@@ -1,31 +1,42 @@
 /**
  * Ground-truth fixtures for the sequence-combination engine.
  *
- * Every step here is transcribed from Austen's worked cards (2026-08-04): the
- * GG+HH fusion card, the FALG variants, and the ΦΨ bridge steps. The GGGG /
- * HHHH / AAAA cycles extend his literal consecutive steps by continuing the
- * same 90° pattern around the grid.
+ * Every step here is transcribed from Austen's worked cards (2026-08-04) — the
+ * GG+HH fusion card, the 8-beat FALG card, the ΦΨ bridge steps — and every one
+ * of them has been verified to be an exact row of
+ * `static/data/pictographs/DiamondPictographDataframe.csv`. The dataframe is
+ * canon: where a transcription and the dataframe disagreed, the dataframe won
+ * (see HHHH_CW's comment for the one case).
  *
- * Two invariants make these usable as ground truth, and `fixtures.test.ts`
- * enforces both:
- *   1. Each sequence is a closed loop — step i's startPosition is step i-1's
- *      endPosition, and the last step returns to the first step's seam.
- *   2. Every position LABEL equals what `getGridPositionFromLocations` computes
- *      from that step's own motion locations. The mapper is canon; a label that
- *      disagrees is the bug.
+ * Four invariants make these usable as ground truth, all enforced by
+ * `fixtures.test.ts` so a corrupted fixture can never ship green:
+ *   1. Each loop closes — step i starts where step i-1 ended, and the last step
+ *      returns to the first step's seam.
+ *   2. Every position LABEL equals `getGridPositionFromLocations` of that step's
+ *      own motion locations.
+ *   3. Every motion's `motionType` equals `deriveMotionType` of its own
+ *      locations + rotation direction + turns. motionType is not free data; it
+ *      is a function of the other three.
+ *   4. Every step is a real (letter, positions, blue motion, red motion) row of
+ *      the diamond dataframe, and each loop is an orientation fixpoint under
+ *      `recalculateAllOrientations`.
  *
- * Hermetic by construction — no MCP, no network, no fixture files on disk.
+ * Hermetic — no MCP, no network. The dataframe checks read the CSV from disk
+ * through the production parser (see `pictograph-dataset.ts` and
+ * `tests/helpers/real-pictograph-loader.ts`).
  */
 
+import { withCalculatedArrowLocations } from "$lib/features/assemble-lab/services/builder-step-converter";
+import type { SeamState } from "$lib/shared/combination/domain/types";
+import { seamOf } from "$lib/shared/combination/services/position-groups";
 import { createStartPositionData } from "$lib/shared/foundation/domain/factories/create-start-position-data";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
-import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   createSequenceData,
   type SequenceData,
 } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import { calculateArrowLocation } from "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-locator";
 import {
   GridLocation,
   GridMode,
@@ -63,29 +74,25 @@ function makeMotion(spec: MotionSpec, color: MotionColor): MotionData {
     turns: 0,
     color,
     gridMode: GridMode.DIAMOND,
-    // createMotionData's arrowLocation default is a hard NORTH, which would be
-    // wrong on every fixture step. The locator is a pure function of the two
-    // locations plus motion type, so compute it rather than leave it lying.
-    arrowLocation: calculateArrowLocation({
-      startLocation: spec.from,
-      endLocation: spec.to,
-      motionType: spec.type,
-    }) as GridLocation,
+    // Provisional. The real value is computed by withCalculatedArrowLocations
+    // below, once BOTH hands exist — a dash's canonical arrow location depends
+    // on the OTHER hand's motion, so it cannot be derived per-motion.
+    arrowLocation: spec.from,
   });
 }
 
 export function makeStep(
   stepNumber: number,
-  letter: string,
+  letter: Letter,
   startPosition: GridPosition,
   endPosition: GridPosition,
   blue: MotionSpec,
   red: MotionSpec
 ): StepData {
-  return createStepData({
+  const step = createStepData({
     id: `fixture-${letter}-${stepNumber}-${startPosition}-${endPosition}`,
     stepNumber,
-    letter: letter as Letter,
+    letter,
     startPosition,
     endPosition,
     gridMode: GridMode.DIAMOND,
@@ -95,6 +102,11 @@ export function makeStep(
       [MotionColor.RED]: makeMotion(red, MotionColor.RED),
     },
   });
+  // Production's documented arrow-location seam — it delegates to
+  // ArrowLocationCalculator, which routes DASH through the pictograph-aware
+  // dash calculator. Without it Ψ's red dash and Φ's blue dash both land on
+  // "s" instead of the canonical "w".
+  return withCalculatedArrowLocations(step);
 }
 
 /** The static both-hands hold the sequence begins from. */
@@ -138,8 +150,16 @@ export function makeLoop(
 }
 
 /** The seam each step starts at, in order. */
-export function seamsOf(seq: SequenceData): GridPosition[] {
-  return seq.steps.map((s) => s.startPosition as GridPosition);
+export function seamsOf(seq: SequenceData): SeamState[] {
+  return seq.steps.map((step) => {
+    const seam = seamOf(step);
+    if (!seam) {
+      throw new Error(
+        `Fixture step ${step.stepNumber} carries no startPosition`
+      );
+    }
+    return seam;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -154,6 +174,9 @@ const { NORTH: N, EAST: E, SOUTH: S, WEST: W } = GridLocation;
 const IN = Orientation.IN;
 const OUT = Orientation.OUT;
 
+const { ALPHA1, ALPHA3, ALPHA5, ALPHA7, BETA1, BETA3, BETA5, BETA7 } =
+  GridPosition;
+
 const spec =
   (type: MotionType) =>
   (
@@ -167,40 +190,65 @@ const spec =
 const pro = spec(MotionType.PRO);
 const anti = spec(MotionType.ANTI);
 const dash = spec(MotionType.DASH);
-const staticM = spec(MotionType.STATIC);
+const held = spec(MotionType.STATIC);
 
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------
 
 /**
- * GGGG — clockwise pro cycle through the beta world.
+ * GGGG — clockwise pro cycle through the beta world (hand path cw: n→e→s→w).
  *
  * Steps 1–2 are literal (steps 7–8 of Austen's third FALG variant):
  *   G beta1>beta3, both hands pro cw n>e, in>in
  *   G beta3>beta5, both hands pro cw e>s, in>in
- * Steps 3–4 continue the same 90° pattern (s>w, w>n) back to beta1.
+ * Steps 3–4 continue the same 90° pattern back to beta1. All four are pro-cw
+ * dataframe rows.
  */
 export const GGGG_CW: SequenceData = makeLoop("fx-gggg", "GGGG", [
-  makeStep(1, "G", GridPosition.BETA1, GridPosition.BETA3, pro(CW, N, E, IN, IN), pro(CW, N, E, IN, IN)),
-  makeStep(2, "G", GridPosition.BETA3, GridPosition.BETA5, pro(CW, E, S, IN, IN), pro(CW, E, S, IN, IN)),
-  makeStep(3, "G", GridPosition.BETA5, GridPosition.BETA7, pro(CW, S, W, IN, IN), pro(CW, S, W, IN, IN)),
-  makeStep(4, "G", GridPosition.BETA7, GridPosition.BETA1, pro(CW, W, N, IN, IN), pro(CW, W, N, IN, IN)),
+  makeStep(1, Letter.G, BETA1, BETA3, pro(CW, N, E, IN, IN), pro(CW, N, E, IN, IN)),
+  makeStep(2, Letter.G, BETA3, BETA5, pro(CW, E, S, IN, IN), pro(CW, E, S, IN, IN)),
+  makeStep(3, Letter.G, BETA5, BETA7, pro(CW, S, W, IN, IN), pro(CW, S, W, IN, IN)),
+  makeStep(4, Letter.G, BETA7, BETA1, pro(CW, W, N, IN, IN), pro(CW, W, N, IN, IN)),
 ]);
 
 /**
- * HHHH — anti cycle through the beta world, orientations alternating in↔out.
+ * HHHH (anti + ccw) — same hand path as GGGG (n→e→s→w) but the prop counter-
+ * rotates, so the motion reads anti. Orientations alternate in↔out because anti
+ * at 0 turns flips orientation every step.
  *
- * Steps 1–2 are literal (steps 7–8 of Austen's second example):
- *   H beta1>beta3, both hands anti ccw n>e, in>out
- *   H beta3>beta5, both hands anti ccw e>s, out>in
- * Steps 3–4 continue the pattern (s>w in>out, w>n out>in).
+ * Steps 1–2 are literal (steps 7–8 of Austen's second example). A valid card in
+ * its own right, kept in the corpus — but it is NOT the rotation-faithful twin
+ * of GGGG_CW. See HHHH_CW.
  */
-export const HHHH_CCW: SequenceData = makeLoop("fx-hhhh", "HHHH", [
-  makeStep(1, "H", GridPosition.BETA1, GridPosition.BETA3, anti(CCW, N, E, IN, OUT), anti(CCW, N, E, IN, OUT)),
-  makeStep(2, "H", GridPosition.BETA3, GridPosition.BETA5, anti(CCW, E, S, OUT, IN), anti(CCW, E, S, OUT, IN)),
-  makeStep(3, "H", GridPosition.BETA5, GridPosition.BETA7, anti(CCW, S, W, IN, OUT), anti(CCW, S, W, IN, OUT)),
-  makeStep(4, "H", GridPosition.BETA7, GridPosition.BETA1, anti(CCW, W, N, OUT, IN), anti(CCW, W, N, OUT, IN)),
+export const HHHH_CCW: SequenceData = makeLoop("fx-hhhh-ccw", "HHHH", [
+  makeStep(1, Letter.H, BETA1, BETA3, anti(CCW, N, E, IN, OUT), anti(CCW, N, E, IN, OUT)),
+  makeStep(2, Letter.H, BETA3, BETA5, anti(CCW, E, S, OUT, IN), anti(CCW, E, S, OUT, IN)),
+  makeStep(3, Letter.H, BETA5, BETA7, anti(CCW, S, W, IN, OUT), anti(CCW, S, W, IN, OUT)),
+  makeStep(4, Letter.H, BETA7, BETA1, anti(CCW, W, N, OUT, IN), anti(CCW, W, N, OUT, IN)),
+]);
+
+/**
+ * HHHH (anti + cw) — the rotation-faithful twin partner of GGGG_CW: the prop
+ * keeps spinning CLOCKWISE and only the motion type flips pro→anti.
+ *
+ * Read `VariantDescriptor.rotationFaithful` carefully before using this.
+ * "rotation direction AND locations preserved" cannot both hold: motionType is
+ * a FUNCTION of (hand path, rotation direction) — that is exactly what
+ * `deriveMotionType` computes — so holding n→e and cw fixed forces pro.
+ * Flipping to anti while keeping the prop cw necessarily reverses the hand
+ * path, which is why this loop runs beta1→beta7→beta5→beta3 (n→w→s→e) rather
+ * than GGGG's beta1→beta3→beta5→beta7. There is no `H beta1>beta3 anti cw` row
+ * in the dataframe; the four rows below are the complete anti-cw H set. Task 5's
+ * variant generator must choose which half of that descriptor it honours.
+ *
+ * Austen's GHGH card corroborates the pairing: it fuses pro-cw G with anti-cw H.
+ */
+export const HHHH_CW: SequenceData = makeLoop("fx-hhhh-cw", "HHHH", [
+  makeStep(1, Letter.H, BETA1, BETA7, anti(CW, N, W, IN, OUT), anti(CW, N, W, IN, OUT)),
+  makeStep(2, Letter.H, BETA7, BETA5, anti(CW, W, S, OUT, IN), anti(CW, W, S, OUT, IN)),
+  makeStep(3, Letter.H, BETA5, BETA3, anti(CW, S, E, IN, OUT), anti(CW, S, E, IN, OUT)),
+  makeStep(4, Letter.H, BETA3, BETA1, anti(CW, E, N, OUT, IN), anti(CW, E, N, OUT, IN)),
 ]);
 
 /**
@@ -211,70 +259,102 @@ export const HHHH_CCW: SequenceData = makeLoop("fx-hhhh", "HHHH", [
  *   4 H beta3>beta5  blue anti ccw e>s out>in red anti ccw e>s out>in
  */
 export const GHGH: SequenceData = makeLoop("fx-ghgh", "GHGH", [
-  makeStep(1, "G", GridPosition.BETA5, GridPosition.BETA7, pro(CW, S, W, IN, IN), pro(CW, S, W, IN, IN)),
-  makeStep(2, "H", GridPosition.BETA7, GridPosition.BETA5, anti(CW, W, S, IN, OUT), anti(CW, W, S, IN, OUT)),
-  makeStep(3, "G", GridPosition.BETA5, GridPosition.BETA3, pro(CCW, S, E, OUT, OUT), pro(CCW, S, E, OUT, OUT)),
-  makeStep(4, "H", GridPosition.BETA3, GridPosition.BETA5, anti(CCW, E, S, OUT, IN), anti(CCW, E, S, OUT, IN)),
+  makeStep(1, Letter.G, BETA5, BETA7, pro(CW, S, W, IN, IN), pro(CW, S, W, IN, IN)),
+  makeStep(2, Letter.H, BETA7, BETA5, anti(CW, W, S, IN, OUT), anti(CW, W, S, IN, OUT)),
+  makeStep(3, Letter.G, BETA5, BETA3, pro(CCW, S, E, OUT, OUT), pro(CCW, S, E, OUT, OUT)),
+  makeStep(4, Letter.H, BETA3, BETA5, anti(CCW, E, S, OUT, IN), anti(CCW, E, S, OUT, IN)),
 ]);
 
 /**
  * AAAA — counter-clockwise pro cycle through the alpha world (hands 180° apart).
  *
  * Step 1 is literal from Austen's FALG card:
- *   A alpha3>alpha1: blue pro ccw w>s, red pro ccw e>n (in>in for a clean cycle)
- * The remaining steps continue the location cycle blue w→s→e→n→w with red
- * always opposite (e→n→w→s→e). Every alpha label below was READ OFF
- * `getGridPositionFromLocations`, not assumed.
+ *   A alpha3>alpha1: blue pro ccw w>s, red pro ccw e>n
+ * The rest continues the location cycle blue w→s→e→n→w with red always
+ * opposite. Every alpha label was READ OFF `getGridPositionFromLocations`.
+ *
+ * Its whole seam set is alpha; GGGG's is entirely beta. That disjointness is
+ * what makes "AAAA + GGGG is impossible without a ΦΨ bridge" a real claim.
  */
 export const AAAA_CCW: SequenceData = makeLoop("fx-aaaa", "AAAA", [
-  makeStep(1, "A", GridPosition.ALPHA3, GridPosition.ALPHA1, pro(CCW, W, S, IN, IN), pro(CCW, E, N, IN, IN)),
-  makeStep(2, "A", GridPosition.ALPHA1, GridPosition.ALPHA7, pro(CCW, S, E, IN, IN), pro(CCW, N, W, IN, IN)),
-  makeStep(3, "A", GridPosition.ALPHA7, GridPosition.ALPHA5, pro(CCW, E, N, IN, IN), pro(CCW, W, S, IN, IN)),
-  makeStep(4, "A", GridPosition.ALPHA5, GridPosition.ALPHA3, pro(CCW, N, W, IN, IN), pro(CCW, S, E, IN, IN)),
+  makeStep(1, Letter.A, ALPHA3, ALPHA1, pro(CCW, W, S, IN, IN), pro(CCW, E, N, IN, IN)),
+  makeStep(2, Letter.A, ALPHA1, ALPHA7, pro(CCW, S, E, IN, IN), pro(CCW, N, W, IN, IN)),
+  makeStep(3, Letter.A, ALPHA7, ALPHA5, pro(CCW, E, N, IN, IN), pro(CCW, W, S, IN, IN)),
+  makeStep(4, Letter.A, ALPHA5, ALPHA3, pro(CCW, N, W, IN, IN), pro(CCW, S, E, IN, IN)),
+]);
+
+/**
+ * FALG — Austen's 8-beat mirrored card, transcribed verbatim:
+ *   1 F beta5>alpha3  blue anti ccw s>w in>out   red pro ccw s>e in>in
+ *   2 A alpha3>alpha1 blue pro ccw w>s out>out   red pro ccw e>n in>in
+ *   3 L alpha1>beta7  blue anti ccw s>w out>in   red pro ccw n>w in>in
+ *   4 G beta7>beta5   blue pro ccw w>s in>in     red pro ccw w>s in>in
+ *   5 F beta5>alpha3  blue pro cw s>w in>in      red anti cw s>e in>out
+ *   6 A alpha3>alpha5 blue pro cw w>n in>in      red pro cw e>s out>out
+ *   7 L alpha5>beta3  blue pro cw n>e in>in      red anti cw s>e out>in
+ *   8 G beta3>beta5   blue pro cw e>s in>in      red pro cw e>s in>in
+ *
+ * The asymmetric fixture: it crosses alpha↔beta four times, uses four letters,
+ * and its two halves are colour-mirrors of each other. Rotations, mirrors and
+ * colour swaps are OBSERVABLE on this one and invisible on the fully symmetric
+ * cycles above — which is why Task 5+ needs it.
+ */
+export const FALG: SequenceData = makeLoop("fx-falg", "FALG", [
+  makeStep(1, Letter.F, BETA5, ALPHA3, anti(CCW, S, W, IN, OUT), pro(CCW, S, E, IN, IN)),
+  makeStep(2, Letter.A, ALPHA3, ALPHA1, pro(CCW, W, S, OUT, OUT), pro(CCW, E, N, IN, IN)),
+  makeStep(3, Letter.L, ALPHA1, BETA7, anti(CCW, S, W, OUT, IN), pro(CCW, N, W, IN, IN)),
+  makeStep(4, Letter.G, BETA7, BETA5, pro(CCW, W, S, IN, IN), pro(CCW, W, S, IN, IN)),
+  makeStep(5, Letter.F, BETA5, ALPHA3, pro(CW, S, W, IN, IN), anti(CW, S, E, IN, OUT)),
+  makeStep(6, Letter.A, ALPHA3, ALPHA5, pro(CW, W, N, IN, IN), pro(CW, E, S, OUT, OUT)),
+  makeStep(7, Letter.L, ALPHA5, BETA3, pro(CW, N, E, IN, IN), anti(CW, S, E, OUT, IN)),
+  makeStep(8, Letter.G, BETA3, BETA5, pro(CW, E, S, IN, IN), pro(CW, E, S, IN, IN)),
+]);
+
+/**
+ * ΦΨΦΨ — the 4-step ambient bridge loop. Every step is a Type-4 dash/static
+ * pair, so it crosses alpha↔beta on every step and touches beta5, alpha5, beta1
+ * and alpha1. This is the vocabulary the engine reaches for when two cards share
+ * no seam (Task 10).
+ *
+ *   1 Φ beta5>alpha5  blue dash s>n in>out    red static s>s in>in
+ *   2 Ψ alpha5>beta1  blue static n>n out>out red dash s>n in>out
+ *   3 Φ beta1>alpha1  blue dash n>s out>in    red static n>n out>out
+ *   4 Ψ alpha1>beta5  blue static s>s in>in   red dash n>s out>in
+ */
+export const PHI_PSI_LOOP: SequenceData = makeLoop("fx-phi-psi", "ΦΨΦΨ", [
+  makeStep(1, Letter.PHI, BETA5, ALPHA5, dash(NONE, S, N, IN, OUT), held(NONE, S, S, IN, IN)),
+  makeStep(2, Letter.PSI, ALPHA5, BETA1, held(NONE, N, N, OUT, OUT), dash(NONE, S, N, IN, OUT)),
+  makeStep(3, Letter.PHI, BETA1, ALPHA1, dash(NONE, N, S, OUT, IN), held(NONE, N, N, OUT, OUT)),
+  makeStep(4, Letter.PSI, ALPHA1, BETA5, held(NONE, S, S, IN, IN), dash(NONE, N, S, OUT, IN)),
 ]);
 
 /**
  * Ψ alpha5>beta1 — verbatim: blue static n>n out>out, red dash s>n in>out.
- * One of the two ambient bridge steps between the alpha and beta worlds.
+ * Standalone bridge step; the same object as PHI_PSI_LOOP step 2.
  */
-export const PSI_STEP: StepData = makeStep(
-  1,
-  "Ψ",
-  GridPosition.ALPHA5,
-  GridPosition.BETA1,
-  staticM(NONE, N, N, OUT, OUT),
-  dash(NONE, S, N, IN, OUT)
-);
+export const PSI_STEP: StepData = PHI_PSI_LOOP.steps[1]!;
 
 /**
  * Φ beta5>alpha5 — verbatim: blue dash s>n in>out, red static s>s in>in.
- * The other ambient bridge step: beta world back out to alpha.
+ * Standalone bridge step; the same object as PHI_PSI_LOOP step 1.
  */
-export const PHI_STEP: StepData = makeStep(
-  1,
-  "Φ",
-  GridPosition.BETA5,
-  GridPosition.ALPHA5,
-  dash(NONE, S, N, IN, OUT),
-  staticM(NONE, S, S, IN, IN)
-);
+export const PHI_STEP: StepData = PHI_PSI_LOOP.steps[0]!;
+
+/** Every loop fixture, named. */
+export const ALL_FIXTURE_LOOPS: readonly (readonly [string, SequenceData])[] = [
+  ["GGGG_CW", GGGG_CW],
+  ["HHHH_CCW", HHHH_CCW],
+  ["HHHH_CW", HHHH_CW],
+  ["GHGH", GHGH],
+  ["AAAA_CCW", AAAA_CCW],
+  ["FALG", FALG],
+  ["PHI_PSI_LOOP", PHI_PSI_LOOP],
+];
 
 /** Every fixture step, named, for whole-corpus assertions. */
 export const ALL_FIXTURE_STEPS: readonly {
   readonly name: string;
   readonly step: StepData;
-}[] = [
-  ...[
-    ["GGGG_CW", GGGG_CW],
-    ["HHHH_CCW", HHHH_CCW],
-    ["GHGH", GHGH],
-    ["AAAA_CCW", AAAA_CCW],
-  ].flatMap(([name, seq]) =>
-    (seq as SequenceData).steps.map((step, i) => ({
-      name: `${name as string}[${i}]`,
-      step,
-    }))
-  ),
-  { name: "PSI_STEP", step: PSI_STEP },
-  { name: "PHI_STEP", step: PHI_STEP },
-];
+}[] = ALL_FIXTURE_LOOPS.flatMap(([name, seq]) =>
+  seq.steps.map((step, i) => ({ name: `${name}[${i}]`, step }))
+);

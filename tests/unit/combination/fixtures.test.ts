@@ -1,18 +1,57 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
-import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
+import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
+import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { deriveMotionType } from "$lib/shared/render/core/calculations/orientation";
 
+import { getAllLetterVariants } from "../../helpers/real-pictograph-loader";
 import {
   AAAA_CCW,
+  ALL_FIXTURE_LOOPS,
   ALL_FIXTURE_STEPS,
+  FALG,
   GGGG_CW,
   GHGH,
   HHHH_CCW,
+  HHHH_CW,
+  PHI_PSI_LOOP,
   PHI_STEP,
   PSI_STEP,
   seamsOf,
 } from "./fixtures";
+import { loadPictographDatasetForTests } from "./pictograph-dataset";
+
+const COLORS = [MotionColor.BLUE, MotionColor.RED] as const;
+
+function assertClosedLoop(seq: SequenceData): void {
+  for (let i = 1; i < seq.steps.length; i++) {
+    expect(seq.steps[i]!.startPosition).toBe(seq.steps[i - 1]!.endPosition);
+  }
+  expect(seq.steps.at(-1)!.endPosition).toBe(seq.steps[0]!.startPosition);
+}
+
+/**
+ * A dataframe row reduced to the fields a fixture is allowed to assert on.
+ * Orientations are deliberately absent — the CSV carries none; the parser
+ * derives them from an assumed IN start.
+ */
+function rowKey(
+  letter: Letter | null,
+  startPosition: string | null,
+  endPosition: string | null,
+  blue: MotionData,
+  red: MotionData
+): string {
+  const hand = (m: MotionData) =>
+    [m.motionType, m.rotationDirection, m.startLocation, m.endLocation].join("/");
+  return [letter, startPosition, endPosition, hand(blue), hand(red)].join(" | ");
+}
 
 describe("combination fixtures", () => {
   it("GGGG is a closed 4-step loop with position continuity", () => {
@@ -20,36 +59,35 @@ describe("combination fixtures", () => {
     for (let i = 0; i < GGGG_CW.steps.length; i++) {
       expect(GGGG_CW.steps[i]!.startPosition).toBe(seams[i]);
     }
-    for (let i = 1; i < GGGG_CW.steps.length; i++) {
-      expect(GGGG_CW.steps[i]!.startPosition).toBe(
-        GGGG_CW.steps[i - 1]!.endPosition
-      );
-    }
-    expect(GGGG_CW.steps.at(-1)!.endPosition).toBe(
-      GGGG_CW.steps[0]!.startPosition
-    );
+    assertClosedLoop(GGGG_CW);
   });
 
-  it("HHHH is a closed 4-step loop", () => {
-    for (let i = 1; i < HHHH_CCW.steps.length; i++) {
-      expect(HHHH_CCW.steps[i]!.startPosition).toBe(
-        HHHH_CCW.steps[i - 1]!.endPosition
-      );
+  it("HHHH (ccw) is a closed 4-step loop", () => {
+    assertClosedLoop(HHHH_CCW);
+  });
+
+  it("HHHH (cw) is a closed 4-step loop and is GGGG's rotation-faithful twin", () => {
+    assertClosedLoop(HHHH_CW);
+    // Same prop rotation as GGGG throughout, opposite motion type. That is the
+    // entire content of "rotation-faithful": the prop keeps spinning cw.
+    for (const step of HHHH_CW.steps) {
+      for (const color of COLORS) {
+        expect(step.motions[color].rotationDirection).toBe("cw");
+        expect(step.motions[color].motionType).toBe("anti");
+      }
     }
-    expect(HHHH_CCW.steps.at(-1)!.endPosition).toBe(
-      HHHH_CCW.steps[0]!.startPosition
-    );
+    for (const step of GGGG_CW.steps) {
+      for (const color of COLORS) {
+        expect(step.motions[color].rotationDirection).toBe("cw");
+        expect(step.motions[color].motionType).toBe("pro");
+      }
+    }
+    // Both cover the same four beta seams, in opposite order around the grid.
+    expect([...seamsOf(HHHH_CW)].sort()).toEqual([...seamsOf(GGGG_CW)].sort());
   });
 
   it("AAAA is a closed 4-step loop", () => {
-    for (let i = 1; i < AAAA_CCW.steps.length; i++) {
-      expect(AAAA_CCW.steps[i]!.startPosition).toBe(
-        AAAA_CCW.steps[i - 1]!.endPosition
-      );
-    }
-    expect(AAAA_CCW.steps.at(-1)!.endPosition).toBe(
-      AAAA_CCW.steps[0]!.startPosition
-    );
+    assertClosedLoop(AAAA_CCW);
   });
 
   it("GHGH (Austen's fused example) is closed and alternates letters", () => {
@@ -60,47 +98,132 @@ describe("combination fixtures", () => {
     expect(GHGH.steps.at(-1)!.endPosition).toBe(GHGH.steps[0]!.startPosition);
   });
 
-  it("every fixture's positions agree with getGridPositionFromLocations", () => {
-    // The mapper is canon. A fixture's transcribed position label is only
-    // correct if it equals the position computed from that step's own motion
-    // locations — otherwise the label is the bug, not the function.
-    const label = (step: StepData, edge: "start" | "end") => {
-      const blue = step.motions.blue;
-      const red = step.motions.red;
-      return edge === "start"
-        ? getGridPositionFromLocations(blue.startLocation, red.startLocation)
-        : getGridPositionFromLocations(blue.endLocation, red.endLocation);
-    };
+  it("FALG is Austen's closed 8-step card and crosses alpha/beta four times", () => {
+    expect(FALG.steps.map((s) => s.letter)).toEqual([
+      "F",
+      "A",
+      "L",
+      "G",
+      "F",
+      "A",
+      "L",
+      "G",
+    ]);
+    assertClosedLoop(FALG);
+    const seams = seamsOf(FALG);
+    expect(seams.filter((p) => p.startsWith("alpha")).length).toBe(4);
+    expect(seams.filter((p) => p.startsWith("beta")).length).toBe(4);
+  });
 
-    expect(ALL_FIXTURE_STEPS.length).toBeGreaterThan(0);
+  it("ΦΨΦΨ is a closed bridge loop touching both worlds on every step", () => {
+    expect(PHI_PSI_LOOP.steps.map((s) => s.letter)).toEqual([
+      "Φ",
+      "Ψ",
+      "Φ",
+      "Ψ",
+    ]);
+    assertClosedLoop(PHI_PSI_LOOP);
+    for (const step of PHI_PSI_LOOP.steps) {
+      expect(step.startPosition!.replace(/\d+$/, "")).not.toBe(
+        step.endPosition!.replace(/\d+$/, "")
+      );
+    }
+  });
+
+  it("every fixture's positions agree with getGridPositionFromLocations", () => {
+    // The mapper is canon. A fixture's transcribed position label is correct
+    // only if it equals the position computed from that step's own motion
+    // locations — otherwise the label is the bug, not the function.
+    expect(ALL_FIXTURE_STEPS.length).toBe(32);
     for (const { name, step } of ALL_FIXTURE_STEPS) {
-      expect(
-        { where: `${name} start`, position: step.startPosition },
-        `${name} startPosition`
-      ).toEqual({ where: `${name} start`, position: label(step, "start") });
-      expect(
-        { where: `${name} end`, position: step.endPosition },
-        `${name} endPosition`
-      ).toEqual({ where: `${name} end`, position: label(step, "end") });
+      const { blue, red } = step.motions;
+      expect(`${name} start=${step.startPosition}`).toBe(
+        `${name} start=${getGridPositionFromLocations(
+          blue.startLocation,
+          red.startLocation
+        )}`
+      );
+      expect(`${name} end=${step.endPosition}`).toBe(
+        `${name} end=${getGridPositionFromLocations(
+          blue.endLocation,
+          red.endLocation
+        )}`
+      );
+    }
+  });
+
+  it("every fixture motion's motionType is derivable from its own fields", () => {
+    // motionType is a FUNCTION of (hand path, rotation direction, turns).
+    // Without this check, corrupting a pro→anti or a cw→ccw still ships green.
+    for (const { name, step } of ALL_FIXTURE_STEPS) {
+      for (const color of COLORS) {
+        const m = step.motions[color];
+        expect(`${name} ${color}=${m.motionType}`).toBe(
+          `${name} ${color}=${deriveMotionType(
+            m.startLocation,
+            m.endLocation,
+            m.rotationDirection,
+            m.turns
+          )}`
+        );
+      }
     }
   });
 
   it("every fixture sequence's start position matches its first step's seam", () => {
-    for (const seq of [GGGG_CW, HHHH_CCW, GHGH, AAAA_CCW]) {
+    for (const [name, seq] of ALL_FIXTURE_LOOPS) {
       const first = seq.steps[0]!;
-      expect(seq.startPosition?.startPosition).toBe(first.startPosition);
-      expect(seq.startPosition?.endPosition).toBe(first.startPosition);
-      expect(seq.startPosition?.gridPosition).toBe(first.startPosition);
+      expect(seq.startPosition?.startPosition, name).toBe(first.startPosition);
+      expect(seq.startPosition?.endPosition, name).toBe(first.startPosition);
+      expect(seq.startPosition?.gridPosition, name).toBe(first.startPosition);
       // Static both-hands hold: nothing moves, nothing rotates.
-      for (const color of ["blue", "red"] as const) {
-        const held = seq.startPosition!.motions[color]!;
+      for (const color of COLORS) {
+        const hold = seq.startPosition!.motions[color]!;
         const live = first.motions[color];
-        expect(held.motionType).toBe("static");
-        expect(held.rotationDirection).toBe("noRotation");
-        expect(held.startLocation).toBe(live.startLocation);
-        expect(held.endLocation).toBe(live.startLocation);
-        expect(held.startOrientation).toBe(live.startOrientation);
-        expect(held.endOrientation).toBe(live.startOrientation);
+        expect(hold.motionType).toBe("static");
+        expect(hold.rotationDirection).toBe("noRotation");
+        expect(hold.startLocation).toBe(live.startLocation);
+        expect(hold.endLocation).toBe(live.startLocation);
+        expect(hold.startOrientation).toBe(live.startOrientation);
+        expect(hold.endOrientation).toBe(live.startOrientation);
+      }
+    }
+  });
+
+  it("every loop fixture is a fixpoint of recalculateAllOrientations", () => {
+    // The Task-9 contract: splicing these blocks must never need to rewrite an
+    // orientation, because each loop's chain already closes on itself.
+    const chainOf = (seq: SequenceData) =>
+      seq.steps.map((s) =>
+        COLORS.map(
+          (c) =>
+            `${s.motions[c].startOrientation}>${s.motions[c].endOrientation}`
+        ).join(",")
+      );
+    for (const [name, seq] of ALL_FIXTURE_LOOPS) {
+      expect(chainOf(recalculateAllOrientations(seq)), `${name}`).toEqual(
+        chainOf(seq)
+      );
+    }
+  });
+
+  it("canonical arrow locations are applied, including the dash special cases", () => {
+    // A dash's arrow location depends on the OTHER hand, so a per-motion
+    // calculation gets it wrong. These are the values production's
+    // ArrowLocationCalculator produces.
+    expect(PSI_STEP.motions.blue.arrowLocation).toBe("n"); // static -> start
+    expect(PSI_STEP.motions.red.arrowLocation).toBe("w"); // dash s->n
+    expect(PHI_STEP.motions.blue.arrowLocation).toBe("w"); // dash s->n
+    expect(PHI_STEP.motions.red.arrowLocation).toBe("s"); // static -> start
+    // Shifts land on the intercardinal between their endpoints.
+    expect(GGGG_CW.steps[0]!.motions.blue.arrowLocation).toBe("ne"); // n->e
+    expect(FALG.steps[0]!.motions.blue.arrowLocation).toBe("sw"); // s->w
+    for (const { name, step } of ALL_FIXTURE_STEPS) {
+      for (const color of COLORS) {
+        expect(
+          step.motions[color].arrowLocation,
+          `${name} ${color}`
+        ).toBeTruthy();
       }
     }
   });
@@ -124,5 +247,86 @@ describe("combination fixtures", () => {
     expect(seamsOf(AAAA_CCW)).toContain(PSI_STEP.startPosition);
     expect(seamsOf(GGGG_CW)).toContain(PSI_STEP.endPosition);
     expect(seamsOf(GGGG_CW)).toContain(PHI_STEP.startPosition);
+    // AAAA and GGGG genuinely share no seam — the premise of the ambient tests.
+    const alpha = new Set<string>(seamsOf(AAAA_CCW));
+    expect(seamsOf(GGGG_CW).some((p) => alpha.has(p))).toBe(false);
+  });
+});
+
+describe("combination fixtures vs the diamond dataframe", () => {
+  const rowsByLetter = new Map<Letter, Set<string>>();
+
+  beforeAll(async () => {
+    await loadPictographDatasetForTests();
+    const letters = new Set(
+      ALL_FIXTURE_STEPS.map(({ step }) => step.letter).filter(
+        (l): l is Letter => l !== null
+      )
+    );
+    for (const letter of letters) {
+      const variants = await getAllLetterVariants(letter, GridMode.DIAMOND);
+      rowsByLetter.set(
+        letter,
+        new Set(
+          variants.map((v) =>
+            rowKey(
+              v.letter ?? null,
+              v.startPosition ?? null,
+              v.endPosition ?? null,
+              v.motions.blue!,
+              v.motions.red!
+            )
+          )
+        )
+      );
+    }
+  });
+
+  it("the dataset bootstrap really hydrates the production pipeline", () => {
+    expect(rowsByLetter.size).toBe(7); // G H A F L Φ Ψ
+    for (const [letter, rows] of rowsByLetter) {
+      expect(rows.size, `${letter} variants`).toBeGreaterThan(0);
+    }
+  });
+
+  it("every fixture step is a real row of DiamondPictographDataframe.csv", () => {
+    for (const { name, step } of ALL_FIXTURE_STEPS) {
+      const key = rowKey(
+        step.letter,
+        step.startPosition,
+        step.endPosition,
+        step.motions.blue,
+        step.motions.red
+      );
+      const rows = rowsByLetter.get(step.letter as Letter);
+      expect(
+        rows,
+        `${name}: letter ${step.letter} missing from dataframe`
+      ).toBeDefined();
+      expect(
+        rows!.has(key)
+          ? key
+          : `${key}\n  NOT FOUND AMONG:\n  ${[...rows!].join("\n  ")}`,
+        `${name} is not a dataframe row`
+      ).toBe(key);
+    }
+  });
+
+  it("the standalone Ψ/Φ steps are dataframe rows too", () => {
+    for (const step of [PSI_STEP, PHI_STEP] as StepData[]) {
+      const rows = rowsByLetter.get(step.letter as Letter)!;
+      expect(
+        rows.has(
+          rowKey(
+            step.letter,
+            step.startPosition,
+            step.endPosition,
+            step.motions.blue,
+            step.motions.red
+          )
+        ),
+        `${step.letter} ${step.startPosition}>${step.endPosition}`
+      ).toBe(true);
+    }
   });
 });
