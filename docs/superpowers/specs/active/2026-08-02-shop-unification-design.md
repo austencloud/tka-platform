@@ -220,6 +220,82 @@ visitors today.
       all four states), 960x412 fold and pill guarantees intact, zero page
       console errors.
 
+- [x] R11 `42780c55b0`: **the phone goes live.** Austen: "is this the most
+      realistic we can make the phone look ... do we want to make it so that we
+      can actually interact with it by clicking the navigation ... on my 4K
+      device I actually could click each one of these buttons very easily."
+      Three decisions, all approved:
+
+      1. **CSS materiality** (no device-frame asset, no brand cosplay). A conic
+         gradient masked to the border box replaces the flat inset hairline, so
+         the frame catches light on the upper-left and lower-right chamfers and
+         goes near-dark between them — the lean and the entrance now read as an
+         object turning. Power + volume nubs hang off the frame edges (widths in
+         % of phone width, heights in % of phone height, so they hold at every
+         size the stage hands the component). A punch-hole camera sits ON the
+         display just below its top edge (3.7% of body width — the viewer's top
+         bar runs under it, not around it), and the old 26%-wide "speaker" bar
+         that straddled the screen seam is now a thin earpiece slit entirely on
+         the bezel. A 118° two-band glare sweeps the glass at 11% white max,
+         `mix-blend-mode: screen`, aria-hidden and pointer-inert. Kept intact:
+         the derived `frameH`, the entrance/lean/opened transform ladder,
+         reduced motion, and the host's `--phone-h` contract.
+
+      2. **Live when big enough, inert below.** The iframe was pointer-inert at
+         every size ("a depiction, not a control surface"). It now gates on the
+         MEASURED screen width — the same ResizeObserver binding `frameH` uses,
+         never a media query. Threshold **scale ≥ 0.9**, because the viewer's
+         44px floor lands at `44 × scale` and below ~40px it stops being a
+         control anyone can hit on purpose. Measured:
+
+         | viewport | screen px | scale | 44px lands at | verdict |
+         |---|---|---|---|---|
+         | 3840×2160 | 399 | 1.064 | 46.8 | live |
+         | 2560×1440 | 347 | 0.925 | 40.7 | live |
+         | 1920×1080 | 255 | 0.680 | 29.9 | inert |
+         | 1440×900 | 217 | 0.579 | 25.5 | inert |
+         | 960×412 | 75 | 0.200 | 8.8 | inert |
+         | 375×667 | 110 | 0.293 | 12.9 | inert |
+
+         The line falls in the empty gap between 0.680 and 0.925 — no tier is
+         near it, so 0.9 is stable rather than lucky. The only chatter risk is a
+         resize dragged across it, so the gate has hysteresis: opens at 0.9,
+         closes at 0.86. Live adds a cyan halo on the body and a "This screen is
+         live" chip absolutely placed above the phone (no layout shift; it can
+         only appear at sizes where there is room above the stage). The pointer
+         affordance is the embedded page's own hover states — a cursor rule out
+         here cannot reach inside the frame. "Open this scan" stays in both
+         states.
+
+      3. **Everything real, no fences.** Nothing on /q was touched. Verified at
+         3840 with real trusted clicks (`isTrusted: true`) passing through
+         `.card-stage → .scene → .phone-holder → .phone` (3D rotated) `→ .screen
+         → .viewport` (scaled) `→ iframe`: bottom-nav Side-by-Side → Tunnel →
+         2D Animation each switched the view; the Playback panel opened inside
+         the phone and "Step-by-step playback mode" toggled to `aria-pressed
+         true`; step cells select and move the playhead. `elementFromPoint` over
+         all five nav tabs returns the IFRAME (nothing above swallows), each tab
+         measures 72×47 px on screen, and the inner document's
+         `scrollHeight === clientHeight`, so a wheel over the live screen chains
+         to the page instead of trapping. Two findings, neither fenced: the
+         viewer's **X navigates the IFRAME to `/browse/gallery`** — the outer
+         /shop page is untouched, the pill still points at `/q/<code>`, and
+         "Deal another card" unmounts and re-arms the phone, so it is
+         recoverable, but the phone then shows the browse app instead of the
+         scan; and the 2D view's corner play/pause is auto-hiding chrome parked
+         above the frame (`visibility: hidden`), so it never appears in the
+         embed — playback is still reachable through the Playback panel.
+
+      Verified: rest + scanned frames at 3840/2560/1920/1440/820/960×412/375;
+      gate table above measured with `evaluate_script`; before/after interaction
+      frames at 3840; 960×412 fold intact (pill bottom 317, trigger bottom 386
+      of 412) and zero horizontal overflow at 960 and 375; zero page console
+      errors on a clean load through a full scan. Harness note for the next
+      session: DevTools MCP's `click` ignores the iframe's CSS `transform:
+      scale()`, so it lands at `target / scale` and cannot reach the bottom ~6%
+      of the screen. Sizing the window so the scale is exactly 1.0 (3840×1553)
+      makes it land true — that is how the nav-tab clicks above were driven.
+
 ## Shipped state (2026-08-02, local commits — NOT pushed)
 
 All work is committed locally. **Pushing main deploys production (CF Pages)** and would take
