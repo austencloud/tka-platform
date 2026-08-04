@@ -29,6 +29,12 @@ import {
   firstFireStationOffsets,
   SHORE_Y as FIRE_SHORE_Y,
 } from "./first-fire-layout";
+import {
+  buildEarthCanyonLayout,
+  createEarthCanyonTerrain,
+  earthCanyonStationOffsets,
+  BOSS_Y as EARTH_BOSS_Y,
+} from "./earth-canyon-layout";
 import { CAVE_THRESHOLD_ROOM } from "./lobby-floor-plan";
 
 type WallName = "north" | "south" | "east" | "west";
@@ -77,8 +83,12 @@ export const CAVE_MODE_ROOMS = [
     label: "Earth",
     category: "TS",
     technicalMode: "Together-time / same-direction",
-    performerIds: ["cave-earth-automaton"],
-    sequenceIds: ["cave-earth-seq"],
+    performerIds: [
+      "cave-earth-automaton-g",
+      "cave-earth-automaton-h",
+      "cave-earth-automaton-i",
+    ],
+    sequenceIds: ["cave-earth-seq-g", "cave-earth-seq-h", "cave-earth-seq-i"],
     tone: "social",
   },
   {
@@ -294,6 +304,58 @@ const firePerformers = firstFireStationOffsets(
   elevation: FIRE_SHORE_Y,
 }));
 
+/**
+ * The Earth canyon overlook's authored shell, declared before VULCAN_CAVE_ROOMS
+ * for the same reason Water's and Fire's are: the three boss stations come off
+ * the SAME compiled dimensions the layout engine uses.
+ *
+ * Interior metres = ceil(minInterior × 1.5) × 0.5, so 45 × 32 compiles to
+ * 34 × 24 m: a 12.5 m grass gully plus a 21.5 × 24 m canyon chamber holding a
+ * ⌀14 m void with its rim ring.
+ */
+const EARTH_MIN_INTERIOR_WIDTH = 45;
+const EARTH_MIN_INTERIOR_HEIGHT = 32;
+
+const earthWalls = {
+  // The canyon is open north. The compiled wall stays for collision; the
+  // graybox omits its visual and renders the boulder parapet just inside it.
+  north: EMPTY_WALL,
+  // The Air door sits at the east end of the south wall, at the top of the
+  // exit ramp that climbs east along the south rim.
+  south: doorWall(EDGE_IDS.earthToAir, "end"),
+  east: torchWall("start"),
+  west: doorWall(EDGE_IDS.fireToEarth, "center"),
+} satisfies Record<WallName, WallDefinition>;
+
+const earthDimensions = computeRoomDimensions({
+  walls: earthWalls,
+  minInteriorWidth: EARTH_MIN_INTERIOR_WIDTH,
+  minInteriorHeight: EARTH_MIN_INTERIOR_HEIGHT,
+});
+
+const EARTH_STATION_SUFFIXES = ["g", "h", "i"] as const;
+
+const earthPerformers = earthCanyonStationOffsets(
+  (earthDimensions.w - 2) * TILE_METRES
+).map((offset, index) => ({
+  offsetX: interiorOffsetFraction(
+    offset.xMetres,
+    earthDimensions.w,
+    earthDimensions.w - 2
+  ),
+  offsetY: interiorOffsetFraction(
+    offset.zMetres,
+    earthDimensions.h,
+    earthDimensions.h - 2
+  ),
+  // Up and out toward the south rim and the slab overlook, where the visitor
+  // stands six metres above them.
+  facing: "south" as const,
+  refId: `cave-earth-automaton-${EARTH_STATION_SUFFIXES[index]}`,
+  collisionRadiusTiles: 2,
+  elevation: EARTH_BOSS_Y,
+}));
+
 const thresholdRoom: RoomNode = {
   ...CAVE_THRESHOLD_ROOM,
   spawn: { offsetX: -0.28, offsetY: 0.28, facing: "north" },
@@ -392,28 +454,16 @@ export const VULCAN_CAVE_ROOMS: RoomNode[] = [
   },
   {
     id: "cave-earth",
-    name: "Earth Chamber",
+    name: "The Canyon Overlook",
     material: "stone",
     theme: "cave",
-    minInteriorWidth: 11,
-    minInteriorHeight: 11,
+    minInteriorWidth: EARTH_MIN_INTERIOR_WIDTH,
+    minInteriorHeight: EARTH_MIN_INTERIOR_HEIGHT,
     description:
-      "The cave's largest chamber, with room for the tactile stone grid and its solo demonstration.",
-    walls: {
-      north: torchWall("center"),
-      south: doorWall(EDGE_IDS.earthToAir, "end"),
-      east: EMPTY_WALL,
-      west: doorWall(EDGE_IDS.fireToEarth, "start"),
-    },
-    performers: [
-      {
-        offsetX: 0,
-        offsetY: -0.08,
-        facing: "west",
-        refId: "cave-earth-automaton",
-        collisionRadiusTiles: 2.5,
-      },
-    ],
+      "A grass gully opens onto the rim of a canyon. Three figures perform six metres below, on a floor there is no way down to; a fallen slab cantilevers over the drop and the shelves beyond recede into haze.",
+    roomPresentation: { suppressTileGeometry: true },
+    walls: earthWalls,
+    performers: earthPerformers,
   },
   {
     id: "cave-air",
@@ -651,9 +701,9 @@ const CAVE_SPACE_PROGRAM: readonly CaveSpaceProgram[] = [
   },
   {
     id: "cave-earth",
-    title: "Earth chamber",
+    title: "The canyon overlook",
     description:
-      "The major spatial release holds the tactile four-beat sequence-matching exhibit.",
+      "A grass gully turns once and opens on a canyon rim; three figures work six metres below, past a fallen slab, with no way down.",
     tone: "social",
   },
   {
@@ -851,6 +901,10 @@ export function buildVulcanCaveFloorPlan(): VulcanCaveFloorPlan {
     {
       bounds: buildFirstFireLayout(build.grid)?.bayBounds,
       program: createFirstFireTerrain(build.grid),
+    },
+    {
+      bounds: buildEarthCanyonLayout(build.grid)?.bayBounds,
+      program: createEarthCanyonTerrain(build.grid),
     },
   ]);
   if (terrain) build.grid.terrain = terrain;

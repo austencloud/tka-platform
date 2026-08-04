@@ -232,25 +232,72 @@ const RAW: Record<string, RawSequence> = {
 
 
 
-	// Earth: together-time / same-direction. Generated and verified through the Flow Arts MCP.
-	"cave-earth-seq": {
-		word: "GHGH",
+	// Earth: together-time / same-direction. The Canyon Overlook's three bosses
+	// run GGGG, HHHH and IIII, transcribed VERBATIM from the Tog-Same catalog
+	// entries in static/data/hero/tnd-base-words.json (tnd-tog-same-gggg / -hhhh
+	// / -iiii). The catalog is the variation authority — the generator's
+	// variation-0 default is a different timing family and shipped wrong once
+	// already (memory: reference_tnd_catalog_variation_authority).
+	"cave-earth-seq-g": {
+		word: "GGGG",
 		steps: [
-			{ letter: "β", startPosition: "beta7", endPosition: "beta7", stepNumber: 0,
-				blueMotion: { color: "blue", startLocation: "w", endLocation: "w", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" },
-				redMotion: { color: "red", startLocation: "w", endLocation: "w", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" } },
-			{ letter: "G", startPosition: "beta7", endPosition: "beta5", stepNumber: 1,
-				blueMotion: { color: "blue", startLocation: "w", endLocation: "s", motionType: "pro", rotationDirection: "ccw", startOrientation: "in", endOrientation: "in" },
-				redMotion: { color: "red", startLocation: "w", endLocation: "s", motionType: "pro", rotationDirection: "ccw", startOrientation: "in", endOrientation: "in" } },
-			{ letter: "H", startPosition: "beta5", endPosition: "beta7", stepNumber: 2,
+			{ letter: "β", startPosition: "beta5", endPosition: "beta5", stepNumber: 0,
+				blueMotion: { color: "blue", startLocation: "s", endLocation: "s", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "s", endLocation: "s", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "G", startPosition: "beta5", endPosition: "beta7", stepNumber: 1,
+				blueMotion: { color: "blue", startLocation: "s", endLocation: "w", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "s", endLocation: "w", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "G", startPosition: "beta7", endPosition: "beta1", stepNumber: 2,
+				blueMotion: { color: "blue", startLocation: "w", endLocation: "n", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "w", endLocation: "n", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "G", startPosition: "beta1", endPosition: "beta3", stepNumber: 3,
+				blueMotion: { color: "blue", startLocation: "n", endLocation: "e", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "n", endLocation: "e", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "G", startPosition: "beta3", endPosition: "beta5", stepNumber: 4,
+				blueMotion: { color: "blue", startLocation: "e", endLocation: "s", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "e", endLocation: "s", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" } },
+		],
+	},
+
+	"cave-earth-seq-h": {
+		word: "HHHH",
+		steps: [
+			{ letter: "β", startPosition: "beta5", endPosition: "beta5", stepNumber: 0,
+				blueMotion: { color: "blue", startLocation: "s", endLocation: "s", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "s", endLocation: "s", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "H", startPosition: "beta5", endPosition: "beta7", stepNumber: 1,
 				blueMotion: { color: "blue", startLocation: "s", endLocation: "w", motionType: "anti", rotationDirection: "ccw", startOrientation: "in", endOrientation: "out" },
 				redMotion: { color: "red", startLocation: "s", endLocation: "w", motionType: "anti", rotationDirection: "ccw", startOrientation: "in", endOrientation: "out" } },
-			{ letter: "G", startPosition: "beta7", endPosition: "beta1", stepNumber: 3,
-				blueMotion: { color: "blue", startLocation: "w", endLocation: "n", motionType: "pro", rotationDirection: "cw", startOrientation: "out", endOrientation: "out" },
-				redMotion: { color: "red", startLocation: "w", endLocation: "n", motionType: "pro", rotationDirection: "cw", startOrientation: "out", endOrientation: "out" } },
-			{ letter: "H", startPosition: "beta1", endPosition: "beta3", stepNumber: 4,
-				blueMotion: { color: "blue", startLocation: "n", endLocation: "e", motionType: "anti", rotationDirection: "ccw", startOrientation: "out", endOrientation: "in" },
-				redMotion: { color: "red", startLocation: "n", endLocation: "e", motionType: "anti", rotationDirection: "ccw", startOrientation: "out", endOrientation: "in" } },
+			{ letter: "H", startPosition: "beta7", endPosition: "beta1", stepNumber: 2,
+				blueMotion: { color: "blue", startLocation: "w", endLocation: "n", motionType: "anti", rotationDirection: "ccw", startOrientation: "out", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "w", endLocation: "n", motionType: "anti", rotationDirection: "ccw", startOrientation: "out", endOrientation: "in" } },
+			{ letter: "H", startPosition: "beta1", endPosition: "beta3", stepNumber: 3,
+				blueMotion: { color: "blue", startLocation: "n", endLocation: "e", motionType: "anti", rotationDirection: "ccw", startOrientation: "in", endOrientation: "out" },
+				redMotion: { color: "red", startLocation: "n", endLocation: "e", motionType: "anti", rotationDirection: "ccw", startOrientation: "in", endOrientation: "out" } },
+			{ letter: "H", startPosition: "beta3", endPosition: "beta5", stepNumber: 4,
+				blueMotion: { color: "blue", startLocation: "e", endLocation: "s", motionType: "anti", rotationDirection: "ccw", startOrientation: "out", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "e", endLocation: "s", motionType: "anti", rotationDirection: "ccw", startOrientation: "out", endOrientation: "in" } },
+		],
+	},
+
+	"cave-earth-seq-i": {
+		word: "IIII",
+		steps: [
+			{ letter: "β", startPosition: "beta5", endPosition: "beta5", stepNumber: 0,
+				blueMotion: { color: "blue", startLocation: "s", endLocation: "s", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "s", endLocation: "s", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "I", startPosition: "beta5", endPosition: "beta7", stepNumber: 1,
+				blueMotion: { color: "blue", startLocation: "s", endLocation: "w", motionType: "anti", rotationDirection: "ccw", startOrientation: "in", endOrientation: "out" },
+				redMotion: { color: "red", startLocation: "s", endLocation: "w", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "I", startPosition: "beta7", endPosition: "beta1", stepNumber: 2,
+				blueMotion: { color: "blue", startLocation: "w", endLocation: "n", motionType: "anti", rotationDirection: "ccw", startOrientation: "out", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "w", endLocation: "n", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "I", startPosition: "beta1", endPosition: "beta3", stepNumber: 3,
+				blueMotion: { color: "blue", startLocation: "n", endLocation: "e", motionType: "anti", rotationDirection: "ccw", startOrientation: "in", endOrientation: "out" },
+				redMotion: { color: "red", startLocation: "n", endLocation: "e", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "I", startPosition: "beta3", endPosition: "beta5", stepNumber: 4,
+				blueMotion: { color: "blue", startLocation: "e", endLocation: "s", motionType: "anti", rotationDirection: "ccw", startOrientation: "out", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "e", endLocation: "s", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" } },
 		],
 	},
 

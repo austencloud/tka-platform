@@ -51,10 +51,11 @@ describe("Vulcan Cave floor plan", () => {
     }
   });
 
-  // The two authored bays stage an ensemble rather than a solo: the Drowned
-  // Gallery its A/B/C procession, the First Fire its DJ/EK/FL stations. Both
-  // are excluded from the one-performer-per-chamber rule.
-  const BAY_ROOM_IDS = new Set(["cave-water", "cave-fire"]);
+  // The three authored bays stage an ensemble rather than a solo: the Drowned
+  // Gallery its A/B/C procession, the First Fire its DJ/EK/FL stations, the
+  // Canyon Overlook its G/H/I bosses. All are excluded from the
+  // one-performer-per-chamber rule.
+  const BAY_ROOM_IDS = new Set(["cave-water", "cave-fire", "cave-earth"]);
   const SOLO_MODE_ROOMS = CAVE_MODE_ROOMS.filter(
     (mode) => !BAY_ROOM_IDS.has(mode.roomId)
   );
@@ -134,15 +135,15 @@ describe("Vulcan Cave floor plan", () => {
       id: room.id,
       area: (room.bounds.width - 2) * (room.bounds.height - 2),
     }));
-    // The two authored bays are the releases; Earth remains the largest of the
-    // four single-chamber rooms after them.
+    // The three authored bays are the releases; every remaining single-chamber
+    // room stays smaller than all of them.
     const bayAreas = performerAreas.filter(({ id }) => BAY_ROOM_IDS.has(id));
     const soloAreas = performerAreas.filter(({ id }) => !BAY_ROOM_IDS.has(id));
     expect(Math.min(...bayAreas.map(({ area }) => area))).toBeGreaterThan(
       Math.max(...soloAreas.map(({ area }) => area))
     );
     expect(Math.max(...soloAreas.map(({ area }) => area))).toBe(
-      soloAreas.find(({ id }) => id === "cave-earth")!.area
+      soloAreas.find(({ id }) => id === "cave-air")!.area
     );
   });
 

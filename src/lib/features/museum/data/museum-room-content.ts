@@ -244,12 +244,12 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
     },
   },
 
+  // The Canyon Overlook's three bosses on the floor disc, west → east.
   "cave-earth": {
     performers: {
-      "cave-earth-automaton": {
-        autoPlay: true,
-        sequenceId: "cave-earth-seq",
-      },
+      "cave-earth-automaton-g": { autoPlay: true, sequenceId: "cave-earth-seq-g" },
+      "cave-earth-automaton-h": { autoPlay: true, sequenceId: "cave-earth-seq-h" },
+      "cave-earth-automaton-i": { autoPlay: true, sequenceId: "cave-earth-seq-i" },
     },
   },
 
