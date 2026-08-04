@@ -106,6 +106,44 @@ git.
     the old Sunshine host (d2, laptop) must pair again; and the
     dashboard has no credentials until Austen sets them at the host.
 
+14. **Instance names fixed at the source, and d2's host list cleaned to three**
+    (2026-08-04, from d2). Austen: *"there should only be three devices ...
+    d1 ... d2 ... laptop ... those are the only three devices."*
+    - d1 runs **two** Apollo instances: the primary on port base `47989`, and a
+      second on port base `48989` (offset +1000) created to serve the laptop.
+      The second one was named `d1-laptop`, which reads as two conflicting
+      machines in every client's host list.
+    - Renamed via each instance's own `sunshine_name`, so the fix propagates to
+      every client instead of being a per-client alias: primary → `d1`,
+      second → `laptop`. Verified by reading each instance's `serverinfo` back:
+      `<hostname>d1</hostname>` on `47989`, `<hostname>laptop</hostname>` on
+      `48989`.
+    - Deleted every Moonlight host entry on d2 (they carried stale
+      pre-Apollo `srvcert` values) and let mDNS rediscover. Result: exactly
+      three entries — `d1`, `d2`, `laptop`.
+    - d2's own instance still has `sunshine_name = D2` in its
+      `sunshine.conf`; it is aliased to `d2` in d2's Moonlight
+      (`customname = true`) because three separate UAC prompts to edit
+      `C:\Program Files\Apollo\config\` were canceled. Cosmetic, and only on
+      other clients' host lists.
+
+15. **d2 re-paired with d1's Apollo** (2026-08-04). Handshake completed
+    getservercert → clientchallenge → serverchallengeresp → clientpairingsecret
+    → HTTPS pairchallenge. Verified from both ends: d1's
+    `/api/clients/list` lists a named cert `d2`, and d2's Moonlight registry
+    shows 3 apps under the `d1` host.
+
+16. **Virtual display enabled for the d2 client** on d1's primary Apollo.
+    `always_use_virtual_display: true`, `display_mode: "3440x1440x120"`,
+    confirmed by API readback. Not yet exercised by a real stream — see
+    Believed done.
+
+17. **d2's stream launchers rewritten** to target the host by name (`stream d1`)
+    instead of by IP. An IP target is genuinely ambiguous now that two Apollo
+    instances share d1's address: a pair attempt against the raw IP was
+    observed going to port `48989` (the `laptop` instance) instead of `47989`.
+    Files renamed `Stream Desktop1 (...)` → `Stream d1 (...)`.
+
 ## Believed done — unverified
 
 - **Step 8 formal verification was never captured.** The runbook wants
@@ -135,16 +173,19 @@ deliberately excluded from this handoff's commit. Leave it alone.
 ## Loose ends (ranked)
 
 1. ~~**Install Apollo on d1.**~~ **DONE 2026-08-03** — see Done item 13.
-   Remaining first-boot steps: Austen sets dashboard credentials at
-   `https://localhost:47990` on d1, then d2 and the laptop re-pair
-   (d2 via its existing `47991` port proxy, which still points at
-   d1:47990 and now lands on Apollo's dashboard).
-2. **Get ONE virtual display working office → bedroom.** Apollo auto-creates the
-   virtual display at the *client's* native resolution/aspect/refresh, so
-   d2's ultrawide should get a 3440x1440 display with zero scaling.
-   Prove one before adding a second.
-3. **Second Apollo instance on d1 for the laptop.** Required, not
-   optional — see Gotchas on the one-display-per-instance limit.
+   Credentials are set; d2 re-paired 2026-08-04 (Done item 15). **The laptop
+   still has to re-pair** against whichever instance it uses — Apollo's fresh
+   CA invalidated its old pairing too.
+2. **Get ONE virtual display working office → bedroom.** Configured but not yet
+   proven — Done item 16 sets `always_use_virtual_display` +
+   `3440x1440x120` for the d2 client. Run a real stream and confirm d1 gains
+   a 3440x1440 display and d2 sees it 1:1.
+   **Then tear it down and check d1 has no phantom left** — d2's own Apollo
+   does exactly that (see Gotchas), and d1's will likely behave the same.
+3. ~~**Second Apollo instance on d1 for the laptop.**~~ **ALREADY EXISTS** —
+   discovered 2026-08-04 running on d1 at port base `48989`, now named
+   `laptop`. Its dashboard is `48990` and it accepts the same credentials as
+   the primary. Untested end to end; the laptop still needs to pair with it.
 4. **Ethernet.** Austen's gateway has two LAN ports, both occupied. Plan agreed:
    an 8-port unmanaged gigabit switch, with **d1 and d2 on the same
    switch** so their traffic switches locally and never reaches the gateway.
@@ -229,6 +270,42 @@ Things the next agent cannot derive from the code or the runbook.
 - **spacedesk and Deskreen extend to multiple clients from a single instance**,
   which Apollo cannot. That is the fallback if two Apollo instances prove
   unmanageable; the cost is a less tuned video pipeline and more input lag.
+- **Apollo leaves its virtual display attached after the client disconnects.**
+  Observed on d2 2026-08-04: the laptop's stream had long ended, no TCP
+  session remained on 47984/47989/47990/48010, and Windows still enumerated a
+  second monitor (`Generic Monitor (lap)`, 1920x1200, placed below the
+  ultrawide). Windows then parks windows on the phantom, which reads to Austen
+  as "my display settings are stuck." `Restart-Service ApolloService` tears it
+  down; verify with `[System.Windows.Forms.Screen]::AllScreens` and
+  `Get-PnpDevice -Class Monitor`. Expect d1 to do the same once it serves
+  virtual displays.
+- **Two Apollo instances on one machine make an IP a useless target.** d1 hosts
+  both `47989` and `48989`. `moonlight pair <ip>` was observed picking `48989`
+  and pairing with the wrong instance. **Target hosts by name**
+  (`moonlight pair d1`, `moonlight stream d1 Desktop`) — the CLI accepts
+  "computer name, UUID, or IP address" and the name is the only unambiguous
+  one.
+- **A stale `srvcert` makes the CLI fail with a misleading error.** Before the
+  host entries were deleted, `moonlight pair` died on
+  `"serverinfo" request failed with error: QNetworkReply::OperationCanceledError`
+  while plain HTTP `serverinfo` from PowerShell answered instantly. The pinned
+  pre-Apollo certificate was the cause. Deleting
+  `HKCU:\...\Moonlight\hosts\*` and letting mDNS rediscover fixed it.
+- **Apollo's dashboard API is session-cookie based, not Basic auth.** Basic
+  returns 401 on every `/api/*` route. `POST /api/login` with
+  `{"username","password"}` returns an `auth` cookie; send that cookie on
+  subsequent calls. **`POST /api/restart` invalidates the session**, so
+  re-login after any restart. Handy routes: `/api/config` (GET returns only
+  non-default keys — POST back the whole object minus
+  `platform`/`status`/`version`/`vdisplayStatus`), `/api/clients/list`,
+  `/api/clients/update`, `/api/pin`.
+- **`POST /api/pin` returns `{"status":false}` when no pairing request is
+  pending.** That is not an error — it means the client has not called yet.
+  Launch the client's pair command first, then poll the PIN endpoint.
+- **UAC on d2 is the recurring blocker, still.** Three separate elevation
+  prompts were canceled on 2026-08-04. Anything under
+  `C:\Program Files\Apollo\config\` or `Restart-Service` needs it. Batch every
+  elevated action into one prompt and tell Austen before firing it.
 - **Do not query processes from Git Bash on these machines** (project
   `CLAUDE.md` → Bash Gotchas). PowerShell only.
 
