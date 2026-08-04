@@ -22,24 +22,59 @@
   // The offer SKU, not the art lead: a cover-only row leads the LOOP group on
   // sortOrder, and reading availability off it labelled a tile "In stock"
   // beside a price that came from the SKU behind it.
-  const state = $derived(resolvePurchaseState(entry.offer, SALES_LIVE));
+  //
+  // NOT named `state`: this component also uses the `$state` rune below, and
+  // Svelte 5 reads the token `$state` as a store auto-subscription of a
+  // variable called `state` rather than as the rune (`store_rune_conflict`).
+  const purchase = $derived(resolvePurchaseState(entry.offer, SALES_LIVE));
 
   // What the shopper can do with this today, said plainly.
   const statusLabel = $derived(
-    state === "buy" ? "In stock" : state === "preorder" ? "Pre-order" : "Not on sale yet"
+    purchase === "buy"
+      ? "In stock"
+      : purchase === "preorder"
+        ? "Pre-order"
+        : "Not on sale yet"
   );
   const ctaLabel = $derived(
-    state === "preorder" ? "Pre-order" : state === "buy" ? "View" : "See details"
+    purchase === "preorder" ? "Pre-order" : purchase === "buy" ? "View" : "See details"
+  );
+
+  // ── art sizing ────────────────────────────────────────────────────────────
+  // The art box reserves its height in CSS from its own width (see the .art
+  // rule), which pins what a card in the fan may be: the box width over the
+  // fan's span pitch, `cardW · (1 + 0.82(n-1)) · 1.05`.
+  //
+  // That number is passed as BOTH the floor and the ceiling, so every tile
+  // draws the SAME card whatever it has to fan. Left to itself DeckFanCover
+  // spreads whatever it's given across the whole box: the trilogy ships three
+  // cover cards where the decks ship five, and its three came out a third
+  // bigger than everyone else's and 40px taller than the box reserved for
+  // them. The floor is also what drops a narrow tile from four cards to three
+  // (DeckFanCover reduces the count while a card would fall below it).
+  const FOUR_CARD_MIN = 448; // in step with the @container tier in the styles
+  const PITCH_4 = 3.633;
+  const PITCH_3 = 2.772;
+
+  let artW = $state(0);
+  const cardPx = $derived(
+    artW ? Math.max(64, Math.floor(artW / (artW >= FOUR_CARD_MIN ? PITCH_4 : PITCH_3))) : 105
   );
 </script>
 
 <a class="tile" href={entry.href}>
-  <div class="art">
+  <div class="art" bind:clientWidth={artW}>
+    <!-- Four cards on a desktop tile, three once the tile is narrow — and the
+         card itself grows with the box instead of stopping at the 150px cap
+         that left a 438×238 fan in a 733×432 panel at 4K. -->
     <ShopEntryArt
       cards={entry.artCards}
       product={entry.product}
       deckName={entry.name}
-      bookWidth="min(42cqi, 70cqh)"
+      cardWidth={cardPx}
+      maxCardWidth={cardPx}
+      maxCards={4}
+      bookWidth="min(48cqi, 76cqh)"
     />
   </div>
   <span class="shelf">{entry.shelf}</span>
@@ -49,7 +84,7 @@
     <span class="price">
       {#if entry.priceIsFrom}<span class="from">from</span>{/if}{formatUsd(entry.priceCents)}
     </span>
-    <span class="status" class:live={state !== "notify"}>{statusLabel}</span>
+    <span class="status" class:live={purchase !== "notify"}>{statusLabel}</span>
     <span class="cta">
       {ctaLabel}
       <i class="fas fa-arrow-right" aria-hidden="true"></i>
@@ -82,10 +117,26 @@
     outline-offset: 2px;
   }
 
-  /* Fixed art box. Fans and book covers resolve after the page paints, and a
-     reserved height means the row of tiles never re-flows when they land. */
+  /* Reserved art box, sized to the art it holds instead of a clamp that had no
+     relationship to it. The old `clamp(11rem, 15vw, 18rem)` grew with the
+     viewport while the fan stayed capped at 150px, so at 4K a 438×238 fan sat
+     in a 733×432 panel — 40% of the box, "content that isn't the size of the
+     container it's in". At 820 the same clamp went the other way and CLIPPED
+     the fan's outer corners.
+
+     The fan's geometry is arithmetic, so the box can be derived from it. A fan
+     of n cards spans `cardW · (1 + 0.82(n-1)) · 1.05` (DeckFanCover's rest
+     pitch and tilt slack) — 3.633 for four cards, 2.772 for three — and the
+     script above hands the fan `boxW / pitch` as its card size. A card's
+     visible height, the ±12° rotated bounding box of a 5:7 card, is
+     1.577·cardW; 1.65 leaves the outer cards' bottom corners the room the
+     fan's own 10px of bottom padding doesn't cover. Height is therefore
+     `boxW · 1.65 / pitch`, and `100cqi` is the tile container's CONTENT
+     width — which is this box's own width — so it resolves at first layout:
+     no measurement, no shift, and the art scales with the tile at every tier
+     instead of floating in it. */
   .art {
-    height: clamp(11rem, 15vw, 18rem);
+    height: calc(100cqi * 0.5952 + 12px);
     /* A size container so the book cover can be measured against the box's
        HEIGHT — a wide, short art box cropped it when it only knew the width. */
     container-type: size;
@@ -98,6 +149,13 @@
       rgba(255, 255, 255, 0.055),
       rgba(255, 255, 255, 0.015)
     );
+  }
+
+  /* Four-card pitch, at the same 448px the script switches on. */
+  @container (min-width: 448px) {
+    .art {
+      height: calc(100cqi * 0.4542 + 12px);
+    }
   }
 
   .shelf {

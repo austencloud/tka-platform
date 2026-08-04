@@ -33,7 +33,6 @@
        at the catalog; without a participant on this end the tile morph would
        degrade to a cut (tests/unit/landing-route-morph.test.ts holds the pair). -->
   <div class="copy" style:view-transition-name="launchpad-choreo-cards">
-    <p class="kicker"> <span aria-hidden="true"></span></p>
     <h1><em>Choreo Cards</em></h1>
     <p class="lede">The latest evolution of flow arts technology</p>
     <ol class="steps">
@@ -102,16 +101,50 @@
        so an override written here loses on source order. */
   }
 
-  /* Big-screen tier (the site-wide 1680 seam). Two things go wrong up here if
-     the base rules just scale: a 60svh floor on a 2160px-tall screen inflates
-     the grid by ~300px past what the content needs, which strands the CTA in
-     the middle of an empty band above the shelf filter; and the card, capped
-     at laptop proportions, reads as a postcard on a wall. So the band is sized
-     by its content and the card takes the room instead. */
-  @media (min-width: 105rem) {
+  /* THE FOLD. The first screen is exactly this hero plus the shelf filter, and
+     the catalog's first row starts one pixel below it.
+
+     Left alone, the hero's natural height landed the grid's top edge just
+     ABOVE the fold on the two commonest desktop sizes — 61px of tile shell
+     showing at 1920×1080, 155px at 2560×1440. Both are cut mid-shape with
+     nothing readable in them, which is what Austen saw: "there's stuff peeking
+     out from the bottom that doesn't feel right." A peek has to be earned
+     (enough card art to read as an invitation) and neither was close, so the
+     gap is closed instead: the hero takes the rest of the screen.
+
+     `min-height`, so it only ever GROWS the band. On a phone, where the copy
+     and the stage stack to well over a screen on their own, it is a no-op; on
+     tablet portrait it closes a 27px shell edge. The min-height guard keeps it
+     away from the wide-and-short tier above, whose whole job is to make the
+     hero smaller.
+
+     Above 3000px the rule stops, deliberately. At 4K@100% the leftover below
+     the filter is ~655px — the tile row is ~630px there, so the first row
+     lands COMPLETE. Filling the screen instead would inflate the hero by that
+     same 655px of dead band, which is exactly the failure the old 60svh floor
+     had here. Below 3000 the leftover is smaller than a row; above it, larger.
+     That is the seam. */
+  @media (max-width: 187.5rem) and (min-height: 41rem) {
+    .hero {
+      min-height: calc(
+        100svh - var(--shop-header-h, 64px) - var(--shop-fold-reserve, 7.5rem)
+      );
+    }
+  }
+
+  /* 4K@100% and wider. The band is sized by its content — a 60svh floor on a
+     2160px-tall screen inflated it ~300px past what the content needs and
+     stranded the CTA in an empty field — and the card takes the room instead
+     (HeroCardDuo's container tiers).
+
+     The padding is trimmed rather than left at the base scale because up here
+     it is what decides the fold: at 3840×2160 the hero, the filter and the
+     catalog's first row come to within ~30px of the viewport, so a looser
+     band cuts the bottom edge off a row that would otherwise land whole. */
+  @media (min-width: 187.5rem) {
     .hero {
       min-height: 0;
-      padding-block: clamp(2rem, 3.5vh, 4rem);
+      padding-block: clamp(1.5rem, 2vh, 2.75rem);
     }
   }
 
@@ -121,17 +154,6 @@
     align-items: flex-start;
     gap: clamp(1rem, 1.6vw, 1.75rem);
     min-width: 0;
-  }
-
-  .kicker {
-    margin: 0;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    /* Two even lines on a phone rather than "PRINTED" then an orphaned "LINE". */
-    text-wrap: balance;
   }
 
   h1 {

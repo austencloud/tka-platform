@@ -65,17 +65,16 @@
     activeShelf === "all" ? entries : entries.filter((e) => e.shelf === activeShelf)
   );
 
-  // Column count is a decision, not whatever auto-fill emits. Three across is
-  // the widest the tiles read well at; two when three would leave the last tile
-  // alone on its own row.
-  const wideColumns = $derived.by(() => {
-    const n = visible.length;
-    if (n <= 1) return 1;
-    if (n % 3 !== 1) return 3;
-    if (n % 2 !== 1) return 2;
-    return 3;
-  });
-  const midColumns = $derived(Math.min(wideColumns, 2));
+  // Column counts are PINNED per tier — 1, then 2, then 3 — never auto-fill,
+  // which emits more and thinner tiles as the screen grows and orphans the
+  // last one. What varies is the final row: with 5 products a three-across
+  // grid ends on two tiles and a two-across grid ends on one, and a shelf
+  // filter can narrow the catalog to a single item. Those remainders are
+  // CENTRED under the row above (the grid runs on double tracks so a row of
+  // two or one can sit half a tile in) rather than left stranded against an
+  // empty track — or, as the single tile used to, stretched across the band.
+  const remWide = $derived(visible.length % 3);
+  const remMid = $derived(visible.length % 2);
 
   // The hero deals from this, so it is the whole pool rather than one pick.
   const heroPool = $derived(heroCoverPool(catalog));
@@ -105,13 +104,7 @@
   {/if}
 
   <div class="band">
-    <section
-      class="catalog"
-      id={CATALOG_ID}
-      aria-label="Catalog"
-      style:--cols-wide={wideColumns}
-      style:--cols-mid={midColumns}
-    >
+    <section class="catalog" id={CATALOG_ID} aria-label="Catalog">
       {#if entries.length === 0 && loadFailed}
         <p class="empty">The catalog isn't loading right now. Try again in a moment.</p>
       {:else if entries.length === 0}
@@ -120,7 +113,12 @@
           land.
         </p>
       {:else}
-        <div class="grid" class:odd={visible.length % 2 === 1}>
+        <div
+          class="grid"
+          class:wide-rem1={remWide === 1}
+          class:wide-rem2={remWide === 2}
+          class:mid-rem1={remMid === 1}
+        >
           {#each visible as entry (entry.href)}
             <ShopCatalogTile {entry} />
           {/each}
@@ -128,50 +126,69 @@
       {/if}
     </section>
 
-    <section class="notify" aria-labelledby="shop-notify-title">
-      <div class="notify-copy">
-        <h2 id="shop-notify-title">
-          {SALES_LIVE ? "New in the line" : "The shop isn't open yet"}
-        </h2>
-        <p>
-          {SALES_LIVE
-            ? "Leave an email and you'll hear when something new ships."
-            : "Orders aren't running yet. Leave an email and you'll hear when they are."}
-        </p>
-      </div>
-      <WaitlistForm source="shop-front-door" compact />
-    </section>
+    <!-- The two ways off this page for someone who can't or won't buy today.
+         They were consecutive full-width bands: two rows of mostly-empty dark
+         panel, a paragraph at one end and a control at the other, with the
+         whole content band between them. They're a PAIR, so they sit side by
+         side as one row of two cards, and stack only when a half-band is too
+         narrow to hold one. -->
+    <div class="exits">
+      <section class="notify" aria-labelledby="shop-notify-title">
+        <div class="exit-copy">
+          <h2 id="shop-notify-title">
+            {SALES_LIVE ? "New in the line" : "The shop isn't open yet"}
+          </h2>
+          <p>
+            {SALES_LIVE
+              ? "Leave an email and you'll hear when something new ships."
+              : "Orders aren't running yet. Leave an email and you'll hear when they are."}
+          </p>
+        </div>
+        <!-- Pushed to the foot of the card so both cards' controls line up
+             across the row however the copy above them wraps. -->
+        <div class="exit-action">
+          <WaitlistForm source="shop-front-door" compact />
+        </div>
+      </section>
 
-    <section class="onward" aria-labelledby="shop-onward-title">
-      <div>
-        <h2 id="shop-onward-title">Not buying today?</h2>
-        <p>
-          Everything on the cards is free in the Composer. Build sequences, watch them
-          move, share a link anyone can scan.
-        </p>
-      </div>
-      <!-- Two ways out for a non-buyer: the tool, and the free reading path the
-           retired explainer page used to point at. Both are buttons, not text
-           links (clickables-look-like-buttons.md). -->
-      <div class="onward-actions">
-        <!-- /create, not /composer. The button says OPEN, so it opens the tool;
-             /composer is the page that describes it. Same destination the
-             header, the footer and the home hero send this label to. -->
-        <a class="onward-cta" href="/create">
-          Open the Composer
-          <i class="fas fa-arrow-right" aria-hidden="true"></i>
-        </a>
-        <a class="onward-cta secondary" href="/guide">Read the free guide</a>
-      </div>
-    </section>
+      <section class="onward" aria-labelledby="shop-onward-title">
+        <div class="exit-copy">
+          <h2 id="shop-onward-title">Not buying today?</h2>
+          <p>
+            Everything on the cards is free in the Composer. Build sequences, watch them
+            move, share a link anyone can scan.
+          </p>
+        </div>
+        <!-- Two ways out for a non-buyer: the tool, and the free reading path the
+             retired explainer page used to point at. Both are buttons, not text
+             links (clickables-look-like-buttons.md). -->
+        <div class="exit-action onward-actions">
+          <!-- /create, not /composer. The button says OPEN, so it opens the tool;
+               /composer is the page that describes it. Same destination the
+               header, the footer and the home hero send this label to. -->
+          <a class="onward-cta" href="/create">
+            Open the Composer
+            <i class="fas fa-arrow-right" aria-hidden="true"></i>
+          </a>
+          <a class="onward-cta secondary" href="/guide">Read the free guide</a>
+        </div>
+      </section>
+    </div>
   </div>
 </div>
 
 <style>
   .front-door {
-    min-height: 100vh;
+    min-height: 100svh;
     /* px, not rem: this clears the fixed-height SiteHeader, which does not ramp. */
-    padding-top: 64px;
+    --shop-header-h: 64px;
+    /* Everything between the bottom of the hero and the first tile: the shelf
+       filter's own band (0.75rem top and bottom around a ~52px control) plus
+       the catalog's top padding. The hero reads it to decide where the fold
+       lands — see ShopFrontDoorHero's fold rule — so the two have to agree,
+       and both are declared here rather than guessed there. */
+    --shop-fold-reserve: calc(1.5rem + 52px + clamp(1.5rem, 2.5vw, 2.5rem));
+    padding-top: var(--shop-header-h);
     background: transparent; /* the cosmic background shows through */
     color: var(--theme-text, #ffffff);
   }
@@ -207,24 +224,38 @@
     gap: clamp(1rem, 1.8vw, 2rem);
   }
 
+  /* Two across. Four tracks, two per tile: the doubled track is what lets a
+     lone trailing tile sit centred on half-track boundaries instead of
+     stretching across the band. */
   @media (min-width: 48rem) {
     .grid {
-      grid-template-columns: repeat(var(--cols-mid, 2), minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .grid > :global(*) {
+      grid-column: span 2;
     }
   }
 
-  /* Two columns and an odd number of items leaves the last one alone on its
-     own row with a hole beside it. It takes the full row instead, so the grid
-     ends on a deliberate wide card rather than an orphan. */
+  /* Bounded so it can't leak into the three-across tier, where the trailing
+     row is placed by the rules below instead. */
   @media (min-width: 48rem) and (max-width: 87.4375rem) {
-    .grid.odd > :global(:last-child) {
-      grid-column: 1 / -1;
+    .grid.mid-rem1 > :global(:last-child) {
+      grid-column: 2 / span 2;
     }
   }
 
+  /* Three across, six tracks. A remainder of one centres under the middle
+     tile; a remainder of two steps in by half a tile so the pair straddles
+     the centre. */
   @media (min-width: 87.5rem) {
     .grid {
-      grid-template-columns: repeat(var(--cols-wide, 3), minmax(0, 1fr));
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+    .grid.wide-rem1 > :global(:last-child) {
+      grid-column: 3 / span 2;
+    }
+    .grid.wide-rem2 > :global(:nth-last-child(2)) {
+      grid-column: 2 / span 2;
     }
   }
 
@@ -235,16 +266,31 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.66));
   }
 
+  /* One row of two cards. 60rem is where a half-band still holds an email
+     field beside its button without the form wrapping. */
+  .exits {
+    display: grid;
+    gap: clamp(1rem, 1.8vw, 2rem);
+    margin-bottom: clamp(1.5rem, 3vh, 3rem);
+  }
+
+  @media (min-width: 60rem) {
+    .exits {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
   /* Deliberately quiet: it's the fallback for people the shop can't sell to
-     yet, not the point of the page. */
+     yet, not the point of the page. Stacked rather than a copy-left /
+     control-right row — at half a band that row wraps at some widths and not
+     others, and stacking makes the two cards read as a matched pair. */
   .notify,
   .onward {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: clamp(1rem, 2vw, 2rem);
-    padding: clamp(1.25rem, 2vw, 2rem);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: clamp(0.9rem, 1.4vw, 1.5rem);
+    padding: clamp(1.25rem, 1.8vw, 2rem);
     border-radius: 1.25rem;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
@@ -253,9 +299,11 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
   }
 
-  .notify-copy {
-    min-width: min(100%, 22rem);
-    flex: 1 1 22rem;
+  /* Both cards stretch to the taller of the two, so pinning the control to the
+     foot lands the email field and the CTA row on the same line. */
+  .exit-action {
+    margin-top: auto;
+    width: 100%;
   }
 
   .onward {
@@ -265,7 +313,6 @@
       rgba(126, 224, 255, 0.06)
     );
     border-color: var(--theme-border, rgba(255, 255, 255, 0.16));
-    margin-bottom: clamp(3rem, 6vh, 6rem);
   }
 
   h2 {
@@ -278,12 +325,14 @@
     letter-spacing: -0.015em;
   }
 
+  /* No `ch` reading cap: these are one-sentence lines inside a card that is
+     already half a band, and the cap only forced them to wrap early and made
+     the card taller than it needed to be (4k-native-layout.md, rule 3). */
   p {
     margin: 0;
     font-size: var(--font-size-min, 14px);
     line-height: 1.6;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.68));
-    max-width: 52ch;
   }
 
   .onward-actions {
