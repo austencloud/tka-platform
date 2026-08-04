@@ -73,13 +73,30 @@ data-URL card images and a header of `Deck #001 / 55 cards`.
 **`npx svelte-check` reports 0 errors and 0 warnings** at each of the three code
 commits.
 
+**A real export has been produced and opened** (2026-08-04, `1aa2a25c23`).
+Backs-only export of Deck #003 (54 cards) from the live releaser →
+`D:/Downloads/Deck_003_backs.pdf`, 23.8 MB. `pdf-lib` reports **7 pages** at
+612×792pt. Page 1 is labelled `Deck #003 · Rotated · Quartered · 8-step · L1 ·
+1 turn · Diamond · Staff · BACKS · How to Read · Sheet 1 of 7` and carries the
+insert back ("Your Catalog") in the mirrored column, with the other eight slots
+blank — correct for one insert at `copies: 1`. Pages 2–7 hold the 54 card backs,
+nine per sheet. Backs-only claims no physical issuance (`printRunId: null`), so
+this cost zero short codes.
+
+That export exposed a third place doing its own print arithmetic:
+`PrintPanel.svelte` advertised "Fronts 6 sheets" for a 7-page file and "Images
+108 PNGs" for a 110-file ZIP, and its Combined formula was `sheets*2 + 2` when
+the exporter emits `sheets*2 + 1`. Fixed in `1aa2a25c23`; the panel now reads
+7 / 7 / 15 / 110 against that deck. The exported PDF's title also now carries
+the printed count.
+
 ## Believed done — unverified
 
-**No real export has ever been produced from the releaser.** No ZIP or PDF has
-been written to disk and opened. `~/Downloads` was empty when checked on
-2026-08-04, so the on-screen preview is the only surface anyone has actually
-looked at. The exporter behaviour is covered by unit tests but not by a file a
-human has opened. This is loose end #1.
+**The fronts / ZIP paths have still never been exported to disk.** Their
+behaviour is covered by unit tests and they share the slot-planning code the
+backs export just exercised, but no fronts PDF or ZIP has been opened by a
+human. Doing so mints one permanent short code per card and issues physical-card
+records, so it needs Austen's explicit go-ahead.
 
 **Print legibility at physical size is unconfirmed.** The pronunciation table
 and the corner labels are the smallest type on the card: 12px at the card's
@@ -103,25 +120,18 @@ branch, no worktree.
 
 ## Loose ends (ranked)
 
-1. **Run one real export and open the file.** In the Deck Releaser with a
-   composed deck, export **backs-only** first — it returns `printRunId: null`,
-   claims no physical issuance, and still contains the insert's back sheet, so
-   it proves the pipeline without spending identities. Then decide about a full
-   fronts/combined or ZIP export, which mints one permanent short code per card
-   and issues physical-card records. That is not undoable and needs Austen's
-   explicit go-ahead.
-2. **Physical proof for legibility.** Print one insert at actual size and read
+1. **Physical proof for legibility.** Print one insert at actual size and read
    the pronunciation table and corner labels. If they fail, the fix is to bump
    those two type sizes in `info-card-canvas-renderer.ts`, not to redesign.
-3. **`/test/insert-card` label casing.** Both `capitalize()` helpers (preview and
+2. **`/test/insert-card` label casing.** Both `capitalize()` helpers (preview and
    PDF exporter) now touch only the first character and both call sites pass
    `"How to Read"`, so preview and PDF agree. Austen's live tab still showed the
    pre-HMR `"How to read"` — cosmetic, self-resolving on reload, listed only so
    nobody re-investigates it.
-4. **The deferred deck page.** `/deck/[n]` + deck-level QR. See Decisions below
+3. **The deferred deck page.** `/deck/[n]` + deck-level QR. See Decisions below
    before reopening; the reasoning and the three real costs are recorded in the
    spec's Out Of Scope section and in the `project_deck_insert_card` memory.
-5. **Adjacent gaps in the release flow**, found while mapping it and deliberately
+4. **Adjacent gaps in the release flow**, found while mapping it and deliberately
    not fixed here. Listed in full at the end of the design spec. The two that
    will bite during a first end-to-end release: `.claude/agents/deck-release-expert.md`
    documented a `decks/{catalogId}` collection that does not exist (it is
@@ -166,11 +176,15 @@ served stale builds. Fixed by Austen in `f9ab18f33c`, which polyfills
 the next agent: a locally green vitest run is not a green CI run, and in this
 repo a red CI silently stops deploys rather than shouting.
 
-**Two call sites plan print slots, not one.** `print-pdf-exporter.ts` and
-`PrintPreviewPages.svelte` each call `planPrintSlots` independently. The
-planner's docstring claims it guarantees preview equals print; it only does if
-you change both. This is exactly how the insert ended up in the export and not
-the preview. Any future change to sheet composition must touch both.
+**THREE places compute print composition, not one.** `print-pdf-exporter.ts`
+and `PrintPreviewPages.svelte` each call `planPrintSlots` independently, and
+`PrintPanel.svelte` re-derives sheet and file counts arithmetically without
+calling the planner at all. The planner's docstring claims it guarantees preview
+equals print; it only does if you change all three. The insert missed the
+preview on the first pass and missed the panel on the second — each was found
+only by looking at the actual surface. Any change to sheet composition must
+touch all three, and the panel's formulas must be checked against a real
+exported file, not against the preview.
 
 **Do not route the insert through `planPrintSlots`.** It was tried. An untagged
 item either merges into the cards' bucket (LOOP/gallery decks have no elements,
