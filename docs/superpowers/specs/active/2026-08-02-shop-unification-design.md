@@ -407,6 +407,89 @@ visitors today.
       the HEAD baseline (measured by restoring HEAD's tile and re-running),
       none in these files.
 
+- [x] R13 `e84ee4ab4b` + `122a9b0cb6`: **the live screen answers a mouse, and
+      the embed loses the exits.** Austen: "we don't want it to navigate back
+      to browse we should just deactivate the buttons that don't make sense in
+      this context show the bottom five buttons as navigatable and actually use
+      them right now when I try to click on them inside the fake phone it still
+      does not work." Two causes, both closed.
+
+      1. **The gate was measuring the wrong pointer.** R11's single threshold,
+         0.9, came from the app's 44px touch-target floor — and 44px is a TOUCH
+         norm, the size of a fingertip. Applied to a mouse it made 4K@200%
+         Windows scaling (a 1920 CSS viewport — Austen's own machine) inert.
+         The floor now follows `(hover: hover) and (pointer: fine)`. For a fine
+         pointer the governing number is WCAG 2.2's Target Size (Minimum), 24
+         CSS px, against the smallest real control in the frame — a bottom-nav
+         tab, measured 67.6 × 44.0 CSS px — so 24 / 44 = 0.545 → **0.55**
+         (hysteresis 0.52). Coarse keeps R11's 0.9 / 0.86 verbatim.
+
+         | viewport | screen px | scale | tab lands at | fine | coarse |
+         |---|---|---|---|---|---|
+         | 3840×2160 | 399 | 1.064 | 46.8 | live | live |
+         | 2560×1440 | 347 | 0.925 | 40.7 | live | live |
+         | 1920×1080 | 255 | 0.680 | 29.9 | **live** | inert |
+         | 1440×900 | 217 | 0.579 | 25.5 | **live** | inert |
+         | 820×1180 | 194 | 0.517 | 22.8 | inert | inert |
+         | 960×412 | 75 | 0.200 | 8.8 | inert | inert |
+         | 375×667 | 110 | 0.293 | 12.9 | inert | inert |
+
+         Both lines sit in empty gaps in that ladder (0.55 between 0.517 and
+         0.579; 0.9 between 0.680 and 0.925). 820 falls just under the fine
+         line on purpose: 22.8px is below the 24px minimum, and a real 820-wide
+         device reports a coarse pointer anyway. Pointer type is a media query
+         with a `change` listener rather than a sample, so a convertible
+         folding into tablet mode flips it without a resize.
+
+      2. **/q edits are now sanctioned, and they went through the prop seam.**
+         R11 found the viewer's X navigating the IFRAME to `/browse/gallery`.
+         The fix is one shell prop, `embedded`, passed by the /q host only when
+         `demo=1` — no forked chrome, no host-side header, no theme vars, the
+         768 breakpoint untouched. Hidden rather than disabled: a visible
+         button that ignores a press reads as broken, which is worse than a
+         button that was never there. Per control:
+
+         | control | verdict | why |
+         |---|---|---|
+         | Close (X) | hidden | the embed has nowhere to close TO |
+         | Account entry | hidden | auth trapped in a marketing iframe; its signed-in variant is a link to /browse/gallery |
+         | Share | hidden | `getViewerShareDetails()` seeds from `window.location.href` — in here that is the `?demo=1` URL, so sharing would put demo-flagged links (which suppress scan analytics by design) into the world |
+         | More → Open TKA / Remix / Guide | hidden | each navigates the frame away |
+         | More → Favorite / Save | hidden | open the sign-in gate |
+         | More → publish / unpublish / delete / video upload | hidden | a marketing page must not be able to publish or delete a sequence |
+         | More → motion Left/Right | KEPT | pure view state; the menu degrades to a plain title when the sequence is not paired |
+         | Practice, bottom-nav, rail, playback, step cells | KEPT | this is what the hero is there to show |
+
+         Dropping the account entry also clears `accountCrowded`, which hands
+         the More trigger back to the centered title slot — the embed gets its
+         header title ("Sequence Viewer") back, which the 375-wide layout had
+         traded away for room. **The keyboard path is not the shell's**:
+         Escape reaches `onClose` through the ORCHESTRATOR, so `closeViewer`
+         in the /q host no-ops under `isDemo`. Hiding the button alone would
+         have left Escape navigating the frame to the gallery.
+
+      Verified at 1920 (fine pointer): `.phone.live`, `.viewport`
+      `pointer-events: auto`, the cue chip visible, `elementFromPoint` over all
+      five nav tabs returns the IFRAME, and every one of the five switches the
+      view (Side by Side → 2D Animation → Card → Mandala → Tunnel, each ending
+      as the sole `active` tab) with before/after frames on the 2D→Card step.
+      Same viewport under emulated touch: `pointer: coarse`, live false,
+      `pointer-events: none`, no cue — the coarse rule intact, and at 3840 the
+      coarse gate still opens. Frames at 3840/2560/1920/1440/375; 820, 960×412
+      and 375 inert; no horizontal overflow at 960 or 375. In the embed
+      close/share/account count 0 and the More menu holds only Left/Right;
+      Escape leaves the frame on `/q/<code>?demo=1`. Real `/q/5DL9` with no
+      flag is unchanged — close/share/account 1, header carries Open TKA +
+      Share + Close, Escape still exits to `/browse/gallery`. Contract test
+      19/19. Zero page console errors on a clean load through a full scan.
+      `check:fast`: 19 errors repo-wide, none in the three touched files.
+
+      Session note: a parallel session ran `git pull --rebase --autostash`
+      mid-round, which stashed this work out of the tree for ~2 minutes. It
+      came back intact when the rebase popped its autostash. A `stash@{0}:
+      autostash` entry is still listed afterwards — not ours to drop, flagged
+      rather than touched.
+
 ## Shipped state (2026-08-02, local commits — NOT pushed)
 
 All work is committed locally. **Pushing main deploys production (CF Pages)** and would take
