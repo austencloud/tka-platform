@@ -69,17 +69,19 @@ wing grammar + roster canon:
 
 ## In flight
 
-- **A background Opus agent is writing
-  `docs/superpowers/specs/2026-08-04-vulcan-cave-all-rooms-concepts.md`** —
-  broad-brush concepts + floor-plan programs for Earth/Air/Sun/Moon, plus
-  Water/Fire summaries, wing pacing, and a recommended build order. It was
-  dispatched ~16:15 2026-08-04 and instructed to commit with explicit
-  pathspec. If the doc exists and is committed, review it before starting
-  Earth; if it never landed, re-dispatch (the brief is recoverable from this
-  session's transcript, or re-derive: per room — concept sentence,
-  element-first-person beat, unique mechanism + non-confusion vs other rooms,
-  station table with datums, performers + barrier, money shot, reuse map with
-  verified paths, risks).
+- Nothing uncommitted from this workstream. **The all-rooms concept doc
+  LANDED** (`f2d7944030`, 421 lines, cleanly scoped):
+  `docs/superpowers/specs/2026-08-04-vulcan-cave-all-rooms-concepts.md` —
+  Earth "The Weight" (low bedding passage, boulder choke, sinkhole rim: the
+  only room viewed from above, barrier = 6 m vertical drop, Tog-Same's
+  convergence read from overhead), Air "The Chimney" (+8.4 m switchback
+  climb, Fire's designed phase-twin), Sun "The Sundial" (round, daylit,
+  oculus beam sweeping four stations), Moon "The Still Room" (performers
+  visible only as reflections in a black pool; `MuseumMirror.svelte` already
+  provides the Reflector). Wing pacing thesis: no two adjacent rooms share a
+  dominant axis. Build order: Earth next, deliberately spectacle-free.
+  AWAITING AUSTEN'S REVIEW — treat it as a proposal, not approved canon; the
+  Earth brainstorm starts by walking him through the Earth section.
 - The checkout carries MANY other sessions' dirty files (shop, codex, agents,
   scripts...). Do not touch, stage, or revert them. `main` has unpushed local
   commits from several sessions; do not push without confirming ownership of
