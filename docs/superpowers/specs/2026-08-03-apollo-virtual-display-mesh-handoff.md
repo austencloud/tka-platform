@@ -277,6 +277,40 @@ Things the next agent cannot derive from the code or the runbook.
   unmanageable; the cost is a less tuned video pipeline and more input lag.
 - **Do not query processes from Git Bash on these machines** (project
   `CLAUDE.md` → Bash Gotchas). PowerShell only.
+- **`output_name` is read ONLY at service start.** Changing which physical
+  monitor an instance captures and then streaming without restarting silently
+  keeps the previous display. This is indistinguishable from the setting being
+  ignored, and it cost a full debugging round on 2026-08-04: the correct device
+  id was set on the first try and dismissed as wrong because nothing restarted.
+- **The dashboard API is session-cookie based, not Basic auth.** `POST
+  /api/login` with `{"username","password"}` sets an `auth` cookie; Basic auth
+  returns 401 on every endpoint. It also enforces a localhost origin, exactly
+  like the PIN form, so drive it through the Step 4 port proxy
+  (`https://localhost:<port>`), never the tailnet address.
+- **`POST /api/restart` needs a `Content-Type: application/json` header** even
+  with no body, or it 400s. A successful restart kills the connection mid-flight,
+  so curl reports `000` — that is success, not failure. The session cookie dies
+  with it; log in again afterwards.
+- **`GET /api/config` returns only explicitly-set keys** plus read-only status
+  fields (`platform`, `status`, `version`, `vdisplayStatus`). `POST /api/config`
+  replaces the whole set, so carry the existing keys forward or they are lost.
+  For instance 2 that means `port` and `sunshine_name`.
+- **Per-client settings cannot choose a physical monitor.** `/api/clients/list`
+  and `/api/clients/update` expose only `always_use_virtual_display` and
+  `display_mode`. Which panel gets captured is the per-instance global
+  `output_name`. Per-app `output` in apps.json is not an alternative either — it
+  is documented as ignored, falling back to primary (LizardByte/Sunshine#4585).
+- **Verify capture target by geometry, not by eyeballing the windows.** The log
+  prints `Offset` at stream start. d1's virtual desktop origin is -3840, so the
+  LEFT panel reports `Offset: 0x0` and the RIGHT reports `Offset: 3840x0`.
+  Windows moving between panels makes screenshots an unreliable check.
+- **d1 display ids** (from the log's `Currently available display devices`):
+  left is `{b0fed915-1f17-51e0-9d9d-ae92b8a22a46}` (`\\.\DISPLAY2`, origin
+  x -3840, not primary); right is `{cef0d528-f01d-5611-878f-8e487d13aa58}`
+  (`\\.\DISPLAY1`, origin x 0, primary). Re-read the log after any rearrangement
+  rather than trusting these: the enumeration in a stale log reflects the layout
+  at the last service start, and a connected client's virtual display shifts the
+  offsets.
 
 ## Related
 
