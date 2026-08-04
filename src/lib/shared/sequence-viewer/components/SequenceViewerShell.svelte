@@ -122,6 +122,40 @@
     /** Optional "See it in the Guide" action — host supplies the handler; the
      *  shell renders it in the overflow menu. Omitted → not shown. */
     guideAction?: { label: string; onSelect: () => void } | null;
+    /**
+     * THE VIEWER IS INSIDE SOMEONE ELSE'S PAGE — trim the chrome that has
+     * nowhere to go.
+     *
+     * The shop hero puts a phone on its front door and iframes the literal
+     * `/q/<code>?demo=1`. Once that screen accepts a pointer (HeroPhone's
+     * live gate), every control in the header is reachable — including the
+     * ones whose whole job is to LEAVE the scan. Close navigated the frame to
+     * /browse/gallery, so the phone on a shop page ended up showing the browse
+     * app. Austen (2026-08-04): "we don't want it to navigate back to browse we
+     * should just deactivate the buttons that don't make sense in this
+     * context."
+     *
+     * Hidden, not disabled: a visible button that ignores a press reads as
+     * broken, which is worse than a button that was never there. What goes:
+     *
+     *   - Close — the embed has nowhere to close TO.
+     *   - The account entry — an auth flow trapped in a marketing iframe, and
+     *     its signed-in variant is a link to /browse/gallery.
+     *   - Share — `getViewerShareDetails()` seeds from `window.location.href`,
+     *     which in here is the `?demo=1` URL. Sharing from the hero would put
+     *     demo-flagged links into the world, and demo links suppress scan
+     *     analytics by design. "Open this scan" beside the phone is the honest
+     *     way out, and it carries the clean code.
+     *   - Every menu item that navigates away (Open TKA, Remix, Guide) or
+     *     opens the sign-in gate (Favorite, Save), plus the owner-only
+     *     management actions — a marketing page must not be able to publish or
+     *     delete a sequence.
+     *
+     * What stays: the entire viewer. Bottom-nav views, the content rail,
+     * playback, practice, the step cells, motion visibility. That is the part
+     * the hero is there to show.
+     */
+    embedded?: boolean;
   }
 
   let {
@@ -136,6 +170,7 @@
     startInCardThenSplit = false,
     exportOverrides,
     guideAction = null,
+    embedded = false,
   }: Props = $props();
 
   const scanInstrumentationEnabled = isScanVisit();
@@ -178,7 +213,12 @@
   // actions into the title menu and collapse the rail to its icon presentation.
   const FULL_CHROME_MIN_WIDTH = 1080;
   const compactChrome = $derived(isMobile || bodyWidth < FULL_CHROME_MIN_WIDTH);
-  const hasAccountEntry = $derived(!!openAppHref && !!onAccountSignIn);
+  // An embed has no account entry, so it also stops being "account crowded" —
+  // which hands the More trigger back to the centered title slot and restores
+  // the header's title in the one layout that had traded it away for room.
+  const hasAccountEntry = $derived(
+    !!openAppHref && !!onAccountSignIn && !embedded
+  );
   const accountCrowded = $derived(hasAccountEntry && bodyWidth < 460);
   const motionProfile = $derived(
     getSequenceMotionProfile(ctx.effectiveSequence ?? sequence)
@@ -1091,27 +1131,35 @@
     align="center"
     trigger={titleTrigger}
     isFavorite={headerActions.isFavorite}
-    onFavoriteToggle={compactChrome && headerActions.onFavoriteToggle
+    onFavoriteToggle={compactChrome &&
+    headerActions.onFavoriteToggle &&
+    !embedded
       ? handleFavoriteToggle
       : undefined}
     isSaved={headerActions.isSaved}
-    onSave={compactChrome && headerActions.onSave ? handleSave : undefined}
-    onRemix={compactChrome && (onRemix ?? headerActions.onRemix)
+    onSave={compactChrome && headerActions.onSave && !embedded
+      ? handleSave
+      : undefined}
+    onRemix={compactChrome && (onRemix ?? headerActions.onRemix) && !embedded
       ? handleRemix
       : undefined}
-    onCopyData={authState.isAdmin ? handleCopyForClaude : undefined}
+    onCopyData={authState.isAdmin && !embedded
+      ? handleCopyForClaude
+      : undefined}
     copyDataFeedback={copyClaudeFeedback}
-    onVideoUpload={headerActions.onVideoUpload
+    onVideoUpload={headerActions.onVideoUpload && !embedded
       ? handleHeaderVideoUpload
       : undefined}
     isPublished={headerActions.isPublished}
-    onPublish={headerActions.onPublish ? handlePublish : undefined}
-    onUnpublish={headerActions.onUnpublish ? handleUnpublish : undefined}
-    onDeleteRequest={headerActions.onDeleteRequest
+    onPublish={headerActions.onPublish && !embedded ? handlePublish : undefined}
+    onUnpublish={headerActions.onUnpublish && !embedded
+      ? handleUnpublish
+      : undefined}
+    onDeleteRequest={headerActions.onDeleteRequest && !embedded
       ? handleDeleteRequest
       : undefined}
-    onOpenApp={openAppHref ? handleOpenApp : undefined}
-    onGuideAction={guideAction ? handleGuideAction : undefined}
+    onOpenApp={openAppHref && !embedded ? handleOpenApp : undefined}
+    onGuideAction={guideAction && !embedded ? handleGuideAction : undefined}
     guideActionLabel={guideAction?.label}
     motionVisibility={includeMotion
       ? {
@@ -1307,30 +1355,35 @@
         </button>
       {/if}
 
-      <ShareActionMenu
-        bind:open={shareMenuOpen}
-        actions={shareActions}
-        useMobileSheet={isMobile}
-        disabled={!ctx.hasSequence}
-        ariaLabel="Share sequence"
-        sheetTitle="Share sequence"
-        tooltip="Share sequence"
-        testId="viewer-share-button"
-        idBase="viewer-share"
-        menuSide="bottom"
-        containDesktopMenu={true}
-        statusMessage={shareStatusMessage}
-        onActionSelect={handleShareActionSelect}
-      />
+      <!-- Share and Close are the two controls that carry the visitor OUT of
+           this viewer, so an embed has neither: the share URL in there is the
+           demo URL, and there is nothing to close to. See `embedded`. -->
+      {#if !embedded}
+        <ShareActionMenu
+          bind:open={shareMenuOpen}
+          actions={shareActions}
+          useMobileSheet={isMobile}
+          disabled={!ctx.hasSequence}
+          ariaLabel="Share sequence"
+          sheetTitle="Share sequence"
+          tooltip="Share sequence"
+          testId="viewer-share-button"
+          idBase="viewer-share"
+          menuSide="bottom"
+          containDesktopMenu={true}
+          statusMessage={shareStatusMessage}
+          onActionSelect={handleShareActionSelect}
+        />
 
-      <button
-        type="button"
-        class="drawer-close-button"
-        onclick={handleClose}
-        aria-label="Close viewer"
-      >
-        <i class="fas fa-times" aria-hidden="true"></i>
-      </button>
+        <button
+          type="button"
+          class="drawer-close-button"
+          onclick={handleClose}
+          aria-label="Close viewer"
+        >
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+      {/if}
     </div>
   </header>
 

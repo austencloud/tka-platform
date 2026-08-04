@@ -633,6 +633,11 @@
   }
 
   function closeViewer(): void {
+    // A demo embed has nowhere to close TO — closing navigates the iframe to
+    // the gallery, so the shop hero's phone would sit there showing the browse
+    // app instead of the scan. The shell hides the X under `embedded`; this
+    // guards the path the shell does not own, the orchestrator's Escape key.
+    if (isDemo) return;
     abandonActiveExports("viewer_close");
     endScanViewerSession("close_button");
     void goto(`/browse/gallery?from=scan&code=${shortCode}`);
@@ -1148,12 +1153,16 @@
                runs the guest-friendly composer handoff, the title menu gains
                Open TKA, the header carries the account entry, and Download
                routes through the gated page pipeline (account funnel + native
-               share sheet). -->
+               share sheet). A demo load is the same shell with `embedded`,
+               which drops the chrome that would carry a shop visitor out of
+               the iframe (close, account, Share, navigate-away menu items) —
+               one prop on the shared shell, no forked header. -->
           <ShellComponent
             {ctx}
             sequence={resolvedSeq!}
             isMobile={isViewerMobile}
             startInCardThenSplit
+            embedded={isDemo}
             onClose={closeViewer}
             onRemix={openInComposer}
             openAppHref={`/browse/gallery?from=scan&code=${shortCode}`}
