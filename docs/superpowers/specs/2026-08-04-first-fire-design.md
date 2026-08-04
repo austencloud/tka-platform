@@ -36,10 +36,13 @@ alpha/beta variations it runs between; downbeats together = tog, 180° apart =
 split. Fire's canon slot is the **split-timing variations**; Air later gets the
 together-timing variations of the same pairs.
 
-**Open item (non-blocking for graybox):** the generator's variation-0 runs of
-JDJD/KEKE/LFLF report `timing: "tog"`. The graybox ships that data (motion is
-correct; the gate judges layout/flow/scale). Before Phase 3, swap the step data
-to the split-timing variations and re-verify via MCP.
+**Resolved 2026-08-04:** the graybox initially shipped the generator's
+variation-0 runs, which are the TOG-timing (Air) versions — Austen caught it at
+the gate walk. The sequences now transcribe the canonical T&D base catalog's
+`tnd-split-opp-*` entries verbatim (`static/data/hero/tnd-base-words.json`):
+alpha1-anchored, blue at the downbeat while red crests. Commit `3a3279f4a4`.
+Lesson recorded: the catalog, not the generator default, is the variation
+authority for roster sequences.
 
 ## Geometry (derive from wing bounds, never absolutes — Water's rule)
 
