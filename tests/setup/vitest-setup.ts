@@ -25,6 +25,26 @@ Object.defineProperty(window, "matchMedia", {
 // object with a fake 2D context whose getImageData produces a real
 // ImageData of the requested size.
 
+// Polyfill Blob.prototype.arrayBuffer — jsdom's Blob predates it, so any code
+// or test that reads bytes back out of a generated Blob (PDF exports, image
+// encoders, share intake) throws "blob.arrayBuffer is not a function" under
+// jsdom while passing in a node environment. FileReader is what jsdom does
+// implement, so route through it.
+if (typeof Blob !== "undefined" && typeof Blob.prototype.arrayBuffer !== "function") {
+  Object.defineProperty(Blob.prototype, "arrayBuffer", {
+    configurable: true,
+    writable: true,
+    value: function arrayBuffer(this: Blob): Promise<ArrayBuffer> {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as ArrayBuffer);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsArrayBuffer(this);
+      });
+    },
+  });
+}
+
 // Polyfill ImageData for environments where jsdom omits it. Mirrors
 // the real browser constructor overloads so tests that previously
 // installed their own per-file polyfill (e.g. video-trails detectors)
