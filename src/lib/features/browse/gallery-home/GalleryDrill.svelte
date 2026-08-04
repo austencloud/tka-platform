@@ -64,7 +64,6 @@
 
   type Section =
     | "chooser"
-    | "more"
     | "level"
     | "length"
     | "letter"
@@ -139,10 +138,6 @@
     /** Opt into a fluid native-4K canvas. Full-screen focused workflows use
      * this; standard gallery and drawer hosts keep their established scale. */
     fluidWideCanvas?: boolean;
-    /** Short landscape screens cannot show the full chooser without turning
-     * it into a tiny wall. Opt in to one explicit door for secondary filters,
-     * then reveal those choices on their own screen. */
-    progressiveSecondaryChoices?: boolean;
     /** Present every available filter category as one decision canvas. Smart
      * Collections use this for the first rule and every refinement so the
      * category map never changes underneath the user. */
@@ -203,7 +198,6 @@
     persistSection,
     showCollections,
     fluidWideCanvas = false,
-    progressiveSecondaryChoices = false,
     unifiedFilterChooser = false,
     adaptiveValueLayout = false,
     persistentDesktopCatalog = false,
@@ -218,7 +212,6 @@
 
   const SECTIONS: readonly Section[] = [
     "chooser",
-    "more",
     "level",
     "length",
     "letter",
@@ -246,7 +239,6 @@
       : "chooser";
   }
   let section = $state<Section>(restoreSection());
-  let returnSection = $state<"chooser" | "more">("chooser");
   $effect(() => {
     if (shouldPersistSection) setDrillSection(section);
   });
@@ -259,7 +251,6 @@
   // <body>, restarting tab order from the top of the document (WCAG 2.4.3).
   const SCREEN_CLASS: Record<Section, string> = {
     chooser: "screen-chooser",
-    more: "screen-more",
     level: "screen-level",
     length: "screen-length",
     letter: "screen-letter",
@@ -290,11 +281,7 @@
   });
   let query = $state("");
 
-  function openSection(
-    next: Exclude<Section, "chooser" | "more">,
-    returnTo: "chooser" | "more" = "chooser"
-  ) {
-    returnSection = returnTo;
+  function openSection(next: Exclude<Section, "chooser">) {
     section = next;
   }
 
@@ -879,13 +866,13 @@
   }
 </script>
 
-{#snippet primaryChoices(returnTo: "chooser" | "more")}
+{#snippet primaryChoices()}
   <button
     class="mini-tile primary-filter-choice"
     class:catalog-active={section === "level"}
     type="button"
     aria-current={section === "level" ? "page" : undefined}
-    onclick={() => openSection("level", returnTo)}
+    onclick={() => openSection("level")}
   >
     <span class="mini-art" aria-hidden="true">
       <i class="fas fa-signal"></i>
@@ -901,7 +888,7 @@
     class:catalog-active={section === "length"}
     type="button"
     aria-current={section === "length" ? "page" : undefined}
-    onclick={() => openSection("length", returnTo)}
+    onclick={() => openSection("length")}
   >
     <span class="mini-art" aria-hidden="true">
       <i class="fas fa-ruler-horizontal"></i>
@@ -913,7 +900,7 @@
   </button>
 {/snippet}
 
-{#snippet secondaryChoices(returnTo: "chooser" | "more")}
+{#snippet secondaryChoices()}
   {#if showSection("letter")}
     <button
       class="mini-tile"
@@ -921,7 +908,7 @@
       type="button"
       aria-current={section === "letter" ? "page" : undefined}
       disabled={sectionNarrowedOut("letter")}
-      onclick={() => openSection("letter", returnTo)}
+      onclick={() => openSection("letter")}
     >
       <span class="mini-art" aria-hidden="true">
         <TKAWordGlyph
@@ -952,7 +939,7 @@
       type="button"
       aria-current={section === "position" ? "page" : undefined}
       disabled={sectionNarrowedOut("position")}
-      onclick={() => openSection("position", returnTo)}
+      onclick={() => openSection("position")}
     >
       <span class="mini-art plate position-preview" aria-hidden="true">
         <img
@@ -980,7 +967,7 @@
       type="button"
       aria-current={section === "gridmode" ? "page" : undefined}
       disabled={sectionNarrowedOut("gridmode")}
-      onclick={() => openSection("gridmode", returnTo)}
+      onclick={() => openSection("gridmode")}
     >
       <span class="mini-art grid-composite-preview" aria-hidden="true">
         <LessonGridDisplay type="merged" size="small" />
@@ -1003,7 +990,7 @@
       type="button"
       aria-current={section === "loop" ? "page" : undefined}
       disabled={sectionNarrowedOut("loop")}
-      onclick={() => openSection("loop", returnTo)}
+      onclick={() => openSection("loop")}
     >
       <span class="mini-art" aria-hidden="true">
         <span class="element-dots">
@@ -1029,7 +1016,7 @@
       type="button"
       aria-current={section === "author" ? "page" : undefined}
       disabled={sectionNarrowedOut("author")}
-      onclick={() => openSection("author", returnTo)}
+      onclick={() => openSection("author")}
     >
       <span class="mini-art" aria-hidden="true">
         <span class="avatar-cluster">
@@ -1108,7 +1095,7 @@
       type="button"
       aria-current={section === "family" ? "page" : undefined}
       disabled={sectionNarrowedOut("family")}
-      onclick={() => openSection("family", returnTo)}
+      onclick={() => openSection("family")}
     >
       <span class="mini-art" aria-hidden="true">
         <span class="element-dots">
@@ -1134,7 +1121,7 @@
       type="button"
       aria-current={section === "max_turn_intensity" ? "page" : undefined}
       disabled={sectionNarrowedOut("max_turn_intensity")}
-      onclick={() => openSection("max_turn_intensity", returnTo)}
+      onclick={() => openSection("max_turn_intensity")}
     >
       <span class="mini-art" aria-hidden="true">
         <i class="fas fa-arrows-spin"></i>
@@ -1172,7 +1159,6 @@
   data-section={section}
   class:sheet={variant === "sheet"}
   class:fluid-wide-canvas={fluidWideCanvas}
-  class:progressive-secondary-choices={progressiveSecondaryChoices}
   class:unified-filter-chooser={unifiedFilterChooser}
   class:adaptive-value-layout={adaptiveValueLayout}
   class:persistent-desktop-catalog={persistentDesktopCatalog}
@@ -1203,12 +1189,10 @@
       <button
         class="head-back"
         type="button"
-        onclick={() => (section = returnSection)}
-        aria-label={returnSection === "more"
-          ? "Back to more filters"
-          : unifiedFilterChooser
-            ? "Back to filters"
-            : "Back to browse options"}
+        onclick={() => (section = "chooser")}
+        aria-label={unifiedFilterChooser
+          ? "Back to filters"
+          : "Back to browse options"}
       >
         <i class="fas fa-arrow-left" aria-hidden="true"></i>
         <!-- Icon-only reads as an anonymous circle when the wide stage strands
@@ -1229,8 +1213,8 @@
       <nav class="desktop-filter-catalog" aria-label="Filter categories">
         <h2>Filters</h2>
         <div class="mini-grid desktop-filter-grid">
-          {@render primaryChoices("chooser")}
-          {@render secondaryChoices("chooser")}
+          {@render primaryChoices()}
+          {@render secondaryChoices()}
         </div>
       </nav>
     {/if}
@@ -1261,8 +1245,8 @@
                  available category in one consistent canvas instead of making
                  two categories privileged and hiding the rest behind More. -->
               <div class="mini-grid unified-choice-grid">
-                {@render primaryChoices("chooser")}
-                {@render secondaryChoices("chooser")}
+                {@render primaryChoices()}
+                {@render secondaryChoices()}
               </div>
             {:else}
               <!-- hero-grid: single column on phones (identical to the old stacked
@@ -1367,51 +1351,17 @@
                   </button>
                 {/if}
 
-                {#if progressiveSecondaryChoices}
-                  <button
-                    class="choice-tile secondary-door"
-                    type="button"
-                    onclick={() => {
-                      returnSection = "chooser";
-                      section = "more";
-                    }}
-                  >
-                    <span class="choice-main">
-                      <span class="choice-title">More filters</span>
-                      <span class="choice-sub"
-                        >Letter, position, LOOPs, and more</span
-                      >
-                    </span>
-                    <span class="secondary-door-art" aria-hidden="true">
-                      <i class="fas fa-sliders"></i>
-                    </span>
-                    <i
-                      class="fas fa-chevron-right drill-chev"
-                      aria-hidden="true"
-                    ></i>
-                  </button>
-                {/if}
               </div>
 
               {#if pool.length > 0}
                 <div class="inline-secondary-choices">
                   <p class="more-head">More ways to browse</p>
                   <div class="mini-grid">
-                    {@render secondaryChoices("chooser")}
+                    {@render secondaryChoices()}
                   </div>
                 </div>
               {/if}
             {/if}
-          </div>
-        {:else if section === "more"}
-          <div class="drill-screen screen-more">
-            {@render valueHead(
-              "More filters",
-              "Choose another way to narrow the collection."
-            )}
-            <div class="mini-grid">
-              {@render secondaryChoices("more")}
-            </div>
           </div>
         {:else if section === "level"}
           <div class="drill-screen screen-level">
@@ -2178,9 +2128,6 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 0.6rem;
-  }
-  .screen-more .mini-grid {
-    width: 100%;
   }
   .mini-tile {
     display: flex;
@@ -3093,399 +3040,23 @@
 
   /* The secondary hub earns its canvas at each size instead of preserving the
      compact rows used when these choices sit beneath the primary doors. */
-  @container drill (min-width: 640px) and (max-width: 899.98px) {
-    .drill.progressive-secondary-choices .screen-more {
-      gap: 1.25rem;
-    }
+  
 
-    .drill.progressive-secondary-choices .screen-more .mini-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.875rem;
-    }
+  
 
-    .drill.progressive-secondary-choices .screen-more .mini-tile {
-      min-height: clamp(7.5rem, 12dvh, 9.5rem);
-      padding: 1rem 1.125rem;
-      border-radius: 1.125rem;
-    }
+  
 
-    .drill.progressive-secondary-choices .screen-more .mini-art {
-      min-width: 3.25rem;
-      height: 3.25rem;
-      font-size: 1.15rem;
-    }
+  
 
-    .drill.progressive-secondary-choices .screen-more .mini-title {
-      font-size: 1rem;
-    }
+  
 
-    .drill.progressive-secondary-choices .screen-more .mini-sub {
-      font-size: 0.8rem;
-      line-height: 1.35;
-    }
-
-    .drill.progressive-secondary-choices
-      .screen-more
-      .mini-grid:has(> :nth-child(7):last-child)
-      > :nth-child(7) {
-      grid-column: 1 / -1;
-      width: calc(50% - 0.4375rem);
-      justify-self: center;
-    }
-  }
-
-  @container drill (min-width: 900px) {
-    .drill.progressive-secondary-choices .screen-more {
-      gap: 1.5rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-tile {
-      min-height: clamp(9rem, 17dvh, 11rem);
-      padding: 1.25rem;
-      border-radius: 1.25rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-art {
-      min-width: 3.5rem;
-      height: 3.5rem;
-      font-size: 1.25rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-title {
-      font-size: 1.1rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-sub {
-      font-size: 0.86rem;
-      line-height: 1.4;
-    }
-
-    /* Seven choices form a balanced 4 + 3 composition instead of leaving the
-       final row visibly pinned to one side. */
-    .drill.progressive-secondary-choices
-      .screen-more
-      .mini-grid:has(> :nth-child(7):last-child) {
-      grid-template-columns: repeat(8, minmax(0, 1fr));
-    }
-
-    .drill.progressive-secondary-choices
-      .screen-more
-      .mini-grid:has(> :nth-child(7):last-child)
-      > .mini-tile {
-      grid-column: span 2;
-    }
-
-    .drill.progressive-secondary-choices
-      .screen-more
-      .mini-grid:has(> :nth-child(7):last-child)
-      > :nth-child(5) {
-      grid-column: 2 / span 2;
-      grid-row: 2;
-    }
-  }
-
-  @container drill (min-width: 1600px) {
-    .drill.progressive-secondary-choices .screen-more .mini-grid {
-      gap: 1.25rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-tile {
-      min-height: clamp(10rem, 17dvh, 16rem);
-      padding: 1.5rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-art {
-      min-width: 4rem;
-      height: 4rem;
-      font-size: 1.4rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-title {
-      font-size: 1.2rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-sub {
-      font-size: 0.92rem;
-    }
-  }
-
-  @container drill (min-width: 2200px) {
-    .drill.progressive-secondary-choices .screen-more .mini-grid,
-    .drill.progressive-secondary-choices
-      .screen-more
-      .mini-grid:has(> :nth-child(7):last-child) {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .drill.progressive-secondary-choices
-      .screen-more
-      .mini-grid:has(> :nth-child(7):last-child)
-      > .mini-tile,
-    .drill.progressive-secondary-choices
-      .screen-more
-      .mini-grid:has(> :nth-child(7):last-child)
-      > :nth-child(5) {
-      grid-column: auto;
-      grid-row: auto;
-    }
-
-    .drill.progressive-secondary-choices
-      .screen-more
-      .mini-grid:has(> :nth-child(7):last-child)
-      > :nth-child(7) {
-      grid-column: 2;
-    }
-  }
-
-  @container drill (min-width: 2600px) {
-    .drill.progressive-secondary-choices .screen-more .mini-grid {
-      gap: 1.5rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-tile {
-      min-height: clamp(14rem, 18dvh, 22rem);
-      padding: 2rem;
-      border-radius: 1.75rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-art {
-      min-width: 6rem;
-      height: 6rem;
-      font-size: 1.9rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-title {
-      font-size: 1.65rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-sub {
-      font-size: 1.15rem;
-    }
-  }
-
-  @media (max-width: 560px) {
-    .drill.progressive-secondary-choices .inline-secondary-choices {
-      display: none;
-    }
-
-    .drill.progressive-secondary-choices .secondary-door {
-      display: flex;
-    }
-
-    .drill.progressive-secondary-choices .screen-more {
-      justify-content: flex-start;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.625rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-tile {
-      min-height: 5.25rem;
-      padding: 0.65rem 0.7rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-art {
-      min-width: 2.75rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-title {
-      line-height: 1.2;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-sub {
-      display: none;
-    }
-
-    .drill.progressive-secondary-choices
-      .screen-more
-      .mini-grid:has(> :nth-child(7):last-child)
-      > :nth-child(7) {
-      grid-column: 1 / -1;
-      width: calc(50% - 0.3125rem);
-      justify-self: center;
-    }
-  }
+  
 
   /* Short landscape is a different information problem, not a smaller
      desktop. Keep the two common doors and replace the clipped secondary wall
      with one explicit next step. The opt-in class protects every established
      GalleryDrill host. */
-  @media (min-width: 700px) and (max-height: 520px) {
-    .drill.progressive-secondary-choices .inline-secondary-choices {
-      display: none;
-    }
-
-    .drill.progressive-secondary-choices .secondary-door {
-      display: flex;
-    }
-
-    .drill.progressive-secondary-choices .hero-grid.without-show-all {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      max-width: none;
-      align-self: stretch;
-    }
-
-    .drill.progressive-secondary-choices .drill-stage {
-      max-width: none;
-    }
-
-    .drill.progressive-secondary-choices .secondary-door-art {
-      width: 2.75rem;
-      height: 2.75rem;
-      border-radius: 0.75rem;
-    }
-
-    .drill.progressive-secondary-choices .compact-door-art {
-      display: flex;
-    }
-
-    .drill.progressive-secondary-choices .hero-grid .peek-fan {
-      display: none;
-    }
-
-    .drill.progressive-secondary-choices .screen-more {
-      justify-content: flex-start;
-      gap: 1.25rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 0.5rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-tile {
-      min-height: 3.25rem;
-      padding: 0.45rem 0.6rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-art {
-      min-width: 2.25rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-title {
-      font-size: 0.84rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-sub {
-      font-size: 0.7rem;
-    }
-
-    .drill.progressive-secondary-choices .drill-screen > .drill-head.with-back,
-    .drill.progressive-secondary-choices .drill-screen > .value-list,
-    .drill.progressive-secondary-choices .drill-screen > .letter-grid {
-      max-width: none;
-    }
-
-    .drill.progressive-secondary-choices .value-list {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.5rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-length > .value-list {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .drill.progressive-secondary-choices .screen-gridmode > .value-list {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      max-width: 40rem;
-    }
-
-    .drill.progressive-secondary-choices .value-list.creator-list {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      max-width: none;
-    }
-
-    .drill.progressive-secondary-choices .level-tile {
-      min-height: 5.5rem;
-      flex-direction: row;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 0.5rem;
-      padding: 0.6rem 0.75rem;
-      border-radius: 0.875rem;
-      text-align: left;
-    }
-
-    .drill.progressive-secondary-choices .level-tile :global(.peek) {
-      display: none;
-    }
-
-    .drill.progressive-secondary-choices .level-tile .value-numeral {
-      min-width: 2.25rem;
-      font-size: 2rem;
-    }
-
-    .drill.progressive-secondary-choices .level-tile .value-main {
-      align-items: flex-start;
-      gap: 0.25rem;
-    }
-
-    .drill.progressive-secondary-choices .level-tile .value-label,
-    .drill.progressive-secondary-choices .level-tile .value-count {
-      font-size: 0.9rem;
-    }
-
-    .drill.progressive-secondary-choices .level-tile .value-desc {
-      font-size: 0.72rem;
-    }
-
-    .drill.progressive-secondary-choices .length-row.monument {
-      min-height: 3.5rem;
-      flex-direction: row;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 0.5rem;
-      padding: 0.5rem 0.65rem;
-      border-radius: 0.75rem;
-      text-align: left;
-    }
-
-    .drill.progressive-secondary-choices .monument .value-main {
-      align-items: flex-start;
-      gap: 0.2rem;
-    }
-
-    .drill.progressive-secondary-choices .monument .value-img,
-    .drill.progressive-secondary-choices .monument .value-img.family-icon,
-    .drill.progressive-secondary-choices .monument .value-pictograph {
-      width: 2.5rem;
-      height: 2.5rem;
-    }
-
-    .drill.progressive-secondary-choices .monument .value-numeral.small {
-      font-size: 1.75rem;
-    }
-
-    .drill.progressive-secondary-choices .monument .loop-icon {
-      font-size: 1.5rem;
-    }
-
-    .drill.progressive-secondary-choices .monument .value-label,
-    .drill.progressive-secondary-choices .monument .value-count {
-      font-size: 0.84rem;
-    }
-
-    .drill.progressive-secondary-choices .creator-row {
-      min-height: 3.5rem;
-      padding: 0.45rem 0.65rem;
-    }
-
-    .drill.progressive-secondary-choices .letter-grid {
-      grid-template-columns: repeat(auto-fill, minmax(4.25rem, 1fr));
-      gap: 0.45rem;
-    }
-
-    .drill.progressive-secondary-choices .letter-chip {
-      min-height: 3.25rem;
-    }
-  }
+  
 
   /* ── Smart Collection decision canvas ─────────────────────────────
      The standard Gallery front door remains editorial and progressive. A
@@ -3589,31 +3160,6 @@
 
   .unified-choice-grid:has(> :nth-child(7):last-child) > :last-child {
     grid-column: 3 / span 2;
-  }
-
-  .drill.adaptive-value-layout
-    .drill-screen:not(.screen-chooser):not(.screen-more) {
-    justify-content: flex-start;
-    overflow-y: auto;
-  }
-
-  .drill.adaptive-value-layout .screen-more {
-    justify-content: flex-start;
-    overflow-y: auto;
-  }
-
-  .drill.adaptive-value-layout .screen-more > .mini-grid {
-    width: min(100%, 90rem);
-    flex: 1 1 0;
-    min-height: 0;
-    align-self: center;
-    align-content: center;
-    grid-auto-rows: minmax(44px, auto);
-  }
-
-  .drill.adaptive-value-layout .screen-more .mini-tile {
-    height: auto;
-    min-height: 44px;
   }
 
   .drill.adaptive-value-layout .drill-head.with-back {
@@ -4454,17 +4000,6 @@
       grid-template-columns: repeat(8, minmax(0, 1fr));
       grid-auto-rows: minmax(4rem, auto);
     }
-
-    .drill.adaptive-value-layout .screen-more .mini-tile {
-      flex-direction: column;
-      justify-content: center;
-      text-align: center;
-    }
-
-    .drill.adaptive-value-layout .screen-more .mini-main {
-      flex: 0 1 auto;
-      align-items: center;
-    }
   }
 
   @container drill (min-width: 640px) and (max-width: 899.98px) {
@@ -4594,15 +4129,6 @@
       --decision-band-width: clamp(64rem, 78cqw, 96rem);
     }
 
-    .drill.adaptive-value-layout .screen-more {
-      --decision-band-width: clamp(68rem, 80cqw, 100rem);
-    }
-
-    .drill.adaptive-value-layout .screen-more > .mini-grid {
-      width: min(100%, var(--decision-band-width));
-      grid-auto-rows: minmax(9rem, auto);
-    }
-
     .drill.adaptive-value-layout .screen-level,
     .drill.adaptive-value-layout .screen-positions {
       --decision-band-width: clamp(64rem, 78cqw, 96rem);
@@ -4639,58 +4165,12 @@
       --decision-band-width: clamp(90rem, 72cqw, 132rem);
     }
 
-    .drill.adaptive-value-layout .screen-more,
-    .drill.adaptive-value-layout .screen-level,
-    .drill.adaptive-value-layout .screen-positions {
-      --decision-band-width: clamp(100rem, 70cqw, 150rem);
-    }
-
     .drill.adaptive-value-layout .screen-gridmode {
       --decision-band-width: clamp(64rem, 48cqw, 90rem);
     }
 
     .drill.adaptive-value-layout .screen-letter {
       --decision-band-width: clamp(96rem, 76cqw, 150rem);
-    }
-
-    /* Seven choices read as a centered 4 + 3 set at every desktop width. The
-       older 4K rule changed this to 3 + 3 + 1, which wasted a full row. */
-    .drill.adaptive-value-layout
-      .screen-more
-      > .mini-grid:has(> :nth-child(7):last-child) {
-      grid-template-columns: repeat(8, minmax(0, 1fr));
-      grid-auto-rows: minmax(12rem, auto);
-    }
-
-    .drill.adaptive-value-layout
-      .screen-more
-      > .mini-grid:has(> :nth-child(7):last-child)
-      > .mini-tile {
-      grid-column: span 2;
-    }
-
-    .drill.adaptive-value-layout
-      .screen-more
-      > .mini-grid:has(> :nth-child(7):last-child)
-      > :nth-child(5) {
-      grid-column: 2 / span 2;
-      grid-row: 2;
-    }
-
-    .drill.adaptive-value-layout
-      .screen-more
-      > .mini-grid:has(> :nth-child(7):last-child)
-      > :nth-child(6) {
-      grid-column: 4 / span 2;
-      grid-row: 2;
-    }
-
-    .drill.adaptive-value-layout
-      .screen-more
-      > .mini-grid:has(> :nth-child(7):last-child)
-      > :nth-child(7) {
-      grid-column: 6 / span 2;
-      grid-row: 2;
     }
 
     .drill.adaptive-value-layout .level-tile {
@@ -4743,10 +4223,6 @@
   }
 
   @container drill (min-width: 2600px) {
-    .drill.unified-filter-chooser .unified-choice-grid,
-    .drill.adaptive-value-layout .screen-more > .mini-grid {
-      gap: 1.5rem;
-    }
 
     .drill.unified-filter-chooser .unified-choice-grid .mini-art {
       width: 5rem;
@@ -4768,27 +4244,6 @@
 
     .drill.unified-filter-chooser .unified-choice-grid .mini-sub {
       font-size: 1.05rem;
-    }
-
-    .drill.adaptive-value-layout .screen-more .mini-tile {
-      min-height: clamp(14rem, 9cqw, 20rem);
-      gap: 1rem;
-      padding: 1.75rem;
-    }
-
-    .drill.adaptive-value-layout .screen-more .mini-art {
-      min-width: 6.5rem;
-      height: 6.5rem;
-      font-size: 2.1rem;
-    }
-
-    .drill.adaptive-value-layout .screen-more .mini-title {
-      font-size: 1.85rem;
-    }
-
-    .drill.adaptive-value-layout .screen-more .mini-sub {
-      font-size: 1.25rem;
-      line-height: 1.35;
     }
 
     .drill.adaptive-value-layout .level-tile {
@@ -4994,17 +4449,6 @@
       display: none;
     }
 
-    .drill.adaptive-value-layout .screen-more .mini-tile {
-      flex-direction: row;
-      justify-content: flex-start;
-      text-align: left;
-    }
-
-    .drill.adaptive-value-layout .screen-more .mini-main {
-      flex: 1;
-      align-items: flex-start;
-    }
-
     .drill.unified-filter-chooser .unified-choice-grid:has(> :nth-child(9)) {
       width: 100%;
       grid-template-columns: repeat(10, minmax(0, 1fr));
@@ -5167,16 +4611,6 @@
       display: none;
     }
 
-    /* Fold decision matrix. The shared picker used to force every category
-       through one generic grid, producing 6 + 1 lengths, 4 + 2 LOOPs, and
-       six narrow T&D columns. Each bounded catalog now gets the composition
-       its content calls for, while the header keeps one stable Back anchor. */
-    .drill.adaptive-value-layout
-      .drill-screen:not(.screen-chooser):not(.screen-more) {
-      gap: 0.45rem;
-      overflow-y: hidden;
-    }
-
     .drill.adaptive-value-layout .drill-head.with-back {
       position: relative;
       top: auto;
@@ -5184,41 +4618,6 @@
       max-width: none;
       padding-bottom: 0;
       background: transparent;
-    }
-
-    .drill.adaptive-value-layout .screen-more {
-      gap: 0.45rem;
-      overflow-y: hidden;
-    }
-
-    .drill.adaptive-value-layout .screen-more > .mini-grid {
-      width: 100%;
-      max-width: none;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      grid-template-rows: repeat(2, minmax(0, 1fr));
-      grid-auto-rows: minmax(0, 1fr);
-      align-content: stretch;
-      overflow: hidden;
-    }
-
-    .drill.adaptive-value-layout .screen-more .mini-tile {
-      height: 100%;
-      min-height: 0;
-      gap: 0.65rem;
-      padding: 0.5rem 0.7rem;
-    }
-
-    .drill.adaptive-value-layout .screen-more .mini-art {
-      min-width: 3rem;
-      height: 3rem;
-    }
-
-    .drill.adaptive-value-layout .screen-more .mini-title {
-      font-size: var(--font-size-sm, 14px);
-    }
-
-    .drill.adaptive-value-layout .screen-more .mini-sub {
-      font-size: var(--font-size-compact, 12px);
     }
 
     .drill.adaptive-value-layout .screen-level > .value-list {
@@ -5551,76 +4950,6 @@
       white-space: normal;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
-    }
-
-    .drill.progressive-secondary-choices .screen-chooser {
-      justify-content: flex-start;
-    }
-
-    .drill.progressive-secondary-choices .screen-chooser > .hero-grid {
-      flex: 1 1 0;
-      min-height: 0;
-      grid-auto-rows: minmax(9rem, 9.75rem);
-      align-content: center;
-      gap: 0.65rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-chooser .choice-tile {
-      height: 100%;
-      min-height: 0;
-      padding-block: 0.8rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more {
-      justify-content: flex-start;
-      gap: 0.65rem;
-      overflow-y: hidden;
-    }
-
-    .drill.progressive-secondary-choices .screen-more > .mini-grid {
-      flex: 1 1 0;
-      min-height: 0;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      grid-auto-rows: minmax(6.25rem, 6.75rem);
-      align-content: center;
-      gap: 0.55rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-tile {
-      height: 100%;
-      min-height: 0;
-      flex-direction: column;
-      justify-content: center;
-      gap: 0.4rem;
-      padding: 0.5rem 0.4rem;
-      text-align: center;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-art {
-      width: 2.75rem;
-      min-width: 2.75rem;
-      height: 2.75rem;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-main {
-      flex: 0 1 auto;
-      align-items: center;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-title {
-      font-size: 0.8rem;
-      line-height: 1.15;
-      text-align: center;
-    }
-
-    .drill.progressive-secondary-choices .screen-more .mini-sub {
-      display: block;
-      overflow: hidden;
-      font-size: 0.65rem;
-      line-height: 1.15;
-      text-align: center;
-      text-overflow: ellipsis;
-      white-space: nowrap;
     }
 
     /* The single-column stretch composition below is tuned to the SHORT
