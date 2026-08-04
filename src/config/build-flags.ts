@@ -17,7 +17,38 @@
  * decision made in `feature-flags.ts`.
  */
 
+import { dev } from "$app/environment";
+import { redirect } from "@sveltejs/kit";
+
 /** True when this build ships the unfinished Coven hub route. */
 export function isCovenBuildEnabled(): boolean {
   return typeof __FEATURE_COVEN__ !== "undefined" && __FEATURE_COVEN__;
+}
+
+/**
+ * Where an internal-only route sends a production visitor.
+ *
+ * One destination for every guarded surface, so the redirect target can't
+ * drift route by route.
+ */
+export const INTERNAL_ROUTE_FALLBACK = "/browse/gallery";
+
+/**
+ * Guard for a route that exists only for development — scratch harnesses,
+ * one-off render pages, retro experiments, unfinished hubs.
+ *
+ * Pair this with `emptyClientRouteComponents` on the owning feature (or an
+ * entry in GUARDED_DEV_ROUTE_PATTERNS). The build empties the page component
+ * so its implementation never ships; this guard is what keeps the now-empty
+ * route from rendering a blank page to whoever typed the URL.
+ *
+ * `dev` is statically false in a production build, so the whole check folds
+ * away to an unconditional redirect — verified in the built route nodes.
+ *
+ * NOT for outward-facing routes that merely look internal. `/embed/spinner`
+ * is the standing example: third parties iframe it, so it stays public even
+ * though it sits under a dev-sounding path.
+ */
+export function guardInternalRoute(): void {
+  if (!dev) redirect(307, INTERNAL_ROUTE_FALLBACK);
 }

@@ -16,7 +16,18 @@ const OUTPUT_DIR = ".svelte-kit/cloudflare";
 const DIRS_TO_REMOVE = [
   "screenshots",
   "thumbnails",
+  // Design sketches are throwaway HTML mockups reviewed at
+  // localhost:5173/sketches/<file>.html during design work. Vite serves them
+  // from static/ in dev, so that workflow is untouched — but static/ copies
+  // verbatim into the deploy output, which published 32 internal mockups on
+  // tkaflowarts.com/sketches/. They are not route-gated, so no feature flag or
+  // load guard can reach them; dropping them here is the only seam.
+  "sketches",
 ];
+
+// Individual dev-only files that live in static/ and would otherwise ship.
+// Same reasoning as the sketches directory above.
+const FILES_TO_REMOVE = ["element-icons-preview.html"];
 
 function walk(dir) {
   const entries = readdirSync(dir, { withFileTypes: true });
@@ -42,6 +53,14 @@ for (const dir of DIRS_TO_REMOVE) {
     const files = readdirSync(fullPath, { recursive: true });
     rmSync(fullPath, { recursive: true, force: true });
     console.log(`  Removed ${fullPath}/ (${files.length} entries)`);
+  }
+}
+
+for (const file of FILES_TO_REMOVE) {
+  const fullPath = join(OUTPUT_DIR, file);
+  if (existsSync(fullPath)) {
+    unlinkSync(fullPath);
+    console.log(`  Removed ${fullPath}`);
   }
 }
 

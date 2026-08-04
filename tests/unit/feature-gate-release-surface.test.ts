@@ -29,8 +29,18 @@ describe("production release feature gate", () => {
     });
     expect(flags.getEnabledFeaturesDefineMap().__FEATURE_COVEN__).toBe("false");
     expect(flags.getClientEmptiedRoutePaths()).toEqual([
+      "src/routes/1989/",
+      "src/routes/1995/",
+      "src/routes/1998/",
+      "src/routes/2003/",
       "src/routes/coven/",
       "src/routes/test/",
+      "src/routes/(dev)/",
+      "src/routes/demo/",
+      "src/routes/render-pictographs/",
+      "src/routes/grant-feature/",
+      "src/routes/hall-of-shame/",
+      "src/routes/(public)/composer/auth-lab/",
     ]);
     expect(flags.getDisabledFeatureModulePaths()).not.toContain(
       "features/coven-hub/"
@@ -41,7 +51,35 @@ describe("production release feature gate", () => {
     const flags = await loadProductionFeatureFlags("true");
 
     expect(flags.getEnabledFeaturesDefineMap().__FEATURE_COVEN__).toBe("true");
-    expect(flags.getClientEmptiedRoutePaths()).toEqual(["src/routes/test/"]);
+    expect(flags.getClientEmptiedRoutePaths()).not.toContain("src/routes/coven/");
+  });
+
+  it("keeps the outward-facing /embed route out of every internal list", async () => {
+    // /embed/spinner is iframed by third parties. It reads like a dev path, so
+    // it is the one most likely to be swept into a gating list by mistake.
+    const flags = await loadProductionFeatureFlags();
+
+    expect(flags.getClientEmptiedRoutePaths()).not.toContain("src/routes/embed/");
+    expect(flags.getDisabledRoutePatterns()).not.toContain("src/routes/embed/");
+  });
+
+  it("empties every internal route that ships real UI", async () => {
+    const flags = await loadProductionFeatureFlags();
+    const emptied = flags.getClientEmptiedRoutePaths();
+
+    // Each of these was reachable in a production build before 2026-08-03.
+    for (const route of [
+      "src/routes/(dev)/", // /video-collab-demo — 15.9 KB, 500d on the public web
+      "src/routes/grant-feature/",
+      "src/routes/render-pictographs/",
+      "src/routes/demo/",
+      "src/routes/hall-of-shame/",
+      "src/routes/(public)/composer/auth-lab/",
+      "src/routes/1998/",
+      "src/routes/2003/",
+    ]) {
+      expect(emptied).toContain(route);
+    }
   });
 
   it("empties only the guarded route components in the client build", async () => {
