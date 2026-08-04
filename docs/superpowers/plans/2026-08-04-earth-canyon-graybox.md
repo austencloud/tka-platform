@@ -152,8 +152,51 @@ plan at the start of each phase.
 
 ## Ledger
 
-- [ ] P1 layout + floor plan + terrain + tests green
-- [ ] P2 graybox component + lighting registered and rendering
-- [ ] P3 performers + sequences + CAVE_MODE_ROOMS migration
-- [ ] P4 museum test suite green + full check clean
-- [ ] Deviations recorded here
+- [x] P1 layout + floor plan + terrain + tests green —
+  `src/lib/features/museum/data/earth-canyon-layout.ts`,
+  `earth-canyon-terrain.test.ts` (18), `earth-canyon-traversal.test.ts` (10).
+- [x] P2 graybox component + lighting registered and rendering —
+  `EarthCanyonGraybox.svelte`, mounted in `Museum3DScene.svelte` behind
+  `hasEarthCanyon`.
+- [x] P3 performers + sequences + CAVE_MODE_ROOMS migration — landed with P1
+  (see deviation 2).
+- [x] P4 museum test suite green (25 files / 268 tests) + `npm run check`
+  reports 0 errors and 0 warnings.
+- [x] Deviations recorded here
+
+### Deviations
+
+1. **Gully is 12.5 m of east–west run, not ~10 m** (6 m mouth + a 4 m-thick
+   north-running bend leg + 2.5 m lower run). The bend has to be a real leg
+   rather than a pad for it to kill Fire's light, and the chamber still clears
+   the ⌀14 m void plus a 3.2 m rim (21.5 m of the 34 m interior). The west door
+   moved to `alignment: "center"` so the bend has something to bend through.
+2. **P3 landed inside the P1 commit.** `vulcan-cave-floor-plan.test.ts` asserts
+   `CAVE_MODE_ROOMS.performerIds` against the compiled performers, so the
+   three-station migration could not be deferred past the layout change —
+   exactly Fire's deviation 2. `d462b23c06` carries P1 + P3.
+3. **The exit ramp gained a kerb and a landing** the plan did not name. A ramp
+   climbing to datum 0 beside a rim at −1.4 leaves a 1.4 m cliff across a
+   walkable seam. `exitKerb` (blocked, 0.5 m, starting 2 m east of the ramp's
+   mouth) separates the deck from the rim, and `exitLanding` (flat, datum 0)
+   holds the corner east of the door. The ramp itself is still a 6 m `ramp-x`
+   from −1.4 to 0 at the door.
+4. **Arrival reads to the RIGHT, not the left.** The design's "the ground opens
+   on the left" assumed a different approach; the gully turns north and delivers
+   east onto the north ledge, so the void opens to the south — the visitor's
+   right. Everything else about the arrival (ledge, drop, figures below and
+   behind) holds. Judge it at the gate.
+5. **Felt downbeat deferred**, per the plan: camera-shake infrastructure is new
+   tech and not worth blocking the walk on. Design risk 5 stays open.
+6. **Existing test updated, not loosened.** `vulcan-cave-floor-plan.test.ts`'s
+   `BAY_ROOM_IDS` now names three authored bays, and the "largest solo chamber"
+   assertion points at `cave-air` since Earth is no longer a solo.
+7. **Canyon-shelf distances are authored**, not derived — the shelves sit
+   3/9/17/29 m north of the bay at the design's four elevations. They are
+   outside the terrain bay and unreachable behind the compiled north wall.
+
+### Open for the gate (from the design's own question list)
+
+Parapet at 0.90 m everywhere vs the slab's 0.45 m lip; four backdrop shelves or
+three; grass on the rim or bare rock; fireflies in a daylit room; the felt
+downbeat. All five are look-at-it questions and none of them are answered here.
