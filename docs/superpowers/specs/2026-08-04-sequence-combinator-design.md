@@ -59,7 +59,7 @@ letters. Runs in microseconds, before any concrete search.
 Austen counts 19 base sequences; the MCP alphabet reference already names the
 compound bases (DJ, EK, FL as β↔α cycles; MP, NQ, OR as γ cycles; ΦΨ as the
 dash cycle) plus the self-looping single letters. Austen additionally
-promotes ΦΨΦΨ, WΣYθ, and XΔZΩ to first-class base sequences. The exact
+promotes ΦΨΦΨ, WΣYΘ, and XΔZΩ to first-class base sequences. The exact
 roster ships as reviewed data — **finalize the list with Austen during
 implementation; do not guess it.** Each entry: word, letter edges,
 rotation character per hand, LOOP structure.
@@ -193,7 +193,7 @@ to be rendered via MCP in the lab handoff:
 ## Risks / Open Items
 
 - **Base-sequence roster**: must be confirmed with Austen (his count: 19,
-  plus ΦΨΦΨ / WΣYθ / XΔZΩ promotions). Blocking for Layer 0 data, not for
+  plus ΦΨΦΨ / WΣYΘ / XΔZΩ promotions). Blocking for Layer 0 data, not for
   engine code.
 - **Result explosion** at small block sizes: mitigated by knobs + ranking +
   caps; tuning is real work, planned as its own implementation phase.

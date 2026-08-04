@@ -667,7 +667,7 @@ describe("base-sequence registry", () => {
   });
   it("contains Austen's promoted bases", () => {
     const words = BASE_SEQUENCES.map((b) => b.word);
-    expect(words).toContain("WΣYθ");
+    expect(words).toContain("WΣYΘ");
     expect(words).toContain("XΔZΩ");
   });
   it("every confirmed base has edges; unconfirmed bases have null edges", () => {
@@ -728,7 +728,7 @@ export const BASE_SEQUENCES: readonly BaseSequenceEntry[] = [
   { word: "OR", edges: [edge("O", G, G), edge("R", G, G)], confirmed: true, note: "gamma compound (MCP: γ→γ cycle)" },
   { word: "CC", edges: null, confirmed: false, note: "awaiting roster review" },
   { word: "II", edges: null, confirmed: false, note: "awaiting roster review" },
-  { word: "WΣYθ", edges: null, confirmed: false, note: "Austen-promoted base; per-letter edges unconfirmed" },
+  { word: "WΣYΘ", edges: null, confirmed: false, note: "Austen-promoted base; per-letter edges unconfirmed" },
   { word: "XΔZΩ", edges: null, confirmed: false, note: "Austen-promoted base; per-letter edges unconfirmed" },
 ];
 
