@@ -148,7 +148,27 @@
   // Timeline mode: beats per row matches the grid layout's column count so
   // swing/duration sequences show the same number of beats per row as uniform
   // sequences. Manual column count (from LOOP alignment) overrides.
-  const timelineBeatsPerRow = $derived(manualColumnCount ?? gridLayout.columns);
+  // LOOP alignment (manualColumnCount) is honored only while a row that wide
+  // can still give every cell the 48px touch floor. gridLayout.columns is
+  // already capped for the container (8 wide / 4 narrow), so falling back to
+  // it keeps a 20-per-repeat LOOP readable instead of stamping out a row of
+  // floor-sized slivers that used to run past the wrapper and get clipped.
+  const TIMELINE_MIN_UNIT = 48;
+  const timelineBeatsPerRow = $derived.by(() => {
+    const fallback = gridLayout.columns;
+    if (manualColumnCount === null || manualColumnCount === undefined)
+      return fallback;
+    if (containerWidth <= 0) return manualColumnCount;
+
+    const sizingWidth = Math.max(0, containerWidth - 2 * POP_RESERVE);
+    const usable = sizingWidth - calculateTimelinePadding(containerWidth);
+    const hasStart = Boolean(startPosition && !startPosition.isBlank);
+    const maxUnits = Math.floor(usable / TIMELINE_MIN_UNIT);
+    const maxBeats = maxUnits - (hasStart ? 1 : 0);
+
+    if (maxBeats >= manualColumnCount) return manualColumnCount;
+    return Math.max(1, Math.min(fallback, maxBeats));
+  });
   const timelineRows = $derived.by(() => {
     if (!isTimelineMode) return [];
     return calculateTimelineRowsByBeatCount(steps, timelineBeatsPerRow);

@@ -386,6 +386,13 @@ export function calculateTimelinePadding(containerWidth: number): number {
  * sizes cells to fill the available width proportionally. Each duration
  * unit gets an equal share of the row width.
  *
+ * The 48px touch floor is honored only while it still FITS. A row that hands
+ * every unit 48px when the container can't afford it is wider than
+ * .scroll-wrapper, whose `overflow-x: hidden` eats the right-most columns
+ * outright — there is no horizontal scroll to reach them. A 40-step LOOP
+ * aligned 10-per-row lost five whole columns that way below ~570px. Shrinking
+ * cells is recoverable; deleting them from the screen is not.
+ *
  * @param containerWidth - Available width in pixels
  * @param rowCapacity - Duration units per row (default: 4)
  * @param minSize - Minimum cell size for touch targets (default: 48)
@@ -410,7 +417,11 @@ export function calculateTimelineUnitSize(
   // No max constraint - timeline cells should fill the available width
   const calculatedSize = Math.floor(availableWidth / rowCapacity);
 
-  return Math.max(minSize, calculatedSize);
+  // Apply the touch floor only when the row can still fit inside the
+  // container at that size; otherwise fitting wins (see the note above).
+  const floor = Math.min(minSize, Math.max(1, calculatedSize));
+
+  return Math.max(floor, calculatedSize);
 }
 
 /**
