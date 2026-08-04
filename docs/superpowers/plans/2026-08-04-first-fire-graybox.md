@@ -130,8 +130,47 @@ in, end out).
 
 ## Ledger
 
-- [ ] P1 layout + floor plan + terrain + tests green
-- [ ] P2 graybox component + lighting registered and rendering
-- [ ] P3 performers + sequences + CAVE_MODE_ROOMS migration
-- [ ] P4 museum test suite green + full check clean for these files
-- [ ] Deviations recorded here (numbered, one line each)
+- [x] P1 layout + floor plan + terrain + tests green — `first-fire-layout.ts`
+      (bands, crack, terraces, ash, fissure, shore, exit stair, stations),
+      `cave-fire` resized to 62 × 27 minInterior (≈ 46.5 × 20.5 m) with
+      `suppressTileGeometry` and layout-driven performers, cave terrain now
+      composed per bay; `first-fire-terrain.test.ts` (15) +
+      `first-fire-traversal.test.ts` (9). Commit `8a3bf8e1`.
+- [x] P2 graybox component + lighting registered and rendering —
+      `FirstFireGraybox.svelte`, mounted in `Museum3DScene.svelte` beside
+      `DrownedGalleryGraybox`. Commit `d97bec31`.
+- [x] P3 performers + sequences + CAVE_MODE_ROOMS migration — landed inside the
+      P1 commit (see deviation 2). `cave-fire-seq-dj/-ek/-fl` transcribed from
+      the MCP data above; old `cave-fire-seq` and the orphaned `cave-water-seq`
+      removed; room content stages the three stations with autoplay.
+- [x] P4 museum test suite green + full check clean — `npx vitest run
+      tests/unit/museum/` 23 files / 242 tests passed; `npm run check` exit 0,
+      "svelte-check found 0 errors and 0 warnings".
+- [x] Deviations recorded here:
+  1. Water's private rect helpers (`interiorWorldRect`, `doorSpan`,
+     `widenSpan`, `bandRects`, `subtractTiles`, `spansExcluding`, `unionRect`)
+     are now exported from `drowned-gallery-terrain.ts` and imported by the
+     fire layout, rather than copy-pasted. One vocabulary, one source.
+  2. P3's data changes (sequences, room content, `CAVE_MODE_ROOMS`) shipped in
+     the P1 commit: `vulcan-cave-floor-plan.test.ts` asserts every declared
+     performer resolves to authored movement data, so the phases could not be
+     green apart.
+  3. Terrace transitions are full-width ramped risers (rendered as steps)
+     instead of discrete aisle steps — guarantees the ≤ 0.6 m neighbour sweep
+     and keeps the exit stair reachable from every bench, which the gate asks
+     for. Aisle-only steps can return with the art pass.
+  4. The graybox mounts in `Museum3DScene.svelte` (where
+     `DrownedGalleryGraybox` actually lives), not inside
+     `VulcanCaveScenicLayer.svelte` as the plan's wording suggested. Same
+     `currentRoomId`/`visible` streaming props.
+  5. The shore and the fissure span only the amphitheatre half of the room;
+     west of it the crossing runs through rock. A full-width fissure would
+     have overlapped the lava stream flanking the bridge.
+  6. Two existing assertions in `vulcan-cave-floor-plan.test.ts` encoded
+     "Water is the only bay" (solo-chamber rule, largest-room rule). Both now
+     read from a two-bay set; Earth is still the largest solo chamber.
+  7. Not yet done, and outside this plan: the design's open item — swapping
+     JDJD/KEKE/LFLF to the split-timing variations. The shipped data is the
+     variation-0 run the plan transcribed (motion correct, `timing: "tog"`).
+  8. No first-person screenshot pass: the eye-level gate is Austen's walk, and
+     the museum scene is not a route a headless viewport can stand in.
