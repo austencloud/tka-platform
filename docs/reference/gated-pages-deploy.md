@@ -103,6 +103,31 @@ between step 1 and step 3.
   `.claude/rules/component-test-discipline.md`, which deliberately keeps it
   non-blocking until it earns the gate.
 
+## A red CI run on `main` is a production outage
+
+The gate's failure mode is silence. `Deploy Pages (gated)` runs on
+`workflow_run` and exits `skipped` when the conclusion isn't `success` — which
+is not a failure, sends no notification, and appears in the run list as a
+perfectly ordinary entry. Production simply keeps serving the last green build
+while `main` moves on, and nothing anywhere says so.
+
+This has bitten twice. On 2026-08-04 a single `blob.arrayBuffer is not a
+function` failure under jsdom held five days of commits off `tkaflowarts.com`;
+it was found only because the site looked stale to a human.
+
+`web-ci.yml` now ends with a `Say that production did not deploy` step, guarded
+by `if: failure() && github.event_name == 'push' && github.ref ==
+'refs/heads/main'`. It emits an error annotation and a run-summary block
+spelling out that no build was queued and that every commit on `main` — not
+just the failing one — is stranded until the suite is green.
+
+It changes no behavior. A red run on `main` already meant this; the step makes
+it legible in the failure the developer is already looking at.
+
+**Corollary:** treat "CI is red on `main`" as a shipping incident, not a
+housekeeping task. The fix is always the same — make `main` green and the
+deploy fires itself.
+
 ## Escape hatch
 
 `workflow_dispatch` is enabled on both deploy workflows. If CI is broken and you

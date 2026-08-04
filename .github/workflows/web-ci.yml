@@ -57,6 +57,32 @@ jobs:
       - name: Verify offline kit in build artifact
         run: pnpm run verify:offline
 
+      # A red run on main is also a PRODUCTION OUTAGE, and that half is silent.
+      # Deploy Pages (gated) fires on workflow_run and exits `skipped` when the
+      # conclusion isn't success — no failure, no notification, just an absent
+      # deploy. tkaflowarts.com then serves the last green build indefinitely
+      # while main moves on. That has now happened twice (2026-08-04: five days
+      # of commits stranded behind one jsdom Blob failure).
+      #
+      # Nothing here changes the gate. It makes the consequence legible in the
+      # failure the developer is already looking at.
+      - name: Say that production did not deploy
+        if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "::error title=Production did NOT deploy::Web App CI failed on main, so Deploy Pages (gated) will skip and Cloudflare is never triggered. tkaflowarts.com keeps serving the last green build until this run is fixed and main is green again."
+          {
+            echo "## :rotating_light: Production did NOT deploy"
+            echo
+            echo "This run failed on \`main\`. \`Deploy Pages (gated)\` only fires the Cloudflare"
+            echo "Deploy Hook when Web App CI concludes \`success\`, so it will exit \`skipped\`"
+            echo "and **no production build is queued**."
+            echo
+            echo "\`tkaflowarts.com\` is serving the last green build — every commit on \`main\`"
+            echo "since then is stranded, not just this one."
+            echo
+            echo "Fix this run and push; the deploy triggers itself once \`main\` is green."
+          } >> "$GITHUB_STEP_SUMMARY"
+
   component-tests:
     name: Component Tests (browser)
     runs-on: ubuntu-latest
