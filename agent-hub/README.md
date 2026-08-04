@@ -34,14 +34,16 @@ context to name it.
 Pin one shortcut per repo. Click it, and a card appears at your cursor with the
 project's icon. Pick Claude or Codex and the agent's terminal opens in that
 directory, already carrying the bypass flags. Projects with a configured PM2
-server also get a third tile that reports its current state.
+server also get a tile that reports its current state, and projects with a
+configured app URL get a tile that opens the app in your default browser.
 
 ```
 1        Claude Code
 2        Codex
 3        start or restart the configured server
-4        pull the current Git branch
-5        push committed work to its upstream
+4        open the app in the default browser
+5        pull the current Git branch
+6        push committed work to its upstream
 Enter    last agent used for this project
 Esc      cancel
 ```
@@ -52,6 +54,11 @@ ready. A process already using the port outside PM2 appears as Take over. PM2
 errors are shown on the tile and written to
 `%LOCALAPPDATA%\AgentHub\server-errors.log`.
 
+The Open app tile launches the project's `appUrl` in your default browser, with
+whatever profile and sign-in state that browser already has. It does exactly one
+thing: open the page. Starting or restarting the server stays on the server
+tile. Only absolute `http://` and `https://` URLs are accepted.
+
 Every Git project gets a compact status row with its branch, ahead and behind
 counts, and changed-file count. Pull is available only for a clean worktree and
 always uses `git pull --ff-only`. Push is available only when the current branch
@@ -60,7 +67,7 @@ because only commits are transferred. Agent Hub never force-pushes, stashes,
 rebases, creates branches, or resolves conflicts. Git failures remain visible in
 the row and are written to `%LOCALAPPDATA%\AgentHub\git-errors.log`.
 
-Server controls are opt-in per project in `projects.json`:
+Server controls and the app URL are opt-in per project in `projects.json`:
 
 ```json
 {
@@ -72,7 +79,8 @@ Server controls are opt-in per project in `projects.json`:
     "app": "tka-dev",
     "config": "ecosystem.config.cjs",
     "port": 5173
-  }
+  },
+  "appUrl": "https://localhost:5173"
 }
 ```
 

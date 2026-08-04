@@ -106,15 +106,91 @@ git.
     the old Sunshine host (d2, laptop) must pair again; and the
     dashboard has no credentials until Austen sets them at the host.
 
+14. **Instance names fixed at the source, and d2's host list cleaned to three**
+    (2026-08-04, from d2). Austen: *"there should only be three devices ...
+    d1 ... d2 ... laptop ... those are the only three devices."*
+    - d1 runs **two** Apollo instances: the primary on port base `47989`, and a
+      second on port base `48989` (offset +1000) created to serve the laptop.
+      The second one was named `d1-laptop`, which reads as two conflicting
+      machines in every client's host list.
+    - Renamed via each instance's own `sunshine_name`, so the fix propagates to
+      every client instead of being a per-client alias: primary → `d1`,
+      second → `laptop`. Verified by reading each instance's `serverinfo` back:
+      `<hostname>d1</hostname>` on `47989`, `<hostname>laptop</hostname>` on
+      `48989`.
+    - Deleted every Moonlight host entry on d2 (they carried stale
+      pre-Apollo `srvcert` values) and let mDNS rediscover. Result: exactly
+      three entries — `d1`, `d2`, `laptop`.
+    - d2's own instance still has `sunshine_name = D2` in its
+      `sunshine.conf`; it is aliased to `d2` in d2's Moonlight
+      (`customname = true`) because three separate UAC prompts to edit
+      `C:\Program Files\Apollo\config\` were canceled. Cosmetic, and only on
+      other clients' host lists.
+
+15. **d2 re-paired with d1's Apollo** (2026-08-04). Handshake completed
+    getservercert → clientchallenge → serverchallengeresp → clientpairingsecret
+    → HTTPS pairchallenge. Verified from both ends: d1's
+    `/api/clients/list` lists a named cert `d2`, and d2's Moonlight registry
+    shows 3 apps under the `d1` host.
+
+16. **Virtual display enabled for the d2 client** on d1's primary Apollo —
+    `always_use_virtual_display: true`, `display_mode: "3440x1440x120"` — and
+    **proven end to end** (2026-08-04). Phase 2's goal is met: d2's ultrawide
+    is a genuinely attached 3440x1440 extended display of d1, 1:1, no scaling.
+    d1's own Apollo log for the run:
+    ```
+    Display mode for client [d2] overriden to [3440x1440x120]
+    Virtual Display created at \\.\DISPLAY11
+    Capture size       : 3440x1440
+    Desktop resolution [3440x1440]
+    Virtual Display removed successfully
+    ```
+    Client side: `Video stream is 3440x1440x60`, AV1, D3D11VA hardware decode.
+    A screenshot of d2's panel shows d1's wallpaper and taskbar on an empty
+    extended desktop filling the ultrawide.
+
+    **Step 8 overlay captured** (closes the long-open loose end). Idle desktop,
+    Wi-Fi, 40 Mbps AV1. Frame rate reads 37.44 because Apollo only sends frames
+    on change — that is an idle desktop, not a shortfall.
+
+    | Metric | d2 (this run) | laptop baseline |
+    |---|---|---|
+    | Host processing latency (avg) | 3.7 ms (min 3.4 / max 6.8) | 2.1 ms |
+    | Network latency | 1 ms (variance 0) | 3 ms |
+    | Decode time | 0.21 ms | 0.76 ms |
+    | Render time (incl. V-sync) | 0.04 ms | 0.59 ms |
+    | Frames dropped — network | 0.00% | 0.00% |
+    | Frames dropped — jitter | 0.00% | — |
+
+    Better than baseline everywhere except host processing latency, which is
+    higher because d1 is encoding a 3440x1440 virtual display rather than
+    capturing an existing panel. No regression hiding behind the subjective
+    "worked really well" from Phase 1.
+
+17. **Virtual-display teardown solved, and the earlier diagnosis corrected.**
+    d1 and d2 behave identically; the difference was the *client*. Apollo
+    pauses a session on disconnect and holds the display for resume — only
+    terminating the app reclaims it. Setting `quitAppAfter = true` in d2's
+    Moonlight makes a normal window close terminate it, verified in d1's log
+    (`CLIENT DISCONNECTED` → `Session pausing` → `Virtual Display removed
+    successfully`, 79 ms). Full explanation in Gotchas.
+
+18. **d2's stream launchers rewritten and tested.** Two fixes:
+    - Target the host by name (`stream d1`) instead of by IP. An IP is
+      genuinely ambiguous now that two Apollo instances share d1's address: a
+      pair attempt against the raw IP was observed going to port `48989` (the
+      `laptop` instance) instead of `47989`.
+    - **Stream the `Virtual Display` app, not `Desktop`.** The old launchers
+      said `Desktop`, which captures d1's existing monitors — the exact
+      downscale-of-two-4K-panels outcome Phase 2 exists to avoid.
+    Files renamed `Stream Desktop1 (...)` → `Stream d1 (...)`. The LAN
+    ultrawide launcher was executed and screenshotted, not just written.
+
 ## Believed done — unverified
 
-- **Step 8 formal verification was never captured.** The runbook wants
-  performance-overlay numbers — host processing latency, network latency,
-  decode time, render time, dropped-frame percentage — compared against the
-  laptop's baseline (2.1ms / 3ms / 0.76ms / 0.59ms / 0.00%). Austen's
-  subjective "worked really well" is the only evidence on record. **Run the
-  overlay before treating Phase 1 as closed**; a soft decode-time regression
-  would be invisible otherwise.
+- ~~**Step 8 formal verification was never captured.**~~ **CAPTURED
+  2026-08-04** — numbers in Done item 16. No decode-time regression; decode is
+  in fact 3.6x faster than the laptop baseline.
 - **d1's monitors are two identical 4K panels** — Austen's statement
   (2026-08-03), not independently verified. All the pixel arithmetic under
   Decisions depends on it. Confirm before acting on it.
@@ -135,68 +211,63 @@ deliberately excluded from this handoff's commit. Leave it alone.
 ## Loose ends (ranked)
 
 1. ~~**Install Apollo on d1.**~~ **DONE 2026-08-03** — see Done item 13.
-   Credentials are set on BOTH instances (2026-08-04): instance 2 was seeded
-   with instance 1's `username`/`salt`/`password` hashes only (identity NOT
-   copied — Apollo2 generated its own `uniqueid`/certs), verified by 401 on
-   `/api/apps` on both ports. One login for both dashboards.
+   Credentials are set on BOTH instances (2026-08-04, from d1): instance 2 was
+   seeded with instance 1's `username`/`salt`/`password` hashes only — identity
+   was NOT copied, Apollo2 generated its own `uniqueid`/certs. One login works
+   for both dashboards, confirmed from d2.
+   **d2 paired 2026-08-04** (Done item 15). **The laptop has not** — Apollo's
+   fresh CA invalidated its old pairing too. Its handoff is
+   `docs/superpowers/specs/2026-08-04-laptop-apollo-client-handoff.md`.
 
-   **PAIRING — the only remaining setup, one step per client machine.**
-   Verified state 2026-08-04: instance 1 has ZERO paired devices; instance 2
-   has none either. Whoever picks this up on each machine:
+   > A d1-authored version of this entry said "instance 1 has ZERO paired
+   > devices" as of 2026-08-04. That was true when written and is now stale —
+   > `/api/clients/list` on instance 1 returns a named cert `d2`.
 
-   - **On d2** (pairs to instance 1, gets a 3440x1440 virtual display):
-     1. `& "C:\Program Files\Moonlight Game Streaming\Moonlight.exe" pair <d1-tailnet-ip>`
-        (discover the IP per the runbook's Step 2; port default). A Moonlight
-        window shows a 4-digit PIN.
-     2. Enter that PIN at `https://localhost:47991` (d2's existing port
-        proxy into d1:47990), PIN tab, after logging in. Name the device
-        clearly (e.g. `d2 ultrawide`). The PIN expires in minutes — arm
-        just-in-time.
-     3. If Moonlight shows the host stale/offline first, delete the old host
-        tile (it holds the dead Sunshine-era cert) and pair fresh.
-   - **On the laptop** (pairs to instance 2, gets a native-res virtual
-     display): same flow but everything is port-shifted +1000:
-     1. `& "C:\Program Files\Moonlight Game Streaming\Moonlight.exe" pair <d1-tailnet-ip>:48989`
-     2. PIN goes to `https://<d1-tailnet-ip>:48990` (same login as the other
-        dashboard). If the browser rejects the PIN with a CSRF error, use the
-        localhost portproxy trick from the runbook's Step 4 against port
-        48990.
-   - **After both stream:** the two virtual displays exist on d1's desktop.
-     Arrange them side by side in d1's Windows display settings to match the
-     office desk layout (agent on d1 can do this). Drive both halves from
-     d2's mouse — input unifies on d1; the laptop is a passive pane.
-   - **Architecture note (Austen asked, 2026-08-03):** do NOT chain
-     laptop→d2→d1. Each client pairs straight to its own d1 instance; the
-     split-screen unification happens on d1's desktop, not between clients.
-     Chaining double-encodes the laptop pane and nests input capture.
-2. **Get ONE virtual display working office → bedroom.** Apollo auto-creates the
-   virtual display at the *client's* native resolution/aspect/refresh, so
-   d2's ultrawide should get a 3440x1440 display with zero scaling.
-   Prove one before adding a second.
-3. ~~**Second Apollo instance on d1 for the laptop.**~~ **DONE 2026-08-03.**
-   Built as a full directory clone: `C:\Program Files\Apollo2`, service
-   `Apollo2Service` (auto-start), `sunshine_name = d1-laptop`,
-   `port = 48989` (so TCP 48984/48989/48990/49010, UDP 48998-49010), own
-   firewall rule, fresh identity (state + credentials deleted from the clone
-   per Apollo discussion #325 — never copy them). Verified: both instances
-   listening simultaneously, instance 2 dashboard 200 on
-   `https://localhost:48990`.
-   **The gotcha that broke the first start:** Apollo's service wrapper
+2. ~~**Get ONE virtual display working office → bedroom.**~~ **DONE and proven
+   2026-08-04** — Done item 16. Teardown is clean once the client sets
+   `quitAppAfter` (Done item 17).
+3. ~~**Second Apollo instance on d1 for the laptop.**~~ **DONE 2026-08-03**,
+   and renamed `d1-laptop` → `laptop` on 2026-08-04 (Done item 14).
+   Built on d1 as a full directory clone: `C:\Program Files\Apollo2`, service
+   `Apollo2Service` (auto-start), `port = 48989` (so TCP
+   48984/48989/48990/49010, UDP 48998-49010), own firewall rule, fresh identity
+   (state + credentials deleted from the clone per Apollo discussion #325 —
+   never copy them). Verified: both instances listening simultaneously,
+   instance 2 dashboard 200 on `https://localhost:48990`, and reachable
+   directly from d2 over the tailnet on 48990 with no port proxy needed.
+   **The gotcha that broke its first start:** Apollo's service wrapper
    (`tools\sunshinesvc.exe`) hardcodes its log to `%TEMP%\sunshine.log`
    (`C:\Windows\Temp` for services) with write-exclusive sharing, so a second
    wrapper dies with a sharing violation. Fix: per-service environment —
    `HKLM\SYSTEM\CurrentControlSet\Services\Apollo2Service\Environment`
    (REG_MULTI_SZ) sets `TMP`/`TEMP` to `C:\Program Files\Apollo2\svctemp`.
-   Remaining: Austen sets instance 2's dashboard credentials at
-   `https://localhost:48990` on d1, laptop pairs against
-   `<d1-ip>:48989`. Note Apollo updates must now be applied to BOTH
-   directories.
+   **Apollo updates must now be applied to BOTH directories.**
+   Still untested end to end; the laptop has to pair with it.
+3a. **Arrange the two virtual displays on d1** once both clients stream. They
+   land on d1's desktop; put them side by side in d1's Windows display settings
+   to match the office desk layout. Input unifies on d1 — drive both halves
+   from d2's mouse, with the laptop as a passive pane.
 4. **Ethernet.** Austen's gateway has two LAN ports, both occupied. Plan agreed:
    an 8-port unmanaged gigabit switch, with **d1 and d2 on the same
    switch** so their traffic switches locally and never reaches the gateway.
    This is the single largest quality win available and it gates the 100fps
    launcher.
-5. **Run the Step 8 overlay pass** and record the numbers (see Believed done).
+5. ~~**Run the Step 8 overlay pass**~~ **DONE 2026-08-04** — table in Done
+   item 16. Worth re-running once d1 and d2 are both on the switch, to see
+   whether host processing latency drops and 100fps becomes viable.
+5a. ~~**Rename d2's own Apollo instance from `D2` to `d2`.**~~ **DONE
+   2026-08-04** — `sunshine_name = d2` in d2's `sunshine.conf`, service
+   restarted.
+5b. **Set `quitAppAfter = true` in the LAPTOP's Moonlight.** Highest-value
+   remaining item and the direct cause of the stranded display on d2. Done on
+   d2 already; the laptop is the one still stranding displays. See Gotchas.
+5c. **The laptop still has to re-pair** — with the `laptop` instance on d1
+   (port base `48989`) and/or with d2, depending on which host it should use
+   now that d1 serves a dedicated instance. Untested this session.
+5d. **d2's Apollo dashboard password is NOT the same as d1's.** Its
+   `sunshine_state.json` shows username `austen`; neither that nor
+   `austencloud` with d1's password authenticates. Unknown, and it blocks
+   API-driven fixes on d2 (e.g. closing a paused session without elevation).
 6. **Amend `docs/reference/moonlight-client-setup.md`.** Its Step 4 assumes port
    `47990` is free on the client. That is false whenever the client runs
    Sunshine or Apollo, which is now normal in this house. The doc should carry
@@ -224,6 +295,11 @@ Do not re-litigate these.
   100 Mbps and needs a matching unit at both ends. Unmanaged gigabit switch,
   plug-and-play, DHCP still from the gateway. Never uplink the switch to the
   gateway twice — that is a loop.
+- **Do NOT chain laptop → d2 → d1** (Austen asked, 2026-08-03). Each client
+  pairs straight to its own d1 instance; the split-screen unification happens
+  on d1's desktop, not between clients. Chaining double-encodes the laptop pane
+  and nests input capture. This settles which host the laptop uses: **d1's
+  `laptop` instance, not d2.**
 - **d2's Apollo install stays untouched.** It was mistaken early in the
   session for a stray Sunshine install and nearly shut off. It is deliberate and
   serves the laptop.
@@ -275,6 +351,72 @@ Things the next agent cannot derive from the code or the runbook.
 - **spacedesk and Deskreen extend to multiple clients from a single instance**,
   which Apollo cannot. That is the fallback if two Apollo instances prove
   unmanageable; the cost is a less tuned video pipeline and more input lag.
+- **The phantom virtual display is a CLIENT setting, not an Apollo bug.**
+  This was misdiagnosed twice on 2026-08-04 before the logs settled it. On
+  client disconnect Apollo logs `Session pausing for app [...]` and
+  deliberately holds the virtual display open so the client can resume. It is
+  never reclaimed until the app is *terminated*. Windows then parks windows on
+  the orphaned monitor, which reads as "my display settings are stuck."
+
+  What terminates it: `moonlight quit <host>`, or Moonlight's **"quit app
+  after ending stream"** (`quitAppAfter`), which makes a normal window close
+  do it. Proven on d2 2026-08-04 — with `quitAppAfter = true`, closing the
+  stream window produced
+  `CLIENT DISCONNECTED` → `Session pausing` → `Virtual Display removed
+  successfully` 79 ms later. **Every Moonlight client in the house should have
+  `quitAppAfter = true`** (registry
+  `HKCU:\Software\Moonlight Game Streaming Project\Moonlight`; close Moonlight
+  first, it rewrites on exit). Set on d2; **the laptop still has it off**,
+  which is what stranded the `Generic Monitor (lap)` display on d2 twice.
+
+  To clear one that is already stuck without the client: `Restart-Service
+  ApolloService` (needs elevation). Verify with
+  `[System.Windows.Forms.Screen]::AllScreens` and
+  `Get-PnpDevice -Class Monitor`. The stale entries accumulate one UID per
+  cycle (`...&UID256/257/258/259`), all `Unknown` except the live one — a
+  quick tell for how many times it has happened.
+- **Two Apollo instances on one machine make an IP a useless target.** d1 hosts
+  both `47989` and `48989`. `moonlight pair <ip>` was observed picking `48989`
+  and pairing with the wrong instance. **Target hosts by name**
+  (`moonlight pair d1`, `moonlight stream d1 Desktop`) — the CLI accepts
+  "computer name, UUID, or IP address" and the name is the only unambiguous
+  one.
+- **A stale `srvcert` makes the CLI fail with a misleading error.** Before the
+  host entries were deleted, `moonlight pair` died on
+  `"serverinfo" request failed with error: QNetworkReply::OperationCanceledError`
+  while plain HTTP `serverinfo` from PowerShell answered instantly. The pinned
+  pre-Apollo certificate was the cause. Deleting
+  `HKCU:\...\Moonlight\hosts\*` and letting mDNS rediscover fixed it.
+- **The app you want is `Virtual Display`, and it is invisible to
+  `/api/apps`.** Apollo ships it as a built-in, so it is absent from
+  `apps.json` and from the `/api/apps` response — that response lists only
+  `Desktop` and `Steam Big Picture` and looks complete. `moonlight list d1 --csv`
+  reveals all three. Streaming `Desktop` captures d1's real monitors (the
+  downscale outcome Phase 2 exists to avoid); `Virtual Display` creates the
+  new extended panel. Launching `Desktop` while `Virtual Display` runs also
+  triggers a blocking "Are you sure you want to quit Virtual Display?" prompt.
+- **Quote app names with spaces when using `Start-Process -ArgumentList`.**
+  `'Virtual Display'` as a bare array element arrives split, and Moonlight
+  fails with `Failed to find application Virtual`. Pass `'"Virtual Display"'`.
+- **`GET /api/logs` returns d1's full Apollo log over the network** — the best
+  remote diagnostic available from another machine, since there is no shell on
+  d1. It is what proved virtual-display create/remove. Expect noise: the
+  virtual audio sink re-inits in a tight loop and dominates the tail.
+- **Apollo's dashboard API is session-cookie based, not Basic auth.** Basic
+  returns 401 on every `/api/*` route. `POST /api/login` with
+  `{"username","password"}` returns an `auth` cookie; send that cookie on
+  subsequent calls. **`POST /api/restart` invalidates the session**, so
+  re-login after any restart. Handy routes: `/api/config` (GET returns only
+  non-default keys — POST back the whole object minus
+  `platform`/`status`/`version`/`vdisplayStatus`), `/api/clients/list`,
+  `/api/clients/update`, `/api/pin`.
+- **`POST /api/pin` returns `{"status":false}` when no pairing request is
+  pending.** That is not an error — it means the client has not called yet.
+  Launch the client's pair command first, then poll the PIN endpoint.
+- **UAC on d2 is the recurring blocker, still.** Three separate elevation
+  prompts were canceled on 2026-08-04. Anything under
+  `C:\Program Files\Apollo\config\` or `Restart-Service` needs it. Batch every
+  elevated action into one prompt and tell Austen before firing it.
 - **Do not query processes from Git Bash on these machines** (project
   `CLAUDE.md` → Bash Gotchas). PowerShell only.
 - **`output_name` is read ONLY at service start.** Changing which physical

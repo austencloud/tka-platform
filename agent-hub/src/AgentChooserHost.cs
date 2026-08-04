@@ -5,7 +5,7 @@
 // The host never exits on selection — it hides and waits for the next ping.
 //
 // Pipe message (UTF8 line): project|name|icon|stampFile|stubStartTicks plus
-// optional development-server manager, app, config, and port fields.
+// optional development-server manager, app, config, port, and app URL fields.
 
 using System;
 using System.Diagnostics;
@@ -37,6 +37,7 @@ class Popup : Window
     string _project, _name, _icon, _lastAgent, _stampFile;
     string _serverManager, _serverApp, _serverConfig, _serverConfigurationError;
     int _serverPort;
+    string _appUrl = "";
     long _stubStartTicks;
     long _deactHideTicks; string _deactHideProject = "";
     int _rawX, _rawY;
@@ -229,7 +230,7 @@ class Popup : Window
     {
         Func<string, string> g = delegate(string k) { string v; return a.TryGetValue(k, out v) ? v : ""; };
         return g("Project") + "|" + g("Name") + "|" + g("Icon") + "|" + g("StampFile") + "|" + g("StubStartTicks") + "|" +
-            g("ServerManager") + "|" + g("ServerApp") + "|" + g("ServerConfig") + "|" + g("ServerPort");
+            g("ServerManager") + "|" + g("ServerApp") + "|" + g("ServerConfig") + "|" + g("ServerPort") + "|" + g("AppUrl");
     }
 
     public Popup()
@@ -284,6 +285,7 @@ class Popup : Window
         Log("prewarm begin");
         _project = ""; _name = "warmup"; _icon = ""; _lastAgent = "claude";
         _serverManager = ""; _serverApp = ""; _serverConfig = ""; _serverPort = 0; _serverControl = null;
+        _appUrl = "";
         _gitControl = null; _gitPanel = null; _gitStatus = GitProjectStatus.Checking();
         Content = BuildCard();
         Left = -30000; Top = -30000;
@@ -304,11 +306,12 @@ class Popup : Window
         string serverApp = p.Length > 6 ? p[6] : "";
         string serverConfig = p.Length > 7 ? p[7] : "";
         int serverPort = 0; if (p.Length > 8) int.TryParse(p[8], out serverPort);
-        ShowFor(project, name, icon, stamp, ticks, serverManager, serverApp, serverConfig, serverPort);
+        string appUrl = p.Length > 9 ? p[9] : "";
+        ShowFor(project, name, icon, stamp, ticks, serverManager, serverApp, serverConfig, serverPort, appUrl);
     }
 
     void ShowFor(string project, string name, string icon, string stampFile, long stubStartTicks,
-        string serverManager, string serverApp, string serverConfig, int serverPort)
+        string serverManager, string serverApp, string serverConfig, int serverPort, string appUrl)
     {
         // A pin click while the popover is open deactivates it (mousedown) and that
         // SAME click's stub ping lands ~150ms later, re-popping it — the user sees
@@ -326,6 +329,7 @@ class Popup : Window
         _stampFile = stampFile;
         _stubStartTicks = stubStartTicks;
         ConfigureServer(serverManager, serverApp, serverConfig, serverPort);
+        ConfigureApp(appUrl);
         ConfigureGit(project);
         _lastAgent = ReadLast();
         _ready = false;
@@ -384,6 +388,18 @@ class Popup : Window
             _serverState = DevServerState.Error;
             Log("server configuration failed: " + ex.Message);
         }
+    }
+
+    void ConfigureApp(string url)
+    {
+        _appUrl = "";
+        if (string.IsNullOrEmpty(url)) return;
+        Uri parsed;
+        if (Uri.TryCreate(url, UriKind.Absolute, out parsed) &&
+            (parsed.Scheme == Uri.UriSchemeHttp || parsed.Scheme == Uri.UriSchemeHttps))
+            _appUrl = parsed.AbsoluteUri;
+        else
+            Log("app url rejected: " + url);
     }
 
     void ConfigureGit(string project)
@@ -477,8 +493,9 @@ class Popup : Window
         if (e.Key == System.Windows.Input.Key.D1 || e.Key == System.Windows.Input.Key.NumPad1) Launch("claude");
         else if (e.Key == System.Windows.Input.Key.D2 || e.Key == System.Windows.Input.Key.NumPad2) Launch("codex");
         else if (e.Key == System.Windows.Input.Key.D3 || e.Key == System.Windows.Input.Key.NumPad3) ControlServer("keyboard");
-        else if (e.Key == System.Windows.Input.Key.D4 || e.Key == System.Windows.Input.Key.NumPad4) ControlGit("pull", "keyboard");
-        else if (e.Key == System.Windows.Input.Key.D5 || e.Key == System.Windows.Input.Key.NumPad5) ControlGit("push", "keyboard");
+        else if (e.Key == System.Windows.Input.Key.D4 || e.Key == System.Windows.Input.Key.NumPad4) OpenApp("keyboard");
+        else if (e.Key == System.Windows.Input.Key.D5 || e.Key == System.Windows.Input.Key.NumPad5) ControlGit("pull", "keyboard");
+        else if (e.Key == System.Windows.Input.Key.D6 || e.Key == System.Windows.Input.Key.NumPad6) ControlGit("push", "keyboard");
         else if (e.Key == System.Windows.Input.Key.Enter) Launch(string.IsNullOrEmpty(_lastAgent) ? "claude" : _lastAgent);
         else if (e.Key == System.Windows.Input.Key.Escape) HideIt();
     }
@@ -527,7 +544,11 @@ class Popup : Window
         // bitmap instead of re-blurring the shadow every frame (kills the stutter).
         _card.CacheMode = new BitmapCache();
 
-        var col = new StackPanel { Width = 430 };
+        bool hasServer = !string.IsNullOrEmpty(_serverManager);
+        bool hasApp = !string.IsNullOrEmpty(_appUrl);
+        bool hasGit = _gitControl != null;
+
+        var col = new StackPanel { Width = hasServer && hasApp ? 560 : 430 };
         var head = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 4) };
         if (!string.IsNullOrEmpty(_icon) && File.Exists(_icon))
         {
@@ -542,28 +563,24 @@ class Popup : Window
         }
         head.Children.Add(new TextBlock { Text = _name, Foreground = Brush("#FFF3F3F6"), FontSize = 20, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, FontFamily = new FontFamily("Segoe UI") });
         col.Children.Add(head);
-        bool hasServer = !string.IsNullOrEmpty(_serverManager);
-        bool hasGit = _gitControl != null;
-        col.Children.Add(new TextBlock { Text = hasServer || hasGit ? "Choose an agent or project action" : "Choose an agent", Foreground = Brush("#FF8B8B95"), FontSize = 12, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 18), FontFamily = new FontFamily("Segoe UI") });
+        col.Children.Add(new TextBlock { Text = hasServer || hasApp || hasGit ? "Choose an agent or project action" : "Choose an agent", Foreground = Brush("#FF8B8B95"), FontSize = 12, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 18), FontFamily = new FontFamily("Segoe UI") });
 
-        var grid = new Grid();
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(hasServer ? 12 : 16) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        if (hasServer)
-        {
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(12) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        }
         _claudeBtn = Choice("#FFD97757", "Claude", "Claude Code", "1", "claude");
         _codexBtn = Choice("#FF10A37F", "Codex", "Codex · Sol", "2", "codex");
-        Grid.SetColumn(_claudeBtn, 0); Grid.SetColumn(_codexBtn, 2);
-        grid.Children.Add(_claudeBtn); grid.Children.Add(_codexBtn);
-        if (hasServer)
+        var tiles = new System.Collections.Generic.List<Border>();
+        tiles.Add(_claudeBtn);
+        tiles.Add(_codexBtn);
+        if (hasServer) { _serverBtn = ServerChoice(); tiles.Add(_serverBtn); }
+        if (hasApp) tiles.Add(AppChoice());
+
+        var grid = new Grid();
+        double gap = tiles.Count == 2 ? 16 : 12;
+        for (int i = 0; i < tiles.Count; i++)
         {
-            _serverBtn = ServerChoice();
-            Grid.SetColumn(_serverBtn, 4);
-            grid.Children.Add(_serverBtn);
+            if (i > 0) grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(gap) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            Grid.SetColumn(tiles[i], i * 2);
+            grid.Children.Add(tiles[i]);
         }
         col.Children.Add(grid);
 
@@ -578,8 +595,12 @@ class Popup : Window
         Border hi = _lastAgent == "codex" ? _codexBtn : _claudeBtn;
         hi.BorderBrush = Brush("#FFFFFFFF"); hi.BorderThickness = new Thickness(2);
 
-        string shortcutText = hasServer
-            ? "1 Claude   ·   2 Codex   ·   3 Server   ·   Enter last   ·   Esc"
+        var keyHelp = new StringBuilder("1 Claude   ·   2 Codex");
+        if (hasServer) keyHelp.Append("   ·   3 Server");
+        if (hasApp) keyHelp.Append("   ·   4 Open");
+        keyHelp.Append("   ·   Enter last   ·   Esc");
+        string shortcutText = hasServer || hasApp
+            ? keyHelp.ToString()
             : "1 · Claude     2 · Codex     Enter · " + (_lastAgent ?? "claude") + "     Esc";
         col.Children.Add(new TextBlock { Text = shortcutText, Foreground = Brush("#FF6C6C74"), FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 18, 0, 0), FontFamily = new FontFamily("Segoe UI") });
 
@@ -602,6 +623,54 @@ class Popup : Window
         b.MouseLeftButtonUp += delegate { ControlServer("mouse"); };
         UpdateServerVisual();
         return b;
+    }
+
+    Border AppChoice()
+    {
+        Uri parsed;
+        string host = Uri.TryCreate(_appUrl, UriKind.Absolute, out parsed) ? parsed.Authority : "";
+        var b = new Border { CornerRadius = new CornerRadius(14), Height = 104, Cursor = System.Windows.Input.Cursors.Hand, Background = Brush("#FF5B5BD6") };
+        var sp = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        sp.Children.Add(new TextBlock { Text = "Open app", Foreground = Brushes.White, FontSize = 19, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center, FontFamily = new FontFamily("Segoe UI") });
+        sp.Children.Add(new TextBlock { Text = host, Foreground = Brushes.White, Opacity = 0.85, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 3, 0, 0), FontFamily = new FontFamily("Segoe UI") });
+        sp.Children.Add(new TextBlock { Text = "4", Foreground = Brushes.White, Opacity = 0.6, FontSize = 11, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 7, 0, 0), FontFamily = new FontFamily("Segoe UI") });
+        b.Child = sp;
+        b.ToolTip = "Open " + _appUrl + " in your default browser";
+        b.MouseEnter += delegate { b.Opacity = 0.86; };
+        b.MouseLeave += delegate { b.Opacity = 1.0; };
+        b.MouseLeftButtonUp += delegate { OpenApp("mouse"); };
+        return b;
+    }
+
+    // Opens the page, nothing else. Starting or restarting the server is the
+    // server tile's job — one action per tile, no overlap.
+    void OpenApp(string source)
+    {
+        if (string.IsNullOrEmpty(_appUrl)) return;
+        Log("open app requested by " + source);
+        OpenBrowser(_appUrl);
+        HideIt();
+    }
+
+    void OpenBrowser(string url)
+    {
+        try
+        {
+            Uri parsed;
+            // ShellExecute on an arbitrary pipe-supplied string could run anything;
+            // only ever hand it an absolute http(s) URL.
+            if (!Uri.TryCreate(url, UriKind.Absolute, out parsed) ||
+                (parsed.Scheme != Uri.UriSchemeHttp && parsed.Scheme != Uri.UriSchemeHttps))
+            {
+                Log("browser open refused for non-http url: " + url);
+                return;
+            }
+            var psi = new ProcessStartInfo(parsed.AbsoluteUri);
+            psi.UseShellExecute = true;
+            Process.Start(psi);
+            Log("opened " + parsed.AbsoluteUri + " in the default browser");
+        }
+        catch (Exception ex) { Log("browser open failed: " + ex.Message); }
     }
 
     void BeginServerStatusCheck()
