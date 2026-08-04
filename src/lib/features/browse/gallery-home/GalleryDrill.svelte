@@ -397,7 +397,7 @@
       value: lvl,
       label: `Level ${lvl}`,
       count: getCount(BrowseFilterType.DIFFICULTY, lvl),
-    })).filter((v) => Boolean(onToggleValue) || v.count > 0)
+    }))
   );
   const maxLevelCount = $derived(
     Math.max(1, ...levelValues.map((v) => v.count))
@@ -417,9 +417,6 @@
           label: `${n} steps`,
           count: getCount(BrowseFilterType.LENGTH, n),
         }))
-        // The ≥3 noise floor is a page-gallery affordance; a rule builder
-        // shows the complete catalog.
-        .filter((v) => (onToggleValue ? true : v.count >= 3))
     );
   });
   const maxLengthCount = $derived(
@@ -486,14 +483,13 @@
         value: letter,
         count: getCount(BrowseFilterType.STARTING_LETTER, letter),
       }))
-      .filter((v) => Boolean(onToggleValue) || v.count > 0)
   );
 
   const positionValues = $derived(
     POSITIONS.map((p) => ({
       ...p,
       count: getCount(BrowseFilterType.STARTING_POSITION, p.value),
-    })).filter((v) => Boolean(onToggleValue) || v.count > 0)
+    }))
   );
   const maxPositionCount = $derived(
     Math.max(1, ...positionValues.map((v) => v.count))
@@ -525,7 +521,7 @@
     GRID_MODES.map((g) => ({
       ...g,
       count: getCount(BrowseFilterType.GRID_MODE, g.value),
-    })).filter((v) => Boolean(onToggleValue) || v.count > 0)
+    }))
   );
   const maxGridModeCount = $derived(
     Math.max(1, ...gridModeValues.map((v) => v.count))
@@ -581,7 +577,6 @@
         value: name,
         count: getCount(BrowseFilterType.OWNER, name),
       }))
-      .filter((v) => Boolean(onToggleValue) || v.count > 0)
       .sort((a, b) => b.count - a.count)
   );
   const maxCreatorCount = $derived(
@@ -837,8 +832,11 @@
   }
 
   /** Toggle hosts keep zero-count unselected options mounted but inert. */
+  // Zero-count options render dimmed everywhere — complete option sets are
+  // the workspace guarantee, and a tap that can only land on an empty grid
+  // is a dead end in the onApply flow too.
   function valueDisabled(count: number, applied: boolean): boolean {
-    return Boolean(onToggleValue) && count === 0 && !applied;
+    return count === 0 && !applied;
   }
 
   const stackHint = onToggleValue
