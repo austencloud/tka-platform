@@ -5,6 +5,7 @@ import type {
   MuseumFloorPlanZoneTone,
 } from "../domain/museum-floor-plan-types";
 import { tileKey } from "../domain/museum-grid-types";
+import type { MuseumTerrainProgram } from "../domain/museum-grid-types";
 import type { WallDefinition } from "../domain/wall-segment-types";
 import { computeRoomDimensions } from "../domain/wall-segment-types";
 import { buildMuseumGrid } from "../services/museum-grid-builder";
@@ -17,6 +18,17 @@ import {
   createDrownedGalleryTerrain,
   tileCentredOffset,
 } from "./drowned-gallery-terrain";
+import {
+  buildDrownedGalleryLayout,
+  inRectClosed,
+  type WorldRect,
+} from "./drowned-gallery-terrain";
+import {
+  buildFirstFireLayout,
+  createFirstFireTerrain,
+  firstFireStationOffsets,
+  SHORE_Y as FIRE_SHORE_Y,
+} from "./first-fire-layout";
 import { CAVE_THRESHOLD_ROOM } from "./lobby-floor-plan";
 
 type WallName = "north" | "south" | "east" | "west";
@@ -48,8 +60,16 @@ export const CAVE_MODE_ROOMS = [
     label: "Fire",
     category: "SO",
     technicalMode: "Split-time / opposite-direction",
-    performerIds: ["cave-fire-automaton"],
-    sequenceIds: ["cave-fire-seq"],
+    performerIds: [
+      "cave-fire-automaton-dj",
+      "cave-fire-automaton-ek",
+      "cave-fire-automaton-fl",
+    ],
+    sequenceIds: [
+      "cave-fire-seq-dj",
+      "cave-fire-seq-ek",
+      "cave-fire-seq-fl",
+    ],
     tone: "retail",
   },
   {
@@ -225,6 +245,55 @@ const grottoPerformers = ALCOVE_X_FRACTIONS.map((fraction, index) => ({
   elevation: SHELF_Y,
 }));
 
+/**
+ * The First Fire chamber's authored shell. Declared before VULCAN_CAVE_ROOMS
+ * for the same reason the grotto's is: the three fire-pit stations come off
+ * the SAME compiled dimensions the layout engine uses, so a performer cannot
+ * drift off the pit rendered under it.
+ *
+ * Interior metres = minInterior × ROOM_SCALE (1.5) × TILE (0.5) = ×0.75, so
+ * 62 × 27 compiles to ≈ 46.5 × 20.5 m: the design's 26 × 20 m amphitheatre
+ * plus the 17.5 m bridge-and-crack approach and the 3 m exit stair.
+ */
+const FIRE_MIN_INTERIOR_WIDTH = 62;
+const FIRE_MIN_INTERIOR_HEIGHT = 27;
+
+const fireWalls = {
+  north: torchWall("start"),
+  south: EMPTY_WALL,
+  // The Earth door sits at the south end of the east wall, which is where the
+  // top bench terrace (and therefore the exit stair) is.
+  east: doorWall(EDGE_IDS.fireToEarth, "end"),
+  west: doorWall(EDGE_IDS.waterToFire, "center"),
+} satisfies Record<WallName, WallDefinition>;
+
+const fireDimensions = computeRoomDimensions({
+  walls: fireWalls,
+  minInteriorWidth: FIRE_MIN_INTERIOR_WIDTH,
+  minInteriorHeight: FIRE_MIN_INTERIOR_HEIGHT,
+});
+
+const FIRE_STATION_SUFFIXES = ["dj", "ek", "fl"] as const;
+
+const firePerformers = firstFireStationOffsets(
+  (fireDimensions.w - 2) * TILE_METRES
+).map((offset, index) => ({
+  offsetX: interiorOffsetFraction(
+    offset.xMetres,
+    fireDimensions.w,
+    fireDimensions.w - 2
+  ),
+  offsetY: interiorOffsetFraction(
+    offset.zMetres,
+    fireDimensions.h,
+    fireDimensions.h - 2
+  ),
+  facing: "south" as const,
+  refId: `cave-fire-automaton-${FIRE_STATION_SUFFIXES[index]}`,
+  collisionRadiusTiles: 2,
+  elevation: FIRE_SHORE_Y,
+}));
+
 const thresholdRoom: RoomNode = {
   ...CAVE_THRESHOLD_ROOM,
   spawn: { offsetX: -0.28, offsetY: 0.28, facing: "north" },
@@ -310,28 +379,16 @@ export const VULCAN_CAVE_ROOMS: RoomNode[] = [
   },
   {
     id: "cave-fire",
-    name: "Fire Chamber",
-    material: "dirt",
+    name: "The First Fire",
+    material: "stone",
     theme: "cave",
-    minInteriorWidth: 8,
-    minInteriorHeight: 8,
+    minInteriorWidth: FIRE_MIN_INTERIOR_WIDTH,
+    minInteriorHeight: FIRE_MIN_INTERIOR_HEIGHT,
     description:
-      "A close chamber where rhythmic light makes the second figure feel less predictable.",
-    walls: {
-      north: torchWall("start"),
-      south: EMPTY_WALL,
-      east: doorWall(EDGE_IDS.fireToEarth, "end"),
-      west: doorWall(EDGE_IDS.waterToFire, "start"),
-    },
-    performers: [
-      {
-        offsetX: 0.08,
-        offsetY: 0,
-        facing: "west",
-        refId: "cave-fire-automaton",
-        collisionRadiusTiles: 2,
-      },
-    ],
+      "A basalt bridge over a lava stream, a darkening crack, and a stepped amphitheatre facing three fire-pit stations across a lava fissure.",
+    roomPresentation: { suppressTileGeometry: true },
+    walls: fireWalls,
+    performers: firePerformers,
   },
   {
     id: "cave-earth",
@@ -729,6 +786,38 @@ function buildCirculation(
   return points;
 }
 
+/**
+ * Routes an elevation/blocking query to the bay that owns the point. Outside
+ * every bay the museum datum stands, which is what the tile-built rooms use.
+ */
+function composeCaveTerrain(
+  bays: { bounds: WorldRect | undefined; program: MuseumTerrainProgram | null }[]
+): MuseumTerrainProgram | null {
+  const active = bays.filter(
+    (bay): bay is { bounds: WorldRect; program: MuseumTerrainProgram } =>
+      Boolean(bay.bounds && bay.program)
+  );
+  if (active.length === 0) return null;
+
+  return {
+    waterlineY: active[0]!.program.waterlineY,
+    elevationAt(x, z) {
+      for (const bay of active) {
+        if (inRectClosed(bay.bounds, x, z)) return bay.program.elevationAt(x, z);
+      }
+      return 0;
+    },
+    blockedAt(x, z) {
+      for (const bay of active) {
+        if (inRectClosed(bay.bounds, x, z) && bay.program.blockedAt(x, z)) {
+          return true;
+        }
+      }
+      return false;
+    },
+  };
+}
+
 export function buildVulcanCaveFloorPlan(): VulcanCaveFloorPlan {
   const build = buildMuseumGrid(
     VULCAN_CAVE_ROOMS,
@@ -750,9 +839,20 @@ export function buildVulcanCaveFloorPlan(): VulcanCaveFloorPlan {
     } satisfies MuseumFloorPlanZone;
   });
 
-  // Elevation + water blocking for the Drowned Gallery. Physics reads it for
-  // ground clamping; the graybox layer reads the same layout for its meshes.
-  const terrain = createDrownedGalleryTerrain(build.grid);
+  // Elevation + blocking for every authored bay in the cave. Physics reads it
+  // for ground clamping; each graybox layer reads the same layout for its
+  // meshes. Each program answers only inside its own bay, so a bay's loud
+  // "no elevation zone" failure can never be swallowed by its neighbour.
+  const terrain = composeCaveTerrain([
+    {
+      bounds: buildDrownedGalleryLayout(build.grid)?.bayBounds,
+      program: createDrownedGalleryTerrain(build.grid),
+    },
+    {
+      bounds: buildFirstFireLayout(build.grid)?.bayBounds,
+      program: createFirstFireTerrain(build.grid),
+    },
+  ]);
   if (terrain) build.grid.terrain = terrain;
 
   const totalInteriorTiles = build.grid.wings.reduce(

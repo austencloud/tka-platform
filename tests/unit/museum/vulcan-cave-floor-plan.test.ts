@@ -51,10 +51,12 @@ describe("Vulcan Cave floor plan", () => {
     }
   });
 
-  // The Drowned Gallery replaced the solo Water automaton with the A/B/C
-  // procession, so it is excluded from the one-performer-per-chamber rule.
+  // The two authored bays stage an ensemble rather than a solo: the Drowned
+  // Gallery its A/B/C procession, the First Fire its DJ/EK/FL stations. Both
+  // are excluded from the one-performer-per-chamber rule.
+  const BAY_ROOM_IDS = new Set(["cave-water", "cave-fire"]);
   const SOLO_MODE_ROOMS = CAVE_MODE_ROOMS.filter(
-    (mode) => mode.roomId !== "cave-water"
+    (mode) => !BAY_ROOM_IDS.has(mode.roomId)
   );
 
   it("places exactly the declared performers in every mode chamber", () => {
@@ -132,14 +134,15 @@ describe("Vulcan Cave floor plan", () => {
       id: room.id,
       area: (room.bounds.width - 2) * (room.bounds.height - 2),
     }));
-    // The Drowned Gallery is the bay-scale release; Earth remains the largest
-    // of the five single-chamber rooms after it.
-    expect(Math.max(...performerAreas.map(({ area }) => area))).toBe(
-      performerAreas.find(({ id }) => id === "cave-water")!.area
+    // The two authored bays are the releases; Earth remains the largest of the
+    // four single-chamber rooms after them.
+    const bayAreas = performerAreas.filter(({ id }) => BAY_ROOM_IDS.has(id));
+    const soloAreas = performerAreas.filter(({ id }) => !BAY_ROOM_IDS.has(id));
+    expect(Math.min(...bayAreas.map(({ area }) => area))).toBeGreaterThan(
+      Math.max(...soloAreas.map(({ area }) => area))
     );
-    const dryAreas = performerAreas.filter(({ id }) => id !== "cave-water");
-    expect(Math.max(...dryAreas.map(({ area }) => area))).toBe(
-      dryAreas.find(({ id }) => id === "cave-earth")!.area
+    expect(Math.max(...soloAreas.map(({ area }) => area))).toBe(
+      soloAreas.find(({ id }) => id === "cave-earth")!.area
     );
   });
 
