@@ -23,15 +23,20 @@
      pure Firestore read; a public marketing page must never write short codes
      (one-code-per-hash). No code, no phone — the composition just holds the
      cards.
-  3. The screen is LIVE WHEN IT IS BIG ENOUGH TO BE USED, and inert below that
-     (see `bigEnough`). It used to be pointer-inert at every size, on the
-     argument that it was a depiction rather than a control surface. Austen
-     (2026-08-04): "on my 4K device I actually could click each one of these
-     buttons very easily." Right — at 4K the embedded viewer's controls render
-     LARGER than they do on a real phone, so refusing the click was the only
-     dishonest thing left on an otherwise honest picture. Below the gate the
-     old argument still holds and the old behavior is unchanged.
-     Either way "Open this scan" stays: the real /q, no demo flag, new tab.
+  3. The screen is LIVE WHEN IT IS BIG ENOUGH TO BE USED BY THE POINTER YOU
+     HAVE, and inert below that (see `bigEnough`). It used to be pointer-inert
+     at every size, on the argument that it was a depiction rather than a
+     control surface. Austen (2026-08-04): "on my 4K device I actually could
+     click each one of these buttons very easily." Right — at 4K the embedded
+     viewer's controls render LARGER than they do on a real phone, so refusing
+     the click was the only dishonest thing left on an otherwise honest
+     picture. Below the gate the old argument still holds and the old behavior
+     is unchanged. Either way "Open this scan" stays: the real /q, no demo
+     flag, new tab.
+  4. The embed shows the scan, so the chrome that LEAVES the scan is not in it
+     — the /q host passes `embedded` to the shared viewer shell when demo=1,
+     and the shell drops close, the account entry, Share, and every
+     navigate-away menu item. See SequenceViewerShell.svelte.
 
   The iframe renders at a true 375 CSS viewport WIDTH — a phone's width, so /q
   lays itself out exactly as it does on a phone — and is scaled into the frame
@@ -135,46 +140,84 @@
   );
 
   /**
-   * THE TARGET-SIZE GATE — the one number that decides whether the screen is a
-   * control surface or a picture of one.
+   * THE TARGET-SIZE GATE — the number that decides whether the screen is a
+   * control surface or a picture of one. There are two of them, because a
+   * thumb and a mouse are not the same instrument.
    *
    * The embedded page lays itself out at 375 CSS px and is then scaled by
-   * `scale`, so every touch target inside it is scaled too. The app's floor is
-   * 44px (`--min-touch-target`), so a 44px control lands on screen at
-   * `44 * scale` physical pixels. Below about 40px that stops being a control
-   * anyone can hit on purpose, and an interactive screen that misses is worse
-   * than an honest picture — hence 0.9 (44 x 0.9 = 39.6px).
+   * `scale`, so every control inside it is scaled too: the app's 44px floor
+   * (`--min-touch-target`) lands on screen at `44 * scale`.
    *
-   * Measured, not assumed (2026-08-04, Chrome, one CSS px per device px):
+   * The first version of this gate had ONE threshold, 0.9, derived from that
+   * 44px floor — and 44px is a TOUCH norm (it is the size of a fingertip, not
+   * the size of a thing a cursor can hit). Applied to a mouse it made the most
+   * common real 4K setup, 4K at 200% Windows scaling = a 1920 CSS viewport,
+   * inert. Austen's own machine. He pressed the nav inside the phone and
+   * nothing happened: "right now when I try to click on them inside the fake
+   * phone it still does not work."
    *
-   *   viewport      screen px   scale   44px lands at   verdict
-   *   3840 x 2160      399      1.064       46.8        live
-   *   2560 x 1440      347      0.925       40.7        live
-   *   1920 x 1080      255      0.680       29.9        inert
-   *   1440 x  900      217      0.579       25.5        inert
-   *    960 x  412       75      0.200        8.8        inert
-   *    375 x  667      110      0.293       12.9        inert
+   * So the floor follows the pointer. For a fine pointer the governing number
+   * is WCAG 2.2's Target Size (Minimum), 24 CSS px — the pointer-agnostic
+   * minimum, and the one that actually describes a cursor. The embedded
+   * viewer's smallest real control is a bottom-nav tab, measured 67.6 x 44.0
+   * CSS px in the frame's own coordinates, so 24 / 44 = 0.545 -> 0.55.
    *
-   * The boundary lands in the empty GAP between 0.680 and 0.925 — no tier is
-   * anywhere near it, which is what makes 0.9 a stable threshold rather than a
-   * lucky one. (0.925 is 2560 sitting on `40svh`; a 2560-wide window under
-   * ~1400 tall drops below the gate, which is a real size change, not a
-   * flicker.) The one thing that could chatter is a live RESIZE dragged across
-   * the line, so the gate has hysteresis: it opens at 0.9 and does not close
-   * until 0.86. A gate that chattered would flash the cue on and off.
+   * Measured, not assumed (2026-08-04, Chrome, one CSS px per device px; tab
+   * = a bottom-nav tab's on-screen height, and it is exactly the 44px floor):
+   *
+   *   viewport      screen px  scale   tab lands at   fine    coarse
+   *   3840 x 2160      399     1.064       46.8       live    live
+   *   2560 x 1440      347     0.925       40.7       live    live
+   *   1920 x 1080      255     0.680       29.9       live    inert
+   *   1440 x  900      217     0.579       25.5       live    inert
+   *    820 x 1180      194     0.517       22.8       inert   inert
+   *    960 x  412       75     0.200        8.8       inert   inert
+   *    375 x  667      110     0.293       12.9       inert   inert
+   *
+   * Both lines fall in empty GAPS in that ladder — 0.55 between 0.517 and
+   * 0.579, 0.9 between 0.680 and 0.925 — which is what makes them stable
+   * thresholds rather than lucky ones. 820 sits just under the fine line on
+   * purpose: at 0.517 a tab is 22.9px, under the 24px minimum, and a real
+   * 820-wide device is a tablet reporting a coarse pointer anyway.
+   *
+   * Coarse keeps the old rule verbatim: a visitor on a phone, tapping a phone
+   * drawn inside their phone, is looking at a picture. Nothing about a real
+   * touch screen makes a 13px tab hittable.
+   *
+   * The one thing that could chatter is a live RESIZE dragged across a line,
+   * so each gate has hysteresis: it opens at its threshold and does not close
+   * until slightly below. A gate that chattered would flash the cue on and off.
    *
    * Reactive off the measured screen width — the same ResizeObserver-backed
-   * binding `frameH` derives from — never a media query. The screen's size is
-   * a function of the stage's container tiers and `svh`, not of the viewport
-   * width alone, so only the measurement knows the answer.
+   * binding `frameH` derives from — never a viewport media query. The screen's
+   * size is a function of the stage's container tiers and `svh`, not of the
+   * viewport width alone, so only the measurement knows the answer. The
+   * POINTER is the one thing a measurement cannot know, so that half is a
+   * media query, listened to rather than sampled: a convertible folding into
+   * tablet mode flips it without a resize.
    */
-  const LIVE_IN = 0.9;
-  const LIVE_OUT = 0.86;
+  const LIVE_IN_FINE = 0.55;
+  const LIVE_OUT_FINE = 0.52;
+  const LIVE_IN_COARSE = 0.9;
+  const LIVE_OUT_COARSE = 0.86;
+
+  let finePointer = $state(false);
+  $effect(() => {
+    const mq = matchMedia("(hover: hover) and (pointer: fine)");
+    finePointer = mq.matches;
+    const onPointerChange = () => (finePointer = mq.matches);
+    mq.addEventListener("change", onPointerChange);
+    return () => mq.removeEventListener("change", onPointerChange);
+  });
+
   let bigEnough = $state(false);
   $effect(() => {
     const s = scale;
+    const fine = finePointer;
     if (!s) return;
-    bigEnough = s >= (untrack(() => bigEnough) ? LIVE_OUT : LIVE_IN);
+    const open = fine ? LIVE_IN_FINE : LIVE_IN_COARSE;
+    const shut = fine ? LIVE_OUT_FINE : LIVE_OUT_COARSE;
+    bigEnough = s >= (untrack(() => bigEnough) ? shut : open);
   });
 
   /** The screen accepts the pointer: big enough, page up, page loaded. */
@@ -209,7 +252,11 @@
          real perspective inside it, and the two drift by different amounts so
          the gap between them reads as depth. -->
     {#if coverUrl && !opened}
-      <div class="camera" class:live={viewfinder} out:fade={{ duration: DURATION.fast }}>
+      <div
+        class="camera"
+        class:live={viewfinder}
+        out:fade={{ duration: DURATION.fast }}
+      >
         <span class="room" aria-hidden="true"></span>
         <span class="shot">
           <img src={coverUrl} alt="" draggable="false" />
@@ -314,7 +361,13 @@
     aspect-ratio: 1 / 2.02;
     border-radius: clamp(1.1rem, 7%, 2.4rem);
     padding: 2.4%;
-    background: linear-gradient(158deg, #333a4b, #12151d 52%, #262c3a 86%, #171b25);
+    background: linear-gradient(
+      158deg,
+      #333a4b,
+      #12151d 52%,
+      #262c3a 86%,
+      #171b25
+    );
     box-shadow:
       0 2rem 4rem rgba(0, 0, 0, 0.6),
       0 0.35rem 0.9rem rgba(0, 0, 0, 0.45),
@@ -503,8 +556,16 @@
     position: absolute;
     inset: -12%;
     background:
-      radial-gradient(circle at 62% 28%, rgba(126, 224, 255, 0.26), transparent 56%),
-      radial-gradient(circle at 22% 84%, rgba(255, 122, 184, 0.2), transparent 60%),
+      radial-gradient(
+        circle at 62% 28%,
+        rgba(126, 224, 255, 0.26),
+        transparent 56%
+      ),
+      radial-gradient(
+        circle at 22% 84%,
+        rgba(255, 122, 184, 0.2),
+        transparent 60%
+      ),
       linear-gradient(168deg, #15203a, #0a0f1c 60%, #121a30);
     filter: blur(2px);
     transform: scale(1.04) translate(1.2%, -0.8%);
