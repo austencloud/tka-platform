@@ -635,16 +635,21 @@
       if (present && !latchedSections[key]) latchedSections[key] = true;
     }
   });
+  // Stable option sets: categories never unmount mid-session; a narrowed-out
+  // category dims with an explanation instead. That guarantee belongs to any
+  // WORKSPACE host (values toggle in place), not just the flat unified
+  // chooser — the main gallery keeps its editorial landing and still gets it.
+  const stableOptionSets = $derived(
+    unifiedFilterChooser || Boolean(onToggleValue)
+  );
   function showSection(key: string): boolean {
-    return unifiedFilterChooser
+    return stableOptionSets
       ? Boolean(latchedSections[key]) || Boolean(sectionPresence[key])
       : Boolean(sectionPresence[key]);
   }
   function sectionNarrowedOut(key: string): boolean {
     return (
-      unifiedFilterChooser &&
-      Boolean(latchedSections[key]) &&
-      !sectionPresence[key]
+      stableOptionSets && Boolean(latchedSections[key]) && !sectionPresence[key]
     );
   }
 
@@ -1219,7 +1224,10 @@
   {/snippet}
 
   <div class="drill-stage">
-    {#if persistentDesktopCatalog}
+    <!-- The catalog rail duplicates the editorial landing's own category
+         tiles — hosts that keep that landing (no unified chooser) get the
+         rail only beside VALUE editors, never beside the landing itself. -->
+    {#if persistentDesktopCatalog && (unifiedFilterChooser || section !== "chooser")}
       <nav class="desktop-filter-catalog" aria-label="Filter categories">
         <h2>Filters</h2>
         <div class="mini-grid desktop-filter-grid">
