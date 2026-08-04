@@ -133,26 +133,63 @@ git.
     `/api/clients/list` lists a named cert `d2`, and d2's Moonlight registry
     shows 3 apps under the `d1` host.
 
-16. **Virtual display enabled for the d2 client** on d1's primary Apollo.
-    `always_use_virtual_display: true`, `display_mode: "3440x1440x120"`,
-    confirmed by API readback. Not yet exercised by a real stream — see
-    Believed done.
+16. **Virtual display enabled for the d2 client** on d1's primary Apollo —
+    `always_use_virtual_display: true`, `display_mode: "3440x1440x120"` — and
+    **proven end to end** (2026-08-04). Phase 2's goal is met: d2's ultrawide
+    is a genuinely attached 3440x1440 extended display of d1, 1:1, no scaling.
+    d1's own Apollo log for the run:
+    ```
+    Display mode for client [d2] overriden to [3440x1440x120]
+    Virtual Display created at \\.\DISPLAY11
+    Capture size       : 3440x1440
+    Desktop resolution [3440x1440]
+    Virtual Display removed successfully
+    ```
+    Client side: `Video stream is 3440x1440x60`, AV1, D3D11VA hardware decode.
+    A screenshot of d2's panel shows d1's wallpaper and taskbar on an empty
+    extended desktop filling the ultrawide.
 
-17. **d2's stream launchers rewritten** to target the host by name (`stream d1`)
-    instead of by IP. An IP target is genuinely ambiguous now that two Apollo
-    instances share d1's address: a pair attempt against the raw IP was
-    observed going to port `48989` (the `laptop` instance) instead of `47989`.
-    Files renamed `Stream Desktop1 (...)` → `Stream d1 (...)`.
+    **Step 8 overlay captured** (closes the long-open loose end). Idle desktop,
+    Wi-Fi, 40 Mbps AV1. Frame rate reads 37.44 because Apollo only sends frames
+    on change — that is an idle desktop, not a shortfall.
+
+    | Metric | d2 (this run) | laptop baseline |
+    |---|---|---|
+    | Host processing latency (avg) | 3.7 ms (min 3.4 / max 6.8) | 2.1 ms |
+    | Network latency | 1 ms (variance 0) | 3 ms |
+    | Decode time | 0.21 ms | 0.76 ms |
+    | Render time (incl. V-sync) | 0.04 ms | 0.59 ms |
+    | Frames dropped — network | 0.00% | 0.00% |
+    | Frames dropped — jitter | 0.00% | — |
+
+    Better than baseline everywhere except host processing latency, which is
+    higher because d1 is encoding a 3440x1440 virtual display rather than
+    capturing an existing panel. No regression hiding behind the subjective
+    "worked really well" from Phase 1.
+
+17. **d1 tears its virtual display down cleanly** — the opposite of d2's
+    behavior. Two full create/remove cycles logged
+    (`Virtual Display created at \\.\DISPLAY11` →
+    `Virtual Display removed successfully`), `current_app` empty afterward, and
+    d2 back to a single display. Do not assume d2's phantom-display bug applies
+    to d1; it does not.
+
+18. **d2's stream launchers rewritten and tested.** Two fixes:
+    - Target the host by name (`stream d1`) instead of by IP. An IP is
+      genuinely ambiguous now that two Apollo instances share d1's address: a
+      pair attempt against the raw IP was observed going to port `48989` (the
+      `laptop` instance) instead of `47989`.
+    - **Stream the `Virtual Display` app, not `Desktop`.** The old launchers
+      said `Desktop`, which captures d1's existing monitors — the exact
+      downscale-of-two-4K-panels outcome Phase 2 exists to avoid.
+    Files renamed `Stream Desktop1 (...)` → `Stream d1 (...)`. The LAN
+    ultrawide launcher was executed and screenshotted, not just written.
 
 ## Believed done — unverified
 
-- **Step 8 formal verification was never captured.** The runbook wants
-  performance-overlay numbers — host processing latency, network latency,
-  decode time, render time, dropped-frame percentage — compared against the
-  laptop's baseline (2.1ms / 3ms / 0.76ms / 0.59ms / 0.00%). Austen's
-  subjective "worked really well" is the only evidence on record. **Run the
-  overlay before treating Phase 1 as closed**; a soft decode-time regression
-  would be invisible otherwise.
+- ~~**Step 8 formal verification was never captured.**~~ **CAPTURED
+  2026-08-04** — numbers in Done item 16. No decode-time regression; decode is
+  in fact 3.6x faster than the laptop baseline.
 - **d1's monitors are two identical 4K panels** — Austen's statement
   (2026-08-03), not independently verified. All the pixel arithmetic under
   Decisions depends on it. Confirm before acting on it.
@@ -176,12 +213,8 @@ deliberately excluded from this handoff's commit. Leave it alone.
    Credentials are set; d2 re-paired 2026-08-04 (Done item 15). **The laptop
    still has to re-pair** against whichever instance it uses — Apollo's fresh
    CA invalidated its old pairing too.
-2. **Get ONE virtual display working office → bedroom.** Configured but not yet
-   proven — Done item 16 sets `always_use_virtual_display` +
-   `3440x1440x120` for the d2 client. Run a real stream and confirm d1 gains
-   a 3440x1440 display and d2 sees it 1:1.
-   **Then tear it down and check d1 has no phantom left** — d2's own Apollo
-   does exactly that (see Gotchas), and d1's will likely behave the same.
+2. ~~**Get ONE virtual display working office → bedroom.**~~ **DONE and proven
+   2026-08-04** — Done item 16. Teardown is clean on d1 (Done item 17).
 3. ~~**Second Apollo instance on d1 for the laptop.**~~ **ALREADY EXISTS** —
    discovered 2026-08-04 running on d1 at port base `48989`, now named
    `laptop`. Its dashboard is `48990` and it accepts the same credentials as
@@ -191,7 +224,17 @@ deliberately excluded from this handoff's commit. Leave it alone.
    switch** so their traffic switches locally and never reaches the gateway.
    This is the single largest quality win available and it gates the 100fps
    launcher.
-5. **Run the Step 8 overlay pass** and record the numbers (see Believed done).
+5. ~~**Run the Step 8 overlay pass**~~ **DONE 2026-08-04** — table in Done
+   item 16. Worth re-running once d1 and d2 are both on the switch, to see
+   whether host processing latency drops and 100fps becomes viable.
+5a. **Rename d2's own Apollo instance from `D2` to `d2`.** One line in
+   `C:\Program Files\Apollo\config\sunshine.conf` plus a service restart.
+   Needs elevation; three UAC prompts were canceled on 2026-08-04. d2's own
+   Moonlight is aliased to `d2` (`customname`), so this only affects how OTHER
+   clients list it.
+5b. **The laptop still has to re-pair** — with the `laptop` instance on d1
+   (port base `48989`) and/or with d2, depending on which host it should use
+   now that d1 serves a dedicated instance. Untested this session.
 6. **Amend `docs/reference/moonlight-client-setup.md`.** Its Step 4 assumes port
    `47990` is free on the client. That is false whenever the client runs
    Sunshine or Apollo, which is now normal in this house. The doc should carry
@@ -291,6 +334,21 @@ Things the next agent cannot derive from the code or the runbook.
   while plain HTTP `serverinfo` from PowerShell answered instantly. The pinned
   pre-Apollo certificate was the cause. Deleting
   `HKCU:\...\Moonlight\hosts\*` and letting mDNS rediscover fixed it.
+- **The app you want is `Virtual Display`, and it is invisible to
+  `/api/apps`.** Apollo ships it as a built-in, so it is absent from
+  `apps.json` and from the `/api/apps` response — that response lists only
+  `Desktop` and `Steam Big Picture` and looks complete. `moonlight list d1 --csv`
+  reveals all three. Streaming `Desktop` captures d1's real monitors (the
+  downscale outcome Phase 2 exists to avoid); `Virtual Display` creates the
+  new extended panel. Launching `Desktop` while `Virtual Display` runs also
+  triggers a blocking "Are you sure you want to quit Virtual Display?" prompt.
+- **Quote app names with spaces when using `Start-Process -ArgumentList`.**
+  `'Virtual Display'` as a bare array element arrives split, and Moonlight
+  fails with `Failed to find application Virtual`. Pass `'"Virtual Display"'`.
+- **`GET /api/logs` returns d1's full Apollo log over the network** — the best
+  remote diagnostic available from another machine, since there is no shell on
+  d1. It is what proved virtual-display create/remove. Expect noise: the
+  virtual audio sink re-inits in a tight loop and dominates the tail.
 - **Apollo's dashboard API is session-cookie based, not Basic auth.** Basic
   returns 401 on every `/api/*` route. `POST /api/login` with
   `{"username","password"}` returns an `auth` cookie; send that cookie on
