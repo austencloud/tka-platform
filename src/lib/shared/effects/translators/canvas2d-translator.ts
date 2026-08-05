@@ -398,10 +398,12 @@ export function resolveAnimal2D(
   const palette = resolveAnimalPalette(intent);
   const defaults: Omit<Animal2DParams, keyof AnimalIntent> = {
     resolvedPalette: palette,
-    baseHalfWidth: 5 + intent.width * 25, // 5-30px
-    bodyLengthPx: 120 + intent.bodyLength * 360, // 120-480px fixed spine length
-    segmentCount: 40,
-    slitherAmpPx: intent.slither * 42,
+    // Slender is the look: at full width the body is ~30px thick, not ~60. A
+    // long, thin creature reads as elegant; a short fat one reads as a cartoon.
+    baseHalfWidth: 2.5 + intent.width * 13, // 2.5-15.5px
+    bodyLengthPx: 160 + intent.bodyLength * 440, // 160-600px fixed spine length
+    segmentCount: 56,
+    slitherAmpPx: intent.slither * 34,
     blendMode: palette.emissive ? "lighter" : "source-over",
   };
   return { ...intent, ...defaults, ...override };

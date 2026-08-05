@@ -1,4 +1,5 @@
 import type { Animal2DParams } from "../translators/canvas2d-types";
+import type { AnimalIntent } from "../domain/effects-config";
 import type { EmitterTip } from "./emitter-tip";
 import { emitterId } from "./emitter-tip";
 import { traceForward, traceBackward } from "./ribbon-trace";
@@ -124,7 +125,10 @@ export class Animal2DRenderer {
   ): void {
     const N = chain.length;
     const pal = params.resolvedPalette;
-    const baseHalf = params.baseHalfWidth * scale * params.intensity;
+    // Creature build: a caterpillar is plump, a snake is slender, a dragon sits
+    // between them. Same slider, different animal.
+    const build = params.creature === "caterpillar" ? 1.55 : params.creature === "dragon" ? 1.15 : 1;
+    const baseHalf = params.baseHalfWidth * scale * params.intensity * build;
     const ampPx = params.slitherAmpPx * scale;
 
     // Cumulative arc-length along the rigid chain (drives the travelling wave).
@@ -147,7 +151,9 @@ export class Animal2DRenderer {
       tx /= tl;
       ty /= tl;
       const ramp = Math.pow(i / (N - 1), 1.3);
-      const wave = Math.sin(WAVENUMBER * s[i]! - SLITHER_SPEED * this.time) * ampPx * ramp;
+      // Fundamental plus a small second harmonic — a pure sine reads mechanical.
+      const phase = WAVENUMBER * s[i]! - SLITHER_SPEED * this.time;
+      const wave = (Math.sin(phase) + 0.22 * Math.sin(phase * 2.1 + 0.7)) * ampPx * ramp;
       cx[i] = chain[i]!.x + -ty * wave;
       cy[i] = chain[i]!.y + tx * wave;
     }
@@ -168,7 +174,7 @@ export class Animal2DRenderer {
       ty /= tl;
       const normalX = -ty;
       const normalY = tx;
-      const half = baseHalf * bodyWidth(i / (N - 1));
+      const half = baseHalf * bodyWidth(i / (N - 1), params.creature);
       nx[i] = normalX;
       ny[i] = normalY;
       hw[i] = half;
@@ -190,11 +196,24 @@ export class Animal2DRenderer {
       this.drawDorsalCrest(ctx, params, cx, cy, nx, ny, hw);
     }
 
-    // Layer A: emissive aura (ember palette only).
+    // Inset edges — the shading strokes ride inside the silhouette so the body
+    // reads as a lit cylinder instead of a flat cut-out.
+    const litX = new Array<number>(N);
+    const litY = new Array<number>(N);
+    const shadeX = new Array<number>(N);
+    const shadeY = new Array<number>(N);
+    for (let i = 0; i < N; i++) {
+      litX[i] = cx[i]! + nx[i]! * hw[i]! * 0.42;
+      litY[i] = cy[i]! + ny[i]! * hw[i]! * 0.42;
+      shadeX[i] = cx[i]! - nx[i]! * hw[i]! * 0.5;
+      shadeY[i] = cy[i]! - ny[i]! * hw[i]! * 0.5;
+    }
+
+    // Layer A: emissive aura (ember palette only). Tight, not a halo.
     if (pal.emissive) {
-      ctx.globalAlpha = 0.12 * params.intensity;
+      ctx.globalAlpha = 0.1 * params.intensity;
       for (let i = 0; i < N; i += AURA_STRIDE) {
-        const r = hw[i]! * 3 + 2;
+        const r = hw[i]! * 2.2 + 1.5 * scale;
         const grad = ctx.createRadialGradient(cx[i]!, cy[i]!, 0, cx[i]!, cy[i]!, r);
         grad.addColorStop(0, pal.edge);
         grad.addColorStop(1, "rgba(0,0,0,0)");
@@ -205,17 +224,25 @@ export class Animal2DRenderer {
       }
     }
 
-    // Layer B: soft underpaint glow along the spine.
-    ctx.globalAlpha = 0.18 * params.intensity;
-    ctx.strokeStyle = pal.body;
-    ctx.lineWidth = baseHalf * 2.0;
-    ctx.beginPath();
-    traceForward(ctx, cx, cy, 0, N - 1, N);
-    ctx.stroke();
+    // Layer B: contact shadow — the body's own cast, offset along a fixed light
+    // direction. Cheap depth; replaces the old fat underpaint halo that made the
+    // creature read as a blurry blob.
+    if (!pal.emissive) {
+      ctx.save();
+      ctx.translate(2.5 * scale, 3.5 * scale);
+      ctx.globalAlpha = 0.22 * params.intensity;
+      ctx.fillStyle = "#000";
+      ctx.beginPath();
+      traceForward(ctx, leftX, leftY, 0, N - 1, N);
+      traceBackward(ctx, rightX, rightY, 0, N - 1, N);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
 
     // Layer C: body fill — closed Catmull-Rom polygon. hueShift palettes
     // (ethereal) grade body→bodyAlt from head to tail.
-    ctx.globalAlpha = 0.92 * params.intensity;
+    ctx.globalAlpha = 0.94 * params.intensity;
     if (pal.hueShift && pal.bodyAlt) {
       const grad = ctx.createLinearGradient(cx[0]!, cy[0]!, cx[N - 1]!, cy[N - 1]!);
       grad.addColorStop(0, pal.body);
@@ -230,10 +257,62 @@ export class Animal2DRenderer {
     ctx.closePath();
     ctx.fill();
 
-    // Layer D: sheen highlight down the back edge.
-    ctx.globalAlpha = 0.32 * params.intensity;
-    ctx.strokeStyle = pal.edge;
-    ctx.lineWidth = 1.5 * scale;
+    // Layer C2: cylinder shading. A dark band hugging the shadow side and a
+    // soft light band on the lit side, both clipped to the silhouette so they
+    // curve with the body.
+    ctx.save();
+    ctx.beginPath();
+    traceForward(ctx, leftX, leftY, 0, N - 1, N);
+    traceBackward(ctx, rightX, rightY, 0, N - 1, N);
+    ctx.closePath();
+    ctx.clip();
+
+    ctx.globalAlpha = 0.34 * params.intensity;
+    ctx.strokeStyle = mix(pal.body, "#000000", 0.62);
+    ctx.lineWidth = baseHalf * 1.1;
+    ctx.beginPath();
+    traceForward(ctx, shadeX, shadeY, 0, N - 1, N);
+    ctx.stroke();
+
+    ctx.globalAlpha = 0.22 * params.intensity;
+    ctx.strokeStyle = mix(pal.body, "#ffffff", 0.55);
+    ctx.lineWidth = baseHalf * 0.7;
+    ctx.beginPath();
+    traceForward(ctx, litX, litY, 0, N - 1, N);
+    ctx.stroke();
+
+    // Scale texture — faint chevrons reading across the back. Snake and dragon
+    // only; the caterpillar has its own banding.
+    if (params.creature !== "caterpillar") {
+      ctx.globalAlpha = 0.14 * params.intensity;
+      ctx.strokeStyle = mix(pal.edge, "#ffffff", 0.2);
+      ctx.lineWidth = Math.max(0.6, baseHalf * 0.16);
+      for (let i = 2; i < N - 2; i += 2) {
+        const h = hw[i]!;
+        if (h < 1) continue;
+        const ax = cx[i]! + nx[i]! * h * 0.9;
+        const ay = cy[i]! + ny[i]! * h * 0.9;
+        const bx = cx[i]! - nx[i]! * h * 0.9;
+        const by = cy[i]! - ny[i]! * h * 0.9;
+        const px = cx[i - 1]! ?? cx[i]!;
+        const py = cy[i - 1]! ?? cy[i]!;
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.quadraticCurveTo(px, py, bx, by);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+
+    // Layer D: sheen highlight down the lit edge, fading out toward the tail.
+    const sheen = ctx.createLinearGradient(cx[0]!, cy[0]!, cx[N - 1]!, cy[N - 1]!);
+    const sheenColor = mix(pal.edge, "#ffffff", 0.35);
+    sheen.addColorStop(0, sheenColor);
+    sheen.addColorStop(0.7, sheenColor);
+    sheen.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.globalAlpha = 0.4 * params.intensity;
+    ctx.strokeStyle = sheen;
+    ctx.lineWidth = Math.max(0.8, baseHalf * 0.2);
     ctx.beginPath();
     traceForward(ctx, leftX, leftY, 0, N - 1, N);
     ctx.stroke();
@@ -263,7 +342,8 @@ export class Animal2DRenderer {
     const N = cx.length;
     ctx.globalAlpha = 0.9 * params.intensity;
     ctx.fillStyle = pal.edge;
-    for (let i = 3; i < N - 2; i += 3) {
+    const crestStride = Math.max(2, Math.round(N / 14));
+    for (let i = crestStride; i < N - 2; i += crestStride) {
       const h = hw[i]!;
       if (h < 1) continue;
       const baseAx = cx[i - 1]! + nx[i - 1]! * hw[i - 1]!;
@@ -298,7 +378,8 @@ export class Animal2DRenderer {
     ctx.globalAlpha = 0.85 * params.intensity;
     ctx.strokeStyle = pal.edge;
     ctx.lineCap = "round";
-    for (let i = 4; i < N - 2; i += 3) {
+    const legStride = Math.max(2, Math.round(N / 11));
+    for (let i = legStride; i < N - 2; i += legStride) {
       const h = hw[i]!;
       if (h < 1.5) continue;
       const legLen = h * 0.9;
@@ -338,7 +419,8 @@ export class Animal2DRenderer {
     ctx.globalAlpha = 0.28 * params.intensity;
     ctx.strokeStyle = pal.edge;
     ctx.lineCap = "round";
-    for (let i = 4; i < N - 2; i += 3) {
+    const bandStride = Math.max(2, Math.round(N / 11));
+    for (let i = bandStride; i < N - 2; i += bandStride) {
       const h = hw[i]!;
       if (h < 1) continue;
       ctx.lineWidth = Math.max(1, h * 0.4);
@@ -432,9 +514,9 @@ export class Animal2DRenderer {
     const perpX = -hy;
     const perpY = hx;
 
-    const headR = baseHalf * 1.5 + 2 * scale;
-    const headCx = cx[0]! + hx * headR * 0.2;
-    const headCy = cy[0]! + hy * headR * 0.2;
+    const headR = baseHalf * 1.15 + 1.2 * scale;
+    const headCx = cx[0]! + hx * headR * 0.25;
+    const headCy = cy[0]! + hy * headR * 0.25;
 
     // Dragon horns behind the head fill.
     if (params.creature === "dragon") {
@@ -480,42 +562,68 @@ export class Animal2DRenderer {
       }
     }
 
-    // Head fill — rounded, slightly elongated along the heading.
+    // Head fill — a tapered wedge, longer than it is wide, with a brow plane
+    // catching the light.
+    const heading = Math.atan2(hy, hx);
     ctx.globalAlpha = 0.96 * params.intensity;
     ctx.save();
     ctx.translate(headCx, headCy);
-    ctx.rotate(Math.atan2(hy, hx));
+    ctx.rotate(heading);
     ctx.fillStyle = pal.body;
     ctx.beginPath();
-    ctx.ellipse(0, 0, headR * 1.25, headR * 0.95, 0, 0, TAU);
+    ctx.ellipse(0, 0, headR * 1.45, headR * 0.92, 0, 0, TAU);
     ctx.fill();
+    // Shadow under the jaw, then the lit brow above it.
     ctx.globalAlpha = 0.3 * params.intensity;
-    ctx.fillStyle = pal.edge;
+    ctx.fillStyle = mix(pal.body, "#000000", 0.6);
     ctx.beginPath();
-    ctx.ellipse(headR * 0.2, -headR * 0.3, headR * 0.6, headR * 0.35, 0, 0, TAU);
+    ctx.ellipse(-headR * 0.05, headR * 0.36, headR * 1.15, headR * 0.5, 0, 0, TAU);
+    ctx.fill();
+    ctx.globalAlpha = 0.26 * params.intensity;
+    ctx.fillStyle = mix(pal.edge, "#ffffff", 0.4);
+    ctx.beginPath();
+    ctx.ellipse(headR * 0.18, -headR * 0.34, headR * 0.75, headR * 0.28, 0, 0, TAU);
     ctx.fill();
     ctx.restore();
 
-    // Eyes.
+    // Eyes — small almonds aligned with the heading, not googly discs. A dark
+    // lid ring, a saturated iris, and one pin-sized specular.
     ctx.globalAlpha = 1;
-    const eyeFwd = headR * 0.35;
-    const eyePerp = headR * 0.5;
-    const eyeR = headR * 0.3;
+    const eyeFwd = headR * 0.5;
+    const eyePerp = headR * 0.46;
+    const eyeR = headR * (params.creature === "caterpillar" ? 0.24 : 0.2);
+    const irisColor = params.creature === "dragon" ? mix(pal.edge, "#ffd27f", 0.5) : mix(pal.edge, "#ffffff", 0.25);
     for (const side of [-1, 1]) {
       const ex = headCx + hx * eyeFwd + perpX * side * eyePerp;
       const ey = headCy + hy * eyeFwd + perpY * side * eyePerp;
-      ctx.fillStyle = "#fdfdf5";
+      ctx.save();
+      ctx.translate(ex, ey);
+      ctx.rotate(heading);
+      // Lid.
+      ctx.fillStyle = mix(pal.body, "#000000", 0.75);
       ctx.beginPath();
-      ctx.arc(ex, ey, eyeR, 0, TAU);
+      ctx.ellipse(0, 0, eyeR * 1.5, eyeR * 1.0, 0, 0, TAU);
       ctx.fill();
-      ctx.fillStyle = "#101014";
+      // Iris.
+      ctx.fillStyle = irisColor;
       ctx.beginPath();
-      ctx.arc(ex + hx * eyeR * 0.2, ey + hy * eyeR * 0.2, eyeR * 0.55, 0, TAU);
+      ctx.ellipse(eyeR * 0.12, 0, eyeR * 1.0, eyeR * 0.66, 0, 0, TAU);
       ctx.fill();
-      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      // Vertical slit pupil for snake/dragon; round for the caterpillar.
+      ctx.fillStyle = "#0a0a0f";
       ctx.beginPath();
-      ctx.arc(ex - perpX * side * eyeR * 0.25, ey - perpY * side * eyeR * 0.25, eyeR * 0.2, 0, TAU);
+      if (params.creature === "caterpillar") {
+        ctx.ellipse(eyeR * 0.15, 0, eyeR * 0.38, eyeR * 0.38, 0, 0, TAU);
+      } else {
+        ctx.ellipse(eyeR * 0.15, 0, eyeR * 0.16, eyeR * 0.58, 0, 0, TAU);
+      }
       ctx.fill();
+      // Specular.
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      ctx.beginPath();
+      ctx.arc(eyeR * 0.55, -eyeR * 0.3, Math.max(0.5, eyeR * 0.18), 0, TAU);
+      ctx.fill();
+      ctx.restore();
     }
 
     // Snake tongue flick — extends then retracts on a per-creature-desynced timer.
@@ -569,10 +677,35 @@ export class Animal2DRenderer {
  * Body half-width profile along the creature. u = 0 (head) → 1 (tail). Narrow
  * snout ramps to a full-width neck by u≈0.06, then tapers smoothly to a point.
  */
-function bodyWidth(u: number): number {
+function bodyWidth(u: number, creature: AnimalIntent["creature"]): number {
+  if (creature === "caterpillar") {
+    // Plump and near-constant, rounding off at both ends like a grub.
+    if (u < 0.08) return 0.62 + (u / 0.08) * 0.38;
+    const t = (u - 0.08) / 0.92;
+    return Math.max(0, Math.sqrt(1 - t * t * t * t));
+  }
   if (u < 0.06) return 0.35 + (u / 0.06) * 0.65;
   const t = (u - 0.06) / 0.94;
   return Math.max(0, 1 - t * t);
+}
+
+/** Blend two hex colors. t = 0 returns a, t = 1 returns b. Cached — this runs
+ *  per creature per frame and the inputs are a tiny fixed set. */
+const mixCache = new Map<string, string>();
+function mix(a: string, b: string, t: number): string {
+  const key = `${a}|${b}|${t}`;
+  const hit = mixCache.get(key);
+  if (hit) return hit;
+  const pa = parseInt(a.slice(1), 16);
+  const pb = parseInt(b.slice(1), 16);
+  const ch = (shift: number) => {
+    const va = (pa >> shift) & 0xff;
+    const vb = (pb >> shift) & 0xff;
+    return Math.round(va + (vb - va) * t);
+  };
+  const out = `rgb(${ch(16)},${ch(8)},${ch(0)})`;
+  mixCache.set(key, out);
+  return out;
 }
 
 /** Stable 0-1 hash of an emitter id, used to desync per-creature tongue flicks. */
