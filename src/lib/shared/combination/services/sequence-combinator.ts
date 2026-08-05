@@ -16,8 +16,12 @@
  *   - every distinct variant of card B (`buildVariants` — rotation, mirror,
  *     colour swap, twin, deduped cyclically).
  *
- * Ambient base-vocabulary material (ΦΨ bridges and friends) is Task 9. Until
- * then, a walk is built from the two cards' own material only.
+ *   - AMBIENT base-vocabulary steps (ΦΨ bridges and friends), when the caller
+ *     supplies an `ambientProvider`. These are not one of the two things being
+ *     combined; they are connective tissue that lets two cards sharing no seam
+ *     meet at all — AAAA lives in the alpha world and HHHH in the beta world,
+ *     and one Ψ across plus one Φ back is the whole difference between
+ *     "impossible" and Austen's AAAAΨHHΦ.
  *
  * **Two claims, kept apart.** The reachability precheck below decides
  * `impossible` — a structural, any-length proof that costs O(seams). The walk
@@ -25,6 +29,15 @@
  * `searchedToLength` ("nothing of this length or shorter"), never as
  * impossibility. A bounded search cannot prove a negative, and conflating the
  * two would let a budget timeout masquerade as a theorem.
+ *
+ * **Ambient edges are part of the precheck, not just the search.** The precheck
+ * and the DFS must walk the SAME graph, or the engine contradicts its own
+ * theorem: a card-material-only precheck would keep proclaiming AAAA + HHHH
+ * impossible while the DFS was perfectly able to bridge them. So the ambient
+ * pool is built BEFORE the precheck and its edges join the BFS. The consequence
+ * is worth stating plainly: `impossible: true` with ambient active is the
+ * STRONGEST claim the engine makes — not merely "these two cards do not meet",
+ * but "they do not meet even with the whole ambient vocabulary in play".
  *
  * **Iterative deepening, not plain DFS.** The walk space is exponential in
  * length, so a depth-first sweep would spend its whole budget on one very deep
@@ -39,7 +52,12 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 import {
+  ambientBaseForLetter,
+  ambientLetterSet,
+} from "../domain/base-sequence-registry";
+import {
   COMBINATOR_DEFAULTS,
+  type AmbientOptionProvider,
   type CombinationSearchReport,
   type CombinatorOptions,
   type CombinatorTunables,
@@ -55,11 +73,29 @@ import { classifyAndRank, type RawWalk } from "./walk-classifier";
 const MIN_RESULT_LENGTH = 2;
 const HARD_MAX_RESULT_LENGTH = 64;
 
+/**
+ * `WalkBlock.startStepIndex` for an ambient block. Ambient steps come from a
+ * provider, not from a cyclic source, so there is no index for them to have —
+ * and -1 makes the absence explicit rather than pretending they entered at 0.
+ */
+const AMBIENT_START_INDEX = -1;
+
 /** A step of some source that a walk can enter at. */
 interface SeamEntry {
   readonly sourceIndex: number;
   readonly stepIndex: number;
 }
+
+/** One ambient step, tagged with the roster base it came from. */
+interface AmbientOption {
+  readonly step: StepData;
+  readonly baseWord: string;
+}
+
+/** Seam -> the ambient steps that START there. */
+type AmbientPool = ReadonlyMap<SeamState, readonly AmbientOption[]>;
+
+const EMPTY_AMBIENT_POOL: AmbientPool = new Map();
 
 /** The one place a `WalkSource`'s step list is read (ambient sources have none). */
 function stepsOf(source: WalkSource): readonly StepData[] {
@@ -81,7 +117,130 @@ function commitBlock(
     startStepIndex,
     steps: [...steps],
     rotationFaithful: isRotationFaithful(source),
+    ...(source.kind === "ambient" && { ambientWord: source.ambientWord }),
   };
+}
+
+/**
+ * Every ambient step the walk could ever reach, indexed by the seam it starts
+ * at — precomputed once, before the DFS, because the provider is async and the
+ * search is not.
+ *
+ * **Why it expands breadth-first.** An ambient RUN of two steps needs options
+ * at a seam no card ever visits: Φ leaves beta5 for alpha5, and the Ψ that
+ * continues the run starts at alpha5. So the pool seeds from the card seams and
+ * then follows its own end seams outward, `maxAmbientRun` hops in total —
+ * exactly as far as a legal run can go and no further, which is what keeps a
+ * vocabulary-sized provider from being asked about the whole seam space.
+ *
+ * **Every option is re-validated.** A provider is a collaborator, not an
+ * authority: a step is kept only when it carries a letter belonging to an
+ * ambient-eligible roster base, has both seams, and actually STARTS at the seam
+ * it was asked about. The third check is the one that matters — a provider
+ * answering with material for a different seam would silently break the walk's
+ * positional continuity, which is the single invariant everything downstream
+ * assumes.
+ */
+async function buildAmbientPool(
+  provider: AmbientOptionProvider,
+  cardSeams: readonly SeamState[],
+  maxHops: number
+): Promise<AmbientPool> {
+  const pool = new Map<SeamState, readonly AmbientOption[]>();
+  if (maxHops <= 0) return pool;
+
+  const eligibleLetters = ambientLetterSet();
+  const queried = new Set<SeamState>();
+  let frontier: SeamState[] = [...new Set(cardSeams)];
+
+  for (let hop = 0; hop < maxHops && frontier.length > 0; hop++) {
+    const next: SeamState[] = [];
+
+    for (const seam of frontier) {
+      if (queried.has(seam)) continue;
+      queried.add(seam);
+
+      const options: AmbientOption[] = [];
+      for (const step of await provider.optionsAt(seam)) {
+        const letter = step.letter;
+        if (!letter || !eligibleLetters.has(letter)) continue;
+
+        const from = seamOf(step);
+        const to = seamEndOf(step);
+        if (!from || !to || from !== seam) continue;
+
+        const base = ambientBaseForLetter(letter);
+        if (!base) continue;
+
+        options.push({ step, baseWord: base.word });
+        if (!queried.has(to)) next.push(to);
+      }
+
+      if (options.length > 0) pool.set(seam, options);
+    }
+
+    frontier = next;
+  }
+
+  return pool;
+}
+
+/**
+ * One `WalkSource` per ambient base the pool actually offers, in order of first
+ * appearance.
+ *
+ * A base rather than a step is the right grain for a source: consecutive
+ * ambient steps of the SAME base are one run of one vocabulary (Φ then Ψ is
+ * "some ΦΨ"), and `ambientWord` is what the derivation sentence and the
+ * classifier read. A run that changes base changes source, and therefore splits
+ * into two blocks — which is the honest partition, because two bases are two
+ * ingredients.
+ */
+function buildAmbientSources(
+  pool: AmbientPool,
+  firstIndex: number
+): { sources: WalkSource[]; indexByWord: Map<string, number> } {
+  const sources: WalkSource[] = [];
+  const indexByWord = new Map<string, number>();
+
+  for (const options of pool.values()) {
+    for (const option of options) {
+      if (indexByWord.has(option.baseWord)) continue;
+      indexByWord.set(option.baseWord, firstIndex + sources.length);
+      sources.push({
+        kind: "ambient",
+        id: `ambient:${option.baseWord}`,
+        ambientWord: option.baseWord,
+      });
+    }
+  }
+
+  return { sources, indexByWord };
+}
+
+/**
+ * Every seam a walk can STAND at while playing card material — the seeds the
+ * ambient pool expands from.
+ *
+ * Both ends of every step, not just the starts: a walk stands at a step's END
+ * seam when it finishes that step, and that is the moment it may reach for a
+ * bridge. For a closed card the two sets coincide; for a walk over mixed
+ * variants they need not, and missing an end seam would silently make a legal
+ * bridge unreachable.
+ */
+function cardSeamsOf(
+  sourceSteps: readonly (readonly StepData[])[]
+): SeamState[] {
+  const seams: SeamState[] = [];
+  for (const steps of sourceSteps) {
+    for (const step of steps) {
+      const from = seamOf(step);
+      const to = seamEndOf(step);
+      if (from) seams.push(from);
+      if (to) seams.push(to);
+    }
+  }
+  return seams;
 }
 
 /**
@@ -136,6 +295,11 @@ function canonicalPartition(
  * from every card-A step it passes through, and a 4-fold symmetric card
  * therefore finds it four times. Keying on the per-STEP list rather than on the
  * blocks makes those phases identical strings, which is what collapses them.
+ *
+ * Ambient steps have no index to key on — they come from a provider, not from a
+ * cyclic source — so they key on CONTENT instead: letter plus both seams, which
+ * is what distinguishes one bridge step from another. Two walks crossing on the
+ * same Ψ therefore agree, and two crossing on different ones do not.
  */
 function canonicalWalkSignature(
   blocks: readonly WalkBlock[],
@@ -143,6 +307,16 @@ function canonicalWalkSignature(
 ): string {
   const keys: string[] = [];
   for (const block of blocks) {
+    if (block.kind === "ambient") {
+      for (const step of block.steps) {
+        keys.push(
+          `${block.sourceId}#${step.letter ?? "?"}` +
+            `@${step.startPosition ?? "?"}>${step.endPosition ?? "?"}`
+        );
+      }
+      continue;
+    }
+
     const length = lengthOfSource.get(block.sourceId) ?? 0;
     for (let i = 0; i < block.steps.length; i++) {
       const index =
@@ -174,14 +348,27 @@ function canonicalWalkSignature(
  *
  * Empty inputs land here too: a card with no steps contributes no seams, so
  * nothing of its kind is ever reachable.
+ *
+ * **The ambient pool's edges join the graph.** Bridge material EXPANDS what is
+ * reachable, so leaving it out would make the proof unsound in the one
+ * direction that matters — claiming impossibility for a pair the search can
+ * actually combine. With the pool in, `impossible: true` says something
+ * stronger: not even the ambient vocabulary connects these two cards.
  */
 function cardBIsReachableFromCardA(
   sources: readonly WalkSource[],
-  sourceSteps: readonly (readonly StepData[])[]
+  sourceSteps: readonly (readonly StepData[])[],
+  ambientPool: AmbientPool
 ): boolean {
   const edges = new Map<SeamState, Set<SeamState>>();
   const frontier: SeamState[] = [];
   const cardBSeams = new Set<SeamState>();
+
+  const addEdge = (from: SeamState, to: SeamState): void => {
+    const out = edges.get(from);
+    if (out) out.add(to);
+    else edges.set(from, new Set([to]));
+  };
 
   sourceSteps.forEach((steps, sourceIndex) => {
     const kind = sources[sourceIndex]!.kind;
@@ -190,14 +377,19 @@ function cardBIsReachableFromCardA(
       const to = seamEndOf(step);
       if (!from || !to) continue;
 
-      const out = edges.get(from);
-      if (out) out.add(to);
-      else edges.set(from, new Set([to]));
+      addEdge(from, to);
 
       if (kind === "cardA") frontier.push(from);
       if (kind === "cardB") cardBSeams.add(from);
     }
   });
+
+  for (const [from, options] of ambientPool) {
+    for (const option of options) {
+      const to = seamEndOf(option.step);
+      if (to) addEdge(from, to);
+    }
+  }
 
   if (cardBSeams.size === 0) return false;
 
@@ -273,9 +465,27 @@ export async function findCombinations(
   }
   sources.push(...(await buildVariants(cardB, opts)));
 
+  // The ambient pool is built HERE — after the card material exists, before the
+  // precheck runs — because the precheck has to see the same graph the DFS
+  // walks. See `cardBIsReachableFromCardA`.
+  const ambientRunCap = options.ambientProvider
+    ? Math.max(opts.allowAmbient ? opts.maxAmbientRun : 0, 0)
+    : 0;
+  const ambientPool =
+    ambientRunCap > 0
+      ? await buildAmbientPool(
+          options.ambientProvider!,
+          cardSeamsOf(sources.map(stepsOf)),
+          ambientRunCap
+        )
+      : EMPTY_AMBIENT_POOL;
+
+  const ambient = buildAmbientSources(ambientPool, sources.length);
+  sources.push(...ambient.sources);
+
   const sourceSteps = sources.map(stepsOf);
 
-  if (!cardBIsReachableFromCardA(sources, sourceSteps)) {
+  if (!cardBIsReachableFromCardA(sources, sourceSteps, ambientPool)) {
     return proven(false);
   }
 
@@ -339,6 +549,10 @@ export async function findCombinations(
    * @param blockSteps  steps of the current block, not yet committed
    * @param blockStart  index the current block entered its source at
    * @param blocks      committed blocks
+   * @param ambientRun  consecutive ambient steps taken so far, 0 after any card
+   *                    step. Counted across the RUN rather than per block, so a
+   *                    run that changes base (and therefore splits into two
+   *                    blocks) is still capped as one run.
    */
   const visit = (
     limit: number,
@@ -350,7 +564,8 @@ export async function findCombinations(
     blockStart: number,
     blocks: WalkBlock[],
     totalSteps: number,
-    usedCardB: boolean
+    usedCardB: boolean,
+    ambientRun: number
   ): void => {
     if (stopped) return;
     if (budget <= 0) {
@@ -372,6 +587,10 @@ export async function findCombinations(
       blockSteps.length >= opts.minBlockSize &&
       usedCardB
     ) {
+      // Closing off an AMBIENT step is legal: Austen's own AAAAΨHHΦ ends on the
+      // Φ that carries the walk back to its start seam. What a bridge can never
+      // do is stand in for a card — `usedCardB` is unaffected by ambient
+      // material, so both cards are still required to be present.
       record(
         [...blocks, commitBlock(source, blockStart, blockSteps)],
         totalSteps
@@ -379,26 +598,31 @@ export async function findCombinations(
       if (stopped) return;
     }
 
-    if (totalSteps >= limit || steps.length === 0) return;
+    if (totalSteps >= limit) return;
 
-    // Extend: stay in this source and take its next step.
-    const extendIndex = nextIndex % steps.length;
-    const nextStep = steps[extendIndex]!;
-    const nextEnd = seamEndOf(nextStep);
-    if (nextEnd && seamOf(nextStep) === currentSeam) {
-      visit(
-        limit,
-        startSeam,
-        nextEnd,
-        sourceIndex,
-        nextIndex + 1,
-        [...blockSteps, nextStep],
-        blockStart,
-        blocks,
-        totalSteps + 1,
-        usedCardB || source.kind === "cardB"
-      );
-      if (stopped) return;
+    // Extend: stay in this source and take its next step. Ambient sources have
+    // no step list of their own — a run is extended through the pool below.
+    let extendIndex = -1;
+    if (steps.length > 0) {
+      extendIndex = nextIndex % steps.length;
+      const nextStep = steps[extendIndex]!;
+      const nextEnd = seamEndOf(nextStep);
+      if (nextEnd && seamOf(nextStep) === currentSeam) {
+        visit(
+          limit,
+          startSeam,
+          nextEnd,
+          sourceIndex,
+          nextIndex + 1,
+          [...blockSteps, nextStep],
+          blockStart,
+          blocks,
+          totalSteps + 1,
+          usedCardB || source.kind === "cardB",
+          0
+        );
+        if (stopped) return;
+      }
     }
 
     if (blockSteps.length < opts.minBlockSize) return;
@@ -433,9 +657,39 @@ export async function findCombinations(
         entry.stepIndex,
         [...blocks, committed],
         totalSteps + 1,
-        usedCardB || target.kind === "cardB"
+        usedCardB || target.kind === "cardB",
+        0
       );
       if (stopped) return;
+    }
+
+    // Take a bridge step. Consecutive ambient steps of the SAME base extend one
+    // block; a change of base commits and starts another, because two bases are
+    // two ingredients. `usedCardB` is deliberately untouched — connective
+    // tissue is not one of the two things being combined.
+    if (ambientRun < ambientRunCap) {
+      for (const option of ambientPool.get(currentSeam) ?? []) {
+        const end = seamEndOf(option.step);
+        if (!end) continue;
+        const targetIndex = ambient.indexByWord.get(option.baseWord);
+        if (targetIndex === undefined) continue;
+
+        const sameRun = targetIndex === sourceIndex;
+        visit(
+          limit,
+          startSeam,
+          end,
+          targetIndex,
+          0,
+          sameRun ? [...blockSteps, option.step] : [option.step],
+          sameRun ? blockStart : AMBIENT_START_INDEX,
+          sameRun ? blocks : [...blocks, committed],
+          totalSteps + 1,
+          usedCardB,
+          ambientRun + 1
+        );
+        if (stopped) return;
+      }
     }
   };
 
@@ -472,7 +726,8 @@ export async function findCombinations(
           start,
           [],
           1,
-          false
+          false,
+          0
         );
       }
     }

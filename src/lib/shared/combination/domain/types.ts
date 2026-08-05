@@ -112,6 +112,14 @@ export interface CombinationSearchReport {
    * seam graph (`gridModeMismatch` distinguishes them). Everything else
    * reports `impossible: false` and lets `searchedToLength` carry the weaker,
    * honest claim.
+   *
+   * **With ambient active, the reachability graph INCLUDES the bridge edges**,
+   * so `impossible: true` is then the strongest thing the engine says: these
+   * two cards do not meet even with the ambient vocabulary in play. Conversely
+   * `impossible: false` with an empty result set is NOT a weaker impossibility
+   * — a one-way bridge makes card B reachable without making any closed walk
+   * exist, and that case is reported honestly as an empty search of a stated
+   * depth.
    */
   readonly impossible: boolean;
   /**
@@ -181,7 +189,20 @@ export interface CombinatorTunables {
    * built, so it costs nothing but the block arithmetic.
    */
   readonly wholeUnitsOnly: boolean;
+  /**
+   * May the walk use ambient base material to bridge seams the two cards do not
+   * share? Requires an `ambientProvider`; without one the flag is inert.
+   */
   readonly allowAmbient: boolean;
+  /**
+   * Longest run of CONSECUTIVE ambient steps, counted across the run rather
+   * than per block — so a run that switches base (and therefore splits into two
+   * blocks) is still one run. It also fixes how far the ambient pool is
+   * expanded: reaching the second step of a run means asking the provider about
+   * a seam no card visits, so the pool follows its own end seams exactly this
+   * many hops out from the card seams. A bridge longer than a couple of steps
+   * stops being connective tissue and starts being a third card.
+   */
   readonly maxAmbientRun: number;
   readonly allowMirror: boolean;
   readonly allowRotation: boolean;
