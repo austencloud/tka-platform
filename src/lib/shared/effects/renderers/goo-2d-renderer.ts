@@ -43,6 +43,8 @@ const VELOCITY_INHERIT = 0.22;
  * hugging the surface — the rim light that makes goo read as a wet substance.
  */
 const ERODE = 0.8;
+/** Second, deeper threshold — the innermost of the three nested regions. */
+const ERODE_DEEP = 0.62;
 
 interface Blob {
   x: number;
@@ -141,7 +143,12 @@ export class Goo2DRenderer {
           age: 0,
           maxAge: 0.46 + Math.random() * 0.4,
           r0,
-          r1: r0 * 1.35,
+          // Beads SHRINK as they age. Growing them gave the tail a blunt cap
+          // that vanished on alpha alone; shrinking lets the far end fall under
+          // the metaball threshold gradually, so the ribbon necks down and
+          // pinches off into droplets the way surface tension actually ends a
+          // stream.
+          r1: r0 * 0.62,
           glint: Math.random() < 0.3,
         });
       }
@@ -192,7 +199,7 @@ export class Goo2DRenderer {
     off.globalCompositeOperation = "lighter";
     for (const b of this.blobs) {
       const t = b.age / b.maxAge;
-      const fade = t < 0.12 ? t / 0.12 : t > 0.65 ? Math.max(0, (1 - t) / 0.35) : 1;
+      const fade = beadFade(t);
       if (fade <= 0.02) continue;
       const r = b.r0 + (b.r1 - b.r0) * t;
       const g = off.createRadialGradient(b.x, b.y, 0, b.x, b.y, r);
@@ -239,21 +246,25 @@ export class Goo2DRenderer {
       ctx.filter = "none";
       ctx.drawImage(workCanvas, 0, 0);
 
-      // 5. Rim light. The same threshold run against a dimmed field survives
-      //    over a smaller area, so outer XOR eroded is a band hugging the
-      //    surface. Tinted with the palette edge and added on top of the body,
-      //    it gives the wet meniscus that separates goo from a glowing shape.
-      work.globalCompositeOperation = "source-over";
-      work.filter = `blur(${blurPx}px) contrast(${CONTRAST})`;
-      work.drawImage(field, 0, 0);
-      work.globalCompositeOperation = "difference";
-      work.filter = `blur(${blurPx}px) brightness(${ERODE}) contrast(${CONTRAST})`;
-      work.drawImage(field, 0, 0);
-      work.filter = "none";
-      work.globalCompositeOperation = "multiply";
-      work.fillStyle = p.edge;
-      work.fillRect(0, 0, W, H);
+      // 5. Depth grading. Thresholding the same field at three levels nests
+      //    three regions — outer ⊃ shallow ⊃ deep — and the rings between them
+      //    are the liquid's cross-section. Painting the outermost ring brightest
+      //    and leaving the innermost as bare body colour reads as thickness:
+      //    light gets through the thin edges and is absorbed by the mass.
+      //    Everything composites additively, so depth has to be built by adding
+      //    LESS toward the middle, never by painting the middle darker.
+      //
+      //    The rim ring is cut with the shallow mask pushed AWAY from the light,
+      //    which widens the band on the lit side and closes it on the far side.
+      //    A rim of even width all the way round is lit from everywhere, which
+      //    is to say from nowhere; a crescent is what reads as wet.
+      const lightPush = Math.max(1, Math.round(blurPx * 0.5));
+      this.drawBand(work, field, W, H, blurPx, 1, ERODE, lightPush, p.edge);
       ctx.globalAlpha = 0.62;
+      ctx.drawImage(workCanvas, 0, 0);
+
+      this.drawBand(work, field, W, H, blurPx, ERODE, ERODE_DEEP, 0, p.core);
+      ctx.globalAlpha = 0.4;
       ctx.drawImage(workCanvas, 0, 0);
       ctx.globalAlpha = 1;
 
@@ -273,7 +284,7 @@ export class Goo2DRenderer {
         const nb = neighbours[i]!;
         if (nb < 4 || nb > 14) continue;
         const t = b.age / b.maxAge;
-        const fade = t < 0.12 ? t / 0.12 : t > 0.65 ? Math.max(0, (1 - t) / 0.35) : 1;
+        const fade = beadFade(t);
         const rFull = b.r0 + (b.r1 - b.r0) * t;
         if (fade < 0.9 || rFull < baseBlob * 0.85) continue;
         const r = rFull * 0.22;
@@ -292,6 +303,36 @@ export class Goo2DRenderer {
       ctx.globalCompositeOperation = prevComposite;
       ctx.globalAlpha = prevAlpha;
     }
+  }
+
+  /**
+   * Leave `work` holding one tinted ring: the density field thresholded at
+   * `outerLevel` minus the same field thresholded at `innerLevel`, with the
+   * inner mask displaced by `push` px down-right. Both masks are white-on-black,
+   * so `difference` gives the ring and `multiply` colours it — black elsewhere,
+   * which composites additively without needing a backing plate.
+   */
+  private drawBand(
+    work: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+    field: CanvasImageSource,
+    w: number,
+    h: number,
+    blurPx: number,
+    outerLevel: number,
+    innerLevel: number,
+    push: number,
+    tint: string,
+  ): void {
+    work.globalCompositeOperation = "source-over";
+    work.filter = `blur(${blurPx}px) brightness(${outerLevel}) contrast(${CONTRAST})`;
+    work.drawImage(field, 0, 0);
+    work.globalCompositeOperation = "difference";
+    work.filter = `blur(${blurPx}px) brightness(${innerLevel}) contrast(${CONTRAST})`;
+    work.drawImage(field, push, push);
+    work.filter = "none";
+    work.globalCompositeOperation = "multiply";
+    work.fillStyle = tint;
+    work.fillRect(0, 0, w, h);
   }
 
   /**
@@ -425,6 +466,17 @@ export class Goo2DRenderer {
     this.offH = 0;
     this.clock = 0;
   }
+}
+
+/**
+ * Bead opacity over its life. The plateau runs long because the TAPER is now
+ * carried by the shrinking radius — fading alpha at the same time would erase
+ * the tail before it had a chance to neck down.
+ */
+function beadFade(t: number): number {
+  if (t < 0.12) return t / 0.12;
+  if (t > 0.8) return Math.max(0, (1 - t) / 0.2);
+  return 1;
 }
 
 function poisson(expected: number): number {
