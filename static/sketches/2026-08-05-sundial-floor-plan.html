@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sun Chamber — floor plan &amp; section</title>
+<style>
+  :root {
+    --bg: #0a0c12;
+    --panel: #10131c;
+    --ink: #e8ecf6;
+    --dim: #7d8ba6;
+    --faint: #2a3140;
+    --stone: #39414f;
+    --walk: #4a5468;
+    --void: #05070c;
+    --sun: #ffcf5c;
+    --sunfaint: #6b5526;
+    --blue: #5b8fd6;
+    --red: #d6685b;
+    --sand: #b9a988;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2rem clamp(1rem, 4vw, 4rem) 4rem;
+    background: var(--bg);
+    color: var(--ink);
+    font: 14px/1.55 "Inter", "Segoe UI", system-ui, sans-serif;
+  }
+  header { max-width: 90rem; margin: 0 auto 2rem; }
+  h1 { margin: 0; font-size: clamp(1.4rem, 2.4vw, 2rem); letter-spacing: -0.015em; }
+  .sub { color: var(--dim); margin: .35rem 0 0; max-width: 70ch; }
+  .meta { color: var(--sunfaint); font-size: .8rem; letter-spacing: .09em; text-transform: uppercase; margin-bottom: .5rem; }
+
+  .sheet {
+    max-width: 108rem;
+    margin: 0 auto;
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    grid-template-areas:
+      "plan schedule"
+      "section section"
+      "chart chart";
+    align-items: start;
+  }
+  .a-plan { grid-area: plan; }
+  .a-schedule { grid-area: schedule; }
+  .a-section { grid-area: section; }
+  .a-chart { grid-area: chart; }
+  @media (max-width: 1100px) {
+    .sheet { grid-template-columns: 1fr; grid-template-areas: "plan" "schedule" "section" "chart"; }
+  }
+  /* The section is a wide, short drawing — it wants the full sheet width. */
+  @media (min-width: 1400px) {
+    .sheet { grid-template-areas: "plan schedule" "section section" "chart chart"; }
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--faint);
+    border-radius: .6rem;
+    padding: 1.1rem 1.2rem 1.3rem;
+  }
+  .panel h2 {
+    margin: 0 0 .15rem;
+    font-size: .82rem;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--sun);
+  }
+  .panel .note { margin: 0 0 .9rem; color: var(--dim); font-size: .82rem; }
+  svg { width: 100%; height: auto; display: block; overflow: visible; }
+
+  .stack { display: grid; gap: 1.5rem; }
+
+  table { border-collapse: collapse; width: 100%; font-size: .82rem; }
+  th, td { text-align: left; padding: .34rem .5rem; border-bottom: 1px solid var(--faint); }
+  th { color: var(--dim); font-weight: 600; letter-spacing: .04em; }
+  td.num { font-variant-numeric: tabular-nums; color: var(--sand); }
+  .swatch { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; margin-right: .45rem; vertical-align: -1px; }
+
+  ul.notes { margin: .2rem 0 0; padding-left: 1.1rem; color: var(--dim); font-size: .82rem; }
+  ul.notes li { margin-bottom: .4rem; }
+  ul.notes strong { color: var(--ink); font-weight: 600; }
+
+  text { font-family: "Inter", system-ui, sans-serif; }
+  .lbl { fill: var(--ink); font-size: 11px; }
+  .lbl-dim { fill: var(--dim); font-size: 10px; }
+  .lbl-sun { fill: var(--sun); font-size: 11px; font-weight: 600; }
+  .lbl-small { fill: var(--dim); font-size: 9px; letter-spacing: .06em; }
+  .leader { stroke: var(--dim); stroke-width: .6; fill: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <p class="meta">Vulcan Cave · Room 5 of 6 · Quarter-Same (gamma) · 2026-08-05</p>
+  <h1>Sun Chamber — “The Sundial”</h1>
+  <p class="sub">
+    Your bearing from the centre is the sun's azimuth and it sits at your back; your distance from
+    the centre is its elevation. Walking inward walks you to noon. The spiral crossing sweeps
+    exactly 90&deg;, so the move that carries you to zenith performs the room's own phase offset.
+    You leave by standing in the eye and letting the ground lift you through the ceiling onto the Moon.
+  </p>
+</header>
+
+<div class="sheet">
+
+  <div class="panel a-plan">
+    <h2>Plan</h2>
+    <p class="note">Chamber &empty;24 m. North is up. Grid ring at 4 / 9 / 12 m radius.</p>
+    <svg id="plan" viewBox="0 0 760 640" role="img" aria-label="Sun chamber floor plan">
+      <defs>
+        <radialGradient id="voidgrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#0b0f18"/>
+          <stop offset="100%" stop-color="#05070c"/>
+        </radialGradient>
+        <pattern id="hatch" width="7" height="7" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+          <line x1="0" y1="0" x2="0" y2="7" stroke="#1b2130" stroke-width="3"/>
+        </pattern>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--sun)"/>
+        </marker>
+        <marker id="arrowdim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--dim)"/>
+        </marker>
+      </defs>
+      <g id="plan-g"></g>
+    </svg>
+  </div>
+
+  <div class="panel a-section">
+      <h2>Section A–A</h2>
+      <p class="note">Cut north–south through the eye. Vertical and horizontal at the same scale.</p>
+      <svg id="section" viewBox="0 0 1180 460" role="img" aria-label="Sun chamber section"><g id="section-g"></g></svg>
+    </div>
+
+    <div class="panel a-chart">
+      <h2>The sun, as a function of where you stand</h2>
+      <p class="note">Elevation falls off linearly with radius. Azimuth is simply your own bearing.</p>
+      <svg id="chart" viewBox="0 0 1180 250" role="img" aria-label="Sun elevation against radius"><g id="chart-g"></g></svg>
+    </div>
+
+    <div class="panel a-schedule">
+      <h2>Schedule</h2>
+      <table>
+        <thead><tr><th>Zone</th><th>Radius</th><th>Floor Y</th><th>Walk</th></tr></thead>
+        <tbody>
+          <tr><td><span class="swatch" style="background:var(--walk)"></span>Centre disc</td><td class="num">0 – 4 m</td><td class="num">−0.2</td><td>yes</td></tr>
+          <tr><td><span class="swatch" style="background:var(--sun)"></span>The eye (lift)</td><td class="num">0 – 1 m</td><td class="num">−0.2 → +14</td><td>yes</td></tr>
+          <tr><td><span class="swatch" style="background:var(--sand)"></span>Ring floor — the page</td><td class="num">4 – 9 m</td><td class="num">−4.0</td><td><strong>no</strong></td></tr>
+          <tr><td><span class="swatch" style="background:var(--sun)"></span>Spiral crossing</td><td class="num">4 – 9 m</td><td class="num">−0.4 → −0.2</td><td>yes</td></tr>
+          <tr><td><span class="swatch" style="background:var(--walk)"></span>Rim walk</td><td class="num">9 – 12 m</td><td class="num">−0.4</td><td>yes</td></tr>
+          <tr><td><span class="swatch" style="background:var(--stone)"></span>Pillar caps ×4</td><td class="num">6.5 m, &empty;2.2</td><td class="num">+0.4</td><td>no</td></tr>
+        </tbody>
+      </table>
+      <ul class="notes">
+        <li><strong>The crossing is the only way in.</strong> A route test must prove it — the ring is a 5 m gap with a 3.8 m drop.</li>
+        <li><strong>U opposite V.</strong> The leader/follower inversion mirrors across the centre; S and T take the cross axis. All four are closed 4-step loops (MCP-verified).</li>
+        <li><strong>The sky is a ring, not a hole.</strong> Light enters annularly so an 8&deg; sun still reaches the rim. The solid medallion at dead centre is the hatch.</li>
+        <li><strong>Noon lands the shadows on the ring floor</strong>, over the carved mandala. Ornament and exhibit, same drawing, two materials.</li>
+      </ul>
+    </div>
+
+</div>
+
+<script>
+// ── Shared geometry ────────────────────────────────────────────────────────
+const M = 20;                 // pixels per metre, both views
+const R_WALL = 12, R_RIM = 9, R_DISC = 4, R_EYE = 1, R_PILLAR = 6.5;
+const THETA0 = -Math.PI / 10; // crossing leaves the rim just west of the north door
+const SWEEP  = Math.PI / 2;   // exactly a quarter — this is the room's thesis
+
+const NS = "http://www.w3.org/2000/svg";
+const el = (n, a = {}) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); return e; };
+const add = (p, n, a, t) => { const e = el(n, a); if (t != null) e.textContent = t; p.appendChild(e); return e; };
+
+// Plan: bearing measured from north, clockwise. +Z is south (screen down).
+const CX = 340, CY = 310;
+const px = (r, th) => [CX + Math.sin(th) * r * M, CY - Math.cos(th) * r * M];
+
+// Spiral centreline: r = 9 - 5t, theta = THETA0 + (pi/2)t
+const spiralPoint = (t) => px(R_RIM - (R_RIM - R_DISC) * t, THETA0 + SWEEP * t);
+
+// ── PLAN ───────────────────────────────────────────────────────────────────
+(function plan() {
+  const g = document.getElementById("plan-g");
+
+  // Chamber floor + the void of the collapse ring
+  add(g, "circle", { cx: CX, cy: CY, r: R_WALL * M, fill: "url(#voidgrad)", stroke: "var(--stone)", "stroke-width": 3 });
+
+  // Rim walk annulus
+  add(g, "path", {
+    d: `M ${CX - R_WALL * M} ${CY} a ${R_WALL * M} ${R_WALL * M} 0 1 0 ${2 * R_WALL * M} 0 a ${R_WALL * M} ${R_WALL * M} 0 1 0 ${-2 * R_WALL * M} 0 Z
+        M ${CX - R_RIM * M} ${CY} a ${R_RIM * M} ${R_RIM * M} 0 1 0 ${2 * R_RIM * M} 0 a ${R_RIM * M} ${R_RIM * M} 0 1 0 ${-2 * R_RIM * M} 0 Z`,
+    "fill-rule": "evenodd", fill: "var(--walk)", opacity: .34
+  });
+
+  // Ring floor — the page. Pale, because it receives the noon shadows.
+  add(g, "path", {
+    d: `M ${CX - R_RIM * M} ${CY} a ${R_RIM * M} ${R_RIM * M} 0 1 0 ${2 * R_RIM * M} 0 a ${R_RIM * M} ${R_RIM * M} 0 1 0 ${-2 * R_RIM * M} 0 Z
+        M ${CX - R_DISC * M} ${CY} a ${R_DISC * M} ${R_DISC * M} 0 1 0 ${2 * R_DISC * M} 0 a ${R_DISC * M} ${R_DISC * M} 0 1 0 ${-2 * R_DISC * M} 0 Z`,
+    "fill-rule": "evenodd", fill: "var(--sand)", opacity: .5
+  });
+  add(g, "circle", { cx: CX, cy: CY, r: R_RIM * M, fill: "none", stroke: "var(--sand)", "stroke-width": 1, "stroke-dasharray": "3 4", opacity: .6 });
+
+  // Four-fold mandala inlay on the ring floor — schematic, C4, no mirror.
+  for (let k = 0; k < 4; k++) {
+    const a = (k * Math.PI) / 2;
+    const gg = add(g, "g", { transform: `rotate(${(a * 180) / Math.PI} ${CX} ${CY})`, opacity: .85 });
+    // One chiral arm per quadrant, swept the same way — C4, no mirror.
+    for (const off of [0, .1]) {
+      const a0 = px(R_DISC + .5 + off * 6, .04), a1 = px(R_RIM - .6 - off * 4, Math.PI / 2 * .82);
+      add(gg, "path", {
+        d: `M ${a0[0]} ${a0[1]} Q ${px(R_PILLAR - .4, Math.PI / 7)[0]} ${px(R_PILLAR - .4, Math.PI / 7)[1]} ${a1[0]} ${a1[1]}`,
+        fill: "none", stroke: "#6a5f47", "stroke-width": 1.4, "stroke-linecap": "round"
+      });
+    }
+  }
+
+  // Centre disc
+  add(g, "circle", { cx: CX, cy: CY, r: R_DISC * M, fill: "var(--walk)", opacity: .55 });
+  add(g, "circle", { cx: CX, cy: CY, r: R_DISC * M, fill: "none", stroke: "var(--stone)", "stroke-width": 1.5 });
+
+  // Spiral crossing — a ribbon of constant 2 m width about the centreline.
+  const N = 160, half = 1.0;
+  let left = [], right = [];
+  for (let i = 0; i <= N; i++) {
+    const t = i / N;
+    const r = R_RIM - (R_RIM - R_DISC) * t, th = THETA0 + SWEEP * t;
+    const dth = half / r;                       // half-width as an angle at this radius
+    left.push(px(r, th - dth));
+    right.push(px(r, th + dth));
+  }
+  const dRibbon =
+    "M " + left.map(p => p.join(" ")).join(" L ") +
+    " L " + right.reverse().map(p => p.join(" ")).join(" L ") + " Z";
+  add(g, "path", { d: dRibbon, fill: "var(--sun)", opacity: .28, stroke: "var(--sun)", "stroke-width": 1.2 });
+
+  // Its centreline, with a direction arrow: the walk to noon.
+  let dCentre = "M " + spiralPoint(0).join(" ");
+  for (let i = 1; i <= N; i++) dCentre += " L " + spiralPoint(i / N).join(" ");
+  add(g, "path", { d: dCentre, fill: "none", stroke: "var(--sun)", "stroke-width": 1.4, "stroke-dasharray": "5 4", "marker-end": "url(#arrow)" });
+
+  // The 90-degree sweep, annotated as two radii from the centre.
+  for (const th of [THETA0, THETA0 + SWEEP]) {
+    const a = px(R_DISC, th), b = px(R_WALL + .6, th);
+    add(g, "line", { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: "var(--sunfaint)", "stroke-width": .8, "stroke-dasharray": "2 5" });
+  }
+  const arcR = (R_WALL + 1.4) * M;
+  const s = px(R_WALL + 1.4, THETA0), e2 = px(R_WALL + 1.4, THETA0 + SWEEP);
+  add(g, "path", { d: `M ${s[0]} ${s[1]} A ${arcR} ${arcR} 0 0 1 ${e2[0]} ${e2[1]}`, fill: "none", stroke: "var(--sun)", "stroke-width": 1, "marker-start": "url(#arrow)", "marker-end": "url(#arrow)" });
+  const mid = px(R_WALL + 2.5, THETA0 + SWEEP / 2);
+  add(g, "text", { x: mid[0], y: mid[1], class: "lbl-sun", "text-anchor": "middle" }, "90° sweep");
+  add(g, "text", { x: mid[0], y: mid[1] + 13, class: "lbl-small", "text-anchor": "middle" }, "= QUARTER-SAME");
+
+  // Four pillars, faced inward. U opposite V; S opposite T.
+  const stations = [
+    { th: 0,             id: "U", note: "leader pro",  c: "var(--blue)" },
+    { th: Math.PI / 2,   id: "S", note: "both pro",    c: "var(--blue)" },
+    { th: Math.PI,       id: "V", note: "leader anti", c: "var(--red)"  },
+    { th: -Math.PI / 2,  id: "T", note: "both anti",   c: "var(--red)"  },
+  ];
+  for (const st of stations) {
+    const [x, y] = px(R_PILLAR, st.th);
+    add(g, "circle", { cx: x, cy: y, r: 1.1 * M, fill: "var(--stone)", stroke: "var(--ink)", "stroke-width": 1 });
+    add(g, "circle", { cx: x, cy: y, r: .6 * M, fill: st.c, opacity: .85 });
+    const [lx, ly] = px(R_PILLAR + 2.9, st.th);
+    add(g, "text", { x: lx, y: ly - 2, class: "lbl", "text-anchor": "middle" }, st.id);
+    add(g, "text", { x: lx, y: ly + 10, class: "lbl-small", "text-anchor": "middle" }, st.note);
+    // faced inward
+    const a1 = px(R_PILLAR - 1.3, st.th), a2 = px(R_PILLAR - 2.3, st.th);
+    add(g, "line", { x1: a1[0], y1: a1[1], x2: a2[0], y2: a2[1], stroke: "var(--dim)", "stroke-width": .8, "marker-end": "url(#arrowdim)" });
+  }
+
+  // The eye
+  add(g, "circle", { cx: CX, cy: CY, r: R_EYE * M, fill: "var(--sun)", opacity: .85 });
+  add(g, "circle", { cx: CX, cy: CY, r: R_EYE * M + 4, fill: "none", stroke: "var(--sun)", "stroke-width": .8, "stroke-dasharray": "2 3" });
+  add(g, "text", { x: CX, y: CY + 4, class: "lbl-small", "text-anchor": "middle", fill: "#12141a" }, "EYE");
+
+  // North door from Air
+  const dw = 2.0;
+  const dl = px(R_WALL, -dw / 2 / R_WALL), dr = px(R_WALL, dw / 2 / R_WALL);
+  add(g, "line", { x1: dl[0], y1: dl[1], x2: dr[0], y2: dr[1], stroke: "var(--sun)", "stroke-width": 5 });
+  add(g, "text", { x: CX, y: CY - (R_WALL + 1.1) * M, class: "lbl", "text-anchor": "middle" }, "from AIR");
+  add(g, "text", { x: CX, y: CY - (R_WALL + 1.1) * M - 12, class: "lbl-small", "text-anchor": "middle" }, "RISING LIGHT CRACK · DAWN");
+
+  // The old east exit, struck out — the room no longer leaves sideways.
+  const [ex, ey] = px(R_WALL + .1, Math.PI / 2);
+  add(g, "line", { x1: ex - 12, y1: ey - 12, x2: ex + 12, y2: ey + 12, stroke: "var(--red)", "stroke-width": 1.4, opacity: .75 });
+  add(g, "line", { x1: ex - 12, y1: ey + 12, x2: ex + 12, y2: ey - 12, stroke: "var(--red)", "stroke-width": 1.4, opacity: .75 });
+  add(g, "text", { x: ex + 18, y: ey - 4, class: "lbl-small", fill: "var(--red)" }, "OLD EAST EXIT —");
+  add(g, "text", { x: ex + 18, y: ey + 7, class: "lbl-small", fill: "var(--red)" }, "DELETED. YOU LEAVE UP.");
+
+  // Radius ticks
+  for (const [r, t] of [[4, "4 m"], [9, "9 m"], [12, "12 m"]]) {
+    const [x, y] = px(r, -Math.PI * 0.75);
+    add(g, "circle", { cx: x, cy: y, r: 2, fill: "var(--dim)" });
+    add(g, "text", { x: x - 6, y: y - 5, class: "lbl-dim", "text-anchor": "end" }, t);
+  }
+
+  // Section cut line A–A, north–south through the eye
+  add(g, "line", { x1: CX, y1: CY - (R_WALL + 2.2) * M, x2: CX, y2: CY + (R_WALL + 2.2) * M, stroke: "var(--dim)", "stroke-width": .7, "stroke-dasharray": "9 4 2 4", opacity: .8 });
+  add(g, "text", { x: CX + 6, y: CY + (R_WALL + 2.2) * M + 2, class: "lbl-small" }, "A");
+  add(g, "text", { x: CX + 6, y: CY - (R_WALL + 2.2) * M - 4, class: "lbl-small" }, "A");
+})();
+
+// ── SECTION ────────────────────────────────────────────────────────────────
+(function section() {
+  const g = document.getElementById("section-g");
+  const SX = 590, SY = 350, HM = 22, VM = 20;     // true 1:1 — no vertical exaggeration
+  const X = (r) => SX + r * HM;
+  const Y = (y) => SY - y * VM;
+  const ROOF = 14.4, WALL_TOP = 15.2;
+
+  // Sky above the roof
+  add(g, "rect", { x: X(-13.4), y: Y(WALL_TOP + 1), width: X(13.4) - X(-13.4), height: Y(-0.4) - Y(WALL_TOP + 1), fill: "#06080e" });
+
+  // Rock mass below the floors
+  add(g, "rect", { x: X(-13.4), y: Y(-0.4), width: X(13.4) - X(-13.4), height: Y(-6.5) - Y(-0.4), fill: "var(--stone)", opacity: .32 });
+
+  // Ring floor — the page. Palest surface, both sides of the cut.
+  for (const s2 of [-1, 1]) {
+    const a = s2 > 0 ? 4 : -9;
+    add(g, "rect", { x: X(a), y: Y(-4.0), width: X(9) - X(4), height: 5, fill: "var(--sand)", opacity: .78 });
+  }
+  // Rim walk
+  for (const s2 of [-1, 1]) {
+    const a = s2 > 0 ? 9 : -12;
+    add(g, "rect", { x: X(a), y: Y(-0.4), width: X(12) - X(9), height: 5, fill: "var(--walk)" });
+  }
+  // Centre disc
+  add(g, "rect", { x: X(-4), y: Y(-0.2), width: X(4) - X(-4), height: 5, fill: "var(--walk)" });
+
+  // The 5 m gap, called out once per side
+  for (const s2 of [-1, 1]) {
+    const m = s2 * 6.5;
+    add(g, "line", { x1: X(s2 > 0 ? 4 : -9), y1: Y(-5.4), x2: X(s2 > 0 ? 9 : -4), y2: Y(-5.4), stroke: "var(--dim)", "stroke-width": .7, "marker-start": "url(#arrowdim)", "marker-end": "url(#arrowdim)" });
+    add(g, "text", { x: X(m), y: Y(-5.9), class: "lbl-dim", "text-anchor": "middle" }, "5 m gap · 3.8 m drop");
+  }
+
+  // Pillars and their performers
+  for (const s2 of [-1, 1]) {
+    const r = s2 * 6.5;
+    add(g, "rect", { x: X(r) - .6 * HM, y: Y(0.4), width: 1.2 * HM, height: Y(-4.0) - Y(0.4), fill: "var(--stone)" });
+    add(g, "rect", { x: X(r) - 1.1 * HM, y: Y(0.4) - 5, width: 2.2 * HM, height: 6, fill: "#525c6e" });
+    add(g, "circle", { cx: X(r), cy: Y(0.4) - 24, r: 6, fill: s2 > 0 ? "var(--blue)" : "var(--red)" });
+    add(g, "line", { x1: X(r), y1: Y(0.4) - 18, x2: X(r), y2: Y(0.4) - 5, stroke: "var(--ink)", "stroke-width": 1.6 });
+    add(g, "text", { x: X(r), y: Y(0.4) - 34, class: "lbl", "text-anchor": "middle" }, s2 > 0 ? "U" : "V");
+  }
+
+  // Chamber walls
+  for (const s2 of [-1, 1]) {
+    add(g, "rect", { x: s2 > 0 ? X(12) : X(-13.4), y: Y(WALL_TOP), width: X(13.4) - X(12), height: Y(-0.4) - Y(WALL_TOP), fill: "var(--stone)", opacity: .8 });
+  }
+
+  // Roof: solid from the wall inward, then the annular opening, then the medallion
+  for (const s2 of [-1, 1]) {
+    add(g, "rect", { x: s2 > 0 ? X(9.6) : X(-12), y: Y(ROOF), width: X(12) - X(9.6), height: 9, fill: "var(--stone)" });
+  }
+  add(g, "rect", { x: X(-3), y: Y(ROOF), width: X(3) - X(-3), height: 9, fill: "var(--stone)" });
+  add(g, "rect", { x: X(-1.1), y: Y(ROOF), width: X(1.1) - X(-1.1), height: 9, fill: "var(--sun)", opacity: .6 });
+
+  // Morning light through the annular opening, landing on the far rim walk.
+  // Schematic: a true 8 deg sun would need ~105 m of run to cross 14.8 m of
+  // fall, so the angle here is steepened to fit the section. The point being
+  // made is WHERE the light lands, not its exact slope.
+  for (let i = 0; i < 4; i++) {
+    // Sunlight is PARALLEL: every ray takes the same horizontal run, so a
+    // 6.6 m opening lands a 6.6 m band. Fanning them to a point would be a lie.
+    const x0 = -(3.4 + i * 1.9);          // inside the left opening (3.0 - 9.6)
+    const x1 = x0 + 15.0;                 // constant run -> parallel
+    add(g, "line", { x1: X(x0), y1: Y(ROOF), x2: X(x1), y2: Y(-0.4), stroke: "var(--sun)", "stroke-width": .85, opacity: .3 });
+  }
+  add(g, "text", { x: X(8.6), y: Y(1.0), class: "lbl-small", "text-anchor": "middle" }, "THE LIT BAND");
+
+  // The eye: plinth at rest, and its travel
+  add(g, "rect", { x: X(-1), y: Y(-0.2), width: X(1) - X(-1), height: Y(-4.2) - Y(-0.2), fill: "var(--sun)", opacity: .4 });
+  add(g, "line", { x1: X(0), y1: Y(0.6), x2: X(0), y2: Y(ROOF - 0.6), stroke: "var(--sun)", "stroke-width": 1.8, "stroke-dasharray": "7 5", "marker-end": "url(#arrow)" });
+
+  // Callouts, placed on opposite sides so they cannot collide
+  add(g, "text", { x: X(1.5), y: Y(8.4), class: "lbl-sun" }, "the ground rises");
+  add(g, "text", { x: X(1.5), y: Y(8.4) + 13, class: "lbl-small" }, "≈14 m · rate to be judged by walking it");
+  add(g, "text", { x: X(0), y: Y(ROOF) + 24, class: "lbl-sun", "text-anchor": "middle" }, "medallion + hatch");
+  add(g, "text", { x: X(-6.6), y: Y(ROOF) - 8, class: "lbl", "text-anchor": "middle" }, "annular sky");
+  add(g, "text", { x: X(6.6), y: Y(ROOF) - 8, class: "lbl", "text-anchor": "middle" }, "annular sky");
+  add(g, "text", { x: X(-10.2), y: Y(9.4), class: "lbl-small", "text-anchor": "middle" }, "DAWN: SUN LOW,");
+  add(g, "text", { x: X(-10.2), y: Y(9.4) + 11, class: "lbl-small", "text-anchor": "middle" }, "SHADOWS RAKE THE WALL");
+
+  // Visitor standing on the disc at noon
+  add(g, "circle", { cx: X(-2.6), cy: Y(1.55), r: 5.5, fill: "var(--ink)" });
+  add(g, "line", { x1: X(-2.6), y1: Y(1.25), x2: X(-2.6), y2: Y(-0.2), stroke: "var(--ink)", "stroke-width": 1.8 });
+  add(g, "text", { x: X(-2.6), y: Y(3.1), class: "lbl-small", "text-anchor": "middle" }, "YOU, AT NOON");
+
+  // Datum labels — staggered left/right so they never stack
+  const marks = [
+    [0.4, "+0.4  pillar caps", 1],
+    [-0.2, "−0.2  centre disc", -1],
+    [-0.4, "−0.4  rim walk", 1],
+    [-4.0, "−4.0  ring floor (the page)", -1],
+  ];
+  for (const [y, t, side] of marks) {
+    add(g, "line", { x1: X(-13.4), y1: Y(y), x2: X(13.4), y2: Y(y), stroke: "var(--faint)", "stroke-width": .6, "stroke-dasharray": "2 5" });
+    add(g, "text", {
+      x: side > 0 ? X(13.8) : X(-13.8),
+      y: Y(y) + 3,
+      class: "lbl-dim",
+      "text-anchor": side > 0 ? "start" : "end",
+    }, t);
+  }
+
+  add(g, "text", { x: X(-13.4), y: Y(-7.4), class: "lbl-small" }, "SECTION A–A · LOOKING EAST · 1:1, NO VERTICAL EXAGGERATION");
+})();
+
+// ── SUN CHART ──────────────────────────────────────────────────────────────
+(function chart() {
+  const g = document.getElementById("chart-g");
+  const L = 70, R = 1110, T = 34, B = 190;
+  const X = (r) => L + (r / 12) * (R - L);
+  const Y = (deg) => B - (deg / 90) * (B - T);
+
+  add(g, "line", { x1: L, y1: B, x2: R, y2: B, stroke: "var(--faint)" });
+  add(g, "line", { x1: L, y1: T, x2: L, y2: B, stroke: "var(--faint)" });
+
+  for (const d of [0, 30, 60, 90]) {
+    add(g, "line", { x1: L, y1: Y(d), x2: R, y2: Y(d), stroke: "var(--faint)", "stroke-width": .5, "stroke-dasharray": "2 5" });
+    add(g, "text", { x: L - 8, y: Y(d) + 3, class: "lbl-dim", "text-anchor": "end" }, d + "°");
+  }
+  for (const r of [0, 4, 9, 12]) {
+    add(g, "text", { x: X(r), y: B + 15, class: "lbl-dim", "text-anchor": "middle" }, r + " m");
+  }
+
+  // elevation = 90 - 82 * (r / 12)
+  add(g, "path", { d: `M ${X(0)} ${Y(90)} L ${X(12)} ${Y(8)}`, fill: "none", stroke: "var(--sun)", "stroke-width": 2.2 });
+
+  // Zone bands
+  const band = (a, b, c, t) => {
+    add(g, "rect", { x: X(a), y: T - 14, width: X(b) - X(a), height: 10, fill: c, opacity: .5 });
+    add(g, "text", { x: (X(a) + X(b)) / 2, y: T - 18, class: "lbl-small", "text-anchor": "middle" }, t);
+  };
+  band(0, 4, "var(--walk)", "DISC");
+  band(4, 9, "var(--sand)", "RING · CROSSING ONLY");
+  band(9, 12, "var(--walk)", "RIM");
+
+  for (const [r, t] of [[0, "zenith — shadows retract"], [12, "8° — shadows rake the wall"]]) {
+    const deg = 90 - 82 * (r / 12);
+    add(g, "circle", { cx: X(r), cy: Y(deg), r: 3.5, fill: "var(--sun)" });
+    add(g, "text", { x: r === 0 ? X(r) + 10 : X(r) - 10, y: Y(deg) - 8, class: "lbl", "text-anchor": r === 0 ? "start" : "end" }, t);
+  }
+  add(g, "text", { x: (L + R) / 2, y: B + 34, class: "lbl-small", "text-anchor": "middle" }, "DISTANCE FROM CENTRE  →  SUN ELEVATION.   BEARING FROM CENTRE  →  SUN AZIMUTH, AT YOUR BACK.");
+})();
+</script>
+</body>
+</html>
