@@ -508,6 +508,8 @@ Last audit: 2025-12-27
     type="button"
     class="corner-toggle"
     aria-label={isPlaying ? "Pause" : "Play"}
+    data-ghost="safe"
+    data-ghost-kind="play"
     onclick={handleCornerToggle}
   >
     <span class="corner-disc">
@@ -530,6 +532,10 @@ Last audit: 2025-12-27
   data-corner-toggle={cornerToggle || undefined}
   data-playing={isPlaying || undefined}
   data-view={viewState}
+  data-ghost="safe"
+  data-ghost-kind="stage"
+  data-ghost-state={isPlaying ? "playing" : undefined}
+  data-ghost-word={word || undefined}
   oncontextmenu={handleContextMenu}
   onpointerdown={handlePointerDown}
   onpointermove={handlePointerMove}
