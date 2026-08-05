@@ -30,7 +30,8 @@ Austen: *"be confident that we've cracked the system."*
 | Result contract | **LOOPs only.** Full LOOP family — plain, rotated, mirrored, flipped, swapped, inverted, rewound, compounds. Freeform closures are discarded, not demoted. |
 | Connectors | Minimal, only when the pair cannot close without them. Fewest possible, visibly marked. Roster = the 24 base sequences (19 + 2 Type 2 + 2 Type 3 + 1 Type 4). |
 | Result display | **Full circles always**, every step shown. |
-| Result grouping | **Grouped by LOOP type.** |
+| Result grouping | **Bucketed by full circle count first** (all the 4-counts together, then the 8s, 12s, 16s…), grouped by LOOP type within each bucket. |
+| Displayed word | Simplified to its smallest repeating unit (`simplifyRepeatedWord`) — AAAA reads as A. |
 | List shape | **Flat rows, one per closure.** A flat list is auditable; a count you can see is the point. |
 | UI | Stripped to the task: two card slots, one Combine button, results. Everything else behind a collapsed Advanced drawer. |
 
@@ -143,6 +144,42 @@ them, the completeness statement:
 Behind a collapsed Advanced drawer: liberty toggles, length and connector
 budgets, JSON paste, and the similarity panel with its sliders. Nothing there
 greets you.
+
+### The count buckets are the primary organisation
+
+**Circle length = unit length × the order of the closing transform.** Plain
+closes in one pass; mirrored, flipped, swapped and 180° rotations take two; 90°
+and 270° take four. So one 4-step unit is a 4-count, an 8-count or a 16-count
+depending only on how it closes — which is why a unit appears in several buckets,
+once per admissible closure. That is the flat five-rows-per-unit list, sorted
+into the counts a performer actually thinks in.
+
+Measured for A + G (unit ≤ 6, connectors ≤ 2, diamond):
+
+| Count | Words | What lives here |
+|---|---|---|
+| 4 | 10 | `AJGD AJGE AJGF AKGD AKGE AKGF ALGD ALGE ALGF AΨGΦ` — all plain |
+| 5 | 18 | plain, one card run longer |
+| 6 | 60 | plain, longer runs still |
+| 8 | 32 | the 4- and 5-step units under a 2-fold closure |
+| 10 | 80 | |
+| 12 | 144 | |
+| 16 | 12 | `AJGΦ AKGΦ ALGΦ AΨGD AΨGE AΨGF` (+ phases) — all quartered |
+| 20 | 50 | quartered |
+| 24 | 54 | quartered |
+
+**The crossing law.** The 4-count and 16-count buckets are separated by exactly
+one thing: whether the two crossings match in kind. J, K, L, D, E, F are shift
+crossings; Ψ and Φ are dash crossings. Match them — shift out and shift back, or
+dash out and dash back — and the unit closes plain at 4. Mix them — a shift out
+and a dash back — and a 90° residue survives the pass, forcing a quartered loop
+at 16. Every word in the 16-count bucket is a mixed crossing; none of the 10
+words in the 4-count bucket is.
+
+This is the corrected form of the parity idea from early in the session. It is
+not about counting shifts in the word: a shift crossing advances the loop 90° and
+a dash crossing advances it 180°, and it is the *residue* of those two that
+decides the count.
 
 ### Sorting and sub-categorising the results
 
