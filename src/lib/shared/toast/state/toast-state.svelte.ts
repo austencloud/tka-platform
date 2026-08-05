@@ -5,6 +5,8 @@
  */
 
 export type ToastType = "info" | "success" | "warning" | "error";
+export type ToastAnnouncement = "assertive" | "polite";
+export type ToastRemovalReason = "dismissed" | "action" | "programmatic";
 
 export interface ToastAction {
   /** Button label, e.g. "Reload". */
@@ -23,6 +25,10 @@ export interface Toast {
   imageUrl?: string;
   /** Optional action button (e.g. a Reload prompt). */
   action?: ToastAction;
+  /** Polite announcements are for low-priority, non-blocking information. */
+  announcement?: ToastAnnouncement;
+  /** Runs only when the person closes the toast or it expires. */
+  onDismiss?: () => void;
 }
 
 // Reactive toast queue
@@ -39,6 +45,8 @@ export interface ShowToastOptions {
   duration?: number;
   imageUrl?: string;
   action?: ToastAction;
+  announcement?: ToastAnnouncement;
+  onDismiss?: () => void;
 }
 
 /**
@@ -65,6 +73,8 @@ export function showToast(
     timestamp: Date.now(),
     imageUrl: options.imageUrl,
     action: options.action,
+    announcement: options.announcement,
+    onDismiss: options.onDismiss,
   };
 
   toastQueue.push(toast);
@@ -74,7 +84,7 @@ export function showToast(
     dismissTimers.set(
       id,
       setTimeout(() => {
-        removeToast(id);
+        removeToast(id, "dismissed");
       }, toast.duration)
     );
   }
@@ -85,7 +95,10 @@ export function showToast(
 /**
  * Remove a specific toast by ID
  */
-export function removeToast(id: string): void {
+export function removeToast(
+  id: string,
+  reason: ToastRemovalReason = "dismissed"
+): void {
   const timer = dismissTimers.get(id);
   if (timer !== undefined) {
     clearTimeout(timer);
@@ -93,7 +106,10 @@ export function removeToast(id: string): void {
   }
   const index = toastQueue.findIndex((t) => t.id === id);
   if (index !== -1) {
-    toastQueue.splice(index, 1);
+    const [removed] = toastQueue.splice(index, 1);
+    if (reason === "dismissed") {
+      removed?.onDismiss?.();
+    }
   }
 }
 

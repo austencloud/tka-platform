@@ -55,8 +55,10 @@
       <div
         class="toast"
         class:has-image={toast.imageUrl}
-        style="--toast-color: {config.color}; --toast-bg: {config.bg}; --toast-text: {config.textColor || 'var(--theme-text)'}"
-        role="alert"
+        style="--toast-color: {config.color}; --toast-bg: {config.bg}; --toast-text: {config.textColor ||
+          'var(--theme-text)'}"
+        role={toast.announcement === "polite" ? "status" : "alert"}
+        aria-live={toast.announcement === "polite" ? "polite" : "assertive"}
       >
         {#if toast.imageUrl}
           <img
@@ -74,7 +76,7 @@
                 class="toast-action accessible-touch-target"
                 onclick={() => {
                   toast.action?.onClick();
-                  removeToast(toast.id);
+                  removeToast(toast.id, "action");
                 }}
               >
                 {toast.action.label}
@@ -82,7 +84,7 @@
             {/if}
             <button
               class="toast-close accessible-touch-target"
-              onclick={() => removeToast(toast.id)}
+              onclick={() => removeToast(toast.id, "dismissed")}
               aria-label="Dismiss"
             >
               <i class="fas fa-times" aria-hidden="true"></i>
@@ -113,8 +115,6 @@
     gap: 12px;
     padding: 14px 18px;
     background: var(--toast-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     border: 1.5px solid var(--toast-color);
     border-radius: 12px;
     box-shadow:
