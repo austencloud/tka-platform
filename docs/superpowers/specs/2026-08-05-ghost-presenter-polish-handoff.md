@@ -137,7 +137,7 @@ Vite HMR remounts caused by my own edits mid-tour** — the same trap the prior
 handoff documents for `window.__ghost`. See Gotchas; it is the single easiest way
 to waste an hour here.
 
-**The docent survives the scene host remounting.** Last commit below. The 110s run
+**The docent survives the scene host remounting.** `42cfcc8e18`. The 110s run
 exposed the real problem the fake one was hiding: **`instancesSeen: [1,2,3,4,5,6]`
 — six docents in 110 seconds** as rooms streamed and wings changed, each one
 throwing away its path, target and seen-exhibits set. It walked forever and
