@@ -256,11 +256,23 @@
 </div>
 
 {#if selectedStep}
-  <PictographInspectModal show stepData={selectedStep} onClose={closeEditor} onDone={handleEditorDone} />
+  <!-- The inspector fills its positioned host. This host is a fullscreen modal
+       of its own, so it supplies a fixed viewport-sized box to fill. -->
+  <div class="inspect-host">
+    <PictographInspectModal show stepData={selectedStep} onClose={closeEditor} onDone={handleEditorDone} />
+  </div>
 {/if}
 
 
 <style>
+  /* Full-size positioned box for the inspector to fill. Sits above this host's
+     own backdrop so it covers the card editor while it's open. */
+  .inspect-host {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-modal) + 1);
+  }
+
   .modal-backdrop {
     position: fixed;
     inset: 0;

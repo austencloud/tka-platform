@@ -11,6 +11,7 @@
 <script lang="ts">
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import PropPlacementGrid from "$lib/shared/pictograph/grid/components/PropPlacementGrid.svelte";
+  import type { PropPlacementChange } from "$lib/shared/pictograph/grid/domain/prop-placement";
   import StartPositionEditMode from "./StartPositionEditMode.svelte";
   import DurationControl from "./DurationControl.svelte";
   import PictographInspectModal from "./PictographInspectModal.svelte";
@@ -35,6 +36,12 @@
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
+  import { UndoOperationType } from "$lib/features/create/shared/services/undo-manager";
+  import {
+    getShortestRotationStepsBetweenLocations,
+    rotateLocation,
+  } from "$lib/shared/create/services/rotation-helpers";
+  import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
   import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
   import { onMount } from "svelte";
 
@@ -83,7 +90,10 @@
 
   // Get layout context for responsive behavior
   const ctx = getCreateModuleContext();
-  const { layout, panelState } = ctx;
+  const { CreateModuleState, layout, panelState } = ctx;
+  const activeSequenceState = $derived.by(() =>
+    CreateModuleState.getActiveTabSequenceState()
+  );
   const isSideBySideLayout = $derived(layout.shouldUseSideBySideLayout);
   let editorWidth = $state(0);
   let editorHeight = $state(0);
@@ -166,6 +176,13 @@
     startBlueLocation === GridLocation.CENTER ||
       startRedLocation === GridLocation.CENTER
   );
+  let placementGrid = $state<ReturnType<typeof PropPlacementGrid> | null>(null);
+  let activeMoveColor = $state<MotionColor | null>(null);
+  let isRepositioning = $state(false);
+  let placementResetEpoch = $state(0);
+  const placementGridKey = $derived(
+    `${startGridMode}:${startBlueLocation ?? ""}:${startRedLocation ?? ""}:${placementResetEpoch}`
+  );
 
   const stepLabel = $derived.by(() => {
     if (displayedStepNumber === null) return "";
@@ -199,7 +216,8 @@
     return sequence.steps.reduce((acc, step, idx) => {
       const blue = step?.motions?.[MotionColor.BLUE];
       const red = step?.motions?.[MotionColor.RED];
-      const blueTurnsNum = blue?.turns === "fl" ? -0.5 : Number(blue?.turns ?? 0);
+      const blueTurnsNum =
+        blue?.turns === "fl" ? -0.5 : Number(blue?.turns ?? 0);
       const redTurnsNum = red?.turns === "fl" ? -0.5 : Number(red?.turns ?? 0);
       return acc + idx * 1000 + blueTurnsNum * 100 + redTurnsNum * 10;
     }, sequence.steps.length);
@@ -247,7 +265,7 @@
             duration: "duration",
           } as const
         )[stepEditorTourState.currentStop]
-      : "none",
+      : "none"
   );
 
   // Beta swap state — both hands end at same location. Invisible placeholder =
@@ -267,12 +285,18 @@
   // Keyboard handler for B key beta swap toggle
   function handleBetaSwapKeydown(event: KeyboardEvent) {
     if (event.key.toLowerCase() !== "b") return;
-    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+    if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)
+      return;
     if (!isOpen || !hasSelection || isStartPositionSelected) return;
     if (!isBetaPosition) return;
     if (hasArrowSelected) return;
     const target = event.target as HTMLElement;
-    if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
+    if (
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
+      target.isContentEditable
+    )
+      return;
     event.preventDefault();
     onBetaSwapToggle?.();
   }
@@ -313,6 +337,119 @@
     // Also update the displayed step data locally for immediate visual feedback
     displayedStepData = updatedStepData;
   }
+
+  function handlePlacementChange(change: PropPlacementChange) {
+    activeMoveColor = change.activeColor;
+  }
+
+  function handleMoveProp(color: MotionColor) {
+    if (isRepositioning || startPositionUsesCenter) return;
+    placementGrid?.moveProp(color);
+  }
+
+  async function rotateStartPositionLocation(
+    color: MotionColor,
+    direction: "clockwise" | "counterclockwise",
+    rotationSteps: number,
+    targetLocation: GridLocation
+  ) {
+    if (
+      !isStartPositionSelected ||
+      isRepositioning ||
+      startPositionUsesCenter ||
+      rotationSteps < 1
+    ) {
+      return;
+    }
+
+    const targetHand = color === MotionColor.BLUE ? "blue" : "red";
+    const directionStep = direction === "clockwise" ? 1 : -1;
+    isRepositioning = true;
+    activeMoveColor = null;
+    CreateModuleState.pushUndoSnapshot(UndoOperationType.ROTATE_SEQUENCE);
+    setGridRotationDirection(directionStep);
+
+    try {
+      await activeSequenceState.rotateSequence(
+        direction,
+        targetHand,
+        rotationSteps
+      );
+
+      const updatedLocation =
+        activeSequenceState.selectedStartPosition?.motions?.[color]
+          ?.startLocation;
+      if (updatedLocation !== targetLocation) {
+        placementResetEpoch += 1;
+      }
+    } finally {
+      isRepositioning = false;
+    }
+  }
+
+  async function handleLocationRotate(
+    color: MotionColor,
+    direction: "clockwise" | "counterclockwise"
+  ) {
+    const currentLocation =
+      color === MotionColor.BLUE ? startBlueLocation : startRedLocation;
+    if (currentLocation === null || currentLocation === GridLocation.CENTER) {
+      return;
+    }
+
+    const directionStep = direction === "clockwise" ? 1 : -1;
+    const targetLocation = rotateLocation(
+      currentLocation,
+      directionStep
+    ) as GridLocation;
+    await rotateStartPositionLocation(color, direction, 1, targetLocation);
+  }
+
+  async function handlePlacementComplete(
+    blueLocation: GridLocation,
+    redLocation: GridLocation
+  ) {
+    if (
+      !isStartPositionSelected ||
+      isRepositioning ||
+      startBlueLocation === null ||
+      startRedLocation === null
+    ) {
+      return;
+    }
+
+    const blueChanged = blueLocation !== startBlueLocation;
+    const redChanged = redLocation !== startRedLocation;
+
+    // Move mode changes one prop at a time. Pressing an occupied prop before an
+    // aim drag also publishes the current pair, which is intentionally a no-op.
+    if (!blueChanged && !redChanged) return;
+    if (blueChanged === redChanged) {
+      placementResetEpoch += 1;
+      return;
+    }
+
+    const targetColor = blueChanged ? MotionColor.BLUE : MotionColor.RED;
+    const previousLocation = blueChanged ? startBlueLocation : startRedLocation;
+    const targetLocation = blueChanged ? blueLocation : redLocation;
+    const rotationSteps = getShortestRotationStepsBetweenLocations(
+      previousLocation,
+      targetLocation
+    );
+
+    if (rotationSteps === null || rotationSteps === 0) {
+      placementResetEpoch += 1;
+      return;
+    }
+
+    const direction = rotationSteps > 0 ? "clockwise" : "counterclockwise";
+    await rotateStartPositionLocation(
+      targetColor,
+      direction,
+      Math.abs(rotationSteps),
+      targetLocation
+    );
+  }
 </script>
 
 <div
@@ -322,189 +459,211 @@
   bind:clientWidth={editorWidth}
   bind:clientHeight={editorHeight}
 >
-    <!-- Step Editor Tour overlay -->
-    <StepEditorTour />
+  <!-- Step Editor Tour overlay -->
+  <StepEditorTour />
 
-    <!-- Header -->
-    <header class="panel-header" class:tour-dim={tourHighlight !== "none"}>
-      <div class="header-info">
-        <h2>Step Editor</h2>
-        <span class="subtitle">
-          {stepLabel}
-          {#if cascadeCount > 0 && !isStartPositionSelected}
-            <span class="cascade-indicator" class:pulse={showCascadePulse}>
-              → +{cascadeCount} step{cascadeCount === 1 ? "" : "s"}
-            </span>
-          {/if}
-          {#if isBetaPosition && isBetaSwapped}
-            <button
-              class="beta-swap-badge active"
-              onclick={() => onBetaSwapToggle?.()}
-              title="Beta offset swapped (B to toggle)"
-              aria-label="Beta offset swapped, press B to toggle"
-              aria-pressed="true"
-            >β⇄</button>
-          {:else if isBetaPosition}
-            <button
-              class="beta-swap-badge"
-              onclick={() => onBetaSwapToggle?.()}
-              title="Swap beta offset (B)"
-              aria-label="Swap beta offset, press B to toggle"
-              aria-pressed="false"
-            >β⇄</button>
-          {/if}
-        </span>
-      </div>
-
-      <!-- Arrow adjustment panel in header when arrow is selected -->
-      {#if isAdmin() && hasArrowSelected && displayedStepData}
-        <ArrowAdjustmentPanel
-          stepData={displayedStepData}
-          onStepDataUpdate={handleStepDataUpdate}
-          {onPushUndoSnapshot}
-          keyboardActive={!showInspectModal}
-        />
-        <ArrowAdjustmentHistory />
-      {/if}
-
-      <div class="header-actions">
-        <!-- Help button -->
-        <HelpButton
-          onclick={() => stepEditorTourState.restart()}
-          ariaLabel="Replay step editor tour"
-          size="compact"
-        />
-        {#if isAdmin() && hasSelection && displayedStepData}
-          <button
-            class="icon-btn inspect"
-            onclick={handleOpenInspect}
-            aria-label="Inspect pictograph data"
-            title="Inspect pictograph data (dev)"
-          >
-            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-          </button>
+  <!-- Header -->
+  <header class="panel-header" class:tour-dim={tourHighlight !== "none"}>
+    <div class="header-info">
+      <h2>Step Editor</h2>
+      <span class="subtitle">
+        {stepLabel}
+        {#if cascadeCount > 0 && !isStartPositionSelected}
+          <span class="cascade-indicator" class:pulse={showCascadePulse}>
+            → +{cascadeCount} step{cascadeCount === 1 ? "" : "s"}
+          </span>
         {/if}
-        {#if onDelete && hasSelection}
+        {#if isBetaPosition && isBetaSwapped}
           <button
-            class="icon-btn delete"
-            onclick={() => onDelete()}
-            aria-label={isStartPositionSelected
-              ? "Delete start position"
-              : "Delete step"}
-            title={isStartPositionSelected
-              ? "Delete start position"
-              : "Delete this step"}
+            class="beta-swap-badge active"
+            onclick={() => onBetaSwapToggle?.()}
+            title="Beta offset swapped (B to toggle)"
+            aria-label="Beta offset swapped, press B to toggle"
+            aria-pressed="true">β⇄</button
           >
-            <i class="fa-solid fa-trash" aria-hidden="true"></i>
-          </button>
+        {:else if isBetaPosition}
+          <button
+            class="beta-swap-badge"
+            onclick={() => onBetaSwapToggle?.()}
+            title="Swap beta offset (B)"
+            aria-label="Swap beta offset, press B to toggle"
+            aria-pressed="false">β⇄</button
+          >
         {/if}
+      </span>
+    </div>
+
+    <!-- Arrow adjustment panel in header when arrow is selected -->
+    {#if isAdmin() && hasArrowSelected && displayedStepData}
+      <ArrowAdjustmentPanel
+        stepData={displayedStepData}
+        onStepDataUpdate={handleStepDataUpdate}
+        {onPushUndoSnapshot}
+        keyboardActive={!showInspectModal}
+      />
+      <ArrowAdjustmentHistory />
+    {/if}
+
+    <div class="header-actions">
+      <!-- Help button -->
+      <HelpButton
+        onclick={() => stepEditorTourState.restart()}
+        ariaLabel="Replay step editor tour"
+        size="compact"
+      />
+      {#if isAdmin() && hasSelection && displayedStepData}
         <button
-          class="icon-btn close"
-          onclick={handleClose}
-          aria-label="Close step editor"
+          class="icon-btn inspect"
+          onclick={handleOpenInspect}
+          aria-label="Inspect pictograph data"
+          title="Inspect pictograph data (dev)"
         >
-          <i class="fas fa-times" aria-hidden="true"></i>
+          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
         </button>
-      </div>
-    </header>
-
-    <div class="editor-content">
-      <!-- Pictograph Preview - shown on both mobile and desktop when beat selected -->
-      <!-- Duration is now rendered INSIDE the pictograph via DurationGlyph -->
-      {#if hasSelection && displayedStepData}
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div
-          class="preview-section"
-          class:mobile={!isSideBySideLayout}
-          class:tour-highlight={tourHighlight === "preview"}
-          class:tour-dim={tourHighlight !== "none" && tourHighlight !== "preview"}
-          onclick={(e) => {
-            if (hasArrowSelected && !(e.target as HTMLElement).closest('[role="button"]')) {
-              selectedArrowState.clearSelection();
-            }
-          }}
+      {/if}
+      {#if onDelete && hasSelection}
+        <button
+          class="icon-btn delete"
+          onclick={() => onDelete()}
+          aria-label={isStartPositionSelected
+            ? "Delete start position"
+            : "Delete step"}
+          title={isStartPositionSelected
+            ? "Delete start position"
+            : "Delete this step"}
         >
-          <div class="pictograph-container">
-            {#if canAimStartPosition && startBlueLocation && startRedLocation}
-              <div class="start-position-aim" data-swipe-block>
+          <i class="fa-solid fa-trash" aria-hidden="true"></i>
+        </button>
+      {/if}
+      <button
+        class="icon-btn close"
+        onclick={handleClose}
+        aria-label="Close step editor"
+      >
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </div>
+  </header>
+
+  <div class="editor-content">
+    <!-- Pictograph Preview - shown on both mobile and desktop when beat selected -->
+    <!-- Duration is now rendered INSIDE the pictograph via DurationGlyph -->
+    {#if hasSelection && displayedStepData}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="preview-section"
+        class:mobile={!isSideBySideLayout}
+        class:tour-highlight={tourHighlight === "preview"}
+        class:tour-dim={tourHighlight !== "none" && tourHighlight !== "preview"}
+        onclick={(e) => {
+          if (
+            hasArrowSelected &&
+            !(e.target as HTMLElement).closest('[role="button"]')
+          ) {
+            selectedArrowState.clearSelection();
+          }
+        }}
+      >
+        <div class="pictograph-container" class:aiming={canAimStartPosition}>
+          {#if canAimStartPosition && startBlueLocation && startRedLocation}
+            <div class="start-position-aim" data-swipe-block>
+              {#key placementGridKey}
                 <PropPlacementGrid
+                  bind:this={placementGrid}
                   gridMode={startGridMode}
                   bluePropType={startBluePropType}
                   redPropType={startRedPropType}
-                  blueOrientation={startBlueMotion?.startOrientation ?? Orientation.IN}
-                  redOrientation={startRedMotion?.startOrientation ?? Orientation.IN}
+                  blueOrientation={startBlueMotion?.startOrientation ??
+                    Orientation.IN}
+                  redOrientation={startRedMotion?.startOrientation ??
+                    Orientation.IN}
                   initialBlueLocation={startBlueLocation}
                   initialRedLocation={startRedLocation}
                   betaSwapped={displayedStepData.betaSwapped}
                   showCenter={startPositionUsesCenter}
                   editAfterCompletion
+                  disabled={isRepositioning}
                   showUndo={false}
                   renderTray={false}
                   hitTargetRadius={startPositionHitTargetRadius}
+                  onChange={handlePlacementChange}
+                  onPlacementComplete={handlePlacementComplete}
                   {onOrientationChange}
                 />
-              </div>
-            {:else}
-              <PictographContainer
-                pictographData={displayedStepData}
-                arrowsClickable={isAdmin()}
-                disableTransitions={true}
-                propRenderContext="editor"
-              />
-            {/if}
-          </div>
-        </div>
-      {/if}
-
-      <!-- Controls - different layout for mobile vs desktop -->
-      <div
-        class="controls-section"
-        class:mobile={!isSideBySideLayout}
-        class:duration-only={hasSelection && !isStartPositionSelected}
-      >
-        {#if !hasSelection}
-          <div class="no-selection">
-            <i class="fas fa-hand-pointer" aria-hidden="true"></i>
-            <p>Select a step to edit</p>
-          </div>
-        {:else if isStartPositionSelected}
-          <StartPositionEditMode
-            startPositionData={displayedStepData}
-            stacked={!isSideBySideLayout}
-            compact={!isSideBySideLayout || isShortWideEditor}
-            {onOrientationChange}
-          />
-        {:else}
-          {#if onDurationChange}
-            <div
-              class="tour-section"
-              class:tour-highlight={tourHighlight === "duration"}
-              class:tour-dim={tourHighlight !== "none" && tourHighlight !== "duration"}
-            >
-              <DurationControl
-                duration={displayedStepData?.duration ?? 1}
-                compact={!isSideBySideLayout}
-                onDurationChange={onDurationChange}
-              />
+              {/key}
             </div>
+          {:else}
+            <PictographContainer
+              pictographData={displayedStepData}
+              arrowsClickable={isAdmin()}
+              disableTransitions={true}
+              propRenderContext="editor"
+            />
           {/if}
-          <!-- Blue/red turns controls now live in the shared, persistent
+        </div>
+      </div>
+    {/if}
+
+    <!-- Controls - different layout for mobile vs desktop -->
+    <div
+      class="controls-section"
+      class:mobile={!isSideBySideLayout}
+      class:duration-only={hasSelection && !isStartPositionSelected}
+    >
+      {#if !hasSelection}
+        <div class="no-selection">
+          <i class="fas fa-hand-pointer" aria-hidden="true"></i>
+          <p>Select a step to edit</p>
+        </div>
+      {:else if isStartPositionSelected}
+        <StartPositionEditMode
+          startPositionData={displayedStepData}
+          stacked={!isSideBySideLayout}
+          compact={!isSideBySideLayout || isShortWideEditor}
+          {activeMoveColor}
+          repositionDisabled={startPositionUsesCenter}
+          {isRepositioning}
+          {onOrientationChange}
+          onLocationRotate={handleLocationRotate}
+          onMoveProp={handleMoveProp}
+        />
+      {:else}
+        {#if onDurationChange}
+          <div
+            class="tour-section"
+            class:tour-highlight={tourHighlight === "duration"}
+            class:tour-dim={tourHighlight !== "none" &&
+              tourHighlight !== "duration"}
+          >
+            <DurationControl
+              duration={displayedStepData?.duration ?? 1}
+              compact={!isSideBySideLayout}
+              {onDurationChange}
+            />
+          </div>
+        {/if}
+        <!-- Blue/red turns controls now live in the shared, persistent
              StepControlsZone (rendered by the coordinator below this panel), so
              they morph across single ↔ multi instead of being rebuilt here. -->
-        {/if}
-      </div>
+      {/if}
     </div>
   </div>
+</div>
 
-<!-- Inspect Modal (admin-only). Guard on a valid step + admin so a persisted
-     open flag can't restore an empty modal or surface it to non-admins. -->
+<!-- Inspect view (admin-only). Guard on a valid step + admin so a persisted
+     open flag can't restore an empty view or surface it to non-admins.
+
+     Deliberately a SIBLING of .editor-panel, not a child. The inspector fills
+     the drawer, and .editor-panel declares `container-type: size` — which makes
+     it a containing block for fixed descendants as well as absolute ones, and
+     it is only the editor's 716px top zone. Mounting inside it would shrink the
+     inspector to less than the dialog it used to cover. -->
 <PictographInspectModal
   show={showInspectModal && isAdmin() && !!displayedStepData}
   stepData={displayedStepData}
   onClose={handleCloseInspect}
 />
-
 
 <style>
   /* ============================================================================
@@ -773,6 +932,18 @@
     border-radius: 12px;
   }
 
+  /* The placement grid frames its own board and carries a prompt line above it.
+     Locking that pair inside a square card left a band of empty card under the
+     board and read as a card sitting inside the panel's card. Aiming gets the
+     whole preview area instead; the board still keeps itself square. */
+  .pictograph-container.aiming {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    background: none;
+    border-radius: 0;
+  }
+
   .start-position-aim {
     width: 100%;
     height: 100%;
@@ -876,10 +1047,14 @@
     z-index: 50;
     opacity: 1;
     box-shadow:
-      0 0 0 2px color-mix(in srgb, var(--feature-edit, #8b5cf6) 70%, transparent),
-      0 0 24px 4px color-mix(in srgb, var(--feature-edit, #8b5cf6) 35%, transparent);
+      0 0 0 2px
+        color-mix(in srgb, var(--feature-edit, #8b5cf6) 70%, transparent),
+      0 0 24px 4px
+        color-mix(in srgb, var(--feature-edit, #8b5cf6) 35%, transparent);
     border-radius: 8px;
-    transition: opacity 0.3s ease, box-shadow 0.3s ease;
+    transition:
+      opacity 0.3s ease,
+      box-shadow 0.3s ease;
   }
 
   /* ============================================================================

@@ -383,11 +383,10 @@
     }
   }
 
-  function handleBackdropClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) {
-      requestClose();
-    }
-  }
+  // No click-outside close any more: the panel fills its host edge to edge, so
+  // there is no "outside" left to click — a backdrop handler here would just be
+  // a way to dismiss the editor by clicking its own background. Escape and the
+  // header's close button are the exits.
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
@@ -404,8 +403,7 @@
 
 {#if show && stepData}
   <div
-    class="modal-backdrop"
-    onclick={handleBackdropClick}
+    class="inspect-surface"
     onkeydown={handleKeydown}
     role="dialog"
     aria-modal="true"
@@ -511,37 +509,42 @@
 {/if}
 
 <style>
-  .modal-backdrop {
+  /*
+   * A VIEW, not a dialog.
+   *
+   * This was a `position: fixed` modal with its own scrim, size caps and
+   * centering — rendered inside the step-editor drawer, whose <dialog> carries
+   * transform + will-change and therefore captures fixed positioning. So it was
+   * a viewport-modal that could never reach the viewport: it dimmed a surface
+   * that was already dimmed glass, sized itself against a viewport it wasn't in,
+   * and centered the result in a column a fifth that width. The empty bands, the
+   * 280px hero, the dead responsive tier and the near-black stack were all
+   * downstream of that one mistake.
+   *
+   * It now fills its host and nothing else. `fixed` already resolves to the
+   * drawer's <dialog> (transform + will-change make it the containing block) and
+   * to the viewport in the choreo card host — so one rule serves both, and the
+   * containing block that used to be the trap becomes the feature.
+   */
+  .inspect-surface {
     position: fixed;
     inset: 0;
     z-index: var(--z-modal);
-    /* This scrim sits INSIDE the step-editor drawer, over a surface that is
-       already dimmed glass. At 0.9 it composited with the panel's own 0.75 black
-       to ~97% black — the panel became a black box inside a black box and the
-       scene behind was erased. It only has to separate the panel from the
-       drawer, not black out a page. */
-    background: rgba(0, 0, 0, 0.55);
     display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
     animation: fadeIn var(--duration-fast, 0.15s) ease-out;
   }
 
   .modal-content {
+    /* The panel token is translucent (0.75), which was fine under a scrim and is
+       not fine without one — the step editor behind it stayed legible and the two
+       headers overlapped. Blurring the backdrop destroys the text underneath
+       while keeping the scene's colour, so the panel reads as frosted depth
+       rather than as a second opaque slab. */
     background: var(--theme-panel-bg, rgba(13, 17, 23, 0.98));
-    border: 1px solid var(--theme-stroke, #30363d);
-    border-radius: 8px;
-    /* Use horizontal space on wide/4K screens instead of a narrow tall strip. */
-    width: min(96vw, 1800px);
-    /* Fill the host, capped. This panel is usually rendered inside the step-editor
-       drawer, whose <dialog> carries transform + will-change and is therefore the
-       containing block for the fixed backdrop — so "the host" is a ~910px-wide
-       column, not the viewport. Hugging content there centered a 594px box in
-       1005px of space and threw away 41% of the height. */
-    /* The cap scales with the screen instead of freezing at 1040px, which used
-       less than half the column on a 2160-tall display. */
-    height: min(100%, max(1040px, 78vh));
+    backdrop-filter: blur(22px) saturate(115%);
+    -webkit-backdrop-filter: blur(22px) saturate(115%);
+    width: 100%;
+    height: 100%;
     overflow: hidden;
     /* Everything below sizes off THIS box, not the viewport. Without it the
        responsive tier keyed to the panel's own width can never fire. */
@@ -549,8 +552,6 @@
     container-name: inspect;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 16px 64px rgba(0, 0, 0, 0.7);
-    animation: slideUp var(--duration-normal, 0.3s) ease-out;
   }
 
   .modal-body {
@@ -740,29 +741,12 @@
     }
   }
 
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @media (max-width: 600px) {
-    .modal-content {
-      max-width: 100%;
-      border-radius: 6px;
-    }
-  }
+  /* The old `slideUp` keyframes and the 600px card-shape tier went with the
+     dialog shell: a view that fills its host has no card to round off and no
+     off-centre position to rise from. */
 
   @media (prefers-reduced-motion: reduce) {
-    .modal-backdrop {
-      animation: none;
-    }
-    .modal-content {
+    .inspect-surface {
       animation: none;
     }
   }
