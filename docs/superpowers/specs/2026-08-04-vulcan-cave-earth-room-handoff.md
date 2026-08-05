@@ -76,9 +76,11 @@ wing grammar + roster canon:
   only room viewed from above, barrier = 6 m vertical drop, Tog-Same's
   convergence read from overhead), Air "The Chimney" (+8.4 m switchback
   climb, Fire's designed phase-twin), Sun "The Sundial" (round, daylit,
-  oculus beam sweeping four stations), Moon "The Still Room" (performers
-  visible only as reflections in a black pool; `MuseumMirror.svelte` already
-  provides the Reflector). Wing pacing thesis: no two adjacent rooms share a
+  oculus beam sweeping four stations — NOTE: beam since rejected by Austen,
+  see below), Moon — SUPERSEDED 2026-08-05, now "The Sea of Tranquility"
+  (the wing stops being a cave and opens onto the lunar surface; the old
+  "Still Room" reflection-pool concept and its `MuseumMirror.svelte`
+  Reflector path are retired). Wing pacing thesis: no two adjacent rooms share a
   dominant axis. Build order: Earth next, deliberately spectacle-free.
   AWAITING AUSTEN'S REVIEW — treat it as a proposal, not approved canon; the
   Earth brainstorm starts by walking him through the Earth section.
@@ -207,10 +209,33 @@ brainstorm with Austen (mushroom-coffee session) produced:
   hopping (Austen's literal pitch). Austen has not picked. The updraft
   mechanic = trigger volume adding +y velocity with soft terminal speed;
   prototype on a bare shaft and gate on feel BEFORE building the room.
-- **Moon candidate upgraded**: "be on the moon" using `scenes/cosmic/`
-  assets (LunarGroundPlane, EarthSphere, Starfield) now co-equal with the
-  Still Room reflection pool. Sun remains undecided (sun-bubble idea logged,
-  Austen lukewarm on it).
+- **Moon DECIDED 2026-08-05 — "be on the moon" wins; Still Room retired.**
+  Austen: *"put the fucking person on the moon ... make them think holy shit
+  I just walked through the door and I'm on the moon."* The reflection pool
+  is retired outright, NOT merged — a mare-pool hybrid was considered and
+  dropped, since repeating Water's mirror pool as the wing's closing image
+  was the main problem the surface concept solves. Built from `scenes/cosmic/`
+  (`LunarGroundPlane`, `EarthSphere`, `Starfield`, `EarthGodRays`,
+  `LunarCrystals`, `MeteorStreaks`, `NebulaLayer` — all verified on disk).
+  Approved in the same session: low gravity (persistent, player-driven —
+  distinct from Air's scripted lift, but SHARES the walker/ground-clamp risk,
+  so coordinate the prototypes); total silence (the only room with no audio
+  bed, and it must be a deliberate registry entry so it doesn't read as a
+  bug); two-source lighting, hard sun key plus Earthshine fill, which Austen
+  is skeptical of and gated to graybox. The barrier is plain scale — no wall,
+  no drop. A distance-misjudgement effect was considered and is flagged
+  UNPROVEN: do not build the barrier on it. The room's cost profile flipped —
+  it no longer carries the real-time planar Reflector, but it does carry an
+  uncapped open-sky room on a tile system built for enclosed bays. Full
+  rewritten section: `## Moon — "The Sea of Tranquility"` in the all-rooms doc.
+- **Sun — beam mechanism rejected in principle, room still undecided.**
+  Austen on the Sundial's sweeping beam: *"I'm not sold on the whole notion of
+  a spotlight beam revealing one performer at a time."* Parked, not replaced.
+  Two live directions: glare inversion (barrier and light channel become the
+  same thing — the lit performer is the one you CANNOT look at), or small,
+  close and hot, which is newly available because Moon has taken over the
+  wing's bright-open-peak role. Sun is now the only room with no agreed
+  mechanism. The sun-bubble idea remains logged with Austen lukewarm on it.
 - **Standing directive**: every room's Phase 2 art pass starts with an
   inventory of the existing scene libraries (`scenes/ember|ocean|cosmic|
   celestial|autumn`) and `static/models/` GLBs before authoring anything.
