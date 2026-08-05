@@ -15,7 +15,7 @@
   import { getEffectState } from "./state/effect-state.svelte";
   import { getEffectsConfigContext as getUnifiedEffectsState } from "$lib/shared/effects/state/effects-config-context";
   import { getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
-  import { resolveGhost3D, resolveSparkles3D, resolveZap3D, resolveGoo3D, resolveBubbles3D, resolvePetals3D, resolveSmoke3D, resolveFire3D } from "$lib/shared/effects/translators/webgl3d-translator";
+  import { resolveGhost3D, resolveSparkles3D, resolveZap3D, resolveGoo3D, resolveBubbles3D, resolvePetals3D, resolveSmoke3D } from "$lib/shared/effects/translators/webgl3d-translator";
   import { AUSTEN_STAFF } from "@austencloud/scene-3d";
 
   // Effect components
@@ -28,7 +28,6 @@
   // unmounted for a period, which silently cost those eight effects their 3D
   // path; tests/unit/effects/effect-orchestrator-mounts-layer.test.ts now
   // guards against that recurring.
-  import FireEmitter from "./particles/FireEmitter.svelte";
   import SparkleEmitter from "./particles/SparkleEmitter.svelte";
   import ElectricityArc from "./energy/ElectricityArc.svelte";
   // PropMotionEffects is the LEGACY per-prop motion blur/speed-line mount
@@ -131,11 +130,6 @@
   const smokeShowRightEnd = $derived(
     smoke3D?.trackingMode === "right_end" || smoke3D?.trackingMode === "both_ends",
   );
-  const fire3D = $derived(unifiedState ? resolveFire3D(unifiedState.fire) : null);
-  const fireEnabled = $derived(
-    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "fire" : false,
-  );
-
   /**
    * Pick the phantom color for the Ghost effect. Ghost is prop-matched: each
    * prop's ghosts wear that prop's unified trail color.
@@ -263,46 +257,10 @@
 <!-- Trails render via EffectOrchestrator3D (Trail3D ribbon) in the rig's
      effectsSlot, not here. -->
 
-<!-- =============================================================================
-     Fire Effects (on prop ends)
-     ============================================================================= -->
-{#if fireEnabled && fire3D && isPlaying}
-  <!-- Blue prop fire -->
-  {#if blueEnds}
-    <FireEmitter
-      position={blueEnds.positive}
-      enabled={true}
-      intensity={fire3D.intensity}
-      velocityInfluence={0.3}
-      propVelocity={blueVelocityVec}
-    />
-    <FireEmitter
-      position={blueEnds.negative}
-      enabled={true}
-      intensity={fire3D.intensity * 0.7}
-      velocityInfluence={0.3}
-      propVelocity={blueVelocityVec}
-    />
-  {/if}
-
-  <!-- Red prop fire -->
-  {#if redEnds}
-    <FireEmitter
-      position={redEnds.positive}
-      enabled={true}
-      intensity={fire3D.intensity}
-      velocityInfluence={0.3}
-      propVelocity={redVelocityVec}
-    />
-    <FireEmitter
-      position={redEnds.negative}
-      enabled={true}
-      intensity={fire3D.intensity * 0.7}
-      velocityInfluence={0.3}
-      propVelocity={redVelocityVec}
-    />
-  {/if}
-{/if}
+<!-- Fire renders via EffectOrchestrator3D (FireRenderer3D, imperative) in the
+     rig's effectsSlot, not here — same as trails. The FireEmitter particle
+     block that used to live at this spot double-rendered fire the moment this
+     layer was mounted, blowing the exposure out on any fire station. -->
 
 <!-- =============================================================================
      Sparkle Effects (on prop ends)
