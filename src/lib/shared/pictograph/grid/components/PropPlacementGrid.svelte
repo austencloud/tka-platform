@@ -27,7 +27,12 @@
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import {
+    calculateBetaOffset,
+    type BetaMotionInput,
+  } from "$lib/shared/render/core/calculations/beta-offset";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
 
   interface PlacementSnapshot {
@@ -47,6 +52,14 @@
     initialBlueLocation?: GridLocation | null;
     initialRedLocation?: GridLocation | null;
     betaSwapped?: boolean;
+    /** The real pictograph shown elsewhere in the app. Placement still owns the
+     *  live prop locations, while the start label and notation stay identical
+     *  to the source tile instead of disappearing inside a reduced preview. */
+    previewPictographData?: StepData | PictographData | null;
+    /** Lets a host deliberately clear placement history without replacing the
+     *  whole board. Keeping the board mounted is what lets props glide between
+     *  locations. */
+    resetEpoch?: number;
     showCenter?: boolean;
     hitTargetRadius?: number;
     editAfterCompletion?: boolean;
@@ -92,6 +105,8 @@
     initialBlueLocation = null,
     initialRedLocation = null,
     betaSwapped = false,
+    previewPictographData = null,
+    resetEpoch = 0,
     showCenter = false,
     hitTargetRadius = 75,
     editAfterCompletion = false,
@@ -149,6 +164,15 @@
    *  follows the same press doesn't place it a second time. */
   let pointerHandledPress = false;
 
+  /** Which prop a press RIGHT NOW would grab, under a hovering mouse. Beta puts
+   *  both props on one point, so "which one am I about to move" stops being
+   *  obvious the moment they share a location — this is what answers it before
+   *  the press instead of after. */
+  let hoverColor = $state<MotionColor | null>(null);
+  /** The hovered prop's traced outline. Read off the DOM, so it's captured when
+   *  hover is set rather than derived. */
+  let hoverOutline = $state<string | null>(null);
+
   let hapticService: { trigger: (type: string) => void } | null = null;
   try {
     hapticService = getHapticFeedback() as {
@@ -184,6 +208,206 @@
     dragLocation === null
       ? null
       : (activePoints.find((point) => point.location === dragLocation) ?? null)
+  );
+
+  // --- Beta geometry ---------------------------------------------------------
+  // In beta both props sit on one grid point, and the renderer pushes them apart
+  // with a beta offset. Recomputing that offset here — from the SAME render-core
+  // calculation the renderer uses, not a lookalike — is what lets a press pick
+  // the prop the pointer is actually nearest, and lets the halo land on that
+  // prop instead of on the point they share.
+  const isBeta = $derived(
+    blueLocation !== null && blueLocation === redLocation
+  );
+
+  function betaMotionFor(
+    color: "blue" | "red",
+    location: GridLocation,
+    orientation: Orientation,
+    propType: PropType
+  ): BetaMotionInput {
+    return {
+      startLocation: location,
+      endLocation: location,
+      endOrientation: orientation,
+      motionType: MotionType.STATIC,
+      color,
+      propType,
+    };
+  }
+
+  const NO_OFFSET = { x: 0, y: 0 };
+
+  const betaOffsets = $derived.by(() => {
+    if (!isBeta || blueLocation === null || redLocation === null) {
+      return { blue: NO_OFFSET, red: NO_OFFSET };
+    }
+
+    const blueMotion = betaMotionFor(
+      "blue",
+      blueLocation,
+      shownBlueOrientation,
+      bluePropType
+    );
+    const redMotion = betaMotionFor(
+      "red",
+      redLocation,
+      shownRedOrientation,
+      redPropType
+    );
+    const input = {
+      blueMotion,
+      redMotion,
+      letter: "",
+      gridMode: gridMode as unknown as "diamond" | "box" | "skewed",
+      bluePropType,
+      redPropType,
+    };
+
+    // The renderer negates the pair when the props are swapped; match it or the
+    // halo lands on the other prop exactly when the swap is on.
+    const sign = betaSwapped ? -1 : 1;
+    const blue = calculateBetaOffset(input, blueMotion);
+    const red = calculateBetaOffset(input, redMotion);
+    return {
+      blue: { x: blue.x * sign, y: blue.y * sign },
+      red: { x: red.x * sign, y: red.y * sign },
+    };
+  });
+
+  /** Where a prop is actually DRAWN — its grid point plus any beta offset. */
+  function propCenter(color: MotionColor): { x: number; y: number } | null {
+    const location = color === MotionColor.BLUE ? blueLocation : redLocation;
+    if (location === null) return null;
+
+    const point = activePoints.find((entry) => entry.location === location);
+    if (!point) return null;
+
+    const offset =
+      color === MotionColor.BLUE ? betaOffsets.blue : betaOffsets.red;
+    return { x: point.x + offset.x, y: point.y + offset.y };
+  }
+
+  // --- Shape hit-testing -----------------------------------------------------
+  // Centre-distance alone is the wrong model for crossed props. Two staves in
+  // beta can sit 15px apart at the centre while their arms reach 250 units in
+  // perpendicular directions — a press on the far end of the red arm is nowhere
+  // near red's centre. So test the pointer against each prop's ACTUAL rendered
+  // geometry: its artwork bounds, in the prop's own rotated frame, read live off
+  // the DOM. That works for any artwork (staff, club, fan, buugeng) without this
+  // component knowing a thing about how a prop is drawn.
+  let gridWrapper = $state<HTMLDivElement | null>(null);
+
+  /** Thin props deserve a forgiving edge; a staff shaft is only a few px wide
+   *  on a phone. In viewBox units, so it scales with the board. */
+  const SHAPE_TOLERANCE = 26;
+
+  function propElement(color: MotionColor): SVGGraphicsElement | null {
+    const selector =
+      color === MotionColor.BLUE ? ".blue-prop-svg" : ".red-prop-svg";
+    return gridWrapper?.querySelector<SVGGraphicsElement>(selector) ?? null;
+  }
+
+  /**
+   * How far INSIDE this prop's artwork the pointer is, in the prop's own frame.
+   * Positive means inside (bigger = deeper); negative means outside. Returns
+   * null when the prop isn't rendered or its geometry can't be read.
+   */
+  function shapeDepth(color: MotionColor, event: PointerEvent): number | null {
+    const element = propElement(color);
+    if (!element) return null;
+
+    try {
+      const matrix = element.getScreenCTM();
+      if (!matrix) return null;
+
+      // The prop's own transform lives in getScreenCTM, so the inverse lands the
+      // pointer in the same space getBBox reports — rotation included.
+      const local = new DOMPoint(event.clientX, event.clientY).matrixTransform(
+        matrix.inverse()
+      );
+      const box = element.getBBox();
+      if (box.width === 0 || box.height === 0) return null;
+
+      // Distance to the nearest edge along each axis; the smaller one governs.
+      const insetX = Math.min(local.x - box.x, box.x + box.width - local.x);
+      const insetY = Math.min(local.y - box.y, box.y + box.height - local.y);
+      return Math.min(insetX, insetY) + SHAPE_TOLERANCE;
+    } catch {
+      // getScreenCTM/getBBox throw on a detached or not-yet-laid-out element.
+      return null;
+    }
+  }
+
+  /**
+   * The prop's artwork bounds as a polygon in the overlay's own coordinates —
+   * rotation included, so it hugs a diagonal staff instead of boxing it. This
+   * is what lets the resting highlight trace ONE ARM of a crossed pair; a disc
+   * at the shared centre cannot say which of the two you are about to grab.
+   */
+  function propOutline(color: MotionColor): string | null {
+    const element = propElement(color);
+    if (!element || !overlayElement) return null;
+
+    try {
+      const propMatrix = element.getScreenCTM();
+      const overlayMatrix = overlayElement.getScreenCTM();
+      if (!propMatrix || !overlayMatrix) return null;
+
+      const toOverlay = overlayMatrix.inverse().multiply(propMatrix);
+      const box = element.getBBox();
+      if (box.width === 0 || box.height === 0) return null;
+
+      const pad = 12;
+      const corners: Array<[number, number]> = [
+        [box.x - pad, box.y - pad],
+        [box.x + box.width + pad, box.y - pad],
+        [box.x + box.width + pad, box.y + box.height + pad],
+        [box.x - pad, box.y + box.height + pad],
+      ];
+
+      return corners
+        .map(([x, y]) => {
+          const point = new DOMPoint(x, y).matrixTransform(toOverlay);
+          return `${point.x.toFixed(1)},${point.y.toFixed(1)}`;
+        })
+        .join(" ");
+    } catch {
+      return null;
+    }
+  }
+
+  /** The prop whose artwork the pointer is actually on, deepest-first. Null when
+   *  the pointer is on neither, which hands the decision back to the caller. */
+  function colorUnderPointer(event: PointerEvent): MotionColor | null {
+    const blue = shapeDepth(MotionColor.BLUE, event);
+    const red = shapeDepth(MotionColor.RED, event);
+
+    const blueHit = blue !== null && blue > 0;
+    const redHit = red !== null && red > 0;
+
+    if (blueHit && redHit) {
+      // Overlapping artwork — the crossing point of a plus. Whichever arm the
+      // pointer sits further inside wins.
+      return (red as number) > (blue as number)
+        ? MotionColor.RED
+        : MotionColor.BLUE;
+    }
+    if (blueHit) return MotionColor.BLUE;
+    if (redHit) return MotionColor.RED;
+    return null;
+  }
+
+  /** The prop the halo rings: the one being dragged, else the one under the
+   *  cursor. Both answer the same question — "this is the one you're moving." */
+  const highlightColor = $derived(dragColor ?? hoverColor);
+  const highlightCenter = $derived(
+    highlightColor === null ? null : propCenter(highlightColor)
+  );
+  const highlightStroke = $derived(
+    highlightColor === MotionColor.RED
+      ? "var(--prop-red, #ef4444)"
+      : "var(--prop-blue, #3b82f6)"
   );
   const aimDirections = $derived(
     dragLocation === null ? [] : aimDirectionsFor(dragLocation, gridMode)
@@ -235,6 +459,12 @@
     if (dragColor !== null && dragAim !== null) {
       const noun = dragColor === MotionColor.BLUE ? blueNoun : redNoun;
       return build(noun, dragColor, "Aiming the", AIM_LABELS[dragAim] ?? null);
+    }
+    // Hovering an already-placed prop: name it before the press, so beta stops
+    // being a coin flip between the two props sharing the point.
+    if (activeColor === null && hoverColor !== null) {
+      const noun = hoverColor === MotionColor.BLUE ? blueNoun : redNoun;
+      return build(noun, hoverColor, "Drag to aim the");
     }
     if (activeColor === MotionColor.BLUE) {
       if (blueLocation !== null)
@@ -325,10 +555,11 @@
     }
 
     return {
-      id: "shared-prop-placement-grid",
-      letter: null,
-      startPosition: null,
-      endPosition: null,
+      ...(previewPictographData ?? {}),
+      id: previewPictographData?.id ?? "shared-prop-placement-grid",
+      letter: previewPictographData?.letter ?? null,
+      startPosition: previewPictographData?.startPosition ?? null,
+      endPosition: previewPictographData?.endPosition ?? null,
       gridMode,
       betaSwapped,
       motions,
@@ -438,12 +669,56 @@
     return canAim && resolvePressColor(location) !== null;
   }
 
-  function resolvePressColor(location: GridLocation): MotionColor | null {
+  function resolvePressColor(
+    location: GridLocation,
+    event: PointerEvent | null = null
+  ): MotionColor | null {
     if (activeColor !== null) return activeColor;
     if (!editAfterCompletion) return null;
-    if (blueLocation === location) return MotionColor.BLUE;
-    if (redLocation === location) return MotionColor.RED;
+
+    const blueHere = blueLocation === location;
+    const redHere = redLocation === location;
+
+    // Beta: both props share the point, so the point alone can't decide. Ask the
+    // artwork first — a press on a prop grabs THAT prop, whatever shape it is.
+    // Without this the first match won every time and the red prop simply could
+    // not be grabbed.
+    if (blueHere && redHere && event) {
+      const onProp = colorUnderPointer(event);
+      if (onProp !== null) return onProp;
+
+      // The pointer is on neither prop but still inside the point's hit target
+      // (a staff is thin; the target is generous). Fall back to whichever prop
+      // is nearer, using the beta offsets the renderer drew them at.
+      const pointer = toSvgPoint(event);
+      const blue = propCenter(MotionColor.BLUE);
+      const red = propCenter(MotionColor.RED);
+      if (pointer && blue && red) {
+        const toBlue = (pointer.x - blue.x) ** 2 + (pointer.y - blue.y) ** 2;
+        const toRed = (pointer.x - red.x) ** 2 + (pointer.y - red.y) ** 2;
+        return toRed < toBlue ? MotionColor.RED : MotionColor.BLUE;
+      }
+    }
+
+    if (blueHere) return MotionColor.BLUE;
+    if (redHere) return MotionColor.RED;
     return null;
+  }
+
+  function updateHover(event: PointerEvent, location: GridLocation) {
+    // Touch has no hover, and a live drag already owns the halo.
+    if (!canAim || dragPointerId !== null || event.pointerType === "touch") {
+      return;
+    }
+
+    const color = resolvePressColor(location, event);
+    hoverColor = color;
+    hoverOutline = color === null ? null : propOutline(color);
+  }
+
+  function clearHover() {
+    hoverColor = null;
+    hoverOutline = null;
   }
 
   function toSvgPoint(event: PointerEvent): { x: number; y: number } | null {
@@ -471,9 +746,10 @@
     // first finger happened to be pointing when it did.
     if (dragPointerId !== null) return;
 
-    const color = resolvePressColor(location);
+    const color = resolvePressColor(location, event);
     if (color === null) return;
 
+    clearHover();
     pointerHandledPress = true;
     handlePointSelect(location, color);
 
@@ -656,7 +932,7 @@
   });
 
   $effect(() => {
-    const nextInitializationKey = `${gridMode}:${showCenter}:${initialBlueLocation ?? ""}:${initialRedLocation ?? ""}`;
+    const nextInitializationKey = `${gridMode}:${showCenter}:${initialBlueLocation ?? ""}:${initialRedLocation ?? ""}:${resetEpoch}`;
     if (nextInitializationKey === initializationKey) return;
 
     untrack(() => {
@@ -723,16 +999,16 @@
        the host was wide and short (the composer embed), which is what made the
        pictograph read as a speck. -->
   <div class="grid-area">
-    <div class="grid-wrapper">
+    <div class="grid-wrapper" bind:this={gridWrapper}>
       <div class="pictograph-layer">
         <PictographContainer
           {pictographData}
-          {gridMode}
-          showTKA={false}
-          showReversals={false}
-          showTnD={false}
-          showElemental={false}
-          showPositions={false}
+          gridMode={previewPictographData ? null : gridMode}
+          showTKA={previewPictographData ? undefined : false}
+          showReversals={previewPictographData ? undefined : false}
+          showTnD={previewPictographData ? undefined : false}
+          showElemental={previewPictographData ? undefined : false}
+          showPositions={previewPictographData ? undefined : false}
           disableTransitions={true}
           cellIndex={null}
           bluePropTypeOverride={bluePropType}
@@ -768,20 +1044,33 @@
           {/each}
         </g>
 
-        <!-- Aim halo: while a drag is live, the prop being aimed wears a soft
-           ring in its own colour. The overlay sits ABOVE the pictograph, so
-           this is a blurred screen-blended ring rather than a filled disc —
-           it reads as light around the prop instead of paint over it. -->
-        {#if dragPoint && dragColor}
+        <!-- Aim halo: the prop that a press would move — under the cursor, or
+           already being dragged — wears a soft ring in its own colour. The
+           overlay sits ABOVE the pictograph, so this is a blurred
+           screen-blended ring rather than a filled disc: it reads as light
+           around the prop instead of paint over it. It rides the prop's beta
+           offset, not the grid point, so in beta it picks out ONE of the two. -->
+        <!-- At rest, trace the prop itself: for a crossed pair a disc at the
+           shared centre can't say which arm you're on, but an outline hugging
+           the actual artwork can. Falls back to the disc when the geometry
+           can't be read. -->
+        {#if highlightColor && dragColor === null && hoverOutline}
+          <polygon
+            points={hoverOutline}
+            fill="none"
+            class="aim-outline"
+            stroke={highlightStroke}
+            aria-hidden="true"
+          />
+        {:else if highlightCenter && highlightColor}
           <circle
-            cx={dragPoint.x}
-            cy={dragPoint.y}
-            r="56"
+            cx={highlightCenter.x}
+            cy={highlightCenter.y}
+            r={isBeta ? 44 : 56}
             fill="none"
             class="aim-halo"
-            stroke={dragColor === MotionColor.RED
-              ? "var(--prop-red, #ef4444)"
-              : "var(--prop-blue, #3b82f6)"}
+            class:resting={dragColor === null}
+            stroke={highlightStroke}
             aria-hidden="true"
           />
         {/if}
@@ -822,6 +1111,8 @@
               class:tappable={isPressable(point.location)}
               onpointerdown={(event) =>
                 handlePointerDown(event, point.location)}
+              onpointermove={(event) => updateHover(event, point.location)}
+              onpointerleave={clearHover}
               onclick={() => {
                 // A pointer press already placed this one; don't place it twice.
                 if (pointerHandledPress) {
@@ -1067,6 +1358,24 @@
     mix-blend-mode: screen;
     animation: halo-pulse 1.2s ease-in-out infinite;
     pointer-events: none;
+  }
+
+  /* The traced prop, before any press. Held still and soft — pulsing an idle
+     cursor would read as "something is happening"; nothing is yet. */
+  .aim-outline {
+    stroke-width: 10;
+    stroke-linejoin: round;
+    filter: blur(5px);
+    mix-blend-mode: screen;
+    opacity: 0.85;
+    pointer-events: none;
+  }
+
+  /* Fallback disc, same intent as the outline above. */
+  .aim-halo.resting {
+    stroke-width: 16;
+    opacity: 0.75;
+    animation: none;
   }
 
   .aim-tick {

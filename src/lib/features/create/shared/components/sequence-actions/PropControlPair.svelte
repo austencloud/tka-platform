@@ -23,6 +23,8 @@
     stacked?: boolean;
     /** Use compact styling with tighter padding/gaps */
     compact?: boolean;
+    /** Give the prop name stronger hierarchy when a card contains field labels. */
+    prominentLabels?: boolean;
     /** Show one mounted card at a time in narrow layouts */
     visibleHand?: TargetHand;
     /** Content for the blue prop card */
@@ -34,6 +36,7 @@
   let {
     stacked = false,
     compact = false,
+    prominentLabels = false,
     visibleHand = "both",
     blueContent,
     redContent,
@@ -44,6 +47,7 @@
   class="prop-pair"
   class:stacked
   class:compact
+  class:prominent-labels={prominentLabels}
   class:focused={visibleHand !== "both"}
 >
   <div
@@ -179,10 +183,24 @@
     letter-spacing: 0.75px;
   }
 
+  /* Start-position cards have named fields beneath this heading. Giving the
+     prop name the stronger tier keeps Blue/Red above Location/Orientation in
+     the reading order without changing the compact controls used elsewhere. */
+  .prop-pair.prominent-labels .prop-label {
+    color: var(--theme-text, #fff);
+    font-size: clamp(var(--font-size-min, 14px), 1cqw, 1.125rem);
+    letter-spacing: 0.06em;
+  }
+
   /* Compact mode: smaller label */
   .prop-pair.compact .prop-label {
     font-size: var(--font-size-compact, 12px);
     letter-spacing: 0.5px;
+  }
+
+  .prop-pair.compact.prominent-labels .prop-label {
+    font-size: var(--font-size-min, 14px);
+    letter-spacing: 0.05em;
   }
 
   /* ============================================================================

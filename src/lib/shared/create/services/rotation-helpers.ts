@@ -81,3 +81,23 @@ export function rotateLocation(
   }
   return rotated;
 }
+
+/**
+ * Find the shortest signed 45-degree rotation from one perimeter location to
+ * another. Positive values rotate clockwise; negative values rotate
+ * counter-clockwise. Center cannot be reached from a perimeter point by
+ * rotation, so center transitions return null.
+ */
+export function getShortestRotationStepsBetweenLocations(
+  from: GridLocation,
+  to: GridLocation
+): number | null {
+  if (from === to) return 0;
+
+  for (let clockwiseSteps = 1; clockwiseSteps < 8; clockwiseSteps += 1) {
+    if (rotateLocation(from, clockwiseSteps) !== to) continue;
+    return clockwiseSteps <= 4 ? clockwiseSteps : clockwiseSteps - 8;
+  }
+
+  return null;
+}

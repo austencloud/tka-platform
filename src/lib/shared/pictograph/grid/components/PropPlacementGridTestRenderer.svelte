@@ -9,4 +9,9 @@
   data-blue-location={pictographData.motions.blue?.endLocation}
   data-red-location={pictographData.motions.red?.endLocation}
   data-beta-swapped={pictographData.betaSwapped === true}
+  data-letter={pictographData.letter}
+  data-step-number={"stepNumber" in pictographData
+    ? pictographData.stepNumber
+    : undefined}
+  data-grid-mode={pictographData.gridMode}
 ></div>

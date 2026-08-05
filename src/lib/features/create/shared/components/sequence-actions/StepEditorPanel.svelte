@@ -31,6 +31,7 @@
     GridLocation,
     GridMode,
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
@@ -97,11 +98,11 @@
   const isSideBySideLayout = $derived(layout.shouldUseSideBySideLayout);
   let editorWidth = $state(0);
   let editorHeight = $state(0);
-  // A landscape phone leaves the right-side editor almost square. Compact
-  // controls keep both orientation cards visible without shrinking the prop
-  // below a comfortable drag target.
+  // A landscape phone leaves the right-side editor almost square. Focused
+  // controls keep one prop usable at a time without shrinking the placement
+  // board into a decorative strip.
   const isShortWideEditor = $derived(
-    editorWidth >= 400 && editorHeight > 0 && editorHeight <= 520
+    editorWidth > 0 && editorHeight > 0 && editorHeight <= 520
   );
   const startPositionHitTargetRadius = $derived(
     isShortWideEditor ? 160 : isSideBySideLayout ? 75 : 85
@@ -153,12 +154,18 @@
   const startRedLocation = $derived(
     isVisibleMotion(startRedMotion) ? startRedMotion.startLocation : null
   );
-  const startGridMode = $derived(
-    displayedStepData?.gridMode ??
+  const startGridMode = $derived.by(() => {
+    if (isVisibleMotion(startBlueMotion) && isVisibleMotion(startRedMotion)) {
+      return deriveGridMode(startBlueMotion, startRedMotion);
+    }
+
+    return (
+      displayedStepData?.gridMode ??
       startBlueMotion?.gridMode ??
       startRedMotion?.gridMode ??
       GridMode.DIAMOND
-  );
+    );
+  });
   const startBluePropType = $derived.by(
     () =>
       getSettings().bluePropType ?? startBlueMotion?.propType ?? PropType.STAFF
@@ -180,9 +187,6 @@
   let activeMoveColor = $state<MotionColor | null>(null);
   let isRepositioning = $state(false);
   let placementResetEpoch = $state(0);
-  const placementGridKey = $derived(
-    `${startGridMode}:${startBlueLocation ?? ""}:${startRedLocation ?? ""}:${placementResetEpoch}`
-  );
 
   const stepLabel = $derived.by(() => {
     if (displayedStepNumber === null) return "";
@@ -568,30 +572,30 @@
         <div class="pictograph-container" class:aiming={canAimStartPosition}>
           {#if canAimStartPosition && startBlueLocation && startRedLocation}
             <div class="start-position-aim" data-swipe-block>
-              {#key placementGridKey}
-                <PropPlacementGrid
-                  bind:this={placementGrid}
-                  gridMode={startGridMode}
-                  bluePropType={startBluePropType}
-                  redPropType={startRedPropType}
-                  blueOrientation={startBlueMotion?.startOrientation ??
-                    Orientation.IN}
-                  redOrientation={startRedMotion?.startOrientation ??
-                    Orientation.IN}
-                  initialBlueLocation={startBlueLocation}
-                  initialRedLocation={startRedLocation}
-                  betaSwapped={displayedStepData.betaSwapped}
-                  showCenter={startPositionUsesCenter}
-                  editAfterCompletion
-                  disabled={isRepositioning}
-                  showUndo={false}
-                  renderTray={false}
-                  hitTargetRadius={startPositionHitTargetRadius}
-                  onChange={handlePlacementChange}
-                  onPlacementComplete={handlePlacementComplete}
-                  {onOrientationChange}
-                />
-              {/key}
+              <PropPlacementGrid
+                bind:this={placementGrid}
+                gridMode={startGridMode}
+                bluePropType={startBluePropType}
+                redPropType={startRedPropType}
+                blueOrientation={startBlueMotion?.startOrientation ??
+                  Orientation.IN}
+                redOrientation={startRedMotion?.startOrientation ??
+                  Orientation.IN}
+                initialBlueLocation={startBlueLocation}
+                initialRedLocation={startRedLocation}
+                betaSwapped={displayedStepData.betaSwapped}
+                previewPictographData={displayedStepData}
+                resetEpoch={placementResetEpoch}
+                showCenter={startPositionUsesCenter}
+                editAfterCompletion
+                disabled={isRepositioning}
+                showUndo={false}
+                renderTray={false}
+                hitTargetRadius={startPositionHitTargetRadius}
+                onChange={handlePlacementChange}
+                onPlacementComplete={handlePlacementComplete}
+                {onOrientationChange}
+              />
             </div>
           {:else}
             <PictographContainer
@@ -621,6 +625,7 @@
           startPositionData={displayedStepData}
           stacked={!isSideBySideLayout}
           compact={!isSideBySideLayout || isShortWideEditor}
+          focused={isShortWideEditor}
           {activeMoveColor}
           repositionDisabled={startPositionUsesCenter}
           {isRepositioning}

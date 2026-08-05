@@ -821,8 +821,10 @@ export function createSequenceState(services: SequenceStateServices) {
     swapColors: () => transformOperations.swapColors(),
     rotateSequence: (
       direction: "clockwise" | "counterclockwise",
-      targetHand: TargetHand = "both"
-    ) => transformOperations.rotateSequence(direction, targetHand),
+      targetHand: TargetHand = "both",
+      rotationSteps = 1
+    ) =>
+      transformOperations.rotateSequence(direction, targetHand, rotationSteps),
     rewindSequence: (targetHand: TargetHand = "both") =>
       transformOperations.rewindSequence(targetHand),
     shiftStartPosition: (targetStepNumber: number) =>

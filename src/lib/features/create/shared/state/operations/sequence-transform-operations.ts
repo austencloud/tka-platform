@@ -155,12 +155,18 @@ export function createSequenceTransformOperations(
 
     async rotateSequence(
       direction: "clockwise" | "counterclockwise",
-      targetHand: TargetHand = "both"
+      targetHand: TargetHand = "both",
+      rotationSteps = 1
     ) {
       if (!coreState.currentSequence || !SequenceTransformer) return;
 
       try {
-        const rotationAmount = direction === "clockwise" ? 1 : -1;
+        if (!Number.isInteger(rotationSteps) || rotationSteps < 1) {
+          throw new Error("Rotation steps must be a positive integer");
+        }
+
+        const rotationAmount =
+          (direction === "clockwise" ? 1 : -1) * rotationSteps;
 
         // Phase 1: Transform motions (synchronous for single-hand, keeps existing letters)
         const transformedSequence = await SequenceTransformer.rotateSequence(
@@ -176,17 +182,23 @@ export function createSequenceTransformOperations(
         }
         coreState.clearError();
 
-        // Phase 2: Derive correct letters asynchronously (only for single-hand transforms)
+        // Let the geometry paint before resolving the new letters. Awaiting the
+        // scheduled work keeps a direct multi-increment move inside one pending
+        // action instead of letting another transform race its letter lookup.
         if (targetHand !== "both") {
-          requestAnimationFrame(async () => {
-            try {
-              const withLetters = await SequenceTransformer.deriveSequenceLetters(transformedSequence);
-              coreState.setCurrentSequence(withLetters);
-              await onSave?.();
-            } catch (letterError) {
-              console.warn("Failed to derive letters after rotate:", letterError);
-              await onSave?.();
-            }
+          await new Promise<void>((resolve) => {
+            requestAnimationFrame(async () => {
+              try {
+                const withLetters = await SequenceTransformer.deriveSequenceLetters(transformedSequence);
+                coreState.setCurrentSequence(withLetters);
+                await onSave?.();
+              } catch (letterError) {
+                console.warn("Failed to derive letters after rotate:", letterError);
+                await onSave?.();
+              } finally {
+                resolve();
+              }
+            });
           });
         } else {
           await onSave?.();

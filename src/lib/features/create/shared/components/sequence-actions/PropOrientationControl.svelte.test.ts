@@ -56,13 +56,17 @@ describe("PropOrientationControl", () => {
       .element(page.getByRole("button", { name: "Set blue orientation to In" }))
       .toBeVisible();
     await expect
-      .element(page.getByRole("button", { name: "Set blue orientation to Out" }))
+      .element(
+        page.getByRole("button", { name: "Set blue orientation to Out" })
+      )
       .toBeVisible();
     await expect
       .element(page.getByRole("button", { name: "Set blue orientation to CW" }))
       .not.toBeInTheDocument();
     await expect
-      .element(page.getByRole("button", { name: "Set blue orientation to CCW" }))
+      .element(
+        page.getByRole("button", { name: "Set blue orientation to CCW" })
+      )
       .not.toBeInTheDocument();
   });
 
