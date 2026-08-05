@@ -561,20 +561,24 @@
     scrollbar-color: var(--theme-stroke, #30363d) transparent;
   }
 
-  /* Blue motion · pictograph · red motion. The pictograph sits centered
-     between its two flanking motion columns. */
+  /*
+   * DEFAULT: hero left, the two motion columns standing in a side rail.
+   *
+   * Three-across used to be the default and is now reserved for a genuinely wide
+   * host. In the step-editor drawer — the panel's usual home, ~900-1000px — it
+   * put a short blue column, a floating square, and a short red column in one
+   * ragged row and left a dead band under all three. Side-rail bounds the square
+   * by the wider axis and stacks the reference data to fill the height.
+   */
   .inspect-layout {
     display: grid;
-    /* The hero grows with the panel (cqw) rather than freezing at 520px on a
-       wide host. The vh term keeps width the binding axis so the square can
-       never be clamped by height into a rectangle. */
-    grid-template-columns:
-      minmax(300px, 1fr)
-      minmax(280px, min(40cqw, 46vh))
-      minmax(300px, 1fr);
-    grid-template-areas: "blue picto red";
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+    grid-template-areas:
+      "picto blue"
+      "picto red";
+    grid-template-rows: auto auto;
     gap: 20px;
-    align-items: start;
+    align-content: start;
     /* Claim the body's full height so the pictograph has something to grow into. */
     height: 100%;
     min-height: 0;
@@ -611,8 +615,6 @@
      Sticky keeps it in view if the sides ever scroll. */
   .pictograph-rail {
     grid-area: picto;
-    position: sticky;
-    top: 16px;
     align-self: center;
     /* Size to whichever of the two axes runs out first, so the pictograph is as
        large as the panel allows and still square. */
@@ -621,6 +623,11 @@
     justify-content: center;
     min-height: 0;
     height: 100%;
+    /* A size container so the frame can read this rail's HEIGHT in CSS (cqh).
+       Without it the square has no way to know which axis runs out first: a
+       width-driven rule stretched to 826x722 once the panel passed ~1050px,
+       and a height-driven one stretched to 458x618 when the panel was narrow. */
+    container-type: size;
   }
   .pictograph-frame {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
@@ -631,15 +638,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Width-driven. With the motion columns standing in a side rail, the
-       pictograph's column is always narrower than it is tall, so width is the
-       binding axis in every tier. Driving off height instead let an explicit
-       `height: 100%` beat `aspect-ratio` and rendered it 458x618 — a stretched,
-       non-square grid. `max-height` is the guard for the reverse case. */
-    width: 100%;
+    /* The largest square that fits BOTH axes, stated once: the smaller of the
+       column's width and the rail's height. `aspect-ratio` then supplies the
+       height, so no rule can fight it into a rectangle. */
+    width: min(100%, 100cqh);
     height: auto;
-    max-width: 100%;
-    max-height: 100%;
     margin-inline: auto;
   }
 
@@ -660,19 +663,28 @@
    * side rail means the square is bounded by the wider of the two axes and BOTH
    * get consumed: measured 280px -> 470px on the same panel.
    */
-  @container inspect (max-width: 940px) {
+  /*
+   * Three-across earns its keep only when all three columns can be full-width at
+   * once — roughly 1200px of PANEL. Below that it degrades into the ragged row
+   * described above, which is exactly what the drawer was getting.
+   */
+  @container inspect (min-width: 1200px) {
     .inspect-layout {
-      /* The side rail takes the narrowest width its content still reads at, so
-         every remaining pixel goes to the hero. */
-      grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
-      grid-template-areas:
-        "picto blue"
-        "picto red";
-      grid-template-rows: auto auto;
-      align-content: start;
-    }
-    .pictograph-rail {
-      position: static;
+      /* Ratios, not a hard cap. A `min(40cqw, 46vh)` middle column collapsed the
+         hero from 706px to 462px the instant this tier took over — a visible
+         cliff at the boundary. The frame's own cqh rule already guarantees the
+         square, so the column only has to claim its share. */
+      grid-template-columns:
+        minmax(280px, 1fr)
+        minmax(360px, 1.6fr)
+        minmax(280px, 1fr);
+      grid-template-areas: "blue picto red";
+      grid-template-rows: minmax(0, 1fr);
+      /* Center the row rather than pinning it to the top — a short blue column,
+         a square, and a short red column hugging the top is what left the dead
+         band underneath. */
+      align-content: center;
+      align-items: center;
     }
   }
   /* One column only when even two motion columns can't be read side by side. */
@@ -688,13 +700,16 @@
     /* Rows are content-sized here, so the base `height: 100%` on the rail has
        nothing definite to resolve against and collapsed the square to 283x33.
        Let content drive the height and let the body scroll. */
+    /* Rows are content-sized here, so the base `height: 100%` on the rail has
+       nothing definite to resolve against and collapsed the square to 283x33.
+       Content drives the height and the body scrolls — which also means the rail
+       has no definite height, so `cqh` would resolve to 0. Width alone governs. */
     .pictograph-rail {
       height: auto;
+      container-type: normal;
     }
     .pictograph-frame {
-      height: auto;
       width: 100%;
-      max-height: none;
     }
   }
   @media (prefers-reduced-motion: reduce) {
