@@ -22,6 +22,8 @@
     loopOptionTint,
     ORIENTATION_REPEAT_COLOR,
   } from "./loop-option-color";
+  import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
+  import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
 
   interface Props {
     /** Direct LOOP options (no bridge letter needed) */
@@ -55,6 +57,22 @@
 
   const repeatTint = loopOptionTint([ORIENTATION_REPEAT_COLOR]);
   const showRepeat = $derived(Boolean(orientationRepeat && onOrientationRepeat));
+
+  /*
+   * Column count is chosen, not auto-filled, and it is chosen to make the
+   * rows FILL the drawer rather than to make the cards small.
+   *
+   * Few options therefore means fewer columns, not a short strip: two options
+   * become two full-width rows that use the height, instead of two chips over
+   * 600px of black. Counts are also picked so the last row is never a lone
+   * orphan — 4 reads as 2x2, 5 as 3+2.
+   */
+  const columns = $derived(
+    directOptions.length <= 3 ? 1 : directOptions.length === 4 ? 2 : 3
+  );
+
+  /* Full-width rows put the glyph beside the text instead of above it. */
+  const isBanner = $derived(columns === 1);
 
   // Derived state
   const hasDirectOptions = $derived(directOptions.length > 0);
@@ -97,16 +115,30 @@
   <!-- Direct LOOP Options -->
   {#if hasDirectOptions || showRepeat}
     <section class="options-section" transition:slide={{ duration: 200 }}>
-      <div class="options-grid">
+      <div class="options-grid" class:banner={isBanner} style="--cols: {columns}">
         {#each directOptions as option}
           <button
             class="loop-button"
             style={loopTypeTint(option.loopType)}
             onclick={() => handleDirectClick(option.loopType)}
             disabled={isApplying}
-            title={option.description}
           >
-            <span class="loop-name">{option.name}</span>
+            <!--
+              The same glyph badge these LOOPs already wear on a sequence card,
+              in the same brand colours — so the choice here and the thing it
+              produces are recognisably one object.
+            -->
+            <span class="loop-glyph" aria-hidden="true">
+              <LOOPIconStrip
+                activeComponents={parseLoopComponents(option.loopType)}
+                size={isBanner ? 52 : 34}
+                showFreeformWhenEmpty={false}
+              />
+            </span>
+            <span class="loop-text">
+              <span class="loop-name">{option.name}</span>
+              <span class="loop-desc">{option.description}</span>
+            </span>
           </button>
         {/each}
 
@@ -116,10 +148,19 @@
             style={repeatTint}
             onclick={() => !isApplying && onOrientationRepeat?.()}
             disabled={isApplying}
-            title="The sequence returns to its start position but not its start orientation. Repeating it {orientationRepeat.count} times brings the props back to where they began."
           >
-            <span class="loop-name">Repeated &times;{orientationRepeat.count}</span>
-            <span class="loop-sub">closes orientation</span>
+            <span class="loop-glyph" aria-hidden="true">
+              <i class="fas fa-repeat"></i>
+            </span>
+            <span class="loop-text">
+              <span class="loop-name"
+                >Repeated &times;{orientationRepeat.count}</span
+              >
+              <span class="loop-desc">
+                Back at the start position, but the props are turned. Repeating
+                {orientationRepeat.count} times returns their orientation too.
+              </span>
+            </span>
           </button>
         {/if}
       </div>
@@ -186,6 +227,9 @@
     display: flex;
     flex-direction: column;
     gap: var(--settings-spacing-md, 16px);
+    /* Claim the drawer's remaining height so the options can fill it. */
+    flex: 1;
+    min-height: 0;
     position: relative;
     padding: var(--settings-spacing-md, 16px);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
@@ -215,33 +259,74 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
   }
 
+  /* The section is the link in the chain that hands the height to the grid. */
+  .options-section {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
   /*
-   * Options wrap as content-sized cards, not equal grid tracks.
-   *
-   * A fixed column count has no good answer here: the option count is
-   * data-driven (1 to 6), so any pinned track count either stretches two
-   * short labels across a 900px panel or strands an empty cell beside them.
-   * Wrapping from a sane minimum sizes each button to its own label, keeps
-   * the 44px touch floor, and never leaves a hole — at any option count and
-   * any panel width.
+   * The options ARE the panel — they claim its height rather than sitting as a
+   * strip of chips above a field of black. Column count is pinned per option
+   * count (see `columns` above) so the last row is never an orphan, and rows
+   * share the leftover height equally. The floor keeps a short viewport (a
+   * folded phone in landscape) from crushing them.
    */
   .options-grid {
-    display: flex;
-    flex-wrap: wrap;
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 3), 1fr);
+    /* Rows share the drawer's height equally, with a floor for short viewports. */
+    grid-auto-rows: minmax(7.5rem, 1fr);
     gap: var(--settings-spacing-sm, 8px);
+    overflow-y: auto;
   }
 
-  .options-grid > :global(*) {
-    flex: 0 1 auto;
-    min-width: 9.5rem;
-    max-width: 18rem;
+  /*
+   * Full-width rows lay out horizontally: glyph, then name and description in
+   * a left-aligned stack. A centred column inside an 828px-wide card leaves
+   * two big empty flanks and reads as a mistake.
+   */
+  .options-grid.banner .loop-button {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 2rem;
+    padding: 1.5rem 2.5rem;
+    text-align: left;
   }
 
-  /* Narrow panels get two per row rather than a lonely column of one. */
-  @container loop-picker (max-width: 22rem) {
-    .options-grid > :global(*) {
-      flex: 1 1 8rem;
-      min-width: 0;
+  .options-grid.banner .loop-text {
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  /*
+   * A banner row is tall, so its content scales with it — a 2rem glyph and
+   * 16px label marooned in a 400px slab reads as a rendering accident rather
+   * than a deliberately generous target.
+   */
+  .options-grid.banner .loop-glyph {
+    font-size: 3.25rem;
+    flex-shrink: 0;
+  }
+
+  .options-grid.banner .loop-name {
+    font-size: 1.625rem;
+  }
+
+  .options-grid.banner .loop-desc {
+    max-width: 60ch;
+    font-size: 1rem;
+  }
+
+  /* One column on a phone-width panel; the cards stay legible, not squeezed. */
+  @container loop-picker (max-width: 26rem) {
+    .options-grid {
+      grid-template-columns: 1fr;
+      grid-auto-rows: minmax(5.5rem, auto);
     }
   }
 
@@ -263,9 +348,10 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.125rem;
+    gap: 0.5rem;
     min-height: 3.75rem;
-    padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 16px);
+    padding: 1.25rem 1rem;
+    text-align: center;
     background: linear-gradient(
       135deg,
       color-mix(in srgb, var(--c1) 22%, transparent) 0%,
@@ -318,19 +404,60 @@
    * trailing odd option can never strand a half-empty row.
    */
   .loop-button.repeat {
-    flex-basis: 100%;
-    max-width: none;
+    grid-column: 1 / -1;
+  }
+
+  .loop-glyph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.125rem;
+    font-size: 1.75rem;
+    color: var(--c1);
+  }
+
+  .loop-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.375rem;
+    min-width: 0;
   }
 
   .loop-name {
-    text-align: center;
+    font-size: 1.125rem;
+    line-height: 1.2;
   }
 
-  .loop-sub {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    text-align: center;
+  .loop-desc {
+    max-width: 24ch;
+    font-size: 0.8125rem;
+    font-weight: 400;
+    line-height: 1.35;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
+  }
+
+  /* The repeat spans the row, so its copy has room to run wider. */
+  .loop-button.repeat .loop-desc {
+    max-width: 46ch;
+  }
+
+  /*
+   * Descriptions are the first thing to go on a short viewport (a folded phone
+   * in landscape). A container query cannot ask this — the picker is
+   * `container-type: inline-size`, which answers inline-axis questions only,
+   * and switching it to `size` would make its height stop depending on its
+   * own content.
+   */
+  @media (max-height: 34rem) {
+    .loop-desc {
+      display: none;
+    }
+
+    .loop-button {
+      padding: 0.625rem 0.75rem;
+      gap: 0.25rem;
+    }
   }
 
   /* Unavailable reason */

@@ -155,6 +155,11 @@
     opacity: 0.6;
   }
 
+  /*
+   * The status header keeps its own height; everything left over goes to the
+   * picker, which spends it on the option cards. Without this the drawer
+   * rendered a strip of buttons above a full screen of dead black.
+   */
   .options-container {
     flex: 1;
     min-height: 0;
@@ -163,6 +168,11 @@
     padding: 16px;
     gap: 16px;
     overflow-y: auto;
+  }
+
+  .options-container > :global(.loop-picker) {
+    flex: 1;
+    min-height: 0;
   }
 
   .status-header {

@@ -12,15 +12,28 @@
   import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import type { LOOPOption } from "$lib/features/create/shared/services/loop-validator";
 
-  const option = (loopType: LOOPType, name: string): LOOPOption =>
-    ({ loopType, name, description: name, icon: "" }) as LOOPOption;
+  // Descriptions are the real ones from LOOP_OPTION_CONFIG — a harness that
+  // echoes the name back as the description hides how the card actually reads.
+  const option = (
+    loopType: LOOPType,
+    name: string,
+    description: string
+  ): LOOPOption => ({ loopType, name, description, icon: "" }) as LOOPOption;
 
-  const swapped = option(LOOPType.SWAPPED, "Swapped");
-  const inverted = option(LOOPType.INVERTED, "Inverted");
-  const swappedInverted = option(LOOPType.SWAPPED_INVERTED, "Swapped / Inverted");
-  const rewound = option(LOOPType.STRICT_REWOUND, "Rewound");
-  const rotated = option(LOOPType.ROTATED, "Rotated");
-  const mirrored = option(LOOPType.MIRRORED, "Mirrored");
+  const swapped = option(LOOPType.SWAPPED, "Swapped", "Swaps blue and red props");
+  const inverted = option(LOOPType.INVERTED, "Inverted", "Inverts motion directions");
+  const swappedInverted = option(
+    LOOPType.SWAPPED_INVERTED,
+    "Swapped / Inverted",
+    "Swaps colors with inverted motion"
+  );
+  const rewound = option(
+    LOOPType.STRICT_REWOUND,
+    "Rewound",
+    "Appends reversed sequence to double length"
+  );
+  const rotated = option(LOOPType.ROTATED, "Rotated", "Rotates positions around the grid");
+  const mirrored = option(LOOPType.MIRRORED, "Mirrored", "Mirrors positions vertically");
 
   const cases: Array<{
     title: string;
@@ -50,7 +63,10 @@
     { title: "Two options only", options: [inverted, rewound], repeat: null },
   ];
 
-  let widthPx = $state(560);
+  // The picker fills its host's height in the real drawer, so the frame has to
+  // give it one — sized at the drawer's own default to represent it honestly.
+  let widthPx = $state(860);
+  let heightPx = $state(800);
 </script>
 
 <div class="harness">
@@ -58,7 +74,11 @@
     <h1>LOOPPicker states</h1>
     <label>
       Panel width: {widthPx}px
-      <input type="range" min="280" max="1200" bind:value={widthPx} />
+      <input type="range" min="280" max="1400" bind:value={widthPx} />
+    </label>
+    <label>
+      Panel height: {heightPx}px
+      <input type="range" min="320" max="1200" bind:value={heightPx} />
     </label>
   </header>
 
@@ -66,7 +86,7 @@
     {#each cases as c}
       <section>
         <h2>{c.title}</h2>
-        <div class="frame" style="width: {widthPx}px">
+        <div class="frame" style="width: {widthPx}px; height: {heightPx}px">
           <LOOPPicker
             directOptions={c.options}
             onSelect={() => {}}
@@ -124,5 +144,7 @@
 
   .frame {
     max-width: 100%;
+    display: flex;
+    flex-direction: column;
   }
 </style>
