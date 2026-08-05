@@ -96,8 +96,12 @@ describe("scoreSession", () => {
 
   it("caps any single signal so one noisy session cannot dominate", () => {
     const many = scoreSession(row({ rageClickCount: 500 }), { isNewUser: false });
-    const some = scoreSession(row({ rageClickCount: 4 }), { isNewUser: false });
-    expect(many.total).toBeLessThan(some.total + 100);
+    const few = scoreSession(row({ rageClickCount: 2 }), { isNewUser: false });
+    // 250x the clicks must not buy anywhere near 250x the score — otherwise one
+    // pathological session buries every other finding.
+    expect(many.total).toBeLessThan(few.total * 10);
+    // But more friction must still rank worse than less.
+    expect(many.total).toBeGreaterThan(few.total);
   });
 
   it("ranks a Nina-shaped session above an ordinary one", () => {
