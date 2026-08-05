@@ -433,7 +433,7 @@ export class Goo2DRenderer {
           x: a.x + (b.x - a.x) * f,
           y: a.y + (b.y - a.y) * f,
           r,
-          alpha: beadFade(u) * opacity,
+          alpha: streamFade(u) * opacity,
           // Every fourth sample, so highlights are sparse points on the surface.
           glint: index % 4 === 0 && u < 0.5,
         });
@@ -573,6 +573,18 @@ export class Goo2DRenderer {
 function beadFade(t: number): number {
   if (t < 0.12) return t / 0.12;
   if (t > 0.8) return Math.max(0, (1 - t) / 0.2);
+  return 1;
+}
+
+/**
+ * Bead opacity along the STREAM. Unlike a drop, a stream bead is not born in
+ * mid-air — u = 0 is the prop tip itself, and the goo there is at its most
+ * solid. Fading it in (as `beadFade` does) put a low-density gap right behind
+ * the tip; the contrast threshold ate that gap and the mass read as detached,
+ * trailing the prop. Full strength from the head, tail-only falloff.
+ */
+function streamFade(u: number): number {
+  if (u > 0.8) return Math.max(0, (1 - u) / 0.2);
   return 1;
 }
 
