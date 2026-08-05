@@ -868,4 +868,92 @@
       }
     }
   }
+  /* ── Composition: catalog, tall ──────────────────────────────────
+     A wide-and-short row is the worst shape for a tile whose job is to show a
+     pictograph (Austen, 2026-08-05: the art and the label "are forced to be
+     very small, because their container is not very tall"). The catalog's
+     height is now a share of a budget it does not control, so the tile cannot
+     know from the tier whether it is a row or a poster — the CELL knows, and
+     it is a size container (`CategoryRail .cat-cell`). Past 7.5rem the tile
+     turns portrait: art on top at a share of its OWN height, label centred
+     under it. Below that the art still grows with the row instead of sitting
+     at a constant beside it. */
+  .mini-tile.catalog {
+    width: 100%;
+    height: 100%;
+  }
+  .mini-tile.catalog .mini-art {
+    height: min(70%, 3.25rem);
+    aspect-ratio: 1;
+    width: auto;
+    min-width: 0;
+  }
+  @container cat-cell (min-height: 6.25rem) {
+    .mini-tile.catalog {
+      position: relative;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0.5rem;
+      text-align: center;
+    }
+    .mini-tile.catalog .mini-art {
+      height: min(42%, 6rem);
+      min-height: 2.1rem;
+      max-width: 100%;
+      font-size: clamp(1rem, 12cqh, 1.9rem);
+    }
+    .mini-tile.catalog .mini-main {
+      flex: 0 1 auto;
+      align-items: center;
+    }
+    .mini-tile.catalog .mini-title {
+      text-align: center;
+      text-wrap: balance;
+    }
+    /* The dot leaves the row and takes the corner — otherwise it claims a slot
+       of its own under the label and pulls the title off centre. */
+    .mini-tile.catalog .rule-dot {
+      position: absolute;
+      top: 0.45rem;
+      right: 0.5rem;
+    }
+    .mini-tile.catalog .element-dot {
+      width: 0.55rem;
+      height: 0.55rem;
+    }
+  }
+  /* The art is the tile at these sizes — a 6rem glyph in a 20rem box is the
+     same defect as the row it replaced, wearing the opposite sign. */
+  @container cat-cell (min-height: 12rem) {
+    .mini-tile.catalog .mini-art {
+      height: min(50%, 8rem);
+      font-size: 2.6rem;
+    }
+    .mini-tile.catalog .element-dot {
+      width: 0.75rem;
+      height: 0.75rem;
+    }
+  }
+  @container cat-cell (min-height: 16rem) {
+    .mini-tile.catalog {
+      gap: 0.9rem;
+      padding: 1rem;
+    }
+    .mini-tile.catalog .mini-art {
+      height: min(56%, 12rem);
+      font-size: 3.6rem;
+    }
+    .mini-tile.catalog .mini-title {
+      font-size: 1.2rem;
+    }
+  }
+  /* The plate images carry 32px width/height attributes, so a bigger plate used
+     to mean a bigger white square around the same tiny glyph. */
+  .mini-tile.catalog .mini-art.plate img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
 </style>

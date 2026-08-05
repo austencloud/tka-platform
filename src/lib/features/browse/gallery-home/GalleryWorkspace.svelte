@@ -117,19 +117,28 @@
 
   // Art scale inside the capped editor pane — the container queries widen the
   // cards, but SequencePeek's box is a prop.
+  // In the split pane the peek tier is chosen from the COLUMN's width, and the
+  // column reports itself as `drillWidth`. At 620px the column runs three
+  // cards across with real height to spend, so the peek steps with them
+  // instead of staying at the 62px phone constant inside a 350px-tall card.
+  const paneWideArt = $derived(splitPane && drillWidth >= 620);
   const levelPeekWidth = $derived(
-    adaptiveValueLayout && drillWidth >= 640 && drillWidth < 900
-      ? 120
-      : adaptiveValueLayout && drillWidth >= 480 && drillWidth < 640
-        ? 104
-        : catalog.PEEK.levelW
+    paneWideArt
+      ? 150
+      : adaptiveValueLayout && drillWidth >= 640 && drillWidth < 900
+        ? 120
+        : adaptiveValueLayout && drillWidth >= 480 && drillWidth < 640
+          ? 104
+          : catalog.PEEK.levelW
   );
   const levelPeekHeight = $derived(
-    adaptiveValueLayout && drillWidth >= 640 && drillWidth < 900
-      ? 112
-      : adaptiveValueLayout && drillWidth >= 480 && drillWidth < 640
-        ? 97
-        : catalog.PEEK.levelH
+    paneWideArt
+      ? 140
+      : adaptiveValueLayout && drillWidth >= 640 && drillWidth < 900
+        ? 112
+        : adaptiveValueLayout && drillWidth >= 480 && drillWidth < 640
+          ? 97
+          : catalog.PEEK.levelH
   );
   const letterGlyphHeight = $derived(
     adaptiveValueLayout && drillWidth < 640
@@ -551,7 +560,11 @@
               googleId={catalog.creatorAvatars.get(v.value)?.ownerId}
               name={v.value}
               alt=""
-              customSize={adaptiveValueLayout && drillWidth < 640 ? 36 : 44}
+              customSize={paneWideArt
+                ? 72
+                : adaptiveValueLayout && drillWidth < 640
+                  ? 36
+                  : 44}
             />
             <span class="value-main">
               <span class="value-label" title={v.value}>{v.value}</span>
@@ -4350,15 +4363,17 @@
      .screen-loop / .screen-length on this same element), so this override wins
      on order rather than losing on specificity.
 
-     The list FILLS the column rather than hugging its content: a 7-row length
-     grid used to stop at ~60% height and strand the rest of a 1000px column
-     (`4k-native-layout.md` rule 4 — a wide screen is also a tall one). Rows
-     grow into the space; once the natural minimums exceed it the grid simply
-     scrolls, exactly as before. */
+     The list is sized by its ROWS, not by the column: each row grows to the
+     per-screen ceiling below and the grid is exactly that tall. That height is
+     what `pane-height-budget.ts` reads and hands to the editor's flex basis,
+     so the column's leftover goes to the catalog above instead of pooling
+     under the last card (`4k-native-layout.md` rule 4 — a wide screen is also
+     a tall one). A list taller than the column shrinks its rows toward their
+     minimum and then scrolls, exactly as before. */
   .drill-ctx.split-pane .drill-screen > .value-list,
   .drill-ctx.split-pane .drill-screen > .letter-grid,
   .drill-ctx.split-pane .drill-screen > .turn-picker {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
   }
   /* Every per-screen tier caps its rows (`minmax(5.25rem, 5.5rem)` etc.) so the
      phone composition can't balloon. In the pane that ceiling is exactly what
@@ -4396,6 +4411,43 @@
   .drill-ctx.split-pane .screen-positions > .value-list {
     --pane-row-min: 8rem;
     --pane-row-max: 18rem;
+  }
+  /* The art scales with the CARD, not with the tier. Every one of these boxes
+     was a constant (76px pictograph, 44px family icon), so a card that grew to
+     fill its zone grew around a piece of art that stayed the size it is on a
+     phone — Austen, 2026-08-05: "all the pictographs are very small, and yet
+     all that empty space is also present". A percentage of the card's own
+     height with a rem ceiling makes the art a passenger of the budget. */
+  .drill-ctx.split-pane .screen-positions .value-pictograph {
+    width: auto;
+    max-width: 100%;
+    height: min(52%, 12rem);
+    aspect-ratio: 1;
+  }
+  .drill-ctx.split-pane .screen-gridmode .value-grid-preview {
+    width: auto;
+    max-width: 100%;
+    height: min(56%, 15rem);
+    aspect-ratio: 1;
+  }
+  .drill-ctx.split-pane .screen-family .value-img.family-icon,
+  .drill-ctx.split-pane .screen-collections .value-img {
+    width: auto;
+    max-width: 100%;
+    height: min(44%, 7rem);
+    aspect-ratio: 1;
+  }
+  .drill-ctx.split-pane .screen-loop .loop-icon {
+    width: auto;
+    font-size: 1.75rem;
+  }
+  /* `.value-main { flex: 1 }` is a ROW rule — in a portrait card it grows into
+     all the height the budget just handed the card and strands the count at
+     the far bottom, which reads as a hole inside the card. The card's contents
+     are one centred group. */
+  .drill-ctx.split-pane .monument .value-main,
+  .drill-ctx.split-pane .creator-row .value-main {
+    flex: 0 1 auto;
   }
   /* Back stays: the catalog above shows every category, but the landing (hero
      doors, peeks, "Show all") is only reachable through it. */
@@ -4436,6 +4488,42 @@
     .drill-ctx.split-pane .screen-gridmode > .value-list,
     .drill-ctx.split-pane .screen-positions > .value-list {
       --pane-row-max: 26rem;
+    }
+    .drill-ctx.split-pane .screen-loop .loop-icon {
+      font-size: 2.5rem;
+    }
+  }
+
+  /* Very tall columns (4K at 100%, portrait desktops). The catalog takes most
+     of the extra (CategoryRail's own tall-viewport ceiling), but a card that
+     stops at its 1080p ceiling inside a 1100px zone still reads as stranded,
+     so the ceilings step once more here. */
+  @media (min-height: 1600px) {
+    .drill-ctx.split-pane .drill-screen > .value-list,
+    .drill-ctx.split-pane .drill-screen > .letter-grid {
+      --pane-row-max: 11rem;
+    }
+    .drill-ctx.split-pane .screen-letter > .letter-grid {
+      --pane-row-max: 5.5rem;
+    }
+    .drill-ctx.split-pane .screen-level > .value-list,
+    .drill-ctx.split-pane .screen-gridmode > .value-list,
+    .drill-ctx.split-pane .screen-positions > .value-list {
+      --pane-row-max: 22rem;
+    }
+    @container drill (min-width: 640px) {
+      .drill-ctx.split-pane .drill-screen > .value-list,
+      .drill-ctx.split-pane .drill-screen > .letter-grid {
+        --pane-row-max: 18rem;
+      }
+      .drill-ctx.split-pane .screen-letter > .letter-grid {
+        --pane-row-max: 7rem;
+      }
+      .drill-ctx.split-pane .screen-level > .value-list,
+      .drill-ctx.split-pane .screen-gridmode > .value-list,
+      .drill-ctx.split-pane .screen-positions > .value-list {
+        --pane-row-max: 30rem;
+      }
     }
   }
 

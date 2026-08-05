@@ -44,6 +44,7 @@
     fill = false,
     onselect,
   }: Props = $props();
+
 </script>
 
 <nav
@@ -56,15 +57,20 @@
   {#if layout === "rail"}<h2>Filters</h2>{/if}
   <div class="desktop-filter-grid">
     {#each [...catalog.primaryCategories, ...catalog.secondaryCategories] as entry (entry.key)}
-      <CategoryTile
-        {entry}
-        composition={layout === "catalog" ? "catalog" : "rail"}
-        active={section === entry.section}
-        ruleCount={ruleCounts?.[entry.key] ?? 0}
-        {morph}
-        avatarFor={(name) => catalog.creatorAvatars.get(name)}
-        {onselect}
-      />
+      <!-- The cell is a size container so the TILE can answer the question
+           only the resolved layout knows: do I have enough height to stop
+           being a row and become a poster? (CategoryTile's `cat-cell` query.) -->
+      <div class="cat-cell">
+        <CategoryTile
+          {entry}
+          composition={layout === "catalog" ? "catalog" : "rail"}
+          active={section === entry.section}
+          ruleCount={ruleCounts?.[entry.key] ?? 0}
+          {morph}
+          avatarFor={(name) => catalog.creatorAvatars.get(name)}
+          {onselect}
+        />
+      </div>
     {/each}
   </div>
 </nav>
@@ -79,42 +85,82 @@
   /* Split-pane composition: every category visible as a compact labeled tile,
      two per row, above the value editor. No display gate — the pane itself is
      the gate (GalleryDrill only renders this layout past the split seam). */
+  /* The catalog is one half of the column's height budget: it never shrinks
+     below its natural rows, and it grows into whatever the value editor's card
+     ceiling leaves over — up to `--catalog-ceiling`, which is its own row count
+     at the tallest a tile should ever be. Past that the surplus goes back to
+     the editor (GalleryPaneLeft owns the flex; this owns the ceiling). */
   .desktop-filter-catalog.catalog-layout {
-    display: block;
-    flex: 0 0 auto;
+    display: flex;
     min-width: 0;
+    min-height: 0;
+    flex-direction: column;
+    /* 2 columns → 6 rows. A 6-row catalog at 8.5rem a tile is 51rem of art and
+       label; taller than that and the tiles read as posters, not a picker. */
+    --catalog-rows: 6;
+    --catalog-tile-max: 8.5rem;
+    --catalog-gap: 0.4rem;
+    max-height: calc(
+      var(--catalog-rows) * var(--catalog-tile-max) +
+        (var(--catalog-rows) - 1) * var(--catalog-gap) + 1.5rem
+    );
   }
   .catalog-layout .desktop-filter-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.4rem;
-  }
-  /* No editor below: the catalog takes the column rather than leaving the
-     bottom half blank (`4k-native-layout.md` rule 4). */
-  .desktop-filter-catalog.catalog-layout.fill {
-    display: flex;
     min-height: 0;
+    flex: 1 1 auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: minmax(3.4rem, 1fr);
+    gap: var(--catalog-gap);
+  }
+  .cat-cell {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    container-type: size;
+    container-name: cat-cell;
+  }
+  /* Eleven into two columns strands the eleventh on a row of its own
+     (`4k-native-layout.md` rule 2). It spans the row instead. */
+  .catalog-layout .desktop-filter-grid > .cat-cell:last-child {
+    grid-column: 1 / -1;
+  }
+  /* No editor below: the catalog takes the whole column. */
+  .desktop-filter-catalog.catalog-layout.fill {
     /* Zero basis: an `auto` basis is the eleven rows' natural height, which
        grows past the column and pushes the hint below it out of view. */
     flex: 1 1 0;
-    flex-direction: column;
-  }
-  /* One column, eleven rows: full-width rows at ~5rem read as a picker, where
-     two columns stretched to fill the same height give 11rem squares with a
-     label adrift in the middle. */
-  .catalog-layout.fill .desktop-filter-grid {
-    min-height: 0;
-    flex: 1 1 0;
-    grid-template-columns: minmax(0, 1fr);
-    grid-auto-rows: minmax(3.4rem, 1fr);
+    max-height: none;
   }
   /* The column itself is the container here, so this steps with the pane, not
      with the window: eleven categories go three-across once there is room,
      which keeps the catalog to four rows instead of six. */
   @container drill (min-width: 620px) {
+    .desktop-filter-catalog.catalog-layout {
+      --catalog-rows: 4;
+      --catalog-tile-max: 15rem;
+      --catalog-gap: 0.6rem;
+    }
     .catalog-layout .desktop-filter-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.6rem;
+    }
+    /* 11 into 3 columns leaves a row of two — no orphan, so the last tile
+       keeps its own width. */
+    .catalog-layout .desktop-filter-grid > .cat-cell:last-child {
+      grid-column: auto;
+    }
+  }
+  /* 4K at 100% and portrait desktops: the column is ~2100px tall and three
+     cards cannot fill it without becoming slabs, so the ceiling rises here and
+     the tiles take the surplus instead (`4k-native-layout.md` rule 4). */
+  @media (min-height: 1600px) {
+    .desktop-filter-catalog.catalog-layout {
+      --catalog-tile-max: 11rem;
+    }
+    @container drill (min-width: 620px) {
+      .desktop-filter-catalog.catalog-layout {
+        --catalog-tile-max: 20rem;
+      }
     }
   }
 

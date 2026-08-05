@@ -1013,27 +1013,27 @@ screen rather than fixed:
 
 ### Steps
 
-- [ ] **Step 9.1 — measure the current waste.** For each of the eleven value
+- [x] **Step 9.1 — measure the current waste.** For each of the eleven value
   screens at 1920 and 2560: the editor zone's height, the height its content
   actually occupies, and the leftover. Same for the no-category catalog state.
   Put the table in this plan. This is the before-evidence and it also tells you
   which screens are the binding constraints.
-- [ ] **Step 9.2 — fix 9A.** Multi-column, taller tiles when the catalog owns
+- [x] **Step 9.2 — fix 9A.** Multi-column, taller tiles when the catalog owns
   the column. Verify the art and every label read at 1920/2560/3840 and that no
   label re-truncates (Task 7.5 fixed truncation — do not regress it).
-- [ ] **Step 9.3 — fix 9B.** The shared height budget above. Every value screen
+- [x] **Step 9.3 — fix 9B.** The shared height budget above. Every value screen
   consumes its zone; cards grow to a bounded max; art scales with the card.
-- [ ] **Step 9.4 — the bound matters.** A 2-option screen must not produce
+- [x] **Step 9.4 — the bound matters.** A 2-option screen must not produce
   comic slabs. Pick a per-card max that keeps proportions sane and SAY what it
   is. If a screen cannot fill its zone without looking silly, the surplus goes
   to the catalog (rule 3) rather than into the cards.
-- [ ] **Step 9.5 — verify.** Screenshot every one of the eleven value screens
+- [x] **Step 9.5 — verify.** Screenshot every one of the eleven value screens
   plus the no-category state at 1920, 2560, and 3840 (×1.1 emulation), and read
   each frame: is there still dead air? is any card a slab? is any art still
   small next to empty space? Re-measure the 9.1 table as after-evidence.
-- [ ] **Step 9.6 — below the seam is untouched.** The step-through flow at
+- [x] **Step 9.6 — below the seam is untouched.** The step-through flow at
   narrow widths keeps today's behavior. Verify at 960×412 and 375×667.
-- [ ] **Step 9.7 — verify + commit.** `npm run check`: 0 errors, 0 warnings.
+- [x] **Step 9.7 — verify + commit.** `npm run check`: 0 errors, 0 warnings.
   `npx vitest run tests/unit/browse/`: baseline failures only (2 protobufjs
   suites). The GalleryDrill line cap in the split-contract test is a REAL
   constraint — do not raise it to make a change fit; put the code where it
@@ -1046,3 +1046,176 @@ The chrome-devtools MCP is disconnected. Drive Chrome over CDP on port 9222
 script using the built-in WebSocket with `Emulation.setDeviceMetricsOverride`,
 `Runtime.evaluate`, and `Page.captureScreenshot` works and has been used
 repeatedly this session. Scratchpad only, never the repo.
+
+## Task 9 closeout (2026-08-05)
+
+**Tooling.** chrome-devtools MCP was still disconnected, so everything below was
+driven over raw CDP against the shared debug Chrome on :9222
+(`Emulation.setDeviceMetricsOverride` at `<w×1.1>×<h×1.1>` dpr 1.1,
+`Runtime.evaluate`, `Page.captureScreenshot` webp/70). Scripts stayed in the
+scratchpad. Two runs had to be discarded and re-sampled: a Vite HMR reload that
+lands mid-walk drops the pane out of split mode and the numbers go nonsense
+(`splitPane: false`, or a screen reporting the whole column as its need). Every
+number below is from a clean run.
+
+### 9.1 — the waste, before and after
+
+`zone` = the editor stage's height. `ink` = the union of what actually paints
+inside it (header + every card + the turn picker's two visible parts).
+`dead` = zone − ink; negative means the screen overflows and scrolls.
+Measured on `https://localhost:5173/browse`, one walk per viewport through
+every category tile.
+
+| Screen | 1920 dead before | 1920 after | 2560 dead before | 2560 after |
+|---|---|---|---|---|
+| Level | 23 | 29 | **582** | **73** |
+| Length | 182 | **31** | **730** | **89** |
+| Starting letter | 29 | 17 | 382 | **29** |
+| Start position | 23 | 13 | **582** | **73** |
+| Grid mode | **230** | **36** | **582** | **73** |
+| LOOPs | −151 | −93 | 78 | 29 |
+| Creator | −193 | −135 | 78 | 29 |
+| Timing & Direction | 48 | 29 | **542** | **68** |
+| Max turn intensity | **216** | **68** | 446 | **144** |
+| Collections | −910 | −852 | 29 | 29 |
+
+The other half of the same table — where the reclaimed height went:
+
+| | 1920 catalog height | 1920 tile | 2560 catalog height | 2560 tile |
+|---|---|---|---|---|
+| Before (identical on every screen) | 441 | 64 | 310 | 64 |
+| After (varies BY screen — that is the point) | 384–760 | 64–117 | 497–1013 | 111–240 |
+
+Ten value screens, not eleven: **"Recently added" has no value editor** — it is
+an instant-apply category (`gallery-drill-catalog.svelte.ts:624`, an `apply`
+entry with no `section`). The eleventh state is the no-category catalog.
+
+### 9.2 — the catalog (9A)
+
+Before, from the CSS: `.catalog-layout.fill .desktop-filter-grid` was
+`grid-template-columns: minmax(0, 1fr)` — one column, eleven full-width rows.
+After: it keeps the same 2-column (base) / 3-column (≥620px column) grid as the
+normal catalog, the rows grow into the column, and the eleventh tile spans the
+row so 11-into-2 does not strand an orphan.
+
+The tile now decides its own composition, because after this task its height is
+a share of a budget it does not control. `CategoryRail` wraps every tile in a
+`.cat-cell` **size container**; `CategoryTile` queries it:
+
+| Cell height | Composition |
+|---|---|
+| < 6.25rem | row (art left, label right), art `min(70%, 3.25rem)` — grows with the row |
+| ≥ 6.25rem | portrait: art on top at `min(42%, 6rem)`, label centred under it, count dot to the corner |
+| ≥ 12rem | art `min(50%, 8rem)`, icon glyphs 2.6rem |
+| ≥ 16rem | art `min(56%, 12rem)`, icon glyphs 3.6rem, title 1.2rem |
+
+Measured: no-category at 1920 is 2 × 6 tiles of 204×158 with 59px of art (was
+11 full-width rows); at 2560 it is 3 × 4 tiles of 231×327 with 165px of art.
+`.mini-art.plate img` also carried 32px width/height ATTRIBUTES, so a bigger
+plate used to mean a bigger white square around the same tiny glyph — now
+`width/height: 100%; object-fit: contain`.
+
+Label truncation (Task 7.5) is not regressed: `scrollWidth > clientWidth` is
+false for all 11 labels at 1920, 2560 and 3840, in every screen state.
+
+### 9.3 / 9.4 — the budget and the ceilings (9B)
+
+`src/lib/features/browse/gallery-home/pane-height-budget.ts` — an action on the
+column. It measures the active screen's blocks (`max(rect, scrollHeight)` per
+block, plus the screen's gaps and padding) and publishes `--editor-need`.
+`GalleryPaneLeft` consumes it:
+
+- editor: `flex: 1 1 var(--editor-need, 100%)`
+- catalog: `flex: 8 0 auto; max-height: <rows × tile ceiling>`
+
+So the editor takes what its cards need at their ceiling, the catalog takes the
+surplus 8:1 until its own ceiling, and only then does anything land back in the
+editor. `scrollHeight`, not the rendered box, is what keeps the measurement
+non-circular: a list too tall for the column shrinks its box and overflows, and
+the budget has to see the height it wanted rather than the squeeze it got.
+
+**The per-card ceilings** (`--pane-row-max`, GalleryWorkspace) were already the
+mechanism from Task 6.2 — this task tuned them and gave the surplus somewhere
+to go. Narrow column / wide column (≥640px) / tall viewport (≥1600px):
+
+| Screen | ~440px column | ≥640px column | ≥1600px tall |
+|---|---|---|---|
+| Level, Start position, Grid mode | 18rem | 26rem | 22 / 30rem |
+| Length, Max turn intensity | 10rem | 14rem | 11 / 18rem |
+| T&D, LOOPs, Collections, Creator | 8.5rem | 14rem | 11 / 18rem |
+| Starting letter | 4.5rem | 6rem | 5.5 / 7rem |
+
+**Why those numbers.** The binding case is Grid mode: 2 options. At 1920 its
+cards are 202px wide, so 18rem (288px) is 1.43:1 — the tallest a 2-up card can
+go before it reads as a slab rather than a card. At 2560 the same cards are
+351px wide and 26rem (416px) is 1.19:1. The rule of thumb everywhere was **stay
+under ~1.5:1 on the card's own width**, and hand anything left over to the
+catalog rather than stretching past it. Start position at 2560 proves it:
+232×416 with a 192px pictograph, where it was 76px inside the same box.
+
+Art now scales with the card instead of with the tier: `.value-pictograph`
+`min(52%, 12rem)`, `.value-grid-preview` `min(56%, 15rem)`, family/collection
+icons `min(44%, 7rem)`; the level `SequencePeek` steps to 150×140 and creator
+avatars to 72px once the column is ≥620px. `.value-main { flex: 1 }` is also
+overridden to `0 1 auto` inside the pane — it is a ROW rule, and in a portrait
+card it stranded the count at the far bottom with a hole above it.
+
+### 9.5 — what the frames showed
+
+Read at 1920, 2560 and 3840 for all ten value screens plus the no-category
+state (webp/70, scratchpad):
+
+- **Fixed.** Grid mode, Start position, Level, Timing & Direction and Length at
+  2560 no longer dead-end a third of the way down the column; the catalog above
+  them carries the reclaimed height as portrait tiles with legible art. Start
+  position's pictographs went 76 → 192px, Grid mode's previews 144 → 220px.
+- **No slabs.** No card exceeds ~1.5:1 on its own width at any viewport; the two
+  Grid mode cards are the worst case and they still read as cards.
+- **Still imperfect, named honestly:**
+  - **Max turn intensity** keeps 68px (1920) / 144px (2560) / 544px (3840) of
+    air. It is a single slider; past a point more height only adds padding, and
+    the catalog is already at its ceiling. Filling it would mean a comic-sized
+    slider or comic-sized tiles.
+  - **3840 (4K @ 100%)** leaves ~215px under the value cards on the 3-option
+    screens. The column there is 736 × 2126 — no arrangement of 11 tiles and 3
+    cards fills it without one of them becoming a slab, and the app-wide root
+    ramp that would fix those proportions is Task 7.6's open item, not this one.
+  - **Collections / Creator / LOOPs at 1920** still scroll (−852 / −135 / −93).
+    They have more content than the column has height; the budget gives them
+    everything the catalog can spare and they scroll as before.
+  - **The dense Length chip grid** (15+ values) is a flex-wrap with its own
+    fixed chip size, so it does not participate in the row ceiling — its surplus
+    all goes to the catalog. It reads fine, but the chips could be bigger if
+    someone wants that later.
+- A residual "dead" of 29px on a satisfied screen is the screen's own
+  `padding-top` plus sub-pixel rounding, not a hole.
+
+### 9.6 — below the seam
+
+Unchanged, verified with a cleared session at 960×412, 375×667 and 820×1180:
+no `.pane-left`, no catalog, the step-through chooser and value screens render
+exactly as before (960×412 Grid mode: two cards, no scroll; 375×667 chooser:
+hero doors + "Show all 1413 sequences" + the tile grid). Every rule this task
+added is scoped to `.drill-ctx.split-pane`, `.pane-left`, `.mini-tile.catalog`
+or the `cat-cell` container, none of which exist below the seam.
+
+### 9.7 — verification
+
+- `npm run check`: **0 errors, 0 warnings**.
+- `npx vitest run tests/unit/browse/`: 83 passed, 2 suites failed — the two
+  pre-existing protobufjs import failures, the documented baseline.
+- `gallery-drill-split-contract.test.ts`: 5/5 pass. **The line cap was NOT
+  raised.** GalleryDrill went 898 → 855 lines because the left column moved out
+  into `GalleryPaneLeft.svelte`, which is where the budget belongs anyway.
+
+### Deviations
+
+1. **A new component, `GalleryPaneLeft.svelte`.** The plan implied editing the
+   column in place, but GalleryDrill sat at 898 of its 900-line cap and the
+   budget needs markup, CSS and an action. Extracting the column both respects
+   the cap and puts the two zones and the flex that divides them in one file.
+2. **The tall/portrait tile is a container query, not a prop.** A prop would
+   have to guess from the tier; after this task the tile's height depends on
+   which value screen is open, so only the resolved cell knows. `.cat-cell`
+   with `container-type: size` is the seam.
+3. **Ten value screens, not eleven** — see 9.1.

@@ -33,6 +33,7 @@
   import GalleryLanding from "./GalleryLanding.svelte";
   import GalleryWorkspace from "./GalleryWorkspace.svelte";
   import CategoryRail from "./CategoryRail.svelte";
+  import GalleryPaneLeft from "./GalleryPaneLeft.svelte";
   import {
     SCREEN_CLASS,
     SECTIONS,
@@ -557,31 +558,20 @@
          the editors compose exactly as they do on a narrow screen — art
          preserved, never shrunk to chips (spec Risk 1). -->
     {#if splitPane}
-      <div
-        class="pane-left"
-        bind:clientWidth={paneWidth}
+      <GalleryPaneLeft
+        {catalog}
+        {section}
+        {ruleCounts}
+        idle={showLanding}
+        onSelectCategory={selectCategory}
+        bind:width={paneWidth}
       >
-        <CategoryRail
-          {catalog}
-          {section}
-          layout="catalog"
-          {ruleCounts}
-          morph
-          fill={showLanding}
-          onselect={selectCategory}
-        />
-        {#if showLanding}
-          <!-- Entered via "Show all": the catalog IS the left column and the
-               whole live grid is the point. No value editor to stage. -->
-          <p class="pane-idle">Pick a category above to narrow it down.</p>
-        {:else}
-          <div class="drill-editor-stage">
-            <Crossfade key={section} duration={DURATION.normal} fill>
-              {@render workspaceScreen()}
-            </Crossfade>
-          </div>
-        {/if}
-      </div>
+        {#snippet editor()}
+          <Crossfade key={section} duration={DURATION.normal} fill>
+            {@render workspaceScreen()}
+          </Crossfade>
+        {/snippet}
+      </GalleryPaneLeft>
       <div class="pane-right">
         {#if resultsHeader}
           <div class="pane-results-header">{@render resultsHeader()}</div>
@@ -711,27 +701,18 @@
     width: 100%;
     max-width: none;
   }
-  .pane-left {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    min-width: 0;
-    min-height: 0;
-    /* The value editors query `drill`; naming the column re-points every one
-       of those queries at THIS box, so a 420px column composes its cards the
-       way a 420px screen does instead of trying to run the 3-across desktop
-       monument layout inside it. */
-    container-type: inline-size;
-    container-name: drill;
-  }
   /* ONE surface for the whole workspace. The results pane used to be a near
      opaque 96% panel while the filters beside it sat directly on the animated
      page background — two products side by side (Austen, 2026-08-05). All three
-     zones now share the same token and the same translucency, so the pane reads
-     as the third panel of one system rather than a window into another app. */
-  .drill.split-pane .pane-left :global(.desktop-filter-catalog.catalog-layout),
-  .drill.split-pane .pane-left .drill-editor-stage,
+     zones share the same token and translucency (the left column declares its
+     own copy in GalleryPaneLeft), so the pane reads as the third panel of one
+     system rather than a window into another app. */
   .pane-right {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 1.1rem;
     background: color-mix(
@@ -739,30 +720,6 @@
       var(--theme-panel-bg, #11131a) 72%,
       transparent
     );
-  }
-  .drill.split-pane .pane-left :global(.desktop-filter-catalog.catalog-layout) {
-    padding: 0.75rem;
-  }
-  .drill.split-pane .pane-left .drill-editor-stage {
-    padding: 0.75rem;
-  }
-  /* No category open (entered via "Show all"): the catalog IS the column. An
-     empty editor panel below it would just be a large blank card, so the tiles
-     take the height instead — the whole left column becomes the affordance. */
-  .pane-idle {
-    flex: 0 0 auto;
-    margin: 0;
-    padding: 0.25rem 0.5rem;
-    color: var(--theme-text-muted, #9aa6b8);
-    font-size: 0.9rem;
-    text-align: center;
-  }
-  .pane-right {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
   }
   .pane-results-header {
     display: flex;
