@@ -327,3 +327,95 @@ Task 4 `681f979aaa`, Task 5 (this closeout + the 375px collections fix).
 - The adaptive value screens' sticky `.drill-head` is translucent over a
   scrolled list at ~750px wide. Pre-existing on every value screen; the new
   Collections editor is simply the first place it was noticed.
+
+---
+
+## Task 6: Austen's review pass (2026-08-05)
+
+Austen reviewed the shipped workspace on his real 4K monitor with DevTools
+docked (effective content width ~1550px — just above the 1240px seam).
+Verdict: *"Major improvement... we're on the right track but it needs a
+serious pass."* Everything below is his punch list. Items 7 and 8 are
+decisions he has now made — implement them, do not re-litigate.
+
+**Additional verified seams for this task:**
+
+| Thing | Path |
+|---|---|
+| Page-top search bar | `GalleryDrill.svelte` :415–425 (`{#if onSearch}` block), fed by `onSearch` from `BrowseModule.svelte` :812 |
+| Show-all handler | `BrowseModule.svelte` :811 `onShowAll` → `applyToGrid` |
+| The eject to the old page | `BrowseModule.svelte` :257–266 `applyToGrid()` sets `galleryView = "browse-all"` → renders `GalleryTab` (:826) instead of the workspace |
+| "Start here" pill | `GalleryTab.svelte` :93 `backLabel="Start here"`; handlers `onBackToStart`/`onOpenWorkspace` at `BrowseModule.svelte` :836–845 |
+| Split-pane liveness flag | `BrowseModule.svelte` :249 `splitPaneActive`, set by `onSplitPaneChange` :819 |
+| T&D dots art | `CategoryTile.svelte` (`.element-dots` / `.element-dot`) |
+
+### Visual polish
+
+- [ ] **Step 6.1 — top tiles are vertically smushed.** Give the category
+  tiles real vertical breathing room. Check `min-height`/padding at every
+  tier, especially 2560/3840 where the lockstep root ramp
+  (`.claude/rules/4k-native-layout.md`) should already be growing them and
+  evidently is not carrying the tile box. Express sizes in `rem`.
+- [ ] **Step 6.2 — dead space below the value chips.** The left column
+  strands vertical space under the value grid (visible in the length
+  screen: chips end at ~60% height, nothing below). Use the column's
+  height — 4K rule 4, "a wide screen is also a tall one."
+- [ ] **Step 6.3 — awkward spacing in the value-screen header.** The
+  "Pick a length" header row (back arrow + title + neighboring control)
+  has an awkward gap. Fix the row's composition.
+- [ ] **Step 6.4 — Timing & Direction dots overflow their art container.**
+  The colored dots spill outside the tile's art slot. Same class of bug as
+  the grid-mode preview fixed in `907b9778c1` (unconstrained art in an
+  auto-sized flex slot). While there, audit EVERY art variant in
+  `CategoryTile.svelte` for a missing box constraint and fix all of them,
+  not just T&D.
+- [ ] **Step 6.5 — unify the results surface.** The results pane's
+  background is visibly darker than the workspace panels beside it, so the
+  page reads as two products. Unify the surface styling (one token family
+  for both panes).
+- [ ] **Step 6.6 — the animations are gone.** Austen sees no transitions in
+  real use. DIAGNOSE FIRST, with evidence, before changing anything.
+  Candidate causes to rule out: (a) the workspace is entered from persisted
+  state on load so the landing↔workspace morph never fires; (b) the
+  per-section `<Crossfade>` was lost or neutralized in the Task 1 split, so
+  category/value switches no longer animate; (c) a `prefers-reduced-motion`
+  or emulation artifact that makes it look fine in your harness and dead on
+  his machine. Report the finding, then make transitions present on the
+  paths a real user actually takes.
+
+### Flow (decisions already made — implement)
+
+- [ ] **Step 6.7 — delete the page-top search bar from the gallery.**
+  Austen: search is not how people will primarily find sequences, and a
+  full-width search bar at the top of the page claims otherwise. Remove it
+  from the gallery surface (`GalleryDrill.svelte` :415–425 / the `onSearch`
+  wiring that renders it). The results toolbar's own search affordance
+  becomes the search — verify it works in the split pane. Re-screenshot the
+  landing composition without the top bar and confirm it still balances.
+  Other `GalleryDrill` hosts (`GalleryFilterSheet`, `AddSequencesSheet`)
+  keep whatever search they pass today.
+- [ ] **Step 6.8 — search and Show all stay in the workspace.** This
+  REVERSES deviation 3 above; Austen's experience proved the spec's original
+  call. Today `onShowAll` and `onSearch` both call `applyToGrid()`, which
+  flips `galleryView` to `"browse-all"` and renders the old full-page
+  `GalleryTab` with its "Start here" pill — a completely different screen,
+  and backing out of a search dumps the user there rather than where they
+  were. Above the seam: Show all = the workspace with no active rules (full
+  live grid); a search = one more narrowing of the live grid. The gallery's
+  own flows must never land on the "Start here" screen at desktop widths.
+  Below the seam, today's step-through + `GalleryTab` behavior stays exactly
+  as it is. `GalleryTab` may remain reachable for other hosts; it just stops
+  being a destination of the gallery's own desktop flows.
+
+### Readability sweep
+
+- [ ] **Step 6.9 — 4K pass over the whole workspace.** Viewport sweep at
+  1920 / 2560 / 3840 **plus ~1550px content width** (Austen's
+  DevTools-docked reality — confirm the seam behaves sanely there rather
+  than degenerating into a squeeze). Read every frame for smushed controls,
+  stranded space, overflow, and contrast; fix what the frames show. This is
+  the item that decides whether the pass is done — arithmetic is not
+  verification of composition.
+- [ ] **Step 6.10 — verify + commit.** `npm run check`: 0 errors, 0
+  warnings. `npx vitest run tests/unit/browse/`: baseline failures only.
+  Commit with explicit pathspecs. Do NOT push.
