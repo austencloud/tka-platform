@@ -38,10 +38,7 @@
 <div class="path-shape-control" class:compact>
   <span class="section-label">Path Shape</span>
 
-  {#each [
-    { label: "BLUE", color: "blue" as MotionColor, current: bluePathShape, cssClass: "blue" },
-    { label: "RED", color: "red" as MotionColor, current: redPathShape, cssClass: "red" },
-  ] as hand}
+  {#each [{ label: "BLUE", color: "blue" as MotionColor, current: bluePathShape, cssClass: "blue" }, { label: "RED", color: "red" as MotionColor, current: redPathShape, cssClass: "red" }] as hand}
     <div class="hand-row">
       <span class="hand-label {hand.cssClass}">{hand.label}</span>
       <div class="shape-buttons">
@@ -49,7 +46,8 @@
           <button
             class="shape-btn"
             class:active={hand.current === shape}
-            class:blue-active={hand.current === shape && hand.cssClass === "blue"}
+            class:blue-active={hand.current === shape &&
+              hand.cssClass === "blue"}
             class:red-active={hand.current === shape && hand.cssClass === "red"}
             aria-pressed={hand.current === shape}
             aria-label="{hand.label} path shape: {shape}"
@@ -116,8 +114,12 @@
     letter-spacing: 0.5px;
   }
 
-  .hand-label.blue { color: #448aff; }
-  .hand-label.red { color: #ff5252; }
+  .hand-label.blue {
+    color: #448aff;
+  }
+  .hand-label.red {
+    color: #ff5252;
+  }
 
   .shape-buttons {
     display: flex;

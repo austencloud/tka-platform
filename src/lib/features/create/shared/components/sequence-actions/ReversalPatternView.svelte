@@ -20,7 +20,10 @@
     StripValue,
   } from "$lib/shared/create/components/pattern-strip/pattern-strip-types";
   import { PER_HAND_RHYTHMS } from "$lib/shared/create/domain/rhythm/rhythm-catalog";
-  import { stampPerHand, tilePeriod } from "$lib/shared/create/domain/rhythm/rhythm-mask";
+  import {
+    stampPerHand,
+    tilePeriod,
+  } from "$lib/shared/create/domain/rhythm/rhythm-mask";
   import { applyReversalMatrix } from "$lib/features/choreo-card/services/reversal-seed-service";
   import { loadDiamondEdges } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
   import { reversalStripStore } from "./reversal-strip-store.svelte";
@@ -90,17 +93,28 @@
       });
 
     // Lane order matches binding.laneColors: [0] Left=blue, [1] Right=red.
-    return [cellInert(spins(MotionColor.BLUE)), cellInert(spins(MotionColor.RED))];
+    return [
+      cellInert(spins(MotionColor.BLUE)),
+      cellInert(spins(MotionColor.RED)),
+    ];
   });
 
   function seedAlternating(): StripValue[][] {
-    const alt = stampPerHand(PER_HAND_RHYTHMS[2]!, initPeriod, true, false, false);
+    const alt = stampPerHand(
+      PER_HAND_RHYTHMS[2]!,
+      initPeriod,
+      true,
+      false,
+      false
+    );
     return [alt.blue, alt.red];
   }
 
   // Restore the persisted matrix; the store outlives this component's mount so
   // the user's layout survives navigating back to the actions grid and returning.
-  let strip = $state<StripValue[][]>(reversalStripStore.value ?? seedAlternating());
+  let strip = $state<StripValue[][]>(
+    reversalStripStore.value ?? seedAlternating()
+  );
 
   // Seed only on a fresh session or when the persisted period no longer tiles
   // the current sequence length (e.g. the sequence was resized while away).
@@ -138,21 +152,26 @@
 </script>
 
 <div class="pattern-view-body">
-  <div class="pattern-view-inner">
-    <PatternStripEditor
-      {binding}
-      sequenceLength={seqLen}
-      value={strip}
-      onChange={handleChange}
-      {inertMask}
-    />
-    <p class="reversal-note" class:emphasis={hasInert}>
-      A reversal flips a spinning prop, so dash and static beats stay put.
-      <span class="counts"
-        >Left spins on <b>{spin.left}</b>/<b>{spin.total}</b> beats, Right on
-        <b>{spin.right}</b>/<b>{spin.total}</b>.</span
-      >
-    </p>
+  <div class="pattern-editor-scroll">
+    <div class="pattern-view-inner">
+      <PatternStripEditor
+        {binding}
+        sequenceLength={seqLen}
+        value={strip}
+        onChange={handleChange}
+        {inertMask}
+        fitAvailableHeight
+      />
+      <p class="reversal-note" class:emphasis={hasInert}>
+        A reversal flips a spinning prop, so dash and static steps stay put.
+        <span class="counts"
+          >Left spins on <b>{spin.left}</b>/<b>{spin.total}</b> steps, Right on
+          <b>{spin.right}</b>/<b>{spin.total}</b>.</span
+        >
+      </p>
+    </div>
+  </div>
+  <div class="pattern-action-footer">
     <button
       class="apply-btn reversal"
       onclick={applyStrip}
@@ -167,8 +186,16 @@
   .pattern-view-body {
     flex: 1;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .pattern-editor-scroll {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
-    padding: 18px;
+    padding: 10px 12px 6px;
     display: flex;
     flex-direction: column;
   }
@@ -179,13 +206,26 @@
     max-width: 820px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 10px;
+  }
+
+  .pattern-action-footer {
+    flex: 0 0 auto;
+    padding: 6px 12px 10px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #10131a) 94%,
+      transparent
+    );
   }
 
   .apply-btn {
     width: 100%;
-    min-height: 52px;
-    margin: 6px 0 0;
+    display: block;
+    max-width: 820px;
+    min-height: var(--min-touch-target, 44px);
+    margin: 0 auto;
     padding: 0 14px;
     border: none;
     border-radius: 12px;
@@ -220,5 +260,32 @@
   .reversal-note b {
     font-weight: 700;
     color: var(--theme-accent, #2dd4bf);
+  }
+
+  @container sequence-action-subview (max-width: 599px) and (max-height: 430px) {
+    .pattern-editor-scroll {
+      padding: 8px 10px 4px;
+    }
+
+    .pattern-action-footer {
+      padding: 4px 10px;
+    }
+  }
+
+  @container sequence-action-subview (min-width: 600px) and (max-height: 540px) {
+    .pattern-editor-scroll {
+      padding: 6px 10px;
+    }
+
+    .pattern-view-inner {
+      height: 100%;
+      margin: 0 auto;
+      gap: 4px;
+      justify-content: safe center;
+    }
+
+    .reversal-note {
+      font-size: var(--font-size-compact, 12px);
+    }
   }
 </style>

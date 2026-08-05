@@ -16,13 +16,12 @@
     - Layer 3 (Combination Override): Edge cases where blue+red prop combo needs special handling
 -->
 <script lang="ts">
-
-import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/get-arrow-adjustment-orchestrator";
+  import { getArrowAdjustmentOrchestrator } from "$lib/features/create/shared/get-arrow-adjustment-orchestrator";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { ArrowAdjustmentOrchestrator } from "../../services/arrow-adjustment-orchestrator";
-import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orchestrator";
+  import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orchestrator";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
   import { onMount } from "svelte";
   import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
@@ -44,7 +43,12 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
     keyboardActive?: boolean;
   }
 
-  let { stepData, onStepDataUpdate, onPushUndoSnapshot, keyboardActive = true }: Props = $props();
+  let {
+    stepData,
+    onStepDataUpdate,
+    onPushUndoSnapshot,
+    keyboardActive = true,
+  }: Props = $props();
 
   // Services
   let hapticService: HapticFeedback | null = null;
@@ -59,8 +63,8 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
   let hasUndoSnapshotForSession = $state(false);
 
   // Auto-save state
-  type SaveState = 'idle' | 'unsaved' | 'saving' | 'saved';
-  let saveState = $state<SaveState>('idle');
+  type SaveState = "idle" | "unsaved" | "saving" | "saved";
+  let saveState = $state<SaveState>("idle");
   let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
   let savedIndicatorTimer: ReturnType<typeof setTimeout> | null = null;
   let pendingSaveKey: string | null = null;
@@ -75,39 +79,53 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
   const thisPropType = $derived.by(() => {
     if (!selectedArrow) return "staff";
     const settings = getSettings();
-    const settingsPropType = selectedArrow.color === "blue"
-      ? settings.bluePropType
-      : settings.redPropType;
-    return (settingsPropType ?? selectedArrow.motionData?.propType)?.toLowerCase() || "staff";
+    const settingsPropType =
+      selectedArrow.color === "blue"
+        ? settings.bluePropType
+        : settings.redPropType;
+    return (
+      (settingsPropType ?? selectedArrow.motionData?.propType)?.toLowerCase() ||
+      "staff"
+    );
   });
   const otherPropType = $derived.by(() => {
     if (!selectedArrow) return "staff";
     const settings = getSettings();
     const otherColor = selectedArrow.color === "blue" ? "red" : "blue";
-    const settingsPropType = otherColor === "blue"
-      ? settings.bluePropType
-      : settings.redPropType;
+    const settingsPropType =
+      otherColor === "blue" ? settings.bluePropType : settings.redPropType;
     const otherMotion = selectedArrow.pictographData?.motions?.[otherColor];
-    return (settingsPropType ?? otherMotion?.propType)?.toLowerCase() || "staff";
+    return (
+      (settingsPropType ?? otherMotion?.propType)?.toLowerCase() || "staff"
+    );
   });
 
   // Get default save layer from orchestrator
   const defaultSaveLayer = $derived.by((): 1 | 2 | 3 => {
     if (!adjustmentOrchestrator) return 1;
-    return adjustmentOrchestrator.getDefaultSaveLayer(thisPropType, otherPropType);
+    return adjustmentOrchestrator.getDefaultSaveLayer(
+      thisPropType,
+      otherPropType
+    );
   });
 
   // Get current adjustment via orchestrator's cascading lookup
   const cascadingResult = $derived.by(() => {
     const _ = globalAdjustmentVersion.version; // Trigger on version change
     if (!selectedArrow || !adjustmentOrchestrator) return null;
-    return adjustmentOrchestrator.getCurrentAdjustment(selectedArrow, thisPropType, otherPropType);
+    return adjustmentOrchestrator.getCurrentAdjustment(
+      selectedArrow,
+      thisPropType,
+      otherPropType
+    );
   });
 
   const currentAdjustmentX = $derived(cascadingResult?.adjustment?.x ?? 0);
   const currentAdjustmentY = $derived(cascadingResult?.adjustment?.y ?? 0);
   const currentAdjustmentLayer = $derived(cascadingResult?.layer ?? null);
-  const hasAdjustment = $derived(currentAdjustmentX !== 0 || currentAdjustmentY !== 0);
+  const hasAdjustment = $derived(
+    currentAdjustmentX !== 0 || currentAdjustmentY !== 0
+  );
 
   // Rotation override is only valid for DASH and STATIC motion types
   const canToggleRotationOverride = $derived.by(() => {
@@ -124,7 +142,10 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
       return;
     }
     rotationOverrideManager
-      .hasRotationOverride(selectedArrow.motionData, selectedArrow.pictographData)
+      .hasRotationOverride(
+        selectedArrow.motionData,
+        selectedArrow.pictographData
+      )
       .then((active) => {
         rotationOverrideActive = active;
       })
@@ -136,7 +157,7 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
     const _ = selectedArrow;
     hasUndoSnapshotForSession = false;
     clearTimers();
-    saveState = 'idle';
+    saveState = "idle";
     pendingSaveKey = null;
   });
 
@@ -209,7 +230,9 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
       globalAdjustmentVersion.increment();
 
       hapticService?.trigger("selection");
-      logger.log(`Rotation override ${isActive ? "applied" : "removed"} for ${selectedArrow.color} ${selectedArrow.motionData.motionType}`);
+      logger.log(
+        `Rotation override ${isActive ? "applied" : "removed"} for ${selectedArrow.color} ${selectedArrow.motionData.motionType}`
+      );
     } catch (err) {
       logger.error("Failed to toggle rotation override:", err);
       hapticService?.trigger("error");
@@ -241,7 +264,7 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
 
   function scheduleAutoSave(targetKey: AdjustmentTargetKey) {
     clearTimers();
-    saveState = 'unsaved';
+    saveState = "unsaved";
     pendingSaveKey = JSON.stringify(targetKey);
 
     autoSaveTimer = setTimeout(async () => {
@@ -252,13 +275,13 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
   async function performAutoSave(targetKey: AdjustmentTargetKey) {
     const expectedKey = JSON.stringify(targetKey);
     if (pendingSaveKey !== expectedKey) {
-      saveState = 'idle';
+      saveState = "idle";
       return;
     }
 
     const repo = getGlobalAdjustmentRepository();
     if (!repo) {
-      saveState = 'idle';
+      saveState = "idle";
       return;
     }
 
@@ -267,12 +290,12 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
     const adjustmentY = currentAdjustment?.y ?? 0;
 
     if (adjustmentX === 0 && adjustmentY === 0) {
-      saveState = 'idle';
+      saveState = "idle";
       return;
     }
 
     try {
-      saveState = 'saving';
+      saveState = "saving";
       logger.log(`Auto-saving to Firestore: (${adjustmentX}, ${adjustmentY})`);
 
       await repo.saveAdjustment({
@@ -281,17 +304,17 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
         adjustmentY,
       });
 
-      saveState = 'saved';
+      saveState = "saved";
       hapticService?.trigger("success");
 
       savedIndicatorTimer = setTimeout(() => {
-        if (saveState === 'saved') {
-          saveState = 'idle';
+        if (saveState === "saved") {
+          saveState = "idle";
         }
       }, SAVED_INDICATOR_DURATION_MS);
     } catch (error) {
       logger.error("Auto-save failed:", error);
-      saveState = 'idle';
+      saveState = "idle";
       hapticService?.trigger("error");
     }
   }
@@ -305,7 +328,7 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
 
     hapticService?.trigger("warning");
     clearTimers();
-    saveState = 'idle';
+    saveState = "idle";
 
     const layerToDelete = currentAdjustmentLayer ?? defaultSaveLayer;
     const deletedKey = adjustmentOrchestrator.resetToDefault(
@@ -365,7 +388,7 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
 
     // Clear any pending auto-save since we just manually reverted
     clearTimers();
-    saveState = 'idle';
+    saveState = "idle";
   }
 
   function handleClearSelection() {
@@ -428,19 +451,21 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
   <span class="increment-badge">{currentIncrement}px</span>
 
   <!-- Save state indicator -->
-  {#if saveState !== 'idle'}
+  {#if saveState !== "idle"}
     <span
       class="save-indicator"
-      class:unsaved={saveState === 'unsaved'}
-      class:saving={saveState === 'saving'}
-      class:saved={saveState === 'saved'}
-      title={saveState === 'unsaved' ? 'Unsaved - will auto-save shortly' :
-             saveState === 'saving' ? 'Saving...' :
-             'Saved to Firestore'}
+      class:unsaved={saveState === "unsaved"}
+      class:saving={saveState === "saving"}
+      class:saved={saveState === "saved"}
+      title={saveState === "unsaved"
+        ? "Unsaved - will auto-save shortly"
+        : saveState === "saving"
+          ? "Saving..."
+          : "Saved to Firestore"}
     >
-      {#if saveState === 'unsaved'}
+      {#if saveState === "unsaved"}
         <i class="fas fa-circle" aria-hidden="true"></i>
-      {:else if saveState === 'saving'}
+      {:else if saveState === "saving"}
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
       {:else}
         <i class="fas fa-check" aria-hidden="true"></i>
@@ -485,7 +510,7 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
       onclick={handleResetToDefault}
       title="Reset to default (Z)"
       aria-label="Reset arrow to default position"
-      disabled={saveState === 'saving'}
+      disabled={saveState === "saving"}
     >
       <i class="fas fa-undo" aria-hidden="true"></i>
     </button>
@@ -609,8 +634,13 @@ import type { AdjustmentTargetKey } from "../../services/arrow-adjustment-orches
   }
 
   @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
   }
 
   .undo-btn {

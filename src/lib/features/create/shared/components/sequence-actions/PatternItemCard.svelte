@@ -106,8 +106,17 @@
 
   .pattern-item.selected {
     border-color: var(--glass-color, var(--theme-accent));
-    background: color-mix(in srgb, var(--glass-color, var(--theme-accent)) 18%, transparent);
-    box-shadow: 0 0 8px color-mix(in srgb, var(--glass-color, var(--theme-accent)) 25%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--glass-color, var(--theme-accent)) 18%,
+      transparent
+    );
+    box-shadow: 0 0 8px
+      color-mix(
+        in srgb,
+        var(--glass-color, var(--theme-accent)) 25%,
+        transparent
+      );
   }
 
   .pattern-item.disabled {

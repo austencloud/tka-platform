@@ -5,6 +5,11 @@
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import SmartCollectionReviewFrame from "./_components/SmartCollectionReviewFrame.svelte";
+  import SequenceActionsReviewPage from "../sequence-actions/+page.svelte";
+
+  const isSequenceActionsReview = $derived(
+    page.url.searchParams.get("review") === "sequence-actions"
+  );
 
   type ReviewStatus = "not-reviewed" | "approved" | "needs-changes";
 
@@ -510,13 +515,17 @@
 
 <svelte:head>
   <title
-    >{isFrame
-      ? "Smart Collection review frame"
-      : "Smart Collection design review"}</title
+    >{isSequenceActionsReview
+      ? "Sequence Actions review"
+      : isFrame
+        ? "Smart Collection review frame"
+        : "Smart Collection design review"}</title
   >
 </svelte:head>
 
-{#if isFrame}
+{#if isSequenceActionsReview}
+  <SequenceActionsReviewPage />
+{:else if isFrame}
   <SmartCollectionReviewFrame surface={frameSurface} variant={frameVariant} />
 {:else}
   <main class="review-page">

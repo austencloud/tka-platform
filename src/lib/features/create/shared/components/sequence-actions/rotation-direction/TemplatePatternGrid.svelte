@@ -224,10 +224,11 @@
 
   .category-filter.mobile-segmented .filter-btn {
     flex: 1;
+    min-height: var(--min-touch-target, 44px);
     border: none;
     border-radius: 6px;
-    padding: 8px 4px;
-    font-size: 0.7rem;
+    padding: 6px 4px;
+    font-size: var(--font-size-compact, 12px);
     gap: 3px;
     justify-content: center;
   }

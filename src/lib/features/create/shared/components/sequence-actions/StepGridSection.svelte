@@ -35,7 +35,11 @@
   }: Props = $props();
 </script>
 
-<div class="step-grid-section" class:shift-mode={isShiftMode} class:mobile-mode={mobileMode}>
+<div
+  class="step-grid-section"
+  class:shift-mode={isShiftMode}
+  class:mobile-mode={mobileMode}
+>
   {#if isShiftMode}
     <div class="shift-mode-banner">
       <span>Tap the step to play first - it becomes Step 1</span>

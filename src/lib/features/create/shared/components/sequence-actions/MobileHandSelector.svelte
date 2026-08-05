@@ -138,11 +138,7 @@
 
   /* Active states per hand color */
   .segment.blue.active {
-    background: color-mix(
-      in srgb,
-      var(--prop-blue, #2e8bf0) 30%,
-      transparent
-    );
+    background: color-mix(in srgb, var(--prop-blue, #2e8bf0) 30%, transparent);
     color: color-mix(in srgb, var(--prop-blue, #2e8bf0) 52%, white);
   }
 
@@ -156,11 +152,7 @@
   }
 
   .segment.red.active {
-    background: color-mix(
-      in srgb,
-      var(--prop-red, #ed1c24) 30%,
-      transparent
-    );
+    background: color-mix(in srgb, var(--prop-red, #ed1c24) 30%, transparent);
     color: color-mix(in srgb, var(--prop-red, #ed1c24) 52%, white);
   }
 

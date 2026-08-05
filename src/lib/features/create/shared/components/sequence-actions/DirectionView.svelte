@@ -18,6 +18,8 @@
   interface Props {
     sequence: SequenceData | null;
     targetHand: TargetHand;
+    initialMode?: "reversals" | "absolute";
+    initialRotationMode?: "apply" | "save";
     onReversalApply: (result: {
       sequence: SequenceData;
       warnings?: readonly string[];
@@ -28,9 +30,16 @@
     }) => void;
   }
 
-  let { sequence, targetHand, onReversalApply, onRotationApply }: Props = $props();
+  let {
+    sequence,
+    targetHand,
+    initialMode = "reversals",
+    initialRotationMode = "apply",
+    onReversalApply,
+    onRotationApply,
+  }: Props = $props();
 
-  let mode = $state<"reversals" | "absolute">("reversals");
+  let mode = $state<"reversals" | "absolute">(initialMode);
 </script>
 
 <div class="direction-view">
@@ -50,7 +59,12 @@
   {#if mode === "reversals"}
     <ReversalPatternView {sequence} onApply={onReversalApply} />
   {:else}
-    <RotationDirectionView {sequence} {targetHand} onApply={onRotationApply} />
+    <RotationDirectionView
+      {sequence}
+      {targetHand}
+      initialMode={initialRotationMode}
+      onApply={onRotationApply}
+    />
   {/if}
 </div>
 
@@ -64,7 +78,7 @@
 
   .mode-wrap {
     flex-shrink: 0;
-    padding: 12px 16px;
+    padding: 0 8px;
     border-bottom: 1px solid var(--theme-stroke);
   }
 </style>

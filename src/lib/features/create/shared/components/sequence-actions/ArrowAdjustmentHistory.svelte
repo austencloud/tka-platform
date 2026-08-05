@@ -8,11 +8,19 @@
 -->
 <script lang="ts">
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-  import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+  import {
+    collection,
+    query,
+    orderBy,
+    limit,
+    getDocs,
+  } from "firebase/firestore";
   import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
   import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
-  import AdjustmentHistoryPanel, { type HistoryEntry } from "./AdjustmentHistoryPanel.svelte";
+  import AdjustmentHistoryPanel, {
+    type HistoryEntry,
+  } from "./AdjustmentHistoryPanel.svelte";
 
   // Carry the global sourceKey on each entry so revert can parse it back.
   const sourceKeyById = new Map<string, string>();
@@ -22,7 +30,7 @@
     const q = query(
       collection(firestore, "global_arrow_adjustment_history"),
       orderBy("timestamp", "desc"),
-      limit(15),
+      limit(15)
     );
     const snap = await getDocs(q);
     sourceKeyById.clear();
@@ -66,7 +74,11 @@
       ...(parts[5] ? { propType: parts[5] } : {}),
       ...(parts[6] ? { otherPropType: parts[6] } : {}),
     };
-    const payload = { ...targetKey, adjustmentX: entry.x ?? 0, adjustmentY: entry.y ?? 0 };
+    const payload = {
+      ...targetKey,
+      adjustmentX: entry.x ?? 0,
+      adjustmentY: entry.y ?? 0,
+    };
 
     repo.saveAdjustmentLocal(payload);
     pictographPreparer.clearCache();

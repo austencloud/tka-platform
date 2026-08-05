@@ -137,7 +137,10 @@
           class:compact
           aria-pressed={pathShape === shape}
           aria-label="{color} path: {shape}"
-          onclick={(e) => { e.stopPropagation(); onPathShapeChange(shape); }}
+          onclick={(e) => {
+            e.stopPropagation();
+            onPathShapeChange(shape);
+          }}
         >
           {shape.charAt(0).toUpperCase() + shape.slice(1)}
         </button>
@@ -147,7 +150,10 @@
         class:compact
         disabled={pathShape === undefined}
         aria-label="Reset {color} path to global"
-        onclick={(e) => { e.stopPropagation(); onPathShapeClear(); }}
+        onclick={(e) => {
+          e.stopPropagation();
+          onPathShapeClear();
+        }}
       >
         <i class="fas fa-rotate-left" aria-hidden="true"></i>
       </button>

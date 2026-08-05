@@ -70,5 +70,4 @@
     letter-spacing: 0.08em;
     font-weight: 700;
   }
-
 </style>

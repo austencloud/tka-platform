@@ -27,11 +27,14 @@
   interface Props {
     hasSequence: boolean;
     fillAvailableHeight?: boolean;
+    initialCategory?: Category;
+    persistCategory?: boolean;
     hasSelection: boolean;
     isTransforming: boolean;
     canExtend?: boolean;
     isExtending?: boolean;
     canShiftStart?: boolean;
+    shiftStartActive?: boolean;
     swapDisabled?: boolean;
     showEditInConstructor: boolean;
     onHelpRequest?: (actionId: ActionHelpId) => void;
@@ -54,11 +57,14 @@
   let {
     hasSequence,
     fillAvailableHeight = false,
+    initialCategory,
+    persistCategory = true,
     hasSelection = false,
     isTransforming,
     canExtend = false,
     isExtending = false,
     canShiftStart = false,
+    shiftStartActive = false,
     swapDisabled = false,
     showEditInConstructor,
     onHelpRequest,
@@ -90,10 +96,10 @@
       : "transform";
   }
 
-  let activeCategory = $state<Category>(getStoredCategory());
+  let activeCategory = $state<Category>(initialCategory ?? getStoredCategory());
 
   $effect(() => {
-    if (typeof sessionStorage !== "undefined") {
+    if (persistCategory && typeof sessionStorage !== "undefined") {
       sessionStorage.setItem(CATEGORY_KEY, activeCategory);
     }
   });
@@ -101,31 +107,139 @@
   const disabled = $derived(isTransforming || isExtending || !hasSequence);
 
   const transformActions = $derived<ActionDef[]>([
-    { id: "mirror", icon: "left-right", label: "Mirror", btnColor: "139, 92, 246", action: onMirror, disabled },
-    { id: "flip", icon: "up-down", label: "Flip", btnColor: "99, 102, 241", action: onFlip, disabled },
-    { id: "swap", icon: "arrows-rotate", label: "Swap", btnColor: "16, 185, 129", action: onSwap, disabled: disabled || swapDisabled, unavailable: swapDisabled },
-    { id: "invert", icon: "repeat", label: "Invert", btnColor: "245, 158, 11", action: onInvert, disabled },
-    { id: "rotate", icon: "rotate-left", label: "Rotate L", btnColor: "249, 115, 22", action: onRotateCCW, disabled },
-    { id: "rotate", icon: "rotate-right", label: "Rotate R", btnColor: "249, 115, 22", action: onRotateCW, disabled },
+    {
+      id: "mirror",
+      icon: "left-right",
+      label: "Mirror",
+      btnColor: "139, 92, 246",
+      action: onMirror,
+      disabled,
+    },
+    {
+      id: "flip",
+      icon: "up-down",
+      label: "Flip",
+      btnColor: "99, 102, 241",
+      action: onFlip,
+      disabled,
+    },
+    {
+      id: "swap",
+      icon: "arrows-rotate",
+      label: "Swap",
+      btnColor: "16, 185, 129",
+      action: onSwap,
+      disabled: disabled || swapDisabled,
+      unavailable: swapDisabled,
+    },
+    {
+      id: "invert",
+      icon: "repeat",
+      label: "Invert",
+      btnColor: "245, 158, 11",
+      action: onInvert,
+      disabled,
+    },
+    {
+      id: "rotate",
+      icon: "rotate-left",
+      label: "Rotate L",
+      btnColor: "249, 115, 22",
+      action: onRotateCCW,
+      disabled,
+    },
+    {
+      id: "rotate",
+      icon: "rotate-right",
+      label: "Rotate R",
+      btnColor: "249, 115, 22",
+      action: onRotateCW,
+      disabled,
+    },
   ]);
 
   const patternsActions = $derived<ActionDef[]>([
-    { id: "turn-pattern", icon: "wand-magic-sparkles", label: "Turn Pattern", btnColor: "20, 184, 166", action: onTurnPattern, disabled: !hasSequence },
-    { id: "direction", icon: "compass", label: "Direction", btnColor: "14, 165, 233", action: onRotationDirection, disabled: !hasSequence },
-    { id: "duration", icon: "stopwatch", label: "Duration", btnColor: "251, 146, 60", action: onDuration, disabled: !hasSequence },
-    { id: "rewind", icon: "backward", label: "Rewind", btnColor: "244, 63, 94", action: onRewind, disabled },
+    {
+      id: "turn-pattern",
+      icon: "wand-magic-sparkles",
+      label: "Turn Pattern",
+      btnColor: "20, 184, 166",
+      action: onTurnPattern,
+      disabled: !hasSequence,
+    },
+    {
+      id: "direction",
+      icon: "compass",
+      label: "Direction",
+      btnColor: "14, 165, 233",
+      action: onRotationDirection,
+      disabled: !hasSequence,
+    },
+    {
+      id: "duration",
+      icon: "stopwatch",
+      label: "Duration",
+      btnColor: "251, 146, 60",
+      action: onDuration,
+      disabled: !hasSequence,
+    },
+    {
+      id: "rewind",
+      icon: "backward",
+      label: "Rewind",
+      btnColor: "244, 63, 94",
+      action: onRewind,
+      disabled,
+    },
     ...(onExtend && canExtend
-      ? [{ id: "extend" as const, icon: "circle-check", label: "Extend", btnColor: "34, 197, 94", action: onExtend, disabled: !hasSequence || isExtending }]
+      ? [
+          {
+            id: "extend" as const,
+            icon: "circle-check",
+            label: "Extend",
+            btnColor: "34, 197, 94",
+            action: onExtend,
+            disabled: !hasSequence || isExtending,
+          },
+        ]
       : []),
     ...(onShiftStart
-      ? [{ id: "shift-start" as const, icon: "forward", label: "First Step", btnColor: "6, 182, 212", action: onShiftStart, disabled: !hasSequence || isTransforming || !canShiftStart, unavailable: !canShiftStart }]
+      ? [
+          {
+            id: "shift-start" as const,
+            icon: shiftStartActive ? "xmark" : "forward",
+            label: shiftStartActive ? "Choosing First" : "First Step",
+            btnColor: "6, 182, 212",
+            action: onShiftStart,
+            disabled: !hasSequence || isTransforming || !canShiftStart,
+            unavailable: !canShiftStart,
+            highlighted: shiftStartActive,
+          },
+        ]
       : []),
   ]);
 
   const editActions = $derived<ActionDef[]>([
-    { id: "edit-turns", icon: "sliders-h", label: "Edit Turns", btnColor: "59, 130, 246", action: onTurns, disabled: !hasSelection, highlighted: hasSelection },
+    {
+      id: "edit-turns",
+      icon: "sliders-h",
+      label: "Edit Turns",
+      btnColor: "59, 130, 246",
+      action: onTurns,
+      disabled: !hasSelection,
+      highlighted: hasSelection,
+    },
     ...(showEditInConstructor
-      ? [{ id: "edit-in-construct" as const, icon: "pen-to-square", label: "Edit in Construct", btnColor: "124, 58, 237", action: onEditInConstructor, disabled: !hasSequence }]
+      ? [
+          {
+            id: "edit-in-construct" as const,
+            icon: "pen-to-square",
+            label: "Edit in Construct",
+            btnColor: "124, 58, 237",
+            action: onEditInConstructor,
+            disabled: !hasSequence,
+          },
+        ]
       : []),
   ]);
 
@@ -146,8 +260,17 @@
   function handleLongPress(actionId: string) {
     // Only trigger help for known action help IDs (not edit-turns or edit-in-construct)
     const helpIds: ActionHelpId[] = [
-      "mirror", "flip", "swap", "invert", "rotate", "rewind",
-      "turn-pattern", "direction", "duration", "extend", "shift-start",
+      "mirror",
+      "flip",
+      "swap",
+      "invert",
+      "rotate",
+      "rewind",
+      "turn-pattern",
+      "direction",
+      "duration",
+      "extend",
+      "shift-start",
     ];
     if (helpIds.includes(actionId as ActionHelpId)) {
       onHelpRequest?.(actionId as ActionHelpId);
@@ -223,7 +346,7 @@
     min-height: 0;
     width: min(100%, 40rem);
     align-self: center;
-    justify-content: center;
+    justify-content: flex-start;
     container-type: size;
   }
 

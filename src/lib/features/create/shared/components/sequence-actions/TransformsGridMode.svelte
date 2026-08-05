@@ -105,7 +105,9 @@
         class:help-active={helpMode}
         onclick={() => handleActionClick("mirror", onMirror)}
         disabled={disabled && !helpMode}
-        aria-label={helpMode ? "Learn about Mirror" : "Mirror sequence: flip left and right"}
+        aria-label={helpMode
+          ? "Learn about Mirror"
+          : "Mirror sequence: flip left and right"}
       >
         <div class="btn-icon">
           <i class="fas fa-left-right" aria-hidden="true"></i>
@@ -120,7 +122,9 @@
         class:help-active={helpMode}
         onclick={() => handleActionClick("flip", onFlip)}
         disabled={disabled && !helpMode}
-        aria-label={helpMode ? "Learn about Flip" : "Flip sequence: flip up and down"}
+        aria-label={helpMode
+          ? "Learn about Flip"
+          : "Flip sequence: flip up and down"}
       >
         <div class="btn-icon">
           <i class="fas fa-up-down" aria-hidden="true"></i>
@@ -157,7 +161,9 @@
         class:help-active={helpMode}
         onclick={() => handleActionClick("invert", onInvert)}
         disabled={disabled && !helpMode}
-        aria-label={helpMode ? "Learn about Invert" : "Invert sequence: reverse turn directions"}
+        aria-label={helpMode
+          ? "Learn about Invert"
+          : "Invert sequence: reverse turn directions"}
       >
         <div class="btn-icon">
           <i class="fas fa-repeat" aria-hidden="true"></i>
@@ -172,7 +178,9 @@
         class:help-active={helpMode}
         onclick={() => handleActionClick("rotate", onRotateCCW)}
         disabled={disabled && !helpMode}
-        aria-label={helpMode ? "Learn about Rotate" : "Rotate sequence left 45 degrees"}
+        aria-label={helpMode
+          ? "Learn about Rotate"
+          : "Rotate sequence left 45 degrees"}
       >
         <div class="btn-icon">
           <i class="fas fa-rotate-left" aria-hidden="true"></i>
@@ -187,7 +195,9 @@
         class:help-active={helpMode}
         onclick={() => handleActionClick("rotate", onRotateCW)}
         disabled={disabled && !helpMode}
-        aria-label={helpMode ? "Learn about Rotate" : "Rotate sequence right 45 degrees"}
+        aria-label={helpMode
+          ? "Learn about Rotate"
+          : "Rotate sequence right 45 degrees"}
       >
         <div class="btn-icon">
           <i class="fas fa-rotate-right" aria-hidden="true"></i>
@@ -209,7 +219,9 @@
         class:help-active={helpMode}
         onclick={() => handleActionClick("turn-pattern", onTurnPattern)}
         disabled={!hasSequence && !helpMode}
-        aria-label={helpMode ? "Learn about Turn Pattern" : "Apply turn pattern to sequence"}
+        aria-label={helpMode
+          ? "Learn about Turn Pattern"
+          : "Apply turn pattern to sequence"}
       >
         <div class="btn-icon">
           <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
@@ -224,7 +236,9 @@
         class:help-active={helpMode}
         onclick={() => handleActionClick("direction", onRotationDirection)}
         disabled={!hasSequence && !helpMode}
-        aria-label={helpMode ? "Learn about Rotation Direction" : "Apply rotation direction pattern (clockwise or counter-clockwise)"}
+        aria-label={helpMode
+          ? "Learn about Rotation Direction"
+          : "Apply rotation direction pattern (clockwise or counter-clockwise)"}
       >
         <div class="btn-icon">
           <i class="fas fa-compass" aria-hidden="true"></i>
@@ -239,7 +253,9 @@
         class:help-active={helpMode}
         onclick={() => handleActionClick("duration", onDuration)}
         disabled={!hasSequence && !helpMode}
-        aria-label={helpMode ? "Learn about Duration" : "Apply duration pattern (beat timing)"}
+        aria-label={helpMode
+          ? "Learn about Duration"
+          : "Apply duration pattern (beat timing)"}
       >
         <div class="btn-icon">
           <i class="fas fa-stopwatch" aria-hidden="true"></i>
@@ -280,8 +296,11 @@
           class:unavailable={!canShiftStart && !helpMode}
           class:help-active={helpMode}
           onclick={() => handleActionClick("shift-start", onShiftStart)}
-          disabled={(!hasSequence || isTransforming || !canShiftStart) && !helpMode}
-          aria-label={helpMode ? "Learn about First Beat" : "Pick new first beat: change where the sequence starts"}
+          disabled={(!hasSequence || isTransforming || !canShiftStart) &&
+            !helpMode}
+          aria-label={helpMode
+            ? "Learn about First Beat"
+            : "Pick new first beat: change where the sequence starts"}
         >
           <div class="btn-icon">
             <i class="fas fa-forward" aria-hidden="true"></i>
@@ -297,7 +316,9 @@
         class:help-active={helpMode}
         onclick={() => handleActionClick("rewind", onRewind)}
         disabled={disabled && !helpMode}
-        aria-label={helpMode ? "Learn about Rewind" : "Rewind: add reversed sequence to the end"}
+        aria-label={helpMode
+          ? "Learn about Rewind"
+          : "Rewind: add reversed sequence to the end"}
       >
         <div class="btn-icon">
           <i class="fas fa-backward" aria-hidden="true"></i>

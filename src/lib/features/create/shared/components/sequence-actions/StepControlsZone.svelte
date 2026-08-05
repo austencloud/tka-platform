@@ -51,7 +51,10 @@
     // Single-select: the displayed regular step (null when none / start position)
     stepData: StepData | null;
     onTurnsChange: (color: MotionColor, delta: number) => void;
-    onRotationChange: (color: MotionColor, direction: RotationDirection) => void;
+    onRotationChange: (
+      color: MotionColor,
+      direction: RotationDirection
+    ) => void;
     onOpenPropSheet?: (color: "blue" | "red") => void;
     onPathShapeChange?: (color: MotionColor, shape: PathShapeValue) => void;
     onPathShapeClear?: (color: MotionColor) => void;
@@ -317,7 +320,9 @@
         >
           <i class="fas fa-minus" aria-hidden="true"></i>
         </button>
-        <span class="turns-value" class:mixed={agg.mixed}>{adjustDisplay(agg)}</span>
+        <span class="turns-value" class:mixed={agg.mixed}
+          >{adjustDisplay(agg)}</span
+        >
         <button
           class="ctrl-btn"
           type="button"

@@ -81,14 +81,18 @@
 </script>
 
 <div class="pattern-view-body">
-  <div class="pattern-view-inner">
-    <PatternStripEditor
-      {binding}
-      sequenceLength={seqLen}
-      value={strip}
-      onChange={previewStrip}
-      fitAvailableHeight
-    />
+  <div class="pattern-editor-scroll">
+    <div class="pattern-view-inner">
+      <PatternStripEditor
+        {binding}
+        sequenceLength={seqLen}
+        value={strip}
+        onChange={previewStrip}
+        fitAvailableHeight
+      />
+    </div>
+  </div>
+  <div class="pattern-action-footer">
     <button
       class="apply-btn duration"
       onclick={applyStrip}
@@ -103,8 +107,16 @@
   .pattern-view-body {
     flex: 1;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .pattern-editor-scroll {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
-    padding: 18px;
+    padding: 10px 12px 6px;
     display: flex;
     flex-direction: column;
   }
@@ -116,7 +128,17 @@
     max-width: 820px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+  }
+
+  .pattern-action-footer {
+    flex: 0 0 auto;
+    padding: 6px 12px 10px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #10131a) 94%,
+      transparent
+    );
   }
 
   .apply-btn:focus-visible {
@@ -126,8 +148,10 @@
 
   .apply-btn {
     width: 100%;
-    min-height: 52px;
-    margin: 6px 0 0;
+    display: block;
+    max-width: 820px;
+    min-height: var(--min-touch-target, 44px);
+    margin: 0 auto;
     padding: 0 14px;
     border: none;
     border-radius: 12px;
@@ -143,28 +167,29 @@
     cursor: not-allowed;
   }
 
-  @media (max-width: 560px) {
-    .pattern-view-body {
-      padding: 12px;
+  @container sequence-action-subview (max-width: 599px) and (max-height: 430px) {
+    .pattern-editor-scroll {
+      padding: 8px 10px 4px;
+    }
+
+    .pattern-action-footer {
+      padding: 4px 10px;
     }
   }
 
   @container sequence-action-subview (min-width: 600px) and (max-height: 540px) {
-    .pattern-view-body {
+    .pattern-editor-scroll {
       padding: 6px 10px;
     }
 
     .pattern-view-inner {
       height: 100%;
       margin: 0 auto;
-      gap: 4px;
       justify-content: safe center;
     }
 
     .apply-btn {
-      flex: 0 0 var(--min-touch-target, 44px);
       min-height: var(--min-touch-target, 44px);
-      margin: 0;
       border-radius: 10px;
     }
   }

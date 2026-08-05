@@ -36,8 +36,12 @@
         {#each sequence.steps as beat, i}
           <!-- Invisible placeholder = hand not really there: null (no-motion
                display state), never "none" (motion present, no rotation). -->
-          {@const blueMotion = isVisibleMotion(beat.motions?.blue) ? beat.motions.blue : null}
-          {@const redMotion = isVisibleMotion(beat.motions?.red) ? beat.motions.red : null}
+          {@const blueMotion = isVisibleMotion(beat.motions?.blue)
+            ? beat.motions.blue
+            : null}
+          {@const redMotion = isVisibleMotion(beat.motions?.red)
+            ? beat.motions.red
+            : null}
           {@const blueRotation = formatRotationValue(
             blueMotion?.rotationDirection === "cw"
               ? "cw"
@@ -81,7 +85,7 @@
     <div class="save-form">
       <input
         type="text"
-        placeholder="Pattern name (optional - auto-generated if empty)"
+        placeholder="Pattern name (optional)"
         value={patternName}
         oninput={(e) => onNameChange(e.currentTarget.value)}
         maxlength={50}
@@ -101,8 +105,10 @@
 <style>
   .save-section {
     flex: 1;
-    overflow-y: auto;
-    padding: 16px;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   .empty-message {
@@ -112,7 +118,11 @@
   }
 
   .pattern-preview {
-    margin-bottom: 16px;
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+    padding: 10px 12px;
+    overflow-y: auto;
   }
 
   .pattern-preview h3 {
@@ -152,7 +162,7 @@
 
   .separator {
     color: var(--theme-text-dim);
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
   }
 
   .rotation-value {
@@ -160,7 +170,7 @@
     display: inline-block;
     min-width: 20px;
     text-align: center;
-    font-size: 0.7rem;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
   }
 
@@ -177,13 +187,24 @@
   }
 
   .save-form {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 8px 12px 10px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #10131a) 94%,
+      transparent
+    );
   }
 
   .save-form input {
-    padding: 12px;
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 10px;
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke, var(--theme-stroke-strong));
     border-radius: 8px;
@@ -200,7 +221,8 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    padding: 12px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 14px;
     background: linear-gradient(
       135deg,
       var(--semantic-warning) 0%,
@@ -221,5 +243,31 @@
   .save-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  @container sequence-action-subview (max-width: 599px) and (max-height: 430px) {
+    .save-form {
+      padding: 4px 10px;
+    }
+
+    .pattern-preview {
+      padding: 8px 10px;
+    }
+
+    .pattern-preview h3 {
+      margin-bottom: 6px;
+    }
+
+    .preview-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 4px;
+    }
+
+    .preview-beat {
+      min-height: var(--min-touch-target, 44px);
+      box-sizing: border-box;
+      padding: 4px 2px;
+      gap: 2px;
+    }
   }
 </style>

@@ -8,12 +8,21 @@
 -->
 <script lang="ts">
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-  import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore";
+  import {
+    collection,
+    query,
+    where,
+    orderBy,
+    limit,
+    getDocs,
+  } from "firebase/firestore";
   import { generateDefaultDocId } from "$lib/shared/pictograph/arrow/positioning/default-override/domain/default-arrow-placement";
   import { getDefaultOverrideRepository } from "$lib/shared/pictograph/arrow/positioning/default-override/services/default-override-singleton";
   import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
-  import AdjustmentHistoryPanel, { type HistoryEntry } from "../AdjustmentHistoryPanel.svelte";
+  import AdjustmentHistoryPanel, {
+    type HistoryEntry,
+  } from "../AdjustmentHistoryPanel.svelte";
 
   interface Props {
     gridMode: string;
@@ -23,10 +32,17 @@
     turns: string;
     accentColor?: string;
   }
-  let { gridMode, propType, motionType, placementKey, turns, accentColor }: Props = $props();
+  let {
+    gridMode,
+    propType,
+    motionType,
+    placementKey,
+    turns,
+    accentColor,
+  }: Props = $props();
 
   const entryKey = $derived(
-    `${generateDefaultDocId(gridMode, propType, motionType)}|${placementKey}|${turns}`,
+    `${generateDefaultDocId(gridMode, propType, motionType)}|${placementKey}|${turns}`
   );
 
   // Snapshot the key the loader closes over so revert targets the right arrow.
@@ -41,7 +57,7 @@
       collection(firestore, "default_arrow_adjustment_history"),
       where("entryKey", "==", entryKey),
       orderBy("timestamp", "desc"),
-      limit(15),
+      limit(15)
     );
     const snap = await getDocs(q);
     return snap.docs.map((d) => {
@@ -66,7 +82,13 @@
   async function onRevert(entry: HistoryEntry): Promise<void> {
     const repo = getDefaultOverrideRepository();
     if (!repo) return;
-    const { gridMode: g, propType: p, motionType: m, placementKey: k, turns: t } = active;
+    const {
+      gridMode: g,
+      propType: p,
+      motionType: m,
+      placementKey: k,
+      turns: t,
+    } = active;
 
     if (entry.action === "delete") {
       repo.deleteDefaultLocal(g, p, m, k, t);
@@ -84,4 +106,10 @@
   }
 </script>
 
-<AdjustmentHistoryPanel {load} {onRevert} reloadKey={entryKey} variant="popover" {accentColor} />
+<AdjustmentHistoryPanel
+  {load}
+  {onRevert}
+  reloadKey={entryKey}
+  variant="popover"
+  {accentColor}
+/>

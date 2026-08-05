@@ -10,9 +10,7 @@
   Compact mode: Smaller buttons and tighter spacing for mobile.
 -->
 <script lang="ts">
-  import {
-    formatDurationDisplay,
-  } from "../../utils/duration-display";
+  import { formatDurationDisplay } from "../../utils/duration-display";
   import {
     MIN_DURATION,
     MAX_DURATION,
@@ -38,7 +36,10 @@
   let inputEl: HTMLInputElement | undefined = $state();
 
   function handleChange(delta: number) {
-    const newDuration = Math.max(MIN_DURATION, Math.min(MAX_DURATION, duration + delta));
+    const newDuration = Math.max(
+      MIN_DURATION,
+      Math.min(MAX_DURATION, duration + delta)
+    );
     if (newDuration !== duration) {
       onDurationChange(newDuration);
     }

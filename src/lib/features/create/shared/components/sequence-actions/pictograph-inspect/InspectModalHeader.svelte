@@ -28,9 +28,13 @@
 
 <header class="modal-header">
   <div class="header-left">
-    <span class="title-icon"><i class="fas fa-magnifying-glass" aria-hidden="true"></i></span>
+    <span class="title-icon"
+      ><i class="fas fa-magnifying-glass" aria-hidden="true"></i></span
+    >
     <h2>Inspect</h2>
-    <span class="beat-chip">Step {displayData?.stepNumber ?? stepData.stepNumber}</span>
+    <span class="beat-chip"
+      >Step {displayData?.stepNumber ?? stepData.stepNumber}</span
+    >
     {#if displayData?.letter ?? stepData.letter}
       <span class="letter-chip">{displayData?.letter ?? stepData.letter}</span>
     {/if}
@@ -91,7 +95,11 @@
     width: 28px;
     height: 28px;
     border-radius: 8px;
-    background: color-mix(in srgb, var(--theme-accent, #58a6ff) 16%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #58a6ff) 16%,
+      transparent
+    );
     color: var(--theme-accent, #58a6ff);
     font-size: var(--font-size-compact, 12px);
   }

@@ -7,7 +7,11 @@
    */
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import type { PipelineDiagnostics } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/pipeline-diagnostics";
-  import { formatMotionText, formatMotionTypeLabel, formatRotationLabel } from "./formatters";
+  import {
+    formatMotionText,
+    formatMotionTypeLabel,
+    formatRotationLabel,
+  } from "./formatters";
   import PipelineTraceSection from "./PipelineTraceSection.svelte";
   import CollapsibleSection from "$lib/features/admin/components/feature-flags/shared/CollapsibleSection.svelte";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
@@ -25,19 +29,31 @@
     onToggle: (next: boolean) => void;
   }
 
-  let { color, motion, rotationOverride, copiedSection, onCopy, diagnostics, open, onToggle }: Props =
-    $props();
+  let {
+    color,
+    motion,
+    rotationOverride,
+    copiedSection,
+    onCopy,
+    diagnostics,
+    open,
+    onToggle,
+  }: Props = $props();
 
   const colorClass = $derived(color === "blue" ? "blue-column" : "red-column");
   const label = $derived(color === "blue" ? "Blue Motion" : "Red Motion");
-  const isSelected = $derived(selectedArrowState.selectedArrow?.color === color);
+  const isSelected = $derived(
+    selectedArrowState.selectedArrow?.color === color
+  );
 </script>
 
 <CollapsibleSection
   title={label}
   {open}
-  onToggle={onToggle}
-  iconColor={color === "blue" ? "var(--prop-blue, #58a6ff)" : "var(--prop-red, #f85149)"}
+  {onToggle}
+  iconColor={color === "blue"
+    ? "var(--prop-blue, #58a6ff)"
+    : "var(--prop-red, #f85149)"}
   icon="fa-circle"
   selected={isSelected}
 >
@@ -59,17 +75,38 @@
         <span class="mt">{formatMotionTypeLabel(motion.motionType)}</span>
         <span class="rot">{formatRotationLabel(motion.rotationDirection)}</span>
         <span class="path">{motion.startLocation}→{motion.endLocation}</span>
-        <span class="ori">{motion.startOrientation}→{motion.endOrientation}</span>
-        <span class="turns">{motion.turns === "fl" ? "float" : `${motion.turns}t`}</span>
-        {#if motion.prefloatMotionType}<span class="warn-val">pf:{motion.prefloatMotionType}</span>{/if}
+        <span class="ori"
+          >{motion.startOrientation}→{motion.endOrientation}</span
+        >
+        <span class="turns"
+          >{motion.turns === "fl" ? "float" : `${motion.turns}t`}</span
+        >
+        {#if motion.prefloatMotionType}<span class="warn-val"
+            >pf:{motion.prefloatMotionType}</span
+          >{/if}
       </div>
       <div class="placement-line">
-        <span class="pl">{motion.arrowPlacementData?.positionX?.toFixed(0) ?? "-"}, {motion.arrowPlacementData?.positionY?.toFixed(0) ?? "-"}</span>
-        <span class="pl">{motion.arrowPlacementData?.rotationAngle?.toFixed(0) ?? "-"}°</span>
-        {#if motion.arrowPlacementData?.svgMirrored}<span class="pl mir">mirrored</span>{/if}
-        {#if rotationOverride?.hasOverride}<span class="pl ov">rotOverride</span>{/if}
+        <span class="pl"
+          >{motion.arrowPlacementData?.positionX?.toFixed(0) ?? "-"}, {motion.arrowPlacementData?.positionY?.toFixed(
+            0
+          ) ?? "-"}</span
+        >
+        <span class="pl"
+          >{motion.arrowPlacementData?.rotationAngle?.toFixed(0) ?? "-"}°</span
+        >
+        {#if motion.arrowPlacementData?.svgMirrored}<span class="pl mir"
+            >mirrored</span
+          >{/if}
+        {#if rotationOverride?.hasOverride}<span class="pl ov">rotOverride</span
+          >{/if}
         {#if motion.arrowPlacementData?.manualAdjustmentX || motion.arrowPlacementData?.manualAdjustmentY}
-          <span class="pl warn-val">manual ({motion.arrowPlacementData?.manualAdjustmentX?.toFixed(0) ?? 0}, {motion.arrowPlacementData?.manualAdjustmentY?.toFixed(0) ?? 0})</span>
+          <span class="pl warn-val"
+            >manual ({motion.arrowPlacementData?.manualAdjustmentX?.toFixed(
+              0
+            ) ?? 0}, {motion.arrowPlacementData?.manualAdjustmentY?.toFixed(
+              0
+            ) ?? 0})</span
+          >
         {/if}
       </div>
 
@@ -101,21 +138,68 @@
     font-size: var(--font-size-compact, 12px);
     font-family: inherit;
   }
-  .copy-btn:hover { border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2)); }
-  .copy-btn:focus-visible { outline: 2px solid var(--theme-accent, #58a6ff); outline-offset: 1px; }
-  .copied-label { color: var(--semantic-success, #7ee787); font-weight: 600; }
-  .motion-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; font-size: var(--font-size-md, 17px); font-weight: 600; font-variant-numeric: tabular-nums; padding: 2px; }
-  .motion-line .mt { color: var(--semantic-warning, #ffa657); }
-  .motion-line .rot { color: var(--theme-accent, #d2a8ff); }
-  .motion-line .path { color: var(--theme-text, #fff); }
-  .motion-line .ori { color: var(--semantic-info, #79c0ff); }
-  .motion-line .turns { color: var(--theme-text-dim, #8b949e); }
-  .motion-line .warn-val { color: var(--semantic-warning, #d29922); font-size: var(--font-size-compact, 12px); }
-  .placement-line { display: flex; flex-wrap: wrap; gap: 10px; font-size: var(--font-size-compact, 12px); color: var(--theme-text-dim, #8b949e); font-variant-numeric: tabular-nums; padding: 0 2px 4px; }
-  .placement-line .pl { color: var(--theme-text-muted, #c9d1d9); }
-  .placement-line .mir { font-style: italic; color: var(--theme-text-dim, #8b949e); }
-  .placement-line .ov { color: var(--semantic-success, #3fb950); }
-  .placement-line .warn-val { color: var(--semantic-warning, #d29922); }
+  .copy-btn:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+  .copy-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #58a6ff);
+    outline-offset: 1px;
+  }
+  .copied-label {
+    color: var(--semantic-success, #7ee787);
+    font-weight: 600;
+  }
+  .motion-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px;
+    font-size: var(--font-size-md, 17px);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    padding: 2px;
+  }
+  .motion-line .mt {
+    color: var(--semantic-warning, #ffa657);
+  }
+  .motion-line .rot {
+    color: var(--theme-accent, #d2a8ff);
+  }
+  .motion-line .path {
+    color: var(--theme-text, #fff);
+  }
+  .motion-line .ori {
+    color: var(--semantic-info, #79c0ff);
+  }
+  .motion-line .turns {
+    color: var(--theme-text-dim, #8b949e);
+  }
+  .motion-line .warn-val {
+    color: var(--semantic-warning, #d29922);
+    font-size: var(--font-size-compact, 12px);
+  }
+  .placement-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, #8b949e);
+    font-variant-numeric: tabular-nums;
+    padding: 0 2px 4px;
+  }
+  .placement-line .pl {
+    color: var(--theme-text-muted, #c9d1d9);
+  }
+  .placement-line .mir {
+    font-style: italic;
+    color: var(--theme-text-dim, #8b949e);
+  }
+  .placement-line .ov {
+    color: var(--semantic-success, #3fb950);
+  }
+  .placement-line .warn-val {
+    color: var(--semantic-warning, #d29922);
+  }
   .empty-state {
     padding: 20px;
     text-align: center;

@@ -28,14 +28,14 @@
   const settings = $derived(getSettings());
   const propType = $derived(
     color === "blue"
-      ? settings.bluePropType ?? PropType.STAFF
-      : settings.redPropType ?? PropType.STAFF
+      ? (settings.bluePropType ?? PropType.STAFF)
+      : (settings.redPropType ?? PropType.STAFF)
   );
   const isBuugeng = $derived(isBuugengFamilyProp(propType));
   const flipped = $derived(
     color === "blue"
-      ? settings.blueBuugengFlipped ?? false
-      : settings.redBuugengFlipped ?? false
+      ? (settings.blueBuugengFlipped ?? false)
+      : (settings.redBuugengFlipped ?? false)
   );
   const displayInfo = $derived(getPropTypeDisplayInfo(propType));
 
@@ -56,7 +56,11 @@
       onclick={() => onOpenPropSheet?.(color)}
       aria-label="Change {color} prop type: {displayInfo.label}"
     >
-      <img src={displayInfo.image} alt={displayInfo.label} class="prop-icon-sm" />
+      <img
+        src={displayInfo.image}
+        alt={displayInfo.label}
+        class="prop-icon-sm"
+      />
     </button>
   {:else}
     <!-- Full button with label -->

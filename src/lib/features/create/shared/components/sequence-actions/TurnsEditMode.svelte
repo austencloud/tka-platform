@@ -83,8 +83,12 @@
         isShift={blueIsShift}
         onTurnsChange={(delta) => onTurnsChange(MotionColor.BLUE, delta)}
         onRotationChange={(dir) => onRotationChange(MotionColor.BLUE, dir)}
-        onPathShapeChange={onPathShapeChange ? (shape) => onPathShapeChange(MotionColor.BLUE, shape) : undefined}
-        onPathShapeClear={onPathShapeClear ? () => onPathShapeClear(MotionColor.BLUE) : undefined}
+        onPathShapeChange={onPathShapeChange
+          ? (shape) => onPathShapeChange(MotionColor.BLUE, shape)
+          : undefined}
+        onPathShapeClear={onPathShapeClear
+          ? () => onPathShapeClear(MotionColor.BLUE)
+          : undefined}
       />
       <PropTypeRow color="blue" {compact} {onOpenPropSheet} />
     {/snippet}
@@ -99,8 +103,12 @@
         isShift={redIsShift}
         onTurnsChange={(delta) => onTurnsChange(MotionColor.RED, delta)}
         onRotationChange={(dir) => onRotationChange(MotionColor.RED, dir)}
-        onPathShapeChange={onPathShapeChange ? (shape) => onPathShapeChange(MotionColor.RED, shape) : undefined}
-        onPathShapeClear={onPathShapeClear ? () => onPathShapeClear(MotionColor.RED) : undefined}
+        onPathShapeChange={onPathShapeChange
+          ? (shape) => onPathShapeChange(MotionColor.RED, shape)
+          : undefined}
+        onPathShapeClear={onPathShapeClear
+          ? () => onPathShapeClear(MotionColor.RED)
+          : undefined}
       />
       <PropTypeRow color="red" {compact} {onOpenPropSheet} />
     {/snippet}

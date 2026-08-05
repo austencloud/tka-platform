@@ -82,7 +82,6 @@
     return unsubscribe;
   });
 
-
   // Calculate arrow positions when modal opens. Reset stale state on the OPEN
   // transition (these writes aren't effect deps, so they don't re-trigger).
   // Close-side teardown — especially the GLOBAL selectedArrowState.clearSelection()
@@ -139,8 +138,7 @@
       // Store for use in formatAllForAI
       pictographDataState = pictographData;
 
-      const calculated =
-        await calculateAllArrowPoints(pictographData);
+      const calculated = await calculateAllArrowPoints(pictographData);
 
       // Arrow-point calculation returns partial motions (it only computes
       // present/visible hands); keep the step's original motion for any hand
@@ -170,9 +168,16 @@
 
     if (blueMotionData) {
       try {
-        const location = arrowLocationCalculator.calculateLocation(blueMotionData, pictographData);
+        const location = arrowLocationCalculator.calculateLocation(
+          blueMotionData,
+          pictographData
+        );
         blueDiagnostics = await arrowAdjustmentCalculator.getDiagnostics(
-          pictographData, blueMotionData, pictographData.letter || "", location, "blue"
+          pictographData,
+          blueMotionData,
+          pictographData.letter || "",
+          location,
+          "blue"
         );
       } catch (err) {
         console.error("Blue diagnostics failed:", err);
@@ -182,9 +187,16 @@
 
     if (redMotionData) {
       try {
-        const location = arrowLocationCalculator.calculateLocation(redMotionData, pictographData);
+        const location = arrowLocationCalculator.calculateLocation(
+          redMotionData,
+          pictographData
+        );
         redDiagnostics = await arrowAdjustmentCalculator.getDiagnostics(
-          pictographData, redMotionData, pictographData.letter || "", location, "red"
+          pictographData,
+          redMotionData,
+          pictographData.letter || "",
+          location,
+          "red"
         );
       } catch (err) {
         console.error("Red diagnostics failed:", err);
@@ -206,10 +218,7 @@
 
       let gridMode = "diamond";
       if (blueMotionData && redMotionData) {
-        gridMode = deriveGridMode(
-          blueMotionData,
-          redMotionData
-        );
+        gridMode = deriveGridMode(blueMotionData, redMotionData);
       }
 
       let oriKey = "unknown";
@@ -225,22 +234,20 @@
       if (blueMotionData) {
         const motionType = blueMotionData.motionType?.toLowerCase();
         if (motionType === "static" || motionType === "dash") {
-          blueRotationOverrideKey =
-            generateRotationAngleOverrideKey(
-              blueMotionData,
-              pictographData
-            );
+          blueRotationOverrideKey = generateRotationAngleOverrideKey(
+            blueMotionData,
+            pictographData
+          );
         }
       }
 
       if (redMotionData) {
         const motionType = redMotionData.motionType?.toLowerCase();
         if (motionType === "static" || motionType === "dash") {
-          redRotationOverrideKey =
-            generateRotationAngleOverrideKey(
-              redMotionData,
-              pictographData
-            );
+          redRotationOverrideKey = generateRotationAngleOverrideKey(
+            redMotionData,
+            pictographData
+          );
         }
       }
 
@@ -304,7 +311,9 @@
   // The currently-selected arrow color, used to dim the non-selected motion
   // so focus sits on the one being edited. Pure read — safe in a $derived
   // (the warned-against case is reading selection inside an effect that writes).
-  const selectedColor = $derived(selectedArrowState.selectedArrow?.color ?? null);
+  const selectedColor = $derived(
+    selectedArrowState.selectedArrow?.color ?? null
+  );
 
   // Select a motion by clicking anywhere in its column — easier than hitting the
   // small arrow in the pictograph. Mirrors what an arrow-click selects (same
@@ -611,7 +620,11 @@
       border-color var(--duration-fast, 0.15s) ease;
   }
   .motion-rail.selected {
-    border-color: color-mix(in srgb, var(--theme-accent, #58a6ff) 55%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #58a6ff) 55%,
+      transparent
+    );
   }
   .motion-rail:focus-visible {
     outline: 2px solid var(--theme-accent, #58a6ff);
@@ -729,7 +742,9 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .motion-rail { transition: none; }
+    .motion-rail {
+      transition: none;
+    }
   }
 
   @keyframes fadeIn {

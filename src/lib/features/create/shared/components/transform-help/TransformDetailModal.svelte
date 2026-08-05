@@ -14,7 +14,10 @@
     type TransformId,
   } from "../../domain/transforms/transform-help-content";
   import { portal } from "$lib/features/create/generate/components/modals/portal";
-  import { getRandomPictographForTransform, reclassifyLetter } from "../../domain/transforms/pictograph-example-loader";
+  import {
+    getRandomPictographForTransform,
+    reclassifyLetter,
+  } from "../../domain/transforms/pictograph-example-loader";
   import {
     applyMirror,
     applyFlip,
@@ -30,9 +33,10 @@
   interface Props {
     transformId: ActionHelpId;
     onClose: () => void;
+    presentation?: "modal" | "drawer";
   }
 
-  let { transformId, onClose }: Props = $props();
+  let { transformId, onClose, presentation = "modal" }: Props = $props();
 
   // Lock body scroll when modal is open
   onMount(() => {
@@ -52,15 +56,20 @@
 
   // Concise descriptions - shorter than fullDesc, but still educational
   const descriptions: Record<string, string> = {
-    mirror: "Flips horizontally, like looking in a mirror. Left becomes right, clockwise becomes counter-clockwise.",
+    mirror:
+      "Flips horizontally, like looking in a mirror. Left becomes right, clockwise becomes counter-clockwise.",
     flip: "Flips vertically, like turning upside down. Up becomes down, clockwise becomes counter-clockwise.",
-    invert: "Inverts rotation relative to the path. Pro becomes Anti, and Anti becomes Pro. Base motion types remain unchanged.",
+    invert:
+      "Inverts rotation relative to the path. Pro becomes Anti, and Anti becomes Pro. Base motion types remain unchanged.",
     rotate: "Pivots 45° around the center.",
     swap: "Exchanges left and right hand movements. Same pattern, opposite hands perform each motion.",
-    rewind: "Plays backwards. End becomes start, every step reverses order, turns flip direction.",
+    rewind:
+      "Plays backwards. End becomes start, every step reverses order, turns flip direction.",
   };
 
-  const description = $derived(descriptions[transformId] ?? action?.fullDesc ?? "");
+  const description = $derived(
+    descriptions[transformId] ?? action?.fullDesc ?? ""
+  );
 
   // Pictograph state
   let displayedPictograph = $state<PictographData | null>(null);
@@ -77,13 +86,17 @@
 
   async function loadInitialExample() {
     isLoading = true;
-    displayedPictograph = await getRandomPictographForTransform(transformId as TransformId);
+    displayedPictograph = await getRandomPictographForTransform(
+      transformId as TransformId
+    );
     isLoading = false;
   }
 
   // Load new example without resetting - allows smooth transition
   async function loadNewExample() {
-    const newPictograph = await getRandomPictographForTransform(transformId as TransformId);
+    const newPictograph = await getRandomPictographForTransform(
+      transformId as TransformId
+    );
     if (newPictograph) {
       displayedPictograph = newPictograph;
     }
@@ -143,6 +156,7 @@
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
 <div
   class="modal-backdrop"
+  class:drawer-presentation={presentation === "drawer"}
   use:portal
   onclick={handleBackdropClick}
   role="dialog"
@@ -152,7 +166,10 @@
 >
   <div class="modal-container">
     <!-- Header -->
-    <div class="modal-header" style:--transform-color={action?.color ?? "#3b82f6"}>
+    <div
+      class="modal-header"
+      style:--transform-color={action?.color ?? "#3b82f6"}
+    >
       <div class="header-icon">
         {#if transformId === "swap"}
           <SwapIcon size="20px" />
@@ -212,10 +229,7 @@
               <span>Apply</span>
             </button>
 
-            <button
-              class="action-btn shuffle"
-              onclick={loadNewExample}
-            >
+            <button class="action-btn shuffle" onclick={loadNewExample}>
               <i class="fas fa-shuffle" aria-hidden="true"></i>
               <span>New</span>
             </button>
@@ -234,9 +248,7 @@
 
     <!-- Footer -->
     <div class="modal-footer">
-      <button class="done-btn" onclick={onClose}>
-        Done
-      </button>
+      <button class="done-btn" onclick={onClose}> Done </button>
     </div>
   </div>
 </div>
@@ -575,6 +587,42 @@
     .pictograph-frame {
       width: 160px;
       height: 160px;
+    }
+
+    .modal-backdrop.drawer-presentation {
+      align-items: flex-end;
+      background: transparent;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+
+    .drawer-presentation .modal-container {
+      height: min(max(377px, 50dvh), calc(100dvh - 180px));
+      max-height: calc(100dvh - 180px);
+      border-radius: 20px 20px 0 0;
+      background: var(--panel-bg-solid, #080b11);
+      box-shadow: 0 -18px 60px rgba(0, 0, 0, 0.62);
+    }
+
+    .drawer-presentation .modal-header {
+      gap: 10px;
+      padding: 8px 10px;
+    }
+
+    .drawer-presentation .modal-content {
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      padding: 14px 12px;
+    }
+
+    .drawer-presentation .modal-footer {
+      padding: 6px 10px 8px;
+    }
+
+    .drawer-presentation .pictograph-frame {
+      width: 120px;
+      height: 120px;
     }
   }
 

@@ -23,24 +23,32 @@
   // the value being dragged live (before Save) — a plain reactive read off the
   // shared editor signal, no async pipeline rerun.
   const liveEdit = $derived(
-    livePipelineEdit.current?.color === color ? livePipelineEdit.current : null,
+    livePipelineEdit.current?.color === color ? livePipelineEdit.current : null
   );
 
   function tierLabel(tier: PipelineTier): string {
     switch (tier) {
-      case "global": return "Global Override";
-      case "special-json": return "Special JSON";
-      case "prop-geometry": return "Prop Geometry";
-      case "default": return "Default";
+      case "global":
+        return "Global Override";
+      case "special-json":
+        return "Special JSON";
+      case "prop-geometry":
+        return "Prop Geometry";
+      case "default":
+        return "Default";
     }
   }
 
   function tierColor(tier: PipelineTier): string {
     switch (tier) {
-      case "global": return "var(--semantic-success, #22c55e)";
-      case "special-json": return "var(--theme-accent, #a78bfa)";
-      case "prop-geometry": return "var(--semantic-info, #22d3d8)";
-      case "default": return "var(--theme-text-dim, #8b949e)";
+      case "global":
+        return "var(--semantic-success, #22c55e)";
+      case "special-json":
+        return "var(--theme-accent, #a78bfa)";
+      case "prop-geometry":
+        return "var(--semantic-info, #22d3d8)";
+      case "default":
+        return "var(--theme-text-dim, #8b949e)";
     }
   }
 
@@ -61,7 +69,11 @@
   {#if diagnostics}
     <!-- Tier rows -->
     {@const tiers = [
-      { tier: "special-json" as const, info: diagnostics.specialJson, detail: diagnostics.specialJson?.filePath ?? null },
+      {
+        tier: "special-json" as const,
+        info: diagnostics.specialJson,
+        detail: diagnostics.specialJson?.filePath ?? null,
+      },
       { tier: "default" as const, info: diagnostics.default, detail: null },
     ]}
 
@@ -121,10 +133,14 @@
     <!-- Summary row -->
     <div class="summary-row">
       <span class="summary-label">base</span>
-      <span class="summary-value">{formatValue(diagnostics.baseAdjustment)}</span>
+      <span class="summary-value"
+        >{formatValue(diagnostics.baseAdjustment)}</span
+      >
       <span class="summary-arrow">→</span>
       <span class="summary-label">rotated</span>
-      <span class="summary-value">{formatValue(diagnostics.finalAdjustment)}</span>
+      <span class="summary-value"
+        >{formatValue(diagnostics.finalAdjustment)}</span
+      >
     </div>
   {:else}
     <div class="loading">calculating...</div>
@@ -250,7 +266,9 @@
     color: var(--theme-text, #fff);
     font-weight: 600;
   }
-  .summary-arrow { color: var(--theme-text-dim, rgba(255, 255, 255, 0.4)); }
+  .summary-arrow {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+  }
   .loading {
     padding: 12px;
     text-align: center;

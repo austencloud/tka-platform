@@ -56,7 +56,9 @@
   }: Props = $props();
 
   const repeatTint = loopOptionTint([ORIENTATION_REPEAT_COLOR]);
-  const showRepeat = $derived(Boolean(orientationRepeat && onOrientationRepeat));
+  const showRepeat = $derived(
+    Boolean(orientationRepeat && onOrientationRepeat)
+  );
 
   /*
    * Column count is chosen, not auto-filled, and it is chosen to make the
@@ -115,7 +117,11 @@
   <!-- Direct LOOP Options -->
   {#if hasDirectOptions || showRepeat}
     <section class="options-section" transition:slide={{ duration: 200 }}>
-      <div class="options-grid" class:banner={isBanner} style="--cols: {columns}">
+      <div
+        class="options-grid"
+        class:banner={isBanner}
+        style="--cols: {columns}"
+      >
         {#each directOptions as option}
           <button
             class="loop-button"
@@ -327,6 +333,40 @@
     .options-grid {
       grid-template-columns: 1fr;
       grid-auto-rows: minmax(5.5rem, auto);
+    }
+  }
+
+  /* Sequence Actions keeps the pictographs visible above the drawer. Inside
+     that compact context the picker spends its height on choices instead of
+     double padding, while the choice cards retain full touch targets. */
+  @container sequence-action-subview (max-width: 599px) and (max-height: 430px) {
+    .loop-picker {
+      gap: var(--settings-spacing-sm, 8px);
+      padding: var(--settings-spacing-sm, 8px);
+      border-radius: 10px;
+    }
+
+    .picker-header {
+      display: grid;
+      grid-template-columns: max-content minmax(0, 1fr);
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .subtitle {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .options-grid {
+      grid-auto-rows: minmax(5.5rem, auto);
+    }
+
+    .loop-button {
+      min-height: 5.5rem;
+      padding: 0.75rem;
+      gap: 0.25rem;
     }
   }
 

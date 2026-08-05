@@ -30,21 +30,30 @@
     sequence: SequenceData | null;
     /** Which hand(s) to apply patterns to - controlled by parent panel */
     targetHand: TargetHand;
+    initialMode?: "save" | "apply";
     onApply: (result: {
       sequence: SequenceData;
       warnings?: readonly string[];
     }) => void;
   }
 
-  let { sequence, targetHand, onApply }: Props = $props();
+  let {
+    sequence,
+    targetHand,
+    initialMode = "apply",
+    onApply,
+  }: Props = $props();
 
-  let mode: "save" | "apply" = $state("apply");
+  let mode: "save" | "apply" = $state(initialMode);
   let patternName = $state("");
   let savingPattern = $state(false);
   let applyingPattern = $state(false);
   let errorMessage = $state<string | null>(null);
 
   const isMobile = $derived(!layoutState.isSideBySideLayout);
+  const targetHandLabel = $derived(
+    targetHand === "blue" ? "Left" : targetHand === "red" ? "Right" : "Both"
+  );
 
   // Load saved patterns once when the view mounts (entering the drill-down).
   onMount(() => {
@@ -130,8 +139,10 @@
       class="tab"
       class:active={mode === "apply"}
       onclick={() => (mode = "apply")}
+      aria-label={`Apply patterns to ${targetHandLabel.toLowerCase()} hand${targetHand === "both" ? "s" : ""}`}
     >
-      Apply
+      <span>Apply</span>
+      <span class="tab-target">{targetHandLabel}</span>
     </button>
     <button
       class="tab"
@@ -141,21 +152,6 @@
       Save Current
     </button>
   </div>
-
-  {#if mode === "apply"}
-    <div class="hand-indicator">
-      <span class="indicator-label">Applying to:</span>
-      <span class="indicator-value" class:both={targetHand === "both"}>
-        {#if targetHand === "blue"}
-          <span class="hand-dot blue"></span>Blue hand
-        {:else if targetHand === "red"}
-          <span class="hand-dot red"></span>Red hand
-        {:else}
-          Both hands
-        {/if}
-      </span>
-    </div>
-  {/if}
 
   {#if errorMessage}
     <div class="error-message">
@@ -219,13 +215,30 @@
 
   .tab {
     flex: 1;
-    padding: 12px;
+    display: flex;
+    min-height: var(--min-touch-target, 44px);
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 0 8px;
     background: transparent;
     border: none;
     color: var(--theme-text-muted);
     font-size: 0.9rem;
     cursor: pointer;
     transition: all var(--duration-fast);
+  }
+
+  .tab-target {
+    min-width: 5ch;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+  }
+
+  .tab-target::before {
+    content: "·";
+    margin-right: 5px;
   }
 
   .tab.active {
@@ -251,8 +264,9 @@
 
   .apply-section {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
-    padding: 16px;
+    padding: 10px 12px;
     container-type: inline-size;
   }
 
@@ -265,45 +279,18 @@
     color: var(--theme-text-muted);
   }
 
-  .hand-indicator {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 16px;
-    border-bottom: 1px solid var(--theme-stroke);
-    background: var(--theme-card-bg);
-    font-size: 0.85rem;
-    flex-shrink: 0;
-  }
+  @container sequence-action-subview (max-width: 599px) and (max-height: 430px) {
+    .apply-section {
+      padding: 8px 10px;
+    }
 
-  .indicator-label {
-    color: var(--theme-text-muted);
-    white-space: nowrap;
-  }
+    .apply-section :global(.uniform-section) {
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+    }
 
-  .indicator-value {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--theme-text);
-    font-weight: 500;
-  }
-
-  .indicator-value.both {
-    color: var(--theme-text-muted);
-  }
-
-  .hand-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-  }
-
-  .hand-dot.blue {
-    background: var(--prop-blue);
-  }
-
-  .hand-dot.red {
-    background: var(--prop-red);
+    .apply-section :global(.templates-section) {
+      margin-bottom: 12px;
+    }
   }
 </style>

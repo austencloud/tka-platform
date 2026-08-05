@@ -361,8 +361,7 @@
     if (!repo || !fields) return;
     // Retain whatever the tier is currently serving, so Restore and the audit
     // trail can name the value that was hidden.
-    const hidden =
-      diagnostics?.specialJson?.firestoreOverride?.original ??
+    const hidden = diagnostics?.specialJson?.firestoreOverride?.original ??
       diagnostics?.specialJson?.value ?? { x: 0, y: 0 };
     const input = {
       ...fields,
@@ -844,7 +843,10 @@
         />
       {/if}
       {#if pendingSuppress}
-        <button class="btn btn-cancel" onclick={() => (pendingSuppress = false)}>
+        <button
+          class="btn btn-cancel"
+          onclick={() => (pendingSuppress = false)}
+        >
           Cancel
         </button>
         <button class="btn btn-danger" onclick={handleSuppressSpecial}>

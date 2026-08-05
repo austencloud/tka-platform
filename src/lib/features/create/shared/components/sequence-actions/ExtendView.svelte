@@ -55,12 +55,12 @@
     if (!analysis) return "";
     const end = analysis.currentEndPosition;
     if (analysis.extensionType !== "already_complete") {
-      return `Ends at ${end} — pick a pattern to close it`;
+      return `Ends at ${end}. Choose a closing pattern.`;
     }
     if (orientationRepeat) {
-      return `Back at ${end}, orientation returns after ${orientationRepeat.count} repeats`;
+      return `Returns to ${end} after ${orientationRepeat.count} repeats.`;
     }
-    return "Closed loop — position and orientation both return";
+    return "Position and orientation both close.";
   });
 
   function handleBridgeSelect(option: CircularizationOption) {
@@ -105,13 +105,13 @@
       <p class="status-line" class:open={orientationRepeat !== null}>
         <span class="status-sizer" aria-hidden="true">
           <span
-            >Ends at {analysis.currentEndPosition} — pick a pattern to close it</span
+            >Ends at {analysis.currentEndPosition}. Choose a closing pattern.</span
           >
           <span
-            >Back at {analysis.currentEndPosition}, orientation returns after
-            {orientationRepeat?.count ?? 8} repeats</span
+            >Returns to {analysis.currentEndPosition} after
+            {orientationRepeat?.count ?? 8} repeats.</span
           >
-          <span>Closed loop — position and orientation both return</span>
+          <span>Position and orientation both close.</span>
         </span>
         <span class="status-live">{statusLine}</span>
       </p>
@@ -165,9 +165,9 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-    padding: 16px;
-    gap: 16px;
-    overflow-y: auto;
+    padding: 8px 10px 10px;
+    gap: 8px;
+    overflow: hidden;
   }
 
   .options-container > :global(.loop-picker) {
@@ -176,10 +176,11 @@
   }
 
   .status-header {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    padding: 0.75rem 0.875rem;
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.625rem;
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--radius-md, 8px);
@@ -189,7 +190,7 @@
   .position-info {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
     font-size: var(--font-size-sm, 14px);
   }
 
@@ -225,6 +226,7 @@
     font-size: var(--font-size-compact, 12px);
     line-height: 1.4;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    min-width: 0;
   }
 
   .status-line.open {
@@ -250,4 +252,10 @@
     grid-area: 1 / 1;
   }
 
+  @container sequence-action-subview (max-width: 340px) {
+    .status-header {
+      grid-template-columns: 1fr;
+      gap: 0.375rem;
+    }
+  }
 </style>

@@ -10,8 +10,13 @@
   import PatternStepStrip from "./PatternStepStrip.svelte";
   import type { StripBinding, StripValue } from "./pattern-strip-types";
   import {
-    divisorsUpTo, uniformActive, perHandRhythmMatches, singleLaneRhythmMatches,
-    stampPerHand, stampSingle, resizePeriod,
+    divisorsUpTo,
+    uniformActive,
+    perHandRhythmMatches,
+    singleLaneRhythmMatches,
+    stampPerHand,
+    stampSingle,
+    resizePeriod,
   } from "$lib/shared/create/domain/rhythm/rhythm-mask";
 
   interface Props {
@@ -57,7 +62,9 @@
   }
   function applyAmount(li: number, a: number) {
     const lane = [...(value[li] ?? [])];
-    const active = lane.map((v, i) => (v !== binding.base ? i : -1)).filter((i) => i >= 0);
+    const active = lane
+      .map((v, i) => (v !== binding.base ? i : -1))
+      .filter((i) => i >= 0);
     if (active.length === 0) lane.fill(a);
     else for (const i of active) lane[i] = a;
     const next = value.map((l, idx) => (idx === li ? lane : l));
@@ -72,7 +79,12 @@
     // Fixed-period rhythms only light when the strip is at exactly that period.
     if (rhythm.period != null && period !== rhythm.period) return false;
     if (binding.lanes === 2)
-      return perHandRhythmMatches(rhythm.sym, value[0] ?? [], value[1] ?? [], binding.base);
+      return perHandRhythmMatches(
+        rhythm.sym,
+        value[0] ?? [],
+        value[1] ?? [],
+        binding.base
+      );
     return singleLaneRhythmMatches(rhythm.sym, value[0] ?? [], binding.base);
   }
   function applyRhythm(rhythm: Rhythm) {
@@ -82,7 +94,11 @@
     const effPeriod = rhythm.period ?? period;
     if (binding.lanes === 2) {
       const { blue, red } = stampPerHand(
-        rhythm, effPeriod, stampValue(0), stampValue(1), binding.base
+        rhythm,
+        effPeriod,
+        stampValue(0),
+        stampValue(1),
+        binding.base
       );
       onChange([blue, red]);
     } else {
@@ -98,10 +114,12 @@
   const stripLanes = $derived(
     binding.laneLabels.map((label, i) => ({
       label,
-      color: (binding.laneColors[i] === "accent" ? "hold" : binding.laneColors[i]) as "blue" | "red" | "hold",
+      color: (binding.laneColors[i] === "accent"
+        ? "hold"
+        : binding.laneColors[i]) as "blue" | "red" | "hold",
       values: value[i] ?? [],
       inert: inertMask?.[i],
-    })),
+    }))
   );
 </script>
 
@@ -117,7 +135,8 @@
     </div>
     <div class="seg-wrap">
       <SegmentedControl
-        size="md" color="accent"
+        size="md"
+        color="accent"
         options={periods.map((p) => ({ value: String(p), label: String(p) }))}
         value={String(period)}
         onchange={(v) => setPeriod(Number(v))}
@@ -130,11 +149,17 @@
     <div class="chips">
       {#each binding.rhythms as r}
         <FilterChipBase
-          label={r.label} mode="toggle" size="md"
-          active={rhythmActive(r)} disabled={rhythmDisabled(r)}
+          label={r.label}
+          mode="toggle"
+          size="md"
+          active={rhythmActive(r)}
+          disabled={rhythmDisabled(r)}
           onclick={() => applyRhythm(r)}
         >
-          {#snippet iconSnippet()}<RhythmGlyph sym={r.sym} lanes={binding.lanes} />{/snippet}
+          {#snippet iconSnippet()}<RhythmGlyph
+              sym={r.sym}
+              lanes={binding.lanes}
+            />{/snippet}
         </FilterChipBase>
       {/each}
     </div>
@@ -149,8 +174,12 @@
             <span class="amt-lane {binding.laneColors[li]}">{label}</span>
             <div class="seg-wrap">
               <SegmentedControl
-                size="md" color={binding.laneColors[li]}
-                options={binding.amountList.map((a) => ({ value: String(a), label: binding.format(a) }))}
+                size="md"
+                color={binding.laneColors[li]}
+                options={binding.amountList.map((a) => ({
+                  value: String(a),
+                  label: binding.format(a),
+                }))}
                 value={String(laneAmount(li) ?? -1)}
                 onchange={(a) => applyAmount(li, Number(a))}
               />
@@ -175,22 +204,125 @@
 </div>
 
 <style>
-  .pse { display: flex; flex-direction: column; gap: 26px; width: 100%; margin: 8px 0 0; }
-  .axis-lbl { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--theme-text-dim); }
-  .axis > .axis-lbl { display: block; margin: 0 0 12px; }
-  .axis-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 12px; }
-  .reps { font-size: 12px; color: var(--theme-text-dim); font-variant-numeric: tabular-nums; }
-  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
-  .amt-grid { display: flex; flex-direction: column; gap: 10px; }
-  .amt-row { display: flex; align-items: center; gap: 12px; }
-  .amt-lane { width: 44px; flex: 0 0 44px; font-size: 13px; font-weight: 800; }
-  .amt-lane.blue { color: var(--theme-blue, #6f9bff); } .amt-lane.red { color: var(--theme-red, #ff7a8a); } .amt-lane.accent { color: var(--theme-accent, #2dd4bf); }
-  .result { margin-top: 2px; }
+  .pse {
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+    width: 100%;
+    margin: 8px 0 0;
+  }
+  .axis-lbl {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--theme-text-dim);
+  }
+  .axis > .axis-lbl {
+    display: block;
+    margin: 0 0 12px;
+  }
+  .axis-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 12px;
+  }
+  .reps {
+    font-size: 12px;
+    color: var(--theme-text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .amt-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .amt-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .amt-lane {
+    width: 44px;
+    flex: 0 0 44px;
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .amt-lane.blue {
+    color: var(--theme-blue, #6f9bff);
+  }
+  .amt-lane.red {
+    color: var(--theme-red, #ff7a8a);
+  }
+  .amt-lane.accent {
+    color: var(--theme-accent, #2dd4bf);
+  }
+  .result {
+    margin-top: 2px;
+  }
 
   /* Cohesion: stop SegmentedControl stretching full-width; unify value type with the strip. */
-  .seg-wrap { width: max-content; max-width: 100%; }
-  :global(.pse .seg-wrap .segmented-control) { width: max-content; }
-  :global(.pse .seg-wrap .segment) { min-width: 56px; padding: 0 16px; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .seg-wrap {
+    width: max-content;
+    max-width: 100%;
+  }
+  :global(.pse .seg-wrap .segmented-control) {
+    width: max-content;
+  }
+  :global(.pse .seg-wrap .segment) {
+    min-width: 56px;
+    padding: 0 16px;
+    font-size: 16px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* A narrow portrait drawer cannot spend 26px between every editing axis.
+     This keeps the phone composition vertical and readable while reclaiming
+     enough height for Result and the persistent Apply action below it. */
+  @container sequence-action-subview (max-width: 599px) and (max-height: 430px) {
+    .pse.fit-available-height {
+      gap: 10px;
+      margin: 0;
+    }
+
+    .pse.fit-available-height .axis-row,
+    .pse.fit-available-height .axis > .axis-lbl {
+      margin-bottom: 6px;
+    }
+
+    .pse.fit-available-height .chips,
+    .pse.fit-available-height .amt-grid {
+      gap: 6px;
+    }
+
+    .pse.fit-available-height .amt-row {
+      gap: 6px;
+    }
+
+    .pse.fit-available-height .seg-wrap :global(.segment) {
+      min-width: var(--min-touch-target, 44px);
+      padding-inline: 10px;
+      font-size: var(--font-size-sm, 14px);
+    }
+
+    .pse.fit-available-height .chips :global(.filter-chip) {
+      min-height: var(--min-touch-target, 44px);
+      padding-inline: 8px;
+      gap: 4px;
+    }
+
+    .pse.fit-available-height .result {
+      margin-top: 0;
+    }
+  }
 
   /* A foldable portrait drawer is wide enough for full controls but only about
      half a screen tall. Keep every target at least 44px and use that width to
