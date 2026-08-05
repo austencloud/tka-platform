@@ -29,6 +29,7 @@
     isApplying: boolean;
     onBridgeAppend: (bridgeLetter: Letter) => void;
     onApply: (loopType: LOOPType) => void;
+    onOrientationRepeat: () => void;
   }
 
   let {
@@ -38,10 +39,29 @@
     isApplying,
     onBridgeAppend,
     onApply,
+    onOrientationRepeat,
   }: Props = $props();
 
   const availableDirectOptions = $derived(analysis?.availableLOOPOptions ?? []);
-  const isDirectlyLoopable = $derived(availableDirectOptions.length > 0);
+  const orientationRepeat = $derived(analysis?.orientationRepeat ?? null);
+  const isDirectlyLoopable = $derived(
+    availableDirectOptions.length > 0 || orientationRepeat !== null
+  );
+
+  // The header's one-line read of where the sequence actually stands. Closing
+  // in position is not the same as closing in orientation, and the difference
+  // is exactly what decides whether the repeat option is worth clicking.
+  const statusLine = $derived.by(() => {
+    if (!analysis) return "";
+    const end = analysis.currentEndPosition;
+    if (analysis.extensionType !== "already_complete") {
+      return `Ends at ${end} — pick a pattern to close it`;
+    }
+    if (orientationRepeat) {
+      return `Back at ${end}, orientation returns after ${orientationRepeat.count} repeats`;
+    }
+    return "Closed loop — position and orientation both return";
+  });
 
   function handleBridgeSelect(option: CircularizationOption) {
     if (isApplying) return;
@@ -63,15 +83,38 @@
   </div>
 {:else}
   <div class="options-container">
-    <div class="position-info">
-      <div class="position-row">
-        <span class="label">Start:</span>
-        <span class="position">{analysis.startPosition}</span>
+    <div class="status-header">
+      <div class="position-info">
+        <div class="position-row">
+          <span class="label">Start</span>
+          <span class="position">{analysis.startPosition}</span>
+        </div>
+        <span class="position-arrow" aria-hidden="true">→</span>
+        <div class="position-row">
+          <span class="label">End</span>
+          <span class="position">{analysis.currentEndPosition}</span>
+        </div>
       </div>
-      <div class="position-row">
-        <span class="label">End:</span>
-        <span class="position">{analysis.currentEndPosition}</span>
-      </div>
+
+      <!--
+        The status line changes as the sequence does, and its variants differ
+        in width. Hidden copies of every variant hold the box open to the
+        longest so switching sequences never resizes the header and shoves
+        the option grid (no-layout-shift.md).
+      -->
+      <p class="status-line" class:open={orientationRepeat !== null}>
+        <span class="status-sizer" aria-hidden="true">
+          <span
+            >Ends at {analysis.currentEndPosition} — pick a pattern to close it</span
+          >
+          <span
+            >Back at {analysis.currentEndPosition}, orientation returns after
+            {orientationRepeat?.count ?? 8} repeats</span
+          >
+          <span>Closed loop — position and orientation both return</span>
+        </span>
+        <span class="status-live">{statusLine}</span>
+      </p>
     </div>
 
     {#if !isDirectlyLoopable}
@@ -86,6 +129,8 @@
         circularizationOptions={[]}
         onSelect={handleLoopSelect}
         directUnavailableReason={null}
+        {orientationRepeat}
+        {onOrientationRepeat}
         {isApplying}
       />
     {/if}
@@ -120,29 +165,79 @@
     overflow-y: auto;
   }
 
+  .status-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 0.875rem;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--radius-md, 8px);
+    flex-shrink: 0;
+  }
+
   .position-info {
     display: flex;
-    justify-content: space-between;
-    padding: 12px;
-    background: var(--theme-card-bg);
-    border-radius: var(--radius-md, 8px);
+    align-items: center;
+    gap: 0.75rem;
     font-size: var(--font-size-sm, 14px);
-    flex-shrink: 0;
   }
 
   .position-row {
     display: flex;
-    align-items: center;
-    gap: 6px;
+    align-items: baseline;
+    gap: 0.375rem;
   }
 
   .label {
     color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   .position {
     font-family: monospace;
-    font-weight: 500;
+    /* Positions swap between sequences; equal digit widths keep the row still. */
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
     color: var(--theme-accent);
   }
+
+  .position-arrow {
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+  }
+
+  /* Ghost-sizer: the cell sizes to the longest variant, the live text overlays it. */
+  .status-line {
+    display: inline-grid;
+    margin: 0;
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.4;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+  }
+
+  .status-line.open {
+    color: var(--semantic-warning, #f5c542);
+  }
+
+  .status-sizer,
+  .status-live {
+    grid-area: 1 / 1;
+  }
+
+  /*
+   * The variants overlap in a single cell rather than stacking, so the sizer
+   * contributes the WIDEST variant's width at one line's height — not three
+   * lines of dead space.
+   */
+  .status-sizer {
+    visibility: hidden;
+    display: grid;
+  }
+
+  .status-sizer > span {
+    grid-area: 1 / 1;
+  }
+
 </style>

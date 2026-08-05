@@ -140,7 +140,8 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
 
   // Extend's header is dynamic and depends on the live analysis.
   const extendDirectlyLoopable = $derived(
-    (extensionAnalysis?.availableLOOPOptions ?? []).length > 0
+    (extensionAnalysis?.availableLOOPOptions ?? []).length > 0 ||
+      extensionAnalysis?.orientationRepeat != null
   );
   const subViewTitle = $derived(
     subView === "turnPattern"
@@ -549,6 +550,37 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     isExtending = false;
   }
 
+  /**
+   * Repeat the sequence until the props return to their start orientation.
+   * The position already closed; only orientation is still open, so no LOOP
+   * transform is involved.
+   */
+  function handleOrientationRepeat() {
+    if (!sequence || !extensionFlowCoordinator || isExtending) return;
+    isExtending = true;
+    hapticService?.trigger("selection");
+
+    CreateModuleState.pushUndoSnapshot(UndoOperationType.EXTEND_SEQUENCE);
+
+    const result = extensionFlowCoordinator.applyOrientationRepeat(sequence);
+
+    if (result.success && result.sequence) {
+      activeSequenceState.setCurrentSequence(result.sequence);
+      hapticService?.trigger("success");
+      toast.success(result.message);
+
+      subView = null;
+      extensionAnalysis = null;
+      circularizationOptions = [];
+      directUnavailableReason = null;
+    } else {
+      toast.warning(result.message);
+      hapticService?.trigger("error");
+    }
+
+    isExtending = false;
+  }
+
   function handleEditInConstructor() {
     if (!sequence || !transferHandler) return;
     hapticService?.trigger("selection");
@@ -799,6 +831,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
             isApplying={isExtending}
             onBridgeAppend={handleBridgeAppend}
             onApply={handleExtendApply}
+            onOrientationRepeat={handleOrientationRepeat}
           />
         {/if}
       </div>

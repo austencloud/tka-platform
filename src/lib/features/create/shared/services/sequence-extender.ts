@@ -14,6 +14,7 @@ import type { OrientationAlignment } from "./orientation-alignment-calculator";
 import { Period, type LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
 
 /**
  * Describes the type of extension available for a sequence
@@ -40,6 +41,14 @@ export interface ExtensionAnalysis {
   availableLOOPOptions: LOOPOption[];
   /** Unavailable LOOP options */
   unavailableLOOPOptions: LOOPOption[];
+  /**
+   * Set when the sequence returns to its start POSITION but not its start
+   * ORIENTATION. `count` is how many total repeats of the sequence bring the
+   * props back to their start orientation, so repeating it verbatim closes
+   * the loop. Null when orientation already closes (count 1), or when the
+   * sequence does not return to its start position at all.
+   */
+  orientationRepeat: { count: 2 | 4 | 8 } | null;
   /** Human-readable description of the extension */
   description: string;
 }
@@ -173,6 +182,7 @@ export class SequenceExtender {
         currentEndPosition: null,
         availableLOOPOptions: [],
         unavailableLOOPOptions: [],
+        orientationRepeat: null,
         description: "No start position defined",
       };
     }
@@ -188,6 +198,7 @@ export class SequenceExtender {
         currentEndPosition: null,
         availableLOOPOptions: [],
         unavailableLOOPOptions: [],
+        orientationRepeat: null,
         description: "No steps in sequence",
       };
     }
@@ -219,8 +230,16 @@ export class SequenceExtender {
         period
       );
 
-    // Can extend if any LOOP options are available
-    const canExtend = available.length > 0;
+    // A sequence back at its start POSITION can still be open in ORIENTATION.
+    // Repeating it verbatim closes that cycle, so it is a real extension
+    // option alongside the transform-based LOOPs. Only meaningful when the
+    // position already closed — otherwise repeating walks further away.
+    const cycleCount = isAlreadyComplete
+      ? orientationCycleExtender.getCycleCount(sequence)
+      : 1;
+    const orientationRepeat = cycleCount > 1 ? { count: cycleCount as 2 | 4 | 8 } : null;
+
+    const canExtend = available.length > 0 || orientationRepeat !== null;
 
     if (!canExtend) {
       return {
@@ -230,6 +249,7 @@ export class SequenceExtender {
         currentEndPosition,
         availableLOOPOptions: [],
         unavailableLOOPOptions: unavailable,
+        orientationRepeat: null,
         description: "No extension patterns available for this position pair",
       };
     }
@@ -250,6 +270,7 @@ export class SequenceExtender {
       currentEndPosition,
       availableLOOPOptions: available,
       unavailableLOOPOptions: unavailable,
+      orientationRepeat,
       description,
     };
   }

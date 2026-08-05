@@ -1,0 +1,128 @@
+<!--
+  Test harness for LOOPPicker.
+
+  The Extend drawer's option set is data-driven, and the generator closes
+  orientation cycles by construction — so the "Repeated ×N" state is hard to
+  reach by driving the real app, even though real sequences (hand-built in
+  Construct, or bridge-extended) land there. This renders the real component
+  against each option set so the states can actually be looked at.
+-->
+<script lang="ts">
+  import LOOPPicker from "$lib/shared/components/loop-picker/LOOPPicker.svelte";
+  import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
+  import type { LOOPOption } from "$lib/features/create/shared/services/loop-validator";
+
+  const option = (loopType: LOOPType, name: string): LOOPOption =>
+    ({ loopType, name, description: name, icon: "" }) as LOOPOption;
+
+  const swapped = option(LOOPType.SWAPPED, "Swapped");
+  const inverted = option(LOOPType.INVERTED, "Inverted");
+  const swappedInverted = option(LOOPType.SWAPPED_INVERTED, "Swapped / Inverted");
+  const rewound = option(LOOPType.STRICT_REWOUND, "Rewound");
+  const rotated = option(LOOPType.ROTATED, "Rotated");
+  const mirrored = option(LOOPType.MIRRORED, "Mirrored");
+
+  const cases: Array<{
+    title: string;
+    options: LOOPOption[];
+    repeat: { count: 2 | 4 | 8 } | null;
+  }> = [
+    {
+      title: "Closed in position AND orientation (the screenshot case)",
+      options: [swapped, inverted, swappedInverted, rewound],
+      repeat: null,
+    },
+    {
+      title: "Closed in position, orientation returns after 2 repeats",
+      options: [swapped, inverted, swappedInverted, rewound],
+      repeat: { count: 2 },
+    },
+    {
+      title: "Orientation returns after 4 repeats",
+      options: [inverted, rewound],
+      repeat: { count: 4 },
+    },
+    {
+      title: "All six primitives — every tint at once",
+      options: [rotated, mirrored, swapped, inverted, swappedInverted, rewound],
+      repeat: { count: 8 },
+    },
+    { title: "Two options only", options: [inverted, rewound], repeat: null },
+  ];
+
+  let widthPx = $state(560);
+</script>
+
+<div class="harness">
+  <header>
+    <h1>LOOPPicker states</h1>
+    <label>
+      Panel width: {widthPx}px
+      <input type="range" min="280" max="1200" bind:value={widthPx} />
+    </label>
+  </header>
+
+  <div class="cases">
+    {#each cases as c}
+      <section>
+        <h2>{c.title}</h2>
+        <div class="frame" style="width: {widthPx}px">
+          <LOOPPicker
+            directOptions={c.options}
+            onSelect={() => {}}
+            orientationRepeat={c.repeat}
+            onOrientationRepeat={() => {}}
+          />
+        </div>
+      </section>
+    {/each}
+  </div>
+</div>
+
+<style>
+  .harness {
+    min-height: 100vh;
+    padding: 2rem;
+    background: #0e0e18;
+    color: #fff;
+    font-family: system-ui, sans-serif;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .cases {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    align-items: flex-start;
+  }
+
+  h2 {
+    margin: 0 0 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  .frame {
+    max-width: 100%;
+  }
+</style>

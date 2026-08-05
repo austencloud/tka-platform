@@ -17,6 +17,11 @@
   import type { CircularizationOption } from "$lib/shared/create/domain/spell-models";
   import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { slide } from "svelte/transition";
+  import {
+    loopTypeTint,
+    loopOptionTint,
+    ORIENTATION_REPEAT_COLOR,
+  } from "./loop-option-color";
 
   interface Props {
     /** Direct LOOP options (no bridge letter needed) */
@@ -29,6 +34,13 @@
     directUnavailableReason?: string | null;
     /** Whether an action is in progress */
     isApplying?: boolean;
+    /**
+     * Set when the sequence is back at its start position but not its start
+     * orientation. `count` total repeats close the orientation cycle.
+     */
+    orientationRepeat?: { count: 2 | 4 | 8 } | null;
+    /** Called when the user picks the orientation repeat. */
+    onOrientationRepeat?: () => void;
   }
 
   let {
@@ -37,7 +49,12 @@
     onSelect,
     directUnavailableReason = null,
     isApplying = false,
+    orientationRepeat = null,
+    onOrientationRepeat,
   }: Props = $props();
+
+  const repeatTint = loopOptionTint([ORIENTATION_REPEAT_COLOR]);
+  const showRepeat = $derived(Boolean(orientationRepeat && onOrientationRepeat));
 
   // Derived state
   const hasDirectOptions = $derived(directOptions.length > 0);
@@ -78,12 +95,13 @@
   </header>
 
   <!-- Direct LOOP Options -->
-  {#if hasDirectOptions}
+  {#if hasDirectOptions || showRepeat}
     <section class="options-section" transition:slide={{ duration: 200 }}>
       <div class="options-grid">
         {#each directOptions as option}
           <button
             class="loop-button"
+            style={loopTypeTint(option.loopType)}
             onclick={() => handleDirectClick(option.loopType)}
             disabled={isApplying}
             title={option.description}
@@ -91,6 +109,19 @@
             <span class="loop-name">{option.name}</span>
           </button>
         {/each}
+
+        {#if orientationRepeat && onOrientationRepeat}
+          <button
+            class="loop-button repeat"
+            style={repeatTint}
+            onclick={() => !isApplying && onOrientationRepeat?.()}
+            disabled={isApplying}
+            title="The sequence returns to its start position but not its start orientation. Repeating it {orientationRepeat.count} times brings the props back to where they began."
+          >
+            <span class="loop-name">Repeated &times;{orientationRepeat.count}</span>
+            <span class="loop-sub">closes orientation</span>
+          </button>
+        {/if}
       </div>
     </section>
   {:else if directUnavailableReason}
@@ -120,6 +151,7 @@
               {#each option.availableLOOPs as loop}
                 <button
                   class="loop-button bridge"
+                  style={loopTypeTint(loop.loopType)}
                   onclick={() => {
                     const bridgeLetter = option.bridgeLetters[0];
                     if (bridgeLetter)
@@ -183,33 +215,63 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
   }
 
-  /* Options Grid - responsive 2-3 columns */
+  /*
+   * Options wrap as content-sized cards, not equal grid tracks.
+   *
+   * A fixed column count has no good answer here: the option count is
+   * data-driven (1 to 6), so any pinned track count either stretches two
+   * short labels across a 900px panel or strands an empty cell beside them.
+   * Wrapping from a sane minimum sizes each button to its own label, keeps
+   * the 44px touch floor, and never leaves a hole — at any option count and
+   * any panel width.
+   */
   .options-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    flex-wrap: wrap;
     gap: var(--settings-spacing-sm, 8px);
   }
 
-  @container loop-picker (min-width: 400px) {
-    .options-grid {
-      grid-template-columns: repeat(3, 1fr);
+  .options-grid > :global(*) {
+    flex: 0 1 auto;
+    min-width: 9.5rem;
+    max-width: 18rem;
+  }
+
+  /* Narrow panels get two per row rather than a lonely column of one. */
+  @container loop-picker (max-width: 22rem) {
+    .options-grid > :global(*) {
+      flex: 1 1 8rem;
+      min-width: 0;
     }
   }
 
-  /* LOOP Buttons - 60px touch targets */
+  /*
+   * LOOP Buttons.
+   *
+   * --loop-c1 / --loop-c2 come from the option's own primitives (see
+   * loop-option-color.ts), so Swapped is green, Inverted is orange, and
+   * "Swapped / Inverted" sweeps green into orange — matching the badge the
+   * same LOOP carries on a sequence card. The theme accent is the fallback
+   * for any option whose type names no known primitive.
+   */
   .loop-button {
+    --c1: var(--loop-c1, var(--theme-accent, #6366f1));
+    --c2: var(--loop-c2, var(--theme-accent, #6366f1));
+    --c2-mix: var(--loop-c2-mix, 9%);
+
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 60px;
+    gap: 0.125rem;
+    min-height: 3.75rem;
     padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 16px);
     background: linear-gradient(
       135deg,
-      color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent) 0%,
-      color-mix(in srgb, var(--theme-accent, #6366f1) 8%, transparent) 100%
+      color-mix(in srgb, var(--c1) 22%, transparent) 0%,
+      color-mix(in srgb, var(--c2) var(--c2-mix), transparent) 100%
     );
-    border: 2px solid
-      color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+    border: 2px solid color-mix(in srgb, var(--c1) 45%, transparent);
     border-radius: var(--settings-radius-md, 12px);
     cursor: pointer;
     color: var(--theme-text, #ffffff);
@@ -223,17 +285,21 @@
   .loop-button:hover:not(:disabled) {
     background: linear-gradient(
       135deg,
-      color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent) 0%,
-      color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent) 100%
+      color-mix(in srgb, var(--c1) 34%, transparent) 0%,
+      color-mix(in srgb, var(--c2) calc(var(--c2-mix) + 10%), transparent) 100%
     );
-    border-color: var(--theme-accent, #6366f1);
+    border-color: var(--c1);
     transform: translateY(-2px);
-    box-shadow: 0 4px 20px
-      color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--c1) 32%, transparent);
   }
 
   .loop-button:active:not(:disabled) {
     transform: translateY(0);
+  }
+
+  .loop-button:focus-visible {
+    outline: 2px solid var(--c1);
+    outline-offset: 2px;
   }
 
   .loop-button:disabled {
@@ -246,7 +312,24 @@
     font-size: var(--font-size-min, 14px);
   }
 
+  /*
+   * The repeat spans the full row. It is a different KIND of extension from
+   * its neighbours (no transform, just repetition), and spanning also means a
+   * trailing odd option can never strand a half-empty row.
+   */
+  .loop-button.repeat {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
   .loop-name {
+    text-align: center;
+  }
+
+  .loop-sub {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     text-align: center;
   }
 
@@ -332,16 +415,17 @@
     font-family: monospace;
   }
 
+  /* Same content-sizing rationale as .options-grid above. */
   .bridge-loops {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    flex-wrap: wrap;
     gap: var(--settings-spacing-xs, 4px);
   }
 
-  @container loop-picker (min-width: 400px) {
-    .bridge-loops {
-      grid-template-columns: repeat(3, 1fr);
-    }
+  .bridge-loops > .loop-button {
+    flex: 0 1 auto;
+    min-width: 8rem;
+    max-width: 16rem;
   }
 
   /* Applying overlay */

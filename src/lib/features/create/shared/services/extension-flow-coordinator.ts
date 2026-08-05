@@ -10,6 +10,7 @@ import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { ExtensionFlowStart, BridgeAppendResult, ExtensionApplyResult } from "./sequence-extender";
 import type { SequenceExtender } from "./sequence-extender";
 import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
 
 export class ExtensionFlowCoordinator {
   constructor(private readonly sequenceExtender: SequenceExtender) {}
@@ -28,8 +29,13 @@ export class ExtensionFlowCoordinator {
       // Analyze the sequence
       const analysis = this.sequenceExtender.analyzeSequence(sequence);
 
-      // If direct LOOPs are available, we're good to go
-      if (analysis.canExtend && analysis.availableLOOPOptions.length > 0) {
+      // Direct path when there is anything to click: a transform-based LOOP,
+      // or the orientation repeat (which needs no bridge — the sequence is
+      // already back at its start position).
+      if (
+        analysis.canExtend &&
+        (analysis.availableLOOPOptions.length > 0 || analysis.orientationRepeat)
+      ) {
         return {
           canExtend: true,
           analysis,
@@ -143,6 +149,47 @@ export class ExtensionFlowCoordinator {
         sequence: null,
         stepsAdded: 0,
         message: "Could not extend sequence",
+      };
+    }
+  }
+
+  /**
+   * Repeat the sequence verbatim until the props return to their start
+   * orientation. No transform is applied — the position already closed, and
+   * only orientation is still open.
+   */
+  applyOrientationRepeat(sequence: SequenceData): ExtensionApplyResult {
+    try {
+      const originalLength = sequence.steps?.length || 0;
+      const extendedSequence = orientationCycleExtender.extendIfNeeded(sequence);
+      const stepsAdded = (extendedSequence.steps?.length || 0) - originalLength;
+
+      if (stepsAdded === 0) {
+        return {
+          success: false,
+          sequence: null,
+          stepsAdded: 0,
+          message: "Orientation already returns at the end of this sequence",
+        };
+      }
+
+      const count = extendedSequence.orientationCycleCount ?? 1;
+      return {
+        success: true,
+        sequence: extendedSequence,
+        stepsAdded,
+        message: `Repeated ×${count} — orientation now returns. Added ${stepsAdded} steps`,
+      };
+    } catch (error) {
+      console.error(
+        "[ExtensionFlowCoordinator] applyOrientationRepeat failed:",
+        error
+      );
+      return {
+        success: false,
+        sequence: null,
+        stepsAdded: 0,
+        message: "Could not repeat sequence",
       };
     }
   }
