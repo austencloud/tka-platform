@@ -12,6 +12,20 @@
 
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { SvgImageConverter } from '$lib/shared/foundation/services/svg-image-converter'
+import {
+  type ElementalType,
+  getElementImagePath,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { deriveTnDFromPictograph } from "$lib/shared/pictograph/shared/domain/utils/tnd-deriver";
+import {
+  getLetterType,
+  type Letter,
+} from "$lib/shared/foundation/domain/models/letter";
+import { LetterType } from "$lib/shared/foundation/domain/models/letter-type";
+import {
+  getSvgImageCache,
+  type DrawableImage,
+} from "$lib/shared/render/services/svg-image-cache";
 
 export interface GlyphAsset {
   image: HTMLImageElement;
@@ -20,7 +34,12 @@ export interface GlyphAsset {
    *  When turns are present, the top turn number sits above the letter. */
   yOffset: number;
 }
-import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+
+export interface ElementalGlyphAsset {
+  image: DrawableImage;
+  sourceWidth: number;
+  sourceHeight: number;
+}
 import { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
 import { interpretTurnColors } from "$lib/shared/pictograph/tka-glyph/services/turn-color-interpreter";
 import {
@@ -74,6 +93,8 @@ interface GlyphBuildData {
 export class ExportGlyphPrerenderer {
   private cache = new Map<string, GlyphAsset>();
   private stepKeyMap = new Map<number, string>();
+  private elementalCache = new Map<ElementalType, ElementalGlyphAsset>();
+  private stepElementMap = new Map<number, ElementalType>();
   private tupleGenerator = new TurnsTupleGenerator();
 
   constructor(private readonly svgImageConverter: SvgImageConverter) {}
@@ -178,6 +199,48 @@ export class ExportGlyphPrerenderer {
     await Promise.all(renderPromises);
   }
 
+  /** Decode each elemental WebP once before entering the deterministic frame loop. */
+  async prerenderElementalGlyphs(steps: readonly StepData[]): Promise<void> {
+    this.elementalCache.clear();
+    this.stepElementMap.clear();
+
+    const uniqueTypes = new Set<ElementalType>();
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i]!;
+      if (!step.letter || getLetterType(step.letter) !== LetterType.TYPE1) continue;
+
+      const elementalType = deriveTnDFromPictograph(step).elementalType;
+      if (!elementalType) continue;
+
+      this.stepElementMap.set(i, elementalType);
+      uniqueTypes.add(elementalType);
+    }
+
+    await Promise.all(
+      [...uniqueTypes].map(async (elementalType) => {
+        const image = await getSvgImageCache().getImageFromUrl(
+          getElementImagePath(elementalType),
+        );
+        const sourceWidth = "naturalWidth" in image
+          ? image.naturalWidth
+          : image.width;
+        const sourceHeight = "naturalHeight" in image
+          ? image.naturalHeight
+          : image.height;
+
+        if (sourceWidth <= 0 || sourceHeight <= 0) {
+          throw new Error(`Elemental glyph has no intrinsic size: ${elementalType}`);
+        }
+
+        this.elementalCache.set(elementalType, {
+          image,
+          sourceWidth,
+          sourceHeight,
+        });
+      }),
+    );
+  }
+
   getGlyph(cacheKey: string): GlyphAsset | null {
     return this.cache.get(cacheKey) ?? null;
   }
@@ -186,9 +249,18 @@ export class ExportGlyphPrerenderer {
     return this.stepKeyMap.get(stepIndex) ?? "";
   }
 
+  getElementalGlyphForStep(stepIndex: number): ElementalGlyphAsset | null {
+    const elementalType = this.stepElementMap.get(stepIndex);
+    return elementalType
+      ? (this.elementalCache.get(elementalType) ?? null)
+      : null;
+  }
+
   clear(): void {
     this.cache.clear();
     this.stepKeyMap.clear();
+    this.elementalCache.clear();
+    this.stepElementMap.clear();
   }
 
   // ---------------------------------------------------------------------------

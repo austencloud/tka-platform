@@ -320,6 +320,7 @@ export class AnimationEngine {
       props: vm.getVisibility("props"),
       trails: hasEffectInMap(ecs?.tipEffectMap, "trails"),
       tkaGlyph: vm.getVisibility("tkaGlyph"),
+      elementalGlyph: vm.getVisibility("elementalGlyph"),
       darkMode: vm.isDarkMode(),
       wordHeader: vm.getVisibility("wordHeader"),
       mandala: vm.getVisibility("mandala"),

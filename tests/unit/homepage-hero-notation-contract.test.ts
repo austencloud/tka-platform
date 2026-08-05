@@ -89,6 +89,16 @@ describe("homepage hero notation rail contract", () => {
     );
   });
 
+  it("uses the animation renderer's canonical elemental glyph", () => {
+    expect(homeHero).toContain("element={heroAct.element}");
+    expect(sequenceHero).toContain(
+      'heroVisibilityManager.setVisibility("elementalGlyph", element !== null)',
+    );
+    expect(sequenceHero).not.toContain('class="element-badge"');
+    expect(sequenceHero).not.toContain("shownElement.iconPath");
+    expect(animatorCanvas).toContain("{elementalGlyphVisible}");
+  });
+
   it("routes the prefetched sequence through the player's clock-preserving boundary handoff", () => {
     expect(homeHero).toContain(
       "onSequenceBoundary={heroAct.offerSequenceBoundary}"

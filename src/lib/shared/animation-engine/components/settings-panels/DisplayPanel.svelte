@@ -24,6 +24,7 @@
 
   let gridVisible = $state(vm.isGridVisible());
   let tkaGlyph = $state(vm.getVisibility("tkaGlyph"));
+  let elementalGlyph = $state(vm.getVisibility("elementalGlyph"));
   let stepNumbers = $state(vm.getVisibility("stepNumbers"));
   let propsVisible = $state(vm.getVisibility("props"));
   let wordHeader = $state(vm.getVisibility("wordHeader"));
@@ -36,6 +37,7 @@
   function handleVisibilityChange(): void {
     gridVisible = vm.isGridVisible();
     tkaGlyph = vm.getVisibility("tkaGlyph");
+    elementalGlyph = vm.getVisibility("elementalGlyph");
     stepNumbers = vm.getVisibility("stepNumbers");
     propsVisible = vm.getVisibility("props");
     wordHeader = vm.getVisibility("wordHeader");
@@ -121,6 +123,13 @@
       toggle: () => vm.toggleVisibility("tkaGlyph"),
     },
     {
+      id: "elementalGlyph",
+      label: "Element",
+      icon: "fas fa-fire-flame-curved",
+      active: () => elementalGlyph,
+      toggle: () => vm.toggleVisibility("elementalGlyph"),
+    },
+    {
       id: "stepNumbers",
       label: "Step #",
       icon: "fas fa-list-ol",
@@ -177,42 +186,49 @@
   }
 </script>
 
-<div class="vis-grid">
-  {#each chips as chip (chip.id)}
-    <button
-      class="rt-chip"
-      type="button"
-      aria-pressed={chip.active()}
-      data-tone={chip.tone}
-      style={chip.accent ? `--rail-accent: ${chip.accent};` : undefined}
-      onclick={() => toggleChip(chip)}
-    >
-      {#if chip.icon}<i class={chip.icon} aria-hidden="true"></i>{/if}
-      <span>{chip.label}</span>
-    </button>
-  {/each}
+<div class="vis-grid-shell">
+  <div class:motion-grid={showPropChips} class="vis-grid">
+    {#each chips as chip (chip.id)}
+      <button
+        class="rt-chip"
+        type="button"
+        aria-pressed={chip.active()}
+        data-tone={chip.tone}
+        style={chip.accent ? `--rail-accent: ${chip.accent};` : undefined}
+        onclick={() => toggleChip(chip)}
+      >
+        {#if chip.icon}<i class={chip.icon} aria-hidden="true"></i>{/if}
+        <span>{chip.label}</span>
+      </button>
+    {/each}
+  </div>
 </div>
 
 <style>
-  /* Even auto-fitting columns: fills the panel width with uniform chips and
-	   wraps cleanly instead of leaving a ragged trailing gap. Matches the
-	   panel's native .rt-chip family (Tempo presets, Motion paths, export). */
+  .vis-grid-shell {
+    container-type: inline-size;
+  }
+
+  /* Nine ordinary controls form a stable 3 × 3 matrix. The landing variant
+     has ten controls, so it uses 2 columns until the rail can hold 5. */
   .vis-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
   }
 
+  .vis-grid.motion-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @container (min-width: 38rem) {
+    .vis-grid.motion-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+
   .vis-grid .rt-chip[data-tone]:not([aria-pressed="true"]) {
-    border-color: color-mix(
-      in srgb,
-      var(--rail-accent) 28%,
-      transparent
-    );
-    color: color-mix(
-      in srgb,
-      var(--rail-accent) 72%,
-      var(--theme-text, #fff)
-    );
+    border-color: color-mix(in srgb, var(--rail-accent) 28%, transparent);
+    color: color-mix(in srgb, var(--rail-accent) 72%, var(--theme-text, #fff));
   }
 </style>

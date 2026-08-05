@@ -397,6 +397,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       // (does NOT mutate global state) so tunnel export can suppress chrome.
       const ov = options.overlayOverrides;
       const showTkaGlyph = ov?.tkaGlyph ?? visibilityManager.getVisibility("tkaGlyph");
+      const showElementalGlyph =
+        ov?.elementalGlyph ?? visibilityManager.getVisibility("elementalGlyph");
       const showStepNumbers = ov?.stepNumbers ?? visibilityManager.getVisibility("stepNumbers");
       const showBluePathLines = ov?.bluePathLines ?? visibilityManager.getVisibility("bluePathLines");
       const showRedPathLines = ov?.redPathLines ?? visibilityManager.getVisibility("redPathLines");
@@ -410,6 +412,9 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       // Pre-render complete glyphs (letter + dash + turns column) before the frame loop
       if (showTkaGlyph && steps.length > 0) {
         await this.glyphPrerenderer.prerenderGlyphs(steps, isDarkMode);
+      }
+      if (showElementalGlyph && steps.length > 0) {
+        await this.glyphPrerenderer.prerenderElementalGlyphs(steps);
       }
 
       // Create offscreen canvas for compositing at OUTPUT resolution directly.
@@ -493,6 +498,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         scaleFactor,
         fps,
         showTkaGlyph,
+        showElementalGlyph,
         showStepNumbers,
         showWordHeader,
         showProgressBar,

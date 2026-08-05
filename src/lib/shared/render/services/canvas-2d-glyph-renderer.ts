@@ -24,6 +24,10 @@ import type { TurnsTupleGenerator } from "../../pictograph/arrow/positioning/pla
 import type { GridPosition } from "../../pictograph/grid/domain/enums/grid-enums";
 import type { MotionData } from "../../pictograph/shared/domain/models/motion-data";
 import { MotionColor, getElementImagePath } from "../../pictograph/shared/domain/enums/pictograph-enums";
+import {
+  containElementalGlyph,
+  getElementalGlyphBox,
+} from "../../pictograph/shared/domain/constants/elemental-glyph-layout";
 import { getMotionColor } from "../../utils/svg-color-utils";
 
 const VIEWBOX_SIZE = 950;
@@ -40,9 +44,6 @@ const TURN_NUMBER_HEIGHT = 45;
 const TND_GLYPH_WIDTH = 201.24;
 const TND_GLYPH_HEIGHT = 133.6;
 const TND_OFFSET_PERCENTAGE = 0.04;
-
-const _ELEMENTAL_GLYPH_WIDTH = 95;
-const _ELEMENTAL_GLYPH_HEIGHT = 125;
 
 const POSITION_GLYPH_Y = 50;
 const POSITION_SCALE_FACTOR = 0.75;
@@ -415,13 +416,7 @@ export async function drawElementalGlyph(
   const tndResult = deriveTnDFromPictograph(pictograph);
   if (!tndResult.elementalType) return;
 
-  const scale = size / VIEWBOX_SIZE;
-  const PADDING = 40;
-  const GLYPH_WIDTH = 120;
-  const GLYPH_HEIGHT = 140;
-
-  const x = (VIEWBOX_SIZE - GLYPH_WIDTH - PADDING) * scale;
-  const y = (VIEWBOX_SIZE - GLYPH_HEIGHT - PADDING) * scale;
+  const box = getElementalGlyphBox(size);
 
   try {
     const elementalPath = getElementImagePath(tndResult.elementalType);
@@ -431,20 +426,11 @@ export async function drawElementalGlyph(
     const blob = await response.blob();
     const img = await createImageBitmap(blob);
 
-    // Element art is not square (water is tall ~0.68, air is wide ~1.41).
-    // Contain-fit within the box so each element keeps its natural aspect
-    // instead of being stretched into the 120x140 slot, then anchor it to the
-    // bottom-right corner where the box sits.
-    const boxWidth = GLYPH_WIDTH * scale;
-    const boxHeight = GLYPH_HEIGHT * scale;
-    const fit = Math.min(boxWidth / img.width, boxHeight / img.height);
-    const drawWidth = img.width * fit;
-    const drawHeight = img.height * fit;
-    const drawX = x + (boxWidth - drawWidth);
-    const drawY = y + (boxHeight - drawHeight);
+    const fitted = containElementalGlyph(box, img.width, img.height);
+    if (!fitted) return;
 
     ctx.save();
-    ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+    ctx.drawImage(img, fitted.x, fitted.y, fitted.width, fitted.height);
     ctx.restore();
   } catch (error) {
     console.warn(`[Canvas2D] Failed to draw Elemental glyph:`, error);

@@ -286,6 +286,14 @@ function buildVisibilityChildren(
       action: () => vm.toggleVisibility("tkaGlyph"),
     },
     {
+      id: "vis-elemental-glyph",
+      label: "Element",
+      icon: "fa-fire-flame-curved",
+      checked: settings.elementalGlyph,
+      keepOpen: true,
+      action: () => vm.toggleVisibility("elementalGlyph"),
+    },
+    {
       id: "vis-word-header",
       label: "Word Header",
       icon: "fa-heading",

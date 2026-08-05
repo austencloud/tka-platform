@@ -61,9 +61,8 @@
         per-visit generated demo) — the stage box and caption line keep their
         reserved footprint and the player mounts when it lands. */
     sequence: SequenceData | null;
-    /** TnD element of the current sequence, shown as a small bottom-right badge
-        on the canvas. Present only for shape-matrix draws (the homepage hero);
-        null (default) on generated draws and every other host — no badge. */
+    /** TnD element of the current sequence. Shape-matrix draws use this as the
+        eligibility signal for the player's canonical elemental glyph. */
     element?: TnDElement | null;
     note: string;
     /** Optional prop-type override so per-prop pages can render the same
@@ -116,14 +115,11 @@
 
   const word = $derived(sequence ? simplifyRepeatedWord(sequence.word) : "");
 
-  // Persist the last element so its icon can fade OUT (stays rendered through the
-  // fade) when a generated draw sets element back to null. Only `visible` toggles.
-  let shownElement = $state<TnDElement | null>(null);
-  $effect(() => {
-    if (element) shownElement = element;
-  });
   const heroVisibilityManager = new AnimationVisibilityStateManager({
     ephemeral: true,
+  });
+  $effect(() => {
+    heroVisibilityManager.setVisibility("elementalGlyph", element !== null);
   });
   const hiddenNotationRail =
     typeof window === "undefined"
@@ -250,24 +246,6 @@
             </div>
           {/if}
 
-          <!-- TnD element indicator (shape-matrix draws only). Absolutely
-               positioned inside the fixed-size stage, so it never shifts layout;
-               fades on the current element and clips to the stage's rounded
-               corners via the parent's overflow:hidden. -->
-          {#if shownElement}
-            <div
-              class="element-badge"
-              class:visible={!!element}
-              style="--el-scale: {shownElement.iconScale}"
-              role="img"
-              aria-label={element
-                ? `${shownElement.element} element`
-                : undefined}
-              aria-hidden={element ? undefined : "true"}
-            >
-              <img src={shownElement.iconPath} alt="" />
-            </div>
-          {/if}
         </div>
       </div>
       {#if showNotationStrip}
@@ -431,60 +409,6 @@
     font-size: 1.25rem;
   }
 
-  /* TnD element icon — bottom-right of the canvas, sized in cqi so it scales
-     with the stage (the stage-shell is a container). No circle/backing: the bare
-     glyph sits on the canvas. A fixed square box gives every element the same
-     footprint and placement; per-icon --el-scale normalizes perceived size (the
-     source PNGs differ in aspect + density). Absolute + always-reserved, so
-     no-layout-shift; only opacity/entrance-scale animate. */
-  .element-badge {
-    position: absolute;
-    /* Mirror the bottom-left TKA glyph so the two corners read as a pair. That
-       glyph is a <g translate(50,800)> in GlyphOverlay's 950-unit viewBox — a
-       ~50/950 (5.26%) margin from the left and bottom edges. 6cqi tracks that as
-       the stage scales, with a 14px floor so the tall icons (water/leaf, which
-       fill the box to its bottom edge) never reach the stage's clipped bottom on
-       a small viewport. */
-    right: max(14px, 6cqi);
-    bottom: max(14px, 6cqi);
-    z-index: 3;
-    display: grid;
-    place-items: center;
-    /* ~10.5% of the stage matches the glyph letter's ~100/950 height. */
-    width: clamp(26px, 10cqi, 46px);
-    height: clamp(26px, 10cqi, 46px);
-    opacity: 0;
-    transform: scale(0.9);
-    transition:
-      opacity 280ms ease,
-      transform 280ms ease;
-    pointer-events: none;
-  }
-  .element-badge.visible {
-    opacity: 1;
-    transform: scale(1);
-  }
-  .element-badge img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    /* Per-icon size normalization; centered so placement stays identical. */
-    transform: scale(var(--el-scale, 1));
-    transform-origin: center;
-    /* No backing circle — a dark drop-shadow keeps light glyphs (cloud, sun)
-       legible over the animation. */
-    filter: drop-shadow(0 1px 3px oklch(0 0 0 / 0.6))
-      drop-shadow(0 0 2px oklch(0 0 0 / 0.5));
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .element-badge {
-      transition: none;
-      transform: none;
-    }
-    .element-badge.visible {
-      transform: none;
-    }
-  }
   .demo-load-error button {
     min-height: 44px;
     padding: 0 1rem;

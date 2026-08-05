@@ -5,17 +5,27 @@ import {
   renderWordHeaderToCanvas,
   renderProgressBarToCanvas,
 } from "./canvas-renderer";
-import type { GlyphAsset } from "$lib/shared/animation-engine/services/export-glyph-prerenderer";
+import type {
+  ElementalGlyphAsset,
+  GlyphAsset,
+} from "$lib/shared/animation-engine/services/export-glyph-prerenderer";
 import type { ExportGlyphPrerenderer } from "$lib/shared/animation-engine/services/export-glyph-prerenderer";
 import type { CompositeVideoRenderer } from "$lib/shared/animation-engine/services/composite-video-renderer";
 import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type { LoopReflectionAxis } from "@tka/render-composition";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  MotionType,
+  MotionColor,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { getPathPoints } from "$lib/features/hand-paths/hand-path-builder/services/hand-path-animator";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  containElementalGlyph,
+  getElementalGlyphBox,
+} from "$lib/shared/pictograph/shared/domain/constants/elemental-glyph-layout";
 
 export interface FrameCompositorConfig {
   outputWidth: number;
@@ -27,6 +37,7 @@ export interface FrameCompositorConfig {
   scaleFactor: number;
   fps: number;
   showTkaGlyph: boolean;
+  showElementalGlyph: boolean;
   showStepNumbers: boolean;
   showWordHeader: boolean;
   showProgressBar: boolean;
@@ -49,8 +60,10 @@ export interface FrameCompositorConfig {
 interface CrossfadeState {
   currentCacheKey: string;
   currentGlyph: GlyphAsset | null;
+  currentElementalGlyph: ElementalGlyphAsset | null;
   currentStepNumber: number | null;
   previousGlyph: GlyphAsset | null;
+  previousElementalGlyph: ElementalGlyphAsset | null;
   previousStepNumber: number | null;
   framesSinceTransition: number;
 }
@@ -61,8 +74,10 @@ export class ExportFrameCompositor {
   private crossfade: CrossfadeState = {
     currentCacheKey: "",
     currentGlyph: null,
+    currentElementalGlyph: null,
     currentStepNumber: null,
     previousGlyph: null,
+    previousElementalGlyph: null,
     previousStepNumber: null,
     framesSinceTransition: 0,
   };
@@ -85,12 +100,26 @@ export class ExportFrameCompositor {
     showProgressBar: boolean,
     resolution: number | undefined,
     isCompositeMode: boolean,
-    getExportDimensions: (res: number, ar: number) => { width: number; height: number }
-  ): { sourceWidth: number; sourceHeight: number; outputWidth: number; outputHeight: number; srcHeaderHeight: number; srcProgressBarHeight: number } {
+    getExportDimensions: (
+      res: number,
+      ar: number
+    ) => { width: number; height: number }
+  ): {
+    sourceWidth: number;
+    sourceHeight: number;
+    outputWidth: number;
+    outputHeight: number;
+    srcHeaderHeight: number;
+    srcProgressBarHeight: number;
+  } {
     const srcHeaderHeight = showWordHeader ? getHeaderHeight(canvas.width) : 0;
-    const srcProgressBarHeight = showProgressBar ? getProgressBarHeight(canvas.width) : 0;
+    const srcProgressBarHeight = showProgressBar
+      ? getProgressBarHeight(canvas.width)
+      : 0;
     const sourceWidth = Math.round(canvas.width);
-    const sourceHeight = Math.round(canvas.width + srcHeaderHeight + srcProgressBarHeight);
+    const sourceHeight = Math.round(
+      canvas.width + srcHeaderHeight + srcProgressBarHeight
+    );
 
     let outputWidth: number;
     let outputHeight: number;
@@ -105,7 +134,14 @@ export class ExportFrameCompositor {
       outputHeight = sourceHeight;
     }
 
-    return { sourceWidth, sourceHeight, outputWidth, outputHeight, srcHeaderHeight, srcProgressBarHeight };
+    return {
+      sourceWidth,
+      sourceHeight,
+      outputWidth,
+      outputHeight,
+      srcHeaderHeight,
+      srcProgressBarHeight,
+    };
   }
 
   renderOverlays(
@@ -124,6 +160,7 @@ export class ExportFrameCompositor {
       outputCanvasSize,
       isCompositeMode,
       showTkaGlyph,
+      showElementalGlyph,
       showStepNumbers,
       showWordHeader,
       showProgressBar,
@@ -151,6 +188,8 @@ export class ExportFrameCompositor {
 
     if (transitionDetected) {
       this.crossfade.previousGlyph = this.crossfade.currentGlyph;
+      this.crossfade.previousElementalGlyph =
+        this.crossfade.currentElementalGlyph;
       this.crossfade.previousStepNumber = this.crossfade.currentStepNumber;
       this.crossfade.currentCacheKey = cacheKey;
       this.crossfade.currentStepNumber = stepNumber;
@@ -161,11 +200,18 @@ export class ExportFrameCompositor {
           : null;
       }
 
+      if (showElementalGlyph) {
+        this.crossfade.currentElementalGlyph = isInStartPosition
+          ? null
+          : this.glyphPrerenderer.getElementalGlyphForStep(clampedStepIndex);
+      }
+
       this.crossfade.framesSinceTransition = 0;
     }
 
     // Calculate crossfade opacities
-    const inCrossfade = this.crossfade.framesSinceTransition < this.crossfadeDurationFrames;
+    const inCrossfade =
+      this.crossfade.framesSinceTransition < this.crossfadeDurationFrames;
     const fadeProgress = inCrossfade
       ? this.crossfade.framesSinceTransition / this.crossfadeDurationFrames
       : 1;
@@ -180,23 +226,53 @@ export class ExportFrameCompositor {
 
     // Render TKA glyph
     if (showTkaGlyph) {
-      if (inCrossfade && this.crossfade.previousGlyph?.image && fadeOutOpacity > 0) {
-        this.drawPrerenderedGlyph(offscreenCtx, actualCanvasSize, this.crossfade.previousGlyph, fadeOutOpacity);
+      if (
+        inCrossfade &&
+        this.crossfade.previousGlyph?.image &&
+        fadeOutOpacity > 0
+      ) {
+        this.drawPrerenderedGlyph(
+          offscreenCtx,
+          actualCanvasSize,
+          this.crossfade.previousGlyph,
+          fadeOutOpacity
+        );
       }
       if (this.crossfade.currentGlyph?.image) {
         const opacity = inCrossfade ? fadeInOpacity : 1;
-        this.drawPrerenderedGlyph(offscreenCtx, actualCanvasSize, this.crossfade.currentGlyph, opacity);
+        this.drawPrerenderedGlyph(
+          offscreenCtx,
+          actualCanvasSize,
+          this.crossfade.currentGlyph,
+          opacity
+        );
       }
     }
 
     // Render beat numbers
     if (showStepNumbers) {
-      if (inCrossfade && this.crossfade.previousStepNumber !== null && fadeOutOpacity > 0) {
-        renderStepNumberToCanvas(offscreenCtx, actualCanvasSize, this.crossfade.previousStepNumber, fadeOutOpacity, isDarkMode);
+      if (
+        inCrossfade &&
+        this.crossfade.previousStepNumber !== null &&
+        fadeOutOpacity > 0
+      ) {
+        renderStepNumberToCanvas(
+          offscreenCtx,
+          actualCanvasSize,
+          this.crossfade.previousStepNumber,
+          fadeOutOpacity,
+          isDarkMode
+        );
       }
       if (this.crossfade.currentStepNumber !== null) {
         const opacity = inCrossfade ? fadeInOpacity : 1;
-        renderStepNumberToCanvas(offscreenCtx, actualCanvasSize, this.crossfade.currentStepNumber, opacity, isDarkMode);
+        renderStepNumberToCanvas(
+          offscreenCtx,
+          actualCanvasSize,
+          this.crossfade.currentStepNumber,
+          opacity,
+          isDarkMode
+        );
       }
     }
 
@@ -210,6 +286,29 @@ export class ExportFrameCompositor {
     // path lines so it shares the canvas-square origin.
     if (this.config.frameOverlayDraw) {
       this.config.frameOverlayDraw(offscreenCtx, actualCanvasSize);
+    }
+
+    if (showElementalGlyph) {
+      if (
+        inCrossfade &&
+        this.crossfade.previousElementalGlyph &&
+        fadeOutOpacity > 0
+      ) {
+        this.drawElementalGlyph(
+          offscreenCtx,
+          actualCanvasSize,
+          this.crossfade.previousElementalGlyph,
+          fadeOutOpacity
+        );
+      }
+      if (this.crossfade.currentElementalGlyph) {
+        this.drawElementalGlyph(
+          offscreenCtx,
+          actualCanvasSize,
+          this.crossfade.currentElementalGlyph,
+          inCrossfade ? fadeInOpacity : 1
+        );
+      }
     }
 
     // Restore context
@@ -241,8 +340,16 @@ export class ExportFrameCompositor {
         ? 0
         : isInEndHold
           ? steps.length
-          : (playbackPosition - 1);
-      renderProgressBarToCanvas(offscreenCtx, actualCanvasSize, progressBarY, steps.length, progressBeat, stepDurations, isDarkMode);
+          : playbackPosition - 1;
+      renderProgressBarToCanvas(
+        offscreenCtx,
+        actualCanvasSize,
+        progressBarY,
+        steps.length,
+        progressBeat,
+        stepDurations,
+        isDarkMode
+      );
     }
 
     this.crossfade.framesSinceTransition++;
@@ -259,7 +366,11 @@ export class ExportFrameCompositor {
     const { headerHeight, outputCanvasSize } = this.config;
 
     if (isCompositeMode) {
-      this.compositeRenderer.renderCompositeFrame(canvas, compositeStepIndex, offscreenCanvas);
+      this.compositeRenderer.renderCompositeFrame(
+        canvas,
+        compositeStepIndex,
+        offscreenCanvas
+      );
     } else {
       // Fill OPAQUE BLACK, not transparent. The encoder builds a VideoFrame as
       // RGBA and H.264/AV1 drop the alpha channel — so any semi-transparent
@@ -268,29 +379,38 @@ export class ExportFrameCompositor {
       // value shown on the live canvas. Pre-flattening over black makes the
       // captured pixels opaque and correctly blended, matching the preview.
       offscreenCtx.fillStyle = "#000";
-      offscreenCtx.fillRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+      offscreenCtx.fillRect(
+        0,
+        0,
+        offscreenCanvas.width,
+        offscreenCanvas.height
+      );
       const canvasY = headerHeight > 0 ? headerHeight : 0;
 
       const container = canvas.parentElement;
       const overlayCanvases = container
         ? Array.from(container.querySelectorAll("canvas")).filter(
             (overlay) =>
-              overlay !== canvas &&
-              overlay.width > 0 &&
-              overlay.height > 0,
+              overlay !== canvas && overlay.width > 0 && overlay.height > 0
           )
         : [];
       const mandalaUnderlays = overlayCanvases.filter(
-        (overlay) => overlay.getAttribute("data-animation-layer") === "mandala",
+        (overlay) => overlay.getAttribute("data-animation-layer") === "mandala"
       );
       const foregroundOverlays = overlayCanvases.filter(
-        (overlay) => overlay.getAttribute("data-animation-layer") !== "mandala",
+        (overlay) => overlay.getAttribute("data-animation-layer") !== "mandala"
       );
       const drawLayer = (layer: HTMLCanvasElement) => {
         offscreenCtx.drawImage(
           layer,
-          0, 0, layer.width, layer.height,
-          0, canvasY, outputCanvasSize, outputCanvasSize
+          0,
+          0,
+          layer.width,
+          layer.height,
+          0,
+          canvasY,
+          outputCanvasSize,
+          outputCanvasSize
         );
       };
 
@@ -338,7 +458,12 @@ export class ExportFrameCompositor {
       if (motion.motionType === MotionType.STATIC) return;
 
       const pathType = this.resolvePathType(motion);
-      const points = getPathPoints(motion.startLocation, motion.endLocation, 20, pathType);
+      const points = getPathPoints(
+        motion.startLocation,
+        motion.endLocation,
+        20,
+        pathType
+      );
       if (points.length < 2) return;
 
       ctx.save();
@@ -360,8 +485,10 @@ export class ExportFrameCompositor {
     const blueColor = getMotionColor(MotionColor.BLUE, "dark");
     const redColor = getMotionColor(MotionColor.RED, "dark");
 
-    if (this.config.showBluePathLines) drawMotionPath(step.motions?.blue, blueColor);
-    if (this.config.showRedPathLines) drawMotionPath(step.motions?.red, redColor);
+    if (this.config.showBluePathLines)
+      drawMotionPath(step.motions?.blue, blueColor);
+    if (this.config.showRedPathLines)
+      drawMotionPath(step.motions?.red, redColor);
   }
 
   private drawPrerenderedGlyph(
@@ -379,6 +506,25 @@ export class ExportFrameCompositor {
     ctx.save();
     ctx.globalAlpha = opacity;
     ctx.drawImage(glyph.image, x, y, scaledWidth, scaledHeight);
+    ctx.restore();
+  }
+
+  private drawElementalGlyph(
+    ctx: CanvasRenderingContext2D,
+    canvasSize: number,
+    glyph: ElementalGlyphAsset,
+    opacity: number
+  ): void {
+    const box = containElementalGlyph(
+      getElementalGlyphBox(canvasSize),
+      glyph.sourceWidth,
+      glyph.sourceHeight
+    );
+    if (!box) return;
+
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.drawImage(glyph.image, box.x, box.y, box.width, box.height);
     ctx.restore();
   }
 }

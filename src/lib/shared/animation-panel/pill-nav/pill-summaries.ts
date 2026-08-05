@@ -4,6 +4,7 @@ export function computePropsSummary(propLabel: string): string {
 
 export interface DisplayFlags {
   tkaGlyph: boolean;
+  elementalGlyph: boolean;
   stepNumbers: boolean;
   props: boolean;
   wordHeader: boolean;

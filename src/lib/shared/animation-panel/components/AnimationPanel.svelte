@@ -318,6 +318,7 @@
     return computeDisplaySummary(
       {
         tkaGlyph: s.tkaGlyph,
+        elementalGlyph: s.elementalGlyph,
         stepNumbers: s.stepNumbers,
         props: s.props,
         wordHeader: s.wordHeader,

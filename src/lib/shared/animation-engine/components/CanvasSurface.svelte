@@ -92,6 +92,7 @@ captureEffectDiagnostics to the context menu.
     beatIndicators = true,
     darkModeEnabled = false,
     effectiveTkaGlyphVisible = false,
+    elementalGlyphVisible = false,
     effectiveBeatNumbersVisible = false,
     positionGlyphVisible = false,
     bluePathLinesVisible = false,
@@ -145,6 +146,7 @@ captureEffectDiagnostics to the context menu.
     beatIndicators?: boolean;
     darkModeEnabled?: boolean;
     effectiveTkaGlyphVisible?: boolean;
+    elementalGlyphVisible?: boolean;
     effectiveBeatNumbersVisible?: boolean;
     /** Show the α/β/γ start→end position indicator (guide hand-path exploration). */
     positionGlyphVisible?: boolean;
@@ -446,6 +448,7 @@ captureEffectDiagnostics to the context menu.
       {displayedMusicalPosition}
       {stepData}
       tkaGlyphVisible={effectiveTkaGlyphVisible}
+      {elementalGlyphVisible}
       stepNumbersVisible={effectiveBeatNumbersVisible}
       {positionGlyphVisible}
       darkMode={darkModeEnabled}

@@ -403,6 +403,7 @@ Last audit: 2025-12-27
 
   // Initialize visibility state via $effect.pre to avoid state_referenced_locally on visibilityManager
   let tkaGlyphVisible = $state(false);
+  let elementalGlyphVisible = $state(false);
   let stepNumbersVisible = $state(false);
   let globalDarkMode = $state(false);
   let wordHeaderVisible = $state(false);
@@ -411,6 +412,7 @@ Last audit: 2025-12-27
   let redPathLinesVisible = $state(false);
   $effect.pre(() => {
     tkaGlyphVisible = visibilityManager.getVisibility("tkaGlyph");
+    elementalGlyphVisible = visibilityManager.getVisibility("elementalGlyph");
     stepNumbersVisible = visibilityManager.getVisibility("stepNumbers");
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
@@ -430,6 +432,7 @@ Last audit: 2025-12-27
 
   function handleVisibilityChange() {
     tkaGlyphVisible = visibilityManager.getVisibility("tkaGlyph");
+    elementalGlyphVisible = visibilityManager.getVisibility("elementalGlyph");
     stepNumbersVisible = visibilityManager.getVisibility("stepNumbers");
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
@@ -590,6 +593,7 @@ Last audit: 2025-12-27
       {positionGlyphVisible}
       {darkModeEnabled}
       {effectiveTkaGlyphVisible}
+      {elementalGlyphVisible}
       {effectiveBeatNumbersVisible}
       bluePathLinesVisible={effectiveBluePathLinesVisible}
       redPathLinesVisible={effectiveRedPathLinesVisible}

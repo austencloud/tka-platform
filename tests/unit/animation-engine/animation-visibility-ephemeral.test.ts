@@ -59,6 +59,35 @@ describe("AnimationVisibilityStateManager (ephemeral)", () => {
 
     expect(vm.getEffortPreset()).toBe("linear");
     expect(vm.getGridMode()).toBe("8point");
+    expect(vm.getVisibility("elementalGlyph")).toBe(false);
+  });
+
+  it("keeps the elemental glyph toggle isolated and observable", () => {
+    const globalVm = new AnimationVisibilityStateManager();
+    const ephemeralVm = new AnimationVisibilityStateManager({ ephemeral: true });
+    let notified = 0;
+    ephemeralVm.registerObserver(() => notified++);
+
+    ephemeralVm.setVisibility("elementalGlyph", true);
+
+    expect(ephemeralVm.getVisibility("elementalGlyph")).toBe(true);
+    expect(globalVm.getVisibility("elementalGlyph")).toBe(false);
+    expect(notified).toBe(1);
+  });
+
+  it("migrates older persisted settings with the elemental glyph off", () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ gridMode: "8point", props: true }),
+    );
+
+    const vm = new AnimationVisibilityStateManager();
+
+    expect(vm.getVisibility("elementalGlyph")).toBe(false);
+    vm.setVisibility("elementalGlyph", true);
+    expect(
+      JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}").elementalGlyph,
+    ).toBe(true);
   });
 
   it("keeps ephemeral and persistent instances fully independent", () => {

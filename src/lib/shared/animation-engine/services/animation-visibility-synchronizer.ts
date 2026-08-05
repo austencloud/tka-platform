@@ -18,6 +18,7 @@ export interface AnimationVisibilityState {
   props: boolean;
   trails: boolean;
   tkaGlyph: boolean; // TKA Glyph includes turn numbers
+  elementalGlyph: boolean;
   /** Dark Mode: dark background, inverted grid, white text/outlines */
   darkMode: boolean;
   /** Word header overlay showing sequence name */
@@ -57,6 +58,7 @@ export class AnimationVisibilitySynchronizer {
       props: this.manager.getVisibility("props"),
       trails: trailsActive,
       tkaGlyph: this.manager.getVisibility("tkaGlyph"), // TKA Glyph includes turn numbers
+      elementalGlyph: this.manager.getVisibility("elementalGlyph"),
       darkMode: this.manager.isDarkMode(),
       wordHeader: this.manager.getVisibility("wordHeader"),
       mandala: this.manager.getVisibility("mandala"),

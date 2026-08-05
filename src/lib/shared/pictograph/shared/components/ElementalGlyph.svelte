@@ -12,6 +12,10 @@ embedded within the elemental shape. Only displays for Type1 letters.
     type Letter,
     getLetterType,
   } from "../../../foundation/domain/models/letter";
+  import {
+    ELEMENTAL_GLYPH_VIEWBOX_SIZE,
+    getElementalGlyphBox,
+  } from "../domain/constants/elemental-glyph-layout";
 
   let {
     elementalType = null,
@@ -66,39 +70,36 @@ embedded within the elemental shape. Only displays for Type1 letters.
     return getElementImagePath(elementalType);
   });
 
-  // Positioning: bottom-right corner (replacing both old elemental top-right and VTG bottom-right)
-  const PICTOGRAPH_SIZE = 950;
-  const PADDING = 40;
-
-  // Fused glyphs are roughly square (~200x230px source), scaled to fit pictograph
-  const GLYPH_WIDTH = 120;
-  const GLYPH_HEIGHT = 140;
-
-  // Position in bottom-right corner (with x-offset for expanded cells)
-  const xPosition = $derived(PICTOGRAPH_SIZE - GLYPH_WIDTH - PADDING + xOffset);
-  const yPosition = PICTOGRAPH_SIZE - GLYPH_HEIGHT - PADDING;
+  // Every live and exported surface shares this slot. Keeping the geometry in
+  // one pure module prevents a landing or video treatment from shrinking away
+  // from the pictograph users already recognize.
+  const glyphBox = $derived(
+    getElementalGlyphBox(ELEMENTAL_GLYPH_VIEWBOX_SIZE, xOffset),
+  );
 
   // Center point for scale animation
-  const centerX = $derived(xPosition + GLYPH_WIDTH / 2);
-  const centerY = yPosition + GLYPH_HEIGHT / 2;
+  const centerX = $derived(glyphBox.x + glyphBox.width / 2);
+  const centerY = $derived(glyphBox.y + glyphBox.height / 2);
 
   // ============================================================================
   // ELEMENTAL TYPE CHANGE ANIMATION
   // ============================================================================
   // Track when elemental type changes to trigger a subtle scale-pulse animation.
 
-  let prevElementalType = $state<ElementalType | null | undefined>(undefined);
+  let prevElementalType: ElementalType | null | undefined;
   let isAnimating = $state(false);
 
   $effect(() => {
+    const previous = prevElementalType;
+    prevElementalType = elementalType;
+
     // Skip initial mount (prevElementalType is undefined)
     // Animate when type changes to a new value
-    if (prevElementalType !== undefined && elementalType !== prevElementalType && elementalType !== null) {
+    if (previous !== undefined && elementalType !== previous && elementalType !== null) {
       isAnimating = true;
       const timeout = setTimeout(() => { isAnimating = false; }, 180);
       return () => clearTimeout(timeout);
     }
-    prevElementalType = elementalType;
     return undefined;
   });
 </script>
@@ -124,10 +125,11 @@ embedded within the elemental shape. Only displays for Type1 letters.
       class="elemental-image"
       class:animating={isAnimating}
       href={imagePath}
-      x={xPosition}
-      y={yPosition}
-      width={GLYPH_WIDTH}
-      height={GLYPH_HEIGHT}
+      x={glyphBox.x}
+      y={glyphBox.y}
+      width={glyphBox.width}
+      height={glyphBox.height}
+      preserveAspectRatio="xMidYMid meet"
       style="transform-origin: {centerX}px {centerY}px"
     />
   </g>

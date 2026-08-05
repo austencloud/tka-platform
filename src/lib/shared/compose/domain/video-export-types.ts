@@ -113,6 +113,7 @@ export interface VideoExportOrchestratorOptions {
    */
   overlayOverrides?: Partial<{
     tkaGlyph: boolean;
+    elementalGlyph: boolean;
     stepNumbers: boolean;
     wordHeader: boolean;
     progressBar: boolean;

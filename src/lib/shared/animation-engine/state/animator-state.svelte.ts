@@ -91,6 +91,7 @@ export function createAnimatorState(): AnimatorState {
       props: true,
       trails: true,
       tkaGlyph: true,
+      elementalGlyph: false,
       darkMode: false,
       wordHeader: true,
       mandala: false,

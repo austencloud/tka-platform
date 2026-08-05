@@ -238,6 +238,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
         tunnelSpectrum,
         overlayOverrides: {
           tkaGlyph: false,
+          elementalGlyph: false,
           stepNumbers: false,
           wordHeader: false,
           progressBar: false,

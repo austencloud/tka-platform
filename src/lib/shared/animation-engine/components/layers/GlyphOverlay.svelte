@@ -22,7 +22,11 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   import TurnsColumn from "$lib/shared/pictograph/tka-glyph/components/TurnsColumn.svelte";
   import StepNumber from "$lib/shared/pictograph/shared/components/StepNumber.svelte";
   import PositionGlyph from "$lib/shared/pictograph/shared/components/PositionGlyph.svelte";
+  import ElementalGlyph from "$lib/shared/pictograph/shared/components/ElementalGlyph.svelte";
   import { getLetterDimensions } from "$lib/shared/pictograph/tka-glyph/components/TKAGlyph.svelte";
+  import { deriveTnDFromPictograph } from "$lib/shared/pictograph/shared/domain/utils/tnd-deriver";
+  import { DURATION } from "$lib/shared/transitions/transitions";
+  import { motionDuration } from "$lib/shared/transitions/motion";
 
   let {
     // Current glyph state
@@ -35,6 +39,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     stepData = null,
     // Visibility
     tkaGlyphVisible = true,
+    elementalGlyphVisible = false,
     stepNumbersVisible = true,
     // Start→end position indicator (α/β/γ) centered at the top. Educational
     // overlay for the guide's hand-path exploration; off elsewhere.
@@ -53,6 +58,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     displayedMusicalPosition?: string | null;
     stepData?: PictographData | null;
     tkaGlyphVisible?: boolean;
+    elementalGlyphVisible?: boolean;
     stepNumbersVisible?: boolean;
     positionGlyphVisible?: boolean;
     darkMode?: boolean;
@@ -61,7 +67,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   } = $props();
 
   // Cross-fade duration in ms
-  const FADE_DURATION = 200;
+  const FADE_DURATION = DURATION.normal;
 
   // Track letter dimensions with reactive state that updates when cache is populated
   // We use $state + $effect because $derived only evaluates once per change,
@@ -101,14 +107,25 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
 
   // Create a composite key for glyph changes to trigger cross-fade
   // Includes letter and turns tuple so changing either triggers a transition
-  const glyphKey = $derived(
-    letter ? `${letter}-${displayedTurnsTuple}` : null
+  const glyphKey = $derived(letter ? `${letter}-${displayedTurnsTuple}` : null);
+
+  const elementalInfo = $derived(deriveTnDFromPictograph(stepData));
+  const elementalLetter = $derived(
+    stepData?.letter ?? displayedLetter ?? letter
   );
 
   // Create a key for step number changes
   const stepKey = $derived(
-    isAtStartPosition ? "start" : isAtEndPosition ? "end" : displayedStepNumber?.toString() ?? null
+    isAtStartPosition
+      ? "start"
+      : isAtEndPosition
+        ? "end"
+        : (displayedStepNumber?.toString() ?? null)
   );
+
+  // The artwork itself is keyed by element. Consecutive steps that share the
+  // same symbol stay visually steady; an actual symbol change crossfades once.
+  const elementalKey = $derived(elementalInfo.elementalType);
 
   // Current step's start/end grid positions (α/β/γ) for the PositionGlyph.
   // StepData carries both; StartPositionData/PictographData without them just
@@ -126,7 +143,6 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
       ? `${stepStartPosition}->${stepEndPosition}`
       : null
   );
-
 </script>
 
 <div class="glyph-overlay" class:dark-mode={darkMode} data-controlled="true">
@@ -141,8 +157,14 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
       {#key glyphKey}
         <g
           class="glyph-group"
-          in:fade={{ duration: FADE_DURATION, easing: cubicOut }}
-          out:fade={{ duration: FADE_DURATION, easing: cubicOut }}
+          in:fade={{
+            duration: motionDuration(FADE_DURATION),
+            easing: cubicOut,
+          }}
+          out:fade={{
+            duration: motionDuration(FADE_DURATION),
+            easing: cubicOut,
+          }}
         >
           <TKAGlyph
             {letter}
@@ -164,6 +186,31 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
             visible={true}
             {darkMode}
             instantAppear={true}
+          />
+        </g>
+      {/key}
+    {/if}
+
+    <!-- Keep the outgoing symbol mounted until its outro completes. Because
+         Crossfade renders an HTML div, the keyed SVG group is the valid SVG
+         equivalent used by the other glyphs in this overlay. -->
+    {#if elementalGlyphVisible && elementalInfo.elementalType && elementalLetter}
+      {#key elementalKey}
+        <g
+          class="elemental-glyph-transition"
+          in:fade|global={{
+            duration: motionDuration(FADE_DURATION),
+            easing: cubicOut,
+          }}
+          out:fade|global={{
+            duration: motionDuration(FADE_DURATION),
+            easing: cubicOut,
+          }}
+        >
+          <ElementalGlyph
+            elementalType={elementalInfo.elementalType}
+            letter={elementalLetter}
+            visible={true}
           />
         </g>
       {/key}
@@ -195,18 +242,28 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
       {#key stepKey}
         <g
           class="beat-number-group"
-          in:fade={{ duration: FADE_DURATION, delay: FADE_DURATION, easing: cubicOut }}
-          out:fade={{ duration: FADE_DURATION, easing: cubicOut }}
+          in:fade={{
+            duration: motionDuration(FADE_DURATION),
+            delay: motionDuration(FADE_DURATION),
+            easing: cubicOut,
+          }}
+          out:fade={{
+            duration: motionDuration(FADE_DURATION),
+            easing: cubicOut,
+          }}
         >
           <StepNumber
-            stepNumber={isAtStartPosition ? 0 : isAtEndPosition ? -2 : displayedStepNumber}
+            stepNumber={isAtStartPosition
+              ? 0
+              : isAtEndPosition
+                ? -2
+                : displayedStepNumber}
             {darkMode}
           />
         </g>
       {/key}
     {/if}
-
-    </svg>
+  </svg>
 </div>
 
 <style>
@@ -246,9 +303,15 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     animation: step-number-pulse 400ms ease-out;
   }
   @keyframes step-number-pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(0.91); }
-    100% { transform: scale(1); }
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.91);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
 
   /* Dark-mode glyph recoloring is handled INSIDE TKAGlyph by swapping the
@@ -260,6 +323,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   /* Accessibility: reduced motion users get instant transitions */
   @media (prefers-reduced-motion: reduce) {
     .glyph-group,
+    .elemental-glyph-transition,
     .beat-number-group {
       transition: none !important;
       animation: none !important;

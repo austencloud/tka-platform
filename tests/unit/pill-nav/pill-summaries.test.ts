@@ -9,6 +9,7 @@ import {
 
 const allOff: DisplayFlags = {
   tkaGlyph: false,
+  elementalGlyph: false,
   stepNumbers: false,
   props: false,
   wordHeader: false,
@@ -18,6 +19,7 @@ const allOff: DisplayFlags = {
 
 const allOn: DisplayFlags = {
   tkaGlyph: true,
+  elementalGlyph: true,
   stepNumbers: true,
   props: true,
   wordHeader: true,
@@ -26,33 +28,33 @@ const allOn: DisplayFlags = {
 };
 
 describe("computeDisplaySummary", () => {
-  it("reports 0 / 6 visible · arc when everything is off and path is arc", () => {
-    expect(computeDisplaySummary(allOff, "arc")).toBe("0 / 6 visible · arc");
+  it("reports 0 / 7 visible · arc when everything is off and path is arc", () => {
+    expect(computeDisplaySummary(allOff, "arc")).toBe("0 / 7 visible · arc");
   });
 
-  it("reports 6 / 6 visible · arc when every flag including grid is on", () => {
-    expect(computeDisplaySummary(allOn, "arc")).toBe("6 / 6 visible · arc");
+  it("reports 7 / 7 visible · arc when every flag including grid is on", () => {
+    expect(computeDisplaySummary(allOn, "arc")).toBe("7 / 7 visible · arc");
   });
 
   it("counts grid as a regular flag", () => {
-    expect(computeDisplaySummary({ ...allOff, grid: true }, "arc")).toBe("1 / 6 visible · arc");
+    expect(computeDisplaySummary({ ...allOff, grid: true }, "arc")).toBe("1 / 7 visible · arc");
   });
 
   it("reports linear path explicitly without affecting the count", () => {
-    expect(computeDisplaySummary(allOff, "linear")).toBe("0 / 6 visible · linear");
-    expect(computeDisplaySummary(allOn, "linear")).toBe("6 / 6 visible · linear");
+    expect(computeDisplaySummary(allOff, "linear")).toBe("0 / 7 visible · linear");
+    expect(computeDisplaySummary(allOn, "linear")).toBe("7 / 7 visible · linear");
   });
 
   it("counts each visibility flag independently", () => {
     expect(
       computeDisplaySummary({ ...allOff, tkaGlyph: true, props: true }, "arc")
-    ).toBe("2 / 6 visible · arc");
+    ).toBe("2 / 7 visible · arc");
   });
 
   it("denominator follows DisplayFlags arity (regression guard)", () => {
     // If someone adds a field to DisplayFlags without updating allOff, this
-    // test will fail because Object.values(...).length will jump to 7.
-    expect(Object.keys(allOff).length).toBe(6);
+    // test will fail because Object.values(...).length will jump to 8.
+    expect(Object.keys(allOff).length).toBe(7);
   });
 });
 

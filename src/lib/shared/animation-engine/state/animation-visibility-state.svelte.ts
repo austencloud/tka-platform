@@ -50,6 +50,7 @@ interface AnimationVisibilitySettings {
 
   // Shared with pictograph visibility (can sync)
   tkaGlyph: boolean; // TKA Glyph includes turn numbers
+  elementalGlyph: boolean; // Elemental / VTG classification glyph at bottom-right
   reversalIndicators: boolean;
   effortPreset: EffortId;
   /** Path shape for shift interpolation: "arc" (default), "linear", or "concave" */
@@ -138,6 +139,7 @@ export class AnimationVisibilityStateManager {
 
       // Shared elements - defaults optimized for animation viewing
       tkaGlyph: true, // TKA Glyph includes turn numbers
+      elementalGlyph: false,
       reversalIndicators: false, // Less clutter during animation
       effortPreset: "linear",
       pathShape: "arc",

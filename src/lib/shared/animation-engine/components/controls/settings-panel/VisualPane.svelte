@@ -19,7 +19,10 @@
     TrailMode,
     TrackingMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import { isBilateralProp, getBilateralEndLabels } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
+  import {
+    isBilateralProp,
+    getBilateralEndLabels,
+  } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   let {
@@ -47,9 +50,11 @@
   let updateCounter = $state(0);
   function isTrailsActive(): boolean {
     const tipMap = visibilityManager.effectsConfigState?.tipEffectMap ?? {};
-    return Object.values(tipMap).some(a => a.effect === "trails");
+    return Object.values(tipMap).some((a) => a.effect === "trails");
   }
-  let currentTrailStyle = $state<TrailVisibility>(isTrailsActive() ? "on" : "off");
+  let currentTrailStyle = $state<TrailVisibility>(
+    isTrailsActive() ? "on" : "off"
+  );
 
   onMount(() => {
     const handleChange = () => {
@@ -62,8 +67,10 @@
 
   // Both ends toggle for bilateral props
   const showBothEndsToggle = $derived.by(() => {
-    const blueIsBilateral = effectiveBluePropType != null && isBilateralProp(effectiveBluePropType);
-    const redIsBilateral = effectiveRedPropType != null && isBilateralProp(effectiveRedPropType);
+    const blueIsBilateral =
+      effectiveBluePropType != null && isBilateralProp(effectiveBluePropType);
+    const redIsBilateral =
+      effectiveRedPropType != null && isBilateralProp(effectiveRedPropType);
     return (blueIsBilateral || redIsBilateral) && currentTrailStyle !== "off";
   });
 
@@ -106,6 +113,10 @@
     updateCounter;
     return visibilityManager.getVisibility("tkaGlyph");
   }
+  function getElementalGlyph() {
+    updateCounter;
+    return visibilityManager.getVisibility("elementalGlyph");
+  }
   function getWordHeader() {
     updateCounter;
     return visibilityManager.getVisibility("wordHeader");
@@ -135,6 +146,11 @@
   function toggleTkaGlyph() {
     const current = visibilityManager.getVisibility("tkaGlyph");
     visibilityManager.setVisibility("tkaGlyph", !current);
+    updateCounter++;
+  }
+  function toggleElementalGlyph() {
+    const current = visibilityManager.getVisibility("elementalGlyph");
+    visibilityManager.setVisibility("elementalGlyph", !current);
     updateCounter++;
   }
   function toggleWordHeader() {
@@ -213,6 +229,19 @@
       aria-pressed={getTkaGlyph()}
     >
       <span>Glyph</span>
+    </button>
+    <button
+      class="element-btn"
+      class:active={getElementalGlyph()}
+      onclick={toggleElementalGlyph}
+      type="button"
+      title="Elemental classification glyph"
+      aria-label={getElementalGlyph()
+        ? "Hide elemental glyph"
+        : "Show elemental glyph"}
+      aria-pressed={getElementalGlyph()}
+    >
+      <span>Element</span>
     </button>
     <button
       class="element-btn"
@@ -326,12 +355,12 @@
 
   /* Element Grid */
   .element-grid {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
   }
 
   .element-btn {
-    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
