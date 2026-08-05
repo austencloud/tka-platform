@@ -15,6 +15,7 @@ import {
   createEarthCanyonTerrain,
   earthCanyonStationOffsets,
   inDisc,
+  BOSS_RADIUS,
   BOSS_Y,
   DOOR_Y,
   FLOOR_DISC_Y,
@@ -22,6 +23,7 @@ import {
   PARAPET_HEIGHT,
   RIM_Y,
   SLAB_LIP_HEIGHT,
+  SLAB_NOSE_OUTER_Y,
   SLAB_Y,
   VOID_RADIUS,
 } from "$lib/features/museum/data/earth-canyon-layout";
@@ -367,6 +369,125 @@ describe("earth canyon terrain", () => {
         layout.canyonShelves[i - 1]!.maxZ
       );
     }
+  });
+
+  it("puts no rock fill inside the chamber — nothing stands on the rim", () => {
+    // Rock fill renders from below the floor disc up to the cave roof, so a
+    // single stray block on the rim is a 12 m wall. Three of them once stood
+    // across the slab approach, because the slab and exit rects are derived
+    // from metre offsets that do not land on tile-cell boundaries and the old
+    // whole-cell carve never removed them. Rock is now the exact tile-centre
+    // complement of the floor, so the chamber must contain none of it.
+    const inChamber = layout.rockFill.filter(
+      (rect) =>
+        rect.maxX > layout.chamber.minX + 0.01 &&
+        rect.maxZ > layout.chamber.minZ + 0.01
+    );
+    expect(
+      inChamber.map((r) => `x[${r.minX},${r.maxX}] z[${r.minZ},${r.maxZ}]`)
+    ).toEqual([]);
+  });
+
+  it("leaves the sightline from the slab apron to every boss unobstructed", () => {
+    // The room's whole thesis is the overhead read. Walk the eye→boss segment
+    // in 0.1 m steps and assert no rendered rock, wall or parapet box contains
+    // any point on it: this is the test that would have caught the wall the
+    // browser walk found.
+    const eye = {
+      x: (layout.slabApron.minX + layout.slabApron.maxX) / 2,
+      y: SLAB_Y + EYE_ABOVE_FLOOR,
+      z: (layout.slabApron.minZ + layout.slabApron.maxZ) / 2,
+    };
+    const occluders: { id: string; rect: WorldRect; minY: number; maxY: number }[] =
+      [
+        ...layout.rockFill.map((rect, i) => ({
+          id: `rock-${i}`,
+          rect,
+          minY: FLOOR_DISC_Y - 1.0,
+          maxY: 3.6,
+        })),
+        ...layout.wallRects.map((wall) => ({
+          id: wall.id,
+          rect: wall.rect,
+          minY: wall.baseY,
+          maxY: wall.topY,
+        })),
+        {
+          id: "parapet-run",
+          rect: layout.parapet,
+          minY: RIM_Y,
+          maxY: RIM_Y + PARAPET_HEIGHT,
+        },
+        {
+          id: "slab-lip",
+          rect: {
+            minX: layout.slabApron.minX,
+            maxX: layout.slabApron.maxX,
+            minZ: layout.slabApron.minZ - 0.14,
+            maxZ: layout.slabApron.minZ + 0.14,
+          },
+          minY: SLAB_Y,
+          maxY: SLAB_Y + SLAB_LIP_HEIGHT,
+        },
+      ];
+
+    /**
+     * The nose is a tilted fracture plane, so it occludes anything BELOW its
+     * surface at that z. A level nose put 2 m of stone straight across this
+     * line, which is the defect this assertion exists to hold shut.
+     */
+    const noseTopAt = (z: number): number | null => {
+      if (z < layout.slabNose.minZ || z > layout.slabNose.maxZ) return null;
+      const t =
+        (z - layout.slabNose.minZ) /
+        (layout.slabNose.maxZ - layout.slabNose.minZ);
+      return SLAB_NOSE_OUTER_Y + (SLAB_Y - SLAB_NOSE_OUTER_Y) * t;
+    };
+
+    const blockers: string[] = [];
+    layout.stations.forEach((station, s) => {
+      const target = { x: station.x, y: BOSS_Y + 1.35, z: station.z };
+      const span = Math.hypot(target.x - eye.x, target.y - eye.y, target.z - eye.z);
+      const steps = Math.ceil(span / 0.1);
+      for (let i = 1; i < steps; i++) {
+        const t = i / steps;
+        const px = eye.x + (target.x - eye.x) * t;
+        const py = eye.y + (target.y - eye.y) * t;
+        const pz = eye.z + (target.z - eye.z) * t;
+        for (const o of occluders) {
+          if (py < o.minY || py > o.maxY) continue;
+          if (!inRectClosed(o.rect, px, pz)) continue;
+          blockers.push(
+            `boss ${s} blocked by ${o.id} at (${px.toFixed(2)}, ${py.toFixed(2)}, ${pz.toFixed(2)})`
+          );
+        }
+        if (px >= layout.slabNose.minX && px <= layout.slabNose.maxX) {
+          const top = noseTopAt(pz);
+          if (top !== null && py < top) {
+            blockers.push(
+              `boss ${s} blocked by slab-nose at (${px.toFixed(2)}, ${py.toFixed(2)}, ${pz.toFixed(2)}) — nose top ${top.toFixed(2)}`
+            );
+          }
+        }
+      }
+    });
+    expect([...new Set(blockers)].slice(0, 6)).toEqual([]);
+  });
+
+  it("keeps the daylight column clear of the slab apron", () => {
+    // The column is rendered geometry the visitor can end up INSIDE, because
+    // the apron hangs within the void. Sized to "contain the bosses" (r = 6) its
+    // wall stood 0.4 m in front of the eye and greyed the entire performance
+    // out — the room's critical defect. The radius is derived, and this is the
+    // invariant it is derived to satisfy.
+    const apronEyeZ =
+      (layout.slabApron.minZ + layout.slabApron.maxZ) / 2 - layout.void_.center.z;
+    expect(layout.avenShaftRadius).toBeLessThan(apronEyeZ - 1.0);
+    expect(layout.avenShaftRadius).toBeGreaterThan(BOSS_RADIUS * 2);
+    // And it must not reach the apron's nearest edge either.
+    expect(layout.avenShaftRadius).toBeLessThanOrEqual(
+      layout.slabApron.minZ - layout.void_.center.z - 1.5 + 1e-9
+    );
   });
 
   it("throws instead of silently dropping to the datum inside the bay", () => {

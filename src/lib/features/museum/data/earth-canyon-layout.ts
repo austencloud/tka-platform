@@ -71,6 +71,15 @@ export const GULLY_LOW_Y = -0.9;
 export const RIM_Y = -1.4;
 /** The slab overlook's viewing apron — 0.3 m up from the rim. */
 export const SLAB_Y = -1.1;
+/**
+ * Outer tip of the slab's fractured nose. The nose FALLS AWAY into the void
+ * rather than cantilevering level: a flat 2 m tongue at apron height sits
+ * exactly across the eye's line to the performers (the sightline crosses apron
+ * level ~0.5 m out, which is mid-nose), so a level nose hides the entire
+ * performance from the one place the room is composed for. Fractured and
+ * dropping is also what the design says it is.
+ */
+export const SLAB_NOSE_OUTER_Y = -4.5;
 /** Boss tops: what the performers stand on. */
 export const BOSS_Y = -7.25;
 /** The performers' floor disc at the bottom of the void. Blocked; never walked. */
@@ -115,6 +124,12 @@ const BOSS_SPACING = 4.0;
 const BOSS_SOUTH_OFFSET = 2.0;
 /** Radius of the aven opening in the roof, centred over the bosses. */
 export const AVEN_RADIUS = 5.0;
+/**
+ * Clearance the rendered daylight column keeps from the slab apron. Anything
+ * less and the column wall lands inside the visitor's near plane on the one
+ * viewpoint the room is composed for.
+ */
+const SHAFT_APRON_CLEARANCE = 1.5;
 
 /** Slab overlook: 4 m across, cantilevered 3 m north into the void. */
 const SLAB_WIDTH = 4.0;
@@ -196,6 +211,21 @@ export interface EarthCanyonLayout {
 
   // ── the drop ──
   void_: Disc;
+  /**
+   * Radius of the rendered daylight column. Derived, not authored: the slab
+   * apron hangs INSIDE the void, so a column sized to "contain the bosses"
+   * puts its own translucent wall a handspan in front of the visitor's eye and
+   * veils the entire performance. The column has to stop short of the apron.
+   */
+  avenShaftRadius: number;
+  /**
+   * The arc of the void's wall that actually exists, in radians, measured the
+   * way a cylinder is parameterised (θ = 0 at +z, south). The slab overlook
+   * hangs INSIDE the circle, so a closed wall wraps around a visitor standing
+   * on the apron and its near face blanks the entire pit. The wall is cut where
+   * the slab breaks through it — which is also the honest fiction.
+   */
+  voidWallArc: { start: number; length: number };
   /** Same footprint as the void, at the bottom: what the performers stand on. */
   floorDisc: Disc;
   /** Three bosses, west → east. Blocked, visual. */
@@ -544,6 +574,27 @@ export function buildEarthCanyonLayout(
     );
   }
 
+  // The sector the slab occupies, measured from the void centre with a small
+  // margin so the cut clears the slab's corners rather than clipping them.
+  const slabHalfAngle =
+    Math.atan2(
+      Math.max(
+        Math.abs(slabApron.minX - voidCentre.x),
+        Math.abs(slabApron.maxX - voidCentre.x)
+      ),
+      voidSouthLine - voidCentre.z
+    ) + 0.12;
+  const voidWallArc = {
+    start: slabHalfAngle,
+    length: Math.PI * 2 - slabHalfAngle * 2,
+  };
+  // Stop the daylight column short of the apron's inner edge, with clearance,
+  // so nothing translucent can ever sit between the eye and the bosses.
+  const avenShaftRadius = Math.min(
+    AVEN_RADIUS,
+    slabApron.minZ - voidCentre.z - SHAFT_APRON_CLEARANCE
+  );
+
   // ── The walkable rim ring: the chamber floor south of the parapet, minus the
   // void, the slab and the exit works. Rasterised off the SAME disc record the
   // blocker uses.
@@ -592,8 +643,10 @@ export function buildEarthCanyonLayout(
   );
 
   // ── Canyon shelves: four blocked visual bands north of the compiled bay.
-  const shelfStarts = [3.0, 9.0, 17.0, 29.0];
-  const shelfDepths = [5.0, 7.0, 11.0, 16.0];
+  // Pushed well back: at 3 m off the parapet the first band filled the arrival
+  // view and read as a wall rather than as distance.
+  const shelfStarts = [9.0, 19.0, 33.0, 52.0];
+  const shelfDepths = [7.0, 10.0, 14.0, 20.0];
   const canyonShelves: WorldRect[] = shelfStarts.map((start, i) => ({
     minX: chamberMinX - 10 - i * 8,
     maxX: earth.maxX + 10 + i * 8,
@@ -625,6 +678,14 @@ export function buildEarthCanyonLayout(
   );
 
   // ── Rock fill: every interior tile the programme does not use.
+  //
+  // This MUST use the same tile-centre test `rasterise` uses, not
+  // `subtractTiles`. subtractTiles only carves a tile whose WHOLE cell sits
+  // inside one hole rect, and the slab and exit works are derived from metre
+  // programme offsets that do not land on cell boundaries. The result was three
+  // rock blocks — base −8.4, top +3.6 — standing on the rim right across the
+  // slab approach, a 12 m wall in front of the room's one money shot.
+  // Tile-centre semantics make rock the exact complement of the floor.
   const carved = [
     gullyMouth,
     gullyBend,
@@ -639,7 +700,9 @@ export function buildEarthCanyonLayout(
     exitKerb,
     ...floorDiscRects,
   ];
-  const rockFill = subtractTiles(earth, carved);
+  const rockFill = rasterise(earth, (x, z) =>
+    carved.some((rect) => inRectClosed(rect, x, z))
+  );
 
   // ── Floor rects: the single list physics and the graybox both read. Order
   // matters — elevationAt takes the FIRST rect that covers a point, so the slab
@@ -684,7 +747,14 @@ export function buildEarthCanyonLayout(
       toY: RIM_Y,
     },
     { id: "slab-apron", rect: slabApron, kind: "flat", fromY: SLAB_Y, toY: SLAB_Y },
-    { id: "slab-nose", rect: slabNose, kind: "flat", fromY: SLAB_Y, toY: SLAB_Y },
+    {
+      id: "slab-nose",
+      rect: slabNose,
+      kind: "ramp-z",
+      // North (outer) edge has fallen into the void; south edge meets the apron.
+      fromY: SLAB_NOSE_OUTER_Y,
+      toY: SLAB_Y,
+    },
     {
       id: "exit-ramp",
       rect: exitRamp,
@@ -820,6 +890,8 @@ export function buildEarthCanyonLayout(
     slabApron,
     slabNose,
     void_,
+    avenShaftRadius,
+    voidWallArc,
     floorDisc,
     bosses,
     stations,

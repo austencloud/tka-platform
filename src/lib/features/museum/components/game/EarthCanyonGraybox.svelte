@@ -58,12 +58,20 @@
   const { grid, currentRoomId = null, visible = true }: Props = $props();
 
   // ── Palette ───────────────────────────────────────────────────────────────
-  /** Pale dust-grey canyon rock — deliberately nothing like Fire's basalt. */
-  const ROCK = "#6f6a60";
-  const ROCK_LIT = "#8d867a";
-  const ROCK_SHADE = "#4a463f";
-  const BOULDER = "#7c766a";
-  const SLAB = "#9a9184";
+  /**
+   * Dust-grey canyon rock — nothing like Fire's basalt, but kept DARK on
+   * purpose. At pale values the rim blew out under its own fill and the tone
+   * mapper crushed the pit to black, which killed the overhead read the whole
+   * room exists for. The rim is the frame; the pool is the picture.
+   */
+  const ROCK = "#4a463f";
+  const ROCK_LIT = "#5c564c";
+  const ROCK_SHADE = "#2e2b26";
+  const BOULDER = "#565046";
+  const SLAB = "#6b6558";
+  /** The one pale surface in the room: what the shaft lands on. */
+  const FLOOR_DISC_STONE = "#a49d8d";
+  const BOSS_STONE = "#bdb6a4";
   const GRASS = "#4e7a35";
   const GRASS_LIT = "#6f9c47";
   const FLOWER_PURPLE = "#a06fd0";
@@ -91,7 +99,7 @@
   const unitBox = new BoxGeometry(1, 1, 1);
   /** ⌀1 × 1 cylinder: scale [d, h, d] to place a disc or a boss. */
   const unitCylinder = new CylinderGeometry(0.5, 0.5, 1, 40);
-  /** Open-ended ⌀1 × 1 tube, seen from inside: the void's wall. */
+  /** Open-ended ⌀1 × 1 tube: the daylight shaft's column. */
   const unitTube = new CylinderGeometry(0.5, 0.5, 1, 56, 1, true);
   const bossRing = new RingGeometry(0.35, 1, 44);
   const grassCone = new ConeGeometry(0.16, 1, 5);
@@ -104,6 +112,11 @@
     rockShade: new MeshStandardMaterial({ color: ROCK_SHADE, roughness: 1 }),
     boulder: new MeshStandardMaterial({ color: BOULDER, roughness: 1 }),
     slab: new MeshStandardMaterial({ color: SLAB, roughness: 0.9 }),
+    floorDiscStone: new MeshStandardMaterial({
+      color: FLOOR_DISC_STONE,
+      roughness: 0.85,
+    }),
+    bossStone: new MeshStandardMaterial({ color: BOSS_STONE, roughness: 0.8 }),
     grass: new MeshStandardMaterial({
       color: GRASS,
       roughness: 1,
@@ -135,26 +148,39 @@
       emissiveIntensity: 0.9,
       toneMapped: false,
     }),
-    /** Seen from inside: the void's wall must not cull away as you look down. */
+    /**
+     * BackSide, and it must stay BackSide. From anywhere OUTSIDE the void's
+     * circle the near half of this shell is front-facing and gets culled, which
+     * is the only reason you can see down into the pit at all — DoubleSide
+     * turns it into an opaque dome over the whole performance. The one place
+     * the eye sits INSIDE the circle is the slab apron, and that is handled by
+     * cutting the shell's arc there (voidWallArc), not by changing the side.
+     */
     voidWall: new MeshStandardMaterial({
       color: ROCK_SHADE,
       roughness: 1,
       side: BackSide,
     }),
+    // The rings are read from six metres up and eight to ten metres out, so
+    // they carry their own light rather than relying on the shaft reaching them.
     bossRing: new MeshStandardMaterial({
       color: DAYLIGHT,
       emissive: DAYLIGHT,
-      emissiveIntensity: 0.35,
+      emissiveIntensity: 1.1,
       side: DoubleSide,
       toneMapped: false,
     }),
-    /** The shaft itself: a translucent cone of light, cheapest thing that reads. */
+    /**
+     * The shaft: a translucent column, BackSide so only its far wall draws.
+     * A DoubleSide column paints its near wall over everything beyond it, and
+     * over a dark pit even 4.5% white flattens the whole read to fog.
+     */
     shaft: new MeshBasicMaterial({
       color: DAYLIGHT,
       transparent: true,
-      opacity: 0.075,
+      opacity: 0.07,
       depthWrite: false,
-      side: DoubleSide,
+      side: BackSide,
       toneMapped: false,
     }),
     trailCool: new MeshStandardMaterial({
@@ -181,9 +207,11 @@
   const shelfMaterials = CANYON_SHELF_Y.map(
     (_, i) =>
       new MeshBasicMaterial({
-        color: [ "#7a7d82", "#8c9099", "#9ea3ad", "#b2b7c0" ][i] ?? "#b2b7c0",
+        // Dark rock washing toward sky, NOT bright sheets. Unlit Basic material
+        // at near-white read as walls three metres off the parapet.
+        color: ["#3d444c", "#525a64", "#69717c", "#828a95"][i] ?? "#828a95",
         transparent: true,
-        opacity: 1 - i * 0.16,
+        opacity: 0.96 - i * 0.13,
         toneMapped: false,
       })
   );
@@ -464,7 +492,7 @@
       id: "floor-disc",
       pos: [void_.center.x, FLOOR_DISC_Y - 0.15, void_.center.z],
       size: [void_.radius * 2, 0.3, void_.radius * 2],
-      material: "rockLit",
+      material: "floorDiscStone",
     });
 
     // ══ BOSSES ══ three low drums with a carved concentric target ring, so the
@@ -474,7 +502,7 @@
         id: `boss-${i}`,
         pos: [boss.center.x, (FLOOR_DISC_Y + BOSS_Y) / 2, boss.center.z],
         size: [boss.radius * 2, BOSS_Y - FLOOR_DISC_Y, boss.radius * 2],
-        material: "slab",
+        material: "bossStone",
       });
       rings.push(
         {
@@ -497,9 +525,11 @@
     // ══ SLAB OVERLOOK ══ the fracture line at the viewing apron's outer edge,
     // and the 0.45 m lip that stops the walk without stopping the sightline.
     boxes.push(
+      // Only the apron has an underside to show; the nose is a tilted fracture
+      // plane and boxing under it would put the slab back across the sightline.
       block(
         "slab-underside",
-        { ...slabNose, minZ: slabNose.minZ, maxZ: slabApron.maxZ },
+        slabApron,
         SLAB_Y - 0.9,
         SLAB_Y - SLAB_T,
         "rockShade"
@@ -563,11 +593,15 @@
     // ══ CANYON ══ four blocked bands receding north, each hazier than the one
     // in front of it. Depth here is a set-dressing claim, so it is made with
     // wash rather than with detail.
+    // Each band is a MASS falling away below its own datum, not a floating
+    // panel: a slab with air under it reads as a backdrop flat.
+    const CANYON_FOOT = -46.0;
     canyonShelves.forEach((rect, i) => {
+      const top = CANYON_SHELF_Y[i]!;
       shelves.push({
         id: `shelf-${i}`,
-        pos: [cx(rect), CANYON_SHELF_Y[i]! + 2.0, cz(rect)],
-        size: [sx(rect), 4.0 + i * 2.0, sz(rect)],
+        pos: [cx(rect), (top + CANYON_FOOT) / 2, cz(rect)],
+        size: [sx(rect), top - CANYON_FOOT, sz(rect)],
         index: i,
       });
     });
@@ -595,10 +629,18 @@
     // ══ THE SHAFT ══ the money shot: one translucent column from the aven down
     // onto the bosses, sitting on the same centre the aven was cut on.
     const shaftTop = EARTH_CEILING_Y + 1.0;
+    const shaftDiameter = layout.avenShaftRadius * 2;
     const shaft: Cyl = {
       id: "daylight-shaft",
-      pos: [void_.center.x, (shaftTop + BOSS_Y) / 2, void_.center.z],
-      size: [AVEN_RADIUS * 1.6, shaftTop - BOSS_Y, AVEN_RADIUS * 1.6],
+      // Stops at the rim rather than running down to the bosses: the column is
+      // seen from ABOVE, so a translucent wall carried the whole way down put
+      // two more washed surfaces between the eye and the performance.
+      pos: [void_.center.x, (shaftTop + RIM_Y) / 2, void_.center.z],
+      // Radius comes from the layout, which holds it clear of the slab apron.
+      // Sizing it to "contain the bosses" put its wall 0.4 m in front of the
+      // visitor's eye and greyed out the entire pit — the defect that made this
+      // room unreadable. Do not widen it here.
+      size: [shaftDiameter, shaftTop - RIM_Y, shaftDiameter],
       material: "shaft",
     };
 
@@ -608,22 +650,24 @@
     // and the rim stays dimmer, so the eye is pulled down into the canyon.
     lights.push(
       {
-        // The shaft's own source, hung low enough that the roof does not
-        // occlude it and high enough to spread across all three bosses.
+        // The shaft's key, hung INSIDE the void mouth so the roof cannot
+        // occlude it and the pool lands on all three bosses. At 6 m it puts
+        // ~3.3 on the boss tops — the brightest surface in the room.
         id: "daylight-shaft-key",
-        pos: [void_.center.x, BOSS_Y + 7.5, void_.center.z],
+        pos: [void_.center.x, BOSS_Y + 6.0, void_.center.z],
         color: DAYLIGHT,
-        intensity: 150,
-        distance: 34,
+        intensity: 70,
+        distance: 30,
         breathe: true,
       },
       {
-        // Bounce off the floor disc, so the bosses are not lit from one point.
+        // Bounce off the floor disc. At BOSS_Y + 1.4 this was ~13 at the boss
+        // top and blew the automatons to white; 3 m up it fills instead.
         id: "floor-disc-bounce",
-        pos: [void_.center.x, BOSS_Y + 1.4, void_.center.z],
+        pos: [void_.center.x, BOSS_Y + 3.0, void_.center.z],
         color: "#cfd8e6",
-        intensity: 26,
-        distance: 22,
+        intensity: 12,
+        distance: 20,
         breathe: false,
       },
       {
@@ -635,16 +679,17 @@
           void_.center.z - VOID_RADIUS * 0.7,
         ],
         color: "#b9c6d8",
-        intensity: 34,
-        distance: 22,
+        intensity: 22,
+        distance: 20,
         breathe: false,
       },
       {
-        // Rim fill: deliberately below the floor's brightness. Never black.
+        // Rim fill: deliberately below the pit's brightness so the eye is
+        // pulled down. At 70 the rim out-read the performance. Never black.
         id: "rim-fill",
         pos: [void_.center.x, RIM_Y + 4.5, void_.center.z],
         color: "#a8a396",
-        intensity: 70,
+        intensity: 16,
         distance: 46,
         breathe: false,
       },
@@ -652,7 +697,7 @@
         id: "slab-cue",
         pos: [cx(slabApron), SLAB_Y + 2.2, cz(slabRamp)],
         color: "#cbc4b2",
-        intensity: 14,
+        intensity: 9,
         distance: 16,
         breathe: false,
       },
@@ -660,42 +705,83 @@
         id: "exit-cue",
         pos: [exitRamp.maxX - 1.5, RIM_Y + 2.4, cz(exitRamp)],
         color: "#d6cdb6",
-        intensity: 16,
+        intensity: 11,
         distance: 18,
         breathe: false,
       }
     );
-    // Soft green fill down the gully, and one dim lamp at the mouth so the
-    // look back toward Fire's door stays legible rather than black.
+    // Each boss gets its own soft key so the automaton reads as a FIGURE from
+    // the rim, not as a silhouette in the pool. Hung 3.5 m up, so a 1.7 m
+    // performer sits at ~2.7 rather than being blown out from close range.
+    stations.forEach((station, i) => {
+      lights.push({
+        id: `boss-key-${i}`,
+        pos: [station.x, BOSS_Y + 3.5, station.z],
+        color: "#f2f6ff",
+        intensity: 10,
+        distance: 14,
+        breathe: false,
+      });
+    });
+    // Soft green fill down the gully. The bend is a 13 m leg, so one lamp at
+    // its centre left both ends black — it gets a cue at each end instead.
     gullyRects.forEach((rect, i) => {
       lights.push({
         id: `gully-fill-${i}`,
-        pos: [cx(rect), -0.4 + 1.8, cz(rect)],
+        pos: [cx(rect), 1.4, cz(rect)],
         color: GULLY_FILL,
         intensity: 22 + i * 6,
         distance: 16,
         breathe: false,
       });
     });
-    lights.push({
-      id: "gully-mouth-cue",
-      pos: [gullyMouth.minX + 1.0, 1.2, cz(gullyMouth)],
-      color: "#9ec98a",
-      intensity: 12,
-      distance: 12,
-      breathe: false,
-    });
-    // The canyon lit progressively fainter with distance.
-    canyonShelves.forEach((rect, i) => {
-      lights.push({
-        id: `canyon-glow-${i}`,
-        pos: [cx(rect), CANYON_SHELF_Y[i]! + 6.0, cz(rect)],
-        color: "#aeb8c6",
-        intensity: 120 / (i + 1),
-        distance: 30 + i * 10,
+    lights.push(
+      {
+        id: "gully-bend-north",
+        pos: [cx(gullyBend), 1.1, gullyBend.minZ + 1.6],
+        color: GULLY_FILL,
+        intensity: 20,
+        distance: 14,
         breathe: false,
-      });
-    });
+      },
+      {
+        id: "gully-bend-south",
+        pos: [cx(gullyBend), 1.1, gullyBend.maxZ - 1.6],
+        color: GULLY_FILL,
+        intensity: 20,
+        distance: 14,
+        breathe: false,
+      },
+      {
+        // The turn itself, so the corner is legible before you reach it.
+        id: "gully-turn-cue",
+        pos: [gullyLower.minX + 0.8, 0.6, cz(gullyLower)],
+        color: "#b7e39c",
+        intensity: 14,
+        distance: 12,
+        breathe: false,
+      },
+      {
+        // The look back toward Fire's door stays legible rather than black.
+        id: "gully-mouth-cue",
+        pos: [gullyMouth.minX + 1.0, 1.2, cz(gullyMouth)],
+        color: "#9ec98a",
+        intensity: 12,
+        distance: 12,
+        breathe: false,
+      },
+      {
+        // One faint sky bounce over the parapet. The canyon shelves are unlit
+        // Basic material, so the old per-shelf point lights lit nothing but the
+        // parapet — and blew it out.
+        id: "canyon-sky-bounce",
+        pos: [void_.center.x, RIM_Y + 3.0, parapet.minZ - 2.0],
+        color: "#aeb8c6",
+        intensity: 10,
+        distance: 24,
+        breathe: false,
+      }
+    );
 
     return {
       boxes,
@@ -709,6 +795,36 @@
       shaft,
     };
   }
+
+  /**
+   * The void's wall, cut on the arc the layout says the slab breaks through.
+   * A CLOSED tube here is the bug that blanked the room: the apron hangs inside
+   * the circle, so from the one viewpoint the room is designed around, the
+   * tube's near inner face filled the whole frame and hid the performance.
+   */
+  const voidWallGeometry = $derived.by(() => {
+    const arc = buildEarthCanyonLayout(grid)?.voidWallArc;
+    return new CylinderGeometry(
+      0.5,
+      0.5,
+      1,
+      56,
+      1,
+      true,
+      arc?.start ?? 0,
+      arc?.length ?? Math.PI * 2
+    );
+  });
+  let previousVoidWall: CylinderGeometry | null = null;
+  $effect(() => {
+    const current = voidWallGeometry;
+    const stale = previousVoidWall;
+    previousVoidWall = current;
+    return () => {
+      if (stale && stale !== current) stale.dispose();
+    };
+  });
+  onDestroy(() => previousVoidWall?.dispose());
 
   const layout = $derived(buildEarthCanyonLayout(grid));
   const scene = $derived(layout ? buildScene(layout) : null);
@@ -733,10 +849,18 @@
 </script>
 
 {#if scene}
-  <T.Group {visible}>
+  <T.Group
+    {visible}
+    oncreate={(ref) => {
+      // Dev-only handle: lets a browser session toggle individual meshes to find
+      // what is occluding what, instead of guessing from screenshots.
+      if (import.meta.env.DEV) (window as any).__earthGraybox = ref;
+    }}
+  >
     <!-- Floors, ramps, rock, walls, ceilings, parapet boulders, the slab -->
     {#each scene.boxes as box (box.id)}
       <T.Mesh
+        name={box.id}
         geometry={unitBox}
         material={materials[box.material]}
         position={box.pos}
@@ -750,7 +874,8 @@
     <!-- The void's wall, the performers' floor disc and the three bosses -->
     {#each scene.cylinders as cyl (cyl.id)}
       <T.Mesh
-        geometry={cyl.id === "void-wall" ? unitTube : unitCylinder}
+        name={cyl.id}
+        geometry={cyl.id === "void-wall" ? voidWallGeometry : unitCylinder}
         material={materials[cyl.material]}
         position={cyl.pos}
         scale={cyl.size}
@@ -761,6 +886,7 @@
     <!-- Carved concentric target rings on the boss tops -->
     {#each scene.rings as ring (ring.id)}
       <T.Mesh
+        name={ring.id}
         geometry={bossRing}
         material={materials[ring.material]}
         position={ring.pos}
@@ -792,6 +918,7 @@
     <!-- Canyon shelves receding north into haze -->
     {#each scene.shelves as shelf (shelf.id)}
       <T.Mesh
+        name={shelf.id}
         geometry={unitBox}
         material={shelfMaterials[shelf.index]}
         position={shelf.pos}
@@ -812,6 +939,7 @@
     <!-- The daylight shaft falling through the aven onto the bosses -->
     {#if scene.shaft}
       <T.Mesh
+        name="daylight-shaft"
         geometry={unitTube}
         material={materials.shaft}
         position={scene.shaft.pos}

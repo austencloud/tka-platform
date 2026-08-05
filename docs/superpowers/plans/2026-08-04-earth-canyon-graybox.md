@@ -195,6 +195,51 @@ plan at the start of each phase.
    3/9/17/29 m north of the bay at the design's four elevations. They are
    outside the terrain bay and unreachable behind the compiled north wall.
 
+### Browser-walk findings (2026-08-04, first-person verification pass)
+
+Four causes found behind "the pit does not read from the rim". Three fixed and
+locked with tests; one still OPEN.
+
+1. **FIXED — rock fill across the slab approach.** `subtractTiles` only carves a
+   tile whose whole cell sits inside one hole rect, and the slab and exit rects
+   come off metre offsets that miss tile-cell boundaries. Three blocks survived
+   at `x[103.75,108.25] z[18.25,18.75]` and either side, rendered from y −8.4 to
+   +3.6 — a 12 m wall straight across the viewing line. Rock is now the
+   tile-centre complement of the floor (`rasterise`), and the chamber must
+   contain zero rock fill (new test).
+2. **FIXED — the daylight shaft stood 0.4 m from the eye.** Widening the column
+   to "contain the bosses" (r = 6) put its translucent DoubleSide wall inside the
+   apron, which sits 6.45 m from the void centre. A pitch sweep showed
+   `daylight-shaft` as the first hit at EVERY pitch across the frame. The radius
+   is now derived in the layout with 1.5 m apron clearance, and the material is
+   BackSide so a near wall can never paint over the pit. New test asserts the
+   clearance.
+3. **FIXED — the slab nose was a level 2 m tongue.** The eye→boss line crosses
+   apron height ~0.5 m out, i.e. mid-nose, so a flat nose hid the performance
+   from the one viewpoint the room is composed for. It now falls away to
+   `SLAB_NOSE_OUTER_Y` (−4.5), which is also what "fractured" means. The
+   sightline test walks eye→boss in 0.1 m steps against rock, walls, parapet,
+   lip and the tilted nose.
+4. **OPEN — the pit still renders pure black from the rim.** Not dim: sampled
+   framebuffer pixels are exactly `0,0,0` across the whole void region while the
+   rim reads `61,66,66`. Ruled out: occlusion (raycasts reach `floor-disc` at
+   10–14 m and `boss-ring-inner-1` at 8.7 m), lights (boosting the pit keys to
+   4000 floods the frame white through bloom, so they do reach), fog
+   (`FogExp2` density ~0.076 — forcing it to 0.012 changes nothing), frustum
+   culling and material state. A `MeshBasicMaterial` magenta disc with
+   `depthTest: false`, `renderOrder: 999` and `frustumCulled: false` STILL
+   samples `0,0,0`, which means the mesh is not being submitted at all. That is
+   a separate cause from the three above and it is not diagnosed.
+
+**Harness note for the next session.** The teleport recipe cannot reproduce real
+first-person rendering: `camera.setMode('first_person')` on the bridge does not
+set `Museum3DScene`'s own `fpsActive`, so the top-down player marker
+(`Museum3DScene.svelte` ~1319, gated on `!fpsActive`) stays mounted and its
+12 cm heading cone sits 0.35 m in front of the eye, first-hitting every ray in
+the lower half of the frame. Suppress it by scaling that group to ~0 (setting
+`visible` is overwritten every frame by the reactive binding) or teach the bridge
+to drive `fpsActive`. Some of the original "dome" report is this cone.
+
 ### Open for the gate (from the design's own question list)
 
 Parapet at 0.90 m everywhere vs the slab's 0.45 m lip; four backdrop shelves or
