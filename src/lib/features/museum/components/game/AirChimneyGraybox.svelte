@@ -1,17 +1,16 @@
 <script lang="ts">
   /**
-   * Graybox shell for the Air chimney — the Vulcan Cave air bay's updraft
-   * feel-prototype.
+   * Graybox shell for the Air chimney — the Vulcan Cave air bay.
    *
-   * EVERY rect, post and light position below comes off
+   * EVERY rect, ledge and light position below comes off
    * buildAirChimneyLayout(grid). There is not one world coordinate in this
    * file. If a shape here disagrees with where physics puts the player, the
    * layout is wrong, not this file.
    *
-   * The column has to be SEEN, not inferred: a translucent cylinder marks the
-   * lift's exact footprint and ceiling, and rising motes give it motion. The
-   * motes reuse the shared FallingParticles primitive in "embers" mode, which
-   * already rises — no second particle system.
+   * Both columns have to be SEEN, not inferred, and they have to be told apart
+   * at a glance: the rise is a cool bright shell with motes climbing it, the
+   * sink is dimmer and warmer with its motes falling. A visitor should never
+   * have to step into one to learn which way it goes.
    */
   import { T } from "@threlte/core";
   import { onDestroy } from "svelte";
@@ -30,7 +29,6 @@
     AIR_FLOOR_Y,
     AIR_ROOM_ID,
     EARTH_ROOM_ID,
-    LANDING_B_Y,
     OVERLOOK_Y,
   } from "../../data/air-chimney-layout";
   import type { WorldRect } from "../../data/drowned-gallery-terrain";
@@ -44,52 +42,48 @@
   const { grid, currentRoomId = null, visible = true }: Props = $props();
 
   // ── Palette ───────────────────────────────────────────────────────────────
-  // Graybox values, not final art. The first verification pass rendered the
-  // shaft as a black silhouette against a dim room; these are the values at
-  // which the ramp, the ledges and the rim read as separate surfaces.
+  // Graybox values, not final art.
   const STONE = "#4a515c";
   const STONE_LIT = "#69727f";
   const LEDGE = "#8b95a3";
-  const RIM_ROCK = "#343b44";
-  const DRAFT = "#bfe4ff";
-  const MARKER = "#e8f4ff";
+  const RISE_TINT = "#bfe4ff";
+  const SINK_TINT = "#ffd9b0";
   const FILL_LIGHT = "#8fb6d8";
 
-  /** Slab thickness for every floor, ramp and ceiling box. */
+  /** Slab thickness for every floor and ceiling box. */
   const SLAB_T = 0.3;
-  /** How far above the lip the column's marker cylinder is drawn. */
-  const COLUMN_VISUAL_TOP = OVERLOOK_Y + 0.4;
-  /** Marker posts carry a bright cap so the height reads from across the room. */
-  const CAP_H = 0.25;
+  /** Ledges are cantilevered shelves, not columns — you walk UNDER them. */
+  const LEDGE_BODY_T = 0.9;
+  /** How far above the overlook the rise column's shell is drawn. */
+  const RISE_VISUAL_TOP = OVERLOOK_Y + 0.4;
 
   // ── Shared geometry + materials (disposed on destroy) ─────────────────────
   const unitBox = new BoxGeometry(1, 1, 1);
   const unitCylinder = new CylinderGeometry(1, 1, 1, 32, 1, true);
 
-  const materials = {
-    rock: new MeshStandardMaterial({ color: STONE, roughness: 1 }),
-    rockLit: new MeshStandardMaterial({ color: STONE_LIT, roughness: 1 }),
-    ledge: new MeshStandardMaterial({ color: LEDGE, roughness: 0.9 }),
-    rim: new MeshStandardMaterial({ color: RIM_ROCK, roughness: 1 }),
-    marker: new MeshStandardMaterial({
-      color: MARKER,
-      emissive: MARKER,
-      emissiveIntensity: 1.2,
-      toneMapped: false,
-    }),
-    // Barely there on purpose: the column must read as a boundary you can see
-    // through, not a solid of light. At 0.14 opacity it filled the whole frame
-    // the moment the player stood next to it (verification pass, 2026-08-05).
-    draft: new MeshStandardMaterial({
-      color: DRAFT,
-      emissive: DRAFT,
+  /** The two columns differ in tint so direction of travel reads instantly. */
+  function draftMaterial(color: string) {
+    return new MeshStandardMaterial({
+      color,
+      emissive: color,
       emissiveIntensity: 0.12,
       transparent: true,
+      // Barely there on purpose: a column must read as a boundary you can see
+      // through, not a solid of light. At 0.14 it filled the whole frame the
+      // moment the player stood next to it (verification pass, 2026-08-05).
       opacity: 0.045,
       side: DoubleSide,
       depthWrite: false,
       toneMapped: false,
-    }),
+    });
+  }
+
+  const materials = {
+    rock: new MeshStandardMaterial({ color: STONE, roughness: 1 }),
+    rockLit: new MeshStandardMaterial({ color: STONE_LIT, roughness: 1 }),
+    ledge: new MeshStandardMaterial({ color: LEDGE, roughness: 0.9 }),
+    rise: draftMaterial(RISE_TINT),
+    sink: draftMaterial(SINK_TINT),
   } as const;
 
   type MaterialKey = keyof typeof materials;
@@ -105,7 +99,6 @@
     id: string;
     pos: [number, number, number];
     size: [number, number, number];
-    rot: [number, number, number];
     material: MaterialKey;
   }
   interface Lamp {
@@ -133,7 +126,6 @@
       id,
       pos: [cx(r), topY - thickness / 2, cz(r)],
       size: [sx(r), thickness, sz(r)],
-      rot: [0, 0, 0],
       material,
     };
   }
@@ -154,28 +146,6 @@
         Math.max(topY - baseY, 0.01),
         Math.max(sz(r), 0.01),
       ],
-      rot: [0, 0, 0],
-      material,
-    };
-  }
-
-  /** Ramp tilted along z: `yAtMinZ` at the rect's north edge, `yAtMaxZ` south. */
-  function rampZ(
-    id: string,
-    r: WorldRect,
-    yAtMinZ: number,
-    yAtMaxZ: number,
-    material: MaterialKey
-  ): Box {
-    const run = sz(r);
-    const dy = yAtMaxZ - yAtMinZ;
-    const angle = Math.atan2(dy, run);
-    return {
-      id,
-      pos: [cx(r), (yAtMinZ + yAtMaxZ) / 2 - SLAB_T / 2 / Math.cos(angle), cz(r)],
-      size: [sx(r), SLAB_T, Math.hypot(run, dy)],
-      // Tilting about x raises the SOUTH edge when the angle is negative.
-      rot: [-angle, 0, 0],
       material,
     };
   }
@@ -190,35 +160,40 @@
     const boxes: Box[] = [];
     const lights: Lamp[] = [];
 
-    const { ramp, platform, column, lip, rims, markers, floorRects, wallRects, ceilingRects } =
-      layout;
+    const { overlook, ledges, floorRects, wallRects, ceilingRects } = layout;
 
     // ══ FLOORS ══ one box per layout floor rect, so the visible floor and the
     // walkable floor are the same list.
     for (const floor of floorRects) {
-      const material: MaterialKey =
-        floor.id === "air-lip" || floor.id === "air-platform"
-          ? "ledge"
-          : "rockLit";
-      if (floor.kind === "ramp-z") {
-        boxes.push(rampZ(floor.id, floor.rect, floor.fromY, floor.toY, material));
-      } else {
-        boxes.push(slab(floor.id, floor.rect, floor.fromY, material));
-      }
+      const raised =
+        floor.id === "air-overlook" || floor.id.startsWith("air-ledge");
+      boxes.push(
+        slab(floor.id, floor.rect, floor.fromY, raised ? "ledge" : "rockLit")
+      );
     }
 
-    // ══ MASS ══ the ramp, platform, shaft base and lip are cut out of rock, so
-    // each one gets a visible body under it rather than floating.
+    // ══ MASS ══ the raised surfaces are shelves cut from the wall, so each gets
+    // a shallow body under it. Shallow is the point: a body reaching the floor
+    // would be a pillar, and the room is meant to be open underneath.
     boxes.push(
-      block("ramp-body", ramp, AIR_FLOOR_Y - 1.0, LANDING_B_Y - SLAB_T, "rock"),
-      block("platform-body", platform, AIR_FLOOR_Y - 1.0, LANDING_B_Y - SLAB_T, "rock"),
-      block("column-body", column, AIR_FLOOR_Y - 1.0, LANDING_B_Y - SLAB_T, "rock"),
-      block("lip-body", lip, OVERLOOK_Y - 1.2, OVERLOOK_Y - SLAB_T, "rock")
+      block(
+        "overlook-body",
+        overlook,
+        OVERLOOK_Y - LEDGE_BODY_T,
+        OVERLOOK_Y - SLAB_T,
+        "rock"
+      )
     );
-
-    // ══ RIMS ══ the blocked rock that makes the updraft the only way up.
-    for (const rim of rims) {
-      boxes.push(block(rim.id, rim.rect, AIR_FLOOR_Y - 1.0, rim.topY, "rim"));
+    for (const ledge of ledges) {
+      boxes.push(
+        block(
+          `${ledge.id}-body`,
+          ledge.rect,
+          ledge.y - LEDGE_BODY_T,
+          ledge.y - SLAB_T,
+          "rock"
+        )
+      );
     }
 
     // ══ WALLS + CEILING ══ door gaps already derived from real door tiles.
@@ -229,90 +204,104 @@
       boxes.push(slab(ceiling.id, ceiling.rect, ceiling.y + SLAB_T, "rock"));
     }
 
-    // ══ HEIGHT MARKERS ══ plain posts at +1.6 / +4.6 / +7.6 with a lit cap, so
-    // the rise has something to read against.
-    for (const marker of markers) {
-      boxes.push(
-        block(`${marker.id}-post`, marker.rect, AIR_FLOOR_Y, marker.topY - CAP_H, "rockLit"),
-        block(`${marker.id}-cap`, marker.rect, marker.topY - CAP_H, marker.topY, "marker")
-      );
-    }
+    // ══ LIGHTS ══
+    //
+    // These are decay=2 point lights, so illuminance falls as 1/d² and the ONLY
+    // sane way to size one is from the distance it actually has to travel:
+    //
+    //     intensity ≈ target · d²
+    //
+    // Sizing by "how far should this reach" instead is how the first pass ended
+    // up with a 2 m ledge lamp at intensity 85 — twenty times over — and turned
+    // the whole chamber into a flat blue wash with no depth in it at all. Cave
+    // fog is dark brown at density 0.06, so it was never the fog: it was this.
+    //
+    // Target illuminance ≈ 1.2, which lands the #69727f rock in mid-tone and
+    // leaves headroom for the columns and ledges to read brighter than it.
+    const forDistance = (metres: number, target = 1.2) =>
+      Math.round(target * metres * metres);
 
-    // ══ LIGHTS ══ sized for decay=2: a value that must still read at r metres
-    // needs roughly target·r². Nothing in this room renders 100% black.
     lights.push(
-      {
-        id: "air-shaft-light",
-        pos: [cx(column), OVERLOOK_Y + 1.5, cz(column)],
-        color: DRAFT,
-        intensity: 45,
-        distance: 26,
-      },
-      {
-        id: "air-platform-light",
-        pos: [cx(platform), LANDING_B_Y + 2.0, cz(platform)],
+      // Two high fills rather than one. A single lamp over the middle of the
+      // room burns a bright pool into the floor directly under it and leaves the
+      // ends dim; splitting it along the room's long axis at half strength each
+      // gives an even base tone with no hotspot.
+      ...[0.32, 0.68].map((t, i) => ({
+        id: `air-room-fill-${i}`,
+        pos: [
+          cx(layout.shell),
+          AIR_CEILING_Y - 2.0,
+          layout.shell.minZ + (layout.shell.maxZ - layout.shell.minZ) * t,
+        ] as [number, number, number],
         color: FILL_LIGHT,
-        intensity: 40,
-        distance: 22,
-      },
-      {
-        id: "air-lip-light",
-        pos: [cx(lip), OVERLOOK_Y + 2.0, cz(lip)],
-        color: FILL_LIGHT,
-        intensity: 40,
-        distance: 22,
-      },
-      {
-        id: "air-ramp-light",
-        pos: [cx(ramp), LANDING_B_Y + 3.0, cz(ramp)],
-        color: FILL_LIGHT,
-        intensity: 120,
-        distance: 40,
-      },
-      {
-        id: "air-room-fill",
-        pos: [cx(layout.shell), AIR_CEILING_Y - 2.0, cz(layout.shell)],
-        color: FILL_LIGHT,
-        intensity: 420,
-        distance: 70,
-      },
-      {
-        // The shaft's east face is what the room looks at; without this it
-        // silhouettes as a black wall (verification pass, 2026-08-05).
-        id: "air-shaft-face",
-        pos: [lip.maxX + 3.0, OVERLOOK_Y - 1.0, cz(lip)],
-        color: FILL_LIGHT,
-        intensity: 150,
-        distance: 34,
-      },
-      {
-        id: "air-ramp-foot",
-        pos: [cx(ramp), 3.0, ramp.minZ + 2.0],
-        color: FILL_LIGHT,
-        intensity: 90,
-        distance: 28,
-      },
-      {
-        id: "air-ramp-mid",
-        pos: [ramp.maxX + 2.0, 6.0, cz(ramp)],
-        color: FILL_LIGHT,
-        intensity: 200,
-        distance: 40,
-      },
-      {
-        id: "air-north-fill",
-        pos: [cx(layout.shell), 6.0, layout.shell.minZ + 8.0],
-        color: FILL_LIGHT,
-        intensity: 220,
-        distance: 46,
-      },
+        intensity: forDistance(11, 0.6),
+        distance: 44,
+      })),
       {
         id: "air-entry-light",
         pos: [cx(layout.shell), 3.0, layout.shell.minZ + 2.0],
         color: FILL_LIGHT,
-        intensity: 60,
-        distance: 26,
-      }
+        intensity: forDistance(4),
+        distance: 18,
+      },
+      {
+        id: "air-exit-light",
+        pos: [cx(layout.shell), 3.0, layout.shell.maxZ - 2.5],
+        color: SINK_TINT,
+        intensity: forDistance(4),
+        distance: 18,
+      },
+      {
+        // The two column lamps are deliberately brighter than the rock: the
+        // shaft should be the brightest thing in the room from the moment the
+        // visitor walks in, because it is the thing to walk into.
+        id: "air-rise-foot",
+        pos: [layout.riseCentre.x, 2.4, layout.riseCentre.z],
+        color: RISE_TINT,
+        intensity: forDistance(3.5, 2.0),
+        distance: 16,
+      },
+      {
+        id: "air-rise-top",
+        pos: [layout.riseCentre.x, OVERLOOK_Y + 1.6, layout.riseCentre.z],
+        color: RISE_TINT,
+        intensity: forDistance(3.5, 2.0),
+        distance: 16,
+      },
+      {
+        id: "air-overlook-light",
+        pos: [cx(overlook), OVERLOOK_Y + 2.2, cz(overlook)],
+        color: FILL_LIGHT,
+        intensity: forDistance(3.0),
+        distance: 14,
+      },
+      {
+        id: "air-sink-light",
+        pos: [layout.sinkCentre.x, OVERLOOK_Y - 1.0, layout.sinkCentre.z],
+        color: SINK_TINT,
+        intensity: forDistance(3.5, 1.6),
+        distance: 16,
+      },
+      // One lamp per ledge. It hangs ABOVE AND IN FRONT of the performer, on the
+      // shaft side, so the figure is lit from the direction the visitor rises
+      // past it. Hung straight overhead at head height instead, it sits inside
+      // the mannequin's skull and blows the whole torso to white — which is
+      // exactly what the first pass did.
+      ...ledges.map((ledge, i) => {
+        const towardShaft = ledge.wall === "west" ? 1 : -1;
+        return {
+          id: `air-ledge-light-${i}`,
+          pos: [
+            ledge.anchor.x + towardShaft * 1.6,
+            ledge.y + 2.6,
+            ledge.anchor.z,
+          ] as [number, number, number],
+          color: FILL_LIGHT,
+          // ~2.3 m of slant range to the figure's chest.
+          intensity: forDistance(2.3, 1.1),
+          distance: 11,
+        };
+      })
     );
 
     return { boxes, lights };
@@ -327,56 +316,92 @@
     visible && (currentRoomId === null || AIR_ROUTE.has(currentRoomId))
   );
 
-  const columnHeight = $derived(COLUMN_VISUAL_TOP - LANDING_B_Y);
+  const riseHeight = $derived(RISE_VISUAL_TOP - AIR_FLOOR_Y);
+  const sinkHeight = $derived(OVERLOOK_Y - AIR_FLOOR_Y);
 </script>
 
 {#if scene && layout}
   <T.Group {visible}>
-    <!-- Floors, ramp, ledges, rims, rock, walls, ceiling, markers -->
+    <!-- Floors, ledges, overlook, rock, walls, ceiling -->
     {#each scene.boxes as box (box.id)}
       <T.Mesh
         geometry={unitBox}
         material={materials[box.material]}
         position={box.pos}
-        rotation={box.rot}
         scale={box.size}
         castShadow={false}
         receiveShadow
       />
     {/each}
 
-    <!-- The lift, made visible: a translucent shell on the exact footprint the
-         terrain lifts inside, capped at the overlook it delivers to. -->
+    <!-- The rise, made visible: a translucent shell on the exact footprint the
+         terrain lifts inside, capped just past the overlook it delivers to. -->
     <T.Mesh
       geometry={unitCylinder}
-      material={materials.draft}
+      material={materials.rise}
       position={[
-        layout.columnCentre.x,
-        LANDING_B_Y + columnHeight / 2,
-        layout.columnCentre.z,
+        layout.riseCentre.x,
+        AIR_FLOOR_Y + riseHeight / 2,
+        layout.riseCentre.z,
       ]}
-      scale={[layout.columnRadius, columnHeight, layout.columnRadius]}
+      scale={[layout.riseRadius, riseHeight, layout.riseRadius]}
+    />
+
+    <!-- The sink: same idea, warmer, and its motes fall. -->
+    <T.Mesh
+      geometry={unitCylinder}
+      material={materials.sink}
+      position={[
+        layout.sinkCentre.x,
+        AIR_FLOOR_Y + sinkHeight / 2,
+        layout.sinkCentre.z,
+      ]}
+      scale={[layout.sinkRadius, sinkHeight, layout.sinkRadius]}
     />
 
     <!-- Rising motes: the shared particle primitive in its rising mode. -->
     <T.Group
       position={[
-        layout.columnCentre.x,
-        LANDING_B_Y + columnHeight / 2,
-        layout.columnCentre.z,
+        layout.riseCentre.x,
+        AIR_FLOOR_Y + riseHeight / 2,
+        layout.riseCentre.z,
       ]}
     >
       <FallingParticles
         type="embers"
-        count={120}
+        count={140}
         area={{
-          width: layout.columnRadius * 1.8,
-          height: columnHeight,
-          depth: layout.columnRadius * 1.8,
+          width: layout.riseRadius * 1.8,
+          height: riseHeight,
+          depth: layout.riseRadius * 1.8,
         }}
         speed={1.0}
-        colors={[DRAFT, "#ffffff", "#dff1ff"]}
+        colors={[RISE_TINT, "#ffffff", "#dff1ff"]}
         sizeRange={[0.018, 0.04]}
+        spin={false}
+        enabled={lit}
+      />
+    </T.Group>
+
+    <!-- Falling motes mark the sink: same primitive, its default direction. -->
+    <T.Group
+      position={[
+        layout.sinkCentre.x,
+        AIR_FLOOR_Y + sinkHeight / 2,
+        layout.sinkCentre.z,
+      ]}
+    >
+      <FallingParticles
+        type="dust"
+        count={90}
+        area={{
+          width: layout.sinkRadius * 1.8,
+          height: sinkHeight,
+          depth: layout.sinkRadius * 1.8,
+        }}
+        speed={1.2}
+        colors={[SINK_TINT, "#ffffff"]}
+        sizeRange={[0.018, 0.038]}
         spin={false}
         enabled={lit}
       />

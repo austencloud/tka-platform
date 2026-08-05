@@ -465,15 +465,20 @@
     if (usePhysics && physicsProvider) {
       noclipEnabled = isNoclip;
       if (!isNoclip) {
-        // A lift column (the museum Air chimney) reports an upward speed at the
+        // A lift column (the museum Air chimney) reports a vertical speed at the
         // player's position. Inside one, vertical velocity EASES toward that
         // speed instead of falling — walking in reads as being picked up rather
         // than launched. Outside one this is 0 and nothing below changes, so the
         // kinematic path and every non-lifting provider are untouched.
+        //
+        // A NEGATIVE speed is a descending column, and it takes the same branch:
+        // easing toward a downward target is a controlled sink, where gravity
+        // would be a fall. That is what lets a room move the visitor both ways on
+        // air alone instead of owing a ramp for the trip back down.
         const lift =
           (physicsProvider as LiftingPhysicsProvider).updraftSpeedAtPlayer?.() ?? 0;
 
-        if (lift > 0) {
+        if (lift !== 0) {
           verticalVelocity += (lift - verticalVelocity) * Math.min(1, UPDRAFT_RISE_EASE * delta);
         } else {
           if (isJumping && physicsProvider.isGrounded() && verticalVelocity <= 0) {

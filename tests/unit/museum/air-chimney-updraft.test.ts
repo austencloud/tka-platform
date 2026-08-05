@@ -1,8 +1,17 @@
 /**
- * The Air chimney's updraft prototype: geometry invariants plus a simulated
- * rise. The gate this file guards is not "does it compile" — it is "does a
- * player who never presses jump get from +4.6 to +8.4 in about four seconds",
- * which is measured here at the physics/UCC seam and again in the browser.
+ * The Air chimney: geometry invariants plus simulated travel in both columns.
+ *
+ * The gate this file guards is not "does it compile". It is the set of claims
+ * the room's design rests on:
+ *
+ *  1. Air is the ONLY way up. If a ramp or a walkable slope ever reappears, the
+ *     room is back to the version Austen rejected on 2026-08-05 — *"why would I
+ *     go up the ramp to get to the airlift"*.
+ *  2. Walking under a ledge leaves you on the floor. That is the bug the old
+ *     room hid behind head-height rock rims, and those rims were the wall
+ *     standing between the door and the shaft.
+ *  3. The performers stay unreachable, because the void is the barrier.
+ *  4. A visitor who never presses jump gets up AND back down.
  */
 import { describe, it, expect } from "vitest";
 import { buildVulcanCaveFloorPlan } from "$lib/features/museum/data/vulcan-cave-floor-plan";
@@ -10,271 +19,197 @@ import {
   buildAirChimneyLayout,
   createAirChimneyTerrain,
   AIR_FLOOR_Y,
-  LANDING_B_Y,
+  LEDGE_YS,
   OVERLOOK_Y,
   UPDRAFT_CEILING_PLAYER_Y,
   UPDRAFT_SPEED,
+  SINK_SPEED,
 } from "$lib/features/museum/data/air-chimney-layout";
-import {
-  MuseumPhysicsProvider,
-  STANDING_Y,
-} from "$lib/features/museum/services/museum-physics-provider";
-import { bucketMuseumTilesByRoom } from "$lib/features/museum/services/museum-geometry-builder";
-import { inRectClosed } from "$lib/features/museum/data/drowned-gallery-terrain";
-import { SOLID_TYPES } from "$lib/features/museum/services/museum-physics-provider";
-import { tileKey } from "$lib/features/museum/domain/museum-grid-types";
+import { STANDING_Y } from "$lib/features/museum/services/museum-physics-provider";
 
 const plan = buildVulcanCaveFloorPlan();
 const grid = plan.grid;
 const layout = buildAirChimneyLayout(grid)!;
 const terrain = createAirChimneyTerrain(grid)!;
 
-/** UCC's physics path, reduced to the vertical axis (see UnifiedCameraController). */
+/** Mirrors the UCC's ease so the simulation matches what the player feels. */
 const UPDRAFT_RISE_EASE = 6;
-const GRAVITY = 9.81 * 2.5;
+const DT = 1 / 60;
+/** 9 m of rise at 1 m/s cannot physically take less than this. */
+const MIN_RISE_SECONDS = 6;
 
 /**
- * Runs the exact vertical integration the UCC does, through the real physics
- * provider, with NO jump input. Returns the sampled {t, y} trace.
+ * Stand in a column and press nothing, exactly as the UCC does: ease vertical
+ * velocity toward the terrain's reported speed, integrate, and clamp to the
+ * floor the terrain reports for the CURRENT feet — the Y-aware seam.
  */
-function simulateRise(
-  startX: number,
-  startZ: number,
-  seconds: number,
-  dt = 1 / 60
-): { t: number; y: number }[] {
-  const physics = new MuseumPhysicsProvider(grid, grid.tileScale, {
-    x: startX,
-    y: 0,
-    z: startZ,
-  });
+function ride(
+  x: number,
+  z: number,
+  startFeetY: number,
+  maxSeconds: number
+): { feetY: number; seconds: number } {
+  let feetY = startFeetY;
   let verticalVelocity = 0;
-  const trace: { t: number; y: number }[] = [
-    { t: 0, y: physics.getPlayerPosition().y },
-  ];
-  const steps = Math.round(seconds / dt);
-  for (let i = 1; i <= steps; i++) {
-    const lift = physics.updraftSpeedAtPlayer();
-    if (lift > 0) {
+  let seconds = 0;
+  while (seconds < maxSeconds) {
+    const lift = terrain.updraftAt!(x, z, feetY + STANDING_Y);
+    if (lift !== 0) {
       verticalVelocity +=
-        (lift - verticalVelocity) * Math.min(1, UPDRAFT_RISE_EASE * dt);
-    } else if (!physics.isGrounded()) {
-      verticalVelocity -= GRAVITY * dt;
-    } else if (verticalVelocity < 0) {
+        (lift - verticalVelocity) * Math.min(1, UPDRAFT_RISE_EASE * DT);
+    } else {
       verticalVelocity = 0;
     }
-    physics.movePlayer({ x: 0, y: verticalVelocity * dt, z: 0 }, dt);
-    trace.push({ t: i * dt, y: physics.getPlayerPosition().y });
+    const floor = terrain.elevationAt(x, z, feetY);
+    feetY = Math.max(feetY + verticalVelocity * DT, floor);
+    seconds += DT;
+    if (lift > 0 && feetY >= OVERLOOK_Y - 0.02) break;
+    if (lift < 0 && feetY <= AIR_FLOOR_Y + 0.02) break;
   }
-  return trace;
+  return { feetY, seconds };
 }
 
-describe("Air chimney layout", () => {
-  it("puts the shaft base at +4.6 and the overlook lip at +8.4", () => {
-    expect(terrain.elevationAt(layout.probes.column.x, layout.probes.column.z)).toBeCloseTo(
-      LANDING_B_Y,
-      6
+describe("Air chimney — the lift is the traversal", () => {
+  it("has no ramp: every floor surface is flat", () => {
+    // A ramp anywhere means someone reintroduced the climb this room exists
+    // without. Air moves the visitor vertically; feet only do the flat.
+    expect(layout.floorRects.filter((f) => f.kind !== "flat")).toEqual([]);
+  });
+
+  it("blocks nothing — the barrier is open air, not rock rims", () => {
+    for (const probe of Object.values(layout.probes)) {
+      expect(terrain.blockedAt(probe.x, probe.z)).toBe(false);
+    }
+  });
+
+  it("leaves the floor open beneath the overlook and every ledge", () => {
+    // The bug the rims were hiding: elevationAt was 2D and the physics clamp
+    // treats its answer as a minimum, so standing here teleported the player
+    // onto the surface overhead.
+    const under = layout.probes.underOverlook;
+    expect(terrain.elevationAt(under.x, under.z, AIR_FLOOR_Y)).toBeCloseTo(
+      AIR_FLOOR_Y,
+      5
     );
-    expect(terrain.elevationAt(layout.probes.lip.x, layout.probes.lip.z)).toBeCloseTo(
+    for (const ledge of layout.ledges) {
+      expect(
+        terrain.elevationAt(ledge.anchor.x, ledge.anchor.z, AIR_FLOOR_Y)
+      ).toBeCloseTo(AIR_FLOOR_Y, 5);
+    }
+  });
+
+  it("still puts a surface underfoot when the player is actually up there", () => {
+    const over = layout.probes.overlook;
+    expect(terrain.elevationAt(over.x, over.z, OVERLOOK_Y)).toBeCloseTo(
       OVERLOOK_Y,
-      6
+      5
     );
-    expect(terrain.elevationAt(layout.probes.platform.x, layout.probes.platform.z)).toBeCloseTo(
-      LANDING_B_Y,
-      6
-    );
-  });
-
-  it("ramps continuously from the datum to the shaft base", () => {
-    expect(terrain.elevationAt(layout.probes.rampFoot.x, layout.probes.rampFoot.z)).toBeLessThan(
-      0.6
-    );
-    expect(terrain.elevationAt(layout.probes.rampHead.x, layout.probes.rampHead.z)).toBeGreaterThan(
-      LANDING_B_Y - 0.3
-    );
-    // No step on the ramp exceeds the museum's 0.6 m neighbour sweep.
-    const steps = 200;
-    let previous = terrain.elevationAt(layout.ramp.minX + 0.5, layout.ramp.minZ);
-    for (let i = 1; i <= steps; i++) {
-      const z = layout.ramp.minZ + ((layout.ramp.maxZ - layout.ramp.minZ) * i) / steps;
-      const here = terrain.elevationAt(layout.ramp.minX + 0.5, z);
-      expect(Math.abs(here - previous)).toBeLessThanOrEqual(0.6);
-      previous = here;
+    for (const ledge of layout.ledges) {
+      expect(
+        terrain.elevationAt(ledge.anchor.x, ledge.anchor.z, ledge.y)
+      ).toBeCloseTo(ledge.y, 5);
     }
   });
 
-  it("never throws or holes inside the bay — the datum is always the floor", () => {
-    for (let x = layout.bayBounds.minX; x <= layout.bayBounds.maxX; x += 0.5) {
-      for (let z = layout.bayBounds.minZ; z <= layout.bayBounds.maxZ; z += 0.5) {
-        const y = terrain.elevationAt(x, z);
-        expect(Number.isFinite(y)).toBe(true);
-        expect(y).toBeGreaterThanOrEqual(AIR_FLOOR_Y);
-      }
+  it("keeps open air between the rise column and every performer ledge", () => {
+    for (const ledge of layout.ledges) {
+      const gap =
+        ledge.wall === "west"
+          ? layout.riseCentre.x - layout.riseRadius - ledge.rect.maxX
+          : ledge.rect.minX - (layout.riseCentre.x + layout.riseRadius);
+      expect(gap).toBeGreaterThanOrEqual(1.8);
     }
   });
 
-  it("rims the raised ledges so they cannot be walked up from below", () => {
-    // Every approach to the +8.4 lip that is not the column is blocked rock.
-    for (const rim of layout.rims) {
-      const cx = (rim.rect.minX + rim.rect.maxX) / 2;
-      const cz = (rim.rect.minZ + rim.rect.maxZ) / 2;
-      expect(terrain.blockedAt(cx, cz)).toBe(true);
+  it("puts the three ledges at three separated heights, low to high", () => {
+    const ys = layout.ledges.map((l) => l.y);
+    expect(ys).toEqual([...LEDGE_YS]);
+    for (let i = 1; i < ys.length; i += 1) {
+      expect(ys[i]! - ys[i - 1]!).toBeGreaterThan(1.5);
     }
-    // The column↔platform and column↔lip seams stay open.
-    expect(terrain.blockedAt(layout.column.minX + 0.1, layout.probes.column.z)).toBe(false);
-    expect(terrain.blockedAt(layout.column.maxX - 0.1, layout.probes.column.z)).toBe(false);
+    expect(ys[ys.length - 1]!).toBeLessThan(OVERLOOK_Y);
   });
 
-  it("keeps the north↔south walk through the bay on the datum", () => {
-    const northDoorZ = layout.shell.minZ;
-    const southDoorZ = layout.shell.maxZ;
-    expect(terrain.elevationAt(layout.probes.entry.x, northDoorZ)).toBe(AIR_FLOOR_Y);
-    expect(terrain.elevationAt(layout.probes.entry.x, southDoorZ)).toBe(AIR_FLOOR_Y);
-    expect(terrain.blockedAt(layout.probes.floor.x, layout.probes.floor.z)).toBe(false);
+  it("keeps every ledge on one wall, staggered along Z", () => {
+    // They alternated walls once. At ~6 m to either side that put the
+    // performers outside the view cone — from the floor you could not see one —
+    // and the ride became a 180° whip between pairs. One wall, climbing away as
+    // a diagonal, is what makes all three readable at once.
+    const walls = new Set(layout.ledges.map((l) => l.wall));
+    expect(walls.size).toBe(1);
+    const zs = layout.ledges.map((l) => (l.rect.minZ + l.rect.maxZ) / 2);
+    for (let i = 1; i < zs.length; i += 1) {
+      expect(zs[i]).toBeGreaterThan(zs[i - 1]!);
+    }
   });
 
-  it("keeps every walkable tile rendered when cave-air joins the suppressed set", () => {
-    const buckets = bucketMuseumTilesByRoom(grid);
-    const rendered = new Set<string>();
-    const collect = (dry: {
-      floorBuckets: Map<string, { positions: { x: number; z: number }[] }>;
-    }) => {
-      for (const bucket of dry.floorBuckets.values()) {
-        for (const position of bucket.positions) {
-          rendered.add(`${position.x.toFixed(3)},${position.z.toFixed(3)}`);
-        }
-      }
-    };
-    collect(buckets.corridorBucket);
-    const suppressed = new Set(
-      grid.wings
-        .filter((w) => w.roomPresentation?.suppressTileGeometry)
-        .map((w) => w.id)
+  it("keeps the performers inside a natural view cone from the shaft", () => {
+    // Lateral offset from the column centre. Beyond ~7 m the pair falls outside
+    // a 75° FOV at eye level and the eye-level pairing stops working.
+    for (const ledge of layout.ledges) {
+      const lateral = Math.abs(ledge.anchor.x - layout.riseCentre.x);
+      expect(lateral).toBeLessThanOrEqual(7);
+    }
+  });
+
+  it("carries a visitor from the floor to the overlook with no jump input", () => {
+    const { feetY, seconds } = ride(
+      layout.riseCentre.x,
+      layout.riseCentre.z,
+      AIR_FLOOR_Y,
+      30
     );
-    for (const [wingId, dry] of buckets.roomBuckets) {
-      if (!suppressed.has(wingId)) collect(dry);
-    }
-
-    const authored = [
-      ...layout.floorRects.map((f) => f.rect),
-      ...layout.corridor,
-    ];
-    // Only the spans cave-air ADDED can be this change's regression: a tile
-    // inside a wing is routed by wing bounds regardless, and the pre-existing
-    // water/fire/earth pairs are the other bays' tests to own.
-    const air = grid.wings.find((w) => w.id === "cave-air")!.bounds;
-    const newSpans = grid.wings
-      .filter((w) => suppressed.has(w.id) && w.id !== "cave-air")
-      .map((w) => ({
-        x0: Math.min(w.bounds.x, air.x),
-        y0: Math.min(w.bounds.y, air.y),
-        x1: Math.max(w.bounds.x + w.bounds.width, air.x + air.width),
-        y1: Math.max(w.bounds.y + w.bounds.height, air.y + air.height),
-      }));
-    const wingBounds = grid.wings.map((w) => w.bounds);
-    const insideAnyWing = (tx: number, ty: number) =>
-      wingBounds.some(
-        (b) => tx >= b.x && tx < b.x + b.width && ty >= b.y && ty < b.y + b.height
-      );
-    const insideNewSpan = (tx: number, ty: number) =>
-      newSpans.some((s) => tx >= s.x0 && tx < s.x1 && ty >= s.y0 && ty < s.y1);
-    // Pairs that existed before cave-air joined: their coverage is the water and
-    // fire bays' own tests to guard, not this one's.
-    const others = grid.wings.filter(
-      (w) => suppressed.has(w.id) && w.id !== "cave-air"
-    );
-    const oldSpans: { x0: number; y0: number; x1: number; y1: number }[] = [];
-    for (let i = 0; i < others.length; i++) {
-      for (let j = i + 1; j < others.length; j++) {
-        const a = others[i]!.bounds;
-        const b = others[j]!.bounds;
-        oldSpans.push({
-          x0: Math.min(a.x, b.x),
-          y0: Math.min(a.y, b.y),
-          x1: Math.max(a.x + a.width, b.x + b.width),
-          y1: Math.max(a.y + a.height, b.y + b.height),
-        });
-      }
-    }
-    const insideOldSpan = (tx: number, ty: number) =>
-      oldSpans.some((s) => tx >= s.x0 && tx < s.x1 && ty >= s.y0 && ty < s.y1);
-
-    const holes: string[] = [];
-    for (const [key, tile] of grid.tiles) {
-      if (SOLID_TYPES.has(tile.type)) continue;
-      const [txRaw, tyRaw] = key.split(",");
-      const tx = Number(txRaw);
-      const ty = Number(tyRaw);
-      if (insideAnyWing(tx, ty)) continue;
-      if (!insideNewSpan(tx, ty)) continue;
-      if (insideOldSpan(tx, ty)) continue;
-      const x = tx * grid.tileScale;
-      const z = ty * grid.tileScale;
-      if (rendered.has(`${x.toFixed(3)},${z.toFixed(3)}`)) continue;
-      if (authored.some((rect) => inRectClosed(rect, x, z))) continue;
-      holes.push(key);
-    }
-    expect({ holes: holes.slice(0, 10), count: holes.length }).toEqual({
-      holes: [],
-      count: 0,
-    });
-    expect(grid.tiles.get(tileKey(grid.spawn.x, grid.spawn.y))).toBeTruthy();
+    expect(feetY).toBeGreaterThanOrEqual(OVERLOOK_Y - 0.05);
+    // Generous bounds on purpose: the rate is a tuning constant Austen has not
+    // signed off on, so this guards "it arrives", not a particular feel.
+    expect(seconds).toBeGreaterThan(MIN_RISE_SECONDS);
+    expect(seconds).toBeLessThan(14);
   });
-});
 
-describe("Air chimney updraft", () => {
-  it("lifts only inside the column footprint and only below the lip", () => {
-    const { columnCentre } = layout;
-    const inside = terrain.updraftAt!(
-      columnCentre.x,
-      columnCentre.z,
-      LANDING_B_Y + STANDING_Y
+  it("sets a visitor back down on the floor through the sink column", () => {
+    const { feetY } = ride(
+      layout.sinkCentre.x,
+      layout.sinkCentre.z,
+      OVERLOOK_Y,
+      30
     );
-    expect(inside).toBe(UPDRAFT_SPEED);
+    expect(feetY).toBeCloseTo(AIR_FLOOR_Y, 1);
+  });
+
+  it("stops lifting at the overlook instead of hovering past it", () => {
     expect(
-      terrain.updraftAt!(columnCentre.x, columnCentre.z, UPDRAFT_CEILING_PLAYER_Y)
-    ).toBe(0);
-    expect(
-      terrain.updraftAt!(layout.probes.platform.x, layout.probes.platform.z, LANDING_B_Y + STANDING_Y)
-    ).toBe(0);
-    expect(
-      terrain.updraftAt!(layout.probes.lip.x, layout.probes.lip.z, LANDING_B_Y + STANDING_Y)
+      terrain.updraftAt!(
+        layout.riseCentre.x,
+        layout.riseCentre.z,
+        UPDRAFT_CEILING_PLAYER_Y + 0.01
+      )
     ).toBe(0);
   });
 
-  it("carries a player who never jumps from +4.6 to +8.4 in about four seconds", () => {
-    const trace = simulateRise(layout.columnCentre.x, layout.columnCentre.z, 6);
-    const startY = trace[0]!.y;
-    expect(startY).toBeCloseTo(LANDING_B_Y + STANDING_Y, 6);
-
-    const target = OVERLOOK_Y + STANDING_Y;
-    const arrival = trace.find((s) => s.y >= target - 0.01);
-    expect(arrival).toBeDefined();
-    expect(arrival!.t).toBeGreaterThan(3.5);
-    expect(arrival!.t).toBeLessThan(4.5);
-
-    const peak = Math.max(...trace.map((s) => s.y));
-    // It must not overshoot the lip into the void: residual momentum at 1 m/s
-    // buys a few centimetres, not a storey.
-    expect(peak - target).toBeLessThan(0.2);
+  it("reports lift only inside the columns, and the right sign in each", () => {
+    expect(
+      terrain.updraftAt!(layout.riseCentre.x, layout.riseCentre.z, STANDING_Y)
+    ).toBeCloseTo(UPDRAFT_SPEED, 5);
+    expect(
+      terrain.updraftAt!(
+        layout.sinkCentre.x,
+        layout.sinkCentre.z,
+        OVERLOOK_Y + STANDING_Y
+      )
+    ).toBeCloseTo(-SINK_SPEED, 5);
+    const entry = layout.probes.entry;
+    expect(terrain.updraftAt!(entry.x, entry.z, STANDING_Y)).toBe(0);
   });
 
-  it("eases in rather than launching — the first half second is the pickup", () => {
-    const trace = simulateRise(layout.columnCentre.x, layout.columnCentre.z, 1);
-    const at = (t: number) => trace.find((s) => Math.abs(s.t - t) < 1e-6)!.y;
-    const startY = trace[0]!.y;
-    const halfSecondGain = at(0.5) - startY;
-    // A hard snap to 1 m/s would gain 0.5 m in that window; the ease costs ~0.17 m.
-    expect(halfSecondGain).toBeGreaterThan(0.25);
-    expect(halfSecondGain).toBeLessThan(0.42);
-  });
-
-  it("drops a player who steps out of the column back to the floor below", () => {
-    // Standing on the datum floor beside the shaft: still air, no lift, and the
-    // floor clamp holds them at standing height.
-    const trace = simulateRise(layout.probes.floor.x, layout.probes.floor.z, 2);
-    for (const sample of trace) {
-      expect(sample.y).toBeCloseTo(AIR_FLOOR_Y + STANDING_Y, 6);
-    }
+  it("does not drag at the visitor once they are down and walking out", () => {
+    const exit = layout.probes.exit;
+    expect(terrain.updraftAt!(exit.x, exit.z, STANDING_Y)).toBe(0);
+    expect(
+      terrain.updraftAt!(
+        layout.sinkCentre.x,
+        layout.sinkCentre.z,
+        AIR_FLOOR_Y + STANDING_Y
+      )
+    ).toBe(0);
   });
 });

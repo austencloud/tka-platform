@@ -253,12 +253,13 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
     },
   },
 
+  // Fire's three pairs met again, one per ledge, low → high. Fire runs
+  // JDJD/KEKE/LFLF; Air runs the same partnerships phase-swapped.
   "cave-air": {
     performers: {
-      "cave-air-automaton": {
-        autoPlay: true,
-        sequenceId: "cave-air-seq",
-      },
+      "cave-air-automaton-dj": { autoPlay: true, sequenceId: "cave-air-seq-dj" },
+      "cave-air-automaton-ek": { autoPlay: true, sequenceId: "cave-air-seq-ek" },
+      "cave-air-automaton-fl": { autoPlay: true, sequenceId: "cave-air-seq-fl" },
     },
   },
 

@@ -92,8 +92,13 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 	 * Local floor height at a world position. Rooms with no terrain program
 	 * (every museum surface but the Drowned Gallery) sit on the 0 datum.
 	 */
-	private floorYAt(worldX: number, worldZ: number): number {
-		return this.terrain ? this.terrain.elevationAt(worldX, worldZ) : 0;
+	private floorYAt(worldX: number, worldZ: number, fromY?: number): number {
+		return this.terrain ? this.terrain.elevationAt(worldX, worldZ, fromY) : 0;
+	}
+
+	/** The player's foot height — what `elevationAt` needs to pick a surface. */
+	private get feetY(): number {
+		return this.position.y - STANDING_Y;
 	}
 
 	private collidesWithAuthoredObject(worldX: number, worldZ: number): boolean {
@@ -180,9 +185,13 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 			}
 		}
 
-		// Y movement: accept UCC's jump/gravity calculations, clamp at local floor
+		// Y movement: accept UCC's jump/gravity calculations, clamp at local floor.
+		// The surface is resolved from where the feet were BEFORE this frame's fall,
+		// so descending past a ledge lands on the ledge rather than skipping to the
+		// floor below it, and walking under one is not snapped up onto it.
+		const feetBefore = this.feetY;
 		this.position.y += desiredMovement.y;
-		const minY = this.floorYAt(this.position.x, this.position.z) + STANDING_Y;
+		const minY = this.floorYAt(this.position.x, this.position.z, feetBefore) + STANDING_Y;
 		if (this.position.y < minY) {
 			this.position.y = minY;
 		}
@@ -234,7 +243,7 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 
 	isGrounded(): boolean {
 		// Grounded when at (or very near) standing height above the local floor
-		const minY = this.floorYAt(this.position.x, this.position.z) + STANDING_Y;
+		const minY = this.floorYAt(this.position.x, this.position.z, this.feetY) + STANDING_Y;
 		return this.position.y <= minY + 0.01;
 	}
 

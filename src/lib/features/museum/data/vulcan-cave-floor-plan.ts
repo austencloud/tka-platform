@@ -38,6 +38,7 @@ import {
 import {
   buildAirChimneyLayout,
   createAirChimneyTerrain,
+  airLedgeStationOffsets,
 } from "./air-chimney-layout";
 import { CAVE_THRESHOLD_ROOM } from "./lobby-floor-plan";
 
@@ -100,8 +101,12 @@ export const CAVE_MODE_ROOMS = [
     label: "Air",
     category: "TO",
     technicalMode: "Together-time / opposite-direction",
-    performerIds: ["cave-air-automaton"],
-    sequenceIds: ["cave-air-seq"],
+    performerIds: [
+      "cave-air-automaton-dj",
+      "cave-air-automaton-ek",
+      "cave-air-automaton-fl",
+    ],
+    sequenceIds: ["cave-air-seq-dj", "cave-air-seq-ek", "cave-air-seq-fl"],
     tone: "service",
   },
   {
@@ -317,10 +322,17 @@ const firePerformers = firstFireStationOffsets(
  * 34 × 24 m: a 12.5 m grass gully plus a 21.5 × 24 m canyon chamber holding a
  * ⌀14 m void with its rim ring.
  */
-// The Air chimney's shaft prototype needs an 18 m ramp run plus its platform,
-// column and overlook lip: 34 × 48 tiles of interior is 17 × 24 m.
-const AIR_MIN_INTERIOR_WIDTH = 34;
-const AIR_MIN_INTERIOR_HEIGHT = 48;
+// Interior metres = ceil(minInterior × 1.5) × 0.5, the same compile the Earth
+// note above describes. 23 × 27 gives 17.5 × 20.5 m.
+//
+// These were 34 × 48, chosen for the prototype's 18 m ramp run and carrying a
+// comment that read them as tiles (17 × 24 m). They are not tiles — the real
+// compile was 25.5 × 36 m, which is why the shaft looked lost in the room and
+// why the performer ledges sat 11 m from the column. With the ramp gone the
+// footprint should be the wing's smallest, per the pacing thesis: Air is the
+// narrowest plan and the tallest space.
+const AIR_MIN_INTERIOR_WIDTH = 23;
+const AIR_MIN_INTERIOR_HEIGHT = 27;
 
 const EARTH_MIN_INTERIOR_WIDTH = 45;
 const EARTH_MIN_INTERIOR_HEIGHT = 32;
@@ -363,6 +375,44 @@ const earthPerformers = earthCanyonStationOffsets(
   refId: `cave-earth-automaton-${EARTH_STATION_SUFFIXES[index]}`,
   collisionRadiusTiles: 2,
   elevation: EARTH_BOSS_Y,
+}));
+
+const airWalls = {
+  north: doorWall(EDGE_IDS.earthToAir, "start"),
+  south: doorWall(EDGE_IDS.airToSun, "end", 3),
+  east: torchWall("start"),
+  west: EMPTY_WALL,
+} satisfies Record<WallName, WallDefinition>;
+
+const airDimensions = computeRoomDimensions({
+  walls: airWalls,
+  minInteriorWidth: AIR_MIN_INTERIOR_WIDTH,
+  minInteriorHeight: AIR_MIN_INTERIOR_HEIGHT,
+});
+
+/** Fire's three pairs, met again — DJ, EK, FL — now one per ledge, low → high. */
+const AIR_STATION_SUFFIXES = ["dj", "ek", "fl"] as const;
+
+const airPerformers = airLedgeStationOffsets(
+  (airDimensions.w - 2) * TILE_METRES
+).map((offset, index) => ({
+  offsetX: interiorOffsetFraction(
+    offset.xMetres,
+    airDimensions.w,
+    airDimensions.w - 2
+  ),
+  offsetY: interiorOffsetFraction(
+    offset.zMetres,
+    airDimensions.h,
+    airDimensions.h - 2
+  ),
+  // Each ledge faces the shaft the visitor rises through.
+  facing: offset.facing,
+  refId: `cave-air-automaton-${AIR_STATION_SUFFIXES[index]}`,
+  // No collision radius on purpose: these stations are 2.4–7.6 m overhead and
+  // unreachable by design, and the collider is 2D — one here would plant an
+  // invisible pillar in the open floor the room depends on being open.
+  elevation: offset.y,
 }));
 
 const thresholdRoom: RoomNode = {
@@ -482,23 +532,10 @@ export const VULCAN_CAVE_ROOMS: RoomNode[] = [
     minInteriorWidth: AIR_MIN_INTERIOR_WIDTH,
     minInteriorHeight: AIR_MIN_INTERIOR_HEIGHT,
     description:
-      "A tall shaft: a ramp climbs the west wall to a ledge at +4.6, and a visible updraft column carries the visitor the last 3.8 m to the overlook.",
+      "A tall shaft with an open floor and no stair. A column of rising air carries the visitor past three ledges — one pair at a time, each arriving at eye level — to an overlook nine metres up; a second, warmer column sets them back down beside the door on.",
     roomPresentation: { suppressTileGeometry: true },
-    walls: {
-      north: doorWall(EDGE_IDS.earthToAir, "start"),
-      south: doorWall(EDGE_IDS.airToSun, "end", 3),
-      east: torchWall("start"),
-      west: EMPTY_WALL,
-    },
-    performers: [
-      {
-        offsetX: 0,
-        offsetY: 0,
-        facing: "north",
-        refId: "cave-air-automaton",
-        collisionRadiusTiles: 2,
-      },
-    ],
+    walls: airWalls,
+    performers: airPerformers,
   },
   {
     id: "cave-sun",

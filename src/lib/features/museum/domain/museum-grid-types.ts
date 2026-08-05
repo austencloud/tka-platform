@@ -74,7 +74,21 @@ export interface MuseumRoomPresentation {
 /** Optional per-plan terrain: floor elevation + walk blocking beyond tile types. */
 export interface MuseumTerrainProgram {
   waterlineY: number;
-  elevationAt(worldX: number, worldZ: number): number;
+  /**
+   * Floor height at a world point. `fromY` is the player's CURRENT foot height,
+   * and it exists because a room can stack surfaces over one another: a ledge at
+   * +5.6 and the open floor at 0 share an (x, z). Without it the caller can only
+   * ask "what is the floor here", the answer is a single number, and the physics
+   * clamp — which treats that number as a minimum — teleports anyone who walks
+   * beneath a ledge up onto it. That is why the Air prototype needed head-height
+   * rock rims around every raised surface just to stay walkable.
+   *
+   * Given `fromY`, a terrain program returns the highest surface the player could
+   * actually be standing on: at or below foot height, plus a step-up tolerance so
+   * kerbs and ramp seams still work. Omit it and the answer is the topmost
+   * surface, which is the historical behaviour every pre-Air bay relies on.
+   */
+  elevationAt(worldX: number, worldZ: number, fromY?: number): number;
   blockedAt(worldX: number, worldZ: number): boolean;
   /**
    * Upward lift speed (m/s) at a world point, or 0 for still air. `worldY` is
