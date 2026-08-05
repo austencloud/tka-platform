@@ -51,6 +51,9 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     setGalleryViewState,
   } from "../services/gallery-view-persister";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
+  import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
+  import { communityCollectionsState } from "$lib/features/browse/collections/state/community-collections-state.svelte";
+  import type { CollectionOption } from "$lib/features/browse/gallery-home/gallery-drill-catalog.svelte";
   import FilterRuleStrip from "$lib/shared/browse/components/FilterRuleStrip.svelte";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
@@ -165,7 +168,44 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     [BrowseFilterType.LOOP_TYPE]: "loop",
     [BrowseFilterType.TND_FAMILY]: "family",
     [BrowseFilterType.MAX_TURN_INTENSITY]: "max_turn_intensity",
+    [BrowseFilterType.COLLECTION]: "collection",
   };
+
+  // Collections are a FILTER in the gallery, not a door out of it: the tile
+  // opens a value editor and picking one stacks an "In: <name>" rule. The
+  // Library tab stays the management home (create, edit membership, share).
+  const collectionOptions = $derived.by(() => {
+    const seen = new Set<string>();
+    const out: CollectionOption[] = [];
+    const push = (
+      c: {
+        id: string;
+        name: string;
+        sequenceCount?: number;
+        sequenceIds?: readonly string[];
+        coverImageUrl?: string;
+        color?: string;
+        icon?: string;
+      },
+      ownerName?: string
+    ) => {
+      if (seen.has(c.id)) return;
+      seen.add(c.id);
+      out.push({
+        id: c.id,
+        name: c.name,
+        size: c.sequenceCount ?? c.sequenceIds?.length ?? 0,
+        coverImageUrl: c.coverImageUrl,
+        color: c.color,
+        icon: c.icon,
+        ownerName,
+      });
+    };
+    for (const c of collectionsState.collections) push(c);
+    for (const c of communityCollectionsState.items)
+      push(c.collection, c.ownerName);
+    return out.sort((a, b) => b.size - a.size);
+  });
   // Remount seed: editing a strip chip reopens the drill ON that filter's
   // editor instead of the chooser.
   let drillSeed = $state<{ section?: WorkspaceSection }>({});
@@ -199,6 +239,8 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       const key = SECTION_FOR_FILTER_TYPE[String(f.type)];
       if (key) counts[key] = (counts[key] ?? 0) + 1;
     }
+    // The Collections tile's catalog key is plural; its section is singular.
+    if (counts["collection"]) counts["collections"] = counts["collection"];
     return counts;
   });
   // True while the drill is rendering results live beside the filters. The
@@ -453,6 +495,11 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   // ============================================================================
 
   onMount(() => {
+    // The gallery's Collections filter needs the live collection lists; both
+    // stores are session singletons that no-op on a repeat call.
+    collectionsState.ensureStarted();
+    void communityCollectionsState.ensureLoaded();
+
     // Start background caching of gallery metadata + thumbnails so the browse
     // module works offline on subsequent visits without any user action.
     offlineCacheState.startBackgroundCache();
@@ -768,6 +815,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
                       engine.setSearch(q);
                     })}
                   {ruleCounts}
+                  collections={collectionOptions}
                   onSplitPaneChange={(active) => (splitPaneActive = active)}
                   {resultsHeader}
                   {resultsPane}

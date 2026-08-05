@@ -34,6 +34,7 @@
     SECTIONS,
     createGalleryCatalog,
     type CategoryEntry,
+    type CollectionOption,
     type Section,
   } from "./gallery-drill-catalog.svelte";
 
@@ -86,8 +87,12 @@
     variant?: "page" | "sheet";
     /** Persist the current sub-screen across remounts. */
     persistSection?: boolean;
-    /** Show the navigation-only Collections tile. */
+    /** Show the Collections tile. */
     showCollections?: boolean;
+    /** The collections this surface can FILTER by. When supplied the
+     * Collections tile opens a value editor instead of ejecting to the Library
+     * tab; when absent it keeps the navigation behavior. */
+    collections?: readonly CollectionOption[];
     /** Opt into a fluid native-4K canvas. */
     fluidWideCanvas?: boolean;
     /** Present every available filter category as one decision canvas. */
@@ -143,6 +148,7 @@
     variant = "page",
     persistSection,
     showCollections,
+    collections,
     fluidWideCanvas = false,
     unifiedFilterChooser = false,
     adaptiveValueLayout = false,
@@ -212,6 +218,9 @@
     },
     get showCollections() {
       return shouldShowCollections;
+    },
+    get collections() {
+      return collections;
     },
     get drillWidth() {
       return drillWidth;

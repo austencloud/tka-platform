@@ -237,36 +237,36 @@ function flipWithMorph(apply: () => void) {
 - Modify: `src/lib/features/browse/shared/components/BrowseModule.svelte` (remove the Library-tab eject for collections)
 - Test: `tests/unit/browse/collection-filter.test.ts`
 
-- [ ] **Step 4.1:** Investigate first (30 min cap): how collection
+- [x] **Step 4.1:** Investigate first (30 min cap): how collection
   membership is resolved today — start from
   `src/lib/features/browse/collections/components/CollectionsBrowsePanel.svelte`
   and `SmartCollectionDetailView.svelte` and find the service that maps a
   collection id to sequence ids. Write the finding (service + call
   signature) into this plan file under this step before coding.
-- [ ] **Step 4.2:** Add a `collection` filter kind keyed per value
+- [x] **Step 4.2:** Add a `collection` filter kind keyed per value
   (`collection:<id>`), same stacking/connective-free semantics as other
   multi-value categories (OR within, AND across). A rule referencing a
   collection that no longer resolves degrades to matching nothing, with
   its strip chip still rendered and removable (spec Risk 4) — never a
   crash, never an invisible filter.
-- [ ] **Step 4.3:** Unit tests: (a) membership filter narrows to the
+- [x] **Step 4.3:** Unit tests: (a) membership filter narrows to the
   collection's sequences, (b) stacks with a level rule (AND), (c) missing
   collection id yields empty results and a live, removable rule, (d)
   persisted `collection:<id>` key round-trips through the
   persister/migration path the other per-value keys use.
   Run: `npx vitest run tests/unit/browse/collection-filter.test.ts`
   Expected: PASS.
-- [ ] **Step 4.4:** Wire the value editor: Collections tile shows the
+- [x] **Step 4.4:** Wire the value editor: Collections tile shows the
   collection list (cover + name + count, dimmed zeros like every other
   category) in the value row; tap = toggle rule. Delete the
   navigate-to-Library behavior for the gallery surface (grep
   `viewCollectionDetail` uses in `BrowseModule.svelte` :243–247 — only the
   gallery-drill path changes; GalleryTab shelf rows and detail views keep
   theirs).
-- [ ] **Step 4.5:** Browser walk at 2112×1188×1.1: add "In: <collection>",
+- [x] **Step 4.5:** Browser walk at 2112×1188×1.1: add "In: <collection>",
   stack Level 2, screenshot strip + narrowed grid, remove via ×.
   `npm run check` captured-log grep: 0 errors.
-- [ ] **Step 4.6:** Commit:
+- [x] **Step 4.6:** Commit:
   `git commit -m "feat(browse): collection membership is a stackable gallery filter" -- src/lib/shared/browse/ src/lib/features/browse/ tests/unit/browse/collection-filter.test.ts`
 
 ### Task 5: Full verification sweep + closeout

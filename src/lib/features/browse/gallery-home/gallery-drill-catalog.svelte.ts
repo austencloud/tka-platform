@@ -44,7 +44,8 @@ export type Section =
   | "author"
   | "loop"
   | "family"
-  | "max_turn_intensity";
+  | "max_turn_intensity"
+  | "collection";
 
 export const SECTIONS: readonly Section[] = [
   "chooser",
@@ -57,6 +58,7 @@ export const SECTIONS: readonly Section[] = [
   "loop",
   "family",
   "max_turn_intensity",
+  "collection",
 ];
 
 /** Class applied to the active screen — the focus target after navigation. */
@@ -71,6 +73,7 @@ export const SCREEN_CLASS: Record<Section, string> = {
   loop: "screen-loop",
   family: "screen-family",
   max_turn_intensity: "screen-max-turns",
+  collection: "screen-collections",
 };
 
 export const LEVELS = [1, 2, 3];
@@ -252,6 +255,20 @@ export const PEEK_TIERS = {
 
 export type PeekTier = (typeof PEEK_TIERS)[keyof typeof PEEK_TIERS];
 
+/** One collection the gallery can filter by. Hosts supply the live list; the
+ * drill stays free of Firestore. */
+export interface CollectionOption {
+  readonly id: string;
+  readonly name: string;
+  /** Total sequences the collection holds, independent of the current rule. */
+  readonly size: number;
+  readonly coverImageUrl?: string;
+  readonly color?: string;
+  readonly icon?: string;
+  /** "Curated by <name>" — whose collection this is. */
+  readonly ownerName?: string;
+}
+
 /** Art shown on a category tile. Every kind previews REAL catalog data. */
 export type CategoryArt =
   | { kind: "icon"; icon: string }
@@ -289,6 +306,9 @@ export interface GalleryCatalogDeps {
   readonly onToggleValue: unknown;
   readonly unifiedFilterChooser: boolean;
   readonly showCollections: boolean;
+  /** When present, the Collections tile opens a value editor instead of
+   * navigating to the Library tab. */
+  readonly collections: readonly CollectionOption[] | undefined;
   readonly drillWidth: number;
   readonly fluidWideCanvas: boolean;
 }
@@ -435,6 +455,16 @@ export function createGalleryCatalog(deps: GalleryCatalogDeps) {
   const recentCount = $derived(deps.getCount(BrowseFilterType.RECENT, "recent"));
   const favoritesCount = $derived(
     deps.getCount(BrowseFilterType.FAVORITES, "favorites")
+  );
+
+  const collectionValues = $derived(
+    (deps.collections ?? []).map((c) => ({
+      ...c,
+      count: deps.getCount(BrowseFilterType.COLLECTION, c.id),
+    }))
+  );
+  const maxCollectionCount = $derived(
+    Math.max(1, ...collectionValues.map((v) => v.count))
   );
 
   const loopDotColors = $derived(
@@ -655,12 +685,16 @@ export function createGalleryCatalog(deps: GalleryCatalogDeps) {
       });
     }
     if (deps.showCollections) {
+      const filterable = (deps.collections?.length ?? 0) > 0;
       out.push({
         key: "collections",
         title: "Collections",
-        sub: "Curated by the community",
+        sub: filterable
+          ? `${deps.collections!.length} to filter by`
+          : "Curated by the community",
         art: { kind: "icon", icon: "fa-folder" },
-        navigate: "collections",
+        section: filterable ? "collection" : undefined,
+        navigate: filterable ? undefined : "collections",
         narrowedOut: false,
       });
     }
@@ -721,6 +755,12 @@ export function createGalleryCatalog(deps: GalleryCatalogDeps) {
     },
     get maxCreatorCount() {
       return maxCreatorCount;
+    },
+    get collectionValues() {
+      return collectionValues;
+    },
+    get maxCollectionCount() {
+      return maxCollectionCount;
     },
     get creatorSamples() {
       return creatorSamples;

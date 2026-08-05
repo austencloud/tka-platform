@@ -614,6 +614,63 @@
         {/each}
       </div>
     </div>
+  {:else if section === "collection"}
+    <div class="drill-screen screen-collections">
+      {@render valueHead(
+        "Pick a collection",
+        stackHint ?? "Sequences filed in it."
+      )}
+      <div class="value-list">
+        {#each catalog.collectionValues as v (v.id)}
+          {@const applied =
+            isValueApplied?.(BrowseFilterType.COLLECTION, v.id) ?? false}
+          <button
+            class="length-row tall monument tinted collection-row"
+            class:value-applied={applied}
+            style:--row-color={v.color ?? "var(--theme-accent, #6366f1)"}
+            type="button"
+            aria-label={`${v.name}, ${v.count} sequences`}
+            aria-pressed={isValueApplied ? applied : undefined}
+            disabled={valueDisabled(v.count, applied)}
+            onclick={() =>
+              onPickValue(
+                BrowseFilterType.COLLECTION,
+                v.id,
+                v.name,
+                v.color ?? undefined
+              )}
+          >
+            {#if v.coverImageUrl}
+              <img
+                class="value-img collection-cover"
+                src={v.coverImageUrl}
+                alt=""
+                width="56"
+                height="56"
+                loading="lazy"
+              />
+            {:else}
+              <span class="loop-icon" aria-hidden="true">
+                <i class="fas {v.icon ?? 'fa-folder'}"></i>
+              </span>
+            {/if}
+            <span class="value-main">
+              <span class="value-label" title={v.name}>{v.name}</span>
+              {#if v.ownerName}
+                <span class="value-desc">Curated by {v.ownerName}</span>
+              {/if}
+              <span class="density-bar">
+                <span
+                  class="density-fill"
+                  style:width="{(v.count / catalog.maxCollectionCount) * 100}%"
+                ></span>
+              </span>
+            </span>
+            <span class="value-count">{v.count}</span>
+          </button>
+        {/each}
+      </div>
+    </div>
   {:else if section === "family"}
     <div class="drill-screen screen-family">
       {@render valueHead(
@@ -4161,6 +4218,19 @@
         font-size: 1.15rem;
       }
     }
+  }
+
+  /* Collection rows read as their own thing: cover art (or the folder glyph)
+     leading a name, the curator, and the live count. */
+  .collection-row .value-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+  .value-img.collection-cover {
+    object-fit: cover;
+    border-radius: 0.6rem;
   }
 
   /* ── Split pane (LAST: must outrank every tier above) ──────────── */
