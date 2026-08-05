@@ -97,11 +97,10 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
 
   const isMobileLayout = $derived(!isSideBySideLayout);
 
-  // Medium-width stacked windows have room to keep the sequence visible above
-  // the actions. Compact phones still use the full-screen editing surface.
-  const useWorkspaceContextLayout = $derived(
-    !isSideBySideLayout && viewportWidth >= BREAKPOINTS.PORTRAIT_MOBILE
-  );
+  // Keep the sequence visible above the actions whenever the workspace and
+  // controls are stacked. Phone-sized layouts still use the compact toolbar,
+  // but the drawer only replaces the controls at the bottom of the screen.
+  const useWorkspaceContextLayout = $derived(!isSideBySideLayout);
 
   // Compact mode for mobile portrait - horizontal icon+text layout
   // Applies to most mobile widths, disabled at tablet/desktop widths
