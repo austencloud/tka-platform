@@ -45,6 +45,12 @@
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/cell-pre-warmer";
   import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
+  import { registerResultsLayoutStabilizer } from "$lib/shared/transitions/results-morph";
+  import {
+    createSectionedGridMeasurementSignature,
+    getSectionedGridItemKey,
+    getSectionedGridRowMaxSteps,
+  } from "./sectioned-grid-measurements";
 
   export interface SectionedGridApi {
     /** Scroll the section whose header carries `title` to the top of the view. */
@@ -265,11 +271,7 @@
       listWidth > 0 ? listWidth : (scrollElement?.clientWidth ?? 360);
     const gap = 8;
     const cardWidth = (width - (cols - 1) * gap) / cols;
-    let maxSteps = 4;
-    for (const seq of it.sequences) {
-      const steps = seq?.steps?.length || seq?.sequenceLength || 4;
-      if (steps > maxSteps) maxSteps = steps;
-    }
+    const maxSteps = getSectionedGridRowMaxSteps(it.sequences);
     const aspect = calculateGalleryAspectRatio(
       maxSteps,
       compositionManager.startPositionLayout
@@ -283,6 +285,10 @@
   let virtualizerStore: VirtualizerStore | null = null;
   let storeUnsub: (() => void) | null = null;
   let lastActive: string | undefined;
+  let activeScrollElement: HTMLElement | null = null;
+  let activeMeasurementSignature = "";
+  let remeasureRaf: number | null = null;
+  let unregisterMorphStabilizer: (() => void) | null = null;
 
   function measureScrollMargin(): number {
     if (!listEl || !scrollElement) return 0;
@@ -309,16 +315,27 @@
 
   let createSignature = "";
 
-  function createAndSubscribe() {
-    if (!scrollElement) return;
-    // Recreate ONLY on structural change (item count / columns) — those remount
-    // the item nodes so `use:measureItem` re-runs. Recreating on width/scroll-
-    // margin churn discards the measurement cache WITHOUT remounting nodes, which
-    // strands stale estimates and opens gaps between sections. Width changes go
-    // through currentVirtualizer.measure() instead (see the ResizeObserver).
+  function getVirtualItemKey(index: number): string | number {
+    return getSectionedGridItemKey(flat.items, index);
+  }
+
+  function createAndSubscribe(measurementSignature: string): boolean {
+    if (!scrollElement) return false;
+    // Recreate only when the virtualizer's shape or scroll owner changes.
+    // Equal-count data replacements reset measurements in the pre-effect below;
+    // width changes use the list ResizeObserver. Recreating for either one would
+    // discard the cache without guaranteeing that every retained node remounts.
     const sig = `${flat.items.length}|${engine.columnCount}`;
-    if (sig === createSignature && currentVirtualizer) return;
+    if (
+      sig === createSignature &&
+      currentVirtualizer &&
+      activeScrollElement === scrollElement
+    ) {
+      return false;
+    }
     createSignature = sig;
+    activeScrollElement = scrollElement;
+    activeMeasurementSignature = measurementSignature;
 
     // Seed the row width SYNCHRONOUSLY before the first estimates. The rAF
     // seed below (onMount) lands a frame after the virtualizer has already
@@ -337,6 +354,7 @@
     virtualizerStore = createVirtualizer({
       count: flat.items.length,
       getScrollElement: () => scrollElement,
+      getItemKey: getVirtualItemKey,
       estimateSize: estimateItemSize,
       overscan: 4,
       scrollMargin,
@@ -352,14 +370,40 @@
     // A fresh virtualizer starts from estimates. The already-mounted item nodes
     // won't re-run the `use:measureItem` action, so feed their real heights back
     // in — otherwise stale estimates leave gaps between sections.
-    requestAnimationFrame(remeasureMounted);
+    queueMountedRemeasure();
+    return true;
+  }
+
+  function queueMountedRemeasure() {
+    if (remeasureRaf !== null) return;
+    remeasureRaf = requestAnimationFrame(() => {
+      remeasureRaf = null;
+      remeasureMounted();
+    });
   }
 
   function remeasureMounted() {
     if (!currentVirtualizer || !listEl) return;
+    // Svelte actions do not have React's null-ref callback. Clear TanStack's
+    // disconnected element entries before registering the data-keyed nodes that
+    // replaced them during this filter update.
+    currentVirtualizer.measureElement(null);
     for (const node of listEl.querySelectorAll<HTMLElement>(".v-item")) {
       currentVirtualizer.measureElement(node);
     }
+  }
+
+  function stabilizeMorphLayout() {
+    if (remeasureRaf !== null) {
+      cancelAnimationFrame(remeasureRaf);
+      remeasureRaf = null;
+    }
+    remeasureMounted();
+  }
+
+  function resetMeasurementsForCurrentWidth() {
+    currentVirtualizer?.measure();
+    queueMountedRemeasure();
   }
 
   function measureItem(node: HTMLElement) {
@@ -375,7 +419,13 @@
 
   onMount(() => {
     scrollMargin = measureScrollMargin();
-    createAndSubscribe();
+    createAndSubscribe(
+      createSectionedGridMeasurementSignature(
+        flat.items,
+        engine.columnCount,
+        compositionManager.startPositionLayout
+      )
+    );
 
     if (onGridReady) {
       onGridReady({
@@ -410,9 +460,10 @@
             widthChanged = true;
           }
         }
-        // Width change: re-estimate + re-measure IN PLACE. Never recreate here —
-        // recreating without remounting nodes strands stale estimates.
-        if (widthChanged) currentVirtualizer?.measure();
+        // A width change invalidates every cached height. Leaving the
+        // virtualizer at estimates here is what made the C section fall back on
+        // top of A one frame after an otherwise-correct filter transition.
+        if (widthChanged) resetMeasurementsForCurrentWidth();
       });
     });
     if (listEl) ro.observe(listEl);
@@ -423,7 +474,7 @@
         const w = listEl.getBoundingClientRect().width;
         if (w > 0 && Math.abs(w - listWidth) > 1) {
           listWidth = w;
-          currentVirtualizer?.measure();
+          resetMeasurementsForCurrentWidth();
         }
       }
     });
@@ -436,18 +487,30 @@
 
   onDestroy(() => {
     storeUnsub?.();
+    unregisterMorphStabilizer?.();
+    if (remeasureRaf !== null) cancelAnimationFrame(remeasureRaf);
     visibilityManager.unregisterObserver(handleVisibilityChange);
   });
 
-  // Recreate when the item stream, column count, or (late-arriving) scroll
-  // element changes. Tracking `scrollElement` covers BrowsePanel's `bind:this`
-  // landing after this child mounts.
-  $effect(() => {
-    const _count = flat.items.length;
-    const _cols = engine.columnCount;
+  // Filtering can replace a short row with a taller one while leaving the item
+  // count unchanged. Reset those cached sizes before Svelte paints the new row,
+  // so the View Transition snapshots the final section positions rather than a
+  // frame where the following header still owns the old row's offset.
+  $effect.pre(() => {
+    const measurementSignature = createSectionedGridMeasurementSignature(
+      flat.items,
+      engine.columnCount,
+      compositionManager.startPositionLayout
+    );
     const sc = scrollElement;
     untrack(() => {
-      if (sc) createAndSubscribe();
+      if (!sc) return;
+      if (createAndSubscribe(measurementSignature)) return;
+      if (measurementSignature === activeMeasurementSignature) return;
+
+      activeMeasurementSignature = measurementSignature;
+      currentVirtualizer?.measure();
+      queueMountedRemeasure();
     });
   });
 
@@ -493,6 +556,10 @@
   let namesStructure = $state(false);
   onMount(() => {
     namesStructure = !!listEl?.closest(".pane-results-body");
+    if (namesStructure) {
+      unregisterMorphStabilizer =
+        registerResultsLayoutStabilizer(stabilizeMorphLayout);
+    }
   });
 
   // Names must be unique document-wide. A per-instance prefix guarantees that
