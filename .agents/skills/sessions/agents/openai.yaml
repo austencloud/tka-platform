@@ -1,0 +1,4 @@
+interface:
+  display_name: "User Session Triage"
+  short_description: "Reviewing real user sessions for bugs"
+  default_prompt: "Use $sessions to apply the User Session Triage workflow to this task."

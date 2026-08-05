@@ -78,6 +78,8 @@
     ".agents/skills/screenshots/agents/openai.yaml",
     ".agents/skills/service-naming/SKILL.md",
     ".agents/skills/service-naming/agents/openai.yaml",
+    ".agents/skills/sessions/SKILL.md",
+    ".agents/skills/sessions/agents/openai.yaml",
     ".agents/skills/ship/SKILL.md",
     ".agents/skills/ship/agents/openai.yaml",
     ".agents/skills/ship/phases-reference.md",
