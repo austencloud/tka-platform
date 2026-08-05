@@ -52,6 +52,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   } from "../services/gallery-view-persister";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import FilterRuleStrip from "$lib/shared/browse/components/FilterRuleStrip.svelte";
+  import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
 
   // Tab ids match tab labels (renamed 2026-07-10): "library" is your saved
@@ -189,6 +190,21 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     )
   );
   const activeFamilyValues = $derived(new Set(familyKeyByValue.keys()));
+  // Which category each active rule belongs to, so the split pane's catalog
+  // tiles can carry a count dot.
+  const ruleCounts = $derived.by(() => {
+    const counts: Record<string, number> = {};
+    for (const f of engine.activeFilters.values()) {
+      if (f.locked) continue;
+      const key = SECTION_FOR_FILTER_TYPE[String(f.type)];
+      if (key) counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return counts;
+  });
+  // True while the drill is rendering results live beside the filters. The
+  // pinned strip and "View N results" belong to the step-through flow only;
+  // with the grid on screen they are noise (and a second, contradicting count).
+  let splitPaneActive = $state(false);
   const appliedValueKeys = $derived(
     new Set(
       [...engine.activeFilters.values()]
@@ -563,6 +579,53 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   });
 </script>
 
+<!-- The gallery workspace's right-hand column: the rule as a header, the live
+     grid underneath. Both are the SHARED components the step-through flow and
+     the grid tab already use — never a copy. -->
+{#snippet resultsHeader()}
+  <span class="strip-count" aria-live="polite">
+    {engine.resultCount}
+    {engine.resultCount === 1 ? "match" : "matches"}
+  </span>
+  {#if engine.hasActiveFilters}
+    <FilterRuleStrip
+      filters={engine.allFilterChips.filter((c) => !c.locked)}
+      connectives={engine.connectives}
+      onEditFilter={(type) =>
+        (drillSeed = { section: SECTION_FOR_FILTER_TYPE[type] })}
+      onRemoveFilter={(key) => engine.removeFilter(key)}
+    />
+  {:else}
+    <span class="strip-empty">No filters yet — pick one on the left.</span>
+  {/if}
+  <div class="strip-actions">
+    <PanelButton
+      variant="secondary"
+      ariaLabel="Save these filters as a Smart Collection"
+      onclick={() => (smartSaveOpen = true)}
+    >
+      <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+      Save
+    </PanelButton>
+  </div>
+{/snippet}
+
+{#snippet resultsPane()}
+  <BrowsePanel
+    {engine}
+    layout="compact"
+    showFilterBar={false}
+    hideToolbarSearch
+    hideFilterChips
+    onSelect={(sequence, variations) =>
+      eventHandlerService?.handleSequenceAction(
+        "view-detail",
+        sequence,
+        variations
+      )}
+  />
+{/snippet}
+
 <!-- Error banner -->
 {#if error}
   <ErrorBanner
@@ -603,7 +666,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
         {#if activeTab === "gallery"}
           {#if galleryView === "start-here"}
             <div class="gallery-workspace">
-              {#if engine.hasActiveFilters}
+              {#if engine.hasActiveFilters && !splitPaneActive}
                 <div class="gallery-rule-strip" aria-label="Current filters">
                   <span class="strip-count" aria-live="polite">
                     {engine.resultCount}
@@ -704,6 +767,10 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
                       engine.clearUserFilters();
                       engine.setSearch(q);
                     })}
+                  {ruleCounts}
+                  onSplitPaneChange={(active) => (splitPaneActive = active)}
+                  {resultsHeader}
+                  {resultsPane}
                 />
               {/key}
             </div>
@@ -786,11 +853,16 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       var(--theme-border, rgba(255, 255, 255, 0.12));
   }
 
-  .gallery-rule-strip .strip-count {
+  .strip-count {
     font-size: 0.85rem;
     font-weight: 700;
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
+  }
+
+  .strip-empty {
+    font-size: 0.8rem;
+    color: var(--theme-text-muted, #9aa6b8);
   }
 
   .strip-actions {

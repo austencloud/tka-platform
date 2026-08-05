@@ -18,9 +18,11 @@
   interface Props {
     entry: CategoryEntry;
     /** Which surface is rendering this tile. */
-    composition?: "landing" | "rail" | "unified";
+    composition?: "landing" | "rail" | "unified" | "catalog";
     /** True when this category's value editor is the one on screen. */
     active?: boolean;
+    /** Active rules this category carries — rendered as a count dot. */
+    ruleCount?: number;
     /** Glyph art height — the landing bumps it inside the adaptive tier. */
     glyphHeight?: number;
     /** Creator avatars: photo + owner id per name. */
@@ -34,6 +36,7 @@
     entry,
     composition = "landing",
     active = false,
+    ruleCount = 0,
     glyphHeight = 20,
     avatarFor,
     onselect,
@@ -44,6 +47,7 @@
   class="mini-tile"
   class:unified={composition === "unified"}
   class:rail={composition === "rail"}
+  class:catalog={composition === "catalog"}
   class:catalog-active={active}
   type="button"
   aria-current={active ? "page" : undefined}
@@ -94,6 +98,10 @@
   <span class="mini-main">
     <span class="mini-title">{entry.title}</span>
     <span class="mini-sub">{entry.sub}</span>
+  </span>
+  <!-- Slot always reserved: a dot appearing must not resize the tile. -->
+  <span class="rule-dot" class:on={ruleCount > 0} aria-hidden={ruleCount === 0}>
+    {ruleCount > 0 ? ruleCount : ""}
   </span>
 </button>
 
@@ -258,6 +266,88 @@
       width: 10px;
       height: 10px;
     }
+  }
+
+  /* Count dot: how many rules this category carries right now. The slot is
+     always in the layout (visibility, not display), so a rule landing never
+     resizes the tile or shifts its neighbours. */
+  .rule-dot {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15rem;
+    height: 1.15rem;
+    border-radius: 999px;
+    background: var(--theme-accent, #6366f1);
+    color: var(--theme-text-on-accent, #fff);
+    font-size: 0.68rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    visibility: hidden;
+  }
+  .rule-dot.on {
+    visibility: visible;
+  }
+  /* Only the split-pane catalog shows the dot; every other composition keeps
+     its historical box exactly as it was. */
+  .mini-tile:not(.catalog) .rule-dot {
+    display: none;
+  }
+
+  /* ── Composition: split-pane catalog ───────────────────────────── */
+  /* Compact labeled rows, two per column-row, above the value editor. */
+  .mini-tile.catalog {
+    min-height: 44px;
+    gap: 0.45rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: 0.7rem;
+  }
+  .mini-tile.catalog:hover {
+    transform: none;
+  }
+  .mini-tile.catalog.catalog-active {
+    border-color: var(--theme-accent, #6366f1);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 18%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+    box-shadow: inset 3px 0 0 var(--theme-accent, #6366f1);
+  }
+  .mini-tile.catalog .mini-art {
+    width: 1.75rem;
+    min-width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+  }
+  .mini-tile.catalog .mini-main {
+    flex: 1 1 auto;
+    align-items: flex-start;
+  }
+  .mini-tile.catalog .mini-title {
+    overflow: hidden;
+    font-size: 0.85rem;
+    line-height: 1.15;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* The label is the decision; the sub-line is landing editorial. */
+  .mini-tile.catalog .mini-sub {
+    display: none;
+  }
+  .mini-tile.catalog .element-dot {
+    width: 6px;
+    height: 6px;
+  }
+  .mini-tile.catalog .avatar-cluster > :global(.robust-avatar + .robust-avatar) {
+    margin-left: -14px;
+  }
+  .mini-tile.catalog :global(.cluster-avatar.robust-avatar) {
+    --avatar-size: 1.5rem !important;
   }
 
   /* ── Composition: unified decision canvas ──────────────────────── */

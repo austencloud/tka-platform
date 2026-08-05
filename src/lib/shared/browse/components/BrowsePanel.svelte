@@ -32,6 +32,9 @@
     backLabel?: string;
     /** Hide the toolbar search when the host provides its own entry point. */
     hideToolbarSearch?: boolean;
+    /** Hide the toolbar's inline filter chips when the host already owns a
+     * complete filter surface (the gallery split pane). Sort/zoom/count stay. */
+    hideFilterChips?: boolean;
     /** Picker hosts: ids to render with the selected outline (e.g. sequences
      * already in the collection being built). */
     selectedIds?: ReadonlySet<string>;
@@ -76,6 +79,7 @@
     onBack,
     backLabel,
     hideToolbarSearch = false,
+    hideFilterChips = false,
     selectedIds,
     onOpenFilters,
     warming = false,
@@ -305,6 +309,7 @@
         {backLabel}
         hideSearch={hideToolbarSearch}
         {onOpenFilters}
+        {hideFilterChips}
         onEnterSelection={selection ? () => selection.enter() : undefined}
       />
     {/if}

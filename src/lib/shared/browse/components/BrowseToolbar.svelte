@@ -34,6 +34,10 @@
     /** Bottom-sheet filter pattern: renders a Filters pill (with active-count
      * badge) and hides the inline selector chips — the sheet owns them. */
     onOpenFilters?: () => void;
+    /** The host already owns a complete filter surface (the gallery split
+     * pane's left column), so the inline selector chips would be a second,
+     * contradicting copy of it. Sort, zoom and the count stay. */
+    hideFilterChips?: boolean;
     /** Enters multi-selection mode. Kept host-owned because only personal
      * library surfaces can file a selection into collections. */
     onEnterSelection?: () => void;
@@ -46,6 +50,7 @@
     backLabel = "Start here",
     hideSearch = false,
     onOpenFilters,
+    hideFilterChips = false,
     onEnterSelection,
   }: Props = $props();
 
@@ -480,7 +485,7 @@
   {/if}
 
   <!-- 4. Inline filter chips (wide screens only; sheet pattern replaces them) -->
-  {#if !onOpenFilters}
+  {#if !onOpenFilters && !hideFilterChips}
     <span class="toolbar-divider" aria-hidden="true"></span>
     <div class="inline-filters" role="toolbar" aria-label="Filter options">
       {#if !isHandsMode}

@@ -148,7 +148,7 @@ pinned bar does. The sheets (`AddSequencesSheet`,
 `SmartCollectionBuilderSheet`, `GalleryFilterSheet`) pass neither and keep
 today's flow automatically.
 
-- [ ] **Step 2.1:** Add the snippet props and, in `GalleryWorkspace`, the
+- [x] **Step 2.1:** Add the snippet props and, in `GalleryWorkspace`, the
   wide-tier grid: `grid-template-columns: minmax(25rem, 27.5rem) 1fr`
   behind `@media (min-width: 1200px)` when `resultsPane` is present
   (exact seam value: executor picks within 1140–1280 where the columns
@@ -159,24 +159,24 @@ today's flow automatically.
   `resultsPane`. Value-editor card layouts inside the left column go to
   1–2 across — art is preserved, not shrunk to chips (spec Risk 1: if a
   category cannot read at ~420px, STOP and report rather than degrade it).
-- [ ] **Step 2.2:** In `BrowseModule`, build the two snippets and pass them
+- [x] **Step 2.2:** In `BrowseModule`, build the two snippets and pass them
   to the drill only for the main gallery surface. While the workspace is
   live-rendering results, suppress the pinned top strip and the
   "View N results" button at the wide tier (they remain below the seam).
   The Save action moves into `resultsHeader`.
-- [ ] **Step 2.3:** `npm run check` (captured log, grep errors). Expected: 0.
-- [ ] **Step 2.4:** Browser loop, wide tier: at 2112×1188×1.1 open the
+- [x] **Step 2.3:** `npm run check` (captured log, grep errors). Expected: 0.
+- [x] **Step 2.4:** Browser loop, wide tier: at 2112×1188×1.1 open the
   workspace, tap values across Level, Grid mode, LOOPs. Evidence required:
   `evaluate_script` returning the results grid's rendered card count
   before/after each tap (proves live update, no "View results" press), and
   measured left-column width + category-tile widths. Screenshot each state.
-- [ ] **Step 2.5:** Browser loop, remaining viewports: 4224×2376×1.1,
+- [x] **Step 2.5:** Browser loop, remaining viewports: 4224×2376×1.1,
   2816×1584×1.1, 1584×990×1.1 (above-seam set), then 1320×902×1.1 and
   1056×453×1.1 (960×412 fold) and 412×733 phone — the below-seam set must
   show today's step-through flow unchanged, "View N results" intact.
   Read every frame against the visual-verification checklist (absurd
   widths, dead space, orphans, dead-ends).
-- [ ] **Step 2.6:** Commit:
+- [x] **Step 2.6:** Commit:
   `git commit -m "feat(gallery): split-pane workspace — live results right, filters left" -- src/lib/features/browse/gallery-home/ src/lib/features/browse/shared/components/BrowseModule.svelte`
 
 ### Task 3: The landing ↔ workspace morph

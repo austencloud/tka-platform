@@ -15,6 +15,7 @@
   that leak column layout into unprefixed names.
 -->
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
@@ -110,6 +111,17 @@
       color: string | undefined,
       nowActive: boolean
     ) => void;
+    /** Rendered as the right-hand LIVE results pane on wide screens. When
+     * absent (sheets, narrow hosts), the step-through flow renders. */
+    resultsPane?: Snippet;
+    /** Rendered as the results pane's header (rule strip + count + Save). */
+    resultsHeader?: Snippet;
+    /** How many active rules each category carries, keyed by section key —
+     * the count dot on the left column's catalog tiles. */
+    ruleCounts?: Readonly<Record<string, number>>;
+    /** Fires when the split pane opens or closes, so the host can retire its
+     * own pinned rule strip and "View N results" button while it is live. */
+    onSplitPaneChange?: (active: boolean) => void;
   }
   let {
     pool = [],
@@ -139,6 +151,10 @@
     onSectionChange,
     isValueApplied,
     onToggleValue,
+    resultsPane,
+    resultsHeader,
+    ruleCounts,
+    onSplitPaneChange,
   }: Props = $props();
 
   const shouldPersistSection = persistSection ?? variant === "page";
@@ -165,6 +181,9 @@
   });
 
   let drillWidth = $state(0);
+  /** Live width of the split pane's left column — the art tiers inside the
+   * value editors follow IT, not the whole drill, once the pane is open. */
+  let paneWidth = $state(0);
   let drillEl = $state<HTMLElement | null>(null);
   let query = $state("");
 
@@ -224,6 +243,20 @@
   /** The editorial landing shows only when a host keeps it (no unified
    * chooser) AND no value editor is open. */
   const showLanding = $derived(section === "chooser" && !unifiedFilterChooser);
+
+  // ── Split pane ──────────────────────────────────────────────────────────
+  // The seam is 1240px of DRILL width, not viewport: below it the left column
+  // (25–27.5rem) plus a results grid worth looking at stop fitting side by
+  // side, and the step-through flow is the better shape. Measured off the same
+  // clientWidth binding the art tiers use, so the JS decision and the layout
+  // can never disagree the way a media query and a container query would.
+  const SPLIT_SEAM = 1240;
+  const splitPane = $derived(
+    Boolean(resultsPane) && !showLanding && drillWidth >= SPLIT_SEAM
+  );
+  $effect(() => {
+    onSplitPaneChange?.(splitPane);
+  });
 
   function submitSearch(event: Event) {
     event.preventDefault();
@@ -288,6 +321,37 @@
   );
 </script>
 
+{#snippet workspaceScreen()}
+  <GalleryWorkspace
+    {catalog}
+    {section}
+    drillWidth={splitPane ? paneWidth : drillWidth}
+    sheet={variant === "sheet"}
+    {splitPane}
+    {unifiedFilterChooser}
+    {adaptiveValueLayout}
+    {persistentDesktopCatalog}
+    {chooserTitle}
+    {chooserHint}
+    {stackHint}
+    {isValueApplied}
+    {activeLoopValues}
+    {onToggleLoop}
+    {loopConnective}
+    {onLoopConnectiveChange}
+    {activeFamilyValues}
+    {onToggleFamily}
+    {familyConnective}
+    {onFamilyConnectiveChange}
+    onBack={() => (section = "chooser")}
+    onPickValue={pickValue}
+    onPickLoop={pickLoop}
+    onPickFamily={pickFamily}
+    {onApply}
+    onSelectCategory={selectCategory}
+  />
+{/snippet}
+
 <div
   class="drill"
   data-section={section}
@@ -296,6 +360,7 @@
   class:unified-filter-chooser={unifiedFilterChooser}
   class:adaptive-value-layout={adaptiveValueLayout}
   class:persistent-desktop-catalog={persistentDesktopCatalog}
+  class:split-pane={splitPane}
   bind:clientWidth={drillWidth}
   bind:this={drillEl}
 >
@@ -315,62 +380,66 @@
   {/if}
 
   <div class="drill-stage">
-    <!-- The rail duplicates the editorial landing's own category tiles —
-         hosts that keep that landing get the rail only beside VALUE editors,
-         never beside the landing itself. -->
-    {#if persistentDesktopCatalog && (unifiedFilterChooser || section !== "chooser")}
-      <CategoryRail {catalog} {section} onselect={selectCategory} />
-    {/if}
-    <div class="drill-editor-stage">
-      <!-- fill mode: screens differ in height, so the content-sized grid-stack
-           would resize (and shove neighbors) at every section change. The stage
-           is the sized box; layers fill it and each screen scrolls itself. -->
-      <Crossfade key={section} duration={DURATION.normal} fill>
-        {#if showLanding}
-          <GalleryLanding
-            {catalog}
-            poolSize={pool.length}
-            {showAll}
-            {chooserTitle}
-            {chooserHint}
-            sheet={variant === "sheet"}
-            {fluidWideCanvas}
-            glyphHeight={landingGlyphHeight}
-            onOpenSection={(next) => (section = next)}
-            {onShowAll}
-            onSelectCategory={selectCategory}
-          />
-        {:else}
-          <GalleryWorkspace
-            {catalog}
-            {section}
-            {drillWidth}
-            sheet={variant === "sheet"}
-            {unifiedFilterChooser}
-            {adaptiveValueLayout}
-            {persistentDesktopCatalog}
-            {chooserTitle}
-            {chooserHint}
-            {stackHint}
-            {isValueApplied}
-            {activeLoopValues}
-            {onToggleLoop}
-            {loopConnective}
-            {onLoopConnectiveChange}
-            {activeFamilyValues}
-            {onToggleFamily}
-            {familyConnective}
-            {onFamilyConnectiveChange}
-            onBack={() => (section = "chooser")}
-            onPickValue={pickValue}
-            onPickLoop={pickLoop}
-            onPickFamily={pickFamily}
-            {onApply}
-            onSelectCategory={selectCategory}
-          />
+    <!-- Split pane: the left column stacks the category catalog over the
+         active value editor; the right column is the live results grid. The
+         left column re-declares `container-name: drill`, so every value
+         editor's own container queries resolve against ITS ~420px width and
+         the editors compose exactly as they do on a narrow screen — art
+         preserved, never shrunk to chips (spec Risk 1). -->
+    {#if splitPane}
+      <div class="pane-left" bind:clientWidth={paneWidth}>
+        <CategoryRail
+          {catalog}
+          {section}
+          layout="catalog"
+          {ruleCounts}
+          onselect={selectCategory}
+        />
+        <div class="drill-editor-stage">
+          <Crossfade key={section} duration={DURATION.normal} fill>
+            {@render workspaceScreen()}
+          </Crossfade>
+        </div>
+      </div>
+      <div class="pane-right">
+        {#if resultsHeader}
+          <div class="pane-results-header">{@render resultsHeader()}</div>
         {/if}
-      </Crossfade>
-    </div>
+        <div class="pane-results-body">{@render resultsPane?.()}</div>
+      </div>
+    {:else}
+      <!-- The rail duplicates the editorial landing's own category tiles —
+           hosts that keep that landing get the rail only beside VALUE editors,
+           never beside the landing itself. -->
+      {#if persistentDesktopCatalog && (unifiedFilterChooser || section !== "chooser")}
+        <CategoryRail {catalog} {section} onselect={selectCategory} />
+      {/if}
+      <div class="drill-editor-stage">
+        <!-- fill mode: screens differ in height, so the content-sized
+             grid-stack would resize (and shove neighbors) at every section
+             change. The stage is the sized box; layers fill it and each
+             screen scrolls itself. -->
+        <Crossfade key={section} duration={DURATION.normal} fill>
+          {#if showLanding}
+            <GalleryLanding
+              {catalog}
+              poolSize={pool.length}
+              {showAll}
+              {chooserTitle}
+              {chooserHint}
+              sheet={variant === "sheet"}
+              {fluidWideCanvas}
+              glyphHeight={landingGlyphHeight}
+              onOpenSection={(next) => (section = next)}
+              {onShowAll}
+              onSelectCategory={selectCategory}
+            />
+          {:else}
+            {@render workspaceScreen()}
+          {/if}
+        </Crossfade>
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -438,6 +507,75 @@
     overflow: hidden;
   }
 
+  /* ── Split pane ──────────────────────────────────────────────────────
+     Two content columns: filters left, LIVE results right. Opens at 1240px of
+     drill width (see SPLIT_SEAM) — below that the columns stop fitting and the
+     step-through flow is the better shape. The band goes fluid here: dead rail
+     beside a results grid is exactly the 4K failure this project exists to
+     end. */
+  .drill.split-pane .drill-stage {
+    display: grid;
+    grid-template-columns: minmax(25rem, 27.5rem) minmax(0, 1fr);
+    gap: 1rem;
+    width: 100%;
+    max-width: none;
+  }
+  .pane-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+    min-height: 0;
+    /* The value editors query `drill`; naming the column re-points every one
+       of those queries at THIS box, so a 420px column composes its cards the
+       way a 420px screen does instead of trying to run the 3-across desktop
+       monument layout inside it. */
+    container-type: inline-size;
+    container-name: drill;
+  }
+  .pane-right {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 1.1rem;
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #11131a) 96%,
+      transparent
+    );
+  }
+  .pane-results-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.9rem;
+    flex: 0 0 auto;
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+  .pane-results-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* 4K-class canvases: the column STEPS, it does not just sit there. At 440px
+     on a 3800px drill the filters read as a strip taped to the edge. Past
+     2600px the column crosses its own 640px container seam, so every value
+     editor moves up a composition tier (2–3 cards across, larger art) instead
+     of staying phone-shaped inside a huge screen. */
+  @container drill (min-width: 2600px) {
+    .drill.split-pane .drill-stage {
+      grid-template-columns: minmax(40rem, 46rem) minmax(0, 1fr);
+      gap: 1.5rem;
+    }
+  }
+
   /* Mid tier: unfolded foldables + small tablets. */
   @container drill (min-width: 640px) and (max-width: 899.98px) {
     .drill-stage {
@@ -492,12 +630,14 @@
      while editing a value, so the first chooser remains a clean overview. */
   @media (min-height: 650px) {
     @container drill (min-width: 900px) {
-      .drill.persistent-desktop-catalog .drill-stage {
+      .drill.persistent-desktop-catalog:not(.split-pane) .drill-stage {
         width: min(100%, 96rem);
         max-width: none;
       }
 
-      .drill.persistent-desktop-catalog:not([data-section="chooser"])
+      .drill.persistent-desktop-catalog:not(.split-pane):not(
+          [data-section="chooser"]
+        )
         .drill-stage {
         display: grid;
         grid-template-columns: clamp(15rem, 19cqw, 17.5rem) minmax(0, 1fr);
@@ -521,7 +661,9 @@
   /* Tall desktop canvases: the rail steps with the pane (audit D-10). */
   @media (min-height: 1150px) {
     @container drill (min-width: 1200px) {
-      .drill.persistent-desktop-catalog:not([data-section="chooser"])
+      .drill.persistent-desktop-catalog:not(.split-pane):not(
+          [data-section="chooser"]
+        )
         .drill-stage {
         grid-template-columns: clamp(17rem, 21cqw, 21rem) minmax(0, 1fr);
       }

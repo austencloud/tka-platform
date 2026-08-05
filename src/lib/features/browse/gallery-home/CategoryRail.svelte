@@ -22,24 +22,37 @@
   interface Props {
     catalog: GalleryCatalog;
     section: Section;
+    /** "rail" = the tall single-column catalog beside a value editor.
+     *  "catalog" = the split pane's wrapping grid above the value editor. */
+    layout?: "rail" | "catalog";
+    /** Active rules per category key — renders the count dot. */
+    ruleCounts?: Readonly<Record<string, number>>;
     onselect: (entry: CategoryEntry) => void;
   }
 
-  let { catalog, section, onselect }: Props = $props();
+  let {
+    catalog,
+    section,
+    layout = "rail",
+    ruleCounts,
+    onselect,
+  }: Props = $props();
 </script>
 
 <nav
   class="desktop-filter-catalog"
+  class:catalog-layout={layout === "catalog"}
   data-section={section}
   aria-label="Filter categories"
 >
-  <h2>Filters</h2>
+  {#if layout === "rail"}<h2>Filters</h2>{/if}
   <div class="desktop-filter-grid">
     {#each [...catalog.primaryCategories, ...catalog.secondaryCategories] as entry (entry.key)}
       <CategoryTile
         {entry}
-        composition="rail"
+        composition={layout === "catalog" ? "catalog" : "rail"}
         active={section === entry.section}
+        ruleCount={ruleCounts?.[entry.key] ?? 0}
         avatarFor={(name) => catalog.creatorAvatars.get(name)}
         {onselect}
       />
@@ -52,6 +65,29 @@
      modes, and portrait tablets all stay under it. */
   .desktop-filter-catalog {
     display: none;
+  }
+
+  /* Split-pane composition: every category visible as a compact labeled tile,
+     two per row, above the value editor. No display gate — the pane itself is
+     the gate (GalleryDrill only renders this layout past the split seam). */
+  .desktop-filter-catalog.catalog-layout {
+    display: block;
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+  .catalog-layout .desktop-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+  /* The column itself is the container here, so this steps with the pane, not
+     with the window: eleven categories go three-across once there is room,
+     which keeps the catalog to four rows instead of six. */
+  @container drill (min-width: 620px) {
+    .catalog-layout .desktop-filter-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.6rem;
+    }
   }
 
   @media (min-height: 650px) {

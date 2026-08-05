@@ -40,6 +40,8 @@
     section: Section;
     drillWidth: number;
     sheet: boolean;
+    /** Rendering inside the split pane's left column. */
+    splitPane?: boolean;
     unifiedFilterChooser: boolean;
     adaptiveValueLayout: boolean;
     persistentDesktopCatalog: boolean;
@@ -78,6 +80,7 @@
     section,
     drillWidth,
     sheet,
+    splitPane = false,
     unifiedFilterChooser,
     adaptiveValueLayout,
     persistentDesktopCatalog,
@@ -206,6 +209,7 @@
 <div
   class="drill-ctx"
   class:sheet
+  class:split-pane={splitPane}
   class:unified-filter-chooser={unifiedFilterChooser}
   class:adaptive-value-layout={adaptiveValueLayout}
   class:persistent-desktop-catalog={persistentDesktopCatalog}
@@ -688,9 +692,6 @@
     display: contents;
   }
 
-  .drill-ctx.sheet .drill-screen {
-    justify-content: flex-start;
-  }
   /* Each screen fills its (absolute, stage-sized) crossfade layer and owns its
      own scroll; short screens center, tall ones scroll from the top. */
   .drill-screen {
@@ -4160,5 +4161,44 @@
         font-size: 1.15rem;
       }
     }
+  }
+
+  /* ── Split pane (LAST: must outrank every tier above) ──────────── */
+  /* Split pane: the editor is a COLUMN under the catalog, not a stage of its
+     own. Vertically centering a short option set there opens a hole under the
+     header; start at the top and let the column breathe at the bottom, where
+     the results grid beside it is already carrying the eye. */
+  .drill-ctx.split-pane .drill-screen {
+    justify-content: flex-start;
+    padding-top: 0.25rem;
+  }
+  /* `.drill-screen >` matches the per-screen tier rules' weight (they key off
+     .screen-loop / .screen-length on this same element), so this override wins
+     on order rather than losing on specificity. */
+  .drill-ctx.split-pane .drill-screen > .value-list,
+  .drill-ctx.split-pane .drill-screen > .letter-grid,
+  .drill-ctx.split-pane .drill-screen > .turn-picker {
+    flex: 0 1 auto;
+    align-content: start;
+  }
+  /* Back is redundant beside a permanently visible category catalog. */
+  .drill-ctx.split-pane .drill-head.with-back {
+    position: static;
+    grid-template-columns: minmax(0, 1fr);
+    background: transparent;
+  }
+  .drill-ctx.split-pane .drill-head.with-back .head-back {
+    display: none;
+  }
+  .drill-ctx.split-pane .drill-head.with-back h2 {
+    grid-column: 1;
+    font-size: 1.15rem;
+  }
+  .drill-ctx.split-pane .drill-head.with-back p {
+    grid-column: 1;
+  }
+
+  .drill-ctx.sheet .drill-screen {
+    justify-content: flex-start;
   }
 </style>

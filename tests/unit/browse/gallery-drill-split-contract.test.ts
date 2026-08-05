@@ -65,9 +65,10 @@ describe("GalleryDrill split contract", () => {
       expect(css, `GalleryDrill still styles ${selector}`).not.toContain(selector);
     }
 
-    // The shell owns only the drill root, the search field and the band. It
-    // was 6,248 lines; anything approaching that again means the split leaked.
-    expect(source.split("\n").length).toBeLessThan(600);
+    // The shell owns the drill root, the search field, the band and the split
+    // pane's two columns — plus a ~120-line documented prop seam. It was 6,248
+    // lines; anything approaching that again means the split leaked.
+    expect(source.split("\n").length).toBeLessThan(800);
   });
 
   it("landing and workspace CSS do not overlap", () => {
