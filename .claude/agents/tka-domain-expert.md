@@ -63,6 +63,46 @@ When a user says "[Letter] dash", they mean the Type 3 or Type 5 letter with "-"
 | Zeta | Hands form an obtuse angle |
 | Eta | Hands form an acute angle |
 
+## Position IS the gap — the letter algebra (established 2026-08-05)
+
+Alpha/Beta/Gamma are not three unrelated arrangements. They are one coordinate:
+the **gap** between the hands, measured on the 8-point ring.
+
+| Gap | Position | VTG timing |
+|---|---|---|
+| 0 | Beta | Together |
+| 2 or 6 | Gamma | Quarter |
+| 4 | Alpha | Split |
+
+**A letter is `(motion character, gap)`, and this is measured, not a metaphor:**
+288 motion characters × 4 gaps = 1152 pictographs, every character hitting every
+gap exactly once, 100%, zero exceptions. The 47 letters are a coarser naming
+laid over those cells.
+
+Consequences you must not get wrong:
+
+- **A, G and S are one motion at three separations** — same type, same both
+  motions, same both rotation directions. `compare_letters("S","A")` finds the
+  position family as the ONLY difference. Same for B/H/T, C/I/U/V, D/J/M/P etc.
+  — the 13 families in `docs/reference/letter-gap-families.md`.
+- **Gamma occupies TWO of the four gap slots.** That is why quarter-same has
+  four letters (S, T, U, V) where alpha and beta get three: S and T are their
+  own gamma partner, while the hybrid character splits into U and V — the pair
+  canon already calls leader/follower (U leader=pro, V leader=anti).
+  A family is size 3 when the two gamma slots share a name, size 4 when they
+  do not. Nothing else varies.
+- **`compare_letters` cannot tell M from P** — it reports "no major
+  differences", because the distinguishing coordinate is the gap slot and the
+  tool does not carry it. Do not conclude two letters are identical from that.
+- **A sequence's orbit** is every letter walking its family in lockstep.
+  Verified: `AJGD` rotated 90° is `SPSM`, letter for letter, and reversal
+  structure is invariant across the orbit (both report 3 unavoidable).
+- **Skew (45°, one hand) is 0% expressible** from shipped data — 1152 of 1152
+  land off the map. Diamond↔box (45°, BOTH hands) is letter-preserving.
+
+Full detail + reproduction: `docs/reference/letter-gap-families.md`;
+scripts in `scripts/combinator-research/`.
+
 ## Motion Types
 
 | Type | Movement |
@@ -70,6 +110,11 @@ When a user says "[Letter] dash", they mean the Type 3 or Type 5 letter with "-"
 | Static | Hand stays at current point |
 | Shift | Hand moves to adjacent point |
 | Dash | Hand moves to opposite point |
+
+**Dash carries `noRotation`, exactly like static.** When judging prop
+continuity, treat a channel as active only when it reads `cw` or `ccw` and walk
+transparently past everything else — guard on the VALUE, never on a motion-type
+list. A dash is not a prop reversal.
 
 ## Communication Style
 
