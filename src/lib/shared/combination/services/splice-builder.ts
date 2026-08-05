@@ -84,8 +84,11 @@ const COLORS = [MotionColor.BLUE, MotionColor.RED] as const;
 
 /**
  * Passes to simulate before giving up on orientation closure. The orientation
- * wheel has four states and each hand's per-pass map is a permutation of it, so
- * a two-hand period divides 4 — 8 is generous headroom, not a real ceiling.
+ * wheel has EIGHT states (`RADIAL_CW_CYCLE` in
+ * `shared/render/core/calculations/orientation.ts`: in, clockIn, clock,
+ * clockOut, out, counterOut, counter, counterIn), and each hand's per-pass map
+ * is a rotation of it, so a two-hand period divides 8. This is the exact
+ * ceiling, not headroom.
  */
 const MAX_PERIOD = 8;
 

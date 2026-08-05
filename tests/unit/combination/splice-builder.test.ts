@@ -224,29 +224,51 @@ describe("splice builder", () => {
   });
 
   it("reports a period-2 loop honestly instead of calling it circular", async () => {
-    // ONE H step on its own: anti at 0 turns flips orientation, so the walk
-    // returns to beta1 positionally but with the props inverted. Playing it
-    // twice returns them. That is a period-2 loop — a real, performable
-    // sequence — and calling it `isCircular` would be a lie the app's own
-    // seamless-loop definition does not permit.
-    const oneH: WalkBlock[] = [
+    // Three G steps then one H step: beta1 -> beta3 -> beta5 -> beta7 -> beta1.
+    // The walk closes POSITIONALLY — deliberately, so that `isCircular: false`
+    // isolates the orientation failure and nothing else. Pro at 0 turns
+    // preserves orientation and anti flips it, so an ODD number of anti steps
+    // (one, here) leaves the props inverted at the wrap. Playing it twice
+    // returns them: a period-2 loop, a real performable sequence, and calling
+    // it `isCircular` would be a lie the app's seamless-loop definition does
+    // not permit.
+    const threeGOneH: WalkBlock[] = [
+      {
+        sourceId: "A",
+        kind: "cardA",
+        startStepIndex: 0,
+        steps: GGGG_CW.steps.slice(0, 3),
+        rotationFaithful: false,
+      },
       {
         sourceId: "B id",
         kind: "cardB",
-        startStepIndex: 0,
-        steps: [HHHH_CCW.steps[0]!],
+        startStepIndex: 3,
+        steps: [HHHH_CCW.steps[3]!],
         rotationFaithful: false,
       },
     ];
-    const result = await buildResult(oneH, GGGG_CW);
+    const result = await buildResult(threeGOneH, GGGG_CW);
 
-    expect(result.steps).toHaveLength(1);
+    expect(result.steps).toHaveLength(4);
+
+    // Position closure holds, including the wrap — this walk is a closed loop.
+    for (let i = 1; i < result.steps.length; i++) {
+      expect(result.steps[i]!.startPosition).toBe(
+        result.steps[i - 1]!.endPosition
+      );
+    }
+    expect(result.steps.at(-1)!.endPosition).toBe(
+      result.steps[0]!.startPosition
+    );
+
+    // Only the ORIENTATION chain fails to close in one pass.
     expect(result.period).toBe(2);
     expect(result.isCircular).toBe(false);
-    // Orientation closure was NOT forced: the last step really does end `out`
-    // against a hold that started `in`.
+    // Closure was NOT forced: the last step really does end `out` against a
+    // hold that started `in`.
     expect(result.startPosition!.motions.blue!.endOrientation).toBe("in");
-    expect(result.steps[0]!.motions.blue.endOrientation).toBe("out");
+    expect(result.steps.at(-1)!.motions.blue.endOrientation).toBe("out");
   });
 
   it("flags an incomplete word rather than emitting a plausible short one", async () => {

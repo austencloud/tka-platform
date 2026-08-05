@@ -146,9 +146,10 @@ export interface CombinatorTunables {
   readonly maxResultLength: number;
   readonly maxResults: number;
   /**
-   * Accepted and IGNORED until Task 8 — whole-unit restriction is a
-   * classifier-side filter (a block is a whole unit when it spans its source's
-   * full cycle), and the classifier is still a stub.
+   * Keep only walks whose every card block is a whole multiple of that card's
+   * REPEAT UNIT — the simplified word's letter count, so GGGG's unit is one
+   * step and FALG's is four. Applied by the classifier before anything is
+   * built, so it costs nothing but the block arithmetic.
    */
   readonly wholeUnitsOnly: boolean;
   readonly allowAmbient: boolean;
