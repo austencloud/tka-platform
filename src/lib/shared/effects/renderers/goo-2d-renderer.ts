@@ -28,14 +28,21 @@ const PX_PER_WORLD = 60;
 const BLUR_PX = 10;
 const CONTRAST = 14;
 const GLOW_ALPHA = 0.16;
-const GRAVITY_PX = 32;
-const MAX_BLOBS = 560;
+const GRAVITY_PX = 26;
+const MAX_BLOBS = 900;
+/** Bead spacing as a fraction of bead radius. Must stay under ~1 or the blur
+ *  cannot bridge neighbours and the stream reads as separate beads. */
+const BEAD_SPACING = 0.7;
+/** Per-emitter, per-frame ceiling so a teleporting tip can't spike the count. */
+const MAX_PER_FRAME = 14;
+/** Fraction of tip velocity a fresh bead carries. */
+const VELOCITY_INHERIT = 0.22;
 /**
  * Pre-contrast brightness for the eroded pass. Dimming the field before the
  * threshold shrinks the region that survives it, so (outer − eroded) is a band
  * hugging the surface — the rim light that makes goo read as a wet substance.
  */
-const ERODE = 0.6;
+const ERODE = 0.8;
 
 interface Blob {
   x: number;
@@ -46,6 +53,9 @@ interface Blob {
   maxAge: number;
   r0: number;
   r1: number;
+  /** Stable per-bead flag: only a minority carry a glint, so highlights read as
+   *  sparse points on a surface rather than lint suspended through the gel. */
+  glint: boolean;
 }
 
 interface TipSample {
@@ -89,40 +99,50 @@ export class Goo2DRenderer {
     // 1. Per-emitter: smooth velocity + lay beads along the path travelled.
     for (const s of this.sampleTips(emitters, params, dt)) {
       const speedScalar = refSpeed > 0 ? Math.min(1, s.speed / refSpeed) : 0;
-      // Where the tip was last frame — beads laid CONTINUOUSLY from there to
-      // here bridge into a rivulet instead of gapped lonely dots.
+      // Where the tip was last frame. Beads are laid along that span — but the
+      // COUNT comes from the DISTANCE covered, not from elapsed time. A
+      // per-second rate drops the same handful of beads whether the tip crawled
+      // 3px or flew 60px, so at speed the spacing outruns the bridge blur and
+      // the stream shatters into islands. Per-distance emission keeps the gap
+      // fixed at any speed, which is what makes it read as connected liquid.
       const prevX = s.x - s.vx * dt;
       const prevY = s.y - s.vy * dt;
-      // Beads must land closer together than the bridge blur or the stream
-      // breaks into separate beads instead of merging into a rivulet.
-      const ambient = params.ambientEmission * 5;
-      const motion = params.motionEmission * speedScalar * 68;
-      let n = poisson((ambient + motion) * dt);
-      if (this.blobs.length + n > MAX_BLOBS) n = MAX_BLOBS - this.blobs.length;
-      const motionDir = s.speed > 1 ? Math.atan2(s.vy, s.vx) : 0;
+      const travelled = Math.hypot(s.x - prevX, s.y - prevY);
+      const spacing = baseBlob * BEAD_SPACING;
+      const moving = s.speed > 1;
+      const alongPath = moving ? Math.ceil(travelled / spacing) : 0;
+      const ambient = poisson(params.ambientEmission * 5 * dt);
+      let n = Math.max(alongPath, ambient);
+      // Emission knob scales the stream without letting it thin into gaps.
+      if (moving) n = Math.max(alongPath, Math.round(n * (0.55 + params.motionEmission * 0.75)));
+      n = Math.min(n, MAX_PER_FRAME);
+      if (this.blobs.length + n > MAX_BLOBS) n = Math.max(0, MAX_BLOBS - this.blobs.length);
+      const motionDir = moving ? Math.atan2(s.vy, s.vx) : 0;
       // Perpendicular to motion — beads spread sideways off the stream, not
       // backward, so the liquid sheet stays attached to the arc then breaks.
       const perp = motionDir + Math.PI / 2;
       for (let i = 0; i < n; i++) {
-        const moving = s.speed > 1;
         const f = moving ? (i + Math.random()) / n : 0.5;
-        const lat = (Math.random() - 0.5) * (moving ? 6 + speedScalar * 10 : 9) * sc;
+        const lat = (Math.random() - 0.5) * (moving ? 3 + speedScalar * 5 : 7) * sc;
         const bx = prevX + (s.x - prevX) * f + Math.cos(perp) * lat;
         const by = prevY + (s.y - prevY) * f + Math.sin(perp) * lat;
         const kick =
           (moving
-            ? speedScalar * 30 * (Math.random() - 0.5)
-            : (Math.random() - 0.5) * 16) * sc;
+            ? speedScalar * 12 * (Math.random() - 0.5)
+            : (Math.random() - 0.5) * 10) * sc;
         const r0 = baseBlob * (0.92 + Math.random() * 0.42);
         this.blobs.push({
           x: bx,
           y: by,
-          vx: s.vx * 0.88 + Math.cos(perp) * kick,
-          vy: s.vy * 0.88 + Math.sin(perp) * kick,
+          // Beads keep only a little of the tip's velocity. Inheriting most of
+          // it launched the whole mass off the arc it was laid on.
+          vx: s.vx * VELOCITY_INHERIT + Math.cos(perp) * kick,
+          vy: s.vy * VELOCITY_INHERIT + Math.sin(perp) * kick,
           age: 0,
-          maxAge: 0.6 + Math.random() * 0.5,
+          maxAge: 0.46 + Math.random() * 0.4,
           r0,
           r1: r0 * 1.35,
+          glint: Math.random() < 0.3,
         });
       }
     }
@@ -134,9 +154,16 @@ export class Goo2DRenderer {
       b.age += dt;
       if (b.age >= b.maxAge) continue;
       b.vy += GRAVITY_PX * sc * dt;
+      // Curl is surface wobble, not transport. At the old strength it pulled
+      // beads apart faster than they were laid, so the ribbon came apart into
+      // islands between one frame and the next.
       const c = curl2D(b.x * (0.005 / sc), b.y * (0.005 / sc), this.clock);
-      b.vx += (c.vx * 55 * sc - b.vx) * 1.1 * dt;
-      b.vy += (c.vy * 55 * sc - b.vy) * 1.1 * dt;
+      b.vx += (c.vx * 22 * sc - b.vx) * 0.5 * dt;
+      b.vy += (c.vy * 22 * sc - b.vy) * 0.5 * dt;
+      // Viscous drag — goo settles instead of coasting away from its stream.
+      const damp = Math.pow(0.12, dt);
+      b.vx *= damp;
+      b.vy *= damp;
       b.x += b.vx * dt;
       b.y += b.vy * dt;
       if (i !== w) this.blobs[w] = b;
@@ -230,28 +257,34 @@ export class Goo2DRenderer {
       ctx.drawImage(workCanvas, 0, 0);
       ctx.globalAlpha = 1;
 
-      // 6. Wet specular glints — tiny bright cores so it reads as liquid, not
-      //    gel. Gated to strong, full-size blobs (and tinted, not white) so
-      //    faded/isolated blobs don't leave orphan dots.
+      // 6. Wet specular glints. Every highlight sits at the SAME offset from its
+      //    bead — up and to the left — so they agree on where the light is.
+      //    Scattered at random depths they read as lint suspended in the gel;
+      //    agreeing on a light direction is what makes a surface.
       const hi = hexToRgb(p.highlight);
-      // A glint only belongs on liquid that actually merged. An isolated bead
-      // never survives the metaball threshold, so its highlight would float in
-      // the void as an orphan speck — which is exactly what it looked like.
-      const neighbours = this.countNeighbours(baseBlob * 1.6);
+      // A glint also only belongs on liquid that actually merged (an isolated
+      // bead never survives the threshold, so its highlight would float in the
+      // void) and near the SURFACE — deeply buried beads are under the goo, not
+      // on it. The neighbour count gives both tests.
+      const neighbours = this.countNeighbours(baseBlob * 1.7);
       for (let i = 0; i < this.blobs.length; i++) {
         const b = this.blobs[i]!;
-        if (neighbours[i]! < 3) continue;
+        if (!b.glint) continue;
+        const nb = neighbours[i]!;
+        if (nb < 4 || nb > 14) continue;
         const t = b.age / b.maxAge;
         const fade = t < 0.12 ? t / 0.12 : t > 0.65 ? Math.max(0, (1 - t) / 0.35) : 1;
         const rFull = b.r0 + (b.r1 - b.r0) * t;
-        if (fade < 0.92 || rFull < baseBlob * 0.85) continue;
-        const r = rFull * 0.3;
-        const g = ctx.createRadialGradient(b.x - r * 0.3, b.y - r * 0.35, 0, b.x, b.y, r);
-        g.addColorStop(0, `rgba(${hi.r},${hi.g},${hi.b},${0.45 * fade})`);
+        if (fade < 0.9 || rFull < baseBlob * 0.85) continue;
+        const r = rFull * 0.22;
+        const gx = b.x - rFull * 0.3;
+        const gy = b.y - rFull * 0.34;
+        const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, r);
+        g.addColorStop(0, `rgba(${hi.r},${hi.g},${hi.b},${0.5 * fade})`);
         g.addColorStop(1, `rgba(${hi.r},${hi.g},${hi.b},0)`);
         ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.arc(b.x, b.y, r, 0, TAU);
+        ctx.arc(gx, gy, r, 0, TAU);
         ctx.fill();
       }
     } finally {
