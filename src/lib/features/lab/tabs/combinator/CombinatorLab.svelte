@@ -258,14 +258,32 @@
 </div>
 
 <style>
+	/*
+		The lab shell is `height: 100%; overflow: hidden` (LabModule .lab-module),
+		so a tab that just grows gets CLIPPED — the results were unreachable below
+		the fold with no scrollbar. The tab owns its own scrolling, as the sibling
+		labs do. `min-height: 0` is load-bearing: without it a flex child refuses to
+		shrink below its content and the overflow never engages.
+	*/
 	.combinator {
 		display: flex;
 		flex-direction: column;
 		gap: 1.5rem;
 		padding: 1.5rem;
+		width: 100%;
+		height: 100%;
+		min-height: 0;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+	}
+
+	/* The band stays centred while the SCROLLER stays full-width, so the
+	   scrollbar sits at the edge of the pane rather than mid-page. */
+	.combinator > * {
+		width: 100%;
 		max-width: var(--shell-w, min(1720px, 92vw));
 		margin-inline: auto;
-		width: 100%;
+		flex: 0 0 auto;
 	}
 
 	.head h1 {
@@ -537,11 +555,13 @@
 		}
 	}
 
-	@media (min-width: 1400px) {
-		.rows {
-			grid-template-columns: repeat(3, 1fr);
-		}
-	}
+	/*
+		Column counts are chosen so a cell always fits the BOX'S LONGEST UNIT
+		(6 steps) on one line. At four columns a 6-step unit wrapped 5+1 and left a
+		lone pictograph on its own row — the "never a row of one" failure. Three
+		columns at the 1680 seam gives ~540px per cell against 6 x 4.5rem + gaps
+		(~456px), so every strip is one line and every cell is the same height.
+	*/
 
 	/* The site-wide big-screen seam (.claude/rules/4k-native-layout.md). */
 	@media (min-width: 1680px) {
@@ -550,14 +570,14 @@
 			gap: 2rem;
 		}
 		.rows {
-			grid-template-columns: repeat(4, 1fr);
+			grid-template-columns: repeat(3, 1fr);
 		}
 	}
 
 	/* Second tier: above here nothing is scaling for you, so element size steps. */
 	@media (min-width: 2600px) {
 		.rows {
-			grid-template-columns: repeat(6, 1fr);
+			grid-template-columns: repeat(4, 1fr);
 		}
 		.step {
 			width: 5.5rem;
