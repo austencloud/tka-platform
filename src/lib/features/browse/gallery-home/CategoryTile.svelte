@@ -1,0 +1,639 @@
+<!--
+  CategoryTile — ONE tile, three compositions.
+
+  The gallery landing's "More ways to browse" grid, the workspace's persistent
+  desktop rail, and the unified filter canvas all render this component. One
+  component, several layouts: drift between the landing and the workspace is
+  impossible by construction (2026-08-04 split-pane workspace project).
+
+  The tile owns its own box AND every composition variant, so hosts never reach
+  inside it — they lay out their grid, the tile styles itself.
+-->
+<script lang="ts">
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import LessonGridDisplay from "$lib/shared/pictograph/grid/components/LessonGridDisplay.svelte";
+  import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
+  import type { CategoryEntry } from "./gallery-drill-catalog.svelte";
+
+  interface Props {
+    entry: CategoryEntry;
+    /** Which surface is rendering this tile. */
+    composition?: "landing" | "rail" | "unified";
+    /** True when this category's value editor is the one on screen. */
+    active?: boolean;
+    /** Glyph art height — the landing bumps it inside the adaptive tier. */
+    glyphHeight?: number;
+    /** Creator avatars: photo + owner id per name. */
+    avatarFor?: (
+      name: string
+    ) => { avatarUrl?: string; ownerId?: string } | undefined;
+    onselect: (entry: CategoryEntry) => void;
+  }
+
+  let {
+    entry,
+    composition = "landing",
+    active = false,
+    glyphHeight = 20,
+    avatarFor,
+    onselect,
+  }: Props = $props();
+</script>
+
+<button
+  class="mini-tile"
+  class:unified={composition === "unified"}
+  class:rail={composition === "rail"}
+  class:catalog-active={active}
+  type="button"
+  aria-current={active ? "page" : undefined}
+  disabled={entry.narrowedOut}
+  onclick={() => onselect(entry)}
+>
+  {#if entry.art.kind === "plate"}
+    <span class="mini-art plate position-preview" aria-hidden="true">
+      <img src={entry.art.src} alt="" width="32" height="32" loading="lazy" />
+    </span>
+  {:else if entry.art.kind === "grid"}
+    <span class="mini-art grid-composite-preview" aria-hidden="true">
+      <LessonGridDisplay type="merged" size="small" />
+    </span>
+  {:else}
+    <span class="mini-art" aria-hidden="true">
+      {#if entry.art.kind === "icon"}
+        <i class="fas {entry.art.icon}"></i>
+      {:else if entry.art.kind === "glyph"}
+        <TKAWordGlyph
+          word={entry.art.word}
+          height={glyphHeight}
+          darkMode
+          fitToParent
+        />
+      {:else if entry.art.kind === "dots"}
+        <span class="element-dots">
+          {#each entry.art.colors as color (color)}
+            <span class="element-dot" style:background={color}></span>
+          {/each}
+        </span>
+      {:else if entry.art.kind === "avatars"}
+        <span class="avatar-cluster">
+          {#each entry.art.names as name (name)}
+            <RobustAvatar
+              class="cluster-avatar"
+              src={avatarFor?.(name)?.avatarUrl}
+              googleId={avatarFor?.(name)?.ownerId}
+              {name}
+              alt=""
+              customSize={26}
+            />
+          {/each}
+        </span>
+      {/if}
+    </span>
+  {/if}
+  <span class="mini-main">
+    <span class="mini-title">{entry.title}</span>
+    <span class="mini-sub">{entry.sub}</span>
+  </span>
+</button>
+
+<style>
+  /* ── Base tile ─────────────────────────────────────────────────── */
+  .mini-tile {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 64px;
+    padding: 0.6rem 0.7rem;
+    text-align: left;
+    border-radius: 14px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #e8edf6);
+    cursor: pointer;
+    transition:
+      border-color 0.16s ease,
+      transform 0.16s ease;
+  }
+  .mini-tile:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+    transform: translateY(-1px);
+  }
+  .mini-tile:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+  .mini-art {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: 44px;
+    height: 32px;
+    color: var(--theme-text-muted, #9aa6b8);
+    font-size: 1rem;
+  }
+  /* Legacy PNGs/SVGs draw dark lines — give them the same white plate the
+     legacy app rendered them on. */
+  .mini-art.plate {
+    background: #fff;
+    border-radius: 8px;
+    padding: 3px 4px;
+  }
+  /* The grid preview SVG sizes to its own 180px max when the flex item is
+     auto-sized — pin the box so it stays a mini-tile icon on the landing. */
+  .mini-art.grid-composite-preview {
+    width: 2rem;
+    min-width: 2rem;
+    height: 2rem;
+    overflow: hidden;
+    border-radius: 8px;
+    align-self: center;
+  }
+  .mini-art.grid-composite-preview :global(.lesson-grid-display),
+  .mini-art.grid-composite-preview :global(.grid-svg) {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+  }
+  .mini-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .mini-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+  .mini-sub {
+    font-size: 0.75rem;
+    color: var(--theme-text-muted, #9aa6b8);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Creator avatar cluster (mini-tile art) ────────────────────── */
+  /* Overlapped faces, most-prolific on top of the stack. */
+  .avatar-cluster {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+  .avatar-cluster > :global(.robust-avatar + .robust-avatar) {
+    margin-left: -9px;
+  }
+  .avatar-cluster :global(.cluster-avatar.robust-avatar) {
+    border: 2px solid rgba(12, 16, 24, 0.9);
+  }
+
+  /* ── Family / loop color dots (mini-tile art) ──────────────────── */
+  .element-dots {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+  }
+  .element-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  /* Stability over deletion: catalog tiles that a rule change zeroes out dim
+     instead of unmounting (audit X-4/D-5). */
+  .mini-tile:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .mini-tile:disabled:hover {
+    transform: none;
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  /* Instant tap feedback — touch has no :hover. */
+  .mini-tile:active {
+    transform: scale(0.985);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mini-tile {
+      transition: none;
+    }
+    .mini-tile:hover,
+    .mini-tile:active {
+      transform: none;
+    }
+  }
+
+  @container drill (min-width: 900px) {
+    .mini-tile {
+      min-height: 78px;
+      padding: 0.75rem 0.9rem;
+    }
+    .mini-title {
+      font-size: 0.98rem;
+    }
+  }
+
+  @container drill (min-width: 1600px) {
+    .mini-tile {
+      min-height: 92px;
+      padding: 0.9rem 1.1rem;
+      border-radius: 16px;
+    }
+    .mini-art {
+      min-width: 52px;
+      font-size: 1.2rem;
+    }
+    .mini-title {
+      font-size: 1.05rem;
+    }
+    .mini-sub {
+      font-size: 0.82rem;
+    }
+    .element-dot {
+      width: 10px;
+      height: 10px;
+    }
+  }
+
+  /* ── Composition: unified decision canvas ──────────────────────── */
+  /* A Smart Collection refinement shows every category together, so the tile
+     becomes a centered poster instead of a horizontal row. */
+  .mini-tile.unified {
+    min-height: 5.5rem;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.55rem;
+    padding: 0.7rem 0.5rem;
+    text-align: center;
+  }
+  .mini-tile.unified .mini-main {
+    flex: 0 1 auto;
+    align-items: center;
+  }
+  .mini-tile.unified .mini-art {
+    width: 2.75rem;
+    min-width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #6366f1) 38%, transparent);
+    border-radius: 0.8rem;
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 12%, transparent);
+    color: var(--theme-accent, #6366f1);
+  }
+  .mini-tile.unified .mini-art.plate {
+    background: #fff;
+  }
+  .mini-tile.unified .mini-art.plate.position-preview img {
+    width: calc(100% - 0.35rem);
+    height: calc(100% - 0.35rem);
+    object-fit: contain;
+  }
+  .mini-tile.unified .mini-art.grid-composite-preview {
+    overflow: hidden;
+    padding: 0.2rem;
+  }
+  .mini-tile.unified
+    .mini-art.grid-composite-preview
+    :global(.lesson-grid-display),
+  .mini-tile.unified .mini-art.grid-composite-preview :global(.grid-svg) {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+  }
+
+  @container drill (max-width: 639.98px) {
+    .mini-tile.unified {
+      min-height: 4.25rem;
+      overflow: hidden;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.15rem;
+      padding: 0.25rem 0.35rem;
+      border-radius: 0.75rem;
+      text-align: center;
+    }
+    .mini-tile.unified .mini-art {
+      width: auto;
+      min-width: 0;
+      max-width: 100%;
+      height: 1.75rem;
+      overflow: hidden;
+      border-radius: 0.6rem;
+    }
+    .mini-tile.unified .mini-art.plate {
+      height: 2rem;
+    }
+    .mini-tile.unified .mini-art.plate img {
+      width: 1.25rem;
+      height: 1.25rem;
+      flex: 0 0 1.25rem;
+      object-fit: contain;
+    }
+    .mini-tile.unified .mini-art.plate img:only-child {
+      width: 1.5rem;
+      height: 1.5rem;
+      flex-basis: 1.5rem;
+    }
+    .mini-tile.unified .mini-main {
+      flex: 0 1 auto;
+      min-width: 0;
+      width: 100%;
+      align-items: center;
+      justify-content: center;
+    }
+    .mini-tile.unified .mini-title {
+      width: 100%;
+      overflow: visible;
+      font-size: var(--font-size-sm, 14px);
+      line-height: 1.15;
+      text-align: center;
+      text-overflow: clip;
+      text-wrap: balance;
+      white-space: normal;
+    }
+    .mini-tile.unified .mini-sub {
+      display: none;
+    }
+  }
+
+  @container drill (min-width: 640px) {
+    .mini-tile.unified .element-dots {
+      width: calc(100% - 0.25rem);
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 1px;
+    }
+    .mini-tile.unified .element-dot {
+      width: min(100%, 0.5rem);
+      height: auto;
+      aspect-ratio: 1;
+      justify-self: center;
+    }
+  }
+
+  @container drill (min-width: 640px) and (max-width: 899.98px) {
+    .mini-tile.unified {
+      min-height: 5.5rem;
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 0.75rem;
+      padding: 0.7rem 0.85rem;
+      text-align: left;
+    }
+    .mini-tile.unified .mini-art {
+      width: 2.75rem;
+      min-width: 2.75rem;
+      height: 2.75rem;
+    }
+    .mini-tile.unified .mini-main {
+      flex: 1 1 auto;
+      align-items: flex-start;
+    }
+    .mini-tile.unified
+      .avatar-cluster
+      > :global(.robust-avatar + .robust-avatar) {
+      margin-left: -18px;
+    }
+    .mini-tile.unified .mini-title,
+    .mini-tile.unified .mini-sub {
+      text-align: left;
+    }
+  }
+
+  @container drill (min-width: 900px) {
+    .mini-tile.unified
+      .avatar-cluster
+      > :global(.robust-avatar + .robust-avatar) {
+      margin-left: -12px;
+    }
+    .mini-tile.unified {
+      gap: 0.8rem;
+      padding: 1.1rem;
+      border-radius: 1.25rem;
+    }
+    .mini-tile.unified .mini-art {
+      width: 3.5rem;
+      min-width: 3.5rem;
+      height: 3.5rem;
+      font-size: 1.2rem;
+    }
+    .mini-tile.unified .mini-title {
+      font-size: 1.05rem;
+    }
+    .mini-tile.unified .mini-sub {
+      font-size: 0.8rem;
+      text-align: center;
+    }
+  }
+
+  @container drill (min-width: 1600px) {
+    .mini-tile.unified {
+      min-height: clamp(10rem, 7cqw, 13rem);
+    }
+  }
+
+  @container drill (min-width: 2600px) {
+    .mini-tile.unified .mini-art {
+      width: 5rem;
+      min-width: 5rem;
+      height: 5rem;
+      font-size: 1.75rem;
+    }
+    .mini-tile.unified
+      .avatar-cluster
+      > :global(.robust-avatar + .robust-avatar) {
+      margin-left: -6px;
+    }
+    .mini-tile.unified .mini-title {
+      font-size: 1.55rem;
+    }
+    .mini-tile.unified .mini-sub {
+      font-size: 1.05rem;
+    }
+  }
+
+  /* Fold landscape: the art carries the identity when height is scarce. */
+  @media (min-width: 700px) and (max-height: 520px) {
+    .mini-tile.unified .mini-art.position-preview,
+    .mini-tile.unified .mini-art.grid-composite-preview {
+      width: 3.75rem;
+      min-width: 3.75rem;
+      height: 3.75rem;
+    }
+    .mini-tile.unified
+      .avatar-cluster
+      > :global(.robust-avatar + .robust-avatar) {
+      margin-left: -12px;
+    }
+  }
+
+  /* Tall cover screens: use the vertical axis for bigger targets. */
+  @media (max-width: 480px) and (min-height: 820px) {
+    .mini-tile.unified {
+      min-height: 7rem;
+      gap: 0.35rem;
+      padding: 0.55rem 0.45rem;
+    }
+    .mini-tile.unified .mini-art {
+      height: 2.35rem;
+      font-size: 1.05rem;
+    }
+    .mini-tile.unified .mini-art.plate {
+      height: 2.5rem;
+    }
+    .mini-tile.unified .mini-art.plate img {
+      width: 1.55rem;
+      height: 1.55rem;
+      flex-basis: 1.55rem;
+    }
+    .mini-tile.unified .mini-art.plate img:only-child {
+      width: 1.85rem;
+      height: 1.85rem;
+      flex-basis: 1.85rem;
+    }
+    .mini-tile.unified .mini-title {
+      font-size: 0.9rem;
+    }
+    .mini-tile.unified .mini-sub {
+      display: -webkit-box;
+      width: 100%;
+      overflow: hidden;
+      color: var(--theme-text-muted, #9aa6b8);
+      font-size: 0.7rem;
+      line-height: 1.15;
+      text-align: center;
+      text-overflow: ellipsis;
+      white-space: normal;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+  }
+
+  /* Portrait tablet. */
+  @media (min-width: 700px) and (max-width: 900px) and (min-height: 1000px) {
+    .mini-tile.unified {
+      height: 100%;
+      min-height: 9rem;
+      gap: 1rem;
+      padding: 1rem 1.1rem;
+    }
+    .mini-tile.unified .mini-art {
+      width: 4.25rem;
+      min-width: 4.25rem;
+      height: 4.25rem;
+      font-size: 1.5rem;
+    }
+    .mini-tile.unified
+      .avatar-cluster
+      > :global(.robust-avatar + .robust-avatar) {
+      margin-left: -16px;
+    }
+    .mini-tile.unified :global(.cluster-avatar.robust-avatar) {
+      --avatar-size: 2.25rem !important;
+    }
+    .mini-tile.unified .mini-title {
+      font-size: 1.08rem;
+    }
+    .mini-tile.unified .mini-sub {
+      font-size: 0.86rem;
+      line-height: 1.25;
+    }
+    .mini-tile.unified .element-dot {
+      width: 0.7rem;
+      height: 0.7rem;
+    }
+  }
+
+  /* ── Composition: persistent desktop rail ──────────────────────── */
+  @media (min-height: 650px) {
+    @container drill (min-width: 900px) {
+      .mini-tile.rail {
+        width: 100%;
+        height: 100%;
+        min-height: 44px;
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 0.6rem;
+        padding: 0.35rem 0.55rem;
+        border-radius: 0.8rem;
+        text-align: left;
+        transform: none;
+      }
+      .mini-tile.rail:hover {
+        transform: none;
+      }
+      .mini-tile.rail.catalog-active {
+        border-color: var(--theme-accent, #6366f1);
+        background: color-mix(
+          in srgb,
+          var(--theme-accent, #6366f1) 18%,
+          var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+        );
+        box-shadow: inset 3px 0 0 var(--theme-accent, #6366f1);
+      }
+      .mini-tile.rail .mini-art {
+        width: 2.25rem;
+        min-width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 0.65rem;
+        font-size: 0.95rem;
+      }
+      .mini-tile.rail .mini-main {
+        flex: 1 1 auto;
+        align-items: flex-start;
+      }
+      .mini-tile.rail .mini-title {
+        overflow: hidden;
+        font-size: 0.86rem;
+        line-height: 1.15;
+        text-align: left;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .mini-tile.rail .mini-sub {
+        display: none;
+      }
+      .mini-tile.rail
+        .avatar-cluster
+        > :global(.robust-avatar + .robust-avatar) {
+        margin-left: -12px;
+      }
+    }
+  }
+
+  /* Rail steps with the pane on tall displays (audit D-10). */
+  @media (min-height: 1150px) {
+    @container drill (min-width: 1200px) {
+      .mini-tile.rail {
+        border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+        padding: 0.5rem 0.7rem;
+      }
+      .mini-tile.rail .mini-title {
+        font-size: 1rem;
+      }
+      .mini-tile.rail .mini-art {
+        width: 2.75rem;
+        min-width: 2.75rem;
+        height: 2.75rem;
+      }
+    }
+  }
+
+  @media (min-height: 1900px) {
+    @container drill (min-width: 1200px) {
+      .mini-tile.rail .mini-title {
+        font-size: 1.2rem;
+      }
+      .mini-tile.rail .mini-art {
+        width: 3.25rem;
+        min-width: 3.25rem;
+        height: 3.25rem;
+      }
+    }
+  }
+</style>

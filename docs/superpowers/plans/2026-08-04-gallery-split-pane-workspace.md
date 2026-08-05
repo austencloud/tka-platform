@@ -56,19 +56,19 @@ when done. READ every screenshot for defects
 
 ### Task 0: Recon (no code)
 
-- [ ] **Step 0.1:** Read the spec in full.
-- [ ] **Step 0.2:** Read `GalleryDrill.svelte` in full (yes, all of it — use
+- [x] **Step 0.1:** Read the spec in full.
+- [x] **Step 0.2:** Read `GalleryDrill.svelte` in full (yes, all of it — use
   offset/limit passes). Build a written inventory in your scratchpad:
   (a) every top-level template block and which product it belongs to
   (landing vs workspace vs shared), (b) every CSS rule block by selector
   prefix (`.hero-`, `.mini-`, `.choice-`, `.unified-`, `.desktop-filter-`,
   `.drill.` variants) and which product owns it, (c) every prop and which
   product consumes it.
-- [ ] **Step 0.3:** Read `BrowseModule.svelte` :100–260 and :600–740 (view
+- [x] **Step 0.3:** Read `BrowseModule.svelte` :100–260 and :600–740 (view
   state, workspace wiring, drill/tab render sites), `GalleryTab.svelte` in
   full, `FilterRuleStrip.svelte` in full, `create-browse-engine.svelte.ts`
   exports and `types.ts` in full.
-- [ ] **Step 0.4:** Baseline screenshot set of TODAY'S behavior, saved to
+- [x] **Step 0.4:** Baseline screenshot set of TODAY'S behavior, saved to
   your scratchpad (not committed): landing + workspace (one category open,
   one rule active) at 2112×1188×1.1, 1584×990×1.1, 4224×2376×1.1, and
   landing at 412×920×1.1 (phone flow). These are the Task 1 no-change
@@ -91,7 +91,7 @@ component both render (landing mini-tile composition and workspace catalog
 composition are the same component with a `composition: "landing" | "catalog"`
 prop or CSS-driven sizing — executor's choice, but ONE component).
 
-- [ ] **Step 1.1:** From the Task 0 inventory, move the landing template +
+- [x] **Step 1.1:** From the Task 0 inventory, move the landing template +
   landing-owned CSS into `GalleryLanding.svelte`; workspace template +
   workspace CSS into `GalleryWorkspace.svelte`; the mini-tile markup into
   `CategoryTile.svelte` consumed by both. Shared helpers (section maps,
@@ -99,9 +99,9 @@ prop or CSS-driven sizing — executor's choice, but ONE component).
   their consumers are; if genuinely shared, a sibling
   `gallery-drill-shared.ts`. No selector may exist in both new files —
   that is the drift this split kills.
-- [ ] **Step 1.2:** Reduce `GalleryDrill.svelte` to props passthrough +
+- [x] **Step 1.2:** Reduce `GalleryDrill.svelte` to props passthrough +
   the landing/workspace branch. Target: under 300 lines.
-- [ ] **Step 1.3:** Write the contract test asserting the split holds
+- [x] **Step 1.3:** Write the contract test asserting the split holds
   (same pattern as `tests/unit/sequence-viewer-shell-contract.test.ts`):
   GalleryDrill source contains no `<style>` block over 50 lines and no
   `.hero-`/`.unified-choice-grid` selectors; GalleryLanding source contains
@@ -109,16 +109,16 @@ prop or CSS-driven sizing — executor's choice, but ONE component).
   contains no `.hero-` selectors; both render `CategoryTile`.
   Run: `npx vitest run tests/unit/browse/gallery-drill-split-contract.test.ts`
   Expected: PASS.
-- [ ] **Step 1.4:** `npm run check > "$env:TEMP/check.log" 2>&1` then grep the
+- [x] **Step 1.4:** `npm run check > "$env:TEMP/check.log" 2>&1` then grep the
   log for `error` (one check per turn — `.claude/rules/fast-iteration-loop.md`).
   Expected: 0 errors. Then `npx vitest run tests/unit/browse/`
   Expected: same pass/fail set as before the split (the two protobufjs
   import failures and `browse-engine-solo-load-race` fail on HEAD already —
   they are the pre-existing baseline, not yours).
-- [ ] **Step 1.5:** Re-shoot the Task 0.4 screenshot set. Compare against
+- [x] **Step 1.5:** Re-shoot the Task 0.4 screenshot set. Compare against
   baseline side by side. Expected: pixel-equivalent composition at every
   viewport (background animation may differ frame to frame).
-- [ ] **Step 1.6:** Commit:
+- [x] **Step 1.6:** Commit:
   `git commit -m "refactor(gallery): split GalleryDrill into Landing + Workspace + CategoryTile" -- src/lib/features/browse/gallery-home/ tests/unit/browse/gallery-drill-split-contract.test.ts`
 
 ### Task 2: Split-pane layout (≥ seam) with live results
