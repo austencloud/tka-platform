@@ -10,10 +10,15 @@
  * world, bridged by whatever Φ/Ψ material the dataframe actually contains.
  */
 
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 
-import { getSequenceCombinator } from "$lib/shared/combination/get-sequence-combinator";
+import {
+  __resetForTests,
+  getSequenceCombinator,
+} from "$lib/shared/combination/get-sequence-combinator";
 import { createRuntimeAmbientProvider } from "$lib/shared/combination/services/runtime-ambient-provider";
+import { findCombinations } from "$lib/shared/combination/services/sequence-combinator";
+import type { AmbientOptionProvider } from "$lib/shared/combination/domain/types";
 import {
   ambientLetterSet,
   rosterConfirmedBases,
@@ -54,12 +59,30 @@ describe("getSequenceCombinator", () => {
     expect(gh).toBeDefined();
     expect(gh!.letters).toEqual([Letter.G, Letter.H]);
 
-    // Flags are the enumerator's, unmodified — the filter runs after it.
-    expect(typeof preview.resultsTruncated).toBe("boolean");
-    expect(typeof preview.budgetExhausted).toBe("boolean");
-    expect(preview.searchComplete).toBe(
-      !preview.resultsTruncated && !preview.budgetExhausted
-    );
+    // Flags are the enumerator's, unmodified — the filter runs after it. At
+    // the defaults (length <=5, cap 4,000 vs a complete set of 3,916) the
+    // sweep finishes, so the preview can honestly claim it looked everywhere.
+    expect(preview.resultsTruncated).toBe(false);
+    expect(preview.budgetExhausted).toBe(false);
+    expect(preview.searchComplete).toBe(true);
+  });
+
+  it("sweeps the whole length-5 space at the defaults, on every pair shape", () => {
+    const combinator = getSequenceCombinator();
+    const pairs: Array<[string, typeof GGGG_CW, typeof GGGG_CW]> = [
+      ["GGGG+HHHH", GGGG_CW, HHHH_CCW],
+      ["AAAA+HHHH", AAAA_CCW, HHHH_CCW],
+      ["GGGG+GGGG", GGGG_CW, GGGG_CW],
+    ];
+
+    for (const [label, a, b] of pairs) {
+      const preview = combinator.candidateWords(a, b);
+      expect(
+        preview.searchComplete,
+        `${label} truncated at the default cap`
+      ).toBe(true);
+      expect(preview.words.length).toBeGreaterThan(0);
+    }
   });
 
   it("handles the same card twice (ingredients are identified by index)", () => {
@@ -123,7 +146,21 @@ describe("createRuntimeAmbientProvider", () => {
     expect(provider.stats.seamsQueried).toBe(1);
     expect(provider.stats.optionsOffered).toBeGreaterThan(0);
     expect(provider.stats.labelMismatches).toBe(0);
+    expect(provider.stats.fallbackRelays).toBe(0);
     expect(provider.stats.optionsKept).toBeGreaterThan(0);
+  });
+
+  it("counts the handler's no-match fallback apart from real rejections", async () => {
+    // Nothing in the DIAMOND dataframe starts at a skewed-mode position, so
+    // the handler relays its whole row set. That is an EMPTY seam, not 576
+    // suspect candidates — it must not inflate seamMismatches.
+    const provider = createRuntimeAmbientProvider(GridMode.DIAMOND);
+    const options = await provider.optionsAt(GridPosition.ZETA1);
+
+    expect(options).toEqual([]);
+    expect(provider.stats.fallbackRelays).toBe(1);
+    expect(provider.stats.seamMismatches).toBe(0);
+    expect(provider.stats.labelMismatches).toBe(0);
   });
 });
 
@@ -166,6 +203,86 @@ describe("auto-wired ambient search", () => {
     expect(report.results[0]!.usedAmbient).toBe(false);
     expect(report.impossible).toBe(false);
   }, 120_000);
+
+  it("reports a healthy pool and an attached provider", async () => {
+    const report = await getSequenceCombinator().findCombinations(
+      AAAA_CCW,
+      HHHH_CCW
+    );
+
+    expect(report.poolIncomplete).toBe(false);
+    expect(report.ambientUnavailable).toBe(false);
+  }, 120_000);
+
+  it("flags poolIncomplete when the provider fails, instead of proving anything", async () => {
+    const broken: AmbientOptionProvider = {
+      optionsAt() {
+        return Promise.reject(new Error("dataset is down"));
+      },
+    };
+
+    const report = await findCombinations(AAAA_CCW, HHHH_CCW, {
+      ambientProvider: broken,
+    });
+
+    expect(report.poolIncomplete).toBe(true);
+    // A subset graph can only manufacture a false theorem.
+    expect(report.impossible).toBe(false);
+    // The engine itself never attempts an auto-wire.
+    expect(report.ambientUnavailable).toBe(false);
+  }, 120_000);
+
+  it("flags ambientUnavailable when the dataset cannot answer", async () => {
+    // The dataset is loaded for this suite, so starve it deliberately: an
+    // empty handler is exactly what an un-hydrated app or a latched failed
+    // load looks like from here.
+    __resetForTests();
+    const starved = vi
+      .spyOn(motionQueryHandler, "queryMotions")
+      .mockResolvedValue([]);
+
+    try {
+      const report = await getSequenceCombinator().findCombinations(
+        AAAA_CCW,
+        HHHH_CCW
+      );
+
+      expect(report.ambientUnavailable).toBe(true);
+      expect(report.ambientRunCap).toBe(0);
+      // No bridges, so the two worlds genuinely do not meet — but a UI must
+      // not print that flatly while `ambientUnavailable` is set.
+      expect(report.impossible).toBe(true);
+    } finally {
+      starved.mockRestore();
+      __resetForTests();
+    }
+  }, 120_000);
+
+  it("exposes the auto-wired provider's counters, per grid mode", async () => {
+    __resetForTests();
+    const combinator = getSequenceCombinator();
+
+    expect(combinator.ambientStats()).toBeNull();
+
+    await combinator.findCombinations(AAAA_CCW, HHHH_CCW);
+
+    const stats = combinator.ambientStats();
+    expect(stats).not.toBeNull();
+    expect(stats!.seamsQueried).toBeGreaterThan(0);
+    expect(stats!.optionsKept).toBeGreaterThan(0);
+    expect(stats!.labelMismatches).toBe(0);
+
+    // A snapshot does not move under the caller.
+    const before = stats!.seamsQueried;
+    await combinator.findCombinations(GGGG_CW, HHHH_CCW);
+    expect(stats!.seamsQueried).toBe(before);
+    expect(combinator.ambientStats()!.seamsQueried).toBeGreaterThanOrEqual(
+      before
+    );
+
+    // No search has run in box mode, so no provider exists for it.
+    expect(combinator.ambientStats(GridMode.BOX)).toBeNull();
+  }, 240_000);
 
   it("is deterministic across runs of the whole auto-wired pipeline", async () => {
     const combinator = getSequenceCombinator();

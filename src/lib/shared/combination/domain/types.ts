@@ -174,6 +174,35 @@ export interface CombinationSearchReport {
    * further. A UI that prints "impossible" without this number is overclaiming.
    */
   readonly ambientRunCap: number;
+  /**
+   * The ambient pool could not be built in full — a provider threw, or
+   * answered with something that was not a list of steps.
+   *
+   * The graph the search walked is then a SUBSET of the real one. Results stay
+   * sound (everything found is genuinely performable), but absence proves
+   * nothing, which is why `impossible` is suppressed whenever this is true.
+   *
+   * It is its own flag rather than something a caller infers from
+   * `searchedToLength === 0`: that inference conflated a broken provider with
+   * an ordinary early return, and left a UI no way to say "the bridge
+   * vocabulary failed" instead of "these two cards do not combine".
+   */
+  readonly poolIncomplete: boolean;
+  /**
+   * Ambient material was WANTED but no provider could be attached: the facade
+   * tried to auto-wire the runtime provider and the pictograph dataset did not
+   * answer.
+   *
+   * Distinct from `ambientRunCap: 0`, which is ALSO what a deliberate
+   * `allowAmbient: false` produces. This flag is the difference between "we
+   * did not look for bridges" and "we could not look for bridges", and only a
+   * caller that can tell those apart should decide whether an empty result set
+   * is worth putting in front of someone.
+   *
+   * Always false when `findCombinations` is called directly — only the facade
+   * knows an auto-wire was attempted.
+   */
+  readonly ambientUnavailable: boolean;
 }
 
 export interface AmbientOptionProvider {

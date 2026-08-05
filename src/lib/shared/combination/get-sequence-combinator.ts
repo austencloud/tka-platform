@@ -33,7 +33,9 @@ import {
 } from "./services/letter-calculus";
 import {
   createRuntimeAmbientProvider,
+  snapshotAmbientStats,
   type RuntimeAmbientProvider,
+  type RuntimeAmbientStats,
 } from "./services/runtime-ambient-provider";
 import { findCombinations } from "./services/sequence-combinator";
 
@@ -43,29 +45,48 @@ import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
 
 /**
- * Longest word `candidateWords` will look for.
+ * Longest word `candidateWords` looks for by default.
  *
- * Five, because six cannot be honest. The enumerator's default node budget is
- * spent before the length-6 level finishes at this ingredient shape (two cards
- * plus the whole roster), so `searchComplete` can never come back true above
- * five — and a preview that says "no candidates" without being able to say
- * "and I looked everywhere" is worse than one that stops where its proof
- * stops.
+ * Five for BREVITY, not because six is out of reach. Measured at this
+ * ingredient shape (two cards plus the eleven roster bases, 2026-08-04): the
+ * complete length-<=5 set is 3,916 words in ~11ms, and length <=6 is 19,397
+ * words in ~70ms — six sweeps completely too, `searchComplete: true`, with the
+ * node budget nowhere near spent. The binding constraint at both depths is
+ * `maxResults`, never `searchBudget`.
+ *
+ * So this is a product choice: a preview panel that offers five-letter shapes
+ * is a list someone reads, and 19,397 candidates is a list nobody does. Raise
+ * `maxLength` to 6 deliberately when a caller genuinely wants the long tail —
+ * it stays honest, it just stops being a preview. (An earlier version of this
+ * comment claimed the budget made six impossible. It was inherited from a
+ * measurement taken at a different ingredient shape and is simply false here.)
  */
 const DEFAULT_MAX_WORD_LENGTH = 5;
 
 /**
  * Result cap for the preview enumeration.
  *
- * NOT a display size — the display filter runs afterwards. It has to be big
- * enough that the words drawing on BOTH cards survive to be filtered FOR: the
- * complete length-<=4 set at this shape is ~1,600 words in about a
- * millisecond, and the enumerator emits shortest-first, so the default 200
- * truncates deep inside the length-3 level, often before a single both-cards
- * word appears. 2,000 clears the whole shape at the lengths this preview asks
- * about.
+ * NOT a display size — the both-cards filter runs afterwards, so this cap has
+ * to clear the whole UNFILTERED sweep or it silently eats answers. The
+ * enumerator emits shortest-first and truncates mid-level, and the words that
+ * draw on both cards are the rarer ones, so they are exactly what a low cap
+ * cuts.
+ *
+ * Measured at length <=5 (2026-08-04), complete set 3,916 words in ~11ms:
+ *
+ *   | cap   | GGGG+HHHH both-cards | FALG+GGGG | complete? |
+ *   |-------|----------------------|-----------|-----------|
+ *   | 200   | 3                    | 20        | no        |
+ *   | 2,000 | 129                  | 423       | no        |
+ *   | 4,000 | 204                  | 637       | YES       |
+ *
+ * 2,000 looked adequate because it happened to be complete at length <=4 (814
+ * words) — at length 5 it drops ~34-37% of the both-cards words on every pair
+ * measured, without the caller being able to tell which ones. 4,000 clears the
+ * length-<=5 space outright, so `searchComplete` comes back true at the
+ * defaults and the preview can honestly say it looked everywhere.
  */
-const CANDIDATE_WORD_MAX_RESULTS = 2000;
+const CANDIDATE_WORD_MAX_RESULTS = 4000;
 
 export interface SequenceCombinator {
   /**
@@ -77,13 +98,19 @@ export interface SequenceCombinator {
    * **Ambient material is auto-wired.** Unless the caller passes
    * `allowAmbient: false` or supplies its own `ambientProvider`, this reaches
    * for `createRuntimeAmbientProvider` over the live pictograph dataset — the
-   * difference between "AAAA and HHHH cannot meet" and Austen's AAAAΨHHΦ. When
-   * the dataset is not available (SSR before hydration, a unit test that never
-   * bootstrapped the CSVs), the options pass through UNTOUCHED rather than
-   * carrying a provider that would throw: a provider that fails makes the
+   * difference between "AAAA and HHHH cannot meet" and Austen's AAAAΨHHΦ.
+   *
+   * `allowAmbient: false` is the opt-out; passing `ambientProvider: undefined`
+   * is NOT one, and re-auto-wires exactly as omitting the key would.
+   *
+   * When the dataset is not available (SSR before hydration, a unit test that
+   * never bootstrapped the CSVs), the options pass through UNTOUCHED rather
+   * than carrying a provider that would throw — a failing provider makes the
    * engine mark its pool incomplete and withdraw its impossibility claim, so
    * silently attaching a doomed one would degrade every report on a machine
-   * that simply has no data yet.
+   * that simply has no data yet. The report says which happened:
+   * `ambientUnavailable: true` means the auto-wire was wanted and could not be
+   * made, as opposed to never having been attempted.
    */
   findCombinations(
     cardA: SequenceData,
@@ -114,6 +141,23 @@ export interface SequenceCombinator {
     cardB: SequenceData,
     maxLength?: number
   ): EnumerateResult;
+
+  /**
+   * Counters from the auto-wired ambient provider — how many seams were asked
+   * about, how much material the dataset offered, and what was rejected and
+   * why. Null when no provider has been created for that grid mode yet (no
+   * ambient search has run, or the dataset never answered).
+   *
+   * A frozen SNAPSHOT, but of CUMULATIVE totals: one provider serves every
+   * search for its grid mode for the life of the process, so these are
+   * per-process figures, not per-search ones. Subtract two snapshots to scope
+   * them to one search.
+   *
+   * The counter worth watching is `labelMismatches` — the engine drops
+   * mismatched material and warns only once per search, so without this it is
+   * the kind of failure that costs real bridges quietly.
+   */
+  ambientStats(gridMode?: GridMode): RuntimeAmbientStats | null;
 }
 
 /** Display name for a card ingredient — simplified per `simplified-word-display`. */
@@ -125,10 +169,31 @@ function ingredientName(sequence: SequenceData, fallback: string): string {
 /**
  * Is the pictograph dataset actually answering?
  *
- * Memoized per grid mode, and cached only on success: a machine that has not
- * loaded the CSVs yet may well load them later (the app fetches them during
- * hydration), and pinning "no dataset" for the process lifetime would leave the
- * facade permanently ambient-blind after one early call.
+ * Memoized per grid mode, and the memo is dropped on a negative answer — but
+ * be clear about what that does and does not buy, because the obvious reading
+ * is wrong. **The handler LATCHES a failed load, so a later retry through it
+ * cannot succeed:**
+ *
+ *   - `CsvLoader.loadCSVDataSet` never throws on a failed fetch; it catches and
+ *     returns `{ success: false, data: undefined }`
+ *     (`foundation/services/data/csv-loader.ts:79`).
+ *   - `MotionQueryHandler.ensureInitialized` reads that as
+ *     `csvData.data?.diamondData || ""`, parses the empty string into empty row
+ *     arrays, and sets `this.isInitialized = true` REGARDLESS
+ *     (`pictograph/shared/services/motion-query-handler.ts:33,55`). Its own
+ *     try/catch only guards a parse crash, which a load failure is not.
+ *   - So every later `queryMotions` short-circuits on `isInitialized` and
+ *     returns `[]` forever. Not slow — permanently empty.
+ *
+ * Dropping the memo therefore costs a cheap re-probe and buys nothing on its
+ * own; it is kept because it is honest about WHERE the latch lives (upstream,
+ * not here) and because it starts working the moment the handler learns to
+ * invalidate. The real fix is upstream: `ensureInitialized` should leave
+ * `isInitialized` false when `csvData.success` is false, so a later call
+ * retries the load. Until then the graceful degradation below —
+ * `ambientUnavailable: true`, no provider attached, search still runs on card
+ * material — is the whole of the recovery story, and the honest thing to
+ * report to a user is "bridge vocabulary unavailable this session".
  */
 const datasetReady = new Map<GridMode, Promise<boolean>>();
 
@@ -182,11 +247,15 @@ export function getSequenceCombinator(): SequenceCombinator {
 
       const gridMode = cardA.gridMode ?? GridMode.DIAMOND;
       const ambientProvider = await ambientProviderFor(gridMode);
-      return findCombinations(
-        cardA,
-        cardB,
-        ambientProvider ? { ...options, ambientProvider } : options
-      );
+      if (ambientProvider) {
+        return findCombinations(cardA, cardB, { ...options, ambientProvider });
+      }
+
+      // Wanted a bridge vocabulary, could not get one. The search still runs
+      // on card material; the report has to say the difference between that
+      // and a caller who never asked (see `ambientUnavailable`).
+      const report = await findCombinations(cardA, cardB, options);
+      return { ...report, ambientUnavailable: true };
     },
 
     candidateWords(cardA, cardB, maxLength = DEFAULT_MAX_WORD_LENGTH) {
@@ -224,7 +293,27 @@ export function getSequenceCombinator(): SequenceCombinator {
         ),
       };
     },
+
+    ambientStats(gridMode = GridMode.DIAMOND) {
+      const provider = providers.get(gridMode);
+      return provider ? snapshotAmbientStats(provider.stats) : null;
+    },
   };
 
   return instance;
+}
+
+/**
+ * Drop the module-private caches — the singleton, the dataset probes and the
+ * per-grid-mode providers.
+ *
+ * For tests only, and needed because all three are deliberately
+ * process-lifetime: a suite that wants to observe a first-call path (an
+ * unavailable dataset, a fresh stats counter) cannot otherwise get back to one
+ * after any earlier test has warmed them.
+ */
+export function __resetForTests(): void {
+  instance = null;
+  datasetReady.clear();
+  providers.clear();
 }

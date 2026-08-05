@@ -555,6 +555,10 @@ export async function findCombinations(
     searchComplete: true,
     gridModeMismatch,
     ambientRunCap,
+    // A proof is only ever issued from a pool that WAS complete (the caller
+    // below checks), and the engine never attempts an auto-wire of its own.
+    poolIncomplete: false,
+    ambientUnavailable: false,
   });
 
   // Odd rotations are the only transform that changes grid mode, and the
@@ -622,6 +626,8 @@ export async function findCombinations(
         searchComplete: false,
         gridModeMismatch: false,
         ambientRunCap,
+        poolIncomplete: true,
+        ambientUnavailable: false,
       };
     }
     return proven(false, ambientRunCap);
@@ -902,5 +908,10 @@ export async function findCombinations(
       searchedToLength >= opts.maxResultLength,
     gridModeMismatch: false,
     ambientRunCap,
+    // A pool that failed to build still yields sound RESULTS — only the
+    // absence claim is unsafe — so the search runs and reports the shortfall
+    // rather than bailing.
+    poolIncomplete: !ambientPool.complete,
+    ambientUnavailable: false,
   };
 }

@@ -69,14 +69,34 @@ import {
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
 
-/** Per-provider rejection tally — see the module comment's gate 3. */
-export interface RuntimeAmbientProviderStats {
+/**
+ * Per-provider tally — see the module comment's gate 3.
+ *
+ * Counters are CUMULATIVE for the life of the provider, and the facade keeps
+ * one provider per grid mode for the life of the process, so these are
+ * per-process totals across every search, not per-search figures. A caller
+ * that wants a delta takes two snapshots and subtracts.
+ */
+export interface RuntimeAmbientStats {
   /** Distinct seams the engine asked about (cache hits excluded). */
   readonly seamsQueried: number;
   /** Candidates the dataset offered across those seams, before any filtering. */
   readonly optionsOffered: number;
-  /** Dropped: the seam has no location pair, or the handler threw. */
+  /** Dropped: the seam names no location pair, so nothing can start there. */
   readonly seamsUnresolved: number;
+  /**
+   * Seams where the handler relayed its ENTIRE row set instead of matches —
+   * its documented "no matching options found" fallback, which means the seam
+   * genuinely has no continuations.
+   *
+   * Counted apart from `seamMismatches` because it is the normal, expected
+   * answer for an unreachable seam, not suspect material. Measured over all 81
+   * `GridPosition` values in diamond mode (2026-08-04): 16 seams answer with
+   * material, 17 name no location pair, and **48 hit this fallback** — folding
+   * those into `seamMismatches` would have added 48 x 576 = 27,648 routine
+   * rejections and buried the label-gate signal completely.
+   */
+  readonly fallbackRelays: number;
   /** Dropped: did not actually start at the requested seam. */
   readonly seamMismatches: number;
   /** Dropped: letter belongs to no roster-confirmed ambient base. */
@@ -88,12 +108,20 @@ export interface RuntimeAmbientProviderStats {
 }
 
 export interface RuntimeAmbientProvider extends AmbientOptionProvider {
-  readonly stats: RuntimeAmbientProviderStats;
+  /** Live counters. Use `snapshotAmbientStats` for a value that will not move. */
+  readonly stats: RuntimeAmbientStats;
 }
 
 type MutableStats = {
-  -readonly [K in keyof RuntimeAmbientProviderStats]: number;
+  -readonly [K in keyof RuntimeAmbientStats]: number;
 };
+
+/** A frozen copy — safe to hold across further searches. */
+export function snapshotAmbientStats(
+  stats: RuntimeAmbientStats
+): RuntimeAmbientStats {
+  return Object.freeze({ ...stats });
+}
 
 /**
  * A one-step sequence that simply STANDS at the seam — both hands static at
@@ -143,11 +171,27 @@ export function createRuntimeAmbientProvider(
     seamsQueried: 0,
     optionsOffered: 0,
     seamsUnresolved: 0,
+    fallbackRelays: 0,
     seamMismatches: 0,
     letterRejections: 0,
     labelMismatches: 0,
     optionsKept: 0,
   };
+
+  /**
+   * How many rows this grid mode holds, resolved once and reused — the size
+   * the handler's fallback relays back when nothing matched. Memoized as a
+   * promise so concurrent first calls share the one query.
+   */
+  let rowCount: Promise<number> | null = null;
+  const totalRows = (): Promise<number> => {
+    rowCount ??= motionQueryHandler
+      .queryMotions({ gridMode })
+      .then((rows) => rows.length);
+    return rowCount;
+  };
+
+  let warnedAboutFallback = false;
 
   const lookUp = async (seam: SeamState): Promise<readonly StepData[]> => {
     stats.seamsQueried++;
@@ -173,6 +217,26 @@ export function createRuntimeAmbientProvider(
     );
 
     stats.optionsOffered += offered.length;
+
+    // `getNextOptionsForSequence` relays its ENTIRE row set when nothing
+    // matched the probe (its documented "no matching options found" fallback).
+    // That is the truthful answer for a seam with no continuations — a diamond
+    // sequence standing on a box-only position, say — so the right response is
+    // an empty list, not a 576-row filtering pass that would reject every row
+    // one at a time and bury the label-gate counter under the noise.
+    if (offered.length > 0 && offered.length === (await totalRows())) {
+      stats.fallbackRelays++;
+      if (!warnedAboutFallback) {
+        warnedAboutFallback = true;
+        console.warn(
+          `[runtime-ambient-provider] no dataset options start at ${seam}; ` +
+            "the handler relayed its full row set (its no-match fallback) and " +
+            "the seam is being treated as empty. Further seams are counted in " +
+            "stats.fallbackRelays rather than warned about."
+        );
+      }
+      return [];
+    }
 
     const kept: StepData[] = [];
     for (const option of offered) {
