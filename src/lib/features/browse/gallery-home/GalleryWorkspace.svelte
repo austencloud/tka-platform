@@ -14,7 +14,6 @@
 -->
 <script lang="ts">
   import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
-  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import SequencePeek from "$lib/shared/browse/components/SequencePeek.svelte";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
@@ -65,6 +64,15 @@
       label: string,
       color?: string
     ) => void;
+    /** Replace the applied value of a single-valued category (the turn-limit
+     * slider) rather than stacking a second one. */
+    onPickExclusiveValue: (
+      type: BrowseFilterType,
+      value: string | number,
+      label: string,
+      previous?: { value: string | number; label: string },
+      color?: string
+    ) => void;
     onPickLoop: (v: { value: string; label: string; color: string }) => void;
     onPickFamily: (v: { value: string; label: string; color: string }) => void;
     onApply: (
@@ -99,6 +107,7 @@
     onFamilyConnectiveChange,
     onBack,
     onPickValue,
+    onPickExclusiveValue,
     onPickLoop,
     onPickFamily,
     onApply,
@@ -174,12 +183,20 @@
     }
   });
 
-  function applyMaxTurnIntensity() {
-    if (!selectedMaxTurn) return;
-    onApply(
+  /** The slider IS the commit — dragging it applies the limit live. Fires only
+   * on user interaction, so the applied→pending sync above cannot loop. */
+  function commitMaxTurn(next: number) {
+    const choice = catalog.maxTurnIntensityValues.find((v) => v.value === next);
+    if (!choice || choice.value === appliedMaxTurn) return;
+    const previous =
+      appliedMaxTurn !== undefined
+        ? catalog.maxTurnIntensityValues.find((v) => v.value === appliedMaxTurn)
+        : undefined;
+    onPickExclusiveValue(
       BrowseFilterType.MAX_TURN_INTENSITY,
-      selectedMaxTurn.value,
-      selectedMaxTurn.label
+      choice.value,
+      choice.label,
+      previous ? { value: previous.value, label: previous.label } : undefined
     );
   }
 </script>
@@ -361,9 +378,7 @@
           <div class="turn-summary" aria-live="polite">
             <span class="turn-limit">≤{selectedMaxTurn.value}</span>
             <span class="turn-unit">turns</span>
-            <!-- "would match": the slider is a projection until the button
-                 below commits it. -->
-            <span class="turn-count">would match {selectedMaxTurn.count}</span>
+            <span class="turn-count">{selectedMaxTurn.count} matches</span>
           </div>
 
           <div class="turn-slider-shell">
@@ -373,6 +388,7 @@
               max={maxTurnStops.at(-1)}
               step={maxTurnStops}
               bind:value={pendingMaxTurn}
+              onValueChange={commitMaxTurn}
               class="turn-slider-root"
               trackPadding={3}
             >
@@ -400,11 +416,6 @@
             </Slider.Root>
           </div>
 
-          <div class="turn-action">
-            <PanelButton variant="primary" fullWidth onclick={applyMaxTurnIntensity}>
-              Use ≤{selectedMaxTurn.value} turns
-            </PanelButton>
-          </div>
         </div>
       {:else}
         <div class="value-list">
@@ -1802,10 +1813,6 @@
     color: var(--theme-text, #e8edf6);
   }
 
-  .turn-action {
-    width: min(100%, 18rem);
-    justify-self: center;
-  }
 
   @container drill (max-width: 639.98px) {
     .drill-ctx.unified-filter-chooser .drill-screen {
@@ -2488,9 +2495,6 @@
       font-size: 1rem;
     }
 
-    .drill-ctx.adaptive-value-layout .screen-max-turns .turn-action {
-      width: min(100%, 24rem);
-    }
   }
 
   @container drill (min-width: 2600px) {
@@ -2555,9 +2559,6 @@
       font-size: 1.2rem;
     }
 
-    .drill-ctx.adaptive-value-layout .screen-max-turns .turn-action {
-      width: min(100%, 32rem);
-    }
   }
 
   /* Portrait tablets should follow their long axis. Three-choice screens use
@@ -3120,9 +3121,6 @@
       padding: 0 0.5rem 1.75rem;
     }
 
-    .drill-ctx.adaptive-value-layout .screen-max-turns .turn-action {
-      width: 100%;
-    }
   }
 
   /* A tall cover screen is not an iPhone SE with spare pixels. Keep the
@@ -3400,9 +3398,6 @@
       height: 2.75rem;
     }
 
-    .drill-ctx.adaptive-value-layout .screen-max-turns .turn-action {
-      width: 100%;
-    }
   }
 
   @media (min-width: 700px) and (max-width: 900px) and (min-height: 1000px) {

@@ -414,6 +414,29 @@
     });
   }
 
+  /** Categories where the control itself expresses "exactly one value" — the
+   * turn-limit slider. Moving it REPLACES the applied limit; toggling would
+   * stack ≤1.5 and ≤2 into one rule, which the slider cannot represent. Both
+   * mutations share a morph so the grid animates once, not twice. */
+  function pickExclusiveValue(
+    type: BrowseFilterType,
+    value: string | number,
+    label: string,
+    previous?: { value: string | number; label: string },
+    color?: string
+  ) {
+    withResultsMorph(() => {
+      if (onToggleValue) {
+        if (previous && previous.value !== value) {
+          onToggleValue(type, previous.value, previous.label, color, false);
+        }
+        onToggleValue(type, value, label, color, true);
+      } else {
+        onApply(type, value, label, color);
+      }
+    });
+  }
+
   function pickLoop(v: { value: string; label: string; color: string }) {
     withResultsMorph(() => {
       if (onToggleLoop) {
@@ -491,6 +514,7 @@
       : undefined}
     onBack={() => goToSection("chooser")}
     onPickValue={pickValue}
+    onPickExclusiveValue={pickExclusiveValue}
     onPickLoop={pickLoop}
     onPickFamily={pickFamily}
     {onApply}
