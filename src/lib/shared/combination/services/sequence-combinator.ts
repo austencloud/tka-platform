@@ -17,21 +17,22 @@
  *     colour swap, twin, deduped cyclically).
  *
  * Ambient base-vocabulary material (ΦΨ bridges and friends) is Task 9. Until
- * then `allowAmbient` is accepted and ignored, and `impossible` means "no
- * combination exists from the two cards' own material" — the strong,
- * bridge-inclusive claim arrives with the ambient arm.
+ * then, a walk is built from the two cards' own material only.
+ *
+ * **Two claims, kept apart.** The reachability precheck below decides
+ * `impossible` — a structural, any-length proof that costs O(seams). The walk
+ * search decides what EXISTS, and its failure to find something is reported as
+ * `searchedToLength` ("nothing of this length or shorter"), never as
+ * impossibility. A bounded search cannot prove a negative, and conflating the
+ * two would let a budget timeout masquerade as a theorem.
  *
  * **Iterative deepening, not plain DFS.** The walk space is exponential in
- * length (≈6 sources × up to 64 steps), so a depth-first sweep would spend its
- * whole budget on one very long branch and report the shapes it happened to
- * reach. Deepening by total step count instead makes the emitted order
- * shortest-first — which is both the useful answer ("what is the SMALLEST way
- * these two cards combine?") and a stable one, and it matches the
- * shortest-first contract Layer 0's `enumerateHybridWords` already settled on.
- *
- * Honest bounds: `searchComplete` is false when either the node budget or the
- * raw-walk cap stopped the sweep early. `impossible` is only ever true
- * alongside `searchComplete` — a search that ran out of budget proves nothing.
+ * length, so a depth-first sweep would spend its whole budget on one very deep
+ * branch and report the shapes it happened to reach. Deepening by total step
+ * count instead makes the emitted order shortest-first — both the useful answer
+ * ("what is the SMALLEST way these two cards combine?") and a stable one, and
+ * it matches the shortest-first contract Layer 0's `enumerateHybridWords`
+ * already settled on.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -50,7 +51,8 @@ import { seamEndOf, seamOf } from "./position-groups";
 import { buildTwinSource, buildVariants } from "./variant-generator";
 import { classifyAndRank, type RawWalk } from "./walk-classifier";
 
-/** `CombinatorOptions.maxResultLength` is clamped to this. */
+/** `CombinatorOptions.maxResultLength` is clamped to this range. */
+const MIN_RESULT_LENGTH = 2;
 const HARD_MAX_RESULT_LENGTH = 64;
 
 /**
@@ -90,15 +92,57 @@ function commitBlock(
 }
 
 /**
+ * Merge a wrap-split block pair.
+ *
+ * A closed walk has no start, but the search has to enter it somewhere — and
+ * entering in the MIDDLE of a run splits that one run into the walk's first and
+ * last blocks. `A[0..2] B[..] A[3..3]` and `A[3..2] B[..]` are the same loop
+ * with the same blocks; only the entry differs. Rejoining the pair before the
+ * signature is taken means every phase of a walk produces the SAME partition,
+ * so the block structure a caller reads is a property of the loop rather than
+ * an artefact of where the search happened to start.
+ *
+ * Only the first/last pair can ever need this: a same-source jump landing where
+ * the extend branch would have gone is excluded at the jump site, so no two
+ * ADJACENT blocks are ever cyclically contiguous.
+ */
+function canonicalPartition(
+  blocks: readonly WalkBlock[],
+  lengthOfSource: ReadonlyMap<string, number>
+): readonly WalkBlock[] {
+  if (blocks.length < 2) return blocks;
+
+  const first = blocks[0]!;
+  const last = blocks[blocks.length - 1]!;
+  if (first.sourceId !== last.sourceId) return blocks;
+
+  const length = lengthOfSource.get(first.sourceId) ?? 0;
+  if (length === 0) return blocks;
+  if (
+    (last.startStepIndex + last.steps.length) % length !==
+    first.startStepIndex % length
+  ) {
+    return blocks;
+  }
+
+  const merged: WalkBlock = {
+    sourceId: first.sourceId,
+    kind: first.kind,
+    startStepIndex: last.startStepIndex,
+    steps: [...last.steps, ...first.steps],
+    rotationFaithful: first.rotationFaithful,
+  };
+  return [merged, ...blocks.slice(1, -1)];
+}
+
+/**
  * One key per step: `sourceId#indexWithinSource`, then the lexicographically
  * smallest ROTATION of that list.
  *
- * The rotation is the whole point. A closed walk has no start — the same cyclic
- * combination is reachable from every card-A step it passes through, and a
- * 4-fold symmetric card therefore finds it four times, each with a different
- * block split (entering mid-block splits one block into two). Keying on the
- * per-STEP list rather than on the blocks makes those phases identical strings,
- * which is what collapses them to one result.
+ * The rotation is the whole point. The same cyclic combination is reachable
+ * from every card-A step it passes through, and a 4-fold symmetric card
+ * therefore finds it four times. Keying on the per-STEP list rather than on the
+ * blocks makes those phases identical strings, which is what collapses them.
  */
 function canonicalWalkSignature(
   blocks: readonly WalkBlock[],
@@ -125,8 +169,61 @@ function canonicalWalkSignature(
 }
 
 /**
- * Every closed alternating walk over card A and card B, or a proof that none
- * exists within the searched material.
+ * Can card-B material be REACHED from card-A material at all?
+ *
+ * Walk the union seam graph forward from every seam a card-A step starts at. A
+ * combination contains at least one step of each card, so it contains a path
+ * from some card-A seam to some card-B seam; if the BFS never arrives at one,
+ * no such walk exists AT ANY LENGTH. That is the engine's only impossibility
+ * proof, and it costs O(seams + steps) rather than an exponential sweep — which
+ * is why AAAA + GGGG (alpha world vs beta world) is answered instantly instead
+ * of being searched to the budget and reported as an unproven "none found".
+ *
+ * Empty inputs land here too: a card with no steps contributes no seams, so
+ * nothing of its kind is ever reachable.
+ */
+function cardBIsReachableFromCardA(
+  sources: readonly WalkSource[],
+  sourceSteps: readonly (readonly StepData[])[]
+): boolean {
+  const edges = new Map<SeamState, Set<SeamState>>();
+  const frontier: SeamState[] = [];
+  const cardBSeams = new Set<SeamState>();
+
+  sourceSteps.forEach((steps, sourceIndex) => {
+    const kind = sources[sourceIndex]!.kind;
+    for (const step of steps) {
+      const from = seamOf(step);
+      const to = seamEndOf(step);
+      if (!from || !to) continue;
+
+      const out = edges.get(from);
+      if (out) out.add(to);
+      else edges.set(from, new Set([to]));
+
+      if (kind === "cardA") frontier.push(from);
+      if (kind === "cardB") cardBSeams.add(from);
+    }
+  });
+
+  if (cardBSeams.size === 0) return false;
+
+  const seen = new Set<SeamState>(frontier);
+  while (frontier.length > 0) {
+    const seam = frontier.pop()!;
+    if (cardBSeams.has(seam)) return true;
+    for (const next of edges.get(seam) ?? []) {
+      if (seen.has(next)) continue;
+      seen.add(next);
+      frontier.push(next);
+    }
+  }
+  return false;
+}
+
+/**
+ * Every closed alternating walk over card A and card B, within the requested
+ * bounds — or a structural proof that none exists at any length.
  */
 export async function findCombinations(
   cardA: SequenceData,
@@ -137,21 +234,30 @@ export async function findCombinations(
     ...COMBINATOR_DEFAULTS,
     ...options,
     maxResultLength: Math.min(
-      options.maxResultLength ?? COMBINATOR_DEFAULTS.maxResultLength,
+      Math.max(
+        options.maxResultLength ?? COMBINATOR_DEFAULTS.maxResultLength,
+        MIN_RESULT_LENGTH
+      ),
       HARD_MAX_RESULT_LENGTH
     ),
   };
 
+  /** A structural proof covers every length, so nothing is left unexplored. */
+  const proven = (gridModeMismatch: boolean): CombinationSearchReport => ({
+    results: [],
+    impossible: true,
+    searchedToLength: opts.maxResultLength,
+    resultsTruncated: false,
+    budgetExhausted: false,
+    searchComplete: true,
+    gridModeMismatch,
+  });
+
   // Odd rotations are the only transform that changes grid mode, and the
   // variant generator never emits one — so two cards in different modes share
-  // no reachable seam at all. Say so instead of searching for it.
+  // no reachable seam at all.
   if ((cardA.gridMode ?? "diamond") !== (cardB.gridMode ?? "diamond")) {
-    return {
-      results: [],
-      impossible: true,
-      searchComplete: true,
-      gridModeMismatch: true,
-    };
+    return proven(true);
   }
 
   const frameSource: WalkSource = {
@@ -173,6 +279,11 @@ export async function findCombinations(
   sources.push(...(await buildVariants(cardB, opts)));
 
   const sourceSteps = sources.map(stepsOf);
+
+  if (!cardBIsReachableFromCardA(sources, sourceSteps)) {
+    return proven(false);
+  }
+
   const lengthOfSource = new Map(
     sources.map((source, index) => [source.id, sourceSteps[index]!.length])
   );
@@ -193,31 +304,37 @@ export async function findCombinations(
   const rawWalks = new Map<string, RawWalk>();
   const rawWalkCap = Math.max(opts.maxResults * RAW_WALK_OVERSHOOT, 1);
   let budget = opts.searchBudget;
-  let searchComplete = true;
+  let resultsTruncated = false;
+  let budgetExhausted = false;
   let stopped = false;
 
-  const record = (blocks: WalkBlock[], totalSteps: number): void => {
-    const signature = canonicalWalkSignature(blocks, lengthOfSource);
+  const record = (blocks: readonly WalkBlock[], totalSteps: number): void => {
+    const partition = canonicalPartition(blocks, lengthOfSource);
+    const signature = canonicalWalkSignature(partition, lengthOfSource);
+
     const existing = rawWalks.get(signature);
     if (existing) {
-      // Same cyclic walk entered at a different phase. Prefer the
-      // representative with the fewest blocks — that is the one whose block
-      // boundaries are real seam changes rather than an artefact of where the
-      // search happened to enter the loop.
-      if (blocks.length < existing.blocks.length) {
-        rawWalks.set(signature, { blocks, totalSteps, signature });
+      // The same cyclic walk, entered at a different card-A step. Prefer the
+      // representative whose blocks are fewest — with wrap-splits already
+      // rejoined the partitions agree, so this only ever settles ties.
+      if (partition.length < existing.blocks.length) {
+        rawWalks.set(signature, { blocks: partition, totalSteps, signature });
       }
       return;
     }
 
-    rawWalks.set(signature, { blocks, totalSteps, signature });
+    rawWalks.set(signature, { blocks: partition, totalSteps, signature });
     if (rawWalks.size >= rawWalkCap) {
       stopped = true;
-      searchComplete = false;
+      resultsTruncated = true;
     }
   };
 
   /**
+   * Card-A material is present from the first step — every anchor is a card-A
+   * source — so only card B has to be PROVEN present before a walk may close.
+   * That asymmetry is why `usedCardB` has no `usedCardA` twin.
+   *
    * @param startSeam   where the walk began; closure means returning here
    * @param currentSeam where the walk stands now
    * @param sourceIndex the source the current (uncommitted) block belongs to
@@ -225,8 +342,6 @@ export async function findCombinations(
    * @param blockSteps  steps of the current block, not yet committed
    * @param blockStart  index the current block entered its source at
    * @param blocks      committed blocks
-   * @param usedA/usedB whether card A / card B material is in the walk,
-   *                    INCLUDING the uncommitted block
    */
   const visit = (
     limit: number,
@@ -238,12 +353,11 @@ export async function findCombinations(
     blockStart: number,
     blocks: WalkBlock[],
     totalSteps: number,
-    usedA: boolean,
-    usedB: boolean
+    usedCardB: boolean
   ): void => {
     if (stopped) return;
     if (budget <= 0) {
-      searchComplete = false;
+      budgetExhausted = true;
       stopped = true;
       return;
     }
@@ -259,8 +373,7 @@ export async function findCombinations(
       // a combination — at least one committed block plus the current one.
       blocks.length >= 1 &&
       blockSteps.length >= opts.minBlockSize &&
-      usedA &&
-      usedB
+      usedCardB
     ) {
       record(
         [...blocks, commitBlock(source, blockStart, blockSteps)],
@@ -272,7 +385,8 @@ export async function findCombinations(
     if (totalSteps >= limit || steps.length === 0) return;
 
     // Extend: stay in this source and take its next step.
-    const nextStep = steps[nextIndex % steps.length]!;
+    const extendIndex = nextIndex % steps.length;
+    const nextStep = steps[extendIndex]!;
     const nextEnd = seamEndOf(nextStep);
     if (nextEnd && seamOf(nextStep) === currentSeam) {
       visit(
@@ -285,20 +399,28 @@ export async function findCombinations(
         blockStart,
         blocks,
         totalSteps + 1,
-        usedA || source.kind === "cardA",
-        usedB || source.kind === "cardB"
+        usedCardB || source.kind === "cardB"
       );
       if (stopped) return;
     }
 
-    // Jump: hand off to a DIFFERENT source at this seam. Staying inside the
-    // same source is the extend branch above; re-entering it at another phase
-    // would splice a card into itself, which is not a combination of two cards.
     if (blockSteps.length < opts.minBlockSize) return;
 
+    // Jump: hand off to any step sitting at this seam, including one in the
+    // SAME source at a different phase. A card that revisits a seam (FALG is at
+    // beta5 twice) can legitimately be re-entered elsewhere in its own cycle —
+    // forbidding that would silently drop real combinations, and the
+    // both-cards close rule already guarantees a result is not one card alone.
+    // The single exclusion is the step the extend branch above just took: the
+    // same walk, split into two blocks for no reason.
     const committed = commitBlock(source, blockStart, blockSteps);
     for (const entry of entries.get(currentSeam) ?? []) {
-      if (entry.sourceIndex === sourceIndex) continue;
+      if (
+        entry.sourceIndex === sourceIndex &&
+        entry.stepIndex === extendIndex
+      ) {
+        continue;
+      }
       const target = sources[entry.sourceIndex]!;
       const step = sourceSteps[entry.sourceIndex]![entry.stepIndex]!;
       const end = seamEndOf(step);
@@ -314,23 +436,50 @@ export async function findCombinations(
         entry.stepIndex,
         [...blocks, committed],
         totalSteps + 1,
-        usedA || target.kind === "cardA",
-        usedB || target.kind === "cardB"
+        usedCardB || target.kind === "cardB"
       );
       if (stopped) return;
     }
   };
 
-  const frameSteps = sourceSteps[0]!;
-  // Deepen by total step count: the shortest combinations first.
-  for (let limit = 2; limit <= opts.maxResultLength && !stopped; limit++) {
-    for (let start = 0; start < frameSteps.length && !stopped; start++) {
-      const step = frameSteps[start]!;
-      const seam = seamOf(step);
-      const end = seamEndOf(step);
-      if (!seam || !end) continue;
-      visit(limit, seam, end, 0, start + 1, [step], start, [], 1, true, false);
+  // Anchor at every card-A source, identity AND twin. A combination whose only
+  // card-A material comes from the twin is a real combination; anchoring solely
+  // on the identity source would make it unreachable. Canonical dedup keeps the
+  // extra anchors from duplicating anything.
+  const anchorSourceIndices = sources
+    .map((source, index) => ({ kind: source.kind, index }))
+    .filter((entry) => entry.kind === "cardA")
+    .map((entry) => entry.index);
+
+  let searchedToLength = 0;
+  for (
+    let limit = MIN_RESULT_LENGTH;
+    limit <= opts.maxResultLength && !stopped;
+    limit++
+  ) {
+    for (const sourceIndex of anchorSourceIndices) {
+      if (stopped) break;
+      const steps = sourceSteps[sourceIndex]!;
+      for (let start = 0; start < steps.length && !stopped; start++) {
+        const step = steps[start]!;
+        const seam = seamOf(step);
+        const end = seamEndOf(step);
+        if (!seam || !end) continue;
+        visit(
+          limit,
+          seam,
+          end,
+          sourceIndex,
+          start + 1,
+          [step],
+          start,
+          [],
+          1,
+          false
+        );
+      }
     }
+    if (!stopped) searchedToLength = limit;
   }
 
   const results = await classifyAndRank(
@@ -343,8 +492,16 @@ export async function findCombinations(
 
   return {
     results,
-    impossible: results.length === 0 && searchComplete,
-    searchComplete,
+    // Never claimed from an empty bounded search — the precheck above is the
+    // only thing that can prove it, and it already returned if it held.
+    impossible: false,
+    searchedToLength,
+    resultsTruncated,
+    budgetExhausted,
+    searchComplete:
+      !resultsTruncated &&
+      !budgetExhausted &&
+      searchedToLength >= opts.maxResultLength,
     gridModeMismatch: false,
   };
 }

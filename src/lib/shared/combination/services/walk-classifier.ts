@@ -20,6 +20,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type {
   CombinationResult,
   CombinatorTunables,
+  VariantDescriptor,
   WalkBlock,
   WalkSource,
 } from "../domain/types";
@@ -34,6 +35,32 @@ export interface RawWalk {
    * unique across the walks handed here.
    */
   readonly signature: string;
+}
+
+function variantKey(variant: VariantDescriptor): string {
+  return `${variant.rotation}|${variant.mirrored}|${variant.colorSwapped}|${variant.rotationFaithful}`;
+}
+
+/**
+ * Every distinct card-B variant the walk draws on, in order of first
+ * appearance. One result legitimately mixes variants — see `variantsB`.
+ */
+function variantsUsed(
+  blocks: readonly WalkBlock[],
+  sourceById: ReadonlyMap<string, WalkSource>
+): VariantDescriptor[] {
+  const seen = new Set<string>();
+  const variants: VariantDescriptor[] = [];
+  for (const block of blocks) {
+    if (block.kind !== "cardB") continue;
+    const source = sourceById.get(block.sourceId);
+    if (!source || source.kind === "ambient") continue;
+    const key = variantKey(source.variant);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    variants.push(source.variant);
+  }
+  return variants;
 }
 
 function stepsOfKind(
@@ -70,9 +97,6 @@ export async function classifyAndRank(
     const cardBSteps = stepsOfKind(walk.blocks, "cardB");
     const cardSteps = cardASteps + cardBSteps;
 
-    const firstB = walk.blocks.find((block) => block.kind === "cardB");
-    const bSource = firstB ? sourceById.get(firstB.sourceId) : undefined;
-
     results.push({
       sequence,
       blocks: walk.blocks,
@@ -82,7 +106,7 @@ export async function classifyAndRank(
       ambientWords: [],
       cardAShare: cardSteps > 0 ? cardASteps / cardSteps : 0,
       cardBShare: cardSteps > 0 ? cardBSteps / cardSteps : 0,
-      variantB: bSource && bSource.kind !== "ambient" ? bSource.variant : null,
+      variantsB: variantsUsed(walk.blocks, sourceById),
       rotationFaithfulBlocks: walk.blocks.filter(
         (block) => block.rotationFaithful
       ).length,

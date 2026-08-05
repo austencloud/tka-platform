@@ -75,7 +75,16 @@ export interface CombinationResult {
   /** Fractions of result steps drawn from each card (ambient excluded). */
   readonly cardAShare: number;
   readonly cardBShare: number;
-  readonly variantB: VariantDescriptor | null;
+  /**
+   * Every DISTINCT card-B variant the result draws on, in order of first
+   * appearance. A list, not a single descriptor: mixing variants inside one
+   * combination is canon, not an edge case — Austen's own FALG card is the
+   * identity half of its material followed by the colour-mirrored half, and a
+   * single-variant field could not express it.
+   *
+   * Empty only for a result with no card-B block, which the search never emits.
+   */
+  readonly variantsB: readonly VariantDescriptor[];
   /** Count of blocks taken from a rotation-faithful twin (see VariantDescriptor.rotationFaithful). */
   readonly rotationFaithfulBlocks: number;
   readonly canonicalHash: string;
@@ -85,11 +94,37 @@ export interface CombinationResult {
 
 export interface CombinationSearchReport {
   readonly results: readonly CombinationResult[];
-  /** Derived at construction: results empty AND searchComplete. With ambient
-   * enabled this is the strong impossibility claim. */
+  /**
+   * A PROOF that no combination exists at ANY length — never merely "the
+   * search found nothing".
+   *
+   * Only a structural argument can establish this, because the walk search is
+   * bounded and a bounded search that comes back empty has proven nothing. The
+   * two structural arguments the engine makes: the cards are in different grid
+   * modes, or no card-B seam is REACHABLE from any card-A seam in the union
+   * seam graph (`gridModeMismatch` distinguishes them). Everything else
+   * reports `impossible: false` and lets `searchedToLength` carry the weaker,
+   * honest claim.
+   */
   readonly impossible: boolean;
-  /** True when the bounded search exhausted the space. False = budget hit;
-   * impossibility NOT proven, only "none found". */
+  /**
+   * The deepest walk length the search fully explored. "No results and
+   * `searchedToLength` 6" is the true statement a bounded search can make:
+   * no combination of 6 steps or fewer exists. 0 = nothing was fully explored.
+   */
+  readonly searchedToLength: number;
+  /**
+   * The raw-walk cap fired: MORE combinations exist than were collected. A
+   * healthy signal on a rich pair, not an error — the caller asked for
+   * `maxResults` and the space is bigger than that.
+   */
+  readonly resultsTruncated: boolean;
+  /** The DFS node budget ran out mid-sweep. */
+  readonly budgetExhausted: boolean;
+  /**
+   * Neither cap fired AND the deepening reached `maxResultLength` — the
+   * bounded space was swept completely.
+   */
   readonly searchComplete: boolean;
   readonly gridModeMismatch: boolean;
 }
@@ -101,8 +136,14 @@ export interface AmbientOptionProvider {
 
 export interface CombinatorTunables {
   readonly minBlockSize: number;
+  /** Clamped by the search to [2, 64]: a closed walk needs at least two steps. */
   readonly maxResultLength: number;
   readonly maxResults: number;
+  /**
+   * Accepted and IGNORED until Task 8 — whole-unit restriction is a
+   * classifier-side filter (a block is a whole unit when it spans its source's
+   * full cycle), and the classifier is still a stub.
+   */
   readonly wholeUnitsOnly: boolean;
   readonly allowAmbient: boolean;
   readonly maxAmbientRun: number;
