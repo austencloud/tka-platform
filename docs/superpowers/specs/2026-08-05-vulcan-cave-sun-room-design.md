@@ -20,7 +20,7 @@ revealing one performer at a time ... but it's better than anything I have right
 now."*
 
 This document keeps the round plan, the four performers, the collapse ring and
-the rib bridge, and replaces the mechanism underneath them. The beam is gone.
+the rib bridge (now a spiral crossing, below), and replaces the mechanism underneath them. The beam is gone.
 Nothing hides anything.
 
 Brainstormed with Austen 2026-08-05. Decisions taken in that session are in
@@ -94,7 +94,7 @@ definitions in `vulcan-cave-floor-plan.ts`.
 | 1 | Rising light crack (north) | 10 m run, 2.5 m wide | −1.2 → −0.4 | yes |
 | 2 | Outer rim walk — **full circle** | 3 m wide annulus | −0.4 | yes |
 | 3 | Annular collapse ring | 5 m gap | −4.0 (visual) | **blocked** |
-| 4 | Rib bridge (single crossing) | 6 × 2 m | −0.4 → −0.2 | yes |
+| 4 | **Spiral crossing** (single crossing) | ~10 m arc, 2 m wide | −0.4 → −0.2 | yes |
 | 5 | Centre disc | ⌀ 8 m | −0.2 | yes |
 | 6 | Four pillars, N/E/S/W of the ring | ⌀ 1.2 m shafts, ⌀ 2.2 m caps | cap +0.4 | blocked |
 | 7 | Exit crack to Moon (east) | 7 m run, 2.5 m wide | −0.4 → −0.8 | yes |
@@ -116,9 +116,35 @@ Three changes from the earlier program, each load-bearing:
    most uniform surface in the chamber, unbroken under each pillar. It exists
    to receive the noon shadows.
 
-The rib bridge sits at one bearing, so crossing it holds azimuth constant and
-raises elevation only: the sun climbs vertically while the visitor walks. That
-is a legible authored move, not a limitation.
+### The spiral crossing — the room's own phase offset, walked
+
+**Decided 2026-08-05.** The crossing was a straight rib bridge at one bearing,
+which held azimuth constant and raised elevation only. Austen: *"Maybe it's
+like a spiral staircase that goes upward?"* A literal climbing stair costs the
+room two things it cannot afford — zenith requires standing at r = 0, and Air,
+the room immediately before this one, already owns the wing's vertical axis. So
+the spiral moved from the visitor's feet into the light.
+
+**The crossing is an arc that winds inward from the rim to the centre disc,
+sweeping exactly 90° of bearing as it goes.** Radii: it spans the collapse ring
+from r = 9 to r = 4, so the walk is roughly a 10 m curve.
+
+Three things fall out of that, and all three are the reason to build it:
+
+1. **The sun climbs AND rotates, in one continuous move.** Bearing and radius
+   change together, so elevation rises while azimuth swings — the shadows
+   lengthen, shorten and slew through a quarter of the compass as you walk in.
+   The straight bridge could only do half of that.
+2. **A quarter sweep is Quarter-Same.** The room's modality is a 90° phase
+   offset. The move that carries the visitor to noon performs that offset with
+   their body. Nobody is told the modality; they walk it.
+3. **A spiral is chiral, and so is this room.** Sun's symmetry is four-fold
+   rotation with no mirror (see Ornament). A spiral is the definitive
+   handed rising form. The circulation and the ornament now come from the same
+   fact.
+
+Still true: the crossing is the ONLY route across the ring, and a route test
+must prove it.
 
 ## The two frames
 
@@ -283,7 +309,7 @@ matching the Air and Fire contract exactly.
    itself.
 3. **Circular blocking on a square tile grid.** The annulus, the round centre
    disc and the four pillars are new blocking predicates, and a route test must
-   prove the rib bridge is the only crossing. Already flagged in the concepts
+   prove the spiral crossing is the only crossing. Already flagged in the concepts
    doc as Sun's structural unknown.
 4. **Four rigs in one room.** First time in the wing; Fire's three is the
    benchmark. Measure before art.
