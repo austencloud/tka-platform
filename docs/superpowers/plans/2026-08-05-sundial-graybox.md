@@ -243,6 +243,30 @@ Per `visual-verification-mandatory.md` this needs no permission.
 - **Wall motif traces.** Same reason. They depend on the effects migration (`2026-08-05-effects-3d-migration.md`) landing first.
 - **Volumetric shafts, colour grade, ember kit.** Judge legibility before spending on atmosphere.
 
+## Progress
+
+**Task 1 — DONE** (`d9e92e8a68`, `e45af28ab3`). Verified: 284 museum tests pass,
+`svelte-check` 0 errors, and the four stations measured at exactly 6.50 m radius
+with correct inward facings.
+
+Three findings from doing it, which change what Task 2 must assume:
+
+1. **The chamber centre is NOT the room centre.** The north 10 m is the light
+   crack, so the chamber centre sits at `SUN_CHAMBER_CENTRE_X_M` /
+   `SUN_CHAMBER_CENTRE_Z_M` in `vulcan-cave-floor-plan.ts`, 5 m south of the
+   room's own centre. **`sundial-layout.ts` must import those constants rather
+   than re-deriving a centre**, or the sun mapping and the pillars will disagree.
+2. **The centre is snapped to the 0.5 m tile grid** (`snapToTileCentre`).
+   Unsnapped it produced radii of 6.25 / 6.50 / 6.50 / 6.75 — an asymmetric ring
+   in a room about four-fold symmetry. Keep the snap.
+3. **The east door survives, against the design.** `buildCirculation` resolves
+   the `sunToMoon` edge to a real door tile and throws without one, so it is
+   currently the only route to Moon. **Delete it in the same change that lands
+   the eye lift (Task 3), not before** — the wall is marked with this in the
+   source.
+
+**Tasks 2–5 — not started.**
+
 ## Loose ends
 
 Append what the frames actually show.
