@@ -57,9 +57,6 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
-import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-
 import {
   ambientBaseForLetter,
   ambientLetterSet,
@@ -74,7 +71,11 @@ import {
   type WalkBlock,
   type WalkSource,
 } from "../domain/types";
-import { seamEndOf, seamOf } from "./position-groups";
+import {
+  positionLabelsMatchLocations,
+  seamEndOf,
+  seamOf,
+} from "./position-groups";
 import { buildTwinSource, buildVariants } from "./variant-generator";
 import {
   classifyAndRank,
@@ -150,38 +151,6 @@ function commitBlock(
     rotationFaithful: isRotationFaithful(source),
     ...(source.kind === "ambient" && { ambientWord: source.ambientWord }),
   };
-}
-
-/**
- * Does a step's own motion locations actually produce the positions it is
- * labelled with?
- *
- * `startPosition`/`endPosition` are DERIVED data — `getGridPositionFromLocations`
- * of the two hands — and the whole walk is stitched on those labels alone. A
- * mislabelled `endPosition` is therefore the worst thing a provider can hand
- * over: the seam graph joins two steps whose props are nowhere near each other,
- * and the result passes every downstream check (it closes, it letters, it
- * hashes) while being physically unperformable. Teleporting props, silently.
- *
- * So both labels are re-derived here and compared. The deriver throws on a
- * location pair that names no position at all, which is the same failure and is
- * treated the same way.
- */
-function positionLabelsMatchLocations(step: StepData): boolean {
-  const blue = step.motions[MotionColor.BLUE];
-  const red = step.motions[MotionColor.RED];
-  if (!blue || !red) return false;
-
-  try {
-    return (
-      getGridPositionFromLocations(blue.startLocation, red.startLocation) ===
-        step.startPosition &&
-      getGridPositionFromLocations(blue.endLocation, red.endLocation) ===
-        step.endPosition
-    );
-  } catch {
-    return false;
-  }
 }
 
 /**

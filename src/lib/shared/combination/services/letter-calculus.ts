@@ -227,8 +227,16 @@ export function findIngredientCoverWitness<T>(
  * collision, not an identity collision: two hybrid cards can legitimately
  * both be called "Card B"). This builds the display string per index,
  * appending " (2)", " (3)", ... to every name after its first occurrence.
+ *
+ * Exported because `WordCandidate.ingredients` speaks these strings and
+ * nothing else: a caller that wants to ask "did this word draw on ingredient
+ * #1?" has to know what #1 is CALLED, and re-deriving that convention at the
+ * call site is exactly the drift that would silently break the combinator
+ * facade's both-cards filter the day someone combines a card with itself.
  */
-function buildDisplayNames(ingredients: readonly IngredientEdges[]): string[] {
+export function ingredientDisplayNames(
+  ingredients: readonly IngredientEdges[]
+): string[] {
   const seenCount = new Map<string, number>();
   return ingredients.map((ing) => {
     const count = (seenCount.get(ing.name) ?? 0) + 1;
@@ -346,7 +354,7 @@ export function enumerateHybridWords(
     else edgesByFrom.set(def.from, [def]);
   }
 
-  const displayNames = buildDisplayNames(ingredients);
+  const displayNames = ingredientDisplayNames(ingredients);
   const requiredIndices = ingredients.map((_, idx) => idx);
 
   let nodesVisited = 0;
