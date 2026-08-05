@@ -17,9 +17,11 @@ so the diff is clean. It is **NOT merged to main** — that is loose end #1.
   `git ls-remote origin feat/notation-roots-merge` shows it. 21 files, +12410/−9651.
 - **`svelte-check`: 0 errors, 0 warnings.** Ran twice (after recompose, and after
   the Lorq image swap). Both logs printed `svelte-check found 0 errors and 0 warnings`.
-- **All 24 Codex audit findings remediated.** Full list + evidence in the audit
-  findings doc; disposition ledger was `REMEDIATION_LEDGER.md` (in the orphaned
-  worktree, see In flight). Highlights, each grounded:
+- **All 24 Codex audit findings remediated.** Full list + evidence is in
+  `docs/superpowers/specs/audits/2026-07-18-notation-roots-audit-findings.md`;
+  dispositions are in
+  `docs/superpowers/specs/audits/2026-07-18-notation-roots-remediation-ledger.md`.
+  Highlights, each grounded:
   - QFT clock corrected to **8-at-top, clockwise, arrow 8→1**, verified against the
     DrexFactor QFT guide (WebFetch: "8=top, 1=upper-right, then clockwise").
   - **Cushing = Charlie**, not Ben (my brief had it wrong; Codex + DrexFactor caught it).
@@ -58,9 +60,9 @@ so the diff is clean. It is **NOT merged to main** — that is loose end #1.
 - **Authoritative copy:** `origin/feat/notation-roots-merge` @ `6ef8f5fe93`. Use this.
 - **Laptop orphaned worktree** `C:/worktrees/tka-platform/notation-redesign`: same
   files on disk but its `.git` link was destroyed mid-session (see Gotchas) — it is
-  NOT a git repo. Ignore it; the pushed branch is the source of truth. It also holds
-  `REMEDIATION_LEDGER.md` and `CODEX_AUDIT_BRIEF.md` if you want them (audit findings
-  are already committed on the branch).
+  NOT a git repo. Ignore it; the pushed branch is the source of truth. Recovered
+  copies of its audit brief, findings, and remediation ledger now live under
+  `docs/superpowers/specs/audits/`.
 - **Laptop temp worktree** `C:/worktrees/tka-platform/notation-preserve` (branch
   `feat/notation-roots-merge`): the clean worktree the commit was made from. Safe to
   `git worktree remove` once you've confirmed the push.

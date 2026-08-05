@@ -411,3 +411,7 @@ tests/render-parity/.artifacts/
 
 # MCP HTTP authorization config — names a specific Cloudflare Zero Trust org/app
 mcp-server/deploy/auth.local.cmd
+
+# One-off root exports and task-local Vite debug configs
+.kv-bulk-shortcodes.json
+vite.debug*.config.mts

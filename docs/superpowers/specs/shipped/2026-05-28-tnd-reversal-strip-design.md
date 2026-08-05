@@ -8,7 +8,10 @@
 The TnD "By Family" browse view shows six elemental family hero cards (Split-Same/Water, Tog-Same/Earth, Quarter-Same/Sun, Split-Opp/Fire, Tog-Opp/Air, Quarter-Opp/Moon). Above them, in `CatalogBrowseFilterBar`, sits a flat row of reversal-pattern filter chips (Continuous, Book, Red Book, Blue Book, Long Book, Alternating). Two issues:
 
 1. The chip row is a coarse, multi-select filter detached from the family cards. It can't express a *custom* reversal pattern — only the six named presets that happen to be seeded.
-2. There's no way to tune a reversal pattern per-step the way the `reversal-pattern-playground.html` prototype demonstrated. That interactive per-step timeline never made it into the app.
+2. There's no way to tune a reversal pattern per-step the way the
+   `docs/research/interactive-prototypes/reversal-pattern-playground.html`
+   prototype demonstrated. That interactive per-step timeline never made it
+   into the app.
 
 In By-Family mode every sequence is exactly **4 steps long**, so a full per-step reversal selector is compact (two rows × four cells) and belongs directly under the family cards as the scene's secondary control.
 
@@ -34,7 +37,9 @@ A reversal pattern is orthogonal to the TnD family and turn ratio (established i
 
 ### Component 1 — `TnDReversalStrip.svelte`
 
-A faithful 4-step port of `reversal-pattern-playground.html`, trimmed for in-app use.
+A faithful 4-step port of
+`docs/research/interactive-prototypes/reversal-pattern-playground.html`,
+trimmed for in-app use.
 
 **Renders:**
 - A **preset quick-row**: six chips (Continuous / Book / Red Book / Blue Book / Long Book / Alternating) sourced from `SIMPLE_PATTERNS` in `domain/reversal-patterns.ts`. Clicking one seeds the grid state. The active chip highlights; editing a cell switches the active label to "Custom".

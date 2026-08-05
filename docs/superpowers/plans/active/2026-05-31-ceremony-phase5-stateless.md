@@ -244,9 +244,11 @@ Expected: `0` (or only deliberate keepers, enumerated).
 
 - [ ] **Step 6: Commit** — `git commit -m "refactor(ceremony): Phase C — kebab-rename residual PascalCase .ts" -- <paths>`
 
-## Task K+3: Handoff — MERGE.md
+## Task K+3: Handoff file
 
-**Files:** Create `MERGE.md` at clone root.
+**Files:** Create
+`docs/superpowers/handoffs/2026-05-31-ceremony-phase5-merge-handoff.md` in the
+clone.
 
 - [ ] **Step 1: Write the landing recipe**
 
@@ -264,7 +266,9 @@ npm run check > /tmp/final-check.log 2>&1; grep -cE "Error:" /tmp/final-check.lo
 npm run test:ci 2>&1 | tail -15
 ```
 
-- [ ] **Step 3: Commit + report to user** — `git commit -m "docs(ceremony): MERGE.md landing recipe + final metrics" -- MERGE.md`. Surface the branch + MERGE.md link to the user; do not merge.
+- [ ] **Step 3: Commit + report to user** —
+  `git commit -m "docs(ceremony): landing recipe + final metrics" -- docs/superpowers/handoffs/2026-05-31-ceremony-phase5-merge-handoff.md`.
+  Surface the branch and handoff link to the user; do not merge.
 
 ---
 

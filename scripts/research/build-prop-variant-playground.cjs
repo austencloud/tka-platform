@@ -181,5 +181,10 @@ render();
 </body>
 </html>`;
 
-fs.writeFileSync('prop-variant-playground.html', html);
-console.log('Written:', html.length, 'bytes');
+const outputPath = path.resolve(
+  __dirname,
+  '../../docs/research/interactive-prototypes/prop-variant-playground.html'
+);
+
+fs.writeFileSync(outputPath, html);
+console.log('Written:', outputPath, html.length, 'bytes');

@@ -599,7 +599,11 @@ git commit -m "feat(choreo-card): single-active reversal filter, drop chip row"
 **Files:**
 - Create: `src/lib/features/choreo-card/components/TnDReversalStrip.svelte`
 
-A 4-step port of `reversal-pattern-playground.html`. Two rows (Blue/Red) × 4 toggle cells, a preset quick-row, a pattern string, and a validity badge. No checkboxes — cells are `<button role="switch">`. Emits the resolved pattern via `onPatternChange`.
+A 4-step port of
+`docs/research/interactive-prototypes/reversal-pattern-playground.html`. Two
+rows (Blue/Red) × 4 toggle cells, a preset quick-row, a pattern string, and a
+validity badge. No checkboxes — cells are `<button role="switch">`. Emits the
+resolved pattern via `onPatternChange`.
 
 - [ ] **Step 1: Write the component**
 

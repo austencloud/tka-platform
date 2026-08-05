@@ -3,7 +3,8 @@
 You are auditing a flow-arts notation page that Claude just rewrote. Austen wants it
 "audited tf out of." Be adversarial and skeptical. Find factual errors, AI-writing
 tells, rule violations, dead links, code bugs, and layout/a11y problems. **Do not fix
-anything** — report. Write your findings to `CODEX_AUDIT_FINDINGS.md` in this worktree,
+anything** — report. Write your findings to
+`docs/superpowers/specs/audits/2026-07-18-notation-roots-audit-findings.md`,
 ranked most-severe first, each with `file:line`, the problem, hard evidence (MCP output /
 source URL / rule citation), and a concrete fix. Claude applies the fixes.
 
@@ -100,5 +101,6 @@ Diff the deleted `roots/+page.svelte` (via `git show origin/main:...`) against t
 - Full read access to the worktree, `.claude/rules/`, `.claude/skills/`.
 
 ## Deliverable
-`CODEX_AUDIT_FINDINGS.md` in this worktree. Ranked findings, evidence per finding, concrete
-fixes, no code changes. If a dimension is clean, say so in one line.
+`docs/superpowers/specs/audits/2026-07-18-notation-roots-audit-findings.md`.
+Ranked findings, evidence per finding, concrete fixes, no code changes. If a
+dimension is clean, say so in one line.

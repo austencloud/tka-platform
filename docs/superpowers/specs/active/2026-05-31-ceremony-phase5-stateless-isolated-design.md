@@ -111,7 +111,9 @@ near-zero rename conflict.
   `git rebase origin/main`, resolving early while conflicts are small.
 - Atomic per-module commits with clear messages; explicit pathspec every commit.
 - Phase C as codemod → re-runnable on final `main`.
-- **Handoff = the branch + `MERGE.md`** (recipe: re-run codemods on fresh `main`,
+- **Handoff:** the branch and
+  `docs/superpowers/handoffs/2026-05-31-ceremony-phase5-merge-handoff.md`
+  (recipe: re-run codemods on fresh `main`,
   then rebase/cherry-pick the semantic Phase-5 commits). The user merges when idle.
   This work never merges into `main` while the user is active.
 
@@ -121,7 +123,8 @@ near-zero rename conflict.
 2. `npm run check` clean and `npm run test:ci` green in the clone — same pass set as
    the Step-0 baseline, no new failures.
 3. Branch rebases cleanly onto a recent `origin/main`.
-4. `MERGE.md` present with a reproducible landing recipe.
+4. `docs/superpowers/handoffs/2026-05-31-ceremony-phase5-merge-handoff.md`
+   present with a reproducible landing recipe.
 
 ## Risks
 
