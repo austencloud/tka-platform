@@ -535,6 +535,20 @@ async function doInitializeAuthListener(): Promise<void> {
                 "❌ [authState] Failed to update user document:",
                 error
               );
+              // A swallowed failure here is how two real 2026-08-05 signups
+              // ended up with an Auth record and no public profile — invisible
+              // to the admin panel and to the signup notification, for a week.
+              // The server-side onAuthUserCreated trigger now backstops the
+              // write; this reports the client-side loss so the backstop's
+              // hit rate is observable instead of assumed.
+              void import("$lib/shared/analytics/services/posthog").then(
+                ({ captureException }) =>
+                  captureException(error, {
+                    context: "createOrUpdateUserDocument",
+                    uid: user.uid,
+                    isAnonymous: user.isAnonymous,
+                  })
+              );
             });
         }
 

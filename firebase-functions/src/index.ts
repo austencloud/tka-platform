@@ -30,6 +30,8 @@ export {
   syncCollectionCountOnDelete,
   syncLibraryCountsOnProfileCreate,
 } from "./profiles/syncLibraryCounts";
+export { onAuthUserCreated } from "./profiles/onAuthUserCreated";
+export { reconcileMissingProfiles } from "./profiles/reconcileMissingProfiles";
 
 export {
   cleanupStaleAgentSessions,
