@@ -13,12 +13,57 @@
  * `--editor-need`, which the column's flex basis consumes. Everything the
  * ceiling leaves over flows to the catalog, whose tiles grow into it.
  *
- * The measurement is invariant to the zone height it feeds: in the pane every
- * block of a screen is content-sized (`flex: 0 1 auto`) and top-aligned, so the
- * union of the blocks is the screen's own height whatever the box around it is
- * doing. Without that there would be a feedback loop between the budget and the
- * thing it measures.
+ * The measurement MUST be invariant to the zone height it feeds, and reading the
+ * rendered boxes is not. A grid track written `minmax(a, b)` is maximised into
+ * whatever free space its container has before `align-content` ever runs, so a
+ * value list inside the stage is exactly as tall as the stage lets it be — and
+ * the stage's basis is this measurement. Every allocation is then a fixed point
+ * and the one you land on is whichever screen you arrived from. Austen,
+ * 2026-08-05: "sometimes you can go to LOOPs and it's all spelling out an
+ * incorrect way like this, as a result of whatever was selected before."
+ *
+ * So a grid block is measured from quantities the allocation cannot move: how
+ * many ROWS its items occupy (row assignment follows the column count, not the
+ * height) and the track's own ceiling. Anything else falls back to its content
+ * height. The result is the same number no matter which screen was open before.
  */
+
+/** `minmax(<anything>, 224px)` → 224. The ceiling is what a row is owed. */
+const TRACK_CEILING = /minmax\([^,]+,\s*([\d.]+)px\s*\)/;
+
+/**
+ * What one block of a screen is owed, measured independently of the height it
+ * currently has.
+ */
+function blockNeed(block: HTMLElement): number {
+  const style = getComputedStyle(block);
+  if (style.display === "grid" || style.display === "inline-grid") {
+    const ceiling = TRACK_CEILING.exec(style.gridAutoRows);
+    if (ceiling) {
+      const cap = Number.parseFloat(ceiling[1]);
+      // Group items by grid row. Which row an item lands in depends on the
+      // column count and its span — never on how tall the rows turned out.
+      const rows = new Map<number, number>();
+      for (const item of block.children) {
+        const box = item.getBoundingClientRect();
+        if (box.height <= 0) continue;
+        const key = Math.round(box.top);
+        const content = (item as HTMLElement).scrollHeight;
+        rows.set(key, Math.max(rows.get(key) ?? 0, content));
+      }
+      if (rows.size > 0) {
+        const gap = Number.parseFloat(style.rowGap) || 0;
+        let total = (rows.size - 1) * gap;
+        // A row that cannot fit inside the ceiling keeps its own content
+        // height; every other row is owed the ceiling exactly.
+        for (const content of rows.values()) total += Math.max(cap, content);
+        return total;
+      }
+    }
+  }
+  const box = block.getBoundingClientRect();
+  return Math.max(box.height, block.scrollHeight);
+}
 
 export function heightBudget(node: HTMLElement, _key?: unknown) {
   let frame = 0;
@@ -42,12 +87,8 @@ export function heightBudget(node: HTMLElement, _key?: unknown) {
       (Number.parseFloat(style.paddingBottom) || 0);
     let blocks = 0;
     for (const child of screen.children) {
-      const box = child.getBoundingClientRect();
-      if (box.height <= 0) continue;
-      // `scrollHeight`, not just the box: a list too tall for the column is
-      // allowed to shrink its box and overflow, and the budget must see the
-      // content it wanted rather than the squeeze it got.
-      need += Math.max(box.height, (child as HTMLElement).scrollHeight);
+      if (child.getBoundingClientRect().height <= 0) continue;
+      need += blockNeed(child as HTMLElement);
       blocks += 1;
     }
     if (blocks === 0) {

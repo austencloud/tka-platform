@@ -487,8 +487,16 @@
             onclick={() =>
               onPickValue(BrowseFilterType.STARTING_LETTER, v.value, v.value)}
           >
+            <!-- fitToParent: the dashed letters (W-, Σ-, θ-) are wider than a
+                 chip at the glyph's natural aspect and used to bleed past the
+                 tile's right edge. -->
             <span class="letter-glyph" style:height="{letterGlyphHeight}px">
-              <TKAWordGlyph word={v.value} height={letterGlyphHeight} darkMode />
+              <TKAWordGlyph
+                word={v.value}
+                height={letterGlyphHeight}
+                darkMode
+                fitToParent
+              />
             </span>
             <span class="letter-count">{v.count}</span>
           </button>
@@ -1177,6 +1185,8 @@
   }
   .letter-glyph {
     display: flex;
+    width: 100%;
+    min-width: 0;
     align-items: center;
     justify-content: center;
     height: 26px;
@@ -4382,13 +4392,44 @@
      which is the same defect wearing the opposite sign. Rows grow to a sane
      maximum and the leftover distributes evenly, so short option sets read as a
      spaced card list instead of a pile at the top. */
+  /* A fixed length as the minmax MINIMUM ignores what the card holds. Once a
+     list has more rows than the column has height there is no free space left,
+     every track freezes at that length, and a card needing more spills — the
+     folder glyph out the top, the count out the bottom, into the gaps between
+     rows, so consecutive rows read as overlapping (Austen, 2026-08-05: "notice
+     how the icon is spilling out of its container"). Collections showed it
+     because it is the one screen whose content exceeds its zone.
+
+     Cards that are a stack of text plus a fixed glyph therefore floor at
+     `min-content` (`--pane-row-fit`) — a row can never be shorter than what it
+     holds — and the numeric floor moves onto the card as `min-height`, where it
+     still holds SHORT cards open but can no longer crush a tall one.
+
+     The art-led screens (start position, grid mode, T&D) opt out deliberately:
+     their art is a PERCENTAGE of the card, so it already shrinks with the box,
+     and a percentage cannot resolve during min-content sizing — it falls back
+     to the pictograph's intrinsic size and inflates the floor to a height the
+     column never had. Those keep the numeric floor. */
   .drill-ctx.split-pane .drill-screen > .value-list,
   .drill-ctx.split-pane .drill-screen > .letter-grid {
     grid-auto-rows: minmax(
-      var(--pane-row-min, 4.5rem),
+      var(--pane-row-fit, var(--pane-row-min, 4.5rem)),
       var(--pane-row-max, 8rem)
     );
     align-content: start;
+  }
+  .drill-ctx.split-pane .screen-collections > .value-list,
+  .drill-ctx.split-pane .screen-loop > .value-list,
+  .drill-ctx.split-pane .screen-creator > .value-list,
+  .drill-ctx.split-pane .screen-level > .value-list,
+  .drill-ctx.split-pane .screen-length > .value-list,
+  .drill-ctx.split-pane .screen-max-turns > .value-list,
+  .drill-ctx.split-pane .screen-letter > .letter-grid {
+    --pane-row-fit: min-content;
+  }
+  .drill-ctx.split-pane .drill-screen > .value-list > *,
+  .drill-ctx.split-pane .drill-screen > .letter-grid > * {
+    min-height: var(--pane-row-min, 4.5rem);
   }
   .drill-ctx.split-pane .screen-letter > .letter-grid {
     --pane-row-min: 3.25rem;
@@ -4412,6 +4453,24 @@
     --pane-row-min: 8rem;
     --pane-row-max: 18rem;
   }
+  /* LOOPs is seven options, and seven into two columns strands Rewound alone on
+     the last row — a row of one, which `4k-native-layout.md` rule 2 forbids.
+     The count is pinned here rather than inherited from the tier soup so the
+     orphan rule below is provably correct: in a two-column grid the last child
+     is alone exactly when its index is odd. Same trick as the catalog's
+     eleventh tile. */
+  @container drill (min-width: 640px) {
+    .drill-ctx.split-pane .screen-loop > .value-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .drill-ctx.split-pane
+      .screen-loop
+      > .value-list
+      > :last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
+  }
+
   /* The art scales with the CARD, not with the tier. Every one of these boxes
      was a constant (76px pictograph, 44px family icon), so a card that grew to
      fill its zone grew around a piece of art that stayed the size it is on a
