@@ -1,0 +1,51 @@
+<script lang="ts">
+  /**
+   * Scene contents for the elemental-motif harness. Six stations in a line,
+   * each running its room's VTG modality with the avatar and (optionally) the
+   * props hidden, so the only thing in the air is the effect trace.
+   *
+   * Mounts the museum's own station adapter rather than a bespoke rig — what
+   * reads well here is what will read in the room.
+   */
+  import { T } from "@threlte/core";
+  import TelekineticFormation3D from "$lib/features/museum/components/game/TelekineticFormation3D.svelte";
+  import { ELEMENT_MOTIFS, motifPosition } from "./element-motifs";
+
+  interface Props {
+    /** Per-room effect override, keyed by roomId. */
+    effects: Record<string, string>;
+    showProps: boolean;
+    playing: boolean;
+    /** Draw the accent ring under each station. */
+    showRings: boolean;
+  }
+  const props: Props = $props();
+
+  const count = ELEMENT_MOTIFS.length;
+</script>
+
+<!-- Dim key so the effects carry the frame rather than competing with lighting. -->
+<T.AmbientLight intensity={0.18} color="#0e1420" />
+<T.DirectionalLight position={[6, 12, 8]} intensity={0.35} color="#c8d4ff" />
+
+{#each ELEMENT_MOTIFS as motif, i (motif.roomId)}
+  {@const pos = motifPosition(i, count)}
+
+  {#if props.showRings}
+    <T.Mesh position.x={pos.x} position.y={0.01} position.z={pos.z} rotation.x={-Math.PI / 2}>
+      <T.RingGeometry args={[2.4, 2.6, 64]} />
+      <T.MeshBasicMaterial color={motif.color} transparent opacity={0.35} />
+    </T.Mesh>
+  {/if}
+
+  <TelekineticFormation3D
+    stationId={`motif-${motif.roomId}`}
+    worldX={pos.x}
+    worldZ={pos.z}
+    sequenceId={motif.sequenceId}
+    presentation="sculpture"
+    effectId={props.effects[motif.roomId] ?? motif.defaultEffect}
+    showProps={props.showProps}
+    autoPlay={props.playing}
+  />
+{/each}

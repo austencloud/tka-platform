@@ -49,6 +49,13 @@
     presentation?: "ritual" | "sculpture";
     /** Uniform scale for installation-sized presentations. */
     scale?: number;
+    /**
+     * Render the centre staffs. Turning this off leaves the effect trace alone
+     * in space — still driven by the real prop motion, with nothing visible
+     * making it. That is the "elemental motif" configuration: the modality
+     * draws itself. Avatars are already off on the centre rigs.
+     */
+    showProps?: boolean;
   }
   const props: Props = $props();
   const stationId = props.stationId;
@@ -58,6 +65,7 @@
   const lod = $derived(props.lod ?? "hero");
   const presentation = props.presentation ?? "ritual";
   const formationScale = props.scale ?? 1;
+  const showCenterProps = $derived(props.showProps ?? true);
 
   // Ritual platform
   const PLATFORM_RADIUS = 3.5;
@@ -334,7 +342,7 @@
         avatarState={instance}
         showAvatar={false}
         showGrid={!planeCfg.mirror}
-        showProps={true}
+        showProps={showCenterProps}
         showEffects={true}
         isPlaying={instance.isPlaying && stationPlaying}
         tipEffectMap={tipEffectMap}

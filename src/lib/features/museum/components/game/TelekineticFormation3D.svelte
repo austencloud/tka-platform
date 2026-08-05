@@ -18,6 +18,10 @@
      * the official museum (default behavior).
      */
     userSequenceDataMap?: Map<string, SequenceData>;
+    /** Override the presentation's default effect (elemental motif work). */
+    effectId?: string | null;
+    /** Hide the centre staffs and leave only the effect trace. */
+    showProps?: boolean;
   }
   const props: Props = $props();
 
@@ -43,8 +47,9 @@
   worldX={props.worldX}
   worldZ={props.worldZ}
   {sequence}
-  effectId={props.presentation === "sculpture" ? "trails" : "led"}
+  effectId={props.effectId ?? (props.presentation === "sculpture" ? "trails" : "led")}
   autoPlay={props.autoPlay ?? true}
   presentation={props.presentation}
   scale={props.scale}
+  showProps={props.showProps ?? true}
 />
