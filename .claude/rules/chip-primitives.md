@@ -15,7 +15,7 @@ names the canonical primitives and the routing decision explicitly.
 | Need | Primitive | Path |
 |---|---|---|
 | Multi-select / independent toggles | `FilterChipBase` (`mode="toggle"`) | `src/lib/shared/browse/components/filter-chips/FilterChipBase.svelte` |
-| Single-select group (exactly one active) | `SegmentedControl` | `src/lib/shared/3d/components/controls/SegmentedControl.svelte` |
+| Single-select group (exactly one active) | `SegmentedControl` | `src/lib/shared/ui/components/SegmentedControl.svelte` |
 
 `FilterChipBase` also has `mode="dropdown"` (chip opens a popover list) and
 `mode="action"` (momentary button — clear/apply). Props worth knowing before you
