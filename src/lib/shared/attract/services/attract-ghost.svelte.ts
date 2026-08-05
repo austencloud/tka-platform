@@ -24,6 +24,28 @@ export interface GhostState {
   visible: boolean;
   /** Takeover pose: parked bottom-right as the clickable "watch again" button. */
   parked: boolean;
+  /**
+   * How fast the ghost is travelling right now, normalised 0..1 against a brisk
+   * glide. The body renders a trailing wisp from this: at fifteen feet a bare
+   * dot jumping between positions reads as a rendering glitch, and a tail that
+   * grows with speed reads as a thing that MOVED. Purely cosmetic — nothing in
+   * the motor or the mind branches on it.
+   */
+  speed: number;
+  /** Direction of travel in radians, for the same trail. Stale when speed is 0. */
+  heading: number;
+  /**
+   * The ghost has deliberately stepped back to let the app be looked at (see
+   * `savor`). The body shrinks and dims; the caption clears. Distinct from
+   * `parked`, which means the VISITOR has the wheel.
+   */
+  dimmed: boolean;
+  /**
+   * On target, not yet committed — the beat where a person's hand arrives and
+   * hovers before they actually press. The body leans in slightly. This is the
+   * single largest "it's alive" tell and it costs one boolean.
+   */
+  considering: boolean;
 }
 
 /** The lifecycle surface a section wires to (GhostPointer + takeover). */
@@ -70,6 +92,12 @@ export interface AttractGhost extends AttractActHandle {
   browseThenPress: (chosen: HTMLElement, alternatives?: HTMLElement[]) => Promise<void>;
   /** Rest just inside an element's bottom-right corner, hover cleared. */
   restBeside: (el: HTMLElement) => Promise<void>;
+  /**
+   * Step aside, shrink and dim for `ms` so the app can be looked at without a
+   * ghost on top of it. Only for beats with a real payoff — see the note on the
+   * implementation about the bug this would otherwise recreate.
+   */
+  savor: (ms: number) => Promise<void>;
   /** Mark/unmark the element the ghost is "hovering" (.ghost-hover mirror). */
   setHover: (el: HTMLElement | null) => void;
   /** Poll the live DOM for visible, actually-hittable targets. */
@@ -106,6 +134,10 @@ export function createAttractGhost(opts: {
     pressed: false,
     visible: false,
     parked: false,
+    speed: 0,
+    heading: 0,
+    dimmed: false,
+    considering: false,
   });
 
   let dead = false;
@@ -163,6 +195,40 @@ export function createAttractGhost(opts: {
 
   const easeInOutCubic = (t: number) =>
     t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+  /** The speed a brisk glide reaches, in px/ms. `ghost.speed` is normalised
+   *  against it so the body's trail has a stable meaning across screen sizes. */
+  const FAST_PX_PER_MS = 1.4;
+
+  /**
+   * A short straight tween used for the small motions that bracket a glide —
+   * anticipation and overshoot-settle. Deliberately NOT `glide` itself: those
+   * are sub-20px moves where a bowed path and a distance-scaled duration would
+   * both be wrong, and calling glide would recurse into its own anticipation.
+   */
+  async function segment(
+    tx: number,
+    ty: number,
+    dur: number,
+    abort: () => boolean,
+  ): Promise<void> {
+    const sx = ghost.x;
+    const sy = ghost.y;
+    const t0 = performance.now();
+    while (!abort()) {
+      const t = (performance.now() - t0) / dur;
+      if (t >= 1) break;
+      const e = easeOutCubic(t);
+      ghost.x = sx + (tx - sx) * e;
+      ghost.y = sy + (ty - sy) * e;
+      await frame();
+      while (!abort() && !inViewport) await raw(200);
+    }
+    if (abort()) return;
+    ghost.x = tx;
+    ghost.y = ty;
+  }
 
   /**
    * Glide the ghost to a point along a bowed quadratic-bezier path, rAF-driven,
@@ -200,21 +266,67 @@ export function createAttractGhost(opts: {
       Math.max((240 + dist * 0.9) * jitter(0.85, 0.3), 300),
       1300,
     );
+
+    // ANTICIPATION. Before a real journey, lean back against the direction of
+    // travel for a beat. Every animator's first note and the cheapest possible
+    // "something is about to happen" — it also gives a distant viewer a frame
+    // of warning to follow the move, instead of the dot simply being elsewhere.
+    // Short hops skip it: a hand does not wind up to move 40px.
+    if (dist > 150) {
+      const back = Math.min(dist * 0.05, 11);
+      await segment(
+        sx - (dx / dist) * back,
+        sy - (dy / dist) * back,
+        jitter(90, 60),
+        abort,
+      );
+      if (abort()) return;
+    }
+
+    // OVERSHOOT. Aim a hair past the mark on longer moves and settle back, so
+    // arrival has weight instead of stopping dead on the pixel.
+    const over = dist > 150 ? Math.min(dist * 0.035, 9) : 0;
+    const ax = tx + (dx / dist) * over;
+    const ay = ty + (dy / dist) * over;
+
     // Bow the path sideways — human reaches curve, they don't ride rails.
+    const gx = ghost.x;
+    const gy = ghost.y;
     const bow = dist * jitter(0.05, 0.15) * (Math.random() < 0.5 ? -1 : 1);
-    const cx = sx + dx / 2 + (-dy / dist) * bow;
-    const cy = sy + dy / 2 + (dx / dist) * bow;
+    const cx = gx + (ax - gx) / 2 + (-dy / dist) * bow;
+    const cy = gy + (ay - gy) / 2 + (dx / dist) * bow;
     const t0 = performance.now();
+    ghost.heading = Math.atan2(dy, dx);
+    let px = gx;
+    let py = gy;
+    let pt = t0;
     while (!abort()) {
-      const t = (performance.now() - t0) / dur;
+      const nowMs = performance.now();
+      const t = (nowMs - t0) / dur;
       if (t >= 1) break;
       const e = easeInOutCubic(t);
       const u = 1 - e;
-      ghost.x = u * u * sx + 2 * u * e * cx + e * e * tx;
-      ghost.y = u * u * sy + 2 * u * e * cy + e * e * ty;
+      ghost.x = u * u * gx + 2 * u * e * cx + e * e * ax;
+      ghost.y = u * u * gy + 2 * u * e * cy + e * e * ay;
+      // Measured, not modelled: the trail has to match what the eye sees, and
+      // the eased bezier's real speed peaks mid-flight and dies at both ends.
+      const dt = nowMs - pt;
+      if (dt > 0) {
+        const v = Math.hypot(ghost.x - px, ghost.y - py) / dt;
+        ghost.speed = Math.min(1, v / FAST_PX_PER_MS);
+      }
+      px = ghost.x;
+      py = ghost.y;
+      pt = nowMs;
       await frame();
       while (!abort() && !inViewport) await raw(200);
     }
+    if (abort()) return;
+    if (over > 0) {
+      ghost.speed = 0.25;
+      await segment(tx, ty, jitter(130, 70), abort);
+    }
+    ghost.speed = 0;
     if (abort()) return;
     ghost.x = tx;
     ghost.y = ty;
@@ -305,12 +417,30 @@ export function createAttractGhost(opts: {
       if (halted()) return;
     }
     if (!fingertipOn(el)) return;
+
+    // HESITATION. The beat between arriving and committing — a person's hand
+    // lands, settles, and only then presses. Without it the ghost arrives and
+    // fires in the same instant, which is the single clearest "this is a script
+    // running" tell left in the motor. The body leans in while this is true.
+    ghost.considering = true;
+    await sleep(jitter(160, 220));
+    ghost.considering = false;
+    if (halted()) return;
+    // The target can still die during the hesitation; re-check rather than
+    // press into a hole.
+    if (!fingertipOn(el)) return;
+
     ghost.pressed = true;
     await sleep(PRESS_MS);
     ghost.pressed = false;
     if (halted()) return;
     if (action) action();
     else el.click();
+    // RECOIL. Hold still long enough for the body's release rebound to play
+    // (the dot's scale transition overshoots on the way back out). Gliding away
+    // in the same frame the click lands cuts it off, and a press that snaps
+    // flat back to rest reads as a state change rather than contact.
+    await sleep(120);
   }
 
   /** Browse before deciding: hover 0–2 alternatives, then press the chosen
@@ -335,6 +465,40 @@ export function createAttractGhost(opts: {
     }
     if (halted()) return;
     await moveAndPress(chosen);
+  }
+
+  /**
+   * Step back and let the app be looked at.
+   *
+   * Glides to the nearest quiet edge of the band, shrinks and dims, and waits.
+   * The caller (the mind) clears the caption for the same window, so for a few
+   * seconds there is a running sequence or a lit-up effect on screen and
+   * nothing else — the show gets a peak instead of an unbroken stream of
+   * clicking.
+   *
+   * This is movement-after-press, which was REMOVED in 3b912bbc97 because
+   * watchKind() called restBeside() after every single press and Austen saw the
+   * ghost "move out of the way after clicking" constantly. The distinction is
+   * the entire point and it must stay: getting out of the way is right when
+   * there is something to watch, and wrong when there is not. Only an intention
+   * that explicitly declares `savor` reaches this.
+   */
+  async function savor(ms: number): Promise<void> {
+    const root = opts.getRoot();
+    if (!root || halted()) return;
+    setHover(null);
+    const rr = root.getBoundingClientRect();
+    // Toward whichever bottom corner the ghost is already nearer, so the retreat
+    // is a short step aside rather than a march across the thing being admired.
+    const left = ghost.x < rr.width / 2;
+    await glideTo(
+      left ? jitter(46, 34) : rr.width - jitter(46, 34),
+      rr.height - jitter(52, 30),
+    );
+    if (halted()) return;
+    ghost.dimmed = true;
+    await dwell(ms);
+    ghost.dimmed = false;
   }
 
   /** Park the ghost just inside an element's bottom-right corner (jittered) —
@@ -387,6 +551,12 @@ export function createAttractGhost(opts: {
   async function parkAndWait(): Promise<void> {
     setHover(null);
     ghost.pressed = false;
+    // The visitor has the wheel: drop every in-flight expression, or the parked
+    // dot inherits whatever pose the aborted beat left behind (dimmed mid-savor,
+    // leaning in mid-hesitation) and reads as broken rather than waiting.
+    ghost.considering = false;
+    ghost.dimmed = false;
+    ghost.speed = 0;
     const root = opts.getRoot();
     if (root) {
       const rr = root.getBoundingClientRect();
@@ -450,6 +620,9 @@ export function createAttractGhost(opts: {
       wakeParkedLoop();
       setHover(null);
       ghost.visible = false;
+      ghost.considering = false;
+      ghost.dimmed = false;
+      ghost.speed = 0;
     },
     get dead() {
       return dead;
@@ -477,6 +650,7 @@ export function createAttractGhost(opts: {
     browseAndPick,
     browseThenPress,
     restBeside,
+    savor,
     setHover,
     waitFor,
     pick,

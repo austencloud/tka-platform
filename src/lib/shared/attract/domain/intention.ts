@@ -19,7 +19,8 @@ export type IntentionCategory =
   | "props"
   | "explore"
   | "admire"
-  | "reset";
+  | "reset"
+  | "invite";
 
 export const INTENTION_CATEGORIES: IntentionCategory[] = [
   "build",
@@ -29,6 +30,7 @@ export const INTENTION_CATEGORIES: IntentionCategory[] = [
   "explore",
   "admire",
   "reset",
+  "invite",
 ];
 
 /** Mood hint for the body (companion spec: Taco Cat). The dot ignores it. */
@@ -156,6 +158,19 @@ export interface GhostMemory {
   budgets: {
     /** Gallery opens so far. Firestore reads cost money over a four-hour jam. */
     galleryOpens: number;
+    /**
+     * Invitations offered so far. "You can take this from me" is worth saying
+     * and worth saying rarely: the whole point is that it reads as an aside
+     * from something busy, not as signage. Capped per session and spaced.
+     */
+    invites: number;
+    /**
+     * `trail.lastAt()` when the last invitation ran, for the spacing half of
+     * that budget. Lives INSIDE budgets for the reason documented above: the
+     * context handed to `perform` is a shallow copy, so a bare scalar on memory
+     * would be written to a throwaway object and silently lost.
+     */
+    lastInviteAt: number;
   };
   rng: Rng;
   trail: Trail;
@@ -215,6 +230,21 @@ export interface Intention {
 
   /** Optional mood hint for the body. Defaults to "curious". */
   mood?: GhostMood;
+
+  /**
+   * Milliseconds to step back and SHUT UP after a successful perform, so the
+   * thing that just happened can actually be watched.
+   *
+   * Declare it only on beats with a real payoff — a sequence playing, an effect
+   * lighting up. The ghost glides clear, shrinks, dims, and the caption blanks
+   * for this long; then the `reaction` lands on the way back in. That is what
+   * gives the show peaks instead of an unbroken stream of clicking.
+   *
+   * Deliberately opt-in per intention. The global version of this behaviour was
+   * a bug (3b912bbc97 — "moves out of the way after clicking"): stepping aside
+   * when there is nothing to look at is just the ghost wandering off.
+   */
+  savor?: number | ((ctx: GhostContext) => number);
 }
 
 /**
@@ -230,6 +260,9 @@ export const FOLLOWS: Record<IntentionCategory, IntentionCategory[]> = {
   explore: ["explore", "build", "admire"],
   admire: ["explore", "playback"],
   reset: ["build"],
+  // Nothing follows INTO an invitation: it must win on its own low appeal, never
+  // on momentum, or two of them chain and the aside becomes a pitch.
+  invite: ["build", "explore", "playback"],
 };
 
 export function resolveThought(

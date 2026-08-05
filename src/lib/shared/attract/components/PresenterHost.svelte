@@ -73,6 +73,11 @@
     ghost: core,
     sense,
     rng,
+    // Stage mode slows the whole tour: a caption read across a room has to be
+    // FOUND before it can be read, and a laptop's tempo blurs past at that
+    // distance. Read once at mount — the flag is set at setup and latched, so
+    // it cannot change under a running tour.
+    pace: presentationState.stage ? 1.6 : 1,
   });
   const act = run(mind.tick);
   const ghost = act.ghost;
@@ -251,6 +256,12 @@
     pressed={ghost.pressed}
     visible={ghost.visible}
     parked={ghost.parked}
+    mood={mind.mood}
+    speed={ghost.speed}
+    heading={ghost.heading}
+    dimmed={ghost.dimmed}
+    considering={ghost.considering}
+    stage={presentationState.stage}
     onResume={resumeTour}
   />
 </div>
@@ -260,6 +271,7 @@
     thought={mind.thought}
     x={ghost.x + originX}
     y={ghost.y + originY}
+    stage={presentationState.stage}
   />
 {/if}
 

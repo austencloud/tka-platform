@@ -47,6 +47,30 @@ export function isPresentationRequested(): boolean {
 }
 
 /**
+ * `?present=stage` — the big read.
+ *
+ * Viewport width cannot tell a 1080p projector from a 1080p laptop, and the two
+ * want opposite things: a laptop at arm's length wants a discreet pointer, a
+ * projection screen fifteen feet away wants a presence. Every existing tier in
+ * the ghost keys off `min-width: 2600px`, so a projector at a jam currently
+ * gets the LAPTOP treatment, which is the worst case in the room.
+ *
+ * Rather than guess, one flag set once when the laptop is plugged in. The
+ * laptop default stays the safe one; stage is purely additive.
+ */
+export function isStageMode(): boolean {
+  let value = presentParam();
+  if (value === null) {
+    try {
+      value = sessionStorage.getItem(LATCH_KEY);
+    } catch {
+      value = null;
+    }
+  }
+  return value === "stage";
+}
+
+/**
  * `?present=1` runs a fresh random tour and logs its seed. Passing that seed
  * back (`?present=1234567`) replays the identical sequence of decisions, which
  * is the only reason the seeded RNG exists.

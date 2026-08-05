@@ -21,9 +21,15 @@ export const PLAYBACK_INTENTIONS: Intention[] = [
     can: (ctx) => ctx.hasSequence && !ctx.isPlaying && has(ctx, "play"),
     appeal: (ctx) => Math.min(0.95, 0.35 + ctx.sequenceLength * 0.12),
     mood: "delighted",
+    // The sequence playing is the best thing on this screen, so the ghost gets
+    // out from in front of it and stops talking over it. Longer sequences earn
+    // a longer look. This is the beat the whole savor mechanism exists for.
+    savor: (ctx) => Math.min(9000, 3800 + ctx.sequenceLength * 350),
     perform: async (g, ctx) => {
       if (!(await pressKind(g, ctx, "play", 4000))) return false;
-      await watchKind(g, "stage", g.jitter(2600, 1800), 4000);
+      // Short: a person watches for a second with the cursor where they
+      // clicked, THEN sits back. The sitting back is savor's job now.
+      await watchKind(g, "stage", g.jitter(900, 700), 4000);
       return true;
     },
   },

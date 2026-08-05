@@ -29,9 +29,16 @@ import {
   selectIntention,
 } from "../domain/scoring";
 
-/** How long a thought stays legible before another can replace it. */
+/**
+ * How long a thought stays legible before another can replace it, and the
+ * breath between intentions (jittered — a metronome reads as a machine).
+ *
+ * Both scale by `pace`. A sentence read at arm's length and the same sentence
+ * read across a room are not the same task: at fifteen feet the eye has to find
+ * the caption before it can start reading it, so stage mode holds every thought
+ * noticeably longer and slows the whole tour down to match.
+ */
 const MIN_THOUGHT_MS = 1800;
-/** Breath between intentions. Jittered — a metronome reads as a machine. */
 const BETWEEN_MS = 700;
 
 export interface GhostMind {
@@ -54,8 +61,13 @@ export function createGhostMind(opts: {
   seed?: number;
   rng?: Rng;
   now?: () => number;
+  /** Tempo multiplier. 1 = laptop at arm's length; >1 = stage mode. */
+  pace?: number;
 }): GhostMind {
   const now = opts.now ?? (() => performance.now());
+  const pace = opts.pace ?? 1;
+  const minThoughtMs = MIN_THOUGHT_MS * pace;
+  const betweenMs = BETWEEN_MS * pace;
   const rng = opts.rng ?? createRng(opts.seed);
   const trail = createTrail(now);
   const memory = createMemory(rng, trail);
@@ -83,8 +95,8 @@ export function createGhostMind(opts: {
   async function think(text: string, mood: GhostMood): Promise<void> {
     // A thought the visitor could not finish reading is worse than no thought.
     const held = now() - thoughtSetAt;
-    if (state.thought !== null && held < MIN_THOUGHT_MS) {
-      await opts.ghost.sleep(MIN_THOUGHT_MS - held);
+    if (state.thought !== null && held < minThoughtMs) {
+      await opts.ghost.sleep(minThoughtMs - held);
     }
     state.thought = text;
     state.mood = mood;
@@ -135,6 +147,25 @@ export function createGhostMind(opts: {
       ok = false;
     }
 
+    // SAVOR. A beat that produced something to look at gets watched instead of
+    // narrated over: the caption goes dark and the ghost steps aside, so for a
+    // few seconds the screen is just the running sequence or the lit effect.
+    // A show needs valleys or the peaks do not register.
+    if (ok && intention.savor && !g.halted()) {
+      const ms =
+        typeof intention.savor === "function"
+          ? intention.savor(ctx)
+          : intention.savor;
+      if (ms > 0) {
+        state.thought = null;
+        // Not thoughtSetAt = now(): the NEXT thought must be free to appear the
+        // instant the ghost comes back. The minimum-legibility clock is about
+        // one thought replacing another, and blank is not a thought.
+        thoughtSetAt = 0;
+        await g.savor(ms);
+      }
+    }
+
     // The reaction lands after the thing happened, and only if it happened. A
     // "that was kind of neat" over a press that found nothing would be worse
     // than silence.
@@ -166,7 +197,7 @@ export function createGhostMind(opts: {
 
     // A failed perform means the ghost reached for nothing. Pause a beat
     // longer so a run of misses doesn't look like a seizure.
-    await g.sleep(g.jitter(ok ? BETWEEN_MS : 1600, 600));
+    await g.sleep(g.jitter(ok ? betweenMs : 1600 * pace, 600 * pace));
   }
 
   return {

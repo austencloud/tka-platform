@@ -29,11 +29,16 @@ export const EFFECT_INTENTIONS: Intention[] = [
     can: (ctx) => has(ctx, "effect") && ctx.hasSequence,
     appeal: (ctx) => (ctx.activeEffectIds.length ? 0.45 : 0.7),
     reaction: (ctx, target) => reactionFor(target, ctx),
+    // An effect landing IS the payoff — step aside so the picture is the whole
+    // screen for a moment, then come back and say what you thought of it. The
+    // reaction reads completely differently after a silent look than it does
+    // shouted over the top of the thing it is about.
+    savor: 3600,
     perform: async (g, ctx, target) => {
       if (!target || g.halted()) return false;
       noteEncounter(ctx, target);
       await g.browseThenPress(target, visibleAll(safe("effect")));
-      await watchKind(g, "stage", g.jitter(2200, 1500));
+      await watchKind(g, "stage", g.jitter(900, 700));
       return true;
     },
   },

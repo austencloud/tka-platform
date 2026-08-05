@@ -15,8 +15,16 @@
 
   Placement follows the pointer but is clamped to the viewport and flips to
   whichever side keeps it off the control the ghost is about to press.
+
+  The whole bubble fades on mount/unmount because the mind now deliberately
+  BLANKS the thought during a savor beat (the ghost steps back and shuts up so
+  the sequence or the effect can be watched). Popping in and out of existence
+  every time it does that reads as a glitch. This is a single enter/exit, not a
+  crossfade — plain `transition:fade` is the correct primitive for it
+  (crossfade-primitive.md §The Routing Rule).
 -->
 <script lang="ts">
+  import { fade } from "svelte/transition";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
 
@@ -24,12 +32,21 @@
     thought,
     x,
     y,
+    stage = false,
   }: {
     /** The current thought. Null hides the bubble entirely. */
     thought: string | null;
     /** Viewport coordinates of the pointer. */
     x: number;
     y: number;
+    /**
+     * Projection/TV mode (`?present=stage`). Viewport width cannot tell a
+     * 1080p projector from a 1080p laptop, and the tiers below can only see
+     * width — so on a projector the caption used to land in the LAPTOP tier,
+     * which is the one case where it needed to be biggest. An explicit flag
+     * beats a guess.
+     */
+    stage?: boolean;
   } = $props();
 
   // The bubble's fixed footprint per screen tier. Everything downstream of
@@ -41,8 +58,14 @@
   // how a 4K session ends up rendering 24px type inside the laptop-tier box.
   let viewportW = $state(1920);
   let viewportH = $state(1080);
-  const tier = $derived(viewportW >= 2600 ? 2 : viewportW >= 1680 ? 1 : 0);
-  const WIDTH = $derived([300, 380, 620][tier]!);
+  // Stage mode floors the tier at the largest one regardless of width — that
+  // is the whole point of the flag.
+  const tier = $derived(
+    stage ? 2 : viewportW >= 2600 ? 2 : viewportW >= 1680 ? 1 : 0,
+  );
+  const WIDTH = $derived(
+    Math.min([300, 380, 620][tier]!, Math.max(260, viewportW - 2 * 16)),
+  );
   const HEIGHT = $derived([68, 84, 132][tier]!);
   const GAP = 34;
   const EDGE = 16;
@@ -69,8 +92,10 @@
   <div
     class="caption"
     class:below
+    class:stage
     style={`width:${WIDTH}px;height:${HEIGHT}px;transform:translate(${left}px, ${top}px)`}
     aria-live="polite"
+    transition:fade={{ duration: DURATION.normal }}
   >
     <div class="body">
       <Crossfade key={thought} duration={DURATION.emphasis} fill>
@@ -161,6 +186,22 @@
     .text {
       font-size: 1.25rem;
     }
+  }
+
+  /* Stage mode gets the big treatment at ANY width — a 1080p projector is
+     1920 CSS px and needs exactly what a 4K TV needs. Same values as the
+     2600px tier below, applied by flag instead of by measurement. */
+  .caption.stage {
+    border-radius: 26px;
+    padding: 1rem 1.35rem;
+  }
+  .caption.stage .text {
+    font-size: 2rem;
+  }
+  .caption.stage .tail {
+    width: 18px;
+    height: 18px;
+    margin-left: -9px;
   }
 
   /* Nothing scales for you at 4K@100% or on a TV across the room — the type

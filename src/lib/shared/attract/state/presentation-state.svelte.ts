@@ -19,6 +19,7 @@
 
 import {
   isPresentationRequested,
+  isStageMode,
   requestedSeed,
 } from "../services/presentation-mode";
 
@@ -50,6 +51,7 @@ const state = $state({
   armed: false,
   seed: undefined as number | undefined,
   activity: "running" as PresenterActivity,
+  stage: false,
 });
 
 /**
@@ -73,6 +75,13 @@ export const presentationState = {
   get activity() {
     return state.activity;
   },
+  /**
+   * Projection/TV mode (`?present=stage`): a bigger ghost, a bigger caption and
+   * a slower tour, for an audience across a room rather than at the keyboard.
+   */
+  get stage() {
+    return state.stage;
+  },
   /** ms since the visitor last took the wheel, across reloads. Infinity if never. */
   get pausedForMs() {
     const at = readPausedAt();
@@ -86,6 +95,7 @@ export const presentationState = {
   boot(): void {
     state.armed = isPresentationRequested();
     state.seed = requestedSeed();
+    state.stage = isStageMode();
     state.activity = read(ACTIVITY_KEY) === "paused" ? "paused" : "running";
   },
 
@@ -95,9 +105,10 @@ export const presentationState = {
    * labelled "Ghost" has asked for motion — and always starts running, because
    * pressing it while it is parked means "get back to work".
    */
-  activate(seed?: number): void {
-    write("tka-presentation-mode", String(seed ?? 1));
-    state.seed = seed;
+  activate(seed?: number, stage = false): void {
+    write("tka-presentation-mode", stage ? "stage" : String(seed ?? 1));
+    state.seed = stage ? undefined : seed;
+    state.stage = stage;
     this.markRunning();
     state.armed = true;
   },
@@ -109,6 +120,7 @@ export const presentationState = {
     write(PAUSED_AT_KEY, null);
     state.armed = false;
     state.activity = "running";
+    state.stage = false;
   },
 
   markPaused(): void {

@@ -12,6 +12,7 @@ import { PLAYBACK_INTENTIONS } from "./playback";
 import { EFFECT_INTENTIONS, PROP_INTENTIONS } from "./effects";
 import { EXPLORE_INTENTIONS } from "./explore";
 import { ADMIRE_INTENTIONS } from "./admire";
+import { INVITE_INTENTIONS } from "./invite";
 
 export const ALL_INTENTIONS: Intention[] = [
   ...BUILD_INTENTIONS,
@@ -20,4 +21,5 @@ export const ALL_INTENTIONS: Intention[] = [
   ...PROP_INTENTIONS,
   ...EXPLORE_INTENTIONS,
   ...ADMIRE_INTENTIONS,
+  ...INVITE_INTENTIONS,
 ];
