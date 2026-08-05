@@ -178,7 +178,12 @@
   {@const r = renderRadius(b)}
   {@const op = renderOpacity(b)}
   {#if op > 0.02 && r > 0.001}
-    <T.Mesh position.x={b.x} position.y={b.y} position.z={b.z}>
+    <!-- scale={r} is load-bearing: the geometry is a UNIT sphere, so without it
+         every bubble renders at radius 1 — a 2-metre ball on a 0.86m staff.
+         renderRadius() was being computed and then used only for the cull test
+         below, so all the growth, pop and jitter maths above was thrown away
+         and the tip disappeared inside one white blob. -->
+    <T.Mesh position.x={b.x} position.y={b.y} position.z={b.z} scale={r}>
       <T.SphereGeometry args={[1, 12, 8]} />
       <T.MeshBasicMaterial
         color={rimFor(b)}
