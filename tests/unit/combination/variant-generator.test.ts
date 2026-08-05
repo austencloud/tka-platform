@@ -1,20 +1,29 @@
 import { beforeAll, describe, expect, it } from "vitest";
 
+import type { WalkSource } from "$lib/shared/combination/domain/types";
 import {
   buildRotationFaithfulTwin,
+  buildTwinSource,
   buildVariants,
   type VariantLiberties,
 } from "$lib/shared/combination/services/variant-generator";
+import {
+  mirrorSequence,
+  rotateSequence,
+  swapColors,
+} from "$lib/shared/create/services/sequence-transformer";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  MotionColor,
+  MotionType,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import type { WalkSource } from "$lib/shared/combination/domain/types";
 
 import { getAllLetterVariants } from "../../helpers/real-pictograph-loader";
-import { FALG, GGGG_CW, HHHH_CW } from "./fixtures";
+import { FALG, GGGG_CW, HHHH_CW, PHI_PSI_LOOP } from "./fixtures";
 import { loadPictographDatasetForTests } from "./pictograph-dataset";
 
 const COLORS = [MotionColor.BLUE, MotionColor.RED] as const;
@@ -54,14 +63,6 @@ function spatialKeys(seq: SequenceData): string[] {
   return seq.steps.map(spatialKey);
 }
 
-type CardSource = Extract<WalkSource, { kind: "cardA" | "cardB" }>;
-
-/** Assert the generator emitted only card sources, and narrow the union. */
-function cardSources(sources: readonly WalkSource[]): CardSource[] {
-  expect(sources.map((s) => s.kind)).toEqual(sources.map(() => "cardB"));
-  return sources.filter((s): s is CardSource => s.kind !== "ambient");
-}
-
 /**
  * The cyclic offset k for which `rotate(actual, k)` equals `expected`, or null
  * when no rotation aligns them. A twin starts at its source's LAST end
@@ -83,76 +84,189 @@ function cyclicOffset(actual: string[], expected: string[]): number | null {
   return null;
 }
 
-describe("variant generator — liberty math", () => {
+type CardSource = Extract<WalkSource, { kind: "cardA" | "cardB" }>;
+
+/** Assert the generator emitted only card sources of `kind`, and narrow the union. */
+function cardSources(
+  sources: readonly WalkSource[],
+  kind: "cardA" | "cardB" = "cardB"
+): CardSource[] {
+  expect(sources.map((s) => s.kind)).toEqual(sources.map(() => kind));
+  return sources.filter((s): s is CardSource => s.kind !== "ambient");
+}
+
+/** Membership test against the real diamond dataframe, letters included. */
+async function assertRealDataframeRows(
+  seq: SequenceData,
+  label: string
+): Promise<void> {
+  const rowKey = (
+    letter: string | null,
+    startPosition: string | null,
+    endPosition: string | null,
+    blue: MotionData,
+    red: MotionData
+  ): string => {
+    const hand = (m: MotionData) =>
+      [m.motionType, m.rotationDirection, m.startLocation, m.endLocation].join(
+        "/"
+      );
+    return [letter, startPosition, endPosition, hand(blue), hand(red)].join(
+      " | "
+    );
+  };
+
+  for (const step of seq.steps) {
+    const variants = await getAllLetterVariants(
+      step.letter as Letter,
+      GridMode.DIAMOND
+    );
+    const rows = new Set(
+      variants.map((v) =>
+        rowKey(
+          v.letter ?? null,
+          v.startPosition ?? null,
+          v.endPosition ?? null,
+          v.motions.blue!,
+          v.motions.red!
+        )
+      )
+    );
+    const key = rowKey(
+      step.letter,
+      step.startPosition,
+      step.endPosition,
+      step.motions.blue,
+      step.motions.red
+    );
+    expect(
+      rows.has(key) ? key : `${key}\n  NOT A DIAMOND DATAFRAME ROW`,
+      `${label} step ${step.stepNumber}`
+    ).toBe(key);
+  }
+}
+
+describe("variant generator — enumeration and collapse", () => {
   beforeAll(async () => {
     await loadPictographDatasetForTests();
   });
 
-  it("emits 32 variants at full liberties (4 rotations x mirror x swap x twin)", async () => {
+  it("collapses GGGG_CW's 32 candidates to 4 distinct sources", async () => {
+    // GGGG is maximally symmetric: its four rotations are ONE loop entered at
+    // four different steps, and its two hands are identical so the colour swap
+    // is a no-op. What survives is {identity, mirror} x {plain, twin}.
     const variants = cardSources(await buildVariants(GGGG_CW, ALL));
-    expect(variants).toHaveLength(32);
+    expect(variants.map((v) => v.id)).toEqual([
+      "B id",
+      "B twin",
+      "B mirror",
+      "B mirror+twin",
+    ]);
   });
 
-  it("emits 2 variants with every liberty off except the twin", async () => {
-    const variants = await buildVariants(GGGG_CW, {
-      ...NONE,
-      exploreRotationFaithful: true,
-    });
-    expect(variants).toHaveLength(2);
-    expect(variants.map((v) => v.id)).toEqual(["B id", "B twin"]);
-  });
-
-  it("emits 16 variants with the twin off and everything else on", async () => {
-    const variants = cardSources(
-      await buildVariants(GGGG_CW, { ...ALL, exploreRotationFaithful: false })
-    );
-    expect(variants).toHaveLength(16);
-    for (const variant of variants) {
-      expect(variant.variant.rotationFaithful).toBe(false);
-    }
-  });
-
-  it("emits exactly one variant with no liberties at all", async () => {
-    const variants = cardSources(await buildVariants(GGGG_CW, NONE));
-    expect(variants).toHaveLength(1);
-    expect(variants[0]!.id).toBe("B id");
+  it("keeps the simplest descriptor as each class's survivor", async () => {
+    const variants = cardSources(await buildVariants(GGGG_CW, ALL));
+    // The identity class contains r2/r4/r6 and every colour-swapped copy; the
+    // enumeration order (rotation asc, then no-mirror, no-swap, no-twin) is the
+    // preference order, so the survivor is the plainest descriptor.
     expect(variants[0]!.variant).toEqual({
       rotation: 0,
       mirrored: false,
       colorSwapped: false,
       rotationFaithful: false,
     });
-  });
-
-  it("multiplies the enabled liberties, one toggle at a time", async () => {
-    const cases: ReadonlyArray<readonly [Partial<VariantLiberties>, number]> = [
-      [{ allowRotation: true }, 4],
-      [{ allowMirror: true }, 2],
-      [{ allowColorSwap: true }, 2],
-      [{ allowRotation: true, allowColorSwap: true }, 8],
-      [{ allowMirror: true, allowColorSwap: true }, 4],
-      [{ allowRotation: true, allowMirror: true }, 8],
-      [{ allowMirror: true, exploreRotationFaithful: true }, 4],
-    ];
-    for (const [overrides, expected] of cases) {
-      const variants = await buildVariants(GGGG_CW, { ...NONE, ...overrides });
-      expect(variants.length, JSON.stringify(overrides)).toBe(expected);
+    for (const variant of variants) {
+      expect(variant.variant.colorSwapped).toBe(false);
+      expect(variant.variant.rotation).toBe(0);
     }
   });
 
-  it("gives every variant a unique, deterministic id", async () => {
-    const variants = await buildVariants(FALG, ALL);
-    const ids = variants.map((v) => v.id);
-    expect(new Set(ids).size).toBe(32);
-    // Sample the naming contract at both ends of the space.
-    expect(ids).toContain("B id");
-    expect(ids).toContain("B r2+mirror+swap+twin");
-
-    const again = await buildVariants(FALG, ALL);
-    expect(again.map((v) => v.id)).toEqual(ids);
+  it("collapses FALG's 32 candidates to 16 distinct sources", async () => {
+    // FALG is asymmetric — its rotations are genuinely different loops — but
+    // its two halves are colour-mirrors of each other, which halves the space.
+    const variants = cardSources(await buildVariants(FALG, ALL));
+    expect(variants).toHaveLength(16);
   });
 
-  it("preserves grid mode on every variant (even rotations only)", async () => {
+  it("emits 2 sources with every liberty off except the twin", async () => {
+    const variants = cardSources(
+      await buildVariants(GGGG_CW, { ...NONE, exploreRotationFaithful: true })
+    );
+    expect(variants.map((v) => v.id)).toEqual(["B id", "B twin"]);
+  });
+
+  it("emits exactly one source with no liberties at all", async () => {
+    const variants = cardSources(await buildVariants(GGGG_CW, NONE));
+    expect(variants).toHaveLength(1);
+    expect(variants[0]!.id).toBe("B id");
+    expect(variants[0]!.variant.rotationFaithful).toBe(false);
+  });
+
+  it("never shrinks the source set when a liberty is added", async () => {
+    // Dedup makes the raw 4x2x2x2 arithmetic unobservable, but monotonicity
+    // still has to hold: a superset of liberties can only add material.
+    for (const card of [GGGG_CW, FALG]) {
+      const base = (await buildVariants(card, NONE)).length;
+      const full = (await buildVariants(card, ALL)).length;
+      for (const key of [
+        "allowRotation",
+        "allowMirror",
+        "allowColorSwap",
+        "exploreRotationFaithful",
+      ] as const) {
+        const widened = (await buildVariants(card, { ...NONE, [key]: true }))
+          .length;
+        expect(widened, `${card.word} + ${key}`).toBeGreaterThanOrEqual(base);
+        expect(full, `${card.word} full vs ${key}`).toBeGreaterThanOrEqual(
+          widened
+        );
+      }
+    }
+  });
+
+  it("gives every source and every source sequence a unique id", async () => {
+    const variants = cardSources(await buildVariants(FALG, ALL));
+    expect(new Set(variants.map((v) => v.id)).size).toBe(variants.length);
+    expect(new Set(variants.map((v) => v.sequence.id)).size).toBe(
+      variants.length
+    );
+    for (const variant of variants) {
+      const label = variant.id.replace(/^B /, "");
+      expect(variant.sequence.id).toBe(`${FALG.id}~${label}`);
+      expect(variant.sequence.name).toBe(label);
+      // getSequenceDisplayName prefers these over `word` — a carried-over value
+      // would render every variant as "FALG".
+      expect(variant.sequence.displayName).toBeUndefined();
+      expect(variant.sequence.intendedWord).toBeUndefined();
+    }
+
+    const again = cardSources(await buildVariants(FALG, ALL));
+    expect(again.map((v) => v.id)).toEqual(variants.map((v) => v.id));
+  });
+
+  it("normalizes word to the expanded letter string on every source", async () => {
+    // Data layer: `word` is what is actually performed. Display-layer
+    // shortening ("GGGG" -> "G") belongs to word-simplifier, not here.
+    const labelled: SequenceData = {
+      ...GGGG_CW,
+      word: "stale label",
+      name: "stale label",
+      displayName: "Austen's card",
+      intendedWord: "GGGG",
+    };
+    const variants = cardSources(await buildVariants(labelled, ALL));
+    const identity = variants.find((v) => v.id === "B id")!;
+    expect(identity.sequence.word).toBe("GGGG");
+    for (const variant of variants) {
+      expect(variant.sequence.word, variant.id).toBe(
+        variant.sequence.steps.map((s) => s.letter).join("")
+      );
+      expect(variant.sequence.displayName, variant.id).toBeUndefined();
+      expect(variant.sequence.intendedWord, variant.id).toBeUndefined();
+    }
+  });
+
+  it("preserves grid mode on every source (even rotations only)", async () => {
     for (const card of [GGGG_CW, FALG]) {
       const variants = cardSources(await buildVariants(card, ALL));
       for (const variant of variants) {
@@ -164,12 +278,38 @@ describe("variant generator — liberty math", () => {
 
   it("applies the twin AFTER the spatial and colour transforms", async () => {
     const variants = cardSources(await buildVariants(FALG, ALL));
-    const byId = new Map(variants.map((v) => [v.id, v]));
-    const spatialOnly = byId.get("B r2+mirror+swap")!;
-    const withTwin = byId.get("B r2+mirror+swap+twin")!;
+    const compound = variants.find(
+      (v) =>
+        v.variant.rotationFaithful &&
+        (v.variant.rotation !== 0 ||
+          v.variant.mirrored ||
+          v.variant.colorSwapped)
+    );
+    expect(
+      compound,
+      "expected a compound twin source to survive dedup"
+    ).toBeDefined();
 
-    const twinOfSpatial = await buildRotationFaithfulTwin(spatialOnly.sequence);
-    expect(spatialKeys(withTwin.sequence)).toEqual(spatialKeys(twinOfSpatial));
+    const { rotation, mirrored, colorSwapped } = compound!.variant;
+    let spatial: SequenceData = FALG;
+    if (rotation) spatial = await rotateSequence(spatial, rotation);
+    if (mirrored) spatial = await mirrorSequence(spatial);
+    if (colorSwapped) spatial = swapColors(spatial);
+
+    const expected = await buildRotationFaithfulTwin(spatial);
+    expect(spatialKeys(compound!.sequence)).toEqual(spatialKeys(expected));
+  });
+
+  it("labels card A's twin through the shared source builder", async () => {
+    const source = await buildTwinSource(FALG);
+    expect(source.kind).toBe("cardA");
+    expect(source.id).toBe("A twin");
+    if (source.kind === "ambient") throw new Error("unreachable");
+    expect(source.variant.rotationFaithful).toBe(true);
+    expect(source.sequence.id).toBe(`${FALG.id}~twin`);
+    expect(spatialKeys(source.sequence)).toEqual(
+      spatialKeys(await buildRotationFaithfulTwin(FALG))
+    );
   });
 });
 
@@ -274,60 +414,14 @@ describe("rotation-faithful twin — ground truth", () => {
     // dataframe actually contains, but the POSITION labels are computed
     // separately — this asserts the whole (letter, positions, both motions) row
     // exists, the same membership test the fixtures are held to.
-    const rowKey = (
-      letter: string | null,
-      startPosition: string | null,
-      endPosition: string | null,
-      blue: MotionData,
-      red: MotionData
-    ): string => {
-      const hand = (m: MotionData) =>
-        [
-          m.motionType,
-          m.rotationDirection,
-          m.startLocation,
-          m.endLocation,
-        ].join("/");
-      return [letter, startPosition, endPosition, hand(blue), hand(red)].join(
-        " | "
-      );
-    };
-
     for (const card of [GGGG_CW, FALG]) {
       const twin = await buildRotationFaithfulTwin(card);
-      for (const step of twin.steps) {
-        const variants = await getAllLetterVariants(
-          step.letter as Letter,
-          GridMode.DIAMOND
-        );
-        const rows = new Set(
-          variants.map((v) =>
-            rowKey(
-              v.letter ?? null,
-              v.startPosition ?? null,
-              v.endPosition ?? null,
-              v.motions.blue!,
-              v.motions.red!
-            )
-          )
-        );
-        const key = rowKey(
-          step.letter,
-          step.startPosition,
-          step.endPosition,
-          step.motions.blue,
-          step.motions.red
-        );
-        expect(
-          rows.has(key) ? key : `${key}\n  NOT A DIAMOND DATAFRAME ROW`,
-          `twin(${card.word}) step ${step.stepNumber}`
-        ).toBe(key);
-      }
+      await assertRealDataframeRows(twin, `twin(${card.word})`);
     }
   });
 
   it("is an involution on positions, locations and rotations", async () => {
-    for (const card of [GGGG_CW, FALG]) {
+    for (const card of [GGGG_CW, FALG, PHI_PSI_LOOP]) {
       const roundTrip = await buildRotationFaithfulTwin(
         await buildRotationFaithfulTwin(card)
       );
@@ -339,5 +433,85 @@ describe("rotation-faithful twin — ground truth", () => {
         card.steps.map((s) => s.letter).join("")
       );
     }
+  });
+});
+
+describe("rotation-faithful twin — dash and static material", () => {
+  beforeAll(async () => {
+    await loadPictographDatasetForTests();
+  });
+
+  it("self-twins the ΦΨ bridge loop", async () => {
+    // Φ and Ψ are dash/static pairs. A dash has no orbital direction, so
+    // deriveMotionType leaves it a DASH (and a static a STATIC) no matter what
+    // the prop rotation does — the WORD comes back unchanged. This is the case
+    // that would break if the twin flipped PRO<->ANTI by table lookup instead
+    // of re-deriving from the hand path.
+    //
+    // Measured, not assumed: the word is preserved but the loop is NOT the same
+    // material — it visits different position instances (it opens beta5>alpha1,
+    // where the source opens beta5>alpha5), so this is a genuine second bridge
+    // card, not a no-op.
+    const twin = await buildRotationFaithfulTwin(PHI_PSI_LOOP);
+    expect(twin.steps.map((s) => s.letter).join("")).toBe("ΦΨΦΨ");
+    expect(twin.word).toBe("ΦΨΦΨ");
+    expect(spatialKeys(twin)).not.toEqual(spatialKeys(PHI_PSI_LOOP));
+
+    for (const step of twin.steps) {
+      const types = COLORS.map((c) => step.motions[c].motionType).sort();
+      expect(types, `step ${step.stepNumber}`).toEqual([
+        MotionType.DASH,
+        MotionType.STATIC,
+      ]);
+    }
+    await assertRealDataframeRows(twin, "twin(ΦΨΦΨ)");
+  });
+
+  it("relocates dash arrows to match the reversed hand path", async () => {
+    // The only nontrivial withArrowLocations case: a dash's arrow location is
+    // NOT its start location, it comes from the (start,end) pair — so reversing
+    // s->n into n->s must move the arrow from w to e. Recomputation also has to
+    // run AFTER letter derivation, because the calculator branches on the
+    // step's letter type.
+    const DASH_ARROW: Record<string, string> = {
+      "s>n": "w",
+      "n>s": "e",
+      "w>e": "n",
+      "e>w": "s",
+    };
+
+    const twin = await buildRotationFaithfulTwin(PHI_PSI_LOOP);
+    let dashesChecked = 0;
+    for (const step of twin.steps) {
+      for (const color of COLORS) {
+        const m = step.motions[color];
+        if (m.motionType === MotionType.DASH) {
+          expect(
+            m.arrowLocation,
+            `twin step ${step.stepNumber} ${color} dash ${m.startLocation}>${m.endLocation}`
+          ).toBe(DASH_ARROW[`${m.startLocation}>${m.endLocation}`]);
+          dashesChecked++;
+        } else {
+          // A static's arrow sits on the hand itself.
+          expect(m.arrowLocation).toBe(m.startLocation);
+        }
+      }
+    }
+    expect(dashesChecked).toBe(4);
+
+    // And each arrow genuinely moved relative to the step it came FROM: twin
+    // step i is built from source step n-1-i, and reversing that dash flips its
+    // arrow to the opposite side of the grid.
+    const source = [...PHI_PSI_LOOP.steps].reverse();
+    twin.steps.forEach((step, i) => {
+      const origin = source[i]!;
+      for (const color of COLORS) {
+        if (step.motions[color].motionType !== MotionType.DASH) continue;
+        expect(
+          step.motions[color].arrowLocation,
+          `twin step ${step.stepNumber} ${color} vs origin step ${origin.stepNumber}`
+        ).not.toBe(origin.motions[color].arrowLocation);
+      }
+    });
   });
 });
