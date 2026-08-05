@@ -116,6 +116,7 @@
     "screenshots:public": "tsx scripts/take-screenshots.ts --public",
     "screenshots:compare": "tsx scripts/take-screenshots.ts --compare",
     "screenshots:update": "tsx scripts/take-screenshots.ts --update-baselines",
+    "triage": "tsx scripts/triage-sessions.ts",
     "seo:measure": "tsx scripts/seo/cli.ts",
     "seo:bootstrap": "tsx scripts/seo/cli.ts bootstrap",
     "seo:verify-access": "tsx scripts/seo/cli.ts verify-access",
