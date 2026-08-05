@@ -14,9 +14,16 @@
     - Word, position, structural: plain arithmetic over the loaded data —
       Levenshtein on the words, position-group equality per step index, and
       length/circularity/word-length ratios. Sound as far as they go.
-    - Motion: `SequenceAligner.alignGlobal`, a Needleman-Wunsch alignment over
-      step signatures. Sound, and the only component that tolerates a length
-      difference or an insertion.
+    - Motion: INFLATED, and the least trustworthy number on the panel. The
+      Needleman-Wunsch scaffolding around it is real — it is the only component
+      that tolerates a length difference or an insertion — but the scorer under
+      it is a stub. `computeTransformedSimilarity`
+      (`services/sequence-aligner.ts:249`) takes a `SpatialTransform`, IGNORES
+      it, and returns `min(1, directSimilarity × 1.1)`. So every non-exact pair
+      is scored about 10% high, and the per-pair `transform` label on each
+      aligned pair names whichever transform happened to be tried last rather
+      than a relationship anyone verified. Read motion as a rough upper bound,
+      never as a measurement, and do not build on the transform labels.
     - Per-step scores: step i against step i, no alignment. A phase-shifted
       copy therefore reads as DIFFERENT, which is correct here — period-2 loop
       phases are genuinely different sequences and must never be collapsed.
@@ -26,9 +33,13 @@
       depends on it. Neither does `SimilarityCalculator`.
 
   The sliders are native range inputs. That is not the checkbox ban's territory
-  — a continuous 0-1 weight has no toggle to be, and no primitive in the
-  codebase covers it. The weights they hold are normalized at the state seam
-  (`lab-state.svelte.ts`), because the calculator sums without dividing.
+  — a continuous 0-1 weight has no toggle to be. The closest existing primitive
+  is `features/lab/tabs/scene-lab/components/ParamSlider.svelte`, which stacks
+  its label above the control and bundles a paired number input; neither fits
+  the three-column `label | control | value` grid the dimension bars above
+  already establish, and matching that grid is the whole point of the row. The
+  weights they hold are normalized at the state seam (`lab-state.svelte.ts`),
+  because the calculator sums without dividing.
 -->
 <script lang="ts">
   import type { SimilarityReport } from "$lib/shared/comparison/services/types";
@@ -38,6 +49,9 @@
   interface Props {
     report: SimilarityReport | null;
     error: string;
+    /** A caveat about a report that DID compute. Not a failure — styled as one
+     *  would read as broken when the panel is showing perfectly good numbers. */
+    note: string;
     /** Read-only here. Slider moves go back through `onWeightChange`. */
     weights: SimilarityWeights;
     onWeightChange: (key: keyof SimilarityWeights, value: number) => void;
@@ -47,7 +61,8 @@
   // A callback rather than `bind:` on `weights[key]`: the weights object is
   // owned by the page's lab state, and writing into another component's state
   // from here is exactly what Svelte 5's ownership warning is about.
-  const { report, error, weights, onWeightChange, onReset }: Props = $props();
+  const { report, error, note, weights, onWeightChange, onReset }: Props =
+    $props();
 
   /** Above this, the two cards are close enough that combining them is dull. */
   const NEAR_DUPLICATE = 0.85;
@@ -90,6 +105,10 @@
 
   {#if error}
     <p class="banner error">{error}</p>
+  {/if}
+
+  {#if note}
+    <p class="banner info">{note}</p>
   {/if}
 
   {#if nearDuplicate}
@@ -244,6 +263,11 @@
     border: 1px solid rgba(248, 113, 113, 0.45);
     background: rgba(248, 113, 113, 0.12);
     color: #fca5a5;
+  }
+  .banner.info {
+    border: 1px solid rgba(147, 197, 253, 0.28);
+    background: rgba(96, 165, 250, 0.1);
+    color: #bfdbfe;
   }
 
   .summary {

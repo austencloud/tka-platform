@@ -294,9 +294,12 @@ function derivationOf(
  *      opposite failure and the reason its hash cannot be trusted in either
  *      direction here.
  *
- * Fixing that is Task 12's job, not a side effect of this one. Until then its
- * output is still carried on `CombinationResult.canonicalHash` for
- * cross-module compatibility — read, never deduped on.
+ * All three are still unowned — Task 12 routed AROUND the canonicalizer rather
+ * than repairing it: the similarity panel it shipped reads
+ * `SimilarityCalculator` and `SequenceAligner`, neither of which touches this
+ * hash. Until someone does own it, its output is still carried on
+ * `CombinationResult.canonicalHash` for cross-module compatibility — read,
+ * never deduped on.
  */
 /**
  * One step's identity as a performer would read it: letter, both endpoints, and

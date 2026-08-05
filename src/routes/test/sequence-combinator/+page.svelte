@@ -248,6 +248,7 @@
     <SimilarityPanel
       report={lab.similarityReport}
       error={lab.similarityError}
+      note={lab.similarityNote}
       weights={lab.similarityWeights}
       onWeightChange={(key, value) => (lab.similarityWeights[key] = value)}
       onReset={() => lab.resetSimilarityWeights()}

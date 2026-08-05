@@ -157,6 +157,8 @@ export interface CombinatorLabState {
   readonly similarityReport: SimilarityReport | null;
   /** Why the report is null despite both cards being loaded. */
   readonly similarityError: string;
+  /** A caveat about a report that DID compute — empty when there is none. */
+  readonly similarityNote: string;
   resetSimilarityWeights(): void;
 
   loadFixture(slot: SlotId, name: string): void;
@@ -354,31 +356,37 @@ export function createCombinatorLabState(): CombinatorLabState {
   const similarityOutcome = $derived.by<{
     report: SimilarityReport | null;
     error: string;
+    note: string;
   }>(() => {
-    if (!cardA || !cardB) return { report: null, error: "" };
+    if (!cardA || !cardB) return { report: null, error: "", note: "" };
 
     const total =
       similarityWeights.word +
       similarityWeights.motion +
       similarityWeights.position +
       similarityWeights.structural;
-    if (total <= 0) {
-      return {
-        report: null,
-        error:
-          "Every weight is zero — there is nothing left to weigh. Raise at least one slider.",
-      };
-    }
+
+    // All four at zero is a shrug, not an error. Falling back to an even blend
+    // keeps the panel rendering: nulling the report here would collapse roughly
+    // ten rem of bars, chips and the per-step row the instant the last slider
+    // hits zero, and shove everything below it up the page. The note says which
+    // weights are actually in force so the number is not silently a lie.
+    const evenBlend = total <= 0;
+    const divisor = evenBlend ? 4 : total;
+    const weightOf = (value: number) => (evenBlend ? 1 : value) / divisor;
 
     try {
       return {
         report: getSimilarityCalculator().computeSimilarity(cardA, cardB, {
-          wordWeight: similarityWeights.word / total,
-          motionWeight: similarityWeights.motion / total,
-          positionWeight: similarityWeights.position / total,
-          structuralWeight: similarityWeights.structural / total,
+          wordWeight: weightOf(similarityWeights.word),
+          motionWeight: weightOf(similarityWeights.motion),
+          positionWeight: weightOf(similarityWeights.position),
+          structuralWeight: weightOf(similarityWeights.structural),
         }),
         error: "",
+        note: evenBlend
+          ? "Every slider is at zero, so this is an even blend — 0.25 each."
+          : "",
       };
     } catch (cause) {
       console.warn(
@@ -388,6 +396,7 @@ export function createCombinatorLabState(): CombinatorLabState {
       return {
         report: null,
         error: cause instanceof Error ? cause.message : String(cause),
+        note: "",
       };
     }
   });
@@ -536,6 +545,9 @@ export function createCombinatorLabState(): CombinatorLabState {
     },
     get similarityError() {
       return similarityOutcome.error;
+    },
+    get similarityNote() {
+      return similarityOutcome.note;
     },
     resetSimilarityWeights() {
       Object.assign(similarityWeights, DEFAULT_SIMILARITY_WEIGHTS);

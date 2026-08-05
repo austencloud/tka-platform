@@ -46,13 +46,18 @@ describe("SimilarityCalculator — the panel's data source", () => {
     expect(report.summary.length).toBeGreaterThan(0);
   });
 
-  it("scores a card against itself as effectively identical", () => {
+  it("scores a card against itself as identical, on every component", () => {
     const report = getSimilarityCalculator().computeSimilarity(FALG, FALG);
 
-    // The panel's near-duplicate banner fires at 0.85. If self-comparison could
-    // not clear that, the banner would be meaningless.
-    expect(report.overallScore).toBeGreaterThan(0.95);
+    // Exact 1, not "close enough". A card compared with itself is the one input
+    // where every component has a knowable right answer, so it is the only
+    // place a regression in any of them can be caught for free. Motion in
+    // particular runs through `computeTransformedSimilarity`, whose 1.1×
+    // fudge stub is invisible at 1.0 (it clamps) and would show up here the
+    // moment someone changed it — a loose `> 0.95` would swallow that.
+    expect(report.overallScore).toBe(1);
     expect(report.wordSimilarity).toBe(1);
+    expect(report.motionSimilarity).toBe(1);
     expect(report.positionSimilarity).toBe(1);
     expect(report.structuralSimilarity).toBe(1);
     expect(report.breakdown.wordMatch).toBe(true);

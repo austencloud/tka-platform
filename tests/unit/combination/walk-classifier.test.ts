@@ -318,9 +318,9 @@ describe("walk classifier — content dedup", () => {
     expect(atZero!.sequence.period).toBe(1);
     expect(atTwo!.sequence.period).toBe(1);
 
-    // The label disagrees. This pins CURRENT upstream behavior: when Task 12
-    // makes `SequenceCanonicalizer` phase-invariant, this line starts failing —
-    // that is the signal to delete it, not to loosen the dedup key.
+    // The label disagrees. This pins CURRENT upstream behavior: if
+    // `SequenceCanonicalizer` is ever made phase-invariant, this line starts
+    // failing — that is the signal to delete it, not to loosen the dedup key.
     expect(
       atZero!.canonicalHash,
       "canonicalizer became phase-invariant; see contentDedupKey's defect list"

@@ -10,7 +10,13 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { SimilarityReport, CommonSubsequence, SimilarityBreakdown, QuickSimilarityResult, SimilarityOptions } from "./types";
+import type {
+  SimilarityReport,
+  CommonSubsequence,
+  SimilarityBreakdown,
+  QuickSimilarityResult,
+  SimilarityOptions,
+} from "./types";
 import type { StepSignatureGenerator } from "./step-signature-generator";
 import type { SequenceAligner } from "./sequence-aligner";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -84,7 +90,10 @@ export class SimilarityCalculator {
     };
   }
 
-  computeQuickScore(seqA: SequenceData, seqB: SequenceData): QuickSimilarityResult {
+  computeQuickScore(
+    seqA: SequenceData,
+    seqB: SequenceData
+  ): QuickSimilarityResult {
     // Quick structural check
     if (seqA.steps.length === 0 && seqB.steps.length === 0) {
       return { score: 1.0, likelyEquivalent: true, confidence: 1.0 };
@@ -151,7 +160,11 @@ export class SimilarityCalculator {
     } | null = null;
 
     for (const pair of alignment.alignment) {
-      if (pair.indexA !== null && pair.indexB !== null && pair.similarity >= 0.5) {
+      if (
+        pair.indexA !== null &&
+        pair.indexB !== null &&
+        pair.similarity >= 0.5
+      ) {
         // Matching pair
         if (currentSubseq === null) {
           currentSubseq = {
@@ -253,7 +266,8 @@ export class SimilarityCalculator {
         if (a[i - 1] === b[j - 1]) {
           dp[i]![j] = dp[i - 1]![j - 1]!;
         } else {
-          dp[i]![j] = 1 + Math.min(dp[i - 1]![j]!, dp[i]![j - 1]!, dp[i - 1]![j - 1]!);
+          dp[i]![j] =
+            1 + Math.min(dp[i - 1]![j]!, dp[i]![j - 1]!, dp[i - 1]![j - 1]!);
         }
       }
     }
@@ -281,7 +295,10 @@ export class SimilarityCalculator {
     return alignment.score;
   }
 
-  private computePositionSimilarity(seqA: SequenceData, seqB: SequenceData): number {
+  private computePositionSimilarity(
+    seqA: SequenceData,
+    seqB: SequenceData
+  ): number {
     const stepsA = seqA.steps;
     const stepsB = seqB.steps;
 
@@ -315,7 +332,10 @@ export class SimilarityCalculator {
     return matches / minLen;
   }
 
-  private computeStructuralSimilarity(seqA: SequenceData, seqB: SequenceData): number {
+  private computeStructuralSimilarity(
+    seqA: SequenceData,
+    seqB: SequenceData
+  ): number {
     let score = 0;
     let factors = 0;
 
@@ -408,13 +428,21 @@ export class SimilarityCalculator {
 
       // Invisible placeholder = hand not really there (both-required Step
       // shape): counts as a mismatch, like the old absent hand.
-      if (isVisibleMotion(blueA) && isVisibleMotion(blueB) && blueA.motionType === blueB.motionType) {
+      if (
+        isVisibleMotion(blueA) &&
+        isVisibleMotion(blueB) &&
+        blueA.motionType === blueB.motionType
+      ) {
         motionTypeMatches++;
       } else {
         motionTypeMismatches++;
       }
 
-      if (isVisibleMotion(redA) && isVisibleMotion(redB) && redA.motionType === redB.motionType) {
+      if (
+        isVisibleMotion(redA) &&
+        isVisibleMotion(redB) &&
+        redA.motionType === redB.motionType
+      ) {
         motionTypeMatches++;
       } else {
         motionTypeMismatches++;
@@ -499,10 +527,18 @@ export class SimilarityCalculator {
       const blueB = stepB.motions[MotionColor.BLUE];
       const redB = stepB.motions[MotionColor.RED];
 
-      if (isVisibleMotion(blueA) && isVisibleMotion(blueB) && blueA.motionType === blueB.motionType) {
+      if (
+        isVisibleMotion(blueA) &&
+        isVisibleMotion(blueB) &&
+        blueA.motionType === blueB.motionType
+      ) {
         matches++;
       }
-      if (isVisibleMotion(redA) && isVisibleMotion(redB) && redA.motionType === redB.motionType) {
+      if (
+        isVisibleMotion(redA) &&
+        isVisibleMotion(redB) &&
+        redA.motionType === redB.motionType
+      ) {
         matches++;
       }
     }
@@ -514,6 +550,13 @@ export class SimilarityCalculator {
   // PRIVATE: Summary Generation
   // ============================================================================
 
+  /**
+   * The one string here a human reads — it renders verbatim in the combinator
+   * lab's similarity panel. So it says STEP, per the domain rule: "beat" is not
+   * TKA vocabulary for a sequence entry. The type and field names around it
+   * (`stepByBeatScores`, `perfectBeatMatches`) still say beat and are left
+   * alone; renaming a published interface is not a copy fix.
+   */
   private generateSummaryText(
     overallScore: number,
     breakdown: SimilarityBreakdown,
@@ -538,7 +581,9 @@ export class SimilarityCalculator {
 
     // Length comparison
     if (!breakdown.lengthMatch) {
-      parts.push(`(${breakdown.lengthDifference} beat${breakdown.lengthDifference === 1 ? "" : "s"} length difference)`);
+      parts.push(
+        `(${breakdown.lengthDifference} step${breakdown.lengthDifference === 1 ? "" : "s"} length difference)`
+      );
     }
 
     // Common subsequences
@@ -546,7 +591,7 @@ export class SimilarityCalculator {
       const longest = commonSubsequences[0];
       if (longest) {
         parts.push(
-          `Longest matching section: ${longest.length} beat${longest.length === 1 ? "" : "s"}`
+          `Longest matching section: ${longest.length} step${longest.length === 1 ? "" : "s"}`
         );
       }
     }
@@ -554,7 +599,7 @@ export class SimilarityCalculator {
     // Perfect matches
     if (breakdown.perfectBeatMatches > 0) {
       parts.push(
-        `${breakdown.perfectBeatMatches} perfect beat match${breakdown.perfectBeatMatches === 1 ? "" : "es"}`
+        `${breakdown.perfectBeatMatches} perfect step match${breakdown.perfectBeatMatches === 1 ? "" : "es"}`
       );
     }
 
