@@ -93,6 +93,7 @@ export class GalleryOfflineCache {
       const doc = entry.data;
 
       if (doc.sourceRef) {
+        sourceRefs.set(`id:${entry.id}`, doc.sourceRef);
         sourceRefs.set(doc.word, doc.sourceRef);
         if (doc.name && doc.name !== doc.word) {
           sourceRefs.set(doc.name, doc.sourceRef);

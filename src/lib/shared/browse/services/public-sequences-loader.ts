@@ -20,7 +20,10 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { getPublicSequencesPath } from "$lib/shared/library/data/firestore-paths";
+import {
+  getPublicSequencePath,
+  getPublicSequencesPath,
+} from "$lib/shared/library/data/firestore-paths";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { PublicSequenceIndex } from "$lib/shared/foundation/domain/models/public-sequence-index";
 import { hydrate } from "$lib/shared/foundation/services/sequence-hydrator";
@@ -45,6 +48,18 @@ export class PublicSequencesLoader {
         (data, id) => this.mapPublicIndexToSequenceData(data, id)
       );
     }
+  }
+
+  /** Keep every lookup key in step whenever a public index entry is learned. */
+  private cacheSourceRef(
+    id: string,
+    sourceRef: string,
+    word?: string,
+    name?: string
+  ): void {
+    this.sourceRefCache.set(`id:${id}`, sourceRef);
+    if (word) this.sourceRefCache.set(word, sourceRef);
+    if (name && name !== word) this.sourceRefCache.set(name, sourceRef);
   }
 
   /**
@@ -150,25 +165,64 @@ export class PublicSequencesLoader {
       await this.loadSequenceMetadata();
     }
 
-    // Prefer ID-based lookup when available - this is the only way to
-    // disambiguate multiple sequences that share the same word.
+    // When an ID is supplied, resolve only that exact document. Falling back to
+    // a word here can silently load somebody else's same-word variation.
     let sourceRef = sequenceId ? this.sourceRefCache.get(`id:${sequenceId}`) : undefined;
 
-    // Fall back to word-based lookup (works when words are unique)
-    if (!sourceRef) {
-      sourceRef = this.sourceRefCache.get(sequenceName);
-    }
-
-    // Last resort: scan cached sequences for a match by name/word,
-    // preferring the one matching sequenceId if provided.
-    if (!sourceRef) {
-      const candidates = this.cachedSequences?.filter(
-        (s) => s.name === sequenceName || s.word === sequenceName
-      ) ?? [];
-      const match = (sequenceId && candidates.find((s) => s.id === sequenceId))
-        || candidates[0];
+    // IndexedDB caches written before the ID-key fix only carried word/name
+    // source refs. Their sequence metadata still has enough owner information
+    // to reconstruct the canonical source path without a network lookup.
+    if (!sourceRef && sequenceId) {
+      const match = this.cachedSequences?.find((sequence) => sequence.id === sequenceId);
       if (match?.ownerId && match.id) {
         sourceRef = `users/${match.ownerId}/sequences/${match.id}`;
+        this.cacheSourceRef(match.id, sourceRef, match.word, match.name);
+      }
+    }
+
+    // A warmed gallery cache is intentionally allowed to be stale, so absence
+    // there is not proof that a public sequence was deleted. Read the exact
+    // public index document before returning null.
+    if (!sourceRef && sequenceId) {
+      const firestore = await getFirestoreInstance();
+      const publicDoc = await getDoc(doc(firestore, getPublicSequencePath(sequenceId)));
+      if (!publicDoc.exists()) {
+        if (publicDoc.metadata.fromCache) {
+          throw new Error(
+            `[PublicSequencesLoader] Read of ${getPublicSequencePath(sequenceId)} never reached the server`
+          );
+        }
+        console.warn(
+          `[PublicSequencesLoader] No sequence found for "${sequenceName}" (id: ${sequenceId})`
+        );
+        return null;
+      }
+
+      const indexData = publicDoc.data() as PublicSequenceIndex;
+      if (indexData.sourceRef) {
+        sourceRef = indexData.sourceRef;
+        this.cacheSourceRef(publicDoc.id, indexData.sourceRef, indexData.word, indexData.name);
+      } else {
+        const indexedSequence = this.mapPublicIndexToSequenceData(indexData, publicDoc.id);
+        if ((indexedSequence.steps?.length ?? 0) > 0) return indexedSequence;
+        throw new Error(
+          `[PublicSequencesLoader] Public index ${getPublicSequencePath(sequenceId)} has no sourceRef or renderable steps`
+        );
+      }
+    }
+
+    // Word-only callers have no exact ID to disambiguate. Preserve the legacy
+    // word/name lookup for them after every exact-ID path is exhausted.
+    if (!sourceRef && !sequenceId) {
+      sourceRef = this.sourceRefCache.get(sequenceName);
+      if (!sourceRef) {
+        const match = this.cachedSequences?.find(
+          (sequence) => sequence.name === sequenceName || sequence.word === sequenceName
+        );
+        if (match?.ownerId && match.id) {
+          sourceRef = `users/${match.ownerId}/sequences/${match.id}`;
+          this.cacheSourceRef(match.id, sourceRef, match.word, match.name);
+        }
       }
     }
     if (!sourceRef) {
@@ -201,6 +255,7 @@ export class PublicSequencesLoader {
     if (this.cachedSequences) {
       this.cachedSequences = this.cachedSequences.filter((s) => s.id !== sequenceId);
     }
+    this.sourceRefCache.delete(`id:${sequenceId}`);
   }
 
   /**
@@ -222,6 +277,14 @@ export class PublicSequencesLoader {
     } else {
       this.cachedSequences = [...this.cachedSequences, sequence];
     }
+    if (sequence.ownerId) {
+      this.cacheSourceRef(
+        sequence.id,
+        `users/${sequence.ownerId}/sequences/${sequence.id}`,
+        sequence.word,
+        sequence.name
+      );
+    }
   }
 
   warmFromCache(sequences: SequenceData[], sourceRefs: Map<string, string>): void {
@@ -229,6 +292,16 @@ export class PublicSequencesLoader {
     this.cachedSequences = sequences;
     for (const [key, value] of sourceRefs) {
       this.sourceRefCache.set(key, value);
+    }
+    // Repair caches written before GalleryOfflineCache stored ID-prefixed keys.
+    for (const sequence of sequences) {
+      if (!sequence.ownerId) continue;
+      this.cacheSourceRef(
+        sequence.id,
+        `users/${sequence.ownerId}/sequences/${sequence.id}`,
+        sequence.word,
+        sequence.name
+      );
     }
   }
 
@@ -293,12 +366,7 @@ export class PublicSequencesLoader {
       // Store under both word AND ID so we can look up by either.
       // The ID key is prefixed with "id:" to avoid collisions with words.
       if (data.sourceRef) {
-        this.sourceRefCache.set(data.word, data.sourceRef);
-        if (data.name && data.name !== data.word) {
-          this.sourceRefCache.set(data.name, data.sourceRef);
-        }
-        // ID-based key enables disambiguation for same-word variations
-        this.sourceRefCache.set(`id:${docSnap.id}`, data.sourceRef);
+        this.cacheSourceRef(docSnap.id, data.sourceRef, data.word, data.name);
       }
     });
 
