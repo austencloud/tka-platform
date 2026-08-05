@@ -11,13 +11,14 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { goto } from "$app/navigation";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import GhostPointer from "./GhostPointer.svelte";
   import ThoughtCaption from "./ThoughtCaption.svelte";
   import { createAttractGhost } from "../services/attract-ghost.svelte";
   import { createSensors, readRoute } from "../services/sensors";
   import { createGhostMind } from "../services/mind.svelte";
   import { ALL_INTENTIONS } from "../intentions";
+  import { setEscapeHatch } from "../intentions/explore";
   import { scoreAll } from "../domain/scoring";
   import { isDeniedModule, isDeniedPath } from "../domain/annotations";
 
@@ -48,11 +49,22 @@
    * a nicety. It is the one place the presenter navigates programmatically,
    * because a safety retreat is not choreography.
    */
+  /**
+   * A real module switch, the same one pressing the nav performs. NEVER goto()
+   * or history.back(): those move the URL while the module system carries on
+   * believing it is elsewhere, and the shell then renders an empty screen
+   * until a human clicks a module. The presenter must not be able to leave the
+   * app in a state a visitor has to rescue it from.
+   */
+  async function goHome(): Promise<void> {
+    await handleModuleChange("create");
+  }
+
   function guardRoute(): void {
     const pathname = window.location.pathname;
     const { moduleId } = readRoute(pathname);
     if (isDeniedPath(pathname) || isDeniedModule(moduleId)) {
-      void goto("/create");
+      void goHome();
     }
   }
 
@@ -79,6 +91,8 @@
       resume: () => act.resume(),
       stop: () => act.kill(),
     };
+
+    setEscapeHatch(goHome);
 
     const measure = () => {
       const r = document.body.getBoundingClientRect();
@@ -107,6 +121,7 @@
     act.start();
 
     return () => {
+      setEscapeHatch(null);
       clearInterval(guard);
       window.removeEventListener("pointerdown", onRealPointer, { capture: true });
       window.removeEventListener("keydown", onKey, { capture: true });

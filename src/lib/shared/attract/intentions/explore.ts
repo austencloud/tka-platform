@@ -32,6 +32,17 @@ let galleryOpens = 0;
 /** Buttons this session has already asked about, so it asks about new ones. */
 const askedAbout = new Set<string>();
 
+/**
+ * The way out of a room with no visible exit, injected by the host so the bag
+ * stays free of feature imports. It must perform a REAL module switch (the
+ * same one the nav performs), never a URL-only navigation.
+ */
+let escapeHatch: (() => Promise<void> | void) | null = null;
+
+export function setEscapeHatch(fn: (() => Promise<void> | void) | null): void {
+  escapeHatch = fn;
+}
+
 /** Nav buttons for modules the ghost has not been to yet, denylist applied. */
 function unvisitedNavButtons(visited: ReadonlySet<string>): HTMLElement[] {
   return visibleAll(NAV_MODULE_SEL).filter((el) => {
@@ -176,9 +187,13 @@ export const EXPLORE_INTENTIONS: Intention[] = [
     appeal: () => 1,
     mood: "bored",
     perform: async (g) => {
-      // The one programmatic move in the bag, and it is the same one a visitor
-      // would make. Pressing is not an option when there is nothing to press.
-      history.back();
+      // Escaping goes through the app's OWN module switch, not history.back()
+      // or a goto(). Both of those move the URL without the module system
+      // observing it, which leaves the shell rendering nothing until a human
+      // clicks a module — a blank app is a worse failure than a stuck ghost.
+      // The host injects the seam; nothing in the bag imports feature code.
+      if (!escapeHatch) return false;
+      await escapeHatch();
       await g.sleep(g.jitter(2000, 1200));
       return true;
     },
@@ -222,4 +237,5 @@ export const EXPLORE_INTENTIONS: Intention[] = [
 export function __resetExploreSessionState(): void {
   galleryOpens = 0;
   askedAbout.clear();
+  escapeHatch = null;
 }

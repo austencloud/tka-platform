@@ -24,10 +24,18 @@ import { ALL_INTENTIONS } from "$lib/shared/attract/intentions";
 
 const INTENTIONS_DIR = "src/lib/shared/attract/intentions";
 
+/** Comments explain the banned patterns by name, so match CODE only. */
+function stripComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+}
+
 function intentionSources(): { file: string; source: string }[] {
   return readdirSync(INTENTIONS_DIR)
     .filter((f) => f.endsWith(".ts"))
-    .map((f) => ({ file: f, source: readFileSync(join(INTENTIONS_DIR, f), "utf8") }));
+    .map((f) => ({
+      file: f,
+      source: stripComments(readFileSync(join(INTENTIONS_DIR, f), "utf8")),
+    }));
 }
 
 describe("ghost safety", () => {
@@ -105,6 +113,30 @@ describe("ghost safety", () => {
     for (const { file, source } of intentionSources()) {
       expect(source, `${file} navigates programmatically`).not.toMatch(
         /\bgoto\(|switchModule|location\.(href|assign|replace)/,
+      );
+    }
+  });
+
+  it("never moves the URL behind the module system's back", () => {
+    // history.back() and goto() change the URL while the module system carries
+    // on believing it is elsewhere, and the shell then renders an EMPTY screen
+    // until a human clicks a module. Escaping goes through the injected
+    // escapeHatch, which performs a real module switch.
+    const sources = [
+      ...intentionSources(),
+      {
+        file: "PresenterHost.svelte",
+        source: stripComments(
+          readFileSync(
+            "src/lib/shared/attract/components/PresenterHost.svelte",
+            "utf8",
+          ),
+        ),
+      },
+    ];
+    for (const { file, source } of sources) {
+      expect(source, `${file} moves the URL directly`).not.toMatch(
+        /history\.(back|forward|go|pushState|replaceState)\(|\bgoto\(/,
       );
     }
   });
