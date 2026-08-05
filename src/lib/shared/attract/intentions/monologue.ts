@@ -74,21 +74,39 @@ const BY_LABEL: Record<string, string[]> = {
    * these lines are for the second meeting onward.
    */
   fire: ["Fire. Obviously fire.", "Let's set it on fire."],
-  trails: ["I want to see the path it draws.", "Trails on."],
-  led: ["Let's make it glow.", "LED, like a night jam."],
-  coal: ["Coal — let's see it smoulder.", "What about embers?"],
-  zap: ["Let's make it electric.", "Zap, obviously."],
-  sparkle: ["A bit of sparkle can't hurt.", "Let's make it glitter."],
-  ghost: ["Ghost. Let's see it double up.", "I want to see where it just was."],
-  bloom: ["Let's make it glow at the edges.", "Bloom on."],
-  goo: ["Goo. That sounds ridiculous.", "Let's see what goo does."],
-  bubbles: ["Bubbles, why not.", "Let's try bubbles."],
-  petals: ["Petals would be pretty.", "Let's try petals."],
-  smoke: ["Let's put it in smoke.", "Something softer — smoke."],
-  ink: ["Ink. Like it's painting the air.", "Let's make it draw in ink."],
-  silk: ["Silk. Let's see it flow.", "Something smoother — silk."],
-  animal: ["Animal? I have to know what that is.", "What on earth is Animal?"],
-  pulse: ["Let's make it breathe with the beat.", "Pulse on."],
+  // Draws the tip's path (trail-renderer-3d).
+  trails: ["Trails on.", "I want to see the shape it makes."],
+  // Billboard bulbs with continuous ribbon trails — glowstick/LED-poi look.
+  led: ["Let's make it glow like glowsticks.", "LED, like a night jam."],
+  // Sparks BURST from the tips on direction changes and fall under gravity,
+  // hot→cool ramp (charcoal-renderer-3d). Not embers smouldering — struck sparks.
+  coal: ["Let's make it throw sparks.", "Sparks off the ends, then."],
+  // A bolt arcs BETWEEN the blue prop's end and the red prop's matching end.
+  // The interesting part is that it connects the two hands, which "let's make it
+  // electric" completely misses.
+  zap: ["Let's make it arc between the two.", "Lightning between the hands?"],
+  sparkle: ["A bit of sparkle can't hurt.", "Let's make it twinkle."],
+  // Onion-skin: faded copies of the REAL prop sprite at recent past poses.
+  // First meeting goes through FIRST_ENCOUNTER ("What does Ghost do?"); coming
+  // back to it is fondness, not fresh curiosity.
+  ghost: ["I liked that ghost effect.", "Ghost again — the copies are nice."],
+  // Per-tip light source, glow around the ends.
+  bloom: ["Let's make the ends glow.", "Bloom — softer light."],
+  // Beads of liquid laid along the path, merged into blobs with surface tension.
+  goo: ["Goo. That sounds ridiculous.", "Let's make it gooey."],
+  bubbles: ["Bubbles, why not.", "Let's fill it with bubbles."],
+  // Petals launch along the prop's actual arc, then flutter down.
+  petals: ["Let's throw petals off it.", "Petals would be pretty."],
+  smoke: ["Let's put it in smoke.", "Smoke off the ends."],
+  // Brush stamps with paper-fibre noise — it paints.
+  ink: ["Let's make it paint.", "Ink — like a brush on paper."],
+  // A traced ribbon following the tip.
+  silk: ["Let's give it ribbons.", "Silk — that'll flow."],
+  // A CREATURE whose head is the prop tip: spine chain, undulating body, snake
+  // tongue, dragon crest and horns. The best-kept secret in the panel.
+  animal: ["The dragon one. Let's do that again.", "Let's turn it into a creature."],
+  // Expanding shockwave rings from the tip along its travel axis.
+  pulse: ["Let's make it send out rings.", "Pulse — shockwaves off the ends."],
 
   // Tempo
   slow: ["Slower. I want to see the hands.", "Too fast — let's slow it down."],
@@ -166,6 +184,19 @@ const FIRST_ENCOUNTER = [
   "What's this one?",
   "No idea what that does. Let's find out.",
   "Let's see what this is.",
+];
+
+/**
+ * Same beat, but the control has a name on it — Austen's example (2026-08-05)
+ * was Ghost: *"it can wonder what does the ghost mean or what does the ghost
+ * do."* Naming the unknown thing is stronger than "this button", and it teaches
+ * the passerby the vocabulary on the way past.
+ */
+const FIRST_ENCOUNTER_NAMED = [
+  "What does {label} do?",
+  "What does {label} even mean?",
+  "{label}? No idea. Let's find out.",
+  "What's {label}?",
 ];
 
 /**
@@ -250,7 +281,12 @@ export function monologueFor(
   // option card or a start position "does".
   const isDiscovery = kind === "curio" || kind === "effect" || kind === "prop";
   if (isDiscovery && label && !ctx.askedAbout.has(label.toLowerCase())) {
-    return ctx.rng.pick(FIRST_ENCOUNTER) ?? fallback;
+    // A short, real name is worth saying out loud ("What does Ghost do?"). A long
+    // one is UI copy and reads badly in a thought bubble, so those stay generic.
+    const named = label.length <= 12 && !label.includes(" ");
+    const pool = named ? FIRST_ENCOUNTER_NAMED : FIRST_ENCOUNTER;
+    const line = ctx.rng.pick(pool) ?? fallback;
+    return line.replaceAll("{label}", label);
   }
 
   const specific = label ? BY_LABEL[label.toLowerCase()] : undefined;
