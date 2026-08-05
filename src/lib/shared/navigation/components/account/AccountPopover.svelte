@@ -1,7 +1,6 @@
 <!-- AccountPopover: Desktop-only popover menu above AccountRow in sidebar -->
 <script lang="ts">
-
-import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { signInWithGoogle } from "$lib/shared/auth/services/authenticator";
   import { upgradeAnonymousWithGoogle } from "$lib/shared/auth/services/anonymous-upgrade";
   import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
@@ -11,16 +10,10 @@ import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { authState } from "../../../auth/state/auth-state.svelte";
   import { whatsNewState } from "../../../settings/state/whats-new-state.svelte";
   import type { HapticFeedback } from "../../../application/services/haptic-feedback";
-  import { createPropPreferenceState } from "../../../community/state/prop-preference-state.svelte";
   import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
-  import {
-    navigationState,
-  } from "../../state/navigation-state.svelte";
-  import {
-    handleModuleChange,
-  } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
-  import { myPropsDrawerState } from "./my-props-drawer-state.svelte";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import type { ModuleId } from "../../domain/types";
+  import { tryGetAccountSetupContext } from "$lib/shared/onboarding/context/account-setup-context";
 
   let { isOpen, onClose, anchorElement } = $props<{
     isOpen: boolean;
@@ -30,9 +23,7 @@ import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 
   const user = $derived(authState.user);
   const isFullAccount = $derived(authState.isFullAccount);
-  const displayName = $derived(
-    user?.displayName || user?.email || "Guest"
-  );
+  const displayName = $derived(user?.displayName || user?.email || "Guest");
   const email = $derived(user?.email ?? null);
   const photoURL = $derived(user?.photoURL ?? null);
 
@@ -139,35 +130,27 @@ import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
     onClose();
   }
 
-  // Prop preference state for nudge detection
-  const userId = $derived(authState.user?.uid);
-  const propState = $derived.by(() => {
-    if (!userId) return null;
-    return createPropPreferenceState(userId);
-  });
-
-  // Profile completeness nudges - each disappears once the user completes the action
-  const needsPhoto = $derived(isFullAccount && !photoURL);
-  const needsProp = $derived(
-    isFullAccount && propState && !propState.loading && !propState.favoriteProp
+  const accountSetupState = tryGetAccountSetupContext();
+  const showSetupSummary = $derived(
+    isFullAccount &&
+      accountSetupState &&
+      !accountSetupState.loading &&
+      accountSetupState.available &&
+      !accountSetupState.isComplete
   );
-  const hasNudges = $derived(needsPhoto || needsProp);
+  const setupProgress = $derived(
+    accountSetupState && accountSetupState.totalCount > 0
+      ? Math.round(
+          (accountSetupState.completedCount / accountSetupState.totalCount) *
+            100
+        )
+      : 0
+  );
 
   function handleNavigateToProfile() {
     triggerHaptic();
     onClose();
     handleModuleChange("settings" as ModuleId, "profile");
-  }
-
-  // Open the My Props drawer (two-phase: "What do you spin?" → "Your go-to?")
-  // right here instead of dumping the user on the settings page. The drawer
-  // renders at the document root via MainInterface, so it survives the popover
-  // closing. propState is non-null whenever the prop nudge is shown.
-  function handlePickProp() {
-    if (!propState) return;
-    triggerHaptic();
-    onClose();
-    myPropsDrawerState.open(propState);
   }
 </script>
 
@@ -213,40 +196,36 @@ import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
       </div>
     {/if}
 
-    {#if isFullAccount && hasNudges}
-      <div class="nudges-section">
-        {#if needsPhoto}
-          <button
-            class="nudge-card"
-            onclick={handleNavigateToProfile}
-            aria-label="Add a profile photo"
+    {#if showSetupSummary && accountSetupState}
+      <div class="setup-section">
+        <button
+          class="setup-summary"
+          onclick={handleNavigateToProfile}
+          aria-label={`Finish account setup. ${accountSetupState.completedCount} of ${accountSetupState.totalCount} done`}
+        >
+          <span class="setup-heading">
+            <span class="setup-title">Finish setup</span>
+            <span class="setup-count">
+              {accountSetupState.completedCount} of {accountSetupState.totalCount}
+              done
+            </span>
+          </span>
+          <span
+            class="setup-progress"
+            role="progressbar"
+            aria-label="Account setup progress"
+            aria-valuemin="0"
+            aria-valuemax={accountSetupState.totalCount}
+            aria-valuenow={accountSetupState.completedCount}
           >
-            <div class="nudge-icon">
-              <i class="fas fa-camera" aria-hidden="true"></i>
-            </div>
-            <div class="nudge-info">
-              <span class="nudge-label">Add a profile photo</span>
-              <span class="nudge-hint">Let people recognize you</span>
-            </div>
-            <i class="fas fa-chevron-right nudge-arrow" aria-hidden="true"></i>
-          </button>
-        {/if}
-        {#if needsProp}
-          <button
-            class="nudge-card"
-            onclick={handlePickProp}
-            aria-label="Pick your favorite prop"
-          >
-            <div class="nudge-icon">
-              <i class="fas fa-fire" aria-hidden="true"></i>
-            </div>
-            <div class="nudge-info">
-              <span class="nudge-label">Pick your favorite prop</span>
-              <span class="nudge-hint">What do you spin?</span>
-            </div>
-            <i class="fas fa-chevron-right nudge-arrow" aria-hidden="true"></i>
-          </button>
-        {/if}
+            <span class="setup-progress-fill" style:width={`${setupProgress}%`}
+            ></span>
+          </span>
+          <span class="setup-link">
+            Open profile
+            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+          </span>
+        </button>
       </div>
     {/if}
 
@@ -258,22 +237,12 @@ import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
           role="menuitem"
           onclick={handleSignOut}
         >
-          <i
-            class="fas fa-sign-out-alt action-icon"
-            aria-hidden="true"
-          ></i>
+          <i class="fas fa-sign-out-alt action-icon" aria-hidden="true"></i>
           Sign Out
         </button>
       {:else}
-        <button
-          class="action-button"
-          role="menuitem"
-          onclick={handleSignIn}
-        >
-          <i
-            class="fas fa-sign-in-alt action-icon"
-            aria-hidden="true"
-          ></i>
+        <button class="action-button" role="menuitem" onclick={handleSignIn}>
+          <i class="fas fa-sign-in-alt action-icon" aria-hidden="true"></i>
           Sign In
         </button>
       {/if}
@@ -288,7 +257,6 @@ import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
     </div>
   </div>
 {/if}
-
 
 <style>
   /* ==========================================================================
@@ -396,75 +364,80 @@ import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   }
 
   /* ==========================================================================
-     NUDGES SECTION
+     SETUP SUMMARY
      ========================================================================== */
-  .nudges-section {
-    padding: 4px 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+  .setup-section {
+    padding: 8px;
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  .nudge-card {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 10px 8px;
-    background: transparent;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background var(--duration-fast, 150ms) ease;
-  }
-
-  .nudge-card:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
-  }
-
-  .nudge-card:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
-    outline-offset: -2px;
-  }
-
-  .nudge-icon {
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
-    color: var(--theme-accent, #6366f1);
-    font-size: 12px;
-  }
-
-  .nudge-info {
-    flex: 1;
-    min-width: 0;
+  .setup-summary {
     display: flex;
     flex-direction: column;
-    gap: 1px;
-    text-align: left;
+    gap: 8px;
+    width: 100%;
+    padding: 10px;
+    color: var(--theme-text, #fff);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    cursor: pointer;
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      border-color var(--duration-fast, 150ms) ease;
   }
 
-  .nudge-label {
+  .setup-summary:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
+  }
+
+  .setup-summary:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
+    outline-offset: 2px;
+  }
+
+  .setup-heading,
+  .setup-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .setup-title {
     font-size: var(--font-size-sm, 14px);
+    font-weight: 700;
+  }
+
+  .setup-count {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
-    color: var(--theme-text, white);
   }
 
-  .nudge-hint {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  .setup-progress {
+    display: block;
+    width: 100%;
+    height: 6px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--theme-text, #fff) 10%, transparent);
+    border-radius: 999px;
   }
 
-  .nudge-arrow {
+  .setup-progress-fill {
+    display: block;
+    height: 100%;
+    background: var(--theme-accent, #6366f1);
+    border-radius: inherit;
+  }
+
+  .setup-link {
+    justify-content: flex-end;
+    gap: 6px;
+    color: var(--theme-accent, #6366f1);
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
-    flex-shrink: 0;
+    font-weight: 700;
   }
 
   /* ==========================================================================

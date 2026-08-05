@@ -15,6 +15,7 @@
   import StartPositionPicker from "$lib/features/create/construct/start-position-picker/components/StartPositionPicker.svelte";
   import type { SimplifiedStartPositionState } from "$lib/shared/create/state/start-position-state.svelte";
   import ConstructTutorialGuide from "../../construct/tutorial/components/ConstructTutorialGuide.svelte";
+  import ConstructGuideEntry from "../../construct/tutorial/components/ConstructGuideEntry.svelte";
   import type { StartPositionPath } from "../../construct/services/construct-analytics";
   // Props
   let {
@@ -61,6 +62,10 @@
   }>();
 </script>
 
+{#snippet startPositionHeading()}
+  <ConstructGuideEntry />
+{/snippet}
+
 <div
   class="construct-tab-content"
   data-testid="construct-tab-content"
@@ -83,6 +88,7 @@
             onNavigateToDefault={onStartPositionNavigateToDefault}
             {isSideBySideLayout}
             onPositionSubmitted={onStartPositionSubmitted}
+            heading={startPositionHeading}
           />
         {:else}
           <OptionPicker

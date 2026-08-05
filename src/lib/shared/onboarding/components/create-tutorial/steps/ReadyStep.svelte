@@ -394,7 +394,7 @@
     border-radius: 50%;
     background: var(--theme-text, #fff);
     color: var(--theme-panel-bg, #111);
-    font-size: 11px;
+    font-size: var(--font-size-compact, 0.75rem);
     font-weight: 700;
     display: flex;
     align-items: center;

@@ -1,9 +1,12 @@
+import type { AccountSetupProgress } from "../domain/account-setup-progress";
+
 // --- From OnboardingPersister ---
 /**
  * OnboardingPersister
  *
  * Contract for persisting onboarding completion status: app-wide
- * completion/skip status, and the What's New "last seen version" mark.
+ * completion/skip status, profile setup progress and reminder policy, and the
+ * What's New "last seen version" mark.
  *
  * Previously also carried per-module completion (a `modules` sub-object).
  * Removed 2026-07-19: it served the deprecated `ModuleOnboarding.svelte`
@@ -21,5 +24,6 @@ export interface OnboardingStatus {
   appCompletedAt: string | null;
   /** Last version user has seen in What's New modal */
   lastSeenVersion: string | null;
+  /** Durable profile-completion choices and reminder policy. */
+  accountSetup: AccountSetupProgress;
 }
-

@@ -5,8 +5,9 @@
  * Falls back to localStorage for anonymous users.
  * Syncs local progress to cloud on authentication.
  *
- * Scope: app-wide completion/skip status, and the What's New "last seen
- * version" high-water mark. There is no per-module or per-tab tracking.
+ * Scope: app-wide completion/skip status, profile setup progress and reminder
+ * policy, and the What's New "last seen version" high-water mark. There is no
+ * per-module or per-tab tracking.
  * The per-module surface (a `modules` sub-object keyed by module id) was
  * removed 2026-07-19 as dead code; it served the deprecated
  * `ModuleOnboarding.svelte` carousel. Its planned replacement,
@@ -28,10 +29,16 @@ import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import type { OnboardingStatus } from "./types";
 import { compareVersions } from "$lib/shared/versioning/domain/models/version-models";
 import {
+  ACCOUNT_SETUP_PROGRESS_KEY,
   ONBOARDING_COMPLETED_KEY,
   ONBOARDING_COMPLETED_AT_KEY,
   ONBOARDING_SKIPPED_KEY,
 } from "../config/storage-keys";
+import {
+  createDefaultAccountSetupProgress,
+  mergeAccountSetupProgress,
+  normalizeAccountSetupProgress,
+} from "../domain/account-setup-progress";
 import {
   safeLocalStorageSetItem,
   removeLocalStorageItem,
@@ -69,6 +76,7 @@ export class OnboardingPersister {
       appSkipped: false,
       appCompletedAt: null,
       lastSeenVersion: null,
+      accountSetup: createDefaultAccountSetupProgress(),
     };
   }
 
@@ -89,11 +97,24 @@ export class OnboardingPersister {
     // Last seen version
     const lastSeenVersion = localStorage.getItem(LAST_SEEN_VERSION_KEY) || null;
 
+    let accountSetup = createDefaultAccountSetupProgress();
+    const storedAccountSetup = localStorage.getItem(ACCOUNT_SETUP_PROGRESS_KEY);
+    if (storedAccountSetup) {
+      try {
+        accountSetup = normalizeAccountSetupProgress(
+          JSON.parse(storedAccountSetup)
+        );
+      } catch {
+        // A partial or damaged local value should never block application entry.
+      }
+    }
+
     return {
       appCompleted,
       appSkipped,
       appCompletedAt,
       lastSeenVersion,
+      accountSetup,
     };
   }
 
@@ -135,6 +156,11 @@ export class OnboardingPersister {
     } else {
       removeLocalStorageItem(LAST_SEEN_VERSION_KEY);
     }
+
+    safeLocalStorageSetItem(
+      ACCOUNT_SETUP_PROGRESS_KEY,
+      JSON.stringify(normalizeAccountSetupProgress(status.accountSetup))
+    );
   }
 
   /**
@@ -160,6 +186,7 @@ export class OnboardingPersister {
         status.appCompletedAt = data.appCompletedAt ?? null;
         // Last seen version
         status.lastSeenVersion = data.lastSeenVersion ?? null;
+        status.accountSetup = normalizeAccountSetupProgress(data.accountSetup);
 
         this.cachedStatus = status;
         // Also sync to localStorage for fast access
@@ -309,6 +336,9 @@ export class OnboardingPersister {
           status.appCompletedAt = data.appCompletedAt ?? null;
           // Last seen version
           status.lastSeenVersion = data.lastSeenVersion ?? null;
+          status.accountSetup = normalizeAccountSetupProgress(
+            data.accountSetup
+          );
 
           this.cachedStatus = status;
           this.saveToLocalStorage(status);
@@ -363,6 +393,11 @@ export class OnboardingPersister {
         } else {
           mergedStatus.lastSeenVersion = localVersion || cloudVersion || null;
         }
+
+        mergedStatus.accountSetup = mergeAccountSetupProgress(
+          localStatus.accountSetup,
+          cloudStatus.accountSetup
+        );
 
         await this.saveStatus(mergedStatus);
       } else {

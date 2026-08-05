@@ -5,8 +5,8 @@
  *
  * NOTE: localStorage is used for synchronous access (to avoid UI flash).
  * The OnboardingPersister syncs localStorage with Firebase for authenticated
- * users, for two things only: app-wide completion/skip status, and the
- * What's New "last seen version" high-water mark (see
+ * users for app-wide completion/skip status, profile setup progress and
+ * reminder policy, and the What's New "last seen version" high-water mark (see
  * syncOnboardingFromCloud/syncOnboardingToCloud below).
  *
  * There is no per-module or per-tab onboarding tracking here. The per-module
@@ -47,6 +47,9 @@ export const ONBOARDING_COMPLETED_AT_KEY = "tka-onboarding-completed-at";
 
 /** localStorage key for app-wide onboarding skip (user chose to skip) */
 export const ONBOARDING_SKIPPED_KEY = "tka-onboarding-skipped";
+
+/** Local fallback for profile-completion choices and reminder policy. */
+export const ACCOUNT_SETUP_PROGRESS_KEY = "tka-account-setup-progress";
 
 // ============================================================================
 // CLOUD SYNC

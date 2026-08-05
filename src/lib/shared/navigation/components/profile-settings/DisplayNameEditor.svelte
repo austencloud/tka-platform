@@ -8,18 +8,22 @@
   import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import type { User } from "firebase/auth";
   import { authState } from "../../../auth/state/auth-state.svelte";
+  import { tick } from "svelte";
 
   interface Props {
     user: User;
     hapticService: HapticFeedback | null;
+    editRequest?: number;
   }
 
-  let { user, hapticService }: Props = $props();
+  let { user, hapticService, editRequest = 0 }: Props = $props();
 
   // Local state
   let editedName = $state("");
   let isEditing = $state(false);
   let isSaving = $state(false);
+  let nameInput = $state<HTMLInputElement | null>(null);
+  let handledEditRequest = 0;
 
   // Sync editedName when user changes (and not editing)
   $effect(() => {
@@ -28,11 +32,18 @@
     }
   });
 
-  function startEditing() {
+  function startEditing(triggerHaptic = true) {
     editedName = user.displayName || "";
     isEditing = true;
-    hapticService?.trigger("selection");
+    if (triggerHaptic) hapticService?.trigger("selection");
   }
+
+  $effect(() => {
+    if (editRequest <= handledEditRequest) return;
+    handledEditRequest = editRequest;
+    startEditing(false);
+    void tick().then(() => nameInput?.focus());
+  });
 
   function cancelEditing() {
     isEditing = false;
@@ -71,13 +82,17 @@
 
 <div class="section">
   <label class="label" for="display-name">Display Name</label>
-  <p class="helper-text">This is your public identity. Other users will see this name when they view your sequences, comments, and profile.</p>
+  <p class="helper-text">
+    This is your public identity. Other users will see this name when they view
+    your sequences, comments, and profile.
+  </p>
   {#if isEditing}
     <div class="input-row">
       <input
         id="display-name"
         type="text"
         class="input"
+        bind:this={nameInput}
         bind:value={editedName}
         onkeydown={handleKeydown}
         maxlength="50"
@@ -110,8 +125,8 @@
   {:else}
     <div
       class="value-row"
-      onclick={startEditing}
-      onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && startEditing()}
+      onclick={() => startEditing()}
+      onkeydown={(e) => (e.key === "Enter" || e.key === " ") && startEditing()}
       role="button"
       tabindex="0"
       aria-label="Edit display name"
@@ -214,21 +229,37 @@
   }
 
   .icon-btn.save {
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 15%,
+      transparent
+    );
     color: color-mix(in srgb, var(--semantic-success, #22c55e) 75%, white);
   }
 
   .icon-btn.save:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 25%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 25%,
+      transparent
+    );
   }
 
   .icon-btn.cancel {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 15%,
+      transparent
+    );
     color: color-mix(in srgb, var(--semantic-error, #ef4444) 75%, white);
   }
 
   .icon-btn.cancel:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 25%,
+      transparent
+    );
   }
 
   .icon-btn:disabled {

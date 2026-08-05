@@ -17,6 +17,8 @@
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { PropPreferenceState } from "$lib/shared/community/state/prop-preference-state.svelte";
   import { getBasePropType } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import { tryGetAccountSetupContext } from "$lib/shared/onboarding/context/account-setup-context";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   interface Props {
     isOpen: boolean;
@@ -25,6 +27,7 @@
   }
 
   let { isOpen = $bindable(), propState, onclose }: Props = $props();
+  const accountSetupState = tryGetAccountSetupContext();
 
   type Phase = "select" | "favorite";
   let phase = $state<Phase>("select");
@@ -64,18 +67,31 @@
     phase = "favorite";
   }
 
-  function handleDone() {
+  async function handleDone() {
     // 1 prop selected - auto-favorite it
     const singleProp = gridSelections[0];
     if (gridSelections.length === 1 && singleProp) {
-      propState.setFavorite(singleProp);
+      try {
+        await propState.setFavorite(singleProp);
+        accountSetupState?.markFavoritePropPresent(true);
+      } catch (error) {
+        console.error("[MyPropsDrawer] Favorite prop save failed", error);
+        toast.error("Favorite prop didn't save. Try again.");
+        return;
+      }
     }
     closeModal();
   }
 
-  function handleFavoriteSelected(propType: PropType) {
-    propState.setFavorite(propType);
-    closeModal();
+  async function handleFavoriteSelected(propType: PropType) {
+    try {
+      await propState.setFavorite(propType);
+      accountSetupState?.markFavoritePropPresent(true);
+      closeModal();
+    } catch (error) {
+      console.error("[MyPropsDrawer] Favorite prop save failed", error);
+      toast.error("Favorite prop didn't save. Try again.");
+    }
   }
 
   function handleBack() {
@@ -122,7 +138,9 @@
     {#if phase === "select"}
       <PropFamilyGrid
         selectedProps={gridSelections}
-        favoriteProp={propState.favoriteProp ? getBasePropType(propState.favoriteProp) : null}
+        favoriteProp={propState.favoriteProp
+          ? getBasePropType(propState.favoriteProp)
+          : null}
         disabled={propState.loading}
         ontoggle={handleToggle}
       />
@@ -198,7 +216,8 @@
   .phase-container {
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2))
+      transparent;
     padding-bottom: 8px;
   }
 

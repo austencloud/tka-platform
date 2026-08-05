@@ -2,9 +2,10 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { authState } from "../../../auth/state/auth-state.svelte";
-import type { HapticFeedback } from "../../../application/services/haptic-feedback";
+  import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
   import { authDrawerState } from "../../../auth/state/auth-drawer-state.svelte";
+  import { tryGetAccountSetupContext } from "$lib/shared/onboarding/context/account-setup-context";
 
   let { variant = "expanded", onclick } = $props<{
     variant?: "expanded" | "collapsed" | "drawer";
@@ -13,10 +14,15 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
 
   const user = $derived(authState.user);
   const isFullAccount = $derived(authState.isFullAccount);
-  const displayName = $derived(
-    user?.displayName || user?.email || "Account"
-  );
+  const displayName = $derived(user?.displayName || user?.email || "Account");
   const photoURL = $derived(user?.photoURL ?? null);
+  const accountSetupState = tryGetAccountSetupContext();
+  const showSetupStatus = $derived(
+    isFullAccount &&
+      accountSetupState &&
+      !accountSetupState.loading &&
+      !accountSetupState.isComplete
+  );
 
   // One avatar size in both rail and expanded states. A per-variant size
   // (32 collapsed vs 28 expanded) made the avatar visibly resize — and shift
@@ -49,19 +55,45 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
       aria-label="Edit profile"
     >
       <RobustAvatar src={photoURL} name={displayName} customSize={32} />
-      <span class="account-label">{displayName}</span>
+      <span class="account-copy">
+        <span class="account-label">{displayName}</span>
+        {#if showSetupStatus && accountSetupState}
+          <span class="setup-status">
+            {accountSetupState.totalCount - accountSetupState.completedCount}
+            setup {accountSetupState.totalCount -
+              accountSetupState.completedCount ===
+            1
+              ? "step"
+              : "steps"} left
+          </span>
+        {/if}
+      </span>
       <i class="fas fa-chevron-right drawer-chevron" aria-hidden="true"></i>
     </button>
   {:else if isFullAccount}
     <div class="account-row drawer">
       <RobustAvatar src={photoURL} name={displayName} customSize={32} />
-      <span class="account-label">{displayName}</span>
+      <span class="account-copy">
+        <span class="account-label">{displayName}</span>
+        {#if showSetupStatus && accountSetupState}
+          <span class="setup-status">
+            {accountSetupState.totalCount - accountSetupState.completedCount}
+            setup {accountSetupState.totalCount -
+              accountSetupState.completedCount ===
+            1
+              ? "step"
+              : "steps"} left
+          </span>
+        {/if}
+      </span>
     </div>
   {:else}
     <button
       class="account-row drawer interactive"
       onclick={() => {
-        try { (getHapticFeedback() as HapticFeedback)?.trigger("selection"); } catch {}
+        try {
+          (getHapticFeedback() as HapticFeedback)?.trigger("selection");
+        } catch {}
         // Close the containing drawer (e.g. mobile nav) before the auth drawer
         // opens, so we never stack two full-height sheets on top of each other.
         onclick?.();
@@ -99,7 +131,9 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
     </span>
 
     {#if variant !== "collapsed"}
-      <span class="account-label">{isFullAccount ? displayName : "Sign in"}</span>
+      <span class="account-label"
+        >{isFullAccount ? displayName : "Sign in"}</span
+      >
       {#if isFullAccount}
         <i class="fas fa-chevron-up chevron" aria-hidden="true"></i>
       {/if}
@@ -132,7 +166,8 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
       background var(--duration-normal) ease,
       border-color var(--duration-normal) ease,
       color var(--duration-normal) ease,
-      border-radius var(--duration-emphasis) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+      border-radius var(--duration-emphasis)
+        var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
     font-size: var(--font-size-sm);
     font-weight: 500;
   }
@@ -270,11 +305,29 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    animation: label-fade-in var(--duration-normal) ease-out var(--duration-fast) both;
+    animation: label-fade-in var(--duration-normal) ease-out
+      var(--duration-fast) both;
   }
 
   .drawer .account-label {
     flex: none;
+  }
+
+  .account-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .drawer .account-copy {
+    text-align: left;
+  }
+
+  .setup-status {
+    color: var(--theme-accent, #3b82f6);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
   }
 
   .chevron {

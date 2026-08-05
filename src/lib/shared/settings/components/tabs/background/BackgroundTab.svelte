@@ -18,6 +18,8 @@
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { tryGetAccountSetupContext } from "$lib/shared/onboarding/context/account-setup-context";
+  import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 
   registerBackgroundCard();
 
@@ -29,19 +31,31 @@
   let hapticService: HapticFeedback | null = null;
   let isVisible = $state(false);
   let gridEl: HTMLDivElement;
+  const accountSetupState = tryGetAccountSetupContext();
 
   const currentBg = $derived(settings?.backgroundType || BackgroundType.COSMIC);
+
+  async function recordThemeChoice(): Promise<void> {
+    if (!accountSetupState) return;
+
+    await accountSetupState.markThemeChosen();
+    if (!accountSetupState.saveError) return;
+
+    showToast({
+      message: accountSetupState.saveError,
+      type: "error",
+      duration: 10_000,
+      announcement: "polite",
+      action: {
+        label: "Retry",
+        onClick: () => void accountSetupState.retrySave(),
+      },
+    });
+  }
 
   onMount(() => {
     hapticService = getHapticFeedback();
     setTimeout(() => (isVisible = true), 30);
-
-    // Record that user has visited the background tab (for theme discovery nudge)
-    try {
-      localStorage.setItem("tka-background-tab-visited", "true");
-    } catch {
-      // non-critical
-    }
 
     function handleSelect(e: Event) {
       hapticService?.trigger("selection");
@@ -55,6 +69,7 @@
       }
 
       onUpdate?.({ key: "backgroundType", value: type });
+      void recordThemeChoice();
     }
 
     gridEl.addEventListener("background-select", handleSelect);
@@ -77,7 +92,7 @@
     <div
       class="bg-grid"
       role="radiogroup"
-      aria-label="Choose background"
+      aria-label="Choose theme"
       bind:this={gridEl}
     >
       {#each BACKGROUND_CARD_REGISTRY as bg}

@@ -19,14 +19,25 @@
     onChangePassword: () => Promise<void>;
     hapticService: HapticFeedback | null;
     onPronounsChanged?: (pronouns: string) => void;
+    displayNameEditRequest?: number;
   }
 
-  let { user, hasPasswordProvider, onChangePassword, hapticService, onPronounsChanged }: Props =
-    $props();
+  let {
+    user,
+    hasPasswordProvider,
+    onChangePassword,
+    hapticService,
+    onPronounsChanged,
+    displayNameEditRequest = 0,
+  }: Props = $props();
 </script>
 
 <div class="account-settings">
-  <DisplayNameEditor {user} {hapticService} />
+  <DisplayNameEditor
+    {user}
+    {hapticService}
+    editRequest={displayNameEditRequest}
+  />
 
   <div class="divider"></div>
 

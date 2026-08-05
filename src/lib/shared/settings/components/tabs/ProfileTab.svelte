@@ -38,6 +38,18 @@
   import { getFirestoreInstance } from "../../../auth/firebase";
   import { refreshUser } from "../../../auth/state/auth-state.svelte";
   import { hasInstagramAccount } from "$lib/shared/auth/services/instagram-auth";
+  import AccountSetupChecklist from "$lib/shared/onboarding/components/account-setup/AccountSetupChecklist.svelte";
+  import { tryGetAccountSetupContext } from "$lib/shared/onboarding/context/account-setup-context";
+  import {
+    ACCOUNT_SETUP_SETTINGS_DESTINATIONS,
+    type AccountSetupTaskId,
+  } from "$lib/shared/onboarding/state/account-setup-state.svelte";
+  import {
+    createPropPreferenceState,
+    type PropPreferenceState,
+  } from "$lib/shared/community/state/prop-preference-state.svelte";
+  import { myPropsDrawerState } from "$lib/shared/navigation/components/account/my-props-drawer-state.svelte";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
 
   import type { PreviewUserProfile } from "../../../debug/state/user-preview-state.svelte";
   import type { User } from "firebase/auth";
@@ -45,6 +57,21 @@
   // Create and provide profile settings context for child components
   const profileState = createProfileSettingsState();
   setProfileSettingsContext(profileState);
+  const accountSetupState = tryGetAccountSetupContext();
+
+  let setupPropState = $state<PropPreferenceState | null>(null);
+  let setupPropUserId = $state<string | null>(null);
+  let displayNameEditRequest = $state(0);
+
+  $effect(() => {
+    const userId = authState.isFullAccount
+      ? (authState.user?.uid ?? null)
+      : null;
+    if (userId === setupPropUserId) return;
+
+    setupPropUserId = userId;
+    setupPropState = userId ? createPropPreferenceState(userId) : null;
+  });
 
   // Check if we're in preview mode
   const isPreviewMode = $derived(
@@ -236,6 +263,33 @@
     sessionStorage.setItem(PHOTO_PICKER_KEY, "1");
   }
 
+  function handleAccountSetupTask(taskId: AccountSetupTaskId) {
+    hapticService?.trigger("selection");
+
+    switch (taskId) {
+      case "display-name": {
+        displayNameEditRequest += 1;
+        break;
+      }
+      case "profile-photo":
+        handleOpenPhotoPicker();
+        break;
+      case "favorite-prop":
+        if (setupPropState) {
+          myPropsDrawerState.open(setupPropState);
+        } else {
+          toast.info("Props are still loading. Try again in a moment.");
+        }
+        break;
+      case "theme":
+        void handleModuleChange(
+          "settings",
+          ACCOUNT_SETUP_SETTINGS_DESTINATIONS.theme
+        );
+        break;
+    }
+  }
+
   async function handleColorChange(color: string) {
     // Optimistic update so the ring color changes instantly
     const previousColor = profileColor;
@@ -420,27 +474,37 @@
         {profileColor}
       />
 
+      {#if accountSetupState && !accountSetupState.loading && accountSetupState.available}
+        <AccountSetupChecklist
+          state={accountSetupState}
+          onTaskAction={handleAccountSetupTask}
+        />
+      {/if}
+
       <!-- Settings Grid - Flexbox for natural fill behavior -->
       <div class="settings-grid">
         <!-- Row 1: Smaller cards -->
         <!-- Account Settings - Display name + password (if available) -->
-        <GlassCard
-          icon="fas fa-user-cog"
-          title="Account Settings"
-          subtitle="Manage your profile"
-        >
-          {#snippet children()}
-            <AccountSettingsSection
-              user={authState.user!}
-              hasPasswordProvider={profileState.hasPasswordProvider(
-                authState.user
-              )}
-              onChangePassword={handleChangePassword}
-              {hapticService}
-              onPronounsChanged={(p) => (userPronouns = p)}
-            />
-          {/snippet}
-        </GlassCard>
+        <div id="profile-account-settings" class="settings-card-anchor">
+          <GlassCard
+            icon="fas fa-user-cog"
+            title="Account Settings"
+            subtitle="Manage your profile"
+          >
+            {#snippet children()}
+              <AccountSettingsSection
+                user={authState.user!}
+                hasPasswordProvider={profileState.hasPasswordProvider(
+                  authState.user
+                )}
+                onChangePassword={handleChangePassword}
+                {hapticService}
+                onPronounsChanged={(p) => (userPronouns = p)}
+                {displayNameEditRequest}
+              />
+            {/snippet}
+          </GlassCard>
+        </div>
 
         <!-- Storage Section -->
         <StorageSection
@@ -548,6 +612,28 @@
     max-width: 100%;
   }
 
+  /* Settings needs to use the room available on large displays. The default
+     1200px cap is right for laptops, but reads as a small island at 4K. */
+  @media (min-width: 1680px) {
+    .profile-tab {
+      max-width: 1600px;
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .profile-tab {
+      max-width: var(--shell-w, min(2600px, 92vw));
+    }
+
+    .profile-content {
+      gap: 28px;
+    }
+
+    .settings-grid {
+      gap: 24px;
+    }
+  }
+
   /* ========================================
      SETTINGS GRID - Flexbox with natural heights
      Cards keep their natural height, partial rows expand width
@@ -563,6 +649,15 @@
   .settings-grid > :global(*) {
     flex: 1 1 320px;
     min-width: 0;
+  }
+
+  .settings-card-anchor {
+    display: flex;
+    min-width: 0;
+  }
+
+  .settings-card-anchor > :global(*) {
+    width: 100%;
   }
 
   /* Single column on narrow screens */

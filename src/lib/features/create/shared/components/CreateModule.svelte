@@ -96,8 +96,10 @@
   import { getPropUnlockManager } from "$lib/shared/gamification/get-prop-unlock-manager";
   import { createConstructTutorialState } from "../../construct/tutorial/state/construct-tutorial-state.svelte";
   import { logConstructOptionApplied } from "../../construct/services/construct-analytics";
+  import { tryGetAccountSetupContext } from "$lib/shared/onboarding/context/account-setup-context";
 
   const logger = createComponentLogger("CreateModule");
+  const accountSetupState = tryGetAccountSetupContext();
 
   type CreateModuleState = ReturnType<typeof CreateModuleStateType>;
   type ConstructTabState = ReturnType<typeof ConstructTabStateType>;
@@ -178,6 +180,10 @@
   let currentDisplayWord = $state<string>(""); // Current word with contextual messages
   let currentLetterSources = $state<LetterSource[] | null>(null); // Letter sources for spell tab styling
   let isInputMode = $state(false); // Input mode - collapse workspace when word input is focused on mobile
+  const canShowSaveToLibraryPanel = $derived(
+    CreateModuleState?.isPersistenceInitialized === true &&
+      CreateModuleState.canShowActionButtons()
+  );
 
   // ============================================================================
   // CONTEXT PROVISION
@@ -617,6 +623,9 @@
 
     try {
       await handlers.handleOptionSelected(option);
+      if (!appEntryState.isCreateTutorial()) {
+        accountSetupState?.requestReminder();
+      }
     } catch (err) {
       error = err instanceof Error ? err.message : "Failed to select option";
     }
@@ -840,6 +849,16 @@
       });
     }
   });
+
+  $effect(() => {
+    if (
+      CreateModuleState?.isPersistenceInitialized === true &&
+      !CreateModuleState.canShowActionButtons() &&
+      panelState.isSaveToLibraryPanelOpen
+    ) {
+      panelState.closeSaveToLibraryPanel();
+    }
+  });
 </script>
 
 {#if error}
@@ -909,9 +928,9 @@
        issues. Deferred until first opened; keep-alive preserves close animation. -->
   <LazyMount
     loader={() => import("./SaveToLibraryPanel.svelte")}
-    active={panelState.isSaveToLibraryPanelOpen}
+    active={panelState.isSaveToLibraryPanelOpen && canShowSaveToLibraryPanel}
     props={{
-      show: panelState.isSaveToLibraryPanelOpen,
+      show: panelState.isSaveToLibraryPanelOpen && canShowSaveToLibraryPanel,
       word: currentDisplayWord,
       onClose: () => panelState.closeSaveToLibraryPanel(),
     }}

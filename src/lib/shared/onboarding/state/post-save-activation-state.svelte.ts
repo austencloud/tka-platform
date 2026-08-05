@@ -3,8 +3,8 @@
  *
  * Module singleton — same pattern as authDrawerState / firstRunState, not a
  * factory/context. There's exactly one of these per app instance and every
- * consumer (host that renders AuthNudge, signout cascade) reaches it the
- * same way those do.
+ * consumer (the actionable-toast host and signout cascade) reaches it the same
+ * way those do.
  *
  * Two-phase by design:
  *
@@ -14,7 +14,7 @@
  *      consume the once-only guard and does NOT emit the "_shown" analytics
  *      event yet - at this point nothing has been shown to the user.
  *
- *   2. markPresented() — called by the host after the native dialog opens.
+ *   2. markPresented() — called by the host when the actionable toast appears.
  *      THIS is what consumes the guard (guestFirstSaveGuard.markSeen) and
  *      fires the "_shown" event, exactly once. Splitting queue from presented
  *      means a save that triggers a prompt which never reaches the top layer
@@ -30,14 +30,19 @@ import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
 import { postHogFeatureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
 import { captureEvent } from "$lib/shared/analytics/services/posthog";
-import { hasSeen, markSeen } from "$lib/shared/onboarding/state/guest-first-save-guard";
+import {
+  hasSeen,
+  markSeen,
+} from "$lib/shared/onboarding/state/guest-first-save-guard";
 
 // The single SP3-wide rollout flag (Part A + Part B), defaulted off. Registered
 // in onboarding-feature-flags.ts → DEFAULT_FEATURE_FLAGS, read via canAccess().
-const ACTIVATION_FLAG = "capability:onboarding:first-session-activation" as const;
+const ACTIVATION_FLAG =
+  "capability:onboarding:first-session-activation" as const;
 
 function logPrompt(
-  name: "onboarding_guest_first_save_prompt_shown"
+  name:
+    | "onboarding_guest_first_save_prompt_shown"
     | "onboarding_guest_first_save_prompt_accepted"
     | "onboarding_guest_first_save_prompt_login"
     | "onboarding_guest_first_save_prompt_declined",
@@ -48,9 +53,9 @@ function logPrompt(
 
 let _pending = $state(false);
 let _sequenceId = $state<string | null>(null);
-// Latch so markPresented() fires exactly once per queued prompt. BaseModal can
-// reopen during a render race, so the coordinator still owns idempotency rather
-// than relying on a single callback from the view.
+// Latch so markPresented() fires exactly once per queued prompt. Reactive host
+// effects can rerun while the toast is queued, so the coordinator owns
+// idempotency rather than relying on a single callback from the view.
 let _presented = $state(false);
 
 export const postSaveActivation = {
@@ -91,7 +96,7 @@ export const postSaveActivation = {
   },
 
   /**
-   * Phase 2 — call once the host's native dialog is open for this queued
+   * Phase 2 — call once the host's actionable toast is visible for this queued
    * prompt. Consumes the guard and fires the shown event. Idempotent: only the
    * first call per queued prompt does anything.
    */

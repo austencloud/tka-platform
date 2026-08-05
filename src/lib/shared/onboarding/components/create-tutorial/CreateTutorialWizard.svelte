@@ -6,7 +6,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { FocusTrap } from "$lib/shared/foundation/ui/drawer/focus-trap";
   import {
@@ -30,6 +30,28 @@
   let animateIn = $state(false);
   let hapticService: HapticFeedback | null = null;
   let wizardEl = $state<HTMLDivElement | null>(null);
+  const transitionTimers = new Set<ReturnType<typeof setTimeout>>();
+  const animationFrames = new Set<number>();
+
+  // Step exit duration — the outgoing card lifts + fades before we swap.
+  // Kept in sync with the .tutorial-step transition below.
+  const STEP_EXIT_MS = 230;
+
+  function scheduleFrame(callback: () => void): void {
+    const frame = requestAnimationFrame(() => {
+      animationFrames.delete(frame);
+      callback();
+    });
+    animationFrames.add(frame);
+  }
+
+  function scheduleTransition(callback: () => void): void {
+    const timer = setTimeout(() => {
+      transitionTimers.delete(timer);
+      callback();
+    }, STEP_EXIT_MS);
+    transitionTimers.add(timer);
+  }
 
   // Trap focus inside the wizard while it's open: focus moves to the wizard
   // container on open, Tab is trapped within, everything else (MainInterface
@@ -69,14 +91,18 @@
       // Haptics optional
     }
 
-    requestAnimationFrame(() => {
+    scheduleFrame(() => {
       animateIn = true;
     });
   });
 
-  // Step exit duration — the outgoing card lifts + fades before we swap.
-  // Kept in sync with the .tutorial-step transition below.
-  //
+  onDestroy(() => {
+    transitionTimers.forEach((timer) => clearTimeout(timer));
+    animationFrames.forEach((frame) => cancelAnimationFrame(frame));
+    transitionTimers.clear();
+    animationFrames.clear();
+  });
+
   // Carve-out (crossfade-primitive.md keep-separate): this is NOT routed
   // through the shared <Crossfade> primitive. The entrance here is a
   // translateY + scale SPRING (cubic-bezier overshoot, see
@@ -85,8 +111,6 @@
   // opacity `fade` — swapping to it would drop the spring/scale entrance
   // entirely, which is a feel change the P3 finding explicitly says not to
   // force. Evaluated 2026-07-19 per the onboarding-accessibility spec.
-  const STEP_EXIT_MS = 230;
-
   function prefersReducedMotion(): boolean {
     return (
       typeof window !== "undefined" &&
@@ -102,12 +126,12 @@
       return;
     }
     animateIn = false;
-    setTimeout(() => {
+    scheduleTransition(() => {
       swap();
-      requestAnimationFrame(() => {
+      scheduleFrame(() => {
         animateIn = true;
       });
-    }, STEP_EXIT_MS);
+    });
   }
 
   function handleAdvance() {
@@ -120,7 +144,7 @@
         return;
       }
       animateIn = false;
-      setTimeout(onComplete, STEP_EXIT_MS);
+      scheduleTransition(onComplete);
       return;
     }
 
@@ -505,6 +529,5 @@
       flex: 1;
       min-height: 0;
     }
-
   }
 </style>

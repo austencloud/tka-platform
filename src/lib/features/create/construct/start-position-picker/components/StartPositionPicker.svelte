@@ -9,7 +9,7 @@ Controls moved below the grid for better UX
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, type Snippet } from "svelte";
   import { scale } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import {
@@ -30,10 +30,8 @@ Controls moved below the grid for better UX
     type StartPositionPath,
   } from "../../services/construct-analytics";
 
-  // The guest "New here? Show me how" chip was removed: it only ever rendered
-  // in the exact window the create-tutorial prompt was already on screen (both
-  // gated on the same not-yet-decided state), so it was pure duplicate noise on
-  // a first-run mobile view. Replaying the guided build lives in Settings.
+  // The caller can replace this picker's heading with an inline guide offer.
+  // Preview and tutorial embeds keep their existing heading ownership.
 
   // Local storage key for persisting picker preferences
   const STORAGE_KEY = "tka-start-position-picker-prefs";
@@ -55,6 +53,7 @@ Controls moved below the grid for better UX
     lockedGridMode = undefined,
     validationMessage = null,
     onPositionSubmitted = () => {},
+    heading,
   } = $props<{
     startPositionState?: SimplifiedStartPositionState | null;
     onNavigateToAdvanced?: () => void;
@@ -76,6 +75,7 @@ Controls moved below the grid for better UX
       position: PictographData,
       path: StartPositionPath
     ) => void;
+    heading?: Snippet;
   }>();
 
   // Create simplified state - use $derived to handle prop changes
@@ -349,7 +349,13 @@ Controls moved below the grid for better UX
   data-testid="start-position-picker"
 >
   {#if !embedded}
-    <p class="workspace-hint">Choose your start position</p>
+    <div class="workspace-heading">
+      {#if heading}
+        {@render heading()}
+      {:else}
+        <p class="workspace-hint">Choose your start position</p>
+      {/if}
+    </div>
   {/if}
 
   <div class="path-selector">
@@ -489,16 +495,19 @@ Controls moved below the grid for better UX
     container-type: inline-size;
   }
 
-  .workspace-hint {
+  .workspace-heading {
     flex-shrink: 0;
-    text-align: center;
-    /* Drop the hint off the top edge into the whitespace above the grid. Kept
-       modest (vh-bounded) on purpose: reserving a large band here shrinks the
-       grid container and flips PictographGrid's aspect-ratio rule from column
-       to row on tall screens (Fold). */
-    margin: 0;
-    padding: clamp(20px, 9vh, 80px)
+    display: grid;
+    align-items: start;
+    height: clamp(96px, 14vh, 148px);
+    padding: clamp(12px, 4vh, 52px)
       calc(1rem + var(--picker-leading-action-offset, 0px)) 0;
+    box-sizing: border-box;
+  }
+
+  .workspace-hint {
+    text-align: center;
+    margin: 0;
     /* Match the Generate tab hint exactly: Playfair serif, soft shadow, one line.
        cqi tracks .start-pos-picker's width (container-type: inline-size) so the
        line scales to fit and never wraps. */
@@ -515,7 +524,8 @@ Controls moved below the grid for better UX
   /* Presets can afford the deep band above the heading; Build spends that same
      height on the board someone is aiming at. Bounded by vh so it only tightens
      where the screen is actually short. */
-  .start-pos-picker.build-path .workspace-hint {
+  .start-pos-picker.build-path .workspace-heading {
+    height: clamp(72px, 9vh, 96px);
     padding-top: clamp(12px, 3vh, 36px);
   }
 
@@ -552,10 +562,14 @@ Controls moved below the grid for better UX
       box-sizing: border-box;
     }
 
-    .start-pos-picker.build-path .workspace-hint {
+    .start-pos-picker.build-path .workspace-heading {
       grid-area: hint;
       align-self: center;
+      height: auto;
       padding: 0 0 0 var(--picker-leading-action-offset, 0px);
+    }
+
+    .start-pos-picker.build-path .workspace-hint {
       /* The nowrap that keeps this on one line across the full width would
          overflow a 17rem column. */
       white-space: normal;
@@ -580,8 +594,12 @@ Controls moved below the grid for better UX
   /* A phone in portrait has no spare band at all — the heading sits right at
      the top and everything it isn't using goes to the board. */
   @media (max-height: 780px) {
-    .start-pos-picker.build-path .workspace-hint {
+    .start-pos-picker.build-path .workspace-heading {
+      height: 74px;
       padding-top: 6px;
+    }
+
+    .start-pos-picker.build-path .workspace-hint {
       font-size: clamp(0.95rem, 4.2cqi, 1.5rem);
     }
 
@@ -785,9 +803,12 @@ Controls moved below the grid for better UX
      heading and a 360px method toggle read as postage stamps across the room,
      which is the exact "scaled-up phone layout" this codebase keeps fixing. */
   @media (min-width: 1680px) {
+    .workspace-heading {
+      padding-top: clamp(20px, 5vh, 52px);
+    }
+
     .workspace-hint {
       font-size: clamp(2rem, 2.2vw, 3rem);
-      padding-top: clamp(20px, 5vh, 52px);
     }
 
     .path-selector {
