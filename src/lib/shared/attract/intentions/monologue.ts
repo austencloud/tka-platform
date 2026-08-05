@@ -104,7 +104,9 @@ const BY_LABEL: Record<string, string[]> = {
   silk: ["Let's give it ribbons.", "Silk — that'll flow."],
   // A CREATURE whose head is the prop tip: spine chain, undulating body, snake
   // tongue, dragon crest and horns. The best-kept secret in the panel.
-  animal: ["The dragon one. Let's do that again.", "Let's turn it into a creature."],
+  // Default creature is SNAKE (defaults.ts), with dragon and caterpillar as
+  // presets — so "the dragon one" would have been a lie most of the time.
+  animal: ["Let's turn it into a creature.", "The snake one. Let's do that again."],
   // Expanding shockwave rings from the tip along its travel axis.
   pulse: ["Let's make it send out rings.", "Pulse — shockwaves off the ends."],
 

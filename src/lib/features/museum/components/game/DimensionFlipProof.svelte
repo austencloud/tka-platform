@@ -208,7 +208,7 @@
 
   function toggleDocent(): void {
     if (docent.active) {
-      docent.stop();
+      docent.stop("button");
       // Release whatever it was holding, or the player keeps walking into a wall.
       for (const key of ["KeyW", "KeyA", "KeyS", "KeyD"]) heldKeys.delete(key);
     } else {
@@ -219,7 +219,7 @@
   // A real keypress means a human took over — the docent must not fight them for
   // the keyboard.
   function stopDocentOnHumanInput(): void {
-    if (docent.active) docent.stop();
+    if (docent.active) docent.stop("human-input");
   }
 
   // ── Zoom state (top-down camera height) ──

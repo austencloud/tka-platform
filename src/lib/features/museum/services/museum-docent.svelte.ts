@@ -24,6 +24,10 @@
 import { tileKey, type MuseumGrid } from "../domain/museum-grid-types";
 import { isWalkable as isTypeWalkable } from "../domain/tile-registry";
 
+/** Distinguishes a remount (new instance) from a stop() call, which look the
+ * same from outside and have opposite fixes. */
+let instances = 0;
+
 /** How close (in tiles) counts as arrived. */
 const ARRIVE_EPSILON = 0.6;
 /** No progress for this long means the path is blocked by something unmodelled. */
@@ -110,7 +114,7 @@ export interface MuseumDocent {
   /** What it is doing right now, for the presenter's caption and the HUD. */
   readonly status: string;
   start: () => void;
-  stop: () => void;
+  stop: (reason?: string) => void;
   /**
    * Called every frame by the scene host. Writes into the SAME heldKeys set the
    * keyboard fills, so the player controller cannot tell the difference.
@@ -130,6 +134,8 @@ export function createMuseumDocent(opts: {
   random?: () => number;
 }): MuseumDocent {
   const random = opts.random ?? Math.random;
+  const instanceId = ++instances;
+  let stopReason: string | null = null;
 
   /*
    * The tour survives a remount. Walking through a portal into another wing
@@ -248,7 +254,8 @@ export function createMuseumDocent(opts: {
       admireUntil = 0;
     },
 
-    stop() {
+    stop(reason = "explicit") {
+      stopReason = reason;
       latch(false);
       state.active = false;
       state.status = "";
@@ -262,6 +269,9 @@ export function createMuseumDocent(opts: {
         pathAhead: path.slice(0, 4),
         pathLength: path.length,
         lastDistance,
+        instanceId,
+        stopReason,
+        latched,
       };
     },
 
