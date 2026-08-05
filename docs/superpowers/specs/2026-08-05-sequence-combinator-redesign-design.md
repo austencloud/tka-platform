@@ -181,6 +181,14 @@ not about counting shifts in the word: a shift crossing advances the loop 90° a
 a dash crossing advances it 180°, and it is the *residue* of those two that
 decides the count.
 
+**Verified against real generations, not just the enumerator (2026-08-05):**
+
+| Generation | Result | Predicted |
+|---|---|---|
+| `AJGD` (shift out, shift back) | alpha3 → **alpha3**, closes in 4 | 4-count plain ✓ |
+| `AJGΦ` (shift out, dash back) | alpha3 → **alpha5**, does not close | 90° residue ✓ |
+| `AJGΦ` rotated/quartered | **16 steps**, `isCircular: true`, alpha1 → alpha7 → alpha5 → alpha3 → alpha1 | 16-count quartered ✓ |
+
 ### Sorting and sub-categorising the results
 
 Results are sequences, so **the browse gallery's existing filter bar points at
@@ -221,13 +229,31 @@ clearly the right altitude, but "shape" needs a formal definition — provisiona
 ignoring which specific connector was chosen*. **Austen must confirm this before
 the result list means anything.**
 
-**2. LOOP admissibility must come from the app.** A scratch reimplementation
-written during this session disagrees with `validate_loop_options`: for
-alpha7→alpha5 the app offers only `rewound`, while a naive D4×swap group test
-finds a 90° rotation mapping one to the other. The app's rule is stricter than
-position-pair matching and is not yet understood. **Reimplementing it is exactly
-the mistake this design forbids** — the engine calls the real machinery, and
-someone must first document what that machinery actually requires.
+**2. ~~LOOP admissibility disagreement.~~ RESOLVED 2026-08-05 — and it leaves a
+footgun every consumer must respect.**
+
+There was no disagreement. The rule is position-pair membership in a
+**period-specific** validation set:
+`packages/sequence-engine/src/loop/validation/LOOPValidator.ts` builds
+`HALVED_LOOPS` from a 180° position map and `QUARTERED_LOOPS` from 90° CW/CCW
+maps, and `isLOOPValidForPositionPair(loopType, positionPair, period)` picks the
+set by period (`:343`).
+
+The apparent conflict was my own missing parameter. `validate_loop_options`
+declares `period: periodSchema.optional().default("halved")`
+(`mcp-server-pkg/src/tools/loop-tools.ts:86`), so every call that omits it gets a
+**halved-only answer** and every quartered LOOP is silently invisible. Passing
+`period: "quartered"` for alpha3→alpha5 returns `rotated`, `rotated_inverted` and
+`rotated_swapped` as available, matching the group computation exactly.
+
+**Binding consequence: the engine must query BOTH periods for every candidate
+unit.** A single default-period call would have hidden the entire 16-count
+bucket — which is to say, every mixed-crossing combination this feature exists to
+find.
+
+Verified end to end 2026-08-05: `generate_loop_sequence("AJGΦ", rotated,
+quartered)` returns a 16-step `isCircular: true` loop, alpha1 → alpha7 → alpha5 →
+alpha3 → alpha1, one 90° step per pass.
 
 **3. Detection cannot currently be trusted.** Three LOOP detectors exist with
 three definitions of circular; `detect_loop_pattern` is non-deterministic; and
