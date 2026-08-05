@@ -784,7 +784,16 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
                     if (nowActive) {
                       engine.addFilter(type, value, label, color ?? "#6aa0ff");
                     } else {
-                      engine.removeFilter(`${type}:${String(value)}`);
+                      // Stacking categories (LOOPs, T&D, and the OR-stacking
+                      // set) key per value; single-valued ones key by bare type
+                      // because re-adding replaces. Removing the wrong key is a
+                      // SILENT no-op, so remove whichever one the engine holds.
+                      const perValue = `${type}:${String(value)}`;
+                      engine.removeFilter(
+                        engine.activeFilters.has(perValue)
+                          ? perValue
+                          : String(type)
+                      );
                     }
                   }}
                   {activeLoopValues}

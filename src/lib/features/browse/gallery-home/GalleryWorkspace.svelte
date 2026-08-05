@@ -68,7 +68,8 @@
      * slider) rather than stacking a second one. */
     onPickExclusiveValue: (
       type: BrowseFilterType,
-      value: string | number,
+      /** null clears the category — the slider's "No limit" stop. */
+      value: string | number | null,
       label: string,
       previous?: { value: string | number; label: string },
       color?: string
@@ -144,17 +145,33 @@
     return count === 0 && !applied;
   }
 
-  const maxTurnStops = $derived(
-    catalog.maxTurnIntensityValues.map((value) => value.value)
+  // "No limit" is the far end of the same axis, not separate chrome: the track
+  // already runs from strictest to most permissive, and allowing everything is
+  // where that ramp ends. It also makes the thumb honest — with no rule applied
+  // the slider rests here instead of pointing at a midpoint it is not enforcing.
+  const NO_TURN_LIMIT = $derived(
+    (catalog.maxTurnIntensityValues.at(-1)?.value ?? 3) + 0.5
   );
-  let pendingMaxTurn = $state(1.5);
+  const maxTurnStops = $derived([
+    ...catalog.maxTurnIntensityValues.map((value) => value.value),
+    NO_TURN_LIMIT,
+  ]);
+  const noLimitChoice = $derived({
+    value: NO_TURN_LIMIT,
+    label: "No limit",
+    count: catalog.maxTurnIntensityCount,
+  });
+  let pendingMaxTurn = $state(Number.NaN);
+  const atNoLimit = $derived(pendingMaxTurn === NO_TURN_LIMIT);
   const selectedMaxTurn = $derived(
-    catalog.maxTurnIntensityValues.find(
-      (value) => value.value === pendingMaxTurn
-    ) ?? catalog.maxTurnIntensityValues[0]
+    atNoLimit
+      ? noLimitChoice
+      : (catalog.maxTurnIntensityValues.find(
+          (value) => value.value === pendingMaxTurn
+        ) ?? noLimitChoice)
   );
-  // A limit already in the rule wins over the midpoint default, so re-entering
-  // this editor shows the applied value instead of a guess.
+  // A limit already in the rule wins, so re-entering this editor shows what is
+  // actually applied; with nothing applied the thumb sits at "No limit".
   const appliedMaxTurn = $derived(
     isValueApplied
       ? catalog.maxTurnIntensityValues.find((value) =>
@@ -163,39 +180,36 @@
       : undefined
   );
   $effect(() => {
-    if (
-      catalog.maxTurnIntensityValues.length > 0 &&
-      !catalog.maxTurnIntensityValues.some(
-        (value) => value.value === pendingMaxTurn
-      )
-    ) {
-      const middleChoice =
-        catalog.maxTurnIntensityValues[
-          Math.floor((catalog.maxTurnIntensityValues.length - 1) / 2)
-        ];
-      const seeded = appliedMaxTurn ?? middleChoice?.value;
-      if (seeded !== undefined) pendingMaxTurn = seeded;
+    const known =
+      pendingMaxTurn === NO_TURN_LIMIT ||
+      catalog.maxTurnIntensityValues.some((v) => v.value === pendingMaxTurn);
+    if (catalog.maxTurnIntensityValues.length > 0 && !known) {
+      pendingMaxTurn = appliedMaxTurn ?? NO_TURN_LIMIT;
     }
   });
   $effect(() => {
-    if (section === "max_turn_intensity" && appliedMaxTurn !== undefined) {
-      pendingMaxTurn = appliedMaxTurn;
+    if (section === "max_turn_intensity") {
+      pendingMaxTurn = appliedMaxTurn ?? NO_TURN_LIMIT;
     }
   });
 
   /** The slider IS the commit — dragging it applies the limit live. Fires only
    * on user interaction, so the applied→pending sync above cannot loop. */
   function commitMaxTurn(next: number) {
-    const choice = catalog.maxTurnIntensityValues.find((v) => v.value === next);
-    if (!choice || choice.value === appliedMaxTurn) return;
+    const clearing = next === NO_TURN_LIMIT;
+    const choice = clearing
+      ? undefined
+      : catalog.maxTurnIntensityValues.find((v) => v.value === next);
+    if (!clearing && !choice) return;
+    if ((choice?.value ?? undefined) === appliedMaxTurn) return;
     const previous =
       appliedMaxTurn !== undefined
         ? catalog.maxTurnIntensityValues.find((v) => v.value === appliedMaxTurn)
         : undefined;
     onPickExclusiveValue(
       BrowseFilterType.MAX_TURN_INTENSITY,
-      choice.value,
-      choice.label,
+      choice ? choice.value : null,
+      choice ? choice.label : "No limit",
       previous ? { value: previous.value, label: previous.label } : undefined
     );
   }
@@ -376,7 +390,9 @@
       {#if adaptiveValueLayout && selectedMaxTurn}
         <div class="turn-picker">
           <div class="turn-summary" aria-live="polite">
-            <span class="turn-limit">≤{selectedMaxTurn.value}</span>
+            <span class="turn-limit" class:turn-limit-any={atNoLimit}>
+              {atNoLimit ? "Any" : `≤${selectedMaxTurn.value}`}
+            </span>
             <span class="turn-unit">turns</span>
             <span class="turn-count">{selectedMaxTurn.count} matches</span>
           </div>
@@ -403,14 +419,16 @@
                     position="bottom"
                     class="turn-slider-label"
                   >
-                    ≤{value}
+                    {value === NO_TURN_LIMIT ? "Any" : `≤${value}`}
                   </Slider.TickLabel>
                 {/each}
                 <Slider.Thumb
                   index={0}
                   class="turn-slider-thumb"
                   aria-label="Maximum turn intensity"
-                  aria-valuetext={`At most ${selectedMaxTurn.value} turns, ${selectedMaxTurn.count} matches`}
+                  aria-valuetext={atNoLimit
+                    ? `No turn limit, ${selectedMaxTurn.count} matches`
+                    : `At most ${selectedMaxTurn.value} turns, ${selectedMaxTurn.count} matches`}
                 />
               {/snippet}
             </Slider.Root>
@@ -1699,6 +1717,15 @@
     font-size: clamp(2.75rem, 10cqw, 5rem);
     font-weight: 800;
     line-height: 0.9;
+    /* Sized to the widest label ("≤0.5") so stepping through the stops — and
+       swapping in the "Any" word — never re-centres the summary row. */
+    min-width: 4ch;
+    text-align: center;
+  }
+  /* A word, not a numeral: set it a shade smaller so it reads as prose at
+     display scale rather than shouting like the digits do. */
+  .turn-limit-any {
+    font-size: clamp(2.25rem, 8cqw, 4rem);
   }
 
   .turn-unit {

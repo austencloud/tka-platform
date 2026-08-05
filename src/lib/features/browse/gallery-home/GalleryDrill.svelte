@@ -414,13 +414,13 @@
     });
   }
 
-  /** Categories where the control itself expresses "exactly one value" — the
-   * turn-limit slider. Moving it REPLACES the applied limit; toggling would
-   * stack ≤1.5 and ≤2 into one rule, which the slider cannot represent. Both
-   * mutations share a morph so the grid animates once, not twice. */
+  /** Controls that express "exactly one value" — the turn-limit slider. Moving
+   * it REPLACES the applied limit (toggling would stack ≤1.5 and ≤2 into a rule
+   * the slider cannot represent); a null value clears the category, so the
+   * control that sets the rule also lifts it. One morph covers both mutations. */
   function pickExclusiveValue(
     type: BrowseFilterType,
-    value: string | number,
+    value: string | number | null,
     label: string,
     previous?: { value: string | number; label: string },
     color?: string
@@ -430,8 +430,8 @@
         if (previous && previous.value !== value) {
           onToggleValue(type, previous.value, previous.label, color, false);
         }
-        onToggleValue(type, value, label, color, true);
-      } else {
+        if (value !== null) onToggleValue(type, value, label, color, true);
+      } else if (value !== null) {
         onApply(type, value, label, color);
       }
     });
