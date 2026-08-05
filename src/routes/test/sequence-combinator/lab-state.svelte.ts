@@ -10,6 +10,20 @@
  * the ambient bridge vocabulary off the live pictograph dataset, so nothing
  * here builds a provider; the report's `ambientUnavailable` flag is what tells
  * the lab whether that wiring actually happened.
+ *
+ * Two structural decisions worth reading before editing:
+ *
+ *   1. **Cards live in `$state.raw`, outside the deep proxy.** A SequenceData is
+ *      hundreds of nested step/motion fields; a `$state` proxy would hand the
+ *      engine proxied objects and would make the Layer-0 `$derived` subscribe to
+ *      every one of those fields (`reference_svelte5_state_proxy_identity`).
+ *      Cards are replaced wholesale, never mutated in place, so `raw` is exactly
+ *      right — and the UI-only fields (mode, error, textarea contents) stay in a
+ *      separate proxied object where fine-grained reactivity is what you want.
+ *   2. **Every input mutation bumps `runGeneration`.** The search is a 190-700ms
+ *      await; without a generation stamp a run that started before the user
+ *      swapped cards would land its report on top of the new pair and read as
+ *      the answer to a question nobody asked.
  */
 
 import { ALL_FIXTURE_LOOPS } from "$lib/shared/combination/domain/demo-fixtures";
@@ -17,8 +31,12 @@ import type {
   CombinationSearchReport,
   CombinatorOptions,
 } from "$lib/shared/combination/domain/types";
-import { getSequenceCombinator } from "$lib/shared/combination/get-sequence-combinator";
+import {
+  DEFAULT_MAX_WORD_LENGTH,
+  getSequenceCombinator,
+} from "$lib/shared/combination/get-sequence-combinator";
 import type { EnumerateResult } from "$lib/shared/combination/services/letter-calculus";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import {
   createSequenceData,
   type SequenceData,
@@ -54,6 +72,16 @@ const DEPTH_PRESETS: Record<
 export const FIXTURE_CARDS: ReadonlyMap<string, SequenceData> = new Map(
   ALL_FIXTURE_LOOPS.map(([name, sequence]) => [name, sequence])
 );
+
+/**
+ * The preset button labels — the single source, derived from the same map the
+ * loader reads. A second hand-written list is how a renamed fixture turns into
+ * a button that silently does nothing.
+ */
+export const FIXTURE_NAMES: readonly string[] = [...FIXTURE_CARDS.keys()];
+
+/** Longest word the Layer-0 preview enumerates, so the copy can say so. */
+export { DEFAULT_MAX_WORD_LENGTH };
 
 export interface CardSlot {
   /** The loaded card, or null when the slot is empty. */
@@ -94,6 +122,8 @@ export interface CombinatorLabState {
   readonly elapsedMs: number;
   /** Layer-0 preview for the currently loaded pair. Null until both are in. */
   readonly preview: EnumerateResult | null;
+  /** Why the Layer-0 preview is null despite both cards being loaded. */
+  readonly previewError: string;
 
   loadFixture(slot: SlotId, name: string): void;
   loadJson(slot: SlotId, text: string): void;
@@ -105,11 +135,17 @@ export interface CombinatorLabState {
 /**
  * Structural check on pasted JSON.
  *
- * Deliberately shallow: it verifies the shape the engine actually reads (steps
- * with both seam positions and both hands) and then hands the object to
- * `createSequenceData` for defaults. It does NOT re-validate the pictograph
- * against the dataframe — a lab that only accepted canon material could not be
- * used to find out what non-canon material does.
+ * Deliberately shallow about CONTENT and strict about SHAPE: it verifies the
+ * fields the engine actually walks on (both seam positions, both hands) and
+ * then rebuilds every step through `createStepData` so the object that reaches
+ * the renderer is a real StepData — minted id, placeholder motions where a hand
+ * is absent, every optional field defaulted. Pasted JSON is caller data; taking
+ * it into the app unrebuilt is how a half-populated step becomes a render
+ * crash.
+ *
+ * It does NOT re-validate the pictograph against the dataframe. A lab that only
+ * accepted canon material could not be used to find out what non-canon material
+ * does, which is most of what a lab is for.
  */
 function parseCard(text: string, slot: SlotId): SequenceData {
   const trimmed = text.trim();
@@ -131,12 +167,12 @@ function parseCard(text: string, slot: SlotId): SequenceData {
   }
 
   const candidate = raw as Partial<SequenceData>;
-  const steps = candidate.steps;
-  if (!Array.isArray(steps) || steps.length === 0) {
+  const rawSteps = candidate.steps;
+  if (!Array.isArray(rawSteps) || rawSteps.length === 0) {
     throw new Error("Expected a non-empty `steps` array.");
   }
 
-  steps.forEach((step, index) => {
+  const steps = rawSteps.map((step, index) => {
     const label = `step ${index + 1}`;
     if (typeof step !== "object" || step === null) {
       throw new Error(`${label} is not an object.`);
@@ -149,6 +185,10 @@ function parseCard(text: string, slot: SlotId): SequenceData {
     if (!step.motions?.blue || !step.motions?.red) {
       throw new Error(`${label} is missing a blue or red motion.`);
     }
+    // Rebuilt, never passed through. A duplicated step in the paste (a common
+    // hand-edit) would otherwise carry a duplicate id straight into the render
+    // tree; here it gets its own object, and the strips key on position anyway.
+    return createStepData({ ...step, stepNumber: index + 1 });
   });
 
   const word =
@@ -166,24 +206,32 @@ function parseCard(text: string, slot: SlotId): SequenceData {
   });
 }
 
-function emptySlot(): {
-  card: SequenceData | null;
+/** The per-slot fields that genuinely want fine-grained reactivity. */
+interface SlotChrome {
   mode: SlotInputMode;
   fixtureName: string | null;
   jsonText: string;
   error: string;
-} {
-  return {
-    card: null,
-    mode: "fixture",
-    fixtureName: null,
-    jsonText: "",
-    error: "",
-  };
+}
+
+function emptyChrome(): SlotChrome {
+  return { mode: "fixture", fixtureName: null, jsonText: "", error: "" };
 }
 
 export function createCombinatorLabState(): CombinatorLabState {
-  const slots = $state({ A: emptySlot(), B: emptySlot() });
+  // Split deliberately: chrome is proxied ($state), cards are not ($state.raw).
+  const chrome = $state<Record<SlotId, SlotChrome>>({
+    A: emptyChrome(),
+    B: emptyChrome(),
+  });
+  let cardA = $state.raw<SequenceData | null>(null);
+  let cardB = $state.raw<SequenceData | null>(null);
+
+  const cardOf = (id: SlotId) => (id === "A" ? cardA : cardB);
+  function setCard(id: SlotId, value: SequenceData | null): void {
+    if (id === "A") cardA = value;
+    else cardB = value;
+  }
 
   let depth = $state<DepthPreset>("default");
   let maxResultLength = $state(16);
@@ -209,41 +257,68 @@ export function createCombinatorLabState(): CombinatorLabState {
    */
   let inFlight = false;
 
-  const preview = $derived.by<EnumerateResult | null>(() => {
-    const cardA = slots.A.card;
-    const cardB = slots.B.card;
-    if (!cardA || !cardB) return null;
+  /**
+   * Bumped by every mutation that changes what a search would be ABOUT. A run
+   * compares the value it captured on entry against this before writing
+   * anything; a mismatch means its answer is about a pair that no longer exists
+   * and gets dropped on the floor.
+   */
+  let runGeneration = 0;
+
+  /** Every input mutator calls this instead of clearing `report` by hand. */
+  function invalidateRun(): void {
+    report = null;
+    runGeneration++;
+  }
+
+  const previewOutcome = $derived.by<{
+    words: EnumerateResult | null;
+    error: string;
+  }>(() => {
+    if (!cardA || !cardB) return { words: null, error: "" };
     try {
-      return getSequenceCombinator().candidateWords(cardA, cardB);
-    } catch {
+      return {
+        words: getSequenceCombinator().candidateWords(cardA, cardB),
+        error: "",
+      };
+    } catch (cause) {
       // Layer 0 is a preview, not a gate — a card it cannot read (a seam label
-      // outside the alpha/beta/gamma families) must not take the page down.
-      return null;
+      // outside the alpha/beta/gamma families) must not take the page down. It
+      // must not vanish silently either: say so on the page AND in the console,
+      // because a blank preview panel looks identical to "no candidates".
+      console.warn(
+        "[sequence-combinator lab] candidateWords failed for the loaded pair",
+        cause
+      );
+      return {
+        words: null,
+        error: cause instanceof Error ? cause.message : String(cause),
+      };
     }
   });
 
   function slotView(id: SlotId): CardSlot {
     return {
       get card() {
-        return slots[id].card;
+        return cardOf(id);
       },
       get mode() {
-        return slots[id].mode;
+        return chrome[id].mode;
       },
       get fixtureName() {
-        return slots[id].fixtureName;
+        return chrome[id].fixtureName;
       },
       get jsonText() {
-        return slots[id].jsonText;
+        return chrome[id].jsonText;
       },
       set jsonText(value: string) {
-        slots[id].jsonText = value;
+        chrome[id].jsonText = value;
       },
       get error() {
-        return slots[id].error;
+        return chrome[id].error;
       },
       get displayWord() {
-        return simplifyRepeatedWord(slots[id].card?.word ?? "");
+        return simplifyRepeatedWord(cardOf(id)?.word ?? "");
       },
     };
   }
@@ -271,7 +346,7 @@ export function createCombinatorLabState(): CombinatorLabState {
     slotA: viewA,
     slotB: viewB,
     get bothLoaded() {
-      return slots.A.card !== null && slots.B.card !== null;
+      return cardA !== null && cardB !== null;
     },
 
     get depth() {
@@ -354,72 +429,97 @@ export function createCombinatorLabState(): CombinatorLabState {
       return elapsedMs;
     },
     get preview() {
-      return preview;
+      return previewOutcome.words;
+    },
+    get previewError() {
+      return previewOutcome.error;
     },
 
     loadFixture(slot, name) {
       const card = FIXTURE_CARDS.get(name);
       if (!card) {
-        slots[slot].error = `No demo card named "${name}".`;
+        chrome[slot].error = `No demo card named "${name}".`;
         return;
       }
-      slots[slot].card = card;
-      slots[slot].mode = "fixture";
-      slots[slot].fixtureName = name;
-      slots[slot].error = "";
-      report = null;
+      setCard(slot, card);
+      chrome[slot].mode = "fixture";
+      chrome[slot].fixtureName = name;
+      chrome[slot].error = "";
+      invalidateRun();
     },
 
     loadJson(slot, text) {
-      slots[slot].jsonText = text;
+      chrome[slot].jsonText = text;
       try {
-        slots[slot].card = parseCard(text, slot);
-        slots[slot].mode = "json";
-        slots[slot].fixtureName = null;
-        slots[slot].error = "";
-        report = null;
+        setCard(slot, parseCard(text, slot));
+        chrome[slot].mode = "json";
+        chrome[slot].fixtureName = null;
+        chrome[slot].error = "";
       } catch (cause) {
-        slots[slot].card = null;
-        slots[slot].error =
+        setCard(slot, null);
+        chrome[slot].error =
           cause instanceof Error ? cause.message : String(cause);
       }
+      // Bumped on BOTH paths: a failed paste empties the slot, which invalidates
+      // any run in flight just as surely as a successful one.
+      invalidateRun();
     },
 
     clearSlot(slot) {
-      slots[slot].card = null;
-      slots[slot].fixtureName = null;
-      slots[slot].error = "";
-      report = null;
+      setCard(slot, null);
+      chrome[slot].fixtureName = null;
+      chrome[slot].error = "";
+      invalidateRun();
     },
 
     swapSlots() {
-      const a = slots.A;
-      slots.A = slots.B;
-      slots.B = a;
-      report = null;
+      const heldCard = cardA;
+      cardA = cardB;
+      cardB = heldCard;
+      const heldChrome = chrome.A;
+      chrome.A = chrome.B;
+      chrome.B = heldChrome;
+      invalidateRun();
     },
 
     async run() {
       if (inFlight) return;
-      const cardA = slots.A.card;
-      const cardB = slots.B.card;
-      if (!cardA || !cardB) return;
+      const a = cardA;
+      const b = cardB;
+      if (!a || !b) return;
 
       inFlight = true;
       running = true;
       runError = "";
+      const generation = ++runGeneration;
+
+      // Yield a real frame before the search starts. `findCombinations` awaits,
+      // but only on already-resolved promises, so it runs as one uninterrupted
+      // 190-700ms block on the main thread — a microtask-only await never lets
+      // the browser paint, and "Searching…" would appear only after the search
+      // had already finished. A macrotask does.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
       const startedAt = performance.now();
       try {
-        report = await getSequenceCombinator().findCombinations(
-          cardA,
-          cardB,
+        const next = await getSequenceCombinator().findCombinations(
+          a,
+          b,
           options()
         );
+        if (generation !== runGeneration) return;
+        report = next;
       } catch (cause) {
+        if (generation !== runGeneration) return;
         report = null;
         runError = cause instanceof Error ? cause.message : String(cause);
       } finally {
-        elapsedMs = Math.round(performance.now() - startedAt);
+        // The timing belongs to the run that produced the visible report, so it
+        // is generation-guarded like the report. The lifecycle flags are not —
+        // they describe THIS call, and leaving them set would lock the button.
+        if (generation === runGeneration) {
+          elapsedMs = Math.round(performance.now() - startedAt);
+        }
         running = false;
         inFlight = false;
       }

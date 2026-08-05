@@ -119,7 +119,9 @@
   </header>
 
   <div class="strip" role="list" aria-label="Steps of {word}">
-    {#each cells as cell, i (cell.step.id ?? i)}
+    <!-- Keyed on POSITION as well as id. Step ids reaching here are derived
+         from pasted card material, which may carry duplicates. -->
+    {#each cells as cell, i (`${cell.step.id ?? "s"}-${i}`)}
       <div
         class="cell kind-{cell.kind}"
         class:block-start={cell.blockStart}

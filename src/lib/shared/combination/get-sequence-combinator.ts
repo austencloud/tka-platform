@@ -61,7 +61,7 @@ import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motio
  * comment claimed the budget made six impossible. It was inherited from a
  * measurement taken at a different ingredient shape and is simply false here.)
  */
-const DEFAULT_MAX_WORD_LENGTH = 5;
+export const DEFAULT_MAX_WORD_LENGTH = 5;
 
 /**
  * Result cap for the preview enumeration.

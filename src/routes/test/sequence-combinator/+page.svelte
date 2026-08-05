@@ -15,7 +15,6 @@
   half-works is worse than one that says what it is waiting for.
 -->
 <script lang="ts">
-  import { ALL_FIXTURE_LOOPS } from "$lib/shared/combination/domain/demo-fixtures";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
@@ -23,13 +22,13 @@
   import ResultStrip from "./ResultStrip.svelte";
   import {
     createCombinatorLabState,
+    DEFAULT_MAX_WORD_LENGTH,
+    FIXTURE_NAMES,
     type DepthPreset,
     type SlotId,
   } from "./lab-state.svelte";
 
   const lab = createCombinatorLabState();
-
-  const FIXTURE_NAMES = ALL_FIXTURE_LOOPS.map(([name]) => name);
 
   /** How many preview words to draw before collapsing the tail into a count. */
   const PREVIEW_CHIP_LIMIT = 60;
@@ -59,6 +58,16 @@
     value,
     label: value,
   }));
+  // The number the impossibility banner quotes, so it belongs on the rail: a
+  // proof at cap 0 and a proof at cap 4 are different claims.
+  const AMBIENT_RUN_OPTIONS = ["0", "1", "2", "4"].map((value) => ({
+    value,
+    label: value,
+  }));
+  const RESULT_COUNT_OPTIONS = ["12", "24", "48"].map((value) => ({
+    value,
+    label: value,
+  }));
 
   const results = $derived(lab.report?.results ?? []);
 
@@ -69,7 +78,7 @@
     const preview = lab.preview;
     if (!preview) return "";
     if (preview.searchComplete) {
-      return "Complete: every hybrid word of 5 letters or fewer that draws on both cards.";
+      return `Complete: every hybrid word of ${DEFAULT_MAX_WORD_LENGTH} letters or fewer that draws on both cards.`;
     }
     if (preview.resultsTruncated) {
       return "Truncated — the result cap fired before the space was swept. More words exist.";
@@ -80,35 +89,58 @@
     return "Partial — the sweep stopped early.";
   });
 
-  /** The one sentence the report is allowed to lead with. */
+  /**
+   * The one sentence the report is allowed to lead with.
+   *
+   * Impossibility is CAP-RELATIVE and the sentence has to carry the cap, so a
+   * run at `ambientRunCap: 0` gets its own wording — "no bridges considered" is
+   * a materially weaker claim than "bridges up to 2 steps considered", and
+   * collapsing them into "bridges up to 0 steps" reads as thoroughness it did
+   * not have.
+   */
   const headline = $derived.by(() => {
     const report = lab.report;
     if (!report) return null;
+
     if (report.gridModeMismatch) {
       return {
         tone: "impossible" as const,
         text: "Provably impossible — the two cards are in different grid modes, and no transform or bridge crosses that.",
       };
     }
+
     if (report.impossible) {
+      const scope =
+        report.ambientRunCap === 0
+          ? "no bridges considered — bridge material could still change this"
+          : `bridges up to ${report.ambientRunCap} ${
+              report.ambientRunCap === 1 ? "step" : "steps"
+            } considered`;
       return {
         tone: "impossible" as const,
-        text: `Provably impossible (bridges up to ${report.ambientRunCap} ${
-          report.ambientRunCap === 1 ? "step" : "steps"
-        } considered). No card-B seam is reachable from any card-A seam under these liberties.`,
+        text: `Provably impossible (${scope}). No card-B seam is reachable from any card-A seam under these liberties.`,
       };
     }
+
     if (report.results.length === 0) {
       return {
         tone: "empty" as const,
         text: `None found within length ${report.searchedToLength}. Nothing is claimed beyond that — a longer walk, another liberty, or a longer bridge could still exist.`,
       };
     }
+
+    // The count is a page size, not a census, whenever a cap fired. Say so in
+    // the same breath rather than leaving it to a pill further down.
+    const qualifier = report.resultsTruncated
+      ? " — more exist beyond the cap"
+      : report.budgetExhausted
+        ? " — the node budget ran out, so more may exist"
+        : "";
     return {
       tone: "found" as const,
       text: `${report.results.length} ${
         report.results.length === 1 ? "combination" : "combinations"
-      }, fully explored to length ${report.searchedToLength}.`,
+      }, fully explored to length ${report.searchedToLength}${qualifier}.`,
     };
   });
 
@@ -194,7 +226,9 @@
 
         <div class="mini-strip" aria-label="Card {slot.id} steps">
           {#if slot.view.card}
-            {#each slot.view.card.steps as step, i (step.id ?? i)}
+            <!-- Keyed on POSITION as well as id: pasted JSON is caller data and
+                 a duplicated step would otherwise collide two keys. -->
+            {#each slot.view.card.steps as step, i (`${step.id ?? "s"}-${i}`)}
               <div class="mini">
                 <PictographContainer pictographData={step} />
               </div>
@@ -236,6 +270,28 @@
         onchange={(value) => (lab.minBlockSize = Number(value))}
         size="sm"
         ariaLabelledby="block-label"
+      />
+    </div>
+
+    <div class="rail-group">
+      <span class="rail-label" id="bridge-label">Bridge run</span>
+      <SegmentedControl
+        options={AMBIENT_RUN_OPTIONS}
+        value={String(lab.maxAmbientRun)}
+        onchange={(value) => (lab.maxAmbientRun = Number(value))}
+        size="sm"
+        ariaLabelledby="bridge-label"
+      />
+    </div>
+
+    <div class="rail-group">
+      <span class="rail-label" id="results-label">Results</span>
+      <SegmentedControl
+        options={RESULT_COUNT_OPTIONS}
+        value={String(lab.maxResults)}
+        onchange={(value) => (lab.maxResults = Number(value))}
+        size="sm"
+        ariaLabelledby="results-label"
       />
     </div>
 
@@ -346,6 +402,13 @@
     </section>
   {/if}
 
+  {#if lab.previewError}
+    <p class="banner error">
+      Candidate-word preview failed for this pair: {lab.previewError}. The
+      search below is unaffected.
+    </p>
+  {/if}
+
   {#if lab.preview}
     <section class="preview" aria-label="Layer 0 word preview">
       <h2>
@@ -373,7 +436,7 @@
 
   {#if results.length > 0}
     <section class="results" aria-label="Combination results">
-      {#each results as result, i (result.canonicalHash + i)}
+      {#each results as result, i (`${result.canonicalHash}#${i}`)}
         <ResultStrip {result} rank={i + 1} />
       {/each}
     </section>
