@@ -18,17 +18,28 @@
     playing: boolean;
     /** Draw the accent ring under each station. */
     showRings: boolean;
+    /**
+     * Solo mode: render only this room, alone at the origin. One effect framed
+     * by itself reads far better than six competing in a line — and a single
+     * oversized emitter can't occlude its neighbours while you judge it.
+     */
+    soloRoomId?: string | null;
   }
   const props: Props = $props();
 
-  const count = ELEMENT_MOTIFS.length;
+  const shown = $derived(
+    props.soloRoomId
+      ? ELEMENT_MOTIFS.filter((m) => m.roomId === props.soloRoomId)
+      : ELEMENT_MOTIFS,
+  );
+  const count = $derived(shown.length);
 </script>
 
 <!-- Dim key so the effects carry the frame rather than competing with lighting. -->
 <T.AmbientLight intensity={0.18} color="#0e1420" />
 <T.DirectionalLight position={[6, 12, 8]} intensity={0.35} color="#c8d4ff" />
 
-{#each ELEMENT_MOTIFS as motif, i (motif.roomId)}
+{#each shown as motif, i (motif.roomId)}
   {@const pos = motifPosition(i, count)}
 
   {#if props.showRings}

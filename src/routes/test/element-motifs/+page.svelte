@@ -12,6 +12,7 @@
    * at once with the choices switchable.
    */
   import { Canvas, T } from "@threlte/core";
+  import { page } from "$app/state";
   import { WebGLRenderer } from "three";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
@@ -25,6 +26,23 @@
 
   let effects = $state<Record<string, string>>(
     Object.fromEntries(ELEMENT_MOTIFS.map((m) => [m.roomId, m.defaultEffect])),
+  );
+
+  /**
+   * `?e=<effectId>` puts one effect alone at the origin with the camera pulled
+   * in. That is how each effect gets judged on its own terms — in the line of
+   * six, an emitter with a scale bug swallows its neighbours and you learn
+   * nothing about either. `?room=<roomId>` picks which modality carries it.
+   */
+  const soloEffect = $derived(page.url.searchParams.get("e"));
+  const soloRoomId = $derived(
+    soloEffect ? page.url.searchParams.get("room") ?? ELEMENT_MOTIFS[0].roomId : null,
+  );
+  const resolvedEffects = $derived(
+    soloEffect && soloRoomId ? { ...effects, [soloRoomId]: soloEffect } : effects,
+  );
+  const cameraPosition = $derived<[number, number, number]>(
+    soloEffect ? [0, 2.6, 8] : [0, 3.4, 17],
   );
 
   function effectLabel(id: string): string {
@@ -53,10 +71,16 @@
       createRenderer={(canvas) =>
         new WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: "high-performance" })}
     >
-      <T.PerspectiveCamera makeDefault position={[0, 3.4, 17]} fov={52}>
+      <T.PerspectiveCamera makeDefault position={cameraPosition} fov={52}>
         <OrbitControls enableDamping target={[0, 1.5, 0]} maxPolarAngle={Math.PI / 2} />
       </T.PerspectiveCamera>
-      <ElementMotifScene {effects} {showProps} {playing} {showRings} />
+      <ElementMotifScene
+        effects={resolvedEffects}
+        {showProps}
+        {playing}
+        {showRings}
+        {soloRoomId}
+      />
     </Canvas>
   </section>
 
@@ -106,7 +130,7 @@
           <p class="intent">{motif.intent}</p>
           <SegmentedControl
             options={motif.candidates.map((id) => ({ value: id, label: effectLabel(id) }))}
-            value={effects[motif.roomId] ?? motif.defaultEffect}
+            value={resolvedEffects[motif.roomId] ?? motif.defaultEffect}
             onchange={(v) => (effects = { ...effects, [motif.roomId]: v })}
             size="sm"
             ariaLabel={`${motif.label} effect`}
