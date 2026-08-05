@@ -145,7 +145,14 @@
 
   // Rainbow mode keeps its own texture handle since the baseColor drifts
   // every frame - we regenerate on a throttle rather than cache by key.
-  let rainbowTexture: CanvasTexture | null = null;
+  // $state, not a plain let: `activeTexture` below is a $derived that reads
+  // this, and it is assigned from inside useTask. As a plain let it was not a
+  // reactive source, so activeTexture kept its initial null forever and the
+  // mount guard `{#if ... && activeTexture}` never opened. bloom's default
+  // colorMode is "rainbow", so out of the box the effect rendered NOTHING —
+  // playing or paused. Non-rainbow modes were fine, because stableTexture is
+  // derived from props.
+  let rainbowTexture = $state<CanvasTexture | null>(null);
   let lastRainbowUpdateMs = 0;
   const RAINBOW_UPDATE_INTERVAL_MS = 80; // ~12 fps on the hue
 
