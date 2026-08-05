@@ -34,10 +34,16 @@
  * and the DFS must walk the SAME graph, or the engine contradicts its own
  * theorem: a card-material-only precheck would keep proclaiming AAAA + HHHH
  * impossible while the DFS was perfectly able to bridge them. So the ambient
- * pool is built BEFORE the precheck and its edges join the BFS. The consequence
- * is worth stating plainly: `impossible: true` with ambient active is the
- * STRONGEST claim the engine makes — not merely "these two cards do not meet",
- * but "they do not meet even with the whole ambient vocabulary in play".
+ * pool is built BEFORE the precheck and its edges join the BFS.
+ *
+ * **Every claim here is CAP-RELATIVE.** The graph is the one the options built:
+ * card-B variants only as the liberties admit them, bridge edges only as far as
+ * `ambientRunCap` reaches. So `impossible: true` means "no combination under
+ * THESE liberties and a bridge of at most N steps" — the strongest thing the
+ * engine says, and still not an absolute. `ambientRunCap` rides on the report so
+ * a caller can say it out loud. And a pool that could not be built in full (a
+ * provider threw) suppresses the claim entirely: a subset graph can only ever
+ * manufacture a false proof.
  *
  * **Iterative deepening, not plain DFS.** The walk space is exponential in
  * length, so a depth-first sweep would spend its whole budget on one very deep
@@ -50,6 +56,9 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+
+import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
+import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 import {
   ambientBaseForLetter,
@@ -67,7 +76,11 @@ import {
 } from "../domain/types";
 import { seamEndOf, seamOf } from "./position-groups";
 import { buildTwinSource, buildVariants } from "./variant-generator";
-import { classifyAndRank, type RawWalk } from "./walk-classifier";
+import {
+  classifyAndRank,
+  stepContentKey,
+  type RawWalk,
+} from "./walk-classifier";
 
 /** `CombinatorOptions.maxResultLength` is clamped to this range. */
 const MIN_RESULT_LENGTH = 2;
@@ -95,7 +108,25 @@ interface AmbientOption {
 /** Seam -> the ambient steps that START there. */
 type AmbientPool = ReadonlyMap<SeamState, readonly AmbientOption[]>;
 
-const EMPTY_AMBIENT_POOL: AmbientPool = new Map();
+/**
+ * The pool, plus whether it is the WHOLE pool.
+ *
+ * `complete: false` means at least one seam's options could not be collected —
+ * a provider threw, or answered with something that is not a list. The graph is
+ * then a SUBSET of the real one, and a subset can only ever produce a false
+ * impossibility proof, never a false result. So an incomplete pool suppresses
+ * `impossible` entirely rather than letting a failed lookup masquerade as a
+ * theorem about the seam graph.
+ */
+interface AmbientPoolResult {
+  readonly pool: AmbientPool;
+  readonly complete: boolean;
+}
+
+const EMPTY_AMBIENT_POOL: AmbientPoolResult = Object.freeze({
+  pool: Object.freeze(new Map()) as AmbientPool,
+  complete: true,
+});
 
 /** The one place a `WalkSource`'s step list is read (ambient sources have none). */
 function stepsOf(source: WalkSource): readonly StepData[] {
@@ -122,6 +153,58 @@ function commitBlock(
 }
 
 /**
+ * Does a step's own motion locations actually produce the positions it is
+ * labelled with?
+ *
+ * `startPosition`/`endPosition` are DERIVED data — `getGridPositionFromLocations`
+ * of the two hands — and the whole walk is stitched on those labels alone. A
+ * mislabelled `endPosition` is therefore the worst thing a provider can hand
+ * over: the seam graph joins two steps whose props are nowhere near each other,
+ * and the result passes every downstream check (it closes, it letters, it
+ * hashes) while being physically unperformable. Teleporting props, silently.
+ *
+ * So both labels are re-derived here and compared. The deriver throws on a
+ * location pair that names no position at all, which is the same failure and is
+ * treated the same way.
+ */
+function positionLabelsMatchLocations(step: StepData): boolean {
+  const blue = step.motions[MotionColor.BLUE];
+  const red = step.motions[MotionColor.RED];
+  if (!blue || !red) return false;
+
+  try {
+    return (
+      getGridPositionFromLocations(blue.startLocation, red.startLocation) ===
+        step.startPosition &&
+      getGridPositionFromLocations(blue.endLocation, red.endLocation) ===
+        step.endPosition
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * One warning per CATEGORY per search. A broken provider fails at every seam it
+ * is asked about, and a log line per seam would bury the one that matters —
+ * while a single global flag would let a provider throw silently forever after
+ * the first bad search, and would hide a label rejection behind an unrelated
+ * throw. Per-call, per-category is the pair that stays useful.
+ */
+function createWarner(): (
+  category: string,
+  message: string,
+  detail?: unknown
+) => void {
+  const warned = new Set<string>();
+  return (category, message, detail) => {
+    if (warned.has(category)) return;
+    warned.add(category);
+    console.warn(`[sequence-combinator] ${message}`, detail ?? "");
+  };
+}
+
+/**
  * Every ambient step the walk could ever reach, indexed by the seam it starts
  * at — precomputed once, before the DFS, because the provider is async and the
  * search is not.
@@ -131,58 +214,115 @@ function commitBlock(
  * continues the run starts at alpha5. So the pool seeds from the card seams and
  * then follows its own end seams outward, `maxAmbientRun` hops in total —
  * exactly as far as a legal run can go and no further, which is what keeps a
- * vocabulary-sized provider from being asked about the whole seam space.
+ * vocabulary-sized provider from being asked about the whole seam space. Each
+ * hop's lookups run together, since they are independent by construction.
  *
  * **Every option is re-validated.** A provider is a collaborator, not an
- * authority: a step is kept only when it carries a letter belonging to an
- * ambient-eligible roster base, has both seams, and actually STARTS at the seam
- * it was asked about. The third check is the one that matters — a provider
- * answering with material for a different seam would silently break the walk's
- * positional continuity, which is the single invariant everything downstream
- * assumes.
+ * authority. A step is kept only when it carries a letter belonging to an
+ * ambient-eligible roster base, has both seams, actually STARTS at the seam it
+ * was asked about, and carries position labels its own motion locations agree
+ * with. The last two are the load-bearing ones: either would break positional
+ * continuity, which is the single invariant everything downstream assumes.
+ *
+ * **A provider that fails does not get to shrink the answer silently.** A throw
+ * or a non-iterable return is caught per seam, warned once, and recorded as an
+ * INCOMPLETE pool — which suppresses `impossible` upstream. Losing results to a
+ * broken lookup is a degradation; proving a theorem from the smaller graph the
+ * failure left behind would be a lie.
  */
 async function buildAmbientPool(
   provider: AmbientOptionProvider,
   cardSeams: readonly SeamState[],
   maxHops: number
-): Promise<AmbientPool> {
+): Promise<AmbientPoolResult> {
   const pool = new Map<SeamState, readonly AmbientOption[]>();
-  if (maxHops <= 0) return pool;
+  if (maxHops <= 0) return { pool, complete: true };
 
   const eligibleLetters = ambientLetterSet();
+  const warn = createWarner();
   const queried = new Set<SeamState>();
   let frontier: SeamState[] = [...new Set(cardSeams)];
+  let complete = true;
 
   for (let hop = 0; hop < maxHops && frontier.length > 0; hop++) {
-    const next: SeamState[] = [];
-
-    for (const seam of frontier) {
-      if (queried.has(seam)) continue;
+    const seams = frontier.filter((seam) => {
+      if (queried.has(seam)) return false;
       queried.add(seam);
+      return true;
+    });
 
+    // Independent lookups, so they run together. Order is preserved by
+    // `Promise.all`, which is what keeps the pool (and therefore the search)
+    // deterministic.
+    const answers = await Promise.all(
+      seams.map(async (seam) => {
+        try {
+          const steps = await provider.optionsAt(seam);
+          if (!Array.isArray(steps)) {
+            complete = false;
+            warn(
+              "provider",
+              `ambient provider returned a non-list for seam ${seam}; ` +
+                "treating the pool as incomplete (impossibility is suppressed)"
+            );
+            return [];
+          }
+          return steps;
+        } catch (error) {
+          complete = false;
+          warn(
+            "provider",
+            `ambient provider threw for seam ${seam}; ` +
+              "treating the pool as incomplete (impossibility is suppressed)",
+            error
+          );
+          return [];
+        }
+      })
+    );
+
+    const next: SeamState[] = [];
+    seams.forEach((seam, i) => {
       const options: AmbientOption[] = [];
-      for (const step of await provider.optionsAt(seam)) {
-        const letter = step.letter;
+      // Two providers (or one provider queried twice) can offer the very same
+      // bridge step; the walk would then find every combination twice over.
+      const seenContent = new Set<string>();
+
+      for (const step of answers[i]!) {
+        const letter = step?.letter;
         if (!letter || !eligibleLetters.has(letter)) continue;
 
         const from = seamOf(step);
         const to = seamEndOf(step);
         if (!from || !to || from !== seam) continue;
+        if (!positionLabelsMatchLocations(step)) {
+          warn(
+            "labels",
+            `ambient step ${letter} at ${from} is labelled ${from}>${to} but ` +
+              "its motion locations derive different positions; rejected " +
+              "(a mislabelled seam splices into an unperformable sequence)"
+          );
+          continue;
+        }
 
         const base = ambientBaseForLetter(letter);
         if (!base) continue;
+
+        const content = stepContentKey(step);
+        if (seenContent.has(content)) continue;
+        seenContent.add(content);
 
         options.push({ step, baseWord: base.word });
         if (!queried.has(to)) next.push(to);
       }
 
       if (options.length > 0) pool.set(seam, options);
-    }
+    });
 
     frontier = next;
   }
 
-  return pool;
+  return { pool, complete };
 }
 
 /**
@@ -297,9 +437,16 @@ function canonicalPartition(
  * blocks makes those phases identical strings, which is what collapses them.
  *
  * Ambient steps have no index to key on — they come from a provider, not from a
- * cyclic source — so they key on CONTENT instead: letter plus both seams, which
- * is what distinguishes one bridge step from another. Two walks crossing on the
- * same Ψ therefore agree, and two crossing on different ones do not.
+ * cyclic source — so they key on CONTENT instead, through the same per-step
+ * encoding the classifier dedups results with (`stepContentKey`: letter, both
+ * endpoints, and each hand's motion type, rotation direction, turns,
+ * orientations and locations).
+ *
+ * Letter plus seams was not enough. A vocabulary legitimately offers SEVERAL
+ * bridges between the same pair of seams — a 0-turn Ψ and a 1-turn Ψ are
+ * different material a performer would feel — and keying on the label alone
+ * would collapse every combination using one onto the combination using the
+ * other, silently deleting real answers.
  */
 function canonicalWalkSignature(
   blocks: readonly WalkBlock[],
@@ -309,10 +456,7 @@ function canonicalWalkSignature(
   for (const block of blocks) {
     if (block.kind === "ambient") {
       for (const step of block.steps) {
-        keys.push(
-          `${block.sourceId}#${step.letter ?? "?"}` +
-            `@${step.startPosition ?? "?"}>${step.endPosition ?? "?"}`
-        );
+        keys.push(`${block.sourceId}#${stepContentKey(step)}`);
       }
       continue;
     }
@@ -428,7 +572,10 @@ export async function findCombinations(
   };
 
   /** A structural proof covers every length, so nothing is left unexplored. */
-  const proven = (gridModeMismatch: boolean): CombinationSearchReport => ({
+  const proven = (
+    gridModeMismatch: boolean,
+    ambientRunCap: number
+  ): CombinationSearchReport => ({
     results: [],
     impossible: true,
     // Synthesized, not measured: the structural proof holds at every length, so
@@ -438,13 +585,16 @@ export async function findCombinations(
     budgetExhausted: false,
     searchComplete: true,
     gridModeMismatch,
+    ambientRunCap,
   });
 
   // Odd rotations are the only transform that changes grid mode, and the
   // variant generator never emits one — so two cards in different modes share
-  // no reachable seam at all.
+  // no reachable seam at all. Nothing ambient has been consulted at this point,
+  // and nothing needs to be: an odd rotation is the only transform that crosses
+  // grid modes and no bridge supplies one.
   if ((cardA.gridMode ?? "diamond") !== (cardB.gridMode ?? "diamond")) {
-    return proven(true);
+    return proven(true, 0);
   }
 
   const frameSource: WalkSource = {
@@ -468,25 +618,44 @@ export async function findCombinations(
   // The ambient pool is built HERE — after the card material exists, before the
   // precheck runs — because the precheck has to see the same graph the DFS
   // walks. See `cardBIsReachableFromCardA`.
-  const ambientRunCap = options.ambientProvider
-    ? Math.max(opts.allowAmbient ? opts.maxAmbientRun : 0, 0)
-    : 0;
-  const ambientPool =
-    ambientRunCap > 0
-      ? await buildAmbientPool(
-          options.ambientProvider!,
-          cardSeamsOf(sources.map(stepsOf)),
-          ambientRunCap
-        )
-      : EMPTY_AMBIENT_POOL;
+  const cardSourceSteps = sources.map(stepsOf);
+  const provider = options.ambientProvider;
+  const ambientRunCap =
+    provider && opts.allowAmbient ? Math.max(opts.maxAmbientRun, 0) : 0;
 
-  const ambient = buildAmbientSources(ambientPool, sources.length);
+  let ambientPool = EMPTY_AMBIENT_POOL;
+  if (provider && ambientRunCap > 0) {
+    ambientPool = await buildAmbientPool(
+      provider,
+      cardSeamsOf(cardSourceSteps),
+      ambientRunCap
+    );
+  }
+
+  const ambient = buildAmbientSources(ambientPool.pool, sources.length);
   sources.push(...ambient.sources);
 
-  const sourceSteps = sources.map(stepsOf);
+  // Ambient sources carry no step list of their own, so the card table extends
+  // by exactly one empty entry each.
+  const sourceSteps = [...cardSourceSteps, ...ambient.sources.map(stepsOf)];
 
-  if (!cardBIsReachableFromCardA(sources, sourceSteps, ambientPool)) {
-    return proven(false);
+  if (!cardBIsReachableFromCardA(sources, sourceSteps, ambientPool.pool)) {
+    // An incomplete pool is a SMALLER graph than the real one, and a smaller
+    // graph can only manufacture a false proof. Report the empty result without
+    // the theorem: nothing was found, and nothing is claimed about why.
+    if (!ambientPool.complete) {
+      return {
+        results: [],
+        impossible: false,
+        searchedToLength: 0,
+        resultsTruncated: false,
+        budgetExhausted: false,
+        searchComplete: false,
+        gridModeMismatch: false,
+        ambientRunCap,
+      };
+    }
+    return proven(false, ambientRunCap);
   }
 
   const lengthOfSource = new Map(
@@ -578,13 +747,21 @@ export async function findCombinations(
     const source = sources[sourceIndex]!;
     const steps = sourceSteps[sourceIndex]!;
 
+    // `minBlockSize` is a floor on how much of a CARD a block must show — "do
+    // not cut this card into single steps". A bridge is not a card, and its
+    // length is owned by `maxAmbientRun` instead. Applying the card floor to an
+    // ambient block would make a one-step Ψ illegal at minBlockSize 2, which
+    // would delete Austen's own AAAAΨHHΦ from the results of a setting that has
+    // nothing to say about bridges.
+    const blockFloor = source.kind === "ambient" ? 1 : opts.minBlockSize;
+
     if (
       currentSeam === startSeam &&
       totalSteps >= 2 &&
       // A walk that never left its source is that card played on its own, not
       // a combination — at least one committed block plus the current one.
       blocks.length >= 1 &&
-      blockSteps.length >= opts.minBlockSize &&
+      blockSteps.length >= blockFloor &&
       usedCardB
     ) {
       // Closing off an AMBIENT step is legal: Austen's own AAAAΨHHΦ ends on the
@@ -625,7 +802,7 @@ export async function findCombinations(
       }
     }
 
-    if (blockSteps.length < opts.minBlockSize) return;
+    if (blockSteps.length < blockFloor) return;
 
     // Jump: hand off to any step sitting at this seam, including one in the
     // SAME source at a different phase. A card that revisits a seam (FALG is at
@@ -668,7 +845,7 @@ export async function findCombinations(
     // two ingredients. `usedCardB` is deliberately untouched — connective
     // tissue is not one of the two things being combined.
     if (ambientRun < ambientRunCap) {
-      for (const option of ambientPool.get(currentSeam) ?? []) {
+      for (const option of ambientPool.pool.get(currentSeam) ?? []) {
         const end = seamEndOf(option.step);
         if (!end) continue;
         const targetIndex = ambient.indexByWord.get(option.baseWord);
@@ -755,5 +932,6 @@ export async function findCombinations(
       !budgetExhausted &&
       searchedToLength >= opts.maxResultLength,
     gridModeMismatch: false,
+    ambientRunCap,
   };
 }

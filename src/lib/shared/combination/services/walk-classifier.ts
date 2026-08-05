@@ -29,8 +29,10 @@
 
 import { getSequenceCanonicalizer } from "$lib/shared/comparison/get-sequence-canonicalizer";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
+import { ambientBaseForLetter } from "../domain/base-sequence-registry";
 import type {
   CombinationResult,
   CombinatorTunables,
@@ -187,15 +189,43 @@ function displayWord(card: SequenceData): string {
   return raw ? simplifyRepeatedWord(raw) : "(unnamed)";
 }
 
-/** Ambient bases the walk drew on, in order of first appearance. */
-function ambientWordsOf(blocks: readonly WalkBlock[]): string[] {
+/**
+ * Ambient bases the walk drew on, in order of first appearance — read off the
+ * SPLICED steps, not off the provider's own labelling.
+ *
+ * `block.ambientWord` records what the provider claimed when the pool was
+ * built. What the result actually CONTAINS is decided later: the splice
+ * re-derives every letter from the dataframe, and a provider that offered a
+ * step it called Ψ which resolves to F would otherwise have its claim printed
+ * verbatim in the derivation sentence. The ingredient list has to name what is
+ * in the sequence, so the letter that survived derivation is routed through
+ * `ambientBaseForLetter` and the provider's word is used only as the fallback
+ * for a step whose letter did not resolve at all.
+ *
+ * Blocks are flattened in walk order, so an ambient block's steps occupy a
+ * contiguous run of the spliced sequence starting at the running offset.
+ */
+function ambientWordsOf(
+  blocks: readonly WalkBlock[],
+  spliced: SequenceData
+): string[] {
   const seen = new Set<string>();
   const words: string[] = [];
+
+  let offset = 0;
   for (const block of blocks) {
-    const word = block.ambientWord;
-    if (!word || seen.has(word)) continue;
-    seen.add(word);
-    words.push(word);
+    const start = offset;
+    offset += block.steps.length;
+    if (block.kind !== "ambient") continue;
+
+    for (let i = start; i < offset; i++) {
+      const letter = spliced.steps[i]?.letter;
+      const word =
+        (letter && ambientBaseForLetter(letter)?.word) || block.ambientWord;
+      if (!word || seen.has(word)) continue;
+      seen.add(word);
+      words.push(word);
+    }
   }
   return words;
 }
@@ -268,24 +298,37 @@ function derivationOf(
  * output is still carried on `CombinationResult.canonicalHash` for
  * cross-module compatibility — read, never deduped on.
  */
+/**
+ * One step's identity as a performer would read it: letter, both endpoints, and
+ * each hand's motion type + rotation direction + turns + orientations +
+ * locations. Ids and step numbers are deliberately out — they differ by
+ * construction between two walks over different sources.
+ *
+ * Exported because the walk search needs the same encoding for AMBIENT steps,
+ * which have no source index to key on. Two bridge variants sitting at the same
+ * seams (a 0-turn Ψ and a 1-turn Ψ) are genuinely different material and must
+ * produce different keys; letter-plus-seams would collapse them into one.
+ */
+export function stepContentKey(step: StepData): string {
+  const hands = (["blue", "red"] as const)
+    .map((color) => {
+      const motion = step.motions[color];
+      return [
+        motion?.motionType,
+        motion?.rotationDirection,
+        motion?.turns,
+        motion?.startOrientation,
+        motion?.endOrientation,
+        motion?.startLocation,
+        motion?.endLocation,
+      ].join(",");
+    })
+    .join("|");
+  return `${step.letter ?? "?"}@${step.startPosition}>${step.endPosition}:${hands}`;
+}
+
 export function contentDedupKey(sequence: SequenceData): string {
-  const keys = sequence.steps.map((step) => {
-    const hands = (["blue", "red"] as const)
-      .map((color) => {
-        const motion = step.motions[color];
-        return [
-          motion?.motionType,
-          motion?.rotationDirection,
-          motion?.turns,
-          motion?.startOrientation,
-          motion?.endOrientation,
-          motion?.startLocation,
-          motion?.endLocation,
-        ].join(",");
-      })
-      .join("|");
-    return `${step.letter ?? "?"}@${step.startPosition}>${step.endPosition}:${hands}`;
-  });
+  const keys = sequence.steps.map(stepContentKey);
 
   let best = keys.join(">");
   for (let k = 1; k < keys.length; k++) {
@@ -399,10 +442,18 @@ export function rankResults(
  * Every SEQUENTIAL and HYBRID shape the engine had found was cut off below the
  * fold by results that differed from the leader only in which G it started on.
  *
- * So results are bucketed by (verdict, length) — the two things that make one
- * combination a different KIND of answer from another — and the page is filled
- * round-robin: the best of the best bucket, then the best of the next bucket,
- * and so on, then round again for each bucket's second-best.
+ * So results are bucketed by (verdict, length, bridged) — the things that make
+ * one combination a different KIND of answer from another — and the page is
+ * filled round-robin: the best of the best bucket, then the best of the next
+ * bucket, and so on, then round again for each bucket's second-best.
+ *
+ * `bridged` earns its place in that key because "these two cards concatenate"
+ * and "these two cards concatenate IF you drop a ΦΨ between them" are different
+ * answers to the user's question, not two samples of one. Without it a page of
+ * eight-step SEQUENTIALs could be entirely pure or entirely bridged depending
+ * on which happened to rank first, and the other way of combining would never
+ * be shown at all. The ranking still prefers pure card material — this only
+ * decides what the page SAMPLES, never what leads it.
  *
  * **The page samples the ways to combine; within a way, best first.**
  *
@@ -419,7 +470,9 @@ export function samplerSlice(
   // Insertion order over a ranked walk = buckets in best-member-first order.
   const buckets = new Map<string, CombinationResult[]>();
   for (const result of ranked) {
-    const key = `${result.verdict}:${result.sequence.steps.length}`;
+    const key =
+      `${result.verdict}:${result.sequence.steps.length}` +
+      `:${result.usedAmbient ? "bridged" : "pure"}`;
     const bucket = buckets.get(key);
     if (bucket) bucket.push(result);
     else buckets.set(key, [result]);
@@ -533,7 +586,7 @@ export async function classifyAndRank(
     const cardASteps = stepsOfKind(walk.blocks, "cardA");
     const cardBSteps = stepsOfKind(walk.blocks, "cardB");
     const cardSteps = cardASteps + cardBSteps;
-    const ambientWords = ambientWordsOf(walk.blocks);
+    const ambientWords = ambientWordsOf(walk.blocks, sequence);
     const rotationFaithfulBlocks = walk.blocks.filter(
       (block) => block.rotationFaithful
     ).length;

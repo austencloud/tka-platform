@@ -20,6 +20,11 @@
  * the results must be empty with `searchComplete` true. "Nothing up to here",
  * not "nothing ever".
  *
+ * A provider is a COLLABORATOR, not an authority, and the second half of this
+ * suite is about what happens when it misbehaves — a mislabelled seam, a letter
+ * that is not the letter, a lookup that throws. None of those may produce an
+ * unperformable sequence, a dishonest ingredient list, or a proof.
+ *
  * Providers here are hand-built stubs over the verified fixtures. Wiring the
  * real `motionQueryHandler`-backed provider is Task 10.
  */
@@ -33,9 +38,16 @@ import type {
   WalkBlock,
 } from "$lib/shared/combination/domain/types";
 import { findCombinations } from "$lib/shared/combination/services/sequence-combinator";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 import {
   AAAA_CCW,
+  FALG,
   GGGG_CW,
   HHHH_CCW,
   PHI_PSI_LOOP,
@@ -74,6 +86,53 @@ const barren: AmbientOptionProvider = {
     return [];
   },
 };
+
+/** A provider whose lookup is broken. */
+const throwing: AmbientOptionProvider = {
+  async optionsAt(seam: SeamState): Promise<readonly StepData[]> {
+    throw new Error(`provider is down (asked about ${seam})`);
+  },
+};
+
+// --- Malformed / mislabelled material -------------------------------------
+
+/**
+ * Ψ with a LIE for an end position: its motions land the hands at beta1, but it
+ * claims beta5. Splicing on the claim would join it to material whose props are
+ * a quarter turn away — a sequence that closes on paper and teleports in the
+ * hands.
+ */
+const PSI_MISLABELLED_END: StepData = createStepData({
+  ...PSI_STEP,
+  id: "psi-mislabelled-end",
+  endPosition: GridPosition.BETA5,
+});
+
+/**
+ * A genuine 1-turn Ψ: same seams, same hand path, one extra prop rotation. Real
+ * vocabulary, and a DIFFERENT bridge from the 0-turn one — a performer feels the
+ * turn. The dataframe carries no turns column, so it still letters as Ψ.
+ */
+const PSI_ONE_TURN: StepData = createStepData({
+  ...PSI_STEP,
+  id: "psi-one-turn",
+  motions: {
+    [MotionColor.BLUE]: PSI_STEP.motions.blue,
+    [MotionColor.RED]: createMotionData({ ...PSI_STEP.motions.red, turns: 1 }),
+  },
+});
+
+/**
+ * FALG's first step — a verified F, beta5>alpha3 — wearing a Ψ label. The pool
+ * filters on the letter it is handed, so this gets in; the splice re-derives
+ * from the motions and gets F back. What the result CONTAINS is FL material,
+ * and the ingredient list has to say FL.
+ */
+const F_LABELLED_PSI: StepData = createStepData({
+  ...FALG.steps[0]!,
+  id: "f-wearing-a-psi-label",
+  letter: Letter.PSI,
+});
 
 /**
  * Every step of the ΦΨΦΨ loop, offered at its own start seam — so ambient steps
@@ -337,6 +396,261 @@ describe("ambient base material — the ΦΨ pinch", () => {
       expect(result.derivation).not.toContain("Φ");
     }
   }, 120_000);
+
+  it("keeps bridges out of minBlockSize, which is a floor on CARD blocks", async () => {
+    // minBlockSize 2 says "do not cut a card into single steps". It says nothing
+    // about bridges — their length is `maxAmbientRun`'s business — and applying
+    // it to them would delete AAAAΨHHΦ, whose Ψ and Φ are one step each.
+    const report = await findCombinations(AAAA_CCW, HHHH_CCW, {
+      allowAmbient: true,
+      ambientProvider: bothWays,
+      minBlockSize: 2,
+      maxResultLength: 8,
+      maxResults: 500,
+    });
+
+    const flagship = report.results.find((result) =>
+      matchesUpToRotation(result.sequence.word ?? "", A_PSI_H_PHI)
+    );
+    expect(
+      flagship,
+      "minBlockSize 2 must not outlaw a one-step bridge"
+    ).toBeDefined();
+    expect(ambientBlocks(flagship!).every((b) => b.steps.length === 1)).toBe(
+      true
+    );
+
+    // The card floor is still enforced on card blocks, everywhere.
+    for (const result of report.results) {
+      for (const block of result.blocks) {
+        if (block.kind === "ambient") continue;
+        expect(block.steps.length, lettersOf(result)).toBeGreaterThanOrEqual(2);
+      }
+    }
+  }, 120_000);
+
+  it("treats two bridges at the same seams as two bridges", async () => {
+    // A 0-turn Ψ and a 1-turn Ψ occupy the same seams and carry the same letter.
+    // Keying the walk signature on letter-plus-seams would collapse every
+    // combination using one onto the combination using the other; keying it on
+    // step CONTENT keeps both, which is why offering both must find strictly
+    // more.
+    const options = {
+      allowAmbient: true,
+      maxResultLength: 8,
+      maxResults: 2000,
+    } as const;
+
+    const oneBridge = await findCombinations(AAAA_CCW, HHHH_CCW, {
+      ...options,
+      ambientProvider: bothWays,
+    });
+    const twoBridges = await findCombinations(AAAA_CCW, HHHH_CCW, {
+      ...options,
+      ambientProvider: {
+        async optionsAt(seam: SeamState) {
+          if (seam === PSI_STEP.startPosition) return [PSI_STEP, PSI_ONE_TURN];
+          if (seam === PHI_STEP.startPosition) return [PHI_STEP];
+          return [];
+        },
+      },
+    });
+
+    expect(oneBridge.results.length).toBeGreaterThan(0);
+    expect(twoBridges.results.length).toBeGreaterThan(oneBridge.results.length);
+
+    // And the same step offered twice is still one bridge — the pool dedups on
+    // the same content key, so a duplicated option cannot double the answer.
+    const duplicated = await findCombinations(AAAA_CCW, HHHH_CCW, {
+      ...options,
+      ambientProvider: {
+        async optionsAt(seam: SeamState) {
+          if (seam === PSI_STEP.startPosition) return [PSI_STEP, PSI_STEP];
+          if (seam === PHI_STEP.startPosition) return [PHI_STEP, PHI_STEP];
+          return [];
+        },
+      },
+    });
+    expect(duplicated.results.map((r) => r.sequence.word)).toEqual(
+      oneBridge.results.map((r) => r.sequence.word)
+    );
+  }, 180_000);
+
+  it("rejects a bridge step whose position labels contradict its own motions", async () => {
+    // The mislabelled Ψ claims to end at beta5; its hands land at beta1. Accept
+    // it and the walk splices card material onto props that are not there.
+    const report = await findCombinations(AAAA_CCW, HHHH_CCW, {
+      allowAmbient: true,
+      ambientProvider: {
+        async optionsAt(seam: SeamState) {
+          if (seam === PSI_STEP.startPosition) return [PSI_MISLABELLED_END];
+          if (seam === PHI_STEP.startPosition) return [PHI_STEP];
+          return [];
+        },
+      },
+      maxResultLength: 8,
+      maxResults: 500,
+    });
+
+    // With the only alpha->beta door rejected, the beta world is unreachable
+    // again — the same answer as offering nothing at all.
+    expect(report.results).toHaveLength(0);
+    expect(report.impossible).toBe(true);
+  }, 120_000);
+
+  it("names the ingredient the result CONTAINS, not the one the provider claimed", async () => {
+    // The provider hands over FALG's F step wearing a Ψ label. The splice
+    // re-derives letters from the motions and gets F back, so the honest
+    // ingredient is FL — printing the provider's ΦΨ would be a lie about what
+    // is in the sequence.
+    const report = await findCombinations(AAAA_CCW, HHHH_CCW, {
+      allowAmbient: true,
+      ambientProvider: {
+        async optionsAt(seam: SeamState) {
+          if (seam === PSI_STEP.startPosition) return [PSI_STEP];
+          if (seam === F_LABELLED_PSI.startPosition) return [F_LABELLED_PSI];
+          return [];
+        },
+      },
+      maxResultLength: 8,
+      maxResults: 1000,
+    });
+
+    const mislabelled = report.results.find((result) =>
+      result.ambientWords.includes("FL")
+    );
+    expect(
+      mislabelled,
+      `expected an FL-bridged result; got ${[
+        ...new Set(report.results.flatMap((r) => r.ambientWords)),
+      ].join(", ")}`
+    ).toBeDefined();
+
+    // The block still records what the provider said — that is provenance — but
+    // the ingredient list and the derivation sentence report the truth.
+    const lie = mislabelled!.blocks.find(
+      (block) => block.kind === "ambient" && block.ambientWord === "ΦΨ"
+    );
+    expect(
+      lie,
+      "the provider's own claim is preserved on the block"
+    ).toBeDefined();
+    expect(mislabelled!.derivation).toContain("FL");
+    expect(lettersOf(mislabelled!)).toContain("F");
+  }, 120_000);
+
+  it("survives a broken provider without inventing a proof", async () => {
+    // A provider that throws leaves a SMALLER graph than the real one, and a
+    // smaller graph can only ever manufacture a false impossibility. So the
+    // search degrades to card material and the theorem is withheld.
+    const pureCards = await findCombinations(GGGG_CW, HHHH_CCW, {
+      allowAmbient: true,
+      ambientProvider: throwing,
+      maxResultLength: 6,
+      maxResults: 200,
+    });
+    expect(pureCards.results.length).toBeGreaterThan(0);
+    expect(pureCards.results.every((r) => !r.usedAmbient)).toBe(true);
+    expect(pureCards.impossible).toBe(false);
+
+    // The sharp case: card material alone cannot bridge these two, and without
+    // the failure this would be a true `impossible`. A failed lookup must not
+    // be allowed to prove it.
+    const unbridgeable = await findCombinations(AAAA_CCW, HHHH_CCW, {
+      allowAmbient: true,
+      ambientProvider: throwing,
+      maxResultLength: 6,
+    });
+    expect(unbridgeable.results).toHaveLength(0);
+    expect(unbridgeable.impossible).toBe(false);
+    expect(unbridgeable.searchComplete).toBe(false);
+  }, 120_000);
+
+  it("reports the run cap its claims are relative to", async () => {
+    // "Impossible" is never absolute — it holds under the liberties and the
+    // bridge length the search actually ran with. The cap rides along so a
+    // caller can say which.
+    const off = await findCombinations(AAAA_CCW, HHHH_CCW, {
+      allowAmbient: false,
+      maxResultLength: 6,
+    });
+    expect(off.impossible).toBe(true);
+    expect(off.ambientRunCap).toBe(0);
+
+    // A provider present but ambient disabled is still a card-only claim.
+    const disabled = await findCombinations(AAAA_CCW, HHHH_CCW, {
+      allowAmbient: false,
+      ambientProvider: bothWays,
+      maxResultLength: 6,
+    });
+    expect(disabled.impossible).toBe(true);
+    expect(disabled.ambientRunCap).toBe(0);
+
+    // Same pair, same liberties, cap 2 — and the claim flips.
+    const on = await findCombinations(AAAA_CCW, HHHH_CCW, {
+      allowAmbient: true,
+      ambientProvider: bothWays,
+      maxAmbientRun: 2,
+      maxResultLength: 8,
+      maxResults: 50,
+    });
+    expect(on.impossible).toBe(false);
+    expect(on.ambientRunCap).toBe(2);
+
+    // A grid-mode mismatch never consults a bridge, and says so.
+    const boxish = { ...HHHH_CCW, gridMode: "box" as never };
+    const mismatch = await findCombinations(AAAA_CCW, boxish, {
+      allowAmbient: true,
+      ambientProvider: bothWays,
+    });
+    expect(mismatch.gridModeMismatch).toBe(true);
+    expect(mismatch.ambientRunCap).toBe(0);
+  }, 120_000);
+
+  it("samples bridged and pure answers of the same shape as different answers", async () => {
+    // "These two cards concatenate" and "these two cards concatenate IF you drop
+    // a ΦΨ between them" are different answers to the user's question. Bucketing
+    // the page on (verdict, length) alone would show whichever ranked first and
+    // hide the other entirely.
+    const options = {
+      allowAmbient: true,
+      ambientProvider: bothWays,
+      maxResultLength: 6,
+    } as const;
+
+    const shapeKey = (result: CombinationResult) =>
+      `${result.verdict}:${result.sequence.steps.length}`;
+
+    const everything = await findCombinations(GGGG_CW, HHHH_CCW, {
+      ...options,
+      maxResults: 5000,
+    });
+    const pureShapes = new Set(
+      everything.results.filter((r) => !r.usedAmbient).map(shapeKey)
+    );
+    const bridgedShapes = new Set(
+      everything.results.filter((r) => r.usedAmbient).map(shapeKey)
+    );
+    const contested = [...pureShapes].filter((key) => bridgedShapes.has(key));
+    expect(
+      contested.length,
+      "no shape exists in both forms — the test would be vacuous"
+    ).toBeGreaterThan(0);
+
+    const page = await findCombinations(GGGG_CW, HHHH_CCW, {
+      ...options,
+      maxResults: 24,
+    });
+    const onPage = (key: string, bridged: boolean) =>
+      page.results.some(
+        (r) => shapeKey(r) === key && r.usedAmbient === bridged
+      );
+
+    expect(
+      contested.some((key) => onPage(key, false) && onPage(key, true)),
+      `expected one page to carry both forms of a contested shape (${contested.join(", ")})`
+    ).toBe(true);
+  }, 180_000);
 
   it("is deterministic with ambient enabled", async () => {
     const options = {

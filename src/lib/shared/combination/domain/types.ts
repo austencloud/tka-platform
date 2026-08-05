@@ -102,8 +102,9 @@ export interface CombinationResult {
 export interface CombinationSearchReport {
   readonly results: readonly CombinationResult[];
   /**
-   * A PROOF that no combination exists at ANY length — never merely "the
-   * search found nothing".
+   * A PROOF that no combination exists at any length **under the active
+   * liberties and the active ambient run cap** — never merely "the search found
+   * nothing".
    *
    * Only a structural argument can establish this, because the walk search is
    * bounded and a bounded search that comes back empty has proven nothing. The
@@ -113,13 +114,27 @@ export interface CombinationSearchReport {
    * reports `impossible: false` and lets `searchedToLength` carry the weaker,
    * honest claim.
    *
-   * **With ambient active, the reachability graph INCLUDES the bridge edges**,
-   * so `impossible: true` is then the strongest thing the engine says: these
-   * two cards do not meet even with the ambient vocabulary in play. Conversely
-   * `impossible: false` with an empty result set is NOT a weaker impossibility
-   * — a one-way bridge makes card B reachable without making any closed walk
-   * exist, and that case is reported honestly as an empty search of a stated
-   * depth.
+   * **The claim is CAP-RELATIVE, and callers must say so.** The graph the proof
+   * runs on is the one the OPTIONS built: card B's variants exist only as
+   * `allowMirror`/`allowRotation`/`allowColorSwap`/`exploreRotationFaithful`
+   * admit them, and bridge edges exist only as far as `ambientRunCap` reaches.
+   * Turning a liberty on, raising the run cap, or supplying a richer provider
+   * can all turn a true `impossible` into results. The honest sentence is
+   * "impossible under these liberties and a bridge of at most N steps", never a
+   * bare "impossible" — `ambientRunCap` is on this report so the lab can state
+   * it precisely.
+   *
+   * Within those bounds it is still the strongest thing the engine says: with
+   * ambient active the reachability graph INCLUDES the bridge edges, so the
+   * claim is "these two cards do not meet even with the ambient vocabulary in
+   * play". Conversely `impossible: false` with an empty result set is NOT a
+   * weaker impossibility — a one-way bridge makes card B reachable without
+   * making any closed walk exist, and that case is reported honestly as an
+   * empty search of a stated depth.
+   *
+   * Suppressed outright when the ambient pool could not be built in full (a
+   * provider threw or answered with a non-list): the graph is then a subset of
+   * the real one, and a subset can only manufacture a FALSE proof.
    */
   readonly impossible: boolean;
   /**
@@ -148,6 +163,17 @@ export interface CombinationSearchReport {
    */
   readonly searchComplete: boolean;
   readonly gridModeMismatch: boolean;
+  /**
+   * The ambient run cap the search actually ran under: `maxAmbientRun` when
+   * ambient material was in play, and **0** when it was not — no provider, or
+   * `allowAmbient: false`.
+   *
+   * Reported so `impossible` can be stated precisely rather than absolutely. 0
+   * means the proof covers card material only, and a bridge could still change
+   * the answer; N means it covers bridges of up to N consecutive steps and no
+   * further. A UI that prints "impossible" without this number is overclaiming.
+   */
+  readonly ambientRunCap: number;
 }
 
 export interface AmbientOptionProvider {

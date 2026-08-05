@@ -189,11 +189,22 @@ export function ambientEligibleBases(): BaseSequenceEntry[] {
   return rosterConfirmedBases();
 }
 
-/** Letters available as ambient material (for option filtering). */
+/**
+ * Letters available as ambient material (for option filtering).
+ *
+ * Read off `base.letters` — the SAME field {@link ambientBaseForLetter} matches
+ * on, deliberately. The two used to disagree in principle: this set was built
+ * from `base.edges[].letter` while the reverse lookup scanned `base.letters`,
+ * so a registry entry whose edges and letters ever drifted apart would have
+ * admitted a letter no base could then own, and the combinator would have
+ * filtered a step IN and immediately failed to tag it. One field, one answer.
+ * (`base-sequence-registry.test.ts` also pins edges and letters to agree, which
+ * makes the drift unreachable — this makes it harmless as well.)
+ */
 export function ambientLetterSet(): ReadonlySet<Letter> {
   const letters = new Set<Letter>();
   for (const base of ambientEligibleBases())
-    for (const e of base.edges) letters.add(e.letter);
+    for (const letter of base.letters) letters.add(letter);
   return letters;
 }
 
