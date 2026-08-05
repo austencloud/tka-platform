@@ -4233,6 +4233,73 @@
     border-radius: 0.6rem;
   }
 
+  /* The collection catalog is the one editor with an UNBOUNDED option count
+     (every collection you own or follow), so it scrolls from the top instead
+     of centring a list that is taller than its box — centring an overflowing
+     list hides its first rows above the scroll origin. */
+  .drill-ctx.adaptive-value-layout .screen-collections > .value-list {
+    flex: 0 0 auto;
+    align-content: start;
+  }
+
+  @container drill (max-width: 639.98px) {
+    /* One column: collection names are long and the curator line is the
+       second half of the identity. The generic two-up 44px rows crushed both. */
+    .drill-ctx.adaptive-value-layout .screen-collections > .value-list {
+      grid-template-columns: minmax(0, 1fr);
+      grid-auto-rows: minmax(44px, auto);
+      gap: 0.35rem;
+    }
+
+    .drill-ctx.adaptive-value-layout .screen-collections .length-row.monument {
+      height: auto;
+      min-height: 44px;
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 0.6rem;
+      padding: 0.35rem 0.6rem;
+      border-radius: 0.75rem;
+      text-align: left;
+    }
+
+    .drill-ctx.adaptive-value-layout .screen-collections .value-main {
+      align-items: stretch;
+      gap: 0.2rem;
+    }
+
+    .drill-ctx.adaptive-value-layout .screen-collections .loop-icon {
+      width: 2rem;
+      font-size: 1.1rem;
+    }
+
+    .drill-ctx.adaptive-value-layout
+      .screen-collections
+      .value-img.collection-cover {
+      width: 2rem;
+      height: 2rem;
+    }
+
+    .drill-ctx.adaptive-value-layout .screen-collections .value-label,
+    .drill-ctx.adaptive-value-layout .screen-collections .value-count {
+      font-size: var(--font-size-compact, 12px);
+    }
+
+    .drill-ctx.adaptive-value-layout .screen-collections .value-desc {
+      font-size: 0.66rem;
+      line-height: 1.2;
+    }
+
+    .drill-ctx.adaptive-value-layout .screen-collections .density-bar {
+      max-width: none;
+      height: 4px;
+      margin-inline: 0;
+    }
+
+    .drill-ctx.adaptive-value-layout .screen-collections .value-count {
+      margin-left: auto;
+    }
+  }
+
   /* ── Split pane (LAST: must outrank every tier above) ──────────── */
   /* Split pane: the editor is a COLUMN under the catalog, not a stage of its
      own. Vertically centering a short option set there opens a hole under the

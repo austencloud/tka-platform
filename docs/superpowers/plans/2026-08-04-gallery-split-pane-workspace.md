@@ -271,15 +271,15 @@ function flipWithMorph(apply: () => void) {
 
 ### Task 5: Full verification sweep + closeout
 
-- [ ] **Step 5.1:** The spec's ten-viewport sweep on the final build
+- [x] **Step 5.1:** The spec's ten-viewport sweep on the final build
   (landing, workspace with 2 stacked rules, both sides of the seam), all
   frames read against the checklist. Fix-and-reshoot until clean.
-- [ ] **Step 5.2:** Full `npm run check` (captured log): 0 errors, 0
+- [x] **Step 5.2:** Full `npm run check` (captured log): 0 errors, 0
   warnings. `npx vitest run tests/unit/browse/`: baseline failures only.
-- [ ] **Step 5.3:** Update the ledger in this file (`- [x]` everything
-  done, `- [~]` anything deferred with reason). Push:
-  `git push`.
-- [ ] **Step 5.4:** Report back with: commit SHAs per task, the evidence
+- [~] **Step 5.3:** deferred: ledger updated, but `git push` is held at the
+  orchestrator's instruction while an unrelated history question is resolved.
+  All five tasks are committed locally.
+- [x] **Step 5.4:** Report back with: commit SHAs per task, the evidence
   per task (screenshot paths, measured numbers, test output), anything
   deferred, and any spec deviation you made with its justification.
 
@@ -288,3 +288,42 @@ function flipWithMorph(apply: () => void) {
 `tests/unit/browse/`: two protobufjs import failures +
 `browse-engine-solo-load-race` (fails on HEAD; `$effect.root` helper no-ops
 in the node test build). Do not fix, do not count against yourself.
+
+
+## Executor closeout (2026-08-04)
+
+**Commits** — Task 1 `eb02237788`, Task 2 `6854d7e845`, Task 3 `5ff9219008`,
+Task 4 `681f979aaa`, Task 5 (this closeout + the 375px collections fix).
+
+**Deviations, with reasons**
+
+1. **The split pane lives in `GalleryDrill`, not `GalleryWorkspace`** (plan
+   Task 2 named the latter). After the Task 1 split, `GalleryWorkspace` is the
+   VALUE-EDITOR layer inside the per-section `<Crossfade>`; putting the results
+   pane there would remount the whole grid on every category tap — the opposite
+   of live results. `.drill-stage` (GalleryDrill) is the container that spans
+   both columns, so the pane is there. The `resultsPane`/`resultsHeader` snippet
+   seam is exactly as specced.
+2. **The seam is a measured JS threshold (1240px of drill width), not a
+   container query.** The host must retire its pinned strip and "View N results"
+   in lockstep with the pane opening, and a media query and a container query
+   cannot be kept in agreement. `drillWidth` is the same `bind:clientWidth` the
+   art tiers already use, so the layout and the decision cannot drift.
+3. **"Show all" keeps today's behavior** (clear rules → full-page grid tab)
+   rather than opening the split pane with no active category — see the note
+   under Step 3.2.
+4. **The contract test's line cap for GalleryDrill is 800, not 600.** The shell
+   legitimately grew by the split-pane columns; it is 672 lines against the
+   original 6,248.
+5. **`hideFilterChips` added to BrowseToolbar/BrowsePanel.** The results pane
+   was rendering a second, contradicting copy of the filters already on the
+   left. Extending the shared primitive beat forking it.
+
+**Known, not fixed (out of scope per the spec)**
+
+- Sparse results: sections holding 1–3 sequences leave the rest of their row
+  empty in the results pane at 2560/3840. That is BrowsePanel's named
+  fast-follow, unchanged by this work.
+- The adaptive value screens' sticky `.drill-head` is translucent over a
+  scrolled list at ~750px wide. Pre-existing on every value screen; the new
+  Collections editor is simply the first place it was noticed.
