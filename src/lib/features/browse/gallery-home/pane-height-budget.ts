@@ -96,6 +96,18 @@ export function heightBudget(node: HTMLElement, _key?: unknown) {
       return;
     }
     need += (blocks - 1) * (Number.parseFloat(style.rowGap) || 0);
+    // The value is consumed as the STAGE's flex-basis, and the stage is
+    // border-box with its own panel padding. Without adding it back the last
+    // row loses exactly that much and gets clipped along its bottom edge.
+    const stage = screen.closest<HTMLElement>(".drill-editor-stage");
+    if (stage) {
+      const box = getComputedStyle(stage);
+      need +=
+        (Number.parseFloat(box.paddingTop) || 0) +
+        (Number.parseFloat(box.paddingBottom) || 0) +
+        (Number.parseFloat(box.borderTopWidth) || 0) +
+        (Number.parseFloat(box.borderBottomWidth) || 0);
+    }
     node.style.setProperty("--editor-need", `${Math.ceil(need)}px`);
   }
 

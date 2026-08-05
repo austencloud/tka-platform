@@ -942,43 +942,38 @@ Austen captured a persistent overlap after filtering: the `C` section header
 started inside the preceding 16-step `A` card. Refreshing repaired it.
 
 The motion exposed a stale virtualizer cache rather than a stacking-context
-problem:
+problem. The failure had two stages:
 
 1. `SectionedVirtualGrid` positions every item absolutely from TanStack's
    measured `VirtualItem.start`.
-2. The virtualizer used TanStack's default numeric index key, even though the
-   flattened stream already carries data keys. Filtering could therefore put an
-   unrelated row at an index that still owned the previous row's measured size.
-3. The recreation signature contained only item count and column count. An
-   equal-count result change kept the old cache.
-4. Row height depends on step count. At the same card width, the current layout
-   calculation makes a 16-step card about 57.5% taller than an 8-step card. A
-   cached 8-step size places the next header inside the new 16-step card.
+2. Row height depends on step count. At the same card width, the current layout
+   calculation makes a 16-step card about 57.5% taller than an 8-step card.
+3. Numeric item keys and a count-only recreation signature could carry a short
+   row's cached size into a different result stream.
+4. The transition's synchronous stabilization produced correct offsets, but
+   the list `ResizeObserver` ran one frame later and called TanStack's
+   `measure()`. That cleared the real heights and left the grid at estimates
+   without measuring the still-mounted nodes again. Live instrumentation caught
+   the A row moving from the correct `translateY(30px)` / 389px reservation back
+   to the stale 257px reservation after the transition callback returned.
 
 Implemented safeguards:
 
 - [x] Give TanStack each flattened item's stable data key through `getItemKey`.
 - [x] Build a measurement signature from item order, row maximum step count,
   column count, and start-position layout.
-- [x] Invalidate cached measurements in `$effect.pre`, before the View
-  Transition captures the new frame, then retain the next-frame DOM measurement
-  as the pixel correction.
+- [x] Stabilize mounted virtual rows inside the View Transition update callback,
+  before Chrome captures the new frame.
+- [x] Pair every width-driven `measure()` reset with a mounted-node remeasurement
+  on the next frame, so the resize observer cannot strand estimate-only offsets.
 - [x] Add focused regression coverage for equal-count short-to-tall replacement,
-  persistent mixed-height rows, layout changes, and data keys. Result: 4/4.
-- [ ] Reproduce Austen's filter path interactively and prove adjacent virtual
-  items do not overlap during or after the transition. Browser clicks still
-  require explicit permission in the current conversation.
-
-### Note on browser tooling
-
-The chrome-devtools MCP server disconnected during this session. If it is
-still unavailable, drive Chrome over CDP directly: the shared debug browser
-is on port 9222 (`scripts/launch-chrome-debug.ps1`), and a small Node script
-using the built-in WebSocket plus `Emulation.setDeviceMetricsOverride`,
-`Runtime.evaluate`, and `Page.captureScreenshot` is a proven pattern in this
-repo (a prior session built exactly this when the MCP dropped). Put it in the
-scratchpad, not the repo. Verification is not optional because a tool
-disconnected.
+  persistent mixed-height rows, layout changes, data keys, and transition
+  stabilization ordering. Result: 6/6.
+- [x] Reproduce Austen's exact `12 step sequence or C2C - Down the Road` filter
+  path interactively. C2C off/on measured zero overlaps at 1.2s and again at
+  3.5s; 1920, 2560, and 3840 split-pane captures stayed clear. The 1440,
+  820x1180, 960x412, and 375x667 step-through layouts had zero horizontal
+  overflow.
 
 ---
 
@@ -1313,19 +1308,173 @@ from a fresh load) and compare the measured column count, row heights, and
 
 ### Steps
 
-- [ ] **Step 10.1 — reproduce both, with numbers.** For 10B, the arrival-path
+- [x] **Step 10.1 — reproduce both, with numbers.** For 10B, the arrival-path
   table above (≥4 paths × column count / row height / `--editor-need`). For 10A,
   per-card child-vs-card rect comparison on the Collections screen.
-- [ ] **Step 10.2 — fix 10A.** Content inside the card at 1920 / 2560 / 3840.
-- [ ] **Step 10.3 — fix 10B at the source.** Same composition regardless of
+- [x] **Step 10.2 — fix 10A.** Content inside the card at 1920 / 2560 / 3840.
+- [x] **Step 10.3 — fix 10B at the source.** Same composition regardless of
   arrival path; no row of one on LOOPs (or any screen — check all ten).
-- [ ] **Step 10.4 — sweep for the same two classes across all ten value
+- [x] **Step 10.4 — sweep for the same two classes across all ten value
   screens.** (a) any child element whose rect escapes its card's rect;
   (b) any screen whose last row holds exactly one item. Measure, do not
   eyeball: compare `getBoundingClientRect()` of each card's children against
   the card, and group cards by `Math.round(rect.top)` to count rows. Report
   what you CHECKED, not only what you changed.
-- [ ] **Step 10.5 — verify + commit.** Before/after screenshots of Collections
+- [x] **Step 10.5 — verify + commit.** Before/after screenshots of Collections
   and LOOPs at 2560 read side by side. `npm run check`: 0 errors, 0 warnings.
   `npx vitest run tests/unit/browse/`: only the 2 protobufjs suites failing.
   Do NOT raise the GalleryDrill line cap. Explicit pathspecs. Do NOT push.
+
+## Task 10 closeout (2026-08-05)
+
+**Tooling.** chrome-devtools MCP still disconnected; everything below was driven
+over raw CDP on :9222 (`Emulation.setDeviceMetricsOverride` at w×1.1 by h×1.1,
+dpr 1.1, `Runtime.evaluate`, `Page.captureScreenshot` webp/70), scripts in the
+scratchpad. Two automation notes for the next session: the browse module
+restores its last tab (Library) and fights `/browse/gallery`, so click the
+"Gallery" section button until a gallery surface is mounted; and the flex-basis
+transition is 0.24s, so sample the pane twice and only trust two consecutive
+agreeing reads — a single read lands mid-transition and reports a stage height
+that belongs to the previous screen.
+
+### 10.1 — the before numbers
+
+**10B: LOOPs by arrival path, 2560×1440 (before).** The composition changed with
+every path. Column count was always 2 and the last row always held one card, but
+the height allocation was different every time:
+
+| Arrival | `--editor-need` | stage | row height | catalog | tile |
+|---|---|---|---|---|---|
+| fresh load | 1010px | 1022 | 221 | 371 | 79 |
+| from Grid mode | 634px | 688 | 137 | 705 | 163 |
+| from Timing & Direction | 655px | 707 | 142 | 687 | 158 |
+| from Collections | 878px | 905 | 192 | 488 | 109 |
+| from Length | 580px | 640 | 125 | 753 | 175 |
+| from Start position | 634px | 688 | 137 | 705 | 163 |
+
+At 1920 the same table is uniform (750px everywhere) — the column is short
+enough that every path saturates, which is why the defect only shows on wide
+screens.
+
+**10A: Collections per-card child-vs-card rects, 2560, 736px column.** Grid
+`minmax(84px, 224px)`, 16 collections, 8 rows, list 777 in a 788 scroll box.
+Every card measured 91px while its content needed 92–105:
+
+| child | offset vs card top | offset vs card bottom |
+|---|---|---|
+| `.loop-icon` (folder / sparkle) | **+2 above** | −68 |
+| `.value-main` | +30 | −28 |
+| `.value-count` | −69 | **+2 below** |
+
+48 escaping child rects across the 16 cards. Cards carrying a curator line
+(`C2C - Down the Road`) need ~105px and spilled further; with an 8px row gap the
+glyph of one row and the count of the row above land in the same gap, which is
+the "rows overlapping" Austen saw.
+
+### Root cause of the staleness (10B)
+
+Not the Crossfade. **The measurement was circular.** A grid track written
+`minmax(a, b)` is *maximised* into whatever free space its container has before
+`align-content` ever runs, so `.value-list` was exactly as tall as the stage let
+it be — and the stage's flex-basis was `--editor-need`, which the budget read
+back off that same list. Every allocation is a fixed point of that loop, and
+which one you land on is whichever screen you arrived from. The file's own
+header comment asserted the opposite ("the measurement is invariant to the zone
+height it feeds"); it was wrong.
+
+`pane-height-budget.ts` now measures a grid block from quantities the allocation
+cannot move: the number of ROWS its items occupy (row assignment follows the
+column count and spans, never the row heights) times the track's own ceiling,
+floored per row by that row's content. Non-grid blocks keep the content-height
+path. It also adds the stage's own padding and border, because the value is
+consumed as the border-box stage's flex-basis and without it the last row lost
+exactly that much off its bottom edge.
+
+**After: 5 screens × 7 arrival paths each, all identical.** LOOPs 1036px from a
+fresh load and from Grid mode, T&D, Collections, Length, Start position and
+Starting letter. Same for Collections (1964px), Level (532px), Start position
+(532px), Timing & Direction (572px).
+
+### 10.2 / 10.3 — what changed
+
+1. **`grid-auto-rows` minimum is `min-content`, not a fixed length**
+   (`--pane-row-fit`), for the screens whose cards are a stack of text plus a
+   fixed glyph: collections, LOOPs, creator, level, length, max turns, letter.
+   A row can no longer be shorter than what it holds. The numeric floor moved
+   onto the card as `min-height`, where it still holds short cards open but
+   cannot crush a tall one.
+   **The art-led screens opt out deliberately** — start position, grid mode and
+   T&D size their art as a PERCENTAGE of the card, and a percentage cannot
+   resolve during min-content sizing: it falls back to the pictograph's
+   intrinsic height and inflates the floor to a height the column never had.
+   Measured: with them included, Start position at 1920 went from 546/546 to
+   546/1000 and T&D from 410/410 to 499/774. With them excluded, both are back
+   to no scroll and their art still scales with the card.
+2. **LOOPs pins two columns at `@container drill (min-width: 640px)` and spans
+   its last card when the index is odd.** Seven into two strands Rewound alone
+   (`4k-native-layout.md` rule 2). Pinning the count is what makes the
+   `:last-child:nth-child(odd)` test provably correct rather than a guess about
+   whatever tier happened to apply. Same trick as the catalog's eleventh tile.
+   Measured after: 7 cards, 4 rows, last card 711px wide in a 711px list.
+3. **Letter glyphs get `fitToParent`.** `W-` (and the other dashed letters) were
+   wider than their chip at the glyph's natural aspect and bled 12–44px past the
+   tile's right edge at every viewport, including below the seam.
+
+### 10.4 — the sweep, all ten value screens × three viewports
+
+Method: `getBoundingClientRect()` of every descendant of every card compared
+against the card's own rect (a spill is only counted when nothing between the
+child and the card clips it), and cards grouped by `Math.round(rect.top)` to
+count rows, with the last row's width compared against the list's to tell an
+orphan from a deliberate span.
+
+**(a) Escaping children — 3 classes found, all fixed:**
+
+| Screen | Before | Where |
+|---|---|---|
+| Collections | 48 escapes @2560 | folder/sparkle +2 above, count +2 below (10A) |
+| Starting letter | 8 @2560, 4 @1920, 44 @3840 | dashed glyphs +12/+2/+44 past the right edge |
+| Level | 9 @1920 | `SequencePeek` +12 above and below the tile |
+
+**Checked and NOT a defect:** Creator showed 49 rect escapes at 2560 and 3840
+(the peek fan +56 to +65 above the card). `.creator-row { overflow: hidden }`
+clips every one of them, so nothing paints outside the card. The clipping-aware
+detector no longer reports it; the fan now also fits inside the card outright,
+because the creator rows grew under the `min-content` floor.
+
+**After: 0 escaping children on all ten screens at 1920, 2560 and 3840**, and 0
+on the letter grid below the seam at 960×412, 375×667 and 820×1180.
+
+**(b) Rows of one — one found, one fixed.** LOOPs at 2560 and 3840 (2 columns,
+last row 1 card). Everything else with more than one column ends on a full or
+part-full row: Level 3/3, Length 5 then 3, Starting letter 8 then 6, Start
+position 3/3, Grid mode 2/2, Creator 2/2, T&D 3/3, Collections 2/2.
+Single-column layouts (Level, Start position, LOOPs, Creator, Collections and
+Max turn intensity at 1920) are not orphans — there is no second column to
+strand against.
+
+### 10.5 — after numbers
+
+Every screen's last card sits inside the stage except where the list genuinely
+overflows the column, which scrolls: at 2560 only Creator (172px) and
+Collections (28px); at 3840 none; at 1920 Level (108), LOOPs (123), Creator
+(165) and Collections (260) — the 1920 column is ~1046px tall and those lists
+have 3–16 rows.
+
+- `npm run check`: **0 errors, 0 warnings.**
+- `npx vitest run tests/unit/browse/`: 87 passed, 2 suites failed — the
+  documented protobufjs baseline (`canonical-tnd-author`, `founding-collections`).
+- `gallery-drill-split-contract.test.ts`: 5/5. **Line cap not raised**;
+  GalleryDrill is unchanged at 855 lines.
+
+### Known, not fixed
+
+- **The catalog collapses to its compact rows (54px tiles) on Collections and
+  Creator** at 2560 and 3840. Those screens now ask for their full ceiling, the
+  catalog is already at its natural minimum, and the editor takes the rest.
+  That is the budget working as designed — the editor genuinely needs the height
+  — but it is the biggest visible change outside the two defects.
+- **Level at 1920 scrolls further than it did** (108px hidden vs 23px). Its
+  cards grew from ~165px to ~218px so the `SequencePeek` fits inside the tile
+  instead of spilling 12px out of it; three of those do not fit a 1046px column.
+- The 4K@100% root ramp remains Task 7.6's open item.
