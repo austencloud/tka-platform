@@ -66,9 +66,11 @@ describe("GalleryDrill split contract", () => {
     }
 
     // The shell owns the drill root, the search field, the band and the split
-    // pane's two columns — plus a ~120-line documented prop seam. It was 6,248
-    // lines; anything approaching that again means the split leaked.
-    expect(source.split("\n").length).toBeLessThan(800);
+    // pane's two columns — plus a ~130-line documented prop seam and (since
+    // 2026-08-05) the show-all pane state and the workspace's unified panel
+    // surface. It was 6,248 lines; anything approaching that again means the
+    // split leaked.
+    expect(source.split("\n").length).toBeLessThan(900);
   });
 
   it("landing and workspace CSS do not overlap", () => {

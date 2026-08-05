@@ -247,6 +247,12 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   // pinned strip and "View N results" belong to the step-through flow only;
   // with the grid on screen they are noise (and a second, contradicting count).
   let splitPaneActive = $state(false);
+  // Wide enough for live results even while the editorial landing is up. "Show
+  // all" reads this to decide between opening the pane and ejecting to the grid.
+  let splitCapable = $state(false);
+  // Bound into the drill: opens its pane on the full live grid with no active
+  // category (the destination "Show all" / "View N results" used to eject to).
+  let showAllPane = $state(false);
   const appliedValueKeys = $derived(
     new Set(
       [...engine.activeFilters.values()]
@@ -658,11 +664,13 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
 {/snippet}
 
 {#snippet resultsPane()}
+  <!-- The toolbar keeps its own search: the gallery's page-top search bar is
+       gone (2026-08-05), so THIS is the search, and it narrows the live grid in
+       place instead of ejecting to the full-page tab. -->
   <BrowsePanel
     {engine}
     layout="compact"
     showFilterBar={false}
-    hideToolbarSearch
     hideFilterChips
     onSelect={(sequence, variations) =>
       eventHandlerService?.handleSequenceAction(
@@ -729,7 +737,13 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
                   <div class="strip-actions">
                     <PanelButton
                       variant="primary"
-                      onclick={() => applyToGrid(() => {})}
+                      onclick={() => {
+                        // Above the seam this opens the workspace's own live
+                        // pane; the gallery never hands a desktop user to the
+                        // "Start here" screen. Below it, today's grid tab.
+                        if (splitCapable) showAllPane = true;
+                        else applyToGrid(() => {});
+                      }}
                     >
                       View {engine.resultCount} results
                     </PanelButton>
@@ -808,15 +822,19 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
                       if (key) engine.removeFilter(key);
                     }
                   }}
-                  onShowAll={() => applyToGrid(() => engine.clearUserFilters())}
-                  onSearch={(q) =>
-                    applyToGrid(() => {
-                      engine.clearUserFilters();
-                      engine.setSearch(q);
-                    })}
+                  onShowAll={() => {
+                    // Above the seam the drill opens its own pane on the full
+                    // live grid; the gallery's own flows never land on the
+                    // "Start here" screen at desktop widths. Below it, today's
+                    // hand-off to the full-page grid.
+                    if (splitCapable) engine.clearUserFilters();
+                    else applyToGrid(() => engine.clearUserFilters());
+                  }}
                   {ruleCounts}
                   collections={collectionOptions}
                   onSplitPaneChange={(active) => (splitPaneActive = active)}
+                  onSplitCapableChange={(capable) => (splitCapable = capable)}
+                  bind:showAllPane
                   {resultsHeader}
                   {resultsPane}
                 />

@@ -127,6 +127,15 @@
     /** Fires when the split pane opens or closes, so the host can retire its
      * own pinned rule strip and "View N results" button while it is live. */
     onSplitPaneChange?: (active: boolean) => void;
+    /** Fires when the surface becomes (or stops being) wide enough to render
+     * results live — true even while the editorial landing is on screen. The
+     * host uses it to keep "Show all" inside the workspace instead of ejecting
+     * to the full-page grid. */
+    onSplitCapableChange?: (capable: boolean) => void;
+    /** Bindable: open the pane on the full live grid with no active category.
+     * "Show all" sets it from inside; a host can set it to bring the user into
+     * the workspace instead of ejecting to the full-page grid tab. */
+    showAllPane?: boolean;
   }
   let {
     pool = [],
@@ -161,6 +170,8 @@
     resultsHeader,
     ruleCounts,
     onSplitPaneChange,
+    onSplitCapableChange,
+    showAllPane = $bindable(false),
   }: Props = $props();
 
   const shouldPersistSection = persistSection ?? variant === "page";
@@ -260,11 +271,23 @@
   // clientWidth binding the art tiers use, so the JS decision and the layout
   // can never disagree the way a media query and a container query would.
   const SPLIT_SEAM = 1240;
-  const splitPane = $derived(
-    Boolean(resultsPane) && !showLanding && drillWidth >= SPLIT_SEAM
-  );
+  /** "Show all" above the seam opens the pane with NO active category: the
+   * catalog on the left, the whole live grid on the right. Without this flag
+   * the pane is keyed to an open value editor and Show all had nowhere to go
+   * but the old full-page grid tab. Cleared on any return to the landing. */
+  const splitCapable = $derived(Boolean(resultsPane) && drillWidth >= SPLIT_SEAM);
+  const splitPane = $derived(splitCapable && (!showLanding || showAllPane));
   $effect(() => {
     onSplitPaneChange?.(splitPane);
+  });
+  $effect(() => {
+    onSplitCapableChange?.(splitCapable);
+  });
+  // The pane is a wide-screen shape. Dragging below the seam (or a host that
+  // never passes a results pane) must not strand the user on a category grid
+  // with no way back to the landing.
+  $effect(() => {
+    if (!splitCapable && showAllPane) showAllPane = false;
   });
 
   // ── The landing ↔ workspace morph ───────────────────────────────────────
@@ -295,12 +318,55 @@
     });
   }
 
-  /** Enter a value editor. Morphs when it crosses the landing boundary. */
+  /** Enter a value editor. Morphs when it crosses the landing boundary.
+   *
+   * Deliberately NOT morphed for a category switch inside the pane: the app
+   * disables `::view-transition-old/new(root)` globally
+   * (`shared/transitions/view-transitions.css`), so a switch that moves no
+   * NAMED element animates nothing and only buys a ~124ms capture freeze. The
+   * per-section `<Crossfade>` already carries that swap. */
   function goToSection(next: Section): void {
     const crossesLanding =
       (section === "chooser") !== (next === "chooser") && !unifiedFilterChooser;
-    if (crossesLanding) flipWithMorph(() => (section = next));
-    else section = next;
+    const apply = () => {
+      if (next === "chooser") showAllPane = false;
+      section = next;
+    };
+    if (crossesLanding) flipWithMorph(apply);
+    else apply();
+  }
+
+  /** "Show all" — above the seam it opens the workspace pane with no rules and
+   * the full live grid; below it, today's hand-off to the full-page grid. The
+   * host clears the rules either way (it reads `onSplitCapableChange`). */
+  function handleShowAll(): void {
+    if (!splitCapable) {
+      onShowAll?.();
+      return;
+    }
+    // Clear INSIDE the transition so the browser's "after" capture already has
+    // the full grid — otherwise the rules drop a frame later and the results
+    // repaint outside the morph.
+    flipWithMorph(() => {
+      showAllPane = true;
+      section = "chooser";
+      onShowAll?.();
+    });
+  }
+
+  /** Wrap a live-results mutation so the grid animates instead of popping.
+   *
+   * This is the animation Austen was missing (diagnosed 2026-08-05). The
+   * landing↔workspace morph fires on a path a working user almost never takes —
+   * the section is restored from sessionStorage, so a reload lands straight in
+   * the workspace and every move from there is a rail tap. Meanwhile the
+   * biggest change on screen, a filter narrowing the results from 1412 cards to
+   * 288, happened with no transition at all. Every card already carries a
+   * `sequence-<id>` view-transition name, so one wrapped mutation makes the
+   * grid rearrange instead of blink. Measured: ready 347ms, settled 657ms. */
+  function withResultsMorph(apply: () => void): void {
+    if (splitPane) flipWithMorph(apply);
+    else apply();
   }
 
   function submitSearch(event: Event) {
@@ -317,32 +383,49 @@
     label: string,
     color?: string
   ) {
-    if (onToggleValue) {
-      onToggleValue(type, value, label, color, !(isValueApplied?.(type, value) ?? false));
-    } else {
-      onApply(type, value, label, color);
-    }
+    withResultsMorph(() => {
+      if (onToggleValue) {
+        onToggleValue(
+          type,
+          value,
+          label,
+          color,
+          !(isValueApplied?.(type, value) ?? false)
+        );
+      } else {
+        onApply(type, value, label, color);
+      }
+    });
   }
 
   function pickLoop(v: { value: string; label: string; color: string }) {
-    if (onToggleLoop) {
-      onToggleLoop(v.value, v.label, v.color, !(activeLoopValues?.has(v.value) ?? false));
-    } else {
-      onApply(BrowseFilterType.LOOP_TYPE, v.value, v.label, v.color);
-    }
+    withResultsMorph(() => {
+      if (onToggleLoop) {
+        onToggleLoop(
+          v.value,
+          v.label,
+          v.color,
+          !(activeLoopValues?.has(v.value) ?? false)
+        );
+      } else {
+        onApply(BrowseFilterType.LOOP_TYPE, v.value, v.label, v.color);
+      }
+    });
   }
 
   function pickFamily(v: { value: string; label: string; color: string }) {
-    if (onToggleFamily) {
-      onToggleFamily(
-        v.value,
-        v.label,
-        v.color,
-        !(activeFamilyValues?.has(v.value) ?? false)
-      );
-    } else {
-      onApply(BrowseFilterType.TND_FAMILY, v.value, v.label, v.color);
-    }
+    withResultsMorph(() => {
+      if (onToggleFamily) {
+        onToggleFamily(
+          v.value,
+          v.label,
+          v.color,
+          !(activeFamilyValues?.has(v.value) ?? false)
+        );
+      } else {
+        onApply(BrowseFilterType.TND_FAMILY, v.value, v.label, v.color);
+      }
+    });
   }
 
   /** One tile handler for all three compositions: open an editor, apply a
@@ -432,20 +515,30 @@
          the editors compose exactly as they do on a narrow screen — art
          preserved, never shrunk to chips (spec Risk 1). -->
     {#if splitPane}
-      <div class="pane-left" bind:clientWidth={paneWidth}>
+      <div
+        class="pane-left"
+        bind:clientWidth={paneWidth}
+      >
         <CategoryRail
           {catalog}
           {section}
           layout="catalog"
           {ruleCounts}
-          morph={!showLanding}
+          morph
+          fill={showLanding}
           onselect={selectCategory}
         />
-        <div class="drill-editor-stage">
-          <Crossfade key={section} duration={DURATION.normal} fill>
-            {@render workspaceScreen()}
-          </Crossfade>
-        </div>
+        {#if showLanding}
+          <!-- Entered via "Show all": the catalog IS the left column and the
+               whole live grid is the point. No value editor to stage. -->
+          <p class="pane-idle">Pick a category above to narrow it down.</p>
+        {:else}
+          <div class="drill-editor-stage">
+            <Crossfade key={section} duration={DURATION.normal} fill>
+              {@render workspaceScreen()}
+            </Crossfade>
+          </div>
+        {/if}
       </div>
       <div class="pane-right">
         {#if resultsHeader}
@@ -487,7 +580,7 @@
               glyphHeight={landingGlyphHeight}
               morph={showLanding}
               onOpenSection={goToSection}
-              {onShowAll}
+              onShowAll={onShowAll ? handleShowAll : undefined}
               onSelectCategory={selectCategory}
             />
           {:else}
@@ -589,19 +682,45 @@
     container-type: inline-size;
     container-name: drill;
   }
+  /* ONE surface for the whole workspace. The results pane used to be a near
+     opaque 96% panel while the filters beside it sat directly on the animated
+     page background — two products side by side (Austen, 2026-08-05). All three
+     zones now share the same token and the same translucency, so the pane reads
+     as the third panel of one system rather than a window into another app. */
+  .drill.split-pane .pane-left :global(.desktop-filter-catalog.catalog-layout),
+  .drill.split-pane .pane-left .drill-editor-stage,
+  .pane-right {
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 1.1rem;
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #11131a) 72%,
+      transparent
+    );
+  }
+  .drill.split-pane .pane-left :global(.desktop-filter-catalog.catalog-layout) {
+    padding: 0.75rem;
+  }
+  .drill.split-pane .pane-left .drill-editor-stage {
+    padding: 0.75rem;
+  }
+  /* No category open (entered via "Show all"): the catalog IS the column. An
+     empty editor panel below it would just be a large blank card, so the tiles
+     take the height instead — the whole left column becomes the affordance. */
+  .pane-idle {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0.25rem 0.5rem;
+    color: var(--theme-text-muted, #9aa6b8);
+    font-size: 0.9rem;
+    text-align: center;
+  }
   .pane-right {
     display: flex;
     flex-direction: column;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 1.1rem;
-    background: color-mix(
-      in srgb,
-      var(--theme-panel-bg, #11131a) 96%,
-      transparent
-    );
   }
   .pane-results-header {
     display: flex;
@@ -625,7 +744,12 @@
      2600px the column crosses its own 640px container seam, so every value
      editor moves up a composition tier (2–3 cards across, larger art) instead
      of staying phone-shaped inside a huge screen. */
-  @container drill (min-width: 2600px) {
+  /* 2300 of drill width, not 2600: a 4K panel at 150% scaling is a ~2470px
+     drill, which the old seam missed entirely — exactly the failure
+     `4k-native-layout.md` names (a single high tier that never fires on the
+     setups people actually use). The column crosses its own 640px container
+     seam here, so every value editor steps up a composition tier with it. */
+  @container drill (min-width: 2300px) {
     .drill.split-pane .drill-stage {
       grid-template-columns: minmax(40rem, 46rem) minmax(0, 1fr);
       gap: 1.5rem;
@@ -700,7 +824,11 @@
         gap: 1rem;
       }
 
-      .drill.persistent-desktop-catalog:not([data-section="chooser"])
+      /* The split pane declares its own unified surface above — this legacy
+         96%-opaque panel is the persistent-rail composition only. */
+      .drill.persistent-desktop-catalog:not(.split-pane):not(
+          [data-section="chooser"]
+        )
         .drill-editor-stage {
         padding: 0.25rem;
         border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));

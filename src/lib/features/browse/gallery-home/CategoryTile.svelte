@@ -129,8 +129,12 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: var(--theme-text, #e8edf6);
     cursor: pointer;
+    /* Background and shadow ride the same curve as the border: selecting a
+       category used to snap its highlight on with no motion at all. */
     transition:
       border-color 0.16s ease,
+      background-color 0.16s ease,
+      box-shadow 0.16s ease,
       transform 0.16s ease;
   }
   .mini-tile:hover {
@@ -306,12 +310,15 @@
   }
 
   /* ── Composition: split-pane catalog ───────────────────────────── */
-  /* Compact labeled rows, two per column-row, above the value editor. */
+  /* Compact labeled rows, two per column-row, above the value editor.
+     Sized in rem so the tier steps below move the whole tile together. The
+     44px touch floor is a FLOOR, not the design height — a row pinned to it
+     reads as a smushed strip (Austen, 2026-08-05). */
   .mini-tile.catalog {
-    min-height: 44px;
-    gap: 0.45rem;
-    padding: 0.4rem 0.5rem;
-    border-radius: 0.7rem;
+    min-height: 3.4rem;
+    gap: 0.55rem;
+    padding: 0.55rem 0.65rem;
+    border-radius: 0.8rem;
   }
   .mini-tile.catalog:hover {
     transform: none;
@@ -326,19 +333,24 @@
     box-shadow: inset 3px 0 0 var(--theme-accent, #6366f1);
   }
   .mini-tile.catalog .mini-art {
-    width: 1.75rem;
-    min-width: 1.75rem;
-    height: 1.75rem;
-    border-radius: 0.5rem;
-    font-size: 0.85rem;
+    width: 2.1rem;
+    min-width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 0.55rem;
+    font-size: 0.95rem;
   }
+  /* `stretch`, not `flex-start`: a flex-start column sizes the title to its own
+     text, so it overflows the shrunken column instead of ellipsing (the two
+     longest labels spilled past the tile border at 4K). The title is already
+     text-align: left, so stretching changes nothing visually. */
   .mini-tile.catalog .mini-main {
+    min-width: 0;
     flex: 1 1 auto;
-    align-items: flex-start;
+    align-items: stretch;
   }
   .mini-tile.catalog .mini-title {
     overflow: hidden;
-    font-size: 0.85rem;
+    font-size: 0.88rem;
     line-height: 1.15;
     text-align: left;
     text-overflow: ellipsis;
@@ -348,15 +360,114 @@
   .mini-tile.catalog .mini-sub {
     display: none;
   }
-  .mini-tile.catalog .element-dot {
-    width: 6px;
-    height: 6px;
+
+  /* Catalog tier steps. The catalog's container is the ~440px left COLUMN, so
+     `@container drill` queries here resolve against the column and never fire —
+     the tiles have to step off the viewport instead. 1680 is the site-wide
+     big-screen seam (`.claude/rules/4k-native-layout.md`); 2600 is where the
+     column itself widens and the tile can carry real weight. */
+  @media (min-width: 1680px) {
+    .mini-tile.catalog {
+      min-height: 4rem;
+      gap: 0.65rem;
+      padding: 0.7rem 0.8rem;
+      border-radius: 0.9rem;
+    }
+    .mini-tile.catalog .mini-art {
+      width: 2.4rem;
+      min-width: 2.4rem;
+      height: 2.4rem;
+      font-size: 1.05rem;
+    }
+    .mini-tile.catalog .mini-title {
+      font-size: 0.95rem;
+    }
+  }
+  @media (min-width: 2600px) {
+    .mini-tile.catalog {
+      min-height: 5.25rem;
+      gap: 0.85rem;
+      padding: 0.9rem 1.05rem;
+      border-radius: 1.1rem;
+    }
+    .mini-tile.catalog .mini-art {
+      width: 3.1rem;
+      min-width: 3.1rem;
+      height: 3.1rem;
+      font-size: 1.35rem;
+    }
+    .mini-tile.catalog .mini-title {
+      font-size: 1.2rem;
+    }
+    .mini-tile.catalog .rule-dot {
+      width: 1.5rem;
+      height: 1.5rem;
+      font-size: 0.85rem;
+    }
+  }
+
+  /* ── Compact-art box constraint (catalog + rail) ────────────────
+     Both compositions pin the art slot to a fixed square, but the dot rows and
+     the avatar cluster size to their CONTENT: six T&D dots ran 56px wide inside
+     a 28px slot and spilled past the tile's own left border. The clip is the
+     guarantee; the sizing below means nothing actually reaches it. */
+  .mini-tile.catalog .mini-art,
+  .mini-tile.rail .mini-art {
+    overflow: hidden;
+  }
+  /* Dots wrap into a 2-wide cluster instead of one ever-widening row: four LOOP
+     colors square up 2×2, the six T&D families stack 2×3. */
+  .mini-tile.catalog .element-dots,
+  .mini-tile.rail .element-dots {
+    display: grid;
+    max-width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px;
+    place-content: center;
+    place-items: center;
+  }
+  .mini-tile.catalog .element-dot,
+  .mini-tile.rail .element-dot {
+    width: 0.4rem;
+    height: 0.4rem;
+  }
+  .mini-tile.catalog .avatar-cluster,
+  .mini-tile.rail .avatar-cluster {
+    max-width: 100%;
   }
   .mini-tile.catalog .avatar-cluster > :global(.robust-avatar + .robust-avatar) {
-    margin-left: -14px;
+    margin-left: -0.72rem;
   }
   .mini-tile.catalog :global(.cluster-avatar.robust-avatar) {
-    --avatar-size: 1.5rem !important;
+    --avatar-size: 1.15rem !important;
+  }
+  @media (min-width: 1680px) {
+    .mini-tile.catalog .element-dot {
+      width: 0.45rem;
+      height: 0.45rem;
+    }
+    .mini-tile.catalog
+      .avatar-cluster
+      > :global(.robust-avatar + .robust-avatar) {
+      margin-left: -0.8rem;
+    }
+    .mini-tile.catalog :global(.cluster-avatar.robust-avatar) {
+      --avatar-size: 1.3rem !important;
+    }
+  }
+  @media (min-width: 2600px) {
+    .mini-tile.catalog .element-dot {
+      width: 0.6rem;
+      height: 0.6rem;
+    }
+    .mini-tile.catalog
+      .avatar-cluster
+      > :global(.robust-avatar + .robust-avatar) {
+      margin-left: -1rem;
+    }
+    .mini-tile.catalog :global(.cluster-avatar.robust-avatar) {
+      --avatar-size: 1.7rem !important;
+    }
   }
 
   /* ── Composition: unified decision canvas ──────────────────────── */
@@ -683,8 +794,9 @@
         font-size: 0.95rem;
       }
       .mini-tile.rail .mini-main {
+        min-width: 0;
         flex: 1 1 auto;
-        align-items: flex-start;
+        align-items: stretch;
       }
       .mini-tile.rail .mini-title {
         overflow: hidden;
@@ -697,10 +809,16 @@
       .mini-tile.rail .mini-sub {
         display: none;
       }
+      /* Three 26px faces at -12px ran 54px wide inside the rail's 36px art
+         slot. Shrink the faces and deepen the overlap so the stack fits its
+         box (the box also clips, above). */
+      .mini-tile.rail :global(.cluster-avatar.robust-avatar) {
+        --avatar-size: 1.35rem !important;
+      }
       .mini-tile.rail
         .avatar-cluster
         > :global(.robust-avatar + .robust-avatar) {
-        margin-left: -12px;
+        margin-left: -0.95rem;
       }
     }
   }

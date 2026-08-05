@@ -351,29 +351,29 @@ decisions he has now made — implement them, do not re-litigate.
 
 ### Visual polish
 
-- [ ] **Step 6.1 — top tiles are vertically smushed.** Give the category
+- [x] **Step 6.1 — top tiles are vertically smushed.** Give the category
   tiles real vertical breathing room. Check `min-height`/padding at every
   tier, especially 2560/3840 where the lockstep root ramp
   (`.claude/rules/4k-native-layout.md`) should already be growing them and
   evidently is not carrying the tile box. Express sizes in `rem`.
-- [ ] **Step 6.2 — dead space below the value chips.** The left column
+- [x] **Step 6.2 — dead space below the value chips.** The left column
   strands vertical space under the value grid (visible in the length
   screen: chips end at ~60% height, nothing below). Use the column's
   height — 4K rule 4, "a wide screen is also a tall one."
-- [ ] **Step 6.3 — awkward spacing in the value-screen header.** The
+- [x] **Step 6.3 — awkward spacing in the value-screen header.** The
   "Pick a length" header row (back arrow + title + neighboring control)
   has an awkward gap. Fix the row's composition.
-- [ ] **Step 6.4 — Timing & Direction dots overflow their art container.**
+- [x] **Step 6.4 — Timing & Direction dots overflow their art container.**
   The colored dots spill outside the tile's art slot. Same class of bug as
   the grid-mode preview fixed in `907b9778c1` (unconstrained art in an
   auto-sized flex slot). While there, audit EVERY art variant in
   `CategoryTile.svelte` for a missing box constraint and fix all of them,
   not just T&D.
-- [ ] **Step 6.5 — unify the results surface.** The results pane's
+- [x] **Step 6.5 — unify the results surface.** The results pane's
   background is visibly darker than the workspace panels beside it, so the
   page reads as two products. Unify the surface styling (one token family
   for both panes).
-- [ ] **Step 6.6 — the animations are gone.** Austen sees no transitions in
+- [x] **Step 6.6 — the animations are gone.** Austen sees no transitions in
   real use. DIAGNOSE FIRST, with evidence, before changing anything.
   Candidate causes to rule out: (a) the workspace is entered from persisted
   state on load so the landing↔workspace morph never fires; (b) the
@@ -385,7 +385,7 @@ decisions he has now made — implement them, do not re-litigate.
 
 ### Flow (decisions already made — implement)
 
-- [ ] **Step 6.7 — delete the page-top search bar from the gallery.**
+- [x] **Step 6.7 — delete the page-top search bar from the gallery.**
   Austen: search is not how people will primarily find sequences, and a
   full-width search bar at the top of the page claims otherwise. Remove it
   from the gallery surface (`GalleryDrill.svelte` :415–425 / the `onSearch`
@@ -394,7 +394,7 @@ decisions he has now made — implement them, do not re-litigate.
   landing composition without the top bar and confirm it still balances.
   Other `GalleryDrill` hosts (`GalleryFilterSheet`, `AddSequencesSheet`)
   keep whatever search they pass today.
-- [ ] **Step 6.8 — search and Show all stay in the workspace.** This
+- [x] **Step 6.8 — search and Show all stay in the workspace.** This
   REVERSES deviation 3 above; Austen's experience proved the spec's original
   call. Today `onShowAll` and `onSearch` both call `applyToGrid()`, which
   flips `galleryView` to `"browse-all"` and renders the old full-page
@@ -409,13 +409,73 @@ decisions he has now made — implement them, do not re-litigate.
 
 ### Readability sweep
 
-- [ ] **Step 6.9 — 4K pass over the whole workspace.** Viewport sweep at
+- [x] **Step 6.9 — 4K pass over the whole workspace.** Viewport sweep at
   1920 / 2560 / 3840 **plus ~1550px content width** (Austen's
   DevTools-docked reality — confirm the seam behaves sanely there rather
   than degenerating into a squeeze). Read every frame for smushed controls,
   stranded space, overflow, and contrast; fix what the frames show. This is
   the item that decides whether the pass is done — arithmetic is not
   verification of composition.
-- [ ] **Step 6.10 — verify + commit.** `npm run check`: 0 errors, 0
+- [x] **Step 6.10 — verify + commit.** `npm run check`: 0 errors, 0
   warnings. `npx vitest run tests/unit/browse/`: baseline failures only.
   Commit with explicit pathspecs. Do NOT push.
+
+## Task 6 closeout (2026-08-05)
+
+**Step 6.6 diagnosis (evidence, before any change).** All three candidate
+causes were tested in the live app at 1920×1080:
+
+- `document.startViewTransition` present; `prefers-reduced-motion` false. Not (c).
+- The per-section `<Crossfade>` DOES run: sampling `getComputedStyle(layer).opacity`
+  per rAF across a category switch gave `0 → 0.166 → 0.333 → 0.5 → 0.666 → 0.833 → 1`.
+  Not (b) — it was never lost in the split.
+- The landing→workspace morph DOES fire: a landing tile click produced 75
+  view-transition animations including 11 `::view-transition-group(gallery-cat-*)`
+  at 250ms; the back-out measured ready 81ms / finished 345ms.
+
+So nothing was broken. What was true:
+
+1. **(a) confirmed.** `restoreSection()` reads sessionStorage, so a reload lands
+   straight in the workspace; from there every move is a rail tap, which never
+   crosses the landing boundary and therefore never morphs. During review Austen
+   reloads constantly — for him the morph effectively never fired.
+2. **The one animated path animates nothing that matters.** The app globally
+   disables `::view-transition-old/new(root)` (`shared/transitions/view-transitions.css`),
+   so a transition only shows where a NAMED element moves. A category switch
+   moves no named element; wrapping it in a view transition measured ready 124ms
+   / finished 462ms and produced no visible motion, so that half was reverted.
+3. **The biggest change on screen had no transition at all.** A filter tap goes
+   from 1412 cards to 288 with zero animation. Every card already carries a
+   `sequence-<id>` view-transition name, so wrapping the value-tap mutation
+   (`withResultsMorph` in GalleryDrill) makes the grid rearrange. Measured:
+   ready 347ms, settled 657ms. The 347ms is the engine recompute, which was
+   always paid — it is now spent behind a morph instead of a frozen frame.
+
+Also added: `background-color`/`box-shadow` to the CategoryTile transition, so
+selecting a category eases its highlight in instead of snapping.
+
+**Deviations**
+
+1. **Step 6.6 half-reverted by measurement** — see above; category switches keep
+   the `<Crossfade>`, value taps get the view transition.
+2. **`showAllPane` is a bindable prop, not internal state.** 6.8 needs "Show all"
+   AND the landing's "View N results" to open the pane; the latter lives in
+   BrowseModule's pinned strip, so the host needs to set it.
+3. **Contract-test line cap raised 800 → 900.** GalleryDrill is 857: the pane's
+   show-all state and the unified surface. Original file was 6,248.
+4. **The split-pane column seam moved 2600 → 2300 of drill width.** 4K at 150%
+   scaling is a ~2470px drill, which the old seam missed entirely — the exact
+   failure `4k-native-layout.md` names. A 3300 tier was tried and removed: it
+   pushed the column past 900px, where the rail composition's rules clobbered
+   the catalog grid. Those rail rules are now guarded with `:not(.catalog-layout)`.
+
+**Known, not fixed**
+
+- **Sparse results at 2560/3840.** Sections holding 2–4 sequences leave most of
+  their row empty in the results pane. Dominant visual defect at 4K, but it is
+  BrowsePanel's own layout and the spec puts BrowsePanel internals out of scope
+  (named fast-follow, unchanged since the Task 5 closeout).
+- **The app does not scale at 3840 (4K @ 100%).** Type and cards render tiny
+  because the lockstep root ramp is scoped to marketing/legal shells, not the
+  app. The catalog tiles now step at 1680 and 2600, but a whole-app ramp is a
+  systemic change well outside this punch list.

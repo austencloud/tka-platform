@@ -29,6 +29,9 @@
     ruleCounts?: Readonly<Record<string, number>>;
     /** This surface owns the category morph names right now. */
     morph?: boolean;
+    /** Catalog layout with no value editor below it (the "Show all" pane): the
+     * tiles take the whole column instead of leaving a blank half. */
+    fill?: boolean;
     onselect: (entry: CategoryEntry) => void;
   }
 
@@ -38,6 +41,7 @@
     layout = "rail",
     ruleCounts,
     morph = false,
+    fill = false,
     onselect,
   }: Props = $props();
 </script>
@@ -45,6 +49,7 @@
 <nav
   class="desktop-filter-catalog"
   class:catalog-layout={layout === "catalog"}
+  class:fill
   data-section={section}
   aria-label="Filter categories"
 >
@@ -84,6 +89,25 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.4rem;
   }
+  /* No editor below: the catalog takes the column rather than leaving the
+     bottom half blank (`4k-native-layout.md` rule 4). */
+  .desktop-filter-catalog.catalog-layout.fill {
+    display: flex;
+    min-height: 0;
+    /* Zero basis: an `auto` basis is the eleven rows' natural height, which
+       grows past the column and pushes the hint below it out of view. */
+    flex: 1 1 0;
+    flex-direction: column;
+  }
+  /* One column, eleven rows: full-width rows at ~5rem read as a picker, where
+     two columns stretched to fill the same height give 11rem squares with a
+     label adrift in the middle. */
+  .catalog-layout.fill .desktop-filter-grid {
+    min-height: 0;
+    flex: 1 1 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: minmax(3.4rem, 1fr);
+  }
   /* The column itself is the container here, so this steps with the pane, not
      with the window: eleven categories go three-across once there is room,
      which keeps the catalog to four rows instead of six. */
@@ -98,11 +122,17 @@
     @container drill (min-width: 900px) {
       /* The rail persists only while EDITING a value, so the first chooser
          stays a clean overview. */
-      .desktop-filter-catalog:not([data-section="chooser"]) {
+      /* Rail composition only. The split pane's catalog layout owns its own
+         box; without this guard a left column wider than 900px (the 4K tier)
+         pulls the rail's single-column, overflow-hidden grid over it and the
+         tiles collapse to nothing. */
+      .desktop-filter-catalog:not(.catalog-layout):not(
+          [data-section="chooser"]
+        ) {
         display: flex;
       }
 
-      .desktop-filter-catalog {
+      .desktop-filter-catalog:not(.catalog-layout) {
         min-width: 0;
         min-height: 0;
         flex-direction: column;
@@ -125,7 +155,7 @@
         font-weight: 800;
       }
 
-      .desktop-filter-grid {
+      .desktop-filter-catalog:not(.catalog-layout) .desktop-filter-grid {
         display: grid;
         min-height: 0;
         flex: 1 1 0;

@@ -26,6 +26,7 @@
   import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { FilterConnective } from "$lib/shared/browse/services/multi-filter";
+  import type { Snippet } from "svelte";
   import { Slider } from "bits-ui";
   import {
     FAN_TILTS,
@@ -183,10 +184,12 @@
   }
 </script>
 
-{#snippet valueHead(title: string, hint?: string)}
+{#snippet valueHead(title: string, hint?: string, trailing?: Snippet)}
   <!-- Back lives IN the screen header (same spot on every value screen, part
        of the crossfading layer) — a persistent bar above the stage burned
-       ~44px on the chooser where Back doesn't exist. -->
+       ~44px on the chooser where Back doesn't exist. A screen's own control
+       (Match any / Match all) rides the same row rather than floating centred
+       below it, so the header reads as one band. -->
   <header class="drill-head with-back">
     <button
       class="head-back"
@@ -203,7 +206,40 @@
     </button>
     <h2 tabindex="-1">{title}</h2>
     {#if hint}<p>{hint}</p>{/if}
+    {#if trailing}
+      <div class="head-trailing">{@render trailing()}</div>
+    {/if}
   </header>
+{/snippet}
+
+{#snippet loopConnectiveControl()}
+  <SegmentedControl
+    size="sm"
+    density="compact"
+    color="accent"
+    ariaLabel="How selected LOOPs combine"
+    options={[
+      { value: "any", label: "Match any" },
+      { value: "all", label: "Match all" },
+    ]}
+    value={loopConnective}
+    onchange={(v) => onLoopConnectiveChange?.(v)}
+  />
+{/snippet}
+
+{#snippet familyConnectiveControl()}
+  <SegmentedControl
+    size="sm"
+    density="compact"
+    color="accent"
+    ariaLabel="How selected families combine"
+    options={[
+      { value: "any", label: "Match any" },
+      { value: "all", label: "Match all" },
+    ]}
+    value={familyConnective}
+    onchange={(v) => onFamilyConnectiveChange?.(v)}
+  />
 {/snippet}
 
 <div
@@ -559,24 +595,9 @@
           ? loopConnective === "all"
             ? "Tap several — sequences need every one of them."
             : "Tap several — sequences match any of them."
-          : undefined
+          : undefined,
+        onLoopConnectiveChange ? loopConnectiveControl : undefined
       )}
-      {#if onLoopConnectiveChange}
-        <div class="connective-row">
-          <SegmentedControl
-            size="sm"
-            density="compact"
-            color="accent"
-            ariaLabel="How selected LOOPs combine"
-            options={[
-              { value: "any", label: "Match any" },
-              { value: "all", label: "Match all" },
-            ]}
-            value={loopConnective}
-            onchange={(v) => onLoopConnectiveChange?.(v)}
-          />
-        </div>
-      {/if}
       <div class="value-list">
         {#each catalog.loopValues as v (v.value)}
           {@const isOn = activeLoopValues?.has(v.value) ?? false}
@@ -679,24 +700,9 @@
           ? familyConnective === "all"
             ? "Tap several — sequences need every family."
             : "Tap several — sequences match any family."
-          : undefined
+          : undefined,
+        onFamilyConnectiveChange ? familyConnectiveControl : undefined
       )}
-      {#if onFamilyConnectiveChange}
-        <div class="connective-row">
-          <SegmentedControl
-            size="sm"
-            density="compact"
-            color="accent"
-            ariaLabel="How selected families combine"
-            options={[
-              { value: "any", label: "Match any" },
-              { value: "all", label: "Match all" },
-            ]}
-            value={familyConnective}
-            onchange={(v) => onFamilyConnectiveChange?.(v)}
-          />
-        </div>
-      {/if}
       <div class="value-list">
         {#each catalog.familyValues as v (v.value)}
           {@const isOn = activeFamilyValues?.has(v.value) ?? false}
@@ -790,6 +796,9 @@
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     row-gap: 0.3rem;
+    /* Back was flush against the title (zero column gap) — a 44px pill welded
+       to the heading reads as one broken control. */
+    column-gap: 0.75rem;
   }
   .drill-head.with-back h2 {
     grid-column: 2;
@@ -797,6 +806,31 @@
   }
   .drill-head.with-back p {
     grid-column: 1 / -1;
+  }
+  /* The screen's own control (Match any / Match all) sits at the header's far
+     end instead of floating centred on its own row below it. */
+  .head-trailing {
+    display: flex;
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    align-items: center;
+  }
+  .head-trailing :global(.segmented-control) {
+    width: max-content;
+  }
+  .head-trailing :global(.segmented-control button) {
+    white-space: nowrap;
+  }
+  /* Phone-width headers: three things on one row forced the title to wrap to
+     three lines. The control drops to its own row instead. */
+  @container drill (max-width: 560px) {
+    .drill-head.with-back .head-trailing {
+      grid-column: 1 / -1;
+      grid-row: auto;
+      justify-self: center;
+      margin-top: 0.35rem;
+    }
   }
   .head-back {
     grid-column: 1;
@@ -834,25 +868,6 @@
     flex-direction: column;
     gap: 0.6rem;
     width: 100%;
-  }
-
-  /* Match any / all control on connective-bearing editors (LOOPs, T&D).
-     Sized to its labels, never stretched across the screen — the shared
-     SegmentedControl is width:100% by design, so the consumer caps it. */
-  .connective-row {
-    display: flex;
-    justify-content: center;
-    flex: 0 0 auto;
-    margin-bottom: 0.6rem;
-  }
-
-  .connective-row :global(.segmented-control) {
-    width: max-content;
-  }
-
-  /* Two short fixed labels — never let "Match any" break across lines. */
-  .connective-row :global(.segmented-control button) {
-    white-space: nowrap;
   }
 
   /* Level tiles wear the canonical difficulty gradients (light backgrounds,
@@ -4311,18 +4326,60 @@
   }
   /* `.drill-screen >` matches the per-screen tier rules' weight (they key off
      .screen-loop / .screen-length on this same element), so this override wins
-     on order rather than losing on specificity. */
+     on order rather than losing on specificity.
+
+     The list FILLS the column rather than hugging its content: a 7-row length
+     grid used to stop at ~60% height and strand the rest of a 1000px column
+     (`4k-native-layout.md` rule 4 — a wide screen is also a tall one). Rows
+     grow into the space; once the natural minimums exceed it the grid simply
+     scrolls, exactly as before. */
   .drill-ctx.split-pane .drill-screen > .value-list,
   .drill-ctx.split-pane .drill-screen > .letter-grid,
   .drill-ctx.split-pane .drill-screen > .turn-picker {
-    flex: 0 1 auto;
+    flex: 1 1 auto;
+  }
+  /* Every per-screen tier caps its rows (`minmax(5.25rem, 5.5rem)` etc.) so the
+     phone composition can't balloon. In the pane that ceiling is exactly what
+     leaves the hole — raise it, but keep a ceiling: two grid-mode cards given a
+     free `1fr` grew to 570px each and stranded their art in a huge empty box,
+     which is the same defect wearing the opposite sign. Rows grow to a sane
+     maximum and the leftover distributes evenly, so short option sets read as a
+     spaced card list instead of a pile at the top. */
+  .drill-ctx.split-pane .drill-screen > .value-list,
+  .drill-ctx.split-pane .drill-screen > .letter-grid {
+    grid-auto-rows: minmax(
+      var(--pane-row-min, 4.5rem),
+      var(--pane-row-max, 8rem)
+    );
     align-content: start;
+  }
+  .drill-ctx.split-pane .screen-letter > .letter-grid {
+    --pane-row-min: 3.25rem;
+    --pane-row-max: 4.5rem;
+  }
+  .drill-ctx.split-pane .screen-length > .value-list,
+  .drill-ctx.split-pane .screen-max-turns > .value-list {
+    --pane-row-min: 5rem;
+    --pane-row-max: 10rem;
+  }
+  .drill-ctx.split-pane .screen-family > .value-list,
+  .drill-ctx.split-pane .screen-loop > .value-list,
+  .drill-ctx.split-pane .screen-collections > .value-list,
+  .drill-ctx.split-pane .screen-creator > .value-list {
+    --pane-row-min: 5.25rem;
+    --pane-row-max: 8.5rem;
+  }
+  .drill-ctx.split-pane .screen-level > .value-list,
+  .drill-ctx.split-pane .screen-gridmode > .value-list,
+  .drill-ctx.split-pane .screen-positions > .value-list {
+    --pane-row-min: 8rem;
+    --pane-row-max: 18rem;
   }
   /* Back stays: the catalog above shows every category, but the landing (hero
      doors, peeks, "Show all") is only reachable through it. */
   .drill-ctx.split-pane .drill-head.with-back {
     position: static;
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) auto;
     justify-items: start;
     text-align: left;
     background: transparent;
@@ -4339,6 +4396,25 @@
   .drill-ctx.split-pane .drill-head.with-back p {
     grid-column: 1 / -1;
     text-align: left;
+  }
+
+  /* Wide column (4K@150% and up — the drill's own 2300px seam widens the
+     left column past 640px). The row ceilings above are sized for a ~440px
+     column; at 736px+ they leave the same hole the pane was built to close, so
+     every ceiling steps with the column. */
+  @container drill (min-width: 640px) {
+    .drill-ctx.split-pane .drill-screen > .value-list,
+    .drill-ctx.split-pane .drill-screen > .letter-grid {
+      --pane-row-max: 14rem;
+    }
+    .drill-ctx.split-pane .screen-letter > .letter-grid {
+      --pane-row-max: 6rem;
+    }
+    .drill-ctx.split-pane .screen-level > .value-list,
+    .drill-ctx.split-pane .screen-gridmode > .value-list,
+    .drill-ctx.split-pane .screen-positions > .value-list {
+      --pane-row-max: 26rem;
+    }
   }
 
   .drill-ctx.sheet .drill-screen {
