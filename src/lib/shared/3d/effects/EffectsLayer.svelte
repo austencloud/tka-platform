@@ -21,7 +21,13 @@
   // Effect components
   // Trails are no longer mounted here. The single consolidated 3D trail
   // (Trail3D ribbon) renders via EffectOrchestrator3D in PerformerRig's
-  // effectsSlot. EffectsLayer itself is currently unmounted (legacy).
+  // effectsSlot.
+  //
+  // Mounted by EffectOrchestrator3D. This component owns the ONLY 3D renderers
+  // for goo, bubbles, smoke, petals, sparkles, zap, ghost and bloom. It was
+  // unmounted for a period, which silently cost those eight effects their 3D
+  // path; tests/unit/effects/effect-orchestrator-mounts-layer.test.ts now
+  // guards against that recurring.
   import FireEmitter from "./particles/FireEmitter.svelte";
   import SparkleEmitter from "./particles/SparkleEmitter.svelte";
   import ElectricityArc from "./energy/ElectricityArc.svelte";

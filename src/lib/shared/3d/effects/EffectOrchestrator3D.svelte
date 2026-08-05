@@ -24,6 +24,7 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
   import { tryGetViewer3DContext } from "../context/viewer-3d-context";
   import { Vector3, Color, Object3D, Quaternion, Euler } from "three";
   import Trail3D from "./trails/Trail3D.svelte";
+  import EffectsLayer from "./EffectsLayer.svelte";
   import { LedRenderer3D, type LedTipInput } from "./led/led-renderer-3d";
   import { CharcoalRenderer3D, type CharcoalTipInput } from "./charcoal/charcoal-renderer-3d";
   import { FireRenderer3D, type FireTipInput } from "./fire/fire-renderer-3d";
@@ -81,6 +82,13 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
     redPropState: PropState3D | null;
     isPlaying: boolean;
     staffHalfLength?: number;
+    /**
+     * Fractional animation step index. Only Ghost (inside EffectsLayer) reads
+     * it — it needs step onsets to know when to capture a phantom. Rigs that
+     * don't plumb it leave Ghost silent rather than capturing at step 0 every
+     * frame.
+     */
+    currentStep?: number;
     tipEffectMap?: TipEffectMap;
     globalTipEffectMap?: TipEffectMap;
     /** Rig-local hand position for blue prop (from PerformerRig HandAnchor). y is always 0. */
@@ -112,6 +120,7 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
     redPropState,
     isPlaying,
     staffHalfLength = 0.5,
+    currentStep = 0,
     tipEffectMap,
     globalTipEffectMap = {},
     blueHandPos = { x: 0, z: 0 },
@@ -815,3 +824,15 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
      useTask - renderer instances add meshes to the effectsParentRef (rig group).
      This bypasses Svelte's batched prop propagation so effect data flows
      in the same frame tick as the tip position computation. -->
+
+<!-- The eight effects whose only 3D renderers live in EffectsLayer: goo,
+     bubbles, smoke, petals, sparkles, zap, ghost, bloom. EffectsLayer gates
+     each one on the effects-config context, so mounting it unconditionally is
+     correct — at most one is active at a time. -->
+<EffectsLayer
+  {bluePropState}
+  {redPropState}
+  {isPlaying}
+  staffLength={staffHalfLength * 2}
+  {currentStep}
+/>
