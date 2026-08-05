@@ -439,41 +439,83 @@ describe("walk classifier — ranking", () => {
     const report = await findCombinations(GGGG_CW, HHHH_CCW, NO_AMBIENT);
     expect(report.results.length).toBe(COMBINATOR_DEFAULTS.maxResults);
 
+    // The sampler changes what comes after the leader, never the leader.
     const first = report.results[0]!;
     expect(first.sequence.steps.length).toBeGreaterThan(2);
     expect(first.verdict).toBe("FUSED");
     expect(first.sequence.period).toBe(1);
 
-    // Nothing trivial survives the slice at all now: ranking key 5 pulls the
-    // page toward `lenA + lenB` (8 steps here), so the whole page is longer
-    // than the two-steppers the search emitted first.
+    // Two-steppers may well appear — they are a real WAY these cards combine,
+    // and the sampler's whole job is to show the ways. What must not happen is
+    // one leading, or the front of the page being made of them.
+    const leadingTrivial = report.results
+      .slice(0, 3)
+      .filter((r) => r.sequence.steps.length === 2);
+    expect(leadingTrivial).toHaveLength(0);
+  }, 120_000);
+
+  it("samples the WAYS to combine rather than clones of the best way", async () => {
+    // The page answers "what ways can these two cards combine?", so a page of
+    // 24 near-identical results is the wrong answer even when every one of them
+    // outranks the alternatives. Both of these were present before the sampler
+    // and both were cut off below the fold by six-step FUSED results that
+    // differed only in which G they started on.
+    const report = await findCombinations(GGGG_CW, HHHH_CCW, NO_AMBIENT);
+
+    const verdicts = new Set(report.results.map((r) => r.verdict));
+    const lengths = new Set(report.results.map((r) => r.sequence.steps.length));
+    expect(verdicts.size, [...verdicts].join(",")).toBeGreaterThanOrEqual(2);
+    expect(lengths.size, [...lengths].join(",")).toBeGreaterThanOrEqual(2);
+
+    // "Within a way, best first": each (verdict, length) bucket keeps its
+    // ranked order, so the sampler reorders ACROSS shapes and never inside one.
+    const buckets = new Map<string, CombinationResult[]>();
     for (const result of report.results) {
-      expect(result.sequence.steps.length, shapeOf(result)).toBeGreaterThan(2);
+      const key = `${result.verdict}:${result.sequence.steps.length}`;
+      buckets.set(key, [...(buckets.get(key) ?? []), result]);
     }
+    for (const [key, members] of buckets) {
+      expect(rankResults(members, 8).map(shapeOf), key).toEqual(
+        members.map(shapeOf)
+      );
+    }
+
+    // Bucket order is each bucket's best member's rank, so the verdict of the
+    // first result in each bucket still climbs FUSED -> SEQUENTIAL -> ...
+    const order = ["FUSED", "SEQUENTIAL", "HYBRID", "BRAIDED"];
+    const firstSeen = [...buckets.keys()].map((key) =>
+      order.indexOf(key.split(":")[0]!)
+    );
+    expect(firstSeen).toEqual([...firstSeen].sort((a, b) => a - b));
   }, 120_000);
 
   it("orders verdicts FUSED, SEQUENTIAL, HYBRID, BRAIDED", async () => {
+    // Asserted on `rankResults` over REAL results, not on the page: the page is
+    // a sampler over the ranking (by design), so the comparator's own ordering
+    // axioms are tested where they live.
     const order = ["FUSED", "SEQUENTIAL", "HYBRID", "BRAIDED"];
 
-    // Measured on real reports. Shallow enough to keep several verdicts in
-    // frame — the ordering claim is about the comparator, not about depth.
     const gh = await findCombinations(GGGG_CW, HHHH_CCW, {
       ...NO_AMBIENT,
       maxResultLength: 4,
       maxResults: 200,
     });
-    const ghRanks = gh.results.map((r) => order.indexOf(r.verdict));
+    const ghRanks = rankResults(gh.results, 8).map((r) =>
+      order.indexOf(r.verdict)
+    );
     expect(ghRanks).toEqual([...ghRanks].sort((a, b) => a - b));
     expect(new Set(ghRanks).size).toBeGreaterThan(1);
 
-    // FALG's unit is four steps, so sub-unit cuts — and therefore BRAIDED —
+    // FALG's unit is four steps, so mid-unit cuts — and therefore BRAIDED —
     // exist on this pair, and sort last.
     const fg = await findCombinations(FALG, GGGG_CW, {
       ...NO_AMBIENT,
       maxResultLength: 5,
       maxResults: 200,
     });
-    const fgRanks = fg.results.map((r) => order.indexOf(r.verdict));
+    const fgRanks = rankResults(fg.results, 12).map((r) =>
+      order.indexOf(r.verdict)
+    );
     expect(fgRanks).toEqual([...fgRanks].sort((a, b) => a - b));
     expect(fg.results.some((r) => r.verdict === "BRAIDED")).toBe(true);
 
@@ -494,7 +536,7 @@ describe("walk classifier — ranking", () => {
       maxResultLength: 4,
       maxResults: 200,
     });
-    const fusedPeriods = report.results
+    const fusedPeriods = rankResults(report.results, 8)
       .filter((r) => r.verdict === "FUSED")
       .map((r) => r.sequence.period);
 

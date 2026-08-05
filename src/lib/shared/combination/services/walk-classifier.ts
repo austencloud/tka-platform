@@ -15,8 +15,10 @@
  *      after `buildResult` and the first walk to produce a given sequence wins.
  *      The search's shortest-first order makes "first" mean "smallest", which
  *      is the representative worth keeping.
- *   3. **Ranking.** See {@link rankResults} — the search's shortest-first order
- *      is deliberately NOT the presentation order.
+ *   3. **Ranking, then sampling.** See {@link rankResults} — the search's
+ *      shortest-first order is deliberately NOT the presentation order — and
+ *      {@link samplerSlice}, which fills the page across shapes rather than
+ *      taking the top N of one.
  *
  * Results whose sequence carries `metadata.incompleteWord` are DROPPED rather
  * than shown. That flag means some spliced step is not a dataframe row, so the
@@ -386,6 +388,60 @@ export function rankResults(
   });
 }
 
+/**
+ * Take a page off the ranked list by SAMPLING the shapes, not by cutting the
+ * top off it.
+ *
+ * The page answers "what WAYS can these two cards combine?", so variety is the
+ * deliverable. A straight `slice` answers a different question — "what is the
+ * single best way, twenty-four times" — and measured on GGGG + HHHH at
+ * defaults it returned exactly that: 24 FUSED results, all six steps long.
+ * Every SEQUENTIAL and HYBRID shape the engine had found was cut off below the
+ * fold by results that differed from the leader only in which G it started on.
+ *
+ * So results are bucketed by (verdict, length) — the two things that make one
+ * combination a different KIND of answer from another — and the page is filled
+ * round-robin: the best of the best bucket, then the best of the next bucket,
+ * and so on, then round again for each bucket's second-best.
+ *
+ * **The page samples the ways to combine; within a way, best first.**
+ *
+ * Bucket order is the rank of each bucket's best member, so the very first
+ * result is still the top-ranked result overall — the sampler changes what
+ * comes AFTER it, never what leads.
+ */
+export function samplerSlice(
+  ranked: readonly CombinationResult[],
+  maxResults: number
+): CombinationResult[] {
+  if (maxResults <= 0) return [];
+
+  // Insertion order over a ranked walk = buckets in best-member-first order.
+  const buckets = new Map<string, CombinationResult[]>();
+  for (const result of ranked) {
+    const key = `${result.verdict}:${result.sequence.steps.length}`;
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(result);
+    else buckets.set(key, [result]);
+  }
+
+  const queues = [...buckets.values()];
+  const page: CombinationResult[] = [];
+  for (let depth = 0; page.length < maxResults; depth++) {
+    let took = false;
+    for (const queue of queues) {
+      const next = queue[depth];
+      if (!next) continue;
+      page.push(next);
+      took = true;
+      if (page.length >= maxResults) break;
+    }
+    // Every bucket is exhausted: the engine simply found fewer than asked for.
+    if (!took) break;
+  }
+  return page;
+}
+
 // ---------------------------------------------------------------------------
 // Assembly
 // ---------------------------------------------------------------------------
@@ -428,10 +484,13 @@ function stepsOfKind(
 }
 
 /**
- * Build, label, dedup and rank the search's walks, then take `maxResults`.
+ * Build, label, dedup and rank the search's walks, then sample a page of
+ * `maxResults` off the ranking.
  *
- * The slice happens LAST, on purpose: slicing before the ranking would hand the
- * user the search's shortest-first order under a ranking's name.
+ * The page is taken LAST, on purpose: cutting before the ranking would hand the
+ * user the search's shortest-first order under a ranking's name. And it is a
+ * SAMPLE rather than a slice — see {@link samplerSlice} for why the top 24 of a
+ * ranked list is the wrong page for this question.
  */
 export async function classifyAndRank(
   walks: readonly RawWalk[],
@@ -506,8 +565,8 @@ export async function classifyAndRank(
     );
   }
 
-  return rankResults(results, cardA.steps.length + cardB.steps.length).slice(
-    0,
+  return samplerSlice(
+    rankResults(results, cardA.steps.length + cardB.steps.length),
     options.maxResults
   );
 }
