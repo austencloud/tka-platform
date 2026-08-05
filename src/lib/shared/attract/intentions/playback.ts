@@ -6,7 +6,9 @@
 import { safe } from "../domain/annotations";
 import type { Intention } from "../domain/intention";
 import { visibleAll } from "../services/sensors";
-import { has, labelOf, pressKind, restlessness, watchKind } from "./helpers";
+import { has, labelOf, pressKind, restlessness, watchKind,
+  oneOf,
+} from "./helpers";
 
 export const PLAYBACK_INTENTIONS: Intention[] = [
   {
@@ -29,7 +31,12 @@ export const PLAYBACK_INTENTIONS: Intention[] = [
   {
     id: "pause-to-look",
     category: "playback",
-    thought: "Hold on, what is it doing there?",
+    thought: (ctx) =>
+      oneOf(ctx, [
+        "Hold on, what is it doing there?",
+        "Wait — freeze it there.",
+        "How does it get through that bit?",
+      ]),
     can: (ctx) => ctx.isPlaying && has(ctx, "play"),
     appeal: () => 0.5,
     mood: "unsure",
@@ -50,7 +57,12 @@ export const PLAYBACK_INTENTIONS: Intention[] = [
   {
     id: "scrub-back",
     category: "playback",
-    thought: "Wait, do that bit again.",
+    thought: (ctx) =>
+      oneOf(ctx, [
+        "Wait, do that bit again.",
+        "Back up — I missed that.",
+        "Let's see that step once more.",
+      ]),
     can: (ctx) => ctx.sequenceLength >= 2 && has(ctx, "step-cell"),
     appeal: (ctx) => (ctx.isPlaying ? 0.55 : 0.25),
     perform: async (g, ctx) => {

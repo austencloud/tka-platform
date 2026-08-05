@@ -58,6 +58,13 @@ export type GhostKind =
   | "mirror"
   /** Leaves practice. Bounded on purpose — the camera does not stay on all night. */
   | "practice-stop"
+  /**
+   * Hands an immersive module its own autopilot. The presenter can only press
+   * DOM, so it cannot steer a 3D character — before the museum had a docent
+   * button the ghost walked in, said "I haven't looked at Museum yet", and stood
+   * still in the one room it could not explore.
+   */
+  | "docent"
   // playback
   | "play"
   | "stage"

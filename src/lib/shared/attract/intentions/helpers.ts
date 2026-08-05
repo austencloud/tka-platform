@@ -9,6 +9,7 @@
 import type { AttractGhost } from "../services/attract-ghost.svelte";
 import { safe, type GhostKind } from "../domain/annotations";
 import type { GhostContext } from "../domain/intention";
+import { visibleAll } from "../services/sensors";
 
 /** Press one element of a kind, chosen by the seeded RNG. False if none. */
 export async function pressKind(
@@ -86,6 +87,22 @@ export function restlessness(ctx: GhostContext): number {
  */
 export function settled(ctx: GhostContext): number {
   return Math.min(1, ctx.moduleDwellMs / 10_000);
+}
+
+/**
+ * One of several phrasings, seeded. An intention that recurs for four hours with
+ * one fixed line reads as a loop; three phrasings read as a person.
+ */
+export const oneOf = (ctx: GhostContext, lines: string[]): string =>
+  ctx.rng.pick(lines) ?? lines[0]!;
+
+/**
+ * One visible, pressable element of a kind, chosen by the seeded rng. The
+ * standard `target()` body: resolved once so the thought and the press are about
+ * the same control.
+ */
+export function pickOf(ctx: GhostContext, kind: GhostKind): HTMLElement | null {
+  return ctx.rng.pick(visibleAll(safe(kind))) ?? null;
 }
 
 /** True when this kind is present and pressable right now. */

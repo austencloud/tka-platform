@@ -66,6 +66,13 @@ export interface GhostWorld {
    * strangers.
    */
   cameraGranted: boolean;
+  /**
+   * A module is currently putting on the show itself — the museum docent walking
+   * the player around. The ghost stands back, and the escape hatch must not fire
+   * just because an immersive module has nothing left to press: a tour in progress
+   * is the opposite of being stuck.
+   */
+  presenting: boolean;
 }
 
 /** Re-exported for the world's `available` map without a circular import. */
@@ -96,6 +103,7 @@ export const EMPTY_WORLD: GhostWorld = {
     practice: 0,
     mirror: 0,
     "practice-stop": 0,
+    docent: 0,
     play: 0,
     stage: 0,
     tempo: 0,
@@ -111,6 +119,7 @@ export const EMPTY_WORLD: GhostWorld = {
   },
   lingerCount: 0,
   cameraGranted: false,
+  presenting: false,
 };
 
 /** What the mind remembers for the session. Survives takeover/resume. */

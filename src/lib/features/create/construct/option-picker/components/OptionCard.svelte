@@ -42,6 +42,14 @@ Receives pre-calculated data, just renders it.
 
   let contextMenuHost: PictographContextMenuHost;
 
+  /*
+   * data-ghost-label carries JUST the letter. The presentation-mode ghost
+   * narrates the control it is about to press, and with only an aria-label to
+   * read it thought out loud in UI copy — "What does Select M. Hold to preview.
+   * do?" A label is what a person would call the thing, not what a screen
+   * reader says about it.
+   */
+
   function handleClick() {
     if (!disabled) {
       onSelect(pictograph);
@@ -68,6 +76,7 @@ Receives pre-calculated data, just renders it.
   data-letter={pictograph.letter}
   data-ghost="safe"
   data-ghost-kind="option"
+  data-ghost-label={pictograph.letter}
   aria-label="Select {pictograph.letter}. Hold to preview."
   aria-keyshortcuts="Shift+Space"
   title="Tap to select. Hold to preview."

@@ -9,34 +9,59 @@
 
 import { safe } from "../domain/annotations";
 import type { Intention } from "../domain/intention";
-import { browseKind, has, pressKind, restlessness } from "./helpers";
+import { visibleAll } from "../services/sensors";
+import { has, oneOf, pickOf, pressKind, restlessness } from "./helpers";
+import { monologueFor } from "./monologue";
 
 export const BUILD_INTENTIONS: Intention[] = [
   {
     id: "pick-start",
     category: "build",
-    thought: "Let's start somewhere.",
+    target: (ctx) => pickOf(ctx, "start-position"),
+    thought: (ctx, target) =>
+      monologueFor("start-position", target, ctx, "Let's start somewhere."),
     can: (ctx) => !ctx.hasSequence && has(ctx, "start-position"),
     appeal: () => 0.9,
-    perform: (g) => browseKind(g, "start-position"),
+    perform: async (g, ctx, target) => {
+      if (!target || g.halted()) return false;
+      await g.browseThenPress(target, visibleAll(safe("start-position")));
+      return true;
+    },
   },
 
   {
     id: "add-step",
     category: "build",
-    thought: (ctx) =>
-      ctx.sequenceLength > 3 ? "One more after that." : "What comes next?",
+    target: (ctx) => pickOf(ctx, "option"),
+    // Names the letter it is about to add. "What comes next?" said nothing about
+    // the forty pictographs on screen; "P looks like it fits" is a decision.
+    thought: (ctx, target) =>
+      monologueFor(
+        "option",
+        target,
+        ctx,
+        ctx.sequenceLength > 3 ? "One more after that." : "What comes next?",
+      ),
     can: (ctx) => ctx.hasSequence && has(ctx, "option"),
     // Strong early, tapering off — a sequence that never stops growing stops
     // being a demonstration and becomes a wall.
     appeal: (ctx) => Math.max(0.15, 0.85 - ctx.sequenceLength * 0.08),
-    perform: (g) => browseKind(g, "option"),
+    perform: async (g, ctx, target) => {
+      if (!target || g.halted()) return false;
+      await g.browseThenPress(target, visibleAll(safe("option")));
+      return true;
+    },
   },
 
   {
     id: "filter-continuous",
     category: "build",
-    thought: "I wonder if anything continues from this.",
+    thought: (ctx) =>
+      oneOf(ctx, [
+        "I wonder if anything continues from this.",
+        "Only the ones that flow on, then.",
+        "What actually follows this?",
+      ]),
     can: (ctx) => has(ctx, "option-filter"),
     appeal: (ctx) => (ctx.hasSequence ? 0.45 : 0.1),
     perform: async (g, ctx) => {
@@ -56,7 +81,12 @@ export const BUILD_INTENTIONS: Intention[] = [
   {
     id: "fiddle-turns",
     category: "build",
-    thought: "What if this hand turned instead?",
+    thought: (ctx) =>
+      oneOf(ctx, [
+        "What if this hand turned instead?",
+        "Let's put a turn on it.",
+        "What happens if I add rotation here?",
+      ]),
     can: (ctx) => has(ctx, "turn"),
     appeal: (ctx) => (ctx.hasSequence ? 0.5 : 0.2),
     perform: async (g, ctx) => {
@@ -73,7 +103,12 @@ export const BUILD_INTENTIONS: Intention[] = [
   {
     id: "clear-and-restart",
     category: "reset",
-    thought: "Let's try something completely different.",
+    thought: (ctx) =>
+      oneOf(ctx, [
+        "Let's try something completely different.",
+        "Scrap it. Start again.",
+        "I want to build something else.",
+      ]),
     can: (ctx) => ctx.hasSequence && ctx.sequenceLength >= 3 && has(ctx, "clear"),
     // Only once it has actually made something and stayed a while.
     appeal: (ctx) => Math.min(0.7, ctx.sequenceLength * 0.08 + restlessness(ctx) * 0.4),

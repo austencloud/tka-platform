@@ -6,17 +6,31 @@
 
 import { safe } from "../domain/annotations";
 import type { Intention } from "../domain/intention";
-import { browseKind, has, labelOf, pressKind, watchKind } from "./helpers";
+import { visibleAll } from "../services/sensors";
+import { has, pickOf, pressKind, watchKind,
+  oneOf,
+} from "./helpers";
+import { monologueFor } from "./monologue";
 
 export const EFFECT_INTENTIONS: Intention[] = [
   {
     id: "try-effect",
     category: "effects",
-    thought: "I wonder what this looks like with something on it.",
+    target: (ctx) => pickOf(ctx, "effect"),
+    // Names the effect. Every effect used to get the same line, which is how
+    // sixteen distinct visual ideas came out sounding like one shrug.
+    thought: (ctx, target) =>
+      monologueFor(
+        "effect",
+        target,
+        ctx,
+        "I wonder what this looks like with something on it.",
+      ),
     can: (ctx) => has(ctx, "effect") && ctx.hasSequence,
     appeal: (ctx) => (ctx.activeEffectIds.length ? 0.45 : 0.7),
-    perform: async (g) => {
-      if (!(await browseKind(g, "effect"))) return false;
+    perform: async (g, _ctx, target) => {
+      if (!target || g.halted()) return false;
+      await g.browseThenPress(target, visibleAll(safe("effect")));
       await watchKind(g, "stage", g.jitter(2200, 1500));
       return true;
     },
@@ -25,7 +39,12 @@ export const EFFECT_INTENTIONS: Intention[] = [
   {
     id: "reject-effect",
     category: "effects",
-    thought: "…no. Not that one.",
+    thought: (ctx) =>
+      oneOf(ctx, [
+        "…no. Not that one.",
+        "That's too much. Something else.",
+        "Hm, that's not it.",
+      ]),
     can: (ctx) => has(ctx, "effect") && ctx.activeEffectIds.length > 0,
     appeal: () => 0.4,
     mood: "unsure",
@@ -67,7 +86,12 @@ export const PROP_INTENTIONS: Intention[] = [
   {
     id: "open-props",
     category: "props",
-    thought: "Can I swap the props?",
+    thought: (ctx) =>
+      oneOf(ctx, [
+        "Can I swap the props?",
+        "What else could it be holding?",
+        "Are staves the only option?",
+      ]),
     // The prop tiles live in a drawer, and until this existed nothing in the
     // bag could open it — so `try-prop` was unreachable in a normal session
     // even though its tiles were annotated.
@@ -83,20 +107,18 @@ export const PROP_INTENTIONS: Intention[] = [
   {
     id: "try-prop",
     category: "props",
-    target: (ctx) => ctx.rng.pick(visibleAll(safe("prop"))) ?? null,
+    target: (ctx) => pickOf(ctx, "prop"),
     // Names the prop it actually switches to. It used to name the first
     // non-active tile in the DOM and then let browseKind press a random one.
-    thought: (_ctx, target) => {
-      const name = target ? labelOf(target).toLowerCase() : "";
-      return name ? `What if these were ${name}?` : "What if these were something else?";
-    },
+    thought: (ctx, target) =>
+      monologueFor("prop", target, ctx, "What if these were something else?"),
     can: (ctx) => has(ctx, "prop") && ctx.hasSequence,
     appeal: () => 0.55,
     perform: async (g, _ctx, target) => {
       if (!target || g.halted()) return false;
       // Still browses a couple of alternatives first — it just commits to the
       // one it named.
-      await g.browseThenPress(target);
+      await g.browseThenPress(target, visibleAll(safe("prop")));
       // The whole board re-skins live — that is the thing worth watching.
       await g.dwell(g.jitter(2000, 1400));
       return true;

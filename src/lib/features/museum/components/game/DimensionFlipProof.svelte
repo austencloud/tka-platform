@@ -16,6 +16,7 @@
   import PlaqueView from "../panel/PlaqueView.svelte";
   import SequenceView from "../panel/SequenceView.svelte";
   import SequenceBrowserOverlay from "$lib/features/museum/scenes/procedural/overlay/SequenceBrowserOverlay.svelte";
+  import { createMuseumDocent } from "$lib/features/museum/services/museum-docent.svelte";
 
   import { onMount } from "svelte";
 
@@ -197,6 +198,29 @@
   // Plain object (not $state) for key tracking - Museum3DScene reads this every frame
   // in its useTask loop, bypassing Svelte reactivity. A raw Set avoids proxy overhead.
   const heldKeys = new Set<string>();
+
+  /**
+   * The museum's own autopilot. It exists because the presentation-mode ghost
+   * can only press DOM and cannot steer a 3D character — so the museum owns the
+   * walking and the ghost just presses one button. See museum-docent.svelte.ts.
+   */
+  const docent = createMuseumDocent({ getGrid: () => props.grid });
+
+  function toggleDocent(): void {
+    if (docent.active) {
+      docent.stop();
+      // Release whatever it was holding, or the player keeps walking into a wall.
+      for (const key of ["KeyW", "KeyA", "KeyS", "KeyD"]) heldKeys.delete(key);
+    } else {
+      docent.start();
+    }
+  }
+
+  // A real keypress means a human took over — the docent must not fight them for
+  // the keyboard.
+  function stopDocentOnHumanInput(): void {
+    if (docent.active) docent.stop();
+  }
 
   // ── Zoom state (top-down camera height) ──
   let topDownHeight = $state(savedHmrState?.topDownHeight ?? 12);
@@ -438,6 +462,9 @@
       return;
     }
 
+    // A human pressing a movement key wants the keyboard back.
+    if (e.isTrusted) stopDocentOnHumanInput();
+
     // Movement keys - only track in top-down mode (UCC handles its own keys in FPS)
     if (!isInFPS) {
       heldKeys.add(e.code);
@@ -467,6 +494,29 @@
     facing: string, inFPS: boolean,
     yaw: number
   ) {
+    // The docent steers by filling the SAME heldKeys set the keyboard fills, so
+    // collision, portals and void-recovery all run through MuseumPlayerController
+    // exactly as they do for a human. Called from the scene's own frame loop, so
+    // its keys land on the next frame.
+    docent.step(
+      heldKeys,
+      { x: worldX / TILE_SIZE, y: worldZ / TILE_SIZE },
+      performance.now()
+    );
+
+    // Debug seam, same idea as the presenter's window.__ghost: when the docent
+    // walks into a wall the only useful question is "which way did it think it
+    // was going", and that is invisible from the outside.
+    if (import.meta.env.DEV) {
+      (window as unknown as { __docent?: unknown }).__docent = {
+        active: docent.active,
+        status: docent.status,
+        keys: [...heldKeys],
+        tile: { x: worldX / TILE_SIZE, y: worldZ / TILE_SIZE },
+        debug: docent.debug(),
+      };
+    }
+
     playerWorldX = worldX;
     playerWorldZ = worldZ;
     playerTileX = tileX;
@@ -590,6 +640,46 @@
     </button>
   {/if}
 
+  <!-- Docent: the museum walks itself. The presentation-mode ghost presses this
+       (data-ghost-kind="docent") because it can only press DOM and has no way to
+       steer a 3D character — before this it walked in, said "I haven't looked at
+       Museum yet", and stood still in a room it could not explore. Useful for a
+       human too: it is the "show me around" button. -->
+  {#if !museum3dEditorState.editorActive && !showPanel}
+    <button
+      class="museum-docent-btn"
+      class:on={docent.active}
+      onclick={toggleDocent}
+      data-ghost="safe"
+      data-ghost-kind={docent.active ? undefined : "docent"}
+      data-ghost-label="Look around"
+      aria-pressed={docent.active}
+      aria-label={docent.active ? "Stop walking me around" : "Walk me around"}
+      title={docent.active ? "Stop the tour" : "Show me around"}
+    >
+      <i
+        class="fas {docent.active ? 'fa-stop' : 'fa-person-walking'}"
+        aria-hidden="true"
+      ></i>
+      <span>{docent.active ? "Stop" : "Look around"}</span>
+    </button>
+  {/if}
+
+  {#if docent.active && !showPanel}
+    <!-- data-ghost-state="presenting" tells the attract presenter that this
+         module is currently putting on the show itself, so its
+         nothing-pressable-anywhere escape hatch must not fire and drag the ghost
+         out of a tour that is going fine. -->
+    <div
+      class="docent-status"
+      role="status"
+      aria-live="polite"
+      data-ghost-state="presenting"
+    >
+      {docent.status}
+    </div>
+  {/if}
+
   <!-- Wing label (top-left, offset when back button visible) - hidden in editor mode -->
   {#if currentWing && !showPanel && !museum3dEditorState.editorActive}
     <div class="wing-label" class:fps={isInFPS}>
@@ -695,6 +785,53 @@
   }
 
   /* Back button - top-left circle, takes you out of the museum */
+  /* Sits beside the back button, same visual family. Filled while walking so it
+     reads as a live state rather than an action. */
+  .museum-docent-btn {
+    position: absolute;
+    top: calc(var(--museum-hud-edge) + var(--museum-hud-top-offset, 0px));
+    left: calc(var(--museum-hud-edge) + var(--museum-hud-button) + 0.5rem);
+    height: var(--museum-hud-button);
+    padding: 0 0.85rem;
+    gap: 0.45rem;
+    border-radius: calc(var(--museum-hud-button) / 2);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(6px);
+    color: rgba(255, 255, 255, 0.72);
+    font-size: clamp(0.75rem, 0.6rem + 0.2vw, 0.95rem);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 90;
+  }
+
+  .museum-docent-btn:hover {
+    color: white;
+    background: rgba(0, 0, 0, 0.62);
+  }
+
+  .museum-docent-btn.on {
+    background: rgba(139, 92, 246, 0.85);
+    border-color: rgba(196, 181, 253, 0.9);
+    color: white;
+  }
+
+  .docent-status {
+    position: absolute;
+    top: calc(var(--museum-hud-edge) + var(--museum-hud-top-offset, 0px) + var(--museum-hud-button) + 0.5rem);
+    left: calc(var(--museum-hud-edge) + var(--museum-hud-button) + 0.5rem);
+    padding: 0.35rem 0.7rem;
+    border-radius: 0.5rem;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    color: rgba(255, 255, 255, 0.85);
+    font-size: clamp(0.7rem, 0.6rem + 0.15vw, 0.85rem);
+    z-index: 90;
+    pointer-events: none;
+  }
+
   .museum-back-btn {
     position: absolute;
     top: calc(var(--museum-hud-edge) + var(--museum-hud-top-offset, 0px));

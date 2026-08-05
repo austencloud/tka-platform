@@ -24,7 +24,9 @@ import {
   restlessness,
   settled,
   watchKind,
+  oneOf,
 } from "./helpers";
+import { monologueFor } from "./monologue";
 
 /** Firestore reads cost money at a jam that runs for hours. */
 const GALLERY_OPENS_PER_SESSION = 8;
@@ -74,10 +76,11 @@ export const EXPLORE_INTENTIONS: Intention[] = [
           (el) => !ctx.askedAbout.has(labelOf(el)),
         ),
       ) ?? null,
-    thought: (_ctx, target) => {
-      const name = target ? labelOf(target) : "";
-      return name ? `What does ${name} do?` : "What does this one do?";
-    },
+    // Every curio used to get "What does X do?". Mandala and Tunnel are
+    // different curiosities that happen to share a mechanism, so the line comes
+    // from the control rather than the intention.
+    thought: (ctx, target) =>
+      monologueFor("curio", target, ctx, "What does this one do?"),
     // Only if there is one it has not already asked about — otherwise the
     // thought lies ("What does X do?" about a button it pressed four times).
     can: (ctx) =>
@@ -98,7 +101,12 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   {
     id: "open-viewer",
     category: "explore",
-    thought: "What's this 3D thing?",
+    thought: (ctx) =>
+      oneOf(ctx, [
+        "Let's see this properly.",
+        "I want a bigger look at it.",
+        "What's this 3D thing?",
+      ]),
     can: (ctx) => has(ctx, "viewer") && !ctx.viewerOpen && ctx.hasSequence,
     appeal: () => 0.6,
     mood: "delighted",
@@ -113,13 +121,28 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   {
     id: "overwhelmed",
     category: "explore",
-    // Pure personality. It presses nothing, so it is always safe — but it is
-    // NOT always possible: "that's a lot of buttons" in a room with no buttons
-    // is a lie, and an always-true `can` also means the mind can never report
-    // "nothing here is satisfiable", which is the signal a trap looks like.
-    thought: "…that's a lot of buttons.",
-    can: (ctx) => Object.values(ctx.available).some((count) => count > 0),
-    appeal: (ctx) => 0.12 + restlessness(ctx) * 0.15,
+    /*
+     * Pure personality, and now RARE. Austen, watching a tour: "He sure does say
+     * that's a lot of buttons pretty often. Let's make it so he doesn't really
+     * do that." It was winning because it presses nothing, so it was satisfiable
+     * on every screen while the intentions with something to say needed their
+     * control to be present. Twice a session, at an appeal that loses to
+     * anything with a real motive behind it.
+     *
+     * Also not always possible: "that's a lot of buttons" in a room with no
+     * buttons is a lie, and an always-true `can` means the mind can never report
+     * that nothing is satisfiable, which is the signal a trap gives off.
+     */
+    thought: (ctx) =>
+      ctx.rng.pick([
+        "…that's a lot of buttons.",
+        "Where do I even start with this?",
+        "Hm.",
+      ]) ?? "Hm.",
+    can: (ctx) =>
+      (ctx.performed.get("overwhelmed") ?? 0) < 2 &&
+      Object.values(ctx.available).filter((count) => count > 0).length > 2,
+    appeal: () => 0.08,
     mood: "unsure",
     perform: async (g, ctx) => {
       g.setHover(null);
@@ -153,9 +176,8 @@ export const EXPLORE_INTENTIONS: Intention[] = [
       const name = target ? labelOf(target) : "";
       if (!name) return "Let's see what else is here.";
       const id = target?.getAttribute(NAV_MODULE_ID_ATTR);
-      return id && !ctx.visitedModules.has(id)
-        ? `I haven't looked at ${name} yet.`
-        : `Back to ${name} for a second.`;
+      if (id && ctx.visitedModules.has(id)) return `Back to ${name} for a second.`;
+      return monologueFor("nav-module", target, ctx, `I haven't looked at ${name} yet.`);
     },
     can: (ctx) => ctx.available["nav-module"] > 0 && ctx.reachableModules.length > 0,
     // Restlessness is what stops the ghost admiring one screen for the whole
@@ -176,7 +198,8 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   {
     id: "change-tab",
     category: "explore",
-    thought: "There's more in here.",
+    thought: (ctx) =>
+      oneOf(ctx, ["There's more in here.", "What's behind this tab?"]),
     can: (ctx) => has(ctx, "nav-tab"),
     appeal: (ctx) => (0.3 + restlessness(ctx) * 0.2) * settled(ctx),
     perform: async (g, ctx) => {
@@ -206,6 +229,32 @@ export const EXPLORE_INTENTIONS: Intention[] = [
     perform: async (g, ctx) => {
       if (!(await pressKind(g, ctx, "dismiss", 1500))) return false;
       await g.sleep(g.jitter(900, 600));
+      return true;
+    },
+  },
+
+  {
+    id: "let-it-show-me",
+    category: "explore",
+    thought: (ctx) =>
+      oneOf(ctx, [
+        "Can I actually walk around in here?",
+        "Show me around, then.",
+        "Let's see the rest of this place.",
+      ]),
+    // The way into an immersive module. Very high appeal: a 3D room the ghost is
+    // standing still in is the worst-looking moment in the whole tour, and the
+    // docent button is the only thing in there it can press. It is also the one
+    // beat where the ghost stops driving and lets the module drive — so the dwell
+    // is long, because walking a museum IS the demonstration.
+    can: (ctx) => has(ctx, "docent"),
+    appeal: () => 0.95,
+    mood: "delighted",
+    perform: async (g, ctx) => {
+      if (!(await pressKind(g, ctx, "docent", 2500))) return false;
+      // Get the pointer out of the middle of the scene and let it play.
+      await g.glideTo(window.innerWidth * 0.86, window.innerHeight * 0.82);
+      await g.dwell(g.jitter(26_000, 16_000));
       return true;
     },
   },
@@ -247,6 +296,10 @@ export const EXPLORE_INTENTIONS: Intention[] = [
         ([kind, count]) => count === 0 || kind === "close-overlay",
       ) &&
       ctx.lingerCount === 0 &&
+      // A module running its own tour (the museum docent) has nothing left to
+      // press BY DESIGN. Escaping it would drag the ghost out of the best thing
+      // happening on screen.
+      !ctx.presenting &&
       ctx.moduleDwellMs > 45_000,
     appeal: () => 1,
     mood: "bored",
@@ -270,7 +323,11 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   {
     id: "browse-gallery",
     category: "explore",
-    thought: "I wonder who else has made stuff.",
+    thought: (ctx) =>
+      oneOf(ctx, [
+        "I wonder who else has made stuff.",
+        "What has everyone else been building?",
+      ]),
     can: (ctx) =>
       has(ctx, "gallery-item") &&
       ctx.budgets.galleryOpens < GALLERY_OPENS_PER_SESSION,
@@ -289,7 +346,11 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   {
     id: "open-someone-elses",
     category: "explore",
-    thought: "Let's look at this one properly.",
+    thought: (ctx) =>
+      oneOf(ctx, [
+        "Let's look at this one properly.",
+        "Somebody made this. Let's see it move.",
+      ]),
     can: (ctx) =>
       has(ctx, "gallery-item") &&
       ctx.budgets.galleryOpens < GALLERY_OPENS_PER_SESSION,

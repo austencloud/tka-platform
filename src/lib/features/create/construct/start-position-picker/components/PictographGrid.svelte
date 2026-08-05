@@ -74,6 +74,7 @@
       tabindex="0"
       data-ghost="safe"
       data-ghost-kind="start-position"
+      data-ghost-label={pictographData.letter ?? ""}
       style:--letter-border-color={getLetterBorderColorSafe(
         pictographData.letter
       )}
