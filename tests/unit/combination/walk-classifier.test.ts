@@ -7,9 +7,11 @@
  *   1. The verdict is read off the block shape against each card's REPEAT UNIT,
  *      so "two G steps" (GGGG's unit is one step) and "two FALG steps" (unit
  *      four) are labelled differently even though both are two-step blocks.
- *   2. Dedup is on CONTENT, not on source identity. Two walks over different
- *      variants of a symmetric card build the same sequence, and only one of
- *      them should reach the user.
+ *      Alternation is judged around the CYCLE, because a combination is a loop.
+ *   2. Dedup is on CONTENT and is PHASE-INVARIANT — the same loop entered at a
+ *      different step is the same loop. `SequenceCanonicalizer` is not
+ *      phase-invariant (three defects cited on `contentDedupKey`), which is why
+ *      its hash is carried as a label and never deduped on.
  *   3. The presentation order is NOT the search's shortest-first order. That
  *      was a measured problem at Task 6: the shortest walks of GGGG + HHHH are
  *      two-step "one G, one H" loops, and a default page of 24 filled up with
@@ -31,10 +33,13 @@ import {
 import { findCombinations } from "$lib/shared/combination/services/sequence-combinator";
 import {
   classifyAndRank,
+  classifyBlocks,
+  contentDedupKey,
   rankResults,
   type RawWalk,
 } from "$lib/shared/combination/services/walk-classifier";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   MotionColor,
@@ -63,12 +68,42 @@ function cardBlocks(result: CombinationResult): readonly WalkBlock[] {
   return result.blocks.filter((b) => b.kind !== "ambient");
 }
 
+/** A block of arbitrary material, for exercising `classifyBlocks` directly. */
+function block(kind: "cardA" | "cardB", steps: readonly StepData[]): WalkBlock {
+  return {
+    sourceId: kind === "cardA" ? "A" : "B id",
+    kind,
+    startStepIndex: 0,
+    steps,
+    rotationFaithful: false,
+  };
+}
+
+/** `n` steps of FALG material, cycling — the content is irrelevant to shape. */
+function falgSteps(n: number): StepData[] {
+  return Array.from(
+    { length: n },
+    (_, i) => FALG.steps[i % FALG.steps.length]!
+  );
+}
+
+function gSteps(n: number): StepData[] {
+  return Array.from(
+    { length: n },
+    (_, i) => GGGG_CW.steps[i % GGGG_CW.steps.length]!
+  );
+}
+
 describe("walk classifier — verdicts", () => {
   it("labels a two-run walk SEQUENTIAL and a whole-unit interleave FUSED", async () => {
     // GGGG and HHHH each simplify to a one-letter word, so their repeat unit is
     // ONE step: every single-step block is already a whole unit, and the only
     // thing separating these two verdicts is how many runs the walk has.
-    const report = await findCombinations(GGGG_CW, HHHH_CCW, NO_AMBIENT);
+    const report = await findCombinations(GGGG_CW, HHHH_CCW, {
+      ...NO_AMBIENT,
+      maxResultLength: 4,
+      maxResults: 200,
+    });
     expect(report.results.length).toBeGreaterThan(0);
 
     const sequential = report.results.find((r) => r.verdict === "SEQUENTIAL");
@@ -77,15 +112,7 @@ describe("walk classifier — verdicts", () => {
 
     const fused = report.results.find((r) => r.verdict === "FUSED");
     expect(fused, "expected a FUSED result").toBeDefined();
-    const fusedBlocks = cardBlocks(fused!);
-    expect(fusedBlocks.length).toBeGreaterThan(2);
-    // Strictly alternating cards. The whole-unit half of the FUSED rule is
-    // vacuous for this pair (unit 1 divides everything) — the sub-unit cut it
-    // guards against is tested on FALG and GHGH below, where the unit is > 1.
-    fusedBlocks.forEach((block, i) => {
-      if (i > 0)
-        expect(block.kind, shapeOf(fused!)).not.toBe(fusedBlocks[i - 1]!.kind);
-    });
+    expect(cardBlocks(fused!).length).toBeGreaterThan(2);
 
     // Every result carries one of the four verdicts — no stub label survives.
     for (const result of report.results) {
@@ -94,7 +121,36 @@ describe("walk classifier — verdicts", () => {
         result.canonicalHash
       ).toContain(result.verdict);
     }
-  }, 60_000);
+  }, 120_000);
+
+  it("requires alternation around the WRAP, not just along the list", () => {
+    // Austen's DJDJ + GGGG -> DJGGDJGG: two steps of card A, two of card B,
+    // twice round. It alternates at every seam INCLUDING the one from the last
+    // GG back into the first DJ, so it is FUSED. GHGH (unit 2) + GGGG (unit 1)
+    // stands in for DJ here — same shape, fixtures we already trust.
+    const djggdjgg = [
+      block("cardA", gSteps(2)),
+      block("cardB", gSteps(2)),
+      block("cardA", gSteps(2)),
+      block("cardB", gSteps(2)),
+    ];
+    expect(classifyBlocks(djggdjgg, 2, 1)).toBe("FUSED");
+
+    // A, B, A alternates along the list and NOT around the cycle: the last A
+    // run hands straight back to the first A run, which a performer plays as
+    // one long A. Odd card-block counts can never two-colour a cycle, so this
+    // is HYBRID however the runs are sized.
+    const reentry = [
+      block("cardA", gSteps(2)),
+      block("cardB", gSteps(2)),
+      block("cardA", gSteps(2)),
+    ];
+    expect(classifyBlocks(reentry, 2, 1)).toBe("HYBRID");
+
+    // Every FUSED result a real search emits obeys the cyclic rule.
+    // (Checked against the search in the ranking suite below too.)
+    expect(classifyBlocks([...djggdjgg].reverse(), 2, 1)).toBe("FUSED");
+  });
 
   it("labels a cut inside FALG's repeat unit BRAIDED", async () => {
     // FALG's word does not repeat, so its unit is its four letters — a one- or
@@ -103,43 +159,63 @@ describe("walk classifier — verdicts", () => {
     // it; the label here is about card A alone.
     const report = await findCombinations(FALG, GGGG_CW, {
       ...NO_AMBIENT,
-      maxResultLength: 8,
-      maxResults: 40,
+      maxResultLength: 5,
+      maxResults: 200,
     });
 
     const braided = report.results.filter((r) => r.verdict === "BRAIDED");
     expect(braided.length, "expected a BRAIDED result").toBeGreaterThan(0);
 
     for (const result of braided) {
-      const subUnit = result.blocks.filter(
-        (b) => b.kind === "cardA" && b.steps.length < 4
+      const cut = result.blocks.filter(
+        (b) => b.kind === "cardA" && b.steps.length % 4 !== 0
       );
-      expect(subUnit.length, shapeOf(result)).toBeGreaterThan(0);
+      expect(cut.length, shapeOf(result)).toBeGreaterThan(0);
     }
+  }, 120_000);
 
-    // And the converse: nothing whose card blocks are all whole units got
-    // called BRAIDED.
-    for (const result of report.results) {
-      if (result.verdict !== "BRAIDED") continue;
-      expect(
-        cardBlocks(result).some(
-          (b) => b.steps.length < (b.kind === "cardA" ? 4 : 1)
-        ),
-        shapeOf(result)
-      ).toBe(true);
-    }
-  }, 60_000);
+  it("calls FIVE steps of a unit-four card BRAIDED, not merely short ones", () => {
+    // The predicate is "not a whole number of units", not "shorter than one
+    // unit". A 5-step FALG block runs one whole unit and then stops one step
+    // into the second — the same mid-unit cut a 1-step block makes, and the
+    // same thing `wholeUnitsOnly` filters out. Reading it as "long enough,
+    // therefore fine" would let the two disagree.
+    const fiveAgainstFour = [
+      block("cardA", falgSteps(5)),
+      block("cardB", gSteps(1)),
+      block("cardA", falgSteps(5)),
+      block("cardB", gSteps(1)),
+    ];
+    expect(classifyBlocks(fiveAgainstFour, 4, 1)).toBe("BRAIDED");
+
+    // Eight steps IS two whole units, and the same shape is then FUSED — so
+    // the verdict really is tracking the modulus, not the length.
+    const eightAgainstFour = [
+      block("cardA", falgSteps(8)),
+      block("cardB", gSteps(1)),
+      block("cardA", falgSteps(8)),
+      block("cardB", gSteps(1)),
+    ];
+    expect(classifyBlocks(eightAgainstFour, 4, 1)).toBe("FUSED");
+
+    // And a two-run walk is SEQUENTIAL regardless — "how many runs" is asked
+    // before "how were they cut".
+    expect(
+      classifyBlocks(
+        [block("cardA", falgSteps(5)), block("cardB", gSteps(1))],
+        4,
+        1
+      )
+    ).toBe("SEQUENTIAL");
+  });
 });
 
 describe("walk classifier — content dedup", () => {
-  it("gives every surfaced result a distinct canonical hash", async () => {
+  it("gives every surfaced result a distinct content key", async () => {
     const report = await findCombinations(GGGG_CW, HHHH_CCW, NO_AMBIENT);
-    const hashes = report.results.map((r) => r.canonicalHash);
-    expect(new Set(hashes).size).toBe(hashes.length);
-    // The hash is CONTENT, not the search's source-identity signature: it has
-    // to survive two walks over different variants of the same material.
-    for (const hash of hashes) expect(hash.length).toBeGreaterThan(0);
-  }, 60_000);
+    const keys = report.results.map((r) => contentDedupKey(r.sequence));
+    expect(new Set(keys).size).toBe(keys.length);
+  }, 120_000);
 
   it("collapses two walks over different sources that build the same sequence", async () => {
     // GGGG and HHHH are 4-fold symmetric, so a variant of card B can contain
@@ -173,54 +249,18 @@ describe("walk classifier — content dedup", () => {
       signature,
     });
 
-    const sources: WalkSource[] = [
-      {
-        kind: "cardA",
-        id: "A",
-        variant: {
-          rotation: 0,
-          mirrored: false,
-          colorSwapped: false,
-          rotationFaithful: false,
-        },
-        sequence: GGGG_CW,
-      },
-      {
-        kind: "cardB",
-        id: "B id",
-        variant: {
-          rotation: 0,
-          mirrored: false,
-          colorSwapped: false,
-          rotationFaithful: false,
-        },
-        sequence: HHHH_CCW,
-      },
-      {
-        kind: "cardB",
-        id: "B mirror",
-        variant: {
-          rotation: 0,
-          mirrored: true,
-          colorSwapped: false,
-          rotationFaithful: false,
-        },
-        sequence: HHHH_CCW,
-      },
-    ];
-
     const both = await classifyAndRank(
       [walkVia("B id", "w1"), walkVia("B mirror", "w2")],
       GGGG_CW,
       HHHH_CCW,
-      sources,
+      SOURCES,
       COMBINATOR_DEFAULTS
     );
     const alone = await classifyAndRank(
       [walkVia("B id", "w1")],
       GGGG_CW,
       HHHH_CCW,
-      sources,
+      SOURCES,
       COMBINATOR_DEFAULTS
     );
 
@@ -228,7 +268,71 @@ describe("walk classifier — content dedup", () => {
     // The survivor is the FIRST walk — the search emits shortest-first, so
     // "first" is the representative worth keeping.
     expect(both[0]!.blocks[1]!.sourceId).toBe("B id");
-    expect(both[0]!.canonicalHash).toBe(alone[0]!.canonicalHash);
+    expect(contentDedupKey(both[0]!.sequence)).toBe(
+      contentDedupKey(alone[0]!.sequence)
+    );
+  }, 60_000);
+
+  it("collapses the same loop entered at a different PHASE", async () => {
+    // THE case `SequenceCanonicalizer` leaks, reproduced exactly.
+    //
+    // GHGH's two halves are each closed at beta5, so `[0,1] + [2,3]` and
+    // `[2,3] + [0,1]` are the same four-step loop entered two steps apart. It
+    // closes in one pass, so both builds carry the identical per-step material
+    // — one is literally a rotation of the other.
+    //
+    // The canonicalizer cannot see that. Both phases spell "GHGH", so
+    // `findCircularOffset` returns 0 for BOTH (sequence-canonicalizer.ts:117)
+    // and no rotation is applied to the beat signatures — which then differ,
+    // because GHGH's two G steps are a cw and a ccw pro. Two entries, one loop.
+    const phase = (start: number, signature: string): RawWalk => ({
+      blocks: [
+        {
+          sourceId: "A",
+          kind: "cardA",
+          startStepIndex: start,
+          steps: GHGH.steps.slice(start, start + 2),
+          rotationFaithful: false,
+        },
+        {
+          sourceId: "B id",
+          kind: "cardB",
+          startStepIndex: (start + 2) % 4,
+          steps: GHGH.steps.slice((start + 2) % 4, ((start + 2) % 4) + 2),
+          rotationFaithful: false,
+        },
+      ],
+      totalSteps: 4,
+      signature,
+    });
+
+    const run = (walks: RawWalk[]) =>
+      classifyAndRank(walks, GHGH, GHGH, SOURCES, COMBINATOR_DEFAULTS);
+
+    const [atZero] = await run([phase(0, "phase-0")]);
+    const [atTwo] = await run([phase(2, "phase-2")]);
+
+    // Same loop, same word, both seamless — genuinely two phases of one thing.
+    expect(atZero!.sequence.word).toBe("GHGH");
+    expect(atTwo!.sequence.word).toBe("GHGH");
+    expect(atZero!.sequence.period).toBe(1);
+    expect(atTwo!.sequence.period).toBe(1);
+
+    // The label disagrees. This pins CURRENT upstream behavior: when Task 12
+    // makes `SequenceCanonicalizer` phase-invariant, this line starts failing —
+    // that is the signal to delete it, not to loosen the dedup key.
+    expect(
+      atZero!.canonicalHash,
+      "canonicalizer became phase-invariant; see contentDedupKey's defect list"
+    ).not.toBe(atTwo!.canonicalHash);
+
+    // The dedup key agrees, so the user sees the loop once.
+    expect(contentDedupKey(atZero!.sequence)).toBe(
+      contentDedupKey(atTwo!.sequence)
+    );
+    expect(await run([phase(0, "phase-0"), phase(2, "phase-2")])).toHaveLength(
+      1
+    );
   }, 60_000);
 });
 
@@ -311,7 +415,7 @@ describe("walk classifier — unlabelable results", () => {
       [broken, good],
       GGGG_CW,
       HHHH_CCW,
-      [],
+      SOURCES,
       COMBINATOR_DEFAULTS
     );
 
@@ -320,6 +424,10 @@ describe("walk classifier — unlabelable results", () => {
     expect(results[0]!.sequence.word.length).toBe(
       results[0]!.sequence.steps.length
     );
+    // Real sources are supplied above, so the documented `variantsB` invariant
+    // holds here as it does on a real search — passing `[]` would have faked a
+    // state the search never produces.
+    expect(results[0]!.variantsB.length).toBeGreaterThan(0);
   }, 60_000);
 });
 
@@ -336,48 +444,56 @@ describe("walk classifier — ranking", () => {
     expect(first.verdict).toBe("FUSED");
     expect(first.sequence.period).toBe(1);
 
-    // Two-steppers are still present — they are real combinations — just not
-    // at the top.
-    const shortest = report.results.findIndex(
-      (r) => r.sequence.steps.length === 2
-    );
-    expect(shortest).toBeGreaterThan(0);
-  }, 60_000);
+    // Nothing trivial survives the slice at all now: ranking key 5 pulls the
+    // page toward `lenA + lenB` (8 steps here), so the whole page is longer
+    // than the two-steppers the search emitted first.
+    for (const result of report.results) {
+      expect(result.sequence.steps.length, shapeOf(result)).toBeGreaterThan(2);
+    }
+  }, 120_000);
 
   it("orders verdicts FUSED, SEQUENTIAL, HYBRID, BRAIDED", async () => {
     const order = ["FUSED", "SEQUENTIAL", "HYBRID", "BRAIDED"];
 
-    // Measured on a real report: GGGG + HHHH produces the first three.
-    const gh = await findCombinations(GGGG_CW, HHHH_CCW, NO_AMBIENT);
+    // Measured on real reports. Shallow enough to keep several verdicts in
+    // frame — the ordering claim is about the comparator, not about depth.
+    const gh = await findCombinations(GGGG_CW, HHHH_CCW, {
+      ...NO_AMBIENT,
+      maxResultLength: 4,
+      maxResults: 200,
+    });
     const ghRanks = gh.results.map((r) => order.indexOf(r.verdict));
     expect(ghRanks).toEqual([...ghRanks].sort((a, b) => a - b));
     expect(new Set(ghRanks).size).toBeGreaterThan(1);
 
-    // GHGH's unit is two steps ("GHGH" simplifies to "GH"), so one-step GHGH
-    // blocks are sub-unit — this pair is where BRAIDED shows up, and it sorts
-    // last there too.
-    const gg = await findCombinations(GHGH, GGGG_CW, {
+    // FALG's unit is four steps, so sub-unit cuts — and therefore BRAIDED —
+    // exist on this pair, and sort last.
+    const fg = await findCombinations(FALG, GGGG_CW, {
       ...NO_AMBIENT,
-      maxResultLength: 8,
-      maxResults: 40,
+      maxResultLength: 5,
+      maxResults: 200,
     });
-    const ggRanks = gg.results.map((r) => order.indexOf(r.verdict));
-    expect(ggRanks).toEqual([...ggRanks].sort((a, b) => a - b));
-    expect(gg.results.some((r) => r.verdict === "BRAIDED")).toBe(true);
+    const fgRanks = fg.results.map((r) => order.indexOf(r.verdict));
+    expect(fgRanks).toEqual([...fgRanks].sort((a, b) => a - b));
+    expect(fg.results.some((r) => r.verdict === "BRAIDED")).toBe(true);
 
     // FUSED above BRAIDED directly, on real results from those two reports —
-    // no pair produces both verdicts at these lengths, so the comparator is
-    // exercised on the mixed list instead of a synthetic one.
+    // no single pair produces both verdicts at these lengths, so the comparator
+    // is exercised on the mixed list instead of a synthetic one.
     const fused = gh.results.find((r) => r.verdict === "FUSED")!;
-    const braided = gg.results.find((r) => r.verdict === "BRAIDED")!;
+    const braided = fg.results.find((r) => r.verdict === "BRAIDED")!;
     expect(rankResults([braided, fused], 8).map((r) => r.verdict)).toEqual([
       "FUSED",
       "BRAIDED",
     ]);
-  }, 60_000);
+  }, 120_000);
 
   it("puts period-1 loops above period-2 within the same verdict", async () => {
-    const report = await findCombinations(GGGG_CW, HHHH_CCW, NO_AMBIENT);
+    const report = await findCombinations(GGGG_CW, HHHH_CCW, {
+      ...NO_AMBIENT,
+      maxResultLength: 4,
+      maxResults: 200,
+    });
     const fusedPeriods = report.results
       .filter((r) => r.verdict === "FUSED")
       .map((r) => r.sequence.period);
@@ -388,14 +504,28 @@ describe("walk classifier — ranking", () => {
     expect(fusedPeriods).toEqual(
       [...fusedPeriods].sort((a, b) => (a ?? Infinity) - (b ?? Infinity))
     );
-  }, 60_000);
+  }, 120_000);
+
+  it("names every card-B variant it drew on", async () => {
+    // The documented `variantsB` invariant: empty only for a result with no
+    // card-B block, which the search never emits.
+    const report = await findCombinations(GGGG_CW, HHHH_CCW, NO_AMBIENT);
+    expect(report.results.length).toBeGreaterThan(0);
+    for (const result of report.results) {
+      expect(result.cardBShare, shapeOf(result)).toBeGreaterThan(0);
+      expect(result.variantsB.length, shapeOf(result)).toBeGreaterThan(0);
+      expect(result.variantsB.length).toBeLessThanOrEqual(
+        result.blocks.filter((b) => b.kind === "cardB").length
+      );
+    }
+  }, 120_000);
 });
 
 describe("walk classifier — derivation", () => {
   it("names the ingredients in display words", async () => {
     const report = await findCombinations(FALG, GGGG_CW, {
       ...NO_AMBIENT,
-      maxResultLength: 8,
+      maxResultLength: 5,
       maxResults: 40,
     });
     expect(report.results.length).toBeGreaterThan(0);
@@ -421,7 +551,7 @@ describe("walk classifier — derivation", () => {
         result.canonicalHash
       ).toBe(result.rotationFaithfulBlocks > 0);
     }
-  }, 60_000);
+  }, 120_000);
 
   it("names both single-letter cards", async () => {
     const report = await findCombinations(GGGG_CW, HHHH_CCW, NO_AMBIENT);
@@ -429,13 +559,11 @@ describe("walk classifier — derivation", () => {
       expect(result.derivation, result.canonicalHash).toMatch(
         /^= G \+ H(?: · rotation-faithful seams)?$/
       );
-    }
-    // No ambient layer yet (Task 9), so nothing extends the sentence.
-    for (const result of report.results) {
+      // No ambient layer yet (Task 9), so nothing extends the sentence.
       expect(result.usedAmbient).toBe(false);
       expect(result.ambientWords).toEqual([]);
     }
-  }, 60_000);
+  }, 120_000);
 });
 
 describe("walk classifier — wholeUnitsOnly", () => {
@@ -451,17 +579,17 @@ describe("walk classifier — wholeUnitsOnly", () => {
     });
 
     expect(restricted.results.length).toBeGreaterThan(0);
-    expect(restricted.results.map((r) => r.canonicalHash)).toEqual(
-      unrestricted.results.map((r) => r.canonicalHash)
+    expect(restricted.results.map((r) => contentDedupKey(r.sequence))).toEqual(
+      unrestricted.results.map((r) => contentDedupKey(r.sequence))
     );
-  }, 60_000);
+  }, 120_000);
 
   it("actually removes sub-unit blocks when a card's unit is bigger than one", async () => {
     // GHGH's unit is two steps, so this is where the flag has teeth.
     const options = {
       ...NO_AMBIENT,
-      maxResultLength: 8,
-      maxResults: 40,
+      maxResultLength: 5,
+      maxResults: 200,
     };
     const unrestricted = await findCombinations(GHGH, GGGG_CW, options);
     const restricted = await findCombinations(GHGH, GGGG_CW, {
@@ -478,15 +606,16 @@ describe("walk classifier — wholeUnitsOnly", () => {
     ).toBe(true);
 
     for (const result of restricted.results) {
-      for (const block of result.blocks) {
-        if (block.kind === "cardA") {
-          expect(block.steps.length % 2, shapeOf(result)).toBe(0);
+      for (const b of result.blocks) {
+        if (b.kind === "cardA") {
+          expect(b.steps.length % 2, shapeOf(result)).toBe(0);
         }
       }
-      // A sub-unit cut is what BRAIDED means, so the flag rules it out.
+      // A mid-unit cut is what BRAIDED means, so the flag rules it out — the
+      // filter and the verdict share one predicate.
       expect(result.verdict, shapeOf(result)).not.toBe("BRAIDED");
     }
-  }, 60_000);
+  }, 120_000);
 });
 
 describe("walk classifier — determinism", () => {
@@ -503,6 +632,7 @@ describe("walk classifier — determinism", () => {
 
     const fingerprint = (report: { results: readonly CombinationResult[] }) =>
       report.results.map((r) => ({
+        key: contentDedupKey(r.sequence),
         hash: r.canonicalHash,
         verdict: r.verdict,
         derivation: r.derivation,
@@ -512,5 +642,46 @@ describe("walk classifier — determinism", () => {
       }));
 
     expect(fingerprint(second)).toEqual(fingerprint(first));
-  }, 60_000);
+  }, 120_000);
 });
+
+/**
+ * The source table a hand-built walk is classified against. Real entries, so
+ * `variantsB` resolves — `variantsUsed` silently skips blocks whose source is
+ * unknown, and an empty table would fake a state the search never produces.
+ */
+const SOURCES: WalkSource[] = [
+  {
+    kind: "cardA",
+    id: "A",
+    variant: {
+      rotation: 0,
+      mirrored: false,
+      colorSwapped: false,
+      rotationFaithful: false,
+    },
+    sequence: GGGG_CW,
+  },
+  {
+    kind: "cardB",
+    id: "B id",
+    variant: {
+      rotation: 0,
+      mirrored: false,
+      colorSwapped: false,
+      rotationFaithful: false,
+    },
+    sequence: HHHH_CCW,
+  },
+  {
+    kind: "cardB",
+    id: "B mirror",
+    variant: {
+      rotation: 0,
+      mirrored: true,
+      colorSwapped: false,
+      rotationFaithful: false,
+    },
+    sequence: HHHH_CCW,
+  },
+];

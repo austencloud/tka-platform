@@ -55,13 +55,6 @@ import { classifyAndRank, type RawWalk } from "./walk-classifier";
 const MIN_RESULT_LENGTH = 2;
 const HARD_MAX_RESULT_LENGTH = 64;
 
-/**
- * Raw walks collected before the classifier runs, as a multiple of
- * `maxResults`. The classifier prunes further (content dedup, ranking), so the
- * search has to hand it more than the caller asked for — but not without limit.
- */
-const RAW_WALK_OVERSHOOT = 8;
-
 /** A step of some source that a walk can enter at. */
 interface SeamEntry {
   readonly sourceIndex: number;
@@ -304,7 +297,9 @@ export async function findCombinations(
   });
 
   const rawWalks = new Map<string, RawWalk>();
-  const rawWalkCap = Math.max(opts.maxResults * RAW_WALK_OVERSHOOT, 1);
+  // How much of the space to LOOK AT, independent of how much of the answer
+  // the caller wants to SEE. See `CombinatorTunables.rawWalkCap`.
+  const rawWalkCap = Math.max(opts.rawWalkCap, 1);
   let budget = opts.searchBudget;
   let resultsTruncated = false;
   let budgetExhausted = false;

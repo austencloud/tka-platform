@@ -11,10 +11,10 @@
  *   2. **Content dedup.** Two walks over DIFFERENT sources can build the same
  *      sequence — a symmetric card's identity and its rotated variant contain
  *      literally the same steps — and the search cannot see that, because it
- *      keys on source identity. The built sequence's canonical hash can, so the
- *      hash is taken after `buildResult` and the first walk to produce a given
- *      sequence wins. The search's shortest-first order makes "first" mean
- *      "smallest", which is the representative worth keeping.
+ *      keys on source identity. {@link contentDedupKey} can, so it is taken
+ *      after `buildResult` and the first walk to produce a given sequence wins.
+ *      The search's shortest-first order makes "first" mean "smallest", which
+ *      is the representative worth keeping.
  *   3. **Ranking.** See {@link rankResults} — the search's shortest-first order
  *      is deliberately NOT the presentation order.
  *
@@ -99,14 +99,17 @@ function unitOf(block: WalkBlock, unitA: number, unitB: number): number | null {
   return null;
 }
 
+/**
+ * Does this block span a whole number of its card's repeat units?
+ *
+ * Note the shape of the question: a 5-step block of a unit-4 card is NOT whole,
+ * even though it is longer than a unit. It ends one step into a second repeat,
+ * which is a cut inside a unit exactly like a 3-step block is. Ambient blocks
+ * have no card grain, so they are vacuously whole.
+ */
 function isWholeUnit(block: WalkBlock, unitA: number, unitB: number): boolean {
   const unit = unitOf(block, unitA, unitB);
   return unit === null || block.steps.length % unit === 0;
-}
-
-function isSubUnit(block: WalkBlock, unitA: number, unitB: number): boolean {
-  const unit = unitOf(block, unitA, unitB);
-  return unit !== null && block.steps.length < unit;
 }
 
 // ---------------------------------------------------------------------------
@@ -121,11 +124,19 @@ function isSubUnit(block: WalkBlock, unitA: number, unitB: number): boolean {
  * dropped between the two halves of a concatenation must not turn SEQUENTIAL
  * into something else. `usedAmbient` is where that shows up instead.
  *
- * Alternation is read along the block list, not around the cyclic wrap. The
- * partition is canonical (`canonicalPartition` rejoins wrap-split runs), so a
- * first and last block of the same KIND are two separate runs of that card —
- * a re-entry — and an odd number of card blocks can still be a clean
- * whole-unit interleave.
+ * **Alternation is CYCLIC.** A combination is a loop, so the last block is
+ * adjacent to the first and the wrap seam counts like every other seam. FUSED
+ * therefore needs adjacent kinds to differ AND the first and last kinds to
+ * differ. Austen's DJDJ + GGGG -> DJGGDJGG is the shape it is protecting:
+ * `A:2 + B:2 + A:2 + B:2`, which alternates all the way round, including from
+ * that last GG back into the first DJ.
+ *
+ * An even card-block count falls out of that rule rather than being imposed —
+ * you cannot two-colour an odd cycle. So a re-entry shape like `A + B + A`
+ * lands in HYBRID: it reads as alternating only if you stop at the end of the
+ * list and ignore that the loop hands the last A straight back to the first.
+ * That is the correct answer, not a limitation; those two A runs are adjacent
+ * in performance.
  */
 export function classifyBlocks(
   blocks: readonly WalkBlock[],
@@ -137,17 +148,20 @@ export function classifyBlocks(
   // Two runs, one per card: the cards were played one after the other.
   if (cardBlocks.length === 2) return "SEQUENTIAL";
 
-  const alternating = cardBlocks.every(
-    (block, i) => i === 0 || block.kind !== cardBlocks[i - 1]!.kind
-  );
+  const alternating =
+    cardBlocks.every(
+      (block, i) => i === 0 || block.kind !== cardBlocks[i - 1]!.kind
+    ) && cardBlocks[0]!.kind !== cardBlocks.at(-1)!.kind;
   const allWhole = cardBlocks.every((block) =>
     isWholeUnit(block, unitA, unitB)
   );
   if (cardBlocks.length > 2 && alternating && allWhole) return "FUSED";
 
-  // A block shorter than its own card's unit is a cut INSIDE a repeat — the
-  // cards are woven at a finer grain than either was written in.
-  if (cardBlocks.some((block) => isSubUnit(block, unitA, unitB))) {
+  // Any block that is not a whole number of its card's units is a cut INSIDE a
+  // repeat — the cards are woven at a finer grain than either was written in.
+  // Same predicate the `wholeUnitsOnly` filter uses, so the two can never
+  // disagree: with that flag set, BRAIDED is unreachable by construction.
+  if (cardBlocks.some((block) => !isWholeUnit(block, unitA, unitB))) {
     return "BRAIDED";
   }
 
@@ -216,18 +230,43 @@ function derivationOf(
 // ---------------------------------------------------------------------------
 
 /**
- * A content signature that does not depend on the canonicalizer.
+ * THE dedup key: are these two built sequences the same loop?
  *
  * Per step: letter, both endpoints, and each hand's motion type + rotation
- * direction + turns + orientation transition. That is the material a performer
- * would call "the same beat"; ids and step numbers (which differ by
+ * direction + turns + orientations + locations. That is the material a
+ * performer would call "the same beat"; ids and step numbers (which differ by
  * construction between two walks over different sources) are deliberately out.
  *
- * A closed walk has no start, so the signature is the lexicographically
- * smallest ROTATION of the per-step keys — the same trick the search uses on
- * its own walk signature, for the same reason.
+ * A closed walk has no start, so the key is the lexicographically smallest
+ * ROTATION of the per-step keys — the same trick the search uses on its own
+ * walk signature, for the same reason. PHASE INVARIANCE is the whole job here:
+ * the same loop entered at a different step is the same loop.
+ *
+ * **Why not `SequenceCanonicalizer`?** It was the obvious candidate — it is the
+ * codebase's own "are these the same sequence" — and it leaks duplicates on
+ * exactly this input. Three defects in
+ * `shared/comparison/services/sequence-canonicalizer.ts`, all still present:
+ *
+ *   1. **`:29`** — rotation normalization is gated on `sequence.isCircular`. A
+ *      period-2 combination is a real, correct loop with `isCircular: false`
+ *      (orientation takes two passes), so it receives NO phase normalization
+ *      at all and two phases of it hash differently.
+ *   2. **`:117-127` + `:145-150`** — `findCircularOffset` returns a CHARACTER
+ *      index into the word (`doubled.indexOf(canonicalWord)`), and
+ *      `generateCanonicalHash` then uses it to rotate `beatSignatures`, a
+ *      per-STEP array. Those two indices agree only while every letter is one
+ *      character; any dash or Greek letter desynchronizes the rotation.
+ *   3. **`:37`** — spatial normalization is explicitly not applied, while the
+ *      beat signatures underneath use location DELTAS. Two results that are
+ *      90° rotations of each other can therefore collide, which is the
+ *      opposite failure and the reason its hash cannot be trusted in either
+ *      direction here.
+ *
+ * Fixing that is Task 12's job, not a side effect of this one. Until then its
+ * output is still carried on `CombinationResult.canonicalHash` for
+ * cross-module compatibility — read, never deduped on.
  */
-function fallbackContentHash(sequence: SequenceData): string {
+export function contentDedupKey(sequence: SequenceData): string {
   const keys = sequence.steps.map((step) => {
     const hands = (["blue", "red"] as const)
       .map((color) => {
@@ -257,13 +296,16 @@ function fallbackContentHash(sequence: SequenceData): string {
 let canonicalizerWarned = false;
 
 /**
- * The dedup key. `SequenceCanonicalizer` is the codebase's own answer to "are
- * these the same sequence"; the combination engine is its first consumer, so
- * the fallback above is kept as a real safety net rather than dead code — a
- * step missing a hand makes `generateSignature` throw, and losing the whole
- * search to that would be a poor trade for a hash.
+ * The value carried on `CombinationResult.canonicalHash`, for other modules
+ * that already speak `SequenceCanonicalizer`'s dialect. It is a LABEL, not the
+ * dedup key — see {@link contentDedupKey} for why, and do not reintroduce it as
+ * one.
+ *
+ * A step missing a hand makes `generateSignature` throw, and losing a whole
+ * search to a label would be a poor trade, so a failure degrades to the dedup
+ * key rather than propagating.
  */
-function contentHash(sequence: SequenceData): string {
+function canonicalizerHash(sequence: SequenceData): string {
   try {
     return getSequenceCanonicalizer().canonicalize(sequence).canonicalHash;
   } catch (error) {
@@ -271,11 +313,11 @@ function contentHash(sequence: SequenceData): string {
       canonicalizerWarned = true;
       console.warn(
         "[walk-classifier] sequence canonicalizer unavailable; " +
-          "falling back to a content signature for dedup",
+          "labelling results with the content dedup key instead",
         error
       );
     }
-    return fallbackContentHash(sequence);
+    return contentDedupKey(sequence);
   }
 }
 
@@ -423,9 +465,11 @@ export async function classifyAndRank(
       continue;
     }
 
-    const canonicalHash = contentHash(sequence);
-    if (seen.has(canonicalHash)) continue;
-    seen.add(canonicalHash);
+    // Dedup on CONTENT, label with the canonicalizer. Two different keys on
+    // purpose — the label is not phase-invariant and cannot be trusted here.
+    const dedupKey = contentDedupKey(sequence);
+    if (seen.has(dedupKey)) continue;
+    seen.add(dedupKey);
 
     const cardASteps = stepsOfKind(walk.blocks, "cardA");
     const cardBSteps = stepsOfKind(walk.blocks, "cardB");
@@ -445,7 +489,7 @@ export async function classifyAndRank(
       cardBShare: cardSteps > 0 ? cardBSteps / cardSteps : 0,
       variantsB: variantsUsed(walk.blocks, sourceById),
       rotationFaithfulBlocks,
-      canonicalHash,
+      canonicalHash: canonicalizerHash(sequence),
       derivation: derivationOf(
         cardA,
         cardB,

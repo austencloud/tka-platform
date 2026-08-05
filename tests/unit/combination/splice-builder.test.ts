@@ -331,10 +331,14 @@ describe("splice builder", () => {
     // The end-to-end claim: the real builder now runs inside the pipeline, so
     // the search's results are not merely position-continuous walks — they are
     // performable sequences.
+    // 200 results, not a default page: the classifier ranks period-1 above
+    // period-2, so a small page is all period-1 by construction and the
+    // distribution assertion at the bottom would be measuring the ranking
+    // rather than the material.
     const report = await findCombinations(GGGG_CW, HHHH_CCW, {
       allowAmbient: false,
       maxResultLength: 6,
-      maxResults: 40,
+      maxResults: 200,
     });
     expect(report.results.length).toBeGreaterThan(0);
 
@@ -371,10 +375,10 @@ describe("splice builder", () => {
       expect(seq.isCircular, result.canonicalHash).toBe(seq.period === 1);
     }
 
-    // The real distribution over the default-sized result set: this pair splits
-    // evenly. Half the walks close in one pass, half take two — pinned so a
-    // future change that quietly forced closure (or stopped measuring) shows up
-    // as a number, not as a vibe.
+    // The real distribution over a wide result set: this pair splits roughly
+    // evenly. Some walks close in one pass, some take two — pinned so a future
+    // change that quietly forced closure (or stopped measuring) shows up as a
+    // number, not as a vibe.
     const periods = report.results.map((r) => r.sequence.period);
     expect(periods.filter((p) => p === 1).length).toBeGreaterThan(0);
     expect(periods.filter((p) => p === 2).length).toBeGreaterThan(0);

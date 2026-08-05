@@ -87,6 +87,13 @@ export interface CombinationResult {
   readonly variantsB: readonly VariantDescriptor[];
   /** Count of blocks taken from a rotation-faithful twin (see VariantDescriptor.rotationFaithful). */
   readonly rotationFaithfulBlocks: number;
+  /**
+   * `SequenceCanonicalizer`'s hash for this sequence — a LABEL for other
+   * modules that already speak that dialect, NOT what the engine deduped on.
+   * It is not phase-invariant (three defects documented on
+   * `walk-classifier.contentDedupKey`), so two entries could in principle
+   * carry the same value; use `contentDedupKey(result.sequence)` for identity.
+   */
   readonly canonicalHash: string;
   /** "= FL + AA + GG" style ingredient sentence. */
   readonly derivation: string;
@@ -144,7 +151,29 @@ export interface CombinatorTunables {
   readonly minBlockSize: number;
   /** Clamped by the search to [2, 64]: a closed walk needs at least two steps. */
   readonly maxResultLength: number;
+  /** How many ranked results the caller wants back. A PRESENTATION size. */
   readonly maxResults: number;
+  /**
+   * How many raw closed walks the search collects before it stops deepening.
+   *
+   * Deliberately NOT derived from `maxResults`. The two answer different
+   * questions: `maxResults` is how much of the answer to show, `rawWalkCap` is
+   * how much of the space to look at. Tying them (it was `maxResults * 8`)
+   * meant asking for a smaller page also made the search shallower — a page of
+   * 24 stopped the deepening at 192 walks, which on GGGG + HHHH is reached
+   * while still enumerating two- and four-step loops, so the eight-step shapes
+   * the ranking exists to promote were never collected at all.
+   *
+   * `searchBudget` still bounds the actual work; this bounds the harvest.
+   *
+   * Measured on GGGG + HHHH at these defaults (2026-08-04): 4096 walks in
+   * ~190ms, deepening fully explored to length 5 and truncated part-way
+   * through 6. Reaching length 8 — the "both full cards" shape ranking key 5
+   * aims at — needs BOTH a bigger cap and a bigger budget (16384 / 2_000_000
+   * gets there in ~700ms); at 4096 the harvest cap binds first, and at the
+   * default 200_000 nodes the budget binds right behind it.
+   */
+  readonly rawWalkCap: number;
   /**
    * Keep only walks whose every card block is a whole multiple of that card's
    * REPEAT UNIT — the simplified word's letter count, so GGGG's unit is one
@@ -165,6 +194,7 @@ export const COMBINATOR_DEFAULTS: CombinatorTunables = {
   minBlockSize: 1,
   maxResultLength: 32,
   maxResults: 24,
+  rawWalkCap: 4096,
   wholeUnitsOnly: false,
   allowAmbient: true,
   maxAmbientRun: 2,

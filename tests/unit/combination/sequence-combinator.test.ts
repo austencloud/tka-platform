@@ -13,10 +13,12 @@
  *
  * Ambient bridging is Task 9; every call here runs with `allowAmbient: false`.
  *
- * The GG/HH calls raise `maxResults` above the default: the classifier is still
- * a Task-8 stub that slices shortest-first, and the shapes under test here
- * (a 2-block concatenation AND a 4-block interleave) only coexist in a wider
- * slice. Nothing about the search itself is relaxed.
+ * The GG/HH calls raise `maxResults` above the default because the classifier
+ * RANKS before it slices: a default page of 24 is the two dozen most
+ * card-worthy results, and the shapes under test here (a 2-block concatenation
+ * AND a 4-block interleave) only coexist in a wider slice. Nothing about the
+ * search itself is relaxed — `rawWalkCap`, not `maxResults`, is what bounds
+ * how much of the space is looked at.
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
@@ -26,6 +28,7 @@ import type {
   WalkBlock,
 } from "$lib/shared/combination/domain/types";
 import { findCombinations } from "$lib/shared/combination/services/sequence-combinator";
+import { contentDedupKey } from "$lib/shared/combination/services/walk-classifier";
 
 import { AAAA_CCW, FALG, GGGG_CW, HHHH_CCW, HHHH_CW } from "./fixtures";
 import { loadPictographDatasetForTests } from "./pictograph-dataset";
@@ -260,8 +263,13 @@ describe("sequence combinator — walk search", () => {
     expect(report.searchedToLength).toBe(4);
     expect(report.results.length).toBeGreaterThan(0);
 
-    const hashes = report.results.map((r) => r.canonicalHash);
-    expect(new Set(hashes).size).toBe(hashes.length);
+    // `contentDedupKey`, not `canonicalHash`. The latter is the canonicalizer's
+    // label, and on this pair it collides hard — 235 distinct loops share 60
+    // values, because its beat signatures use location DELTAS with no spatial
+    // normalization applied (sequence-canonicalizer.ts:37), so every rotation
+    // of a walk hashes alike. Identity lives on the dedup key.
+    const keys = report.results.map((r) => contentDedupKey(r.sequence));
+    expect(new Set(keys).size).toBe(keys.length);
 
     // Re-derive the rotation classes independently of the engine's own key:
     // per step, (source, step identity), canonicalized by rotation. Two results
