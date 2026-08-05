@@ -63,10 +63,10 @@ before the rule existed.
 search, and gamma/box material arrives free rather than as the cross-mode
 feature the old spec deferred to Future.
 
-### 3. The answer has a shape, and the shape is the taxonomy
+### 3. The answer has a shape, and the count fingerprints the pair
 
-Exhaustive enumeration for GGGG + AAAA (unit ≤ 6 steps, ≤ 2 connectors, diamond)
-returns 512 distinct words. Every 4-step one has the same form:
+Exhaustive enumeration (unit ≤ 6 steps, ≤ 2 connectors, diamond, both cards
+required). Every 4-step result for A + G has the same form:
 
 ```
 AJGD  AJGE  AJGF  AJGΦ  AKGD  AKGE  AKGF  AKGΦ
@@ -75,11 +75,28 @@ ALGD  ALGE  ALGF  ALGΦ  AΨGD  AΨGE  AΨGF  AΨGΦ
 
 That is **one shape** — *A-run · cross out · G-run · cross back* — with four
 outbound crossers (J, K, L, Ψ), four return crossers (D, E, F, Φ), and a run
-length. 512 is not 512 ideas; it is one idea enumerated.
+length. The count is not that many ideas; it is one idea enumerated.
 
-**So the unit of the answer is the SHAPE, and the choices inside it are the
-taxonomy.** "These two cards combine one way: alternate them, crossing at each
-seam. You have 16 crossing pairs and 3 run lengths, and here they are."
+**The totals are a fingerprint of how the two cards relate:**
+
+| Pair | Relationship | Distinct words |
+|---|---|---|
+| A+G, B+H, C+I | cross-world, matched spin character | **256** |
+| A+H, B+G | cross-world, mismatched spin | **512** |
+| A+S, G+S | cross-world into gamma | **512** |
+| A+B, G+H | same world, no crossing needed | **7396** |
+
+Cards in different position worlds need a bridge at every seam, which constrains
+the answer set hard; sharing spin character folds it in half again. Cards in the
+*same* world need no connector at all — A+B's shortest result is 2 steps against
+A+G's 4 — so every interleaving is legal and the space explodes. A+B and G+H
+returning the identical 7396 is the family structure of finding 2 reappearing:
+the alpha and beta versions of one question have one answer.
+
+Austen's hypothesis (2026-08-05) that the count would be a constant 512 across
+base pairs is therefore **refuted as stated but right in spirit** — the counts
+come from a small stable set determined by the pair's symmetry, not from the
+pair's identity.
 
 ## Architecture
 
@@ -126,6 +143,34 @@ them, the completeness statement:
 Behind a collapsed Advanced drawer: liberty toggles, length and connector
 budgets, JSON paste, and the similarity panel with its sliders. Nothing there
 greets you.
+
+### Sorting and sub-categorising the results
+
+Results are sequences, so **the browse gallery's existing filter bar points at
+them directly** rather than getting a bespoke sorting UI — and the qualities you
+sort combinations by become the same ones you already browse your library by.
+Reuse `BrowseFilterType` (`src/lib/shared/persistence/domain/enums/filtering-enums.ts`)
+and the shared `filter-chips/` components per `chip-primitives.md`.
+
+Available on a realized sequence today, verified 2026-08-05:
+
+| Quality | Source |
+|---|---|
+| Prop reversals **and** hand reversals, as two independent channels | `deriveReversals` — `packages/sequence-engine/src/analysis/deriveReversals.ts:105` |
+| Named reversal pattern (continuous, book, red-book …) | `matchReversalPatternId` — `src/lib/features/choreo-card/domain/reversal-matcher.ts:65` |
+| LOOP type / component | `LOOPDetector` (subject to Open Question 3) |
+| Rotation period (halved / quartered) | `detectRotationPeriod` — `src/lib/shared/create/domain/detect-rotation-period.ts:26` |
+| Difficulty level 1–3, and level 4–8 features | `analyzeDifficulty` — `sequence-difficulty-calculator.ts:22`; `detectLevelFeatures` — `level-feature-detector.ts:67` |
+| Max turn intensity, step count, grid mode, start/end position group, TnD family | `browse-filter.ts` (all cached, all reusable) |
+
+The prop/hand split is the correct form of the axis this session first got wrong:
+a connector's character is *which flow it protects*, and both channels are
+measurable per result rather than inferred from letter type.
+
+**Must be built (nothing analyses a finished sequence for this):** motion-type
+mix, i.e. contains-dashes / contains-statics, plus letter-type mix and VTG
+category mix. Small, but currently absent — dash preference exists only as a
+generation-time steering bias, never as a post-hoc classifier.
 
 Follows `4k-native-layout.md` and `no-layout-shift.md`; verified at all seven
 viewports per `visual-verification-mandatory.md` before it is called done.
