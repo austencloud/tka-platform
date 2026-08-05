@@ -10,6 +10,14 @@ last_triaged: 2026-08-04
 ---
 # Vulcan Cave — Fire room SHIPPED, Earth room next — Handoff (2026-08-04)
 
+> **SUPERSEDED for Air and Moon (2026-08-05).** Air has since been rebuilt with
+> no ramp at all — Austen rejected the Plan B "Last Lift" programme this
+> document records — and Moon's Still Room was retired for the surface of the
+> moon. Anything below about Air's ramp/landings or Moon's reflection pool is
+> historical. Start from
+> [`2026-08-05-vulcan-cave-air-room-handoff.md`](./2026-08-05-vulcan-cave-air-room-handoff.md).
+> The Water, Fire and Earth content here is still current.
+
 ## Mission
 
 The Vulcan Cave wing is built room by room as walkable grayboxes with a hard

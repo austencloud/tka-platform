@@ -139,94 +139,111 @@ blocking shape for the tile terrain (circular predicate, not rects).
 
 ---
 
-## Air — "The Chimney" (working title)
+## Air — "The Chimney" (BUILT 2026-08-05 — this section describes what exists)
 
-**Concept.** A draft you can feel pulls you up a switchback ledge inside a
-tall chimney, and you meet Fire's three partners again one at a time at eye
-level as you climb — same pairs, now landing together.
+**Status.** Graybox built and committed (`410584cff3`). This section was
+rewritten to match the room; the switchback-ramp version it used to describe is
+recorded under **Retired: the ramp** at the end, because a stale plan here is
+how a future agent rebuilds the thing Austen rejected.
 
-**Element first-person.** At the base, cold air moves: audible draft, drifting
-motes visibly lifting, a hanging curtain of dry roots stirring, the torchlight
-leaning. The floor is bright at the top and dark where you stand — the only
-light comes from a surface crack ~22 m up. You feel air as the thing that
-moves before you see anything move deliberately.
+**Concept.** A tall shaft with an open floor and no stair. A column of rising
+air carries the visitor past three ledges — one pair at a time, each arriving at
+eye level — to an overlook nine metres up; a second, warmer column sets them
+back down beside the door on.
 
-**Unique mechanism.** *The only room whose circulation is a vertical climb, and
-the only room where the performers are met serially at eye level* — three
-ledges at three heights, each read alone from the ramp landing beside it, all
-three visible together only from the top overlook, looking back down.
-- Not Earth: Earth is a fixed rim looking down at a simultaneous trio; Air
-  climbs past a staggered trio and only assembles them at the end.
-- Not Fire: same three letter pairs, deliberately — but Fire is a dark
-  horizontal amphitheatre lit by the performers, Air is a bright vertical shaft
-  where they are silhouettes against daylight. The echo is the point: same
+**Element first-person.** Cold air moves before anything else does: audible
+draft, motes visibly lifting inside the column, the shaft brighter than the rock
+around it. The visitor walks in, sees the one obviously-bright thing in the
+room, and walks into it. Nothing instructs them and nothing gates them.
+
+**Unique mechanism.** *The element IS the circulation.* Air is the only room
+where the visitor does no vertical work — every metre up and down is the room
+moving them, and feet only do the flat.
+- Not Earth: Earth is a fixed rim looking down at a simultaneous trio; Air is
+  carried up past a staggered trio.
+- Not Fire: same three letter pairs, deliberately. Fire is a dark horizontal
+  amphitheatre lit by the performers; Air is a bright vertical shaft. Same
   partners, opposite room in every axis.
 - Not Water/Sun: no water, no round plan.
-- Not Moon: both rooms change how the visitor moves, and that rhyme is
-  deliberate — but Air's lift is scripted, involuntary and happens once, where
-  Moon's low gravity is a persistent property the visitor drives. Air is
-  enclosed rock; Moon is open sky. Prototype the two movement changes together.
+- Not Moon: both rooms change how the visitor moves and the rhyme is deliberate
+  — Air's lift is scripted and involuntary, Moon's low gravity is a persistent
+  property the visitor drives. Passenger, then pilot. They share the walker and
+  ground-clamp risk, so prototype the two movement changes together.
 
-**The Fire echo, designed.** Air's three ledges carry the same station
-silhouette as Fire's three pits (same boss profile, same carved ring motif) and
-appear in the same left-to-right order. Fire's stations sit at one elevation
-and fire apart; Air's sit at three elevations and land together. Interpretation
-(pictograph cave-art, no Latin letters) repeats the Fire glyph pair beside each
-Air ledge.
-
-**Floor plan program.** Enter north (`earthToAir`), exit south (`airToSun`).
+**Floor plan as built.** Enter north (`earthToAir`), exit south (`airToSun`).
+Both doors on the museum datum. Interior 17.5 × 20.5 m, ceiling +13.
 
 | # | Station | Rough dims | Floor Y | Walkable |
 |---|---|---|---|---|
-| 1 | Draft vestibule (north door) | 5 × 4 m | −1.2 | yes |
-| 2 | Root curtain squeeze | 4 × 1.6 m | −1.2 | yes |
-| 3 | Chimney floor, rubble cone | 12 × 10 m | −1.4 | yes |
-| 4 | Ramp leg 1 (west wall) | 11 m run, 2.2 m wide | −1.4 → +1.6 | yes |
-| 5 | Landing A (ledge D-J opposite) | 3 × 2.5 m | +1.6 | yes |
-| 6 | Ramp leg 2 (north wall) | 10 m run | +1.6 → +4.6 | yes |
-| 7 | Landing B (ledge E-K opposite) | 3 × 2.5 m | +4.6 | yes |
-| 8 | Ramp leg 3 (east wall) | 10 m run | +4.6 → +7.6 | yes |
-| 9 | Landing C (ledge F-L opposite) | 3 × 2.5 m | +7.6 | yes |
-| 10 | Top overlook (south) | 5 × 3.5 m | +8.4 | yes |
-| 11 | Shaft void | ~9 × 9 m core | — | **blocked** |
-| 12 | Three performer ledges | 3 × 2 m each, opposite each landing | +1.6 / +4.6 / +7.6 | blocked |
-| 13 | Exit crack down to Sun | 8 m run, 2.5 m wide | +8.4 → 0 | yes |
+| 1 | Open arrival floor | full bay | 0 | yes |
+| 2 | Rise column (⌀ 5.2 m, centre 7 m from north wall) | lifts 0 → +9.0 | — | yes |
+| 3 | Performer ledge, DJ | 3.5 m deep × 3.5 m, west wall | +2.4 | blocked |
+| 4 | Performer ledge, EK | 3.5 m deep × 3.5 m, west wall | +5.0 | blocked |
+| 5 | Performer ledge, FL | 3.5 m deep × 3.5 m, west wall | +7.6 | blocked |
+| 6 | Overlook | 7 × 4.5 m, south of the column | +9.0 | yes |
+| 7 | Sink column (⌀ 4 m) | lowers +9.0 → 0 | — | yes |
+| 8 | Walk to the Sun door | — | 0 | yes |
 
-Chamber bay ≈ 16 × 15 m in plan — the smallest footprint in the wing — and
-~24 m of authored height. Ceiling crack at ≈ +22.
+**Nothing in this room is blocked.** `blockedAt` returns false everywhere. The
+barrier between visitor and performers is open air and nothing else.
 
-**Performers + barrier.** Each ledge faces its landing across ~7 m of open
-shaft: the barrier is the void plus the draft, and the ledges have no
-connecting path. Eye-level pairing is the whole point — a Tog-Opp pair reads as
-two props mirroring each other on the same downbeat, and that mirror only reads
-when the pair is at your height and isolated from the other two. The top
-overlook then stacks all three verticaly: three mirrors on three floors, all
-landing on the same beat.
+**Performers + barrier.** DJ, EK and FL stand on three ledges on the WEST wall,
+staggered ~2.2 m apart along Z so they climb away from the door as a diagonal,
+each ~5.8 m laterally from the column centre. Riding the shaft brings each pair
+to eye level in turn and the visitor only ever looks left.
 
-**Money shot.** From Landing B: the E-K figure at eye level 7 m away,
-silhouetted against the daylight crack far above, with Landing A's figure small
-and dark below-left and Landing C's small and bright above-right — one frame
-that says "three heights, one beat."
+They alternated west/east at first, to make the rise turn the visitor. In the
+room that was wrong twice: at ~6 m to either side the ledges fell outside the
+view cone entirely, so from the floor you could not see a single performer, and
+the ride became a 180° whip between pairs. One wall fixed both and produced the
+money shot for free.
 
-**Reuse map.** Lifting motes:
-`environments/primitives/FallingParticles.svelte` (invert velocity) and
-`scenes/autumn/runtime/atmosphere/AutumnParticles.svelte`. Daylight shaft:
-`scenes/celestial/GodRays.svelte` or the ocean/autumn `GodRayShafts`. Wisps for
-the draft cue: `scenes/autumn/runtime/wisps/WillOWisps.svelte`. Ramps/landings:
-`ramp-x`/`ramp-z` zones exactly as `data/first-fire-layout.ts` builds the crack
-and exit stair. Audio: ocean audio engine with a wind bed +
-`CURATED_WING_SOUNDSCAPES` entry.
+**Money shot (verified in-engine).** From just inside the north door looking
+south-west: the rise column with its motes on the left, and two performers on
+stacked ledges climbing away to the right with the third above — "three heights,
+one beat" is simply there when you walk in, with no climbing required to earn it.
 
-**Risks / new tech.** (1) +8.4 m of authored climb is the largest elevation
-range yet (Fire spans 1.8, Water 4.5) — the walker, ground clamp and neighbour
-elevation sweep (≤0.6 m) must hold over ~30 m of ramp. (2) Room streaming and
-fog walls are tuned for horizontal bays; a tall bay may need its ceiling and
-occlusion handled explicitly. (3) Wind as *felt* is audio + particles only — no
-new physics; do not attempt camera push. (4) Performers at three elevations
-means the station anchor list needs per-station `elevation`, which Water
-already does (`SHELF_Y`) — extend, don't invent.
+**Reuse map.** Lifting motes: `environments/primitives/FallingParticles.svelte`
+in `"embers"` mode (rises) for the rise column, `"dust"` (falls) for the sink —
+one primitive, both directions, no second particle system. Layout module:
+`data/air-chimney-layout.ts`. Graybox: `components/game/AirChimneyGraybox.svelte`.
+Stations: `MuseumPerformerStation3D.svelte` (its `worldY` prop takes the
+performer's `elevation`). Sequences: `cave-air-seq-dj|ek|fl` in
+`museum-exhibit-sequences.ts`, generated via the Flow Arts MCP.
 
----
+**Engineering notes that outlive the graybox.**
+
+1. **The elevation seam is Y-aware now.** `MuseumTerrainProgram.elevationAt`
+   takes an optional third argument, the player's foot height, and returns the
+   highest surface at or below it (plus a 0.6 m step-up tolerance). Without it
+   the physics clamp treats the floor height as a minimum and teleports anyone
+   who walks under a ledge onto it — which is why the prototype needed
+   head-height rock rims around every raised surface. Any future room that
+   stacks surfaces over one another depends on this. Omitting the argument
+   keeps the old topmost-surface behaviour, which is what spawn/teleport and
+   every pre-Air bay rely on.
+2. **A negative `updraftAt` is a descending column.** The camera controller
+   eases vertical velocity toward the reported speed for any non-zero value, so
+   a downward target is a controlled sink where gravity would be a fall. This is
+   what lets the room owe no ramp for the trip back down.
+3. **Point lights in the museum are `decay: 2`.** Size them
+   `intensity ≈ target × distance²`. Sizing by "how far should this reach"
+   produced a 2 m ledge lamp at intensity 85 — twenty times over — and flattened
+   the chamber into a featureless blue wash. Cave fog is dark brown at density
+   0.06; if a room reads as pale haze it is the lights, never the fog.
+
+**Open (see the 2026-08-05 handoff).** The rise rate is 1.0 m/s and Austen has
+not judged whether that feels like a reveal; it is one constant. The overlook
+and the sink column have been simulated in tests but never seen in a browser.
+
+**Retired: the ramp.** The original programme climbed an 18 m switchback to
++4.6 through landings A/B/C and used a lift only for the last 3.8 m (Plan B,
+"The Last Lift"). It was built as a feel-prototype (`18c35bcc1e`) and Austen
+rejected the premise on walking it, 2026-08-05: *"why would I go up the ramp to
+get to the airlift — the airlift is demonstrating me how I can lift."* The
+ramp, its landings, its rock rims and the three height-marker posts are all
+gone. Do not reintroduce a walkable slope in this room; a unit test asserts
+every floor surface is flat for exactly this reason.
 
 ## Sun — "The Sundial" (working title)
 
@@ -514,10 +531,10 @@ see the Sun section and the Addendum.
    long authored climb. If Earth reads as a relief after Fire rather than a
    let-down, the wing's pacing thesis is proven and the remaining three can each
    spend on one risky mechanism.
-2. **Air.** Reuses Fire's letters and station motif (cheap narrative payoff) but
-   introduces the wing's largest elevation range; build it after Earth has shown
-   that a low-spectacle room can carry a beat, and while the ramp tooling from
-   Fire is still warm.
+2. **Air. — BUILT 2026-08-05 (`410584cff3`).** Graybox complete: open floor,
+   rise column, three ledges, overlook, sink column. Outstanding is Austen's
+   judgement on the rise rate and a browser look at the overlook and the
+   descent. See the Air section above and the 2026-08-05 handoff.
 3. **Sun.** Four rigs, a round plan, and moving light — the highest combined
    risk, and it wants Air's climb behind it so the arrival lands.
 4. **Moon.** Last by design: it is the wing's closing image and its only
@@ -549,8 +566,11 @@ just this doc's proposals.
   A/B, a single updraft column replaces ramp 3 and doubles as the room's
   reveal — recommended), C = full updraft-pad hopping (Austen's literal
   pitch; flagged for platforming-feel and stranding risks). **Austen chose B
-  on 2026-08-05** ("B definitely"); ramp 3 is preserved as the fallback if the
-  lift prototype fails, and nothing else in the room moves if it does. Wing-grammar
+  on 2026-08-05** ("B definitely"). **B was then SUPERSEDED the same day, by
+  Austen, after walking the prototype**: *"why would I go up the ramp to get to
+  the airlift — the airlift is demonstrating me how I can lift."* The built room
+  keeps no ramp at all; the lift is the whole circulation. B's ramp-3 fallback
+  is void. See the rewritten Air section above for what exists. Wing-grammar
   framing agreed in-session: Air should be the only
   room where the element moves the visitor (under water → around fire →
   atop earth → carried by air). Note that Moon's approved low gravity is a
