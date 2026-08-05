@@ -218,17 +218,23 @@ export const A_G_FOUR_COUNT_WORDS: readonly string[] = [
 ];
 
 /**
- * A subset of A+G's 16-count bucket: 4-step units closing via a 90/270
- * degree rotation (order 4, so full-circle length = 4 x 4 = 16), each one a
- * "mixed crossing" — one connector drawn from the shift family (D/E/F/J/K/L)
- * and the other from the dash family (Φ/Ψ), never two of the same family.
+ * A+G's complete 16-count bucket: 4-step units closing via a 90/270 degree
+ * rotation (order 4, so full-circle length = 4 x 4 = 16), each one a "mixed
+ * crossing" — one connector drawn from the shift family (D/E/F/J/K/L) and the
+ * other from the dash family (Φ/Ψ), never two of the same family.
  *
- * `A_G_COUNT_BUCKET_PROFILE[16]` records 12 words in this bucket, not 6 —
- * this list is NOT claimed to be the complete bucket. It is exactly what was
- * transcribed into the fixture-writing handoff; the other 6 were not
- * recorded and this file does not guess at them (no-fabrication:
- * `.claude/rules/no-fabrication.md`). `oracle-fixtures.test.ts` checks this
- * list is <= the profile count, not ==.
+ * Twelve, not six. The second six are the PHASES of the first six — the same
+ * unit entered at a different step (`AJGΦ` and `JGΦA` are one cycle, two entry
+ * points), and both survive canonicalisation. Resolved by direct measurement
+ * 2026-08-05: `node scripts/combinator-research/by-count.mjs` prints all twelve
+ * under `--- 16-count ---`, closing as rotated90(12), rotated270(12),
+ * rotated90/swapped(12), rotated270/swapped(12).
+ *
+ * Worth knowing: the 4-count bucket has NO phase duplicates while every
+ * 16-count entry has exactly one. That asymmetry is the open equivalence-relation
+ * question (loose end #3) showing up in real data — whether a quartered loop
+ * entered at a different quarter is one result or two is a decision nobody has
+ * made yet. Do not read these twelve as twelve distinct ideas.
  */
 export const A_G_SIXTEEN_COUNT_WORDS: readonly string[] = [
   "AJGΦ",
@@ -237,4 +243,11 @@ export const A_G_SIXTEEN_COUNT_WORDS: readonly string[] = [
   "AΨGD",
   "AΨGE",
   "AΨGF",
+  // phases of the six above
+  "JGΦA",
+  "KGΦA",
+  "LGΦA",
+  "ΨGDA",
+  "ΨGEA",
+  "ΨGFA",
 ];

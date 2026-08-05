@@ -82,15 +82,14 @@ describe("oracle fixtures — A+G count-bucket profile", () => {
     expect(A_G_FOUR_COUNT_WORDS.length).toBe(A_G_COUNT_BUCKET_PROFILE[4]);
   });
 
-  it("the 16-count word list is a non-empty, duplicate-free subset of its bucket count", () => {
-    // Deliberately NOT asserting equality here — this fixture only recorded
-    // 6 of the bucket's 12 words (see the doc comment on
-    // A_G_SIXTEEN_COUNT_WORDS). Asserting == would be a fabricated claim.
+  it("the 16-count word list is the complete, duplicate-free bucket", () => {
+    // All twelve, measured directly from by-count.mjs on 2026-08-05. The second
+    // six are phases of the first six; see the doc comment on
+    // A_G_SIXTEEN_COUNT_WORDS.
     expect(new Set(A_G_SIXTEEN_COUNT_WORDS).size).toBe(
       A_G_SIXTEEN_COUNT_WORDS.length
     );
-    expect(A_G_SIXTEEN_COUNT_WORDS.length).toBeGreaterThan(0);
-    expect(A_G_SIXTEEN_COUNT_WORDS.length).toBeLessThanOrEqual(
+    expect(A_G_SIXTEEN_COUNT_WORDS.length).toBe(
       A_G_COUNT_BUCKET_PROFILE[16]!
     );
   });
@@ -101,9 +100,14 @@ describe("oracle fixtures — A+G count-bucket profile", () => {
     }
   });
 
-  it("every recorded word starts with A and contains G (both cards required)", () => {
+  it("every recorded word contains both cards", () => {
+    // NOT "starts with A". An earlier version asserted that and passed, but only
+    // because the 16-count list was then an incomplete 6 of 12. A phase begins
+    // at whichever step it was entered on — JGΦA is AJGΦ read from step two —
+    // so the real invariant is membership, not position. A circular word has no
+    // privileged first letter.
     for (const w of [...A_G_FOUR_COUNT_WORDS, ...A_G_SIXTEEN_COUNT_WORDS]) {
-      expect(w.startsWith("A"), w).toBe(true);
+      expect(w.includes("A"), w).toBe(true);
       expect(w.includes("G"), w).toBe(true);
     }
   });
