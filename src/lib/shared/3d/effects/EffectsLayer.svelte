@@ -17,6 +17,7 @@
   import { getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import { resolveGhost3D, resolveSparkles3D, resolveZap3D, resolveGoo3D, resolveBubbles3D, resolvePetals3D, resolveSmoke3D } from "$lib/shared/effects/translators/webgl3d-translator";
   import { AUSTEN_STAFF } from "@austencloud/scene-3d";
+  import type { EffectType } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 
   // Effect components
   // Trails are no longer mounted here. The single consolidated 3D trail
@@ -52,6 +53,17 @@
     isPlaying: boolean;
     /** Staff length for end position calculations */
     staffLength?: number;
+    /**
+     * The effects actually selected for THIS 3D rig's tips, resolved by
+     * EffectOrchestrator3D from its tipEffectMap / globalTipEffectMap props.
+     *
+     * This must not be read from the effects-config context. The context map is
+     * the 2D/global selection; the 3D selection travels down the prop channel
+     * the orchestrator already resolves for trails, led, charcoal and fire.
+     * Gating on the context meant picking Goo in 2D put goo on the 3D props
+     * while the 3D picker said LED — gooey LEDs.
+     */
+    activeEffects?: readonly EffectType[];
     /** Current animation step index (fractional). Used by Ghost (GhostStaff3D)
      *  to detect beat onsets and age phantoms. Default 0 when a parent
      *  hasn't plumbed it yet - Ghost stays silent rather than capturing a
@@ -64,6 +76,7 @@
     redPropState,
     isPlaying,
     staffLength = AUSTEN_STAFF.length,
+    activeEffects = [],
     currentStep = 0,
   }: Props = $props();
 
@@ -71,28 +84,49 @@
   const effectState = getEffectState();
   const unifiedState = getUnifiedEffectsState();
   const scene3DRender = getScene3DRenderContext();
+
+  /**
+   * Which effects are live on this rig. Sourced from the orchestrator's
+   * resolved per-tip effects; falls back to the context map only when a caller
+   * hasn't plumbed them, so an unplumbed host degrades to the old behaviour
+   * rather than going dark.
+   *
+   * Known limitation: this is a per-rig set, so a config with DIFFERENT effects
+   * per tip lights every one of them on all four tips. The whole-rig case (what
+   * every surface uses today) is correct. Per-tip gating is a follow-up.
+   */
+  const activeSet = $derived(
+    activeEffects.length > 0
+      ? new Set<string>(activeEffects)
+      : new Set<string>(
+          unifiedState?.config.tipEffectMap["*"]?.effect
+            ? [unifiedState.config.tipEffectMap["*"].effect]
+            : [],
+        ),
+  );
+  const isActive = (id: string) => activeSet.has(id);
   const zap3D = $derived(unifiedState ? resolveZap3D(unifiedState.zap) : null);
   const zapEnabled = $derived(
-    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "zap" : false,
+    isActive("zap"),
   );
   const sparkles3D = $derived(unifiedState ? resolveSparkles3D(unifiedState.sparkles) : null);
   const sparklesEnabled = $derived(
-    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "sparkles" : false,
+    isActive("sparkles"),
   );
   const ghost3D = $derived(unifiedState ? resolveGhost3D(unifiedState.ghost) : null);
   const ghostEnabled = $derived(
-    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "ghost" : false,
+    isActive("ghost"),
   );
   const bloomIntent = $derived(unifiedState?.bloom ?? null);
   const bloomEnabled = $derived(
-    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "bloom" : false,
+    isActive("bloom"),
   );
   const bloomBlueColor = $derived(unifiedState?.trails.blueColor ?? "#3b82f6");
   const bloomRedColor = $derived(unifiedState?.trails.redColor ?? "#ef4444");
   // 3D goo currently renders via the legacy WaterEmitter3D particle system; a dedicated 3D goo renderer is a follow-up.
   const goo3D = $derived(unifiedState ? resolveGoo3D(unifiedState.goo) : null);
   const gooEnabled = $derived(
-    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "goo" : false,
+    isActive("goo"),
   );
   const gooShowLeftEnd = $derived(
     goo3D?.trackingMode === "left_end" || goo3D?.trackingMode === "both_ends",
@@ -102,7 +136,7 @@
   );
   const bubbles3D = $derived(unifiedState ? resolveBubbles3D(unifiedState.bubbles) : null);
   const bubblesEnabled = $derived(
-    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "bubbles" : false,
+    isActive("bubbles"),
   );
   const bubblesShowLeftEnd = $derived(
     bubbles3D?.trackingMode === "left_end" || bubbles3D?.trackingMode === "both_ends",
@@ -112,7 +146,7 @@
   );
   const petals3D = $derived(unifiedState ? resolvePetals3D(unifiedState.petals) : null);
   const petalsEnabled = $derived(
-    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "petals" : false,
+    isActive("petals"),
   );
   const petalsShowLeftEnd = $derived(
     petals3D?.trackingMode === "left_end" || petals3D?.trackingMode === "both_ends",
@@ -122,7 +156,7 @@
   );
   const smoke3D = $derived(unifiedState ? resolveSmoke3D(unifiedState.smoke) : null);
   const smokeEnabled = $derived(
-    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "smoke" : false,
+    isActive("smoke"),
   );
   const smokeShowLeftEnd = $derived(
     smoke3D?.trackingMode === "left_end" || smoke3D?.trackingMode === "both_ends",

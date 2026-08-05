@@ -22,3 +22,42 @@ describe("EffectOrchestrator3D mounts EffectsLayer", () => {
     }
   });
 });
+
+/**
+ * The 2D/3D channel guard.
+ *
+ * EffectsLayer used to decide which effect was live by reading the
+ * effects-config CONTEXT (`config.tipEffectMap["*"].effect`). That map is the
+ * 2D/global selection. The 3D selection travels down the prop channel that
+ * EffectOrchestrator3D resolves via resolveEffect(tipEffectMap,
+ * globalTipEffectMap) for trails/led/charcoal/fire. With the layer mounted,
+ * reading the context meant the 2D choice rendered on the 3D props: picking Goo
+ * in 2D while the 3D picker said LED produced gooey LEDs.
+ */
+const LAYER = resolve("src/lib/shared/3d/effects/EffectsLayer.svelte");
+
+describe("EffectsLayer follows the 3D effect selection, not the 2D one", () => {
+  const layerSource = readFileSync(LAYER, "utf8");
+  const orchestratorSource = readFileSync(ORCHESTRATOR, "utf8");
+
+  it("does not gate any effect on the effects-config context map", () => {
+    // The fallback for unplumbed callers may still reference the map, but no
+    // effect may be gated by comparing it to an effect id.
+    expect(layerSource).not.toMatch(/tipEffectMap\["\*"\]\?\.effect === "/);
+  });
+
+  it("takes the active effects as a prop", () => {
+    expect(layerSource).toMatch(/activeEffects\??:/);
+  });
+
+  it("is handed the orchestrator's resolved effects", () => {
+    const tag = orchestratorSource.slice(orchestratorSource.indexOf("<EffectsLayer"));
+    expect(tag).toContain("activeEffects");
+  });
+
+  it("resolves those from the same maps the imperative renderers use", () => {
+    expect(orchestratorSource).toMatch(
+      /resolveEffect\(\s*propIndex!?,\s*tipIndex!?,\s*tipEffectMap,\s*globalTipEffectMap/,
+    );
+  });
+});

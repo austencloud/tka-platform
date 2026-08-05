@@ -139,6 +139,27 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
   );
   const tipBridge = new TipPositionBridge3D();
 
+  /**
+   * The effects this rig's four tips actually resolve to, for EffectsLayer.
+   *
+   * Same resolveEffect() and same maps the imperative renderers use below, so
+   * the Svelte-mounted effects and the imperative ones can never disagree about
+   * which effect is selected. Deduplicated because EffectsLayer gates per
+   * effect, not per tip.
+   */
+  const layerActiveEffects = $derived([
+    ...new Set(
+      [
+        [0, 0],
+        [0, 1],
+        [1, 0],
+        [1, 1],
+      ].map(([propIndex, tipIndex]) =>
+        resolveEffect(propIndex!, tipIndex!, tipEffectMap, globalTipEffectMap ?? {}),
+      ),
+    ),
+  ]);
+
   // Brighter HDR core on capable tiers so the scene bloom pass makes trails
   // glow (presence). LOW keeps the additive Gaussian halo alone - no bloom
   // there, so over-driving emissive would just clip to white.
@@ -826,13 +847,19 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
      in the same frame tick as the tip position computation. -->
 
 <!-- The eight effects whose only 3D renderers live in EffectsLayer: goo,
-     bubbles, smoke, petals, sparkles, zap, ghost, bloom. EffectsLayer gates
-     each one on the effects-config context, so mounting it unconditionally is
-     correct — at most one is active at a time. -->
+     bubbles, smoke, petals, sparkles, zap, ghost, bloom. Mounting it
+     unconditionally is correct — it gates each effect on activeEffects below.
+
+     activeEffects is the 3D selection, resolved here from the same
+     tipEffectMap/globalTipEffectMap that drive trails, led, charcoal and fire.
+     EffectsLayer must NOT resolve this itself from the effects-config context:
+     that context is the 2D/global choice, and reading it put the 2D effect on
+     the 3D props (Goo in 2D + LED in 3D rendered gooey LEDs). -->
 <EffectsLayer
   {bluePropState}
   {redPropState}
   {isPlaying}
   staffLength={staffHalfLength * 2}
+  activeEffects={layerActiveEffects}
   {currentStep}
 />
