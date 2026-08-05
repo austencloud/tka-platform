@@ -321,6 +321,9 @@
      ============================================================================= -->
 {#if zapEnabled && zap3D && isPlaying}
   {#if bluePropState && redPropState && blueEnds && redEnds}
+    <!-- jitterAmount/segments/regenerateEveryFrames have been on Zap3DParams
+         since it was defined and nothing read them; the arc hardcoded a
+         25-metre displacement instead. -->
     <ElectricityArc
       start={blueEnds.positive}
       end={redEnds.positive}
@@ -328,6 +331,9 @@
       intensity={zap3D.intensity}
       color={zap3D.leftColor}
       mode={zap3D.mode}
+      displacement={zap3D.jitterAmount}
+      segments={zap3D.segments}
+      regenerateEveryFrames={zap3D.regenerateEveryFrames}
     />
     <ElectricityArc
       start={blueEnds.negative}
@@ -336,6 +342,9 @@
       intensity={zap3D.intensity}
       color={zap3D.rightColor}
       mode={zap3D.mode}
+      displacement={zap3D.jitterAmount}
+      segments={zap3D.segments}
+      regenerateEveryFrames={zap3D.regenerateEveryFrames}
     />
   {/if}
 {/if}

@@ -31,6 +31,17 @@
     color?: string;
     /** Mode: 'arc' connects two points, 'crackle' radiates from start */
     mode?: "arc" | "crackle";
+    /**
+     * Peak perpendicular wander of the bolt off the straight line, WORLD UNITS
+     * (metres). From Zap3DParams.jitterAmount. This was a hardcoded 25 — read
+     * as 25 metres between two tips less than a metre apart, which is why zap
+     * drew a scribble the size of the room instead of a bolt.
+     */
+    displacement?: number;
+    /** Point count along each bolt. From Zap3DParams.segments. */
+    segments?: number;
+    /** Frames between path regeneration. From Zap3DParams.regenerateEveryFrames. */
+    regenerateEveryFrames?: number;
   }
 
   let {
@@ -40,15 +51,25 @@
     intensity = 0.7,
     color = "#00ffff",
     mode = "arc",
+    displacement = 0.15,
+    segments = 9,
+    regenerateEveryFrames = 3,
   }: Props = $props();
 
-  // Configuration
-  const SUBDIVISIONS = 5;
-  const BASE_DISPLACEMENT = 25;
+  /**
+   * Midpoint-displacement depth. Each level doubles the point count, so the
+   * bolt carries 2^depth + 1 points; depth is derived from the requested
+   * segment count rather than fixed, and capped so a high-intensity zap cannot
+   * explode the vertex count.
+   */
+  const subdivisions = $derived(
+    Math.max(2, Math.min(5, Math.round(Math.log2(Math.max(4, segments))))),
+  );
+
+  // Crackle geometry, world units. A crackle arc is a hand-span off the tip.
   const CRACKLE_ARC_COUNT = 6;
-  const CRACKLE_LENGTH_MIN = 20;
-  const CRACKLE_LENGTH_MAX = 50;
-  const REGENERATE_INTERVAL = 3; // Frames between path regeneration
+  const CRACKLE_LENGTH_MIN = 0.12;
+  const CRACKLE_LENGTH_MAX = 0.32;
   const BRANCH_PROBABILITY = 0.3;
   const BRANCH_LENGTH_RATIO = 0.4;
 
@@ -91,12 +112,12 @@
   function generateLightningPath(
     startPoint: Vector3,
     endPoint: Vector3,
-    subdivisions: number = SUBDIVISIONS,
-    displacement: number = BASE_DISPLACEMENT
+    depth: number = subdivisions,
+    spread: number = displacement
   ): Vector3[] {
     let points: Vector3[] = [startPoint.clone(), endPoint.clone()];
 
-    for (let i = 0; i < subdivisions; i++) {
+    for (let i = 0; i < depth; i++) {
       const newPoints: Vector3[] = [];
 
       for (let j = 0; j < points.length - 1; j++) {
@@ -106,7 +127,7 @@
 
         // Displace perpendicular to segment
         const perpendicular = getRandomPerpendicular(p1, p2);
-        const scale = displacement / Math.pow(2, i);
+        const scale = spread / Math.pow(2, i);
         mid.add(perpendicular.multiplyScalar((Math.random() - 0.5) * scale));
 
         newPoints.push(p1, mid);
@@ -158,8 +179,8 @@
         const branchPath = generateLightningPath(
           branchStart,
           branchEnd,
-          3, // Fewer subdivisions for branches
-          BASE_DISPLACEMENT * 0.5
+          Math.max(2, subdivisions - 2), // Fewer subdivisions for branches
+          displacement * 0.5
         );
 
         branches.push(branchPath);
@@ -196,8 +217,8 @@
       const arcPath = generateLightningPath(
         center.clone(),
         arcEnd,
-        4,
-        BASE_DISPLACEMENT * 0.6
+        Math.max(2, subdivisions - 1),
+        displacement * 0.6
       );
 
       arcs.push(arcPath);
@@ -271,28 +292,19 @@
     pulsePhase += delta * 3; // Pulse speed
 
     // Regenerate paths periodically for flickery effect
-    if (frameCount % REGENERATE_INTERVAL === 0) {
+    if (frameCount % Math.max(1, regenerateEveryFrames) === 0) {
       regeneratePaths();
     }
   });
 
-  // Regenerate when inputs change
-  $effect(() => {
-    if (enabled) {
-      // Access dependencies to track them
-      const _ = [
-        start.x,
-        start.y,
-        start.z,
-        end?.x,
-        end?.y,
-        end?.z,
-        mode,
-        intensity,
-      ];
-      regeneratePaths();
-    }
-  });
+  // No position-tracking $effect here on purpose. One used to read start.x/y/z
+  // and end.x/y/z and regenerate on change — but those are prop tips, so they
+  // change EVERY frame while playing. That made the component rebuild and
+  // dispose every BufferGeometry twice per frame (once from the effect, once
+  // from the useTask cadence above), which is what stalled the page. The
+  // useTask regeneration already reads the current start/end, so the bolt
+  // still follows the props; it just re-cuts on the regenerateEveryFrames
+  // cadence rather than continuously.
 
   // Cleanup on destroy
   $effect(() => {
@@ -389,12 +401,13 @@
   {/each}
 
   <!-- Optional: Point lights at arc endpoints for extra glow -->
+  <!-- Light falloff in METRES: 100/80 lit the entire scene from a prop tip. -->
   {#if intensity > 0.5}
     <T.PointLight
       position={[start.x, start.y, start.z]}
       color={glowColor}
       intensity={intensity * 0.5}
-      distance={100}
+      distance={2.5}
       decay={2}
     />
 
@@ -403,7 +416,7 @@
         position={[end.x, end.y, end.z]}
         color={glowColor}
         intensity={intensity * 0.3}
-        distance={80}
+        distance={2}
         decay={2}
       />
     {/if}
