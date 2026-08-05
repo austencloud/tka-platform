@@ -30,6 +30,7 @@
   import {
     ShortCodeManager,
     type ShortCodeData,
+    type ShortCodeSequenceLoader,
   } from "$lib/shared/qr/services/short-code-manager";
   import { configureShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
@@ -75,7 +76,6 @@
   } from "$lib/shared/hmr-helper";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { getSequenceMotionProfile } from "$lib/shared/foundation/services/sequence-motion-profile";
-  import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
   import type {
     IVideoExportOrchestrator,
     VideoExportProgress,
@@ -345,13 +345,8 @@
   );
 
   const stubBrowseLoader = {
-    loadSequenceMetadata: async () => [],
     loadFullSequenceData: async () => null,
-    removeFromCache: () => {},
-    addToCache: () => {},
-    warmFromCache: () => {},
-    refreshFromFirestore: async () => [],
-  } as unknown as PublicSequencesLoader;
+  } satisfies ShortCodeSequenceLoader;
 
   const shortCodeManager = new ShortCodeManager(stubBrowseLoader);
 

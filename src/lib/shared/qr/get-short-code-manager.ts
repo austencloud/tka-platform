@@ -1,16 +1,15 @@
 import { browser } from '$app/environment';
-import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
-import { ShortCodeManager } from './services/short-code-manager';
+import { ShortCodeManager, type ShortCodeSequenceLoader } from './services/short-code-manager';
 import { getPublicSequenceHashMatcher } from '$lib/shared/sequence-viewer/get-public-sequence-hash-matcher';
 
 let instance: ShortCodeManager | null = null;
-let _browseLoader: PublicSequencesLoader | null = null;
+let _browseLoader: ShortCodeSequenceLoader | null = null;
 
 /**
  * Must be called once from di/index.ts after the browse container is built,
  * before any consumer calls getShortCodeManager().
  */
-export function configureShortCodeManager(browseLoader: PublicSequencesLoader): void {
+export function configureShortCodeManager(browseLoader: ShortCodeSequenceLoader): void {
 	_browseLoader = browseLoader;
 }
 

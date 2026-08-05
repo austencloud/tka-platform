@@ -267,6 +267,17 @@ export interface ShortCodeResolution {
 }
 
 /**
+ * The short-code resolver reads public sequence bodies when a stored code has
+ * to be reconstructed. It does not own gallery metadata, cache warming, or
+ * Firestore refreshes, so callers outside the app shell only provide this one
+ * read instead of pretending to be a full PublicSequencesLoader.
+ */
+export type ShortCodeSequenceLoader = Pick<
+  PublicSequencesLoader,
+  "loadFullSequenceData"
+>;
+
+/**
  * The word to stamp on a sequence imported from this record's encoded blob.
  * Prefers the strict `payloadWord` (schema-2 mints), then the legacy
  * `sequenceName`; oldest records stored the word — or even the ENCODED BLOB —
@@ -304,7 +315,7 @@ export class ShortCodeManager {
   >();
 
   constructor(
-    private readonly browseLoader: PublicSequencesLoader,
+    private readonly browseLoader: ShortCodeSequenceLoader,
     private readonly hashMatcher?: PublicSequenceHashMatcher,
     private readonly codeCache: ShortCodeCache = new ShortCodeCache()
   ) {}
