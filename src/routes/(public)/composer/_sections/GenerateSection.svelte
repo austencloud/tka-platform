@@ -34,7 +34,7 @@
   import BackButton from "$lib/features/create/shared/workspace-panel/shared/components/buttons/BackButton.svelte";
   import ViewSequenceButton from "$lib/features/create/shared/workspace-panel/shared/components/buttons/ViewSequenceButton.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
-  import GhostPointer from "./GhostPointer.svelte";
+  import GhostPointer from "$lib/shared/attract/components/GhostPointer.svelte";
   import {
     createGenerateAttractAct,
     type GenerateAttractAct,

@@ -441,6 +441,20 @@ import type { SheetType } from "../../navigation/services/types";
     return () => document.removeEventListener("keydown", handleKeydown);
   });
 
+  // Presentation mode is read once at mount: it is a laptop-at-the-jam setting,
+  // not something that should flicker on as the URL changes underneath a
+  // running session.
+  let presentationMode = $state(false);
+  let presentationSeed = $state<number | undefined>(undefined);
+
+  onMount(async () => {
+    const { isPresentationRequested, requestedSeed } = await import(
+      "../../attract/services/presentation-mode"
+    );
+    presentationMode = isPresentationRequested();
+    presentationSeed = requestedSeed();
+  });
+
   // Note: First-run wizard is shown based on simple state checks in the template:
   // - !isFullAccount → guest mode (MainInterface with guest restrictions)
   // - magic-link accounts go straight to Create; the link already collected
@@ -725,6 +739,16 @@ import type { SheetType } from "../../navigation/services/types";
   {#await import("../../sequence-viewer/components/SequenceViewerDrawerHost.svelte") then mod}
     <mod.default />
   {/await}
+
+  <!-- Presentation mode: the ghost demonstrates the app to a room, unattended.
+       Opt-in via ?present=1 only (spec: 2026-08-04-ghost-mind-design.md), and
+       the whole thing is behind a dynamic import so a normal session never
+       pays for it. -->
+  {#if presentationMode}
+    {#await import("../../attract/components/PresenterHost.svelte") then mod}
+      <mod.default seed={presentationSeed} />
+    {/await}
+  {/if}
 </div>
 
 <style>

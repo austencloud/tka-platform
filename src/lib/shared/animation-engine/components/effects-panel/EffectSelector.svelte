@@ -48,6 +48,11 @@
           : effect.label}
         title={isActive ? getActiveLabel(effect) : effect.label}
         style:--effect-color={effect.color}
+        data-ghost="safe"
+        data-ghost-kind="effect"
+        data-ghost-id={effect.id}
+        data-ghost-active={isActive || undefined}
+        data-ghost-label={effect.label}
         onclick={() => onSelect(effect.id)}
         onpointerenter={() => onPrewarm?.(effect.id)}
         onpointerdown={() => onPrewarm?.(effect.id)}

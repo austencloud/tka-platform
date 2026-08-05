@@ -143,6 +143,7 @@
             value={filterValue}
             size="sm"
             color="accent"
+            ghostKind="option-filter"
             onchange={(v) => onToggleContinuous?.(v === "continuous")}
           />
         </div>
@@ -220,6 +221,7 @@
             value={turnValueToKey(blueTurns)}
             size="sm"
             color="blue"
+            ghostKind="turn"
             onchange={(v) => onBlueChange(keyToTurnValue(v))}
           />
         </div>
@@ -257,6 +259,7 @@
             value={turnValueToKey(redTurns)}
             size="sm"
             color="red"
+            ghostKind="turn"
             onchange={(v) => onRedChange(keyToTurnValue(v))}
           />
         </div>

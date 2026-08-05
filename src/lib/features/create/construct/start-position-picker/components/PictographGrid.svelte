@@ -72,6 +72,8 @@
       class:animate={shouldPictographAnimate(pictographData.id)}
       role="button"
       tabindex="0"
+      data-ghost="safe"
+      data-ghost-kind="start-position"
       style:--letter-border-color={getLetterBorderColorSafe(
         pictographData.letter
       )}

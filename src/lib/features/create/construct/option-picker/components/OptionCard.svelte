@@ -66,6 +66,8 @@ Receives pre-calculated data, just renders it.
   style:--border-secondary={borderColors.secondary}
   data-testid="option-card"
   data-letter={pictograph.letter}
+  data-ghost="safe"
+  data-ghost-kind="option"
   aria-label="Select {pictograph.letter}. Hold to preview."
   aria-keyshortcuts="Shift+Space"
   title="Tap to select. Hold to preview."

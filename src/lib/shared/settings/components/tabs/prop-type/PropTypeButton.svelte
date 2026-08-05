@@ -57,6 +57,9 @@
   onkeydown={handleKeydown}
   aria-label={`Select ${displayInfo.label} prop type`}
   aria-pressed={selected}
+  data-ghost={selected ? undefined : "safe"}
+  data-ghost-kind={selected ? undefined : "prop"}
+  data-ghost-label={displayInfo.label}
   title={`${displayInfo.label} - Click to select this prop type`}
 >
   <div class="prop-image-container">

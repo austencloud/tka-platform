@@ -19,7 +19,7 @@ const ghostHarness = vi.hoisted(() => ({
   dwell: vi.fn<() => Promise<void>>(),
 }));
 
-vi.mock("../attract-ghost.svelte", () => ({
+vi.mock("$lib/shared/attract/services/attract-ghost.svelte", () => ({
   createAttractGhost: () => {
     const core = {
       ghost: { x: 0, y: 0, pressed: false, visible: false, parked: false },
@@ -66,7 +66,7 @@ import {
   createConstructAttractAct,
   type ConstructBoardProgress,
 } from "../construct-attract-act.svelte";
-import type { createAttractGhost as createActualAttractGhost } from "../attract-ghost.svelte";
+import type { createAttractGhost as createActualAttractGhost } from "$lib/shared/attract/services/attract-ghost.svelte";
 
 describe("createConstructAttractAct", () => {
   beforeEach(() => {
@@ -139,7 +139,7 @@ describe("createConstructAttractAct", () => {
   it("settles the resume activation before accepting a later takeover", async () => {
     const { createAttractGhost } = await vi.importActual<{
       createAttractGhost: typeof createActualAttractGhost;
-    }>("../attract-ghost.svelte");
+    }>("$lib/shared/attract/services/attract-ghost.svelte");
     const { core } = createAttractGhost({ getRoot: () => null });
 
     core.pause();

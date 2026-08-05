@@ -505,6 +505,9 @@ Variation support:
     class:selection-mode={selectionMode}
     class:long-pressing={isLongPressing}
     class:light-mode={lightMode}
+    data-ghost={selectionMode ? undefined : "safe"}
+    data-ghost-kind={selectionMode ? undefined : "gallery-item"}
+    data-ghost-linger={selectionMode ? undefined : ""}
     onclick={handlePrimaryAction}
     oncontextmenu={handleContextMenu}
     onpointerdown={handleSelectionPointerDown}

@@ -257,6 +257,9 @@
         <button
           class="preset-btn"
           class:active={activePreset === preset.label}
+          data-ghost={activePreset === preset.label ? undefined : "safe"}
+          data-ghost-kind={activePreset === preset.label ? undefined : "tempo"}
+          data-ghost-label={preset.label}
           onclick={() => selectPreset(preset.bpm)}
           type="button"
           aria-label={t("compose_set_bpm_to", { bpm: preset.bpm })}

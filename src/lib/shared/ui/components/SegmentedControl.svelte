@@ -57,6 +57,14 @@
     semantics?: "button-group" | "tabs" | "radiogroup";
     /** Custom visible content. The option's label still owns its accessible name. */
     optionContent?: Snippet<[T]>;
+    /**
+     * Opt this control into the attract presenter's allowlist
+     * (.claude/rules/, spec 2026-08-04-ghost-mind-design.md §Safety). Only
+     * UNSELECTED segments are annotated: pressing the already-selected value
+     * moves nothing, which reads as a misclick rather than a decision. Absent
+     * by default — the presenter cannot see a control that has not opted in.
+     */
+    ghostKind?: "turn" | "option-filter" | "tempo" | "curio";
   }
 
   let {
@@ -70,6 +78,7 @@
     ariaLabelledby,
     semantics = "button-group",
     optionContent,
+    ghostKind,
   }: Props = $props();
 
   function handleSelect(val: T) {
@@ -160,6 +169,12 @@
       class="segment"
       class:selected={value === option.value}
       data-tone={option.tone}
+      data-ghost={ghostKind && value !== option.value && !option.disabled
+        ? "safe"
+        : undefined}
+      data-ghost-kind={ghostKind && value !== option.value && !option.disabled
+        ? ghostKind
+        : undefined}
       onclick={() => handleSelect(option.value)}
       onkeydown={(event) =>
         handleSingleSelectKeydown(event, options.indexOf(option))}

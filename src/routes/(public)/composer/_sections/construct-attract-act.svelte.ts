@@ -16,7 +16,7 @@
 import {
   createAttractGhost,
   type AttractActHandle,
-} from "./attract-ghost.svelte";
+} from "$lib/shared/attract/services/attract-ghost.svelte";
 
 const START_SEL =
   '[data-testid="start-position-picker"] .pictograph-container[role="button"]';
@@ -53,7 +53,7 @@ const CELL_SEL = ".step-cell";
 const AGAIN_SEL = "[data-demo-again]";
 
 export type ConstructAttractAct = AttractActHandle;
-export type { GhostState } from "./attract-ghost.svelte";
+export type { GhostState } from "$lib/shared/attract/services/attract-ghost.svelte";
 
 export interface ConstructBoardProgress {
   phase: "pick-start" | "add-step" | "play";

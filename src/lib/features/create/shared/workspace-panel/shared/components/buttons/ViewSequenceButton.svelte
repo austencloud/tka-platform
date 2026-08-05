@@ -44,6 +44,9 @@
   class:play-purpose={purpose === "play"}
   onclick={handleClick}
   aria-label={accessibleLabel}
+  data-ghost={isActive ? undefined : "safe"}
+  data-ghost-kind={isActive ? undefined : "play"}
+  data-ghost-label={accessibleLabel}
   aria-pressed={purpose === "open-viewer" ? isActive : undefined}
   title={accessibleLabel}
 >

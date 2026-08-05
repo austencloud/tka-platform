@@ -60,7 +60,7 @@
     HERO_TIP_EFFECT_MAP,
     HERO_TRAIL_PRESET,
   } from "$lib/shared/landing/data/hero-trail-preset";
-  import GhostPointer from "./GhostPointer.svelte";
+  import GhostPointer from "$lib/shared/attract/components/GhostPointer.svelte";
   import {
     createConstructAttractAct,
     type ConstructAttractAct,

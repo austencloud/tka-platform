@@ -295,6 +295,8 @@
 <div
   bind:this={cellElement}
   class="step-cell"
+  data-ghost="safe"
+  data-ghost-kind="step-cell"
   class:invisible={!isVisible}
   class:animate={shouldAnimateIn}
   class:expanded={widthMultiplier > 1}

@@ -1,7 +1,11 @@
 # Ghost Mind + Taco Cat Handoff
 
 - **Date:** 2026-08-04
-- **Status:** Two specs approved by Austen in the brainstorm. Nothing implemented. Ready to plan and build.
+- **Status (updated 2026-08-04):** Tasks 0–5 BUILT and verified in the browser.
+  Task 6 (Taco Cat) still blocked on the two blockers below. The remaining work
+  is not a rebuild — it is annotating more surfaces (`data-ghost="safe"` +
+  `data-ghost-kind`) so more of the app is in the tour, and adding intentions.
+  Read §As built in the ghost-mind spec before touching anything.
 - **Branch:** `main`
 - **HEAD when written:** `4bf7311209e2e54542b2d1e56356d186ece969ce`
 - **Specs:**

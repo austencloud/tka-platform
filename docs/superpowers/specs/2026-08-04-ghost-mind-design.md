@@ -1,7 +1,8 @@
 # Ghost Mind — a curiosity-driven presenter for the whole app
 
 **Date:** 2026-08-04
-**Status:** Design approved, not implemented
+**Status:** BUILT 2026-08-04 (Tasks 0–5). Taco Cat (Task 6) still blocked on
+permission + art. See §As built for the deltas from this design.
 **Companion spec:** `2026-08-04-taco-cat-presence-design.md` (the body)
 **Deferred siblings:** the docent (takeover dialogue), the park QR funnel
 
@@ -366,9 +367,58 @@ lying.
 | Firestore read cost from gallery browsing | `browse-gallery` and `open-someone-elses` share a per-session cap |
 | Someone walks up mid-3D-scene and it is slow | Existing takeover already parks instantly; unaffected by the mind |
 
+## As built (2026-08-04)
+
+Entry is `?present=1` on any app route — Austen's call over a Settings toggle:
+the park laptop gets a bookmark and nothing in the shipped UI can trip it. The
+param latches into `sessionStorage`, because a full reload over a multi-hour run
+would otherwise end the tour silently. `?present=<seed>` replays a tour;
+`?present=0` disarms. Navigation presses real nav DOM only, also Austen's call —
+the ghost never calls `switchModule`.
+
+Deltas the browser forced, none of them structural:
+
+- **`settled()` damp on the leave-the-room intentions.** A module's controls
+  mount asynchronously, so for the first second or two the DOM honestly has
+  nothing annotated on it. An undamped `go-to-module` won that gap every time
+  and left before the page it asked for had arrived — the ghost toured five
+  modules in ninety seconds and built nothing. Damped, the first run produced
+  `add-step → fiddle-turns → play-it → reject-effect → reject-effect`, which is
+  the chain of thought this design was written to get.
+- **`escape-room`.** An immersive module that hides the sidebar leaves nothing
+  to press, and the ghost stood in the museum thinking "…that's a lot of
+  buttons" four times running. It is the one programmatic move in the bag
+  (`history.back()`), gated on *nothing pressable anywhere* plus 45s dwell.
+- **Presenter overlay z-index above every app overlay.** The fullscreen viewer
+  covered the ghost precisely while it was doing its most interesting work.
+  Safe: the layer is inert, so it never occludes the `elementFromPoint` probe.
+- **`SegmentedControl` gained a `ghostKind` prop** rather than annotating turn
+  and filter call sites one at a time. Only UNSELECTED segments are annotated —
+  pressing the selected value moves nothing and reads as a misclick.
+- **Sidebar nav is matched by the package's own `data-tour-module` /
+  `.section-button`**, since `@austencloud/sidebar` is external and cannot carry
+  a TKA annotation.
+- **`tempo` is annotated on the BPM presets only.** The +/- buttons are
+  pointerdown-driven and `el.click()` would not reach them; a control the ghost
+  presses to no visible effect is worse than one it cannot see.
+
+**The annotation surface is the part that grows.** Build, playback, effects,
+props, nav, gallery and the viewer toggle are annotated. `curio`, `clear`,
+`option-pager` and most modules are not, so intentions needing them simply never
+score — degrading quietly, exactly as designed. Adding a module to the tour is
+now an annotation, not a script.
+
 ## Open question carried into implementation
 
 The thought caption's placement relative to the pointer is a visual judgment
 that cannot be settled on paper — it must not obscure the control the ghost is
 about to press, and it must stay on-screen at the band edges. Resolve it at the
 browser, not in this document.
+
+**Resolved at the browser (2026-08-04):** the bubble sits centred above the
+pointer at a 34px gap, flips below when the pointer is near the top, and clamps
+to a 16px margin on every edge. It is a fixed box per screen tier
+(300×68 / 380×84 / 620×132, seams at 1680 and 2600) with the text crossfading in
+`fill` mode inside it, so it cannot resize as thoughts change — measured at
+1440/1920/2560/3840 and the box never varied. The dot and the type both step at
+2600 so they read from across a field rather than shrinking to punctuation.

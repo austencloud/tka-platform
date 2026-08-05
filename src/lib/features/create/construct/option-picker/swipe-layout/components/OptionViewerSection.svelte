@@ -364,6 +364,8 @@ Renders a section with:
         data-testid="option-item"
         data-letter={pictograph.letter}
         data-option-index={index}
+        data-ghost="safe"
+        data-ghost-kind="option"
         aria-label="Select {pictograph.letter ?? 'movement'}. Hold to preview."
         aria-keyshortcuts="Shift+Space"
         title="Tap to select. Hold to preview."
