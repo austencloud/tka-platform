@@ -220,16 +220,19 @@ locked with tests; one still OPEN.
    `SLAB_NOSE_OUTER_Y` (−4.5), which is also what "fractured" means. The
    sightline test walks eye→boss in 0.1 m steps against rock, walls, parapet,
    lip and the tilted nose.
-4. **OPEN — the pit still renders pure black from the rim.** Not dim: sampled
-   framebuffer pixels are exactly `0,0,0` across the whole void region while the
-   rim reads `61,66,66`. Ruled out: occlusion (raycasts reach `floor-disc` at
-   10–14 m and `boss-ring-inner-1` at 8.7 m), lights (boosting the pit keys to
-   4000 floods the frame white through bloom, so they do reach), fog
-   (`FogExp2` density ~0.076 — forcing it to 0.012 changes nothing), frustum
-   culling and material state. A `MeshBasicMaterial` magenta disc with
-   `depthTest: false`, `renderOrder: 999` and `frustumCulled: false` STILL
-   samples `0,0,0`, which means the mesh is not being submitted at all. That is
-   a separate cause from the three above and it is not diagnosed.
+4. **RESOLVED (verifier, 2026-08-04) — there was no rendering bug.** The
+   "black pit" was the harness: `window.__gameBridge.bindings.camera.setPitch`
+   is INVERTED relative to intuition — negative pitch looks UP. Every
+   "look-down" frame in this investigation was actually photographing the
+   ceiling AVEN, whose circular cut against the unlit roof reads exactly like
+   a black pit and sits in the same part of the frame. `camera.getWorldDirection`
+   at pitch −0.85 returned `(0, +0.75, −0.66)` — pointing up. At pitch
+   **+0.85** from the slab apron (106, 17.9, yaw π) the acceptance frame is
+   met: three lit automatons mid-swing on their bosses, trail rings, and the
+   daylight pool on the floor disc, verified by screenshot. The `0,0,0`
+   framebuffer samples were a second artifact: `readPixels` on a
+   non-preserved drawing buffer returns zeros regardless of content. Fixes
+   1–3 above were real defects and remain valid.
 
 **Harness note for the next session.** The teleport recipe cannot reproduce real
 first-person rendering: `camera.setMode('first_person')` on the bridge does not
@@ -238,7 +241,9 @@ set `Museum3DScene`'s own `fpsActive`, so the top-down player marker
 12 cm heading cone sits 0.35 m in front of the eye, first-hitting every ray in
 the lower half of the frame. Suppress it by scaling that group to ~0 (setting
 `visible` is overwritten every frame by the reactive binding) or teach the bridge
-to drive `fpsActive`. Some of the original "dome" report is this cone.
+to drive `fpsActive`. Some of the original "dome" report is this cone. Also:
+**setPitch sign is inverted (negative = up)** and **canvas `readPixels` returns
+`0,0,0` everywhere** (drawing buffer not preserved) — screenshot, never sample.
 
 ### Open for the gate (from the design's own question list)
 
