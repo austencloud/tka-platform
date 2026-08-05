@@ -18,7 +18,9 @@
   import { T, useThrelte } from "@threlte/core";
   import { useGltf, useKtx2, useMeshopt } from "@threlte/extras";
   import { FogExp2, Color, type Scene, type WebGLRenderer } from "three";
+  import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
   import { onMount } from "svelte";
+  import { readable } from "svelte/store";
   import { userProportionsState } from "@austencloud/scene-3d";
   import {
     detectAutumnQuality,
@@ -38,6 +40,8 @@
     stageWidth?: number;
     stageDepth?: number;
     stageZOffset?: number;
+    /** Skip hero models that have not shipped yet, such as in compact previews. */
+    loadUnreleasedHeroAssets?: boolean;
   }
 
   let {
@@ -45,6 +49,7 @@
     stageWidth = 6,
     stageDepth = 6,
     stageZOffset = 0,
+    loadUnreleasedHeroAssets = true,
   }: Props = $props();
 
   // ── Quality detection ─────────────────────────────────────────────────
@@ -70,18 +75,25 @@
 
   // ── Hero GLBs (Meshy — best-effort; may 404 until generation runs) ─────
 
-  const terrainGlb = useGltf("/models/autumn/terrain-shell.glb", {
-    meshoptDecoder: useMeshopt(),
-    ktx2Loader: useKtx2("/basis/"),
-  });
-  const heroTreeA = useGltf("/models/autumn/hero-tree-a.glb", {
-    meshoptDecoder: useMeshopt(),
-    ktx2Loader: useKtx2("/basis/"),
-  });
-  const heroTreeB = useGltf("/models/autumn/hero-tree-b.glb", {
-    meshoptDecoder: useMeshopt(),
-    ktx2Loader: useKtx2("/basis/"),
-  });
+  const unavailableHeroGlb = readable<GLTF | null>(null);
+  const terrainGlb = loadUnreleasedHeroAssets
+    ? useGltf("/models/autumn/terrain-shell.glb", {
+        meshoptDecoder: useMeshopt(),
+        ktx2Loader: useKtx2("/basis/"),
+      })
+    : unavailableHeroGlb;
+  const heroTreeA = loadUnreleasedHeroAssets
+    ? useGltf("/models/autumn/hero-tree-a.glb", {
+        meshoptDecoder: useMeshopt(),
+        ktx2Loader: useKtx2("/basis/"),
+      })
+    : unavailableHeroGlb;
+  const heroTreeB = loadUnreleasedHeroAssets
+    ? useGltf("/models/autumn/hero-tree-b.glb", {
+        meshoptDecoder: useMeshopt(),
+        ktx2Loader: useKtx2("/basis/"),
+      })
+    : unavailableHeroGlb;
   const mushroomGroveGlb = useGltf("/models/autumn/mushroom-grove.glb", {
     meshoptDecoder: useMeshopt(),
     ktx2Loader: useKtx2("/basis/"),

@@ -38,7 +38,7 @@
   import ProfileTab from "$lib/shared/settings/components/tabs/ProfileTab.svelte";
   import ReleaseNotesTab from "$lib/shared/settings/components/tabs/ReleaseNotesTab.svelte";
   import PropTypeTab from "$lib/shared/settings/components/tabs/PropTypeTab.svelte";
-  import BackgroundTab from "$lib/shared/settings/components/tabs/background/BackgroundTab.svelte";
+  import ThemeShowroom from "$lib/shared/settings/components/tabs/background/showroom/ThemeShowroom.svelte";
   import KeyboardShortcutsTab from "$lib/shared/keyboard/components/settings/KeyboardShortcutsTab.svelte";
   import PreferencesTab from "$lib/shared/settings/components/tabs/PreferencesTab.svelte";
   import LanguageTab from "$lib/shared/settings/components/tabs/LanguageTab.svelte";
@@ -243,8 +243,14 @@
       <IOSSkeletonLoader variant="toggle" count={8} />
     </div>
   {:else}
-    <div class="settings-module-body">
-      <section class="panel">
+    <div
+      class="settings-module-body"
+      class:theme-showroom-active={activeTab === "theme"}
+    >
+      <section
+        class="panel"
+        class:theme-showroom-active={activeTab === "theme"}
+      >
         {#if activeTab === "profile"}
           <ProfileTab
             currentSettings={settings}
@@ -255,7 +261,7 @@
         {:else if activeTab === "props"}
           <PropTypeTab {settings} onUpdate={handleSettingUpdate} />
         {:else if activeTab === "theme"}
-          <BackgroundTab {settings} onUpdate={handleSettingUpdate} />
+          <ThemeShowroom {settings} onUpdate={handleSettingUpdate} />
         {:else if activeTab === "keyboard"}
           <KeyboardShortcutsTab />
         {:else if activeTab === "notifications"}
@@ -394,6 +400,11 @@
     border-radius: 3px;
   }
 
+  .settings-module-body.theme-showroom-active {
+    overflow: hidden;
+    padding: 0;
+  }
+
   /* Panel - content card - fills available space, allows internal scrolling */
   .panel {
     border-radius: 16px;
@@ -407,6 +418,11 @@
     display: flex;
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .panel.theme-showroom-active {
+    padding: 0;
+    border-radius: 0;
   }
 
   /* Loading state */
