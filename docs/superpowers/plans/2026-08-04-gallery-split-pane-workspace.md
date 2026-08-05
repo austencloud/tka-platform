@@ -946,3 +946,103 @@ using the built-in WebSocket plus `Emulation.setDeviceMetricsOverride`,
 repo (a prior session built exactly this when the MCP dropped). Put it in the
 scratchpad, not the repo. Verification is not optional because a tool
 disconnected.
+
+---
+
+## Task 9: The left column earns its height (2026-08-05)
+
+Austen, reviewing the workspace:
+
+> When we're in the picker category above to narrow it down, after clicking
+> Show all sequences it's not necessarily ideal to show them stacked
+> vertically like this — it makes it so the text and the icon that indicates
+> what we're talking about, such as the pictographs for start position and
+> grid position, are forced to be very small, because their container is not
+> very tall.
+>
+> Every single individual selection once you get to the screen where you have
+> actually opened one of the options could be sensitive to the total height
+> available. Go to Grid mode — look at all that empty vertical space. Go to
+> Start position — all the pictographs are very small, and yet all that empty
+> space is also present. Timing & Direction, same thing. We could have used
+> all that space to make the buttons up above bigger, and the icons for start
+> position and grid mode and length displayed larger. So maybe it should morph
+> up and down — the height allocation for the bottom "pick a family" and the
+> top "pick" ought to be the same.
+
+### The two defects
+
+**9A — the catalog degenerates into a vertical stack when it owns the column.**
+With no category open (the "Show all" / no-selection state) the catalog becomes
+eleven full-width rows. Each row is wide and short, so the art and label are
+pinned small while the column has abundant height. A wide-and-short row is the
+worst shape for a tile whose job is to show a pictograph.
+
+**9B — nothing consumes the leftover height.** Both zones size to their content
+and top-align, so leftover space collects at the bottom as dead air:
+- Grid mode (2 options): two small cards, then a large empty region.
+- Start position (3 options): three small pictographs, same empty region.
+- Timing & Direction (6 options): six cards, same.
+
+The value cards should GROW into the available height (bounded), and when the
+editor genuinely needs less, the catalog should take the surplus and render
+bigger tiles. The allocation is dynamic, not a fixed split.
+
+### The model to build
+
+Treat the left column as a height budget shared by two zones, resolved per
+screen rather than fixed:
+
+1. **The column is a flex/grid in the block axis with a known height** (it
+   already is — the pane's height). Both zones participate; neither is
+   `height: auto` with the remainder stranded.
+2. **The value editor's grid fills its zone**: `grid-auto-rows: 1fr` (or an
+   explicit `minmax`) so R rows divide the zone's height, plus a per-card
+   `max-height` so 2 options do not become absurd slabs. Art inside the card
+   scales with the card (the pictograph/peek box is a prop in several of these
+   — thread the computed size through rather than leaving it at a constant).
+3. **Surplus flows to the catalog.** When the editor hits its per-card
+   max-height and still has room left over, the catalog takes the remainder and
+   its tiles grow — taller tiles, larger art, the labels Austen wants readable.
+   That is the "morph up and down" he described.
+4. **The catalog never degenerates to one column.** In the no-category state it
+   keeps a multi-column grid (2–3 by tier per `4k-native-layout.md`, and never a
+   row of one) with tiles that are TALLER, not wider. Consider promoting the
+   tile to a portrait composition (art above label) when it owns real height,
+   since that is the shape that lets a pictograph read.
+
+### Steps
+
+- [ ] **Step 9.1 — measure the current waste.** For each of the eleven value
+  screens at 1920 and 2560: the editor zone's height, the height its content
+  actually occupies, and the leftover. Same for the no-category catalog state.
+  Put the table in this plan. This is the before-evidence and it also tells you
+  which screens are the binding constraints.
+- [ ] **Step 9.2 — fix 9A.** Multi-column, taller tiles when the catalog owns
+  the column. Verify the art and every label read at 1920/2560/3840 and that no
+  label re-truncates (Task 7.5 fixed truncation — do not regress it).
+- [ ] **Step 9.3 — fix 9B.** The shared height budget above. Every value screen
+  consumes its zone; cards grow to a bounded max; art scales with the card.
+- [ ] **Step 9.4 — the bound matters.** A 2-option screen must not produce
+  comic slabs. Pick a per-card max that keeps proportions sane and SAY what it
+  is. If a screen cannot fill its zone without looking silly, the surplus goes
+  to the catalog (rule 3) rather than into the cards.
+- [ ] **Step 9.5 — verify.** Screenshot every one of the eleven value screens
+  plus the no-category state at 1920, 2560, and 3840 (×1.1 emulation), and read
+  each frame: is there still dead air? is any card a slab? is any art still
+  small next to empty space? Re-measure the 9.1 table as after-evidence.
+- [ ] **Step 9.6 — below the seam is untouched.** The step-through flow at
+  narrow widths keeps today's behavior. Verify at 960×412 and 375×667.
+- [ ] **Step 9.7 — verify + commit.** `npm run check`: 0 errors, 0 warnings.
+  `npx vitest run tests/unit/browse/`: baseline failures only (2 protobufjs
+  suites). The GalleryDrill line cap in the split-contract test is a REAL
+  constraint — do not raise it to make a change fit; put the code where it
+  belongs or tighten it. Explicit pathspecs. Do NOT push.
+
+### Note on browser tooling
+
+The chrome-devtools MCP is disconnected. Drive Chrome over CDP on port 9222
+(`scripts/launch-chrome-debug.ps1` starts/reuses the shared browser); a Node
+script using the built-in WebSocket with `Emulation.setDeviceMetricsOverride`,
+`Runtime.evaluate`, and `Page.captureScreenshot` works and has been used
+repeatedly this session. Scratchpad only, never the repo.
