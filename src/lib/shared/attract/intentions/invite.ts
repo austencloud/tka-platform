@@ -30,7 +30,7 @@
 
 import { safe, type GhostKind } from "../domain/annotations";
 import type { GhostContext, Intention } from "../domain/intention";
-import { has, labelOf, oneOf, pickOf } from "./helpers";
+import { has, labelOf, pickOf, voiced, voicedAbout } from "./helpers";
 
 /** Invitations per session. A four-hour run should offer, not nag. */
 const MAX_INVITES = 14;
@@ -102,7 +102,7 @@ export const INVITE_INTENTIONS: Intention[] = [
     category: "invite",
     mood: "curious",
     thought: (ctx) =>
-      oneOf(ctx, [
+      voiced(ctx, "offer-the-wheel", [
         "you can take this from me whenever you want",
         "this is yours if you want it — just touch something",
         "I'm only playing with it until someone else does",
@@ -124,9 +124,14 @@ export const INVITE_INTENTIONS: Intention[] = [
     category: "invite",
     mood: "curious",
     target: (ctx) => pointable(ctx),
+    // voicedAbout, not voiced: the generated lines for this slot are templates
+    // carrying {target}, substituted with the label of the control the
+    // intention already resolved — so the line names the same button the ghost
+    // is standing on. A generated line with a control name baked in would put
+    // 3b912bbc97 straight back.
     thought: (ctx, target) =>
       target
-        ? oneOf(ctx, [
+        ? voicedAbout(ctx, "point-it-out", target, [
             `try ${labelOf(target)} — go on, I'll wait`,
             `${labelOf(target)}. that one's yours`,
             `press ${labelOf(target)}, see what it does`,
@@ -150,7 +155,7 @@ export const INVITE_INTENTIONS: Intention[] = [
     category: "invite",
     mood: "still",
     thought: (ctx) =>
-      oneOf(ctx, [
+      voiced(ctx, "everything-is-live", [
         "everything I press, you can press",
         "none of this is a video, by the way",
         "it's a real app. it's just me driving",

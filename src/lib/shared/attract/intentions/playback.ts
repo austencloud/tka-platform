@@ -6,8 +6,13 @@
 import { safe } from "../domain/annotations";
 import type { Intention } from "../domain/intention";
 import { visibleAll } from "../services/sensors";
-import { has, labelOf, pressKind, restlessness, watchKind,
-  oneOf,
+import {
+  has,
+  labelOf,
+  pressKind,
+  restlessness,
+  voiced,
+  watchKind,
 } from "./helpers";
 
 export const PLAYBACK_INTENTIONS: Intention[] = [
@@ -38,7 +43,7 @@ export const PLAYBACK_INTENTIONS: Intention[] = [
     id: "pause-to-look",
     category: "playback",
     thought: (ctx) =>
-      oneOf(ctx, [
+      voiced(ctx, "pause-to-look", [
         "Hold on, what is it doing there?",
         "Wait — freeze it there.",
         "How does it get through that bit?",
@@ -64,7 +69,7 @@ export const PLAYBACK_INTENTIONS: Intention[] = [
     id: "scrub-back",
     category: "playback",
     thought: (ctx) =>
-      oneOf(ctx, [
+      voiced(ctx, "scrub-back", [
         "Wait, do that bit again.",
         "Back up — I missed that.",
         "Let's see that step once more.",
@@ -87,7 +92,7 @@ export const PLAYBACK_INTENTIONS: Intention[] = [
     id: "try-practice",
     category: "playback",
     thought: (ctx) =>
-      oneOf(ctx, ["Let's try this along with it.", "Can I do this with it?"]),
+      voiced(ctx, "try-practice", ["Let's try this along with it.", "Can I do this with it?"]),
     /*
      * "Wait — can it see me?" is the good line, and it is only true once the
      * stream is actually live. Austen (2026-08-05): "I like wait can it See Me
@@ -99,7 +104,7 @@ export const PLAYBACK_INTENTIONS: Intention[] = [
      */
     reaction: (ctx) =>
       ctx.cameraLive
-        ? oneOf(ctx, [
+        ? voiced(ctx, "can-it-see-me", [
             "Wait — can it see me?",
             "Oh — that's me.",
             "Hello. That's the camera.",
@@ -130,7 +135,7 @@ export const PLAYBACK_INTENTIONS: Intention[] = [
     // Bounded on purpose. An unattended laptop must not hold the camera open
     // all night — battery, thermals, and a live camera nobody is standing in
     // front of. Restlessness makes leaving read as a decision.
-    thought: "Alright, back to it.",
+    thought: (ctx) => voiced(ctx, "leave-practice", ["Alright, back to it."]),
     can: (ctx) => has(ctx, "practice-stop"),
     appeal: (ctx) => 0.25 + restlessness(ctx) * 0.6,
     perform: async (g, ctx) => {
