@@ -2,11 +2,11 @@
 status: active
 value: 3
 effort: M
-remaining: 'Broad-brush concepts + floor-plan programs for Earth, Air, Sun, Moon. Each still needs its own approved design doc and graybox gate. Earth is next.'
+remaining: 'Concepts + floor-plan programs for Earth, Air, Sun, Moon. Each still needs its own design doc and graybox gate. Air is next (Plan B, The Last Lift, chosen 2026-08-05 — updraft feel-prototype first). Moon rewritten 2026-08-05 as the surface-of-the-moon reality break; Still Room retired. Sun is the only room with no agreed mechanism — its beam was rejected in principle.'
 depends_on: 'docs/superpowers/specs/2026-08-04-first-fire-design.md'
 plan_path: ''
 tags: [museum, vulcan-cave, floor-plan, concept]
-last_triaged: 2026-08-04
+last_triaged: 2026-08-05
 ---
 # Vulcan Cave — All Six Rooms, Concept + Floor-Plan Program
 
@@ -82,7 +82,8 @@ floor; the rim ledge is the whole viewing apparatus.
   time; Earth's is fixed — you stand still, they are all below you at once.
 - Not Sun: Sun surrounds the visitor with performers at eye level on a round
   plan; Earth keeps them all on one plane, below.
-- Not Moon: Moon is seen only in reflection.
+- Not Moon: Earth is enclosed rock looking down into a pit; Moon is open sky
+  looking out across a plain, and is the only room with no barrier object.
 
 **Floor plan program.** Enter west (`fireToEarth`), exit south (`earthToAir`).
 
@@ -160,7 +161,11 @@ three visible together only from the top overlook, looking back down.
   horizontal amphitheatre lit by the performers, Air is a bright vertical shaft
   where they are silhouettes against daylight. The echo is the point: same
   partners, opposite room in every axis.
-- Not Water/Sun/Moon: no water, no round plan, no reflection.
+- Not Water/Sun: no water, no round plan.
+- Not Moon: both rooms change how the visitor moves, and that rhyme is
+  deliberate — but Air's lift is scripted, involuntary and happens once, where
+  Moon's low gravity is a persistent property the visitor drives. Air is
+  enclosed rock; Moon is open sky. Prototype the two movement changes together.
 
 **The Fire echo, designed.** Air's three ledges carry the same station
 silhouette as Fire's three pits (same boss profile, same carved ring motif) and
@@ -244,7 +249,12 @@ whose sequencing is authored in light rather than in walking.
 - Not Earth: Earth is one static overhead view of a simultaneous trio.
 - Not Air: Air sequences performers by making you climb; Sun sequences them
   while you stand still.
-- Not Water/Moon: no water barrier, no reflection.
+- Not Water: no water barrier.
+- Not Moon: Sun's light is authored and moves; Moon's is fixed. Sun is enclosed
+  and round; Moon is open and unbounded. NOTE — with Moon now taking the
+  surface-of-the-moon concept, Sun is no longer the wing's biggest bright open
+  space and does not have to compete for that job. Small, close and hot is a
+  live alternative direction (see Addendum).
 
 **Floor plan program.** Enter north (`airToSun`), exit east (`sunToMoon`).
 
@@ -298,79 +308,171 @@ crack needs a permanent warm cue so the visitor can always find it.
 
 ---
 
-## Moon — "The Still Room" (working title)
+## Moon — "The Sea of Tranquility" (working title)
 
-**Concept.** A small, cold, silent chamber where the only image of the three
-performers is their reflection in a perfectly still black pool — the visitor
-never sees them directly.
+**Status: decided 2026-08-05.** This section replaces the earlier "Still Room"
+concept (a small cold chamber whose only view of the performers was their
+reflection in a black pool). Austen chose the surface-of-the-moon reality break:
+*"put the fucking person on the moon ... make them think holy shit I just walked
+through the door and I'm on the moon."* The Still Room's reflection-pool
+mechanism is retired, not merged — see **Retired alternative** at the end of this
+section for what was kept from it and what was dropped, and why.
 
-**Element first-person.** The approach cools and quiets: the Sun room's warmth
-falls off, footfall damps on fine silt, and the last sound is a single slow
-drip. The chamber is lit only by a glowworm ceiling — cold, dim, sourceless.
-Water is present but ankle-deep and utterly still at the shore, and the visitor
-walks a silt path along its edge; the element felt is *stillness and reflected
-light*, the two things the moon actually is.
+**Concept.** The last tube in the wing opens onto the lunar surface. Stars, the
+Earth hanging in the black, grey regolith to a hard close horizon, and three
+performers out across a crater floor in absolute silence.
 
-**Unique mechanism.** *The performers are visible only as reflections.* They
-stand on a shelf above and behind an overhang; a low rock brow occludes them
-from every walkable point, so turning around gains you nothing. The pool's
-inverted image is the exhibit.
-- Not Water: Water's pool is a barrier you look *across* at directly lit
-  alcoves, in a monumental moving grotto; Moon's pool is the *only* view, in a
-  small still room, and its water is centimetres deep at the shore.
-- Not Earth: Earth looks down at real figures, not an image.
-- Not Air/Fire/Sun: no climb, no fire, no beam, no round plan.
+**Element first-person.** Moon is the wing's only reality break, and it is the
+last room before the Egypt threshold — the wing ends by leaving the cave
+entirely. The visitor comes through a crack expecting a sixth chamber and the
+ceiling is simply gone. The reveal is not the opening; it is **turning around
+and finding the Earth behind and above you.** Sound drops to nothing on the
+threshold. The element felt is *stillness, silence, and reflected light* — the
+three things the moon actually is — with the reflection now literal: the visitor
+is standing on the reflector, lit by Earthshine.
+
+**Unique mechanism.** *The room stops being a cave.* No other room in the wing
+breaks the enclosure, and no other room removes its audio bed. Moon is also the
+only room with no barrier object at all — nothing is between the visitor and the
+performers except distance and vacuum.
+- Not Water: no pool as barrier, no monumental moving grotto. Moon's water, if
+  any survives as a mare-floor visual, is dry basalt, not liquid.
+- Not Fire: Fire is enclosed, loud, and lit by the performers. Moon is open,
+  silent, and lit by the sky.
+- Not Earth: Earth looks *down* at a trio from a rim in an enclosed chamber.
+  Moon looks *out* across an open plain with no rim and no drop.
+- Not Air: Air's lift is scripted, involuntary, and happens once. Moon's low
+  gravity is a persistent movement property the visitor drives. Passenger, then
+  pilot — the rhyme is deliberate and the two rooms sit two apart.
+- Not Sun: no round plan, no beam, no authored light sequencing. Moon's light
+  never moves.
+
+**Why this is cave-native after all (the lava-tube spine).** The reality break
+does not need to be a gag. The moon has lava tubes — real, mapped, and a
+seriously proposed habitat site — and this wing is Vulcan Cave, volcanic tube
+the whole way. The last tube opening onto the lunar surface gives the break an
+in-fiction spine, and nothing about the previous five rooms has to be
+re-justified. Interpretation should carry this rather than leaving it as a
+surprise with no logic behind it.
+
+**Lighting — the two-source rule.** There is no atmosphere, so nothing
+scatters. This is the room's signature and it is a lighting decision, not new
+tech:
+
+1. **Hard white key (the sun)** raking from one side, low. Everything it does
+   not touch falls to near-black with no gradient. A performer reads as a lit
+   edge and an absence.
+2. **Soft blue-white fill (Earthshine)** from overhead-behind, where the Earth
+   hangs. Earthshine is bright enough to read by on the real moon, and it is
+   what keeps the shadow side legible instead of murky.
+
+The result is a warm-white edge against a cold blue shadow side with nothing
+muddy in between, which is both physically correct and the most distinctive
+palette in the wing. `EarthGodRays.svelte` and `EarthSphere.svelte` already
+exist and already do this. **Austen is skeptical of the no-fill look and wants
+to see it before committing** — graybox ships the two-source setup, and if it
+reads as murk, fill gets added and nothing is lost.
+
+**Silence.** Vacuum carries no sound. Moon has **no audio bed at all** — no
+wind, no water, no fire, no drips. Every other room in the wing has one, so
+removing it at the end is the strongest closing move available and it costs
+nothing. Retain only the visitor's own footfall, damped, and optionally a
+suit-breath low enough to notice only in hindsight.
+
+**Low gravity.** Approved. The visitor's jump is light and their fall is slow.
+Two constraints:
+
+1. **Awe before play.** The first ~30 seconds must not invite jumping. Arrive,
+   silence, Earth overhead, no movement. The visitor should discover they are
+   light *after* the room has landed, not during the reveal. Stage the arrival
+   so nothing in frame reads as a platform.
+2. **Crisp, not floaty.** Long airtime and slow falls make first-person low-g
+   nauseating and make navigation tedious. Tune toward "light and controlled."
+   This touches the same walker and ground-clamp code Air's climb is already
+   stressing, so the two prototypes should share findings.
+
+**Barrier — distance, and the honest caveat.** The design intent is that the
+moon itself is the barrier: the performers are simply far, out across the crater
+floor, with no wall, no drop, and no water telling the visitor no. Every other
+room in the wing refuses you with an object; this one refuses you with scale.
+
+There was a second, more specific idea attached to this — that with no
+atmospheric haze to serve as a distance cue, the visitor would badly
+underestimate the range and walk toward figures that never get closer. This is
+true of the real moon, and the Apollo crews misjudged distances exactly this way.
+**It is flagged as unproven for a game.** Players judge distance largely by
+ground-texture parallax, and most rendered scenes lack strong haze anyway, so
+removing it may register as nothing except slow walking. Do not build the room's
+barrier on this effect. If a graybox test shows it lands, it is a bonus; the
+room works on scale alone.
 
 **Floor plan program.** Enter west (`sunToMoon`), exit east (`moonToEgypt`).
+Dimensions below are a first pass and expect revision — this is the wing's only
+open-sky room and the first whose plan is not bounded by rock.
 
 | # | Station | Rough dims | Floor Y | Walkable |
 |---|---|---|---|---|
-| 1 | Cooling crack (west) | 8 m run, 2.2 m wide | −0.8 → −1.4 | yes |
-| 2 | Silt shore, west arc | 3 m wide | −1.4 | yes |
-| 3 | Viewing shelf (the composed spot) | 5 × 3 m, south of the pool | −1.4 | yes |
-| 4 | Mirror pool | 14 × 9 m | surface −1.5, visual bed −1.9 | **blocked** |
-| 5 | Rock brow / overhang | spans the north half, underside +1.2 above shore | — | blocked |
-| 6 | Performer shelf (M-P, N-Q, O-R) | 12 × 2.5 m, behind and above the brow | +1.6 | blocked |
-| 7 | East shore path | 2.5 m wide | −1.4 | yes |
-| 8 | Exit to Egypt threshold (east) | 5 m run | −1.4 → −0.8 | yes |
+| 1 | Final tube, cooling and silencing | 9 m run, 2.2 m wide | −0.8 → −1.4 | yes |
+| 2 | Tube mouth / threshold (audio cuts here) | 4 × 3 m | −1.4 | yes |
+| 3 | Regolith apron below the mouth | 10 × 8 m | −1.6 | yes |
+| 4 | The turn-around (Earth first visible behind) | — | −1.6 | yes |
+| 5 | Open crater floor | ~60 × 50 m, uncapped | −1.6 to −2.4 | yes |
+| 6 | Three performer stations (M-P, N-Q, O-R) | ~35–50 m out, spaced ~12 m | −2.4 | blocked |
+| 7 | Boulder field (scale cue + low-g play) | scattered, 0.5–3 m | varies | yes |
+| 8 | Exit tube to Egypt threshold (east) | 6 m run | −1.6 → −0.8 | yes |
 
-Bay ≈ 18 × 16 m — the smallest chamber in the wing, on purpose. Ceiling ≈ +5.
+The performers are blocked by proximity radius rather than by geometry — there
+is no fence and no drop. Reaching their immediate area should be *possible in
+principle and impractical in fact*; the stations sit far enough out that the
+walk reads as "across the plain," not "over there."
 
-**Performers + barrier.** M-P, N-Q and O-R stand on the raised shelf, lit by
-three small cold sources, facing the pool. The brow blocks the direct sightline
-from every walkable tile; the pool blocks approach. Quarter-Opp with no
-leader/follower is a symmetric, opposed-direction phase relation — an inverted
-image is the correct diagram for it, and reflection turns each performer's
-opposite-direction pair into a visually opposed twin. Space the three so their
-reflections do not overlap from the viewing shelf.
+**Money shot.** From the regolith apron, having just turned around: Earth in
+the upper third, the tube mouth as a black wound in grey rock, and the three
+figures small and hard-edged out on the crater floor — each a white lit edge
+and a blue-black absence, all landing on the same beat, in total silence.
 
-**Money shot.** From the viewing shelf: black water filling the lower two
-thirds of frame, three cold-lit figures inverted in it, glowworms doubled as a
-second sky below, and the rock brow as a hard dark band where the real
-performers are *not* visible.
+**Reuse map.** Ground: `scenes/cosmic/LunarGroundPlane.svelte`. Earth:
+`scenes/cosmic/EarthSphere.svelte` + `scenes/cosmic/EarthGodRays.svelte` (the
+Earthshine fill — already written). Sky: `scenes/cosmic/Starfield.svelte`,
+`scenes/cosmic/NebulaLayer.svelte` (dial well back — the real lunar sky is black
+and star-dense, not nebulous), `scenes/cosmic/MeteorStreaks.svelte` for optional
+distant impacts. Scatter and mineral detail: `scenes/cosmic/LunarCrystals.svelte`,
+`scenes/cosmic/CrystalFormations.svelte`. Grade: `MuseumPostProcessing.svelte`
+(this room wants the least bloom in the wing — vacuum has no glow). Stations:
+`MuseumPerformerStation3D.svelte`. Audio: **none** — this is the one room that
+does not get a `CURATED_WING_SOUNDSCAPES` entry, and that must be a deliberate
+registry entry rather than an omission that looks like a bug.
 
-**Reuse map.** Reflection: `museum/components/game/MuseumMirror.svelte` already
-wires three.js `Reflector` into the Threlte scene correctly (it exists for the
-lobby mirror) — reuse the pattern at pool scale, horizontal. Water surface and
-opacity: `scenes/ocean/runtime/water/WaterSurface.svelte` (Water's noted
-adaptations apply: centre uniform for the edge fade, exposed opacity). Cold
-glow field: `scenes/cosmic/LunarCrystals.svelte`,
-`scenes/cosmic/EnergyParticles.svelte`; drips via
-`environments/primitives/FallingParticles.svelte`. Still-pool reference:
-`scenes/autumn/runtime/water/AutumnPond.svelte`. Audio: ocean audio engine with
-a near-silent drip bed.
+**Risks / new tech.** (1) **Open sky on a tile-terrain system built for
+enclosed bays.** Room streaming, fog walls and occlusion all assume rock
+boundaries; an uncapped room is genuinely new and is the largest unknown here.
+(2) **Low gravity is a movement-model change**, shared-risk with Air's updraft —
+prototype together, and cap airtime. (3) **The no-fill lighting is unproven to
+Austen's eye** and is an explicit graybox gate. (4) **Scale legibility** —
+performers 35–50 m out is far beyond any range in the wing (Fire ~4 m, Earth
+8–10 m); if the figures read as specks, pull the stations in before adding art,
+and use the boulder field to give the eye a size ladder. (5) **The silence must
+not read as broken audio** — interpretation and the threshold transition need to
+make it obviously intentional. (6) Performer legibility now depends on the
+shadow terminator falling usefully across each rig; the sun angle is a
+composition decision, not a default.
 
-**Risks / new tech.** (1) A large real-time planar reflector is the one genuine
-new cost in this document — `Reflector` renders the scene twice. Mitigations:
-small pool, low texture resolution, and a proven fallback (mirror-duplicate the
-three station rigs below the pool plane with a flipped transform and skip the
-reflector entirely — cheap, deterministic, and it only has to reflect three
-figures and a glowworm ceiling). Decide at graybox. (2) Occlusion must be
-*proven*, not assumed: a test that samples every walkable tile and asserts no
-line of sight to any performer anchor. (3) Reflections of animated rigs can
-read as a rendering bug rather than a design idea — the brow must be
-unmistakably deliberate, and interpretation should say so in-fiction.
-
+**Retired alternative — the Still Room (reflection pool).** Kept for the record
+because its reasoning was sound and parts of it survive. The original concept
+put three performers on a shelf behind a rock brow, visible only as an inverted
+image in a still black pool, with occlusion proven by a per-tile line-of-sight
+test. It was retired for two reasons: it repeated Water's mirror pool as the
+wing's *closing* image, and the distinction that made it different (Water's pool
+is a barrier you look across, Moon's is the only view) was too fine a point to
+hang an ending on. What survives into the new concept: stillness and silence as
+the body channel, reflected light as the element's true subject (now literal —
+the visitor stands on the reflector), the smallest emotional scale in the wing,
+and one composed view rather than a tour. What is dropped: the pool, the brow,
+the real-time planar `Reflector` cost, and the line-of-sight occlusion test.
+Note that dropping the reflector removes the one genuine new rendering cost
+flagged in this document, which partly offsets the open-sky risk taken on above.
+If a mare-floor pool ever returns as set dressing, it is dry basalt or a
+decorative detail — never the room's only view of a performer.
 ---
 
 ## Wing pacing — compression and release across six rooms
@@ -386,13 +488,19 @@ its tallest space — pure vertical release after Earth's compression, and the
 climb itself is the pacing. Sun is the second release and the wing's only bright,
 round, open room: after Air's climb the visitor arrives at warmth and 360° of
 space, which is where a wing should peak emotionally rather than in size. Moon
-then closes hard — the smallest, quietest, coldest room, one composed view, and
-out. Rhythm: **compress (approach) → release (Water) → compress (bridge/crack) →
+then breaks the pattern entirely: after five enclosed rooms the wing stops being
+a cave, and the release is total — no ceiling, no barrier, no sound. Rhythm:
+**compress (approach) → release (Water) → compress (bridge/crack) →
 release (Fire) → compress (bedding passage) → contained (Earth) → compress
-(chimney base) → release upward (Air) → open (Sun) → contract to a single image
-(Moon)**. No two adjacent rooms share a dominant axis: Water horizontal-through,
+(chimney base) → release upward (Air) → open (Sun) → compress (final tube) →
+break open (Moon)**. No two adjacent rooms share a dominant axis: Water horizontal-through,
 Fire horizontal-across, Earth vertical-down, Air vertical-up, Sun radial, Moon
-frontal.
+outward-and-unbounded.
+
+One consequence worth stating plainly: Sun no longer has to be the wing's peak.
+It was assigned that job because it was the only bright open room, and Moon has
+now taken both adjectives. Sun's brief is open for revision on those grounds —
+see the Sun section and the Addendum.
 
 ---
 
@@ -412,10 +520,91 @@ frontal.
    Fire is still warm.
 3. **Sun.** Four rigs, a round plan, and moving light — the highest combined
    risk, and it wants Air's climb behind it so the arrival lands.
-4. **Moon.** Last by design: it is the wing's closing image, it is cheap in
-   plan, and it depends on a reflection decision that benefits from the other
-   rooms' performance budget being known.
+4. **Moon.** Last by design: it is the wing's closing image and its only
+   reality break, so it wants every other room's enclosure established behind it
+   for the contrast to land. Its cost profile changed with the 2026-08-05
+   decision — it no longer carries the real-time planar reflector (retired with
+   the Still Room), but it now carries an uncapped open-sky room on a tile
+   system built for enclosed bays, plus a low-gravity movement change shared
+   with Air. Build it after Air's updraft prototype has settled the movement
+   work, and after the wing's performance budget is known.
 
 Each room still owes: its own design doc, a plan sheet under `static/sketches/`,
 a graybox with Water's six engineering invariants, and Austen's eye-level gate
 before any art spend. One executor per phase, no fan-outs.
+
+## Addendum — Austen's direct input, 2026-08-05 (brainstorm session)
+
+Captured verbatim-in-substance so future agents design from his words, not
+just this doc's proposals.
+
+- **Air — updraft traversal.** Austen proposed the visitor being lifted by
+  air: *"they have to jump on top of these air panels that are blowing
+  upwards and causing them to float up ... it's a whole game mechanic [but]
+  a million people have done that mechanic."* This supersedes this doc's
+  "wind is audio + particles only, no camera push" conservatism as a live
+  option. Three dosage tiers are drawn in
+  `static/sketches/2026-08-05-air-room-floor-plans.html`: A = pure
+  switchback (this doc as written), B = **The Last Lift** (ramp to landings
+  A/B, a single updraft column replaces ramp 3 and doubles as the room's
+  reveal — recommended), C = full updraft-pad hopping (Austen's literal
+  pitch; flagged for platforming-feel and stranding risks). **Austen chose B
+  on 2026-08-05** ("B definitely"); ramp 3 is preserved as the fallback if the
+  lift prototype fails, and nothing else in the room moves if it does. Wing-grammar
+  framing agreed in-session: Air should be the only
+  room where the element moves the visitor (under water → around fire →
+  atop earth → carried by air). Note that Moon's approved low gravity is a
+  second movement change — the two are distinct (scripted-involuntary vs
+  persistent-player-driven) but they touch the same walker and ground-clamp
+  code, so the prototypes should share findings.
+- **Moon — "be on the moon." DECIDED 2026-08-05.** Austen: *"put the fucking
+  person on the moon ... put them in a room that suddenly has stars ceiling
+  and has the earth in the background and make them think holy shit I just
+  walked through the door and I'm on the moon."* The Still Room reflection
+  pool is **retired**, not merged — the mare-pool combination was considered
+  and dropped, because repeating Water's mirror pool as the wing's closing
+  image was the main problem the surface concept solves. Directly buildable
+  from `scenes/cosmic/` (`LunarGroundPlane`, `EarthSphere`, `Starfield`,
+  `EarthGodRays`, `LunarCrystals`, `MeteorStreaks`, `NebulaLayer`) — all
+  verified present on disk 2026-08-05. Full concept rewritten in the Moon
+  section above. Decisions taken in the same session:
+  - **Low gravity: approved.** Austen pushed back on the concern that it
+    duplicated Air's updraft and he was right — Air's lift is scripted and
+    involuntary, low-g is a persistent property the visitor drives. The real
+    constraint is tonal, not mechanical: awe before play, so the first ~30
+    seconds must not invite jumping.
+  - **Silence: approved.** No audio bed at all, the only room in the wing
+    without one.
+  - **No-fill lighting: approved to prototype, Austen skeptical.** Hard sun
+    key with near-black shadows, softened only by Earthshine. *"I'm a little
+    bit skeptical but I would like to see how it goes."* Explicit graybox gate.
+  - **Distance-misjudgement barrier: flagged unproven, do not build on it.**
+    Austen found the idea confusing as first explained, and on re-examination
+    it may not survive contact with a game engine. The room's barrier is
+    plain scale — no wall, no drop. The perceptual effect is a bonus if a
+    graybox shows it lands.
+- **Sun — beam mechanism rejected in principle.** Austen on the Sundial's
+  sweeping beam revealing one performer at a time: *"I'm not sold on the whole
+  notion of a spotlight beam revealing one performer at a time ... but it's
+  better than anything I have right now."* Parked rather than replaced — Sun is
+  third in build order. Two live directions, neither chosen: (a) **glare
+  inversion**, where the barrier and the light channel become the same thing —
+  the lit performer is the one you *cannot* look at and you read the three dim
+  ones, which makes the visitor turn and shade their eyes and gives Sun a body
+  channel it currently lacks; (b) **small, close and hot**, now available
+  because Moon has taken over the wing's bright-and-open role and Sun no longer
+  has to be the peak.
+- **Sun — undecided, and Austen knows it.** His sketch: standing "on the
+  sun," engulfed but protected — *"you're in a bubble on the sun ... flames
+  can't get past a certain barrier"* — immediately followed by *"I don't
+  even know if I like that."* Log as a candidate beside the Sundial, not a
+  decision. Reuse path if chosen: ember kit re-tinted white-gold
+  (`VolcanicHaze`, `FireWisps`, `HeatDistortion`) + celestial `GodRays`.
+- **Standing directive — reuse the elemental scene inventory.** Austen
+  flagged that no graybox has used assets from the existing element scenes
+  (`scenes/ember/`, `scenes/ocean/`, `scenes/cosmic/`, `scenes/celestial/`,
+  `scenes/autumn/`) or the ~500 GLBs under `static/models/`. Grayboxes stay
+  primitive by design, but every room's **Phase 2 art pass must start with
+  an inventory pass over those libraries** before authoring anything new
+  (`never-hand-roll.md`). Each future design doc's Reuse Map section is
+  mandatory, not advisory.

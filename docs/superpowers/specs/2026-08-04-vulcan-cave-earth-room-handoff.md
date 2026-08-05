@@ -37,7 +37,7 @@ wing grammar + roster canon:
 - **First Fire graybox built by an Opus executor** (`8a3bf8e118` P1,
   `d97bec31e0` P2, `987b7d68b2` ledger): `first-fire-layout.ts` (single
   geometry source: ember bridge over lava → bent darkening crack −0.3→−0.8 →
-  three bench terraces −0.8/−1.3/−1.8 → blocked ash circle → 4 m lava fissure
+  three bench terraces −0.8/−1.3/−1.8 → blocked ash circle → 4 m lava fissure Hey hey now I can hear you Oh look the video's very Peter just arrived OK you're gonna get a plane You need me to print something after 7 like at that specific time or right now no if you can print them right now so that they're they're just ready I would like 2 copies of the little sale that I emailed to you Yeah so that way if this person
   → performer shore −1.3 with three stations → exit stair to Earth door),
   `FirstFireGraybox.svelte` (mounted in `Museum3DScene.svelte`), `cave-fire`
   wing resized (interior ≈ 46.5 × 20.5 m), CAVE_MODE_ROOMS migrated to
@@ -157,3 +157,67 @@ wing grammar + roster canon:
   first-capture of a heavy page — TaskStop and retry after a reload.
 - **Commits**: explicit pathspec ONLY; new files need `git add <paths>`
   first. The index is shared with parallel sessions.
+
+## Update 2026-08-05 — Air room brainstorm begun; Austen's input captured
+
+Water, Fire, and Earth grayboxes exist. Air is the next room. A live
+brainstorm with Austen (mushroom-coffee session) produced:
+
+- **DECIDED 2026-08-05 — Air = Plan B, "The Last Lift."** Austen chose it off
+  the plan sheet. Ramp to landings A (+1.6, D-J) and B (+4.6, E-K) exactly as
+  the all-rooms doc specifies; **ramp 3 does not exist** — the final +4.6 →
+  +8.4 is a visible updraft column, and the ~4 s rise is the room's reveal
+  (three ledges stack into one vertical frame, all pairs land together as you
+  crest). **Fallback preserved:** if the updraft ever fails a feel gate,
+  restoring the concept doc's ramp 3 (10 m run, east wall, +4.6 → +7.6)
+  reverts the room to Plan A with nothing else moving. Do not delete the
+  ramp-3 geometry spec from the all-rooms doc.
+- **Updraft feel-prototype BUILT and measured** (`18c35bcc1e`, plan with
+  closed ledger: `docs/superpowers/plans/2026-08-05-air-updraft-prototype.md`).
+  `cave-air` is now an authored bay: bare shaft, ramp to +4.6, visible updraft
+  column, overlook lip at +8.4. Measured rise **+3.81 m in 3.93 s, no jump
+  input**; overshoot 0.013 m; step-out mid-rise drops safely. Evidence:
+  281 museum tests pass, `npm run check` 0 errors/0 warnings, three 1920
+  frames read (two real defects found and fixed — an opaque column that
+  filled the frame, and a lip rim that walled off the overlook view).
+  **AWAITING AUSTEN'S FEEL GATE** — the numbers are right; whether 1.0 m/s
+  reads as the room's reveal is his walk, not a headless viewport's.
+  Teleport into the column and ride it.
+- **Prototype gotchas for the Air room build:**
+  1. **Two UnifiedCameraController copies exist.** The museum imports from
+     `@austencloud/camera-3d` (`packages/.../lib/components/`), NOT
+     `src/lib/shared/3d/camera/`. Editing only the src copy is a silent
+     no-op — this cost the executor a full measurement round. Both now carry
+     the identical guarded lift branch.
+  2. **The top hovers rather than settles.** Lift cuts at the lip, gravity
+     pulls back under it, lift resumes — the player bobs within ~1 cm at lip
+     height indefinitely. Reads as forgiving beside a steppable ledge, but a
+     real dismount wants a spent-state on the column, not a ceiling. Decide
+     before the room build.
+  3. **The physics seam is 2D.** `blockedAt`/`elevationAt` take no Y and the
+     ground clamp is a floor-only minimum, so any raised ledge XZ-adjacent to
+     lower ground can be walked straight up onto. The prototype's rims exist
+     only to close that. Air either keeps fences or the terrain program gains
+     a Y-aware blocker — the latter is the better answer for a room whose
+     whole plan is stacked elevations.
+- Superseded context (kept for reasoning): three tiers on the plan sheet
+  `static/sketches/2026-08-05-air-room-floor-plans.html` — A pure switchback
+  (all-rooms doc as written), B "The Last Lift" (single updraft column
+  replaces ramp 3; the lift IS the reveal; recommended), C full updraft-pad
+  hopping (Austen's literal pitch). Austen has not picked. The updraft
+  mechanic = trigger volume adding +y velocity with soft terminal speed;
+  prototype on a bare shaft and gate on feel BEFORE building the room.
+- **Moon candidate upgraded**: "be on the moon" using `scenes/cosmic/`
+  assets (LunarGroundPlane, EarthSphere, Starfield) now co-equal with the
+  Still Room reflection pool. Sun remains undecided (sun-bubble idea logged,
+  Austen lukewarm on it).
+- **Standing directive**: every room's Phase 2 art pass starts with an
+  inventory of the existing scene libraries (`scenes/ember|ocean|cosmic|
+  celestial|autumn`) and `static/models/` GLBs before authoring anything.
+  Reuse Map sections in design docs are mandatory.
+
+Full detail in the Addendum of
+`docs/superpowers/specs/2026-08-04-vulcan-cave-all-rooms-concepts.md`.
+Next steps: Austen picks a plan on the sheet → Air design doc + executor
+plan (reuse Fire plan's "Non-negotiable gotchas" verbatim) → updraft
+prototype (if B/C) → graybox → eye-level gate.

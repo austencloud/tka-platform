@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Air Room — Floor Plan Options (2026-08-05)</title>
+<style>
+  :root {
+    --bg: #0e1116; --panel: #161b23; --line: #2a3242; --ink: #dbe2ee;
+    --dim: #8c97ab; --air: #7fd4ff; --warm: #ffb45e; --good: #6fe3a0;
+    --void: #0a0d12;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 16px/1.55 "Segoe UI", system-ui, sans-serif; padding: 2rem clamp(1rem, 4vw, 4rem) 5rem; }
+  h1 { font-size: clamp(1.6rem, 2.5vw, 2.4rem); letter-spacing: .01em; }
+  h1 span { color: var(--air); }
+  .sub { color: var(--dim); margin: .35rem 0 2rem; max-width: 70ch; }
+  .plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.5rem; }
+  @media (min-width: 1680px) { .plans { grid-template-columns: repeat(3, 1fr); } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 1.4rem; display: flex; flex-direction: column; gap: 1rem; }
+  .card.rec { border-color: var(--good); box-shadow: 0 0 0 1px var(--good); }
+  .card h2 { font-size: 1.25rem; }
+  .card h2 em { color: var(--air); font-style: normal; }
+  .tag { display: inline-block; font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--void); background: var(--good); border-radius: 999px; padding: .15rem .7rem; font-weight: 700; }
+  svg { width: 100%; height: auto; background: var(--void); border-radius: 10px; }
+  .k { color: var(--dim); font-size: .9rem; }
+  .k b { color: var(--ink); }
+  ul { padding-left: 1.2rem; color: var(--dim); font-size: .95rem; }
+  ul li + li { margin-top: .3rem; }
+  ul b { color: var(--ink); font-weight: 600; }
+  .section { margin-top: 3rem; }
+  .section h2 { font-size: 1.4rem; margin-bottom: .8rem; }
+  .rec-box { background: var(--panel); border: 1px solid var(--good); border-radius: 14px; padding: 1.5rem 1.7rem; max-width: 100ch; }
+  .rec-box p + p { margin-top: .8rem; }
+  .rec-box .dim { color: var(--dim); }
+  text { font-family: "Segoe UI", system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Air — <span>"The Chimney"</span> floor-plan options</h1>
+<p class="sub">Bay ≈ 16 × 15 m, ~24 m authored height, daylight crack at +22. Enter north from Earth (−1.2), exit south to Sun (+8.4 → 0). Performers: DJDJ / EKEK / FLFL — Fire's pairs in tog timing, landing together. The question on this sheet: how much of the climb does the air itself do?</p>
+
+<div class="plans">
+
+  <!-- PLAN A -->
+  <div class="card">
+    <h2>Plan A — <em>Pure Switchback</em> (concept doc as written)</h2>
+    <svg viewBox="0 0 460 430">
+      <rect x="30" y="30" width="400" height="370" fill="none" stroke="#2a3242" stroke-width="2"/>
+      <rect x="120" y="120" width="220" height="190" fill="#11151c" stroke="#3a4356" stroke-dasharray="5 4"/>
+      <text x="230" y="220" fill="#5b6678" font-size="13" text-anchor="middle">shaft void (blocked)</text>
+      <!-- ramps -->
+      <rect x="52" y="120" width="46" height="220" fill="#233043"/>
+      <text x="75" y="235" fill="#7fd4ff" font-size="11" text-anchor="middle" transform="rotate(-90 75 235)">ramp 1  −1.4 → +1.6</text>
+      <rect x="98" y="66" width="244" height="40" fill="#233043"/>
+      <text x="220" y="90" fill="#7fd4ff" font-size="11" text-anchor="middle">ramp 2  +1.6 → +4.6</text>
+      <rect x="352" y="106" width="46" height="220" fill="#233043"/>
+      <text x="375" y="215" fill="#7fd4ff" font-size="11" text-anchor="middle" transform="rotate(90 375 215)">ramp 3  +4.6 → +7.6</text>
+      <!-- landings -->
+      <rect x="52" y="340" width="46" height="34" fill="#31405a"/><text x="75" y="361" fill="#dbe2ee" font-size="10" text-anchor="middle">A +1.6</text>
+      <rect x="52" y="66" width="46" height="40" fill="#31405a"/><text x="75" y="90" fill="#dbe2ee" font-size="10" text-anchor="middle">B +4.6</text>
+      <rect x="352" y="326" width="46" height="34" fill="#31405a"/><text x="375" y="347" fill="#dbe2ee" font-size="10" text-anchor="middle">C +7.6</text>
+      <!-- ledges -->
+      <rect x="152" y="330" width="34" height="24" fill="#4a2f4f"/><text x="169" y="345" fill="#e8b3f2" font-size="9" text-anchor="middle">D-J</text>
+      <rect x="152" y="128" width="34" height="24" fill="#4a2f4f"/><text x="169" y="143" fill="#e8b3f2" font-size="9" text-anchor="middle">E-K</text>
+      <rect x="306" y="330" width="34" height="24" fill="#4a2f4f"/><text x="323" y="345" fill="#e8b3f2" font-size="9" text-anchor="middle">F-L</text>
+      <!-- doors -->
+      <rect x="180" y="24" width="60" height="12" fill="#ffb45e"/><text x="210" y="20" fill="#ffb45e" font-size="10" text-anchor="middle">from Earth (N)</text>
+      <rect x="220" y="394" width="60" height="12" fill="#ffb45e"/><text x="250" y="422" fill="#ffb45e" font-size="10" text-anchor="middle">overlook +8.4 → exit to Sun (S)</text>
+    </svg>
+    <p class="k"><b>Traversal:</b> ~31 m of ramp, three landings, each ledge met at eye level. Wind = audio + rising motes only.</p>
+    <ul>
+      <li><b>Pro:</b> zero new tech; walker/clamp already proven on Fire's ramps.</li>
+      <li><b>Pro:</b> serial eye-level meetings fully controlled.</li>
+      <li><b>Con:</b> air never DOES anything — it stays scenery. Weakest element read in the wing.</li>
+    </ul>
+  </div>
+
+  <!-- PLAN B -->
+  <div class="card rec">
+    <span class="tag">Recommended</span>
+    <h2>Plan B — <em>The Last Lift</em> (climb two, fly one)</h2>
+    <svg viewBox="0 0 460 430">
+      <rect x="30" y="30" width="400" height="370" fill="none" stroke="#2a3242" stroke-width="2"/>
+      <rect x="120" y="120" width="220" height="190" fill="#11151c" stroke="#3a4356" stroke-dasharray="5 4"/>
+      <text x="230" y="200" fill="#5b6678" font-size="13" text-anchor="middle">shaft void</text>
+      <rect x="52" y="120" width="46" height="220" fill="#233043"/>
+      <text x="75" y="235" fill="#7fd4ff" font-size="11" text-anchor="middle" transform="rotate(-90 75 235)">ramp 1  −1.4 → +1.6</text>
+      <rect x="98" y="66" width="244" height="40" fill="#233043"/>
+      <text x="220" y="90" fill="#7fd4ff" font-size="11" text-anchor="middle">ramp 2  +1.6 → +4.6</text>
+      <!-- updraft column replaces ramp 3 -->
+      <circle cx="375" cy="150" r="34" fill="#0f2a3a" stroke="#7fd4ff" stroke-width="2" stroke-dasharray="4 4"/>
+      <text x="375" y="146" fill="#7fd4ff" font-size="10" text-anchor="middle">UPDRAFT</text>
+      <text x="375" y="160" fill="#7fd4ff" font-size="10" text-anchor="middle">+4.6 → +8.4</text>
+      <!-- landings -->
+      <rect x="52" y="340" width="46" height="34" fill="#31405a"/><text x="75" y="361" fill="#dbe2ee" font-size="10" text-anchor="middle">A +1.6</text>
+      <rect x="342" y="66" width="56" height="40" fill="#31405a"/><text x="370" y="90" fill="#dbe2ee" font-size="10" text-anchor="middle">B +4.6</text>
+      <!-- ledges -->
+      <rect x="152" y="330" width="34" height="24" fill="#4a2f4f"/><text x="169" y="345" fill="#e8b3f2" font-size="9" text-anchor="middle">D-J</text>
+      <rect x="152" y="128" width="34" height="24" fill="#4a2f4f"/><text x="169" y="143" fill="#e8b3f2" font-size="9" text-anchor="middle">E-K</text>
+      <rect x="286" y="240" width="34" height="24" fill="#4a2f4f"/><text x="303" y="255" fill="#e8b3f2" font-size="9" text-anchor="middle">F-L +7.6</text>
+      <!-- overlook -->
+      <rect x="330" y="326" width="68" height="48" fill="#31405a"/><text x="364" y="352" fill="#dbe2ee" font-size="10" text-anchor="middle">overlook +8.4</text>
+      <rect x="180" y="24" width="60" height="12" fill="#ffb45e"/><text x="210" y="20" fill="#ffb45e" font-size="10" text-anchor="middle">from Earth (N)</text>
+      <rect x="330" y="394" width="60" height="12" fill="#ffb45e"/><text x="360" y="422" fill="#ffb45e" font-size="10" text-anchor="middle">exit to Sun (S)</text>
+    </svg>
+    <p class="k"><b>Traversal:</b> ramp to A and B as in Plan A; ramp 3 does not exist. The final +3.8 m is a visible updraft column — step in, the room lifts you past ledge C to the overlook. <b>The lift is the reveal:</b> during the ~4 s rise the three ledges stack into one vertical frame and land their shared beat as you crest.</p>
+    <ul>
+      <li><b>Pro:</b> air becomes the only element that MOVES the visitor — completes the wing grammar (under water, around fire, atop earth, carried by air).</li>
+      <li><b>Pro:</b> one mechanic, one authored moment; no jumping skill required (walk in = lift). Failure surface tiny; fallback is restoring ramp 3.</li>
+      <li><b>Con:</b> new walker tech: an updraft volume adding +y velocity with soft terminal speed + landing handoff. Must be prototyped first in graybox.</li>
+    </ul>
+  </div>
+
+  <!-- PLAN C -->
+  <div class="card">
+    <h2>Plan C — <em>The Updraft Shaft</em> (full panel-hopping)</h2>
+    <svg viewBox="0 0 460 430">
+      <rect x="30" y="30" width="400" height="370" fill="none" stroke="#2a3242" stroke-width="2"/>
+      <text x="230" y="58" fill="#5b6678" font-size="13" text-anchor="middle">no ramps — the shaft floor is the room</text>
+      <!-- updraft pads -->
+      <g stroke="#7fd4ff" stroke-width="2" stroke-dasharray="4 4" fill="#0f2a3a">
+        <circle cx="120" cy="320" r="30"/><circle cx="230" cy="230" r="30"/>
+        <circle cx="340" cy="300" r="30"/><circle cx="300" cy="130" r="30"/>
+      </g>
+      <g fill="#7fd4ff" font-size="9" text-anchor="middle">
+        <text x="120" y="317">pad 1</text><text x="120" y="329">→ +1.6</text>
+        <text x="230" y="227">pad 2</text><text x="230" y="239">→ +4.6</text>
+        <text x="340" y="297">pad 3</text><text x="340" y="309">→ +7.6</text>
+        <text x="300" y="127">pad 4</text><text x="300" y="139">→ +8.4</text>
+      </g>
+      <!-- ledges -->
+      <g fill="#4a2f4f"><rect x="60" y="230" width="34" height="24"/><rect x="170" y="120" width="34" height="24"/><rect x="390" y="200" width="34" height="24"/></g>
+      <g fill="#e8b3f2" font-size="9" text-anchor="middle">
+        <text x="77" y="245">D-J</text><text x="187" y="135">E-K</text><text x="407" y="215">F-L</text>
+      </g>
+      <rect x="180" y="24" width="60" height="12" fill="#ffb45e"/><text x="210" y="20" fill="#ffb45e" font-size="10" text-anchor="middle">from Earth (N)</text>
+      <rect x="220" y="394" width="60" height="12" fill="#ffb45e"/><text x="250" y="422" fill="#ffb45e" font-size="10" text-anchor="middle">exit to Sun (S)</text>
+    </svg>
+    <p class="k"><b>Traversal:</b> a chain of updraft pads; each lift lands you on a floating step beside the next performer ledge. Air does 100% of the climbing.</p>
+    <ul>
+      <li><b>Pro:</b> the boldest element statement in the wing; pure "air carries you."</li>
+      <li><b>Con:</b> whole room gates on lift/land feel; aim-while-floating is real platforming in a museum walker.</li>
+      <li><b>Con:</b> accessibility — a fumbled hop strands the visitor at the floor; needs a rescue path anyway (which reinvents Plan B).</li>
+    </ul>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Recommendation</h2>
+  <div class="rec-box">
+    <p><b>Plan B — The Last Lift.</b> Keep the concept doc's serial eye-level climb for D-J and E-K (that pacing is the room's pedagogy: one mirror pair at a time), then delete ramp 3 and make the updraft the only way to finish. You get Plan C's magic exactly once, at the moment the room needs its reveal, on a mechanic simple enough to prototype in a day: a trigger volume with upward acceleration, soft terminal velocity, and a lip that catches you at the overlook.</p>
+    <p><b>Why the lift is the reveal:</b> everywhere else in the wing the reveal is a threshold you walk through (Water's surfacing stair, Fire's crack, Earth's rim). Air's reveal should not be a place — it should be a <i>state</i>. For four seconds you are doing what the performers' props are doing: rising on a shared beat. You crest as all three pairs land together.</p>
+    <p class="dim">Graybox order: (1) prototype the updraft volume on a bare test shaft, gate on feel; (2) build the room. If the lift fails the feel gate, Plan A's ramp 3 is the drop-in fallback and nothing else moves.</p>
+  </div>
+</div>
+</body>
+</html>
