@@ -106,13 +106,25 @@ function hasPropReversal(from: PictographData, to: PictographData): { blue: bool
 }
 
 /**
- * Returns null for static motions (no rotation).
+ * The prop's rotation, or null when it has none to compare.
+ *
+ * Guard on the VALUE, not the motion type. Dashes carry `noRotation` exactly
+ * like statics do, and an earlier version tested only `motionType === "static"`
+ * — so a dash's `noRotation` was cast to "cw" | "ccw" and then compared against
+ * a real direction, scoring every dash as a prop reversal. That is what made
+ * `analyze_word_feasibility` report A→Ψ as "always requires prop reversal"
+ * while the generator's own report on the same sequence said "perfect
+ * continuity: no reversals".
+ *
+ * This matches the canonical derivation in
+ * `packages/sequence-engine/src/analysis/deriveReversals.ts` (`channelFlips`),
+ * which treats a channel as active only when it reads "cw" or "ccw" and walks
+ * transparently past everything else. Testing the value also covers float and
+ * missing data, which a motion-type list would keep missing one at a time.
  */
 function getEffectivePropRotation(motion: PictographData["blueMotion"]): "cw" | "ccw" | null {
-  if (motion.motionType === "static") {
-    return null;
-  }
-  return motion.rotationDirection as "cw" | "ccw";
+  const dir = motion.rotationDirection;
+  return dir === "cw" || dir === "ccw" ? dir : null;
 }
 
 export function analyzeTransition(
