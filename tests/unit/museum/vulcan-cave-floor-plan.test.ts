@@ -58,11 +58,16 @@ describe("Vulcan Cave floor plan", () => {
   // cave-air joined the authored bays with the updraft chimney prototype: it
   // carries its own layout, terrain and graybox, and is no longer a solo tile
   // chamber.
+  // cave-sun joined on 2026-08-05 for the same reason — the Sundial is a 24 m
+  // round chamber with four Quarter-Same stations, a spiral crossing and its
+  // own terrain program, so the one-performer-per-chamber rule stops applying
+  // to it and it is sized as a release rather than a solo.
   const BAY_ROOM_IDS = new Set([
     "cave-water",
     "cave-fire",
     "cave-earth",
     "cave-air",
+    "cave-sun",
   ]);
   const SOLO_MODE_ROOMS = CAVE_MODE_ROOMS.filter(
     (mode) => !BAY_ROOM_IDS.has(mode.roomId)

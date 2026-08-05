@@ -542,10 +542,15 @@ export const VULCAN_CAVE_ROOMS: RoomNode[] = [
     name: "Sun Chamber",
     material: "sandstone",
     theme: "cave",
-    minInteriorWidth: 7,
-    minInteriorHeight: 7,
+    // Interior metres = ceil(minInterior * 1.5) * 0.5, NOT tiles. 43 -> 32.5 m
+    // and 45 -> 34.0 m, which carries the 24 m chamber plus the north light
+    // crack. Measure the compiled grid before trusting this comment; the Air
+    // comment in this same file once read these as tiles and was out by 40%.
+    minInteriorWidth: 43,
+    minInteriorHeight: 45,
     description:
-      "A warm, close chamber that begins the cave's deepest paired idea without joining the figures.",
+      "A round chamber whose sun is driven by where the visitor stands: bearing from the centre is azimuth, distance from it is elevation. A spiral crossing sweeps a quarter of the compass on the way to a zenith noon, and the ground itself lifts the visitor out through the ceiling onto the Moon.",
+    roomPresentation: { suppressTileGeometry: true },
     walls: {
       north: doorWall(EDGE_IDS.airToSun, "start", 3),
       south: torchWall("end"),
