@@ -474,6 +474,18 @@
       sans-serif;
   }
 
+  /* 4K@100% / TV tier: test routes don't join the marketing shell's root font
+   * ramp, so above ~2600px CSS the rem-sized lab renders at 1080p scale in a
+   * sea of dark (verified 2026-08-04 at 3840×2160). zoom is the pragmatic
+   * whole-surface step for an internal Chrome-first harness — pictograph
+   * cells, type, and controls all scale together. Composition (fluid width,
+   * zero dead rail) was verified sound before this; only element scale steps. */
+  @media (min-width: 2600px) {
+    .page {
+      zoom: 1.5;
+    }
+  }
+
   .masthead h1 {
     margin: 0;
     font-size: 1.4rem;
