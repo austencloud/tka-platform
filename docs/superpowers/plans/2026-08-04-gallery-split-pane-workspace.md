@@ -499,31 +499,112 @@ That is the results-grid view transition added in `dcbadffea7`, which today
 fires only on the value-tap path. Make it fire on EVERY path that changes the
 result set, so the grid always morphs rather than blinking.
 
-- [ ] **Step 7.1 — inventory the mutation paths.** Grep every call site that
+- [x] **Step 7.1 — inventory the mutation paths.** Grep every call site that
   changes the engine's result set from the gallery surface and write the list
   into this plan file (file:line each) before coding. At minimum: value tap
   (already done), rule-strip chip removal (`onRemoveFilter`), Match any/all
   connective change, search submit and search clear, Show all / clear-all,
   collection filter toggles, and any category switch that changes results.
-- [ ] **Step 7.2 — route them all through one helper.** A single shared
+
+  **Inventory (line numbers as of `5c74456b51`, before the Task 7 edits):**
+
+  | # | Path | Call site | State before 7.2 |
+  |---|---|---|---|
+  | 1 | Value tap, single-valued category | `GalleryDrill.svelte:386` `pickValue` | morphed |
+  | 2 | Value tap, LOOP component | `GalleryDrill.svelte:402` `pickLoop` | morphed |
+  | 3 | Value tap, T&D family | `GalleryDrill.svelte:417` `pickFamily` | morphed |
+  | 4 | Collection filter toggle | routes through `pickValue` (`onToggleValue`, `BrowseModule.svelte:777`) | morphed |
+  | 5 | "Show all" above the seam | `GalleryDrill.svelte:342` `handleShowAll` → `BrowseModule.svelte:825` `clearUserFilters` | morphed (via `flipWithMorph`) |
+  | 6 | LOOP Match any/all | prop `onLoopConnectiveChange` → `BrowseModule.svelte:791` | **not morphed** |
+  | 7 | T&D Match any/all | prop `onFamilyConnectiveChange` → `BrowseModule.svelte:810` | **not morphed** |
+  | 8 | Rule-strip chip × (results header) | `BrowseModule.svelte:649` | **not morphed** |
+  | 9 | Rule-strip chip × (pinned strip, below seam only) | `BrowseModule.svelte:735` | n/a — no live grid below the seam |
+  | 10 | Results-toolbar search apply + clear | `BrowseToolbar.svelte:596` `engine.setSearch` | **not morphed** |
+  | 11 | Results-toolbar sort change | `BrowseToolbar.svelte:157` `handleSortSelect` | **not morphed** |
+  | 12 | Results-toolbar clear-all / chip dismiss / Level / Favorites / Length / LOOP chips | `BrowseToolbar.svelte:236–331` | **not morphed** (hidden in the gallery pane by `hideFilterChips`, live on other hosts) |
+  | 13 | Empty-state "Clear all filters" | `BrowsePanel.svelte:351` | **not morphed** |
+  | 14 | Category switch (rail/catalog tap) | `GalleryDrill.svelte:328` `goToSection` | deliberately NOT morphed — the `<Crossfade>` owns it (Task 6 measured a view transition here as 124ms of freeze and zero visible motion) |
+  | 15 | Page-top search submit | `GalleryDrill.svelte:372` `submitSearch` | dead on the gallery (the bar was deleted in 6.7); still live for the filter sheet, which is below the seam |
+
+  Deliberately OUT: `BrowseFilterBar.svelte:140–164` (clear-all / search chip) —
+  the gallery pane renders `showFilterBar={false}`, so it is not a gallery path.
+
+- [x] **Step 7.2 — route them all through one helper.** A single shared
   wrapper (e.g. `withResultsMorph(mutate)`) rather than `startViewTransition`
   sprayed across call sites — one seam is what keeps this consistent as paths
   get added later. It must no-op cleanly when the API is absent, under
   `prefers-reduced-motion`, and below the seam where there is no live grid.
-- [ ] **Step 7.3 — verify each path animates.** For every path in the 7.1
+
+  Landed as `src/lib/shared/transitions/results-morph.ts`:
+  `startMorph(mutate)` (unconditional primitive — `flushSync` inside
+  `document.startViewTransition`, no-ops on missing API / reduced motion /
+  a transition already in flight) and `withResultsMorph(mutate)` (the same,
+  gated on a live results grid). `setResultsMorphActive(owner, active)` is the
+  claim: `GalleryDrill` sets it from `splitPane` and releases it on destroy, so
+  shared components (`BrowseToolbar`, `BrowsePanel`) can route their mutations
+  through the seam and stay byte-for-byte inert on every other host.
+
+- [x] **Step 7.3 — verify each path animates.** For every path in the 7.1
   inventory, capture evidence the transition actually ran (`transition.ready`
   / `finished` timings plus a non-zero animation count, the way the Task 6
   diagnosis did). A path that silently no-ops is exactly the bug this task
   exists to prevent. Report the results as a table.
-- [ ] **Step 7.4 — guard the feel.** Austen likes the current character
+
+  Measured live at 1920×1080 (×1.1 emulation) on `https://localhost:5173/browse`
+  by wrapping `document.startViewTransition` and counting
+  `document.getAnimations()` entries whose `pseudoElement` starts with
+  `::view-transition-group(` at `transition.ready`. Every group animation
+  carried `duration: 250ms`.
+
+  | Path | ready | finished | groups (sequence / category) | card fades |
+  |---|---|---|---|---|
+  | Value tap — Grid mode Diamond (1412→1389) | 202 ms | 485 ms | 31 (19 / 11) | — |
+  | Value tap — Level (1412→515) | 152 ms | 456 ms | 13 (1 / 11) | 25 |
+  | Value tap — LOOPs stack (54→31) | 222 ms | 524 ms | 22 (10 / 11) | 49 |
+  | Connective → Match all | 186 ms | 455 ms | 28 (16 / 11) | 64 |
+  | Connective → Match any | 239 ms | 521 ms | 28 (16 / 11) | 64 |
+  | Rule chip × (results header) | 150 ms | 427 ms | 18 (6 / 11) | 24 |
+  | Toolbar search apply (54→7) | 174 ms | 453 ms | 16 (4 / 11) | 19 |
+  | Toolbar search clear (7→54) | 220 ms | 497 ms | 16 (4 / 11) | 19 |
+  | Toolbar sort change | 105 ms | 401 ms | 14 (2 / 11) | 26 |
+  | Collection filter toggle (1412→6) | 173 ms | 536 ms | 12 (0 / 11) | 24 |
+  | Empty-state "Clear all filters" | 147 ms | 410 ms | 12 (0 / 11) | 0 |
+  | "Show all" (landing → pane) | 134 ms | 178 ms* | 12 (0 / 11) | 6 |
+  | Landing tile → workspace (pre-existing control) | 106 ms | 403 ms | 12 (0 / 11) | 16 |
+  | Category switch (control — must NOT morph) | — | — | none | — |
+
+  Zero paths silently no-op. `seqGroups` counts cards that persist across the
+  change (they slide); `card fades` counts cards that only exist on one side
+  (they fade). Both are non-zero on every path that changes the card set.
+
+  \* Measurement hazard, recorded honestly: a parallel session was editing
+  `src/lib/shared/animation-engine/*` in this shared checkout throughout the
+  run, and each Vite HMR reload that lands mid-transition ends it early —
+  that regime shows up as `finished ≈ ready + 15 ms` with the animations
+  cancelled at `currentTime: 0`. Samples taken between reloads (the table
+  above) show the full 250 ms group animation. The "Show all" row is one of
+  the short ones and was not re-sampled clean.
+
+- [x] **Step 7.4 — guard the feel.** Austen likes the current character
   (cards fade out, the rest slide in to fill). Keep it: same duration and
   easing on every path. Do not let a slow engine recompute stretch the morph
   into a freeze — if a path's recompute is long enough to feel stuck, report
   the measured number instead of shipping it.
 
+  Character is identical on every path by construction: one helper, no
+  per-path CSS, so every card group uses the browser default 250 ms /
+  ease. The recompute (the frozen part) is 130–265 ms on every path measured
+  warm — the same beat the value tap already shipped with and Austen approved.
+  One outlier worth naming: the FIRST search of a session measured
+  ready 1411 ms / finished 3738 ms while the search index built cold;
+  subsequent searches measured 174 ms. That cost is the engine's, not the
+  morph's — the same synchronous work blocks the thread with or without a
+  transition; the transition only decides whether the frozen frame is the old
+  grid or a half-painted one.
+
 ### 7B — Readability defects from the review sweep
 
-- [ ] **Step 7.5 — truncated category labels.** Measured via
+- [x] **Step 7.5 — truncated category labels.** Measured via
   `scrollWidth > clientWidth`: at 1920, "Recently added", "Timing & Direction"
   and "Max turn intensity" are ellipsised; at 3840 it is six labels
   ("Starting letter", "Start position", "Recently added", "Timing & Direction",
@@ -532,7 +613,23 @@ result set, so the grid always morphs rather than blinking.
   labels must render in full at every tier. Options: fewer catalog columns, a
   wider left column, tighter tile padding, or a shorter label where the domain
   allows. NOT a smaller font.
-- [ ] **Step 7.6 — record, do not fix: the app does not scale at 4K@100%.**
+
+  Fixed by letting the label WRAP instead of ellipsing (`white-space: normal`
+  + `overflow-wrap: break-word` on `.mini-tile.catalog .mini-title`), plus
+  tightening the ≥2600 tier's art (3.1rem → 2.6rem) and side padding
+  (1.05rem → 0.8rem) because that tier had the NARROWEST title box of all —
+  95px against 1920's 100px — which broke "Collections" mid-word.
+  Two lines fit inside the existing 3.4/4/5.25rem `min-height`, so the tile
+  box is unchanged (measured 64px before and after at 1920).
+
+  | Viewport | pane | columns | title box | ellipsised before | ellipsised after | mid-word breaks after |
+  |---|---|---|---|---|---|---|
+  | 1620 (Austen's DevTools-docked 1547px drill) | 440px | 2 | 100px | — | 0 | 0 |
+  | 1920 | 440px | 2 | 100px | 3 (Recently added 110>100, Timing & Direction 137>100, Max turn intensity 132>100) | **0** | 0 |
+  | 2560 | 736px | 3 | 126px | — | **0** | 0 |
+  | 3840 | 736px | 3 | 95px → **117px** | 6 | **0** | 0 (longest word "Collections" 99px < 117px) |
+
+- [x] **Step 7.6 — record, do not fix: the app does not scale at 4K@100%.**
   Measured: at a 3840 viewport `document.documentElement`'s computed font-size
   is still **16px**, because the lockstep root ramp in `src/app.css` is scoped
   to `html:has(.mkt-shell)` / `html:has(.legal-container)`. The whole app
@@ -540,7 +637,12 @@ result set, so the grid always morphs rather than blinking.
   failure `.claude/rules/4k-native-layout.md` exists to prevent. Blast radius
   is every app surface (create, browse, learn, museum, practice), so it needs
   its own spec and sweep. Leave it; report it as the recommended next project.
-- [ ] **Step 7.7 — verify + commit.** `npm run check`: 0 errors, 0 warnings.
+
+  Re-confirmed this session, unchanged: at a 3840 viewport,
+  `getComputedStyle(document.documentElement).fontSize` is **`16px`**. Left as
+  found — this is the recommended next project.
+
+- [x] **Step 7.7 — verify + commit.** `npm run check`: 0 errors, 0 warnings.
   `npx vitest run tests/unit/browse/`: baseline failures only. Screenshot
   sweep at 1550 / 1920 / 2560 / 3840 confirming labels are whole and the
   morph paths behave. Explicit pathspecs. Do NOT push.

@@ -15,9 +15,13 @@
   that leak column layout into unprefixed names.
 -->
 <script lang="ts">
-  import { flushSync, type Snippet } from "svelte";
+  import { onDestroy, type Snippet } from "svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
+  import {
+    setResultsMorphActive,
+    startMorph,
+  } from "$lib/shared/transitions/results-morph";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import {
@@ -300,20 +304,13 @@
   // same flushSync the transition captures.
   let morphing = $state(false);
   function flipWithMorph(apply: () => void): void {
-    const reduced =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (typeof document === "undefined" || !document.startViewTransition || reduced) {
-      apply();
+    morphing = true;
+    const transition = startMorph(apply);
+    if (!transition) {
+      morphing = false;
       return;
     }
-    morphing = true;
-    const transition = document.startViewTransition(() => {
-      // Svelte batches; the browser captures the "after" frame the moment this
-      // callback returns, so the DOM has to be current BEFORE it does.
-      flushSync(apply);
-    });
-    void transition.finished.finally(() => {
+    void transition.finished.catch(() => {}).finally(() => {
       morphing = false;
     });
   }
@@ -367,6 +364,25 @@
   function withResultsMorph(apply: () => void): void {
     if (splitPane) flipWithMorph(apply);
     else apply();
+  }
+
+  /** Publish the live-grid claim so the paths that live OUTSIDE this component
+   * — the rule strip's ×, the toolbar's search and sort, the empty state's
+   * Clear all — morph through the same seam (`shared/transitions/results-morph`)
+   * instead of each re-deriving whether motion is wanted. */
+  const morphOwner = {};
+  $effect(() => {
+    setResultsMorphActive(morphOwner, splitPane);
+  });
+  onDestroy(() => setResultsMorphActive(morphOwner, false));
+
+  /** Match any/all across a stacked category changes the result set as much as
+   * a value tap does; it just arrives through a host callback. */
+  function changeLoopConnective(connective: FilterConnective): void {
+    withResultsMorph(() => onLoopConnectiveChange?.(connective));
+  }
+  function changeFamilyConnective(connective: FilterConnective): void {
+    withResultsMorph(() => onFamilyConnectiveChange?.(connective));
   }
 
   function submitSearch(event: Event) {
@@ -466,11 +482,13 @@
     {activeLoopValues}
     {onToggleLoop}
     {loopConnective}
-    {onLoopConnectiveChange}
+    onLoopConnectiveChange={onLoopConnectiveChange ? changeLoopConnective : undefined}
     {activeFamilyValues}
     {onToggleFamily}
     {familyConnective}
-    {onFamilyConnectiveChange}
+    onFamilyConnectiveChange={onFamilyConnectiveChange
+      ? changeFamilyConnective
+      : undefined}
     onBack={() => goToSection("chooser")}
     onPickValue={pickValue}
     onPickLoop={pickLoop}

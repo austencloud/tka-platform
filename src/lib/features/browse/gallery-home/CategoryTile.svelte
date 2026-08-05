@@ -348,13 +348,23 @@
     flex: 1 1 auto;
     align-items: stretch;
   }
+  /* Wraps, never ellipses. The label IS the decision — "Timing & Directi…" and
+     "Max turn intens…" are not choices anyone can make (Austen, 2026-08-05:
+     make sure things are readable). At 2 columns the title box is ~100px and
+     the three longest labels measured 110–137px, so a single line cannot hold
+     them at any tier without shrinking the type, which is the one fix that is
+     off the table. Two lines fit inside the existing 3.4rem min-height, so
+     nothing below the catalog moves. */
   .mini-tile.catalog .mini-title {
-    overflow: hidden;
     font-size: 0.88rem;
     line-height: 1.15;
     text-align: left;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    /* break-word, not anywhere: mid-word breaks are a last resort, and the
+       tiers below are sized so the longest single word ("Collections") always
+       fits one line. */
+    overflow-wrap: break-word;
+    text-overflow: clip;
   }
   /* The label is the decision; the sub-line is landing editorial. */
   .mini-tile.catalog .mini-sub {
@@ -386,15 +396,20 @@
   @media (min-width: 2600px) {
     .mini-tile.catalog {
       min-height: 5.25rem;
-      gap: 0.85rem;
-      padding: 0.9rem 1.05rem;
+      gap: 0.65rem;
+      padding: 0.9rem 0.8rem;
       border-radius: 1.1rem;
     }
+    /* Art and gaps stay under the label's needs at this tier, not over them.
+       The 3-column catalog gives each tile ~230px; at 3.1rem of art plus 1.05rem
+       of side padding the title box fell to 95px — NARROWER than at 1920 — and
+       "Collections" broke mid-word. The label is the decision; the glyph is
+       decoration, so the glyph yields. */
     .mini-tile.catalog .mini-art {
-      width: 3.1rem;
-      min-width: 3.1rem;
-      height: 3.1rem;
-      font-size: 1.35rem;
+      width: 2.6rem;
+      min-width: 2.6rem;
+      height: 2.6rem;
+      font-size: 1.2rem;
     }
     .mini-tile.catalog .mini-title {
       font-size: 1.2rem;

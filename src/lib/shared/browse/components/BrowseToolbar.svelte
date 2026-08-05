@@ -20,6 +20,11 @@
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import type { SequenceSource } from "../engine/types";
+  // Every mutation below changes the visible result set. Routed through the one
+  // morph seam so the grid rearranges instead of blinking wherever a host has
+  // declared a live results grid (the gallery split pane today); inert
+  // everywhere else — see shared/transitions/results-morph.
+  import { withResultsMorph } from "$lib/shared/transitions/results-morph";
 
   interface Props {
     engine: BrowseEngine;
@@ -154,7 +159,7 @@
   }
 
   function handleSortSelect(method: BrowseSortMethod) {
-    engine.setSort(method, engine.sortDirection);
+    withResultsMorph(() => engine.setSort(method, engine.sortDirection));
     closeSort();
   }
 
@@ -234,36 +239,42 @@
   });
 
   function handleLevelSelect(level: number | null) {
-    if (level == null) engine.removeFilter("difficulty");
-    else
-      engine.addFilter(
-        BrowseFilterType.DIFFICULTY,
-        level,
-        `Level ${level}`,
-        "var(--semantic-info)"
-      );
+    withResultsMorph(() => {
+      if (level == null) engine.removeFilter("difficulty");
+      else
+        engine.addFilter(
+          BrowseFilterType.DIFFICULTY,
+          level,
+          `Level ${level}`,
+          "var(--semantic-info)"
+        );
+    });
   }
 
   function handleFavoritesToggle(active: boolean) {
-    if (active)
-      engine.addFilter(
-        BrowseFilterType.FAVORITES,
-        true,
-        "Favorites",
-        "#ec4899"
-      );
-    else engine.removeFilter("favorites");
+    withResultsMorph(() => {
+      if (active)
+        engine.addFilter(
+          BrowseFilterType.FAVORITES,
+          true,
+          "Favorites",
+          "#ec4899"
+        );
+      else engine.removeFilter("favorites");
+    });
   }
 
   function handleLengthSelect(length: number | null) {
-    if (length == null) engine.removeFilter("length");
-    else
-      engine.addFilter(
-        BrowseFilterType.LENGTH,
-        length,
-        `${length} steps`,
-        "#f59e0b"
-      );
+    withResultsMorph(() => {
+      if (length == null) engine.removeFilter("length");
+      else
+        engine.addFilter(
+          BrowseFilterType.LENGTH,
+          length,
+          `${length} steps`,
+          "#f59e0b"
+        );
+    });
   }
 
   // Loop filters live under composite keys ("cap_type:<value>") so several can
@@ -290,22 +301,24 @@
   function handleLoopSelect(value: string | null) {
     // removeFilter("cap_type") clears ALL stacked loop filters (prefix-aware) —
     // the dropdown is single-select, so a new pick replaces the whole stack.
-    if (value == null) engine.removeFilter("cap_type");
-    else {
-      engine.removeFilter("cap_type");
-      const label = value.startsWith("component:")
-        ? value
-            .slice("component:".length)
-            .replace(/_/g, " ")
-            .replace(/\b\w/g, (c) => c.toUpperCase())
-        : value;
-      engine.addFilter(
-        BrowseFilterType.LOOP_TYPE,
-        value,
-        label,
-        LOOP_FILTER_COLORS[value] ?? "#8b5cf6"
-      );
-    }
+    withResultsMorph(() => {
+      if (value == null) engine.removeFilter("cap_type");
+      else {
+        engine.removeFilter("cap_type");
+        const label = value.startsWith("component:")
+          ? value
+              .slice("component:".length)
+              .replace(/_/g, " ")
+              .replace(/\b\w/g, (c) => c.toUpperCase())
+          : value;
+        engine.addFilter(
+          BrowseFilterType.LOOP_TYPE,
+          value,
+          label,
+          LOOP_FILTER_COLORS[value] ?? "#8b5cf6"
+        );
+      }
+    });
   }
 
   // Active filters the selector chips don't cover (drill picks: letter,
@@ -324,11 +337,11 @@
   );
 
   function handleDismissChip(typeKey: string) {
-    engine.removeFilter(typeKey);
+    withResultsMorph(() => engine.removeFilter(typeKey));
   }
 
   function handleClearAll() {
-    engine.clearUserFilters();
+    withResultsMorph(() => engine.clearUserFilters());
   }
 
   // ---------------------------------------------------------------------------
@@ -593,7 +606,7 @@
   {#if !hideSearch}
     <div class="search-slot">
       <ExpandableSearchBar
-        onSearch={(q) => engine.setSearch(q)}
+        onSearch={(q) => withResultsMorph(() => engine.setSearch(q))}
         value={engine.searchQuery}
         placeholder="Search sequences..."
       />

@@ -57,6 +57,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   import FilterRuleStrip from "$lib/shared/browse/components/FilterRuleStrip.svelte";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import { withResultsMorph } from "$lib/shared/transitions/results-morph";
 
   // Tab ids match tab labels (renamed 2026-07-10): "library" is your saved
   // work (label Library, was id "collections"); "collections" is community
@@ -646,7 +647,8 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       connectives={engine.connectives}
       onEditFilter={(type) =>
         (drillSeed = { section: SECTION_FOR_FILTER_TYPE[type] })}
-      onRemoveFilter={(key) => engine.removeFilter(key)}
+      onRemoveFilter={(key) =>
+        withResultsMorph(() => engine.removeFilter(key))}
     />
   {:else}
     <span class="strip-empty">No filters yet — pick one on the left.</span>
@@ -732,7 +734,8 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
                     connectives={engine.connectives}
                     onEditFilter={(type) =>
                       (drillSeed = { section: SECTION_FOR_FILTER_TYPE[type] })}
-                    onRemoveFilter={(key) => engine.removeFilter(key)}
+                    onRemoveFilter={(key) =>
+                      withResultsMorph(() => engine.removeFilter(key))}
                   />
                   <div class="strip-actions">
                     <PanelButton

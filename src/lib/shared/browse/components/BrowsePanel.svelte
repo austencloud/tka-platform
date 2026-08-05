@@ -16,6 +16,7 @@
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import SelectionToolbar from "$lib/shared/components/selection/SelectionToolbar.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
+  import { withResultsMorph } from "$lib/shared/transitions/results-morph";
 
   interface Props {
     engine: BrowseEngine;
@@ -348,7 +349,7 @@
         {#if engine.hasActiveFilters}
           <button
             class="clear-filters-btn"
-            onclick={() => engine.clearUserFilters()}
+            onclick={() => withResultsMorph(() => engine.clearUserFilters())}
           >
             <i class="fas fa-times" aria-hidden="true"></i>
             Clear all filters
