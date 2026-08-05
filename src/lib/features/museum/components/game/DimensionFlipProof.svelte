@@ -16,7 +16,7 @@
   import PlaqueView from "../panel/PlaqueView.svelte";
   import SequenceView from "../panel/SequenceView.svelte";
   import SequenceBrowserOverlay from "$lib/features/museum/scenes/procedural/overlay/SequenceBrowserOverlay.svelte";
-  import { createMuseumDocent } from "$lib/features/museum/services/museum-docent.svelte";
+  import { getMuseumDocent } from "$lib/features/museum/services/museum-docent.svelte";
 
   import { onMount } from "svelte";
 
@@ -204,7 +204,7 @@
    * can only press DOM and cannot steer a 3D character — so the museum owns the
    * walking and the ghost just presses one button. See museum-docent.svelte.ts.
    */
-  const docent = createMuseumDocent({ getGrid: () => props.grid });
+  const docent = getMuseumDocent({ getGrid: () => props.grid });
 
   function toggleDocent(): void {
     if (docent.active) {

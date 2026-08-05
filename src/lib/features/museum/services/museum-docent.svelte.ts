@@ -28,8 +28,6 @@ import { isWalkable as isTypeWalkable } from "../domain/tile-registry";
  * same from outside and have opposite fixes. */
 let instances = 0;
 
-/** How close (in tiles) counts as arrived. */
-const ARRIVE_EPSILON = 0.6;
 /** No progress for this long means the path is blocked by something unmodelled. */
 const STUCK_MS = 2600;
 /** Stand and look at an exhibit for this long before moving on. */
@@ -126,6 +124,33 @@ export interface MuseumDocent {
   ) => void;
   /** Why it is doing what it is doing. Read via window.__docent in dev. */
   debug: () => Record<string, unknown>;
+  /** Re-point at the current grid after the scene host remounts. */
+  setGridProvider: (getGrid: () => MuseumGrid | null) => void;
+}
+
+/**
+ * ONE docent per tab, deliberately.
+ *
+ * The scene host remounts constantly — measured live, SIX instances in 110
+ * seconds of walking as rooms stream in and wings change. A per-component docent
+ * therefore threw away its path, its target and its seen-exhibits set every ~20
+ * seconds, so it walked forever and never once ARRIVED at a plaque (110s of
+ * "Walking over to…" and zero "Reading…"). Surviving the remount is the whole
+ * point: the tour is longer than any one mount of the scene.
+ */
+let shared: MuseumDocent | null = null;
+
+export function getMuseumDocent(opts: {
+  getGrid: () => MuseumGrid | null;
+  random?: () => number;
+}): MuseumDocent {
+  if (shared) {
+    // A remount brings a new grid closure with it; the walk continues.
+    shared.setGridProvider(opts.getGrid);
+    return shared;
+  }
+  shared = createMuseumDocent(opts);
+  return shared;
 }
 
 export function createMuseumDocent(opts: {
@@ -134,6 +159,7 @@ export function createMuseumDocent(opts: {
   random?: () => number;
 }): MuseumDocent {
   const random = opts.random ?? Math.random;
+  let getGrid = opts.getGrid;
   const instanceId = ++instances;
   let stopReason: string | null = null;
 
@@ -226,7 +252,7 @@ export function createMuseumDocent(opts: {
   }
 
   function retarget(player: { x: number; y: number }, nowMs: number): void {
-    const grid = opts.getGrid();
+    const grid = getGrid();
     if (!grid) return;
     target = chooseTarget(grid, player);
     path = target ? findPath(grid, player, target) : [];
@@ -261,6 +287,10 @@ export function createMuseumDocent(opts: {
       state.status = "";
       path = [];
       target = null;
+    },
+
+    setGridProvider(next) {
+      getGrid = next;
     },
 
     debug() {
