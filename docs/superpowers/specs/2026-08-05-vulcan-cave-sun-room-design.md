@@ -39,6 +39,15 @@ Sun is the only room in the wing that connects the 3D performers back to the
 notation the rest of the app is built on. That connection is the reason to
 build it, and every other decision here serves it.
 
+**Revised 2026-08-05.** The first version of this document treated the noon
+shadow as the room's single notation moment. Austen corrected that: *"I want to
+have artistic representations of the specific modality that each room
+represents everywhere in the room ... embedded into the walls or into the floor
+or into the ceiling."* The shadow read survives as the room's climax; it is no
+longer the answer to "what makes this a Quarter-Same room." See **Ornament**
+below, and the wing-wide rule in
+`docs/superpowers/specs/2026-08-05-vulcan-cave-ornament-grammar.md`.
+
 ## The mechanism — you move the sun
 
 The visitor's position in the chamber sets the sun, in polar coordinates:
@@ -130,6 +139,40 @@ The room is the walk between those two frames, and it is reversible.
 metres below, across a chasm, in an enclosed chamber. Sun's diagrams ring the
 visitor at their own level, there are four of them, they are made of light, and
 the visitor drew them.
+
+## Ornament — four-fold, and the floor is the page twice
+
+Sun's symmetry is **four-fold rotation, chiral, no mirror** — a 90° phase
+offset closes after four copies, and same-direction means pure rotation with no
+reflection. A pinwheel that turns. Derivation and the wing-wide table:
+`2026-08-05-vulcan-cave-ornament-grammar.md`.
+
+**The ornament is a C4 mandala inlaid into the pale collapse-ring floor.**
+Generated, not modelled: Sun's own sequence rendered through the Composer's
+grid-with-rotation-per-cell, stepping 90° per copy so it closes after four.
+
+The reason this placement and not another: **at noon the live shadows land on
+it.** The visitor walks to the centre, the sun climbs to zenith, and each
+performer's prop path is projected straight down onto the ring floor — directly
+over the carved version of the same figure. The sun redraws the inlay, at full
+scale, live, in the round. The room's ornament and the room's exhibit are the
+same drawing in two materials.
+
+That gives the floor two jobs and no conflict: stone at every other hour, stone
+plus its own moving shadow at noon.
+
+**Ornament and mechanism are separated by time, not by space.** Cast shadows
+need a pale uncluttered floor and real contrast, so glowing motif traces
+scattered through the chamber would wash out the exact surface the noon frame
+depends on. So the traces go high on the chamber wall, above the shadow-throw
+zone. At dawn that wall is full of twenty-metre shadows and the traces are
+invisible against the glare; as the sun climbs the wall darkens and quietens and
+the traces come up. **The ornament and the exhibit trade places as the day
+turns** — which is the day doing a second job, for free.
+
+**The performers stay real avatars with real staffs.** Motif traces cannot
+replace them: particles do not cast usable shadows, and the shadow is the
+exhibit. The invisible-performer trace is Sun's ornament, never its content.
 
 ## Content — Quarter-Same, verified
 
