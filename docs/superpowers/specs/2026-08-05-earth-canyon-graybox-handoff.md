@@ -2,7 +2,7 @@
 status: handoff
 value: 4
 effort: M
-remaining: 'Earth room graybox built and walkable; ONE open defect — the pit renders pure black from the rim (sampled 0,0,0) with the sightline proven clear. Diagnosis narrowed, cause not found.'
+remaining: 'Earth room graybox built, walkable, and VERIFIED — the "black pit" was a harness artifact (setPitch inverted: negative looks up; readPixels always 0,0,0). Money shot screenshot-confirmed. Next: Austen eye-level gate + five design questions; trail rings run hot.'
 depends_on: 'docs/superpowers/plans/2026-08-04-earth-canyon-graybox.md'
 plan_path: 'docs/superpowers/plans/2026-08-04-earth-canyon-graybox.md'
 tags: [museum, vulcan-cave, earth-room, graybox, handoff]
@@ -25,9 +25,10 @@ the drop, and shelves receding north into haze. Exit south to Air.
   (`first-fire-layout.ts`, `FirstFireGraybox.svelte`, `first-fire-*.test.ts`).
 
 **The room's entire thesis is the overhead read** — three figures performing
-together, seen from above, across a barrier that is a vertical drop. If that
-frame does not land, nothing else about the room matters. It does not land yet.
-See Loose end #1.
+together, seen from above, across a barrier that is a vertical drop. That frame
+LANDS: verified by screenshot from the slab apron at pitch +0.85 (see resolved
+Loose end #1 for why earlier frames lied). Remaining work is the eye-level gate
+and iteration, not diagnosis.
 
 ## Done — verified
 
@@ -134,14 +135,28 @@ pushing a batch that size.
 
 ## Loose ends (ranked)
 
-### 1. The pit renders pure black from the rim — START HERE
+### 1. ~~The pit renders pure black from the rim~~ — RESOLVED 2026-08-04 (verifier)
 
-This is the room's whole purpose and it is unsolved. Do not polish anything else
-until this is closed.
+**There was no rendering bug.** Two harness artifacts stacked:
 
-**Symptom.** From the slab apron (`106, 17.9`, yaw π, pitch −0.85) the void
-region samples exactly `0, 0, 0` in the framebuffer while the rim beside it
-reads `61, 66, 66`. Not dim — *nothing drawn*.
+1. **`camera.setPitch` is inverted — negative pitch looks UP.** Every
+   "look-down" frame (pitch −0.85) was photographing the ceiling AVEN, whose
+   circular cut against the unlit roof reads exactly like a black pit.
+   `camera.getWorldDirection` at pitch −0.85 returns `(0, +0.75, −0.66)`. At
+   pitch **+0.85** from the slab apron the acceptance frame is met and was
+   screenshot-verified: three lit automatons mid-swing on their bosses, trail
+   rings, daylight pool on the floor disc.
+2. **`readPixels` on the museum canvas returns `0,0,0` everywhere** — the
+   drawing buffer is not preserved. All framebuffer "samples" in this
+   investigation were this artifact, including the magenta-probe result.
+   Screenshot; never sample.
+
+The three geometry fixes in `202a500908` were real defects and stand. The
+evidence below is kept for the record but its conclusion was wrong.
+
+**Original symptom (mis-instrumented).** From the slab apron (`106, 17.9`,
+yaw π, pitch −0.85) the void region sampled exactly `0, 0, 0` while the rim
+beside it read `61, 66, 66`.
 
 **Already ruled out, with evidence — do not re-run these:**
 
@@ -174,8 +189,10 @@ never run and chunk visibility may be stale. That is my best untested lead.
 
 `docs/.../2026-08-04-earth-room-floor-plan-draft.md` ends with five look-at-it
 questions (parapet 0.90 vs a 0.45 lip everywhere; four shelves or three; grass on
-the rim; fireflies in a daylit room; keep the felt downbeat). All five need
-frames, and all five are blocked on #1.
+the rim; fireflies in a daylit room; keep the felt downbeat). All five are
+look-at-it questions for Austen's walk — no longer blocked. Add a sixth: the
+trail rings read blown-out white from above and compete with the performers;
+tune intensity after the composition is judged.
 
 ### 3. Felt downbeat (deferred, not cut)
 
