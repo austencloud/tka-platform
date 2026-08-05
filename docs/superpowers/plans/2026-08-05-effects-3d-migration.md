@@ -345,4 +345,51 @@ Name these rather than silently skipping them:
 
 ## Loose ends
 
-Append what the frames actually show as you go.
+What the frames actually showed, 2026-08-05, at 1920×1080 on the six-station harness.
+
+**Seven of the eight render. One does not.**
+
+| Effect | What the frame showed | Verdict |
+|---|---|---|
+| bubbles | A dense white cauliflower mass at the tips. Distinct from trails, but the spheres are far too large and too opaque — it reads as a cloud, not as bubbles in water. | Renders; needs a scale/opacity pass before it can be Water's motif. |
+| goo | A fine blue droplet spray, correctly tracking the tips. The nicest of the eight as-is. | Renders. Still `WaterEmitter3D`, per the plan's note. |
+| smoke | Grey-white puffs off each tip, curling. Reads clearly as smoke and survives a pause. | Renders. |
+| petals | A pink fall at the tips, and it keeps falling while paused. Subtle at full-scene zoom, right at station scale. | Renders. |
+| sparkles | Catastrophic. Four tan spheres roughly the size of a whole station, translucent, swallowing half the viewport and occluding every neighbouring station. | Renders, but the sprite scale is wrong by orders of magnitude. Unusable until fixed. |
+| zap | A dense white jagged scribble ball sprawling well past the station footprint, not an arc between two props. | Renders, but arcs accumulate rather than living and dying. Unusable as-is. |
+| ghost | Blue and red phantom staff strokes, clearly legible when the camera is close. Static — the phantoms do not advance. | Renders. Inert by design without `currentStep`; see below. |
+| bloom | Nothing, playing or paused, with `bloom` selected on a station. | Does not render. Not diagnosed. |
+
+**Deviations from the plan, and why:**
+
+1. **A fire double-render, found by the first frame.** `EffectsLayer` gated its own
+   `FireEmitter` particle block on `effect === "fire"`, which `EffectOrchestrator3D`
+   already renders via `FireRenderer3D`. The moment the layer was mounted, every fire
+   station drew twice and blew out to a white disc that washed the whole scene. Fixed
+   by deleting the duplicate block from `EffectsLayer` — the orchestrator owns fire, the
+   same way it owns trails. `FireEmitter.svelte` now has no callers; deciding whether to
+   delete it or fold it into `FireRenderer3D` is a follow-up, not a silent leftover.
+2. **`currentStep` is not available where the plan assumed it was.** There is no local
+   `PerformerRig` — it lives in the external `@austencloud/scene-3d` package, and its
+   `effectsSlot` snippet hands down `bluePropState`, `redPropState`, `blueHandPos`,
+   `redHandPos`, `isPlaying`, `staffHalfLength` and `effectsParentRef`, with no step
+   index among them. `currentStep` is now an optional prop on `EffectOrchestrator3D`
+   that forwards to `EffectsLayer`, so a host that has the step can supply it; today
+   nobody does, which is why Ghost's phantoms are static. Plumbing it means either
+   changing the external package's slot signature or reading step from a context inside
+   the orchestrator. That is its own decision.
+
+**Still open, in the order they cost the most:**
+
+- **Sparkles sprite scale.** The single worst defect found. One number, most likely, in
+  the sparkle emitter's sprite sizing.
+- **Zap arc lifetime.** Arcs are accumulating instead of expiring.
+- **Bloom renders nothing.** `bloomEnabled && bloomIntent` gates four `BloomBillboard3D`
+  sprites; one of those two is false at runtime, or the billboards are drawing at zero
+  size. Undiagnosed.
+- **Bubbles scale and opacity**, before bubbles can be Water's motif.
+- **`currentStep` plumbing**, before Ghost is usable anywhere.
+- **`pickSparkleColor` calls `Date.now()` inside a `$derived`**, so rainbow mode is a
+  static hue per emitter, as the plan predicted. Not touched.
+- The Air and Moon stations showed no trace on `trails` in the first frames, before any
+  of this work. Pre-existing, unrelated to the mount, not chased.

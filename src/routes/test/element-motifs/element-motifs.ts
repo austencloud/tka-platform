@@ -18,19 +18,13 @@
  * element to effect is the open creative question, and it gets answered by
  * looking, not by arguing.
  *
- * ── The 3D coverage gap (measured 2026-08-05) ───────────────────────────────
+ * ── 3D coverage (2026-08-05) ───────────────────────────────────────────────
  *
- * The effects registry lists sixteen effects. `EffectOrchestrator3D` — the one
- * that actually mounts inside `PerformerRig`'s effectsSlot — renders exactly
- * FOUR of them: `trails`, `led`, `charcoal`, `fire`. Everything else (goo,
- * bubbles, smoke, petals, sparkles, bloom, ghost, zap, ink, silk, animal,
- * pulse) has no renderer on that path; those emitters live in `EffectsLayer`,
- * which its own header marks as legacy and unmounted.
- *
- * So the candidate lists below are drawn from the four that exist in 3D. The
- * elemental character has to come from colour, palette and motion for now.
- * Giving Water an actual water effect in 3D is a porting job, not a config
- * change, and it is the single biggest lever on this whole idea.
+ * Twelve of the sixteen registry effects render in 3D: trails, led, charcoal
+ * and fire through EffectOrchestrator3D directly, plus goo, bubbles, smoke,
+ * petals, sparkles, zap, ghost and bloom through EffectsLayer, which the
+ * orchestrator mounts. Still absent in 3D: ink (palettes only), silk, animal
+ * and pulse.
  */
 
 export interface ElementMotif {
@@ -67,8 +61,8 @@ export const ELEMENT_MOTIFS: readonly ElementMotif[] = [
     technicalMode: "Split-time / same-direction",
     letters: "ABC",
     sequenceId: "cave-water-seq-a",
-    defaultEffect: "bubbles",
-    candidates: ["bubbles", "goo", "trails", "led"],
+    defaultEffect: "ghost",
+    candidates: ["ghost", "bubbles", "goo", "trails"],
     color: "#3a7fd9",
     intent: "A split-same circle drawn in water.",
   },
@@ -79,8 +73,8 @@ export const ELEMENT_MOTIFS: readonly ElementMotif[] = [
     technicalMode: "Split-time / opposite-direction",
     letters: "JKL",
     sequenceId: "cave-fire-seq-dj",
-    defaultEffect: "fire",
-    candidates: ["fire", "charcoal", "led", "trails"],
+    defaultEffect: "bloom",
+    candidates: ["bloom", "fire", "charcoal", "trails"],
     color: "#f97316",
     intent: "The one element whose effect already looks like itself.",
   },
@@ -91,8 +85,8 @@ export const ELEMENT_MOTIFS: readonly ElementMotif[] = [
     technicalMode: "Together-time / same-direction",
     letters: "GHI",
     sequenceId: "cave-earth-seq-g",
-    defaultEffect: "charcoal",
-    candidates: ["charcoal", "trails", "led", "fire"],
+    defaultEffect: "petals",
+    candidates: ["petals", "charcoal", "goo", "trails"],
     color: "#8a6a3a",
     intent: "Rock, or growing things. Coal and Petals are both worth a look.",
   },
@@ -103,8 +97,8 @@ export const ELEMENT_MOTIFS: readonly ElementMotif[] = [
     technicalMode: "Together-time / opposite-direction",
     letters: "DEF",
     sequenceId: "cave-air-seq-dj",
-    defaultEffect: "trails",
-    candidates: ["trails", "led", "charcoal", "fire"],
+    defaultEffect: "smoke",
+    candidates: ["smoke", "petals", "bubbles", "trails"],
     color: "#c8d8e8",
     intent: "Clouds and butterflies. Smoke, Silk and Petals are the candidates.",
   },
@@ -116,7 +110,7 @@ export const ELEMENT_MOTIFS: readonly ElementMotif[] = [
     letters: "STUV",
     sequenceId: "cave-sun-seq",
     defaultEffect: "led",
-    candidates: ["led", "fire", "trails", "charcoal"],
+    candidates: ["led", "bloom", "ghost", "trails"],
     color: "#ffcf5c",
     intent: "Open question. Beam of light, or something living in the light.",
   },
@@ -127,8 +121,8 @@ export const ELEMENT_MOTIFS: readonly ElementMotif[] = [
     technicalMode: "Quarter-time / opposite-direction",
     letters: "M-R",
     sequenceId: "cave-moon-seq",
-    defaultEffect: "trails",
-    candidates: ["trails", "led", "charcoal", "fire"],
+    defaultEffect: "goo",
+    candidates: ["goo", "zap", "led", "trails"],
     color: "#b8c4e0",
     intent: "Open question. Comet streaks, stars, moon dust.",
   },
