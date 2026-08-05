@@ -356,17 +356,22 @@ async function withDerivedLetters(seq: SequenceData): Promise<SequenceData> {
  * `displayName` and `intendedWord` are DELETED, not overwritten:
  * `getSequenceDisplayName` prioritizes them over `word`, so a carried-over
  * display name would render the twin of "FALG" as "FALG" everywhere in the UI.
+ *
+ * The name pairs the variant's OWN word with its label ("HFBLHFBL twin"). A
+ * bare label is not a name — a sequence called "id" or "twin" tells a reader
+ * nothing about what it is.
  */
 function stampIdentity(
   seq: SequenceData,
   sourceCardId: string,
   label: string
 ): SequenceData {
+  const word = deriveWordFromBeats(seq.steps);
   const stamped = {
     ...seq,
     id: `${sourceCardId}~${label}`,
-    name: label,
-    word: deriveWordFromBeats(seq.steps),
+    name: `${word} ${label}`.trim(),
+    word,
   } as SequenceData & { displayName?: string; intendedWord?: string };
   delete stamped.displayName;
   delete stamped.intendedWord;

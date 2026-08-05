@@ -233,7 +233,12 @@ describe("variant generator — enumeration and collapse", () => {
     for (const variant of variants) {
       const label = variant.id.replace(/^B /, "");
       expect(variant.sequence.id).toBe(`${FALG.id}~${label}`);
-      expect(variant.sequence.name).toBe(label);
+      // The name is the variant's own word plus its label — never a bare
+      // "id"/"twin", which names nothing.
+      expect(variant.sequence.name).toBe(
+        `${variant.sequence.word} ${label}`.trim()
+      );
+      expect(variant.sequence.name).not.toBe(label);
       // getSequenceDisplayName prefers these over `word` — a carried-over value
       // would render every variant as "FALG".
       expect(variant.sequence.displayName).toBeUndefined();
