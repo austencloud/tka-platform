@@ -127,6 +127,14 @@ export function renderMandalaSVG(paths: MandalaPaths, options: MandalaRenderOpti
 	const tipReach = effectiveTipDx * MANDALA_GRID_RADIUS / ENGINE_GRID_RADIUS;
 	const maxExtent = MANDALA_GRID_RADIUS + tipReach;
 	const scale = center / (maxExtent * 1.05);
+	// A perfectly horizontal or vertical mandala has no geometric width or
+	// height. SVG ignores object-bounding-box filters and masks in that case,
+	// which made a real straight-line result disappear from static previews.
+	// Fixed user-space regions keep the glow and overlap treatment without
+	// making visibility depend on the path's bounding-box dimensions.
+	const glowExtent = maxExtent * 1.4;
+	const featherExtent = maxExtent * 1.2;
+	const bloomExtent = maxExtent * 2;
 
 	const parts: string[] = [];
 
@@ -136,20 +144,20 @@ export function renderMandalaSVG(paths: MandalaPaths, options: MandalaRenderOpti
 
 	parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="100%" height="100%" overflow="hidden">`);
 	parts.push(`  <defs>`);
-	parts.push(`    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">`);
+	parts.push(`    <filter id="glow" filterUnits="userSpaceOnUse" x="${(-glowExtent).toFixed(2)}" y="${(-glowExtent).toFixed(2)}" width="${(glowExtent * 2).toFixed(2)}" height="${(glowExtent * 2).toFixed(2)}">`);
 	parts.push(`      <feGaussianBlur stdDeviation="3" result="blur"/>`);
 	parts.push(`      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>`);
 	parts.push(`    </filter>`);
 
 	if (needsMask) {
-		parts.push(`    <filter id="feather${uid}" x="-10%" y="-10%" width="120%" height="120%">`);
+		parts.push(`    <filter id="feather${uid}" filterUnits="userSpaceOnUse" x="${(-featherExtent).toFixed(2)}" y="${(-featherExtent).toFixed(2)}" width="${(featherExtent * 2).toFixed(2)}" height="${(featherExtent * 2).toFixed(2)}">`);
 		parts.push(`      <feGaussianBlur stdDeviation="${ov.feather}"/>`);
 		parts.push(`    </filter>`);
-		parts.push(`    <filter id="bloom${uid}" x="-50%" y="-50%" width="200%" height="200%">`);
+		parts.push(`    <filter id="bloom${uid}" filterUnits="userSpaceOnUse" x="${(-bloomExtent).toFixed(2)}" y="${(-bloomExtent).toFixed(2)}" width="${(bloomExtent * 2).toFixed(2)}" height="${(bloomExtent * 2).toFixed(2)}">`);
 		parts.push(`      <feGaussianBlur stdDeviation="${ov.bloomBlur}" result="b"/>`);
 		parts.push(`      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>`);
 		parts.push(`    </filter>`);
-		parts.push(`    <mask id="bom${uid}">`);
+		parts.push(`    <mask id="bom${uid}" maskUnits="userSpaceOnUse" x="${(-featherExtent).toFixed(2)}" y="${(-featherExtent).toFixed(2)}" width="${(featherExtent * 2).toFixed(2)}" height="${(featherExtent * 2).toFixed(2)}">`);
 		parts.push(`      <g filter="url(#feather${uid})">`);
 		for (const pathData of paths.blue) {
 			if (style === "filled") {

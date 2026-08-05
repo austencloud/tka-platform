@@ -20,6 +20,8 @@ import {
 } from "$lib/shared/foundation/domain/math-constants";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { RADIAL_CYCLE } from "$lib/shared/render/core/calculations/orientation-angle";
+import { handArcDirection } from "@tka/sequence-engine/analysis";
 import {
 	BASE_SAMPLES_PER_BEAT,
 	MANDALA_GRID_RADIUS,
@@ -46,6 +48,7 @@ type TipOffset = MandalaTipOffset;
 interface MotionEndpoints {
 	startCenterAngle: number;
 	targetCenterAngle: number;
+	centerRotationDelta: number;
 	startStaffAngle: number;
 	staffRotationDelta: number;
 	motionType: string;
@@ -89,21 +92,16 @@ function resolveLocationAngle(loc: string): number {
 
 // ─── Orientation string to enum mapping ─────────────────────────────────────
 
-// The existing mapOrientationToAngle expects Orientation enum values.
-// Firestore data stores lowercase strings. Map them.
+// The existing mapOrientationToAngle expects Orientation values. Firestore
+// stores those values as strings, including the four interradial orientations.
 
 function resolveOrientationAngle(
 	ori: string | undefined,
 	centerAngle: number
 ): number {
-	const orientationMap: Record<string, Orientation> = {
-		in: Orientation.IN,
-		out: Orientation.OUT,
-		clock: Orientation.CLOCK,
-		counter: Orientation.COUNTER,
-	};
-
-	const enumValue = orientationMap[ori ?? "out"] ?? Orientation.OUT;
+	const enumValue = (RADIAL_CYCLE as readonly string[]).includes(ori ?? "")
+		? (ori as Orientation)
+		: Orientation.OUT;
 	return mapOrientationToAngle(enumValue, centerAngle);
 }
 
@@ -117,6 +115,31 @@ function parseDirection(rotDir: string): number {
 
 function isNoRotation(rotDir: string): boolean {
 	return rotDir === "noRotation" || rotDir === "no_rotation";
+}
+
+function resolveCenterRotationDelta(
+	motion: {
+		startLoc: string;
+		endLoc: string;
+		handPath?: string | null;
+	},
+	startCenterAngle: number,
+	targetCenterAngle: number
+): number {
+	const direction = handArcDirection({
+		startLocation: motion.startLoc,
+		endLocation: motion.endLoc,
+		handPath: motion.handPath,
+	});
+
+	if (direction === "cw") {
+		return normalizeAnglePositive(targetCenterAngle - startCenterAngle);
+	}
+	if (direction === "ccw") {
+		return -normalizeAnglePositive(startCenterAngle - targetCenterAngle);
+	}
+
+	return normalizeAngleSigned(targetCenterAngle - startCenterAngle);
 }
 
 // ─── Endpoint calculation ───────────────────────────────────────────────────
@@ -138,9 +161,15 @@ function calculateMotionEndpoints(motion: {
 	startOrientation: string;
 	endOrientation: string;
 	turns: number;
+	handPath?: string | null;
 }): MotionEndpoints {
 	const startCenterAngle = resolveLocationAngle(motion.startLoc);
 	const targetCenterAngle = resolveLocationAngle(motion.endLoc);
+	const centerRotationDelta = resolveCenterRotationDelta(
+		motion,
+		startCenterAngle,
+		targetCenterAngle
+	);
 
 	const startStaffAngle = resolveOrientationAngle(
 		motion.startOrientation,
@@ -158,19 +187,13 @@ function calculateMotionEndpoints(motion: {
 
 	switch (motion.motionType) {
 		case "pro": {
-			const centerMovement = normalizeAngleSigned(
-				targetCenterAngle - startCenterAngle
-			);
 			const propRotation = dir * turns * PI;
-			staffRotationDelta = centerMovement + propRotation;
+			staffRotationDelta = centerRotationDelta + propRotation;
 			break;
 		}
 		case "anti": {
-			const centerMovement = normalizeAngleSigned(
-				targetCenterAngle - startCenterAngle
-			);
 			const propRotation = dir * turns * PI;
-			staffRotationDelta = -centerMovement + propRotation;
+			staffRotationDelta = -centerRotationDelta + propRotation;
 			break;
 		}
 		case "static": {
@@ -204,6 +227,7 @@ function calculateMotionEndpoints(motion: {
 	return {
 		startCenterAngle,
 		targetCenterAngle,
+		centerRotationDelta,
 		startStaffAngle,
 		staffRotationDelta,
 		motionType: motion.motionType,
@@ -230,12 +254,6 @@ function resolvePathShape(
 
 // ─── Interpolation ──────────────────────────────────────────────────────────
 
-// lerpAngle: shortest-path angular interpolation
-function lerpAngle(a: number, b: number, t: number): number {
-	const d = normalizeAngleSigned(b - a);
-	return normalizeAnglePositive(a + d * t);
-}
-
 function interpolateLinear(
 	startAngle: number,
 	endAngle: number,
@@ -254,10 +272,13 @@ function interpolateLinear(
 function interpolateConcave(
 	startAngle: number,
 	endAngle: number,
+	centerRotationDelta: number,
 	t: number,
 	staffAngle: number
 ): InterpolatedPosition {
-	const arcAngle = lerpAngle(startAngle, endAngle, t);
+	const arcAngle = normalizeAnglePositive(
+		startAngle + centerRotationDelta * t
+	);
 	const circleX = Math.cos(arcAngle);
 	const circleY = Math.sin(arcAngle);
 
@@ -281,6 +302,7 @@ function interpolate(
 	const {
 		startCenterAngle,
 		targetCenterAngle,
+		centerRotationDelta,
 		startStaffAngle,
 		staffRotationDelta,
 		motionType,
@@ -304,10 +326,18 @@ function interpolate(
 		case "linear":
 			return interpolateLinear(startCenterAngle, targetCenterAngle, t, staffAngle);
 		case "concave":
-			return interpolateConcave(startCenterAngle, targetCenterAngle, t, staffAngle);
+			return interpolateConcave(
+				startCenterAngle,
+				targetCenterAngle,
+				centerRotationDelta,
+				t,
+				staffAngle
+			);
 		case "arc":
 		default: {
-			const centerAngle = lerpAngle(startCenterAngle, targetCenterAngle, t);
+			const centerAngle = normalizeAnglePositive(
+				startCenterAngle + centerRotationDelta * t
+			);
 			const x = Math.cos(centerAngle);
 			const y = Math.sin(centerAngle);
 			return { x, y, staffAngle };
@@ -373,7 +403,7 @@ function pointSetsToPaths(sets: MandalaPoint[][]): SVGPathData[] {
 
 // ─── Catmull-Rom to Bezier SVG path conversion ─────────────────────────────
 
-function pointsToSVGPath(points: MandalaPoint[]): string {
+export function pointsToSVGPath(points: MandalaPoint[]): string {
 	if (points.length < 2) return "";
 
 	const first = points[0]!;
@@ -406,6 +436,7 @@ interface NormalizedMotion {
 	startOrientation: string;
 	endOrientation: string;
 	turns: number;
+	handPath?: string | null;
 }
 
 function extractMotion(
@@ -426,6 +457,7 @@ function extractMotion(
 		startOrientation: motion.startOrientation ?? "out",
 		endOrientation: motion.endOrientation ?? "out",
 		turns: isNaN(turns) ? 0 : turns,
+		handPath: motion.handPath,
 	};
 }
 
@@ -471,17 +503,11 @@ function generatePathPoints(
 				const turnsRotation = dir * motion.turns * PI;
 
 				if (motion.motionType === "pro") {
-					const centerMovement = normalizeAngleSigned(
-						endpoints.targetCenterAngle - endpoints.startCenterAngle
-					);
 					endpoints.staffRotationDelta =
-						centerMovement + turnsRotation;
+						endpoints.centerRotationDelta + turnsRotation;
 				} else if (motion.motionType === "anti") {
-					const centerMovement = normalizeAngleSigned(
-						endpoints.targetCenterAngle - endpoints.startCenterAngle
-					);
 					endpoints.staffRotationDelta =
-						-centerMovement + turnsRotation;
+						-endpoints.centerRotationDelta + turnsRotation;
 				} else {
 					// static, dash with turns
 					endpoints.staffRotationDelta = turnsRotation;
@@ -544,6 +570,7 @@ function buildCacheKey(
 				b.endLocation +
 				(b.startOrientation ?? '') +
 				(b.endOrientation ?? '') +
+				(b.handPath ?? '') +
 				(b.turns ?? 0)
 			);
 		if (isVisibleMotion(r))
@@ -554,6 +581,7 @@ function buildCacheKey(
 				r.endLocation +
 				(r.startOrientation ?? '') +
 				(r.endOrientation ?? '') +
+				(r.handPath ?? '') +
 				(r.turns ?? 0)
 			);
 	}

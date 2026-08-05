@@ -653,6 +653,87 @@ describe("MandalaGeometryCalculator", () => {
     });
   });
 
+  describe("authored skew hand paths", () => {
+    const makeDirectedFloat = (handPath: "cw" | "ccw"): StepLike[] => [
+      {
+        motions: {
+          blue: {
+            motionType: "float",
+            rotationDirection: "noRotation",
+            startLocation: "s",
+            endLocation: "e",
+            handPath,
+            turns: 0,
+            startOrientation: "out",
+            endOrientation: "out",
+          },
+        },
+      },
+    ];
+
+    it("draws an authored clockwise long-way arc instead of the shortest arc", () => {
+      const result = calc.calculate(
+        makeDirectedFloat("cw"),
+        undefined,
+        undefined,
+        undefined,
+        { dx: 0, dy: 0 }
+      );
+      const points = parseSVGEndpoints(result.blue[0]!.d);
+      const midpoint = points[Math.floor((points.length - 1) / 2)]!;
+
+      // Clockwise s→e travels through the west and north sides of the grid.
+      // Shortest-path interpolation incorrectly travels through southeast.
+      expect(midpoint.x).toBeLessThan(0);
+      expect(midpoint.y).toBeLessThan(0);
+    });
+
+    it("keeps opposite authored hand paths distinct in the geometry cache", () => {
+      const clockwise = calc.calculate(makeDirectedFloat("cw"));
+      const counterClockwise = calc.calculate(makeDirectedFloat("ccw"));
+
+      expect(clockwise.blue[0]!.d).not.toBe(counterClockwise.blue[0]!.d);
+    });
+  });
+
+  describe("interradial orientations", () => {
+    it("uses the authored 45-degree orientation in prop-tip geometry", () => {
+      const makeStatic = (orientation: "out" | "clockIn"): StepLike[] => [
+        {
+          motions: {
+            blue: {
+              motionType: "static",
+              rotationDirection: "noRotation",
+              startLocation: "s",
+              endLocation: "s",
+              turns: 0,
+              startOrientation: orientation,
+              endOrientation: orientation,
+            },
+          },
+        },
+      ];
+
+      const cardinal = calc.calculate(
+        makeStatic("out"),
+        undefined,
+        undefined,
+        undefined,
+        { dx: 120, dy: 0 }
+      );
+      const interradial = calc.calculate(
+        makeStatic("clockIn"),
+        undefined,
+        undefined,
+        undefined,
+        { dx: 120, dy: 0 }
+      );
+
+      expect(interradial.blue[1]!.d).not.toBe(cardinal.blue[1]!.d);
+      expect(parseSVGEndpoints(interradial.blue[1]!.d)[0]!.x).toBeLessThan(-1);
+    });
+  });
+
   describe("tip offset applied (MANDALA_STANDARD_TIP_DX)", () => {
     it("tip radius matches MANDALA_STANDARD_TIP_DX scaled to mandala space", () => {
       // The calculator uses MANDALA_STANDARD_TIP_DX (130) as the tip offset

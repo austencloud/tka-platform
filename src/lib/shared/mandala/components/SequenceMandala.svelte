@@ -32,7 +32,12 @@
 	} from "../domain/mandala-constants";
 	import { calculate as calculateMandalaGeometry, calculateMorphed as calculateMandalaMorphed } from "../services/mandala-geometry-calculator";
 	import { getMandalaPathOptions } from "../services/mandala-path-options";
+	import {
+		interpolateMandalaPaths,
+		mandalaPathsEqual,
+	} from "../services/mandala-path-interpolator";
 	import { pairTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
+	import { DURATION } from "$lib/shared/transitions/transitions";
 
 	export type { MandalaPathShape, UndulationEasing } from "../domain/mandala-types";
 
@@ -104,6 +109,8 @@
 		animateRotation?: number;
 		/** Path interpolation shape for hand movement */
 		pathShape?: MandalaPathShape;
+		/** Morph calculated geometry whenever the sequence changes */
+		morphChanges?: boolean;
 		/** Fixed tip dx override (bypasses standard and animation) */
 		tipDx?: number;
 		/** Override palette colors */
@@ -137,6 +144,7 @@
 		animateEasing = "sine",
 		animateRotation = 90,
 		pathShape = "arc",
+		morphChanges = false,
 		tipDx,
 		palette: paletteOverride,
 		strokeWidth,
@@ -208,12 +216,18 @@
 	let morphRafId: number = 0;
 	let lastShape: MandalaPathShape = pathShape;
 	let activeMorph: { from: MandalaPathShape; t: number } | null = $state(null);
+	const CHANGE_MORPH_MS = DURATION.dramatic;
+	let changeMorphRafId = 0;
+	let changeMorphPaths: MandalaPaths | null = $state(null);
+	let changeMorphActive = $state(false);
+	let lastChangeTarget: MandalaPaths | null = null;
 
 	onMount(() => {
 		calcReady = true;
 		return () => {
 			if (rafId) cancelAnimationFrame(rafId);
 			if (morphRafId) cancelAnimationFrame(morphRafId);
+			if (changeMorphRafId) cancelAnimationFrame(changeMorphRafId);
 		};
 	});
 
@@ -223,6 +237,10 @@
 	$effect(() => {
 		const target = pathShape;
 		if (target === lastShape) return;
+		if (morphChanges) {
+			lastShape = target;
+			return;
+		}
 		const from = lastShape;
 		lastShape = target;
 
@@ -305,7 +323,7 @@
 
 	const pathOptions = $derived(getMandalaPathOptions(pathShape, effectiveTipEnds));
 
-	const paths = $derived.by((): MandalaPaths | null => {
+	const calculatedPaths = $derived.by((): MandalaPaths | null => {
 		if (!calcReady || !sequence?.steps) return null;
 		const tip = { dx: effectiveDx, dy: 0 };
 		const morph = activeMorph;
@@ -329,6 +347,67 @@
 		);
 	});
 
+	// The workspace changes a whole sequence at once. Holding the currently
+	// painted geometry here lets every edit flow into the next result, even when
+	// a second change arrives before the first morph has finished.
+	$effect(() => {
+		const target = calculatedPaths;
+		if (!target) {
+			lastChangeTarget = null;
+			return;
+		}
+
+		const reducedMotion =
+			typeof window !== "undefined" &&
+			window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+		const canMorph =
+			morphChanges && !animate && activeMorph === null && !reducedMotion;
+
+		if (!lastChangeTarget || !canMorph) {
+			if (changeMorphRafId) cancelAnimationFrame(changeMorphRafId);
+			changeMorphRafId = 0;
+			changeMorphPaths = null;
+			changeMorphActive = false;
+			lastChangeTarget = target;
+			return;
+		}
+
+		if (mandalaPathsEqual(lastChangeTarget, target)) {
+			lastChangeTarget = target;
+			return;
+		}
+
+		const from = untrack(() => changeMorphPaths ?? lastChangeTarget)!;
+		lastChangeTarget = target;
+		if (changeMorphRafId) cancelAnimationFrame(changeMorphRafId);
+		changeMorphPaths = from;
+		changeMorphActive = true;
+
+		let start: number | null = null;
+		const stepChangeMorph = (timestamp: number) => {
+			if (start === null) start = timestamp;
+			const linearProgress = Math.min(
+				1,
+				(timestamp - start) / CHANGE_MORPH_MS,
+			);
+			const progress = EASING_FNS.bloom(linearProgress);
+			changeMorphPaths = interpolateMandalaPaths(from, target, progress);
+			draw();
+
+			if (linearProgress < 1) {
+				changeMorphRafId = requestAnimationFrame(stepChangeMorph);
+			} else {
+				changeMorphRafId = 0;
+				changeMorphActive = false;
+				changeMorphPaths = null;
+			}
+		};
+
+		changeMorphRafId = requestAnimationFrame(stepChangeMorph);
+	});
+
+	const paths = $derived(changeMorphPaths ?? calculatedPaths);
+
 	const effectiveDarkMode = $derived(darkMode ?? settingsService.settings.darkMode);
 
 	const renderOptions = $derived.by((): MandalaRenderOptions => {
@@ -346,7 +425,9 @@
 	// Canvas while motion is live (undulation or shape-morph), SVG when fully
 	// static. `svgString` is lazy — it isn't read in the canvas branch, so the
 	// expensive SVG-string build is skipped entirely during animation.
-	const useCanvas = $derived(animate || activeMorph !== null);
+	const useCanvas = $derived(
+		animate || activeMorph !== null || changeMorphActive,
+	);
 
 	const svgString = $derived.by((): string => {
 		if (useCanvas || !paths) return "";

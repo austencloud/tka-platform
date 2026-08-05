@@ -14,6 +14,7 @@ export interface MotionLike {
 	turns?: number | string;
 	startOrientation?: string;
 	endOrientation?: string;
+	handPath?: string | null;
 	pathShape?: "arc" | "linear" | "concave";
 	/** false = invisible placeholder — hand not really there (both-required Step shape) */
 	isVisible?: boolean;
