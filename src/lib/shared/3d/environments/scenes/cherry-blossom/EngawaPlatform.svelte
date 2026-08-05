@@ -153,7 +153,10 @@
 {#if config.enabled}
   <!-- Cylindrical body — polished dark wood -->
   <T.Mesh position.y={groundY + config.height / 2}>
-    <T.CylinderGeometry args={[config.radius, config.radius, config.height, 64]} />
+    <!-- The animated disc owns the top face. A cylinder cap here would occupy the same depth and flash as the camera moves. -->
+    <T.CylinderGeometry
+      args={[config.radius, config.radius, config.height, 64, 1, true]}
+    />
     <T.MeshStandardMaterial
       color={config.primaryColor}
       roughness={0.6}
@@ -175,10 +178,6 @@
     position.y={groundY + config.height + 0.005}
   >
     <T.TorusGeometry args={[config.radius * 0.95, 0.015, 12, 64]} />
-    <T.MeshStandardMaterial
-      color="#2a1a0e"
-      roughness={0.4}
-      metalness={0.15}
-    />
+    <T.MeshStandardMaterial color="#2a1a0e" roughness={0.4} metalness={0.15} />
   </T.Mesh>
 {/if}

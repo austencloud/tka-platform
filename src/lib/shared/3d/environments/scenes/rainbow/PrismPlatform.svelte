@@ -114,7 +114,15 @@
   let bodyMaterial = $state<MeshPhysicalMaterial | undefined>(undefined);
 
   $effect(() => {
-    const geo = new CylinderGeometry(config.radius, config.radius, config.height, 64);
+    // The shader disc is the only top face; a closed cylinder would depth-fight with it.
+    const geo = new CylinderGeometry(
+      config.radius,
+      config.radius,
+      config.height,
+      64,
+      1,
+      true
+    );
     bodyGeometry = geo;
     return () => geo.dispose();
   });

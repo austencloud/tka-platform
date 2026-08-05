@@ -207,7 +207,10 @@
 {#if config.enabled}
   <!-- Translucent ice cylinder body -->
   <T.Mesh position.y={groundY + config.height / 2}>
-    <T.CylinderGeometry args={[config.radius, config.radius, config.height, 64]} />
+    <!-- The animated disc owns the top face. A cylinder cap here would occupy the same depth and flash as the camera moves. -->
+    <T.CylinderGeometry
+      args={[config.radius, config.radius, config.height, 64, 1, true]}
+    />
     <T.MeshPhysicalMaterial
       color={config.primaryColor}
       transmission={0.5}
@@ -221,7 +224,10 @@
   </T.Mesh>
 
   <!-- Rim ring at top edge -->
-  <T.Mesh rotation.x={-Math.PI / 2} position.y={groundY + config.height + 0.001}>
+  <T.Mesh
+    rotation.x={-Math.PI / 2}
+    position.y={groundY + config.height + 0.001}
+  >
     <T.RingGeometry
       args={[config.radius - RIM_THICKNESS, config.radius + RIM_THICKNESS, 128]}
     />

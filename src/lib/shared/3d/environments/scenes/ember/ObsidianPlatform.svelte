@@ -239,7 +239,10 @@
 {#if config.enabled}
   <!-- Dark obsidian hexagonal body -->
   <T.Mesh position.y={groundY + config.height / 2}>
-    <T.CylinderGeometry args={[config.radius, config.radius, config.height, 6]} />
+    <!-- The animated disc owns the top face. A cylinder cap here would occupy the same depth and flash as the camera moves. -->
+    <T.CylinderGeometry
+      args={[config.radius, config.radius, config.height, 6, 1, true]}
+    />
     <T.MeshStandardMaterial
       color="#0a0a0a"
       roughness={0.3}
@@ -250,8 +253,13 @@
   </T.Mesh>
 
   <!-- Emissive lava-orange rim ring at top edge -->
-  <T.Mesh rotation.x={-Math.PI / 2} position.y={groundY + config.height + 0.001}>
-    <T.RingGeometry args={[config.radius - RIM_THICKNESS, config.radius + RIM_THICKNESS, 6]} />
+  <T.Mesh
+    rotation.x={-Math.PI / 2}
+    position.y={groundY + config.height + 0.001}
+  >
+    <T.RingGeometry
+      args={[config.radius - RIM_THICKNESS, config.radius + RIM_THICKNESS, 6]}
+    />
     <T.MeshStandardMaterial
       color="#ff4400"
       emissive="#ff3300"
