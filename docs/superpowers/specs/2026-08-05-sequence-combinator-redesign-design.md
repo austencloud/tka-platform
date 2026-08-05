@@ -212,10 +212,19 @@ The prop/hand split is the correct form of the axis this session first got wrong
 a connector's character is *which flow it protects*, and both channels are
 measurable per result rather than inferred from letter type.
 
-**Must be built (nothing analyses a finished sequence for this):** motion-type
-mix, i.e. contains-dashes / contains-statics, plus letter-type mix and VTG
-category mix. Small, but currently absent — dash preference exists only as a
-generation-time steering bias, never as a post-hoc classifier.
+**Correction (2026-08-05): motion-type mix already exists — do not build it.**
+`SequenceFeatureExtractor.extractFeatures(sequence)`
+(`src/lib/features/loop-labeler/services/sequence-feature-extractor.ts:33`) is a
+post-hoc classifier over a finished `SequenceData` and already returns
+`hasProMotion`, `hasAntiMotion`, `hasFloatMotion`, `hasDashMotion`,
+`hasStaticMotion` — plus `hasAlpha/Beta/GammaPositions` (which, per
+`letter-gap-families.md`, is the gap profile), turns, reversals, circularity and
+grid mode. Stage 4 calls this. The earlier claim that "nothing analyses a
+finished sequence for this" was wrong; only the generation-time `motionTypeFilter`
+steering bias was found before this file was.
+
+Still unverified as existing: letter-type mix and VTG category mix. Check for
+those the same way before building either.
 
 Follows `4k-native-layout.md` and `no-layout-shift.md`; verified at all seven
 viewports per `visual-verification-mandatory.md` before it is called done.

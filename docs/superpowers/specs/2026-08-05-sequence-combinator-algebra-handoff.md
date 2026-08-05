@@ -222,6 +222,56 @@ Note: `git status` carries ~28 modified files from other sessions (animation
 engine, compose, export). **Not related to this work.** Commit with explicit
 pathspecs only (`.claude/rules/commit-only-your-own-changes.md`).
 
+## Update — 2026-08-05, later session
+
+Loose ends #1, #5 and #6 are closed, and the "unexplored heart of the algebra"
+was computed. Details in `docs/reference/letter-gap-families.md`; scripts in
+`scripts/combinator-research/`.
+
+- **The group exists and is small.** The two involutions **commute** — they
+  generate the Klein four-group of order 4, and nothing deeper hides there. The
+  useful object is the order-8 group from the full 90° gap step plus twin, whose
+  **9 letter classes** are the natural master boxes. All closed transforms
+  together give order 256 and 7 classes.
+- **`letter = (character, gap)` is a measured bijection**: 288 motion characters
+  × 4 gaps = 1152 pictographs, each character hitting each gap exactly once,
+  100%, no exceptions.
+- **The family-size law**: size 3 exactly when the two gamma slots share a name.
+  Self-reflective characters always fuse (32 of 32, zero counterexamples); the
+  dash/static half fuses for a second reason not yet confirmed.
+- **#1 did not need the overnight 13×13 sweep.** Predicting the class and
+  sampling beat enumerating 169 cells at ~11 minutes each. The result is one
+  law, tested on **18 pairs, 18 correct**: every cross-world card pair is 512
+  words, halving to 256 exactly when the two cards are gap-involution partners.
+  The first model (halving whenever the cards share a family) was **refuted** —
+  A+U, A+T, B+S all measured 512 where it predicted 1024.
+- **The theory-512 sweep finished**, filling the four rows recorded here as
+  incomplete: DJ+EK **10456**, DJ+FL **10456**, S+MP **78103**, MP+NQ **214795**.
+  7620 is confirmed and is a *five*-way tie including A+ΦΨ and G+ΦΨ.
+- **#5 was already built — do not build it.**
+  `SequenceFeatureExtractor.extractFeatures` returns `hasDash/Static/Pro/Anti/Float
+  Motion` plus gap presence, turns, reversals and circularity over a finished
+  sequence. The redesign spec has been corrected.
+- **#6 is fixed and committed** (`25200da2c1`). The diagnosis here was slightly
+  off: the guard belongs on the *value* `noRotation`, not on a motion-type list,
+  matching `deriveReversals`. Proven over the real A and Ψ pictographs — all 16
+  valid transitions flip, `canAvoidPropReversal` false → true. Needs an
+  mcp-server-pkg rebuild + server restart to take effect.
+- **Skew is sharper than recorded**: rotating one hand 45° lands off the shipped
+  map for **1152 of 1152** pictographs — all of them, not merely "no rows start
+  from a skewed position."
+- **The period footgun is confirmed live.** `validate_loop_options` on
+  alpha3→alpha5 returns only `rewound` with period omitted, versus `rotated`,
+  `rotated_inverted`, `rotated_swapped` with `period: "quartered"`.
+
+Still open and unchanged: **#2 (build the combinator)**, #3, #4, #7, #8. What
+scoping #2 turned up: there is **no reference to `isLOOPValidForPositionPair`,
+`LOOPValidator` or any LOOP admissibility anywhere in
+`src/lib/shared/combination/`** — the engine never asks whether a closed walk is
+a LOOP, which is exactly why it emitted freeform. The search machinery
+(~4,400 lines across 11 files, ~4,100 lines of tests) is sound; what is missing
+is Stage 3.
+
 ## Loose ends (ranked)
 
 **#1 — Enumerate the 13×13 family interaction table.** This is the algebra Austen
