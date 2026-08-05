@@ -35,14 +35,23 @@ const BY_LABEL: Record<string, string[]> = {
   "2d animation": ["Just the clean version, no depth.", "Back to the flat one."],
   "3d animation": [
     "What does this look like in three dimensions?",
-    "I want to walk around it.",
+    "Let's see it in 3D.",
   ],
-  card: ["Could I hold this in my hand?", "What does it look like as a card?"],
-  mandala: [
-    "What does the whole thing look like as one picture?",
-    "All of it at once, as a shape.",
+  // Austen's corrections (2026-08-05): a person names the THING, they do not
+  // narrate its purpose. "Let's see what it looks like in a tunnel", not "I want
+  // to see it from the inside." The card is something you review or send, not
+  // something you hold. And nobody says "what does the whole thing look like as
+  // one picture" — they just press it and see.
+  card: [
+    "Let's look at the card.",
+    "I want to see the card for this.",
+    "I'm going to send this to somebody.",
   ],
-  tunnel: ["I want to see it from the inside.", "What's it like looking down it?"],
+  mandala: ["Let's see what this is.", "What's this one?"],
+  tunnel: [
+    "Let's see what it looks like in a tunnel.",
+    "What's this pinwheel mean?",
+  ],
   playback: ["Let me get at the playback controls.", "How do I drive this?"],
   props: ["What else could I be spinning?", "Let's change what's in my hands."],
   display: ["What can I turn on and off here?", "Let me see the display options."],
@@ -56,23 +65,30 @@ const BY_LABEL: Record<string, string[]> = {
   hoop: ["Hoops read completely differently.", "What about hoops?"],
   triad: ["Triads, then.", "Let's see triads."],
 
-  // Effects worth naming
+  /*
+   * One commentary per effect, against the real registry labels (16 slots as of
+   * 2026-08-05). Two rules learned from Austen's corrections: name the THING
+   * ("let's set it on fire"), do not narrate its purpose ("I want to see the
+   * path it draws" is a designer explaining a feature). And the FIRST time the
+   * ghost meets any of these it says "I wonder what this button does" instead —
+   * these lines are for the second meeting onward.
+   */
   fire: ["Fire. Obviously fire.", "Let's set it on fire."],
-  trails: ["I want to see the path it draws.", "Show me where the ends went."],
-  ink: ["Like it's painting the air.", "Let's make it draw."],
-  goo: ["What does it look like thick and slow?", "Something gooier."],
-  ghost: ["I want to see where it just was.", "Leave a trace behind it."],
-  led: ["Make it glow like an LED.", "What about lights?"],
-  sparkles: ["A bit of sparkle can't hurt.", "Let's make it glitter."],
-  smoke: ["Something softer, like smoke.", "What about smoke?"],
+  trails: ["I want to see the path it draws.", "Trails on."],
+  led: ["Let's make it glow.", "LED, like a night jam."],
+  coal: ["Coal — let's see it smoulder.", "What about embers?"],
+  zap: ["Let's make it electric.", "Zap, obviously."],
+  sparkle: ["A bit of sparkle can't hurt.", "Let's make it glitter."],
+  ghost: ["Ghost. Let's see it double up.", "I want to see where it just was."],
+  bloom: ["Let's make it glow at the edges.", "Bloom on."],
+  goo: ["Goo. That sounds ridiculous.", "Let's see what goo does."],
+  bubbles: ["Bubbles, why not.", "Let's try bubbles."],
   petals: ["Petals would be pretty.", "Let's try petals."],
-  bloom: ["I want it to glow around the edges.", "Something with bloom."],
-  zap: ["Something electric.", "Let's make it crackle."],
-  bubbles: ["Bubbles, why not.", "What about bubbles?"],
-  silk: ["Something that flows like silk.", "Let's try silk."],
-  coal: ["Like it's burning down to embers.", "Something smouldering."],
-  pulse: ["Make it breathe with the beat.", "Something that pulses."],
-  animal: ["What on earth does animal do?", "I have to know what this one is."],
+  smoke: ["Let's put it in smoke.", "Something softer — smoke."],
+  ink: ["Ink. Like it's painting the air.", "Let's make it draw in ink."],
+  silk: ["Silk. Let's see it flow.", "Something smoother — silk."],
+  animal: ["Animal? I have to know what that is.", "What on earth is Animal?"],
+  pulse: ["Let's make it breathe with the beat.", "Pulse on."],
 
   // Tempo
   slow: ["Slower. I want to see the hands.", "Too fast — let's slow it down."],
@@ -82,11 +98,9 @@ const BY_LABEL: Record<string, string[]> = {
   // Blockers / plumbing
   "skip for now": ["Not right now, thanks.", "I'd rather just poke around."],
   skip: ["I'll figure it out myself.", "Not the guided version."],
-  mirror: [
-    "Wait — can it see me?",
-    "Let's put me behind it.",
-    "I want to try this along with it.",
-  ],
+  // A motive, not a reaction. "Wait — can it see me?" belongs AFTER the stream
+  // connects and lives in try-practice's `reaction`, gated on cameraLive.
+  mirror: ["Let's put me behind it.", "What does the mirror do?"],
   practice: ["Can I do this with it?", "Let me try it myself."],
   stop: ["Alright, that's enough of that.", "Back to the sequence."],
 };
@@ -137,6 +151,78 @@ const BY_KIND: Partial<Record<GhostKind, string[]>> = {
   stage: ["…", "That's rather nice."],
 };
 
+/**
+ * What you say about a control you have never touched. Austen (2026-08-05):
+ * *"Or I wonder what this button does if they haven't encountered it yet."*
+ *
+ * This is the honest order of operations for a stranger at a laptop. You cannot
+ * want to see the tunnel view before you know the pinwheel opens one — the first
+ * press is curiosity about an unknown icon, and only after that does the control
+ * have a name and a reason. So the specific motive is held back until the ghost
+ * has actually met the thing.
+ */
+const FIRST_ENCOUNTER = [
+  "I wonder what this button does.",
+  "What's this one?",
+  "No idea what that does. Let's find out.",
+  "Let's see what this is.",
+];
+
+/**
+ * Said AFTER the press, once the thing has happened. A reaction, not a motive —
+ * "OK, that was kind of neat" only makes sense on the way out.
+ */
+const REACTIONS: Record<string, string[]> = {
+  tunnel: ["Oh, that's the pinwheel.", "Huh. Neat."],
+  mandala: ["OK, that was kind of neat.", "That's the whole thing at once."],
+  card: ["That's the card, then.", "Tidy."],
+  "3d animation": ["There it is in 3D.", "Oh, that's better."],
+  _default: ["Huh.", "OK.", "That was kind of neat.", "…nice."],
+};
+
+/**
+ * A line for after the press. Only offered for controls worth reacting to, and
+ * `null` the rest of the time — a reaction to every single click would be
+ * chattier than a person.
+ */
+export function reactionFor(
+  target: HTMLElement | null,
+  ctx: GhostContext,
+): string | null {
+  const label = tidy(readLabel(target)).toLowerCase();
+  const pool = REACTIONS[label];
+  if (pool) return ctx.rng.pick(pool) ?? null;
+  // Occasionally react to anything at all, so the pauses are not silent every
+  // time without being narrated every time either.
+  if (ctx.rng.next() < 0.25) return ctx.rng.pick(REACTIONS._default!) ?? null;
+  return null;
+}
+
+/**
+ * The one key `askedAbout` is written and read with. It has to be a single
+ * function: the first-encounter line depends on a hit in that set, so a
+ * lookup that normalises differently from the write silently makes every
+ * control a stranger forever.
+ */
+export function encounterKey(target: HTMLElement | null): string {
+  return tidy(readLabel(target)).toLowerCase();
+}
+
+/** Mark a control as met, so next time it gets its real motive. */
+export function noteEncounter(ctx: GhostContext, target: HTMLElement | null): void {
+  const key = encounterKey(target);
+  if (key) ctx.askedAbout.add(key);
+}
+
+function readLabel(target: HTMLElement | null): string {
+  return (
+    target?.getAttribute("data-ghost-label") ??
+    target?.getAttribute("aria-label") ??
+    target?.textContent ??
+    ""
+  );
+}
+
 /** Strip the punctuation and boilerplate a label picks up from UI copy. */
 function tidy(label: string): string {
   return label
@@ -157,12 +243,15 @@ export function monologueFor(
   ctx: GhostContext,
   fallback: string,
 ): string {
-  const label = tidy(
-    target?.getAttribute("data-ghost-label") ??
-      target?.getAttribute("aria-label") ??
-      target?.textContent ??
-      "",
-  );
+  const label = tidy(readLabel(target));
+
+  // Never met it: curiosity about an unknown icon, not a reason to want what it
+  // does. Only applies to the discovery kinds — a person does not wonder what an
+  // option card or a start position "does".
+  const isDiscovery = kind === "curio" || kind === "effect" || kind === "prop";
+  if (isDiscovery && label && !ctx.askedAbout.has(label.toLowerCase())) {
+    return ctx.rng.pick(FIRST_ENCOUNTER) ?? fallback;
+  }
 
   const specific = label ? BY_LABEL[label.toLowerCase()] : undefined;
   const generic = BY_KIND[kind];

@@ -80,7 +80,25 @@ export const PLAYBACK_INTENTIONS: Intention[] = [
   {
     id: "try-practice",
     category: "playback",
-    thought: "Let's try this along with it.",
+    thought: (ctx) =>
+      oneOf(ctx, ["Let's try this along with it.", "Can I do this with it?"]),
+    /*
+     * "Wait — can it see me?" is the good line, and it is only true once the
+     * stream is actually live. Austen (2026-08-05): "I like wait can it See Me
+     * that's pretty cool. But that should only happen if the camera properly
+     * connects." So it is a REACTION gated on `cameraLive` — set by
+     * CameraPreview when the stream starts and the video attaches, not when the
+     * mirror button was pressed. Over a black rectangle or a failed permission
+     * the ghost says nothing.
+     */
+    reaction: (ctx) =>
+      ctx.cameraLive
+        ? oneOf(ctx, [
+            "Wait — can it see me?",
+            "Oh — that's me.",
+            "Hello. That's the camera.",
+          ])
+        : null,
     // cameraGranted is the hard gate. Without it, pressing Practice raises a
     // native permission prompt — not DOM, so the ghost can neither answer nor
     // dismiss it, and the tour dead-stops in front of strangers. On the park

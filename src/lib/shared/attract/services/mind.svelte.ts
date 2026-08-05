@@ -135,6 +135,18 @@ export function createGhostMind(opts: {
       ok = false;
     }
 
+    // The reaction lands after the thing happened, and only if it happened. A
+    // "that was kind of neat" over a press that found nothing would be worse
+    // than silence.
+    if (ok && intention.reaction && !g.halted()) {
+      // FRESH context: a reaction is about what just happened, so it has to read
+      // the world AFTER the press. Handing it the pre-press snapshot would make
+      // "can it see me?" ask about a camera that was not live when the tick
+      // started, which is exactly the state it is meant to be gated on.
+      const line = intention.reaction(readContext(), target);
+      if (line) await think(line, intention.mood ?? "curious");
+    }
+
     remember(memory, intention);
     // A drastic move earns the room a fresh start. Without this, an escape that
     // lands in the module it was ALREADY in leaves moduleDwellMs untouched — so

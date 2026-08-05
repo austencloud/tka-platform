@@ -26,7 +26,7 @@ import {
   watchKind,
   oneOf,
 } from "./helpers";
-import { monologueFor } from "./monologue";
+import { encounterKey, monologueFor, noteEncounter, reactionFor } from "./monologue";
 
 /** Firestore reads cost money at a jam that runs for hours. */
 const GALLERY_OPENS_PER_SESSION = 8;
@@ -73,23 +73,25 @@ export const EXPLORE_INTENTIONS: Intention[] = [
     target: (ctx) =>
       ctx.rng.pick(
         visibleAll(safe("curio")).filter(
-          (el) => !ctx.askedAbout.has(labelOf(el)),
+          (el) => !ctx.askedAbout.has(encounterKey(el)),
         ),
       ) ?? null,
     // Every curio used to get "What does X do?". Mandala and Tunnel are
     // different curiosities that happen to share a mechanism, so the line comes
-    // from the control rather than the intention.
+    // from the control rather than the intention — and the FIRST time it meets
+    // one it does not pretend to know what it wants from it.
     thought: (ctx, target) =>
       monologueFor("curio", target, ctx, "What does this one do?"),
+    reaction: (ctx, target) => reactionFor(target, ctx),
     // Only if there is one it has not already asked about — otherwise the
     // thought lies ("What does X do?" about a button it pressed four times).
     can: (ctx) =>
       has(ctx, "curio") &&
-      visibleAll(safe("curio")).some((el) => !ctx.askedAbout.has(labelOf(el))),
+      visibleAll(safe("curio")).some((el) => !ctx.askedAbout.has(encounterKey(el))),
     appeal: () => 0.5,
     perform: async (g, ctx, target) => {
       if (!target || g.halted()) return false;
-      ctx.askedAbout.add(labelOf(target));
+      noteEncounter(ctx, target);
       await g.moveAndPress(target);
       // Stay where the hand landed and watch what changed. Gliding away to a
       // corner after every press was the "moves out of the way" tell.

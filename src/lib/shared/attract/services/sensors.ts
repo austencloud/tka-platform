@@ -136,6 +136,7 @@ export function createSensors(): { sense: () => GhostWorld } {
       lingerCount: visibleAll(LINGER_SEL).length,
       cameraGranted,
       presenting: !!document.querySelector(stateSel("presenting")),
+      cameraLive: !!document.querySelector(stateSel("camera-live")),
     };
   }
 

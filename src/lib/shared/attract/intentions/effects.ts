@@ -10,7 +10,7 @@ import { visibleAll } from "../services/sensors";
 import { has, pickOf, pressKind, watchKind,
   oneOf,
 } from "./helpers";
-import { monologueFor } from "./monologue";
+import { monologueFor, noteEncounter, reactionFor } from "./monologue";
 
 export const EFFECT_INTENTIONS: Intention[] = [
   {
@@ -28,8 +28,10 @@ export const EFFECT_INTENTIONS: Intention[] = [
       ),
     can: (ctx) => has(ctx, "effect") && ctx.hasSequence,
     appeal: (ctx) => (ctx.activeEffectIds.length ? 0.45 : 0.7),
-    perform: async (g, _ctx, target) => {
+    reaction: (ctx, target) => reactionFor(target, ctx),
+    perform: async (g, ctx, target) => {
       if (!target || g.halted()) return false;
+      noteEncounter(ctx, target);
       await g.browseThenPress(target, visibleAll(safe("effect")));
       await watchKind(g, "stage", g.jitter(2200, 1500));
       return true;
@@ -114,8 +116,9 @@ export const PROP_INTENTIONS: Intention[] = [
       monologueFor("prop", target, ctx, "What if these were something else?"),
     can: (ctx) => has(ctx, "prop") && ctx.hasSequence,
     appeal: () => 0.55,
-    perform: async (g, _ctx, target) => {
+    perform: async (g, ctx, target) => {
       if (!target || g.halted()) return false;
+      noteEncounter(ctx, target);
       // Still browses a couple of alternatives first — it just commits to the
       // one it named.
       await g.browseThenPress(target, visibleAll(safe("prop")));

@@ -110,7 +110,16 @@ Features frame processing loop for pose estimation and overlay support.
   });
 </script>
 
-<div class="camera-preview">
+<!-- data-ghost-state="camera-live" is set only once the stream has actually
+     started and the video element is attached — `isActive`, not "we pressed the
+     button". The presentation-mode ghost says "Wait — can it see me?" and that
+     line must never appear over a black rectangle or a permission failure.
+     Austen (2026-08-05): "that should only happen if the camera properly
+     connects." -->
+<div
+  class="camera-preview"
+  data-ghost-state={isActive ? "camera-live" : undefined}
+>
   <div class="video-container" bind:this={videoContainer}>
     {#if isInitializing}
       <div class="loading-state">

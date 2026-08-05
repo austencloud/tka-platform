@@ -73,6 +73,12 @@ export interface GhostWorld {
    * is the opposite of being stuck.
    */
   presenting: boolean;
+  /**
+   * The camera stream is actually live and attached — not merely that the mirror
+   * was switched on. "Wait — can it see me?" must never appear over a black
+   * rectangle or a failed permission.
+   */
+  cameraLive: boolean;
 }
 
 /** Re-exported for the world's `available` map without a circular import. */
@@ -120,6 +126,7 @@ export const EMPTY_WORLD: GhostWorld = {
   lingerCount: 0,
   cameraGranted: false,
   presenting: false,
+  cameraLive: false,
 };
 
 /** What the mind remembers for the session. Survives takeover/resume. */
@@ -197,6 +204,14 @@ export interface Intention {
     ctx: GhostContext,
     target: HTMLElement | null,
   ) => Promise<boolean | void>;
+
+  /**
+   * Said AFTER the press, once the thing has actually happened. "OK, that was
+   * kind of neat" is a reaction, not a motive — it only makes sense on the way
+   * out, and the thought slot before the press cannot carry it. Return null to
+   * stay quiet, which should be most of the time.
+   */
+  reaction?: (ctx: GhostContext, target: HTMLElement | null) => string | null;
 
   /** Optional mood hint for the body. Defaults to "curious". */
   mood?: GhostMood;
