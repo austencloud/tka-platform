@@ -27,6 +27,9 @@
 <button
   class="panel-button clear-button"
   data-testid="clear-sequence-button"
+  data-ghost="safe"
+  data-ghost-kind="clear"
+  data-ghost-label="Clear sequence"
   onclick={handleClick}
   aria-label="Clear sequence"
   title="Clear sequence"

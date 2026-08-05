@@ -37,8 +37,8 @@
     aria-label={renderMode === "3d" ? "Switch to 2D" : "Switch to 3D"}
     data-tooltip={renderMode === "3d" ? "Switch to 2D" : "Switch to 3D"}
     data-ghost="safe"
-    data-ghost-kind="viewer"
-    data-ghost-state={renderMode === "3d" ? "viewer-open" : undefined}
+    data-ghost-kind="curio"
+    data-ghost-label={renderMode === "3d" ? "2D" : "3D"}
     onclick={flip}
   >
     <span class="mode-label">{renderMode.toUpperCase()}</span>

@@ -75,6 +75,18 @@ export interface AttractGhost extends AttractActHandle {
 export function createAttractGhost(opts: {
   /** The demo band — coordinate space for the ghost AND the query root. */
   getRoot: () => HTMLElement | null;
+  /**
+   * Source of randomness for CHOICES — which candidate gets pressed, how many
+   * alternatives get browsed first. Cosmetic noise (glide bow, dwell jitter,
+   * landing offset) deliberately stays on Math.random; it does not change what
+   * happens, only how it looks.
+   *
+   * The presenter passes its seeded rng so `?present=<seed>` replays the same
+   * tour rather than the same list of intention IDs with different cards
+   * clicked — the sequence a run builds is a decision, and a divergent sequence
+   * diverges every score after it. The composer attract acts omit it.
+   */
+  choose?: () => number;
 }): {
   core: AttractGhost;
   /** Wrap a cycle script into the running loop; returns the section handle. */
@@ -125,7 +137,8 @@ export function createAttractGhost(opts: {
     while (!abort() && !inViewport) await raw(200);
   }
 
-  const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]!;
+  const choose = opts.choose ?? Math.random;
+  const pick = <T>(arr: T[]): T => arr[Math.floor(choose() * arr.length)]!;
   const jitter = (base: number, spread: number) => base + Math.random() * spread;
 
   // The element the ghost is currently "hovering". Since a fake pointer can't
@@ -298,11 +311,11 @@ export function createAttractGhost(opts: {
    *  one — the "which one do I want" moment a straight pick never has. */
   async function browseAndPick(cands: HTMLElement[]): Promise<void> {
     const pool = [...cands];
-    const chosen = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]!;
-    const roll = Math.random();
+    const chosen = pool.splice(Math.floor(choose() * pool.length), 1)[0]!;
+    const roll = choose();
     const looks = roll < 0.45 ? 0 : roll < 0.85 ? 1 : 2;
     for (let i = 0; i < looks && pool.length && !halted(); i++) {
-      const alt = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]!;
+      const alt = pool.splice(Math.floor(choose() * pool.length), 1)[0]!;
       await hoverOn(alt, jitter(450, 550));
     }
     if (halted()) return;

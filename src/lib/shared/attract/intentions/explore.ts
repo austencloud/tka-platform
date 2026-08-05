@@ -27,10 +27,6 @@ import {
 
 /** Firestore reads cost money at a jam that runs for hours. */
 const GALLERY_OPENS_PER_SESSION = 8;
-let galleryOpens = 0;
-
-/** Buttons this session has already asked about, so it asks about new ones. */
-const askedAbout = new Set<string>();
 
 /**
  * The way out of a room with no visible exit, injected by the host so the bag
@@ -57,21 +53,24 @@ export const EXPLORE_INTENTIONS: Intention[] = [
     category: "explore",
     thought: (ctx) => {
       const fresh = visibleAll(safe("curio")).find(
-        (el) => !askedAbout.has(labelOf(el)),
+        (el) => !ctx.askedAbout.has(labelOf(el)),
       );
-      void ctx;
       const name = fresh ? labelOf(fresh) : "";
       return name ? `What does ${name} do?` : "What does this one do?";
     },
-    can: (ctx) => has(ctx, "curio"),
+    // Only if there is one it has not already asked about — otherwise the
+    // thought lies ("What does X do?" about a button it pressed four times).
+    can: (ctx) =>
+      has(ctx, "curio") &&
+      visibleAll(safe("curio")).some((el) => !ctx.askedAbout.has(labelOf(el))),
     appeal: () => 0.5,
     perform: async (g, ctx) => {
       const fresh = (await g.waitFor(safe("curio"), 1500)).filter(
-        (el) => !askedAbout.has(labelOf(el)),
+        (el) => !ctx.askedAbout.has(labelOf(el)),
       );
       const target = fresh.length ? ctx.rng.pick(fresh)! : null;
       if (!target || g.halted()) return false;
-      askedAbout.add(labelOf(target));
+      ctx.askedAbout.add(labelOf(target));
       await g.moveAndPress(target);
       await g.dwell(g.jitter(1600, 1200));
       return true;
@@ -96,10 +95,12 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   {
     id: "overwhelmed",
     category: "explore",
-    // Pure personality. It presses nothing, so it is always safe and always
-    // possible — the ghost is allowed to just be a little lost.
+    // Pure personality. It presses nothing, so it is always safe — but it is
+    // NOT always possible: "that's a lot of buttons" in a room with no buttons
+    // is a lie, and an always-true `can` also means the mind can never report
+    // "nothing here is satisfiable", which is the signal a trap looks like.
     thought: "…that's a lot of buttons.",
-    can: () => true,
+    can: (ctx) => Object.values(ctx.available).some((count) => count > 0),
     appeal: (ctx) => 0.12 + restlessness(ctx) * 0.15,
     mood: "unsure",
     perform: async (g, ctx) => {
@@ -168,6 +169,26 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   },
 
   {
+    id: "dismiss-blocker",
+    category: "reset",
+    thought: "Not right now, thanks.",
+    // Beats everything while a blocker is up, and it has to: an overlay with a
+    // backdrop makes every other control fail the press hit-test, so until it
+    // is gone the ghost's whole world reads as empty. On a fresh browser
+    // profile the create-tutorial prompt is the FIRST thing on screen, which
+    // means an un-dismissable blocker is a presenter that spends the entire jam
+    // standing in front of a modal saying "let's go back".
+    can: (ctx) => has(ctx, "dismiss"),
+    appeal: () => 1,
+    mood: "unsure",
+    perform: async (g, ctx) => {
+      if (!(await pressKind(g, ctx, "dismiss", 1500))) return false;
+      await g.sleep(g.jitter(900, 600));
+      return true;
+    },
+  },
+
+  {
     id: "escape-room",
     category: "reset",
     thought: "Let's go back.",
@@ -203,7 +224,9 @@ export const EXPLORE_INTENTIONS: Intention[] = [
     id: "browse-gallery",
     category: "explore",
     thought: "I wonder who else has made stuff.",
-    can: (ctx) => has(ctx, "gallery-item") && galleryOpens < GALLERY_OPENS_PER_SESSION,
+    can: (ctx) =>
+      has(ctx, "gallery-item") &&
+      ctx.budgets.galleryOpens < GALLERY_OPENS_PER_SESSION,
     appeal: () => 0.4,
     perform: async (g, ctx) => {
       const items = await g.waitFor(safe("gallery-item"), 3000);
@@ -220,12 +243,14 @@ export const EXPLORE_INTENTIONS: Intention[] = [
     id: "open-someone-elses",
     category: "explore",
     thought: "Let's look at this one properly.",
-    can: (ctx) => has(ctx, "gallery-item") && galleryOpens < GALLERY_OPENS_PER_SESSION,
+    can: (ctx) =>
+      has(ctx, "gallery-item") &&
+      ctx.budgets.galleryOpens < GALLERY_OPENS_PER_SESSION,
     appeal: () => 0.45,
     mood: "delighted",
-    perform: async (g) => {
+    perform: async (g, ctx) => {
       if (!(await browseKind(g, "gallery-item", 3000))) return false;
-      galleryOpens++;
+      ctx.budgets.galleryOpens++;
       await g.sleep(g.jitter(1600, 1000));
       await watchKind(g, "stage", g.jitter(3200, 2000), 4000);
       return true;
@@ -233,9 +258,12 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   },
 ];
 
-/** Test seam: the per-session caps are module state by design. */
+/**
+ * Test seam. The only module-level state left here is the escape hatch, which
+ * is a host-injected seam rather than session memory — everything a tour
+ * remembers now lives in GhostMemory, so it is seeded and it resets with the
+ * mind instead of surviving as a hidden global.
+ */
 export function __resetExploreSessionState(): void {
-  galleryOpens = 0;
-  askedAbout.clear();
   escapeHatch = null;
 }

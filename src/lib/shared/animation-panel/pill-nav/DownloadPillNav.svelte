@@ -105,6 +105,9 @@
       aria-label={pill.label}
       aria-pressed={activeId === pill.id}
       aria-haspopup={variant === "mobile" ? "dialog" : undefined}
+      data-ghost={activeId === pill.id ? undefined : "safe"}
+      data-ghost-kind={activeId === pill.id ? undefined : "curio"}
+      data-ghost-label={pill.label}
       style:--pill-accent={pill.accentColor ?? null}
       onclick={() => onSelect(pill.id)}
       onkeydown={(e) => handleKeydown(e, pill.id)}

@@ -30,6 +30,7 @@ import { onMount } from "svelte";
     showDontAskAgain = false,
     onDontAskAgainChange,
     confirmDelay = 0,
+    ghostConfirm = false,
   } = $props<{
     isOpen?: boolean;
     title: string;
@@ -43,6 +44,19 @@ import { onMount } from "svelte";
     onDontAskAgainChange?: (checked: boolean) => void;
     /** Delay in seconds before confirm button becomes clickable. Default: 0 (no delay) */
     confirmDelay?: number;
+    /**
+     * Let the presentation-mode ghost go through with this dialog
+     * (`.claude/rules` → attract annotations; default-deny, so it is opt-in per
+     * call site). Only for confirmations that are safe to demonstrate and
+     * undoable — clearing a sequence, applying a LOOP. NEVER for anything that
+     * deletes saved work, spends money, or touches an account: an unattended
+     * laptop at a jam must not be able to confirm those.
+     *
+     * Without this, a dialog the ghost raises and cannot dismiss is the worst
+     * state in the system — the backdrop fails every other control's hit-test,
+     * so the whole intention bag goes quiet until a human intervenes.
+     */
+    ghostConfirm?: boolean;
   }>();
 
   let dontAskAgainChecked = $state(false);
@@ -178,6 +192,11 @@ import { onMount } from "svelte";
         <button
           class="dialog-button confirm-button"
           class:delayed={isConfirmDisabled}
+          data-ghost={ghostConfirm && !isConfirmDisabled ? "safe" : undefined}
+          data-ghost-kind={ghostConfirm && !isConfirmDisabled
+            ? "confirm"
+            : undefined}
+          data-ghost-label={confirmText}
           onclick={handleConfirm}
           disabled={isConfirmDisabled}
         >

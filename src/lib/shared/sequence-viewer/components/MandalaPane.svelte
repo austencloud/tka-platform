@@ -81,9 +81,15 @@
 </script>
 
 <div class="mandala-pane" style:background={ctrl.bgColor}>
+  <!-- The presenter's `linger` intention: something worth sitting with rather
+       than pressing. The whole sequence at once is the prettiest thing in the
+       app and the ghost should be allowed to just watch it. -->
   <div
     class="mandala-stage"
     bind:this={stageEl}
+    data-ghost="safe"
+    data-ghost-kind="stage"
+    data-ghost-linger=""
     style:padding-bottom="{stagePadBottom}px"
   >
     <SequenceMandala

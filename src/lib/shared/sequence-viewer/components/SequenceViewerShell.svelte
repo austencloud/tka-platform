@@ -1387,7 +1387,12 @@
     </div>
   </header>
 
-  <div class="drawer-main">
+  <!-- The presenter reads viewer-open from the viewer itself. It used to hang
+       off the 2D/3D toggle, which meant "the viewer is open" was really "the
+       viewer is open AND in 3D" — so open-viewer stayed satisfiable while the
+       viewer sat open in 2D and the ghost kept trying to open what it was
+       already looking at. -->
+  <div class="drawer-main" data-ghost-state="viewer-open">
     <div class="drawer-body-content" bind:clientWidth={bodyWidth}>
       {#if ctx.hasSequence && ctx.effectiveSequence}
         <div

@@ -143,7 +143,15 @@
 
       <!-- Actions -->
       <div class="tour-actions">
-        <button class="skip-btn" onclick={handleSkip}>Skip</button>
+        <!-- data-ghost-kind="dismiss": see GeneratePanelTour — an overlay the
+             presenter cannot dismiss makes every room look empty. -->
+        <button
+          class="skip-btn"
+          data-ghost="safe"
+          data-ghost-kind="dismiss"
+          data-ghost-label="Skip"
+          onclick={handleSkip}>Skip</button
+        >
         <button class="next-btn" onclick={handleNext}>
           {stepEditorTourState.isLastStop ? "Got it" : "Next"}
           {#if !stepEditorTourState.isLastStop}

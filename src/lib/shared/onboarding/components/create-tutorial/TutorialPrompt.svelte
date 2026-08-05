@@ -94,7 +94,20 @@
         Start guide
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
       </button>
-      <button class="skip-button" onclick={handleSkip}> Skip for now </button>
+      <!-- The presenter's way past an unsolicited overlay. This prompt is the
+           FIRST thing a fresh browser profile sees, and its backdrop makes every
+           annotated control fail the hit-test that gates a press — so an
+           un-dismissable prompt is a presenter that stands in front of a modal
+           all night. Skip, never accept: a guided tutorial is not the tour. -->
+      <button
+        class="skip-button"
+        data-ghost="safe"
+        data-ghost-kind="dismiss"
+        data-ghost-label="Skip for now"
+        onclick={handleSkip}
+      >
+        Skip for now
+      </button>
     </div>
   </div>
 </div>

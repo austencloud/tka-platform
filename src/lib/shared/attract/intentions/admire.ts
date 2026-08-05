@@ -9,7 +9,6 @@
 import { LINGER_SEL } from "../domain/annotations";
 import type { Intention } from "../domain/intention";
 import { visibleAll } from "../services/sensors";
-import { has, watchKind } from "./helpers";
 
 export const ADMIRE_INTENTIONS: Intention[] = [
   {
@@ -29,14 +28,13 @@ export const ADMIRE_INTENTIONS: Intention[] = [
       return true;
     },
   },
-
-  {
-    id: "open-mandala",
-    category: "admire",
-    thought: "This is the whole sequence at once.",
-    can: (ctx) => has(ctx, "curio") && ctx.hasSequence && ctx.lingerCount === 0,
-    appeal: () => 0.3,
-    mood: "delighted",
-    perform: async (g) => watchKind(g, "stage", g.jitter(3500, 2500)),
-  },
 ];
+
+/*
+ * There was an `open-mandala` here. It claimed "This is the whole sequence at
+ * once" and then performed watchKind("stage") — it never opened a mandala, and
+ * its `can` was gated on `curio`, which at the time nothing in the app carried.
+ * Deleted rather than reworded: the mandala surface now carries
+ * `data-ghost-linger` (MandalaPane), so `linger` covers it honestly and the
+ * ghost sits with it because it is beautiful, which was the real intent.
+ */

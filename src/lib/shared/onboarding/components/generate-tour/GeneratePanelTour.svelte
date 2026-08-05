@@ -259,7 +259,16 @@
         {/each}
       </div>
       <div class="tour-actions">
-        <button class="ghost" onclick={handleSkip}>Skip</button>
+        <!-- data-ghost-kind="dismiss": an auto-opening tour is a blocker for the
+             presentation-mode ghost, whose whole world reads as empty behind an
+             overlay. Skip is always the safe way out. -->
+        <button
+          class="ghost"
+          data-ghost="safe"
+          data-ghost-kind="dismiss"
+          data-ghost-label="Skip"
+          onclick={handleSkip}>Skip</button
+        >
         <button class="primary" onclick={handleNext} aria-label={generateTourState.isLastStop ? "Finish tour" : "Next step"}>
           {generateTourState.isLastStop ? "Got it" : "Next"}
           {#if !generateTourState.isLastStop}

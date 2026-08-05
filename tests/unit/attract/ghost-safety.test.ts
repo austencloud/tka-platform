@@ -12,9 +12,11 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import {
   DENIED_MODULES,
+  EXTERNALLY_PROVIDED_KINDS,
   isDeniedModule,
   isDeniedPath,
   safe,
+  type GhostKind,
 } from "$lib/shared/attract/domain/annotations";
 import { EMPTY_WORLD, type GhostContext } from "$lib/shared/attract/domain/intention";
 import { createMemory } from "$lib/shared/attract/domain/scoring";
@@ -42,14 +44,17 @@ describe("ghost safety", () => {
   it("has no intention that thinks it can act in an empty world", () => {
     // A `can` that is true against nothing is a lying precondition, and a
     // lying precondition is the single thing that makes the ghost look broken.
-    // `overwhelmed` is the deliberate exception: it presses nothing at all.
+    // There is no exception any more: `overwhelmed` used to be one, on the
+    // grounds that it presses nothing — but an always-true intention also means
+    // the mind can never report "nothing here is satisfiable", which is exactly
+    // the signal a trapped ghost gives off.
     const ctx: GhostContext = {
       ...EMPTY_WORLD,
       ...createMemory(createRng(1), createTrail(() => 0)),
     };
 
     const optimistic = ALL_INTENTIONS.filter((i) => i.can(ctx)).map((i) => i.id);
-    expect(optimistic).toEqual(["overwhelmed"]);
+    expect(optimistic).toEqual([]);
   });
 
   it("gives every intention a unique id", () => {
@@ -173,6 +178,75 @@ describe("annotation integrity", () => {
       return source.includes("data-ghost-linger") && !source.includes("data-ghost-kind");
     });
     expect(offenders).toEqual([]);
+  });
+
+  /**
+   * The test the presenter was missing, and the reason five intentions shipped
+   * as dead code. Annotation hygiene was guarded; annotation EXISTENCE was not,
+   * so a kind no component carried scored zero forever in silence — green
+   * typecheck, green suite, an intention that can never fire. It is also the
+   * alarm for the reverse case: the day someone drops the `stage`/`play`
+   * annotation off AnimatorCanvas, every playback intention goes quiet and
+   * nothing else in the codebase would say a word.
+   */
+  const annotatedKinds = (() => {
+    const found = new Set<string>();
+    const kinds = new Set(Object.keys(EMPTY_WORLD.available));
+    for (const path of svelteFiles) {
+      const source = readFileSync(path, "utf8");
+      // The attribute value: a quoted literal, or a {…} expression which may be
+      // a ternary over literals or a bare identifier (a prop / $derived).
+      const spans = [...source.matchAll(/data-ghost-kind=(?:"([^"]*)"|\{([^}]*)\})/g)];
+      if (!spans.length) continue;
+      let indirect = false;
+      for (const [, literal, expression] of spans) {
+        if (literal) found.add(literal);
+        if (!expression) continue;
+        const inner = [...expression.matchAll(/"([^"]*)"/g)].map((m) => m[1]!);
+        if (inner.length) inner.forEach((k) => found.add(k));
+        // `{ghostKind}` — the kind arrives by prop. Fall back to the file's own
+        // literals, which is where such a component declares its union.
+        else indirect = true;
+      }
+      if (indirect) {
+        for (const [, literal] of source.matchAll(/"([^"]*)"/g)) {
+          if (kinds.has(literal!)) found.add(literal!);
+        }
+      }
+    }
+    return found;
+  })();
+
+  it("has at least one annotated element for every kind the bag can act on", () => {
+    const missing = (Object.keys(EMPTY_WORLD.available) as GhostKind[])
+      .filter((kind) => !EXTERNALLY_PROVIDED_KINDS.includes(kind))
+      .filter((kind) => !annotatedKinds.has(kind));
+    expect(
+      missing,
+      "kinds no component carries — every intention gated on one can never fire",
+    ).toEqual([]);
+  });
+
+  it("has no intention gated on a kind that is not in the vocabulary", () => {
+    // The other direction: an intention querying safe("whatever") that the type
+    // no longer contains would be a compile error, but a kind left in
+    // EMPTY_WORLD after its intentions were deleted is dead weight the coverage
+    // test above would then demand annotations for.
+    const bag = intentionSources()
+      .map((s) => s.source)
+      .join("\n");
+    // Kinds reach the bag as bare string arguments — safe("option"),
+    // has(ctx, "turn"), watchKind(g, "stage", …) — so match every literal and
+    // intersect with the vocabulary rather than enumerating the helpers.
+    // `[^"]*`, not `+`: an empty `""` in the source (explore.ts has two) cannot
+    // match a non-empty body, so its opening quote pairs with the NEXT
+    // literal's and every literal after it is read inside-out. That silently
+    // truncated this scan at the third file.
+    const referenced = new Set([...bag.matchAll(/"([^"]*)"/g)].map((m) => m[1]!));
+    const orphans = (Object.keys(EMPTY_WORLD.available) as GhostKind[]).filter(
+      (kind) => !referenced.has(kind) && !EXTERNALLY_PROVIDED_KINDS.includes(kind),
+    );
+    expect(orphans, "kinds in the vocabulary that no intention uses").toEqual([]);
   });
 
   it("never annotates a control inside a denied module's feature folder", () => {

@@ -78,15 +78,18 @@ export const EMPTY_WORLD: GhostWorld = {
     "start-position": 0,
     option: 0,
     "option-filter": 0,
-    "option-pager": 0,
     turn: 0,
     "step-cell": 0,
     clear: 0,
+    confirm: 0,
+    dismiss: 0,
     play: 0,
     stage: 0,
     tempo: 0,
     effect: 0,
+    "effect-param": 0,
     prop: 0,
+    "prop-picker": 0,
     "nav-module": 0,
     "nav-tab": 0,
     viewer: 0,
@@ -106,6 +109,24 @@ export interface GhostMemory {
   fatigue: Map<IntentionCategory, number>;
   /** ms spent in the current module. Rising pressure to move on. */
   moduleDwellMs: number;
+  /**
+   * Controls the ghost has already asked "what does this do?" about, so it asks
+   * about a new one next time. Lives here rather than in the intention module so
+   * the whole of what a tour remembers is seeded, inspectable via
+   * `window.__ghost.memory`, and reset with the mind rather than with an HMR
+   * reload.
+   */
+  askedAbout: Set<string>;
+  /**
+   * Per-session budgets an intention spends. An OBJECT, not loose numbers: the
+   * context handed to `perform` is a shallow copy of world + memory, so a
+   * scalar written through the context would be dropped on the floor. Anything
+   * an intention needs to increment has to live behind a reference.
+   */
+  budgets: {
+    /** Gallery opens so far. Firestore reads cost money over a four-hour jam. */
+    galleryOpens: number;
+  };
   rng: Rng;
   trail: Trail;
 }

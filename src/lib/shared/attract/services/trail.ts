@@ -23,6 +23,12 @@ export interface Trail {
   entries: () => TrailEntry[];
   /** Count of failed performs — the stall signal. */
   failures: () => number;
+  /**
+   * `now()` when the last decision landed — the liveness clock the host's
+   * watchdog reads. A trail that has not advanced in minutes is a ghost frozen
+   * in front of strangers, which nothing else in the system would notice.
+   */
+  lastAt: () => number;
 }
 
 const CAPACITY = 200;
@@ -30,13 +36,16 @@ const CAPACITY = 200;
 export function createTrail(now: () => number = () => performance.now()): Trail {
   const buffer: TrailEntry[] = [];
   const t0 = now();
+  let lastAt = t0;
 
   return {
     push: (entry) => {
-      buffer.push({ ...entry, t: Math.round(now() - t0) });
+      lastAt = now();
+      buffer.push({ ...entry, t: Math.round(lastAt - t0) });
       if (buffer.length > CAPACITY) buffer.shift();
     },
     entries: () => [...buffer],
     failures: () => buffer.filter((e) => !e.ok).length,
+    lastAt: () => lastAt,
   };
 }

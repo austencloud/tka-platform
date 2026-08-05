@@ -71,19 +71,6 @@ export const BUILD_INTENTIONS: Intention[] = [
   },
 
   {
-    id: "page-families",
-    category: "build",
-    thought: "What else is over here?",
-    can: (ctx) => has(ctx, "option-pager"),
-    appeal: () => 0.3,
-    perform: async (g, ctx) => {
-      if (!(await pressKind(g, ctx, "option-pager", 800))) return false;
-      await g.sleep(g.jitter(500, 400));
-      return true;
-    },
-  },
-
-  {
     id: "clear-and-restart",
     category: "reset",
     thought: "Let's try something completely different.",
@@ -91,6 +78,18 @@ export const BUILD_INTENTIONS: Intention[] = [
     // Only once it has actually made something and stayed a while.
     appeal: (ctx) => Math.min(0.7, ctx.sequenceLength * 0.08 + restlessness(ctx) * 0.4),
     mood: "bored",
-    perform: (g, ctx) => pressKind(g, ctx, "clear"),
+    perform: async (g, ctx) => {
+      if (!(await pressKind(g, ctx, "clear"))) return false;
+      // Clearing raises a confirmation unless the operator turned it off, and a
+      // modal the ghost walks away from is the worst state in the system: the
+      // backdrop makes every other control fail the hit-test, so the whole bag
+      // goes quiet and the tour is over until a human dismisses it. Going
+      // through with the dialog is part of the intention, not a follow-up.
+      const confirms = await g.waitFor(safe("confirm"), 1200);
+      if (!confirms.length || g.halted()) return true;
+      await g.moveAndPress(confirms[0]!);
+      await g.sleep(g.jitter(700, 500));
+      return true;
+    },
   },
 ];

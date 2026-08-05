@@ -29,6 +29,18 @@
       : "Open sequence viewer"
   );
 
+  /**
+   * The presenter's role for this button follows its purpose. In the create
+   * workspace it OPENS THE VIEWER; only public demos use it for inline
+   * playback. Annotating both cases as "play" left the presenter with nothing
+   * carrying "viewer" outside the already-open viewer, so its open-viewer
+   * intention was unreachable while play-it pressed this and narrated a viewer
+   * open as playback.
+   */
+  const ghostKind = $derived(
+    isActive ? undefined : purpose === "play" ? "play" : "viewer"
+  );
+
   // Resolve haptic feedback service
   const hapticService = getHapticFeedback();
 
@@ -45,7 +57,7 @@
   onclick={handleClick}
   aria-label={accessibleLabel}
   data-ghost={isActive ? undefined : "safe"}
-  data-ghost-kind={isActive ? undefined : "play"}
+  data-ghost-kind={ghostKind}
   data-ghost-label={accessibleLabel}
   aria-pressed={purpose === "open-viewer" ? isActive : undefined}
   title={accessibleLabel}

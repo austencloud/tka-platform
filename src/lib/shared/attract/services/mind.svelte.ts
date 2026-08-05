@@ -120,6 +120,15 @@ export function createGhostMind(opts: {
     }
 
     remember(memory, intention);
+    // A drastic move earns the room a fresh start. Without this, an escape that
+    // lands in the module it was ALREADY in leaves moduleDwellMs untouched — so
+    // the 45s stuck-gate stays open and the ghost re-escapes on every tick,
+    // narrating "let's go back" forever. Observed on a clean profile, where a
+    // first-run modal made every room look empty.
+    if (ok && intention.category === "reset") {
+      moduleEnteredAt = now();
+      memory.moduleDwellMs = 0;
+    }
     trail.push({
       intentionId: intention.id,
       thought,

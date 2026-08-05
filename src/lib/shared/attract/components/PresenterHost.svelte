@@ -15,6 +15,7 @@
   import GhostPointer from "./GhostPointer.svelte";
   import ThoughtCaption from "./ThoughtCaption.svelte";
   import { createAttractGhost } from "../services/attract-ghost.svelte";
+  import { createRng } from "../services/rng";
   import { createSensors, readRoute } from "../services/sensors";
   import { createGhostMind } from "../services/mind.svelte";
   import { ALL_INTENTIONS } from "../intentions";
@@ -24,6 +25,23 @@
 
   let { seed }: { seed?: number } = $props();
 
+  /**
+   * How long the visitor keeps the wheel after touching anything. The composer
+   * attract acts park forever on takeover, which is right for a marketing
+   * section — a visitor who took over that demo is finished with it. A kiosk is
+   * the opposite: takeover is a moment, not a state. Left un-resumed, one
+   * curious tap (or a palm on the trackpad) ends a four-hour unattended run and
+   * Austen comes back to a static screen with a dot in the corner.
+   */
+  const RESUME_AFTER_IDLE_MS = 30_000;
+  /**
+   * A tour that has not made a decision in this long is wedged on something no
+   * intention models — a modal nothing can dismiss, a route with no annotated
+   * control, a view that never finished mounting. Going home is always
+   * recoverable; standing there is not.
+   */
+  const STALL_MS = 240_000;
+
   // The ghost's coordinate space is the document body — that is also the query
   // root, so `waitFor` sees the whole app rather than one section's band. The
   // overlay is fixed, so a body that is offset from the viewport (a banner, a
@@ -31,13 +49,20 @@
   let originX = $state(0);
   let originY = $state(0);
 
-  const { core, run } = createAttractGhost({ getRoot: () => document.body });
+  // One stream feeds both halves of a decision — which intention, and which
+  // card that intention presses — so a replayed seed reproduces the actual
+  // tour, not just the list of intention ids.
+  const rng = createRng(seed);
+  const { core, run } = createAttractGhost({
+    getRoot: () => document.body,
+    choose: rng.next,
+  });
   const { sense } = createSensors();
   const mind = createGhostMind({
     intentions: ALL_INTENTIONS,
     ghost: core,
     sense,
-    seed,
+    rng,
   });
   const act = run(mind.tick);
   const ghost = act.ghost;
@@ -103,19 +128,59 @@
 
     // Takeover: a REAL pointer event means a visitor has the wheel. The core's
     // press never dispatches pointer events, so this can only ever be a human.
+    let lastHumanInputAt = 0;
     const onRealPointer = (event: PointerEvent) => {
       if (!event.isTrusted) return;
+      lastHumanInputAt = performance.now();
       act.pause();
     };
     const onKey = (event: KeyboardEvent) => {
+      // isTrusted FIRST: kill() is the one irreversible transition in the
+      // lifecycle, and an untrusted synthetic Escape — any dialog library, any
+      // shortcut layer dispatching one — must not be able to end the demo.
+      if (!event.isTrusted) return;
+      lastHumanInputAt = performance.now();
+      // Escape is the deliberate off switch: a human standing at the laptop who
+      // wants the app back for good. Everything else is a takeover.
       if (event.key === "Escape") act.kill();
-      else if (event.isTrusted) act.pause();
+      else act.pause();
     };
+
+    /**
+     * The idle-resume and stall watchdog. Both exist for the same reason: the
+     * presenter is unattended for hours and nobody is coming to nudge it.
+     */
+    // The stall clock must not count time the visitor was driving, or the first
+    // watchdog tick after a long takeover would immediately "rescue" a ghost
+    // that has simply not had a turn yet.
+    let runningSince = performance.now();
+    function watchdog(): void {
+      if (act.dead) return;
+      const idleFor = performance.now() - lastHumanInputAt;
+      if (act.paused) {
+        if (idleFor > RESUME_AFTER_IDLE_MS) {
+          runningSince = performance.now();
+          act.resume();
+        }
+        return;
+      }
+      // Only meaningful while running: a paused ghost is stalled on purpose.
+      const lastProgress = Math.max(mind.trail.lastAt(), runningSince);
+      if (performance.now() - lastProgress > STALL_MS) {
+        runningSince = performance.now();
+        console.warn(
+          `[ghost] no decision in ${Math.round(STALL_MS / 1000)}s — going home. Last trail:`,
+          mind.trail.entries().slice(-3),
+        );
+        void goHome();
+      }
+    }
 
     window.addEventListener("pointerdown", onRealPointer, { capture: true });
     window.addEventListener("keydown", onKey, { capture: true });
     window.addEventListener("resize", measure);
     const guard = setInterval(guardRoute, 1000);
+    const watch = setInterval(watchdog, 5000);
 
     act.setVisible(true);
     act.start();
@@ -123,6 +188,7 @@
     return () => {
       setEscapeHatch(null);
       clearInterval(guard);
+      clearInterval(watch);
       window.removeEventListener("pointerdown", onRealPointer, { capture: true });
       window.removeEventListener("keydown", onKey, { capture: true });
       window.removeEventListener("resize", measure);

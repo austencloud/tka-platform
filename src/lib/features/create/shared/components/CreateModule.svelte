@@ -961,6 +961,7 @@
     cancelText="Keep"
     variant="danger"
     showDontAskAgain={true}
+    ghostConfirm={true}
     onConfirm={confirmClearSequence}
     onCancel={cancelClearSequence}
     onDontAskAgainChange={handleSkipClearConfirmationChange}

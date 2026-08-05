@@ -4,8 +4,11 @@
  * is reproducible from its logged seed. Two lines now, impossible to retrofit
  * once a hundred call sites have reached for Math.random().
  *
- * The attract-ghost core keeps its own bare Math.random() for motor jitter —
- * that noise is cosmetic and does not affect which intentions get chosen.
+ * The attract-ghost core keeps bare Math.random() for motor NOISE — glide bow,
+ * dwell jitter, off-center landing. That is cosmetic. Its CHOICES (which
+ * candidate to press, how many alternatives to browse first) take this rng via
+ * `choose`, because the sequence a run builds is a decision and a divergent
+ * sequence diverges every score after it.
  */
 
 export interface Rng {

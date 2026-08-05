@@ -71,6 +71,9 @@
   aria-label="Change prop type. Current: {displayInfo.label}"
   title={displayInfo.label}
   data-testid="prop-indicator-button"
+  data-ghost="safe"
+  data-ghost-kind="prop-picker"
+  data-ghost-label="props"
 >
   <PropCompositionPreview propType={bluePropType} size={40} />
   {#if hasPendingPick}

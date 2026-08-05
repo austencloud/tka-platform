@@ -46,6 +46,8 @@ export function createMemory(rng: Rng, trail: Trail): GhostMemory {
     lastCategory: null,
     fatigue: new Map(INTENTION_CATEGORIES.map((c) => [c, 0])),
     moduleDwellMs: 0,
+    askedAbout: new Set(),
+    budgets: { galleryOpens: 0 },
     rng,
     trail,
   };

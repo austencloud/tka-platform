@@ -66,6 +66,11 @@
         role="radio"
         aria-checked={value === option.value}
         {disabled}
+        data-ghost={value === option.value || disabled ? undefined : "safe"}
+        data-ghost-kind={value === option.value || disabled
+          ? undefined
+          : "effect-param"}
+        data-ghost-label={option.label}
         onclick={() => onChange(option.value)}
       >
         {#if option.swatch != null}

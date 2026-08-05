@@ -25,23 +25,45 @@ export type GhostKind =
   | "start-position"
   | "option"
   | "option-filter"
-  | "option-pager"
   | "turn"
   | "step-cell"
   | "clear"
+  /** The confirm button of a dialog the ghost is allowed to go through with. */
+  | "confirm"
+  /**
+   * The way past an UNSOLICITED overlay — a first-run prompt, a tip, an
+   * interstitial. Distinct from `confirm`, which finishes something the ghost
+   * itself started. Any overlay with a backdrop makes every other control fail
+   * the press hit-test, so a blocker it cannot dismiss ends the tour.
+   */
+  | "dismiss"
   // playback
   | "play"
   | "stage"
   | "tempo"
   // dress-up
   | "effect"
+  /** A parameter chip inside an effect's customize panel — the dial. */
+  | "effect-param"
   | "prop"
+  /** Opens the prop drawer that `prop` lives in. */
+  | "prop-picker"
   // explore
   | "nav-module"
   | "nav-tab"
   | "viewer"
   | "gallery-item"
   | "curio";
+
+/**
+ * Kinds supplied by something other than a TKA annotation, so the coverage test
+ * cannot look for them in `src/`. Both come from @austencloud/sidebar's own
+ * markup (see NAV_MODULE_SEL / NAV_TAB_SEL below).
+ */
+export const EXTERNALLY_PROVIDED_KINDS: readonly GhostKind[] = [
+  "nav-module",
+  "nav-tab",
+];
 
 /** A pressable element of this kind, visible to the allowlist. */
 export const safe = (kind: GhostKind): string =>

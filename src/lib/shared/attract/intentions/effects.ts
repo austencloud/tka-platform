@@ -49,10 +49,14 @@ export const EFFECT_INTENTIONS: Intention[] = [
       ctx.activeEffectIds.length
         ? "A little more of that."
         : "What does this dial do?",
-    can: (ctx) => has(ctx, "curio") && ctx.activeEffectIds.length > 0,
+    // `effect-param`, not `curio`: the dial is a real thing (the chip rows in
+    // the effect customize panels) and pressing one visibly changes the effect
+    // on the stage. Pointing this at the generic curio bag meant it pressed a
+    // nav pill and then narrated it as turning a dial.
+    can: (ctx) => has(ctx, "effect-param") && ctx.activeEffectIds.length > 0,
     appeal: () => 0.35,
     perform: async (g, ctx) => {
-      if (!(await pressKind(g, ctx, "curio"))) return false;
+      if (!(await pressKind(g, ctx, "effect-param"))) return false;
       await watchKind(g, "stage", g.jitter(1600, 1000));
       return true;
     },
@@ -60,6 +64,22 @@ export const EFFECT_INTENTIONS: Intention[] = [
 ];
 
 export const PROP_INTENTIONS: Intention[] = [
+  {
+    id: "open-props",
+    category: "props",
+    thought: "Can I swap the props?",
+    // The prop tiles live in a drawer, and until this existed nothing in the
+    // bag could open it — so `try-prop` was unreachable in a normal session
+    // even though its tiles were annotated.
+    can: (ctx) => has(ctx, "prop-picker") && !has(ctx, "prop") && ctx.hasSequence,
+    appeal: () => 0.5,
+    perform: async (g, ctx) => {
+      if (!(await pressKind(g, ctx, "prop-picker"))) return false;
+      await g.sleep(g.jitter(900, 600));
+      return true;
+    },
+  },
+
   {
     id: "try-prop",
     category: "props",
