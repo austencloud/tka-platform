@@ -210,7 +210,7 @@ export class Goo2DRenderer {
     //    the drops. Nothing here persists between frames.
     this.beads.length = 0;
     for (const path of this.paths.values()) {
-      this.resampleStream(path, baseBlob, widthMul, opacity, refSpeed, sc, bodyLife, taperAt);
+      this.resampleStream(path, baseBlob, widthMul, opacity, refSpeed, sc, bodyLife, taperAt, visc);
     }
     for (const d of this.drops) {
       const fade = beadFade(d.age / d.maxAge);
@@ -352,6 +352,7 @@ export class Goo2DRenderer {
     sc: number,
     bodyLife: number,
     taperAt: number,
+    visc: number,
   ): void {
     if (path.length < 2) return;
     const spacing = baseBlob * widthMul * BEAD_SPACING;
@@ -383,6 +384,28 @@ export class Goo2DRenderer {
         alpha: opacity,
         glint: false,
       });
+
+      // A slow tip lays no arc length, so there is nothing to resample and the
+      // cap bead would sit there alone — the goo looked like it vanished
+      // whenever the prop paused. Real liquid does the opposite: it POOLS at a
+      // stationary tip and hangs. Grow a pendant below the head as speed falls,
+      // scaled by viscosity so thick goo hangs in a long teardrop and watery goo
+      // beads up small and lets go.
+      const slow = refSpeed > 0 ? 1 - Math.min(1, h.speed / (refSpeed * 0.45)) : 1;
+      if (slow > 0.05) {
+        const hang = rHead * (0.5 + visc * 1.5) * slow;
+        const lobes = 3;
+        for (let i = 1; i <= lobes; i++) {
+          const f = i / lobes;
+          this.beads.push({
+            x: h.x + Math.sin(this.clock * 1.7 + i) * rHead * 0.06 * slow,
+            y: h.y + hang * f,
+            r: rHead * (1.05 - f * 0.45) * slow,
+            alpha: opacity,
+            glint: i === 1,
+          });
+        }
+      }
     }
     // Track arc length from the head and place a bead every time the running
     // total passes the next multiple of `spacing`. Path points arrive far closer
