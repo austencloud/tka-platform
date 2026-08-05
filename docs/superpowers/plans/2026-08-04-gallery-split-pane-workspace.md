@@ -732,38 +732,209 @@ Report which route you used and the evidence that decided it.
 
 ### Steps
 
-- [ ] **Step 8.1 — reproduce and characterise the defect.** Drive Austen's
+- [x] **Step 8.1 — reproduce and characterise the defect.** Drive Austen's
   exact case (Level 3 active, add Level 2) and capture what each element
   class does: which elements have names, which animate, which snap. A
   frame-by-frame capture (screenshot at ~60 ms intervals through the
   transition, or a WAAPI dump of every running animation with its target
   pseudo) is the evidence. Confirm or correct the four failures above before
   building.
-- [ ] **Step 8.2 — name the structure.** Section headers and any snapping
+- [x] **Step 8.2 — name the structure.** Section headers and any snapping
   wrapper get names/classes. Re-run 8.1's capture and show the snap is gone.
-- [ ] **Step 8.3 — build the motion system.** The three phases above, driven
+- [x] **Step 8.3 — build the motion system.** The three phases above, driven
   by `view-transition-class`, in one module beside `results-morph.ts` so
   every path that already routes through `withResultsMorph` inherits it.
   Tokens (durations/easings) come from the design system where they exist.
-- [ ] **Step 8.4 — stagger.** Per the technique note above; measure route 1
+- [x] **Step 8.4 — stagger.** Per the technique note above; measure route 1
   before committing to it.
-- [ ] **Step 8.5 — tune by eye, not by number.** Capture the transition as a
+- [x] **Step 8.5 — tune by eye, not by number.** Capture the transition as a
   frame series at 1920 and read it: can you SEE what left, what stayed, what
   arrived? If a phase is invisible or the whole thing feels mushy, change the
   timing and look again. Iterate until the frames tell the story. This step
   is the deliverable — not the code.
-- [ ] **Step 8.6 — the degradation paths.** `prefers-reduced-motion` gets no
+- [x] **Step 8.6 — the degradation paths.** `prefers-reduced-motion` gets no
   motion (an instant, correct grid). Browsers without view transitions get
   today's plain update. Below the seam nothing changes. Verify each.
-- [ ] **Step 8.7 — guard the other surfaces.** The card class and any CSS
+- [x] **Step 8.7 — guard the other surfaces.** The card class and any CSS
   added must not leak onto the grid tab, the sheets, the builder, or the
   shop/route morphs that already use view transitions
   (`view-transitions.css` has live `shop-*`, `module-content`, `tab-content`
   names — do not disturb them). Grep-prove the scoping.
-- [ ] **Step 8.8 — verify + commit.** `npm run check`: 0 errors, 0 warnings.
+- [x] **Step 8.8 — verify + commit.** `npm run check`: 0 errors, 0 warnings.
   `npx vitest run tests/unit/browse/`: baseline failures only. Frame series
   for the Level 3 → +Level 2 case plus two other paths (a rule removal and a
   search). Explicit pathspecs. Do NOT push.
+
+## Task 8 closeout (2026-08-05)
+
+**Tooling.** chrome-devtools MCP was still gone, so verification ran over raw
+CDP against the shared debug Chrome (151) on :9222 — `Emulation.setDeviceMetrics
+Override`, `Runtime.evaluate`, `Page.captureScreenshot`. The harness that did
+the real work is a **filmstrip**: wrap `document.startViewTransition`, pause
+every `::view-transition*` animation at `ready`, then step `currentTime` and
+screenshot. That yields TRUE frames at exact instants — a plain screenshot burst
+cannot, because `Page.captureScreenshot` costs longer than the transition.
+Scripts stayed in the scratchpad.
+
+### 8.1 diagnosis — all four failures confirmed, plus two the plan did not have
+
+Measured on Austen's case (Level 3 active, add Level 2), 1920×1080:
+
+| Element | `view-transition-name` before | Verdict |
+|---|---|---|
+| `.thumbnail-container` (cards) | `sequence-<id>` | animated |
+| `.header-wrap` (section headers) | **`none`** | SNAPPED |
+| `.level-banner` | **`none`** | SNAPPED |
+| `.sectioned-virtual`, `.v-item`, `.grid-area` | **`none`** | SNAPPED |
+
+Every card animation was `props: ["opacity"]`, `dur: 250`, `easing: "linear"`,
+`delay: 0` — 8 old + 11 new, all in one undifferentiated window. So failures
+1 (only cards named), 2 (UA fade, no scale/offset/curve), 3 (no stagger) and
+4 (no sequencing) are all confirmed exactly as written.
+
+Two more the frames exposed:
+
+5. **Section names must key on `section.id`, not `section.title`.** Titles embed
+   the count (`"A (4 STEPS) (1 SEQUENCES)"`), so a section that merely GAINS
+   sequences would have exited and a stranger entered in its place. With the id,
+   the same case now measures section `persist: 4` against `exit: 1 / enter: 1`.
+6. **`--ease-out` is the wrong token for an enter here.** It is
+   `cubic-bezier(0.16, 1, 0.3, 1)` (expo-out); the frame at t=180 showed an
+   arriving card already ~85% opaque — it read as having always been there,
+   which is the very defect being fixed. Same problem mirrored on `--ease-in`
+   (expo-in) for exits: a card would sit solid then vanish in the last 50ms.
+   Both moved to `--ease-in-out` / `--ease-smooth`.
+
+**Not a defect (worth recording).** Freshly-filtered cards can snapshot as blank
+placeholders with a render progress ring. `::view-transition-new` is **live
+content**, not a frozen image — proven by pausing a transition at
+`currentTime: 200` and re-shooting the same instant 4s later: the blank cards
+were fully drawn. So the incoming thumbnails catch up INSIDE the transition, and
+a longer sequenced motion is safe. The blank window is the pictograph render
+pipeline's, not the motion system's.
+
+### Stagger route — route 1 measured dead
+
+`sibling-index()` inside `::view-transition-group(*.seq-card)`: `CSS.supports`
+returns true for `animation-delay: calc(sibling-index() * 20ms)`, the
+declaration parses, and the animation is created — but **every group resolved it
+to 1**. Eleven entering cards all reported `effect.getTiming().delay === 20`. The
+::view-transition pseudo tree does not expose sibling positions. Route 2 (WAAPI
+on the pseudo after `ready`) shipped; measured delays step cleanly
+110 / 132 / 154 / 176 / 198 / 220…
+
+### What shipped
+
+- `src/lib/shared/transitions/results-motion.css` — the three phases, driven by
+  `view-transition-class` (`seq-card`, `seq-section`), assigned in CSS under
+  `.pane-results-body` so the class and the rules that style it cannot drift.
+  `:only-child` on the old/new pseudos is what separates leaving/arriving from
+  persisting, so the exit never fights the move.
+- `src/lib/shared/transitions/results-motion.ts` — the WAAPI stagger. Captures
+  the pane's card names before the mutation (the only way to tell an arrival from
+  a survivor) and re-drives the enter in reading order after `ready`.
+- `results-morph.ts` — two lines, so **every** path already routed through
+  `withResultsMorph` inherits the motion. No new call sites.
+- `SectionedVirtualGrid.svelte` — headers and level banners named
+  (`bsec-<gid>-<sectionId>` / `blvl-<gid>-<level>`), only when the grid is inside
+  `.pane-results-body`. A per-instance `gridId` guarantees document-wide
+  uniqueness without a claim registry.
+- `+layout.svelte` — one CSS import.
+
+**Final timings** (all from design-system tokens):
+
+| Phase | Duration | Delay | Easing |
+|---|---|---|---|
+| Exit (card / section) | 180 / 160ms | 0 | `--ease-smooth` |
+| Move (group + persisting pair) | 320 / 300ms | 0 | `--ease-in-out` |
+| Enter (card / section) | 260 / 240ms | 110 / 100ms | `--ease-in-out` |
+| Enter stagger | — | +22ms per card, capped +220ms | — |
+
+Last arrival finishes at 110 + 220 + 260 = 590ms. The cap was 300ms first; the
+frame series at 2560 on a 22-card arrival showed the tail still materialising at
+t=330 when the rest had settled, and it read as lag rather than motion.
+
+### 8.5 — what the frame series showed, iteration by iteration
+
+1. **v1 (exit/move/enter in, `--ease-out`/`--ease-in`).** t=90 read correctly
+   (old fading, survivors sliding, nothing arrived yet) but t=180 showed
+   arrivals already near-solid. Diagnosed as the expo curves. Also caught the
+   section-title/count bug here.
+2. **v2 (curves swapped, id-keyed sections).** t=90: the leaving card at ~35%
+   with the survivor already moved right — space clearing, survivor travelling,
+   nothing arrived. t=180: arrivals at 15–50% in reading order beside solid
+   survivors. t=280+: settled. The three phases are individually legible.
+3. **Best demonstrator** is the search-clear case (13 → 1413): at t=180, AABB /
+   A·B / ABC have landed while AB / AKEJ / AKE / ALIΨ-IΦ are still materialising
+   at descending opacity down the reading order. You can see the grid fill in.
+
+**Honest caveat.** Austen's *exact* case is a weak demonstrator at the default
+scroll position: with sections alphabetical, the top of the viewport holds the
+same "A 4 steps" cards before and after, and the 8 arriving cards measured for
+that change are mostly below the fold. The motion is running and correct there —
+`section exit 2 / enter 3 / persist 2`, `card exit 2 / enter 8 / persist 3`, 5
+staggered — but the top-of-pane frames barely differ. What he saw pop was
+further down the pane or from a different scroll position.
+
+### Per-path evidence (1920×1080, paused-filmstrip accounting)
+
+| Case | Result change | sections exit/enter/persist | cards exit/enter/persist | staggered |
+|---|---|---|---|---|
+| A — Level 3 → +Level 2 (Austen's) | 700 → 1216 | 2 / 3 / 2 | 2 / 8 / 3 | 5 (110–198ms) |
+| B — rule chip × | 1216 → 516 | 2 / 3 / 7 | 2 / 2 / 8 | 2 (110–132ms) |
+| C — search clear | 13 → 1413 | 3 / 4 / 11 | 2 / 21 / 12 | 13 (110–330ms) |
+| 2560, remove level rule | 515 → 1412 | 1 / 1 / 4 | 2 / 22 / 5 | 14 |
+| 3840, add Level 3 | — | — | 0 / 7 / 0 | 7 (110–242ms) |
+
+### 8.6 degradation — verified live
+
+| Path | Evidence |
+|---|---|
+| `prefers-reduced-motion: reduce` | `startViewTransition` call count **0**; grid still updated (header went to "515 matches") |
+| View Transitions API absent | cards 7 → 19, header updated, no error |
+| Below the seam (900px) | no `.pane-results-body`; `isResultsMorphActive()` → `false` |
+
+### 8.7 scoping — grep-proven
+
+`seq-card` / `seq-section` appear ONLY in `results-motion.css` (plus one comment
+in `results-motion.ts`). Every rule descends from `.pane-results-body`, which is
+declared in exactly one place (`GalleryDrill.svelte:565`). `view-transitions.css`
+was not touched, so the live `shop-*`, `module-content`, `tab-content`,
+`launchpad-*` and `sequence-<id>` route morphs are byte-for-byte unchanged. The
+grid tab, both sheets and the collection builder never carry the class.
+
+### Deviations
+
+1. **`--ease-out` / `--ease-in` rejected for enter/exit** despite their token
+   labels — see failure 6 above. `--ease-in-out` and `--ease-smooth` shipped.
+2. **Stagger cap 300 → 220ms**, tuned by eye against frames, not by the plan's
+   starting number.
+3. **`view-transition-name: match-element` not used.** It keys identity to the
+   ELEMENT, and the virtualizer recycles `.v-item` nodes by index, so a header at
+   index 3 that becomes a different section would have falsely "persisted".
+   Explicit `sequence-<id>` / `bsec-<gid>-<sectionId>` names key on the DATA,
+   which is what the morph should follow.
+4. **`namesStructure` decided by `listEl.closest(".pane-results-body")`** rather
+   than a prop plumbed BrowsePanel → BrowseGrid → SectionedVirtualGrid. Same
+   ancestor the CSS uses, so the name and the class cannot end up scoped
+   differently — which is the failure mode a prop would have allowed.
+5. **The results header (rule strip + match count) was left unnamed** and still
+   snaps to the new state at t=0. That is immediate confirmation of the tap and
+   reads as feedback rather than as a defect; naming it would crossfade the match
+   count into mush. Named as a deliberate choice, not an oversight.
+
+### Known, not fixed
+
+- **Cold thumbnails render blank for a few hundred ms** after arriving. Live
+  content, so it resolves inside the transition, but on a cold cache the first
+  ~200ms of a card's enter animates a placeholder. That is `cellPreWarmer` /
+  the pictograph render pipeline's territory, not the motion system's.
+- **11 category tiles crossfade on every filter tap.** `gallery-cat-*` names
+  persist across the mutation and get the UA 250ms pair fade even though the
+  tiles do not change (only their count dots do). Harmless and arguably correct;
+  22 animations of noise per tap if it ever needs trimming.
+- Sparse results at 2560/3840 and the app-wide 4K@100% scaling gap are both
+  unchanged from the Task 6/7 closeouts.
 
 ### Note on browser tooling
 

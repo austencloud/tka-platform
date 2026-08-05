@@ -20,6 +20,10 @@
  * the Smart Collection builder — the mutation runs exactly as it does today.
  */
 import { flushSync } from "svelte";
+import {
+  captureResultsMotionState,
+  stageResultsMotion,
+} from "./results-motion";
 
 /** Surfaces currently rendering a live results grid whose changes should morph.
  *  A set (not a boolean) because a sheet can mount over the gallery: the sheet
@@ -69,9 +73,15 @@ export function startMorph(mutate: () => void): ViewTransition | null {
     return null;
   }
   inFlight = true;
+  // Which cards were on screen BEFORE the mutation. Read here, while the old
+  // DOM is still current — after `mutate` runs there is no way to tell an
+  // arriving card from a surviving one. See results-motion.ts.
+  const before = captureResultsMotionState();
   // Svelte batches; the browser captures the "after" frame the moment this
   // callback returns, so the DOM has to be current BEFORE it does.
   const transition = document.startViewTransition(() => flushSync(mutate));
+  // Every path that already routes through here inherits the staggered enter.
+  stageResultsMotion(transition, before);
   void transition.finished.catch(() => {}).finally(() => {
     inFlight = false;
   });

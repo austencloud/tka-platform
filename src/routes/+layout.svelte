@@ -17,6 +17,9 @@
   import "@austencloud/chip-toggle/css/tka-tokens.css";
   // Import modern view transitions CSS
   import "$lib/shared/transitions/view-transitions.css";
+  // Gallery results-grid filter motion (exit / move / staggered enter). Scoped
+  // to `.pane-results-body`; inert on every other surface.
+  import "$lib/shared/transitions/results-motion.css";
 
   // View Transitions driver (2026 canonical SvelteKit pattern), scoped to route
   // pairs that provide matching named participants: browse <-> sequence, the

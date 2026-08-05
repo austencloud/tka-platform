@@ -1,0 +1,161 @@
+/**
+ * Results-grid filter motion — the three phases.
+ *
+ * Task 7 made every filtering path run a view transition, and Austen's verdict
+ * was still "the other cards just pop into existence". Measured on 2026-08-05:
+ * every card animation was `["opacity"]`, 250ms, `linear`, delay 0 — the UA
+ * default — and NOTHING structural was named, so section headers, level banners
+ * and the grid wrapper all belonged to the `root` snapshot whose animation this
+ * app disables globally (`view-transitions.css` :26-29). Structure snapped while
+ * cards cross-faded, which is exactly what reads as a pop.
+ *
+ * The fix is a designed, SEQUENCED motion instead of one undifferentiated
+ * window:
+ *
+ *   Exit   cards/sections leaving: fade + settle back to 0.96. Fast — the eye
+ *          does not need to study what is going away.
+ *   Move   cards that persist: the group FLIPs them to their new slots. This is
+ *          the motion Austen already praised; only its curve and length change.
+ *   Enter  cards arriving: fade + scale up from 0.92 with a lift, STAGGERED in
+ *          reading order (`results-motion.ts` — CSS cannot do the stagger; see
+ *          that file for the measurement that proved it).
+ *
+ * The overlap is the point: space clears, survivors travel, newcomers land.
+ *
+ * SCOPING. `view-transition-class` is assigned only under `.pane-results-body`
+ * — the gallery split pane's right column, the one surface with a live results
+ * grid. The grid tab, the filter/add sheets, the smart-collection builder and
+ * the shop/route morphs never carry the class, so none of the `*.seq-card` /
+ * `*.seq-section` rules below can reach them.
+ */
+
+/* ── Who opts in ──────────────────────────────────────────────────────────
+   Assigned in CSS rather than plumbed as a prop so the class and the rules
+   that style it can never drift apart: one selector owns both. */
+.pane-results-body .thumbnail-container {
+  view-transition-class: seq-card;
+}
+
+.pane-results-body .header-wrap,
+.pane-results-body .level-banner {
+  view-transition-class: seq-section;
+}
+
+/* ── Phase 2: MOVE ────────────────────────────────────────────────────────
+   The group owns position/size for every named element, whether it persists,
+   leaves or arrives. Longer than the UA's 250ms and properly eased so a card
+   travelling across the grid reads as one object moving. */
+::view-transition-group(*.seq-card) {
+  animation-duration: 320ms;
+  animation-timing-function: var(--ease-in-out, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+::view-transition-group(*.seq-section) {
+  animation-duration: 300ms;
+  animation-timing-function: var(--ease-in-out, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+/* A card that persists has BOTH an old and a new image; the pair cross-fades
+   while the group travels. Match the move length so the fade does not finish
+   early and strand the last third of the journey on a hard-edged image. */
+::view-transition-old(*.seq-card),
+::view-transition-new(*.seq-card) {
+  animation-duration: 320ms;
+  animation-timing-function: var(--ease-in-out, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+::view-transition-old(*.seq-section),
+::view-transition-new(*.seq-section) {
+  animation-duration: 300ms;
+  animation-timing-function: var(--ease-in-out, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+/* ── Phase 1: EXIT ────────────────────────────────────────────────────────
+   `:only-child` is what separates "leaving" from "persisting": an element that
+   exists on one side only is the sole child of its ::view-transition-image-pair.
+   Without this guard the exit would also be applied to the old half of every
+   surviving card and fight the move. */
+::view-transition-old(*.seq-card):only-child {
+  animation: seq-card-exit 180ms
+    var(--ease-smooth, cubic-bezier(0.25, 0.1, 0.25, 1)) both;
+}
+
+::view-transition-old(*.seq-section):only-child {
+  animation: seq-section-exit 160ms
+    var(--ease-smooth, cubic-bezier(0.25, 0.1, 0.25, 1)) both;
+}
+
+/* ── Phase 3: ENTER ───────────────────────────────────────────────────────
+   Starts ~110ms in, after the exit has cleared most of its opacity, so the
+   phases read as distinct rather than as one mush. The per-card stagger is
+   layered on top of this by `results-motion.ts`; these rules are the baseline
+   that still produces a designed (if unstaggered) enter when the script path
+   cannot run. */
+::view-transition-new(*.seq-card):only-child {
+  animation: seq-card-enter 260ms
+    var(--ease-in-out, cubic-bezier(0.4, 0, 0.2, 1)) 110ms both;
+}
+
+::view-transition-new(*.seq-section):only-child {
+  animation: seq-section-enter 240ms
+    var(--ease-in-out, cubic-bezier(0.4, 0, 0.2, 1)) 100ms both;
+}
+
+@keyframes seq-card-exit {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes seq-card-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes seq-section-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes seq-section-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Degradation ──────────────────────────────────────────────────────────
+   `startMorph` already refuses to open a transition under reduced motion, so
+   the grid simply updates. This is the belt-and-braces half: if a transition
+   is ever started some other way, it resolves instantly instead of animating. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*.seq-card),
+  ::view-transition-old(*.seq-card),
+  ::view-transition-new(*.seq-card),
+  ::view-transition-group(*.seq-section),
+  ::view-transition-old(*.seq-section),
+  ::view-transition-new(*.seq-section) {
+    animation: none !important;
+  }
+}

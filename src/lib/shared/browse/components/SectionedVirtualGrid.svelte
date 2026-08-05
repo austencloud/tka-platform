@@ -161,6 +161,11 @@
         type: "header";
         key: string;
         sectionTitle: string;
+        /** Stable across result-set changes — unlike `sectionTitle`, which
+         *  embeds the sequence count. Drives the view-transition name so a
+         *  section that merely gains sequences MOVES instead of exiting and
+         *  re-entering as a different section. */
+        sectionId: string;
         label: string;
         count: number;
         hideSteps: boolean;
@@ -211,6 +216,7 @@
         type: "header",
         key: `h-${s.id}`,
         sectionTitle: s.title,
+        sectionId: s.id,
         label: isLevel ? letterTitle(s.title) : s.title,
         count: display.length,
         hideSteps: stepsRedundant,
@@ -467,6 +473,51 @@
     if (preWarmTimer) clearTimeout(preWarmTimer);
   });
 
+  // ── Structural view-transition names ───────────────────────────────────
+  // Cards were the ONLY named elements in the results grid, so section headers
+  // and level banners belonged to the `root` snapshot — whose animation the app
+  // disables globally (`shared/transitions/view-transitions.css`). Measured
+  // 2026-08-05: on a Level 3 → +Level 2 change, `.header-wrap`, `.level-banner`
+  // and `.sectioned-virtual` all reported `view-transition-name: none`, so every
+  // piece of structure SNAPPED while the cards animated. When the section set
+  // changes — which it does on almost every filter change — that snap is most of
+  // what the eye sees. Naming them lets them move, fade and arrive instead.
+  //
+  // Named ONLY inside the gallery's live results pane, matched by the same
+  // ancestor `results-motion.css` uses to assign the `view-transition-class`.
+  // Deciding it here from the DOM rather than plumbing a prop through
+  // BrowsePanel → BrowseGrid keeps the class and the name inseparable: they
+  // cannot end up scoped differently. Every other host (grid tab, filter sheet,
+  // add-sequences sheet, collection builder) keeps unnamed structure, so the
+  // card → /sequence/[id] route morph is untouched.
+  let namesStructure = $state(false);
+  onMount(() => {
+    namesStructure = !!listEl?.closest(".pane-results-body");
+  });
+
+  // Names must be unique document-wide. A per-instance prefix guarantees that
+  // without a claim registry: no two elements inside ONE grid share a section
+  // title, and two mounted grids can never collide.
+  const gridId = `g${Math.random().toString(36).slice(2, 8)}`;
+
+  /** Section ids carry spaces, `·` and TKA glyphs; a view-transition-name must
+   *  be a custom-ident. The `bsec-<gid>-` prefix also guarantees it never
+   *  starts with a digit.
+   *
+   *  Keyed on the section ID, never the title: titles embed the sequence count
+   *  ("A (4 STEPS) (1 SEQUENCES)"), so a title-keyed name made every section
+   *  whose count moved look like a DIFFERENT section — it exited and a
+   *  stranger entered in its place. Caught by reading the frame series. */
+  function sectionName(id: string): string | undefined {
+    if (!namesStructure) return undefined;
+    return `bsec-${gridId}-${id.replace(/[^A-Za-z0-9_-]/gu, "_")}`;
+  }
+
+  function bannerName(level: number): string | undefined {
+    if (!namesStructure) return undefined;
+    return `blvl-${gridId}-${level}`;
+  }
+
   function handleAction(
     action: string,
     sequence: SequenceData,
@@ -502,14 +553,21 @@
         style:transform="translateY({vi.start - scrollMargin}px)"
       >
         {#if it.type === "banner"}
-          <div class="level-banner">
+          <div
+            class="level-banner"
+            style:view-transition-name={bannerName(it.level)}
+          >
             <DifficultyBadge level={it.level} size="34px" />
             <span class="level-banner-title">Level {it.level}</span>
             <span class="level-banner-count">{it.levelTotal}</span>
             <div class="level-banner-divider"></div>
           </div>
         {:else if it.type === "header"}
-          <div class="header-wrap" class:under-level={it.isLevel}>
+          <div
+            class="header-wrap"
+            class:under-level={it.isLevel}
+            style:view-transition-name={sectionName(it.sectionId)}
+          >
             <SectionHeader
               title={it.label}
               count={it.count}
