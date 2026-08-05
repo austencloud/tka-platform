@@ -265,8 +265,97 @@ Three findings from doing it, which change what Task 2 must assume:
    the eye lift (Task 3), not before** — the wall is marked with this in the
    source.
 
-**Tasks 2–5 — not started.**
+**Task 2 — DONE.** `sundial-layout.ts` + `tests/unit/museum/sundial-layout.test.ts`
+(11 tests, all green; `npx vitest run tests/unit/museum/` = 27 files, 295 tests;
+`svelte-check` 0 errors). Two corrections the tests forced:
+
+1. **The centre snaps to a tile CENTRE, not a tile boundary.** Task 1's
+   `snapToTileCentre` rounded to the boundary, which put the layout's centre
+   0.25 m off the performer ring — the new "all four performers at r=6.5"
+   assertion failed at 6.25. The shared expression is now
+   `sunChamberCentreMetres()` in `sundial-layout.ts`, built on
+   `tileCentredOffset`, and the floor plan imports it instead of deriving its
+   own. One centre, two consumers.
+2. **The bay needed 0.5 m more depth.** Because the centre sits on a tile
+   centre it is a quarter-metre south of 10 + 12, so at
+   `minInteriorHeight: 45` (34.0 m) the ⌀24 chamber's south edge landed inside
+   the south wall. Now 46 → 34.5 m. The layout throws if this ever regresses.
+
+**Task 3 — DONE (graybox depth).** Eye radius/top/speed constants,
+`updraftAt` lift at dead centre, rising plinth whose top tracks the visitor's
+feet, and a two-half iris that finishes opening at 60% of the ride. The east
+door is still in place: it goes with the Moon transition, not with the lift
+alone (see Task 1 finding 3).
+
+**Task 4 — DONE.** `SundialGraybox.svelte`, registered in `Museum3DScene`.
+Polar geometry throughout (ring/circle/arc), the spiral drawn from the same
+equation `onCrossing` tests against, and the sun re-aimed from
+`playerPosition` every frame.
+
+**Task 5 — DONE, and the gate did NOT pass.** See Loose ends.
 
 ## Loose ends
 
-Append what the frames actually show.
+Frames at 1920×1080, webp/70, seeded via `initScript`. Measured with
+`evaluate_script`, not eyeballed.
+
+**What works, verified:**
+
+- **The sun really is driven by the visitor.** Measured light positions:
+  standing on the north rim (r=10.5) put it at `(99.5, 12.5, 40)` — 18°
+  elevation, due north, on the visitor's own bearing. Standing near the centre
+  (r≈1.8) put it at `(99.5, 39.1, 86.5)` — 73°. That is the mapping working,
+  not an assumption about it.
+- **The ring is real and symmetric.** Four performers on four pillars, all at
+  exactly 6.5 m in the compiled grid, the disc/rim/collapse/spiral/wall all
+  render, and the chamber reads as a round room.
+- **Shadow mapping is live**: 2048², ortho ±14, PCFSoft, autoUpdate on.
+
+**Two defects found by looking, and fixed:**
+
+1. **The chamber wall was casting the entire room into shadow.** An 11 m wall
+   between a 40 m-out directional light and the room is a lid. The first frame
+   of this room had no shadows in it at all, only hemisphere fill. The roof
+   here has collapsed, so the wall now receives and does not cast.
+2. **The ceiling medallion was casting a ⌀8 m disc over the noon frame.** At
+   zenith it sits exactly over the centre disc, so the visitor arrived at noon
+   and stood in the dark. It no longer casts.
+
+**The gate — Task 5 Step 4 — did not pass, and the reason is geometric, not
+tuning.** Standing at the centre, each performer's prop path does NOT read as a
+disc of notation. Two causes, both structural:
+
+1. **The sun sits on the visitor's own bearing, so every shadow in the room
+   points directly away from the visitor** — and is therefore occluded by its
+   own caster from the one viewpoint that matters. The parallel-shadows idea is
+   intact and it is a good one, but "at your back" also means "behind the
+   thing casting it."
+2. **The performers stand on pillars in a 3.6 m-deep pit.** At noon their
+   shadows land at their own feet, on the ring floor, at the bottom of the
+   collapse and behind the pillar body. The surface the notation is drawn on is
+   the one surface you cannot see from the disc.
+
+This needs rethinking, not polishing. The cheapest ideas that keep the design's
+commitments (shadows are the exhibit; elevation is distance; the visitor's walk
+drives the day) are: raise the ring floor toward the disc so it is a readable
+plane rather than a pit; or drop the pillars so the props are near floor level
+and their noon shadows spread outward across the pale ring; or offset the sun a
+few degrees off the visitor's exact bearing so shadows splay to one side
+instead of hiding directly behind. That is Austen's call, not mine — the choice
+changes what the room means.
+
+**Also found, worth its own fix:**
+
+- **`?room=cave-sun` drops the visitor into the collapse ring.** The teleport's
+  spawn search uses the game's tile-level `SOLID_TYPES` and knows nothing about
+  a terrain program's `blockedAt`, so it happily seeded `(100, 73.5)` — r=4.5,
+  inside the blocked ring. Every earlier bay was rectangular and tile-shaped, so
+  this never bit before. The spawn search should consult
+  `grid.terrain?.blockedAt` when one exists.
+- **Frame cost was not measured.** The page was reloaded repeatedly by other
+  sessions' HMR during the pass and a clean timing window never opened. Task 5
+  Step 5 is still open.
+- **A stale `:5174` tab from the previous session wedged Chrome DevTools MCP**
+  (`Network.enable timed out` on every call, including `list_pages`). Closing it
+  via `http://127.0.0.1:9222/json/close/<id>` fixed it instantly. Worth knowing
+  before diagnosing the MCP server.

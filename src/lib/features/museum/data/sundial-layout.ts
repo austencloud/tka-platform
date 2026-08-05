@@ -1,0 +1,622 @@
+/**
+ * The Sundial — Vulcan Cave sun bay.
+ *
+ * Same contract as the water, fire, earth and air bays: pure geometry that,
+ * given the compiled cave grid, derives world-space elevation zones, blocked
+ * regions and EVERY shape the graybox renders. The physics provider consumes
+ * elevationAt/blockedAt; the graybox reads the same lists and the same polar
+ * helpers. One geometry source — a shape the graybox draws that this module
+ * does not know about is a bug by construction.
+ *
+ * ── What makes this room different from the other four ──────────────────────
+ *
+ * The other bays are rectangles. This one is polar, and the polar frame is not
+ * decoration: the visitor's BEARING from the chamber centre is the sun's
+ * azimuth and their DISTANCE from it is the sun's elevation, so walking inward
+ * walks the day to noon. The sun sits on the visitor's own bearing — at their
+ * back — which makes every shadow in the room, the four performers' and their
+ * own, run parallel with theirs. The spiral crossing is the only way in, and it
+ * sweeps exactly 90° while it winds from r=9 to r=4, so the walk to zenith
+ * performs Quarter-Same's own phase offset with the visitor's body.
+ *
+ * ── Why the chamber centre is not the room centre ───────────────────────────
+ *
+ * The northern SUN_CRACK_RUN_M of the interior is the rising light crack, so
+ * the ⌀24 m chamber occupies the southern 24 m and its centre sits 5 m south of
+ * the bay's own centre. Every polar quantity in this file is measured about
+ * THAT centre. The floor plan places its four performers from the same two
+ * exported helpers below, so the pillars and the sun mapping can never end up
+ * on different axes.
+ *
+ * There is not one absolute world coordinate in this file: every offset is
+ * metres measured from a compiled room bound or a real door tile span.
+ */
+import type {
+  MuseumGrid,
+  MuseumTerrainProgram,
+} from "../domain/museum-grid-types";
+import {
+  TILE_METRES,
+  WALL_THICKNESS,
+  WATERLINE_Y,
+  bandRects,
+  doorSpan,
+  inRectClosed,
+  spansExcluding,
+  tileCentredOffset,
+  unionRect,
+  type CeilingRect,
+  type FloorRect,
+  type Point2,
+  type WallRect,
+  type WorldRect,
+} from "./drowned-gallery-terrain";
+
+const TILE = TILE_METRES;
+const HALF = TILE / 2;
+
+// ── Room ids ────────────────────────────────────────────────────────────────
+
+export const SUN_ROOM_ID = "cave-sun";
+export const AIR_ROOM_ID_FOR_SUN = "cave-air";
+
+// ── Chamber metrics (metres) ────────────────────────────────────────────────
+//
+// These four are the room's whole plan, and the floor plan imports them so the
+// performer ring and the sun mapping are derived from one set of numbers.
+
+/** Depth of the north light crack, measured from the interior's north edge. */
+export const SUN_CRACK_RUN_M = 10;
+/** The round chamber is ⌀24. */
+export const SUN_CHAMBER_RADIUS_M = 12;
+/** The four Quarter-Same pillars stand on this circle. */
+export const SUN_PILLAR_RADIUS_M = 6.5;
+/** Cap radius of a pillar — ⌀2.2, wide enough to stand a performer on. */
+export const SUN_PILLAR_CAP_RADIUS_M = 1.1;
+
+/**
+ * The chamber centre in INTERIOR metres (from the interior's minimum edges),
+ * given the room's full tile span. The floor plan calls this before the grid
+ * exists, to place performers; `buildSundialLayout` calls it after, off the
+ * compiled wing bounds. Same expression both times, which is the point.
+ *
+ * `tileCentredOffset` is what makes the four radii equal. A performer lands on
+ * a tile CENTRE, which is a quarter-metre off every interior edge, so a centre
+ * placed on a tile boundary instead pushes the east pillar to r=6.25 and the
+ * west to r=6.75 — an asymmetric ring in the one room whose entire subject is
+ * four-fold rotational symmetry. The first build of this module rounded to the
+ * boundary and the ring test caught it at 6.25 m.
+ */
+export function sunChamberCentreMetres(roomWidthTiles: number): {
+  xMetres: number;
+  zMetres: number;
+} {
+  return {
+    xMetres: tileCentredOffset(((roomWidthTiles - 2) * TILE) / 2),
+    zMetres: tileCentredOffset(SUN_CRACK_RUN_M + SUN_CHAMBER_RADIUS_M),
+  };
+}
+
+// ── Datums (metres; museum floor = 0) ───────────────────────────────────────
+
+/** Both doors sit on the museum datum; the chamber floor is cut below it. */
+export const SUN_DOOR_Y = 0;
+/** The rim walk, r ∈ [9, 12] — where the day starts, sun ~8° above the horizon. */
+export const SUN_RIM_Y = -0.4;
+/** The centre disc, r ≤ 4 — noon, and the pale ring the shadows retract onto. */
+export const SUN_DISC_Y = -0.2;
+/** The collapsed ring floor, 4 < r < 9. Seen, never walked. */
+export const SUN_RING_FLOOR_Y = -4.0;
+/** Top of a pillar cap — the performers stand here, above the collapse. */
+export const SUN_PILLAR_TOP_Y = 0.4;
+
+export const SUN_CEILING_Y = 11.0;
+export const SUN_CORRIDOR_CEILING_Y = 2.6;
+
+/**
+ * The ceiling medallion the eye's hatch opens in. Solid stone over the disc;
+ * everything outside it, out to the chamber wall, is the collapsed opening the
+ * sky comes through.
+ */
+export const SUN_MEDALLION_RADIUS_M = 4.0;
+
+// ── The spiral crossing ─────────────────────────────────────────────────────
+
+/** Radius where the crossing leaves the rim. */
+export const CROSSING_OUTER_R = 9;
+/** Radius where it meets the centre disc. */
+export const CROSSING_INNER_R = 4;
+/** Half-width of the walkable crossing, metres. */
+export const CROSSING_HALF_WIDTH = 1.0;
+/** The sweep, locked: a quarter of the compass, no more and no less. */
+export const CROSSING_SWEEP = Math.PI / 2;
+
+// ── The sun ─────────────────────────────────────────────────────────────────
+
+/** Elevation at the chamber centre: dead overhead. */
+export const SUN_ZENITH_DEG = 90;
+/** Elevation at the chamber wall: dawn, raking the room end to end. */
+export const SUN_HORIZON_DEG = 8;
+
+// ── The eye ─────────────────────────────────────────────────────────────────
+
+/** The lift at dead centre — stand here and the ground carries you to Moon. */
+export const EYE_RADIUS_M = 1.0;
+/** Underside of the medallion: where the plinth stops and the hatch is. */
+export const EYE_TOP_Y = SUN_CEILING_Y - 0.6;
+/**
+ * Lift speed. Air's UPDRAFT_SPEED is 1.0 and Austen has never signed off on
+ * that rate either, so this is deliberately one constant to re-tune.
+ */
+export const EYE_SPEED = 1.2;
+
+// ── Types ───────────────────────────────────────────────────────────────────
+
+export interface SundialPillar {
+  id: string;
+  centre: Point2;
+  radius: number;
+  topY: number;
+}
+
+export interface SundialLayout {
+  /** Interior world rect of the sun bay. */
+  interior: WorldRect;
+  /** Full wing footprint including its wall ring — the rendered floor slab. */
+  shell: WorldRect;
+  /** Corridor tiles between the Air south door and the sun north door. */
+  corridor: WorldRect[];
+
+  /** Centre of the round chamber. Origin for every polar quantity here. */
+  centre: Point2;
+  chamberRadius: number;
+  discRadius: number;
+  ringInner: number;
+  ringOuter: number;
+
+  /** The four Quarter-Same pillars, in the collapse ring. */
+  pillars: SundialPillar[];
+
+  /** Bearing where the crossing leaves the rim, and where it meets the disc. */
+  crossingStartTheta: number;
+  crossingEndTheta: number;
+
+  /** Ramped walks from each real door tile to the chamber rim. */
+  approaches: FloorRect[];
+
+  // ── everything the graybox renders ──
+  floorRects: FloorRect[];
+  wallRects: WallRect[];
+  ceilingRects: CeilingRect[];
+
+  /** Union bbox of the sun bay. The terrain answers only inside it. */
+  bayBounds: WorldRect;
+
+  // ── the room's mechanism, shared by physics and the graybox ──
+  blockedAt(x: number, z: number): boolean;
+  elevationAt(x: number, z: number, fromY?: number): number;
+  /** Sun elevation in degrees for a visitor standing here. */
+  sunElevationDeg(x: number, z: number): number;
+  /** Sun azimuth — the visitor's OWN bearing, so the sun is at their back. */
+  sunAzimuth(x: number, z: number): number;
+
+  probes: {
+    entry: Point2;
+    rim: Point2;
+    crossingStart: Point2;
+    crossingMid: Point2;
+    centre: Point2;
+    /** Inside the collapse ring, off the crossing — must be blocked. */
+    ringGap: Point2;
+    exit: Point2;
+  };
+}
+
+// ── Small helpers ───────────────────────────────────────────────────────────
+
+const cx = (r: WorldRect) => (r.minX + r.maxX) / 2;
+const cz = (r: WorldRect) => (r.minZ + r.maxZ) / 2;
+
+/** World rect of a wing's FULL tile footprint, wall ring included. */
+function outerWorldRect(b: {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}): WorldRect {
+  return {
+    minX: b.x * TILE - HALF,
+    minZ: b.y * TILE - HALF,
+    maxX: (b.x + b.width - 1) * TILE + HALF,
+    maxZ: (b.y + b.height - 1) * TILE + HALF,
+  };
+}
+
+/** Smallest signed angular difference, wrapped to [-π, π]. */
+function angleDelta(a: number, b: number): number {
+  const d = a - b;
+  return Math.atan2(Math.sin(d), Math.cos(d));
+}
+
+// ── Layout ──────────────────────────────────────────────────────────────────
+
+export function buildSundialLayout(grid: MuseumGrid): SundialLayout | null {
+  const sunWing = grid.wings.find((w) => w.id === SUN_ROOM_ID);
+  const airWing = grid.wings.find((w) => w.id === AIR_ROOM_ID_FOR_SUN);
+  if (!sunWing || !airWing) return null;
+
+  const shell = outerWorldRect(sunWing.bounds);
+  const interior: WorldRect = {
+    minX: shell.minX + TILE,
+    maxX: shell.maxX - TILE,
+    minZ: shell.minZ + TILE,
+    maxZ: shell.maxZ - TILE,
+  };
+
+  const northDoor = doorSpan(grid, SUN_ROOM_ID, "north");
+  const eastDoor = doorSpan(grid, SUN_ROOM_ID, "east");
+  if (!northDoor || !eastDoor) {
+    throw new Error(
+      "Sundial layout: a door on the sun route is missing from the compiled grid"
+    );
+  }
+
+  // ── The chamber. Its centre comes off the SAME expression the floor plan
+  // uses to place the four performers, so pillar radii and the polar sun
+  // mapping are guaranteed to share an origin.
+  const centreMetres = sunChamberCentreMetres(sunWing.bounds.width);
+  const centre: Point2 = {
+    x: interior.minX + centreMetres.xMetres,
+    z: interior.minZ + centreMetres.zMetres,
+  };
+
+  const chamberRadius = SUN_CHAMBER_RADIUS_M;
+  if (
+    centre.z + chamberRadius > interior.maxZ + 0.01 ||
+    centre.x + chamberRadius > interior.maxX + 0.01 ||
+    centre.x - chamberRadius < interior.minX - 0.01
+  ) {
+    throw new Error(
+      "Sundial layout: the ⌀24 m chamber overruns the sun bay — enlarge cave-sun"
+    );
+  }
+
+  // ── Where the crossing leaves the rim: the bearing of the north door, so the
+  // visitor arrives facing the one route in. Derived from the compiled door,
+  // never a hardcoded compass point.
+  const northDoorX = (northDoor.min + northDoor.max) / 2;
+  const crossingStartTheta = Math.atan2(
+    northDoorX - centre.x,
+    interior.minZ - centre.z
+  );
+  const crossingEndTheta = crossingStartTheta + CROSSING_SWEEP;
+
+  // ── The four pillars, on the same circle as the stations. Bearings are the
+  // compass points the floor plan uses: north, east, south, west.
+  const pillars: SundialPillar[] = (
+    [
+      ["u", 0, -SUN_PILLAR_RADIUS_M],
+      ["s", SUN_PILLAR_RADIUS_M, 0],
+      ["v", 0, SUN_PILLAR_RADIUS_M],
+      ["t", -SUN_PILLAR_RADIUS_M, 0],
+    ] as const
+  ).map(([suffix, dx, dz]) => ({
+    id: `sun-pillar-${suffix}`,
+    centre: { x: centre.x + dx, z: centre.z + dz },
+    radius: SUN_PILLAR_CAP_RADIUS_M,
+    topY: SUN_PILLAR_TOP_Y,
+  }));
+
+  // A pillar sitting on the crossing would put a performer in the visitor's
+  // path and break the only route in. Asserted rather than eyeballed.
+  for (const pillar of pillars) {
+    const dx = pillar.centre.x - centre.x;
+    const dz = pillar.centre.z - centre.z;
+    const theta = Math.atan2(dx, dz);
+    const r = Math.hypot(dx, dz);
+    if (onCrossing(r, theta, crossingStartTheta, pillar.radius)) {
+      throw new Error(
+        `Sundial layout: pillar ${pillar.id} stands on the spiral crossing — the only route to the centre is blocked`
+      );
+    }
+  }
+
+  // ── Door approaches. Both doors sit on the museum datum and the rim is 0.4 m
+  // below it, so each approach is a short ramp rather than a step. The east
+  // door is the one the design deletes with the eye lift; until then it is the
+  // only route to Moon, so it gets a real walk like any other door.
+  const APPROACH_HALF_WIDTH = 3.0;
+  const northApproach: WorldRect = {
+    minX: northDoorX - APPROACH_HALF_WIDTH,
+    maxX: northDoorX + APPROACH_HALF_WIDTH,
+    minZ: interior.minZ,
+    maxZ: centre.z - chamberRadius + 0.5,
+  };
+  const eastDoorZ = (eastDoor.min + eastDoor.max) / 2;
+  const eastApproach: WorldRect = {
+    minX: centre.x + chamberRadius - 0.5,
+    maxX: interior.maxX,
+    minZ: eastDoorZ - APPROACH_HALF_WIDTH,
+    maxZ: eastDoorZ + APPROACH_HALF_WIDTH,
+  };
+  const approaches: FloorRect[] = [
+    {
+      id: "sun-approach-north",
+      rect: northApproach,
+      kind: "ramp-z",
+      fromY: SUN_DOOR_Y,
+      toY: SUN_RIM_Y,
+    },
+    {
+      id: "sun-approach-east",
+      rect: eastApproach,
+      kind: "ramp-x",
+      fromY: SUN_RIM_Y,
+      toY: SUN_DOOR_Y,
+    },
+  ];
+
+  // ── Corridor from Air. Air and Sun both suppress their tile geometry, so the
+  // corridor between them is suppressed too and this module owns it.
+  const ab = airWing.bounds;
+  const sb = sunWing.bounds;
+  const corridorTxMin = Math.min(ab.x, sb.x) - 2;
+  const corridorTxMax = Math.max(ab.x + ab.width, sb.x + sb.width) + 2;
+  const corridor = bandRects(
+    grid,
+    corridorTxMin,
+    corridorTxMax,
+    ab.y + ab.height,
+    sb.y,
+    (t) => t === "corridor" || t === "door"
+  );
+  const corridorWalls = bandRects(
+    grid,
+    corridorTxMin,
+    corridorTxMax,
+    ab.y + ab.height,
+    sb.y - 1,
+    (t) => t === "wall"
+  );
+
+  // ── Floor rects. These exist so the terrain program and the graybox share a
+  // list for the RECTANGULAR parts of the bay — the approaches and the
+  // corridor. Everything inside the chamber is polar and is answered by the
+  // closed-form helpers below, not by walking rects.
+  const floorRects: FloorRect[] = [
+    ...approaches,
+    ...corridor.map((rect, i) => ({
+      id: `sun-corridor-${i}`,
+      rect,
+      kind: "flat" as const,
+      fromY: SUN_DOOR_Y,
+      toY: SUN_DOOR_Y,
+    })),
+  ];
+
+  // ── Wall rects: envelope with gaps derived from real door tiles ───────────
+  const baseY = SUN_RING_FLOOR_Y - 1.0;
+  const wallRects: WallRect[] = [];
+  const pushWall = (id: string, rect: WorldRect, top: number) => {
+    if (rect.maxX - rect.minX > 0.01 && rect.maxZ - rect.minZ > 0.01) {
+      wallRects.push({ id, rect, baseY, topY: top });
+    }
+  };
+
+  for (const [x0, x1] of spansExcluding(shell.minX, shell.maxX, [northDoor])) {
+    pushWall(
+      `sun-north-${x0.toFixed(2)}`,
+      { minX: x0, maxX: x1, minZ: shell.minZ - WALL_THICKNESS, maxZ: shell.minZ },
+      SUN_CEILING_Y
+    );
+  }
+  pushWall(
+    "sun-south",
+    {
+      minX: shell.minX,
+      maxX: shell.maxX,
+      minZ: shell.maxZ,
+      maxZ: shell.maxZ + WALL_THICKNESS,
+    },
+    SUN_CEILING_Y
+  );
+  pushWall(
+    "sun-west",
+    {
+      minX: shell.minX - WALL_THICKNESS,
+      maxX: shell.minX,
+      minZ: shell.minZ - WALL_THICKNESS,
+      maxZ: shell.maxZ + WALL_THICKNESS,
+    },
+    SUN_CEILING_Y
+  );
+  for (const [z0, z1] of spansExcluding(shell.minZ, shell.maxZ, [eastDoor])) {
+    pushWall(
+      `sun-east-${z0.toFixed(2)}`,
+      { minX: shell.maxX, maxX: shell.maxX + WALL_THICKNESS, minZ: z0, maxZ: z1 },
+      SUN_CEILING_Y
+    );
+  }
+  corridorWalls.forEach((rect, i) =>
+    pushWall(`sun-corridor-wall-${i}`, rect, SUN_CORRIDOR_CEILING_Y)
+  );
+
+  // The chamber's roof is the collapse: solid over the crack and the corners,
+  // open over the ring, and a solid medallion at the centre for the eye's hatch
+  // to open in. The annulus and the medallion are polar, so the graybox draws
+  // them from `SUN_MEDALLION_RADIUS_M` and `chamberRadius`; these rects are the
+  // rectangular remainder.
+  const ceilingRects: CeilingRect[] = [
+    {
+      id: "sun-crack-ceiling",
+      rect: {
+        minX: shell.minX,
+        maxX: shell.maxX,
+        minZ: shell.minZ,
+        maxZ: centre.z - chamberRadius,
+      },
+      y: SUN_CEILING_Y,
+    },
+    ...corridor.map((rect, i) => ({
+      id: `sun-corridor-ceiling-${i}`,
+      rect,
+      y: SUN_CORRIDOR_CEILING_Y,
+    })),
+  ];
+
+  if (SUN_MEDALLION_RADIUS_M < EYE_RADIUS_M + 1.5) {
+    throw new Error(
+      "Sundial layout: the ceiling medallion does not cover the eye — there is nothing for the hatch to open in"
+    );
+  }
+
+  const bayBounds = unionRect([shell, ...corridor]);
+
+  // ── The mechanism ─────────────────────────────────────────────────────────
+
+  const polar = (x: number, z: number) => {
+    const dx = x - centre.x;
+    const dz = z - centre.z;
+    return { r: Math.hypot(dx, dz), theta: Math.atan2(dx, dz) };
+  };
+
+  const inApproach = (x: number, z: number) =>
+    inRectClosed(northApproach, x, z) || inRectClosed(eastApproach, x, z);
+  const inCorridor = (x: number, z: number) =>
+    corridor.some((rect) => inRectClosed(rect, x, z));
+
+  function blockedAt(x: number, z: number): boolean {
+    if (inCorridor(x, z) || inApproach(x, z)) return false;
+    const { r, theta } = polar(x, z);
+    // Outside the chamber and off every approach: solid rock, whatever the
+    // rectangular bay looks like.
+    if (r > chamberRadius) return true;
+    if (r >= CROSSING_OUTER_R) return false; // the rim walk
+    if (r <= CROSSING_INNER_R) return false; // the centre disc
+    // The collapse ring. Open only where the spiral crosses it.
+    return !onCrossing(r, theta, crossingStartTheta, CROSSING_HALF_WIDTH);
+  }
+
+  function elevationAt(x: number, z: number, fromY?: number): number {
+    if (inCorridor(x, z)) return SUN_DOOR_Y;
+    for (const approach of approaches) {
+      if (inRectClosed(approach.rect, x, z)) return rampHeight(approach, x, z);
+    }
+    const { r, theta } = polar(x, z);
+    if (r > chamberRadius) return SUN_RIM_Y;
+    if (r >= CROSSING_OUTER_R) return SUN_RIM_Y;
+    if (r <= CROSSING_INNER_R) return SUN_DISC_Y;
+    if (onCrossing(r, theta, crossingStartTheta, CROSSING_HALF_WIDTH)) {
+      // Lerps with the wind: -0.4 where it leaves the rim, -0.2 at the disc.
+      const t = (CROSSING_OUTER_R - r) / (CROSSING_OUTER_R - CROSSING_INNER_R);
+      return SUN_RIM_Y + (SUN_DISC_Y - SUN_RIM_Y) * t;
+    }
+    // Standing on a pillar cap is only possible if something else put the
+    // player up there; below that height the answer is the collapsed floor.
+    for (const pillar of pillars) {
+      const pr = Math.hypot(x - pillar.centre.x, z - pillar.centre.z);
+      if (pr <= pillar.radius) {
+        if (fromY === undefined || fromY >= pillar.topY - 0.6) return pillar.topY;
+      }
+    }
+    return SUN_RING_FLOOR_Y;
+  }
+
+  function sunElevationDeg(x: number, z: number): number {
+    const { r } = polar(x, z);
+    const k = Math.min(r / chamberRadius, 1);
+    return SUN_ZENITH_DEG - (SUN_ZENITH_DEG - SUN_HORIZON_DEG) * k;
+  }
+
+  function sunAzimuth(x: number, z: number): number {
+    return polar(x, z).theta;
+  }
+
+  const at = (r: number, theta: number): Point2 => ({
+    x: centre.x + Math.sin(theta) * r,
+    z: centre.z + Math.cos(theta) * r,
+  });
+
+  return {
+    interior,
+    shell,
+    corridor,
+    centre,
+    chamberRadius,
+    discRadius: CROSSING_INNER_R,
+    ringInner: CROSSING_INNER_R,
+    ringOuter: CROSSING_OUTER_R,
+    pillars,
+    crossingStartTheta,
+    crossingEndTheta,
+    approaches,
+    floorRects,
+    wallRects,
+    ceilingRects,
+    bayBounds,
+    blockedAt,
+    elevationAt,
+    sunElevationDeg,
+    sunAzimuth,
+    probes: {
+      entry: { x: northDoorX, z: interior.minZ + 1.0 },
+      rim: at(10.5, crossingStartTheta),
+      crossingStart: at(CROSSING_OUTER_R - 0.2, crossingStartTheta),
+      crossingMid: at(6.5, crossingStartTheta + CROSSING_SWEEP / 2),
+      centre: { ...centre },
+      // Diametrically opposite the crossing's midpoint: ring, no spiral.
+      ringGap: at(6.5, crossingStartTheta + CROSSING_SWEEP / 2 + Math.PI),
+      exit: { x: interior.maxX - 1.0, z: eastDoorZ },
+    },
+  };
+}
+
+/**
+ * Closed-form test for "is this point on the spiral crossing" — no curve
+ * sampling. `r(t) = 9 - 5t`, `θ(t) = θ0 + (π/2)·t`, and the offset from the
+ * centreline is measured as arc length so the corridor is a constant width
+ * rather than a constant angle.
+ */
+export function onCrossing(
+  r: number,
+  theta: number,
+  theta0: number,
+  halfWidth = CROSSING_HALF_WIDTH
+): boolean {
+  if (r < CROSSING_INNER_R || r > CROSSING_OUTER_R) return false;
+  const t = (CROSSING_OUTER_R - r) / (CROSSING_OUTER_R - CROSSING_INNER_R);
+  const expected = theta0 + CROSSING_SWEEP * t;
+  return Math.abs(angleDelta(theta, expected)) * r <= halfWidth;
+}
+
+function rampHeight(floor: FloorRect, x: number, z: number): number {
+  if (floor.kind === "flat") return floor.fromY;
+  const alongZ = floor.kind === "ramp-z";
+  const min = alongZ ? floor.rect.minZ : floor.rect.minX;
+  const max = alongZ ? floor.rect.maxZ : floor.rect.maxX;
+  const v = alongZ ? z : x;
+  const t = max === min ? 0 : Math.min(1, Math.max(0, (v - min) / (max - min)));
+  return floor.fromY + (floor.toY - floor.fromY) * t;
+}
+
+// ── Terrain program ─────────────────────────────────────────────────────────
+
+export function createSundialTerrain(
+  grid: MuseumGrid
+): MuseumTerrainProgram | null {
+  const layout = buildSundialLayout(grid);
+  if (!layout) return null;
+
+  return {
+    waterlineY: WATERLINE_Y,
+    elevationAt: (x, z, fromY) => layout.elevationAt(x, z, fromY),
+    blockedAt: (x, z) => layout.blockedAt(x, z),
+    updraftAt(x, z, y) {
+      // The eye: stand at dead centre and the ground carries you to the Moon.
+      const dx = x - layout.centre.x;
+      const dz = z - layout.centre.z;
+      if (dx * dx + dz * dz > EYE_RADIUS_M * EYE_RADIUS_M) return 0;
+      return y >= EYE_TOP_Y ? 0 : EYE_SPEED;
+    },
+  };
+}

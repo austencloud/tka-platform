@@ -23,6 +23,7 @@
   import FirstFireGraybox from "./FirstFireGraybox.svelte";
   import EarthCanyonGraybox from "./EarthCanyonGraybox.svelte";
   import AirChimneyGraybox from "./AirChimneyGraybox.svelte";
+  import SundialGraybox from "./SundialGraybox.svelte";
   import TelekineticFormation3D from "./TelekineticFormation3D.svelte";
   import { Avatar3D } from "@austencloud/scene-3d";
   import MuseumMirror from "./MuseumMirror.svelte";
@@ -232,6 +233,8 @@
   // Graybox for the Earth Room (the Canyon Overlook). Same lifetime again.
   const hasEarthCanyon = grid.wings.some((wing) => wing.id === "cave-earth");
   const hasAirChimney = grid.wings.some((wing) => wing.id === "cave-air");
+  // Graybox for the Sundial (the Sun Chamber). Same lifetime again.
+  const hasSundial = grid.wings.some((wing) => wing.id === "cave-sun");
 
   // ── Progressive mount: break heavy sub-components into stages so the
   // browser can paint between each batch. Without this, mounting all torches,
@@ -1696,6 +1699,15 @@
   <AirChimneyGraybox
     {grid}
     currentRoomId={currentPlayerRoomId}
+    visible={props.visible !== false}
+  />
+{/if}
+
+{#if hasSundial}
+  <SundialGraybox
+    {grid}
+    currentRoomId={currentPlayerRoomId}
+    {playerPosition}
     visible={props.visible !== false}
   />
 {/if}

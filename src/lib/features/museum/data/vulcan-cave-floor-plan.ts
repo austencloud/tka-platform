@@ -24,6 +24,13 @@ import {
   type WorldRect,
 } from "./drowned-gallery-terrain";
 import {
+  buildSundialLayout,
+  createSundialTerrain,
+  sunChamberCentreMetres,
+  SUN_PILLAR_RADIUS_M,
+  SUN_PILLAR_TOP_Y,
+} from "./sundial-layout";
+import {
   buildFirstFireLayout,
   createFirstFireTerrain,
   firstFireStationOffsets,
@@ -426,10 +433,12 @@ const airPerformers = airLedgeStationOffsets(
 }));
 
 // Interior metres = ceil(minInterior * 1.5) * 0.5, NOT tiles. 43 -> 32.5 m and
-// 45 -> 34.0 m, which carries the 24 m round chamber plus the 10 m north light
-// crack. Verified against the compiled grid, not assumed.
+// 46 -> 34.5 m, which carries the 24 m round chamber plus the 10 m north light
+// crack. Verified against the compiled grid, not assumed: at 45 (34.0 m) the
+// chamber's south edge landed 0.25 m inside the south wall, because the centre
+// sits on a tile CENTRE and so is a quarter-metre south of 10 + 12.
 const SUN_MIN_INTERIOR_WIDTH = 43;
-const SUN_MIN_INTERIOR_HEIGHT = 45;
+const SUN_MIN_INTERIOR_HEIGHT = 46;
 
 const sunWalls = {
   north: doorWall(EDGE_IDS.airToSun, "start", 3),
@@ -456,30 +465,17 @@ const sunWalls = {
 // Station assignment is from the MCP data, not taste: SSSS/TTTT close on gamma3
 // and UUUU/VVVV on gamma11, so U and V take one axis (the leader/follower
 // inversion mirrored across the centre) and S and T the cross axis.
-const SUN_CRACK_RUN_M = 10;
-const SUN_CHAMBER_RADIUS_M = 12;
-const SUN_PILLAR_RADIUS_M = 6.5;
-
 const sunDimensions = computeRoomDimensions({
   walls: sunWalls,
   minInteriorWidth: SUN_MIN_INTERIOR_WIDTH,
   minInteriorHeight: SUN_MIN_INTERIOR_HEIGHT,
 });
 
-// The centre must land ON a tile centre, not between two. Performers snap to
-// the 0.5 m grid, so a chamber centre at x.25 pushes the east pillar to r=6.25
-// and the west to r=6.75 — an asymmetric ring in the one room whose whole
-// subject is four-fold rotational symmetry. Snapping costs 0.25 m of centring
-// in a 32.5 m bay and buys four equal radii.
-const snapToTileCentre = (m: number) =>
-  Math.round(m / TILE_METRES) * TILE_METRES;
-
-const SUN_CHAMBER_CENTRE_X_M = snapToTileCentre(
-  ((sunDimensions.w - 2) * TILE_METRES) / 2
-);
-const SUN_CHAMBER_CENTRE_Z_M = snapToTileCentre(
-  SUN_CRACK_RUN_M + SUN_CHAMBER_RADIUS_M
-);
+// The centre comes from `sundial-layout.ts`, which is also what the terrain and
+// the graybox measure every polar quantity from. Deriving a second one here is
+// how the pillars and the sun mapping end up on different axes.
+const { xMetres: SUN_CHAMBER_CENTRE_X_M, zMetres: SUN_CHAMBER_CENTRE_Z_M } =
+  sunChamberCentreMetres(sunDimensions.w);
 
 /** North, east, south, west — each faced inward at the visitor. */
 const SUN_STATIONS = [
@@ -505,6 +501,7 @@ const sunPerformers = SUN_STATIONS.map((station) => ({
   // No collider: the pillars stand in the collapse ring, which is already
   // blocked as a whole by the terrain program. A second 2D collider here would
   // only fence off floor the visitor cannot reach anyway.
+  elevation: SUN_PILLAR_TOP_Y,
 }));
 
 const thresholdRoom: RoomNode = {
@@ -1048,6 +1045,10 @@ export function buildVulcanCaveFloorPlan(): VulcanCaveFloorPlan {
     {
       bounds: buildAirChimneyLayout(build.grid)?.bayBounds,
       program: createAirChimneyTerrain(build.grid),
+    },
+    {
+      bounds: buildSundialLayout(build.grid)?.bayBounds,
+      program: createSundialTerrain(build.grid),
     },
   ]);
   if (terrain) build.grid.terrain = terrain;
