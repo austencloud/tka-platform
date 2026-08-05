@@ -2,97 +2,10 @@
 // of distinct combination words inside a fixed box is consistently 512.
 // Box held identical for every pair: unit <= 6 steps, <= 2 connectors, diamond.
 
-import { readFileSync } from "node:fs";
-
-const DIR = "E:/tka-platform/mcp-server-pkg/assets/data/pictographs";
-const RING = ["n", "ne", "e", "se", "s", "sw", "w", "nw"];
-const ri = (l) => RING.indexOf(l);
-
-const rows = [];
-for (const line of readFileSync(`${DIR}/DiamondPictographDataframe.csv`, "utf8").trim().split(/\r?\n/).slice(1)) {
-  const [letter, startPosition, endPosition, , , bT, bR, bS, bE, rT, rR, rS, rE] = line.split(",");
-  if (!letter || !startPosition) continue;
-  rows.push({ letter, startPosition, endPosition, bT, bR, bS, bE, rT, rR, rS, rE });
-}
-const posPair = new Map();
-for (const r of rows) if (!posPair.has(r.startPosition)) posPair.set(r.startPosition, [r.bS, r.rS]);
-for (const r of rows) if (!posPair.has(r.endPosition)) posPair.set(r.endPosition, [r.bE, r.rE]);
-const out = new Map();
-for (const r of rows) {
-  if (!out.has(r.startPosition)) out.set(r.startPosition, []);
-  out.get(r.startPosition).push(r);
-}
-
-const rotL = (l, s) => (ri(l) < 0 ? l : RING[(ri(l) + s + 8) % 8]);
-const mirL = (l) => (ri(l) < 0 ? l : RING[(8 - ri(l)) % 8]);
-const OPS = [];
-for (let k = 0; k < 4; k++) for (const refl of [false, true]) for (const swap of [false, true])
-  OPS.push({ k, refl, swap, apply: ([b, r]) => {
-    let bb = refl ? mirL(b) : b, rr = refl ? mirL(r) : r;
-    bb = rotL(bb, k * 2); rr = rotL(rr, k * 2);
-    return swap ? [rr, bb] : [bb, rr];
-  }});
-const eqPair = (a, b) => a[0] === b[0] && a[1] === b[1];
-const closes = (s, e) => {
-  const sp = posPair.get(s), ep = posPair.get(e);
-  return sp && ep && OPS.some((op) => eqPair(op.apply(sp), ep));
-};
-const tuple = (r) => [r.bT, r.bR, r.bS, r.bE, r.rT, r.rR, r.rS, r.rE].join("|");
-const byTuple = new Map();
-for (const r of rows) if (!byTuple.has(tuple(r))) byTuple.set(tuple(r), r);
-
-function count({ lettersA, lettersB, maxLen = 6, maxConnectors = 2 }) {
-  const A = new Set(lettersA), B = new Set(lettersB);
-  const kind = (l) => (A.has(l) ? "A" : B.has(l) ? "B" : "C");
-  const found = [];
-  let explored = 0;
-  for (const startPos of posPair.keys()) {
-    const walk = [];
-    (function dfs(pos, conn, uA, uB) {
-      if (walk.length >= 1) {
-        explored++;
-        if (uA && uB && closes(startPos, pos)) found.push([...walk]);
-      }
-      if (walk.length >= maxLen) return;
-      for (const e of out.get(pos) ?? []) {
-        const k = kind(e.letter);
-        if (k === "C" && conn >= maxConnectors) continue;
-        walk.push(e);
-        dfs(e.endPosition, conn + (k === "C" ? 1 : 0), uA || k === "A", uB || k === "B");
-        walk.pop();
-      }
-    })(startPos, 0, false, false);
-  }
-
-  const applyOp = (r, op) => {
-    const [bS, rS] = op.apply([r.bS, r.rS]);
-    const [bE, rE] = op.apply([r.bE, r.rE]);
-    return op.swap ? [r.rT, r.rR, bS, bE, r.bT, r.bR, rS, rE].join("|")
-                   : [r.bT, r.bR, bS, bE, r.rT, r.rR, rS, rE].join("|");
-  };
-  const neck = (arr) => { let b = null; for (let i = 0; i < arr.length; i++) { const s = arr.slice(i).concat(arr.slice(0, i)).join("::"); if (b === null || s < b) b = s; } return b; };
-  const canon = (steps) => { let b = null; for (const op of OPS) { const k = neck(steps.map((r) => applyOp(r, op))); if (b === null || k < b) b = k; } return b; };
-
-  const seen = new Map();
-  for (const st of found) { const k = canon(st); if (!seen.has(k)) seen.set(k, st); }
-
-  // orbit dedup: a discovery and its one-hand-rotation faces are one entry
-  const famSeen = new Set(); const reps = [];
-  for (const [key, st] of seen) {
-    if (famSeen.has(key)) continue;
-    famSeen.add(key);
-    for (const s of [2, 4, 6]) {
-      const rot = st.map((r) => byTuple.get([r.bT, r.bR, r.bS, r.bE, r.rT, r.rR, rotL(r.rS, s), rotL(r.rE, s)].join("|")));
-      if (rot.some((x) => !x)) continue;
-      famSeen.add(canon(rot));
-    }
-    reps.push(st);
-  }
-  const words = new Set(reps.map((st) => st.map((s) => s.letter).join("")));
-  const byLen = {};
-  for (const w of words) byLen[w.length] = (byLen[w.length] ?? 0) + 1;
-  return { explored, closed: found.length, reps: reps.length, words: words.size, byLen };
-}
+// The enumeration core moved to enumerate.mjs (2026-08-05) so this oracle and
+// the class-prediction harness share one implementation. Behaviour unchanged:
+// A+G must still report 256.
+import { countPair as count } from "./enumerate.mjs";
 
 const CARDS = {
   "A (α pro same)": ["A"],

@@ -13,8 +13,15 @@ is checked against.
 | Script | What it proves | Runtime |
 |---|---|---|
 | `letter-orbits.mjs` | The **13 letter-gap families**. Rotates one hand by 90/180/270 over every pictograph and maps letter → letter. 100% coverage, no misses. Prints the full map, the 180° involution, and the families as undirected components. | seconds |
+| `letter-group.mjs` | The **group** underneath the families. Treats each structural transform as a permutation of all 1152 pictographs, reports which are closed, generates the group, and prints its orbits and letter classes. Also proves the **288 characters × 4 gaps** bijection and the family-size law. | seconds |
 | `by-count.mjs` | The **count buckets and the crossing law**. Enumerates every closed unit for a card pair, tests closure against the D4×swap group, and buckets by full circle length (unit × order of the closing transform). | ~30s for A+G |
 | `theory-512.mjs` | The **pair fingerprint**. Same enumeration across many base-sequence pairs, reporting distinct-word counts. Source of the 256 / 512 / 7396 table. | minutes to hours |
+| `pair-classes.mjs` | The **fingerprint law**, stated as a prediction and then scored against measurement. Derives each pair's predicted class from gap separation and family membership, runs the enumeration, and prints PASS/MISS per pair. | ~15 min |
+| `enumerate.mjs` | Not a script — the shared enumeration core, extracted from `theory-512.mjs` so the oracle and the prediction harness cannot drift. Exports `countPair`, the closure group, and the runtime family derivation. | — |
+
+**Regression anchor:** `countPair({ lettersA: ["A"], lettersB: ["G"] }).words` must be
+**256**. If a change to `enumerate.mjs` moves that number, the change is wrong
+(or the equivalence relation moved, which needs saying out loud — see limit 3).
 
 ## Known limits — read before trusting a number
 
