@@ -117,4 +117,37 @@ describe("CreateModuleEventHandler option append", () => {
     expect(appliedOptions).toEqual([{ sequence: current, stepNumber: 4 }]);
     expect(current).toEqual(audition.sequence);
   });
+
+  it("waits for an in-flight sequence creation instead of failing the tap", async () => {
+    const handler = new CreateModuleEventHandler();
+    let current: SequenceData | null = null;
+    const updates: SequenceData[] = [];
+
+    // Mirrors the construct flow: the option picker is already up while
+    // createSequence() is still settling, so the sync getter returns null.
+    const creation = new Promise<void>((resolve) => {
+      setTimeout(() => {
+        current = sequenceFixture();
+        resolve();
+      }, 0);
+    });
+
+    handler.setSequenceStateCallbacks(
+      () => current,
+      (sequence) => {
+        updates.push(sequence);
+        current = sequence;
+      },
+      async () => {
+        await creation;
+        return current;
+      }
+    );
+
+    const candidate = pictograph("four", GridLocation.WEST, GridLocation.NORTH);
+    await handler.handleOptionSelected(candidate);
+
+    expect(updates).toHaveLength(1);
+    expect(current!.steps).toHaveLength(4);
+  });
 });

@@ -281,7 +281,40 @@ export function createSequenceState(services: SequenceStateServices) {
     }
   }
 
+  // Creation is async (the sequence service may hit storage/network), but the
+  // construct UI flips to the option picker the moment a start position is
+  // chosen. A fast tap lands in that window with currentSequence still null,
+  // so callers can await this promise instead of seeing "no current sequence".
+  let pendingSequenceCreation: Promise<SequenceData | null> | null = null;
+
   async function createSequence(request: {
+    name: string;
+    length: number;
+  }): Promise<SequenceData | null> {
+    const creation = createSequenceInternal(request);
+    pendingSequenceCreation = creation;
+    try {
+      return await creation;
+    } finally {
+      if (pendingSequenceCreation === creation) {
+        pendingSequenceCreation = null;
+      }
+    }
+  }
+
+  /**
+   * Resolves once a sequence is available: immediately when one already exists,
+   * after the in-flight creation settles when one is being created, or null when
+   * there is nothing to wait for.
+   */
+  async function whenCurrentSequenceReady(): Promise<SequenceData | null> {
+    if (coreState.currentSequence) return coreState.currentSequence;
+    if (!pendingSequenceCreation) return null;
+    await pendingSequenceCreation;
+    return coreState.currentSequence;
+  }
+
+  async function createSequenceInternal(request: {
     name: string;
     length: number;
   }): Promise<SequenceData | null> {
@@ -659,6 +692,7 @@ export function createSequenceState(services: SequenceStateServices) {
 
     // Computed getters
     getCurrentSequence: () => coreState.currentSequence,
+    whenCurrentSequenceReady,
     getCurrentSequenceData,
     getSequences: () => coreState.sequences,
     getIsLoading: () => coreState.isLoading,

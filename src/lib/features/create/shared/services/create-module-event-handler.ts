@@ -31,6 +31,12 @@ export class CreateModuleEventHandler {
   private updateSequenceCallback: ((sequence: SequenceData) => void) | null =
     null;
 
+  // Resolves once an in-flight sequence creation settles (see
+  // whenCurrentSequenceReady in the sequence state orchestrator)
+  private awaitCurrentSequenceCallback:
+    | (() => Promise<SequenceData | null>)
+    | null = null;
+
   // Callback to add option to history
   private addOptionToHistoryCallback:
     | ((stepIndex: number, stepData: StepData) => void)
@@ -75,10 +81,12 @@ export class CreateModuleEventHandler {
    */
   setSequenceStateCallbacks(
     getCurrentSequence: () => SequenceData | null,
-    updateSequence: (sequence: SequenceData) => void
+    updateSequence: (sequence: SequenceData) => void,
+    awaitCurrentSequence?: () => Promise<SequenceData | null>
   ): void {
     this.getCurrentSequenceCallback = getCurrentSequence;
     this.updateSequenceCallback = updateSequence;
+    this.awaitCurrentSequenceCallback = awaitCurrentSequence ?? null;
   }
 
   /**
@@ -120,8 +128,14 @@ export class CreateModuleEventHandler {
       performance.mark("event-service-start");
       this.ensureInitialized();
 
-      // Get current sequence from component state
-      const currentSequence = this.getCurrentSequenceCallback?.();
+      // Get current sequence from component state. Selecting a start position
+      // flips the UI to the option picker before the sequence finishes being
+      // created, so a fast tap can land while this is still null — wait for the
+      // in-flight creation rather than failing the tap.
+      const currentSequence =
+        this.getCurrentSequenceCallback?.() ??
+        (await this.awaitCurrentSequenceCallback?.()) ??
+        null;
       if (!currentSequence) {
         throw new Error("No current sequence available");
       }

@@ -258,7 +258,8 @@ export class CreateModuleInitializer {
     // Set up sequence state callbacks for CreateModuleEventHandler
     CreateModuleEventHandler.setSequenceStateCallbacks(
       () => CreateModuleState.sequenceState.getCurrentSequence(),
-      (sequence) => CreateModuleState.sequenceState.setCurrentSequence(sequence)
+      (sequence) => CreateModuleState.sequenceState.setCurrentSequence(sequence),
+      () => CreateModuleState.sequenceState.whenCurrentSequenceReady()
     );
 
     // Set up option history callback

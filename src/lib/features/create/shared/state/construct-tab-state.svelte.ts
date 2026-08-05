@@ -150,6 +150,17 @@ export function createConstructTabState(
   const startPositionStateService = createSimplifiedStartPositionState();
   let unsubscribeStartPositionListener: (() => void) | null = null;
 
+  // Creation failed, so there is no sequence to add steps to. Send the user back
+  // to the start position picker instead of stranding them on an option picker
+  // whose taps can only fail.
+  function failStartPositionSelection() {
+    setError("Could not start that sequence. Pick a start position again.");
+    setSelectedStartPosition(null);
+    sequenceState?.setSelectedStartPosition(null);
+    startPositionStateService.clearSelectedPosition();
+    setShowStartPositionPicker(true);
+  }
+
   // Event handler function for start position selection (reactive listener compatible)
   function handleStartPositionSelected(
     pictographData: PictographData | null,
@@ -253,10 +264,12 @@ export function createConstructTabState(
           }
         } else {
           console.error("? ConstructTabState: Failed to create new sequence");
+          failStartPositionSelection();
         }
       })
       .catch((error: unknown) => {
         console.error("? ConstructTabState: Error creating sequence:", error);
+        failStartPositionSelection();
       });
   }
   // ============================================================================
