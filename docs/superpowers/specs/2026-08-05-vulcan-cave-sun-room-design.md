@@ -146,6 +146,74 @@ Three things fall out of that, and all three are the reason to build it:
 Still true: the crossing is the ONLY route across the ring, and a route test
 must prove it.
 
+## The departure — the ground rises and the ceiling opens
+
+**Decided 2026-08-05.** Austen: *"the ground literally rises beneath you to open
+you up through a ceiling hatch that opens as you are risen toward it ... you
+burst out of the surface of the sun's ceiling out into the floor of the moon."*
+
+The visitor does not walk out of the Sun room. At the dead centre of the centre
+disc is **the eye**, a ⌀2 m stone plinth. Step onto it and it rises. A hatch in
+the ceiling irises open as it comes up to meet you, and you surface through a
+round hole in lunar regolith. **Sun's ceiling is Moon's floor.**
+
+**This does not spend Air's exclusivity.** The wing grammar says the *element*
+moves the visitor only in Air — under water, around fire, atop earth, carried by
+air. A rising stone plinth is not air. It is the architecture: a machine, in a
+room that is already a instrument. Air is still the only room where the element
+does the carrying.
+
+**The eye is a door, not a trapdoor.** The centre disc remains a place to stand:
+that is where the noon frame is read, with the shadows retracted onto the ring
+floor. Only the ⌀2 m eye at its middle lifts, and only when stepped onto. The
+visitor leaves when they choose to, not when they arrive.
+
+### This is why the sky opening is annular
+
+The roof is collapsed and open, which is where the sun comes from — so a plinth
+rising through the ceiling would surface into Sun's own sky, not onto the moon.
+So the opening is a **ring**: an annular skylight around a solid stone medallion
+at dead centre. Light enters through the ring, which still admits an 8° sun at
+the rim. The medallion is the hatch.
+
+The medallion carries the same four-fold ornament as the ring floor, directly
+above it — floor mandala and ceiling medallion, mirrored across the room's own
+axis, with the door cut into the upper one. The ornament grammar shows up in the
+room's structure, not just its surface.
+
+### Departure is at NOON, and it supersedes the dusk handoff
+
+An earlier revision of this document had the visitor walk out east as the sun
+set, entering the final tube at nightfall, with Moon as the night on the other
+side. **That is superseded.** The eye is at r = 0, which is zenith, so the
+visitor leaves at the brightest moment in the entire wing and surfaces into
+total darkness and silence.
+
+Max light to max dark, in one move, rising *toward* the sun and arriving on the
+moon. The gradual version was prettier on paper; this one is the better cut.
+
+Consequences to carry into the build:
+
+- The east exit crack (`sunToMoon`, station 7 in the program table) is **no
+  longer the route to Moon.** Keep it or delete it, but it is not the way out.
+  Recommend deleting it and letting the room have exactly one door in and one
+  door up.
+- Moon's arrival changes. Its design says the visitor comes through a crack and
+  the reveal is turning to find the Earth above and behind. Surfacing through
+  the ground gives that turn for free — you come up, then you look around. Moon
+  gains a round hole in its regolith and loses its entry crack.
+- Moon's low gravity now begins on the visitor's first step off the plinth,
+  which is a better introduction than walking into it.
+
+### Build note — this is Air's machinery
+
+The ride is not a moving-collision problem and must not be built as one. Air's
+updraft already drives the player's Y directly (`updraftAt`, and
+`UnifiedCameraController`'s `if (lift !== 0)` easing). The eye reuses exactly
+that, with a stone cylinder rendered under the player's feet instead of nothing.
+No time-varying terrain, no platform rider system. What changes is what the
+visitor sees holding them up.
+
 ## The two frames
 
 **At the rim, low sun.** Four shadows thrown twenty metres up the curved
