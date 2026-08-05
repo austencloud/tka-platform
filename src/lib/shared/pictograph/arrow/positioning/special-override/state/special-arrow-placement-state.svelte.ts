@@ -30,6 +30,15 @@ export function createSpecialArrowPlacementState() {
       return !!entry && !(entry.adjustmentX === 0 && entry.adjustmentY === 0);
     },
 
+    /**
+     * True when a tombstone hides the ENTIRE Special tier for this key —
+     * static JSON included. Distinct from "no override": an absent doc means
+     * the static JSON still wins, a suppressed doc means it doesn't.
+     */
+    isSuppressed(key: string): boolean {
+      return overridesMap.get(key)?.suppressed === true;
+    },
+
     setOverride(override: SpecialArrowPlacement): void {
       const newMap = new Map(overridesMap);
       newMap.set(override.key, override);

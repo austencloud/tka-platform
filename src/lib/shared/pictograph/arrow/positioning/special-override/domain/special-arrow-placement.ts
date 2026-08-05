@@ -21,8 +21,31 @@ export interface SpecialArrowPlacement {
   readonly adjustmentY: number;
   readonly originalX: number;
   readonly originalY: number;
+  // Tombstone. A static special-placement JSON entry lives in a shipped file and
+  // can't be deleted at runtime, so "remove the special placement for this arrow"
+  // is expressed as a doc at the same key with suppressed = true. The render path
+  // drops the WHOLE Special tier for the key (static JSON included) and falls
+  // through to Prop Geometry -> Default. Adjustments stay [0,0] so the existing
+  // "zero = absent" sentinel keeps getOverride/hasOverride blind to it;
+  // originalX/Y retain the static value being hidden so Restore and the history
+  // panel can name it.
+  readonly suppressed: boolean;
   readonly updatedAt: Timestamp;
   readonly updatedBy: string;
+}
+
+/** The 7 key fields plus the static value being hidden. Input to a tombstone write. */
+export interface SpecialSuppressionInput {
+  readonly gridMode: string;
+  readonly oriFolder: string;
+  readonly letter: string;
+  readonly turnsTuple: string;
+  readonly motionType: string;
+  readonly attributeKey: string;
+  readonly propType: string;
+  /** The static JSON value this tombstone hides, retained for Restore + history. */
+  readonly originalX: number;
+  readonly originalY: number;
 }
 
 export interface SpecialArrowPlacementInput {
@@ -58,6 +81,10 @@ export const SpecialArrowPlacementSchema = z
     adjustmentY: z.number(),
     originalX: z.number(),
     originalY: z.number(),
+    // Every doc written before tombstones existed is a real override, not a
+    // suppression — default false so legacy data parses unchanged and behaves
+    // exactly as it did.
+    suppressed: z.boolean().default(false),
     updatedAt: firestoreDate,
     updatedBy: z.string(),
   })

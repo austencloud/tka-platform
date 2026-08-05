@@ -67,21 +67,28 @@
 
     {#each tiers as { tier, info, detail }}
       {@const isActive = diagnostics.activeTier === tier}
+      {@const isSuppressed =
+        tier === "special-json" && diagnostics.specialJson?.suppressed === true}
       <div
         class="tier-row"
         class:active={isActive}
         class:has-value={info != null}
+        class:suppressed={isSuppressed}
         style="--tier-color: {tierColor(tier)}"
       >
         <span class="tier-icon">
-          {#if isActive}
+          {#if isSuppressed}
+            <i class="fas fa-ban" aria-hidden="true"></i>
+          {:else if isActive}
             <i class="fas fa-star" aria-hidden="true"></i>
           {:else}
             <i class="fas fa-circle" aria-hidden="true"></i>
           {/if}
         </span>
         <span class="tier-name">{tierLabel(tier)}</span>
-        {#if tier === "special-json" && diagnostics.specialJson?.firestoreOverride}
+        {#if isSuppressed}
+          <span class="tier-badge suppressed-badge">(removed)</span>
+        {:else if tier === "special-json" && diagnostics.specialJson?.firestoreOverride}
           <span class="tier-badge">(override)</span>
         {/if}
         {#if detail}
@@ -202,6 +209,17 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+  }
+  /* Suppressed: the row stays legible (it names what's hidden and is the entry
+     point for Restore) but reads as inert — struck value, warning accent. */
+  .suppressed-badge {
+    color: var(--semantic-warning, #f59e0b);
+  }
+  .tier-row.suppressed {
+    opacity: 0.66;
+  }
+  .tier-row.suppressed .tier-value {
+    text-decoration: line-through;
   }
   .original-row {
     display: flex;

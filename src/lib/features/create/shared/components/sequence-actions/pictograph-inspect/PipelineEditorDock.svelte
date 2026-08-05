@@ -71,6 +71,35 @@
   let editY = $state(0);
   let hasLocalChanges = $state(false);
   let saveState = $state<"idle" | "saving" | "saved">("idle");
+  // Two-step confirm for the app-wide special suppression. The key has no
+  // per-step identity, so this one click changes every pictograph that resolves
+  // to it — the confirm names exactly what it hits before it fires.
+  let pendingSuppress = $state(false);
+
+  // A tombstone hides the whole Special tier for this key. The diagnostics still
+  // report the tier's static value (struck through in the trace), so the row is
+  // the entry point for Restore.
+  const specialSuppressed = $derived(
+    diagnostics?.specialJson?.suppressed === true
+  );
+
+  // The tier actually winning, when it isn't the one being edited. Generic on
+  // purpose: Special-shadows-Default is the case that prompted this, but
+  // Global-shadows-Special and Prop-Geometry-shadow-Default read identically
+  // to a user and would otherwise reproduce the same silent confusion.
+  const shadowedBy = $derived.by((): PipelineTier | null => {
+    if (!diagnostics || !activeColor) return null;
+    const active = diagnostics.activeTier;
+    // Rank, not inequality: a LOWER-priority active tier means the tier being
+    // edited is simply empty (editing Special on a letter with no special entry),
+    // which is normal and needs no warning. Only an outranking tier shadows.
+    return TIER_RANK[active] < TIER_RANK[editTarget] ? active : null;
+  });
+
+  // Only offer removal when the Special tier is what's in the way of Default.
+  const canRemoveSpecial = $derived(
+    editTarget === "default" && diagnostics?.specialJson != null
+  );
 
   // Head identity derived
   const colorName = $derived(activeColor === "red" ? "Red" : "Blue");
@@ -99,6 +128,14 @@
     }
     return () => livePipelineEdit.clear();
   });
+
+  // Mirrors the tier priority in ArrowAdjustmentCalculator.getDiagnostics.
+  const TIER_RANK: Record<PipelineTier, number> = {
+    global: 0,
+    "special-json": 1,
+    "prop-geometry": 2,
+    default: 3,
+  };
 
   const tierOptions = [
     { value: "special-json" as const, label: "Special JSON" },
@@ -239,6 +276,7 @@
     editTarget = defaultEditTargetForActiveTier();
     hasLocalChanges = false;
     saveState = "idle";
+    pendingSuppress = false;
     syncNumericInputs();
   });
 
@@ -294,7 +332,77 @@
     editTarget = tier;
     hasLocalChanges = false;
     saveState = "idle";
+    pendingSuppress = false;
     syncNumericInputs();
+  }
+
+  // What the suppression actually hits, in the user's terms. The key carries no
+  // per-step identity, so every pictograph matching these five facets is affected.
+  const suppressScopeText = $derived.by((): string => {
+    const fields = specialOverrideKey
+      ? parseSpecialOverrideKey(specialOverrideKey)
+      : null;
+    if (!fields) return "this arrow";
+    return `${fields.letter} · turns ${fields.turnsTuple} · ${fields.oriFolder} · ${fields.motionType} · ${fields.propType}`;
+  });
+
+  /**
+   * Remove the Special tier for this key app-wide.
+   *
+   * The static special-placement JSON ships in a file and cannot be deleted at
+   * runtime, so removal is a tombstone doc at the same key. Local-first so the
+   * arrow drops to Default immediately, then persisted.
+   */
+  async function handleSuppressSpecial() {
+    const repo = getSpecialOverrideRepository();
+    const fields = specialOverrideKey
+      ? parseSpecialOverrideKey(specialOverrideKey)
+      : null;
+    if (!repo || !fields) return;
+    // Retain whatever the tier is currently serving, so Restore and the audit
+    // trail can name the value that was hidden.
+    const hidden =
+      diagnostics?.specialJson?.firestoreOverride?.original ??
+      diagnostics?.specialJson?.value ?? { x: 0, y: 0 };
+    const input = {
+      ...fields,
+      originalX: hidden.x,
+      originalY: hidden.y,
+    };
+    try {
+      saveState = "saving";
+      repo.saveSuppressionLocal(input);
+      pictographPreparer.clearCache();
+      globalAdjustmentVersion.increment();
+      await repo.saveSuppression(input);
+      hasLocalChanges = false;
+      pendingSuppress = false;
+      saveState = "idle";
+      getHapticFeedback()?.trigger("warning");
+      onDiagnosticsChanged?.();
+    } catch (error) {
+      logger.error("Special suppression failed:", error);
+      saveState = "idle";
+    }
+  }
+
+  /** Lift the tombstone — deleting the doc lets the shipped static value win again. */
+  async function handleRestoreSpecial() {
+    const repo = getSpecialOverrideRepository();
+    if (!repo || !specialOverrideKey) return;
+    try {
+      saveState = "saving";
+      repo.deleteOverrideLocal(specialOverrideKey);
+      await repo.deleteOverride(specialOverrideKey);
+      pictographPreparer.clearCache();
+      globalAdjustmentVersion.increment();
+      saveState = "idle";
+      getHapticFeedback()?.trigger("success");
+      onDiagnosticsChanged?.();
+    } catch (error) {
+      logger.error("Special restore failed:", error);
+      saveState = "idle";
+    }
   }
 
   function handleKeydown(event: KeyboardEvent): boolean {
@@ -694,13 +802,35 @@
       >
     </div>
 
-    <span class="dock-hint"
-      ><kbd>W A S D</kbd> move · Shift ×4 · Ctrl+Shift ×40 · <kbd>Ctrl+S</kbd>
-      save · live preview
-      {#if hasLocalChanges}<span class="dock-unsaved"
-          ><i class="fas fa-circle" aria-hidden="true"></i> Unsaved</span
-        >{/if}
-    </span>
+    <!-- One slot, three states. The ghost-sizer holds the widest of them so
+         swapping between hint / shadow warning / confirm never resizes the row
+         and shoves the actions to its right (no-layout-shift.md). -->
+    <div class="dock-status">
+      <span class="dock-status-sizer" aria-hidden="true"
+        >Shadowed by Prop Geometry — edits here won't move the arrow</span
+      >
+      <span class="dock-status-live">
+        {#if pendingSuppress}
+          <span class="dock-confirm">
+            <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+            Remove for every pictograph matching {suppressScopeText}?
+          </span>
+        {:else if shadowedBy}
+          <span class="dock-shadow">
+            <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+            Shadowed by {tierLabel(shadowedBy)} — edits here won't move the arrow
+          </span>
+        {:else}
+          <span class="dock-hint"
+            ><kbd>W A S D</kbd> move · Shift ×4 · Ctrl+Shift ×40 ·
+            <kbd>Ctrl+S</kbd> save · live preview
+            {#if hasLocalChanges}<span class="dock-unsaved"
+                ><i class="fas fa-circle" aria-hidden="true"></i> Unsaved</span
+              >{/if}
+          </span>
+        {/if}
+      </span>
+    </div>
 
     <div class="dock-actions">
       {#if editTarget === "default" && defaultLookup}
@@ -712,6 +842,34 @@
           turns={defaultLookup.turns}
           accentColor={colorToken}
         />
+      {/if}
+      {#if pendingSuppress}
+        <button class="btn btn-cancel" onclick={() => (pendingSuppress = false)}>
+          Cancel
+        </button>
+        <button class="btn btn-danger" onclick={handleSuppressSpecial}>
+          {#if saveState === "saving"}<i
+              class="fas fa-spinner fa-spin"
+              aria-hidden="true"
+            ></i>{:else}<i class="fas fa-ban" aria-hidden="true"></i>{/if}
+          Remove everywhere
+        </button>
+      {:else if canRemoveSpecial && specialSuppressed}
+        <button
+          class="btn btn-restore"
+          onclick={handleRestoreSpecial}
+          title="Restore the special placement for this key"
+        >
+          <i class="fas fa-rotate-left" aria-hidden="true"></i> Restore special
+        </button>
+      {:else if canRemoveSpecial}
+        <button
+          class="btn btn-danger"
+          onclick={() => (pendingSuppress = true)}
+          title="Remove the special placement so this arrow places from Default"
+        >
+          <i class="fas fa-ban" aria-hidden="true"></i> Remove special
+        </button>
       {/if}
       {#if editTarget === "special-json" && diagnostics?.specialJson?.firestoreOverride}
         <button
@@ -728,7 +886,12 @@
           ><i class="fas fa-undo" aria-hidden="true"></i> Revert</button
         >
       {/if}
-      {#if onDone}
+      <!-- Mid-confirm the only two answers are Cancel and Remove. Leaving Save
+           in place also widened the actions group enough to wrap the dock onto a
+           third row, shifting everything. -->
+      {#if pendingSuppress}
+        <!-- no commit button while confirming -->
+      {:else if onDone}
         <button class="btn btn-done" onclick={handleDoneClick}>
           {#if saveState === "saving"}<i
               class="fas fa-spinner fa-spin"
@@ -849,12 +1012,51 @@
     outline: none;
     border-color: var(--theme-accent, #58a6ff);
   }
+  /* Grid-stacks the sizer and the live status in one cell, so the cell is always
+     as wide as the longest state and nothing to its right moves on a swap. */
+  .dock-status {
+    display: inline-grid;
+    font-size: var(--font-size-compact, 12px);
+    /* Hard cap, because the confirm names a full lookup identity and is longer
+       than any sizer worth reserving. Capped + wrapping, the long state grows
+       DOWN inside its own slot instead of shoving the actions sideways —
+       measured shifting them 122px before this. */
+    max-width: 46ch;
+  }
+  .dock-status-sizer,
+  .dock-status-live {
+    grid-area: 1 / 1;
+  }
+  .dock-status-sizer {
+    visibility: hidden;
+    white-space: nowrap;
+  }
+  .dock-status-live {
+    white-space: normal;
+  }
+  .dock-shadow,
+  .dock-confirm {
+    align-items: flex-start;
+  }
+  .dock-shadow i,
+  .dock-confirm i {
+    margin-top: 2px;
+  }
   .dock-hint {
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+  }
+  .dock-shadow,
+  .dock-confirm {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--semantic-warning, #f59e0b);
   }
   .dock-hint kbd {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
@@ -896,6 +1098,28 @@
     border-color: color-mix(
       in srgb,
       var(--semantic-error, #f85149) 40%,
+      transparent
+    );
+  }
+  .btn-danger {
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #f85149) 18%,
+      transparent
+    );
+    color: var(--semantic-error, #f85149);
+    border-color: var(--semantic-error, #f85149);
+  }
+  .btn-cancel {
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+  }
+  .btn-restore {
+    background: transparent;
+    color: var(--semantic-warning, #f59e0b);
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-warning, #f59e0b) 45%,
       transparent
     );
   }

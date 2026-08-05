@@ -13,6 +13,7 @@ import {
   generateSpecialOverrideKey,
   type SpecialArrowPlacement,
   type SpecialArrowPlacementInput,
+  type SpecialSuppressionInput,
 } from "../domain/special-arrow-placement";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
@@ -61,12 +62,51 @@ export class SpecialArrowPlacementPersister {
           adjustmentY: input.adjustmentY,
           originalX: input.originalX,
           originalY: input.originalY,
+          // Written explicitly, never omitted: a real override saved on top of a
+          // tombstone at the same key must clear the tombstone, and firestoreSet
+          // merges rather than replaces.
+          suppressed: false,
           updatedBy: userEmail,
         } as Record<string, unknown>,
       );
       logger.success(`Saved special override: ${key} → (${input.adjustmentX}, ${input.adjustmentY})`);
     } catch (error) {
       logger.error(`Failed to save override ${key}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Write a tombstone that hides the whole Special tier for this key. Adjustments
+   * are [0,0] so the "zero = absent" sentinel keeps override readers blind to it;
+   * only `suppressed` carries meaning. Clearing one is a plain `delete(key)`.
+   */
+  async saveSuppression(input: SpecialSuppressionInput, userEmail: string): Promise<void> {
+    const key = generateSpecialOverrideKey(input);
+    try {
+      await firestoreSet(
+        COLLECTION_NAME,
+        key,
+        {
+          key,
+          gridMode: input.gridMode,
+          oriFolder: input.oriFolder,
+          letter: input.letter,
+          turnsTuple: input.turnsTuple,
+          motionType: input.motionType,
+          attributeKey: input.attributeKey,
+          propType: input.propType,
+          adjustmentX: 0,
+          adjustmentY: 0,
+          originalX: input.originalX,
+          originalY: input.originalY,
+          suppressed: true,
+          updatedBy: userEmail,
+        } as Record<string, unknown>,
+      );
+      logger.success(`Suppressed special placement: ${key}`);
+    } catch (error) {
+      logger.error(`Failed to suppress ${key}:`, error);
       throw error;
     }
   }
@@ -122,6 +162,7 @@ export class SpecialArrowPlacementPersister {
                     adjustmentY: data.adjustmentY,
                     originalX: data.originalX ?? 0,
                     originalY: data.originalY ?? 0,
+                    suppressed: data.suppressed === true,
                     updatedAt: data.updatedAt,
                     updatedBy: data.updatedBy ?? "unknown",
                   });

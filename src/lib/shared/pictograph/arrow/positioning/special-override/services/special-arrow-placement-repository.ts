@@ -10,6 +10,7 @@ import {
   generateSpecialOverrideKey,
   type SpecialArrowPlacement,
   type SpecialArrowPlacementInput,
+  type SpecialSuppressionInput,
 } from "../domain/special-arrow-placement";
 import type { SpecialArrowPlacementPersister } from "./special-arrow-placement-persister";
 import {
@@ -130,6 +131,11 @@ export class SpecialArrowPlacementRepository {
     return this.state.hasOverride(key);
   }
 
+  /** True when a tombstone hides the whole Special tier (static JSON included). */
+  isSuppressed(key: string): boolean {
+    return this.state.isSuppressed(key);
+  }
+
   /**
    * Save an override to local cache only (admin only).
    * Use this for live preview during WASD adjustment.
@@ -157,6 +163,9 @@ export class SpecialArrowPlacementRepository {
       adjustmentY: input.adjustmentY,
       originalX: input.originalX,
       originalY: input.originalY,
+      // A live nudge is a real override — it lifts any tombstone at this key,
+      // matching what the Firestore write does.
+      suppressed: false,
       updatedAt: fakeTimestamp,
       updatedBy: authState.user?.email ?? "unknown",
     });
@@ -186,8 +195,54 @@ export class SpecialArrowPlacementRepository {
     await this.persister.save(input, email);
   }
 
+  /** In-memory suppression preview (admin only) — instant, before the Firestore write. */
+  saveSuppressionLocal(input: SpecialSuppressionInput): void {
+    const key = generateSpecialOverrideKey(input);
+    const fakeTimestamp = {
+      seconds: Math.floor(Date.now() / 1000),
+      nanoseconds: 0,
+      toDate: () => new Date(),
+      toMillis: () => Date.now(),
+      isEqual: () => false,
+    } as unknown as import("firebase/firestore").Timestamp;
+
+    this.state.setOverride({
+      key,
+      gridMode: input.gridMode,
+      oriFolder: input.oriFolder,
+      letter: input.letter,
+      turnsTuple: input.turnsTuple,
+      motionType: input.motionType,
+      attributeKey: input.attributeKey,
+      propType: input.propType,
+      adjustmentX: 0,
+      adjustmentY: 0,
+      originalX: input.originalX,
+      originalY: input.originalY,
+      suppressed: true,
+      updatedAt: fakeTimestamp,
+      updatedBy: authState.user?.email ?? "unknown",
+    });
+  }
+
+  /**
+   * Persist a tombstone hiding the whole Special tier for this key (admin only).
+   * NOT routed through saveOverride: that treats a [0,0] adjustment as a removal,
+   * which would delete the very doc that carries the suppression.
+   * @throws Error if user is not admin
+   */
+  async saveSuppression(input: SpecialSuppressionInput): Promise<void> {
+    const email = authState.user?.email;
+    if (email !== ADMIN_EMAIL) {
+      throw new Error("Only admin can suppress special placements");
+    }
+    await this.persister.saveSuppression(input, email);
+  }
+
   /**
    * Delete an override from Firestore (admin only).
+   * Also the way a tombstone is lifted — deleting the doc restores the static
+   * JSON value, since the Special tier reads the shipped file again.
    * @throws Error if user is not admin
    */
   async deleteOverride(key: string): Promise<void> {

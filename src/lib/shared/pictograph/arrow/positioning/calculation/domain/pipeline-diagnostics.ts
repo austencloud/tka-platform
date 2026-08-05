@@ -39,6 +39,13 @@ export interface SpecialJsonTierInfo {
     original: TierValue | null;
     updatedBy: string;
   } | null;
+  /**
+   * A tombstone hides this whole tier (static JSON included) for this key. The
+   * row still reports its static `value` so the editor can show what's hidden and
+   * offer Restore, but the tier is excluded from the active-tier race — the arrow
+   * places from Prop Geometry -> Default instead.
+   */
+  suppressed: boolean;
 }
 
 export interface PropGeometryTierInfo {

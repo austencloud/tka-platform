@@ -285,6 +285,20 @@ export class ArrowAdjustmentCalculator {
     }
 
     // --- Tier 2: Special JSON (static per-letter files + Firestore overrides) ---
+    // A suppressed key still REPORTS its static value (the editor shows the row
+    // struck through, so the state is visible and reversible) but is excluded
+    // from the active-tier race below — matching what lookupSpecialPlacement does.
+    const specialSuppressed = (() => {
+      const r = getSpecialOverrideResolver();
+      if (!r || !pictographData.letter) return false;
+      const key = computeSpecialOverrideKey(
+        pictographData,
+        motionData,
+        arrowColor ?? motionData.color,
+      );
+      return r.getFullOverride(key)?.suppressed === true;
+    })();
+
     if (letter) {
       try {
         const [, , attrKey] = this.generateLookupKeys(
@@ -305,6 +319,7 @@ export class ArrowAdjustmentCalculator {
             filePath: jsonResult.filePath,
             turnsTupleKey: String(jsonResult.turnsTupleKey),
             firestoreOverride: null,
+            suppressed: specialSuppressed,
           };
 
           const specialResolver = getSpecialOverrideResolver();
@@ -325,7 +340,9 @@ export class ArrowAdjustmentCalculator {
               propType: motionData.propType?.toLowerCase() || "staff",
             });
             const fullOverride = specialResolver.getFullOverride(overrideKey);
-            if (fullOverride) {
+            // A tombstone is not an override — reporting it as one would show
+            // the row's value as (0,0) instead of the static value it hides.
+            if (fullOverride && !fullOverride.suppressed) {
               specialJsonInfo.firestoreOverride = {
                 value: { x: fullOverride.adjustmentX, y: fullOverride.adjustmentY },
                 original: { x: jsonResult.adjustment.x, y: jsonResult.adjustment.y },
@@ -364,7 +381,7 @@ export class ArrowAdjustmentCalculator {
                 propType: motionData.propType?.toLowerCase() || "staff",
               });
               const fullOverride = specialResolver.getFullOverride(overrideKey);
-              if (fullOverride) {
+              if (fullOverride && !fullOverride.suppressed) {
                 diagnostics.specialJson = {
                   value: { x: fullOverride.adjustmentX, y: fullOverride.adjustmentY },
                   filePath: `${gridMode}/special/${folder}/${pictographData.letter}_placements.json`,
@@ -374,6 +391,7 @@ export class ArrowAdjustmentCalculator {
                     original: null,
                     updatedBy: fullOverride.updatedBy,
                   },
+                  suppressed: false,
                 };
                 break;
               }
@@ -431,7 +449,7 @@ export class ArrowAdjustmentCalculator {
         diagnostics.global.value.x,
         diagnostics.global.value.y
       );
-    } else if (diagnostics.specialJson) {
+    } else if (diagnostics.specialJson && !diagnostics.specialJson.suppressed) {
       diagnostics.activeTier = "special-json";
       basePoint = new Point(
         diagnostics.specialJson.value.x,
@@ -589,6 +607,21 @@ export class ArrowAdjustmentCalculator {
     try {
       // Prop-scoped special override, checked regardless of static-JSON presence.
       const specialResolver = getSpecialOverrideResolver();
+
+      // Tombstone gate, ahead of every other Special read: a suppressed key drops
+      // the WHOLE tier — Firestore override AND the shipped static JSON — so the
+      // pipeline falls through to Prop Geometry -> Default. Without this the
+      // static entry is unremovable and Default is unreachable for any letter
+      // that has one.
+      if (specialResolver && pictographData.letter) {
+        const canonicalKey = computeSpecialOverrideKey(
+          pictographData,
+          motionData,
+          arrowColor ?? motionData.color,
+        );
+        if (specialResolver.getFullOverride(canonicalKey)?.suppressed) return null;
+      }
+
       if (specialResolver && pictographData.letter) {
         const override = specialResolver.getOverride(
           computeSpecialOverrideKey(pictographData, motionData, arrowColor ?? motionData.color),
