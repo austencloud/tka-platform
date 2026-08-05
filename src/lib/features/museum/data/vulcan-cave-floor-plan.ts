@@ -35,6 +35,10 @@ import {
   earthCanyonStationOffsets,
   BOSS_Y as EARTH_BOSS_Y,
 } from "./earth-canyon-layout";
+import {
+  buildAirChimneyLayout,
+  createAirChimneyTerrain,
+} from "./air-chimney-layout";
 import { CAVE_THRESHOLD_ROOM } from "./lobby-floor-plan";
 
 type WallName = "north" | "south" | "east" | "west";
@@ -313,6 +317,11 @@ const firePerformers = firstFireStationOffsets(
  * 34 × 24 m: a 12.5 m grass gully plus a 21.5 × 24 m canyon chamber holding a
  * ⌀14 m void with its rim ring.
  */
+// The Air chimney's shaft prototype needs an 18 m ramp run plus its platform,
+// column and overlook lip: 34 × 48 tiles of interior is 17 × 24 m.
+const AIR_MIN_INTERIOR_WIDTH = 34;
+const AIR_MIN_INTERIOR_HEIGHT = 48;
+
 const EARTH_MIN_INTERIOR_WIDTH = 45;
 const EARTH_MIN_INTERIOR_HEIGHT = 32;
 
@@ -470,10 +479,11 @@ export const VULCAN_CAVE_ROOMS: RoomNode[] = [
     name: "Air Chamber",
     material: "stone",
     theme: "cave",
-    minInteriorWidth: 8,
-    minInteriorHeight: 11,
+    minInteriorWidth: AIR_MIN_INTERIOR_WIDTH,
+    minInteriorHeight: AIR_MIN_INTERIOR_HEIGHT,
     description:
-      "A tall-feeling fissure that releases the compression without opening into an ensemble space.",
+      "A tall shaft: a ramp climbs the west wall to a ledge at +4.6, and a visible updraft column carries the visitor the last 3.8 m to the overlook.",
+    roomPresentation: { suppressTileGeometry: true },
     walls: {
       north: doorWall(EDGE_IDS.earthToAir, "start"),
       south: doorWall(EDGE_IDS.airToSun, "end", 3),
@@ -865,6 +875,14 @@ function composeCaveTerrain(
       }
       return false;
     },
+    updraftAt(x, z, y) {
+      for (const bay of active) {
+        if (inRectClosed(bay.bounds, x, z)) {
+          return bay.program.updraftAt?.(x, z, y) ?? 0;
+        }
+      }
+      return 0;
+    },
   };
 }
 
@@ -905,6 +923,10 @@ export function buildVulcanCaveFloorPlan(): VulcanCaveFloorPlan {
     {
       bounds: buildEarthCanyonLayout(build.grid)?.bayBounds,
       program: createEarthCanyonTerrain(build.grid),
+    },
+    {
+      bounds: buildAirChimneyLayout(build.grid)?.bayBounds,
+      program: createAirChimneyTerrain(build.grid),
     },
   ]);
   if (terrain) build.grid.terrain = terrain;

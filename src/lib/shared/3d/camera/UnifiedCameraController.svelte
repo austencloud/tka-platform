@@ -167,6 +167,21 @@
   const CROUCH_HEIGHT_DROP = SCALE.EYE_HEIGHT - SCALE.CROUCH_EYE_HEIGHT; // ~0.65m
   const CROUCH_LERP_SPEED = 8; // same responsiveness as camera damping
 
+  /**
+   * A physics provider that can report an upward lift column at the player's
+   * position (the museum's grid provider does; the generic ones do not). Kept
+   * structural rather than added to the shared PhysicsProvider interface — the
+   * seam belongs to the museum, and every other provider stays untouched.
+   */
+  type LiftingPhysicsProvider = { updraftSpeedAtPlayer?: () => number };
+
+  /**
+   * How fast vertical velocity approaches a lift column's speed, per second.
+   * 6 puts ~95% of the ease inside the first 0.5s: enough to feel like the air
+   * takes hold of you, short enough that it costs the rise ~0.17m.
+   */
+  const UPDRAFT_RISE_EASE = 6;
+
   // Scene bounds (used by kinematic path - physics uses colliders instead)
   const SCENE_BOUNDS = {
     minX: -50.0, // 50 meters (large for exploration)
@@ -750,23 +765,40 @@
       noclipEnabled = isNoclip;
 
       if (!isNoclip) {
-        // Normal physics: handle jumping and gravity
-        if (
-          isJumping &&
-          physicsProvider.isGrounded() &&
-          verticalVelocity <= 0
-        ) {
-          verticalVelocity = jumpForce;
+        // A lift column (the museum Air chimney) reports an upward speed at the
+        // player's position. Inside one, vertical velocity EASES toward that
+        // speed instead of falling — walking in reads as being picked up rather
+        // than launched. Outside one this is 0 and nothing below changes, so the
+        // kinematic path and every non-museum provider are untouched.
+        const lift =
+          (physicsProvider as LiftingPhysicsProvider).updraftSpeedAtPlayer?.() ??
+          0;
+
+        if (lift > 0) {
+          verticalVelocity +=
+            (lift - verticalVelocity) * Math.min(1, UPDRAFT_RISE_EASE * delta);
+        } else {
+          // Normal physics: handle jumping and gravity
+          if (
+            isJumping &&
+            physicsProvider.isGrounded() &&
+            verticalVelocity <= 0
+          ) {
+            verticalVelocity = jumpForce;
+          }
+          if (!physicsProvider.isGrounded()) {
+            verticalVelocity -= gravity * delta;
+            verticalVelocity = Math.max(
+              verticalVelocity,
+              SCALE.TERMINAL_VELOCITY
+            );
+          } else if (verticalVelocity < 0) {
+            verticalVelocity = 0;
+          }
         }
-        if (!physicsProvider.isGrounded()) {
-          verticalVelocity -= gravity * delta;
-          verticalVelocity = Math.max(
-            verticalVelocity,
-            SCALE.TERMINAL_VELOCITY
-          );
-        } else if (verticalVelocity < 0) {
-          verticalVelocity = 0;
-        }
+        // Leaving a column does NOT zero verticalVelocity: letting the residual
+        // rise decay under gravity is what makes the crest read as an arc
+        // instead of a wall.
         moveY = verticalVelocity * delta;
       }
 

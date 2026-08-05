@@ -33,7 +33,7 @@ const COLLISION_RADIUS = 0.15;
 // UCC first-person eye height = position.y + 0.75 (from SETTINGS.firstPerson.height).
 // For a 1.6m eye level on a ground-plane museum, we keep position.y at 0.85
 // so that 0.85 + 0.75 = 1.6m. This matches the Rapier capsule center convention.
-const STANDING_Y = 0.85;
+export const STANDING_Y = 0.85;
 
 interface FurnitureCollider {
 	x: number;
@@ -217,6 +217,19 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 
 	getPlayerPosition(): Vector3 {
 		return { ...this.position };
+	}
+
+	/**
+	 * Upward lift (m/s) the terrain applies at the player's current position, or
+	 * 0 in still air. UCC's physics path consults this before gravity: inside a
+	 * lift column the vertical velocity eases toward this speed instead of
+	 * falling. Rooms with no terrain program, and terrain programs written
+	 * before the Air chimney, report still air.
+	 */
+	updraftSpeedAtPlayer(): number {
+		return (
+			this.terrain?.updraftAt?.(this.position.x, this.position.z, this.position.y) ?? 0
+		);
 	}
 
 	isGrounded(): boolean {

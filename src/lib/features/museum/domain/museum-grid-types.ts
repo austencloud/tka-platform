@@ -76,6 +76,15 @@ export interface MuseumTerrainProgram {
   waterlineY: number;
   elevationAt(worldX: number, worldZ: number): number;
   blockedAt(worldX: number, worldZ: number): boolean;
+  /**
+   * Upward lift speed (m/s) at a world point, or 0 for still air. `worldY` is
+   * the player's physics position (feet + STANDING_Y), which is what lets a
+   * lift column stop at a ceiling the 2D elevation map cannot express.
+   *
+   * Optional: every terrain program that predates the Air chimney answers
+   * "still air" by omission.
+   */
+  updraftAt?(worldX: number, worldZ: number, worldY: number): number;
 }
 
 export interface MuseumTile {
