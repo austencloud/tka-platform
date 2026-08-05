@@ -16,6 +16,10 @@ import { RATE_LIMITS } from "$lib/server/security/rate-limiter";
 import { withRateLimit } from "$lib/server/security/withRateLimit";
 import { logAdminAction } from "$lib/server/security/audit-logger";
 import { getAdminAuth } from "$lib/server/firebaseAdmin";
+import {
+  escapeHogQL,
+  pulseProdFilter,
+} from "$lib/server/analytics/hogql-shared";
 
 const POSTHOG_API_BASE = "https://us.i.posthog.com/api";
 
@@ -51,27 +55,6 @@ const GLOBAL_QUERY_TYPES: ReadonlySet<string> = new Set([
   "seo-history",
 ]);
 
-/**
- * Admin/dev noise excluded from all global pulse metrics: localhost + dev
- * hosts, and Austen's own account UIDs (stable production admin accounts).
- */
-const EXCLUDED_ADMIN_UIDS = [
-  "PBp3GSBO6igCKPwJyLZNmVEmamI3",
-  "8IKsYlGhWxbZDd4ss1bnEZS5eBB3",
-];
-
-function pulseProdFilter(): string {
-  const uidList = EXCLUDED_ADMIN_UIDS.map((u) => `'${escapeHogQL(u)}'`).join(
-    ", "
-  );
-  return `
-    coalesce(properties."$host", '') NOT LIKE 'localhost%'
-    AND coalesce(properties."$host", '') NOT LIKE '192.168.%'
-    AND coalesce(properties."$host", '') != 'dev.tkaflowarts.com'
-    AND distinct_id NOT IN (${uidList})
-  `;
-}
-
 function getPostHogHeaders() {
   if (!env.POSTHOG_PERSONAL_API_KEY) {
     throw error(500, "POSTHOG_PERSONAL_API_KEY not configured");
@@ -104,11 +87,6 @@ function periodFilter(period: TimePeriod): string {
   return period === "all"
     ? ""
     : `AND timestamp > now() - interval ${getPeriodInterval(period)}`;
-}
-
-/** Escape a value for safe interpolation into a HogQL single-quoted string literal. */
-function escapeHogQL(value: string): string {
-  return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
 async function executeHogQLQuery(
