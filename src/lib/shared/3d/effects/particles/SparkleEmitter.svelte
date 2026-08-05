@@ -2,8 +2,15 @@
   /**
    * SparkleEmitter Component
    *
-   * Creates sparkle/glitter effects around a position in 3D space.
-   * Uses instanced sprites for reliable rendering in Threlte.
+   * Glints of light thrown off a prop tip, in world space.
+   *
+   * EVERY length and speed here is METRES and metres/second. One world unit is
+   * one metre and a staff is 0.864 of them, so a "15" is not a nudge — it is
+   * seventeen staves. This component was originally ported from a 2D canvas
+   * emitter with its pixel constants intact (spread 15, gravity 30, unit
+   * spheres at scale 3-7) and drew sparkles up to 7 METRES across; a single one
+   * filled the viewport. Sizes now come from resolveSparkles3D, which owns the
+   * pixel→world conversion. Do not reintroduce a bare number here.
    */
 
   import { T, useTask } from "@threlte/core";
@@ -18,8 +25,14 @@
     intensity?: number;
     /** Base color for sparkles */
     color?: string;
-    /** Emission radius around position */
+    /** Emission radius around the position, WORLD UNITS (metres). */
     spread?: number;
+    /** Sparkle radius, WORLD UNITS. From Sparkles3DParams.baseRadius. */
+    radius?: number;
+    /** Gravity in world units/s² (negative rises). From worldGravity. */
+    gravity?: number;
+    /** Particle life in seconds. */
+    lifetime?: number;
   }
 
   let {
@@ -27,13 +40,15 @@
     enabled = true,
     intensity = 1.0,
     color = "#ffffff",
-    spread = 15,
+    spread = 0.06,
+    radius = 0.03,
+    gravity = 1.4,
+    lifetime = 1.2,
   }: Props = $props();
 
   // Particle configuration
   const MAX_PARTICLES = 50;
   const BASE_SPAWN_RATE = 15;
-  const GRAVITY = 30;
 
   // Particle data stored as plain objects for Svelte reactivity
   interface Particle {
@@ -59,21 +74,22 @@
     const py = position.y;
     const pz = position.z;
 
-    // Random position within sphere
+    // Random position within the emission sphere
     const theta = Math.random() * Math.PI * 2;
     const phi = Math.acos(2 * Math.random() - 1);
-    const r = Math.random() * spread * 0.5; // Tighter spread
+    const r = Math.random() * spread;
 
     const x = px + r * Math.sin(phi) * Math.cos(theta);
     const y = py + r * Math.sin(phi) * Math.sin(theta);
     const z = pz + r * Math.cos(phi);
 
-    // Outward velocity
+    // Outward velocity, scaled to the spread so a sparkle drifts roughly one
+    // to two spread-radii over its life rather than a fixed metres-per-second.
     const dx = x - px;
     const dy = y - py;
     const dz = z - pz;
     const len = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
-    const speed = 20 + Math.random() * 30;
+    const speed = (spread / lifetime) * (1 + Math.random());
 
     return {
       id: nextId++,
@@ -81,11 +97,11 @@
       y,
       z,
       vx: (dx / len) * speed,
-      vy: (dy / len) * speed + 20, // Upward bias
+      vy: (dy / len) * speed + speed * 0.5, // Upward bias
       vz: (dz / len) * speed,
       life: 0,
-      maxLife: 0.3 + Math.random() * 0.4,
-      scale: 3 + Math.random() * 4,
+      maxLife: lifetime * (0.6 + Math.random() * 0.8),
+      scale: radius * (0.6 + Math.random() * 0.8),
     };
   }
 
@@ -106,15 +122,15 @@
       p.life += delta / p.maxLife;
       if (p.life >= 1) continue;
 
-      // Physics
-      p.vy -= GRAVITY * delta;
+      // Physics. worldGravity is positive-down, matching the translator.
+      p.vy -= gravity * delta;
       p.x += p.vx * delta;
       p.y += p.vy * delta;
       p.z += p.vz * delta;
 
-      // Fade out
-      p.scale = (3 + Math.random() * 2) * (1 - p.life);
-
+      // The taper is applied at render time from p.scale, which is the
+      // particle's spawn size. Re-rolling Math.random() into p.scale every
+      // frame (as this did) makes each sparkle jitter in size at frame rate.
       surviving.push(p);
     }
 
@@ -131,7 +147,7 @@
     position.x={particle.x}
     position.y={particle.y}
     position.z={particle.z}
-    scale={particle.scale}
+    scale={particle.scale * (1 - particle.life)}
   >
     <T.SphereGeometry args={[1, 8, 8]} />
     <T.MeshBasicMaterial

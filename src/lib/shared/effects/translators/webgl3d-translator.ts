@@ -37,6 +37,16 @@ import { resolveSmokePalette } from "../domain/smoke-palettes";
 import { resolveInkPalette } from "$lib/shared/3d/effects/ink/ink-palettes";
 import { resolveFrostPalette } from "../domain/frost-palettes";
 
+/**
+ * A 34" staff in world units — 1 world unit is 1 metre (AUSTEN_STAFF from
+ * @austencloud/scene-3d is 34in × 2.54cm × 0.01). Stated as a plain number so
+ * this translator stays free of the 3D scene package. It is the ruler every
+ * pixel→world mapping below is measured against: 2D effect constants are
+ * authored in canvas pixels, and reading those pixels as metres is what put
+ * 7-metre sparkles on a 0.86m staff.
+ */
+const STAFF_WORLD_LENGTH = 0.8636;
+
 export function resolveTrails3D(
   intent: TrailsIntent,
   override: Partial<Trails3DParams> = {},
@@ -114,10 +124,16 @@ export function resolveSparkles3D(
 ): Sparkles3DParams {
   const defaults: Omit<Sparkles3DParams, keyof SparklesIntent> = {
     poolSize: 512,
-    baseRadius: 0.03,
+    // Scaled by intent.size so the Size control does something in 3D; at the
+    // default size 0.5 this lands exactly on baseRadius's 3cm.
+    baseRadius: 0.03 * (0.5 + intent.size),
     // Map normalized intent.gravity (0=floaty,1=fast fall) to world-units/s.
     // 0 → small upward drift (-0.2), 1 → strong downward pull (+5.0).
     worldGravity: -0.2 + intent.gravity * 5.2,
+    // intent.spread is 2D canvas pixels (0-30). Map that authoring range onto a
+    // world radius: full spread is a quarter-staff cloud around the tip. The
+    // default spread of 8 lands at ~5.8cm.
+    worldSpread: (intent.spread / 30) * (STAFF_WORLD_LENGTH * 0.25),
   };
   return { ...intent, ...defaults, ...override };
 }

@@ -266,20 +266,29 @@
      Sparkle Effects (on prop ends)
      ============================================================================= -->
 {#if sparklesEnabled && sparkles3D && isPlaying}
+  <!-- worldSpread / baseRadius / worldGravity, never the raw intent values:
+       intent.spread is 2D canvas pixels and reading it as metres is what put
+       7-metre sparkles on a 0.86m staff. -->
   {#if blueEnds}
     <SparkleEmitter
       position={blueEnds.positive}
       enabled={true}
       intensity={sparkles3D.rate}
       color={pickSparkleColor(0)}
-      spread={sparkles3D.spread}
+      spread={sparkles3D.worldSpread}
+      radius={sparkles3D.baseRadius}
+      gravity={sparkles3D.worldGravity}
+      lifetime={sparkles3D.lifetime}
     />
     <SparkleEmitter
       position={blueEnds.negative}
       enabled={true}
       intensity={sparkles3D.rate * 0.7}
       color={pickSparkleColor(1)}
-      spread={sparkles3D.spread * 0.75}
+      spread={sparkles3D.worldSpread * 0.75}
+      radius={sparkles3D.baseRadius}
+      gravity={sparkles3D.worldGravity}
+      lifetime={sparkles3D.lifetime}
     />
   {/if}
 
@@ -289,14 +298,20 @@
       enabled={true}
       intensity={sparkles3D.rate}
       color={pickSparkleColor(2)}
-      spread={sparkles3D.spread}
+      spread={sparkles3D.worldSpread}
+      radius={sparkles3D.baseRadius}
+      gravity={sparkles3D.worldGravity}
+      lifetime={sparkles3D.lifetime}
     />
     <SparkleEmitter
       position={redEnds.negative}
       enabled={true}
       intensity={sparkles3D.rate * 0.7}
       color={pickSparkleColor(3)}
-      spread={sparkles3D.spread * 0.75}
+      spread={sparkles3D.worldSpread * 0.75}
+      radius={sparkles3D.baseRadius}
+      gravity={sparkles3D.worldGravity}
+      lifetime={sparkles3D.lifetime}
     />
   {/if}
 {/if}

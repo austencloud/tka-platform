@@ -102,6 +102,11 @@ export interface Sparkles3DParams extends SparklesIntent {
    *  Distinct from intent.gravity (0-1 normalized) - this is the resolved
    *  3D world-space value derived from intent.gravity. */
   worldGravity: number;
+  /** Emission radius around the tip, world units. Distinct from intent.spread,
+   *  which is authored in 2D canvas pixels (0-30 against a 500px reference).
+   *  Consuming intent.spread directly in 3D reads those pixels as METRES —
+   *  that is what put 7-metre sparkles on a 0.864m staff. */
+  worldSpread: number;
 }
 
 export interface Ghost3DParams extends GhostIntent {
