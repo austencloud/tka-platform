@@ -347,16 +347,21 @@ Name these rather than silently skipping them:
 
 What the frames actually showed, 2026-08-05, at 1920×1080 on the six-station harness.
 
-**Seven of the eight render. One does not.**
+**Seven of the eight render. One does not. Three of the seven are usable.**
+
+Each was then re-shot alone via the harness's new solo mode
+(`/test/element-motifs?e=<id>`), because in the line of six an emitter with a scale bug
+swallows its neighbours and you learn nothing about either. The table below reflects
+those solo frames.
 
 | Effect | What the frame showed | Verdict |
 |---|---|---|
-| bubbles | A dense white cauliflower mass at the tips. Distinct from trails, but the spheres are far too large and too opaque — it reads as a cloud, not as bubbles in water. | Renders; needs a scale/opacity pass before it can be Water's motif. |
+| bubbles | Seen alone, one enormous opaque white mass swallowing the entire station — the individual bubbles are so large and so numerous they fuse into a solid blob. | Renders, unusable. Sprite scale and count, same failure family as sparkles. |
 | goo | A fine blue droplet spray, correctly tracking the tips. The nicest of the eight as-is. | Renders. Still `WaterEmitter3D`, per the plan's note. |
 | smoke | Grey-white puffs off each tip, curling. Reads clearly as smoke and survives a pause. | Renders. |
 | petals | A pink fall at the tips, and it keeps falling while paused. Subtle at full-scene zoom, right at station scale. | Renders. |
-| sparkles | Catastrophic. Four tan spheres roughly the size of a whole station, translucent, swallowing half the viewport and occluding every neighbouring station. | Renders, but the sprite scale is wrong by orders of magnitude. Unusable until fixed. |
-| zap | A dense white jagged scribble ball sprawling well past the station footprint, not an arc between two props. | Renders, but arcs accumulate rather than living and dying. Unusable as-is. |
+| sparkles | Alone at the origin, a single sparkle fills the entire viewport — the camera sits inside one sprite. It drove the page hard enough that Chrome timed out compositing a screenshot. | Renders, but the sprite scale is wrong by orders of magnitude. Unusable until fixed. |
+| zap | A white jagged scribble web filling the frame far past the station, not an arc between two props. Wedged the page badly enough to stall navigation. | Renders, but arcs accumulate rather than living and dying. Unusable as-is. |
 | ghost | Blue and red phantom staff strokes, clearly legible when the camera is close. Static — the phantoms do not advance. | Renders. Inert by design without `currentStep`; see below. |
 | bloom | Nothing, playing or paused, with `bloom` selected on a station. | Does not render. Not diagnosed. |
 
