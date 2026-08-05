@@ -16,6 +16,7 @@
   import ThoughtCaption from "./ThoughtCaption.svelte";
   import { createAttractGhost } from "../services/attract-ghost.svelte";
   import { createRng } from "../services/rng";
+  import { presentationState } from "../state/presentation-state.svelte";
   import { createSensors, readRoute } from "../services/sensors";
   import { createGhostMind } from "../services/mind.svelte";
   import { ALL_INTENTIONS } from "../intentions";
@@ -34,6 +35,15 @@
    * Austen comes back to a static screen with a dot in the corner.
    */
   const RESUME_AFTER_IDLE_MS = 30_000;
+  /**
+   * Idle-resume exists for an UNATTENDED laptop. In dev Austen is sitting right
+   * there, and a ghost that grabs the wheel back 30s after he touched something
+   * is the same annoyance in a different costume — he asked for the opposite:
+   * once he interacts it stays off until he presses play. So in dev the only way
+   * back is an explicit resume (the parked dot, or the F9 admin button).
+   * `window.__ghost.autoResume(true)` re-enables it for testing the kiosk path.
+   */
+  let autoResume = !import.meta.env.DEV;
   /**
    * A tour that has not made a decision in this long is wedged on something no
    * intention models — a modal nothing can dismiss, a route with no annotated
@@ -85,6 +95,16 @@
     await handleModuleChange("create");
   }
 
+  /**
+   * Every route back to work goes through here so the persisted activity and the
+   * running loop can never disagree — the bug that would look like "I pressed
+   * play and it went dead again after the next reload".
+   */
+  function resumeTour(): void {
+    presentationState.markRunning();
+    act.resume();
+  }
+
   function guardRoute(): void {
     const pathname = window.location.pathname;
     const { moduleId } = readRoute(pathname);
@@ -112,8 +132,16 @@
           (s) => `${s.intention.id} ${s.score.toFixed(3)}`,
         ),
       world: () => sense(),
-      pause: () => act.pause(),
-      resume: () => act.resume(),
+      /** Force idle-resume on/off — it is off in dev by default. */
+      autoResume: (on = true) => {
+        autoResume = on;
+        return autoResume;
+      },
+      pause: () => {
+        act.pause();
+        presentationState.markPaused();
+      },
+      resume: () => resumeTour(),
       stop: () => act.kill(),
     };
 
@@ -128,11 +156,17 @@
 
     // Takeover: a REAL pointer event means a visitor has the wheel. The core's
     // press never dispatches pointer events, so this can only ever be a human.
-    let lastHumanInputAt = 0;
+    // Seeded from the persisted pause so a reload does not reset the clock: a
+    // takeover 2 seconds before an HMR update is still a takeover 2 seconds ago.
+    let lastHumanInputAt =
+      presentationState.activity === "paused"
+        ? performance.now() - Math.min(presentationState.pausedForMs, 1e9)
+        : 0;
     const onRealPointer = (event: PointerEvent) => {
       if (!event.isTrusted) return;
       lastHumanInputAt = performance.now();
       act.pause();
+      presentationState.markPaused();
     };
     const onKey = (event: KeyboardEvent) => {
       // isTrusted FIRST: kill() is the one irreversible transition in the
@@ -142,8 +176,15 @@
       lastHumanInputAt = performance.now();
       // Escape is the deliberate off switch: a human standing at the laptop who
       // wants the app back for good. Everything else is a takeover.
-      if (event.key === "Escape") act.kill();
-      else act.pause();
+      if (event.key === "Escape") {
+        act.kill();
+        // Escape is "I want the app back for good", so it must not come back on
+        // the next hot reload either.
+        presentationState.deactivate();
+      } else {
+        act.pause();
+        presentationState.markPaused();
+      }
     };
 
     /**
@@ -158,9 +199,9 @@
       if (act.dead) return;
       const idleFor = performance.now() - lastHumanInputAt;
       if (act.paused) {
-        if (idleFor > RESUME_AFTER_IDLE_MS) {
+        if (autoResume && idleFor > RESUME_AFTER_IDLE_MS) {
           runningSince = performance.now();
-          act.resume();
+          resumeTour();
         }
         return;
       }
@@ -185,6 +226,12 @@
     act.setVisible(true);
     act.start();
 
+    // The reload half of Austen's ask: if the visitor had the wheel when the
+    // page went away, they still have it. The loop starts, parks on its first
+    // iteration, and waits as the "watch the demo again" dot — so an HMR update
+    // mid-keystroke no longer hands the app back to the ghost.
+    if (presentationState.activity === "paused") act.pause();
+
     return () => {
       setEscapeHatch(null);
       clearInterval(guard);
@@ -204,7 +251,7 @@
     pressed={ghost.pressed}
     visible={ghost.visible}
     parked={ghost.parked}
-    onResume={() => act.resume()}
+    onResume={resumeTour}
   />
 </div>
 

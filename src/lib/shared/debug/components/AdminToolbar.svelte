@@ -360,6 +360,41 @@ import type { QuickAccessUser } from "../services/types";
     }, 2000);
   }
 
+  /**
+   * Presentation mode from the F9 panel, so the ghost can be started without
+   * hand-editing the URL. Activating always starts it RUNNING — pressing a
+   * button labelled "Ghost" means get to work, even if the last thing that
+   * happened was a takeover that parked it.
+   */
+  let ghostActive = $state(false);
+  let presenter: typeof import("$lib/shared/attract/state/presentation-state.svelte").presentationState | null =
+    null;
+
+  async function toggleGhost() {
+    presenter ??= (
+      await import("$lib/shared/attract/state/presentation-state.svelte")
+    ).presentationState;
+    if (presenter.armed) {
+      presenter.deactivate();
+      introResetMessage = "Ghost stopped";
+    } else {
+      presenter.activate();
+      introResetMessage = "Ghost presenting";
+      adminToolbarState.close();
+    }
+    ghostActive = presenter.armed;
+    setTimeout(() => {
+      introResetMessage = null;
+    }, 2000);
+  }
+
+  onMount(async () => {
+    presenter = (
+      await import("$lib/shared/attract/state/presentation-state.svelte")
+    ).presentationState;
+    ghostActive = presenter.armed;
+  });
+
   function handleClose() {
     adminToolbarState.close();
   }
@@ -416,6 +451,8 @@ import type { QuickAccessUser } from "../services/types";
     onClearTikaCache={clearTikaPictographCache}
     {isClearingTikaCache}
     onShowPwaBanner={showPwaMigrationBanner}
+    onToggleGhost={toggleGhost}
+    {ghostActive}
     onClose={handleClose}
     {currentRole}
     {effectiveRole}

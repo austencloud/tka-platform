@@ -1,7 +1,6 @@
 <!-- Main Application Layout -->
 <script module lang="ts">
-
-import { getApplicationInitializer } from "$lib/shared/application/get-application-initializer";
+  import { getApplicationInitializer } from "$lib/shared/application/get-application-initializer";
   import { readBootSnapshot } from "$lib/shared/application/services/boot-snapshot";
   // Module-level: survives component remounts so we never show the auth
   // spinner again after the app has loaded once in this session.
@@ -29,9 +28,12 @@ import { getApplicationInitializer } from "$lib/shared/application/get-applicati
   import ErrorToast from "../../error/components/ErrorToast.svelte";
   import InboxSubscriptionProvider from "../../inbox/components/InboxSubscriptionProvider.svelte";
   import { myFeedbackDetailState } from "$lib/shared/feedback/state/my-feedback-detail-state.svelte";
-  import { firstRunState } from "../../onboarding/state/first-run-state.svelte.ts";
   import { appEntryState } from "../../onboarding/state/app-entry-state.svelte.ts";
-  import { getLastAuthMethod } from "../../auth/services/last-auth-method.svelte";
+  import { createAccountSetupState } from "../../onboarding/state/account-setup-state.svelte";
+  import { setAccountSetupContext } from "../../onboarding/context/account-setup-context";
+  import { getOnboardingPersister } from "../../onboarding/get-onboarding-persister";
+  import { loadPropPreferences } from "../../community/services/prop-preference-persister";
+  import AccountSetupReminder from "../../onboarding/components/account-setup/AccountSetupReminder.svelte";
   import { propDrawerState } from "../../settings/state/prop-drawer-state.svelte";
   import { PropType } from "../../pictograph/prop/domain/enums/prop-type";
 
@@ -47,7 +49,7 @@ import { getApplicationInitializer } from "$lib/shared/application/get-applicati
     closeSheet,
     onRouteChange,
   } from "../../navigation/services/sheet-router";
-import type { SheetType } from "../../navigation/services/types";
+  import type { SheetType } from "../../navigation/services/types";
   import { authState } from "../../auth/state/auth-state.svelte";
   import { authDrawerState } from "../../auth/state/auth-drawer-state.svelte";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
@@ -58,8 +60,11 @@ import type { SheetType } from "../../navigation/services/types";
   } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
   import ErrorScreen from "../../foundation/ui/ErrorScreen.svelte";
   import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
-  import { initializeTheme, updateTheme as updateThemeService } from "../../theme/services/theme-service";
-  import type { ApplicationInitializer } from '$lib/shared/application/services/application-initializer'
+  import {
+    initializeTheme,
+    updateTheme as updateThemeService,
+  } from "../../theme/services/theme-service";
+  import type { ApplicationInitializer } from "$lib/shared/application/services/application-initializer";
   import {
     getSettings,
     restoreApplicationState,
@@ -73,7 +78,7 @@ import type { SheetType } from "../../navigation/services/types";
     setInitializationState,
     initializeAppState,
   } from "../state/initialization-state.svelte";
-  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
+  import type { DeviceDetector } from "$lib/shared/device/services/device-detector";
   import BackgroundHost from "../../background/shared/components/BackgroundHost.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import {
@@ -92,7 +97,7 @@ import type { SheetType } from "../../navigation/services/types";
   import { writeBootSnapshot } from "$lib/shared/application/services/boot-snapshot";
   import { CURRENT_MODULE_KEY } from "$lib/shared/navigation/config/storage-keys";
   // Get DI container from context
-// Services - resolved lazily
+  // Services - resolved lazily
   let initService: ApplicationInitializer | null = $state(null);
   let settingsService: SettingsState | null = $state(null);
   let deviceService: DeviceDetector | null = $state(null);
@@ -111,13 +116,32 @@ import type { SheetType } from "../../navigation/services/types";
   // Firebase identity (provisioned on first persistable action via
   // ensureGuestIdentity). The AuthDrawer must mount for both — an anonymous
   // guest tapping "Create Account" upgrades the anon session in place.
-  const isFullAccount = $derived(authState.isFullAccount);
-  const isGuest = $derived(!isFullAccount);
+  const isGuest = $derived(!authState.isFullAccount);
   const authLoading = $derived(authState.loading);
-  const shouldShowAccountSetup = $derived(
-    firstRunState.shouldShow ||
-      (!firstRunState.isDone() && getLastAuthMethod() !== "magic-link")
-  );
+
+  const accountSetupState = createAccountSetupState({
+    getIdentity: () => ({
+      userId: authState.user?.uid ?? null,
+      isFullAccount: authState.isFullAccount,
+      displayName: authState.user?.displayName ?? null,
+      photoURL: authState.user?.photoURL ?? null,
+    }),
+    loadStatus: () => getOnboardingPersister().loadStatus(),
+    saveStatus: (status) => getOnboardingPersister().saveStatus(status),
+    loadPropPreferences,
+  });
+  setAccountSetupContext(accountSetupState);
+
+  let loadedAccountSetupIdentity: string | null = null;
+  $effect(() => {
+    const identity = authState.isFullAccount
+      ? `account:${authState.user?.uid ?? "pending"}`
+      : "guest";
+    if (authState.loading || identity === loadedAccountSetupIdentity) return;
+
+    loadedAccountSetupIdentity = identity;
+    void accountSetupState.loadForCurrentUser();
+  });
 
   // Track whether MainInterface has been shown at least once.
   // Once shown, never tear it down for auth loading - the loading spinner
@@ -250,16 +274,14 @@ import type { SheetType } from "../../navigation/services/types";
         if (getIsInitialized()) {
           // Re-attach sheet router listener (old one was cleaned up on unmount)
           currentSheetType = getCurrentSheet();
-          cleanupSheetListener = onRouteChange(
-            async (state) => {
-              if (state.sheet === "settings") {
-                closeSheet();
-                await handleModuleChange("settings" as ModuleId);
-                return;
-              }
-              currentSheetType = state.sheet ?? null;
+          cleanupSheetListener = onRouteChange(async (state) => {
+            if (state.sheet === "settings") {
+              closeSheet();
+              await handleModuleChange("settings" as ModuleId);
+              return;
             }
-          );
+            currentSheetType = state.sheet ?? null;
+          });
           return;
         }
 
@@ -281,11 +303,7 @@ import type { SheetType } from "../../navigation/services/types";
           return;
         }
 
-        if (
-          !initService ||
-          !settingsService ||
-          !deviceService
-        ) {
+        if (!initService || !settingsService || !deviceService) {
           console.error("Services not properly resolved");
           setInitializationError("Services not properly resolved");
           return;
@@ -312,18 +330,16 @@ import type { SheetType } from "../../navigation/services/types";
           currentSheetType = null;
         }
 
-        cleanupSheetListener = onRouteChange(
-          async (state) => {
-            // Redirect legacy ?sheet=settings to settings module
-            if (state.sheet === "settings") {
-              closeSheet();
-              await handleModuleChange("settings" as ModuleId);
-              return;
-            }
-
-            currentSheetType = state.sheet ?? null;
+        cleanupSheetListener = onRouteChange(async (state) => {
+          // Redirect legacy ?sheet=settings to settings module
+          if (state.sheet === "settings") {
+            closeSheet();
+            await handleModuleChange("settings" as ModuleId);
+            return;
           }
-        );
+
+          currentSheetType = state.sheet ?? null;
+        });
 
         bootProfiler.mark("app:restore-workspace");
         await restoreApplicationState();
@@ -370,7 +386,6 @@ import type { SheetType } from "../../navigation/services/types";
             "create",
         });
         detectAndCaptureScanEntry();
-
       } catch (error) {
         console.error("Application initialization failed:", error);
         setInitializationError(
@@ -441,26 +456,21 @@ import type { SheetType } from "../../navigation/services/types";
     return () => document.removeEventListener("keydown", handleKeydown);
   });
 
-  // Presentation mode is read once at mount: it is a laptop-at-the-jam setting,
-  // not something that should flicker on as the URL changes underneath a
-  // running session.
-  let presentationMode = $state(false);
-  let presentationSeed = $state<number | undefined>(undefined);
+  // Presentation mode is resolved from the URL param + sessionStorage latch at
+  // mount, then lives as reactive state so the F9 admin panel can switch the
+  // ghost on and off without a reload. It still never flickers on from a URL
+  // change underneath a running session — nothing re-reads the param.
+  let presenterSwitch = $state<
+    { armed: boolean; seed: number | undefined } | null
+  >(null);
+  const presentationMode = $derived(presenterSwitch?.armed ?? false);
+  const presentationSeed = $derived(presenterSwitch?.seed);
 
   onMount(async () => {
-    const { isPresentationRequested, requestedSeed } = await import(
-      "../../attract/services/presentation-mode"
-    );
-    presentationMode = isPresentationRequested();
-    presentationSeed = requestedSeed();
+    const mod = await import("../../attract/state/presentation-state.svelte");
+    mod.presentationState.boot();
+    presenterSwitch = mod.presentationState;
   });
-
-  // Note: First-run wizard is shown based on simple state checks in the template:
-  // - !isFullAccount → guest mode (MainInterface with guest restrictions)
-  // - magic-link accounts go straight to Create; the link already collected
-  //   everything needed to establish the account
-  // - other unnamed accounts can still receive the display-name prompt
-  // No need for triggerIfFirstTime() calls since we check isDone() directly
 
   // Create a serialized key for background settings to detect actual changes
   // Include color values so theme updates when colors change, not just type
@@ -546,59 +556,9 @@ import type { SheetType } from "../../navigation/services/types";
       <mod.default />
     {/await}
 
-    <!-- FirstRunWizard as overlay (only for newly authenticated users) -->
-    <!-- Returning users (isDone() === true) have valid local preferences
-         already. The cloud sync is a background freshen, so don't blank out
-         the app with "Loading preferences..." - that looks like a full page
-         reload right after sign-in. Only block the UI for genuine first-run
-         users whose local state isn't set up yet. -->
-    {#if isFullAccount && shouldShowAccountSetup && (firstRunState.syncInProgress || !firstRunState.cloudSynced)}
-      <!-- Hold for cloud sync so we never flash a setup card for an account that
-           already finished onboarding on another device. -->
-      <div class="fullscreen-overlay">
-        <div class="auth-loading">
-          <div class="auth-loading-spinner"></div>
-          <p>Loading preferences...</p>
-        </div>
-      </div>
-    {:else if isFullAccount && shouldShowAccountSetup}
-      <!-- Display-name setup remains available to other sign-up methods and
-           the admin preview. Magic-link accounts bypass this branch. -->
-      <div class="fullscreen-overlay">
-        {#await import("../../onboarding/components/first-run/AccountSetupWizard.svelte") then mod}
-          {#if (!firstRunState.isDone() || firstRunState.shouldShow) && appEntryState.isEntryAnimating()}
-            <div class="wizard-exit-wrapper">
-              <mod.default
-                forcePreview={firstRunState.previewMode}
-                onComplete={() => firstRunState.markCompleted()}
-              />
-            </div>
-          {:else}
-            <mod.default
-              forcePreview={firstRunState.previewMode}
-              onComplete={() => {
-                const wasFirstRun =
-                  !firstRunState.isDone() || firstRunState.shouldShow;
-                if (wasFirstRun) {
-                  firstRunState.markCompleted();
-                  appEntryState.startEntrySequence(true);
-                }
-              }}
-            />
-          {/if}
-        {/await}
-      </div>
-    {/if}
-
-    <!-- Tutorial prompt overlays the main app so the user sees the real layout behind it -->
-    {#if appEntryState.isTutorialPrompt()}
-      {#await import("../../onboarding/components/create-tutorial/TutorialPrompt.svelte") then mod}
-        <mod.default
-          onAccept={() => appEntryState.acceptTutorial()}
-          onSkip={() => appEntryState.declineTutorial()}
-        />
-      {/await}
-    {/if}
+    <!-- Account completion never blocks entry. A sparse reminder can be
+         requested later, after an intentional action in Construct. -->
+    <AccountSetupReminder />
 
     <!-- AuthModal for guest sign-up / anonymous-upgrade flow -->
     {#if isGuest}
@@ -613,15 +573,12 @@ import type { SheetType } from "../../navigation/services/types";
     {/if}
 
     <!-- Auth sheet (route-based) -->
-    <AuthSheet
-      isOpen={showAuthSheet}
-      onClose={() => closeSheet()}
-    />
+    <AuthSheet isOpen={showAuthSheet} onClose={() => closeSheet()} />
 
     <!-- Support modal — in-app "buy me a coffee" (self-driven via supportModalState) -->
     <SupportModal />
 
-    <!-- Post-save activation nudge — self-driven via postSaveActivation (SP3 Part B) -->
+    <!-- Post-save account doorway. Actionable toast, never a blocking modal. -->
     <PostSaveActivationHost />
 
     <!-- Legal sheets (terms/privacy - route-based) -->
@@ -697,7 +654,11 @@ import type { SheetType } from "../../navigation/services/types";
           bind:isOpen={propDrawerState.isOpen}
           selectedPropType={propDrawerSelectedPropType}
           color={catDogMode ? propDrawerActiveTab : "blue"}
-          title={catDogMode ? (propDrawerActiveTab === "blue" ? "Blue Prop" : "Red Prop") : "Change Prop"}
+          title={catDogMode
+            ? propDrawerActiveTab === "blue"
+              ? "Blue Prop"
+              : "Red Prop"
+            : "Change Prop"}
           onSelect={handleGlobalPropSelect}
           showCatDogToggle={true}
           catDogEnabled={catDogMode}
@@ -800,34 +761,6 @@ import type { SheetType } from "../../navigation/services/types";
     }
   }
 
-  /* Fullscreen overlay for first-run wizard and tutorial wizard */
-  .fullscreen-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 900;
-    background: var(--theme-panel-bg, rgb(18, 18, 28));
-  }
-
-  /* Wizard exit animation - fades out + slight scale down */
-  .wizard-exit-wrapper {
-    position: absolute;
-    inset: 0;
-    z-index: 10;
-    animation: wizard-exit 400ms ease-in forwards;
-    pointer-events: none;
-  }
-
-  @keyframes wizard-exit {
-    from {
-      opacity: 1;
-      transform: scale(1);
-    }
-    to {
-      opacity: 0;
-      transform: scale(0.97);
-    }
-  }
-
   /* No mobile height override here on purpose. There used to be a
      `@media (max-width: 768px) { .tka-app { height: 100dvh } }` that only
      restated the base value — harmless until the base grew the banner
@@ -838,11 +771,6 @@ import type { SheetType } from "../../navigation/services/types";
   @media (prefers-reduced-motion: reduce) {
     .tka-app {
       transition: none;
-    }
-
-    .wizard-exit-wrapper {
-      animation: none;
-      opacity: 0;
     }
   }
 

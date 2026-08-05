@@ -53,6 +53,9 @@
     onClearTikaCache: () => void;
     isClearingTikaCache: boolean;
     onShowPwaBanner: () => void;
+    /** Presentation mode: turn the ghost presenter on, or hand the app back. */
+    onToggleGhost: () => void;
+    ghostActive: boolean;
     onClose: () => void;
     currentRole: UserRole;
     effectiveRole: UserRole;
@@ -83,6 +86,8 @@
     onClearTikaCache,
     isClearingTikaCache,
     onShowPwaBanner,
+    onToggleGhost,
+    ghostActive,
     onClose,
     currentRole,
     effectiveRole,
@@ -240,6 +245,22 @@
       <button type="button" class="action-chip" onclick={onShowPwaBanner} title="Show PWA Migration Banner">
         <i class="fas fa-mobile-screen" aria-hidden="true"></i>
         <span>PWA Banner</span>
+      </button>
+      <button
+        type="button"
+        class="action-chip"
+        class:chip-on={ghostActive}
+        onclick={onToggleGhost}
+        title={ghostActive
+          ? "Stop the ghost presenter and take the app back"
+          : "Let the ghost demonstrate the app (presentation mode)"}
+        aria-pressed={ghostActive}
+      >
+        <i
+          class="fas {ghostActive ? 'fa-stop' : 'fa-play'}"
+          aria-hidden="true"
+        ></i>
+        <span>{ghostActive ? "Stop Ghost" : "Ghost"}</span>
       </button>
     {/if}
 
@@ -792,6 +813,18 @@
   .action-chip:disabled {
     opacity: 0.35;
     cursor: not-allowed;
+  }
+
+  /* Filled while the ghost has the wheel, so the chip reads as a live state
+     rather than a fire-and-forget action like its neighbours. */
+  .action-chip.chip-on {
+    background: rgba(139, 92, 246, 0.85);
+    border-color: rgba(196, 181, 253, 0.9);
+    color: white;
+  }
+
+  .action-chip.chip-on:hover:not(:disabled) {
+    background: rgba(139, 92, 246, 1);
   }
 
   .action-chip.danger {
