@@ -6,7 +6,7 @@
 import { safe } from "../domain/annotations";
 import type { Intention } from "../domain/intention";
 import { visibleAll } from "../services/sensors";
-import { has, labelOf, pressKind, watchKind } from "./helpers";
+import { has, labelOf, pressKind, restlessness, watchKind } from "./helpers";
 
 export const PLAYBACK_INTENTIONS: Intention[] = [
   {
@@ -61,6 +61,45 @@ export const PLAYBACK_INTENTIONS: Intention[] = [
       await g.moveAndPress(ctx.rng.pick(cells.slice(0, -1))!);
       if (g.halted()) return true;
       await watchKind(g, "stage", g.jitter(1600, 1200));
+      return true;
+    },
+  },
+
+  {
+    id: "try-practice",
+    category: "playback",
+    thought: "Let's try this along with it.",
+    // cameraGranted is the hard gate. Without it, pressing Practice raises a
+    // native permission prompt — not DOM, so the ghost can neither answer nor
+    // dismiss it, and the tour dead-stops in front of strangers. On the park
+    // laptop, grant the camera once by hand and it stays granted for the origin.
+    can: (ctx) => ctx.cameraGranted && ctx.hasSequence && has(ctx, "practice"),
+    appeal: () => 0.5,
+    mood: "delighted",
+    perform: async (g, ctx) => {
+      if (!(await pressKind(g, ctx, "practice", 2500))) return false;
+      await g.sleep(g.jitter(1400, 800));
+      if (g.halted()) return true;
+      // The mirror is off by default, and the mirror IS the effect — a passerby
+      // seeing themselves behind the props.
+      await pressKind(g, ctx, "mirror", 2500);
+      await g.dwell(g.jitter(9000, 6000));
+      return true;
+    },
+  },
+
+  {
+    id: "leave-practice",
+    category: "playback",
+    // Bounded on purpose. An unattended laptop must not hold the camera open
+    // all night — battery, thermals, and a live camera nobody is standing in
+    // front of. Restlessness makes leaving read as a decision.
+    thought: "Alright, back to it.",
+    can: (ctx) => has(ctx, "practice-stop"),
+    appeal: (ctx) => 0.25 + restlessness(ctx) * 0.6,
+    perform: async (g, ctx) => {
+      if (!(await pressKind(g, ctx, "practice-stop", 2000))) return false;
+      await g.sleep(g.jitter(1200, 800));
       return true;
     },
   },

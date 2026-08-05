@@ -34,12 +34,19 @@
 
 	/**
 	 * The presentation-mode ghost may switch content modes — each one is another
-	 * view of the same sequence, which is exactly what a passerby should see.
-	 * Practice is withheld: it opens a camera workstation, which an unattended
-	 * laptop must not walk into. The active mode is skipped so pressing it is
-	 * never a no-op.
+	 * view of the same sequence, which is exactly what a passerby should see. The
+	 * active mode is skipped so pressing it is never a no-op.
+	 *
+	 * Practice gets its own kind rather than being withheld: Austen wants the
+	 * ghost to enter it and open the camera mirror, because a passerby seeing
+	 * themselves behind the props IS the effect. The presenter only presses it
+	 * when the camera permission is already granted for the origin — see
+	 * `cameraGranted` in the attract sensors.
 	 */
-	const ghostSafe = (id: string) => id !== 'practice' && activeMode !== id;
+	const ghostKindFor = (id: string): 'practice' | 'curio' | undefined => {
+		if (id === 'practice') return practiceActive ? undefined : 'practice';
+		return activeMode === id ? undefined : 'curio';
+	};
 
 	let navEl: HTMLElement | undefined = $state();
 
@@ -132,8 +139,8 @@
 				class:active={mode.id === 'practice' ? practiceActive : activeMode === mode.id}
 				aria-pressed={mode.id === 'practice' ? practiceActive : activeMode === mode.id}
 				aria-label={mode.label}
-				data-ghost={ghostSafe(mode.id) ? 'safe' : undefined}
-				data-ghost-kind={ghostSafe(mode.id) ? 'curio' : undefined}
+				data-ghost={ghostKindFor(mode.id) ? 'safe' : undefined}
+				data-ghost-kind={ghostKindFor(mode.id)}
 				data-ghost-label={mode.label}
 				onclick={() => {
 					if (mode.id === 'split') onSelectSplit();

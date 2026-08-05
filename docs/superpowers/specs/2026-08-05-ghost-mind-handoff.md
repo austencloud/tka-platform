@@ -136,6 +136,55 @@ motor's choices take the seeded rng via a new `choose` option; cosmetic noise
 the index alone via a reduced `git apply --cached` patch so the other session's
 in-flight `elementalGlyphVisible` work stayed in the working tree.
 
+## Practice + the camera mirror (2026-08-05)
+
+Austen: *"I actually think practice should be used by the ghost and the camera
+should be opened and I think that's part of the effect."* An earlier pass had
+withheld Practice on the grounds that an unattended laptop should not open a
+camera; that call is reversed — a passerby seeing themselves behind the props IS
+the demo.
+
+**Operator step, and it is load-bearing.** The intention is gated on
+`cameraGranted`, read from `navigator.permissions.query({name: "camera"})` and
+cached in the sensors. The browser's permission prompt is native chrome: the
+ghost cannot press it, cannot dismiss it, and `elementFromPoint` cannot see it,
+so an ungranted camera would strand the tour at a bubble. **Grant the camera
+once by hand on the origin the park laptop will use** (it persists per origin) or
+`try-practice` will silently never fire. It fails closed by design — including on
+Safari, which does not implement the camera permission query.
+
+The mirror defaults to OFF, so entering practice alone shows no camera:
+`try-practice` presses Practice, then the mirror toggle, then dwells ~9–15s.
+`leave-practice` exits on rising restlessness — the camera must not stay on all
+night (battery, thermals, and a live feed with nobody in front of it).
+
+Verified: permission `prompt` → `cameraGranted: false` → `try-practice` absent
+from the scored candidates entirely. The GRANTED path is unverified; exercising
+it needs the one-time manual grant above, which is the operator's step.
+
+## What the PostHog data actually says (2026-08-05)
+
+Austen caught a bad read: Learn looked like the app's engagement hotspot and it
+was entirely his own dev traffic. `memory/reference_posthog_reading_traffic.md`
+documents the filters and they were not applied. **Always exclude:** geo
+Chicago (Austen, multiple devices), hosts localhost / 127.0.0.1 /
+dev*.tkaflowarts.com, and bot geos Ashburn / Luleå / Forest City / Council
+Bluffs.
+
+Filtered, 60 days: landing 114 sessions, `create/construct` 107, `composer` 61,
+`create` 28, `q/SJJ6` 26, `create/generate` 21, `browse/gallery` 15,
+`browse/collections` 9. **Learn does not appear; `guide` has 3 sessions.** Top
+controls by sessions: Prop 16, Generate 15, **"Skip, I'll explore" 14**, 2D
+Animation 12, Construct 11, Card 11, Tunnel 10, Side by Side 9, Playback 7.
+
+Two conclusions. The viewer content rail and the prop switcher — both dead to
+the ghost before 2026-08-05 — are where real clicks actually go, which is
+independent confirmation of that work. And there is **not enough real-user data
+to mine personalities or a transition matrix from** (~100 real interacting
+sessions); anything clustered from that is overfitting. Revisit after the app has
+traffic. What the data IS good for today is a ranked annotation worklist and a
+sanity check on where the ghost spends its time.
+
 ## Believed done — unverified
 
 - **`escape-room` has never fired in a real trap.** It is gated on nothing

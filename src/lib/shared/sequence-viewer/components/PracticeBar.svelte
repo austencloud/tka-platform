@@ -238,10 +238,19 @@
         <span>{metronomeOn ? "Sound" : "Muted"}</span>
       </button>
 
+      <!-- data-ghost-kind="mirror": the presenter turns the camera on itself.
+           The mirror defaults to off, so entering practice alone shows no
+           camera — this button is what makes "you, behind the props" happen in
+           front of a passerby. Only annotated while OFF (pressing it on would
+           turn the camera back off), and the presenter only reaches for it when
+           the camera permission is already granted. -->
       <button
         class="pb-btn pb-mirror"
         class:on={mirrorOn}
         type="button"
+        data-ghost={mirrorOn ? undefined : "safe"}
+        data-ghost-kind={mirrorOn ? undefined : "mirror"}
+        data-ghost-label="Mirror"
         onclick={onToggleMirror}
         aria-label={mirrorOn ? "Hide camera mirror" : "Show camera mirror"}
         aria-pressed={mirrorOn}
@@ -252,9 +261,14 @@
 
       <span class="pb-divider" aria-hidden="true"></span>
 
+      <!-- The presenter's bounded exit from practice: an unattended laptop must
+           not hold the camera open all night. -->
       <button
         class="pb-btn pb-stop"
         type="button"
+        data-ghost="safe"
+        data-ghost-kind="practice-stop"
+        data-ghost-label="Stop"
         onclick={onStop}
         aria-label="Stop and return to setup"
       >

@@ -227,20 +227,30 @@ describe("annotation integrity", () => {
       const source = readFileSync(path, "utf8");
       // The attribute value: a quoted literal, or a {…} expression which may be
       // a ternary over literals or a bare identifier (a prop / $derived).
-      const spans = [...source.matchAll(/data-ghost-kind=(?:"([^"]*)"|\{([^}]*)\})/g)];
+      // Both quote styles: this repo has single-quoted components too, and a
+      // double-quote-only scan silently under-reports (it missed the viewer
+      // rail's 'practice' until this test flagged the kind as uncarried).
+      const spans = [
+        ...source.matchAll(/data-ghost-kind=(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})/g),
+      ];
       if (!spans.length) continue;
       let indirect = false;
-      for (const [, literal, expression] of spans) {
-        if (literal) found.add(literal);
+      for (const [, dq, sq, expression] of spans) {
+        if (dq) found.add(dq);
+        if (sq) found.add(sq);
         if (!expression) continue;
-        const inner = [...expression.matchAll(/"([^"]*)"/g)].map((m) => m[1]!);
+        // Backreferenced quote: `["']…["']` lets a string open with " and close
+        // with ', so one apostrophe in a comment ("the button's purpose") shifts
+        // pairing for the whole file and swallows the real literals.
+        const inner = [...expression.matchAll(/(["'])([^"']*)\1/g)].map((m) => m[2]!);
         if (inner.length) inner.forEach((k) => found.add(k));
-        // `{ghostKind}` — the kind arrives by prop. Fall back to the file's own
-        // literals, which is where such a component declares its union.
+        // `{ghostKind}` / `{ghostKindFor(id)}` — the kind arrives by prop or
+        // helper. Fall back to the file's own literals, which is where such a
+        // component declares its union.
         else indirect = true;
       }
       if (indirect) {
-        for (const [, literal] of source.matchAll(/"([^"]*)"/g)) {
+        for (const [, , literal] of source.matchAll(/(["'])([^"']*)\1/g)) {
           if (kinds.has(literal!)) found.add(literal!);
         }
       }

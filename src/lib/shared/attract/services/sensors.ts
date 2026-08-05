@@ -70,6 +70,29 @@ export function readRoute(pathname: string): {
 }
 
 export function createSensors(): { sense: () => GhostWorld } {
+  /**
+   * Cached because `sense()` is synchronous and the Permissions API is not, and
+   * because asking on every tick would be wasteful. Fails closed: if the query
+   * throws or the browser does not implement the camera permission (Safari),
+   * this stays false and the ghost never touches practice. A native permission
+   * prompt is not DOM — it cannot be pressed, dismissed or even seen by the
+   * hit-test, so triggering one strands the tour.
+   */
+  let cameraGranted = false;
+  void (async () => {
+    try {
+      const status = await navigator.permissions.query({
+        name: "camera" as PermissionName,
+      });
+      cameraGranted = status.state === "granted";
+      status.onchange = () => {
+        cameraGranted = status.state === "granted";
+      };
+    } catch {
+      cameraGranted = false;
+    }
+  })();
+
   function sense(): GhostWorld {
     if (typeof document === "undefined") return EMPTY_WORLD;
 
@@ -111,6 +134,7 @@ export function createSensors(): { sense: () => GhostWorld } {
         .filter((id) => id && MODULE_IDS.has(id) && !isDeniedModule(id)),
       available,
       lingerCount: visibleAll(LINGER_SEL).length,
+      cameraGranted,
     };
   }
 

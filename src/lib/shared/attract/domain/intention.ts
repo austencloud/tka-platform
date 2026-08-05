@@ -57,6 +57,15 @@ export interface GhostWorld {
   available: Record<GhostKind_, number>;
   /** Elements inviting the ghost to sit and watch. */
   lingerCount: number;
+  /**
+   * The camera permission is ALREADY granted for this origin, so entering
+   * practice will show a mirror instead of raising a native permission prompt.
+   * Fails closed: false on any browser that will not answer the question
+   * (Safari does not implement the camera permission query), because a prompt
+   * the ghost cannot see, press or dismiss is a dead stop in front of
+   * strangers.
+   */
+  cameraGranted: boolean;
 }
 
 /** Re-exported for the world's `available` map without a circular import. */
@@ -84,6 +93,9 @@ export const EMPTY_WORLD: GhostWorld = {
     confirm: 0,
     dismiss: 0,
     "close-overlay": 0,
+    practice: 0,
+    mirror: 0,
+    "practice-stop": 0,
     play: 0,
     stage: 0,
     tempo: 0,
@@ -98,6 +110,7 @@ export const EMPTY_WORLD: GhostWorld = {
     curio: 0,
   },
   lingerCount: 0,
+  cameraGranted: false,
 };
 
 /** What the mind remembers for the session. Survives takeover/resume. */

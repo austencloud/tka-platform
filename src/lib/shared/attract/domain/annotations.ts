@@ -45,6 +45,19 @@ export type GhostKind =
    * what is UNDER an overlay and leaves the overlay covering it.
    */
   | "close-overlay"
+  /**
+   * Enters practice — the sequence over a live camera mirror. Austen
+   * (2026-08-05): "practice should be used by the ghost and the camera should be
+   * opened and I think that's part of the effect." Gated on the camera
+   * permission ALREADY being granted, because the browser's permission prompt is
+   * native chrome: the ghost cannot press it, cannot dismiss it, and
+   * elementFromPoint cannot see it.
+   */
+  | "practice"
+  /** The camera-mirror toggle inside the practice bar (defaults to off). */
+  | "mirror"
+  /** Leaves practice. Bounded on purpose — the camera does not stay on all night. */
+  | "practice-stop"
   // playback
   | "play"
   | "stage"
