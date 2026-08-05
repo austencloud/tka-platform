@@ -3,6 +3,8 @@ import {
   buildTriageSessionsQuery,
   buildTriageSessionEventsQuery,
   buildFirstSeenQuery,
+  toIsoUtc,
+  parseTriageEventRow,
   parseTriageSessionRow,
 } from "$lib/server/analytics/session-triage-queries";
 
@@ -89,5 +91,56 @@ describe("parseTriageSessionRow", () => {
     expect(p.exitPath).toBe("/app/browse");
     expect(p.browser).toBe("Chrome");
     expect(p.deviceType).toBe("Desktop");
+  });
+});
+
+describe("toIsoUtc", () => {
+  it("converts a ClickHouse timestamp to ISO UTC", () => {
+    expect(toIsoUtc("2026-08-01 10:00:00")).toBe("2026-08-01T10:00:00Z");
+  });
+
+  it("leaves an already-ISO timestamp alone", () => {
+    expect(toIsoUtc("2026-08-01T10:00:00Z")).toBe("2026-08-01T10:00:00Z");
+  });
+
+  it("adds a missing zone designator", () => {
+    expect(toIsoUtc("2026-08-01T10:00:00")).toBe("2026-08-01T10:00:00Z");
+  });
+
+  it("passes an empty string through", () => {
+    expect(toIsoUtc("")).toBe("");
+  });
+
+  it("parses as UTC, not local time", () => {
+    expect(new Date(toIsoUtc("2026-08-01 10:00:00")).toISOString()).toBe(
+      "2026-08-01T10:00:00.000Z"
+    );
+  });
+
+  it("fixes the ordering inversion that would break resolve-on-silence", () => {
+    // Same date, so the comparison reaches the separator: " " (0x20) sorts
+    // below "T" (0x54), so the LATER ClickHouse stamp compares as older. This
+    // is what would freeze lastSeen and let resolve-on-silence close a live bug.
+    expect("2026-08-01 10:00:00" < "2026-08-01T00:00:00Z").toBe(true);
+    // Normalized, chronological order is restored.
+    expect(toIsoUtc("2026-08-01 10:00:00") > "2026-08-01T00:00:00Z").toBe(true);
+  });
+});
+
+describe("parsers normalize timestamps", () => {
+  it("normalizes session row timestamps", () => {
+    const p = parseTriageSessionRow([
+      "s_1", "u_1", "2026-08-01 10:00:00", "2026-08-01 10:05:00", 300000,
+      20, 0, 0, 0, 1, 0, ["app"], ["compose"], "/a", "/b", "C", "W", "D",
+    ]);
+    expect(p.startedAt).toBe("2026-08-01T10:00:00Z");
+    expect(p.endedAt).toBe("2026-08-01T10:05:00Z");
+  });
+
+  it("normalizes event row timestamps", () => {
+    const e = parseTriageEventRow([
+      "e_1", "2026-08-01 10:00:00", "$pageview", "/a", "", null, null,
+    ]);
+    expect(e.occurredAt).toBe("2026-08-01T10:00:00Z");
   });
 });

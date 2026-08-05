@@ -138,13 +138,34 @@ export function buildFirstSeenQuery(uids: readonly string[]): string {
   `;
 }
 
+/**
+ * ClickHouse returns `2026-08-01 10:00:00` — space separator, no zone. The
+ * issue register compares timestamps as strings and parses them with
+ * `new Date()`, and BOTH break on that format:
+ *
+ *   - Lexically, a space (0x20) sorts below every digit and `T` (0x54) above,
+ *     so a ClickHouse stamp always compares as older than a same-day ISO one.
+ *     `lastSeen` would then refuse to advance, and resolve-on-silence would
+ *     read a stale `lastSeen` and close a bug that is still happening.
+ *   - `new Date("2026-08-01 10:00:00")` is parsed as LOCAL time, shifting the
+ *     14-day silence boundary by the machine's UTC offset.
+ *
+ * Normalizing here means one canonical ISO-UTC form is the only thing any
+ * downstream consumer ever sees. Already-ISO input passes through untouched.
+ */
+export function toIsoUtc(raw: string): string {
+  if (raw === "") return "";
+  if (raw.includes("T")) return raw.endsWith("Z") ? raw : `${raw}Z`;
+  return `${raw.replace(" ", "T")}Z`;
+}
+
 /** Maps a raw HogQL row array to a typed row. Column order must match the SELECT. */
 export function parseTriageSessionRow(row: unknown[]): TriageSessionRow {
   return {
     sessionId: String(row[0] ?? ""),
     uid: String(row[1] ?? ""),
-    startedAt: String(row[2] ?? ""),
-    endedAt: String(row[3] ?? ""),
+    startedAt: toIsoUtc(String(row[2] ?? "")),
+    endedAt: toIsoUtc(String(row[3] ?? "")),
     durationMs: Number(row[4] ?? 0),
     eventCount: Number(row[5] ?? 0),
     exceptionCount: Number(row[6] ?? 0),
@@ -166,7 +187,7 @@ export function parseTriageSessionRow(row: unknown[]): TriageSessionRow {
 export function parseTriageEventRow(row: unknown[]): TriageEventRow {
   return {
     eventId: String(row[0] ?? ""),
-    occurredAt: String(row[1] ?? ""),
+    occurredAt: toIsoUtc(String(row[1] ?? "")),
     event: String(row[2] ?? ""),
     route: String(row[3] ?? ""),
     detail: String(row[4] ?? ""),
