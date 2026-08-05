@@ -36,6 +36,8 @@ import {
   getSequenceCombinator,
 } from "$lib/shared/combination/get-sequence-combinator";
 import type { EnumerateResult } from "$lib/shared/combination/services/letter-calculus";
+import { getSimilarityCalculator } from "$lib/shared/comparison/get-similarity-calculator";
+import type { SimilarityReport } from "$lib/shared/comparison/services/types";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import {
   createSequenceData,
@@ -83,6 +85,30 @@ export const FIXTURE_NAMES: readonly string[] = [...FIXTURE_CARDS.keys()];
 /** Longest word the Layer-0 preview enumerates, so the copy can say so. */
 export { DEFAULT_MAX_WORD_LENGTH };
 
+/**
+ * The four component weights, as the panel's sliders hold them.
+ *
+ * These are RAW slider values, not a normalized budget. `computeSimilarity`
+ * takes a plain weighted sum with no division by the total (pinned in
+ * `tests/unit/combination/analyzer-revival.test.ts`), so four sliders at 1.0
+ * would produce an "overall score" of up to 4. Normalization happens at this
+ * seam, once, before the calculator ever sees them — see `similarityOutcome`.
+ */
+export interface SimilarityWeights {
+  word: number;
+  motion: number;
+  position: number;
+  structural: number;
+}
+
+/** `DEFAULT_OPTIONS` in `services/similarity-calculator.ts`, mirrored. */
+const DEFAULT_SIMILARITY_WEIGHTS: SimilarityWeights = {
+  word: 0.2,
+  motion: 0.35,
+  position: 0.25,
+  structural: 0.2,
+};
+
 export interface CardSlot {
   /** The loaded card, or null when the slot is empty. */
   readonly card: SequenceData | null;
@@ -124,6 +150,14 @@ export interface CombinatorLabState {
   readonly preview: EnumerateResult | null;
   /** Why the Layer-0 preview is null despite both cards being loaded. */
   readonly previewError: string;
+
+  /** Live slider values. Mutate the fields directly; the report re-derives. */
+  readonly similarityWeights: SimilarityWeights;
+  /** Comparison report for the loaded pair. Null until both cards are in. */
+  readonly similarityReport: SimilarityReport | null;
+  /** Why the report is null despite both cards being loaded. */
+  readonly similarityError: string;
+  resetSimilarityWeights(): void;
 
   loadFixture(slot: SlotId, name: string): void;
   loadJson(slot: SlotId, text: string): void;
@@ -245,6 +279,12 @@ export function createCombinatorLabState(): CombinatorLabState {
   let allowAmbient = $state(true);
   let wholeUnitsOnly = $state(false);
 
+  // Proxied, unlike the cards: four numbers a slider writes one at a time is
+  // exactly the case fine-grained reactivity is for.
+  const similarityWeights = $state<SimilarityWeights>({
+    ...DEFAULT_SIMILARITY_WEIGHTS,
+  });
+
   let report = $state<CombinationSearchReport | null>(null);
   let running = $state(false);
   let runError = $state("");
@@ -292,6 +332,61 @@ export function createCombinatorLabState(): CombinatorLabState {
       );
       return {
         words: null,
+        error: cause instanceof Error ? cause.message : String(cause),
+      };
+    }
+  });
+
+  /**
+   * The comparison panel's data source.
+   *
+   * Same shape as `previewOutcome` and for the same reason: `computeSimilarity`
+   * reaches into every step's motions and throws on a hand-less step, and a
+   * card the calculator cannot read must not take the page down with it.
+   *
+   * The weights are normalized HERE rather than passed through raw. The
+   * calculator multiplies and sums without dividing, so raw sliders summing to
+   * 2.4 would report a 140% "overall score" — a number with no meaning on a
+   * bar. Dividing by the total keeps the reported score a genuine 0-1 blend of
+   * the four components, which is what the bars and the near-duplicate
+   * threshold both assume.
+   */
+  const similarityOutcome = $derived.by<{
+    report: SimilarityReport | null;
+    error: string;
+  }>(() => {
+    if (!cardA || !cardB) return { report: null, error: "" };
+
+    const total =
+      similarityWeights.word +
+      similarityWeights.motion +
+      similarityWeights.position +
+      similarityWeights.structural;
+    if (total <= 0) {
+      return {
+        report: null,
+        error:
+          "Every weight is zero — there is nothing left to weigh. Raise at least one slider.",
+      };
+    }
+
+    try {
+      return {
+        report: getSimilarityCalculator().computeSimilarity(cardA, cardB, {
+          wordWeight: similarityWeights.word / total,
+          motionWeight: similarityWeights.motion / total,
+          positionWeight: similarityWeights.position / total,
+          structuralWeight: similarityWeights.structural / total,
+        }),
+        error: "",
+      };
+    } catch (cause) {
+      console.warn(
+        "[sequence-combinator lab] computeSimilarity failed for the loaded pair",
+        cause
+      );
+      return {
+        report: null,
         error: cause instanceof Error ? cause.message : String(cause),
       };
     }
@@ -433,6 +528,17 @@ export function createCombinatorLabState(): CombinatorLabState {
     },
     get previewError() {
       return previewOutcome.error;
+    },
+
+    similarityWeights,
+    get similarityReport() {
+      return similarityOutcome.report;
+    },
+    get similarityError() {
+      return similarityOutcome.error;
+    },
+    resetSimilarityWeights() {
+      Object.assign(similarityWeights, DEFAULT_SIMILARITY_WEIGHTS);
     },
 
     loadFixture(slot, name) {

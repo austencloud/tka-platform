@@ -20,6 +20,7 @@
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 
   import ResultStrip from "./ResultStrip.svelte";
+  import SimilarityPanel from "./SimilarityPanel.svelte";
   import {
     createCombinatorLabState,
     DEFAULT_MAX_WORD_LENGTH,
@@ -238,6 +239,20 @@
       </div>
     {/each}
   </section>
+
+  <!-- Between the slots and the rail on purpose: "are these two cards too
+       alike to be worth combining" is a question about the INPUTS, and it is
+       cheap enough to answer before anyone touches the liberties or spends
+       700ms on a search. -->
+  {#if lab.bothLoaded}
+    <SimilarityPanel
+      report={lab.similarityReport}
+      error={lab.similarityError}
+      weights={lab.similarityWeights}
+      onWeightChange={(key, value) => (lab.similarityWeights[key] = value)}
+      onReset={() => lab.resetSimilarityWeights()}
+    />
+  {/if}
 
   <section class="rail" aria-label="Search options">
     <div class="rail-group">
