@@ -980,7 +980,9 @@
      dock space, wraps to its own full-width row when the dock is cramped. */
   .dock-tier {
     flex: 1 1 520px;
-    min-width: 460px;
+    /* A flat 460px floor overflowed the dock by 154px inside a 325px-wide panel
+       on a phone. The floor is a preference, not a requirement. */
+    min-width: min(460px, 100%);
     max-width: 680px;
   }
   .dock-vals {
@@ -1021,7 +1023,13 @@
        than any sizer worth reserving. Capped + wrapping, the long state grows
        DOWN inside its own slot instead of shoving the actions sideways —
        measured shifting them 122px before this. */
-    max-width: 46ch;
+    max-width: min(46ch, 100%);
+    /* A flex item's default `min-width: auto` is its min-content width, and the
+       sizer is deliberately nowrap — so the reservation became a floor the dock
+       couldn't shrink past, overflowing a narrow panel. Zeroing it lets the slot
+       shrink and the live text wrap. */
+    min-width: 0;
+    overflow: hidden;
   }
   .dock-status-sizer,
   .dock-status-live {
@@ -1059,6 +1067,9 @@
     color: var(--semantic-warning, #f59e0b);
   }
   .dock-hint kbd {
+    /* The chip is one key name — letting it break mid-chip renders "W A S" over
+       "D", which reads as two different shortcuts. */
+    white-space: nowrap;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 6px;

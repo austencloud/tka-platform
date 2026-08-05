@@ -527,11 +527,21 @@
     background: var(--theme-panel-bg, rgba(13, 17, 23, 0.98));
     border: 1px solid var(--theme-stroke, #30363d);
     border-radius: 8px;
-    /* Use horizontal space on wide/4K screens instead of a narrow tall strip,
-       but cap height so the modal never grows into a viewport-tall tower. */
+    /* Use horizontal space on wide/4K screens instead of a narrow tall strip. */
     width: min(96vw, 1800px);
-    max-height: min(90vh, 1040px);
+    /* Fill the host, capped. This panel is usually rendered inside the step-editor
+       drawer, whose <dialog> carries transform + will-change and is therefore the
+       containing block for the fixed backdrop — so "the host" is a ~910px-wide
+       column, not the viewport. Hugging content there centered a 594px box in
+       1005px of space and threw away 41% of the height. */
+    /* The cap scales with the screen instead of freezing at 1040px, which used
+       less than half the column on a 2160-tall display. */
+    height: min(100%, max(1040px, 78vh));
     overflow: hidden;
+    /* Everything below sizes off THIS box, not the viewport. Without it the
+       responsive tier keyed to the panel's own width can never fire. */
+    container-type: inline-size;
+    container-name: inspect;
     display: flex;
     flex-direction: column;
     box-shadow: 0 16px 64px rgba(0, 0, 0, 0.7);
@@ -539,10 +549,11 @@
   }
 
   .modal-body {
-    /* Hug content (no flex-grow) so the modal never letterboxes into a
-       viewport-tall shell with a dead band below the panels. Shrinks + scrolls
-       only when content exceeds the capped modal height. */
-    flex: 0 1 auto;
+    /* Take the space between the info bar and the dock. The old rule hugged
+       content to avoid letterboxing — correct back when nothing inside could
+       grow. Now the pictograph absorbs the slack, so filling is the right call
+       and the dead band is gone. */
+    flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
     padding: 16px;
@@ -554,9 +565,25 @@
      between its two flanking motion columns. */
   .inspect-layout {
     display: grid;
-    grid-template-columns: minmax(300px, 1fr) minmax(280px, 420px) minmax(300px, 1fr);
+    /* The hero grows with the panel (cqw) rather than freezing at 520px on a
+       wide host. The vh term keeps width the binding axis so the square can
+       never be clamped by height into a rectangle. */
+    grid-template-columns:
+      minmax(300px, 1fr)
+      minmax(280px, min(40cqw, 46vh))
+      minmax(300px, 1fr);
+    grid-template-areas: "blue picto red";
     gap: 20px;
     align-items: start;
+    /* Claim the body's full height so the pictograph has something to grow into. */
+    height: 100%;
+    min-height: 0;
+  }
+  .inspect-layout > .motion-rail:first-child {
+    grid-area: blue;
+  }
+  .inspect-layout > .motion-rail:last-child {
+    grid-area: red;
   }
   .motion-rail {
     min-width: 0;
@@ -583,9 +610,17 @@
      element sits balanced instead of pinned to the top with a void beneath.
      Sticky keeps it in view if the sides ever scroll. */
   .pictograph-rail {
+    grid-area: picto;
     position: sticky;
     top: 16px;
     align-self: center;
+    /* Size to whichever of the two axes runs out first, so the pictograph is as
+       large as the panel allows and still square. */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    height: 100%;
   }
   .pictograph-frame {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
@@ -596,11 +631,71 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    /* Width-driven. With the motion columns standing in a side rail, the
+       pictograph's column is always narrower than it is tall, so width is the
+       binding axis in every tier. Driving off height instead let an explicit
+       `height: 100%` beat `aspect-ratio` and rendered it 458x618 — a stretched,
+       non-square grid. `max-height` is the guard for the reverse case. */
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    margin-inline: auto;
   }
-  /* Three columns need ~920px; below that, stack with the pictograph on top. */
-  @media (max-width: 1000px) {
-    .inspect-layout { grid-template-columns: 1fr; }
-    .pictograph-rail { position: static; order: -1; }
+
+  /*
+   * Three columns need ~940px of PANEL width. The old rule asked the VIEWPORT,
+   * which is ~1900px while this panel is ~840px inside the drawer — so it never
+   * fired and all three columns sat crushed on their minmax floors, rendering
+   * the pictograph at its 280px minimum. Asking the container is the fix.
+   *
+   * Narrow: the pictograph takes the full width on top (the tall drawer has
+   * height to spare) and the two motion columns share the row beneath, which is
+   * how they both fit at a readable width instead of at 300px.
+   */
+  /*
+   * Hero beside the data, not above it. Stacking the pictograph on top consumed
+   * the height but left ~570px of empty rail either side of the square — the same
+   * dead-space complaint on the other axis. Standing the two motion columns in a
+   * side rail means the square is bounded by the wider of the two axes and BOTH
+   * get consumed: measured 280px -> 470px on the same panel.
+   */
+  @container inspect (max-width: 940px) {
+    .inspect-layout {
+      /* The side rail takes the narrowest width its content still reads at, so
+         every remaining pixel goes to the hero. */
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+      grid-template-areas:
+        "picto blue"
+        "picto red";
+      grid-template-rows: auto auto;
+      align-content: start;
+    }
+    .pictograph-rail {
+      position: static;
+    }
+  }
+  /* One column only when even two motion columns can't be read side by side. */
+  @container inspect (max-width: 560px) {
+    .inspect-layout {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "picto"
+        "blue"
+        "red";
+      grid-template-rows: auto auto auto;
+    }
+    /* Rows are content-sized here, so the base `height: 100%` on the rail has
+       nothing definite to resolve against and collapsed the square to 283x33.
+       Let content drive the height and let the body scroll. */
+    .pictograph-rail {
+      height: auto;
+    }
+    .pictograph-frame {
+      height: auto;
+      width: 100%;
+      max-height: none;
+    }
   }
   @media (prefers-reduced-motion: reduce) {
     .motion-rail { transition: none; }
