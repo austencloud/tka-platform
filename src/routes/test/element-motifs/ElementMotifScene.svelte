@@ -8,7 +8,7 @@
    * reads well here is what will read in the room.
    */
   import { T } from "@threlte/core";
-  import TelekineticFormation3D from "$lib/features/museum/components/game/TelekineticFormation3D.svelte";
+  import MotifStation from "./MotifStation.svelte";
   import { ELEMENT_MOTIFS, motifPosition } from "./element-motifs";
 
   interface Props {
@@ -38,14 +38,13 @@
     </T.Mesh>
   {/if}
 
-  <TelekineticFormation3D
+  <MotifStation
     stationId={`motif-${motif.roomId}`}
     worldX={pos.x}
     worldZ={pos.z}
     sequenceId={motif.sequenceId}
-    presentation="sculpture"
     effectId={props.effects[motif.roomId] ?? motif.defaultEffect}
     showProps={props.showProps}
-    autoPlay={props.playing}
+    playing={props.playing}
   />
 {/each}
