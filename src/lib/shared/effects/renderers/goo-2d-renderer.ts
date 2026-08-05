@@ -24,12 +24,18 @@ import { curl2D } from "$lib/shared/3d/effects/smoke/smoke-curl-field";
 const TAU = Math.PI * 2;
 const PX_PER_WORLD = 60;
 
-/** Metaball look constants (the prototype's tuned defaults). */
-const BLUR_PX = 11;
+/** Metaball look constants. */
+const BLUR_PX = 10;
 const CONTRAST = 14;
-const GLOW_ALPHA = 0.22;
-const GRAVITY_PX = 60;
-const MAX_BLOBS = 900;
+const GLOW_ALPHA = 0.16;
+const GRAVITY_PX = 32;
+const MAX_BLOBS = 560;
+/**
+ * Pre-contrast brightness for the eroded pass. Dimming the field before the
+ * threshold shrinks the region that survives it, so (outer − eroded) is a band
+ * hugging the surface — the rim light that makes goo read as a wet substance.
+ */
+const ERODE = 0.6;
 
 interface Blob {
   x: number;
@@ -59,6 +65,11 @@ export class Goo2DRenderer {
     | CanvasRenderingContext2D
     | OffscreenCanvasRenderingContext2D
     | null = null;
+  private work: HTMLCanvasElement | OffscreenCanvas | null = null;
+  private workCtx:
+    | CanvasRenderingContext2D
+    | OffscreenCanvasRenderingContext2D
+    | null = null;
   private offW = 0;
   private offH = 0;
   private clock = 0;
@@ -73,7 +84,7 @@ export class Goo2DRenderer {
     this.clock += dt;
     const sc = scale;
     const refSpeed = params.motionReferenceSpeed * PX_PER_WORLD * sc;
-    const baseBlob = 14 * (0.85 + 0.6 * params.intensity) * sc;
+    const baseBlob = 11.5 * (0.85 + 0.6 * params.intensity) * sc;
 
     // 1. Per-emitter: smooth velocity + lay beads along the path travelled.
     for (const s of this.sampleTips(emitters, params, dt)) {
@@ -82,8 +93,10 @@ export class Goo2DRenderer {
       // here bridge into a rivulet instead of gapped lonely dots.
       const prevX = s.x - s.vx * dt;
       const prevY = s.y - s.vy * dt;
-      const ambient = params.ambientEmission * 4;
-      const motion = params.motionEmission * speedScalar * 46;
+      // Beads must land closer together than the bridge blur or the stream
+      // breaks into separate beads instead of merging into a rivulet.
+      const ambient = params.ambientEmission * 5;
+      const motion = params.motionEmission * speedScalar * 68;
       let n = poisson((ambient + motion) * dt);
       if (this.blobs.length + n > MAX_BLOBS) n = MAX_BLOBS - this.blobs.length;
       const motionDir = s.speed > 1 ? Math.atan2(s.vy, s.vx) : 0;
@@ -107,7 +120,7 @@ export class Goo2DRenderer {
           vx: s.vx * 0.88 + Math.cos(perp) * kick,
           vy: s.vy * 0.88 + Math.sin(perp) * kick,
           age: 0,
-          maxAge: 0.8 + Math.random() * 0.55,
+          maxAge: 0.6 + Math.random() * 0.5,
           r0,
           r1: r0 * 1.35,
         });
@@ -138,54 +151,96 @@ export class Goo2DRenderer {
     if (!off) return;
     const p: WaterPalette = params.resolvedPalette;
 
-    // 3. Sum bright colored blobs additively on an opaque black offscreen.
+    const work = this.ensureWork(W, H);
+    if (!work) return;
+
+    // 3. Sum the blobs as a GRAYSCALE density field on an opaque black
+    //    offscreen. Grayscale is the whole point: thresholding a colored field
+    //    binarizes each channel independently, so any overlap saturates to pure
+    //    white with a fringe wherever one channel crosses first. That is what
+    //    made the goo read as plasma. Threshold the density, colorize after.
     off.globalCompositeOperation = "source-over";
     off.fillStyle = "#000";
     off.fillRect(0, 0, W, H);
     off.globalCompositeOperation = "lighter";
-    const core = hexToRgb(p.core);
-    const edge = hexToRgb(p.edge);
     for (const b of this.blobs) {
       const t = b.age / b.maxAge;
       const fade = t < 0.12 ? t / 0.12 : t > 0.65 ? Math.max(0, (1 - t) / 0.35) : 1;
       if (fade <= 0.02) continue;
       const r = b.r0 + (b.r1 - b.r0) * t;
       const g = off.createRadialGradient(b.x, b.y, 0, b.x, b.y, r);
-      g.addColorStop(0, `rgba(${edge.r},${edge.g},${edge.b},${0.95 * fade})`);
-      g.addColorStop(0.5, `rgba(${core.r},${core.g},${core.b},${0.62 * fade})`);
-      g.addColorStop(1, `rgba(${core.r},${core.g},${core.b},0)`);
+      g.addColorStop(0, `rgba(255,255,255,${0.95 * fade})`);
+      g.addColorStop(0.5, `rgba(255,255,255,${0.6 * fade})`);
+      g.addColorStop(1, "rgba(255,255,255,0)");
       off.fillStyle = g;
       off.beginPath();
       off.arc(b.x, b.y, r, 0, TAU);
       off.fill();
     }
 
+    const field = this.off as CanvasImageSource;
+    const workCanvas = this.work as CanvasImageSource;
+    const blurPx = Math.round(BLUR_PX * sc);
     const prevFilter = ctx.filter;
     const prevComposite = ctx.globalCompositeOperation;
     const prevAlpha = ctx.globalAlpha;
     try {
-      // 4. Soft bloom halo — wide blur of the raw glow, low additive alpha,
-      //    under the liquid. Luminous depth so the void reads as lit.
+      // 4. Threshold the density into connected liquid (the metaball recipe:
+      //    blur bridges neighbours, contrast snaps the overlap to a hard gooey
+      //    edge and crushes stray glow to black), then multiply the white
+      //    silhouette by the palette body colour. Black stays black, so the
+      //    tinted plate composites additively without a backing rectangle.
+      work.globalCompositeOperation = "source-over";
+      work.filter = `blur(${blurPx}px) contrast(${CONTRAST})`;
+      work.drawImage(field, 0, 0);
+      work.filter = "none";
+      work.globalCompositeOperation = "multiply";
+      // The deep tint carries the body. Everything here adds, so a light body
+      // leaves the rim and the specular nowhere brighter to go — the interior
+      // has to sit low for the surface to read.
+      work.fillStyle = p.puddleTint;
+      work.fillRect(0, 0, W, H);
+
+      // Soft bloom halo under the liquid — luminous depth so the void reads lit.
       ctx.globalCompositeOperation = "lighter";
       ctx.globalAlpha = GLOW_ALPHA;
       ctx.filter = `blur(${Math.round(26 * sc)}px)`;
-      ctx.drawImage(this.off as CanvasImageSource, 0, 0);
+      ctx.drawImage(workCanvas, 0, 0);
 
-      // 5. Threshold the summed glow into connected liquid (metaball recipe):
-      //    blur bridges neighbours, contrast snaps the overlap to a hard gooey
-      //    edge and crushes faint stray glow to black so lonely sub-threshold
-      //    blobs vanish instead of leaving gray specks. Additive over the dark
-      //    scene so it glows on top of the props rather than occluding them.
+      // The body itself.
       ctx.globalAlpha = 1;
-      ctx.filter = `blur(${Math.round(BLUR_PX * sc)}px) contrast(${CONTRAST})`;
-      ctx.drawImage(this.off as CanvasImageSource, 0, 0);
       ctx.filter = "none";
+      ctx.drawImage(workCanvas, 0, 0);
+
+      // 5. Rim light. The same threshold run against a dimmed field survives
+      //    over a smaller area, so outer XOR eroded is a band hugging the
+      //    surface. Tinted with the palette edge and added on top of the body,
+      //    it gives the wet meniscus that separates goo from a glowing shape.
+      work.globalCompositeOperation = "source-over";
+      work.filter = `blur(${blurPx}px) contrast(${CONTRAST})`;
+      work.drawImage(field, 0, 0);
+      work.globalCompositeOperation = "difference";
+      work.filter = `blur(${blurPx}px) brightness(${ERODE}) contrast(${CONTRAST})`;
+      work.drawImage(field, 0, 0);
+      work.filter = "none";
+      work.globalCompositeOperation = "multiply";
+      work.fillStyle = p.edge;
+      work.fillRect(0, 0, W, H);
+      ctx.globalAlpha = 0.62;
+      ctx.drawImage(workCanvas, 0, 0);
+      ctx.globalAlpha = 1;
 
       // 6. Wet specular glints — tiny bright cores so it reads as liquid, not
       //    gel. Gated to strong, full-size blobs (and tinted, not white) so
       //    faded/isolated blobs don't leave orphan dots.
       const hi = hexToRgb(p.highlight);
-      for (const b of this.blobs) {
+      // A glint only belongs on liquid that actually merged. An isolated bead
+      // never survives the metaball threshold, so its highlight would float in
+      // the void as an orphan speck — which is exactly what it looked like.
+      const neighbours = this.countNeighbours(baseBlob * 1.6);
+      for (let i = 0; i < this.blobs.length; i++) {
+        const b = this.blobs[i]!;
+        if (neighbours[i]! < 3) continue;
         const t = b.age / b.maxAge;
         const fade = t < 0.12 ? t / 0.12 : t > 0.65 ? Math.max(0, (1 - t) / 0.35) : 1;
         const rFull = b.r0 + (b.r1 - b.r0) * t;
@@ -204,6 +259,49 @@ export class Goo2DRenderer {
       ctx.globalCompositeOperation = prevComposite;
       ctx.globalAlpha = prevAlpha;
     }
+  }
+
+  /**
+   * Neighbours within `radius` for every blob, via a uniform grid keyed on
+   * radius-sized cells — the 3x3 cell block around a blob covers its whole
+   * search disc, so this stays linear instead of the O(n²) naive sweep.
+   */
+  private countNeighbours(radius: number): Int32Array {
+    const n = this.blobs.length;
+    const counts = new Int32Array(n);
+    if (radius <= 0) return counts;
+    const cell = radius;
+    const buckets = new Map<number, number[]>();
+    const key = (cx: number, cy: number) => cx * 73856093 + cy * 19349663;
+    for (let i = 0; i < n; i++) {
+      const b = this.blobs[i]!;
+      const k = key(Math.floor(b.x / cell), Math.floor(b.y / cell));
+      const list = buckets.get(k);
+      if (list) list.push(i);
+      else buckets.set(k, [i]);
+    }
+    const r2 = radius * radius;
+    for (let i = 0; i < n; i++) {
+      const b = this.blobs[i]!;
+      const cx = Math.floor(b.x / cell);
+      const cy = Math.floor(b.y / cell);
+      let c = 0;
+      for (let ox = -1; ox <= 1; ox++) {
+        for (let oy = -1; oy <= 1; oy++) {
+          const list = buckets.get(key(cx + ox, cy + oy));
+          if (!list) continue;
+          for (const j of list) {
+            if (j === i) continue;
+            const o = this.blobs[j]!;
+            const dx = o.x - b.x;
+            const dy = o.y - b.y;
+            if (dx * dx + dy * dy <= r2) c++;
+          }
+        }
+      }
+      counts[i] = c;
+    }
+    return counts;
   }
 
   /** Per-emitter EMA velocity smoothing, honoring trackingMode. */
@@ -259,6 +357,26 @@ export class Goo2DRenderer {
     this.offCtx = ctx;
     this.offW = w;
     this.offH = h;
+    this.work = null;
+    this.workCtx = null;
+    return ctx;
+  }
+
+  /** Scratch plate for the threshold + tint passes. Sized with the field. */
+  private ensureWork(
+    w: number,
+    h: number,
+  ): CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null {
+    if (this.work && this.workCtx && this.offW === w && this.offH === h) return this.workCtx;
+    const c = createOffscreen(w, h);
+    if (!c) return null;
+    const ctx = c.getContext("2d") as
+      | CanvasRenderingContext2D
+      | OffscreenCanvasRenderingContext2D
+      | null;
+    if (!ctx) return null;
+    this.work = c;
+    this.workCtx = ctx;
     return ctx;
   }
 
@@ -268,6 +386,8 @@ export class Goo2DRenderer {
     this.smoothedVelocity.clear();
     this.off = null;
     this.offCtx = null;
+    this.work = null;
+    this.workCtx = null;
     this.offW = 0;
     this.offH = 0;
     this.clock = 0;
