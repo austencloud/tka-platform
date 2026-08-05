@@ -7,6 +7,7 @@ import { initFirestore, getAdminAuth } from "./firestore-provider.js";
 import type { SessionIssue } from "../../src/lib/server/analytics/session-issue-register.js";
 
 const ISSUES = "sessionIssues";
+const FEEDBACK = "feedback";
 const META_COLLECTION = "sessionTriageMeta";
 const META_ID = "state";
 
@@ -51,13 +52,24 @@ export async function saveMeta(meta: TriageMeta): Promise<void> {
 export async function loadIssues(): Promise<SessionIssue[]> {
   const db = await getDb();
   const snap = await db.collection(ISSUES).get();
-  return snap.docs.map((d: any) => ({ ...(d.data() as SessionIssue), id: d.id }));
+  return snap.docs.map((d: any) => ({
+    ...(d.data() as SessionIssue),
+    id: d.id,
+  }));
 }
 
 export async function saveIssue(issue: SessionIssue): Promise<void> {
   const db = await getDb();
   const { id, ...rest } = issue;
   await db.collection(ISSUES).doc(id).set(rest, { merge: true });
+}
+
+export async function loadFeedbackStatus(id: string): Promise<string | null> {
+  const db = await getDb();
+  const snap = await db.collection(FEEDBACK).doc(id).get();
+  if (!snap.exists) return null;
+  const status = snap.data()?.status;
+  return typeof status === "string" ? status : null;
 }
 
 export async function deleteIssue(id: string): Promise<void> {

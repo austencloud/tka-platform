@@ -3,6 +3,7 @@ import type { User } from "firebase/auth";
 
 const h = vi.hoisted(() => ({
   claimUsername: vi.fn(async () => undefined),
+  captureWhenReady: vi.fn(),
   collection: vi.fn((_firestore: unknown, ...segments: string[]) =>
     segments.join("/")
   ),
@@ -19,6 +20,7 @@ const h = vi.hoisted(() => ({
   })),
   serverTimestamp: vi.fn(() => ({ __serverTimestamp: true })),
   setDoc: vi.fn(async () => undefined),
+  reportErrorTelemetry: vi.fn(async () => undefined),
 }));
 
 vi.mock("firebase/firestore", () => ({
@@ -46,6 +48,14 @@ vi.mock("$lib/shared/auth/services/username-validator", () => ({
 
 vi.mock("$lib/shared/foundation/utils/avatar-generator", () => ({
   generateAvatarUrl: h.generateAvatarUrl,
+}));
+
+vi.mock("$lib/shared/analytics/services/posthog", () => ({
+  captureWhenReady: h.captureWhenReady,
+}));
+
+vi.mock("$lib/shared/error/services/error-telemetry-reporter", () => ({
+  reportErrorTelemetry: h.reportErrorTelemetry,
 }));
 
 import { UserDocumentManager } from "$lib/shared/auth/services/user-document-manager";
@@ -96,6 +106,42 @@ describe("UserDocumentManager parent reconstruction", () => {
       collectionCount: 0,
     });
     expect(h.claimUsername).toHaveBeenCalledWith("user-1", "matty");
+    expect(h.captureWhenReady).toHaveBeenCalledWith(
+      "profile_document_read_completed",
+      expect.objectContaining({
+        telemetry_schema_version: 2,
+        telemetry_path_shape: "users/{id}",
+      })
+    );
+  });
+
+  it("reports an exact privacy-safe fingerprint when the profile read is denied", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const error = Object.assign(
+      new Error("Missing or insufficient permissions"),
+      {
+        code: "permission-denied",
+      }
+    );
+    h.getDoc.mockRejectedValue(error);
+
+    await new UserDocumentManager().createOrUpdateUserDocument(fullUser());
+
+    expect(h.getDoc).toHaveBeenCalledTimes(2);
+    expect(h.reportErrorTelemetry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error,
+        context: {
+          module: "firestore",
+          action: "get",
+          additionalData: { path: "users/user-1" },
+        },
+      })
+    );
+    expect(h.captureWhenReady).not.toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 
   it("does not claim a full-account-only username for an anonymous guest", async () => {

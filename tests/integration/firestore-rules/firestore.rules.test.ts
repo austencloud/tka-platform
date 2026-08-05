@@ -146,6 +146,26 @@ describe("user profile privilege boundaries", () => {
     );
   });
 
+  it("lets owners observe a missing profile before safe client provisioning", async () => {
+    const fullDb = testEnv
+      .authenticatedContext("missing-full-profile", {
+        firebase: { sign_in_provider: "password" },
+      })
+      .firestore(SDK_SETTINGS);
+    const anonDb = testEnv
+      .authenticatedContext("missing-anon-profile", {
+        firebase: { sign_in_provider: "anonymous" },
+      })
+      .firestore(SDK_SETTINGS);
+
+    await assertSucceeds(
+      getDoc(doc(fullDb, "users/missing-full-profile"))
+    );
+    await assertSucceeds(
+      getDoc(doc(anonDb, "users/missing-anon-profile"))
+    );
+  });
+
   it("keeps privileged profile mutations available to administrators", async () => {
     await seedProfiles();
     const ref = doc(adminCtx().firestore(SDK_SETTINGS), `users/${FULL_UID}`);
@@ -173,6 +193,9 @@ describe("user profile privilege boundaries", () => {
           `users/${FULL_UID}`
         )
       )
+    );
+    await assertFails(
+      getDoc(doc(fullCtx().firestore(SDK_SETTINGS), `users/${FULL_UID}`))
     );
     await assertSucceeds(
       getDoc(doc(adminCtx().firestore(SDK_SETTINGS), `users/${FULL_UID}`))

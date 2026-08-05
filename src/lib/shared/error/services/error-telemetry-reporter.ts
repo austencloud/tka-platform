@@ -15,9 +15,13 @@ import {
   serverTimestamp,
   increment,
 } from "firebase/firestore";
-import { getFirestoreInstance, getAuthInstance } from "$lib/shared/auth/firebase";
-import { captureException } from "$lib/shared/analytics/services/posthog";
+import {
+  getFirestoreInstance,
+  getAuthInstance,
+} from "$lib/shared/auth/firebase";
+import { captureExceptionWhenReady } from "$lib/shared/analytics/services/posthog";
 import type { ShowErrorOptions } from "$lib/shared/error/domain/error-models";
+import { toFirestorePathShape } from "$lib/shared/error/domain/firestore-path-shape";
 
 const COLLECTION = "errorTelemetry";
 
@@ -43,16 +47,21 @@ function isMissingDocError(err: unknown): boolean {
 
 export async function reportErrorTelemetry(
   options: ShowErrorOptions,
-  { skipPostHog = false }: { skipPostHog?: boolean } = {},
+  { skipPostHog = false }: { skipPostHog?: boolean } = {}
 ): Promise<void> {
   // Mirror into PostHog error tracking so handled errors land in the same
   // per-user timeline (session replay, rage clicks) as uncaught ones.
   // Callers reporting errors PostHog already auto-captures (unhandled
   // rejections, window errors) pass skipPostHog to avoid double $exception.
   if (!skipPostHog) {
-    captureException(options.error ?? new Error(options.message), {
+    const pathShape = toFirestorePathShape(
+      options.context?.additionalData?.path
+    );
+    captureExceptionWhenReady(options.error ?? new Error(options.message), {
       telemetry_module: options.context?.module ?? "unknown",
       telemetry_action: options.context?.action ?? "unknown",
+      telemetry_schema_version: 2,
+      ...(pathShape ? { telemetry_path_shape: pathShape } : {}),
       severity: options.severity ?? "error",
     });
   }

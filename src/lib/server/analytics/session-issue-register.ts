@@ -3,6 +3,8 @@
  * store in scripts/lib/session-issue-store.ts owns I/O.
  */
 
+import type { ProductionVerificationSnapshot } from "./production-verification";
+
 export type IssueStatus = "open" | "watching" | "resolved" | "dismissed";
 
 export interface Evidence {
@@ -27,6 +29,7 @@ export interface SessionIssue {
   evidence: Evidence[];
   resolvedAt: string | null;
   resolvedReason: string | null;
+  productionVerification?: ProductionVerificationSnapshot;
 }
 
 export interface Sighting extends Evidence {
@@ -48,7 +51,10 @@ export const SILENCE_DAYS = 14;
  * `dismissed` issues never match: dismissing means "stop telling me". `resolved`
  * issues DO match, so a returning bug reopens instead of forking a duplicate.
  */
-export function matchIssue(issues: readonly SessionIssue[], s: Sighting): SessionIssue | null {
+export function matchIssue(
+  issues: readonly SessionIssue[],
+  s: Sighting
+): SessionIssue | null {
   const candidates = issues.filter((i) => i.status !== "dismissed");
 
   if (s.codeSite) {
@@ -122,6 +128,9 @@ export function shouldResolveOnSilence(
  * Advance the watermark to the newest session seen. Never moves backwards, so
  * a partial run re-reads rather than skipping sessions.
  */
-export function nextWatermark(current: string, sessionStarts: readonly string[]): string {
+export function nextWatermark(
+  current: string,
+  sessionStarts: readonly string[]
+): string {
   return sessionStarts.reduce((max, t) => (t > max ? t : max), current);
 }

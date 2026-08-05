@@ -37,10 +37,11 @@ function getDb() {
   return _db;
 }
 
-// Cache the JWT client and tokens
-let _jwtClient = null;
+// Cache one token per exact Cloud Function audience. Reusing the register
+// function's token for the status function produces an audience mismatch.
 let _cachedToken = null;
 let _tokenExpiry = 0;
+let _cachedTokenAudience = null;
 
 /**
  * Get or create a JWT client from the service account
@@ -69,7 +70,11 @@ function getJwtClient(targetAudience) {
  */
 async function getIdToken(functionUrl) {
   // Check cache (tokens are valid for ~1 hour, we refresh at 50 min)
-  if (_cachedToken && Date.now() < _tokenExpiry) {
+  if (
+    _cachedToken &&
+    _cachedTokenAudience === functionUrl &&
+    Date.now() < _tokenExpiry
+  ) {
     return _cachedToken;
   }
 
@@ -83,6 +88,7 @@ async function getIdToken(functionUrl) {
 
     // Cache the token (refresh 10 minutes before expiry)
     _cachedToken = tokenResponse.id_token;
+    _cachedTokenAudience = functionUrl;
     _tokenExpiry = Date.now() + 50 * 60 * 1000; // 50 minutes
 
     return _cachedToken;

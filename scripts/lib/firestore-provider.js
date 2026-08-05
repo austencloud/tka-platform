@@ -25,7 +25,7 @@ import { join } from "path";
 
 // CLI API key — unrestricted by referrer, limited to Identity Toolkit + Firestore + Token Service.
 // The web app uses a separate key with referrer restrictions.
-const FIREBASE_CONFIG = {
+export const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBSFcJ4T0ssj1adw_KrxWColIu8GKiJI30",
   authDomain: "the-kinetic-alphabet.firebaseapp.com",
   projectId: "the-kinetic-alphabet",

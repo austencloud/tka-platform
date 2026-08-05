@@ -379,7 +379,15 @@ service cloud.firestore {
       // Legacy documents containing private admin metadata stay unavailable
       // to public direct reads. Public list queries must prove the migration
       // marker; signed admins retain list access for migration tooling.
-      allow get: if isAdmin() || isSafePublicProfile(resource.data);
+      // The client provisions a missing profile only after an existence check.
+      // Let the owner observe "not found" without exposing any existing legacy
+      // document that still contains fields outside the public v2 contract.
+      // AUTONOMOUS_REVIEW: missing-owner-profile-read:start
+      allow get: if (isOwner(userId)
+          && !exists(/databases/$(database)/documents/users/$(userId)))
+        || isAdmin()
+        || isSafePublicProfile(resource.data);
+      // AUTONOMOUS_REVIEW: missing-owner-profile-read:end
       allow list: if isAdmin() || resource.data.publicProfileVersion == 2;
 
       // Users can only update their own profile

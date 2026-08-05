@@ -117,6 +117,8 @@
     "screenshots:compare": "tsx scripts/take-screenshots.ts --compare",
     "screenshots:update": "tsx scripts/take-screenshots.ts --update-baselines",
     "triage": "tsx scripts/triage-sessions.ts",
+    "review:firestore-permissions": "tsx scripts/review-firestore-permission-fix.ts",
+    "test:firestore-permission-review": "vitest run --config tests/config/vitest.config.ts tests/unit/analytics/firebase-rules-deployment.test.ts tests/unit/analytics/production-verification.test.ts tests/unit/analytics/profile-read-verification-queries.test.ts tests/unit/analytics/session-issue-register.test.ts tests/unit/auth/user-document-manager-counts.test.ts tests/unit/shared/error/error-telemetry-reporter.test.ts tests/unit/shared/error/firestore-path-shape.test.ts",
     "seo:measure": "tsx scripts/seo/cli.ts",
     "seo:bootstrap": "tsx scripts/seo/cli.ts bootstrap",
     "seo:verify-access": "tsx scripts/seo/cli.ts verify-access",

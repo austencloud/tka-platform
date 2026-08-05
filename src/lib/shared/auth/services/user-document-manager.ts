@@ -15,6 +15,8 @@ import { retryAuthenticatedFirestoreOperation } from "./retry-authenticated-fire
 
 import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
 import { PUBLIC_PROFILE_VERSION } from "$lib/shared/community/domain/models/public-profile-contract";
+import { captureWhenReady } from "$lib/shared/analytics/services/posthog";
+import { reportErrorTelemetry } from "$lib/shared/error/services/error-telemetry-reporter";
 
 /**
  * Capitalize each word in a name (e.g., "brendan freaney" -> "Brendan Freaney")
@@ -74,7 +76,29 @@ export class UserDocumentManager {
       const userDocRef = doc(firestore, `users/${user.uid}`);
       const userDoc = await retryAuthenticatedFirestoreOperation(user, () =>
         getDoc(userDocRef)
-      );
+      ).catch(async (error: unknown) => {
+        const reportedError =
+          error instanceof Error ? error : new Error(String(error));
+        await reportErrorTelemetry({
+          message: "Could not read the signed-in user's profile document",
+          error: reportedError,
+          context: {
+            module: "firestore",
+            action: "get",
+            additionalData: { path: `users/${user.uid}` },
+          },
+        });
+        throw error;
+      });
+
+      // This event is the denominator for the autonomous production review.
+      // It proves the exact owner-scoped read ran under deployed rules; generic
+      // pageviews cannot distinguish real exposure from an untouched code path.
+      captureWhenReady("profile_document_read_completed", {
+        telemetry_schema_version: 2,
+        telemetry_path_shape: "users/{id}",
+        profile_document_exists: userDoc.exists(),
+      });
 
       // Determine display name and auto-capitalize.
       //

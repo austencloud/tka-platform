@@ -1,0 +1,63 @@
+name: Firestore Permission Review
+
+on:
+  schedule:
+    - cron: "17 10 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: firestore-permission-review
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    name: Verify deployed fix and production silence
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      POSTHOG_PROJECT_ID: ${{ vars.POSTHOG_PROJECT_ID }}
+      POSTHOG_PERSONAL_API_KEY: ${{ secrets.POSTHOG_PERSONAL_API_KEY }}
+      TKA_ADMIN: "1"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create Firebase credential file
+        env:
+          SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+        run: printf '%s' "$SERVICE_ACCOUNT_KEY" > serviceAccountKey.json
+
+      - name: Verify review contracts
+        run: pnpm run test:firestore-permission-review
+
+      - name: Verify Firestore rules in the emulator
+        run: pnpm run test:rules:core
+
+      - name: Review deployed rules and production sessions
+        run: pnpm run review:firestore-permissions -- --apply
+
+      - name: Remove Firebase credential file
+        if: always()
+        run: rm -f serviceAccountKey.json

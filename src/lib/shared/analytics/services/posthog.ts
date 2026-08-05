@@ -382,7 +382,30 @@ export function captureException(
   properties?: Record<string, unknown>
 ): void {
   if (!browser || !initialized || import.meta.env.DEV) return;
-  posthog.captureException(error, properties);
+  captureExceptionWithPostHog(posthog, error, properties);
+}
+
+/** Capture a handled exception even when it occurs during analytics startup. */
+export function captureExceptionWhenReady(
+  error: unknown,
+  properties?: Record<string, unknown>
+): void {
+  if (!browser || import.meta.env.DEV) return;
+  onPostHogReady((instance) =>
+    captureExceptionWithPostHog(instance, error, properties)
+  );
+}
+
+function captureExceptionWithPostHog(
+  instance: PostHogReadyClient,
+  error: unknown,
+  properties?: Record<string, unknown>
+): void {
+  try {
+    instance.captureException(error, properties);
+  } catch (captureError) {
+    console.warn("[posthog] exception capture failed", captureError);
+  }
 }
 
 /**
