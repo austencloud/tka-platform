@@ -2,7 +2,7 @@
 status: active
 value: 4
 effort: S
-remaining: 'ACTIVE. Phases 1-4 shipped (a422744d68..c0df410868: shell, catalog front door, PDP re-seat, choreography-cards retirement). Phase 5 (7-viewport visual sweep) and Phase 6 (Codex review) not confirmed.'
+remaining: 'ACTIVE. Phases 1-6 and hero rounds 1-13 are verified locally. Production push sequencing and the decisions in "Decisions Austen owns" remain.'
 depends_on: ""
 plan_path: ""
 tags: []
@@ -220,7 +220,7 @@ visitors today.
       all four states), 960x412 fold and pill guarantees intact, zero page
       console errors.
 
-- [x] R11 `42780c55b0`: **the phone goes live.** Austen: "is this the most
+- [x] R11 `7176d242dc`: **the phone goes live.** Austen: "is this the most
       realistic we can make the phone look ... do we want to make it so that we
       can actually interact with it by clicking the navigation ... on my 4K
       device I actually could click each one of these buttons very easily."
@@ -296,7 +296,7 @@ visitors today.
       of the screen. Sizing the window so the scale is exactly 1.0 (3840×1553)
       makes it land true — that is how the nav-tab clicks above were driven.
 
-- [x] R12 `f71cc1d693`: **the page-wide layout pass.** Every round so far had
+- [x] R12 `208e352383`: **the page-wide layout pass.** Every round so far had
       been the hero. Austen, on the page around it: "no matter how I resize my
       webpage or no matter what device I have it feels like it is designed for
       that device ... right now there's stuff peeking out from the bottom that

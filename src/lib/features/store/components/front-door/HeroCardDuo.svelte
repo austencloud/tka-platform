@@ -102,9 +102,7 @@
   // The card's own sequence, render-ready. Catalog blobs omit motion placement
   // data, and the start-position cell draws propless without it.
   const backSequence = $derived(
-    card?.sequence
-      ? hydrateSequence(card.sequence as unknown as Record<string, unknown>)
-      : null
+    card?.sequence ? hydrateSequence({ ...card.sequence }) : null
   );
 
   /** The camera view IS the card, so the QR cell is in the card's own space. */

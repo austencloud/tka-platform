@@ -43,7 +43,7 @@
       label: "All",
       count: entries.length,
       id: "shop-shelf-all",
-      ariaLabel: `All products, ${entries.length}`,
+      ariaLabel: `All ${entries.length} ${entries.length === 1 ? "product" : "products"}`,
     },
     ...shelves.map((shelf) => {
       const count = entries.filter((e) => e.shelf === shelf).length;

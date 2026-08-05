@@ -28,22 +28,18 @@
  * for the page session: dealing back to a card already seen costs nothing.
  */
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
 import { encodeSequence } from "$lib/shared/navigation/services/sequence-encoder";
+import type { ShortCodeSequenceLoader } from "$lib/shared/qr/services/short-code-manager";
 import {
   configureShortCodeManager,
   getShortCodeManager,
 } from "$lib/shared/qr/get-short-code-manager";
 
-/** Code GENERATION never reads the browse cache; the same stub /q passes. */
+/** Code generation never reads the public gallery; resolution only needs the
+ * one sequence-body read ShortCodeManager declares. */
 const stubBrowseLoader = {
-  loadSequenceMetadata: async () => [],
   loadFullSequenceData: async () => null,
-  removeFromCache: () => {},
-  addToCache: () => {},
-  warmFromCache: () => {},
-  refreshFromFirestore: async () => [],
-} as unknown as PublicSequencesLoader;
+} satisfies ShortCodeSequenceLoader;
 
 const cache = new Map<string, Promise<string | null>>();
 

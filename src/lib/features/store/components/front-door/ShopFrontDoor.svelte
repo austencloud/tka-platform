@@ -14,6 +14,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
+  import ShimmerBlock from "$lib/shared/components/loading/ShimmerBlock.svelte";
   import type { Product } from "../../domain/models/product";
   import { SALES_LIVE } from "../../domain/purchase-state";
   import WaitlistForm from "../WaitlistForm.svelte";
@@ -43,6 +44,10 @@
   // they are not the same message: one asks the reader to retry, the other
   // tells them there is nothing to retry for.
   let loadFailed = $state(false);
+  // Server data normally paints the catalog immediately. When that read falls
+  // back to an empty list, keep the page in an honest pending state until the
+  // browser gets an answer instead of calling a request in flight "restocking."
+  let catalogLoading = $state(products.length === 0);
 
   onMount(async () => {
     try {
@@ -51,6 +56,8 @@
     } catch (e) {
       loadFailed = true;
       console.error("[shop] catalog load failed:", e);
+    } finally {
+      catalogLoading = false;
     }
   });
 
@@ -75,6 +82,9 @@
   // empty track — or, as the single tile used to, stretched across the band.
   const remWide = $derived(visible.length % 3);
   const remMid = $derived(visible.length % 2);
+  // Mirrors today's five-item catalog during the rare SSR-fallback load. The
+  // real grid replaces like-for-like without pulling the exit cards upward.
+  const SKELETON_TILE_COUNT = 5;
 
   // The hero deals from this, so it is the whole pool rather than one pick.
   const heroPool = $derived(heroCoverPool(catalog));
@@ -101,11 +111,74 @@
     <div class="band filter-band">
       <ShopShelfFilter {entries} value={activeShelf} onchange={(next) => (shelf = next)} />
     </div>
+  {:else if catalogLoading}
+    <div class="band filter-band" aria-hidden="true">
+      <div class="filter-placeholder">
+        <div class="filter-shell-placeholder">
+          <ShimmerBlock
+            height="max(var(--min-touch-target, 44px), calc(1.4em + 1.1rem))"
+            borderRadius="7px"
+          />
+        </div>
+      </div>
+    </div>
   {/if}
 
   <div class="band">
-    <section class="catalog" id={CATALOG_ID} aria-label="Catalog">
-      {#if entries.length === 0 && loadFailed}
+    <section
+      class="catalog"
+      id={CATALOG_ID}
+      aria-labelledby="shop-catalog-title"
+      aria-busy={catalogLoading}
+    >
+      <h2 id="shop-catalog-title" class="sr-only">Catalog</h2>
+      {#if catalogLoading}
+        <div class="catalog-loading" role="status" aria-live="polite">
+          <p>Loading the catalog.</p>
+          <div class="wide-rem2 mid-rem1 grid" aria-hidden="true">
+            {#each Array(SKELETON_TILE_COUNT) as _, index}
+              <div class="catalog-skeleton">
+                <div class="skeleton-art">
+                  <ShimmerBlock
+                    height="100%"
+                    borderRadius="1rem"
+                    delay={index * 70}
+                  />
+                </div>
+                <ShimmerBlock
+                  width="24%"
+                  height="0.75rem"
+                  delay={index * 70 + 20}
+                />
+                <ShimmerBlock
+                  width="58%"
+                  height="1.65rem"
+                  delay={index * 70 + 40}
+                />
+                <ShimmerBlock height="1rem" delay={index * 70 + 60} />
+                <ShimmerBlock
+                  width="82%"
+                  height="1rem"
+                  delay={index * 70 + 80}
+                />
+                <div class="skeleton-foot">
+                  <ShimmerBlock
+                    width="4rem"
+                    height="1.45rem"
+                    delay={index * 70 + 100}
+                  />
+                  <ShimmerBlock
+                    width="7rem"
+                    height="2.75rem"
+                    borderRadius="999px"
+                    delay={index * 70 + 120}
+                  />
+                </div>
+              </div>
+            {/each}
+          </div>
+        </div>
+      {:else if entries.length === 0 && loadFailed}
         <p class="empty">The catalog isn't loading right now. Try again in a moment.</p>
       {:else if entries.length === 0}
         <p class="empty">
@@ -212,6 +285,25 @@
     z-index: 20;
   }
 
+  /* ShopShelfFilter is 50px tall inside 0.75rem vertical padding. Reserving
+     the same 74px band keeps the catalog fixed when the real options arrive. */
+  .filter-placeholder {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding: 0.75rem 0;
+  }
+
+  .filter-shell-placeholder {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 38rem;
+    padding: 3px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font-size: var(--font-size-compact, 0.7rem);
+  }
+
   .catalog {
     /* Clears the sticky filter when the hero button jumps down here. */
     scroll-margin-top: 8.5rem;
@@ -264,6 +356,56 @@
     padding: 3rem 0;
     text-align: center;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.66));
+  }
+
+  /* Same grid grammar and card geometry as the loaded catalog. The server
+     fallback can therefore resolve without the exit cards jumping several
+     rows down the page when the client catalog arrives. */
+  .catalog-loading > p {
+    margin: 0 0 1rem;
+    text-align: center;
+  }
+
+  .catalog-skeleton {
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: clamp(1rem, 1.4vw, 1.6rem);
+    border-radius: 1.25rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  }
+
+  .skeleton-art {
+    height: calc(100cqi * 0.5952 + 12px);
+  }
+
+  @container (min-width: 448px) {
+    .skeleton-art {
+      height: calc(100cqi * 0.4542 + 12px);
+    }
+  }
+
+  .skeleton-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: auto;
+    padding-top: 0.75rem;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   /* One row of two cards. 60rem is where a half-band still holds an email
