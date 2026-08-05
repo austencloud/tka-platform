@@ -114,8 +114,18 @@ export const CAVE_MODE_ROOMS = [
     label: "Sun",
     category: "QS",
     technicalMode: "Quarter-time / same-direction",
-    performerIds: ["cave-sun-automaton"],
-    sequenceIds: ["cave-sun-seq"],
+    performerIds: [
+      "cave-sun-automaton-u",
+      "cave-sun-automaton-s",
+      "cave-sun-automaton-v",
+      "cave-sun-automaton-t",
+    ],
+    sequenceIds: [
+      "cave-sun-seq-u",
+      "cave-sun-seq-s",
+      "cave-sun-seq-v",
+      "cave-sun-seq-t",
+    ],
     tone: "anchor",
   },
   {
@@ -415,6 +425,88 @@ const airPerformers = airLedgeStationOffsets(
   elevation: offset.y,
 }));
 
+// Interior metres = ceil(minInterior * 1.5) * 0.5, NOT tiles. 43 -> 32.5 m and
+// 45 -> 34.0 m, which carries the 24 m round chamber plus the 10 m north light
+// crack. Verified against the compiled grid, not assumed.
+const SUN_MIN_INTERIOR_WIDTH = 43;
+const SUN_MIN_INTERIOR_HEIGHT = 45;
+
+const sunWalls = {
+  north: doorWall(EDGE_IDS.airToSun, "start", 3),
+  south: torchWall("end"),
+  // RETAINED DELIBERATELY, and slated for deletion. The design has the visitor
+  // leave the Sundial UP — the ground rises at the eye, a hatch opens, and they
+  // surface on the Moon — which makes this door redundant. But it is currently
+  // the ONLY route to Moon: buildCirculation resolves the sunToMoon edge to a
+  // real door tile and throws without one. Removing it before the eye lift
+  // exists strands the last room in the wing. Delete it in the same change that
+  // lands the lift, not before.
+  east: doorWall(EDGE_IDS.sunToMoon, "end"),
+  west: EMPTY_WALL,
+} satisfies Record<WallName, WallDefinition>;
+
+// ── The Sundial's four Quarter-Same stations ────────────────────────────────
+//
+// The chamber is NOT centred in the bay. The northern 10 m of the 34 m interior
+// is the rising light crack, so the ⌀24 m chamber occupies the southern 24 m and
+// its centre sits 22 m from the interior's north edge — 5 m south of the room's
+// own centre. Placing the pillars on the room centre would put the whole exhibit
+// off-axis from the sun mapping, which is polar about the CHAMBER centre.
+//
+// Station assignment is from the MCP data, not taste: SSSS/TTTT close on gamma3
+// and UUUU/VVVV on gamma11, so U and V take one axis (the leader/follower
+// inversion mirrored across the centre) and S and T the cross axis.
+const SUN_CRACK_RUN_M = 10;
+const SUN_CHAMBER_RADIUS_M = 12;
+const SUN_PILLAR_RADIUS_M = 6.5;
+
+const sunDimensions = computeRoomDimensions({
+  walls: sunWalls,
+  minInteriorWidth: SUN_MIN_INTERIOR_WIDTH,
+  minInteriorHeight: SUN_MIN_INTERIOR_HEIGHT,
+});
+
+// The centre must land ON a tile centre, not between two. Performers snap to
+// the 0.5 m grid, so a chamber centre at x.25 pushes the east pillar to r=6.25
+// and the west to r=6.75 — an asymmetric ring in the one room whose whole
+// subject is four-fold rotational symmetry. Snapping costs 0.25 m of centring
+// in a 32.5 m bay and buys four equal radii.
+const snapToTileCentre = (m: number) =>
+  Math.round(m / TILE_METRES) * TILE_METRES;
+
+const SUN_CHAMBER_CENTRE_X_M = snapToTileCentre(
+  ((sunDimensions.w - 2) * TILE_METRES) / 2
+);
+const SUN_CHAMBER_CENTRE_Z_M = snapToTileCentre(
+  SUN_CRACK_RUN_M + SUN_CHAMBER_RADIUS_M
+);
+
+/** North, east, south, west — each faced inward at the visitor. */
+const SUN_STATIONS = [
+  { suffix: "u", dx: 0, dz: -SUN_PILLAR_RADIUS_M, facing: "south" },
+  { suffix: "s", dx: SUN_PILLAR_RADIUS_M, dz: 0, facing: "west" },
+  { suffix: "v", dx: 0, dz: SUN_PILLAR_RADIUS_M, facing: "north" },
+  { suffix: "t", dx: -SUN_PILLAR_RADIUS_M, dz: 0, facing: "east" },
+] as const;
+
+const sunPerformers = SUN_STATIONS.map((station) => ({
+  offsetX: interiorOffsetFraction(
+    SUN_CHAMBER_CENTRE_X_M + station.dx,
+    sunDimensions.w,
+    sunDimensions.w - 2
+  ),
+  offsetY: interiorOffsetFraction(
+    SUN_CHAMBER_CENTRE_Z_M + station.dz,
+    sunDimensions.h,
+    sunDimensions.h - 2
+  ),
+  facing: station.facing,
+  refId: `cave-sun-automaton-${station.suffix}`,
+  // No collider: the pillars stand in the collapse ring, which is already
+  // blocked as a whole by the terrain program. A second 2D collider here would
+  // only fence off floor the visitor cannot reach anyway.
+}));
+
 const thresholdRoom: RoomNode = {
   ...CAVE_THRESHOLD_ROOM,
   spawn: { offsetX: -0.28, offsetY: 0.28, facing: "north" },
@@ -546,26 +638,13 @@ export const VULCAN_CAVE_ROOMS: RoomNode[] = [
     // and 45 -> 34.0 m, which carries the 24 m chamber plus the north light
     // crack. Measure the compiled grid before trusting this comment; the Air
     // comment in this same file once read these as tiles and was out by 40%.
-    minInteriorWidth: 43,
-    minInteriorHeight: 45,
+    minInteriorWidth: SUN_MIN_INTERIOR_WIDTH,
+    minInteriorHeight: SUN_MIN_INTERIOR_HEIGHT,
     description:
       "A round chamber whose sun is driven by where the visitor stands: bearing from the centre is azimuth, distance from it is elevation. A spiral crossing sweeps a quarter of the compass on the way to a zenith noon, and the ground itself lifts the visitor out through the ceiling onto the Moon.",
     roomPresentation: { suppressTileGeometry: true },
-    walls: {
-      north: doorWall(EDGE_IDS.airToSun, "start", 3),
-      south: torchWall("end"),
-      east: doorWall(EDGE_IDS.sunToMoon, "end"),
-      west: EMPTY_WALL,
-    },
-    performers: [
-      {
-        offsetX: 0,
-        offsetY: 0,
-        facing: "north",
-        refId: "cave-sun-automaton",
-        collisionRadiusTiles: 2,
-      },
-    ],
+    walls: sunWalls,
+    performers: sunPerformers,
   },
   {
     id: "cave-moon",

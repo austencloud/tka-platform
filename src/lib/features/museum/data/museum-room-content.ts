@@ -263,12 +263,15 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
     },
   },
 
+  // The Sundial's four Quarter-Same stations, ringing the collapse ring at the
+  // compass points. U opposite V puts the leader/follower inversion on one axis;
+  // S and T take the cross axis.
   "cave-sun": {
     performers: {
-      "cave-sun-automaton": {
-        autoPlay: true,
-        sequenceId: "cave-sun-seq",
-      },
+      "cave-sun-automaton-u": { autoPlay: true, sequenceId: "cave-sun-seq-u" },
+      "cave-sun-automaton-s": { autoPlay: true, sequenceId: "cave-sun-seq-s" },
+      "cave-sun-automaton-v": { autoPlay: true, sequenceId: "cave-sun-seq-v" },
+      "cave-sun-automaton-t": { autoPlay: true, sequenceId: "cave-sun-seq-t" },
     },
   },
 
