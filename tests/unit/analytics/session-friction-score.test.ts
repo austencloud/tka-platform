@@ -127,3 +127,30 @@ describe("scoreSession", () => {
     }
   });
 });
+
+describe("calibration from the first live run (2026-08-05)", () => {
+  it("discriminates between many exceptions and a few", () => {
+    // A flat cap made these identical, producing six sessions tied at 77 and a
+    // ranking that could not order its own top results.
+    const many = scoreSession(row({ exceptionCount: 40 }), { isNewUser: false });
+    const few = scoreSession(row({ exceptionCount: 4 }), { isNewUser: false });
+    expect(many.total).toBeGreaterThan(few.total);
+  });
+
+  it("ignores a parked tab rather than calling it friction", () => {
+    // 3720s with nothing produced is a forgotten tab, not a struggling user.
+    const parked = scoreSession(
+      row({ contentActionCount: 0, durationMs: 3_720_000 }),
+      { isNewUser: false }
+    );
+    expect(parked.reasons.map((r) => r.signal)).not.toContain("silent-abandon");
+  });
+
+  it("still flags a realistic empty session inside the window", () => {
+    const real = scoreSession(
+      row({ contentActionCount: 0, durationMs: 134_000 }),
+      { isNewUser: false }
+    );
+    expect(real.reasons.map((r) => r.signal)).toContain("silent-abandon");
+  });
+});

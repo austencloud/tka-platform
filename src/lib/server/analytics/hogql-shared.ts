@@ -19,7 +19,17 @@ export function escapeHogQL(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
-/** SQL fragment excluding dev hosts and admin accounts. Used in WHERE clauses. */
+/**
+ * Automation identities that browse production. Verified 2026-08-05:
+ * `agent-codex-claude` had 91 events on tkaflowarts.com and took two of the
+ * top ten friction slots with hour-long "produced nothing" sessions — a parked
+ * agent tab, scored as a struggling user. Matched by prefix so future agent
+ * identities are excluded automatically. Real Firebase uids are 28-char
+ * alphanumeric and never start with "agent-".
+ */
+export const EXCLUDED_AGENT_UID_PREFIX = "agent-";
+
+/** SQL fragment excluding dev hosts, admin accounts, and agent automation. */
 export function pulseProdFilter(): string {
   const uidList = EXCLUDED_ADMIN_UIDS.map((u) => `'${escapeHogQL(u)}'`).join(", ");
   return `
@@ -27,5 +37,6 @@ export function pulseProdFilter(): string {
     AND coalesce(properties."$host", '') NOT LIKE '192.168.%'
     AND coalesce(properties."$host", '') != 'dev.tkaflowarts.com'
     AND distinct_id NOT IN (${uidList})
+    AND distinct_id NOT LIKE '${EXCLUDED_AGENT_UID_PREFIX}%'
   `;
 }
