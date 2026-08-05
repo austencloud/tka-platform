@@ -6,6 +6,12 @@ pages_build_output_dir = ".svelte-kit/cloudflare"
 [vars]
 PUBLIC_ENVIRONMENT = "production"
 R2_PUBLIC_URL = "https://assets.tkaflowarts.com"
+# Session-replay deep links only (posthog.ts buildSessionReplayUrl). Not a
+# credential — the PostHog project id is public, and the key that can actually
+# read the project is POSTHOG_PERSONAL_API_KEY, a dashboard-managed secret.
+# This was set on the preview environment but not production, so replay links
+# silently returned null in prod.
+PUBLIC_POSTHOG_PROJECT_ID = "299320"
 
 [[r2_buckets]]
 binding = "QR_VIDEOS"
