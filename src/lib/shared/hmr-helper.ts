@@ -72,6 +72,29 @@ function scheduleReload(reason: string) {
 }
 
 /**
+ * HMR can leave Create's scoped stylesheet present in the document but absent
+ * from the active cascade. The module still exists in the accessibility tree,
+ * yet its root collapses to its intrinsic height and the user sees only the
+ * animated background. A healthy Create surface always fills its module host.
+ */
+export function isCreateSurfaceCollapsed(
+  root: ParentNode = document,
+): boolean {
+  const surface = root.querySelector<HTMLElement>(".create-tab");
+  const host = surface?.parentElement;
+  if (!surface || !host) return false;
+
+  const surfaceRect = surface.getBoundingClientRect();
+  const hostRect = host.getBoundingClientRect();
+  if (hostRect.width <= 0 || hostRect.height <= 0) return false;
+
+  return (
+    surfaceRect.width < hostRect.width * 0.5 ||
+    surfaceRect.height < hostRect.height * 0.5
+  );
+}
+
+/**
  * Handle HMR-specific initialization
  * Call this in your main app component's onMount
  */
@@ -297,6 +320,12 @@ async function checkStateUISync() {
 
     const stateTab = navigationState.activeTab;
     const stateModule = navigationState.currentModule;
+
+    if (stateModule === "create" && isCreateSurfaceCollapsed()) {
+      console.error("[HMR] Create surface collapsed after update");
+      scheduleReload("Collapsed Create surface after HMR update");
+      return;
+    }
 
     // Get current URL path
     const urlPath = window.location.pathname;
