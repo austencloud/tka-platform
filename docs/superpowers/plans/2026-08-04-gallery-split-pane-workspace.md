@@ -936,6 +936,39 @@ grid tab, both sheets and the collection builder never carry the class.
 - Sparse results at 2560/3840 and the app-wide 4K@100% scaling gap are both
   unchanged from the Task 6/7 closeouts.
 
+### Task 8 regression: a taller row can keep a shorter row's offset (2026-08-05)
+
+Austen captured a persistent overlap after filtering: the `C` section header
+started inside the preceding 16-step `A` card. Refreshing repaired it.
+
+The motion exposed a stale virtualizer cache rather than a stacking-context
+problem:
+
+1. `SectionedVirtualGrid` positions every item absolutely from TanStack's
+   measured `VirtualItem.start`.
+2. The virtualizer used TanStack's default numeric index key, even though the
+   flattened stream already carries data keys. Filtering could therefore put an
+   unrelated row at an index that still owned the previous row's measured size.
+3. The recreation signature contained only item count and column count. An
+   equal-count result change kept the old cache.
+4. Row height depends on step count. At the same card width, the current layout
+   calculation makes a 16-step card about 57.5% taller than an 8-step card. A
+   cached 8-step size places the next header inside the new 16-step card.
+
+Implemented safeguards:
+
+- [x] Give TanStack each flattened item's stable data key through `getItemKey`.
+- [x] Build a measurement signature from item order, row maximum step count,
+  column count, and start-position layout.
+- [x] Invalidate cached measurements in `$effect.pre`, before the View
+  Transition captures the new frame, then retain the next-frame DOM measurement
+  as the pixel correction.
+- [x] Add focused regression coverage for equal-count short-to-tall replacement,
+  persistent mixed-height rows, layout changes, and data keys. Result: 4/4.
+- [ ] Reproduce Austen's filter path interactively and prove adjacent virtual
+  items do not overlap during or after the transition. Browser clicks still
+  require explicit permission in the current conversation.
+
 ### Note on browser tooling
 
 The chrome-devtools MCP server disconnected during this session. If it is
@@ -1219,3 +1252,80 @@ or the `cat-cell` container, none of which exist below the seam.
    which value screen is open, so only the resolved cell knows. `.cat-cell`
    with `container-type: size` is the seam.
 3. **Ten value screens, not eleven** — see 9.1.
+
+---
+
+## Task 10: Finish the height pass — Collections and LOOPs (2026-08-05)
+
+Austen on Task 9: *"They did a really really good job aside from the
+collections, which apparently didn't quite work as well as they intended —
+notice how the icon is spilling out of its container. Let's tell them to finish
+up the job."* Then, separately: *"Sometimes you can go to LOOPs and it's all
+spelling out an incorrect way like this, as a result of whatever was selected
+before you applied the transition to LOOPs. This is not ideal."*
+
+### 10A — Collections cards overflow their box
+
+Screen: `section === "collection"` in `GalleryWorkspace.svelte` (~:680), rows are
+`.length-row.tall.monument.tinted.collection-row` inside `.value-list`. At ~2560
+with a 736px left column, his screenshot shows:
+
+- The folder glyph (`.loop-icon`) and the Smart-Collection sparkle render ABOVE
+  the card's top edge, sitting in the gap between rows.
+- The count numeral renders BELOW the card's bottom edge, in the next gap.
+- So the painted card holds only the label while its art and count escape into
+  the row gaps, and consecutive rows read as overlapping. They stopped looking
+  like cards.
+
+Likely the same class you already fixed for the catalog's plate images: the card
+grew under the new row-ceiling / height-budget math but this screen's inner
+content is not constrained to the card box (missing `min-height: 0` on the grid
+item, art sized against something that is no longer the sized element, or
+content simply taller than the row with visible overflow). Note this screen
+measured `-910 / -852` dead air at 1920 in your own 9.1 table — it is the one
+screen whose content EXCEEDS its zone, which is why it is the one that broke.
+
+Fix it so art, label, and count all live inside the card at every tier, with the
+art scaling with the card the way Creator and Timing & Direction now do.
+Genuine scrolling is acceptable when there are more collections than fit — a
+broken card is not.
+
+### 10B — LOOPs composes wrong, and depends on the previous screen
+
+His screenshot: LOOPs renders 7 options as 2 columns × 4 rows with **Rewound
+alone in the last row** — a row of one, which `4k-native-layout.md` forbids
+outright. 7 % 2 = 1 and 7 % 3 = 1, so neither 2 nor 3 columns divides cleanly;
+either span the last card across the row (the trick you already used for the
+11th catalog tile) or pick a count that leaves no orphan.
+
+The more important half is his causal observation: **the composition depends on
+which screen was open before**. That points at the height budget reading a stale
+measurement across the per-section `<Crossfade>` — the outgoing screen's blocks,
+or a value published before the incoming screen laid out — so LOOPs inherits an
+allocation computed for something else. A layout that differs by arrival path is
+a bug even when the frame happens to look fine.
+
+Reproduce it deliberately: enter LOOPs from several different prior screens
+(Grid mode → LOOPs, Timing & Direction → LOOPs, Collections → LOOPs, and LOOPs
+from a fresh load) and compare the measured column count, row heights, and
+`--editor-need`. They must be identical. Then fix the staleness at its source in
+`pane-height-budget.ts` rather than papering over it with a per-screen override.
+
+### Steps
+
+- [ ] **Step 10.1 — reproduce both, with numbers.** For 10B, the arrival-path
+  table above (≥4 paths × column count / row height / `--editor-need`). For 10A,
+  per-card child-vs-card rect comparison on the Collections screen.
+- [ ] **Step 10.2 — fix 10A.** Content inside the card at 1920 / 2560 / 3840.
+- [ ] **Step 10.3 — fix 10B at the source.** Same composition regardless of
+  arrival path; no row of one on LOOPs (or any screen — check all ten).
+- [ ] **Step 10.4 — sweep for the same two classes across all ten value
+  screens.** (a) any child element whose rect escapes its card's rect;
+  (b) any screen whose last row holds exactly one item. Measure, do not
+  eyeball: compare `getBoundingClientRect()` of each card's children against
+  the card, and group cards by `Math.round(rect.top)` to count rows. Report
+  what you CHECKED, not only what you changed.
+- [ ] **Step 10.5 — verify + commit.** Before/after screenshots of Collections
+  and LOOPs at 2560 read side by side. `npm run check`: 0 errors, 0 warnings.
+  `npx vitest run tests/unit/browse/`: only the 2 protobufjs suites failing.
+  Do NOT raise the GalleryDrill line cap. Explicit pathspecs. Do NOT push.
