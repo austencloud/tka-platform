@@ -1189,6 +1189,17 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
   },
   {
+    id: "combinator",
+    groupId: "choreography",
+    labelKey: "tab_lab_combinator",
+    descKey: "tab_desc_lab_combinator",
+    label: "Combinator",
+    icon: '<i class="fas fa-code-merge" aria-hidden="true"></i>',
+    description: "Two cards in, every LOOP they make out",
+    color: "#a78bfa",
+    gradient: "linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)",
+  },
+  {
     id: "collision-lab",
     groupId: "physical",
     labelKey: "tab_lab_collision_lab",

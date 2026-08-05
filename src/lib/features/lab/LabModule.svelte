@@ -35,6 +35,7 @@
     "phrase-effort": () => import("$lib/features/lab/phrase-effort-lab/PhraseEffortLabModule.svelte"),
     village: () => import("$lib/features/village/VillageLabTab.svelte"),
     "pov-pattern": () => import("./tabs/PovPatternLab.svelte"),
+    combinator: () => import("./tabs/combinator/CombinatorLab.svelte"),
     "collision-lab": () => import("./tabs/collision-lab/CollisionLab.svelte"),
     dodge: () => import("./tabs/dodge/DodgeTab.svelte"),
     "spatial-lab": () => import("./tabs/spatial-lab/SpatialLab.svelte"),
