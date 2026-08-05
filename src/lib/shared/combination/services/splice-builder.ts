@@ -12,26 +12,35 @@
  * So the whole chain is re-derived here, from a single seed:
  *
  *   1. Flatten the blocks in walk order, renumbering 1..n.
- *   2. Rebuild the START POSITION — a static both-hands hold at the first step's
- *      start. That hold IS the frame: its orientations are the walk's only
- *      orientation input.
+ *   2. Rebuild the START POSITION through `startPositionDeriver` — the same
+ *      derivation the sequence-hydrator uses. That hold IS the frame: its end
+ *      orientations are the walk's only orientation input.
  *   3. `recalculateAllOrientations` — propagate from the hold through every
  *      step. THIS is the step that makes a mixed-source walk performable, and
  *      the reason a splice is more than a concatenation.
  *   4. `deriveSequenceLetters` — normalization, not correction. Dataframe rows
  *      carry no orientation (see `fixtures.test.ts` rowKey), so step 3 cannot
  *      change a letter; running the lookup anyway catches material that was
- *      never a real row in the first place, and says so out loud.
- *   5. `processReversals` — reversal dots over the NEW step order. Splice seams
- *      are exactly where a prop-direction flip appears, which is what Austen's
- *      letter-faithful GG+HH examples show.
+ *      never a real row in the first place, and flags it.
+ *   5. `deriveReversals(..., { loop: true })` — reversal dots over the NEW step
+ *      order, WITH the wrap. Splice seams are exactly where a prop-direction
+ *      flip appears, which is what Austen's letter-faithful GG+HH examples show.
+ *   6. Strict word + honest circularity + period (below).
  *
- * **Orientation closure is NOT forced.** A closed walk closes positionally by
- * construction; whether it also returns to its start ORIENTATION is a property
- * of the material. When it does not, the loop simply has a period > 1 — two (or
- * four) passes to return to identity — which is ordinary TKA, not an error. The
- * `period` field is left unset here rather than guessed; classification is Task
- * 8's.
+ * **isCircular is measured, not asserted.** A walk closes POSITIONALLY by
+ * construction, but `isCircular` in this codebase means the app's stricter
+ * seamless-loop definition — position AND orientation return to the start, so a
+ * player can repeat it with no visible jump (`isSeamlesslyLoopable`). Hard-coding
+ * `true` would have lied about every result whose orientation chain takes two
+ * passes.
+ *
+ * **`period` carries the fuller truth.** A walk whose orientations do not close
+ * in one pass is not broken; it is a period-2 (or 4) loop, ordinary TKA. The
+ * period is SIMULATED here — feed the last pass's end orientations back in as
+ * the next pass's seed and count how many passes it takes to return — rather
+ * than guessed, and orientation closure is never forced. Location closes in one
+ * pass by construction, so for a combination `period` is exactly the orientation
+ * period.
  *
  * **Arrow locations are not recomputed.** A step's arrow locations are a
  * function of its own two motions' locations plus its letter, and splicing
@@ -41,76 +50,112 @@
  * Everything here is DETERMINISTIC: ids are derived from block index, step
  * index and the source step's own id, never minted. Two identical walks must
  * produce byte-identical sequences, or the search's determinism guarantee stops
- * at this boundary. (That is also why the start position is assembled here
- * rather than via `createStartPositionFromBeatStart`, whose id is
+ * at this boundary. (`startPositionDeriver`'s own id, `derived-start-<position>`,
+ * is derived too — unlike `createStartPositionFromBeatStart`, whose id is
  * `start-derived-${Date.now()}`.)
  */
 
-import { recalculateAllOrientations } from "$lib/shared/create/services/orientation-propagation";
+import { deriveReversals } from "@tka/sequence-engine";
+
+import {
+  propagateOrientationsForColor,
+  recalculateAllOrientations,
+} from "$lib/shared/create/services/orientation-propagation";
 import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { deriveSequenceLetters } from "$lib/shared/create/services/sequence-transformer";
-import { createStartPositionData } from "$lib/shared/foundation/domain/factories/create-start-position-data";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import {
   createSequenceData,
   updateSequenceData,
   type SequenceData,
 } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import { deriveWord } from "$lib/shared/foundation/services/word-deriver";
+import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
+import { deriveWordStatus } from "$lib/shared/foundation/services/word-deriver";
 import {
   MotionColor,
-  MotionType,
-  RotationDirection,
+  type Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import {
-  createMotionData,
-  type MotionData,
-} from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
 
 import type { WalkBlock } from "../domain/types";
 
+const COLORS = [MotionColor.BLUE, MotionColor.RED] as const;
+
 /**
- * One hand's motion, frozen where it stands: same location, same orientation,
- * nothing rotating. The same construction the fixtures' `holdOf` uses.
+ * Passes to simulate before giving up on orientation closure. The orientation
+ * wheel has four states and each hand's per-pass map is a permutation of it, so
+ * a two-hand period divides 4 — 8 is generous headroom, not a real ceiling.
  */
-function holdOf(motion: MotionData): MotionData {
-  return createMotionData({
-    ...motion,
-    motionType: MotionType.STATIC,
-    rotationDirection: RotationDirection.NO_ROTATION,
-    endLocation: motion.startLocation,
-    endOrientation: motion.startOrientation,
-    arrowLocation: motion.startLocation,
-    turns: 0,
-  });
+const MAX_PERIOD = 8;
+
+type OrientationSeed = Partial<Record<MotionColor, Orientation>>;
+
+/** Where each hand stands before the first step: the start hold's end state. */
+function seedOf(sequence: SequenceData): OrientationSeed {
+  const hold = sequence.startPosition;
+  if (!hold) return {};
+  return Object.fromEntries(
+    COLORS.map((color) => [color, hold.motions[color]?.endOrientation])
+  ) as OrientationSeed;
 }
 
 /**
- * The static both-hands hold the spliced sequence begins from.
+ * One pass of the sequence: what each hand's orientation becomes after playing
+ * every step once from `seed`.
  *
- * The ORIENTATION SEED. `recalculateAllOrientations` reads this hold's end
- * orientations and nothing else, so seeding it from the walk's first step means
- * the result is expressed in the frame that step was written in — and every
- * downstream orientation follows from there.
- *
- * `letter` stays null: the α/β/Γ static-letter helper is module-private to
- * `create/services/sequence-transforms`, and the fixtures' own loops carry null
- * here too, so this matches the corpus rather than inventing a third shape.
+ * Reuses the same propagation the orientation recalc uses, so a simulated pass
+ * and a real one can never disagree.
  */
-function buildStartHold(first: StepData, id: string): StartPositionData {
-  return createStartPositionData({
-    id,
-    letter: null,
-    startPosition: first.startPosition ?? null,
-    endPosition: first.startPosition ?? null,
-    gridPosition: first.startPosition ?? null,
-    motions: {
-      [MotionColor.BLUE]: holdOf(first.motions.blue),
-      [MotionColor.RED]: holdOf(first.motions.red),
-    },
-  });
+function playOnePass(
+  steps: readonly StepData[],
+  seed: OrientationSeed
+): OrientationSeed {
+  const next: OrientationSeed = {};
+  for (const color of COLORS) {
+    const start = seed[color];
+    if (start === undefined) continue;
+    const played = propagateOrientationsForColor([...steps], color, start);
+    next[color] = played.at(-1)?.motions[color]?.endOrientation ?? start;
+  }
+  return next;
+}
+
+function sameSeed(a: OrientationSeed, b: OrientationSeed): boolean {
+  return COLORS.every((color) => a[color] === b[color]);
+}
+
+/**
+ * Passes required to return to the starting orientation — the sequence's
+ * `period`.
+ *
+ * 1 = closes in one pass (a true seamless loop). 2 = halved: play it twice and
+ * the props are back where they began. Both are correct sequences; only the
+ * player's repeat count differs.
+ *
+ * Returns undefined when the chain has not closed within {@link MAX_PERIOD}
+ * passes. At 0 turns that should be unreachable, so it warns rather than
+ * silently reporting a number it cannot justify.
+ */
+function orientationPeriod(
+  sequence: SequenceData
+): { period: number } | undefined {
+  const seed = seedOf(sequence);
+  if (sequence.steps.length === 0 || Object.keys(seed).length === 0) {
+    return undefined;
+  }
+
+  let current = seed;
+  for (let pass = 1; pass <= MAX_PERIOD; pass++) {
+    current = playOnePass(sequence.steps, current);
+    if (sameSeed(current, seed)) return { period: pass };
+  }
+
+  console.warn(
+    `[splice-builder] orientation chain of ${sequence.id} did not close within ${MAX_PERIOD} passes; ` +
+      "leaving period unset rather than reporting an unjustified number."
+  );
+  return undefined;
 }
 
 /**
@@ -140,10 +185,33 @@ async function withDerivedLetters(seq: SequenceData): Promise<SequenceData> {
   if (unresolved.length > 0) {
     console.warn(
       `[splice-builder] ${unresolved.length} of ${derived.steps.length} spliced steps have no dataframe letter ` +
-        `(steps ${unresolved.map((s) => s.stepNumber).join(", ")}); the result will carry them unlettered.`
+        `(steps ${unresolved.map((s) => s.stepNumber).join(", ")}); the result is flagged metadata.incompleteWord.`
     );
   }
   return derived;
+}
+
+/**
+ * Reversal dots over the spliced step order, WITH the loop wrap.
+ *
+ * `reversalDetector.processReversals` gates the wrap on `sequence.loopType`,
+ * which a combination does not carry — its LOOP classification is not this
+ * layer's claim to make. But a closed walk IS cyclic by construction, so step 1
+ * genuinely does look back at the last step, and suppressing that would hide a
+ * real dot at the wrap seam. The engine detector is called directly with
+ * `loop: true`; the app's display policy (dots = the `propReversal` channel
+ * only) and its per-step applier are still the adapter's.
+ */
+function withWrapReversals(seq: SequenceData): SequenceData {
+  const flags = deriveReversals(seq.steps, { loop: true });
+  return updateSequenceData(seq, {
+    steps: seq.steps.map((step, i) =>
+      reversalDetector.applyReversalSymbols(step, {
+        blueReversal: flags[i]?.blue.propReversal ?? false,
+        redReversal: flags[i]?.red.propReversal ?? false,
+      })
+    ),
+  });
 }
 
 /**
@@ -153,6 +221,10 @@ async function withDerivedLetters(seq: SequenceData): Promise<SequenceData> {
  * mode is carried onto the result; its start position is NOT, because a walk
  * may enter card A at any step and the hold has to match the step the walk
  * actually begins on.
+ *
+ * Throws on an empty walk. The search never emits one (a recorded walk has at
+ * least two steps), so an empty block list is a caller bug, and a
+ * stepless "sequence" would be a silently useless object.
  */
 export async function buildResult(
   blocks: readonly WalkBlock[],
@@ -170,8 +242,9 @@ export async function buildResult(
           // search produce different sequences.
           id: `${blockIndex}.${stepIndex}:${block.sourceId}:${step.id}`,
           stepNumber,
-          // Reversal flags describe adjacency in the SOURCE ordering; the
-          // splice has a new one. Cleared here, recomputed below.
+          // Belt and braces: the source flags describe adjacency in the SOURCE
+          // ordering, and the splice has a new one. `withWrapReversals` below
+          // is authoritative and overwrites both.
           blueReversal: false,
           redReversal: false,
         })
@@ -179,30 +252,50 @@ export async function buildResult(
     });
   });
 
+  const first = steps[0];
+  if (!first) {
+    throw new Error(
+      "buildResult: a walk with no steps is not a sequence (the search never emits one)"
+    );
+  }
+
   const id = `combination:${blocks
     .map((b) => `${b.sourceId}#${b.startStepIndex}+${b.steps.length}`)
     .join("|")}`;
 
-  const first = steps[0];
   const spliced = createSequenceData({
     id,
     steps,
-    isCircular: true,
+    // Provisional; measured at the end, once orientations are real.
+    isCircular: false,
     ...(frameCard.gridMode !== undefined && { gridMode: frameCard.gridMode }),
-    ...(first && { startPosition: buildStartHold(first, `${id}-start`) }),
+    startPosition: startPositionDeriver.deriveFromFirstStep(first),
   });
 
   // 3 → 4 → 5. Order matters only between 3 and 5: reversal flags are read off
   // the final step order, and nothing after 3 reorders anything.
   const oriented = recalculateAllOrientations(spliced);
   const lettered = await withDerivedLetters(oriented);
-  const withReversals = reversalDetector.processReversals(lettered);
+  const result = withWrapReversals(lettered);
 
-  const word = deriveWord(withReversals);
-  return updateSequenceData(withReversals, {
-    word,
+  // Strict derivation, not the permissive display helper: `deriveWord` drops
+  // unlettered steps and falls back to `name`, which would turn an 8-step walk
+  // with one unresolved step into a plausible 7-token word. The partial word is
+  // still emitted (it is the honest best label), but `incompleteWord` makes the
+  // gap VISIBLE to the classifier and to anything that would save or mint a
+  // shortcode from it — both of which must refuse.
+  const status = deriveWordStatus(result);
+  const closure = orientationPeriod(result);
+
+  return updateSequenceData(result, {
+    word: status.word,
     // Display simplification (FΨFΨ -> FΨ) is word-simplifier's job at the
     // display layer; `word` and `name` are the data layer's full expansion.
-    name: word || "combination",
+    name: status.word || "combination",
+    isCircular: isSeamlesslyLoopable(result),
+    ...(closure && { period: closure.period }),
+    ...(!status.complete && {
+      metadata: { ...result.metadata, incompleteWord: true },
+    }),
   });
 }

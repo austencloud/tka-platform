@@ -10,15 +10,31 @@
  * `validateSequence` is imported from `features/` deliberately and ONLY here —
  * `shared/` source may never import from `features/`, but a test may reach for
  * the app's own validator rather than re-deriving the rule it enforces.
+ *
+ * What `validateSequence` does and does NOT prove: it checks ADJACENCY only —
+ * every step's start orientation equals its predecessor's end orientation, with
+ * step 1 measured against the start hold. It cannot tell a correct chain from a
+ * consistently-wrong one, because it never recomputes what an end orientation
+ * OUGHT to be. The pinned chain in the wrap test and the oracle-style
+ * assertions below (exact letters, exact dot positions, exact period) are what
+ * carry correctness; adjacency is the cheap invariant on top.
  */
 
 import { beforeAll, describe, expect, it } from "vitest";
 
+import { validateSequence } from "$lib/features/create/spell/services/orientation-continuity-validator";
 import type { WalkBlock } from "$lib/shared/combination/domain/types";
 import { findCombinations } from "$lib/shared/combination/services/sequence-combinator";
 import { buildResult } from "$lib/shared/combination/services/splice-builder";
-import { validateSequence } from "$lib/features/create/spell/services/orientation-continuity-validator";
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
+import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  MotionColor,
+  MotionType,
+  Orientation,
+  RotationDirection,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 import { GGGG_CW, HHHH_CCW } from "./fixtures";
 import { loadPictographDatasetForTests } from "./pictograph-dataset";
@@ -64,13 +80,24 @@ describe("splice builder", () => {
     expect(result.steps.map((s) => s.stepNumber)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8,
     ]);
-    expect(result.isCircular).toBe(true);
     expect(result.word.length).toBe(8);
+    expect(result.gridMode).toBe(GGGG_CW.gridMode);
+
+    // The canonical deriver's start hold — same one the sequence-hydrator
+    // builds. Its id is derived from the position (deterministic), and it
+    // carries the α/β/Γ static letter a hand-rolled hold would have dropped.
     expect(result.startPosition).toBeDefined();
     expect(result.startPosition!.gridPosition).toBe(
       GGGG_CW.steps[0]!.startPosition
     );
-    expect(result.gridMode).toBe(GGGG_CW.gridMode);
+    expect(result.startPosition!.id).toBe("derived-start-beta1");
+    expect(result.startPosition!.letter).toBe("β");
+
+    // MEASURED, not asserted: this splice really does close in orientation as
+    // well as position, so it earns the app's seamless-loop flag. See the
+    // period test for the case where it would not.
+    expect(result.isCircular).toBe(true);
+    expect(result.period).toBe(1);
 
     // Positional closure: every seam meets, including the wrap.
     for (let i = 1; i < result.steps.length; i++) {
@@ -137,23 +164,25 @@ describe("splice builder", () => {
       expect(typeof step.redReversal).toBe("boolean");
     }
 
-    // Step 1 can never carry a dot: a dot marks a prop-direction FLIP against
-    // what came before, and `processReversals` reads the loop wrap only for
-    // sequences carrying a `loopType`. A combination carries none (its LOOP
-    // classification is not this layer's claim), so step 1 has no predecessor
-    // to flip against.
-    expect(result.steps[0]!.blueReversal).toBe(false);
-    expect(result.steps[0]!.redReversal).toBe(false);
-
-    // The G->H seam: GGGG is pro CW throughout, HHHH_CCW is anti CCW
-    // throughout, so the prop reverses direction exactly once, on step 5 — the
-    // first H. Both hands move identically in these two cards, so both dot.
+    // A closed walk is cyclic by construction, so the dots are computed WITH
+    // the wrap. Both hands move identically in these two cards, so every dot is
+    // on both hands, and the material puts one at each of the two seams:
+    //
+    //   step 5 — the G->H seam. GGGG is pro CW, HHHH_CCW is anti CCW: the prop
+    //            reverses direction on the first H.
+    //   step 1 — the WRAP seam. Step 8 is anti CCW and step 1 is pro CW, so the
+    //            prop reverses again on the way round. Suppressing this (which
+    //            `processReversals` would, since it gates the wrap on
+    //            `loopType` and a combination carries none) would hide a real
+    //            reversal a performer has to make.
     const dotted = result.steps
       .filter((s) => s.blueReversal || s.redReversal)
       .map((s) => s.stepNumber);
-    expect(dotted).toEqual([5]);
-    expect(result.steps[4]!.blueReversal).toBe(true);
-    expect(result.steps[4]!.redReversal).toBe(true);
+    expect(dotted).toEqual([1, 5]);
+    for (const i of [0, 4]) {
+      expect(result.steps[i]!.blueReversal).toBe(true);
+      expect(result.steps[i]!.redReversal).toBe(true);
+    }
   });
 
   it("closes its orientation chain in one pass for GGGG + HHHH", async () => {
@@ -171,6 +200,7 @@ describe("splice builder", () => {
     // chain below would no longer read as computed values.
     const result = await buildResult(gThenH(), GGGG_CW);
     const hold = result.startPosition!;
+    expect(result.period).toBe(1);
 
     for (const color of COLORS) {
       expect(hold.motions[color]!.endOrientation).toBe(
@@ -191,6 +221,88 @@ describe("splice builder", () => {
       "in",
       "out",
     ]);
+  });
+
+  it("reports a period-2 loop honestly instead of calling it circular", async () => {
+    // ONE H step on its own: anti at 0 turns flips orientation, so the walk
+    // returns to beta1 positionally but with the props inverted. Playing it
+    // twice returns them. That is a period-2 loop — a real, performable
+    // sequence — and calling it `isCircular` would be a lie the app's own
+    // seamless-loop definition does not permit.
+    const oneH: WalkBlock[] = [
+      {
+        sourceId: "B id",
+        kind: "cardB",
+        startStepIndex: 0,
+        steps: [HHHH_CCW.steps[0]!],
+        rotationFaithful: false,
+      },
+    ];
+    const result = await buildResult(oneH, GGGG_CW);
+
+    expect(result.steps).toHaveLength(1);
+    expect(result.period).toBe(2);
+    expect(result.isCircular).toBe(false);
+    // Orientation closure was NOT forced: the last step really does end `out`
+    // against a hold that started `in`.
+    expect(result.startPosition!.motions.blue!.endOrientation).toBe("in");
+    expect(result.steps[0]!.motions.blue.endOrientation).toBe("out");
+  });
+
+  it("flags an incomplete word rather than emitting a plausible short one", async () => {
+    // A step whose motions are not a dataframe row at all: a PRO that never
+    // moves. `deriveSequenceLetters` cannot resolve it and leaves the letter
+    // null, so the word silently loses a token — the exact "GI" defect
+    // `word-deriver`'s strict API exists to stop.
+    const stuck = (color: MotionColor) =>
+      createMotionData({
+        motionType: MotionType.PRO,
+        rotationDirection: RotationDirection.CLOCKWISE,
+        startLocation: GridLocation.NORTH,
+        endLocation: GridLocation.NORTH,
+        startOrientation: Orientation.IN,
+        endOrientation: Orientation.IN,
+        turns: 0,
+        color,
+        arrowLocation: GridLocation.NORTH,
+      });
+    const unresolvable = createStepData({
+      id: "unresolvable",
+      stepNumber: 1,
+      letter: null,
+      startPosition: GGGG_CW.steps[0]!.startPosition,
+      endPosition: GGGG_CW.steps[0]!.startPosition,
+      motions: {
+        [MotionColor.BLUE]: stuck(MotionColor.BLUE),
+        [MotionColor.RED]: stuck(MotionColor.RED),
+      },
+    });
+
+    const blocks: WalkBlock[] = [
+      {
+        sourceId: "A",
+        kind: "cardA",
+        startStepIndex: 0,
+        steps: [GGGG_CW.steps[0]!, unresolvable],
+        rotationFaithful: false,
+      },
+    ];
+    const result = await buildResult(blocks, GGGG_CW);
+
+    expect(result.steps).toHaveLength(2);
+    expect(result.steps[1]!.letter).toBeNull();
+    // The partial word is still emitted — it is the honest best label — but the
+    // mismatch is DETECTABLE, and the flag says so without arithmetic.
+    expect(result.word).toBe("G");
+    expect(result.word.length).not.toBe(result.steps.length);
+    expect(result.metadata.incompleteWord).toBe(true);
+  });
+
+  it("refuses to build a sequence from an empty walk", async () => {
+    // The search never emits one (a recorded walk has at least two steps), so
+    // an empty block list is a caller bug. A stepless "sequence" would be a
+    // silently useless object with no start position and no word.
+    await expect(buildResult([], GGGG_CW)).rejects.toThrow(/no steps/);
   });
 
   it("every searched combination of GGGG + HHHH is orientation-valid", async () => {
@@ -224,6 +336,26 @@ describe("splice builder", () => {
       expect(seq.startPosition!.gridPosition, result.canonicalHash).toBe(
         seq.steps[0]!.startPosition
       );
+
+      // Every result carries a word for every step — this material is all real
+      // dataframe rows, so nothing should be flagged.
+      expect(seq.metadata.incompleteWord, result.canonicalHash).toBeUndefined();
+      expect(seq.word.length, result.canonicalHash).toBe(seq.steps.length);
+
+      // isCircular and period are two views of the same measurement, because a
+      // combination closes positionally by construction: the seamless-loop flag
+      // holds EXACTLY when the orientation chain also closes in one pass.
+      expect(seq.period, result.canonicalHash).toBeDefined();
+      expect(seq.isCircular, result.canonicalHash).toBe(seq.period === 1);
     }
+
+    // The real distribution over the default-sized result set: this pair splits
+    // evenly. Half the walks close in one pass, half take two — pinned so a
+    // future change that quietly forced closure (or stopped measuring) shows up
+    // as a number, not as a vibe.
+    const periods = report.results.map((r) => r.sequence.period);
+    expect(periods.filter((p) => p === 1).length).toBeGreaterThan(0);
+    expect(periods.filter((p) => p === 2).length).toBeGreaterThan(0);
+    expect(periods.every((p) => p === 1 || p === 2)).toBe(true);
   }, 60_000);
 });
