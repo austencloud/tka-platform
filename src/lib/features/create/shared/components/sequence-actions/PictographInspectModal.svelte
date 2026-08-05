@@ -515,7 +515,12 @@
     position: fixed;
     inset: 0;
     z-index: var(--z-modal);
-    background: rgba(0, 0, 0, 0.9);
+    /* This scrim sits INSIDE the step-editor drawer, over a surface that is
+       already dimmed glass. At 0.9 it composited with the panel's own 0.75 black
+       to ~97% black — the panel became a black box inside a black box and the
+       scene behind was erased. It only has to separate the panel from the
+       drawer, not black out a page. */
+    background: rgba(0, 0, 0, 0.55);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -593,8 +598,13 @@
     min-width: 0;
     cursor: pointer;
     border-radius: 16px;
+    padding: 4px;
+    /* Same white-lift reasoning as the pictograph frame: these read as distinct
+       surfaces instead of dissolving into the panel. Kept below the frame's lift
+       so the hero still sits highest. */
+    background: rgba(255, 255, 255, 0.03);
     /* Click anywhere in the column to select; ring marks the selected one. */
-    border: 1px solid transparent;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     transition:
       opacity var(--duration-normal, 0.3s) ease,
       border-color var(--duration-fast, 0.15s) ease;
@@ -630,8 +640,13 @@
     container-type: size;
   }
   .pictograph-frame {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    /* A WHITE lift, not the card token. In dark mode `--theme-card-bg` resolves
+       to the same rgba(0,0,0,0.75) as the panel it sits on, and nested alpha can
+       only darken — so a black-on-black child can never read as elevated no
+       matter how the opacities are tuned. Lifting is the only direction that
+       works here. */
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.14));
     border-radius: 16px;
     padding: 16px;
     aspect-ratio: 1 / 1;
