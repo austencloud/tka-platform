@@ -22,6 +22,7 @@
   let loading = $state(true);
   let refreshing = $state(false);
   let loadError = $state<string | null>(null);
+  let historyError = $state<string | null>(null);
   let snapshot = $state<SeoDashboardSnapshot | null>(null);
   let history = $state<SeoHistoryPoint[]>([]);
   let refreshedAt = $state<Date | null>(null);
@@ -59,11 +60,27 @@
   async function loadEvidence(): Promise<void> {
     refreshing = snapshot !== null;
     loadError = null;
+    historyError = null;
     try {
-      const [scorecardRows, historyRows] = await Promise.all([
+      // The trend is a nice-to-have next to the scorecard, so a slow history
+      // query gets to fail on its own instead of blanking the dashboard.
+      const [scorecardResult, historyResult] = await Promise.allSettled([
         analyticsQuery("seo-scorecard"),
         analyticsQuery("seo-history"),
       ]);
+      if (scorecardResult.status === "rejected") throw scorecardResult.reason;
+      const scorecardRows = scorecardResult.value;
+      let historyRows: unknown[][] | null = null;
+      if (historyResult.status === "fulfilled") {
+        historyRows = historyResult.value;
+      } else {
+        const historyFailure =
+          historyResult.reason instanceof Error
+            ? historyResult.reason
+            : new Error(String(historyResult.reason));
+        console.error("Failed to load SEO history:", historyFailure);
+        historyError = historyFailure.message;
+      }
       const encodedSnapshot = scorecardRows[0]?.[1];
       if (typeof encodedSnapshot !== "string" || !encodedSnapshot) {
         snapshot = null;
@@ -74,9 +91,13 @@
         JSON.parse(encodedSnapshot)
       );
       snapshot = parsedSnapshot;
-      history = parseSeoHistoryRows(historyRows).filter(
-        (point) => point.evaluationMode === parsedSnapshot.evaluationMode
-      );
+      // A failed history query leaves the trend already on screen alone rather
+      // than replacing it with an empty chart.
+      if (historyRows) {
+        history = parseSeoHistoryRows(historyRows).filter(
+          (point) => point.evaluationMode === parsedSnapshot.evaluationMode
+        );
+      }
       refreshedAt = new Date();
     } catch (caught) {
       const failure =
@@ -208,6 +229,10 @@
 
       {#if loadError}
         <p class="inline-error" role="alert">{loadError}</p>
+      {:else if historyError}
+        <p class="inline-warning" role="status">
+          The trend did not load this time. {historyError}
+        </p>
       {/if}
     </div>
   {/if}
@@ -521,10 +546,15 @@
     cursor: pointer;
   }
 
-  .inline-error {
+  .inline-error,
+  .inline-warning {
     margin: 0;
     text-align: right;
     font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .inline-warning {
+    color: var(--semantic-warning, #f59e0b);
   }
 
   @container seo-center (max-width: 1500px) {

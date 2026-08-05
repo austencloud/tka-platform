@@ -213,6 +213,34 @@ describe("admin analytics endpoint", () => {
     });
   });
 
+  it("retries a PostHog gateway timeout instead of failing the dashboard", async () => {
+    // The SEO dashboard blanked on a one-off 504 from PostHog's query pool.
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(upstream([], 504))
+      .mockResolvedValueOnce(upstream([["2026-08-01T00:00:00Z", "{}"]]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(event({ type: "seo-scorecard" }) as never);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      results: [["2026-08-01T00:00:00Z", "{}"]],
+    });
+  });
+
+  it("gives up on a query PostHog rejects outright, with no retry", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(upstream([], 400));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(event({ type: "seo-history" }) as never);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(502);
+  });
+
   it("rejects malformed PostHog result envelopes instead of inventing zeros", async () => {
     vi.stubGlobal(
       "fetch",

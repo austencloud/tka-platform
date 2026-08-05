@@ -89,14 +89,30 @@ function periodFilter(period: TimePeriod): string {
     : `AND timestamp > now() - interval ${getPeriodInterval(period)}`;
 }
 
+/**
+ * PostHog answers heavy HogQL from a shared query pool, so it hands back a
+ * gateway timeout or a throttle instead of an answer under load. Those clear on
+ * their own; a bad query never will.
+ */
+const RETRYABLE_POSTHOG_STATUSES: ReadonlySet<number> = new Set([
+  408, 429, 500, 502, 503, 504,
+]);
+const POSTHOG_QUERY_ATTEMPTS = 3;
+const POSTHOG_RETRY_BASE_MS = 600;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function executeHogQLQuery(
   query: string
 ): Promise<{ results: unknown[][] }> {
   const projectId = getProjectId();
 
-  const response = await fetch(
-    `${POSTHOG_API_BASE}/projects/${projectId}/query/`,
-    {
+  let response: Response | null = null;
+  let lastFailure = "";
+  for (let attempt = 1; attempt <= POSTHOG_QUERY_ATTEMPTS; attempt++) {
+    response = await fetch(`${POSTHOG_API_BASE}/projects/${projectId}/query/`, {
       method: "POST",
       headers: getPostHogHeaders(),
       body: JSON.stringify({
@@ -105,17 +121,30 @@ async function executeHogQLQuery(
           query,
         },
       }),
-    }
-  );
+    });
+    if (response.ok) break;
 
-  if (!response.ok) {
-    const errorText = await response.text();
+    lastFailure = await response.text().catch(() => "<unreadable body>");
+    const retryable = RETRYABLE_POSTHOG_STATUSES.has(response.status);
     console.error(
       "[analytics] PostHog query failed:",
       response.status,
-      errorText
+      `attempt ${attempt}/${POSTHOG_QUERY_ATTEMPTS}`,
+      retryable ? "(retryable)" : "(final)",
+      lastFailure
     );
-    throw error(502, `PostHog API error: ${response.status}`);
+    if (!retryable || attempt === POSTHOG_QUERY_ATTEMPTS) break;
+    await sleep(POSTHOG_RETRY_BASE_MS * 2 ** (attempt - 1));
+  }
+
+  if (!response || !response.ok) {
+    const status = response?.status ?? 0;
+    throw error(
+      502,
+      RETRYABLE_POSTHOG_STATUSES.has(status)
+        ? `PostHog was too busy to answer (${status}). Try again in a moment.`
+        : `PostHog API error: ${status}`
+    );
   }
 
   const payload: unknown = await response.json();
