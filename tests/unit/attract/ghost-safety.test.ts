@@ -146,6 +146,37 @@ describe("ghost safety", () => {
     }
   });
 
+  it("never lets a thought name something the perform did not choose", () => {
+    // The bug Austen caught live: "I wonder what Side by Side is" followed by a
+    // click on something else, and "I want to slow down" followed by pressing
+    // Fast. The thought resolved BEFORE the perform and each sampled the DOM
+    // separately — the thought took the first match, the perform a random one.
+    // A thought that inspects the DOM must do it through target(), which is
+    // resolved once and handed to both.
+    // Two shapes are wrong: a thought that queries the DOM itself, and a
+    // thought that reads a `target` the intention never declares (so it is
+    // always null and the thought silently falls back to its generic line).
+    const inspectsDom = /visibleAll\(|querySelector|\btarget\b/;
+    const offenders: string[] = [];
+    for (const { file, source } of intentionSources()) {
+      // Each intention is an object literal opening with `id: "..."`.
+      const blocks = source.split(/\n\s{2}\{\n/).slice(1);
+      for (const block of blocks) {
+        const id = block.match(/id:\s*"([^"]+)"/)?.[1];
+        if (!id) continue;
+        const thought = block.match(/thought:[\s\S]*?\n\s{4}(?=can:|target:|appeal:|mood:|perform:)/);
+        if (!thought) continue;
+        if (inspectsDom.test(thought[0]) && !/\n\s{4}target:/.test(block)) {
+          offenders.push(`${file} → ${id}`);
+        }
+      }
+    }
+    expect(
+      offenders,
+      "thoughts that read the DOM without a target() the perform shares",
+    ).toEqual([]);
+  });
+
   it("builds allowlist selectors that require both attributes", () => {
     expect(safe("option")).toBe('[data-ghost="safe"][data-ghost-kind="option"]');
   });

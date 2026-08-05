@@ -83,20 +83,22 @@ export const PROP_INTENTIONS: Intention[] = [
   {
     id: "try-prop",
     category: "props",
-    thought: (ctx) => {
-      const el = document.querySelector<HTMLElement>(
-        `${safe("prop")}:not([data-ghost-active])`,
-      );
-      const name = el ? labelOf(el).toLowerCase() : "";
-      void ctx;
+    target: (ctx) => ctx.rng.pick(visibleAll(safe("prop"))) ?? null,
+    // Names the prop it actually switches to. It used to name the first
+    // non-active tile in the DOM and then let browseKind press a random one.
+    thought: (_ctx, target) => {
+      const name = target ? labelOf(target).toLowerCase() : "";
       return name ? `What if these were ${name}?` : "What if these were something else?";
     },
     can: (ctx) => has(ctx, "prop") && ctx.hasSequence,
     appeal: () => 0.55,
-    perform: async (g) => {
-      if (!(await browseKind(g, "prop"))) return false;
+    perform: async (g, _ctx, target) => {
+      if (!target || g.halted()) return false;
+      // Still browses a couple of alternatives first — it just commits to the
+      // one it named.
+      await g.browseThenPress(target);
       // The whole board re-skins live — that is the thing worth watching.
-      await watchKind(g, "stage", g.jitter(2000, 1400));
+      await g.dwell(g.jitter(2000, 1400));
       return true;
     },
   },

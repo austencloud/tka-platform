@@ -36,7 +36,20 @@ export async function browseKind(
   return true;
 }
 
-/** Settle beside something and watch it for a while. False if it is gone. */
+/**
+ * Watch something for a while. False if it is gone.
+ *
+ * Stays where the hand already is by default. It used to glide to the target's
+ * bottom-right corner every time, which after a press reads as the ghost
+ * politely stepping out of its own way — Austen: "doing a weird thing where he
+ * moves out of the way after clicking different settings and different buttons
+ * which is not a thing that a normal user would" do. A person clicks, then
+ * watches with the cursor still sitting where they clicked.
+ *
+ * `linger` (admire.ts) is the one beat that SHOULD travel to its subject and
+ * settle beside it — it is going somewhere to admire something, not watching
+ * the result of its own click. It calls restBeside directly.
+ */
 export async function watchKind(
   g: AttractGhost,
   kind: GhostKind,
@@ -45,7 +58,6 @@ export async function watchKind(
 ): Promise<boolean> {
   const els = await g.waitFor(safe(kind), timeoutMs);
   if (!els.length || g.halted()) return false;
-  await g.restBeside(els[0]!);
   await g.dwell(ms);
   return true;
 }

@@ -62,6 +62,12 @@ export interface AttractGhost extends AttractActHandle {
   moveAndPress: (el: HTMLElement, action?: () => void) => Promise<void>;
   /** Hover 0–2 alternatives, then press the chosen one. */
   browseAndPick: (cands: HTMLElement[]) => Promise<void>;
+  /**
+   * The same browse-before-deciding beat, but for a target the caller ALREADY
+   * chose — so an intention can name the thing it is about to press and still
+   * look like it considered the alternatives.
+   */
+  browseThenPress: (chosen: HTMLElement, alternatives?: HTMLElement[]) => Promise<void>;
   /** Rest just inside an element's bottom-right corner, hover cleared. */
   restBeside: (el: HTMLElement) => Promise<void>;
   /** Mark/unmark the element the ghost is "hovering" (.ghost-hover mirror). */
@@ -312,6 +318,15 @@ export function createAttractGhost(opts: {
   async function browseAndPick(cands: HTMLElement[]): Promise<void> {
     const pool = [...cands];
     const chosen = pool.splice(Math.floor(choose() * pool.length), 1)[0]!;
+    await browseThenPress(chosen, pool);
+  }
+
+  /** Browse a couple of alternatives, then press the target the caller named. */
+  async function browseThenPress(
+    chosen: HTMLElement,
+    alternatives: HTMLElement[] = [],
+  ): Promise<void> {
+    const pool = alternatives.filter((el) => el !== chosen);
     const roll = choose();
     const looks = roll < 0.45 ? 0 : roll < 0.85 ? 1 : 2;
     for (let i = 0; i < looks && pool.length && !halted(); i++) {
@@ -460,6 +475,7 @@ export function createAttractGhost(opts: {
     hoverOn,
     moveAndPress,
     browseAndPick,
+    browseThenPress,
     restBeside,
     setHover,
     waitFor,

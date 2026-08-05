@@ -106,13 +106,29 @@ export function createGhostMind(opts: {
       return;
     }
 
-    const thought = resolveThought(intention, ctx);
+    // Pick the target BEFORE speaking, so the thought and the action are about
+    // the same control. An intention that declares a target and cannot find one
+    // is not satisfiable this tick, however optimistic its `can` was.
+    let target: HTMLElement | null = null;
+    if (intention.target) {
+      try {
+        target = intention.target(ctx);
+      } catch {
+        target = null;
+      }
+      if (!target) {
+        await g.sleep(400);
+        return;
+      }
+    }
+
+    const thought = resolveThought(intention, ctx, target);
     await think(thought, intention.mood ?? "curious");
     if (g.halted()) return;
 
     let ok = true;
     try {
-      ok = (await intention.perform(g, ctx)) !== false;
+      ok = (await intention.perform(g, ctx, target)) !== false;
     } catch {
       // A perform that throws is a lying precondition with extra steps. The
       // trail records it; the tour carries on.

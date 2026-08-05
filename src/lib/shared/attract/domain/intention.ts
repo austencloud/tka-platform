@@ -138,8 +138,26 @@ export interface Intention {
   id: string;
   category: IntentionCategory;
 
-  /** The visible monologue. A function when it names what it found. */
-  thought: string | ((ctx: GhostContext) => string);
+  /**
+   * Choose the ONE element this intention will act on, before it says anything.
+   *
+   * Without this, a thought that names a control and a perform that picks one
+   * sample the DOM independently and disagree — the thought took the first
+   * fresh match, the perform took a random one. Austen watching it live:
+   * "he keeps saying I wonder what side by side is and then not clicking side
+   * by side", "said I wanted to slow down and then clicked fast". A presenter
+   * that narrates one thing and does another is worse than a silent one.
+   *
+   * The target is resolved once, the thought is written from it, and the
+   * perform acts on exactly it. If it has vanished by then the perform fails
+   * honestly rather than quietly substituting a different control.
+   */
+  target?: (ctx: GhostContext) => HTMLElement | null;
+
+  /** The visible monologue. A function when it names what it is about to touch. */
+  thought:
+    | string
+    | ((ctx: GhostContext, target: HTMLElement | null) => string);
 
   /** Hard gate. False means it is not even a candidate this tick. */
   can: (ctx: GhostContext) => boolean;
@@ -152,7 +170,11 @@ export interface Intention {
    * Return false when it found nothing to act on — that is a lying
    * precondition and the trail records it. void counts as acted.
    */
-  perform: (g: AttractGhost, ctx: GhostContext) => Promise<boolean | void>;
+  perform: (
+    g: AttractGhost,
+    ctx: GhostContext,
+    target: HTMLElement | null,
+  ) => Promise<boolean | void>;
 
   /** Optional mood hint for the body. Defaults to "curious". */
   mood?: GhostMood;
@@ -173,8 +195,12 @@ export const FOLLOWS: Record<IntentionCategory, IntentionCategory[]> = {
   reset: ["build"],
 };
 
-export function resolveThought(intention: Intention, ctx: GhostContext): string {
+export function resolveThought(
+  intention: Intention,
+  ctx: GhostContext,
+  target: HTMLElement | null = null,
+): string {
   return typeof intention.thought === "function"
-    ? intention.thought(ctx)
+    ? intention.thought(ctx, target)
     : intention.thought;
 }

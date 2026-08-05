@@ -67,11 +67,15 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   {
     id: "what-is-this-button",
     category: "explore",
-    thought: (ctx) => {
-      const fresh = visibleAll(safe("curio")).find(
-        (el) => !ctx.askedAbout.has(labelOf(el)),
-      );
-      const name = fresh ? labelOf(fresh) : "";
+    // One control, chosen once: the thought names the button the press lands on.
+    target: (ctx) =>
+      ctx.rng.pick(
+        visibleAll(safe("curio")).filter(
+          (el) => !ctx.askedAbout.has(labelOf(el)),
+        ),
+      ) ?? null,
+    thought: (_ctx, target) => {
+      const name = target ? labelOf(target) : "";
       return name ? `What does ${name} do?` : "What does this one do?";
     },
     // Only if there is one it has not already asked about — otherwise the
@@ -80,14 +84,12 @@ export const EXPLORE_INTENTIONS: Intention[] = [
       has(ctx, "curio") &&
       visibleAll(safe("curio")).some((el) => !ctx.askedAbout.has(labelOf(el))),
     appeal: () => 0.5,
-    perform: async (g, ctx) => {
-      const fresh = (await g.waitFor(safe("curio"), 1500)).filter(
-        (el) => !ctx.askedAbout.has(labelOf(el)),
-      );
-      const target = fresh.length ? ctx.rng.pick(fresh)! : null;
+    perform: async (g, ctx, target) => {
       if (!target || g.halted()) return false;
       ctx.askedAbout.add(labelOf(target));
       await g.moveAndPress(target);
+      // Stay where the hand landed and watch what changed. Gliding away to a
+      // corner after every press was the "moves out of the way" tell.
       await g.dwell(g.jitter(1600, 1200));
       return true;
     },
@@ -136,10 +138,24 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   {
     id: "go-to-module",
     category: "explore",
-    thought: (ctx) => {
-      const next = unvisitedNavButtons(ctx.visitedModules)[0];
-      const name = next ? labelOf(next) : "";
-      return name ? `I haven't looked at ${name} yet.` : "Let's see what else is here.";
+    // The module it names is the module it walks to. It used to name the FIRST
+    // unvisited one and then press a random one from the pool.
+    target: (ctx) => {
+      const unvisited = unvisitedNavButtons(ctx.visitedModules);
+      if (unvisited.length) return ctx.rng.pick(unvisited) ?? null;
+      const allowed = visibleAll(NAV_MODULE_SEL).filter((el) => {
+        const id = el.getAttribute(NAV_MODULE_ID_ATTR);
+        return !!id && !isDeniedModule(id);
+      });
+      return ctx.rng.pick(allowed) ?? null;
+    },
+    thought: (ctx, target) => {
+      const name = target ? labelOf(target) : "";
+      if (!name) return "Let's see what else is here.";
+      const id = target?.getAttribute(NAV_MODULE_ID_ATTR);
+      return id && !ctx.visitedModules.has(id)
+        ? `I haven't looked at ${name} yet.`
+        : `Back to ${name} for a second.`;
     },
     can: (ctx) => ctx.available["nav-module"] > 0 && ctx.reachableModules.length > 0,
     // Restlessness is what stops the ghost admiring one screen for the whole
@@ -148,19 +164,9 @@ export const EXPLORE_INTENTIONS: Intention[] = [
       ((unvisitedNavButtons(ctx.visitedModules).length ? 0.55 : 0.25) +
         restlessness(ctx) * 0.45) *
       settled(ctx),
-    perform: async (g, ctx) => {
-      const buttons = await g.waitFor(NAV_MODULE_SEL, 2000);
-      if (!buttons.length || g.halted()) return false;
-      const allowed = buttons.filter((el) => {
-        const id = el.getAttribute(NAV_MODULE_ID_ATTR);
-        return !!id && !isDeniedModule(id);
-      });
-      if (!allowed.length) return false;
-      const unvisited = allowed.filter(
-        (el) => !ctx.visitedModules.has(el.getAttribute(NAV_MODULE_ID_ATTR)!),
-      );
-      const pool = unvisited.length ? unvisited : allowed;
-      await g.moveAndPress(ctx.rng.pick(pool)!);
+    perform: async (g, _ctx, target) => {
+      if (!target || g.halted()) return false;
+      await g.moveAndPress(target);
       // Give the module its mount before the next tick senses an empty screen.
       await g.sleep(g.jitter(1800, 1200));
       return true;

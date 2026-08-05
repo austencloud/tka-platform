@@ -5,7 +5,8 @@
 
 import { safe } from "../domain/annotations";
 import type { Intention } from "../domain/intention";
-import { has, pressKind, watchKind } from "./helpers";
+import { visibleAll } from "../services/sensors";
+import { has, labelOf, pressKind, watchKind } from "./helpers";
 
 export const PLAYBACK_INTENTIONS: Intention[] = [
   {
@@ -67,12 +68,24 @@ export const PLAYBACK_INTENTIONS: Intention[] = [
   {
     id: "change-tempo",
     category: "playback",
-    thought: "Slower. I want to see the hands.",
+    target: (ctx) => ctx.rng.pick(visibleAll(safe("tempo"))) ?? null,
+    // The thought is written FROM the preset it is about to press. It used to be
+    // the constant "Slower. I want to see the hands." while pressing a random
+    // one of Slow/Med/Fast — so it announced slowing down and sped up.
+    thought: (_ctx, target) => {
+      const label = target ? labelOf(target).toLowerCase() : "";
+      if (label.startsWith("slow")) return "Slower. I want to see the hands.";
+      if (label.startsWith("fast")) return "Faster — what does that feel like?";
+      if (label) return `What about ${labelOf(target!)}?`;
+      return "Let's change the tempo.";
+    },
     can: (ctx) => has(ctx, "tempo"),
     appeal: (ctx) => (ctx.isPlaying ? 0.4 : 0.15),
-    perform: async (g, ctx) => {
-      if (!(await pressKind(g, ctx, "tempo"))) return false;
-      await watchKind(g, "stage", g.jitter(2000, 1200));
+    perform: async (g, _ctx, target) => {
+      if (!target || g.halted()) return false;
+      await g.moveAndPress(target);
+      // Watch from where the hand already is — the stage is right there.
+      await g.dwell(g.jitter(2000, 1200));
       return true;
     },
   },
