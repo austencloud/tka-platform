@@ -76,10 +76,24 @@ export class UserDocumentManager {
         getDoc(userDocRef)
       );
 
-      // Determine display name and auto-capitalize
+      // Determine display name and auto-capitalize.
+      //
+      // providerData comes BEFORE the email local-part: Google sign-ins
+      // routinely land with an empty top-level displayName and the real name
+      // only on the provider record. Reading the email first is what stored two
+      // real people as "Jasminehartart" and "Hairbykevin127".
+      // Same order as provisionUserProfile.ts server-side — keep them in step.
+      const providerName = user.providerData.find(
+        (p) => p?.displayName
+      )?.displayName;
       const rawName =
-        user.displayName || user.email?.split("@")[0] || "Anonymous User";
+        user.displayName ||
+        providerName ||
+        user.email?.split("@")[0] ||
+        "Anonymous User";
       const displayName = capitalizeName(rawName);
+      /** Did Auth actually give us a name, or did we fall back to the email? */
+      const hasRealAuthName = Boolean(user.displayName || providerName);
 
       // Get provider IDs for reliable profile picture URLs
       const providerIds = getProviderIds(user);
@@ -166,7 +180,6 @@ export class UserDocumentManager {
         // Build update object - don't overwrite username
         // NOTE: Email deliberately NOT stored - user documents are publicly readable
         const updateData: Record<string, unknown> = {
-          displayName,
           updatedAt: serverTimestamp(),
           lastActivityDate: serverTimestamp(),
           // Keep the guest flag current. onAuthStateChanged doesn't reliably
@@ -174,6 +187,15 @@ export class UserDocumentManager {
           // explicitly — this just keeps it correct on any later auth refresh.
           isAnonymous: user.isAnonymous,
         };
+
+        // Same rule the avatar below follows: only overwrite the stored name
+        // when Auth actually has one. This branch runs on EVERY sign-in, so
+        // writing the email-derived fallback unconditionally re-mangled a
+        // repaired name (and clobbered a name the user had set themselves) the
+        // next time they logged in.
+        if (hasRealAuthName || !existingData?.displayName) {
+          updateData.displayName = displayName;
+        }
 
         // Only overwrite avatar fields when Auth provides a real URL.
         // Prevents nulling out a generated or custom avatar on re-login.
