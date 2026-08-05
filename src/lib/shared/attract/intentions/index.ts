@@ -1,0 +1,23 @@
+/**
+ * The bag. Order is irrelevant — the mind scores all of it every tick.
+ *
+ * Adding a curiosity is the intended way to make the presenter better. Adding
+ * cleverness to the scorer is not: a mood model or a planner is invisible from
+ * fifteen feet away, and more intentions are not.
+ */
+
+import type { Intention } from "../domain/intention";
+import { BUILD_INTENTIONS } from "./build";
+import { PLAYBACK_INTENTIONS } from "./playback";
+import { EFFECT_INTENTIONS, PROP_INTENTIONS } from "./effects";
+import { EXPLORE_INTENTIONS } from "./explore";
+import { ADMIRE_INTENTIONS } from "./admire";
+
+export const ALL_INTENTIONS: Intention[] = [
+  ...BUILD_INTENTIONS,
+  ...PLAYBACK_INTENTIONS,
+  ...EFFECT_INTENTIONS,
+  ...PROP_INTENTIONS,
+  ...EXPLORE_INTENTIONS,
+  ...ADMIRE_INTENTIONS,
+];
