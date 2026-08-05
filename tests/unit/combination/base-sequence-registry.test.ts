@@ -90,8 +90,12 @@ describe("base-sequence registry", () => {
     }
   });
 
-  it("every entry's edges agree with the canonical dataframe (all 15 entries, roster-confirmed or not)", async () => {
-    expect(BASE_SEQUENCES.length).toBe(15);
+  it("every entry's edges agree with the canonical dataframe (all 19 entries, roster-confirmed or not)", async () => {
+    // 19 after quarter-same (SS/TT/UU/VV) was added 2026-08-05 — it had been
+    // absent entirely while quarter-opposite (MP/NQ/OR) was fully rostered.
+    // Still short of the handoff's full 24: both Type 3 sequences and the
+    // Type 4 are not entered yet.
+    expect(BASE_SEQUENCES.length).toBe(19);
 
     for (const base of BASE_SEQUENCES) {
       for (const letterEdge of base.edges) {

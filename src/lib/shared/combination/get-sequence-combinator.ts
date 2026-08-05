@@ -82,11 +82,37 @@ export const DEFAULT_MAX_WORD_LENGTH = 5;
  *
  * 2,000 looked adequate because it happened to be complete at length <=4 (814
  * words) — at length 5 it drops ~34-37% of the both-cards words on every pair
- * measured, without the caller being able to tell which ones. 4,000 clears the
- * length-<=5 space outright, so `searchComplete` comes back true at the
- * defaults and the preview can honestly say it looked everywhere.
+ * measured, without the caller being able to tell which ones.
+ *
+ * RE-MEASURED 2026-08-05, after quarter-same (SS/TT) joined the confirmed
+ * roster. Two more confirmed bases grew the same length-<=5 space from 3,916
+ * to between 9,001 and 10,000 — roughly 2.5x — and 4,000 began reporting
+ * `searchComplete: false`. Bisected:
+ *
+ *   | cap    | complete? |
+ *   |--------|-----------|
+ *   | 8,000  | no        |
+ *   | 9,000  | no        |
+ *   | 10,000 | YES       |
+ *
+ * The filtered both-cards answers were IDENTICAL at every cap from 4,000 to
+ * 200,000 (204 and 637), so the truncation cost no both-cards word here — it
+ * cost the honesty of the `searchComplete` flag, which is the part callers
+ * reason about.
+ *
+ * 16,384 restores completeness with headroom. Two caveats, both real:
+ *
+ *   1. This number is a function of ROSTER SIZE, and the roster is still
+ *      incomplete — both Type 3 sequences and the Type 4 are not entered yet
+ *      (see base-sequence-registry). Adding them will grow the space again and
+ *      this cap will need re-measuring, not re-guessing.
+ *   2. The redesign spec deletes this cap entirely: "no caps, no truncation
+ *      banner — the box is declared and the search inside it finishes."
+ *      Exhaustive search is cheap (2,057,344 walks in 8s, single-threaded), so
+ *      the cap was never protecting against a real limit. Treat this value as
+ *      a stopgap with an expiry date, not a tuned constant.
  */
-const CANDIDATE_WORD_MAX_RESULTS = 4000;
+const CANDIDATE_WORD_MAX_RESULTS = 16384;
 
 export interface SequenceCombinator {
   /**

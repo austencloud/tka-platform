@@ -10,9 +10,14 @@
  * `tests/unit/combination/base-sequence-registry.test.ts`
  * (per `verify-at-canonical-source.md`). `rosterConfirmed` tracks a SEPARATE
  * question: whether Austen has blessed this base's MEMBERSHIP in his 19-base
- * roster. The four `rosterConfirmed: false` placeholders (CC, II, WΣYΘ,
+ * roster. The `rosterConfirmed: false` placeholders (CC, II, UU, VV, WΣYΘ,
  * XΔZΩ) already have fully canon-grounded `letters`/`edges` — the only open
  * question for them is roster membership, not the underlying letter data.
+ *
+ * Known incomplete: the 2026-08-05 algebra handoff puts the full roster at 24
+ * (19 Type 1 + 2 Type 2 + 2 Type 3 + 1 Type 4). This file holds 19. Absent are
+ * both Type 3 sequences (Σ-Y-Θ-W-, Δ-Z-Ω-X-) and the Type 4. Do not read
+ * `BASE_SEQUENCES` as the complete connector vocabulary yet.
  * Ambient eligibility (`ambientEligibleBases`) is gated on `rosterConfirmed`
  * only, so an unconfirmed placeholder's canon-correct edges never leak into
  * ambient use.
@@ -136,6 +141,34 @@ export const BASE_SEQUENCES: readonly BaseSequenceEntry[] = [
     rosterConfirmed: true,
     note: "gamma compound (MCP)",
   },
+  // Quarter-SAME. Added 2026-08-05: quarter-opposite (M–R) was fully rostered
+  // while quarter-same was absent entirely — not unconfirmed, simply never
+  // entered. All four are canon-grounded gamma→gamma 4-cycles in the diamond
+  // dataframe (gamma1→gamma3→gamma5→gamma7→gamma1), the same shape as AA and GG.
+  //
+  // There are FOUR of these where alpha and beta get three apiece, because
+  // gamma occupies two of the four gap slots (`docs/reference/letter-gap-families.md`).
+  // S and T are their own gamma partner; C's character splits across two names,
+  // and those two are U and V — the pair TKA already calls leader/follower
+  // (U leader=pro, V leader=anti, per packages/domain rotation-invariant.ts).
+  //
+  // Confirmation follows the pattern the rest of this file already sets: the
+  // non-hybrids are confirmed (as AA/BB/GG/HH are), the hybrids await review
+  // (as CC/II do). U and V are the hybrid family's two gamma names.
+  {
+    word: "SS",
+    letters: [Letter.S],
+    edges: [edge(Letter.S, G, G)],
+    rosterConfirmed: true,
+    note: "pro/pro gamma cycle — the gamma face of AA and GG",
+  },
+  {
+    word: "TT",
+    letters: [Letter.T],
+    edges: [edge(Letter.T, G, G)],
+    rosterConfirmed: true,
+    note: "anti/anti gamma cycle — the gamma face of BB and HH",
+  },
   {
     word: "CC",
     letters: [Letter.C],
@@ -149,6 +182,20 @@ export const BASE_SEQUENCES: readonly BaseSequenceEntry[] = [
     edges: [edge(Letter.I, B, B)],
     rosterConfirmed: false,
     note: "awaiting roster review",
+  },
+  {
+    word: "UU",
+    letters: [Letter.U],
+    edges: [edge(Letter.U, G, G)],
+    rosterConfirmed: false,
+    note: "awaiting roster review — hybrid gamma cycle, leader pro",
+  },
+  {
+    word: "VV",
+    letters: [Letter.V],
+    edges: [edge(Letter.V, G, G)],
+    rosterConfirmed: false,
+    note: "awaiting roster review — hybrid gamma cycle, leader anti",
   },
   {
     // Θ is U+0398 (uppercase, a Type-2 Shift letter per the Letter model's
