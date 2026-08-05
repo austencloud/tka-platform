@@ -111,6 +111,12 @@ export interface CombinationSearchReport {
    * The deepest walk length the search fully explored. "No results and
    * `searchedToLength` 6" is the true statement a bounded search can make:
    * no combination of 6 steps or fewer exists. 0 = nothing was fully explored.
+   *
+   * It is a floor on COVERAGE, not a ceiling on the results: when the raw-walk
+   * cap (or the budget) fires part-way through a level, the walks that level
+   * already recorded are kept, so results LONGER than `searchedToLength` may
+   * well be present. Read it as "everything up to here was seen", never as
+   * "nothing longer than this was returned".
    */
   readonly searchedToLength: number;
   /**

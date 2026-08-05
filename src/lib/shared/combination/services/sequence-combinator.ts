@@ -246,6 +246,8 @@ export async function findCombinations(
   const proven = (gridModeMismatch: boolean): CombinationSearchReport => ({
     results: [],
     impossible: true,
+    // Synthesized, not measured: the structural proof holds at every length, so
+    // the whole requested depth is covered without a single node being visited.
     searchedToLength: opts.maxResultLength,
     resultsTruncated: false,
     budgetExhausted: false,
