@@ -11,8 +11,77 @@
     releaseBackground,
     suppressBackground,
   } from "$lib/shared/background/shared/state/background-suppression.svelte";
+  import { SOLID_TYPES } from "$lib/features/museum/services/museum-physics-provider";
 
   const plan = buildVulcanCaveFloorPlan();
+
+  // ── Teleport ────────────────────────────────────────────────────────────────
+  //
+  // Walking the whole wing to review one chamber is a tax on every review. Both
+  // entry points below seed the SAME sessionStorage key DimensionFlipProof
+  // restores from, so neither needs a new prop on the walker:
+  //
+  //   /test/museum-cave-3d?room=cave-sun     — deep link straight into a room
+  //   the chamber dots in the HUD            — click to jump while walking
+  //
+  // The walker validates that the restored tile is walkable and silently drops
+  // the state if it is not, so a spawn in a wall would dump you at the cave
+  // mouth with no explanation. Hence findWalkableTile: it uses the game's own
+  // SOLID_TYPES predicate and searches outward from the room's centre.
+  const CAVE_STATE_KEY = "museum-cave-3d-state-v1";
+  /** Must match DimensionFlipProof's own TILE_SIZE, or the spawn lands in rock. */
+  const TILE_SIZE = 0.5;
+
+  function findWalkableTile(roomId: string): { x: number; y: number } | null {
+    const wing = plan.grid.wings.find((w) => w.id === roomId);
+    if (!wing) return null;
+    const cx = Math.round(wing.bounds.x + wing.bounds.width / 2);
+    const cy = Math.round(wing.bounds.y + wing.bounds.height / 2);
+    const walkable = (x: number, y: number) => {
+      const tile = plan.grid.tiles.get(`${x},${y}`);
+      return !!tile && !SOLID_TYPES.has(tile.type);
+    };
+    if (walkable(cx, cy)) return { x: cx, y: cy };
+    // Expanding ring search — the centre of a room can be a pillar, a pit or,
+    // in the Sundial's case, the collapse ring the visitor cannot stand in.
+    const limit = Math.max(wing.bounds.width, wing.bounds.height);
+    for (let r = 1; r <= limit; r++) {
+      for (let dx = -r; dx <= r; dx++) {
+        for (let dy = -r; dy <= r; dy++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          if (walkable(cx + dx, cy + dy)) return { x: cx + dx, y: cy + dy };
+        }
+      }
+    }
+    return null;
+  }
+
+  /** Seed the walker's restore key. Returns false if the room has no floor. */
+  function seedSpawn(roomId: string): boolean {
+    const tile = findWalkableTile(roomId);
+    if (!tile) return false;
+    try {
+      sessionStorage.setItem(
+        CAVE_STATE_KEY,
+        JSON.stringify({
+          playerWorldX: tile.x * TILE_SIZE,
+          playerWorldZ: tile.y * TILE_SIZE,
+          viewMode: "first-person",
+          isInFPS: true,
+          topDownHeight: 40,
+          // yaw 0 faces +Z (south) — the direction of travel through the wing.
+          playerYaw: 0,
+        })
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function teleportTo(roomId: string) {
+    if (seedSpawn(roomId)) location.reload();
+  }
   const modeByRoom = new Map<
     string,
     (typeof CAVE_MODE_ROOMS)[number] & { index: number }
@@ -42,6 +111,8 @@
   let displayedPercent = $state(3);
   let stageLabel = $state("Preparing the walkthrough");
   let submerged = $state(false);
+  let deepLinkedRoom = $state<string | null>(null);
+  let deepLinkFailed = $state<string | null>(null);
   let currentRoomId = $state<string | null>("cave-threshold");
   let currentRoomName = $state("Cave Threshold");
   let fadeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -92,6 +163,17 @@
 
   onMount(() => {
     suppressBackground("museum-cave-review");
+
+    // Seed before the walker mounts — it reads the key once, at init.
+    const requested = new URL(location.href).searchParams.get("room");
+    if (requested) {
+      if (seedSpawn(requested)) {
+        deepLinkedRoom = requested;
+      } else {
+        deepLinkFailed = requested;
+      }
+    }
+
     mountFrame = requestAnimationFrame(() => {
       deferredReady = true;
     });
@@ -148,18 +230,34 @@
         <strong>{currentRoomName}</strong>
         <small>{passageLabel}</small>
       </div>
-      <ol class="mode-track" aria-label="Six demonstration chambers">
+      <ol class="mode-track" aria-label="Jump to a demonstration chamber">
         {#each CAVE_MODE_ROOMS as mode, index (mode.roomId)}
-          <li
-            class:active={currentMode?.index === index}
-            class:passed={(currentMode?.index ?? -1) > index ||
-              currentRoomId === "egypt-threshold"}
-            title={`${index + 1}. ${mode.label}: ${mode.technicalMode}`}
-          >
-            <span class="sr-only">{mode.label}</span>
+          <li>
+            <button
+              type="button"
+              class="mode-dot"
+              class:active={currentMode?.index === index}
+              class:passed={(currentMode?.index ?? -1) > index ||
+                currentRoomId === "egypt-threshold"}
+              title={`Jump to ${index + 1}. ${mode.label} — ${mode.technicalMode}`}
+              aria-label={`Jump to ${mode.label}, ${mode.technicalMode}`}
+              aria-current={currentMode?.index === index ? "location" : undefined}
+              onclick={() => teleportTo(mode.roomId)}
+            >
+              <span class="sr-only">{mode.label}</span>
+            </button>
           </li>
         {/each}
       </ol>
+      <small class="jump-hint">
+        {#if deepLinkFailed}
+          No walkable floor in “{deepLinkFailed}” — started at the cave mouth
+        {:else if deepLinkedRoom}
+          Jumped straight to {modeByRoom.get(deepLinkedRoom)?.label ?? deepLinkedRoom}
+        {:else}
+          Click a chamber to jump there
+        {/if}
+      </small>
     </aside>
   {/if}
 
@@ -278,21 +376,67 @@
   }
 
   .mode-track li {
+    display: flex;
+  }
+
+  /* The dot IS the control now. A 0.22rem bar is far under the 44px touch
+     floor, so the button keeps that visual height and reaches its real target
+     with padding plus a transparent border-box. */
+  .mode-dot {
+    flex: 1;
+    appearance: none;
+    border: 0;
+    padding-block: 0.6rem;
+    padding-inline: 0;
+    background: none;
+    cursor: pointer;
+    position: relative;
+    min-block-size: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .mode-dot::before {
+    content: "";
+    display: block;
+    inline-size: 100%;
     block-size: 0.22rem;
     border-radius: 999px;
     background: rgba(241, 232, 220, 0.16);
     transition:
       background 180ms ease,
-      box-shadow 180ms ease;
+      box-shadow 180ms ease,
+      transform 180ms ease;
   }
 
-  .mode-track li.passed {
+  .mode-dot.passed::before {
     background: rgba(210, 157, 98, 0.46);
   }
 
-  .mode-track li.active {
+  .mode-dot.active::before {
     background: #d39d62;
     box-shadow: 0 0 0.7rem rgba(211, 157, 98, 0.52);
+  }
+
+  .mode-dot:hover::before,
+  .mode-dot:focus-visible::before {
+    background: #f1e8dc;
+    transform: scaleY(2);
+  }
+
+  .mode-dot:focus-visible {
+    outline: 2px solid #d39d62;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .jump-hint {
+    display: block;
+    margin-block-start: 0.1rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(241, 232, 220, 0.38);
   }
 
   .loading-overlay {
