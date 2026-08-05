@@ -264,7 +264,44 @@ was computed. Details in `docs/reference/letter-gap-families.md`; scripts in
   alpha3→alpha5 returns only `rewound` with period omitted, versus `rotated`,
   `rotated_inverted`, `rotated_swapped` with `period: "quartered"`.
 
-Still open and unchanged: **#2 (build the combinator)**, #3, #4, #7, #8. What
+### Stage 3 landed — and found a hole in the app's LOOP catalogue
+
+`4b73ff56c0` adds Stages 1–4 as six new modules (nothing existing modified) and
+reproduces the oracle exactly: 256 words, the full bucket profile
+`4:10 5:18 6:60 8:32 10:80 12:144 16:12 20:50 24:54`, and both word sets.
+175 tests pass.
+
+**The finding worth carrying forward: the LOOP type catalogue has no identity
+element.** Verified independently via MCP — `validate_loop_options(alpha3,
+alpha3)`, a unit that returns to its own start, offers only `flipped`,
+`inverted`, `mirrored_swapped`, `rotated_swapped`, `rewound`. Every one is a
+2-pass-or-more transform. There is no type meaning "it already closes, play it
+once."
+
+Consequence: `isLOOPValidForPositionPair` alone cannot express a plain closure,
+so the 4-, 5- and 6-count buckets come back EMPTY — the entire plain tier, which
+is most of what a performer actually wants. Stage 3 therefore carries two
+closure families beyond the validator (`plain` by position equality, and
+reflection about the two DIAGONAL axes, whose location maps the engine ships but
+for which it has no validation set, though TKA canon holds all four axes valid).
+Both are tagged by `family` so they never masquerade as validator answers.
+
+That gap is the app's, not the combinator's. Closing it properly means adding an
+identity type and the two diagonal validation sets to `LOOPValidator` — at which
+point Stage 3's extra families can be deleted.
+
+Two more deviations, both defaulted OFF with flags: `rewound` is excluded because
+the validator returns true for it at EVERY position pair (confirmed at two pairs
+via MCP), which would make "discard anything admitting no LOOP" vacuous; and the
+compound 4x/16x types are excluded because their circle is a product of two
+expansions rather than the order of one transform, which is not the bucket law.
+
+Also noted by the build: `isLOOPValidForPositionPair` is marked `@deprecated` in
+favour of `isLOOPValidForSpec`, and the app-side `LOOPType` in `circular-models`
+is NOT value-identical to the engine's (it spells rewound `strict_rewound`), so
+results carry the engine's enum and consumers must map rather than cast.
+
+Still open and unchanged: **#2's UI**, #3, #4, #7, #8. What
 scoping #2 turned up: there is **no reference to `isLOOPValidForPositionPair`,
 `LOOPValidator` or any LOOP admissibility anywhere in
 `src/lib/shared/combination/`** — the engine never asks whether a closed walk is
