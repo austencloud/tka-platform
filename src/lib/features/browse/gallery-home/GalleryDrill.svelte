@@ -15,7 +15,7 @@
   that leak column layout into unprefixed names.
 -->
 <script lang="ts">
-  import type { Snippet } from "svelte";
+  import { flushSync, type Snippet } from "svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
@@ -258,6 +258,42 @@
     onSplitPaneChange?.(splitPane);
   });
 
+  // ── The landing ↔ workspace morph ───────────────────────────────────────
+  // Same-document View Transitions: every category tile carries a stable
+  // `gallery-cat-<key>` name (claimed, never stamped — see
+  // claimed-view-transition-name), so the browser animates the landing's tiles
+  // into their catalog slots in one choreographed pass. The claim moves with
+  // the live surface: `morph` is true on whichever of landing/workspace is
+  // becoming the screen, so the outgoing copy releases its names inside the
+  // same flushSync the transition captures.
+  let morphing = $state(false);
+  function flipWithMorph(apply: () => void): void {
+    const reduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (typeof document === "undefined" || !document.startViewTransition || reduced) {
+      apply();
+      return;
+    }
+    morphing = true;
+    const transition = document.startViewTransition(() => {
+      // Svelte batches; the browser captures the "after" frame the moment this
+      // callback returns, so the DOM has to be current BEFORE it does.
+      flushSync(apply);
+    });
+    void transition.finished.finally(() => {
+      morphing = false;
+    });
+  }
+
+  /** Enter a value editor. Morphs when it crosses the landing boundary. */
+  function goToSection(next: Section): void {
+    const crossesLanding =
+      (section === "chooser") !== (next === "chooser") && !unifiedFilterChooser;
+    if (crossesLanding) flipWithMorph(() => (section = next));
+    else section = next;
+  }
+
   function submitSearch(event: Event) {
     event.preventDefault();
     const q = query.trim();
@@ -304,7 +340,7 @@
    * single-valued category directly, or leave for Collections. */
   function selectCategory(entry: CategoryEntry) {
     if (entry.section) {
-      section = entry.section;
+      goToSection(entry.section);
     } else if (entry.apply) {
       onApply(entry.apply.type, entry.apply.value, entry.apply.label);
     } else if (entry.navigate === "collections") {
@@ -343,7 +379,7 @@
     {onToggleFamily}
     {familyConnective}
     {onFamilyConnectiveChange}
-    onBack={() => (section = "chooser")}
+    onBack={() => goToSection("chooser")}
     onPickValue={pickValue}
     onPickLoop={pickLoop}
     onPickFamily={pickFamily}
@@ -393,6 +429,7 @@
           {section}
           layout="catalog"
           {ruleCounts}
+          morph={!showLanding}
           onselect={selectCategory}
         />
         <div class="drill-editor-stage">
@@ -412,14 +449,23 @@
            hosts that keep that landing get the rail only beside VALUE editors,
            never beside the landing itself. -->
       {#if persistentDesktopCatalog && (unifiedFilterChooser || section !== "chooser")}
-        <CategoryRail {catalog} {section} onselect={selectCategory} />
+        <CategoryRail
+          {catalog}
+          {section}
+          morph={!showLanding}
+          onselect={selectCategory}
+        />
       {/if}
       <div class="drill-editor-stage">
         <!-- fill mode: screens differ in height, so the content-sized
              grid-stack would resize (and shove neighbors) at every section
              change. The stage is the sized box; layers fill it and each
              screen scrolls itself. -->
-        <Crossfade key={section} duration={DURATION.normal} fill>
+        <Crossfade
+          key={section}
+          duration={morphing ? 0 : DURATION.normal}
+          fill
+        >
           {#if showLanding}
             <GalleryLanding
               {catalog}
@@ -430,7 +476,8 @@
               sheet={variant === "sheet"}
               {fluidWideCanvas}
               glyphHeight={landingGlyphHeight}
-              onOpenSection={(next) => (section = next)}
+              morph={showLanding}
+              onOpenSection={goToSection}
               {onShowAll}
               onSelectCategory={selectCategory}
             />

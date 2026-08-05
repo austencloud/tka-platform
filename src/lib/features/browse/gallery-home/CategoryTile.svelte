@@ -13,6 +13,7 @@
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import LessonGridDisplay from "$lib/shared/pictograph/grid/components/LessonGridDisplay.svelte";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
+  import { claimedViewTransitionName } from "$lib/shared/transitions/claimed-view-transition-name";
   import type { CategoryEntry } from "./gallery-drill-catalog.svelte";
 
   interface Props {
@@ -23,6 +24,9 @@
     active?: boolean;
     /** Active rules this category carries — rendered as a count dot. */
     ruleCount?: number;
+    /** Owns this category's `gallery-cat-<key>` morph name while true. The
+     * surface on its way out passes false so the incoming one takes it. */
+    morph?: boolean;
     /** Glyph art height — the landing bumps it inside the adaptive tier. */
     glyphHeight?: number;
     /** Creator avatars: photo + owner id per name. */
@@ -37,6 +41,7 @@
     composition = "landing",
     active = false,
     ruleCount = 0,
+    morph = false,
     glyphHeight = 20,
     avatarFor,
     onselect,
@@ -52,6 +57,10 @@
   type="button"
   aria-current={active ? "page" : undefined}
   disabled={entry.narrowedOut}
+  use:claimedViewTransitionName={{
+    name: `gallery-cat-${entry.key}`,
+    enabled: morph,
+  }}
   onclick={() => onselect(entry)}
 >
   {#if entry.art.kind === "plate"}

@@ -27,6 +27,8 @@
     layout?: "rail" | "catalog";
     /** Active rules per category key — renders the count dot. */
     ruleCounts?: Readonly<Record<string, number>>;
+    /** This surface owns the category morph names right now. */
+    morph?: boolean;
     onselect: (entry: CategoryEntry) => void;
   }
 
@@ -35,6 +37,7 @@
     section,
     layout = "rail",
     ruleCounts,
+    morph = false,
     onselect,
   }: Props = $props();
 </script>
@@ -53,6 +56,7 @@
         composition={layout === "catalog" ? "catalog" : "rail"}
         active={section === entry.section}
         ruleCount={ruleCounts?.[entry.key] ?? 0}
+        {morph}
         avatarFor={(name) => catalog.creatorAvatars.get(name)}
         {onselect}
       />

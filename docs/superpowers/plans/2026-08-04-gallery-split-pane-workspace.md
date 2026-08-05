@@ -187,14 +187,14 @@ today's flow automatically.
 - Modify: `src/lib/features/browse/gallery-home/GalleryWorkspace.svelte`
 - Modify: `src/lib/features/browse/gallery-home/GalleryDrill.svelte` (or wherever the landing→workspace branch flips)
 
-- [ ] **Step 3.1:** Give each `CategoryTile` a stable name
+- [x] **Step 3.1:** Give each `CategoryTile` a stable name
   `gallery-cat-<sectionKey>` claimed through
   `claimViewTransitionName(name, onGrant)` from
   `src/lib/shared/transitions/view-transition-name-registry.ts` (claim on
   mount, release on destroy; apply `style:view-transition-name` only when
   granted). The hero doors (By level, By length) claim their mapped
   category names so they morph into the Level/Length tiles.
-- [ ] **Step 3.2:** Wrap the landing↔workspace state flip in
+- [x] **Step 3.2:** Wrap the landing↔workspace state flip in
   `document.startViewTransition` when available:
 
 ```ts
@@ -205,18 +205,26 @@ function flipWithMorph(apply: () => void) {
 }
 ```
 
+  DEVIATION: "Show all" keeps today's behavior (clear rules, hand off to the
+  full-page grid tab) rather than opening the split pane with no active
+  category. The split pane is keyed to an open value editor; a fourth
+  "workspace, no category" state would have to be threaded through every
+  GalleryDrill host (including the two sheets) for a surface that already
+  exists as the grid tab. The spec's outcome — full results, no rules, no
+  active category — is delivered.
+
   (Svelte flushes synchronously enough for same-document transitions when
   the state change happens inside the callback; if the capture misses the
   new layout, wrap `apply` with `flushSync` from `svelte`.) "Show all"
   enters the workspace with no rules and a full grid. Backing out reverses.
-- [ ] **Step 3.3:** Verify: browser loop at 2112×1188×1.1, click a landing
+- [x] **Step 3.3:** Verify: browser loop at 2112×1188×1.1, click a landing
   tile, capture a screenshot mid-transition (fire `take_screenshot`
   immediately after the click) plus the settled end state; then check
   `list_console_messages` for `InvalidStateError` (duplicate
   view-transition-name — the registry exists precisely to prevent this;
   any hit is a bug in your claiming). Repeat for back-out and "Show all".
-- [ ] **Step 3.4:** `npm run check` captured-log grep. Expected: 0 errors.
-- [ ] **Step 3.5:** Commit:
+- [x] **Step 3.4:** `npm run check` captured-log grep. Expected: 0 errors.
+- [x] **Step 3.5:** Commit:
   `git commit -m "feat(gallery): landing tiles morph into workspace catalog via view transitions" -- src/lib/features/browse/gallery-home/`
 
 ### Task 4: Collections becomes a stackable filter

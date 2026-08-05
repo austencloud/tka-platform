@@ -4181,21 +4181,27 @@
     flex: 0 1 auto;
     align-content: start;
   }
-  /* Back is redundant beside a permanently visible category catalog. */
+  /* Back stays: the catalog above shows every category, but the landing (hero
+     doors, peeks, "Show all") is only reachable through it. */
   .drill-ctx.split-pane .drill-head.with-back {
     position: static;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: start;
+    text-align: left;
     background: transparent;
   }
   .drill-ctx.split-pane .drill-head.with-back .head-back {
-    display: none;
+    height: 36px;
+    min-width: 36px;
+    padding: 0 0.75rem 0 0.65rem;
   }
   .drill-ctx.split-pane .drill-head.with-back h2 {
-    grid-column: 1;
+    grid-column: 2;
     font-size: 1.15rem;
   }
   .drill-ctx.split-pane .drill-head.with-back p {
-    grid-column: 1;
+    grid-column: 1 / -1;
+    text-align: left;
   }
 
   .drill-ctx.sheet .drill-screen {

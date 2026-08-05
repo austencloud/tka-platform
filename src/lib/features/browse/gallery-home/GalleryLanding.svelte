@@ -15,6 +15,7 @@
   import SequencePeek from "$lib/shared/browse/components/SequencePeek.svelte";
   import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
   import CategoryTile from "./CategoryTile.svelte";
+  import { claimedViewTransitionName } from "$lib/shared/transitions/claimed-view-transition-name";
   import {
     FAN_TILTS,
     LEVELS,
@@ -32,6 +33,8 @@
     fluidWideCanvas: boolean;
     /** Glyph art height for the Starting-letter tile (adaptive hosts bump it). */
     glyphHeight: number;
+    /** The landing owns the category morph names while it is the live screen. */
+    morph?: boolean;
     onOpenSection: (section: "level" | "length") => void;
     onShowAll?: () => void;
     onSelectCategory: (entry: CategoryEntry) => void;
@@ -46,6 +49,7 @@
     sheet,
     fluidWideCanvas,
     glyphHeight,
+    morph = false,
     onOpenSection,
     onShowAll,
     onSelectCategory,
@@ -73,7 +77,15 @@
     class:without-show-all={!showAll}
     class:fluid-wide-canvas={fluidWideCanvas}
   >
-    <button class="choice-tile" type="button" onclick={() => onOpenSection("level")}>
+    <!-- The two hero doors claim the Level and Length category names, so on
+         the way into the workspace they morph into those two catalog tiles
+         instead of dissolving and reappearing somewhere else. -->
+    <button
+      class="choice-tile"
+      type="button"
+      use:claimedViewTransitionName={{ name: "gallery-cat-level", enabled: morph }}
+      onclick={() => onOpenSection("level")}
+    >
       <span class="choice-main">
         <span class="choice-title">By level</span>
         <span class="choice-sub">Beginner to advanced</span>
@@ -98,7 +110,15 @@
       <i class="fas fa-chevron-right drill-chev" aria-hidden="true"></i>
     </button>
 
-    <button class="choice-tile" type="button" onclick={() => onOpenSection("length")}>
+    <button
+      class="choice-tile"
+      type="button"
+      use:claimedViewTransitionName={{
+        name: "gallery-cat-length",
+        enabled: morph,
+      }}
+      onclick={() => onOpenSection("length")}
+    >
       <span class="choice-main">
         <span class="choice-title">By length</span>
         <span class="choice-sub">{catalog.lengthSub}</span>
@@ -152,6 +172,7 @@
           <CategoryTile
             {entry}
             {glyphHeight}
+            {morph}
             avatarFor={(name) => catalog.creatorAvatars.get(name)}
             onselect={onSelectCategory}
           />
