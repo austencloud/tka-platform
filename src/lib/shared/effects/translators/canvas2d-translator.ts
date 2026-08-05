@@ -403,7 +403,9 @@ export function resolveAnimal2D(
     baseHalfWidth: 2.5 + intent.width * 13, // 2.5-15.5px
     bodyLengthPx: 160 + intent.bodyLength * 440, // 160-600px fixed spine length
     segmentCount: 56,
-    slitherAmpPx: intent.slither * 34,
+    // The body traces the tip's own path now, so the undulation is a garnish on
+    // top of that shape — a big wave just serrates the figure being drawn.
+    slitherAmpPx: intent.slither * 20,
     blendMode: palette.emissive ? "lighter" : "source-over",
   };
   return { ...intent, ...defaults, ...override };

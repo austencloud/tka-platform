@@ -14,6 +14,9 @@ const WAVENUMBER = 0.045;
 const SLITHER_SPEED = 3.2;
 const WHISKER_NODES = 6;
 
+// px - minimum head travel before the path buffer records a new sample.
+const MIN_PATH_STEP = 1.2;
+
 /**
  * A fixed-length creature whose head is the prop tip. Each tracked emitter owns
  * a chain of spine nodes held at a constant inter-node distance (a classic
@@ -26,6 +29,7 @@ const WHISKER_NODES = 6;
 export class Animal2DRenderer {
   private time = 0;
   private chains = new Map<string, Vec2[]>();
+  private paths = new Map<string, Vec2[]>();
   private whiskerChains = new Map<string, [Vec2[], Vec2[]]>();
 
   render(
@@ -51,6 +55,7 @@ export class Animal2DRenderer {
     for (const id of [...this.chains.keys()]) {
       if (!present.has(id)) {
         this.chains.delete(id);
+        this.paths.delete(id);
         this.whiskerChains.delete(id);
       }
     }
@@ -62,49 +67,40 @@ export class Animal2DRenderer {
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
 
+      const bodyLen = params.bodyLengthPx * scale;
+
       for (const [id, tip] of present) {
         let chain = this.chains.get(id);
         if (!chain) {
           chain = new Array<Vec2>(N);
-          for (let i = 0; i < N; i++) chain[i] = { x: tip.x, y: tip.y + segLen * i };
+          for (let i = 0; i < N; i++) chain[i] = { x: tip.x, y: tip.y };
           this.chains.set(id, chain);
         }
 
         if (loopDetected) {
-          // Tip teleports at the loop seam — snap the body straight behind the
-          // head along its heading so it doesn't whip across the canvas. Reset
-          // the whisker sub-chain too so it re-seeds at the new head instead of
-          // streaming across the canvas from its pre-teleport position.
+          // Tip teleports at the loop seam — drop the recorded path so the body
+          // doesn't whip across the canvas, and re-seed it straight behind the
+          // head along its heading. The whisker sub-chain resets for the same
+          // reason.
           let hx = chain[0]!.x - chain[1]!.x;
           let hy = chain[0]!.y - chain[1]!.y;
           const hl = Math.hypot(hx, hy) || 1;
           hx /= hl;
           hy /= hl;
+          const seed: Vec2[] = [];
           for (let i = 0; i < N; i++) {
-            chain[i]!.x = tip.x - hx * segLen * i;
-            chain[i]!.y = tip.y - hy * segLen * i;
+            seed.push({ x: tip.x - hx * segLen * i, y: tip.y - hy * segLen * i });
           }
+          this.paths.set(id, seed);
           this.whiskerChains.delete(id);
-        } else {
-          // Head rides the prop tip; body follows via per-node distance clamps.
-          chain[0]!.x = tip.x;
-          chain[0]!.y = tip.y;
-          for (let i = 1; i < N; i++) {
-            const prev = chain[i - 1]!;
-            const cur = chain[i]!;
-            const dx = cur.x - prev.x;
-            const dy = cur.y - prev.y;
-            const d = Math.hypot(dx, dy);
-            if (d > 0.0001) {
-              const k = segLen / d;
-              cur.x = prev.x + dx * k;
-              cur.y = prev.y + dy * k;
-            } else {
-              cur.x = prev.x;
-              cur.y = prev.y + segLen;
-            }
-          }
         }
+
+        // The body IS the head's path. Record where the tip has been, then
+        // resample that polyline at fixed arc-length steps — so the creature
+        // traces the figure the prop draws instead of being dragged straight
+        // behind it like a weighted chain.
+        const path = this.recordPath(id, tip, bodyLen);
+        resampleAlongPath(path, chain, segLen);
 
         // Draw every frame, including the loop-seam frame — the creature must
         // never blink out at the seam.
@@ -114,6 +110,42 @@ export class Animal2DRenderer {
       ctx.globalAlpha = prevAlpha;
       ctx.globalCompositeOperation = prevComposite;
     }
+  }
+
+  /**
+   * Append the tip's current position to its recorded path (newest first) and
+   * trim the tail once the polyline is longer than the body needs. Points closer
+   * than MIN_PATH_STEP collapse into the newest sample so a stationary prop
+   * doesn't flood the buffer.
+   */
+  private recordPath(id: string, tip: EmitterTip, bodyLen: number): Vec2[] {
+    let path = this.paths.get(id);
+    if (!path) {
+      path = [{ x: tip.x, y: tip.y }];
+      this.paths.set(id, path);
+      return path;
+    }
+    const head = path[0]!;
+    const moved = Math.hypot(tip.x - head.x, tip.y - head.y);
+    if (moved < MIN_PATH_STEP) {
+      head.x = tip.x;
+      head.y = tip.y;
+    } else {
+      path.unshift({ x: tip.x, y: tip.y });
+    }
+
+    // Trim to just past the body length so the buffer stays bounded.
+    let acc = 0;
+    let cut = path.length;
+    for (let i = 1; i < path.length; i++) {
+      acc += Math.hypot(path[i]!.x - path[i - 1]!.x, path[i]!.y - path[i - 1]!.y);
+      if (acc > bodyLen + MIN_PATH_STEP) {
+        cut = i + 1;
+        break;
+      }
+    }
+    if (cut < path.length) path.length = cut;
+    return path;
   }
 
   private drawCreature(
@@ -666,6 +698,7 @@ export class Animal2DRenderer {
 
   dispose(): void {
     this.chains.clear();
+    this.paths.clear();
     this.whiskerChains.clear();
     this.time = 0;
   }
@@ -687,6 +720,57 @@ function bodyWidth(u: number, creature: AnimalIntent["creature"]): number {
   if (u < 0.06) return 0.35 + (u / 0.06) * 0.65;
   const t = (u - 0.06) / 0.94;
   return Math.max(0, 1 - t * t);
+}
+
+/**
+ * Write `chain` as points spaced `segLen` apart measured along `path` (a
+ * newest-first polyline). When the path is shorter than the body — the first
+ * moments after a spawn or a loop seam — the remainder extends straight along
+ * the path's last direction, so the creature is always its full length.
+ */
+function resampleAlongPath(path: Vec2[], chain: Vec2[], segLen: number): void {
+  const N = chain.length;
+  chain[0]!.x = path[0]!.x;
+  chain[0]!.y = path[0]!.y;
+
+  let seg = 0; // index of the path segment [seg, seg+1] currently being walked
+  let walked = 0; // arc length consumed up to path[seg]
+  let target = segLen;
+
+  for (let i = 1; i < N; i++, target += segLen) {
+    while (seg < path.length - 1) {
+      const a = path[seg]!;
+      const b = path[seg + 1]!;
+      const d = Math.hypot(b.x - a.x, b.y - a.y);
+      if (d > 0 && walked + d >= target) {
+        const t = (target - walked) / d;
+        chain[i]!.x = a.x + (b.x - a.x) * t;
+        chain[i]!.y = a.y + (b.y - a.y) * t;
+        break;
+      }
+      walked += d;
+      seg++;
+    }
+
+    if (seg >= path.length - 1) {
+      // Ran off the end of the recorded path — continue in a straight line.
+      const last = path[path.length - 1]!;
+      const before = path[path.length - 2] ?? path[0]!;
+      let dx = last.x - before.x;
+      let dy = last.y - before.y;
+      const dl = Math.hypot(dx, dy);
+      if (dl < 0.0001) {
+        dx = 0;
+        dy = 1;
+      } else {
+        dx /= dl;
+        dy /= dl;
+      }
+      const over = target - walked;
+      chain[i]!.x = last.x + dx * over;
+      chain[i]!.y = last.y + dy * over;
+    }
+  }
 }
 
 /** Blend two hex colors. t = 0 returns a, t = 1 returns b. Cached — this runs
