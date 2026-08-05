@@ -29,13 +29,16 @@ const BLUR_PX = 10;
 const CONTRAST = 14;
 const GLOW_ALPHA = 0.16;
 const GRAVITY_PX = 26;
-const MAX_BLOBS = 900;
+/** Ceiling on beads submitted to the density pass in one frame. */
+const MAX_BEADS = 1400;
+/** Ceiling on simulated drips. */
+const MAX_DROPS = 90;
 /** Bead spacing as a fraction of bead radius. Must stay under ~1 or the blur
  *  cannot bridge neighbours and the stream reads as separate beads. */
-const BEAD_SPACING = 0.7;
-/** Per-emitter, per-frame ceiling so a teleporting tip can't spike the count. */
-const MAX_PER_FRAME = 14;
-/** Fraction of tip velocity a fresh bead carries. */
+const BEAD_SPACING = 0.55;
+/** Seconds of tip path the body spans, head to pinched-off tail. */
+const BODY_LIFE = 1.4;
+/** Fraction of tip velocity a drip carries as it leaves the stream. */
 const VELOCITY_INHERIT = 0.22;
 /**
  * Pre-contrast brightness for the eroded pass. Dimming the field before the
@@ -46,21 +49,41 @@ const ERODE = 0.8;
 /** Second, deeper threshold — the innermost of the three nested regions. */
 const ERODE_DEEP = 0.62;
 
-interface Blob {
+/** One recorded position of a tip, with the speed it was moving at the time. */
+interface PathPoint {
+  x: number;
+  y: number;
+  /** Renderer clock when this point was laid. Age drives the taper. */
+  t: number;
+  speed: number;
+}
+
+/**
+ * A bead that has LEFT the stream. Drops are the only simulated particles left —
+ * everything still attached to the prop is sampled from the path instead. That
+ * is what makes a drip mean something: it is the exception, not the rule.
+ */
+interface Drop {
   x: number;
   y: number;
   vx: number;
   vy: number;
   age: number;
   maxAge: number;
-  r0: number;
-  r1: number;
-  /** Stable per-bead flag: only a minority carry a glint, so highlights read as
-   *  sparse points on a surface rather than lint suspended through the gel. */
+  r: number;
+}
+
+/** Transient per-frame bead handed to the density pass. Not persistent state. */
+interface Bead {
+  x: number;
+  y: number;
+  r: number;
+  alpha: number;
   glint: boolean;
 }
 
 interface TipSample {
+  id: string;
   x: number;
   y: number;
   vx: number;
@@ -69,7 +92,10 @@ interface TipSample {
 }
 
 export class Goo2DRenderer {
-  private blobs: Blob[] = [];
+  private paths = new Map<string, PathPoint[]>();
+  private drops: Drop[] = [];
+  private dripCredit = 0;
+  private beads: Bead[] = [];
   private lastTipPos = new Map<string, { x: number; y: number }>();
   private smoothedVelocity = new Map<string, { vx: number; vy: number }>();
   private off: HTMLCanvasElement | OffscreenCanvas | null = null;
@@ -96,88 +122,93 @@ export class Goo2DRenderer {
     this.clock += dt;
     const sc = scale;
     const refSpeed = params.motionReferenceSpeed * PX_PER_WORLD * sc;
-    const baseBlob = 11.5 * (0.85 + 0.6 * params.intensity) * sc;
+    const baseBlob = 15 * (0.85 + 0.6 * params.intensity) * sc;
 
-    // 1. Per-emitter: smooth velocity + lay beads along the path travelled.
+    // The three sliders, each owning something you can SEE. Emission used to be
+    // a bead COUNT, which the continuity floor then overrode — so the knobs
+    // moved a number that could not change the picture. Count is now geometry
+    // (see resampleStream), and the sliders own mass, drip rate, and opacity.
+    const widthMul = 0.5 + params.motionEmission * 1.1; // Motion  → stream mass
+    const dripRate = params.ambientEmission * params.ambientEmission * 9; // Drip → drops/sec
+    const opacity = 0.45 + params.intensity * 0.55; // Intensity → how solid
+
+    // 1. Record where each tip has been. The stream is a PATH, not a cloud of
+    //    particles that happen to be near each other: beads get sampled along it
+    //    below, so the body cannot fragment no matter how fast the prop moves.
+    const live = new Set<string>();
     for (const s of this.sampleTips(emitters, params, dt)) {
-      const speedScalar = refSpeed > 0 ? Math.min(1, s.speed / refSpeed) : 0;
-      // Where the tip was last frame. Beads are laid along that span — but the
-      // COUNT comes from the DISTANCE covered, not from elapsed time. A
-      // per-second rate drops the same handful of beads whether the tip crawled
-      // 3px or flew 60px, so at speed the spacing outruns the bridge blur and
-      // the stream shatters into islands. Per-distance emission keeps the gap
-      // fixed at any speed, which is what makes it read as connected liquid.
-      const prevX = s.x - s.vx * dt;
-      const prevY = s.y - s.vy * dt;
-      const travelled = Math.hypot(s.x - prevX, s.y - prevY);
-      const spacing = baseBlob * BEAD_SPACING;
-      const moving = s.speed > 1;
-      const alongPath = moving ? Math.ceil(travelled / spacing) : 0;
-      const ambient = poisson(params.ambientEmission * 5 * dt);
-      let n = Math.max(alongPath, ambient);
-      // Emission knob scales the stream without letting it thin into gaps.
-      if (moving) n = Math.max(alongPath, Math.round(n * (0.55 + params.motionEmission * 0.75)));
-      n = Math.min(n, MAX_PER_FRAME);
-      if (this.blobs.length + n > MAX_BLOBS) n = Math.max(0, MAX_BLOBS - this.blobs.length);
-      const motionDir = moving ? Math.atan2(s.vy, s.vx) : 0;
-      // Perpendicular to motion — beads spread sideways off the stream, not
-      // backward, so the liquid sheet stays attached to the arc then breaks.
-      const perp = motionDir + Math.PI / 2;
-      for (let i = 0; i < n; i++) {
-        const f = moving ? (i + Math.random()) / n : 0.5;
-        const lat = (Math.random() - 0.5) * (moving ? 3 + speedScalar * 5 : 7) * sc;
-        const bx = prevX + (s.x - prevX) * f + Math.cos(perp) * lat;
-        const by = prevY + (s.y - prevY) * f + Math.sin(perp) * lat;
-        const kick =
-          (moving
-            ? speedScalar * 12 * (Math.random() - 0.5)
-            : (Math.random() - 0.5) * 10) * sc;
-        const r0 = baseBlob * (0.92 + Math.random() * 0.42);
-        this.blobs.push({
-          x: bx,
-          y: by,
-          // Beads keep only a little of the tip's velocity. Inheriting most of
-          // it launched the whole mass off the arc it was laid on.
-          vx: s.vx * VELOCITY_INHERIT + Math.cos(perp) * kick,
-          vy: s.vy * VELOCITY_INHERIT + Math.sin(perp) * kick,
+      live.add(s.id);
+      let path = this.paths.get(s.id);
+      if (!path) {
+        path = [];
+        this.paths.set(s.id, path);
+      }
+      // Always append. An earlier version skipped the append and moved the head
+      // point when the tip had barely travelled, which meant a SLOW tip never
+      // accumulated any history at all — its path stayed one point long forever
+      // and it rendered nothing. The trim below bounds the cost anyway.
+      path.unshift({ x: s.x, y: s.y, t: this.clock, speed: s.speed });
+      // Trim everything older than the body's life — that IS the tail.
+      let cut = path.length;
+      for (let i = 0; i < path.length; i++) {
+        if (this.clock - path[i]!.t > BODY_LIFE) {
+          cut = i + 1;
+          break;
+        }
+      }
+      if (cut < path.length) path.length = cut;
+
+      // 2. Shed drips off the stream. A drop is a bead that LEFT the path, so it
+      //    is the one thing here worth simulating — and the one thing the eye
+      //    reads as liquid behaving on its own.
+      this.dripCredit += dripRate * dt;
+      while (this.dripCredit >= 1 && this.drops.length < MAX_DROPS) {
+        this.dripCredit -= 1;
+        const src = path[Math.floor(Math.random() * Math.min(path.length, 12))];
+        if (!src) break;
+        const r = baseBlob * widthMul * (0.4 + Math.random() * 0.4);
+        this.drops.push({
+          x: src.x,
+          y: src.y,
+          vx: s.vx * VELOCITY_INHERIT * Math.random(),
+          vy: s.vy * VELOCITY_INHERIT * Math.random(),
           age: 0,
-          maxAge: 0.46 + Math.random() * 0.4,
-          r0,
-          // Beads SHRINK as they age. Growing them gave the tail a blunt cap
-          // that vanished on alpha alone; shrinking lets the far end fall under
-          // the metaball threshold gradually, so the ribbon necks down and
-          // pinches off into droplets the way surface tension actually ends a
-          // stream.
-          r1: r0 * 0.62,
-          glint: Math.random() < 0.3,
+          maxAge: 0.7 + Math.random() * 0.8,
+          r,
         });
       }
     }
+    for (const id of [...this.paths.keys()]) if (!live.has(id)) this.paths.delete(id);
 
-    // 2. Integrate: gentle gravity + advect toward curl (cohesion, no drain).
+    // 3. Integrate the drops. Gravity owns them; curl only wobbles.
     let w = 0;
-    for (let i = 0; i < this.blobs.length; i++) {
-      const b = this.blobs[i]!;
-      b.age += dt;
-      if (b.age >= b.maxAge) continue;
-      b.vy += GRAVITY_PX * sc * dt;
-      // Curl is surface wobble, not transport. At the old strength it pulled
-      // beads apart faster than they were laid, so the ribbon came apart into
-      // islands between one frame and the next.
-      const c = curl2D(b.x * (0.005 / sc), b.y * (0.005 / sc), this.clock);
-      b.vx += (c.vx * 22 * sc - b.vx) * 0.5 * dt;
-      b.vy += (c.vy * 22 * sc - b.vy) * 0.5 * dt;
-      // Viscous drag — goo settles instead of coasting away from its stream.
-      const damp = Math.pow(0.12, dt);
-      b.vx *= damp;
-      b.vy *= damp;
-      b.x += b.vx * dt;
-      b.y += b.vy * dt;
-      if (i !== w) this.blobs[w] = b;
+    for (let i = 0; i < this.drops.length; i++) {
+      const d = this.drops[i]!;
+      d.age += dt;
+      if (d.age >= d.maxAge) continue;
+      d.vy += GRAVITY_PX * sc * dt;
+      const c = curl2D(d.x * (0.005 / sc), d.y * (0.005 / sc), this.clock);
+      d.vx += (c.vx * 22 * sc - d.vx) * 0.5 * dt;
+      d.vy += (c.vy * 22 * sc - d.vy) * 0.35 * dt;
+      d.x += d.vx * dt;
+      d.y += d.vy * dt;
+      if (i !== w) this.drops[w] = d;
       w++;
     }
-    this.blobs.length = w;
-    if (!this.blobs.length) return;
+    this.drops.length = w;
+
+    // 4. Rebuild this frame's beads: the stream resampled along every path, plus
+    //    the drops. Nothing here persists between frames.
+    this.beads.length = 0;
+    for (const path of this.paths.values()) {
+      this.resampleStream(path, baseBlob, widthMul, opacity, refSpeed, sc);
+    }
+    for (const d of this.drops) {
+      const fade = beadFade(d.age / d.maxAge);
+      if (fade <= 0.02) continue;
+      this.beads.push({ x: d.x, y: d.y, r: d.r, alpha: fade * opacity, glint: d.r > baseBlob * 0.5 });
+    }
+    if (!this.beads.length) return;
 
     const W = ctx.canvas.width;
     const H = ctx.canvas.height;
@@ -197,18 +228,14 @@ export class Goo2DRenderer {
     off.fillStyle = "#000";
     off.fillRect(0, 0, W, H);
     off.globalCompositeOperation = "lighter";
-    for (const b of this.blobs) {
-      const t = b.age / b.maxAge;
-      const fade = beadFade(t);
-      if (fade <= 0.02) continue;
-      const r = b.r0 + (b.r1 - b.r0) * t;
-      const g = off.createRadialGradient(b.x, b.y, 0, b.x, b.y, r);
-      g.addColorStop(0, `rgba(255,255,255,${0.95 * fade})`);
-      g.addColorStop(0.5, `rgba(255,255,255,${0.6 * fade})`);
+    for (const b of this.beads) {
+      const g = off.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+      g.addColorStop(0, `rgba(255,255,255,${0.95 * b.alpha})`);
+      g.addColorStop(0.5, `rgba(255,255,255,${0.6 * b.alpha})`);
       g.addColorStop(1, "rgba(255,255,255,0)");
       off.fillStyle = g;
       off.beginPath();
-      off.arc(b.x, b.y, r, 0, TAU);
+      off.arc(b.x, b.y, b.r, 0, TAU);
       off.fill();
     }
 
@@ -272,26 +299,17 @@ export class Goo2DRenderer {
       //    bead — up and to the left — so they agree on where the light is.
       //    Scattered at random depths they read as lint suspended in the gel;
       //    agreeing on a light direction is what makes a surface.
+      //    They also stay OFF the dense middle. Piling glints where the mass is
+      //    thickest puts a white core back in the interior — the exact blowout
+      //    the grayscale threshold exists to prevent, just drawn by hand.
       const hi = hexToRgb(p.highlight);
-      // A glint also only belongs on liquid that actually merged (an isolated
-      // bead never survives the threshold, so its highlight would float in the
-      // void) and near the SURFACE — deeply buried beads are under the goo, not
-      // on it. The neighbour count gives both tests.
-      const neighbours = this.countNeighbours(baseBlob * 1.7);
-      for (let i = 0; i < this.blobs.length; i++) {
-        const b = this.blobs[i]!;
-        if (!b.glint) continue;
-        const nb = neighbours[i]!;
-        if (nb < 4 || nb > 14) continue;
-        const t = b.age / b.maxAge;
-        const fade = beadFade(t);
-        const rFull = b.r0 + (b.r1 - b.r0) * t;
-        if (fade < 0.9 || rFull < baseBlob * 0.85) continue;
-        const r = rFull * 0.22;
-        const gx = b.x - rFull * 0.3;
-        const gy = b.y - rFull * 0.34;
+      for (const b of this.beads) {
+        if (!b.glint || b.alpha < 0.5) continue;
+        const r = b.r * 0.2;
+        const gx = b.x - b.r * 0.34;
+        const gy = b.y - b.r * 0.38;
         const g = ctx.createRadialGradient(gx, gy, 0, gx, gy, r);
-        g.addColorStop(0, `rgba(${hi.r},${hi.g},${hi.b},${0.5 * fade})`);
+        g.addColorStop(0, `rgba(${hi.r},${hi.g},${hi.b},${0.42 * b.alpha})`);
         g.addColorStop(1, `rgba(${hi.r},${hi.g},${hi.b},0)`);
         ctx.fillStyle = g;
         ctx.beginPath();
@@ -302,6 +320,62 @@ export class Goo2DRenderer {
       ctx.filter = prevFilter;
       ctx.globalCompositeOperation = prevComposite;
       ctx.globalAlpha = prevAlpha;
+    }
+  }
+
+  /**
+   * Walk a recorded tip path from the head and drop a bead every `spacing` px of
+   * arc length. Spacing is a fixed fraction of bead radius, so the stream is
+   * continuous by construction at any prop speed — the failure this replaces was
+   * beads being emitted on a clock and drifting apart between frames.
+   *
+   * Thickness comes from two places. Age tapers it toward the tail, which is the
+   * pinch-off. Speed thins it, because liquid pulled fast stretches: the ribbon
+   * narrows through the quick arcs and swells where the prop turns around, which
+   * is also where the eye expects mass to gather.
+   */
+  private resampleStream(
+    path: PathPoint[],
+    baseBlob: number,
+    widthMul: number,
+    opacity: number,
+    refSpeed: number,
+    sc: number,
+  ): void {
+    if (path.length < 2) return;
+    const spacing = baseBlob * widthMul * BEAD_SPACING;
+    // Track arc length from the head and place a bead every time the running
+    // total passes the next multiple of `spacing`. Path points arrive far closer
+    // together than beads sit, so per-segment leftovers must ACCUMULATE — the
+    // first version reset them per segment and placed almost nothing.
+    let total = 0;
+    let nextAt = 0;
+    let index = 0;
+
+    for (let i = 0; i < path.length - 1 && this.beads.length < MAX_BEADS; i++) {
+      const a = path[i]!;
+      const b = path[i + 1]!;
+      const segLen = Math.hypot(b.x - a.x, b.y - a.y);
+      if (segLen < 0.0001) continue;
+
+      for (; nextAt <= total + segLen && this.beads.length < MAX_BEADS; nextAt += spacing, index++) {
+        const f = (nextAt - total) / segLen;
+        const age = this.clock - (a.t + (b.t - a.t) * f);
+        const u = Math.min(1, age / BODY_LIFE);
+        const speed = a.speed + (b.speed - a.speed) * f;
+        const stretch = refSpeed > 0 ? 1 / (1 + Math.min(1.6, speed / refSpeed) * 0.38) : 1;
+        const r = baseBlob * widthMul * streamWidth(u) * stretch;
+        if (r < 1.2 * sc) continue;
+        this.beads.push({
+          x: a.x + (b.x - a.x) * f,
+          y: a.y + (b.y - a.y) * f,
+          r,
+          alpha: beadFade(u) * opacity,
+          // Every fourth sample, so highlights are sparse points on the surface.
+          glint: index % 4 === 0 && u < 0.5,
+        });
+      }
+      total += segLen;
     }
   }
 
@@ -335,49 +409,6 @@ export class Goo2DRenderer {
     work.fillRect(0, 0, w, h);
   }
 
-  /**
-   * Neighbours within `radius` for every blob, via a uniform grid keyed on
-   * radius-sized cells — the 3x3 cell block around a blob covers its whole
-   * search disc, so this stays linear instead of the O(n²) naive sweep.
-   */
-  private countNeighbours(radius: number): Int32Array {
-    const n = this.blobs.length;
-    const counts = new Int32Array(n);
-    if (radius <= 0) return counts;
-    const cell = radius;
-    const buckets = new Map<number, number[]>();
-    const key = (cx: number, cy: number) => cx * 73856093 + cy * 19349663;
-    for (let i = 0; i < n; i++) {
-      const b = this.blobs[i]!;
-      const k = key(Math.floor(b.x / cell), Math.floor(b.y / cell));
-      const list = buckets.get(k);
-      if (list) list.push(i);
-      else buckets.set(k, [i]);
-    }
-    const r2 = radius * radius;
-    for (let i = 0; i < n; i++) {
-      const b = this.blobs[i]!;
-      const cx = Math.floor(b.x / cell);
-      const cy = Math.floor(b.y / cell);
-      let c = 0;
-      for (let ox = -1; ox <= 1; ox++) {
-        for (let oy = -1; oy <= 1; oy++) {
-          const list = buckets.get(key(cx + ox, cy + oy));
-          if (!list) continue;
-          for (const j of list) {
-            if (j === i) continue;
-            const o = this.blobs[j]!;
-            const dx = o.x - b.x;
-            const dy = o.y - b.y;
-            if (dx * dx + dy * dy <= r2) c++;
-          }
-        }
-      }
-      counts[i] = c;
-    }
-    return counts;
-  }
-
   /** Per-emitter EMA velocity smoothing, honoring trackingMode. */
   private sampleTips(
     emitters: EmitterTip[],
@@ -402,7 +433,7 @@ export class Goo2DRenderer {
       const svx = prev ? prev.vx + (vx - prev.vx) * a : vx;
       const svy = prev ? prev.vy + (vy - prev.vy) * a : vy;
       if (prev) { prev.vx = svx; prev.vy = svy; } else { this.smoothedVelocity.set(id, { vx: svx, vy: svy }); }
-      out.push({ x: e.x, y: e.y, vx: svx, vy: svy, speed: Math.hypot(svx, svy) });
+      out.push({ id, x: e.x, y: e.y, vx: svx, vy: svy, speed: Math.hypot(svx, svy) });
       if (last) { last.x = e.x; last.y = e.y; } else { this.lastTipPos.set(id, { x: e.x, y: e.y }); }
     }
     for (const id of this.lastTipPos.keys()) if (!seen.has(id)) this.lastTipPos.delete(id);
@@ -455,7 +486,10 @@ export class Goo2DRenderer {
   }
 
   dispose(): void {
-    this.blobs = [];
+    this.paths.clear();
+    this.drops = [];
+    this.beads = [];
+    this.dripCredit = 0;
     this.lastTipPos.clear();
     this.smoothedVelocity.clear();
     this.off = null;
@@ -479,10 +513,16 @@ function beadFade(t: number): number {
   return 1;
 }
 
-function poisson(expected: number): number {
-  let n = Math.floor(expected);
-  if (Math.random() < expected - n) n++;
-  return n;
+/**
+ * Stream thickness along its length. u = 0 at the prop, 1 at the tail. Full
+ * width for the first third, then a curve that goes to zero with a vertical
+ * tangent — that shape is the pinch-off, and it is why the tail breaks into
+ * beads instead of ending in a cap.
+ */
+function streamWidth(u: number): number {
+  if (u < 0.45) return 1;
+  const t = (u - 0.45) / 0.55;
+  return Math.sqrt(Math.max(0, 1 - t * t));
 }
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
