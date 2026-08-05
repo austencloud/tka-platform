@@ -646,3 +646,132 @@ result set, so the grid always morphs rather than blinking.
   `npx vitest run tests/unit/browse/`: baseline failures only. Screenshot
   sweep at 1550 / 1920 / 2560 / 3840 confirming labels are whole and the
   morph paths behave. Explicit pathspecs. Do NOT push.
+
+---
+
+## Task 8: The filter motion system (2026-08-05)
+
+Austen, after Task 7: *"the morph is not working as intended — when I click
+Level 2 having Level 3 selected, the other cards just pop into existence
+instead of showing me any sort of indication of what is happening. Let us do
+another pass for solid transitions. I want the most modern, best possible,
+most informative, most useful, most gorgeous animations you can bring to the
+table."*
+
+He is right, and Task 7 mis-measured its own success: it proved animations
+RAN, not that they COMMUNICATED. A default 250 ms opacity fade is an
+animation and reads as a pop.
+
+### Root cause (diagnosed from the screenshots + the Task 7 closeout)
+
+Adding Level 2 to a Level 3 rule took the grid from 11 matches in sections
+`B 4 / F 16 / H 16` to 39 matches in sections `A 8 / B 4 / B 12`. Four
+separate failures stack up:
+
+1. **Only cards are named.** Section headers, section wrappers, and the grid
+   container carry no `view-transition-name`, so they belong to the `root`
+   snapshot — whose animation the app disables globally
+   (`src/lib/shared/transitions/view-transitions.css` :26–29). Every piece of
+   structure therefore SNAPS while the cards animate. When the section set
+   changes (as it does on almost every filter change) that snap is most of
+   what the eye sees.
+2. **Entering cards get the UA default fade only.** No scale, no offset, no
+   designed curve. Task 7 closeout, Step 7.4: *"every card group uses the
+   browser default 250 ms / ease."*
+3. **No stagger.** Every entering card fades at the same instant, so there is
+   no sense of the grid filling in — the defining quality of the motion
+   Austen liked.
+4. **No sequencing.** Exits, moves, and enters all run simultaneously over
+   the same 250 ms, so no phase reads as distinct and nothing tells the story
+   "these left, these stayed, these arrived."
+
+### The design
+
+Build one **filter motion system** for the results grid, in
+`src/lib/shared/transitions/` beside `results-morph.ts`, expressed with the
+current view-transitions feature set (all supported by the app's Chrome
+target; degrade cleanly elsewhere):
+
+- **`view-transition-class`** (Chromium 125+/137+, Safari 18.4+) — one class
+  on every card, styled once via `::view-transition-group(*.seq-card)`,
+  `::view-transition-old(*.seq-card)`, `::view-transition-new(*.seq-card)`.
+  This is what makes a designed animation possible across N cards without
+  per-id CSS. Same treatment for a `seq-section` class on section headers.
+- **Name the structure.** Give section headers (and any wrapper whose motion
+  the eye needs) their own names/classes so they move and fade instead of
+  snapping. This is failure 1 and it is the biggest single win.
+- **`view-transition-name: match-element`** (Chrome 137+) is available if it
+  simplifies naming for cards; the existing `sequence-<id>` naming plus the
+  claim registry also works. Executor picks, with a one-line reason.
+
+**Three phases, deliberately sequenced** — this is what makes it informative
+rather than merely pretty:
+
+| Phase | What | Timing (starting point, tune by eye) |
+|---|---|---|
+| Exit | Cards leaving: fade out + settle back slightly (scale ~0.96). Fast — the eye does not need to study what is going away. | ~160–200 ms, no stagger (or a short reverse stagger) |
+| Move | Cards that persist: FLIP to their new slots. This is the motion Austen already praised — preserve its character. | ~300–340 ms, overlapping the exit |
+| Enter | Cards arriving: fade in + scale up from ~0.92, **staggered in reading order** so the grid fills in rather than blinking on. | ~240–280 ms each, stagger ~15–25 ms, total added stagger capped ~300 ms; begins ~80–120 ms after the exit starts |
+
+The overlap matters: space clears, survivors travel, newcomers land. Do not
+run all three in one undifferentiated 250 ms window.
+
+**Stagger technique.** Custom properties do not reach view-transition
+pseudo-elements, so `--index` on the element will not work. Two viable
+routes, in order of preference:
+1. `sibling-index()` inside `::view-transition-group(*.seq-card)`
+   (Chrome 137+). The `::view-transition` pseudo tree makes the groups
+   siblings, so this may resolve — **measure whether it actually does before
+   building on it.**
+2. WAAPI on the pseudo-elements after `transition.ready`:
+   `document.documentElement.animate(frames, { pseudoElement:
+   "::view-transition-new(<name>)", delay: i * 20 })`. This definitely works
+   and is the fallback if (1) does not resolve.
+
+Report which route you used and the evidence that decided it.
+
+### Steps
+
+- [ ] **Step 8.1 — reproduce and characterise the defect.** Drive Austen's
+  exact case (Level 3 active, add Level 2) and capture what each element
+  class does: which elements have names, which animate, which snap. A
+  frame-by-frame capture (screenshot at ~60 ms intervals through the
+  transition, or a WAAPI dump of every running animation with its target
+  pseudo) is the evidence. Confirm or correct the four failures above before
+  building.
+- [ ] **Step 8.2 — name the structure.** Section headers and any snapping
+  wrapper get names/classes. Re-run 8.1's capture and show the snap is gone.
+- [ ] **Step 8.3 — build the motion system.** The three phases above, driven
+  by `view-transition-class`, in one module beside `results-morph.ts` so
+  every path that already routes through `withResultsMorph` inherits it.
+  Tokens (durations/easings) come from the design system where they exist.
+- [ ] **Step 8.4 — stagger.** Per the technique note above; measure route 1
+  before committing to it.
+- [ ] **Step 8.5 — tune by eye, not by number.** Capture the transition as a
+  frame series at 1920 and read it: can you SEE what left, what stayed, what
+  arrived? If a phase is invisible or the whole thing feels mushy, change the
+  timing and look again. Iterate until the frames tell the story. This step
+  is the deliverable — not the code.
+- [ ] **Step 8.6 — the degradation paths.** `prefers-reduced-motion` gets no
+  motion (an instant, correct grid). Browsers without view transitions get
+  today's plain update. Below the seam nothing changes. Verify each.
+- [ ] **Step 8.7 — guard the other surfaces.** The card class and any CSS
+  added must not leak onto the grid tab, the sheets, the builder, or the
+  shop/route morphs that already use view transitions
+  (`view-transitions.css` has live `shop-*`, `module-content`, `tab-content`
+  names — do not disturb them). Grep-prove the scoping.
+- [ ] **Step 8.8 — verify + commit.** `npm run check`: 0 errors, 0 warnings.
+  `npx vitest run tests/unit/browse/`: baseline failures only. Frame series
+  for the Level 3 → +Level 2 case plus two other paths (a rule removal and a
+  search). Explicit pathspecs. Do NOT push.
+
+### Note on browser tooling
+
+The chrome-devtools MCP server disconnected during this session. If it is
+still unavailable, drive Chrome over CDP directly: the shared debug browser
+is on port 9222 (`scripts/launch-chrome-debug.ps1`), and a small Node script
+using the built-in WebSocket plus `Emulation.setDeviceMetricsOverride`,
+`Runtime.evaluate`, and `Page.captureScreenshot` is a proven pattern in this
+repo (a prior session built exactly this when the MCP dropped). Put it in the
+scratchpad, not the repo. Verification is not optional because a tool
+disconnected.
