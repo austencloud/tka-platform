@@ -479,3 +479,68 @@ selecting a category eases its highlight in instead of snapping.
   because the lockstep root ramp is scoped to marketing/legal shells, not the
   app. The catalog tiles now step at 1680 and 2600, but a whole-app ramp is a
   systemic change well outside this punch list.
+
+---
+
+## Task 7: Consistent filter motion + readability (2026-08-05)
+
+Austen on the Task 6 result: *"Well done, very pleased, I like it."* One
+follow-up from him, two defects from the orchestrator's review sweep.
+
+### 7A — The card morph, everywhere (Austen's ask)
+
+Austen: *"sometimes when I toggle certain filters on and off the cards do a
+flip animation where they kind of fade away and then the other cards animate
+in to fill their space and it's very pleasing... if we could employ such
+animations consistently throughout the filtering process I think it'll be
+both informative and aesthetically pleasing."*
+
+That is the results-grid view transition added in `dcbadffea7`, which today
+fires only on the value-tap path. Make it fire on EVERY path that changes the
+result set, so the grid always morphs rather than blinking.
+
+- [ ] **Step 7.1 — inventory the mutation paths.** Grep every call site that
+  changes the engine's result set from the gallery surface and write the list
+  into this plan file (file:line each) before coding. At minimum: value tap
+  (already done), rule-strip chip removal (`onRemoveFilter`), Match any/all
+  connective change, search submit and search clear, Show all / clear-all,
+  collection filter toggles, and any category switch that changes results.
+- [ ] **Step 7.2 — route them all through one helper.** A single shared
+  wrapper (e.g. `withResultsMorph(mutate)`) rather than `startViewTransition`
+  sprayed across call sites — one seam is what keeps this consistent as paths
+  get added later. It must no-op cleanly when the API is absent, under
+  `prefers-reduced-motion`, and below the seam where there is no live grid.
+- [ ] **Step 7.3 — verify each path animates.** For every path in the 7.1
+  inventory, capture evidence the transition actually ran (`transition.ready`
+  / `finished` timings plus a non-zero animation count, the way the Task 6
+  diagnosis did). A path that silently no-ops is exactly the bug this task
+  exists to prevent. Report the results as a table.
+- [ ] **Step 7.4 — guard the feel.** Austen likes the current character
+  (cards fade out, the rest slide in to fill). Keep it: same duration and
+  easing on every path. Do not let a slow engine recompute stretch the morph
+  into a freeze — if a path's recompute is long enough to feel stuck, report
+  the measured number instead of shipping it.
+
+### 7B — Readability defects from the review sweep
+
+- [ ] **Step 7.5 — truncated category labels.** Measured via
+  `scrollWidth > clientWidth`: at 1920, "Recently added", "Timing & Direction"
+  and "Max turn intensity" are ellipsised; at 3840 it is six labels
+  ("Starting letter", "Start position", "Recently added", "Timing & Direction",
+  "Max turn intensity", "Collections"). Austen's punch list said "make sure
+  things are readable" — an ellipsised category name fails that. All eleven
+  labels must render in full at every tier. Options: fewer catalog columns, a
+  wider left column, tighter tile padding, or a shorter label where the domain
+  allows. NOT a smaller font.
+- [ ] **Step 7.6 — record, do not fix: the app does not scale at 4K@100%.**
+  Measured: at a 3840 viewport `document.documentElement`'s computed font-size
+  is still **16px**, because the lockstep root ramp in `src/app.css` is scoped
+  to `html:has(.mkt-shell)` / `html:has(.legal-container)`. The whole app
+  renders at 1080p proportions on a 4K monitor at 100% scaling — the exact
+  failure `.claude/rules/4k-native-layout.md` exists to prevent. Blast radius
+  is every app surface (create, browse, learn, museum, practice), so it needs
+  its own spec and sweep. Leave it; report it as the recommended next project.
+- [ ] **Step 7.7 — verify + commit.** `npm run check`: 0 errors, 0 warnings.
+  `npx vitest run tests/unit/browse/`: baseline failures only. Screenshot
+  sweep at 1550 / 1920 / 2560 / 3840 confirming labels are whole and the
+  morph paths behave. Explicit pathspecs. Do NOT push.
