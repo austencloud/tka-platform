@@ -1375,9 +1375,17 @@
           onActionSelect={handleShareActionSelect}
         />
 
+        <!-- The presenter's only real way out of the viewer. Its programmatic
+             escape hatch performs a module switch, which changes what sits
+             UNDER this drawer and leaves the drawer covering it — so without
+             this annotation a viewer with nothing pressable in it (a sequence
+             with no animation data, say) is a dead end it cannot leave. -->
         <button
           type="button"
           class="drawer-close-button"
+          data-ghost="safe"
+          data-ghost-kind="close-overlay"
+          data-ghost-label="Close viewer"
           onclick={handleClose}
           aria-label="Close viewer"
         >

@@ -14,6 +14,7 @@ import {
   safe,
 } from "../domain/annotations";
 import type { Intention } from "../domain/intention";
+import type { AttractGhost } from "../services/attract-ghost.svelte";
 import { visibleAll } from "../services/sensors";
 import {
   browseKind,
@@ -37,6 +38,21 @@ let escapeHatch: (() => Promise<void> | void) | null = null;
 
 export function setEscapeHatch(fn: (() => Promise<void> | void) | null): void {
   escapeHatch = fn;
+}
+
+/**
+ * The last resort when the room has no visible door — an immersive module that
+ * hides the sidebar. Goes through the app's OWN module switch, never
+ * history.back() or goto(): both move the URL while the module system carries on
+ * believing it is elsewhere, and the shell then renders an empty screen until a
+ * human clicks a module. A blank app is a worse failure than a stuck ghost.
+ * The host injects the seam; nothing in the bag imports feature code.
+ */
+async function escapeProgrammatically(g: AttractGhost): Promise<boolean> {
+  if (!escapeHatch) return false;
+  await escapeHatch();
+  await g.sleep(g.jitter(2000, 1200));
+  return true;
 }
 
 /** Nav buttons for modules the ghost has not been to yet, denylist applied. */
@@ -189,6 +205,24 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   },
 
   {
+    id: "leave-viewer",
+    category: "explore",
+    thought: "Right — what else was there?",
+    // The viewer drawer covers the sidebar, so `go-to-module` cannot fire while
+    // it is open: without this, a viewer with plenty to do inside it would hold
+    // the ghost for the whole jam, and the only exit would be escape-room's
+    // 45s-stuck gate. Restlessness makes leaving a decision rather than a
+    // timeout — it loses to anything interesting for the first minute or so.
+    can: (ctx) => ctx.viewerOpen && has(ctx, "close-overlay"),
+    appeal: (ctx) => restlessness(ctx) * 0.5,
+    perform: async (g, ctx) => {
+      if (!(await pressKind(g, ctx, "close-overlay", 1500))) return false;
+      await g.sleep(g.jitter(1200, 800));
+      return true;
+    },
+  },
+
+  {
     id: "escape-room",
     category: "reset",
     thought: "Let's go back.",
@@ -201,22 +235,29 @@ export const EXPLORE_INTENTIONS: Intention[] = [
     can: (ctx) =>
       // Nothing to press ANYWHERE, not merely no nav: an open viewer covers
       // the sidebar without trapping anything, and backing out of that would
-      // be the ghost undoing its own work.
-      Object.values(ctx.available).every((count) => count === 0) &&
+      // be the ghost undoing its own work. A close-overlay control does not
+      // count as something to do — it IS this intention's way out.
+      Object.entries(ctx.available).every(
+        ([kind, count]) => count === 0 || kind === "close-overlay",
+      ) &&
       ctx.lingerCount === 0 &&
       ctx.moduleDwellMs > 45_000,
     appeal: () => 1,
     mood: "bored",
-    perform: async (g) => {
-      // Escaping goes through the app's OWN module switch, not history.back()
-      // or a goto(). Both of those move the URL without the module system
-      // observing it, which leaves the shell rendering nothing until a human
-      // clicks a module — a blank app is a worse failure than a stuck ghost.
-      // The host injects the seam; nothing in the bag imports feature code.
-      if (!escapeHatch) return false;
-      await escapeHatch();
-      await g.sleep(g.jitter(2000, 1200));
-      return true;
+    perform: async (g, ctx) => {
+      // Prefer the room's own door. An overlay (the viewer drawer) sits ABOVE
+      // the module, so switching modules underneath it leaves the overlay
+      // covering the app and the ghost still trapped — observed live: it
+      // escaped to create and stayed stuck behind a viewer showing "animation
+      // data not available". Pressing the real close button is also the
+      // on-brand move: a viewer sees the app being driven.
+      if (has(ctx, "close-overlay")) {
+        if (await pressKind(g, ctx, "close-overlay", 1500)) {
+          await g.sleep(g.jitter(1200, 800));
+          return true;
+        }
+      }
+      return escapeProgrammatically(g);
     },
   },
 

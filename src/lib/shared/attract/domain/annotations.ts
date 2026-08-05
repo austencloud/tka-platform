@@ -37,6 +37,14 @@ export type GhostKind =
    * the press hit-test, so a blocker it cannot dismiss ends the tour.
    */
   | "dismiss"
+  /**
+   * Closes a surface the ghost itself opened (the viewer drawer). Distinct from
+   * `dismiss`: this one must NOT be high-appeal, or the ghost would shut the
+   * viewer the instant it opened it. It is the escape route, pressed only when
+   * the room turns out to be a dead end — a programmatic module switch changes
+   * what is UNDER an overlay and leaves the overlay covering it.
+   */
+  | "close-overlay"
   // playback
   | "play"
   | "stage"

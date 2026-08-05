@@ -67,6 +67,75 @@ a human clicked a module. Both now route through `handleModuleChange`. Evidence:
 create → browse → browse/library → creators → lab — **zero blank samples**,
 zero trail failures. Static test added; suite is the 19 above.
 
+## Audit remediation (2026-08-05, later session) — `e8e8df0990`
+
+An audit of this implementation against its own mission found the two things
+below, plus a third that only appeared when the BUILT app was run on a clean
+browser profile. All fixed and verified live; `npm run check` 0/0, 21/21 unit
+tests.
+
+**1. One touch ended the demo, permanently.** Any trusted pointerdown or
+keypress parked the ghost forever — only a human clicking the parked dot
+brought it back. A passerby tapping the trackpad ended a four-hour unattended
+run, which is the entire mission. There is now a 30s idle-resume. Also: the
+`event.key === "Escape"` → `kill()` check sat BEFORE `isTrusted`, so any
+synthetic Escape from a dialog or shortcut layer could permanently end the
+demo. Evidence: parked at 0–25s after a real F13, un-parked at 30s with no
+click; an untrusted Escape no longer kills and the trail keeps advancing.
+
+**2. A fresh profile demonstrated nothing at all, forever.** The
+create-tutorial prompt ("Try the Construct guide?") is the first thing a clean
+browser sees, and any overlay with a backdrop makes every annotated control
+fail the `elementFromPoint` press gate — so the ghost's whole world reads as
+empty. Measured on the pre-fix build: **92 decisions in 6 minutes, 100% of them
+`escape-room`**, blocker still up, zero pressable elements. New `dismiss` kind
++ `dismiss-blocker` intention (Skip, never Accept), annotated on the
+create-tutorial prompt and the generate/step-editor tours. `clear-and-restart`
+had the same shape — it raised a confirmation and walked away from it — so
+`ConfirmDialog` gained an opt-in `ghostConfirm` and clearing now goes through
+with the dialog.
+
+**3. The escape hatch could not leave an overlay.** `handleModuleChange` swaps
+what is UNDER the viewer drawer and leaves the drawer covering it. Observed
+live: the ghost opened someone else's sequence, the viewer had no animation
+data (nothing annotated inside it), and it "escaped" to create while still
+trapped behind the drawer. `escape-room` now presses a real `close-overlay`
+control first and only falls back to the programmatic hatch when the room has
+no visible door. The viewer content rail (Side by Side / 2D / 3D / Card /
+Mandala / Tunnel — Practice deliberately withheld, it opens a camera) is
+annotated `curio`, so the viewer is a room with things to do; `leave-viewer`
+gives it a restlessness-driven exit, because the drawer covers the nav and
+`go-to-module` cannot fire while it is open.
+
+**Five intentions were dead code.** `clear`, `curio`, `effect-param` and
+`prop-picker` had no annotated element anywhere in `src/`, so
+`clear-and-restart`, `what-is-this-button` and `tune-effect` could never fire.
+`open-viewer` was unreachable because `ViewSequenceButton` claimed kind `play`
+while actually opening the viewer, and `viewer-open` hung off the 2D/3D toggle
+(so it really meant "open AND in 3D"). `try-prop`'s tiles were annotated but
+nothing opened the drawer they live in (`open-props` added). Deleted
+`page-families` (no pager exists to annotate — inventing a control is worse
+than deleting the intention) and `open-mandala` (it claimed to open a mandala
+and only watched the stage; the mandala carries `data-ghost-linger` instead).
+
+**The test that would have caught all of it** is now in
+`ghost-safety.test.ts`: every kind in the vocabulary must have at least one
+annotated element in `src/`, and every kind must be used by an intention.
+Annotation *hygiene* was guarded before; annotation *existence* was not, which
+is why a kind nothing carried scored zero forever in silence.
+
+**`?present=<seed>` now actually replays a tour.** The seed only drove
+intention SELECTION; which option card got pressed ran on `Math.random`, and
+that is a decision — a divergent sequence diverges every score after it. The
+motor's choices take the seeded rng via a new `choose` option; cosmetic noise
+(glide bow, dwell jitter) stays on `Math.random` deliberately. Session memory
+(`askedAbout`, the gallery budget) moved out of module-level globals into
+`GhostMemory`.
+
+**Also landed:** the `AnimatorCanvas` annotation (`950015c0b4`), committed from
+the index alone via a reduced `git apply --cached` patch so the other session's
+in-flight `elementalGlyphVisible` work stayed in the working tree.
+
 ## Believed done — unverified
 
 - **`escape-room` has never fired in a real trap.** It is gated on nothing

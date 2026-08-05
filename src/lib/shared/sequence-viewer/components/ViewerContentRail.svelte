@@ -32,6 +32,15 @@
 		...(onPracticeToggle ? [{ id: 'practice' as const, icon: PRACTICE_OPTION.icon, label: PRACTICE_OPTION.label }] : [])
 	]);
 
+	/**
+	 * The presentation-mode ghost may switch content modes — each one is another
+	 * view of the same sequence, which is exactly what a passerby should see.
+	 * Practice is withheld: it opens a camera workstation, which an unattended
+	 * laptop must not walk into. The active mode is skipped so pressing it is
+	 * never a no-op.
+	 */
+	const ghostSafe = (id: string) => id !== 'practice' && activeMode !== id;
+
 	let navEl: HTMLElement | undefined = $state();
 
 	function loadWidth(): number {
@@ -123,6 +132,9 @@
 				class:active={mode.id === 'practice' ? practiceActive : activeMode === mode.id}
 				aria-pressed={mode.id === 'practice' ? practiceActive : activeMode === mode.id}
 				aria-label={mode.label}
+				data-ghost={ghostSafe(mode.id) ? 'safe' : undefined}
+				data-ghost-kind={ghostSafe(mode.id) ? 'curio' : undefined}
+				data-ghost-label={mode.label}
 				onclick={() => {
 					if (mode.id === 'split') onSelectSplit();
 					else if (mode.id === 'practice') onPracticeToggle?.();

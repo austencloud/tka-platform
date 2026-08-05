@@ -83,6 +83,7 @@ export const EMPTY_WORLD: GhostWorld = {
     clear: 0,
     confirm: 0,
     dismiss: 0,
+    "close-overlay": 0,
     play: 0,
     stage: 0,
     tempo: 0,
