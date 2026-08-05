@@ -4,7 +4,7 @@ Animates forward in z-axis and expands to fill the container space
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { scale } from "svelte/transition";
+  import { fly, scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import { onMount, tick } from "svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
@@ -30,7 +30,6 @@ Animates forward in z-axis and expands to fill the container space
   import LOOPComponentGrid from "../modals/LOOPComponentGrid.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import LoopBlockTimeline from "$lib/shared/components/LoopBlockTimeline.svelte";
-  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import FontAwesomeIcon from "$lib/shared/foundation/ui/FontAwesomeIcon.svelte";
   import type { ReflectionAxis } from "@tka/sequence-engine/loop";
 
@@ -135,7 +134,7 @@ Animates forward in z-axis and expands to fill the container space
   // on close — so mount-time init is the reopen path).
   let isMultiSelectMode = $state(selectedComponents.size > 1);
   let localSelectedComponents = $state(new Set<LOOPComponent>());
-  let mobileDetailComponent = $state<LOOPComponent | null>(null);
+  let detailComponent = $state<LOOPComponent | null>(null);
 
   function normalizeReflectionSelection(
     components: Set<LOOPComponent>
@@ -264,9 +263,6 @@ Animates forward in z-axis and expands to fill the container space
       !!rhythm &&
       !!onRhythmChange
   );
-  const hasInlineConfigurator = $derived(
-    canConfigureReflection || canConfigureInversion || canConfigureRotation
-  );
   const configurableComponents = $derived.by(() => {
     const components = new Set<LOOPComponent>();
     if (canConfigureRotation) components.add(LOOPComponent.ROTATED);
@@ -274,15 +270,14 @@ Animates forward in z-axis and expands to fill the container space
     if (canConfigureReflection) components.add(LOOPComponent.MIRRORED);
     return components;
   });
-  const mobileDetailInfo = $derived(
-    mobileDetailComponent
-      ? (LOOP_COMPONENTS.find(
-          (info) => info.component === mobileDetailComponent
-        ) ?? null)
+  const detailInfo = $derived(
+    detailComponent
+      ? (LOOP_COMPONENTS.find((info) => info.component === detailComponent) ??
+          null)
       : null
   );
-  const mobileView = $derived(
-    mobileDetailInfo ? `detail-${mobileDetailInfo.component}` : "picker"
+  const detailView = $derived(
+    detailInfo ? `detail-${detailInfo.component}` : "picker"
   );
 
   // Wire-form spec for the CURRENT selection + rhythm — same helper the
@@ -312,15 +307,6 @@ Animates forward in z-axis and expands to fill the container space
       guestMaxLength
     );
   });
-
-  const showSelectionDetails = $derived(
-    isMultiSelectMode ||
-      hasInlineConfigurator ||
-      (selectionCount > 0 &&
-        (!isImplemented ||
-          guestLock.locked ||
-          (rhythmGate !== null && !rhythmGate.ok)))
-  );
 
   // Per-component lock for single-select mode: each component evaluated as if it
   // were the sole selection, so the grid can badge the gated ones up front.
@@ -381,8 +367,9 @@ Animates forward in z-axis and expands to fill the container space
   });
 
   function usesMobileDrawerPresentation(): boolean {
-    const mobileStage =
-      overlayElement?.querySelector<HTMLElement>(".mobile-loop-stage");
+    const mobileStage = overlayElement?.querySelector<HTMLElement>(
+      ".mobile-loop-stage, .single-loop-stage"
+    );
     if (mobileStage && getComputedStyle(mobileStage).display !== "none") {
       return true;
     }
@@ -395,13 +382,22 @@ Animates forward in z-axis and expands to fill the container space
     );
   }
 
+  function hasComponentConfigurator(component: LOOPComponent): boolean {
+    if (!rhythm || !onRhythmChange) return false;
+    return (
+      component === LOOPComponent.ROTATED ||
+      component === LOOPComponent.INVERTED ||
+      component === LOOPComponent.MIRRORED
+    );
+  }
+
   function handleToggle(component: LOOPComponent) {
     hapticService?.trigger("selection");
-    const isMobileDrawer = usesMobileDrawerPresentation();
+    const usesFocusedDetail = usesMobileDrawerPresentation();
 
-    // A LOOP tile is the choice itself in Single mode. Configurable choices
-    // stay open so their settings are reachable, but the valid type is already
-    // active and closing the drawer does not undo it.
+    // Single stays spatially continuous on desktop: the selected card expands
+    // around its controls and pushes its siblings down. Compact drawers use a
+    // focused settings screen because the full list no longer fits beside it.
     if (!isMultiSelectMode) {
       // Guest-gated single pick routes to sign-up instead of applying.
       if (guestMaxLength !== undefined) {
@@ -424,22 +420,23 @@ Animates forward in z-axis and expands to fill the container space
         sequenceLength === undefined
           ? null
           : gateRhythm(nextComponents, localRhythm, sequenceLength);
-      if (nextRhythmGate && !nextRhythmGate.ok) return;
+      const isValid = !nextRhythmGate || nextRhythmGate.ok;
 
-      onChange(newLoopType);
-      if (
-        (component === LOOPComponent.ROTATED ||
-          component === LOOPComponent.MIRRORED ||
-          component === LOOPComponent.INVERTED) &&
-        rhythm &&
-        onRhythmChange
-      ) {
-        if (!isMobileDrawer) {
+      if (isValid) {
+        onChange(newLoopType);
+      }
+
+      if (hasComponentConfigurator(component)) {
+        if (usesFocusedDetail) {
+          void openConfigurator(component, false);
+        } else {
+          detailComponent = null;
           void keepExpandedComponentVisible(component);
         }
         return;
       }
-      onClose();
+
+      if (isValid) onClose();
       return;
     }
 
@@ -452,12 +449,12 @@ Animates forward in z-axis and expands to fill the container space
       newSet.add(component);
     }
     localSelectedComponents = newSet;
-    if (!isAdding && mobileDetailComponent === component) {
-      mobileDetailComponent = null;
+    if (!isAdding && detailComponent === component) {
+      detailComponent = null;
     }
     if (
       isAdding &&
-      !isMobileDrawer &&
+      !usesFocusedDetail &&
       (component === LOOPComponent.ROTATED ||
         component === LOOPComponent.MIRRORED ||
         component === LOOPComponent.INVERTED)
@@ -466,26 +463,30 @@ Animates forward in z-axis and expands to fill the container space
     }
   }
 
-  async function openMobileConfigurator(component: LOOPComponent) {
-    if (!configurableComponents.has(component)) return;
-    hapticService?.trigger("selection");
-    mobileDetailComponent = component;
+  async function openConfigurator(
+    component: LOOPComponent,
+    triggerHaptic = true
+  ) {
+    if (!hasComponentConfigurator(component)) return;
+    if (triggerHaptic) hapticService?.trigger("selection");
+    detailComponent = component;
     await tick();
     overlayElement
-      ?.querySelector<HTMLButtonElement>(".mobile-detail-back")
+      ?.querySelector<HTMLButtonElement>(".loop-detail-back")
       ?.focus({ preventScroll: true });
   }
 
-  async function closeMobileConfigurator() {
-    const previousComponent = mobileDetailComponent;
+  async function closeConfigurator() {
+    const previousComponent = detailComponent;
     if (!previousComponent) return;
     hapticService?.trigger("selection");
-    mobileDetailComponent = null;
+    detailComponent = null;
     await tick();
+    const focusSelector = isMultiSelectMode
+      ? `.mobile-loop-stage [data-configure-component="${previousComponent}"]`
+      : `.single-loop-stage [data-component="${previousComponent}"] .loop-component-button`;
     overlayElement
-      ?.querySelector<HTMLButtonElement>(
-        `[data-configure-component="${previousComponent}"]`
-      )
+      ?.querySelector<HTMLButtonElement>(focusSelector)
       ?.focus({ preventScroll: true });
   }
 
@@ -565,7 +566,7 @@ Animates forward in z-axis and expands to fill the container space
 
     drawerHeightAnimation?.cancel();
     drawerHeightAnimation = null;
-    mobileDetailComponent = null;
+    detailComponent = null;
     if (!isMulti && localSelectedComponents.size > 1) {
       // A committed combo has no honest preselection in Single mode. Leave the
       // active combo untouched until the user chooses the single LOOP that
@@ -693,7 +694,7 @@ Animates forward in z-axis and expands to fill the container space
 <div
   bind:this={overlayElement}
   class="loop-expanded-overlay"
-  class:combo-mode={showSelectionDetails}
+  class:combo-mode={isMultiSelectMode}
   transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}
 >
   <!-- Header with title, disable toggle, and close button -->
@@ -736,17 +737,18 @@ Animates forward in z-axis and expands to fill the container space
     </div>
   </div>
 
-  <!-- Mode selector (shared SegmentedControl per chip-primitives rule) -->
-  <SegmentedControl
-    options={[
-      { value: "single", label: "Single" },
-      { value: "combo", label: "Combo" },
-    ]}
-    value={isMultiSelectMode ? "combo" : "single"}
-    onchange={(v) => handleModeChange(v === "combo")}
-    size="sm"
-    color="accent"
-  />
+  {#snippet modeSelector()}
+    <SegmentedControl
+      options={[
+        { value: "single", label: "Single" },
+        { value: "combo", label: "Combo" },
+      ]}
+      value={isMultiSelectMode ? "combo" : "single"}
+      onchange={(v) => handleModeChange(v === "combo")}
+      size="sm"
+      color="accent"
+    />
+  {/snippet}
 
   <!-- Component grid -->
   {#snippet reflectionConfigurator(idPrefix = "loop")}
@@ -920,98 +922,217 @@ Animates forward in z-axis and expands to fill the container space
     {@render reflectionConfigurator("desktop")}
   {/snippet}
 
-  <!-- Desktop keeps the attached accordion. Phones show every transformation
-       first, then drill into the selected transformation's settings. -->
-  <div
-    class="grid-container desktop-loop-grid themed-scrollbar"
-    bind:this={gridContainerElement}
-  >
-    <LOOPComponentGrid
-      selectedComponents={localSelectedComponents}
-      {disabledComponents}
-      {lockedComponents}
-      {isMultiSelectMode}
-      {layout}
-      componentConfigurators={{
-        [LOOPComponent.ROTATED]:
-          rhythm && onRhythmChange ? desktopRotationConfigurator : undefined,
-        [LOOPComponent.INVERTED]:
-          rhythm && onRhythmChange ? desktopInversionConfigurator : undefined,
-        [LOOPComponent.MIRRORED]:
-          rhythm && onRhythmChange ? desktopReflectionConfigurator : undefined,
-      }}
-      expandedComponents={new Set([
-        ...(canConfigureRotation ? [LOOPComponent.ROTATED] : []),
-        ...(canConfigureInversion ? [LOOPComponent.INVERTED] : []),
-        ...(canConfigureReflection ? [LOOPComponent.MIRRORED] : []),
-      ])}
-      onToggleComponent={handleToggle}
-    />
-  </div>
+  {#snippet singleRhythmStatus()}
+    {#if rhythmGate && !rhythmGate.ok}
+      <div class="loop-detail-status coming-soon-badge" role="status">
+        {rhythmGate.reason}
+      </div>
+    {/if}
+  {/snippet}
 
-  <div class="mobile-loop-stage">
-    <Crossfade key={mobileView} fill>
-      {#if mobileDetailInfo}
-        <section
-          class="mobile-loop-detail themed-scrollbar"
-          style="--component-color: {mobileDetailInfo.color};"
-          aria-label="{mobileDetailInfo.label} settings"
-        >
-          <div class="mobile-detail-header">
-            <button
-              type="button"
-              class="mobile-detail-back"
-              onclick={closeMobileConfigurator}
-              aria-label="Back to all LOOP types"
-            >
-              <FontAwesomeIcon icon="fas fa-arrow-left" size="1em" />
-            </button>
-            <div class="mobile-detail-identity">
-              <div class="mobile-detail-icon" aria-hidden="true">
-                <FontAwesomeIcon icon={mobileDetailInfo.icon} size="1em" />
-              </div>
-              <div class="mobile-detail-copy">
-                <strong>{mobileDetailInfo.label}</strong>
-                <span>{mobileDetailInfo.description}</span>
-              </div>
+  {#snippet desktopSingleRotationConfigurator()}
+    {@render rotationConfigurator("desktop-single")}
+    {@render singleRhythmStatus()}
+  {/snippet}
+
+  {#snippet desktopSingleInversionConfigurator()}
+    {@render inversionConfigurator("desktop-single")}
+    {@render singleRhythmStatus()}
+  {/snippet}
+
+  {#snippet desktopSingleReflectionConfigurator()}
+    {@render reflectionConfigurator("desktop-single")}
+    {@render singleRhythmStatus()}
+  {/snippet}
+
+  {#snippet loopDetail(idPrefix: string)}
+    {#if detailInfo}
+      <section
+        class="loop-detail themed-scrollbar"
+        style="--component-color: {detailInfo.color};"
+        aria-label="{detailInfo.label} settings"
+      >
+        <div class="loop-detail-header">
+          <button
+            type="button"
+            class="loop-detail-back"
+            onclick={closeConfigurator}
+            aria-label="Back to all LOOP types"
+          >
+            <FontAwesomeIcon icon="fas fa-arrow-left" size="1em" />
+          </button>
+          <div class="loop-detail-identity">
+            <div class="loop-detail-icon" aria-hidden="true">
+              <FontAwesomeIcon icon={detailInfo.icon} size="1em" />
+            </div>
+            <div class="loop-detail-copy">
+              <strong>{detailInfo.label}</strong>
+              <span>{detailInfo.description}</span>
             </div>
           </div>
-
-          <div class="mobile-detail-controls">
-            {#if mobileDetailComponent === LOOPComponent.ROTATED}
-              {@render rotationConfigurator("mobile")}
-            {:else if mobileDetailComponent === LOOPComponent.INVERTED}
-              {@render inversionConfigurator("mobile")}
-            {:else if mobileDetailComponent === LOOPComponent.MIRRORED}
-              {@render reflectionConfigurator("mobile")}
-            {/if}
-          </div>
-        </section>
-      {:else}
-        <div class="mobile-loop-picker">
-          <LOOPComponentGrid
-            selectedComponents={localSelectedComponents}
-            {disabledComponents}
-            {lockedComponents}
-            {isMultiSelectMode}
-            layout="grid"
-            {configurableComponents}
-            onConfigureComponent={openMobileConfigurator}
-            onToggleComponent={handleToggle}
-          />
-          <p class="mobile-picker-hint">
-            Tap a LOOP to select it. Use
-            <FontAwesomeIcon icon="fas fa-sliders" size="0.85em" />
-            to change its settings.
-          </p>
         </div>
-      {/if}
-    </Crossfade>
-  </div>
+
+        <div class="loop-detail-controls">
+          {#if detailComponent === LOOPComponent.ROTATED}
+            {@render rotationConfigurator(idPrefix)}
+          {:else if detailComponent === LOOPComponent.INVERTED}
+            {@render inversionConfigurator(idPrefix)}
+          {:else if detailComponent === LOOPComponent.MIRRORED}
+            {@render reflectionConfigurator(idPrefix)}
+          {/if}
+        </div>
+
+        {#if !isMultiSelectMode && rhythmGate && !rhythmGate.ok}
+          <div class="loop-detail-status coming-soon-badge" role="status">
+            {rhythmGate.reason}
+          </div>
+        {/if}
+      </section>
+    {/if}
+  {/snippet}
+
+  {#if isMultiSelectMode}
+    {@render modeSelector()}
+
+    <!-- Combo keeps its attached desktop configurators because several
+         selections and settings are reviewed together before Apply. -->
+    <div
+      class="grid-container desktop-loop-grid themed-scrollbar"
+      bind:this={gridContainerElement}
+    >
+      <LOOPComponentGrid
+        selectedComponents={localSelectedComponents}
+        {disabledComponents}
+        {lockedComponents}
+        {isMultiSelectMode}
+        {layout}
+        componentConfigurators={{
+          [LOOPComponent.ROTATED]:
+            rhythm && onRhythmChange ? desktopRotationConfigurator : undefined,
+          [LOOPComponent.INVERTED]:
+            rhythm && onRhythmChange ? desktopInversionConfigurator : undefined,
+          [LOOPComponent.MIRRORED]:
+            rhythm && onRhythmChange
+              ? desktopReflectionConfigurator
+              : undefined,
+        }}
+        expandedComponents={new Set([
+          ...(canConfigureRotation ? [LOOPComponent.ROTATED] : []),
+          ...(canConfigureInversion ? [LOOPComponent.INVERTED] : []),
+          ...(canConfigureReflection ? [LOOPComponent.MIRRORED] : []),
+        ])}
+        onToggleComponent={handleToggle}
+      />
+    </div>
+
+    <div class="mobile-loop-stage">
+      {#key detailView}
+        <div
+          class="loop-stage-layer"
+          in:fly={{
+            x: detailInfo ? 32 : -32,
+            duration: motionDuration(DURATION.normal),
+            easing: quintOut,
+          }}
+        >
+          {#if detailInfo}
+            {@render loopDetail("mobile-combo")}
+          {:else}
+            <div class="mobile-loop-picker">
+              <LOOPComponentGrid
+                selectedComponents={localSelectedComponents}
+                {disabledComponents}
+                {lockedComponents}
+                {isMultiSelectMode}
+                layout="grid"
+                {configurableComponents}
+                onConfigureComponent={openConfigurator}
+                onToggleComponent={handleToggle}
+              />
+              <p class="mobile-picker-hint">
+                Tap a LOOP to select it. Use
+                <FontAwesomeIcon icon="fas fa-sliders" size="0.85em" />
+                to change its settings.
+              </p>
+            </div>
+          {/if}
+        </div>
+      {/key}
+    </div>
+  {:else}
+    <!-- A desktop selection expands the card the user already touched. The
+         identity stays put while its controls reveal and the other LOOP types
+         slide around it, keeping the full-height drawer meaningfully occupied. -->
+    <div class="desktop-single-stack">
+      {@render modeSelector()}
+      <div
+        class="grid-container desktop-single-grid themed-scrollbar"
+        bind:this={gridContainerElement}
+      >
+        <LOOPComponentGrid
+          selectedComponents={localSelectedComponents}
+          {disabledComponents}
+          {lockedComponents}
+          {isMultiSelectMode}
+          {layout}
+          componentConfigurators={{
+            [LOOPComponent.ROTATED]:
+              rhythm && onRhythmChange
+                ? desktopSingleRotationConfigurator
+                : undefined,
+            [LOOPComponent.INVERTED]:
+              rhythm && onRhythmChange
+                ? desktopSingleInversionConfigurator
+                : undefined,
+            [LOOPComponent.MIRRORED]:
+              rhythm && onRhythmChange
+                ? desktopSingleReflectionConfigurator
+                : undefined,
+          }}
+          expandedComponents={configurableComponents}
+          onToggleComponent={handleToggle}
+        />
+      </div>
+    </div>
+
+    <!-- Narrow drawers keep the deliberate two-level flow. The old layer is
+         removed synchronously and the next layer pushes in directionally, so
+         there is never a ghosted duplicate under the live controls. -->
+    <div class="single-loop-stage">
+      {#key detailView}
+        <div
+          class="loop-stage-layer"
+          in:fly={{
+            x: detailInfo ? 32 : -32,
+            duration: motionDuration(DURATION.normal),
+            easing: quintOut,
+          }}
+        >
+          {#if detailInfo}
+            {@render loopDetail("single")}
+          {:else}
+            <div class="single-loop-picker">
+              {@render modeSelector()}
+              <div class="single-loop-grid-shell themed-scrollbar">
+                <LOOPComponentGrid
+                  selectedComponents={localSelectedComponents}
+                  {disabledComponents}
+                  {lockedComponents}
+                  {isMultiSelectMode}
+                  layout="grid"
+                  onToggleComponent={handleToggle}
+                />
+              </div>
+            </div>
+          {/if}
+        </div>
+      {/key}
+    </div>
+  {/if}
 
   <!-- Configurable LOOPs keep their explanation visible. Invalid single
        choices use the same area to say why they have not committed yet. -->
-  {#if showSelectionDetails}
+  {#if isMultiSelectMode}
     <div
       class="combo-details desktop-combo-details themed-scrollbar"
       in:flyFade={{
@@ -1209,10 +1330,63 @@ Animates forward in z-axis and expands to fill the container space
     display: none;
   }
 
+  .desktop-single-stack {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .desktop-single-grid {
+    flex: 1 1 auto;
+  }
+
+  .mobile-loop-stage,
+  .single-loop-stage {
+    position: relative;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .single-loop-stage {
+    display: none;
+    flex: 1 1 auto;
+  }
+
+  .loop-stage-layer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+  }
+
   .mobile-loop-picker,
-  .mobile-loop-detail {
+  .single-loop-picker,
+  .loop-detail {
     height: 100%;
     min-height: 0;
+  }
+
+  .single-loop-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .single-loop-grid-shell {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    align-items: stretch;
+    overflow-y: auto;
+    overflow-anchor: none;
+    overscroll-behavior: contain;
+  }
+
+  .single-loop-grid-shell :global(.loop-component-grid) {
+    width: 100%;
   }
 
   .mobile-loop-picker {
@@ -1253,7 +1427,7 @@ Animates forward in z-axis and expands to fill the container space
     text-align: center;
   }
 
-  .mobile-loop-detail {
+  .loop-detail {
     --theme-accent: var(--component-color);
     display: flex;
     flex-direction: column;
@@ -1263,14 +1437,14 @@ Animates forward in z-axis and expands to fill the container space
     overscroll-behavior: contain;
   }
 
-  .mobile-detail-header {
+  .loop-detail-header {
     display: flex;
     flex-shrink: 0;
     align-items: center;
     gap: 10px;
   }
 
-  .mobile-detail-back {
+  .loop-detail-back {
     display: flex;
     width: var(--min-touch-target, 44px);
     height: var(--min-touch-target, 44px);
@@ -1290,19 +1464,19 @@ Animates forward in z-axis and expands to fill the container space
     cursor: pointer;
   }
 
-  .mobile-detail-back:focus-visible {
+  .loop-detail-back:focus-visible {
     outline: 2px solid var(--component-color);
     outline-offset: 2px;
   }
 
-  .mobile-detail-identity {
+  .loop-detail-identity {
     display: flex;
     min-width: 0;
     align-items: center;
     gap: 9px;
   }
 
-  .mobile-detail-icon {
+  .loop-detail-icon {
     display: flex;
     width: 36px;
     height: 36px;
@@ -1315,19 +1489,19 @@ Animates forward in z-axis and expands to fill the container space
     font-size: 1.15rem;
   }
 
-  .mobile-detail-copy {
+  .loop-detail-copy {
     display: flex;
     min-width: 0;
     flex-direction: column;
     gap: 1px;
   }
 
-  .mobile-detail-copy strong {
+  .loop-detail-copy strong {
     color: var(--theme-text, white);
     font-size: var(--font-size-sm, 14px);
   }
 
-  .mobile-detail-copy span {
+  .loop-detail-copy span {
     overflow: hidden;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.72));
     font-size: var(--font-size-compact, 12px);
@@ -1336,9 +1510,13 @@ Animates forward in z-axis and expands to fill the container space
     white-space: nowrap;
   }
 
-  .mobile-detail-controls {
+  .loop-detail-controls {
     min-height: 0;
     padding: 0 2px 2px;
+  }
+
+  .loop-detail-status {
+    flex-shrink: 0;
   }
 
   .combo-details {
@@ -1648,11 +1826,13 @@ Animates forward in z-axis and expands to fill the container space
      foot (the drawer content reserves clearance for it) — stick above it. */
   @media (max-width: 768px) {
     .desktop-loop-grid,
-    .desktop-combo-details {
+    .desktop-combo-details,
+    .desktop-single-stack {
       display: none;
     }
 
-    .mobile-loop-stage {
+    .mobile-loop-stage,
+    .single-loop-stage {
       display: block;
       width: 100%;
       height: clamp(260px, 45dvh, 320px);
@@ -1661,14 +1841,33 @@ Animates forward in z-axis and expands to fill the container space
       overflow: hidden;
     }
 
-    .mobile-loop-picker :global(.loop-component-grid) {
+    .mobile-loop-picker :global(.loop-component-grid),
+    .single-loop-picker :global(.loop-component-grid) {
       grid-auto-rows: 76px;
       gap: 8px;
     }
 
     .mobile-loop-picker :global(.loop-component-shell),
-    .mobile-loop-picker :global(.loop-component-button) {
+    .mobile-loop-picker :global(.loop-component-button),
+    .single-loop-picker :global(.loop-component-shell),
+    .single-loop-picker :global(.loop-component-button) {
       min-height: 76px;
+    }
+
+    .single-loop-picker :global(.loop-component-grid) {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .single-loop-picker :global(.loop-component-shell) {
+      grid-column: span 2;
+    }
+
+    .single-loop-picker :global(.loop-component-shell:nth-child(4)) {
+      grid-column: 2 / span 2;
+    }
+
+    .single-loop-picker :global(.loop-component-shell:nth-child(5)) {
+      grid-column: 4 / span 2;
     }
 
     .mobile-loop-status {
@@ -1687,12 +1886,13 @@ Animates forward in z-axis and expands to fill the container space
      accordion inside a bottom sheet. */
   @media (min-width: 769px) and (max-width: 1023px) {
     :global(.loop-drawer-sheet[data-placement="bottom"]) .desktop-loop-grid,
-    :global(.loop-drawer-sheet[data-placement="bottom"])
-      .desktop-combo-details {
+    :global(.loop-drawer-sheet[data-placement="bottom"]) .desktop-combo-details,
+    :global(.loop-drawer-sheet[data-placement="bottom"]) .desktop-single-stack {
       display: none;
     }
 
-    :global(.loop-drawer-sheet[data-placement="bottom"]) .mobile-loop-stage {
+    :global(.loop-drawer-sheet[data-placement="bottom"]) .mobile-loop-stage,
+    :global(.loop-drawer-sheet[data-placement="bottom"]) .single-loop-stage {
       display: block;
       width: 100%;
       height: clamp(260px, 45dvh, 320px);
@@ -1703,6 +1903,9 @@ Animates forward in z-axis and expands to fill the container space
 
     :global(.loop-drawer-sheet[data-placement="bottom"])
       .mobile-loop-picker
+      :global(.loop-component-grid),
+    :global(.loop-drawer-sheet[data-placement="bottom"])
+      .single-loop-picker
       :global(.loop-component-grid) {
       grid-auto-rows: 76px;
       gap: 8px;
@@ -1713,8 +1916,38 @@ Animates forward in z-axis and expands to fill the container space
       :global(.loop-component-shell),
     :global(.loop-drawer-sheet[data-placement="bottom"])
       .mobile-loop-picker
+      :global(.loop-component-button),
+    :global(.loop-drawer-sheet[data-placement="bottom"])
+      .single-loop-picker
+      :global(.loop-component-shell),
+    :global(.loop-drawer-sheet[data-placement="bottom"])
+      .single-loop-picker
       :global(.loop-component-button) {
       min-height: 76px;
+    }
+
+    :global(.loop-drawer-sheet[data-placement="bottom"])
+      .single-loop-picker
+      :global(.loop-component-grid) {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    :global(.loop-drawer-sheet[data-placement="bottom"])
+      .single-loop-picker
+      :global(.loop-component-shell) {
+      grid-column: span 2;
+    }
+
+    :global(.loop-drawer-sheet[data-placement="bottom"])
+      .single-loop-picker
+      :global(.loop-component-shell:nth-child(4)) {
+      grid-column: 2 / span 2;
+    }
+
+    :global(.loop-drawer-sheet[data-placement="bottom"])
+      .single-loop-picker
+      :global(.loop-component-shell:nth-child(5)) {
+      grid-column: 4 / span 2;
     }
 
     :global(.loop-drawer-sheet[data-placement="bottom"]) .mobile-loop-status {
@@ -1733,11 +1966,13 @@ Animates forward in z-axis and expands to fill the container space
      inside that stable stage. */
   @media (min-width: 769px) and (max-height: 700px) {
     :global(.loop-drawer-sheet[data-placement="right"]) .desktop-loop-grid,
-    :global(.loop-drawer-sheet[data-placement="right"]) .desktop-combo-details {
+    :global(.loop-drawer-sheet[data-placement="right"]) .desktop-combo-details,
+    :global(.loop-drawer-sheet[data-placement="right"]) .desktop-single-stack {
       display: none;
     }
 
-    :global(.loop-drawer-sheet[data-placement="right"]) .mobile-loop-stage {
+    :global(.loop-drawer-sheet[data-placement="right"]) .mobile-loop-stage,
+    :global(.loop-drawer-sheet[data-placement="right"]) .single-loop-stage {
       display: block;
       width: 100%;
       height: auto;
@@ -1748,6 +1983,9 @@ Animates forward in z-axis and expands to fill the container space
 
     :global(.loop-drawer-sheet[data-placement="right"])
       .mobile-loop-picker
+      :global(.loop-component-grid),
+    :global(.loop-drawer-sheet[data-placement="right"])
+      .single-loop-picker
       :global(.loop-component-grid) {
       grid-auto-rows: 68px;
       gap: 6px;
@@ -1758,8 +1996,38 @@ Animates forward in z-axis and expands to fill the container space
       :global(.loop-component-shell),
     :global(.loop-drawer-sheet[data-placement="right"])
       .mobile-loop-picker
+      :global(.loop-component-button),
+    :global(.loop-drawer-sheet[data-placement="right"])
+      .single-loop-picker
+      :global(.loop-component-shell),
+    :global(.loop-drawer-sheet[data-placement="right"])
+      .single-loop-picker
       :global(.loop-component-button) {
       min-height: 68px;
+    }
+
+    :global(.loop-drawer-sheet[data-placement="right"])
+      .single-loop-picker
+      :global(.loop-component-grid) {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    :global(.loop-drawer-sheet[data-placement="right"])
+      .single-loop-picker
+      :global(.loop-component-shell) {
+      grid-column: span 2;
+    }
+
+    :global(.loop-drawer-sheet[data-placement="right"])
+      .single-loop-picker
+      :global(.loop-component-shell:nth-child(4)) {
+      grid-column: 2 / span 2;
+    }
+
+    :global(.loop-drawer-sheet[data-placement="right"])
+      .single-loop-picker
+      :global(.loop-component-shell:nth-child(5)) {
+      grid-column: 4 / span 2;
     }
 
     :global(.loop-drawer-sheet[data-placement="right"]) .mobile-loop-status {
@@ -1820,7 +2088,7 @@ Animates forward in z-axis and expands to fill the container space
     .apply-button,
     .close-button,
     .disable-button,
-    .mobile-detail-back {
+    .loop-detail-back {
       transition: none;
     }
   }

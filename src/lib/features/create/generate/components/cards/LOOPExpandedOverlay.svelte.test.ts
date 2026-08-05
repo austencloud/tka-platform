@@ -54,7 +54,7 @@ describe("LOOPExpandedOverlay live single selection", () => {
     await page.viewport(900, 900);
   });
 
-  it("commits a configurable single LOOP immediately and writes its settings through live", async () => {
+  it("morphs a desktop Single card open and writes its settings through live", async () => {
     const handlers = renderOverlay();
 
     await page
@@ -67,10 +67,15 @@ describe("LOOPExpandedOverlay live single selection", () => {
     expect(handlers.onChange).toHaveBeenLastCalledWith(LOOPType.ROTATED);
     expect(handlers.onClose).not.toHaveBeenCalled();
     expect(document.querySelector(".apply-button")).toBeNull();
-    expect(document.body.textContent).not.toContain("Swapped");
+    expect(document.body.textContent).toContain("Swapped");
     expect(
       document.querySelector('[aria-label="Back to all LOOP types"]')
-    ).not.toBeNull();
+    ).toBeNull();
+
+    const rotatedButton = document.querySelector<HTMLButtonElement>(
+      `[data-component="${LOOPComponent.ROTATED}"] .loop-component-button`
+    );
+    expect(rotatedButton?.getAttribute("aria-expanded")).toBe("true");
 
     await page
       .getByRole("radiogroup", { name: "Rotation period" })
@@ -82,13 +87,41 @@ describe("LOOPExpandedOverlay live single selection", () => {
     });
     expect(handlers.onChange).toHaveBeenCalledTimes(2);
     expect(handlers.onChange).toHaveBeenLastCalledWith(LOOPType.ROTATED);
+  });
+
+  it("pushes into focused settings on a phone and restores focus on Back", async () => {
+    await page.viewport(375, 667);
+    const handlers = renderOverlay();
+
+    await page
+      .getByRole("button", {
+        name: /Rotated - Halved or quartered position rotation - not selected/,
+      })
+      .click();
+
+    expect(handlers.onChange).toHaveBeenLastCalledWith(LOOPType.ROTATED);
+    expect(handlers.onClose).not.toHaveBeenCalled();
+    expect(
+      document.querySelector('[aria-label="Back to all LOOP types"]')
+    ).not.toBeNull();
+    await vi.waitFor(() => {
+      expect(
+        document.querySelector(
+          `.single-loop-stage [data-component="${LOOPComponent.SWAPPED}"]`
+        )
+      ).toBeNull();
+    });
 
     await page.getByRole("button", { name: "Back to all LOOP types" }).click();
 
     const rotatedButton = document.querySelector<HTMLButtonElement>(
-      `[data-component="${LOOPComponent.ROTATED}"] .loop-component-button`
+      `.single-loop-stage [data-component="${LOOPComponent.ROTATED}"] .loop-component-button`
     );
-    expect(document.body.textContent).toContain("Swapped");
+    expect(
+      document.querySelector(
+        `.single-loop-stage [data-component="${LOOPComponent.SWAPPED}"]`
+      )
+    ).not.toBeNull();
     expect(document.activeElement).toBe(rotatedButton);
   });
 

@@ -9,31 +9,14 @@
 -->
 <script lang="ts">
   import LOOPPicker from "$lib/shared/components/loop-picker/LOOPPicker.svelte";
-  import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import type { LOOPOption } from "$lib/features/create/shared/services/loop-validator";
+  import {
+    COMPACT_LOOP_REVIEW_OPTIONS,
+    LOOP_REVIEW_OPTIONS,
+  } from "./loop-picker-review-fixtures";
 
-  // Descriptions are the real ones from LOOP_OPTION_CONFIG — a harness that
-  // echoes the name back as the description hides how the card actually reads.
-  const option = (
-    loopType: LOOPType,
-    name: string,
-    description: string
-  ): LOOPOption => ({ loopType, name, description, icon: "" }) as LOOPOption;
-
-  const swapped = option(LOOPType.SWAPPED, "Swapped", "Swaps blue and red props");
-  const inverted = option(LOOPType.INVERTED, "Inverted", "Inverts motion directions");
-  const swappedInverted = option(
-    LOOPType.SWAPPED_INVERTED,
-    "Swapped / Inverted",
-    "Swaps colors with inverted motion"
-  );
-  const rewound = option(
-    LOOPType.STRICT_REWOUND,
-    "Rewound",
-    "Appends reversed sequence to double length"
-  );
-  const rotated = option(LOOPType.ROTATED, "Rotated", "Rotates positions around the grid");
-  const mirrored = option(LOOPType.MIRRORED, "Mirrored", "Mirrors positions vertically");
+  const { swapped, inverted, swappedInverted, rewound, rotated, mirrored } =
+    LOOP_REVIEW_OPTIONS;
 
   const cases: Array<{
     title: string;
@@ -42,12 +25,12 @@
   }> = [
     {
       title: "Closed in position AND orientation (the screenshot case)",
-      options: [swapped, inverted, swappedInverted, rewound],
+      options: COMPACT_LOOP_REVIEW_OPTIONS,
       repeat: null,
     },
     {
       title: "Closed in position, orientation returns after 2 repeats",
-      options: [swapped, inverted, swappedInverted, rewound],
+      options: COMPACT_LOOP_REVIEW_OPTIONS,
       repeat: { count: 2 },
     },
     {
