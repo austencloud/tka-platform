@@ -10,6 +10,8 @@ interface HarnessOptions {
   selectedStepNumber: number | null;
   panelOpen: boolean;
   multiSelect?: boolean;
+  selectedStepNumbers?: number[];
+  mandalaSelected?: boolean;
 }
 
 export function createAutoStepEditorEffectHarness(options: HarnessOptions) {
@@ -18,6 +20,8 @@ export function createAutoStepEditorEffectHarness(options: HarnessOptions) {
   let selectedStepNumber = $state<number | null>(options.selectedStepNumber);
   let panelOpen = $state(options.panelOpen);
   let multiSelect = $state(options.multiSelect ?? false);
+  let selectedStepNumbers = $state(new Set(options.selectedStepNumbers ?? []));
+  let mandalaSelected = $state(options.mandalaSelected ?? false);
 
   const sequenceState = {
     get currentSequence() {
@@ -28,6 +32,9 @@ export function createAutoStepEditorEffectHarness(options: HarnessOptions) {
     },
     get isMultiSelectMode() {
       return multiSelect;
+    },
+    get selectedStepNumbers() {
+      return selectedStepNumbers;
     },
     clearSelection() {
       selectedStepNumber = null;
@@ -41,6 +48,9 @@ export function createAutoStepEditorEffectHarness(options: HarnessOptions) {
   const panelState = {
     get isStepEditorPanelOpen() {
       return panelOpen;
+    },
+    get mandalaViewerSelection() {
+      return mandalaSelected ? { variant: "both", pathShape: "hybrid" } : null;
     },
     openStepEditorPanel() {
       panelOpen = true;

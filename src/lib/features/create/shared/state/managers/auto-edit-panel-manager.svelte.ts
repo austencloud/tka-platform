@@ -9,7 +9,10 @@
 
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import { sequenceHasStepEditorContent } from "../../services/step-editor-availability";
+import {
+  hasStepEditorSelection,
+  sequenceHasStepEditorContent,
+} from "../../services/step-editor-availability";
 import type { PanelCoordinationState } from "../panel-coordination-state.svelte";
 import type { createCreateModuleState as CreateModuleStateType } from "../create-module-state.svelte";
 
@@ -88,13 +91,8 @@ export function createAutoEditPanelEffect(
 /**
  * Creates auto-open effect for Beat Editor panel on beat selection
  *
- * IMPORTANT: This only AUTO-OPENS the panel when a beat is selected.
- * It does NOT auto-close when selection is cleared - this prevents
- * the panel from flickering during beat operations (delete, transforms)
- * that temporarily clear selection.
- *
- * The panel is closed when:
- * - User explicitly closes it (close button, swipe, etc.)
+ * Keeps a restored panel flag synchronized with the hydrated selection. The
+ * shared mandala drawer is allowed without a step; the editor branch is not.
  *
  * @returns Cleanup function
  */
@@ -133,8 +131,28 @@ export function createAutoStepEditorEffect(
         return;
       }
 
-      if (!shouldAutoOpen) {
+      const canShowEditor = hasStepEditorSelection({
+        sequence: currentSequence,
+        selectedStepNumber,
+        selectedStepNumbers: seqState.selectedStepNumbers,
+        hasMandalaSelection: panelState.mandalaViewerSelection !== null,
+      });
+
+      // Panel and selection persistence hydrate independently. Keep the
+      // restored flag only when there is still something selected to edit.
+      if (!canShowEditor) {
         lastSelectedBeat = null;
+        if (
+          CreateModuleState.isPersistenceInitialized &&
+          panelState.isStepEditorPanelOpen
+        ) {
+          panelState.closeStepEditorPanel();
+        }
+        return;
+      }
+
+      if (!shouldAutoOpen) {
+        lastSelectedBeat = selectedStepNumber;
         return;
       }
 
@@ -147,9 +165,6 @@ export function createAutoStepEditorEffect(
             `Auto-opening Beat Editor panel for beat ${selectedStepNumber}`
           );
         }
-        // NOTE: We deliberately do NOT auto-close the panel when selection becomes null.
-        // This prevents panel flickering during beat operations that temporarily clear selection.
-        // The panel will be closed when the user explicitly closes it.
         lastSelectedBeat = selectedStepNumber;
       }
     });

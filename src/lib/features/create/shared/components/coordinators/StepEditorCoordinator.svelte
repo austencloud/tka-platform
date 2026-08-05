@@ -30,7 +30,8 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { StepOperator } from "$lib/features/create/shared/services/step-operator";
-  import { sequenceHasStepEditorContent } from "../../services/step-editor-availability";
+  import { canShowStepEditorDrawer } from "../../services/step-editor-availability";
+  import { getSequenceOverlayState } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
   import {
     MotionColor,
     MotionType,
@@ -54,6 +55,7 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   const ctx = getCreateModuleContext();
   const { CreateModuleState, panelState, layout } = ctx;
   const isSideBySideLayout = $derived(layout.shouldUseSideBySideLayout);
+  const sequenceOverlay = getSequenceOverlayState();
 
   // Services
   const hapticService: HapticFeedback = getHapticFeedback();
@@ -100,8 +102,22 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   const isOpen = $derived(
     panelState.isStepEditorPanelOpen &&
       isTabSupported &&
-      sequenceHasStepEditorContent(sequence)
+      canShowStepEditorDrawer({
+        sequence,
+        selectedStepNumber,
+        selectedStepNumbers: activeSequenceState.selectedStepNumbers,
+        hasMandalaSelection: panelState.mandalaViewerSelection !== null,
+        isSequenceViewerOpen: sequenceOverlay.isOpen,
+      })
   );
+
+  // The viewer overlay survives Create HMR independently from this drawer.
+  // If both states restore, the viewer owns the screen and clears the editor.
+  $effect(() => {
+    if (sequenceOverlay.isOpen && panelState.isStepEditorPanelOpen) {
+      panelState.closeStepEditorPanel();
+    }
+  });
 
   // CRITICAL FIX: Compute selectedStepData directly instead of using the getter
   // The getter on activeSequenceState is NOT reactive because it's a plain object getter.
@@ -174,7 +190,7 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   let lastIsMulti = false;
   $effect(() => {
     const multi = isMultiSelect;
-    if (multi && !lastIsMulti && isTabSupported) {
+    if (multi && !lastIsMulti && isTabSupported && !sequenceOverlay.isOpen) {
       panelState.openStepEditorPanel();
     }
     lastIsMulti = multi;

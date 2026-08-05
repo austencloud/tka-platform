@@ -2,7 +2,10 @@ import { afterEach, describe, expect, it } from "vitest";
 import { flushSync } from "svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import { sequenceHasStepEditorContent } from "$lib/features/create/shared/services/step-editor-availability";
+import {
+  canShowStepEditorDrawer,
+  sequenceHasStepEditorContent,
+} from "$lib/features/create/shared/services/step-editor-availability";
 import { createAutoStepEditorEffectHarness } from "./auto-step-editor-effect-harness.svelte";
 
 const sequenceWithStep = {
@@ -70,6 +73,47 @@ describe("Create Step Editor availability", () => {
 
     expect(harness.panelOpen).toBe(false);
     expect(harness.multiSelect).toBe(false);
+  });
+
+  it("closes a restored editor when no step is selected", () => {
+    const harness = createAutoStepEditorEffectHarness({
+      persistenceInitialized: true,
+      sequence: sequenceWithStep,
+      selectedStepNumber: null,
+      panelOpen: true,
+    });
+    dispose = harness.dispose;
+
+    flushSync();
+
+    expect(harness.panelOpen).toBe(false);
+  });
+
+  it("keeps the shared drawer open for a selected mandala", () => {
+    const harness = createAutoStepEditorEffectHarness({
+      persistenceInitialized: true,
+      sequence: sequenceWithStep,
+      selectedStepNumber: null,
+      panelOpen: true,
+      mandalaSelected: true,
+    });
+    dispose = harness.dispose;
+
+    flushSync();
+
+    expect(harness.panelOpen).toBe(true);
+  });
+
+  it("never allows the step editor to coexist with the sequence viewer", () => {
+    expect(
+      canShowStepEditorDrawer({
+        sequence: sequenceWithStep,
+        selectedStepNumber: 1,
+        selectedStepNumbers: new Set(),
+        hasMandalaSelection: false,
+        isSequenceViewerOpen: true,
+      })
+    ).toBe(false);
   });
 
   it("still opens for a selected step in a real sequence", () => {
