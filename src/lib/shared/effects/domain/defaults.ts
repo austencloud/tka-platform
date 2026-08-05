@@ -93,10 +93,10 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     afterglow: 0.5,
   },
 
-  // Goo (renamed from water 2026-06-28). clarity/surfaceTension/spewStyle are
-  // inert legacy droplet knobs kept for shape stability; goo uses emission,
-  // intensity, palette, trackingMode. Higher motionEmission so blobs are dense
-  // enough to bridge into connected goo rather than lonely globs.
+  // Goo (renamed from water 2026-06-28). surfaceTension is the Viscosity knob:
+  // 0 is watery and sheds drips, 1 congeals and clings. motionEmission is
+  // Amount (stream mass). clarity/spewStyle/ambientEmission are inert legacy
+  // droplet knobs kept for shape stability.
   goo: {
     ambientEmission: 0.4,
     motionEmission: 0.6,
@@ -104,7 +104,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     palette: "classic",
     customColor: "#3a7fd9",
     clarity: 0.7,
-    surfaceTension: 0.3,
+    surfaceTension: 0.45,
     trackingMode: "both_ends",
     spewStyle: "flow",
   },

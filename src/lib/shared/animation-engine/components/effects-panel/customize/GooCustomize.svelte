@@ -25,9 +25,12 @@
     { value: "both_ends", label: "Both" },
   ];
 
-  // Goo reads emission/intensity/palette/tracking. The droplet-era spewStyle,
-  // clarity and surfaceTension knobs are inert for the goo renderer, so they
-  // are not exposed here (the fields remain on GooIntent for shape stability).
+  // Goo reads surfaceTension (exposed as Viscosity — how much the liquid
+  // congeals), motionEmission (Amount — stream mass), intensity, palette and
+  // tracking. Drip rate is derived from viscosity rather than being its own
+  // knob: watery liquid sheds drops, thick liquid clings. The droplet-era
+  // spewStyle/clarity/ambientEmission fields remain on GooIntent for shape
+  // stability but no longer drive anything.
 </script>
 
 <div class="customize-view">
@@ -60,29 +63,30 @@
 
       <OptionChipRow label="Tracking" ariaLabel="Goo tracking mode" value={state.goo.trackingMode} options={TRACKING} onChange={(v) => state.updateEffect("goo", { trackingMode: v })} />
 
-      <!-- Ambient emission -->
+      <!-- Viscosity. Names the MATERIAL rather than a number inside it: low is
+           watery and sheds drips, high congeals and hangs together. -->
       <div class="slider-row">
-        <label for="goo-ambient">Drip</label>
+        <label for="goo-viscosity">Viscosity</label>
         <input
-          id="goo-ambient"
+          id="goo-viscosity"
           type="range"
           min="0"
           max="1"
           step="0.05"
-          value={state.goo.ambientEmission}
+          value={state.goo.surfaceTension}
           oninput={(e) =>
             state.updateEffect("goo", {
-              ambientEmission: +(e.currentTarget as HTMLInputElement).value,
+              surfaceTension: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
-        <span class="slider-value">{Math.round(state.goo.ambientEmission * 100)}%</span>
+        <span class="slider-value">{Math.round(state.goo.surfaceTension * 100)}%</span>
       </div>
 
-      <!-- Motion emission -->
+      <!-- Amount -->
       <div class="slider-row">
-        <label for="goo-motion">Motion</label>
+        <label for="goo-amount">Amount</label>
         <input
-          id="goo-motion"
+          id="goo-amount"
           type="range"
           min="0"
           max="1"

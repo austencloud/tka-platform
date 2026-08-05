@@ -128,9 +128,18 @@ export class Goo2DRenderer {
     // a bead COUNT, which the continuity floor then overrode — so the knobs
     // moved a number that could not change the picture. Count is now geometry
     // (see resampleStream), and the sliders own mass, drip rate, and opacity.
-    const widthMul = 0.5 + params.motionEmission * 1.1; // Motion  → stream mass
-    const dripRate = params.ambientEmission * params.ambientEmission * 9; // Drip → drops/sec
+    const widthMul = 0.5 + params.motionEmission * 1.1; // Amount → stream mass
     const opacity = 0.45 + params.intensity * 0.55; // Intensity → how solid
+
+    // Viscosity is the knob the effect always wanted: how much this stuff
+    // CONGEALS. 0 is watery — it necks off early, sheds drips constantly and
+    // barely holds together. 1 is thick — it bridges hard, hangs on to its full
+    // width, and almost never drips. Everything downstream reads from it, so one
+    // slider moves the whole material rather than one number in it.
+    const visc = params.surfaceTension;
+    const dripRate = (1 - visc) * (1 - visc) * 8; // watery sheds, thick clings
+    const bodyLife = BODY_LIFE * (0.72 + visc * 0.55);
+    const taperAt = 0.28 + visc * 0.34; // thick stays fat further down its length
 
     // 1. Record where each tip has been. The stream is a PATH, not a cloud of
     //    particles that happen to be near each other: beads get sampled along it
@@ -151,7 +160,7 @@ export class Goo2DRenderer {
       // Trim everything older than the body's life — that IS the tail.
       let cut = path.length;
       for (let i = 0; i < path.length; i++) {
-        if (this.clock - path[i]!.t > BODY_LIFE) {
+        if (this.clock - path[i]!.t > bodyLife) {
           cut = i + 1;
           break;
         }
@@ -201,7 +210,7 @@ export class Goo2DRenderer {
     //    the drops. Nothing here persists between frames.
     this.beads.length = 0;
     for (const path of this.paths.values()) {
-      this.resampleStream(path, baseBlob, widthMul, opacity, refSpeed, sc);
+      this.resampleStream(path, baseBlob, widthMul, opacity, refSpeed, sc, bodyLife, taperAt);
     }
     for (const d of this.drops) {
       const fade = beadFade(d.age / d.maxAge);
@@ -241,7 +250,7 @@ export class Goo2DRenderer {
 
     const field = this.off as CanvasImageSource;
     const workCanvas = this.work as CanvasImageSource;
-    const blurPx = Math.round(BLUR_PX * sc);
+    const blurPx = Math.max(3, Math.round(BLUR_PX * sc * (0.72 + visc * 0.62)));
     const prevFilter = ctx.filter;
     const prevComposite = ctx.globalCompositeOperation;
     const prevAlpha = ctx.globalAlpha;
@@ -341,9 +350,40 @@ export class Goo2DRenderer {
     opacity: number,
     refSpeed: number,
     sc: number,
+    bodyLife: number,
+    taperAt: number,
   ): void {
     if (path.length < 2) return;
     const spacing = baseBlob * widthMul * BEAD_SPACING;
+
+    // Cap the head. Density falls off at both ends of the stream because the
+    // last bead only has neighbours on one side, so the threshold eats the tip —
+    // which is why the goo looked detached from the prop and trailing behind it.
+    // An oversized bead pushed slightly PAST the newest point keeps the stream
+    // welded to the tip that is producing it.
+    {
+      const h = path[0]!;
+      const n = path[1]!;
+      let dx = h.x - n.x;
+      let dy = h.y - n.y;
+      const dl = Math.hypot(dx, dy);
+      const stretch = refSpeed > 0 ? 1 / (1 + Math.min(1.6, h.speed / refSpeed) * 0.38) : 1;
+      const rHead = baseBlob * widthMul * stretch;
+      if (dl > 0.0001) {
+        dx /= dl;
+        dy /= dl;
+      } else {
+        dx = 0;
+        dy = 0;
+      }
+      this.beads.push({
+        x: h.x + dx * rHead * 0.35,
+        y: h.y + dy * rHead * 0.35,
+        r: rHead * 1.18,
+        alpha: opacity,
+        glint: false,
+      });
+    }
     // Track arc length from the head and place a bead every time the running
     // total passes the next multiple of `spacing`. Path points arrive far closer
     // together than beads sit, so per-segment leftovers must ACCUMULATE — the
@@ -361,10 +401,10 @@ export class Goo2DRenderer {
       for (; nextAt <= total + segLen && this.beads.length < MAX_BEADS; nextAt += spacing, index++) {
         const f = (nextAt - total) / segLen;
         const age = this.clock - (a.t + (b.t - a.t) * f);
-        const u = Math.min(1, age / BODY_LIFE);
+        const u = Math.min(1, age / bodyLife);
         const speed = a.speed + (b.speed - a.speed) * f;
         const stretch = refSpeed > 0 ? 1 / (1 + Math.min(1.6, speed / refSpeed) * 0.38) : 1;
-        const r = baseBlob * widthMul * streamWidth(u) * stretch;
+        const r = baseBlob * widthMul * streamWidth(u, taperAt) * stretch;
         if (r < 1.2 * sc) continue;
         this.beads.push({
           x: a.x + (b.x - a.x) * f,
@@ -519,9 +559,9 @@ function beadFade(t: number): number {
  * tangent — that shape is the pinch-off, and it is why the tail breaks into
  * beads instead of ending in a cap.
  */
-function streamWidth(u: number): number {
-  if (u < 0.45) return 1;
-  const t = (u - 0.45) / 0.55;
+function streamWidth(u: number, taperAt: number): number {
+  if (u < taperAt) return 1;
+  const t = (u - taperAt) / (1 - taperAt);
   return Math.sqrt(Math.max(0, 1 - t * t));
 }
 

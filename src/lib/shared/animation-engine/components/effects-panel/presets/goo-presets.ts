@@ -106,6 +106,6 @@ export const GOO_PRESET_GROUP: EffectPresetGroup = {
   presets: GOO_PRESETS,
   getSummary: (state) => {
     const g = state.goo;
-    return `${g.palette} · amb ${Math.round(g.ambientEmission * 100)}% · mot ${Math.round(g.motionEmission * 100)}%`;
+    return `${g.palette} · viscosity ${Math.round(g.surfaceTension * 100)}% · amount ${Math.round(g.motionEmission * 100)}%`;
   },
 };
