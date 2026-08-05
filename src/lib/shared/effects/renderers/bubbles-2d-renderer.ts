@@ -10,7 +10,7 @@ import { emitterId } from "./emitter-tip";
  * up a bit of horizontal drift and grow over lifetime.
  */
 interface Bubble {
-  /** Current position (px). */
+  /** Drift-free position (px). Wobble is added at draw time. */
   x: number;
   y: number;
   /** Horizontal drift velocity (px/s). Small natural chaos. */
@@ -19,15 +19,18 @@ interface Bubble {
   vy: number;
   /** Seconds since spawn. */
   age: number;
-  /** Seconds until forced timeout-pop. Max-radius can pop sooner. */
+  /** Seconds until pop. */
   maxAge: number;
-  /** Base radius at spawn (px). */
+  /** Radius at spawn (px). Barely changes - see `currentRadius`. */
   baseR: number;
-  /** Growth rate - radius grows from baseR toward maxR over lifetime.
-   *  0 = no growth (champagne-style), 1 = full growth (soap-style). */
-  growthRate: number;
-  /** Cap radius (px) for growth + max-size pop trigger. */
-  maxR: number;
+  /** Sideways sway amplitude (px) - bubbles weave as they rise. */
+  wobbleAmp: number;
+  /** Sway frequency (rad/s). */
+  wobbleFreq: number;
+  /** Sway phase offset so no two bubbles move in lockstep. */
+  wobblePhase: number;
+  /** 0-1 seed for where this bubble sits in the thin-film hue sweep. */
+  filmPhase: number;
   /** Pop state. 0 = alive, 1 = popping. */
   popping: number;
   /** Age in popping phase (seconds). Once this exceeds POP_DURATION the
@@ -64,14 +67,28 @@ const BURST_LIFE_VAR = 0.22;
 const TAU = Math.PI * 2;
 
 /**
+ * Total swell over a bubble's life. A real soap bubble in air holds its
+ * volume until it bursts - it does not balloon. 8% is enough to read as
+ * "under tension" without becoming the cartoon growth this replaced.
+ */
+const LIFETIME_SWELL = 0.08;
+/** Smallest bubble in the field, as a fraction of the intensity-scaled base. */
+const SIZE_FLOOR = 0.34;
+/** How hard the size roll biases toward small. 1 = uniform, higher = smaller. */
+const SIZE_BIAS = 2.0;
+/** Global opacity ceiling - bubbles are chrome, never the subject. */
+const MAX_OPACITY = 0.78;
+
+/**
  * Canvas2D bubbles renderer - per-tip buoyant emitter.
  *
- * Each bubble renders as a hollow ringed circle: rim stroke + transparent
- * interior fill + upper-left specular highlight. Motion is simple Euler
- * integration (rise + horizontal drift). Bubbles grow during lifetime and
- * pop either on timeout or when they hit max radius (whichever first).
- * Oil palette samples a hue-shift gradient per frame instead of using a
- * static rim color.
+ * Each bubble is four layers: a Fresnel interior gradient (clear through
+ * the middle, brightening to a band just inside the edge), a hairline rim,
+ * a thin-film sheen arc, and two highlights - a tight specular upper-left
+ * plus a soft bounce lower-right. Sizes follow a power law so the field is
+ * mostly small bubbles with occasional large ones, rise speed scales with
+ * radius for parallax, and each bubble sways on its own sine. Bubbles hold
+ * their volume and pop on timeout.
  */
 export class Bubbles2DRenderer {
   private bubbles: Bubble[] = [];
@@ -153,36 +170,32 @@ export class Bubbles2DRenderer {
     if (n > slots) n = slots;
     if (n <= 0) return;
 
-    // Lifetime scales with intensity - bigger bubbles last longer, but
-    // size-pop caps it if they hit maxR first.
-    const lifeBase = 1.0 + params.intensity * 2.0;
-    // growthRate ∝ (1 - sizeJitter). Low-jitter (champagne) = ~0 growth;
-    // high-jitter (soap/dream) = dramatic swell.
-    const growth = Math.max(0, 1 - params.sizeJitter);
-    // Palette-specific max-size multiplier. Soap + oil + spirit grow more;
-    // champagne + acid stay smaller.
+    // Lifetime scales with intensity. Champagne-style palettes fizz out
+    // fast; soapy ones linger.
     const paletteId = params.resolvedPalette.id;
-    const maxSizeMult =
-      paletteId === "soap" || paletteId === "oil" || paletteId === "spirit"
-        ? 3.0
-        : paletteId === "champagne" || paletteId === "acid"
-          ? 1.4
-          : 2.2; // custom / other
+    const lifeMult =
+      paletteId === "champagne" || paletteId === "acid" ? 0.55 : 1.0;
+    const lifeBase = (1.0 + params.intensity * 2.0) * lifeMult;
+    // Size spread widens with sizeJitter but the floor stays put, so
+    // raising it adds big bubbles rather than inflating every bubble.
+    const spread = 0.42 + params.sizeJitter * 1.55;
 
     for (let i = 0; i < n; i++) {
-      // Base-radius jitter. sizeJitter controls how wild.
-      const jitter =
-        1.0 + (Math.random() - 0.5) * 2 * Math.max(0.05, params.sizeJitter);
-      const r0 = baseR * jitter;
+      // Power-law size roll. Real bubble fields are mostly small bubbles
+      // with the occasional large one - a uniform roll reads as a field of
+      // identical discs, which is what made this effect look cartoony.
+      const roll = Math.pow(Math.random(), SIZE_BIAS);
+      const sizeMul = SIZE_FLOOR + roll * spread;
+      const r0 = baseR * sizeMul;
       // Small origin offset so stacked spawns don't overlap perfectly.
       const ox = (Math.random() - 0.5) * 4 * scale;
       const oy = (Math.random() - 0.5) * 4 * scale;
-      // Small horizontal drift + a tiny upward kick so spawn reads as
-      // release rather than appearing-in-place.
-      const drift = (Math.random() - 0.5) * 30 * scale;
-      // Buoyancy maps to upward velocity in screen-space (negative y).
-      // 0 → ~20 px/s, 1 → ~120 px/s (before per-frame integration).
-      const upSpeed = (20 + params.buoyancy * 100) * scale;
+      const drift = (Math.random() - 0.5) * 22 * scale;
+      // Terminal rise velocity grows with radius (buoyancy ∝ volume, drag
+      // ∝ area), so the big ones lead and the small ones hang back. That
+      // parallax is most of what sells a bubble field as depth.
+      const upSpeed =
+        (16 + params.buoyancy * 92) * scale * (0.55 + sizeMul * 0.75);
       this.bubbles.push({
         x: tip.x + ox,
         y: tip.y + oy,
@@ -191,8 +204,12 @@ export class Bubbles2DRenderer {
         age: 0,
         maxAge: lifeBase * (0.7 + Math.random() * 0.6),
         baseR: r0,
-        growthRate: growth,
-        maxR: r0 * maxSizeMult * (0.85 + Math.random() * 0.3),
+        // Small bubbles get shoved around by their own wake more than big
+        // ones, so sway amplitude falls off as radius rises.
+        wobbleAmp: (1.6 + Math.random() * 2.6) * scale * (1.3 - sizeMul * 0.5),
+        wobbleFreq: 1.4 + Math.random() * 1.9,
+        wobblePhase: Math.random() * TAU,
+        filmPhase: Math.random(),
         popping: 0,
         popAge: 0,
         popR: r0,
@@ -220,11 +237,13 @@ export class Bubbles2DRenderer {
       b.age += dt;
       b.x += b.vx * dt;
       b.y += b.vy * dt;
-      const currentR = this.currentRadius(b);
-      if (b.age >= b.maxAge || currentR >= b.maxR) {
+      // Horizontal drift bleeds off - the bubble settles into a pure
+      // buoyant rise plus its own sway.
+      b.vx *= Math.pow(0.55, dt);
+      if (b.age >= b.maxAge) {
         b.popping = 1;
         b.popAge = 0;
-        b.popR = currentR;
+        b.popR = this.currentRadius(b);
         this.spawnBurst(b, params, scale);
       }
       if (i !== writeIdx) this.bubbles[writeIdx] = b;
@@ -262,31 +281,41 @@ export class Bubbles2DRenderer {
     const isIridescent = palette.iridescent === true;
     const lifeT = Math.min(1, b.age / b.maxAge);
     const color = isIridescent ? oilIridescentRim(lifeT) : staticColor;
-    const speed = 80 + Math.random() * 120;
+    // The film that bursts is the bubble's own - fragment spread and size
+    // both follow its radius, so a small bubble makes a small pop.
+    const sizeK = Math.min(2, b.popR / (6 * scale));
+    const speed = (55 + Math.random() * 85) * (0.6 + sizeK * 0.7);
+    const x = b.x + this.wobbleX(b);
     for (let i = 0; i < count; i++) {
       const theta = (i / count) * TAU + Math.random() * 0.4;
       const mag = speed * (0.6 + Math.random() * 0.8);
       this.bursts.push({
-        x: b.x,
+        x,
         y: b.y,
         vx: Math.cos(theta) * mag * scale,
         vy: Math.sin(theta) * mag * scale,
         age: 0,
         maxAge: BURST_LIFE_MIN + Math.random() * BURST_LIFE_VAR,
-        r: (1.2 + Math.random() * 1.4) * scale,
+        r: (0.6 + Math.random() * 0.7) * (0.5 + sizeK) * scale,
         color,
       });
     }
   }
 
-  /** Current radius for an alive bubble, accounting for growth. */
+  /**
+   * Current radius for an alive bubble. Nearly constant: a film bubble
+   * holds its volume and only thins slightly as it climbs, so this is a
+   * few percent of ease-in swell rather than the lifetime tripling it
+   * replaced.
+   */
   private currentRadius(b: Bubble): number {
     const lifeT = Math.min(1, b.age / b.maxAge);
-    // Ease-out - early growth is faster than late. Feels more organic
-    // than linear.
-    const grow = 1 - Math.pow(1 - lifeT, 1.6);
-    const growSpan = b.maxR - b.baseR;
-    return b.baseR + growSpan * grow * b.growthRate;
+    return b.baseR * (1 + LIFETIME_SWELL * lifeT * lifeT);
+  }
+
+  /** Sway offset - bubbles weave sideways instead of tracking straight up. */
+  private wobbleX(b: Bubble): number {
+    return Math.sin(b.age * b.wobbleFreq + b.wobblePhase) * b.wobbleAmp;
   }
 
   private drawBubbles(
@@ -303,11 +332,32 @@ export class Bubbles2DRenderer {
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       const iridescent = palette.iridescent === true;
-      // Unit-radius specular gradient reused for every bubble. CTM at
-      // paint time scales it per bubble - zero per-particle allocation.
+
+      // Three unit-radius gradients, built once and re-used for every
+      // bubble by scaling the CTM at paint time - zero per-particle
+      // allocation.
+
+      // Interior: transparent through the middle, brightening into a thin
+      // band just inside the edge. That Fresnel falloff is what reads as a
+      // curved film instead of a flat tinted disc, and it's the single
+      // biggest reason the old flat fill looked like a sticker.
+      const bodyGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 1.0);
+      bodyGrad.addColorStop(0, withAlphaScale(palette.fill, 0));
+      bodyGrad.addColorStop(0.6, withAlphaScale(palette.fill, 0.1));
+      bodyGrad.addColorStop(0.9, withAlphaScale(palette.fill, 0.7));
+      bodyGrad.addColorStop(1, withAlphaScale(palette.fill, 0.18));
+
+      // Primary specular - the tight window reflection, upper left.
       const specGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 1.0);
       specGrad.addColorStop(0, palette.highlight);
-      specGrad.addColorStop(1, withAlpha(palette.highlight, 0));
+      specGrad.addColorStop(0.45, withAlphaScale(palette.highlight, 0.55));
+      specGrad.addColorStop(1, withAlphaScale(palette.highlight, 0));
+
+      // Secondary bounce - light that passed through and caught the far
+      // wall. Soft, dim, opposite the specular.
+      const bounceGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 1.0);
+      bounceGrad.addColorStop(0, withAlphaScale(palette.highlight, 0.4));
+      bounceGrad.addColorStop(1, withAlphaScale(palette.highlight, 0));
 
       for (const b of this.bubbles) {
         let r: number;
@@ -319,32 +369,78 @@ export class Bubbles2DRenderer {
         } else {
           r = this.currentRadius(b);
           const lifeT = Math.min(1, b.age / b.maxAge);
-          const fadeIn = lifeT < 0.08 ? lifeT / 0.08 : 1;
-          const fadeOut = lifeT > 0.85 ? 1 - (lifeT - 0.85) / 0.15 : 1;
+          const fadeIn = lifeT < 0.12 ? lifeT / 0.12 : 1;
+          const fadeOut = lifeT > 0.8 ? 1 - (lifeT - 0.8) / 0.2 : 1;
           alpha = fadeIn * fadeOut;
         }
+        alpha *= MAX_OPACITY;
         if (alpha <= 0.02 || r < 0.5) continue;
-        const rim = iridescent
-          ? oilIridescentRim(Math.min(1, b.age / b.maxAge))
-          : palette.rim;
 
-        ctx.globalAlpha = alpha * 0.9;
-        ctx.fillStyle = palette.fill;
+        const x = b.x + this.wobbleX(b);
+        const y = b.y;
+        const lifeT = Math.min(1, b.age / b.maxAge);
+        const rim = iridescent ? oilIridescentRim(lifeT) : palette.rim;
+
+        // Interior film.
+        ctx.setTransform(r, 0, 0, r, x, y);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = bodyGrad;
         ctx.beginPath();
-        ctx.arc(b.x, b.y, r, 0, TAU);
+        ctx.arc(0, 0, 1.0, 0, TAU);
         ctx.fill();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-        const rimWidth = Math.max(1, r * 0.08) * (b.popping === 1 ? 1.2 : 1);
+        // Rim. Held to roughly a hairline regardless of radius - a rim
+        // that scales with r turns every large bubble into a cartoon
+        // outline. Thicker only while popping, where it's the whole point.
+        const rimWidth =
+          Math.min(1.9, Math.max(0.65, r * 0.055)) *
+          (b.popping === 1 ? 1.7 : 1);
         ctx.globalAlpha = alpha;
         ctx.lineWidth = rimWidth;
         ctx.strokeStyle = rim;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, TAU);
         ctx.stroke();
 
-        if (b.popping === 0) {
-          const specR = r * 0.22;
-          ctx.setTransform(specR, 0, 0, specR, b.x - r * 0.38, b.y - r * 0.42);
-          ctx.globalAlpha = alpha * 0.85;
-          ctx.fillStyle = specGrad;
+        if (b.popping === 1) continue;
+
+        // Thin-film interference: a hue-shifted sheen on the shadowed arc,
+        // opposite the specular. Every palette gets a whisper of it, the
+        // oil palette wears it openly - it's the same physics either way.
+        if (r > 2) {
+          const sheenT = (b.filmPhase + lifeT * 0.35) % 1;
+          ctx.globalAlpha = alpha * (iridescent ? 0.65 : 0.3);
+          ctx.lineWidth = rimWidth * 1.5;
+          ctx.strokeStyle = oilIridescentRim(sheenT);
+          ctx.beginPath();
+          ctx.arc(x, y, r * 0.92, TAU * 0.06, TAU * 0.42);
+          ctx.stroke();
+        }
+
+        // Primary specular, upper left.
+        const specR = r * 0.2;
+        ctx.setTransform(specR, 0, 0, specR, x - r * 0.4, y - r * 0.44);
+        ctx.globalAlpha = alpha * 0.9;
+        ctx.fillStyle = specGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, 1.0, 0, TAU);
+        ctx.fill();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+        // Secondary bounce, lower right.
+        if (r > 3) {
+          const bounceR = r * 0.3;
+          ctx.setTransform(
+            bounceR,
+            0,
+            0,
+            bounceR,
+            x + r * 0.36,
+            y + r * 0.42,
+          );
+          ctx.globalAlpha = alpha * 0.32;
+          ctx.fillStyle = bounceGrad;
           ctx.beginPath();
           ctx.arc(0, 0, 1.0, 0, TAU);
           ctx.fill();
@@ -394,10 +490,24 @@ export class Bubbles2DRenderer {
   }
 }
 
-function withAlpha(hex: string, alpha: number): string {
-  const s = hex.replace("#", "");
+/**
+ * Re-alpha a palette color by a MULTIPLIER of whatever alpha it already
+ * carries. Palette `fill` slots arrive as `rgba(...)` and `rim`/`highlight`
+ * as hex; both are handled, so gradient stops stay relative to the
+ * palette's intended opacity instead of overriding it.
+ */
+function withAlphaScale(color: string, factor: number): string {
+  const k = Math.max(0, Math.min(1, factor));
+  const rgba = color.match(
+    /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)/i,
+  );
+  if (rgba) {
+    const a = rgba[4] === undefined ? 1 : parseFloat(rgba[4]);
+    return `rgba(${rgba[1]},${rgba[2]},${rgba[3]},${(a * k).toFixed(4)})`;
+  }
+  const s = color.replace("#", "");
   const r = parseInt(s.slice(0, 2), 16);
   const g = parseInt(s.slice(2, 4), 16);
   const b = parseInt(s.slice(4, 6), 16);
-  return `rgba(${r},${g},${b},${Math.max(0, Math.min(1, alpha))})`;
+  return `rgba(${r},${g},${b},${k})`;
 }

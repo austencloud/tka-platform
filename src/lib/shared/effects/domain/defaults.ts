@@ -111,11 +111,11 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
 
   bubbles: {
     ambientEmission: 0.3,
-    motionEmission: 0.5,
-    intensity: 0.6,
+    motionEmission: 0.55,
+    intensity: 0.42,
     palette: "soap",
     customColor: "#c8e0ff",
-    sizeJitter: 0.4,
+    sizeJitter: 0.45,
     buoyancy: 0.5,
     trackingMode: "both_ends",
   },

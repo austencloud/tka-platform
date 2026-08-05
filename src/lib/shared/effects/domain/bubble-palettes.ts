@@ -29,7 +29,7 @@ const SOAP: BubblePalette = {
   id: "soap",
   rim: "#c8e0ff",
   highlight: "#ffffff",
-  fill: "rgba(200,224,255,0.15)",
+  fill: "rgba(200,224,255,0.22)",
   popBurst: "#e8f4ff",
 };
 
@@ -37,7 +37,7 @@ const CHAMPAGNE: BubblePalette = {
   id: "champagne",
   rim: "#f4e8c8",
   highlight: "#ffffff",
-  fill: "rgba(244,232,200,0.2)",
+  fill: "rgba(244,232,200,0.26)",
   popBurst: "#fff8e0",
 };
 
@@ -48,7 +48,7 @@ const OIL: BubblePalette = {
   id: "oil",
   rim: "#ff80d0",
   highlight: "#ffffff",
-  fill: "rgba(200,160,240,0.15)",
+  fill: "rgba(200,160,240,0.24)",
   popBurst: "#c080ff",
   iridescent: true,
 };
@@ -57,7 +57,7 @@ const ACID: BubblePalette = {
   id: "acid",
   rim: "#b8ff6f",
   highlight: "#e8ffc0",
-  fill: "rgba(184,255,111,0.15)",
+  fill: "rgba(184,255,111,0.2)",
   popBurst: "#98e860",
 };
 
@@ -65,7 +65,7 @@ const SPIRIT: BubblePalette = {
   id: "spirit",
   rim: "#c0fff4",
   highlight: "#ffffff",
-  fill: "rgba(192,255,244,0.1)",
+  fill: "rgba(192,255,244,0.18)",
   popBurst: "#a0f8e0",
 };
 

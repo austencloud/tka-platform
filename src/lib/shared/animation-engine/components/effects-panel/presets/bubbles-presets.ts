@@ -1,5 +1,12 @@
 import type { EffectPreset, EffectPresetGroup } from "./types";
 
+/**
+ * Preset sizing note: `intensity` scales the base radius and `sizeJitter`
+ * widens the spread above the floor rather than inflating every bubble.
+ * These values were retuned when the renderer moved to a power-law size
+ * distribution - the old numbers were calibrated against a growth model
+ * that tripled each bubble's radius over its lifetime.
+ */
 export const BUBBLES_PRESETS: EffectPreset<"bubbles">[] = [
   {
     id: "bubbles-classic",
@@ -8,9 +15,9 @@ export const BUBBLES_PRESETS: EffectPreset<"bubbles">[] = [
     patch: {
       palette: "soap",
       ambientEmission: 0.3,
-      motionEmission: 0.5,
-      intensity: 0.6,
-      sizeJitter: 0.4,
+      motionEmission: 0.55,
+      intensity: 0.42,
+      sizeJitter: 0.45,
       buoyancy: 0.5,
       trackingMode: "both_ends",
     },
@@ -21,11 +28,11 @@ export const BUBBLES_PRESETS: EffectPreset<"bubbles">[] = [
     previewColor: "#f4e8c8",
     patch: {
       palette: "champagne",
-      ambientEmission: 0.6,
-      motionEmission: 0.5,
-      intensity: 0.5,
-      sizeJitter: 0.2,
-      buoyancy: 0.9,
+      ambientEmission: 0.85,
+      motionEmission: 0.6,
+      intensity: 0.25,
+      sizeJitter: 0.15,
+      buoyancy: 0.95,
       trackingMode: "both_ends",
     },
   },
@@ -35,11 +42,11 @@ export const BUBBLES_PRESETS: EffectPreset<"bubbles">[] = [
     previewColor: "#e8f4ff",
     patch: {
       palette: "soap",
-      ambientEmission: 0.5,
+      ambientEmission: 0.32,
       motionEmission: 0.2,
-      intensity: 0.9,
-      sizeJitter: 0.7,
-      buoyancy: 0.3,
+      intensity: 0.68,
+      sizeJitter: 0.85,
+      buoyancy: 0.2,
       trackingMode: "both_ends",
     },
   },
@@ -49,11 +56,11 @@ export const BUBBLES_PRESETS: EffectPreset<"bubbles">[] = [
     previewColor: "#c080ff",
     patch: {
       palette: "oil",
-      ambientEmission: 0.4,
-      motionEmission: 0.4,
-      intensity: 0.7,
-      sizeJitter: 0.5,
-      buoyancy: 0.5,
+      ambientEmission: 0.35,
+      motionEmission: 0.45,
+      intensity: 0.5,
+      sizeJitter: 0.6,
+      buoyancy: 0.45,
       trackingMode: "both_ends",
     },
   },
@@ -63,11 +70,11 @@ export const BUBBLES_PRESETS: EffectPreset<"bubbles">[] = [
     previewColor: "#b8ff6f",
     patch: {
       palette: "acid",
-      ambientEmission: 0.5,
-      motionEmission: 0.6,
-      intensity: 0.6,
-      sizeJitter: 0.3,
-      buoyancy: 0.8,
+      ambientEmission: 0.7,
+      motionEmission: 0.7,
+      intensity: 0.28,
+      sizeJitter: 0.25,
+      buoyancy: 0.85,
       trackingMode: "both_ends",
     },
   },
@@ -77,11 +84,11 @@ export const BUBBLES_PRESETS: EffectPreset<"bubbles">[] = [
     previewColor: "#c0fff4",
     patch: {
       palette: "spirit",
-      ambientEmission: 0.6,
+      ambientEmission: 0.45,
       motionEmission: 0.3,
       intensity: 0.4,
-      sizeJitter: 0.6,
-      buoyancy: 0.4,
+      sizeJitter: 0.7,
+      buoyancy: 0.28,
       trackingMode: "both_ends",
     },
   },
