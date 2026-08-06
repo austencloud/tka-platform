@@ -27,14 +27,10 @@
     getBuilderControlVisibility(builderState.phase)
   );
 
-  // Show hand toggle whenever either hand has steps (hidden only when both are empty)
-  const showHandToggle = $derived(
-    builderState.blueSteps.length > 0 || builderState.redSteps.length > 0
-  );
-
   // Show action button when sequence can be completed or is complete
   const showActions = $derived(builderState.canFinishHand || isComplete);
   const actionsDimmed = $derived(isAnimating);
+  const handSelectionDisabled = $derived(isAnimating || isComplete);
 
   let oriPopoverOpen = $state(false);
   let explainerOpen = $state(false);
@@ -197,16 +193,15 @@
 
   <!-- Bottom bar: hand toggle (left) + Complete/New (right) - mobile only -->
   <div class="bottom-bar">
-    {#if showHandToggle}
-      <div class="mobile-hand-picker">
-        <BuilderHandPicker
-          activeHand={builderState.activeHand}
-          blueCount={builderState.blueSteps.length}
-          redCount={builderState.redSteps.length}
-          onchange={(hand) => builderState.switchToHand(hand)}
-        />
-      </div>
-    {/if}
+    <div class="mobile-hand-picker">
+      <BuilderHandPicker
+        activeHand={builderState.activeHand}
+        blueCount={builderState.blueSteps.length}
+        redCount={builderState.redSteps.length}
+        disabled={handSelectionDisabled}
+        onchange={(hand) => builderState.switchToHand(hand)}
+      />
+    </div>
 
     <!-- Action button: Complete or New -->
     <div
@@ -234,25 +229,41 @@
   </div>
 </div>
 
-<!-- Action row: below the grid on desktop only -->
-<div
-  class="action-row"
-  class:visible={showActions}
-  class:dimmed={actionsDimmed}
->
-  {#if builderState.canFinishHand}
-    <PanelButton variant="primary" onclick={() => builderState.finishHand()}>
-      <i class="fas fa-check" aria-hidden="true"></i>
-      <span>Complete</span>
-    </PanelButton>
-  {/if}
+<!-- Persistent hand rail: below the grid on desktop only. The reserved action
+     slot keeps the two hand targets stable when Complete becomes available. -->
+<div class="action-row" class:dimmed={actionsDimmed}>
+  <div class="desktop-hand-picker">
+    <BuilderHandPicker
+      activeHand={builderState.activeHand}
+      blueCount={builderState.blueSteps.length}
+      redCount={builderState.redSteps.length}
+      disabled={handSelectionDisabled}
+      onchange={(hand) => builderState.switchToHand(hand)}
+    />
+  </div>
 
-  {#if isComplete}
-    <PanelButton variant="primary" onclick={() => builderState.reset()}>
-      <i class="fas fa-plus" aria-hidden="true"></i>
-      <span>New</span>
-    </PanelButton>
-  {/if}
+  <div class="desktop-action-slot">
+    {#if isComplete}
+      <PanelButton
+        variant="primary"
+        fullWidth
+        onclick={() => builderState.reset()}
+      >
+        <i class="fas fa-plus" aria-hidden="true"></i>
+        <span>New</span>
+      </PanelButton>
+    {:else}
+      <PanelButton
+        variant="primary"
+        fullWidth
+        disabled={!builderState.canFinishHand || isAnimating}
+        onclick={() => builderState.finishHand()}
+      >
+        <i class="fas fa-check" aria-hidden="true"></i>
+        <span>Complete</span>
+      </PanelButton>
+    {/if}
+  </div>
 </div>
 
 <OrientationExplainer bind:isOpen={explainerOpen} />
@@ -491,24 +502,27 @@
   /* ── Action row (desktop only) ── */
   .action-row {
     display: flex;
-    justify-content: center;
+    align-items: stretch;
     gap: var(--settings-spacing-sm, 8px);
     padding: 6px 0;
     flex-shrink: 0;
-    opacity: 0;
-    pointer-events: none;
     min-height: var(--min-touch-target, 44px);
-    transition: opacity 0.2s ease;
-  }
-
-  .action-row.visible {
-    opacity: 1;
-    pointer-events: auto;
   }
 
   .action-row.dimmed {
     opacity: 0.3;
     pointer-events: none;
+  }
+
+  .desktop-hand-picker {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .desktop-action-slot {
+    display: flex;
+    width: 9rem;
+    flex: 0 0 9rem;
   }
 
   @container tool-panel (max-width: 768px) {

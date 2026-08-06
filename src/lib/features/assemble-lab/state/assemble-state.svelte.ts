@@ -331,7 +331,7 @@ export function createAssembleState(
   }
 
   function handLabel(hand: MotionColor): string {
-    return hand === MotionColor.BLUE ? "Blue" : "Red";
+    return hand === MotionColor.BLUE ? "Left" : "Right";
   }
 
   function poseForHand(hand: MotionColor): BuilderStartPose | null {

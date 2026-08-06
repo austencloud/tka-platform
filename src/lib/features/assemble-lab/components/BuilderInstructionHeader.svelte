@@ -7,7 +7,6 @@
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { AssembleState } from "../state/assemble-state.svelte";
   import { getBuilderPhaseInstruction } from "../services/builder-phase-presentation";
-  import BuilderHandPicker from "./BuilderHandPicker.svelte";
   import BuilderKeyboardControl from "./BuilderKeyboardControl.svelte";
   import BuilderTurnBar from "./BuilderTurnBar.svelte";
   import GridModePicker from "./GridModePicker.svelte";
@@ -25,10 +24,10 @@
     startPositionSetup
       ? "Start position"
       : isBlueHand
-        ? "Blue hand"
-        : "Red hand"
+        ? "Left hand"
+        : "Right hand"
   );
-  const otherHandLabel = $derived(isBlueHand ? "Red" : "Blue");
+  const otherHandLabel = $derived(isBlueHand ? "Right" : "Left");
   const otherHandSteps = $derived(
     isBlueHand ? builderState.redSteps.length : builderState.blueSteps.length
   );
@@ -40,7 +39,6 @@
       ? "Place and aim both props"
       : getBuilderPhaseInstruction(builderState.phase)
   );
-  const controlsDisabled = $derived(builderState.phase === "complete");
   const gridStatusLabel = $derived.by(() => {
     const modeLabel =
       builderState.gridMode === GridMode.BOX
@@ -59,7 +57,7 @@
       return "";
     }
     if (otherHandSteps === 0 && activeStepCount > 0) {
-      return `Switch to ${otherHandLabel} when ready`;
+      return `Build the ${otherHandLabel.toLowerCase()} hand when ready`;
     }
     if (otherHandSteps > 0 && activeStepCount > otherHandSteps) {
       const difference = activeStepCount - otherHandSteps;
@@ -107,17 +105,6 @@
     </div>
 
     {#if !startPositionSetup}
-      <div class="control-cell hand-control">
-        <span class="control-label">Hand</span>
-        <BuilderHandPicker
-          activeHand={builderState.activeHand}
-          blueCount={builderState.blueSteps.length}
-          redCount={builderState.redSteps.length}
-          disabled={controlsDisabled}
-          onchange={(hand) => builderState.switchToHand(hand)}
-        />
-      </div>
-
       <div class="control-cell input-control">
         <span class="control-label">Input</span>
         <BuilderKeyboardControl {builderState} />
@@ -150,7 +137,7 @@
 
   .primary-row {
     display: grid;
-    grid-template-columns: minmax(190px, 1fr) auto auto auto;
+    grid-template-columns: minmax(190px, 1fr) auto auto;
     align-items: end;
     gap: 12px;
     min-width: 0;
@@ -252,10 +239,6 @@
     white-space: nowrap;
   }
 
-  .hand-control {
-    width: 180px;
-  }
-
   .input-control {
     width: max-content;
   }
@@ -268,7 +251,7 @@
 
   @container tool-panel (max-width: 920px) {
     .primary-row {
-      grid-template-columns: minmax(0, 1fr) auto auto;
+      grid-template-columns: minmax(0, 1fr) auto;
       align-items: end;
     }
 

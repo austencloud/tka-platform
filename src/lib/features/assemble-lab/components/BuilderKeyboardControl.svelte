@@ -16,7 +16,7 @@
   let guideOpen = $state(false);
 
   const handLabel = $derived(
-    builderState.activeHand === MotionColor.BLUE ? "Blue hand" : "Red hand"
+    builderState.activeHand === MotionColor.BLUE ? "Left hand" : "Right hand"
   );
   const rotationLabel = $derived(
     builderState.rotationDirection === RotationDirection.CLOCKWISE

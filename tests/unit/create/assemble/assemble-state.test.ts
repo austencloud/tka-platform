@@ -266,7 +266,7 @@ describe("Assemble state invariants", () => {
     await addMotion(state, GridLocation.SOUTH);
 
     expect(state.redSteps).toHaveLength(1);
-    expect(state.undoLabel).toBe("Add Red step 1");
+    expect(state.undoLabel).toBe("Add Right step 1");
     expect(state.undoStep()).toBe(true);
     expect(state.redSteps).toHaveLength(0);
     expect(state.currentPosition).toBe(GridLocation.WEST);

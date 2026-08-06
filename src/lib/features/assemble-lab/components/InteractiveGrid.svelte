@@ -385,7 +385,7 @@
     defaultLabel: string
   ): string {
     const handLabel =
-      builderState.activeHand === MotionColor.BLUE ? "Blue" : "Red";
+      builderState.activeHand === MotionColor.BLUE ? "Left" : "Right";
     if (builderState.stepEditMode === "replace") {
       return `Set ${handLabel} step ${
         (builderState.selectedStepIndex ?? 0) + 1
