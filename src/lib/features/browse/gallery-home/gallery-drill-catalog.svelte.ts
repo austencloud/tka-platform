@@ -688,7 +688,11 @@ export function createGalleryCatalog(deps: GalleryCatalogDeps) {
         sub: sectionNarrowedOut("max_turn_intensity")
           ? "Narrowed out by this rule"
           : `${maxTurnIntensityValues.length} levels`,
-        art: { kind: "icon", icon: "fa-arrows-spin" },
+        // A gauge, not a rotation glyph: `fa-arrows-spin` is what the LOOPs
+        // "Rotated (quartered)" type wears, so this category was reading as a
+        // second loop filter. Turn INTENSITY is a quantity — how much rotation
+        // a sequence is allowed — which is what a gauge says.
+        art: { kind: "icon", icon: "fa-gauge-high" },
         section: "max_turn_intensity",
         narrowedOut: sectionNarrowedOut("max_turn_intensity"),
       });

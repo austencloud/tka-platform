@@ -46,6 +46,17 @@
     avatarFor,
     onselect,
   }: Props = $props();
+
+  // TKAWordGlyph sizes everything from a px number, so CSS cannot scale it the
+  // way it scales the icon glyphs and dots. The tile measures its own art box
+  // instead and hands the glyph a share of it — otherwise "Starting letter"
+  // stays a 20px ABC in a 71px slot while every sibling grew.
+  let artHeight = $state(0);
+  const glyphArtHeight = $derived(
+    composition === "landing"
+      ? glyphHeight
+      : Math.max(glyphHeight, Math.round(artHeight * 0.78))
+  );
 </script>
 
 <button
@@ -72,13 +83,13 @@
       <LessonGridDisplay type="merged" size="small" />
     </span>
   {:else}
-    <span class="mini-art" aria-hidden="true">
+    <span class="mini-art" aria-hidden="true" bind:clientHeight={artHeight}>
       {#if entry.art.kind === "icon"}
         <i class="fas {entry.art.icon}"></i>
       {:else if entry.art.kind === "glyph"}
         <TKAWordGlyph
           word={entry.art.word}
-          height={glyphHeight}
+          height={glyphArtHeight}
           darkMode
           fitToParent
         />
@@ -337,7 +348,9 @@
     min-width: 2.1rem;
     height: 2.1rem;
     border-radius: 0.55rem;
-    font-size: 0.95rem;
+    /* Tracks the slot instead of sitting at a constant inside it — the row
+       composition had no rule at all, so a 16px glyph floated in a 48px box. */
+    font-size: clamp(0.95rem, 62cqw, 1.6rem);
   }
   /* `stretch`, not `flex-start`: a flex-start column sizes the title to its own
      text, so it overflows the shrunken column instead of ellipsing (the two
@@ -387,7 +400,9 @@
       width: 2.4rem;
       min-width: 2.4rem;
       height: 2.4rem;
-      font-size: 1.05rem;
+      /* Proportional, because a later rule grows this box to a share of the
+         cell: a constant here left a 17px glyph in a 48px slot. */
+      font-size: clamp(1.05rem, 34cqh, 2.2rem);
     }
     .mini-tile.catalog .mini-title {
       font-size: 0.95rem;
@@ -409,7 +424,7 @@
       width: 2.6rem;
       min-width: 2.6rem;
       height: 2.6rem;
-      font-size: 1.2rem;
+      font-size: clamp(1.2rem, 34cqh, 2.6rem);
     }
     .mini-tile.catalog .mini-title {
       font-size: 1.2rem;
@@ -441,10 +456,23 @@
     place-content: center;
     place-items: center;
   }
+  /* Dots fill their own grid cells, so the cluster tracks the art box whatever
+     the count is: four LOOP colors square up 2×2, six T&D families stack 2×3,
+     and neither needs a per-count size. A fixed dot could only ever be right
+     for one of them. */
+  .mini-tile.catalog .element-dots,
+  .mini-tile.rail .element-dots {
+    height: 100%;
+    grid-auto-rows: 1fr;
+  }
   .mini-tile.catalog .element-dot,
   .mini-tile.rail .element-dot {
-    width: 0.4rem;
-    height: 0.4rem;
+    width: 100%;
+    height: 100%;
+    max-width: 1.5rem;
+    max-height: 1.5rem;
+    aspect-ratio: 1;
+    place-self: center;
   }
   .mini-tile.catalog .avatar-cluster,
   .mini-tile.rail .avatar-cluster {
@@ -467,7 +495,7 @@
       margin-left: -0.8rem;
     }
     .mini-tile.catalog :global(.cluster-avatar.robust-avatar) {
-      --avatar-size: 1.3rem !important;
+      --avatar-size: clamp(1.3rem, 26cqh, 2.6rem) !important;
     }
   }
   @media (min-width: 2600px) {
@@ -481,7 +509,7 @@
       margin-left: -1rem;
     }
     .mini-tile.catalog :global(.cluster-avatar.robust-avatar) {
-      --avatar-size: 1.7rem !important;
+      --avatar-size: clamp(1.7rem, 26cqh, 3rem) !important;
     }
   }
 
@@ -897,11 +925,27 @@
       padding: 0.5rem;
       text-align: center;
     }
+    /* The art BOX is a share of the tile, so its CONTENTS have to be too. Left
+       as viewport-keyed constants they stayed the 1080p size while the box grew
+       with the height budget — a 24px glyph adrift in an 84px slot, which is
+       what "the icons are really small" was. ~62% of the box reads as filled
+       without touching the edges. */
     .mini-tile.catalog .mini-art {
       height: min(42%, 6rem);
       min-height: 2.1rem;
       max-width: 100%;
-      font-size: clamp(1rem, 12cqh, 1.9rem);
+      font-size: clamp(1.15rem, 26cqh, 4rem);
+    }
+    .mini-tile.catalog .element-dot {
+      width: clamp(0.4rem, 7cqh, 1.05rem);
+      height: clamp(0.4rem, 7cqh, 1.05rem);
+    }
+    .mini-tile.catalog .avatar-cluster
+      > :global(.robust-avatar + .robust-avatar) {
+      margin-left: clamp(-1.4rem, -11cqh, -0.72rem);
+    }
+    .mini-tile.catalog :global(.cluster-avatar.robust-avatar) {
+      --avatar-size: clamp(1.15rem, 28cqh, 3.6rem) !important;
     }
     .mini-tile.catalog .mini-main {
       flex: 0 1 auto;
@@ -928,11 +972,14 @@
   @container cat-cell (min-height: 12rem) {
     .mini-tile.catalog .mini-art {
       height: min(50%, 8rem);
-      font-size: 2.6rem;
+      font-size: clamp(1.6rem, 30cqh, 5rem);
     }
     .mini-tile.catalog .element-dot {
-      width: 0.75rem;
-      height: 0.75rem;
+      width: clamp(0.5rem, 8cqh, 1.3rem);
+      height: clamp(0.5rem, 8cqh, 1.3rem);
+    }
+    .mini-tile.catalog :global(.cluster-avatar.robust-avatar) {
+      --avatar-size: clamp(1.6rem, 30cqh, 4.4rem) !important;
     }
   }
   @container cat-cell (min-height: 16rem) {
@@ -942,7 +989,7 @@
     }
     .mini-tile.catalog .mini-art {
       height: min(56%, 12rem);
-      font-size: 3.6rem;
+      font-size: clamp(2.2rem, 34cqh, 6.5rem);
     }
     .mini-tile.catalog .mini-title {
       font-size: 1.2rem;
