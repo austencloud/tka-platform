@@ -952,6 +952,23 @@ instead of showing an empty shell.
     animation: skeleton-pulse 1.2s ease-in-out infinite;
   }
 
+  .shared-shelf-state {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 72px;
+    padding: 14px 16px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 14px;
+    background: var(--theme-card-bg);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .shared-shelf-state.warning {
+    color: var(--semantic-warning);
+  }
+
   @keyframes skeleton-pulse {
     0%,
     100% {
