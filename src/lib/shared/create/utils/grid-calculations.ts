@@ -29,6 +29,12 @@ export interface GridSizingConfig {
   columnBreakpoint?: number;
   isSideBySideLayout?: boolean;
   manualColumnCount?: number | null;
+  /**
+   * Keep a wide workspace on a predictable step-column count and size cells
+   * from width so adding another row does not resize every existing step.
+   * Explicit manual columns, used for LOOP alignment, still win.
+   */
+  stableColumnCount?: number | null;
   /** Cap step columns when the grid is narrower than columnBreakpoint. */
   narrowMaxColumns?: number | null;
   /** Let a narrow grid scroll vertically instead of shrinking cells to its height. */
@@ -37,9 +43,10 @@ export interface GridSizingConfig {
 
 const DEFAULT_SIZING: Omit<
   Required<GridSizingConfig>,
-  "manualColumnCount" | "narrowMaxColumns"
+  "manualColumnCount" | "stableColumnCount" | "narrowMaxColumns"
 > & {
   manualColumnCount: number | null;
+  stableColumnCount: number | null;
   narrowMaxColumns: number | null;
 } = {
   minCellSize: 40, // Reduced from 50px to allow fitting more rows on small screens
@@ -50,6 +57,7 @@ const DEFAULT_SIZING: Omit<
   columnBreakpoint: 650,
   isSideBySideLayout: false,
   manualColumnCount: null,
+  stableColumnCount: null,
   narrowMaxColumns: null,
   preferWidthSizingOnNarrow: false,
 };
@@ -77,8 +85,16 @@ export function calculateGridLayout(
   const isNarrowContainer =
     containerWidth > 0 && containerWidth < sizing.columnBreakpoint;
   const isMobileFewSteps = isNarrowContainer && stepCount <= 2;
+  const stableWideColumnCount =
+    containerWidth >= sizing.columnBreakpoint &&
+    sizing.stableColumnCount !== null &&
+    sizing.stableColumnCount > 0
+      ? Math.max(1, Math.floor(sizing.stableColumnCount))
+      : null;
   const useWidthSizing =
-    isMobileFewSteps || (isNarrowContainer && sizing.preferWidthSizingOnNarrow);
+    stableWideColumnCount !== null ||
+    isMobileFewSteps ||
+    (isNarrowContainer && sizing.preferWidthSizingOnNarrow);
   const narrowMaxColumns =
     isNarrowContainer &&
     sizing.narrowMaxColumns !== null &&
@@ -185,6 +201,10 @@ export function calculateGridLayout(
     return calculateCandidate(Math.min(sizing.manualColumnCount, mobileCap));
   }
 
+  if (stableWideColumnCount !== null) {
+    return calculateCandidate(stableWideColumnCount);
+  }
+
   const wideMaxColumns = Math.min(
     getMaxColumnsForBeatCount(
       stepCount,
@@ -225,6 +245,22 @@ export function calculateStepPosition(
   const row = Math.floor(stepIndex / columns) + 1;
   const column = (stepIndex % columns) + 2; // +2 because start position is column 1
   return { row, column };
+}
+
+/**
+ * Keep a grid vertically centered while it fits, then pin it to the top once
+ * it needs to scroll. Returning the offset as a number lets the workspace
+ * animate between row counts instead of relying on non-animatable auto margins.
+ */
+export function calculateGridVerticalCenterOffset(
+  containerHeight: number,
+  rows: number,
+  cellSize: number,
+  verticalPadding: number
+): number {
+  const availableHeight = Math.max(0, containerHeight - verticalPadding);
+  const gridHeight = Math.max(1, rows) * Math.max(0, cellSize);
+  return Math.max(0, (availableHeight - gridHeight) / 2);
 }
 
 /**

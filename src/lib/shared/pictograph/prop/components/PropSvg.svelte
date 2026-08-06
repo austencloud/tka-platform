@@ -100,6 +100,9 @@ even when Svelte recreates the component instance.
     onPropClick,
     // Cell index for position caching (enables smooth transitions on regeneration)
     cellIndex = null,
+    // Per-frame motion renderers already supply interpolation. Bypass the cache
+    // and CSS transition layer so these coordinates paint on the same frame.
+    directPositioning = false,
     propRenderContext = "standard",
     darkMode = false,
   } = $props<{
@@ -112,6 +115,8 @@ even when Svelte recreates the component instance.
     onPropClick?: () => void;
     /** Cell index for position caching (enables smooth transitions on regeneration) */
     cellIndex?: number | null;
+    /** Apply supplied coordinates directly without cache or CSS interpolation. */
+    directPositioning?: boolean;
     /** Editor grids opt in to a surface-aware torch palette. */
     propRenderContext?: PropRenderContext;
     /** The actual pictograph surface, used to choose the opposing shaft color. */
@@ -248,6 +253,16 @@ even when Svelte recreates the component instance.
       pendingPositionFrame = null;
     }
 
+    if (directPositioning) {
+      displayedX = targetX;
+      displayedY = targetY;
+      if (cellIndex !== null) {
+        const key = `${cellIndex}-${motionData.color}`;
+        positionCache.set(key, { x: targetX, y: targetY });
+      }
+      return;
+    }
+
     // No cell index means we're not in a grid context (option picker, etc.)
     // Set position immediately without caching
     if (cellIndex === null) {
@@ -304,7 +319,9 @@ even when Svelte recreates the component instance.
     const isFirstRender =
       previousSnapshot === null || previousRotation === null;
 
-    if (isFirstRender) {
+    if (directPositioning) {
+      displayedRotation = targetRotation;
+    } else if (isFirstRender) {
       displayedRotation = targetRotation;
     } else {
       const direction = determineAnimationDirection(
@@ -487,9 +504,10 @@ even when Svelte recreates the component instance.
     <g
       class="prop-svg {motionData.color}-prop-svg clickable"
       class:selected={isSelected}
-      class:no-transition={isTransforming}
+      class:no-transition={isTransforming || directPositioning}
       class:prop-fading={propFading}
       data-prop-type={motionData?.propType}
+      data-direct-positioning={directPositioning || undefined}
       style="transform: {transformString};"
       onclick={onPropClick}
       onkeydown={(e) => {
@@ -520,9 +538,10 @@ even when Svelte recreates the component instance.
     <g
       class="prop-svg {motionData.color}-prop-svg"
       class:selected={isSelected}
-      class:no-transition={isTransforming}
+      class:no-transition={isTransforming || directPositioning}
       class:prop-fading={propFading}
       data-prop-type={motionData?.propType}
+      data-direct-positioning={directPositioning || undefined}
       style="transform: {transformString};"
     >
       {@render propArtwork()}

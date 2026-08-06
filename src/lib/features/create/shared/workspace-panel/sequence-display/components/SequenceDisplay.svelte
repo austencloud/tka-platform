@@ -208,6 +208,7 @@
       <div class="step-grid-wrapper" class:shift-mode={isShiftStartMode}>
         <StepGrid
           steps={currentSequence?.steps ?? []}
+          arrivalSequence={currentSequence}
           startPosition={startPositionStep() ?? undefined}
           onStepClick={handleStepClick}
           onStartClick={handleStartPositionClick}

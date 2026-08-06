@@ -1,11 +1,19 @@
 <!-- WorkspaceGrid.svelte - Unified workspace grid with standard and timeline layout modes -->
 <script lang="ts">
+  import { flip } from "svelte/animate";
+  import { cubicOut } from "svelte/easing";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
-  import type { GridLayout, TimelineRow } from "$lib/shared/create/utils/grid-calculations";
-  import type { StepGridDisplayState } from "../state/step-grid-display-state.svelte";
+  import type {
+    GridLayout,
+    TimelineRow,
+  } from "$lib/shared/create/utils/grid-calculations";
+  import type {
+    PictographArrivalRequest,
+    StepGridDisplayState,
+  } from "../state/step-grid-display-state.svelte";
   import type { ScrollState } from "../state/scroll-state.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
@@ -31,6 +39,11 @@
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { motionDuration } from "$lib/shared/transitions/motion";
+  import {
+    PICTOGRAPH_ARRIVAL_LANDING_EASING,
+    PICTOGRAPH_ARRIVAL_LANDING_MS,
+  } from "../domain/pictograph-arrival-motion";
   import type {
     MandalaPathShape,
     MandalaRenderOptions,
@@ -44,6 +57,7 @@
     startPosition = null,
     isTimelineMode = false,
     gridLayout,
+    standardGridCenterOffset = 0,
     timelineRows = [],
     timelineUnitSize = 0,
     timelinePadding = 0,
@@ -67,12 +81,14 @@
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
     sequenceWord = "",
+    arrivalRequest = null,
     scrollContainerRef = $bindable(),
   }: {
     steps: ReadonlyArray<StepData> | StepData[];
     startPosition?: StartPositionData | StepData | null;
     isTimelineMode?: boolean;
     gridLayout: GridLayout;
+    standardGridCenterOffset?: number;
     timelineRows?: TimelineRow[];
     timelineUnitSize?: number;
     timelinePadding?: number;
@@ -95,17 +111,28 @@
     onDurationChange?: (stepNumber: number, newDuration: number) => void;
     onMandalaClick?: (
       variant: MandalaRenderOptions["show"],
-      pathShape: MandalaPathShape,
+      pathShape: MandalaPathShape
     ) => void;
     getStepKey: (beat: StepData, index: number) => string;
     getDurationDisplay: (stepIndex: number) => string;
     bluePropTypeOverride?: PropType;
     redPropTypeOverride?: PropType;
     sequenceWord?: string;
+    arrivalRequest?: PictographArrivalRequest | null;
     scrollContainerRef?: HTMLElement;
   } = $props();
 
-  const cellSize = $derived(isTimelineMode ? timelineUnitSize : gridLayout.cellSize);
+  function isArrivalDestination(stepIndex: number): boolean {
+    return arrivalRequest?.stepIndex === stepIndex;
+  }
+
+  function isArrivalDestinationHidden(stepIndex: number): boolean {
+    return isArrivalDestination(stepIndex) && arrivalRequest?.owner === "stage";
+  }
+
+  const cellSize = $derived(
+    isTimelineMode ? timelineUnitSize : gridLayout.cellSize
+  );
 
   // Effective prop for the step-grid mandalas: an explicit override wins, else
   // the user's selected prop, else staff. The mandala derives its tip count
@@ -113,10 +140,10 @@
   // override drew the dual-staff figure even for a club. Mirrors the
   // collection-save resolution below.
   const effectiveBluePropType = $derived(
-    bluePropTypeOverride ?? settingsService.settings.bluePropType ?? "staff",
+    bluePropTypeOverride ?? settingsService.settings.bluePropType ?? "staff"
   );
   const effectiveRedPropType = $derived(
-    redPropTypeOverride ?? settingsService.settings.redPropType ?? "staff",
+    redPropTypeOverride ?? settingsService.settings.redPropType ?? "staff"
   );
 
   // --- Duration resize (timeline only) ---
@@ -137,7 +164,10 @@
   function handleResizeDrag(pixelDelta: number) {
     if (resizingStepIndex === null || timelineUnitSize <= 0) return;
     const raw = resizingInitialDuration + pixelDelta / timelineUnitSize;
-    resizingPreviewDuration = Math.max(MIN_DURATION, Math.min(MAX_DURATION, raw));
+    resizingPreviewDuration = Math.max(
+      MIN_DURATION,
+      Math.min(MAX_DURATION, raw)
+    );
     const currentSnapped =
       Math.round(resizingPreviewDuration / SNAP_INCREMENT) * SNAP_INCREMENT;
     if (currentSnapped !== lastSnappedValue) {
@@ -163,7 +193,7 @@
 
   function getEffectiveMultiplier(
     stepIndex: number,
-    baseDuration: number,
+    baseDuration: number
   ): number {
     if (stepIndex === resizingStepIndex && resizingPreviewDuration !== null) {
       return resizingPreviewDuration;
@@ -176,11 +206,11 @@
 
   const hasStartPosition = $derived(
     startPosition !== null &&
-      !("isBlank" in startPosition && startPosition.isBlank),
+      !("isBlank" in startPosition && startPosition.isBlank)
   );
 
   const isLightBackground = $derived(
-    settingsService.settings.backgroundType === BackgroundType.CELESTIAL,
+    settingsService.settings.backgroundType === BackgroundType.CELESTIAL
   );
 
   const standardMandalaCells = $derived.by(() => {
@@ -198,11 +228,40 @@
     });
 
     return placements.map(({ row, col, variant }) => ({
+      key: `mandala-${variant}`,
       row,
       column: col,
       show: variant === "full" ? ("both" as const) : variant,
     }));
   });
+
+  // Reading the grid geometry here ensures Svelte measures the keyed cells
+  // whenever their tracks change, even when the underlying sequence objects
+  // themselves did not move. The cells then glide and scale from their old
+  // rectangles instead of repainting at the new size in one frame.
+  const standardStartCells = $derived.by(() => {
+    const layoutVersion = `${gridLayout.columns}:${gridLayout.cellSize}`;
+    if (isTimelineMode || !hasStartPosition || !startPosition) return [];
+    return [{ key: "start-position", startPosition, layoutVersion }];
+  });
+
+  const standardStepCells = $derived.by(() => {
+    const layoutVersion = `${gridLayout.columns}:${gridLayout.cellSize}`;
+    if (isTimelineMode) return [];
+    return steps.map((step, index) => ({ step, index, layoutVersion }));
+  });
+
+  function getLayoutFlipDuration(): number {
+    if (
+      activeMode !== "construct" ||
+      removingStepIndex !== null ||
+      isClearing ||
+      displayState.isClearingForGeneration
+    ) {
+      return 0;
+    }
+    return motionDuration(PICTOGRAPH_ARRIVAL_LANDING_MS);
+  }
 
   const timelineStartMandalas = $derived.by(() => {
     if (!isTimelineMode) return [];
@@ -249,7 +308,11 @@
     mandalaMenuState = { open: true, x: event.clientX, y: event.clientY };
   }
 
-  const PATH_SHAPE_OPTIONS: { id: MandalaPathShape; label: string; icon: string }[] = [
+  const PATH_SHAPE_OPTIONS: {
+    id: MandalaPathShape;
+    label: string;
+    icon: string;
+  }[] = [
     { id: "hybrid", label: "Hybrid", icon: "fa-shuffle" },
     { id: "arc", label: "Arc", icon: "fa-bezier-curve" },
     { id: "linear", label: "Linear", icon: "fa-arrows-alt-h" },
@@ -283,11 +346,12 @@
         label: opt.label,
         icon: opt.icon,
         checked: mandalaPathShape === opt.id,
-        action: () => { mandalaPathShape = opt.id; },
+        action: () => {
+          mandalaPathShape = opt.id;
+        },
       })),
     },
   ]);
-
 </script>
 
 {#snippet mandalaArtwork(show: MandalaShow)}
@@ -315,14 +379,19 @@
     class:timeline={isTimelineMode}
     class:assemble-surface={activeMode === "assemble"}
     class:clearing={isClearing || displayState.isClearingForGeneration}
+    class:layout-motion-enabled={getLayoutFlipDuration() > 0}
+    data-arrival-phase={arrivalRequest?.phase}
     style:--cell-size="{cellSize}px"
+    style:--grid-center-offset="{standardGridCenterOffset}px"
+    style:--grid-layout-duration="{getLayoutFlipDuration()}ms"
+    style:--grid-layout-easing={PICTOGRAPH_ARRIVAL_LANDING_EASING}
     style:--grid-rows={gridLayout.rows}
     style:--grid-cols={gridLayout.totalColumns}
     style:--timeline-padding="{timelinePadding}px"
   >
     {#if isTimelineMode}
       <!-- ===== Timeline layout: start column + flexbox rows ===== -->
-      {#if startPosition && !('isBlank' in startPosition && startPosition.isBlank)}
+      {#if startPosition && !("isBlank" in startPosition && startPosition.isBlank)}
         <div class="timeline-start-column">
           <div
             class="timeline-cell"
@@ -335,7 +404,7 @@
               isSelected={selectedStepNumber === 0}
               isPracticeStep={practiceStepNumber === 0}
               {activeMode}
-              onStartClick={onStartClick}
+              {onStartClick}
               onLongPress={onStepLongPress}
               onDelete={onStepDelete}
               animationEpoch={displayState.animationEpoch}
@@ -388,15 +457,31 @@
               {@const musicalPosition = getDurationDisplay(stepIndex)}
               {@const effectiveDuration = getEffectiveMultiplier(
                 stepIndex,
-                duration,
+                duration
               )}
               <div
                 class="timeline-cell step-container"
                 class:deleting={isDeleting}
                 class:sliding={shouldSlide}
-                class:hidden-for-sequential={displayState.shouldBeatBeHidden(stepIndex)}
+                class:arrival-destination={isArrivalDestination(stepIndex)}
+                class:arrival-destination-hidden={isArrivalDestinationHidden(
+                  stepIndex
+                )}
+                class:hidden-for-sequential={displayState.shouldBeatBeHidden(
+                  stepIndex
+                )}
                 class:cell-selected={selectedStepNumber === step.stepNumber}
                 class:cell-practice={practiceStepNumber === step.stepNumber}
+                data-step-index={stepIndex}
+                data-arrival-destination-state={isArrivalDestination(stepIndex)
+                  ? isArrivalDestinationHidden(stepIndex)
+                    ? "hidden"
+                    : "ready"
+                  : undefined}
+                aria-hidden={isArrivalDestinationHidden(stepIndex)
+                  ? "true"
+                  : undefined}
+                inert={isArrivalDestinationHidden(stepIndex)}
                 style:--duration-multiplier={effectiveDuration}
                 style:animation-delay={shouldSlide
                   ? `${Math.min(stepIndex - removingStepIndex - 1, 5) * 50}ms`
@@ -412,7 +497,8 @@
                   isSelected={selectedStepNumber === step.stepNumber}
                   isPracticeStep={practiceStepNumber === step.stepNumber}
                   {activeMode}
-                  highlightStyle={highlightedSteps?.get(step.stepNumber) ?? null}
+                  highlightStyle={highlightedSteps?.get(step.stepNumber) ??
+                    null}
                   {musicalPosition}
                   isTimelineMode={true}
                   widthMultiplier={effectiveDuration}
@@ -438,19 +524,23 @@
       </div>
     {:else}
       <!-- ===== Standard layout: CSS Grid with uniform cells ===== -->
-      {#if startPosition && !('isBlank' in startPosition && startPosition.isBlank)}
+      {#each standardStartCells as startCell (startCell.key)}
         <div
           class="step-container"
           style:grid-row="1"
           style:grid-column="1"
+          animate:flip={{
+            duration: getLayoutFlipDuration(),
+            easing: cubicOut,
+          }}
         >
           <StartTile
-            {startPosition}
+            startPosition={startCell.startPosition}
             shouldAnimate={displayState.shouldAnimateStartPosition}
             isSelected={selectedStepNumber === 0}
             isPracticeStep={practiceStepNumber === 0}
             {activeMode}
-            onStartClick={onStartClick}
+            {onStartClick}
             onLongPress={onStepLongPress}
             onDelete={onStepDelete}
             animationEpoch={displayState.animationEpoch}
@@ -458,24 +548,40 @@
             {redPropTypeOverride}
           />
         </div>
-      {/if}
+      {/each}
 
-      {#each steps as step, index (index)}
+      {#each standardStepCells as { step, index } (getStepKey(step, index))}
         {@const position = calculateStepPosition(index, gridLayout.columns)}
         {@const isDeleting = removingStepIndices.has(index)}
         {@const shouldSlide =
-          removingStepIndex !== null && !isDeleting && index > removingStepIndex}
+          removingStepIndex !== null &&
+          !isDeleting &&
+          index > removingStepIndex}
         {@const musicalPosition = getDurationDisplay(index)}
         <div
           class="step-container"
           class:deleting={isDeleting}
           class:sliding={shouldSlide}
+          class:arrival-destination={isArrivalDestination(index)}
+          class:arrival-destination-hidden={isArrivalDestinationHidden(index)}
           class:hidden-for-sequential={displayState.shouldBeatBeHidden(index)}
+          data-step-index={index}
+          data-arrival-destination-state={isArrivalDestination(index)
+            ? isArrivalDestinationHidden(index)
+              ? "hidden"
+              : "ready"
+            : undefined}
+          aria-hidden={isArrivalDestinationHidden(index) ? "true" : undefined}
+          inert={isArrivalDestinationHidden(index)}
           style:grid-row={position.row}
           style:grid-column={position.column}
           style:animation-delay={shouldSlide
             ? `${Math.min(index - removingStepIndex - 1, 5) * 50}ms`
             : "0ms"}
+          animate:flip={{
+            duration: getLayoutFlipDuration(),
+            easing: cubicOut,
+          }}
         >
           <StepCell
             {step}
@@ -496,33 +602,39 @@
         </div>
       {/each}
 
-      {#each standardMandalaCells as cell (cell.row + "-" + cell.column)}
-        {#if onMandalaClick}
-          <button
-            type="button"
-            class="mandala-cell viewer-enabled"
-            class:light-bg={isLightBackground}
-            style:grid-row={cell.row}
-            style:grid-column={cell.column}
-            onclick={() => onMandalaClick(cell.show, mandalaPathShape)}
-            oncontextmenu={(e) => handleMandalaContextMenu(e, cell.show)}
-            aria-label="Open mandala"
-            title="Open mandala"
-          >
-            {@render mandalaArtwork(cell.show)}
-          </button>
-        {:else}
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div
-            class="mandala-cell"
-            class:light-bg={isLightBackground}
-            style:grid-row={cell.row}
-            style:grid-column={cell.column}
-            oncontextmenu={(e) => handleMandalaContextMenu(e, cell.show)}
-          >
-            {@render mandalaArtwork(cell.show)}
-          </div>
-        {/if}
+      {#each standardMandalaCells as cell (cell.key)}
+        <div
+          class="mandala-layout-item"
+          style:grid-row={cell.row}
+          style:grid-column={cell.column}
+          animate:flip={{
+            duration: getLayoutFlipDuration(),
+            easing: cubicOut,
+          }}
+        >
+          {#if onMandalaClick}
+            <button
+              type="button"
+              class="mandala-cell viewer-enabled"
+              class:light-bg={isLightBackground}
+              onclick={() => onMandalaClick(cell.show, mandalaPathShape)}
+              oncontextmenu={(e) => handleMandalaContextMenu(e, cell.show)}
+              aria-label="Open mandala"
+              title="Open mandala"
+            >
+              {@render mandalaArtwork(cell.show)}
+            </button>
+          {:else}
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div
+              class="mandala-cell"
+              class:light-bg={isLightBackground}
+              oncontextmenu={(e) => handleMandalaContextMenu(e, cell.show)}
+            >
+              {@render mandalaArtwork(cell.show)}
+            </div>
+          {/if}
+        </div>
       {/each}
     {/if}
   </div>
@@ -621,6 +733,16 @@
     grid-auto-rows: var(--cell-size);
     max-width: 100%;
     box-sizing: border-box;
+    margin-block: 0;
+    translate: 0 var(--grid-center-offset, 0px);
+  }
+
+  .grid-surface.standard.layout-motion-enabled {
+    transition:
+      opacity 300ms ease-out,
+      transform 300ms ease-out,
+      translate var(--grid-layout-duration, 280ms)
+        var(--grid-layout-easing, cubic-bezier(0.4, 0, 0.2, 1));
   }
 
   /* Assemble grows one continuous record beside the interactive grid. Filling
@@ -669,6 +791,15 @@
     pointer-events: none;
   }
 
+  .step-container.arrival-destination :global(.step-cell) {
+    transition: none;
+  }
+
+  .step-container.arrival-destination-hidden {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
   /* ===== Timeline sub-elements ===== */
   .timeline-start-column {
     width: var(--cell-size);
@@ -712,7 +843,8 @@
   .cell-selected {
     z-index: 10;
     border: 3px solid transparent;
-    background: linear-gradient(
+    background:
+      linear-gradient(
           var(--dm-pictograph-bg, #0a0a0f),
           var(--dm-pictograph-bg, #0a0a0f)
         )
@@ -751,7 +883,8 @@
      timeline selects via the parent .timeline-cell.cell-selected (the
      step-cell itself never gets .selected in timeline mode). */
   .grid-surface.standard :global(.step-cell:not(.selected):hover),
-  .grid-surface.timeline :global(.timeline-cell:not(.cell-selected) .step-cell:hover) {
+  .grid-surface.timeline
+    :global(.timeline-cell:not(.cell-selected) .step-cell:hover) {
     /* Above the selected cell (z 10): the hovered cell is the one scaling
        toward the user, so it must read as closest / in front. */
     z-index: 11;
@@ -780,7 +913,8 @@
      its own bare :hover scale (StepCell.svelte) on top — that grows the
      pictograph past the gold border. Pin it so border + pictograph scale as one
      and the gold frame stays hugging the pictograph. */
-  .grid-surface.timeline :global(.timeline-cell.cell-selected:hover .step-cell) {
+  .grid-surface.timeline
+    :global(.timeline-cell.cell-selected:hover .step-cell) {
     transform: none;
   }
 
@@ -790,6 +924,22 @@
   }
 
   /* ===== Mandala cells ===== */
+  .mandala-layout-item {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .mandala-layout-item:hover {
+    z-index: 2;
+  }
+
+  .mandala-layout-item > .mandala-cell {
+    width: 100%;
+    height: 100%;
+  }
+
   .mandala-cell {
     display: flex;
     align-items: center;
@@ -893,6 +1043,10 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .grid-surface.standard {
+      transition: none;
+    }
+
     .step-container.deleting,
     .step-container.sliding {
       animation: none;

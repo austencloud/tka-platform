@@ -9,6 +9,7 @@
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import type { TimeSignatureKey } from "$lib/shared/foundation/domain/models/time-signature";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type {
     MandalaPathShape,
     MandalaRenderOptions,
@@ -20,9 +21,11 @@
     isPendingGenerationAnimation,
     setPendingGenerationAnimation,
     consumeSuppressNextAnimation,
+    type PictographArrivalRequest,
   } from "$lib/features/create/shared/workspace-panel/sequence-display/state/step-grid-display-state.svelte";
   import { createScrollState } from "$lib/features/create/shared/workspace-panel/sequence-display/state/scroll-state.svelte";
   import {
+    calculateGridVerticalCenterOffset,
     calculateGridLayout,
     calculateTimelineRowsByBeatCount,
     calculateTimelineUnitSize,
@@ -30,6 +33,11 @@
     clampTimelineUnitSizeToHeight,
   } from "$lib/shared/create/utils/grid-calculations";
   import { formatDurationCompact } from "../../../domain/models/duration-pattern-data";
+  import {
+    translateArrivalRect,
+    type ArrivalRect,
+  } from "../domain/pictograph-arrival-geometry";
+  import PictographArrivalStage from "./PictographArrivalStage.svelte";
   import WorkspaceGrid from "./WorkspaceGrid.svelte";
 
   // Services
@@ -64,6 +72,7 @@
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
     sequenceWord = "",
+    arrivalSequence = null,
   } = $props<{
     steps: ReadonlyArray<StepData> | StepData[];
     startPosition?: StartPositionData | StepData | null;
@@ -100,6 +109,7 @@
     /** Override prop type for red hand. Used by demos/previews to bypass global settings. */
     redPropTypeOverride?: PropType;
     sequenceWord?: string;
+    arrivalSequence?: SequenceData | null;
   }>();
 
   // State management
@@ -112,6 +122,10 @@
   let containerRef: HTMLElement | undefined = $state();
   let scrollContainerRef: HTMLElement | undefined = $state();
 
+  const activeArrivalRequest = $derived<PictographArrivalRequest | null>(
+    activeMode === "construct" ? displayState.arrivalRequest : null
+  );
+
   // Breathing room (px, each side) reserved around the grid so a selected or
   // hovered cell's gold border + scale "pop" never reaches the hard clip on
   // .scroll-wrapper (overflow-x: hidden) / .step-grid-container (overflow:
@@ -120,8 +134,7 @@
   // sized to the wrapper's content box so they don't spill into it.
   const POP_RESERVE = 16;
 
-  // Computed grid layout - must use $derived.by for reactive recalculation
-  const gridLayout = $derived.by(() => {
+  function calculateResponsiveGridLayout(stepCount: number) {
     const isNarrowAssemble =
       activeMode === "assemble" && containerWidth > 0 && containerWidth < 650;
     const narrowMaxColumns = isNarrowAssemble
@@ -129,8 +142,8 @@
         ? 2
         : 3
       : null;
-    const layout = calculateGridLayout(
-      steps.length,
+    return calculateGridLayout(
+      stepCount,
       Math.max(0, containerWidth - 2 * POP_RESERVE),
       Math.max(0, containerHeight - 2 * POP_RESERVE),
       deviceDetector,
@@ -138,11 +151,48 @@
         isSideBySideLayout,
         heightSizingRowThreshold,
         manualColumnCount,
+        stableColumnCount:
+          activeMode === "construct" && !isTimelineMode ? 4 : null,
         narrowMaxColumns,
         preferWidthSizingOnNarrow: isNarrowAssemble,
       }
     );
-    return layout;
+  }
+
+  // Computed grid layout - must use $derived.by for reactive recalculation
+  const gridLayout = $derived.by(() =>
+    calculateResponsiveGridLayout(steps.length)
+  );
+
+  const standardGridCenterOffset = $derived(
+    isTimelineMode
+      ? 0
+      : calculateGridVerticalCenterOffset(
+          containerHeight,
+          gridLayout.rows,
+          gridLayout.cellSize,
+          2 * POP_RESERVE
+        )
+  );
+
+  const displayedStandardGridCenterOffset = $derived.by(() => {
+    const request = activeArrivalRequest;
+    if (
+      isTimelineMode ||
+      !request ||
+      request.phase === "landing" ||
+      request.owner === "cell"
+    ) {
+      return standardGridCenterOffset;
+    }
+
+    const previousLayout = calculateResponsiveGridLayout(request.stepIndex);
+    return calculateGridVerticalCenterOffset(
+      containerHeight,
+      previousLayout.rows,
+      previousLayout.cellSize,
+      2 * POP_RESERVE
+    );
   });
 
   // Timeline mode: beats per row matches the grid layout's column count so
@@ -224,6 +274,44 @@
   let previousStepsRef: ReadonlyArray<StepData> | StepData[] = [];
   let isFirstRender = true;
 
+  function handleSingleStepAddition(stepIndex: number) {
+    const existingRequest = displayState.arrivalRequest;
+    if (
+      activeMode === "construct" &&
+      existingRequest?.stepIndex === stepIndex &&
+      existingRequest.owner === "stage"
+    ) {
+      return;
+    }
+
+    displayState.handleSingleBeatAddition(
+      stepIndex,
+      activeMode === "construct"
+    );
+  }
+
+  // Stage the arrival before Svelte updates the grid DOM. This preserves the
+  // old visual center while the preview plays instead of letting a new row
+  // jump upward before the landing gesture begins.
+  $effect.pre(() => {
+    const currentStepCount = steps.length;
+    if (
+      isFirstRender ||
+      activeMode !== "construct" ||
+      currentStepCount !== previousStepCount + 1
+    ) {
+      return;
+    }
+
+    const previousStepsUnchanged =
+      previousStepCount === 0 ||
+      previousStepsRef[previousStepCount - 1]?.id ===
+        steps[previousStepCount - 1]?.id;
+    if (!previousStepsUnchanged) return;
+
+    handleSingleStepAddition(currentStepCount - 1);
+  });
+
   // Helper to trigger animations
   async function triggerFullAnimation() {
     if (!containerRef) return;
@@ -290,7 +378,7 @@
 
       if (stepCountDiff === 1) {
         if (previousStepCount === 0) {
-          displayState.handleSingleBeatAddition(currentStepCount - 1);
+          handleSingleStepAddition(currentStepCount - 1);
         } else {
           const lastPreviousBeat = previousStepsRef[previousStepCount - 1];
           const lastCurrentBeat = steps[previousStepCount - 1];
@@ -300,7 +388,7 @@
             lastPreviousBeat.id === lastCurrentBeat.id;
 
           if (previousBeatsUnchanged) {
-            displayState.handleSingleBeatAddition(currentStepCount - 1);
+            handleSingleStepAddition(currentStepCount - 1);
           } else {
             setTimeout(() => {
               triggerFullAnimation();
@@ -336,7 +424,7 @@
     } else if (currentStepCount > previousStepCount) {
       const stepsAdded = currentStepCount - previousStepCount;
       if (stepsAdded === 1) {
-        displayState.handleSingleBeatAddition(currentStepCount - 1);
+        handleSingleStepAddition(currentStepCount - 1);
       }
     }
 
@@ -488,6 +576,20 @@
     const duration = beat?.duration ?? 1.0;
     return formatDurationCompact(duration);
   }
+
+  function getArrivalDestinationRect(stepIndex: number): ArrivalRect | null {
+    const destination =
+      containerRef?.querySelector<HTMLElement>(
+        `[data-step-index="${stepIndex}"]`
+      ) ?? null;
+    if (!destination) return null;
+
+    return translateArrivalRect(
+      destination.getBoundingClientRect(),
+      0,
+      standardGridCenterOffset - displayedStandardGridCenterOffset
+    );
+  }
 </script>
 
 <div class="step-grid-container" bind:this={containerRef}>
@@ -502,6 +604,7 @@
       {startPosition}
       {isTimelineMode}
       {gridLayout}
+      standardGridCenterOffset={displayedStandardGridCenterOffset}
       {timelineRows}
       {timelineUnitSize}
       {timelinePadding}
@@ -525,8 +628,24 @@
       {bluePropTypeOverride}
       {redPropTypeOverride}
       {sequenceWord}
+      arrivalRequest={activeArrivalRequest}
       bind:scrollContainerRef
     />
+
+    {#if activeArrivalRequest && arrivalSequence}
+      {#key activeArrivalRequest.requestId}
+        <PictographArrivalStage
+          request={activeArrivalRequest}
+          sequence={arrivalSequence}
+          getDestinationRect={getArrivalDestinationRect}
+          onBeginLanding={displayState.beginArrivalLanding}
+          onBeginHandoff={displayState.beginArrivalHandoff}
+          onComplete={displayState.completeArrival}
+          {bluePropTypeOverride}
+          {redPropTypeOverride}
+        />
+      {/key}
+    {/if}
   {/if}
 </div>
 
@@ -542,6 +661,7 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
+    container: step-grid / size;
   }
 
   .empty-grid-message {

@@ -23,6 +23,7 @@ Usage:
   import { isVisibleMotion, type MotionData } from "../domain/models/motion-data";
   import GridSvg from "../../grid/components/GridSvg.svelte";
   import PropSvg from "../../prop/components/PropSvg.svelte";
+  import type { PropPosition } from "../../prop/domain/models/prop-position";
   import {
     EDITOR_TORCH_PALETTE,
     type PropRenderContext,
@@ -109,6 +110,12 @@ Usage:
     widthMultiplier = 1,
     // Cell index for position caching (enables smooth transitions on regeneration)
     cellIndex = null,
+    // Live motion geometry. When present, the same prop SVGs used by
+    // the finished pictograph render at these interpolated coordinates.
+    propPositionOverrides = null,
+    // The arrow layer stays mounted so a completed motion can reveal it without
+    // swapping renderers or rebuilding arrow assets.
+    arrowOpacity = 1,
     // Duration multiplier for the step (1 = default, shown when != 1)
     duration = 1,
     // Fires when the grid SVG has loaded (or errored). The grid loads asynchronously
@@ -167,6 +174,12 @@ Usage:
     widthMultiplier?: number;
     /** Cell index for position caching (enables smooth transitions on regeneration) */
     cellIndex?: number | null;
+    /** Per-hand live positions for an in-place pictograph motion. */
+    propPositionOverrides?: Partial<
+      Record<"blue" | "red", PropPosition>
+    > | null;
+    /** Opacity applied to the complete arrow layer. */
+    arrowOpacity?: number;
     /** Duration multiplier for the step (1 = default one beat, shown when != 1) */
     duration?: number;
     /** Fires when the grid finishes loading (or errors). Used by export readiness gating. */
@@ -218,6 +231,9 @@ Usage:
   const arrowMirroring = $derived(pictograph._prepared?.arrowMirroring || {});
   const propPositions = $derived(pictograph._prepared?.propPositions || {});
   const propAssets = $derived(pictograph._prepared?.propAssets || {});
+  const effectiveArrowOpacity = $derived(
+    Math.min(1, Math.max(0, arrowOpacity))
+  );
 
   // Opacity for dimmed (not hidden) motions - visible enough to see, clearly de-emphasized
   const DIMMED_OPACITY = 0.2;
@@ -406,12 +422,14 @@ Usage:
 
       <!-- Props -->
       {#each motions as { color, data, opacity } (color)}
-        {#if propAssets[color] && propPositions[color]}
+        {@const motionPosition =
+          propPositionOverrides?.[color] ?? propPositions[color]}
+        {#if propAssets[color] && motionPosition}
           <g opacity={opacity}>
             <PropSvg
               motionData={data}
               propAssets={propAssets[color]}
-              propPosition={propPositions[color]}
+              propPosition={motionPosition}
               showProp={true}
               isClickable={propsClickable}
               isSelected={selectedPropHand === color}
@@ -419,6 +437,7 @@ Usage:
                 ? () => onPropClick(color)
                 : undefined}
               {cellIndex}
+              directPositioning={propPositionOverrides?.[color] !== undefined}
               {propRenderContext}
               darkMode={darkMode ?? false}
             />
@@ -427,6 +446,7 @@ Usage:
       {/each}
 
       <!-- Arrows -->
+      <g class="pictograph-arrows" opacity={effectiveArrowOpacity}>
       {#if tipPromotionNeeded}
         <!-- Split rendering: shafts first, then tips on top -->
         {#each motions as { color, data, opacity } (color + "-shaft")}
@@ -488,6 +508,7 @@ Usage:
           {/if}
         {/each}
       {/if}
+      </g>
     </g>
 
     <!-- Corner glyphs - positioned at edges of expanded viewBox -->

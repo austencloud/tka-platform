@@ -14,6 +14,13 @@ import type {
 } from "../domain/models/step-grid-display-models";
 import { DEFAULT_ANIMATION_TIMING } from "../domain/models/step-grid-display-models";
 
+export interface PictographArrivalRequest {
+  stepIndex: number;
+  requestId: number;
+  owner: "stage" | "cell";
+  phase: "preview" | "landing";
+}
+
 /**
  * Global flag to indicate a generation is pending.
  * This is set when the prepare-sequence-animation event fires, BEFORE the StepGrid
@@ -65,6 +72,12 @@ export function createStepGridDisplayState() {
   let isWaitingForSequentialAnimation = $state<boolean>(false);
   let isClearingForGeneration = $state<boolean>(false);
 
+  // Construct gives one committed step the workspace stage, then hands the
+  // finished pictograph to its grid cell. Keeping both owners in one request
+  // guarantees that only one of them is visible at a time.
+  let arrivalRequest = $state<PictographArrivalRequest | null>(null);
+  let nextArrivalRequestId = 0;
+
   // Animation generation counter - used to cancel previous animations when a new one starts
   // Each new animation increments this, and running animations check if they're still current
   let animationGeneration = 0;
@@ -91,6 +104,7 @@ export function createStepGridDisplayState() {
    * Called BEFORE new sequence is set
    */
   function prepareSequenceAnimation(_stepCount: number, mode: AnimationMode) {
+    arrivalRequest = null;
     // Increment epoch to signal all StepCells to reset their hasAnimated state
     // This is critical when beat IDs are reused across generations (e.g., beat-5, beat-6)
     animationEpoch++;
@@ -121,6 +135,7 @@ export function createStepGridDisplayState() {
     totalBeatCount: number,
     existingBeatCount: number
   ) {
+    arrivalRequest = null;
     // Increment epoch so new StepCells know to animate
     animationEpoch++;
 
@@ -241,12 +256,23 @@ export function createStepGridDisplayState() {
   /**
    * Handle single beat addition (Construct mode)
    */
-  function handleSingleBeatAddition(stepIndex: number) {
+  function handleSingleBeatAddition(
+    stepIndex: number,
+    shouldStageArrival: boolean = false
+  ) {
     isPreparingFullAnimation = false;
     newlyAddedStepIndex = stepIndex;
     shouldAnimateAllSteps = false;
     shouldAnimateStartPosition = false;
     stepsToAnimate.clear();
+    arrivalRequest = shouldStageArrival
+      ? {
+          stepIndex,
+          requestId: ++nextArrivalRequestId,
+          owner: "stage",
+          phase: "preview",
+        }
+      : null;
 
     // Clear after animation completes
     setTimeout(() => {
@@ -254,10 +280,30 @@ export function createStepGridDisplayState() {
     }, animationTiming.entranceDuration);
   }
 
+  function beginArrivalLanding(requestId: number) {
+    if (!arrivalRequest || arrivalRequest.requestId !== requestId) return;
+    arrivalRequest = { ...arrivalRequest, phase: "landing" };
+  }
+
+  function beginArrivalHandoff(requestId: number) {
+    if (!arrivalRequest || arrivalRequest.requestId !== requestId) return;
+    arrivalRequest = { ...arrivalRequest, owner: "cell" };
+  }
+
+  function completeArrival(requestId: number) {
+    if (!arrivalRequest || arrivalRequest.requestId !== requestId) return;
+    arrivalRequest = null;
+  }
+
+  function cancelArrival() {
+    arrivalRequest = null;
+  }
+
   /**
    * Handle sequence clearing animation
    */
   function handleClearSequence() {
+    arrivalRequest = null;
     isClearingForGeneration = true;
 
     // Reset after animation completes
@@ -275,13 +321,18 @@ export function createStepGridDisplayState() {
     shouldAnimateStartPosition = false;
     shouldAnimateAllSteps = false;
     stepsToAnimate.clear();
+    arrivalRequest = null;
   }
 
   /**
    * Check if a beat should animate
    */
   function shouldBeatAnimate(stepIndex: number): boolean {
-    return shouldAnimateAllSteps || stepIndex === newlyAddedStepIndex || stepsToAnimate.has(stepIndex);
+    return (
+      shouldAnimateAllSteps ||
+      stepIndex === newlyAddedStepIndex ||
+      stepsToAnimate.has(stepIndex)
+    );
   }
 
   /**
@@ -333,6 +384,9 @@ export function createStepGridDisplayState() {
     get animationEpoch() {
       return animationEpoch;
     },
+    get arrivalRequest() {
+      return arrivalRequest;
+    },
 
     // Actions
     setAnimationMode,
@@ -341,6 +395,10 @@ export function createStepGridDisplayState() {
     triggerSequentialAnimation,
     triggerAllAtOnceAnimation,
     handleSingleBeatAddition,
+    beginArrivalLanding,
+    beginArrivalHandoff,
+    completeArrival,
+    cancelArrival,
     handleClearSequence,
     cleanupAnimation,
     shouldBeatAnimate,

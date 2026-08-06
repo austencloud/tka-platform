@@ -40,6 +40,7 @@ with pre-prepared data for better performance.
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { PropType } from "../../prop/domain/enums/prop-type";
   import type { PropRenderContext } from "../../prop/domain/prop-render-context";
+  import { calculatePictographMotionPositions } from "../../prop/services/pictograph-motion-positioner";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
   import PictographRenderer from "./PictographRenderer.svelte";
   import { globalAdjustmentVersion } from "../../arrow/positioning/global/state/global-adjustment-version.svelte";
@@ -113,6 +114,11 @@ with pre-prepared data for better performance.
     // Per-instance step-number override. undefined = follow the global toggle;
     // true/false force it (the choreo sheet drives this from its own setting).
     stepNumberOverride = undefined,
+    // Optional in-place motion. The current pictograph remains the only
+    // renderer while its props travel from the prepared start pose to this step.
+    motionStartData = null,
+    motionProgress = null,
+    arrowOpacity = 1,
   } = $props<{
     pictographData?: (StepData | PictographData) | null;
     disableTransitions?: boolean;
@@ -164,6 +170,12 @@ with pre-prepared data for better performance.
     onReady?: () => void;
     /** Force step-number visibility on/off, overriding the global toggle. undefined = follow global. */
     stepNumberOverride?: boolean;
+    /** Pictograph whose prepared prop positions define this motion's exact start pose. */
+    motionStartData?: PictographData | null;
+    /** 0..1 interpolation progress. null renders the finished pictograph normally. */
+    motionProgress?: number | null;
+    /** Opacity for the existing pictograph arrow layer. */
+    arrowOpacity?: number;
   }>();
 
   // Extract beat context from StepData if available.
@@ -322,6 +334,7 @@ with pre-prepared data for better performance.
 
   // Prepared data state
   let preparedData = $state<PreparedPictographData | null>(null);
+  let preparedStartData = $state<PreparedPictographData | null>(null);
   let isLoading = $state(false);
 
   // Tracks whether the grid SVG has settled. PictographRenderer's GridSvg loads its
@@ -398,6 +411,16 @@ with pre-prepared data for better performance.
       darkMode: effectiveDarkMode, // Include effective dark mode for color-correct preparation
       blueMotion: blueFingerprint,
       redMotion: redFingerprint,
+      motionStartData: motionStartData
+        ? {
+            id: motionStartData.id,
+            letter: motionStartData.letter,
+            gridMode: motionStartData.gridMode,
+            betaSwapped: motionStartData.betaSwapped,
+            blueMotion: motionStartData.motions?.blue,
+            redMotion: motionStartData.motions?.red,
+          }
+        : null,
       // Include global adjustment version so ALL pictographs re-prepare when adjustments are saved
       // This ensures steps 6, 10, 14, etc. (same letter rotated) update when beat 2 is adjusted globally
       globalAdjustmentVersion: globalAdjustmentVersion.version,
@@ -414,9 +437,11 @@ with pre-prepared data for better performance.
   $effect(() => {
     const key = prepareKey;
     const data = pictographData;
+    const startData = motionStartData;
 
     if (!data || !key) {
       preparedData = null;
+      preparedStartData = null;
       prepareSequence = 0;
       lastAppliedSequence = 0;
       return;
@@ -439,18 +464,25 @@ with pre-prepared data for better performance.
           bluePropType: effectiveBluePropType,
           redPropType: effectiveRedPropType,
         };
-        const result = await pictographPreparer.prepareSingle(data as PictographData, prepareOptions);
+        const [result, startResult] = await Promise.all([
+          pictographPreparer.prepareSingle(data as PictographData, prepareOptions),
+          startData
+            ? pictographPreparer.prepareSingle(startData, prepareOptions)
+            : Promise.resolve(null),
+        ]);
         // Only apply if no newer preparation has already been applied.
         // This prevents stale results (e.g. old prop type) from overwriting fresh ones,
         // while still allowing intermediate WASD results to show if they finish in order.
         if (mySequence > lastAppliedSequence) {
           lastAppliedSequence = mySequence;
+          preparedStartData = startResult;
           preparedData = result;
         }
       } catch (error) {
         console.error("Failed to prepare pictograph:", error);
         if (mySequence > lastAppliedSequence) {
           lastAppliedSequence = mySequence;
+          preparedStartData = startData as PreparedPictographData | null;
           preparedData = data as PreparedPictographData;
         }
       } finally {
@@ -468,6 +500,23 @@ with pre-prepared data for better performance.
     if (!pictographData) return "empty";
     // Just use id - transforms keep same id, loading different sequence changes id
     return pictographData.id || "no-id";
+  });
+
+  const motionPropPositionOverrides = $derived.by(() => {
+    if (motionProgress === null || !stepData || !preparedData?._prepared) {
+      return null;
+    }
+
+    return calculatePictographMotionPositions({
+      step: stepData,
+      progress: motionProgress,
+      gridMode:
+        overrideGridMode ?? preparedData._prepared.gridMode ?? GridMode.DIAMOND,
+      bluePropType: effectiveBluePropType,
+      redPropType: effectiveRedPropType,
+      startPositions: preparedStartData?._prepared?.propPositions ?? {},
+      endPositions: preparedData._prepared.propPositions,
+    });
   });
 
   // Machine-readable notation on the WRAPPER (not just the inner SVG): the inner
@@ -490,7 +539,17 @@ with pre-prepared data for better performance.
   let hasReportedReady = false;
   $effect(() => {
     const gridSettled = !effectiveShowGrid || gridReady;
-    if (preparedData && gridSettled && !hasReportedReady && onReady) {
+    const motionGeometryReady =
+      motionProgress === null ||
+      !motionStartData ||
+      Boolean(preparedStartData?._prepared);
+    if (
+      preparedData &&
+      gridSettled &&
+      motionGeometryReady &&
+      !hasReportedReady &&
+      onReady
+    ) {
       hasReportedReady = true;
       void tick().then(() => onReady());
     }
@@ -541,6 +600,8 @@ with pre-prepared data for better performance.
         {widthMultiplier}
         {cellIndex}
         {duration}
+        propPositionOverrides={motionPropPositionOverrides}
+        {arrowOpacity}
         onGridReady={handleGridReady}
       />
     {:else}
@@ -584,6 +645,8 @@ with pre-prepared data for better performance.
             {widthMultiplier}
             {cellIndex}
             {duration}
+            propPositionOverrides={motionPropPositionOverrides}
+            {arrowOpacity}
             onGridReady={handleGridReady}
           />
         </div>
