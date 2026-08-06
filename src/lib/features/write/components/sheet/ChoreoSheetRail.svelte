@@ -25,6 +25,7 @@
     width,
     stacked = false,
     dragging,
+    playbackActive = false,
     viewMode,
     onToggle,
     onViewMode,
@@ -36,6 +37,7 @@
     width: number;
     stacked?: boolean;
     dragging: boolean;
+    playbackActive?: boolean;
     viewMode: ViewMode;
     onToggle: () => void;
     onViewMode: (v: ViewMode) => void;
@@ -110,14 +112,21 @@
       class="icon-btn"
       onclick={onToggle}
       aria-expanded={!collapsed}
-      aria-label={collapsed ? "Expand sequence rail" : "Collapse sequence rail"}
+      aria-label={playbackActive
+        ? "Exit Play act"
+        : collapsed
+          ? "Expand sequence rail"
+          : "Collapse sequence rail"}
       ><i
         class="fa-solid"
         class:fa-chevron-left={!collapsed}
         class:fa-chevron-right={collapsed}
         aria-hidden="true"
       ></i></button
-    >{#if collapsed}<span>{builder.sequenceIds.length}</span>{/if}
+    >{#if collapsed}{#if playbackActive}<i
+          class="fa-solid fa-play playback-mark"
+          aria-hidden="true"
+        ></i>{:else}<span>{builder.sequenceIds.length}</span>{/if}{/if}
   </div>
   <div class="content">
     <SegmentedControl
@@ -284,14 +293,16 @@
     {/if}
   </div>
 </aside>
-<div class="resize" class:stacked>
-  <ResizeHandle
-    direction={stacked ? "vertical" : "horizontal"}
-    {onDragStart}
-    {onDrag}
-    {onDragEnd}
-  />
-</div>
+{#if !playbackActive}
+  <div class="resize" class:stacked>
+    <ResizeHandle
+      direction={stacked ? "vertical" : "horizontal"}
+      {onDragStart}
+      {onDrag}
+      {onDragEnd}
+    />
+  </div>
+{/if}
 
 <style>
   .rail {
@@ -329,6 +340,10 @@
   }
   .collapsed .rail-bar {
     flex-direction: column;
+  }
+  .playback-mark {
+    color: var(--theme-accent);
+    font-size: var(--font-size-compact);
   }
   .collapsed .content {
     display: none;

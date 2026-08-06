@@ -21,10 +21,20 @@
 
   let {
     sequence,
+    stacked = false,
+    playerFirst = false,
+    constrainedHeight = false,
+    wide = false,
+    ultraWide = false,
     onClose,
     onStepChange,
   }: {
     sequence: SequenceData | null;
+    stacked?: boolean;
+    playerFirst?: boolean;
+    constrainedHeight?: boolean;
+    wide?: boolean;
+    ultraWide?: boolean;
     onClose?: () => void;
     /**
      * The act's current step as it animates, 0-based into the concatenated act
@@ -111,9 +121,19 @@
   }
 </script>
 
-<aside class="act-player" aria-label="Play act" transition:dockSlide>
+<aside
+  id="choreo-act-player"
+  class="act-player"
+  class:stacked
+  class:player-first={playerFirst}
+  class:constrained-height={constrainedHeight}
+  class:wide
+  class:ultra-wide={ultraWide}
+  aria-labelledby="choreo-act-player-title"
+  transition:dockSlide
+>
   <div class="dock-head">
-    <span class="dock-title">Play act</span>
+    <span id="choreo-act-player-title" class="dock-title">Play act</span>
     <button
       type="button"
       class="dock-close"
@@ -136,14 +156,20 @@
         tapToToggle={true}
       />
     </div>
-    <div class="music-host">
-      <label class="load-music">
+    <div class="music-host" class:compact={playerFirst || constrainedHeight}>
+      <label
+        class="load-music"
+        aria-label={musicState.filename ? "Change music" : "Load music"}
+      >
         <i class="fa-solid fa-music" aria-hidden="true"></i>
-        {musicState.filename ? "Change music" : "Load music"}
+        <span class="load-text"
+          >{musicState.filename ? "Change music" : "Load music"}</span
+        >
         <input type="file" accept="audio/*" onchange={onFile} hidden />
       </label>
       <MusicPlayer
         playerState={musicState}
+        compact={playerFirst || constrainedHeight}
         onPlayRequested={playMusic}
         onPauseRequested={pauseMusic}
         onStopRequested={stopMusic}
@@ -157,8 +183,9 @@
 
 <style>
   .act-player {
+    --act-player-w: min(460px, 42vw);
     flex-shrink: 0;
-    width: min(460px, 42vw);
+    width: var(--act-player-w);
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -171,7 +198,28 @@
   /* dockSlide perf contract: children pinned at final width so the glide is a
      pure clip-reveal (no per-frame relayout of the dock's contents). */
   .act-player > :global(*) {
-    width: min(460px, 42vw);
+    width: var(--act-player-w);
+  }
+
+  .act-player.wide {
+    --act-player-w: min(520px, 34vw);
+  }
+
+  .act-player.ultra-wide {
+    --act-player-w: min(640px, 30vw);
+  }
+
+  .act-player.stacked {
+    width: 100%;
+  }
+
+  .act-player.stacked > :global(*) {
+    width: auto;
+  }
+
+  .act-player.player-first {
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .dock-head {
@@ -216,6 +264,11 @@
     overflow: hidden;
   }
 
+  .act-player.constrained-height .player-host,
+  .act-player.player-first .player-host {
+    min-height: 0;
+  }
+
   .music-host {
     flex-shrink: 0;
     padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
@@ -223,6 +276,17 @@
     flex-direction: column;
     gap: var(--spacing-sm);
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .music-host.compact {
+    display: grid;
+    grid-template-columns: var(--min-touch-target, 44px) minmax(0, 1fr);
+    align-items: center;
+    padding: var(--spacing-xs);
+  }
+
+  .music-host.compact > :global(.music-player) {
+    min-width: 0;
   }
 
   .load-music {
@@ -244,19 +308,20 @@
     background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.1));
   }
 
+  .music-host.compact .load-music {
+    width: var(--min-touch-target, 44px);
+    padding: 0;
+    justify-content: center;
+  }
+
+  .music-host.compact .load-text {
+    display: none;
+  }
+
   .empty {
     text-align: center;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-sm, 0.875rem);
     margin: var(--spacing-md);
-  }
-
-  @media (max-width: 900px) {
-    .act-player {
-      width: 100%;
-    }
-    .act-player > :global(*) {
-      width: auto;
-    }
   }
 </style>

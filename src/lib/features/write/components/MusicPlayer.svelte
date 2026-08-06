@@ -20,6 +20,7 @@
   interface Props {
     playerState?: MusicPlayerState;
     disabled?: boolean;
+    compact?: boolean;
     onPlayRequested?: () => void;
     onPauseRequested?: () => void;
     onStopRequested?: () => void;
@@ -29,6 +30,7 @@
   let {
     playerState = createDefaultMusicPlayerState(),
     disabled = false,
+    compact = false,
     onPlayRequested,
     onPauseRequested,
     onStopRequested,
@@ -97,7 +99,7 @@
   const totalTimeDisplay = $derived(formatTime(playerState.duration));
 </script>
 
-<div class="music-player" class:disabled>
+<div class="music-player" class:disabled class:compact>
   <!-- Header row -->
   <div class="player-header">
     <div class="title">
@@ -191,6 +193,42 @@
   .music-player.disabled {
     opacity: 0.5;
     pointer-events: none;
+  }
+
+  .music-player.compact {
+    display: grid;
+    grid-template-areas:
+      "header transport"
+      "timeline transport";
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px var(--spacing-xs);
+    padding: var(--spacing-xs);
+  }
+
+  .music-player.compact .player-header {
+    grid-area: header;
+    min-width: 0;
+  }
+
+  .music-player.compact .title {
+    display: none;
+  }
+
+  .music-player.compact .status,
+  .music-player.compact .status > span {
+    min-width: 0;
+  }
+
+  .music-player.compact .timeline {
+    grid-area: timeline;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .music-player.compact .transport {
+    grid-area: transport;
+    align-self: center;
+    gap: 4px;
   }
 
   /* Header */

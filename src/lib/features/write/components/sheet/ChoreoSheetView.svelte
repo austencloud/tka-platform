@@ -57,7 +57,9 @@
   // Zoom changes only the stage drawing; the print geometry remains unchanged.
   const ZOOM_STEPS = [1, 1.25, 1.5, 2, 3] as const;
   type ViewMode = "reading" | "page";
+  type WorkspaceMode = "compose" | "play";
   const VIEW_MODE_KEY = "tka-choreo-view-mode";
+  const PLAYER_TRIGGER_ID = "choreo-play-act-trigger";
   type PictographSize = "large" | "standard" | "compact";
   const isAnnotated = $derived(builder.layout.packing === "aligned");
   const pictographSize = $derived<PictographSize>(
@@ -134,9 +136,14 @@
   }
   const initialPrefs = loadPickerPrefs();
 
-  let browseOpen = $state(initialPrefs.open);
-  let playerOpen = $state(initialPrefs.playerOpen);
-  let actsOpen = $state(initialPrefs.actsOpen);
+  let browseOpen = $state(initialPrefs.playerOpen ? false : initialPrefs.open);
+  let workspaceMode = $state<WorkspaceMode>(
+    initialPrefs.playerOpen ? "play" : "compose"
+  );
+  const playerOpen = $derived(workspaceMode === "play");
+  let actsOpen = $state(
+    initialPrefs.playerOpen ? false : initialPrefs.actsOpen
+  );
   let zoom = $state<number>(initialPrefs.zoom);
   const zoomIndex = $derived(
     Math.max(0, ZOOM_STEPS.indexOf(zoom as (typeof ZOOM_STEPS)[number]))
@@ -173,23 +180,26 @@
   function toggleBrowse(): void {
     browseOpen = !browseOpen;
     if (!browseOpen) return;
-    playerOpen = false; // docks are mutually exclusive — keep the page readable
+    exitPlayback();
     actsOpen = false;
   }
 
   function togglePlayer(): void {
-    playerOpen = !playerOpen;
     if (playerOpen) {
-      browseOpen = false;
-      actsOpen = false;
+      exitPlayback();
+      return;
     }
+    workspaceMode = "play";
+    actStepIndex = null;
+    browseOpen = false;
+    actsOpen = false;
   }
 
   function toggleActs(): void {
     actsOpen = !actsOpen;
     if (actsOpen) {
       browseOpen = false;
-      playerOpen = false;
+      exitPlayback();
     }
   }
 
@@ -372,6 +382,8 @@
   const workspaceNarrow = $derived(
     shouldStackSheetWorkspace(workspaceWidth, workspaceHeight)
   );
+  const workspacePhone = $derived(workspaceWidth > 0 && workspaceWidth <= 640);
+  const workspaceShort = $derived(workspaceHeight > 0 && workspaceHeight < 600);
   const workspaceWide = $derived(workspaceWidth >= 1680);
   const workspaceUltraWide = $derived(workspaceWidth >= 2600);
   const drawerSideBySide = $derived(workspaceWidth >= 1024);
@@ -405,6 +417,15 @@
   // sequence — matched against each cell's `actStepIndex` to light the
   // pictograph being animated. null when not playing.
   let actStepIndex = $state<number | null>(null);
+
+  function exitPlayback(restoreFocus = false): void {
+    workspaceMode = "compose";
+    actStepIndex = null;
+    if (!restoreFocus || typeof document === "undefined") return;
+    requestAnimationFrame(() => {
+      document.getElementById(PLAYER_TRIGGER_ID)?.focus();
+    });
+  }
 
   // Reading columns follow the stage, and the bands rebuild to match — the grid
   // renders exactly the count the bands were built with, so the two cannot drift.
@@ -456,11 +477,14 @@
   let railWidth = $state(loadRailWidth());
   let railStackHeight = $state(220);
   let railCollapsed = $state(loadRailCollapsed());
+  // Play is its own workspace state. It borrows the strip without mutating the
+  // user's saved rail preference, so closing the player restores their rail.
+  const railCollapsedForWorkspace = $derived(playerOpen || railCollapsed);
   const railStackMax = $derived(
     Math.max(148, Math.min(280, Math.round(workspaceHeight * 0.32)))
   );
   const railDisplaySize = $derived(
-    railCollapsed
+    railCollapsedForWorkspace
       ? RAIL_STRIP
       : workspaceNarrow
         ? Math.min(railStackHeight, railStackMax)
@@ -478,6 +502,10 @@
   }
 
   function toggleRailCollapse(): void {
+    if (playerOpen) {
+      exitPlayback();
+      return;
+    }
     railCollapsed = !railCollapsed;
     persistRail();
   }
@@ -627,7 +655,7 @@
     if (Math.abs(delta) > 3) railDragMoved = true;
     // A collapsed rail expands from the chevron or a double-click, not a drag —
     // dragging a 48px strip has no meaningful origin width.
-    if (railCollapsed) return;
+    if (railCollapsedForWorkspace) return;
     if (workspaceNarrow) {
       railStackHeight = Math.round(
         Math.min(railStackMax, Math.max(132, railDragOrigin + delta))
@@ -651,14 +679,19 @@
 
 <svelte:window
   onkeydown={(e) => {
-    if (e.key === "Escape" && builder.selectedSequenceId)
-      builder.clearSelection();
+    if (e.key !== "Escape") return;
+    if (playerOpen) {
+      e.preventDefault();
+      exitPlayback(true);
+    } else if (builder.selectedSequenceId) builder.clearSelection();
   }}
 />
 
 <div
   class="choreo-sheet-view"
   class:is-narrow={workspaceNarrow}
+  class:is-phone={workspacePhone}
+  class:is-playing={playerOpen}
   class:is-wide={workspaceWide}
   class:is-ultra-wide={workspaceUltraWide}
   bind:this={workspaceEl}
@@ -688,10 +721,11 @@
 
   <div class="sheet-body">
     <ChoreoSheetRail
-      collapsed={railCollapsed}
+      collapsed={railCollapsedForWorkspace}
       width={railDisplaySize}
       stacked={workspaceNarrow}
       dragging={railDragging}
+      playbackActive={playerOpen}
       {viewMode}
       onToggle={toggleRailCollapse}
       onViewMode={setViewMode}
@@ -725,22 +759,22 @@
     </Drawer>
 
     {#if playerOpen}
-      <div class="player-overlay">
-        <ActPlayer
-          sequence={builder.actSequence}
-          onClose={() => {
-            playerOpen = false;
-            actStepIndex = null;
-          }}
-          onStepChange={(stepIndex) => {
-            // Forwarded as-is, including while paused — the viewer keeps its
-            // playback highlight lit when you pause mid-sequence, so the sheet
-            // does too. AnimationPlayer already reports null once playback is
-            // back before the first beat, which is what clears it on stop.
-            actStepIndex = stepIndex;
-          }}
-        />
-      </div>
+      <ActPlayer
+        sequence={builder.actSequence}
+        stacked={workspaceNarrow}
+        playerFirst={workspacePhone}
+        constrainedHeight={workspaceShort}
+        wide={workspaceWide}
+        ultraWide={workspaceUltraWide}
+        onClose={() => exitPlayback(true)}
+        onStepChange={(stepIndex) => {
+          // Forwarded as-is, including while paused — the viewer keeps its
+          // playback highlight lit when you pause mid-sequence, so the sheet
+          // does too. AnimationPlayer already reports null once playback is
+          // back before the first beat, which is what clears it on stop.
+          actStepIndex = stepIndex;
+        }}
+      />
     {/if}
   </div>
 </div>
@@ -768,19 +802,6 @@
     height: min(78vh, 720px) !important;
   }
 
-  .player-overlay {
-    position: absolute;
-    inset-block: 0;
-    right: 0;
-    z-index: 4;
-    display: flex;
-    pointer-events: none;
-  }
-
-  .player-overlay > :global(*) {
-    pointer-events: auto;
-  }
-
   .sheet-body {
     position: relative;
     flex: 1;
@@ -795,5 +816,16 @@
      isn't `@container` on the root). */
   .choreo-sheet-view.is-narrow .sheet-body {
     flex-direction: column;
+  }
+
+  /* On a phone, Play becomes the body rather than squeezing a letter page and
+     the player into two unusable slivers. The preview stays mounted so zoom and
+     scroll state survive the round trip back to Compose. */
+  .choreo-sheet-view.is-playing.is-phone :global(.preview-pane) {
+    display: none;
+  }
+
+  .choreo-sheet-view.is-playing.is-phone .sheet-body {
+    overflow: hidden;
   }
 </style>
