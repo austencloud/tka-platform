@@ -1,144 +1,300 @@
 # First Fire Torch Procession: 3D Handoff (2026-08-06)
 
+## Status at a glance
+
+The creative design, measured floor plan, interaction state, Blender coordinate
+bridge, standalone Blender graybox, optimized review GLB, floor-plan review,
+and isolated first-person walk route now exist. Production museum integration
+has not started.
+
+The graybox is intentionally isolated from the live cave. It proves scale,
+route pacing, shrine separation, full-height sightline blockers, torch density,
+and the Fire-to-Earth state contrast without overwriting another session's
+museum work.
+
+![First Fire Blender graybox review](./2026-08-06-first-fire-graybox-review.webp)
+
+The contact sheet is ordered as overview, Water threshold, DJ, EK, FL, and the
+Earth route after complete red extinction. The flame cones and performer posts
+are spatial guides, not final art.
+
 ## Mission
 
 Replace the current First Fire amphitheater with the approved Torch Procession:
-a steam threshold from Water, an ember bridge, three isolated DJ, EK, and FL
-shrines, total red extinction, then a bounded green route into Earth. The
-governing design and measured plan are in the
+a steam threshold from Water, a short ember bridge, three isolated DJ, EK, and
+FL shrine habitats, total red extinction, then a bounded green route into
+Earth. The governing design is the
 [Torch Procession spec](./2026-08-06-first-fire-torch-procession-design.md).
-This handoff exists so the 3D pass can start from tested geometry and state
-rather than reinterpret the brainstorm.
 
-## Done: verified
+Tracker decision `jl8TveF5GrOgHsA2Vyfr` is accepted and completed. Fire is the
+sole three-performer cave exception. The three performers remain solo exhibits
+and may never share a performance sightline or acoustic field.
 
-- **Canon and governing spec, commit `994bb600be`.** Fire is the sole
-  three-performer cave exception. The previous amphitheater spec is archived,
-  and the story bible records the exception. Evidence: tracker decision
-  `jl8TveF5GrOgHsA2Vyfr` is accepted and completed; the tracker session
-  `vOJcIbVJ76gQCaEo4N9L` is completed.
-- **Measured floor plan, commit `994bb600be`.** The replacement has a 60 by 30
-  metre interior, three separated shrine footprints, alternating blind turns,
-  a continuous Water-to-Earth route, and exact room-relative coordinates.
-  Evidence: `first-fire-procession-plan.test.ts` proves the dimensions, compiled
-  authoring scale, route continuity, rock clearance, shrine separation,
-  performer-pair occlusion, and no dual-performer view across route samples
-  spaced 0.2 m apart.
-- **Resize proof, commit `994bb600be`.** The existing production shell compiles
-  to 46.5 by 20.5 m and cannot hold the measured plan. Evidence: the grid
-  integration test deliberately rejects it with the required and actual
-  dimensions in the error.
-- **Interaction state, commit `994bb600be`.** The pure state contract advances
-  DJ, EK, FL, extinction, and growth in order. Later overlapping trigger zones
-  imply earlier ones; repeat events are idempotent. Evidence:
-  `first-fire-procession-state.test.ts` covers order, missed boundaries,
-  repeated events, re-entry persistence, and new-run reset.
-- **Review drawing, commit `994bb600be`.** The SVG carries plan dimensions and
-  shrine centres as machine-checked metadata. Evidence: its XML parses, and the
-  plan test asserts the 60 by 30 m frame plus DJ (16.5, 8.5), EK (31.5, 21.5),
-  and FL (47, 8.5) coordinates.
-- **Regression suite, commit `994bb600be`.** Command:
-  `pnpm exec vitest run --config tests/config/vitest.config.ts tests/unit/museum/first-fire-procession-plan.test.ts tests/unit/museum/first-fire-procession-state.test.ts tests/unit/museum/first-fire-terrain.test.ts tests/unit/museum/first-fire-traversal.test.ts tests/unit/museum/vulcan-cave-floor-plan.test.ts`.
-  Result: 5 files passed, 59 tests passed.
-- **Copy and file validation, commit `994bb600be`.** Prettier passes on the new
-  TypeScript and spec, ESLint reports no source errors, the SVG parses as XML,
-  the inline plan JavaScript parses, and the task files have no trailing
-  whitespace. The documentation copy passes the project AI-pattern scan.
+## Review surfaces
 
-## Believed done: unverified
+- Interactive measured plan:
+  `https://localhost:5173/test/first-fire-floor-plan`
+- Walkable Blender graybox:
+  `https://localhost:5173/test/first-fire-graybox`
+- Route source:
+  `src/routes/test/first-fire-floor-plan/`
+- Walk route source:
+  `src/routes/test/first-fire-graybox/`
+- The walk route carries a local `+layout@.svelte` reset. Keep it. The product
+  app shell treats bare `/test/*` paths as invalid module URLs and rewrites them
+  to Create.
+- Static measured drawing:
+  `2026-08-06-first-fire-torch-procession-floor-plan.svg`
+- Blender review contact sheet:
+  `2026-08-06-first-fire-graybox-review.webp`
+- Editable generated Blender scene:
+  `blender/first-fire-torch-procession-graybox.blend`
+- Optimized review GLB:
+  `static/models/museum/cave/first-fire-torch-procession-graybox.glb`
 
-- The static drawing is structurally valid but has not been browser-rendered.
-  Browser use was not authorized in this conversation.
-- The plan has not been walked in first person. Geometry tests prove the 2D
-  contract, not camera-scale drama, torch density, ceiling composition, or the
-  emotional timing of extinction.
-- Audio isolation is specified and supported by the rock plan but has not been
-  measured in a running scene.
-- The 126-stem budget is a production ceiling, not a measured frame-time result.
+Austen reviewed the interactive floor-plan page on 2026-08-06 and said, "It's
+great." The standalone walk route loads the optimized Blender GLB and uses the
+shared Unified Camera Controller with Rapier collision derived from the same
+coordinate contract. It remains isolated from the live museum.
 
-## In flight
+## Sources of truth
 
-- Branch: `main`. Groundwork commit: `994bb600be`.
-- Production Fire integration has not started. The existing
-  `first-fire-layout.ts`, `vulcan-cave-floor-plan.ts`, and current amphitheater
-  tests still drive the live room.
-- Other sessions have uncommitted changes in `FirstFireGraybox.svelte`,
-  `EarthCanyonGraybox.svelte`, `Museum3DScene.svelte`,
-  `MuseumPerformerStation3D.svelte`, `museum-room-light-pool.ts`, room lifecycle,
-  streaming, and several other cave components. Do not overwrite or revert
-  them. Recheck status before editing.
-- The conversation-only interactive plan lives under this thread's
-  `.codex/visualizations` directory and is intentionally outside the project
-  commit. The canonical review asset is the SVG beside this handoff.
+| Concern                              | Authority                                          |
+| ------------------------------------ | -------------------------------------------------- |
+| Creative sequence and acceptance     | `2026-08-06-first-fire-torch-procession-design.md` |
+| Room-relative measured geometry      | `first-fire-procession-plan.ts`                    |
+| DJ to EK to FL room progression      | `first-fire-procession-state.ts`                   |
+| Blender axis and origin transform    | `first-fire-blender-contract.ts`                   |
+| Generated artist manifest            | `2026-08-06-first-fire-blender-plan.json`          |
+| Reproducible Blender scene authoring | `scripts/build-first-fire-graybox.py`              |
+| Runtime collision and triggers       | TypeScript plan and terrain contracts, not the GLB |
 
-## Loose ends, ranked
+Never hand-edit the generated JSON. Regenerate it from the TypeScript plan. The
+manifest and Blender scene both carry this source digest:
 
-1. **Rebase the plan onto the landed museum work.** Read the current diffs in
-   every overlapping file. Resolve ownership before editing.
-2. **Resize the Fire shell.** In `vulcan-cave-floor-plan.ts`, replace the old 62
-   by 27 authoring minimum with
-   `FIRST_FIRE_PROCESSION_AUTHORING_MINIMUM` from the new plan. Update the room
-   description and derive all three performer placements from the shrine
-   centres. Run the whole cave floor-plan and museum-walk suites because a
-   wider Fire room moves every downstream room.
-3. **Replace the terrain contract.** Rewrite `first-fire-layout.ts` around the
-   new plan's path sections, trench annuli, rock ribs, entrance hazards, and
-   exit growth path. Preserve the existing rule that physics and meshes consume
-   one geometry source. Replace amphitheater assertions in the existing terrain
-   and traversal tests; do not keep both layouts alive.
-4. **Build the graybox from the plan.** Render steam, bridge, torch ribbons,
-   three shrine pockets, trenches, rock ribs, and the final growth route. The
-   first target is spatial truth, not finished particles.
-5. **Wire one room-scoped state owner.** Use
-   `first-fire-procession-state.ts`. Expose active performer step index and
-   within-step progress through a narrow callback or adapter. Never synchronize
-   the three performers as an ensemble.
-6. **Add bounded effects.** Reuse tracked `FireRenderer3D` for moving prop
-   flames. Follow the existing museum `InstancedMesh` placement pattern for
-   repeated torch stems and low-cost flame cards. Reuse the room-light pool
-   after its current edit lands. Keep detailed fire on one shrine at a time.
-7. **Connect Earth without spending its reveal.** Extend the existing bent
-   grass gully only after every red source is gone. Growth remains on the final
-   shrine and transition path.
-8. **Run the full acceptance gate.** Terrain and sightline tests, museum walk,
-   typecheck, console pass, merged-scene draw calls and frame time, visual
-   frames, then Austen's first-person walk.
+`e674f006c4d133d28bf894c1b912560611cfe66edca1362a849d805d01f38f14`
 
-## Decisions already made
+## Blender coordinate contract
 
-- Austen locked the Torch Procession on 2026-08-06.
+The museum mounts authored room GLBs at the compiled room centre with rotation
+`[0, 0, 0]` and scale `1`. The nominal Fire interior is 60 by 30 metres, so the
+plan centre is `(30, 15)`.
+
+The authored transform is:
+
+```text
+Blender X = plan X - 30
+Blender Y = 15 - plan Z
+Blender Z = elevation
+```
+
+Blender's glTF export then maps Blender `(X, Y, Z)` to runtime `(X, Z, -Y)`.
+This returns the authored points to the runtime room-relative X/Z frame after
+the GLB is mounted at the room centre.
+
+| Anchor       |       Plan X/Z |     Blender X/Y/Z |
+| ------------ | -------------: | ----------------: |
+| Water door   |      `(0, 15)` |     `(-30, 0, 0)` |
+| DJ performer |  `(16.5, 8.5)` | `(-13.5, 6.5, 0)` |
+| EK performer | `(31.5, 21.5)` |  `(1.5, -6.5, 0)` |
+| FL performer |    `(47, 8.5)` |    `(17, 6.5, 0)` |
+| Earth door   |     `(60, 28)` |    `(30, -13, 0)` |
+
+`first-fire-blender-contract.test.ts` proves the inverse transform at twelve
+decimal places across every route point. It also locks the door and performer
+anchors, centred room bounds, collection names, and generated manifest digest.
+
+## Blender collection and export contract
+
+| Collection     | Owner and purpose                                                | Ships in `FF_` GLB |
+| -------------- | ---------------------------------------------------------------- | ------------------ |
+| `SHELL`        | Cave floor, perimeter, steam guides, route surfaces, Earth crack | Yes                |
+| `ROCK_RIBS`    | Full-height sightline blockers and return baffles                | Yes                |
+| `SHRINES`      | Three recessed habitat foundations                               | Yes                |
+| `TRENCHES`     | Fire trench rims and magma placeholders                          | Yes                |
+| `BRIDGE`       | Ember bed and uneven basalt crossing slabs                       | Yes                |
+| `TORCH_GUIDES` | 72 field stems plus 18 stems per shrine                          | Yes                |
+| `REFERENCE`    | Eye-height samples and blocked sightline rays                    | No                 |
+| `LOCATORS`     | Water/Earth doors and performer stand-ins                        | No                 |
+| `QA_ONLY`      | Seven cameras, review lights, and labels                         | No                 |
+
+Only mesh objects beginning with `FF_` are exported. The optimized GLB contains
+zero cameras and zero lights. Performer locators are deliberately excluded so
+the runtime automatons remain authoritative.
+
+The 126 stems share one mesh. The three flame guide families share three more.
+The optimized GLB uses four `EXT_mesh_gpu_instancing` nodes with instance counts
+of 126, 50, 38, and 38.
+
+## Rebuild from source
+
+Run these commands from the repository root in PowerShell:
+
+```powershell
+pnpm exec tsx scripts/export-first-fire-blender-plan.ts
+
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --background --factory-startup --python scripts/build-first-fire-graybox.py
+
+& "C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --background blender/first-fire-torch-procession-graybox.blend --python scripts/blender-export-glb.py -- --include FF_ --output artifacts/first-fire-graybox_raw.glb
+
+node scripts/optimize-first-fire-graybox-glb.mjs
+
+node scripts/verify-first-fire-graybox-glb.mjs
+```
+
+The Blender build uses `--factory-startup`. It does not touch the live Blender
+scene, which currently contains another session's Autumn work.
+
+The repository ignores `blender/` by policy because editable Blender files are
+large local build products. `scripts/build-first-fire-graybox.py` is the tracked
+editable source and regenerates the `.blend` deterministically from the checked
+in manifest. The optimized GLB is the tracked review artifact.
+
+## Verified evidence
+
+### Spatial and state package
+
+- Groundwork commit `994bb600be` contains the design, measured plan, state
+  model, floor-plan SVG, and original focused regression package.
+- The existing five-file regression command passed 59 tests at groundwork
+  handoff time.
+- The interactive review route consumes the same measured plan directly.
+- The current production Fire shell still rejects the plan at 46.5 by 20.5
+  metres. This is the intentional resize proof.
+
+### Coordinate bridge
+
+- Manifest generation completed with SHA-256 digest
+  `e674f006c4d133d28bf894c1b912560611cfe66edca1362a849d805d01f38f14`.
+- Focused coordinate and floor-plan suites pass after regeneration.
+- Water is at Blender X = -30, Earth is at X = 30, and the three performer
+  anchors match the measured plan.
+
+### Blender graybox
+
+- Blender 5.0.1 completed the headless build.
+- Exact room footprint: 60 by 30 metres.
+- Export meshes before instancing: 409.
+- Field torch stems: 72.
+- Perimeter torch stems: 54.
+- Required collections: 9 of 9.
+- Review renders: plan, overview, threshold, DJ, EK, FL, and Earth.
+- Fire-state renders hide green growth.
+- The Earth-state render hides all flame guides, magma, bridge embers, and red
+  review lights before showing the green crack.
+
+The machine-readable build report is regenerated at
+`artifacts/first-fire-graybox-report.json`.
+
+### Optimized GLB
+
+- File size: 188,232 bytes.
+- Scene count: 1.
+- Node count: 161.
+- Mesh count after GPU instancing: 155.
+- Material count: 15.
+- Cameras: 0.
+- Lights: 0.
+- `gltf-transform validate`: no errors and no warnings.
+- Extensions: `EXT_mesh_gpu_instancing`, `KHR_draco_mesh_compression`, and
+  `KHR_materials_emissive_strength`.
+
+The validator reports informational notes for extensions it cannot inspect and
+pruned intermediate buffer data. It reports no error or warning severity.
+
+## Runtime ownership boundary
+
+The review GLB is static visual geometry. It does not own collision, orbit
+triggers, progression, performer anchors, extinction, or session persistence.
+
+- Collision and walkability must continue to come from the TypeScript terrain
+  contract.
+- `first-fire-procession-state.ts` owns monotonic DJ, EK, FL, extinction, and
+  growth progression.
+- Runtime performer timing remains local to each shrine.
+- Final fire, smoke, steam, coals, and growth are dynamic runtime effects.
+- Placeholder flame cones, magma surfaces, and the green guide may be hidden or
+  removed when their runtime replacements land.
+
+`Museum3DScene.svelte` already mounts `roomPresentation.modelPath` at a room's
+compiled centre through `GltfAsset.svelte`. That loader supports Draco,
+Meshopt, and KTX2. Do not wire this GLB there until two conditions are met:
+
+1. The current overlapping museum edits have landed.
+2. Authored room GLBs are gated by the room lifecycle, or the Fire asset is
+   explicitly accepted as always resident. The current authored-room loop is
+   not obviously streamed by `RoomLifecycleManager`.
+
+## Current overlap gate
+
+These live museum files still contain uncommitted work from other sessions:
+
+- `FirstFireGraybox.svelte`
+- `EarthCanyonGraybox.svelte`
+- `Museum3DScene.svelte`
+- `MuseumPerformerStation3D.svelte`
+- `museum-room-light-pool.ts`
+- `room-lifecycle-manager.ts`
+
+Do not overwrite, revert, or route around those changes. Stay on `main`. No
+branch or worktree is authorized.
+
+## Next owner: start here
+
+1. Open `blender/first-fire-torch-procession-graybox.blend` and inspect the
+   collection structure, review cameras, door locators, performer locators, and
+   sightline rays.
+2. Walk the review mentally in this order: Water threshold, bridge, first torch
+   reveal, DJ orbit, blind transfer, EK orbit, blind transfer, FL orbit,
+   extinction, Earth crack.
+3. Preserve every measured anchor and full-height blocker while replacing
+   graybox forms with final cave geometry.
+4. Replace rectangular rib cores with credible cave mass. Do not reduce their
+   height or open performer-to-performer views.
+5. Keep Meshy limited to replaceable modules such as torch stems, basalt hero
+   ribs, bridge stones, or shrine artifacts. Do not generate the whole cave as
+   one asset.
+6. Re-run the builder and coordinate tests whenever plan geometry changes.
+7. Integrate into the museum only after the overlap gate clears.
+
+## Remaining production order
+
+1. Resize `cave-fire` in `vulcan-cave-floor-plan.ts` to the approved authoring
+   minimum and re-run the whole museum walk because downstream rooms move.
+2. Replace `first-fire-layout.ts` amphitheater assumptions with terrain,
+   trenches, blockers, route probes, and three performer anchors derived from
+   the procession plan.
+3. Decide whether the final GLB replaces or dresses the tile shell. Collision
+   remains plan-driven either way.
+4. Mount the authored scene behind room lifecycle gating.
+5. Add one room-scoped progression coordinator.
+6. Add bounded fire, steam, smoke, coal, blackout, growth, and audio effects.
+7. Connect Earth's existing bent gully without exposing the canyon early.
+8. Run terrain, sightline, traversal, museum walk, typecheck, console, visual,
+   draw-call, light-count, and frame-time verification.
+9. Austen walks the merged room first-person before final art is accepted.
+
+## Decisions that must not drift
+
 - The order is Water steam threshold, ember bridge, DJ, EK, FL, total red
-  extinction, green ring, then Earth.
-- The maze creates pressure without real dead ends or traps.
-- Each shrine has a 240-degree orbit outside a narrow fire trench.
-- DJ, EK, and FL remain separate solo encounters. No shared performance
-  sightline or acoustic field is allowed.
-- Completed flames collapse to low coals while the automaton keeps moving.
-- FL extinguishes all red fire before any green appears.
-- The green response comes from Earth's existing bent gully and stays bounded.
-- No production 3D file may be edited around another session's uncommitted work.
+  extinction, green response, then Earth.
+- The maze creates pressure without dead ends or traps.
+- Each shrine has a 240-degree visitor orbit outside a narrow fire trench.
+- DJ, EK, and FL never share a performance sightline or acoustic field.
+- Completed tall flames collapse to low coals while the performer keeps moving.
+- FL extinguishes every red source before any green appears.
+- Green comes from Earth's existing gully and remains bounded to the final
+  shrine and exit route.
+- Backtracking remains possible.
+- The graybox is a measured production scaffold, not the final art target.
 
-## Gotchas
+## Known limitations
 
-- `buildFirstFireProcessionPlanForGrid()` is supposed to throw against the
-  current cave. That is the resize proof, not a failing implementation.
-- `FirstFireGraybox.svelte` consumes the old amphitheater-shaped
-  `FirstFireLayout`. Importing the new plan before replacing that renderer will
-  not produce a partial upgrade.
-- The east Fire door is south-aligned. Preserve it. The long green bend from FL
-  to that door is what prevents Fire from exposing Earth's canyon early.
-- Four activation zones overlap by 20 degrees. The state reducer advances to
-  the highest reached zone, which is how it avoids a missed-trigger soft lock.
-- The current room-light pool file is dirty. Inspect the landed contract instead
-  of coding against today's two-slot implementation.
-- The tracked `FireRenderer3D` models flames born at moving prop tips. It is not
-  the field-torch solution.
-- Shared particle-pool work is currently untracked and owned elsewhere. Do not
-  make Fire depend on it until it lands.
-- Full `pnpm exec tsc --noEmit --pretty false` is not green in the shared
-  checkout. It reports unrelated in-flight errors in Browse, Choreo Cards, Lab,
-  keyboard, pictograph, and museum files such as `museum-walk.ts` and
-  `museum-geometry-builder.ts`. None of the errors reference the four new Fire
-  source or test files. The focused 59-test suite is green.
-- Port 5173 belongs to Austen. Do not restart it. Browser interaction still
-  needs Austen's permission under the repository rules.
+- The room has not been walked first-person in the merged museum.
+- The Blender steam, flames, magma, and growth are visual stand-ins.
+- The performer locators prove scale and placement, not animation or prop
+  clearance.
+- Audio isolation has not been measured.
+- Runtime frame time and light pooling have not been measured.
+- The final cave ceiling and vertical silhouette need an artist pass.
+- The optimized GLB is not yet referenced by production room data.
