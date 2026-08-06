@@ -140,19 +140,67 @@ owl. The governing plan is
   `6B56AC7DFBE127C3E900602CF72F5FA5EEFFFD0FBAEB761C223D81210341802E`.
   Focused tests remain 30/30, `pnpm check` remains 0 errors and 0 warnings, and
   HTTPS probes return 200 with the exact 13,080,804-byte asset response.
+- The final runtime-inspected asset is the uncommitted working-tree build from
+  2026-08-06. Its Blender validator reports 54 ferns, 15 boulders, 1,800 fixed
+  leaf cards, 2,000 grass clumps, 16 mushroom clusters, 150 twigs, zero
+  forbidden-placement collisions, and the exact rear-belt distribution
+  `{'Birch': 5, 'Larch': 4, 'Snag': 5, 'Willow': 3}`. The optimized GLB is
+  14,166,492 bytes (13.51 MiB), SHA-256
+  `89AC8CB48C23D3AC43F70C5619EA4306B908257C1942C2AD475D867D8FE88189`,
+  with meshopt, WebP textures, quantization, and 5 GPU-instance batches holding
+  16 repeated objects.
+- The floor's final runtime pass removes the eight broad golden/cool overlay
+  meshes because browser inspection proved that their borders read as flat
+  cut-outs. Macro variation now comes from the physical leaf-card drifts, moss
+  islands, understory, packed performance clearing, and tile-safe woodland
+  albedo. The floor materials connect their baked color-grade images directly
+  to Principled Base Color so glTF does not discard a Blender-only grading node.
+  Evidence: the final integrated frame at
+  `C:\Users\Austen\AppData\Local\Temp\codex-autumn-s0k3-front-balanced-1920.webp`
+  shows continuous soil, leaf-scale edges, readable deck contact, the moon
+  centered in the protected opening, and six tree silhouettes across the hero
+  and rear tiers.
+- Final live Composer verification is complete in the task-owned DevTools tab
+  on `https://localhost:5173/create/construct?v=S0K3`. Desktop screenshots were
+  inspected at 1920x1080, 2560x1440, 3840x2160, and 1440x900:
+  `codex-autumn-s0k3-front-balanced-1920.webp`,
+  `codex-autumn-s0k3-2560.webp`, `codex-autumn-s0k3-3840.webp`, and
+  `codex-autumn-s0k3-1440.webp` in the Windows temp directory. The real Composer
+  route proves performer feet meet the stage deck and that the moon, pond,
+  varied rear belt, leaf drifts, grass, ferns, logs, rocks, and hero trees render
+  together without visible loading or scene errors.
+- The environment-only responsive sweep is complete at 820x1180, 960x412, and
+  375x667 because the real Composer intentionally switches to its dedicated
+  mobile viewer at small widths. Inspected evidence lives at
+  `codex-autumn-harness-820x1180.webp`,
+  `codex-autumn-harness-960x412.webp`, and
+  `codex-autumn-harness-375x667.webp` in the Windows temp directory. Portrait
+  keeps the stage centered between the tree walls; landscape reveals the full
+  pond-to-stage clearing with no clipping or blank canvas.
+- Runtime evidence is stable after quality adaptation. The final live route
+  settled at 30 fps on the low adaptive tier, with repeated
+  33.3 ms frame windows and update callbacks averaging about 0.15 ms. A direct
+  browser HEAD request returned HTTP 200, `model/gltf-binary`, and the exact
+  14,166,492-byte content length for the final GLB. One separate resource
+  request returned HTTP 429 on the full Composer route; the Autumn harness had
+  no console warnings or errors.
+- Final verification is green on the uncommitted implementation. Evidence:
+  `pnpm vitest run --config tests/config/vitest.config.ts tests/unit/3d-autumn/autumn-scene-layout.test.ts tests/unit/3d/stage-coordinate-frame.test.ts`
+  passed 30/30 tests, `pnpm check` reported 0 errors and 0 warnings,
+  `python -m py_compile scripts/build-autumn-environment.py` passed, and
+  `git diff --check` passed for the changed Autumn code and handoff.
 
 ## Believed done — unverified
 
-- The real app should now render the authored mushroom rings only once, reveal
-  cumulative grass density by quality tier, bend grass from root-weight UVs,
-  show the owl statically integrated with its tree, frame a low moon and stars through the
-  rear opening, and distribute fireflies around the pond plus both mushroom
-  rings. These code paths typecheck and their pure layout contracts are tested.
-  The first two integrated passes have user-supplied visual proof. The newest
-  deck-coordinate correction, six-family 17-tree horizon belt, larger floor UV
-  scale, 1,800-card leaf drifts, denser dusk fog, and baked owl-tree connector are
-  code-/asset-verified and hot served but still need a fresh real-app screenshot
-  because this Codex session's Chrome DevTools MCP transport remains closed.
+- The owl's baked branch contact is proven in the close Blender QA image, but
+  the owl is intentionally tiny in the full Composer composition. A reviewer
+  should use the QA image rather than expecting talon contact to read at the
+  performance camera distance.
+- Recording/export performance was not profiled. Interactive playback settled
+  at 30 fps after adaptive quality moved to low, but capture mode may add load.
+- The exact request behind the Composer route's HTTP 429 was not
+  identified. It did not occur in the isolated Autumn harness and did not block
+  the environment GLB, moon, stars, performers, stage, or runtime systems.
 
 ## In flight
 
@@ -162,12 +210,12 @@ owl. The governing plan is
   preceding ecology rebuild are uncommitted and belong to this workstream;
   unrelated dirty files belong to other live sessions and must not be staged,
   reverted, or reformatted.
-- This handoff and its governing plan are isolated in a scoped local commit;
-  inspect `HEAD` for its SHA. Implementation files remain uncommitted.
-- Current implementation step: inspect the integrated app at every required
-  viewport, rebuild the environment with a varied distant tree belt, physically
-  attach the owl perch to a hero-tree branch, strengthen foreground leaf drifts,
-  then collect screenshots plus console/frame evidence.
+- Earlier handoff updates are isolated in scoped local commits `fb87cb0436`,
+  `807f9c7904`, and `697bea0f40`. Implementation files remain uncommitted.
+- Current implementation state: the final asset, lighting, direct glTF floor
+  material path, integrated browser proof, responsive harness proof, frame
+  evidence, and test evidence are complete. This doc is being updated for the
+  Fapel and Opus review requested by Austen.
 - Publishing note: `main` was already three commits ahead of `origin/main` with
   unrelated ghost-system commits (`5b1d123b0c`, `e3a0b07518`, `8d1ba89880`). A
   handoff commit may be created locally with explicit pathspecs, but pushing it
@@ -196,36 +244,31 @@ owl. The governing plan is
 
 ## Loose ends (ranked)
 
-1. Refresh the real app and confirm the stage deck meets the performer's feet,
-   the owl's baked branch visibly enters the hero tree, the moon opening stays
-   clear, and the new horizon belt removes barren floor without becoming a wall.
-2. Complete the seven-viewport visual pass and iterate until the performer,
-   floor, pond, moon, owl, grass, and ecological pockets read cleanly.
-3. Capture fresh console and frame-stat evidence from the final runtime.
-4. Replace this provisional handoff evidence with exact screenshot paths and
-   implementation commit SHAs. Push the handoff after the unrelated ahead
-   commits are resolved.
+1. Fapel and Opus should judge the final integrated desktop frame, the three
+   responsive harness frames, and the five Blender close QA views. If they ask
+   for more floor variation, add or reshape physical leaf-card drift centers;
+   do not restore broad overlay meshes.
+2. Profile recording/export mode separately if the next review includes video
+   capture. Interactive playback is already measured.
+3. Trace the Composer route's HTTP 429 as a separate application-infrastructure
+   issue if it remains reproducible.
+4. Commit the implementation with explicit Autumn-only pathspecs after the
+   owning session confirms the current shared worktree scope. Push this handoff
+   only after the unrelated commits already ahead of `origin/main` are resolved.
 
 ### Browser resume recipe
 
-1. Restart Codex so the Chrome DevTools MCP transport is recreated.
-2. Reuse the shared browser with
+1. Reuse the shared browser with
    `pwsh -NoProfile -File scripts/launch-chrome-debug.ps1 -Url about:blank`.
-3. Create one background tab for `https://localhost:5173/create/construct?v=S0K3`
+2. Create one background tab for `https://localhost:5173/create/construct?v=S0K3`
    and retain its page ID for every call.
-4. Wait for the loading curtain to clear, then capture 1920x1080, 2560x1440,
-   3840x2160, 1440x900, 820x1180, 960x412, and 375x667 with per-page viewport
-   emulation. Clear emulation and close only that task-owned tab afterward.
-5. Inspect console errors/warnings, verify the three `Autumn_Grass_*` objects,
-   `Autumn_Owl_Tree_Connector`, and `Autumn_Owl_Perch_0.007` at runtime, and
-   capture fresh frame statistics.
-
-The shared debug Chrome itself was healthy on port 9222. Both `new_page` and
-`list_pages` failed with `Transport closed`. Independent HTTPS checks returned
-200 for the route and all changed Svelte modules. After the final varied-tree
-pass, HTTPS checks returned 200 for `AutumnScene.svelte` (17,377 bytes), the
-coordinate-frame module (6,729 bytes), and the 13,080,804-byte environment
-GLB.
+3. Switch 3D Scene to Autumn, choose the Front camera, close the camera panel,
+   and zoom out four small wheel increments. That reproduces the final desktop
+   composition without mutating Austen's visible browser window.
+4. For environment-only responsive review, use
+   `https://localhost:5173/test/autumn-scene`; the full Composer enters its
+   dedicated mobile viewer at small widths.
+5. Clear emulation and close only the task-owned tab when finished.
 
 ## Decisions already made
 
@@ -251,9 +294,13 @@ GLB.
 - Browser verification must use `scripts/launch-chrome-debug.ps1`, one
   task-owned background tab, explicit page IDs, and per-page viewport emulation.
   Never resize the shared Chrome window.
-- A previous 960x412 screenshot attempt lost the DevTools transport after the
-  loading veil. The next pass must prove that viewport rather than recycling
-  the incomplete frame.
+- Fresh harness navigations can spend about 20 seconds behind the app's
+  `Resolving services` or `Connecting to cloud` curtain even when the route and
+  GLB are healthy. Wait for the curtain instead of treating it as a render
+  failure.
+- At small widths the full Composer route enters its dedicated mobile viewer.
+  The Autumn environment's 820x1180, 960x412, and 375x667 evidence therefore
+  comes from the isolated real-component harness.
 - The Blender MCP add-on disappears if the builder calls factory reset. The
   builder uses `reset_scene_contents()` to remove data without disabling the
   add-on.
