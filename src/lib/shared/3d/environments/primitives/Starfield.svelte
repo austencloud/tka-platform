@@ -7,7 +7,7 @@
     ShaderMaterial,
     AdditiveBlending,
   } from "three";
-  import type { StarfieldConfig } from "../../domain/models/scene-configs";
+  import type { StarfieldConfig } from "../domain/models/scene-configs";
 
   interface Props {
     config: StarfieldConfig;
@@ -121,7 +121,10 @@
     geo.setAttribute("position", new Float32BufferAttribute(positions, 3));
     geo.setAttribute("aSize", new Float32BufferAttribute(sizes, 1));
     geo.setAttribute("aPhase", new Float32BufferAttribute(phases, 1));
-    geo.setAttribute("aBrightness", new Float32BufferAttribute(brightnesses, 1));
+    geo.setAttribute(
+      "aBrightness",
+      new Float32BufferAttribute(brightnesses, 1)
+    );
 
     const mat = new ShaderMaterial({
       uniforms: {

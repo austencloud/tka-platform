@@ -147,6 +147,10 @@ export interface VoidPlatformConfig {
 
 export interface ForestSceneConfig {
   sky: SkyGradientConfig;
+  /** Distant stars visible through the forest canopy. */
+  starfield?: StarfieldConfig | null;
+  /** Camera-facing moon in the night sky. */
+  moon?: MoonConfig | null;
   fog: FogConfig;
   ground: GroundConfig;
   /** Falling leaves. */
@@ -634,6 +638,16 @@ export interface StarfieldConfig {
   twinkleSpeed: number;
 }
 
+export interface MoonConfig {
+  enabled: boolean;
+  texture: string;
+  position: [number, number, number];
+  diameter: number;
+  opacity: number;
+  glowScale: number;
+  glowOpacity: number;
+}
+
 export interface CosmicSceneConfig {
   sky: SkyGradientConfig;
   fog: FogConfig;
@@ -750,6 +764,22 @@ export function createDefaultForestFireflyConfig(): ForestSceneConfig {
       midColor: "#1a4a5a",
       bottomColor: "#0d2218",
     },
+    starfield: {
+      enabled: true,
+      count: 700,
+      radius: 90,
+      sizeRange: [0.35, 1.5],
+      twinkleSpeed: 0.55,
+    },
+    moon: {
+      enabled: true,
+      texture: "/textures/moon.png",
+      position: [-22, 28, 58],
+      diameter: 7,
+      opacity: 0.9,
+      glowScale: 1.18,
+      glowOpacity: 0.12,
+    },
     fog: { color: "#0a1210", density: 0.034 },
     ground: {
       color: "#99aa88",
@@ -803,6 +833,8 @@ export function createDefaultForestAutumnConfig(): ForestSceneConfig {
       midColor: "#b5522a",
       bottomColor: "#3d1a10",
     },
+    starfield: null,
+    moon: null,
     fog: { color: "#1a1008", density: 0.028 },
     ground: {
       color: "#ddccbb",

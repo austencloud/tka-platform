@@ -15,6 +15,8 @@
   import TexturedGroundPlane from "../primitives/TexturedGroundPlane.svelte";
   import GroundPlane from "../primitives/GroundPlane.svelte";
   import SkyGradient from "../primitives/SkyGradient.svelte";
+  import Starfield from "../primitives/Starfield.svelte";
+  import MoonBillboard from "../primitives/MoonBillboard.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
   import type { ForestVariant } from "../domain/enums/environment-enums";
   import {
@@ -244,6 +246,14 @@
   midColor={activeConfig.sky.midColor}
   bottomColor={activeConfig.sky.bottomColor}
 />
+
+{#if activeConfig.starfield}
+  <Starfield config={activeConfig.starfield} />
+{/if}
+
+{#if activeConfig.moon}
+  <MoonBillboard config={activeConfig.moon} />
+{/if}
 
 {#if activeConfig.ground.textured && activeConfig.ground.diffuseMap}
   <TexturedGroundPlane

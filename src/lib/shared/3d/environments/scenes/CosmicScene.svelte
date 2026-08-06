@@ -11,7 +11,7 @@
   import EnergyParticles from "./cosmic/EnergyParticles.svelte";
   import MeteorStreaks from "./cosmic/MeteorStreaks.svelte";
   import EarthGodRays from "./cosmic/EarthGodRays.svelte";
-  import Starfield from "./cosmic/Starfield.svelte";
+  import Starfield from "../primitives/Starfield.svelte";
   import type { CosmicVariant } from "../domain/enums/environment-enums";
   import {
     type CosmicSceneConfig,
