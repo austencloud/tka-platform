@@ -106,7 +106,9 @@ Firestore rules provide defense in depth:
 - a recipient can read only their own share grant;
 - an owner can list grants for their collection;
 - collection reads allow owner, public, admin, or an existing grant;
-- editor updates are limited to collection presentation and membership fields;
+- direct editor updates are limited to collection presentation fields;
+- membership changes stay behind the callable so sequence ownership and
+  visibility are validated before the collection can reference them;
 - access, public state, ownership, system type, and deletion remain owner-only;
 - private sequence documents are not opened broadly. Shared member loading stays
   behind the callable authorization check.

@@ -767,14 +767,28 @@ describe("collections: person-specific viewer and editor grants", () => {
     await assertFails(updateDoc(doc(db, collectionPath), { name: "Nope" }));
   });
 
-  it("lets editors change presentation and membership fields", async () => {
+  it("lets editors change presentation fields", async () => {
     await seedSharedCollection();
     const db = userCtx(EDITOR).firestore(SDK_SETTINGS);
     await assertSucceeds(
       updateDoc(doc(db, collectionPath), {
         name: "Edited together",
-        sequenceIds: ["s1", "s2"],
-        sequenceOwnerIds: { s1: OWNER, s2: EDITOR },
+        color: "#654321",
+        updatedAt: new Date(),
+      })
+    );
+  });
+
+  it("keeps membership writes behind the validated callable boundary", async () => {
+    await seedSharedCollection();
+    const db = userCtx(EDITOR).firestore(SDK_SETTINGS);
+    await assertFails(
+      updateDoc(doc(db, collectionPath), {
+        sequenceIds: ["s1", "private-victim-sequence"],
+        sequenceOwnerIds: {
+          s1: OWNER,
+          "private-victim-sequence": STRANGER,
+        },
         sequenceCount: 2,
         updatedAt: new Date(),
       })

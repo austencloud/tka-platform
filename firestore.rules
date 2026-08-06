@@ -793,15 +793,16 @@ service cloud.firestore {
         && (request.resource.data.isPublic != true || isFullUser());
 
       // Owners retain the existing publish gate. Editors may change only the
-      // shared collection's presentation and ordered membership. Access,
-      // ownership, public state, system markers, and deletion stay owner-only.
+      // shared collection's presentation. Membership goes through the callable
+      // so sequence ownership and public/private visibility are validated.
+      // Access, ownership, public state, system markers, and deletion stay
+      // owner-only.
       allow update: if (isOwner(userId)
           && (request.resource.data.isPublic != true || isFullUser()))
         || (isAuthenticated()
           && get(/databases/$(database)/documents/users/$(userId)/collections/$(collectionId)/shares/$(request.auth.uid)).data.role == 'editor'
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'name', 'description', 'coverImageUrl', 'color', 'icon',
-            'sequenceIds', 'sequenceOwnerIds', 'sequenceCount', 'updatedAt'
+            'name', 'description', 'coverImageUrl', 'color', 'icon', 'updatedAt'
           ]));
 
       // Deleting never publishes anything; owner-only regardless of isPublic.
