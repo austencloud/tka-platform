@@ -52,7 +52,7 @@ import type { RenderCanvas } from "$lib/shared/render/services/types";
 import { Canvas2DDirectRenderer } from "$lib/shared/render/services/canvas-2d-direct-renderer";
 import { drawStepNumber } from "$lib/shared/render/services/step-number-renderer";
 import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
-import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+import { settingsService as propSettings } from "$lib/shared/settings/state/settings-state.svelte";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 const PRINT_DPI = 300;
@@ -176,8 +176,8 @@ export async function buildChoreoSheetPDF(
 
   // Match the live preview's prop types — PictographContainer falls back to the
   // user's settings when no override is given, so the print uses the same.
-  const blueProp = settingsService.settings.bluePropType ?? PropType.STAFF;
-  const redProp = settingsService.settings.redPropType ?? PropType.STAFF;
+  const blueProp = propSettings.settings.bluePropType ?? PropType.STAFF;
+  const redProp = propSettings.settings.redPropType ?? PropType.STAFF;
 
   const renderer = new Canvas2DDirectRenderer();
   await renderer.initialize();

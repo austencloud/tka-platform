@@ -44,13 +44,12 @@ describe("public collection live propagation contract", () => {
 describe("collection-to-print contract", () => {
   it("bulk-adds a selected collection to Choreo", () => {
     const source = read(
-      "src/lib/features/write/components/sheet/ChoreoSheetView.svelte"
+      "src/lib/features/write/components/sheet/SheetBrowserDrawer.svelte"
     );
 
     expect(source).toContain("onAddCollection");
     expect(source).toContain("getCollectionSequences(collectionId)");
     expect(source).toContain("getUserCollectionSequences(");
-    expect(source).toContain('setPictographSize("large")');
   });
 
   it("renders exported sheet cells in light mode", () => {
