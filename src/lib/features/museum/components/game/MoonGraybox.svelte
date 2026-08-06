@@ -28,8 +28,12 @@
    * still.
    */
   import { T } from "@threlte/core";
-  import { onDestroy } from "svelte";
+  import { useKtx2 } from "@threlte/extras";
+  import { onDestroy, onMount } from "svelte";
   import {
+    RepeatWrapping,
+    SRGBColorSpace,
+    type Texture,
     BoxGeometry,
     CylinderGeometry,
     DirectionalLight,
@@ -76,18 +80,21 @@
   // Regolith is not grey-blue moonlight — that is what the Moon looks like from
   // Earth, through air. Standing on it, it is a warm-neutral dust, and the only
   // reason it reads as cold is that nothing is scattering the light.
-  const REGOLITH = "#8e8a82";
-  const RIM_ROCK = "#4b4741";
+  // Tints, not colours: every one of these multiplies the regolith diffuse map,
+  // so they sit near white and let the texture carry the tone. Before the map
+  // landed they WERE the colour and were correspondingly darker.
+  const REGOLITH = "#d6d1c7";
+  const RIM_ROCK = "#8b867e";
   /** The Sun's stone, carried up through the floor. Warmer than anything else here. */
   const SUN_STONE = "#b4a184";
-  const MOUND = "#9a958b";
+  const MOUND = "#cbc6bc";
   const SHAFT = "#151312";
   const KEY_COLOUR = "#ffffff";
 
   /** The outer regolith. Read at distance under the same hard key, so it is a
    *  shade down from the chamber floor rather than a different rock. */
-  const OUTER_REGOLITH = "#7d7a73";
-  const OUTER_ROCK = "#6b6760";
+  const OUTER_REGOLITH = "#c6c1b8";
+  const OUTER_ROCK = "#b0aba2";
 
   /** How high the crater rim stands. Below eye height on purpose — it is the
    *  lip of the crater you are standing in, not a wall. Standing on the plain
@@ -164,9 +171,104 @@
 
   type MaterialKey = keyof typeof materials;
 
+  /**
+   * The regolith surface itself, taken from the Cosmic scene rather than
+   * invented here. `cosmic-reliquary.glb`'s terrain wears an authored
+   * `AR_LunarRegolith` material — 1024² diffuse, normal and roughness, all
+   * KTX2 — and that IS the moon ground Austen means when he points at the 3D
+   * scene. The three maps were lifted straight out of the GLB into
+   * `static/textures/moon-regolith/`, so this room and that scene are the same
+   * dust rather than two people's guesses at grey.
+   *
+   * The GLB's own terrain is a 68 m patch with the texture stretched across it
+   * once. Here it TILES instead, which is what lets the same surface cover 420
+   * m without turning to mush underfoot: every consumer picks a tile size in
+   * METRES and the repeat is derived from its UV convention, because the
+   * geometries disagree about that — ShapeGeometry writes UVs in world units,
+   * everything else writes 0..1 across the shape.
+   */
+  const REGOLITH_MAPS = "/textures/moon-regolith";
+  const ktx2 = useKtx2("/basis/");
+
+  interface RegolithSet {
+    map: Texture;
+    normalMap: Texture;
+    roughnessMap: Texture;
+  }
+
+  /** Loaded once; every surface gets cheap clones that share these images. */
+  let sourceMaps = $state<RegolithSet | null>(null);
+  const clones: Texture[] = [];
+
+  function loadMap(file: string, srgb: boolean): Promise<Texture> {
+    return new Promise((resolve, reject) => {
+      ktx2.load(
+        `${REGOLITH_MAPS}/${file}`,
+        (tex) => {
+          if (srgb) tex.colorSpace = SRGBColorSpace;
+          tex.wrapS = RepeatWrapping;
+          tex.wrapT = RepeatWrapping;
+          resolve(tex);
+        },
+        undefined,
+        reject
+      );
+    });
+  }
+
+  onMount(async () => {
+    try {
+      const [map, normalMap, roughnessMap] = await Promise.all([
+        loadMap("diffuse.ktx2", true),
+        loadMap("normal.ktx2", false),
+        loadMap("roughness.ktx2", false),
+      ]);
+      sourceMaps = { map, normalMap, roughnessMap };
+    } catch (error) {
+      // The room is fully legible on its flat colours; the texture is the
+      // finish, not the geometry. Losing it must not take the Moon down.
+      console.warn("[MoonGraybox] lunar regolith maps failed to load", error);
+    }
+  });
+
+  /** @param repeat Tiles across this surface's own UV space. */
+  function dressed(target: MeshStandardMaterial, repeat: number): void {
+    if (!sourceMaps) return;
+    for (const key of ["map", "normalMap", "roughnessMap"] as const) {
+      const tex = sourceMaps[key].clone();
+      tex.needsUpdate = true;
+      tex.repeat.set(repeat, repeat);
+      clones.push(tex);
+      target[key] = tex;
+    }
+    target.needsUpdate = true;
+  }
+
+  /**
+   * How many metres one tile of regolith covers. Small enough that a visitor
+   * standing on the plain sees grain, large enough that the mare is not a moiré
+   * pattern at 400 m.
+   */
+  const TILE_M = 5;
+
+  $effect(() => {
+    if (!sourceMaps) return;
+    // ShapeGeometry's UVs are the vertex coordinates, so its UV unit is one
+    // metre and the repeat is the inverse of the tile size.
+    dressed(materials.regolith, 1 / TILE_M);
+    // Everything below writes UVs across 0..1, so the repeat is the surface's
+    // own span divided by the tile.
+    dressed(materials.outerRegolith, (OUTER_PLAIN_RADIUS * 2) / TILE_M);
+    dressed(materials.outerRock, 4);
+    dressed(materials.rim, 6);
+    dressed(materials.mound, 2);
+  });
+
   onDestroy(() => {
     unitBox.dispose();
     for (const m of Object.values(materials)) m.dispose();
+    for (const t of clones) t.dispose();
+    if (sourceMaps) for (const t of Object.values(sourceMaps)) t.dispose();
   });
 
   const cx = (r: WorldRect) => (r.minX + r.maxX) / 2;
@@ -510,7 +612,10 @@
     );
     key.target.position.set(layout.centre.x, 0, layout.centre.z);
     key.target.updateMatrixWorld();
-    key.intensity = lit ? 4.2 : 0;
+    // Raised from 4.2 when the regolith maps landed: the authored diffuse is a
+    // dark basalt and the flat-colour figure was lighting a much brighter
+    // surface. Sunlight on the Moon is not dim — it is unscattered.
+    key.intensity = lit ? 6 : 0;
   });
 </script>
 
