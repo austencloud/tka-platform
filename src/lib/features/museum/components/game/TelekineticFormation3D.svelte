@@ -22,6 +22,8 @@
     effectId?: string | null;
     /** Hide the centre staffs and leave only the effect trace. */
     showProps?: boolean;
+    /** Cap the overlaid centre rigs. See CovenStation.centerPlanes. */
+    centerPlanes?: number;
   }
   const props: Props = $props();
 
@@ -52,4 +54,5 @@
   presentation={props.presentation}
   scale={props.scale}
   showProps={props.showProps ?? true}
+  centerPlanes={props.centerPlanes}
 />

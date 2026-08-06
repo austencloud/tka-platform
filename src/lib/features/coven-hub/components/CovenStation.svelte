@@ -56,6 +56,13 @@
      * draws itself. Avatars are already off on the centre rigs.
      */
     showProps?: boolean;
+    /**
+     * Cap the overlaid centre rigs (default: all six — three planes, each with
+     * its mirror). Lower it when many stations share one canvas: six rigs per
+     * station is six EffectOrchestrator3D mounts, and a grid of sixteen
+     * stations is ninety-six of them.
+     */
+    centerPlanes?: number;
   }
   const props: Props = $props();
   const stationId = props.stationId;
@@ -155,9 +162,10 @@
 
   // hero: all 6 center + 6 acolytes. idle/frozen: only the first center rig.
   const visibleCenter = $derived(
-    presentation === "sculpture" || lod === "hero"
+    (presentation === "sculpture" || lod === "hero"
       ? centerInstances
       : centerInstances.slice(0, 1)
+    ).slice(0, props.centerPlanes ?? CENTER_PLANES.length)
   );
   const showAcolytes = $derived(presentation === "ritual" && lod === "hero");
   const stationPlaying = $derived(lod !== "frozen");
