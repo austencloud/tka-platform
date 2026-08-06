@@ -106,8 +106,7 @@
         handleCancel();
       }, 1500);
     } catch (e: unknown) {
-      const msg =
-        e instanceof Error ? e.message : String(e);
+      const msg = e instanceof Error ? e.message : String(e);
       if (msg === "WRONG_PASSWORD") {
         errorMessage = "Current password is incorrect";
         hapticService?.trigger("error");
@@ -137,7 +136,7 @@
     <div in:fade={{ duration: 200, delay: 150 }} out:fade={{ duration: 120 }}>
       <button class="button button--secondary" onclick={handleExpand}>
         <i class="fas fa-lock" aria-hidden="true"></i>
-        Change Password
+        Change password
       </button>
     </div>
   {:else}
@@ -160,9 +159,13 @@
           </div>
         {/if}
 
-        <div class="field stagger-field" class:revealed={formRevealed} style="--stagger: 0">
+        <div
+          class="field stagger-field"
+          class:revealed={formRevealed}
+          style="--stagger: 0"
+        >
           <label class="field-label" for="current-password">
-            Current Password
+            Current password
           </label>
           <div class="input-wrapper">
             <input
@@ -180,7 +183,9 @@
               type="button"
               class="toggle-visibility"
               onclick={toggleCurrentPassword}
-              aria-label={showCurrentPassword ? "Hide password" : "Show password"}
+              aria-label={showCurrentPassword
+                ? "Hide password"
+                : "Show password"}
             >
               <i
                 class="fas {showCurrentPassword ? 'fa-eye-slash' : 'fa-eye'}"
@@ -190,8 +195,12 @@
           </div>
         </div>
 
-        <div class="field stagger-field" class:revealed={formRevealed} style="--stagger: 1">
-          <label class="field-label" for="new-password">New Password</label>
+        <div
+          class="field stagger-field"
+          class:revealed={formRevealed}
+          style="--stagger: 1"
+        >
+          <label class="field-label" for="new-password">New password</label>
           <div class="input-wrapper">
             <input
               id="new-password"
@@ -216,16 +225,25 @@
             </button>
           </div>
           {#if passwordStrength}
-            <div class="strength-bar" aria-label="Password strength: {strengthLabel}">
+            <div
+              class="strength-bar"
+              aria-label="Password strength: {strengthLabel}"
+            >
               <div class="strength-track">
                 <div class="strength-fill strength--{passwordStrength}"></div>
               </div>
-              <span class="strength-label strength--{passwordStrength}">{strengthLabel}</span>
+              <span class="strength-label strength--{passwordStrength}"
+                >{strengthLabel}</span
+              >
             </div>
           {/if}
         </div>
 
-        <div class="button-row stagger-field" class:revealed={formRevealed} style="--stagger: 2">
+        <div
+          class="button-row stagger-field"
+          class:revealed={formRevealed}
+          style="--stagger: 2"
+        >
           <button class="button button--secondary" onclick={handleCancel}>
             Cancel
           </button>
@@ -239,7 +257,7 @@
               Updating...
             {:else}
               <i class="fas fa-check" aria-hidden="true"></i>
-              Update Password
+              Update password
             {/if}
           </button>
         </div>
@@ -285,7 +303,11 @@
   }
 
   .password-form {
-    background: var(--theme-card-bg);
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #12121c) 96%,
+      var(--theme-text, #fff) 4%
+    );
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
     padding: 20px;
@@ -309,9 +331,14 @@
   .input {
     flex: 1;
     min-width: 0;
-    padding: 12px 16px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.75rem 1rem;
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #12121c) 92%,
+      var(--theme-text, #fff) 8%
+    );
+    border: 1.5px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
     border-radius: 8px;
     color: var(--theme-text);
     font-size: var(--font-size-sm);
@@ -347,8 +374,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
     background: transparent;
     border: none;
     border-radius: 6px;
@@ -377,8 +404,13 @@
     gap: 8px;
     padding: 10px 14px;
     margin-bottom: 16px;
-    background: color-mix(in srgb, var(--semantic-error, #f44336) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--semantic-error, #f44336) 30%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #f44336) 12%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-error, #f44336) 30%, transparent);
     border-radius: 8px;
     color: var(--semantic-error, #f44336);
     font-size: var(--font-size-compact);
@@ -420,7 +452,9 @@
   .strength-fill {
     height: 100%;
     border-radius: 2px;
-    transition: width 300ms ease, background 300ms ease;
+    transition:
+      width 300ms ease,
+      background 300ms ease;
   }
 
   .strength-fill.strength--weak {
@@ -493,13 +527,15 @@
       var(--theme-accent-strong)
     );
     color: white;
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    box-shadow: 0 2px 8px
+      color-mix(in srgb, var(--theme-accent) 30%, transparent);
   }
 
   .button--primary:hover:not(:disabled) {
     filter: brightness(1.1);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    box-shadow: 0 4px 12px
+      color-mix(in srgb, var(--theme-accent) 40%, transparent);
   }
 
   .button--secondary {

@@ -464,6 +464,7 @@
   "sort_difficulty": "어려움",
   "sort_length": "길이",
   "sort_recent": "최근의",
+  "tab_settings_profile": "계정",
   "train_accuracy_percent": "{value} % 정확도",
   "train_all_completed": "모든 도전 과제를 완료했습니다! 곧 다시 확인해 주세요.",
   "train_avg_accuracy": "평균 정확도",

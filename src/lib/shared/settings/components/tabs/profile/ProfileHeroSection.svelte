@@ -1,8 +1,7 @@
-<!-- ProfileHeroSection.svelte - Profile avatar, name, email, and sign-out button -->
+<!-- The signed-in identity column inside Account settings. -->
 <script lang="ts">
   import RobustAvatar from "../../../../components/avatar/RobustAvatar.svelte";
   import type { User } from "firebase/auth";
-  import { fly, fade } from "svelte/transition";
 
   interface Props {
     user: User;
@@ -10,21 +9,31 @@
     disabled?: boolean;
     onAvatarClick?: () => void;
     pronouns?: string;
-    /** Profile accent color for avatar ring */
+    username?: string;
     profileColor?: string;
   }
 
-  let { user, onSignOut, disabled = false, onAvatarClick, pronouns, profileColor }: Props = $props();
-
-  const reducedMotion = typeof window !== "undefined"
-    ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    : false;
+  let {
+    user,
+    onSignOut,
+    disabled = false,
+    onAvatarClick,
+    pronouns,
+    username,
+    profileColor,
+  }: Props = $props();
 </script>
 
-<section class="glass-card profile-card">
+<section class="identity-header" aria-label="Signed-in account">
+  <p class="identity-kicker">
+    <i class="fas fa-id-card" aria-hidden="true"></i>
+    <span>Account</span>
+  </p>
+
   <div class="profile-hero">
     {#if onAvatarClick && !disabled}
       <button
+        type="button"
         class="avatar-wrapper clickable"
         style:--profile-accent={profileColor}
         onclick={onAvatarClick}
@@ -36,9 +45,9 @@
           alt={user.displayName || "User"}
           size="xl"
         />
-        <div class="avatar-edit-badge">
+        <span class="avatar-edit-badge">
           <i class="fas fa-camera" aria-hidden="true"></i>
-        </div>
+        </span>
       </button>
     {:else}
       <div class="avatar-wrapper">
@@ -50,131 +59,138 @@
         />
       </div>
     {/if}
+
     <div class="profile-info">
-      <h2 class="profile-name">{user.displayName || "User"}</h2>
-      {#key pronouns}
-        {#if pronouns}
-          <p
-            class="profile-pronouns"
-            in:fly={{ y: reducedMotion ? 0 : -6, duration: reducedMotion ? 0 : 300, delay: reducedMotion ? 0 : 80 }}
-            out:fade={{ duration: reducedMotion ? 0 : 150 }}
-          >
-            {pronouns}
-          </p>
-        {/if}
-      {/key}
+      <h1 class="profile-name">{user.displayName || "User"}</h1>
+      {#if username || pronouns}
+        <p class="profile-meta">
+          {#if username}<span>@{username}</span>{/if}
+          {#if username && pronouns}<span aria-hidden="true">·</span>{/if}
+          {#if pronouns}<span>{pronouns}</span>{/if}
+        </p>
+      {/if}
       {#if user.email}
         <p class="profile-email">{user.email}</p>
       {/if}
     </div>
-    {#if !disabled}
-      <button class="sign-out-btn" onclick={onSignOut}>
-        <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
-        <span>Sign Out</span>
-      </button>
-    {/if}
   </div>
+
+  {#if !disabled}
+    <div class="session-row">
+      <span class="session-status">
+        <span class="session-dot" aria-hidden="true"></span>
+        <span>Signed in</span>
+      </span>
+      <button type="button" class="sign-out-btn" onclick={onSignOut}>
+        <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+        <span>Sign out</span>
+      </button>
+    </div>
+  {/if}
 </section>
 
 <style>
-  /* ========================================
-     GLASS CARD BASE
-     ======================================== */
-  .glass-card {
+  .identity-header {
     display: flex;
+    height: 100%;
+    min-width: 0;
     flex-direction: column;
-    gap: clamp(12px, 2.5cqi, 16px);
-    padding: clamp(14px, 2.5cqi, 24px);
-    border-radius: clamp(12px, 3cqi, 16px);
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    transition:
-      background 0.2s ease,
-      border-color 0.2s ease,
-      box-shadow 0.2s ease,
-      transform 0.2s ease;
+    align-items: flex-start;
   }
 
-  .glass-card:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    transform: translateY(-1px);
-    box-shadow: var(--theme-shadow);
+  .identity-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0 0 1.25em;
+    color: var(--theme-accent-text, var(--theme-accent));
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
 
-  /* ========================================
-     PROFILE HERO
-     ======================================== */
+  .identity-kicker i {
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
   .profile-hero {
     display: flex;
+    width: 100%;
+    min-width: 0;
     align-items: center;
-    gap: clamp(12px, 2.5cqi, 24px);
-    flex-wrap: wrap;
+    gap: clamp(1em, 2cqi, 1.5em);
   }
 
   .avatar-wrapper {
     position: relative;
-    width: clamp(64px, 14cqi, 100px);
-    height: clamp(64px, 14cqi, 100px);
-    border-radius: 50%;
+    width: clamp(5em, 7cqi, 6em);
+    height: clamp(5em, 7cqi, 6em);
+    flex: 0 0 auto;
     overflow: visible;
     padding: 3px;
+    border: 0;
+    border-radius: 50%;
     background: linear-gradient(
       135deg,
       var(--profile-accent, var(--theme-accent)) 0%,
-      color-mix(in srgb, var(--profile-accent, var(--theme-accent-strong)) 80%, black) 100%
+      color-mix(
+          in srgb,
+          var(--profile-accent, var(--theme-accent-strong)) 80%,
+          black
+        )
+        100%
     );
-    box-shadow: 0 0 32px
-      color-mix(in srgb, var(--profile-accent, var(--theme-accent)) 25%, transparent);
-    flex-shrink: 0;
-    border: none;
+    box-shadow: 0 0 2rem
+      color-mix(
+        in srgb,
+        var(--profile-accent, var(--theme-accent)) 28%,
+        transparent
+      );
   }
 
   .avatar-wrapper.clickable {
     cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition:
+      transform var(--duration-fast) ease,
+      box-shadow var(--duration-fast) ease;
   }
 
   .avatar-wrapper.clickable:hover {
-    transform: scale(1.03);
-    box-shadow: 0 0 40px
-      color-mix(in srgb, var(--profile-accent, var(--theme-accent)) 35%, transparent);
-  }
-
-  .avatar-wrapper.clickable:hover .avatar-edit-badge {
-    opacity: 1;
-    transform: scale(1);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 0 2.4rem
+      color-mix(
+        in srgb,
+        var(--profile-accent, var(--theme-accent)) 40%,
+        transparent
+      );
   }
 
   .avatar-wrapper.clickable:focus-visible {
-    outline: 3px solid color-mix(in srgb, var(--theme-accent) 90%, transparent);
-    outline-offset: 3px;
+    outline: 3px solid var(--theme-accent-text, var(--theme-accent));
+    outline-offset: 4px;
   }
 
   .avatar-edit-badge {
     position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 28px;
-    height: 28px;
+    right: -0.1em;
+    bottom: -0.1em;
+    display: grid;
+    width: 2em;
+    height: 2em;
+    place-items: center;
+    border: 3px solid color-mix(in srgb, var(--theme-panel-bg) 55%, #070b10 45%);
     border-radius: 50%;
-    background: var(--profile-accent, var(--theme-accent, #6366f1));
-    display: flex;
-    align-items: center;
-    justify-content: center;
     color: white;
-    font-size: 12px;
-    border: 3px solid var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    opacity: 0.85;
-    transform: scale(0.95);
-    transition: opacity 0.15s ease, transform 0.15s ease;
+    background: var(--profile-accent, var(--theme-accent));
+    font-size: var(--font-size-compact, 0.75rem);
   }
 
   .avatar-wrapper :global(.robust-avatar) {
     width: 100% !important;
     height: 100% !important;
-    border-radius: 50%;
     overflow: hidden;
+    border-radius: 50%;
   }
 
   .avatar-wrapper :global(img),
@@ -183,121 +199,173 @@
   }
 
   .profile-info {
-    flex: 1;
-    min-width: 140px;
+    min-width: 0;
   }
 
   .profile-name {
-    font-size: clamp(18px, 3.5cqi, 28px);
-    font-weight: 700;
-    color: var(--theme-text);
     margin: 0;
+    overflow-wrap: anywhere;
+    color: var(--theme-text);
     font-family:
       -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+    font-size: clamp(1.65em, 2.5cqi, 2.25em);
+    font-weight: 780;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
   }
 
-  .profile-pronouns {
-    font-size: clamp(12px, 2cqi, 14px);
+  .profile-meta,
+  .profile-email {
+    margin: 0.45em 0 0;
     color: var(--theme-text-dim);
-    font-style: italic;
-    margin: 2px 0 0 0;
-    opacity: 0.8;
+    font-size: max(0.875rem, var(--font-size-min));
+    line-height: 1.4;
+  }
+
+  .profile-meta {
+    display: flex;
+    min-width: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4em;
+    font-weight: 650;
   }
 
   .profile-email {
-    font-size: clamp(12px, 2cqi, 15px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .session-row {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+    margin-top: 1.5em;
+    padding-top: 1.25em;
+    border-top: 1px solid var(--theme-stroke);
+  }
+
+  .session-status {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.55em;
     color: var(--theme-text-dim);
-    margin: 0;
+    font-size: max(0.875rem, var(--font-size-min));
+    font-weight: 650;
+  }
+
+  .session-dot {
+    width: 0.55em;
+    height: 0.55em;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--semantic-success);
+    box-shadow: 0 0 0 0.25em
+      color-mix(in srgb, var(--semantic-success) 12%, transparent);
   }
 
   .sign-out-btn {
     display: inline-flex;
+    min-height: var(--min-touch-target, 44px);
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    min-height: var(--min-touch-target);
-    padding: 12px 20px;
-    background: var(--semantic-error-dim, rgba(239, 68, 68, 0.15));
-    border: 1px solid
-      color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
-    border-radius: 12px;
-    color: #fca5a5;
-    font-size: var(--font-size-sm);
-    font-weight: 600;
+    gap: 0.55em;
+    padding: 0.7em 1em;
+    border: 1px solid var(--theme-stroke-strong, var(--theme-stroke));
+    border-radius: 0.7em;
+    color: var(--theme-text-dim);
+    background: color-mix(in srgb, var(--theme-text) 5%, transparent);
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 700;
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
-    flex-shrink: 0;
+    transition:
+      background var(--duration-fast) ease,
+      border-color var(--duration-fast) ease,
+      color var(--duration-fast) ease,
+      transform var(--duration-fast) ease;
   }
 
   .sign-out-btn:hover {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, transparent);
-    color: #fecaca;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px
-      color-mix(in srgb, var(--semantic-error, #ef4444) 20%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 45%, transparent);
+    color: color-mix(in srgb, var(--semantic-error) 85%, var(--theme-text));
+    background: color-mix(in srgb, var(--semantic-error) 10%, transparent);
+    transform: translateY(-1px);
   }
 
   .sign-out-btn:active {
-    transform: scale(0.97);
+    transform: scale(0.98);
   }
 
   .sign-out-btn:focus-visible {
-    outline: 2px solid var(--theme-accent);
+    outline: 3px solid var(--theme-accent-text, var(--theme-accent));
     outline-offset: 2px;
   }
 
-  /* Mobile: Stack profile */
-  @container profile-tab (max-width: 420px) {
+  @container profile-tab (min-width: 75rem) {
     .profile-hero {
       flex-direction: column;
-      text-align: center;
-      gap: 16px;
-    }
-
-    .profile-info {
-      min-width: 100%;
-    }
-
-    .sign-out-btn {
-      width: 100%;
+      align-items: flex-start;
+      gap: 1.5em;
+      margin-block: auto;
     }
   }
 
-  /* Very small screens: more compact */
-  @container profile-tab (max-width: 360px) {
+  @container profile-tab (max-width: 32rem) {
+    .identity-kicker {
+      margin-bottom: 1rem;
+    }
+
     .profile-hero {
-      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .avatar-wrapper {
+      width: 4.5rem;
+      height: 4.5rem;
     }
 
     .profile-name {
-      font-size: var(--font-size-base);
+      font-size: 1.5rem;
     }
 
     .profile-email {
-      font-size: var(--font-size-compact);
+      max-width: 13rem;
     }
   }
 
-  /* ========================================
-     ACCESSIBILITY
-     ======================================== */
+  @container profile-tab (max-width: 24rem) {
+    .profile-hero {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .profile-email {
+      max-width: 100%;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .session-row {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .glass-card,
+    .avatar-wrapper.clickable,
     .sign-out-btn {
       transition: none;
     }
 
-    .glass-card:hover,
-    .sign-out-btn:hover {
+    .avatar-wrapper.clickable:hover,
+    .sign-out-btn:hover,
+    .sign-out-btn:active {
       transform: none;
-    }
-  }
-
-  @media (prefers-contrast: high) {
-    .glass-card,
-    .sign-out-btn {
-      border-width: 2px;
     }
   }
 </style>

@@ -11,7 +11,9 @@
   import { toast } from "../../../toast/state/toast-state.svelte";
   import { doc, getDoc } from "firebase/firestore";
   import { getFirestoreInstance } from "../../../auth/firebase";
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
+  import InstagramIcon from "$lib/shared/auth/components/icons/InstagramIcon.svelte";
+  import AccountValueRow from "./AccountValueRow.svelte";
 
   interface Props {
     user: User;
@@ -26,6 +28,9 @@
   let isEditing = $state(false);
   let isSaving = $state(false);
   let error = $state("");
+  let saveError = $state("");
+  let usernameInput = $state<HTMLInputElement | null>(null);
+  let editButton = $state<HTMLButtonElement | null>(null);
 
   // Instagram username validation: alphanumeric, underscores, periods, 1-30 chars
   const INSTAGRAM_REGEX = /^[a-zA-Z0-9._]{1,30}$/;
@@ -47,10 +52,12 @@
   // Derived: can save if valid format and changed
   const isSaveDisabled = $derived(
     isSaving ||
-    !!error ||
-    (editedUsername.trim() !== "" && !validateFormat(editedUsername.trim())) ||
-    editedUsername.trim() === currentUsername
+      !!error ||
+      (editedUsername.trim() !== "" &&
+        !validateFormat(editedUsername.trim())) ||
+      editedUsername.trim() === currentUsername
   );
+  const feedbackError = $derived(saveError || error);
 
   function validateFormat(username: string): boolean {
     if (!username) return true; // Empty is valid (clears the field)
@@ -61,17 +68,23 @@
     editedUsername = currentUsername;
     isEditing = true;
     error = "";
+    saveError = "";
     hapticService?.trigger("selection");
+    void tick().then(() => usernameInput?.focus());
   }
 
-  function cancelEditing() {
+  async function cancelEditing() {
     isEditing = false;
     editedUsername = "";
     error = "";
+    saveError = "";
+    await tick();
+    editButton?.focus();
   }
 
   function handleInput() {
     error = "";
+    saveError = "";
 
     // Strip @ if user enters it
     if (editedUsername.startsWith("@")) {
@@ -101,16 +114,26 @@
     }
 
     isSaving = true;
+    saveError = "";
     try {
       await authState.updateInstagramUsername(trimmedUsername);
       currentUsername = trimmedUsername;
       hapticService?.trigger("success");
-      toast.success(trimmedUsername ? "Instagram username updated" : "Instagram username cleared");
+      toast.success(
+        trimmedUsername
+          ? "Instagram username updated"
+          : "Instagram username cleared"
+      );
       isEditing = false;
+      await tick();
+      editButton?.focus();
     } catch (err) {
       console.error("Failed to update Instagram username:", err);
       hapticService?.trigger("error");
-      toast.error(err instanceof Error ? err.message : "Failed to update Instagram");
+      saveError = "Instagram username couldn't be saved. Try again.";
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update Instagram"
+      );
     } finally {
       isSaving = false;
     }
@@ -126,28 +149,34 @@
   }
 </script>
 
-<div class="section">
-  <label class="label" for="instagram-username">Instagram</label>
+<div data-save-shortcut-scope class="section">
   {#if isEditing}
+    <label class="label" for="instagram-username">Instagram</label>
     <div class="input-row">
-      <div class="instagram-input-wrapper" class:error class:success={editedUsername.trim() && !error}>
-        <i class="fab fa-instagram instagram-icon" aria-hidden="true"></i>
+      <div
+        class="instagram-input-wrapper"
+        class:error
+        class:success={editedUsername.trim() && !error}
+      >
+        <span class="instagram-icon"><InstagramIcon /></span>
         <input
           id="instagram-username"
           type="text"
           class="input instagram-input"
+          bind:this={usernameInput}
           bind:value={editedUsername}
           oninput={handleInput}
           onkeydown={handleKeydown}
           maxlength="30"
           placeholder="your_username"
           disabled={isSaving}
-          aria-invalid={error ? "true" : "false"}
-          aria-describedby={error ? "instagram-error" : undefined}
+          aria-invalid={feedbackError ? "true" : "false"}
+          aria-describedby={feedbackError ? "instagram-error" : undefined}
         />
       </div>
       <div class="inline-actions">
         <button
+          data-save-shortcut
           class="icon-btn save"
           onclick={save}
           disabled={isSaveDisabled}
@@ -171,27 +200,20 @@
     </div>
 
     <!-- Real-time feedback -->
-    {#if error}
+    {#if feedbackError}
       <p id="instagram-error" class="hint-message error" role="alert">
         <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-        {error}
+        {feedbackError}
       </p>
     {/if}
   {:else}
-    <div
-      class="value-row"
-      onclick={startEditing}
-      onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && startEditing()}
-      role="button"
-      tabindex="0"
-      aria-label="Edit Instagram username"
-    >
-      <div class="current-value-wrapper">
-        <i class="fab fa-instagram instagram-icon" aria-hidden="true"></i>
-        <span class="current-value">{currentUsername || "Not set"}</span>
-      </div>
-      <i class="fas fa-pen edit-icon" aria-hidden="true"></i>
-    </div>
+    <AccountValueRow
+      label="Instagram"
+      value={currentUsername ? `@${currentUsername}` : "Not set"}
+      empty={!currentUsername}
+      onEdit={startEditing}
+      bind:buttonRef={editButton}
+    />
   {/if}
 </div>
 
@@ -199,7 +221,7 @@
   .section {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 0.625rem;
   }
 
   .label {
@@ -208,104 +230,70 @@
     color: var(--theme-text);
   }
 
-  .value-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 16px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-  }
-
-  .value-row:hover,
-  .value-row:focus {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-  }
-
-  .value-row:focus-visible {
-    outline: 3px solid var(--theme-accent);
-    outline-offset: 2px;
-  }
-
-  .current-value-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .current-value {
-    font-size: var(--font-size-sm);
-    color: var(--theme-text-dim);
-  }
-
   .instagram-icon {
-    font-size: 16px;
-    color: #E4405F;
+    display: grid;
+    width: 1.25rem;
+    height: 1.25rem;
+    flex: 0 0 auto;
+    place-items: center;
+    color: #e4405f;
   }
 
-  .edit-icon {
-    font-size: 12px;
-    color: var(--theme-text-dim);
-    opacity: 0;
-    transition: opacity var(--duration-fast) ease;
-  }
-
-  .value-row:hover .edit-icon,
-  .value-row:focus .edit-icon {
-    opacity: 0.6;
-  }
-
-  /* Always show on touch devices (no hover capability) */
-  @media (hover: none) {
-    .edit-icon {
-      opacity: 0.4;
-    }
+  .instagram-icon :global(svg) {
+    width: 1.25rem;
+    height: 1.25rem;
   }
 
   .input-row {
     display: flex;
-    gap: 8px;
+    width: min(100%, 34rem);
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .inline-actions {
     display: flex;
-    gap: 4px;
+    gap: 0.125rem;
     flex-shrink: 0;
+    padding: 0.125rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.65rem;
+    background: color-mix(in srgb, var(--theme-text) 4%, transparent);
   }
 
   .icon-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    border: none;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
   }
 
   .icon-btn.save {
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
-    color: color-mix(in srgb, var(--semantic-success, #22c55e) 75%, white);
+    background: transparent;
+    color: var(--semantic-success, #22c55e);
   }
 
   .icon-btn.save:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 25%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 12%,
+      transparent
+    );
   }
 
   .icon-btn.cancel {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
-    color: color-mix(in srgb, var(--semantic-error, #ef4444) 75%, white);
+    background: transparent;
+    color: var(--theme-text-dim);
   }
 
   .icon-btn.cancel:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    color: var(--theme-text);
   }
 
   .icon-btn:disabled {
@@ -316,10 +304,11 @@
   .input {
     flex: 1;
     min-width: 0;
-    padding: 12px 16px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 8px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.75rem 1rem;
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    border: 1.5px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
+    border-radius: 0.5rem;
     color: var(--theme-text);
     font-size: var(--font-size-sm);
     transition: all var(--duration-normal) ease;
@@ -328,7 +317,7 @@
   .input:focus {
     outline: none;
     border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
-    background: var(--theme-card-hover-bg);
+    background: color-mix(in srgb, var(--theme-text) 11%, transparent);
   }
 
   .input::placeholder {
@@ -345,24 +334,34 @@
     flex: 1;
     display: flex;
     align-items: center;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 8px;
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    border: 1.5px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
+    border-radius: 0.5rem;
     transition: all var(--duration-normal) ease;
     padding-left: 12px;
   }
 
   .instagram-input-wrapper:focus-within {
-    border-color: color-mix(in srgb, #E4405F 60%, transparent);
-    background: var(--theme-card-hover-bg);
+    border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
+    background: color-mix(in srgb, var(--theme-text) 11%, transparent);
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--theme-accent) 22%, transparent);
   }
 
   .instagram-input-wrapper.error {
-    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 60%,
+      transparent
+    );
   }
 
   .instagram-input-wrapper.success {
-    border-color: rgba(228, 64, 95, 0.6);
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 60%,
+      transparent
+    );
   }
 
   .instagram-input {
@@ -397,14 +396,16 @@
     outline-offset: 2px;
   }
 
+  .instagram-input:focus-visible {
+    outline: none;
+  }
+
   .icon-btn:focus-visible {
     outline: 3px solid var(--theme-accent);
     outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .value-row,
-    .edit-icon,
     .icon-btn {
       transition: none;
     }

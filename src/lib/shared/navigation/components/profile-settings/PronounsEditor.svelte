@@ -11,8 +11,10 @@
   import { toast } from "../../../toast/state/toast-state.svelte";
   import { doc, getDoc } from "firebase/firestore";
   import { getFirestoreInstance } from "../../../auth/firebase";
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { t } from "../../../i18n/i18n.svelte.js";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import AccountValueRow from "./AccountValueRow.svelte";
 
   interface Props {
     user: User;
@@ -27,6 +29,9 @@
   let editedPronouns = $state("");
   let isEditing = $state(false);
   let isSaving = $state(false);
+  let saveError = $state("");
+  let pronounsInput = $state<HTMLInputElement | null>(null);
+  let editButton = $state<HTMLButtonElement | null>(null);
 
   // Preset options
   const PRESETS = $derived([
@@ -57,12 +62,17 @@
   function startEditing() {
     editedPronouns = currentPronouns;
     isEditing = true;
+    saveError = "";
     hapticService?.trigger("selection");
+    void tick().then(() => pronounsInput?.focus());
   }
 
-  function cancelEditing() {
+  async function cancelEditing() {
     isEditing = false;
     editedPronouns = "";
+    saveError = "";
+    await tick();
+    editButton?.focus();
   }
 
   function selectPreset(preset: string) {
@@ -85,17 +95,25 @@
     }
 
     isSaving = true;
+    saveError = "";
     try {
       await authState.updatePronouns(trimmed);
       currentPronouns = trimmed;
       hapticService?.trigger("success");
-      toast.success(trimmed ? t("profile_pronouns_updated") : t("profile_pronouns_cleared"));
+      toast.success(
+        trimmed ? t("profile_pronouns_updated") : t("profile_pronouns_cleared")
+      );
       onPronounsChanged?.(trimmed);
       isEditing = false;
+      await tick();
+      editButton?.focus();
     } catch (err) {
       console.error("Failed to update pronouns:", err);
       hapticService?.trigger("error");
-      toast.error(err instanceof Error ? err.message : t("profile_pronouns_update_failed"));
+      saveError = t("profile_pronouns_update_failed");
+      toast.error(
+        err instanceof Error ? err.message : t("profile_pronouns_update_failed")
+      );
     } finally {
       isSaving = false;
     }
@@ -111,41 +129,45 @@
   }
 </script>
 
-<div class="section">
-  <div class="label-row">
-    <label class="label" for="pronouns-input">{t("profile_pronouns_label")}</label>
-    <span class="optional-badge">{t("profile_optional")}</span>
-  </div>
+<div data-save-shortcut-scope class="section">
   {#if isEditing}
-    <!-- Preset chips -->
+    <div class="label-row">
+      <label class="label" for="pronouns-input"
+        >{t("profile_pronouns_label")}</label
+      >
+      <span class="optional-badge">{t("profile_optional")}</span>
+    </div>
+
     <div class="preset-chips" role="group" aria-label="Pronoun presets">
       {#each PRESETS as preset}
-        <button
-          type="button"
-          class="preset-chip"
-          class:selected={editedPronouns.trim() === preset.key}
+        <FilterChipBase
+          label={preset.label}
+          mode="toggle"
+          size="sm"
+          active={editedPronouns.trim() === preset.key}
           onclick={() => selectPreset(preset.key)}
           disabled={isSaving}
-        >
-          {preset.label}
-        </button>
+        />
       {/each}
     </div>
 
-    <!-- Free text input -->
     <div class="input-row">
       <input
         id="pronouns-input"
         type="text"
         class="input"
+        bind:this={pronounsInput}
         bind:value={editedPronouns}
         onkeydown={handleKeydown}
         maxlength="50"
         placeholder={t("profile_pronouns_placeholder")}
         disabled={isSaving}
+        aria-invalid={saveError ? "true" : "false"}
+        aria-describedby={saveError ? "pronouns-save-error" : undefined}
       />
       <div class="inline-actions">
         <button
+          data-save-shortcut
           class="icon-btn save"
           onclick={save}
           disabled={isSaveDisabled}
@@ -167,18 +189,21 @@
         </button>
       </div>
     </div>
+    {#if saveError}
+      <p id="pronouns-save-error" class="error-message" role="alert">
+        <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+        {saveError}
+      </p>
+    {/if}
   {:else}
-    <div
-      class="value-row"
-      onclick={startEditing}
-      onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && startEditing()}
-      role="button"
-      tabindex="0"
-      aria-label="Edit pronouns"
-    >
-      <span class="current-value">{currentPronouns || t("profile_pronouns_not_set")}</span>
-      <i class="fas fa-pen edit-icon" aria-hidden="true"></i>
-    </div>
+    <AccountValueRow
+      label={t("profile_pronouns_label")}
+      value={currentPronouns || t("profile_pronouns_not_set")}
+      optional={true}
+      empty={!currentPronouns}
+      onEdit={startEditing}
+      bind:buttonRef={editButton}
+    />
   {/if}
 </div>
 
@@ -186,7 +211,7 @@
   .section {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 0.625rem;
   }
 
   .label-row {
@@ -208,129 +233,62 @@
     font-style: italic;
   }
 
-  .value-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 16px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-  }
-
-  .value-row:hover,
-  .value-row:focus {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-  }
-
-  .value-row:focus-visible {
-    outline: 3px solid var(--theme-accent);
-    outline-offset: 2px;
-  }
-
-  .current-value {
-    font-size: var(--font-size-sm);
-    color: var(--theme-text-dim);
-  }
-
-  .edit-icon {
-    font-size: 12px;
-    color: var(--theme-text-dim);
-    opacity: 0;
-    transition: opacity var(--duration-fast) ease;
-  }
-
-  .value-row:hover .edit-icon,
-  .value-row:focus .edit-icon {
-    opacity: 0.6;
-  }
-
-  @media (hover: none) {
-    .edit-icon {
-      opacity: 0.4;
-    }
-  }
-
-  /* Preset chips */
   .preset-chips {
     display: flex;
-    gap: 8px;
+    gap: 0.5rem;
     flex-wrap: wrap;
   }
 
-  .preset-chip {
-    padding: 6px 14px;
-    border-radius: 20px;
-    border: 1px solid var(--theme-stroke);
-    background: var(--theme-card-bg);
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-  }
-
-  .preset-chip:hover:not(:disabled) {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    color: var(--theme-text);
-  }
-
-  .preset-chip.selected {
-    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
-    border-color: var(--theme-accent);
-    color: var(--theme-accent);
-  }
-
-  .preset-chip:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  /* Input row */
   .input-row {
     display: flex;
-    gap: 8px;
+    width: min(100%, 34rem);
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .inline-actions {
     display: flex;
-    gap: 4px;
+    gap: 0.125rem;
     flex-shrink: 0;
+    padding: 0.125rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.65rem;
+    background: color-mix(in srgb, var(--theme-text) 4%, transparent);
   }
 
   .icon-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    border: none;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
   }
 
   .icon-btn.save {
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
-    color: color-mix(in srgb, var(--semantic-success, #22c55e) 75%, white);
+    background: transparent;
+    color: var(--semantic-success, #22c55e);
   }
 
   .icon-btn.save:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 25%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 12%,
+      transparent
+    );
   }
 
   .icon-btn.cancel {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
-    color: color-mix(in srgb, var(--semantic-error, #ef4444) 75%, white);
+    background: transparent;
+    color: var(--theme-text-dim);
   }
 
   .icon-btn.cancel:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    color: var(--theme-text);
   }
 
   .icon-btn:disabled {
@@ -341,10 +299,11 @@
   .input {
     flex: 1;
     min-width: 0;
-    padding: 12px 16px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 8px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.75rem 1rem;
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    border: 1.5px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
+    border-radius: 0.5rem;
     color: var(--theme-text);
     font-size: var(--font-size-sm);
     transition: all var(--duration-normal) ease;
@@ -353,7 +312,7 @@
   .input:focus {
     outline: none;
     border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
-    background: var(--theme-card-hover-bg);
+    background: color-mix(in srgb, var(--theme-text) 11%, transparent);
   }
 
   .input::placeholder {
@@ -376,16 +335,17 @@
     outline-offset: 2px;
   }
 
-  .preset-chip:focus-visible {
-    outline: 3px solid var(--theme-accent);
-    outline-offset: 2px;
+  .error-message {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    color: var(--semantic-error, #ef4444);
+    font-size: var(--font-size-min, 0.875rem);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .value-row,
-    .edit-icon,
     .icon-btn,
-    .preset-chip,
     .input {
       transition: none;
     }

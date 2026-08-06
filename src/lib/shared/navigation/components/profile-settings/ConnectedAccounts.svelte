@@ -19,7 +19,12 @@
   import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import { onMount } from "svelte";
   import EmailLinkingDrawer from "../../../auth/components/EmailLinkingDrawer.svelte";
-  import { PROVIDERS, type ProviderId } from "./connected-accounts.providers";
+  import {
+    getAvailableProviderIds,
+    PROVIDERS,
+    type ProviderId,
+  } from "./connected-accounts.providers";
+  import ProviderStatusRow from "./ProviderStatusRow.svelte";
   import {
     FACEBOOK_LOGIN_ENABLED,
     INSTAGRAM_LOGIN_ENABLED,
@@ -32,8 +37,9 @@
     hasInstagramAccount,
   } from "$lib/shared/auth/services/instagram-auth";
 
-  let { onInstagramChange } = $props<{
+  let { onInstagramChange, managing = false } = $props<{
     onInstagramChange?: (linked: boolean) => void;
+    managing?: boolean;
   }>();
 
   // Services
@@ -66,26 +72,28 @@
   });
 
   // Derived state
-  const linkedProviders = $derived([
-    ...(authState.user?.providerData?.map((p) => p.providerId) ?? []),
-    ...(instagramLinked ? ["instagram.com"] : []),
+  const linkedProviderIds = $derived([
+    ...new Set([
+      ...(authState.user?.providerData?.map((p) => p.providerId) ?? []),
+      ...(instagramLinked ? ["instagram.com"] : []),
+    ]),
   ]);
 
-  const availableProviders = $derived(
-    (Object.keys(PROVIDERS) as ProviderId[]).filter(
-      (id) =>
-        !linkedProviders.includes(id) &&
-        // Facebook linking is hidden until the login flow is verified end to
-        // end — and always in the native shell, where linkWithPopup dead-ends
-        // in the WebView (not yet wired through the native plugin).
-        (id !== "facebook.com" ||
-          (FACEBOOK_LOGIN_ENABLED && !(browser && isNative()))) &&
-        (id !== "instagram.com" ||
-          (INSTAGRAM_LOGIN_ENABLED && !(browser && isNative())))
+  const linkedProviders = $derived(
+    (Object.keys(PROVIDERS) as ProviderId[]).filter((providerId) =>
+      linkedProviderIds.includes(providerId)
     )
   );
 
-  const canUnlink = $derived(linkedProviders.length > 1);
+  const availableProviders = $derived(
+    getAvailableProviderIds(linkedProviderIds, {
+      facebookEnabled: FACEBOOK_LOGIN_ENABLED,
+      instagramEnabled: INSTAGRAM_LOGIN_ENABLED,
+      native: browser && isNative(),
+    })
+  );
+
+  const canUnlink = $derived(linkedProviderIds.length > 1);
 
   // Get provider details from providerData
   function getProviderEmail(providerId: string): string | null {
@@ -93,6 +101,23 @@
       (p) => p.providerId === providerId
     );
     return provider?.email ?? null;
+  }
+
+  function getLinkedProviderDetail(providerId: ProviderId): string {
+    if (providerId === "instagram.com") return "Connected";
+    if (providerId === "password") {
+      const email = getProviderEmail(providerId) ?? authState.user?.email;
+      if (!email)
+        return isEmailVerified ? "Verified email" : "Email not verified";
+      return isEmailVerified ? email : `${email} · Not verified`;
+    }
+    return getProviderEmail(providerId) ?? "Connected";
+  }
+
+  function getAvailableProviderDetail(providerId: ProviderId): string {
+    return providerId === "password"
+      ? "Add email and password sign-in"
+      : "Not connected";
   }
 
   // Link a new provider
@@ -219,80 +244,73 @@
 </script>
 
 <div class="connected-accounts">
-  <!-- Error Message -->
   {#if errorMessage}
     <div class="error-banner" role="alert">
       <span>{errorMessage}</span>
-      <button class="dismiss-btn" onclick={dismissError} aria-label="Dismiss">
+      <button
+        type="button"
+        class="dismiss-btn"
+        onclick={dismissError}
+        aria-label="Dismiss account connection error"
+      >
         <i class="fas fa-times" aria-hidden="true"></i>
       </button>
     </div>
   {/if}
 
-  <!-- All Providers - Compact list -->
   <div class="providers-list">
-    <!-- Linked providers -->
     {#each linkedProviders as providerId}
-      {@const config = PROVIDERS[providerId as ProviderId]}
+      {@const config = PROVIDERS[providerId]}
       {@const isUnlinking = unlinkingProvider === providerId}
-      {#if config}
-        <div
-          class="provider-row linked"
-          style="--provider-color: {config.color};"
-        >
-          <i class="{config.icon} provider-icon" aria-hidden="true"></i>
-          <span class="provider-name">{config.name}</span>
-          <i
-            class="fas fa-check-circle status-icon connected"
-            aria-hidden="true"
-          ></i>
-          {#if canUnlink}
-            <button
-              class="action-btn unlink"
-              onclick={() => requestUnlinkProvider(providerId as ProviderId)}
-              disabled={isUnlinking}
-              aria-label="Disconnect {config.name}"
-            >
-              {#if isUnlinking}
-                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-              {:else}
-                <i class="fas fa-unlink" aria-hidden="true"></i>
-              {/if}
-            </button>
-          {/if}
-        </div>
-      {/if}
+      <ProviderStatusRow
+        {providerId}
+        name={config.name}
+        detail={getLinkedProviderDetail(providerId)}
+        accent={config.color}
+        status={!managing ? "Connected" : canUnlink ? undefined : "Required"}
+        statusTone="connected"
+        actionLabel={managing && canUnlink ? "Disconnect" : undefined}
+        actionAriaLabel={managing && canUnlink
+          ? `Disconnect ${config.name}`
+          : undefined}
+        busyLabel="Disconnecting..."
+        busy={isUnlinking}
+        disabled={unlinkingProvider !== null && !isUnlinking}
+        onAction={managing && canUnlink
+          ? () => requestUnlinkProvider(providerId)
+          : undefined}
+      />
     {/each}
 
-    <!-- Available providers -->
     {#each availableProviders as providerId}
       {@const config = PROVIDERS[providerId]}
       {@const isLinking = linkingProvider === providerId}
-      <button
-        class="provider-row available"
-        style="--provider-color: {config.color};"
-        onclick={() =>
-          providerId === "password"
-            ? openEmailLinkingDrawer()
-            : linkProvider(providerId)}
-        disabled={isLinking || linkingProvider !== null}
-      >
-        {#if isLinking}
-          <i class="fas fa-spinner fa-spin provider-icon" aria-hidden="true"
-          ></i>
-        {:else}
-          <i class="{config.icon} provider-icon" aria-hidden="true"></i>
-        {/if}
-        <span class="provider-name"
-          >{isLinking ? "Connecting..." : `Add ${config.name}`}</span
-        >
-        <i class="fas fa-plus action-icon" aria-hidden="true"></i>
-      </button>
+      <ProviderStatusRow
+        {providerId}
+        name={config.name}
+        detail={getAvailableProviderDetail(providerId)}
+        accent={config.color}
+        status={managing ? undefined : "Available"}
+        statusTone="neutral"
+        actionLabel={managing ? "Connect" : undefined}
+        actionAriaLabel={managing ? `Connect ${config.name}` : undefined}
+        busyLabel="Connecting..."
+        busy={isLinking}
+        disabled={linkingProvider !== null && !isLinking}
+        onAction={managing
+          ? () =>
+              providerId === "password"
+                ? openEmailLinkingDrawer()
+                : linkProvider(providerId)
+          : undefined}
+      />
     {/each}
   </div>
 
-  {#if !canUnlink && linkedProviders.length === 1}
-    <p class="hint">Add another method to enable disconnecting</p>
+  {#if managing && !canUnlink && linkedProviderIds.length === 1}
+    <p class="hint">
+      Connect another sign-in method before disconnecting this one.
+    </p>
   {/if}
 </div>
 
@@ -310,7 +328,7 @@
     title="Disconnect {config.name}?"
     message="You won't be able to sign in with {config.name} after disconnecting. Make sure you have another sign-in method available."
     confirmText="Disconnect"
-    cancelText="Keep Connected"
+    cancelText="Keep connected"
     variant="warning"
     confirmDelay={5}
     onConfirm={confirmUnlinkProvider}
@@ -322,23 +340,25 @@
   .connected-accounts {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0.75rem;
   }
 
-  /* Error Banner - Compact */
   .error-banner {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
+    gap: 0.75rem;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.625rem 0.75rem;
     background: color-mix(
       in srgb,
       var(--semantic-error, #ef4444) 12%,
       transparent
     );
-    border-radius: 8px;
-    color: color-mix(in srgb, var(--semantic-error, #ef4444) 50%, white);
-    font-size: var(--font-size-compact);
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-error, #ef4444) 28%, transparent);
+    border-radius: 0.625rem;
+    color: var(--semantic-error, #ef4444);
+    font-size: var(--font-size-min, 0.875rem);
   }
 
   .error-banner span {
@@ -346,154 +366,39 @@
   }
 
   .dismiss-btn {
-    background: none;
-    border: none;
-    padding: 4px;
+    display: grid;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    flex: 0 0 auto;
+    place-items: center;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
     color: var(--theme-text-dim);
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 0.5rem;
   }
 
   .dismiss-btn:hover {
     color: var(--theme-text);
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke);
   }
 
-  /* Provider List - Compact rows */
   .providers-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 0;
   }
 
-  /* Provider Row - Single line compact display */
-  .provider-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 8px;
-    transition: all var(--duration-fast) ease;
-  }
-
-  .provider-row.linked {
-    background: color-mix(in srgb, var(--provider-color) 8%, transparent);
-    border-color: color-mix(in srgb, var(--provider-color) 20%, transparent);
-  }
-
-  .provider-row.available {
-    cursor: pointer;
-    width: 100%;
-    text-align: left;
-    font-family: inherit;
-    border: 1px dashed var(--theme-stroke);
-    background: transparent;
-  }
-
-  .provider-row.available:hover:not(:disabled) {
-    background: var(--theme-card-bg);
-    border-style: solid;
-    border-color: color-mix(in srgb, var(--provider-color) 40%, transparent);
-  }
-
-  .provider-row.available:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  /* Provider Icon - Inline, no background */
-  .provider-icon {
-    font-size: 16px;
-    color: var(--provider-color);
-    width: 20px;
-    text-align: center;
-    flex-shrink: 0;
-  }
-
-  /* Provider Name */
-  .provider-name {
-    flex: 1;
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-    color: var(--theme-text);
-  }
-
-  /* Status Icon - Connected checkmark */
-  .status-icon {
-    font-size: 14px;
-    flex-shrink: 0;
-  }
-
-  .status-icon.connected {
-    color: var(--semantic-success);
-  }
-
-  /* Action Icon - Plus for available */
-  .action-icon {
-    font-size: 12px;
-    color: var(--theme-text-dim);
-    flex-shrink: 0;
-  }
-
-  .provider-row.available:hover:not(:disabled) .action-icon {
-    color: var(--provider-color);
-  }
-
-  /* Action Button - Unlink */
-  .action-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    background: transparent;
-    border: none;
-    border-radius: 6px;
-    color: var(--theme-text-dim);
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-    flex-shrink: 0;
-  }
-
-  .action-btn.unlink:hover:not(:disabled) {
-    background: color-mix(
-      in srgb,
-      var(--semantic-error, #ef4444) 15%,
-      transparent
-    );
-    color: var(--semantic-error);
-  }
-
-  .action-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .action-btn i {
-    font-size: 12px;
-  }
-
-  /* Hint - Compact */
   .hint {
-    font-size: var(--font-size-compact);
+    font-size: var(--font-size-min, 0.875rem);
     color: var(--theme-text-dim);
-    margin: 2px 0 0 0;
-    padding: 6px 10px;
-    background: var(--theme-card-bg);
-    border-radius: 6px;
+    margin: 0;
+    padding-inline: 0.25rem;
+    line-height: 1.45;
   }
 
-  /* Accessibility */
-  @media (prefers-reduced-motion: reduce) {
-    .provider-row,
-    .action-btn {
-      transition: none;
-    }
-  }
-
-  .provider-row.available:focus-visible,
-  .action-btn:focus-visible,
   .dismiss-btn:focus-visible {
     outline: 2px solid var(--theme-accent);
     outline-offset: 2px;

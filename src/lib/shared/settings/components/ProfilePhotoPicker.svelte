@@ -388,6 +388,7 @@
 <input
   type="file"
   accept="image/*"
+  aria-label="Choose a profile photo"
   onchange={handleFileSelected}
   bind:this={fileInputRef}
   class="sr-only"

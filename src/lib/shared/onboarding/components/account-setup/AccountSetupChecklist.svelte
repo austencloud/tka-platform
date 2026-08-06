@@ -1,12 +1,18 @@
 <script lang="ts">
   import type {
     AccountSetupState,
+    AccountSetupTask,
     AccountSetupTaskId,
   } from "../../state/account-setup-state.svelte";
 
-  let { state, onTaskAction } = $props<{
+  let {
+    state,
+    onTaskAction,
+    variant = "standard",
+  } = $props<{
     state: AccountSetupState;
     onTaskAction: (taskId: AccountSetupTaskId) => void;
+    variant?: "standard" | "prompt";
   }>();
 
   const progressPercent = $derived(
@@ -14,39 +20,58 @@
       ? 0
       : Math.round((state.completedCount / state.totalCount) * 100)
   );
+  const remainingTasks = $derived(
+    state.tasks.filter((task: AccountSetupTask) => !task.complete)
+  );
+  const visibleTasks = $derived(
+    variant === "prompt" ? remainingTasks : state.tasks
+  );
 </script>
 
-{#if !state.loading && state.available}
-  <section class="setup-card" aria-labelledby="account-setup-title">
+{#if !state.loading && state.available && (variant !== "prompt" || !state.isComplete)}
+  <section
+    class="setup-card"
+    class:prompt={variant === "prompt"}
+    style:--setup-task-count={visibleTasks.length}
+    aria-labelledby="account-setup-title"
+  >
     <header class="setup-header">
       <div class="header-copy">
-        <p class="eyebrow">Account setup</p>
+        {#if variant === "standard"}<p class="eyebrow">Account setup</p>{/if}
         <h2 id="account-setup-title">
-          {state.isComplete
-            ? "Your account is set"
-            : "Finish setting up your account"}
+          {variant === "prompt"
+            ? "Finish your account"
+            : state.isComplete
+              ? "Your account is set"
+              : "Finish setting up your account"}
         </h2>
       </div>
       <span class="progress-count">
-        {state.completedCount} of {state.totalCount} done
+        {variant === "prompt"
+          ? `${remainingTasks.length} ${remainingTasks.length === 1 ? "item" : "items"} left`
+          : `${state.completedCount} of ${state.totalCount} done`}
       </span>
     </header>
 
-    <div
-      class="progress-track"
-      role="progressbar"
-      aria-label="Account setup progress"
-      aria-valuemin="0"
-      aria-valuemax={state.totalCount}
-      aria-valuenow={state.completedCount}
-    >
-      <span class="progress-fill" style:width={`${progressPercent}%`}></span>
-    </div>
+    {#if variant === "standard"}
+      <div
+        class="progress-track"
+        role="progressbar"
+        aria-label="Account setup progress"
+        aria-valuemin="0"
+        aria-valuemax={state.totalCount}
+        aria-valuenow={state.completedCount}
+      >
+        <span class="progress-fill" style:width={`${progressPercent}%`}></span>
+      </div>
+    {/if}
 
     <p class="completion-status" role="status" aria-live="polite">
-      {state.isComplete
-        ? "Account setup complete."
-        : `${state.completedCount} of ${state.totalCount} account setup tasks complete.`}
+      {variant === "prompt"
+        ? `${remainingTasks.length} account setup ${remainingTasks.length === 1 ? "task remains" : "tasks remain"}.`
+        : state.isComplete
+          ? "Account setup complete."
+          : `${state.completedCount} of ${state.totalCount} account setup tasks complete.`}
     </p>
 
     {#if state.saveError}
@@ -59,7 +84,7 @@
     {/if}
 
     <div class="task-grid">
-      {#each state.tasks as task (task.id)}
+      {#each visibleTasks as task (task.id)}
         <button
           class="task-row"
           class:complete={task.complete}
@@ -90,6 +115,45 @@
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 16px;
+  }
+
+  .setup-card.prompt {
+    gap: 0.7rem;
+    padding: 0.85rem 1rem;
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.98)) 94%,
+      var(--theme-accent, #8b5cf6) 6%
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 26%,
+      var(--theme-stroke, rgba(255, 255, 255, 0.1))
+    );
+  }
+
+  .setup-card.prompt h2 {
+    margin-top: 0;
+    font-size: var(--font-size-lg, 1.125rem);
+  }
+
+  .setup-card.prompt .progress-count {
+    color: var(--theme-accent, #8b5cf6);
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .setup-card.prompt .task-description {
+    display: none;
+  }
+
+  .setup-card.prompt .task-row {
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.55rem 0.7rem;
+  }
+
+  .setup-card.prompt .task-status {
+    width: 2rem;
+    height: 2rem;
   }
 
   .setup-header {
@@ -292,6 +356,10 @@
     .task-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .setup-card.prompt .task-grid {
+      grid-template-columns: repeat(var(--setup-task-count), minmax(0, 1fr));
+    }
   }
 
   @container (min-width: 1050px) {
@@ -387,6 +455,42 @@
     .save-error {
       padding: 16px 20px;
       font-size: 1.125rem;
+    }
+
+    .setup-card.prompt .task-grid {
+      grid-template-columns: repeat(var(--setup-task-count), minmax(0, 1fr));
+      gap: 0.5em;
+    }
+
+    .setup-card.prompt .task-row {
+      grid-template-columns: 2.375em minmax(0, 1fr);
+      gap: 0.625em;
+      min-height: var(--min-touch-target, 48px);
+      padding: 0.625em 0.75em;
+      border-radius: 0.75em;
+    }
+
+    .setup-card.prompt .task-status {
+      width: 2.25em;
+      height: 2.25em;
+      font-size: var(--font-size-compact, 0.75em);
+    }
+
+    .setup-card.prompt .task-copy {
+      gap: 0.125em;
+    }
+
+    .setup-card.prompt .task-label,
+    .setup-card.prompt .task-action {
+      font-size: var(--font-size-min, 0.875em);
+    }
+
+    .setup-card.prompt .task-action {
+      grid-column: 2;
+    }
+
+    .setup-card.prompt .task-description {
+      font-size: var(--font-size-compact, 0.75em);
     }
   }
 

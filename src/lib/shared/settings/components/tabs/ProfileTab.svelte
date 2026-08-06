@@ -1,43 +1,39 @@
-<!-- ProfileTab.svelte - User Profile & Account Settings (Refactored) -->
+<!-- Account settings: identity, sign-in methods, and security. -->
 <script lang="ts">
+  import { onMount } from "svelte";
+  import { doc, getDoc } from "firebase/firestore";
+  import { updateProfile, type User } from "firebase/auth";
+
   import { getUserDocumentManager } from "$lib/shared/auth/get-user-document-manager";
   import { generateAndUploadAvatar } from "$lib/shared/auth/services/profile-picture-manager";
   import { getAccountManager } from "$lib/shared/auth/get-account-manager";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { signInWithFacebook } from "$lib/shared/auth/services/authenticator";
-  import { authState } from "../../../auth/state/auth-state.svelte";
+  import {
+    authState,
+    refreshUser,
+  } from "$lib/shared/auth/state/auth-state.svelte";
+  import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+  import { hasInstagramAccount } from "$lib/shared/auth/services/instagram-auth";
   import {
     userPreviewState,
     loadPreviewSection,
     isSectionLoaded,
-  } from "../../../debug/state/user-preview-state.svelte";
-  import type {
-    AccountManager,
-    DeleteReauth,
-  } from "$lib/shared/auth/services/account-manager";
-  import { onMount } from "svelte";
+    type PreviewUserProfile,
+  } from "$lib/shared/debug/state/user-preview-state.svelte";
   import {
     createProfileSettingsState,
     setProfileSettingsContext,
-  } from "../../../navigation/state/profile-settings-context.svelte";
-  import ConnectedAccounts from "../../../navigation/components/profile-settings/ConnectedAccounts.svelte";
-  import ConnectedAccountsPreview from "../../../navigation/components/profile-settings/ConnectedAccountsPreview.svelte";
-  import AccountSettingsSection from "../../../navigation/components/profile-settings/AccountSettingsSection.svelte";
-  import DangerZone from "../../../navigation/components/profile-settings/DangerZone.svelte";
-  import type { HapticFeedback } from "../../../application/services/haptic-feedback";
-  import GlassCard from "./profile/GlassCard.svelte";
+  } from "$lib/shared/navigation/state/profile-settings-context.svelte";
+  import ConnectedAccounts from "$lib/shared/navigation/components/profile-settings/ConnectedAccounts.svelte";
+  import ConnectedAccountsPreview from "$lib/shared/navigation/components/profile-settings/ConnectedAccountsPreview.svelte";
+  import AccountSettingsSection from "$lib/shared/navigation/components/profile-settings/AccountSettingsSection.svelte";
+  import AccountValueRow from "$lib/shared/navigation/components/profile-settings/AccountValueRow.svelte";
+  import PasswordChangeForm from "$lib/shared/navigation/components/profile-settings/PasswordChangeForm.svelte";
+  import DangerZone from "$lib/shared/navigation/components/profile-settings/DangerZone.svelte";
   import ProfileHeroSection from "./profile/ProfileHeroSection.svelte";
-  import StorageSection from "./profile/StorageSection.svelte";
   import AuthPrompt from "./profile/AuthPrompt.svelte";
   import ProfilePhotoPicker from "../ProfilePhotoPicker.svelte";
-  import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
-  import type { PhotoSelection } from "../../domain/photo-picker-types";
-  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { updateProfile } from "firebase/auth";
-  import { doc, getDoc } from "firebase/firestore";
-  import { getFirestoreInstance } from "../../../auth/firebase";
-  import { refreshUser } from "../../../auth/state/auth-state.svelte";
-  import { hasInstagramAccount } from "$lib/shared/auth/services/instagram-auth";
   import AccountSetupChecklist from "$lib/shared/onboarding/components/account-setup/AccountSetupChecklist.svelte";
   import { tryGetAccountSetupContext } from "$lib/shared/onboarding/context/account-setup-context";
   import {
@@ -50,57 +46,15 @@
   } from "$lib/shared/community/state/prop-preference-state.svelte";
   import { myPropsDrawerState } from "$lib/shared/navigation/components/account/my-props-drawer-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
 
-  import type { PreviewUserProfile } from "../../../debug/state/user-preview-state.svelte";
-  import type { User } from "firebase/auth";
-
-  // Create and provide profile settings context for child components
-  const profileState = createProfileSettingsState();
-  setProfileSettingsContext(profileState);
-  const accountSetupState = tryGetAccountSetupContext();
-
-  let setupPropState = $state<PropPreferenceState | null>(null);
-  let setupPropUserId = $state<string | null>(null);
-  let displayNameEditRequest = $state(0);
-
-  $effect(() => {
-    const userId = authState.isFullAccount
-      ? (authState.user?.uid ?? null)
-      : null;
-    if (userId === setupPropUserId) return;
-
-    setupPropUserId = userId;
-    setupPropState = userId ? createPropPreferenceState(userId) : null;
-  });
-
-  // Check if we're in preview mode
-  const isPreviewMode = $derived(
-    userPreviewState.isActive && userPreviewState.data.profile !== null
-  );
-
-  // Create a User-like object from preview profile for ProfileHeroSection
-  function createPreviewUser(profile: PreviewUserProfile): User {
-    return {
-      uid: profile.uid,
-      email: profile.email,
-      displayName: profile.displayName,
-      photoURL: profile.photoURL,
-      // Minimal User interface requirements (unused but required)
-      emailVerified: false,
-      isAnonymous: false,
-      metadata: {},
-      providerData: [],
-      refreshToken: "",
-      tenantId: null,
-      phoneNumber: null,
-      providerId: "firebase",
-      delete: async () => {},
-      getIdToken: async () => "",
-      getIdTokenResult: async () => ({}) as any,
-      reload: async () => {},
-      toJSON: () => ({}),
-    } as User;
-  }
+  import type {
+    AccountManager,
+    DeleteReauth,
+  } from "$lib/shared/auth/services/account-manager";
+  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+  import type { PhotoSelection } from "$lib/shared/settings/domain/photo-picker-types";
 
   interface Props {
     currentSettings?: unknown;
@@ -112,87 +66,132 @@
     onSettingUpdate: _onSettingUpdate,
   }: Props = $props();
 
-  // Services
+  const profileState = createProfileSettingsState();
+  setProfileSettingsContext(profileState);
+
+  const accountSetupState = tryGetAccountSetupContext();
+  const showAccountSetup = $derived(
+    accountSetupState !== null &&
+      !accountSetupState.loading &&
+      accountSetupState.available &&
+      !accountSetupState.isComplete
+  );
+
+  let setupPropState = $state<PropPreferenceState | null>(null);
+  let setupPropUserId = $state<string | null>(null);
+  let displayNameEditRequest = $state(0);
   let hapticService = $state<HapticFeedback | null>(null);
   let accountManager = $state<AccountManager | null>(null);
-
-  // Cache clearing state
-  let clearingCache = $state(false);
-  let showClearCacheConfirm = $state(false);
-
-  // Pronouns loaded from Firestore
   let userPronouns = $state("");
-
-  // Profile accent color loaded from Firestore
+  let userUsername = $state("");
   let profileColor = $state("#8b5cf6");
-
-  // Google photo URL persisted in Firestore (survives avatar switches)
   let savedGooglePhotoUrl = $state<string | null>(null);
   let instagramLinked = $state(false);
+  let isVisible = $state(false);
+  let manageSignInMethods = $state(false);
+  let loadedAccountUserId = $state<string | null>(null);
 
-  const connectedProviderIds = $derived([
-    ...(authState.user?.providerData.map((provider) => provider.providerId) ??
-      []),
-    ...(instagramLinked ? ["instagram.com"] : []),
-  ]);
-
-  // Photo picker state - survives refresh/HMR via sessionStorage
   const PHOTO_PICKER_KEY = "tka_photo_picker_open";
   let showPhotoPicker = $state(
     typeof sessionStorage !== "undefined" &&
       sessionStorage.getItem(PHOTO_PICKER_KEY) === "1"
   );
 
-  // Entry animation
-  let isVisible = $state(false);
-
-  // Preview mode: auth data state
+  const isPreviewMode = $derived(
+    userPreviewState.isActive && userPreviewState.data.profile !== null
+  );
   const previewAuthData = $derived(userPreviewState.data.authData);
   const isLoadingAuthData = $derived(
     userPreviewState.loadingSection === "authData"
   );
   const authDataLoaded = $derived(isSectionLoaded("authData"));
+  const connectedProviderIds = $derived([
+    ...(authState.user?.providerData.map((provider) => provider.providerId) ??
+      []),
+    ...(instagramLinked ? ["instagram.com"] : []),
+  ]);
 
-  // Load auth data when entering preview mode and viewing profile tab
+  $effect(() => {
+    const userId = authState.isFullAccount
+      ? (authState.user?.uid ?? null)
+      : null;
+    if (userId === setupPropUserId) return;
+
+    setupPropUserId = userId;
+    setupPropState = userId ? createPropPreferenceState(userId) : null;
+  });
+
   $effect(() => {
     if (isPreviewMode && !authDataLoaded && !isLoadingAuthData) {
-      loadPreviewSection("authData");
+      void loadPreviewSection("authData");
     }
   });
 
-  onMount(async () => {
+  $effect(() => {
+    const user = authState.user;
+    if (!user) {
+      loadedAccountUserId = null;
+      return;
+    }
+    if (loadedAccountUserId === user.uid) return;
+
+    loadedAccountUserId = user.uid;
+    void loadAccountDetails(user);
+  });
+
+  onMount(() => {
     hapticService = getHapticFeedback();
     accountManager = getAccountManager();
-
     setTimeout(() => (isVisible = true), 30);
-
-    // Load pronouns from Firestore
-    const user = authState.user;
-    if (user) {
-      instagramLinked = await hasInstagramAccount(user).catch(() => false);
-      try {
-        const firestore = await getFirestoreInstance();
-        const userDocRef = doc(firestore, "users", user.uid);
-        const privateDocRef = doc(firestore, "userPrivateProfiles", user.uid);
-        const [userDoc, privateDoc] = await Promise.all([
-          getDoc(userDocRef),
-          getDoc(privateDocRef),
-        ]);
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          userPronouns = data?.pronouns || "";
-          if (data?.profileColor) {
-            profileColor = data.profileColor;
-          }
-        }
-        if (privateDoc.exists()) {
-          savedGooglePhotoUrl = privateDoc.data()?.googlePhotoURL ?? null;
-        }
-      } catch (err) {
-        console.error("Failed to load pronouns:", err);
-      }
-    }
   });
+
+  async function loadAccountDetails(user: User) {
+    try {
+      const firestore = await getFirestoreInstance();
+      const [isInstagramLinked, userDoc, privateDoc] = await Promise.all([
+        hasInstagramAccount(user).catch(() => false),
+        getDoc(doc(firestore, "users", user.uid)),
+        getDoc(doc(firestore, "userPrivateProfiles", user.uid)),
+      ]);
+
+      if (authState.user?.uid !== user.uid) return;
+      instagramLinked = isInstagramLinked;
+
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        userPronouns = data?.pronouns || "";
+        userUsername = data?.username || "";
+        if (data?.profileColor) profileColor = data.profileColor;
+      }
+      if (privateDoc.exists()) {
+        savedGooglePhotoUrl = privateDoc.data()?.googlePhotoURL ?? null;
+      }
+    } catch (error) {
+      console.error("Failed to load account details:", error);
+    }
+  }
+
+  function createPreviewUser(profile: PreviewUserProfile): User {
+    return {
+      uid: profile.uid,
+      email: profile.email,
+      displayName: profile.displayName,
+      photoURL: profile.photoURL,
+      emailVerified: false,
+      isAnonymous: false,
+      metadata: {},
+      providerData: [],
+      refreshToken: "",
+      tenantId: null,
+      phoneNumber: null,
+      providerId: "firebase",
+      delete: async () => {},
+      getIdToken: async () => "",
+      getIdTokenResult: async () => ({}) as never,
+      reload: async () => {},
+      toJSON: () => ({}),
+    } as User;
+  }
 
   async function handleSignOut() {
     hapticService?.trigger("selection");
@@ -208,15 +207,14 @@
     hapticService?.trigger("selection");
     try {
       await signInWithFacebook();
-    } catch (error: any) {
-      console.error("❌ Facebook auth failed:", error);
+    } catch (error) {
+      console.error("Facebook sign-in failed:", error);
       hapticService?.trigger("error");
     }
   }
 
   async function handleChangePassword() {
     if (!accountManager || profileState.ui.saving) return;
-
     profileState.ui.saving = true;
 
     try {
@@ -224,10 +222,6 @@
         profileState.password.current,
         profileState.password.new
       );
-      // Success handling is done by the form component (inline success state)
-    } catch (error) {
-      // Re-throw so the form component can show inline error
-      throw error;
     } finally {
       profileState.ui.saving = false;
     }
@@ -235,26 +229,7 @@
 
   async function handleDeleteAccount(reauth: DeleteReauth, reason?: string) {
     if (!accountManager) return;
-
     await accountManager.deleteAccount(reauth, reason);
-  }
-
-  // Opens the themed confirmation; the destructive clear runs on confirm.
-  function handleClearCache() {
-    showClearCacheConfirm = true;
-  }
-
-  async function performClearCache() {
-    if (!accountManager) return;
-
-    clearingCache = true;
-
-    try {
-      await accountManager.clearCache();
-    } catch (error) {
-      console.error("Clear cache failed:", error);
-      clearingCache = false;
-    }
   }
 
   function handleOpenPhotoPicker() {
@@ -267,10 +242,9 @@
     hapticService?.trigger("selection");
 
     switch (taskId) {
-      case "display-name": {
+      case "display-name":
         displayNameEditRequest += 1;
         break;
-      }
       case "profile-photo":
         handleOpenPhotoPicker();
         break;
@@ -291,7 +265,6 @@
   }
 
   async function handleColorChange(color: string) {
-    // Optimistic update so the ring color changes instantly
     const previousColor = profileColor;
     profileColor = color;
 
@@ -299,32 +272,26 @@
     if (!user) return;
 
     try {
-      const userDocumentManager = getUserDocumentManager();
-      await userDocumentManager.updateProfileColor(user.uid, color);
-    } catch (err) {
-      console.error("Failed to save profile color:", err);
-      // Revert the optimistic update — the new color never persisted
+      await getUserDocumentManager().updateProfileColor(user.uid, color);
+    } catch (error) {
+      console.error("Failed to save profile color:", error);
       profileColor = previousColor;
       toast.error(
-        "Couldn't save profile color. Reverted to your previous color."
+        "Couldn't save profile color. Your previous color is restored."
       );
     }
   }
 
-  /**
-   * Upload a profile photo file to Firebase Storage
-   */
   async function uploadProfilePhoto(user: User, file: File): Promise<string> {
     const { getStorageInstance } = await import("$lib/shared/auth/firebase");
     const { ref, uploadBytes, getDownloadURL } =
       await import("firebase/storage");
     const storage = await getStorageInstance();
-
-    // Generate unique filename with timestamp
-    const ext = file.name.split(".").pop() || "jpg";
-    const filename = `${Date.now()}.${ext}`;
-    const storagePath = `avatars/${user.uid}/${filename}`;
-    const storageRef = ref(storage, storagePath);
+    const extension = file.name.split(".").pop() || "jpg";
+    const storageRef = ref(
+      storage,
+      `avatars/${user.uid}/${Date.now()}.${extension}`
+    );
 
     await uploadBytes(storageRef, file, {
       contentType: file.type || "image/jpeg",
@@ -335,7 +302,7 @@
       },
     });
 
-    return await getDownloadURL(storageRef);
+    return getDownloadURL(storageRef);
   }
 
   async function handlePhotoSelected(selection: PhotoSelection) {
@@ -343,7 +310,6 @@
     if (!user) return;
 
     hapticService?.trigger("selection");
-
     const userDocumentManager = getUserDocumentManager();
 
     try {
@@ -352,12 +318,10 @@
       switch (selection.type) {
         case "upload":
           if (selection.file) {
-            // Upload file to Firebase Storage
             newPhotoURL = await uploadProfilePhoto(user, selection.file);
             await updateProfile(user, { photoURL: newPhotoURL });
           }
           break;
-
         case "google":
         case "facebook":
           if (selection.url) {
@@ -365,7 +329,6 @@
             await updateProfile(user, { photoURL: newPhotoURL });
           }
           break;
-
         case "generated":
           if (selection.generatedData) {
             newPhotoURL = await generateAndUploadAvatar(
@@ -376,184 +339,245 @@
           break;
       }
 
-      // If we got a new photo URL, sync to Firestore and refresh UI
       if (newPhotoURL) {
-        // Update Firestore user document so admin views reflect change instantly
         await userDocumentManager.updatePhotoURL(user.uid, newPhotoURL);
-        await refreshUser(); // Triggers Svelte reactivity
+        await refreshUser();
         hapticService?.trigger("success");
       }
     } catch (error) {
       console.error("Failed to update profile photo:", error);
       hapticService?.trigger("error");
+      toast.error("Profile photo could not be updated. Try again.");
     }
   }
 </script>
 
-<div class="profile-tab themed-scrollbar" class:visible={isVisible}>
+<div class="profile-tab" class:visible={isVisible}>
   {#if isPreviewMode && userPreviewState.data.profile}
-    <!-- Preview Mode: Show exact same layout with preview user's data -->
+    {@const previewProfile = userPreviewState.data.profile}
     <div class="profile-content">
-      <!-- Preview banner -->
       <div class="preview-banner">
-        <i class="fas fa-eye"></i>
-        <span
-          >Viewing as <strong
-            >{userPreviewState.data.profile.displayName ||
-              userPreviewState.data.profile.email ||
+        <i class="fas fa-eye" aria-hidden="true"></i>
+        <span>
+          Viewing as
+          <strong
+            >{previewProfile.displayName ||
+              previewProfile.email ||
               "User"}</strong
-          ></span
-        >
-      </div>
-
-      <!-- Profile Hero - same layout, preview user data, no sign out -->
-      <ProfileHeroSection
-        user={createPreviewUser(userPreviewState.data.profile)}
-        onSignOut={() => {}}
-        disabled={true}
-      />
-
-      <!-- Settings Grid - same layout as normal view -->
-      <div class="settings-grid">
-        <!-- Connected Accounts - now uses admin endpoint to fetch real data -->
-        <GlassCard
-          icon="fas fa-link"
-          title="Connected Accounts"
-          subtitle="View linked providers"
-        >
-          {#snippet children()}
-            <ConnectedAccountsPreview
-              providers={previewAuthData?.providers ?? []}
-              emailVerified={previewAuthData?.emailVerified ?? false}
-              loading={isLoadingAuthData}
-            />
-          {/snippet}
-        </GlassCard>
-
-        <!-- Password - show if user has password provider -->
-        {#if previewAuthData?.providers.some((p) => p.providerId === "password")}
-          <GlassCard
-            icon="fas fa-key"
-            title="Password"
-            subtitle="Password authentication enabled"
           >
-            {#snippet children()}
-              <div class="password-preview">
-                <div class="password-status">
-                  <i class="fas fa-check-circle"></i>
-                  <span>Password sign-in enabled</span>
-                </div>
-                {#if !previewAuthData?.emailVerified}
-                  <div class="email-unverified-note">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span>Email not yet verified</span>
-                  </div>
-                {/if}
-              </div>
-            {/snippet}
-          </GlassCard>
-        {/if}
-
-        <!-- Storage Section -->
-        <StorageSection
-          onClearCache={handleClearCache}
-          isClearing={clearingCache}
-        />
+        </span>
       </div>
-      <!-- Danger Zone not shown in preview mode - can't delete another user's account -->
+
+      <div class="account-workspace">
+        <div class="identity-pane">
+          <ProfileHeroSection
+            user={createPreviewUser(previewProfile)}
+            username={previewProfile.username}
+            onSignOut={() => {}}
+            disabled={true}
+          />
+        </div>
+
+        <section class="workspace-section personal-section">
+          <header class="section-header">
+            <span class="section-icon"
+              ><i class="fas fa-user" aria-hidden="true"></i></span
+            >
+            <span class="section-heading">
+              <h2>Personal details</h2>
+              <p>How this person appears across Flow Arts Composer.</p>
+            </span>
+          </header>
+          <div class="section-body value-list">
+            <AccountValueRow
+              label="Display name"
+              value={previewProfile.displayName || "Not set"}
+              empty={!previewProfile.displayName}
+            />
+            <AccountValueRow
+              label="Username"
+              value={previewProfile.username
+                ? `@${previewProfile.username}`
+                : "Not set"}
+              empty={!previewProfile.username}
+            />
+            <AccountValueRow
+              label="Email"
+              value={previewProfile.email || "Not set"}
+              empty={!previewProfile.email}
+            />
+          </div>
+        </section>
+
+        <div class="access-pane">
+          <section class="workspace-group sign-in-section">
+            <header class="section-header">
+              <span class="section-icon"
+                ><i class="fas fa-link" aria-hidden="true"></i></span
+              >
+              <span class="section-heading">
+                <h2>Sign-in methods</h2>
+                <p>Providers connected to this account.</p>
+              </span>
+            </header>
+            <div class="section-body">
+              <ConnectedAccountsPreview
+                providers={previewAuthData?.providers ?? []}
+                emailVerified={previewAuthData?.emailVerified ?? false}
+                loading={isLoadingAuthData}
+              />
+            </div>
+          </section>
+
+          <section class="workspace-group security-section">
+            <header class="section-header">
+              <span class="section-icon"
+                ><i class="fas fa-shield-halved" aria-hidden="true"></i></span
+              >
+              <span class="section-heading">
+                <h2>Security</h2>
+                <p>Password status and protected account actions.</p>
+              </span>
+            </header>
+            <div class="section-body value-list">
+              <AccountValueRow
+                label="Password"
+                value={previewAuthData?.providers.some(
+                  (provider) => provider.providerId === "password"
+                )
+                  ? "Password sign-in enabled"
+                  : "No password sign-in"}
+              />
+              {#if previewAuthData && !previewAuthData.emailVerified}
+                <p class="security-note warning">
+                  <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+                  Email not yet verified
+                </p>
+              {/if}
+              <p class="security-note">
+                Account actions are unavailable while previewing another user.
+              </p>
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
   {:else if authState.isAuthenticated && authState.user}
-    <!-- Signed In State -->
     <div class="profile-content">
-      <!-- Profile Hero -->
-      <ProfileHeroSection
-        user={authState.user}
-        onSignOut={handleSignOut}
-        onAvatarClick={handleOpenPhotoPicker}
-        pronouns={userPronouns}
-        {profileColor}
-      />
-
-      {#if accountSetupState && !accountSetupState.loading && accountSetupState.available}
+      {#if showAccountSetup && accountSetupState}
         <AccountSetupChecklist
           state={accountSetupState}
           onTaskAction={handleAccountSetupTask}
+          variant="prompt"
         />
       {/if}
 
-      <!-- Settings Grid - Flexbox for natural fill behavior -->
-      <div class="settings-grid">
-        <!-- Row 1: Smaller cards -->
-        <!-- Account Settings - Display name + password (if available) -->
-        <div id="profile-account-settings" class="settings-card-anchor">
-          <GlassCard
-            icon="fas fa-user-cog"
-            title="Account Settings"
-            subtitle="Manage your profile"
-          >
-            {#snippet children()}
-              <AccountSettingsSection
-                user={authState.user!}
-                hasPasswordProvider={profileState.hasPasswordProvider(
-                  authState.user
-                )}
-                onChangePassword={handleChangePassword}
-                {hapticService}
-                onPronounsChanged={(p) => (userPronouns = p)}
-                {displayNameEditRequest}
-              />
-            {/snippet}
-          </GlassCard>
+      <div class="account-workspace">
+        <div class="identity-pane">
+          <ProfileHeroSection
+            user={authState.user}
+            username={userUsername}
+            pronouns={userPronouns}
+            {profileColor}
+            onSignOut={handleSignOut}
+            onAvatarClick={handleOpenPhotoPicker}
+          />
         </div>
 
-        <!-- Storage Section -->
-        <StorageSection
-          onClearCache={handleClearCache}
-          isClearing={clearingCache}
-        />
-
-        <!-- Connected Accounts -->
-        <GlassCard
-          icon="fas fa-link"
-          title="Connected Accounts"
-          subtitle="Manage linked providers"
+        <section
+          id="profile-account-settings"
+          class="workspace-section personal-section"
         >
-          {#snippet children()}
-            <ConnectedAccounts
-              onInstagramChange={(linked) => (instagramLinked = linked)}
+          <header class="section-header">
+            <span class="section-icon"
+              ><i class="fas fa-user" aria-hidden="true"></i></span
+            >
+            <span class="section-heading">
+              <h2>Personal details</h2>
+              <p>Control how people recognize you.</p>
+            </span>
+          </header>
+          <div class="section-body">
+            <AccountSettingsSection
+              user={authState.user}
+              {hapticService}
+              onPronounsChanged={(pronouns) => (userPronouns = pronouns)}
+              onUsernameChanged={(username) => (userUsername = username)}
+              {displayNameEditRequest}
             />
-          {/snippet}
-        </GlassCard>
-      </div>
+          </div>
+        </section>
 
-      <!-- Danger Zone - Full width, separated from grid -->
-      <GlassCard
-        class="danger-card"
-        icon="fas fa-skull"
-        iconClass="danger-icon"
-        title="Danger Zone"
-        subtitle="Irreversible account actions"
-      >
-        {#snippet children()}
-          <DangerZone
-            onDeleteAccount={handleDeleteAccount}
-            {hapticService}
-            isAdmin={authState.isAdmin}
-            userIdentifier={authState.user?.displayName ||
-              authState.user?.email ||
-              ""}
-            providerIds={connectedProviderIds}
-          />
-        {/snippet}
-      </GlassCard>
+        <div class="access-pane">
+          <section class="workspace-group sign-in-section">
+            <header class="section-header">
+              <span class="section-icon"
+                ><i class="fas fa-link" aria-hidden="true"></i></span
+              >
+              <span class="section-heading">
+                <h2>Sign-in methods</h2>
+                <p>Ways to access this account.</p>
+              </span>
+              <span class="section-action">
+                <PanelButton
+                  variant="secondary"
+                  onclick={() => (manageSignInMethods = !manageSignInMethods)}
+                  ariaLabel={manageSignInMethods
+                    ? "Finish managing sign-in methods"
+                    : "Manage sign-in methods"}
+                >
+                  <i
+                    class={manageSignInMethods ? "fas fa-check" : "fas fa-gear"}
+                    aria-hidden="true"
+                  ></i>
+                  <span>{manageSignInMethods ? "Done" : "Manage"}</span>
+                </PanelButton>
+              </span>
+            </header>
+            <div class="section-body">
+              <ConnectedAccounts
+                managing={manageSignInMethods}
+                onInstagramChange={(linked) => (instagramLinked = linked)}
+              />
+            </div>
+          </section>
+
+          <section class="workspace-group security-section">
+            <header class="section-header">
+              <span class="section-icon"
+                ><i class="fas fa-shield-halved" aria-hidden="true"></i></span
+              >
+              <span class="section-heading">
+                <h2>Security</h2>
+                <p>Password and account access.</p>
+              </span>
+            </header>
+            <div class="section-body security-body">
+              {#if profileState.hasPasswordProvider(authState.user)}
+                <PasswordChangeForm
+                  onChangePassword={handleChangePassword}
+                  {hapticService}
+                />
+              {/if}
+              <DangerZone
+                onDeleteAccount={handleDeleteAccount}
+                {hapticService}
+                isAdmin={authState.isAdmin}
+                userIdentifier={authState.user.displayName ||
+                  authState.user.email ||
+                  ""}
+                providerIds={connectedProviderIds}
+              />
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
   {:else}
-    <!-- Signed Out State -->
     <AuthPrompt onFacebookAuth={handleFacebookAuth} />
   {/if}
 </div>
 
-<!-- Profile Photo Picker Drawer -->
 <ProfilePhotoPicker
   bind:isOpen={showPhotoPicker}
   onClose={() => {
@@ -566,38 +590,18 @@
   {savedGooglePhotoUrl}
 />
 
-<!-- Clear-cache confirmation -->
-<ConfirmDialog
-  bind:isOpen={showClearCacheConfirm}
-  variant="warning"
-  title="Clear cached data?"
-  message="This signs you out, removes locally stored data, and reloads the page. Cloud-saved sequences stay in your account."
-  confirmText="Clear cache"
-  cancelText="Cancel"
-  onConfirm={performClearCache}
-  onCancel={() => {}}
-/>
-
 <style>
-  /* ═══════════════════════════════════════════════════════════════════════════
-     PROFILE TAB - Lightweight layout container
-     All component-specific styles live in child components
-     ═══════════════════════════════════════════════════════════════════════════ */
   .profile-tab {
-    container-type: inline-size;
-    container-name: profile-tab;
-
-    display: flex;
-    flex-direction: column;
+    container: profile-tab / inline-size;
+    display: grid;
+    flex: 1 1 auto;
+    align-content: safe center;
     width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: clamp(12px, 3cqi, 24px);
-    gap: clamp(12px, 2cqi, 20px);
-    overflow-y: auto;
-    overflow-x: hidden;
-
+    min-height: 100%;
+    min-width: 0;
+    padding: clamp(0.75em, 1.4cqi, 1.75em) clamp(0.75em, 2cqi, 3em);
     opacity: 0;
+    overflow: visible;
     transition: opacity var(--duration-normal) ease;
   }
 
@@ -605,204 +609,321 @@
     opacity: 1;
   }
 
+  @media (min-width: 1680px) and (min-height: 45rem) {
+    .profile-tab {
+      font-size: clamp(16px, calc(16px + (100vw - 1680px) * 8 / 2160), 24px);
+      --font-size-min: 0.875em;
+      --font-size-compact: 0.75em;
+      --font-size-xs: 0.75em;
+      --font-size-sm: 0.875em;
+      --font-size-base: 1em;
+      --font-size-md: 1em;
+      --font-size-lg: 1.125em;
+      --font-size-xl: 1.25em;
+      --font-size-2xl: 1.5em;
+      --font-size-3xl: 1.875em;
+    }
+  }
+
   .profile-content {
     display: flex;
     flex-direction: column;
-    gap: clamp(12px, 2cqi, 20px);
-    max-width: 100%;
-  }
-
-  /* Settings needs to use the room available on large displays. The default
-     1200px cap is right for laptops, but reads as a small island at 4K. */
-  @media (min-width: 1680px) {
-    .profile-tab {
-      max-width: 1600px;
-    }
-  }
-
-  @media (min-width: 2600px) {
-    .profile-tab {
-      max-width: var(--shell-w, min(2600px, 92vw));
-    }
-
-    .profile-content {
-      gap: 28px;
-    }
-
-    .settings-grid {
-      gap: 24px;
-    }
-  }
-
-  /* ========================================
-     SETTINGS GRID - Flexbox with natural heights
-     Cards keep their natural height, partial rows expand width
-     ======================================== */
-  .settings-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: clamp(10px, 2cqi, 16px);
-    align-items: stretch; /* Cards match row height */
-  }
-
-  /* Each card: min 320px, grows to fill width */
-  .settings-grid > :global(*) {
-    flex: 1 1 320px;
-    min-width: 0;
-  }
-
-  .settings-card-anchor {
-    display: flex;
-    min-width: 0;
-  }
-
-  .settings-card-anchor > :global(*) {
+    gap: clamp(0.75em, 1cqi, 1em);
     width: 100%;
+    min-width: 0;
   }
 
-  /* Single column on narrow screens */
-  @container profile-tab (max-width: 500px) {
-    .settings-grid > :global(*) {
-      flex-basis: 100%;
-    }
-  }
-
-  /* Tighter spacing on very small screens */
-  @container profile-tab (max-width: 360px) {
-    .settings-grid {
-      gap: 8px;
-    }
-  }
-
-  /* ========================================
-     DANGER CARD & PREMIUM ICON - Special styles
-     ======================================== */
-  :global(.danger-card) {
-    background: var(
-      --theme-danger-bg,
-      linear-gradient(
-        135deg,
-        rgba(70, 15, 20, 0.9) 0%,
-        rgba(85, 20, 25, 0.85) 100%
-      )
-    );
-    border: 1px solid var(--theme-danger-border);
-    box-shadow: var(
-      --theme-danger-shadow,
-      inset 0 1px 0 rgba(239, 68, 68, 0.15),
-      0 4px 20px var(--theme-shadow)
-    );
-  }
-
-  :global(.danger-card:hover) {
-    background: var(
-      --theme-danger-hover-bg,
-      linear-gradient(
-        135deg,
-        rgba(85, 18, 25, 0.92) 0%,
-        rgba(100, 25, 30, 0.88) 100%
-      )
-    );
-    border-color: var(--theme-danger-hover-border);
-    box-shadow: var(
-      --theme-danger-hover-shadow,
-      inset 0 1px 0 rgba(239, 68, 68, 0.2),
-      0 8px 32px rgba(0, 0, 0, 0.4),
-      0 0 20px rgba(239, 68, 68, 0.15)
-    );
-  }
-
-  :global(.danger-card .card-icon) {
+  .account-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke-strong, var(--theme-stroke));
+    border-radius: 1.25em;
     background: color-mix(
       in srgb,
-      var(--semantic-error, #ef4444) 20%,
-      transparent
+      var(--theme-panel-bg, rgba(0, 0, 0, 0.88)) 14%,
+      #070b10 86%
     );
-    color: var(--semantic-error);
+    box-shadow: var(--theme-panel-shadow, 0 1rem 3rem rgba(0, 0, 0, 0.35));
+    isolation: isolate;
   }
 
-  :global(.danger-card .card-title) {
-    color: #fecaca;
+  :global(html[data-theme-luminance="bright"]) .account-workspace {
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, rgba(255, 255, 255, 0.88)) 14%,
+      #f6f7f9 86%
+    );
   }
 
-  :global(.premium-icon) {
+  .identity-pane,
+  .workspace-section,
+  .access-pane,
+  .workspace-group {
+    min-width: 0;
+  }
+
+  .identity-pane {
+    padding: clamp(1.25em, 2cqi, 2.25em);
     background: linear-gradient(
-      135deg,
-      rgba(245, 158, 11, 0.2),
-      rgba(251, 191, 36, 0.15)
+      155deg,
+      color-mix(in srgb, var(--theme-accent) 12%, transparent),
+      transparent 58%
     );
-    color: var(--semantic-warning);
   }
 
-  /* ========================================
-     PREVIEW MODE STYLES
-     ======================================== */
+  .workspace-section {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--theme-stroke);
+    background: color-mix(in srgb, var(--theme-text) 2%, transparent);
+  }
+
+  .access-pane {
+    display: grid;
+    align-content: start;
+    border-top: 1px solid var(--theme-stroke);
+  }
+
+  .workspace-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .workspace-group + .workspace-group {
+    border-top: 1px solid var(--theme-stroke);
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75em;
+    min-height: 4.5em;
+    padding: 0.85em 1.15em;
+    border-bottom: 1px solid var(--theme-stroke);
+    background: color-mix(in srgb, var(--theme-text) 3%, transparent);
+  }
+
+  .section-heading {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .section-action {
+    flex: 0 0 auto;
+  }
+
+  .section-action :global(.panel-btn) {
+    min-width: 7.25em;
+  }
+
+  .section-icon {
+    display: grid;
+    width: 2.5em;
+    height: 2.5em;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 0.7em;
+    color: var(--theme-accent-text, var(--theme-accent));
+    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 22%, transparent);
+  }
+
+  .section-header h2,
+  .section-header p {
+    margin: 0;
+  }
+
+  .section-header h2 {
+    color: var(--theme-text);
+    font-size: max(1.125rem, var(--font-size-lg));
+    font-weight: 750;
+    line-height: 1.25;
+  }
+
+  .section-header p {
+    margin-top: 0.2em;
+    color: var(--theme-text-dim);
+    font-size: max(0.875rem, var(--font-size-min));
+    line-height: 1.35;
+  }
+
+  .section-body {
+    min-width: 0;
+    padding: 0.45em 1.15em 0.85em;
+  }
+
+  .personal-section .section-body {
+    display: flex;
+    flex: 1 1 auto;
+  }
+
+  .personal-section .section-body :global(.account-settings) {
+    flex: 1 1 auto;
+  }
+
+  .security-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    padding-top: 1em;
+  }
+
+  .security-body :global(.danger-section) {
+    margin-top: 0;
+  }
+
+  .value-list :global(.account-value-row:last-child) {
+    border-bottom: 0;
+  }
+
   .preview-banner {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 16px;
-    background: rgba(139, 92, 246, 0.15);
-    border: 1px solid rgba(139, 92, 246, 0.4);
-    border-radius: 10px;
-    color: #c4b5fd;
-    font-size: var(--font-size-sm, 14px);
-  }
-
-  .preview-banner i {
-    font-size: 14px;
-  }
-
-  .preview-banner strong {
+    gap: 0.6rem;
+    min-height: var(--min-touch-target);
+    padding: 0.65rem 0.9rem;
+    border: 1px solid color-mix(in srgb, #8b5cf6 45%, transparent);
+    border-radius: 0.75rem;
     color: #ddd6fe;
+    background: color-mix(in srgb, #8b5cf6 14%, var(--theme-panel-bg));
+    font-size: max(0.875rem, var(--font-size-sm));
   }
 
-  /* Password Preview in preview mode */
-  .password-preview {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .password-status {
+  .security-note {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 14px 16px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
-    font-size: var(--font-size-sm);
-    color: var(--theme-text);
+    gap: 0.5rem;
+    margin: 0.75rem 0 0;
+    color: var(--theme-text-dim);
+    font-size: max(0.875rem, var(--font-size-min));
+    line-height: 1.4;
   }
 
-  .password-status i {
-    font-size: var(--font-size-base);
-    color: var(--semantic-success, #4ade80);
-  }
-
-  .email-unverified-note {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    background: rgba(245, 158, 11, 0.1);
-    border: 1px solid rgba(245, 158, 11, 0.25);
-    border-radius: 10px;
-    font-size: var(--font-size-compact);
+  .security-note.warning {
     color: var(--semantic-warning);
   }
 
-  .email-unverified-note i {
-    font-size: var(--font-size-sm);
+  @container profile-tab (min-width: 48rem) {
+    .account-workspace {
+      grid-template-columns: minmax(15rem, 0.78fr) minmax(24rem, 1.22fr);
+      min-height: clamp(30em, 56vh, 38em);
+    }
+
+    .identity-pane {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .personal-section {
+      grid-column: 2;
+      grid-row: 1;
+      border-top: 0;
+      border-left: 1px solid var(--theme-stroke);
+    }
+
+    .access-pane {
+      grid-column: 1 / -1;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .workspace-group + .workspace-group {
+      border-top: 0;
+      border-left: 1px solid var(--theme-stroke);
+    }
   }
 
-  /* ========================================
-     ACCESSIBILITY
-     ======================================== */
+  @container profile-tab (min-width: 75rem) {
+    .account-workspace {
+      grid-template-columns:
+        minmax(16rem, 0.78fr)
+        minmax(28rem, 1.3fr)
+        minmax(23rem, 1fr);
+      min-height: clamp(30em, 50vh, 42em);
+    }
+
+    .identity-pane {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .personal-section {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .access-pane {
+      grid-column: 3;
+      grid-row: 1;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto auto;
+      border-top: 0;
+      border-left: 1px solid var(--theme-stroke);
+    }
+
+    .workspace-group + .workspace-group {
+      border-top: 1px solid var(--theme-stroke);
+      border-left: 0;
+    }
+  }
+
+  @container profile-tab (min-width: 105rem) {
+    .identity-pane {
+      padding: 2.5em;
+    }
+
+    .section-header {
+      min-height: 4.75em;
+      padding: 0.95em 1.35em;
+    }
+
+    .section-body {
+      padding-inline: 1.35em;
+    }
+
+    .personal-section .section-body {
+      padding-block: 0.8em 1em;
+    }
+  }
+
+  @container profile-tab (max-width: 32rem) {
+    .profile-tab {
+      align-content: start;
+      padding-inline: 0.65rem;
+    }
+
+    .section-header {
+      align-items: flex-start;
+      min-height: 0;
+      padding: 0.9rem;
+    }
+
+    .section-action :global(.panel-btn) {
+      min-width: var(--min-touch-target, 44px);
+      padding-inline: 0.75rem;
+    }
+
+    .section-action :global(.panel-btn span) {
+      display: none;
+    }
+
+    .section-body {
+      padding-inline: 0.85rem;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .profile-tab {
       transition: none;
+    }
+  }
+
+  @media (prefers-contrast: high) {
+    .account-workspace,
+    .preview-banner {
+      border-width: 2px;
     }
   }
 </style>

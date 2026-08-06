@@ -12,14 +12,16 @@
   import { toast } from "../../../toast/state/toast-state.svelte";
   import { doc, getDoc } from "firebase/firestore";
   import { getFirestoreInstance } from "../../../auth/firebase";
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
+  import AccountValueRow from "./AccountValueRow.svelte";
 
   interface Props {
     user: User;
     hapticService: HapticFeedback | null;
+    onUsernameChanged?: (username: string) => void;
   }
 
-  let { user, hapticService }: Props = $props();
+  let { user, hapticService, onUsernameChanged }: Props = $props();
 
   // Local state
   let currentUsername = $state("");
@@ -28,9 +30,12 @@
   let isSaving = $state(false);
   let isChecking = $state(false);
   let error = $state("");
+  let saveError = $state("");
   let isAvailable = $state(false);
   let suggestions = $state<string[]>([]);
   let checkTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  let usernameInput = $state<HTMLInputElement | null>(null);
+  let editButton = $state<HTMLButtonElement | null>(null);
 
   // Load current username from Firestore on mount
   onMount(async () => {
@@ -48,31 +53,37 @@
 
   const isSaveDisabled = $derived(
     isSaving ||
-    isChecking ||
-    !isAvailable ||
-    !editedUsername.trim() ||
-    editedUsername.trim().toLowerCase() === currentUsername.toLowerCase()
+      isChecking ||
+      !isAvailable ||
+      !editedUsername.trim() ||
+      editedUsername.trim().toLowerCase() === currentUsername.toLowerCase()
   );
+  const feedbackError = $derived(saveError || error);
 
   function startEditing() {
     editedUsername = currentUsername;
     isEditing = true;
     error = "";
+    saveError = "";
     isAvailable = false;
     suggestions = [];
     hapticService?.trigger("selection");
+    void tick().then(() => usernameInput?.focus());
   }
 
-  function cancelEditing() {
+  async function cancelEditing() {
     isEditing = false;
     editedUsername = "";
     error = "";
+    saveError = "";
     isAvailable = false;
     suggestions = [];
     if (checkTimeoutId) {
       clearTimeout(checkTimeoutId);
       checkTimeoutId = null;
     }
+    await tick();
+    editButton?.focus();
   }
 
   function handleInput() {
@@ -82,6 +93,7 @@
     }
 
     error = "";
+    saveError = "";
     isAvailable = false;
     suggestions = [];
 
@@ -134,16 +146,23 @@
     }
 
     isSaving = true;
+    saveError = "";
     try {
       await authState.updateUsername(trimmedUsername);
       currentUsername = trimmedUsername;
+      onUsernameChanged?.(trimmedUsername);
       hapticService?.trigger("success");
       toast.success("Username updated successfully");
       isEditing = false;
+      await tick();
+      editButton?.focus();
     } catch (err) {
       console.error("Failed to update username:", err);
       hapticService?.trigger("error");
-      toast.error(err instanceof Error ? err.message : "Failed to update username");
+      saveError = "Username couldn't be saved. Try again.";
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update username"
+      );
     } finally {
       isSaving = false;
     }
@@ -164,28 +183,34 @@
   }
 </script>
 
-<div class="section">
-  <label class="label" for="username">Username</label>
+<div data-save-shortcut-scope class="section">
   {#if isEditing}
+    <label class="label" for="username">Username</label>
     <div class="input-row">
-      <div class="username-input-wrapper" class:error class:success={isAvailable && !isChecking}>
+      <div
+        class="username-input-wrapper"
+        class:error
+        class:success={isAvailable && !isChecking}
+      >
         <span class="username-prefix">@</span>
         <input
           id="username"
           type="text"
           class="input username-input"
+          bind:this={usernameInput}
           bind:value={editedUsername}
           oninput={handleInput}
           onkeydown={handleKeydown}
           maxlength="20"
           placeholder="your_username"
           disabled={isSaving}
-          aria-invalid={error ? "true" : "false"}
-          aria-describedby={error ? "username-error" : undefined}
+          aria-invalid={feedbackError ? "true" : "false"}
+          aria-describedby={feedbackError ? "username-error" : undefined}
         />
       </div>
       <div class="inline-actions">
         <button
+          data-save-shortcut
           class="icon-btn save"
           onclick={save}
           disabled={isSaveDisabled}
@@ -214,12 +239,12 @@
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
         Checking availability...
       </p>
-    {:else if error}
+    {:else if feedbackError}
       <p id="username-error" class="hint-message error" role="alert">
         <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-        {error}
+        {feedbackError}
       </p>
-      {#if suggestions.length > 0}
+      {#if error && suggestions.length > 0}
         <div class="suggestions">
           <span class="suggestions-label">Try:</span>
           {#each suggestions as suggestion}
@@ -240,17 +265,13 @@
       </p>
     {/if}
   {:else}
-    <div
-      class="value-row"
-      onclick={startEditing}
-      onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && startEditing()}
-      role="button"
-      tabindex="0"
-      aria-label="Edit username"
-    >
-      <span class="current-value">@{currentUsername || "Not set"}</span>
-      <i class="fas fa-pen edit-icon" aria-hidden="true"></i>
-    </div>
+    <AccountValueRow
+      label="Username"
+      value={currentUsername ? `@${currentUsername}` : "Not set"}
+      empty={!currentUsername}
+      onEdit={startEditing}
+      bind:buttonRef={editButton}
+    />
   {/if}
 </div>
 
@@ -258,7 +279,7 @@
   .section {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 0.625rem;
   }
 
   .label {
@@ -267,93 +288,56 @@
     color: var(--theme-text);
   }
 
-  .value-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 16px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-  }
-
-  .value-row:hover,
-  .value-row:focus {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-  }
-
-  .value-row:focus-visible {
-    outline: 3px solid var(--theme-accent);
-    outline-offset: 2px;
-  }
-
-  .current-value {
-    font-size: var(--font-size-sm);
-    color: var(--theme-text-dim);
-  }
-
-  .edit-icon {
-    font-size: 12px;
-    color: var(--theme-text-dim);
-    opacity: 0;
-    transition: opacity var(--duration-fast) ease;
-  }
-
-  .value-row:hover .edit-icon,
-  .value-row:focus .edit-icon {
-    opacity: 0.6;
-  }
-
-  /* Always show on touch devices (no hover capability) */
-  @media (hover: none) {
-    .edit-icon {
-      opacity: 0.4;
-    }
-  }
-
   .input-row {
     display: flex;
-    gap: 8px;
+    width: min(100%, 34rem);
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .inline-actions {
     display: flex;
-    gap: 4px;
+    gap: 0.125rem;
     flex-shrink: 0;
+    padding: 0.125rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.65rem;
+    background: color-mix(in srgb, var(--theme-text) 4%, transparent);
   }
 
   .icon-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    border: none;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
   }
 
   .icon-btn.save {
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
-    color: color-mix(in srgb, var(--semantic-success, #22c55e) 75%, white);
+    background: transparent;
+    color: var(--semantic-success, #22c55e);
   }
 
   .icon-btn.save:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 25%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 12%,
+      transparent
+    );
   }
 
   .icon-btn.cancel {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
-    color: color-mix(in srgb, var(--semantic-error, #ef4444) 75%, white);
+    background: transparent;
+    color: var(--theme-text-dim);
   }
 
   .icon-btn.cancel:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    color: var(--theme-text);
   }
 
   .icon-btn:disabled {
@@ -364,10 +348,11 @@
   .input {
     flex: 1;
     min-width: 0;
-    padding: 12px 16px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 8px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.75rem 1rem;
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    border: 1.5px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
+    border-radius: 0.5rem;
     color: var(--theme-text);
     font-size: var(--font-size-sm);
     transition: all var(--duration-normal) ease;
@@ -376,7 +361,7 @@
   .input:focus {
     outline: none;
     border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
-    background: var(--theme-card-hover-bg);
+    background: color-mix(in srgb, var(--theme-text) 11%, transparent);
   }
 
   .input::placeholder {
@@ -393,27 +378,37 @@
     flex: 1;
     display: flex;
     align-items: center;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 8px;
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    border: 1.5px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
+    border-radius: 0.5rem;
     transition: all var(--duration-normal) ease;
   }
 
   .username-input-wrapper:focus-within {
     border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
-    background: var(--theme-card-hover-bg);
+    background: color-mix(in srgb, var(--theme-text) 11%, transparent);
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--theme-accent) 22%, transparent);
   }
 
   .username-input-wrapper.error {
-    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 60%,
+      transparent
+    );
   }
 
   .username-input-wrapper.success {
-    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 60%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 60%,
+      transparent
+    );
   }
 
   .username-prefix {
-    padding: 12px 0 12px 16px;
+    padding: 0.75rem 0 0.75rem 1rem;
     color: var(--theme-text-dim);
     font-size: var(--font-size-sm);
     user-select: none;
@@ -450,7 +445,11 @@
   }
 
   .hint-message.success {
-    color: color-mix(in srgb, var(--semantic-success, #22c55e) 90%, transparent);
+    color: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 90%,
+      transparent
+    );
   }
 
   /* Suggestions */
@@ -468,7 +467,8 @@
   }
 
   .suggestion-btn {
-    padding: 4px 10px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.5rem 0.75rem;
     font-size: var(--font-size-compact);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
@@ -490,6 +490,10 @@
     outline-offset: 2px;
   }
 
+  .username-input:focus-visible {
+    outline: none;
+  }
+
   .icon-btn:focus-visible,
   .suggestion-btn:focus-visible {
     outline: 3px solid var(--theme-accent);
@@ -497,8 +501,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .value-row,
-    .edit-icon,
     .icon-btn,
     .suggestion-btn {
       transition: none;

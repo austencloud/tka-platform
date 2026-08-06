@@ -9,6 +9,7 @@
   import type { User } from "firebase/auth";
   import { authState } from "../../../auth/state/auth-state.svelte";
   import { tick } from "svelte";
+  import AccountValueRow from "./AccountValueRow.svelte";
 
   interface Props {
     user: User;
@@ -22,7 +23,9 @@
   let editedName = $state("");
   let isEditing = $state(false);
   let isSaving = $state(false);
+  let saveError = $state("");
   let nameInput = $state<HTMLInputElement | null>(null);
+  let editButton = $state<HTMLButtonElement | null>(null);
   let handledEditRequest = 0;
 
   // Sync editedName when user changes (and not editing)
@@ -35,7 +38,9 @@
   function startEditing(triggerHaptic = true) {
     editedName = user.displayName || "";
     isEditing = true;
+    saveError = "";
     if (triggerHaptic) hapticService?.trigger("selection");
+    void tick().then(() => nameInput?.focus());
   }
 
   $effect(() => {
@@ -45,9 +50,12 @@
     void tick().then(() => nameInput?.focus());
   });
 
-  function cancelEditing() {
+  async function cancelEditing() {
     isEditing = false;
     editedName = user.displayName || "";
+    saveError = "";
+    await tick();
+    editButton?.focus();
   }
 
   async function save() {
@@ -58,12 +66,16 @@
     }
 
     isSaving = true;
+    saveError = "";
     try {
       await authState.updateDisplayName(trimmedName);
       hapticService?.trigger("success");
       isEditing = false;
+      await tick();
+      editButton?.focus();
     } catch (error) {
       console.error("Failed to update display name:", error);
+      saveError = "Display name couldn't be saved. Try again.";
       hapticService?.trigger("error");
     } finally {
       isSaving = false;
@@ -80,13 +92,12 @@
   }
 </script>
 
-<div class="section">
-  <label class="label" for="display-name">Display Name</label>
-  <p class="helper-text">
-    This is your public identity. Other users will see this name when they view
-    your sequences, comments, and profile.
-  </p>
+<div data-save-shortcut-scope class="section">
   {#if isEditing}
+    <label class="label" for="display-name">Display name</label>
+    <p class="helper-text">
+      This name appears on your sequences, comments, and profile.
+    </p>
     <div class="input-row">
       <input
         id="display-name"
@@ -98,9 +109,12 @@
         maxlength="50"
         placeholder="Your display name"
         disabled={isSaving}
+        aria-invalid={saveError ? "true" : "false"}
+        aria-describedby={saveError ? "display-name-error" : undefined}
       />
       <div class="inline-actions">
         <button
+          data-save-shortcut
           class="icon-btn save"
           onclick={save}
           disabled={isSaving || !editedName.trim()}
@@ -122,18 +136,20 @@
         </button>
       </div>
     </div>
+    {#if saveError}
+      <p id="display-name-error" class="error-message" role="alert">
+        <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+        {saveError}
+      </p>
+    {/if}
   {:else}
-    <div
-      class="value-row"
-      onclick={() => startEditing()}
-      onkeydown={(e) => (e.key === "Enter" || e.key === " ") && startEditing()}
-      role="button"
-      tabindex="0"
-      aria-label="Edit display name"
-    >
-      <span class="current-value">{user.displayName || "Not set"}</span>
-      <i class="fas fa-pen edit-icon" aria-hidden="true"></i>
-    </div>
+    <AccountValueRow
+      label="Display name"
+      value={user.displayName || "Not set"}
+      empty={!user.displayName}
+      onEdit={() => startEditing()}
+      bind:buttonRef={editButton}
+    />
   {/if}
 </div>
 
@@ -141,7 +157,7 @@
   .section {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 0.625rem;
   }
 
   .label {
@@ -157,109 +173,56 @@
     line-height: 1.4;
   }
 
-  .value-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 16px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-  }
-
-  .value-row:hover,
-  .value-row:focus {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-  }
-
-  .value-row:focus-visible {
-    outline: 3px solid var(--theme-accent);
-    outline-offset: 2px;
-  }
-
-  .current-value {
-    font-size: var(--font-size-sm);
-    color: var(--theme-text-dim);
-  }
-
-  .edit-icon {
-    font-size: 12px;
-    color: var(--theme-text-dim);
-    opacity: 0;
-    transition: opacity var(--duration-fast) ease;
-  }
-
-  .value-row:hover .edit-icon,
-  .value-row:focus .edit-icon {
-    opacity: 0.6;
-  }
-
-  /* Always show on touch devices (no hover capability) */
-  @media (hover: none) {
-    .edit-icon {
-      opacity: 0.4;
-    }
-  }
-
   .input-row {
     display: flex;
-    gap: 8px;
+    width: min(100%, 34rem);
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .inline-actions {
     display: flex;
-    gap: 4px;
+    gap: 0.125rem;
     flex-shrink: 0;
+    padding: 0.125rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.65rem;
+    background: color-mix(in srgb, var(--theme-text) 4%, transparent);
   }
 
   .icon-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    border: none;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
   }
 
   .icon-btn.save {
-    background: color-mix(
-      in srgb,
-      var(--semantic-success, #22c55e) 15%,
-      transparent
-    );
-    color: color-mix(in srgb, var(--semantic-success, #22c55e) 75%, white);
+    background: transparent;
+    color: var(--semantic-success, #22c55e);
   }
 
   .icon-btn.save:hover:not(:disabled) {
     background: color-mix(
       in srgb,
-      var(--semantic-success, #22c55e) 25%,
+      var(--semantic-success, #22c55e) 12%,
       transparent
     );
   }
 
   .icon-btn.cancel {
-    background: color-mix(
-      in srgb,
-      var(--semantic-error, #ef4444) 15%,
-      transparent
-    );
-    color: color-mix(in srgb, var(--semantic-error, #ef4444) 75%, white);
+    background: transparent;
+    color: var(--theme-text-dim);
   }
 
   .icon-btn.cancel:hover:not(:disabled) {
-    background: color-mix(
-      in srgb,
-      var(--semantic-error, #ef4444) 25%,
-      transparent
-    );
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    color: var(--theme-text);
   }
 
   .icon-btn:disabled {
@@ -270,10 +233,11 @@
   .input {
     flex: 1;
     min-width: 0;
-    padding: 12px 16px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 8px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.75rem 1rem;
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    border: 1.5px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
+    border-radius: 0.5rem;
     color: var(--theme-text);
     font-size: var(--font-size-sm);
     transition: all var(--duration-normal) ease;
@@ -282,7 +246,7 @@
   .input:focus {
     outline: none;
     border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
-    background: var(--theme-card-hover-bg);
+    background: color-mix(in srgb, var(--theme-text) 11%, transparent);
   }
 
   .input::placeholder {
@@ -305,9 +269,16 @@
     outline-offset: 2px;
   }
 
+  .error-message {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    color: var(--semantic-error, #ef4444);
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .value-row,
-    .edit-icon,
     .icon-btn {
       transition: none;
     }

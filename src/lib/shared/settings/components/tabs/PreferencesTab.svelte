@@ -17,6 +17,11 @@
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte.ts";
   import { generateTourState } from "$lib/shared/onboarding/state/generate-tour-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import KeyboardKeyDisplay from "$lib/shared/keyboard/components/settings/KeyboardKeyDisplay.svelte";
+  import { keyboardShortcutState } from "$lib/shared/keyboard/state/keyboard-shortcut-state.svelte";
+  import OfflineLocalDataSection from "./preferences/OfflineLocalDataSection.svelte";
+  import { Collapsible } from "bits-ui";
 
   let { currentSettings, onSettingUpdate } = $props<{
     currentSettings: AppSettings;
@@ -28,6 +33,7 @@
 
   // Entry animation
   let isVisible = $state(false);
+  let advancedOpen = $state(false);
 
   onMount(() => {
     hapticService = getHapticFeedback();
@@ -47,9 +53,7 @@
     });
   }
 
-  const showLoopConfirmation = $derived(
-    !currentSettings?.skipLoopConfirmation
-  );
+  const showLoopConfirmation = $derived(!currentSettings?.skipLoopConfirmation);
 
   function handleToggleLoopConfirmation() {
     hapticService?.trigger("selection");
@@ -77,6 +81,10 @@
     generateTourState.restart();
   }
 
+  function handleOpenShortcutCenter() {
+    hapticService?.trigger("selection");
+    keyboardShortcutState.openHelp();
+  }
 </script>
 
 <div class="preferences-tab" class:visible={isVisible}>
@@ -90,6 +98,35 @@
       <p>{t("settings_customize_behavior")}</p>
     </div>
   </header>
+
+  <section class="section">
+    <h2 class="section-title keyboard-section-title">
+      <i class="fas fa-keyboard" aria-hidden="true"></i>
+      Keyboard
+    </h2>
+
+    <PanelButton
+      variant="secondary"
+      fullWidth={true}
+      onclick={handleOpenShortcutCenter}
+      ariaLabel="Open keyboard shortcuts"
+    >
+      <span class="shortcut-launcher">
+        <span class="shortcut-launcher-icon">
+          <i class="fas fa-keyboard" aria-hidden="true"></i>
+        </span>
+        <span class="shortcut-launcher-copy">
+          <strong>Keyboard shortcuts</strong>
+          <small>Review or change shortcuts saved on this device.</small>
+        </span>
+        <KeyboardKeyDisplay keyCombo="Shift+/" size="small" />
+        <i
+          class="fas fa-chevron-right shortcut-launcher-arrow"
+          aria-hidden="true"
+        ></i>
+      </span>
+    </PanelButton>
+  </section>
 
   <!-- Confirmation Dialogs Section -->
   <section class="section">
@@ -139,11 +176,7 @@
     </h2>
 
     <div class="guide-buttons">
-      <button
-        type="button"
-        class="guide-button"
-        onclick={handleReplayTutorial}
-      >
+      <button type="button" class="guide-button" onclick={handleReplayTutorial}>
         <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
         <span>Replay Construct guide</span>
       </button>
@@ -156,10 +189,37 @@
         <i class="fas fa-circle-question" aria-hidden="true"></i>
         <span>Replay generate options tour</span>
       </button>
-
     </div>
   </section>
 
+  <section class="section advanced-section">
+    <Collapsible.Root bind:open={advancedOpen}>
+      <Collapsible.Trigger class="advanced-trigger">
+        <span class="advanced-trigger-icon">
+          <i class="fas fa-database" aria-hidden="true"></i>
+        </span>
+        <span class="advanced-trigger-copy">
+          <strong>Advanced</strong>
+          <small>Offline downloads and data stored on this device.</small>
+        </span>
+        <i
+          class="fas fa-chevron-down advanced-chevron"
+          class:open={advancedOpen}
+          aria-hidden="true"
+        ></i>
+      </Collapsible.Trigger>
+
+      <Collapsible.Content class="advanced-content">
+        <div class="advanced-content-inner">
+          <header class="advanced-content-header">
+            <h3>Offline and local data</h3>
+            <p>Manage downloads and storage used only on this device.</p>
+          </header>
+          <OfflineLocalDataSection />
+        </div>
+      </Collapsible.Content>
+    </Collapsible.Root>
+  </section>
 </div>
 
 <style>
@@ -242,6 +302,59 @@
 
   .section-title i.fa-compass {
     color: var(--semantic-info, #3b82f6);
+  }
+
+  .section-title.keyboard-section-title i {
+    color: var(--theme-accent-strong, var(--theme-accent));
+  }
+
+  .shortcut-launcher {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-align: left;
+  }
+
+  .shortcut-launcher-icon {
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 12px;
+    color: var(--theme-accent-strong, var(--theme-accent));
+    background: color-mix(in srgb, var(--theme-accent) 14%, transparent);
+    font-size: var(--font-size-lg);
+  }
+
+  .shortcut-launcher-copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .shortcut-launcher-copy strong {
+    color: var(--theme-text);
+    font-size: var(--font-size-base);
+    font-weight: 600;
+  }
+
+  .shortcut-launcher-copy small {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 400;
+    line-height: 1.35;
+  }
+
+  .shortcut-launcher-arrow {
+    width: 20px;
+    flex-shrink: 0;
+    color: var(--theme-text-dim);
+    text-align: center;
   }
 
   /* Toggle List */
@@ -367,6 +480,110 @@
     text-align: center;
   }
 
+  .advanced-section {
+    padding-top: 0.25rem;
+    border-top: 1px solid var(--theme-stroke);
+  }
+
+  :global(.advanced-trigger) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.875rem;
+    width: 100%;
+    min-height: var(--min-touch-target);
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.75rem;
+    color: var(--theme-text);
+    background: var(--theme-card-bg);
+    cursor: pointer;
+    text-align: left;
+  }
+
+  :global(.advanced-trigger:hover) {
+    border-color: var(--theme-stroke-strong);
+    background: var(--theme-card-hover-bg);
+  }
+
+  :global(.advanced-trigger:focus-visible) {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .advanced-trigger-icon {
+    display: grid;
+    place-items: center;
+    width: var(--min-touch-target);
+    height: var(--min-touch-target);
+    border-radius: 0.7rem;
+    color: var(--theme-accent-strong, var(--theme-accent));
+    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+  }
+
+  .advanced-trigger-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  .advanced-trigger-copy strong {
+    font-size: max(0.875rem, var(--font-size-base));
+    font-weight: 650;
+  }
+
+  .advanced-trigger-copy small,
+  .advanced-content-header p {
+    color: var(--theme-text-dim);
+    font-size: max(0.75rem, var(--font-size-compact));
+    line-height: 1.4;
+  }
+
+  .advanced-chevron {
+    color: var(--theme-text-dim);
+    transition: transform var(--duration-fast) ease;
+  }
+
+  .advanced-chevron.open {
+    transform: rotate(180deg);
+  }
+
+  :global(.advanced-content) {
+    overflow: hidden;
+  }
+
+  .advanced-content-inner {
+    margin-top: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.75rem;
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg) 92%,
+      var(--theme-text) 2%
+    );
+  }
+
+  .advanced-content-header {
+    margin-bottom: 1rem;
+  }
+
+  .advanced-content-header h3,
+  .advanced-content-header p {
+    margin: 0;
+  }
+
+  .advanced-content-header h3 {
+    color: var(--theme-text);
+    font-size: max(1rem, var(--font-size-base));
+    font-weight: 650;
+  }
+
+  .advanced-content-header p {
+    margin-top: 0.25rem;
+  }
+
   /* Responsive */
   @media (max-width: 640px) {
     .preferences-tab {
@@ -382,6 +599,18 @@
 
     .toggle-row {
       padding: 14px;
+    }
+
+    .shortcut-launcher {
+      gap: 10px;
+    }
+
+    .shortcut-launcher-icon {
+      display: none;
+    }
+
+    .shortcut-launcher-copy small {
+      font-size: var(--font-size-compact, 12px);
     }
 
     .toggle-switch {
@@ -406,6 +635,10 @@
     .toggle-switch,
     .toggle-knob {
       transition: none !important;
+    }
+
+    .advanced-chevron {
+      transition: none;
     }
   }
 </style>

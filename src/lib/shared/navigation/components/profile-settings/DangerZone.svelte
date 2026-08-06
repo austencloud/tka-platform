@@ -9,6 +9,9 @@
   import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import type { DeleteReauth } from "$lib/shared/auth/services/account-manager";
   import { getProfileSettingsContext } from "../../state/profile-settings-context.svelte";
+  import FacebookIcon from "$lib/shared/auth/components/icons/FacebookIcon.svelte";
+  import GoogleIcon from "$lib/shared/auth/components/icons/GoogleIcon.svelte";
+  import InstagramIcon from "$lib/shared/auth/components/icons/InstagramIcon.svelte";
 
   const ctx = getProfileSettingsContext();
 
@@ -101,7 +104,7 @@
       class:expanded={isExpanded}
       aria-hidden="true"
     ></i>
-    <span>Account Deletion</span>
+    <span>Delete account</span>
   </button>
 
   {#if isExpanded}
@@ -125,13 +128,13 @@
             onclick={handleShowConfirmation}
           >
             <i class="fas fa-trash-alt" aria-hidden="true"></i>
-            Delete My Account
+            Continue to deletion
           </button>
         {:else}
           <div class="confirmation-box">
             <p class="confirmation-text">
               <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-              Are you absolutely sure? This action is irreversible.
+              Deleting this account is permanent.
             </p>
 
             <div class="confirmation-input-section">
@@ -157,7 +160,7 @@
               <textarea
                 id="delete-reason"
                 class="confirmation-input reason-input"
-                placeholder="Your feedback helps us improve"
+                placeholder="Share what went wrong"
                 bind:value={deleteReason}
                 maxlength="500"
                 rows="2"
@@ -205,7 +208,7 @@
                     onclick={() => runDelete({ method: "google" })}
                     disabled={!usernameMatches || isDeleting}
                   >
-                    <i class="fab fa-google" aria-hidden="true"></i>
+                    <span class="reauth-provider-icon"><GoogleIcon /></span>
                     {isDeleting ? "Deleting..." : "Confirm with Google"}
                   </button>
                 {/if}
@@ -215,7 +218,9 @@
                     onclick={() => runDelete({ method: "facebook" })}
                     disabled={!usernameMatches || isDeleting}
                   >
-                    <i class="fab fa-facebook-f" aria-hidden="true"></i>
+                    <span class="reauth-provider-icon facebook"
+                      ><FacebookIcon /></span
+                    >
                     {isDeleting ? "Deleting..." : "Confirm with Facebook"}
                   </button>
                 {/if}
@@ -225,7 +230,9 @@
                     onclick={() => runDelete({ method: "instagram" })}
                     disabled={!usernameMatches || isDeleting}
                   >
-                    <i class="fab fa-instagram" aria-hidden="true"></i>
+                    <span class="reauth-provider-icon instagram"
+                      ><InstagramIcon /></span
+                    >
                     {isDeleting ? "Deleting..." : "Confirm with Instagram"}
                   </button>
                 {/if}
@@ -237,7 +244,7 @@
                   disabled={!isConfirmationValid || isDeleting}
                 >
                   <i class="fas fa-trash-alt" aria-hidden="true"></i>
-                  {isDeleting ? "Deleting..." : "Yes, Delete Forever"}
+                  {isDeleting ? "Deleting..." : "Delete forever"}
                 </button>
               {/if}
             </div>
@@ -251,19 +258,20 @@
 <style>
   .danger-section {
     width: 100%;
-    max-width: min(900px, 85vw); /* Match SecurityTab card width */
-    margin: 0 auto;
+    max-width: none;
+    margin: 0;
     border-top: 1px solid var(--theme-stroke, var(--theme-stroke));
-    padding-top: clamp(20px, 3vh, 28px);
+    padding-top: 0.9rem;
   }
 
   /* Disclosure Button */
   .disclosure-button {
-    width: 100%;
-    display: flex;
+    width: auto;
+    display: inline-flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.65rem 0.9rem;
     background: color-mix(
       in srgb,
       var(--semantic-error, #ef4444) 5%,
@@ -274,7 +282,7 @@
     border-radius: 10px;
     color: color-mix(in srgb, var(--semantic-error, #ef4444) 80%, transparent);
     font-size: var(--font-size-sm);
-    font-weight: 500;
+    font-weight: 650;
     cursor: pointer;
     transition: all var(--duration-normal) ease;
   }
@@ -305,8 +313,8 @@
 
   /* Danger Content */
   .danger-content {
-    margin-top: 16px;
-    padding: 20px;
+    margin-top: 0.75rem;
+    padding: 1rem;
     background: color-mix(
       in srgb,
       var(--semantic-error, #ef4444) 4%,
@@ -396,7 +404,11 @@
     font-family:
       ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
     letter-spacing: 0.5px;
-    background: rgba(0, 0, 0, 0.3);
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #12121c) 90%,
+      var(--theme-text, #fff) 10%
+    );
     border: 2px solid
       color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
     border-radius: 8px;
@@ -406,7 +418,7 @@
   }
 
   .confirmation-input::placeholder {
-    color: rgba(255, 255, 255, 0.5); /* Improved contrast for WCAG AAA */
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
     font-family: inherit;
   }
 
@@ -442,7 +454,7 @@
 
   /* Buttons */
   .button {
-    width: 100%;
+    width: auto;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -539,10 +551,30 @@
     flex: 1;
   }
 
+  .reauth-provider-icon {
+    display: grid;
+    width: 1.1rem;
+    height: 1.1rem;
+    place-items: center;
+  }
+
+  .reauth-provider-icon :global(svg) {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  .reauth-provider-icon.facebook {
+    color: #1877f2;
+  }
+
+  .reauth-provider-icon.instagram {
+    color: #e4405f;
+  }
+
   /* Mobile Responsive */
   @media (max-width: 480px) {
     .danger-section {
-      padding-top: 16px;
+      padding-top: 0.75rem;
     }
 
     .button-row {
@@ -550,6 +582,10 @@
     }
 
     .button-row .button {
+      width: 100%;
+    }
+
+    .button--danger {
       width: 100%;
     }
   }
