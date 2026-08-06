@@ -57,6 +57,9 @@
 			class="step-btn step-secondary"
 			onclick={onStepHalfBack}
 			aria-label="Previous half step"
+			data-ghost="safe"
+			data-ghost-kind="step-nav"
+			data-ghost-label="Previous half step"
 		>
 			<i class="fas fa-chevron-left" aria-hidden="true"></i>
 		</button>
@@ -66,6 +69,9 @@
 			class="step-btn step-primary"
 			onclick={onRestartToStart}
 			aria-label="Restart from beginning"
+			data-ghost="safe"
+			data-ghost-kind="step-nav"
+			data-ghost-label="Restart"
 		>
 			<i class="fas fa-backward-fast" aria-hidden="true"></i>
 		</button>
@@ -74,6 +80,9 @@
 			class="step-btn step-primary"
 			onclick={onStepFullBack}
 			aria-label="Previous step"
+			data-ghost="safe"
+			data-ghost-kind="step-nav"
+			data-ghost-label="Previous step"
 		>
 			<i class="fas {stepGlyph}-left" aria-hidden="true"></i>
 		</button>
@@ -106,6 +115,9 @@
 		class="step-btn step-primary"
 		onclick={onStepFullFwd}
 		aria-label="Next step"
+		data-ghost="safe"
+		data-ghost-kind="step-nav"
+		data-ghost-label="Next step"
 	>
 		<i class="fas {stepGlyph}-right" aria-hidden="true"></i>
 	</button>
@@ -114,6 +126,9 @@
 			class="step-btn step-secondary"
 			onclick={onStepHalfFwd}
 			aria-label="Next half step"
+			data-ghost="safe"
+			data-ghost-kind="step-nav"
+			data-ghost-label="Next half step"
 		>
 			<i class="fas fa-chevron-right" aria-hidden="true"></i>
 		</button>

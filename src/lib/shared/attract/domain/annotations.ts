@@ -58,6 +58,12 @@ export type GhostKind =
   | "extend"
   /** Mirror / Swap / Rotate / Reverse — changes the whole sequence at once. */
   | "transform"
+  /**
+   * A control inside the step editor — prop orientation, the beta swap. Editing
+   * ONE step of a sequence is the most TKA-specific thing the app does, and the
+   * presenter could not demonstrate it at all.
+   */
+  | "step-edit"
   /** Takes the last step back. Shows a stranger that the app is forgiving. */
   | "undo"
   | "clear"
@@ -102,6 +108,21 @@ export type GhostKind =
   | "play"
   | "stage"
   | "tempo"
+  /**
+   * Transport: step forward/back, half-step, restart. Scrubbing by hand is how
+   * a person inspects a moment they could not catch at speed, and it is the
+   * clearest way to show that a sequence is made of discrete steps.
+   */
+  | "step-nav"
+  /**
+   * A way of LOOKING at the sequence that changes nothing about it — grid
+   * overlay, motion visibility, comparison mode, the 2D/3D switcher, maximize.
+   *
+   * Separate from `curio` because these are reversible view state rather than
+   * a destination: pressing one twice returns the screen to where it was, so
+   * the ghost can explore them freely without stranding itself.
+   */
+  | "view-toggle"
   // dress-up
   | "effect"
   /** A parameter chip inside an effect's customize panel — the dial. */
@@ -125,6 +146,33 @@ export const EXTERNALLY_PROVIDED_KINDS: readonly GhostKind[] = [
   "nav-module",
   "nav-tab",
 ];
+
+/**
+ * What the presenter is deliberately NOT given, and why (2026-08-06).
+ *
+ * The ghost runs unattended for hours on a laptop in a park, so the line is not
+ * "could a user press this" — a user can press all of it — but "is this safe
+ * for something with no judgement to press a hundred times while nobody is
+ * watching". Everything below stays unannotated ON PURPOSE. Adding an
+ * annotation to one of these is a decision to be argued, not an oversight to be
+ * fixed:
+ *
+ *   Writes data      Save / Save to library / Save scene, Favorite, Fork,
+ *                    Remix. A jam would end with a library full of a robot's
+ *                    half-finished sequences.
+ *   Destroys data    Delete sequence, Delete video.
+ *   Produces files   Download image / Download Card, video and card export,
+ *                    Copy to clipboard. Hundreds of files, and a hijacked
+ *                    clipboard on a machine someone else is about to use.
+ *   Leaves the app   Share externally (an OS share sheet is not DOM — the
+ *                    ghost can neither see nor dismiss it, so the tour dead
+ *                    stops), Open TKA, Explore TKA.
+ *   Costs money      Uploads, and anything that writes to storage.
+ *
+ * `clear` is the deliberate exception among destructive controls: it is scoped
+ * to the ghost's OWN unsaved work, which is the whole point of a demo that
+ * starts over.
+ */
 
 /** A pressable element of this kind, visible to the allowlist. */
 export const safe = (kind: GhostKind): string =>

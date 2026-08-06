@@ -28,6 +28,8 @@ export interface SimState {
   viewerOpen: boolean;
   propDrawerOpen: boolean;
   actionsPanelOpen: boolean;
+  /** A step is selected and its editor is open. */
+  stepEditorOpen: boolean;
   /** All vs Continuous. Continuous shows only what flows on from HERE. */
   continuousOnly: boolean;
   /** Words are how a transform proves it changed something. */
@@ -111,6 +113,11 @@ function screenKinds(s: SimState): Record<string, number> {
         effect: s.seqLen > 0 ? 16 : 0,
         "effect-param": s.activeEffects.size > 0 ? 4 : 0,
         undo: s.seqLen > 0 ? 1 : 0,
+        // Transport + view toggles ride along with the stage.
+        "step-nav": s.seqLen >= 2 ? 5 : 0,
+        "view-toggle": s.seqLen > 0 ? 3 : 0,
+        // The step editor opens on a selected step.
+        "step-edit": s.stepEditorOpen ? 8 : 0,
         "sequence-actions": s.seqLen > 0 && !s.actionsPanelOpen ? 1 : 0,
         // The actions panel: transforms always, Extend only when the sequence
         // genuinely closes — the real TransformsGridMode renders that button
@@ -150,6 +157,9 @@ const LABELS: Record<string, string[]> = {
   curio: ["Mandala", "Tunnel", "Card"],
   "gallery-item": ["someone's sequence"],
   transform: ["Mirror", "Flip", "Swap", "Invert", "Rotate L", "Rotate R"],
+  "step-nav": ["Next step", "Previous step", "Restart"],
+  "view-toggle": ["Toggle grid", "Motion visibility", "Comparison mode"],
+  "step-edit": ["blue orientation in", "red orientation out", "Swap beta offset"],
   "generate-option": ["Increase Length", "Decrease Length", "Increase Level", "Grid Mode"],
 };
 
@@ -180,6 +190,7 @@ export function createSimApp(
     propDrawerOpen: false,
     actionsPanelOpen: false,
     continuousOnly: false,
+    stepEditorOpen: false,
     word: "",
     practiceOn: false,
     mirrorOn: false,
@@ -299,6 +310,13 @@ export function createSimApp(
       case "effect":
         if (state.activeEffects.has(label)) state.activeEffects.delete(label);
         else state.activeEffects.add(label);
+        break;
+      case "step-cell":
+        // Selecting a step is what opens its editor.
+        state.stepEditorOpen = true;
+        break;
+      case "step-edit":
+        state.word = `${state.word}*`;
         break;
       case "option-filter":
         state.continuousOnly = !state.continuousOnly;

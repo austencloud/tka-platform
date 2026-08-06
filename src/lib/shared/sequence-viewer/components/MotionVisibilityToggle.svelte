@@ -81,6 +81,9 @@
       class="motion-vis-btn"
       onclick={toggleOpen}
       aria-label="Motion visibility"
+      data-ghost="safe"
+      data-ghost-kind="view-toggle"
+      data-ghost-label="Motion visibility"
       aria-expanded={open}
       aria-haspopup="dialog"
     >

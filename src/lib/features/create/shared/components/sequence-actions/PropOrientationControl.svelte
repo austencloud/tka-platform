@@ -145,6 +145,9 @@
           class="option-button"
           class:active={orientation === option.value}
           aria-label="Set {color} orientation to {option.label}"
+          data-ghost="safe"
+          data-ghost-kind="step-edit"
+          data-ghost-label="{color} orientation {option.label}"
           onclick={(event) => selectOrientation(event, option.value)}
         >
           <i class="fas {option.icon}" aria-hidden="true"></i>
@@ -157,6 +160,9 @@
           class="option-button interradial"
           class:active={orientation === option.value}
           aria-label="Set {color} orientation to {option.label}"
+          data-ghost="safe"
+          data-ghost-kind="step-edit"
+          data-ghost-label="{color} orientation {option.label}"
           onclick={(event) => selectOrientation(event, option.value)}
         >
           <i class="fas {option.icon}" aria-hidden="true"></i>

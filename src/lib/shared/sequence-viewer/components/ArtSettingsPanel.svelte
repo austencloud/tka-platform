@@ -538,6 +538,9 @@
             type="button"
             aria-pressed={controller.gridVisible}
             aria-label="Toggle grid"
+            data-ghost="safe"
+            data-ghost-kind="view-toggle"
+            data-ghost-label="Toggle grid"
             title="Grid"
             onclick={() =>
               changeSetting(
@@ -626,6 +629,9 @@
             type="button"
             aria-pressed={controller.gridVisible}
             aria-label="Toggle grid"
+            data-ghost="safe"
+            data-ghost-kind="view-toggle"
+            data-ghost-label="Toggle grid"
             title="Grid"
             onclick={() =>
               changeSetting(
