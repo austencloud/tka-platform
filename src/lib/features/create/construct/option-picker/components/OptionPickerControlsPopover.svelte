@@ -88,7 +88,7 @@
 
   <Popover.Portal>
     <Popover.Overlay
-      class="controls-overlay"
+      class="option-settings-overlay"
       data-testid="option-settings-overlay"
     />
 
@@ -231,7 +231,7 @@
 
   /* Portaling the veil with the panel lets it cover the workspace above the
      picker instead of being clipped to the option grid's own bounds. */
-  :global(.controls-overlay) {
+  :global(.option-settings-overlay) {
     position: fixed;
     inset: 0;
     z-index: calc(var(--z-dropdown, 1000) - 1);
@@ -245,8 +245,8 @@
     transition: opacity var(--duration-normal, 200ms) ease-out;
   }
 
-  :global(.controls-overlay[data-starting-style]),
-  :global(.controls-overlay[data-ending-style]) {
+  :global(.option-settings-overlay[data-starting-style]),
+  :global(.option-settings-overlay[data-ending-style]) {
     opacity: 0;
   }
 
@@ -259,7 +259,7 @@
       transform: none;
     }
 
-    :global(.controls-overlay) {
+    :global(.option-settings-overlay) {
       transition: none;
     }
   }
