@@ -197,7 +197,7 @@
     grid-template-columns: 320px 1fr;
     gap: 20px;
     height: 100%;
-    min-height: 600px;
+    min-height: 0;
   }
 
   .controls {
@@ -250,6 +250,7 @@
     justify-content: center;
     gap: 8px;
     padding: 12px 20px;
+    min-height: 44px;
     background: linear-gradient(135deg, #d97706, #b45309);
     border: none;
     border-radius: 12px;
@@ -271,7 +272,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 42px;
+    min-height: 44px;
     padding: 10px 14px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -371,6 +372,12 @@
     .autumn-lab {
       grid-template-columns: 1fr;
       grid-template-rows: minmax(0, auto) minmax(400px, 58vh);
+    }
+  }
+
+  @media (max-height: 500px) and (min-width: 801px) {
+    .autumn-lab :global(.preview) {
+      min-height: 0;
     }
   }
 
