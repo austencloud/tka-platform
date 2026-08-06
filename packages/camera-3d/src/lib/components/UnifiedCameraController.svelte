@@ -6,6 +6,7 @@
   import { createCameraPreferences, type CameraPreferences } from "../camera-preferences.svelte";
   import { CAMERA_DEFAULTS } from "../constants";
   import { createInputCapabilities } from "../input-capabilities";
+  import { collectCameraColliders } from "../camera-collider-index";
 
   interface Props {
     destinationId: string;
@@ -107,6 +108,21 @@
   const CAPSULE_HALF_EXTENT = CAMERA_DEFAULTS.CAPSULE_HALF_EXTENT;
 
   const cameraRaycaster = new Raycaster();
+  let colliderScene: import("three").Object3D | null = null;
+  let colliderRootChildCount = -1;
+  let cameraColliders: import("three").Object3D[] = [];
+
+  function getCameraColliders(sceneRoot: import("three").Object3D): import("three").Object3D[] {
+    // Museum room chunks are added directly to the scene root. Re-index only
+    // when that root changes instead of recursively intersecting the complete
+    // scene graph on every third-person frame.
+    if (colliderScene !== sceneRoot || colliderRootChildCount !== sceneRoot.children.length) {
+      colliderScene = sceneRoot;
+      colliderRootChildCount = sceneRoot.children.length;
+      cameraColliders = collectCameraColliders(sceneRoot);
+    }
+    return cameraColliders;
+  }
   const rayOrigin = new Vector3();
   const rayDirection = new Vector3();
   const desiredCamPos = new Vector3();
@@ -602,7 +618,10 @@
         const distToCamera = rayOrigin.distanceTo(desiredCamPos);
         cameraRaycaster.set(rayOrigin, rayDirection);
         cameraRaycaster.far = distToCamera;
-        const intersects = cameraRaycaster.intersectObjects(sceneToCast.children, true);
+        const intersects = cameraRaycaster.intersectObjects(
+          getCameraColliders(sceneToCast),
+          false,
+        );
         for (const intersection of intersects) {
           if (!intersection.object.userData?.cameraCollider) continue;
           if (!intersection.object.visible) continue;

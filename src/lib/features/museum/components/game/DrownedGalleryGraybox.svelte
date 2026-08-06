@@ -24,6 +24,7 @@
     SphereGeometry,
   } from "three";
   import type { MuseumGrid } from "../../domain/museum-grid-types";
+  import type { AuthoredPointLightPlanChange } from "../../services/museum-room-light-pool";
   import {
     buildDrownedGalleryLayout,
     type DrownedGalleryLayout,
@@ -45,8 +46,14 @@
     /** Room the player is standing in; lights idle when they are elsewhere. */
     currentRoomId?: string | null;
     visible?: boolean;
+    onLightPlanChange?: AuthoredPointLightPlanChange;
   }
-  const { grid, currentRoomId = null, visible = true }: Props = $props();
+  const {
+    grid,
+    currentRoomId = null,
+    visible = true,
+    onLightPlanChange,
+  }: Props = $props();
 
   // ── Palette ───────────────────────────────────────────────────────────────
   const ROCK = "#2b2620";
@@ -218,7 +225,11 @@
     return {
       id,
       pos: [cx(r), (baseY + topY) / 2, cz(r)],
-      size: [Math.max(sx(r), 0.01), Math.max(topY - baseY, 0.01), Math.max(sz(r), 0.01)],
+      size: [
+        Math.max(sx(r), 0.01),
+        Math.max(topY - baseY, 0.01),
+        Math.max(sz(r), 0.01),
+      ],
       rot: [0, 0, 0],
       material,
     };
@@ -237,7 +248,11 @@
     const angle = -Math.atan2(dy, run);
     return {
       id,
-      pos: [cx(r), (yAtMinZ + yAtMaxZ) / 2 - SLAB_T / 2 / Math.cos(angle), cz(r)],
+      pos: [
+        cx(r),
+        (yAtMinZ + yAtMaxZ) / 2 - SLAB_T / 2 / Math.cos(angle),
+        cz(r),
+      ],
       size: [sx(r), SLAB_T, Math.hypot(run, dy)],
       rot: [angle, 0, 0],
       material,
@@ -257,7 +272,11 @@
     const angle = Math.atan2(dy, run);
     return {
       id,
-      pos: [cx(r), (yAtMinX + yAtMaxX) / 2 - SLAB_T / 2 / Math.cos(angle), cz(r)],
+      pos: [
+        cx(r),
+        (yAtMinX + yAtMaxX) / 2 - SLAB_T / 2 / Math.cos(angle),
+        cz(r),
+      ],
       size: [Math.hypot(run, dy), SLAB_T, sz(r)],
       rot: [0, 0, angle],
       material,
@@ -375,9 +394,13 @@
       const material: MaterialKey =
         Math.min(floor.fromY, floor.toY) < WATERLINE_Y ? "floorWet" : "stone";
       if (floor.kind === "ramp-z") {
-        boxes.push(rampZ(floor.id, floor.rect, floor.fromY, floor.toY, material));
+        boxes.push(
+          rampZ(floor.id, floor.rect, floor.fromY, floor.toY, material)
+        );
       } else if (floor.kind === "ramp-x") {
-        boxes.push(rampX(floor.id, floor.rect, floor.fromY, floor.toY, material));
+        boxes.push(
+          rampX(floor.id, floor.rect, floor.fromY, floor.toY, material)
+        );
       } else {
         boxes.push(
           slab(
@@ -393,7 +416,9 @@
     // ══ GALLERY ROCK ══ every interior tile that is not path, plus the roof
     // over every path tile deep enough to carry it.
     layout.rockFill.forEach((rect, i) => {
-      boxes.push(block(`rock-${i}`, rect, POOL_BOTTOM_Y, GALLERY_ROOF_Y, "rock"));
+      boxes.push(
+        block(`rock-${i}`, rect, POOL_BOTTOM_Y, GALLERY_ROOF_Y, "rock")
+      );
     });
     roofRects.forEach((rect, i) => {
       boxes.push(slab(`roof-${i}`, rect, GALLERY_ROOF_Y + SLAB_T, "rock"));
@@ -411,14 +436,20 @@
     }
 
     // ══ POOL + CHANNEL BASINS ══
-    const basin = (id: string, rect: WorldRect, bedY: number, skipNorth: boolean) => {
+    const basin = (
+      id: string,
+      rect: WorldRect,
+      bedY: number,
+      skipNorth: boolean
+    ) => {
       const T = 0.25;
       const sides: [string, WorldRect][] = [
         [`${id}-west`, { ...rect, maxX: rect.minX + T }],
         [`${id}-east`, { ...rect, minX: rect.maxX - T }],
         [`${id}-south`, { ...rect, minZ: rect.maxZ - T }],
       ];
-      if (!skipNorth) sides.push([`${id}-north`, { ...rect, maxZ: rect.minZ + T }]);
+      if (!skipNorth)
+        sides.push([`${id}-north`, { ...rect, maxZ: rect.minZ + T }]);
       for (const [sideId, sideRect] of sides) {
         boxes.push(block(sideId, sideRect, bedY, CAUSEWAY_Y, "rockWet"));
       }
@@ -435,9 +466,17 @@
       maxX: a.x + NICHE_W / 2,
     }));
     // rock piers between and beside the niches
-    const edges = [shore.minX, ...niches.flatMap((n) => [n.minX, n.maxX]), shore.maxX];
+    const edges = [
+      shore.minX,
+      ...niches.flatMap((n) => [n.minX, n.maxX]),
+      shore.maxX,
+    ];
     for (let i = 0; i < edges.length - 1; i += 2) {
-      const pier: WorldRect = { ...shore, minX: edges[i]!, maxX: edges[i + 1]! };
+      const pier: WorldRect = {
+        ...shore,
+        minX: edges[i]!,
+        maxX: edges[i + 1]!,
+      };
       if (sx(pier) < 0.05) continue;
       boxes.push(block(`shore-pier-${i}`, pier, SHELF_Y, shoreTop, "rock"));
     }
@@ -471,7 +510,9 @@
 
     // ══ BALUSTRADE ══ every walkway edge that faces water.
     balustrades.forEach((rect, i) => {
-      boxes.push(block(`rail-${i}`, rect, CAUSEWAY_Y, CAUSEWAY_Y + RAIL_H, "stone"));
+      boxes.push(
+        block(`rail-${i}`, rect, CAUSEWAY_Y, CAUSEWAY_Y + RAIL_H, "stone")
+      );
     });
 
     // ══ CARVED THRESHOLD ══ frames the Fire exit, never blocks it.
@@ -479,16 +520,19 @@
     const lintelBase = CAUSEWAY_Y + 3.2;
     const transomBase = CAUSEWAY_Y + 2.4;
     thresholdJambs.forEach((jamb, i) => {
-      boxes.push(block(`threshold-jamb-${i}`, jamb, CAUSEWAY_Y, jambTop, "stone"));
+      boxes.push(
+        block(`threshold-jamb-${i}`, jamb, CAUSEWAY_Y, jambTop, "stone")
+      );
     });
-    boxes.push(block("threshold-lintel", threshold, lintelBase, jambTop, "stone"));
+    boxes.push(
+      block("threshold-lintel", threshold, lintelBase, jambTop, "stone")
+    );
     const BAR_COUNT = 11;
     const barWidth = 0.06;
     const openingWidth = sx(thresholdOpening);
     const barGap = (openingWidth - BAR_COUNT * barWidth) / (BAR_COUNT + 1);
     for (let i = 0; i < BAR_COUNT; i++) {
-      const minX =
-        thresholdOpening.minX + barGap * (i + 1) + barWidth * i;
+      const minX = thresholdOpening.minX + barGap * (i + 1) + barWidth * i;
       boxes.push(
         block(
           `threshold-bar-${i}`,
@@ -507,7 +551,9 @@
     }
 
     // ══ WATERFALL ══ one column at the channel's west end.
-    boxes.push(block("waterfall", waterfall, CHANNEL_BED_Y, CAUSEWAY_Y + 6, "waterfall"));
+    boxes.push(
+      block("waterfall", waterfall, CHANNEL_BED_Y, CAUSEWAY_Y + 6, "waterfall")
+    );
 
     // ══ WATER ══
     layout.waterPlanes.forEach((rect, i) => {
@@ -552,7 +598,14 @@
         scale: 0.8 + rng() * 0.7,
       });
     }
-    const pathRects = [descentRoofed, westRun, northRun, eastBend, westRun, northRun];
+    const pathRects = [
+      descentRoofed,
+      westRun,
+      northRun,
+      eastBend,
+      westRun,
+      northRun,
+    ];
     pathRects.forEach((rect, i) => {
       plants.push({
         id: `path-plant-${i}`,
@@ -584,7 +637,11 @@
       {
         // the door of water — the descent mouth must read, not vanish
         id: "descent-mouth",
-        pos: [cx(layout.descentStair), WATERLINE_Y + 0.6, layout.descentStair.minZ + 1],
+        pos: [
+          cx(layout.descentStair),
+          WATERLINE_Y + 0.6,
+          layout.descentStair.minZ + 1,
+        ],
         color: "#4a8aa8",
         intensity: 7,
         distance: 12,
@@ -664,8 +721,25 @@
   ]);
   /** Lights idle to zero when the player is nowhere near the bay. */
   const lit = $derived(
-    visible && (currentRoomId === null || WATER_ROUTE.has(currentRoomId))
+    visible && currentRoomId !== null && WATER_ROUTE.has(currentRoomId)
   );
+
+  $effect(() => {
+    const currentScene = scene;
+    if (!currentScene || !onLightPlanChange) return;
+    onLightPlanChange("drowned-gallery", {
+      roomIds: [...WATER_ROUTE],
+      lights: currentScene.lights.map((light) => ({
+        x: light.pos[0],
+        y: light.pos[1],
+        z: light.pos[2],
+        color: light.color,
+        intensity: light.intensity,
+        distance: light.distance,
+      })),
+    });
+    return () => onLightPlanChange("drowned-gallery", null);
+  });
 </script>
 
 {#if scene}
@@ -728,18 +802,6 @@
         material={materials.fish}
         position={marker.pos}
         scale={[marker.scale * 1.8, marker.scale, marker.scale]}
-      />
-    {/each}
-
-    <!-- Light plan -->
-    {#each scene.lights as light (light.id)}
-      <T.PointLight
-        position={light.pos}
-        color={light.color}
-        intensity={lit ? light.intensity : 0}
-        distance={light.distance}
-        decay={2}
-        castShadow={false}
       />
     {/each}
   </T.Group>

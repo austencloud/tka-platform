@@ -11,12 +11,7 @@
  * component to apply.
  */
 
-import {
-  MathUtils,
-  Vector3,
-  Quaternion,
-  Euler,
-} from "three";
+import { Vector3, Quaternion, Euler } from "three";
 import type { PerspectiveCamera } from "three";
 
 // ── Constants ──
@@ -28,7 +23,6 @@ const UCC_FP_HEIGHT = 0.75;
 const UCC_FP_FORWARD_OFFSET = 0.05;
 const UCC_FPS_FOV = 65;
 const UCC_FAR_PLANE = 10000;
-const FLIP_DURATION = 0.8;
 
 export interface CameraFlipState {
   progress: number;
@@ -67,10 +61,6 @@ export class MuseumCameraFlipController {
     fov: number;
   };
 
-  // Scratch vectors for interpolation
-  private readonly tempPos = new Vector3();
-  private readonly tempQuat = new Quaternion();
-
   // Current top-down height (lerps toward target)
   private currentTopDownHeight: number;
 
@@ -92,12 +82,6 @@ export class MuseumCameraFlipController {
       quaternion: new Quaternion(),
       fov: UCC_FPS_FOV,
     };
-  }
-
-  // ── Easing ──
-
-  static easeInOutCubic(x: number): number {
-    return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
   }
 
   // ── Sync helpers ──
@@ -237,61 +221,43 @@ export class MuseumCameraFlipController {
   }
 
   /**
-   * Advance the flip animation by one frame. Applies interpolated position,
-   * quaternion, and FOV to the camera.
+   * Complete a requested view change on the next render frame.
+   *
+   * The previous 0.8-second camera flight crossed a large portion of the
+   * museum. That exposed unrelated room materials to the camera and forced the
+   * browser to link their shaders in the middle of an interaction. Snapping to
+   * the already-warmed endpoint keeps the switch bounded to one frame.
    *
    * Returns updated state. If justEnteredFps is true, the caller should
    * activate FPS mode and set initial yaw/pitch from the returned values.
    */
   updateFlipAnimation(
     camera: PerspectiveCamera,
-    delta: number,
+    _delta: number,
     state: CameraFlipState,
     playerYaw: number,
     playerPitch: number,
   ): CameraFlipResult {
-    const step = delta / FLIP_DURATION;
     const { goingDown } = state;
-    let { progress, animating } = state;
-    let justEnteredFps = false;
-    let fpsInitialYaw: number | undefined;
-    let fpsInitialPitch: number | undefined;
+    const progress = goingDown ? 1 : 0;
+    const target = goingDown ? this.fps : this.topDown;
 
-    if (goingDown) {
-      progress = Math.min(progress + step, 1);
-      if (progress >= 1) {
-        animating = false;
-        justEnteredFps = true;
-        fpsInitialYaw = playerYaw;
-        fpsInitialPitch = playerPitch;
-      }
-    } else {
-      progress = Math.max(progress - step, 0);
-      if (progress <= 0) animating = false;
-    }
-
-    const t = MuseumCameraFlipController.easeInOutCubic(progress);
-
-    this.tempPos.lerpVectors(this.topDown.position, this.fps.position, t);
-    camera.position.copy(this.tempPos);
-
-    this.tempQuat.slerpQuaternions(this.topDown.quaternion, this.fps.quaternion, t);
-    camera.quaternion.copy(this.tempQuat);
-
-    camera.fov = MathUtils.lerp(this.topDown.fov, this.fps.fov, t);
+    camera.position.copy(target.position);
+    camera.quaternion.copy(target.quaternion);
+    camera.fov = target.fov;
     camera.near = 0.1;
     camera.far = UCC_FAR_PLANE;
     camera.updateProjectionMatrix();
 
     return {
       progress,
-      animating,
+      animating: false,
       goingDown,
       initialized: state.initialized,
       lastFlipCount: state.lastFlipCount,
-      justEnteredFps,
-      fpsInitialYaw,
-      fpsInitialPitch,
+      justEnteredFps: goingDown,
+      fpsInitialYaw: goingDown ? playerYaw : undefined,
+      fpsInitialPitch: goingDown ? playerPitch : undefined,
     };
   }
 }

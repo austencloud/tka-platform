@@ -133,6 +133,14 @@ describe("RoomLifecycleManager", () => {
       manager.onPlayerEnteredRoom("lobby");
       expect(manager.getRoomState("room-d")).toBe(RoomState.Unvisited);
     });
+
+    it("exposes the two-hop active set for renderer visibility", () => {
+      manager.onPlayerEnteredRoom("lobby");
+
+      expect(new Set(manager.getActiveRoomIds())).toEqual(
+        new Set(["lobby", "room-a", "room-b", "room-c"]),
+      );
+    });
   });
 
   // ── Moving from lobby to room-a ────────────────────────────────────────────

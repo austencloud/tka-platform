@@ -180,6 +180,7 @@
 
 <!-- Glowing rectangular frame around the portal -->
 <T.Group
+  visible={props.visible !== false}
   position.x={position[0]}
   position.y={position[1]}
   position.z={position[2]}

@@ -362,7 +362,6 @@
     "three": "^0.182.0",
     "three-good-godrays": "^0.11.2",
     "three-mesh-bvh": "^0.9.9",
-    "three-player-controller": "^0.4.0",
     "threlte-postprocessing": "^0.0.10",
     "wavesurfer.js": "^7.12.1",
     "zod": "^4.2.1"

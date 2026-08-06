@@ -12,7 +12,7 @@
    * disagrees with where physics puts the player, the layout is wrong, not
    * this file.
    */
-  import { T, useTask } from "@threlte/core";
+  import { T } from "@threlte/core";
   import { onDestroy } from "svelte";
   import {
     BoxGeometry,
@@ -24,6 +24,7 @@
     DoubleSide,
   } from "three";
   import type { MuseumGrid } from "../../domain/museum-grid-types";
+  import type { AuthoredPointLightPlanChange } from "../../services/museum-room-light-pool";
   import {
     buildFirstFireLayout,
     type FirstFireLayout,
@@ -43,8 +44,14 @@
     /** Room the player is standing in; lights idle when they are elsewhere. */
     currentRoomId?: string | null;
     visible?: boolean;
+    onLightPlanChange?: AuthoredPointLightPlanChange;
   }
-  const { grid, currentRoomId = null, visible = true }: Props = $props();
+  const {
+    grid,
+    currentRoomId = null,
+    visible = true,
+    onLightPlanChange,
+  }: Props = $props();
 
   // ── Palette ───────────────────────────────────────────────────────────────
   const BASALT = "#221d1c";
@@ -350,9 +357,13 @@
         );
         continue;
       }
-      const material: MaterialKey = benchIds.has(floor.id) ? "bench" : "rockLit";
+      const material: MaterialKey = benchIds.has(floor.id)
+        ? "bench"
+        : "rockLit";
       if (floor.kind === "ramp-x") {
-        boxes.push(rampX(floor.id, floor.rect, floor.fromY, floor.toY, material));
+        boxes.push(
+          rampX(floor.id, floor.rect, floor.fromY, floor.toY, material)
+        );
       } else {
         boxes.push(slab(floor.id, floor.rect, floor.fromY, material));
       }
@@ -361,7 +372,9 @@
     // ══ ROCK ══ every interior tile the programme does not use, plus the
     // mass over the performers' shore and the crack's walls.
     rockFill.forEach((rect, i) => {
-      boxes.push(block(`rock-${i}`, rect, FISSURE_BED_Y - 0.5, CAVE_CEILING_Y, "rock"));
+      boxes.push(
+        block(`rock-${i}`, rect, FISSURE_BED_Y - 0.5, CAVE_CEILING_Y, "rock")
+      );
     });
     boxes.push(
       block("shore-base", shore, FISSURE_BED_Y - 0.5, SHORE_Y, "rock"),
@@ -594,19 +607,30 @@
   const FIRE_ROUTE = new Set([FIRE_ROOM_ID, GROTTO_ROOM_ID]);
   /** Lights idle to zero when the player is nowhere near the bay. */
   const lit = $derived(
-    visible && (currentRoomId === null || FIRE_ROUTE.has(currentRoomId))
+    visible && currentRoomId !== null && FIRE_ROUTE.has(currentRoomId)
   );
 
   // Slow sine pulse on the three pit lights — the graybox stand-in for
   // performance-synced flare. ~0.15 Hz, ±30%.
   const PULSE_HZ = 0.15;
   const PULSE_DEPTH = 0.3;
-  let pulse = $state(1);
-  let elapsed = 0;
-  useTask((delta) => {
-    if (!lit) return;
-    elapsed += delta;
-    pulse = 1 + PULSE_DEPTH * Math.sin(elapsed * PULSE_HZ * Math.PI * 2);
+  $effect(() => {
+    const currentScene = scene;
+    if (!currentScene || !onLightPlanChange) return;
+    onLightPlanChange("first-fire", {
+      roomIds: [...FIRE_ROUTE],
+      lights: currentScene.lights.map((light) => ({
+        x: light.pos[0],
+        y: light.pos[1],
+        z: light.pos[2],
+        color: light.color,
+        intensity: light.intensity,
+        distance: light.distance,
+        modulationHz: light.pulse ? PULSE_HZ : undefined,
+        modulationDepth: light.pulse ? PULSE_DEPTH : undefined,
+      })),
+    });
+    return () => onLightPlanChange("first-fire", null);
   });
 </script>
 
@@ -673,18 +697,6 @@
         material={materials[ring.material]}
         position={ring.pos}
         rotation={ring.rot}
-      />
-    {/each}
-
-    <!-- Light plan: the three fire pits are the primary sources -->
-    {#each scene.lights as light (light.id)}
-      <T.PointLight
-        position={light.pos}
-        color={light.color}
-        intensity={lit ? light.intensity * (light.pulse ? pulse : 1) : 0}
-        distance={light.distance}
-        decay={2}
-        castShadow={false}
       />
     {/each}
   </T.Group>

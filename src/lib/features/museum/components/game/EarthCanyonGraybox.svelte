@@ -15,7 +15,7 @@
    * basalt: the gully is green, the rock is pale dust-grey, and the dominant
    * source is a cool-white shaft falling through the aven onto the bosses.
    */
-  import { T, useTask } from "@threlte/core";
+  import { T } from "@threlte/core";
   import { onDestroy } from "svelte";
   import {
     BoxGeometry,
@@ -30,6 +30,7 @@
     DoubleSide,
   } from "three";
   import type { MuseumGrid } from "../../domain/museum-grid-types";
+  import type { AuthoredPointLightPlanChange } from "../../services/museum-room-light-pool";
   import {
     buildEarthCanyonLayout,
     type EarthCanyonLayout,
@@ -54,8 +55,14 @@
     /** Room the player is standing in; lights idle when they are elsewhere. */
     currentRoomId?: string | null;
     visible?: boolean;
+    onLightPlanChange?: AuthoredPointLightPlanChange;
   }
-  const { grid, currentRoomId = null, visible = true }: Props = $props();
+  const {
+    grid,
+    currentRoomId = null,
+    visible = true,
+    onLightPlanChange,
+  }: Props = $props();
 
   // ── Palette ───────────────────────────────────────────────────────────────
   /**
@@ -344,7 +351,11 @@
     const angle = Math.atan2(dy, run);
     return {
       id,
-      pos: [cx(r), (yAtMinX + yAtMaxX) / 2 - SLAB_T / 2 / Math.cos(angle), cz(r)],
+      pos: [
+        cx(r),
+        (yAtMinX + yAtMaxX) / 2 - SLAB_T / 2 / Math.cos(angle),
+        cz(r),
+      ],
       size: [Math.hypot(run, dy), SLAB_T, sz(r)],
       rot: [0, 0, angle],
       material,
@@ -364,7 +375,11 @@
     const angle = Math.atan2(dy, run);
     return {
       id,
-      pos: [cx(r), (yAtMinZ + yAtMaxZ) / 2 - SLAB_T / 2 / Math.cos(angle), cz(r)],
+      pos: [
+        cx(r),
+        (yAtMinZ + yAtMaxZ) / 2 - SLAB_T / 2 / Math.cos(angle),
+        cz(r),
+      ],
       size: [sx(r), SLAB_T, Math.hypot(run, dy)],
       rot: [-angle, 0, 0],
       material,
@@ -431,9 +446,13 @@
           ? "slab"
           : "rockLit";
       if (floor.kind === "ramp-x") {
-        boxes.push(rampX(floor.id, floor.rect, floor.fromY, floor.toY, material));
+        boxes.push(
+          rampX(floor.id, floor.rect, floor.fromY, floor.toY, material)
+        );
       } else if (floor.kind === "ramp-z") {
-        boxes.push(rampZ(floor.id, floor.rect, floor.fromY, floor.toY, material));
+        boxes.push(
+          rampZ(floor.id, floor.rect, floor.fromY, floor.toY, material)
+        );
       } else {
         boxes.push(slab(floor.id, floor.rect, floor.fromY, material));
       }
@@ -442,7 +461,9 @@
     // ══ ROCK ══ every interior tile the programme does not use: the gully's
     // walls and the mass the chamber is carved out of.
     rockFill.forEach((rect, i) => {
-      boxes.push(block(`rock-${i}`, rect, FLOOR_DISC_Y - 1.0, EARTH_CEILING_Y, "rock"));
+      boxes.push(
+        block(`rock-${i}`, rect, FLOOR_DISC_Y - 1.0, EARTH_CEILING_Y, "rock")
+      );
     });
 
     // ══ WALLS ══ envelope and corridor enclosure, door gaps already derived
@@ -454,14 +475,27 @@
 
     // ══ CEILINGS ══ the chamber roof, already cut around the aven.
     for (const ceiling of ceilingRects) {
-      boxes.push(slab(ceiling.id, ceiling.rect, ceiling.y + SLAB_T, "rockShade"));
+      boxes.push(
+        slab(ceiling.id, ceiling.rect, ceiling.y + SLAB_T, "rockShade")
+      );
     }
 
     // ══ PARAPET ══ a 0.90 m boulder run just inside the compiled north wall.
     // The height is load-bearing: the sightline cap is 1.07 m, and a reflex
     // 1.1 m guard rail would occlude the performers from the rim.
-    boxes.push(block("parapet-run", parapet, RIM_Y, RIM_Y + PARAPET_HEIGHT * 0.72, "boulder"));
-    const boulderCount = Math.max(6, Math.round(sx(parapet) * BOULDERS_PER_METRE));
+    boxes.push(
+      block(
+        "parapet-run",
+        parapet,
+        RIM_Y,
+        RIM_Y + PARAPET_HEIGHT * 0.72,
+        "boulder"
+      )
+    );
+    const boulderCount = Math.max(
+      6,
+      Math.round(sx(parapet) * BOULDERS_PER_METRE)
+    );
     for (let i = 0; i < boulderCount; i++) {
       const t = (i + 0.5) / boulderCount;
       const width = 1.1 + rng() * 1.3;
@@ -480,11 +514,7 @@
     // see and the circle you cannot cross are the same number.
     cylinders.push({
       id: "void-wall",
-      pos: [
-        void_.center.x,
-        (RIM_Y + FLOOR_DISC_Y) / 2,
-        void_.center.z,
-      ],
+      pos: [void_.center.x, (RIM_Y + FLOOR_DISC_Y) / 2, void_.center.z],
       size: [void_.radius * 2, RIM_Y - FLOOR_DISC_Y, void_.radius * 2],
       material: "voidWall",
     });
@@ -673,11 +703,7 @@
       {
         // Sky wash down the void's north wall — what makes the drop read.
         id: "void-wall-wash",
-        pos: [
-          void_.center.x,
-          RIM_Y - 1.4,
-          void_.center.z - VOID_RADIUS * 0.7,
-        ],
+        pos: [void_.center.x, RIM_Y - 1.4, void_.center.z - VOID_RADIUS * 0.7],
         color: "#b9c6d8",
         intensity: 22,
         distance: 20,
@@ -832,19 +858,30 @@
   const EARTH_ROUTE = new Set([EARTH_ROOM_ID, FIRE_ROOM_ID]);
   /** Lights idle to zero when the player is nowhere near the bay. */
   const lit = $derived(
-    visible && (currentRoomId === null || EARTH_ROUTE.has(currentRoomId))
+    visible && currentRoomId !== null && EARTH_ROUTE.has(currentRoomId)
   );
 
   // A very slow breath on the shaft — cloud drifting past the aven, not a
   // flicker. ~0.05 Hz, ±12%.
   const BREATHE_HZ = 0.05;
   const BREATHE_DEPTH = 0.12;
-  let breath = $state(1);
-  let elapsed = 0;
-  useTask((delta) => {
-    if (!lit) return;
-    elapsed += delta;
-    breath = 1 + BREATHE_DEPTH * Math.sin(elapsed * BREATHE_HZ * Math.PI * 2);
+  $effect(() => {
+    const currentScene = scene;
+    if (!currentScene || !onLightPlanChange) return;
+    onLightPlanChange("earth-canyon", {
+      roomIds: [...EARTH_ROUTE],
+      lights: currentScene.lights.map((light) => ({
+        x: light.pos[0],
+        y: light.pos[1],
+        z: light.pos[2],
+        color: light.color,
+        intensity: light.intensity,
+        distance: light.distance,
+        modulationHz: light.breathe ? BREATHE_HZ : undefined,
+        modulationDepth: light.breathe ? BREATHE_DEPTH : undefined,
+      })),
+    });
+    return () => onLightPlanChange("earth-canyon", null);
   });
 </script>
 
@@ -947,17 +984,5 @@
         visible={lit}
       />
     {/if}
-
-    <!-- Light plan: the shaft is the key, the rim stays dimmer than the floor -->
-    {#each scene.lights as light (light.id)}
-      <T.PointLight
-        position={light.pos}
-        color={light.color}
-        intensity={lit ? light.intensity * (light.breathe ? breath : 1) : 0}
-        distance={light.distance}
-        decay={2}
-        castShadow={false}
-      />
-    {/each}
   </T.Group>
 {/if}

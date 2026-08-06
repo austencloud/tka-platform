@@ -21,7 +21,10 @@
   import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 
   import { createPersonalMuseumState } from "./state/personal-museum-state.svelte";
-  import { PERSONAL_MUSEUM_SLOT_IDS } from "./data/personal-museum-room-graph";
+  import {
+    PERSONAL_MUSEUM_EDGES,
+    PERSONAL_MUSEUM_SLOT_IDS,
+  } from "./data/personal-museum-room-graph";
   import { buildPersonalGrid } from "./services/build-personal-grid";
   import { renderFirstStepBitmap } from "./services/plaque-pictograph";
   import PersonalMuseumAssignPanel from "./components/PersonalMuseumAssignPanel.svelte";
@@ -206,6 +209,7 @@
   {#await import("../museum/components/game/DimensionFlipProof.svelte") then { default: DimensionFlipProof }}
     <DimensionFlipProof
       {grid}
+      edges={PERSONAL_MUSEUM_EDGES}
       {visible}
       startInFps={false}
       {userSequenceData}

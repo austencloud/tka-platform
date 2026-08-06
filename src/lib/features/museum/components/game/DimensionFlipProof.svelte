@@ -91,14 +91,15 @@
   // 1. Geometry build completed (InstancedMeshes populated)
   // 2. Textures/models finished loading (Three.js DefaultLoadingManager)
   // Either can finish first depending on cache state.
-  let sceneReady = false;
-  let texturesReady = false;
-  let meshesReady = false;
+  let sceneReady = $state(false);
+  let texturesReady = $state(false);
+  let meshesReady = $state(false);
+  let shadersReady = $state(false);
   let settleTimer: ReturnType<typeof setTimeout> | null = null;
 
   function checkFullyReady(): void {
     if (sceneReady) return;
-    if (!texturesReady || !meshesReady) return;
+    if (!texturesReady || !meshesReady || !shadersReady) return;
     sceneReady = true;
     requestAnimationFrame(() => {
       props.onAllLoaded?.();
@@ -107,6 +108,11 @@
 
   function handleGeometryReady(): void {
     meshesReady = true;
+    checkFullyReady();
+  }
+
+  function handleShaderWarmupReady(): void {
+    shadersReady = true;
     checkFullyReady();
   }
 
@@ -129,6 +135,7 @@
     contextRestoreTimer = setTimeout(() => {
       texturesReady = true;
       meshesReady = true;
+      shadersReady = true;
       checkFullyReady();
     }, 2000);
   }
@@ -437,14 +444,14 @@
     if (e.key === "q" || e.key === "Q") {
       e.preventDefault();
       if (viewMode === "top-down") {
-        // top-down → first-person: play flip animation into 3D
+        // top-down → first-person: snap to the warmed 3D camera
         // Pointer lock is handled by UCC when it attaches (deferred to avoid blocking)
         flipRequested++;
       } else if (viewMode === "first-person") {
         // first-person → third-person: instant switch, no animation
         modeChangeRequested++;
       } else {
-        // third-person → top-down: play flip-back animation
+        // third-person → top-down: snap to the 2D camera
         flipRequested++;
       }
       return;
@@ -645,7 +652,7 @@
   <!-- 3D Canvas -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="canvas-area" onwheel={handleWheel} bind:this={canvasAreaEl}>
-    <Canvas>
+    <Canvas dpr={1}>
       <Museum3DScene
         grid={props.grid}
         edges={props.edges}
@@ -663,6 +670,8 @@
         onBuildStage={props.onBuildStage}
         onSubmergedChange={props.onSubmergedChange}
         onGeometryReady={handleGeometryReady}
+        assetsReady={texturesReady}
+        onShaderWarmupReady={handleShaderWarmupReady}
         initialFpsActive={viewMode !== "top-down"}
         initialCameraMode={props.initialCameraMode}
         cameraModePersistenceKey={props.cameraModePersistenceKey}

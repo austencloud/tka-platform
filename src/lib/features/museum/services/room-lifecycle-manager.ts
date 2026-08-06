@@ -60,6 +60,12 @@ export class RoomLifecycleManager {
     return [...this.adjacency.keys()];
   }
 
+  getActiveRoomIds(): string[] {
+    return [...this.states]
+      .filter(([, state]) => state === RoomState.Active)
+      .map(([roomId]) => roomId);
+  }
+
   onPlayerEnteredRoom(roomId: string): LifecycleUpdate {
     // The desired active set is the current room, direct neighbors (1 hop),
     // AND neighbors-of-neighbors (2 hops). Two hops ensures the player never

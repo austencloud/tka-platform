@@ -277,9 +277,6 @@ importers:
       three-mesh-bvh:
         specifier: ^0.9.9
         version: 0.9.9(three@0.182.0)
-      three-player-controller:
-        specifier: ^0.4.0
-        version: 0.4.0(@dimforge/rapier3d-compat@0.19.3)(three-mesh-bvh@0.9.9(three@0.182.0))(three@0.182.0)
       threlte-postprocessing:
         specifier: ^0.0.10
         version: 0.0.10(@rollup/pluginutils@5.3.0(rollup@4.57.1))(@types/three@0.182.0)(esbuild@0.27.3)(rollup@4.57.1)(svelte@5.49.2)(vite@7.3.1(@types/node@25.2.0)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.9.0))
@@ -7555,19 +7552,6 @@ packages:
     resolution: {integrity: sha512-OgBpZjwL+csQKGKZjpkH/QHdbGFMxqngMbSEJeSnVNfXDYd6On7WHNv/GhUZH4YxIpNMwMahBWrNnsJvnbSJHQ==}
     peerDependencies:
       three: '>=0.170'
-
-  three-player-controller@0.4.0:
-    resolution: {integrity: sha512-9gfHbrFZR1Oep+cUmd07t/AvhrB3sKiDvLDTERfM9LzOS1jcv/r6o5SXPvbmivvKO4ucthTVHU/Z7066XkXLMw==}
-    peerDependencies:
-      '@dimforge/rapier3d-compat': ^0.12.0
-      nipplejs: ^0.10.2
-      three: ^0.182.0
-      three-mesh-bvh: ^0.9.9
-    peerDependenciesMeta:
-      '@dimforge/rapier3d-compat':
-        optional: true
-      nipplejs:
-        optional: true
 
   three-render-objects@1.41.1:
     resolution: {integrity: sha512-0H7l7yREPVKfO3HL7RjPQ67T0phHgnyMeEc4ww/OCEfK6jbsm7psEcrR0SGFqGDyS/pDQTPi4DyPbS/xlHRJKw==}
@@ -16130,13 +16114,6 @@ snapshots:
       three: 0.182.0
       troika-three-text: 0.52.4(three@0.182.0)
       tweakpane: 3.1.10
-
-  three-player-controller@0.4.0(@dimforge/rapier3d-compat@0.19.3)(three-mesh-bvh@0.9.9(three@0.182.0))(three@0.182.0):
-    dependencies:
-      three: 0.182.0
-      three-mesh-bvh: 0.9.9(three@0.182.0)
-    optionalDependencies:
-      '@dimforge/rapier3d-compat': 0.19.3
 
   three-render-objects@1.41.1(three@0.182.0):
     dependencies:

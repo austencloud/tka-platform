@@ -12,11 +12,12 @@
   } from "./data/museum-walk";
   import { serializeGrid, deserializeGrid } from "./domain/museum-grid-types";
   import type { MuseumGrid } from "./domain/museum-grid-types";
-  import { createEditorState } from "./state/editor-state.svelte";
-  import { setEditorContext } from "./state/editor-context";
   import { createSoundscapePlayer } from "./audio/soundscape-player.svelte";
   import { setSoundscapeContext } from "./audio/soundscape-context";
-  import { destroyMuseumVillage, setMuseumVillageVisible } from "./services/museum-village-manager";
+  import {
+    destroyMuseumVillage,
+    setMuseumVillageVisible,
+  } from "./services/museum-village-manager";
   import RoomPicker from "./components/RoomPicker.svelte";
   import SoundscapeBubble from "./components/audio/SoundscapeBubble.svelte";
   import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
@@ -24,9 +25,11 @@
   import { onMount, untrack } from "svelte";
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
-  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { setDesktopSidebarForcedHidden } from "$lib/shared/layout/desktop-sidebar-state.svelte";
-  import { suppressBackground, releaseBackground } from "$lib/shared/background/shared/state/background-suppression.svelte";
+  import {
+    suppressBackground,
+    releaseBackground,
+  } from "$lib/shared/background/shared/state/background-suppression.svelte";
 
   interface Props {
     /** False when mounted-but-hidden (keep-alive). Default true so the module
@@ -44,18 +47,20 @@
   let showOverlay = $state(true);
   let overlayFading = $state(false);
 
-  let textureFraction = $state(0);   // 0-1 from DefaultLoadingManager
-  let geometryFraction = $state(0);  // 0-1 derived from build-stage milestones
-  let displayedPercent = $state(0);  // monotonic 0-100 shown in the bar
+  let textureFraction = $state(0); // 0-1 from DefaultLoadingManager
+  let geometryFraction = $state(0); // 0-1 derived from build-stage milestones
+  let displayedPercent = $state(0); // monotonic 0-100 shown in the bar
   let stageLabel = $state("Opening the doors");
 
   // Build-stage strings (emitted by the geometry streamer) → completion
   // fraction + user-facing label. Stages fire in order as the lobby streams in.
   const STAGE_INFO: Record<string, { fraction: number; label: string }> = {
-    "Tile bucketing":    { fraction: 0.15, label: "Mapping the halls" },
-    "Building corridors":{ fraction: 0.4,  label: "Carving corridors" },
-    "Building lobby":    { fraction: 0.7,  label: "Raising the lobby" },
-    "Mounting fixtures": { fraction: 0.9,  label: "Hanging the exhibits" },
+    "Tile bucketing": { fraction: 0.15, label: "Mapping the halls" },
+    "Building corridors": { fraction: 0.4, label: "Carving corridors" },
+    "Building lobby": { fraction: 0.7, label: "Raising the lobby" },
+    "Mounting fixtures": { fraction: 0.9, label: "Hanging the exhibits" },
+    "Warming 3D view": { fraction: 0.97, label: "Lighting the entrance" },
+    "Drawing 3D preview": { fraction: 0.99, label: "Checking the 3D view" },
   };
 
   function handleLoadProgress(p: number) {
@@ -81,7 +86,9 @@
     displayedPercent = 100;
     stageLabel = "Welcome";
     overlayFading = true;
-    setTimeout(() => { showOverlay = false; }, 600);
+    setTimeout(() => {
+      showOverlay = false;
+    }, 600);
   }
 
   // Defer heavy 3D component mount until AFTER the loading overlay has painted.
@@ -115,14 +122,6 @@
     };
   });
 
-  // Map sidebar tab IDs to internal modes
-  const TAB_TO_MODE: Record<string, string> = {
-    play: "museum",
-    edit: "edit",
-    showroom: "showroom",
-    "3p-test": "3p-test",
-  };
-
   // ── Room isolation ──
   // URL query param `?room=vulcan-cave` filters the museum to a single room.
   // null = full museum (all rooms + corridors).
@@ -149,11 +148,19 @@
   const GRID_CACHE_KEY = "museum-grid-cache";
   const GRID_HASH_KEY = "museum-grid-hash";
 
-  function computeConfigHash(rooms: typeof MUSEUM_ROOMS, edges: typeof MUSEUM_EDGES): string {
+  function computeConfigHash(
+    rooms: typeof MUSEUM_ROOMS,
+    edges: typeof MUSEUM_EDGES
+  ): string {
     // Include a version bump whenever layout logic changes (e.g. ROOM_SCALE)
     // layoutVersion 5: the authored Vulcan Cave replaced the placeholder room,
     // so every cached grid from before it is a museum with a hole in the middle.
-    const input = JSON.stringify({ rooms, edges, config: GRID_CONFIG, layoutVersion: 5 });
+    const input = JSON.stringify({
+      rooms,
+      edges,
+      config: GRID_CONFIG,
+      layoutVersion: 5,
+    });
     let hash = 0;
     for (let i = 0; i < input.length; i++) {
       hash = ((hash << 5) - hash + input.charCodeAt(i)) | 0;
@@ -161,29 +168,46 @@
     return String(hash);
   }
 
-  function loadCachedGrid(rooms: typeof MUSEUM_ROOMS, edges: typeof MUSEUM_EDGES): MuseumGrid | null {
+  function loadCachedGrid(
+    rooms: typeof MUSEUM_ROOMS,
+    edges: typeof MUSEUM_EDGES
+  ): MuseumGrid | null {
     try {
       const hash = sessionStorage.getItem(GRID_HASH_KEY);
       if (hash !== computeConfigHash(rooms, edges)) return null;
       const raw = sessionStorage.getItem(GRID_CACHE_KEY);
       if (!raw) return null;
       return deserializeGrid(JSON.parse(raw));
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }
 
-  function cacheGrid(grid: MuseumGrid, rooms: typeof MUSEUM_ROOMS, edges: typeof MUSEUM_EDGES): void {
+  function cacheGrid(
+    grid: MuseumGrid,
+    rooms: typeof MUSEUM_ROOMS,
+    edges: typeof MUSEUM_EDGES
+  ): void {
     try {
       sessionStorage.setItem(GRID_HASH_KEY, computeConfigHash(rooms, edges));
-      sessionStorage.setItem(GRID_CACHE_KEY, JSON.stringify(serializeGrid(grid)));
-    } catch { /* sessionStorage full - non-critical */ }
+      sessionStorage.setItem(
+        GRID_CACHE_KEY,
+        JSON.stringify(serializeGrid(grid))
+      );
+    } catch {
+      /* sessionStorage full - non-critical */
+    }
   }
 
   // Build grid for the given room filter. When a single room is selected,
   // we pass only that room and no edges (no corridors needed). When null,
   // the full museum is built.
-  function buildGridForRoom(roomFilter: string | null): { grid: MuseumGrid; validation: { valid: boolean; errors: string[] } } {
+  function buildGridForRoom(roomFilter: string | null): {
+    grid: MuseumGrid;
+    validation: { valid: boolean; errors: string[] };
+  } {
     const rooms = roomFilter
-      ? MUSEUM_ROOMS.filter(r => r.id === roomFilter)
+      ? MUSEUM_ROOMS.filter((r) => r.id === roomFilter)
       : MUSEUM_ROOMS;
     const edges = roomFilter ? [] : MUSEUM_EDGES;
 
@@ -218,7 +242,10 @@
 
   $effect(() => {
     if (!currentBuild.validation.valid) {
-      console.error("Museum layout validation failed:", currentBuild.validation.errors);
+      console.error(
+        "Museum layout validation failed:",
+        currentBuild.validation.errors
+      );
     }
   });
 
@@ -229,8 +256,8 @@
       const grid = generatedGrid; // subscribe to derived grid
       import("./services/museum-design-validator").then(({ validateAll }) => {
         // Reconstruct PlacedRoom-like objects from grid wings + original room data
-        const roomMap = new Map(MUSEUM_ROOMS.map(r => [r.id, r]));
-        const placedRooms = grid.wings.map(wing => {
+        const roomMap = new Map(MUSEUM_ROOMS.map((r) => [r.id, r]));
+        const placedRooms = grid.wings.map((wing) => {
           const src = roomMap.get(wing.id);
           return {
             id: wing.id,
@@ -248,9 +275,17 @@
 
         const violations = validateAll(placedRooms as any, MUSEUM_EDGES, grid);
         if (violations.length > 0) {
-          console.group("%c Museum Design Violations", "font-weight: bold; color: #d4b878");
+          console.group(
+            "%c Museum Design Violations",
+            "font-weight: bold; color: #d4b878"
+          );
           for (const v of violations) {
-            const icon = v.severity === "error" ? "X" : v.severity === "warning" ? "!" : "i";
+            const icon =
+              v.severity === "error"
+                ? "X"
+                : v.severity === "warning"
+                  ? "!"
+                  : "i";
             console.warn(`${icon} [${v.roomId}] ${v.rule}: ${v.message}`);
           }
           console.groupEnd();
@@ -259,14 +294,8 @@
     });
   }
 
-  // The 3D scene mounts eagerly on module load (behind the loading overlay)
-  // and stays alive across mode switches. This ensures geometry, textures, and
-  // shaders are warm before the user ever navigates to museum mode, eliminating
-  // the multi-second freeze on 2D→3D transitions.
-  // Previously this was gated on mode === "museum" which meant the first switch
-  // to museum mode triggered the full geometry build + shader compilation.
-
-  // The "live" grid - starts from generated, can be modified by editor.
+  // The live grid starts from the generated walk and is replaced wholesale when
+  // a developer isolates a room from the floating room picker.
   // Must use $state.raw: $state would deeply proxy 20k+ tiles, causing a
   // multi-second freeze on init. The grid is replaced wholesale (not mutated
   // in place), so shallow reactivity is correct.
@@ -279,11 +308,6 @@
   $effect(() => {
     liveGrid = generatedGrid;
   });
-
-  // Editor state - initialized from the initial grid (plain const, not reactive)
-  const editorState = createEditorState(initialGrid.width, initialGrid.height);
-  editorState.importGrid(serializeGrid(initialGrid));
-  setEditorContext({ state: editorState });
 
   // Soundscape player - owns audio elements, crossfades on wing change.
   // Wing updates flow in via DimensionFlipProof's onWingChange callback.
@@ -301,51 +325,17 @@
     setMuseumVillageVisible(visible);
     setDesktopSidebarForcedHidden(visible);
   });
-
-  // Module mode: museum | edit | showroom | 3p-test
-  type ModuleMode = "museum" | "edit" | "showroom" | "3p-test";
-  const LAST_MODE_KEY = "museum-last-mode";
-  const VALID_MODES: Set<string> = new Set(["museum", "edit", "showroom", "3p-test"]);
-
-  function getInitialMode(): ModuleMode {
-    const urlMode = new URLSearchParams(window.location.search).get("mode");
-    if (urlMode === "edit") return "edit";
-    const saved = localStorage.getItem(LAST_MODE_KEY);
-    if (saved && VALID_MODES.has(saved) && saved !== "edit") return saved as ModuleMode;
-    return "museum";
-  }
-  let mode = $state(getInitialMode());
-  $effect(() => {
-    localStorage.setItem(LAST_MODE_KEY, mode);
-  });
-
-  // Sync sidebar tab clicks to internal mode
-  $effect(() => {
-    const tab = navigationState.activeTab;
-    const mapped = TAB_TO_MODE[tab];
-    if (mapped && mapped !== mode) {
-      if (mapped === "edit") {
-        editorState.importGrid(serializeGrid(liveGrid));
-      }
-      mode = mapped as ModuleMode;
-    }
-  });
-
-  function switchToEdit() {
-    editorState.importGrid(serializeGrid(liveGrid));
-    mode = "edit";
-  }
-
-  function switchToMuseum() {
-    liveGrid = deserializeGrid(editorState.exportGrid());
-    mode = "museum";
-  }
 </script>
 
 <div class="museum-module">
   <!-- Loading gate - brief fade-from-black until lobby is ready -->
   {#if showOverlay}
-    <div class="museum-loading-overlay" class:fading={overlayFading} role="status" aria-live="polite">
+    <div
+      class="museum-loading-overlay"
+      class:fading={overlayFading}
+      role="status"
+      aria-live="polite"
+    >
       <div class="overlay-icon">
         <i class="fas fa-landmark" aria-hidden="true"></i>
       </div>
@@ -362,20 +352,19 @@
   {/if}
 
   <!-- Room picker - floating pill bar for room isolation -->
-  {#if mode === "museum" && deferredReady}
+  {#if deferredReady}
     <RoomPicker {selectedRoom} onSelect={handleRoomSelect} />
   {/if}
 
-  <!-- Content renders behind the opaque overlay; deferred to allow first paint -->
+  <!-- The walk is the Museum. It renders behind the opaque loading gate and is
+       deferred long enough for that gate to reach the screen first. -->
   {#if deferredReady}
-    <!-- 3D scene mounts eagerly and stays alive across ALL mode switches.
-         Hidden via CSS when inactive - geometry, textures, and shaders stay warm
-         so switching to museum mode is instant (no rebuild). -->
-    <div class="mode-content" class:hidden-mode={mode !== "museum" && mode !== "showroom" && mode !== "3p-test"}>
+    <div class="mode-content">
       {#key selectedRoom}
         {#await import("./components/game/DimensionFlipProof.svelte") then { default: DimensionFlipProof }}
           <DimensionFlipProof
             grid={liveGrid}
+            edges={selectedRoom ? [] : MUSEUM_EDGES}
             {visible}
             onAllLoaded={handleAllLoaded}
             onLoadProgress={handleLoadProgress}
@@ -388,30 +377,7 @@
     </div>
 
     <!-- Floating music-player bubble - audition ambient tracks per wing -->
-    {#if mode === "museum"}
-      <SoundscapeBubble />
-    {/if}
-
-    <!-- Non-3D modes render separately and unmount normally (they're lightweight) -->
-    {#if mode === "showroom"}
-      <div class="mode-content">
-        {#await import("./components/showroom/PropsShowroom.svelte") then { default: PropsShowroom }}
-          <PropsShowroom />
-        {/await}
-      </div>
-    {:else if mode === "3p-test"}
-      <div class="mode-content">
-        {#await import("./components/showroom/ThirdPersonTest.svelte") then { default: ThirdPersonTest }}
-          <ThirdPersonTest />
-        {/await}
-      </div>
-    {:else if mode === "edit"}
-      <div class="mode-content">
-        {#await import("./components/editor/Museum2DEditor.svelte") then { default: Museum2DEditor }}
-          <Museum2DEditor />
-        {/await}
-      </div>
-    {/if}
+    <SoundscapeBubble />
   {/if}
 </div>
 
@@ -428,13 +394,6 @@
   .mode-content {
     flex: 1;
     overflow: hidden;
-  }
-
-  .mode-content.hidden-mode {
-    visibility: hidden;
-    pointer-events: none;
-    position: absolute;
-    inset: 0;
   }
 
   /* Unified loading overlay - covers full module, fades out when ready */
@@ -472,8 +431,12 @@
   }
 
   @keyframes overlay-pulse {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 0.6; }
+    0%,
+    100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 0.6;
+    }
   }
-
 </style>

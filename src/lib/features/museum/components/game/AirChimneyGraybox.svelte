@@ -22,6 +22,7 @@
   } from "three";
   import FallingParticles from "$lib/shared/3d/environments/primitives/FallingParticles.svelte";
   import type { MuseumGrid } from "../../domain/museum-grid-types";
+  import type { AuthoredPointLightPlanChange } from "../../services/museum-room-light-pool";
   import {
     buildAirChimneyLayout,
     type AirChimneyLayout,
@@ -38,8 +39,14 @@
     /** Room the player is standing in; lights idle when they are elsewhere. */
     currentRoomId?: string | null;
     visible?: boolean;
+    onLightPlanChange?: AuthoredPointLightPlanChange;
   }
-  const { grid, currentRoomId = null, visible = true }: Props = $props();
+  const {
+    grid,
+    currentRoomId = null,
+    visible = true,
+    onLightPlanChange,
+  }: Props = $props();
 
   // ── Palette ───────────────────────────────────────────────────────────────
   // Graybox values, not final art.
@@ -313,8 +320,25 @@
   const AIR_ROUTE = new Set([AIR_ROOM_ID, EARTH_ROOM_ID]);
   /** Lights and motes idle when the player is nowhere near the bay. */
   const lit = $derived(
-    visible && (currentRoomId === null || AIR_ROUTE.has(currentRoomId))
+    visible && currentRoomId !== null && AIR_ROUTE.has(currentRoomId)
   );
+
+  $effect(() => {
+    const currentScene = scene;
+    if (!currentScene || !onLightPlanChange) return;
+    onLightPlanChange("air-chimney", {
+      roomIds: [...AIR_ROUTE],
+      lights: currentScene.lights.map((light) => ({
+        x: light.pos[0],
+        y: light.pos[1],
+        z: light.pos[2],
+        color: light.color,
+        intensity: light.intensity,
+        distance: light.distance,
+      })),
+    });
+    return () => onLightPlanChange("air-chimney", null);
+  });
 
   const riseHeight = $derived(RISE_VISUAL_TOP - AIR_FLOOR_Y);
   const sinkHeight = $derived(OVERLOOK_Y - AIR_FLOOR_Y);
@@ -406,17 +430,5 @@
         enabled={lit}
       />
     </T.Group>
-
-    <!-- Light plan -->
-    {#each scene.lights as light (light.id)}
-      <T.PointLight
-        position={light.pos}
-        color={light.color}
-        intensity={lit ? light.intensity : 0}
-        distance={light.distance}
-        decay={2}
-        castShadow={false}
-      />
-    {/each}
   </T.Group>
 {/if}

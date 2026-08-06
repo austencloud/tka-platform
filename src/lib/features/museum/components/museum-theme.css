@@ -4,7 +4,7 @@
  *
  * Previously these literal rgba values were duplicated 100+ times across
  * SoundscapePanel, DetailPanel, RoomPicker, AvatarPicker, PlaqueView,
- * InteractionPrompt, MuseumTileRenderer, DimensionFlipProof, EditorCanvas,
+ * InteractionPrompt, MuseumTileRenderer, and DimensionFlipProof,
  * and the showroom components.
  *
  * Deliberately feature-local: properties are scoped to `.museum-gold-scope`,

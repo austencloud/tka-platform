@@ -11,11 +11,13 @@
   } from "three";
   import FallingParticles from "$lib/shared/3d/environments/primitives/FallingParticles.svelte";
   import type { WingRegion } from "../../domain/museum-grid-types";
+  import type { AuthoredPointLightPlanChange } from "../../services/museum-room-light-pool";
 
   interface Props {
     rooms: WingRegion[];
     currentRoomId: string | null;
     visible?: boolean;
+    onLightPlanChange?: AuthoredPointLightPlanChange;
   }
 
   interface ChamberMood {
@@ -54,7 +56,12 @@
     distance: number;
   }
 
-  let { rooms, currentRoomId, visible = true }: Props = $props();
+  let {
+    rooms,
+    currentRoomId,
+    visible = true,
+    onLightPlanChange,
+  }: Props = $props();
 
   const TILE_SIZE = 0.5;
   const MODE_ORDER = [
@@ -333,6 +340,29 @@
       };
     });
   });
+  const MOOD_LIGHT_ROOMS = [
+    ...MODE_ORDER,
+    "cave-threshold",
+    "cave-squeeze",
+    "egypt-threshold",
+  ] as const;
+
+  $effect(() => {
+    const lights = moodLights;
+    if (!onLightPlanChange) return;
+    onLightPlanChange("vulcan-cave-mood", {
+      roomIds: MOOD_LIGHT_ROOMS,
+      lights: lights.map((light) => ({
+        x: light.position[0],
+        y: light.position[1],
+        z: light.position[2],
+        color: light.color,
+        intensity: light.intensity,
+        distance: light.distance,
+      })),
+    });
+    return () => onLightPlanChange("vulcan-cave-mood", null);
+  });
 </script>
 
 {#each rockInstances as rock (rock.id)}
@@ -376,15 +406,4 @@
       />
     </T.Group>
   {/if}
-{/each}
-
-{#each moodLights as light, index (index)}
-  <T.PointLight
-    position={light.position}
-    color={light.color}
-    intensity={light.intensity}
-    distance={light.distance}
-    decay={2}
-    castShadow={false}
-  />
 {/each}

@@ -68,6 +68,9 @@ export class MuseumGeometryStreamer {
   private readonly worker: Worker;
   private readonly pendingBuilds = new Map<string, PendingBuild>();
   private firstRoomActivated = false;
+  private fpsVisibilityActive = false;
+  private visibleRoomIds = new Set<string>();
+  private callbacks: StreamerCallbacks | null = null;
 
   // References
   private readonly grid: MuseumGrid;
@@ -127,6 +130,7 @@ export class MuseumGeometryStreamer {
   }
 
   dispose(): void {
+    this.callbacks = null;
     // Reject (quietly) any in-flight builds so awaiting callers unwind on teardown.
     for (const pending of this.pendingBuilds.values()) {
       clearTimeout(pending.timer);
@@ -250,6 +254,9 @@ export class MuseumGeometryStreamer {
 
     callbacks.addChunkToScene(chunk);
     this.activeRoomChunks.set(roomId, chunk);
+    if (this.visibleRoomIds.size > 0) {
+      this.setChunkVisible(chunk, this.visibleRoomIds.has(roomId));
+    }
 
     if (!this.firstRoomActivated) {
       this.firstRoomActivated = true;
@@ -297,6 +304,7 @@ export class MuseumGeometryStreamer {
   // ── Initial load orchestration ──
 
   async runInitialLoad(callbacks: StreamerCallbacks): Promise<void> {
+    this.callbacks = callbacks;
     // 1. Build corridors on main thread
     callbacks.onBuildStage?.("Building corridors");
     const corridorDryRun = this.perRoomBuckets.corridorBucket;
@@ -313,48 +321,53 @@ export class MuseumGeometryStreamer {
       await this.activateRoom(this.spawnRoomId, 0, callbacks);
     }
 
-    // 3. Compile shaders for lobby only
-    const renderer = callbacks.getRenderer();
-    const camera = callbacks.getCamera();
-    if (renderer && camera && sceneObj) {
-      renderer.compile(sceneObj, camera);
-    }
-
-    // 4. Signal ready
+    // 3. Signal ready
     this.geometryReady = true;
 
-    // 5. Build all remaining rooms progressively
-    const allRoomIds = [...this.perRoomBuckets.roomBuckets.keys()];
-    const distances = this.computeDistancesFromSpawn(this.spawnRoomId, allRoomIds);
-    const sortedRooms = allRoomIds
-      .filter((id) => id !== this.spawnRoomId)
-      .sort((a, b) => (distances.get(a) ?? 99) - (distances.get(b) ?? 99));
-
-    for (const roomId of sortedRooms) {
-      const dist = distances.get(roomId) ?? 99;
-      // fire-and-forget; swallow per-room failures so one bad room doesn't
-      // surface as an unhandled rejection (the room just stays unbuilt).
-      this.activateRoom(roomId, dist, callbacks).catch((err) => {
-        console.warn(`[MuseumGeometryStreamer] room "${roomId}" failed to stream:`, err);
-      });
+    // 4. Build only the local two-hop neighborhood. Loading every distant room
+    // here created new material programs for minutes after the museum opened,
+    // and any Q press during that work was trapped behind shader linking.
+    if (this.spawnRoomId) {
+      const initial = this.lifecycleManager.onPlayerEnteredRoom(this.spawnRoomId);
+      this.applyRoomVisibility(new Set(this.lifecycleManager.getActiveRoomIds()));
+      const activations: Promise<void>[] = [];
+      for (const roomId of initial.toActivate) {
+        if (roomId === this.spawnRoomId) continue;
+        const priority = initial.priorities.get(roomId) ?? 2;
+        activations.push(
+          this.activateRoom(roomId, priority, callbacks).catch((error: unknown) => {
+            console.warn(`[MuseumGeometryStreamer] room "${roomId}" failed to stream:`, error);
+          })
+        );
+      }
+      await Promise.all(activations);
     }
 
-    // 6. Compile shaders for newly added rooms during idle time
-    if (typeof requestIdleCallback !== "undefined") {
-      requestIdleCallback(() => {
-        const r2 = callbacks.getRenderer();
-        const s2 = callbacks.getScene();
-        const c2 = callbacks.getCamera();
-        if (r2 && c2 && s2) r2.compile(s2, c2);
-      });
-    }
   }
 
   // ── Runtime streaming ──
 
+  private setChunkVisible(chunk: RoomChunk, visible: boolean): void {
+    for (const { mesh } of chunk.floorMeshes) mesh.visible = visible;
+    for (const { mesh } of chunk.wallMeshes) mesh.visible = visible;
+    if (chunk.kitWalls) chunk.kitWalls.visible = visible;
+    if (chunk.ceilingMesh) {
+      chunk.ceilingMesh.mesh.visible = visible && this.fpsVisibilityActive;
+    }
+    if (chunk.pedestalMesh) chunk.pedestalMesh.visible = visible;
+    if (chunk.signMesh) chunk.signMesh.visible = visible;
+  }
+
+  private applyRoomVisibility(visibleRoomIds: Set<string>): void {
+    this.visibleRoomIds = visibleRoomIds;
+    for (const [roomId, chunk] of this.activeRoomChunks) {
+      this.setChunkVisible(chunk, visibleRoomIds.has(roomId));
+    }
+    if (this.corridorChunk) this.setChunkVisible(this.corridorChunk, true);
+  }
+
   updateStreaming(playerTX: number, playerTZ: number, fpsActive: boolean): void {
     if (!this.geometryReady) return;
-    if (!fpsActive) return;
 
     let detectedRoomId: string | null = null;
     for (const wing of this.grid.wings) {
@@ -366,8 +379,24 @@ export class MuseumGeometryStreamer {
     }
     this.currentPlayerRoomId = detectedRoomId;
 
+    const cameraModeChanged = fpsActive !== this.fpsVisibilityActive;
+    this.fpsVisibilityActive = fpsActive;
+
     if (detectedRoomId && detectedRoomId !== this.lastPlayerRoomId) {
       this.lastPlayerRoomId = detectedRoomId;
+      const update = this.lifecycleManager.onPlayerEnteredRoom(detectedRoomId);
+      this.applyRoomVisibility(new Set(this.lifecycleManager.getActiveRoomIds()));
+      if (this.callbacks) {
+        for (const roomId of update.toActivate) {
+          const priority = update.priorities.get(roomId) ?? 2;
+          this.activateRoom(roomId, priority, this.callbacks).catch((error: unknown) => {
+            console.warn(`[MuseumGeometryStreamer] room "${roomId}" failed to stream:`, error);
+          });
+        }
+      }
+    } else if (cameraModeChanged) {
+      // The room set stays fixed; only ceiling visibility changes by camera mode.
+      this.applyRoomVisibility(this.visibleRoomIds);
     }
   }
 

@@ -9,7 +9,7 @@
    * - no manual STAGE_LIFT math, no sibling Avatar3D/Prop3D/Grid3D calls.
    */
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
-  import { untrack } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import { T } from "@threlte/core";
   import { Color } from "three";
   import { PerformerRig } from "@austencloud/scene-3d";
@@ -34,6 +34,8 @@
     facingAngle: number;
     sequenceId?: string;
     autoPlay?: boolean;
+    /** Animate only while the visitor is close enough to see this station. */
+    active?: boolean;
     showGrid?: boolean;
     /**
      * Optional injection map for resolving a sequenceId to a user's PRIVATE
@@ -112,7 +114,7 @@
         resolvedSequence = injected;
         performerState.loadSequence(injected);
         performerState.loop = true;
-        if (autoPlay) performerState.play();
+        if (autoPlay && props.active !== false) performerState.play();
         return;
       }
 
@@ -121,7 +123,7 @@
         resolvedSequence = buildSequenceData(museumSeq);
         performerState.loadSequence(resolvedSequence);
         performerState.loop = true;
-        if (autoPlay) performerState.play();
+        if (autoPlay && props.active !== false) performerState.play();
         return;
       }
 
@@ -134,12 +136,23 @@
         resolvedSequence = seq;
         performerState.loadSequence(seq);
         performerState.loop = true;
-        if (autoPlay) performerState.play();
+        if (autoPlay && props.active !== false) performerState.play();
       }).catch((err: unknown) => {
         console.warn(`[MuseumPerformer] Failed to load sequence ${id}:`, err);
       });
     });
   });
+
+  $effect(() => {
+    const active = props.active !== false;
+    untrack(() => {
+      if (!performerState || !autoPlay) return;
+      if (active) performerState.play();
+      else performerState.pause();
+    });
+  });
+
+  onDestroy(() => performerState?.destroy());
 
   // Prop type: prefer the sequence's intended prop, fall back to global settings.
   // This way Shift+P cycles the museum performers too.

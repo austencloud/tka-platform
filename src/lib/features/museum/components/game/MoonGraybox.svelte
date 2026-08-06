@@ -73,11 +73,7 @@
     currentRoomId?: string | null;
     visible?: boolean;
   }
-  const {
-    grid,
-    currentRoomId = null,
-    visible = true,
-  }: Props = $props();
+  const { grid, currentRoomId = null, visible = true }: Props = $props();
 
   // ── Palette ───────────────────────────────────────────────────────────────
   // Regolith is not grey-blue moonlight — that is what the Moon looks like from
@@ -132,7 +128,10 @@
   const cosmicDefaults = createDefaultCosmicNightConfig();
   const cosmic = {
     ...cosmicDefaults,
-    earth: { ...cosmicDefaults.earth, position: [-30, 34, -45] as [number, number, number] },
+    earth: {
+      ...cosmicDefaults.earth,
+      position: [-30, 34, -45] as [number, number, number],
+    },
   };
   const meteors = cosmic.particles?.effects?.meteorStreaks;
   /** How far the arrival shaft is drawn down before it goes to black. */
@@ -280,7 +279,12 @@
     material: MaterialKey;
   }
 
-  function slab(id: string, r: WorldRect, topY: number, material: MaterialKey): Box {
+  function slab(
+    id: string,
+    r: WorldRect,
+    topY: number,
+    material: MaterialKey
+  ): Box {
     return {
       id,
       pos: [cx(r), topY - SLAB_T / 2, cz(r)],
@@ -403,11 +407,7 @@
         id: `moon-boulder-${i}`,
         pos: [Math.sin(theta) * dist, Math.cos(theta) * dist],
         size: [w, w * (0.45 + rand() * 0.5), w * (0.7 + rand() * 0.6)],
-        rot: [
-          (rand() - 0.5) * 0.5,
-          rand() * Math.PI,
-          (rand() - 0.5) * 0.5,
-        ],
+        rot: [(rand() - 0.5) * 0.5, rand() * Math.PI, (rand() - 0.5) * 0.5],
       });
     }
 
@@ -458,7 +458,11 @@
       ),
       ...l.corridorWalls.map((rect, i) => ({
         id: `moon-corridor-wall-${i}`,
-        pos: [cx(rect), MOON_CORRIDOR_CEILING_Y / 2, cz(rect)] as [number, number, number],
+        pos: [cx(rect), MOON_CORRIDOR_CEILING_Y / 2, cz(rect)] as [
+          number,
+          number,
+          number,
+        ],
         size: [
           Math.max(sx(rect), 0.01),
           MOON_CORRIDOR_CEILING_Y,
@@ -470,12 +474,16 @@
       // open sky.
       ...l.corridorFloors.map((rect, i) => ({
         id: `moon-corridor-ceiling-${i}`,
-        pos: [cx(rect), MOON_CORRIDOR_CEILING_Y + SLAB_T / 2, cz(rect)] as [number, number, number],
-        size: [
-          Math.max(sx(rect), 0.01),
-          SLAB_T,
-          Math.max(sz(rect), 0.01),
-        ] as [number, number, number],
+        pos: [cx(rect), MOON_CORRIDOR_CEILING_Y + SLAB_T / 2, cz(rect)] as [
+          number,
+          number,
+          number,
+        ],
+        size: [Math.max(sx(rect), 0.01), SLAB_T, Math.max(sz(rect), 0.01)] as [
+          number,
+          number,
+          number,
+        ],
         material: "rim" as MaterialKey,
       })),
       slab(
@@ -550,7 +558,15 @@
       // the dome sat IN FRONT of all three and the sky was simply black. It
       // now also has to stand outside the 380 m mare, or the ground would run
       // through the horizon.
-      sky: new SphereGeometry(SKY_RADIUS, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+      sky: new SphereGeometry(
+        SKY_RADIUS,
+        32,
+        16,
+        0,
+        Math.PI * 2,
+        0,
+        Math.PI / 2
+      ),
       boxes,
     };
   }
@@ -575,7 +591,7 @@
   });
 
   const inRoom = $derived(currentRoomId === MOON_ROOM_ID);
-  const lit = $derived(visible && (currentRoomId === null || inRoom));
+  const lit = $derived(visible && currentRoomId !== null && inRoom);
 
   // ── The key ───────────────────────────────────────────────────────────────
   //
@@ -791,6 +807,8 @@
       </T.Group>
     {/if}
 
+    <!-- Keep the light types mounted across every room. Only their uniform
+         values change, which keeps the compiled material program stable. -->
     <T is={key} />
     <T is={key.target} />
 

@@ -1,0 +1,186 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { describe, expect, it } from "vitest";
+
+const read = (path: string) =>
+  readFileSync(resolve(process.cwd(), path), "utf8");
+
+describe("museum rendering performance contract", () => {
+  it("never uses the synchronous Three.js shader compiler", () => {
+    const streamer = read(
+      "src/lib/features/museum/services/museum-geometry-streamer.ts"
+    );
+    const scene = read(
+      "src/lib/features/museum/components/game/Museum3DScene.svelte"
+    );
+
+    expect(scene).toContain(
+      "renderer.compileAsync(object, warmupCamera, scene)"
+    );
+    expect(`${streamer}\n${scene}`).not.toMatch(/\br(?:enderer|2)\.compile\(/);
+    expect(streamer).not.toContain("Build all remaining rooms progressively");
+  });
+
+  it("raycasts the collider index instead of the complete scene graph", () => {
+    const source = read(
+      "packages/camera-3d/src/lib/components/UnifiedCameraController.svelte"
+    );
+
+    expect(source).toContain("getCameraColliders(sceneToCast)");
+    expect(source).not.toContain(
+      "intersectObjects(sceneToCast.children, true)"
+    );
+  });
+
+  it("only animates performer stations in the visitor's current room", () => {
+    const scene = read(
+      "src/lib/features/museum/components/game/Museum3DScene.svelte"
+    );
+    const station = read(
+      "src/lib/features/museum/components/game/MuseumPerformerStation3D.svelte"
+    );
+
+    expect(scene).toContain("active={activePerformerIds.has(performer.id)}");
+    expect(scene).toContain("visiblePerformers = roomId");
+    expect(scene).not.toContain("visiblePerformers = grid.performers");
+    expect(station).toContain("else performerState.pause()");
+  });
+
+  it("uses one direct render path at a bounded museum DPR", () => {
+    const postProcessing = read(
+      "src/lib/features/museum/components/game/MuseumPostProcessing.svelte"
+    );
+    const shell = read(
+      "src/lib/features/museum/components/game/DimensionFlipProof.svelte"
+    );
+
+    expect(postProcessing).toContain("renderer.render(scene, camera)");
+    expect(postProcessing).not.toContain("EffectComposer");
+    expect(shell).toContain("<Canvas dpr={1}>");
+  });
+
+  it("draws both 3D camera variants behind the loading gate", () => {
+    const scene = read(
+      "src/lib/features/museum/components/game/Museum3DScene.svelte"
+    );
+    const shell = read(
+      "src/lib/features/museum/components/game/DimensionFlipProof.svelte"
+    );
+
+    expect(scene).toContain("onModelSwapped={handlePlayerAvatarReady}");
+    expect(scene).toContain("fpsActive = true");
+    expect(scene).toContain("playerAvatarWarmupGroup.visible = true");
+    expect(scene).toContain("Promise.race([");
+    expect(scene).toContain("renderer.render(scene, warmupCamera)");
+    expect(scene).toContain("cameraFlip.initializeCamera(warmupCamera, true)");
+    expect(scene).not.toContain("fpsWarmupObjects");
+    expect(shell).toContain("onShaderWarmupReady={handleShaderWarmupReady}");
+  });
+
+  it("bounds real-time museum lights before shader generation", () => {
+    const scene = read(
+      "src/lib/features/museum/components/game/Museum3DScene.svelte"
+    );
+    const roomPool = read(
+      "src/lib/features/museum/services/museum-room-light-pool.ts"
+    );
+
+    expect(scene).toContain("const MAX_TORCH_LIGHTS = 1");
+    expect(scene).toContain("const MAX_EXHIBIT_LIGHTS = 0");
+    expect(scene).toContain("const MAX_CEILING_LIGHTS = 0");
+    expect(scene).toContain("const MAX_SUNLIGHTS = 0");
+    expect(roomPool).toContain("export const MAX_ROOM_LIGHTS = 2");
+    expect(roomPool).toContain("export const MAX_AUTHORED_POINT_LIGHTS = 3");
+  });
+
+  it("snaps between 2D and 3D without flying through uncached rooms", () => {
+    const controller = read(
+      "src/lib/features/museum/services/museum-camera-flip-controller.ts"
+    );
+
+    expect(controller).toContain("const progress = goingDown ? 1 : 0");
+    expect(controller).not.toContain("FLIP_DURATION");
+    expect(controller).not.toContain("lerpVectors");
+  });
+
+  it("keeps the player light in the scene across camera modes", () => {
+    const scene = read(
+      "src/lib/features/museum/components/game/Museum3DScene.svelte"
+    );
+
+    expect(scene).toContain(
+      "intensity={!fpsActive && !museum3dEditorState.editorActive ? 2 : 0}"
+    );
+    expect(scene).not.toMatch(
+      /<T\.Group[\s\S]{0,180}visible=\{!fpsActive[\s\S]{0,800}<T\.PointLight intensity=\{2\}/
+    );
+  });
+
+  it("keeps one fixed authored-light signature across rooms and corridors", () => {
+    const scene = read(
+      "src/lib/features/museum/components/game/Museum3DScene.svelte"
+    );
+    const pointLightSources = [
+      "DrownedGalleryGraybox.svelte",
+      "FirstFireGraybox.svelte",
+      "EarthCanyonGraybox.svelte",
+      "AirChimneyGraybox.svelte",
+      "VulcanCaveScenicLayer.svelte",
+    ];
+
+    expect(scene).toMatch(
+      /\$state<string \| null>\(\s*geometryStreamer\.getSpawnRoomId\(\)\s*\)/
+    );
+    expect(scene).toContain("{#each authoredPointLightPool as slot, i (i)}");
+    expect(scene).toContain("const torchLightSlot = $derived.by");
+    expect(scene).toContain("baseIntensity={0}");
+    expect(scene).toContain(
+      "if (detectedRoomId) currentLightingRoomId = detectedRoomId"
+    );
+    for (const file of pointLightSources) {
+      const source = read(`src/lib/features/museum/components/game/${file}`);
+      expect(source).not.toContain("<T.PointLight");
+      expect(source).not.toContain("currentRoomId === null ||");
+    }
+
+    for (const file of ["SundialGraybox.svelte", "MoonGraybox.svelte"]) {
+      const source = read(`src/lib/features/museum/components/game/${file}`);
+      expect(source).not.toContain("<T.Group visible={lit}>");
+      expect(source).not.toContain("currentRoomId === null ||");
+    }
+  });
+
+  it("treats Museum as one destination without mounting developer canvases", () => {
+    const moduleDefinitions = read(
+      "src/lib/shared/navigation/config/module-definitions.ts"
+    );
+    const navigationCoordinator = read(
+      "src/lib/shared/navigation-coordinator/navigation-coordinator.svelte.ts"
+    );
+    const museumModule = read("src/lib/features/museum/MuseumModule.svelte");
+
+    expect(moduleDefinitions).toMatch(
+      /id: "museum",[\s\S]{0,500}sections: \[\]/
+    );
+    expect(museumModule).not.toContain("museum-last-mode");
+    expect(museumModule).not.toContain("PropsShowroom");
+    expect(museumModule).not.toContain("ThirdPersonTest");
+    expect(museumModule).not.toContain("Museum2DEditor");
+    expect(navigationCoordinator).toContain('["museum", "play"]');
+    expect(navigationCoordinator).toContain(
+      "moduleDef?.sections?.[0]?.id ?? RETIRED_DEFAULT_SECTIONS.get(moduleId)"
+    );
+  });
+
+  it("passes each museum's real room graph into the geometry streamer", () => {
+    const officialMuseum = read("src/lib/features/museum/MuseumModule.svelte");
+    const personalMuseum = read(
+      "src/lib/features/personal-museum/PersonalMuseumModule.svelte"
+    );
+
+    expect(officialMuseum).toContain(
+      "edges={selectedRoom ? [] : MUSEUM_EDGES}"
+    );
+    expect(personalMuseum).toContain("edges={PERSONAL_MUSEUM_EDGES}");
+  });
+});

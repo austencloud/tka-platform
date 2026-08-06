@@ -125,8 +125,22 @@
     ringFloor: new RingGeometry(CROSSING_INNER_R, CROSSING_OUTER_R, 96, 1),
     disc: new CircleGeometry(CROSSING_INNER_R, 96),
     /** Vertical skirts at the two collapse edges. */
-    innerSkirt: new CylinderGeometry(CROSSING_INNER_R, CROSSING_INNER_R, 1, 96, 1, true),
-    outerSkirt: new CylinderGeometry(CROSSING_OUTER_R, CROSSING_OUTER_R, 1, 96, 1, true),
+    innerSkirt: new CylinderGeometry(
+      CROSSING_INNER_R,
+      CROSSING_INNER_R,
+      1,
+      96,
+      1,
+      true
+    ),
+    outerSkirt: new CylinderGeometry(
+      CROSSING_OUTER_R,
+      CROSSING_OUTER_R,
+      1,
+      96,
+      1,
+      true
+    ),
     pillar: new CylinderGeometry(1, 1, 1, 24),
     eye: new CylinderGeometry(EYE_RADIUS_M, EYE_RADIUS_M, 1, 32),
     medallionHalf: new CylinderGeometry(
@@ -161,7 +175,12 @@
   const sx = (r: WorldRect) => r.maxX - r.minX;
   const sz = (r: WorldRect) => r.maxZ - r.minZ;
 
-  function slab(id: string, r: WorldRect, topY: number, material: MaterialKey): Box {
+  function slab(
+    id: string,
+    r: WorldRect,
+    topY: number,
+    material: MaterialKey
+  ): Box {
     return {
       id,
       pos: [cx(r), topY - SLAB_T / 2, cz(r)],
@@ -216,9 +235,13 @@
    * — so a bearing can be handed to `thetaStart` untranslated.
    */
   function wallArcs(gaps: { centre: number; half: number }[]): Arc[] {
-    const norm = (a: number) => ((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    const norm = (a: number) =>
+      ((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
     const sorted = gaps
-      .map((g) => ({ from: norm(g.centre - g.half), to: norm(g.centre + g.half) }))
+      .map((g) => ({
+        from: norm(g.centre - g.half),
+        to: norm(g.centre + g.half),
+      }))
       .sort((a, b) => a.from - b.from);
     const arcs: Arc[] = [];
     for (let i = 0; i < sorted.length; i++) {
@@ -227,7 +250,11 @@
       let length = end - start;
       if (length <= 0) length += Math.PI * 2;
       if (length > 0.02) {
-        arcs.push({ id: `sun-wall-arc-${i}`, thetaStart: start, thetaLength: length });
+        arcs.push({
+          id: `sun-wall-arc-${i}`,
+          thetaStart: start,
+          thetaLength: length,
+        });
       }
     }
     return arcs;
@@ -355,7 +382,7 @@
 
   const SUN_ROUTE = new Set([SUN_ROOM_ID, AIR_ROOM_ID_FOR_SUN]);
   const lit = $derived(
-    visible && (currentRoomId === null || SUN_ROUTE.has(currentRoomId))
+    visible && currentRoomId !== null && SUN_ROUTE.has(currentRoomId)
   );
 
   // ── The sun ───────────────────────────────────────────────────────────────
@@ -434,7 +461,10 @@
   const eyeBaseY = SUN_SUMMIT_Y - 0.4;
   /** 0 on the ground, 1 at the hatch. Drives how far the iris has opened. */
   const rideProgress = $derived(
-    Math.min(1, Math.max(0, (eyeTopY - SUN_SUMMIT_Y) / (EYE_TOP_Y - SUN_SUMMIT_Y)))
+    Math.min(
+      1,
+      Math.max(0, (eyeTopY - SUN_SUMMIT_Y) / (EYE_TOP_Y - SUN_SUMMIT_Y))
+    )
   );
   /**
    * The hatch must finish opening BEFORE the plinth arrives, or the moment
@@ -553,11 +583,7 @@
           (SUN_RING_FLOOR_Y + pillar.topY) / 2,
           pillar.centre.z,
         ]}
-        scale={[
-          pillar.radius,
-          pillar.topY - SUN_RING_FLOOR_Y,
-          pillar.radius,
-        ]}
+        scale={[pillar.radius, pillar.topY - SUN_RING_FLOOR_Y, pillar.radius]}
         castShadow
         receiveShadow
       />
@@ -604,11 +630,7 @@
     <T.Mesh
       geometry={geo.eye}
       material={materials.disc}
-      position={[
-        layout.centre.x,
-        (eyeBaseY + eyeTopY) / 2,
-        layout.centre.z,
-      ]}
+      position={[layout.centre.x, (eyeBaseY + eyeTopY) / 2, layout.centre.z]}
       scale={[1, Math.max(eyeTopY - eyeBaseY, 0.01), 1]}
       castShadow
       receiveShadow
@@ -646,7 +668,8 @@
       }}
     />
 
-    <!-- The sun itself, re-aimed from the visitor's position every frame -->
+    <!-- The light objects never leave the scene. Three.js compiles their types
+         into every lit material, so room changes use intensity only. -->
     <T is={sun} />
     <T is={sun.target} />
 
