@@ -77,18 +77,62 @@ owl. The governing plan is
   the repeating albedo. The rebuilt optimized GLB is 10.03 MiB
   (10,516,636 bytes). Focused tests pass 8/8 and the fresh project check again
   reports zero errors and zero warnings.
+- Austen's next real-app screenshot at
+  `C:\Users\Austen\AppData\Local\Temp\codex-clipboard-V5jEip.png` verifies the
+  canonical stage, tree-localized falling leaves, darker night sky, owl, and
+  macro floor swaths in the actual Create viewer. His review: the scene is now
+  becoming gorgeous; the performer feet still intersect the deck, the near
+  ground still reads generic, the horizon is barren, the hero-tree silhouettes
+  repeat too much, and the owl reads detached from its branch at app distance.
+- The deck-contact regression is fixed at its coordinate source. Autumn now
+  declares the canonical Stage3D deck top as its native performer surface,
+  exactly like Forest, so the environment is no longer shifted upward by one
+  deck height. Focused stage-coordinate verification passes 22/22 tests.
+- The horizon-variety generation is checkpointed. The silver-birch cluster
+  completed Meshy preview `019fd884-ceb8-70e1-9d9c-94d6bfa6a309` and refine
+  `019fd885-fc83-7917-b98b-f01cca20cc94`; its 12,571,060-byte source GLB is
+  downloaded. The broken snag preview
+  `019fd889-31c2-71cf-9161-d530d8b1e9fc` succeeded and refine
+  `019fd88a-36fe-71ec-a7ec-a6a71f0f74af` also reached `SUCCEEDED`; its
+  10,219,428-byte source GLB is downloaded. These IDs prevent duplicate paid
+  submissions if the session is interrupted.
+- The latest Blender rebuild completes its expanded ecology validator: 54
+  ferns, 15 boulders, 1,800 fixed leaf cards, 2,000 quality-tiered grass
+  clumps, 16 mushroom clusters, 150 twigs, 17 distant trees, a connected owl
+  branch, and zero forbidden-placement collisions. The tree belt is 12
+  silver-birch cluster instances plus 5 broken-snag instances, with the moon
+  gap protected between the upper crowns.
+- The owl is no longer runtime-rotated. Its source GLB already contains talons
+  closed around a short branch; Blender now buries that branch into
+  `Autumn_Owl_Tree_Connector`, which grows from the rear hero-tree fork. The
+  final optimized GLB retains both `Autumn_Owl_Tree_Connector` and
+  `Autumn_Owl_Perch_0.007`. The close QA render at
+  `C:\Users\Austen\AppData\Local\Temp\tka-autumn-evidence\autumn_environment_qa_owl.png`
+  verifies continuous branch contact and visible talon contact.
+- The final authored asset exported 146 visible meshes to a 154.37 MiB raw GLB
+  and optimized to 11,675,576 bytes (SHA-256
+  `4636C69917437E92CE31443E4EEDA1442FA64F979D0270F7D18AE9D6F6D9CBF0`). It
+  uses meshopt, WebP, mesh quantization, and GPU instancing. Direct GLB JSON
+  inspection proves three scenery instance batches of 8, 12, and 5 instances;
+  the 12/5 batches are the new birches/snags. Grass nodes and eight macro floor
+  swath nodes also survive optimization.
+- Final code verification is green: the Autumn layout and coordinate-frame
+  suites pass 30/30 focused tests, and `pnpm check` reports 0 errors and 0
+  warnings. HTTPS runtime probes return 200 for the Construct route, the
+  11,675,576-byte GLB, `AutumnScene.svelte`, and the coordinate-frame module.
 
 ## Believed done — unverified
 
 - The real app should now render the authored mushroom rings only once, reveal
   cumulative grass density by quality tier, bend grass from root-weight UVs,
-  show the owl's restrained idle turn, frame a low moon and stars through the
+  show the owl statically integrated with its tree, frame a low moon and stars through the
   rear opening, and distribute fireflies around the pond plus both mushroom
   rings. These code paths typecheck and their pure layout contracts are tested.
-  The first integrated pass has user-supplied visual proof. The later stage,
-  macro floor swaths, and tree-localized leaf emitters are typechecked and hot
-  served but still need a fresh screenshot because this Codex session's Chrome
-  DevTools MCP transport remains closed.
+  The first two integrated passes have user-supplied visual proof. The newest
+  deck-coordinate correction, 17-tree horizon belt, larger floor UV scale,
+  1,800-card leaf drifts, denser dusk fog, and baked owl-tree connector are
+  code-/asset-verified and hot served but still need a fresh real-app screenshot
+  because this Codex session's Chrome DevTools MCP transport remains closed.
 
 ## In flight
 
@@ -101,8 +145,9 @@ owl. The governing plan is
 - This handoff and its governing plan are isolated in a scoped local commit;
   inspect `HEAD` for its SHA. Implementation files remain uncommitted.
 - Current implementation step: inspect the integrated app at every required
-  viewport, tune runtime color/composition/performance, and collect screenshots
-  plus console/frame evidence.
+  viewport, rebuild the environment with a varied distant tree belt, physically
+  attach the owl perch to a hero-tree branch, strengthen foreground leaf drifts,
+  then collect screenshots plus console/frame evidence.
 - Publishing note: `main` was already three commits ahead of `origin/main` with
   unrelated ghost-system commits (`5b1d123b0c`, `e3a0b07518`, `8d1ba89880`). A
   handoff commit may be created locally with explicit pathspecs, but pushing it
@@ -122,8 +167,8 @@ owl. The governing plan is
   `autumn/runtime/atmosphere/AutumnParticles.svelte`,
   `autumn/runtime/atmosphere/autumn-ground-life-layout.ts`,
   `autumn/runtime/wind/AutumnWind.svelte`,
-  `autumn/runtime/wind/autumn-grass-tier.ts`, and
-  `autumn/runtime/creatures/AutumnOwlIdle.svelte`.
+  `autumn/runtime/wind/autumn-grass-tier.ts`, plus the canonical coordinate
+  frame in `environments/domain/stage-coordinate-frame.ts`.
 - Verification: `tests/unit/3d-autumn/autumn-scene-layout.test.ts` and this
   handoff. Several additional dirty Autumn files predate this Living Forest
   Floor pass and belong to the preceding hero-environment workstream; do not
@@ -131,9 +176,9 @@ owl. The governing plan is
 
 ## Loose ends (ranked)
 
-1. Refresh the real app and visually inspect the new stage, golden/cool floor
-   swaths, and tree-localized falling leaves. Confirm the stage deck meets the
-   performer's feet and the leaves never enter through open sky.
+1. Refresh the real app and confirm the stage deck meets the performer's feet,
+   the owl's baked branch visibly enters the hero tree, the moon opening stays
+   clear, and the new horizon belt removes barren floor without becoming a wall.
 2. Complete the seven-viewport visual pass and iterate until the performer,
    floor, pond, moon, owl, grass, and ecological pockets read cleanly.
 3. Capture fresh console and frame-stat evidence from the final runtime.
@@ -146,19 +191,20 @@ owl. The governing plan is
 1. Restart Codex so the Chrome DevTools MCP transport is recreated.
 2. Reuse the shared browser with
    `pwsh -NoProfile -File scripts/launch-chrome-debug.ps1 -Url about:blank`.
-3. Create one background tab for `https://localhost:5173/create/generate?v=2ZQ7`
+3. Create one background tab for `https://localhost:5173/create/construct?v=S0K3`
    and retain its page ID for every call.
 4. Wait for the loading curtain to clear, then capture 1920x1080, 2560x1440,
    3840x2160, 1440x900, 820x1180, 960x412, and 375x667 with per-page viewport
    emulation. Clear emulation and close only that task-owned tab afterward.
-5. Inspect console errors/warnings, verify the three `Autumn_Grass_*` objects
-   and `Autumn_Owl_Perch_0.005` at runtime, and capture fresh frame statistics.
+5. Inspect console errors/warnings, verify the three `Autumn_Grass_*` objects,
+   `Autumn_Owl_Tree_Connector`, and `Autumn_Owl_Perch_0.007` at runtime, and
+   capture fresh frame statistics.
 
 The shared debug Chrome itself was healthy on port 9222. Both `new_page` and
 `list_pages` failed with `Transport closed`. Independent HTTPS checks returned
-200 for the route and all changed Svelte modules. After the composition pass,
-HTTPS checks returned 200 for `AutumnScene.svelte` (17,085 bytes),
-`AutumnParticles.svelte` (14,791 bytes), and the 10,516,636-byte environment
+200 for the route and all changed Svelte modules. After the final authored
+pass, HTTPS checks returned 200 for `AutumnScene.svelte` (17,377 bytes), the
+coordinate-frame module (6,729 bytes), and the 11,675,576-byte environment
 GLB.
 
 ## Decisions already made
@@ -198,8 +244,9 @@ GLB.
 - The shared git index may contain other sessions' staged files. Every commit
   must use an explicit pathspec.
 - `gltf-transform` preserves the grass nodes exactly as `Autumn_Grass_Base`,
-  `Autumn_Grass_Medium`, and `Autumn_Grass_High`, but renamed the owl node to
-  `Autumn_Owl_Perch_0.005`. The runtime deliberately matches the owl by prefix.
+  `Autumn_Grass_Medium`, and `Autumn_Grass_High`. The final pass names the owl
+  `Autumn_Owl_Perch_0.007` and keeps `Autumn_Owl_Tree_Connector`; neither is
+  runtime-transformed.
 - `static/models/autumn/perched-owl.glb` is the optional 1.9 MiB standalone
   optimized owl. The ship asset already bakes the owl into
   `autumn-environment.glb`; do not load the standalone file in the scene.
