@@ -39,21 +39,42 @@
     const cy = Math.round(wing.bounds.y + wing.bounds.height / 2);
     const walkable = (x: number, y: number) => {
       const tile = plan.grid.tiles.get(`${x},${y}`);
-      return !!tile && !SOLID_TYPES.has(tile.type);
+      if (!tile || SOLID_TYPES.has(tile.type)) return false;
+      // Tile type is not the whole story. A bay with a terrain program can
+      // block ground that is a perfectly ordinary floor TILE — the Sundial's
+      // collapse ring is exactly that, so this search happily seeded r=4.5 and
+      // dropped the visitor into a pit they could not walk out of in any
+      // direction. Ask the terrain too, in the same world units it answers in.
+      return !plan.grid.terrain?.blockedAt(x * TILE_SIZE, y * TILE_SIZE);
     };
-    if (walkable(cx, cy)) return { x: cx, y: cy };
+    // Standing ON a walkable tile is not the same as standing somewhere you
+    // want to arrive. The first version of this fix put the visitor at exactly
+    // r=4.00 in the Sundial — the lip of a 3.8 m drop, one step from the pit.
+    // Requiring the neighbours to be walkable too keeps spawns off every edge.
+    const roomy = (x: number, y: number) =>
+      walkable(x, y) &&
+      walkable(x + 1, y) &&
+      walkable(x - 1, y) &&
+      walkable(x, y + 1) &&
+      walkable(x, y - 1);
     // Expanding ring search — the centre of a room can be a pillar, a pit or,
     // in the Sundial's case, the collapse ring the visitor cannot stand in.
+    // Two passes: take a roomy tile if one exists, and only fall back to a
+    // merely-walkable one if the room has no open ground at all.
     const limit = Math.max(wing.bounds.width, wing.bounds.height);
-    for (let r = 1; r <= limit; r++) {
-      for (let dx = -r; dx <= r; dx++) {
-        for (let dy = -r; dy <= r; dy++) {
-          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
-          if (walkable(cx + dx, cy + dy)) return { x: cx + dx, y: cy + dy };
+    const search = (accept: (x: number, y: number) => boolean) => {
+      if (accept(cx, cy)) return { x: cx, y: cy };
+      for (let r = 1; r <= limit; r++) {
+        for (let dx = -r; dx <= r; dx++) {
+          for (let dy = -r; dy <= r; dy++) {
+            if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+            if (accept(cx + dx, cy + dy)) return { x: cx + dx, y: cy + dy };
+          }
         }
       }
-    }
-    return null;
+      return null;
+    };
+    return search(roomy) ?? search(walkable);
   }
 
   /** Seed the walker's restore key. Returns false if the room has no floor. */
