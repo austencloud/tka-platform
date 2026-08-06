@@ -2,14 +2,14 @@
 status: handoff
 value: 4
 effort: M
-remaining: 'Sun is built and walkable — helix stair, sun-follows-visitor lighting, eye lift. Its noon-shadow gate is unproven and needs Austen at the summit looking DOWN. Moon is in flight with a subagent (layout written, wiring/graybox/tests pending). Mobile traversal now works wing-wide.'
+remaining: 'All six chambers exist and are walkable. The Sun noon-shadow gate is unproven and needs Austen at the summit looking DOWN. The Moon low-gravity jump arc is unverified. The Sun-to-Moon transition does not exist yet.'
 depends_on: 'docs/superpowers/plans/2026-08-05-sundial-graybox.md'
 plan_path: 'docs/superpowers/plans/2026-08-05-sundial-graybox.md'
 tags: [museum, vulcan-cave, sun, moon, mobile, handoff]
 last_triaged: 2026-08-05
 ---
 
-# Sun built, Moon in flight — Handoff (2026-08-05, evening)
+# The wing is complete — Handoff (2026-08-05, evening)
 
 Supersedes the morning handoff
 [2026-08-05-vulcan-cave-sun-room-handoff.md](file:///E:/tka-platform/docs/superpowers/specs/2026-08-05-vulcan-cave-sun-room-handoff.md)
@@ -33,6 +33,7 @@ All on `main` in the primary checkout. Every commit used an explicit pathspec.
 | `1f4a922f94` | The crossing became a real spiral staircase |
 | `684d5099cf` | The museum is walkable on a phone |
 | `3d6ce9a580` | The light crack was mostly invisible wall |
+| `75ceb51cee` | The Moon, and the first step off the Sun's stone |
 
 ### The Sun room, as built
 
@@ -76,16 +77,36 @@ so plainly.
 
 ---
 
-## In flight
+## The Moon — LANDED (`75ceb51cee`)
 
-**A subagent is finishing the Moon** (dispatched at the end of this session). It
-has `moon-layout.ts` (written, unwired) and the full brief. If its work is not on
-`main`, assume it did not finish and pick up from the layout file, whose header
-carries the whole design rationale.
+**The wing is complete: all six chambers exist and are walkable.**
 
-**The Moon's stations are settled.** Austen supplied the Quarter-Opposite
-pairings; all three verified through the Flow Arts MCP with
-`constraintPreset: "smooth"`:
+A ⌀20 m plain in a 22.5 m bay, under an open black sky. One hard white key light
+at 22° with `castShadow`, against a hemisphere at **0.05** — the Sun room runs
+0.55, and that ratio is the whole difference: no atmosphere, no scattered light,
+shadows to near-black. Verified in-browser at 1920×1080: the plain reads bone
+white, the mounds throw long hard-edged shadows, and the shadowed side of a
+performer goes to silhouette. It looks nothing like the Sun room, which is the
+entire point of the pair.
+
+The arrival is a real hole — the plain is a `ShapeGeometry` with a `Path` hole
+cut at the arrival point, so the Sun's shaft is seen THROUGH the floor rather
+than decalled onto it.
+
+**Three stations, not four, and that is a design answer rather than a
+shortfall.** The west compass point is the arrival hole, so the plan mirrors
+about the axis the visitor surfaces on: N and S reflect into each other, E sits
+on the axis, the visitor stands at its far end. `moon-layout.ts` throws if a
+station is ever placed on the hole, and the reasoning is written into
+`MOON_STATIONS` so a later session does not "fix" it by adding a fourth.
+
+Its `cave-moon` also moved from the solo-chamber list into `BAY_ROOM_IDS` in
+`vulcan-cave-floor-plan.test.ts` — the room genuinely changed category, and the
+wing now has no solo chambers left. That is not a loosened assertion.
+
+**The pairings**, from Austen, all verified through the Flow Arts MCP with
+`constraintPreset: "smooth"` — 5 steps, gamma3→gamma3, score 1.00, continuity +
+handPath, every beat `timing: quarter` / `direction: opp`:
 
 | word | closes | score | satisfied |
 |---|---|---|---|
@@ -93,12 +114,19 @@ pairings; all three verified through the Flow Arts MCP with
 | **NQNQ** | gamma3 | 1.00 | continuity, handPath |
 | **OROR** | gamma3 | 1.00 | continuity, handPath |
 
-That is three pairs across all six letters M–R. **Austen said "the four moon
-words are MP, NQ, and OR" but named three** — unresolved, and worth one question
-before building a fourth station out of nothing.
+That is three pairs across all six letters M–R. Austen said "the four moon words
+are MP, NQ, and OR" and named three; the room is built for three, with the
+fourth point given to the arrival.
 
 Do NOT repeat my mistake of testing MMMM/NNNN/OOOO/PPPP/QQQQ/RRRR: those score
-0.25–0.63 and satisfy nothing. Quarter-Opposite pairs; it does not repeat.
+0.25–0.63 and satisfy nothing. **Quarter-Opposite pairs; it does not repeat.**
+Ask for the pairings rather than enumerating single letters.
+
+**Unverified on the Moon:** the low-gravity JUMP ARC. The scale factor, the
+boundary predicate (`isLowGravityAt` — normal gravity on the Sun-stone plinth,
+lunar one step off it) and the wiring are all unit-tested and the prop reaches
+`UnifiedCameraController`, but nobody has jumped and watched the hang time. That
+needs pointer lock and a keypress in a live window.
 
 ---
 
