@@ -59,6 +59,8 @@ export interface CompositionLabState {
   newPresetDescription: string;
   newPresetIcon: string;
   readonly exportStatus: "idle" | "copied" | "error";
+  readonly canUndo: boolean;
+  readonly canRedo: boolean;
 
   handleSelectCell: (cellId: string | null, additive?: boolean) => void;
   handleUpdateCellPosition: (cellId: string, x: number, y: number) => void;
@@ -112,9 +114,9 @@ export function createCompositionLabState(
   // ── Export status ──
   let exportStatus = $state<"idle" | "copied" | "error">("idle");
 
-  // ── Undo/Redo stacks (not reactive — plain arrays) ──
-  const undoStack: ConstraintCell[][] = [];
-  let redoStack: ConstraintCell[][] = [];
+  // ── Undo/Redo stacks ──
+  let undoStack = $state<ConstraintCell[][]>([]);
+  let redoStack = $state<ConstraintCell[][]>([]);
 
   // ── Derived values ──
   const selectedCell = $derived(
@@ -573,21 +575,6 @@ export function createCompositionLabState(
       return;
     }
 
-    if ((e.ctrlKey || e.metaKey) && e.key === "z") {
-      e.preventDefault();
-      if (e.shiftKey) {
-        redo();
-      } else {
-        undo();
-      }
-      return;
-    }
-
-    if ((e.ctrlKey || e.metaKey) && e.key === "y") {
-      e.preventDefault();
-      redo();
-      return;
-    }
   }
 
   // ── Effects (persistence, initialization, keyboard) ──
@@ -708,6 +695,12 @@ export function createCompositionLabState(
     },
     get exportStatus() {
       return exportStatus;
+    },
+    get canUndo() {
+      return undoStack.length > 0;
+    },
+    get canRedo() {
+      return redoStack.length > 0;
     },
 
     // Handlers

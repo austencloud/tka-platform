@@ -74,7 +74,6 @@ export interface ArrangeUndoEntry {
  * Handles keyboard events for the grid composition builder:
  * - Arrow key navigation between cells
  * - Clipboard operations (Ctrl+C/V)
- * - Undo/redo (Ctrl+Z/Y)
  * - Play/pause (Space)
  * - Delete/clear (Delete/Backspace)
  * - Escape to deselect
@@ -112,8 +111,6 @@ export interface KeyboardCallbacks {
   playPause(): void;
   copyCell(): void;
   pasteLayer(): void;
-  undo(): void;
-  redo(): void;
   transformLayer(layerIndex: number, transformType: TransformType): void;
 }
 
@@ -166,4 +163,3 @@ export interface GridStateSnapshot {
   bpm: number;
   skipStartPosition: boolean;
 }
-

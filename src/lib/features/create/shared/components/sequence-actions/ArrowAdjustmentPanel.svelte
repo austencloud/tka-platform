@@ -191,13 +191,6 @@
       handleWASDMovement(key as "w" | "a" | "s" | "d");
     }
 
-    // Ctrl+Z: undo last adjustment (must be before plain Z check)
-    if (key === "z" && (event.ctrlKey || event.metaKey)) {
-      event.preventDefault();
-      handleUndo();
-      return;
-    }
-
     if (key === "z" && !event.ctrlKey && !event.metaKey) {
       event.preventDefault();
       handleResetToDefault();
@@ -413,7 +406,7 @@
   });
 </script>
 
-<div class="arrow-adjustment">
+<div class="arrow-adjustment" data-edit-history-shortcut-scope>
   <!-- Arrow color indicator -->
   <span
     class="arrow-badge"
@@ -476,6 +469,8 @@
   <!-- Undo button (Ctrl+Z) -->
   {#if arrowAdjustmentUndoStack.size > 0}
     <button
+      data-undo-shortcut
+      data-undo-shortcut-label="Last arrow adjustment"
       class="undo-btn"
       onclick={handleUndo}
       title="Undo last adjustment (Ctrl+Z) - {arrowAdjustmentUndoStack.size} in stack"

@@ -153,22 +153,6 @@
     persistOverrides();
   }
 
-  // Keyboard shortcuts: Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z
-  $effect(() => {
-    function handleKeydown(e: KeyboardEvent) {
-      if (!e.ctrlKey && !e.metaKey) return;
-      if (e.key === "z" && !e.shiftKey) {
-        e.preventDefault();
-        undo();
-      } else if (e.key === "y" || (e.key === "z" && e.shiftKey)) {
-        e.preventDefault();
-        redo();
-      }
-    }
-    window.addEventListener("keydown", handleKeydown);
-    return () => window.removeEventListener("keydown", handleKeydown);
-  });
-
   /** Persist overrides to settings (auto-saves to localStorage + Firebase) */
   function persistOverrides() {
     const toSave = Object.keys(overrides).length > 0 ? { ...overrides } : undefined;
@@ -253,12 +237,14 @@
   }
 </script>
 
-<div class="prop-button-lab">
+<div class="prop-button-lab" data-edit-history-shortcut-scope>
   <header class="lab-header">
     <h1>Prop Button Lab</h1>
     <p class="subtitle">Tune paired prop compositions for buttons and drawers</p>
     <div class="header-buttons">
       <button
+        data-undo-shortcut
+        data-undo-shortcut-label="Prop composition change"
         class="header-btn"
         onclick={undo}
         disabled={!canUndo}
@@ -267,6 +253,8 @@
         <i class="fas fa-undo"></i>
       </button>
       <button
+        data-redo-shortcut
+        data-redo-shortcut-label="Prop composition change"
         class="header-btn"
         onclick={redo}
         disabled={!canRedo}

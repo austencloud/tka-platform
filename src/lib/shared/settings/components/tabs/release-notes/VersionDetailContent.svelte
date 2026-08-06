@@ -23,6 +23,7 @@
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { changelogEditState } from "./state/changelog-edit-state.svelte";
   import * as versionService from "$lib/shared/feedback/services/version-service";
+  import EditHistoryShortcutBridge from "$lib/shared/keyboard/components/EditHistoryShortcutBridge.svelte";
 
   let {
     version,
@@ -249,22 +250,6 @@
     }
   }
 
-  function handleKeydown(e: KeyboardEvent) {
-    const mod = e.ctrlKey || e.metaKey;
-    if (mod && e.key === "z" && !e.shiftKey && changelogEditState.canUndo) {
-      e.preventDefault();
-      void handleUndo();
-    }
-    if (
-      mod &&
-      ((e.key === "z" && e.shiftKey) || e.key === "y") &&
-      changelogEditState.canRedo
-    ) {
-      e.preventDefault();
-      void handleRedo();
-    }
-  }
-
   function formatReleaseNotesForCopy(): string {
     if (!version) return "";
     const lines: string[] = [];
@@ -343,19 +328,24 @@
       allContributors = list;
     });
 
-    window.addEventListener("keydown", handleKeydown);
     return () => {
-      window.removeEventListener("keydown", handleKeydown);
       if (toastTimeout) clearTimeout(toastTimeout);
     };
   });
 </script>
 
 <div
+  data-edit-history-shortcut-scope
   class="version-detail-body"
   onclick={handlePanelClick}
   role="presentation"
 >
+  <EditHistoryShortcutBridge
+    onUndo={handleUndo}
+    onRedo={handleRedo}
+    canUndo={changelogEditState.canUndo}
+    canRedo={changelogEditState.canRedo}
+  />
   <VersionHeader
     version={version.version}
     releasedAt={version.releasedAt}

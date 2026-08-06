@@ -225,6 +225,8 @@
           {/if}
           {#if canUndo}
             <button
+              data-undo-shortcut
+              data-undo-shortcut-label="Placement"
               class="move-button"
               aria-label="Undo placement"
               onclick={() => grid?.undoPlacement()}

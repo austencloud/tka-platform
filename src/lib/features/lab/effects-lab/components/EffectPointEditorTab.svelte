@@ -19,11 +19,6 @@
 	const editorState = new EffectPointEditorState(provider, persister);
 
 	function handleKeyDown(e: KeyboardEvent) {
-		if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
-			e.preventDefault();
-			editorState.undo();
-			return;
-		}
 		if (
 			e.key === "Delete" &&
 			editorState.selectedPointIndex >= 0
@@ -45,7 +40,7 @@
 	});
 </script>
 
-<div class="editor-tab">
+<div class="editor-tab" data-edit-history-shortcut-scope>
 	<EffectPropTypeSelector {editorState} />
 
 	<div class="editor-content">

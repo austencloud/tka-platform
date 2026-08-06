@@ -161,13 +161,6 @@
     const target = e.target as HTMLElement;
     if (target.tagName === "CANVAS" || target.closest("[role='application']")) return;
 
-    // Ctrl+Z / Cmd+Z = undo
-    if ((e.ctrlKey || e.metaKey) && e.key === "z") {
-      e.preventDefault();
-      undo();
-      return;
-    }
-
     const step = e.shiftKey ? 10 : 1;
     if (e.key === "ArrowLeft") {
       e.preventDefault();
@@ -257,7 +250,12 @@
 
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="studio" onkeydown={handleKeydown} tabindex="0">
+  <div
+    class="studio"
+    onkeydown={handleKeydown}
+    tabindex="0"
+    data-edit-history-shortcut-scope
+  >
     <!-- Toolbar strip -->
     <div class="toolbar-strip">
       <div class="tool-group">
@@ -329,6 +327,8 @@
 
       <div class="toolbar-info">
         <button
+          data-undo-shortcut
+          data-undo-shortcut-label="Last placement"
           class="tool-btn compact"
           onclick={undo}
           disabled={undoStack.length === 0}

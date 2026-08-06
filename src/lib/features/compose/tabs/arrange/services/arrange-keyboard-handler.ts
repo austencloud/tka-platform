@@ -90,28 +90,6 @@ export function handleKeyDown(
       }
       return false;
 
-    case "z":
-    case "Z":
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        if (e.shiftKey) {
-          callbacks.redo();
-        } else {
-          callbacks.undo();
-        }
-        return true;
-      }
-      return false;
-
-    case "y":
-    case "Y":
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        callbacks.redo();
-        return true;
-      }
-      return false;
-
     default:
       break;
   }

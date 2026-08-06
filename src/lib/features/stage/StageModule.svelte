@@ -7,6 +7,7 @@
   import type { PanelDefinition } from '$lib/shared/panels/PanelGroup.svelte';
   import { getStageChoreographyState } from './state/stage-choreography-state.svelte';
   import { createStageEditMode } from './state/stage-edit-mode.svelte';
+  import EditHistoryShortcutBridge from '$lib/shared/keyboard/components/EditHistoryShortcutBridge.svelte';
 
   const stageState = getStageChoreographyState();
   const editMode = createStageEditMode();
@@ -26,18 +27,6 @@
       if (e.target === document.body || (e.target as HTMLElement)?.closest('.stage-module')) {
         editMode.toggleCameraMode();
       }
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-      e.preventDefault();
-      stageState.undo();
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
-      e.preventDefault();
-      stageState.redo();
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-      e.preventDefault();
-      stageState.redo();
     }
   }
 </script>
@@ -83,7 +72,18 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="stage-module" role="main" aria-label="Stage choreography editor">
+<div
+  class="stage-module"
+  role="main"
+  aria-label="Stage choreography editor"
+  data-edit-history-shortcut-scope
+>
+  <EditHistoryShortcutBridge
+    onUndo={stageState.undo}
+    onRedo={stageState.redo}
+    canUndo={stageState.canUndo}
+    canRedo={stageState.canRedo}
+  />
   <PanelGroup direction="horizontal" panels={mainPanels} />
 </div>
 

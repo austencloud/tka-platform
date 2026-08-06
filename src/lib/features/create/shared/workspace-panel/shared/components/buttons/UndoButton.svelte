@@ -112,6 +112,14 @@
 </script>
 
 <button
+  data-undo-shortcut={direction === "undo" ? "" : undefined}
+  data-redo-shortcut={direction === "redo" ? "" : undefined}
+  data-undo-shortcut-label={direction === "undo"
+    ? historyButtonText().replace(/^Undo\s+/i, "")
+    : undefined}
+  data-redo-shortcut-label={direction === "redo"
+    ? historyButtonText().replace(/^Redo\s+/i, "")
+    : undefined}
   class="undo-button"
   class:disabled={!canAct}
   onclick={handleAction}

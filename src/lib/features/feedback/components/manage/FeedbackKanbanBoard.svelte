@@ -12,6 +12,7 @@
   import DeferFeedbackDialog from "./DeferFeedbackDialog.svelte";
   import TrashFeedbackDialog from "./TrashFeedbackDialog.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import EditHistoryShortcutBridge from "$lib/shared/keyboard/components/EditHistoryShortcutBridge.svelte";
 
   interface Props {
     manageState: FeedbackManageState;
@@ -31,7 +32,7 @@
     : undefined;
 
   // Debounce flag to prevent rapid undo/redo
-  let isProcessingUndoRedo = false;
+  let isProcessingUndoRedo = $state(false);
 
   // Handle undo keyboard shortcut
   async function handleUndo() {
@@ -110,27 +111,6 @@
     }
   }
 
-  function handleKeydown(e: KeyboardEvent) {
-    // Only handle if we're not in an input/textarea
-    const target = e.target as HTMLElement;
-    if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
-      return;
-    }
-
-    // Ctrl+Shift+Z or Cmd+Shift+Z = Redo
-    if ((e.ctrlKey || e.metaKey) && e.key === "z" && e.shiftKey) {
-      e.preventDefault();
-      handleRedo();
-      return;
-    }
-
-    // Ctrl+Z or Cmd+Z = Undo
-    if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
-      e.preventDefault();
-      handleUndo();
-    }
-  }
-
   onMount(() => {
     let resizeObserver: ResizeObserver | null = null;
 
@@ -160,21 +140,24 @@
 
     initializeBoard();
 
-    // Add keyboard listener for undo/redo
-    document.addEventListener("keydown", handleKeydown);
-
     return () => {
       resizeObserver?.disconnect();
-      document.removeEventListener("keydown", handleKeydown);
     };
   });
 
 </script>
 
 <div
+  data-edit-history-shortcut-scope
   class="kanban-board"
   style="--active-color: {boardState?.activeStatusColor}"
 >
+  <EditHistoryShortcutBridge
+    onUndo={handleUndo}
+    onRedo={handleRedo}
+    canUndo={Boolean(boardState?.canUndo) && !isProcessingUndoRedo}
+    canRedo={Boolean(boardState?.canRedo) && !isProcessingUndoRedo}
+  />
   {#if boardState}
     {#if boardState.isMobileView}
       <KanbanMobileView {boardState} {manageState} {claimStatusDeriver} {onOpenArchive} />

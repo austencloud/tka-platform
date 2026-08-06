@@ -120,7 +120,7 @@
   }
 </script>
 
-<div class="timeline-controls">
+<div class="timeline-controls" data-edit-history-shortcut-scope>
   <!-- Time Display -->
   <div class="time-display">
     <span class="current-time">{currentTimeDisplay}</span>
@@ -137,6 +137,8 @@
   <!-- Undo/Redo Controls -->
   <div class="undo-redo-section">
     <button
+      data-undo-shortcut
+      data-undo-shortcut-label={undoDescription || undefined}
       class="control-btn"
       onclick={() => getState().undo()}
       disabled={!canUndo}
@@ -147,6 +149,8 @@
     </button>
 
     <button
+      data-redo-shortcut
+      data-redo-shortcut-label={redoDescription || undefined}
       class="control-btn"
       onclick={() => getState().redo()}
       disabled={!canRedo}

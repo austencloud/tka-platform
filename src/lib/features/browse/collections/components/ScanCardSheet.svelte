@@ -571,6 +571,8 @@ the geo dashboard).
 							{/if}
 							<span class="tray-text">“{lastScan.word}” added</span>
 							<button
+								data-undo-shortcut
+								data-undo-shortcut-label={`Add “${lastScan.word}”`}
 								type="button"
 								class="tray-undo"
 								onclick={() => void undoLastScan()}

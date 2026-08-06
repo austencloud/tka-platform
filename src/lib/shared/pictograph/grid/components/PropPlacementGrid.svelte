@@ -963,6 +963,7 @@
 />
 
 <div
+  data-edit-history-shortcut-scope
   class="placement-grid"
   class:disabled
   class:complete={isComplete}
@@ -1236,6 +1237,8 @@
         <!-- Short visible label so three buttons stay on one row (a second row
            would eat the board's height); the full name stays for assistive tech. -->
         <button
+          data-undo-shortcut
+          data-undo-shortcut-label="Placement"
           class="undo-button"
           onclick={handleUndo}
           aria-label="Undo placement"

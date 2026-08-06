@@ -5,22 +5,17 @@
   hand picker below it. Desktop keeps those controls in the builder header.
 -->
 <script lang="ts">
-  import { Popover } from "bits-ui";
-  import {
-    MotionColor,
-    RotationDirection,
-  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { AssembleState } from "../state/assemble-state.svelte";
-  import OrientationExplainer from "./OrientationExplainer.svelte";
   import GridModePicker from "./GridModePicker.svelte";
-  import BuilderMotionSettings from "./BuilderMotionSettings.svelte";
-  import BuilderOrientationPicker from "./BuilderOrientationPicker.svelte";
   import BuilderHandPicker from "./BuilderHandPicker.svelte";
+  import BuilderPhaseControls from "./BuilderPhaseControls.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import {
     getBuilderControlVisibility,
     getBuilderPhaseInstruction,
   } from "../services/builder-phase-presentation";
+  import EditHistoryShortcutBridge from "$lib/shared/keyboard/components/EditHistoryShortcutBridge.svelte";
 
   let { builderState }: { builderState: AssembleState } = $props();
 
@@ -40,43 +35,23 @@
       : builderState.redSteps.length) + (isComplete ? 0 : 1)
   );
 
-  let oriPopoverOpen = $state(false);
-  let explainerOpen = $state(false);
-  const currentOriLabel = $derived(
-    String(builderState.currentOrientation).replace("center", "")
-  );
-
-  // ── Turns ──
-  let turnsPopoverOpen = $state(false);
-
-  const FLOAT_TURN = -0.5;
-  const isFloat = $derived(builderState.turnCount === FLOAT_TURN);
-
-  const rotLabel = $derived(
-    builderState.rotationDirection === RotationDirection.CLOCKWISE
-      ? "CW"
-      : "CCW"
-  );
-
-  const isFlipped = $derived(
-    builderState.rotationDirection === RotationDirection.COUNTER_CLOCKWISE
-  );
-
-  // Close popovers when phase changes (subscribing to phase to auto-close)
-  $effect(() => {
-    const _phase = builderState.phase;
-    oriPopoverOpen = false;
-    turnsPopoverOpen = false;
-  });
-
   // ── Instruction text ──
   const phaseInstruction = $derived(
     getBuilderPhaseInstruction(builderState.phase)
   );
 </script>
 
+<EditHistoryShortcutBridge
+  onUndo={builderState.undoStep}
+  onRedo={builderState.redoStep}
+  canUndo={builderState.canUndo}
+  canRedo={builderState.canRedo}
+  undoLabel={builderState.undoLabel}
+  redoLabel={builderState.redoLabel}
+/>
+
 <!-- Grid overlay -->
-<div class="controls-overlay">
+<div class="builder-controls-overlay">
   <!-- Mobile status strip. Controls live in flow with the instruction so a
        growing label can wrap without ever sitting underneath a button. -->
   <div
@@ -92,100 +67,8 @@
         <span>{phaseInstruction}</span>
       </span>
 
-      <div class="phase-controls">
-        <!-- Orientation control: during placing phase -->
-        {#if controlVisibility.orientation}
-          <div class="inline-control-wrapper">
-            <Popover.Root bind:open={oriPopoverOpen}>
-              <Popover.Trigger>
-                {#snippet child({ props })}
-                  <button
-                    {...props}
-                    class="inline-trigger"
-                    aria-label="Orientation: {currentOriLabel}"
-                  >
-                    <i class="fas fa-compass" aria-hidden="true"></i>
-                    <span>{currentOriLabel}</span>
-                  </button>
-                {/snippet}
-              </Popover.Trigger>
-              <Popover.Portal>
-                <Popover.Content
-                  side="bottom"
-                  align="end"
-                  sideOffset={8}
-                  collisionPadding={8}
-                  class="assemble-popover-panel orientation-popover"
-                  aria-label="Starting orientation"
-                >
-                  <BuilderOrientationPicker
-                    value={builderState.currentOrientation}
-                    onchange={(orientation) => {
-                      builderState.setOrientation(orientation);
-                      oriPopoverOpen = false;
-                    }}
-                    onHelp={() => {
-                      oriPopoverOpen = false;
-                      explainerOpen = true;
-                    }}
-                  />
-                </Popover.Content>
-              </Popover.Portal>
-            </Popover.Root>
-          </div>
-        {/if}
-
-        <!-- The next motion's turn settings are available as soon as its start point exists. -->
-        {#if controlVisibility.motionSettings}
-          <div class="inline-control-wrapper">
-            <Popover.Root bind:open={turnsPopoverOpen}>
-              <Popover.Trigger>
-                {#snippet child({ props })}
-                  <button
-                    {...props}
-                    class="inline-trigger"
-                    aria-label="Turn settings: {isFloat
-                      ? 'Float'
-                      : `${rotLabel} ${builderState.turnCount}`}"
-                  >
-                    {#if !isFloat}
-                      <i
-                        class="fas fa-rotate-right"
-                        class:flipped={isFlipped}
-                        aria-hidden="true"
-                      ></i>
-                    {/if}
-                    <span
-                      >{isFloat
-                        ? "fl"
-                        : `${rotLabel} ${builderState.turnCount}`}</span
-                    >
-                  </button>
-                {/snippet}
-              </Popover.Trigger>
-              <Popover.Portal>
-                <Popover.Content
-                  side="bottom"
-                  align="end"
-                  sideOffset={8}
-                  collisionPadding={8}
-                  class="assemble-popover-panel turns-popover"
-                  aria-label="Turn count and rotation direction"
-                >
-                  <BuilderMotionSettings
-                    turnCount={builderState.turnCount}
-                    rotationDirection={builderState.rotationDirection}
-                    onchangeTurnCount={(turnCount) =>
-                      builderState.setTurnCount(turnCount)}
-                    onchangeRotationDirection={(direction) =>
-                      builderState.setRotationDirection(direction)}
-                    stacked
-                  />
-                </Popover.Content>
-              </Popover.Portal>
-            </Popover.Root>
-          </div>
-        {/if}
+      <div class="mobile-phase-controls">
+        <BuilderPhaseControls {builderState} reserveSlots={false} />
       </div>
     </div>
 
@@ -219,10 +102,13 @@
       class="action-slot"
       class:visible={showActions}
       class:dimmed={actionsDimmed}
+      class:can-finish={builderState.canFinishHand}
     >
       {#if builderState.canFinishHand}
         <PanelButton
           variant="primary"
+          disabled={isAnimating}
+          ariaBusy={isAnimating}
           onclick={() => builderState.finishHand()}
         >
           <i class="fas fa-check" aria-hidden="true"></i>
@@ -242,7 +128,11 @@
 
 <!-- Persistent hand rail: below the grid on desktop only. The reserved action
      slot keeps the two hand targets stable when Complete becomes available. -->
-<div class="action-row" class:dimmed={actionsDimmed}>
+<div
+  class="action-row"
+  class:dimmed={actionsDimmed}
+  class:can-finish={builderState.canFinishHand}
+>
   <div class="desktop-hand-picker">
     <BuilderHandPicker
       activeHand={builderState.activeHand}
@@ -268,6 +158,7 @@
         variant="primary"
         fullWidth
         disabled={!builderState.canFinishHand || isAnimating}
+        ariaBusy={isAnimating}
         onclick={() => builderState.finishHand()}
       >
         <i class="fas fa-check" aria-hidden="true"></i>
@@ -277,11 +168,9 @@
   </div>
 </div>
 
-<OrientationExplainer bind:isOpen={explainerOpen} />
-
 <style>
   /* === Grid overlay === */
-  .controls-overlay {
+  .builder-controls-overlay {
     position: absolute;
     inset: 0;
     pointer-events: none;
@@ -376,101 +265,10 @@
     pointer-events: auto;
   }
 
-  .phase-controls {
+  .mobile-phase-controls {
     display: flex;
-    align-items: center;
     justify-content: flex-end;
-    gap: 6px;
     pointer-events: auto;
-  }
-
-  .phase-controls:empty {
-    display: none;
-  }
-
-  /* ── Inline turn/orientation trigger ── */
-  .inline-control-wrapper {
-    position: relative;
-  }
-
-  .inline-trigger {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    min-width: var(--min-touch-target, 44px);
-    min-height: var(--min-touch-target, 44px);
-    padding: 6px 11px;
-    border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #26c6da) 46%, transparent);
-    border-radius: 999px;
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #26c6da) 13%,
-      var(--theme-card-bg, rgba(10, 22, 30, 0.92))
-    );
-    color: var(--theme-accent, #6366f1);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-    cursor: pointer;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    transition:
-      background var(--duration-fast, 150ms) ease,
-      border-color var(--duration-fast, 150ms) ease,
-      transform var(--duration-fast, 150ms) ease;
-  }
-
-  .inline-trigger:hover {
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, #26c6da) 72%,
-      transparent
-    );
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #26c6da) 22%,
-      var(--theme-card-bg, rgba(10, 22, 30, 0.92))
-    );
-  }
-
-  .inline-trigger:active {
-    transform: scale(0.96);
-  }
-
-  .inline-trigger i {
-    font-size: 12px;
-    transition: transform 0.2s ease;
-  }
-
-  .inline-trigger i.flipped {
-    transform: scaleX(-1);
-  }
-
-  /* ── Popover ── */
-  :global(.assemble-popover-panel) {
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--settings-radius-md, 14px);
-    padding: var(--settings-spacing-sm, 8px);
-    box-shadow: 0 8px 32px var(--theme-shadow, rgba(0, 0, 0, 0.3));
-    animation: popover-in 0.15s ease-out;
-    width: min(520px, calc(100vw - 16px));
-    max-width: calc(100vw - 16px);
-    z-index: var(--z-dropdown, 100);
-  }
-
-  :global(.assemble-popover-panel.orientation-popover) {
-    width: min(420px, calc(100vw - 16px));
-  }
-
-  @keyframes popover-in {
-    from {
-      opacity: 0;
-      transform: translateY(-6px) scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
   }
 
   /* ── Bottom bar (mobile only) ── */
@@ -521,8 +319,36 @@
   }
 
   .action-slot.dimmed {
-    opacity: 0.3;
     pointer-events: none;
+  }
+
+  .action-slot.dimmed.can-finish :global(.panel-btn:disabled) {
+    opacity: 1;
+  }
+
+  .action-slot.can-finish :global(.panel-btn--primary),
+  .action-row.can-finish .desktop-action-slot :global(.panel-btn--primary) {
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 52%,
+      white
+    );
+    background: color-mix(in srgb, var(--semantic-success, #22c55e) 82%, white);
+    color: #04150a;
+    font-size: var(--assemble-action-size, 15px);
+    font-weight: 900;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.32),
+      0 0 18px
+        color-mix(in srgb, var(--semantic-success, #22c55e) 38%, transparent);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .action-slot.can-finish :global(.panel-btn--primary:hover:not(:disabled)),
+  .action-row.can-finish
+    .desktop-action-slot
+    :global(.panel-btn--primary:hover:not(:disabled)) {
+    filter: brightness(1.08);
   }
 
   /* ── Action row (desktop only) ── */
@@ -540,8 +366,13 @@
   }
 
   .action-row.dimmed {
-    opacity: 0.3;
     pointer-events: none;
+  }
+
+  .action-row.dimmed.can-finish :global(.panel-btn:disabled),
+  .desktop-hand-picker :global(.segment:disabled),
+  .mobile-hand-picker :global(.segment:disabled) {
+    opacity: 1;
   }
 
   .desktop-hand-picker {
@@ -561,12 +392,6 @@
     }
   }
 
-  /* === Focus indicators === */
-  .inline-trigger:focus-visible {
-    outline: 2px solid var(--theme-text, #ffffff);
-    outline-offset: 2px;
-  }
-
   @container tool-panel (max-width: 420px) {
     .top-status-area.has-dual-controls .status-line {
       grid-template-columns: minmax(0, 1fr);
@@ -577,7 +402,7 @@
       text-align: center;
     }
 
-    .has-dual-controls .phase-controls {
+    .has-dual-controls .mobile-phase-controls {
       justify-content: center;
     }
   }
@@ -585,14 +410,8 @@
   /* === Reduced motion === */
   @media (prefers-reduced-motion: reduce) {
     .action-row,
-    .action-slot,
-    .inline-trigger,
-    .inline-trigger i {
+    .action-slot {
       transition: none;
-    }
-
-    :global(.assemble-popover-panel) {
-      animation: none;
     }
   }
 </style>

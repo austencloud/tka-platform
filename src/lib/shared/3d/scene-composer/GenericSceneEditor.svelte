@@ -194,12 +194,6 @@
       return;
     }
 
-    if ((event.ctrlKey || event.metaKey) && key === "z") {
-      event.preventDefault();
-      event.shiftKey ? editorState.commands.redo() : editorState.commands.undo();
-      return;
-    }
-
     if ((event.ctrlKey || event.metaKey) && key === "s") {
       event.preventDefault();
       onSave?.();

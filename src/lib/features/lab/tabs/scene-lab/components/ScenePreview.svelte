@@ -42,6 +42,7 @@
   import type { Command } from "$lib/shared/history/command-stack.svelte";
   import { getSceneLabContext } from "../context/scene-lab-context";
   import { createSceneLabPlayerState } from "../state/scene-lab-player-state.svelte";
+  import EditHistoryShortcutBridge from "$lib/shared/keyboard/components/EditHistoryShortcutBridge.svelte";
 
   const { state: labState, composerState } = getSceneLabContext();
 
@@ -203,7 +204,17 @@
   });
 </script>
 
-<div class="scene-preview">
+<div class="scene-preview" data-edit-history-shortcut-scope>
+  {#if camMode === "compose"}
+    <EditHistoryShortcutBridge
+      onUndo={() => composerState.commands.undo()}
+      onRedo={() => composerState.commands.redo()}
+      canUndo={composerState.commands.canUndo}
+      canRedo={composerState.commands.canRedo}
+      undoLabel={composerState.commands.undoLabel}
+      redoLabel={composerState.commands.redoLabel}
+    />
+  {/if}
   <Canvas {createRenderer}>
     <T.PerspectiveCamera
       makeDefault
