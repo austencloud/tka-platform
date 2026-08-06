@@ -11,16 +11,8 @@
     and height is halo padding, grown symmetrically about the pivot so
     placement, tip reach, and mandala radius never move.
 
-  The two ends are deliberately unlike each other. TKA's orientation system
-  rests on one staff end staying a consistent thumb reference and the other a
-  consistent pinky reference, and two mirror-image glowing ends would erase
-  that landmark. The blades stay equal; the collars carry the difference:
-    right / thumb end = tall flared block, roughly 48 units of vertical bite,
-                        ridged with three raised fins
-    left  / pinky end = smooth rounded cap, no fins, half the vertical bite
-  The picker draws this tile as a flat white silhouette at 52 px
-  (PropCompositionPreview neutral mode), where only the outline survives, so
-  the difference is carried by vertical mass rather than by surface detail.
+  Both blade collars use the same rounded silhouette, mirrored around the hand
+  pivot so the staff remains visually balanced at every orientation.
 
   Color contract (packages/render-core/src/svg-color.ts, selective mode):
     Blade layers are flat neutral grays (saturation 0, luminance > 0.4), so the
@@ -66,17 +58,10 @@
   <rect x="128" y="35" width="44" height="20" rx="9" fill="url(#estaffSheen)"/>
   <rect x="143" y="32" width="14" height="26" rx="4" fill="#3A3F49"/>
 
-  <!-- Thumb end: tall flared block, three raised fins.
-       Sized to be roughly three times the pinky cap's vertical bite. At the
-       52 px picker tile the whole prop is about seven pixels tall, so anything
-       subtler than this reads as one symmetric blur and the landmark is gone. -->
-  <path d="M 172,23 L 192,16 L 198,18 L 198,72 L 192,74 L 172,67 Z" fill="#4A505B" stroke="#12151A" stroke-width="1.5"/>
-  <path d="M 172,23 L 192,16 L 198,18 L 198,72 L 192,74 L 172,67 Z" fill="url(#estaffSheen)"/>
-  <rect x="175" y="22" width="6" height="46" rx="2" fill="#5C6470"/>
-  <rect x="183" y="18" width="6" height="54" rx="2" fill="#5C6470"/>
-  <rect x="191" y="16" width="6" height="58" rx="2" fill="#5C6470"/>
-
-  <!-- Pinky end: smooth rounded cap, no fins -->
+  <!-- Matching rounded blade collars -->
+  <rect x="172" y="36" width="26" height="18" rx="9" fill="#4A505B" stroke="#12151A" stroke-width="1.5"/>
+  <rect x="172" y="36" width="26" height="18" rx="9" fill="url(#estaffSheen)"/>
+  <rect x="186" y="34" width="8" height="22" rx="4" fill="#5C6470"/>
   <rect x="102" y="36" width="26" height="18" rx="9" fill="#4A505B" stroke="#12151A" stroke-width="1.5"/>
   <rect x="102" y="36" width="26" height="18" rx="9" fill="url(#estaffSheen)"/>
   <rect x="106" y="34" width="8" height="22" rx="4" fill="#5C6470"/>
