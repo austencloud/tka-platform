@@ -9,6 +9,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
 import { sortSequencesByKineticAlphabet } from "$lib/shared/browse/utils/kinetic-alphabet-sort";
 import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
+import { resolveBrowseDate } from "$lib/shared/browse/services/browse-date";
 
 /** Numeric difficulty (1–3). Prefers stored `level`, else computes from steps. */
 export function resolveDifficultyLevel(sequence: SequenceData): number {
@@ -79,22 +80,12 @@ function sortAlphabetically(sequences: SequenceData[]): SequenceData[] {
   return sortSequencesByKineticAlphabet(sequences);
 }
 
-/**
- * Timestamp used for date sorting. Community docs get `dateAdded` from
- * birthday ?? publishedAt, but their `createdAt` is mapped from Firestore
- * `updatedAt` (public-sequences-loader), so createdAt must be the LAST
- * resort — preferring it would sort community galleries by last-edit time.
- * Library sequences lack dateAdded but carry birthday (real creation) and
- * createdAt (added-to-library), so they still resolve to a real date.
- */
-function dateValueOf(sequence: SequenceData): number {
-  const withCreated = sequence as SequenceData & { createdAt?: Date };
-  const d = sequence.dateAdded ?? sequence.birthday ?? withCreated.createdAt;
-  return d ? new Date(d).getTime() : 0;
-}
-
 function sortByDateAdded(sequences: SequenceData[]): SequenceData[] {
-  return sequences.sort((a, b) => dateValueOf(b) - dateValueOf(a)); // Newest first
+  return sequences.sort(
+    (a, b) =>
+      (resolveBrowseDate(b)?.getTime() ?? 0) -
+      (resolveBrowseDate(a)?.getTime() ?? 0)
+  ); // Newest first
 }
 
 function sortByDifficulty(sequences: SequenceData[]): SequenceData[] {
@@ -174,4 +165,3 @@ function getLengthSection(sequence: SequenceData): string {
   if (length <= 8) return "7-8 steps";
   return "9+ steps";
 }
-

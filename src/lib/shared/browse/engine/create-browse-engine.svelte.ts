@@ -49,6 +49,7 @@ import {
   type FilterConnective,
 } from "$lib/shared/browse/services/multi-filter";
 import { sortSequences as browseSortSequences } from "$lib/shared/browse/services/browse-sorter";
+import { withLibraryBrowseDate } from "$lib/shared/browse/services/browse-date";
 import { organizeSections as organizeBrowseSections } from "$lib/shared/browse/services/browse-section-manager";
 import { toggleFavorite as doToggleFavorite } from "$lib/shared/library/services/collection-manager";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
@@ -460,10 +461,11 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
     $effect(() => {
       return onLibrarySequenceAdded((sequence) => {
         if (source === "my-library") {
+          const librarySequence = withLibraryBrowseDate(sequence);
           if (libraryCache) {
-            libraryCache = [sequence, ...libraryCache];
+            libraryCache = [librarySequence, ...libraryCache];
           }
-          allSequences = deduplicateById([sequence, ...allSequences]);
+          allSequences = deduplicateById([librarySequence, ...allSequences]);
         } else {
           // Invalidate cache so next switch fetches fresh data
           libraryCache = null;
@@ -532,7 +534,9 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
         isLoading = true;
         sectionsReady = false;
         error = null;
-        const sequences = await soloLoader(requestedViewMode);
+        const sequences = (await soloLoader(requestedViewMode)).map(
+          withLibraryBrowseDate
+        );
         if (!isCurrentRequest()) return;
         allSequences = deduplicateById([...sequences]);
         sectionsReady = true;
@@ -572,7 +576,9 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
         const { getAllSequences } =
           await import("$lib/shared/persistence/services/dexie-persistence-service");
         const local = deduplicateById(
-          (await getAllSequences()) as SequenceData[]
+          ((await getAllSequences()) as SequenceData[]).map(
+            withLibraryBrowseDate
+          )
         );
         if (!isCurrentRequest()) return;
         allSequences = local;
@@ -612,7 +618,9 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
       error = null;
       const sequences = await libRepo.getSequences();
       if (!isCurrentRequest()) return;
-      const deduped = deduplicateById(sequences as SequenceData[]);
+      const deduped = deduplicateById(
+        (sequences as SequenceData[]).map(withLibraryBrowseDate)
+      );
       allSequences = deduped;
       libraryCache = deduped;
       sectionsReady = true;
@@ -757,7 +765,11 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
     },
 
     setPool(sequences: readonly SequenceData[]): void {
-      allSequences = deduplicateById([...sequences]);
+      const pool =
+        source === "my-library"
+          ? sequences.map(withLibraryBrowseDate)
+          : [...sequences];
+      allSequences = deduplicateById(pool);
       // The host owns the list, so there is nothing left to wait for — without
       // this the panel sits on its skeleton forever.
       sectionsReady = true;

@@ -4378,13 +4378,10 @@
      .screen-loop / .screen-length on this same element), so this override wins
      on order rather than losing on specificity.
 
-     The list is sized by its ROWS, not by the column: each row grows to the
-     per-screen ceiling below and the grid is exactly that tall. That height is
-     what `pane-height-budget.ts` reads and hands to the editor's flex basis,
-     so the column's leftover goes to the catalog above instead of pooling
-     under the last card (`4k-native-layout.md` rule 4 — a wide screen is also
-     a tall one). A list taller than the column shrinks its rows toward their
-     minimum and then scrolls, exactly as before. */
+     The list is sized by its ROWS, not by the column. The pane budget fits the
+     row height between the per-screen bounds below, then publishes exact
+     catalog/editor sizes whose sum fills the column. A list only scrolls when
+     even its minimum rows cannot fit. */
   .drill-ctx.split-pane .drill-screen > .value-list,
   .drill-ctx.split-pane .drill-screen > .letter-grid,
   .drill-ctx.split-pane .drill-screen > .turn-picker {
@@ -4419,7 +4416,7 @@
   .drill-ctx.split-pane .drill-screen > .letter-grid {
     grid-auto-rows: minmax(
       var(--pane-row-fit, var(--pane-row-min, 4.5rem)),
-      var(--pane-row-max, 8rem)
+      var(--pane-row-size, var(--pane-row-max, 8rem))
     );
     align-content: start;
   }
@@ -4485,7 +4482,7 @@
   .drill-ctx.split-pane .screen-positions .value-pictograph {
     width: auto;
     max-width: 100%;
-    height: min(52%, 12rem);
+    height: min(68%, 18rem);
     aspect-ratio: 1;
   }
   .drill-ctx.split-pane .screen-gridmode .value-grid-preview {

@@ -18,6 +18,7 @@ import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/g
 import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
 import { detectRotationPeriod } from "$lib/shared/create/domain/detect-rotation-period";
 import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
+import { resolveBrowseDate } from "$lib/shared/browse/services/browse-date";
 import { deriveTnDFromPictograph } from "$lib/shared/pictograph/shared/domain/utils/tnd-deriver";
 import { TnDMode } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
@@ -474,8 +475,8 @@ function filterByFavorites(sequences: SequenceData[]): SequenceData[] {
 function filterByRecent(sequences: SequenceData[]): SequenceData[] {
   const thirtyDaysAgo = new Date(Date.now() - THIRTY_DAYS_MS);
   return sequences.filter((seq) => {
-    const dateAdded = seq.dateAdded ?? new Date(0);
-    return dateAdded >= thirtyDaysAgo;
+    const browseDate = resolveBrowseDate(seq);
+    return browseDate !== null && browseDate >= thirtyDaysAgo;
   });
 }
 

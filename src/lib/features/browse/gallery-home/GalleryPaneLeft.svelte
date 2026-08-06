@@ -2,11 +2,10 @@
   GalleryPaneLeft — the split pane's filter column, and the height budget that
   divides it between its two zones.
 
-  The column is not two stacked content-sized boxes. It is a budget: the value
-  editor takes what its screen needs at the screen's own per-card ceiling
-  (`--editor-need`, measured by `pane-height-budget.ts`) and the catalog grows
-  into everything left over, up to a ceiling of its own. Whichever zone can use
-  the space gets it — Austen, 2026-08-05: "maybe it should morph up and down".
+  The column is one height budget. The catalog keeps its natural rows and the
+  active editor fits its bounded rows into the exact space beside the results.
+  A row maximum is only a ceiling; `pane-height-budget.ts` publishes both zone
+  sizes and the fitted row size.
 
   Split out of GalleryDrill.svelte 2026-08-05 (Task 9).
 -->
@@ -82,18 +81,16 @@
   }
 
   /* ── The budget ──────────────────────────────────────────────────────
-     Editor: basis = what its screen needs at its card ceiling. It shrinks
-     (and scrolls) when the column is short, and takes a small share of any
-     surplus the catalog cannot use.
-     Catalog: never shrinks below its natural rows, grows 4:1 into the surplus
-     until its own ceiling, then hands the rest back. */
+     The action publishes two border-box sizes whose sum plus the gap equals
+     the pane. The browser no longer has to resolve competing flex weights. */
   .drill-editor-stage {
     position: relative;
     display: flex;
+    box-sizing: border-box;
     width: 100%;
     min-width: 0;
     min-height: 0;
-    flex: 1 1 var(--editor-need, 100%);
+    flex: 0 0 var(--editor-size, 100%);
     flex-direction: column;
     overflow: hidden;
     /* The allocation morphs as the screen changes; animating the basis is
@@ -101,11 +98,8 @@
     transition: flex-basis 0.24s var(--ease-smooth, ease);
   }
   .pane-left :global(.desktop-filter-catalog.catalog-layout) {
-    /* 8:1 against the editor. The editor already has what it asked for, so the
-       surplus belongs to the tiles — but it keeps a small share so that when
-       the catalog hits its ceiling the remainder lands inside a panel rather
-       than as a gap between the two. */
-    flex: 8 0 auto;
+    box-sizing: border-box;
+    flex: 0 0 var(--catalog-size, auto);
     transition: flex-basis 0.24s var(--ease-smooth, ease);
   }
   @media (prefers-reduced-motion: reduce) {

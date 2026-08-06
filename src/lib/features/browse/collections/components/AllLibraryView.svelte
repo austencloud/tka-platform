@@ -1,13 +1,11 @@
 <!--
 AllLibraryView.svelte
 
-The "All" shelf: your whole library.
+The "All" shelf: your whole library, with the newest saves visible first.
 
-Above the split-pane seam this is the SAME FilterWorkspace the gallery renders
-— category catalog, value editor, rule strip, live results — around a
-library-scoped engine. Gallery and Library differ by source, not by
-interaction. Below the seam it falls back to the full-page grid plus the
-filter sheet, exactly as the gallery does.
+The full grid is the front door. Filters open the shared FilterWorkspace on
+demand, so Gallery and Library keep one filtering system without making a
+discovery chooser stand between someone and the sequence they just saved.
 
 The engine is created here (not shared with the gallery): its persisted state
 is a separate localStorage record, so your library's sort/filters don't fight
@@ -17,6 +15,7 @@ the gallery's, and the source is pinned to my-library with no toggle.
   import { onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
+  import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
   import SmartCollectionSaveDialog from "$lib/features/library/components/SmartCollectionSaveDialog.svelte";
   import FilterWorkspace from "$lib/features/browse/gallery-home/FilterWorkspace.svelte";
@@ -51,6 +50,7 @@ the gallery's, and the source is pinned to my-library with no toggle.
   const engine = createBrowseEngine({
     persistKey: "tka-browse-library-all",
     initialSource: "my-library",
+    initialSort: BrowseSortMethod.DATE_ADDED,
     sources: ["my-library"],
     sections: true,
     loadSoloLibrarySequences,
@@ -163,11 +163,9 @@ the gallery's, and the source is pinned to my-library with no toggle.
     };
   });
 
-  // The workspace is the front door. Below the split-pane seam it has no live
-  // results column, so "View N results" ejects to the full-page grid — the
-  // same two-view arrangement the gallery uses, and the grid's Filters control
-  // walks back here rather than opening a second, weaker filter surface.
-  let libraryView = $state<"workspace" | "grid">("workspace");
+  // All opens on the collection itself. The filter workspace is a focused
+  // supporting task entered from the grid's Filters control.
+  let libraryView = $state<"workspace" | "grid">("grid");
   let gridWarming = $state(false);
   let smartSaveOpen = $state(false);
 
@@ -241,6 +239,7 @@ the gallery's, and the source is pinned to my-library with no toggle.
       {resultsPane}
       onSaveSmart={() => (smartSaveOpen = true)}
       onEject={ejectToGrid}
+      onClose={() => ejectToGrid(() => {})}
     />
   {:else}
     <BrowsePanel

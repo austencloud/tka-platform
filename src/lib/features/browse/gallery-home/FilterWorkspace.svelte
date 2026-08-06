@@ -36,11 +36,14 @@ the below-seam actions mutate the engine in place.
     resultsPane,
     onSaveSmart,
     onEject,
+    onClose,
   }: {
     engine: BrowseEngine;
     collections?: CollectionOption[];
     resultsPane: Snippet;
     onSaveSmart?: () => void;
+    /** Optional host outcome for a supporting filter pane. Rules stay active. */
+    onClose?: () => void;
     /**
      * Below the split-pane seam there is no live results column, so "View N
      * results" / "Show all" hand off to a full-page grid. The host runs the
@@ -126,21 +129,43 @@ the below-seam actions mutate the engine in place.
   {:else}
     <span class="strip-empty">No filters yet — pick one on the left.</span>
   {/if}
-  {#if onSaveSmart}
+  {#if onSaveSmart || onClose}
     <div class="strip-actions">
-      <PanelButton
-        variant="secondary"
-        ariaLabel="Save these filters as a Smart Collection"
-        onclick={onSaveSmart}
-      >
-        <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-        Save
-      </PanelButton>
+      {#if onSaveSmart}
+        <PanelButton
+          variant="secondary"
+          ariaLabel="Save these filters as a Smart Collection"
+          onclick={onSaveSmart}
+        >
+          <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+          Save
+        </PanelButton>
+      {/if}
+      {#if onClose}
+        <PanelButton
+          variant="primary"
+          ariaLabel="Close filters and view results"
+          onclick={onClose}
+        >
+          Done
+        </PanelButton>
+      {/if}
     </div>
   {/if}
 {/snippet}
 
 <div class="gallery-workspace">
+  {#if onClose && !splitPaneActive && !engine.hasActiveFilters}
+    <div class="workspace-close">
+      <PanelButton
+        variant="primary"
+        ariaLabel="Close filters and view results"
+        onclick={onClose}
+      >
+        Done
+      </PanelButton>
+    </div>
+  {/if}
   {#if engine.hasActiveFilters && !splitPaneActive}
     <div class="gallery-rule-strip" aria-label="Current filters">
       <span class="strip-count" aria-live="polite">
@@ -176,6 +201,15 @@ the below-seam actions mutate the engine in place.
           >
             <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
             Save
+          </PanelButton>
+        {/if}
+        {#if onClose}
+          <PanelButton
+            variant="primary"
+            ariaLabel="Close filters and view results"
+            onclick={onClose}
+          >
+            Done
           </PanelButton>
         {/if}
       </div>
@@ -255,10 +289,18 @@ the below-seam actions mutate the engine in place.
 
 <style>
   .gallery-workspace {
+    position: relative;
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
+  }
+
+  .workspace-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 4;
   }
 
   /* The pinned rule strip: count, grouped sentence, actions on one wrapping
