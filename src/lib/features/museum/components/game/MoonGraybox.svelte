@@ -37,9 +37,11 @@
     MeshBasicMaterial,
     MeshStandardMaterial,
     Path,
+    RingGeometry,
     Shape,
     ShapeGeometry,
     SphereGeometry,
+    TorusGeometry,
   } from "three";
   import type { MuseumGrid } from "../../domain/museum-grid-types";
   import {
@@ -82,10 +84,33 @@
   const SHAFT = "#151312";
   const KEY_COLOUR = "#ffffff";
 
-  /** How high the crater rim stands. Above eye height on purpose: the horizon
-   *  is rock, the sky is the only thing above it, and a rim you can see over
-   *  turns the plain back into a room with walls. */
-  const RIM_HEIGHT = 2.4;
+  /** The outer regolith. Read at distance under the same hard key, so it is a
+   *  shade down from the chamber floor rather than a different rock. */
+  const OUTER_REGOLITH = "#7d7a73";
+  const OUTER_ROCK = "#6b6760";
+
+  /** How high the crater rim stands. Below eye height on purpose — it is the
+   *  lip of the crater you are standing in, not a wall. Standing on the plain
+   *  you see straight over it to the mare running out to the horizon, which is
+   *  the whole reason this room is above ground. */
+  const RIM_HEIGHT = 1.05;
+
+  /**
+   * The Moon outside the crater. There is no atmosphere to fade a horizon into,
+   * so distance here is bought entirely with SIZE: the mare runs to 420 m,
+   * which puts the horizon line at the limit of what the eye can resolve
+   * rather than at a visible edge. The 90 m dome the room shipped with cut the
+   * ground off roughly where the crater rim ended and made the plain read as a
+   * set.
+   *
+   * The mare runs PAST the sky shell on purpose. The shell is a hemisphere, so
+   * below its base there is no sky at all — ground that stopped short of it
+   * would leave a strip of clear-colour under the horizon. Ground beyond it,
+   * sitting a few centimetres proud of its base, hides that edge and puts the
+   * horizon where the dust runs out.
+   */
+  const OUTER_PLAIN_RADIUS = 420;
+  const SKY_RADIUS = 400;
 
   /**
    * The cosmic scene's own night config. Its numbers are taken rather than
@@ -120,6 +145,12 @@
       side: DoubleSide,
     }),
     rim: new MeshStandardMaterial({ color: RIM_ROCK, roughness: 1 }),
+    outerRegolith: new MeshStandardMaterial({
+      color: OUTER_REGOLITH,
+      roughness: 1,
+      side: DoubleSide,
+    }),
+    outerRock: new MeshStandardMaterial({ color: OUTER_ROCK, roughness: 1 }),
     sunStone: new MeshStandardMaterial({ color: SUN_STONE, roughness: 0.8 }),
     mound: new MeshStandardMaterial({ color: MOUND, roughness: 1 }),
     shaft: new MeshStandardMaterial({
@@ -182,6 +213,124 @@
     );
     outline.holes.push(hole);
     return new ShapeGeometry(outline, 96);
+  }
+
+  /**
+   * The mare beyond the crater: a field of other craters, thinning as it goes
+   * out, plus a scatter of boulders near enough to read as objects. It is what
+   * turns a flat disc into somewhere — with nothing on it, 380 m of unbroken
+   * regolith looks exactly like 20 m of unbroken regolith.
+   *
+   * Seeded and deterministic, so the view out of the crater is the same view
+   * every time the room is entered. Sizes and spacing come off the same
+   * distance-thins-detail rule the key light already implies: near craters are
+   * small and sharp, far ones wide and low.
+   */
+  interface FarCrater {
+    id: string;
+    /** x, z offsets from the chamber centre. */
+    pos: [number, number];
+    radius: number;
+    height: number;
+  }
+
+  interface FarBoulder {
+    id: string;
+    pos: [number, number];
+    size: [number, number, number];
+    rot: [number, number, number];
+  }
+
+  function seeded(seed: number): () => number {
+    let s = seed >>> 0;
+    return () => {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      return s / 4294967296;
+    };
+  }
+
+  /**
+   * A distant highland. A sphere sunk into the plain so only its cap shows —
+   * the cheapest thing that reads as a rounded, eroded lunar massif, and the
+   * only thing in the far field that breaks the horizon line. Without these the
+   * mare is a dead-flat table and the eye reads it as a floor no matter how far
+   * out it goes.
+   */
+  interface FarHill {
+    id: string;
+    pos: [number, number];
+    /** Half-width across the plain, and how far the cap stands above it. */
+    radius: number;
+    rise: number;
+  }
+
+  function farField(innerRadius: number): {
+    craters: FarCrater[];
+    boulders: FarBoulder[];
+    hills: FarHill[];
+  } {
+    const rand = seeded(0x4d4f4f4e); // "MOON"
+    const craters: FarCrater[] = [];
+    const boulders: FarBoulder[] = [];
+    const hills: FarHill[] = [];
+
+    // Craters. A crater is a LIP, not a plateau: wide, and barely off the
+    // ground next to its own width. The first pass drew them as short solid
+    // cylinders and the horizon came back as a row of mesas.
+    //
+    // `t` is normalised distance out, and size grows with it, so the field
+    // reads as perspective rather than as tiling.
+    for (let i = 0; i < 70; i++) {
+      const t = Math.pow(rand(), 0.55);
+      const dist = innerRadius + 30 + t * (OUTER_PLAIN_RADIUS * 0.7);
+      const theta = rand() * Math.PI * 2;
+      const radius = (5 + rand() * 11) * (0.6 + t * 2.6);
+      craters.push({
+        id: `moon-far-crater-${i}`,
+        pos: [Math.sin(theta) * dist, Math.cos(theta) * dist],
+        radius,
+        height: Math.max(0.35, radius * (0.035 + rand() * 0.04)),
+      });
+    }
+
+    // Boulders, kept close in — past ~120 m a 2 m rock is a pixel and costs a
+    // draw call to say nothing. Tilted on all three axes: a rock sitting square
+    // to the world reads as a crate.
+    for (let i = 0; i < 40; i++) {
+      const dist = innerRadius + 8 + Math.pow(rand(), 0.7) * 105;
+      const theta = rand() * Math.PI * 2;
+      const w = 0.45 + rand() * 1.5;
+      boulders.push({
+        id: `moon-boulder-${i}`,
+        pos: [Math.sin(theta) * dist, Math.cos(theta) * dist],
+        size: [w, w * (0.45 + rand() * 0.5), w * (0.7 + rand() * 0.6)],
+        rot: [
+          (rand() - 0.5) * 0.5,
+          rand() * Math.PI,
+          (rand() - 0.5) * 0.5,
+        ],
+      });
+    }
+
+    // Highlands, in two ranges: a near one you can read the shape of, and a far
+    // one that is mostly silhouette. Nothing inside 130 m, so the crater and
+    // its three stations keep their open sky.
+    for (let i = 0; i < 26; i++) {
+      const near = i < 10;
+      const dist = near
+        ? 130 + rand() * 90
+        : 240 + rand() * (OUTER_PLAIN_RADIUS * 0.4);
+      const theta = rand() * Math.PI * 2;
+      const radius = (near ? 30 : 60) + rand() * (near ? 40 : 110);
+      hills.push({
+        id: `moon-hill-${i}`,
+        pos: [Math.sin(theta) * dist, Math.cos(theta) * dist],
+        radius,
+        rise: radius * (0.14 + rand() * 0.16),
+      });
+    }
+
+    return { craters, boulders, hills };
   }
 
   /**
@@ -264,6 +413,22 @@
 
     return {
       plain: plainGeometry(l),
+      // The mare. A ring, not a disc: it starts under the crater floor's own
+      // edge so there is no seam and no z-fight with it, and it carries no
+      // hole because the arrival is 190 m inside its inner edge.
+      outerPlain: new RingGeometry(
+        l.chamberRadius - 0.25,
+        OUTER_PLAIN_RADIUS,
+        160,
+        1
+      ),
+      // A torus authored in XY and laid flat, so a crater is a raised ring of
+      // ejecta with open ground inside it. Its tube radius is 0.22 of the unit
+      // circle, which is what the vertical scale below divides by to turn a
+      // wanted lip height into a scale factor.
+      farCraterRim: new TorusGeometry(1, 0.22, 6, 40),
+      hill: new SphereGeometry(1, 24, 12),
+      far: farField(l.chamberRadius),
       plinth: new CylinderGeometry(l.arrivalRadius, l.arrivalRadius, 1, 48),
       shaft: new CylinderGeometry(
         l.arrivalHoleRadius,
@@ -276,10 +441,12 @@
       mound: new CylinderGeometry(1, 1, 1, 32),
       // Upper hemisphere only, centred on the plain and mounted only while the
       // visitor is in this room, so it can never black out its neighbours.
-      // 90 m, and that is load-bearing: the cosmic starfield is a 75 m shell,
-      // the nebula 70 m and Earth ~64 m out. At the original 48 the dome sat
-      // IN FRONT of all three and the sky was simply black.
-      sky: new SphereGeometry(90, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+      // It must stand outside everything in the sky — the cosmic starfield is
+      // a 75 m shell, the nebula 70 m and Earth ~64 m out. At the original 48
+      // the dome sat IN FRONT of all three and the sky was simply black. It
+      // now also has to stand outside the 380 m mare, or the ground would run
+      // through the horizon.
+      sky: new SphereGeometry(SKY_RADIUS, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2),
       boxes,
       arcs,
     };
@@ -293,6 +460,9 @@
     return () => {
       if (!current) return;
       current.plain.dispose();
+      current.outerPlain.dispose();
+      current.farCraterRim.dispose();
+      current.hill.dispose();
       current.plinth.dispose();
       current.shaft.dispose();
       current.mound.dispose();
@@ -446,6 +616,56 @@
          stay with this module, because they carry the room's geometry contract
          and the cosmic scene's own floor is a performance stage. -->
     {#if inRoom}
+      <!-- The mare. Mounted with the sky and for the same reason: 380 m of
+           ground centred on this room would otherwise be laid straight over
+           every other chamber in the wing. It does not receive the key's
+           shadow — the shadow camera is fitted to the 20 m plain, and widening
+           it to 380 would spend the whole map on empty dust. -->
+      <T.Mesh
+        geometry={scene.outerPlain}
+        material={materials.outerRegolith}
+        position={[layout.centre.x, MOON_FLOOR_Y - 0.04, layout.centre.z]}
+        rotation={[-Math.PI / 2, 0, 0]}
+      />
+      {#each scene.far.craters as crater (crater.id)}
+        <T.Mesh
+          geometry={scene.farCraterRim}
+          material={materials.outerRock}
+          position={[
+            layout.centre.x + crater.pos[0],
+            MOON_FLOOR_Y - 0.04,
+            layout.centre.z + crater.pos[1],
+          ]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          scale={[crater.radius, crater.radius, crater.height / 0.22]}
+        />
+      {/each}
+      {#each scene.far.hills as hill (hill.id)}
+        <T.Mesh
+          geometry={scene.hill}
+          material={materials.outerRock}
+          position={[
+            layout.centre.x + hill.pos[0],
+            MOON_FLOOR_Y - 0.04,
+            layout.centre.z + hill.pos[1],
+          ]}
+          scale={[hill.radius, hill.rise, hill.radius]}
+        />
+      {/each}
+      {#each scene.far.boulders as boulder (boulder.id)}
+        <T.Mesh
+          geometry={unitBox}
+          material={materials.outerRock}
+          position={[
+            layout.centre.x + boulder.pos[0],
+            MOON_FLOOR_Y - 0.04 + boulder.size[1] / 2,
+            layout.centre.z + boulder.pos[1],
+          ]}
+          rotation={boulder.rot}
+          scale={boulder.size}
+        />
+      {/each}
+
       <T.Mesh
         geometry={scene.sky}
         material={materials.sky}

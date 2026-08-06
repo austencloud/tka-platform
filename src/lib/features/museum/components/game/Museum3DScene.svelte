@@ -650,7 +650,14 @@
 
   function updateAtmosphere(tileX: number, tileZ: number, delta: number): void {
     const theme = getWingThemeAt(tileX, tileZ);
-    const wingChanged = atmosphere.update(theme, fpsActive, delta);
+    // The Moon is the one room in the museum standing outside, on a body with
+    // no air. See MuseumAtmosphere.update's `vacuum`.
+    const wingChanged = atmosphere.update(
+      theme,
+      fpsActive,
+      delta,
+      currentPlayerRoomId === MOON_ROOM_ID,
+    );
     if (wingChanged) {
       roomLightPool = recomputeNearbyLightsFromPool(
         tileX * TILE_SIZE,

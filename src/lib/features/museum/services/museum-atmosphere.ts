@@ -29,10 +29,20 @@ export class MuseumAtmosphere {
     return this.currentWingTheme;
   }
 
+  /**
+   * @param vacuum Rooms that are outdoors on an airless body. Fog is scattering
+   *   by suspended particles; with no atmosphere there is nothing to scatter,
+   *   which is why the Moon's horizon is a hard line at kilometres rather than
+   *   a fade at thirty metres. The cave wing's 0.06 density swallowed the Moon
+   *   room's mare whole. The wing theme still tracks normally underneath, so
+   *   walking back into the Sun restores the wing's fog without a special case
+   *   at the door.
+   */
   update(
     theme: WingTheme | null,
     fpsActive: boolean,
     delta: number,
+    vacuum = false,
   ): boolean {
     let wingChanged = false;
 
@@ -42,6 +52,15 @@ export class MuseumAtmosphere {
       this.colorTarget.set(fogCfg.color);
       this.densityTarget = fogCfg.density;
       wingChanged = true;
+    }
+
+    if (vacuum) {
+      this.colorTarget.set("#000000");
+      this.densityTarget = 0;
+    } else if (this.currentWingTheme) {
+      const fogCfg = WING_FOG[this.currentWingTheme];
+      this.colorTarget.set(fogCfg.color);
+      this.densityTarget = fogCfg.density;
     }
 
     if (fpsActive) {
