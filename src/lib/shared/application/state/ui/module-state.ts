@@ -26,6 +26,19 @@ async function loadFeatureModule(_feature: string): Promise<void> {
 const LOCAL_STORAGE_KEY = "tka-active-module-cache";
 const TRANSITION_RESET_DELAY = 300;
 
+// Restoring a saved workspace is allowed only until the user asks to go
+// somewhere. Without this epoch, a slower IndexedDB/auth read can finish after
+// a click and put the old module back on screen.
+let navigationIntentEpoch = 0;
+
+export function markNavigationIntent(): void {
+  navigationIntentEpoch += 1;
+}
+
+function canApplyAutomaticRestore(startEpoch: number): boolean {
+  return startEpoch === 0 && navigationIntentEpoch === startEpoch;
+}
+
 /**
  * Sync both UI state and navigation state to the same module.
  * This ensures the navigation bar and content display are always in agreement.
@@ -55,6 +68,7 @@ function isModuleAccessible(moduleId: ModuleId): boolean {
 export async function revalidateCurrentModule(): Promise<void> {
   // ITI containers are synchronous - no initialization needed
   const currentModule = getActiveModule();
+  const restoreStartEpoch = navigationIntentEpoch;
 
   // IMPORTANT: Check if this is URL-based navigation (deep linking)
   // If user explicitly navigated to a URL, do NOT override with cached module
@@ -70,7 +84,11 @@ export async function revalidateCurrentModule(): Promise<void> {
 
   // Try to restore any cached module that user now has access to
   // BUT skip if user explicitly navigated via URL
-  if ((featureFlagService.isTester || featureFlagService.isAdmin) && !isUrlNavigation) {
+  if (
+    (featureFlagService.isTester || featureFlagService.isAdmin) &&
+    !isUrlNavigation &&
+    canApplyAutomaticRestore(restoreStartEpoch)
+  ) {
     try {
       // Check localStorage FIRST (most recent user intent, survives even if Firestore was overwritten)
       const cached = browser ? localStorage.getItem(LOCAL_STORAGE_KEY) : null;
@@ -84,7 +102,8 @@ export async function revalidateCurrentModule(): Promise<void> {
           if (
             cachedModuleId &&
             isModuleAccessible(cachedModuleId) &&
-            currentModule !== cachedModuleId
+            currentModule !== cachedModuleId &&
+            canApplyAutomaticRestore(restoreStartEpoch)
           ) {
             // Load feature module BEFORE setting active module to ensure services are available
             await loadFeatureModule(cachedModuleId);
@@ -117,7 +136,8 @@ export async function revalidateCurrentModule(): Promise<void> {
       if (
         normalizedFirestoreModule &&
         isModuleAccessible(normalizedFirestoreModule) &&
-        currentModule !== normalizedFirestoreModule
+        currentModule !== normalizedFirestoreModule &&
+        canApplyAutomaticRestore(restoreStartEpoch)
       ) {
         // Load feature module BEFORE setting active module to ensure services are available
         await loadFeatureModule(normalizedFirestoreModule);
@@ -235,6 +255,8 @@ export async function switchModule(module: ModuleId): Promise<void> {
     return;
   }
 
+  markNavigationIntent();
+
   setIsTransitioning(true);
 
   try {
@@ -266,6 +288,13 @@ export function isModuleActive(module: string): boolean {
 }
 
 export async function initializeModulePersistence(): Promise<void> {
+  const restoreStartEpoch = navigationIntentEpoch;
+
+  // A legacy sheet redirect or an unusually fast click can happen while the
+  // rest of startup is still resolving. That newer destination owns the
+  // screen; persistence must not compete with it.
+  if (!canApplyAutomaticRestore(restoreStartEpoch)) return;
+
   try {
     // FIRST: Check if URL specifies a module (deep linking takes priority)
     // This prevents localStorage from overriding the user's navigation intent
@@ -334,7 +363,11 @@ export async function initializeModulePersistence(): Promise<void> {
 
       // Sync BOTH ui state and navigation state to ensure nav bar matches content
       // Pass URL tab if this is URL-based navigation (deep linking)
-      syncBothStateSystems(moduleId, isUrlNavigation ? urlTab ?? undefined : undefined);
+      if (!canApplyAutomaticRestore(restoreStartEpoch)) return;
+      syncBothStateSystems(
+        moduleId,
+        isUrlNavigation ? (urlTab ?? undefined) : undefined
+      );
 
       // Clean up localStorage if we normalized the value
       if (browser) {
@@ -354,6 +387,7 @@ export async function initializeModulePersistence(): Promise<void> {
       await loadFeatureModule(defaultModule);
 
       // Sync BOTH ui state and navigation state to ensure nav bar matches content
+      if (!canApplyAutomaticRestore(restoreStartEpoch)) return;
       syncBothStateSystems(defaultModule);
 
       await persistInitialize();
@@ -376,6 +410,7 @@ export async function initializeModulePersistence(): Promise<void> {
     try {
       await loadFeatureModule("create");
       // Sync BOTH ui state and navigation state to ensure nav bar matches content
+      if (!canApplyAutomaticRestore(restoreStartEpoch)) return;
       syncBothStateSystems("create");
     } catch (_fallbackError) {
       console.error(
