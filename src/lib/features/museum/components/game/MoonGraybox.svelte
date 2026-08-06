@@ -49,6 +49,14 @@
     type MoonLayout,
   } from "../../data/moon-layout";
   import type { WorldRect } from "../../data/drowned-gallery-terrain";
+  // The lunar sky, borrowed rather than rebuilt. See the sky block in the
+  // markup for why, and for what is deliberately NOT taken from it.
+  import Starfield from "$lib/shared/3d/environments/primitives/Starfield.svelte";
+  import EarthSphere from "$lib/shared/3d/environments/scenes/cosmic/EarthSphere.svelte";
+  import EarthGodRays from "$lib/shared/3d/environments/scenes/cosmic/EarthGodRays.svelte";
+  import NebulaLayer from "$lib/shared/3d/environments/scenes/cosmic/NebulaLayer.svelte";
+  import MeteorStreaks from "$lib/shared/3d/environments/scenes/cosmic/MeteorStreaks.svelte";
+  import { createDefaultCosmicNightConfig } from "$lib/shared/3d/environments/domain/models/scene-configs";
 
   interface Props {
     grid: MuseumGrid;
@@ -78,6 +86,26 @@
    *  is rock, the sky is the only thing above it, and a rim you can see over
    *  turns the plain back into a room with walls. */
   const RIM_HEIGHT = 2.4;
+
+  /**
+   * The cosmic scene's own night config. Its numbers are taken rather than
+   * re-tuned, so this room and the Cosmic background read as the same Moon —
+   * same Earth, same starfield density — instead of two authors' guesses at
+   * one.
+   *
+   * ONE value is overridden, and honestly: Earth's position. The cosmic scene
+   * hangs it at `[-40, 2, -60]`, which is nearly on its horizon — fine on an
+   * open performance platform, invisible here behind a 2.4 m crater rim. It is
+   * lifted into the sky so a visitor standing in a walled crater can actually
+   * see the thing the room exists to show them. Distance is kept close to the
+   * original so its apparent size does not change.
+   */
+  const cosmicDefaults = createDefaultCosmicNightConfig();
+  const cosmic = {
+    ...cosmicDefaults,
+    earth: { ...cosmicDefaults.earth, position: [-30, 34, -45] as [number, number, number] },
+  };
+  const meteors = cosmic.particles?.effects?.meteorStreaks;
   /** How far the arrival shaft is drawn down before it goes to black. */
   const SHAFT_DEPTH = 7;
   const SLAB_T = 0.3;
@@ -248,7 +276,10 @@
       mound: new CylinderGeometry(1, 1, 1, 32),
       // Upper hemisphere only, centred on the plain and mounted only while the
       // visitor is in this room, so it can never black out its neighbours.
-      sky: new SphereGeometry(48, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+      // 90 m, and that is load-bearing: the cosmic starfield is a 75 m shell,
+      // the nebula 70 m and Earth ~64 m out. At the original 48 the dome sat
+      // IN FRONT of all three and the sky was simply black.
+      sky: new SphereGeometry(90, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2),
       boxes,
       arcs,
     };
@@ -400,14 +431,48 @@
       </T.Mesh>
     {/each}
 
-    <!-- The open black sky. Mounted only while the visitor is standing in this
-         room, so a 48 m dome can never swallow the rooms next door. -->
+    <!-- The sky. Mounted only while the visitor is standing in this room, so a
+         48 m dome and a 75 m starfield can never swallow the rooms next door.
+
+         The black dome is the backdrop, and the rest is NOT hand-rolled: the
+         cosmic scene in `shared/3d/environments/scenes/cosmic` already IS a
+         lunar surface — Earth hanging in the sky, a starfield, nebula and
+         meteor streaks, all driven off `createDefaultCosmicNightConfig()`. The
+         first version of this room drew an empty black hemisphere and called
+         it the Moon while that scene sat one directory away. Austen:
+         *"Look at my scenes package. Find cosmic. That's the moon."*
+
+         Only the SKY is borrowed. The ground, the mounds and the arrival hole
+         stay with this module, because they carry the room's geometry contract
+         and the cosmic scene's own floor is a performance stage. -->
     {#if inRoom}
       <T.Mesh
         geometry={scene.sky}
         material={materials.sky}
         position={[layout.centre.x, MOON_FLOOR_Y - 0.5, layout.centre.z]}
       />
+      <T.Group position={[layout.centre.x, MOON_FLOOR_Y, layout.centre.z]}>
+        <Starfield config={cosmic.starfield} />
+        {#if cosmic.nebula.enabled}
+          <NebulaLayer config={cosmic.nebula} />
+        {/if}
+        <!-- Earth. The reason to look up, and the reason this room needs no
+             ornament of its own: the wing's other five chambers are all
+             underground, and this is the one where you can see where you came
+             from. -->
+        <EarthSphere config={cosmic.earth} />
+        {#if cosmic.earth.enabled}
+          <EarthGodRays config={cosmic.godRays} earthConfig={cosmic.earth} />
+        {/if}
+        <!-- Optional-chained, because `particles.effects` is not present on
+             every cosmic variant. Reading it straight threw inside the group
+             and took the ENTIRE sky down with it — Earth, stars and nebula all
+             silently gone, with only a promise rejection in the console to say
+             so. -->
+        {#if meteors?.enabled}
+          <MeteorStreaks config={meteors} />
+        {/if}
+      </T.Group>
     {/if}
 
     <T is={key} />
