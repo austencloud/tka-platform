@@ -249,10 +249,10 @@ function report(stats: Stats, log: SessionRecord[]): string {
     `|---|---|---|`,
     rank(stats.moduleTicks),
     ``,
-    `## First 80 decisions`,
+    process.env.GHOST_SIM_REPORT ? `## Every decision` : `## First 80 decisions`,
     ``,
     ...log
-      .slice(0, 80)
+      .slice(0, process.env.GHOST_SIM_REPORT ? Infinity : 80)
       .map(
         (r) =>
           `${String(Math.round(r.t / 1000)).padStart(4)}s  [${r.moduleId ?? "-"}${

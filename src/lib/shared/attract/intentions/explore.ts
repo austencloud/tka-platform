@@ -13,7 +13,7 @@ import {
   isDeniedModule,
   safe,
 } from "../domain/annotations";
-import type { Intention } from "../domain/intention";
+import type { GhostContext, Intention } from "../domain/intention";
 import type { AttractGhost } from "../services/attract-ghost.svelte";
 import { visibleAll } from "../services/sensors";
 import {
@@ -63,6 +63,26 @@ function unvisitedNavButtons(visited: ReadonlySet<string>): HTMLElement[] {
     const id = el.getAttribute(NAV_MODULE_ID_ATTR);
     return !!id && !isDeniedModule(id) && !visited.has(id);
   });
+}
+
+/**
+ * Nav buttons worth pressing — everything except rooms the ghost has already
+ * discovered it can do nothing in (GhostMemory.barrenModules).
+ *
+ * 8 of 26 module visits in a 289-decision session consisted of arriving and
+ * immediately leaving, including three separate trips to practice. From the
+ * far side of the room that is a montage of doors opening and closing.
+ */
+function worthwhileNavButtons(ctx: GhostContext): HTMLElement[] {
+  const all = visibleAll(NAV_MODULE_SEL).filter((el) => {
+    const id = el.getAttribute(NAV_MODULE_ID_ATTR);
+    return !!id && !isDeniedModule(id);
+  });
+  const worthwhile = all.filter(
+    (el) => !ctx.barrenModules.has(el.getAttribute(NAV_MODULE_ID_ATTR) ?? ""),
+  );
+  // If EVERY room is barren, being stuck is worse than being repetitive.
+  return worthwhile.length ? worthwhile : all;
 }
 
 export const EXPLORE_INTENTIONS: Intention[] = [
@@ -141,8 +161,12 @@ export const EXPLORE_INTENTIONS: Intention[] = [
         "Where do I even start with this?",
         "Hm.",
       ]) ?? "Hm.",
+    // Early only. "…that is a lot of buttons" from something that has been
+    // driving the app fluently for ten minutes is not shy, it is amnesiac —
+    // observed at 607s in a 289-decision session.
     can: (ctx) =>
       (ctx.performed.get("overwhelmed") ?? 0) < 2 &&
+      ctx.trail.entries().length < 25 &&
       Object.values(ctx.available).filter((count) => count > 0).length > 2,
     appeal: () => 0.08,
     mood: "unsure",
@@ -166,13 +190,11 @@ export const EXPLORE_INTENTIONS: Intention[] = [
     // The module it names is the module it walks to. It used to name the FIRST
     // unvisited one and then press a random one from the pool.
     target: (ctx) => {
-      const unvisited = unvisitedNavButtons(ctx.visitedModules);
+      const unvisited = unvisitedNavButtons(ctx.visitedModules).filter(
+        (el) => !ctx.barrenModules.has(el.getAttribute(NAV_MODULE_ID_ATTR) ?? ""),
+      );
       if (unvisited.length) return ctx.rng.pick(unvisited) ?? null;
-      const allowed = visibleAll(NAV_MODULE_SEL).filter((el) => {
-        const id = el.getAttribute(NAV_MODULE_ID_ATTR);
-        return !!id && !isDeniedModule(id);
-      });
-      return ctx.rng.pick(allowed) ?? null;
+      return ctx.rng.pick(worthwhileNavButtons(ctx)) ?? null;
     },
     thought: (ctx, target) => {
       const name = target ? labelOf(target) : "";

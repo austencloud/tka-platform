@@ -193,6 +193,15 @@ export interface GhostMemory {
    */
   askedAbout: Set<string>;
   /**
+   * Modules that turned out to have nothing the ghost can do. Recorded when a
+   * tick finds no satisfiable intention at all, which is the only honest
+   * signal that a room is empty — `available` counts controls, not usefulness.
+   *
+   * Without this the tour becomes a montage of doors: 8 of 26 module visits in
+   * a 289-decision session consisted of arriving and immediately leaving.
+   */
+  barrenModules: Set<string>;
+  /**
    * Per-session budgets an intention spends. An OBJECT, not loose numbers: the
    * context handed to `perform` is a shallow copy of world + memory, so a
    * scalar written through the context would be dropped on the floor. Anything
@@ -214,6 +223,17 @@ export interface GhostMemory {
      * would be written to a throwaway object and silently lost.
      */
     lastInviteAt: number;
+    /**
+     * `trail.lastAt()` when the ghost last produced something worth looking at
+     * — any intention carrying a `savor`. Read by clear-and-restart, which
+     * must not bin a thing the ghost has only just finished.
+     *
+     * The simulation that earned this: five extends in one session, and ALL
+     * FIVE were followed by a clear within 4-22 seconds. The single most
+     * impressive press in the app, and every time the ghost completed the loop
+     * it immediately threw it away.
+     */
+    lastPayoffAt: number;
   };
   /**
    * What the ghost currently believes about each idea in the app. Absent means

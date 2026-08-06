@@ -214,7 +214,23 @@ export const BUILD_INTENTIONS: Intention[] = [
     // outscoring `add-step` and throwing away a fragment — the ghost binned
     // every sequence it started at exactly three, seven times in a 200-decision
     // run, which is why nobody ever saw it make anything.
-    can: (ctx) => ctx.sequenceLength >= 6 && has(ctx, "clear"),
+    /*
+     * The payoff guard, and it is the most important clause in this file.
+     *
+     * A 289-decision simulation extended five sequences — the biggest single
+     * press in the app, a fragment becoming a finished loop — and binned ALL
+     * FIVE within 4 to 22 seconds. Restlessness pins at 1.0 after 90s in one
+     * module, so clear sat at a permanent 0.55 while add-step tapered off past
+     * eight steps, and clearing simply won every time the sequence got good.
+     *
+     * Nobody finishes a thing and immediately throws it away. `lastPayoffAt` is
+     * stamped by the mind whenever a savor-bearing intention lands, so for the
+     * following minute the ghost lives with what it just made.
+     */
+    can: (ctx) =>
+      ctx.sequenceLength >= 6 &&
+      has(ctx, "clear") &&
+      ctx.trail.lastAt() - ctx.budgets.lastPayoffAt > 60_000,
     // Boredom, not length, is the motive. A long sequence is a reason to keep
     // playing with it, not a reason to bin it.
     appeal: (ctx) => Math.min(0.6, restlessness(ctx) * 0.55),

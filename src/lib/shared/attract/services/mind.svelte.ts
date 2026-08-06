@@ -80,6 +80,8 @@ export function createGhostMind(opts: {
 
   let thoughtSetAt = 0;
   let currentModuleId: string | null = null;
+  /** Non-navigational decisions performed in the current module. */
+  let actionsHere = 0;
   let moduleEnteredAt = now();
 
   /** The world as of the last `readContext`, for the before/after delta. */
@@ -89,6 +91,21 @@ export function createGhostMind(opts: {
     const world = opts.sense();
     lastWorld = world;
     if (world.moduleId !== currentModuleId) {
+      /*
+       * Leaving. If the ghost did nothing here but navigate, this room has
+       * nothing for it — remember that so the navigator stops coming back.
+       *
+       * The verdict has to be taken on DEPARTURE, not while standing in the
+       * room. An earlier version marked a module barren when no intention at
+       * all was satisfiable, which never fired: the nav is always on screen, so
+       * leaving is always satisfiable and the room never looked empty. The
+       * measurement that caught it: practice entered four times in one session
+       * and departed immediately every time.
+       */
+      if (currentModuleId && actionsHere === 0) {
+        memory.barrenModules.add(currentModuleId);
+      }
+      actionsHere = 0;
       currentModuleId = world.moduleId;
       moduleEnteredAt = now();
       if (world.moduleId) memory.visitedModules.add(world.moduleId);
@@ -119,6 +136,7 @@ export function createGhostMind(opts: {
     if (!intention) {
       // Nothing satisfiable here — usually a view still loading. Wait rather
       // than spin, and let the next tick re-sense.
+      //
       await g.sleep(1200);
       return;
     }
@@ -182,6 +200,9 @@ export function createGhostMind(opts: {
           ? intention.savor(ctx)
           : intention.savor;
       if (ms > 0) {
+        // Something worth looking at just happened. clear-and-restart reads
+        // this so the ghost cannot bin a thing it has only just finished.
+        memory.budgets.lastPayoffAt = trail.lastAt();
         state.thought = null;
         // Not thoughtSetAt = now(): the NEXT thought must be free to appear the
         // instant the ghost comes back. The minimum-legibility clock is about
@@ -203,6 +224,9 @@ export function createGhostMind(opts: {
       if (line) await think(line, intention.mood ?? "curious");
     }
 
+    if (ok && intention.id !== "go-to-module" && intention.id !== "escape-room") {
+      actionsHere++;
+    }
     remember(memory, intention);
     // A drastic move earns the room a fresh start. Without this, an escape that
     // lands in the module it was ALREADY in leaves moduleDwellMs untouched — so

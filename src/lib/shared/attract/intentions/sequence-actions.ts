@@ -68,7 +68,11 @@ export const SEQUENCE_ACTION_INTENTIONS: Intention[] = [
      * reach for an extension that is not available, which is the whole point of
      * annotating the real control rather than inferring from step count.
      */
-    can: (ctx) => has(ctx, "extend"),
+    // Extend DOUBLES the sequence. Run against a 14-step sequence that yields
+    // 28 steps, which is not a demonstration, it is a wall — the simulation
+    // reached 28 and then binned it. Only offer it while the result stays
+    // watchable.
+    can: (ctx) => has(ctx, "extend") && ctx.sequenceLength <= 10,
     // The biggest single press in the app: one button turns a fragment into a
     // finished loop. It beats almost everything when it is available at all.
     appeal: () => 0.85,
