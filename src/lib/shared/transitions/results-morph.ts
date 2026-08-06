@@ -30,6 +30,13 @@ import {
  *  reporting "not live" must not clear the gallery's own claim. */
 const liveSurfaces = new Set<object>();
 
+/**
+ * Virtualized result layouts need one last measurement after Svelte has
+ * rendered the filtered rows. Without it, Chrome snapshots the row estimates
+ * and a shorter estimate can leave the next section sitting on top of a card.
+ */
+const layoutStabilizers = new Set<() => void>();
+
 /** One transition at a time. Starting a second while one runs makes the browser
  *  skip the first, which reads as a snap — worse than not animating. A search
  *  keystroke landing mid-morph just applies plainly. */
@@ -47,6 +54,27 @@ export function setResultsMorphActive(owner: object, active: boolean): void {
 /** True when some mounted surface is showing results that should morph. */
 export function isResultsMorphActive(): boolean {
   return liveSurfaces.size > 0;
+}
+
+/**
+ * Register a live results layout that must finish measuring before Chrome
+ * captures the new side of a same-document View Transition.
+ */
+export function registerResultsLayoutStabilizer(
+  stabilize: () => void
+): () => void {
+  layoutStabilizers.add(stabilize);
+  return () => layoutStabilizers.delete(stabilize);
+}
+
+function stabilizeResultsLayouts(): void {
+  if (layoutStabilizers.size === 0) return;
+  // The first pass corrects rows that survived the filter change. Flushing can
+  // mount another overscanned row, so the second pass measures that row too.
+  for (let pass = 0; pass < 2; pass += 1) {
+    for (const stabilize of layoutStabilizers) stabilize();
+    flushSync();
+  }
 }
 
 function morphUnavailable(): boolean {
@@ -79,12 +107,17 @@ export function startMorph(mutate: () => void): ViewTransition | null {
   const before = captureResultsMotionState();
   // Svelte batches; the browser captures the "after" frame the moment this
   // callback returns, so the DOM has to be current BEFORE it does.
-  const transition = document.startViewTransition(() => flushSync(mutate));
+  const transition = document.startViewTransition(() => {
+    flushSync(mutate);
+    stabilizeResultsLayouts();
+  });
   // Every path that already routes through here inherits the staggered enter.
   stageResultsMotion(transition, before);
-  void transition.finished.catch(() => {}).finally(() => {
-    inFlight = false;
-  });
+  void transition.finished
+    .catch(() => {})
+    .finally(() => {
+      inFlight = false;
+    });
   return transition;
 }
 
