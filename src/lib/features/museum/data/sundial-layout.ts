@@ -585,11 +585,25 @@ export function buildSundialLayout(grid: MuseumGrid): SundialLayout | null {
   const inCorridor = (x: number, z: number) =>
     corridor.some((rect) => inRectClosed(rect, x, z));
 
+  /**
+   * The north light crack: the whole band between the interior's north edge and
+   * the chamber. The graybox floors ALL of it, so all of it has to be walkable
+   * — the first version allowed only a 6 m strip on the door's axis and left
+   * the rest of a lit, visibly solid floor blocked. Austen walked in and hit an
+   * invisible wall with the chamber in plain sight ahead of him. This module's
+   * own header promises one geometry source; that was the promise breaking.
+   */
+  const inCrack = (x: number, z: number) =>
+    z <= centre.z - chamberRadius &&
+    x >= interior.minX &&
+    x <= interior.maxX &&
+    z >= interior.minZ;
+
   function blockedAt(x: number, z: number): boolean {
-    if (inCorridor(x, z) || inApproach(x, z)) return false;
+    if (inCorridor(x, z) || inApproach(x, z) || inCrack(x, z)) return false;
     const { r, theta } = polar(x, z);
-    // Outside the chamber and off every approach: solid rock, whatever the
-    // rectangular bay looks like.
+    // Outside the chamber, off every approach and out of the crack: the rock
+    // corners the round chamber leaves in a rectangular bay.
     if (r > chamberRadius) return true;
     if (r >= CROSSING_OUTER_R) return false; // the rim walk
     if (r <= CROSSING_INNER_R) return false; // the centre disc
@@ -599,6 +613,9 @@ export function buildSundialLayout(grid: MuseumGrid): SundialLayout | null {
 
   function elevationAt(x: number, z: number, fromY?: number): number {
     if (inCorridor(x, z)) return SUN_DOOR_Y;
+    // The crack floor is the rim's datum, so walking off the door approach onto
+    // it is a walk, not a step.
+    if (inCrack(x, z) && !inApproach(x, z)) return SUN_RIM_Y;
     for (const approach of approaches) {
       if (inRectClosed(approach.rect, x, z)) return rampHeight(approach, x, z);
     }

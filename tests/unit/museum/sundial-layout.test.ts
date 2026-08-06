@@ -165,6 +165,27 @@ describe("sundial layout", () => {
     }
   });
 
+  it("lets you walk the whole crack, not just a strip down the middle", () => {
+    // The graybox floors the entire band north of the chamber. Anything it
+    // floors must be walkable, or the visitor meets an invisible wall on a lit
+    // floor — which is exactly what shipped.
+    const northEdge = layout.centre.z - layout.chamberRadius;
+    for (let i = 0; i <= 40; i++) {
+      const x =
+        layout.interior.minX +
+        ((layout.interior.maxX - layout.interior.minX) * i) / 40;
+      for (const z of [
+        layout.interior.minZ + 0.5,
+        (layout.interior.minZ + northEdge) / 2,
+        northEdge - 0.5,
+      ]) {
+        expect(layout.blockedAt(x, z), `crack at ${x.toFixed(1)},${z.toFixed(1)}`).toBe(
+          false
+        );
+      }
+    }
+  });
+
   it("keeps the eye under solid ceiling", () => {
     expect(SUN_MEDALLION_RADIUS_M).toBeGreaterThanOrEqual(EYE_RADIUS_M + 1.5);
   });
