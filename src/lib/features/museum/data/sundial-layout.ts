@@ -71,8 +71,13 @@ export const SUN_CRACK_RUN_M = 10;
 export const SUN_CHAMBER_RADIUS_M = 12;
 /** The four Quarter-Same pillars stand on this circle. */
 export const SUN_PILLAR_RADIUS_M = 6.5;
-/** Cap radius of a pillar — ⌀2.2, wide enough to stand a performer on. */
-export const SUN_PILLAR_CAP_RADIUS_M = 1.1;
+/**
+ * Cap radius of a pillar — ⌀1.8, wide enough to stand a performer on and
+ * narrow enough to leave real clearance where the crossing passes it. At the
+ * original ⌀2.2 the walk squeezed by with 0.4 m either side, which reads as
+ * "nearly touching" even when the arithmetic says it fits.
+ */
+export const SUN_PILLAR_CAP_RADIUS_M = 0.9;
 
 /**
  * The chamber centre in INTERIOR metres (from the interior's minimum edges),
@@ -126,10 +131,34 @@ export const SUN_MEDALLION_RADIUS_M = 4.0;
 export const CROSSING_OUTER_R = 9;
 /** Radius where it meets the centre disc. */
 export const CROSSING_INNER_R = 4;
-/** Half-width of the walkable crossing, metres. */
-export const CROSSING_HALF_WIDTH = 1.0;
+/**
+ * Half-width of the walkable crossing.
+ *
+ * A 1.5 m walk. The binding constraint is radial, not angular: the crossing starts and ends
+ * on compass bearings (so its midpoint threads the diagonal gap between two
+ * pillars), which puts each endpoint 2.5 m radially from the pillar circle.
+ * That 2.5 m is the whole budget: half-width + pillar cap + clearance. At 1.0
+ * there was 0.4 m left over, which reads as grazing.
+ */
+export const CROSSING_HALF_WIDTH = 0.75;
 /** The sweep, locked: a quarter of the compass, no more and no less. */
 export const CROSSING_SWEEP = Math.PI / 2;
+
+/** Open ground demanded between the walkway's edge and any pillar's edge. */
+export const MIN_PILLAR_CLEARANCE = 0.5;
+
+/**
+ * Rotational bias applied to the crossing's start bearing. Zero, and that is a
+ * result rather than a default: starting exactly on a compass point is
+ * provably the best available. The crossing passes each of two pillars'
+ * bearings exactly once, and on the compass it does so at its two ENDPOINTS,
+ * where the radius is furthest from the pillar circle (9 and 4 against 6.5, so
+ * 2.5 m each). Any bias drags one of those crossings inward: +8° took pillar
+ * T from 0.46 m to 0.09 m, and −8° did the same to pillar U. The 2.5 m is the
+ * whole budget, so clearance is bought from the walkway's width, not its
+ * bearing.
+ */
+export const CROSSING_END_INSET = 0;
 
 // ── The sun ─────────────────────────────────────────────────────────────────
 
@@ -281,14 +310,34 @@ export function buildSundialLayout(grid: MuseumGrid): SundialLayout | null {
     );
   }
 
-  // ── Where the crossing leaves the rim: the bearing of the north door, so the
-  // visitor arrives facing the one route in. Derived from the compiled door,
-  // never a hardcoded compass point.
+  // ── Where the crossing leaves the rim. Two constraints, and the first
+  // version of this honoured only one of them.
+  //
+  // It should start near the north door, so the visitor arrives facing the one
+  // route in — that part was right, and the door bearing is still where it
+  // starts from.
+  //
+  // But it also has to MISS the pillars, and that is not a free choice. The
+  // crossing crosses the pillar circle exactly once, at its midpoint, so the
+  // midpoint bearing is what decides whether the walk threads the gap or runs
+  // through a performer. Taking the door bearing literally put the midpoint
+  // 11° off due west and the walk went straight through pillar T, overlapping
+  // it by 1.55 m — visible immediately from inside the room, and the reason
+  // this comment exists. The pillars sit on the compass points, so the gaps
+  // between them are the diagonals, and the midpoint must land on one.
   const northDoorX = (northDoor.min + northDoor.max) / 2;
-  const crossingStartTheta = Math.atan2(
-    northDoorX - centre.x,
-    interior.minZ - centre.z
-  );
+  const doorTheta = Math.atan2(northDoorX - centre.x, interior.minZ - centre.z);
+  // Midpoint = θ0 + 45°, and it must be a diagonal, so θ0 is a compass point.
+  // Pick the one nearest the door — then rotate the whole crossing a few
+  // degrees off it. Landing exactly on the compass points puts both ENDS
+  // radially in line with a pillar, and the spiral curves toward each one as
+  // it approaches: the tightest point is just before the end, not at it, and
+  // that left 0.46 m at pillar T. A small bias moves both ends off their
+  // pillar's bearing in the same rotational direction, so both gain, and the
+  // midpoint stays comfortably in the diagonal gap.
+  const quarter = Math.PI / 2;
+  const crossingStartTheta =
+    Math.round(doorTheta / quarter) * quarter - CROSSING_END_INSET;
   const crossingEndTheta = crossingStartTheta + CROSSING_SWEEP;
 
   // ── The four pillars, on the same circle as the stations. Bearings are the
@@ -307,16 +356,35 @@ export function buildSundialLayout(grid: MuseumGrid): SundialLayout | null {
     topY: SUN_PILLAR_TOP_Y,
   }));
 
-  // A pillar sitting on the crossing would put a performer in the visitor's
-  // path and break the only route in. Asserted rather than eyeballed.
+  // A pillar sitting on the crossing puts a performer in the visitor's path.
+  // This is measured as the real gap between two solids — the crossing's edge
+  // and the pillar's edge — by sampling the spiral's centreline. The earlier
+  // version asked `onCrossing(..., pillar.radius)`, which compares the pillar
+  // CENTRE against the crossing's centreline using the pillar's radius as the
+  // tolerance. That ignores the walkway's own width entirely, so it reported
+  // clear while the walk ran 1.55 m into pillar T.
+  const clearanceTo = (pillar: SundialPillar): number => {
+    let nearest = Number.POSITIVE_INFINITY;
+    const STEPS = 400;
+    for (let i = 0; i <= STEPS; i++) {
+      const t = i / STEPS;
+      const r =
+        CROSSING_OUTER_R - (CROSSING_OUTER_R - CROSSING_INNER_R) * t;
+      const theta = crossingStartTheta + CROSSING_SWEEP * t;
+      const x = centre.x + Math.sin(theta) * r;
+      const z = centre.z + Math.cos(theta) * r;
+      nearest = Math.min(
+        nearest,
+        Math.hypot(x - pillar.centre.x, z - pillar.centre.z)
+      );
+    }
+    return nearest - CROSSING_HALF_WIDTH - pillar.radius;
+  };
   for (const pillar of pillars) {
-    const dx = pillar.centre.x - centre.x;
-    const dz = pillar.centre.z - centre.z;
-    const theta = Math.atan2(dx, dz);
-    const r = Math.hypot(dx, dz);
-    if (onCrossing(r, theta, crossingStartTheta, pillar.radius)) {
+    const gap = clearanceTo(pillar);
+    if (gap < MIN_PILLAR_CLEARANCE) {
       throw new Error(
-        `Sundial layout: pillar ${pillar.id} stands on the spiral crossing — the only route to the centre is blocked`
+        `Sundial layout: only ${gap.toFixed(2)} m between the spiral crossing and ${pillar.id} — the walk must thread the gap between pillars, not graze one`
       );
     }
   }

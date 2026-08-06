@@ -242,7 +242,14 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 	}
 
 	isGrounded(): boolean {
-		// Grounded when at (or very near) standing height above the local floor
+		// A lift is ground that is moving. The Sundial's eye is literally a
+		// rising plinth under the visitor's feet, and Air's column is carrying
+		// them just as deliberately — in neither case are they falling. Without
+		// this the height test fails every frame of the ride and the avatar
+		// plays its falling animation the whole way up, which is what it did.
+		if (this.updraftSpeedAtPlayer() > 0) return true;
+		// Otherwise: grounded when at (or very near) standing height above the
+		// local floor.
 		const minY = this.floorYAt(this.position.x, this.position.z, this.feetY) + STANDING_Y;
 		return this.position.y <= minY + 0.01;
 	}

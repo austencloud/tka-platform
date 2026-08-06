@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import { buildVulcanCaveFloorPlan } from "$lib/features/museum/data/vulcan-cave-floor-plan";
 import {
   buildSundialLayout,
+  CROSSING_HALF_WIDTH,
+  MIN_PILLAR_CLEARANCE,
   EYE_RADIUS_M,
   SUN_MEDALLION_RADIUS_M,
   SUN_PILLAR_RADIUS_M,
@@ -99,6 +101,30 @@ describe("sundial layout", () => {
           pillar.topY
         )
       ).toBeCloseTo(-4.0, 5);
+    }
+  });
+
+  it("threads the crossing between the pillars, not through one", () => {
+    // Walk the spiral and check the walkway's EDGE against each pillar's EDGE.
+    // A pillar centre merely being off the centreline is not enough: the first
+    // build passed that check while the walk ran 1.55 m into pillar T, which
+    // was plainly visible from inside the room.
+    for (const pillar of layout.pillars) {
+      let nearest = Infinity;
+      for (let i = 0; i <= 400; i++) {
+        const t = i / 400;
+        const r = 9 - 5 * t;
+        const theta = layout.crossingStartTheta + (Math.PI / 2) * t;
+        const p = at(r, theta);
+        nearest = Math.min(
+          nearest,
+          Math.hypot(p.x - pillar.centre.x, p.z - pillar.centre.z)
+        );
+      }
+      const gap = nearest - CROSSING_HALF_WIDTH - pillar.radius;
+      expect(gap, `${pillar.id} clearance`).toBeGreaterThanOrEqual(
+        MIN_PILLAR_CLEARANCE
+      );
     }
   });
 
