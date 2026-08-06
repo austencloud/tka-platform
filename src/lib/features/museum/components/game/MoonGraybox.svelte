@@ -51,6 +51,8 @@
   import {
     buildMoonLayout,
     MOON_FLOOR_Y,
+    MOON_RIM_RIDGE_HALF_WIDTH_M,
+    MOON_RIM_RIDGE_TOP_Y,
     MOON_ROOM_ID,
     type MoonLayout,
   } from "../../data/moon-layout";
@@ -95,12 +97,6 @@
    *  shade down from the chamber floor rather than a different rock. */
   const OUTER_REGOLITH = "#c6c1b8";
   const OUTER_ROCK = "#b0aba2";
-
-  /** How high the crater rim stands. Below eye height on purpose — it is the
-   *  lip of the crater you are standing in, not a wall. Standing on the plain
-   *  you see straight over it to the mare running out to the horizon, which is
-   *  the whole reason this room is above ground. */
-  const RIM_HEIGHT = 1.05;
 
   /**
    * The Moon outside the crater. There is no atmosphere to fade a horizon into,
@@ -435,35 +431,6 @@
     return { craters, boulders, hills };
   }
 
-  /**
-   * The crater rim, minus a gap at each real door approach. Three.js cylinder
-   * theta shares this room's bearing convention — `x = r·sin θ, z = r·cos θ` —
-   * so a bearing goes straight into `thetaStart`.
-   */
-  interface Arc {
-    id: string;
-    thetaStart: number;
-    thetaLength: number;
-  }
-
-  function rimArcs(gaps: { centre: number; half: number }[]): Arc[] {
-    const norm = (a: number) => ((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-    const sorted = gaps
-      .map((g) => ({ from: norm(g.centre - g.half), to: norm(g.centre + g.half) }))
-      .sort((a, b) => a.from - b.from);
-    const arcs: Arc[] = [];
-    for (let i = 0; i < sorted.length; i++) {
-      const start = sorted[i]!.to;
-      const end = sorted[(i + 1) % sorted.length]!.from;
-      let length = end - start;
-      if (length <= 0) length += Math.PI * 2;
-      if (length > 0.02) {
-        arcs.push({ id: `moon-rim-${i}`, thetaStart: start, thetaLength: length });
-      }
-    }
-    return arcs;
-  }
-
   interface Scene {
     plain: ShapeGeometry;
     plinth: CylinderGeometry;
@@ -471,7 +438,8 @@
     mound: CylinderGeometry;
     sky: SphereGeometry;
     boxes: Box[];
-    arcs: Arc[];
+    /** The crater lip, drawn to match `elevationAt`'s ridge exactly. */
+    rimRidge: TorusGeometry;
   }
 
   function buildScene(l: MoonLayout): Scene {
@@ -504,15 +472,6 @@
       ),
     ];
 
-    // The rim gaps are the door band's own angular half-width at the rim
-    // radius, not a hand-picked constant — so the opening in the rock is
-    // exactly as wide as the floor that runs through it.
-    const half = Math.atan2((band.maxZ - band.minZ) / 2, l.chamberRadius);
-    const arcs = rimArcs([
-      { centre: -Math.PI / 2, half },
-      { centre: Math.PI / 2, half },
-    ]);
-
     return {
       plain: plainGeometry(l),
       // The mare. A ring, not a disc: it starts under the crater floor's own
@@ -530,7 +489,20 @@
       // wanted lip height into a scale factor.
       farCraterRim: new TorusGeometry(1, 0.22, 6, 40),
       hill: new SphereGeometry(1, 24, 12),
-      far: farField(l.chamberRadius),
+      // Everything in the far field starts OUTSIDE the walkable plain. It has
+      // no collision, so a boulder inside the disc is a boulder the visitor
+      // walks through.
+      far: farField(l.walkRadius + 6),
+      // The lip, as geometry: a torus whose tube is the ridge's own half-width,
+      // squashed to the ridge's own height. Half of it is under the mare, so
+      // what shows is the top of a swell — the same shape the character
+      // controller walks over.
+      rimRidge: new TorusGeometry(
+        l.chamberRadius,
+        MOON_RIM_RIDGE_HALF_WIDTH_M,
+        8,
+        128
+      ),
       plinth: new CylinderGeometry(l.arrivalRadius, l.arrivalRadius, 1, 48),
       shaft: new CylinderGeometry(
         l.arrivalHoleRadius,
@@ -550,7 +522,6 @@
       // through the horizon.
       sky: new SphereGeometry(SKY_RADIUS, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2),
       boxes,
-      arcs,
     };
   }
 
@@ -565,6 +536,7 @@
       current.outerPlain.dispose();
       current.farCraterRim.dispose();
       current.hill.dispose();
+      current.rimRidge.dispose();
       current.plinth.dispose();
       current.shaft.dispose();
       current.mound.dispose();
@@ -679,32 +651,21 @@
       />
     {/each}
 
-    <!-- The crater rim: the horizon is rock, and above it there is only sky.
-         It CASTS, unlike the Sun chamber's wall — there the light came from
-         above through a collapsed roof, so a casting wall put the whole room in
-         shadow. Here the key is low and outside, and the rim's shadow reaching
-         in across the dust is most of what says "no atmosphere". -->
-    {#each scene.arcs as arc (arc.id)}
-      <T.Mesh
-        material={materials.rim}
-        position={[layout.centre.x, RIM_HEIGHT / 2, layout.centre.z]}
-        castShadow
-        receiveShadow
-      >
-        <T.CylinderGeometry
-          args={[
-            layout.chamberRadius,
-            layout.chamberRadius,
-            RIM_HEIGHT,
-            96,
-            1,
-            true,
-            arc.thetaStart,
-            arc.thetaLength,
-          ]}
-        />
-      </T.Mesh>
-    {/each}
+    <!-- The crater lip. It is GROUND, not wall: elevationAt raises the same
+         ridge under the visitor, topping out below the physics provider's
+         step-up, so walking out of the crater is a step up and a step down.
+         The 2.4 m casting wall it replaces is what made this room a room.
+         It still casts — the key is low and outside, and the lip's shadow
+         reaching in across the dust is most of what says 'no atmosphere'. -->
+    <T.Mesh
+      geometry={scene.rimRidge}
+      material={materials.rim}
+      position={[layout.centre.x, MOON_FLOOR_Y, layout.centre.z]}
+      rotation={[-Math.PI / 2, 0, 0]}
+      scale={[1, 1, MOON_RIM_RIDGE_TOP_Y / MOON_RIM_RIDGE_HALF_WIDTH_M]}
+      castShadow
+      receiveShadow
+    />
 
     <!-- The sky. Mounted only while the visitor is standing in this room, so a
          48 m dome and a 75 m starfield can never swallow the rooms next door.

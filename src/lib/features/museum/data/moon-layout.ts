@@ -68,6 +68,27 @@ export const MOON_ROOM_ID = "cave-moon";
 
 /** The plain is ⌀20 — smaller than the Sun's ⌀24, and deliberately emptier. */
 export const MOON_CHAMBER_RADIUS_M = 10;
+/**
+ * The crater lip, and the one number that decides whether this room is a
+ * chamber or a place.
+ *
+ * The rim used to be a 2.4 m wall at the chamber radius and the plain stopped
+ * dead at it. It is now a RIDGE: `elevationAt` raises the ground over a 3 m
+ * band centred on the chamber radius, and the ridge tops out at 0.45 m — under
+ * the physics provider's 0.6 m step-up, so the visitor walks over it instead of
+ * being stopped by it. Raise it past 0.6 and the Moon silently becomes a walled
+ * room again.
+ */
+export const MOON_RIM_RIDGE_TOP_Y = 0.45;
+export const MOON_RIM_RIDGE_HALF_WIDTH_M = 1.5;
+
+/**
+ * Clearance kept between the walkable plain and the bay's own wall, so the
+ * invisible boundary is never something the visitor walks their face into
+ * while the mare visibly continues past it.
+ */
+const WALK_MARGIN_M = 2;
+
 /** The mirrored stations stand on this circle. */
 export const MOON_STATION_RADIUS_M = 6;
 /** A station mound is low: the Moon has no pillars, because nothing rises here. */
@@ -93,12 +114,21 @@ export const MOON_SKY_Y = 22.0;
 export const MOON_CORRIDOR_CEILING_Y = 2.6;
 
 /**
- * Museum gravity is scaled by this inside the chamber. The Moon's real figure
- * is 0.165 g, which in a room this size makes a single step take long enough to
- * feel broken rather than light. 0.32 keeps the arc obviously lunar while a
- * stride still lands when the visitor expects it to.
+ * Museum gravity is scaled by this on the regolith.
+ *
+ * Do the arithmetic before touching it, because the number is deceptive: the
+ * museum runs 2.5x the camera package's own gravity (9.81), so 24.5 m/s². The
+ * jump velocity is 5.0. Apex is v²/2g — 0.51 m in the museum, 1.27 m in a
+ * normal scene.
+ *
+ * This was 0.32, which is 7.85 m/s² and a 1.59 m apex: a slightly better hop,
+ * arrived at by comparing against museum gravity rather than against a normal
+ * jump. 0.18 gives 4.41 m/s², a 2.8 m apex and about 2.3 s of hang — five and a
+ * half times the museum's own jump, which is what Austen asked for when he
+ * asked to bounce around. The Moon's real 0.165 g would be 4.04; this is
+ * deliberately close to it now, where 0.32 was not.
  */
-export const MOON_GRAVITY_SCALE = 0.32;
+export const MOON_GRAVITY_SCALE = 0.18;
 
 /**
  * The stations, and the one place their count is decided.
@@ -135,6 +165,11 @@ export interface MoonLayout {
   interior: WorldRect;
   centre: Point2;
   chamberRadius: number;
+  /**
+   * How far from the centre the visitor can actually walk. Much larger than
+   * `chamberRadius`: the crater is the exhibit, this is the Moon around it.
+   */
+  walkRadius: number;
 
   /** Where the Sun's lift delivers, and the disc of Sun-stone it delivers onto. */
   arrival: Point2;
@@ -233,6 +268,16 @@ export function buildMoonLayout(grid: MuseumGrid): MoonLayout | null {
   };
 
   const chamberRadius = MOON_CHAMBER_RADIUS_M;
+  // The largest disc that fits the bay, less a margin off the wall. The bay
+  // wall is invisible here (the room suppresses tile geometry), so the disc is
+  // what the visitor feels; a rectangle would have corners they could feel.
+  const walkRadius = Math.max(
+    chamberRadius,
+    Math.min(
+      (interior.maxX - interior.minX) / 2,
+      (interior.maxZ - interior.minZ) / 2
+    ) - WALK_MARGIN_M
+  );
   if (
     centre.x - chamberRadius < interior.minX - 0.01 ||
     centre.x + chamberRadius > interior.maxX + 0.01 ||
@@ -332,12 +377,27 @@ export function buildMoonLayout(grid: MuseumGrid): MoonLayout | null {
   function blockedAt(x: number, z: number): boolean {
     // The plain is round; the corners of the rectangular bay are rock. The
     // doors are the exception — their approaches cross that band.
-    if (polarR(x, z) <= chamberRadius) return false;
+    if (polarR(x, z) <= walkRadius) return false;
     return !inRectClosed(
       { minX: interior.minX, maxX: interior.maxX, ...doorBand },
       x,
       z
     );
+  }
+
+  /**
+   * The crater lip as ground rather than as wall — a smooth ridge over a band
+   * centred on the chamber radius, so walking out of the crater is a step up
+   * and a step down instead of a stop. Zero everywhere else, which is why the
+   * plain either side of it stays exactly flat.
+   */
+  function rimRidgeY(x: number, z: number): number {
+    const d = Math.abs(polarR(x, z) - chamberRadius);
+    if (d >= MOON_RIM_RIDGE_HALF_WIDTH_M) return MOON_FLOOR_Y;
+    const t = 1 - d / MOON_RIM_RIDGE_HALF_WIDTH_M;
+    // Smoothstep, so the crest has no crease for the character controller to
+    // catch on.
+    return MOON_FLOOR_Y + MOON_RIM_RIDGE_TOP_Y * t * t * (3 - 2 * t);
   }
 
   function elevationAt(x: number, z: number, fromY?: number): number {
@@ -347,7 +407,7 @@ export function buildMoonLayout(grid: MuseumGrid): MoonLayout | null {
         if (fromY === undefined || fromY >= mound.topY - 0.6) return mound.topY;
       }
     }
-    return MOON_FLOOR_Y;
+    return rimRidgeY(x, z);
   }
 
   function isLowGravityAt(x: number, z: number): boolean {
@@ -361,6 +421,7 @@ export function buildMoonLayout(grid: MuseumGrid): MoonLayout | null {
     interior,
     centre,
     chamberRadius,
+    walkRadius,
     arrival,
     arrivalRadius: MOON_ARRIVAL_RADIUS_M,
     arrivalHoleRadius: MOON_ARRIVAL_HOLE_RADIUS_M,

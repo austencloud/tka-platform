@@ -5,6 +5,8 @@ import {
   createMoonTerrain,
   MOON_ARRIVAL_HOLE_RADIUS_M,
   MOON_CHAMBER_RADIUS_M,
+  MOON_RIM_RIDGE_HALF_WIDTH_M,
+  MOON_RIM_RIDGE_TOP_Y,
   MOON_STATION_RADIUS_M,
   MOON_STATIONS,
   type MoonLayout,
@@ -107,6 +109,50 @@ describe("moon layout", () => {
       true
     );
     expect(l.isLowGravityAt(l.probes.centre.x, l.probes.centre.z)).toBe(true);
+  });
+
+  it("gives the visitor a plain to cross, not a chamber to stand in", () => {
+    const l = required(layout);
+    // The room exists to be walked on. 40 m is the floor below which the mare
+    // stops being somewhere you go and becomes something you look at.
+    expect(l.walkRadius).toBeGreaterThan(40);
+    for (let i = 0; i < 48; i++) {
+      const theta = (i / 48) * Math.PI * 2;
+      const r = l.walkRadius - 1;
+      const x = l.centre.x + Math.sin(theta) * r;
+      const z = l.centre.z + Math.cos(theta) * r;
+      expect(l.blockedAt(x, z), `bearing ${i}`).toBe(false);
+      // And it is Moon gravity the whole way out, not just inside the crater.
+      expect(l.isLowGravityAt(x, z)).toBe(true);
+    }
+    // The bay wall still stops you somewhere; the plain is not infinite.
+    expect(l.blockedAt(l.centre.x + l.walkRadius + 3, l.centre.z)).toBe(true);
+  });
+
+  it("makes the crater lip ground you step over, never a wall", () => {
+    const l = required(layout);
+    const terrain = createMoonTerrain(plan.grid)!;
+    const crest = terrain.elevationAt(l.centre.x + l.chamberRadius, l.centre.z);
+    expect(crest).toBeCloseTo(MOON_RIM_RIDGE_TOP_Y, 6);
+    // The physics provider allows a 0.6 m step up. A lip past that is a wall
+    // wearing a ridge's clothes, and the plain outside becomes unreachable.
+    expect(crest).toBeLessThan(0.6);
+    // Rises monotonically to the crest, and is flat again outside the band.
+    let previous = 0;
+    for (let d = MOON_RIM_RIDGE_HALF_WIDTH_M; d >= 0; d -= 0.1) {
+      const y = terrain.elevationAt(
+        l.centre.x + l.chamberRadius - d,
+        l.centre.z
+      );
+      expect(y).toBeGreaterThanOrEqual(previous - 1e-9);
+      previous = y;
+    }
+    expect(
+      terrain.elevationAt(
+        l.centre.x + l.chamberRadius + MOON_RIM_RIDGE_HALF_WIDTH_M + 0.5,
+        l.centre.z
+      )
+    ).toBe(0);
   });
 
   it("stands the performers on the mounds the graybox draws", () => {

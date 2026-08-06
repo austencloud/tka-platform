@@ -527,8 +527,17 @@ const sunPerformers = SUN_STATIONS.map((station) => ({
 // only the band the two door approaches cross; with the doors at opposite
 // corners that band would span nearly the whole bay and the "round plain" would
 // be a rectangle with rounded corners drawn on it.
-const MOON_MIN_INTERIOR_WIDTH = 30;
-const MOON_MIN_INTERIOR_HEIGHT = 30;
+// 140 -> a 105 m interior (`ceil(140 * 1.5) * 0.5`, the same conversion the Sun
+// comment above documents). It was 30 (22.5 m), a bay that held the ⌀20 crater
+// and nothing else — so the mare the Moon graybox draws out to 420 m was
+// scenery you could look at and not walk on. Austen (2026-08-05): *"allow me to
+// walk on the moon and bounce around."* The room now carries a ~51 m walkable
+// plain around the crater; the rest of the mare stays scenery, and the bay wall
+// is the horizon you never reach rather than a fence at arm's length. The room
+// draws no tile geometry (`suppressTileGeometry`), so the bigger shell adds
+// nothing to look at — only ground to cross.
+const MOON_MIN_INTERIOR_WIDTH = 140;
+const MOON_MIN_INTERIOR_HEIGHT = 140;
 
 const moonWalls = {
   north: EMPTY_WALL,
