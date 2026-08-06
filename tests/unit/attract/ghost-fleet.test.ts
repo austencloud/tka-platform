@@ -62,8 +62,14 @@ interface FleetRow {
   informedSelections: number;
   boostedSelections: number;
   reducedSelections: number;
+  exploratorySelections: number;
   lowValueEpisodes: number;
   highValueEpisodes: number;
+  predictionEpisodeMismatch: number;
+  accuratePredictions: number;
+  confidentMisses: number;
+  initialPredictionError: number;
+  recentPredictionError: number;
 }
 
 async function flyFleet(): Promise<FleetRow[]> {
@@ -142,6 +148,8 @@ async function flyFleet(): Promise<FleetRow[]> {
       ...session.mind.memory.activities.completed.values(),
       ...session.mind.memory.activities.abandoned.values(),
     ].reduce((total, count) => total + count, 0);
+    const experience = session.mind.memory.experience;
+    const recentPredictionEpisodes = experience.episodes.slice(-30);
 
     rows.push({
       seed,
@@ -162,12 +170,25 @@ async function flyFleet(): Promise<FleetRow[]> {
       deliberateSidebarReads: session.mind.memory.navigation.deliberateReads,
       recognizedSidebarReads: session.mind.memory.navigation.recognizedReads,
       activityEpisodeMismatch:
-        endedActivities - session.mind.memory.experience.recorded,
-      informedSelections: session.mind.memory.experience.informedSelections,
-      boostedSelections: session.mind.memory.experience.boostedSelections,
-      reducedSelections: session.mind.memory.experience.reducedSelections,
-      lowValueEpisodes: session.mind.memory.experience.lowValueEpisodes,
-      highValueEpisodes: session.mind.memory.experience.highValueEpisodes,
+        endedActivities - experience.recorded,
+      informedSelections: experience.informedSelections,
+      boostedSelections: experience.boostedSelections,
+      reducedSelections: experience.reducedSelections,
+      exploratorySelections: experience.exploratorySelections,
+      lowValueEpisodes: experience.lowValueEpisodes,
+      highValueEpisodes: experience.highValueEpisodes,
+      predictionEpisodeMismatch:
+        experience.recorded - experience.predictionsRecorded,
+      accuratePredictions: experience.accuratePredictions,
+      confidentMisses: experience.confidentMisses,
+      initialPredictionError:
+        experience.initialPredictionErrorTotal /
+        experience.initialPredictionCount,
+      recentPredictionError:
+        recentPredictionEpisodes.reduce(
+          (total, episode) => total + episode.predictionError,
+          0
+        ) / recentPredictionEpisodes.length,
     });
   }
   return rows;
@@ -275,6 +296,26 @@ function fleetReport(rows: FleetRow[]): string {
       "low-value activity episodes",
       rows.map((r) => r.lowValueEpisodes)
     ),
+    dist(
+      "uncertain activities deliberately explored",
+      rows.map((r) => r.exploratorySelections)
+    ),
+    dist(
+      "accurate activity predictions",
+      rows.map((r) => r.accuratePredictions)
+    ),
+    dist(
+      "confident prediction misses",
+      rows.map((r) => r.confidentMisses)
+    ),
+    dist(
+      "initial prediction error",
+      rows.map((r) => r.initialPredictionError)
+    ),
+    dist(
+      "recent prediction error",
+      rows.map((r) => r.recentPredictionError)
+    ),
     ``,
     `## Intentions — how often, and in how many sessions`,
     ``,
@@ -373,6 +414,12 @@ describe("ghost fleet", () => {
         "sessions that ended an activity without recording its outcome"
       ).toEqual([]);
       expect(
+        rows
+          .filter((r) => r.predictionEpisodeMismatch !== 0)
+          .map((r) => r.seed),
+        "activity episodes without a prediction evaluation"
+      ).toEqual([]);
+      expect(
         rows.filter((r) => r.informedSelections === 0).map((r) => r.seed),
         "sessions where experience never changed activity selection"
       ).toEqual([]);
@@ -384,6 +431,18 @@ describe("ghost fleet", () => {
         rows.reduce((total, row) => total + row.reducedSelections, 0),
         "fleet choices tempered by disappointing outcomes"
       ).toBeGreaterThan(0);
+      expect(
+        rows.filter((r) => r.exploratorySelections === 0).map((r) => r.seed),
+        "sessions that never tested an uncertain prediction"
+      ).toEqual([]);
+      expect(
+        rows.filter((r) => r.accuratePredictions === 0).map((r) => r.seed),
+        "sessions where the predictor never became accurate"
+      ).toEqual([]);
+      expect(
+        mean(rows.map((r) => r.recentPredictionError)),
+        "recent forecasts should beat the cold-start calibration window"
+      ).toBeLessThan(mean(rows.map((r) => r.initialPredictionError)));
       expect(
         rows
           .filter((r) => r.lowValueEpisodes === 0 || r.highValueEpisodes === 0)

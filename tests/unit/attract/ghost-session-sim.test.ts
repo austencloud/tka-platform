@@ -392,6 +392,15 @@ describe("ghost session simulation", () => {
     );
     const navigation = session.mind.memory.navigation;
     const experience = session.mind.memory.experience;
+    const recentPredictionEpisodes = experience.episodes.slice(-30);
+    const initialPredictionError =
+      experience.initialPredictionErrorTotal /
+      experience.initialPredictionCount;
+    const recentPredictionError =
+      recentPredictionEpisodes.reduce(
+        (total, episode) => total + episode.predictionError,
+        0
+      ) / recentPredictionEpisodes.length;
     const endedActivities = [
       ...session.mind.memory.activities.completed.values(),
       ...session.mind.memory.activities.abandoned.values(),
@@ -418,20 +427,40 @@ describe("ghost session simulation", () => {
       session.mind.memory.performed.get("browse-gallery") ?? 0
     ).toBeGreaterThan(8);
     expect(experience.recorded).toBe(endedActivities);
+    expect(experience.predictionsRecorded).toBe(experience.recorded);
+    expect(experience.initialPredictionCount).toBe(30);
     expect(experience.informedSelections).toBeGreaterThan(0);
     expect(experience.boostedSelections).toBeGreaterThan(0);
     expect(experience.reducedSelections).toBeGreaterThan(0);
+    expect(experience.exploratorySelections).toBeGreaterThan(0);
+    expect(experience.accuratePredictions).toBeGreaterThan(0);
     expect(experience.highValueEpisodes).toBeGreaterThan(0);
     expect(experience.lowValueEpisodes).toBeGreaterThan(0);
+    expect(recentPredictionError).toBeLessThan(initialPredictionError);
     expect(
       experience.episodes.every(
-        ({ value, novelty, achievement }) =>
+        ({
+          value,
+          novelty,
+          achievement,
+          prediction,
+          predictionError,
+          predictionAccuracy,
+        }) =>
           value >= 0 &&
           value <= 1 &&
           novelty >= 0 &&
           novelty <= 1 &&
           achievement >= 0 &&
-          achievement <= 1
+          achievement <= 1 &&
+          prediction.value >= 0 &&
+          prediction.value <= 1 &&
+          prediction.uncertainty >= 0 &&
+          prediction.uncertainty <= 1 &&
+          predictionError >= 0 &&
+          predictionError <= 1 &&
+          predictionAccuracy >= 0 &&
+          predictionAccuracy <= 1
       )
     ).toBe(true);
 
@@ -470,7 +499,23 @@ describe("ghost session simulation", () => {
                 ),
                 lowValueEpisodes: experience.lowValueEpisodes,
                 highValueEpisodes: experience.highValueEpisodes,
-                lastExpectation: experience.lastExpectation,
+                predictionsRecorded: experience.predictionsRecorded,
+                exploratorySelections: experience.exploratorySelections,
+                accuratePredictions: experience.accuratePredictions,
+                confidentMisses: experience.confidentMisses,
+                averagePredictionError: Number(
+                  (
+                    experience.predictionErrorTotal /
+                    experience.predictionsRecorded
+                  ).toFixed(3)
+                ),
+                initialPredictionError: Number(
+                  initialPredictionError.toFixed(3)
+                ),
+                recentPredictionError: Number(
+                  recentPredictionError.toFixed(3)
+                ),
+                lastPrediction: experience.lastPrediction,
               },
               activitiesCompleted: Object.fromEntries(
                 session.mind.memory.activities.completed
