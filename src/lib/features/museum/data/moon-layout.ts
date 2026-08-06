@@ -49,6 +49,7 @@ import {
   TILE_METRES,
   WALL_THICKNESS,
   WATERLINE_Y,
+  bandRects,
   doorSpan,
   inRectClosed,
   spansExcluding,
@@ -60,6 +61,9 @@ import {
 } from "./drowned-gallery-terrain";
 
 const TILE = TILE_METRES;
+
+/** Just the part of a wing this module needs: where it sits on the grid. */
+type WingBoundsLike = { bounds: { x: number; y: number; width: number; height: number } };
 const HALF = TILE / 2;
 
 export const MOON_ROOM_ID = "cave-moon";
@@ -189,6 +193,20 @@ export interface MoonLayout {
 
   wallRects: WallRect[];
   ceilingRects: CeilingRect[];
+  /**
+   * The hall in from the Sun, and the hall out to Egypt.
+   *
+   * Both the Sun and the Moon suppress their tile geometry, so the tiles the
+   * grid routes between them draw nothing on their own — that is the contract
+   * every other chamber in this wing already honours by owning its inbound
+   * corridor (drowned gallery, fire, earth, air, sun). The Moon never did, so
+   * the Sun-to-Moon hall was walkable, lit by nothing, with no floor under it
+   * and no walls beside it: the visitor stepped out of the Sundial into a void
+   * and kept walking. Austen: *"the hallways between rooms are still not even
+   * loading at all and are floating in the abyss."*
+   */
+  corridorFloors: WorldRect[];
+  corridorWalls: WorldRect[];
   bayBounds: WorldRect;
 
   blockedAt(x: number, z: number): boolean;
@@ -369,6 +387,52 @@ export function buildMoonLayout(grid: MuseumGrid): MoonLayout | null {
   const arrivalR = (x: number, z: number) =>
     Math.hypot(x - arrival.x, z - arrival.z);
 
+  // ── The halls either side. Read off the grid's OWN corridor tiles, so what is
+  // drawn and what the router carved can never disagree.
+  const corridorBand = (other: WingBoundsLike | null): WorldRect[] => {
+    if (!other) return [];
+    const o = other.bounds;
+    const m = wing.bounds;
+    return bandRects(
+      grid,
+      Math.min(o.x, m.x) - 2,
+      Math.max(o.x + o.width, m.x + m.width) + 2,
+      Math.min(o.y, m.y) - 2,
+      Math.max(o.y + o.height, m.y + m.height) + 2,
+      (t) => t === "corridor" || t === "door"
+    );
+  };
+  const corridorWallBand = (other: WingBoundsLike | null): WorldRect[] => {
+    if (!other) return [];
+    const o = other.bounds;
+    const m = wing.bounds;
+    return bandRects(
+      grid,
+      Math.min(o.x, m.x) - 2,
+      Math.max(o.x + o.width, m.x + m.width) + 2,
+      Math.min(o.y, m.y) - 2,
+      Math.max(o.y + o.height, m.y + m.height) + 2,
+      (t) => t === "wall"
+    );
+  };
+  const sunWing = grid.wings.find((w) => w.id === "cave-sun") ?? null;
+  // Only the tiles OUTSIDE the two rooms are the hall; inside, each room draws
+  // its own floor.
+  const outsideRooms = (rects: WorldRect[]): WorldRect[] => {
+    const inside = (rect: WorldRect, bounds: WorldRect) =>
+      rect.minX >= bounds.minX - 0.01 &&
+      rect.maxX <= bounds.maxX + 0.01 &&
+      rect.minZ >= bounds.minZ - 0.01 &&
+      rect.maxZ <= bounds.maxZ + 0.01;
+    const sunShell = sunWing ? outerWorldRect(sunWing.bounds) : null;
+    return rects.filter(
+      (rect) =>
+        !inside(rect, shell) && !(sunShell && inside(rect, sunShell))
+    );
+  };
+  const corridorFloors = outsideRooms(corridorBand(sunWing));
+  const corridorWalls = outsideRooms(corridorWallBand(sunWing));
+
   const doorBand = {
     minZ: Math.min(westDoor.min, eastDoor.min) - 0.5,
     maxZ: Math.max(westDoor.max, eastDoor.max) + 0.5,
@@ -434,6 +498,8 @@ export function buildMoonLayout(grid: MuseumGrid): MoonLayout | null {
     doorBand,
     wallRects,
     ceilingRects,
+    corridorFloors,
+    corridorWalls,
     bayBounds: shell,
     blockedAt,
     elevationAt,

@@ -470,13 +470,36 @@ export function bucketMuseumTilesByRoom(grid: MuseumGrid): PerRoomBuckets {
     for (let j = i + 1; j < suppressedWings.length; j++) {
       const a = suppressedWings[i].bounds;
       const b = suppressedWings[j].bounds;
-      suppressedSpans.push({
+      const span = {
         x0: Math.min(a.x, b.x),
         y0: Math.min(a.y, b.y),
         x1: Math.max(a.x + a.width, b.x + b.width),
         y1: Math.max(a.y + a.height, b.y + b.height),
         wingId: suppressedWings[i].id,
+      };
+      // ONLY for wings that are actually neighbours. The union box of a
+      // non-adjacent pair is a blanket: with eight suppressed cave rooms spread
+      // across the museum, twenty-eight pairwise boxes covered nearly the whole
+      // map, so every corridor in the building — including ones nowhere near a
+      // cave — was routed into a bucket that draws nothing, and the visitor
+      // walked hallways with no floor, no walls and no ceiling over the void.
+      //
+      // Adjacency test: no OTHER wing sits inside the box. Two rooms with a
+      // corridor between them enclose nothing else; two rooms at opposite ends
+      // of the museum enclose half of it.
+      const enclosesAnother = grid.wings.some((other) => {
+        if (other.id === suppressedWings[i].id || other.id === suppressedWings[j].id) {
+          return false;
+        }
+        const o = other.bounds;
+        return (
+          o.x < span.x1 &&
+          o.x + o.width > span.x0 &&
+          o.y < span.y1 &&
+          o.y + o.height > span.y0
+        );
       });
+      if (!enclosesAnother) suppressedSpans.push(span);
     }
   }
   function suppressedSpanFor(key: string): string | undefined {

@@ -17,6 +17,7 @@ import {
   attachMuseumWalkTerrain,
 } from "../../../src/lib/features/museum/data/museum-walk";
 import { isWalkable } from "../../../src/lib/features/museum/domain/tile-registry";
+import { bucketMuseumTilesByRoom } from "../../../src/lib/features/museum/services/museum-geometry-builder";
 import { tileKey } from "../../../src/lib/features/museum/domain/museum-grid-types";
 import type { MuseumGrid } from "../../../src/lib/features/museum/domain/museum-grid-types";
 import { buildMoonLayout } from "../../../src/lib/features/museum/data/moon-layout";
@@ -148,6 +149,23 @@ describe("the museum as one walk", () => {
       // 20 tiles is 5 m² of floor actually stood on inside the room.
       expect(hit, `${wing.id} reachable tiles`).toBeGreaterThan(20);
     }
+  });
+
+  it("draws the hallways instead of leaving them as void", () => {
+    // Corridor tiles belong to no wing, so they go to the always-loaded corridor
+    // chunk — UNLESS a suppressed-wing span steals them, and a stolen tile draws
+    // nothing at all. Eight cave rooms suppress their tile geometry, and the
+    // pairwise union boxes of all eight blanketed the museum: every hallway in
+    // the building, cave or not, was routed into a bucket that renders nothing.
+    // The visitor walked hallways with no floor, no walls, no ceiling.
+    // Measured: 1906 corridor tiles reach the chunk now. Under the old spans
+    // 1518 of them — slightly more than half of everything outside a room —
+    // were stolen and drawn as nothing, leaving 1495. The threshold sits above
+    // that number on purpose, so a regression cannot squeak past it.
+    const buckets = bucketMuseumTilesByRoom(grid);
+    expect(buckets.corridorBucket.totalTiles).toBeGreaterThan(1800);
+    expect(buckets.corridorBucket.totalFloorInstances).toBeGreaterThan(1800);
+    expect(buckets.corridorBucket.totalWallInstances).toBeGreaterThan(600);
   });
 
   it("carries the cave's terrain, so the chambers behave as authored", () => {

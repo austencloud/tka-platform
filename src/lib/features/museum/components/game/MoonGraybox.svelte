@@ -50,6 +50,7 @@
   import type { MuseumGrid } from "../../domain/museum-grid-types";
   import {
     buildMoonLayout,
+    MOON_CORRIDOR_CEILING_Y,
     MOON_FLOOR_Y,
     MOON_RIM_RIDGE_HALF_WIDTH_M,
     MOON_RIM_RIDGE_TOP_Y,
@@ -448,6 +449,35 @@
     // everything the visitor can see to stand on, they can stand on.
     const band = l.doorBand;
     const boxes: Box[] = [
+      // The hall in from the Sun. Both rooms suppress their tile geometry, so
+      // these tiles draw nothing unless a module owns them — every other chamber
+      // in the wing owns its inbound corridor and the Moon did not, which is why
+      // the walk out of the Sundial crossed a lit void.
+      ...l.corridorFloors.map((rect, i) =>
+        slab(`moon-corridor-${i}`, rect, MOON_FLOOR_Y, "rim")
+      ),
+      ...l.corridorWalls.map((rect, i) => ({
+        id: `moon-corridor-wall-${i}`,
+        pos: [cx(rect), MOON_CORRIDOR_CEILING_Y / 2, cz(rect)] as [number, number, number],
+        size: [
+          Math.max(sx(rect), 0.01),
+          MOON_CORRIDOR_CEILING_Y,
+          Math.max(sz(rect), 0.01),
+        ] as [number, number, number],
+        material: "rim" as MaterialKey,
+      })),
+      // Its lid, so the hall reads as rock rather than as a trench under an
+      // open sky.
+      ...l.corridorFloors.map((rect, i) => ({
+        id: `moon-corridor-ceiling-${i}`,
+        pos: [cx(rect), MOON_CORRIDOR_CEILING_Y + SLAB_T / 2, cz(rect)] as [number, number, number],
+        size: [
+          Math.max(sx(rect), 0.01),
+          SLAB_T,
+          Math.max(sz(rect), 0.01),
+        ] as [number, number, number],
+        material: "rim" as MaterialKey,
+      })),
       slab(
         "moon-approach-west",
         {

@@ -31,9 +31,15 @@
   import MoonGraybox from "./MoonGraybox.svelte";
   import {
     buildMoonLayout,
+    MOON_FLOOR_Y,
     MOON_GRAVITY_SCALE,
     MOON_ROOM_ID,
   } from "../../data/moon-layout";
+  import {
+    buildSundialLayout,
+    EYE_RADIUS_M,
+    EYE_TOP_Y,
+  } from "../../data/sundial-layout";
   import TelekineticFormation3D from "./TelekineticFormation3D.svelte";
   import { Avatar3D } from "@austencloud/scene-3d";
   import MuseumMirror from "./MuseumMirror.svelte";
@@ -254,6 +260,7 @@
   // Graybox for the Moon. Same lifetime again.
   const hasMoon = grid.wings.some((wing) => wing.id === MOON_ROOM_ID);
   const moonLayout = hasMoon ? buildMoonLayout(grid) : null;
+  const sundialLayout = hasSundial ? buildSundialLayout(grid) : null;
 
   // ── Progressive mount: break heavy sub-components into stages so the
   // browser can paint between each batch. Without this, mounting all torches,
@@ -667,6 +674,51 @@
     }
   }
 
+  /**
+   * The Sun's eye, delivered.
+   *
+   * The eye is an updraft at the centre of the Sundial that carries the visitor
+   * up the chamber. It always stopped at the ceiling and left them pinned there
+   * — Austen: *"when it lifts me up it does not actually lift me through the
+   * ground of the moon ... it just smooshes me towards the ceiling."* The ride
+   * was the whole mechanism and it had no other end.
+   *
+   * It has one now: at the top of the column the visitor surfaces on the Moon's
+   * arrival plinth, which is the Sun's own stone carried up through the
+   * regolith, facing the plain with the three stations ahead of them. Both
+   * rooms already agreed about that shaft — the Moon's hole is sized off this
+   * eye — so nothing new is invented here, only the last metre of the journey.
+   */
+  function handleEyeLift(x: number, y: number, z: number): boolean {
+    if (!sundialLayout || !moonLayout) return false;
+    const dx = x - sundialLayout.centre.x;
+    const dz = z - sundialLayout.centre.z;
+    if (dx * dx + dz * dz > EYE_RADIUS_M * EYE_RADIUS_M) return false;
+    // A hair below the top, so the arrival fires while the column is still
+    // pushing rather than after it has given up and left the visitor hanging.
+    if (y < EYE_TOP_Y - 0.35) return false;
+
+    const arrival = moonLayout.arrival;
+    physicsProvider.teleport!({ x: arrival.x, y: MOON_FLOOR_Y, z: arrival.z });
+    syncPositionFromPhysics();
+    // Facing the chamber centre: the arrival sits west of it on purpose, so the
+    // stations are ahead of the visitor rather than behind them.
+    const yaw = Math.atan2(
+      moonLayout.centre.x - arrival.x,
+      moonLayout.centre.z - arrival.z
+    );
+    playerYaw = yaw;
+    targetPlayerYaw = yaw;
+    fpsInitialYaw = yaw;
+    fpsInitialPitch = 0;
+    fpsActive = false;
+    requestAnimationFrame(() => {
+      fpsActive = true;
+      flipState.progress = 1;
+    });
+    return true;
+  }
+
   /** Handle portal teleport — updates reactive state for yaw/pitch/fps reset */
   function handlePortalTeleport(playerX: number, playerZ: number): boolean {
     const hit = portalChecker.check(playerX, playerZ);
@@ -781,6 +833,18 @@
     if (fpsActive) {
       // Delegate to player controller for position sync, void recovery, portal check
       const fpsResult = playerCtrl.syncFpsPosition();
+      if (
+        handleEyeLift(
+          fpsResult.position.x,
+          fpsResult.position.y,
+          fpsResult.position.z
+        )
+      ) {
+        const corrected = physicsProvider.getPlayerPosition();
+        fpsResult.position.x = corrected.x;
+        fpsResult.position.y = corrected.y;
+        fpsResult.position.z = corrected.z;
+      }
       if (fpsResult.portalHit) {
         // Portal teleport needs to update reactive state
         if (handlePortalTeleport(fpsResult.position.x, fpsResult.position.z)) {
