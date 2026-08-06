@@ -28,10 +28,14 @@ export interface SimState {
   viewerOpen: boolean;
   propDrawerOpen: boolean;
   actionsPanelOpen: boolean;
+  /** An unsolicited overlay is up — a first-run prompt. Blocks everything. */
+  blockerUp: boolean;
   /** A step is selected and its editor is open. */
   stepEditorOpen: boolean;
   /** All vs Continuous. Continuous shows only what flows on from HERE. */
   continuousOnly: boolean;
+  /** Virtual-clock time at which the current playthrough finishes. */
+  playingUntil: number;
   /** Words are how a transform proves it changed something. */
   word: string;
   practiceOn: boolean;
@@ -73,6 +77,9 @@ export const SIM_MODULES = [
  * navigates by "what can I press here" can never spend time in generate.
  */
 function screenKinds(s: SimState): Record<string, number> {
+  // A blocker with a backdrop makes every other control fail the hit-test, so
+  // the world really is just the one button until it is dismissed.
+  if (s.blockerUp) return { dismiss: 1 };
   if (s.confirmUp) return { confirm: 1, dismiss: 0 };
   if (s.viewerOpen)
     return { stage: 1, play: 1, tempo: 3, effect: 16, "close-overlay": 1, viewer: 0 };
@@ -174,6 +181,8 @@ export interface SimApp {
   presses: PressEvent[];
   /** A module is running its own show — the ghost should stand back. */
   presenting: () => boolean;
+  /** Playback runs for the length of the sequence, then stops by itself. */
+  playing: () => boolean;
 }
 
 export function createSimApp(
@@ -191,7 +200,9 @@ export function createSimApp(
     actionsPanelOpen: false,
     continuousOnly: false,
     stepEditorOpen: false,
+    blockerUp: true,
     word: "",
+    playingUntil: 0,
     practiceOn: false,
     mirrorOn: false,
     confirmUp: false,
@@ -246,6 +257,19 @@ export function createSimApp(
         const pool = LABELS[kind] ?? [kind];
         html.push(el(kind, pool[i % pool.length]!, i));
       }
+    }
+
+    /*
+     * Something worth just watching — but ONLY on a screen that actually has a
+     * stage. `activeEffects` is global state, so an earlier version rendered
+     * this in the museum and in empty rooms too, where linger became the only
+     * satisfiable intention and won 78% of every decision in the session.
+     * In the real app data-ghost-linger lives on specific surfaces (the stage,
+     * MandalaPane); it does not follow the ghost around the building.
+     */
+    const hasStage = (screenKinds(state).stage ?? 0) > 0;
+    if (hasStage && (state.isPlaying || state.activeEffects.size > 0)) {
+      html.push(`<div data-ghost-linger data-ghost-label="the stage"></div>`);
     }
 
     document.body.innerHTML = html.join("");
@@ -306,6 +330,8 @@ export function createSimApp(
         break;
       case "play":
         state.isPlaying = !state.isPlaying;
+        // A sequence takes about a second a step and then stops on its own.
+        state.playingUntil = state.isPlaying ? now() + state.seqLen * 1000 : 0;
         break;
       case "effect":
         if (state.activeEffects.has(label)) state.activeEffects.delete(label);
@@ -317,6 +343,9 @@ export function createSimApp(
         break;
       case "step-edit":
         state.word = `${state.word}*`;
+        break;
+      case "dismiss":
+        state.blockerUp = false;
         break;
       case "option-filter":
         state.continuousOnly = !state.continuousOnly;
@@ -385,5 +414,6 @@ export function createSimApp(
     goTo,
     presses,
     presenting: () => now() < state.presentingUntil,
+    playing: () => state.isPlaying && now() < state.playingUntil,
   };
 }
