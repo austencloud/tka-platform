@@ -183,7 +183,7 @@
     </button>
   </div>
 
-  <form onsubmit={handleSubmit}>
+  <form data-save-shortcut-scope onsubmit={handleSubmit}>
     {#if error}
       <div class="error-message" role="alert" aria-live="assertive">
         <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
@@ -363,7 +363,12 @@
         <i class="fas fa-times" aria-hidden="true"></i>
         {t("form_cancel")}
       </button>
-      <button type="submit" class="save-button" disabled={isSaving}>
+      <button
+        data-save-shortcut
+        type="submit"
+        class="save-button"
+        disabled={isSaving}
+      >
         {#if isSaving}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
           {t("form_saving")}

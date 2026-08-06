@@ -116,6 +116,7 @@
       Replay
     </button>
     <button
+      data-save-shortcut={!shareTarget.isMobile ? "" : undefined}
       type="button"
       class="action-btn primary"
       onclick={onRedownload}

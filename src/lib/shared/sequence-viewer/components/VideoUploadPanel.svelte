@@ -259,6 +259,7 @@
         <span class="save-first-hint">Videos are attached to saved sequences. Save this one to your library, then you can upload a performance video.</span>
         <div class="save-first-actions">
           <button
+            data-save-shortcut
             type="button"
             class="save-first-btn"
             onclick={handleSaveFirst}

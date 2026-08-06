@@ -475,7 +475,7 @@
 									placeholder="Add context or notes before review..."
 									rows="3"
 								></textarea>
-								<button aria-label="Save review notes"
+								<button data-save-shortcut aria-label="Save review notes"
 									class="save-notes-btn"
 									onclick={saveNotes}
 									disabled={savingNotes || !notesInput.trim()}

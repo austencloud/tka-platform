@@ -245,6 +245,7 @@ Allows user to set name, visibility, tags, collections, and notes.
         Cancel
       </button>
       <button
+        data-save-shortcut
         type="button"
         class="button button-primary"
         onclick={handleSave}

@@ -354,6 +354,7 @@
         >
         <div class="state-actions">
           <button
+            data-save-shortcut
             type="button"
             class="primary-btn"
             onclick={handleSaveFirst}

@@ -367,7 +367,7 @@
       </div>
       <div class="modal-right-actions">
         <button class="secondary" onclick={cancelActForm} type="button">Cancel</button>
-        <button class="primary" onclick={saveActForm} disabled={!aTitle.trim()} type="button">
+        <button data-save-shortcut class="primary" onclick={saveActForm} disabled={!aTitle.trim()} type="button">
           {editingActId ? "Save Changes" : "Add Act"}
         </button>
       </div>

@@ -276,6 +276,7 @@
           {/if}
           <div class="confirm-actions">
             <button
+              data-save-shortcut
               type="button"
               class="btn btn-primary"
               onclick={saveFirst}

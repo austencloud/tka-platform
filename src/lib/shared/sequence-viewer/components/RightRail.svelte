@@ -1,12 +1,10 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import ViewerPopover from "$lib/shared/3d/components/controls/ViewerPopover.svelte";
   import ExportPopover from "./ExportPopover.svelte";
   import CameraPopover from "$lib/shared/3d/components/CameraPopover.svelte";
   import SceneSelectorPopover from "$lib/shared/3d/components/SceneSelectorPopover.svelte";
   import FormationPopover from "$lib/shared/3d/components/controls/FormationPopover.svelte";
-  import { createViewer3DKeyboardHandler } from "$lib/shared/3d/keyboard/viewer-3d-keyboard-handler";
   import DevToolsPopover from "$lib/shared/3d/components/controls/DevToolsPopover.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import SaveSceneModal from "$lib/features/scene-3d-collection/components/SaveSceneModal.svelte";
@@ -15,6 +13,7 @@
     type ViewerActionSink,
     type ViewerControlSink,
   } from "../domain/viewer-control-analytics";
+  import EditHistoryShortcutBridge from "$lib/shared/keyboard/components/EditHistoryShortcutBridge.svelte";
 
   const viewer = getViewer3DContext();
 
@@ -41,13 +40,6 @@
     );
   }
 
-  onMount(() => {
-    const cleanupKeyboard = createViewer3DKeyboardHandler({
-      undo: () => viewer.undo(),
-      redo: () => viewer.redo(),
-    });
-    return () => cleanupKeyboard();
-  });
 </script>
 
 <div
@@ -58,6 +50,14 @@
   aria-label="Viewer controls"
 >
   {#if renderMode === "3d"}
+    <EditHistoryShortcutBridge
+      onUndo={() => viewer.undo()}
+      onRedo={() => viewer.redo()}
+      canUndo={viewer.canUndo}
+      canRedo={viewer.canRedo}
+      undoLabel="3D scene change"
+      redoLabel="3D scene change"
+    />
     <ViewerPopover
       id="formation"
       title="Formation"
@@ -91,6 +91,7 @@
     </ViewerPopover>
 
     <button
+      data-save-shortcut
       type="button"
       class="rail-chip"
       aria-label="Save scene"

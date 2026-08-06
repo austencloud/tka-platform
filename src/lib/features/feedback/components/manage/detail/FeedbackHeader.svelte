@@ -83,6 +83,7 @@ Claim this item by updating its status to "in-progress" in Firebase (collection:
         <i class="fas fa-undo" aria-hidden="true"></i>
       </button>
       <button
+        data-save-shortcut
         type="button"
         class="header-btn save-btn"
         onclick={() => detailState.saveChanges()}

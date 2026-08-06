@@ -307,7 +307,7 @@
       </div>
       <div class="modal-right-actions">
         <button class="secondary" onclick={cancelWorkshopForm} type="button">Cancel</button>
-        <button class="primary" onclick={saveWorkshopForm} disabled={!wTitle.trim()} type="button">
+        <button data-save-shortcut class="primary" onclick={saveWorkshopForm} disabled={!wTitle.trim()} type="button">
           {editingWorkshopId ? "Save Changes" : "Add Workshop"}
         </button>
       </div>

@@ -13,6 +13,7 @@ Provides consistent, beautiful button layouts for modal actions
     confirmLabel = "Confirm",
     confirmDisabled = false,
     confirmVariant = "primary" as "primary" | "success" | "danger",
+    saveShortcut = false,
   } = $props<{
     onCancel: () => void;
     onConfirm: () => void;
@@ -20,6 +21,7 @@ Provides consistent, beautiful button layouts for modal actions
     confirmLabel?: string;
     confirmDisabled?: boolean;
     confirmVariant?: "primary" | "success" | "danger";
+    saveShortcut?: boolean;
   }>();
 
   let hapticService: HapticFeedback | null = null;
@@ -45,6 +47,7 @@ Provides consistent, beautiful button layouts for modal actions
     {cancelLabel}
   </button>
   <button
+    data-save-shortcut={saveShortcut ? "" : undefined}
     class="action-button confirm-button {confirmVariant}"
     onclick={handleConfirm}
     disabled={confirmDisabled}

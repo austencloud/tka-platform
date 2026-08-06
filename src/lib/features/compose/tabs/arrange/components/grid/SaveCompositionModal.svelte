@@ -106,6 +106,7 @@
       confirmLabel="Save"
       confirmDisabled={!canSave}
       confirmVariant="primary"
+      saveShortcut
     />
   {/snippet}
 </BaseModal>

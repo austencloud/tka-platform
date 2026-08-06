@@ -751,7 +751,12 @@
   }}
 />
 
-<footer class="editor-dock" class:idle={!activeColor} style="--c: {colorToken}">
+<footer
+  data-save-shortcut-scope
+  class="editor-dock"
+  class:idle={!activeColor}
+  style="--c: {colorToken}"
+>
   {#if !activeColor}
     <span class="dock-idle"
       ><i class="fas fa-hand-pointer" aria-hidden="true"></i> Select an arrow to adjust
@@ -903,6 +908,7 @@
         </button>
       {:else}
         <button
+          data-save-shortcut
           class="btn btn-save"
           onclick={handleSave}
           disabled={!hasLocalChanges}

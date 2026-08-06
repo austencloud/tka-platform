@@ -185,6 +185,14 @@
   function handleKeydown(event: KeyboardEvent) {
     if (!open) return;
     const key = event.key.toLowerCase();
+    if (
+      key === "s" &&
+      (event.ctrlKey || event.metaKey) &&
+      !event.shiftKey &&
+      !event.altKey
+    ) {
+      return;
+    }
 
     let increment = 5;
     if (event.shiftKey && event.ctrlKey) increment = 200;
@@ -403,6 +411,7 @@
         </button>
       {/if}
       <button
+        data-save-shortcut
         class="btn btn-save"
         onclick={handleSave}
         disabled={!hasLocalChanges && !hasValue}

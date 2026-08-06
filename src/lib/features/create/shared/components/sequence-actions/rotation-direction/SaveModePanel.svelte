@@ -90,7 +90,12 @@
         oninput={(e) => onNameChange(e.currentTarget.value)}
         maxlength={50}
       />
-      <button class="save-btn" onclick={onSave} disabled={saving}>
+      <button
+        data-save-shortcut
+        class="save-btn"
+        onclick={onSave}
+        disabled={saving}
+      >
         {#if saving}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
         {:else}

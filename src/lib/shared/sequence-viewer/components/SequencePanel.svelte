@@ -488,6 +488,7 @@
     <div class="action-buttons">
       {#if onSaveToLibrary}
         <button
+          data-save-shortcut
           type="button"
           class="action-btn primary"
           onclick={() => { hapticService?.trigger("selection"); onSaveToLibrary?.(); }}

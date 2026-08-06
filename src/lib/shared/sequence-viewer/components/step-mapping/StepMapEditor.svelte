@@ -358,6 +358,7 @@
     </button>
 
     <button
+      data-save-shortcut
       class="save-btn"
       onclick={handleSave}
       disabled={isSaving || placedCount === 0}

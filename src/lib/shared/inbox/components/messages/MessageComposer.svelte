@@ -413,6 +413,7 @@
       aria-label={isEditing ? "Edit message" : "Message input"}
     ></textarea>
     <button
+      data-save-shortcut={isEditing ? "" : undefined}
       class="send-button"
       class:success={sendSuccess}
       onclick={isEditing ? saveEdit : sendMessage}

@@ -26,7 +26,7 @@
     name: string;
     sequenceCount: number;
     loopStatus: "empty" | "loops" | "open";
-    sheetMeta: string;
+    sheetMeta: string | null;
     actsOpen: boolean;
     playerOpen: boolean;
     browseOpen: boolean;
@@ -81,12 +81,15 @@
         ></button
       >
       <button
+        id="choreo-play-act-trigger"
         type="button"
         class="btn"
         class:active={playerOpen}
         onclick={onTogglePlayer}
         disabled={!rosterReady || sequenceCount === 0}
         aria-label="Play act"
+        aria-controls="choreo-act-player"
+        aria-expanded={playerOpen}
         ><i class="fa-solid fa-play" aria-hidden="true"></i><span>Play act</span
         ></button
       >
@@ -101,6 +104,7 @@
         ><i class="fa-solid fa-plus" aria-hidden="true"></i>Add sequences</button
       >
       <button
+        data-save-shortcut
         type="button"
         class="btn save"
         class:success={saveFlash}

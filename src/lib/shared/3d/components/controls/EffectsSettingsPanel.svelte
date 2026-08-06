@@ -2,8 +2,7 @@
   /**
    * EffectsSettingsPanel - Visual effects controls for 3D viewer
    *
-   * 13 unified per-tip effects (trails/fire/led/charcoal/zap/sparkles/
-   * echo/bloom/water/bubbles/petals/smoke/ink) + 1 scene-level motion modifier.
+   * The canonical 16 per-tip effects plus one scene-level motion modifier.
    * Uses chip-style buttons consistent with GridSettingsPanel.
    *
    * Three scopes, in precedence order:
@@ -25,10 +24,7 @@
   import { EFFECTS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
   import { isEffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
   import EffectControlStack from "$lib/shared/effects/components/EffectControlStack.svelte";
-  import {
-    EFFECTS_WITH_3D_RENDERER,
-    advancedControls,
-  } from "$lib/shared/effects/domain/effect-control-manifest";
+  import { advancedControls } from "$lib/shared/effects/domain/effect-control-manifest";
   import type { EffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
   import type { AvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import type { EffectType } from "$lib/shared/effects/domain/effects-config";
@@ -70,28 +66,27 @@
   const config = getEffectsConfigContext() ?? createEffectsConfigState();
   const scene3DRender = getScene3DRenderContext() ?? createScene3DRenderState();
 
-  // Grid combines the 12 unified effects + motion (scene-level render modifier).
-  // Registry is canonical for order, label, icon, color.
+  // The registry is canonical for order, label, icon, and color. Motion is a
+  // scene modifier and intentionally stays outside the 16-effect radio group.
   type EffectKey = EffectType | "motion";
-  // Only effects with a live 3D renderer are listed in the 3D viewer — the
-  // renderer-less effects (zap/echo/water/…) are no-ops here. Motion stays as a
-  // scene-level modifier.
   const effectChips: ReadonlyArray<{
-    key: EffectKey;
+    key: EffectType;
     label: string;
     icon: string;
     color: string;
-  }> = [
-    ...EFFECTS.filter((e) =>
-      EFFECTS_WITH_3D_RENDERER.has(e.id as EffectId)
-    ).map((e) => ({
-      key: e.id as EffectType,
-      label: e.label,
-      icon: e.icon.replace(/^fa-/, ""),
-      color: e.color,
-    })),
-    { key: "motion" as const, label: "Motion", icon: "wind", color: "#22d3ee" },
-  ];
+  }> = EFFECTS.map((effect) => ({
+    key: effect.id as EffectType,
+    label: effect.label,
+    icon: effect.icon.replace(/^fa-/, ""),
+    color: effect.color,
+  }));
+  const motionChip = {
+    key: "motion" as const,
+    label: "Motion",
+    icon: "wind",
+    color: "#22d3ee",
+  };
+  const motionEnabled = $derived(isEnabled("motion"));
 
   // The single per-performer effect now uses the canonical EffectType directly
   // (no legacy EffectId translation), so the full 16-effect grid is selectable
@@ -199,9 +194,9 @@
   // sliders show whenever an effect with a curated 3D knob set is the active
   // one — in every scope, no double-click. The currently-enabled chip IS the
   // selection; its knobs appear above the grid automatically.
-  const activeEffectKey = $derived.by<EffectKey | null>(() => {
+  const activeEffectKey = $derived.by<EffectType | null>(() => {
     for (const c of effectChips) {
-      if (c.key !== "motion" && isEnabled(c.key)) return c.key;
+      if (isEnabled(c.key)) return c.key;
     }
     return null;
   });
@@ -227,8 +222,13 @@
   let copyTimer: ReturnType<typeof setTimeout> | null = null;
 
   async function copyDiagnostic() {
-    const { trails, fire, led, charcoal } = config.config;
-    const json = JSON.stringify({ trails, fire, led, charcoal }, null, 2);
+    const diagnostic = Object.fromEntries(
+      EFFECTS.map((effect) => [
+        effect.id,
+        config.config[effect.id as keyof typeof config.config],
+      ])
+    );
+    const json = JSON.stringify(diagnostic, null, 2);
     try {
       await navigator.clipboard.writeText(json);
       copyStatus = "copied";
@@ -340,6 +340,22 @@
     {/each}
   </div>
 
+  <div class="scene-modifier">
+    <span class="scene-modifier-label">Scene</span>
+    <button
+      class="effect-chip modifier-chip"
+      class:active={motionEnabled}
+      style="--color: {motionChip.color}"
+      onclick={() => toggle(motionChip.key)}
+      aria-label={motionEnabled ? motionChip.label : `Enable ${motionChip.label}`}
+      aria-pressed={motionEnabled}
+      title={motionEnabled ? motionChip.label : "Click to enable"}
+    >
+      <i class="fas fa-{motionChip.icon}" aria-hidden="true"></i>
+      <span>{motionChip.label}</span>
+    </button>
+  </div>
+
   <!-- Active effect's controls, from the shared manifest (same controls 2D
        renders). Shown automatically while that effect is on — no double-click. -->
   {#if activeEffectId}
@@ -402,6 +418,7 @@
       {copyLabel}
     </button>
     <button
+      data-save-shortcut
       class="footer-btn"
       onclick={saveDefaults}
       title="Save current tuning as the default Reset returns to"
@@ -504,6 +521,29 @@
   .effect-chip.active i {
     color: var(--color);
     opacity: 1;
+  }
+
+  .scene-modifier {
+    margin-top: 0.55rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid var(--theme-stroke);
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .scene-modifier-label {
+    min-width: 3rem;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .modifier-chip {
+    width: 64px;
+    flex: 0 0 64px;
   }
 
   /* Active effect's control stack, rendered above the chip grid. */

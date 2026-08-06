@@ -398,6 +398,7 @@
               ></i>
             </button>
             <button
+              data-save-shortcut
               class="control-btn success"
               onclick={saveRecording}
               aria-label="Save"

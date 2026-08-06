@@ -1,6 +1,7 @@
 <script lang="ts">
 
 import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/features/compose/tabs/arrange/services/arrange-keyboard-handler";
+  import EditHistoryShortcutBridge from "$lib/shared/keyboard/components/EditHistoryShortcutBridge.svelte";
   /**
    * ArrangeTab - Grid-based composition builder
    *
@@ -344,8 +345,6 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
     playPause: handlePlayPause,
     copyCell: handleCopyCell,
     pasteLayer: handlePasteLayer,
-    undo: handleUndo,
-    redo: handleRedo,
     transformLayer: handleTransformLayer,
   };
 
@@ -370,7 +369,15 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
   });
 </script>
 
-<div class="arrange-tab">
+<div class="arrange-tab" data-edit-history-shortcut-scope>
+  <EditHistoryShortcutBridge
+    onUndo={handleUndo}
+    onRedo={handleRedo}
+    canUndo={gridState.canUndo}
+    canRedo={gridState.canRedo}
+    undoLabel={gridState.undoDescription}
+    redoLabel={gridState.redoDescription}
+  />
   {#if isMobile}
     <!-- Mobile: Show placeholder until Phase B -->
     <div class="mobile-placeholder">
@@ -396,6 +403,7 @@ import { handleKeyDown as arrangeHandleKeyDown, findAdjacentCell } from "$lib/fe
             <i class="fas fa-clipboard" aria-hidden="true"></i>
           </button>
           <button
+            data-save-shortcut
             class="util-btn"
             onclick={handleSaveComposition}
             title="Save composition"

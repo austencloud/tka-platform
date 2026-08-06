@@ -50,6 +50,7 @@
   {/if}
   {#if !isSaved}
     <button
+      data-save-shortcut
       type="button"
       class="landscape-btn save"
       onclick={onSave}

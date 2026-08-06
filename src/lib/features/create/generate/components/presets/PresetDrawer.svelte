@@ -186,6 +186,7 @@
             </div>
           {:else}
             <button
+              data-save-shortcut
               type="button"
               class="save-button primary-action"
               disabled={!favoriteState.canSave}

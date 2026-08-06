@@ -60,6 +60,7 @@
 
     {#if !isSaved}
       <button
+        data-save-shortcut
         type="button"
         class="mid-action-btn save"
         onclick={onSave}

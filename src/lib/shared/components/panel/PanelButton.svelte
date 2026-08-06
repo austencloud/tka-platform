@@ -22,6 +22,12 @@
     fullWidth?: boolean;
     /** Accessible name when the visible label is shortened responsively. */
     ariaLabel?: string;
+    /** Exposes the native button for focus restoration after inline editing. */
+    ref?: HTMLButtonElement | null;
+    /** Announces that the button's action is in progress. */
+    ariaBusy?: boolean;
+    /** Makes this the active surface's Ctrl/Cmd+S target. */
+    saveShortcut?: boolean;
   }
 
   let {
@@ -32,16 +38,22 @@
     type = "button",
     fullWidth = false,
     ariaLabel,
+    ref = $bindable(null),
+    ariaBusy = false,
+    saveShortcut = false,
   }: Props = $props();
 </script>
 
 <button
+  data-save-shortcut={saveShortcut ? "" : undefined}
+  bind:this={ref}
   class="panel-btn panel-btn--{variant}"
   class:panel-btn--full-width={fullWidth}
   {onclick}
   {disabled}
   {type}
   aria-label={ariaLabel}
+  aria-busy={ariaBusy}
 >
   {@render children()}
 </button>

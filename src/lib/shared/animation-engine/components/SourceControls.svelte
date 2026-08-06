@@ -89,7 +89,7 @@
             />
           {/if}
           {#if onSave}
-            <button class="icon-btn save-btn" onclick={onSave} aria-label="Save sequence to library" title="Save to library">
+            <button data-save-shortcut class="icon-btn save-btn" onclick={onSave} aria-label="Save sequence to library" title="Save to library">
               <i class="fas fa-bookmark" aria-hidden="true"></i>
             </button>
           {/if}
@@ -121,7 +121,7 @@
             />
           {/if}
           {#if onSave}
-            <button class="icon-btn save-btn" onclick={onSave} aria-label="Save sequence to library" title="Save to library">
+            <button data-save-shortcut class="icon-btn save-btn" onclick={onSave} aria-label="Save sequence to library" title="Save to library">
               <i class="fas fa-bookmark" aria-hidden="true"></i>
             </button>
           {/if}

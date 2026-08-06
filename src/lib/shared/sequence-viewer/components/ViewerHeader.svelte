@@ -71,7 +71,8 @@
   {/if}
 
   <div class="header-left">
-    <button type="button" class="back-button" onclick={ctx.onClose}
+    <button type="button" class="back-button" data-escape-shortcut
+      data-escape-shortcut-label="Viewer" onclick={ctx.onClose}
       aria-label={editingPane ? "Close viewer" : `Back to ${returnLabel}`}>
       <i class="fas fa-arrow-left" aria-hidden="true"></i>
       {#if !isMobile && !editingPane}<span class="back-label">{returnLabel}</span>{/if}
@@ -140,7 +141,7 @@
         </button>
       {/if}
       {#if !isMobile && !actions.isSaved && actions.onSave}
-        <button type="button" class="header-action-btn save" onclick={actions.onSave} aria-label="Save sequence">
+        <button data-save-shortcut type="button" class="header-action-btn save" onclick={actions.onSave} aria-label="Save sequence">
           <i class="fas fa-floppy-disk" aria-hidden="true"></i>
         </button>
       {/if}

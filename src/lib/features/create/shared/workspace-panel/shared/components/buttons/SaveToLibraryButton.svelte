@@ -48,6 +48,7 @@
 </script>
 
 <button
+  data-save-shortcut
   class="save-button"
   class:disabled={isDisabled}
   onclick={handleClick}

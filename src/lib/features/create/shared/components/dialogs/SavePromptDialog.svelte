@@ -64,7 +64,7 @@
         <i class="fas fa-times" aria-hidden="true"></i>
         Cancel
       </button>
-      <button class="btn-primary" onclick={handleSave}>
+      <button data-save-shortcut class="btn-primary" onclick={handleSave}>
         <i class="fas fa-save" aria-hidden="true"></i>
         Save & Continue
       </button>

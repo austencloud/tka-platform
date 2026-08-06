@@ -74,6 +74,7 @@
 
     {#if !isSaved}
       <button
+        data-save-shortcut
         type="button"
         class="action-btn save"
         onclick={onSave}

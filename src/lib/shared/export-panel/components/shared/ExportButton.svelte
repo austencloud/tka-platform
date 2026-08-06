@@ -19,12 +19,14 @@
     loading = false,
     disabled = false,
     progress = null,
+    saveShortcut = false,
     onclick,
   }: {
     label?: string;
     loading?: boolean;
     disabled?: boolean;
     progress?: number | null; // 0-100 percentage
+    saveShortcut?: boolean;
     onclick?: () => void;
   } = $props();
 
@@ -32,6 +34,7 @@
 </script>
 
 <button
+  data-save-shortcut={saveShortcut ? "" : undefined}
   class="export-button"
   class:loading
   {disabled}

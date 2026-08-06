@@ -68,6 +68,7 @@
     <ExportButton
       label={buttonLabel}
       loading={exporting}
+      saveShortcut={!isMobile}
       onclick={handleExport}
     />
   </div>

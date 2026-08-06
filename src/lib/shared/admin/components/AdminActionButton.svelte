@@ -15,6 +15,7 @@
     fullWidth?: boolean;
     class?: string;
     onclick?: () => void;
+    saveShortcut?: boolean;
     children: Snippet;
   }
 
@@ -26,11 +27,13 @@
     fullWidth = false,
     class: className = "",
     onclick,
+    saveShortcut = false,
     children,
   }: AdminActionButtonProps = $props();
 </script>
 
 <button
+  data-save-shortcut={saveShortcut ? "" : undefined}
   class="admin-action-btn variant-{variant} {className}"
   class:full-width={fullWidth}
   {onclick}

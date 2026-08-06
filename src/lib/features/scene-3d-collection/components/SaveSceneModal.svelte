@@ -298,6 +298,7 @@
     <footer class="foot">
       <span class="status">{statusText}</span>
       <button
+        data-save-shortcut
         type="button"
         class="save-btn"
         onclick={handleSave}

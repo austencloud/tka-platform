@@ -139,7 +139,7 @@
 
   <!-- Button row -->
   <div class="button-row">
-    <RetroButton label="Save" isDefault onclick={handleSave} />
+    <RetroButton label="Save" isDefault saveShortcut onclick={handleSave} />
     <RetroButton label="Cancel" onclick={() => oncancel?.()} />
   </div>
 </div>

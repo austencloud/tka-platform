@@ -328,7 +328,7 @@
         <i class="fas fa-xmark" aria-hidden="true"></i>
         <span>Cancel</span>
       </button>
-      <button class="admin-btn is-primary" type="button" onclick={saveEdit} disabled={editSaving}>
+      <button data-save-shortcut class="admin-btn is-primary" type="button" onclick={saveEdit} disabled={editSaving}>
         <i class="fas fa-check" aria-hidden="true"></i>
         <span>{editSaving ? "Saving…" : "Save"}</span>
       </button>

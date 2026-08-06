@@ -192,6 +192,7 @@
       </AdminActionButton>
     {/if}
     <AdminActionButton
+      saveShortcut={hasChanges()}
       variant="primary"
       icon={hasChanges() ? "fa-save" : "fa-check"}
       loading={isSaving}

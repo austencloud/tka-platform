@@ -18,6 +18,7 @@
   import PresetPicker from "./components/PresetPicker.svelte";
   import CellInspector from "./components/CellInspector.svelte";
   import { createCompositionLabState, ICON_OPTIONS } from "./state/composition-lab-state.svelte";
+  import EditHistoryShortcutBridge from "$lib/shared/keyboard/components/EditHistoryShortcutBridge.svelte";
 
   // Props
   interface Props {
@@ -61,7 +62,15 @@
   });
 </script>
 
-<div class="composition-lab">
+<div class="composition-lab" data-edit-history-shortcut-scope>
+  <EditHistoryShortcutBridge
+    onUndo={lab.undo}
+    onRedo={lab.redo}
+    canUndo={lab.canUndo}
+    canRedo={lab.canRedo}
+    undoLabel="Layout change"
+    redoLabel="Layout change"
+  />
   <header class="lab-header">
     <h1>Composition Lab</h1>
     <p class="subtitle">
@@ -116,7 +125,7 @@
       </button>
 
       <!-- Save as preset button -->
-      <button class="save-preset-btn" onclick={() => (lab.showSaveDialog = true)} disabled={lab.cells.length === 0}>
+      <button data-save-shortcut class="save-preset-btn" onclick={() => (lab.showSaveDialog = true)} disabled={lab.cells.length === 0}>
         <i class="fas fa-save" aria-hidden="true"></i>
         Save as Preset
       </button>
@@ -232,6 +241,7 @@
             Cancel
           </button>
           <button
+            data-save-shortcut
             class="save-btn"
             onclick={lab.handleSaveAsPreset}
             type="button"

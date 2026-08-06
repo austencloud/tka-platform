@@ -407,6 +407,7 @@
         Cancel
       </button>
       <button
+        data-save-shortcut
         type="button"
         class="button button-primary"
         class:button-saved={s.isExactDuplicate && !s.isFlagged}

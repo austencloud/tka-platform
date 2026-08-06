@@ -11,18 +11,21 @@
     label = "",
     disabled = false,
     isDefault = false,
+    saveShortcut = false,
     onclick,
     children,
   }: {
     label?: string;
     disabled?: boolean;
     isDefault?: boolean;
+    saveShortcut?: boolean;
     onclick?: () => void;
     children?: Snippet;
   } = $props();
 </script>
 
 <button
+  data-save-shortcut={saveShortcut ? "" : undefined}
   class:default={isDefault}
   {disabled}
   {onclick}

@@ -254,6 +254,7 @@
           {t("feedback_cancel")}
         </button>
         <button
+          data-save-shortcut
           type="button"
           class="save-btn"
           onclick={handleSave}

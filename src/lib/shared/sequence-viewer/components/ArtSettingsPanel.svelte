@@ -565,6 +565,7 @@
         </button>
         {#if onSaveTunnel}
           <button
+            data-save-shortcut
             class="customize-btn"
             type="button"
             onclick={() => onSaveTunnel?.()}
@@ -753,6 +754,7 @@
                 aria-label="Preset name"
               />
               <button
+                data-save-shortcut
                 class="save-confirm"
                 type="button"
                 onclick={saveCurrentPreset}>Save</button

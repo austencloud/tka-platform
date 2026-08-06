@@ -308,6 +308,7 @@
 
     <div class="action-buttons">
       <button
+        data-save-shortcut
         class="action-btn default-btn"
         onclick={() => editorState.setAsDefault()}
         aria-label="Set current points as default for this prop"
@@ -328,6 +329,8 @@
       </button>
 
       <button
+        data-undo-shortcut
+        data-undo-shortcut-label="Last point change"
         class="action-btn undo-btn"
         onclick={() => editorState.undo()}
         disabled={!editorState.canUndo}

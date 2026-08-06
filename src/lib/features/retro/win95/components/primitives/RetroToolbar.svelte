@@ -17,6 +17,7 @@
       action: () => void;
       disabled?: boolean;
       separator?: boolean;
+      saveShortcut?: boolean;
     }[];
   } = $props();
 </script>
@@ -29,6 +30,7 @@
     <RetroTooltip text={button.tooltip}>
       {#snippet children()}
         <button
+          data-save-shortcut={button.saveShortcut ? "" : undefined}
           class="retro-toolbar-button"
           type="button"
           aria-label={button.tooltip}

@@ -346,7 +346,7 @@ import { getDuetPersister } from "$lib/shared/3d/get-duet-persister";
     <!-- Footer -->
     <footer class="footer">
       <button class="cancel-btn" onclick={onCancel} aria-label="Cancel">{t('action_cancel')}</button>
-      <button class="save-btn" disabled={!canSave} onclick={handleSave} aria-label="Save duet">
+      <button data-save-shortcut class="save-btn" disabled={!canSave} onclick={handleSave} aria-label="Save duet">
         {#if isSaving}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
           {t('action_saving')}

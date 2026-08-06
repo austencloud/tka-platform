@@ -157,6 +157,7 @@
       icon: RETRO_ICONS.save,
       tooltip: isSaving ? "Saving..." : "Save",
       disabled: isSaving || !currentSequenceData,
+      saveShortcut: true,
       action: () => handleSave(),
     },
     { separator: true, icon: "", tooltip: "", action: () => {} },

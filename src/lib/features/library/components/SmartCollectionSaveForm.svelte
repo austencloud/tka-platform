@@ -35,6 +35,7 @@
 </script>
 
 <form
+  data-save-shortcut-scope
   class="save-form"
   onsubmit={(event) => {
     event.preventDefault();
@@ -62,6 +63,7 @@
     type="submit"
     variant="primary"
     fullWidth
+    saveShortcut
     disabled={saving || spec.filters.length === 0}
   >
     <i

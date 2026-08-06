@@ -1245,6 +1245,7 @@
           </button>
 
           <button
+            data-save-shortcut={!ctx.isSaved ? "" : undefined}
             type="button"
             class="header-action-btn utility"
             class:saved={ctx.isSaved}
@@ -1383,6 +1384,8 @@
         <button
           type="button"
           class="drawer-close-button"
+          data-escape-shortcut
+          data-escape-shortcut-label="Viewer"
           data-ghost="safe"
           data-ghost-kind="close-overlay"
           data-ghost-label="Close viewer"

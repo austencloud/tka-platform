@@ -71,7 +71,7 @@ import { getHandPathSaveOrchestrator } from "$lib/features/library/get-hand-path
   }
 </script>
 
-<div class="builder-controls">
+<div class="builder-controls" data-edit-history-shortcut-scope>
   <!-- Phase instruction -->
   {#if builder.phase !== "complete"}
     <p class="instruction">{instruction}</p>
@@ -82,6 +82,8 @@ import { getHandPathSaveOrchestrator } from "$lib/features/library/get-hand-path
     <!-- Undo -->
     {#if builder.phase !== "complete"}
       <button
+        data-undo-shortcut
+        data-undo-shortcut-label="Last tap"
         class="btn btn-ghost"
         disabled={!builder.canUndo}
         onclick={builder.undo}
@@ -163,6 +165,7 @@ import { getHandPathSaveOrchestrator } from "$lib/features/library/get-hand-path
 
         {#if !savedBlue}
           <button
+            data-save-shortcut
             class="btn btn-primary"
             disabled={saving}
             onclick={handleSave}

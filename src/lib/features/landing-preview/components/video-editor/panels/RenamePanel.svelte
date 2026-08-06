@@ -333,6 +333,7 @@
     </button>
     {#if unnamedCount === 1 && hasTitle}
       <button
+        data-save-shortcut
         class="action-btn primary complete"
         onclick={saveAndNext}
         disabled={controller.saving || !hasTitle}
@@ -342,6 +343,7 @@
       </button>
     {:else}
       <button
+        data-save-shortcut
         class="action-btn primary"
         class:ready={hasTitle}
         onclick={saveAndNext}

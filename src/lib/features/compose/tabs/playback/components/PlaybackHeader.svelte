@@ -41,6 +41,7 @@
 
   <div class="header-center">
     <button
+      data-save-shortcut
       class="action-btn save-btn"
       onclick={onSave}
       aria-label="Save composition"
