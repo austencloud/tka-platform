@@ -7,7 +7,7 @@
    */
   import { T } from "@threlte/core";
   import { useTexture } from "@threlte/extras";
-  import { AdditiveBlending, SRGBColorSpace } from "three";
+  import { AdditiveBlending } from "three";
   import type { MoonConfig } from "../domain/models/scene-configs";
 
   interface Props {
@@ -17,12 +17,6 @@
   let { config }: Props = $props();
 
   const moonTexture = useTexture(config.texture);
-
-  $effect(() => {
-    if (!$moonTexture) return;
-    $moonTexture.colorSpace = SRGBColorSpace;
-    $moonTexture.needsUpdate = true;
-  });
 </script>
 
 {#if config.enabled && $moonTexture}
