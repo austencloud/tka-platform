@@ -8,6 +8,7 @@
   import type { TargetHand } from "$lib/shared/create/domain/panel-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { ActionHelpId } from "$lib/features/create/shared/domain/transforms/transform-help-content";
+  import type { DirectionDrillRoute } from "$lib/features/create/shared/components/sequence-actions/direction-drill-route";
   import {
     SEQUENCE_ACTIONS_EXTENSION_ANALYSIS,
     SEQUENCE_ACTIONS_REVIEW_SEQUENCE,
@@ -140,8 +141,18 @@
         ? "edit"
         : "transform"
   );
-  const initialDirectionMode = $derived(
-    variant === "apply" || variant === "save" ? "absolute" : "reversals"
+  const initialDirectionRoute = $derived<DirectionDrillRoute>(
+    variant === "hub"
+      ? "hub"
+      : variant === "length"
+        ? "reversal-length"
+        : variant === "rhythm"
+          ? "reversal-rhythm"
+          : variant === "result"
+            ? "reversal-result"
+            : variant === "apply" || variant === "save"
+              ? "absolute"
+              : "reversals"
   );
   const initialRotationMode = $derived(variant === "save" ? "save" : "apply");
   const initialHelpAction = $derived<ActionHelpId | null>(
@@ -187,7 +198,7 @@
     show={panelOpen}
     onClose={() => (panelOpen = false)}
     {initialSubView}
-    {initialDirectionMode}
+    {initialDirectionRoute}
     {initialRotationMode}
     {initialActionCategory}
     initialExtensionAnalysis={extensionAnalysis}

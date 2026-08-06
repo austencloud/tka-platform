@@ -15,12 +15,14 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import PatternStripEditor from "$lib/shared/create/components/pattern-strip/PatternStripEditor.svelte";
+  import SettingsDrillRow from "$lib/shared/ui/components/settings-drill/SettingsDrillRow.svelte";
   import type {
     StripBinding,
     StripValue,
   } from "$lib/shared/create/components/pattern-strip/pattern-strip-types";
   import { PER_HAND_RHYTHMS } from "$lib/shared/create/domain/rhythm/rhythm-catalog";
   import {
+    perHandRhythmMatches,
     stampPerHand,
     tilePeriod,
   } from "$lib/shared/create/domain/rhythm/rhythm-mask";
@@ -29,16 +31,24 @@
   import { reversalStripStore } from "./reversal-strip-store.svelte";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { ReversalEditorStage } from "./direction-drill-route";
 
   interface Props {
     sequence: SequenceData | null;
+    stage?: ReversalEditorStage;
+    onStageChange: (stage: ReversalEditorStage) => void;
     onApply: (result: {
       sequence: SequenceData;
       warnings?: readonly string[];
     }) => void;
   }
 
-  let { sequence, onApply }: Props = $props();
+  let {
+    sequence,
+    stage = "overview",
+    onStageChange,
+    onApply,
+  }: Props = $props();
 
   const binding: StripBinding = {
     lanes: 2,
@@ -115,6 +125,19 @@
   let strip = $state<StripValue[][]>(
     reversalStripStore.value ?? seedAlternating()
   );
+  const period = $derived(strip[0]?.length ?? 1);
+  const repetitions = $derived(seqLen / period);
+  const activeRhythm = $derived(
+    PER_HAND_RHYTHMS.find(
+      (rhythm) =>
+        (rhythm.period == null || rhythm.period === period) &&
+        perHandRhythmMatches(rhythm.sym, strip[0] ?? [], strip[1] ?? [], false)
+    )?.label ?? "Custom"
+  );
+  const reversalCounts = $derived({
+    left: (strip[0] ?? []).filter(Boolean).length,
+    right: (strip[1] ?? []).filter(Boolean).length,
+  });
 
   // Seed only on a fresh session or when the persisted period no longer tiles
   // the current sequence length (e.g. the sequence was resized while away).
@@ -152,24 +175,47 @@
 </script>
 
 <div class="pattern-view-body">
-  <div class="pattern-editor-scroll">
-    <div class="pattern-view-inner">
-      <PatternStripEditor
-        {binding}
-        sequenceLength={seqLen}
-        value={strip}
-        onChange={handleChange}
-        {inertMask}
-        fitAvailableHeight
-      />
-      <p class="reversal-note" class:emphasis={hasInert}>
-        A reversal flips a spinning prop, so dash and static steps stay put.
-        <span class="counts"
-          >Left spins on <b>{spin.left}</b>/<b>{spin.total}</b> steps, Right on
-          <b>{spin.right}</b>/<b>{spin.total}</b>.</span
-        >
-      </p>
-    </div>
+  <div class="reversal-surface">
+    {#if stage === "overview"}
+      <div class="reversal-overview">
+        <SettingsDrillRow
+          label="Length"
+          value={`${period} steps · repeats ${repetitions}×`}
+          onclick={() => onStageChange("length")}
+        />
+        <SettingsDrillRow
+          label="Rhythm"
+          value={activeRhythm}
+          onclick={() => onStageChange("rhythm")}
+        />
+        <SettingsDrillRow
+          label="Result"
+          value={`${reversalCounts.left} left · ${reversalCounts.right} right per cycle`}
+          onclick={() => onStageChange("result")}
+        />
+      </div>
+    {:else}
+      <div class="reversal-detail">
+        <PatternStripEditor
+          {binding}
+          sequenceLength={seqLen}
+          value={strip}
+          onChange={handleChange}
+          {inertMask}
+          fitAvailableHeight
+          visibleAxis={stage}
+        />
+        {#if stage === "result"}
+          <p class="reversal-note" class:emphasis={hasInert}>
+            A reversal flips a spinning prop, so dash and static steps stay put.
+            <span class="counts"
+              >Left spins on <b>{spin.left}</b>/<b>{spin.total}</b> steps, Right
+              on <b>{spin.right}</b>/<b>{spin.total}</b>.</span
+            >
+          </p>
+        {/if}
+      </div>
+    {/if}
   </div>
   <div class="pattern-action-footer">
     <button
@@ -191,22 +237,28 @@
     overflow: hidden;
   }
 
-  .pattern-editor-scroll {
+  /* `safe center` + scroll, never `margin: auto` + `overflow: hidden`: the
+     latter centres content taller than the box and then silently clips both
+     ends of it, which is how the overview's Result row lost its bottom edge. */
+  .reversal-surface {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
     padding: 10px 12px 6px;
     display: flex;
     flex-direction: column;
+    justify-content: safe center;
   }
 
-  .pattern-view-inner {
-    margin: auto;
+  .reversal-overview,
+  .reversal-detail {
+    flex: 0 0 auto;
+    margin-inline: auto;
     width: 100%;
     max-width: 820px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
   }
 
   .pattern-action-footer {
@@ -263,7 +315,7 @@
   }
 
   @container sequence-action-subview (max-width: 599px) and (max-height: 430px) {
-    .pattern-editor-scroll {
+    .reversal-surface {
       padding: 8px 10px 4px;
     }
 
@@ -273,13 +325,15 @@
   }
 
   @container sequence-action-subview (min-width: 600px) and (max-height: 540px) {
-    .pattern-editor-scroll {
+    .reversal-surface {
       padding: 6px 10px;
     }
 
-    .pattern-view-inner {
-      height: 100%;
-      margin: 0 auto;
+    /* min-height, not height: the block still fills the short foldable drawer,
+       but grows past it rather than hiding the overflow from the scroller. */
+    .reversal-overview,
+    .reversal-detail {
+      min-height: 100%;
       gap: 4px;
       justify-content: safe center;
     }

@@ -9,17 +9,23 @@
   Both act on the same axis (prop spin); this is the single destination for it.
 -->
 <script lang="ts">
-  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import SettingsDrillRow from "$lib/shared/ui/components/settings-drill/SettingsDrillRow.svelte";
   import ReversalPatternView from "./ReversalPatternView.svelte";
   import RotationDirectionView from "./RotationDirectionView.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { TargetHand } from "../../state/panel-coordination-state.svelte";
+  import {
+    getReversalEditorStage,
+    type DirectionDrillRoute,
+    type ReversalEditorStage,
+  } from "./direction-drill-route";
 
   interface Props {
     sequence: SequenceData | null;
     targetHand: TargetHand;
-    initialMode?: "reversals" | "absolute";
+    route: DirectionDrillRoute;
     initialRotationMode?: "apply" | "save";
+    onRouteChange: (route: DirectionDrillRoute) => void;
     onReversalApply: (result: {
       sequence: SequenceData;
       warnings?: readonly string[];
@@ -33,37 +39,53 @@
   let {
     sequence,
     targetHand,
-    initialMode = "reversals",
+    route,
     initialRotationMode = "apply",
+    onRouteChange,
     onReversalApply,
     onRotationApply,
   }: Props = $props();
 
-  let mode = $state<"reversals" | "absolute">(initialMode);
+  function selectReversalStage(stage: ReversalEditorStage) {
+    const nextRoute: Record<ReversalEditorStage, DirectionDrillRoute> = {
+      overview: "reversals",
+      length: "reversal-length",
+      rhythm: "reversal-rhythm",
+      result: "reversal-result",
+    };
+    onRouteChange(nextRoute[stage]);
+  }
 </script>
 
 <div class="direction-view">
-  <div class="mode-wrap">
-    <SegmentedControl
-      size="md"
-      color="accent"
-      options={[
-        { value: "reversals", label: "Reversals" },
-        { value: "absolute", label: "Direction" },
-      ]}
-      value={mode}
-      onchange={(v) => (mode = v as "reversals" | "absolute")}
-    />
-  </div>
-
-  {#if mode === "reversals"}
-    <ReversalPatternView {sequence} onApply={onReversalApply} />
-  {:else}
+  {#if route === "hub"}
+    <div class="hub-surface">
+      <div class="direction-choices">
+        <SettingsDrillRow
+          label="Reversals"
+          value="Flip spinning props on a rhythm"
+          onclick={() => onRouteChange("reversals")}
+        />
+        <SettingsDrillRow
+          label="Rotation Direction"
+          value="Set CW or CCW across the sequence"
+          onclick={() => onRouteChange("absolute")}
+        />
+      </div>
+    </div>
+  {:else if route === "absolute"}
     <RotationDirectionView
       {sequence}
       {targetHand}
       initialMode={initialRotationMode}
       onApply={onRotationApply}
+    />
+  {:else}
+    <ReversalPatternView
+      {sequence}
+      stage={getReversalEditorStage(route)}
+      onStageChange={selectReversalStage}
+      onApply={onReversalApply}
     />
   {/if}
 </div>
@@ -76,9 +98,24 @@
     flex-direction: column;
   }
 
-  .mode-wrap {
-    flex-shrink: 0;
-    padding: 0 8px;
-    border-bottom: 1px solid var(--theme-stroke);
+  /* The two choices centre in the drawer. `safe center` rather than `margin:
+     auto` so a viewport too short to hold them clips nothing off the top, and
+     the surface scrolls instead of swallowing a row. */
+  .hub-surface {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: safe center;
+    overflow-y: auto;
+  }
+
+  .direction-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: min(100%, 620px);
+    margin-inline: auto;
+    padding: 10px 12px;
   }
 </style>

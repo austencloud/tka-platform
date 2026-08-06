@@ -31,6 +31,8 @@
     /** Reflows the controls into horizontal rows when a wide, short drawer
      *  provides less height than the standard stacked editor needs. */
     fitAvailableHeight?: boolean;
+    /** Lets a parent drill-down give one editing axis the whole surface. */
+    visibleAxis?: "all" | "length" | "rhythm" | "amount" | "result";
   }
   let {
     binding,
@@ -39,6 +41,7 @@
     onChange,
     inertMask,
     fitAvailableHeight = false,
+    visibleAxis = "all",
   }: Props = $props();
 
   const periods = $derived(divisorsUpTo(sequenceLength));
@@ -127,45 +130,50 @@
   class="pse"
   class:fit-available-height={fitAvailableHeight}
   class:single-lane={binding.lanes === 1}
+  class:solo-axis={visibleAxis !== "all"}
 >
-  <div class="axis">
-    <div class="axis-row">
-      <span class="axis-lbl">Length</span>
-      <span class="reps">×{reps} over {sequenceLength} steps</span>
-    </div>
-    <div class="seg-wrap">
-      <SegmentedControl
-        size="md"
-        color="accent"
-        options={periods.map((p) => ({ value: String(p), label: String(p) }))}
-        value={String(period)}
-        onchange={(v) => setPeriod(Number(v))}
-      />
-    </div>
-  </div>
-
-  <div class="axis">
-    <div class="axis-lbl">Rhythm</div>
-    <div class="chips">
-      {#each binding.rhythms as r}
-        <FilterChipBase
-          label={r.label}
-          mode="toggle"
+  {#if visibleAxis === "all" || visibleAxis === "length"}
+    <div class="axis">
+      <div class="axis-row">
+        <span class="axis-lbl">Length</span>
+        <span class="reps">×{reps} over {sequenceLength} steps</span>
+      </div>
+      <div class="seg-wrap">
+        <SegmentedControl
           size="md"
-          active={rhythmActive(r)}
-          disabled={rhythmDisabled(r)}
-          onclick={() => applyRhythm(r)}
-        >
-          {#snippet iconSnippet()}<RhythmGlyph
-              sym={r.sym}
-              lanes={binding.lanes}
-            />{/snippet}
-        </FilterChipBase>
-      {/each}
+          color="accent"
+          options={periods.map((p) => ({ value: String(p), label: String(p) }))}
+          value={String(period)}
+          onchange={(v) => setPeriod(Number(v))}
+        />
+      </div>
     </div>
-  </div>
+  {/if}
 
-  {#if binding.amountList}
+  {#if visibleAxis === "all" || visibleAxis === "rhythm"}
+    <div class="axis">
+      <div class="axis-lbl">Rhythm</div>
+      <div class="chips">
+        {#each binding.rhythms as r}
+          <FilterChipBase
+            label={r.label}
+            mode="toggle"
+            size="md"
+            active={rhythmActive(r)}
+            disabled={rhythmDisabled(r)}
+            onclick={() => applyRhythm(r)}
+          >
+            {#snippet iconSnippet()}<RhythmGlyph
+                sym={r.sym}
+                lanes={binding.lanes}
+              />{/snippet}
+          </FilterChipBase>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
+  {#if binding.amountList && (visibleAxis === "all" || visibleAxis === "amount")}
     <div class="axis">
       <div class="axis-lbl">Amount</div>
       <div class="amt-grid">
@@ -190,17 +198,19 @@
     </div>
   {/if}
 
-  <div class="axis result">
-    <div class="axis-lbl">Result</div>
-    <PatternStepStrip
-      lanes={stripLanes}
-      cellKind={binding.cellKind ?? "number"}
-      valueList={binding.valueList}
-      base={binding.base}
-      format={binding.format}
-      onEdit={editCell}
-    />
-  </div>
+  {#if visibleAxis === "all" || visibleAxis === "result"}
+    <div class="axis result">
+      <div class="axis-lbl">Result</div>
+      <PatternStepStrip
+        lanes={stripLanes}
+        cellKind={binding.cellKind ?? "number"}
+        valueList={binding.valueList}
+        base={binding.base}
+        format={binding.format}
+        onEdit={editCell}
+      />
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -266,6 +276,26 @@
   }
   .result {
     margin-top: 2px;
+  }
+
+  /* One axis on its own screen: the drill-down header already names it, so the
+     duplicate LENGTH / RHYTHM / RESULT caption goes, and the meta line ("×10
+     over 40 steps") slides back under the heading it belongs to. */
+  .solo-axis .axis-lbl {
+    display: none;
+  }
+
+  /* With the caption gone the meta line ("×10 over 40 steps") is no longer a
+     heading — it is the consequence of the choice, so it moves under the
+     control. Axes with a single visible child are unaffected by the reverse. */
+  .solo-axis .axis {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .solo-axis .axis-row {
+    justify-content: flex-start;
+    margin: 8px 0 0;
   }
 
   /* Cohesion: stop SegmentedControl stretching full-width; unify value type with the strip. */

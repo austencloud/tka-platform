@@ -27,9 +27,13 @@
       title: "Direction",
       hint: "Review every nested Direction mode without losing the workspace.",
       variants: [
-        { value: "reversals", label: "Reversals" },
-        { value: "apply", label: "Apply" },
-        { value: "save", label: "Save Current" },
+        { value: "hub", label: "Hub" },
+        { value: "reversals", label: "Reversal overview" },
+        { value: "length", label: "Length" },
+        { value: "rhythm", label: "Rhythm" },
+        { value: "result", label: "Result" },
+        { value: "apply", label: "Rotation apply" },
+        { value: "save", label: "Rotation save" },
       ],
     },
     {
@@ -103,7 +107,7 @@
   let selectedVariants = $state<Record<StepId, string>>({
     root: "transform",
     turn: "default",
-    direction: "reversals",
+    direction: "hub",
     duration: "default",
     extend: "loop",
     help: "direction",

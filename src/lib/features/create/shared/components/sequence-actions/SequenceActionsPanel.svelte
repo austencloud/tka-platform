@@ -43,6 +43,13 @@
   import type { ActionHelpId } from "../../domain/transforms/transform-help-content";
   type HelpMode = "inactive" | "selecting" | "viewing";
   import DirectionView from "./DirectionView.svelte";
+  import {
+    getDirectionDrillDepth,
+    getDirectionDrillParent,
+    getDirectionDrillSubtitle,
+    getDirectionDrillTitle,
+    type DirectionDrillRoute,
+  } from "./direction-drill-route";
   import DurationPatternView from "./DurationPatternView.svelte";
   import ExtendView from "./ExtendView.svelte";
   import StepGridSection from "./StepGridSection.svelte";
@@ -65,7 +72,7 @@
     onClose?: () => void;
     /** Deterministic entry points used by the isolated responsive review route. */
     initialSubView?: "turnPattern" | "duration" | "rotation" | "extend" | null;
-    initialDirectionMode?: "reversals" | "absolute";
+    initialDirectionRoute?: DirectionDrillRoute;
     initialRotationMode?: "apply" | "save";
     initialActionCategory?: "transform" | "patterns" | "edit";
     initialExtensionAnalysis?: ExtensionAnalysis | null;
@@ -77,7 +84,7 @@
     show,
     onClose,
     initialSubView = null,
-    initialDirectionMode = "reversals",
+    initialDirectionRoute = "hub",
     initialRotationMode = "apply",
     initialActionCategory,
     initialExtensionAnalysis = null,
@@ -164,6 +171,7 @@
   let subView = $state<
     "turnPattern" | "duration" | "rotation" | "extend" | null
   >(initialSubView);
+  let directionRoute = $state<DirectionDrillRoute>(initialDirectionRoute);
   let extensionAnalysis = $state<ExtensionAnalysis | null>(
     initialExtensionAnalysis
   );
@@ -191,14 +199,26 @@
       : subView === "duration"
         ? "Duration Patterns"
         : subView === "rotation"
-          ? "Direction"
+          ? getDirectionDrillTitle(directionRoute)
           : subView === "extend"
             ? extendDirectlyLoopable
               ? "Extend"
               : "Choose Bridge"
             : ""
   );
+  // Back always steps exactly one level, so it says which level it lands on.
+  const backLabel = $derived.by(() => {
+    if (subView !== "rotation") return "Back to sequence actions";
+    const parentRoute = getDirectionDrillParent(directionRoute);
+    return parentRoute
+      ? `Back to ${getDirectionDrillTitle(parentRoute)}`
+      : "Back to sequence actions";
+  });
   const subViewSubtitle = $derived.by(() => {
+    // Every Direction screen owns exactly one knob, so the header subtitle is
+    // where that knob says what it does — the body stays the control alone.
+    if (subView === "rotation")
+      return getDirectionDrillSubtitle(directionRoute);
     if (subView !== "extend") return "";
     if (!extendDirectlyLoopable)
       return "Select a pictograph to reach a loopable position";
@@ -227,6 +247,16 @@
     }
     return flyTransition(node, { x, duration: DURATION.emphasis });
   }
+
+  /**
+   * +1 while drilling in, −1 while backing out. Every layer enters from
+   * `NAV_TRAVEL * navDirection` and leaves toward the opposite side, so a pop
+   * runs the push in reverse instead of sliding in from the right again.
+   */
+  const NAV_TRAVEL = 30;
+  let navDirection = $state(1);
+  const navEnterX = $derived(NAV_TRAVEL * navDirection);
+  const navExitX = $derived(-NAV_TRAVEL * navDirection);
   // Spotlight modal state (legacy - modal replaced with route navigation)
   let spotlightOpen = $state(false);
   let spotlightSequence = $state<SequenceData | null>(null);
@@ -423,12 +453,21 @@
 
   function handleTurnPattern() {
     hapticService?.trigger("selection");
+    navDirection = 1;
     subView = "turnPattern";
   }
 
   /** Back out of an inline sub-view, reverting any per-view side effects. */
   function exitSubView() {
     hapticService?.trigger("selection");
+    navDirection = -1;
+    if (subView === "rotation") {
+      const parentRoute = getDirectionDrillParent(directionRoute);
+      if (parentRoute) {
+        directionRoute = parentRoute;
+        return;
+      }
+    }
     if (subView === "duration" && panelState.isDurationPreviewMode) {
       panelState.exitDurationPreviewMode(false);
     }
@@ -454,7 +493,18 @@
 
   function handleRotationDirection() {
     hapticService?.trigger("selection");
+    navDirection = 1;
+    directionRoute = "hub";
     subView = "rotation";
+  }
+
+  function handleDirectionRouteChange(route: DirectionDrillRoute) {
+    hapticService?.trigger("selection");
+    navDirection =
+      getDirectionDrillDepth(route) < getDirectionDrillDepth(directionRoute)
+        ? -1
+        : 1;
+    directionRoute = route;
   }
 
   function handleRotationDirectionApply(result: {
@@ -486,6 +536,7 @@
 
   function handleDuration() {
     hapticService?.trigger("selection");
+    navDirection = 1;
     subView = "duration";
     // Enter preview mode on desktop (side-by-side layout)
     if (isSideBySideLayout && sequence) {
@@ -511,6 +562,7 @@
     activeSequenceState.setCurrentSequence(result.sequence);
     hapticService?.trigger("success");
     // Duration preview lifecycle ends on apply — return to the actions grid.
+    navDirection = -1;
     subView = null;
   }
 
@@ -537,6 +589,7 @@
     extensionAnalysis = result.analysis;
     circularizationOptions = result.circularizationOptions;
     directUnavailableReason = result.directUnavailableReason;
+    navDirection = 1;
     subView = "extend";
   }
 
@@ -592,6 +645,7 @@
       toast.success(result.message);
 
       // Return to the actions grid on success
+      navDirection = -1;
       subView = null;
       extensionAnalysis = null;
       circularizationOptions = [];
@@ -623,6 +677,7 @@
       hapticService?.trigger("success");
       toast.success(result.message);
 
+      navDirection = -1;
       subView = null;
       extensionAnalysis = null;
       circularizationOptions = [];
@@ -843,64 +898,75 @@
   >
     {#if subView}
       <!-- Inline drill-down: sub-view swaps the panel content in place -->
-      <div class="view-layer" transition:sharedAxis|local={{ x: 30 }}>
-        <div class="compact-header sub">
-          <button
-            class="icon-btn back"
-            onclick={exitSubView}
-            aria-label="Back to sequence actions"
-          >
-            <i class="fas fa-chevron-left" aria-hidden="true"></i>
-          </button>
-          <div class="sub-title">
-            <h2 class="panel-title">{subViewTitle}</h2>
-            {#if subViewSubtitle}
-              <p class="sub-subtitle">{subViewSubtitle}</p>
+      {#key subView === "rotation" ? `${subView}:${directionRoute}` : subView}
+        <div
+          class="view-layer"
+          in:sharedAxis|local={{ x: navEnterX }}
+          out:sharedAxis|local={{ x: navExitX }}
+        >
+          <div class="compact-header sub">
+            <button
+              class="icon-btn back"
+              onclick={exitSubView}
+              aria-label={backLabel}
+            >
+              <i class="fas fa-chevron-left" aria-hidden="true"></i>
+            </button>
+            <div class="sub-title">
+              <h2 class="panel-title">{subViewTitle}</h2>
+              {#if subViewSubtitle}
+                <p class="sub-subtitle">{subViewSubtitle}</p>
+              {/if}
+            </div>
+            <div class="header-actions">
+              <button
+                class="icon-btn close"
+                onclick={handleClose}
+                aria-label="Close"
+              >
+                <i class="fas fa-times" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+          <div class="sub-view-body">
+            {#if subView === "turnPattern"}
+              <TurnPatternView {sequence} onApply={handleTurnPatternApply} />
+            {:else if subView === "duration"}
+              <DurationPatternView
+                {sequence}
+                onPreview={handleDurationPreview}
+                onApply={handleDurationApply}
+              />
+            {:else if subView === "rotation"}
+              <DirectionView
+                {sequence}
+                targetHand={panelState.targetHand}
+                route={directionRoute}
+                {initialRotationMode}
+                onRouteChange={handleDirectionRouteChange}
+                onReversalApply={handleReversalApply}
+                onRotationApply={handleRotationDirectionApply}
+              />
+            {:else if subView === "extend"}
+              <ExtendView
+                analysis={extensionAnalysis}
+                {circularizationOptions}
+                {directUnavailableReason}
+                isApplying={isExtending}
+                onBridgeAppend={handleBridgeAppend}
+                onApply={handleExtendApply}
+                onOrientationRepeat={handleOrientationRepeat}
+              />
             {/if}
           </div>
-          <div class="header-actions">
-            <button
-              class="icon-btn close"
-              onclick={handleClose}
-              aria-label="Close"
-            >
-              <i class="fas fa-times" aria-hidden="true"></i>
-            </button>
-          </div>
         </div>
-        <div class="sub-view-body">
-          {#if subView === "turnPattern"}
-            <TurnPatternView {sequence} onApply={handleTurnPatternApply} />
-          {:else if subView === "duration"}
-            <DurationPatternView
-              {sequence}
-              onPreview={handleDurationPreview}
-              onApply={handleDurationApply}
-            />
-          {:else if subView === "rotation"}
-            <DirectionView
-              {sequence}
-              targetHand={panelState.targetHand}
-              initialMode={initialDirectionMode}
-              {initialRotationMode}
-              onReversalApply={handleReversalApply}
-              onRotationApply={handleRotationDirectionApply}
-            />
-          {:else if subView === "extend"}
-            <ExtendView
-              analysis={extensionAnalysis}
-              {circularizationOptions}
-              {directUnavailableReason}
-              isApplying={isExtending}
-              onBridgeAppend={handleBridgeAppend}
-              onApply={handleExtendApply}
-              onOrientationRepeat={handleOrientationRepeat}
-            />
-          {/if}
-        </div>
-      </div>
+      {/key}
     {:else}
-      <div class="view-layer" transition:sharedAxis|local={{ x: -30 }}>
+      <div
+        class="view-layer"
+        in:sharedAxis|local={{ x: navEnterX }}
+        out:sharedAxis|local={{ x: navExitX }}
+      >
         <!-- Simple header with title and actions -->
         <div class="compact-header" class:dimmed={helpMode === "selecting"}>
           <div class="header-lead">
