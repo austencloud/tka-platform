@@ -8,7 +8,11 @@
 
 import type { AttractGhost } from "../services/attract-ghost.svelte";
 import { safe, type GhostKind } from "../domain/annotations";
-import type { GhostContext } from "../domain/intention";
+import type {
+  ConceptId,
+  GhostContext,
+  UnderstandingStage,
+} from "../domain/intention";
 import { visibleAll } from "../services/sensors";
 
 /** Press one element of a kind, chosen by the seeded RNG. False if none. */
@@ -108,3 +112,40 @@ export function pickOf(ctx: GhostContext, kind: GhostKind): HTMLElement | null {
 /** True when this kind is present and pressable right now. */
 export const has = (ctx: GhostContext, kind: GhostKind): boolean =>
   (ctx.available[kind] ?? 0) > 0;
+
+/** What the ghost currently believes about an idea. Absent means unaware. */
+export const stageOf = (ctx: GhostContext, concept: ConceptId): UnderstandingStage =>
+  ctx.concepts.get(concept) ?? "unaware";
+
+/**
+ * Say the thing that fits what the ghost currently believes.
+ *
+ * The same control means different things to a person depending on where they
+ * are with it: the first press of the option filter is a shot in the dark, the
+ * second is a question, the fifth is a decision. One `thought` string across
+ * all of those is what makes a presenter read as a machine — it is the same
+ * sentence from someone who should have learned something by now.
+ *
+ * Stages fall back DOWN to the nearest earlier stage that has a line, so a
+ * concept only needs to write the lines where its voice actually changes.
+ */
+const STAGE_ORDER: UnderstandingStage[] = ["unaware", "confused", "understood"];
+
+export function byStage(
+  ctx: GhostContext,
+  concept: ConceptId,
+  lines: Partial<Record<UnderstandingStage, string[]>>,
+  /**
+   * Required. An earlier version fell through to `""` when a stage had no
+   * lines, which the caption rendered as a ghost standing there thinking
+   * visibly nothing. A missing line is an authoring gap, not a silence.
+   */
+  fallback: string,
+): string {
+  const stage = stageOf(ctx, concept);
+  for (let i = STAGE_ORDER.indexOf(stage); i >= 0; i--) {
+    const pool = lines[STAGE_ORDER[i]!];
+    if (pool?.length) return oneOf(ctx, pool);
+  }
+  return fallback;
+}

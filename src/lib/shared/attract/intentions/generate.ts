@@ -25,6 +25,12 @@ export const GENERATE_INTENTIONS: Intention[] = [
   {
     id: "generate-one",
     category: "build",
+    concept: "generation",
+    // The idea is "you can ASK for one instead of making it", and the evidence
+    // is a sequence appearing where the ghost built nothing. A press that
+    // merely swapped one sequence for another of the same size proves nothing.
+    learn: (before, after) =>
+      after.sequenceLength > before.sequenceLength + 2 ? "understood" : null,
     thought: (ctx) =>
       ctx.hasSequence
         ? oneOf(ctx, [

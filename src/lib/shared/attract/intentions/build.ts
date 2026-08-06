@@ -10,7 +10,7 @@
 import { safe } from "../domain/annotations";
 import type { Intention } from "../domain/intention";
 import { visibleAll } from "../services/sensors";
-import { has, oneOf, pickOf, pressKind, restlessness } from "./helpers";
+import { byStage, has, oneOf, pickOf, pressKind, restlessness, stageOf } from "./helpers";
 import { monologueFor } from "./monologue";
 
 export const BUILD_INTENTIONS: Intention[] = [
@@ -62,22 +62,110 @@ export const BUILD_INTENTIONS: Intention[] = [
     },
   },
 
+  /**
+   * The All / Continuous filter — the worked example of the understanding
+   * mechanism (spec: 2026-08-06-ghost-understanding-design.md).
+   *
+   * The domain fact this whole arc turns on:
+   *
+   *   getReversalCount(option, sequence)
+   *
+   * Continuity is NOT a property of a letter. It is a property of the
+   * transition from where the sequence currently is — the same letter is
+   * continuous in one sequence and a reversal in another. That is what makes
+   * the toggle confusing (the surviving set changes between steps, which is
+   * inexplicable if you think it filters letters) and it is exactly what the
+   * realization consists of.
+   *
+   * So the arc is:
+   *
+   *   curious    the motive comes from PLAYBACK, not from the picker. Nobody
+   *              constrains their option space for fun; they do it after
+   *              something felt lumpy and they went looking for why.
+   *   confused   forty options became six. "Did I break it?" is the honest
+   *              first reaction, and the ghost only says it if the count
+   *              really collapsed.
+   *   understood met the collapse a second time and the survivors had CHANGED.
+   *              Now it is a recommendation, not a restriction.
+   *
+   * Past `understood`, going back to All means the opposite of what it meant at
+   * `confused`: not a panicked retreat but "I want that letter and I'll take
+   * the reversal."
+   */
   {
     id: "filter-continuous",
     category: "build",
+    concept: "continuity",
     thought: (ctx) =>
-      oneOf(ctx, [
-        "I wonder if anything continues from this.",
-        "Only the ones that flow on, then.",
+      byStage(
+        ctx,
+        "continuity",
+        {
+          // First encounter. It does not know what the control is — it knows
+          // something in what it just watched felt wrong and it is hunting.
+          unaware: [
+            "Something in that felt lumpy.",
+            "One of those didn't sit right. Which one?",
+            "Is there a reason that snagged?",
+          ],
+          confused: [
+            "Let's try that filter again.",
+            "What is this actually doing to the list?",
+          ],
+          understood: [
+            "Continuous. I want it to keep flowing.",
+            "Only what carries on from here, then.",
+            "Show me the ones that won't fight the last step.",
+          ],
+        },
         "What actually follows this?",
-      ]),
-    can: (ctx) => has(ctx, "option-filter"),
-    appeal: (ctx) => (ctx.hasSequence ? 0.45 : 0.1),
+      ),
+    // Never before there is something to be dissatisfied WITH. A filter pressed
+    // by someone who has not watched their sequence is someone reading the UI,
+    // not someone using it.
+    can: (ctx) =>
+      has(ctx, "option-filter") &&
+      ctx.sequenceLength >= 3 &&
+      ((ctx.performed.get("play-it") ?? 0) > 0 || ctx.available.option > 20),
+    appeal: (ctx) => (stageOf(ctx, "continuity") === "understood" ? 0.45 : 0.55),
+    mood: "unsure",
+    /**
+     * The evidence. A belief moves only on a measured collapse, and the jump to
+     * `understood` additionally requires that the SURVIVING SET differ from
+     * last time — the one observation that proves the filter is about
+     * transitions rather than about letters, and the one no single before/after
+     * can show on its own. That is what `conceptNotes` is for.
+     */
+    learn: (before, after, ctx) => {
+      const collapsed = after.available.option < before.available.option * 0.6;
+      if (!collapsed) return null;
+
+      const survivors = String(after.available.option);
+      const lastTime = ctx.conceptNotes.get("continuity");
+      ctx.conceptNotes.set("continuity", survivors);
+
+      const stage = stageOf(ctx, "continuity");
+      if (stage === "confused" && lastTime && lastTime !== survivors) {
+        return "understood";
+      }
+      return stage === "understood" ? "understood" : "confused";
+    },
+    reaction: (ctx) =>
+      stageOf(ctx, "continuity") === "understood"
+        ? oneOf(ctx, [
+            "Oh — it's not the letters. It's what follows THIS one.",
+            "It changes every step. Of course it does.",
+          ])
+        : stageOf(ctx, "continuity") === "confused"
+          ? oneOf(ctx, ["…oh. That's not many.", "Where did the rest go?"])
+          : null,
     perform: async (g, ctx) => {
       if (!(await pressKind(g, ctx, "option-filter"))) return false;
       await g.sleep(g.jitter(600, 500));
       if (g.halted()) return true;
-      // The retreat a person makes from a filter that filtered everything out.
+      // The retreat a person makes from a filter that filtered EVERYTHING out.
+      // Still correct at every stage: understanding the control does not make
+      // an empty list useful.
       const left = await g.waitFor(safe("option"), 2500);
       if (!left.length && !g.halted()) {
         await pressKind(g, ctx, "option-filter", 800);

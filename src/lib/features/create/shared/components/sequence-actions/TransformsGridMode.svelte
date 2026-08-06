@@ -104,6 +104,9 @@
         class="grid-btn mirror"
         class:help-active={helpMode}
         onclick={() => handleActionClick("mirror", onMirror)}
+        data-ghost={disabled || helpMode ? undefined : "safe"}
+        data-ghost-kind="transform"
+        data-ghost-label="Mirror"
         disabled={disabled && !helpMode}
         aria-label={helpMode
           ? "Learn about Mirror"
@@ -121,6 +124,9 @@
         class="grid-btn flip"
         class:help-active={helpMode}
         onclick={() => handleActionClick("flip", onFlip)}
+        data-ghost={disabled || helpMode ? undefined : "safe"}
+        data-ghost-kind="transform"
+        data-ghost-label="Flip"
         disabled={disabled && !helpMode}
         aria-label={helpMode
           ? "Learn about Flip"
@@ -139,6 +145,9 @@
         class:unavailable={swapDisabled && !helpMode}
         class:help-active={helpMode}
         onclick={() => handleActionClick("swap", onSwap)}
+        data-ghost={disabled || helpMode ? undefined : "safe"}
+        data-ghost-kind="transform"
+        data-ghost-label="Swap"
         disabled={(disabled || swapDisabled) && !helpMode}
         aria-label={helpMode
           ? "Learn about Swap Hands"
@@ -160,6 +169,9 @@
         class="grid-btn invert"
         class:help-active={helpMode}
         onclick={() => handleActionClick("invert", onInvert)}
+        data-ghost={disabled || helpMode ? undefined : "safe"}
+        data-ghost-kind="transform"
+        data-ghost-label="Invert"
         disabled={disabled && !helpMode}
         aria-label={helpMode
           ? "Learn about Invert"
@@ -177,6 +189,9 @@
         class="grid-btn rotate-ccw"
         class:help-active={helpMode}
         onclick={() => handleActionClick("rotate", onRotateCCW)}
+        data-ghost={disabled || helpMode ? undefined : "safe"}
+        data-ghost-kind="transform"
+        data-ghost-label="Rotate L"
         disabled={disabled && !helpMode}
         aria-label={helpMode
           ? "Learn about Rotate"
@@ -194,6 +209,9 @@
         class="grid-btn rotate-cw"
         class:help-active={helpMode}
         onclick={() => handleActionClick("rotate", onRotateCW)}
+        data-ghost={disabled || helpMode ? undefined : "safe"}
+        data-ghost-kind="transform"
+        data-ghost-label="Rotate R"
         disabled={disabled && !helpMode}
         aria-label={helpMode
           ? "Learn about Rotate"
@@ -271,6 +289,9 @@
           class:help-active={helpMode}
           onclick={() => handleActionClick("extend", onExtend)}
           disabled={(!hasSequence || isExtending) && !helpMode}
+          data-ghost={!hasSequence || isExtending || helpMode ? undefined : "safe"}
+          data-ghost-kind="extend"
+          data-ghost-label="Extend"
           aria-label={helpMode
             ? "Learn about Extend"
             : isExtending

@@ -37,8 +37,11 @@ import { createRng } from "$lib/shared/attract/services/rng";
 import { ALL_INTENTIONS } from "$lib/shared/attract/intentions";
 import { setEscapeHatch } from "$lib/shared/attract/intentions/explore";
 import {
+  CONCEPTS,
   EMPTY_WORLD,
+  type ConceptId,
   type GhostWorld,
+  type UnderstandingStage,
 } from "$lib/shared/attract/domain/intention";
 import { safe, type GhostKind } from "$lib/shared/attract/domain/annotations";
 import { createSimApp, SIM_MODULES } from "./sim/app-model";
@@ -92,7 +95,10 @@ function runSession(seed: number, decisions: number) {
       tabId: app.state.tabId,
       hasSequence: app.state.seqLen > 0,
       sequenceLength: app.state.seqLen,
-      sequenceWord: app.state.seqLen > 0 ? "ABDG".slice(0, app.state.seqLen) : null,
+      sequenceWord:
+        app.state.seqLen > 0
+          ? `${"ABDGPSWX".slice(0, Math.min(8, app.state.seqLen))}${app.state.word}`
+          : null,
       isPlaying: app.state.isPlaying,
       activeEffectIds: [...app.state.activeEffects],
       viewerOpen: app.state.viewerOpen,
@@ -158,9 +164,14 @@ interface Stats {
   seqLenAtClear: number[];
   longestBuildRun: number;
   failures: number;
+  concepts: Map<ConceptId, UnderstandingStage>;
 }
 
-function analyze(log: SessionRecord[], peak: number): Stats {
+function analyze(
+  log: SessionRecord[],
+  peak: number,
+  concepts: Map<ConceptId, UnderstandingStage> = new Map(),
+): Stats {
   const byIntention = new Map<string, number>();
   const byCategory = new Map<string, number>();
   const moduleTicks = new Map<string, number>();
@@ -195,6 +206,7 @@ function analyze(log: SessionRecord[], peak: number): Stats {
     seqLenAtClear,
     longestBuildRun,
     failures: log.filter((r) => !r.ok).length,
+    concepts,
   };
 }
 
@@ -212,6 +224,12 @@ function report(stats: Stats, log: SessionRecord[]): string {
     `- longest unbroken run of building: **${stats.longestBuildRun}**`,
     `- sequence length when cleared: ${stats.seqLenAtClear.join(", ") || "never cleared"}`,
     `- failed performs: ${stats.failures}`,
+    ``,
+    `## What it came to understand`,
+    ``,
+    ...CONCEPTS.map(
+      (c) => `- **${c}**: ${stats.concepts.get(c) ?? "unaware"}`,
+    ),
     ``,
     `## By intention`,
     ``,
@@ -252,7 +270,7 @@ describe("ghost session simulation", () => {
   it("plays a long session and reports what it did", async () => {
     const session = runSession(7, 400);
     await session.run();
-    const stats = analyze(session.log, session.app.state.peakSeqLen);
+    const stats = analyze(session.log, session.app.state.peakSeqLen, session.mind.memory.concepts);
     const text = report(stats, session.log);
 
     if (process.env.GHOST_SIM_REPORT) {
@@ -274,18 +292,57 @@ describe("ghost session simulation", () => {
     expect(session.app.state.peakSeqLen).toBeGreaterThanOrEqual(6);
   });
 
+  // Aggregated across seeds on purpose. A single seed's share of any one module
+  // swings widely — tuning until one lucky seed clears a threshold would be
+  // fitting the test to the run rather than measuring the behaviour.
   it("spends real time in generate, not just construct", async () => {
-    const session = runSession(23, 300);
+    let generate = 0;
+    let total = 0;
+    for (const seed of [7, 23, 41]) {
+      const session = runSession(seed, 300);
+      await session.run();
+      const stats = analyze(
+        session.log,
+        session.app.state.peakSeqLen,
+        session.mind.memory.concepts,
+      );
+      generate += stats.moduleTicks.get("create/generate") ?? 0;
+      total += stats.decisions;
+    }
+    expect(generate / total).toBeGreaterThan(0.04);
+  });
+
+  it("uses the sequence actions it can now reach", async () => {
+    const session = runSession(7, 400);
     await session.run();
-    const stats = analyze(session.log, session.app.state.peakSeqLen);
-    const generate = stats.moduleTicks.get("create/generate") ?? 0;
-    expect(generate / stats.decisions).toBeGreaterThan(0.05);
+    const stats = analyze(
+      session.log,
+      session.app.state.peakSeqLen,
+      session.mind.memory.concepts,
+    );
+    // Extend is the LOOP payoff and the single most impressive press in the
+    // app. Before 2026-08-06 none of this surface was annotated, so the count
+    // here was structurally zero in every run ever recorded.
+    expect(stats.byIntention.get("extend-it") ?? 0).toBeGreaterThan(0);
+    expect(stats.byIntention.get("transform-it") ?? 0).toBeGreaterThan(0);
+  });
+
+  it("arrives at an understanding rather than starting with one", async () => {
+    const session = runSession(7, 400);
+    await session.run();
+    const concepts = session.mind.memory.concepts;
+    // Every belief must be EARNED from a measured before/after delta, so a
+    // fresh mind believes nothing and a long session believes several things.
+    const fresh = runSession(7, 0);
+    expect(fresh.mind.memory.concepts.size).toBe(0);
+    expect([...concepts.values()].filter((s) => s === "understood").length,
+    ).toBeGreaterThanOrEqual(4);
   });
 
   it("does not fiddle turns more often than it adds steps", async () => {
     const session = runSession(5, 300);
     await session.run();
-    const stats = analyze(session.log, session.app.state.peakSeqLen);
+    const stats = analyze(session.log, session.app.state.peakSeqLen, session.mind.memory.concepts);
     const turns = stats.byIntention.get("fiddle-turns") ?? 0;
     const steps = stats.byIntention.get("add-step") ?? 0;
     expect(turns).toBeLessThan(steps);

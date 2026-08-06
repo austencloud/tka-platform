@@ -36,6 +36,40 @@ export const INTENTION_CATEGORIES: IntentionCategory[] = [
 /** Mood hint for the body (companion spec: Taco Cat). The dot ignores it. */
 export type GhostMood = "curious" | "delighted" | "bored" | "unsure" | "still";
 
+/**
+ * How well the ghost understands one idea the app embodies
+ * (spec: 2026-08-06-ghost-understanding-design.md).
+ *
+ * A CONCEPT is not a control. `undo` is a control; "this is forgiving, you can
+ * take things back" is a concept. A person's relationship to a control has a
+ * history — they do not know it exists, then they are surprised by it, then
+ * they get it — and watching that history happen is most of what makes watching
+ * someone use software interesting.
+ *
+ * There is deliberately no "curious" stage. Curiosity is not a belief, it is a
+ * REASON TO ACT, and it already has a home: the intention's `can`. Storing it
+ * would have meant a stage nothing could ever set.
+ */
+export type UnderstandingStage = "unaware" | "confused" | "understood";
+
+/** Ideas the ghost can come to understand. Ids are stable; stages are not. */
+export const CONCEPTS = [
+  /** The picker recommends what flows on from here; it does not restrict you. */
+  "continuity",
+  /** A sequence that closes can be completed for you. */
+  "extension",
+  /** It is forgiving — a step can be taken back. */
+  "reversibility",
+  /** The whole sequence can change without being rebuilt. */
+  "transformation",
+  /** You can ask for a sequence instead of making one. */
+  "generation",
+  /** How it looks is separate from what it is. */
+  "layering",
+] as const;
+
+export type ConceptId = (typeof CONCEPTS)[number];
+
 /** What the sensors read off the live DOM every tick. Never feature imports. */
 export interface GhostWorld {
   moduleId: string | null;
@@ -106,6 +140,10 @@ export const EMPTY_WORLD: GhostWorld = {
     "step-cell": 0,
     generate: 0,
     "generate-option": 0,
+    "sequence-actions": 0,
+    extend: 0,
+    transform: 0,
+    undo: 0,
     clear: 0,
     confirm: 0,
     dismiss: 0,
@@ -174,6 +212,24 @@ export interface GhostMemory {
      */
     lastInviteAt: number;
   };
+  /**
+   * What the ghost currently believes about each idea in the app. Absent means
+   * `unaware`. Written ONLY by an intention's `learn`, which is handed the
+   * world before and after its own action — so a belief can never run ahead of
+   * the evidence for it.
+   *
+   * A Map rather than a scalar for the same reason `budgets` is an object: the
+   * context handed to `perform` is a shallow copy, so anything written through
+   * it has to live behind a reference.
+   */
+  concepts: Map<ConceptId, UnderstandingStage>;
+  /**
+   * A small scratchpad per concept, for evidence that only means something
+   * across two encounters — e.g. continuity is only understood once the ghost
+   * has seen that the surviving option set CHANGED between two collapses,
+   * which no single before/after can show.
+   */
+  conceptNotes: Map<ConceptId, string>;
   rng: Rng;
   trail: Trail;
 }
@@ -252,6 +308,34 @@ export interface Intention {
    * stops.
    */
   repeatable?: boolean;
+
+  /**
+   * The idea this intention is an encounter with. Pairs with `learn`.
+   */
+  concept?: ConceptId;
+
+  /**
+   * Read what actually happened and report what the ghost should now believe.
+   *
+   * Handed the world as it was BEFORE the action and as it is AFTER it, so the
+   * only thing that can move a belief forward is an observed delta. Return
+   * `null` — the common case — to leave the belief where it was.
+   *
+   * This constraint is the whole point. The ghost cannot decide it has
+   * understood the option filter unless the option count really did collapse
+   * when it pressed the toggle; on a screen where Continuous happens to filter
+   * nothing, no insight is claimed, because none was available. The earlier
+   * attempt at giving the presenter an inner life failed the other way round —
+   * lines written first, justifications found second (ca21afa1f6, reverted).
+   * Evidence first, line second, or nothing.
+   *
+   * Runs BEFORE `reaction`, so a reaction may be about what was just realised.
+   */
+  learn?: (
+    before: GhostWorld,
+    after: GhostWorld,
+    ctx: GhostContext,
+  ) => UnderstandingStage | null;
 
   /**
    * Milliseconds to step back and SHUT UP after a successful perform, so the

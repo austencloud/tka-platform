@@ -38,6 +38,28 @@ export type GhostKind =
   | "generate"
   /** A generator setting the ghost may change in place before generating. */
   | "generate-option"
+  /**
+   * Opens the Sequence Actions panel — the door to extend and the transforms.
+   *
+   * That whole surface (40 components) carried no annotation at all until
+   * 2026-08-06, so the ghost had never once touched it in any run. It could not
+   * see it.
+   */
+  | "sequence-actions"
+  /**
+   * Completes a sequence that closes on itself. The LOOP payoff, and the most
+   * impressive single press in the app.
+   *
+   * Gated on `data-ghost-state="extendable"`, published by the panel, because
+   * `canExtend` is computed by sequence-extender.ts and NOTHING in the markup
+   * reflects it. A precondition that guessed here would lie, and a lying
+   * precondition is the one failure mode that makes the presenter look broken.
+   */
+  | "extend"
+  /** Mirror / Swap / Rotate / Reverse — changes the whole sequence at once. */
+  | "transform"
+  /** Takes the last step back. Shows a stranger that the app is forgiving. */
+  | "undo"
   | "clear"
   /** The confirm button of a dialog the ghost is allowed to go through with. */
   | "confirm"

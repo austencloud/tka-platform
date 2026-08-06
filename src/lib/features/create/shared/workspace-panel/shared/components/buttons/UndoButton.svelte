@@ -118,6 +118,9 @@
   disabled={!canAct}
   title={historyTooltip()}
   aria-label={historyButtonText()}
+  data-ghost={canAct ? "safe" : undefined}
+  data-ghost-kind="undo"
+  data-ghost-label="Undo"
 >
   <UndoGlyph size={20} {direction} />
 </button>

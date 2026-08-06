@@ -55,6 +55,8 @@ export function createMemory(rng: Rng, trail: Trail): GhostMemory {
     moduleDwellMs: 0,
     askedAbout: new Set(),
     budgets: { galleryOpens: 0, invites: 0, lastInviteAt: 0 },
+    concepts: new Map(),
+    conceptNotes: new Map(),
     rng,
     trail,
   };

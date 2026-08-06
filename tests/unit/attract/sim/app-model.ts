@@ -27,6 +27,11 @@ export interface SimState {
   activeEffects: Set<string>;
   viewerOpen: boolean;
   propDrawerOpen: boolean;
+  actionsPanelOpen: boolean;
+  /** All vs Continuous. Continuous shows only what flows on from HERE. */
+  continuousOnly: boolean;
+  /** Words are how a transform proves it changed something. */
+  word: string;
   practiceOn: boolean;
   mirrorOn: boolean;
   confirmUp: boolean;
@@ -86,7 +91,16 @@ function screenKinds(s: SimState): Record<string, number> {
         };
       }
       return {
-        ...(s.seqLen === 0 ? { "start-position": 8 } : { option: 24 }),
+        ...(s.seqLen === 0
+          ? { "start-position": 8 }
+          : {
+              // Continuity is a property of the TRANSITION, not of the letter
+              // (getReversalCount takes the surrounding sequence). So the
+              // surviving set both shrinks AND changes as the sequence grows —
+              // which is the observation the ghost has to make to understand
+              // what the filter is really doing.
+              option: s.continuousOnly ? 3 + ((s.seqLen * 3) % 6) : 24,
+            }),
         "option-filter": s.seqLen > 0 ? 3 : 0,
         turn: s.seqLen > 0 ? 2 : 0,
         "step-cell": s.seqLen,
@@ -96,6 +110,13 @@ function screenKinds(s: SimState): Record<string, number> {
         tempo: s.seqLen > 0 ? 3 : 0,
         effect: s.seqLen > 0 ? 16 : 0,
         "effect-param": s.activeEffects.size > 0 ? 4 : 0,
+        undo: s.seqLen > 0 ? 1 : 0,
+        "sequence-actions": s.seqLen > 0 && !s.actionsPanelOpen ? 1 : 0,
+        // The actions panel: transforms always, Extend only when the sequence
+        // genuinely closes — the real TransformsGridMode renders that button
+        // inside `{#if onExtend && canExtend}`, so its presence IS the signal.
+        transform: s.actionsPanelOpen ? 6 : 0,
+        extend: s.actionsPanelOpen && s.seqLen >= 4 && s.seqLen % 2 === 0 ? 1 : 0,
         "prop-picker": s.seqLen > 0 && !s.propDrawerOpen ? 1 : 0,
         prop: s.propDrawerOpen ? 6 : 0,
         viewer: s.seqLen > 0 ? 1 : 0,
@@ -128,6 +149,8 @@ const LABELS: Record<string, string[]> = {
   tempo: ["Slow", "Medium", "Fast"],
   curio: ["Mandala", "Tunnel", "Card"],
   "gallery-item": ["someone's sequence"],
+  transform: ["Mirror", "Flip", "Swap", "Invert", "Rotate L", "Rotate R"],
+  "generate-option": ["Increase Length", "Decrease Length", "Increase Level", "Grid Mode"],
 };
 
 export interface SimApp {
@@ -155,6 +178,9 @@ export function createSimApp(
     activeEffects: new Set(),
     viewerOpen: false,
     propDrawerOpen: false,
+    actionsPanelOpen: false,
+    continuousOnly: false,
+    word: "",
     practiceOn: false,
     mirrorOn: false,
     confirmUp: false,
@@ -273,6 +299,24 @@ export function createSimApp(
       case "effect":
         if (state.activeEffects.has(label)) state.activeEffects.delete(label);
         else state.activeEffects.add(label);
+        break;
+      case "option-filter":
+        state.continuousOnly = !state.continuousOnly;
+        break;
+      case "sequence-actions":
+        state.actionsPanelOpen = true;
+        break;
+      case "extend":
+        // Completes the loop: the sequence comes back round to its start.
+        state.seqLen = state.seqLen * 2;
+        break;
+      case "transform":
+        // Same steps, different sequence — length unchanged, word changed,
+        // which is exactly the evidence `transformation` learns from.
+        state.word = `${state.word}'`;
+        break;
+      case "undo":
+        state.seqLen = Math.max(0, state.seqLen - 1);
         break;
       case "prop-picker":
         state.propDrawerOpen = true;

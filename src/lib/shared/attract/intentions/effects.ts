@@ -16,6 +16,14 @@ export const EFFECT_INTENTIONS: Intention[] = [
   {
     id: "try-effect",
     category: "effects",
+    concept: "layering",
+    // "How it looks is separate from what it is." The proof is an effect
+    // landing while the sequence itself is untouched — same length, same word.
+    learn: (before, after) =>
+      after.activeEffectIds.length > before.activeEffectIds.length &&
+      after.sequenceLength === before.sequenceLength
+        ? "understood"
+        : null,
     target: (ctx) => pickOf(ctx, "effect"),
     // Names the effect. Every effect used to get the same line, which is how
     // sixteen distinct visual ideas came out sounding like one shrug.

@@ -26,6 +26,9 @@
   aria-label="Sequence actions"
   title="Sequence actions"
   data-testid="sequence-actions-button"
+  data-ghost="safe"
+  data-ghost-kind="sequence-actions"
+  data-ghost-label="Sequence actions"
 >
   <i class="fa-solid {WORKSPACE_BUTTON_ICON['sequence-actions'].icon}" aria-hidden="true"></i>
 </button>

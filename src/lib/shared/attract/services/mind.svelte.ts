@@ -21,6 +21,7 @@ import {
   type GhostMood,
   type GhostWorld,
   type Intention,
+  type UnderstandingStage,
 } from "../domain/intention";
 import {
   createMemory,
@@ -81,8 +82,12 @@ export function createGhostMind(opts: {
   let currentModuleId: string | null = null;
   let moduleEnteredAt = now();
 
+  /** The world as of the last `readContext`, for the before/after delta. */
+  let lastWorld: GhostWorld = opts.sense();
+
   function readContext(): GhostContext {
     const world = opts.sense();
+    lastWorld = world;
     if (world.moduleId !== currentModuleId) {
       currentModuleId = world.moduleId;
       moduleEnteredAt = now();
@@ -138,6 +143,9 @@ export function createGhostMind(opts: {
     await think(thought, intention.mood ?? "curious");
     if (g.halted()) return;
 
+    // The world as it was BEFORE the action, for `learn` to compare against.
+    const before = lastWorld;
+
     let ok = true;
     try {
       ok = (await intention.perform(g, ctx, target)) !== false;
@@ -145,6 +153,23 @@ export function createGhostMind(opts: {
       // A perform that throws is a lying precondition with extra steps. The
       // trail records it; the tour carries on.
       ok = false;
+    }
+
+    // LEARN. What actually happened, measured, before anything is said about
+    // it. Runs ahead of savor and reaction so that both can be about what the
+    // ghost now understands — a realization has to land as a realization, not
+    // as an announcement scheduled in advance
+    // (spec: 2026-08-06-ghost-understanding-design.md).
+    if (ok && intention.concept && intention.learn && !g.halted()) {
+      const after = opts.sense();
+      let stage: UnderstandingStage | null = null;
+      try {
+        stage = intention.learn(before, after, ctx);
+      } catch {
+        // A learn that throws is a belief with no evidence. Believe nothing.
+        stage = null;
+      }
+      if (stage) memory.concepts.set(intention.concept, stage);
     }
 
     // SAVOR. A beat that produced something to look at gets watched instead of
