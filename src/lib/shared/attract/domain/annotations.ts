@@ -27,6 +27,17 @@ export type GhostKind =
   | "option-filter"
   | "turn"
   | "step-cell"
+  /**
+   * The generate button — the app makes a whole sequence in one press.
+   *
+   * The best single demonstration TKA has, and until this kind existed the
+   * generate tab carried no annotation at all: the ghost would walk in, find
+   * nothing satisfiable, and bounce straight back out. A 400-decision
+   * simulation put 2.7% of the session in generate and zero presses in it.
+   */
+  | "generate"
+  /** A generator setting the ghost may change in place before generating. */
+  | "generate-option"
   | "clear"
   /** The confirm button of a dialog the ghost is allowed to go through with. */
   | "confirm"

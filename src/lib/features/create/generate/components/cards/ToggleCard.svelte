@@ -74,6 +74,9 @@ Hides header when card height is below 65px for space optimization
   ontouchend={state.handleTouchEnd}
   ontouchcancel={state.handleTouchCancel}
   aria-label={`${title}: ${activeOption === option1.value ? option1.label : option2.label}. Click to toggle.`}
+  data-ghost="safe"
+  data-ghost-kind="generate-option"
+  data-ghost-label={title}
 >
   <div class="card-header-wrapper">
     <CardHeader {title} {headerFontSize} />

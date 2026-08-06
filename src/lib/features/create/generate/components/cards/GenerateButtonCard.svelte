@@ -65,6 +65,9 @@ Always renders as a pure button. Word input is now in WordInputCard.
   disabled={isDisabled}
   type="button"
   aria-label={buttonLabel}
+  data-ghost="safe"
+  data-ghost-kind="generate"
+  data-ghost-label="Generate"
 >
   <div class="button-content">
     <FontAwesomeIcon icon={buttonIcon} style="solid" />

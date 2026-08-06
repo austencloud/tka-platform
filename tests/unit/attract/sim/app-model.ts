@@ -1,0 +1,327 @@
+/**
+ * A fake app for the ghost to drive.
+ *
+ * The presenter's failures are failures of SEQUENCING — it sets a turn and
+ * never applies an option, it adds one step and clears, it never sprees, it
+ * never touches generate. None of that is a motor or a pixel problem, so none
+ * of it needs a browser to observe. What it needs is the real intention bag and
+ * the real scoring running against a world that reacts the way the app reacts,
+ * for a few hundred decisions, with every decision written down.
+ *
+ * So this models the app as state + annotated DOM. Pressing a `start-position`
+ * really does create a sequence; pressing `clear` really does raise a confirm;
+ * the generate module really is annotated with nothing, because that is the
+ * truth today and hiding it would hide the finding.
+ *
+ * Fidelity contract: this models WHAT IS ANNOTATED and WHAT PRESSING IT DOES.
+ * It does not model layout, timing of real mounts, or anything visual. Findings
+ * about decision order are trustworthy; findings about how something looks are
+ * not, and must be checked in a browser.
+ */
+
+export interface SimState {
+  moduleId: string | null;
+  tabId: string | null;
+  seqLen: number;
+  isPlaying: boolean;
+  activeEffects: Set<string>;
+  viewerOpen: boolean;
+  propDrawerOpen: boolean;
+  practiceOn: boolean;
+  mirrorOn: boolean;
+  confirmUp: boolean;
+  /** Virtual-clock time until which a module is running its own tour. */
+  presentingUntil: number;
+  /** Turn presses that never got applied to a step — the complaint, counted. */
+  turnPresses: number;
+  clears: number;
+  /** Generator settings pressed — the generate-tab version of turn-fiddling. */
+  generatorTweaks: number;
+  /** Longest sequence this session ever reached. */
+  peakSeqLen: number;
+}
+
+export interface PressEvent {
+  kind: string;
+  label: string;
+  moduleId: string | null;
+}
+
+/** Modules the sidebar offers. Mirrors the real nav closely enough to score. */
+export const SIM_MODULES = [
+  "create",
+  "browse",
+  "library",
+  "practice",
+  "museum",
+  "play",
+  "learn",
+] as const;
+
+/**
+ * What each module puts on screen, by annotated kind.
+ *
+ * `create` is split by tab because that IS the finding: the construct tab is
+ * dense with annotated controls and the generate tab has none, so a ghost that
+ * navigates by "what can I press here" can never spend time in generate.
+ */
+function screenKinds(s: SimState): Record<string, number> {
+  if (s.confirmUp) return { confirm: 1, dismiss: 0 };
+  if (s.viewerOpen)
+    return { stage: 1, play: 1, tempo: 3, effect: 16, "close-overlay": 1, viewer: 0 };
+
+  switch (s.moduleId) {
+    case "create":
+      if (s.tabId === "generate") {
+        // The generate card grid: one Generate button plus the settings that
+        // change in place (length/level steppers, the grid-mode toggle).
+        // Cards that open an overlay stay unannotated, so the ghost cannot
+        // walk itself into a modal it has no way out of.
+        return {
+          generate: 1,
+          "generate-option": 6,
+          "step-cell": s.seqLen,
+          play: s.seqLen > 0 ? 1 : 0,
+          stage: 1,
+        };
+      }
+      return {
+        ...(s.seqLen === 0 ? { "start-position": 8 } : { option: 24 }),
+        "option-filter": s.seqLen > 0 ? 3 : 0,
+        turn: s.seqLen > 0 ? 2 : 0,
+        "step-cell": s.seqLen,
+        clear: s.seqLen > 0 ? 1 : 0,
+        play: s.seqLen > 0 ? 1 : 0,
+        stage: 1,
+        tempo: s.seqLen > 0 ? 3 : 0,
+        effect: s.seqLen > 0 ? 16 : 0,
+        "effect-param": s.activeEffects.size > 0 ? 4 : 0,
+        "prop-picker": s.seqLen > 0 && !s.propDrawerOpen ? 1 : 0,
+        prop: s.propDrawerOpen ? 6 : 0,
+        viewer: s.seqLen > 0 ? 1 : 0,
+        practice: s.seqLen > 0 && !s.practiceOn ? 1 : 0,
+        mirror: s.practiceOn && !s.mirrorOn ? 1 : 0,
+        "practice-stop": s.practiceOn ? 1 : 0,
+        curio: 2,
+      };
+    case "browse":
+    case "library":
+      return { "gallery-item": 12, curio: 1 };
+    case "museum":
+      return { docent: 1 };
+    case "play":
+      return { curio: 3 };
+    case "learn":
+      return { curio: 2 };
+    default:
+      return {};
+  }
+}
+
+const LABELS: Record<string, string[]> = {
+  "start-position": ["alpha1", "beta3", "gamma5"],
+  option: ["A", "B", "D", "G", "P", "Σ", "Ψ", "W-"],
+  "option-filter": ["Continuous", "All", "Reversals"],
+  turn: ["Blue turns", "Red turns"],
+  effect: ["Trails", "Fire", "LED", "Bloom", "Goo", "Ink", "Silk", "Pulse"],
+  prop: ["Staff", "Fan", "Club", "Buugeng"],
+  tempo: ["Slow", "Medium", "Fast"],
+  curio: ["Mandala", "Tunnel", "Card"],
+  "gallery-item": ["someone's sequence"],
+};
+
+export interface SimApp {
+  state: SimState;
+  /** Rebuild document.body to match state. Called after every mutation. */
+  render: () => void;
+  /** Apply the effect of pressing an element. Unknown elements are inert. */
+  press: (el: HTMLElement) => void;
+  /** Programmatic module switch — the host's escape hatch. */
+  goTo: (moduleId: string, tabId?: string | null) => void;
+  presses: PressEvent[];
+  /** A module is running its own show — the ghost should stand back. */
+  presenting: () => boolean;
+}
+
+export function createSimApp(
+  pick: <T>(arr: T[]) => T,
+  now: () => number = () => 0,
+): SimApp {
+  const state: SimState = {
+    moduleId: "create",
+    tabId: "construct",
+    seqLen: 0,
+    isPlaying: false,
+    activeEffects: new Set(),
+    viewerOpen: false,
+    propDrawerOpen: false,
+    practiceOn: false,
+    mirrorOn: false,
+    confirmUp: false,
+    presentingUntil: 0,
+    turnPresses: 0,
+    clears: 0,
+    generatorTweaks: 0,
+    peakSeqLen: 0,
+  };
+
+  const presses: PressEvent[] = [];
+
+  /**
+   * Built as an HTML string on purpose: the shared vitest setup replaces
+   * `document.createElement` with a plain object fake for every tag, so nodes
+   * made that way cannot be appended. The parser path is untouched by it.
+   */
+  function el(kind: string, label: string, index: number): string {
+    const active =
+      kind === "effect" && state.activeEffects.has(label) ? " data-ghost-active" : "";
+    const playing =
+      kind === "stage" && state.isPlaying ? ' data-ghost-state="playing"' : "";
+    return (
+      `<button data-ghost="safe" data-ghost-kind="${kind}" ` +
+      `data-ghost-label="${label}" data-sim-index="${index}"${active}${playing}>${label}</button>`
+    );
+  }
+
+  function render(): void {
+    const html: string[] = [];
+
+    // The sidebar. Hidden by an immersive module or an overlay, exactly like
+    // the real one — that is what makes escape-room reachable.
+    const immersive = state.moduleId === "museum";
+    if (!state.viewerOpen && !state.confirmUp && !immersive) {
+      for (const id of SIM_MODULES) {
+        html.push(
+          `<button class="module-button" data-tour-module="${id}" data-ghost-label="${id}">${id}</button>`,
+        );
+      }
+      if (state.moduleId === "create") {
+        for (const tab of ["construct", "generate"]) {
+          html.push(
+            `<button class="section-button" data-sim-tab="${tab}">${tab}</button>`,
+          );
+        }
+      }
+    }
+
+    for (const [kind, count] of Object.entries(screenKinds(state))) {
+      for (let i = 0; i < count; i++) {
+        const pool = LABELS[kind] ?? [kind];
+        html.push(el(kind, pool[i % pool.length]!, i));
+      }
+    }
+
+    document.body.innerHTML = html.join("");
+  }
+
+  function goTo(moduleId: string, tabId: string | null = null): void {
+    state.moduleId = moduleId;
+    state.tabId = moduleId === "create" ? (tabId ?? "construct") : tabId;
+    state.viewerOpen = false;
+    render();
+  }
+
+  function press(node: HTMLElement): void {
+    const kind = node.getAttribute("data-ghost-kind");
+    const label = node.getAttribute("data-ghost-label") ?? "";
+
+    if (node.classList.contains("module-button")) {
+      goTo(node.getAttribute("data-tour-module")!);
+      presses.push({ kind: "nav-module", label, moduleId: state.moduleId });
+      return;
+    }
+    if (node.classList.contains("section-button")) {
+      state.tabId = node.getAttribute("data-sim-tab");
+      presses.push({ kind: "nav-tab", label, moduleId: state.moduleId });
+      render();
+      return;
+    }
+    if (!kind) return;
+
+    presses.push({ kind, label, moduleId: state.moduleId });
+
+    switch (kind) {
+      case "start-position":
+        state.seqLen = 1;
+        break;
+      case "option":
+        state.seqLen += 1;
+        break;
+      case "generate":
+        // A whole sequence at once — the thing the generate tab is for.
+        state.seqLen = 4 + (pick([0, 2, 4, 8]) ?? 0);
+        break;
+      case "generate-option":
+        state.generatorTweaks += 1;
+        break;
+      case "turn":
+        state.turnPresses += 1;
+        break;
+      case "clear":
+        state.confirmUp = true;
+        break;
+      case "confirm":
+        state.confirmUp = false;
+        state.seqLen = 0;
+        state.isPlaying = false;
+        state.activeEffects.clear();
+        state.clears += 1;
+        break;
+      case "play":
+        state.isPlaying = !state.isPlaying;
+        break;
+      case "effect":
+        if (state.activeEffects.has(label)) state.activeEffects.delete(label);
+        else state.activeEffects.add(label);
+        break;
+      case "prop-picker":
+        state.propDrawerOpen = true;
+        break;
+      case "prop":
+        state.propDrawerOpen = false;
+        break;
+      case "viewer":
+        state.viewerOpen = true;
+        break;
+      case "close-overlay":
+        state.viewerOpen = false;
+        break;
+      case "practice":
+        state.practiceOn = true;
+        break;
+      case "mirror":
+        state.mirrorOn = true;
+        break;
+      case "practice-stop":
+        state.practiceOn = false;
+        state.mirrorOn = false;
+        break;
+      case "docent":
+        // The module takes over and walks the room for a while. `presenting` is
+        // what tells the ghost to stand back rather than keep pressing.
+        state.presentingUntil = now() + 90_000;
+        break;
+      case "curio":
+        // A curio opens something ephemeral. Nothing structural changes.
+        break;
+      case "gallery-item":
+        state.seqLen = 4 + (pick([0, 1, 2, 3]) ?? 0);
+        break;
+      default:
+        break;
+    }
+
+    state.peakSeqLen = Math.max(state.peakSeqLen, state.seqLen);
+    render();
+  }
+
+  render();
+  return {
+    state,
+    render,
+    press,
+    goTo,
+    presses,
+    presenting: () => now() < state.presentingUntil,
+  };
+}

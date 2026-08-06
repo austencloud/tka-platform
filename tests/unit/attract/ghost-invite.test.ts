@@ -62,12 +62,31 @@ describe("invitation preconditions", () => {
 
   it.each([
     ["playback", { isPlaying: true }],
-    ["an open picker", { pickerOpen: true }],
     ["an open viewer", { viewerOpen: true }],
     ["a module running its own show", { presenting: true }],
   ])("never interrupts %s", (_label, world) => {
     const ctx = ctxWith(world);
     expect(INVITE_INTENTIONS.some((i) => i.can(ctx))).toBe(false);
+  });
+
+  /*
+   * This case previously asserted the opposite, and the assertion was wrong
+   * rather than the code. `pickerOpen` reads as "a chooser is up, do not
+   * interrupt", but the sensor defines it as
+   * `available.option > 0 || available["start-position"] > 0` — which is true
+   * for the whole time the construct screen is displayed. Gating invitations on
+   * it meant the family could never fire on the busiest screen in the app, and
+   * a 400-decision session simulation produced exactly one invitation.
+   *
+   * The construct screen is the screen a passerby is most likely to be looking
+   * at. It is the entire point of the invitation.
+   */
+  it("does offer while the option picker is on screen — that is the main screen", () => {
+    const ctx = ctxWith({
+      pickerOpen: true,
+      available: { ...EMPTY_WORLD.available, option: 24, effect: 16 },
+    });
+    expect(INVITE_INTENTIONS.some((i) => i.can(ctx))).toBe(true);
   });
 
   it("never speaks over a modal — the one shape that makes the app unpressable", () => {

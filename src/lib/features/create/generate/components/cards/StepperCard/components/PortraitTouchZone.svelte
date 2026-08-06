@@ -24,6 +24,9 @@ Covers top or bottom half of the card for increment/decrement
   {onkeydown}
   {disabled}
   aria-label={ariaLabel}
+  data-ghost="safe"
+  data-ghost-kind="generate-option"
+  data-ghost-label={ariaLabel}
 ></button>
 
 <style>

@@ -8,6 +8,7 @@
 
 import type { Intention } from "../domain/intention";
 import { BUILD_INTENTIONS } from "./build";
+import { GENERATE_INTENTIONS } from "./generate";
 import { PLAYBACK_INTENTIONS } from "./playback";
 import { EFFECT_INTENTIONS, PROP_INTENTIONS } from "./effects";
 import { EXPLORE_INTENTIONS } from "./explore";
@@ -16,6 +17,7 @@ import { INVITE_INTENTIONS } from "./invite";
 
 export const ALL_INTENTIONS: Intention[] = [
   ...BUILD_INTENTIONS,
+  ...GENERATE_INTENTIONS,
   ...PLAYBACK_INTENTIONS,
   ...EFFECT_INTENTIONS,
   ...PROP_INTENTIONS,

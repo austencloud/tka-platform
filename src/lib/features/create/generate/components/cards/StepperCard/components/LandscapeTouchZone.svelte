@@ -22,6 +22,9 @@ Left side decrements, right side increments
   {onkeydown}
   {disabled}
   aria-label={ariaLabel}
+  data-ghost="safe"
+  data-ghost-kind="generate-option"
+  data-ghost-label={ariaLabel}
 >
   <div class="zone-icon">
     <svg

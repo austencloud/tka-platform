@@ -249,7 +249,16 @@ export const EXPLORE_INTENTIONS: Intention[] = [
     // docent button is the only thing in there it can press. It is also the one
     // beat where the ghost stops driving and lets the module drive — so the dwell
     // is long, because walking a museum IS the demonstration.
-    can: (ctx) => has(ctx, "docent"),
+    /*
+     * `!presenting` is load-bearing, not defensive. Without it the museum is an
+     * absorbing state: the docent button is the ONLY annotated control in the
+     * room, so once the ghost is in there nothing else is satisfiable, and it
+     * re-presses the button while the docent is already walking. A 400-decision
+     * simulation spent 96% of the whole session doing exactly that — one room,
+     * one button, 382 times, saying "Can I actually walk around in here?" over
+     * and over. Nobody would have called that a character.
+     */
+    can: (ctx) => has(ctx, "docent") && !ctx.presenting,
     appeal: () => 0.95,
     mood: "delighted",
     perform: async (g, ctx) => {
@@ -295,7 +304,15 @@ export const EXPLORE_INTENTIONS: Intention[] = [
       // be the ghost undoing its own work. A close-overlay control does not
       // count as something to do — it IS this intention's way out.
       Object.entries(ctx.available).every(
-        ([kind, count]) => count === 0 || kind === "close-overlay",
+        ([kind, count]) =>
+          count === 0 ||
+          kind === "close-overlay" ||
+          // A docent button the ghost has ALREADY handed the room to is not
+          // something left to do — it is the thing it just did. Counting it as
+          // "there is still something to press" is what sealed the museum: the
+          // only control in the room was also the only reason the escape gate
+          // could never open.
+          (kind === "docent" && (ctx.performed.get("let-it-show-me") ?? 0) > 0),
       ) &&
       ctx.lingerCount === 0 &&
       // A module running its own tour (the museum docent) has nothing left to

@@ -104,6 +104,8 @@ export const EMPTY_WORLD: GhostWorld = {
     "option-filter": 0,
     turn: 0,
     "step-cell": 0,
+    generate: 0,
+    "generate-option": 0,
     clear: 0,
     confirm: 0,
     dismiss: 0,
@@ -230,6 +232,26 @@ export interface Intention {
 
   /** Optional mood hint for the body. Defaults to "curious". */
   mood?: GhostMood;
+
+  /**
+   * Exempt from the novelty penalty.
+   *
+   * Novelty (`1 / (1 + timesPerformed)`) exists to stop the ghost repeating
+   * itself, and for almost everything that is right. For the handful of
+   * intentions whose whole job IS repetition it is catastrophic: adding a step
+   * to a sequence is the same action every time, so by the third one novelty
+   * has cut its score to a quarter and anything else on screen outscores it.
+   *
+   * A 400-decision simulation of the shipped bag never once added two steps in
+   * a row and never got a sequence past six steps — the ghost demonstrated a
+   * start-position picker rather than a composer, which is exactly what Austen
+   * saw: "he won't build a whole sequence."
+   *
+   * Set this only where repetition is the point, and give the intention its own
+   * brake instead (a tapering `appeal`, a ceiling in `can`). Otherwise it never
+   * stops.
+   */
+  repeatable?: boolean;
 
   /**
    * Milliseconds to step back and SHUT UP after a successful perform, so the

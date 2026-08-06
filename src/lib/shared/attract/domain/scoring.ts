@@ -27,6 +27,13 @@ import type { Trail } from "../services/trail";
 
 /** Fatigue added to a category each time one of its intentions performs. */
 export const FATIGUE_GAIN = 0.35;
+/**
+ * Fatigue added by a `repeatable` intention. Much smaller, for the same reason
+ * novelty is skipped: at the normal rate two steps in a row take `build`
+ * freshness to 0.3 and the spree dies on the third — so the ghost could never
+ * sit and make a sequence the way a person does.
+ */
+export const FATIGUE_GAIN_REPEATABLE = 0.08;
 /** Fatigue bled off every category on every tick. */
 export const FATIGUE_DECAY = 0.04;
 /** Multiplier when a category naturally follows the last one. */
@@ -67,7 +74,9 @@ export const momentumOf = (ctx: GhostContext, category: IntentionCategory) =>
 export function scoreIntention(intention: Intention, ctx: GhostContext): number {
   return (
     Math.max(0, intention.appeal(ctx)) *
-    noveltyOf(ctx, intention.id) *
+    // An intention whose job is repetition (adding steps) must not be punished
+    // for repeating — see Intention.repeatable. It brakes itself instead.
+    (intention.repeatable ? 1 : noveltyOf(ctx, intention.id)) *
     freshnessOf(ctx, intention.category) *
     momentumOf(ctx, intention.category)
   );
@@ -115,7 +124,11 @@ export function remember(memory: GhostMemory, intention: Intention): void {
   memory.performed.set(intention.id, (memory.performed.get(intention.id) ?? 0) + 1);
   memory.fatigue.set(
     intention.category,
-    Math.min(1, (memory.fatigue.get(intention.category) ?? 0) + FATIGUE_GAIN),
+    Math.min(
+      1,
+      (memory.fatigue.get(intention.category) ?? 0) +
+        (intention.repeatable ? FATIGUE_GAIN_REPEATABLE : FATIGUE_GAIN),
+    ),
   );
   memory.lastCategory = intention.category;
 }

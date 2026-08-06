@@ -42,10 +42,19 @@ export const BUILD_INTENTIONS: Intention[] = [
         ctx,
         ctx.sequenceLength > 3 ? "One more after that." : "What comes next?",
       ),
-    can: (ctx) => ctx.hasSequence && has(ctx, "option"),
-    // Strong early, tapering off — a sequence that never stops growing stops
-    // being a demonstration and becomes a wall.
-    appeal: (ctx) => Math.max(0.15, 0.85 - ctx.sequenceLength * 0.08),
+    // The one intention whose job is repetition: a person building a sequence
+    // presses option after option, and the novelty penalty made that
+    // impossible (see Intention.repeatable). `can` carries the ceiling that
+    // novelty used to provide by accident.
+    repeatable: true,
+    can: (ctx) => ctx.hasSequence && ctx.sequenceLength < 16 && has(ctx, "option"),
+    // Strong until it is a real sequence, then tapering — a sequence that never
+    // stops growing stops being a demonstration and becomes a wall. The knee is
+    // deliberately past 8: eight steps is a word, three is a fragment.
+    appeal: (ctx) =>
+      ctx.sequenceLength < 8
+        ? 0.9
+        : Math.max(0.12, 0.9 - (ctx.sequenceLength - 8) * 0.1),
     perform: async (g, ctx, target) => {
       if (!target || g.halted()) return false;
       await g.browseThenPress(target, visibleAll(safe("option")));
@@ -87,8 +96,12 @@ export const BUILD_INTENTIONS: Intention[] = [
         "Let's put a turn on it.",
         "What happens if I add rotation here?",
       ]),
-    can: (ctx) => has(ctx, "turn"),
-    appeal: (ctx) => (ctx.hasSequence ? 0.5 : 0.2),
+    // A turn decorates a sequence that already exists. Firing it at one or two
+    // steps is the "sets a turn value and then never applies an option" tell
+    // Austen watched live — it reads as fiddling with settings instead of
+    // making something. Decoration waits until there is something to decorate.
+    can: (ctx) => ctx.sequenceLength >= 4 && has(ctx, "turn"),
+    appeal: () => 0.4,
     perform: async (g, ctx) => {
       if (!(await pressKind(g, ctx, "turn"))) return false;
       await g.sleep(g.jitter(500, 500));
@@ -109,9 +122,14 @@ export const BUILD_INTENTIONS: Intention[] = [
         "Scrap it. Start again.",
         "I want to build something else.",
       ]),
-    can: (ctx) => ctx.hasSequence && ctx.sequenceLength >= 3 && has(ctx, "clear"),
-    // Only once it has actually made something and stayed a while.
-    appeal: (ctx) => Math.min(0.7, ctx.sequenceLength * 0.08 + restlessness(ctx) * 0.4),
+    // Only once it has actually FINISHED something. At three steps this was
+    // outscoring `add-step` and throwing away a fragment — the ghost binned
+    // every sequence it started at exactly three, seven times in a 200-decision
+    // run, which is why nobody ever saw it make anything.
+    can: (ctx) => ctx.sequenceLength >= 6 && has(ctx, "clear"),
+    // Boredom, not length, is the motive. A long sequence is a reason to keep
+    // playing with it, not a reason to bin it.
+    appeal: (ctx) => Math.min(0.6, restlessness(ctx) * 0.55),
     mood: "bored",
     perform: async (g, ctx) => {
       if (!(await pressKind(g, ctx, "clear"))) return false;

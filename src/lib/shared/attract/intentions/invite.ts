@@ -47,10 +47,18 @@ const WARMUP_DECISIONS = 5;
  * The world is calm enough to say something to the room: nothing playing,
  * nothing modal, nothing mid-choice, and no module running its own show.
  */
+/*
+ * NOT gated on `pickerOpen`. That sensor does not mean "a modal chooser is up"
+ * — it is literally `available.option > 0 || available["start-position"] > 0`,
+ * which is TRUE for the entire time the construct screen is on display. Gating
+ * on it meant the invitation could never once fire on the busiest, most-watched
+ * screen in the app, which is the only screen a passerby is likely to be
+ * looking at. The whole family was dead on arrival and the simulation is what
+ * showed it: one invitation in 400 decisions.
+ */
 function calm(ctx: GhostContext): boolean {
   return (
     !ctx.isPlaying &&
-    !ctx.pickerOpen &&
     !ctx.viewerOpen &&
     !ctx.presenting &&
     !has(ctx, "dismiss") &&
