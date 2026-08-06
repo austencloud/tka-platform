@@ -38,6 +38,7 @@
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
   import type { PreparedSequenceHandoff } from "$lib/shared/animation-engine/domain/chaining-types";
   import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { syncHeroElementalGlyphVisibility } from "$lib/shared/landing/services/hero-elemental-glyph-visibility";
 
   let {
     sequence,
@@ -119,7 +120,7 @@
     ephemeral: true,
   });
   $effect(() => {
-    heroVisibilityManager.setVisibility("elementalGlyph", element !== null);
+    syncHeroElementalGlyphVisibility(heroVisibilityManager, element !== null);
   });
   const hiddenNotationRail =
     typeof window === "undefined"
@@ -245,7 +246,6 @@
               <span>{errorMessage}</span>
             </div>
           {/if}
-
         </div>
       </div>
       {#if showNotationStrip}
