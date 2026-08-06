@@ -1,32 +1,17 @@
-<!--
-  Assemble's desktop control header. The instruction, grid, active hand,
-  keyboard input, orientation, and motion settings share one glass surface.
--->
+<!-- Assemble's compact desktop instruction and control header. -->
 <script lang="ts">
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { AssembleState } from "../state/assemble-state.svelte";
   import { getBuilderPhaseInstruction } from "../services/builder-phase-presentation";
   import BuilderKeyboardControl from "./BuilderKeyboardControl.svelte";
-  import BuilderTurnBar from "./BuilderTurnBar.svelte";
+  import BuilderPhaseControls from "./BuilderPhaseControls.svelte";
   import GridModePicker from "./GridModePicker.svelte";
 
-  let {
-    builderState,
-    startPositionSetup = false,
-  }: {
-    builderState: AssembleState;
-    startPositionSetup?: boolean;
-  } = $props();
+  let { builderState }: { builderState: AssembleState } = $props();
 
   const isBlueHand = $derived(builderState.activeHand === MotionColor.BLUE);
-  const activeHandLabel = $derived(
-    startPositionSetup
-      ? "Start position"
-      : isBlueHand
-        ? "Left hand"
-        : "Right hand"
-  );
+  const activeHandLabel = $derived(isBlueHand ? "Left hand" : "Right hand");
   const otherHandLabel = $derived(isBlueHand ? "Right" : "Left");
   const otherHandSteps = $derived(
     isBlueHand ? builderState.redSteps.length : builderState.blueSteps.length
@@ -34,11 +19,10 @@
   const activeStepCount = $derived(
     isBlueHand ? builderState.blueSteps.length : builderState.redSteps.length
   );
-  const phaseMessage = $derived(
-    startPositionSetup
-      ? "Place and aim both props"
-      : getBuilderPhaseInstruction(builderState.phase)
+  const currentStepNumber = $derived(
+    activeStepCount + (builderState.phase === "complete" ? 0 : 1)
   );
+  const phaseMessage = $derived(getBuilderPhaseInstruction(builderState.phase));
   const gridStatusLabel = $derived.by(() => {
     const modeLabel =
       builderState.gridMode === GridMode.BOX
@@ -46,18 +30,13 @@
         : builderState.gridMode === GridMode.SKEWED
           ? "Merged"
           : "Diamond";
-    return builderState.showCenter
-      ? `${modeLabel} + center`
-      : `${modeLabel} grid`;
+    return builderState.showCenter ? `${modeLabel} + center` : modeLabel;
   });
 
   const otherHandHint = $derived.by(() => {
-    if (startPositionSetup) return "";
-    if (builderState.phase === "complete" || builderState.phase === "idle") {
-      return "";
-    }
+    if (builderState.phase === "complete") return "";
     if (otherHandSteps === 0 && activeStepCount > 0) {
-      return `Build the ${otherHandLabel.toLowerCase()} hand when ready`;
+      return `${otherHandLabel} is ready when you are`;
     }
     if (otherHandSteps > 0 && activeStepCount > otherHandSteps) {
       const difference = activeStepCount - otherHandSteps;
@@ -67,24 +46,25 @@
   });
 </script>
 
-<section
-  class="control-header"
-  class:start-position-setup={startPositionSetup}
-  aria-label="Assemble controls"
->
+<section class="control-header" aria-label="Assemble controls">
   <div class="primary-row">
     <div class="instruction-block" aria-live="polite" aria-atomic="true">
       <span
-        class="active-hand"
-        class:blue={!startPositionSetup && isBlueHand}
-        class:red={!startPositionSetup && !isBlueHand}
+        class="step-and-hand"
+        class:blue={isBlueHand}
+        class:red={!isBlueHand}
       >
+        Step {currentStepNumber} <span aria-hidden="true">·</span>
         {activeHandLabel}
       </span>
       <strong class="instruction">{phaseMessage}</strong>
       <span class="hand-hint" class:empty={!otherHandHint}>
         {otherHandHint || "\u00A0"}
       </span>
+    </div>
+
+    <div class="phase-control-cell" aria-label="Current motion settings">
+      <BuilderPhaseControls {builderState} />
     </div>
 
     <div class="control-cell grid-control">
@@ -99,47 +79,34 @@
       {:else}
         <div class="grid-status" aria-label="Grid fixed to {gridStatusLabel}">
           <strong>{gridStatusLabel}</strong>
-          <span>Fixed for this build</span>
+          <i class="fas fa-lock" aria-hidden="true"></i>
         </div>
       {/if}
     </div>
 
-    {#if !startPositionSetup}
-      <div class="control-cell input-control">
-        <span class="control-label">Input</span>
-        <BuilderKeyboardControl {builderState} />
-      </div>
-    {/if}
-  </div>
-
-  {#if !startPositionSetup}
-    <div class="motion-row">
-      <BuilderTurnBar {builderState} />
+    <div class="control-cell input-control">
+      <span class="control-label">Input</span>
+      <BuilderKeyboardControl {builderState} />
     </div>
-  {/if}
+  </div>
 </section>
 
 <style>
   .control-header {
     width: 100%;
-    padding: 12px 16px;
+    padding: 10px 14px;
     border: 0;
     border-bottom: 1px solid var(--assemble-builder-stroke, var(--theme-stroke));
-    border-radius: 0;
     background: transparent;
     box-shadow: none;
   }
 
   .primary-row {
     display: grid;
-    grid-template-columns: minmax(190px, 1fr) auto auto;
+    grid-template-columns: minmax(210px, 1fr) auto auto auto;
     align-items: end;
-    gap: 12px;
+    gap: 10px;
     min-width: 0;
-  }
-
-  .control-header.start-position-setup .primary-row {
-    grid-template-columns: minmax(190px, 1fr) 300px;
   }
 
   .instruction-block {
@@ -148,39 +115,44 @@
     flex-direction: column;
     justify-content: center;
     min-width: 0;
-    padding: 2px 4px;
+    padding: 1px 2px;
   }
 
-  .active-hand {
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
+  .step-and-hand {
+    color: var(--theme-text, #fff);
     font-size: var(--font-size-compact, 12px);
-    font-weight: 800;
+    font-weight: 900;
   }
 
-  .active-hand.blue {
-    color: color-mix(in srgb, var(--prop-blue, #2e8bf0) 76%, white);
+  .step-and-hand.blue {
+    color: color-mix(in srgb, var(--prop-blue, #2e8bf0) 38%, white);
   }
 
-  .active-hand.red {
-    color: color-mix(in srgb, var(--prop-red, #ed1c24) 76%, white);
+  .step-and-hand.red {
+    color: color-mix(in srgb, var(--prop-red, #ed1c24) 38%, white);
   }
 
   .instruction {
     overflow: hidden;
     color: var(--theme-text, #fff);
-    font-size: clamp(14px, 1.5cqi, 17px);
-    font-weight: 700;
+    font-size: clamp(
+      var(--font-size-min, 14px),
+      1.45cqi,
+      var(--assemble-instruction-size, 17px)
+    );
+    font-weight: 800;
     line-height: 1.25;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .hand-hint {
-    min-height: 16px;
+    min-height: 15px;
     overflow: hidden;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.58));
+    color: color-mix(in srgb, var(--theme-text, #fff) 78%, transparent);
     font-size: var(--font-size-compact, 12px);
-    line-height: 1.3;
+    font-weight: 650;
+    line-height: 1.25;
     text-overflow: ellipsis;
     white-space: nowrap;
     transition: opacity var(--duration-fast, 150ms) ease;
@@ -190,64 +162,64 @@
     opacity: 0;
   }
 
+  .phase-control-cell {
+    align-self: end;
+    padding-bottom: 1px;
+  }
+
   .control-cell {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
     min-width: 0;
   }
 
   .control-label {
     padding-left: 4px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.55));
+    color: color-mix(in srgb, var(--theme-text, #fff) 86%, transparent);
     font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
+    font-weight: 800;
   }
 
   .grid-control {
-    width: 300px;
+    width: max-content;
   }
 
   .grid-status {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--settings-spacing-sm, 8px);
+    justify-content: center;
+    gap: 8px;
+    min-width: 116px;
     min-height: var(--min-touch-target, 44px);
-    width: 100%;
-    padding: 7px 10px;
+    padding: 7px 11px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: var(--settings-radius-md, 12px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    background: color-mix(
+      in srgb,
+      var(--theme-card-bg, #10141f) 84%,
+      transparent
+    );
     color: var(--theme-text, #fff);
   }
 
   .grid-status strong {
     font-size: var(--font-size-min, 14px);
-    font-weight: 700;
+    font-weight: 800;
   }
 
-  .grid-status span {
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    white-space: nowrap;
+  .grid-status i {
+    color: color-mix(in srgb, var(--theme-text, #fff) 68%, transparent);
+    font-size: 11px;
   }
 
   .input-control {
     width: max-content;
   }
 
-  .motion-row {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.09));
-  }
-
-  @container tool-panel (max-width: 920px) {
+  @container tool-panel (max-width: 980px) {
     .primary-row {
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: end;
+      grid-template-columns: minmax(0, 1fr) auto auto;
     }
 
     .instruction-block {
@@ -256,14 +228,8 @@
       text-align: center;
     }
 
-    .grid-control {
-      width: auto;
-    }
-
-    .control-header.start-position-setup .instruction-block {
-      grid-column: auto;
-      align-items: flex-start;
-      text-align: left;
+    .phase-control-cell {
+      justify-self: start;
     }
   }
 

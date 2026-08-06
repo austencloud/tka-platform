@@ -91,6 +91,7 @@
   let bluePropData = $state<PropRenderData | null>(null);
   let redPropData = $state<PropRenderData | null>(null);
   let previewLocation = $state<GridLocation | null>(null);
+  let startAimPreview = $state<Orientation | null>(null);
 
   // Reactive prop types for rotation checks
   const currentBluePropType = $derived(
@@ -165,7 +166,7 @@
     if (activePropType === PropType.HAND) return 0;
     return PropRotAngleManager.calculateRotation(
       builderState.currentPosition,
-      builderState.currentOrientation,
+      startAimPreview ?? builderState.currentOrientation,
       builderState.gridMode
     );
   });
@@ -392,7 +393,7 @@
       } destination to ${defaultLabel}`;
     }
     if (builderState.phase === "idle") {
-      return `Place ${handLabel} prop at ${defaultLabel}`;
+      return `Set ${handLabel} start at ${defaultLabel}`;
     }
     if (builderState.phase === "placing" || builderState.phase === "building") {
       return `Move ${handLabel} prop to ${defaultLabel}`;
@@ -822,9 +823,16 @@
     currentPosition={builderState.currentPosition}
     disabled={targetsDisabled}
     pulseTargets={false}
+    aimEnabled={builderState.phase === "idle"}
     keyLabels={builderState.keyboardMode ? LOCATION_TO_KEY_LABEL : {}}
     labelForLocation={getTargetLabel}
     onPointClick={handleTargetClick}
+    onPointAim={(_location, orientation) => {
+      builderState.setOrientation(orientation);
+    }}
+    onPointAimPreview={(_location, orientation) => {
+      startAimPreview = orientation;
+    }}
     onPointPreview={(location) => {
       previewLocation = location;
     }}
@@ -880,13 +888,13 @@
   }
 
   .step-badge span {
-    color: color-mix(in srgb, var(--step-color) 82%, var(--theme-text, #fff));
+    color: color-mix(in srgb, var(--step-color) 40%, white);
     font-size: var(--font-size-compact, 12px);
     font-weight: 800;
   }
 
   .step-badge strong {
-    font-size: 18px;
+    font-size: var(--assemble-step-badge-size, 18px);
     font-weight: 900;
     font-variant-numeric: tabular-nums;
     line-height: 1;

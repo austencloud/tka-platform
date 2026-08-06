@@ -84,16 +84,17 @@
   }
 
   .hand-picker-heading strong {
-    color: var(--theme-text, #fff);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 800;
+    color: #ffffff;
+    font-size: var(--assemble-hand-heading-size, 16px);
+    font-weight: 900;
     line-height: 1.2;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.22);
   }
 
   .hand-picker-heading span {
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
+    color: #eef2f8;
+    font-size: var(--font-size-compact, 13px);
+    font-weight: 700;
     line-height: 1.2;
     white-space: nowrap;
   }
@@ -106,6 +107,7 @@
     width: 100%;
     min-width: 0;
     min-height: 42px;
+    color: #f8fafc;
   }
 
   .hand-name {
@@ -114,8 +116,9 @@
     gap: 8px;
     min-width: 0;
     color: inherit;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 800;
+    font-size: var(--assemble-hand-label-size, 16px);
+    font-weight: 900;
+    text-shadow: 0 0 10px color-mix(in srgb, var(--hand-color) 32%, transparent);
     white-space: nowrap;
   }
 
@@ -136,21 +139,39 @@
     --hand-color: var(--prop-red, #ed1c24);
   }
 
+  :global(.segment.selected) .hand-option-content {
+    color: #ffffff;
+  }
+
+  .hand-picker :global(.indicator[data-tone="blue"]) {
+    background: color-mix(in srgb, var(--prop-blue, #2e8bf0) 68%, #05070c);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--prop-blue, #2e8bf0) 48%, white),
+      0 0 16px color-mix(in srgb, var(--prop-blue, #2e8bf0) 26%, transparent);
+  }
+
+  .hand-picker :global(.indicator[data-tone="red"]) {
+    background: color-mix(in srgb, var(--prop-red, #ed1c24) 68%, #05070c);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--prop-red, #ed1c24) 48%, white),
+      0 0 16px color-mix(in srgb, var(--prop-red, #ed1c24) 26%, transparent);
+  }
+
   .hand-progress {
     flex: 0 0 auto;
     padding: 4px 8px;
     border: 1px solid color-mix(in srgb, var(--hand-color) 28%, transparent);
     border-radius: 999px;
     background: color-mix(in srgb, var(--hand-color) 10%, transparent);
-    color: color-mix(in srgb, var(--hand-color) 62%, var(--theme-text, #fff));
-    font-size: var(--font-size-compact, 12px);
+    color: color-mix(in srgb, var(--hand-color) 34%, white);
+    font-size: var(--font-size-compact, 13px);
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     line-height: 1.2;
     white-space: nowrap;
   }
 
-  @container tool-panel (max-width: 420px) {
+  @container tool-panel (max-width: 520px) {
     .hand-picker {
       grid-template-columns: minmax(0, 1fr);
       gap: 6px;

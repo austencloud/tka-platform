@@ -101,9 +101,12 @@
 
   .setting-label {
     padding-left: 4px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.55));
+    color: var(
+      --assemble-text-secondary,
+      color-mix(in srgb, var(--theme-text, #fff) 84%, transparent)
+    );
     font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
   }

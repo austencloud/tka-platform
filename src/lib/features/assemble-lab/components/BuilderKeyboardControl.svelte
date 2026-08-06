@@ -214,7 +214,10 @@
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.07),
       0 2px 0 color-mix(in srgb, var(--theme-shadow, #000) 45%, transparent);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
+    color: var(
+      --assemble-text-secondary,
+      color-mix(in srgb, var(--theme-text, #fff) 84%, transparent)
+    );
     cursor: pointer;
     transition:
       background var(--duration-fast, 150ms) ease,

@@ -18,12 +18,12 @@ export function getBuilderControlVisibility(
 export function getBuilderPhaseInstruction(phase: BuilderPhase): string {
   switch (phase) {
     case "idle":
-      return "Tap a starting point";
+      return "Choose a starting point. Press and drag to aim.";
     case "placing":
-      return "Set orientation and rotation, then tap a destination";
+      return "Set orientation and rotation, then choose a destination";
     case "building":
     case "animating":
-      return "Set rotation, then tap the next point";
+      return "Set rotation, then choose the next point";
     case "complete":
       return "Sequence complete";
   }

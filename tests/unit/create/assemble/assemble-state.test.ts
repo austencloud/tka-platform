@@ -202,6 +202,25 @@ describe("Assemble state invariants", () => {
     expect(state.startPoses[MotionColor.RED]?.location).toBe(GridLocation.WEST);
   });
 
+  it("builds one hand before the other hand has a starting pose", async () => {
+    const state = createAssembleState();
+
+    state.handlePointClick(GridLocation.NORTH);
+    await addMotion(state, GridLocation.EAST);
+
+    expect(state.blueSteps).toHaveLength(1);
+    expect(state.startPoses[MotionColor.RED]).toBeUndefined();
+
+    state.switchToHand(MotionColor.RED);
+    expect(state.phase).toBe("idle");
+    expect(state.currentPosition).toBeNull();
+
+    state.handlePointClick(GridLocation.WEST);
+    expect(state.phase).toBe("placing");
+    expect(state.startPoses[MotionColor.RED]?.location).toBe(GridLocation.WEST);
+    expect(state.blueSteps).toHaveLength(1);
+  });
+
   it("sets both starting poses as one reversible document action", () => {
     const onDocumentChange = vi.fn();
     const state = createAssembleState({ onDocumentChange });
