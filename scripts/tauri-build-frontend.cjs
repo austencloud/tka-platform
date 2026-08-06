@@ -1,23 +1,32 @@
 #!/usr/bin/env node
-const { execSync } = require("child_process");
-const fs = require("fs");
-const path = require("path");
+const { execFileSync, execSync } = require("node:child_process");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
 const strip = path.resolve(__dirname, "strip-desktop-assets.cjs");
-const buildDir = path.resolve(root, "build");
+const generateEnv = path.resolve(__dirname, "generate-native-env.mjs");
+const verifySurface = path.resolve(
+	__dirname,
+	"verify-native-release-surface.mjs"
+);
+const buildDir = path.resolve(root, ".svelte-kit/cloudflare");
 
-// Clean stale build output to prevent 1.5GB+ dirs from previous builds
+// Clean stale output so Tauri never embeds files left by an earlier web build.
 if (fs.existsSync(buildDir)) {
 	fs.rmSync(buildDir, { recursive: true, force: true });
-	console.log("Cleaned stale build directory.");
+	console.log("Cleaned stale desktop web output.");
 }
 
-// Build with TAURI_BUILD=true so Vite skips copying static/ (Unicode filename issues)
-execSync(`cross-env DISABLE_PWA=true TAURI_BUILD=true pnpm build`, {
+execSync("pnpm build", {
 	cwd: root,
+	env: { ...process.env, DISABLE_PWA: "true" },
 	stdio: "inherit",
 });
 
-// Copy only the static assets needed for desktop
-execSync(`node "${strip}" --copy-static`, { cwd: root, stdio: "inherit" });
+execFileSync(process.execPath, [strip], { cwd: root, stdio: "inherit" });
+execFileSync(process.execPath, [generateEnv], { cwd: root, stdio: "inherit" });
+execFileSync(process.execPath, [verifySurface], {
+	cwd: root,
+	stdio: "inherit",
+});

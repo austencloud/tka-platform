@@ -5,9 +5,9 @@
   "identifier": "com.tkaflowarts.composer.desktop",
   "build": {
     "beforeDevCommand": "pnpm dev -- --port 5174",
-    "beforeBuildCommand": "cross-env DISABLE_PWA=true pnpm build && node scripts/strip-desktop-assets.cjs",
+    "beforeBuildCommand": "node scripts/tauri-build-frontend.cjs",
     "devUrl": "http://localhost:5174",
-    "frontendDist": "../build"
+    "frontendDist": "../.svelte-kit/cloudflare"
   },
   "app": {
     "windows": [
