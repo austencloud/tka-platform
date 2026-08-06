@@ -229,6 +229,9 @@
     get onToggleValue() {
       return onToggleValue;
     },
+    get isValueApplied() {
+      return isValueApplied;
+    },
     get unifiedFilterChooser() {
       return unifiedFilterChooser;
     },

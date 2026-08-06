@@ -231,8 +231,7 @@ export function dealByOwner(
 }
 
 /** Distinct base letters present in the pool (incl. dash variants like "W-"),
- * in canonical kinetic-alphabet order. These are the letter screen's values —
- * derived from real words, so no letter is ever a dead end. */
+ * in canonical kinetic-alphabet order. */
 export function deriveStartingLetters(pool: readonly SequenceData[]): string[] {
   const letters = new Set<string>();
   for (const seq of pool) {
@@ -240,4 +239,17 @@ export function deriveStartingLetters(pool: readonly SequenceData[]): string[] {
     if (letter) letters.add(letter);
   }
   return [...letters].sort(compareKineticLetters);
+}
+
+/** Starting-letter choices that still produce results after every other live
+ * gallery rule is applied. Applied letters stay visible at zero so the user
+ * can see and remove every part of the current rule. */
+export function deriveAvailableStartingLetterOptions(
+  pool: readonly SequenceData[],
+  getCount: (letter: string) => number,
+  isApplied: (letter: string) => boolean = () => false
+): Array<{ value: string; count: number }> {
+  return deriveStartingLetters(pool)
+    .map((letter) => ({ value: letter, count: getCount(letter) }))
+    .filter((option) => option.count > 0 || isApplied(option.value));
 }

@@ -25,7 +25,7 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
   deriveCreators,
-  deriveStartingLetters,
+  deriveAvailableStartingLetterOptions,
   pickCollage,
   pickCreatorAvatars,
   pickCreatorSamples,
@@ -307,6 +307,9 @@ export interface GalleryCatalogDeps {
   readonly onToggleFamily: unknown;
   readonly activeFamilyValues: ReadonlySet<string> | undefined;
   readonly onToggleValue: unknown;
+  readonly isValueApplied:
+    | ((type: BrowseFilterType, value: string | number) => boolean)
+    | undefined;
   readonly unifiedFilterChooser: boolean;
   readonly showCollections: boolean;
   /** When present, the Collections tile opens a value editor instead of
@@ -366,10 +369,12 @@ export function createGalleryCatalog(deps: GalleryCatalogDeps) {
   );
 
   const letterValues = $derived(
-    deriveStartingLetters(deps.pool).map((letter) => ({
-      value: letter,
-      count: deps.getCount(BrowseFilterType.STARTING_LETTER, letter),
-    }))
+    deriveAvailableStartingLetterOptions(
+      deps.pool,
+      (letter) => deps.getCount(BrowseFilterType.STARTING_LETTER, letter),
+      (letter) =>
+        deps.isValueApplied?.(BrowseFilterType.STARTING_LETTER, letter) ?? false
+    )
   );
 
   const positionValues = $derived(
