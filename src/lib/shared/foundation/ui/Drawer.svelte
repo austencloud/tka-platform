@@ -130,6 +130,7 @@
   let shouldRender = $state(false);
   let isAnimatedOpen = $state(false); // Controls visual state for animations
   let isAnimating = $state(false); // True during open/close animation - blocks swipe gestures
+  let pendingCloseReason = $state<CloseReason>("programmatic");
   let closeTimeoutId: ReturnType<typeof setTimeout> | null = null; // Track close animation timeout
   let animatingTimeoutId: ReturnType<typeof setTimeout> | null = null; // Track animation duration
 
@@ -367,9 +368,13 @@
 
         // Register with drawer stack and get z-index for nested support
         // Pass dismiss callback so other drawers can trigger dismissal of this one
-        stackZIndex = registerDrawer(drawerId, () => {
-          isOpen = false;
-        });
+        stackZIndex = registerDrawer(
+          drawerId,
+          () => {
+            requestClose("escape");
+          },
+          () => closeOnEscape
+        );
         shouldRender = true;
         swipeToDismiss?.reset(); // Reset drag state when opening
 
@@ -410,7 +415,8 @@
 
       // When closing, animate to closed state, then remove from DOM
       if (previouslyOpen && !isOpen) {
-        emitClose("programmatic");
+        emitClose(pendingCloseReason);
+        pendingCloseReason = "programmatic";
         isAnimatedOpen = false; // Trigger close animation
         swipeToDismiss?.reset(); // Reset drag state when closing
         // Deactivate focus trap immediately so focus can return
@@ -447,26 +453,31 @@
     }
   }
 
+  function requestClose(reason: CloseReason) {
+    pendingCloseReason = reason;
+    isOpen = false;
+  }
+
   function handleBackdropClick(event: MouseEvent) {
     // If custom handler provided, use it to determine whether to close
     if (onbackdropclick) {
       const shouldClose = onbackdropclick(event);
       if (shouldClose) {
-        emitClose("backdrop");
-        isOpen = false;
+        requestClose("backdrop");
       }
       return;
     }
 
     // Default behavior
     if (closeOnBackdrop) {
-      emitClose("backdrop");
-      isOpen = false;
+      requestClose("backdrop");
     }
   }
 
   // Handle escape key - only close if this is the topmost drawer
   function handleKeydown(event: KeyboardEvent) {
+    if (event.defaultPrevented) return;
+
     if (
       event.key === "Escape" &&
       closeOnEscape &&
@@ -474,8 +485,7 @@
       isTopDrawer(drawerId)
     ) {
       event.preventDefault();
-      emitClose("escape");
-      isOpen = false;
+      requestClose("escape");
     }
   }
 
@@ -490,8 +500,7 @@
       return;
     }
     // Let it close naturally - our close logic will handle cleanup
-    emitClose("escape");
-    isOpen = false;
+    requestClose("escape");
   }
 
   // Compute state attribute for CSS - use animated state for visual transitions

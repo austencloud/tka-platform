@@ -12,11 +12,13 @@
  */
 
 import { Z } from '$lib/shared/ui/z-index';
+import { getEscapeLayerManager } from '$lib/shared/keyboard/get-escape-layer-manager';
 
 type DismissCallback = () => void;
 
 const modalStack: string[] = [];
 const dismissCallbacks = new Map<string, DismissCallback>();
+const canEscapeDismissCallbacks = new Map<string, () => boolean>();
 
 const BASE_Z_INDEX = Z.MODAL;
 const Z_INDEX_INCREMENT = 10;
@@ -42,7 +44,11 @@ function updatePullToRefreshBlocking(): void {
  * Register a modal when it opens
  * @returns The z-index this modal should use
  */
-export function registerModal(id: string, onDismiss: DismissCallback): number {
+export function registerModal(
+	id: string,
+	onDismiss: DismissCallback,
+	canEscapeDismiss: () => boolean = () => true
+): number {
 	// Remove if already registered (shouldn't happen, but safety)
 	const existingIndex = modalStack.indexOf(id);
 	if (existingIndex > -1) {
@@ -51,6 +57,12 @@ export function registerModal(id: string, onDismiss: DismissCallback): number {
 
 	modalStack.push(id);
 	dismissCallbacks.set(id, onDismiss);
+	canEscapeDismissCallbacks.set(id, canEscapeDismiss);
+	getEscapeLayerManager().register({
+		id: `modal:${id}`,
+		dismiss: onDismiss,
+		canDismiss: canEscapeDismiss,
+	});
 
 	// Block pull-to-refresh when modal opens
 	updatePullToRefreshBlocking();
@@ -67,6 +79,8 @@ export function unregisterModal(id: string): void {
 		modalStack.splice(index, 1);
 	}
 	dismissCallbacks.delete(id);
+	canEscapeDismissCallbacks.delete(id);
+	getEscapeLayerManager().unregister(`modal:${id}`);
 
 	// Re-enable pull-to-refresh if no modals are open
 	updatePullToRefreshBlocking();
@@ -94,7 +108,8 @@ export function dismissTopModal(): boolean {
 	if (!topId) return false;
 
 	const callback = dismissCallbacks.get(topId);
-	if (callback) {
+	const canDismiss = canEscapeDismissCallbacks.get(topId);
+	if (callback && (canDismiss?.() ?? true)) {
 		callback();
 		return true;
 	}

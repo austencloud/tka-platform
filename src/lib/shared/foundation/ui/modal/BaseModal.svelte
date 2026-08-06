@@ -172,7 +172,11 @@
       shouldRender = true;
 
       // Register with stack
-      registerModal(modalId, () => closeModal("programmatic"));
+      registerModal(
+        modalId,
+        () => closeModal("escape"),
+        () => closeOnEscape
+      );
 
       // Wait for DOM, then show modal
       requestAnimationFrame(() => {
@@ -285,6 +289,7 @@
   :global(dialog[data-size="sm"]) .modal-content-wrapper,
   :global(dialog[data-size="md"]) .modal-content-wrapper,
   :global(dialog[data-size="lg"]) .modal-content-wrapper,
+  :global(dialog[data-size="xl"]) .modal-content-wrapper,
   :global(dialog[data-size="full"]) .modal-content-wrapper {
     height: 100%;
   }
@@ -337,6 +342,7 @@
   :global(dialog[data-size="sm"]) .modal-body,
   :global(dialog[data-size="md"]) .modal-body,
   :global(dialog[data-size="lg"]) .modal-body,
+  :global(dialog[data-size="xl"]) .modal-body,
   :global(dialog[data-size="full"]) .modal-body {
     flex: 1;
   }

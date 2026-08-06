@@ -10,6 +10,7 @@
 
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { Z } from '$lib/shared/ui/z-index';
+import { getEscapeLayerManager } from "$lib/shared/keyboard/get-escape-layer-manager";
 
 const debug = createComponentLogger("DrawerStack");
 
@@ -35,9 +36,14 @@ export function generateDrawerId(): string {
  * Register a drawer as open and get its z-index
  * @param id - Unique drawer ID
  * @param onDismiss - Optional callback to dismiss this drawer
+ * @param canEscapeDismiss - Whether Escape may close the drawer right now
  * @returns The z-index to use for this drawer
  */
-export function registerDrawer(id: string, onDismiss?: () => void): number {
+export function registerDrawer(
+  id: string,
+  onDismiss?: () => void,
+  canEscapeDismiss: () => boolean = () => true
+): number {
   // Remove if already exists (shouldn't happen, but be safe)
   const existingIndex = drawerStack.indexOf(id);
   if (existingIndex !== -1) {
@@ -52,6 +58,12 @@ export function registerDrawer(id: string, onDismiss?: () => void): number {
   if (onDismiss) {
     dismissCallbacks.set(id, onDismiss);
   }
+
+  getEscapeLayerManager().register({
+    id: `drawer:${id}`,
+    dismiss: onDismiss ?? (() => {}),
+    canDismiss: () => Boolean(onDismiss) && canEscapeDismiss(),
+  });
 
   const zIndex = BASE_Z_INDEX + (drawerStack.length - 1) * Z_INDEX_INCREMENT;
   debug.log(`registerDrawer: ${id} | stack: [${drawerStack.join(", ")}] | zIndex: ${zIndex}`);
@@ -68,6 +80,7 @@ export function unregisterDrawer(id: string): void {
     drawerStack.splice(index, 1);
   }
   dismissCallbacks.delete(id);
+  getEscapeLayerManager().unregister(`drawer:${id}`);
 }
 
 /**

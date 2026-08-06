@@ -51,7 +51,13 @@
 
   <!-- Right section: Close button only -->
   <div class="header-actions">
-    <button class="close-button" onclick={onClose} aria-label="Close panel">
+    <button
+      class="close-button"
+      data-escape-shortcut
+      data-escape-shortcut-label="Panel"
+      onclick={onClose}
+      aria-label="Close panel"
+    >
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
   </div>
