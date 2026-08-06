@@ -28,7 +28,10 @@ import {
   type CueMark,
   type NoteMark,
 } from "../domain/types/choreo-sheet";
-import { getSheetPageLayout, type SheetPageGeometry } from "../domain/sheet-page-layout";
+import {
+  getSheetPageLayout,
+  type SheetPageGeometry,
+} from "../domain/sheet-page-layout";
 import {
   buildBands,
   planBands,
@@ -48,7 +51,10 @@ import {
 } from "../services/sheet-continuity";
 import type { ActData } from "../domain/types/write";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { ResolveFailure, ResolveOutcome } from "../services/sheet-sequence-resolver";
+import type {
+  ResolveFailure,
+  ResolveOutcome,
+} from "../services/sheet-sequence-resolver";
 
 /** Per-row hydration state. `retrying` is a re-attempt of a row that already
  *  failed — visually identical to `loading`, so recovery never flashes red. */
@@ -105,7 +111,9 @@ export function loadDraft(key: string): ChoreoSheet | null {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
-    const p = JSON.parse(raw) as Partial<ChoreoSheet> & { sequenceIds?: unknown };
+    const p = JSON.parse(raw) as Partial<ChoreoSheet> & {
+      sequenceIds?: unknown;
+    };
     if (!Array.isArray(p.sequenceIds)) return null;
     const now = new Date();
     return {
@@ -139,9 +147,15 @@ export function loadDraftMeta(key: string): Record<string, SequenceMeta> {
     const parsed = JSON.parse(raw) as { sequenceMeta?: unknown };
     const out: Record<string, SequenceMeta> = {};
     if (parsed.sequenceMeta && typeof parsed.sequenceMeta === "object") {
-      for (const [id, m] of Object.entries(parsed.sequenceMeta as Record<string, unknown>)) {
+      for (const [id, m] of Object.entries(
+        parsed.sequenceMeta as Record<string, unknown>
+      )) {
         const meta = m as Partial<SequenceMeta> | null;
-        if (meta && typeof meta.name === "string" && typeof meta.stepCount === "number") {
+        if (
+          meta &&
+          typeof meta.name === "string" &&
+          typeof meta.stepCount === "number"
+        ) {
           out[id] = { name: meta.name, stepCount: meta.stepCount };
         }
       }
@@ -158,13 +172,16 @@ export function persistDraft(
   sequenceMeta?: Record<string, SequenceMeta>
 ): void {
   try {
-    localStorage.setItem(key, JSON.stringify(sequenceMeta ? { ...sheet, sequenceMeta } : sheet));
+    localStorage.setItem(
+      key,
+      JSON.stringify(sequenceMeta ? { ...sheet, sequenceMeta } : sheet)
+    );
   } catch {
     // ignore storage errors (quota, private mode)
   }
 }
 
-export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
+function buildChoreoSheetState(deps: ChoreoSheetStateDeps) {
   // The sheet itself (ids + layout + metadata). Mutated by reassignment so the
   // `updatedAt` stamp and downstream `$derived`s refresh together. Restored from
   // the persisted draft when a persistKey is given and no explicit seed passed.
@@ -196,7 +213,8 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   const attemptsById = new SvelteMap<string, number>();
   const metaById = new SvelteMap<string, SequenceMeta>();
   if (deps.persistKey) {
-    for (const [id, meta] of Object.entries(loadDraftMeta(deps.persistKey))) metaById.set(id, meta);
+    for (const [id, meta] of Object.entries(loadDraftMeta(deps.persistKey)))
+      metaById.set(id, meta);
   }
 
   // Generation token + live controllers: a sheet swap cancels the batch it
@@ -247,7 +265,8 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   // never normalized against N−1 across a hole, and no reduced sheet is ever
   // paginated, played, or exported (spec §1.3).
   const planRows = $derived<SequenceData[]>(
-    sheet.sequenceIds.length > 0 && sheet.sequenceIds.every((id) => cache.has(id))
+    sheet.sequenceIds.length > 0 &&
+      sheet.sequenceIds.every((id) => cache.has(id))
       ? sheet.sequenceIds.map((id) => cache.get(id)!)
       : []
   );
@@ -356,7 +375,10 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
       await Promise.all(
         targets.map(async (id) => {
           const prior = statusById.get(id);
-          statusById.set(id, prior === "error" || prior === "missing" ? "retrying" : "loading");
+          statusById.set(
+            id,
+            prior === "error" || prior === "missing" ? "retrying" : "loading"
+          );
           failureById.delete(id);
           try {
             const outcome = await deps.resolveSequence(id, ctrl.signal);
@@ -371,7 +393,10 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
                 stepCount: outcome.sequence.steps?.length ?? 0,
               });
             } else {
-              statusById.set(id, outcome.failure === "missing" ? "missing" : "error");
+              statusById.set(
+                id,
+                outcome.failure === "missing" ? "missing" : "error"
+              );
               failureById.set(id, outcome.failure ?? "transient");
             }
           } catch {
@@ -392,7 +417,9 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
 
   // Re-attempt hydration for one failed id, or every errored row when none given.
   async function retryHydration(id?: string): Promise<void> {
-    const targets = id ? [id] : roster.filter((r) => r.status === "error").map((r) => r.id);
+    const targets = id
+      ? [id]
+      : roster.filter((r) => r.status === "error").map((r) => r.id);
     if (targets.length === 0) return;
     await ensureHydrated(targets);
   }
@@ -495,7 +522,10 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
       // directly seeded — any earlier failure is moot
       statusById.delete(seq.id);
       failureById.delete(seq.id);
-      metaById.set(seq.id, { name: metaName(seq), stepCount: seq.steps?.length ?? 0 });
+      metaById.set(seq.id, {
+        name: metaName(seq),
+        stepCount: seq.steps?.length ?? 0,
+      });
       if (!sheet.sequenceIds.includes(seq.id) && !additions.includes(seq.id)) {
         additions.push(seq.id);
       }
@@ -605,8 +635,11 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     patch: Partial<Omit<CueMark, "sequenceId" | "stepIndex">>
   ): void {
     const cues = sheet.annotations.cues.slice();
-    const idx = cues.findIndex((c) => c.sequenceId === sequenceId && c.stepIndex === stepIndex);
-    if (idx === -1) cues.push({ sequenceId, stepIndex, timestamp: "", text: "", ...patch });
+    const idx = cues.findIndex(
+      (c) => c.sequenceId === sequenceId && c.stepIndex === stepIndex
+    );
+    if (idx === -1)
+      cues.push({ sequenceId, stepIndex, timestamp: "", text: "", ...patch });
     else cues[idx] = { ...cues[idx]!, ...patch };
     sheet = {
       ...sheet,
@@ -618,9 +651,16 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   // Add a blank note at an absolute step — `pinned` puts it under that step's
   // column, otherwise it reads as a full-width bullet on that step's row.
   // Returns its stable id so the caller can immediately edit/remove it.
-  function addNote(sequenceId: string, stepIndex: number, pinned: boolean): string {
+  function addNote(
+    sequenceId: string,
+    stepIndex: number,
+    pinned: boolean
+  ): string {
     const id = crypto.randomUUID();
-    const notes = [...sheet.annotations.notes, { id, sequenceId, stepIndex, pinned, text: "" }];
+    const notes = [
+      ...sheet.annotations.notes,
+      { id, sequenceId, stepIndex, pinned, text: "" },
+    ];
     sheet = {
       ...sheet,
       annotations: { ...sheet.annotations, notes },
@@ -660,11 +700,17 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
     // key) is what makes a prefilled timestamp survive a pictograph-size change:
     // the cue stays on the step whose beat produced it.
     const all = bandPages.flatMap((p) => p.bands);
-    const anchors = new Map(all.map((b) => [b.key, { sequenceId: b.sequenceId, stepIndex: b.firstStepIndex }]));
+    const anchors = new Map(
+      all.map((b) => [
+        b.key,
+        { sequenceId: b.sequenceId, stepIndex: b.firstStepIndex },
+      ])
+    );
     const bands = all.map((b) => ({
       key: b.key,
       firstBeatIndex: b.firstBeatIndex,
-      timestamp: b.cues.find((c) => c.stepIndex === b.firstStepIndex)?.timestamp ?? "",
+      timestamp:
+        b.cues.find((c) => c.stepIndex === b.firstStepIndex)?.timestamp ?? "",
     }));
     const filled = computePrefill(bands, sheet.bpm);
     for (const [key, timestamp] of Object.entries(filled)) {
@@ -686,7 +732,10 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
       // directly seeded — any earlier failure is moot
       statusById.delete(data.id);
       failureById.delete(data.id);
-      metaById.set(data.id, { name: metaName(data), stepCount: data.steps?.length ?? 0 });
+      metaById.set(data.id, {
+        name: metaName(data),
+        stepCount: data.steps?.length ?? 0,
+      });
       if (!ids.includes(data.id)) ids.push(data.id);
     }
     sheet = {
@@ -801,11 +850,15 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
       return rosterComplete;
     },
     get isHydrating() {
-      return roster.some((r) => r.status === "loading" || r.status === "retrying");
+      return roster.some(
+        (r) => r.status === "loading" || r.status === "retrying"
+      );
     },
     get failedSequenceIds(): ReadonlySet<string> {
       return new Set(
-        roster.filter((r) => r.status === "error" || r.status === "missing").map((r) => r.id)
+        roster
+          .filter((r) => r.status === "error" || r.status === "missing")
+          .map((r) => r.id)
       );
     },
     get selectedSequenceId() {
@@ -837,7 +890,13 @@ export function createChoreoSheetState(deps: ChoreoSheetStateDeps) {
   };
 }
 
-export type ChoreoSheetState = ReturnType<typeof createChoreoSheetState>;
+export type ChoreoSheetState = ReturnType<typeof buildChoreoSheetState>;
+
+export function createChoreoSheetState(
+  deps: ChoreoSheetStateDeps
+): ChoreoSheetState {
+  return buildChoreoSheetState(deps);
+}
 
 // ── Context ──────────────────────────────────────────────────────────────────
 // Set once in the builder root (ChoreoSheetView / WriteTab), consumed by any

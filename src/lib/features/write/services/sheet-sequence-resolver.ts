@@ -9,7 +9,11 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import { LibraryError } from "$lib/shared/library/domain/library-error";
 import { isPermissionDeniedError } from "$lib/shared/auth/utils/is-permission-denied-error";
 
-export type ResolveFailure = "transient" | "permission" | "missing" | "unreadable";
+export type ResolveFailure =
+  | "transient"
+  | "permission"
+  | "missing"
+  | "unreadable";
 
 export interface ResolveOutcome {
   sequence: SequenceData | null;
@@ -28,6 +32,10 @@ export interface SheetSequenceResolverDeps {
   delay?: (ms: number, signal: AbortSignal) => Promise<void>;
 }
 
+export interface SheetSequenceResolver {
+  resolve: (id: string, signal: AbortSignal) => Promise<ResolveOutcome>;
+}
+
 /** Error classes: unauthorized = genuinely no identity (post-settle) → public-only,
  *  permission = never present as deleted, unreadable = the document is there and
  *  broken (retrying cannot fix it), transient = retry. Unknowns fail open to
@@ -35,8 +43,10 @@ export interface SheetSequenceResolverDeps {
 export function classifyResolveError(
   error: unknown
 ): "unauthorized" | "permission" | "unreadable" | "transient" {
-  if (error instanceof LibraryError && error.code === "UNAUTHORIZED") return "unauthorized";
-  if (error instanceof LibraryError && error.code === "INVALID_DATA") return "unreadable";
+  if (error instanceof LibraryError && error.code === "UNAUTHORIZED")
+    return "unauthorized";
+  if (error instanceof LibraryError && error.code === "INVALID_DATA")
+    return "unreadable";
   if (isPermissionDeniedError(error)) return "permission";
   return "transient";
 }
@@ -92,7 +102,9 @@ function hasSteps(seq: SequenceData | null): seq is SequenceData {
   return seq != null && (seq.steps?.length ?? 0) > 0;
 }
 
-export function createSheetSequenceResolver(deps: SheetSequenceResolverDeps) {
+export function createSheetSequenceResolver(
+  deps: SheetSequenceResolverDeps
+): SheetSequenceResolver {
   const delay = deps.delay ?? defaultDelay;
   const inFlight = new Map<string, Promise<ResolveOutcome>>();
 
@@ -139,7 +151,10 @@ export function createSheetSequenceResolver(deps: SheetSequenceResolverDeps) {
     throw new PrivateTierUnavailable(blocked ?? "permission");
   }
 
-  async function resolve(id: string, signal: AbortSignal): Promise<ResolveOutcome> {
+  async function resolve(
+    id: string,
+    signal: AbortSignal
+  ): Promise<ResolveOutcome> {
     const existing = inFlight.get(id);
     if (existing) return existing;
 
@@ -152,9 +167,19 @@ export function createSheetSequenceResolver(deps: SheetSequenceResolverDeps) {
         try {
           const result = await attempt(id);
           if ("sequence" in result) {
-            return { sequence: result.sequence, source: result.source, failure: null, attempts };
+            return {
+              sequence: result.sequence,
+              source: result.source,
+              failure: null,
+              attempts,
+            };
           }
-          return { sequence: null, source: null, failure: result.terminal, attempts };
+          return {
+            sequence: null,
+            source: null,
+            failure: result.terminal,
+            attempts,
+          };
         } catch (error) {
           if (signal.aborted) throw abortError();
           const backoff = BACKOFF_MS[attempts - 1];
@@ -182,5 +207,3 @@ export function createSheetSequenceResolver(deps: SheetSequenceResolverDeps) {
 
   return { resolve };
 }
-
-export type SheetSequenceResolver = ReturnType<typeof createSheetSequenceResolver>;

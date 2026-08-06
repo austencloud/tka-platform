@@ -2,8 +2,7 @@
   ActsDock.svelte
 
   The saved-acts panel for the Choreo builder: create a new act, open a saved
-  one, delete one — all in the same inline dock chrome the sequence picker uses,
-  so creation and selection read as one designed surface.
+  one, delete one — all inside the shared Drawer shell.
 
   States (loading / error / empty / list / unsaved-changes confirm) swap through
   the shared <Crossfade> primitive in fill mode, so the dock never jumps as data
@@ -19,7 +18,6 @@
 <script lang="ts">
   import { flip } from "svelte/animate";
   import { scale } from "svelte/transition";
-  import { dockSlide } from "$lib/shared/transitions/dock-slide";
   import { flipDuration, motionDuration } from "$lib/shared/transitions/motion";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { formatTimeAgo } from "$lib/shared/i18n/i18n-formatters";
@@ -136,7 +134,7 @@
           ? "error"
           : acts.length === 0
             ? "empty"
-            : "list",
+            : "list"
   );
 
   function requestOpen(act: ChoreoSheet): void {
@@ -235,13 +233,18 @@
   }}
 />
 
-<aside class="acts-dock" aria-label="Saved acts" transition:dockSlide>
+<aside class="acts-dock" aria-label="Saved acts">
   <div class="dock-head">
     <span class="dock-title">
       <i class="fa-solid fa-clapperboard" aria-hidden="true"></i>
       Acts
     </span>
-    <button type="button" class="dock-close" aria-label="Close acts panel" onclick={onClose}>
+    <button
+      type="button"
+      class="dock-close"
+      aria-label="Close acts panel"
+      onclick={onClose}
+    >
       <i class="fa-solid fa-xmark" aria-hidden="true"></i>
     </button>
   </div>
@@ -265,7 +268,8 @@
           </div>
           <h3 class="confirm-title">Unsaved changes</h3>
           <p class="confirm-text">
-            “{currentActName || "Untitled Sheet"}” has changes that aren't saved yet.
+            “{currentActName || "Untitled Sheet"}” has changes that aren't saved
+            yet.
           </p>
           {#if switchError}
             <p class="confirm-error" role="alert">{switchError}</p>
@@ -278,8 +282,12 @@
               disabled={switching}
             >
               <span class="btn-label">
-                <span class="btn-label-sizer" aria-hidden="true">Save first</span>
-                <span class="btn-label-live">{switching ? "Saving…" : "Save first"}</span>
+                <span class="btn-label-sizer" aria-hidden="true"
+                  >Save first</span
+                >
+                <span class="btn-label-live"
+                  >{switching ? "Saving…" : "Save first"}</span
+                >
               </span>
             </button>
             <button
@@ -290,7 +298,12 @@
             >
               Discard
             </button>
-            <button type="button" class="btn" onclick={cancelSwitch} disabled={switching}>
+            <button
+              type="button"
+              class="btn"
+              onclick={cancelSwitch}
+              disabled={switching}
+            >
               Cancel
             </button>
           </div>
@@ -320,7 +333,9 @@
             <i class="fa-solid fa-clapperboard" aria-hidden="true"></i>
           </div>
           <p class="state-msg">No saved acts yet.</p>
-          <p class="state-hint">Save the sheet you're building and it'll show up here.</p>
+          <p class="state-hint">
+            Save the sheet you're building and it'll show up here.
+          </p>
         </div>
       {:else}
         <div class="phase act-scroll">
@@ -341,7 +356,9 @@
                   onclick={() => requestOpen(act)}
                   disabled={act.id === currentActId || switching}
                   aria-current={act.id === currentActId ? "true" : undefined}
-                  title={act.id === currentActId ? "Currently open" : `Open ${act.name || "Untitled Sheet"}`}
+                  title={act.id === currentActId
+                    ? "Currently open"
+                    : `Open ${act.name || "Untitled Sheet"}`}
                 >
                   <span class="act-name">{act.name || "Untitled Sheet"}</span>
                   <span class="act-meta">
@@ -360,12 +377,17 @@
                   aria-label={confirmDeleteId === act.id
                     ? `Confirm delete ${act.name || "Untitled Sheet"}`
                     : `Delete ${act.name || "Untitled Sheet"}`}
-                  title={confirmDeleteId === act.id ? "Tap again to delete" : "Delete"}
+                  title={confirmDeleteId === act.id
+                    ? "Tap again to delete"
+                    : "Delete"}
                   onclick={() => requestDelete(act.id)}
                   disabled={deletingId !== null}
                 >
                   {#if deletingId === act.id}
-                    <i class="fa-solid fa-circle-notch spinning" aria-hidden="true"></i>
+                    <i
+                      class="fa-solid fa-circle-notch spinning"
+                      aria-hidden="true"
+                    ></i>
                   {:else}
                     <Crossfade key={confirmDeleteId === act.id}>
                       {#if confirmDeleteId === act.id}
@@ -389,24 +411,17 @@
 </aside>
 
 <style>
-  /* Same inline-dock chrome as the sequence picker (browse-dock) so the two
-     surfaces read as one design. */
+  /* Drawer owns the outer surface and its animation. This component fills the
+     Drawer slot and gives its body the remaining height for state/list scroll. */
   .acts-dock {
-    flex-shrink: 0;
-    width: min(360px, 36vw);
     display: flex;
+    flex: 1;
     flex-direction: column;
+    width: 100%;
+    height: 100%;
     min-height: 0;
     background: var(--theme-panel-bg, #14141c);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: 8px;
     overflow: hidden;
-  }
-
-  /* dockSlide perf contract: children pinned at final width so the glide is a
-     pure clip-reveal (no per-frame relayout of the dock's contents). */
-  .acts-dock > :global(*) {
-    width: min(360px, 36vw);
   }
 
   .dock-head {
@@ -478,7 +493,8 @@
   }
 
   .new-act i {
-    transition: transform var(--duration-normal, 0.2s) cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform var(--duration-normal, 0.2s)
+      cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .new-act:hover:not(:disabled) {
@@ -506,13 +522,24 @@
   }
 
   .dock-body {
+    position: relative;
+    display: flex;
+    flex-direction: column;
     flex: 1;
     min-height: 0;
     padding: var(--spacing-sm) 0 0;
+    overflow: hidden;
+  }
+
+  .dock-body > :global(*) {
+    flex: 1;
+    min-height: 0;
   }
 
   .phase {
+    width: 100%;
     height: 100%;
+    min-height: 0;
     overflow-y: auto;
   }
 
@@ -534,7 +561,8 @@
     align-items: center;
     gap: var(--spacing-xs);
     min-height: var(--min-touch-target, 44px);
-    padding: var(--spacing-xs) var(--spacing-xs) var(--spacing-xs) var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-xs) var(--spacing-xs)
+      var(--spacing-sm);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
@@ -575,7 +603,11 @@
   /* Armed delete tints the WHOLE card danger, so it's unmistakable which act
      the second tap will remove. */
   .act-item.armed {
-    border-color: color-mix(in srgb, var(--theme-danger, #ef4444) 60%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-danger, #ef4444) 60%,
+      transparent
+    );
     background: color-mix(
       in srgb,
       var(--theme-danger, #ef4444) 10%,
@@ -870,7 +902,11 @@
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 15%,
+      transparent
+    );
     color: var(--theme-accent, #6366f1);
     font-size: 1.15rem;
     /* Pops in with a slight overshoot so the warning registers immediately. */
@@ -972,16 +1008,6 @@
 
   .btn-label-sizer {
     visibility: hidden;
-  }
-
-  @media (max-width: 900px) {
-    .acts-dock {
-      width: 100%;
-      max-height: 45vh;
-    }
-    .acts-dock > :global(*) {
-      width: auto;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {

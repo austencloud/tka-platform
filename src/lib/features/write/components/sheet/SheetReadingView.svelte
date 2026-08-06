@@ -20,7 +20,10 @@
 <script lang="ts">
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import type { SheetBand } from "../../services/sheet-row-planner";
-  import type { ChoreoSheetLayout, SheetHeader } from "../../domain/types/choreo-sheet";
+  import type {
+    ChoreoSheetLayout,
+    SheetHeader,
+  } from "../../domain/types/choreo-sheet";
   import { SHEET_CELL_VISIBILITY } from "../../services/sheet-cell-config";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
@@ -61,7 +64,11 @@
       stepIndex: number,
       patch: { timestamp?: string; text?: string }
     ) => void;
-    onAddNote?: (sequenceId: string, stepIndex: number, pinned: boolean) => string;
+    onAddNote?: (
+      sequenceId: string,
+      stepIndex: number,
+      pinned: boolean
+    ) => string;
     onSetNote?: (id: string, patch: { text?: string }) => void;
     onRemoveNote?: (id: string) => void;
   } = $props();
@@ -73,10 +80,14 @@
   const isActCurrent = (cell: { actStepIndex: number | null }) =>
     actStepIndex !== null && cell.actStepIndex === actStepIndex;
   const isActPlayed = (cell: { actStepIndex: number | null }) =>
-    actStepIndex !== null && cell.actStepIndex !== null && cell.actStepIndex < actStepIndex;
+    actStepIndex !== null &&
+    cell.actStepIndex !== null &&
+    cell.actStepIndex < actStepIndex;
 
   // A repeated word always displays in its smallest form.
-  const title = $derived(simplifyRepeatedWord(header?.songName || sheetName || "Untitled"));
+  const title = $derived(
+    simplifyRepeatedWord(header?.songName || sheetName || "Untitled")
+  );
   const label = (id: string) => simplifyRepeatedWord(sequenceNames[id] ?? "");
 
   /**
@@ -85,7 +96,8 @@
    * a later step (which happens when a wider layout merged two rows).
    */
   function cueSlots(band: SheetBand) {
-    const primary = band.cues.find((c) => c.stepIndex === band.firstStepIndex) ?? null;
+    const primary =
+      band.cues.find((c) => c.stepIndex === band.firstStepIndex) ?? null;
     const extras = band.cues.filter((c) => c.stepIndex !== band.firstStepIndex);
     // `isExtra` marks a cue that a wider layout merged into this band; it is
     // labelled by STEP NUMBER, the same number printed on its pictograph.
@@ -99,7 +111,11 @@
   // add-then-type flow is one gesture. Falls back silently when no handler.
   let focusNoteId = $state<string | null>(null);
   function addPinnedNote(band: SheetBand, cellIndex: number) {
-    const id = onAddNote?.(band.sequenceId, band.firstStepIndex + cellIndex, true);
+    const id = onAddNote?.(
+      band.sequenceId,
+      band.firstStepIndex + cellIndex,
+      true
+    );
     if (id) focusNoteId = id;
   }
   function addBullet(band: SheetBand) {
@@ -120,14 +136,20 @@
     {#if header?.songArtist || header?.choreographer}
       <p class="reading-sub">
         {#if header?.songArtist}<span>{header.songArtist}</span>{/if}
-        {#if header?.songArtist && header?.choreographer}<span aria-hidden="true"> · </span>{/if}
+        {#if header?.songArtist && header?.choreographer}<span
+            aria-hidden="true"
+          >
+            ·
+          </span>{/if}
         {#if header?.choreographer}<span>{header.choreographer}</span>{/if}
       </p>
     {/if}
   </header>
 
   {#if bands.length === 0}
-    <p class="reading-empty">Nothing to read yet — add a sequence to this act.</p>
+    <p class="reading-empty">
+      Nothing to read yet — add a sequence to this act.
+    </p>
   {/if}
 
   {#each bands as band (band.key)}
@@ -141,7 +163,9 @@
           {#each cueSlots(band) as slot (slot.stepIndex)}
             <div class="rb-cue">
               {#if slot.isExtra}
-                <span class="rb-badge" aria-hidden="true">{slot.stepIndex + 1}</span>
+                <span class="rb-badge" aria-hidden="true"
+                  >{slot.stepIndex + 1}</span
+                >
               {/if}
               <input
                 class="rb-ts"
@@ -152,15 +176,21 @@
                   ? `Cue timestamp at step ${slot.stepIndex + 1}`
                   : "Cue timestamp"}
                 oninput={(e) =>
-                  onSetCue?.(band.sequenceId, slot.stepIndex, { timestamp: e.currentTarget.value })}
+                  onSetCue?.(band.sequenceId, slot.stepIndex, {
+                    timestamp: e.currentTarget.value,
+                  })}
               />
               <input
                 class="rb-cue-text"
                 value={slot.cue?.text ?? ""}
                 placeholder="cue…"
-                aria-label={slot.isExtra ? `Cue text at step ${slot.stepIndex + 1}` : "Cue text"}
+                aria-label={slot.isExtra
+                  ? `Cue text at step ${slot.stepIndex + 1}`
+                  : "Cue text"}
                 oninput={(e) =>
-                  onSetCue?.(band.sequenceId, slot.stepIndex, { text: e.currentTarget.value })}
+                  onSetCue?.(band.sequenceId, slot.stepIndex, {
+                    text: e.currentTarget.value,
+                  })}
               />
             </div>
           {/each}
@@ -207,16 +237,23 @@
                    the pictograph it refers to. `count` is a within-band column,
                    which differs per column count — a badge reading "1" beside a
                    cell labelled "5" is worse than no badge at all. -->
-              <span class="rb-badge" class:is-bullet={note.count == null} aria-hidden="true">
+              <span
+                class="rb-badge"
+                class:is-bullet={note.count == null}
+                aria-hidden="true"
+              >
                 {note.count == null ? "•" : note.stepIndex + 1}
               </span>
               <input
                 class="rb-note-text"
                 value={note.text}
                 placeholder="note…"
-                aria-label={note.count != null ? `Note on step ${note.stepIndex + 1}` : "Note"}
+                aria-label={note.count != null
+                  ? `Note on step ${note.stepIndex + 1}`
+                  : "Note"}
                 use:autofocus={note.id}
-                oninput={(e) => onSetNote?.(note.id, { text: e.currentTarget.value })}
+                oninput={(e) =>
+                  onSetNote?.(note.id, { text: e.currentTarget.value })}
               />
               <button
                 type="button"
@@ -229,7 +266,11 @@
             </div>
           {/each}
           {#if onAddNote}
-            <button type="button" class="rb-add" onclick={() => addBullet(band)}>
+            <button
+              type="button"
+              class="rb-add"
+              onclick={() => addBullet(band)}
+            >
               <i class="fa-solid fa-plus" aria-hidden="true"></i> note
             </button>
           {/if}
@@ -243,12 +284,23 @@
   /* Sized in rem/px, deliberately NOT in --pt. The page preview's pt model is
      what crushes this content on a phone; nothing here may inherit it. */
   .reading {
+    --reading-playback-ring: var(--semantic-warning);
+    --reading-playback-ring-strong: color-mix(
+      in srgb,
+      var(--semantic-warning) 90%,
+      transparent
+    );
+    --reading-playback-glow: color-mix(
+      in srgb,
+      var(--semantic-warning) 45%,
+      transparent
+    );
     --rb-gap: 0.375rem;
     display: flex;
     flex-direction: column;
     gap: 1rem;
     padding: 0.75rem;
-    color: var(--theme-text, #fff);
+    color: var(--theme-text);
   }
 
   .reading-head {
@@ -263,12 +315,12 @@
   .reading-sub {
     margin: 0.125rem 0 0;
     font-size: 0.8125rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    color: var(--theme-text-dim);
   }
   .reading-empty {
     margin: 0;
     font-size: 0.9375rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    color: var(--theme-text-dim);
   }
 
   .rb {
@@ -278,7 +330,7 @@
   }
   /* A sequence boundary is the one structural cue print gets from separators. */
   .rb.starts-sequence:not(:first-of-type) {
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    border-top: 1px solid var(--theme-stroke);
     padding-top: 0.875rem;
   }
   .rb-seq {
@@ -286,7 +338,7 @@
     font-size: 0.9375rem;
     font-weight: 600;
     letter-spacing: 0.01em;
-    color: var(--theme-text, #fff);
+    color: var(--theme-text);
   }
 
   .rb-cues {
@@ -321,9 +373,9 @@
   .rb-cell {
     aspect-ratio: 1;
     padding: 0;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.16));
+    border: 1px solid var(--theme-stroke);
     border-radius: 6px;
-    background: #fff;
+    background: var(--reading-paper, var(--print-bg));
     overflow: hidden;
     cursor: pointer;
     position: relative;
@@ -334,7 +386,7 @@
     cursor: default;
   }
   .rb-cell:focus-visible {
-    outline: 2px solid var(--theme-accent, #64b4ff);
+    outline: 2px solid var(--theme-accent);
     outline-offset: 2px;
   }
 
@@ -343,11 +395,11 @@
      spaced, so this one can afford the viewer's lift. */
   .rb-cell.act-current {
     z-index: 2;
-    border-color: rgba(251, 191, 36, 0.95);
+    border-color: var(--reading-playback-ring);
     transform: scale(1.04);
     box-shadow:
-      0 0 0 2px rgba(251, 191, 36, 0.9),
-      0 0 14px 2px rgba(251, 191, 36, 0.45);
+      0 0 0 2px var(--reading-playback-ring-strong),
+      0 0 14px 2px var(--reading-playback-glow);
     transition:
       transform 0.16s ease-out,
       box-shadow 0.16s ease-out;
@@ -388,8 +440,8 @@
     height: 1.5rem;
     padding: 0 0.25rem;
     border-radius: 999px;
-    background: var(--theme-accent-bg, rgba(100, 180, 255, 0.22));
-    color: var(--theme-text, #fff);
+    background: var(--theme-accent-bg);
+    color: var(--theme-text);
     font-size: 0.75rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -410,16 +462,16 @@
     padding: 0 0.5rem;
     font-size: 1rem; /* 16px — anything smaller makes iOS zoom on focus. */
     color: inherit;
-    background: var(--theme-surface, rgba(255, 255, 255, 0.06));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    background: var(--theme-surface);
+    border: 1px solid var(--theme-stroke);
     border-radius: 8px;
   }
   .rb-ts:focus-visible,
   .rb-cue-text:focus-visible,
   .rb-note-text:focus-visible {
     outline: none;
-    border-color: var(--theme-accent, #64b4ff);
-    background: var(--theme-accent-bg, rgba(100, 180, 255, 0.16));
+    border-color: var(--theme-accent);
+    background: var(--theme-accent-bg);
   }
 
   .rb-remove,
@@ -434,19 +486,19 @@
     border: 1px solid transparent;
     border-radius: 8px;
     background: transparent;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    color: var(--theme-text-dim);
     font-size: 0.875rem;
     cursor: pointer;
   }
   .rb-add {
     align-self: flex-start;
     padding: 0 0.875rem;
-    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    border-color: var(--theme-stroke);
   }
   .rb-remove:hover,
   .rb-add:hover {
-    color: var(--theme-text, #fff);
-    background: var(--theme-surface, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text);
+    background: var(--theme-surface);
   }
 
   /* Wider screens only get roomier — the column count is the caller's, so

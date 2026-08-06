@@ -20,16 +20,32 @@
  * same overlay StepNumber.svelte / the card pipeline use), so print matches the
  * live preview glyph-for-glyph in BOTH layouts. Block separators stay vector.
  */
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
+import {
+  PDFDocument,
+  StandardFonts,
+  rgb,
+  type PDFFont,
+  type PDFImage,
+  type PDFPage,
+} from "pdf-lib";
 import {
   getSheetPageLayout,
   RUNNING_HEADER_PT,
   TITLE_BLOCK_PT,
   type SheetPageGeometry,
 } from "../domain/sheet-page-layout";
-import { planSheet, planBands, type SheetPage, type SheetCell } from "./sheet-row-planner";
+import {
+  planSheet,
+  planBands,
+  type SheetPage,
+  type SheetCell,
+} from "./sheet-row-planner";
 import { SHEET_CELL_VISIBILITY } from "./sheet-cell-config";
 import type { ChoreoSheet } from "../domain/types/choreo-sheet";
+import {
+  formatSheetRunningTimestamp,
+  formatSheetTitleBlock,
+} from "../domain/sheet-title-block";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { RenderCanvas } from "$lib/shared/render/services/types";
@@ -56,12 +72,20 @@ function cellRasterKey(
   step: StepData,
   blueProp: PropType,
   redProp: PropType,
-  bakedNumber: number | null,
+  bakedNumber: number | null
 ): string {
   const motions = step.motions ?? {};
   const fingerprint = (m: (typeof motions)["blue"]): string =>
     m
-      ? [m.motionType, m.startLocation, m.endLocation, m.rotationDirection, m.turns, m.startOrientation, m.endOrientation].join(",")
+      ? [
+          m.motionType,
+          m.startLocation,
+          m.endLocation,
+          m.rotationDirection,
+          m.turns,
+          m.startOrientation,
+          m.endOrientation,
+        ].join(",")
       : "none";
   return [
     step.letter ?? "none",
@@ -79,19 +103,31 @@ function cellRasterKey(
 // RenderCanvas is an OffscreenCanvas in workers/modern browsers, HTMLCanvasElement
 // on the fallback path. Both encode to PNG bytes, just via different APIs.
 async function canvasToPngBytes(canvas: RenderCanvas): Promise<Uint8Array> {
-  if (typeof OffscreenCanvas !== "undefined" && canvas instanceof OffscreenCanvas) {
+  if (
+    typeof OffscreenCanvas !== "undefined" &&
+    canvas instanceof OffscreenCanvas
+  ) {
     const blob = await canvas.convertToBlob({ type: "image/png" });
     return new Uint8Array(await blob.arrayBuffer());
   }
   const html = canvas as HTMLCanvasElement;
   const blob: Blob = await new Promise((resolve, reject) =>
-    html.toBlob((b) => (b ? resolve(b) : reject(new Error("canvas.toBlob returned null"))), "image/png"),
+    html.toBlob(
+      (b) =>
+        b ? resolve(b) : reject(new Error("canvas.toBlob returned null")),
+      "image/png"
+    )
   );
   return new Uint8Array(await blob.arrayBuffer());
 }
 
 // Greedy word-wrap for the cue rail + header — pdf-lib has no text layout.
-function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
+function wrapText(
+  text: string,
+  font: PDFFont,
+  size: number,
+  maxWidth: number
+): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let line = "";
@@ -111,12 +147,21 @@ function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): 
 // Notes get exactly one line each — `estimateBandHeight` budgets the strip at
 // one line per note, so wrapping a long one would spill into the band below.
 // Truncate to the space actually available instead.
-export function truncateToWidth(text: string, font: PDFFont, size: number, maxWidth: number): string {
+export function truncateToWidth(
+  text: string,
+  font: PDFFont,
+  size: number,
+  maxWidth: number
+): string {
   if (maxWidth <= 0) return "";
   if (font.widthOfTextAtSize(text, size) <= maxWidth) return text;
   const ellipsis = "…";
   let cut = text.length;
-  while (cut > 0 && font.widthOfTextAtSize(text.slice(0, cut) + ellipsis, size) > maxWidth) cut--;
+  while (
+    cut > 0 &&
+    font.widthOfTextAtSize(text.slice(0, cut) + ellipsis, size) > maxWidth
+  )
+    cut--;
   return cut > 0 ? text.slice(0, cut) + ellipsis : "";
 }
 
@@ -124,7 +169,7 @@ export async function buildChoreoSheetPDF(
   sheet: ChoreoSheet,
   hydrated: readonly SequenceData[], // normalized rows, in order (see ChoreoSheetView)
   onProgress?: (done: number, total: number) => void,
-  breakSequenceIds: Set<string> = new Set(),
+  breakSequenceIds: Set<string> = new Set()
 ): Promise<Blob> {
   const geo = getSheetPageLayout(sheet.layout);
   const aligned = sheet.layout.packing === "aligned";
@@ -168,7 +213,7 @@ export async function buildChoreoSheetPDF(
     cell: SheetCell,
     cellX: number,
     cellBottomY: number,
-    isFirstCell: boolean,
+    isFirstCell: boolean
   ): Promise<void> {
     // Outline every cell (blanks fainter) so the grid reads as discrete boxes.
     pdfPage.drawRectangle({
@@ -182,7 +227,11 @@ export async function buildChoreoSheetPDF(
 
     // Sequences flow continuously, so a boundary is a VERTICAL edge on the
     // sequence-start cell (it can land mid-row), matching the preview.
-    if (sheet.layout.groupSeparator === "rule" && cell.isSequenceStart && !isFirstCell) {
+    if (
+      sheet.layout.groupSeparator === "rule" &&
+      cell.isSequenceStart &&
+      !isFirstCell
+    ) {
       pdfPage.drawLine({
         start: { x: cellX, y: cellBottomY },
         end: { x: cellX, y: cellBottomY + geo.cellSizePt },
@@ -193,7 +242,11 @@ export async function buildChoreoSheetPDF(
 
     // Break: thick red left edge + label on a sequence start that doesn't
     // connect to the sequence before it. Independent of separator style.
-    if (cell.isSequenceStart && cell.sequenceId && breakSequenceIds.has(cell.sequenceId)) {
+    if (
+      cell.isSequenceStart &&
+      cell.sequenceId &&
+      breakSequenceIds.has(cell.sequenceId)
+    ) {
       pdfPage.drawLine({
         start: { x: cellX, y: cellBottomY },
         end: { x: cellX, y: cellBottomY + geo.cellSizePt },
@@ -215,7 +268,9 @@ export async function buildChoreoSheetPDF(
     // Step numbers honor the sheet flag; start positions (stepNumber 0) never
     // get one, though the planner only feeds actual steps (>= 1).
     const bakedNumber =
-      sheet.layout.showStepNumbers && step.stepNumber && step.stepNumber > 0 ? step.stepNumber : null;
+      sheet.layout.showStepNumbers && step.stepNumber && step.stepNumber > 0
+        ? step.stepNumber
+        : null;
 
     const key = cellRasterKey(step, blueProp, redProp, bakedNumber);
     let img = imageCache.get(key);
@@ -227,7 +282,12 @@ export async function buildChoreoSheetPDF(
       });
       const canvas = await renderer.renderPictograph(prepared, {
         size: rasterPx,
-        visibility: { ...SHEET_CELL_VISIBILITY, darkMode: false, bluePropType: blueProp, redPropType: redProp },
+        visibility: {
+          ...SHEET_CELL_VISIBILITY,
+          darkMode: false,
+          bluePropType: blueProp,
+          redPropType: redProp,
+        },
       });
       if (bakedNumber !== null) {
         // Canonical overlay — same drawStepNumber the preview's StepNumber.svelte
@@ -243,7 +303,12 @@ export async function buildChoreoSheetPDF(
       imageCache.set(key, img);
     }
 
-    pdfPage.drawImage(img, { x: cellX, y: cellBottomY, width: geo.cellSizePt, height: geo.cellSizePt });
+    pdfPage.drawImage(img, {
+      x: cellX,
+      y: cellBottomY,
+      width: geo.cellSizePt,
+      height: geo.cellSizePt,
+    });
 
     done++;
     onProgress?.(done, total);
@@ -259,7 +324,9 @@ export async function buildChoreoSheetPDF(
     });
 
     // Count non-blank cells up front so progress is meaningful card-by-card.
-    for (const page of bandPages) for (const band of page.bands) for (const cell of band.cells) if (!cell.isBlank && cell.step) total++;
+    for (const page of bandPages)
+      for (const band of page.bands)
+        for (const cell of band.cells) if (!cell.isBlank && cell.step) total++;
     onProgress?.(done, total);
 
     // Rail + strip type scale keyed to cell size, clamped so it stays legible in
@@ -279,16 +346,29 @@ export async function buildChoreoSheetPDF(
       // consume — the packer budgeted against these same constants, so the two
       // cannot disagree about where the first band starts.
       if (page.pageIndex === 0 && sheet.annotations.header.showTitleBlock) {
-        drawTitleBlock(pdfPage, sheet, geo, { fontBold, font, fontOblique, ink, inkSoft });
-        yUsed += TITLE_BLOCK_PT;
-      } else if (page.pageIndex > 0) {
-        drawRunningHeader(pdfPage, sheet, page.pageIndex, page.bands[0]?.cues[0]?.timestamp ?? "", geo, {
+        drawTitleBlock(pdfPage, sheet, geo, {
+          fontBold,
           font,
           fontOblique,
           ink,
           inkSoft,
-          railRule,
         });
+        yUsed += TITLE_BLOCK_PT;
+      } else if (page.pageIndex > 0) {
+        drawRunningHeader(
+          pdfPage,
+          sheet,
+          page.pageIndex,
+          page.bands[0]?.cues[0]?.timestamp ?? "",
+          geo,
+          {
+            font,
+            fontOblique,
+            ink,
+            inkSoft,
+            railRule,
+          }
+        );
         yUsed += RUNNING_HEADER_PT;
       }
 
@@ -323,9 +403,20 @@ export async function buildChoreoSheetPDF(
             }
             let ty = cueY - tsSize - cueSize - 3;
             if (cue.text) {
-              const lines = wrapText(cue.text, fontOblique, cueSize, railInnerW);
+              const lines = wrapText(
+                cue.text,
+                fontOblique,
+                cueSize,
+                railInnerW
+              );
               for (const line of lines) {
-                pdfPage.drawText(line, { x: railLeftX, y: ty, size: cueSize, font: fontOblique, color: inkSoft });
+                pdfPage.drawText(line, {
+                  x: railLeftX,
+                  y: ty,
+                  size: cueSize,
+                  font: fontOblique,
+                  color: inkSoft,
+                });
                 ty -= cueSize * 1.2;
               }
             }
@@ -346,19 +437,42 @@ export async function buildChoreoSheetPDF(
           let noteY = cellBottomY - 4 - noteSize;
           // Right edge of the last cell — a note may run to the end of the grid
           // but never past it, on paper or on screen.
-          const gridRightX = geo.marginXPt + geo.columns * stride - geo.gutterPt;
+          const gridRightX =
+            geo.marginXPt + geo.columns * stride - geo.gutterPt;
           for (const note of band.notes) {
             // `count` is resolved by the planner from the note's absolute step
             // index — the preview reads the identical value, so a note cannot
             // pin on screen and bullet on paper.
             if (note.count != null) {
               const x = geo.marginXPt + (note.count! - 1) * stride;
-              const text = truncateToWidth(note.text, font, noteSize, gridRightX - x);
-              pdfPage.drawText(text, { x, y: noteY, size: noteSize, font, color: ink });
+              const text = truncateToWidth(
+                note.text,
+                font,
+                noteSize,
+                gridRightX - x
+              );
+              pdfPage.drawText(text, {
+                x,
+                y: noteY,
+                size: noteSize,
+                font,
+                color: ink,
+              });
             } else {
               const bullet = `• ${note.text}`;
-              const text = truncateToWidth(bullet, fontOblique, noteSize, gridRightX - geo.marginXPt);
-              pdfPage.drawText(text, { x: geo.marginXPt, y: noteY, size: noteSize, font: fontOblique, color: ink });
+              const text = truncateToWidth(
+                bullet,
+                fontOblique,
+                noteSize,
+                gridRightX - geo.marginXPt
+              );
+              pdfPage.drawText(text, {
+                x: geo.marginXPt,
+                y: noteY,
+                size: noteSize,
+                font: fontOblique,
+                color: ink,
+              });
             }
             noteY -= noteSize * 1.35;
           }
@@ -371,7 +485,9 @@ export async function buildChoreoSheetPDF(
     const pages: SheetPage[] = planSheet(hydrated, sheet.layout);
 
     // Count non-blank cells up front so progress is meaningful card-by-card.
-    for (const page of pages) for (const row of page.rows) for (const cell of row.cells) if (!cell.isBlank && cell.step) total++;
+    for (const page of pages)
+      for (const row of page.rows)
+        for (const cell of row.cells) if (!cell.isBlank && cell.step) total++;
     onProgress?.(done, total);
 
     let pageIndex = -1;
@@ -387,7 +503,8 @@ export async function buildChoreoSheetPDF(
 
           // pdf-lib draws from the bottom-left; the page origin is bottom-left too.
           const cellX = geo.marginXPt + ci * stride;
-          const cellBottomY = geo.pageHeightPt - geo.marginYPt - ri * stride - geo.cellSizePt;
+          const cellBottomY =
+            geo.pageHeightPt - geo.marginYPt - ri * stride - geo.cellSizePt;
           const isFirstCell = pageIndex === 0 && ri === 0 && ci === 0;
 
           await drawCell(pdfPage, cell, cellX, cellBottomY, isFirstCell);
@@ -411,11 +528,23 @@ interface HeaderFonts {
 
 // Page-1 title block: centered act name + choreography/song credit + tagline.
 // Returns the vertical space it consumed (so the first band starts below it).
-function drawTitleBlock(pdfPage: PDFPage, sheet: ChoreoSheet, geo: SheetPageGeometry, f: HeaderFonts): number {
+function drawTitleBlock(
+  pdfPage: PDFPage,
+  sheet: ChoreoSheet,
+  geo: SheetPageGeometry,
+  f: HeaderFonts
+): number {
   const header = sheet.annotations.header;
+  const titleBlock = formatSheetTitleBlock(sheet.name, header);
   const topY = geo.pageHeightPt - geo.marginYPt;
   const centerX = geo.pageWidthPt / 2;
-  const drawCentered = (text: string, y: number, font: PDFFont, size: number, color: ReturnType<typeof rgb>) => {
+  const drawCentered = (
+    text: string,
+    y: number,
+    font: PDFFont,
+    size: number,
+    color: ReturnType<typeof rgb>
+  ) => {
     const w = font.widthOfTextAtSize(text, size);
     pdfPage.drawText(text, { x: centerX - w / 2, y, size, font, color });
   };
@@ -431,29 +560,25 @@ function drawTitleBlock(pdfPage: PDFPage, sheet: ChoreoSheet, geo: SheetPageGeom
 
   let ty = topY;
   /** Advance one line box and draw the text on its baseline. */
-  const line = (text: string, size: number, font: PDFFont, color: ReturnType<typeof rgb>, gapBefore = 0) => {
+  const line = (
+    text: string,
+    size: number,
+    font: PDFFont,
+    color: ReturnType<typeof rgb>,
+    gapBefore = 0
+  ) => {
     ty -= gapBefore;
     const box = size * LINE;
     ty -= box;
-    if (text) drawCentered(text, ty + (box - size) / 2 + size * 0.2, font, size, color);
+    if (text)
+      drawCentered(text, ty + (box - size) / 2 + size * 0.2, font, size, color);
   };
 
-  line(sheet.name || "Untitled Sheet", actSize, f.fontBold, f.ink);
-  line(
-    header.choreographer ? `Choreography by ${header.choreographer}` : "",
-    bySize,
-    f.font,
-    f.inkSoft,
-    6
-  );
-  const songLine = header.songArtist
-    ? `Song by ${header.songArtist}`
-    : header.songName
-      ? `Song: ${header.songName}`
-      : "";
-  line(songLine, bySize, f.font, f.inkSoft, 6);
-  line("Created using The Kinetic Alphabet", madeSize, f.fontOblique, f.inkSoft, 6);
-  line(header.tagline ?? "", tagSize, f.fontBold, f.ink, 10);
+  line(titleBlock.title, actSize, f.fontBold, f.ink);
+  line(titleBlock.choreographyLine, bySize, f.font, f.inkSoft, 6);
+  line(titleBlock.songLine, bySize, f.font, f.inkSoft, 6);
+  line(titleBlock.createdLine, madeSize, f.fontOblique, f.inkSoft, 6);
+  line(titleBlock.tagline, tagSize, f.fontBold, f.ink, 10);
 
   return topY - ty;
 }
@@ -474,7 +599,7 @@ function drawRunningHeader(
   pageIndex: number,
   startTimestamp: string,
   geo: SheetPageGeometry,
-  f: RunHeaderFonts,
+  f: RunHeaderFonts
 ): number {
   const size = 11;
   const topY = geo.pageHeightPt - geo.marginYPt;
@@ -484,18 +609,36 @@ function drawRunningHeader(
 
   const song = sheet.annotations.header.songName || sheet.name || "";
   if (song) {
-    pdfPage.drawText(song, { x: leftX, y: baselineY, size, font: f.fontOblique, color: f.inkSoft });
+    pdfPage.drawText(song, {
+      x: leftX,
+      y: baselineY,
+      size,
+      font: f.fontOblique,
+      color: f.inkSoft,
+    });
   }
 
-  if (startTimestamp) {
-    const mid = `page starts ${startTimestamp}`;
+  const mid = formatSheetRunningTimestamp(startTimestamp);
+  if (mid) {
     const w = f.font.widthOfTextAtSize(mid, size);
-    pdfPage.drawText(mid, { x: geo.pageWidthPt / 2 - w / 2, y: baselineY, size, font: f.font, color: f.inkSoft });
+    pdfPage.drawText(mid, {
+      x: geo.pageWidthPt / 2 - w / 2,
+      y: baselineY,
+      size,
+      font: f.font,
+      color: f.inkSoft,
+    });
   }
 
   const pageLabel = String(pageIndex + 1);
   const plw = f.font.widthOfTextAtSize(pageLabel, size);
-  pdfPage.drawText(pageLabel, { x: rightX - plw, y: baselineY, size, font: f.font, color: f.ink });
+  pdfPage.drawText(pageLabel, {
+    x: rightX - plw,
+    y: baselineY,
+    size,
+    font: f.font,
+    color: f.ink,
+  });
 
   const ruleY = baselineY - 5;
   pdfPage.drawLine({
@@ -514,9 +657,14 @@ export async function downloadChoreoSheetPDF(
   hydrated: readonly SequenceData[],
   filename = "choreo-sheet.pdf",
   onProgress?: (done: number, total: number) => void,
-  breakSequenceIds: Set<string> = new Set(),
+  breakSequenceIds: Set<string> = new Set()
 ): Promise<void> {
-  const blob = await buildChoreoSheetPDF(sheet, hydrated, onProgress, breakSequenceIds);
+  const blob = await buildChoreoSheetPDF(
+    sheet,
+    hydrated,
+    onProgress,
+    breakSequenceIds
+  );
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
