@@ -13,6 +13,7 @@
   import { onMount } from "svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import GhostPointer from "./GhostPointer.svelte";
+  import GhostMindOverlay from "./GhostMindOverlay.svelte";
   import ThoughtCaption from "./ThoughtCaption.svelte";
   import { createAttractGhost } from "../services/attract-ghost.svelte";
   import { createRng } from "../services/rng";
@@ -25,6 +26,15 @@
   import { isDeniedModule, isDeniedPath } from "../domain/annotations";
 
   let { seed }: { seed?: number } = $props();
+
+  function initialDebugVisibility(): boolean {
+    if (typeof window === "undefined") return false;
+    const value = new URLSearchParams(window.location.search).get("ghostDebug");
+    if (value === "0" || value === "false") return false;
+    return import.meta.env.DEV || value === "1" || value === "true";
+  }
+
+  let showMindOverlay = $state(initialDebugVisibility());
 
   /**
    * How long the visitor keeps the wheel after touching anything. The composer
@@ -78,6 +88,7 @@
     // distance. Read once at mount — the flag is set at setup and latched, so
     // it cannot change under a running tour.
     pace: presentationState.stage ? 1.6 : 1,
+    observe: () => showMindOverlay,
   });
   const act = run(mind.tick);
   const ghost = act.ghost;
@@ -120,7 +131,7 @@
 
   onMount(() => {
     console.info(
-      `[ghost] presentation mode — seed ${mind.seed}. Replay with ?present=${mind.seed}`,
+      `[ghost] presentation mode — seed ${mind.seed}. Replay with ?present=${mind.seed}`
     );
 
     // The trail answers the only question worth asking when the ghost stalls
@@ -134,9 +145,15 @@
       /** What the ghost is weighing right now, best first. */
       scores: () =>
         scoreAll(ALL_INTENTIONS, { ...sense(), ...mind.memory }).map(
-          (s) => `${s.intention.id} ${s.score.toFixed(3)}`,
+          (s) => `${s.intention.id} ${s.score.toFixed(3)}`
         ),
       world: () => sense(),
+      status: () => mind.status,
+      /** Toggle the developer HUD without restarting the seeded session. */
+      debug: (on = true) => {
+        showMindOverlay = on;
+        return showMindOverlay;
+      },
       /** Force idle-resume on/off — it is off in dev by default. */
       autoResume: (on = true) => {
         autoResume = on;
@@ -216,7 +233,7 @@
         runningSince = performance.now();
         console.warn(
           `[ghost] no decision in ${Math.round(STALL_MS / 1000)}s — going home. Last trail:`,
-          mind.trail.entries().slice(-3),
+          mind.trail.entries().slice(-3)
         );
         void goHome();
       }
@@ -241,7 +258,9 @@
       setEscapeHatch(null);
       clearInterval(guard);
       clearInterval(watch);
-      window.removeEventListener("pointerdown", onRealPointer, { capture: true });
+      window.removeEventListener("pointerdown", onRealPointer, {
+        capture: true,
+      });
       window.removeEventListener("keydown", onKey, { capture: true });
       window.removeEventListener("resize", measure);
       act.kill();
@@ -249,7 +268,10 @@
   });
 </script>
 
-<div class="presenter-overlay" style={`transform: translate(${originX}px, ${originY}px)`}>
+<div
+  class="presenter-overlay"
+  style={`transform: translate(${originX}px, ${originY}px)`}
+>
   <GhostPointer
     x={ghost.x}
     y={ghost.y}
@@ -271,6 +293,16 @@
     thought={mind.thought}
     x={ghost.x + originX}
     y={ghost.y + originY}
+    stage={presentationState.stage}
+  />
+{/if}
+
+{#if showMindOverlay}
+  <GhostMindOverlay
+    status={mind.status}
+    thought={mind.thought}
+    mood={mind.mood}
+    seed={mind.seed}
     stage={presentationState.stage}
   />
 {/if}

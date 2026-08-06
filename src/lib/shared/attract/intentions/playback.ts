@@ -4,9 +4,15 @@
  */
 
 import { safe } from "../domain/annotations";
+import { playbackWouldRepeat } from "../domain/episodic-memory";
 import type { Intention } from "../domain/intention";
 import { visibleAll } from "../services/sensors";
-import { has, labelOf, pressKind, restlessness, watchKind,
+import {
+  has,
+  labelOf,
+  pressKind,
+  restlessness,
+  watchKind,
   oneOf,
 } from "./helpers";
 
@@ -18,7 +24,11 @@ export const PLAYBACK_INTENTIONS: Intention[] = [
       ctx.sequenceWord
         ? `Let's see what ${ctx.sequenceWord} looks like.`
         : "Let's see what that looks like.",
-    can: (ctx) => ctx.hasSequence && !ctx.isPlaying && has(ctx, "play"),
+    can: (ctx) =>
+      ctx.hasSequence &&
+      !ctx.isPlaying &&
+      has(ctx, "play") &&
+      !playbackWouldRepeat(ctx),
     appeal: (ctx) => Math.min(0.95, 0.35 + ctx.sequenceLength * 0.12),
     mood: "delighted",
     // The sequence playing is the best thing on this screen, so the ghost gets
@@ -63,6 +73,7 @@ export const PLAYBACK_INTENTIONS: Intention[] = [
   {
     id: "scrub-back",
     category: "playback",
+    changesPresentation: true,
     thought: (ctx) =>
       oneOf(ctx, [
         "Wait, do that bit again.",
@@ -143,6 +154,7 @@ export const PLAYBACK_INTENTIONS: Intention[] = [
   {
     id: "change-tempo",
     category: "playback",
+    changesPresentation: true,
     target: (ctx) => ctx.rng.pick(visibleAll(safe("tempo"))) ?? null,
     // The thought is written FROM the preset it is about to press. It used to be
     // the constant "Slower. I want to see the hands." while pressing a random

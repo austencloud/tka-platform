@@ -193,21 +193,26 @@ export const safe = (kind: GhostKind): string =>
   `[data-ghost="safe"][data-ghost-kind="${kind}"]`;
 
 /** A readable element of this kind (not necessarily pressable). */
-export const readable = (kind: GhostKind): string => `[data-ghost-kind="${kind}"]`;
+export const readable = (kind: GhostKind): string =>
+  `[data-ghost-kind="${kind}"]`;
 
 /** Something the ghost is invited to just sit and watch. */
 export const LINGER_SEL = "[data-ghost-linger]";
 
 /** State the DOM could not otherwise answer, published by the component. */
-export const stateSel = (state: string): string => `[data-ghost-state~="${state}"]`;
+export const stateSel = (state: string): string =>
+  `[data-ghost-state~="${state}"]`;
 
 /** The simplified sequence word, published by whichever surface owns it. */
 export const WORD_SEL = "[data-ghost-word]";
 
 /** Sidebar module buttons already carry this from @austencloud/sidebar. */
+export const NAV_SIDEBAR_SEL = ".ghost-hover-boundary";
 export const NAV_MODULE_SEL = ".module-button[data-tour-module]";
 export const NAV_MODULE_ID_ATTR = "data-tour-module";
+export const NAV_MODULE_LABEL_SEL = ".module-label";
 export const NAV_TAB_SEL = ".section-button";
+export const NAV_TAB_LABEL_SEL = ".section-label";
 
 /**
  * Layer 2 of safety: routes the ghost hard-refuses to enter regardless of any
@@ -237,6 +242,6 @@ export function isDeniedModule(moduleId: string | null | undefined): boolean {
 
 export function isDeniedPath(pathname: string): boolean {
   return DENIED_PATH_FRAGMENTS.some(
-    (fragment) => pathname === fragment || pathname.startsWith(`${fragment}/`),
+    (fragment) => pathname === fragment || pathname.startsWith(`${fragment}/`)
   );
 }

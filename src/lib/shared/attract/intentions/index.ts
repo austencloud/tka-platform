@@ -1,9 +1,9 @@
 /**
  * The bag. Order is irrelevant — the mind scores all of it every tick.
  *
- * Adding a curiosity is the intended way to make the presenter better. Adding
- * cleverness to the scorer is not: a mood model or a planner is invisible from
- * fifteen feet away, and more intentions are not.
+ * Intentions remain the presenter's visible action vocabulary. The activity
+ * layer decides which short train of thought owns them; this file only defines
+ * the complete set of actions the planner may use.
  */
 
 import type { Intention } from "../domain/intention";

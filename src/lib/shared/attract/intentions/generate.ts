@@ -25,6 +25,7 @@ export const GENERATE_INTENTIONS: Intention[] = [
   {
     id: "generate-one",
     category: "build",
+    changesPresentation: true,
     concept: "generation",
     // The idea is "you can ASK for one instead of making it", and the evidence
     // is a sequence appearing where the ghost built nothing. A press that
@@ -52,7 +53,9 @@ export const GENERATE_INTENTIONS: Intention[] = [
     // it deserves the same silence a playthrough gets.
     savor: 3200,
     reaction: (ctx) =>
-      ctx.sequenceWord ? `${ctx.sequenceWord}. I'd not have picked that.` : null,
+      ctx.sequenceWord
+        ? `${ctx.sequenceWord}. I'd not have picked that.`
+        : null,
     perform: async (g, ctx) => {
       const el = pickOf(ctx, "generate");
       if (!el || g.halted()) return false;
@@ -74,7 +77,9 @@ export const GENERATE_INTENTIONS: Intention[] = [
     thought: (_ctx, target) => {
       const label = target?.getAttribute("data-ghost-label") ?? "";
       if (/length/i.test(label))
-        return /increase/i.test(label) ? "Longer this time." : "Shorter. Tighter.";
+        return /increase/i.test(label)
+          ? "Longer this time."
+          : "Shorter. Tighter.";
       if (/level/i.test(label))
         return /increase/i.test(label)
           ? "Harder. Let's see it struggle."

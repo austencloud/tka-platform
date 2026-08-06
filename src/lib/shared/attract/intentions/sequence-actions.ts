@@ -31,7 +31,9 @@ export const SEQUENCE_ACTION_INTENTIONS: Intention[] = [
     // why it needs to exist as its own beat rather than being folded into the
     // actions themselves.
     can: (ctx) =>
-      ctx.sequenceLength >= 3 && has(ctx, "sequence-actions") && !has(ctx, "extend"),
+      ctx.sequenceLength >= 3 &&
+      has(ctx, "sequence-actions") &&
+      !has(ctx, "extend"),
     appeal: () => 0.5,
     perform: async (g, ctx) => {
       if (!(await pressKind(g, ctx, "sequence-actions", 2000))) return false;
@@ -43,6 +45,7 @@ export const SEQUENCE_ACTION_INTENTIONS: Intention[] = [
   {
     id: "extend-it",
     category: "build",
+    changesPresentation: true,
     concept: "extension",
     thought: (ctx) =>
       byStage(
@@ -59,7 +62,7 @@ export const SEQUENCE_ACTION_INTENTIONS: Intention[] = [
             "It wants to be a loop. Let it.",
           ],
         },
-        "Extend. Let's see.",
+        "Extend. Let's see."
       ),
     /*
      * The precondition is the app's own answer, not a guess. TransformsGridMode
@@ -101,6 +104,7 @@ export const SEQUENCE_ACTION_INTENTIONS: Intention[] = [
   {
     id: "transform-it",
     category: "build",
+    changesPresentation: true,
     concept: "transformation",
     target: (ctx) => pickOf(ctx, "transform"),
     // Names the transform it is about to press — the thought and the action
@@ -147,6 +151,7 @@ export const SEQUENCE_ACTION_INTENTIONS: Intention[] = [
   {
     id: "undo-that",
     category: "build",
+    changesPresentation: true,
     concept: "reversibility",
     thought: (ctx) =>
       byStage(
@@ -160,10 +165,10 @@ export const SEQUENCE_ACTION_INTENTIONS: Intention[] = [
           ],
           understood: ["Nope. Take that back.", "Not that one — undo."],
         },
-        "No, not that.",
+        "No, not that."
       ),
     /*
-     * A regret, so it only makes sense immediately after having added something,
+     * A regret, so it only makes sense immediately after a sequence mutation,
      * and only while there is something to take back (`UndoButton` carries the
      * annotation only while `canAct`). Deliberately uncommon: a presenter that
      * undoes a third of what it does looks indecisive rather than human.
@@ -171,12 +176,17 @@ export const SEQUENCE_ACTION_INTENTIONS: Intention[] = [
     can: (ctx) =>
       has(ctx, "undo") &&
       ctx.sequenceLength >= 2 &&
-      ctx.lastCategory === "build" &&
+      ["add-step", "edit-one-step", "transform-it"].includes(
+        ctx.lastIntentionId ?? ""
+      ) &&
       (ctx.performed.get("undo-that") ?? 0) < 4,
     appeal: () => 0.22,
     mood: "unsure",
     learn: (before, after) =>
-      after.sequenceLength < before.sequenceLength ? "understood" : null,
+      after.sequenceLength !== before.sequenceLength ||
+      after.sequenceWord !== before.sequenceWord
+        ? "understood"
+        : null,
     reaction: (ctx) =>
       stageOf(ctx, "reversibility") === "understood" &&
       (ctx.performed.get("undo-that") ?? 0) <= 1

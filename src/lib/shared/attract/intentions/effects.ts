@@ -7,15 +7,14 @@
 import { safe } from "../domain/annotations";
 import type { Intention } from "../domain/intention";
 import { visibleAll } from "../services/sensors";
-import { has, pickOf, pressKind, watchKind,
-  oneOf,
-} from "./helpers";
+import { has, pickOf, pressKind, watchKind, oneOf } from "./helpers";
 import { monologueFor, noteEncounter, reactionFor } from "./monologue";
 
 export const EFFECT_INTENTIONS: Intention[] = [
   {
     id: "try-effect",
     category: "effects",
+    changesPresentation: true,
     concept: "layering",
     // "How it looks is separate from what it is." The proof is an effect
     // landing while the sequence itself is untouched — same length, same word.
@@ -32,7 +31,7 @@ export const EFFECT_INTENTIONS: Intention[] = [
         "effect",
         target,
         ctx,
-        "I wonder what this looks like with something on it.",
+        "I wonder what this looks like with something on it."
       ),
     can: (ctx) => has(ctx, "effect") && ctx.hasSequence,
     appeal: (ctx) => (ctx.activeEffectIds.length ? 0.45 : 0.7),
@@ -54,6 +53,7 @@ export const EFFECT_INTENTIONS: Intention[] = [
   {
     id: "reject-effect",
     category: "effects",
+    changesPresentation: true,
     thought: (ctx) =>
       oneOf(ctx, [
         "…no. Not that one.",
@@ -65,7 +65,10 @@ export const EFFECT_INTENTIONS: Intention[] = [
     mood: "unsure",
     perform: async (g, ctx) => {
       // Turn the current one off, look at the plain version, pick another.
-      const active = await g.waitFor(`${safe("effect")}[data-ghost-active]`, 1500);
+      const active = await g.waitFor(
+        `${safe("effect")}[data-ghost-active]`,
+        1500
+      );
       if (!active.length || g.halted()) return false;
       await g.moveAndPress(active[0]!);
       await g.dwell(g.jitter(900, 700));
@@ -79,6 +82,7 @@ export const EFFECT_INTENTIONS: Intention[] = [
   {
     id: "tune-effect",
     category: "effects",
+    changesPresentation: true,
     thought: (ctx) =>
       ctx.activeEffectIds.length
         ? "A little more of that."
@@ -110,7 +114,8 @@ export const PROP_INTENTIONS: Intention[] = [
     // The prop tiles live in a drawer, and until this existed nothing in the
     // bag could open it — so `try-prop` was unreachable in a normal session
     // even though its tiles were annotated.
-    can: (ctx) => has(ctx, "prop-picker") && !has(ctx, "prop") && ctx.hasSequence,
+    can: (ctx) =>
+      has(ctx, "prop-picker") && !has(ctx, "prop") && ctx.hasSequence,
     appeal: () => 0.5,
     perform: async (g, ctx) => {
       if (!(await pressKind(g, ctx, "prop-picker"))) return false;
@@ -122,6 +127,7 @@ export const PROP_INTENTIONS: Intention[] = [
   {
     id: "try-prop",
     category: "props",
+    changesPresentation: true,
     target: (ctx) => pickOf(ctx, "prop"),
     // Names the prop it actually switches to. It used to name the first
     // non-active tile in the DOM and then let browseKind press a random one.

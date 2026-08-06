@@ -8,14 +8,26 @@
 
 import {
   NAV_MODULE_ID_ATTR,
+  NAV_MODULE_LABEL_SEL,
   NAV_MODULE_SEL,
+  NAV_SIDEBAR_SEL,
+  NAV_TAB_LABEL_SEL,
   NAV_TAB_SEL,
   isDeniedModule,
   safe,
 } from "../domain/annotations";
-import type { GhostContext, Intention } from "../domain/intention";
+import type {
+  GhostContext,
+  GhostNavigationOption,
+  Intention,
+} from "../domain/intention";
 import type { AttractGhost } from "../services/attract-ghost.svelte";
 import { visibleAll } from "../services/sensors";
+import {
+  navigationContextKey,
+  navigationSignature,
+  recognizesNavigation,
+} from "../domain/episodic-memory";
 import {
   browseKind,
   has,
@@ -26,7 +38,12 @@ import {
   watchKind,
   oneOf,
 } from "./helpers";
-import { encounterKey, monologueFor, noteEncounter, reactionFor } from "./monologue";
+import {
+  encounterKey,
+  monologueFor,
+  noteEncounter,
+  reactionFor,
+} from "./monologue";
 
 /** Firestore reads cost money at a jam that runs for hours. */
 const GALLERY_OPENS_PER_SESSION = 8;
@@ -65,24 +82,99 @@ function unvisitedNavButtons(visited: ReadonlySet<string>): HTMLElement[] {
   });
 }
 
+interface ReadNavigationOption {
+  option: GhostNavigationOption;
+  element: HTMLElement;
+}
+
 /**
- * Nav buttons worth pressing — everything except rooms the ghost has already
- * discovered it can do nothing in (GhostMemory.barrenModules).
- *
- * 8 of 26 module visits in a 289-decision session consisted of arriving and
- * immediately leaving, including three separate trips to practice. From the
- * far side of the room that is a montage of doors opening and closing.
+ * Read only labels that are genuinely painted in the expanded sidebar. The
+ * buttons carry aria-labels while collapsed, but those are accessibility names
+ * for a human using assistive tech, not words the on-screen Ghost has looked
+ * at. Reading them early is how it used to announce a destination before ever
+ * approaching the rail.
  */
-function worthwhileNavButtons(ctx: GhostContext): HTMLElement[] {
-  const all = visibleAll(NAV_MODULE_SEL).filter((el) => {
-    const id = el.getAttribute(NAV_MODULE_ID_ATTR);
-    return !!id && !isDeniedModule(id);
+export function readNavigationOptions(
+  sidebar: HTMLElement
+): ReadNavigationOption[] {
+  const modules = [
+    ...sidebar.querySelectorAll<HTMLElement>(NAV_MODULE_SEL),
+  ].flatMap((element) => {
+    const id = element.getAttribute(NAV_MODULE_ID_ATTR) ?? "";
+    const label =
+      element
+        .querySelector<HTMLElement>(NAV_MODULE_LABEL_SEL)
+        ?.textContent?.trim() ?? "";
+    if (!id || !label || isDeniedModule(id)) return [];
+    return [{ option: { kind: "module" as const, id, label }, element }];
   });
-  const worthwhile = all.filter(
-    (el) => !ctx.barrenModules.has(el.getAttribute(NAV_MODULE_ID_ATTR) ?? ""),
+
+  const tabs = [...sidebar.querySelectorAll<HTMLElement>(NAV_TAB_SEL)].flatMap(
+    (element) => {
+      if (element.getAttribute("aria-disabled") === "true") return [];
+      const label =
+        element
+          .querySelector<HTMLElement>(NAV_TAB_LABEL_SEL)
+          ?.textContent?.trim() ?? "";
+      if (!label) return [];
+      const id =
+        element.getAttribute("data-sim-tab") ??
+        label.toLowerCase().replace(/\s+/g, "-");
+      return [{ option: { kind: "tab" as const, id, label }, element }];
+    }
   );
-  // If EVERY room is barren, being stuck is worse than being repetitive.
-  return worthwhile.length ? worthwhile : all;
+
+  return [...modules, ...tabs];
+}
+
+export function chooseNavigationOption(
+  ctx: GhostContext,
+  options: ReadNavigationOption[]
+): ReadNavigationOption | null {
+  const requested = plannedStep(ctx);
+  if (requested?.targetModuleId) {
+    return (
+      options.find(
+        ({ option }) =>
+          option.kind === "module" && option.id === requested.targetModuleId
+      ) ?? null
+    );
+  }
+  if (requested?.targetTabId) {
+    const requestedTab = requested.targetTabId.toLowerCase();
+    return (
+      options.find(
+        ({ option }) =>
+          option.kind === "tab" &&
+          (option.id === requestedTab ||
+            option.label.toLowerCase().includes(requestedTab))
+      ) ?? null
+    );
+  }
+
+  const excluded = new Set([
+    ctx.moduleId,
+    "create",
+    "browse",
+    "library",
+    "practice",
+    "museum",
+  ]);
+  const modules = options.filter(
+    ({ option }) =>
+      option.kind === "module" &&
+      !excluded.has(option.id) &&
+      !ctx.barrenModules.has(option.id)
+  );
+  const unvisited = modules.filter(
+    ({ option }) => !ctx.visitedModules.has(option.id)
+  );
+  return ctx.rng.pick(unvisited.length ? unvisited : modules) ?? null;
+}
+
+function plannedStep(ctx: GhostContext) {
+  const activity = ctx.activities.current;
+  return activity?.steps[activity.stepIndex] ?? null;
 }
 
 export const EXPLORE_INTENTIONS: Intention[] = [
@@ -93,8 +185,8 @@ export const EXPLORE_INTENTIONS: Intention[] = [
     target: (ctx) =>
       ctx.rng.pick(
         visibleAll(safe("curio")).filter(
-          (el) => !ctx.askedAbout.has(encounterKey(el)),
-        ),
+          (el) => !ctx.askedAbout.has(encounterKey(el))
+        )
       ) ?? null,
     // Every curio used to get "What does X do?". Mandala and Tunnel are
     // different curiosities that happen to share a mechanism, so the line comes
@@ -107,7 +199,9 @@ export const EXPLORE_INTENTIONS: Intention[] = [
     // thought lies ("What does X do?" about a button it pressed four times).
     can: (ctx) =>
       has(ctx, "curio") &&
-      visibleAll(safe("curio")).some((el) => !ctx.askedAbout.has(encounterKey(el))),
+      visibleAll(safe("curio")).some(
+        (el) => !ctx.askedAbout.has(encounterKey(el))
+      ),
     appeal: () => 0.5,
     perform: async (g, ctx, target) => {
       if (!target || g.halted()) return false;
@@ -143,6 +237,7 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   {
     id: "overwhelmed",
     category: "explore",
+    operation: "perceive",
     /*
      * Pure personality, and now RARE. Austen, watching a tour: "He sure does say
      * that's a lot of buttons pretty often. Let's make it so he doesn't really
@@ -176,7 +271,7 @@ export const EXPLORE_INTENTIONS: Intention[] = [
       for (let i = 0; i < drifts && !g.halted(); i++) {
         await g.glideTo(
           window.innerWidth * (0.25 + ctx.rng.next() * 0.5),
-          window.innerHeight * (0.25 + ctx.rng.next() * 0.5),
+          window.innerHeight * (0.25 + ctx.rng.next() * 0.5)
         );
         await g.dwell(g.jitter(700, 800));
       }
@@ -185,34 +280,127 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   },
 
   {
+    id: "consider-navigation",
+    category: "explore",
+    operation: "perceive",
+    target: () =>
+      visibleAll(NAV_MODULE_SEL).find((el) =>
+        el.classList.contains("active")
+      ) ??
+      visibleAll(NAV_MODULE_SEL)[0] ??
+      null,
+    thought: "Let's see where I could go.",
+    can: (ctx) => ctx.available["nav-module"] > 0,
+    appeal: () => 0.5,
+    perform: async (g, ctx, target) => {
+      if (!target || g.halted()) return false;
+
+      // Crossing this element's `.ghost-hover-boundary` fires the sidebar
+      // package's real pointer-enter path. Its 50ms intent delay completes
+      // during this deliberate pause, then and only then do labels exist.
+      await g.hoverOn(target, g.jitter(700, 500));
+      if (g.halted()) return false;
+      const expanded = await g.waitFor(
+        `${NAV_SIDEBAR_SEL}.hover-expanded, ${NAV_SIDEBAR_SEL}:not(.collapsed)`,
+        1600
+      );
+      if (!expanded.length) return false;
+
+      const options = readNavigationOptions(expanded[0]!);
+      const choice = chooseNavigationOption(ctx, options);
+      if (!choice) return false;
+
+      const renderedOptions = options.map(({ option }) => option);
+      const contextKey = navigationContextKey(ctx);
+      const signature = navigationSignature(renderedOptions);
+      const readAt = ctx.trail.lastAt();
+      const requested = plannedStep(ctx);
+      const hasKnownDestination = Boolean(
+        requested?.targetModuleId || requested?.targetTabId
+      );
+      const recognized =
+        hasKnownDestination &&
+        recognizesNavigation(ctx.navigation, contextKey, signature, readAt);
+      const previous = ctx.navigation.familiarityByContext.get(contextKey);
+
+      ctx.navigation.options = renderedOptions;
+      ctx.navigation.lastReadAt = readAt;
+      ctx.navigation.lastReadWasFamiliar = recognized;
+      ctx.navigation.familiarityByContext.set(contextKey, {
+        signature,
+        reads: (previous?.reads ?? 0) + 1,
+        lastReadAt: readAt,
+      });
+      if (recognized) ctx.navigation.recognizedReads += 1;
+      else ctx.navigation.deliberateReads += 1;
+
+      // Look at a few alternatives before settling on the chosen row. The
+      // final pause is longer: this is the visible moment where the Ghost has
+      // read the menu and made up its mind. A familiar, unchanged rail still
+      // has to be physically opened; it simply becomes direct recognition
+      // instead of another complete scan.
+      const alternatives = options.filter(
+        ({ element }) => element !== choice.element
+      );
+      const looks = recognized
+        ? 0
+        : Math.min(alternatives.length, 1 + ctx.rng.int(3));
+      for (let i = 0; i < looks && !g.halted(); i++) {
+        const candidate = ctx.rng.pick(alternatives);
+        if (!candidate) break;
+        alternatives.splice(alternatives.indexOf(candidate), 1);
+        await g.hoverOn(candidate.element, g.jitter(420, 420));
+      }
+      if (g.halted()) return false;
+
+      await g.hoverOn(
+        choice.element,
+        recognized ? g.jitter(520, 320) : g.jitter(1000, 700)
+      );
+      ctx.navigation.choice = choice.option;
+      return true;
+    },
+  },
+
+  {
     id: "go-to-module",
     category: "explore",
-    // The module it names is the module it walks to. It used to name the FIRST
-    // unvisited one and then press a random one from the pool.
     target: (ctx) => {
-      const unvisited = unvisitedNavButtons(ctx.visitedModules).filter(
-        (el) => !ctx.barrenModules.has(el.getAttribute(NAV_MODULE_ID_ATTR) ?? ""),
+      const choice = ctx.navigation.choice;
+      if (choice?.kind !== "module") return null;
+      return (
+        visibleAll(NAV_MODULE_SEL).find(
+          (el) => el.getAttribute(NAV_MODULE_ID_ATTR) === choice.id
+        ) ?? null
       );
-      if (unvisited.length) return ctx.rng.pick(unvisited) ?? null;
-      return ctx.rng.pick(worthwhileNavButtons(ctx)) ?? null;
     },
     thought: (ctx, target) => {
-      const name = target ? labelOf(target) : "";
+      const name = ctx.navigation.choice?.label ?? "";
       if (!name) return "Let's see what else is here.";
       const id = target?.getAttribute(NAV_MODULE_ID_ATTR);
-      if (id && ctx.visitedModules.has(id)) return `Back to ${name} for a second.`;
-      return monologueFor("nav-module", target, ctx, `I haven't looked at ${name} yet.`);
+      if (id && ctx.visitedModules.has(id))
+        return `Back to ${name} for a second.`;
+      return monologueFor(
+        "nav-module",
+        target,
+        ctx,
+        `I haven't looked at ${name} yet.`
+      );
     },
-    can: (ctx) => ctx.available["nav-module"] > 0 && ctx.reachableModules.length > 0,
+    can: (ctx) =>
+      ctx.available["nav-module"] > 0 &&
+      ctx.reachableModules.length > 0 &&
+      ctx.navigation.choice?.kind === "module",
     // Restlessness is what stops the ghost admiring one screen for the whole
     // jam; an unvisited module is worth more than a re-visit.
     appeal: (ctx) =>
       ((unvisitedNavButtons(ctx.visitedModules).length ? 0.55 : 0.25) +
         restlessness(ctx) * 0.45) *
       settled(ctx),
-    perform: async (g, _ctx, target) => {
+    perform: async (g, ctx, target) => {
       if (!target || g.halted()) return false;
       await g.moveAndPress(target);
+      ctx.navigation.choice = null;
       // Give the module its mount before the next tick senses an empty screen.
       await g.sleep(g.jitter(1800, 1200));
       return true;
@@ -220,18 +408,69 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   },
 
   {
+    id: "take-in-the-room",
+    category: "explore",
+    operation: "perceive",
+    thought: (ctx) =>
+      ctx.moduleId && (ctx.moduleEpisodes.get(ctx.moduleId)?.visits ?? 0) > 1
+        ? oneOf(ctx, [
+            "Anything new in here?",
+            "One more look around.",
+            "Did I miss something?",
+          ])
+        : oneOf(ctx, [
+            "Let's have a look.",
+            "What is this place?",
+            "Hm. What's here?",
+          ]),
+    can: (ctx) =>
+      ctx.activities.current?.id === "visit" &&
+      ctx.lastIntentionId === "go-to-module",
+    appeal: () => 0.5,
+    perform: async (g, ctx) => {
+      g.setHover(null);
+      await g.glideTo(
+        window.innerWidth * (0.35 + ctx.rng.next() * 0.3),
+        window.innerHeight * (0.35 + ctx.rng.next() * 0.3)
+      );
+      await g.dwell(g.jitter(2800, 1800));
+      return true;
+    },
+  },
+
+  {
     id: "change-tab",
     category: "explore",
-    thought: (ctx) =>
-      oneOf(ctx, ["There's more in here.", "What's behind this tab?"]),
-    can: (ctx) => has(ctx, "nav-tab"),
+    target: (ctx) => {
+      const choice = ctx.navigation.choice;
+      if (choice?.kind !== "tab") return null;
+      const tabs = visibleAll(NAV_TAB_SEL).filter(
+        (el) =>
+          !el.classList.contains("active") &&
+          el.getAttribute("aria-disabled") !== "true"
+      );
+      return (
+        tabs.find(
+          (el) =>
+            el.getAttribute("data-sim-tab") === choice.id ||
+            labelOf(el).toLowerCase() === choice.label.toLowerCase()
+        ) ?? null
+      );
+    },
+    thought: (ctx, _target) => {
+      const name = ctx.navigation.choice?.label ?? "";
+      return name
+        ? oneOf(ctx, [`Let's look at ${name}.`, `${name}. What's in here?`])
+        : oneOf(ctx, ["There's more in here.", "What's behind this tab?"]);
+    },
+    can: (ctx) => has(ctx, "nav-tab") && ctx.navigation.choice?.kind === "tab",
     appeal: (ctx) => (0.3 + restlessness(ctx) * 0.2) * settled(ctx),
-    perform: async (g, ctx) => {
+    perform: async (g, ctx, target) => {
       // Sidebar tabs come from @austencloud/sidebar, so they are matched by the
       // package's own class rather than an annotation TKA cannot add.
-      const tabs = await g.waitFor(NAV_TAB_SEL, 1500);
-      if (!tabs.length || g.halted()) return false;
-      await g.moveAndPress(ctx.rng.pick(tabs)!);
+      if (!target || g.halted()) return false;
+      await g.moveAndPress(target);
+      ctx.navigation.choice = null;
       await g.sleep(g.jitter(1400, 1000));
       return true;
     },
@@ -240,6 +479,7 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   {
     id: "dismiss-blocker",
     category: "reset",
+    interrupt: true,
     thought: "Not right now, thanks.",
     // Beats everything while a blocker is up, and it has to: an overlay with a
     // backdrop makes every other control fail the press hit-test, so until it
@@ -295,13 +535,13 @@ export const EXPLORE_INTENTIONS: Intention[] = [
     target: (ctx) =>
       ctx.rng.pick(
         visibleAll(safe("docent")).filter(
-          (el) => !ctx.askedAbout.has(encounterKey(el)),
-        ),
+          (el) => !ctx.askedAbout.has(encounterKey(el))
+        )
       ) ?? null,
     can: (ctx) =>
       !ctx.presenting &&
       visibleAll(safe("docent")).some(
-        (el) => !ctx.askedAbout.has(encounterKey(el)),
+        (el) => !ctx.askedAbout.has(encounterKey(el))
       ),
     appeal: () => 0.95,
     mood: "delighted",
@@ -337,6 +577,7 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   {
     id: "escape-room",
     category: "reset",
+    interrupt: true,
     thought: "Let's go back.",
     // The trap this exists for: an immersive module (the museum, a fullscreen
     // scene) that hides the sidebar. With no nav button on screen the ghost
@@ -358,7 +599,7 @@ export const EXPLORE_INTENTIONS: Intention[] = [
           // "there is still something to press" is what sealed the museum: the
           // only control in the room was also the only reason the escape gate
           // could never open.
-          (kind === "docent" && (ctx.performed.get("let-it-show-me") ?? 0) > 0),
+          (kind === "docent" && (ctx.performed.get("let-it-show-me") ?? 0) > 0)
       ) &&
       ctx.lingerCount === 0 &&
       // A module running its own tour (the museum docent) has nothing left to
@@ -388,14 +629,13 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   {
     id: "browse-gallery",
     category: "explore",
+    operation: "perceive",
     thought: (ctx) =>
       oneOf(ctx, [
         "I wonder who else has made stuff.",
         "What has everyone else been building?",
       ]),
-    can: (ctx) =>
-      has(ctx, "gallery-item") &&
-      ctx.budgets.galleryOpens < GALLERY_OPENS_PER_SESSION,
+    can: (ctx) => has(ctx, "gallery-item"),
     appeal: () => 0.4,
     perform: async (g, ctx) => {
       const items = await g.waitFor(safe("gallery-item"), 3000);
@@ -411,6 +651,7 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   {
     id: "open-someone-elses",
     category: "explore",
+    changesPresentation: true,
     thought: (ctx) =>
       oneOf(ctx, [
         "Let's look at this one properly.",

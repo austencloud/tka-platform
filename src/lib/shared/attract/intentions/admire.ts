@@ -14,6 +14,7 @@ export const ADMIRE_INTENTIONS: Intention[] = [
   {
     id: "linger",
     category: "admire",
+    operation: "perceive",
     thought: "…",
     can: (ctx) => ctx.lingerCount > 0,
     appeal: () => 0.45,

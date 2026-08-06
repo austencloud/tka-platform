@@ -57,7 +57,9 @@ export const BROWSE_INTENTIONS: Intention[] = [
       const options = await g.waitFor(safe("filter-option"), 1200);
       if (!options.length || g.halted()) return true;
       await g.sleep(g.jitter(700, 500));
-      await g.moveAndPress(ctx.rng.pick(options)!);
+      // The first option is the reset. Filtering by "All" would narrate a
+      // narrowing action while leaving the grid untouched.
+      await g.moveAndPress(ctx.rng.pick(options.slice(1)) ?? options[0]!);
       // Watch the grid re-flow to whatever survived.
       await g.dwell(g.jitter(2200, 1300));
       return true;
@@ -71,10 +73,7 @@ export const BROWSE_INTENTIONS: Intention[] = [
     thought: (ctx, target) => {
       const label = target ? labelOf(target) : "";
       if (!label) return "What else is further down?";
-      return oneOf(ctx, [
-        `What's under ${label}?`,
-        `Skip ahead to ${label}.`,
-      ]);
+      return oneOf(ctx, [`What's under ${label}?`, `Skip ahead to ${label}.`]);
     },
     // A library long enough to have sections is a library worth showing off the
     // size of — jumping is how you make that legible without scrolling forever.
@@ -108,7 +107,7 @@ export const BROWSE_INTENTIONS: Intention[] = [
     can: (ctx) =>
       has(ctx, "browse-filter") &&
       (ctx.performed.get("filter-the-library") ?? 0) > 0 &&
-      ctx.available["gallery-item"] < 6,
+      ctx.available["gallery-item"] < 12,
     appeal: () => 0.6,
     mood: "unsure",
     perform: async (g, ctx) => {

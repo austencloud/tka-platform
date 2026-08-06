@@ -58,6 +58,49 @@ export function createMemory(rng: Rng, trail: Trail): GhostMemory {
     barrenModules: new Set(),
     concepts: new Map(),
     conceptNotes: new Map(),
+    activities: {
+      current: null,
+      completed: new Map(),
+      abandoned: new Map(),
+      lastEndedAt: new Map(),
+    },
+    navigation: {
+      options: [],
+      choice: null,
+      lastReadAt: 0,
+      familiarityByContext: new Map(),
+      lastReadWasFamiliar: false,
+      deliberateReads: 0,
+      recognizedReads: 0,
+    },
+    moduleEpisodes: new Map(),
+    playback: {
+      presentationRevision: 0,
+      lastPlayedRevision: -1,
+      lastPlayedSurface: null,
+      lastPlayedAt: Number.NEGATIVE_INFINITY,
+    },
+    experience: {
+      active: null,
+      episodes: [],
+      last: null,
+      recorded: 0,
+      valueTotal: 0,
+      lowValueEpisodes: 0,
+      highValueEpisodes: 0,
+      informedSelections: 0,
+      boostedSelections: 0,
+      reducedSelections: 0,
+      exploratorySelections: 0,
+      predictionsRecorded: 0,
+      predictionErrorTotal: 0,
+      initialPredictionCount: 0,
+      initialPredictionErrorTotal: 0,
+      accuratePredictions: 0,
+      confidentMisses: 0,
+      lastPrediction: null,
+    },
+    lastIntentionId: null,
     rng,
     trail,
   };
@@ -74,7 +117,10 @@ export const momentumOf = (ctx: GhostContext, category: IntentionCategory) =>
     ? MOMENTUM_BONUS
     : 1;
 
-export function scoreIntention(intention: Intention, ctx: GhostContext): number {
+export function scoreIntention(
+  intention: Intention,
+  ctx: GhostContext
+): number {
   return (
     Math.max(0, intention.appeal(ctx)) *
     // An intention whose job is repetition (adding steps) must not be punished
@@ -88,7 +134,7 @@ export function scoreIntention(intention: Intention, ctx: GhostContext): number 
 /** Every satisfiable intention, best first. */
 export function scoreAll(
   intentions: readonly Intention[],
-  ctx: GhostContext,
+  ctx: GhostContext
 ): ScoredIntention[] {
   return intentions
     .filter((intention) => {
@@ -107,7 +153,7 @@ export function scoreAll(
 /** Weighted-random over the top N. Null when nothing is satisfiable. */
 export function selectIntention(
   intentions: readonly Intention[],
-  ctx: GhostContext,
+  ctx: GhostContext
 ): Intention | null {
   const candidates = scoreAll(intentions, ctx).slice(0, TOP_N);
   if (!candidates.length) return null;
@@ -124,14 +170,18 @@ export function decayFatigue(memory: GhostMemory): void {
 
 /** Fold a performed intention into memory. */
 export function remember(memory: GhostMemory, intention: Intention): void {
-  memory.performed.set(intention.id, (memory.performed.get(intention.id) ?? 0) + 1);
+  memory.performed.set(
+    intention.id,
+    (memory.performed.get(intention.id) ?? 0) + 1
+  );
   memory.fatigue.set(
     intention.category,
     Math.min(
       1,
       (memory.fatigue.get(intention.category) ?? 0) +
-        (intention.repeatable ? FATIGUE_GAIN_REPEATABLE : FATIGUE_GAIN),
-    ),
+        (intention.repeatable ? FATIGUE_GAIN_REPEATABLE : FATIGUE_GAIN)
+    )
   );
   memory.lastCategory = intention.category;
+  memory.lastIntentionId = intention.id;
 }

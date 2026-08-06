@@ -13,13 +13,16 @@
  * and view toggles are reversible by construction, and a step edit is undoable.
  */
 
+import { safe } from "../domain/annotations";
 import type { Intention } from "../domain/intention";
-import { has, oneOf, pickOf, pressKind, restlessness } from "./helpers";
+import { visibleAll } from "../services/sensors";
+import { has, labelOf, oneOf, pickOf, restlessness } from "./helpers";
 
 export const INSPECT_INTENTIONS: Intention[] = [
   {
     id: "step-through-it",
     category: "playback",
+    changesPresentation: true,
     thought: (ctx) =>
       oneOf(ctx, [
         "Hold on — one step at a time.",
@@ -29,16 +32,39 @@ export const INSPECT_INTENTIONS: Intention[] = [
     // Scrubbing is what a person does when playback went past something they
     // wanted to see. It only makes sense on a sequence long enough to have a
     // middle, and it is most wanted right after watching.
+    target: (ctx) =>
+      ctx.rng.pick(
+        visibleAll(safe("step-nav")).filter(
+          (el) => !(el as HTMLButtonElement).disabled
+        )
+      ) ?? null,
     can: (ctx) => has(ctx, "step-nav") && ctx.sequenceLength >= 3,
     appeal: (ctx) => (ctx.isPlaying ? 0.2 : 0.45),
     mood: "curious",
     // The repetition IS the beat: one press is a misclick, four in a row is
-    // somebody studying a transition. Fatigue is what stops it going forever.
-    repeatable: true,
-    perform: async (g, ctx) => {
+    // somebody studying a transition. One chosen direction is held for the
+    // whole beat, so it never reads as random Next/Previous/Restart thrashing.
+    perform: async (g, ctx, target) => {
+      if (!target || g.halted()) return false;
+      const firstLabel = labelOf(target);
       const steps = 2 + ctx.rng.int(3);
       for (let i = 0; i < steps && !g.halted(); i++) {
-        if (!(await pressKind(g, ctx, "step-nav", 1500))) return i > 0;
+        const candidates =
+          i === 0
+            ? [target]
+            : (await g.waitFor(safe("step-nav"), 1500)).filter(
+                (el) => !(el as HTMLButtonElement).disabled
+              );
+        const chosen =
+          i === 0
+            ? target
+            : firstLabel.toLowerCase().startsWith("restart")
+              ? candidates.find((el) =>
+                  labelOf(el).toLowerCase().startsWith("next")
+                )
+              : candidates.find((el) => labelOf(el) === firstLabel);
+        if (!chosen) return i > 0;
+        await g.moveAndPress(chosen);
         // Long enough to actually read the pictograph that just landed.
         await g.dwell(g.jitter(1100, 700));
       }
@@ -49,6 +75,7 @@ export const INSPECT_INTENTIONS: Intention[] = [
   {
     id: "change-the-view",
     category: "explore",
+    changesPresentation: true,
     target: (ctx) => pickOf(ctx, "view-toggle"),
     // Names the toggle it presses. A view toggle changes nothing about the
     // sequence, so the honest framing is "let me look at it differently",
@@ -74,6 +101,7 @@ export const INSPECT_INTENTIONS: Intention[] = [
   {
     id: "edit-one-step",
     category: "build",
+    changesPresentation: true,
     target: (ctx) => pickOf(ctx, "step-edit"),
     thought: (ctx, target) => {
       const label = target?.getAttribute("data-ghost-label") ?? "";

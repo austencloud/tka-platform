@@ -17,7 +17,7 @@ import {
   type UnderstandingStage,
 } from "$lib/shared/attract/domain/intention";
 import { safe, type GhostKind } from "$lib/shared/attract/domain/annotations";
-import { createSimApp, SIM_MODULES } from "./app-model";
+import { createSimApp, simBaseWord, SIM_MODULES } from "./app-model";
 import { createFakeGhost } from "./fake-ghost";
 
 const KINDS = Object.keys(EMPTY_WORLD.available) as GhostKind[];
@@ -33,11 +33,13 @@ export interface SessionRecord {
   seqLen: number;
   effects: number;
   playing: boolean;
+  presentationRevision: number;
+  playbackSurface: string | null;
 }
 
 export function runSession(seed: number, decisions: number) {
   const rng = createRng(seed);
-  const pick = <T,>(arr: T[]): T => rng.pick(arr) as T;
+  const pick = <T>(arr: T[]): T => rng.pick(arr) as T;
   // The app needs the clock and the clock lives on the motor, which needs the
   // app — tied together through a holder rather than by duplicating the clock.
   const clock = { now: () => 0 };
@@ -53,12 +55,13 @@ export function runSession(seed: number, decisions: number) {
   // `pickerOpen` is derived from options being on screen rather than from any
   // drawer state.
   const sense = (): GhostWorld => {
+    app.syncTime();
     const available = { ...EMPTY_WORLD.available };
     for (const kind of KINDS) {
       available[kind] = document.querySelectorAll(safe(kind)).length;
     }
     available["nav-module"] = document.querySelectorAll(
-      ".module-button[data-tour-module]",
+      ".module-button[data-tour-module]"
     ).length;
     available["nav-tab"] = document.querySelectorAll(".section-button").length;
 
@@ -70,7 +73,7 @@ export function runSession(seed: number, decisions: number) {
       sequenceLength: app.state.seqLen,
       sequenceWord:
         app.state.seqLen > 0
-          ? `${"ABDGPSWX".slice(0, Math.min(8, app.state.seqLen))}${app.state.word}`
+          ? app.state.word || simBaseWord(app.state.seqLen)
           : null,
       isPlaying: app.playing(),
       activeEffectIds: [...app.state.activeEffects],
@@ -100,20 +103,34 @@ export function runSession(seed: number, decisions: number) {
 
   const log: SessionRecord[] = [];
   let lastT = -1;
+  const telemetry = {
+    ticks: 0,
+    idleTicks: 0,
+    presentingIdleTicks: 0,
+  };
 
   return {
     app,
     fake,
     mind,
     log,
+    telemetry,
     run: async () => {
       for (let i = 0; i < decisions; i++) {
+        const presentingBefore = app.presenting();
         await mind.tick();
+        telemetry.ticks += 1;
         // The trail is a 200-entry ring buffer, so it cannot be replayed for a
         // long session — read only the newest entry, each tick, as it lands.
         const entries = mind.trail.entries();
         const e = entries[entries.length - 1];
-        if (!e || e.t === lastT) continue;
+        if (!e || e.t === lastT) {
+          telemetry.idleTicks += 1;
+          if (presentingBefore || app.presenting()) {
+            telemetry.presentingIdleTicks += 1;
+          }
+          continue;
+        }
         lastT = e.t;
         log.push({
           t: e.t,
@@ -127,6 +144,8 @@ export function runSession(seed: number, decisions: number) {
           seqLen: app.state.seqLen,
           effects: app.state.activeEffects.size,
           playing: app.state.isPlaying,
+          presentationRevision: mind.memory.playback.presentationRevision,
+          playbackSurface: mind.memory.playback.lastPlayedSurface,
         });
       }
     },
@@ -149,7 +168,7 @@ export interface Stats {
 export function analyze(
   log: SessionRecord[],
   peak: number,
-  concepts: Map<ConceptId, UnderstandingStage> = new Map(),
+  concepts: Map<ConceptId, UnderstandingStage> = new Map()
 ): Stats {
   const byIntention = new Map<string, number>();
   const byCategory = new Map<string, number>();

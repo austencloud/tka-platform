@@ -11,6 +11,205 @@
 import type { AttractGhost } from "../services/attract-ghost.svelte";
 import type { Rng } from "../services/rng";
 import type { Trail } from "../services/trail";
+import type { GhostKind } from "./annotations";
+
+export type GhostActivityId =
+  | "compose"
+  | "generate"
+  | "inspect"
+  | "reconsider"
+  | "finish"
+  | "style"
+  | "change-prop"
+  | "practice"
+  | "viewer"
+  | "browse"
+  | "visit"
+  | "museum"
+  | "reset"
+  | "admire";
+
+export interface GhostActivityStep {
+  intentionId: string;
+  optional?: boolean;
+  targetModuleId?: string;
+  targetTabId?: string;
+}
+
+export type GhostActivityGoal = "make" | "inspect" | "discover" | "correct";
+
+export type GhostSequenceBand = "empty" | "fragment" | "formed" | "long";
+
+export interface GhostActivitySituation {
+  moduleId: string | null;
+  tabId: string | null;
+  sequenceBand: GhostSequenceBand;
+  hasEffects: boolean;
+  galleryBudgetSpent: boolean;
+  cameraGranted: boolean;
+  capabilities: string[];
+}
+
+export interface GhostActivityObservation {
+  situation: GhostActivitySituation;
+  sequenceLength: number;
+  sequenceWord: string | null;
+  effectIds: string[];
+  presentationRevision: number;
+  understoodConcepts: number;
+  encounteredControls: number;
+}
+
+export type GhostActivityPredictionSource = "activity" | "goal" | "prior";
+
+export type GhostActivityPredictionDimension =
+  | "completion"
+  | "achievement"
+  | "presentationChange"
+  | "discovery"
+  | "novelty"
+  | "value";
+
+/** Observable consequences the Ghost expects before choosing an activity. */
+export interface GhostActivityPrediction {
+  activityId: GhostActivityId;
+  goal: GhostActivityGoal;
+  source: GhostActivityPredictionSource;
+  matches: number;
+  completion: number;
+  achievement: number;
+  presentationChange: number;
+  discovery: number;
+  novelty: number;
+  value: number;
+  confidence: number;
+  reliability: number;
+  uncertainty: number;
+}
+
+export interface ActiveGhostActivityExperience {
+  activityId: GhostActivityId;
+  goal: GhostActivityGoal;
+  startedAt: number;
+  before: GhostActivityObservation;
+  prediction: GhostActivityPrediction;
+  successfulActions: number;
+  perceptions: number;
+  watchedPayoffs: number;
+  failedSteps: number;
+}
+
+export interface GhostActivityEvidence {
+  presentationChanged: boolean;
+  sequenceChanged: boolean;
+  effectsChanged: boolean;
+  conceptsLearned: number;
+  encountersLearned: number;
+}
+
+export interface GhostActivityEpisode {
+  activityId: GhostActivityId;
+  goal: GhostActivityGoal;
+  situation: GhostActivitySituation;
+  outcome: "completed" | "abandoned";
+  startedAt: number;
+  endedAt: number;
+  successfulActions: number;
+  perceptions: number;
+  watchedPayoffs: number;
+  failedSteps: number;
+  evidence: GhostActivityEvidence;
+  achievement: number;
+  novelty: number;
+  value: number;
+  prediction: GhostActivityPrediction;
+  predictionError: number;
+  predictionAccuracy: number;
+  surprises: GhostActivityPredictionDimension[];
+  resultSignature: string;
+}
+
+export interface GhostExperienceMemory {
+  active: ActiveGhostActivityExperience | null;
+  episodes: GhostActivityEpisode[];
+  last: GhostActivityEpisode | null;
+  recorded: number;
+  valueTotal: number;
+  lowValueEpisodes: number;
+  highValueEpisodes: number;
+  informedSelections: number;
+  boostedSelections: number;
+  reducedSelections: number;
+  exploratorySelections: number;
+  predictionsRecorded: number;
+  predictionErrorTotal: number;
+  initialPredictionCount: number;
+  initialPredictionErrorTotal: number;
+  accuratePredictions: number;
+  confidentMisses: number;
+  lastPrediction: {
+    prediction: GhostActivityPrediction;
+    multiplier: number;
+  } | null;
+}
+
+export interface ActiveGhostActivity {
+  id: GhostActivityId;
+  steps: GhostActivityStep[];
+  stepIndex: number;
+  startedAt: number;
+}
+
+export interface GhostActivityMemory {
+  current: ActiveGhostActivity | null;
+  completed: Map<GhostActivityId, number>;
+  abandoned: Map<GhostActivityId, number>;
+  lastEndedAt: Map<GhostActivityId, number>;
+}
+
+export type GhostNavigationOptionKind = "module" | "tab";
+
+export interface GhostNavigationOption {
+  kind: GhostNavigationOptionKind;
+  id: string;
+  label: string;
+}
+
+export interface GhostNavigationFamiliarity {
+  /** Stable fingerprint of the labels that were genuinely visible. */
+  signature: string;
+  reads: number;
+  lastReadAt: number;
+}
+
+export interface GhostNavigationMemory {
+  /** Labels actually rendered after the rail opened, in the order observed. */
+  options: GhostNavigationOption[];
+  /** The option chosen after looking. Consumed by the following press. */
+  choice: GhostNavigationOption | null;
+  lastReadAt: number;
+  /** What this rail looked like in each module/tab context when last opened. */
+  familiarityByContext: Map<string, GhostNavigationFamiliarity>;
+  /** Whether the latest read matched a recent, previously inspected rail. */
+  lastReadWasFamiliar: boolean;
+  /** Full scans versus direct recognitions, exposed for behavioral audits. */
+  deliberateReads: number;
+  recognizedReads: number;
+}
+
+export interface GhostModuleEpisode {
+  visits: number;
+  productiveVisits: number;
+  lastVisitedAt: number;
+}
+
+export interface GhostPlaybackMemory {
+  /** Increments whenever a successful action changes what Play would show. */
+  presentationRevision: number;
+  lastPlayedRevision: number;
+  lastPlayedSurface: string | null;
+  lastPlayedAt: number;
+}
 
 export type IntentionCategory =
   | "build"
@@ -90,7 +289,7 @@ export interface GhostWorld {
    * be true when the thing it wants to touch is really there — which is the
    * one failure mode that makes the ghost look broken.
    */
-  available: Record<GhostKind_, number>;
+  available: Record<GhostKind, number>;
   /** Elements inviting the ghost to sit and watch. */
   lingerCount: number;
   /**
@@ -116,9 +315,6 @@ export interface GhostWorld {
    */
   cameraLive: boolean;
 }
-
-/** Re-exported for the world's `available` map without a circular import. */
-type GhostKind_ = import("./annotations").GhostKind;
 
 /** A world where nothing is possible. Every `can` must be false against it. */
 export const EMPTY_WORLD: GhostWorld = {
@@ -256,6 +452,22 @@ export interface GhostMemory {
    * which no single before/after can show.
    */
   conceptNotes: Map<ConceptId, string>;
+  /**
+   * The activity currently holding the Ghost's attention. Fish keep swimming a
+   * chosen behavior until it ends; this gives the presenter the same ability to
+   * finish a thought instead of redrawing from the whole bag after every click.
+   */
+  activities: GhostActivityMemory;
+  /** What the Ghost has physically opened and read in the sidebar. */
+  navigation: GhostNavigationMemory;
+  /** Outcomes of entering a room, not merely the fact that it was entered. */
+  moduleEpisodes: Map<string, GhostModuleEpisode>;
+  /** Whether replay would reveal anything the Ghost has not just watched. */
+  playback: GhostPlaybackMemory;
+  /** General lessons learned from completed and abandoned activities. */
+  experience: GhostExperienceMemory;
+  /** The last action that actually ran, used by reactions such as Undo. */
+  lastIntentionId: string | null;
   rng: Rng;
   trail: Trail;
 }
@@ -265,6 +477,12 @@ export type GhostContext = GhostWorld & GhostMemory;
 export interface Intention {
   id: string;
   category: IntentionCategory;
+
+  /** A perception gathers evidence; an action changes the app. */
+  operation?: "perceive" | "act";
+
+  /** A successful perform changes the presentation a later Play would show. */
+  changesPresentation?: boolean;
 
   /**
    * Choose the ONE element this intention will act on, before it says anything.
@@ -283,9 +501,7 @@ export interface Intention {
   target?: (ctx: GhostContext) => HTMLElement | null;
 
   /** The visible monologue. A function when it names what it is about to touch. */
-  thought:
-    | string
-    | ((ctx: GhostContext, target: HTMLElement | null) => string);
+  thought: string | ((ctx: GhostContext, target: HTMLElement | null) => string);
 
   /** Hard gate. False means it is not even a candidate this tick. */
   can: (ctx: GhostContext) => boolean;
@@ -301,7 +517,7 @@ export interface Intention {
   perform: (
     g: AttractGhost,
     ctx: GhostContext,
-    target: HTMLElement | null,
+    target: HTMLElement | null
   ) => Promise<boolean | void>;
 
   /**
@@ -360,7 +576,7 @@ export interface Intention {
   learn?: (
     before: GhostWorld,
     after: GhostWorld,
-    ctx: GhostContext,
+    ctx: GhostContext
   ) => UnderstandingStage | null;
 
   /**
@@ -377,6 +593,9 @@ export interface Intention {
    * when there is nothing to look at is just the ghost wandering off.
    */
   savor?: number | ((ctx: GhostContext) => number);
+
+  /** Safety actions may interrupt an activity whose next task has not run yet. */
+  interrupt?: boolean;
 }
 
 /**
@@ -400,7 +619,7 @@ export const FOLLOWS: Record<IntentionCategory, IntentionCategory[]> = {
 export function resolveThought(
   intention: Intention,
   ctx: GhostContext,
-  target: HTMLElement | null = null,
+  target: HTMLElement | null = null
 ): string {
   return typeof intention.thought === "function"
     ? intention.thought(ctx, target)

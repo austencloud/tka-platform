@@ -9,6 +9,7 @@
  */
 
 import type { AttractGhost } from "$lib/shared/attract/services/attract-ghost.svelte";
+import { transitionGhostHover } from "$lib/shared/attract/services/ghost-hover";
 import type { SimApp } from "./app-model";
 
 export interface FakeGhost {
@@ -20,10 +21,14 @@ export interface FakeGhost {
   savoredMs: number;
 }
 
-export function createFakeGhost(app: SimApp, pick: <T>(a: T[]) => T): FakeGhost {
+export function createFakeGhost(
+  app: SimApp,
+  pick: <T>(a: T[]) => T
+): FakeGhost {
   let clock = 0;
   const pressed: HTMLElement[] = [];
   let savoredMs = 0;
+  let hovered: HTMLElement | null = null;
 
   const advance = (ms: number) => {
     clock += Math.max(0, ms);
@@ -34,6 +39,13 @@ export function createFakeGhost(app: SimApp, pick: <T>(a: T[]) => T): FakeGhost 
     if (!document.body.contains(el)) return;
     pressed.push(el);
     app.press(el);
+  };
+
+  const hover = (el: HTMLElement | null) => {
+    transitionGhostHover(hovered, el);
+    hovered = el;
+    const sidebar = el?.closest<HTMLElement>(".ghost-hover-boundary");
+    if (sidebar) sidebar.classList.add("hover-expanded");
   };
 
   const ghost = {
@@ -49,7 +61,10 @@ export function createFakeGhost(app: SimApp, pick: <T>(a: T[]) => T): FakeGhost 
     sleep: async (ms: number) => advance(ms),
     dwell: async (ms: number) => advance(ms),
     glideTo: async () => advance(500),
-    hoverOn: async (_el: HTMLElement, dwellMs: number) => advance(400 + dwellMs),
+    hoverOn: async (el: HTMLElement, dwellMs: number) => {
+      hover(el);
+      advance(400 + dwellMs);
+    },
     moveAndPress: async (el: HTMLElement) => {
       advance(700);
       press(el);
@@ -68,12 +83,12 @@ export function createFakeGhost(app: SimApp, pick: <T>(a: T[]) => T): FakeGhost 
       savoredMs += ms;
       advance(ms);
     },
-    setHover: () => {},
+    setHover: hover,
     waitFor: async (selector: string) => {
       advance(30);
       return [...document.querySelectorAll<HTMLElement>(selector)];
     },
-    pick: (<T,>(arr: T[]) => pick(arr)) as AttractGhost["pick"],
+    pick: (<T>(arr: T[]) => pick(arr)) as AttractGhost["pick"],
     jitter: (base: number) => base,
   } satisfies Record<string, unknown> as unknown as AttractGhost;
 

@@ -33,6 +33,7 @@ vi.mock("$lib/shared/attract/services/sensors", () => ({
 }));
 
 import { CONCEPTS } from "$lib/shared/attract/domain/intention";
+import { PLAYBACK_REVISIT_MS } from "$lib/shared/attract/domain/episodic-memory";
 import {
   analyze,
   runSession,
@@ -40,11 +41,51 @@ import {
   type Stats,
 } from "./sim/run-session";
 
+interface AuditedDecision {
+  record: SessionRecord;
+  presses: Array<{ kind: string; label: string; moduleId: string | null }>;
+}
+
+async function runToRealPresses(
+  seed: number,
+  targetPresses: number
+): Promise<{
+  session: ReturnType<typeof runSession>;
+  decisions: AuditedDecision[];
+}> {
+  const session = runSession(seed, 1);
+  const decisions: AuditedDecision[] = [];
+  let ticks = 0;
+
+  while (
+    session.app.presses.length < targetPresses &&
+    ticks < targetPresses * 4
+  ) {
+    const logStart = session.log.length;
+    const pressStart = session.app.presses.length;
+    await session.run();
+    ticks += 1;
+
+    const record = session.log[logStart];
+    if (record) {
+      decisions.push({
+        record,
+        presses: session.app.presses.slice(pressStart),
+      });
+    }
+  }
+
+  return { session, decisions };
+}
+
 function report(stats: Stats, log: SessionRecord[]): string {
   const rank = (m: Map<string, number>) =>
     [...m.entries()]
       .sort((a, b) => b[1] - a[1])
-      .map(([k, v]) => `| ${k} | ${v} | ${((v / stats.decisions) * 100).toFixed(1)}% |`)
+      .map(
+        ([k, v]) =>
+          `| ${k} | ${v} | ${((v / stats.decisions) * 100).toFixed(1)}% |`
+      )
       .join("\n");
 
   return [
@@ -57,9 +98,7 @@ function report(stats: Stats, log: SessionRecord[]): string {
     ``,
     `## What it came to understand`,
     ``,
-    ...CONCEPTS.map(
-      (c) => `- **${c}**: ${stats.concepts.get(c) ?? "unaware"}`,
-    ),
+    ...CONCEPTS.map((c) => `- **${c}**: ${stats.concepts.get(c) ?? "unaware"}`),
     ``,
     `## By intention`,
     ``,
@@ -79,7 +118,9 @@ function report(stats: Stats, log: SessionRecord[]): string {
     `|---|---|---|`,
     rank(stats.moduleTicks),
     ``,
-    process.env.GHOST_SIM_REPORT ? `## Every decision` : `## First 80 decisions`,
+    process.env.GHOST_SIM_REPORT
+      ? `## Every decision`
+      : `## First 80 decisions`,
     ``,
     ...log
       .slice(0, process.env.GHOST_SIM_REPORT ? Infinity : 80)
@@ -87,7 +128,7 @@ function report(stats: Stats, log: SessionRecord[]): string {
         (r) =>
           `${String(Math.round(r.t / 1000)).padStart(4)}s  [${r.moduleId ?? "-"}${
             r.tabId ? "/" + r.tabId : ""
-          }] len=${r.seqLen} fx=${r.effects}  ${r.intentionId}${r.ok ? "" : " (FAILED)"} — "${r.thought}"`,
+          }] len=${r.seqLen} fx=${r.effects}  ${r.intentionId}${r.ok ? "" : " (FAILED)"} — "${r.thought}"`
       ),
   ].join("\n");
 }
@@ -103,7 +144,11 @@ describe("ghost session simulation", () => {
     const seed = Number(process.env.GHOST_SIM_SEED ?? 7);
     const session = runSession(seed, 400);
     await session.run();
-    const stats = analyze(session.log, session.app.state.peakSeqLen, session.mind.memory.concepts);
+    const stats = analyze(
+      session.log,
+      session.app.state.peakSeqLen,
+      session.mind.memory.concepts
+    );
     const text = report(stats, session.log);
 
     if (process.env.GHOST_SIM_REPORT) {
@@ -137,13 +182,13 @@ describe("ghost session simulation", () => {
       const stats = analyze(
         session.log,
         session.app.state.peakSeqLen,
-        session.mind.memory.concepts,
+        session.mind.memory.concepts
       );
       generate += stats.moduleTicks.get("create/generate") ?? 0;
       total += stats.decisions;
     }
     expect(generate / total).toBeGreaterThan(0.04);
-  });
+  }, 10_000);
 
   it("uses the sequence actions it can now reach", async () => {
     const session = runSession(7, 400);
@@ -151,7 +196,7 @@ describe("ghost session simulation", () => {
     const stats = analyze(
       session.log,
       session.app.state.peakSeqLen,
-      session.mind.memory.concepts,
+      session.mind.memory.concepts
     );
     // Extend is the LOOP payoff and the single most impressive press in the
     // app. Before 2026-08-06 none of this surface was annotated, so the count
@@ -168,16 +213,276 @@ describe("ghost session simulation", () => {
     // fresh mind believes nothing and a long session believes several things.
     const fresh = runSession(7, 0);
     expect(fresh.mind.memory.concepts.size).toBe(0);
-    expect([...concepts.values()].filter((s) => s === "understood").length,
+    expect(
+      [...concepts.values()].filter((s) => s === "understood").length
     ).toBeGreaterThanOrEqual(4);
   });
 
   it("does not fiddle turns more often than it adds steps", async () => {
     const session = runSession(5, 300);
     await session.run();
-    const stats = analyze(session.log, session.app.state.peakSeqLen, session.mind.memory.concepts);
+    const stats = analyze(
+      session.log,
+      session.app.state.peakSeqLen,
+      session.mind.memory.concepts
+    );
     const turns = stats.byIntention.get("fiddle-turns") ?? 0;
     const steps = stats.byIntention.get("add-step") ?? 0;
     expect(turns).toBeLessThan(steps);
   });
+
+  it("keeps a coherent mind through 400 real presses", async () => {
+    const { session, decisions } = await runToRealPresses(7, 400);
+    const presses = session.app.presses.slice(0, 400);
+    const stepPresses = presses.filter((press) => press.kind === "step-nav");
+    const latePresses = presses.slice(-100);
+    const lateStepPresses = latePresses.filter(
+      (press) => press.kind === "step-nav"
+    );
+
+    expect(session.app.presses.length).toBeGreaterThanOrEqual(400);
+    expect(session.log.every((record) => record.ok)).toBe(true);
+    expect(stepPresses.length / presses.length).toBeLessThan(0.2);
+    expect(lateStepPresses.length / latePresses.length).toBeLessThan(0.25);
+
+    for (const decision of decisions.filter(
+      ({ record }) => record.intentionId === "step-through-it"
+    )) {
+      const labels = decision.presses.map((press) => press.label);
+      if (labels[0] === "Restart") {
+        expect(labels.slice(1).every((label) => label.startsWith("Next"))).toBe(
+          true
+        );
+      } else {
+        expect(new Set(labels).size).toBe(1);
+      }
+    }
+
+    let consecutiveNavigation = 0;
+    let longestNavigationRun = 0;
+    const navigationRuns: string[][] = [];
+    let navigationRun: string[] = [];
+    for (const { record } of decisions) {
+      if (record.intentionId === "go-to-module") {
+        consecutiveNavigation += 1;
+        navigationRun.push(`${record.moduleId ?? "-"}:${record.thought}`);
+        longestNavigationRun = Math.max(
+          longestNavigationRun,
+          consecutiveNavigation
+        );
+      } else {
+        if (navigationRun.length > 1) navigationRuns.push(navigationRun);
+        navigationRun = [];
+        consecutiveNavigation = 0;
+      }
+    }
+    if (navigationRun.length > 1) navigationRuns.push(navigationRun);
+    expect(
+      longestNavigationRun,
+      JSON.stringify(navigationRuns)
+    ).toBeLessThanOrEqual(1);
+
+    for (const [index, { record }] of decisions.entries()) {
+      if (!["go-to-module", "change-tab"].includes(record.intentionId)) {
+        continue;
+      }
+      expect(decisions[index - 1]?.record.intentionId).toBe(
+        "consider-navigation"
+      );
+    }
+
+    let libraryOpens = 0;
+    for (const { record } of decisions) {
+      if (record.moduleId === "library") {
+        if (record.intentionId === "open-someone-elses") libraryOpens += 1;
+      } else if (libraryOpens > 0) {
+        expect(libraryOpens).toBeLessThanOrEqual(1);
+        libraryOpens = 0;
+      }
+    }
+    if (libraryOpens > 0) expect(libraryOpens).toBeLessThanOrEqual(1);
+
+    if (process.env.GHOST_CLICK_REPORT) {
+      const count = (values: string[]) =>
+        Object.fromEntries(
+          [...new Set(values)]
+            .map(
+              (value) =>
+                [
+                  value,
+                  values.filter((candidate) => candidate === value).length,
+                ] as const
+            )
+            .sort((a, b) => b[1] - a[1])
+        );
+      console.log(
+        "GHOST_CLICK_REPORT\n" +
+          JSON.stringify(
+            {
+              seed: 7,
+              realPresses: session.app.presses.length,
+              decisions: decisions.length,
+              simulatedMinutes: Number(
+                ((decisions.at(-1)?.record.t ?? 0) / 60_000).toFixed(2)
+              ),
+              peakSequenceLength: session.app.state.peakSeqLen,
+              clears: session.app.state.clears,
+              stepPressShare: Number(
+                (stepPresses.length / presses.length).toFixed(3)
+              ),
+              finalHundredStepPressShare: Number(
+                (lateStepPresses.length / latePresses.length).toFixed(3)
+              ),
+              longestNavigationRun,
+              byIntention: count(
+                decisions.map(({ record }) => record.intentionId)
+              ),
+              byPressKind: count(presses.map((press) => press.kind)),
+              activitiesCompleted: Object.fromEntries(
+                session.mind.memory.activities.completed
+              ),
+              activitiesAbandoned: Object.fromEntries(
+                session.mind.memory.activities.abandoned
+              ),
+              finalDecisions: decisions
+                .slice(-20)
+                .map(({ record, presses }) => ({
+                  atSeconds: Math.round(record.t / 1000),
+                  module: record.moduleId,
+                  intention: record.intentionId,
+                  presses: presses.map(
+                    (press) => `${press.kind}:${press.label}`
+                  ),
+                })),
+            },
+            null,
+            2
+          )
+      );
+    }
+  }, 10_000);
+
+  it("retains episodic judgment through 1,000 real presses", async () => {
+    const { session, decisions } = await runToRealPresses(7, 1_000);
+    const plays = decisions.filter(
+      ({ record }) => record.intentionId === "play-it"
+    );
+    const prematureReplays: Array<{
+      previous: SessionRecord;
+      current: SessionRecord;
+    }> = [];
+
+    for (let index = 1; index < plays.length; index++) {
+      const previous = plays[index - 1]!.record;
+      const current = plays[index]!.record;
+      if (
+        current.presentationRevision === previous.presentationRevision &&
+        current.playbackSurface === previous.playbackSurface &&
+        current.t - previous.t < PLAYBACK_REVISIT_MS
+      ) {
+        prematureReplays.push({ previous, current });
+      }
+    }
+
+    const barrenEpisodes = [...session.mind.memory.barrenModules].map(
+      (moduleId) => ({
+        moduleId,
+        ...session.mind.memory.moduleEpisodes.get(moduleId),
+      })
+    );
+    const navigation = session.mind.memory.navigation;
+    const experience = session.mind.memory.experience;
+    const endedActivities = [
+      ...session.mind.memory.activities.completed.values(),
+      ...session.mind.memory.activities.abandoned.values(),
+    ].reduce((total, count) => total + count, 0);
+
+    expect(session.app.presses.length).toBeGreaterThanOrEqual(1_000);
+    expect(session.log.every((record) => record.ok)).toBe(true);
+    expect(prematureReplays).toEqual([]);
+    expect(navigation.recognizedReads).toBeGreaterThan(0);
+    expect(navigation.recognizedReads).toBeGreaterThan(
+      navigation.deliberateReads
+    );
+    expect(session.mind.memory.barrenModules.has("play")).toBe(true);
+    expect(session.mind.memory.barrenModules.has("learn")).toBe(true);
+    expect(
+      barrenEpisodes.every(
+        ({ visits, productiveVisits }) =>
+          (visits ?? 0) - (productiveVisits ?? 0) === 1
+      ),
+      JSON.stringify(barrenEpisodes)
+    ).toBe(true);
+    expect(session.mind.memory.budgets.galleryOpens).toBe(8);
+    expect(
+      session.mind.memory.performed.get("browse-gallery") ?? 0
+    ).toBeGreaterThan(8);
+    expect(experience.recorded).toBe(endedActivities);
+    expect(experience.informedSelections).toBeGreaterThan(0);
+    expect(experience.boostedSelections).toBeGreaterThan(0);
+    expect(experience.reducedSelections).toBeGreaterThan(0);
+    expect(experience.highValueEpisodes).toBeGreaterThan(0);
+    expect(experience.lowValueEpisodes).toBeGreaterThan(0);
+    expect(
+      experience.episodes.every(
+        ({ value, novelty, achievement }) =>
+          value >= 0 &&
+          value <= 1 &&
+          novelty >= 0 &&
+          novelty <= 1 &&
+          achievement >= 0 &&
+          achievement <= 1
+      )
+    ).toBe(true);
+
+    if (process.env.GHOST_1000_REPORT) {
+      console.log(
+        "GHOST_1000_REPORT\n" +
+          JSON.stringify(
+            {
+              seed: 7,
+              realPresses: session.app.presses.length,
+              decisions: decisions.length,
+              simulatedMinutes: Number(
+                ((decisions.at(-1)?.record.t ?? 0) / 60_000).toFixed(2)
+              ),
+              plays: plays.length,
+              prematureReplays: prematureReplays.length,
+              sidebar: {
+                deliberateReads: navigation.deliberateReads,
+                recognizedReads: navigation.recognizedReads,
+              },
+              barrenEpisodes,
+              library: {
+                paidOpens: session.mind.memory.budgets.galleryOpens,
+                browseOnlyVisits:
+                  (session.mind.memory.performed.get("browse-gallery") ?? 0) -
+                  session.mind.memory.budgets.galleryOpens,
+              },
+              experience: {
+                recorded: experience.recorded,
+                retained: experience.episodes.length,
+                informedSelections: experience.informedSelections,
+                boostedSelections: experience.boostedSelections,
+                reducedSelections: experience.reducedSelections,
+                averageValue: Number(
+                  (experience.valueTotal / experience.recorded).toFixed(3)
+                ),
+                lowValueEpisodes: experience.lowValueEpisodes,
+                highValueEpisodes: experience.highValueEpisodes,
+                lastExpectation: experience.lastExpectation,
+              },
+              activitiesCompleted: Object.fromEntries(
+                session.mind.memory.activities.completed
+              ),
+              activitiesAbandoned: Object.fromEntries(
+                session.mind.memory.activities.abandoned
+              ),
+            },
+            null,
+            2
+          )
+      );
+    }
+  }, 30_000);
 });

@@ -61,14 +61,19 @@
   // Stage mode floors the tier at the largest one regardless of width — that
   // is the whole point of the flag.
   const tier = $derived(
-    stage ? 2 : viewportW >= 2600 ? 2 : viewportW >= 1680 ? 1 : 0,
+    stage ? 2 : viewportW >= 2600 ? 2 : viewportW >= 1680 ? 1 : 0
   );
   const WIDTH = $derived(
-    Math.min([300, 380, 620][tier]!, Math.max(260, viewportW - 2 * 16)),
+    Math.min([300, 380, 620][tier]!, Math.max(260, viewportW - 2 * 16))
   );
   const HEIGHT = $derived([68, 84, 132][tier]!);
   const GAP = 34;
   const EDGE = 16;
+  // The expanded desktop rail is 220px wide. When the Ghost is inspecting an
+  // icon in that rail, centering the caption over its x coordinate hides the
+  // labels it just revealed. Keep the bubble one edge-gap beyond the rail so a
+  // visitor can watch both the thought and the menu-reading beat at once.
+  const LEFT_RAIL_CLEARANCE = 220 + EDGE;
 
   // Sit above the pointer by default; below it near the top of the screen, so
   // the caption never leaves the viewport and never covers the target.
@@ -76,13 +81,15 @@
   const top = $derived(
     below
       ? Math.min(y + GAP, Math.max(EDGE, viewportH - HEIGHT - EDGE))
-      : y - GAP - HEIGHT,
+      : y - GAP - HEIGHT
   );
   const left = $derived(
-    Math.min(
-      Math.max(x - WIDTH / 2, EDGE),
-      Math.max(EDGE, viewportW - WIDTH - EDGE),
-    ),
+    x < LEFT_RAIL_CLEARANCE
+      ? Math.min(LEFT_RAIL_CLEARANCE, Math.max(EDGE, viewportW - WIDTH - EDGE))
+      : Math.min(
+          Math.max(x - WIDTH / 2, EDGE),
+          Math.max(EDGE, viewportW - WIDTH - EDGE)
+        )
   );
 </script>
 
@@ -116,7 +123,11 @@
     pointer-events: none;
     border-radius: 16px;
     padding: 0.75rem 1rem;
-    background: color-mix(in srgb, var(--theme-panel-bg, #101018) 88%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #101018) 88%,
+      transparent
+    );
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
     box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(18px) saturate(140%);

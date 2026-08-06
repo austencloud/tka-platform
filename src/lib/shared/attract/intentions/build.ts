@@ -10,13 +10,22 @@
 import { safe } from "../domain/annotations";
 import type { Intention } from "../domain/intention";
 import { visibleAll } from "../services/sensors";
-import { byStage, has, oneOf, pickOf, pressKind, restlessness, stageOf } from "./helpers";
+import {
+  byStage,
+  has,
+  oneOf,
+  pickOf,
+  pressKind,
+  restlessness,
+  stageOf,
+} from "./helpers";
 import { monologueFor } from "./monologue";
 
 export const BUILD_INTENTIONS: Intention[] = [
   {
     id: "pick-start",
     category: "build",
+    changesPresentation: true,
     target: (ctx) => pickOf(ctx, "start-position"),
     thought: (ctx, target) =>
       monologueFor("start-position", target, ctx, "Let's start somewhere."),
@@ -32,6 +41,7 @@ export const BUILD_INTENTIONS: Intention[] = [
   {
     id: "add-step",
     category: "build",
+    changesPresentation: true,
     target: (ctx) => pickOf(ctx, "option"),
     // Names the letter it is about to add. "What comes next?" said nothing about
     // the forty pictographs on screen; "P looks like it fits" is a decision.
@@ -40,14 +50,15 @@ export const BUILD_INTENTIONS: Intention[] = [
         "option",
         target,
         ctx,
-        ctx.sequenceLength > 3 ? "One more after that." : "What comes next?",
+        ctx.sequenceLength > 3 ? "One more after that." : "What comes next?"
       ),
     // The one intention whose job is repetition: a person building a sequence
     // presses option after option, and the novelty penalty made that
     // impossible (see Intention.repeatable). `can` carries the ceiling that
     // novelty used to provide by accident.
     repeatable: true,
-    can: (ctx) => ctx.hasSequence && ctx.sequenceLength < 16 && has(ctx, "option"),
+    can: (ctx) =>
+      ctx.hasSequence && ctx.sequenceLength < 16 && has(ctx, "option"),
     // Strong until it is a real sequence, then tapering — a sequence that never
     // stops growing stops being a demonstration and becomes a wall. The knee is
     // deliberately past 8: eight steps is a word, three is a fragment.
@@ -118,7 +129,7 @@ export const BUILD_INTENTIONS: Intention[] = [
             "Show me the ones that won't fight the last step.",
           ],
         },
-        "What actually follows this?",
+        "What actually follows this?"
       ),
     // Never before there is something to be dissatisfied WITH. A filter pressed
     // by someone who has not watched their sequence is someone reading the UI,
@@ -127,7 +138,8 @@ export const BUILD_INTENTIONS: Intention[] = [
       has(ctx, "option-filter") &&
       ctx.sequenceLength >= 3 &&
       ((ctx.performed.get("play-it") ?? 0) > 0 || ctx.available.option > 20),
-    appeal: (ctx) => (stageOf(ctx, "continuity") === "understood" ? 0.45 : 0.55),
+    appeal: (ctx) =>
+      stageOf(ctx, "continuity") === "understood" ? 0.45 : 0.55,
     mood: "unsure",
     /**
      * The evidence. A belief moves only on a measured collapse, and the jump to
@@ -178,6 +190,7 @@ export const BUILD_INTENTIONS: Intention[] = [
   {
     id: "fiddle-turns",
     category: "build",
+    changesPresentation: true,
     thought: (ctx) =>
       oneOf(ctx, [
         "What if this hand turned instead?",
@@ -204,6 +217,7 @@ export const BUILD_INTENTIONS: Intention[] = [
   {
     id: "clear-and-restart",
     category: "reset",
+    changesPresentation: true,
     thought: (ctx) =>
       oneOf(ctx, [
         "Let's try something completely different.",

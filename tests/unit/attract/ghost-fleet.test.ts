@@ -30,10 +30,8 @@ vi.mock("$lib/shared/attract/services/sensors", () => ({
 }));
 
 import { ALL_INTENTIONS } from "$lib/shared/attract/intentions";
-import {
-  CONCEPTS,
-  type ConceptId,
-} from "$lib/shared/attract/domain/intention";
+import { CONCEPTS, type ConceptId } from "$lib/shared/attract/domain/intention";
+import { PLAYBACK_REVISIT_MS } from "$lib/shared/attract/domain/episodic-memory";
 import { analyze, runSession } from "./sim/run-session";
 
 const SESSIONS = Number(process.env.GHOST_FLEET_SESSIONS ?? 60);
@@ -42,8 +40,10 @@ const TICKS = Number(process.env.GHOST_FLEET_TICKS ?? 400);
 interface FleetRow {
   seed: number;
   decisions: number;
-  /** Ticks that produced no decision at all — the ghost standing there. */
+  /** Ticks that produced no action, including deliberate presentation waits. */
   deadTicks: number;
+  /** No-action ticks intentionally yielded to a module's own presentation. */
+  presentingTicks: number;
   peakSeqLen: number;
   clears: number;
   longestBuildRun: number;
@@ -54,6 +54,16 @@ interface FleetRow {
   /** Module visits where it did nothing but navigate away. */
   emptyVisits: number;
   visits: number;
+  prematureReplays: number;
+  barrenVisitOverruns: number;
+  deliberateSidebarReads: number;
+  recognizedSidebarReads: number;
+  activityEpisodeMismatch: number;
+  informedSelections: number;
+  boostedSelections: number;
+  reducedSelections: number;
+  lowValueEpisodes: number;
+  highValueEpisodes: number;
 }
 
 async function flyFleet(): Promise<FleetRow[]> {
@@ -66,7 +76,7 @@ async function flyFleet(): Promise<FleetRow[]> {
     const stats = analyze(
       session.log,
       session.app.state.peakSeqLen,
-      session.mind.memory.concepts,
+      session.mind.memory.concepts
     );
 
     // Module visits, grouped by module id only — the tab suffix would split a
@@ -85,7 +95,15 @@ async function flyFleet(): Promise<FleetRow[]> {
         current = mod;
         actions = 0;
       }
-      if (r.intentionId !== "go-to-module") actions++;
+      const intention = ALL_INTENTIONS.find(
+        (candidate) => candidate.id === r.intentionId
+      );
+      if (
+        intention?.operation !== "perceive" &&
+        !["go-to-module", "escape-room"].includes(r.intentionId)
+      ) {
+        actions++;
+      }
     }
     if (current !== null) {
       visits++;
@@ -98,10 +116,38 @@ async function flyFleet(): Promise<FleetRow[]> {
       moduleShare.set(mod, (moduleShare.get(mod) ?? 0) + n);
     }
 
+    let prematureReplays = 0;
+    const plays = session.log.filter(
+      ({ intentionId }) => intentionId === "play-it"
+    );
+    for (let index = 1; index < plays.length; index++) {
+      const previous = plays[index - 1]!;
+      const currentPlay = plays[index]!;
+      if (
+        currentPlay.presentationRevision === previous.presentationRevision &&
+        currentPlay.playbackSurface === previous.playbackSurface &&
+        currentPlay.t - previous.t < PLAYBACK_REVISIT_MS
+      ) {
+        prematureReplays++;
+      }
+    }
+
+    const barrenVisitOverruns = [...session.mind.memory.barrenModules].filter(
+      (moduleId) => {
+        const episode = session.mind.memory.moduleEpisodes.get(moduleId);
+        return (episode?.visits ?? 0) - (episode?.productiveVisits ?? 0) > 1;
+      }
+    ).length;
+    const endedActivities = [
+      ...session.mind.memory.activities.completed.values(),
+      ...session.mind.memory.activities.abandoned.values(),
+    ].reduce((total, count) => total + count, 0);
+
     rows.push({
       seed,
       decisions: stats.decisions,
       deadTicks: TICKS - stats.decisions,
+      presentingTicks: session.telemetry.presentingIdleTicks,
       peakSeqLen: stats.peakSeqLen,
       clears: stats.seqLenAtClear.length,
       longestBuildRun: stats.longestBuildRun,
@@ -111,6 +157,17 @@ async function flyFleet(): Promise<FleetRow[]> {
       concepts: new Map(stats.concepts),
       emptyVisits,
       visits,
+      prematureReplays,
+      barrenVisitOverruns,
+      deliberateSidebarReads: session.mind.memory.navigation.deliberateReads,
+      recognizedSidebarReads: session.mind.memory.navigation.recognizedReads,
+      activityEpisodeMismatch:
+        endedActivities - session.mind.memory.experience.recorded,
+      informedSelections: session.mind.memory.experience.informedSelections,
+      boostedSelections: session.mind.memory.experience.boostedSelections,
+      reducedSelections: session.mind.memory.experience.reducedSelections,
+      lowValueEpisodes: session.mind.memory.experience.lowValueEpisodes,
+      highValueEpisodes: session.mind.memory.experience.highValueEpisodes,
     });
   }
   return rows;
@@ -154,14 +211,70 @@ function fleetReport(rows: FleetRow[]): string {
     ``,
     `| measure | mean | p10 | p50 | p90 | min | max |`,
     `|---|---|---|---|---|---|---|`,
-    dist("decisions per session", rows.map((r) => r.decisions)),
-    dist("dead ticks (nothing to do)", rows.map((r) => r.deadTicks)),
-    dist("peak sequence length", rows.map((r) => r.peakSeqLen)),
-    dist("clears", rows.map((r) => r.clears)),
-    dist("longest build run", rows.map((r) => r.longestBuildRun)),
-    dist("failed performs", rows.map((r) => r.failures)),
-    dist("module visits", rows.map((r) => r.visits)),
-    dist("visits doing nothing", rows.map((r) => r.emptyVisits)),
+    dist(
+      "decisions per session",
+      rows.map((r) => r.decisions)
+    ),
+    dist(
+      "ticks without a ghost action",
+      rows.map((r) => r.deadTicks)
+    ),
+    dist(
+      "ticks watching a module presentation",
+      rows.map((r) => r.presentingTicks)
+    ),
+    dist(
+      "unexplained idle ticks",
+      rows.map((r) => r.deadTicks - r.presentingTicks)
+    ),
+    dist(
+      "peak sequence length",
+      rows.map((r) => r.peakSeqLen)
+    ),
+    dist(
+      "clears",
+      rows.map((r) => r.clears)
+    ),
+    dist(
+      "longest build run",
+      rows.map((r) => r.longestBuildRun)
+    ),
+    dist(
+      "failed performs",
+      rows.map((r) => r.failures)
+    ),
+    dist(
+      "module visits",
+      rows.map((r) => r.visits)
+    ),
+    dist(
+      "visits doing nothing",
+      rows.map((r) => r.emptyVisits)
+    ),
+    dist(
+      "premature unchanged replays",
+      rows.map((r) => r.prematureReplays)
+    ),
+    dist(
+      "repeat visits after a room proved barren",
+      rows.map((r) => r.barrenVisitOverruns)
+    ),
+    dist(
+      "sidebar reads recognized from memory",
+      rows.map((r) => r.recognizedSidebarReads)
+    ),
+    dist(
+      "activity choices informed by experience",
+      rows.map((r) => r.informedSelections)
+    ),
+    dist(
+      "activity choices reduced by experience",
+      rows.map((r) => r.reducedSelections)
+    ),
+    dist(
+      "low-value activity episodes",
+      rows.map((r) => r.lowValueEpisodes)
+    ),
     ``,
     `## Intentions — how often, and in how many sessions`,
     ``,
@@ -176,7 +289,7 @@ function fleetReport(rows: FleetRow[]): string {
       .sort((a, b) => b.n - a.n)
       .map(
         (r) =>
-          `| ${r.id} | ${r.n} | ${((r.n / allDecisions) * 100).toFixed(2)}% | ${r.s}/${rows.length} |`,
+          `| ${r.id} | ${r.n} | ${((r.n / allDecisions) * 100).toFixed(2)}% | ${r.s}/${rows.length} |`
       ),
     ``,
     `## Where the time goes`,
@@ -221,7 +334,7 @@ describe("ghost fleet", () => {
       // An intention that never wins on ANY seed is dead code wearing a
       // personality. This is the finding a fleet exists for.
       const never = ALL_INTENTIONS.filter((i) =>
-        rows.every((r) => (r.byIntention.get(i.id) ?? 0) === 0),
+        rows.every((r) => (r.byIntention.get(i.id) ?? 0) === 0)
       ).map((i) => i.id);
       expect(never, "intentions that never fired in any session").toEqual([]);
 
@@ -230,9 +343,65 @@ describe("ghost fleet", () => {
       const stranded = rows.filter((r) => r.decisions < TICKS * 0.2);
       expect(
         stranded.map((r) => r.seed),
-        "sessions where the ghost was idle for most of its ticks",
+        "sessions where the ghost was idle for most of its ticks"
       ).toEqual([]);
+
+      expect(
+        rows.filter((r) => r.failures > 0).map((r) => r.seed),
+        "sessions with failed actions"
+      ).toEqual([]);
+      expect(
+        rows
+          .filter((r) => r.deadTicks !== r.presentingTicks)
+          .map((r) => r.seed),
+        "sessions with unexplained idle ticks"
+      ).toEqual([]);
+      expect(
+        rows.filter((r) => r.prematureReplays > 0).map((r) => r.seed),
+        "sessions that replayed an unchanged presentation too soon"
+      ).toEqual([]);
+      expect(
+        rows.filter((r) => r.barrenVisitOverruns > 0).map((r) => r.seed),
+        "sessions that revisited a room after it proved barren"
+      ).toEqual([]);
+      expect(
+        rows.filter((r) => r.recognizedSidebarReads === 0).map((r) => r.seed),
+        "sessions that never recognized a previously read sidebar"
+      ).toEqual([]);
+      expect(
+        rows.filter((r) => r.activityEpisodeMismatch !== 0).map((r) => r.seed),
+        "sessions that ended an activity without recording its outcome"
+      ).toEqual([]);
+      expect(
+        rows.filter((r) => r.informedSelections === 0).map((r) => r.seed),
+        "sessions where experience never changed activity selection"
+      ).toEqual([]);
+      expect(
+        rows.reduce((total, row) => total + row.boostedSelections, 0),
+        "fleet choices reinforced by useful outcomes"
+      ).toBeGreaterThan(0);
+      expect(
+        rows.reduce((total, row) => total + row.reducedSelections, 0),
+        "fleet choices tempered by disappointing outcomes"
+      ).toBeGreaterThan(0);
+      expect(
+        rows
+          .filter((r) => r.lowValueEpisodes === 0 || r.highValueEpisodes === 0)
+          .map((r) => r.seed),
+        "sessions that never distinguished useful and disappointing outcomes"
+      ).toEqual([]);
+
+      const invitations = rows.map((r) =>
+        ["offer-the-wheel", "point-it-out", "everything-is-live"].reduce(
+          (total, id) => total + (r.byIntention.get(id) ?? 0),
+          0
+        )
+      );
+      expect(
+        mean(invitations),
+        "average invitations per simulated half-hour"
+      ).toBeLessThan(5);
     },
-    600_000,
+    600_000
   );
 });

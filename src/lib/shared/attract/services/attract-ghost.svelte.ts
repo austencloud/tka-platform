@@ -17,6 +17,8 @@
  * and generate-attract-act.svelte.ts.
  */
 
+import { transitionGhostHover } from "./ghost-hover";
+
 export interface GhostState {
   x: number;
   y: number;
@@ -89,7 +91,10 @@ export interface AttractGhost extends AttractActHandle {
    * chose — so an intention can name the thing it is about to press and still
    * look like it considered the alternatives.
    */
-  browseThenPress: (chosen: HTMLElement, alternatives?: HTMLElement[]) => Promise<void>;
+  browseThenPress: (
+    chosen: HTMLElement,
+    alternatives?: HTMLElement[]
+  ) => Promise<void>;
   /** Rest just inside an element's bottom-right corner, hover cleared. */
   restBeside: (el: HTMLElement) => Promise<void>;
   /**
@@ -167,7 +172,10 @@ export function createAttractGhost(opts: {
       }, 64);
     });
 
-  async function sleep(ms: number, abort: () => boolean = halted): Promise<void> {
+  async function sleep(
+    ms: number,
+    abort: () => boolean = halted
+  ): Promise<void> {
     const end = performance.now() + ms;
     while (!abort() && performance.now() < end) {
       await raw(Math.min(120, Math.max(16, end - performance.now())));
@@ -177,7 +185,8 @@ export function createAttractGhost(opts: {
 
   const choose = opts.choose ?? Math.random;
   const pick = <T>(arr: T[]): T => arr[Math.floor(choose() * arr.length)]!;
-  const jitter = (base: number, spread: number) => base + Math.random() * spread;
+  const jitter = (base: number, spread: number) =>
+    base + Math.random() * spread;
 
   // The element the ghost is currently "hovering". Since a fake pointer can't
   // trigger CSS :hover, the act marks its target with a .ghost-hover class and
@@ -186,9 +195,8 @@ export function createAttractGhost(opts: {
   let hovered: HTMLElement | null = null;
   function setHover(el: HTMLElement | null): void {
     if (hovered === el) return;
-    hovered?.classList.remove("ghost-hover");
+    transitionGhostHover(hovered, el);
     hovered = el;
-    hovered?.classList.add("ghost-hover");
   }
 
   // ---- Human motor model ------------------------------------------------
@@ -211,7 +219,7 @@ export function createAttractGhost(opts: {
     tx: number,
     ty: number,
     dur: number,
-    abort: () => boolean,
+    abort: () => boolean
   ): Promise<void> {
     const sx = ghost.x;
     const sy = ghost.y;
@@ -240,7 +248,7 @@ export function createAttractGhost(opts: {
   async function glide(
     tx: number,
     ty: number,
-    abort: () => boolean,
+    abort: () => boolean
   ): Promise<void> {
     if (abort()) return;
     if (!ghost.visible) {
@@ -264,7 +272,7 @@ export function createAttractGhost(opts: {
     }
     const dur = Math.min(
       Math.max((240 + dist * 0.9) * jitter(0.85, 0.3), 300),
-      1300,
+      1300
     );
 
     // ANTICIPATION. Before a real journey, lean back against the direction of
@@ -278,7 +286,7 @@ export function createAttractGhost(opts: {
         sx - (dx / dist) * back,
         sy - (dy / dist) * back,
         jitter(90, 60),
-        abort,
+        abort
       );
       if (abort()) return;
     }
@@ -362,7 +370,10 @@ export function createAttractGhost(opts: {
     const root = opts.getRoot();
     if (!root) return false;
     const rr = root.getBoundingClientRect();
-    const probe = document.elementFromPoint(ghost.x + rr.left, ghost.y + rr.top);
+    const probe = document.elementFromPoint(
+      ghost.x + rr.left,
+      ghost.y + rr.top
+    );
     return !!probe && (probe === el || el.contains(probe));
   }
 
@@ -395,7 +406,7 @@ export function createAttractGhost(opts: {
    *  canvas) and click() wouldn't land. */
   async function moveAndPress(
     el: HTMLElement,
-    action?: () => void,
+    action?: () => void
   ): Promise<void> {
     await hoverOn(el, jitter(240, 420));
     if (halted()) return;
@@ -454,7 +465,7 @@ export function createAttractGhost(opts: {
   /** Browse a couple of alternatives, then press the target the caller named. */
   async function browseThenPress(
     chosen: HTMLElement,
-    alternatives: HTMLElement[] = [],
+    alternatives: HTMLElement[] = []
   ): Promise<void> {
     const pool = alternatives.filter((el) => el !== chosen);
     const roll = choose();
@@ -493,7 +504,7 @@ export function createAttractGhost(opts: {
     const left = ghost.x < rr.width / 2;
     await glideTo(
       left ? jitter(46, 34) : rr.width - jitter(46, 34),
-      rr.height - jitter(52, 30),
+      rr.height - jitter(52, 30)
     );
     if (halted()) return;
     ghost.dimmed = true;
@@ -511,7 +522,7 @@ export function createAttractGhost(opts: {
     setHover(null);
     await glideTo(
       r.right - rr.left - jitter(22, 20),
-      r.bottom - rr.top - jitter(22, 20),
+      r.bottom - rr.top - jitter(22, 20)
     );
   }
 
@@ -519,7 +530,10 @@ export function createAttractGhost(opts: {
    *  are hit-tested at their center — clipped-but-in-flow content (embla
    *  pages) would otherwise let the ghost "press" a target sitting under
    *  something else and the click would land on empty air. */
-  async function waitFor(selector: string, timeoutMs = 8000): Promise<HTMLElement[]> {
+  async function waitFor(
+    selector: string,
+    timeoutMs = 8000
+  ): Promise<HTMLElement[]> {
     const t0 = performance.now();
     while (!halted()) {
       const root = opts.getRoot();
@@ -531,10 +545,10 @@ export function createAttractGhost(opts: {
             if (r.width < 4 || r.height < 4) return false;
             const probe = document.elementFromPoint(
               r.left + r.width / 2,
-              r.top + r.height / 2,
+              r.top + r.height / 2
             );
             return !!probe && (el.contains(probe) || probe.contains(el));
-          },
+          }
         );
         if (els.length) return els;
       }
