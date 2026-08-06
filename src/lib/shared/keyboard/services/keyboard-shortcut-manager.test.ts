@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { KeyboardShortcutManager } from "./keyboard-shortcut-manager";
-import type { ShortcutRegistry } from "./shortcut-registry";
+import { ShortcutRegistry } from "./shortcut-registry";
 
 /**
  * Minimal registry stub. handleKeydown's suppressor check runs before any
@@ -76,5 +76,59 @@ describe("KeyboardShortcutManager.addInputSuppressor", () => {
       window.dispatchEvent(new Event("keydown"));
     }).not.toThrow();
     expect(findMatches).not.toHaveBeenCalled();
+  });
+
+  it("matches the question-mark shortcut without firing while typing", () => {
+    const action = vi.fn();
+    const manager = new KeyboardShortcutManager(new ShortcutRegistry());
+    dispose = () => manager.dispose();
+    manager.register({
+      id: "help",
+      label: "Help",
+      key: "/",
+      modifiers: ["shift"],
+      action,
+    });
+    manager.initialize();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "?", shiftKey: true })
+    );
+    expect(action).toHaveBeenCalledOnce();
+
+    const input = document.createElement("input");
+    document.body.append(input);
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "?",
+        shiftKey: true,
+        bubbles: true,
+      })
+    );
+    expect(action).toHaveBeenCalledOnce();
+    input.remove();
+  });
+
+  it("matches Ctrl shortcuts on Windows and Command shortcuts on macOS", () => {
+    const action = vi.fn();
+    const manager = new KeyboardShortcutManager(new ShortcutRegistry());
+    dispose = () => manager.dispose();
+    manager.register({
+      id: "palette",
+      label: "Command palette",
+      key: "k",
+      modifiers: ["ctrl"],
+      action,
+    });
+    manager.initialize();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "k", ctrlKey: true })
+    );
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "k", metaKey: true })
+    );
+
+    expect(action).toHaveBeenCalledTimes(2);
   });
 });

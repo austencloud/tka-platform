@@ -12,35 +12,27 @@ import type {
   ShortcutContext,
   ShortcutSettings,
 } from "../domain/types/keyboard-types";
+import {
+  createDefaultShortcutSettings,
+  decodeShortcutSettings,
+  encodeShortcutSettings,
+} from "../domain/shortcut-settings-codec";
 import { browser } from "$app/environment";
-
-/**
- * Default shortcut settings
- */
-const defaultSettings: ShortcutSettings = {
-  enableSingleKeyShortcuts: true,
-  enableVimStyleNavigation: false,
-  showShortcutHints: true,
-  playSoundOnActivation: false,
-  customBindings: {} as Record<string, CustomBinding>,
-};
 
 /**
  * Load settings from localStorage
  */
 function loadSettings(): ShortcutSettings {
-  if (!browser) return defaultSettings;
+  if (!browser) return createDefaultShortcutSettings();
 
   try {
     const stored = localStorage.getItem("tka-keyboard-shortcuts-settings");
-    if (stored) {
-      return { ...defaultSettings, ...JSON.parse(stored) };
-    }
+    return decodeShortcutSettings(stored);
   } catch (error) {
     console.warn("Failed to load keyboard shortcut settings:", error);
   }
 
-  return defaultSettings;
+  return createDefaultShortcutSettings();
 }
 
 /**
@@ -52,7 +44,7 @@ function saveSettings(settings: ShortcutSettings): void {
   try {
     localStorage.setItem(
       "tka-keyboard-shortcuts-settings",
-      JSON.stringify(settings)
+      encodeShortcutSettings(settings)
     );
   } catch (error) {
     console.warn("Failed to save keyboard shortcut settings:", error);
@@ -105,6 +97,25 @@ export function createKeyboardShortcutState() {
   // Recently activated shortcuts (for feedback)
   let recentlyActivated = $state<string[]>([]);
 
+  function updateCustomBindings(
+    updates: Record<string, CustomBinding | null>
+  ): void {
+    const nextBindings = { ...settings.customBindings };
+    for (const [shortcutId, binding] of Object.entries(updates)) {
+      if (binding) {
+        nextBindings[shortcutId] = binding;
+      } else {
+        delete nextBindings[shortcutId];
+      }
+    }
+
+    settings = {
+      ...settings,
+      customBindings: nextBindings,
+    };
+    saveSettings(settings);
+  }
+
   return {
     // Context
     get context() {
@@ -123,7 +134,7 @@ export function createKeyboardShortcutState() {
       saveSettings(settings);
     },
     resetSettings() {
-      settings = defaultSettings;
+      settings = createDefaultShortcutSettings();
       saveSettings(settings);
     },
 
@@ -187,24 +198,14 @@ export function createKeyboardShortcutState() {
 
     // Custom binding management
     setCustomBinding(shortcutId: string, binding: CustomBinding) {
-      settings = {
-        ...settings,
-        customBindings: {
-          ...settings.customBindings,
-          [shortcutId]: binding,
-        },
-      };
-      saveSettings(settings);
+      updateCustomBindings({ [shortcutId]: binding });
     },
 
     removeCustomBinding(shortcutId: string) {
-      const { [shortcutId]: _, ...rest } = settings.customBindings;
-      settings = {
-        ...settings,
-        customBindings: rest,
-      };
-      saveSettings(settings);
+      updateCustomBindings({ [shortcutId]: null });
     },
+
+    updateCustomBindings,
 
     resetAllCustomBindings() {
       settings = {

@@ -17,13 +17,17 @@ import { keyComboEquals, buildKeyCombo } from "../utils/key-combo-utils";
 
 export class ShortcutRegistry {
   private shortcuts: Map<string, Shortcut> = new Map();
+  private listeners = new Set<() => void>();
 
   add(shortcut: Shortcut): void {
     this.shortcuts.set(shortcut.id, shortcut);
+    this.notify();
   }
 
   remove(id: string): void {
-    this.shortcuts.delete(id);
+    if (this.shortcuts.delete(id)) {
+      this.notify();
+    }
   }
 
   get(id: string): Shortcut | undefined {
@@ -94,10 +98,24 @@ export class ShortcutRegistry {
   }
 
   clear(): void {
-    this.shortcuts.clear();
+    if (this.shortcuts.size > 0) {
+      this.shortcuts.clear();
+      this.notify();
+    }
   }
 
   count(): number {
     return this.shortcuts.size;
+  }
+
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  private notify(): void {
+    for (const listener of this.listeners) {
+      listener();
+    }
   }
 }

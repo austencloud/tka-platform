@@ -48,6 +48,7 @@ export class NormalizedKeyboardEvent implements KeyboardEventDetails {
       "*": "8",
       "(": "9",
       ")": "0",
+      "?": "/",
     };
 
     return keyMap[key] || key;

@@ -1,0 +1,561 @@
+<script lang="ts">
+  import { onMount, tick } from "svelte";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
+  import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
+  import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
+  import PanelSearch from "$lib/shared/components/panel/PanelSearch.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import ShortcutBindingEditor from "./ShortcutBindingEditor.svelte";
+  import ShortcutContextSection from "./settings/ShortcutContextSection.svelte";
+  import { keyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
+  import { getShortcutRegistry } from "../get-shortcut-registry";
+  import { getShortcutCustomizer } from "../get-shortcut-customizer";
+  import type { ShortcutRegistry } from "../services/shortcut-registry";
+  import type { ShortcutCustomizer } from "../services/shortcut-customizer";
+  import type { ShortcutWithBinding } from "../services/types";
+  import type { ShortcutContext } from "../domain/types/keyboard-types";
+  import {
+    buildShortcutCatalog,
+    getShortcutContextLabel,
+    type ShortcutCenterView,
+  } from "../domain/shortcut-center-catalog";
+
+  let registry: ShortcutRegistry | null = null;
+  let customizer = $state<ShortcutCustomizer | null>(null);
+  let registryVersion = $state(0);
+  let query = $state("");
+  let view = $state<ShortcutCenterView>("current");
+  let selectedShortcutId = $state<string | null>(null);
+  let showResetConfirmation = $state(false);
+  let announcement = $state("");
+  let searchInput = $state<HTMLInputElement | null>(null);
+  let workspaceElement = $state<HTMLDivElement | null>(null);
+
+  const allItems = $derived.by(() => {
+    registryVersion;
+    keyboardShortcutState.settings;
+    return customizer?.getAllShortcutsWithBindings() ?? [];
+  });
+  const currentContext = $derived(keyboardShortcutState.context);
+  const currentItems = $derived(
+    buildShortcutCatalog(allItems, "current", currentContext, "").flatMap(
+      ({ items }) => items
+    )
+  );
+  const changedCount = $derived(
+    allItems.filter(({ isCustomized }) => isCustomized).length
+  );
+  const viewOptions = $derived([
+    {
+      value: "current" as const,
+      label: "This area",
+      count: currentItems.length,
+      ariaLabel: `This area, ${currentItems.length} shortcuts`,
+    },
+    {
+      value: "all" as const,
+      label: "All",
+      count: allItems.length,
+      ariaLabel: `All, ${allItems.length} shortcuts`,
+    },
+    {
+      value: "changed" as const,
+      label: "Changed",
+      count: changedCount,
+      ariaLabel: `Changed, ${changedCount} shortcuts`,
+    },
+  ]);
+  const groups = $derived(
+    buildShortcutCatalog(allItems, view, currentContext, query)
+  );
+  const visibleCount = $derived(
+    groups.reduce((total, group) => total + group.items.length, 0)
+  );
+  const selectedItem = $derived(
+    allItems.find(({ shortcut }) => shortcut.id === selectedShortcutId) ?? null
+  );
+  const selectedContextLabel = $derived(
+    selectedItem ? describeContexts(selectedItem) : ""
+  );
+
+  onMount(() => {
+    registry = getShortcutRegistry();
+    customizer = getShortcutCustomizer();
+    registryVersion += 1;
+    return registry.subscribe(() => (registryVersion += 1));
+  });
+
+  $effect(() => {
+    if (!keyboardShortcutState.showHelp) {
+      query = "";
+      selectedShortcutId = null;
+      showResetConfirmation = false;
+    }
+  });
+
+  function close(): void {
+    keyboardShortcutState.closeHelp();
+  }
+
+  function focusSearch(): void {
+    requestAnimationFrame(() => searchInput?.focus());
+  }
+
+  function describeContexts(item: ShortcutWithBinding): string {
+    const contexts = Array.isArray(item.shortcut.context)
+      ? item.shortcut.context
+      : [item.shortcut.context ?? "global"];
+    return contexts.map(getShortcutContextLabel).join(" · ");
+  }
+
+  async function editShortcut(item: ShortcutWithBinding): Promise<void> {
+    selectedShortcutId = item.shortcut.id;
+    await tick();
+    if (workspaceElement && workspaceElement.clientWidth < 1024) {
+      workspaceElement.scrollTop = 0;
+    }
+  }
+
+  function resetShortcut(item: ShortcutWithBinding): void {
+    customizer?.resetBinding(item.shortcut.id);
+    announcement = `${item.shortcut.label} restored to its default.`;
+  }
+
+  function saveShortcut(item: ShortcutWithBinding, keyCombo: string): void {
+    customizer?.setCustomBinding(item.shortcut.id, keyCombo);
+    announcement = `${item.shortcut.label} saved.`;
+  }
+
+  function replaceShortcut(item: ShortcutWithBinding, keyCombo: string): void {
+    const replaced =
+      customizer?.replaceBinding(item.shortcut.id, keyCombo) ?? [];
+    const firstReplacement = replaced[0];
+    const suffix =
+      replaced.length === 1 && firstReplacement
+        ? ` ${firstReplacement.existingShortcutLabel} was turned off.`
+        : replaced.length > 1
+          ? ` ${replaced.length} conflicting shortcuts were turned off.`
+          : "";
+    announcement = `${item.shortcut.label} saved.${suffix}`;
+  }
+
+  function swapShortcut(
+    item: ShortcutWithBinding,
+    conflictId: string
+  ): boolean {
+    const conflict = customizer?.swapBindings(item.shortcut.id, conflictId);
+    if (conflict) {
+      announcement = `The swap would conflict with ${conflict.existingShortcutLabel}.`;
+      return false;
+    }
+
+    announcement = `${item.shortcut.label} and the conflicting shortcut were swapped.`;
+    return true;
+  }
+
+  function disableShortcut(item: ShortcutWithBinding): void {
+    customizer?.disableShortcut(item.shortcut.id);
+    announcement = `${item.shortcut.label} turned off.`;
+  }
+
+  function enableShortcut(item: ShortcutWithBinding): void {
+    customizer?.enableShortcut(item.shortcut.id);
+    announcement = `${item.shortcut.label} turned on.`;
+  }
+
+  function resetAll(): void {
+    customizer?.resetAllBindings();
+    selectedShortcutId = null;
+    announcement = "All shortcuts restored to their defaults.";
+  }
+
+  function getEmptyMessage(): string {
+    if (query) return `No shortcuts match “${query}”.`;
+    if (view === "changed")
+      return "No shortcuts have been changed on this device.";
+    if (view === "current") return "No shortcuts are registered for this area.";
+    return "No shortcuts are registered.";
+  }
+</script>
+
+<BaseModal
+  open={keyboardShortcutState.showHelp}
+  size="xl"
+  class="shortcut-center-modal"
+  labelledBy="shortcut-center-title"
+  onclose={close}
+  onopened={focusSearch}
+>
+  {#snippet header()}
+    <ModalHeader
+      id="shortcut-center-title"
+      title="Keyboard shortcuts"
+      subtitle="Find a command, see where it works, or change its keys."
+      icon="fa-keyboard"
+      onClose={close}
+    />
+  {/snippet}
+
+  <div class="shortcut-center">
+    <div class="toolbar">
+      <PanelSearch
+        bind:value={query}
+        bind:inputRef={searchInput}
+        maxWidth="none"
+        placeholder="Search commands, areas, or keys"
+        ariaLabel="Search keyboard shortcuts"
+        autofocus={true}
+      />
+
+      <div class="view-picker">
+        <SegmentedControl
+          options={viewOptions}
+          value={view}
+          onchange={(nextView) => (view = nextView)}
+          color="accent"
+          size="sm"
+          density="compact"
+          semantics="radiogroup"
+          ariaLabel="Shortcut view"
+        />
+      </div>
+
+      {#if changedCount > 0}
+        <button
+          type="button"
+          class="reset-all-button"
+          onclick={() => (showResetConfirmation = true)}
+        >
+          Reset all
+        </button>
+      {/if}
+    </div>
+
+    <div class="result-summary" aria-live="polite">
+      <span>{visibleCount} {visibleCount === 1 ? "shortcut" : "shortcuts"}</span
+      >
+      {#if view === "current"}
+        <span>for {getShortcutContextLabel(currentContext)}</span>
+      {/if}
+    </div>
+
+    <div
+      bind:this={workspaceElement}
+      class="workspace"
+      class:editing={selectedItem !== null}
+    >
+      <div class="list-pane">
+        {#if groups.length > 0}
+          <div class="groups">
+            {#each groups as group (group.context)}
+              <ShortcutContextSection
+                context={group.context}
+                label={group.label}
+                shortcuts={group.items}
+                {selectedShortcutId}
+                onEditShortcut={editShortcut}
+                onResetShortcut={resetShortcut}
+              />
+            {/each}
+          </div>
+        {:else}
+          <div class="empty-state">
+            <i class="fas fa-keyboard" aria-hidden="true"></i>
+            <h3>{getEmptyMessage()}</h3>
+            {#if query}
+              <button type="button" onclick={() => (query = "")}
+                >Clear search</button
+              >
+            {:else if view === "changed"}
+              <p>Choose a shortcut from All to give it a different key.</p>
+            {/if}
+          </div>
+        {/if}
+      </div>
+
+      {#if selectedItem && customizer}
+        <div class="editor-pane">
+          <ShortcutBindingEditor
+            item={selectedItem}
+            contextLabel={selectedContextLabel}
+            detectConflicts={(keyCombo) =>
+              customizer?.detectConflicts(selectedItem.shortcut.id, keyCombo) ??
+              []}
+            onSave={(keyCombo) => saveShortcut(selectedItem, keyCombo)}
+            onReplace={(keyCombo) => replaceShortcut(selectedItem, keyCombo)}
+            onSwap={(_, conflictId) => swapShortcut(selectedItem, conflictId)}
+            onReset={() => resetShortcut(selectedItem)}
+            onDisable={() => disableShortcut(selectedItem)}
+            onEnable={() => enableShortcut(selectedItem)}
+            onClose={() => (selectedShortcutId = null)}
+          />
+        </div>
+      {/if}
+    </div>
+
+    <p class="sr-only" aria-live="assertive">{announcement}</p>
+  </div>
+</BaseModal>
+
+<ConfirmDialog
+  bind:isOpen={showResetConfirmation}
+  title="Reset every keyboard shortcut?"
+  message="This removes every shortcut change saved on this device."
+  confirmText="Reset all"
+  cancelText="Keep changes"
+  variant="danger"
+  onConfirm={resetAll}
+  onCancel={() => (showResetConfirmation = false)}
+/>
+
+<style>
+  :global(dialog.base-modal.shortcut-center-modal[data-size="xl"]) {
+    width: min(94vw, clamp(72rem, 72vw, 176rem));
+    height: min(90dvh, 96rem);
+  }
+
+  :global(dialog.shortcut-center-modal .modal-content-wrapper) {
+    height: 100%;
+  }
+
+  :global(dialog.shortcut-center-modal .modal-body) {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .shortcut-center {
+    container-type: inline-size;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: color-mix(in srgb, var(--theme-panel-bg) 82%, transparent);
+  }
+
+  .toolbar {
+    display: grid;
+    grid-template-columns: minmax(15rem, 1fr) minmax(19rem, 30rem) auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.8rem 1rem 0.55rem;
+    border-bottom: 1px solid var(--theme-stroke);
+  }
+
+  :global(.shortcut-center .panel-search) {
+    padding: 0;
+  }
+
+  :global(.shortcut-center .panel-search__icon) {
+    left: 0.8rem;
+  }
+
+  .view-picker {
+    min-width: 0;
+  }
+
+  .reset-all-button,
+  .empty-state button {
+    min-height: var(--min-touch-target);
+    padding: 0 0.85rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.65rem;
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .reset-all-button:hover,
+  .empty-state button:hover {
+    background: var(--theme-card-hover-bg);
+  }
+
+  .reset-all-button:focus-visible,
+  .empty-state button:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .result-summary {
+    display: flex;
+    gap: 0.35rem;
+    padding: 0.45rem 1rem;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+  }
+
+  .workspace {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+    min-height: 0;
+    padding: 0 1rem 1rem;
+    overflow-y: auto;
+  }
+
+  .list-pane {
+    flex: none;
+    min-width: 0;
+  }
+
+  .groups {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .editor-pane {
+    flex: none;
+    order: -1;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .empty-state {
+    display: flex;
+    min-height: 15rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 2rem;
+    border: 1px dashed var(--theme-stroke-strong);
+    border-radius: 1rem;
+    color: var(--theme-text-dim);
+    text-align: center;
+  }
+
+  .empty-state i {
+    font-size: 2rem;
+    color: var(--theme-accent);
+  }
+
+  .empty-state h3,
+  .empty-state p {
+    margin: 0;
+  }
+
+  .empty-state h3 {
+    color: var(--theme-text);
+    font-size: var(--font-size-base);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @container (min-width: 64rem) {
+    .workspace.editing {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(22rem, 27rem);
+      overflow: hidden;
+    }
+
+    .list-pane,
+    .editor-pane {
+      min-height: 0;
+      overflow: hidden;
+      overscroll-behavior: contain;
+    }
+
+    .editor-pane {
+      order: initial;
+    }
+
+    :global(.editor-pane .binding-editor) {
+      height: 100%;
+    }
+  }
+
+  @container (min-width: 105rem) {
+    .groups {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+    }
+  }
+
+  @container (max-width: 50rem) {
+    .toolbar {
+      grid-template-columns: minmax(0, 1fr);
+      padding-inline: 0.75rem;
+    }
+
+    .reset-all-button {
+      justify-self: stretch;
+    }
+
+    .result-summary {
+      padding-inline: 0.75rem;
+    }
+
+    .workspace {
+      padding: 0 0.75rem 0.75rem;
+    }
+  }
+
+  @media (max-width: 520px) {
+    :global(dialog.base-modal.shortcut-center-modal[data-size="xl"]) {
+      width: 100%;
+      height: var(--viewport-height, 100dvh);
+      max-height: var(--viewport-height, 100dvh);
+    }
+
+    :global(.shortcut-center-modal .modal-header) {
+      padding: 0.65rem 0.75rem;
+    }
+
+    :global(.shortcut-center-modal .header-icon) {
+      display: none;
+    }
+
+    :global(.shortcut-center-modal .header-subtitle) {
+      display: none;
+    }
+
+    .toolbar {
+      gap: 0.45rem;
+      padding-block: 0.55rem;
+    }
+
+    .result-summary {
+      padding-block: 0.35rem;
+    }
+  }
+
+  @media (max-height: 520px) {
+    :global(dialog.base-modal.shortcut-center-modal[data-size="xl"]) {
+      height: 100dvh;
+      max-height: 100dvh;
+    }
+
+    :global(.shortcut-center-modal .modal-header) {
+      padding: 0.5rem 0.75rem;
+    }
+
+    :global(.shortcut-center-modal .header-icon),
+    :global(.shortcut-center-modal .header-subtitle) {
+      display: none;
+    }
+
+    .toolbar {
+      padding-block: 0.45rem;
+    }
+
+    .result-summary {
+      padding-block: 0.25rem;
+    }
+  }
+</style>

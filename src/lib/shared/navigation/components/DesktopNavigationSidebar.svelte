@@ -198,14 +198,17 @@
     )
   );
 
-  async function handleSettingsTap() {
+  async function handleOpenSettings() {
     hapticService?.trigger("selection");
-    if (navigationState.currentModule === "settings") {
-      const previousModule = navigationState.previousModule || "create";
-      await onModuleChange?.(previousModule as ModuleId);
-    } else {
+    if (navigationState.currentModule !== "settings") {
       await onModuleChange?.("settings" as ModuleId);
     }
+  }
+
+  async function handleSettingsBack() {
+    hapticService?.trigger("selection");
+    const previousModule = navigationState.previousModule || "create";
+    await onModuleChange?.(previousModule as ModuleId);
   }
 
   function handleSettingsSectionTap(section: Section) {
@@ -215,9 +218,7 @@
 
   // In settings mode the module tree is empty; the settings nav renders in
   // beforeTree instead.
-  const hostModules = $derived<ModuleDefinition[]>(
-    isInSettings ? [] : modules
-  );
+  const hostModules = $derived<ModuleDefinition[]>(isInSettings ? [] : modules);
 
   onMount(() => {
     hapticService = getHapticFeedback();
@@ -236,8 +237,12 @@
   homeHref="/"
   onModuleChange={handleModuleChange}
   {onSectionChange}
-  onModuleContextMenu={featureFlagService.isAdmin ? openModuleContextMenu : undefined}
-  onSectionContextMenu={featureFlagService.isAdmin ? openSectionContextMenu : undefined}
+  onModuleContextMenu={featureFlagService.isAdmin
+    ? openModuleContextMenu
+    : undefined}
+  onSectionContextMenu={featureFlagService.isAdmin
+    ? openSectionContextMenu
+    : undefined}
   {onModuleHover}
   {onHaptic}
   {translateLabel}
@@ -245,14 +250,15 @@
   {filterSection}
   {getBadgeCount}
   holdOpen={heldOpen}
-  class={isEntryAnimating ? "tka-sidebar-entry" : ""}
+  class={`${isEntryAnimating ? "tka-sidebar-entry " : ""}ghost-hover-boundary`}
 >
   <!-- Wordmark in the brand hero face (Fraunces italic 700), matching the
        landing SiteHeader wordmark so both read as one brand. Both words share
        the treatment to preserve the package's slide-reveal morph: the rail
        face shows "Flow", expanding reveals " Arts Composer". -->
   {#snippet brandLead()}<span class="brand-wordmark">Flow</span>{/snippet}
-  {#snippet brandRest()}<span class="brand-wordmark">{" Arts Composer"}</span>{/snippet}
+  {#snippet brandRest()}<span class="brand-wordmark">{" Arts Composer"}</span
+    >{/snippet}
 
   {#snippet beforeTree(expanded)}
     {#if isInSettings}
@@ -265,9 +271,10 @@
         {/if}
 
         <button
+          type="button"
           class="settings-back-button"
           class:collapsed={!expanded}
-          onclick={handleSettingsTap}
+          onclick={handleSettingsBack}
           aria-label="Back to modules"
         >
           <div class="back-icon">
@@ -281,7 +288,8 @@
         {#if !expanded}
           <div class="collapsed-settings-tabs">
             {#each filteredSettingsSections as section, index}
-              {@const isSectionActive = navigationState.activeTab === section.id}
+              {@const isSectionActive =
+                navigationState.activeTab === section.id}
               <div in:fade={{ duration: 150, delay: index * 25 }}>
                 <CollapsedTabButton
                   {section}
@@ -295,7 +303,8 @@
         {:else}
           <div class="settings-sections">
             {#each filteredSettingsSections as section, index}
-              {@const isSectionActive = navigationState.activeTab === section.id}
+              {@const isSectionActive =
+                navigationState.activeTab === section.id}
               <button
                 class="section-button"
                 class:active={isSectionActive}
@@ -317,7 +326,7 @@
     <SidebarFooter
       isCollapsed={!expanded}
       {isInSettings}
-      onSettingsClick={handleSettingsTap}
+      onSettingsClick={handleOpenSettings}
       onAccountClick={toggleAccountPopover}
       bind:accountSectionElement={accountSectionEl}
     />
@@ -333,6 +342,35 @@
 />
 
 <style>
+  /* Ghost uses the package's real pointer-enter controller to open the rail,
+     then `.ghost-hover` mirrors the visual half of a desktop mouseover while
+     it pauses over each option. The package's scoped :hover rules cannot see a
+     synthetic class added by the presenter, so the host owns this bridge. */
+  :global(.ghost-hover-boundary .module-button.ghost-hover) {
+    color: var(--theme-text);
+    background: var(--theme-card-bg);
+    border-color: var(--theme-stroke);
+    transform: translateX(3px);
+  }
+
+  :global(.ghost-hover-boundary .module-button.ghost-hover .module-icon) {
+    transform: scale(1.08);
+  }
+
+  :global(.ghost-hover-boundary .section-button.ghost-hover:not(.disabled)) {
+    color: var(--theme-text);
+    background: var(--theme-card-bg);
+    transform: translateX(3px);
+  }
+
+  :global(
+    .ghost-hover-boundary
+      .section-button.ghost-hover:not(.disabled)
+      .section-icon
+  ) {
+    transform: scale(1.15);
+  }
+
   /* Brand wordmark face — same as the landing SiteHeader .logo-text. The
      @austencloud/sidebar package leaves the brand font-family unset (inherits
      the app sans); these snippets override it to the Fraunces italic voice so
@@ -416,7 +454,8 @@
     flex: 1;
     text-align: left;
     font-weight: 500;
-    animation: label-fade-in var(--duration-normal) ease-out var(--duration-fast) both;
+    animation: label-fade-in var(--duration-normal) ease-out
+      var(--duration-fast) both;
   }
 
   .settings-back-button:focus-visible {
@@ -508,7 +547,8 @@
 
   .section-label {
     flex: 1;
-    animation: label-fade-in var(--duration-normal) ease-out var(--duration-fast) both;
+    animation: label-fade-in var(--duration-normal) ease-out
+      var(--duration-fast) both;
   }
 
   .collapsed-settings-tabs {

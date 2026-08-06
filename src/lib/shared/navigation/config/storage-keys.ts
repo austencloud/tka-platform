@@ -17,6 +17,9 @@ export const MODULE_LAST_TABS_KEY = "tka-module-last-tabs";
 /** localStorage key for last open panel per tab (JSON object, key format: "moduleId:tabId") */
 export const TAB_LAST_PANELS_KEY = "tka-tab-last-panels";
 
+/** Versioned, identity-scoped visit history used by Jump to suggestions */
+export const NAVIGATION_VISITS_KEY = "tka-navigation-visits";
+
 /** localStorage key for current create mode (legacy, synced with activeTab) */
 export const CURRENT_CREATE_MODE_KEY = "tka-current-create-mode";
 

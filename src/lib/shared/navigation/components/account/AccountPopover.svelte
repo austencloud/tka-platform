@@ -14,6 +14,7 @@
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import type { ModuleId } from "../../domain/types";
   import { tryGetAccountSetupContext } from "$lib/shared/onboarding/context/account-setup-context";
+  import { supportModalState } from "$lib/shared/support/state/support-modal-state.svelte";
 
   let { isOpen, onClose, anchorElement } = $props<{
     isOpen: boolean;
@@ -130,6 +131,12 @@
     onClose();
   }
 
+  function handleSupport() {
+    triggerHaptic();
+    onClose();
+    supportModalState.show();
+  }
+
   const accountSetupState = tryGetAccountSetupContext();
   const showSetupSummary = $derived(
     isFullAccount &&
@@ -231,6 +238,14 @@
 
     <!-- Actions -->
     <div class="actions">
+      <button
+        class="action-button support"
+        role="menuitem"
+        onclick={handleSupport}
+      >
+        <i class="fas fa-heart action-icon" aria-hidden="true"></i>
+        Support
+      </button>
       {#if isFullAccount}
         <button
           class="action-button sign-out"
@@ -484,6 +499,15 @@
 
   .action-button:hover .action-icon {
     opacity: 1;
+  }
+
+  .action-button.support .action-icon {
+    color: #f472b6;
+    opacity: 1;
+  }
+
+  .action-button.support:hover {
+    color: #f9a8d4;
   }
 
   /* Sign out hover turns red */

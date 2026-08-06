@@ -29,20 +29,17 @@
   import type { AppSettings } from "$lib/shared/settings/domain/app-settings";
 
   // Navigation state - use global activeTab
-  import {
-    navigationState,
-    SETTINGS_TABS,
-  } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
   // Import all tab components directly
   import ProfileTab from "$lib/shared/settings/components/tabs/ProfileTab.svelte";
   import ReleaseNotesTab from "$lib/shared/settings/components/tabs/ReleaseNotesTab.svelte";
   import PropTypeTab from "$lib/shared/settings/components/tabs/PropTypeTab.svelte";
   import ThemeShowroom from "$lib/shared/settings/components/tabs/background/showroom/ThemeShowroom.svelte";
-  import KeyboardShortcutsTab from "$lib/shared/keyboard/components/settings/KeyboardShortcutsTab.svelte";
   import PreferencesTab from "$lib/shared/settings/components/tabs/PreferencesTab.svelte";
   import LanguageTab from "$lib/shared/settings/components/tabs/LanguageTab.svelte";
   import NotificationPreferencesPanel from "$lib/features/feedback/components/NotificationPreferencesPanel.svelte";
+  import { keyboardShortcutState } from "$lib/shared/keyboard/state/keyboard-shortcut-state.svelte";
 
   // Reactive settings - derives from getSettings() to maintain reactivity
   let settings = $derived(getSettings());
@@ -64,6 +61,11 @@
   let showBackHeader = $derived(false);
 
   onMount(() => {
+    if (navigationState.activeTab === "keyboard") {
+      navigationState.setActiveTab("profile");
+      keyboardShortcutState.openHelp();
+    }
+
     let deviceCleanup: (() => void) | undefined;
     try {
       deviceDetector = getDeviceDetector();
@@ -262,8 +264,6 @@
           <PropTypeTab {settings} onUpdate={handleSettingUpdate} />
         {:else if activeTab === "theme"}
           <ThemeShowroom {settings} onUpdate={handleSettingUpdate} />
-        {:else if activeTab === "keyboard"}
-          <KeyboardShortcutsTab />
         {:else if activeTab === "notifications"}
           <NotificationPreferencesPanel />
         {:else if activeTab === "preferences"}

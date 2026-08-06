@@ -11,13 +11,20 @@
   import AccountRow from "../account/AccountRow.svelte";
   import { inboxState } from "../../../inbox/state/inbox-state.svelte";
   import { authState } from "../../../auth/state/auth-state.svelte";
-  import { supportModalState } from "../../../support/state/support-modal-state.svelte";
+  import { commandPaletteState } from "../../../keyboard/state/command-palette-state.svelte";
+  import { keyboardShortcutState } from "../../../keyboard/state/keyboard-shortcut-state.svelte";
 
   // Inbox is a member-only surface (unfinished, and not relevant to guests).
   // Anonymous guests are authenticated but not full accounts — gate on this.
   const isFullAccount = $derived(authState.isFullAccount);
 
-  let { isCollapsed, onSettingsClick, isInSettings = false, onAccountClick, accountSectionElement = $bindable(null) } = $props<{
+  let {
+    isCollapsed,
+    onSettingsClick,
+    isInSettings = false,
+    onAccountClick,
+    accountSectionElement = $bindable(null),
+  } = $props<{
     isCollapsed: boolean;
     onSettingsClick?: () => void;
     isInSettings?: boolean;
@@ -38,11 +45,21 @@
   );
 
   // Voice control is opt-in via Settings > Preferences
-  const voiceControlOptIn = $derived(getSettings()?.voiceControlEnabled === true);
-  const voiceSupported = $derived(voiceControlOptIn && voiceControlState.supported);
+  const voiceControlOptIn = $derived(
+    getSettings()?.voiceControlEnabled === true
+  );
+  const voiceSupported = $derived(
+    voiceControlOptIn && voiceControlState.supported
+  );
   const voiceEnabled = $derived(voiceControlState.enabled);
   const inCommandMode = $derived(voiceControlState.commandMode);
   const hasVoiceError = $derived(voiceControlState.detectorState === "error");
+  const commandPaletteKey = $derived(
+    keyboardShortcutState.isMac ? "Meta+K" : "Ctrl+K"
+  );
+  const commandPaletteAriaKey = $derived(
+    keyboardShortcutState.isMac ? "Meta+K" : "Control+K"
+  );
 
   function handleMicClick() {
     try {
@@ -97,6 +114,18 @@
 
     onSettingsClick?.();
   }
+
+  function handleOpenCommandPalette() {
+    try {
+      const hapticService = getHapticFeedback();
+      hapticService?.trigger("selection");
+    } catch {
+      // Ignore if not available
+    }
+
+    keyboardShortcutState.openCommandPalette();
+    commandPaletteState.open();
+  }
 </script>
 
 <!-- Footer with settings, account (hidden when in settings mode) -->
@@ -108,6 +137,7 @@
   {#if !isInSettings}
     <!-- Settings Button -->
     <button
+      type="button"
       class="footer-button settings-button"
       class:collapsed={isCollapsed}
       onclick={handleSettingsClick}
@@ -121,19 +151,21 @@
       {/if}
     </button>
 
-    <!-- Support button (opens the in-app support modal — no longer a new tab) -->
+    <!-- Jump to is a quiet footer utility, not a selected navigation row. -->
     <button
       type="button"
-      class="footer-button support-button"
+      class="footer-button command-button"
       class:collapsed={isCollapsed}
-      onclick={() => supportModalState.show()}
-      aria-label="Support The Kinetic Alphabet"
+      onclick={handleOpenCommandPalette}
+      aria-label="Open Jump to"
+      aria-keyshortcuts={commandPaletteAriaKey}
+      title="Jump to · {commandPaletteKey}"
     >
       <div class="button-icon">
-        <i class="fas fa-heart" aria-hidden="true"></i>
+        <i class="fas fa-search" aria-hidden="true"></i>
       </div>
       {#if !isCollapsed}
-        <span class="button-label">Support</span>
+        <span class="button-label">Jump to</span>
       {/if}
     </button>
 
@@ -144,7 +176,9 @@
         class:collapsed={isCollapsed}
         class:has-unread={hasUnread}
         onclick={handleInboxClick}
-        aria-label="Open inbox{hasUnread ? `, ${inboxState.totalUnreadCount} unread` : ''}"
+        aria-label="Open inbox{hasUnread
+          ? `, ${inboxState.totalUnreadCount} unread`
+          : ''}"
       >
         <div class="button-icon inbox-icon-wrapper">
           <i class="fas fa-inbox" aria-hidden="true"></i>
@@ -204,7 +238,11 @@
       class:command-mode={inCommandMode}
       class:error={hasVoiceError}
       onclick={handleMicClick}
-      aria-label={!voiceEnabled ? "Enable voice control" : inCommandMode ? "Stop voice command mode" : "Start voice command mode"}
+      aria-label={!voiceEnabled
+        ? "Enable voice control"
+        : inCommandMode
+          ? "Stop voice command mode"
+          : "Start voice command mode"}
     >
       <i class="fas fa-microphone" aria-hidden="true"></i>
       {#if inCommandMode}
@@ -282,15 +320,21 @@
     color: var(--theme-text);
   }
 
-  /* Support is a link styled as a footer button */
-  .support-button {
-    text-decoration: none;
+  .command-button:hover {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 7%,
+      var(--theme-card-hover-bg)
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent) 32%,
+      var(--theme-stroke-strong)
+    );
   }
-  .support-button .button-icon i {
-    color: #f472b6; /* warm pink heart */
-  }
-  .support-button:hover {
-    border-color: color-mix(in srgb, #f472b6 40%, var(--theme-stroke));
+
+  .command-button:hover .button-icon i {
+    color: var(--theme-accent-strong, var(--theme-accent));
   }
 
   .footer-button.collapsed {
@@ -347,7 +391,8 @@
     font-weight: 500;
 
     /* Delayed fade-in animation when sidebar expands (Google Calendar-style) */
-    animation: label-fade-in var(--duration-normal) ease-out var(--duration-fast) both;
+    animation: label-fade-in var(--duration-normal) ease-out
+      var(--duration-fast) both;
   }
 
   @keyframes label-fade-in {
@@ -365,12 +410,24 @@
      PROP SWITCHER BUTTON
      ============================================================================ */
   .prop-button {
-    border-color: color-mix(in srgb, var(--theme-accent, #818cf8) 25%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #818cf8) 25%,
+      transparent
+    );
   }
 
   .prop-button:hover {
-    background: color-mix(in srgb, var(--theme-accent, #818cf8) 10%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #818cf8) 40%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #818cf8) 10%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #818cf8) 40%,
+      transparent
+    );
   }
 
   .prop-button .button-icon {
@@ -392,11 +449,19 @@
   }
 
   .inbox-button.has-unread {
-    border-color: color-mix(in srgb, var(--semantic-info, #3b82f6) 30%, var(--theme-stroke));
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-info, #3b82f6) 30%,
+      var(--theme-stroke)
+    );
   }
 
   .inbox-button.has-unread:hover {
-    border-color: color-mix(in srgb, var(--semantic-info, #3b82f6) 50%, var(--theme-stroke));
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-info, #3b82f6) 50%,
+      var(--theme-stroke)
+    );
   }
 
   .unread-badge {
@@ -414,7 +479,8 @@
     line-height: 18px;
     text-align: center;
     pointer-events: none;
-    animation: badgePop var(--duration-emphasis, 300ms) cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: badgePop var(--duration-emphasis, 300ms)
+      cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .unread-label-badge {
@@ -432,9 +498,15 @@
   }
 
   @keyframes badgePop {
-    0% { transform: scale(0); }
-    50% { transform: scale(1.2); }
-    100% { transform: scale(1); }
+    0% {
+      transform: scale(0);
+    }
+    50% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
 
   /* ============================================================================
@@ -496,32 +568,53 @@
 
   /* Command mode: glowing green */
   .mic-button.command-mode {
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 15%,
+      transparent
+    );
     color: var(--semantic-success, #22c55e);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
+    box-shadow: 0 0 12px
+      color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent);
   }
 
   .mic-button.command-mode:hover {
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 25%, transparent);
-    box-shadow: 0 0 16px color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 25%,
+      transparent
+    );
+    box-shadow: 0 0 16px
+      color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
   }
 
   .mic-glow-ring {
     position: absolute;
     inset: -3px;
     border-radius: 50%;
-    border: 2px solid color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
+    border: 2px solid
+      color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
     animation: mic-glow-pulse 2s ease-out infinite;
   }
 
   @keyframes mic-glow-pulse {
-    0% { transform: scale(1); opacity: 0.6; }
-    100% { transform: scale(1.5); opacity: 0; }
+    0% {
+      transform: scale(1);
+      opacity: 0.6;
+    }
+    100% {
+      transform: scale(1.5);
+      opacity: 0;
+    }
   }
 
   /* Error state */
   .mic-button.error {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 10%,
+      transparent
+    );
     color: color-mix(in srgb, var(--semantic-error, #ef4444) 60%, transparent);
   }
 

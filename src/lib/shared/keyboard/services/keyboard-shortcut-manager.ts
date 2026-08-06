@@ -83,6 +83,7 @@ export class KeyboardShortcutManager {
       label: options.label,
       key: options.key,
       modifiers: options.modifiers ?? [],
+      alternateBindings: options.alternateBindings ?? [],
       context: options.context ?? "global",
       scope: options.scope ?? "action",
       priority: options.priority ?? "medium",
@@ -170,6 +171,7 @@ export class KeyboardShortcutManager {
       }),
       key: shortcut.key,
       modifiers: shortcut.modifiers,
+      alternateBindings: shortcut.alternateBindings,
       context: shortcut.context,
       scope: shortcut.scope,
       priority: shortcut.priority,
@@ -194,6 +196,7 @@ export class KeyboardShortcutManager {
       }),
       key: shortcut.key,
       modifiers: shortcut.modifiers,
+      alternateBindings: shortcut.alternateBindings,
       context: shortcut.context,
       scope: shortcut.scope,
       priority: shortcut.priority,
@@ -227,9 +230,15 @@ export class KeyboardShortcutManager {
     // Skip WASD shortcuts when an arrow is selected for adjustment
     // The ArrowAdjustmentControls component handles WASD in this case
     const key = event.key.toLowerCase();
+    const isSaveCombo =
+      key === "s" &&
+      (event.ctrlKey || event.metaKey) &&
+      !event.shiftKey &&
+      !event.altKey;
     if (
       selectedArrowState.selectedArrow &&
-      ["w", "a", "s", "d"].includes(key)
+      ["w", "a", "s", "d"].includes(key) &&
+      !isSaveCombo
     ) {
       // Arrow is selected, let ArrowAdjustmentPanel handle WASD
       return;

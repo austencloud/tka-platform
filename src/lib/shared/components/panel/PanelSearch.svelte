@@ -5,6 +5,8 @@
    * Provides consistent search input styling.
    */
 
+  import type { Snippet } from "svelte";
+
   interface Props {
     /** Current search value */
     value: string;
@@ -14,6 +16,25 @@
     oninput?: (value: string) => void;
     /** Optional max width */
     maxWidth?: string;
+    /** Accessible name for the search field */
+    ariaLabel?: string;
+    /** Focus the field when its containing surface opens */
+    autofocus?: boolean;
+    /** Exposes the input for focus management */
+    inputRef?: HTMLInputElement | null;
+    /** Form-field name used by browser accessibility tooling */
+    name?: string;
+    /** Stable id for labels and composite-widget relationships */
+    id?: string;
+    /** Keyboard handler for search-driven surfaces such as command menus */
+    onkeydown?: (event: KeyboardEvent) => void;
+    /** Optional content shown inside the field at the trailing edge */
+    trailing?: Snippet;
+    /** Composite widget semantics when search controls a result list */
+    role?: "searchbox" | "combobox";
+    ariaControls?: string;
+    ariaExpanded?: boolean;
+    ariaActiveDescendant?: string;
   }
 
   let {
@@ -21,6 +42,17 @@
     placeholder = "Search...",
     oninput,
     maxWidth = "600px",
+    ariaLabel = "Search",
+    autofocus = false,
+    inputRef = $bindable(null),
+    name = "panel-search",
+    id,
+    onkeydown,
+    trailing,
+    role = "searchbox",
+    ariaControls,
+    ariaExpanded,
+    ariaActiveDescendant,
   }: Props = $props();
 
   function handleInput(event: Event) {
@@ -33,13 +65,31 @@
 <div class="panel-search" style:max-width={maxWidth}>
   <i class="fas fa-search panel-search__icon" aria-hidden="true"></i>
   <input
+    bind:this={inputRef}
+    {id}
+    {name}
     type="text"
     class="panel-search__input"
+    class:panel-search__input--trailing={trailing !== undefined}
     {placeholder}
     {value}
     oninput={handleInput}
-    aria-label="Search"
+    {onkeydown}
+    aria-label={ariaLabel}
+    aria-controls={ariaControls}
+    aria-expanded={ariaExpanded}
+    aria-activedescendant={ariaActiveDescendant}
+    aria-autocomplete={role === "combobox" ? "list" : undefined}
+    {role}
+    {autofocus}
+    autocomplete="off"
+    spellcheck="false"
   />
+  {#if trailing}
+    <div class="panel-search__trailing" aria-hidden="true">
+      {@render trailing()}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -85,6 +135,20 @@
     color: var(--theme-text-dim);
   }
 
+  .panel-search__input--trailing {
+    padding-right: 6rem;
+  }
+
+  .panel-search__trailing {
+    position: absolute;
+    right: 32px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+  }
+
   @media (max-width: 640px) {
     .panel-search {
       padding: 0 16px;
@@ -92,6 +156,10 @@
 
     .panel-search__icon {
       left: 28px;
+    }
+
+    .panel-search__trailing {
+      right: 28px;
     }
   }
 

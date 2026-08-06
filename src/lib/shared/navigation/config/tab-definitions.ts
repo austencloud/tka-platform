@@ -445,9 +445,9 @@ export const SETTINGS_TABS: Section[] = [
     id: "profile",
     labelKey: "tab_settings_profile",
     descKey: "tab_desc_settings_profile",
-    label: "Profile",
+    label: "Account",
     icon: '<i class="fas fa-user" aria-hidden="true"></i>',
-    description: "Account and profile settings",
+    description: "Identity, sign-in, and security",
     color: "#6366f1",
     gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
   },
@@ -480,16 +480,6 @@ export const SETTINGS_TABS: Section[] = [
     description: "Theme and visual settings",
     color: "#06b6d4",
     gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
-  },
-  {
-    id: "keyboard",
-    labelKey: "tab_settings_keyboard",
-    descKey: "tab_desc_settings_keyboard",
-    label: "Keyboard",
-    icon: '<i class="fas fa-keyboard" aria-hidden="true"></i>',
-    description: "Keyboard shortcuts and customization",
-    color: "#8b5cf6",
-    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
   {
     id: "notifications",
@@ -749,49 +739,6 @@ export const RETRO_TABS: Section[] = [
   },
 ];
 
-export const ARCHIVE_TABS: Section[] = [
-  {
-    id: "play",
-    labelKey: "tab_museum_play",
-    descKey: "tab_desc_museum_play",
-    label: "Play",
-    icon: '<i class="fas fa-gamepad" aria-hidden="true"></i>',
-    description: "Walk the museum in top-down or 3D",
-    color: "#f59e0b",
-    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
-  },
-  {
-    id: "edit",
-    labelKey: "tab_museum_edit",
-    descKey: "tab_desc_museum_edit",
-    label: "Edit",
-    icon: '<i class="fas fa-pen" aria-hidden="true"></i>',
-    description: "Edit the museum floor plan",
-    color: "#a78bfa",
-    gradient: "linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)",
-  },
-  {
-    id: "showroom",
-    labelKey: "tab_museum_showroom",
-    descKey: "tab_desc_museum_showroom",
-    label: "Showroom",
-    icon: '<i class="fas fa-cubes" aria-hidden="true"></i>',
-    description: "Preview all available 3D props and textures",
-    color: "#06b6d4",
-    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
-  },
-  {
-    id: "3p-test",
-    labelKey: "tab_museum_3p_test",
-    descKey: "tab_desc_museum_3p_test",
-    label: "3P Test",
-    icon: '<i class="fas fa-flask" aria-hidden="true"></i>',
-    description: "Test third-person character controller",
-    color: "#10b981",
-    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
-  },
-];
-
 // Lab tabs configuration (admin-only, temporary experiments)
 // All experimental modules consolidated here instead of cluttering the sidebar
 export const LEVELS_TABS: Section[] = [
@@ -864,7 +811,8 @@ export const HAND_PATH_TABS: Section[] = [
     descKey: "tab_desc_hand_paths_hand_path_builder",
     label: "Hand Path Builder",
     icon: '<i class="fas fa-draw-polygon" aria-hidden="true"></i>',
-    description: "Tap grid locations to draw spatial hand paths and save them to the library",
+    description:
+      "Tap grid locations to draw spatial hand paths and save them to the library",
     color: "#06b6d4",
     gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
   },
@@ -890,7 +838,8 @@ export const PLAYGROUND_TABS: Section[] = [
     descKey: "tab_desc_playground_tunnels",
     label: "Tunnels",
     icon: '<i class="fas fa-fan" aria-hidden="true"></i>',
-    description: "Collect and replay the kaleidoscope tunnels you save from the viewer",
+    description:
+      "Collect and replay the kaleidoscope tunnels you save from the viewer",
     color: "#22d3ee",
     gradient: "linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%)",
   },
@@ -914,7 +863,8 @@ export const VIDEO_TABS: Section[] = [
     descKey: "tab_desc_video_video_trails",
     label: "Video Trails",
     icon: '<i class="fas fa-magic-wand-sparkles" aria-hidden="true"></i>',
-    description: "Detect prop endpoints in video, apply fire/LED/trail effects, build training data",
+    description:
+      "Detect prop endpoints in video, apply fire/LED/trail effects, build training data",
     color: "#f43f5e",
     gradient: "linear-gradient(135deg, #fb7185 0%, #f43f5e 100%)",
   },
@@ -924,7 +874,8 @@ export const VIDEO_TABS: Section[] = [
     descKey: "tab_desc_video_video_lab",
     label: "Video Lab",
     icon: '<i class="fas fa-film" aria-hidden="true"></i>',
-    description: "Beat mapping, BPM-synced playback, and video-to-notation alignment",
+    description:
+      "Beat mapping, BPM-synced playback, and video-to-notation alignment",
     color: "#8b5cf6",
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
@@ -944,7 +895,8 @@ export const VIDEO_TABS: Section[] = [
     descKey: "tab_desc_video_led_notation",
     label: "LED Notation",
     icon: '<i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>',
-    description: "Track LED staff ends in video and transcribe the flow into a TKA sequence",
+    description:
+      "Track LED staff ends in video and transcribe the flow into a TKA sequence",
     color: "#22d3ee",
     gradient: "linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%)",
   },
@@ -1102,7 +1054,8 @@ export const LAB_TABS: Section[] = [
     descKey: "tab_desc_lab_phrase_effort",
     label: "Phrase Effort",
     icon: '<i class="fas fa-music" aria-hidden="true"></i>',
-    description: "Paint effort qualities across beats to shape how a sequence moves",
+    description:
+      "Paint effort qualities across beats to shape how a sequence moves",
     color: "#a78bfa",
     gradient: "linear-gradient(135deg, #c084fc 0%, #a78bfa 100%)",
   },
@@ -1239,7 +1192,8 @@ export const LAB_TABS: Section[] = [
     descKey: "tab_desc_lab_fan_relations",
     label: "Fan Relations",
     icon: '<i class="fas fa-fan" style="color: #22d3ee;" aria-hidden="true"></i>',
-    description: "Compare fan placement, orientation, face plane, and viewpoint",
+    description:
+      "Compare fan placement, orientation, face plane, and viewpoint",
     color: "#22d3ee",
     gradient: "linear-gradient(135deg, #67e8f9 0%, #0891b2 100%)",
   },
@@ -1261,7 +1215,8 @@ export const LAB_TABS: Section[] = [
     descKey: "tab_desc_lab_viewer_3d",
     label: "3D Viewer",
     icon: '<i class="fas fa-cube" style="color: #6a6aff;" aria-hidden="true"></i>',
-    description: "Mobile 3D scene controls: performer + scene menus, playback, immersive",
+    description:
+      "Mobile 3D scene controls: performer + scene menus, playback, immersive",
     color: "#6a6aff",
     gradient: "linear-gradient(135deg, #8888ff 0%, #6a6aff 100%)",
   },

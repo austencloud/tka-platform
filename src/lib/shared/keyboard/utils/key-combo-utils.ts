@@ -96,6 +96,7 @@ function normalizeKeyName(key: string): string {
     home: "Home",
     end: "End",
     insert: "Insert",
+    "?": "/",
   };
 
   // Function keys

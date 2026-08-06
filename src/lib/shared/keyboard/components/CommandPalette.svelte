@@ -1,71 +1,94 @@
 <script lang="ts">
-  /**
-   * Command Palette Component
-   *
-   * Searchable command palette (Cmd+K) for quick navigation and actions.
-   *
-   * Domain: Keyboard Shortcuts - UI
-   */
-
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
+  import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
+  import PanelSearch from "$lib/shared/components/panel/PanelSearch.svelte";
+  import KeyboardKeyDisplay from "./settings/KeyboardKeyDisplay.svelte";
   import { getCommandPalette } from "../get-command-palette";
-  import type { CommandPalette } from '$lib/shared/keyboard/services/command-palette'
+  import type { CommandPalette } from "$lib/shared/keyboard/services/command-palette";
   import { commandPaletteState } from "../state/command-palette-state.svelte";
   import { keyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
   import type { CommandPaletteItem } from "../domain/types/keyboard-types";
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { buildNavigationDestinationId } from "$lib/shared/navigation/domain/navigation-visit";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 
-  // Service
-  let paletteService: CommandPalette | null = null;
-
-  // Local state
+  let paletteService = $state<CommandPalette | null>(null);
   let inputElement = $state<HTMLInputElement | null>(null);
-  let _dialogElement = $state<HTMLDialogElement | null>(null);
 
-  onMount(async () => {
+  const commandPaletteKey = $derived(
+    keyboardShortcutState.isMac ? "Meta+K" : "Ctrl+K"
+  );
+  const selectedOptionId = $derived(
+    commandPaletteState.selectedItem
+      ? optionId(commandPaletteState.selectedItem.id)
+      : undefined
+  );
+  const currentDestinationId = $derived(
+    buildNavigationDestinationId(
+      navigationState.currentModule,
+      navigationState.activeTab || undefined
+    )
+  );
+  const resultsLabel = $derived(
+    commandPaletteState.query ? "Search results" : "Jump to suggestions"
+  );
+
+  onMount(() => {
     try {
       paletteService = getCommandPalette();
     } catch (error) {
       console.error("Failed to resolve command palette:", error);
+      const failure = error instanceof Error ? error : new Error(String(error));
+      getErrorHandler().showUserError({
+        message: "Jump to could not open.",
+        technicalDetails: failure.message,
+        error: failure,
+        context: { module: "keyboard", tab: "jump-to", action: "initialize" },
+      });
     }
   });
 
-  // Watch for open state changes
-  $effect(() => {
-    if (commandPaletteState.isOpen) {
-      // Focus the input when opened
-      const focusTimer = setTimeout(() => {
-        inputElement?.focus();
-      }, 50);
-
-      // Load initial results (recent commands)
-      performSearch("");
-
-      return () => clearTimeout(focusTimer);
-    }
-    return undefined;
-  });
-
-  // Perform search when query changes
   $effect(() => {
     const query = commandPaletteState.query;
-    if (commandPaletteState.isOpen) {
-      performSearch(query);
+    const service = paletteService;
+
+    if (commandPaletteState.isOpen && service) {
+      performSearch(service, query, currentDestinationId);
     }
   });
 
-  function performSearch(query: string) {
-    if (!paletteService) return;
-
+  function performSearch(
+    service: CommandPalette,
+    query: string,
+    activeDestinationId: string
+  ) {
     commandPaletteState.setLoading(true);
 
     try {
-      const results = paletteService.search(query);
-      commandPaletteState.setResults(results);
+      commandPaletteState.setResults(
+        service.search(query, activeDestinationId)
+      );
     } catch (error) {
-      console.error("Search failed:", error);
+      console.error("Command search failed:", error);
       commandPaletteState.setResults([]);
     } finally {
       commandPaletteState.setLoading(false);
+    }
+  }
+
+  async function moveSelection(direction: "next" | "previous") {
+    if (direction === "next") {
+      commandPaletteState.selectNext();
+    } else {
+      commandPaletteState.selectPrevious();
+    }
+
+    await tick();
+    if (selectedOptionId) {
+      document.getElementById(selectedOptionId)?.scrollIntoView({
+        block: "nearest",
+      });
     }
   }
 
@@ -73,15 +96,15 @@
     switch (event.key) {
       case "ArrowDown":
         event.preventDefault();
-        commandPaletteState.selectNext();
+        void moveSelection("next");
         break;
       case "ArrowUp":
         event.preventDefault();
-        commandPaletteState.selectPrevious();
+        void moveSelection("previous");
         break;
       case "Enter":
         event.preventDefault();
-        executeSelected();
+        void executeSelected();
         break;
       case "Escape":
         event.preventDefault();
@@ -94,7 +117,7 @@
     commandPaletteState.selectByIndex(
       commandPaletteState.results.indexOf(item)
     );
-    executeSelected();
+    void executeItem(item);
   }
 
   function handleItemHover(item: CommandPaletteItem) {
@@ -104,16 +127,24 @@
   }
 
   async function executeSelected() {
+    const selected = commandPaletteState.selectedItem;
+    if (selected) await executeItem(selected);
+  }
+
+  async function executeItem(item: CommandPaletteItem) {
     if (!paletteService) return;
 
-    const selected = commandPaletteState.selectedItem;
-    if (!selected) return;
-
     try {
-      await paletteService.executeCommand(selected.id);
+      await paletteService.executeCommand(item.id);
       close();
     } catch (error) {
-      console.error("Failed to execute command:", error);
+      const failure = error instanceof Error ? error : new Error(String(error));
+      getErrorHandler().showUserError({
+        message: "That destination could not be opened.",
+        technicalDetails: failure.message,
+        error: failure,
+        context: { module: "keyboard", tab: "jump-to", action: item.id },
+      });
     }
   }
 
@@ -122,276 +153,648 @@
     keyboardShortcutState.closeCommandPalette();
   }
 
-  // Group results by category
-  let groupedResults = $derived.by(() => {
+  function focusSearch() {
+    inputElement?.focus();
+  }
+
+  function optionId(commandId: string): string {
+    return `command-option-${commandId.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+  }
+
+  function categoryId(category: string): string {
+    return `command-category-${category.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  }
+
+  const groupedResults = $derived.by(() => {
     const groups = new Map<string, CommandPaletteItem[]>();
 
     for (const item of commandPaletteState.results) {
       const category = item.category || "Other";
-      if (!groups.has(category)) {
-        groups.set(category, []);
-      }
-      groups.get(category)!.push(item);
+      const group = groups.get(category) ?? [];
+      group.push(item);
+      groups.set(category, group);
     }
 
     return Array.from(groups.entries());
   });
 </script>
 
-{#if commandPaletteState.isOpen}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="command-palette-overlay" onclick={close} aria-hidden="true">
-    <div
-      class="command-palette"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
-      role="dialog"
-      aria-label="Command Palette"
-      tabindex="-1"
-    >
-      <!-- Search Input -->
-      <div class="command-palette__search">
-        <i class="fa fa-search command-palette__search-icon" aria-hidden="true"
-        ></i>
-        <input
-          bind:this={inputElement}
-          type="text"
-          placeholder="Type a command or search..."
-          value={commandPaletteState.query}
-          oninput={(e) => commandPaletteState.setQuery(e.currentTarget.value)}
-          onkeydown={handleKeydown}
-          class="command-palette__input"
-        />
-        <span class="command-palette__hint">
-          {keyboardShortcutState.isMac ? "⌘K" : "Ctrl+K"}
-        </span>
-      </div>
+<BaseModal
+  open={commandPaletteState.isOpen}
+  size="lg"
+  position="center"
+  animation="pop"
+  class="command-palette-modal"
+  labelledBy="command-palette-title"
+  onclose={close}
+  onopened={focusSearch}
+>
+  {#snippet header()}
+    <ModalHeader
+      id="command-palette-title"
+      title="Jump to"
+      subtitle="Open a page, tab, or action."
+      icon="fa-magnifying-glass"
+      onClose={close}
+    />
+  {/snippet}
 
-      <!-- Results -->
-      <div class="command-palette__results">
-        {#if commandPaletteState.isLoading}
-          <div class="command-palette__loading">Searching...</div>
-        {:else if commandPaletteState.results.length === 0}
-          <div class="command-palette__empty">
+  {#snippet footer()}
+    <div class="command-palette__footer" aria-hidden="true">
+      <span><kbd>↑</kbd><kbd>↓</kbd> Move</span>
+      <span><kbd>Enter</kbd> Open</span>
+      <span><kbd>Esc</kbd> Close</span>
+    </div>
+  {/snippet}
+
+  <div class="command-palette">
+    <div class="command-search">
+      <PanelSearch
+        value={commandPaletteState.query}
+        oninput={(query) => commandPaletteState.setQuery(query)}
+        onkeydown={handleKeydown}
+        bind:inputRef={inputElement}
+        id="command-palette-search"
+        name="command-palette-search"
+        maxWidth="none"
+        placeholder="Search pages, tabs, and actions"
+        ariaLabel="Search pages, tabs, and actions"
+        role="combobox"
+        ariaControls="command-palette-results"
+        ariaExpanded={commandPaletteState.isOpen}
+        ariaActiveDescendant={selectedOptionId}
+      >
+        {#snippet trailing()}
+          <KeyboardKeyDisplay keyCombo={commandPaletteKey} size="small" />
+        {/snippet}
+      </PanelSearch>
+    </div>
+
+    <div
+      id="command-palette-results"
+      class="command-palette__results"
+      role="listbox"
+      aria-label={resultsLabel}
+    >
+      {#if commandPaletteState.isLoading}
+        <div class="command-palette__status">Searching…</div>
+      {:else if commandPaletteState.results.length === 0}
+        <div class="command-palette__empty">
+          <span class="command-palette__empty-icon">
+            <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+          </span>
+          <strong>
             {commandPaletteState.query
-              ? "No commands found"
-              : "Start typing to search commands"}
-          </div>
-        {:else}
-          {#each groupedResults as [category, items]}
-            <div class="command-palette__category">
-              <div class="command-palette__category-label">{category}</div>
-              {#each items as item, _}
+              ? `No matches for “${commandPaletteState.query}”.`
+              : "Search the app"}
+          </strong>
+          {#if commandPaletteState.query}
+            <span>Try a page, tab, or action.</span>
+          {:else}
+            <span>Type a page or tab name to jump straight there.</span>
+          {/if}
+        </div>
+      {:else}
+        {#each groupedResults as [category, items] (category)}
+          <section
+            class="command-palette__category"
+            role="group"
+            aria-labelledby={categoryId(category)}
+          >
+            <h3
+              id={categoryId(category)}
+              class="command-palette__category-label"
+            >
+              {category}
+            </h3>
+            <div class="command-palette__category-items">
+              {#each items as item (item.id)}
                 {@const globalIndex = commandPaletteState.results.indexOf(item)}
                 {@const isSelected =
                   globalIndex === commandPaletteState.selectedIndex}
                 <button
+                  id={optionId(item.id)}
                   class="command-palette__item"
                   class:command-palette__item--selected={isSelected}
                   onclick={() => handleItemClick(item)}
                   onmouseenter={() => handleItemHover(item)}
                   type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  tabindex="-1"
                 >
-                  {#if item.icon}
-                    <i
-                      class="fa {item.icon} command-palette__item-icon"
-                      aria-hidden="true"
+                  <span class="command-palette__item-icon">
+                    <i class="fas {item.icon || 'fa-bolt'}" aria-hidden="true"
                     ></i>
-                  {/if}
-                  <div class="command-palette__item-content">
-                    <div class="command-palette__item-label">{item.label}</div>
+                  </span>
+                  <span class="command-palette__item-content">
+                    <strong class="command-palette__item-label">
+                      {#if item.parentLabel}
+                        <span class="command-palette__item-parent">
+                          {item.parentLabel}
+                        </span>
+                        <i
+                          class="fas fa-chevron-right command-palette__item-separator"
+                          aria-hidden="true"
+                        ></i>
+                      {/if}
+                      <span>{item.label}</span>
+                    </strong>
                     {#if item.description}
-                      <div class="command-palette__item-description">
+                      <span class="command-palette__item-description">
                         {item.description}
-                      </div>
+                      </span>
                     {/if}
-                  </div>
+                  </span>
                   {#if item.shortcut}
-                    <kbd class="command-palette__item-shortcut">
-                      {item.shortcut}
-                    </kbd>
+                    <span class="command-palette__item-shortcut">
+                      <KeyboardKeyDisplay
+                        keyCombo={item.shortcut}
+                        size="small"
+                      />
+                    </span>
                   {/if}
+                  <i
+                    class="fas fa-arrow-right command-palette__item-arrow"
+                    aria-hidden="true"
+                  ></i>
                 </button>
               {/each}
             </div>
-          {/each}
-        {/if}
-      </div>
-
-      <!-- Footer -->
-      <div class="command-palette__footer">
-        <span>
-          <kbd>↑</kbd>
-          <kbd>↓</kbd>
-          to navigate
-        </span>
-        <span>
-          <kbd>↵</kbd>
-          to select
-        </span>
-        <span>
-          <kbd>Esc</kbd>
-          to close
-        </span>
-      </div>
+          </section>
+        {/each}
+      {/if}
     </div>
   </div>
-{/if}
+</BaseModal>
 
 <style>
-  .command-palette-overlay {
-    position: fixed;
-    inset: 0;
-    background: color-mix(in srgb, var(--theme-shadow) 60%, transparent);
-    z-index: var(--z-tooltip);
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding-top: 15vh;
+  :global(dialog.command-palette-modal[data-size="lg"]) {
+    width: min(50rem, calc(100vw - 2rem));
+    height: min(68dvh, 42rem);
+    max-height: calc(100dvh - 2rem);
+    border: 1px solid var(--theme-stroke-strong);
+    background: var(--theme-panel-bg);
   }
 
-  .command-palette {
-    width: 90%;
-    max-width: 640px;
-    background: var(--theme-panel-bg);
-    border: 1px solid var(--theme-stroke, var(--theme-stroke-strong));
-    border-radius: 12px;
-    box-shadow: 0 20px 60px var(--theme-shadow);
-    display: flex;
-    flex-direction: column;
-    max-height: 70vh;
+  :global(dialog.command-palette-modal .modal-body) {
     overflow: hidden;
   }
 
-  .command-palette__search {
+  @media (min-width: 1680px) {
+    :global(dialog.command-palette-modal[data-size="lg"]) {
+      width: min(54rem, calc(100vw - 3rem));
+      height: min(66dvh, 46rem);
+    }
+  }
+
+  .command-palette {
+    height: 100%;
+    min-height: 0;
     display: flex;
-    align-items: center;
-    padding: 1rem;
-    border-bottom: 1px solid var(--theme-stroke, var(--theme-stroke-strong));
-    gap: 0.75rem;
+    flex-direction: column;
+    background: var(--theme-panel-bg);
   }
 
-  .command-palette__search-icon {
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: 1.125rem;
+  .command-search {
+    flex-shrink: 0;
+    padding: 1rem 0.25rem 0.75rem;
   }
 
-  .command-palette__input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--theme-text);
-    font-size: 1.125rem;
-    padding: 0;
+  .command-search :global(.panel-search) {
+    padding: 0 16px;
   }
 
-  .command-palette__input::placeholder {
-    color: var(--theme-text-dim);
+  .command-search :global(.panel-search__input) {
+    min-height: 56px;
+    padding-left: 46px;
+    background: var(--theme-card-bg);
+    border-color: var(--theme-stroke-strong);
+    border-radius: 14px;
+    font-size: var(--font-size-base);
   }
 
-  .command-palette__hint {
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: 0.875rem;
-    padding: 0.25rem 0.5rem;
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    border-radius: 4px;
+  .command-search :global(.panel-search__input:focus) {
+    background: var(--theme-card-hover-bg);
+    border-color: color-mix(in srgb, var(--theme-accent) 68%, white);
+    box-shadow: 0 0 0 4px
+      color-mix(in srgb, var(--theme-accent) 16%, transparent);
+  }
+
+  .command-search :global(.panel-search__icon) {
+    left: 34px;
+    color: var(--theme-accent-strong, var(--theme-accent));
+    font-size: var(--font-size-base);
+  }
+
+  .command-search :global(.panel-search__trailing) {
+    right: 30px;
   }
 
   .command-palette__results {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
-    padding: 0.5rem;
+    overscroll-behavior: contain;
+    padding: 0 0.75rem 1rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
-  .command-palette__category {
-    margin-bottom: 1rem;
+  .command-palette__category + .command-palette__category {
+    margin-top: 16px;
   }
 
   .command-palette__category-label {
-    font-size: 0.75rem;
-    font-weight: 600;
+    margin: 0;
+    padding: 8px 10px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 1.2;
     text-transform: uppercase;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    padding: 0.5rem 0.75rem;
-    letter-spacing: 0.5px;
+  }
+
+  .command-palette__category-items {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
 
   .command-palette__item {
     width: 100%;
+    min-height: 62px;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem;
+    gap: 12px;
+    padding: 9px 12px;
     background: transparent;
-    border: none;
-    border-radius: 6px;
+    border: 1px solid transparent;
+    border-radius: 12px;
     color: var(--theme-text);
     cursor: pointer;
-    transition: background var(--duration-instant);
     text-align: left;
+    transition:
+      background var(--duration-fast) ease,
+      border-color var(--duration-fast) ease;
   }
 
   .command-palette__item:hover,
   .command-palette__item--selected {
-    background: var(--theme-card-bg);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 10%,
+      var(--theme-card-bg)
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent) 34%,
+      var(--theme-stroke)
+    );
   }
 
   .command-palette__item-icon {
-    font-size: 1.125rem;
-    width: 1.5rem;
-    text-align: center;
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 11px;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    color: var(--theme-accent-strong, var(--theme-accent));
+    font-size: var(--font-size-base);
+  }
+
+  .command-palette__item--selected .command-palette__item-icon {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 18%,
+      var(--theme-card-bg)
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent) 42%,
+      var(--theme-stroke)
+    );
   }
 
   .command-palette__item-content {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
   }
 
   .command-palette__item-label {
-    font-weight: 500;
-    margin-bottom: 0.125rem;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    overflow: hidden;
+    color: var(--theme-text);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .command-palette__item-description {
-    font-size: 0.875rem;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    white-space: nowrap;
+  .command-palette__item-parent {
     overflow: hidden;
+    flex-shrink: 1;
+    color: var(--theme-text-dim);
+    font-weight: 550;
     text-overflow: ellipsis;
   }
 
-  .command-palette__item-shortcut {
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-    background: var(--theme-card-hover-bg, var(--theme-card-hover-bg));
-    border-radius: 4px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    font-family: monospace;
+  .command-palette__item-separator {
+    flex-shrink: 0;
+    color: var(--theme-text-dim);
+    font-size: 0.625rem;
+    opacity: 0.72;
   }
 
-  .command-palette__loading,
+  .command-palette__item-label > span:last-child {
+    overflow: hidden;
+    min-width: 0;
+    flex-shrink: 1;
+    text-overflow: ellipsis;
+  }
+
+  .command-palette__item-description {
+    overflow: hidden;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .command-palette__item-shortcut {
+    min-width: 4.5rem;
+    display: flex;
+    justify-content: flex-end;
+    flex-shrink: 0;
+  }
+
+  .command-palette__item-arrow {
+    width: 18px;
+    flex-shrink: 0;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    opacity: 0;
+    transition: opacity var(--duration-fast) ease;
+  }
+
+  .command-palette__item:hover .command-palette__item-arrow,
+  .command-palette__item--selected .command-palette__item-arrow {
+    opacity: 1;
+  }
+
+  .command-palette__status,
   .command-palette__empty {
+    min-height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-min, 14px);
     text-align: center;
-    padding: 2rem;
-    color: var(--theme-text-dim, var(--theme-text-dim));
+  }
+
+  .command-palette__empty {
+    flex-direction: column;
+    gap: 10px;
+    padding: 24px;
+  }
+
+  .command-palette__empty-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 14px;
+    background: var(--theme-card-bg);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-lg);
+  }
+
+  .command-palette__empty strong {
+    color: var(--theme-text);
+    font-size: var(--font-size-base);
   }
 
   .command-palette__footer {
+    min-height: 50px;
     display: flex;
-    gap: 1.5rem;
-    padding: 0.75rem 1rem;
-    border-top: 1px solid var(--theme-stroke, var(--theme-stroke-strong));
-    font-size: 0.75rem;
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    align-items: center;
+    justify-content: flex-end;
+    gap: 20px;
+    padding: 8px 18px;
+    border-top: 1px solid var(--theme-stroke);
+    background: color-mix(
+      in srgb,
+      var(--theme-card-bg) 72%,
+      var(--theme-panel-bg)
+    );
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .command-palette__footer span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
   }
 
   .command-palette__footer kbd {
-    padding: 0.125rem 0.375rem;
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    border-radius: 3px;
-    font-family: monospace;
+    min-width: 24px;
+    min-height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+    border: 1px solid var(--theme-stroke-strong);
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+    font-family: ui-monospace, "SFMono-Regular", "Cascadia Code", monospace;
     font-size: var(--font-size-compact, 12px);
+  }
+
+  @media (min-width: 2600px) {
+    :global(dialog.command-palette-modal[data-size="lg"]) {
+      width: min(72rem, calc(100vw - 4rem));
+      height: min(64dvh, 64rem);
+    }
+
+    :global(dialog.command-palette-modal .header-title) {
+      font-size: 1.75rem;
+    }
+
+    :global(dialog.command-palette-modal .header-subtitle),
+    .command-search :global(.panel-search__input),
+    .command-palette__item-label {
+      font-size: 1.25rem;
+    }
+
+    .command-palette__item-description {
+      font-size: 1rem;
+    }
+
+    .command-search :global(.panel-search__input) {
+      min-height: 4.25rem;
+    }
+
+    .command-palette__category-label,
+    .command-palette__footer,
+    .command-palette__footer kbd {
+      font-size: 1rem;
+    }
+
+    .command-palette__item {
+      min-height: 5.125rem;
+      padding: 0.875rem 1.125rem;
+    }
+
+    .command-palette__item-icon {
+      width: 3.25rem;
+      height: 3.25rem;
+      font-size: 1.25rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .command-palette__footer {
+      display: none;
+    }
+
+    .command-search {
+      padding: 12px 0 8px;
+    }
+
+    .command-search :global(.panel-search) {
+      padding: 0 12px;
+    }
+
+    .command-search :global(.panel-search__icon) {
+      left: 28px;
+    }
+
+    .command-search :global(.panel-search__trailing) {
+      display: none;
+    }
+
+    .command-search :global(.panel-search__input) {
+      min-height: 52px;
+      padding-right: 12px;
+    }
+
+    .command-palette__results {
+      padding-inline: 8px;
+      padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .command-palette__item {
+      min-height: 64px;
+      gap: 10px;
+      padding: 10px;
+    }
+
+    .command-palette__item-description {
+      display: -webkit-box;
+      overflow: hidden;
+      white-space: normal;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .command-palette__item-shortcut,
+    .command-palette__item-arrow {
+      display: none;
+    }
+  }
+
+  @media (max-width: 520px) {
+    :global(dialog.command-palette-modal[data-size="lg"]) {
+      width: 100%;
+      height: var(--viewport-height, 100dvh);
+      max-height: var(--viewport-height, 100dvh);
+      margin: 0;
+      border: none;
+      border-radius: 0;
+    }
+
+    :global(dialog.command-palette-modal .close-btn) {
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      min-height: 44px;
+    }
+  }
+
+  @media (max-height: 520px) and (min-width: 521px) {
+    :global(dialog.command-palette-modal[data-size="lg"]) {
+      width: min(46rem, calc(100vw - 1rem));
+      height: calc(100dvh - 1rem);
+      max-height: calc(100dvh - 1rem);
+      margin: auto;
+    }
+
+    :global(dialog.command-palette-modal .modal-header) {
+      gap: 10px;
+      padding: 8px 14px;
+    }
+
+    :global(dialog.command-palette-modal .header-icon) {
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      min-height: 36px;
+    }
+
+    :global(dialog.command-palette-modal .close-btn) {
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    :global(dialog.command-palette-modal .header-subtitle),
+    .command-palette__footer {
+      display: none;
+    }
+
+    .command-search {
+      padding-block: 8px 4px;
+    }
+
+    .command-search :global(.panel-search__input) {
+      min-height: 44px;
+    }
+
+    .command-palette__item {
+      min-height: 48px;
+      padding-block: 5px;
+    }
+
+    .command-palette__item-icon {
+      width: 34px;
+      height: 34px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .command-palette__item,
+    .command-palette__item-arrow {
+      transition: none;
+    }
   }
 </style>

@@ -1,231 +1,216 @@
-<!--
-  ShortcutRow.svelte
-
-  Compact row for displaying a single keyboard shortcut.
-  Click to edit. Minimal visual noise, maximum scannability.
--->
 <script lang="ts">
   import KeyboardKeyDisplay from "./KeyboardKeyDisplay.svelte";
   import type { ShortcutWithBinding } from "../../services/types";
 
   let {
     item,
+    selected = false,
     onEdit = () => {},
     onReset = () => {},
   }: {
     item: ShortcutWithBinding;
+    selected?: boolean;
     onEdit?: (item: ShortcutWithBinding) => void;
     onReset?: (item: ShortcutWithBinding) => void;
   } = $props();
-
-  function handleClick() {
-    onEdit(item);
-  }
-
-  function handleReset(e: MouseEvent) {
-    e.stopPropagation();
-    onReset(item);
-  }
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      onEdit(item);
-    }
-  }
 </script>
 
 <div
   class="shortcut-row"
+  class:selected
   class:customized={item.isCustomized}
   class:disabled={item.isDisabled}
-  onclick={handleClick}
-  onkeydown={handleKeydown}
-  role="button"
-  tabindex="0"
-  title={item.shortcut.description || item.shortcut.label}
-  aria-label="Edit shortcut for {item.shortcut.label}"
 >
-  <!-- Key combo - left aligned, fixed width -->
-  <div class="key-section" class:muted={item.isDisabled}>
-    <KeyboardKeyDisplay parsed={item.effectiveBinding} />
-  </div>
+  <button
+    type="button"
+    class="edit-button"
+    onclick={() => onEdit(item)}
+    aria-current={selected ? "true" : undefined}
+  >
+    <span class="sr-only">Edit</span>
+    <span class="shortcut-copy">
+      <span class="label">{item.shortcut.label}</span>
+      {#if item.shortcut.description}
+        <span class="description">{item.shortcut.description}</span>
+      {/if}
+    </span>
 
-  <!-- Label - grows to fill space -->
-  <span class="label">{item.shortcut.label}</span>
+    <span class="binding" class:muted={item.isDisabled}>
+      <KeyboardKeyDisplay parsed={item.effectiveBinding} size="small" />
+    </span>
 
-  <!-- Status indicators -->
-  <div class="status">
-    {#if item.isCustomized}
-      <button
-        type="button"
-        class="reset-btn"
-        onclick={handleReset}
-        title="Reset to default"
-        aria-label="Reset to default"
-      >
-        <i class="fas fa-undo" aria-hidden="true"></i>
-      </button>
-    {/if}
-    {#if item.isDisabled}
-      <span class="off-badge">Off</span>
-    {/if}
-  </div>
+    <span class="status" aria-hidden="true">
+      {#if item.isDisabled}
+        <span class="status-badge">Off</span>
+      {:else if item.isCustomized}
+        <span class="status-badge">Changed</span>
+      {/if}
+      <i class="fas fa-chevron-right"></i>
+    </span>
+  </button>
 
-  <!-- Edit indicator -->
-  <i class="fas fa-pen edit-icon" aria-hidden="true"></i>
+  {#if item.isCustomized}
+    <button
+      type="button"
+      class="reset-button"
+      onclick={() => onReset(item)}
+      aria-label="Reset {item.shortcut.label} to its default"
+      title="Reset to default"
+    >
+      <i class="fas fa-undo" aria-hidden="true"></i>
+    </button>
+  {/if}
 </div>
 
 <style>
-  /* Row with subtle background to group key + label */
   .shortcut-row {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    width: 100%;
-    height: 44px;
-    padding: 0 14px;
-    background: var(
-      --theme-card-bg,
-      color-mix(in srgb, var(--theme-text, #fff) 3%, transparent)
-    );
-    border: none;
-    border-radius: 8px;
-    border-left: 3px solid transparent;
-    cursor: pointer;
-    text-align: left;
-    transition: all var(--duration-instant) ease;
-    -webkit-tap-highlight-color: transparent;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
+    min-height: 3.5rem;
+    border: 1px solid transparent;
+    border-radius: 0.75rem;
+    background: var(--theme-card-bg);
+    overflow: hidden;
+    transition:
+      background var(--duration-fast) ease,
+      border-color var(--duration-fast) ease;
   }
 
-  .shortcut-row:hover {
-    background: var(
-      --theme-card-hover-bg,
-      color-mix(in srgb, var(--theme-text, #fff) 7%, transparent)
+  .shortcut-row:hover,
+  .shortcut-row.selected {
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent) 45%,
+      var(--theme-stroke)
     );
-    border-left-color: var(--theme-accent, var(--theme-accent-strong));
-  }
-
-  .shortcut-row:active {
-    background: color-mix(in srgb, var(--theme-text, #fff) 9%, transparent);
+    background: var(--theme-card-hover-bg);
   }
 
   .shortcut-row.customized {
-    border-left-color: var(--theme-accent, var(--theme-accent-strong));
+    border-left: 3px solid var(--theme-accent);
   }
 
-  .shortcut-row.customized .label {
-    color: var(--theme-accent);
+  .shortcut-row.disabled .shortcut-copy,
+  .binding.muted {
+    opacity: 0.52;
   }
 
-  .shortcut-row.disabled {
-    opacity: 0.45;
+  .edit-button {
+    display: grid;
+    grid-template-columns: minmax(8rem, 1fr) auto auto;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+    min-height: var(--min-touch-target);
+    padding: 0.55rem 0.75rem;
+    border: 0;
+    background: transparent;
+    color: var(--theme-text);
+    text-align: left;
+    cursor: pointer;
   }
 
-  /* Key section - fixed width for alignment */
-  .key-section {
-    flex-shrink: 0;
-    min-width: 90px;
+  .shortcut-copy {
     display: flex;
-    justify-content: flex-start;
+    flex-direction: column;
+    min-width: 0;
+    gap: 0.1rem;
   }
 
-  .key-section.muted {
-    opacity: 0.4;
-    filter: grayscale(1);
-  }
-
-  /* Label - connected to key */
-  .label {
-    flex: 1;
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-    color: var(--theme-text, var(--theme-text));
-    white-space: nowrap;
+  .label,
+  .description {
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  /* Status section */
+  .label {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+  }
+
+  .description {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+  }
+
+  .binding,
   .status {
     display: flex;
     align-items: center;
-    gap: 6px;
     flex-shrink: 0;
   }
 
-  .reset-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
+  .status {
+    gap: 0.45rem;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+  }
+
+  .status-badge {
+    padding: 0.15rem 0.4rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--theme-accent) 14%, transparent);
+    color: var(--theme-accent);
+    font-weight: 650;
+  }
+
+  .reset-button {
+    width: var(--min-touch-target);
+    min-height: var(--min-touch-target);
     padding: 0;
+    border: 0;
+    border-left: 1px solid var(--theme-stroke);
     background: transparent;
-    border: none;
-    border-radius: 4px;
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
     cursor: pointer;
-    opacity: 0;
-    transition: all var(--duration-instant) ease;
   }
 
-  .shortcut-row:hover .reset-btn {
-    opacity: 1;
+  .reset-button:hover {
+    background: color-mix(in srgb, var(--semantic-error) 12%, transparent);
+    color: var(--semantic-error);
   }
 
-  .reset-btn:hover {
-    background: color-mix(
-      in srgb,
-      var(--semantic-error, var(--semantic-error)) 15%,
-      transparent
-    );
-    color: var(--semantic-error, var(--semantic-error));
-  }
-
-  .off-badge {
-    font-size: var(--font-size-compact);
-    font-weight: 600;
-    text-transform: uppercase;
-    padding: 2px 6px;
-    border-radius: 3px;
-    background: var(--theme-card-bg);
-    color: var(--theme-text-dim, var(--theme-text-dim));
-  }
-
-  /* Edit icon - subtle, shows on hover */
-  .edit-icon {
-    flex-shrink: 0;
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim);
-    opacity: 0;
-    transition: opacity var(--duration-instant) ease;
-  }
-
-  .shortcut-row:hover .edit-icon {
-    opacity: 1;
-  }
-
-  /* Focus state */
-  .shortcut-row:focus-visible {
+  .edit-button:focus-visible,
+  .reset-button:focus-visible {
     outline: 2px solid var(--theme-accent);
-    outline-offset: 1px;
+    outline-offset: -3px;
   }
 
-  /* Touch devices */
-  @media (hover: none) {
-    .edit-icon,
-    .reset-btn {
-      opacity: 0.6;
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @container (max-width: 36rem) {
+    .edit-button {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .description,
+    .status-badge {
+      display: none;
+    }
+
+    .status {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
     }
   }
 
-  /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .shortcut-row,
-    .reset-btn,
-    .edit-icon {
+    .shortcut-row {
       transition: none;
     }
   }

@@ -1,105 +1,169 @@
 /**
- * Register Command Palette Commands
+ * Registers Jump to destinations and actions.
  *
- * Registers all commands available in the command palette.
- *
- * Side-effectful registration/orchestration — lives in registration/, not utils/.
- *
- * Domain: Keyboard Shortcuts - Command Registration
+ * Side-effectful registration/orchestration lives here rather than in a
+ * catalog or utility module.
  */
 
-import type { CommandPalette } from '$lib/shared/keyboard/services/command-palette'
+import type { CommandPalette } from "$lib/shared/keyboard/services/command-palette";
 import type { createKeyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
 import {
-  handleModuleChange,
+  getAccessibleSectionsForModule,
   getModuleDefinitions,
+  handleModuleChange,
+  handleSectionChange,
 } from "../../navigation-coordinator/navigation-coordinator.svelte";
-import { navigationState } from "../../navigation/state/navigation-state.svelte";
-import type { ModuleId } from "../../navigation/domain/types";
+import { buildNavigationDestinationId } from "../../navigation/domain/navigation-visit";
 import { authState } from "../../auth/state/auth-state.svelte";
+import {
+  activateEditHistoryShortcutTarget,
+  canActivateEditHistoryShortcutTarget,
+  getEditHistoryShortcutActionLabel,
+  type EditHistoryAction,
+} from "../domain/edit-history-shortcut-target";
+
+function getCommandIcon(icon: string | undefined): string {
+  return icon?.match(/\bfa-[a-z0-9-]+\b/i)?.[0] ?? "fa-circle";
+}
 
 export function registerCommandPaletteCommands(
   service: CommandPalette,
   state: ReturnType<typeof createKeyboardShortcutState>
 ) {
-  // Get accessible modules
-  const moduleDefinitions = getModuleDefinitions();
-  const isAdmin = authState.isAdmin;
+  // Auth and feature flags settle after the app shell mounts. Re-registration
+  // replaces the optimistic list so Jump to never exposes a stale destination.
+  for (const command of service.getAllCommands()) {
+    if (
+      command.id.startsWith("navigate.") ||
+      command.id === "settings.toggle" ||
+      command.id === "help.shortcuts"
+    ) {
+      service.unregisterCommand(command.id);
+    }
+  }
 
-  // Filter modules to only show accessible ones
-  const accessibleModules = moduleDefinitions.filter((module) => {
-    // Filter out admin module for non-admin users
-    if (module.id === "admin" && !isAdmin) {
-      return false;
-    }
-    // Filter out modules that aren't implemented yet
-    const notImplemented = ["choreo"];
-    if (notImplemented.includes(module.id)) {
-      return false;
-    }
-    return true;
+  const accessibleModules = getModuleDefinitions().filter((module) => {
+    return module.id !== "admin" || authState.isAdmin;
   });
 
-  // ==================== Navigation Commands ====================
+  // Modules with tabs contribute their actual destinations. A module-only row
+  // would land on remembered state without telling the user where they are
+  // going, which is the same ambiguity as clicking the module in the sidebar.
+  for (const module of accessibleModules) {
+    const sections = getAccessibleSectionsForModule(module.id).filter(
+      (section) => !section.disabled
+    );
 
-  // Dynamically register commands for accessible modules
-  accessibleModules.forEach((module, index) => {
-    const shortcutNumber = index + 1;
-    const shortcutKey = shortcutNumber <= 5 ? `${shortcutNumber}` : undefined;
+    if (sections.length > 0) {
+      for (const section of sections) {
+        service.registerCommand({
+          id: `navigate.${module.id}.${section.id}`,
+          label: section.label,
+          parentLabel: module.label,
+          description: section.description,
+          icon: getCommandIcon(section.icon),
+          category: "Places",
+          kind: "destination",
+          destinationId: buildNavigationDestinationId(module.id, section.id),
+          keywords: [
+            module.label.toLowerCase(),
+            module.id,
+            section.label.toLowerCase(),
+            section.id,
+          ],
+          available: true,
+          action: async () => {
+            if (module.id !== state.context) {
+              await handleModuleChange(module.id, section.id);
+            } else {
+              handleSectionChange(section.id);
+            }
+            state.closeCommandPalette();
+          },
+        });
+      }
+      continue;
+    }
 
     service.registerCommand({
       id: `navigate.${module.id}`,
       label: module.label,
-      description: module.description || `Navigate to ${module.label}`,
-      icon: module.icon || "fa-circle",
-      category: "Navigation",
-      ...(shortcutKey !== undefined && { shortcut: shortcutKey }),
+      description: module.description,
+      icon: getCommandIcon(module.icon),
+      category: "Places",
+      kind: "destination",
+      destinationId: buildNavigationDestinationId(module.id),
       keywords: [module.label.toLowerCase(), module.id],
       available: true,
       action: async () => {
-        await handleModuleChange(module.id);
+        if (module.linkHref) {
+          window.location.assign(module.linkHref);
+        } else {
+          await handleModuleChange(module.id);
+        }
         state.closeCommandPalette();
       },
     });
-  });
+  }
 
-  // ==================== Settings Commands ====================
-
-  service.registerCommand({
-    id: "settings.toggle",
-    label: "Toggle Settings",
-    description: "Open settings or return to previous module",
-    icon: "fa-cog",
-    category: "Settings",
-    shortcut: state.isMac ? "⌘," : "Ctrl+,",
-    keywords: ["settings", "preferences", "config", "options"],
-    available: true,
-    action: async () => {
-      // Toggle behavior: if in settings, go back to previous module
-      if (navigationState.currentModule === "settings") {
-        const previousModule = navigationState.previousModule || "create";
-        await handleModuleChange(previousModule as ModuleId);
-      } else {
-        await handleModuleChange("settings" as ModuleId);
-      }
-      state.closeCommandPalette();
-    },
-  });
-
-  // ==================== Help Commands ====================
+  registerEditHistoryCommand(service, state, "undo");
+  registerEditHistoryCommand(service, state, "redo");
 
   service.registerCommand({
     id: "help.shortcuts",
-    label: "Show Keyboard Shortcuts",
-    description: "View all available shortcuts",
+    label: "Keyboard shortcuts",
+    description: "Review or change keyboard shortcuts",
     icon: "fa-keyboard",
     category: "Help",
-    shortcut: state.isMac ? "⌘/" : "Ctrl+/",
+    kind: "action",
+    shortcut: "Shift+/",
     keywords: ["help", "shortcuts", "keyboard", "hotkeys"],
     available: true,
     action: () => {
       state.openHelp();
       state.closeCommandPalette();
+    },
+  });
+}
+
+function registerEditHistoryCommand(
+  service: CommandPalette,
+  state: ReturnType<typeof createKeyboardShortcutState>,
+  action: EditHistoryAction
+): void {
+  const baseLabel = action === "undo" ? "Undo" : "Redo";
+  service.registerCommand({
+    id: `action.${action}`,
+    label: baseLabel,
+    description: `${baseLabel} the latest change in this editor`,
+    icon: action === "undo" ? "fa-rotate-left" : "fa-rotate-right",
+    category: "Actions",
+    kind: "action",
+    shortcut:
+      action === "undo"
+        ? state.isMac
+          ? "Cmd+Z"
+          : "Ctrl+Z"
+        : state.isMac
+          ? "Cmd+Shift+Z"
+          : "Ctrl+Shift+Z",
+    keywords: [action, "change", "edit", "history"],
+    available: () =>
+      canActivateEditHistoryShortcutTarget(action, document, {
+        fromCommandPalette: true,
+      }),
+    resolvePresentation: () => {
+      const actionLabel = getEditHistoryShortcutActionLabel(action, document, {
+        fromCommandPalette: true,
+      });
+      return {
+        label: actionLabel ? `${baseLabel}: ${actionLabel}` : baseLabel,
+      };
+    },
+    action: () => {
+      activateEditHistoryShortcutTarget(action, document, {
+        fromCommandPalette: true,
+      });
     },
   });
 }

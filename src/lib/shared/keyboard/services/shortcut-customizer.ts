@@ -35,18 +35,80 @@ export class ShortcutCustomizer {
     shortcutId: string,
     keyCombo: string
   ): ShortcutConflict | null {
-    // Check for conflicts first
-    const conflict = this.detectConflict(shortcutId, keyCombo);
-    if (conflict?.severity === "error") {
-      return conflict;
+    const conflicts = this.detectConflicts(shortcutId, keyCombo);
+    const blockingConflict = conflicts.find(
+      ({ severity }) => severity === "error"
+    );
+    if (blockingConflict) {
+      return blockingConflict;
     }
 
-    // Set the custom binding
-    const binding: CustomBinding = { keyCombo };
-    keyboardShortcutState.setCustomBinding(shortcutId, binding);
+    keyboardShortcutState.updateCustomBindings({
+      [shortcutId]: this.bindingUpdateForCombo(shortcutId, keyCombo),
+    });
 
-    // Return warning-level conflict if exists
-    return conflict;
+    return conflicts[0] ?? null;
+  }
+
+  replaceBinding(shortcutId: string, keyCombo: string): ShortcutConflict[] {
+    const conflicts = this.detectConflicts(shortcutId, keyCombo).filter(
+      ({ severity }) => severity === "error"
+    );
+    const updates: Record<string, CustomBinding | null> = {
+      [shortcutId]: this.bindingUpdateForCombo(shortcutId, keyCombo),
+    };
+
+    for (const conflict of conflicts) {
+      const effectiveBinding = this.getEffectiveBinding(
+        conflict.existingShortcutId
+      );
+      if (!effectiveBinding) continue;
+
+      updates[conflict.existingShortcutId] = {
+        keyCombo: buildKeyCombo(
+          effectiveBinding.key,
+          effectiveBinding.modifiers
+        ),
+        disabled: true,
+      };
+    }
+
+    keyboardShortcutState.updateCustomBindings(updates);
+    return conflicts;
+  }
+
+  swapBindings(
+    shortcutId: string,
+    otherShortcutId: string
+  ): ShortcutConflict | null {
+    const currentBinding = this.getEffectiveBinding(shortcutId);
+    const otherBinding = this.getEffectiveBinding(otherShortcutId);
+    if (!currentBinding || !otherBinding) return null;
+
+    const currentCombo = buildKeyCombo(
+      currentBinding.key,
+      currentBinding.modifiers
+    );
+    const otherCombo = buildKeyCombo(otherBinding.key, otherBinding.modifiers);
+    const blockingConflict = this.detectConflicts(
+      otherShortcutId,
+      currentCombo
+    ).find(
+      (conflict) =>
+        conflict.severity === "error" &&
+        conflict.existingShortcutId !== shortcutId
+    );
+
+    if (blockingConflict) return blockingConflict;
+
+    keyboardShortcutState.updateCustomBindings({
+      [shortcutId]: this.bindingUpdateForCombo(shortcutId, otherCombo),
+      [otherShortcutId]: this.bindingUpdateForCombo(
+        otherShortcutId,
+        currentCombo
+      ),
+    });
+    return null;
   }
 
   removeCustomBinding(shortcutId: string): void {
@@ -83,9 +145,8 @@ export class ShortcutCustomizer {
   enableShortcut(shortcutId: string): void {
     const existing = this.getCustomBinding(shortcutId);
     if (existing) {
-      keyboardShortcutState.setCustomBinding(shortcutId, {
-        ...existing,
-        disabled: false,
+      keyboardShortcutState.updateCustomBindings({
+        [shortcutId]: this.bindingUpdateForCombo(shortcutId, existing.keyCombo),
       });
     }
   }
@@ -98,12 +159,17 @@ export class ShortcutCustomizer {
     shortcutId: string,
     keyCombo: string
   ): ShortcutConflict | null {
+    return this.detectConflicts(shortcutId, keyCombo)[0] ?? null;
+  }
+
+  detectConflicts(shortcutId: string, keyCombo: string): ShortcutConflict[] {
     const shortcut = this.registry.get(shortcutId);
-    if (!shortcut) return null;
+    if (!shortcut) return [];
 
     const shortcutContexts = Array.isArray(shortcut.context)
       ? shortcut.context
       : [shortcut.context];
+    const conflicts: ShortcutConflict[] = [];
 
     // Get all registered shortcuts
     const allShortcuts = this.registry.getAll();
@@ -116,42 +182,40 @@ export class ShortcutCustomizer {
       if (this.isDisabled(other.id)) continue;
 
       // Get effective binding for the other shortcut
-      const otherBinding = this.getEffectiveBinding(other.id);
-      if (!otherBinding) continue;
-
-      const otherKeyCombo = buildKeyCombo(
-        otherBinding.key,
-        otherBinding.modifiers
+      const matchesOtherBinding = this.getEffectiveBindings(other.id).some(
+        (otherBinding) =>
+          keyComboEquals(
+            keyCombo,
+            buildKeyCombo(otherBinding.key, otherBinding.modifiers)
+          )
       );
 
-      // Check if key combos match
-      if (!keyComboEquals(keyCombo, otherKeyCombo)) continue;
+      if (!matchesOtherBinding) continue;
 
       // Key combos match - check for context conflict
       const otherContexts = Array.isArray(other.context)
         ? other.context
         : [other.context];
 
-      // Find overlapping context
-      for (const context of shortcutContexts) {
-        if (contextsCanConflict(context, otherContexts)) {
-          // Determine severity
-          const hasDirectOverlap = otherContexts.some(
-            (c) => c === context || c === "global" || context === "global"
-          );
+      if (!contextsCanConflict(shortcutContexts, otherContexts)) continue;
 
-          return {
-            existingShortcutId: other.id,
-            existingShortcutLabel: other.label,
-            keyCombo,
-            context: context as ShortcutContext,
-            severity: hasDirectOverlap ? "error" : "warning",
-          };
-        }
-      }
+      const directContext = shortcutContexts.find(
+        (context) =>
+          context === "global" ||
+          otherContexts.includes("global") ||
+          otherContexts.includes(context)
+      );
+
+      conflicts.push({
+        existingShortcutId: other.id,
+        existingShortcutLabel: other.label,
+        keyCombo,
+        context: directContext ?? shortcutContexts[0] ?? "global",
+        severity: directContext ? "error" : "warning",
+      });
     }
 
-    return null;
+    return conflicts;
   }
 
   detectAllConflicts(): ShortcutConflict[] {
@@ -162,10 +226,8 @@ export class ShortcutCustomizer {
     for (const shortcut of allShortcuts) {
       if (this.isDisabled(shortcut.id)) continue;
 
-      const binding = this.getEffectiveBinding(shortcut.id);
-      if (!binding) continue;
-
-      const keyCombo = buildKeyCombo(binding.key, binding.modifiers);
+      const bindings = this.getEffectiveBindings(shortcut.id);
+      if (bindings.length === 0) continue;
       const contexts = Array.isArray(shortcut.context)
         ? shortcut.context
         : [shortcut.context];
@@ -180,15 +242,19 @@ export class ShortcutCustomizer {
         if (checked.has(pairKey)) continue;
         checked.add(pairKey);
 
-        const otherBinding = this.getEffectiveBinding(other.id);
-        if (!otherBinding) continue;
+        const otherBindings = this.getEffectiveBindings(other.id);
+        const conflictingKeyCombo = bindings
+          .map((binding) => buildKeyCombo(binding.key, binding.modifiers))
+          .find((keyCombo) =>
+            otherBindings.some((otherBinding) =>
+              keyComboEquals(
+                keyCombo,
+                buildKeyCombo(otherBinding.key, otherBinding.modifiers)
+              )
+            )
+          );
 
-        const otherKeyCombo = buildKeyCombo(
-          otherBinding.key,
-          otherBinding.modifiers
-        );
-
-        if (!keyComboEquals(keyCombo, otherKeyCombo)) continue;
+        if (!conflictingKeyCombo) continue;
 
         const otherContexts = Array.isArray(other.context)
           ? other.context
@@ -204,7 +270,7 @@ export class ShortcutCustomizer {
             conflicts.push({
               existingShortcutId: other.id,
               existingShortcutLabel: other.label,
-              keyCombo,
+              keyCombo: conflictingKeyCombo,
               context: context as ShortcutContext,
               severity: hasDirectOverlap ? "error" : "warning",
             });
@@ -223,11 +289,29 @@ export class ShortcutCustomizer {
 
   getEffectiveBinding(shortcutId: string): ParsedKeyCombo | null {
     const customBinding = this.getCustomBinding(shortcutId);
-    if (customBinding && !customBinding.disabled) {
+    if (customBinding) {
       return parseKeyCombo(customBinding.keyCombo);
     }
 
     return this.getDefaultBinding(shortcutId);
+  }
+
+  private getEffectiveBindings(shortcutId: string): ParsedKeyCombo[] {
+    const customBinding = this.getCustomBinding(shortcutId);
+    if (customBinding) {
+      const parsed = parseKeyCombo(customBinding.keyCombo);
+      return parsed ? [parsed] : [];
+    }
+
+    const shortcut = this.registry.get(shortcutId);
+    if (!shortcut) return [];
+    return [
+      { key: shortcut.key, modifiers: [...shortcut.modifiers] },
+      ...shortcut.alternateBindings.map((binding) => ({
+        key: binding.key,
+        modifiers: [...binding.modifiers],
+      })),
+    ];
   }
 
   getDefaultBinding(shortcutId: string): ParsedKeyCombo | null {
@@ -290,6 +374,7 @@ export class ShortcutCustomizer {
         description: shortcut.description,
         key: shortcut.key,
         modifiers: shortcut.modifiers,
+        alternateBindings: shortcut.alternateBindings,
         context: shortcut.context,
         scope: shortcut.scope,
         priority: shortcut.priority,
@@ -312,11 +397,31 @@ export class ShortcutCustomizer {
   }
 
   getCustomizedCount(): number {
-    return Object.keys(keyboardShortcutState.settings.customBindings).length;
+    return this.getAllShortcutsWithBindings().filter(
+      ({ isCustomized }) => isCustomized
+    ).length;
   }
 
   getDisabledCount(): number {
     const bindings = keyboardShortcutState.settings.customBindings;
     return Object.values(bindings).filter((b) => b.disabled).length;
+  }
+
+  private bindingUpdateForCombo(
+    shortcutId: string,
+    keyCombo: string
+  ): CustomBinding | null {
+    const defaultBinding = this.getDefaultBinding(shortcutId);
+    if (
+      defaultBinding &&
+      keyComboEquals(
+        keyCombo,
+        buildKeyCombo(defaultBinding.key, defaultBinding.modifiers)
+      )
+    ) {
+      return null;
+    }
+
+    return { keyCombo };
   }
 }

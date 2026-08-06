@@ -9,7 +9,7 @@
  * Domain: Keyboard Shortcuts - Registration
  */
 
-import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/keyboard-shortcut-manager'
+import type { KeyboardShortcutManager } from "$lib/shared/keyboard/services/keyboard-shortcut-manager";
 import type { createKeyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
 import {
   handleModuleChange,
@@ -20,7 +20,6 @@ import { isModuleAccessible } from "../../auth/domain/guest-access-config";
 import { resolveAccessTier } from "../../auth/domain/access-tier";
 import { isPremiumOrAbove } from "../../auth/domain/models/user-role";
 import { quickFeedbackState } from "$lib/shared/feedback/state/quick-feedback-state.svelte";
-import { saveActiveTab } from "../../settings/utils/tab-persistence.svelte";
 import { adminToolbarState } from "../../debug/state/admin-toolbar-state.svelte";
 import { settingsService } from "../../settings/state/settings-state.svelte";
 import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";
@@ -40,6 +39,10 @@ import {
   PROP_TYPE_DISPLAY_REGISTRY,
 } from "../../pictograph/prop/domain/prop-type-display-registry";
 import { filterPremiumCosmeticProps } from "../../subscription/domain/premium-prop-access";
+import { commandPaletteState } from "../state/command-palette-state.svelte";
+import { registerSaveShortcut } from "./register-save-shortcut";
+import { registerEditHistoryShortcuts } from "./register-edit-history-shortcuts";
+import { registerEscapeShortcut } from "./register-escape-shortcut";
 
 export function registerGlobalShortcuts(
   service: KeyboardShortcutManager,
@@ -65,41 +68,38 @@ export function registerGlobalShortcuts(
   // ==================== TIER 1: Essential Global Shortcuts ====================
   // Using single-key shortcuts (Gmail/Notion style) since Chrome blocks most Ctrl combinations
 
-  // ? - Show keyboard shortcuts settings (Gmail standard, opens Settings → Keyboard)
   service.register({
-    id: "global.shortcuts-help",
-    label: "Keyboard shortcuts",
-    description: "Open keyboard shortcuts settings (press ? key)",
-    key: "?",
-    modifiers: [],
-    context: "global",
-    scope: "help",
-    priority: "critical",
-    action: async () => {
-      // Set the active tab to Keyboard before navigating to settings
-      saveActiveTab("Keyboard");
-      await handleModuleChange("settings");
-    },
-  });
-
-  // Escape - Close current modal/panel
-  service.register({
-    id: "global.escape",
-    label: "Close modal",
-    description: "Close the current modal, panel, or dialog",
-    key: "Escape",
-    modifiers: [],
+    id: "global.command-palette",
+    label: "Jump to",
+    description: "Open a page, tab, or action",
+    key: "k",
+    modifiers: state.isMac ? ["meta"] : ["ctrl"],
     context: "global",
     scope: "navigation",
     priority: "critical",
+    forceExecute: true,
     action: () => {
-      // Close command palette if open
-      if (state.showCommandPalette) {
-        state.closeCommandPalette();
-        return;
-      }
+      state.openCommandPalette();
+      commandPaletteState.open();
+    },
+  });
 
-      // Other escape handlers will be context-specific
+  registerSaveShortcut(service, state.isMac);
+  registerEditHistoryShortcuts(service, state.isMac);
+  registerEscapeShortcut(service);
+
+  // ? - Open the canonical shortcut center
+  service.register({
+    id: "global.shortcuts-help",
+    label: "Keyboard shortcuts",
+    description: "Open the keyboard shortcut center",
+    key: "/",
+    modifiers: ["shift"],
+    context: "global",
+    scope: "help",
+    priority: "critical",
+    action: () => {
+      state.openHelp();
     },
   });
 
@@ -179,7 +179,7 @@ export function registerGlobalShortcuts(
         return;
       }
 
-      const beforeValue = darkModeOverride ?? (getSettings().darkMode ?? false);
+      const beforeValue = darkModeOverride ?? getSettings().darkMode ?? false;
       const newValue = !beforeValue;
       darkModeOverride = newValue;
 

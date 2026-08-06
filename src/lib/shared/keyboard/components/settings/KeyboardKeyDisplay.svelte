@@ -39,6 +39,15 @@
       (a, b) => modifierOrder.indexOf(a) - modifierOrder.indexOf(b)
     )
   );
+  const isQuestionMarkCombo = $derived(
+    resolvedParsed.key === "/" &&
+      sortedModifiers.length === 1 &&
+      sortedModifiers[0] === "shift"
+  );
+  const displayModifiers = $derived(
+    isQuestionMarkCombo ? [] : sortedModifiers
+  );
+  const displayKey = $derived(isQuestionMarkCombo ? "?" : resolvedParsed.key);
 
   // Format modifier for display
   function formatModifier(mod: KeyModifier): string {
@@ -82,19 +91,19 @@
   class:small={size === "small"}
   class:large={size === "large"}
 >
-  {#each sortedModifiers as mod, i}
+  {#each displayModifiers as mod, i}
     <kbd class="kbd modifier" class:pressable>{formatModifier(mod)}</kbd>
     {#if !isMac}
       <span class="separator">+</span>
     {/if}
   {/each}
-  {#if resolvedParsed.key}
+  {#if displayKey}
     <kbd
       class="kbd main-key"
-      class:wide={isWideKey(resolvedParsed.key)}
+      class:wide={isWideKey(displayKey)}
       class:pressable
     >
-      {formatKeyForDisplay(resolvedParsed.key, isMac)}
+      {formatKeyForDisplay(displayKey, isMac)}
     </kbd>
   {/if}
 </div>

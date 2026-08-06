@@ -12,6 +12,11 @@
  */
 export type KeyModifier = "ctrl" | "alt" | "shift" | "meta";
 
+export interface ShortcutBinding {
+  key: string;
+  modifiers: KeyModifier[];
+}
+
 /**
  * Keyboard shortcut context - determines when a shortcut is active
  */
@@ -75,6 +80,9 @@ export interface ShortcutDefinition {
   /** Required modifier keys */
   modifiers: KeyModifier[];
 
+  /** Additional default bindings for the same command */
+  alternateBindings?: ShortcutBinding[];
+
   /** Context where this shortcut is active */
   context: ShortcutContext | ShortcutContext[];
 
@@ -128,6 +136,9 @@ export interface ShortcutRegistrationOptions {
   /** Required modifier keys (default: []) */
   modifiers?: KeyModifier[];
 
+  /** Additional default bindings for the same command */
+  alternateBindings?: ShortcutBinding[];
+
   /** Context where this shortcut is active (default: "global") */
   context?: ShortcutContext | ShortcutContext[];
 
@@ -169,6 +180,9 @@ export interface CommandPaletteItem {
   /** Display label */
   label: string;
 
+  /** Parent location shown before a destination label, such as Create */
+  parentLabel?: string;
+
   /** Optional description/subtitle */
   description?: string;
 
@@ -178,6 +192,12 @@ export interface CommandPaletteItem {
   /** Category for grouping */
   category: string;
 
+  /** Destinations move through the app; actions operate on the current app */
+  kind?: "destination" | "action";
+
+  /** Stable key used to match ordinary navigation history */
+  destinationId?: string;
+
   /** Associated shortcut keys (for display) */
   shortcut?: string;
 
@@ -185,7 +205,13 @@ export interface CommandPaletteItem {
   keywords: string[];
 
   /** Whether this command is available in current context */
-  available: boolean;
+  available: boolean | (() => boolean);
+
+  /** Resolve labels that depend on the active editor when the palette opens */
+  resolvePresentation?: () => {
+    label?: string;
+    description?: string;
+  };
 
   /** Action to execute */
   action: () => void | Promise<void>;
@@ -235,6 +261,9 @@ export interface KeyboardEventDetails {
  * Shortcut settings (user preferences)
  */
 export interface ShortcutSettings {
+  /** Persistence schema version */
+  schemaVersion: number;
+
   /** Whether single-key shortcuts are enabled (WCAG 2.1.4) */
   enableSingleKeyShortcuts: boolean;
 
@@ -290,7 +319,7 @@ export interface ShortcutConflict {
 /**
  * Parsed key combo representation
  */
-export interface ParsedKeyCombo {
+export interface ParsedKeyCombo extends ShortcutBinding {
   /** The main key (e.g., "k", "Space", "ArrowLeft") */
   key: string;
 

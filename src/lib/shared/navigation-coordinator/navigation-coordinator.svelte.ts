@@ -32,7 +32,10 @@ import {
   ENABLED_MODULE_DEFINITIONS,
   navigationState,
 } from "../navigation/state/navigation-state.svelte";
-import { switchModule } from "../application/state/ui/module-state";
+import {
+  markNavigationIntent,
+  switchModule,
+} from "../application/state/ui/module-state";
 import { authState } from "../auth/state/auth-state.svelte";
 import { resolveAccessTier } from "../auth/domain/access-tier";
 import { isTabAccessible } from "../auth/domain/guest-access-config";
@@ -46,6 +49,8 @@ import {
   replaceState as svelteKitReplaceState,
 } from "$app/navigation";
 import { parseCreatorPathname } from "../navigation/services/creator-routes";
+import { buildNavigationDestinationId } from "../navigation/domain/navigation-visit";
+import { getNavigationVisitPersister } from "../navigation/get-navigation-visit-persister";
 
 // Session storage key for persisting navigation history across HMR
 const PREVIOUS_MODULE_KEY = "tka-previous-module-before-settings";
@@ -131,9 +136,9 @@ export function currentModuleName() {
 // When a sequence exists (canAccessEditAndExportPanels = true), all sections are shown.
 // When creation method selector is visible, hide all tabs (user must pick via selector).
 // Settings module: AI tab is admin-only.
-export function moduleSections() {
-  const baseSections = currentModuleDefinition()?.sections || [];
-  const module = currentModule();
+export function getAccessibleSectionsForModule(module: ModuleId) {
+  const baseSections =
+    navigationState.getModuleDefinition(module)?.sections || [];
 
   // Guest tab gating: role-based canAccessTab() passes for the guest's implicit
   // "user" role, so the guest-config tier check is required to keep gated tabs
@@ -173,21 +178,12 @@ export function moduleSections() {
     return availableSections;
   }
 
-  // Settings module: Filter tabs based on device and role
+  // Settings module: Filter tabs based on role
   if (module === "settings") {
-    // pointer: coarse = touch-primary device (phones, tablets, foldables)
-    // These devices lack physical keyboards, so keyboard shortcuts are irrelevant
-    const isTouchDevice =
-      typeof window !== "undefined" &&
-      window.matchMedia("(pointer: coarse)").matches;
     return baseSections.filter((section: { id: string }) => {
       // AI tab is admin-only
       if (section.id === "ai") {
         return featureFlagService.isAdmin;
-      }
-      // Keyboard shortcuts tab is irrelevant on touch devices (no physical keyboard)
-      if (section.id === "keyboard" && isTouchDevice) {
-        return false;
       }
       return true;
     });
@@ -233,6 +229,10 @@ export function moduleSections() {
   });
 }
 
+export function moduleSections() {
+  return getAccessibleSectionsForModule(currentModule());
+}
+
 // Module order for determining slide direction
 // Settings is included for transition support but accessed via footer gear icon
 const MODULE_ORDER = [
@@ -259,6 +259,8 @@ export async function handleModuleChange(
     forceViewTransition?: boolean;
   }
 ) {
+  markNavigationIntent();
+
   const currentMod = currentModule();
   const shouldSkipHistory = options?.skipHistory === true;
   const forceTransition = options?.forceViewTransition === true;
@@ -395,7 +397,6 @@ const TAB_ORDERS: Record<string, string[]> = {
     "props",
     "theme",
     "visibility",
-    "keyboard",
   ],
 };
 
@@ -590,17 +591,29 @@ function readHistoryState(raw: unknown): HistoryState | null {
 
 /** Modules whose default tab should not appear in the URL (full-screen experiences) */
 const CLEAN_URL_MODULES: Set<string> = new Set(["museum"]);
+// Keep retired default tab IDs here so an HMR session or old history entry
+// cannot put a removed section back into an otherwise sectionless URL.
+const RETIRED_DEFAULT_SECTIONS: ReadonlyMap<string, string> = new Map([
+  ["museum", "play"],
+]);
 
 function buildPath(moduleId: ModuleId, sectionId?: string) {
   // For clean-URL modules, omit the default section from the path
   if (CLEAN_URL_MODULES.has(moduleId)) {
     const moduleDef = getModuleDefinitions().find((m) => m.id === moduleId);
-    const defaultSection = moduleDef?.sections?.[0]?.id;
+    const defaultSection =
+      moduleDef?.sections?.[0]?.id ?? RETIRED_DEFAULT_SECTIONS.get(moduleId);
     if (!sectionId || sectionId === defaultSection) {
       return `/${moduleId}`;
     }
   }
   return sectionId ? `/${moduleId}/${sectionId}` : `/${moduleId}`;
+}
+
+function recordNavigationVisit(moduleId: ModuleId, sectionId?: string): void {
+  getNavigationVisitPersister().recordVisit(
+    buildNavigationDestinationId(moduleId, sectionId)
+  );
 }
 
 function replaceHistoryState(moduleId: ModuleId, sectionId?: string) {
@@ -618,6 +631,7 @@ function replaceHistoryState(moduleId: ModuleId, sectionId?: string) {
   }
   url.hash = "";
   svelteKitReplaceState(url, { moduleId, sectionId });
+  recordNavigationVisit(moduleId, sectionId);
 }
 
 function pushHistoryState(moduleId: ModuleId, sectionId?: string) {
@@ -626,6 +640,7 @@ function pushHistoryState(moduleId: ModuleId, sectionId?: string) {
   url.pathname = buildPath(moduleId, sectionId);
   url.hash = "";
   svelteKitPushState(url, { moduleId, sectionId });
+  recordNavigationVisit(moduleId, sectionId);
 }
 
 let historyInitialized = false;
@@ -870,5 +885,7 @@ export function initializeNavigationHistory() {
       // Module with no stored tab; clear any lingering tab state
       navigationState.setActiveTab("");
     }
+
+    recordNavigationVisit(targetModule, targetSection);
   });
 }

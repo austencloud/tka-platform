@@ -12,8 +12,9 @@
   import { getKeyboardShortcutManager } from "../get-keyboard-shortcut-manager";
   import { getCommandPalette } from "../get-command-palette";
 
-  import type { KeyboardShortcutManager } from '$lib/shared/keyboard/services/keyboard-shortcut-manager'
-  import type { CommandPalette } from '$lib/shared/keyboard/services/command-palette'
+  import type { KeyboardShortcutManager } from "$lib/shared/keyboard/services/keyboard-shortcut-manager";
+  import type { CommandPalette } from "$lib/shared/keyboard/services/command-palette";
+  import type { ShortcutContext } from "../domain/types/keyboard-types";
   import { keyboardShortcutState } from "../state/keyboard-shortcut-state.svelte";
   import { getActiveModule } from "../../application/state/ui/ui-state.svelte";
   import { registerGlobalShortcuts } from "../registration/register-global-shortcuts";
@@ -23,8 +24,8 @@
   import { registerChoreoShortcuts } from "../registration/register-choreo-shortcuts";
 
   // Services
-  let shortcutManager: KeyboardShortcutManager | null = null;
-  let commandPalette: CommandPalette | null = null;
+  let shortcutManager = $state<KeyboardShortcutManager | null>(null);
+  let commandPalette = $state<CommandPalette | null>(null);
 
   onMount(() => {
     // Initialize services asynchronously
@@ -43,9 +44,6 @@
 
         // Register global shortcuts
         registerGlobalShortcuts(manager, keyboardShortcutState);
-
-        // Register command palette commands
-        registerCommandPaletteCommands(palette, keyboardShortcutState);
 
         // Register CREATE module shortcuts
         registerCreateShortcuts(manager, keyboardShortcutState);
@@ -68,13 +66,24 @@
     };
   });
 
+  // The first app-shell render intentionally exposes only core modules while
+  // auth and feature flags load. Keep the palette in lockstep when that list
+  // expands or changes instead of freezing the optimistic first render.
+  $effect(() => {
+    if (commandPalette) {
+      registerCommandPaletteCommands(commandPalette, keyboardShortcutState);
+    }
+  });
+
   // Sync context with active module
   $effect(() => {
     const module = getActiveModule();
 
     // Only set context if service is initialized and module is available
     if (shortcutManager && module) {
-      shortcutManager.setContext(module as any);
+      const context = module as ShortcutContext;
+      shortcutManager.setContext(context);
+      keyboardShortcutState.setContext(context);
     }
   });
 </script>

@@ -8,11 +8,18 @@
  */
 
 import type { CommandPaletteItem } from "../domain/types/keyboard-types";
+import {
+  selectOftenUsedDestinationIds,
+  selectRecentDestinationIds,
+} from "$lib/shared/navigation/domain/navigation-visit-ranking";
+import type { INavigationVisitPersister } from "$lib/shared/navigation/services/contracts/INavigationVisitPersister";
 
 export class CommandPalette {
   private commands: Map<string, CommandPaletteItem> = new Map();
-  private recentCommandIds: string[] = [];
-  private readonly MAX_RECENT = 10;
+
+  constructor(
+    private readonly visitPersister: INavigationVisitPersister | null = null
+  ) {}
 
   registerCommand(command: CommandPaletteItem): void {
     this.commands.set(command.id, command);
@@ -20,9 +27,6 @@ export class CommandPalette {
 
   unregisterCommand(id: string): void {
     this.commands.delete(id);
-    this.recentCommandIds = this.recentCommandIds.filter(
-      (cmdId) => cmdId !== id
-    );
   }
 
   getAllCommands(): CommandPaletteItem[] {
@@ -30,32 +34,44 @@ export class CommandPalette {
   }
 
   getAvailableCommands(): CommandPaletteItem[] {
-    return this.getAllCommands().filter((cmd) => cmd.available);
+    return this.getAllCommands()
+      .map((command) => this.resolveCommand(command))
+      .filter((command) => command.available === true);
   }
 
-  search(query: string): CommandPaletteItem[] {
+  search(query: string, currentDestinationId?: string): CommandPaletteItem[] {
     if (!query.trim()) {
-      // Return recent commands if no query
-      return this.getRecentCommands();
+      return this.getSuggestions(currentDestinationId);
     }
 
     const normalizedQuery = query.toLowerCase().trim();
     const results: CommandPaletteItem[] = [];
 
-    for (const command of this.commands.values()) {
+    for (const storedCommand of this.commands.values()) {
+      const command = this.resolveCommand(storedCommand);
       // Only search available commands
-      if (!command.available) continue;
+      if (command.available !== true) continue;
 
       // Calculate relevance score
       const score = this.calculateRelevance(command, normalizedQuery);
 
       if (score > 0) {
-        results.push({ ...command, score });
+        results.push({
+          ...command,
+          category: command.kind === "destination" ? "Places" : "Actions",
+          score,
+        });
       }
     }
 
     // Sort by score (highest first)
-    return results.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    return results.sort(
+      (left, right) =>
+        Number(right.kind === "destination") -
+          Number(left.kind === "destination") ||
+        (right.score ?? 0) - (left.score ?? 0) ||
+        left.label.localeCompare(right.label)
+    );
   }
 
   async executeCommand(id: string): Promise<void> {
@@ -65,43 +81,66 @@ export class CommandPalette {
       throw new Error(`Command with ID "${id}" not found`);
     }
 
-    if (!command.available) {
+    if (!this.isAvailable(command)) {
       throw new Error(`Command "${id}" is not available in current context`);
     }
-
-    // Track usage
-    this.trackUsage(id);
 
     // Execute the command
     await command.action();
   }
 
-  getRecentCommands(limit: number = this.MAX_RECENT): CommandPaletteItem[] {
-    const recent: CommandPaletteItem[] = [];
+  private getSuggestions(
+    currentDestinationId: string | undefined
+  ): CommandPaletteItem[] {
+    const available = this.getAvailableCommands();
+    const destinations = available.filter(
+      (command) => command.kind === "destination" && command.destinationId
+    );
+    const byDestinationId = new Map(
+      destinations.map((command) => [command.destinationId!, command])
+    );
+    const availableDestinationIds = new Set(byDestinationId.keys());
+    const visits = this.visitPersister?.getVisits() ?? [];
+    const recentIds = selectRecentDestinationIds(
+      visits,
+      availableDestinationIds,
+      currentDestinationId
+    );
+    const excludedIds = new Set(recentIds);
+    if (currentDestinationId) excludedIds.add(currentDestinationId);
+    const oftenUsedIds = selectOftenUsedDestinationIds(
+      visits,
+      availableDestinationIds,
+      excludedIds
+    );
+    const recent = recentIds.flatMap((id) => {
+      const command = byDestinationId.get(id);
+      return command ? [{ ...command, category: "Recent" }] : [];
+    });
+    const oftenUsed = oftenUsedIds.flatMap((id) => {
+      const command = byDestinationId.get(id);
+      return command ? [{ ...command, category: "Often used" }] : [];
+    });
+    const actions = available
+      .filter((command) => command.kind !== "destination")
+      .slice(0, 3)
+      .map((command) => ({ ...command, category: "Actions here" }));
 
-    for (const id of this.recentCommandIds.slice(0, limit)) {
-      const command = this.commands.get(id);
-      if (command?.available) {
-        recent.push(command);
-      }
-    }
-
-    return recent;
+    return [...recent, ...oftenUsed, ...actions];
   }
 
-  trackUsage(id: string): void {
-    // Remove if already in recent
-    this.recentCommandIds = this.recentCommandIds.filter(
-      (cmdId) => cmdId !== id
-    );
+  private isAvailable(command: CommandPaletteItem): boolean {
+    return typeof command.available === "function"
+      ? command.available()
+      : command.available;
+  }
 
-    // Add to front
-    this.recentCommandIds.unshift(id);
-
-    // Keep only MAX_RECENT items
-    if (this.recentCommandIds.length > this.MAX_RECENT) {
-      this.recentCommandIds = this.recentCommandIds.slice(0, this.MAX_RECENT);
-    }
+  private resolveCommand(command: CommandPaletteItem): CommandPaletteItem {
+    return {
+      ...command,
+      ...command.resolvePresentation?.(),
+      available: this.isAvailable(command),
+    };
   }
 
   /**
@@ -132,6 +171,14 @@ export class CommandPalette {
     // Description contains query
     if (command.description?.toLowerCase().includes(query)) {
       score += 50;
+    }
+
+    if (command.parentLabel?.toLowerCase() === query) {
+      score += 350;
+    } else if (command.parentLabel?.toLowerCase().startsWith(query)) {
+      score += 175;
+    } else if (command.parentLabel?.toLowerCase().includes(query)) {
+      score += 75;
     }
 
     // Keywords match

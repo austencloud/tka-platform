@@ -21,7 +21,6 @@ import { shiftStartPosition } from "$lib/shared/create/services/sequence-transfo
 import { getAllPropTypes } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
 import { filterPremiumCosmeticProps } from "$lib/shared/subscription/domain/premium-prop-access";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
 const debug = createComponentLogger("CreateShortcuts");
 
@@ -98,33 +97,6 @@ export function registerCreateShortcuts(
           // Open the sequence viewer (full-screen with animation + image views)
           panelState.openSequenceViewer();
         }
-      }
-    },
-  });
-
-  // Escape - Close Export panel or Sequence Details Modal
-  service.register({
-    id: "create.close-export-panel",
-    label: "Close Panel",
-    description: "Close the Export panel or Sequence Viewer",
-    key: "Escape",
-    modifiers: [],
-    context: ["create", "export-panel"], // Works in both contexts
-    scope: "animation",
-    priority: "high",
-    condition: () => {
-      // Only when Export panel or Sequence Viewer is open
-      const ref = getCreateModuleRef();
-      return (ref?.panelState.isExportPanelOpen || ref?.panelState.isSequenceViewerOpen) ?? false;
-    },
-    action: () => {
-      const ref = getCreateModuleRef();
-      if (!ref) return;
-
-      if (ref.panelState.isSequenceViewerOpen) {
-        ref.panelState.closeSequenceViewer();
-      } else if (ref.panelState.isExportPanelOpen) {
-        ref.panelState.closeExportPanel();
       }
     },
   });
@@ -275,23 +247,6 @@ export function registerCreateShortcuts(
 
   // ==================== Sequence Management ====================
 
-  // Ctrl+S - Save sequence
-  service.register({
-    id: "create.save-sequence",
-    label: "Save Sequence",
-    description: "Save the current sequence",
-    key: "s",
-    modifiers: ["ctrl"],
-    context: "create",
-    scope: "sequence-management",
-    priority: "high",
-    action: () => {
-      debug.log("Ctrl+S - Save sequence (not yet implemented)");
-      // TODO: Integrate with sequence save functionality
-      // saveCurrentSequence();
-    },
-  });
-
   // + (Plus) - Add beat
   // Note: This adds to the sequence, but we need to figure out which prop color
   service.register({
@@ -310,64 +265,6 @@ export function registerCreateShortcuts(
       debug.log("Plus - Add beat (not yet implemented)");
       // TODO: Determine logic for which prop color to add
       // User mentioned needing to figure out non-confusing pattern
-    },
-  });
-
-  // Ctrl+Z - Undo last action
-  service.register({
-    id: "create.undo",
-    label: "Undo",
-    description: "Undo the last action in the current tab",
-    key: "z",
-    modifiers: ["ctrl"],
-    context: "create",
-    scope: "sequence-management",
-    priority: "high",
-    action: () => {
-      const ref = getCreateModuleRef();
-      if (!ref) {
-        debug.log("Undo - Create module reference not available");
-        return;
-      }
-
-      const { CreateModuleState } = ref;
-      const success = CreateModuleState.undo();
-
-      if (!success) {
-        debug.log("Ctrl+Z - Nothing to undo");
-      } else if (navigationState.activeTab === "construct") {
-        void import("$lib/features/create/construct/services/construct-analytics").then(
-          ({ logConstructImmediateUndo }) => {
-            logConstructImmediateUndo();
-          }
-        );
-      }
-    },
-  });
-
-  // Ctrl+Shift+Z - Redo last undone action
-  service.register({
-    id: "create.redo",
-    label: "Redo",
-    description: "Redo the last undone action in the current tab",
-    key: "z",
-    modifiers: ["ctrl", "shift"],
-    context: "create",
-    scope: "sequence-management",
-    priority: "high",
-    action: () => {
-      const ref = getCreateModuleRef();
-      if (!ref) {
-        debug.log("Redo - Create module reference not available");
-        return;
-      }
-
-      const { CreateModuleState } = ref;
-      const success = CreateModuleState.redo();
-
-      if (!success) {
-        debug.log("Ctrl+Shift+Z - Nothing to redo");
-      }
     },
   });
 

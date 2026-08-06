@@ -9,6 +9,7 @@
 import type {
   KeyModifier,
   ShortcutContext,
+  ShortcutBinding,
   ShortcutDefinition,
   ShortcutPriority,
   ShortcutScope,
@@ -20,6 +21,7 @@ export class Shortcut implements ShortcutDefinition {
   description?: string;
   key: string;
   modifiers: KeyModifier[];
+  alternateBindings: ShortcutBinding[];
   context: ShortcutContext | ShortcutContext[];
   scope: ShortcutScope;
   priority: ShortcutPriority;
@@ -37,6 +39,7 @@ export class Shortcut implements ShortcutDefinition {
     this.label = definition.label;
     this.key = definition.key;
     this.modifiers = definition.modifiers;
+    this.alternateBindings = definition.alternateBindings ?? [];
     this.context = definition.context;
     this.scope = definition.scope;
     this.priority = definition.priority;
@@ -60,18 +63,29 @@ export class Shortcut implements ShortcutDefinition {
   /**
    * Check if this shortcut matches the given keyboard event
    */
-  matches(key: string, modifiers: KeyModifier[], ctrlOrMeta: boolean): boolean {
+  matches(
+    key: string,
+    modifiers: KeyModifier[],
+    _ctrlOrMeta: boolean
+  ): boolean {
     if (!this.enabled) return false;
 
     // Normalize key comparison (case-insensitive for letters)
     const normalizedKey = this.normalizeKey(key);
     const normalizedShortcutKey = this.normalizeKey(this.key);
 
-    if (normalizedKey !== normalizedShortcutKey) return false;
+    if (
+      normalizedKey === normalizedShortcutKey &&
+      this.modifiersMatch(modifiers, this.modifiers)
+    ) {
+      return true;
+    }
 
-    // Check modifiers
-    const requiredModifiers = this.getRequiredModifiers(ctrlOrMeta);
-    return this.modifiersMatch(modifiers, requiredModifiers);
+    return this.alternateBindings.some(
+      (binding) =>
+        normalizedKey === this.normalizeKey(binding.key) &&
+        this.modifiersMatch(modifiers, binding.modifiers)
+    );
   }
 
   /**
@@ -106,6 +120,7 @@ export class Shortcut implements ShortcutDefinition {
     }
 
     if (this.stopPropagation) {
+      event.stopImmediatePropagation();
       event.stopPropagation();
     }
 
@@ -161,19 +176,6 @@ export class Shortcut implements ShortcutDefinition {
   }
 
   /**
-   * Get required modifiers, handling cross-platform Ctrl/Cmd
-   */
-  private getRequiredModifiers(ctrlOrMeta: boolean): KeyModifier[] {
-    return this.modifiers.map((mod) => {
-      // On Mac, treat "ctrl" as "meta" (Cmd key)
-      if (mod === "ctrl" && ctrlOrMeta) {
-        return "meta";
-      }
-      return mod;
-    });
-  }
-
-  /**
    * Check if current modifiers match required modifiers
    */
   private modifiersMatch(
@@ -184,7 +186,11 @@ export class Shortcut implements ShortcutDefinition {
     if (current.length !== required.length) return false;
 
     // All required modifiers must be present
-    return required.every((mod) => current.includes(mod));
+    return required.every((mod) =>
+      mod === "ctrl"
+        ? current.includes("ctrl") || current.includes("meta")
+        : current.includes(mod)
+    );
   }
 
   /**

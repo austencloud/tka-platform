@@ -1,7 +1,6 @@
 <script lang="ts">
-
-import { getLanSyncCoordinator } from "$lib/shared/lan-sync/get-lan-sync-coordinator";
-import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discovery";
+  import { getLanSyncCoordinator } from "$lib/shared/lan-sync/get-lan-sync-coordinator";
+  import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discovery";
   /**
    * MainInterface
    * Domain: Application Layout Shell
@@ -46,9 +45,7 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discove
   // Domain managers
   import ModuleRenderer from "./modules/ModuleRenderer.svelte";
   import PWAInstallationManager from "./pwa/PWAInstallationManager.svelte";
-    import {
-    desktopSidebarState,
-  } from "./layout/desktop-sidebar-state.svelte";
+  import { desktopSidebarState } from "./layout/desktop-sidebar-state.svelte";
   // Keyboard shortcuts
 
   import { deepLinker } from "./navigation/services/deep-linker";
@@ -59,7 +56,7 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discove
   import { hasOpenDrawers } from "./foundation/ui/drawer/drawer-stack";
   import { keyboardShortcutState } from "./keyboard/state/keyboard-shortcut-state.svelte";
   import CommandPalette from "./keyboard/components/CommandPalette.svelte";
-  import ShortcutsHelp from "./keyboard/components/ShortcutsHelp.svelte";
+  import ShortcutCenter from "./keyboard/components/ShortcutCenter.svelte";
   import KeyboardShortcutCoordinator from "./keyboard/coordinators/KeyboardShortcutCoordinator.svelte";
 
   // My Props drawer - rendered here (outside sidebar) because the sidebar's
@@ -89,11 +86,8 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discove
   import NearbySyncBanner from "./lan-sync/components/NearbySyncBanner.svelte";
   import { lanSyncState } from "./lan-sync/state/lan-sync-state.svelte";
 
-
   // Props
-  let {
-    isEntryAnimating = false,
-  } = $props<{
+  let { isEntryAnimating = false } = $props<{
     isEntryAnimating?: boolean;
   }>();
 
@@ -175,7 +169,6 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discove
     browseScrollState.forceShowUI();
   }
 
-
   // 🚀 Prefetch likely next modules when current module changes
   $effect(() => {
     const module = currentModule();
@@ -227,7 +220,10 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discove
       lanSyncState.initialize(lanSyncCoordinator);
       lanSyncState.initializeDiscovery(syncRoomDiscovery);
     } catch (error) {
-      console.warn("MainInterface: Failed to initialize LAN sync services", error);
+      console.warn(
+        "MainInterface: Failed to initialize LAN sync services",
+        error
+      );
     }
 
     return () => {
@@ -316,7 +312,6 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discove
         {isEntryAnimating}
       />
     {/if}
-
   </div>
 
   <!-- Domain Managers -->
@@ -331,7 +326,7 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discove
   <!-- Keyboard Shortcuts -->
   <KeyboardShortcutCoordinator />
   <CommandPalette />
-  <ShortcutsHelp />
+  <ShortcutCenter />
   <!-- Toast Notifications -->
   <ToastContainer />
 </div>
@@ -342,10 +337,11 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discove
   <MyPropsDrawer
     bind:isOpen={myPropsDrawerState.isOpen}
     propState={myPropsDrawerState.propState}
-    onclose={() => { myPropsDrawerState.close(); }}
+    onclose={() => {
+      myPropsDrawerState.close();
+    }}
   />
 {/if}
-
 
 <style>
   /* Skip link - visually hidden until focused (sr-only pattern) */

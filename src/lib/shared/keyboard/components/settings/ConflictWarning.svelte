@@ -1,51 +1,63 @@
-<!--
-  ConflictWarning.svelte
-
-  Displays a warning when a key combo conflicts with an existing shortcut.
-  Shows severity level and conflicting shortcut information.
--->
 <script lang="ts">
   import type { ShortcutConflict } from "../../domain/types/keyboard-types";
 
   let {
-    conflict,
-    onReplace = undefined,
-    onSwap = undefined,
+    conflicts,
+    onReplace,
+    onSwap,
   }: {
-    conflict: ShortcutConflict;
+    conflicts: ShortcutConflict[];
     onReplace?: () => void;
     onSwap?: () => void;
   } = $props();
 
-  const isError = $derived(conflict.severity === "error");
+  const errorConflicts = $derived(
+    conflicts.filter(({ severity }) => severity === "error")
+  );
+  const hasErrors = $derived(errorConflicts.length > 0);
 </script>
 
-<div class="conflict-warning" class:error={isError} class:warning={!isError}>
-  <div class="conflict-icon">
-    <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-  </div>
+<div
+  class="conflict-warning"
+  class:error={hasErrors}
+  class:warning={!hasErrors}
+  role="alert"
+>
+  <i class="fas fa-exclamation-triangle conflict-icon" aria-hidden="true"></i>
   <div class="conflict-info">
-    <span class="conflict-title">
-      {isError ? "Shortcut Conflict" : "Potential Conflict"}
-    </span>
-    <span class="conflict-detail">
-      Already assigned to "{conflict.existingShortcutLabel}"
-      {#if !isError}
-        <span class="context-note">(in different context)</span>
-      {/if}
-    </span>
+    <strong
+      >{hasErrors
+        ? "This shortcut is already in use"
+        : "Context overlap"}</strong
+    >
+    <ul>
+      {#each conflicts as conflict (conflict.existingShortcutId)}
+        <li>
+          {conflict.existingShortcutLabel}
+          {#if conflict.severity === "warning"}
+            <span>can also be active here</span>
+          {/if}
+        </li>
+      {/each}
+    </ul>
+    {#if hasErrors}
+      <p>
+        Replace turns the conflicting shortcut off. Swap exchanges both keys.
+      </p>
+    {/if}
   </div>
-  {#if onReplace || onSwap}
+
+  {#if hasErrors && (onReplace || onSwap)}
     <div class="conflict-actions">
-      {#if onSwap}
-        <button class="conflict-btn swap" onclick={onSwap} type="button">
-          Swap
-        </button>
+      {#if onSwap && errorConflicts.length === 1}
+        <button class="conflict-button" type="button" onclick={onSwap}
+          >Swap</button
+        >
       {/if}
-      {#if onReplace && isError}
-        <button class="conflict-btn replace" onclick={onReplace} type="button">
-          Replace
-        </button>
+      {#if onReplace}
+        <button class="conflict-button danger" type="button" onclick={onReplace}
+          >Replace</button
+        >
       {/if}
     </div>
   {/if}
@@ -53,114 +65,84 @@
 
 <style>
   .conflict-warning {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    border-radius: 10px;
-    margin-top: 8px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.875rem;
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-warning) 35%, transparent);
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, var(--semantic-warning) 10%, transparent);
+    color: var(--theme-text);
   }
 
   .conflict-warning.error {
-    background: color-mix(
-      in srgb,
-      var(--semantic-error, var(--semantic-error)) 10%,
-      transparent
-    );
-    border: 1px solid
-      color-mix(
-        in srgb,
-        var(--semantic-error, var(--semantic-error)) 30%,
-        transparent
-      );
-  }
-
-  .conflict-warning.warning {
-    background: color-mix(in srgb, var(--semantic-warning) 10%, transparent);
-    border: 1px solid
-      color-mix(in srgb, var(--semantic-warning) 30%, transparent);
+    border-color: color-mix(in srgb, var(--semantic-error) 38%, transparent);
+    background: color-mix(in srgb, var(--semantic-error) 10%, transparent);
   }
 
   .conflict-icon {
-    flex-shrink: 0;
-    font-size: var(--font-size-base);
+    margin-top: 0.15rem;
+    color: var(--semantic-warning);
   }
 
   .error .conflict-icon {
-    color: var(--semantic-error, var(--semantic-error));
-  }
-
-  .warning .conflict-icon {
-    color: var(--semantic-warning);
+    color: var(--semantic-error);
   }
 
   .conflict-info {
-    flex: 1;
     min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .conflict-title {
-    font-weight: 600;
     font-size: var(--font-size-compact);
+    line-height: 1.4;
   }
 
-  .error .conflict-title {
-    color: var(--semantic-error, var(--semantic-error));
+  .conflict-info strong {
+    font-size: var(--font-size-sm);
   }
 
-  .warning .conflict-title {
-    color: var(--semantic-warning);
+  ul {
+    margin: 0.35rem 0 0;
+    padding-left: 1.1rem;
   }
 
-  .conflict-detail {
-    font-size: var(--font-size-compact);
-    color: color-mix(in srgb, var(--theme-text, white) 70%, transparent);
-  }
-
-  .context-note {
+  li span,
+  p {
     color: var(--theme-text-dim);
-    font-style: italic;
+  }
+
+  p {
+    margin: 0.5rem 0 0;
   }
 
   .conflict-actions {
+    grid-column: 2;
     display: flex;
-    gap: 8px;
-    flex-shrink: 0;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
-  .conflict-btn {
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: var(--font-size-compact);
+  .conflict-button {
+    min-height: var(--min-touch-target);
+    padding: 0 0.9rem;
+    border: 1px solid var(--theme-stroke-strong);
+    border-radius: 0.55rem;
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
     font-weight: 600;
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
   }
 
-  .conflict-btn.replace {
-    background: var(--semantic-error, var(--semantic-error));
-    border: none;
-    color: var(--theme-text, white);
+  .conflict-button.danger {
+    border-color: color-mix(in srgb, var(--semantic-error) 55%, transparent);
+    background: color-mix(in srgb, var(--semantic-error) 18%, transparent);
   }
 
-  .conflict-btn.replace:hover {
-    background: color-mix(
-      in srgb,
-      var(--semantic-error, var(--semantic-error)) 85%,
-      var(--theme-shadow, #000)
-    );
-  }
-
-  .conflict-btn.swap {
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    color: color-mix(in srgb, var(--theme-text, white) 90%, transparent);
-  }
-
-  .conflict-btn.swap:hover {
+  .conflict-button:hover {
     background: var(--theme-card-hover-bg);
+  }
+
+  .conflict-button:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
   }
 </style>
