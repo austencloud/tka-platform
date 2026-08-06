@@ -7,7 +7,9 @@
 import { safe } from "../domain/annotations";
 import type { Intention } from "../domain/intention";
 import { visibleAll } from "../services/sensors";
-import { has, pickOf, pressKind, voiced, watchKind } from "./helpers";
+import { has, pickOf, pressKind, watchKind,
+  oneOf,
+} from "./helpers";
 import { monologueFor, noteEncounter, reactionFor } from "./monologue";
 
 export const EFFECT_INTENTIONS: Intention[] = [
@@ -45,7 +47,7 @@ export const EFFECT_INTENTIONS: Intention[] = [
     id: "reject-effect",
     category: "effects",
     thought: (ctx) =>
-      voiced(ctx, "reject-effect", [
+      oneOf(ctx, [
         "…no. Not that one.",
         "That's too much. Something else.",
         "Hm, that's not it.",
@@ -92,7 +94,7 @@ export const PROP_INTENTIONS: Intention[] = [
     id: "open-props",
     category: "props",
     thought: (ctx) =>
-      voiced(ctx, "open-props", [
+      oneOf(ctx, [
         "Can I swap the props?",
         "What else could it be holding?",
         "Are staves the only option?",

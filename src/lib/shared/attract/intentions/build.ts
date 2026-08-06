@@ -10,7 +10,7 @@
 import { safe } from "../domain/annotations";
 import type { Intention } from "../domain/intention";
 import { visibleAll } from "../services/sensors";
-import { has, pickOf, pressKind, restlessness, voiced } from "./helpers";
+import { has, oneOf, pickOf, pressKind, restlessness } from "./helpers";
 import { monologueFor } from "./monologue";
 
 export const BUILD_INTENTIONS: Intention[] = [
@@ -57,7 +57,7 @@ export const BUILD_INTENTIONS: Intention[] = [
     id: "filter-continuous",
     category: "build",
     thought: (ctx) =>
-      voiced(ctx, "filter-continuous", [
+      oneOf(ctx, [
         "I wonder if anything continues from this.",
         "Only the ones that flow on, then.",
         "What actually follows this?",
@@ -82,7 +82,7 @@ export const BUILD_INTENTIONS: Intention[] = [
     id: "fiddle-turns",
     category: "build",
     thought: (ctx) =>
-      voiced(ctx, "fiddle-turns", [
+      oneOf(ctx, [
         "What if this hand turned instead?",
         "Let's put a turn on it.",
         "What happens if I add rotation here?",
@@ -104,7 +104,7 @@ export const BUILD_INTENTIONS: Intention[] = [
     id: "clear-and-restart",
     category: "reset",
     thought: (ctx) =>
-      voiced(ctx, "clear-and-restart", [
+      oneOf(ctx, [
         "Let's try something completely different.",
         "Scrap it. Start again.",
         "I want to build something else.",

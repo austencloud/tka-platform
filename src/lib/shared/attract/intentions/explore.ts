@@ -23,8 +23,8 @@ import {
   pressKind,
   restlessness,
   settled,
-  voiced,
   watchKind,
+  oneOf,
 } from "./helpers";
 import { encounterKey, monologueFor, noteEncounter, reactionFor } from "./monologue";
 
@@ -104,7 +104,7 @@ export const EXPLORE_INTENTIONS: Intention[] = [
     id: "open-viewer",
     category: "explore",
     thought: (ctx) =>
-      voiced(ctx, "open-viewer", [
+      oneOf(ctx, [
         "Let's see this properly.",
         "I want a bigger look at it.",
         "What's this 3D thing?",
@@ -136,11 +136,11 @@ export const EXPLORE_INTENTIONS: Intention[] = [
      * that nothing is satisfiable, which is the signal a trap gives off.
      */
     thought: (ctx) =>
-      voiced(ctx, "overwhelmed", [
+      ctx.rng.pick([
         "…that's a lot of buttons.",
         "Where do I even start with this?",
         "Hm.",
-      ]),
+      ]) ?? "Hm.",
     can: (ctx) =>
       (ctx.performed.get("overwhelmed") ?? 0) < 2 &&
       Object.values(ctx.available).filter((count) => count > 0).length > 2,
@@ -201,7 +201,7 @@ export const EXPLORE_INTENTIONS: Intention[] = [
     id: "change-tab",
     category: "explore",
     thought: (ctx) =>
-      voiced(ctx, "change-tab", ["There's more in here.", "What's behind this tab?"]),
+      oneOf(ctx, ["There's more in here.", "What's behind this tab?"]),
     can: (ctx) => has(ctx, "nav-tab"),
     appeal: (ctx) => (0.3 + restlessness(ctx) * 0.2) * settled(ctx),
     perform: async (g, ctx) => {
@@ -218,7 +218,7 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   {
     id: "dismiss-blocker",
     category: "reset",
-    thought: (ctx) => voiced(ctx, "dismiss-blocker", ["Not right now, thanks."]),
+    thought: "Not right now, thanks.",
     // Beats everything while a blocker is up, and it has to: an overlay with a
     // backdrop makes every other control fail the press hit-test, so until it
     // is gone the ghost's whole world reads as empty. On a fresh browser
@@ -239,7 +239,7 @@ export const EXPLORE_INTENTIONS: Intention[] = [
     id: "let-it-show-me",
     category: "explore",
     thought: (ctx) =>
-      voiced(ctx, "let-it-show-me", [
+      oneOf(ctx, [
         "Can I actually walk around in here?",
         "Show me around, then.",
         "Let's see the rest of this place.",
@@ -264,7 +264,7 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   {
     id: "leave-viewer",
     category: "explore",
-    thought: (ctx) => voiced(ctx, "leave-viewer", ["Right — what else was there?"]),
+    thought: "Right — what else was there?",
     // The viewer drawer covers the sidebar, so `go-to-module` cannot fire while
     // it is open: without this, a viewer with plenty to do inside it would hold
     // the ghost for the whole jam, and the only exit would be escape-room's
@@ -282,7 +282,7 @@ export const EXPLORE_INTENTIONS: Intention[] = [
   {
     id: "escape-room",
     category: "reset",
-    thought: (ctx) => voiced(ctx, "escape-room", ["Let's go back."]),
+    thought: "Let's go back.",
     // The trap this exists for: an immersive module (the museum, a fullscreen
     // scene) that hides the sidebar. With no nav button on screen the ghost
     // physically cannot press its way out, and every tick after that is it
@@ -326,7 +326,7 @@ export const EXPLORE_INTENTIONS: Intention[] = [
     id: "browse-gallery",
     category: "explore",
     thought: (ctx) =>
-      voiced(ctx, "browse-gallery", [
+      oneOf(ctx, [
         "I wonder who else has made stuff.",
         "What has everyone else been building?",
       ]),
@@ -349,7 +349,7 @@ export const EXPLORE_INTENTIONS: Intention[] = [
     id: "open-someone-elses",
     category: "explore",
     thought: (ctx) =>
-      voiced(ctx, "open-someone-elses", [
+      oneOf(ctx, [
         "Let's look at this one properly.",
         "Somebody made this. Let's see it move.",
       ]),
