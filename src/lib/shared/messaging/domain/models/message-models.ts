@@ -5,7 +5,12 @@
 /**
  * Attachment types that can be included in messages
  */
-export type MessageAttachmentType = "image" | "sequence" | "link" | "feedback";
+export type MessageAttachmentType =
+  | "image"
+  | "sequence"
+  | "collection"
+  | "link"
+  | "feedback";
 
 /**
  * Feedback-specific metadata for message attachments
@@ -51,6 +56,14 @@ export interface MessageAttachment {
     sequenceThumbnail?: string;
     sequenceAuthor?: string;
     sequenceStepCount?: number;
+    // Collection-specific fields
+    collectionId?: string;
+    collectionOwnerId?: string;
+    collectionName?: string;
+    collectionIcon?: string;
+    collectionColor?: string;
+    collectionSequenceCount?: number;
+    collectionAccessRole?: "viewer" | "editor";
     // Feedback-specific fields
     feedbackId?: string;
     feedbackTitle?: string;

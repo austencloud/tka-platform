@@ -1,11 +1,13 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
+  import type { CollectionAccessRole } from "$lib/shared/library/domain/models/collection";
 
   interface Props {
     collection: LibraryCollection;
     onOpen: () => void;
     ownerName?: string;
+    accessRole?: CollectionAccessRole;
     readonly?: boolean;
     selected?: boolean;
     countLabel?: string;
@@ -19,6 +21,7 @@
     collection,
     onOpen,
     ownerName,
+    accessRole,
     readonly: isReadonly = false,
     selected = false,
     countLabel: countLabelOverride,
@@ -98,7 +101,10 @@
             ></i> Public{/if}
         </span>
         {#if ownerName}
-          <span class="tile-owner">by {ownerName}</span>
+          <span class="tile-owner">
+            by {ownerName}{#if accessRole}
+              · {accessRole === "editor" ? "Can edit" : "Can view"}{/if}
+          </span>
         {/if}
       </span>
     </button>

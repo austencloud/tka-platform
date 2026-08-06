@@ -14,6 +14,8 @@ export function getMessagePreviewText(
       return "Sent an image";
     case "sequence":
       return "Shared a sequence";
+    case "collection":
+      return "Shared a collection";
     case "feedback":
       return "Shared feedback";
     case "link":

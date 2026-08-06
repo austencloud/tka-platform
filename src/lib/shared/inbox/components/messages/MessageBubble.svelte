@@ -17,6 +17,7 @@
   import { formatTime } from "../../utils/format";
   import FeedbackMessageCard from "./FeedbackMessageCard.svelte";
   import SequenceMessageCard from "./SequenceMessageCard.svelte";
+  import CollectionMessageCard from "./CollectionMessageCard.svelte";
   import ImageMessageCard from "./ImageMessageCard.svelte";
   import ReplyPreview from "./ReplyPreview.svelte";
   import MessageReactions from "./MessageReactions.svelte";
@@ -62,8 +63,16 @@
   const imageAttachment = $derived(
     message.attachments?.find((a) => a.type === "image")
   );
+  const collectionAttachment = $derived(
+    message.attachments?.find((a) => a.type === "collection")
+  );
   const hasAttachment = $derived(
-    Boolean(feedbackAttachment || sequenceAttachment || imageAttachment)
+    Boolean(
+      feedbackAttachment ||
+      sequenceAttachment ||
+      imageAttachment ||
+      collectionAttachment
+    )
   );
   const accessibleMessage = $derived(
     getMessagePreviewText(message.content, message.attachments)
@@ -112,6 +121,11 @@
   {:else if sequenceAttachment}
     <SequenceMessageCard attachment={sequenceAttachment} {isOwn} />
     {#if message.content && !message.content.startsWith("Check out this sequence")}
+      <p class="content attachment-content">{message.content}</p>
+    {/if}
+  {:else if collectionAttachment}
+    <CollectionMessageCard attachment={collectionAttachment} {isOwn} />
+    {#if message.content}
       <p class="content attachment-content">{message.content}</p>
     {/if}
   {:else if feedbackAttachment}

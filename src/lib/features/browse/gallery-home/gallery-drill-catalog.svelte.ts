@@ -267,6 +267,9 @@ export interface CollectionOption {
   readonly icon?: string;
   /** "Curated by <name>" — whose collection this is. */
   readonly ownerName?: string;
+  /** Owner collections expose their share action from the filter workspace too. */
+  readonly canShare?: boolean;
+  readonly ownerId?: string;
 }
 
 /** Art shown on a category tile. Every kind previews REAL catalog data. */
@@ -321,7 +324,9 @@ export function createGalleryCatalog(deps: GalleryCatalogDeps) {
       count: deps.getCount(BrowseFilterType.DIFFICULTY, lvl),
     }))
   );
-  const maxLevelCount = $derived(Math.max(1, ...levelValues.map((v) => v.count)));
+  const maxLevelCount = $derived(
+    Math.max(1, ...levelValues.map((v) => v.count))
+  );
 
   const lengthValues = $derived.by(() => {
     const lengths = new Set<number>();
@@ -450,9 +455,13 @@ export function createGalleryCatalog(deps: GalleryCatalogDeps) {
   );
   const creatorSamples = $derived(pickCreatorSamples(deps.pool, 3));
   const creatorAvatars = $derived(pickCreatorAvatars(deps.pool));
-  const creatorTopThree = $derived(creatorValues.slice(0, 3).map((v) => v.value));
+  const creatorTopThree = $derived(
+    creatorValues.slice(0, 3).map((v) => v.value)
+  );
 
-  const recentCount = $derived(deps.getCount(BrowseFilterType.RECENT, "recent"));
+  const recentCount = $derived(
+    deps.getCount(BrowseFilterType.RECENT, "recent")
+  );
   const favoritesCount = $derived(
     deps.getCount(BrowseFilterType.FAVORITES, "favorites")
   );

@@ -22,322 +22,348 @@ Signed out, a library has nowhere to live, so the tab explains itself
 instead of showing an empty shell.
 -->
 <script lang="ts">
-	import { onMount, type Component } from "svelte";
-	import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-	import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
-	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
-	import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
-	import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
-	import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
-	import { PLAYGROUND_TABS } from "$lib/shared/navigation/config/tab-definitions";
-	import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
-	import { scene3dCollectionState } from "$lib/features/scene-3d-collection/state/scene-3d-collection-state.svelte";
-	import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
-	import CollectionCard from "./CollectionCard.svelte";
-	import CollectionAddTile from "./CollectionAddTile.svelte";
-	import CollectionDetailView from "./CollectionDetailView.svelte";
-	import SmartCollectionDetailView from "./SmartCollectionDetailView.svelte";
-	import SmartCollectionBuilderSheet from "./SmartCollectionBuilderSheet.svelte";
-	import AllLibraryView from "./AllLibraryView.svelte";
-	import {
-		FOUNDING_SMART_COLLECTIONS,
-		toSyntheticCollection,
-		isFoundingId,
-	} from "$lib/features/browse/collections/config/founding-collections";
-	import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
-	import { getGalleryPrefetcher } from "$lib/features/browse/shared/get-gallery-prefetcher";
-	import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
-	import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import { onMount, type Component } from "svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
+  import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
+  import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
+  import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
+  import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
+  import { PLAYGROUND_TABS } from "$lib/shared/navigation/config/tab-definitions";
+  import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
+  import { scene3dCollectionState } from "$lib/features/scene-3d-collection/state/scene-3d-collection-state.svelte";
+  import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
+  import CollectionCard from "./CollectionCard.svelte";
+  import CollectionAddTile from "./CollectionAddTile.svelte";
+  import CollectionDetailView from "./CollectionDetailView.svelte";
+  import SmartCollectionDetailView from "./SmartCollectionDetailView.svelte";
+  import SmartCollectionBuilderSheet from "./SmartCollectionBuilderSheet.svelte";
+  import AllLibraryView from "./AllLibraryView.svelte";
+  import {
+    FOUNDING_SMART_COLLECTIONS,
+    toSyntheticCollection,
+    isFoundingId,
+  } from "$lib/features/browse/collections/config/founding-collections";
+  import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+  import { getGalleryPrefetcher } from "$lib/features/browse/shared/get-gallery-prefetcher";
+  import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import { getSharedCollectionsContext } from "../context/shared-collections-context";
 
-	const signedIn = $derived(!!authState.user);
+  const signedIn = $derived(!!authState.user);
+  const sharedCollectionsState = getSharedCollectionsContext();
+  const sharedCollections = $derived(sharedCollectionsState.items);
 
-	$effect(() => {
-		if (signedIn) {
-			collectionsState.ensureStarted();
-			followedCollectionsState.ensureStarted();
-		}
-		const uid = authState.user?.uid;
-		if (uid) {
-			// The Art shelf's three singletons are also started at auth boot
-			// (auth-boot-orchestrator), but a fast Library visit can beat that
-			// non-blocking chain — ensureStarted() is idempotent per uid, so
-			// this becomes a no-op once boot's own init() has already fired.
-			tunnelCollectionState.ensureStarted(uid);
-			scene3dCollectionState.ensureStarted(uid);
-			mandalaCollectionState.ensureStarted(uid);
-		}
-	});
+  $effect(() => {
+    if (signedIn) {
+      collectionsState.ensureStarted();
+      followedCollectionsState.ensureStarted();
+    }
+    const uid = authState.user?.uid;
+    if (uid) {
+      // The Art shelf's three singletons are also started at auth boot
+      // (auth-boot-orchestrator), but a fast Library visit can beat that
+      // non-blocking chain — ensureStarted() is idempotent per uid, so
+      // this becomes a no-op once boot's own init() has already fired.
+      tunnelCollectionState.ensureStarted(uid);
+      scene3dCollectionState.ensureStarted(uid);
+      mandalaCollectionState.ensureStarted(uid);
+    }
+  });
 
-	// Wide screens get the rail + detail split; phones keep the stacked flow.
-	let isSideBySide = $state(false);
-	onMount(() => {
-		// The Smart Collection entry is visible on this surface, so warm its
-		// catalog from local storage now instead of waiting for the modal click.
-		// The live Firestore sync remains the app shell's background job.
-		void getGalleryPrefetcher()
-			.prefetch({ skipNetworkSync: true })
-			.catch((error: unknown) =>
-				console.warn("[MyCollectionsPanel] Gallery warm failed:", error),
-			);
+  // Wide screens get the rail + detail split; phones keep the stacked flow.
+  let isSideBySide = $state(false);
+  onMount(() => {
+    // The Smart Collection entry is visible on this surface, so warm its
+    // catalog from local storage now instead of waiting for the modal click.
+    // The live Firestore sync remains the app shell's background job.
+    void getGalleryPrefetcher()
+      .prefetch({ skipNetworkSync: true })
+      .catch((error: unknown) =>
+        console.warn("[MyCollectionsPanel] Gallery warm failed:", error)
+      );
 
-		isSideBySide = responsiveLayoutManager.shouldUseSideBySideLayout();
-		const unsubscribe = responsiveLayoutManager.onLayoutChange(() => {
-			isSideBySide = responsiveLayoutManager.shouldUseSideBySideLayout();
-		});
-		return unsubscribe;
-	});
+    isSideBySide = responsiveLayoutManager.shouldUseSideBySideLayout();
+    const unsubscribe = responsiveLayoutManager.onLayoutChange(() => {
+      isSideBySide = responsiveLayoutManager.shouldUseSideBySideLayout();
+    });
+    return unsubscribe;
+  });
 
-	// Favorites stays pinned (sortOrder -1000); after that, most recently
-	// touched first — adding or removing a sequence bumps updatedAt, so the
-	// collection you're actively building floats to the front. All user
-	// collections share sortOrder 0, so without this the tie-break is
-	// whatever order Firestore returns.
-	const collections = $derived(
-		[...collectionsState.collections].sort(
-			(a, b) =>
-				a.sortOrder - b.sortOrder ||
-				b.updatedAt.getTime() - a.updatedAt.getTime(),
-		),
-	);
-	const loading = $derived(collectionsState.loading);
+  // Favorites stays pinned (sortOrder -1000); after that, most recently
+  // touched first — adding or removing a sequence bumps updatedAt, so the
+  // collection you're actively building floats to the front. All user
+  // collections share sortOrder 0, so without this the tie-break is
+  // whatever order Firestore returns.
+  const collections = $derived(
+    [...collectionsState.collections].sort(
+      (a, b) =>
+        a.sortOrder - b.sortOrder ||
+        b.updatedAt.getTime() - a.updatedAt.getTime()
+    )
+  );
+  const loading = $derived(collectionsState.loading);
 
-	// Founding decks (TKA 1/2/3) — read-only, config-defined, shown to everyone.
-	const foundingCards = FOUNDING_SMART_COLLECTIONS.map(toSyntheticCollection);
+  // Founding decks (TKA 1/2/3) — read-only, config-defined, shown to everyone.
+  const foundingCards = FOUNDING_SMART_COLLECTIONS.map(toSyntheticCollection);
 
-	// Own smart collections render the live-derived view; everything else uses
-	// the standard member grid. (Foreign collections are never smart in v1.)
-	function isOwnSmart(id: string, ownerId: string | null): boolean {
-		if (ownerId) return false;
-		return collectionsState.collections.find((c) => c.id === id)?.kind === "smart";
-	}
+  // Own smart collections render the live-derived view; everything else uses
+  // the standard member grid. (Foreign collections are never smart in v1.)
+  function isOwnSmart(id: string, ownerId: string | null): boolean {
+    if (ownerId) return false;
+    return (
+      collectionsState.collections.find((c) => c.id === id)?.kind === "smart"
+    );
+  }
 
-	// "New smart collection" opens the builder from scratch.
-	let smartBuilderOpen = $state(false);
-	let smartEditTarget = $state<LibraryCollection | null>(null);
+  // "New smart collection" opens the builder from scratch.
+  let smartBuilderOpen = $state(false);
+  let smartEditTarget = $state<LibraryCollection | null>(null);
 
-	// ── "All" shelf ──────────────────────────────────────────────────────────
-	// The library pile itself, pinned above Favorites (it's the superset).
-	// Synthetic — not a Firestore doc. Its id "all" can't collide with real
-	// collections (Firestore auto-ids are 20 chars; system ids use "system_").
-	let libraryCount = $state(0);
-	$effect(() => {
-		if (!signedIn) {
-			libraryCount = 0;
-			return;
-		}
-		getLibraryRepository()
-			.getSequences()
-			.then((seqs) => (libraryCount = seqs.length))
-			.catch(() => {});
-	});
+  // ── "All" shelf ──────────────────────────────────────────────────────────
+  // The library pile itself, pinned above Favorites (it's the superset).
+  // Synthetic — not a Firestore doc. Its id "all" can't collide with real
+  // collections (Firestore auto-ids are 20 chars; system ids use "system_").
+  let libraryCount = $state(0);
+  $effect(() => {
+    if (!signedIn) {
+      libraryCount = 0;
+      return;
+    }
+    getLibraryRepository()
+      .getSequences()
+      .then((seqs) => (libraryCount = seqs.length))
+      .catch(() => {});
+  });
 
-	const allShelf = $derived<LibraryCollection>({
-		id: "all",
-		name: "All",
-		ownerId: authState.user?.uid ?? "",
-		sequenceIds: [],
-		sequenceCount: libraryCount,
-		icon: "fa-layer-group",
-		isPublic: false,
-		sortOrder: -2000,
-		createdAt: new Date(0),
-		updatedAt: new Date(0),
-	});
+  const allShelf = $derived<LibraryCollection>({
+    id: "all",
+    name: "All",
+    ownerId: authState.user?.uid ?? "",
+    sequenceIds: [],
+    sequenceCount: libraryCount,
+    icon: "fa-layer-group",
+    isPublic: false,
+    sortOrder: -2000,
+    createdAt: new Date(0),
+    updatedAt: new Date(0),
+  });
 
-	// The nav state is the single source of truth for which view is showing.
-	// Foreign (community) collections encode their owner in the contextId as
-	// "ownerId:collectionId" — own collection ids never contain a colon
-	// (Firestore auto-ids + "system_favorites").
-	const detail = $derived.by(() => {
-		const loc = browseNavigationState.currentLocation;
-		if (loc?.tab !== "library" || loc.view !== "detail" || !loc.contextId) {
-			return null;
-		}
-		const sep = loc.contextId.indexOf(":");
-		if (sep > 0) {
-			return {
-				id: loc.contextId.slice(sep + 1),
-				ownerId: loc.contextId.slice(0, sep),
-				ownerName: loc.filter?.displayName,
-			};
-		}
-		// Art categories work signed OUT too (guest saves live in localStorage),
-		// so they bypass the signed-in gate below.
-		if (isArtId(loc.contextId)) {
-			return { id: loc.contextId, ownerId: null, ownerName: undefined };
-		}
-		// Your own collection needs you signed in; a stale restore while signed
-		// out falls through to the list (which shows the sign-in prompt).
-		if (!signedIn) return null;
-		return { id: loc.contextId, ownerId: null, ownerName: undefined };
-	});
+  // The nav state is the single source of truth for which view is showing.
+  // Foreign (community) collections encode their owner in the contextId as
+  // "ownerId:collectionId" — own collection ids never contain a colon
+  // (Firestore auto-ids + "system_favorites").
+  const detail = $derived.by(() => {
+    const loc = browseNavigationState.currentLocation;
+    if (loc?.tab !== "library" || loc.view !== "detail" || !loc.contextId) {
+      return null;
+    }
+    const sep = loc.contextId.indexOf(":");
+    if (sep > 0) {
+      const ownerId = loc.contextId.slice(0, sep);
+      const collectionId = loc.contextId.slice(sep + 1);
+      const shared = sharedCollections.find(
+        (item) =>
+          item.grant.ownerId === ownerId &&
+          item.grant.collectionId === collectionId
+      );
+      return {
+        id: collectionId,
+        ownerId,
+        ownerName: shared?.ownerName ?? loc.filter?.displayName,
+        accessRole: shared?.grant.role,
+      };
+    }
+    // Art categories work signed OUT too (guest saves live in localStorage),
+    // so they bypass the signed-in gate below.
+    if (isArtId(loc.contextId)) {
+      return { id: loc.contextId, ownerId: null, ownerName: undefined };
+    }
+    // Your own collection needs you signed in; a stale restore while signed
+    // out falls through to the list (which shows the sign-in prompt).
+    if (!signedIn) return null;
+    return { id: loc.contextId, ownerId: null, ownerName: undefined };
+  });
 
-	// Split mode never shows an empty pane: with nothing selected, the All
-	// shelf fills in. Display-only — no history entry is written until the
-	// user actually clicks something, so back/forward stay truthful.
-	const railSelection = $derived(
-		detail ?? {
-			id: "all",
-			ownerId: null as string | null,
-			ownerName: undefined as string | undefined,
-		},
-	);
+  // Split mode never shows an empty pane: with nothing selected, the All
+  // shelf fills in. Display-only — no history entry is written until the
+  // user actually clicks something, so back/forward stay truthful.
+  const railSelection = $derived(
+    detail ?? {
+      id: "all",
+      ownerId: null as string | null,
+      ownerName: undefined as string | undefined,
+    }
+  );
 
-	function openCollection(id: string, name: string) {
-		browseNavigationState.viewCollectionDetail(id, name);
-	}
+  function openCollection(id: string, name: string) {
+    browseNavigationState.viewCollectionDetail(id, name);
+  }
 
-	function openForeignCollection(ownerId: string, collectionId: string, name: string, ownerName: string) {
-		browseNavigationState.navigateTo({
-			tab: "library",
-			view: "detail",
-			contextId: `${ownerId}:${collectionId}`,
-			filter: {
-				type: "collectionName",
-				value: name,
-				displayName: ownerName,
-			},
-		});
-	}
+  function openForeignCollection(
+    ownerId: string,
+    collectionId: string,
+    name: string,
+    ownerName?: string
+  ) {
+    browseNavigationState.navigateTo({
+      tab: "library",
+      view: "detail",
+      contextId: `${ownerId}:${collectionId}`,
+      filter: {
+        type: "collectionName",
+        value: name,
+        displayName: ownerName ?? "Collection owner",
+      },
+    });
+  }
 
-	function backToList() {
-		browseNavigationState.viewCollections();
-	}
+  function backToList() {
+    browseNavigationState.viewCollections();
+  }
 
-	// ── "Art" shelf ──────────────────────────────────────────────────────────
-	// The three Art collections (tunnels, 3D scenes, mandalas) as category
-	// cards — a count + latest-poster cover per category. Selecting one opens
-	// its gallery IN the detail pane, exactly like a sequence collection: same
-	// nav-detail seam (back/forward + restore free), same rail highlight. The
-	// gallery components are the former Playground tabs, lazy-mounted here.
-	const ART_DETAIL: Record<
-		string,
-		{ label: string; load: () => Promise<{ default: Component }> }
-	> = {
-		art_tunnels: {
-			label: "Tunnels",
-			load: () => import("$lib/features/tunnel-collection/TunnelCollectionModule.svelte"),
-		},
-		art_scenes: {
-			label: "3D Scenes",
-			load: () => import("$lib/features/scene-3d-collection/Scene3DCollectionModule.svelte"),
-		},
-		art_mandala: {
-			label: "Mandalas",
-			load: () => import("$lib/features/mandala/MandalaModule.svelte"),
-		},
-	};
+  // ── "Art" shelf ──────────────────────────────────────────────────────────
+  // The three Art collections (tunnels, 3D scenes, mandalas) as category
+  // cards — a count + latest-poster cover per category. Selecting one opens
+  // its gallery IN the detail pane, exactly like a sequence collection: same
+  // nav-detail seam (back/forward + restore free), same rail highlight. The
+  // gallery components are the former Playground tabs, lazy-mounted here.
+  const ART_DETAIL: Record<
+    string,
+    { label: string; load: () => Promise<{ default: Component }> }
+  > = {
+    art_tunnels: {
+      label: "Tunnels",
+      load: () =>
+        import("$lib/features/tunnel-collection/TunnelCollectionModule.svelte"),
+    },
+    art_scenes: {
+      label: "3D Scenes",
+      load: () =>
+        import("$lib/features/scene-3d-collection/Scene3DCollectionModule.svelte"),
+    },
+    art_mandala: {
+      label: "Mandalas",
+      load: () => import("$lib/features/mandala/MandalaModule.svelte"),
+    },
+  };
 
-	function isArtId(id: string): boolean {
-		return id in ART_DETAIL;
-	}
+  function isArtId(id: string): boolean {
+    return id in ART_DETAIL;
+  }
 
-	function openArtDetail(id: string) {
-		browseNavigationState.viewCollectionDetail(id, ART_DETAIL[id]?.label ?? "Art");
-	}
+  function openArtDetail(id: string) {
+    browseNavigationState.viewCollectionDetail(
+      id,
+      ART_DETAIL[id]?.label ?? "Art"
+    );
+  }
 
-	// Call sites are gated by isArtId, so the lookup can't miss.
-	function artLoad(id: string): Promise<{ default: Component }> {
-		return ART_DETAIL[id]!.load();
-	}
+  // Call sites are gated by isArtId, so the lookup can't miss.
+  function artLoad(id: string): Promise<{ default: Component }> {
+    return ART_DETAIL[id]!.load();
+  }
 
-	function playgroundTabColor(tabId: string): string {
-		return PLAYGROUND_TABS.find((t) => t.id === tabId)?.color ?? "var(--theme-accent)";
-	}
+  function playgroundTabColor(tabId: string): string {
+    return (
+      PLAYGROUND_TABS.find((t) => t.id === tabId)?.color ??
+      "var(--theme-accent)"
+    );
+  }
 
-	function artCollection(
-		id: string,
-		name: string,
-		icon: string,
-		tabId: string,
-		sequenceCount: number,
-		coverImageUrl?: string,
-	): LibraryCollection {
-		return {
-			id,
-			name,
-			ownerId: authState.user?.uid ?? "",
-			sequenceIds: [],
-			sequenceCount,
-			coverImageUrl,
-			color: playgroundTabColor(tabId),
-			icon,
-			isPublic: false,
-			sortOrder: 0,
-			createdAt: new Date(0),
-			updatedAt: new Date(0),
-		};
-	}
+  function artCollection(
+    id: string,
+    name: string,
+    icon: string,
+    tabId: string,
+    sequenceCount: number,
+    coverImageUrl?: string
+  ): LibraryCollection {
+    return {
+      id,
+      name,
+      ownerId: authState.user?.uid ?? "",
+      sequenceIds: [],
+      sequenceCount,
+      coverImageUrl,
+      color: playgroundTabColor(tabId),
+      icon,
+      isPublic: false,
+      sortOrder: 0,
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+    };
+  }
 
-	const tunnelsArtCard = $derived(
-		artCollection(
-			"art_tunnels",
-			"Tunnels",
-			"fa-fan",
-			"tunnels",
-			tunnelCollectionState.collection.length,
-			tunnelCollectionState.collection[0]?.poster,
-		),
-	);
-	const scenesArtCard = $derived(
-		artCollection(
-			"art_scenes",
-			"3D Scenes",
-			"fa-cube",
-			"scenes",
-			scene3dCollectionState.collection.length,
-			scene3dCollectionState.collection[0]?.poster,
-		),
-	);
-	const mandalaArtCard = $derived(
-		// Mandalas have no poster field — the card falls back to icon + color.
-		artCollection(
-			"art_mandala",
-			"Mandalas",
-			"fa-dharmachakra",
-			"mandala",
-			mandalaCollectionState.collection.length,
-			undefined,
-		),
-	);
+  const tunnelsArtCard = $derived(
+    artCollection(
+      "art_tunnels",
+      "Tunnels",
+      "fa-fan",
+      "tunnels",
+      tunnelCollectionState.collection.length,
+      tunnelCollectionState.collection[0]?.poster
+    )
+  );
+  const scenesArtCard = $derived(
+    artCollection(
+      "art_scenes",
+      "3D Scenes",
+      "fa-cube",
+      "scenes",
+      scene3dCollectionState.collection.length,
+      scene3dCollectionState.collection[0]?.poster
+    )
+  );
+  const mandalaArtCard = $derived(
+    // Mandalas have no poster field — the card falls back to icon + color.
+    artCollection(
+      "art_mandala",
+      "Mandalas",
+      "fa-dharmachakra",
+      "mandala",
+      mandalaCollectionState.collection.length,
+      undefined
+    )
+  );
 
-	function unitLabel(n: number, singular: string, plural: string): string {
-		return `${n} ${n === 1 ? singular : plural}`;
-	}
+  function unitLabel(n: number, singular: string, plural: string): string {
+    return `${n} ${n === 1 ? singular : plural}`;
+  }
 
-	// ── New collection (inline, same interaction as the picker's add tile) ──
-	let showInput = $state(false);
-	let newName = $state("");
-	let creating = $state(false);
+  // ── New collection (inline, same interaction as the picker's add tile) ──
+  let showInput = $state(false);
+  let newName = $state("");
+  let creating = $state(false);
 
-	async function handleCreate() {
-		const name = newName.trim();
-		if (!name || creating) return;
-		creating = true;
-		try {
-			const created = await collectionsState.create(name);
-			newName = "";
-			showInput = false;
-			// In the split view the detail pane is right there — open the new
-			// collection immediately so the next click can be "Add" or "Scan".
-			if (created && isSideBySide) {
-				openCollection(created.id, created.name);
-			}
-		} finally {
-			creating = false;
-		}
-	}
+  async function handleCreate() {
+    const name = newName.trim();
+    if (!name || creating) return;
+    creating = true;
+    try {
+      const created = await collectionsState.create(name);
+      newName = "";
+      showInput = false;
+      // In the split view the detail pane is right there — open the new
+      // collection immediately so the next click can be "Add" or "Scan".
+      if (created && isSideBySide) {
+        openCollection(created.id, created.name);
+      }
+    } finally {
+      creating = false;
+    }
+  }
 
-	function handleInputKeydown(e: KeyboardEvent) {
-		if (e.key === "Enter") {
-			e.preventDefault();
-			void handleCreate();
-		} else if (e.key === "Escape") {
-			e.preventDefault();
-			showInput = false;
-			newName = "";
-		}
-	}
+  function handleInputKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      void handleCreate();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      showInput = false;
+      newName = "";
+    }
+  }
 </script>
 
 <!-- Shared shelf markup: the phone grid and the desktop rail render the same
@@ -346,585 +372,646 @@ instead of showing an empty shell.
 <!-- TKA Core: the founding "everybody's joint" decks (TKA 1/2/3, Book).
      Curated by TKA, read-only — a distinct group from the user's own work. -->
 {#snippet tkaOriginalsShelf(sel: { id: string; ownerId: string | null } | null)}
-	{#each foundingCards as f (f.id)}
-		<CollectionCard
-			collection={f}
-			readonly
-			selected={!!sel && sel.id === f.id && !sel.ownerId}
-			onOpen={() => openCollection(f.id, f.name)}
-		/>
-	{/each}
+  {#each foundingCards as f (f.id)}
+    <CollectionCard
+      collection={f}
+      readonly
+      selected={!!sel && sel.id === f.id && !sel.ownerId}
+      onOpen={() => openCollection(f.id, f.name)}
+    />
+  {/each}
+{/snippet}
+
+{#snippet sharedShelves(sel: { id: string; ownerId: string | null } | null)}
+  {#each sharedCollections as item (item.grant.ownerId + item.grant.collectionId)}
+    <CollectionCard
+      collection={item.collection}
+      ownerName={item.ownerName}
+      accessRole={item.grant.role}
+      readonly
+      selected={!!sel &&
+        sel.ownerId === item.grant.ownerId &&
+        sel.id === item.grant.collectionId}
+      onOpen={() =>
+        openForeignCollection(
+          item.grant.ownerId,
+          item.grant.collectionId,
+          item.collection.name,
+          item.ownerName
+        )}
+    />
+  {/each}
+{/snippet}
+
+{#snippet sharedShelfContent(sel: { id: string; ownerId: string | null } | null)}
+  {#if sharedCollectionsState.loading}
+    <div class="shared-shelf-state" role="status">
+      <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+      Loading shared collections…
+    </div>
+  {:else if sharedCollectionsState.error}
+    <div class="shared-shelf-state warning" role="status">
+      <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+      {sharedCollectionsState.error}
+    </div>
+  {:else}
+    {@render sharedShelves(sel)}
+  {/if}
 {/snippet}
 
 <!-- My Collections: the All shelf (everything you saved) + your own manual/smart
      collections + the create tiles. -->
 {#snippet ownShelves(sel: { id: string; ownerId: string | null } | null)}
-	<CollectionCard
-		collection={allShelf}
-		readonly
-		selected={!!sel && sel.id === "all" && !sel.ownerId}
-		onOpen={() => openCollection("all", "All")}
-	/>
+  <CollectionCard
+    collection={allShelf}
+    readonly
+    selected={!!sel && sel.id === "all" && !sel.ownerId}
+    onOpen={() => openCollection("all", "All")}
+  />
 
-	{#each collections as c (c.id)}
-		<CollectionCard
-			collection={c}
-			selected={!!sel && sel.id === c.id && !sel.ownerId}
-			onOpen={() => openCollection(c.id, c.name)}
-			onEditRule={c.kind === "smart"
-				? () => (smartEditTarget = c)
-				: undefined}
-		/>
-	{/each}
+  {#each collections as c (c.id)}
+    <CollectionCard
+      collection={c}
+      selected={!!sel && sel.id === c.id && !sel.ownerId}
+      onOpen={() => openCollection(c.id, c.name)}
+      onEditRule={c.kind === "smart" ? () => (smartEditTarget = c) : undefined}
+    />
+  {/each}
 
-	{#if showInput}
-		<div class="new-tile-input">
-			<!-- svelte-ignore a11y_autofocus -->
-			<input
-				type="text"
-				class="name-field"
-				placeholder="Collection name"
-				aria-label="New collection name"
-				bind:value={newName}
-				onkeydown={handleInputKeydown}
-				maxlength="60"
-				autofocus
-			/>
-			<button
-				type="button"
-				class="confirm-create"
-				onclick={handleCreate}
-				disabled={!newName.trim() || creating}
-				aria-label="Create collection"
-			>
-				<i class="fas fa-check" aria-hidden="true"></i>
-			</button>
-		</div>
-	{:else}
-		<CollectionAddTile
-			label="New collection"
-			hint="Choose the sequences yourself"
-			icon="fa-plus"
-			onclick={() => (showInput = true)}
-		/>
-	{/if}
+  {#if showInput}
+    <div class="new-tile-input">
+      <!-- svelte-ignore a11y_autofocus -->
+      <input
+        type="text"
+        class="name-field"
+        placeholder="Collection name"
+        aria-label="New collection name"
+        bind:value={newName}
+        onkeydown={handleInputKeydown}
+        maxlength="60"
+        autofocus
+      />
+      <button
+        type="button"
+        class="confirm-create"
+        onclick={handleCreate}
+        disabled={!newName.trim() || creating}
+        aria-label="Create collection"
+      >
+        <i class="fas fa-check" aria-hidden="true"></i>
+      </button>
+    </div>
+  {:else}
+    <CollectionAddTile
+      label="New collection"
+      hint="Choose the sequences yourself"
+      icon="fa-plus"
+      onclick={() => (showInput = true)}
+    />
+  {/if}
 
-	<CollectionAddTile
-		label="New Smart Collection"
-		hint="Build a live collection from filters"
-		icon="fa-wand-magic-sparkles"
-		onclick={() => (smartBuilderOpen = true)}
-	/>
+  <CollectionAddTile
+    label="New Smart Collection"
+    hint="Build a live collection from filters"
+    icon="fa-wand-magic-sparkles"
+    onclick={() => (smartBuilderOpen = true)}
+  />
 {/snippet}
 
 {#snippet artShelf(sel: { id: string; ownerId: string | null } | null)}
-	<CollectionCard
-		collection={tunnelsArtCard}
-		readonly
-		selected={!!sel && !sel.ownerId && sel.id === "art_tunnels"}
-		countLabel={unitLabel(tunnelsArtCard.sequenceCount, "tunnel", "tunnels")}
-		onOpen={() => openArtDetail("art_tunnels")}
-	/>
-	<CollectionCard
-		collection={scenesArtCard}
-		readonly
-		selected={!!sel && !sel.ownerId && sel.id === "art_scenes"}
-		countLabel={unitLabel(scenesArtCard.sequenceCount, "3D scene", "3D scenes")}
-		onOpen={() => openArtDetail("art_scenes")}
-	/>
-	<CollectionCard
-		collection={mandalaArtCard}
-		readonly
-		selected={!!sel && !sel.ownerId && sel.id === "art_mandala"}
-		countLabel={unitLabel(mandalaArtCard.sequenceCount, "mandala", "mandalas")}
-		onOpen={() => openArtDetail("art_mandala")}
-	/>
+  <CollectionCard
+    collection={tunnelsArtCard}
+    readonly
+    selected={!!sel && !sel.ownerId && sel.id === "art_tunnels"}
+    countLabel={unitLabel(tunnelsArtCard.sequenceCount, "tunnel", "tunnels")}
+    onOpen={() => openArtDetail("art_tunnels")}
+  />
+  <CollectionCard
+    collection={scenesArtCard}
+    readonly
+    selected={!!sel && !sel.ownerId && sel.id === "art_scenes"}
+    countLabel={unitLabel(scenesArtCard.sequenceCount, "3D scene", "3D scenes")}
+    onOpen={() => openArtDetail("art_scenes")}
+  />
+  <CollectionCard
+    collection={mandalaArtCard}
+    readonly
+    selected={!!sel && !sel.ownerId && sel.id === "art_mandala"}
+    countLabel={unitLabel(mandalaArtCard.sequenceCount, "mandala", "mandalas")}
+    onOpen={() => openArtDetail("art_mandala")}
+  />
 {/snippet}
 
 {#snippet artDetail(artId: string, showBack: boolean)}
-	<!-- The former Playground gallery, lazy-mounted inside the Library the same
+  <!-- The former Playground gallery, lazy-mounted inside the Library the same
 	     way the other detail views fill this space. Phone (stacked) flow gets a
 	     back bar; the desktop split has the rail right there. -->
-	<div class="art-detail">
-		{#if showBack}
-			<header class="art-detail-bar">
-				<button type="button" class="art-back" onclick={backToList}>
-					<i class="fas fa-arrow-left" aria-hidden="true"></i>
-					<span>Library</span>
-				</button>
-				<span class="art-detail-title">{ART_DETAIL[artId]?.label}</span>
-			</header>
-		{/if}
-		<div class="art-detail-body">
-			{#await artLoad(artId)}
-				<div class="art-detail-loading" aria-hidden="true">
-					<i class="fas fa-circle-notch fa-spin"></i>
-				</div>
-			{:then mod}
-				{@const ArtGallery = mod.default}
-				<ArtGallery />
-			{:catch}
-				<div class="art-detail-loading">Couldn't load this gallery.</div>
-			{/await}
-		</div>
-	</div>
+  <div class="art-detail">
+    {#if showBack}
+      <header class="art-detail-bar">
+        <button type="button" class="art-back" onclick={backToList}>
+          <i class="fas fa-arrow-left" aria-hidden="true"></i>
+          <span>Library</span>
+        </button>
+        <span class="art-detail-title">{ART_DETAIL[artId]?.label}</span>
+      </header>
+    {/if}
+    <div class="art-detail-body">
+      {#await artLoad(artId)}
+        <div class="art-detail-loading" aria-hidden="true">
+          <i class="fas fa-circle-notch fa-spin"></i>
+        </div>
+      {:then mod}
+        {@const ArtGallery = mod.default}
+        <ArtGallery />
+      {:catch}
+        <div class="art-detail-loading">Couldn't load this gallery.</div>
+      {/await}
+    </div>
+  </div>
 {/snippet}
 
 {#snippet followedShelves(sel: { id: string; ownerId: string | null } | null)}
-	{#each followedCollectionsState.items as item (item.ownerId + item.collection.id)}
-		<CollectionCard
-			collection={item.collection}
-			ownerName={item.ownerName}
-			readonly
-			selected={!!sel && sel.ownerId === item.ownerId && sel.id === item.collection.id}
-			onUnfollow={() =>
-				followedCollectionsState.unfollow(item.ownerId, item.collection.id)}
-			onOpen={() =>
-				openForeignCollection(
-					item.ownerId,
-					item.collection.id,
-					item.collection.name,
-					item.ownerName,
-				)}
-		/>
-	{/each}
+  {#each followedCollectionsState.items as item (item.ownerId + item.collection.id)}
+    <CollectionCard
+      collection={item.collection}
+      ownerName={item.ownerName}
+      readonly
+      selected={!!sel &&
+        sel.ownerId === item.ownerId &&
+        sel.id === item.collection.id}
+      onUnfollow={() =>
+        followedCollectionsState.unfollow(item.ownerId, item.collection.id)}
+      onOpen={() =>
+        openForeignCollection(
+          item.ownerId,
+          item.collection.id,
+          item.collection.name,
+          item.ownerName
+        )}
+    />
+  {/each}
 {/snippet}
 
 {#if isSideBySide && signedIn}
-	<div class="library-split">
-		<aside class="rail" aria-label="Your collections">
-			<header class="list-header">
-				<h2 class="list-title">Library</h2>
-			</header>
+  <div class="library-split">
+    <aside class="rail" aria-label="Your collections">
+      <header class="list-header">
+        <h2 class="list-title">Library</h2>
+      </header>
 
-			{#if loading && collections.length === 0}
-				<div class="rail-cards" aria-hidden="true">
-					{#each Array(5) as _}
-						<span class="tile-skeleton"></span>
-					{/each}
-				</div>
-			{:else}
-				<h3 class="shelf-heading">My Collections</h3>
-				<div class="rail-cards">
-					{@render ownShelves(railSelection)}
-				</div>
+      {#if loading && collections.length === 0}
+        <div class="rail-cards" aria-hidden="true">
+          {#each Array(5) as _}
+            <span class="tile-skeleton"></span>
+          {/each}
+        </div>
+      {:else}
+        <h3 class="shelf-heading">My Collections</h3>
+        <div class="rail-cards">
+          {@render ownShelves(railSelection)}
+        </div>
 
-				<h3 class="shelf-heading">Art</h3>
-				<div class="rail-cards">
-					{@render artShelf(railSelection)}
-				</div>
+        <h3 class="shelf-heading">Art</h3>
+        <div class="rail-cards">
+          {@render artShelf(railSelection)}
+        </div>
 
-				<h3 class="shelf-heading">TKA Core</h3>
-				<div class="rail-cards">
-					{@render tkaOriginalsShelf(railSelection)}
-				</div>
+        <h3 class="shelf-heading">TKA Core</h3>
+        <div class="rail-cards">
+          {@render tkaOriginalsShelf(railSelection)}
+        </div>
 
-				{#if followedCollectionsState.items.length > 0}
-					<h3 class="shelf-heading">Following</h3>
-					<div class="rail-cards">
-						{@render followedShelves(railSelection)}
-					</div>
-				{/if}
-			{/if}
-		</aside>
+        {#if sharedCollections.length > 0 || sharedCollectionsState.loading || sharedCollectionsState.error}
+          <h3 class="shelf-heading">Shared with you</h3>
+          <div class="rail-cards">
+            {@render sharedShelfContent(railSelection)}
+          </div>
+        {/if}
 
-		<section class="detail-pane">
-			{#if railSelection.id === "all" && !railSelection.ownerId}
-				<AllLibraryView />
-			{:else if !railSelection.ownerId && isArtId(railSelection.id)}
-				{#key railSelection.id}
-					{@render artDetail(railSelection.id, false)}
-				{/key}
-			{:else if isOwnSmart(railSelection.id, railSelection.ownerId) || isFoundingId(railSelection.id)}
-				{#key railSelection.id}
-					<SmartCollectionDetailView
-						collectionId={railSelection.id}
-						onBack={backToList}
-						showBack={false}
-					/>
-				{/key}
-			{:else}
-				<CollectionDetailView
-					collectionId={railSelection.id}
-					foreignOwnerId={railSelection.ownerId}
-					ownerName={railSelection.ownerName}
-					onBack={backToList}
-					showBack={false}
-				/>
-			{/if}
-		</section>
-	</div>
+        {#if followedCollectionsState.items.length > 0}
+          <h3 class="shelf-heading">Following</h3>
+          <div class="rail-cards">
+            {@render followedShelves(railSelection)}
+          </div>
+        {/if}
+      {/if}
+    </aside>
+
+    <section class="detail-pane">
+      {#if railSelection.id === "all" && !railSelection.ownerId}
+        <AllLibraryView />
+      {:else if !railSelection.ownerId && isArtId(railSelection.id)}
+        {#key railSelection.id}
+          {@render artDetail(railSelection.id, false)}
+        {/key}
+      {:else if isOwnSmart(railSelection.id, railSelection.ownerId) || isFoundingId(railSelection.id)}
+        {#key railSelection.id}
+          <SmartCollectionDetailView
+            collectionId={railSelection.id}
+            onBack={backToList}
+            showBack={false}
+          />
+        {/key}
+      {:else}
+        <CollectionDetailView
+          collectionId={railSelection.id}
+          foreignOwnerId={railSelection.ownerId}
+          ownerName={railSelection.ownerName}
+          accessRole={railSelection.accessRole}
+          onBack={backToList}
+          showBack={false}
+        />
+      {/if}
+    </section>
+  </div>
 {:else if detail}
-	{#if detail.id === "all" && !detail.ownerId}
-		<AllLibraryView onBack={backToList} />
-	{:else if !detail.ownerId && isArtId(detail.id)}
-		{#key detail.id}
-			{@render artDetail(detail.id, true)}
-		{/key}
-	{:else if isOwnSmart(detail.id, detail.ownerId) || isFoundingId(detail.id)}
-		{#key detail.id}
-			<SmartCollectionDetailView collectionId={detail.id} onBack={backToList} />
-		{/key}
-	{:else}
-		<CollectionDetailView
-			collectionId={detail.id}
-			foreignOwnerId={detail.ownerId}
-			ownerName={detail.ownerName}
-			onBack={backToList}
-		/>
-	{/if}
+  {#if detail.id === "all" && !detail.ownerId}
+    <AllLibraryView onBack={backToList} />
+  {:else if !detail.ownerId && isArtId(detail.id)}
+    {#key detail.id}
+      {@render artDetail(detail.id, true)}
+    {/key}
+  {:else if isOwnSmart(detail.id, detail.ownerId) || isFoundingId(detail.id)}
+    {#key detail.id}
+      <SmartCollectionDetailView collectionId={detail.id} onBack={backToList} />
+    {/key}
+  {:else}
+    <CollectionDetailView
+      collectionId={detail.id}
+      foreignOwnerId={detail.ownerId}
+      ownerName={detail.ownerName}
+      accessRole={detail.accessRole}
+      onBack={backToList}
+    />
+  {/if}
 {:else}
-	<div class="collections-list">
-		<header class="list-header">
-			<h2 class="list-title">Library</h2>
-		</header>
+  <div class="collections-list">
+    <header class="list-header">
+      <h2 class="list-title">Library</h2>
+    </header>
 
-		{#if !signedIn}
-			<div class="signed-out">
-				<span class="signed-out-icon">
-					<i class="fas fa-folder-open" aria-hidden="true"></i>
-				</span>
-				<p class="signed-out-title">Your library lives in your account</p>
-				<p class="signed-out-hint">
-					Log in or create a free account to keep saved sequences together,
-					build Smart Collections, and follow collections other people share.
-				</p>
-				<div class="auth-actions">
-					<PanelButton
-						variant="primary"
-						onclick={() => authDrawerState.show("signup", "module:library")}
-					>
-						Create account
-					</PanelButton>
-					<PanelButton
-						variant="secondary"
-						onclick={() => authDrawerState.show("signin", "module:library")}
-					>
-						Log in
-					</PanelButton>
-				</div>
-			</div>
-		{:else if loading && collections.length === 0}
-				<div class="card-grid" aria-hidden="true">
-					{#each Array(4) as _}
-						<span class="tile-skeleton"></span>
-					{/each}
-				</div>
-			{:else}
-				<h3 class="shelf-heading">My Collections</h3>
-				<div class="card-grid">
-					{@render ownShelves(null)}
-				</div>
+    {#if !signedIn}
+      <div class="signed-out">
+        <span class="signed-out-icon">
+          <i class="fas fa-folder-open" aria-hidden="true"></i>
+        </span>
+        <p class="signed-out-title">Your library lives in your account</p>
+        <p class="signed-out-hint">
+          Log in or create a free account to keep saved sequences together,
+          build Smart Collections, and follow collections other people share.
+        </p>
+        <div class="auth-actions">
+          <PanelButton
+            variant="primary"
+            onclick={() => authDrawerState.show("signup", "module:library")}
+          >
+            Create account
+          </PanelButton>
+          <PanelButton
+            variant="secondary"
+            onclick={() => authDrawerState.show("signin", "module:library")}
+          >
+            Log in
+          </PanelButton>
+        </div>
+      </div>
+    {:else if loading && collections.length === 0}
+      <div class="card-grid" aria-hidden="true">
+        {#each Array(4) as _}
+          <span class="tile-skeleton"></span>
+        {/each}
+      </div>
+    {:else}
+      <h3 class="shelf-heading">My Collections</h3>
+      <div class="card-grid">
+        {@render ownShelves(null)}
+      </div>
 
-				<h3 class="shelf-heading">Art</h3>
-				<div class="card-grid">
-					{@render artShelf(null)}
-				</div>
+      <h3 class="shelf-heading">Art</h3>
+      <div class="card-grid">
+        {@render artShelf(null)}
+      </div>
 
-				<h3 class="shelf-heading">TKA Core</h3>
-				<div class="card-grid">
-					{@render tkaOriginalsShelf(null)}
-				</div>
+      <h3 class="shelf-heading">TKA Core</h3>
+      <div class="card-grid">
+        {@render tkaOriginalsShelf(null)}
+      </div>
 
-				{#if followedCollectionsState.items.length > 0}
-					<h3 class="shelf-heading">Following</h3>
-					<div class="card-grid">
-						{@render followedShelves(null)}
-					</div>
-				{/if}
-		{/if}
-	</div>
+      {#if sharedCollections.length > 0 || sharedCollectionsState.loading || sharedCollectionsState.error}
+        <h3 class="shelf-heading">Shared with you</h3>
+        <div class="card-grid">
+          {@render sharedShelfContent(null)}
+        </div>
+      {/if}
+
+      {#if followedCollectionsState.items.length > 0}
+        <h3 class="shelf-heading">Following</h3>
+        <div class="card-grid">
+          {@render followedShelves(null)}
+        </div>
+      {/if}
+    {/if}
+  </div>
 {/if}
 
 {#if smartBuilderOpen}
-	<SmartCollectionBuilderSheet mode="create" onClose={() => (smartBuilderOpen = false)} />
+  <SmartCollectionBuilderSheet
+    mode="create"
+    onClose={() => (smartBuilderOpen = false)}
+  />
 {/if}
 
 {#if smartEditTarget?.filterSpec}
-	<SmartCollectionBuilderSheet
-		mode="edit"
-		editCollectionId={smartEditTarget.id}
-		initialSpec={smartEditTarget.filterSpec}
-		onClose={() => (smartEditTarget = null)}
-	/>
+  <SmartCollectionBuilderSheet
+    mode="edit"
+    editCollectionId={smartEditTarget.id}
+    initialSpec={smartEditTarget.filterSpec}
+    onClose={() => (smartEditTarget = null)}
+  />
 {/if}
 
 <style>
-	/* ── Desktop split: rail + detail pane ──────────────────────────── */
+  /* ── Desktop split: rail + detail pane ──────────────────────────── */
 
-	.library-split {
-		display: grid;
-		grid-template-columns: clamp(300px, 24cqi, 400px) minmax(0, 1fr);
-		width: 100%;
-		height: 100%;
-		min-height: 0;
-	}
+  .library-split {
+    display: grid;
+    grid-template-columns: clamp(300px, 24cqi, 400px) minmax(0, 1fr);
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
 
-	.rail {
-		display: flex;
-		flex-direction: column;
-		gap: 14px;
-		min-height: 0;
-		overflow-y: auto;
-		padding: clamp(12px, 1.8cqi, 24px);
-		border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-	}
+  .rail {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+    overflow-y: auto;
+    padding: clamp(12px, 1.8cqi, 24px);
+    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
 
-	.rail-cards {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
+  .rail-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
 
-	.detail-pane {
-		min-width: 0;
-		min-height: 0;
-		height: 100%;
-		overflow: hidden;
-	}
+  .detail-pane {
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
 
-	/* ── Embedded Art gallery (tunnels / scenes / mandalas) ──────────── */
+  /* ── Embedded Art gallery (tunnels / scenes / mandalas) ──────────── */
 
-	.art-detail {
-		display: flex;
-		flex-direction: column;
-		height: 100%;
-		min-height: 0;
-	}
+  .art-detail {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
 
-	/* Fixed-height bar: content below never shifts as the title changes. */
-	.art-detail-bar {
-		flex: 0 0 auto;
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		height: 48px;
-		padding: 0 12px;
-		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-	}
+  /* Fixed-height bar: content below never shifts as the title changes. */
+  .art-detail-bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 48px;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
 
-	.art-back {
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-		min-height: 44px;
-		padding: 0 14px;
-		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-		border-radius: 999px;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-		color: var(--theme-text, rgba(255, 255, 255, 0.9));
-		font-size: 14px;
-		font-weight: 600;
-		cursor: pointer;
-		transition: background 0.15s ease;
-	}
+  .art-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 999px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    color: var(--theme-text, rgba(255, 255, 255, 0.9));
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
 
-	.art-back:hover {
-		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
-	}
+  .art-back:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
+  }
 
-	.art-detail-title {
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
-		font-size: 14px;
-		font-weight: 600;
-	}
+  .art-detail-title {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+    font-size: 14px;
+    font-weight: 600;
+  }
 
-	.art-detail-body {
-		flex: 1;
-		min-height: 0;
-		overflow: hidden;
-	}
+  .art-detail-body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
 
-	.art-detail-loading {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		height: 100%;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-		font-size: 14px;
-	}
+  .art-detail-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: 14px;
+  }
 
-	.art-detail-loading i {
-		font-size: 24px;
-	}
+  .art-detail-loading i {
+    font-size: 24px;
+  }
 
-	/* ── Phone list ─────────────────────────────────────────────────── */
+  /* ── Phone list ─────────────────────────────────────────────────── */
 
-	.collections-list {
-		display: flex;
-		flex-direction: column;
-		gap: 14px;
-		height: 100%;
-		min-height: 0;
-		overflow-y: auto;
-		padding: clamp(12px, 3cqi, 28px);
-		/* A handful of collections on a narrow panel otherwise huddles in
+  .collections-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    padding: clamp(12px, 3cqi, 28px);
+    /* A handful of collections on a narrow panel otherwise huddles in
 		   the top-left corner — cap the column and center it so the page reads
 		   composed at any count. */
-		width: 100%;
-		max-width: 880px;
-		margin-inline: auto;
-	}
+    width: 100%;
+    max-width: 880px;
+    margin-inline: auto;
+  }
 
-	.list-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
+  .list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
 
-	.list-title {
-		margin: 0;
-		font-size: clamp(17px, 2.6cqi, 22px);
-		font-weight: 700;
-		color: var(--theme-text, white);
-	}
+  .list-title {
+    margin: 0;
+    font-size: clamp(17px, 2.6cqi, 22px);
+    font-weight: 700;
+    color: var(--theme-text, white);
+  }
 
-	.card-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-		gap: 10px;
-		align-content: start;
-	}
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+    align-content: start;
+  }
 
-	/* Section headers: My Collections / TKA Core / Following each read as
+  /* Section headers: My Collections / TKA Core / Following each read as
 	   their own labeled shelf. */
-	.shelf-heading {
-		margin: 10px 0 0;
-		font-size: var(--font-size-sm, 14px);
-		font-weight: 700;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-	}
+  .shelf-heading {
+    margin: 10px 0 0;
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 700;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
 
-	.new-tile-input {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		min-height: 72px;
-	}
+  .new-tile-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 72px;
+  }
 
-	.name-field {
-		flex: 1;
-		min-width: 0;
-		height: 44px;
-		padding: 0 14px;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border: 1.5px solid color-mix(in srgb, var(--theme-accent) 45%, transparent);
-		border-radius: 12px;
-		color: var(--theme-text, white);
-		font-size: var(--font-size-sm, 14px);
-		font-family: inherit;
-	}
+  .name-field {
+    flex: 1;
+    min-width: 0;
+    height: 44px;
+    padding: 0 14px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid color-mix(in srgb, var(--theme-accent) 45%, transparent);
+    border-radius: 12px;
+    color: var(--theme-text, white);
+    font-size: var(--font-size-sm, 14px);
+    font-family: inherit;
+  }
 
-	.name-field:focus {
-		outline: none;
-		border-color: color-mix(in srgb, var(--theme-accent) 70%, transparent);
-		box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 14%, transparent);
-	}
+  .name-field:focus {
+    outline: none;
+    border-color: color-mix(in srgb, var(--theme-accent) 70%, transparent);
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--theme-accent) 14%, transparent);
+  }
 
-	.name-field::placeholder {
-		color: color-mix(in srgb, var(--theme-text-dim, #888) 70%, transparent);
-	}
+  .name-field::placeholder {
+    color: color-mix(in srgb, var(--theme-text-dim, #888) 70%, transparent);
+  }
 
-	.confirm-create {
-		flex-shrink: 0;
-		width: 44px;
-		height: 44px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border: 1px solid color-mix(in srgb, var(--theme-accent) 45%, transparent);
-		border-radius: 50%;
-		background: color-mix(in srgb, var(--theme-accent) 22%, transparent);
-		color: var(--theme-text, white);
-		cursor: pointer;
-		transition: background var(--duration-fast, 150ms) ease;
-	}
+  .confirm-create {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 45%, transparent);
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--theme-accent) 22%, transparent);
+    color: var(--theme-text, white);
+    cursor: pointer;
+    transition: background var(--duration-fast, 150ms) ease;
+  }
 
-	.confirm-create:hover:not(:disabled) {
-		background: color-mix(in srgb, var(--theme-accent) 34%, transparent);
-	}
+  .confirm-create:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--theme-accent) 34%, transparent);
+  }
 
-	.confirm-create:disabled {
-		opacity: 0.4;
-		cursor: not-allowed;
-	}
+  .confirm-create:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
 
-	.confirm-create:focus-visible {
-		outline: 2px solid var(--theme-accent);
-		outline-offset: 2px;
-	}
+  .confirm-create:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
 
-	.tile-skeleton {
-		min-height: 72px;
-		border-radius: 14px;
-		background: color-mix(in srgb, var(--theme-text-dim, #888) 12%, transparent);
-		animation: skeleton-pulse 1.2s ease-in-out infinite;
-	}
+  .tile-skeleton {
+    min-height: 72px;
+    border-radius: 14px;
+    background: color-mix(
+      in srgb,
+      var(--theme-text-dim, #888) 12%,
+      transparent
+    );
+    animation: skeleton-pulse 1.2s ease-in-out infinite;
+  }
 
-	@keyframes skeleton-pulse {
-		0%,
-		100% {
-			opacity: 0.5;
-		}
-		50% {
-			opacity: 0.85;
-		}
-	}
+  @keyframes skeleton-pulse {
+    0%,
+    100% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 0.85;
+    }
+  }
 
-	.signed-out {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 10px;
-		padding: clamp(40px, 12cqh, 96px) 24px;
-		text-align: center;
-	}
+  .signed-out {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: clamp(40px, 12cqh, 96px) 24px;
+    text-align: center;
+  }
 
-	.signed-out-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 64px;
-		height: 64px;
-		border-radius: 18px;
-		background: color-mix(in srgb, var(--theme-accent) 14%, transparent);
-		color: color-mix(in srgb, var(--theme-accent) 80%, white);
-		font-size: 24px;
-	}
+  .signed-out-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--theme-accent) 14%, transparent);
+    color: color-mix(in srgb, var(--theme-accent) 80%, white);
+    font-size: 24px;
+  }
 
-	.signed-out-title {
-		margin: 0;
-		font-size: var(--font-size-base, 16px);
-		font-weight: 600;
-		color: var(--theme-text, white);
-	}
+  .signed-out-title {
+    margin: 0;
+    font-size: var(--font-size-base, 16px);
+    font-weight: 600;
+    color: var(--theme-text, white);
+  }
 
-	.signed-out-hint {
-		margin: 0;
-		max-width: 380px;
-		font-size: var(--font-size-sm, 14px);
-		line-height: 1.5;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-	}
+  .signed-out-hint {
+    margin: 0;
+    max-width: 380px;
+    font-size: var(--font-size-sm, 14px);
+    line-height: 1.5;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+  }
 
-	.auth-actions {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-		margin-top: 6px;
-	}
+  .auth-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 6px;
+  }
 
-	@media (prefers-reduced-motion: reduce) {
-		.confirm-create {
-			transition: none;
-		}
-		.tile-skeleton {
-			animation: none;
-		}
-	}
+  @media (prefers-reduced-motion: reduce) {
+    .confirm-create {
+      transition: none;
+    }
+    .tile-skeleton {
+      animation: none;
+    }
+  }
 </style>

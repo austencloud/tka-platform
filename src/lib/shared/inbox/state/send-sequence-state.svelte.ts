@@ -3,6 +3,7 @@ import type { PendingMessageAttachment } from "../domain/pending-message-attachm
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
 import { inboxState } from "./inbox-state.svelte";
+import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
 export { buildSequenceSharePayload } from "../domain/build-sequence-share-payload";
 
 const FIREBASE_STORAGE_BUCKET = "the-kinetic-alphabet.firebasestorage.app";
@@ -46,4 +47,39 @@ export function openSendAttachmentSheet(
   options: { note?: string; receiptId?: string; conversationId?: string } = {}
 ): void {
   inboxState.openAttachmentShare(attachment, options);
+}
+
+type ShareableCollection = Pick<
+  LibraryCollection,
+  | "id"
+  | "ownerId"
+  | "name"
+  | "sequenceCount"
+  | "coverImageUrl"
+  | "color"
+  | "icon"
+> &
+  Partial<Pick<LibraryCollection, "systemType" | "kind">>;
+
+export function openShareCollectionSheet(
+  collection: ShareableCollection
+): void {
+  if (!authState.isFullAccount) {
+    authDrawerState.show("signup", "share-collection");
+    return;
+  }
+  if (collection.systemType || collection.kind === "smart") return;
+
+  inboxState.openAttachmentShare({
+    type: "collection",
+    payload: {
+      collectionId: collection.id,
+      ownerId: collection.ownerId,
+      name: collection.name,
+      sequenceCount: collection.sequenceCount,
+      coverImageUrl: collection.coverImageUrl,
+      color: collection.color,
+      icon: collection.icon,
+    },
+  });
 }

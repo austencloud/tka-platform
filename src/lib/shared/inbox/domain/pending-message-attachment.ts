@@ -1,5 +1,15 @@
 import type { SequenceSharePayload } from "./models/sequence-share-payload";
 
+export interface CollectionSharePayload {
+  collectionId: string;
+  ownerId: string;
+  name: string;
+  sequenceCount: number;
+  coverImageUrl?: string;
+  color?: string;
+  icon?: string;
+}
+
 /**
  * What is staged to send with a message.
  *
@@ -21,4 +31,8 @@ export type PendingMessageAttachment =
   | {
       type: "sequence";
       payload: SequenceSharePayload;
+    }
+  | {
+      type: "collection";
+      payload: CollectionSharePayload;
     };

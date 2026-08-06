@@ -60,6 +60,10 @@ export function toDate(timestamp: unknown): Date {
   if (timestamp instanceof Date) {
     return timestamp;
   }
+  if (typeof timestamp === "number" || typeof timestamp === "string") {
+    const parsed = new Date(timestamp);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
   return new Date();
 }
 
@@ -76,6 +80,7 @@ export function mapDocToCollection(
     description: data["description"],
     ownerId: data["ownerId"] ?? "",
     sequenceIds: data["sequenceIds"] ?? [],
+    sequenceOwnerIds: data["sequenceOwnerIds"],
     sequenceCount: data["sequenceCount"] ?? 0,
     coverImageUrl: data["coverImageUrl"],
     color: data["color"],

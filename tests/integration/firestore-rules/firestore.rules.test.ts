@@ -158,12 +158,8 @@ describe("user profile privilege boundaries", () => {
       })
       .firestore(SDK_SETTINGS);
 
-    await assertSucceeds(
-      getDoc(doc(fullDb, "users/missing-full-profile"))
-    );
-    await assertSucceeds(
-      getDoc(doc(anonDb, "users/missing-anon-profile"))
-    );
+    await assertSucceeds(getDoc(doc(fullDb, "users/missing-full-profile")));
+    await assertSucceeds(getDoc(doc(anonDb, "users/missing-anon-profile")));
   });
 
   it("keeps privileged profile mutations available to administrators", async () => {
@@ -693,6 +689,127 @@ describe("collections: private is server-private, public is world-readable", () 
     await seed();
     const db = testEnv.unauthenticatedContext().firestore(SDK_SETTINGS);
     await assertFails(getDocs(collectionGroup(db, "collections")));
+  });
+});
+
+describe("collections: person-specific viewer and editor grants", () => {
+  const OWNER = "collection-owner";
+  const VIEWER = "collection-viewer";
+  const EDITOR = "collection-editor";
+  const STRANGER = "collection-stranger";
+  const collectionPath = `users/${OWNER}/collections/shared`;
+
+  function userCtx(uid: string) {
+    return testEnv.authenticatedContext(uid, {
+      firebase: { sign_in_provider: "password" },
+    });
+  }
+
+  async function seedSharedCollection() {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore(SDK_SETTINGS);
+      await setDoc(doc(db, collectionPath), {
+        ownerId: OWNER,
+        name: "Shared practice",
+        isPublic: false,
+        kind: "manual",
+        sequenceIds: ["s1"],
+        sequenceOwnerIds: { s1: OWNER },
+        sequenceCount: 1,
+      });
+      await setDoc(doc(db, `${collectionPath}/shares/${VIEWER}`), {
+        ownerId: OWNER,
+        collectionId: "shared",
+        recipientId: VIEWER,
+        role: "viewer",
+      });
+      await setDoc(doc(db, `${collectionPath}/shares/${EDITOR}`), {
+        ownerId: OWNER,
+        collectionId: "shared",
+        recipientId: EDITOR,
+        role: "editor",
+      });
+    });
+  }
+
+  it("lets each recipient discover only their own share grant", async () => {
+    await seedSharedCollection();
+    const viewerDb = userCtx(VIEWER).firestore(SDK_SETTINGS);
+    const viewerShares = await assertSucceeds(
+      getDocs(
+        query(
+          collectionGroup(viewerDb, "shares"),
+          where("recipientId", "==", VIEWER)
+        )
+      )
+    );
+    if (viewerShares.size !== 1) {
+      throw new Error(
+        `Expected one viewer share, received ${viewerShares.size}`
+      );
+    }
+
+    const strangerDb = userCtx(STRANGER).firestore(SDK_SETTINGS);
+    await assertFails(
+      getDocs(
+        query(
+          collectionGroup(strangerDb, "shares"),
+          where("recipientId", "==", VIEWER)
+        )
+      )
+    );
+  });
+
+  it("lets viewers read the collection but not modify it", async () => {
+    await seedSharedCollection();
+    const db = userCtx(VIEWER).firestore(SDK_SETTINGS);
+    await assertSucceeds(getDoc(doc(db, collectionPath)));
+    await assertFails(updateDoc(doc(db, collectionPath), { name: "Nope" }));
+  });
+
+  it("lets editors change presentation and membership fields", async () => {
+    await seedSharedCollection();
+    const db = userCtx(EDITOR).firestore(SDK_SETTINGS);
+    await assertSucceeds(
+      updateDoc(doc(db, collectionPath), {
+        name: "Edited together",
+        sequenceIds: ["s1", "s2"],
+        sequenceOwnerIds: { s1: OWNER, s2: EDITOR },
+        sequenceCount: 2,
+        updatedAt: new Date(),
+      })
+    );
+  });
+
+  it("prevents editors from changing owner controls or deleting", async () => {
+    await seedSharedCollection();
+    const db = userCtx(EDITOR).firestore(SDK_SETTINGS);
+    await assertFails(updateDoc(doc(db, collectionPath), { isPublic: true }));
+    await assertFails(updateDoc(doc(db, collectionPath), { ownerId: EDITOR }));
+    await assertFails(deleteDoc(doc(db, collectionPath)));
+  });
+
+  it("keeps grant writes behind the callable boundary", async () => {
+    await seedSharedCollection();
+    const ownerDb = userCtx(OWNER).firestore(SDK_SETTINGS);
+    const viewerDb = userCtx(VIEWER).firestore(SDK_SETTINGS);
+    await assertSucceeds(
+      getDocs(collection(ownerDb, `${collectionPath}/shares`))
+    );
+    await assertFails(
+      updateDoc(doc(ownerDb, `${collectionPath}/shares/${VIEWER}`), {
+        role: "editor",
+      })
+    );
+    await assertFails(
+      deleteDoc(doc(viewerDb, `${collectionPath}/shares/${VIEWER}`))
+    );
+  });
+
+  it("does not grant a signed-in stranger access", async () => {
+    await seedSharedCollection();
+    const db = userCtx(STRANGER).firestore(SDK_SETTINGS);
+    await assertFails(getDoc(doc(db, collectionPath)));
   });
 });
 

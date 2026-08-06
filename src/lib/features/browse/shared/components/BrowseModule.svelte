@@ -1,9 +1,8 @@
 <script lang="ts">
-
-import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cache-orchestrator";
+  import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cache-orchestrator";
   import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
+  import type { DeviceDetector } from "$lib/shared/device/services/device-detector";
   import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
   import { getBrowseEventHandler } from "../get-browse-event-handler";
   import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/get-thumbnail-render-orchestrator";
@@ -53,6 +52,9 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
   import { communityCollectionsState } from "$lib/features/browse/collections/state/community-collections-state.svelte";
+  import { createSharedCollectionsState } from "$lib/features/browse/collections/state/shared-collections-state.svelte";
+  import { setSharedCollectionsContext } from "$lib/features/browse/collections/context/shared-collections-context";
+  import { getCollectionCollaborationManager } from "$lib/shared/library/get-collection-collaboration-manager";
   import type { CollectionOption } from "$lib/features/browse/gallery-home/gallery-drill-catalog.svelte";
   import FilterRuleStrip from "$lib/shared/browse/components/FilterRuleStrip.svelte";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
@@ -65,10 +67,19 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   // (/browse/discover, /browse/collections/{id} scan links) and persisted nav
   // state migrate in navigation-coordinator.svelte.ts and
   // browse-navigation-state.svelte.ts.
-  type BrowseModuleType = "gallery" | "library" | "collections" | "hall-of-shame";
+  type BrowseModuleType =
+    | "gallery"
+    | "library"
+    | "collections"
+    | "hall-of-shame";
 
   // Tab order for determining slide direction (left-to-right in bottom nav)
-  const TAB_ORDER: BrowseModuleType[] = ["gallery", "library", "collections", "hall-of-shame"];
+  const TAB_ORDER: BrowseModuleType[] = [
+    "gallery",
+    "library",
+    "collections",
+    "hall-of-shame",
+  ];
 
   // Transition configuration
   const SLIDE_DISTANCE = 30; // pixels
@@ -119,6 +130,15 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   const orchestrator = getOfflineCacheOrchestrator();
   const offlineCacheState = createOfflineCacheState(orchestrator);
   setOfflineCacheContext(offlineCacheState);
+
+  const sharedCollectionsState = createSharedCollectionsState(
+    getCollectionCollaborationManager()
+  );
+  setSharedCollectionsContext(sharedCollectionsState);
+
+  $effect(() => {
+    sharedCollectionsState.start(authState.user?.uid ?? null);
+  });
 
   // ✅ PURE RUNES: Local state
   let _selectedSequence = $state<SequenceData | null>(null);
@@ -187,6 +207,9 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
         coverImageUrl?: string;
         color?: string;
         icon?: string;
+        ownerId?: string;
+        systemType?: string;
+        kind?: string;
       },
       ownerName?: string
     ) => {
@@ -200,6 +223,8 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
         color: c.color,
         icon: c.icon,
         ownerName,
+        ownerId: c.ownerId,
+        canShare: !ownerName && !c.systemType && c.kind !== "smart",
       });
     };
     for (const c of collectionsState.collections) push(c);
@@ -214,9 +239,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   const loopKeyByValue = $derived(
     new Map(
       [...engine.activeFilters]
-        .filter(
-          ([, f]) => f.type === BrowseFilterType.LOOP_TYPE && !f.locked
-        )
+        .filter(([, f]) => f.type === BrowseFilterType.LOOP_TYPE && !f.locked)
         .map(([key, f]) => [String(f.value), key])
     )
   );
@@ -224,9 +247,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   const familyKeyByValue = $derived(
     new Map(
       [...engine.activeFilters]
-        .filter(
-          ([, f]) => f.type === BrowseFilterType.TND_FAMILY && !f.locked
-        )
+        .filter(([, f]) => f.type === BrowseFilterType.TND_FAMILY && !f.locked)
         .map(([key, f]) => [String(f.value), key])
     )
   );
@@ -516,7 +537,9 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     // with fresh data. This cast is intentional - adding clearCache() to PublicSequencesLoader
     // is a larger interface change deferred to a later task.
     const unsubscribeReconnect = networkStatusState.onOnline(() => {
-      const loader = getBrowseLoader() as unknown as { cachedSequences?: unknown };
+      const loader = getBrowseLoader() as unknown as {
+        cachedSequences?: unknown;
+      };
       if (loader) {
         loader.cachedSequences = null;
       }
@@ -552,15 +575,12 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       eventHandlerService.initialize({
         engine,
         openAnimationModal,
-        setSelectedSequence: (seq: SequenceData | null) => (_selectedSequence = seq),
+        setSelectedSequence: (seq: SequenceData | null) =>
+          (_selectedSequence = seq),
         setError: (err: string | null) => (error = err),
       });
-
     } catch (err) {
-      console.error(
-        "BrowseModule: Failed to resolve BrowseEventHandler",
-        err
-      );
+      console.error("BrowseModule: Failed to resolve BrowseEventHandler", err);
       error = "Failed to initialize browse module services";
     }
 
@@ -618,6 +638,10 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     };
   });
 
+  onDestroy(() => {
+    sharedCollectionsState.stop();
+  });
+
   // Cancel all pending thumbnail renders when leaving the browse module
   // This prevents the render queue from continuing to process after navigation
   onDestroy(() => {
@@ -647,8 +671,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       connectives={engine.connectives}
       onEditFilter={(type) =>
         (drillSeed = { section: SECTION_FOR_FILTER_TYPE[type] })}
-      onRemoveFilter={(key) =>
-        withResultsMorph(() => engine.removeFilter(key))}
+      onRemoveFilter={(key) => withResultsMorph(() => engine.removeFilter(key))}
     />
   {:else}
     <span class="strip-empty">No filters yet — pick one on the left.</span>
@@ -755,9 +778,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
                       ariaLabel="Save these filters as a Smart Collection"
                       onclick={() => (smartSaveOpen = true)}
                     >
-                      <i
-                        class="fas fa-wand-magic-sparkles"
-                        aria-hidden="true"
+                      <i class="fas fa-wand-magic-sparkles" aria-hidden="true"
                       ></i>
                       Save
                     </PanelButton>
@@ -801,7 +822,10 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
                     String(BrowseFilterType.LOOP_TYPE)
                   ] ?? "any"}
                   onLoopConnectiveChange={(connective) =>
-                    engine.setConnective(BrowseFilterType.LOOP_TYPE, connective)}
+                    engine.setConnective(
+                      BrowseFilterType.LOOP_TYPE,
+                      connective
+                    )}
                   onToggleLoop={(value, label, color, nowActive) => {
                     if (nowActive) {
                       engine.addFilter(
@@ -820,7 +844,10 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
                     String(BrowseFilterType.TND_FAMILY)
                   ] ?? "any"}
                   onFamilyConnectiveChange={(connective) =>
-                    engine.setConnective(BrowseFilterType.TND_FAMILY, connective)}
+                    engine.setConnective(
+                      BrowseFilterType.TND_FAMILY,
+                      connective
+                    )}
                   onToggleFamily={(familyId, label, color, nowActive) => {
                     if (nowActive) {
                       engine.addFilter(
@@ -860,8 +887,13 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
               {error}
               warming={gridWarming}
               onSequenceAction={(action, sequence, variations) => {
-                return eventHandlerService?.handleSequenceAction(action, sequence, variations) ??
-                  Promise.resolve();
+                return (
+                  eventHandlerService?.handleSequenceAction(
+                    action,
+                    sequence,
+                    variations
+                  ) ?? Promise.resolve()
+                );
               }}
               onBackToStart={() => {
                 // Back to the WORKSPACE, rule intact — the strip shows and
@@ -927,8 +959,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     gap: 0.5rem 0.9rem;
     padding: 0.55rem 1rem;
     flex: 0 0 auto;
-    border-bottom: 1px solid
-      var(--theme-border, rgba(255, 255, 255, 0.12));
+    border-bottom: 1px solid var(--theme-border, rgba(255, 255, 255, 0.12));
   }
 
   .strip-count {

@@ -27,6 +27,8 @@
   import type { FilterConnective } from "$lib/shared/browse/services/multi-filter";
   import type { Snippet } from "svelte";
   import { Slider } from "bits-ui";
+  import { openShareCollectionSheet } from "$lib/shared/inbox/state/send-sequence-state.svelte";
+  import type { CollectionOption } from "./gallery-drill-catalog.svelte";
   import {
     FAN_TILTS,
     LEVEL_DESCRIPTIONS,
@@ -48,7 +50,10 @@
     chooserTitle?: string;
     chooserHint?: string;
     stackHint?: string;
-    isValueApplied?: (type: BrowseFilterType, value: string | number) => boolean;
+    isValueApplied?: (
+      type: BrowseFilterType,
+      value: string | number
+    ) => boolean;
     activeLoopValues?: ReadonlySet<string>;
     onToggleLoop?: unknown;
     loopConnective: FilterConnective;
@@ -114,6 +119,23 @@
     onApply,
     onSelectCategory,
   }: Props = $props();
+
+  function handleCollectionContextMenu(
+    event: MouseEvent,
+    collection: CollectionOption
+  ): void {
+    if (!collection.canShare || !collection.ownerId) return;
+    event.preventDefault();
+    openShareCollectionSheet({
+      id: collection.id,
+      ownerId: collection.ownerId,
+      name: collection.name,
+      sequenceCount: collection.size,
+      coverImageUrl: collection.coverImageUrl,
+      color: collection.color,
+      icon: collection.icon,
+    });
+  }
 
   // Art scale inside the capped editor pane — the container queries widen the
   // cards, but SequencePeek's box is a prop.
@@ -376,7 +398,8 @@
             type="button"
             aria-pressed={isValueApplied ? lengthApplied : undefined}
             disabled={valueDisabled(v.count, lengthApplied)}
-            onclick={() => onPickValue(BrowseFilterType.LENGTH, v.value, v.label)}
+            onclick={() =>
+              onPickValue(BrowseFilterType.LENGTH, v.value, v.label)}
           >
             <span class="value-numeral small">{v.value}</span>
             <span class="value-main">
@@ -442,7 +465,6 @@
               {/snippet}
             </Slider.Root>
           </div>
-
         </div>
       {:else}
         <div class="value-list">
@@ -476,7 +498,8 @@
       <div class="letter-grid">
         {#each catalog.letterValues as v (v.value)}
           {@const letterApplied =
-            isValueApplied?.(BrowseFilterType.STARTING_LETTER, v.value) ?? false}
+            isValueApplied?.(BrowseFilterType.STARTING_LETTER, v.value) ??
+            false}
           <button
             class="letter-chip"
             class:value-applied={letterApplied}
@@ -560,7 +583,8 @@
             aria-label={`${v.value}, ${v.count} sequences`}
             aria-pressed={isValueApplied ? creatorApplied : undefined}
             disabled={valueDisabled(v.count, creatorApplied)}
-            onclick={() => onPickValue(BrowseFilterType.OWNER, v.value, v.value)}
+            onclick={() =>
+              onPickValue(BrowseFilterType.OWNER, v.value, v.value)}
           >
             <RobustAvatar
               class="creator-avatar"
@@ -703,6 +727,7 @@
             aria-label={`${v.name}, ${v.count} sequences`}
             aria-pressed={isValueApplied ? applied : undefined}
             disabled={valueDisabled(v.count, applied)}
+            oncontextmenu={(event) => handleCollectionContextMenu(event, v)}
             onclick={() =>
               onPickValue(
                 BrowseFilterType.COLLECTION,
@@ -912,7 +937,6 @@
     outline-offset: 2px;
   }
 
-
   .value-list {
     display: flex;
     flex-direction: column;
@@ -1105,11 +1129,11 @@
 
   /* Stability over deletion: options and catalog tiles that a rule change
      zeroes out dim instead of unmounting (audit X-4/D-5). */
-.length-row:disabled {
+  .length-row:disabled {
     opacity: 0.45;
     cursor: not-allowed;
   }
-.length-row:disabled:hover {
+  .length-row:disabled:hover {
     transform: none;
     border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
@@ -1294,7 +1318,6 @@
     .drill-screen {
       gap: 1rem;
     }
-
 
     /* Back earns its label once the wide stage strands it away from the title. */
     .head-back {
@@ -1483,7 +1506,6 @@
       font-size: 1.05rem;
     }
 
-
     .value-list {
       grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
       gap: 1rem;
@@ -1572,13 +1594,6 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-auto-rows: minmax(5.5rem, auto);
   }
-
-
-
-
-
-
-
 
   .unified-choice-grid:has(> :nth-child(2):last-child),
   .unified-choice-grid:has(> :nth-child(4):last-child),
@@ -1863,7 +1878,6 @@
     color: var(--theme-text, #e8edf6);
   }
 
-
   @container drill (max-width: 639.98px) {
     .drill-ctx.unified-filter-chooser .drill-screen {
       gap: 0.55rem;
@@ -1873,14 +1887,6 @@
       gap: 0.35rem;
       grid-auto-rows: minmax(4.25rem, auto);
     }
-
-
-
-
-
-
-
-
 
     /* The complete Smart Collection catalog is ten choices. Two equal columns
        keep every label readable without sending the user to another screen. */
@@ -2358,9 +2364,6 @@
   }
 
   @container drill (min-width: 640px) {
-
-
-
     .drill-ctx.adaptive-value-layout .value-list {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       grid-auto-rows: minmax(7rem, auto);
@@ -2388,11 +2391,6 @@
     .drill-ctx.unified-filter-chooser .unified-choice-grid {
       grid-auto-rows: minmax(5.5rem, auto);
     }
-
-
-
-
-
   }
 
   @container drill (min-width: 900px) {
@@ -2402,14 +2400,10 @@
       grid-auto-rows: minmax(8rem, auto);
     }
 
-    .drill-ctx.unified-filter-chooser .unified-choice-grid:has(> :nth-child(9)) {
+    .drill-ctx.unified-filter-chooser
+      .unified-choice-grid:has(> :nth-child(9)) {
       grid-template-columns: repeat(5, minmax(0, 1fr));
     }
-
-
-
-
-
 
     .drill-ctx.adaptive-value-layout
       .screen-length
@@ -2488,7 +2482,6 @@
       grid-auto-rows: minmax(10rem, auto);
     }
 
-
     .drill-ctx.adaptive-value-layout {
       --decision-band-width: clamp(90rem, 72cqw, 132rem);
     }
@@ -2535,24 +2528,22 @@
       height: 0.75rem;
     }
 
-    .drill-ctx.adaptive-value-layout .screen-max-turns :global(.turn-slider-thumb) {
+    .drill-ctx.adaptive-value-layout
+      .screen-max-turns
+      :global(.turn-slider-thumb) {
       width: 2.75rem;
       height: 2.75rem;
     }
 
-    .drill-ctx.adaptive-value-layout .screen-max-turns :global(.turn-slider-label) {
+    .drill-ctx.adaptive-value-layout
+      .screen-max-turns
+      :global(.turn-slider-label) {
       padding-top: 0.75rem;
       font-size: 1rem;
     }
-
   }
 
   @container drill (min-width: 2600px) {
-
-
-
-
-
     .drill-ctx.adaptive-value-layout .level-tile {
       gap: 0.85rem;
       padding: 2rem;
@@ -2599,16 +2590,19 @@
       height: 0.9rem;
     }
 
-    .drill-ctx.adaptive-value-layout .screen-max-turns :global(.turn-slider-thumb) {
+    .drill-ctx.adaptive-value-layout
+      .screen-max-turns
+      :global(.turn-slider-thumb) {
       width: 3.25rem;
       height: 3.25rem;
     }
 
-    .drill-ctx.adaptive-value-layout .screen-max-turns :global(.turn-slider-label) {
+    .drill-ctx.adaptive-value-layout
+      .screen-max-turns
+      :global(.turn-slider-label) {
       padding-top: 0.9rem;
       font-size: 1.2rem;
     }
-
   }
 
   /* Portrait tablets should follow their long axis. Three-choice screens use
@@ -2708,7 +2702,10 @@
         margin-left: auto;
       }
 
-      .drill-ctx.adaptive-value-layout .screen-level .level-tile :global(.peek) {
+      .drill-ctx.adaptive-value-layout
+        .screen-level
+        .level-tile
+        :global(.peek) {
         order: -1;
         flex: 0 0 auto;
       }
@@ -2730,11 +2727,17 @@
       align-content: center;
     }
 
-    .drill-ctx.adaptive-value-layout .screen-length > .value-list > .length-row {
+    .drill-ctx.adaptive-value-layout
+      .screen-length
+      > .value-list
+      > .length-row {
       grid-column: span 2;
     }
 
-    .drill-ctx.adaptive-value-layout .screen-length > .value-list > :nth-child(5) {
+    .drill-ctx.adaptive-value-layout
+      .screen-length
+      > .value-list
+      > :nth-child(5) {
       grid-column: 2 / span 2;
     }
   }
@@ -2753,7 +2756,8 @@
       display: none;
     }
 
-    .drill-ctx.unified-filter-chooser .unified-choice-grid:has(> :nth-child(9)) {
+    .drill-ctx.unified-filter-chooser
+      .unified-choice-grid:has(> :nth-child(9)) {
       width: 100%;
       grid-template-columns: repeat(10, minmax(0, 1fr));
       grid-template-rows: repeat(2, minmax(44px, 1fr));
@@ -2785,8 +2789,6 @@
       :global(.mini-sub) {
       display: none;
     }
-
-
 
     .unified-choice-grid:has(> :nth-child(9):last-child) > :nth-child(6) {
       grid-column: 2 / span 2;
@@ -2934,7 +2936,10 @@
       text-align: left;
     }
 
-    .drill-ctx.adaptive-value-layout .screen-level .level-tile > :global(.peek) {
+    .drill-ctx.adaptive-value-layout
+      .screen-level
+      .level-tile
+      > :global(.peek) {
       display: none;
     }
 
@@ -3170,7 +3175,6 @@
     .drill-ctx.adaptive-value-layout .screen-max-turns .turn-slider-shell {
       padding: 0 0.5rem 1.75rem;
     }
-
   }
 
   /* A tall cover screen is not an iPhone SE with spare pixels. Keep the
@@ -3189,13 +3193,6 @@
       grid-auto-rows: minmax(7rem, 7.25rem);
     }
 
-
-
-
-
-
-
-
     /* The single-column stretch composition below is tuned to the SHORT
        page-gallery list (≤8 values). A dense builder catalog keeps its
        compact wrapped chips (see the dense section at the end of this file). */
@@ -3206,7 +3203,10 @@
       gap: 0.45rem;
     }
 
-    .drill-ctx.adaptive-value-layout .screen-length > .value-list:not(.dense) > * {
+    .drill-ctx.adaptive-value-layout
+      .screen-length
+      > .value-list:not(.dense)
+      > * {
       width: 100% !important;
       grid-column: auto !important;
       grid-row: auto !important;
@@ -3443,11 +3443,12 @@
       height: 0.75rem;
     }
 
-    .drill-ctx.adaptive-value-layout .screen-max-turns :global(.turn-slider-thumb) {
+    .drill-ctx.adaptive-value-layout
+      .screen-max-turns
+      :global(.turn-slider-thumb) {
       width: 2.75rem;
       height: 2.75rem;
     }
-
   }
 
   @media (min-width: 700px) and (max-width: 900px) and (min-height: 1000px) {
@@ -3458,13 +3459,6 @@
       align-content: center;
       gap: 0.75rem;
     }
-
-
-
-
-
-
-
 
     /* Seven values need a composition, not an orphan. A 2 / 3 / 2 diamond
        gives every length a substantial tablet target while preserving one
@@ -3757,7 +3751,10 @@
       grid-column: span 2;
     }
 
-    .drill-ctx.adaptive-value-layout .screen-length > .value-list > :nth-child(5) {
+    .drill-ctx.adaptive-value-layout
+      .screen-length
+      > .value-list
+      > :nth-child(5) {
       grid-column: 2 / span 2;
     }
 
@@ -3899,13 +3896,17 @@
         justify-self: stretch;
       }
 
-      .drill-ctx.persistent-desktop-catalog .screen-length .length-row.monument {
+      .drill-ctx.persistent-desktop-catalog
+        .screen-length
+        .length-row.monument {
         min-height: 0;
         gap: 0.6rem;
         padding: 1rem 0.5rem;
       }
 
-      .drill-ctx.persistent-desktop-catalog .screen-length .value-numeral.small {
+      .drill-ctx.persistent-desktop-catalog
+        .screen-length
+        .value-numeral.small {
         font-size: clamp(2.5rem, 3.2cqw, 3.6rem);
       }
 
@@ -3952,12 +3953,16 @@
       /* Content groups in the card's center — numeral, unit, bar, count as
          one readable stack instead of fragments pinned to the card's edges
          with a hollow middle (audit D-18). */
-      .drill-ctx.persistent-desktop-catalog .screen-length .length-row.monument {
+      .drill-ctx.persistent-desktop-catalog
+        .screen-length
+        .length-row.monument {
         justify-content: center;
         gap: 0.85rem;
       }
 
-      .drill-ctx.persistent-desktop-catalog .screen-length .value-numeral.small {
+      .drill-ctx.persistent-desktop-catalog
+        .screen-length
+        .value-numeral.small {
         font-size: clamp(3rem, 3.6cqw, 4.25rem);
       }
 
@@ -3992,7 +3997,6 @@
       .drill-ctx.adaptive-value-layout .creator-row {
         min-height: 8.5rem;
       }
-
     }
   }
 
@@ -4017,7 +4021,9 @@
         gap: 1rem;
       }
 
-      .drill-ctx.persistent-desktop-catalog .screen-length .value-numeral.small {
+      .drill-ctx.persistent-desktop-catalog
+        .screen-length
+        .value-numeral.small {
         font-size: 5rem;
       }
 
@@ -4069,7 +4075,6 @@
       .drill-ctx.adaptive-value-layout .screen-max-turns .turn-unit {
         font-size: 1.3rem;
       }
-
     }
   }
 

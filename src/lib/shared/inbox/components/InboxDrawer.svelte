@@ -19,6 +19,7 @@
   import MessageThread from "./messages/MessageThread.svelte";
   import NewMessageSheet from "./messages/NewMessageSheet.svelte";
   import SendAttachmentSheet from "./messages/SendAttachmentSheet.svelte";
+  import ShareCollectionSheet from "./messages/ShareCollectionSheet.svelte";
   import GroupSettingsSheet from "./messages/GroupSettingsSheet.svelte";
   import NotificationList from "./notifications/NotificationList.svelte";
   import { conversationService } from "../../messaging/services/conversation-manager";
@@ -256,9 +257,8 @@
 
     // Null for an ordinary in-app share; there is no intake record behind it.
     if (!receiptId) return;
-    const { completeShareIntake } = await import(
-      "$lib/shared/share-intake/services/share-intake-runner"
-    );
+    const { completeShareIntake } =
+      await import("$lib/shared/share-intake/services/share-intake-runner");
     await completeShareIntake(receiptId);
   }
 
@@ -551,14 +551,16 @@
         <div class="spacer"></div>
       {:else if inboxState.currentView === "send-attachment"}
         <h2 id="inbox-title">
-          {inboxState.shareAttachment?.type === "image"
-            ? "Send image"
-            : "Send sequence"}
+          {inboxState.shareAttachment?.type === "collection"
+            ? "Share collection"
+            : inboxState.shareAttachment?.type === "image"
+              ? "Send image"
+              : "Send sequence"}
         </h2>
         <button
           class="close-button"
           onclick={handleCancelSequenceShare}
-          aria-label="Close sequence sharing"
+          aria-label="Close attachment sharing"
         >
           <i class="fas fa-times" aria-hidden="true"></i>
         </button>
@@ -619,11 +621,19 @@
         />
       {:else if inboxState.currentView === "send-attachment"}
         {#if inboxState.shareAttachment}
-          <SendAttachmentSheet
-            attachment={inboxState.shareAttachment}
-            initialNote={inboxState.shareAttachmentNote ?? ""}
-            onSent={handleSequenceSent}
-          />
+          {#if inboxState.shareAttachment.type === "collection"}
+            <ShareCollectionSheet
+              attachment={inboxState.shareAttachment}
+              initialNote={inboxState.shareAttachmentNote ?? ""}
+              onSent={handleSequenceSent}
+            />
+          {:else}
+            <SendAttachmentSheet
+              attachment={inboxState.shareAttachment}
+              initialNote={inboxState.shareAttachmentNote ?? ""}
+              onSent={handleSequenceSent}
+            />
+          {/if}
         {/if}
       {:else if inboxState.currentView === "group-settings"}
         {#if inboxState.selectedConversation}

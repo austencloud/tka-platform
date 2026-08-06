@@ -761,12 +761,22 @@ service cloud.firestore {
       allow read: if resource.data.isPublic == true;
     }
 
+    // A recipient discovers only their own person-specific collection grants
+    // through collectionGroup("shares"). The grant is a pointer; opening the
+    // collection still passes the access check on the collection document.
+    match /{path=**}/shares/{shareId} {
+      allow read: if isAuthenticated()
+        && resource.data.recipientId == request.auth.uid;
+    }
+
     // User Collections - PUBLIC collections are world-readable (via the
-    // collection-group rule above); PRIVATE ones are readable only by their
-    // owner (or an admin) for single-doc gets.
+    // collection-group rule above). Private collections are readable by their
+    // owner, an explicitly granted person, or an admin.
     match /users/{userId}/collections/{collectionId} {
       allow read: if resource.data.isPublic == true
         || isOwner(userId)
+        || (isAuthenticated()
+          && exists(/databases/$(database)/documents/users/$(userId)/collections/$(collectionId)/shares/$(request.auth.uid)))
         || isAdmin();
 
       // Publishing (the resulting doc has isPublic == true) requires a full
@@ -779,11 +789,33 @@ service cloud.firestore {
       // stay open to guests, same as the rest of the guest-tier
       // "play/save is open" surface — the un-publish case always evaluates
       // request.resource.data.isPublic != true and is never blocked.
-      allow create, update: if isOwner(userId)
+      allow create: if isOwner(userId)
         && (request.resource.data.isPublic != true || isFullUser());
+
+      // Owners retain the existing publish gate. Editors may change only the
+      // shared collection's presentation and ordered membership. Access,
+      // ownership, public state, system markers, and deletion stay owner-only.
+      allow update: if (isOwner(userId)
+          && (request.resource.data.isPublic != true || isFullUser()))
+        || (isAuthenticated()
+          && get(/databases/$(database)/documents/users/$(userId)/collections/$(collectionId)/shares/$(request.auth.uid)).data.role == 'editor'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'name', 'description', 'coverImageUrl', 'color', 'icon',
+            'sequenceIds', 'sequenceOwnerIds', 'sequenceCount', 'updatedAt'
+          ]));
 
       // Deleting never publishes anything; owner-only regardless of isPublic.
       allow delete: if isOwner(userId);
+
+      // Cross-account grants are written by callable functions after owner and
+      // conversation validation. Clients can read their own grant or, as the
+      // collection owner, list everyone who has access.
+      match /shares/{recipientId} {
+        allow read: if isOwner(userId)
+          || (isAuthenticated() && request.auth.uid == recipientId)
+          || isAdmin();
+        allow create, update, delete: if false;
+      }
     }
 
     // Followed collections - lightweight pointers to other users' public

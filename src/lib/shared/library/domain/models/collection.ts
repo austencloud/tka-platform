@@ -42,6 +42,19 @@ export type SystemCollectionType = SeededSystemCollectionType | "founding";
 /** A Smart Collection's rule targets one of these pools. */
 export type SmartCollectionSource = "community" | "my-library";
 
+/** Person-specific access to a manual collection owned by another user. */
+export type CollectionAccessRole = "viewer" | "editor";
+
+export interface CollectionShareGrant {
+  readonly ownerId: string;
+  readonly collectionId: string;
+  readonly recipientId: string;
+  readonly role: CollectionAccessRole;
+  readonly grantedBy: string;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+}
+
 /**
  * One saved filter, Firestore-safe. This is an OBJECT (not the engine's
  * `[key, ActiveFilter]` tuple) because Firestore forbids arrays-of-arrays.
@@ -124,6 +137,13 @@ export interface LibraryCollection {
   /** Sequence IDs in this collection (references, not embedded) */
   readonly sequenceIds: readonly string[];
 
+  /**
+   * Source library for each sequence. Old collections omit this map and treat
+   * every member as owner-authored. Shared collections use it when a
+   * collaborator contributes one of their own sequences.
+   */
+  readonly sequenceOwnerIds?: Readonly<Record<string, string>>;
+
   /** Sequence count (denormalized for display without loading sequences) */
   readonly sequenceCount: number;
 
@@ -166,6 +186,9 @@ export interface LibraryCollection {
 
   /** When last modified */
   readonly updatedAt: Date;
+
+  /** Viewer/editor role attached by the Shared with you loader, never stored on the collection doc. */
+  readonly accessRole?: CollectionAccessRole;
 }
 
 /**
