@@ -39,7 +39,16 @@
 	let elapsedMs = $state(0);
 	let expandedBuckets = $state<Set<number>>(new Set());
 
-	const ROWS_PER_BUCKET_FOLDED = 6;
+	/**
+	 * How many columns each bucket's grid actually resolved to, read back from
+	 * the laid-out grid rather than predicted from a media query. The folded
+	 * preview is then `columns × 2`, which fills exactly two complete rows at
+	 * every viewport — the "never a row of one" failure becomes unreachable
+	 * instead of being argued about per tier (.claude/rules/4k-native-layout.md).
+	 */
+	let columnsByBucket = $state<Record<number, number>>({});
+	const FOLDED_ROWS_OF_CELLS = 2;
+	const foldedCountFor = (count: number) => (columnsByBucket[count] ?? 3) * FOLDED_ROWS_OF_CELLS;
 
 	const entryOf = (word: string | null) => ROSTER.find((b) => b.word === word) ?? null;
 	const lettersOf = (word: string | null): ReadonlySet<string> =>
@@ -119,6 +128,40 @@
 			},
 		};
 	}
+
+	/**
+	 * Reads the resolved column count off the grid itself. Buckets do NOT share
+	 * one count — a bucket of 4-step units packs more cells per row than one of
+	 * 6-step units — so this is per bucket, keyed by circle count. Width drives
+	 * the count and the count only changes the grid's HEIGHT, so it settles in
+	 * one pass rather than oscillating.
+	 */
+	function watchColumns(node: HTMLElement, bucketCount: number) {
+		const measure = () => {
+			const cols = getComputedStyle(node)
+				.gridTemplateColumns.split(" ")
+				.filter((t) => t.trim().length > 0).length;
+			if (cols > 0 && columnsByBucket[bucketCount] !== cols) {
+				columnsByBucket = { ...columnsByBucket, [bucketCount]: cols };
+			}
+		};
+		const ro = new ResizeObserver(measure);
+		ro.observe(node);
+		measure();
+		return {
+			destroy() {
+				ro.disconnect();
+			},
+		};
+	}
+
+	/**
+	 * The widest unit anywhere in the bucket — including rows the fold is
+	 * hiding, so expanding never resizes the cells that were already on screen
+	 * (.claude/rules/no-layout-shift.md).
+	 */
+	const widestUnitIn = (combinations: readonly { unit: { steps: readonly unknown[] } }[]) =>
+		combinations.reduce((widest, c) => Math.max(widest, c.unit.steps.length), 1);
 </script>
 
 <div class="combinator">
@@ -189,22 +232,26 @@
 		<section class="buckets" aria-label="Results by circle count">
 			{#each report.buckets as bucket (bucket.count)}
 				{@const open = expandedBuckets.has(bucket.count)}
-				{@const rows = open ? bucket.combinations : bucket.combinations.slice(0, ROWS_PER_BUCKET_FOLDED)}
+				{@const rows = open
+					? bucket.combinations
+					: bucket.combinations.slice(0, foldedCountFor(bucket.count))}
 				{@const hidden = bucket.combinations.length - rows.length}
-				<article class="bucket">
+				<article class="bucket" style="--bucket-steps: {widestUnitIn(bucket.combinations)}">
 					<h2 class="bucket-head">
 						<span class="count">{bucket.count}</span>
 						<span class="count-label">count</span>
 						<!-- Words, not closures: this is the figure the oracle publishes
 					     (A+G reads 4:10 5:18 6:60 8:32 10:80 12:144 16:12 20:50 24:54),
-					     so a mismatch is visible rather than buried. -->
+					     so a mismatch is visible rather than buried. Kept beside the
+					     count rather than flung to the far edge — at 1720px that put
+					     the two halves of one sentence 1500px apart. -->
 					<span class="bucket-n">
 						{bucket.words.length}
 						{bucket.words.length === 1 ? "word" : "words"}
 					</span>
 					</h2>
 
-					<ul class="rows">
+					<ul class="rows" use:watchColumns={bucket.count}>
 						<!--
 							Keyed by POSITION, not by word+closure. Two distinct discoveries can
 							share both: AJGF closing plain appears more than once in the 4-count
@@ -222,7 +269,7 @@
 									     which routes through simplifyRepeatedWord. -->
 									<span class="word">{combo.displayWord}</span>
 									<span class="meta">
-										{combo.unit.steps.length}-step unit × {combo.closure.circleMultiplier}
+										{combo.unit.steps.length}-step × {combo.closure.circleMultiplier}
 									</span>
 								</div>
 
@@ -265,6 +312,14 @@
 		labs do. `min-height: 0` is load-bearing: without it a flex child refuses to
 		shrink below its content and the overflow never engages.
 	*/
+	/*
+		Opaque, like the sibling data labs (FanRelationsLab, DodgeTab). The app's
+		animated background bled straight through every panel here — bokeh orbs
+		drifted across the pictograph strips and the completeness line, which is
+		the "floats on the animated background with nothing behind it" failure in
+		.claude/rules/visual-verification-mandatory.md. A dense grid of small
+		glyphs cannot share a canvas with moving light.
+	*/
 	.combinator {
 		display: flex;
 		flex-direction: column;
@@ -275,14 +330,21 @@
 		min-height: 0;
 		overflow-y: auto;
 		overscroll-behavior: contain;
+		background: var(--theme-bg, #090b14);
+		color: var(--theme-text, #f3f4f6);
 	}
 
-	/* The band stays centred while the SCROLLER stays full-width, so the
-	   scrollbar sits at the edge of the pane rather than mid-page. */
+	/*
+		No band cap. `--shell-w` tops out at 2600px, which is the right answer for
+		editorial prose and the wrong one here: in a 3767px lab pane it left 1167px
+		of dead rail either side of a grid whose entire job is to show as many
+		strips at once as the screen allows. There is no reading-measure argument
+		to protect — the only prose is a one-line lede. Everything on the tab still
+		shares ONE width (.claude/rules/4k-native-layout.md rule 3), that width is
+		now the pane.
+	*/
 	.combinator > * {
 		width: 100%;
-		max-width: var(--shell-w, min(1720px, 92vw));
-		margin-inline: auto;
 		flex: 0 0 auto;
 	}
 
@@ -397,7 +459,22 @@
 		gap: 1.25rem;
 	}
 
+	/*
+		Every measure a cell needs is derived here from ONE number — the widest
+		unit in this bucket — so the strip fits its cell by construction at every
+		viewport instead of by per-tier arithmetic. The old version pinned column
+		counts per breakpoint against a 6-step worst case, which meant a bucket of
+		4-step units sat in 556px cells holding 323px of content: ~42% of every
+		cell empty, with the meta marooned at the far edge.
+	*/
 	.bucket {
+		--step-size: 4.5rem;
+		--step-gap: 0.3rem;
+		--cell-pad: 0.6rem;
+		--cell-w: calc(
+			var(--bucket-steps) * var(--step-size) + (var(--bucket-steps) - 1) * var(--step-gap) + 2 *
+				var(--cell-pad) + 2px
+		);
 		border: 1px solid var(--theme-border, #2b2b3a);
 		border-radius: 0.75rem;
 		padding: 1rem;
@@ -421,7 +498,6 @@
 		font-weight: 500;
 	}
 	.bucket-n {
-		margin-left: auto;
 		font-size: 0.85rem;
 		color: var(--theme-text-secondary, #9ca3af);
 		font-variant-numeric: tabular-nums;
@@ -433,16 +509,24 @@
 		far edge. Still a flat list — one cell per closure, in reading order — just
 		one that fills the canvas.
 
-		Column counts are PINNED per tier rather than auto-filled: auto-fill against
-		a min width produces more, thinner cells as the screen grows and orphans the
-		last one (.claude/rules/4k-native-layout.md).
+		Cells are as wide as their content and no wider, so the column count falls
+		out of the bucket's own unit length: a 4-step bucket packs more per row
+		than a 6-step one. `min(var(--cell-w), 100%)` is what keeps auto-fill from
+		overflowing a phone — below one cell width the track collapses to the
+		column and the steps shrink with it. `1fr` as the max hands the leftover
+		remainder back to the cells rather than parking it in a trailing gutter,
+		so the canvas is full at 4K without a hardcoded tier.
+
+		Auto-fill's usual sin — orphaning the last item — is answered by measuring
+		the resolved column count and folding to exactly two full rows of it (see
+		`watchColumns`), rather than by pinning counts per breakpoint.
 	*/
 	.rows {
 		list-style: none;
 		margin: 0;
 		padding: 0;
 		display: grid;
-		grid-template-columns: 1fr;
+		grid-template-columns: repeat(auto-fill, minmax(min(var(--cell-w), 100%), 1fr));
 		gap: 0.6rem;
 	}
 
@@ -490,24 +574,31 @@
 		font-variant-numeric: tabular-nums;
 	}
 
+	/*
+		One track per step of the BUCKET'S widest unit, never wrapping. A flex row
+		of fixed-width boxes could always spill to a second line one viewport
+		short of wherever the arithmetic was checked — that is how a 6-step strip
+		came to wrap 5+1 and orphan a lone pictograph. Tracks share the cell, so
+		a shorter unit in a mixed bucket simply leaves its last tracks empty and
+		every pictograph in the bucket stays the same size.
+	*/
 	.steps {
 		list-style: none;
 		margin: 0;
 		padding: 0;
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.3rem;
+		display: grid;
+		grid-template-columns: repeat(var(--bucket-steps), 1fr);
+		gap: var(--step-gap);
 	}
 
-	/* Fixed box so the row never reflows when the art mounts. */
+	/* Square by ratio, so the box is reserved before the art mounts. */
 	.step {
-		width: 4.5rem;
-		height: 4.5rem;
+		aspect-ratio: 1;
+		min-width: 0;
 		border-radius: 0.35rem;
 		overflow: hidden;
 		border: 2px solid transparent;
 		background: rgba(0, 0, 0, 0.25);
-		flex: 0 0 auto;
 	}
 	.step[data-origin="a"] {
 		border-color: var(--semantic-blue, #60a5fa);
@@ -542,26 +633,68 @@
 		color: var(--theme-text-secondary, #9ca3af);
 	}
 
-	/* Two card slots side by side once there is room for both chip rows. */
-	@media (min-width: 900px) {
+	/*
+		Side by side only once BOTH walls fit on one line each — measured, not
+		assumed: 19 chips need 964px, so two need ~1944px of band, which the shell
+		reaches at about a 2240px viewport. At 1920 the old 900px breakpoint gave
+		each slot 852px and split every wall 16 + 3, stranding a tail row in both.
+		Stacked full-width, each wall is a single unbroken row.
+	*/
+	@media (min-width: 2240px) {
 		.slots {
 			grid-template-columns: 1fr 1fr;
 		}
 		.actions {
 			grid-column: 1 / -1;
 		}
-		.rows {
-			grid-template-columns: repeat(2, 1fr);
+	}
+
+	/*
+		Only two width tiers remain, and neither counts columns — the column count
+		is a consequence of the step size now, not a separate decision to keep in
+		sync.
+
+		A phone is the case where a 6-step cell cannot fit at desktop scale; the
+		step shrinks and the cell becomes the column, one per row.
+	*/
+	@media (max-width: 700px) {
+		.bucket {
+			--step-size: 3rem;
 		}
 	}
 
 	/*
-		Column counts are chosen so a cell always fits the BOX'S LONGEST UNIT
-		(6 steps) on one line. At four columns a 6-step unit wrapped 5+1 and left a
-		lone pictograph on its own row — the "never a row of one" failure. Three
-		columns at the 1680 seam gives ~540px per cell against 6 x 4.5rem + gaps
-		(~456px), so every strip is one line and every cell is the same height.
+		Wide and short — a folded phone in landscape, 960 x 412. Two stacked walls
+		of 19 chips under a full-size header filled the entire viewport: the
+		Combine button was cut off by the bottom edge and no result was reachable
+		without scrolling past all the chrome. The chrome compacts and the walls go
+		side by side, which is shorter here even though each wall then wraps to
+		three rows.
 	*/
+	@media (max-height: 560px) {
+		.combinator {
+			gap: 0.75rem;
+			padding: 0.75rem 1rem;
+		}
+		.head h1 {
+			font-size: 1.25rem;
+		}
+		.lede {
+			display: none;
+		}
+		.slot {
+			gap: 0.35rem;
+		}
+	}
+
+	@media (max-height: 560px) and (min-width: 700px) {
+		.slots {
+			grid-template-columns: 1fr 1fr;
+		}
+		.actions {
+			grid-column: 1 / -1;
+		}
+	}
 
 	/* The site-wide big-screen seam (.claude/rules/4k-native-layout.md). */
 	@media (min-width: 1680px) {
@@ -569,19 +702,47 @@
 			padding: 2rem;
 			gap: 2rem;
 		}
-		.rows {
-			grid-template-columns: repeat(3, 1fr);
-		}
 	}
 
-	/* Second tier: above here nothing is scaling for you, so element size steps. */
+	/*
+		Second tier: above here nothing is scaling for you — no OS scaling, and the
+		lockstep root ramp in app.css is scoped to the marketing and legal shells,
+		so a lab page stays at a 16px root at 3840. Type and element size have to
+		step by hand or the whole surface reads as a thumbnail of itself.
+	*/
 	@media (min-width: 2600px) {
-		.rows {
-			grid-template-columns: repeat(4, 1fr);
+		.bucket {
+			--step-size: 5.5rem;
 		}
-		.step {
-			width: 5.5rem;
-			height: 5.5rem;
+		.head h1 {
+			font-size: 2.4rem;
+		}
+		.lede,
+		.statement p {
+			font-size: 1.2rem;
+		}
+		.fine {
+			font-size: 1.05rem;
+		}
+		.count {
+			font-size: 2.1rem;
+		}
+		.bucket-head,
+		.bucket-n {
+			font-size: 1.2rem;
+		}
+		.word {
+			font-size: 1.35rem;
+		}
+		.badge {
+			font-size: 0.95rem;
+		}
+		.meta {
+			font-size: 1rem;
+		}
+		.combine {
+			font-size: 1.2rem;
+			min-height: 56px;
 		}
 	}
 </style>

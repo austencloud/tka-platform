@@ -14,9 +14,10 @@ tested by prediction rather than curve-fitted.
 
 **Thread 2 — "go from spec into reality."** Build the LOOPs-only combinator per
 [`2026-08-05-sequence-combinator-redesign-design.md`](./2026-08-05-sequence-combinator-redesign-design.md).
-Stages 1–4 are built and agree with the research oracle exactly. A Lab UI exists
-at `/lab/combinator` and shows the right numbers, but its visual pass is
-incomplete — that is where the next agent starts.
+Stages 1–4 are built and agree with the research oracle exactly. A Lab UI at
+`/lab/combinator` shows the right numbers, and as of session 3 its visual pass
+is complete across all seven required viewports (§9). What it still does not do
+is expand a full circle — that is where the next agent starts.
 
 ---
 
@@ -187,29 +188,63 @@ warnings**.
 
 ---
 
-## Believed done — unverified
+### 9. The UI's visual pass — session 3, `visual-verification-mandatory.md` satisfied
 
-**The Lab UI's layout** (`6a74f47897`, `a529334ffc`, `/lab/combinator`).
+All seven required viewports were loaded, measured and shot with A+G combined.
+Four defects were visible in the FIRST frame and none of them were arithmetic
+errors — they were things only a picture shows.
 
-Verified in-browser: the oracle numbers render on screen (`6 shapes · 256 words
-· 9 count buckets` and the full profile), 4 columns × 398px at a real 1920
-viewport, `document.scrollWidth` 1911 (no overflow), and after the scroll fix
-`scrollHeight` 4692 vs `clientHeight` 1080 with `scrollTop` moving.
+| Defect at 1920 | Fix |
+|---|---|
+| Every panel transparent; the app's animated bokeh drifted through the pictograph strips | Opaque `--theme-bg` on the tab root, matching the sibling data labs (FanRelationsLab, DodgeTab) |
+| 556px cells holding 323px strips — ~42% of every cell empty, meta marooned at the far edge | Cell width derived from the bucket's own widest unit, so a 4-step bucket packs 5 columns where a 6-step one packs 3 |
+| Bucket header split "4 count" from "10 words" by 1500px | Word count sits beside the count |
+| Both 19-chip walls split 16 + 3 | Side-by-side only above 2240px, where two 964px walls actually fit; stacked below, one unbroken row each |
 
-**NOT verified:**
+Two more surfaced during the sweep:
 
-1. **The column retier is arithmetic, not observed.** At 4 columns a 6-step
-   unit wrapped 5+1, orphaning a lone pictograph. Retiered to 3 at the 1680 seam
-   / 4 above 2600 on the arithmetic that a cell must fit 6 × 4.5rem + gaps
-   (~456px). Never seen rendered.
-2. **Six of the seven required viewports were never shot.** Only 1920 has a
-   frame. 2560, 3840, 1440, 820, 960×412 and 375 are all unobserved.
-   `visual-verification-mandatory.md` is not satisfied.
+- **3840 was 31% dead rail.** `--shell-w` caps at 2600 in a 3767px lab pane. The
+  band cap is gone — there is no reading measure to protect on a grid of
+  pictograph strips — and the ≥2600 tier now steps type as well as step size,
+  because the lockstep root ramp in `app.css` is scoped to the marketing and
+  legal shells and never fires on a lab route.
+- **960×412 could not show the Combine button.** Two stacked chip walls under a
+  full-size header filled the entire viewport. A `max-height: 560px` tier
+  compacts the chrome and puts the walls side by side.
 
-Why: other sessions edit this checkout continuously, so vite kept firing full
-reloads that reset the component between the measure call and the screenshot,
-and eventually the component stopped hydrating (the Combine handler would not
-fire even on a dispatched MouseEvent sequence).
+**The column question the previous session left open is answered, and answered
+differently than it was framed.** Pinned per-tier column counts were the wrong
+mechanism: they must be re-derived by hand for every new tier and they were
+sized for a 6-step worst case that most buckets never reach. Both replaced by
+construction —
+
+1. `.steps` is a grid of `--bucket-steps` tracks, so a strip **cannot** wrap,
+   at any viewport, for any unit length. The 5+1 orphan class of bug is gone
+   rather than avoided.
+2. The folded preview is `columns × 2`, where `columns` is **read back off the
+   laid-out grid** by a `ResizeObserver` (`watchColumns`) rather than predicted.
+   Every bucket ends on a complete row at every width.
+
+Measured, all nine buckets, every viewport: `wrapped: 0`, last row full, no
+horizontal overflow.
+
+| Viewport | Columns (4/5/6-step buckets) | Step px | scrollWidth |
+|---|---|---|---|
+| 3840×2160 | 9 / 7 / 6 | 91–95 | 3831 |
+| 2560×1440 | 6 / 5 / 4 | 79–84 | 2551 |
+| 1920×1080 | 5 / 4 / 3 | 74–85 | 1911 |
+| 1440×900 | 3 / 3 / 2 | — | no overflow |
+| 820×1180 | 2 | — | no overflow |
+| 960×412 | 2 | 89 | 951 |
+| 375×667 | 1 | 39–60 | 366 |
+
+`npx svelte-check --threshold error` → 0 errors, 0 warnings.
+`npx vitest run tests/unit/combination/` → 16 files, 175 tests, all passing.
+
+⚠️ Emulate at target × 1.1 on this machine (`reference_devtools_emulate_dpr`
+memory) — the window's DPR is 1.1 and the trailing `x1` does not override it.
+Read `innerWidth` back every time; the sweep above confirmed 1920/2560/3840
+rather than 1745/2327/3491.
 
 ---
 
@@ -238,45 +273,38 @@ other sessions). Not pushed by this session.
 
 ## Loose ends (ranked)
 
-**#1 — Finish the UI's visual pass.** Load
-`https://localhost:5173/lab/combinator`, press Combine (A+G), and shoot all
-seven viewports per `visual-verification-mandatory.md`. Specifically confirm the
-6-step strips no longer wrap 5+1. Do this when the checkout is quiet — parallel
-edits make the page unhydratable. If the handler still will not fire, use
-DevTools' real `click` on a snapshot uid rather than `element.click()`.
-
-**#2 — Expand full circles.** Rows render the UNIT and label its multiplier
+**#1 — Expand full circles.** Rows render the UNIT and label its multiplier
 ("4-step unit × 4"). The design says *"Full circles always, every step shown."*
 Needs the LOOP executor, taking `buildUnitSequence(unit, frameCard)` plus the
 closure's `loopType`/`period`.
 
-**#3 — Close the identity-type gap in `LOOPValidator`.** Add an identity type
+**#2 — Close the identity-type gap in `LOOPValidator`.** Add an identity type
 and the two diagonal-axis validation sets (TKA canon holds all four axes valid;
 the engine already ships their location maps). Then delete Stage 3's extra
 closure families. This is the app's gap, not the combinator's.
 
-**#4 — Rebuild + restart the MCP server** so the dash fix goes live, then re-run
+**#3 — Rebuild + restart the MCP server** so the dash fix goes live, then re-run
 `analyze_word_feasibility` on a dash word to confirm.
 
-**#5 — Finish the roster.** 19 of 24. Missing: both Type 3 sequences
+**#4 — Finish the roster.** 19 of 24. Missing: both Type 3 sequences
 (Σ-Y-Θ-W-, Δ-Z-Ω-X-) and the Type 4. Note the walk cap will need
 **re-measuring, not re-guessing** after each addition — see `#4` in Gotchas.
 
-**#6 — Settle the equivalence relation (Open Question 1).** Still Austen's. The
+**#5 — Settle the equivalence relation (Open Question 1).** Still Austen's. The
 data now shows where it bites: the 4-count bucket has **no** phase duplicates
 while every 16-count entry has **exactly one**. Whether a quartered loop entered
 at a different quarter is one result or two is undecided. Stage 3 exposes both
 altitudes (`shape` with run lengths, `shapeFamily` without) so either answer is
 already supported.
 
-**#7 — The dash/static half of the gamma-fusion mechanism.** Self-reflective
+**#6 — The dash/static half of the gamma-fusion mechanism.** Self-reflective
 characters always fuse (32 of 32, zero counterexamples) — that half is airtight.
 The other 32 fused characters are the dash/static ones and fuse for a second,
 unconfirmed reason. Ruled out already: colour swap (0 of 64), reflection about
 N–S alone (8), reflection ∘ colour swap (0), some reflection linking the slots
 directly (32). None ever wrongly fused a split pair.
 
-**#8 — Extend the skewed dataframe** (unchanged from the previous handoff).
+**#7 — Extend the skewed dataframe** (unchanged from the previous handoff).
 
 ---
 
