@@ -217,7 +217,7 @@
 			const x = e.clientX - rect.left;
 			const y = e.clientY - rect.top;
 			const inside = x >= 0 && y >= 0 && x <= rect.width && y <= rect.height;
-			controller.setPointer?.(x, y, inside);
+			controller.setPointer?.(x, y, inside, e.pointerType);
 			if (finePointer.matches) {
 				// Only claim the pointer cursor where a poke would actually fire — not
 				// over a control sitting on top of the jelly (it owns its own cursor).
@@ -225,7 +225,7 @@
 			}
 		};
 		const onPointerLeaveWin = () => {
-			controller?.setPointer?.(0, 0, false);
+			controller.setPointer?.(0, 0, false);
 			setJellyCursor(false);
 		};
 		window.addEventListener('pointermove', onPointerMove, { passive: true });

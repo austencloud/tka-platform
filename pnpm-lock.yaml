@@ -32,8 +32,8 @@ importers:
         specifier: ^4.0.27
         version: 4.0.70(svelte@5.49.2)(zod@4.3.6)
       '@austencloud/backgrounds':
-        specifier: ^0.7.1
-        version: 0.7.1
+        specifier: ^0.7.2
+        version: 0.7.2
       '@austencloud/camera-3d':
         specifier: workspace:*
         version: link:packages/camera-3d
@@ -798,8 +798,8 @@ packages:
   '@asamuzakjp/nwsapi@2.3.9':
     resolution: {integrity: sha512-n8GuYSrI9bF7FFZ/SjhwevlHc8xaVlb/7HmHelnc/PZXBD2ZR49NnN9sMMuDdEGPeeRQ5d0hqlSlEpgCX3Wl0Q==}
 
-  '@austencloud/backgrounds@0.7.1':
-    resolution: {integrity: sha512-MhO56ZpPCWgwnCzPYrA6OqZCU/qRvOCAGTSXyYzoV/n+pk0iumiAgB/V+5gFnsxCxMkX7Qxoh3fmKA2g7IzFdg==}
+  '@austencloud/backgrounds@0.7.2':
+    resolution: {integrity: sha512-fkWRk5diilCI4kqzI5znrUPFo2IXBFJdYszMnpxH7S7lDuoGwe81EfoLuALQVuqNvB80dWKHsDquMEdXUh2B4w==}
     engines: {node: '>=18'}
 
   '@austencloud/chip-toggle@0.1.0':
@@ -8588,7 +8588,7 @@ snapshots:
 
   '@asamuzakjp/nwsapi@2.3.9': {}
 
-  '@austencloud/backgrounds@0.7.1': {}
+  '@austencloud/backgrounds@0.7.2': {}
 
   '@austencloud/chip-toggle@0.1.0(svelte@5.49.2)':
     dependencies:
