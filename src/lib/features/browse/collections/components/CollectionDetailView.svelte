@@ -11,7 +11,7 @@ batched Firestore reads return them shuffled. If the collection disappears or
 becomes private while open, we bail back to the list instead of showing a ghost.
 -->
 <script lang="ts">
-  import { untrack } from "svelte";
+  import { untrack, onDestroy } from "svelte";
   import type {
     CollectionAccessRole,
     LibraryCollection,
@@ -31,7 +31,9 @@ becomes private while open, we bail back to the list instead of showing a ghost.
   import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
   import { communityCollectionsState } from "../state/community-collections-state.svelte";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
-  import BrowseGrid from "$lib/features/browse/sequences/display/components/BrowseGrid.svelte";
+  import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
+  import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
+  import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type {
     ContextMenuEntry,
@@ -91,6 +93,28 @@ becomes private while open, we bail back to the list instead of showing a ghost.
     getAllIds: () => members.map((member) => member.id),
     onModeChange: () => getHapticFeedback()?.trigger("selection"),
   });
+
+  // The members are loaded here (batch reads by id, because a collection can
+  // hold sequences no browsable pool contains), then handed to an engine so
+  // this view gets the same search / sort / filters every other browse surface
+  // has. Ephemeral: a collection is somewhere you visit, not a workspace whose
+  // filters should outlive the visit.
+  //
+  // CURATED leads the sort menu and is the default — the owner's own order is
+  // the point of a manual collection, and any automatic sort destroys it.
+  const engine = createBrowseEngine({
+    persistKey: null,
+    initialSource: "my-library",
+    sources: ["my-library"],
+    initialSort: BrowseSortMethod.CURATED,
+    sections: false,
+  });
+
+  $effect(() => {
+    engine.setPool(members as SequenceData[]);
+  });
+
+  onDestroy(() => engine.destroy());
 
   const isSystem = $derived(!!collection && isSystemCollection(collection));
   const isShared = $derived(!!foreignOwnerId && !!accessRole);
@@ -290,6 +314,24 @@ becomes private while open, we bail back to the list instead of showing a ghost.
     selectionState.toggle(sequence.id);
     getHapticFeedback()?.trigger("selection");
   }
+
+  // Cards enter and toggle selection through the panel; the toolbar above stays
+  // this view's own, because its primary action ("Remove from this collection")
+  // only exists here. hideSelectionToolbar keeps the two from stacking.
+  const panelSelection = {
+    get active() {
+      return selectionState.active;
+    },
+    get selectedIds() {
+      return selectionState.selectedIds;
+    },
+    enter: (sequence?: SequenceData) => selectionState.enter(sequence?.id),
+    toggle: toggleSelection,
+    selectAll: () => selectAllMembers(),
+    clear: () => clearSelection(),
+    exit: () => selectionState.exit(),
+    openPrimaryAction: () => void removeSelectedFromCollection(),
+  };
 
   function selectAllMembers(): void {
     selectionState.selectAll();
@@ -775,13 +817,14 @@ becomes private while open, we bail back to the list instead of showing a ghost.
         {/if}
       </div>
     {:else}
-      <BrowseGrid
-        sequences={members}
-        thumbnailService={null}
-        onAction={handleSequenceAction}
-        selectedIds={selectionState.selectedIds}
-        selectionMode={selectionState.active}
-        onSelectionToggle={toggleSelection}
+      <BrowsePanel
+        {engine}
+        layout="compact"
+        curatedSortLabel="Collection order"
+        onSelect={(sequence, variations) =>
+          handleSequenceAction("view-detail", sequence, variations)}
+        selection={panelSelection}
+        hideSelectionToolbar
         collectionContext={canEdit
           ? {
               id: collectionId,

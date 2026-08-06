@@ -1,0 +1,294 @@
+<!--
+FilterWorkspace.svelte
+
+The split-pane filter workspace: category catalog + value editor on the left,
+rule strip and live results on the right. Extracted from BrowseModule so the
+gallery and the Library render the SAME workspace rather than two compositions
+of the same parts — the Library previously reached GalleryDrill through the
+`variant="sheet"` drawer, which passed no collections, no rule counts, no
+applied state and no connectives, so half the workspace simply wasn't there.
+
+Gallery and Library differ by SOURCE, not by interaction: one engine over the
+community pool, one over my-library. Everything else is this component.
+
+Hosts own two things: the results pane (their own BrowsePanel, with their own
+selection / empty-state / navigation wiring) and `onEject`, the below-seam
+escape to a full-page grid. A host that has no such grid omits `onEject` and
+the below-seam actions mutate the engine in place.
+-->
+<script lang="ts">
+  import type { Snippet } from "svelte";
+  import GalleryDrill from "$lib/features/browse/gallery-home/GalleryDrill.svelte";
+  import type { CollectionOption } from "$lib/features/browse/gallery-home/gallery-drill-catalog.svelte";
+  import FilterRuleStrip from "$lib/shared/browse/components/FilterRuleStrip.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import { withResultsMorph } from "$lib/shared/transitions/results-morph";
+  import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
+  import type { BrowseEngine } from "$lib/shared/browse/engine/types";
+  import {
+    SECTION_FOR_FILTER_TYPE,
+    type WorkspaceSection,
+  } from "$lib/shared/browse/domain/workspace-sections";
+
+  let {
+    engine,
+    collections = [],
+    resultsPane,
+    onSaveSmart,
+    onEject,
+  }: {
+    engine: BrowseEngine;
+    collections?: CollectionOption[];
+    resultsPane: Snippet;
+    onSaveSmart?: () => void;
+    /**
+     * Below the split-pane seam there is no live results column, so "View N
+     * results" / "Show all" hand off to a full-page grid. The host runs the
+     * mutation inside whatever warm-up its grid needs. Omit it and the
+     * mutation just runs.
+     */
+    onEject?: (mutate: () => void) => void;
+  } = $props();
+
+  const eject = (mutate: () => void) => (onEject ? onEject(mutate) : mutate());
+
+  // Remount seed: editing a strip chip reopens the drill ON that filter's
+  // editor instead of the chooser.
+  let drillSeed = $state<{ section?: WorkspaceSection }>({});
+
+  const loopKeyByValue = $derived(
+    new Map(
+      [...engine.activeFilters]
+        .filter(([, f]) => f.type === BrowseFilterType.LOOP_TYPE && !f.locked)
+        .map(([key, f]) => [String(f.value), key])
+    )
+  );
+  const activeLoopValues = $derived(new Set(loopKeyByValue.keys()));
+  const familyKeyByValue = $derived(
+    new Map(
+      [...engine.activeFilters]
+        .filter(([, f]) => f.type === BrowseFilterType.TND_FAMILY && !f.locked)
+        .map(([key, f]) => [String(f.value), key])
+    )
+  );
+  const activeFamilyValues = $derived(new Set(familyKeyByValue.keys()));
+
+  // Which category each active rule belongs to, so the split pane's catalog
+  // tiles can carry a count dot.
+  const ruleCounts = $derived.by(() => {
+    const counts: Record<string, number> = {};
+    for (const f of engine.activeFilters.values()) {
+      if (f.locked) continue;
+      const key = SECTION_FOR_FILTER_TYPE[String(f.type)];
+      if (key) counts[key] = (counts[key] ?? 0) + 1;
+    }
+    // The Collections tile's catalog key is plural; its section is singular.
+    if (counts["collection"]) counts["collections"] = counts["collection"];
+    return counts;
+  });
+
+  const appliedValueKeys = $derived(
+    new Set(
+      [...engine.activeFilters.values()]
+        .filter((f) => !f.locked)
+        .map((f) => `${f.type}:${String(f.value)}`)
+    )
+  );
+
+  // True while the drill is rendering results live beside the filters. The
+  // pinned strip and "View N results" belong to the step-through flow only;
+  // with the grid on screen they are noise (and a second, contradicting count).
+  let splitPaneActive = $state(false);
+  // Wide enough for live results even while the editorial landing is up. "Show
+  // all" reads this to decide between opening the pane and ejecting to the grid.
+  let splitCapable = $state(false);
+  // Bound into the drill: opens its pane on the full live grid with no active
+  // category (the destination "Show all" / "View N results" used to eject to).
+  let showAllPane = $state(false);
+</script>
+
+<!-- The workspace's right-hand column: the rule as a header, the live grid
+     underneath. Both are the SHARED components the step-through flow and the
+     grid tab already use — never a copy. -->
+{#snippet resultsHeader()}
+  <span class="strip-count" aria-live="polite">
+    {engine.resultCount}
+    {engine.resultCount === 1 ? "match" : "matches"}
+  </span>
+  {#if engine.hasActiveFilters}
+    <FilterRuleStrip
+      filters={engine.allFilterChips.filter((c) => !c.locked)}
+      connectives={engine.connectives}
+      onEditFilter={(type) =>
+        (drillSeed = { section: SECTION_FOR_FILTER_TYPE[type] })}
+      onRemoveFilter={(key) => withResultsMorph(() => engine.removeFilter(key))}
+    />
+  {:else}
+    <span class="strip-empty">No filters yet — pick one on the left.</span>
+  {/if}
+  {#if onSaveSmart}
+    <div class="strip-actions">
+      <PanelButton
+        variant="secondary"
+        ariaLabel="Save these filters as a Smart Collection"
+        onclick={onSaveSmart}
+      >
+        <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+        Save
+      </PanelButton>
+    </div>
+  {/if}
+{/snippet}
+
+<div class="gallery-workspace">
+  {#if engine.hasActiveFilters && !splitPaneActive}
+    <div class="gallery-rule-strip" aria-label="Current filters">
+      <span class="strip-count" aria-live="polite">
+        {engine.resultCount}
+        {engine.resultCount === 1 ? "match" : "matches"}
+      </span>
+      <FilterRuleStrip
+        filters={engine.allFilterChips.filter((c) => !c.locked)}
+        connectives={engine.connectives}
+        onEditFilter={(type) =>
+          (drillSeed = { section: SECTION_FOR_FILTER_TYPE[type] })}
+        onRemoveFilter={(key) =>
+          withResultsMorph(() => engine.removeFilter(key))}
+      />
+      <div class="strip-actions">
+        <PanelButton
+          variant="primary"
+          onclick={() => {
+            // Above the seam this opens the workspace's own live pane; a
+            // desktop user is never handed to the "Start here" screen. Below
+            // it, the host's full-page grid.
+            if (splitCapable) showAllPane = true;
+            else eject(() => {});
+          }}
+        >
+          View {engine.resultCount} results
+        </PanelButton>
+        {#if onSaveSmart}
+          <PanelButton
+            variant="secondary"
+            ariaLabel="Save these filters as a Smart Collection"
+            onclick={onSaveSmart}
+          >
+            <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+            Save
+          </PanelButton>
+        {/if}
+      </div>
+    </div>
+  {/if}
+  {#key drillSeed}
+    <GalleryDrill
+      pool={engine.allSequences}
+      adaptiveValueLayout
+      persistentDesktopCatalog
+      fluidWideCanvas
+      initialSection={drillSeed.section}
+      getCount={(type, value) => engine.getFilteredCount(type, value)}
+      isValueApplied={(type, value) =>
+        appliedValueKeys.has(`${type}:${String(value)}`)}
+      onApply={(type, value, label, color) =>
+        engine.addFilter(type, value, label, color ?? "#6aa0ff")}
+      onToggleValue={(type, value, label, color, nowActive) => {
+        // The workspace never bounces: values toggle in place and the strip +
+        // counts recompose live.
+        if (nowActive) {
+          engine.addFilter(type, value, label, color ?? "#6aa0ff");
+        } else {
+          // Stacking categories (LOOPs, T&D, and the OR-stacking set) key per
+          // value; single-valued ones key by bare type because re-adding
+          // replaces. Removing the wrong key is a SILENT no-op, so remove
+          // whichever one the engine holds.
+          const perValue = `${type}:${String(value)}`;
+          engine.removeFilter(
+            engine.activeFilters.has(perValue) ? perValue : String(type)
+          );
+        }
+      }}
+      {activeLoopValues}
+      loopConnective={engine.connectives[String(BrowseFilterType.LOOP_TYPE)] ??
+        "any"}
+      onLoopConnectiveChange={(connective) =>
+        engine.setConnective(BrowseFilterType.LOOP_TYPE, connective)}
+      onToggleLoop={(value, label, color, nowActive) => {
+        if (nowActive) {
+          engine.addFilter(BrowseFilterType.LOOP_TYPE, value, label, color);
+        } else {
+          const key = loopKeyByValue.get(value);
+          if (key) engine.removeFilter(key);
+        }
+      }}
+      {activeFamilyValues}
+      familyConnective={engine.connectives[
+        String(BrowseFilterType.TND_FAMILY)
+      ] ?? "any"}
+      onFamilyConnectiveChange={(connective) =>
+        engine.setConnective(BrowseFilterType.TND_FAMILY, connective)}
+      onToggleFamily={(familyId, label, color, nowActive) => {
+        if (nowActive) {
+          engine.addFilter(BrowseFilterType.TND_FAMILY, familyId, label, color);
+        } else {
+          const key = familyKeyByValue.get(familyId);
+          if (key) engine.removeFilter(key);
+        }
+      }}
+      onShowAll={() => {
+        // Above the seam the drill opens its own pane on the full live grid.
+        // Below it, the host's grid.
+        if (splitCapable) engine.clearUserFilters();
+        else eject(() => engine.clearUserFilters());
+      }}
+      {ruleCounts}
+      {collections}
+      onSplitPaneChange={(active) => (splitPaneActive = active)}
+      onSplitCapableChange={(capable) => (splitCapable = capable)}
+      bind:showAllPane
+      {resultsHeader}
+      {resultsPane}
+    />
+  {/key}
+</div>
+
+<style>
+  .gallery-workspace {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* The pinned rule strip: count, grouped sentence, actions on one wrapping
+     row. The drill below keeps the remaining height. */
+  .gallery-rule-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.9rem;
+    padding: 0.55rem 1rem;
+    flex: 0 0 auto;
+    border-bottom: 1px solid var(--theme-border, rgba(255, 255, 255, 0.12));
+  }
+
+  .strip-count {
+    font-size: 0.85rem;
+    font-weight: 700;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .strip-empty {
+    font-size: 0.8rem;
+    color: var(--theme-text-muted, #9aa6b8);
+  }
+
+  .strip-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: auto;
+    flex: 0 0 auto;
+  }
+</style>

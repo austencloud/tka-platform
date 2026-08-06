@@ -46,6 +46,9 @@
     /** Enters multi-selection mode. Kept host-owned because only personal
      * library surfaces can file a selection into collections. */
     onEnterSelection?: () => void;
+    /** Names the host pool's own order and offers it as a sort option (e.g.
+     * "Collection order"). Omit and no Curated option appears. */
+    curatedSortLabel?: string;
   }
 
   let {
@@ -57,6 +60,7 @@
     onOpenFilters,
     hideFilterChips = false,
     onEnterSelection,
+    curatedSortLabel,
   }: Props = $props();
 
   const activeUserFilterCount = $derived(
@@ -111,11 +115,24 @@
 
   const isHandsMode = $derived(engine.viewMode.subject === "hands");
 
-  const visibleSortOptions = $derived(
-    isHandsMode
+  const visibleSortOptions = $derived.by(() => {
+    const base = isHandsMode
       ? SORT_OPTIONS.filter((o) => o.id !== BrowseSortMethod.DIFFICULTY_LEVEL)
-      : SORT_OPTIONS
-  );
+      : SORT_OPTIONS;
+    // A host-provided pool can carry its own meaningful order (a collection's
+    // curated one). Only that host offers it, and it leads — it is the default.
+    return curatedSortLabel
+      ? [
+          {
+            id: BrowseSortMethod.CURATED,
+            label: curatedSortLabel,
+            shortLabel: curatedSortLabel,
+            icon: "fa-list-ol",
+          },
+          ...base,
+        ]
+      : base;
+  });
 
   const currentSortOption = $derived.by((): SortOption => {
     return (

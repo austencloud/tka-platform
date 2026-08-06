@@ -77,6 +77,12 @@
     selectionMode?: boolean;
     onSelectionStart?: (sequence: SequenceData) => void;
     onSelectionToggle?: (sequence: SequenceData) => void;
+    /** Inside one collection: per-card "remove from this collection". */
+    collectionContext?: {
+      id: string;
+      name: string;
+      onRemove: (sequenceId: string) => void;
+    };
     /** Imperative API for the sidebar's section jump. */
     onGridReady?: (api: SectionedGridApi) => void;
     /** Reports the section title at the top of the viewport (sidebar highlight). */
@@ -98,6 +104,7 @@
     selectionMode = false,
     onSelectionStart,
     onSelectionToggle,
+    collectionContext,
     onGridReady,
     onActiveSectionChange,
   }: Props = $props();
@@ -671,6 +678,7 @@
                 {selectionMode}
                 {onSelectionStart}
                 {onSelectionToggle}
+                {collectionContext}
               />
             {/each}
           </div>

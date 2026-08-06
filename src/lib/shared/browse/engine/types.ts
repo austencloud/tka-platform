@@ -253,6 +253,15 @@ export interface BrowseEngine {
   /** Load initial data for current source. Call on mount. */
   initialize(): Promise<void>;
 
+  /**
+   * Supply the pool directly instead of loading one, for a surface that
+   * already owns its list — a collection's members, batch-read by id, which
+   * can include sequences no browsable pool contains. Such a host calls this
+   * instead of `initialize()`, and calls it again whenever its list changes.
+   * Everything downstream (search, sort, filters, sections) is unchanged.
+   */
+  setPool(sequences: readonly SequenceData[]): void;
+
   /** Force reload (invalidates cache). For retry buttons. */
   refresh(): Promise<void>;
 

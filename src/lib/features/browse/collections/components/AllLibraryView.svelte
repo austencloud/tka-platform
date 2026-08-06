@@ -1,10 +1,13 @@
 <!--
 AllLibraryView.svelte
 
-The "All" shelf: your whole library as the full browse grid. Same composition
-as GalleryTab (BrowsePanel + GalleryFilterSheet + variation picker + mobile
-sort sheet) around a library-scoped engine — sort, filters pill, search chip,
-word-collapse and the variation drawer all come from the shared primitives.
+The "All" shelf: your whole library.
+
+Above the split-pane seam this is the SAME FilterWorkspace the gallery renders
+— category catalog, value editor, rule strip, live results — around a
+library-scoped engine. Gallery and Library differ by source, not by
+interaction. Below the seam it falls back to the full-page grid plus the
+filter sheet, exactly as the gallery does.
 
 The engine is created here (not shared with the gallery): its persisted state
 is a separate localStorage record, so your library's sort/filters don't fight
@@ -16,7 +19,8 @@ the gallery's, and the source is pinned to my-library with no toggle.
   import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
   import SmartCollectionSaveDialog from "$lib/features/library/components/SmartCollectionSaveDialog.svelte";
-  import GalleryFilterSheet from "$lib/features/browse/gallery-home/GalleryFilterSheet.svelte";
+  import FilterWorkspace from "$lib/features/browse/gallery-home/FilterWorkspace.svelte";
+  import { getCollectionOptions } from "$lib/features/browse/gallery-home/collection-options.svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import SortJumpSheet from "../../sequences/navigation/components/SortJumpSheet.svelte";
@@ -159,8 +163,26 @@ the gallery's, and the source is pinned to my-library with no toggle.
     };
   });
 
-  let isFilterSheetOpen = $state(false);
+  // The workspace is the front door. Below the split-pane seam it has no live
+  // results column, so "View N results" ejects to the full-page grid — the
+  // same two-view arrangement the gallery uses, and the grid's Filters control
+  // walks back here rather than opening a second, weaker filter surface.
+  let libraryView = $state<"workspace" | "grid">("workspace");
+  let gridWarming = $state(false);
   let smartSaveOpen = $state(false);
+
+  const collectionOptions = $derived.by(() => getCollectionOptions());
+
+  function ejectToGrid(mutate: () => void) {
+    libraryView = "grid";
+    gridWarming = true;
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        mutate();
+        gridWarming = false;
+      })
+    );
+  }
 
   const pickerState = getVariationPickerState();
 
@@ -196,22 +218,46 @@ the gallery's, and the source is pinned to my-library with no toggle.
   };
 </script>
 
-<div class="all-library">
+<!-- The workspace's results column. Its own BrowsePanel, so selection mode,
+     the empty-library CTA and the viewer hand-off stay library-owned; only the
+     filtering chrome is shared. -->
+{#snippet resultsPane()}
   <BrowsePanel
     {engine}
-    layout="fullpage"
+    layout="compact"
+    showFilterBar={false}
+    hideFilterChips
     onSelect={handleSelect}
-    {onBack}
-    backLabel="Library"
-    hideToolbarSearch
-    onOpenFilters={() => (isFilterSheetOpen = true)}
-    onSaveSmart={() => (smartSaveOpen = true)}
     {emptyAction}
     {selection}
   />
-</div>
+{/snippet}
 
-<GalleryFilterSheet {engine} bind:isOpen={isFilterSheetOpen} {isMobile} />
+<div class="all-library" class:workspace={libraryView === "workspace"}>
+  {#if libraryView === "workspace"}
+    <FilterWorkspace
+      {engine}
+      collections={collectionOptions}
+      {resultsPane}
+      onSaveSmart={() => (smartSaveOpen = true)}
+      onEject={ejectToGrid}
+    />
+  {:else}
+    <BrowsePanel
+      {engine}
+      layout="fullpage"
+      onSelect={handleSelect}
+      {onBack}
+      backLabel="Library"
+      hideToolbarSearch
+      warming={gridWarming}
+      onOpenFilters={() => (libraryView = "workspace")}
+      onSaveSmart={() => (smartSaveOpen = true)}
+      {emptyAction}
+      {selection}
+    />
+  {/if}
+</div>
 
 <SmartCollectionSaveDialog {engine} bind:show={smartSaveOpen} />
 
@@ -266,5 +312,13 @@ the gallery's, and the source is pinned to my-library with no toggle.
     overflow-x: hidden;
     min-width: 0;
     height: 100%;
+  }
+
+  /* The workspace owns its own scrolling panes (catalog, editor, results), so
+     the shell must not add a second scroll container around them. */
+  .all-library.workspace {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 </style>

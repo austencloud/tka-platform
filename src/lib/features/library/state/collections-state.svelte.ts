@@ -1,4 +1,4 @@
-import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { authState, getEffectiveUserId } from "$lib/shared/auth/state/auth-state.svelte";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
 import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
 import { isFullAccountUser } from "$lib/shared/auth/domain/access-tier";
@@ -6,6 +6,9 @@ import { toast, showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { LIBRARY_LIMITS } from "$lib/shared/library/data/firestore-paths";
 import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
 import type { SmartFilterSpec } from "$lib/shared/library/domain/models/collection";
+import { isSmartCollection } from "$lib/shared/library/domain/models/collection";
+import { deriveSpecMembers } from "$lib/shared/browse/services/smart-filter-spec";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
   subscribeToCollections,
   addSequenceToCollection,
@@ -449,15 +452,45 @@ export const collectionsState = new CollectionsState();
 // first, then every public community collection. Followed state remains a
 // startup fallback for a persisted filter while the global listener's first
 // snapshot is still resolving.
-setCollectionMembershipResolver((collectionId) => {
+setCollectionMembershipResolver((collectionId, candidates) => {
   const own = collectionsState.collections.find((c) => c.id === collectionId);
-  if (own) return new Set(own.sequenceIds);
+  if (own) return membersOf(own, candidates);
   const community = communityCollectionsState.items.find(
     (item) => item.collection.id === collectionId
   );
-  if (community) return new Set(community.collection.sequenceIds);
+  if (community) return membersOf(community.collection, candidates);
   const followed = followedCollectionsState.items.find(
     (i) => i.collection.id === collectionId
   );
-  return followed ? new Set(followed.collection.sequenceIds) : undefined;
+  return followed ? membersOf(followed.collection, candidates) : undefined;
 });
+
+/**
+ * A collection's members among `candidates`.
+ *
+ * Manual collections carry their members as stored ids. Smart collections
+ * carry a rule instead — `sequenceIds` is empty by construction — so their
+ * members are derived by replaying the spec over the candidates. Evaluating
+ * against the candidates rather than a global pool is what makes a smart
+ * collection stack correctly with other filters: the result is the
+ * intersection, which is exactly what a stacked rule means.
+ *
+ * A spec scoped to "my-library" stays scoped when it is used inside a
+ * community pool, otherwise "In: <my smart collection>" would start matching
+ * other people's sequences.
+ */
+function membersOf(
+  collection: LibraryCollection,
+  candidates: readonly SequenceData[]
+): ReadonlySet<string> {
+  if (!isSmartCollection(collection) || !collection.filterSpec) {
+    return new Set(collection.sequenceIds);
+  }
+  const spec = collection.filterSpec;
+  const uid = getEffectiveUserId();
+  const pool =
+    spec.source === "my-library" && uid
+      ? candidates.filter((seq) => seq.ownerId === uid)
+      : candidates;
+  return new Set(deriveSpecMembers(pool as SequenceData[], spec).map((seq) => seq.id));
+}

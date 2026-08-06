@@ -65,6 +65,19 @@
       openPrimaryAction: () => void;
       openDangerAction?: () => void;
     };
+    /** The host renders its own selection toolbar with surface-specific
+     * actions (a collection's "Remove from this collection"). Cards still
+     * enter and toggle selection; only this panel's toolbar is suppressed,
+     * so the two never stack. */
+    hideSelectionToolbar?: boolean;
+    /** Names the host pool's own order for the sort menu (see setPool). */
+    curatedSortLabel?: string;
+    /** Inside one collection: per-card "remove from this collection". */
+    collectionContext?: {
+      id: string;
+      name: string;
+      onRemove: (sequenceId: string) => void;
+    };
   }
 
   let {
@@ -87,6 +100,9 @@
     onSaveSmart,
     emptyAction,
     selection,
+    hideSelectionToolbar = false,
+    curatedSortLabel,
+    collectionContext,
   }: Props = $props();
 
   const showToolbar = $derived(toolbarOverride ?? layout !== "minimal");
@@ -286,7 +302,7 @@
   {/if}
 
   {#if showToolbar}
-    {#if selection?.active}
+    {#if selection?.active && !hideSelectionToolbar}
       <SelectionToolbar
         selectedCount={selection.selectedIds.size}
         totalCount={engine.sequences.length}
@@ -312,6 +328,7 @@
         {onOpenFilters}
         {hideFilterChips}
         onEnterSelection={selection ? () => selection.enter() : undefined}
+        {curatedSortLabel}
       />
     {/if}
   {/if}
@@ -391,6 +408,7 @@
                 ? (sequence) => selection.toggle(sequence)
                 : undefined}
               scrollElement={contentEl}
+              {collectionContext}
               onSectionGridReady={(api) => (sectionApi = api)}
               onActiveSectionChange={(title) => (activeSection = title)}
             />

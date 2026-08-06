@@ -44,6 +44,13 @@
     onSectionGridReady?: (api: SectionedGridApi) => void;
     /** Sectioned virtual grid: reports the section at the top of the viewport. */
     onActiveSectionChange?: (title: string | undefined) => void;
+    /** Inside one collection: gives each card a "remove from this collection"
+     * action. Omit everywhere else. */
+    collectionContext?: {
+      id: string;
+      name: string;
+      onRemove: (sequenceId: string) => void;
+    };
   }
 
   const {
@@ -60,6 +67,7 @@
     scrollElement = null,
     onSectionGridReady,
     onActiveSectionChange,
+    collectionContext,
   }: Props = $props();
 
   // Derived state from engine — sections take priority over virtualization
@@ -178,6 +186,7 @@
     {selectionMode}
     {onSelectionStart}
     {onSelectionToggle}
+    {collectionContext}
   />
 {:else if engine.sectionsEnabled && engine.sections.length > 0}
   <!-- Sectioned: virtualized (level banners + letter headers + word rows) -->
@@ -196,6 +205,7 @@
     {selectionMode}
     {onSelectionStart}
     {onSelectionToggle}
+    {collectionContext}
     onGridReady={onSectionGridReady}
     {onActiveSectionChange}
   />
@@ -227,6 +237,7 @@
         {selectionMode}
         {onSelectionStart}
         {onSelectionToggle}
+        {collectionContext}
       />
     {/each}
   </div>

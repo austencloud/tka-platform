@@ -146,6 +146,71 @@ describe("collection membership filter", () => {
     expect(applyFilters([...POOL], filters)).toEqual([]);
   });
 
+  it("hands the resolver the set it is about to narrow", () => {
+    // Smart collections have no stored members, so the resolver can only
+    // answer by evaluating their rule against these candidates.
+    const seen: string[][] = [];
+    setCollectionMembershipResolver((id, candidates) => {
+      seen.push(candidates.map((s) => s.id));
+      return MEMBERSHIP[id];
+    });
+    applyFilters(
+      [...POOL],
+      new Map([
+        [
+          keyFor(BrowseFilterType.COLLECTION, "bella"),
+          rule(BrowseFilterType.COLLECTION, "bella"),
+        ],
+      ])
+    );
+    expect(seen).toEqual([["a", "b", "c", "d"]]);
+  });
+
+  it("a rule-based collection resolves its members instead of reporting none", () => {
+    // What the real resolver does for kind: "smart" — replay the spec over the
+    // candidates. Before this, smart collections returned new Set([]) from an
+    // empty sequenceIds array and every one of them read as 0.
+    setCollectionMembershipResolver((id, candidates) =>
+      id === "level-2-smart"
+        ? new Set(candidates.filter((s) => s.level === 2).map((s) => s.id))
+        : MEMBERSHIP[id]
+    );
+    const filters = new Map<string, ActiveFilter>([
+      [
+        keyFor(BrowseFilterType.COLLECTION, "level-2-smart"),
+        rule(BrowseFilterType.COLLECTION, "level-2-smart", "Level 2"),
+      ],
+    ]);
+    expect(applyFilters([...POOL], filters).map((s) => s.id)).toEqual([
+      "b",
+      "c",
+    ]);
+  });
+
+  it("a rule-based collection intersects when stacked, rather than widening", () => {
+    setCollectionMembershipResolver((id, candidates) =>
+      id === "level-2-smart"
+        ? new Set(candidates.filter((s) => s.level === 2).map((s) => s.id))
+        : MEMBERSHIP[id]
+    );
+    const filters = new Map<string, ActiveFilter>([
+      [
+        keyFor(BrowseFilterType.COLLECTION, "level-2-smart"),
+        rule(BrowseFilterType.COLLECTION, "level-2-smart", "Level 2"),
+      ],
+      [
+        keyFor(BrowseFilterType.COLLECTION, "bella"),
+        rule(BrowseFilterType.COLLECTION, "bella"),
+      ],
+    ]);
+    // Two collections are alternatives, so this is (level 2) ∪ (a, b).
+    expect(applyFilters([...POOL], filters).map((s) => s.id)).toEqual([
+      "a",
+      "b",
+      "c",
+    ]);
+  });
+
   it("the collection:<id> key round-trips through persistence", () => {
     const key = keyFor(BrowseFilterType.COLLECTION, "bella");
     const entries: Array<[string, ActiveFilter]> = [

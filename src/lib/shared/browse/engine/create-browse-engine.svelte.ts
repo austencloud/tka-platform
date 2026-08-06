@@ -756,6 +756,15 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
       else await loadCommunitySequences();
     },
 
+    setPool(sequences: readonly SequenceData[]): void {
+      allSequences = deduplicateById([...sequences]);
+      // The host owns the list, so there is nothing left to wait for — without
+      // this the panel sits on its skeleton forever.
+      sectionsReady = true;
+      isLoading = false;
+      error = null;
+    },
+
     async refresh(): Promise<void> {
       libraryCache = null;
       if (source === "my-library") await loadLibrarySequences();

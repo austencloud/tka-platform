@@ -30,8 +30,16 @@ import { TnDMode } from "$lib/shared/pictograph/shared/domain/enums/pictograph-e
 // reactive for free. No resolver / unknown id → empty result (a stale
 // persisted filter surfaces as a dismissible zero-result chip, not as
 // silently unfiltered data).
+//
+// `candidates` is the set this filter is about to narrow. Manual collections
+// ignore it — their membership is the stored id array. SMART collections have
+// no stored members at all (membership IS a rule), so the resolver evaluates
+// their filterSpec against these candidates. Without it every smart collection
+// resolved to the empty set and reported 0, indistinguishable from an
+// empty manual one.
 type CollectionMembershipResolver = (
-  collectionId: string
+  collectionId: string,
+  candidates: readonly SequenceData[]
 ) => ReadonlySet<string> | undefined;
 
 let collectionMembershipResolver: CollectionMembershipResolver | null = null;
@@ -46,7 +54,7 @@ function filterByCollection(
   sequences: SequenceData[],
   filterValue: BrowseFilterValue
 ): SequenceData[] {
-  const memberIds = collectionMembershipResolver?.(String(filterValue));
+  const memberIds = collectionMembershipResolver?.(String(filterValue), sequences);
   if (!memberIds) return [];
   return sequences.filter((seq) => memberIds.has(seq.id));
 }
