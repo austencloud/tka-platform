@@ -68,6 +68,10 @@ describe("Vulcan Cave floor plan", () => {
     "cave-earth",
     "cave-air",
     "cave-sun",
+    // cave-moon joined on 2026-08-05, and with it the wing has no solo
+    // chambers left. It is a ⌀20 m regolith plain with three Quarter-Opposite
+    // stations, an arrival hole, low gravity and its own terrain program.
+    "cave-moon",
   ]);
   const SOLO_MODE_ROOMS = CAVE_MODE_ROOMS.filter(
     (mode) => !BAY_ROOM_IDS.has(mode.roomId)

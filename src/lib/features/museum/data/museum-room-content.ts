@@ -275,12 +275,14 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
     },
   },
 
+  // The Moon's three Quarter-Opposite stations: MP north, NQ east, OR south.
+  // The west point is the arrival hole, which is why there are three and not
+  // four — the plan is mirrored about the axis the visitor surfaces on.
   "cave-moon": {
     performers: {
-      "cave-moon-automaton": {
-        autoPlay: true,
-        sequenceId: "cave-moon-seq",
-      },
+      "cave-moon-automaton-mp": { autoPlay: true, sequenceId: "cave-moon-seq-mp" },
+      "cave-moon-automaton-nq": { autoPlay: true, sequenceId: "cave-moon-seq-nq" },
+      "cave-moon-automaton-or": { autoPlay: true, sequenceId: "cave-moon-seq-or" },
     },
   },
 

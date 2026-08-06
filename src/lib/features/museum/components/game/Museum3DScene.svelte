@@ -8,7 +8,11 @@
   import type { MuseumGrid } from "../../domain/museum-grid-types";
   import type { RoomEdge } from "../../domain/layout-types";
   import { tileKey } from "../../domain/museum-grid-types";
-  import { UnifiedCameraController, CameraMode } from "@austencloud/camera-3d";
+  import {
+    UnifiedCameraController,
+    CameraMode,
+    CAMERA_DEFAULTS,
+  } from "@austencloud/camera-3d";
   import type { AvatarState } from "@austencloud/camera-3d";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import {
@@ -24,6 +28,12 @@
   import EarthCanyonGraybox from "./EarthCanyonGraybox.svelte";
   import AirChimneyGraybox from "./AirChimneyGraybox.svelte";
   import SundialGraybox from "./SundialGraybox.svelte";
+  import MoonGraybox from "./MoonGraybox.svelte";
+  import {
+    buildMoonLayout,
+    MOON_GRAVITY_SCALE,
+    MOON_ROOM_ID,
+  } from "../../data/moon-layout";
   import TelekineticFormation3D from "./TelekineticFormation3D.svelte";
   import { Avatar3D } from "@austencloud/scene-3d";
   import MuseumMirror from "./MuseumMirror.svelte";
@@ -241,6 +251,9 @@
   const hasAirChimney = grid.wings.some((wing) => wing.id === "cave-air");
   // Graybox for the Sundial (the Sun Chamber). Same lifetime again.
   const hasSundial = grid.wings.some((wing) => wing.id === "cave-sun");
+  // Graybox for the Moon. Same lifetime again.
+  const hasMoon = grid.wings.some((wing) => wing.id === MOON_ROOM_ID);
+  const moonLayout = hasMoon ? buildMoonLayout(grid) : null;
 
   // ── Progressive mount: break heavy sub-components into stages so the
   // browser can paint between each batch. Without this, mounting all torches,
@@ -497,6 +510,26 @@
   let playerPosition = $state({ x: spawnWorldX, y: 0, z: spawnWorldZ });
   let playerGrounded = $state(true);
   let playerVerticalVelocity = $state(0);
+
+  /**
+   * Low gravity on the Moon, and only there. It starts on the first step OFF
+   * the arrival plinth rather than on arrival: the plinth is the Sun's stone
+   * and still behaves like it, so stepping across that seam is the moment the
+   * room announces itself. `isLowGravityAt` owns that boundary — this only
+   * asks it.
+   *
+   * The museum's normal figure is UnifiedCameraController's own default, read
+   * from the package rather than restated, so a change there cannot silently
+   * make the Moon the heavier room.
+   */
+  const MUSEUM_GRAVITY = Math.abs(CAMERA_DEFAULTS.GRAVITY) * 2.5;
+  const playerGravity = $derived(
+    moonLayout &&
+      currentPlayerRoomId === MOON_ROOM_ID &&
+      moonLayout.isLowGravityAt(playerPosition.x, playerPosition.z)
+      ? MUSEUM_GRAVITY * MOON_GRAVITY_SCALE
+      : MUSEUM_GRAVITY
+  );
   let playerJumpRequested = $state(false);
 
   // Detect jump input on the EXACT frame Space is pressed - no physics delay.
@@ -1390,6 +1423,7 @@
   enabled={fpsActive && !museum3dEditorState.editorActive}
   moveAxis={props.moveAxis}
   moveSpeed={3}
+  gravity={playerGravity}
   initialYaw={fpsInitialYaw}
   initialPitch={fpsInitialPitch}
   {externalYaw}
@@ -1715,6 +1749,14 @@
     {grid}
     currentRoomId={currentPlayerRoomId}
     {playerPosition}
+    visible={props.visible !== false}
+  />
+{/if}
+
+{#if hasMoon}
+  <MoonGraybox
+    {grid}
+    currentRoomId={currentPlayerRoomId}
     visible={props.visible !== false}
   />
 {/if}

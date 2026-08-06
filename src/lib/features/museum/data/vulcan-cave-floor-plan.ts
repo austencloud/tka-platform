@@ -47,6 +47,13 @@ import {
   createAirChimneyTerrain,
   airLedgeStationOffsets,
 } from "./air-chimney-layout";
+import {
+  buildMoonLayout,
+  createMoonTerrain,
+  moonCentreMetres,
+  MOON_MOUND_TOP_Y,
+  MOON_STATIONS,
+} from "./moon-layout";
 import { CAVE_THRESHOLD_ROOM } from "./lobby-floor-plan";
 
 type WallName = "north" | "south" | "east" | "west";
@@ -140,8 +147,14 @@ export const CAVE_MODE_ROOMS = [
     label: "Moon",
     category: "QO",
     technicalMode: "Quarter-time / opposite-direction",
-    performerIds: ["cave-moon-automaton"],
-    sequenceIds: ["cave-moon-seq"],
+    // Three, not four. MPMP, NQNQ and OROR are the Quarter-Opposite pairs that
+    // close across M–R; the fourth compass point is the arrival hole.
+    performerIds: [
+      "cave-moon-automaton-mp",
+      "cave-moon-automaton-nq",
+      "cave-moon-automaton-or",
+    ],
+    sequenceIds: ["cave-moon-seq-mp", "cave-moon-seq-nq", "cave-moon-seq-or"],
     tone: "exhibit",
   },
 ] as const satisfies readonly CaveModeRoom[];
@@ -504,6 +517,60 @@ const sunPerformers = SUN_STATIONS.map((station) => ({
   elevation: SUN_PILLAR_TOP_Y,
 }));
 
+// ── The Moon's plain and its three Quarter-Opposite stations ────────────────
+//
+// Interior metres = ceil(minInterior * 1.5) * 0.5, NOT tiles. 30 -> 22.5 m
+// each way, which carries the ⌀20 m plain with a 1.25 m rock margin on every
+// side. Measured against the compiled grid, not assumed.
+//
+// Both doors are CENTRED on purpose. blockedAt keeps the plain round and opens
+// only the band the two door approaches cross; with the doors at opposite
+// corners that band would span nearly the whole bay and the "round plain" would
+// be a rectangle with rounded corners drawn on it.
+const MOON_MIN_INTERIOR_WIDTH = 30;
+const MOON_MIN_INTERIOR_HEIGHT = 30;
+
+const moonWalls = {
+  north: EMPTY_WALL,
+  south: torchWall("start"),
+  east: doorWall(EDGE_IDS.moonToEgypt, "center"),
+  west: doorWall(EDGE_IDS.sunToMoon, "center"),
+} satisfies Record<WallName, WallDefinition>;
+
+const moonDimensions = computeRoomDimensions({
+  walls: moonWalls,
+  minInteriorWidth: MOON_MIN_INTERIOR_WIDTH,
+  minInteriorHeight: MOON_MIN_INTERIOR_HEIGHT,
+});
+
+// The centre comes from `moon-layout.ts` — the same expression the terrain and
+// the graybox measure every polar quantity from. A second one derived here is
+// exactly how the Sundial's stations and its sun mapping ended up on different
+// axes.
+const { xMetres: MOON_CENTRE_X_M, zMetres: MOON_CENTRE_Z_M } = moonCentreMetres(
+  moonDimensions.w,
+  moonDimensions.h
+);
+
+const moonPerformers = MOON_STATIONS.map((station) => ({
+  offsetX: interiorOffsetFraction(
+    MOON_CENTRE_X_M + station.dx,
+    moonDimensions.w,
+    moonDimensions.w - 2
+  ),
+  offsetY: interiorOffsetFraction(
+    MOON_CENTRE_Z_M + station.dz,
+    moonDimensions.h,
+    moonDimensions.h - 2
+  ),
+  facing: station.facing,
+  refId: `cave-moon-automaton-${station.suffix}`,
+  // No collider: the mounds are 0.35 m rises on an open plain the visitor is
+  // meant to walk across and around. A 2D collision disc here would fence off
+  // floor for no reason the eye can see.
+  elevation: MOON_MOUND_TOP_Y,
+}));
+
 const thresholdRoom: RoomNode = {
   ...CAVE_THRESHOLD_ROOM,
   spawn: { offsetX: -0.28, offsetY: 0.28, facing: "north" },
@@ -648,25 +715,13 @@ export const VULCAN_CAVE_ROOMS: RoomNode[] = [
     name: "Moon Chamber",
     material: "stone",
     theme: "cave",
-    minInteriorWidth: 7,
-    minInteriorHeight: 7,
+    minInteriorWidth: MOON_MIN_INTERIOR_WIDTH,
+    minInteriorHeight: MOON_MIN_INTERIOR_HEIGHT,
     description:
-      "A colder, quieter chamber that completes the pairing as a separate encounter.",
-    walls: {
-      north: EMPTY_WALL,
-      south: torchWall("start"),
-      east: doorWall(EDGE_IDS.moonToEgypt, "end"),
-      west: doorWall(EDGE_IDS.sunToMoon, "start"),
-    },
-    performers: [
-      {
-        offsetX: 0,
-        offsetY: 0,
-        facing: "west",
-        refId: "cave-moon-automaton",
-        collisionRadiusTiles: 2,
-      },
-    ],
+      "A flat regolith plain under an open black sky, lit by one hard white sun with nothing to scatter it. The visitor surfaces through a hole in the floor on the Sun's own stone; the first step off it is where the gravity lets go.",
+    roomPresentation: { suppressTileGeometry: true },
+    walls: moonWalls,
+    performers: moonPerformers,
   },
   {
     id: "egypt-threshold",
@@ -1049,6 +1104,10 @@ export function buildVulcanCaveFloorPlan(): VulcanCaveFloorPlan {
     {
       bounds: buildSundialLayout(build.grid)?.bayBounds,
       program: createSundialTerrain(build.grid),
+    },
+    {
+      bounds: buildMoonLayout(build.grid)?.bayBounds,
+      program: createMoonTerrain(build.grid),
     },
   ]);
   if (terrain) build.grid.terrain = terrain;
