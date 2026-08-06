@@ -11,7 +11,6 @@
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import TelekineticFormation3D from "$lib/features/museum/components/game/TelekineticFormation3D.svelte";
-  import type { EffectType } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 
   interface Props {
     stationId: string;
@@ -24,12 +23,18 @@
   }
   const props: Props = $props();
 
+  /**
+   * The context supplies the per-effect INTENT parameters only. It must not
+   * carry the selection: the effect id travels down the prop channel
+   * (effectId → CovenStation → EffectOrchestrator3D → EffectsLayer.activeEffects).
+   *
+   * There used to be an $effect here calling setTipEffectMap. It read and wrote
+   * the same state and looped until Svelte threw effect_update_depth_exceeded,
+   * which tore down the component tree and left the stations blank. It was also
+   * redundant once the 3D layer stopped gating on this context.
+   */
   const effectsState = createEffectsConfigState(undefined, { persist: false });
   setEffectsConfigContext(effectsState);
-
-  $effect(() => {
-    effectsState.setTipEffectMap({ "*": { effect: props.effectId as EffectType } });
-  });
 </script>
 
 <TelekineticFormation3D

@@ -7,7 +7,7 @@
  * → fixes 3D" by construction.
  *
  * Every effect has a uniform Primary row (Color/Palette · Intensity · two
- * character knobs, 3–5 controls) so effects feel equally simple to control;
+ * character knobs, 3–6 controls) so effects feel equally simple to control;
  * deeper params live under tier "advanced". `tracking` is the prop-aware end
  * selector for tip-emission effects.
  *
@@ -340,14 +340,6 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
     // ring-shaping fringe params a flow artist rarely touches — preset-driven only.
   ],
 };
-
-/** Effects that have a live 3D renderer — the only ones the 3D viewer lists. */
-export const EFFECTS_WITH_3D_RENDERER: ReadonlySet<EffectId> = new Set<EffectId>([
-  "trails",
-  "fire",
-  "led",
-  "charcoal",
-]);
 
 export function primaryControls(effect: EffectId): ControlDescriptor[] {
   return EFFECT_CONTROLS[effect].filter((c) => c.tier === "primary" || c.tier === "tracking");

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { untrack } from "svelte";
+  import { tick, untrack } from "svelte";
   import { T, useTask, useThrelte } from "@threlte/core";
   import { PCFSoftShadowMap } from "three";
   import { Vector3, Raycaster, Matrix3 } from "three";
-  import type { BatchedMesh, PerspectiveCamera } from "three";
+  import type { BatchedMesh, Group, Object3D, PerspectiveCamera } from "three";
   import MuseumPostProcessing from "./MuseumPostProcessing.svelte";
   import type { MuseumGrid } from "../../domain/museum-grid-types";
   import type { RoomEdge } from "../../domain/layout-types";
@@ -49,6 +49,13 @@
   import MuseumTorch3D from "./MuseumTorch3D.svelte";
   import GltfAsset from "$lib/shared/3d/environments/primitives/GltfAsset.svelte";
   import FallingParticles from "$lib/shared/3d/environments/primitives/FallingParticles.svelte";
+  import SceneEffectsCoordinator3D from "$lib/shared/3d/effects/scene-effects/SceneEffectsCoordinator3D.svelte";
+  import { SceneEffectsManager3D } from "$lib/shared/3d/effects/scene-effects/scene-effects-manager-3d";
+  import { setSceneEffectsContext } from "$lib/shared/3d/effects/scene-effects/scene-effects-context";
+
+  const sceneEffectsManager = setSceneEffectsContext(
+    new SceneEffectsManager3D()
+  );
 
   // Start preloading village avatar models immediately - they'll be cached
   // by the time the player reaches the Room of Collaboration
@@ -72,8 +79,14 @@
   } from "../../services/museum-portals";
   import { MuseumEditorPlacement } from "../../services/museum-editor-placement";
   import {
+    blendAuthoredPointLightPool,
+    blendRoomLightPool,
+    createEmptyAuthoredPointLightPool,
     createEmptyPool,
     recomputeNearbyRoomLights as recomputeNearbyLightsFromPool,
+    selectAuthoredPointLights,
+    type AuthoredPointLightPlan,
+    type AuthoredPointLightSlot,
     type RoomLightSlot,
   } from "../../services/museum-room-light-pool";
   import { MuseumAtmosphere } from "../../services/museum-atmosphere";
@@ -176,6 +189,10 @@
     onBuildStage?: (stage: string) => void;
     /** Called when async geometry build completes - all meshes are ready to render */
     onGeometryReady?: () => void;
+    /** True once every tracked GLTF and texture has settled. */
+    assetsReady?: boolean;
+    /** Called after FPS-only objects share the final entrance light program. */
+    onShaderWarmupReady?: () => void;
     /** Fires when the camera crosses the terrain waterline (underwater state). */
     onSubmergedChange?: (submerged: boolean) => void;
     /** False when the museum is mounted-but-hidden (keep-alive) - pause per-frame work */
@@ -380,9 +397,23 @@
 
   // ── Camera ──
   let camera: PerspectiveCamera | undefined = $state();
+  let playerAvatarWarmupGroup: Group | undefined = $state();
+  let resolvePlayerAvatarReady: (() => void) | undefined;
+  const playerAvatarReady = new Promise<void>((resolve) => {
+    resolvePlayerAvatarReady = resolve;
+  });
   // Reused scratch vector for reading the editor-orbit target on each
   // change event. Avoids per-frame Vector3 allocations.
   const _editorTargetVec = new Vector3();
+
+  function handlePlayerAvatarReady(): void {
+    // Avatar3D reports readiness immediately before its Threlte object mounts.
+    // Defer one microtask so the hidden preview wrapper contains the model.
+    queueMicrotask(() => {
+      resolvePlayerAvatarReady?.();
+      resolvePlayerAvatarReady = undefined;
+    });
+  }
 
   // ── Game-bridge raycast (AI debug: "what am I looking at / what's at X") ──
   // Reused across calls so the debug bridge doesn't allocate a Raycaster +
@@ -515,6 +546,15 @@
   let playerSpeed = $state(0);
   let moveDir = $state({ x: 0, z: 0 });
   let playerPosition = $state({ x: spawnWorldX, y: 0, z: spawnWorldZ });
+  const portalsVisible = $derived.by(() => {
+    if (!portalConfig.caveWing || !portalConfig.galleryWing) return false;
+    const maxDistanceSq = 15 * 15;
+    return [portalConfig.bluePos, portalConfig.orangePos].some((position) => {
+      const dx = position[0] - playerPosition.x;
+      const dz = position[2] - playerPosition.z;
+      return dx * dx + dz * dz <= maxDistanceSq;
+    });
+  });
   let playerGrounded = $state(true);
   let playerVerticalVelocity = $state(0);
 
@@ -530,13 +570,6 @@
    * make the Moon the heavier room.
    */
   const MUSEUM_GRAVITY = Math.abs(CAMERA_DEFAULTS.GRAVITY) * 2.5;
-  const playerGravity = $derived(
-    moonLayout &&
-      currentPlayerRoomId === MOON_ROOM_ID &&
-      moonLayout.isLowGravityAt(playerPosition.x, playerPosition.z)
-      ? MUSEUM_GRAVITY * MOON_GRAVITY_SCALE
-      : MUSEUM_GRAVITY
-  );
   let playerJumpRequested = $state(false);
 
   // Detect jump input on the EXACT frame Space is pressed - no physics delay.
@@ -659,19 +692,12 @@
     const theme = getWingThemeAt(tileX, tileZ);
     // The Moon is the one room in the museum standing outside, on a body with
     // no air. See MuseumAtmosphere.update's `vacuum`.
-    const wingChanged = atmosphere.update(
+    atmosphere.update(
       theme,
       fpsActive,
       delta,
-      currentPlayerRoomId === MOON_ROOM_ID,
+      currentPlayerRoomId === MOON_ROOM_ID
     );
-    if (wingChanged) {
-      roomLightPool = recomputeNearbyLightsFromPool(
-        tileX * TILE_SIZE,
-        tileZ * TILE_SIZE,
-        roomLights
-      );
-    }
   }
 
   /**
@@ -865,7 +891,7 @@
       const fpsTileZ = Math.round(fpsResult.position.z / TILE_SIZE);
       updateAtmosphere(fpsTileX, fpsTileZ, delta);
       geometryStreamer.updateStreaming(fpsTileX, fpsTileZ, fpsActive);
-      currentPlayerRoomId = geometryStreamer.currentPlayerRoomId;
+      syncPlayerRoomFromStreamer();
       props.onPlayerUpdate?.(
         fpsResult.position.x,
         fpsResult.position.z,
@@ -925,7 +951,7 @@
       const tileZ = Math.round(moveResult.position.z / TILE_SIZE);
       updateAtmosphere(tileX, tileZ, delta);
       geometryStreamer.updateStreaming(tileX, tileZ, fpsActive);
-      currentPlayerRoomId = geometryStreamer.currentPlayerRoomId;
+      syncPlayerRoomFromStreamer();
       props.onPlayerUpdate?.(
         moveResult.position.x,
         moveResult.position.z,
@@ -962,20 +988,12 @@
   });
 
   // When Q is pressed again while in FPS mode, exit back to top-down.
-  // CRITICAL: Exit pointer lock SYNCHRONOUSLY before starting the flip.
-  // Chrome blocks rAF callbacks for ~4 seconds during pointer lock exit
-  // (notification banner UI). If we let UCC's deferred exit handle it,
-  // the block happens mid-animation. By exiting here, Chrome's freeze
-  // happens on the static FPS view (which the user is already looking at),
-  // then the animation plays at 60fps.
+  // Release pointer lock synchronously before the next frame snaps the camera.
   $effect(() => {
     const flip = props.flipRequested;
     if (fpsActive && flip !== flipState.lastFlipCount) {
       flipState.lastFlipCount = flip;
 
-      // Exit pointer lock FIRST - Chrome will process this synchronously
-      // and any UI freeze from Chrome's lock-exit notification happens
-      // before we start the flip animation.
       if (document.pointerLockElement) {
         document.exitPointerLock();
       }
@@ -1137,11 +1155,117 @@
 
   // ── Per-room geometry streaming (delegated to MuseumGeometryStreamer) ──
   let geometryReady = $state(false);
+  let shaderWarmupStarted = false;
+
+  $effect(() => {
+    if (!props.assetsReady || !geometryReady || shaderWarmupStarted) return;
+    const renderer = resolveRenderer(threlteCtx);
+    const scene = resolveScene(threlteCtx);
+    if (!renderer || !scene || !camera) return;
+    const warmupCamera = camera;
+
+    shaderWarmupStarted = true;
+    props.onBuildStage?.("Warming 3D view");
+    void (async () => {
+      const savedFpsActive = fpsActive;
+      const savedPosition = warmupCamera.position.clone();
+      const savedQuaternion = warmupCamera.quaternion.clone();
+      const savedFov = warmupCamera.fov;
+      const savedNear = warmupCamera.near;
+      const savedFar = warmupCamera.far;
+      const savedAvatarVisibility = playerAvatarWarmupGroup?.visible;
+      try {
+        // Avatar3D normally resolves from the browser cache before geometry.
+        // A failed or unusually slow avatar request must not hold the whole
+        // museum loading gate forever.
+        await Promise.race([
+          playerAvatarReady,
+          new Promise<void>((resolve) => window.setTimeout(resolve, 3_000)),
+        ]);
+
+        // Enter the real FPS scene state while the loading overlay is opaque.
+        // This changes ceilings, player lighting, and streamed visibility to
+        // the exact signature used after Q instead of compiling a synthetic
+        // object graph that Three may never finish linking.
+        fpsActive = true;
+        await tick();
+
+        props.onBuildStage?.("Drawing 3D preview");
+        cameraFlip.syncFpsFromPlayer(
+          physicsProvider.getPlayerPosition(),
+          playerYaw,
+          playerPitch,
+          warmupCamera
+        );
+        cameraFlip.initializeCamera(warmupCamera, true);
+        if (playerAvatarWarmupGroup) playerAvatarWarmupGroup.visible = false;
+        scene.updateMatrixWorld(true);
+        warmupCamera.updateMatrixWorld(true);
+        renderer.render(scene, warmupCamera);
+
+        // The second Q press reveals the third-person avatar without changing
+        // the FPS light signature. Draw it once from a guaranteed-visible
+        // camera position so that switch cannot become its first shader link.
+        if (playerAvatarWarmupGroup?.children.length) {
+          const playerPosition = physicsProvider.getPlayerPosition();
+          playerAvatarWarmupGroup.visible = true;
+          warmupCamera.position.set(
+            playerPosition.x - Math.sin(playerYaw) * 3,
+            playerPosition.y + 1.6,
+            playerPosition.z - Math.cos(playerYaw) * 3
+          );
+          warmupCamera.lookAt(
+            playerPosition.x,
+            playerPosition.y + 0.9,
+            playerPosition.z
+          );
+          warmupCamera.updateMatrixWorld(true);
+          renderer.render(scene, warmupCamera);
+        }
+      } catch (error) {
+        console.warn("[Museum3DScene] FPS resource warmup failed:", error);
+      } finally {
+        fpsActive = savedFpsActive;
+        await tick();
+        if (playerAvatarWarmupGroup && savedAvatarVisibility !== undefined) {
+          playerAvatarWarmupGroup.visible = savedAvatarVisibility;
+        }
+        warmupCamera.position.copy(savedPosition);
+        warmupCamera.quaternion.copy(savedQuaternion);
+        warmupCamera.fov = savedFov;
+        warmupCamera.near = savedNear;
+        warmupCamera.far = savedFar;
+        warmupCamera.updateProjectionMatrix();
+        warmupCamera.updateMatrixWorld(true);
+        props.onShaderWarmupReady?.();
+      }
+    })();
+  });
 
   const geometryStreamer = new MuseumGeometryStreamer(
     grid,
     props.edges ?? MUSEUM_EDGES,
     TILE_SIZE
+  );
+
+  // Track which room the player is in (updated by streamer each frame). Seed
+  // it before any derived state reads it so distant graybox lights never join
+  // the entrance shader signature during the initialization frame.
+  let currentPlayerRoomId = $state<string | null>(
+    geometryStreamer.getSpawnRoomId()
+  );
+  // A corridor is circulation between two rooms, not a signal to turn every
+  // authored room on. It keeps the last occupied room's lighting until the next
+  // room is crossed, then the fixed rig blends to that room's values.
+  let currentLightingRoomId = $state<string | null>(
+    geometryStreamer.getSpawnRoomId()
+  );
+  const playerGravity = $derived(
+    moonLayout &&
+      currentPlayerRoomId === MOON_ROOM_ID &&
+      moonLayout.isLowGravityAt(playerPosition.x, playerPosition.z)
+      ? MUSEUM_GRAVITY * MOON_GRAVITY_SCALE
+      : MUSEUM_GRAVITY
   );
 
   // Proximity renderer
@@ -1154,7 +1278,14 @@
     };
   });
 
-  const MAX_POINT_LIGHTS = 32;
+  // Keep the entrance's generated StandardMaterial program small enough that
+  // Chrome's driver can link it predictably. The fixtures remain visible and
+  // emissive; the global key/fill plus a tiny local-light budget provide the
+  // illumination without compiling six spotlight branches into every mesh.
+  const MAX_TORCH_LIGHTS = 1;
+  const MAX_EXHIBIT_LIGHTS = 0;
+  const MAX_CEILING_LIGHTS = 0;
+  const MAX_SUNLIGHTS = 0;
 
   // Visible sets - only these items get rendered
   let visibleTorches = $state<TorchPosition[]>([]);
@@ -1164,7 +1295,33 @@
   let visibleCeilingLights = $state<LightPosition[]>([]);
   let visibleSunlights = $state<LightPosition[]>([]);
   let visibleFurniture = $state<NonNullable<typeof grid.furniture>>([]);
-  let useSpotLights = $state(false);
+
+  function nearestLights(
+    source: LightPosition[],
+    limit: number
+  ): LightPosition[] {
+    const px = playerPosition.x;
+    const pz = playerPosition.z;
+    return [...source]
+      .sort((a, b) => {
+        const aDx = a.x - px;
+        const aDz = a.z - pz;
+        const bDx = b.x - px;
+        const bDz = b.z - pz;
+        return aDx * aDx + aDz * aDz - (bDx * bDx + bDz * bDz);
+      })
+      .slice(0, limit);
+  }
+
+  const renderedExhibitLights = $derived(
+    nearestLights(visibleExhibitLights, MAX_EXHIBIT_LIGHTS)
+  );
+  const renderedCeilingLights = $derived(
+    nearestLights(visibleCeilingLights, MAX_CEILING_LIGHTS)
+  );
+  const renderedSunlights = $derived(
+    nearestLights(visibleSunlights, MAX_SUNLIGHTS)
+  );
 
   // ── Imperative mesh management ──
   const allSceneMeshes: BatchedMesh[] = []; // for cleanup on destroy
@@ -1259,10 +1416,42 @@
       geometryStreamer.corridorChunk,
       geometryStreamer.activeRoomChunks
     );
-    useSpotLights = visiblePlaques.length > 0 && visiblePlaques.length < 20;
-    visiblePerformers = grid.performers;
+    visiblePerformers = [];
     visibleFurniture = grid.furniture ?? [];
     await new Promise<void>((r) => setTimeout(r, 0));
+
+    // Compile only the streamed entrance neighborhood after its fixed light
+    // layout has mounted. Compiling the entire scene also traverses every
+    // distant authored chamber; skipping this step entirely makes the first
+    // FPS frame discover the lobby's wall programs synchronously.
+    props.onBuildStage?.("Warming 3D view");
+    const renderer = resolveRenderer(threlteCtx);
+    const scene = resolveScene(threlteCtx);
+    const warmupCamera = camera;
+    if (renderer && scene && warmupCamera) {
+      const compileTargets: Object3D[] = [];
+      for (const chunk of lobbyChunks) {
+        compileTargets.push(
+          ...chunk.floorMeshes.map(({ mesh }) => mesh),
+          ...chunk.wallMeshes.map(({ mesh }) => mesh)
+        );
+        if (chunk.kitWalls) compileTargets.push(chunk.kitWalls);
+        if (chunk.ceilingMesh) compileTargets.push(chunk.ceilingMesh.mesh);
+        if (chunk.pedestalMesh) compileTargets.push(chunk.pedestalMesh);
+        if (chunk.signMesh) compileTargets.push(chunk.signMesh);
+      }
+      try {
+        await Promise.all(
+          compileTargets.map((object) =>
+            renderer.compileAsync(object, warmupCamera, scene)
+          )
+        );
+      } catch (error) {
+        // Rendering remains usable without precompilation. Preserve the normal
+        // ready path and retain the driver error for diagnosis.
+        console.warn("[Museum3DScene] entrance shader warmup failed:", error);
+      }
+    }
 
     // Signal ready
     geometryReady = true;
@@ -1283,8 +1472,53 @@
       ? (collabWing.bounds.y + collabWing.bounds.height / 2) * TILE_SIZE
       : 0
   );
-  // Track which room the player is in (updated by streamer each frame)
-  let currentPlayerRoomId = $state<string | null>(null);
+  function syncPlayerRoomFromStreamer(): void {
+    const detectedRoomId = geometryStreamer.currentPlayerRoomId;
+    currentPlayerRoomId = detectedRoomId;
+    if (detectedRoomId) currentLightingRoomId = detectedRoomId;
+  }
+
+  const authoredPointLightPlans = new Map<string, AuthoredPointLightPlan>();
+  function handleAuthoredPointLightPlanChange(
+    sourceId: string,
+    plan: AuthoredPointLightPlan | null
+  ): void {
+    if (plan) authoredPointLightPlans.set(sourceId, plan);
+    else authoredPointLightPlans.delete(sourceId);
+  }
+  const performerRoomById = new Map(
+    grid.performers.map((performer) => {
+      const room = grid.wings.find((wing) => {
+        const bounds = wing.bounds;
+        return (
+          performer.tileX >= bounds.x &&
+          performer.tileX < bounds.x + bounds.width &&
+          performer.tileY >= bounds.y &&
+          performer.tileY < bounds.y + bounds.height
+        );
+      });
+      return [performer.id, room?.id ?? null] as const;
+    })
+  );
+  const activePerformerIds = $derived.by(() => {
+    if (!fpsActive || !currentPlayerRoomId) return new Set<string>();
+    return new Set(
+      grid.performers
+        .filter(
+          (performer) =>
+            performerRoomById.get(performer.id) === currentPlayerRoomId
+        )
+        .map((performer) => performer.id)
+    );
+  });
+  $effect(() => {
+    const roomId = currentPlayerRoomId;
+    visiblePerformers = roomId
+      ? grid.performers.filter(
+          (performer) => performerRoomById.get(performer.id) === roomId
+        )
+      : [];
+  });
   const villageEmbedMounted = $derived(geometryReady && !!collabWing);
 
   /** Set mesh.visible on every mesh in a room chunk */
@@ -1342,26 +1576,106 @@
     | { category: "torch"; item: TorchPosition };
   let pendingMounts: PendingMount[] = [];
 
-  // Torch light set - derived from visible torches, capped at MAX_POINT_LIGHTS
-  const torchLightSet = $derived.by(() => {
-    const withLight =
-      visibleTorches.length <= MAX_POINT_LIGHTS
-        ? visibleTorches
-        : visibleTorches.slice(0, MAX_POINT_LIGHTS);
-    return new Set(withLight.map((t) => `${t.x},${t.z}`));
+  // The closest fixture receives one permanent light slot. Changing fixtures
+  // only updates uniforms; the PointLight object itself never mounts/unmounts.
+  const torchLightSlot = $derived.by(() => {
+    const px = playerPosition.x;
+    const pz = playerPosition.z;
+    const nearest = [...visibleTorches]
+      .sort((a, b) => {
+        const aDx = a.x - px;
+        const aDz = a.z - pz;
+        const bDx = b.x - px;
+        const bDz = b.z - pz;
+        return aDx * aDx + aDz * aDz - (bDx * bDx + bDz * bDz);
+      })
+      .slice(0, MAX_TORCH_LIGHTS)[0];
+    if (!nearest) {
+      return { x: 0, y: 1.45, z: 0, color: "#ffffff", intensity: 0 };
+    }
+    const config = FIXTURE_REGISTRY[nearest.wingTheme];
+    return {
+      x: nearest.x + nearest.wallOffsetX,
+      y: 1.45 + config.yOffset,
+      z: nearest.z + nearest.wallOffsetZ,
+      color: config.lightColor,
+      intensity: config.lightIntensity,
+    };
   });
 
-  // Room lights from all active chunks (updates as rooms load/unload)
-  let roomLights = $derived.by(() => {
+  function collectRoomLights(): RoomLight[] {
     const lights: RoomLight[] = [];
     for (const chunk of geometryStreamer.activeRoomChunks.values()) {
       if (chunk.roomLight) lights.push(chunk.roomLight);
     }
     return lights;
-  });
+  }
 
   let roomLightPool = $state<RoomLightSlot[]>(createEmptyPool());
+  let roomLightTarget = createEmptyPool();
+  let authoredPointLightPool = $state<AuthoredPointLightSlot[]>(
+    createEmptyAuthoredPointLightPool()
+  );
+  let authoredPointLightTarget = createEmptyAuthoredPointLightPool();
+  let lightElapsedSeconds = 0;
+  let lastLightSampleX = Number.POSITIVE_INFINITY;
+  let lastLightSampleZ = Number.POSITIVE_INFINITY;
+  let lastLightingRoomId: string | null = null;
+  let lastActiveRoomCount = -1;
+
+  useTask((delta) => {
+    if (props.visible === false) return;
+
+    lightElapsedSeconds += delta;
+    const px = playerPosition.x;
+    const pz = playerPosition.z;
+    const dx = px - lastLightSampleX;
+    const dz = pz - lastLightSampleZ;
+    const movedEnough = dx * dx + dz * dz >= 0.25;
+    const roomChanged = currentLightingRoomId !== lastLightingRoomId;
+    const activeRoomCount = geometryStreamer.activeRoomChunks.size;
+
+    if (
+      movedEnough ||
+      roomChanged ||
+      activeRoomCount !== lastActiveRoomCount
+    ) {
+      roomLightTarget = recomputeNearbyLightsFromPool(
+        px,
+        pz,
+        collectRoomLights()
+      );
+      lastLightSampleX = px;
+      lastLightSampleZ = pz;
+      lastLightingRoomId = currentLightingRoomId;
+      lastActiveRoomCount = activeRoomCount;
+    }
+
+    // Modulated fixtures update their target intensity every frame, but the
+    // three actual PointLight objects below never mount or unmount.
+    authoredPointLightTarget = selectAuthoredPointLights(
+      currentLightingRoomId,
+      px,
+      pz,
+      authoredPointLightPlans.values(),
+      lightElapsedSeconds
+    );
+
+    const blendAmount = 1 - Math.exp(-8 * Math.min(delta, 0.1));
+    roomLightPool = blendRoomLightPool(
+      roomLightPool,
+      roomLightTarget,
+      blendAmount
+    );
+    authoredPointLightPool = blendAuthoredPointLightPool(
+      authoredPointLightPool,
+      authoredPointLightTarget,
+      blendAmount
+    );
+  });
 </script>
+
+<SceneEffectsCoordinator3D manager={sceneEffectsManager} />
 
 <!-- Camera (owned by flip animation when not in FPS, by UCC when in FPS, by OrbitControls in editor) -->
 <T.PerspectiveCamera
@@ -1430,58 +1744,73 @@
   {/if}
 </T.PerspectiveCamera>
 
-<!-- Player representation: top-down marker always mounted, visibility toggled -->
+<!-- Player representation. Keep its light permanently in the scene and change
+     intensity instead of visibility: Three bakes the visible-light count into
+     every lit material program, so removing this light during a view switch
+     would invalidate shaders across the museum. -->
 <T.Group
   position.x={playerPosition.x}
   position.y={0.15}
   position.z={playerPosition.z}
-  visible={!fpsActive && !museum3dEditorState.editorActive}
 >
-  <T.Mesh rotation.x={-Math.PI / 2}>
-    <T.RingGeometry args={[0.18, 0.28, 16]} />
-    <T.MeshBasicMaterial color="#c8b890" opacity={0.4} transparent={true} />
-  </T.Mesh>
-  <T.Mesh rotation.x={-Math.PI / 2}>
-    <T.CircleGeometry args={[0.12, 16]} />
-    <T.MeshBasicMaterial color="#c8b890" opacity={0.8} transparent={true} />
-  </T.Mesh>
-  <T.Group rotation.y={playerYaw}>
-    <T.Mesh position.z={0.35} rotation.x={Math.PI / 2}>
-      <T.ConeGeometry args={[0.06, 0.12, 3]} />
-      <T.MeshBasicMaterial color="#c8b890" opacity={0.6} transparent={true} />
+  <T.Group visible={!fpsActive && !museum3dEditorState.editorActive}>
+    <T.Mesh rotation.x={-Math.PI / 2}>
+      <T.RingGeometry args={[0.18, 0.28, 16]} />
+      <T.MeshBasicMaterial color="#c8b890" opacity={0.4} transparent={true} />
     </T.Mesh>
+    <T.Mesh rotation.x={-Math.PI / 2}>
+      <T.CircleGeometry args={[0.12, 16]} />
+      <T.MeshBasicMaterial color="#c8b890" opacity={0.8} transparent={true} />
+    </T.Mesh>
+    <T.Group rotation.y={playerYaw}>
+      <T.Mesh position.z={0.35} rotation.x={Math.PI / 2}>
+        <T.ConeGeometry args={[0.06, 0.12, 3]} />
+        <T.MeshBasicMaterial color="#c8b890" opacity={0.6} transparent={true} />
+      </T.Mesh>
+    </T.Group>
   </T.Group>
-  <T.PointLight intensity={2} color="#c8b890" distance={4} position.y={1} />
+  <T.PointLight
+    intensity={!fpsActive && !museum3dEditorState.editorActive ? 2 : 0}
+    color="#c8b890"
+    distance={4}
+    position.y={1}
+  />
 </T.Group>
 
 <!-- Player avatar: always mounted, visible only in third-person FPS mode.
      Stays initialized so the first Q press doesn't pay skeleton/animation setup cost. -->
-<Avatar3D
-  id="museum-player"
-  bluePropState={null}
-  redPropState={null}
-  position={{
-    x: playerPosition.x,
-    y: playerPosition.y - 0.85 + 0.001,
-    z: playerPosition.z,
-  }}
-  facingAngle={playerYaw}
-  isActive={false}
-  isMoving={fpsActive && lastCameraMode === CameraMode.THIRD_PERSON
-    ? isMoving
-    : false}
-  moveSpeed={playerSpeed}
-  moveDirection={moveDir}
-  enableLocomotion={true}
-  enableRootMotion={false}
-  isGrounded={playerGrounded}
-  verticalVelocity={playerVerticalVelocity}
-  {isCrouching}
-  isJumpRequested={playerJumpRequested}
+<T.Group
+  bind:ref={playerAvatarWarmupGroup}
   visible={fpsActive &&
     lastCameraMode === CameraMode.THIRD_PERSON &&
     !museum3dEditorState.editorActive}
-/>
+>
+  <Avatar3D
+    id="museum-player"
+    bluePropState={null}
+    redPropState={null}
+    position={{
+      x: playerPosition.x,
+      y: playerPosition.y - 0.85 + 0.001,
+      z: playerPosition.z,
+    }}
+    facingAngle={playerYaw}
+    isActive={false}
+    isMoving={fpsActive && lastCameraMode === CameraMode.THIRD_PERSON
+      ? isMoving
+      : false}
+    moveSpeed={playerSpeed}
+    moveDirection={moveDir}
+    enableLocomotion={true}
+    enableRootMotion={false}
+    isGrounded={playerGrounded}
+    verticalVelocity={playerVerticalVelocity}
+    {isCrouching}
+    isJumpRequested={playerJumpRequested}
+    visible={true}
+    onModelSwapped={handlePlayerAvatarReady}
+  />
+</T.Group>
 
 <!-- UnifiedCameraController: always mounted, enabled only in FPS mode.
      Pre-mounting eliminates first-flip initialization freeze (event listeners,
@@ -1525,10 +1854,8 @@
   }}
 />
 
-<!-- Post-processing: bloom in FPS only, plain render everywhere else.
-     Pre-warm behind loading overlay absorbs the shader compilation cost.
-     Bloom off in top-down avoids the render target switch that causes 8s stall.
-     spawnPosition gives the pre-warm a second render from FPS perspective. -->
+<!-- One direct render path in every camera mode keeps the renderer target and
+     material program set stable across view switches. -->
 <MuseumPostProcessing
   {geometryReady}
   {fpsActive}
@@ -1549,9 +1876,35 @@
   />
 {/each}
 
+<!-- The nearest wall fixture also uses one permanent slot. -->
+<T.PointLight
+  position={[torchLightSlot.x, torchLightSlot.y, torchLightSlot.z]}
+  color={torchLightSlot.color}
+  intensity={torchLightSlot.intensity}
+  distance={8}
+  decay={2}
+  castShadow={false}
+/>
+
+<!-- Authored cave fixtures share three permanent slots. Room changes update
+     uniforms only, so the first hallway cannot create a new material program. -->
+{#each authoredPointLightPool as slot, i (i)}
+  <T.PointLight
+    position={[slot.x, slot.y, slot.z]}
+    color={slot.color}
+    intensity={slot.intensity}
+    distance={slot.distance}
+    decay={2}
+    castShadow={false}
+  />
+{/each}
+
 <!-- Global baseline keeps circulation and dark furniture readable while the
      authored fixtures and kinetic sculpture still carry the brightest values. -->
-<T.AmbientLight intensity={hasLobbyPresentation ? 0.24 : 0.15} color="#c8b890" />
+<T.AmbientLight
+  intensity={hasLobbyPresentation ? 0.24 : 0.15}
+  color="#c8b890"
+/>
 <T.HemisphereLight
   intensity={hasLobbyPresentation ? 0.42 : 0.3}
   color="#fff8e0"
@@ -1604,30 +1957,21 @@
       )}
   />
 {/each}
-{#each visibleExhibitLights as pos, i (`${pos.x},${pos.z},${i}`)}
-  {#if useSpotLights}
-    <T.SpotLight
-      position={[pos.x, 2.5, pos.z]}
-      target-position={[pos.x, 1.2, pos.z]}
-      intensity={3}
-      color="#fff8e0"
-      distance={4}
-      angle={0.4}
-      penumbra={0.5}
-      castShadow={false}
-    />
-  {:else}
-    <T.PointLight
-      position={[pos.x, 2.4, pos.z]}
-      intensity={2}
-      color="#fff8e0"
-      distance={3}
-    />
-  {/if}
+{#each renderedExhibitLights as pos, i (`${pos.x},${pos.z},${i}`)}
+  <T.SpotLight
+    position={[pos.x, 2.5, pos.z]}
+    target-position={[pos.x, 1.2, pos.z]}
+    intensity={3}
+    color="#fff8e0"
+    distance={4}
+    angle={0.4}
+    penumbra={0.5}
+    castShadow={false}
+  />
 {/each}
 
 <!-- Ceiling fluorescent lights - cold white overhead wash for institutional rooms -->
-{#each visibleCeilingLights as cLight, i (`${cLight.x},${cLight.z},${i}`)}
+{#each renderedCeilingLights as cLight, i (`${cLight.x},${cLight.z},${i}`)}
   <T.SpotLight
     position={[cLight.x, WALL_HEIGHT - 0.3, cLight.z]}
     target-position={[cLight.x, 0, cLight.z]}
@@ -1644,7 +1988,7 @@
 <!-- Sunlight shafts - warm golden pools for outdoor rooms.
      Each spot has a bright downward SpotLight (the sun shaft) plus a
      soft PointLight fill to brighten the surrounding ground. -->
-{#each visibleSunlights as sun, i (`${sun.x},${sun.z},${i}`)}
+{#each renderedSunlights as sun, i (`${sun.x},${sun.z},${i}`)}
   <T.SpotLight
     position={[sun.x + 2, WALL_HEIGHT + 3, sun.z - 1]}
     target-position={[sun.x, 0, sun.z]}
@@ -1672,7 +2016,7 @@
     wallOffsetX={torch.wallOffsetX}
     wallOffsetZ={torch.wallOffsetZ}
     wingTheme={torch.wingTheme}
-    baseIntensity={torchLightSet.has(`${torch.x},${torch.z}`) ? 4 : 0}
+    baseIntensity={0}
     materials={createTorchInstance(
       FIXTURE_REGISTRY[torch.wingTheme].lightColor
     )}
@@ -1704,6 +2048,7 @@
       worldZ={posOverride?.z ?? performer.tileY * TILE_SIZE}
       sequenceId={performer.sequenceId}
       autoPlay={performer.autoPlay}
+      active={activePerformerIds.has(performer.id)}
       presentation={performer.presentation}
       scale={performer.scale}
       userSequenceDataMap={props.userSequenceData}
@@ -1721,6 +2066,7 @@
       facingAngle={FACING_TO_YAW[performer.facing] ?? 0}
       sequenceId={performer.sequenceId}
       autoPlay={performer.autoPlay}
+      active={activePerformerIds.has(performer.id)}
       showGrid={true}
       userSequenceDataMap={props.userSequenceData}
     />
@@ -1778,7 +2124,8 @@
 {#if hasVulcanCaveSlice}
   <VulcanCaveScenicLayer
     rooms={grid.wings}
-    currentRoomId={currentPlayerRoomId}
+    currentRoomId={currentLightingRoomId}
+    onLightPlanChange={handleAuthoredPointLightPlanChange}
     visible={props.visible !== false}
   />
 {/if}
@@ -1787,6 +2134,7 @@
   <DrownedGalleryGraybox
     {grid}
     currentRoomId={currentPlayerRoomId}
+    onLightPlanChange={handleAuthoredPointLightPlanChange}
     visible={props.visible !== false}
   />
 {/if}
@@ -1795,6 +2143,7 @@
   <FirstFireGraybox
     {grid}
     currentRoomId={currentPlayerRoomId}
+    onLightPlanChange={handleAuthoredPointLightPlanChange}
     visible={props.visible !== false}
   />
 {/if}
@@ -1803,6 +2152,7 @@
   <EarthCanyonGraybox
     {grid}
     currentRoomId={currentPlayerRoomId}
+    onLightPlanChange={handleAuthoredPointLightPlanChange}
     visible={props.visible !== false}
   />
 {/if}
@@ -1811,6 +2161,7 @@
   <AirChimneyGraybox
     {grid}
     currentRoomId={currentPlayerRoomId}
+    onLightPlanChange={handleAuthoredPointLightPlanChange}
     visible={props.visible !== false}
   />
 {/if}
@@ -1818,7 +2169,7 @@
 {#if hasSundial}
   <SundialGraybox
     {grid}
-    currentRoomId={currentPlayerRoomId}
+    currentRoomId={currentLightingRoomId}
     {playerPosition}
     visible={props.visible !== false}
   />
@@ -1827,7 +2178,7 @@
 {#if hasMoon}
   <MoonGraybox
     {grid}
-    currentRoomId={currentPlayerRoomId}
+    currentRoomId={currentLightingRoomId}
     visible={props.visible !== false}
   />
 {/if}
@@ -1883,7 +2234,7 @@
     color="#0088ff"
     label="Gallery"
     {playerPosition}
-    visible={props.visible}
+    visible={props.visible !== false && portalsVisible}
   />
   <MuseumPortal
     position={portalConfig.orangePos}
@@ -1893,7 +2244,7 @@
     color="#ff8800"
     label="Cave"
     {playerPosition}
-    visible={props.visible}
+    visible={props.visible !== false && portalsVisible}
   />
 {/if}
 

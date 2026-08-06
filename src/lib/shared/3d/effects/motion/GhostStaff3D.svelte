@@ -4,7 +4,7 @@
    *
    * Mirrors the 2D Ghost2DRenderer behaviour: on each beat boundary
    * (`floor(currentStep / interval) > lastStepIndex`), captures the current
-   * prop's worldPosition + worldRotation into a ring buffer. Each phantom
+   * prop's rig-local center + worldRotation into a ring buffer. Each phantom
    * is rendered as a translucent staff-shaped mesh (cylinder) with alpha
    * that fades linearly over `decay` beats.
    *
@@ -13,8 +13,16 @@
    */
 
   import { T } from "@threlte/core";
-  import { Vector3, Quaternion, Euler } from "three";
+  import { onDestroy, untrack } from "svelte";
+  import {
+    Vector3,
+    Quaternion,
+    Euler,
+    CylinderGeometry,
+    SphereGeometry,
+  } from "three";
   import type { PropState3D } from "@austencloud/scene-3d";
+  import { resolveRigLocalPropCenter3D } from "../tip-position-bridge-3d";
 
   interface Props {
     /** Live prop state - read at beat onsets to capture a phantom. */
@@ -31,6 +39,8 @@
     color: string;
     /** Staff length in scene units. */
     staffLength: number;
+    /** PerformerRig hand anchor applied before the live prop's local center. */
+    handAnchor: { x: number; z: number };
     /** Staff thickness (radius) for the phantom cylinder. */
     staffRadius?: number;
     /** Current animation step index (fractional). */
@@ -47,6 +57,7 @@
     interval,
     color,
     staffLength,
+    handAnchor,
     staffRadius = 0.012,
     currentStep,
     shape = "staff",
@@ -64,14 +75,49 @@
   // references - we never mutate them after capture.
   let phantoms = $state<Phantom[]>([]);
   let lastStepIndex = -1;
+  let lastObservedStep = Number.NEGATIVE_INFINITY;
   let nextId = 0;
 
   // Static rotation adjustment: Staff3D renders a Y-axis cylinder then
   // multiplies worldRotation by a 90° Z quaternion. Mirror that here so
   // phantoms orient identically to the live staff.
   const horizontalQuat = new Quaternion().setFromEuler(
-    new Euler(0, 0, Math.PI / 2),
+    new Euler(0, 0, Math.PI / 2)
   );
+  // Every phantom shares these two geometry objects. Mounting geometry child
+  // components inside the keyed loop registered fresh GPU geometry on every
+  // beat and left renderer.info.memory.geometries climbing after the phantom
+  // was culled.
+  let geometryRadius = staffRadius;
+  let geometryLength = staffLength;
+  let staffGeometry = $state.raw(
+    new CylinderGeometry(staffRadius, staffRadius, staffLength, 12, 1)
+  );
+  let tipGeometry = $state.raw(new SphereGeometry(staffRadius * 2.5, 10, 10));
+
+  $effect(() => {
+    if (staffRadius === geometryRadius && staffLength === geometryLength)
+      return;
+    const previousStaff = untrack(() => staffGeometry);
+    const previousTips = untrack(() => tipGeometry);
+    staffGeometry = new CylinderGeometry(
+      staffRadius,
+      staffRadius,
+      staffLength,
+      12,
+      1
+    );
+    tipGeometry = new SphereGeometry(staffRadius * 2.5, 10, 10);
+    geometryRadius = staffRadius;
+    geometryLength = staffLength;
+    previousStaff.dispose();
+    previousTips.dispose();
+  });
+
+  onDestroy(() => {
+    staffGeometry.dispose();
+    tipGeometry.dispose();
+  });
 
   // Beat-onset capture. Driven by `currentStep` changes; falls back to
   // a no-op when disabled or when propState is missing.
@@ -79,20 +125,38 @@
     if (!enabled) return;
     if (!propState) return;
     const stepNumber = Math.floor(currentStep / interval);
+    let previousPhantoms = untrack(() => phantoms);
+    let changed = false;
+
+    // Playback loops and backward scrubs begin a new capture timeline.
+    if (currentStep < lastObservedStep) {
+      previousPhantoms = [];
+      lastStepIndex = -1;
+      changed = true;
+    }
+    lastObservedStep = currentStep;
+
+    const nextPhantoms = previousPhantoms.filter(
+      (phantom) => (currentStep - phantom.capturedStep) / interval < decay
+    );
+    changed ||= nextPhantoms.length !== previousPhantoms.length;
     if (stepNumber > lastStepIndex) {
-      phantoms.push({
+      const center = resolveRigLocalPropCenter3D(
+        propState.worldPosition,
+        handAnchor
+      );
+      nextPhantoms.push({
         id: nextId++,
-        pos: propState.worldPosition.clone(),
+        pos: new Vector3(center.x, center.y, center.z),
         quat: propState.worldRotation.clone(),
         capturedStep: currentStep,
       });
       lastStepIndex = stepNumber;
+      changed = true;
     }
-    // Cull. Age measured in intervals, matches the 2D renderer.
-    const cullAge = decay;
-    phantoms = phantoms.filter(
-      (p) => (currentStep - p.capturedStep) / interval < cullAge,
-    );
+    // Cull and capture as one immutable update. `untrack` keeps this effect
+    // driven by playback/config inputs instead of its own output array.
+    if (changed) phantoms = nextPhantoms;
   });
 
   // Reset beat index + ring buffer when the effect toggles off so re-enabling
@@ -101,6 +165,7 @@
     if (!enabled) {
       phantoms = [];
       lastStepIndex = -1;
+      lastObservedStep = Number.NEGATIVE_INFINITY;
     }
   });
 
@@ -130,12 +195,10 @@
     {#if alpha > 0}
       {#if shape === "staff" || shape === "both"}
         <T.Mesh
+          geometry={staffGeometry}
           position={[phantom.pos.x, phantom.pos.y, phantom.pos.z]}
           rotation={computeRotation(phantom.quat)}
         >
-          <T.CylinderGeometry
-            args={[staffRadius, staffRadius, staffLength, 12, 1]}
-          />
           <T.MeshBasicMaterial
             {color}
             transparent
@@ -146,8 +209,10 @@
       {/if}
       {#if shape === "tips" || shape === "both"}
         {@const ends = tipPositions(phantom)}
-        <T.Mesh position={[ends.a.x, ends.a.y, ends.a.z]}>
-          <T.SphereGeometry args={[staffRadius * 2.5, 10, 10]} />
+        <T.Mesh
+          geometry={tipGeometry}
+          position={[ends.a.x, ends.a.y, ends.a.z]}
+        >
           <T.MeshBasicMaterial
             {color}
             transparent
@@ -155,8 +220,10 @@
             depthWrite={false}
           />
         </T.Mesh>
-        <T.Mesh position={[ends.b.x, ends.b.y, ends.b.z]}>
-          <T.SphereGeometry args={[staffRadius * 2.5, 10, 10]} />
+        <T.Mesh
+          geometry={tipGeometry}
+          position={[ends.b.x, ends.b.y, ends.b.z]}
+        >
           <T.MeshBasicMaterial
             {color}
             transparent

@@ -31,7 +31,7 @@
   interface Props {
     /** World-space position of this tip. null = hidden. */
     position: Vector3 | null;
-    /** Per-frame prop displacement. Converted to m/s inside. */
+    /** Tip velocity in metres per second. */
     propVelocity: Vector3;
     /** Resolved petal params. */
     params: Petals3DParams;
@@ -108,7 +108,7 @@
     clock += delta;
     if (!enabled || !position) return;
 
-    const speed = delta > 0 ? propVelocity.length() / delta : 0;
+    const speed = propVelocity.length();
     const speedScalar =
       params.motionReferenceSpeed > 0
         ? Math.min(1, speed / params.motionReferenceSpeed)

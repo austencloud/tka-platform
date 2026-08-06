@@ -8,6 +8,9 @@
   import CellLabel3D from "./CellLabel3D.svelte";
   import TelekineticFormation3D from "$lib/features/museum/components/game/TelekineticFormation3D.svelte";
   import { EFFECT_CELLS, GRID_SEQUENCE_ID } from "./effect-grid";
+  import SceneEffectsCoordinator3D from "$lib/shared/3d/effects/scene-effects/SceneEffectsCoordinator3D.svelte";
+  import { SceneEffectsManager3D } from "$lib/shared/3d/effects/scene-effects/scene-effects-manager-3d";
+  import { setSceneEffectsContext } from "$lib/shared/3d/effects/scene-effects/scene-effects-context";
 
   interface Props {
     showProps: boolean;
@@ -17,7 +20,10 @@
     centerPlanes: number;
   }
   const props: Props = $props();
+  const sceneEffectsManager = setSceneEffectsContext(new SceneEffectsManager3D());
 </script>
+
+<SceneEffectsCoordinator3D manager={sceneEffectsManager} />
 
 <!-- Dim key: the effects carry the frame, lighting stays out of their way. -->
 <T.AmbientLight intensity={0.18} color="#0e1420" />

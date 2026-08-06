@@ -19,7 +19,7 @@
   interface Props {
     /** World-space position of this tip. null = hidden. */
     position: Vector3 | null;
-    /** Per-frame prop displacement. Converted to m/s inside. */
+    /** Tip velocity in metres per second. */
     propVelocity: Vector3;
     /** Resolved water params (palette + rates + gravity). */
     params: Goo3DParams;
@@ -59,8 +59,7 @@
   useTask((delta) => {
     if (!enabled || !position) return;
 
-    // Convert per-frame delta to m/s.
-    const speed = delta > 0 ? propVelocity.length() / delta : 0;
+    const speed = propVelocity.length();
     const speedScalar =
       params.motionReferenceSpeed > 0
         ? Math.min(1, speed / params.motionReferenceSpeed)
@@ -68,9 +67,9 @@
     const rate =
       params.ambientEmission * params.ambientSpawnRate +
       params.motionEmission * speedScalar * params.motionSpawnRate;
-    const flingVx = delta > 0 ? propVelocity.x / delta : 0;
-    const flingVy = delta > 0 ? propVelocity.y / delta : 0;
-    const flingVz = delta > 0 ? propVelocity.z / delta : 0;
+    const flingVx = propVelocity.x;
+    const flingVy = propVelocity.y;
+    const flingVz = propVelocity.z;
 
     spawnAccumulator += delta * rate;
     while (spawnAccumulator >= 1 && droplets.length < PER_TIP_CAP) {

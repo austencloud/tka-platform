@@ -1,7 +1,6 @@
 <script lang="ts">
-
-import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quality-tier-detector";
-import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-context";
+  import { getQualityTierDetector } from "$lib/shared/3d/effects/quality/get-quality-tier-detector";
+  import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-context";
   /**
    * Central coordinator that reads TipEffectMap assignments and routes each
    * prop tip to the correct 3D renderer. Sits between the animation system
@@ -22,14 +21,18 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
   import { useThrelte, useTask } from "@threlte/core";
   import { onDestroy, untrack } from "svelte";
   import { tryGetViewer3DContext } from "../context/viewer-3d-context";
-  import { Vector3, Color, Object3D, Quaternion, Euler } from "three";
+  import { Vector3, Object3D, Quaternion, Euler, Matrix3 } from "three";
   import Trail3D from "./trails/Trail3D.svelte";
   import EffectsLayer from "./EffectsLayer.svelte";
   import { LedRenderer3D, type LedTipInput } from "./led/led-renderer-3d";
-  import { CharcoalRenderer3D, type CharcoalTipInput } from "./charcoal/charcoal-renderer-3d";
-  import { FireRenderer3D, type FireTipInput } from "./fire/fire-renderer-3d";
-  import { DynamicLightManager, type LightHandle } from "./lighting/dynamic-light-manager";
   import {
+    CharcoalRenderer3D,
+    type CharcoalTipInput,
+  } from "./charcoal/charcoal-renderer-3d";
+  import { FireRenderer3D, type FireTipInput } from "./fire/fire-renderer-3d";
+  import { DynamicLightManager } from "./lighting/dynamic-light-manager";
+  import {
+    resolveRigLocalPropCenter3D,
     resolveTrailSources3D,
     TipPositionBridge3D,
     type TrailSourceId3D,
@@ -55,11 +58,25 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
     resolveLed3D,
     resolveFire3D,
     resolveCharcoal3D,
+    resolveSparkles3D,
+    resolveGoo3D,
+    resolveBubbles3D,
+    resolvePetals3D,
+    resolveSmoke3D,
+    resolveInk3D,
+    resolveSilk3D,
+    resolveAnimal3D,
+    resolvePulse3D,
   } from "$lib/shared/effects/translators/webgl3d-translator";
   import { evaluatePattern } from "$lib/shared/animation-engine/domain/patterns/evaluator";
   import { createReusableContext } from "$lib/shared/animation-engine/domain/patterns/context";
   import { ledBrightnessToFloat } from "$lib/shared/animation-engine/domain/types/led-types";
   import { PROP_COLORS } from "@austencloud/scene-3d";
+  import { getSceneEffectsContext } from "./scene-effects/scene-effects-context";
+  import type {
+    SceneEffectRigFrame3D,
+    SceneEffectTipSource3D,
+  } from "./scene-effects/scene-effect-source-3d";
 
   interface TrailDatum {
     sourceId: TrailSourceId3D;
@@ -155,8 +172,13 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
         [1, 0],
         [1, 1],
       ].map(([propIndex, tipIndex]) =>
-        resolveEffect(propIndex!, tipIndex!, tipEffectMap, globalTipEffectMap ?? {}),
-      ),
+        resolveEffect(
+          propIndex!,
+          tipIndex!,
+          tipEffectMap,
+          globalTipEffectMap ?? {}
+        )
+      )
     ),
   ]);
 
@@ -164,26 +186,160 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
   // glow (presence). LOW keeps the additive Gaussian halo alone - no bloom
   // there, so over-driving emissive would just clip to white.
   const trailTierBoost = $derived(
-    qualityTier === "high"
-      ? 1.6
-      : qualityTier === "medium"
-        ? 1.3
-        : 1.0,
+    qualityTier === "high" ? 1.6 : qualityTier === "medium" ? 1.3 : 1.0
   );
 
   // Canonical effect config - read from context, or create a default-seeded
   // local state as a fallback so this component still works when mounted
   // outside a viewer that sets the context explicitly.
   const effectsState = getEffectsConfigContext() ?? createEffectsConfigState();
+  const sceneEffectsManager = getSceneEffectsContext();
+
+  // Resolved intent objects only change when their config does. Keeping them
+  // derived avoids allocating nine spread objects per rig on every frame.
+  const resolvedSparkles = $derived(resolveSparkles3D(effectsState.sparkles));
+  const resolvedGoo = $derived(resolveGoo3D(effectsState.goo));
+  const resolvedBubbles = $derived(resolveBubbles3D(effectsState.bubbles));
+  const resolvedPetals = $derived(resolvePetals3D(effectsState.petals));
+  const resolvedSmoke = $derived(resolveSmoke3D(effectsState.smoke));
+  const resolvedInk = $derived(resolveInk3D(effectsState.ink));
+  const resolvedSilk = $derived(resolveSilk3D(effectsState.silk));
+  const resolvedAnimal = $derived(resolveAnimal3D(effectsState.animal));
+  const resolvedPulse = $derived(resolvePulse3D(effectsState.pulse));
+
+  const pooledFrame: SceneEffectRigFrame3D = { playing: false, sources: [] };
+  const pooledSources: Array<SceneEffectTipSource3D | null> = [
+    null,
+    null,
+    null,
+    null,
+  ];
+  const pooledRegistration =
+    sceneEffectsManager?.registerRig(pooledFrame) ?? null;
+  const pooledPosition = new Vector3();
+  const pooledVelocity = new Vector3();
+  const pooledLinearTransform = new Matrix3();
+  let blueEffectTips = $state.raw<readonly TipPositionData3D[]>([]);
+  let redEffectTips = $state.raw<readonly TipPositionData3D[]>([]);
+
+  function publishPooledTip(
+    propIndex: 0 | 1,
+    tipIndex: 0 | 1,
+    tip: TipPositionData3D,
+    effect: EffectType
+  ): void {
+    if (!pooledRegistration) return;
+    if (
+      effect !== "sparkles" &&
+      effect !== "goo" &&
+      effect !== "bubbles" &&
+      effect !== "petals" &&
+      effect !== "smoke" &&
+      effect !== "ink" &&
+      effect !== "silk" &&
+      effect !== "animal" &&
+      effect !== "pulse"
+    )
+      return;
+
+    const slot = propIndex * 2 + tipIndex;
+    let source = pooledSources[slot];
+    if (!source || source.effect !== effect) {
+      const base = {
+        sourceId: pooledRegistration.sourceIdBase + slot,
+        propIndex,
+        tipIndex,
+        position: { x: 0, y: 0, z: 0 },
+        velocity: { x: 0, y: 0, z: 0 },
+        speed: 0,
+        currentStep,
+        propColor:
+          propIndex === 0 ? PROP_COLORS.blue.main : PROP_COLORS.red.main,
+      };
+      switch (effect) {
+        case "sparkles":
+          source = { ...base, effect, params: resolvedSparkles };
+          break;
+        case "goo":
+          source = { ...base, effect, params: resolvedGoo };
+          break;
+        case "bubbles":
+          source = { ...base, effect, params: resolvedBubbles };
+          break;
+        case "petals":
+          source = { ...base, effect, params: resolvedPetals };
+          break;
+        case "smoke":
+          source = { ...base, effect, params: resolvedSmoke };
+          break;
+        case "ink":
+          source = { ...base, effect, params: resolvedInk };
+          break;
+        case "silk":
+          source = { ...base, effect, params: resolvedSilk };
+          break;
+        case "animal":
+          source = { ...base, effect, params: resolvedAnimal };
+          break;
+        case "pulse":
+          source = { ...base, effect, params: resolvedPulse };
+          break;
+      }
+      pooledSources[slot] = source;
+    }
+
+    switch (source.effect) {
+      case "sparkles":
+        source.params = resolvedSparkles;
+        break;
+      case "goo":
+        source.params = resolvedGoo;
+        break;
+      case "bubbles":
+        source.params = resolvedBubbles;
+        break;
+      case "petals":
+        source.params = resolvedPetals;
+        break;
+      case "smoke":
+        source.params = resolvedSmoke;
+        break;
+      case "ink":
+        source.params = resolvedInk;
+        break;
+      case "silk":
+        source.params = resolvedSilk;
+        break;
+      case "animal":
+        source.params = resolvedAnimal;
+        break;
+      case "pulse":
+        source.params = resolvedPulse;
+        break;
+    }
+
+    pooledPosition.set(tip.position.x, tip.position.y, tip.position.z);
+    pooledVelocity.set(tip.velocity.x, tip.velocity.y, tip.velocity.z);
+    if (effectsParentRef) {
+      effectsParentRef.localToWorld(pooledPosition);
+      pooledVelocity.applyMatrix3(pooledLinearTransform);
+    }
+    source.position.x = pooledPosition.x;
+    source.position.y = pooledPosition.y;
+    source.position.z = pooledPosition.z;
+    source.velocity.x = pooledVelocity.x;
+    source.velocity.y = pooledVelocity.y;
+    source.velocity.z = pooledVelocity.z;
+    source.speed = pooledVelocity.length();
+    source.currentStep = currentStep;
+    source.propColor =
+      propIndex === 0 ? PROP_COLORS.blue.main : PROP_COLORS.red.main;
+    pooledFrame.sources.push(source);
+  }
 
   // LED renderers managed directly (bypasses Svelte prop propagation timing)
   let blueLedRenderer: LedRenderer3D | null = null;
   let redLedRenderer: LedRenderer3D | null = null;
-
-  let blueLedLightHandle: LightHandle | null = null;
-  let redLedLightHandle: LightHandle | null = null;
-  const ledCentroid = new Vector3();
-  const ledColor = new Color();
 
   // Charcoal renderer (single instance - all tips share one particle pool)
   let charcoalRenderer: CharcoalRenderer3D | null = null;
@@ -258,30 +414,26 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
     low: 1,
   };
 
-
   // Reactive so it responds to runtime tier changes (e.g. user override or
   // auto-downgrade after frame budget miss).
-  const tierConfig: QualityTierConfig = $derived(
-    TIER_CONFIGS[qualityTier],
-  );
+  const tierConfig: QualityTierConfig = $derived(TIER_CONFIGS[qualityTier]);
 
-  // Scene-scoped light pool. Deferred until effectsParentRef or scene.current
-  // is available.
-  let lightManager = $state<DynamicLightManager | null>(null);
+  // A light pool is only useful to Trail3D. Constructing one for every rig
+  // preallocated hundreds of invisible PointLights on the all-effects grid.
+  let lightManager = $state.raw<DynamicLightManager | null>(null);
 
   $effect(() => {
-    const parent = effectsParentRef ?? scene.current;
+    const needsDynamicLights = layerActiveEffects.includes("trails");
+    const parent = effectsParentRef ?? scene;
     const cfg = tierConfig;
-    if (!parent) return;
 
-    // Dispose previous manager if it exists.
-    // untrack prevents reading lightManager from re-triggering this effect.
+    // `untrack` keeps the manager assignment from becoming its own dependency.
     untrack(() => {
-      if (lightManager) {
-        lightManager.dispose();
-      }
+      lightManager?.dispose();
+      lightManager = needsDynamicLights
+        ? new DynamicLightManager(parent, cfg)
+        : null;
     });
-    lightManager = new DynamicLightManager(parent, cfg);
   });
 
   // Trail sources are selected from the canonical tracking mode each frame.
@@ -292,24 +444,24 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
   function getTrailData(
     propIndex: number,
     tips: readonly TipPositionData3D[],
-    propCenter: { x: number; y: number; z: number },
+    propCenter: { x: number; y: number; z: number }
   ): TrailDatum[] {
     return resolveTrailSources3D(
       animationSettings.trail.trackingMode,
       tips,
-      propCenter,
+      propCenter
     ).map((source) => ({
       sourceId: source.sourceId,
       position: new Vector3(
         source.position.x,
         source.position.y,
-        source.position.z,
+        source.position.z
       ),
       effect: resolveEffect(
         propIndex,
         source.effectTipIndex,
         tipEffectMap,
-        globalTipEffectMap ?? {},
+        globalTipEffectMap ?? {}
       ),
     }));
   }
@@ -330,8 +482,12 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
    * offline exporter can call it with a deterministic dt.
    */
   function updateEffectsFrame(delta: number): void {
+    pooledFrame.playing = isPlaying;
+    pooledFrame.sources.length = 0;
     if (!isPlaying) {
       tipBridge.reset();
+      blueEffectTips = [];
+      redEffectTips = [];
       blueLedRenderer?.reset();
       redLedRenderer?.reset();
       bluePovRenderer?.reset();
@@ -389,8 +545,7 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
     // to the 0.2-1.0 alpha multiplier the shader expects. The 2D side
     // calls the same helper so both backends track the slider identically.
     const ledBrightness = ledBrightnessToFloat(resolvedLed.brightness);
-    const ledSupersampleCount =
-      LED_SUPERSAMPLE_BY_TIER[qualityTier] ?? 4;
+    const ledSupersampleCount = LED_SUPERSAMPLE_BY_TIER[qualityTier] ?? 4;
 
     /**
      * Push N interpolated LED samples between the previous-frame tip position
@@ -408,7 +563,7 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
       speed: number,
       r: number,
       g: number,
-      b: number,
+      b: number
     ): void {
       const prev = _ledPrevPositions.get(key);
       const N = ledSupersampleCount;
@@ -459,6 +614,10 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
     // physics explosions after tab-switch or debugger pause (same safeguard
     // as CharcoalRenderer and FireRenderer use internally).
     const dt = Math.min(delta, 1 / 15);
+    if (effectsParentRef) {
+      effectsParentRef.updateWorldMatrix(true, false);
+      pooledLinearTransform.setFromMatrix4(effectsParentRef.matrixWorld);
+    }
     blueLedTips.length = 0;
     redLedTips.length = 0;
     charcoalTips.length = 0;
@@ -472,30 +631,34 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
     const visualRedProp = redPropState;
 
     // Compute rig-local center for each visual prop.
-    const blueRigCenter = visualBlueProp ? {
-      x: blueHandPos.x + visualBlueProp.worldPosition.x,
-      y: visualBlueProp.worldPosition.y,
-      z: blueHandPos.z + visualBlueProp.worldPosition.z,
-    } : null;
+    const blueRigCenter = visualBlueProp
+      ? resolveRigLocalPropCenter3D(visualBlueProp.worldPosition, blueHandPos)
+      : null;
 
-    const redRigCenter = visualRedProp ? {
-      x: redHandPos.x + visualRedProp.worldPosition.x,
-      y: visualRedProp.worldPosition.y,
-      z: redHandPos.z + visualRedProp.worldPosition.z,
-    } : null;
+    const redRigCenter = visualRedProp
+      ? resolveRigLocalPropCenter3D(visualRedProp.worldPosition, redHandPos)
+      : null;
 
     if (visualBlueProp && blueRigCenter) {
-      const result = tipBridge.update(0, visualBlueProp, blueRigCenter, staffHalfLength, dt);
+      const result = tipBridge.update(
+        0,
+        visualBlueProp,
+        blueRigCenter,
+        staffHalfLength,
+        dt
+      );
+      blueEffectTips = result.tips;
       result.tips.forEach((tip, tipIndex) => {
         const resolved = resolveEffect(
           0,
           tipIndex,
           tipEffectMap,
-          globalTipEffectMap ?? {},
+          globalTipEffectMap ?? {}
         );
         // "none" renders nothing - no silent fallback to trails. The default
         // effect comes from the resolved tip map, not an invented value here.
         const effect = resolved;
+        publishPooledTip(0, tipIndex as 0 | 1, tip, effect);
 
         if (effect === "led") {
           // Run the LED pattern evaluator for this specific tip so
@@ -524,51 +687,77 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
             tip.speed,
             color.r,
             color.g,
-            color.b,
+            color.b
           );
         } else if (effect === "charcoal") {
           charcoalTips.push({
-            position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
+            position: new Vector3(
+              tip.position.x,
+              tip.position.y,
+              tip.position.z
+            ),
             velocityX: tip.velocity.x,
             velocityY: tip.velocity.y,
             velocityZ: tip.velocity.z,
             speed: tip.speed,
-            jerk: tip.jerk.x * tip.jerk.x + tip.jerk.y * tip.jerk.y + tip.jerk.z * tip.jerk.z > 0
-              ? Math.sqrt(tip.jerk.x * tip.jerk.x + tip.jerk.y * tip.jerk.y + tip.jerk.z * tip.jerk.z)
-              : 0,
+            jerk:
+              tip.jerk.x * tip.jerk.x +
+                tip.jerk.y * tip.jerk.y +
+                tip.jerk.z * tip.jerk.z >
+              0
+                ? Math.sqrt(
+                    tip.jerk.x * tip.jerk.x +
+                      tip.jerk.y * tip.jerk.y +
+                      tip.jerk.z * tip.jerk.z
+                  )
+                : 0,
           });
         } else if (effect === "fire") {
           fireTips.push({
-            position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
+            position: new Vector3(
+              tip.position.x,
+              tip.position.y,
+              tip.position.z
+            ),
             velocityX: tip.velocity.x,
             velocityY: tip.velocity.y,
             velocityZ: tip.velocity.z,
             speed: tip.speed,
             jerk: Math.sqrt(
-              tip.jerk.x * tip.jerk.x + tip.jerk.y * tip.jerk.y + tip.jerk.z * tip.jerk.z,
+              tip.jerk.x * tip.jerk.x +
+                tip.jerk.y * tip.jerk.y +
+                tip.jerk.z * tip.jerk.z
             ),
             propColor: firePropBlue,
           });
         }
-
       });
       blueTrailData = getTrailData(0, result.tips, blueRigCenter);
     } else {
       blueTrailData = [];
+      blueEffectTips = [];
     }
 
     if (visualRedProp && redRigCenter) {
-      const result = tipBridge.update(1, visualRedProp, redRigCenter, staffHalfLength, dt);
+      const result = tipBridge.update(
+        1,
+        visualRedProp,
+        redRigCenter,
+        staffHalfLength,
+        dt
+      );
+      redEffectTips = result.tips;
       result.tips.forEach((tip, tipIndex) => {
         const resolved = resolveEffect(
           1,
           tipIndex,
           tipEffectMap,
-          globalTipEffectMap ?? {},
+          globalTipEffectMap ?? {}
         );
         // "none" renders nothing - no silent fallback to trails. The default
         // effect comes from the resolved tip map, not an invented value here.
         const effect = resolved;
+        publishPooledTip(1, tipIndex as 0 | 1, tip, effect);
 
         if (effect === "led") {
           // Same pattern evaluator call for red prop's tips. The red prop
@@ -596,37 +785,55 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
             tip.speed,
             color.r,
             color.g,
-            color.b,
+            color.b
           );
         } else if (effect === "charcoal") {
           charcoalTips.push({
-            position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
+            position: new Vector3(
+              tip.position.x,
+              tip.position.y,
+              tip.position.z
+            ),
             velocityX: tip.velocity.x,
             velocityY: tip.velocity.y,
             velocityZ: tip.velocity.z,
             speed: tip.speed,
-            jerk: tip.jerk.x * tip.jerk.x + tip.jerk.y * tip.jerk.y + tip.jerk.z * tip.jerk.z > 0
-              ? Math.sqrt(tip.jerk.x * tip.jerk.x + tip.jerk.y * tip.jerk.y + tip.jerk.z * tip.jerk.z)
-              : 0,
+            jerk:
+              tip.jerk.x * tip.jerk.x +
+                tip.jerk.y * tip.jerk.y +
+                tip.jerk.z * tip.jerk.z >
+              0
+                ? Math.sqrt(
+                    tip.jerk.x * tip.jerk.x +
+                      tip.jerk.y * tip.jerk.y +
+                      tip.jerk.z * tip.jerk.z
+                  )
+                : 0,
           });
         } else if (effect === "fire") {
           fireTips.push({
-            position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
+            position: new Vector3(
+              tip.position.x,
+              tip.position.y,
+              tip.position.z
+            ),
             velocityX: tip.velocity.x,
             velocityY: tip.velocity.y,
             velocityZ: tip.velocity.z,
             speed: tip.speed,
             jerk: Math.sqrt(
-              tip.jerk.x * tip.jerk.x + tip.jerk.y * tip.jerk.y + tip.jerk.z * tip.jerk.z,
+              tip.jerk.x * tip.jerk.x +
+                tip.jerk.y * tip.jerk.y +
+                tip.jerk.z * tip.jerk.z
             ),
             propColor: firePropRed,
           });
         }
-
       });
       redTrailData = getTrailData(1, result.tips, redRigCenter);
     } else {
       redTrailData = [];
+      redEffectTips = [];
     }
 
     // LED rendering - direct imperative update in the same frame tick.
@@ -650,22 +857,17 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
       if (hasPovPattern) {
         // POV Strip Mode: full 200-LED strip with persistence-of-vision trails
 
-        // Initialize POV renderers lazily
-        if (!bluePovRenderer) {
-          bluePovRenderer = new PovStripRenderer3D(qualityTier);
-          bluePovRenderer.initialize(imperativeParent);
-        }
-        if (!redPovRenderer) {
-          redPovRenderer = new PovStripRenderer3D(qualityTier);
-          redPovRenderer.initialize(imperativeParent);
-        }
-        bluePovRenderer.setPersistenceDuration(povPersistenceDuration);
-        redPovRenderer.setPersistenceDuration(povPersistenceDuration);
-
         // Compute staff axis + rotation angle for blue prop
         if (blueLedTips.length > 0 && bluePropState) {
+          if (!bluePovRenderer) {
+            bluePovRenderer = new PovStripRenderer3D(qualityTier);
+            bluePovRenderer.initialize(imperativeParent);
+          }
+          bluePovRenderer.setPersistenceDuration(povPersistenceDuration);
           const rotation = bluePropState.worldRotation;
-          const horizontalQuat = new Quaternion().setFromEuler(new Euler(0, 0, Math.PI / 2));
+          const horizontalQuat = new Quaternion().setFromEuler(
+            new Euler(0, 0, Math.PI / 2)
+          );
           const finalQuat = rotation.clone().multiply(horizontalQuat);
           _staffAxis.set(0, 1, 0).applyQuaternion(finalQuat).normalize();
 
@@ -676,8 +878,14 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
           const rotAngle = euler.z;
 
           bluePovRenderer.update(
-            _staffAxis, _staffCenter, staffHalfLength,
-            rotAngle, activeStripPattern!, cam!, now, 1.0,
+            _staffAxis,
+            _staffCenter,
+            staffHalfLength,
+            rotAngle,
+            activeStripPattern!,
+            cam!,
+            now,
+            1.0
           );
         } else {
           bluePovRenderer.reset();
@@ -685,8 +893,15 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
 
         // Compute staff axis + rotation angle for red prop
         if (redLedTips.length > 0 && redPropState) {
+          if (!redPovRenderer) {
+            redPovRenderer = new PovStripRenderer3D(qualityTier);
+            redPovRenderer.initialize(imperativeParent);
+          }
+          redPovRenderer.setPersistenceDuration(povPersistenceDuration);
           const rotation = redPropState.worldRotation;
-          const horizontalQuat = new Quaternion().setFromEuler(new Euler(0, 0, Math.PI / 2));
+          const horizontalQuat = new Quaternion().setFromEuler(
+            new Euler(0, 0, Math.PI / 2)
+          );
           const finalQuat = rotation.clone().multiply(horizontalQuat);
           _staffAxis.set(0, 1, 0).applyQuaternion(finalQuat).normalize();
 
@@ -696,8 +911,14 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
           const rotAngle = euler.z;
 
           redPovRenderer.update(
-            _staffAxis, _staffCenter, staffHalfLength,
-            rotAngle, activeStripPattern!, cam!, now, 1.0,
+            _staffAxis,
+            _staffCenter,
+            staffHalfLength,
+            rotAngle,
+            activeStripPattern!,
+            cam!,
+            now,
+            1.0
           );
         } else {
           redPovRenderer.reset();
@@ -707,26 +928,24 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
         blueLedRenderer?.reset();
         redLedRenderer?.reset();
       } else {
-        // Legacy 2-point LED mode (unchanged)
-        if (!blueLedRenderer) {
-          blueLedRenderer = new LedRenderer3D(qualityTier);
-          blueLedRenderer.initialize(imperativeParent);
-        }
-        if (!redLedRenderer) {
-          redLedRenderer = new LedRenderer3D(qualityTier);
-          redLedRenderer.initialize(imperativeParent);
-        }
-
         if (blueLedTips.length > 0) {
+          if (!blueLedRenderer) {
+            blueLedRenderer = new LedRenderer3D(qualityTier);
+            blueLedRenderer.initialize(imperativeParent);
+          }
           blueLedRenderer.update(blueLedTips, cam!, now);
         } else {
-          blueLedRenderer.reset();
+          blueLedRenderer?.reset();
         }
 
         if (redLedTips.length > 0) {
+          if (!redLedRenderer) {
+            redLedRenderer = new LedRenderer3D(qualityTier);
+            redLedRenderer.initialize(imperativeParent);
+          }
           redLedRenderer.update(redLedTips, cam!, now);
         } else {
-          redLedRenderer.reset();
+          redLedRenderer?.reset();
         }
 
         // Suppress POV renderers while legacy mode is active
@@ -735,32 +954,30 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
       }
 
       // Charcoal renderer (single pool for all tips)
-      if (!charcoalRenderer) {
-        charcoalRenderer = new CharcoalRenderer3D(qualityTier);
-        charcoalRenderer.initialize(imperativeParent);
-      }
-
       if (charcoalTips.length > 0) {
+        if (!charcoalRenderer) {
+          charcoalRenderer = new CharcoalRenderer3D(qualityTier);
+          charcoalRenderer.initialize(imperativeParent);
+        }
         charcoalRenderer.updateConfig(resolveCharcoal3D(effectsState.charcoal));
         charcoalRenderer.update(charcoalTips, dt);
       } else {
-        charcoalRenderer.reset();
+        charcoalRenderer?.reset();
       }
 
       // Fire renderer
-      if (!fireRenderer) {
-        fireRenderer = new FireRenderer3D(qualityTier);
-        fireRenderer.initialize(imperativeParent);
-      }
-
       if (fireTips.length > 0) {
+        if (!fireRenderer) {
+          fireRenderer = new FireRenderer3D(qualityTier);
+          fireRenderer.initialize(imperativeParent);
+        }
         // Push the user's curated tuning (intensity/turbulence/brightness)
         // before the physics step. resolveFire3D is a cheap pure spread,
         // matching the per-frame resolveLed3D idiom above.
         fireRenderer.updateConfig(resolveFire3D(effectsState.fire));
         fireRenderer.update(fireTips, dt);
       } else {
-        fireRenderer.reset();
+        fireRenderer?.reset();
       }
     }
   }
@@ -789,13 +1006,14 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
 
   // Filter to only selected sources that have the "trails" effect assigned.
   const blueTrailTips = $derived(
-    blueTrailData.filter((source) => source.effect === "trails"),
+    blueTrailData.filter((source) => source.effect === "trails")
   );
   const redTrailTips = $derived(
-    redTrailData.filter((source) => source.effect === "trails"),
+    redTrailData.filter((source) => source.effect === "trails")
   );
 
   onDestroy(() => {
+    pooledRegistration?.dispose();
     lightManager?.dispose();
     tipBridge.reset();
     blueLedRenderer?.dispose();
@@ -818,7 +1036,7 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
     maxPoints={resolvedTrails.maxPoints}
     rainbow={resolvedTrails.rainbow}
     enabled={isPlaying}
-    qualityTier={qualityTier}
+    {qualityTier}
     emissiveStrength={resolvedTrails.emissive * trailTierBoost}
     {lightManager}
   />
@@ -835,7 +1053,7 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
     maxPoints={resolvedTrails.maxPoints}
     rainbow={resolvedTrails.rainbow}
     enabled={isPlaying}
-    qualityTier={qualityTier}
+    {qualityTier}
     emissiveStrength={resolvedTrails.emissive * trailTierBoost}
     {lightManager}
   />
@@ -861,5 +1079,10 @@ import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-contex
   {isPlaying}
   staffLength={staffHalfLength * 2}
   activeEffects={layerActiveEffects}
+  {blueHandPos}
+  {redHandPos}
+  blueTipData={blueEffectTips}
+  redTipData={redEffectTips}
+  pooledEffectsManaged={sceneEffectsManager !== null}
   {currentStep}
 />

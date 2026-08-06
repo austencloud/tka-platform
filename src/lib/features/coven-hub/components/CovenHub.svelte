@@ -9,9 +9,13 @@
   import { computeCovenLods, type LodBand } from "$lib/features/coven-hub/domain/coven-lod";
   import CovenStation from "./CovenStation.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import SceneEffectsCoordinator3D from "$lib/shared/3d/effects/scene-effects/SceneEffectsCoordinator3D.svelte";
+  import { SceneEffectsManager3D } from "$lib/shared/3d/effects/scene-effects/scene-effects-manager-3d";
+  import { setSceneEffectsContext } from "$lib/shared/3d/effects/scene-effects/scene-effects-context";
 
   interface Props { sequence: SequenceData | null; }
   const props: Props = $props();
+  const sceneEffectsManager = setSceneEffectsContext(new SceneEffectsManager3D());
 
   const slots = $derived(computeCovenLayout(readyEffectIds()));
   let lods = $state<Map<string, LodBand>>(new Map());
@@ -41,6 +45,8 @@
     return getRegistration(effectId)?.meta.stageModel ?? null;
   }
 </script>
+
+<SceneEffectsCoordinator3D manager={sceneEffectsManager} />
 
 {#each slots as slot (slot.id)}
   <CovenStation

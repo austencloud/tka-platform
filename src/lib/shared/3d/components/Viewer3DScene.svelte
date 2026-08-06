@@ -1,14 +1,14 @@
 <script lang="ts">
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { T, useTask, useThrelte, useScheduler } from "@threlte/core";
-  import { onMount, onDestroy, untrack } from "svelte";
+  import { layers } from "@threlte/extras";
+  import { onMount, onDestroy } from "svelte";
   import { PerformerRig } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { BackgroundType } from "@austencloud/backgrounds";
   import Environment3D from "../environments/components/Environment3D.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { getSceneFeatureContext } from "../scene-features/context/scene-feature-context";
-  import { STAGE } from "@austencloud/scene-3d";
   import SeatedAudience3D from "./SeatedAudience3D.svelte";
   import { Plane, GRID_OFFSETS, cmToUnits } from "@austencloud/scene-3d";
   import type { GridMode } from "@austencloud/scene-3d";
@@ -29,6 +29,22 @@
   import AvatarSwapTransition from "./AvatarSwapTransition.svelte";
   import EffectOrchestrator3D from "../effects/EffectOrchestrator3D.svelte";
   import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
+  import SceneEffectsCoordinator3D from "../effects/scene-effects/SceneEffectsCoordinator3D.svelte";
+  import { SceneEffectsManager3D } from "../effects/scene-effects/scene-effects-manager-3d";
+  import { setSceneEffectsContext } from "../effects/scene-effects/scene-effects-context";
+  import {
+    getStageCoordinateFrame,
+    isRenderable3DEnvironment,
+  } from "../environments/domain/stage-coordinate-frame";
+  import { tryGetEnvironmentTransitionVisualContext } from "../environments/context/environment-transition-visual-context";
+  import {
+    BASE_SCENE_LAYER,
+    PROTECTED_PERFORMER_LAYER,
+    protectPerformerTree,
+  } from "../environments/rendering/environment-transition-compositor";
+
+  // Performer layer membership inherits through the nested PerformerRig tree.
+  layers();
 
   interface Props {
     sequenceData: SequenceData | null;
@@ -53,6 +69,8 @@
 
   const viewer3DState = getViewer3DContext();
   const sceneFeatures = getSceneFeatureContext();
+  const sceneEffectsManager = setSceneEffectsContext(new SceneEffectsManager3D());
+  const transitionVisual = tryGetEnvironmentTransitionVisualContext();
   const { renderer, camera, scene } = useThrelte();
   const { scheduler, resetFrameInvalidation } = useScheduler();
 
@@ -68,34 +86,6 @@
       return settingsService.settings?.backgroundType ?? BackgroundType.COSMIC;
     } catch { return BackgroundType.COSMIC; }
   });
-
-  function getStageGroundOffset(bg: BackgroundType): number {
-    switch (bg) {
-      case BackgroundType.FOREST:
-      case BackgroundType.AUTUMN:
-        return sceneFeatures.isEnabled("stage") ? STAGE.STAGE_DECK_HEIGHT : 0;
-      case BackgroundType.COSMIC:
-        return 0.4;
-      case BackgroundType.WINTER:
-        return 0.45;
-      case BackgroundType.OCEAN:
-        // 1.5 = seabed surface. With the Stage on, +1.0 (RuinsPlatform deck rise:
-        // elevation 0.5 + slab 0.5) stands the performer on the rectangular dais.
-        return 1.5 + (sceneFeatures.isEnabled("stage") ? 1.0 : 0);
-      case BackgroundType.EMBER:
-        return 0.5;
-      case BackgroundType.BLOSSOM:
-        return 0.35;
-      case BackgroundType.RAINBOW:
-        return 0.4;
-      case BackgroundType.CELESTIAL:
-        return 0.02;
-      case BackgroundType.VOID:
-        return 0;
-      default:
-        return 0;
-    }
-  }
 
   // Reconstructs Threlte's default setAnimationLoop callback. We restore
   // this after the offline export pauses the loop.
@@ -178,6 +168,13 @@
   // stepConfigs now includes the start position at index 0, so the mapping
   // is direct: 2D beat N → 3D index N (no offset needed).
   useTask((delta) => {
+    if (transitionVisual?.active && performerLayerRoot) {
+      protectPerformerTree(performerLayerRoot);
+    }
+    if (transitionVisual?.active && sceneEffectsLayerRoot) {
+      protectPerformerTree(sceneEffectsLayerRoot);
+    }
+
     if (viewer3DState.selectedPerformerIndex !== null) {
       ringPulsePhase += delta * 3;
     }
@@ -317,17 +314,21 @@
 
   const explicitPlanes = $derived(viewer3DState.visiblePlanes as Set<Plane>);
 
-  const hasEnvironment = $derived(
-    backgroundType !== BackgroundType.VOID
-  );
+  const hasEnvironment = $derived(isRenderable3DEnvironment(backgroundType));
 
   const isNightEnvironment = $derived(
     backgroundType === BackgroundType.FOREST ||
-    backgroundType === BackgroundType.COSMIC ||
-    backgroundType === BackgroundType.OCEAN
+      backgroundType === BackgroundType.COSMIC ||
+      backgroundType === BackgroundType.OCEAN
   );
 
-  const stageGroundOffset = $derived(getStageGroundOffset(backgroundType));
+  const stageCoordinateFrame = $derived(
+    getStageCoordinateFrame(
+      backgroundType,
+      sceneFeatures.isEnabled("stage"),
+    ),
+  );
+  const stageGroundOffset = $derived(stageCoordinateFrame.performerAnchorY);
 
   const performerCount = $derived(performerManager.performers.length);
 
@@ -364,17 +365,8 @@
 
   let ringPulsePhase = $state(0);
   const ringPulse = $derived(0.6 + 0.4 * Math.sin(ringPulsePhase));
-
-
-  // Reset environment readiness when the background type changes so scenes
-  // that need async loading (GLB models, textures) can re-report progress.
-  let prevBackgroundType = $state(untrack(() => backgroundType));
-  $effect(() => {
-    if (backgroundType !== prevBackgroundType) {
-      sceneFeatures.resetReady("environment");
-      prevBackgroundType = backgroundType;
-    }
-  });
+  let performerLayerRoot: Object3D | undefined;
+  let sceneEffectsLayerRoot: Object3D | undefined;
 
   // When the background type doesn't produce a 3D environment (solid color,
   // gradient), Environment3D never mounts - so nothing will ever call
@@ -385,6 +377,15 @@
     }
   });
 </script>
+
+<T.Group
+  bind:ref={sceneEffectsLayerRoot}
+  layers={[BASE_SCENE_LAYER, PROTECTED_PERFORMER_LAYER]}
+/>
+<SceneEffectsCoordinator3D
+  manager={sceneEffectsManager}
+  parent={sceneEffectsLayerRoot}
+/>
 
 <!-- Environment (gated by scene feature toggle) -->
 {#if hasEnvironment && sceneFeatures.isEnabled("environment")}
@@ -400,6 +401,14 @@
 <T.AmbientLight intensity={isNightEnvironment ? 0.2 : hasEnvironment ? 0.3 : 0.4} />
 <T.DirectionalLight position={[5, 10, 5]} intensity={isNightEnvironment ? 0.4 : hasEnvironment ? 0.6 : 0.8} />
 
+<!-- Stable performer-only lighting for the protected transition pass. -->
+<T.AmbientLight intensity={0.75} layers={PROTECTED_PERFORMER_LAYER} />
+<T.DirectionalLight
+  position={[-4, 9, 7]}
+  intensity={1.1}
+  layers={PROTECTED_PERFORMER_LAYER}
+/>
+
 <!-- Ground disc (only when no environment provides its own ground) -->
 {#if !hasEnvironment}
   <T.Mesh rotation.x={-Math.PI / 2}>
@@ -409,7 +418,11 @@
 {/if}
 
 <!-- Performer group shifts with stage expansion to stay centered -->
-<T.Group position.z={stageZOffset}>
+<T.Group
+  bind:ref={performerLayerRoot}
+  position.z={stageZOffset}
+  layers={[BASE_SCENE_LAYER, PROTECTED_PERFORMER_LAYER]}
+>
 {#each performerManager.performers as performer, i (performer.id)}
   <T.Group userData={{ performerIndex: i }}>
     {@const performerGridMode = (sequenceData?.gridMode ?? "diamond") as GridMode}
@@ -449,7 +462,7 @@
           {avatarOpacity}
         >
           {#snippet gridSlot()}
-            <T.Group position.z={performerGridOffset}>
+            <T.Group position.z={performerGridOffset} layers={BASE_SCENE_LAYER}>
               <Grid3D
                 visiblePlanes={explicitPlanes}
                 gridMode={performerGridMode}
@@ -467,6 +480,7 @@
               {blueHandPos}
               {redHandPos}
               {effectsParentRef}
+              {currentStep}
             />
           {/snippet}
         </PerformerRig>

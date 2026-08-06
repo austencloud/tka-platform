@@ -22,6 +22,9 @@ import type {
   SmokeIntent,
   InkIntent,
   FrostIntent,
+  SilkIntent,
+  AnimalIntent,
+  PulseIntent,
 } from "../domain/effects-config";
 import type { WaterPalette } from "../domain/water-palettes";
 import type { BubblePalette } from "../domain/bubble-palettes";
@@ -29,6 +32,9 @@ import type { PetalPalette } from "../domain/petal-palettes";
 import type { SmokePalette } from "../domain/smoke-palettes";
 import type { InkPalette } from "$lib/shared/3d/effects/ink/ink-palettes";
 import type { FrostPalette } from "../domain/frost-palettes";
+import type { SilkPalette } from "../domain/silk-palettes";
+import type { AnimalPalette } from "../domain/animal-palettes";
+import type { PulsePalette } from "../domain/pulse-palettes";
 
 export interface Trails3DParams extends TrailsIntent {
   /** World-space tube radius, meters. Derived from thickness. */
@@ -239,6 +245,45 @@ export interface Ink3DParams extends InkIntent {
   maxPointsPerTip: number;
   /** World units/s mapping to full motion scalar. Spec MOTION_REFERENCE_SPEED=3.0. */
   motionReferenceSpeed: number;
+}
+
+export interface Silk3DParams extends SilkIntent {
+  /** Resolved body and edge colors plus palette material flags. */
+  resolvedPalette: SilkPalette;
+  /** World-space ribbon half-width. */
+  baseHalfWidthWorld: number;
+  /** Seconds before a ribbon sample fully fades. */
+  lifetimeSeconds: number;
+  /** World units/s mapping to full tautness response. */
+  motionReferenceSpeed: number;
+  /** Maximum retained path samples per tracked tip. */
+  maxPointsPerTip: number;
+}
+
+export interface Animal3DParams extends AnimalIntent {
+  /** Resolved body and ornament colors plus palette material flags. */
+  resolvedPalette: AnimalPalette;
+  /** World-space body radius before taper. */
+  baseRadiusWorld: number;
+  /** Fixed world-space arc length from head to tail. */
+  bodyLengthWorld: number;
+  /** Number of articulated body samples. */
+  segmentCount: number;
+  /** Maximum world-space tail undulation. */
+  slitherAmplitudeWorld: number;
+}
+
+export interface Pulse3DParams extends PulseIntent {
+  /** Resolved ring and fade colors plus palette material flags. */
+  resolvedPalette: PulsePalette;
+  /** Maximum world-space shockwave radius. */
+  maxRadiusWorld: number;
+  /** Ring band thickness as a fraction of radius. */
+  ringThicknessRatio: number;
+  /** World units/s mapping to velocity trigger and visual energy. */
+  motionReferenceSpeed: number;
+  /** Maximum active rings, including harmonic and chromatic instances. */
+  poolSize: number;
 }
 
 export interface Frost3DParams extends FrostIntent {

@@ -1,3 +1,79 @@
+<script module lang="ts">
+  import { CanvasTexture, SRGBColorSpace } from "three";
+  import type { BloomIntent } from "$lib/shared/effects/domain/effects-config";
+
+  // The radial mask is independent of hue and radius. Sharing one white mask
+  // per falloff lets SpriteMaterial tint it without baking a texture per tip
+  // (or, in rainbow mode, per animation frame).
+  const textureCache = new Map<BloomIntent["falloff"], CanvasTexture>();
+
+  function withAlpha(alpha: number): string {
+    return `rgba(255, 255, 255, ${Math.max(0, Math.min(1, alpha))})`;
+  }
+
+  function getRadialTexture(falloff: BloomIntent["falloff"]): CanvasTexture {
+    const cached = textureCache.get(falloff);
+    if (cached) return cached;
+
+    const size = 128;
+    const canvas =
+      typeof OffscreenCanvas !== "undefined"
+        ? new OffscreenCanvas(size, size)
+        : (() => {
+            const element = document.createElement("canvas");
+            element.width = size;
+            element.height = size;
+            return element;
+          })();
+    const context = canvas.getContext("2d") as
+      | CanvasRenderingContext2D
+      | OffscreenCanvasRenderingContext2D
+      | null;
+    const texture = new CanvasTexture(canvas as HTMLCanvasElement);
+    texture.colorSpace = SRGBColorSpace;
+
+    if (context) {
+      const center = size / 2;
+      const gradient = context.createRadialGradient(
+        center,
+        center,
+        0,
+        center,
+        center,
+        center,
+      );
+      switch (falloff) {
+        case "sharp":
+          gradient.addColorStop(0, withAlpha(1));
+          gradient.addColorStop(0.15, withAlpha(0.7));
+          gradient.addColorStop(0.6, withAlpha(0.1));
+          gradient.addColorStop(1, withAlpha(0));
+          break;
+        case "ring":
+          gradient.addColorStop(0, withAlpha(0));
+          gradient.addColorStop(0.45, withAlpha(0.2));
+          gradient.addColorStop(0.7, withAlpha(1));
+          gradient.addColorStop(0.9, withAlpha(0.3));
+          gradient.addColorStop(1, withAlpha(0));
+          break;
+        case "smooth":
+        default:
+          gradient.addColorStop(0, withAlpha(1));
+          gradient.addColorStop(0.4, withAlpha(0.5));
+          gradient.addColorStop(1, withAlpha(0));
+          break;
+      }
+      context.clearRect(0, 0, size, size);
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, size, size);
+      texture.needsUpdate = true;
+    }
+
+    textureCache.set(falloff, texture);
+    return texture;
+  }
+</script>
+
 <script lang="ts">
   /**
    * BloomBillboard3D - per-tip radial halation sprite.
@@ -17,7 +93,7 @@
    */
 
   import { T, useTask } from "@threlte/core";
-  import { Vector3, CanvasTexture, AdditiveBlending, SRGBColorSpace } from "three";
+  import { Vector3, AdditiveBlending, type SpriteMaterial } from "three";
   import type { BloomIntent } from "$lib/shared/effects/domain/effects-config";
 
   interface Props {
@@ -47,32 +123,6 @@
     enabled,
   }: Props = $props();
 
-  // ───── Texture cache ───────────────────────────────────────────────
-  // Keyed by the same tuple that determines gradient shape + color.
-  // Module-level so multiple instances share the same cache.
-  const textureCache = new Map<string, CanvasTexture>();
-
-  function buildCacheKey(i: BloomIntent, propColor: string, idx: number): string {
-    return `${i.colorMode}|${i.falloff}|${i.color}|${i.radius}|${i.palette.join(",")}|${propColor}|${idx}`;
-  }
-
-  function withAlpha(color: string, alpha: number): string {
-    const a = Math.max(0, Math.min(1, alpha));
-    if (color.startsWith("#")) {
-      let h = color.replace("#", "");
-      if (h.length === 3) h = h.split("").map((c) => c + c).join("");
-      const num = parseInt(h, 16);
-      const r = (num >> 16) & 0xff;
-      const g = (num >> 8) & 0xff;
-      const b = num & 0xff;
-      return `rgba(${r}, ${g}, ${b}, ${a})`;
-    }
-    if (color.startsWith("hsl(") && !color.startsWith("hsla(")) {
-      return `hsla${color.slice(3, -1)}, ${a})`;
-    }
-    return color;
-  }
-
   function pickBaseColor(i: BloomIntent, propColor: string, idx: number, t: number): string {
     switch (i.colorMode) {
       case "prop-matched":
@@ -88,126 +138,43 @@
     }
   }
 
-  function generateTexture(i: BloomIntent, baseColor: string): CanvasTexture {
-    const size = 128;
-    const canvas =
-      typeof OffscreenCanvas !== "undefined"
-        ? new OffscreenCanvas(size, size)
-        : (() => {
-            const c = document.createElement("canvas");
-            c.width = size;
-            c.height = size;
-            return c;
-          })();
-    const ctx = canvas.getContext("2d") as
-      | CanvasRenderingContext2D
-      | OffscreenCanvasRenderingContext2D
-      | null;
-    if (!ctx) {
-      // Worst-case fallback - return an empty texture; scene stays stable.
-      return new CanvasTexture(canvas as HTMLCanvasElement);
-    }
-    const cx = size / 2;
-    const cy = size / 2;
-    const r = size / 2;
-    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-    const col = (a: number) => withAlpha(baseColor, a);
-    const transparent = withAlpha(baseColor, 0);
-    switch (i.falloff) {
-      case "sharp":
-        g.addColorStop(0, col(1));
-        g.addColorStop(0.15, col(0.7));
-        g.addColorStop(0.6, col(0.1));
-        g.addColorStop(1, transparent);
-        break;
-      case "ring":
-        g.addColorStop(0, transparent);
-        g.addColorStop(0.45, col(0.2));
-        g.addColorStop(0.7, col(1));
-        g.addColorStop(0.9, col(0.3));
-        g.addColorStop(1, transparent);
-        break;
-      case "smooth":
-      default:
-        g.addColorStop(0, col(1));
-        g.addColorStop(0.4, col(0.5));
-        g.addColorStop(1, transparent);
-        break;
-    }
-    ctx.clearRect(0, 0, size, size);
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, size, size);
-    const tex = new CanvasTexture(canvas as HTMLCanvasElement);
-    tex.colorSpace = SRGBColorSpace;
-    tex.needsUpdate = true;
-    return tex;
-  }
-
-  // Rainbow mode keeps its own texture handle since the baseColor drifts
-  // every frame - we regenerate on a throttle rather than cache by key.
-  // $state, not a plain let: `activeTexture` below is a $derived that reads
-  // this, and it is assigned from inside useTask. As a plain let it was not a
-  // reactive source, so activeTexture kept its initial null forever and the
-  // mount guard `{#if ... && activeTexture}` never opened. bloom's default
-  // colorMode is "rainbow", so out of the box the effect rendered NOTHING —
-  // playing or paused. Non-rainbow modes were fine, because stableTexture is
-  // derived from props.
-  let rainbowTexture = $state<CanvasTexture | null>(null);
-  let lastRainbowUpdateMs = 0;
-  const RAINBOW_UPDATE_INTERVAL_MS = 80; // ~12 fps on the hue
-
   const propColor = $derived(propIndex === 0 ? blueColor : redColor);
+  const radialTexture = $derived(getRadialTexture(intent.falloff));
+  const stableColor = $derived(pickBaseColor(intent, propColor, tipIndex, 0));
+  let material = $state.raw<SpriteMaterial>();
 
-  // For non-rainbow modes, pick a stable texture via the cache.
-  const stableTexture = $derived.by(() => {
-    if (intent.colorMode === "rainbow") return null;
-    const baseColor = pickBaseColor(intent, propColor, tipIndex, 0);
-    const key = buildCacheKey(intent, propColor, tipIndex);
-    let tex = textureCache.get(key);
-    if (!tex) {
-      tex = generateTexture(intent, baseColor);
-      textureCache.set(key, tex);
-    }
-    return tex;
-  });
-
-  // Per-frame pulse factor + optional rainbow texture refresh.
-  let pulseFactor = $state(1);
+  // Mutate the material in place so pulse and rainbow animation never enter
+  // Svelte's render loop or allocate GPU textures/materials per frame.
   useTask(() => {
-    if (!enabled) return;
+    if (!enabled || !material) return;
     const t = performance.now() / 1000;
-    pulseFactor =
+    const pulseFactor =
       1 -
       intent.pulse +
       intent.pulse * (0.5 + 0.5 * Math.sin(t * intent.pulseRate * Math.PI * 2));
-
+    material.opacity = Math.max(0, Math.min(1, intent.intensity * pulseFactor));
     if (intent.colorMode === "rainbow") {
-      const nowMs = t * 1000;
-      if (nowMs - lastRainbowUpdateMs > RAINBOW_UPDATE_INTERVAL_MS || !rainbowTexture) {
-        rainbowTexture?.dispose();
-        rainbowTexture = generateTexture(intent, pickBaseColor(intent, propColor, tipIndex, t));
-        lastRainbowUpdateMs = nowMs;
-      }
+      material.color.set(pickBaseColor(intent, propColor, tipIndex, t));
+    } else {
+      material.color.set(stableColor);
     }
   });
 
-  const activeTexture = $derived(
-    intent.colorMode === "rainbow" ? rainbowTexture : stableTexture,
-  );
-  const opacity = $derived(Math.max(0, Math.min(1, intent.intensity * pulseFactor)));
   // Tuned so 28 px 2D ≈ 1.12 world units 3D.
   const spriteScale = $derived(intent.radius * 0.04);
 </script>
 
-{#if enabled && position && activeTexture && opacity > 0}
+{#if enabled && position}
   <T.Sprite
     position={[position.x, position.y, position.z]}
     scale={[spriteScale, spriteScale, 1]}
   >
     <T.SpriteMaterial
-      map={activeTexture}
+      bind:ref={material}
+      map={radialTexture}
+      color={stableColor}
       transparent
-      opacity={opacity}
+      opacity={intent.intensity}
       blending={AdditiveBlending}
       depthWrite={false}
     />

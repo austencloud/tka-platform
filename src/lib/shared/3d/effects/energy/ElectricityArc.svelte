@@ -11,11 +11,13 @@
    */
 
   import { T, useTask } from "@threlte/core";
+  import { onDestroy } from "svelte";
   import {
     Vector3,
     BufferGeometry,
     Float32BufferAttribute,
     AdditiveBlending,
+    DynamicDrawUsage,
   } from "three";
 
   interface Props {
@@ -63,7 +65,7 @@
    * explode the vertex count.
    */
   const subdivisions = $derived(
-    Math.max(2, Math.min(5, Math.round(Math.log2(Math.max(4, segments))))),
+    Math.max(2, Math.min(5, Math.round(Math.log2(Math.max(4, segments)))))
   );
 
   // Crackle geometry, world units. A crackle arc is a hand-span off the tip.
@@ -72,13 +74,24 @@
   const CRACKLE_LENGTH_MAX = 0.32;
   const BRANCH_PROBABILITY = 0.3;
   const BRANCH_LENGTH_RATIO = 0.4;
+  const MAIN_MAX_VERTICES = 33;
+  const BRANCH_MAX_VERTICES = 512;
+  const CRACKLE_MAX_VERTICES = 256;
 
   // State
-  let frameCount = $state(0);
-  let mainGeometry = $state<BufferGeometry | null>(null);
-  let branchGeometries = $state<BufferGeometry[]>([]);
-  let crackleGeometries = $state<BufferGeometry[]>([]);
+  let frameCount = 0;
   let pulsePhase = $state(0);
+  let mainVisible = $state(false);
+  let branchesVisible = $state(false);
+  let crackleVisible = $state(false);
+
+  // The bolt changes shape frequently, but its GPU resources do not need to.
+  // Each geometry owns one fixed dynamic position buffer whose draw range is
+  // rewritten when the flicker cadence fires. Branches and crackles use line
+  // segments so every disjoint path can share one draw call and one buffer.
+  const mainGeometry = createDynamicGeometry(MAIN_MAX_VERTICES);
+  const branchGeometry = createDynamicGeometry(BRANCH_MAX_VERTICES);
+  const crackleGeometry = createDynamicGeometry(CRACKLE_MAX_VERTICES);
 
   // Derived colors
   const glowColor = $derived(color);
@@ -227,60 +240,95 @@
     return arcs;
   }
 
-  /**
-   * Convert a path to a BufferGeometry for line rendering
-   */
-  function pathToGeometry(path: Vector3[]): BufferGeometry {
+  function createDynamicGeometry(maxVertices: number): BufferGeometry {
     const geometry = new BufferGeometry();
-    const positions: number[] = [];
-
-    for (const point of path) {
-      positions.push(point.x, point.y, point.z);
-    }
-
-    geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+    const position = new Float32BufferAttribute(
+      new Float32Array(maxVertices * 3),
+      3
+    );
+    position.setUsage(DynamicDrawUsage);
+    geometry.setAttribute("position", position);
+    geometry.setDrawRange(0, 0);
     return geometry;
   }
 
-  /**
-   * Dispose of a geometry
-   */
-  function disposeGeometry(geometry: BufferGeometry | null) {
-    if (geometry) {
-      geometry.dispose();
+  function writeLineStrip(geometry: BufferGeometry, path: Vector3[]): boolean {
+    const attribute = geometry.getAttribute(
+      "position"
+    ) as Float32BufferAttribute;
+    const positions = attribute.array as Float32Array;
+    const vertexCount = Math.min(path.length, positions.length / 3);
+    for (let index = 0; index < vertexCount; index++) {
+      const point = path[index]!;
+      const offset = index * 3;
+      positions[offset] = point.x;
+      positions[offset + 1] = point.y;
+      positions[offset + 2] = point.z;
     }
+    geometry.setDrawRange(0, vertexCount);
+    attribute.needsUpdate = true;
+    if (vertexCount >= 2) geometry.computeBoundingSphere();
+    return vertexCount >= 2;
+  }
+
+  function writeLineSegments(
+    geometry: BufferGeometry,
+    paths: Vector3[][]
+  ): boolean {
+    const attribute = geometry.getAttribute(
+      "position"
+    ) as Float32BufferAttribute;
+    const positions = attribute.array as Float32Array;
+    let offset = 0;
+    for (const path of paths) {
+      for (let index = 0; index < path.length - 1; index++) {
+        if (offset + 6 > positions.length) break;
+        const startPoint = path[index]!;
+        const endPoint = path[index + 1]!;
+        positions[offset++] = startPoint.x;
+        positions[offset++] = startPoint.y;
+        positions[offset++] = startPoint.z;
+        positions[offset++] = endPoint.x;
+        positions[offset++] = endPoint.y;
+        positions[offset++] = endPoint.z;
+      }
+      if (offset + 6 > positions.length) break;
+    }
+    const vertexCount = offset / 3;
+    geometry.setDrawRange(0, vertexCount);
+    attribute.needsUpdate = true;
+    if (vertexCount >= 2) geometry.computeBoundingSphere();
+    return vertexCount >= 2;
   }
 
   /**
    * Regenerate all lightning paths
    */
   function regeneratePaths() {
-    // Clean up old geometries
-    disposeGeometry(mainGeometry);
-    branchGeometries.forEach(disposeGeometry);
-    crackleGeometries.forEach(disposeGeometry);
-
     if (mode === "arc" && end) {
       // Arc mode: single main arc with branches
       const mainPath = generateLightningPath(start, end);
-      mainGeometry = pathToGeometry(mainPath);
+      mainVisible = writeLineStrip(mainGeometry, mainPath);
 
       // Generate branches based on intensity
       if (intensity > 0.3) {
         const branches = generateBranches(mainPath, BRANCH_PROBABILITY);
-        branchGeometries = branches.map(pathToGeometry);
+        branchesVisible = writeLineSegments(branchGeometry, branches);
       } else {
-        branchGeometries = [];
+        branchGeometry.setDrawRange(0, 0);
+        branchesVisible = false;
       }
-
-      crackleGeometries = [];
+      crackleGeometry.setDrawRange(0, 0);
+      crackleVisible = false;
     } else {
       // Crackle mode: multiple arcs radiating from center
-      mainGeometry = null;
-      branchGeometries = [];
+      mainGeometry.setDrawRange(0, 0);
+      branchGeometry.setDrawRange(0, 0);
+      mainVisible = false;
+      branchesVisible = false;
 
       const arcs = generateCrackleArcs(start);
-      crackleGeometries = arcs.map(pathToGeometry);
+      crackleVisible = writeLineSegments(crackleGeometry, arcs);
     }
   }
 
@@ -306,13 +354,10 @@
   // still follows the props; it just re-cuts on the regenerateEveryFrames
   // cadence rather than continuously.
 
-  // Cleanup on destroy
-  $effect(() => {
-    return () => {
-      disposeGeometry(mainGeometry);
-      branchGeometries.forEach(disposeGeometry);
-      crackleGeometries.forEach(disposeGeometry);
-    };
+  onDestroy(() => {
+    mainGeometry.dispose();
+    branchGeometry.dispose();
+    crackleGeometry.dispose();
   });
 
   // Pulsing intensity
@@ -326,7 +371,7 @@
 
 {#if enabled}
   <!-- Main arc (arc mode) -->
-  {#if mainGeometry}
+  {#if mainVisible}
     <!-- Core line (bright, thin) -->
     <T.Line geometry={mainGeometry}>
       <T.LineBasicMaterial
@@ -351,9 +396,9 @@
   {/if}
 
   <!-- Branch arcs -->
-  {#each branchGeometries as branchGeometry}
+  {#if branchesVisible}
     <!-- Core -->
-    <T.Line geometry={branchGeometry}>
+    <T.LineSegments geometry={branchGeometry}>
       <T.LineBasicMaterial
         color="#ffffff"
         opacity={pulsedCoreOpacity * 0.7}
@@ -361,10 +406,10 @@
         blending={AdditiveBlending}
         linewidth={1}
       />
-    </T.Line>
+    </T.LineSegments>
 
     <!-- Glow -->
-    <T.Line geometry={branchGeometry}>
+    <T.LineSegments geometry={branchGeometry}>
       <T.LineBasicMaterial
         color={glowColor}
         opacity={pulsedGlowOpacity * 0.5}
@@ -372,13 +417,13 @@
         blending={AdditiveBlending}
         linewidth={2}
       />
-    </T.Line>
-  {/each}
+    </T.LineSegments>
+  {/if}
 
   <!-- Crackle arcs (crackle mode) -->
-  {#each crackleGeometries as crackleGeometry}
+  {#if crackleVisible}
     <!-- Core -->
-    <T.Line geometry={crackleGeometry}>
+    <T.LineSegments geometry={crackleGeometry}>
       <T.LineBasicMaterial
         color="#ffffff"
         opacity={pulsedCoreOpacity * 0.9}
@@ -386,10 +431,10 @@
         blending={AdditiveBlending}
         linewidth={1}
       />
-    </T.Line>
+    </T.LineSegments>
 
     <!-- Glow -->
-    <T.Line geometry={crackleGeometry}>
+    <T.LineSegments geometry={crackleGeometry}>
       <T.LineBasicMaterial
         color={glowColor}
         opacity={pulsedGlowOpacity * 0.7}
@@ -397,8 +442,8 @@
         blending={AdditiveBlending}
         linewidth={2}
       />
-    </T.Line>
-  {/each}
+    </T.LineSegments>
+  {/if}
 
   <!-- Optional: Point lights at arc endpoints for extra glow -->
   <!-- Light falloff in METRES: 100/80 lit the entire scene from a prop tip. -->

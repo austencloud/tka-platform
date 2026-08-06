@@ -18,7 +18,7 @@
    * an optional GLB stage, and a level-of-detail band.
    */
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
-  import { untrack } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import { T } from "@threlte/core";
   import { Vector3, Quaternion, Color } from "three";
   import { PerformerRig } from "@austencloud/scene-3d";
@@ -35,6 +35,7 @@
   import EffectOrchestrator3D from "$lib/shared/3d/effects/EffectOrchestrator3D.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
+  import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 
   interface Props {
     stationId: string;
@@ -42,6 +43,8 @@
     worldZ: number;
     sequence: SequenceData | null;
     effectId?: string | null;
+    /** Override the wildcard effect with an authored per-tip assignment. */
+    tipEffectMap?: TipEffectMap;
     stageModel?: string | null;
     lod?: LodBand;
     autoPlay?: boolean;
@@ -68,7 +71,7 @@
   const stationId = props.stationId;
   const worldX = props.worldX;
   const worldZ = props.worldZ;
-  const autoPlay = props.autoPlay ?? true;
+  const autoPlay = $derived(props.autoPlay ?? true);
   const lod = $derived(props.lod ?? "hero");
   const presentation = props.presentation ?? "ritual";
   const formationScale = props.scale ?? 1;
@@ -125,8 +128,11 @@
   // WALL mode grid offset (how far forward the hand anchor sits from rig center)
   const GRID_OFFSET = 0.3;
 
-  // Tip effect on all prop tips - the telekinetic glow
-  const tipEffectMap = $derived(buildTipEffectMap(props.effectId ?? null));
+  // Most installations paint every tip. Comparison stages can isolate one
+  // physical endpoint so overlapping props do not masquerade as one creature.
+  const tipEffectMap = $derived(
+    props.tipEffectMap ?? buildTipEffectMap(props.effectId ?? null)
+  );
 
   type AvatarInstance = ReturnType<typeof createAvatarInstanceState>;
 
@@ -188,9 +194,28 @@
           instance.setHandPlane("blue", planeCfg.blue);
           instance.setHandPlane("red", planeCfg.red);
         }
-        if (autoPlay) instance.play();
+        if (autoPlay && stationPlaying) instance.play();
       }
     });
+  });
+
+  // A frozen station remains mounted as a static exhibit, but its playback
+  // clocks must stop. Museum rooms can contain many stations, and one RAF loop
+  // per hidden avatar otherwise keeps recomputing prop textures indefinitely.
+  $effect(() => {
+    const shouldPlay = autoPlay && stationPlaying;
+    untrack(() => {
+      for (const instance of [...centerInstances, ...acolyteInstances]) {
+        if (shouldPlay) instance.play();
+        else instance.pause();
+      }
+    });
+  });
+
+  onDestroy(() => {
+    for (const instance of [...centerInstances, ...acolyteInstances]) {
+      instance.destroy();
+    }
   });
 
   // Dynamic arm tracking: each acolyte's IK targets follow the center props.
@@ -370,6 +395,7 @@
             {blueHandPos}
             {redHandPos}
             {effectsParentRef}
+            currentStep={instance.currentStepIndex + instance.progress}
           />
         {/snippet}
       </PerformerRig>

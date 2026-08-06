@@ -1,7 +1,7 @@
 /**
  * Shared effect metadata. Single source of truth for id/label/icon/color
  * across the unified EffectsPanel (sidebar/strip/grid layouts) and
- * EffectSelector. Currently 13 effects; the "none" chip is rendered
+ * EffectSelector. The canonical roster contains 16 effects; the "none" chip is rendered
  * separately by consumers that need it.
  */
 

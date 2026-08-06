@@ -13,6 +13,9 @@ import type {
   SmokeIntent,
   InkIntent,
   FrostIntent,
+  SilkIntent,
+  AnimalIntent,
+  PulseIntent,
 } from "../domain/effects-config";
 import type {
   Trails3DParams,
@@ -29,6 +32,9 @@ import type {
   Smoke3DParams,
   Ink3DParams,
   Frost3DParams,
+  Silk3DParams,
+  Animal3DParams,
+  Pulse3DParams,
 } from "./webgl3d-types";
 import { resolveWaterPalette } from "../domain/water-palettes";
 import { resolveBubblePalette } from "../domain/bubble-palettes";
@@ -36,6 +42,9 @@ import { resolvePetalPalette } from "../domain/petal-palettes";
 import { resolveSmokePalette } from "../domain/smoke-palettes";
 import { resolveInkPalette } from "$lib/shared/3d/effects/ink/ink-palettes";
 import { resolveFrostPalette } from "../domain/frost-palettes";
+import { resolveSilkPalette } from "../domain/silk-palettes";
+import { resolveAnimalPalette } from "../domain/animal-palettes";
+import { resolvePulsePalette } from "../domain/pulse-palettes";
 
 /**
  * A 34" staff in world units — 1 world unit is 1 metre (AUSTEN_STAFF from
@@ -254,10 +263,8 @@ export function resolveSmoke3D(
 /**
  * Resolve ink for the 3D backend.
  *
- * Sprint 1 is a pure params echo - no 3D ink renderer exists yet. The
- * translator pre-composes the stroke-width/alpha/material decisions so
- * when 3D ink ships in a later phase it doesn't need to re-derive these
- * from raw intent. World-unit tunings mirror the 2D translator's px
+ * The translator pre-composes the stroke-width/alpha/material decisions for
+ * the scene-level ink renderer. World-unit tunings mirror the 2D translator's px
  * tunings through a 60 px/world-unit scale factor.
  *
  *   strokeWidthMaxWorld = 12 px * (watercolor ? 2 : 1) / 60 px/world
@@ -298,6 +305,54 @@ export function resolveInk3D(
     lifetimeSeconds: LIFETIME_SECONDS_BASE,
     maxPointsPerTip: MAX_POINTS_PER_TIP,
     motionReferenceSpeed: MOTION_REFERENCE_SPEED,
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolveSilk3D(
+  intent: SilkIntent,
+  override: Partial<Silk3DParams> = {},
+): Silk3DParams {
+  const defaults: Omit<Silk3DParams, keyof SilkIntent> = {
+    resolvedPalette: resolveSilkPalette(intent),
+    baseHalfWidthWorld: (5 + intent.width * 25) / 60,
+    lifetimeSeconds: 0.5 + intent.duration * 3.5,
+    motionReferenceSpeed: 3,
+    maxPointsPerTip: 320,
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolveAnimal3D(
+  intent: AnimalIntent,
+  override: Partial<Animal3DParams> = {},
+): Animal3DParams {
+  const defaults: Omit<Animal3DParams, keyof AnimalIntent> = {
+    resolvedPalette: resolveAnimalPalette(intent),
+    baseRadiusWorld: (2.5 + intent.width * 13) / 60,
+    // Arc length needs a different ruler than stroke width. The 2D body range
+    // spans the canvas, while the 3D stage cell is only a few staff lengths.
+    bodyLengthWorld: (160 + intent.bodyLength * 440) / 180,
+    segmentCount: 56,
+    slitherAmplitudeWorld: (intent.slither * 20) / 60,
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolvePulse3D(
+  intent: PulseIntent,
+  override: Partial<Pulse3DParams> = {},
+): Pulse3DParams {
+  const ringPixels =
+    intent.style === "stroke"
+      ? 1 + intent.thickness * 4
+      : 3 + intent.thickness * 12;
+  const defaults: Omit<Pulse3DParams, keyof PulseIntent> = {
+    resolvedPalette: resolvePulsePalette(intent),
+    maxRadiusWorld: (20 + intent.reach * 180) / 120,
+    ringThicknessRatio: Math.min(0.45, Math.max(0.035, ringPixels / 60)),
+    motionReferenceSpeed: 3,
+    poolSize: 512,
   };
   return { ...intent, ...defaults, ...override };
 }

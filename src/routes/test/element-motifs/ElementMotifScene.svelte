@@ -10,6 +10,9 @@
   import { T } from "@threlte/core";
   import MotifStation from "./MotifStation.svelte";
   import { ELEMENT_MOTIFS, motifPosition } from "./element-motifs";
+  import SceneEffectsCoordinator3D from "$lib/shared/3d/effects/scene-effects/SceneEffectsCoordinator3D.svelte";
+  import { SceneEffectsManager3D } from "$lib/shared/3d/effects/scene-effects/scene-effects-manager-3d";
+  import { setSceneEffectsContext } from "$lib/shared/3d/effects/scene-effects/scene-effects-context";
 
   interface Props {
     /** Per-room effect override, keyed by roomId. */
@@ -26,6 +29,7 @@
     soloRoomId?: string | null;
   }
   const props: Props = $props();
+  const sceneEffectsManager = setSceneEffectsContext(new SceneEffectsManager3D());
 
   const shown = $derived(
     props.soloRoomId
@@ -34,6 +38,8 @@
   );
   const count = $derived(shown.length);
 </script>
+
+<SceneEffectsCoordinator3D manager={sceneEffectsManager} />
 
 <!-- Dim key so the effects carry the frame rather than competing with lighting. -->
 <T.AmbientLight intensity={0.18} color="#0e1420" />

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+	resolveRigLocalPropCenter3D,
 	resolveTrailSources3D,
 	TipPositionBridge3D,
 } from "$lib/shared/3d/effects/tip-position-bridge-3d";
@@ -17,10 +18,27 @@ function makePropState(x: number, y: number, z: number) {
 }
 
 describe("TipPositionBridge3D", () => {
+	it("adds the hand anchor displacement to a rig-local prop center", () => {
+		const center = resolveRigLocalPropCenter3D(
+			{ x: 0.25, y: 1.1, z: -0.4 },
+			{ x: -0.3, z: 0.9 }
+		);
+
+		expect(center.x).toBeCloseTo(-0.05, 8);
+		expect(center.y).toBe(1.1);
+		expect(center.z).toBe(0.5);
+	});
+
 	it("computes two tip positions from prop state", () => {
 		const bridge = new TipPositionBridge3D();
 		const center = { x: 0, y: 1, z: 0 };
-		const result = bridge.update(0, makePropState(0, 1, 0), center, 0.5, 1 / 60);
+		const result = bridge.update(
+			0,
+			makePropState(0, 1, 0),
+			center,
+			0.5,
+			1 / 60
+		);
 		expect(result.tips.length).toBe(2);
 		expect(result.propIndex).toBe(0);
 	});
@@ -29,7 +47,13 @@ describe("TipPositionBridge3D", () => {
 		const bridge = new TipPositionBridge3D();
 		const halfLen = 0.5;
 		const center = { x: 0, y: 0, z: 0 };
-		const result = bridge.update(0, makePropState(0, 0, 0), center, halfLen, 1 / 60);
+		const result = bridge.update(
+			0,
+			makePropState(0, 0, 0),
+			center,
+			halfLen,
+			1 / 60
+		);
 
 		const tip0 = result.tips[0].position;
 		const tip1 = result.tips[1].position;
@@ -50,7 +74,7 @@ describe("TipPositionBridge3D", () => {
 			makePropState(0, 0, 0),
 			center,
 			0.5,
-			1 / 60,
+			1 / 60
 		);
 
 		expect(result.tips[0].position.x).toBeCloseTo(0.5, 6);
@@ -62,14 +86,52 @@ describe("TipPositionBridge3D", () => {
 		const center1 = { x: 0, y: 1, z: 0 };
 		const center2 = { x: 1, y: 1, z: 0 };
 		bridge.update(0, makePropState(0, 1, 0), center1, 0.5, 1 / 60);
-		const result = bridge.update(0, makePropState(1, 1, 0), center2, 0.5, 1 / 60);
+		const result = bridge.update(
+			0,
+			makePropState(1, 1, 0),
+			center2,
+			0.5,
+			1 / 60
+		);
 
 		// Velocity should be non-zero after center moved
 		const tip = result.tips[0];
 		const speed = Math.sqrt(
-			tip.velocity.x ** 2 + tip.velocity.y ** 2 + tip.velocity.z ** 2,
+			tip.velocity.x ** 2 + tip.velocity.y ** 2 + tip.velocity.z ** 2
 		);
 		expect(speed).toBeGreaterThan(0);
+	});
+
+	it("tracks rotating tips even when the prop center is stationary", () => {
+		const bridge = new TipPositionBridge3D();
+		const center = { x: 0, y: 0, z: 0 };
+		const dt = 0.5;
+		const identity = makePropState(0, 0, 0);
+		const quarterTurn = {
+			...identity,
+			worldRotation: {
+				x: 0,
+				y: 0,
+				z: Math.sin(Math.PI / 4),
+				w: Math.cos(Math.PI / 4),
+			},
+		};
+
+		bridge.update(0, identity, center, 0.5, dt);
+		const result = bridge.update(0, quarterTurn, center, 0.5, dt);
+
+		// Each endpoint travels sqrt(0.5^2 + 0.5^2) metres in half a second.
+		const expectedSpeed = Math.SQRT2;
+		expect(result.tips[0].speed).toBeCloseTo(expectedSpeed, 6);
+		expect(result.tips[1].speed).toBeCloseTo(expectedSpeed, 6);
+		expect(result.tips[0].velocity.x).toBeCloseTo(
+			-result.tips[1].velocity.x,
+			6
+		);
+		expect(result.tips[0].velocity.y).toBeCloseTo(
+			-result.tips[1].velocity.y,
+			6
+		);
 	});
 
 	it("velocity magnitude matches speed field", () => {
@@ -77,11 +139,17 @@ describe("TipPositionBridge3D", () => {
 		const center1 = { x: 0, y: 0, z: 0 };
 		const center2 = { x: 1, y: 0, z: 0 };
 		bridge.update(0, makePropState(0, 0, 0), center1, 0.5, 1 / 60);
-		const result = bridge.update(0, makePropState(1, 0, 0), center2, 0.5, 1 / 60);
+		const result = bridge.update(
+			0,
+			makePropState(1, 0, 0),
+			center2,
+			0.5,
+			1 / 60
+		);
 
 		const tip = result.tips[0];
 		const computedSpeed = Math.sqrt(
-			tip.velocity.x ** 2 + tip.velocity.y ** 2 + tip.velocity.z ** 2,
+			tip.velocity.x ** 2 + tip.velocity.y ** 2 + tip.velocity.z ** 2
 		);
 		expect(tip.speed).toBeCloseTo(computedSpeed, 6);
 	});
@@ -89,7 +157,13 @@ describe("TipPositionBridge3D", () => {
 	it("returns zero velocity on first frame", () => {
 		const bridge = new TipPositionBridge3D();
 		const center = { x: 5, y: 3, z: 1 };
-		const result = bridge.update(0, makePropState(5, 3, 1), center, 0.5, 1 / 60);
+		const result = bridge.update(
+			0,
+			makePropState(5, 3, 1),
+			center,
+			0.5,
+			1 / 60
+		);
 		expect(result.tips[0].speed).toBe(0);
 		expect(result.tips[1].speed).toBe(0);
 	});
@@ -103,11 +177,17 @@ describe("TipPositionBridge3D", () => {
 		// Frame 2: start moving (velocity appears, jerk should be non-zero)
 		bridge.update(0, makePropState(1, 0, 0), { x: 1, y: 0, z: 0 }, 0.5, dt);
 		// Frame 3: stop moving (velocity drops, jerk should be non-zero again)
-		const result = bridge.update(0, makePropState(1, 0, 0), { x: 1, y: 0, z: 0 }, 0.5, dt);
+		const result = bridge.update(
+			0,
+			makePropState(1, 0, 0),
+			{ x: 1, y: 0, z: 0 },
+			0.5,
+			dt
+		);
 
 		const tip = result.tips[0];
 		const jerkMag = Math.sqrt(
-			tip.jerk.x ** 2 + tip.jerk.y ** 2 + tip.jerk.z ** 2,
+			tip.jerk.x ** 2 + tip.jerk.y ** 2 + tip.jerk.z ** 2
 		);
 		expect(jerkMag).toBeGreaterThan(0);
 	});
@@ -115,11 +195,23 @@ describe("TipPositionBridge3D", () => {
 	it("resets history", () => {
 		const bridge = new TipPositionBridge3D();
 		bridge.update(0, makePropState(0, 0, 0), { x: 0, y: 0, z: 0 }, 0.5, 1 / 60);
-		bridge.update(0, makePropState(10, 0, 0), { x: 10, y: 0, z: 0 }, 0.5, 1 / 60);
+		bridge.update(
+			0,
+			makePropState(10, 0, 0),
+			{ x: 10, y: 0, z: 0 },
+			0.5,
+			1 / 60
+		);
 		bridge.reset();
 
 		// After reset, should be like first frame again
-		const result = bridge.update(0, makePropState(0, 0, 0), { x: 0, y: 0, z: 0 }, 0.5, 1 / 60);
+		const result = bridge.update(
+			0,
+			makePropState(0, 0, 0),
+			{ x: 0, y: 0, z: 0 },
+			0.5,
+			1 / 60
+		);
 		expect(result.tips[0].speed).toBe(0);
 		expect(result.tips[1].speed).toBe(0);
 	});
@@ -134,7 +226,13 @@ describe("TipPositionBridge3D", () => {
 		bridge.update(1, makePropState(0, 0, 0), origin, 0.5, dt);
 
 		bridge.update(0, makePropState(0, 0, 0), origin, 0.5, dt); // still stationary
-		const movingResult = bridge.update(1, makePropState(5, 0, 0), { x: 5, y: 0, z: 0 }, 0.5, dt);
+		const movingResult = bridge.update(
+			1,
+			makePropState(5, 0, 0),
+			{ x: 5, y: 0, z: 0 },
+			0.5,
+			dt
+		);
 
 		// Prop 1 should have velocity, prop 0 should not
 		const stationaryResult = bridge.update(
@@ -142,7 +240,7 @@ describe("TipPositionBridge3D", () => {
 			makePropState(0, 0, 0),
 			origin,
 			0.5,
-			dt,
+			dt
 		);
 		expect(stationaryResult.tips[0].speed).toBeCloseTo(0, 4);
 		expect(movingResult.tips[0].speed).toBeGreaterThan(0);

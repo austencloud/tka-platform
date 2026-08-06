@@ -14,12 +14,15 @@
    * (one plane and its mirror), which keeps the layered look affordable.
    */
   import { Canvas, T } from "@threlte/core";
+  import { page } from "$app/state";
   import { WebGLRenderer } from "three";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import EffectGridScene from "./EffectGridScene.svelte";
+  import PerfProbe from "./PerfProbe.svelte";
+  import AnimalPresetReview from "../animal-presets/+page.svelte";
   import { EFFECT_CELLS } from "./effect-grid";
 
   /**
@@ -37,6 +40,23 @@
   let playing = $state(true);
   let showLabels = $state(true);
   let centerPlanes = $state(2);
+  let viewportWidth = $state(1920);
+  let viewportHeight = $state(1080);
+
+  // Portrait canvases need more camera distance to keep the outer grid
+  // columns in frame. Landscape and desktop preserve the original shot.
+  const portraitDistanceScale = $derived(
+    Math.max(
+      1,
+      Math.min(2.5, 1 + (viewportHeight / viewportWidth - 1) * 1.8),
+    ),
+  );
+  const cameraPosition = $derived(
+    [0, 23 * portraitDistanceScale, 14 * portraitDistanceScale] as const,
+  );
+  const animalPresetMode = $derived(
+    page.url.searchParams.get("view") === "animal-presets",
+  );
 
   const boolOptions = [
     { value: true, label: "On" },
@@ -50,7 +70,11 @@
 </script>
 
 <svelte:head><title>Effect grid — all sixteen</title></svelte:head>
+<svelte:window bind:innerWidth={viewportWidth} bind:innerHeight={viewportHeight} />
 
+{#if animalPresetMode}
+  <AnimalPresetReview />
+{:else}
 <div class="harness">
   <header>
     <h1>Effect grid</h1>
@@ -74,9 +98,10 @@
       <!-- Framed to fill the stage with the 4x4: high enough that the rows read
            as a grid rather than a receding line, close enough that no cell is
            a speck. The grid spans 3 * GRID_SPACING in both axes. -->
-      <T.PerspectiveCamera makeDefault position={[0, 23, 14]} fov={50}>
+      <T.PerspectiveCamera makeDefault position={cameraPosition} fov={50}>
         <OrbitControls enableDamping target={[0, 0.6, 1]} maxPolarAngle={Math.PI / 2} />
       </T.PerspectiveCamera>
+      <PerfProbe />
       <EffectGridScene {showProps} {playing} {showLabels} {centerPlanes} />
     </Canvas>
   </section>
@@ -132,6 +157,7 @@
     {/each}
   </ol>
 </div>
+{/if}
 
 <style>
   /* Local type ramp. The site-wide lockstep ramp in app.css is scoped to

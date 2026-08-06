@@ -2,6 +2,7 @@
   import CovenStation from "$lib/features/coven-hub/components/CovenStation.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
   import { MUSEUM_EXHIBIT_SEQUENCES } from "../../data/museum-exhibit-sequences";
 
   interface Props {
@@ -10,6 +11,8 @@
     worldZ: number;
     sequenceId?: string;
     autoPlay?: boolean;
+    /** Animate at full detail only while the visitor is in this room. */
+    active?: boolean;
     presentation?: "ritual" | "sculpture";
     scale?: number;
     /**
@@ -20,6 +23,8 @@
     userSequenceDataMap?: Map<string, SequenceData>;
     /** Override the presentation's default effect (elemental motif work). */
     effectId?: string | null;
+    /** Optional per-tip assignment for isolated comparison and authored installations. */
+    tipEffectMap?: TipEffectMap;
     /** Hide the centre staffs and leave only the effect trace. */
     showProps?: boolean;
     /** Cap the overlaid centre rigs. See CovenStation.centerPlanes. */
@@ -50,7 +55,9 @@
   worldZ={props.worldZ}
   {sequence}
   effectId={props.effectId ?? (props.presentation === "sculpture" ? "trails" : "led")}
-  autoPlay={props.autoPlay ?? true}
+  tipEffectMap={props.tipEffectMap}
+  autoPlay={(props.autoPlay ?? true) && props.active !== false}
+  lod={props.active === false ? "frozen" : "hero"}
   presentation={props.presentation}
   scale={props.scale}
   showProps={props.showProps ?? true}

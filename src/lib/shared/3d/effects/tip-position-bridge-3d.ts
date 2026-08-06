@@ -20,7 +20,7 @@ export interface TrailSource3D {
 export function resolveTrailSources3D(
 	trackingMode: TrackingMode,
 	tips: readonly TipPositionData3D[],
-	propCenter: { x: number; y: number; z: number },
+	propCenter: { x: number; y: number; z: number }
 ): TrailSource3D[] {
 	const leftTip = tips[0];
 	const rightTip = tips[1];
@@ -91,6 +91,24 @@ export interface PropState3DLike {
 	centerPathAngle: number;
 }
 
+/**
+ * Places a prop in the EffectsGroup coordinate frame used by PerformerRig.
+ *
+ * The live mesh sits below a hand anchor, so reading worldPosition alone
+ * pulls an effect back toward the avatar. Every prop-center effect must add
+ * the same hand offset before it is rendered beside the live prop.
+ */
+export function resolveRigLocalPropCenter3D(
+	propPosition: { x: number; y: number; z: number },
+	handAnchor: { x: number; z: number }
+): { x: number; y: number; z: number } {
+	return {
+		x: handAnchor.x + propPosition.x,
+		y: propPosition.y,
+		z: handAnchor.z + propPosition.z,
+	};
+}
+
 interface TipHistory {
 	prevPosition: Vector3;
 	prevVelocity: Vector3;
@@ -121,9 +139,13 @@ export class TipPositionBridge3D {
 		propState: PropState3DLike,
 		rigLocalCenter: { x: number; y: number; z: number },
 		staffHalfLength: number,
-		deltaTime: number,
+		deltaTime: number
 	): PropTipPositions3D {
-		const center = new Vector3(rigLocalCenter.x, rigLocalCenter.y, rigLocalCenter.z);
+		const center = new Vector3(
+			rigLocalCenter.x,
+			rigLocalCenter.y,
+			rigLocalCenter.z
+		);
 
 		// Staff axis in rig-local space: worldRotation × horizontalQuat.
 		// No facing rotation needed - the rig's T.Group rotation.y handles that.
@@ -131,10 +153,10 @@ export class TipPositionBridge3D {
 			propState.worldRotation.x,
 			propState.worldRotation.y,
 			propState.worldRotation.z,
-			propState.worldRotation.w,
+			propState.worldRotation.w
 		);
 		const horizontalQuat = this.tempQuat.setFromEuler(
-			new Euler(0, 0, Math.PI / 2),
+			new Euler(0, 0, Math.PI / 2)
 		);
 		const finalQuat = rotation.multiply(horizontalQuat);
 		this.tempAxis.set(0, 1, 0).applyQuaternion(finalQuat);
@@ -165,7 +187,7 @@ export class TipPositionBridge3D {
 		propIndex: number,
 		tipIndex: number,
 		position: Vector3,
-		deltaTime: number,
+		deltaTime: number
 	): TipPositionData3D {
 		const key = `${propIndex}-${tipIndex}`;
 		let hist = this.history.get(key);
@@ -191,10 +213,7 @@ export class TipPositionBridge3D {
 			.clone()
 			.sub(hist.prevPosition)
 			.multiplyScalar(invDt);
-		const jerk = velocity
-			.clone()
-			.sub(hist.prevVelocity)
-			.multiplyScalar(invDt);
+		const jerk = velocity.clone().sub(hist.prevVelocity).multiplyScalar(invDt);
 		const speed = velocity.length();
 
 		hist.prevPosition.copy(position);

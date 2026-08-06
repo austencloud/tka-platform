@@ -2,13 +2,17 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const ORCHESTRATOR = resolve("src/lib/shared/3d/effects/EffectOrchestrator3D.svelte");
+const ORCHESTRATOR = resolve(
+  "src/lib/shared/3d/effects/EffectOrchestrator3D.svelte"
+);
 
 describe("EffectOrchestrator3D mounts EffectsLayer", () => {
   const source = readFileSync(ORCHESTRATOR, "utf8");
 
   it("imports EffectsLayer", () => {
-    expect(source).toMatch(/import\s+EffectsLayer\s+from\s+"\.\/EffectsLayer\.svelte"/);
+    expect(source).toMatch(
+      /import\s+EffectsLayer\s+from\s+"\.\/EffectsLayer\.svelte"/
+    );
   });
 
   it("renders EffectsLayer in its template", () => {
@@ -17,9 +21,27 @@ describe("EffectOrchestrator3D mounts EffectsLayer", () => {
 
   it("passes the prop states EffectsLayer needs", () => {
     const tag = source.slice(source.indexOf("<EffectsLayer"));
-    for (const prop of ["bluePropState", "redPropState", "isPlaying", "staffLength", "currentStep"]) {
+    for (const prop of [
+      "bluePropState",
+      "redPropState",
+      "isPlaying",
+      "staffLength",
+      "currentStep",
+    ]) {
       expect(tag).toContain(prop);
     }
+  });
+
+  it("passes rig-local tip motion instead of letting the layer track prop centers", () => {
+    const tag = source.slice(source.indexOf("<EffectsLayer"));
+    expect(tag).toContain("blueTipData");
+    expect(tag).toContain("redTipData");
+  });
+
+  it("passes both hand anchors so Ghost captures the live prop centers", () => {
+    const tag = source.slice(source.indexOf("<EffectsLayer"));
+    expect(tag).toContain("blueHandPos");
+    expect(tag).toContain("redHandPos");
   });
 });
 
@@ -51,13 +73,29 @@ describe("EffectsLayer follows the 3D effect selection, not the 2D one", () => {
   });
 
   it("is handed the orchestrator's resolved effects", () => {
-    const tag = orchestratorSource.slice(orchestratorSource.indexOf("<EffectsLayer"));
+    const tag = orchestratorSource.slice(
+      orchestratorSource.indexOf("<EffectsLayer")
+    );
     expect(tag).toContain("activeEffects");
+  });
+
+  it("does not share the process-wide legacy motion history", () => {
+    expect(layerSource).not.toContain("getEffectState");
+    expect(layerSource).not.toContain("updatePositions(");
+  });
+
+  it("forwards each hand anchor to its matching Ghost renderer", () => {
+    expect(layerSource).toMatch(
+      /propState=\{bluePropState\}[\s\S]*?handAnchor=\{blueHandPos\}/
+    );
+    expect(layerSource).toMatch(
+      /propState=\{redPropState\}[\s\S]*?handAnchor=\{redHandPos\}/
+    );
   });
 
   it("resolves those from the same maps the imperative renderers use", () => {
     expect(orchestratorSource).toMatch(
-      /resolveEffect\(\s*propIndex!?,\s*tipIndex!?,\s*tipEffectMap,\s*globalTipEffectMap/,
+      /resolveEffect\(\s*propIndex!?,\s*tipIndex!?,\s*tipEffectMap,\s*globalTipEffectMap/
     );
   });
 });

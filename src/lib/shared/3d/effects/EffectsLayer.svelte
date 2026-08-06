@@ -10,14 +10,21 @@
    */
 
   import { Vector3, Quaternion, Euler } from "three";
-  import { useTask } from "@threlte/core";
   import type { PropState3D } from "@austencloud/scene-3d";
-  import { getEffectState } from "./state/effect-state.svelte";
   import { getEffectsConfigContext as getUnifiedEffectsState } from "$lib/shared/effects/state/effects-config-context";
   import { getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
-  import { resolveGhost3D, resolveSparkles3D, resolveZap3D, resolveGoo3D, resolveBubbles3D, resolvePetals3D, resolveSmoke3D } from "$lib/shared/effects/translators/webgl3d-translator";
+  import {
+    resolveGhost3D,
+    resolveSparkles3D,
+    resolveZap3D,
+    resolveGoo3D,
+    resolveBubbles3D,
+    resolvePetals3D,
+    resolveSmoke3D,
+  } from "$lib/shared/effects/translators/webgl3d-translator";
   import { AUSTEN_STAFF } from "@austencloud/scene-3d";
   import type { EffectType } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
+  import type { TipPositionData3D } from "./types";
 
   // Effect components
   // Trails are no longer mounted here. The single consolidated 3D trail
@@ -64,6 +71,14 @@
      * while the 3D picker said LED — gooey LEDs.
      */
     activeEffects?: readonly EffectType[];
+    /** Hand-anchor offsets applied by PerformerRig before the live props. */
+    blueHandPos: { x: number; z: number };
+    redHandPos: { x: number; z: number };
+    /** Rig-local tips and metres/second velocities from TipPositionBridge3D. */
+    blueTipData?: readonly TipPositionData3D[];
+    redTipData?: readonly TipPositionData3D[];
+    /** A scene coordinator owns the five particle effects when present. */
+    pooledEffectsManaged?: boolean;
     /** Current animation step index (fractional). Used by Ghost (GhostStaff3D)
      *  to detect beat onsets and age phantoms. Default 0 when a parent
      *  hasn't plumbed it yet - Ghost stays silent rather than capturing a
@@ -77,11 +92,14 @@
     isPlaying,
     staffLength = AUSTEN_STAFF.length,
     activeEffects = [],
+    blueHandPos,
+    redHandPos,
+    blueTipData = [],
+    redTipData = [],
+    pooledEffectsManaged = false,
     currentStep = 0,
   }: Props = $props();
 
-  // Get state instances
-  const effectState = getEffectState();
   const unifiedState = getUnifiedEffectsState();
   const scene3DRender = getScene3DRenderContext();
 
@@ -101,68 +119,68 @@
       : new Set<string>(
           unifiedState?.config.tipEffectMap["*"]?.effect
             ? [unifiedState.config.tipEffectMap["*"].effect]
-            : [],
-        ),
+            : []
+        )
   );
   const isActive = (id: string) => activeSet.has(id);
   const zap3D = $derived(unifiedState ? resolveZap3D(unifiedState.zap) : null);
-  const zapEnabled = $derived(
-    isActive("zap"),
+  const zapEnabled = $derived(isActive("zap"));
+  const sparkles3D = $derived(
+    unifiedState ? resolveSparkles3D(unifiedState.sparkles) : null
   );
-  const sparkles3D = $derived(unifiedState ? resolveSparkles3D(unifiedState.sparkles) : null);
-  const sparklesEnabled = $derived(
-    isActive("sparkles"),
+  const sparklesEnabled = $derived(isActive("sparkles"));
+  const ghost3D = $derived(
+    unifiedState ? resolveGhost3D(unifiedState.ghost) : null
   );
-  const ghost3D = $derived(unifiedState ? resolveGhost3D(unifiedState.ghost) : null);
-  const ghostEnabled = $derived(
-    isActive("ghost"),
-  );
+  const ghostEnabled = $derived(isActive("ghost"));
   const bloomIntent = $derived(unifiedState?.bloom ?? null);
-  const bloomEnabled = $derived(
-    isActive("bloom"),
-  );
+  const bloomEnabled = $derived(isActive("bloom"));
   const bloomBlueColor = $derived(unifiedState?.trails.blueColor ?? "#3b82f6");
   const bloomRedColor = $derived(unifiedState?.trails.redColor ?? "#ef4444");
   // 3D goo currently renders via the legacy WaterEmitter3D particle system; a dedicated 3D goo renderer is a follow-up.
   const goo3D = $derived(unifiedState ? resolveGoo3D(unifiedState.goo) : null);
-  const gooEnabled = $derived(
-    isActive("goo"),
-  );
+  const gooEnabled = $derived(isActive("goo"));
   const gooShowLeftEnd = $derived(
-    goo3D?.trackingMode === "left_end" || goo3D?.trackingMode === "both_ends",
+    goo3D?.trackingMode === "left_end" || goo3D?.trackingMode === "both_ends"
   );
   const gooShowRightEnd = $derived(
-    goo3D?.trackingMode === "right_end" || goo3D?.trackingMode === "both_ends",
+    goo3D?.trackingMode === "right_end" || goo3D?.trackingMode === "both_ends"
   );
-  const bubbles3D = $derived(unifiedState ? resolveBubbles3D(unifiedState.bubbles) : null);
-  const bubblesEnabled = $derived(
-    isActive("bubbles"),
+  const bubbles3D = $derived(
+    unifiedState ? resolveBubbles3D(unifiedState.bubbles) : null
   );
+  const bubblesEnabled = $derived(isActive("bubbles"));
   const bubblesShowLeftEnd = $derived(
-    bubbles3D?.trackingMode === "left_end" || bubbles3D?.trackingMode === "both_ends",
+    bubbles3D?.trackingMode === "left_end" ||
+      bubbles3D?.trackingMode === "both_ends"
   );
   const bubblesShowRightEnd = $derived(
-    bubbles3D?.trackingMode === "right_end" || bubbles3D?.trackingMode === "both_ends",
+    bubbles3D?.trackingMode === "right_end" ||
+      bubbles3D?.trackingMode === "both_ends"
   );
-  const petals3D = $derived(unifiedState ? resolvePetals3D(unifiedState.petals) : null);
-  const petalsEnabled = $derived(
-    isActive("petals"),
+  const petals3D = $derived(
+    unifiedState ? resolvePetals3D(unifiedState.petals) : null
   );
+  const petalsEnabled = $derived(isActive("petals"));
   const petalsShowLeftEnd = $derived(
-    petals3D?.trackingMode === "left_end" || petals3D?.trackingMode === "both_ends",
+    petals3D?.trackingMode === "left_end" ||
+      petals3D?.trackingMode === "both_ends"
   );
   const petalsShowRightEnd = $derived(
-    petals3D?.trackingMode === "right_end" || petals3D?.trackingMode === "both_ends",
+    petals3D?.trackingMode === "right_end" ||
+      petals3D?.trackingMode === "both_ends"
   );
-  const smoke3D = $derived(unifiedState ? resolveSmoke3D(unifiedState.smoke) : null);
-  const smokeEnabled = $derived(
-    isActive("smoke"),
+  const smoke3D = $derived(
+    unifiedState ? resolveSmoke3D(unifiedState.smoke) : null
   );
+  const smokeEnabled = $derived(isActive("smoke"));
   const smokeShowLeftEnd = $derived(
-    smoke3D?.trackingMode === "left_end" || smoke3D?.trackingMode === "both_ends",
+    smoke3D?.trackingMode === "left_end" ||
+      smoke3D?.trackingMode === "both_ends"
   );
   const smokeShowRightEnd = $derived(
-    smoke3D?.trackingMode === "right_end" || smoke3D?.trackingMode === "both_ends",
+    smoke3D?.trackingMode === "right_end" ||
+      smoke3D?.trackingMode === "both_ends"
   );
   /**
    * Pick the phantom color for the Ghost effect. Ghost is prop-matched: each
@@ -171,8 +189,8 @@
   function pickGhostColor(whichProp: "blue" | "red"): string {
     const trails = unifiedState?.trails;
     return whichProp === "blue"
-      ? trails?.blueColor ?? "#3b82f6"
-      : trails?.redColor ?? "#ef4444";
+      ? (trails?.blueColor ?? "#3b82f6")
+      : (trails?.redColor ?? "#ef4444");
   }
 
   function pickSparkleColor(i: number): string {
@@ -228,64 +246,45 @@
 
   // Derived prop end positions
   const blueEnds = $derived.by(() => {
+    if (blueTipData.length >= 2) {
+      return {
+        positive: vectorFrom(blueTipData[1]!.position),
+        negative: vectorFrom(blueTipData[0]!.position),
+      };
+    }
     if (!bluePropState) return null;
     return calculatePropEnds(bluePropState);
   });
 
   const redEnds = $derived.by(() => {
+    if (redTipData.length >= 2) {
+      return {
+        positive: vectorFrom(redTipData[1]!.position),
+        negative: vectorFrom(redTipData[0]!.position),
+      };
+    }
     if (!redPropState) return null;
     return calculatePropEnds(redPropState);
   });
+
+  function vectorFrom(
+    value: { x: number; y: number; z: number } | undefined
+  ): Vector3 {
+    return value ? new Vector3(value.x, value.y, value.z) : new Vector3();
+  }
 
   // Blue prop center for trail/motion effects
   const blueCenter = $derived(bluePropState?.worldPosition ?? null);
   const redCenter = $derived(redPropState?.worldPosition ?? null);
 
-  // =============================================================================
-  // Position History Updates
-  // =============================================================================
-
-  // Update position history each frame when playing
-  useTask(() => {
-    if (!isPlaying) return;
-
-    effectState.updatePositions(
-      bluePropState?.worldPosition ?? null,
-      redPropState?.worldPosition ?? null
-    );
-  });
-
-  // Clear history when not playing or prop states change significantly
-  $effect(() => {
-    if (!isPlaying) {
-      effectState.clear();
-    }
-  });
-
-  // =============================================================================
-  // Derived Effect States
-  // =============================================================================
-
-  // Velocities for velocity-reactive effects
-  const blueVelocity = $derived(effectState.getVelocity("blue"));
-  const redVelocity = $derived(effectState.getVelocity("red"));
-
-  // Velocity as Vector3 for fire emitter (approximated from position changes)
-  const blueVelocityVec = $derived.by(() => {
-    const history = effectState.getTrailPoints("blue", 2);
-    if (history.length < 2) return new Vector3(0, 0, 0);
-    const curr = history[0]!.position;
-    const prev = history[1]!.position;
-    return curr.clone().sub(prev);
-  });
-
-  const redVelocityVec = $derived.by(() => {
-    const history = effectState.getTrailPoints("red", 2);
-    if (history.length < 2) return new Vector3(0, 0, 0);
-    const curr = history[0]!.position;
-    const prev = history[1]!.position;
-    return curr.clone().sub(prev);
-  });
+  const bluePositiveVelocityVec = $derived(
+    vectorFrom(blueTipData[1]?.velocity)
+  );
+  const blueNegativeVelocityVec = $derived(
+    vectorFrom(blueTipData[0]?.velocity)
+  );
+  const redPositiveVelocityVec = $derived(vectorFrom(redTipData[1]?.velocity));
+  const redNegativeVelocityVec = $derived(vectorFrom(redTipData[0]?.velocity));
 </script>
 
 <!-- Trails render via EffectOrchestrator3D (Trail3D ribbon) in the rig's
@@ -299,7 +298,7 @@
 <!-- =============================================================================
      Sparkle Effects (on prop ends)
      ============================================================================= -->
-{#if sparklesEnabled && sparkles3D && isPlaying}
+{#if !pooledEffectsManaged && sparklesEnabled && sparkles3D && isPlaying}
   <!-- worldSpread / baseRadius / worldGravity, never the raw intent values:
        intent.spread is 2D canvas pixels and reading it as metres is what put
        7-metre sparkles on a 0.86m staff. -->
@@ -424,8 +423,9 @@
     decay={ghost3D.decay}
     interval={ghost3D.interval}
     color={pickGhostColor("blue")}
-    staffLength={staffLength}
-    currentStep={currentStep}
+    {staffLength}
+    handAnchor={blueHandPos}
+    {currentStep}
     shape="staff"
   />
   <GhostStaff3D
@@ -435,8 +435,9 @@
     decay={ghost3D.decay}
     interval={ghost3D.interval}
     color={pickGhostColor("red")}
-    staffLength={staffLength}
-    currentStep={currentStep}
+    {staffLength}
+    handAnchor={redHandPos}
+    {currentStep}
     shape="staff"
   />
 {/if}
@@ -490,11 +491,11 @@
      reactive emission. Later sub-phases add stream ribbon / metaballs /
      puddles / refraction.
      ============================================================================= -->
-{#if gooEnabled && goo3D && isPlaying}
+{#if !pooledEffectsManaged && gooEnabled && goo3D && isPlaying}
   {#if blueEnds && gooShowRightEnd}
     <WaterEmitter3D
       position={blueEnds.positive}
-      propVelocity={blueVelocityVec}
+      propVelocity={bluePositiveVelocityVec}
       params={goo3D}
       enabled={true}
     />
@@ -502,7 +503,7 @@
   {#if blueEnds && gooShowLeftEnd}
     <WaterEmitter3D
       position={blueEnds.negative}
-      propVelocity={blueVelocityVec}
+      propVelocity={blueNegativeVelocityVec}
       params={goo3D}
       enabled={true}
     />
@@ -510,7 +511,7 @@
   {#if redEnds && gooShowRightEnd}
     <WaterEmitter3D
       position={redEnds.positive}
-      propVelocity={redVelocityVec}
+      propVelocity={redPositiveVelocityVec}
       params={goo3D}
       enabled={true}
     />
@@ -518,7 +519,7 @@
   {#if redEnds && gooShowLeftEnd}
     <WaterEmitter3D
       position={redEnds.negative}
-      propVelocity={redVelocityVec}
+      propVelocity={redNegativeVelocityVec}
       params={goo3D}
       enabled={true}
     />
@@ -530,11 +531,11 @@
      emission. Bubbles rise (+y) and grow over lifetime before popping on
      timeout or max-size.
      ============================================================================= -->
-{#if bubblesEnabled && bubbles3D && isPlaying}
+{#if !pooledEffectsManaged && bubblesEnabled && bubbles3D && isPlaying}
   {#if blueEnds && bubblesShowRightEnd}
     <BubbleEmitter3D
       position={blueEnds.positive}
-      propVelocity={blueVelocityVec}
+      propVelocity={bluePositiveVelocityVec}
       params={bubbles3D}
       enabled={true}
     />
@@ -542,7 +543,7 @@
   {#if blueEnds && bubblesShowLeftEnd}
     <BubbleEmitter3D
       position={blueEnds.negative}
-      propVelocity={blueVelocityVec}
+      propVelocity={blueNegativeVelocityVec}
       params={bubbles3D}
       enabled={true}
     />
@@ -550,7 +551,7 @@
   {#if redEnds && bubblesShowRightEnd}
     <BubbleEmitter3D
       position={redEnds.positive}
-      propVelocity={redVelocityVec}
+      propVelocity={redPositiveVelocityVec}
       params={bubbles3D}
       enabled={true}
     />
@@ -558,7 +559,7 @@
   {#if redEnds && bubblesShowLeftEnd}
     <BubbleEmitter3D
       position={redEnds.negative}
-      propVelocity={redVelocityVec}
+      propVelocity={redNegativeVelocityVec}
       params={bubbles3D}
       enabled={true}
     />
@@ -569,12 +570,12 @@
      Petals: dual-source emission. Per-tip motion bursts (4 emitters) + one
      scene-wide ambient ceiling shower that rains petals from above.
      ============================================================================= -->
-{#if petalsEnabled && petals3D && isPlaying}
+{#if !pooledEffectsManaged && petalsEnabled && petals3D && isPlaying}
   <PetalAmbientShower3D params={petals3D} enabled={true} />
   {#if blueEnds && petalsShowRightEnd}
     <PetalEmitter3D
       position={blueEnds.positive}
-      propVelocity={blueVelocityVec}
+      propVelocity={bluePositiveVelocityVec}
       params={petals3D}
       enabled={true}
     />
@@ -582,7 +583,7 @@
   {#if blueEnds && petalsShowLeftEnd}
     <PetalEmitter3D
       position={blueEnds.negative}
-      propVelocity={blueVelocityVec}
+      propVelocity={blueNegativeVelocityVec}
       params={petals3D}
       enabled={true}
     />
@@ -590,7 +591,7 @@
   {#if redEnds && petalsShowRightEnd}
     <PetalEmitter3D
       position={redEnds.positive}
-      propVelocity={redVelocityVec}
+      propVelocity={redPositiveVelocityVec}
       params={petals3D}
       enabled={true}
     />
@@ -598,7 +599,7 @@
   {#if redEnds && petalsShowLeftEnd}
     <PetalEmitter3D
       position={redEnds.negative}
-      propVelocity={redVelocityVec}
+      propVelocity={redNegativeVelocityVec}
       params={petals3D}
       enabled={true}
     />
@@ -610,11 +611,11 @@
      a 256-particle pool; palette carries lifetime + curl bias + rise bias.
      Sub-phases 1i.ii (blur) and 1i.iii (genie hue-shift) deferred.
      ============================================================================= -->
-{#if smokeEnabled && smoke3D && isPlaying}
+{#if !pooledEffectsManaged && smokeEnabled && smoke3D && isPlaying}
   {#if blueEnds && smokeShowRightEnd}
     <SmokeRenderer3D
       position={blueEnds.positive}
-      propVelocity={blueVelocityVec}
+      propVelocity={bluePositiveVelocityVec}
       params={smoke3D}
       enabled={true}
     />
@@ -622,7 +623,7 @@
   {#if blueEnds && smokeShowLeftEnd}
     <SmokeRenderer3D
       position={blueEnds.negative}
-      propVelocity={blueVelocityVec}
+      propVelocity={blueNegativeVelocityVec}
       params={smoke3D}
       enabled={true}
     />
@@ -630,7 +631,7 @@
   {#if redEnds && smokeShowRightEnd}
     <SmokeRenderer3D
       position={redEnds.positive}
-      propVelocity={redVelocityVec}
+      propVelocity={redPositiveVelocityVec}
       params={smoke3D}
       enabled={true}
     />
@@ -638,7 +639,7 @@
   {#if redEnds && smokeShowLeftEnd}
     <SmokeRenderer3D
       position={redEnds.negative}
-      propVelocity={redVelocityVec}
+      propVelocity={redNegativeVelocityVec}
       params={smoke3D}
       enabled={true}
     />

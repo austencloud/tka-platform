@@ -1,0 +1,104 @@
+import type {
+  Bubbles3DParams,
+  Goo3DParams,
+  Petals3DParams,
+  Smoke3DParams,
+  Sparkles3DParams,
+  Ink3DParams,
+  Silk3DParams,
+  Animal3DParams,
+  Pulse3DParams,
+} from "$lib/shared/effects/translators/webgl3d-types";
+
+export interface SceneEffectVector3 {
+  x: number;
+  y: number;
+  z: number;
+}
+
+interface SceneEffectTipBase3D {
+  /** Stable for the lifetime of one orchestrator tip. */
+  sourceId: number;
+  propIndex: 0 | 1;
+  tipIndex: 0 | 1;
+  position: SceneEffectVector3;
+  /** Metres per second, already scaled by the real frame delta. */
+  velocity: SceneEffectVector3;
+  speed: number;
+  /** Fractional animation step, used by beat-triggered scene effects. */
+  currentStep: number;
+  /** Canonical prop tint for prop-matched color modes. */
+  propColor: string;
+}
+
+export interface SparkleTipSource3D extends SceneEffectTipBase3D {
+  effect: "sparkles";
+  params: Sparkles3DParams;
+}
+
+export interface GooTipSource3D extends SceneEffectTipBase3D {
+  effect: "goo";
+  params: Goo3DParams;
+}
+
+export interface BubbleTipSource3D extends SceneEffectTipBase3D {
+  effect: "bubbles";
+  params: Bubbles3DParams;
+}
+
+export interface PetalTipSource3D extends SceneEffectTipBase3D {
+  effect: "petals";
+  params: Petals3DParams;
+}
+
+export interface SmokeTipSource3D extends SceneEffectTipBase3D {
+  effect: "smoke";
+  params: Smoke3DParams;
+}
+
+export interface InkTipSource3D extends SceneEffectTipBase3D {
+  effect: "ink";
+  params: Ink3DParams;
+}
+
+export interface SilkTipSource3D extends SceneEffectTipBase3D {
+  effect: "silk";
+  params: Silk3DParams;
+}
+
+export interface AnimalTipSource3D extends SceneEffectTipBase3D {
+  effect: "animal";
+  params: Animal3DParams;
+}
+
+export interface PulseTipSource3D extends SceneEffectTipBase3D {
+  effect: "pulse";
+  params: Pulse3DParams;
+}
+
+export type SceneEffectTipSource3D =
+  | SparkleTipSource3D
+  | GooTipSource3D
+  | BubbleTipSource3D
+  | PetalTipSource3D
+  | SmokeTipSource3D
+  | InkTipSource3D
+  | SilkTipSource3D
+  | AnimalTipSource3D
+  | PulseTipSource3D;
+
+export interface SceneEffectRigFrame3D {
+  playing: boolean;
+  sources: SceneEffectTipSource3D[];
+}
+
+export function isTrackedTip(
+  trackingMode: "left_end" | "right_end" | "both_ends",
+  tipIndex: 0 | 1
+): boolean {
+  return (
+    trackingMode === "both_ends" ||
+    (trackingMode === "left_end" && tipIndex === 0) ||
+    (trackingMode === "right_end" && tipIndex === 1)
+  );
+}

@@ -1,33 +1,53 @@
 import { describe, it, expect } from "vitest";
 import {
   EFFECT_CONTROLS,
-  EFFECTS_WITH_3D_RENDERER,
   primaryControls,
 } from "./effect-control-manifest";
 import { DEFAULT_EFFECTS_CONFIG } from "./defaults";
+import { EFFECTS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
 
 describe("effect-control-manifest", () => {
+  const crossStoreFields = new Set([
+    "tailLength",
+    "fireLeftHex",
+    "fireRightHex",
+  ]);
+
   it("every descriptor field exists on the effect's default intent", () => {
     for (const [effect, controls] of Object.entries(EFFECT_CONTROLS)) {
       const intent = (DEFAULT_EFFECTS_CONFIG as unknown as Record<string, Record<string, unknown>>)[effect];
       for (const c of controls) {
+        if (crossStoreFields.has(c.field)) continue;
         expect(intent, `${effect}.${c.field}`).toHaveProperty(c.field);
-        if (c.pairFields) for (const f of c.pairFields) expect(intent, `${effect}.${f}`).toHaveProperty(f);
+        if (c.pairFields) {
+          for (const f of c.pairFields) {
+            if (!crossStoreFields.has(f)) {
+              expect(intent, `${effect}.${f}`).toHaveProperty(f);
+            }
+          }
+        }
       }
     }
   });
 
-  it("every effect has a uniform Primary row (3-5 controls)", () => {
+  it("every effect has a uniform Primary row (3-6 controls)", () => {
     for (const [effect, controls] of Object.entries(EFFECT_CONTROLS)) {
-      const n = controls.filter((c) => c.tier === "primary").length;
+      const intent = (DEFAULT_EFFECTS_CONFIG as unknown as Record<
+        string,
+        Record<string, unknown>
+      >)[effect]!;
+      const n = controls.filter(
+        (c) => c.tier === "primary" && (!c.showWhen || c.showWhen(intent))
+      ).length;
       expect(n, effect).toBeGreaterThanOrEqual(3);
-      expect(n, effect).toBeLessThanOrEqual(5);
+      expect(n, effect).toBeLessThanOrEqual(6);
     }
   });
 
-  it("renderer-backed effects each expose a primary row", () => {
-    for (const effect of EFFECTS_WITH_3D_RENDERER) {
-      expect(primaryControls(effect).length, effect).toBeGreaterThanOrEqual(3);
+  it("every canonical effect exposes a shared primary row", () => {
+    for (const effect of EFFECTS) {
+      expect(primaryControls(effect.id as keyof typeof EFFECT_CONTROLS).length, effect.id)
+        .toBeGreaterThanOrEqual(3);
     }
   });
 
