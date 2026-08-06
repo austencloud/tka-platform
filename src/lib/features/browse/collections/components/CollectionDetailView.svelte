@@ -641,6 +641,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
       primaryLabel="Remove from this collection"
       primaryIcon="fa-folder-minus"
       onPrimaryAction={removeSelectedFromCollection}
+      primaryTone="danger"
       primaryBusy={removingSelected}
       secondaryLabel="Add to collection…"
       secondaryIcon="fa-folder-plus"

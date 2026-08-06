@@ -6,12 +6,15 @@
   select-all, clear, and exit behavior.
 -->
 <script lang="ts">
+  type PrimaryTone = "accent" | "danger";
+
   interface Props {
     selectedCount: number;
     totalCount: number;
     primaryLabel: string;
     primaryIcon: string;
     onPrimaryAction: () => void;
+    primaryTone?: PrimaryTone;
     secondaryLabel?: string;
     secondaryIcon?: string;
     onSecondaryAction?: () => void;
@@ -32,6 +35,7 @@
     primaryLabel,
     primaryIcon,
     onPrimaryAction,
+    primaryTone = "accent",
     secondaryLabel,
     secondaryIcon,
     onSecondaryAction,
@@ -55,6 +59,7 @@
 <div
   class="selection-toolbar"
   class:has-secondary={hasSecondary}
+  class:destructive-primary={primaryTone === "danger"}
   role="toolbar"
   aria-label="Selection actions"
 >
@@ -110,6 +115,7 @@
     <button
       type="button"
       class="toolbar-button primary-button"
+      class:danger-primary={primaryTone === "danger"}
       onclick={onPrimaryAction}
       disabled={selectedCount === 0 || actionsDisabled}
       aria-label={primaryLabel}
@@ -254,6 +260,28 @@
     color: var(--semantic-error, #ef4444);
   }
 
+  .primary-button.danger-primary {
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 14%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 52%,
+      transparent
+    );
+    color: var(--semantic-error, #ef4444);
+  }
+
+  /* When removal is the main action, permanent deletion carries the stronger
+     fill so the two red controls still communicate different consequences. */
+  .selection-toolbar.destructive-primary .danger-button {
+    background: var(--semantic-error, #ef4444);
+    border-color: var(--semantic-error, #ef4444);
+    color: var(--theme-text-on-accent, #fff);
+  }
+
   .toolbar-button:hover:not(:disabled) {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.24));
@@ -277,6 +305,28 @@
     );
   }
 
+  .primary-button.danger-primary:hover:not(:disabled) {
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 24%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 68%,
+      transparent
+    );
+  }
+
+  .selection-toolbar.destructive-primary .danger-button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--semantic-error, #ef4444) 86%, black);
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 86%,
+      black
+    );
+  }
+
   .toolbar-button:active:not(:disabled) {
     transform: scale(0.97);
   }
@@ -289,6 +339,11 @@
   .toolbar-button:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
+  }
+
+  .danger-primary:focus-visible,
+  .danger-button:focus-visible {
+    outline-color: var(--semantic-error, #ef4444);
   }
 
   @container gallery (max-width: 520px) {
