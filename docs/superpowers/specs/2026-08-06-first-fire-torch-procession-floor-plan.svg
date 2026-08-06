@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 620" role="img" aria-labelledby="title desc" data-plan-width-metres="60" data-plan-depth-metres="30" data-dj-centre="16.5,8.5" data-ek-centre="31.5,21.5" data-fl-centre="47,8.5">
+  <title id="title">First Fire Torch Procession proposed floor plan</title>
+  <desc id="desc">A sixty by thirty metre cave running west to east from Water to Earth. The route crosses a steam threshold and ember bridge, circles isolated DJ, EK, and FL shrines in an S-shaped procession, then turns green toward Earth. Alternating rock ribs prevent simultaneous performer sightlines.</desc>
+  <defs>
+    <style>
+      :root { color-scheme: light dark; }
+      .background { fill: #f2eee8; }
+      .room { fill: #e5ddd3; stroke: #3c3531; }
+      .grid { stroke: #b8aca1; }
+      .rock { fill: #645a54; stroke: #3c3531; }
+      .screen { fill: #d47831; fill-opacity: .42; stroke: #9f4f1e; }
+      .habitat { fill: #b35424; fill-opacity: .14; stroke: #9f4f1e; }
+      .trench { fill: none; stroke: #c9471b; }
+      .orbit { fill: none; stroke: #dd6c25; }
+      .steam { fill: none; stroke: #4f92aa; }
+      .bridge { fill: none; stroke: #a64f1f; }
+      .fire-route { fill: none; stroke: #d95c1e; }
+      .growth { fill: none; stroke: #4d8b48; }
+      .performer { fill: #2d2825; stroke: #f0e7dc; }
+      .label { fill: #2d2825; font: 500 15px system-ui, sans-serif; }
+      .small { fill: #5c514b; font: 400 12px system-ui, sans-serif; }
+      .measure { fill: #5c514b; font: 500 12px system-ui, sans-serif; }
+      @media (prefers-color-scheme: dark) {
+        .background { fill: #171311; }
+        .room { fill: #211c19; stroke: #b8aca1; }
+        .grid { stroke: #423936; }
+        .rock { fill: #504641; stroke: #8f8179; }
+        .screen { fill: #ff8a32; fill-opacity: .25; stroke: #ff9d51; }
+        .habitat { fill: #ff7133; fill-opacity: .12; stroke: #d96c35; }
+        .trench { stroke: #ff5c2b; }
+        .orbit { stroke: #ff964e; }
+        .steam { stroke: #87d8ef; }
+        .bridge { stroke: #ff7133; }
+        .fire-route { stroke: #ff843d; }
+        .growth { stroke: #84c878; }
+        .performer { fill: #f5ece3; stroke: #211c19; }
+        .label { fill: #f5ece3; }
+        .small, .measure { fill: #c8bbb2; }
+      }
+    </style>
+    <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+      <path class="grid" d="M 80 0 L 0 0 0 80" fill="none" stroke-width="1" />
+    </pattern>
+    <marker id="fire-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#d95c1e" />
+    </marker>
+    <marker id="growth-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#4d8b48" />
+    </marker>
+  </defs>
+
+  <rect class="background" width="1160" height="620" />
+  <rect class="room" x="80" y="50" width="960" height="480" stroke-width="3" />
+  <rect x="80" y="50" width="960" height="480" fill="url(#grid)" />
+
+  <text class="measure" x="560" y="35" text-anchor="middle">60 m</text>
+  <text class="measure" x="55" y="290" text-anchor="middle" transform="rotate(-90 55 290)">30 m</text>
+  <text class="label" x="36" y="286" text-anchor="middle">WATER</text>
+  <text class="label" x="1100" y="493" text-anchor="middle">EARTH</text>
+
+  <rect class="screen" x="248" y="106" width="16" height="171.2" stroke-width="2" />
+  <text class="small" x="256" y="96" text-anchor="middle">torch veil</text>
+
+  <rect class="rock" x="440" y="50" width="36.8" height="312" />
+  <rect class="rock" x="320" y="362" width="120" height="68.8" />
+  <rect class="rock" x="680" y="218" width="48" height="312" />
+  <rect class="rock" x="515.2" y="170" width="164.8" height="64" />
+
+  <g aria-label="DJ shrine">
+    <circle class="habitat" cx="344" cy="186" r="35.2" stroke-width="2" />
+    <circle class="trench" cx="344" cy="186" r="56" stroke-width="9" />
+    <path class="orbit" d="M269.8 205.9 A76.8 76.8 0 1 1 398.3 240.3" stroke-width="3" stroke-dasharray="8 5" />
+    <circle class="performer" cx="344" cy="186" r="8" stroke-width="2" />
+    <text class="label" x="344" y="160" text-anchor="middle">DJ</text>
+  </g>
+
+  <g aria-label="EK shrine">
+    <circle class="habitat" cx="584" cy="394" r="35.2" stroke-width="2" />
+    <circle class="trench" cx="584" cy="394" r="56" stroke-width="9" />
+    <path class="orbit" d="M509.8 374.1 A76.8 76.8 0 1 0 638.3 339.7" stroke-width="3" stroke-dasharray="8 5" />
+    <circle class="performer" cx="584" cy="394" r="8" stroke-width="2" />
+    <text class="label" x="584" y="368" text-anchor="middle">EK</text>
+  </g>
+
+  <g aria-label="FL shrine">
+    <circle class="habitat" cx="832" cy="186" r="35.2" stroke-width="2" />
+    <circle class="trench" cx="832" cy="186" r="56" stroke-width="9" />
+    <path class="orbit" d="M757.8 205.9 A76.8 76.8 0 1 1 886.3 240.3" stroke-width="3" stroke-dasharray="8 5" />
+    <circle class="performer" cx="832" cy="186" r="8" stroke-width="2" />
+    <text class="label" x="832" y="160" text-anchor="middle">FL</text>
+  </g>
+
+  <path class="steam" d="M80 290 L168 290" stroke-width="22" stroke-linecap="round" />
+  <path class="bridge" d="M168 290 L240 290" stroke-width="16" stroke-linecap="round" />
+  <path class="fire-route" d="M240 290 L240 298 L276.8 298 L269.8 205.9" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+  <path class="fire-route" d="M269.8 205.9 A76.8 76.8 0 1 1 398.3 240.3 L288 274 L288 453.2 L492.8 453.2 L509.8 374.1" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+  <path class="fire-route" d="M509.8 374.1 A76.8 76.8 0 1 0 638.3 339.7 L496 258 L496 146 L744 146 L757.8 205.9" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+  <path class="fire-route" d="M757.8 205.9 A76.8 76.8 0 1 1 886.3 240.3" stroke-width="7" fill="none" stroke-linecap="round" marker-end="url(#fire-arrow)" />
+  <path class="growth" d="M886.3 240.3 L936 258 L952 474 L1040 498" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#growth-arrow)" />
+
+  <g transform="translate(80 570)">
+    <line class="steam" x1="0" y1="0" x2="32" y2="0" stroke-width="8" /><text class="small" x="42" y="4">steam threshold</text>
+    <line class="fire-route" x1="180" y1="0" x2="212" y2="0" stroke-width="5" /><text class="small" x="222" y="4">torch procession</text>
+    <circle class="trench" cx="398" cy="0" r="12" stroke-width="5" /><text class="small" x="420" y="4">fire trench</text>
+    <rect class="rock" x="542" y="-10" width="20" height="20" /><text class="small" x="572" y="4">sightline rib</text>
+    <line class="growth" x1="704" y1="0" x2="736" y2="0" stroke-width="6" /><text class="small" x="746" y="4">post-extinction growth</text>
+  </g>
+  <text class="small" x="1080" y="596" text-anchor="end">5 m grid · north is up · proposed, not yet in the 3D scene</text>
+</svg>

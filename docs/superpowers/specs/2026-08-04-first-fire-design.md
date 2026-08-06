@@ -1,14 +1,19 @@
 ---
-status: active
+status: archived
 value: 4
 effort: L
-remaining: 'Design approved by Austen 2026-08-04 ("let's build it"). Graybox build dispatching to one Opus executor; eye-level gate after.'
+remaining: 'Superseded on 2026-08-06 by the approved Torch Procession redesign. The shared amphitheater is no longer the design target.'
 depends_on: 'docs/superpowers/specs/2026-08-03-vulcan-cave-fire-room-handoff.md'
 plan_path: 'docs/superpowers/plans/2026-08-04-first-fire-graybox.md'
+superseded_by: 'docs/superpowers/specs/2026-08-06-first-fire-torch-procession-design.md'
 tags: [museum, fire-room, first-fire, design]
-last_triaged: 2026-08-04
+last_triaged: 2026-08-06
 ---
 # The First Fire — Vulcan Cave Fire Room Design
+
+> **Superseded 2026-08-06:** The approved Torch Procession redesign replaces
+> the shared amphitheater as the target. This file remains as historical
+> implementation context until the replacement is built.
 
 Approved by Austen 2026-08-04 from the concept sheet
 `static/sketches/2026-08-04-fire-room-floor-plans.html` (Plan C "The First Fire"
