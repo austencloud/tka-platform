@@ -426,16 +426,34 @@ export function buildSundialLayout(grid: MuseumGrid): SundialLayout | null {
   // door is the one the design deletes with the eye lift; until then it is the
   // only route to Moon, so it gets a real walk like any other door.
   const APPROACH_HALF_WIDTH = 3.0;
+  /**
+   * How far the chamber's edge stands from the centre along one axis, at an
+   * offset of `across` along the other — the half-chord, not the radius.
+   *
+   * An approach that stopped at `centre ± chamberRadius` only touches the
+   * chamber when its door sits on that axis. Move the door off-axis and the
+   * approach stops short of the round wall, leaving a blocked gap between the
+   * doorway and the room with nothing to see: the museum-wide walk had the Sun
+   * connected to the Moon by a corridor nobody could reach, because the east
+   * door landed 10.75 m off the chamber's equator on a 12 m radius.
+   */
+  const halfChord = (across: number) =>
+    Math.sqrt(Math.max(chamberRadius * chamberRadius - across * across, 0));
+
   const northApproach: WorldRect = {
     minX: northDoorX - APPROACH_HALF_WIDTH,
     maxX: northDoorX + APPROACH_HALF_WIDTH,
-    minZ: interior.minZ,
-    maxZ: centre.z - chamberRadius + 0.5,
+    // To the SHELL, not the interior: a door tile sits ON the wall line, half a
+    // tile outside `interior`, so an approach that stopped at the interior left
+    // the doorway itself blocked — the corridor arrives, the door is stamped,
+    // and the one tile joining them says no.
+    minZ: shell.minZ - TILE,
+    maxZ: centre.z - halfChord(northDoorX - centre.x) + 0.5,
   };
   const eastDoorZ = (eastDoor.min + eastDoor.max) / 2;
   const eastApproach: WorldRect = {
-    minX: centre.x + chamberRadius - 0.5,
-    maxX: interior.maxX,
+    minX: centre.x + halfChord(eastDoorZ - centre.z) - 0.5,
+    maxX: shell.maxX + TILE,
     minZ: eastDoorZ - APPROACH_HALF_WIDTH,
     maxZ: eastDoorZ + APPROACH_HALF_WIDTH,
   };
@@ -597,7 +615,7 @@ export function buildSundialLayout(grid: MuseumGrid): SundialLayout | null {
     z <= centre.z - chamberRadius &&
     x >= interior.minX &&
     x <= interior.maxX &&
-    z >= interior.minZ;
+    z >= shell.minZ - TILE;
 
   function blockedAt(x: number, z: number): boolean {
     if (inCorridor(x, z) || inApproach(x, z) || inCrack(x, z)) return false;

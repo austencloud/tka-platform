@@ -378,8 +378,13 @@ export function buildMoonLayout(grid: MuseumGrid): MoonLayout | null {
     // The plain is round; the corners of the rectangular bay are rock. The
     // doors are the exception — their approaches cross that band.
     if (polarR(x, z) <= walkRadius) return false;
+    // The band runs to the SHELL, not the interior. A door tile sits ON the
+    // wall line, half a tile outside `interior`, so a band that stopped at the
+    // interior blocked the doorway itself: the corridor arrived, the door was
+    // stamped, and the one tile joining them said no. That is what cut the Moon
+    // out of the museum walk, and it was invisible from the plan.
     return !inRectClosed(
-      { minX: interior.minX, maxX: interior.maxX, ...doorBand },
+      { minX: shell.minX - TILE, maxX: shell.maxX + TILE, ...doorBand },
       x,
       z
     );

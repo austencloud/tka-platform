@@ -1,6 +1,15 @@
 <script lang="ts">
   import { buildMuseumGrid } from "./services/museum-grid-builder";
-  import { MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG } from "./data/museum-room-graph";
+  import { GRID_CONFIG } from "./data/museum-room-graph";
+  // The museum's rooms come from the composition, not from the raw graph: the
+  // graph still carries `vulcan-cave` as one placeholder room, and the walk
+  // replaces it with the eleven authored cave rooms so the six element chambers
+  // are part of the same building the visitor is already standing in.
+  import {
+    MUSEUM_WALK_ROOMS as MUSEUM_ROOMS,
+    MUSEUM_WALK_EDGES as MUSEUM_EDGES,
+    attachMuseumWalkTerrain,
+  } from "./data/museum-walk";
   import { serializeGrid, deserializeGrid } from "./domain/museum-grid-types";
   import type { MuseumGrid } from "./domain/museum-grid-types";
   import { createEditorState } from "./state/editor-state.svelte";
@@ -142,7 +151,9 @@
 
   function computeConfigHash(rooms: typeof MUSEUM_ROOMS, edges: typeof MUSEUM_EDGES): string {
     // Include a version bump whenever layout logic changes (e.g. ROOM_SCALE)
-    const input = JSON.stringify({ rooms, edges, config: GRID_CONFIG, layoutVersion: 4 });
+    // layoutVersion 5: the authored Vulcan Cave replaced the placeholder room,
+    // so every cached grid from before it is a museum with a hole in the middle.
+    const input = JSON.stringify({ rooms, edges, config: GRID_CONFIG, layoutVersion: 5 });
     let hash = 0;
     for (let i = 0; i < input.length; i++) {
       hash = ((hash << 5) - hash + input.charCodeAt(i)) | 0;
@@ -179,10 +190,18 @@
     // Only use cache for the full museum (isolated rooms are cheap to build)
     if (!roomFilter) {
       const cached = loadCachedGrid(rooms, edges);
-      if (cached) return { grid: cached, validation: { valid: true, errors: [] } };
+      if (cached) {
+        // Terrain is behaviour, not tiles, and does not survive serialization.
+        // Skip this and a cached museum is one where the Sundial's collapse
+        // ring, the drowned gallery's shelf and the Moon's low gravity are all
+        // flat floor.
+        attachMuseumWalkTerrain(cached);
+        return { grid: cached, validation: { valid: true, errors: [] } };
+      }
     }
 
     const result = buildMuseumGrid(rooms, edges, GRID_CONFIG);
+    attachMuseumWalkTerrain(result.grid);
 
     if (!roomFilter) {
       cacheGrid(result.grid, rooms, edges);

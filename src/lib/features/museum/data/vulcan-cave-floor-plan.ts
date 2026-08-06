@@ -5,7 +5,10 @@ import type {
   MuseumFloorPlanZoneTone,
 } from "../domain/museum-floor-plan-types";
 import { tileKey } from "../domain/museum-grid-types";
-import type { MuseumTerrainProgram } from "../domain/museum-grid-types";
+import type {
+  MuseumGrid,
+  MuseumTerrainProgram,
+} from "../domain/museum-grid-types";
 import type { WallDefinition } from "../domain/wall-segment-types";
 import { computeRoomDimensions } from "../domain/wall-segment-types";
 import { buildMuseumGrid } from "../services/museum-grid-builder";
@@ -1033,6 +1036,7 @@ function buildCirculation(
  * every bay the museum datum stands, which is what the tile-built rooms use.
  */
 function composeCaveTerrain(
+  grid: MuseumGrid,
   bays: { bounds: WorldRect | undefined; program: MuseumTerrainProgram | null }[]
 ): MuseumTerrainProgram | null {
   const active = bays.filter(
@@ -1050,6 +1054,18 @@ function composeCaveTerrain(
       return 0;
     },
     blockedAt(x, z) {
+      // Corridors win over every bay program. A routed corridor is the museum's
+      // own circulation — the grid carved it because two doors had to meet —
+      // and a bay whose blocked region happens to overlap it would sever the
+      // walk with nothing visible to explain why. This is exactly how the Moon
+      // fell out of the one-walk museum: the Sun's east door and the Moon's
+      // west door sit at different heights on their walls, the router doglegged
+      // between them along the inside of the Sun's bay, and the Sundial's rock
+      // corners blocked the dogleg.
+      const tile = grid.tiles.get(
+        tileKey(Math.round(x / grid.tileScale), Math.round(z / grid.tileScale))
+      );
+      if (tile?.type === "corridor" || tile?.type === "door") return false;
       for (const bay of active) {
         if (inRectClosed(bay.bounds, x, z) && bay.program.blockedAt(x, z)) {
           return true;
@@ -1066,6 +1082,48 @@ function composeCaveTerrain(
       return 0;
     },
   };
+}
+
+/**
+ * Elevation + blocking for every authored bay in the cave, for ANY grid that
+ * contains the cave rooms — the review route's cave-only grid, or the whole
+ * museum's single walk grid (`museum-walk.ts`). Physics reads it for ground
+ * clamping; each graybox layer reads the same layout for its meshes. Each
+ * program answers only inside its own bay, so a bay's loud "no elevation zone"
+ * failure can never be swallowed by its neighbour.
+ *
+ * Each layout builder returns null when its room is absent from the grid, so
+ * this is safe on a grid that carries only some of the chambers.
+ */
+export function composeCaveTerrainForGrid(
+  grid: MuseumGrid
+): MuseumTerrainProgram | null {
+  return composeCaveTerrain(grid, [
+    {
+      bounds: buildDrownedGalleryLayout(grid)?.bayBounds,
+      program: createDrownedGalleryTerrain(grid),
+    },
+    {
+      bounds: buildFirstFireLayout(grid)?.bayBounds,
+      program: createFirstFireTerrain(grid),
+    },
+    {
+      bounds: buildEarthCanyonLayout(grid)?.bayBounds,
+      program: createEarthCanyonTerrain(grid),
+    },
+    {
+      bounds: buildAirChimneyLayout(grid)?.bayBounds,
+      program: createAirChimneyTerrain(grid),
+    },
+    {
+      bounds: buildSundialLayout(grid)?.bayBounds,
+      program: createSundialTerrain(grid),
+    },
+    {
+      bounds: buildMoonLayout(grid)?.bayBounds,
+      program: createMoonTerrain(grid),
+    },
+  ]);
 }
 
 export function buildVulcanCaveFloorPlan(): VulcanCaveFloorPlan {
@@ -1089,36 +1147,7 @@ export function buildVulcanCaveFloorPlan(): VulcanCaveFloorPlan {
     } satisfies MuseumFloorPlanZone;
   });
 
-  // Elevation + blocking for every authored bay in the cave. Physics reads it
-  // for ground clamping; each graybox layer reads the same layout for its
-  // meshes. Each program answers only inside its own bay, so a bay's loud
-  // "no elevation zone" failure can never be swallowed by its neighbour.
-  const terrain = composeCaveTerrain([
-    {
-      bounds: buildDrownedGalleryLayout(build.grid)?.bayBounds,
-      program: createDrownedGalleryTerrain(build.grid),
-    },
-    {
-      bounds: buildFirstFireLayout(build.grid)?.bayBounds,
-      program: createFirstFireTerrain(build.grid),
-    },
-    {
-      bounds: buildEarthCanyonLayout(build.grid)?.bayBounds,
-      program: createEarthCanyonTerrain(build.grid),
-    },
-    {
-      bounds: buildAirChimneyLayout(build.grid)?.bayBounds,
-      program: createAirChimneyTerrain(build.grid),
-    },
-    {
-      bounds: buildSundialLayout(build.grid)?.bayBounds,
-      program: createSundialTerrain(build.grid),
-    },
-    {
-      bounds: buildMoonLayout(build.grid)?.bayBounds,
-      program: createMoonTerrain(build.grid),
-    },
-  ]);
+  const terrain = composeCaveTerrainForGrid(build.grid);
   if (terrain) build.grid.terrain = terrain;
 
   const totalInteriorTiles = build.grid.wings.reduce(
