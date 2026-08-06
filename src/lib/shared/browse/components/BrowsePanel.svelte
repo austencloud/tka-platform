@@ -65,6 +65,9 @@
       openPrimaryAction: () => void;
       openDangerAction?: () => void;
     };
+    /** Show the toolbar's Select action. A host with its own prominent entry
+     * point can hide this without disabling card selection. */
+    showSelectionAction?: boolean;
     /** The host renders its own selection toolbar with surface-specific
      * actions (a collection's "Remove from this collection"). Cards still
      * enter and toggle selection; only this panel's toolbar is suppressed,
@@ -72,6 +75,11 @@
     hideSelectionToolbar?: boolean;
     /** Names the host pool's own order for the sort menu (see setPool). */
     curatedSortLabel?: string;
+    /** A detail page can embed the controls directly in its own header rhythm
+     * instead of drawing the toolbar as a separate full-width panel. */
+    toolbarVariant?: "panel" | "embedded";
+    /** Host-visible total used to explain a narrowed or partially loaded pool. */
+    resultTotal?: number;
     /** Inside one collection: per-card "remove from this collection". */
     collectionContext?: {
       id: string;
@@ -100,8 +108,11 @@
     onSaveSmart,
     emptyAction,
     selection,
+    showSelectionAction = true,
     hideSelectionToolbar = false,
     curatedSortLabel,
+    toolbarVariant = "panel",
+    resultTotal,
     collectionContext,
   }: Props = $props();
 
@@ -327,8 +338,12 @@
         hideSearch={hideToolbarSearch}
         {onOpenFilters}
         {hideFilterChips}
-        onEnterSelection={selection ? () => selection.enter() : undefined}
+        onEnterSelection={selection && showSelectionAction
+          ? () => selection.enter()
+          : undefined}
         {curatedSortLabel}
+        variant={toolbarVariant}
+        {resultTotal}
       />
     {/if}
   {/if}

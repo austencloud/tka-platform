@@ -49,6 +49,11 @@
     /** Names the host pool's own order and offers it as a sort option (e.g.
      * "Collection order"). Omit and no Curated option appears. */
     curatedSortLabel?: string;
+    /** Panel is the original self-contained strip. Embedded lets a host page
+     * supply the surrounding surface while this component keeps the controls. */
+    variant?: "panel" | "embedded";
+    /** Host-visible total for contextual counts such as "10 of 15 shown". */
+    resultTotal?: number;
   }
 
   let {
@@ -61,6 +66,8 @@
     hideFilterChips = false,
     onEnterSelection,
     curatedSortLabel,
+    variant = "panel",
+    resultTotal,
   }: Props = $props();
 
   const activeUserFilterCount = $derived(
@@ -382,7 +389,7 @@
   });
 </script>
 
-<div class="browse-toolbar">
+<div class="browse-toolbar" class:embedded={variant === "embedded"}>
   <!-- 0. Leading back pill -->
   {#if onBack}
     <button
@@ -634,9 +641,15 @@
        Sheet-pattern hosts carry the count inside the Filters pill instead. -->
   {#if !onOpenFilters}
     <span class="result-count" aria-live="polite" aria-atomic="true">
-      {engine.resultCount}<span class="result-count-word"
-        >&nbsp;{engine.resultCount === 1 ? "sequence" : "sequences"}</span
-      >
+      {#if resultTotal !== undefined && resultTotal !== engine.resultCount}
+        {engine.resultCount} of {resultTotal}<span class="result-count-word"
+          >&nbsp;shown</span
+        >
+      {:else}
+        {engine.resultCount}<span class="result-count-word"
+          >&nbsp;{engine.resultCount === 1 ? "sequence" : "sequences"}</span
+        >
+      {/if}
     </span>
   {/if}
 </div>
@@ -650,6 +663,28 @@
     background: var(--theme-panel-bg);
     width: 100%;
     min-height: var(--min-touch-target, 48px);
+  }
+
+  /* Collection details already provide the page surface. Leaving the toolbar
+     transparent keeps it in the title/grid rhythm instead of drawing a dark
+     rectangle across the entire canvas. The controls remain real card
+     surfaces, and the divider is the only boundary the row needs. */
+  .browse-toolbar.embedded {
+    padding: var(--spacing-sm, 8px) var(--spacing-lg, 24px)
+      var(--spacing-md, 16px);
+    background: transparent;
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--theme-stroke) 72%, transparent);
+  }
+
+  .browse-toolbar.embedded .search-slot {
+    flex: 0 0 auto;
+  }
+
+  .browse-toolbar.embedded .result-count {
+    margin-left: 0;
+    padding-inline: var(--spacing-xs, 4px);
+    font-weight: 600;
   }
 
   /* ---- Back pill ---- */
@@ -1109,6 +1144,10 @@
   @media (hover: hover) and (pointer: fine) {
     .zoom-control {
       display: flex;
+    }
+
+    .browse-toolbar.embedded .zoom-control {
+      margin-left: auto;
     }
   }
 

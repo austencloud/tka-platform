@@ -710,7 +710,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
         )}
         <button
           type="button"
-          class="add-btn follow-btn"
+          class="header-action-btn follow-btn"
           class:following
           aria-pressed={following}
           onclick={() => {
@@ -736,26 +736,39 @@ becomes private while open, we bail back to the list instead of showing a ghost.
       {/if}
 
       {#if collection && !renaming && canEdit}
-        {#if !foreignOwnerId}
+        <div class="header-actions">
           <button
             type="button"
-            class="add-btn"
-            aria-label="Add"
-            onclick={() => (addSheetOpen = true)}
+            class="header-action-btn select-btn"
+            aria-label="Select sequences"
+            disabled={loadingMembers || members.length === 0}
+            onclick={() => selectionState.enter()}
           >
-            <i class="fas fa-plus" aria-hidden="true"></i>
-            <span>Add</span>
+            <i class="fas fa-circle-check" aria-hidden="true"></i>
+            <span>Select</span>
           </button>
-          <button
-            type="button"
-            class="scan-btn"
-            aria-label="Scan"
-            onclick={() => (scanSheetOpen = true)}
-          >
-            <i class="fas fa-qrcode" aria-hidden="true"></i>
-            <span>Scan</span>
-          </button>
-        {/if}
+
+          {#if !foreignOwnerId}
+            <button
+              type="button"
+              class="header-action-btn"
+              aria-label="Add"
+              onclick={() => (addSheetOpen = true)}
+            >
+              <i class="fas fa-plus" aria-hidden="true"></i>
+              <span>Add</span>
+            </button>
+            <button
+              type="button"
+              class="header-action-btn"
+              aria-label="Scan"
+              onclick={() => (scanSheetOpen = true)}
+            >
+              <i class="fas fa-qrcode" aria-hidden="true"></i>
+              <span>Scan</span>
+            </button>
+          {/if}
+        </div>
       {/if}
 
       {#if collection && !renaming && (!isSystem || canEdit)}
@@ -821,9 +834,12 @@ becomes private while open, we bail back to the list instead of showing a ghost.
         {engine}
         layout="compact"
         curatedSortLabel="Collection order"
+        toolbarVariant="embedded"
+        resultTotal={visibleCount ?? members.length}
         onSelect={(sequence, variations) =>
           handleSequenceAction("view-detail", sequence, variations)}
         selection={panelSelection}
+        showSelectionAction={false}
         hideSelectionToolbar
         collectionContext={canEdit
           ? {
@@ -938,10 +954,15 @@ becomes private while open, we bail back to the list instead of showing a ghost.
     outline-offset: 2px;
   }
 
-  /* The add button is the first right-aligned control; options follows it.
-	   (Options never renders without add, so the auto margin lives here.) */
-  .add-btn {
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .header-action-btn {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -958,13 +979,30 @@ becomes private while open, we bail back to the list instead of showing a ghost.
     transition: background var(--duration-fast, 150ms) ease;
   }
 
-  .add-btn:hover {
+  .header-action-btn:hover:not(:disabled) {
     background: color-mix(in srgb, var(--tile-color) 30%, transparent);
   }
 
-  .add-btn:focus-visible {
+  .header-action-btn:focus-visible {
     outline: 2px solid var(--tile-color);
     outline-offset: 2px;
+  }
+
+  .header-action-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* Roomy layouts get the direct path. Narrow layouts keep Select sequences
+     in the collection menu so the header still fits beside Add and Scan. */
+  .select-btn {
+    display: none;
+  }
+
+  @container gallery (min-width: 680px) {
+    .select-btn {
+      display: flex;
+    }
   }
 
   /* Follow/Following swap: reserve the wider state so the button's edge
@@ -976,34 +1014,6 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 
   .follow-btn.following {
     background: color-mix(in srgb, var(--tile-color) 32%, transparent);
-  }
-
-  /* Same look as .add-btn, minus the auto margin (Add stays the first
-	   right-aligned control; Scan sits between it and options). */
-  .scan-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    height: 44px;
-    padding: 0 16px;
-    flex-shrink: 0;
-    border: 1px solid color-mix(in srgb, var(--tile-color) 45%, transparent);
-    border-radius: 12px;
-    background: color-mix(in srgb, var(--tile-color) 18%, transparent);
-    color: var(--theme-text, white);
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: background var(--duration-fast, 150ms) ease;
-  }
-
-  .scan-btn:hover {
-    background: color-mix(in srgb, var(--tile-color) 30%, transparent);
-  }
-
-  .scan-btn:focus-visible {
-    outline: 2px solid var(--tile-color);
-    outline-offset: 2px;
   }
 
   .header-icon {
@@ -1069,15 +1079,17 @@ becomes private while open, we bail back to the list instead of showing a ghost.
       padding-inline: 8px;
     }
 
-    .add-btn,
-    .scan-btn {
+    .header-actions {
+      gap: 8px;
+    }
+
+    .header-actions .header-action-btn {
       width: 44px;
       padding: 0;
       justify-content: center;
     }
 
-    .add-btn span,
-    .scan-btn span {
+    .header-actions .header-action-btn span {
       display: none;
     }
   }
@@ -1200,7 +1212,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
   @media (prefers-reduced-motion: reduce) {
     .back-btn,
     .options-btn,
-    .scan-btn {
+    .header-action-btn {
       transition: none;
     }
     .card-skeleton {
