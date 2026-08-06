@@ -8,6 +8,6 @@ describe("getAutumnQualityConfig", () => {
     expect(low.fillTreeCount).toBeLessThan(high.fillTreeCount);
     expect(low.leafCount).toBeLessThan(high.leafCount);
     expect(low.pondReflector).toBe(false);
-    expect(high.pondReflector).toBe(true);
+    expect(high.pondReflector).toBe(false);
   });
 });

@@ -2,34 +2,32 @@
   /**
    * AutumnScene — Enchanted Autumn Dusk
    *
-   * Orchestrator for the rebuilt autumn environment, mirroring
-   * ocean/OceanScene.svelte. It loads the Meshy hero GLBs (terrain shell, two
-   * hero trees, a mushroom grove), sets the dusk fog + background, detects
-   * device quality, mounts the authored flora and the runtime composer, and
-   * reports scene-feature readiness through the loading curtain.
-   *
-   * The Meshy hero GLBs may not exist yet (their generation is gated on the
-   * user). The scene MUST render flora + runtime without them, so every hero is
-   * mounted behind an `{#if $glb}` guard and readiness is based on FLORA, not
-   * the heroes. A 15s safety valve (copied from ForestScene) lifts the curtain
-   * even if everything stalls — the curtain can never hang.
+   * Orchestrator for the Blender-authored autumn environment. It loads the
+   * sculpted terrain, Meshy hero trees and set dressing as one optimized GLB,
+   * mounts the runtime systems, and reports real asset readiness through the
+   * loading curtain.
    */
 
   import { T, useThrelte } from "@threlte/core";
   import { useGltf, useKtx2, useMeshopt } from "@threlte/extras";
   import { FogExp2, Color, type Scene, type WebGLRenderer } from "three";
-  import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
   import { onMount } from "svelte";
-  import { readable } from "svelte/store";
   import { userProportionsState } from "@austencloud/scene-3d";
   import {
     detectAutumnQuality,
     getAutumnQualityConfig,
   } from "./autumn/quality/autumn-quality";
   import { autumnQualityOverride } from "./autumn/quality/autumn-quality-override.svelte";
-  import AutumnFlora from "./autumn/authored/AutumnFlora.svelte";
   import AutumnRuntimeSystems from "./autumn/runtime/AutumnRuntimeSystems.svelte";
-  import type { PulseTarget } from "./autumn/runtime/interaction/AutumnInteraction.svelte";
+  import { AUTUMN_POND_LAYOUT } from "./autumn/runtime/water/autumn-pond-layout";
+  import SkyGradient from "../primitives/SkyGradient.svelte";
+  import MoonBillboard from "../primitives/MoonBillboard.svelte";
+  import Starfield from "../primitives/Starfield.svelte";
+  import Stage3D from "../../components/Stage3D.svelte";
+  import type {
+    MoonConfig,
+    StarfieldConfig,
+  } from "../domain/models/scene-configs";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
   import { tryGetAdaptiveQualityContext } from "../../context/adaptive-quality-context";
 
@@ -40,8 +38,6 @@
     stageWidth?: number;
     stageDepth?: number;
     stageZOffset?: number;
-    /** Skip hero models that have not shipped yet, such as in compact previews. */
-    loadUnreleasedHeroAssets?: boolean;
   }
 
   let {
@@ -49,7 +45,6 @@
     stageWidth = 6,
     stageDepth = 6,
     stageZOffset = 0,
-    loadUnreleasedHeroAssets = true,
   }: Props = $props();
 
   // ── Quality detection ─────────────────────────────────────────────────
@@ -73,63 +68,38 @@
 
   const groundY = $derived(userProportionsState.groundY);
 
-  // ── Hero GLBs (Meshy — best-effort; may 404 until generation runs) ─────
+  // ── Blender-authored environment ──────────────────────────────────────
 
-  const unavailableHeroGlb = readable<GLTF | null>(null);
-  const terrainGlb = loadUnreleasedHeroAssets
-    ? useGltf("/models/autumn/terrain-shell.glb", {
-        meshoptDecoder: useMeshopt(),
-        ktx2Loader: useKtx2("/basis/"),
-      })
-    : unavailableHeroGlb;
-  const heroTreeA = loadUnreleasedHeroAssets
-    ? useGltf("/models/autumn/hero-tree-a.glb", {
-        meshoptDecoder: useMeshopt(),
-        ktx2Loader: useKtx2("/basis/"),
-      })
-    : unavailableHeroGlb;
-  const heroTreeB = loadUnreleasedHeroAssets
-    ? useGltf("/models/autumn/hero-tree-b.glb", {
-        meshoptDecoder: useMeshopt(),
-        ktx2Loader: useKtx2("/basis/"),
-      })
-    : unavailableHeroGlb;
-  const mushroomGroveGlb = useGltf("/models/autumn/mushroom-grove.glb", {
-    meshoptDecoder: useMeshopt(),
-    ktx2Loader: useKtx2("/basis/"),
-  });
+  const autumnEnvironmentGlb = useGltf(
+    "/models/autumn/autumn-environment.glb",
+    {
+      meshoptDecoder: useMeshopt(),
+      ktx2Loader: useKtx2("/basis/"),
+    }
+  );
+  const environmentScene = $derived($autumnEnvironmentGlb?.scene ?? null);
 
-  // Hand-picked hero spots: terrain + grove at the clearing origin, the two
-  // hero trees flanking it.
-  const pondCenter: [number, number, number] = $derived([-6, groundY, 5]);
+  const pondCenter: [number, number, number] = $derived([
+    AUTUMN_POND_LAYOUT.centerX,
+    groundY,
+    AUTUMN_POND_LAYOUT.centerZ,
+  ]);
 
-  // ── Readiness: gate on FLORA, not the optional heroes ──────────────────
-  // Hero GLBs are best-effort (may be absent), so they cannot gate the curtain.
-  // Flora reports real loaded/total progress and fires ready when complete;
-  // we fold flora's fraction straight into the environment progress bar.
+  // ── Readiness: gate on the complete authored environment ──────────────
 
-  let floraFraction = $state(0);
-  let floraLoaded = $state(false);
-
-  function handleFloraProgress(fraction: number) {
-    floraFraction = fraction;
-  }
-
-  function handleFloraReady() {
-    floraLoaded = true;
-    floraFraction = 1;
-  }
+  let readyReported = false;
 
   $effect(() => {
-    sceneFeatures?.reportProgress("environment", floraFraction);
-    if (floraLoaded) {
+    const loaded = Boolean($autumnEnvironmentGlb);
+    sceneFeatures?.reportProgress("environment", loaded ? 1 : 0);
+    if (loaded && !readyReported) {
+      readyReported = true;
       sceneFeatures?.reportReady("environment");
     }
   });
 
-  // Safety valve: if flora (or anything) stalls, lift the curtain after 15s so
-  // the user is never stuck on a permanent loading screen — even with the hero
-  // GLBs absent. Copied from ForestScene.
+  // Safety valve: if the GLB stalls, lift the curtain after 15s so the user is
+  // never stuck on a permanent loading screen. Copied from ForestScene.
   onMount(() => {
     const timer = setTimeout(() => {
       if (sceneFeatures && !sceneFeatures.isReady("environment")) {
@@ -140,45 +110,33 @@
     return () => clearTimeout(timer);
   });
 
-  // ── Mushroom pulse targets (assembled from AutumnFlora) ────────────────
+  const moonConfig: MoonConfig = {
+    enabled: true,
+    texture: "/textures/moon.png",
+    position: [-5, 19, -56],
+    diameter: 6.2,
+    opacity: 0.88,
+    glowScale: 1.18,
+    glowOpacity: 0.032,
+  };
 
-  let mushroomTargets = $state<PulseTarget[]>([]);
-
-  // ── Grove glow: teal emissive override on the Meshy grove caps ─────────
-  // The Meshy texture is realistic, not self-lit; the scene's bioluminescent
-  // look comes from a runtime emissive override (same idea AutumnFlora uses on
-  // the kit mushrooms). Applied once when the grove GLB lands. Mutates in place
-  // — the grove GLB has a single consumer (this orchestrator), so no leak risk.
-  let groveGlowApplied = false;
-  $effect(() => {
-    const glb = $mushroomGroveGlb;
-    if (!glb || groveGlowApplied) return;
-    groveGlowApplied = true;
-    glb.scene.traverse((o) => {
-      const m = o as unknown as { isMesh?: boolean; material?: unknown };
-      if (!m.isMesh || !m.material) return;
-      const mats = Array.isArray(m.material) ? m.material : [m.material];
-      for (const mat of mats) {
-        const sm = mat as {
-          emissive?: Color;
-          emissiveIntensity?: number;
-          needsUpdate?: boolean;
-        };
-        if (sm.emissive) {
-          sm.emissive.set("#00c8b4");
-          sm.emissiveIntensity = 0.45;
-          sm.needsUpdate = true;
-        }
-      }
-    });
+  const starfieldConfig: StarfieldConfig = $derived({
+    enabled: true,
+    count: tier === "high" ? 1200 : tier === "medium" ? 820 : 480,
+    radius: 88,
+    sizeRange: [0.42, 1.45],
+    twinkleSpeed: 0.34,
   });
 
   // ── Fog + background (dusk violet) ─────────────────────────────────────
 
   $effect(() => {
     const s = scene;
-    const fogColor = new Color("#2a1838");
-    s.fog = new FogExp2(fogColor.getHex(), 0.02);
+    const fogColor = new Color("#1a1028");
+    // The varied rear belt now sits close enough to read as individual trees.
+    // This veil still hides the finite terrain edge without flattening those
+    // silhouettes into the night background.
+    s.fog = new FogExp2(fogColor.getHex(), 0.016);
     s.background = fogColor;
     return () => {
       if (s) {
@@ -189,54 +147,28 @@
   });
 </script>
 
-{#if $terrainGlb}
-  <T is={$terrainGlb.scene} position.y={groundY} />
+<SkyGradient topColor="#09081d" midColor="#321b3f" bottomColor="#9a4931" />
+<Starfield config={starfieldConfig} />
+<MoonBillboard config={moonConfig} />
+
+{#if $autumnEnvironmentGlb}
+  <T is={$autumnEnvironmentGlb.scene} position.y={groundY} />
 {/if}
 
-{#if $mushroomGroveGlb}
-  <T is={$mushroomGroveGlb.scene} position.y={groundY} scale={3} />
-{/if}
-
-{#if $heroTreeA}
-  <T
-    is={$heroTreeA.scene}
-    position.x={-9}
-    position.y={groundY}
-    position.z={-4}
-  />
-{/if}
-
-{#if $heroTreeB}
-  <T
-    is={$heroTreeB.scene}
-    position.x={10}
-    position.y={groundY}
-    position.z={-6}
-  />
-{/if}
+<!-- The same canonical stage used by the forest scene anchors the performer,
+     covers the most repetitive central floor, and restores directional cues. -->
+<Stage3D width={stageWidth} depth={stageDepth} overrideGroundY={groundY} />
 
 {#key tier}
-  <AutumnFlora
-    {quality}
-    {groundY}
-    onProgress={handleFloraProgress}
-    onReady={handleFloraReady}
-    onMushroomTargets={(t) =>
-      (mushroomTargets = t.map((x) => ({
-        material: x.material,
-        position: x.position,
-        baseIntensity: x.material.emissiveIntensity,
-      })))}
-  />
-
   <AutumnRuntimeSystems
     {quality}
+    {tier}
+    {environmentScene}
     {groundY}
     {performerCount}
     {stageWidth}
     {stageDepth}
     {stageZOffset}
     {pondCenter}
-    {mushroomTargets}
   />
 {/key}

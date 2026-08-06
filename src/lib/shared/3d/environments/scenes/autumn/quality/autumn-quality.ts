@@ -17,43 +17,45 @@ export interface AutumnQualityConfig {
 const CONFIGS: Record<AutumnQualityTier, AutumnQualityConfig> = {
   // Ocean "ultra" → autumn "high"
   high: {
-    fillTreeCount: 60,
-    mushroomCount: 40,
-    leafCount: 220,
-    sporeCount: 120,
-    fireflyCount: 80,
-    wispCount: 9,
-    pondReflector: true,
-    godRays: true,
-    shadows: true,
+    fillTreeCount: 36,
+    mushroomCount: 18,
+    leafCount: 140,
+    sporeCount: 60,
+    fireflyCount: 36,
+    wispCount: 5,
+    pondReflector: false,
+    godRays: false,
+    shadows: false,
   },
   // Ocean "medium" → autumn "medium"
   medium: {
-    fillTreeCount: 38,
-    mushroomCount: 24,
-    leafCount: 140,
-    sporeCount: 70,
-    fireflyCount: 50,
-    wispCount: 6,
-    pondReflector: true,
-    godRays: true,
-    shadows: false,
-  },
-  // Ocean "low" → autumn "low"
-  low: {
-    fillTreeCount: 20,
-    mushroomCount: 12,
-    leafCount: 70,
-    sporeCount: 30,
+    fillTreeCount: 28,
+    mushroomCount: 14,
+    leafCount: 90,
+    sporeCount: 40,
     fireflyCount: 24,
     wispCount: 4,
     pondReflector: false,
     godRays: false,
     shadows: false,
   },
+  // Ocean "low" → autumn "low"
+  low: {
+    fillTreeCount: 18,
+    mushroomCount: 10,
+    leafCount: 50,
+    sporeCount: 20,
+    fireflyCount: 12,
+    wispCount: 3,
+    pondReflector: false,
+    godRays: false,
+    shadows: false,
+  },
 };
 
-export function getAutumnQualityConfig(tier: AutumnQualityTier): AutumnQualityConfig {
+export function getAutumnQualityConfig(
+  tier: AutumnQualityTier
+): AutumnQualityConfig {
   return CONFIGS[tier];
 }
 
@@ -72,7 +74,9 @@ export function getAutumnQualityConfig(tier: AutumnQualityTier): AutumnQualityCo
  *   ocean "medium" → autumn "medium"
  *   ocean "low"    → autumn "low"
  */
-export function detectAutumnQuality(renderer: WebGLRenderer | null): AutumnQualityTier {
+export function detectAutumnQuality(
+  renderer: WebGLRenderer | null
+): AutumnQualityTier {
   if (!renderer) return "medium";
 
   const gl = renderer.getContext();

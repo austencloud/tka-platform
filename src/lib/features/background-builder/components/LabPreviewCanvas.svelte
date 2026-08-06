@@ -11,6 +11,7 @@
     draw(ctx: CanvasRenderingContext2D, dimensions: { width: number; height: number }): void;
     cleanup?(): void;
     handleResize?(oldDimensions: { width: number; height: number }, newDimensions: { width: number; height: number }): void;
+    setPointer?(x: number, y: number, active: boolean, pointerType?: string): void;
   }
 
   interface Props {
@@ -110,6 +111,22 @@
     }
   }
 
+  function handlePointerMove(event: PointerEvent) {
+    if (canvas && system?.setPointer) {
+      const rect = canvas.getBoundingClientRect();
+      const x = (event.clientX - rect.left) * (canvas.width / Math.max(rect.width, 1));
+      const y = (event.clientY - rect.top) * (canvas.height / Math.max(rect.height, 1));
+      system.setPointer(x, y, true, event.pointerType);
+    }
+
+    onMouseMove?.(event);
+  }
+
+  function handlePointerLeave(event: PointerEvent) {
+    system?.setPointer?.(0, 0, false, event.pointerType);
+    onMouseLeave?.();
+  }
+
   // Watch for system changes to start/stop animation
   $effect(() => {
     if (system && canvas && initialized) {
@@ -149,8 +166,8 @@
   class="preview"
   style:--accent-color={accentColor}
   style:--bg-color={backgroundColor}
-  onmousemove={onMouseMove}
-  onmouseleave={onMouseLeave}
+  onpointermove={handlePointerMove}
+  onpointerleave={handlePointerLeave}
   onclick={onClick}
   onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(e); } }}
   role="button"

@@ -20,6 +20,8 @@
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import { createSceneFeatureState } from "$lib/shared/3d/scene-features/state/scene-feature-state.svelte";
   import { setSceneFeatureContext } from "$lib/shared/3d/scene-features/context/scene-feature-context";
+  import { createEnvironmentTransitionVisualState } from "$lib/shared/3d/environments/state/environment-transition-visual-state.svelte";
+  import { setEnvironmentTransitionVisualContext } from "$lib/shared/3d/environments/context/environment-transition-visual-context";
   import HarnessToneMapping from "./HarnessToneMapping.svelte";
 
   // The Autumn scene calls getSceneFeatureContext() (for reportReady +
@@ -27,6 +29,12 @@
   // uses so the context resolves and the scene doesn't throw.
   const sceneFeatureState = createSceneFeatureState();
   setSceneFeatureContext(sceneFeatureState);
+
+  // Environment3D now coordinates readiness with the full viewer's transition
+  // veil. The harness has no veil, so provide an always-ready visual host.
+  const transitionVisual = createEnvironmentTransitionVisualState();
+  transitionVisual.setRendererReady(true);
+  setEnvironmentTransitionVisualContext(transitionVisual);
 </script>
 
 <svelte:head>
@@ -35,19 +43,20 @@
 
 <div class="page">
   <Canvas
-    createRenderer={(canvas) => new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
+    createRenderer={(canvas) =>
+      new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
   >
     <!-- Match the real viewer's ScenePostProcessing tone mapping (AgX, 1.0)
          so colors read the same here as in the sequence viewer. -->
     <HarnessToneMapping />
 
     <!-- Orbit camera: backed by yomotsu/camera-controls via the shared
-         OrbitControls wrapper. Sits at human eye height, looking at the
-         clearing centre. -->
-    <T.PerspectiveCamera makeDefault position={[0, 2.2, 7]} fov={50}>
+         OrbitControls wrapper. Starts at the elevated Composer framing so
+         the clearing, pond, and both sightline openings are visible. -->
+    <T.PerspectiveCamera makeDefault position={[0, 14, 32]} fov={48}>
       <OrbitControls
         enableDamping
-        target={[0, 1, 0]}
+        target={[0, 1, 3]}
         minDistance={1.5}
         maxDistance={40}
         maxPolarAngle={Math.PI / 2 + 0.05}

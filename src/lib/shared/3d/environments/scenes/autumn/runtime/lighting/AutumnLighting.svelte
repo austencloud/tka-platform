@@ -30,14 +30,14 @@
 <!-- Warm low sun: amber-gold, raking from the right-forward side at a low
      elevation (y=6) so it casts long dramatic shadows across the scene. -->
 <T.DirectionalLight
-  color="#ffb060"
-  intensity={2.2}
+  color="#ff8748"
+  intensity={1.42}
   position.x={14}
-  position.y={6}
+  position.y={10}
   position.z={8}
   castShadow={quality.shadows}
-  shadow.mapSize.width={2048}
-  shadow.mapSize.height={2048}
+  shadow.mapSize.width={1024}
+  shadow.mapSize.height={1024}
   shadow.camera.near={0.5}
   shadow.camera.far={60}
   shadow.camera.left={-20}
@@ -49,17 +49,30 @@
 <!-- Cool fill: slate-blue from the opposite/shadow side — no shadow cast,
      purely to lift the shadow side off pure black. -->
 <T.DirectionalLight
-  color="#3a6a8a"
-  intensity={0.7}
+  color="#7d8fce"
+  intensity={1.16}
   position.x={-12}
-  position.y={8}
+  position.y={12}
   position.z={-6}
 />
 
-<!-- Dusk hemisphere ambient: deep violet-mauve sky, near-black earthy ground.
-     Keeps shadow areas readable without washing out the warm/cool split. -->
-<T.HemisphereLight
-  color="#4a2a50"
-  groundColor="#1a0f14"
-  intensity={0.6}
+<!-- Dusk hemisphere ambient keeps bark, distant silhouettes, and understory
+     readable on ordinary displays while the directional pair preserves the
+     warm/cool night split. -->
+<T.HemisphereLight color="#89669b" groundColor="#49302b" intensity={0.92} />
+
+<!-- A restrained ambient lift preserves the scanned bark and floor detail
+     after tone mapping without flattening the warm/cool directional split. -->
+<T.AmbientLight color="#d3a8bb" intensity={0.46} />
+
+<!-- A local violet reflection source gives the recessed pond and its wet
+     stones a readable cool edge without raising the whole forest floor. -->
+<T.PointLight
+  color="#8170c5"
+  intensity={2.2}
+  distance={15}
+  decay={2}
+  position.x={-10.5}
+  position.y={3.2 + groundY}
+  position.z={7}
 />

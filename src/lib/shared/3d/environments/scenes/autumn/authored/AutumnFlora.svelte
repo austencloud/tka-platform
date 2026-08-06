@@ -15,27 +15,32 @@
    * `onMushroomTargets` so the interaction layer can pulse `emissiveIntensity`
    * by proximity at runtime.
    *
-   * This component does NOT load the Meshy hero GLBs — those load separately
-   * in the orchestrator (Task 13). Props/progress/ready mirror
-   * ocean/authored/FloraInstances.svelte.
+   * The authored mushroom-grove accent loads separately in the orchestrator.
+   * Props/progress/ready mirror ocean/authored/FloraInstances.svelte.
    */
 
   import { T } from "@threlte/core";
   import { useGltf } from "@threlte/extras";
-  import { onDestroy } from "svelte";
   import {
     Color,
     Vector3,
+    type InstancedMesh,
     type MeshStandardMaterial,
     type Object3D,
   } from "three";
-  import { disposeSceneGraph } from "../../../utils/dispose-scene";
-  import { ringPlacements, type Placement } from "./placements";
+  import { createAutumnPlacementLayout, type Placement } from "./placements";
+  import {
+    createAutumnVariantBatches,
+    disposeAutumnInstanceBatches,
+  } from "./autumn-instancing";
   import type { AutumnQualityConfig } from "../quality/autumn-quality";
 
   interface Props {
     quality: AutumnQualityConfig;
     groundY: number;
+    stageWidth?: number;
+    stageDepth?: number;
+    stageZOffset?: number;
     onProgress?: (fraction: number) => void;
     onReady?: () => void;
     /**
@@ -47,13 +52,16 @@
      * placement position. Fired once.
      */
     onMushroomTargets?: (
-      targets: { material: MeshStandardMaterial; position: Vector3 }[],
+      targets: { material: MeshStandardMaterial; position: Vector3 }[]
     ) => void;
   }
 
   let {
     quality,
     groundY,
+    stageWidth = 6,
+    stageDepth = 6,
+    stageZOffset = 0,
     onProgress,
     onReady,
     onMushroomTargets,
@@ -63,16 +71,24 @@
   // Fill trees: autumn-colored Kenney Nature Kit variants.
   const treeOak = useGltf("/models/vegetation/tree/tree_oak_fall.glb");
   const treeFat = useGltf("/models/vegetation/tree/tree_fat_fall.glb");
-  const treeDetailed = useGltf("/models/vegetation/tree/tree_detailed_fall.glb");
+  const treeDetailed = useGltf(
+    "/models/vegetation/tree/tree_detailed_fall.glb"
+  );
   const treeTall = useGltf("/models/vegetation/tree/tree_tall_fall.glb");
   const treeDefault = useGltf("/models/vegetation/tree/tree_default_fall.glb");
   const treeCone = useGltf("/models/vegetation/tree/tree_cone_fall.glb");
 
   // Mushrooms: the glow set.
   const mushRed = useGltf("/models/vegetation/mushroom/mushroom_red.glb");
-  const mushRedGroup = useGltf("/models/vegetation/mushroom/mushroom_redGroup.glb");
-  const mushRedTall = useGltf("/models/vegetation/mushroom/mushroom_redTall.glb");
-  const mushTanGroup = useGltf("/models/vegetation/mushroom/mushroom_tanGroup.glb");
+  const mushRedGroup = useGltf(
+    "/models/vegetation/mushroom/mushroom_redGroup.glb"
+  );
+  const mushRedTall = useGltf(
+    "/models/vegetation/mushroom/mushroom_redTall.glb"
+  );
+  const mushTanGroup = useGltf(
+    "/models/vegetation/mushroom/mushroom_tanGroup.glb"
+  );
 
   // Detail dressing.
   const stumpOld = useGltf("/models/vegetation/log/stump_old.glb");
@@ -86,10 +102,14 @@
   // store variables, so each GLB is unwrapped here by name into a $derived
   // scene (null until loaded). Downstream code reads these, never the stores.
   const treeScenes = $derived(
-    [$treeOak, $treeFat, $treeDetailed, $treeTall, $treeDefault, $treeCone].map((g) => g?.scene ?? null)
+    [$treeOak, $treeFat, $treeDetailed, $treeTall, $treeDefault, $treeCone].map(
+      (g) => g?.scene ?? null
+    )
   );
   const mushroomScenes = $derived(
-    [$mushRed, $mushRedGroup, $mushRedTall, $mushTanGroup].map((g) => g?.scene ?? null)
+    [$mushRed, $mushRedGroup, $mushRedTall, $mushTanGroup].map(
+      (g) => g?.scene ?? null
+    )
   );
   const stumpScene = $derived($stumpOld?.scene ?? null);
   const logScene = $derived($logModel?.scene ?? null);
@@ -121,35 +141,23 @@
   });
 
   // ── Placements ────────────────────────────────────────────────────────
-  // Fill trees across 3 rings totaling ~quality.fillTreeCount.
-  const treePlacements = $derived.by<Placement[]>(() => {
-    const total = quality.fillTreeCount;
-    const inner = Math.round(total * 0.3);
-    const mid = Math.round(total * 0.35);
-    const outer = total - inner - mid;
-    return [
-      ...ringPlacements({ count: inner, radius: 11, radiusJitter: 1.8, scaleBase: 1, scaleVariation: 0.4, seed: 1 }),
-      ...ringPlacements({ count: mid, radius: 16, radiusJitter: 2.2, scaleBase: 1.1, scaleVariation: 0.5, seed: 2 }),
-      ...ringPlacements({ count: outer, radius: 22, radiusJitter: 2.6, scaleBase: 1.2, scaleVariation: 0.6, seed: 3 }),
-    ];
-  });
-
-  // Mushrooms: clustered, smaller radius, two rings so they read as patches.
-  const mushroomPlacements = $derived.by<Placement[]>(() => {
-    const total = quality.mushroomCount;
-    const inner = Math.round(total * 0.55);
-    const outer = total - inner;
-    return [
-      ...ringPlacements({ count: inner, radius: 5.5, radiusJitter: 2.2, scaleBase: 0.8, scaleVariation: 0.4, seed: 11 }),
-      ...ringPlacements({ count: outer, radius: 9, radiusJitter: 2.8, scaleBase: 0.7, scaleVariation: 0.5, seed: 12 }),
-    ];
-  });
-
-  // Detail dressing: modest fixed counts (not quality-driven), distinct seeds.
-  const rockPlacements = ringPlacements({ count: 10, radius: 8, radiusJitter: 3, scaleBase: 0.9, scaleVariation: 0.5, seed: 21 });
-  const logPlacements = ringPlacements({ count: 6, radius: 7, radiusJitter: 2.5, scaleBase: 0.9, scaleVariation: 0.4, seed: 22 });
-  const grassPlacements = ringPlacements({ count: 16, radius: 6.5, radiusJitter: 3.2, scaleBase: 1, scaleVariation: 0.5, seed: 23 });
-  const flowerPlacements = ringPlacements({ count: 12, radius: 5, radiusJitter: 2.4, scaleBase: 1, scaleVariation: 0.4, seed: 24 });
+  // The forest edge follows the full stage footprint, including the negative-Z
+  // expansion used for multiple performers. Nothing large enters the dance area.
+  const placementLayout = $derived(
+    createAutumnPlacementLayout({
+      treeCount: quality.fillTreeCount,
+      mushroomCount: quality.mushroomCount,
+      stageWidth,
+      stageDepth,
+      stageZOffset,
+    })
+  );
+  const treePlacements = $derived(placementLayout.trees);
+  const mushroomPlacements = $derived(placementLayout.mushrooms);
+  const rockPlacements = $derived(placementLayout.rocks);
+  const logPlacements = $derived(placementLayout.logs);
+  const grassPlacements = $derived(placementLayout.grass);
+  const flowerPlacements = $derived(placementLayout.flowers);
 
   // ── Glowing-mushroom clone: deep-clone, clone each material, set emissive ─
   // Adapted from WinterScene's tintSnowy/snowyClone — emissive instead of tint.
@@ -160,15 +168,14 @@
   // Collected so the caller can pulse them at runtime. Each emissive material
   // is paired with its placement's world position (one placement → one or more
   // materials, all sharing that position).
-  const collectedMushroomTargets: {
-    material: MeshStandardMaterial;
-    position: Vector3;
-  }[] = [];
-
-  function emissiveClone(sourceScene: Object3D, placementIndex: number): Object3D {
+  function emissiveClone(
+    sourceScene: Object3D,
+    placement: Placement,
+    placementIndex: number,
+    targets: { material: MeshStandardMaterial; position: Vector3 }[]
+  ): Object3D {
     // Variants alternate the emissive hue so the mushroom patch isn't monochrome.
     const glow = placementIndex % 2 === 0 ? TEAL : VIOLET;
-    const placement = mushroomPlacements[placementIndex];
     const cloned = sourceScene.clone();
     cloned.traverse((obj) => {
       const m = obj as { isMesh?: boolean; material?: unknown };
@@ -179,118 +186,140 @@
         if (c.emissive) {
           c.emissive.copy(glow);
           c.emissiveIntensity = EMISSIVE_INTENSITY;
-          if (placement) {
-            collectedMushroomTargets.push({
-              material: c,
-              position: new Vector3(placement.x, groundY, placement.z),
-            });
-          }
+          targets.push({
+            material: c,
+            position: new Vector3(placement.x, groundY, placement.z),
+          });
         }
         return c;
       });
-      (m as { material: unknown }).material = Array.isArray(m.material) ? cloneds : cloneds[0];
+      (m as { material: unknown }).material = Array.isArray(m.material)
+        ? cloneds
+        : cloneds[0];
     });
     return cloned;
   }
 
-  // ── Clone caching — clone (+ glow for mushrooms) ONCE per load ─────────
-  // Invariant: `quality` is read at mount time. The *Placements derivations depend
-  // on quality.*Count; clones re-derive when GLBs load, not when quality changes.
-  // A live quality change after mount would rebuild clones without disposing the
-  // prior set — acceptable because production sets quality once at mount.
-  const treeClones = $derived.by(() => {
-    const scenes = treeScenes.filter((s) => s !== null);
-    if (scenes.length === 0) return [];
-    return treePlacements.map((_, i) => scenes[i % scenes.length]!.clone());
-  });
+  // ── GPU batches + interactive mushroom clones ─────────────────────────
+  // Trees and static detail use InstancedMesh batches. Mushrooms stay as deep
+  // material clones because their individual glow is animated by proximity.
+  let treeBatches = $state.raw<InstancedMesh[]>([]);
+  let rockBatches = $state.raw<InstancedMesh[]>([]);
+  let logBatches = $state.raw<InstancedMesh[]>([]);
+  let grassBatches = $state.raw<InstancedMesh[]>([]);
+  let flowerBatches = $state.raw<InstancedMesh[]>([]);
+  let mushroomClones = $state.raw<Object3D[]>([]);
 
-  let mushroomTargetsFired = false;
+  function loadedScenes(scenes: readonly (Object3D | null)[]): Object3D[] {
+    return scenes.filter((scene): scene is Object3D => scene !== null);
+  }
 
-  const mushroomClones = $derived.by(() => {
-    const scenes = mushroomScenes.filter((s) => s !== null);
-    if (scenes.length === 0) return [];
-    collectedMushroomTargets.length = 0;
-    return mushroomPlacements.map((_, i) =>
-      emissiveClone(scenes[i % scenes.length]!, i)
-    );
-  });
+  function disposeCloneMaterials(scene: Object3D): void {
+    scene.traverse((child) => {
+      const mesh = child as {
+        isMesh?: boolean;
+        material?: MeshStandardMaterial | MeshStandardMaterial[];
+      };
+      if (!mesh.isMesh || !mesh.material) return;
+      const materials = Array.isArray(mesh.material)
+        ? mesh.material
+        : [mesh.material];
+      for (const material of materials) material.dispose();
+    });
+  }
 
-  // Emit the cloned emissive materials (paired with placement positions) to the
-  // interaction layer once. Never call out from inside the derivation — read
-  // mushroomClones here so the derivation evaluates and populates
-  // collectedMushroomTargets first.
   $effect(() => {
-    if (mushroomTargetsFired) return;
-    if (mushroomClones.length === 0) return;
-    mushroomTargetsFired = true;
-    onMushroomTargets?.(collectedMushroomTargets.slice());
-  });
+    const trees = loadedScenes(treeScenes);
+    const mushrooms = loadedScenes(mushroomScenes);
+    const rocks = loadedScenes([rockAScene, rockCScene]);
+    const logs = loadedScenes([stumpScene, logScene]);
+    const grasses = loadedScenes([grassScene]);
+    const flowers = loadedScenes([flowerScene]);
+    if (
+      trees.length !== treeScenes.length ||
+      mushrooms.length !== mushroomScenes.length ||
+      rocks.length !== 2 ||
+      logs.length !== 2 ||
+      grasses.length !== 1 ||
+      flowers.length !== 1
+    )
+      return;
 
-  const rockClones = $derived.by(() => {
-    if (!rockAScene || !rockCScene) return [];
-    return rockPlacements.map((_, i) => (i % 2 === 0 ? rockAScene : rockCScene).clone());
-  });
+    const nextTreeBatches = createAutumnVariantBatches(trees, treePlacements, {
+      castShadow: quality.shadows,
+    });
+    const nextRockBatches = createAutumnVariantBatches(rocks, rockPlacements);
+    const nextLogBatches = createAutumnVariantBatches(logs, logPlacements);
+    const nextGrassBatches = createAutumnVariantBatches(
+      grasses,
+      grassPlacements
+    );
+    const nextFlowerBatches = createAutumnVariantBatches(
+      flowers,
+      flowerPlacements
+    );
+    const targets: { material: MeshStandardMaterial; position: Vector3 }[] = [];
+    const nextMushroomClones = mushroomPlacements.map((placement, index) =>
+      emissiveClone(
+        mushrooms[index % mushrooms.length]!,
+        placement,
+        index,
+        targets
+      )
+    );
 
-  const logClones = $derived.by(() => {
-    if (!stumpScene || !logScene) return [];
-    return logPlacements.map((_, i) => (i % 2 === 0 ? stumpScene : logScene).clone());
-  });
+    treeBatches = nextTreeBatches;
+    rockBatches = nextRockBatches;
+    logBatches = nextLogBatches;
+    grassBatches = nextGrassBatches;
+    flowerBatches = nextFlowerBatches;
+    mushroomClones = nextMushroomClones;
+    onMushroomTargets?.(targets);
 
-  const grassClones = $derived.by(() => {
-    if (!grassScene) return [];
-    return grassPlacements.map(() => grassScene.clone());
-  });
-
-  const flowerClones = $derived.by(() => {
-    if (!flowerScene) return [];
-    return flowerPlacements.map(() => flowerScene.clone());
-  });
-
-  onDestroy(() => {
-    for (const group of [treeClones, mushroomClones, rockClones, logClones, grassClones, flowerClones]) {
-      for (const c of group) disposeSceneGraph(c as Object3D);
-    }
+    return () => {
+      disposeAutumnInstanceBatches(nextTreeBatches);
+      disposeAutumnInstanceBatches(nextRockBatches);
+      disposeAutumnInstanceBatches(nextLogBatches);
+      disposeAutumnInstanceBatches(nextGrassBatches);
+      disposeAutumnInstanceBatches(nextFlowerBatches);
+      for (const clone of nextMushroomClones) disposeCloneMaterials(clone);
+      onMushroomTargets?.([]);
+    };
   });
 </script>
 
-{#each treeClones as clone, i}
-  {@const p = treePlacements[i]}
-  {#if p}
-    <T is={clone} position.x={p.x} position.y={groundY} position.z={p.z} scale={p.scale * 2.4} rotation.y={p.rotationY} />
-  {/if}
-{/each}
+<T.Group position.y={groundY}>
+  {#each treeBatches as batch}
+    <T is={batch} />
+  {/each}
+
+  {#each rockBatches as batch}
+    <T is={batch} />
+  {/each}
+
+  {#each logBatches as batch}
+    <T is={batch} />
+  {/each}
+
+  {#each grassBatches as batch}
+    <T is={batch} />
+  {/each}
+
+  {#each flowerBatches as batch}
+    <T is={batch} />
+  {/each}
+</T.Group>
 
 {#each mushroomClones as clone, i}
   {@const p = mushroomPlacements[i]}
   {#if p}
-    <T is={clone} position.x={p.x} position.y={groundY} position.z={p.z} scale={p.scale} rotation.y={p.rotationY} />
-  {/if}
-{/each}
-
-{#each rockClones as clone, i}
-  {@const p = rockPlacements[i]}
-  {#if p}
-    <T is={clone} position.x={p.x} position.y={groundY} position.z={p.z} scale={p.scale * 1.8} rotation.y={p.rotationY} />
-  {/if}
-{/each}
-
-{#each logClones as clone, i}
-  {@const p = logPlacements[i]}
-  {#if p}
-    <T is={clone} position.x={p.x} position.y={groundY} position.z={p.z} scale={p.scale * 1.2} rotation.y={p.rotationY} />
-  {/if}
-{/each}
-
-{#each grassClones as clone, i}
-  {@const p = grassPlacements[i]}
-  {#if p}
-    <T is={clone} position.x={p.x} position.y={groundY} position.z={p.z} scale={p.scale} rotation.y={p.rotationY} />
-  {/if}
-{/each}
-
-{#each flowerClones as clone, i}
-  {@const p = flowerPlacements[i]}
-  {#if p}
-    <T is={clone} position.x={p.x} position.y={groundY} position.z={p.z} scale={p.scale} rotation.y={p.rotationY} />
+    <T
+      is={clone}
+      position.x={p.x}
+      position.y={groundY}
+      position.z={p.z}
+      scale={p.scale}
+      rotation.y={p.rotationY}
+    />
   {/if}
 {/each}

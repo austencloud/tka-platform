@@ -7,7 +7,6 @@ export interface PreviewSceneProps {
   stageWidth: number;
   stageDepth: number;
   stageZOffset?: number;
-  loadUnreleasedHeroAssets?: boolean;
 }
 
 export type PreviewSceneComponent = Component<PreviewSceneProps>;

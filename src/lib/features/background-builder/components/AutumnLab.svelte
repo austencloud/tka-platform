@@ -16,8 +16,12 @@
 
   // Layer toggles
   let layers = $state({
-    gradient: true,
+    sky: true,
+    moon: true,
+    trees: true,
+    landscape: true,
     leaves: true,
+    owl: true,
   });
 
   // Density presets
@@ -29,7 +33,7 @@
   let windPreset: WindPreset = $state("breezy");
 
   // Stats
-  let stats = $state({ leaves: 0 });
+  let stats = $state({ leaves: 0, treesLoaded: 0 });
   let lastStatsUpdate = 0;
 
   // Initialize system when canvas is ready
@@ -37,11 +41,7 @@
     canvasDimensions = dimensions;
     backgroundSystem = new AutumnBackgroundSystem();
     backgroundSystem.initialize(dimensions, quality);
-
-    // Apply layer visibility
-    if (backgroundSystem.setLayerVisibility) {
-      backgroundSystem.setLayerVisibility(layers);
-    }
+    applySettings();
 
     isLoading = false;
   }
@@ -61,31 +61,38 @@
     }
     backgroundSystem = new AutumnBackgroundSystem();
     backgroundSystem.initialize(canvasDimensions, quality);
-    if (backgroundSystem.setLayerVisibility) {
-      backgroundSystem.setLayerVisibility(layers);
-    }
+    applySettings();
+  }
+
+  function applySettings() {
+    if (!backgroundSystem) return;
+    backgroundSystem.setLayerVisibility(layers);
+    backgroundSystem.setDensityPreset(densityPreset);
+    backgroundSystem.setWindPreset(windPreset);
+    backgroundSystem.setAccessibility({
+      reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+      highContrast: window.matchMedia("(prefers-contrast: more)").matches,
+    });
   }
 
   function setQuality(q: QualityLevel) {
     quality = q;
-    regenerate();
+    backgroundSystem?.setQuality(q);
   }
 
   function setDensity(preset: DensityPreset) {
     densityPreset = preset;
-    regenerate();
+    backgroundSystem?.setDensityPreset(preset);
   }
 
   function setWindPreset(preset: WindPreset) {
     windPreset = preset;
-    // Wind presets would be applied via the system if we add that capability
+    backgroundSystem?.setWindPreset(preset);
   }
 
   function toggleLayer(layer: keyof typeof layers) {
     layers = { ...layers, [layer]: !layers[layer] };
-    if (backgroundSystem?.setLayerVisibility) {
-      backgroundSystem.setLayerVisibility(layers);
-    }
+    backgroundSystem?.setLayerVisibility(layers);
   }
 
   onDestroy(() => {
@@ -99,7 +106,7 @@
   <div class="controls themed-scrollbar-accent">
     <div class="header">
       <h2>Autumn Lab</h2>
-      <span class="badge">Falling Leaves</span>
+      <span class="badge">Enchanted Dusk</span>
     </div>
 
     <!-- Quality Chips -->
@@ -111,8 +118,12 @@
 
     <!-- Layer Chips -->
     <ChipGroup>
-      <ChipToggle label="Background" icon="fill-drip" active={layers.gradient} color="amber" onclick={() => toggleLayer("gradient")} />
+      <ChipToggle label="Sky" icon="fill-drip" active={layers.sky} color="amber" onclick={() => toggleLayer("sky")} />
+      <ChipToggle label="Moon" icon="moon" active={layers.moon} color="amber" onclick={() => toggleLayer("moon")} />
+      <ChipToggle label="Trees" icon="tree" active={layers.trees} color="amber" onclick={() => toggleLayer("trees")} />
+      <ChipToggle label="Pond" icon="water" active={layers.landscape} color="amber" onclick={() => toggleLayer("landscape")} />
       <ChipToggle label="Leaves" icon="leaf" active={layers.leaves} color="amber" onclick={() => toggleLayer("leaves")} />
+      <ChipToggle label="Owl" icon="crow" active={layers.owl} color="amber" onclick={() => toggleLayer("owl")} />
     </ChipGroup>
 
     <!-- Density Chips -->
@@ -131,11 +142,16 @@
       <ChipToggle label="Gusty" active={windPreset === "gusty"} color="default" onclick={() => setWindPreset("gusty")} />
     </ChipGroup>
 
-    <!-- Regenerate -->
-    <button class="action-btn" onclick={regenerate}>
-      <i class="fas fa-leaf"></i>
-      Regenerate
-    </button>
+    <div class="actions">
+      <button class="action-btn" onclick={() => backgroundSystem?.triggerGust()}>
+        <i class="fas fa-wind"></i>
+        Call a Gust
+      </button>
+      <button class="secondary-btn" onclick={regenerate}>
+        <i class="fas fa-rotate"></i>
+        Reset Leaves
+      </button>
+    </div>
 
     <!-- Stats -->
     <div class="stats-section">
@@ -145,6 +161,10 @@
           <span class="stat-value">{stats.leaves}</span>
           <span class="stat-label">Leaves</span>
         </div>
+        <div class="stat">
+          <span class="stat-value">{stats.treesLoaded}/3</span>
+          <span class="stat-label">Trees</span>
+        </div>
       </div>
     </div>
 
@@ -152,11 +172,11 @@
     <div class="progress-section">
       <span class="label">Features</span>
       <div class="progress-pills">
-        <span class="pill complete">Sunset Gradient</span>
-        <span class="pill complete">Falling Leaves</span>
-        <span class="pill complete">Wind System</span>
-        <span class="pill complete">Leaf Rotation</span>
-        <span class="pill active">Layer Controls</span>
+        <span class="pill complete">Catalog Trees</span>
+        <span class="pill complete">Moonlit Pond</span>
+        <span class="pill complete">Branch Release</span>
+        <span class="pill complete">Perched Owl</span>
+        <span class="pill complete">Eased Gusts</span>
       </div>
     </div>
   </div>
@@ -174,7 +194,7 @@
 <style>
   .autumn-lab {
     display: grid;
-    grid-template-columns: 300px 1fr;
+    grid-template-columns: 320px 1fr;
     gap: 20px;
     height: 100%;
     min-height: 600px;
@@ -240,6 +260,38 @@
     transition: all 0.2s ease;
   }
 
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .secondary-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 10px 14px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    color: #f3f4f6;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .secondary-btn:hover {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.32);
+  }
+
+  .secondary-btn:focus-visible {
+    outline: 2px solid #fbbf24;
+    outline-offset: 2px;
+  }
+
   .action-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 8px 20px rgba(217, 119, 6, 0.35);
@@ -264,7 +316,7 @@
 
   .stats-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
 
@@ -315,27 +367,17 @@
     color: var(--theme-success, #34d399);
   }
 
-  .pill.active {
-    background: rgba(245, 158, 11, 0.2);
-    color: #fbbf24;
-    animation: pulse 2s infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-  }
-
   @media (max-width: 800px) {
     .autumn-lab {
       grid-template-columns: 1fr;
-      grid-template-rows: auto 400px;
+      grid-template-rows: minmax(0, auto) minmax(400px, 58vh);
     }
   }
 
   /* Accessibility: Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .action-btn,
+    .secondary-btn,
     .pill {
       transition: none;
       animation: none;

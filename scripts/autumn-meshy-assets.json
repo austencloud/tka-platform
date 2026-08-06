@@ -1,6 +1,8 @@
 {
   "stylePrefix": "stylized painterly low-poly fantasy, cohesive art direction, dusk lighting,",
   "polycount": 30000,
+  "estimatedCreditsPerAsset": 30,
+  "maxCredits": 150,
   "assets": [
     {
       "id": "hero-tree-a",
@@ -15,6 +17,38 @@
       "textureSize": 2048
     },
     {
+      "id": "silver-birch-cluster",
+      "stylePrefix": "cinematic stylized realism, premium fantasy game asset, cohesive with realistic gnarled autumn forest trees, isolated complete object, no text, no background,",
+      "prompt": "small cluster of three slender silver birch trees growing from one shared root mound, graceful asymmetrical trunks, delicate high branching, airy crown with sparse small golden autumn leaves, clearly different narrow silhouette from an ancient oak, roots visibly enter the ground, full trees from roots to crown",
+      "texturePrompt": "natural chalk-white and charcoal peeling birch bark, fine warm gray branches, restrained translucent gold and pale copper autumn foliage, dark moss at the shared roots, physically based woodland materials, no baked lighting, no glowing leaves",
+      "polycount": 24000,
+      "textureSize": 2048
+    },
+    {
+      "id": "autumn-snag",
+      "stylePrefix": "cinematic stylized realism, premium fantasy game asset, cohesive with realistic gnarled autumn forest trees, isolated complete object, no text, no background,",
+      "prompt": "tall weather-sculpted dead hardwood snag, split lightning-struck trunk, twisting bare branches, one small surviving side branch carrying a sparse cluster of russet leaves, hollow cavity and broken crown, exposed roots visibly enter the ground, strong narrow readable silhouette, full tree from roots to crown",
+      "texturePrompt": "aged charcoal brown bark with pale exposed heartwood at broken ends, subtle lichen and dark moss, restrained russet leaves only on the surviving branch, physically based woodland materials, no baked lighting, no glow",
+      "polycount": 22000,
+      "textureSize": 2048
+    },
+    {
+      "id": "golden-larch",
+      "stylePrefix": "cinematic stylized realism, premium fantasy game asset, cohesive with realistic gnarled autumn forest trees, isolated complete object, no text, no background,",
+      "prompt": "tall mature golden larch tree, one straight tapered trunk, layered irregular conical crown, fine slightly drooping branchlets carrying dense soft autumn needles, open gaps between branch tiers, exposed roots visibly enter the ground, strong narrow conifer silhouette, full tree from roots to crown",
+      "texturePrompt": "deep gray-brown fissured larch bark, luminous natural ochre and muted gold autumn needles with touches of olive, dark moss at the roots, physically based woodland materials, diffuse albedo without baked lighting, no snow, no glow",
+      "polycount": 24000,
+      "textureSize": 2048
+    },
+    {
+      "id": "autumn-willow",
+      "stylePrefix": "cinematic stylized realism, premium fantasy game asset, cohesive with realistic gnarled autumn forest trees, isolated complete object, no text, no background,",
+      "prompt": "mature autumn willow tree, low leaning trunk dividing into several graceful limbs, broad asymmetrical crown, many long thin hanging branch curtains, sparse narrow leaves, exposed roots visibly enter the ground, unmistakable drooping silhouette, full tree from roots to crown",
+      "texturePrompt": "weathered warm gray willow bark, hanging foliage in muted straw gold, pale copper, and olive, subtle moss near roots, physically based woodland materials, diffuse albedo without baked lighting, no water base, no glow",
+      "polycount": 24000,
+      "textureSize": 2048
+    },
+    {
       "id": "mushroom-grove",
       "prompt": "cluster of oversized fantasy glowing mushrooms, fat caps, clustered stems, forest floor base with moss and fallen leaves",
       "texturePrompt": "bioluminescent teal and violet mushroom caps with vein-lit glowing gills, emissive, mossy base, dusk",
@@ -25,6 +59,14 @@
       "prompt": "circular fantasy forest floor terrain, gentle mounds, a shallow pond depression on one side, leaf litter, exposed roots and rocks, low rim",
       "texturePrompt": "autumn forest floor, fallen crimson-gold leaves, damp moss, dark soil, dusk",
       "textureSize": 1024
+    },
+    {
+      "id": "perched-owl",
+      "stylePrefix": "cinematic stylized realism, premium fantasy game asset, natural anatomy, clean readable silhouette, physically based materials, isolated complete object, no text, no background,",
+      "prompt": "great horned owl perched on a short weathered branch section, compact calm silhouette, closed talons firmly wrapped around the branch, wings folded against the body, visible feather tufts, full body, head turned slightly to one side, branch and owl connected as one stable display asset",
+      "texturePrompt": "natural barred owl feathers in charcoal, deep umber, muted copper, and cream, subtle amber eyes with a tiny catchlight, realistic layered feather texture, rough weathered bark, restrained dusk color, no baked shadow, no glowing body",
+      "polycount": 25000,
+      "textureSize": 2048
     }
   ]
 }

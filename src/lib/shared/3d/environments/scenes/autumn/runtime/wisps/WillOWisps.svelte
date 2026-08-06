@@ -1,7 +1,14 @@
 <script lang="ts">
   import { T, useTask } from "@threlte/core";
   import { onDestroy, untrack } from "svelte";
-  import { SphereGeometry, MeshStandardMaterial, Color, Group, Mesh, type Vector3 } from "three";
+  import {
+    SphereGeometry,
+    MeshStandardMaterial,
+    Color,
+    Group,
+    Mesh,
+    type Vector3,
+  } from "three";
   import type { AutumnQualityConfig } from "../../quality/autumn-quality";
 
   interface Props {
@@ -13,14 +20,16 @@
      * The interaction layer reads the moving position for free — no per-frame
      * copy. baseIntensity is captured downstream from material.emissiveIntensity.
      */
-    onWispTargets?: (targets: { material: MeshStandardMaterial; position: Vector3 }[]) => void;
+    onWispTargets?: (
+      targets: { material: MeshStandardMaterial; position: Vector3 }[]
+    ) => void;
   }
 
   let { quality, groundY = 0, onWispTargets }: Props = $props();
 
-  // Warm amber glow shared by every wisp.
-  const WISP_COLOR = "#ffd8a0";
-  const BASE_EMISSIVE = 1.2;
+  // Cool-biased bioluminescence separates the wisps from the amber canopy.
+  const WISP_COLORS = ["#68f4dc", "#b58cff", "#ffbf73"] as const;
+  const BASE_EMISSIVE = 1.6;
 
   // ── Per-wisp drift state ─────────────────────────────────────────────
 
@@ -37,7 +46,7 @@
   }
 
   // One shared unit sphere — scaled per-mesh, disposed once.
-  const sharedCoreGeo = untrack(() => new SphereGeometry(1, 16, 16));
+  const sharedCoreGeo = untrack(() => new SphereGeometry(1, 12, 12));
 
   // Build wisp configs/groups/materials ONCE. wispCount: 4 low / 6 med / 9 high.
   const wisps: Wisp[] = untrack(() => {
@@ -46,18 +55,24 @@
     for (let i = 0; i < count; i++) {
       // Scatter around a ring so wisps drift between the trees.
       const angle = (i / count) * Math.PI * 2 + i * 0.37;
-      const radius = 4.5 + (i % 3) * 1.6;
+      const radius = 8.0 + (i % 3) * 2.0;
       // Varied hover height between ~1 and ~4 units above the ground.
       const height = 1 + ((i * 0.618) % 1) * 3;
-      // Small core scale, varied per wisp (0.06–0.12).
-      const scale = 0.06 + ((i * 0.41) % 1) * 0.06;
+      // Small core scale, varied per wisp. The emissive bloom supplies the halo;
+      // the geometry itself should never read as a floating white ball.
+      const scale = 0.008 + ((i * 0.41) % 1) * 0.006;
 
       const group = new Group();
+      const wispColor = new Color(WISP_COLORS[i % WISP_COLORS.length]);
 
       const coreMat = new MeshStandardMaterial({
-        color: new Color(WISP_COLOR),
-        emissive: new Color(WISP_COLOR),
+        color: wispColor,
+        emissive: wispColor,
         emissiveIntensity: BASE_EMISSIVE,
+        roughness: 0.3,
+        transparent: true,
+        opacity: 0.58,
+        depthWrite: false,
       });
       const core = new Mesh(sharedCoreGeo, coreMat);
       core.scale.setScalar(scale);
@@ -86,7 +101,7 @@
     if (materialsFired) return;
     materialsFired = true;
     onWispTargets?.(
-      wisps.map((w) => ({ material: w.coreMat, position: w.group.position })),
+      wisps.map((w) => ({ material: w.coreMat, position: w.group.position }))
     );
   });
 
@@ -101,7 +116,7 @@
       wisp.group.position.set(
         wisp.baseX + Math.sin(t * 0.7) * wisp.driftRadius,
         wisp.baseY + Math.sin(t) * wisp.bobAmplitude,
-        wisp.baseZ + Math.cos(t * 0.5) * wisp.driftRadius,
+        wisp.baseZ + Math.cos(t * 0.5) * wisp.driftRadius
       );
     }
   });
@@ -117,14 +132,13 @@
   });
 </script>
 
-<!-- Drifting glowing orbs — each an emissive core + a soft warm point light -->
+<!-- Drifting emissive cores. Bloom carries the halo without adding several
+     scene-wide point-light calculations to every ground and flora fragment. -->
 {#each wisps as wisp (wisp)}
   <T
     is={wisp.group}
     position.x={wisp.baseX}
     position.y={wisp.baseY}
     position.z={wisp.baseZ}
-  >
-    <T.PointLight color={WISP_COLOR} intensity={3} distance={5} decay={2} />
-  </T>
+  />
 {/each}

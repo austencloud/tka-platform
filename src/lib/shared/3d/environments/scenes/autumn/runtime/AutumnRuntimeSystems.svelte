@@ -16,7 +16,11 @@
    * No per-frame work lives here — it's a declarative wiring shell.
    */
 
-  import type { AutumnQualityConfig } from "../quality/autumn-quality";
+  import type {
+    AutumnQualityConfig,
+    AutumnQualityTier,
+  } from "../quality/autumn-quality";
+  import type { Object3D } from "three";
   import type { PulseTarget } from "./interaction/AutumnInteraction.svelte";
   import AutumnLighting from "./lighting/AutumnLighting.svelte";
   import AutumnParticles from "./atmosphere/AutumnParticles.svelte";
@@ -24,9 +28,12 @@
   import AutumnPond from "./water/AutumnPond.svelte";
   import GodRayShafts from "./atmosphere/GodRayShafts.svelte";
   import AutumnInteraction from "./interaction/AutumnInteraction.svelte";
+  import AutumnWind from "./wind/AutumnWind.svelte";
 
   interface Props {
     quality: AutumnQualityConfig;
+    tier: AutumnQualityTier;
+    environmentScene?: Object3D | null;
     groundY?: number;
     performerCount?: number;
     stageWidth?: number;
@@ -39,6 +46,8 @@
 
   let {
     quality,
+    tier,
+    environmentScene = null,
     groundY = 0,
     performerCount = 1,
     stageWidth = 6,
@@ -56,6 +65,10 @@
   // Combined targets: mushrooms (orchestrator prop) + wisps (assembled here).
   const allTargets = $derived([...(mushroomTargets ?? []), ...wispTargets]);
 </script>
+
+<!-- Authored grass stays rooted while its tips share one deterministic shader
+     clock. The quality tier reveals cumulative Blender-authored density. -->
+<AutumnWind scene={environmentScene} {tier} />
 
 <!-- Warm/cool dusk light rig -->
 <AutumnLighting {quality} {groundY} />
@@ -76,10 +89,10 @@
     })))}
 />
 
-<!-- Still mirror pond; pondCenter drives its world position when provided -->
+<!-- Static dusk pond; pondCenter drives its world position when provided -->
 <AutumnPond {quality} {groundY} position={pondCenter} />
 
-<!-- Warm volumetric shafts (high/medium tiers only) -->
+<!-- Optional warm volumetric shafts -->
 {#if quality.godRays}
   <GodRayShafts />
 {/if}

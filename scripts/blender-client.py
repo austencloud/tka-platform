@@ -11,6 +11,7 @@ Usage:
   python scripts/blender-client.py exec <code-file.py>
 """
 import json
+import os
 import socket
 import sys
 
@@ -56,9 +57,21 @@ def main():
         r = send("get_viewport_screenshot", {"max_size": max_size, "filepath": out, "format": "png"})
         print(json.dumps(r, indent=2))
     elif cmd == "exec":
-        with open(args[1], "r", encoding="utf-8") as f:
+        script_path = os.path.abspath(args[1])
+        with open(script_path, "r", encoding="utf-8") as f:
             code = f.read()
-        print(json.dumps(send("execute_code", {"code": code}), indent=2))
+        # BlenderMCP executes source with ``exec(code, globals())`` rather than
+        # Python's file loader. Compile with the real filename so repository-
+        # relative paths and tracebacks behave like a normal script run.
+        wrapped = (
+            "import traceback\n"
+            f"__file__ = {script_path!r}\n"
+            "try:\n"
+            f"    exec(compile({code!r}, {script_path!r}, 'exec'), globals())\n"
+            "except Exception:\n"
+            "    raise RuntimeError(traceback.format_exc())\n"
+        )
+        print(json.dumps(send("execute_code", {"code": wrapped}), indent=2))
     else:
         raise SystemExit("Unknown command: " + cmd)
 

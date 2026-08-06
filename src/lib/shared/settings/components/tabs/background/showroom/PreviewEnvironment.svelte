@@ -60,9 +60,6 @@
 
     if (type === BackgroundType.FOREST) return { ...base, variant: "firefly" };
     if (type === BackgroundType.COSMIC) return { ...base, variant: "night" };
-    if (type === BackgroundType.AUTUMN) {
-      return { ...base, loadUnreleasedHeroAssets: false };
-    }
     return base;
   }
 

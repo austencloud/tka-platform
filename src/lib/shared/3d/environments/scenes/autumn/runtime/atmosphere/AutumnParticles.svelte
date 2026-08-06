@@ -14,6 +14,12 @@
   import { T } from "@threlte/core";
   import FallingParticles from "../../../../primitives/FallingParticles.svelte";
   import type { AutumnQualityConfig } from "../../quality/autumn-quality";
+  import {
+    allocateAutumnCanopyLeaves,
+    allocateAutumnFireflies,
+    AUTUMN_FIREFLY_CLUSTERS,
+    AUTUMN_LEAF_EMITTERS,
+  } from "./autumn-ground-life-layout";
 
   interface Props {
     quality: AutumnQualityConfig;
@@ -25,24 +31,32 @@
 
   // Leaf area is centered slightly above ground level so the fall looks natural.
   // sporeArea is narrower and lower — motes rise from the forest floor.
-  const leafAreaHeight = 18;
   const sporeAreaHeight = 8;
+  const leafCounts = $derived(allocateAutumnCanopyLeaves(quality.leafCount));
+  const fireflyCounts = $derived(allocateAutumnFireflies(quality.fireflyCount));
 </script>
 
 <!-- ── Leaves ─────────────────────────────────────────────────────────────── -->
-<!-- Slow-tumbling foliage falling through a 40×18×40 m canopy column.        -->
+<!-- Each emitter sits beneath a real authored canopy, so no leaf appears to
+     enter from the open sky above the performance clearing. -->
 {#key quality.leafCount}
-  <T.Group position.y={groundY + leafAreaHeight * 0.5}>
-    <FallingParticles
-      type="leaves"
-      count={quality.leafCount}
-      area={{ width: 40, height: leafAreaHeight, depth: 40 }}
-      speed={0.12}
-      colors={["#b5571a", "#d98324", "#8a2e16", "#e0a040"]}
-      sizeRange={[0.06, 0.14]}
-      spin={true}
-    />
-  </T.Group>
+  {#each AUTUMN_LEAF_EMITTERS as emitter, index (emitter.id)}
+    <T.Group
+      position.x={emitter.position[0]}
+      position.y={groundY + emitter.area.height * 0.72}
+      position.z={emitter.position[1]}
+    >
+      <FallingParticles
+        type="leaves"
+        count={leafCounts[index] ?? 0}
+        area={emitter.area}
+        speed={0.105}
+        colors={["#b5571a", "#d98324", "#8a2e16", "#e0a040"]}
+        sizeRange={[0.04, 0.095]}
+        spin={true}
+      />
+    </T.Group>
+  {/each}
 {/key}
 
 <!-- ── Spores ─────────────────────────────────────────────────────────────── -->
@@ -56,29 +70,36 @@
       area={{ width: 30, height: sporeAreaHeight, depth: 30 }}
       speed={0.03}
       colors={["#9af9e0", "#00c8b4"]}
-      sizeRange={[0.02, 0.05]}
+      sizeRange={[0.008, 0.022]}
       spin={false}
     />
   </T.Group>
 {/key}
 
 <!-- ── Fireflies ──────────────────────────────────────────────────────────── -->
-<!-- Warm-glow pulses clustered in a 12×5×12 m zone near the pond.            -->
-<!-- When pondCenter is provided the group offsets to that XZ position.        -->
+<!-- Warm-glow pulses live around the pond and both authored mushroom rings. -->
 {#key quality.fireflyCount}
-  <T.Group
-    position.x={pondCenter ? pondCenter[0] : 0}
-    position.y={pondCenter ? pondCenter[1] + 1 : groundY + 2}
-    position.z={pondCenter ? pondCenter[2] : 0}
-  >
-    <FallingParticles
-      type="fireflies"
-      count={quality.fireflyCount}
-      area={{ width: 12, height: 5, depth: 12 }}
-      speed={0.04}
-      colors={["#ffe9a0", "#ffcf66"]}
-      sizeRange={[0.04, 0.09]}
-      spin={false}
-    />
-  </T.Group>
+  {#each AUTUMN_FIREFLY_CLUSTERS as cluster, index (cluster.id)}
+    <T.Group
+      position.x={cluster.id === "pond" && pondCenter
+        ? pondCenter[0]
+        : cluster.position[0]}
+      position.y={pondCenter ? pondCenter[1] + 1.4 : groundY + 1.4}
+      position.z={cluster.id === "pond" && pondCenter
+        ? pondCenter[2]
+        : cluster.position[1]}
+    >
+      <FallingParticles
+        type="fireflies"
+        count={fireflyCounts[index] ?? 0}
+        area={cluster.area}
+        speed={0.032}
+        colors={cluster.id === "pond"
+          ? ["#c9fff1", "#ffe8a3"]
+          : ["#ffe9a0", "#ffbd52"]}
+        sizeRange={[0.014, 0.04]}
+        spin={false}
+      />
+    </T.Group>
+  {/each}
 {/key}
