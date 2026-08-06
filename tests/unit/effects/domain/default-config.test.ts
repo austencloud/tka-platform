@@ -8,7 +8,9 @@ describe("DEFAULT_EFFECTS_CONFIG", () => {
   });
 
   it("has a tipEffectMap with trails as the global default", () => {
-    expect(DEFAULT_EFFECTS_CONFIG.tipEffectMap).toEqual({ "*": { effect: "trails" } });
+    expect(DEFAULT_EFFECTS_CONFIG.tipEffectMap).toEqual({
+      "*": { effect: "trails" },
+    });
   });
 
   it("has valid trails intent", () => {
@@ -56,12 +58,38 @@ describe("DEFAULT_EFFECTS_CONFIG", () => {
     }
   });
 
+  it("uses Sumi Flow as the ink default", () => {
+    expect(DEFAULT_EFFECTS_CONFIG.ink).toEqual({
+      ambientEmission: 0.1,
+      motionEmission: 0.94,
+      intensity: 0.68,
+      palette: "sumi",
+      customColor: "#0a0a0a",
+      viscosity: 0.38,
+      splatterIntensity: 0.16,
+      trackingMode: "both_ends",
+    });
+  });
+
   it("has activePresets all null", () => {
     expect(DEFAULT_EFFECTS_CONFIG.activePresets).toEqual({
-      trails: null, fire: null, led: null, charcoal: null,
-      zap: null, sparkles: null, ghost: null, bloom: null,
-      goo: null, bubbles: null, petals: null, smoke: null,
-      ink: null, frost: null, silk: null, animal: null, pulse: null,
+      trails: null,
+      fire: null,
+      led: null,
+      charcoal: null,
+      zap: null,
+      sparkles: null,
+      ghost: null,
+      bloom: null,
+      goo: null,
+      bubbles: null,
+      petals: null,
+      smoke: null,
+      ink: null,
+      frost: null,
+      silk: null,
+      animal: null,
+      pulse: null,
     });
   });
 

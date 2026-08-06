@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { migrateEffectsConfig } from "./migrations";
 import { EFFECTS_CONFIG_VERSION } from "./effects-config";
+import { DEFAULT_EFFECTS_CONFIG } from "./defaults";
 
 describe("migrateEffectsConfig", () => {
   it("migrates v1 → current with default zap colors", () => {
@@ -14,7 +15,13 @@ describe("migrateEffectsConfig", () => {
   it("migrates v2 zap.color to v3 zap.leftColor + rightColor", () => {
     const v2 = {
       version: 2,
-      zap: { intensity: 0.9, color: "#ff00ff", frequency: 10, mode: "arc", branching: 0.4 },
+      zap: {
+        intensity: 0.9,
+        color: "#ff00ff",
+        frequency: 10,
+        mode: "arc",
+        branching: 0.4,
+      },
     };
     const out = migrateEffectsConfig(v2);
     expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
@@ -26,7 +33,14 @@ describe("migrateEffectsConfig", () => {
   it("leaves a current-version zap untouched", () => {
     const current = {
       version: EFFECTS_CONFIG_VERSION,
-      zap: { intensity: 0.5, leftColor: "#aaaaaa", rightColor: "#bbbbbb", frequency: 5, mode: "arc", branching: 0.2 },
+      zap: {
+        intensity: 0.5,
+        leftColor: "#aaaaaa",
+        rightColor: "#bbbbbb",
+        frequency: 5,
+        mode: "arc",
+        branching: 0.2,
+      },
     };
     const out = migrateEffectsConfig(current);
     expect(out.zap.leftColor).toBe("#aaaaaa");
@@ -37,8 +51,11 @@ describe("migrateEffectsConfig", () => {
     const v3 = {
       version: 3,
       sparkles: {
-        rate: 0.6, size: 0.4, lifetime: 1.0,
-        color: "#ff00ff", rainbow: true,
+        rate: 0.6,
+        size: 0.4,
+        lifetime: 1.0,
+        color: "#ff00ff",
+        rainbow: true,
       },
     };
     const out = migrateEffectsConfig(v3);
@@ -56,8 +73,11 @@ describe("migrateEffectsConfig", () => {
     const v3 = {
       version: 3,
       sparkles: {
-        rate: 0.5, size: 0.5, lifetime: 1.2,
-        color: "#fbbf24", rainbow: false,
+        rate: 0.5,
+        size: 0.5,
+        lifetime: 1.2,
+        color: "#fbbf24",
+        rainbow: false,
       },
     };
     const out = migrateEffectsConfig(v3);
@@ -69,11 +89,15 @@ describe("migrateEffectsConfig", () => {
     const v4 = {
       version: EFFECTS_CONFIG_VERSION,
       sparkles: {
-        rate: 0.7, size: 0.6, lifetime: 2.0,
+        rate: 0.7,
+        size: 0.6,
+        lifetime: 2.0,
         color: "#67e8f9",
         palette: ["#aaa", "#bbb", "#ccc"],
         colorMode: "palette" as const,
-        spread: 12, gravity: 0.8, mode: "burst" as const,
+        spread: 12,
+        gravity: 0.8,
+        mode: "burst" as const,
       },
     };
     const out = migrateEffectsConfig(v4);
@@ -102,9 +126,13 @@ describe("migrateEffectsConfig", () => {
     const v5 = {
       version: 5,
       motion: {
-        blur: 0.6, speedLines: 0.8, threshold: 0.3,
-        color: "#ff0", colorMode: "solid" as const,
-        length: 0.7, count: 8,
+        blur: 0.6,
+        speedLines: 0.8,
+        threshold: 0.3,
+        color: "#ff0",
+        colorMode: "solid" as const,
+        length: 0.7,
+        count: 8,
       },
     };
     const out = migrateEffectsConfig(v5);
@@ -135,7 +163,10 @@ describe("migrateEffectsConfig", () => {
   it("migrates v5 activePresets.motion → ghost (via echo)", () => {
     const v5 = {
       version: 5,
-      activePresets: { motion: "motion-anime", sparkles: "sparkles-fairy-dust" },
+      activePresets: {
+        motion: "motion-anime",
+        sparkles: "sparkles-fairy-dust",
+      },
     };
     const out = migrateEffectsConfig(v5);
     expect((out.activePresets as any).motion).toBeUndefined();
@@ -363,14 +394,7 @@ describe("migrateEffectsConfig", () => {
     };
     const out = migrateEffectsConfig(v11);
     expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
-    expect(out.ink).toBeDefined();
-    expect(out.ink.palette).toBe("watercolor");
-    expect(out.ink.ambientEmission).toBe(0.2);
-    expect(out.ink.motionEmission).toBe(0.8);
-    expect(out.ink.intensity).toBe(0.6);
-    expect(out.ink.viscosity).toBe(0.3);
-    expect(out.ink.splatterIntensity).toBe(0.3);
-    expect(out.ink.trackingMode).toBe("both_ends");
+    expect(out.ink).toEqual(DEFAULT_EFFECTS_CONFIG.ink);
     expect(out.activePresets.ink).toBe(null);
   });
 
@@ -412,8 +436,12 @@ describe("migrateEffectsConfig", () => {
     const v15 = {
       version: 15,
       led: {
-        brightness: 5, patternId: "rainbow", patternSpeed: 2.0,
-        primaryColor: "#ff0000", secondaryColor: "#00ff00", colorMode: "unified" as const,
+        brightness: 5,
+        patternId: "rainbow",
+        patternSpeed: 2.0,
+        primaryColor: "#ff0000",
+        secondaryColor: "#00ff00",
+        colorMode: "unified" as const,
       },
     };
     const out = migrateEffectsConfig(v15);
@@ -428,8 +456,12 @@ describe("migrateEffectsConfig", () => {
     const v15 = {
       version: 15,
       led: {
-        brightness: 2, patternId: "solid", patternSpeed: 1.0,
-        primaryColor: "#00ff88", secondaryColor: "#ffffff", colorMode: "unified" as const,
+        brightness: 2,
+        patternId: "solid",
+        patternSpeed: 1.0,
+        primaryColor: "#00ff88",
+        secondaryColor: "#ffffff",
+        colorMode: "unified" as const,
       },
     };
     const out = migrateEffectsConfig(v15);
@@ -440,8 +472,12 @@ describe("migrateEffectsConfig", () => {
     const current = {
       version: EFFECTS_CONFIG_VERSION,
       led: {
-        brightness: 5, patternId: "solid", patternSpeed: 1.0,
-        primaryColor: "#00ff88", secondaryColor: "#ffffff", colorMode: "unified" as const,
+        brightness: 5,
+        patternId: "solid",
+        patternSpeed: 1.0,
+        primaryColor: "#00ff88",
+        secondaryColor: "#ffffff",
+        colorMode: "unified" as const,
       },
     };
     const out = migrateEffectsConfig(current);
@@ -452,10 +488,14 @@ describe("migrateEffectsConfig", () => {
     const v16 = {
       version: 16,
       bloom: {
-        intensity: 0.95, radius: 90, color: "#f472b6",
+        intensity: 0.95,
+        radius: 90,
+        color: "#f472b6",
         palette: ["#f472b6", "#fbbf24", "#22d3ee"],
-        colorMode: "solid" as const, falloff: "smooth" as const,
-        pulse: 0, pulseRate: 1,
+        colorMode: "solid" as const,
+        falloff: "smooth" as const,
+        pulse: 0,
+        pulseRate: 1,
       },
     };
     const out = migrateEffectsConfig(v16);
@@ -471,10 +511,14 @@ describe("migrateEffectsConfig", () => {
     const v16 = {
       version: 16,
       bloom: {
-        intensity: 0.8, radius: 90, color: "#f472b6",
+        intensity: 0.8,
+        radius: 90,
+        color: "#f472b6",
         palette: ["#f472b6", "#fbbf24", "#22d3ee"],
-        colorMode: "palette" as const, falloff: "smooth" as const,
-        pulse: 0, pulseRate: 1,
+        colorMode: "palette" as const,
+        falloff: "smooth" as const,
+        pulse: 0,
+        pulseRate: 1,
       },
     };
     const out = migrateEffectsConfig(v16);
@@ -486,10 +530,18 @@ describe("migrateEffectsConfig", () => {
     const current = {
       version: EFFECTS_CONFIG_VERSION,
       bloom: {
-        intensity: 0.95, radius: 90, color: "#f472b6",
+        intensity: 0.95,
+        radius: 90,
+        color: "#f472b6",
         palette: ["#f472b6", "#fbbf24", "#22d3ee"],
-        colorMode: "solid" as const, falloff: "smooth" as const,
-        pulse: 0, pulseRate: 1, streak: 0.55, spikes: 0.6, chromatic: 0.35, afterglow: 0.5,
+        colorMode: "solid" as const,
+        falloff: "smooth" as const,
+        pulse: 0,
+        pulseRate: 1,
+        streak: 0.55,
+        spikes: 0.6,
+        chromatic: 0.35,
+        afterglow: 0.5,
       },
     };
     const out = migrateEffectsConfig(current);
@@ -513,8 +565,12 @@ describe("migrateEffectsConfig", () => {
     const v21 = {
       version: 21,
       fire: {
-        intensity: 0.7, colorBlend: 0.5, turbulence: 0.5,
-        colorCurve: null, propColors: null, customColors: null,
+        intensity: 0.7,
+        colorBlend: 0.5,
+        turbulence: 0.5,
+        colorCurve: null,
+        propColors: null,
+        customColors: null,
       },
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -532,8 +588,13 @@ describe("migrateEffectsConfig", () => {
     const current = {
       version: EFFECTS_CONFIG_VERSION,
       fire: {
-        intensity: 0.7, brightness: 0.35, colorBlend: 0.5, turbulence: 0.5,
-        colorCurve: null, propColors: null, customColors: null,
+        intensity: 0.7,
+        brightness: 0.35,
+        colorBlend: 0.5,
+        turbulence: 0.5,
+        colorCurve: null,
+        propColors: null,
+        customColors: null,
       },
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

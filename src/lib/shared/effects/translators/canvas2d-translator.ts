@@ -60,7 +60,7 @@ import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/tr
  */
 export function foldTrailIntentIntoSettings(
   base: TrailSettings,
-  intent: TrailsIntent | null | undefined,
+  intent: TrailsIntent | null | undefined
 ): TrailSettings {
   if (!intent) return base;
   return {
@@ -75,7 +75,7 @@ export function foldTrailIntentIntoSettings(
 
 export function resolveTrails2D(
   intent: TrailsIntent,
-  override: Partial<Trails2DParams> = {},
+  override: Partial<Trails2DParams> = {}
 ): Trails2DParams {
   const defaults: Omit<Trails2DParams, keyof TrailsIntent> = {
     lineWidth: intent.thickness,
@@ -88,14 +88,14 @@ export function resolveTrails2D(
 
 export function resolveFire2D(
   intent: FireIntent,
-  override: Partial<Fire2DParams> = {},
+  override: Partial<Fire2DParams> = {}
 ): Fire2DParams {
   return { ...intent, ...override };
 }
 
 export function resolveLed2D(
   intent: LedIntent,
-  override: Partial<Led2DParams> = {},
+  override: Partial<Led2DParams> = {}
 ): Led2DParams {
   const defaults: Omit<Led2DParams, keyof LedIntent> = {
     dotRadius: 2,
@@ -105,7 +105,7 @@ export function resolveLed2D(
 
 export function resolveCharcoal2D(
   intent: CharcoalIntent,
-  override: Partial<Charcoal2DParams> = {},
+  override: Partial<Charcoal2DParams> = {}
 ): Charcoal2DParams {
   const defaults: Omit<Charcoal2DParams, keyof CharcoalIntent> = {
     particleCount: 200,
@@ -115,7 +115,7 @@ export function resolveCharcoal2D(
 
 export function resolveZap2D(
   intent: ZapIntent,
-  override: Partial<Zap2DParams> = {},
+  override: Partial<Zap2DParams> = {}
 ): Zap2DParams {
   const defaults: Omit<Zap2DParams, keyof ZapIntent> = {
     segments: Math.max(4, Math.round(6 + intent.intensity * 10)),
@@ -130,7 +130,7 @@ export function resolveZap2D(
 
 export function resolveSparkles2D(
   intent: SparklesIntent,
-  override: Partial<Sparkles2DParams> = {},
+  override: Partial<Sparkles2DParams> = {}
 ): Sparkles2DParams {
   // Size dial → per-particle base scale, authored against the 500px reference
   // canvas. Linear remap across the FULL slider into a capped range: size=0 →
@@ -154,7 +154,7 @@ export function resolveSparkles2D(
 
 export function resolveGhost2D(
   intent: GhostIntent,
-  override: Partial<Ghost2DParams> = {},
+  override: Partial<Ghost2DParams> = {}
 ): Ghost2DParams {
   const defaults: Omit<Ghost2DParams, keyof GhostIntent> = {
     blendMode: "lighter",
@@ -164,7 +164,7 @@ export function resolveGhost2D(
 
 export function resolveBloom2D(
   intent: BloomIntent,
-  override: Partial<Bloom2DParams> = {},
+  override: Partial<Bloom2DParams> = {}
 ): Bloom2DParams {
   const defaults: Omit<Bloom2DParams, keyof BloomIntent> = {
     blendMode: "lighter",
@@ -174,7 +174,7 @@ export function resolveBloom2D(
 
 export function resolveGoo2D(
   intent: GooIntent,
-  override: Partial<GooParams> = {},
+  override: Partial<GooParams> = {}
 ): GooParams {
   const defaults: Omit<GooParams, keyof GooIntent> = {
     resolvedPalette: resolveWaterPalette(intent),
@@ -190,7 +190,7 @@ export function resolveGoo2D(
 
 export function resolveBubbles2D(
   intent: BubblesIntent,
-  override: Partial<Bubbles2DParams> = {},
+  override: Partial<Bubbles2DParams> = {}
 ): Bubbles2DParams {
   const defaults: Omit<Bubbles2DParams, keyof BubblesIntent> = {
     resolvedPalette: resolveBubblePalette(intent),
@@ -206,7 +206,7 @@ export function resolveBubbles2D(
 
 export function resolvePetals2D(
   intent: PetalsIntent,
-  override: Partial<Petals2DParams> = {},
+  override: Partial<Petals2DParams> = {}
 ): Petals2DParams {
   const defaults: Omit<Petals2DParams, keyof PetalsIntent> = {
     resolvedPalette: resolvePetalPalette(intent),
@@ -250,7 +250,7 @@ export function resolvePetals2D(
  */
 export function resolveInk2D(
   intent: InkIntent,
-  override: Partial<Ink2DParams> = {},
+  override: Partial<Ink2DParams> = {}
 ): Ink2DParams {
   const palette = resolveInkPalette(intent);
   const AMBIENT_BASE_RATE = 2;
@@ -272,11 +272,16 @@ export function resolveInk2D(
   // ambient rate is ≤ 30% of the base rate.
   const effectiveAmbient = Math.min(intent.ambientEmission, 0.3);
 
-  // Watercolor palette: low opacity wash + wider bleed (2× width).
+  // Watercolor gets its width from a faint bleed pass around a normal-sized
+  // pigment body. Doubling the body here made production-size marks look like
+  // a blue hose once several motions crossed each other.
   const opacityMax = palette.watercolor ? 0.4 : 1.0;
-  const strokeWidthMax = palette.watercolor
-    ? STROKE_WIDTH_MAX_BASE * 2
-    : STROKE_WIDTH_MAX_BASE;
+  const strokeWidthMax = STROKE_WIDTH_MAX_BASE;
+  const lifetimeSeconds = palette.watercolor ? 1.65 : LIFETIME_SECONDS_BASE;
+  const maxPointsPerTip = palette.watercolor ? 64 : MAX_POINTS_PER_TIP;
+  const strokeLengthPx = palette.watercolor ? 240 : 420;
+  const gravityPx = palette.watercolor ? 180 * 0.2 : 180;
+  const strokeGravityPx = palette.watercolor ? 0 : gravityPx;
 
   // Neon is the only emissive ink palette. All others composite opaque -
   // this is the #1 differentiator from trails (which are always emissive).
@@ -294,11 +299,13 @@ export function resolveInk2D(
     strokeWidthMin: STROKE_WIDTH_MIN,
     strokeWidthMax,
     opacityMax,
-    lifetimeSeconds: LIFETIME_SECONDS_BASE,
-    maxPointsPerTip: MAX_POINTS_PER_TIP,
+    lifetimeSeconds,
+    maxPointsPerTip,
+    strokeLengthPx,
     stampScaleMin: STAMP_SCALE_MIN,
     stampScaleMax: STAMP_SCALE_MAX,
-    gravityPx: palette.watercolor ? 180 * 0.4 : 180,
+    gravityPx,
+    strokeGravityPx,
     breakStretchMax: 80,
     dropletPoolSize: 512,
     dropletMaxAge: 1.5,
@@ -320,7 +327,7 @@ export function resolveInk2D(
  */
 export function resolveSmoke2D(
   intent: SmokeIntent,
-  override: Partial<Smoke2DParams> = {},
+  override: Partial<Smoke2DParams> = {}
 ): Smoke2DParams {
   const palette = resolveSmokePalette(intent);
   // Spec tuning constants. RISE_BASE is the screen-space px/s rise at
@@ -352,7 +359,7 @@ export function resolveSmoke2D(
 
 export function resolveFrost2D(
   intent: FrostIntent,
-  override: Partial<Frost2DParams> = {},
+  override: Partial<Frost2DParams> = {}
 ): Frost2DParams {
   const palette = resolveFrostPalette(intent);
   const AMBIENT_BASE_RATE = 24;
@@ -378,12 +385,12 @@ export function resolveFrost2D(
 
 export function resolveSilk2D(
   intent: SilkIntent,
-  override: Partial<Silk2DParams> = {},
+  override: Partial<Silk2DParams> = {}
 ): Silk2DParams {
   const palette = resolveSilkPalette(intent);
   const defaults: Omit<Silk2DParams, keyof SilkIntent> = {
     resolvedPalette: palette,
-    baseHalfWidth: 5 + intent.width * 25,      // 5-30px
+    baseHalfWidth: 5 + intent.width * 25, // 5-30px
     lifetimeSeconds: 0.5 + intent.duration * 3.5, // 0.5-4.0s
     motionReferenceSpeed: 3.0,
     blendMode: palette.emissive ? "lighter" : "source-over",
@@ -393,7 +400,7 @@ export function resolveSilk2D(
 
 export function resolveAnimal2D(
   intent: AnimalIntent,
-  override: Partial<Animal2DParams> = {},
+  override: Partial<Animal2DParams> = {}
 ): Animal2DParams {
   const palette = resolveAnimalPalette(intent);
   const defaults: Omit<Animal2DParams, keyof AnimalIntent> = {
@@ -413,13 +420,16 @@ export function resolveAnimal2D(
 
 export function resolvePulse2D(
   intent: PulseIntent,
-  override: Partial<Pulse2DParams> = {},
+  override: Partial<Pulse2DParams> = {}
 ): Pulse2DParams {
   const palette = resolvePulsePalette(intent);
   const defaults: Omit<Pulse2DParams, keyof PulseIntent> = {
     resolvedPalette: palette,
     maxRadius: 20 + intent.reach * 180,
-    ringWidth: intent.style === "stroke" ? 1 + intent.thickness * 4 : 3 + intent.thickness * 12,
+    ringWidth:
+      intent.style === "stroke"
+        ? 1 + intent.thickness * 4
+        : 3 + intent.thickness * 12,
     refSpeed: 3.0,
     blendMode: "lighter",
   };

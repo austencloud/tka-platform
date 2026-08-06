@@ -243,16 +243,20 @@ export interface Ink2DParams extends InkIntent {
    * why the palette reads translucent vs the rest of the ink family.
    */
   opacityMax: number;
-  /** Seconds - single stroke-point lifetime. Spec range 3-6s. */
+  /** Seconds - maximum age of a stroke point before its local fade completes. */
   lifetimeSeconds: number;
-  /** Max stroke points per tip (bounded history). Spec range 30-50. */
+  /** Max stroke points per tip. Path length is the primary visible-history bound. */
   maxPointsPerTip: number;
+  /** Maximum recorded stroke length in reference-canvas pixels. */
+  strokeLengthPx: number;
   /** Min stamp scale factor - reached at high tip speed (brush lifting). */
   stampScaleMin: number;
   /** Max stamp scale factor - reached at low tip speed (brush pressing). */
   stampScaleMax: number;
-  /** Gravity acceleration in px/s². Palette-adjusted (watercolor = 40%). */
+  /** Gravity acceleration in px/s² for detached droplets. */
   gravityPx: number;
+  /** Gravity acceleration in px/s² for the attached painted strand. */
+  strokeGravityPx: number;
   /** Max stretch distance (px) before strand breaks. Scaled by (1-viscosity). */
   breakStretchMax: number;
   /** Max droplets alive at once from strand breakup. */

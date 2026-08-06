@@ -149,19 +149,17 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     trackingMode: "both_ends",
   },
 
-  // Default ink maps to the "classic" preset (india palette). Motion-dominant
-  // stroke medium - slow tip = thick loaded brush, fast tip = thin lifted
-  // brush. Sprint 1 (1j.i) ships the stroke MVP; viscosity + splatterIntensity
-  // live in the shape now but are sprint-2 knobs (strand breakup + splatter
-  // bursts). See docs/superpowers/specs/2026-04-15-effects-phase-1j-ink-design.md
+  // Sumi Flow is the production default. It stays motion-dominant, keeps the
+  // resting tips quiet, and uses restrained breakup so choreography remains
+  // readable when several paths overlap.
   ink: {
-    ambientEmission: 0.2,
-    motionEmission: 0.8,
-    intensity: 0.6,
-    palette: "watercolor",
+    ambientEmission: 0.1,
+    motionEmission: 0.94,
+    intensity: 0.68,
+    palette: "sumi",
     customColor: "#0a0a0a",
-    viscosity: 0.3,
-    splatterIntensity: 0.3,
+    viscosity: 0.38,
+    splatterIntensity: 0.16,
     trackingMode: "both_ends",
   },
 

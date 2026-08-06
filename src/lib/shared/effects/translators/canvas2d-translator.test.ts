@@ -218,7 +218,9 @@ describe("resolveSmoke2D - palette carries behavior", () => {
 
   it("applies palette.curlBias to intent.curlStrength", () => {
     // fog has curlBias 0.5; intent 0.8 × 0.5 = 0.4
-    const out = resolveSmoke2D(baseIntent({ palette: "fog", curlStrength: 0.8 }));
+    const out = resolveSmoke2D(
+      baseIntent({ palette: "fog", curlStrength: 0.8 })
+    );
     expect(out.resolvedCurlStrength).toBeCloseTo(0.4, 6);
     expect(out.lifetimeSeconds).toBe(6.0);
   });
@@ -226,14 +228,16 @@ describe("resolveSmoke2D - palette carries behavior", () => {
   it("applies palette.riseBias to intent.riseSpeed and scales by riseBaseSpeed", () => {
     // genie has riseBias 0.9; intent 1.0 × 0.9 × 280 = 252
     // (2D uses 280 px/s base - Boussinesq buoyancy target)
-    const out = resolveSmoke2D(baseIntent({ palette: "genie", riseSpeed: 1.0 }));
+    const out = resolveSmoke2D(
+      baseIntent({ palette: "genie", riseSpeed: 1.0 })
+    );
     expect(out.resolvedRiseSpeed).toBeCloseTo(252.0, 4);
     expect(out.riseBaseSpeed).toBe(280);
   });
 
   it("derives a custom palette from customColor with neutral behavior defaults", () => {
     const out = resolveSmoke2D(
-      baseIntent({ palette: "custom", customColor: "#ff8800" }),
+      baseIntent({ palette: "custom", customColor: "#ff8800" })
     );
     expect(out.resolvedPalette.id).toBe("custom");
     // Custom lifetime/curlBias/riseBias are neutral defaults (7.0 / 0.5 / 0.5).
@@ -302,18 +306,28 @@ describe("resolveInk2D - palette + motion-dominant + stroke width", () => {
     expect(below.effectiveAmbient).toBe(0.1);
   });
 
-  it("watercolor palette flips watercolor flag + doubles width + caps alpha", () => {
+  it("watercolor separates the painted mark from detached droplet physics", () => {
     // Palette-carried behavior - watercolor IS watercolor, not "light ink".
     const out = resolveInk2D(baseIntent({ palette: "watercolor" }));
     expect(out.resolvedPalette.watercolor).toBe(true);
     expect(out.resolvedPalette.id).toBe("watercolor");
-    // Width doubled from the base 18 → 36 px.
-    expect(out.strokeWidthMax).toBe(36);
+    expect(out.strokeWidthMax).toBe(18);
+    expect(out.strokeLengthPx).toBe(240);
+    expect(out.lifetimeSeconds).toBe(1.65);
+    expect(out.strokeGravityPx).toBe(0);
+    expect(out.gravityPx).toBeGreaterThan(0);
     // Alpha capped at 0.4 (translucent wash).
     expect(out.opacityMax).toBe(0.4);
     // Still opaque composite - watercolor ≠ neon. The cap comes from
     // alpha, not from switching to additive blend.
     expect(out.blendMode).toBe("source-over");
+  });
+
+  it("keeps sag on dense ink strands", () => {
+    const out = resolveInk2D(baseIntent({ palette: "india" }));
+    expect(out.strokeLengthPx).toBe(420);
+    expect(out.strokeGravityPx).toBe(out.gravityPx);
+    expect(out.strokeGravityPx).toBeGreaterThan(0);
   });
 
   it("neon palette flips emissive flag + switches composite to lighter", () => {
@@ -339,7 +353,7 @@ describe("resolveInk2D - palette + motion-dominant + stroke width", () => {
 
   it("custom palette derives pigment/edge/pool from customColor", () => {
     const out = resolveInk2D(
-      baseIntent({ palette: "custom", customColor: "#ff8800" }),
+      baseIntent({ palette: "custom", customColor: "#ff8800" })
     );
     expect(out.resolvedPalette.id).toBe("custom");
     // Pigment = base customColor round-tripped through HSL.
@@ -355,7 +369,7 @@ describe("resolveInk2D - palette + motion-dominant + stroke width", () => {
     // Sprint 1 renderer ignores these, but the shape must survive the
     // translator so sprint 2's breakup/splatter work has data.
     const out = resolveInk2D(
-      baseIntent({ viscosity: 0.7, splatterIntensity: 0.9 }),
+      baseIntent({ viscosity: 0.7, splatterIntensity: 0.9 })
     );
     expect(out.viscosity).toBe(0.7);
     expect(out.splatterIntensity).toBe(0.9);
