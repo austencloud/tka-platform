@@ -21,7 +21,10 @@ button as a way forward, despite ample width to render results live.
 
 ## Done — verified
 
-All commits are on `main`, **local only — nothing is pushed** (see Loose ends #1).
+All commits are on `main` and **pushed to `origin/main`** — verified per SHA with
+`git branch -r --contains`. `main` and `origin/main` are identical as of this
+writing. (They were held local all session at Austen's instruction; a parallel
+session pushed near the end — see the note under Loose ends.)
 
 | What | SHA | Evidence |
 |---|---|---|
@@ -38,6 +41,7 @@ All commits are on `main`, **local only — nothing is pushed** (see Loose ends 
 | **"No limit" slider stop + engine removal-key fix** | `9bd20c27ae` | Stepping to "Any": header 71 → 700 matches with the turn chip **gone**. `.turn-limit` min-width holds 105px across every numeric stop (no re-centring) |
 | **Task 9** — left column is a shared height budget | `e46bf28709` | Dead air at 2560: Grid mode 582→73, Length 730→89, T&D 542→68. **I verified independently**: catalog tiles 64→191px in a 3-col portrait grid; start-position art 76→191px, grid preview 144→220px |
 | **Task 10** — Collections card overflow + LOOPs stale composition | `3fed1ca0ec`, `46d622232c` | **I verified independently**: `--editor-need` now 1036px on LOOPs from all four arrival paths tested (was 634 / 655 / 878 / 580); Collections cards contain all art, label, bar and count; LOOPs = 3 rows of 2 + Rewound spanning the width |
+| **Catalog art scales with its tile; turn intensity gets a gauge** | `0bf45584dc` | Measured at 1920: icon glyphs 17px → 31px (35% → 65% of their box), dots → 100%, avatars 43% → 50%. At 2560: icons 68%, dots 100%, avatars 52% → 73%. `fa-gauge-high` confirmed live on the tile. `npm run check` 0/0 |
 
 ### The two root causes worth remembering
 
@@ -75,36 +79,33 @@ allocation cannot move (row count × track ceiling, floored per row by content).
 
 ## In flight
 
-**Uncommitted, and NOT mine — another session is mid-work on the morph:**
+**Nothing.** Every gallery file is committed and pushed; the working tree is
+clean of this project's paths. No branches, no worktrees — all work is on
+`main` in the primary checkout.
 
-- `src/lib/shared/transitions/results-morph.ts` (+41 lines): adding
-  `registerResultsLayoutStabilizer` so virtualized result layouts get a final
-  measurement before Chrome captures the new side of a transition — the comment
-  says a shorter row estimate can leave the next section sitting on top of a
-  card.
-- `src/lib/features/browse/shared/components/BrowseModule.svelte` (+16 lines):
-  the corresponding wiring.
-- `tests/unit/transitions/results-morph.test.ts` — untracked, new.
+Earlier in the session a parallel session had `results-morph.ts` +
+`BrowseModule.svelte` dirty (adding `registerResultsLayoutStabilizer`, so a
+virtualized results layout gets a final measurement before Chrome captures the
+new side of a transition). That session has since committed its own work. If
+you are reading this and those files look unfamiliar, that is why.
 
-**Do not commit, revert, or "clean up" these.** They belong to a parallel
-session. Everything of mine is committed.
+## Resolved during the session (context, not work)
 
-No branches, no worktrees — all work is on `main` in the primary checkout.
+**The push.** It was held all day at Austen's instruction pending a history
+question, then a parallel session pushed near the end: `main` and `origin/main`
+are now identical and every commit in this handoff is on origin. That carried
+`dfbb820cd3` out with it — a **mislabeled** commit, where an `index.lock`
+collision during a `pull --rebase` folded three unrelated files
+(`LOOPExpandedOverlay.svelte`, its test, `combination/domain/types.ts`) into a
+"letter-calculus selection" commit. Content is intact and verified: the real
+letter-calculus changes are byte-identical to the pre-rebase tip; only the label
+is wrong. It is **published history** now, so leave it — rewriting would need a
+force-push against a repo other sessions pull from. Austen's call if he ever
+wants it cleaned.
 
 ## Loose ends (ranked)
 
-1. **The push decision — start here.** `main` is **56 commits ahead of
-   `origin/main`** and nothing has been pushed all session, at Austen's
-   instruction, pending one history question: commit `dfbb820cd3`
-   ("letter-calculus selection") is **mislabeled** — a git `index.lock`
-   collision with a parallel session during a `pull --rebase` folded three
-   unrelated files (`LOOPExpandedOverlay.svelte`, its test,
-   `combination/domain/types.ts`) into it. Content is intact and verified — the
-   real letter-calculus changes are byte-identical to the pre-rebase tip — only
-   the labeling is wrong. Options: push as-is and accept it, or have one session
-   reword/split it first while others are quiet. **Ask Austen; do not rewrite
-   history while parallel agents are running.**
-2. **4K@100% — the app does not scale.** At a 3840 viewport
+1. **4K@100% — the app does not scale. Start here.** At a 3840 viewport
    `getComputedStyle(document.documentElement).fontSize` is still **16px**,
    because the lockstep root ramp in `src/app.css` is scoped to
    `html:has(.mkt-shell)` / `html:has(.legal-container)` — marketing and legal
@@ -113,21 +114,21 @@ No branches, no worktrees — all work is on `main` in the primary checkout.
    Austen has been in for weeks, and it is one ramp away from fixed — but the
    blast radius is every app surface (create, browse, learn, museum, practice),
    so it needs its own spec and sweep. **Recommended next project.**
-3. **BrowsePanel sparse-results pass.** Sections holding 1–4 sequences leave
+2. **BrowsePanel sparse-results pass.** Sections holding 1–4 sequences leave
    most of their row empty at 2560/3840 — now the dominant visual defect in the
    results pane. Named as a fast-follow since Task 5; BrowsePanel internals were
    explicitly out of scope for this project.
-4. **Phone-sheet feel test** (open since the 2026-08-04 handoff): decide on a
+3. **Phone-sheet feel test** (open since the 2026-08-04 handoff): decide on a
    real phone whether `GalleryFilterSheet` stays or phones also get the in-page
    workspace. Two `TODO(phone-sheet-feel)` markers in `GalleryTab.svelte`.
-5. **Task 9/10 knock-ons, all designed behavior but worth a look:** the catalog
+4. **Task 9/10 knock-ons, all designed behavior but worth a look:** the catalog
    compacts to 54px tiles on Collections and Creator at 2560/3840 (those screens
    claim their full ceiling); Level at 1920 scrolls further than before (108px
    hidden vs 23px) because its cards grew so the peek art fits inside.
-6. **Max turn intensity still holds dead air** (68 / 144 / 544px at
+5. **Max turn intensity still holds dead air** (68 / 144 / 544px at
    1920/2560/3840). It is one slider; more height only adds padding. Filling it
    means a comic slider or comic tiles. Deliberately left.
-7. **The dense Length chip grid** sits outside the row-ceiling system, so its
+6. **The dense Length chip grid** sits outside the row-ceiling system, so its
    surplus all flows to the catalog. Reads fine; chips could be bigger if wanted.
 
 ## Decisions already made
@@ -160,6 +161,11 @@ Austen's calls — do not re-litigate:
   default 250ms opacity fade reads as a pop.
 - **2026-08-05, on height:** the allocation between catalog and editor should
   *"morph up and down"* per screen rather than being a fixed split.
+- **2026-08-05, on the catalog art:** the icons *"are really small, like you can
+  barely read the creator avatar"* — art must scale with its tile, not sit at a
+  constant. And Max turn intensity must not wear the LOOPs rotation glyph:
+  *"I don't know why we're using the rotated loop label for the max turn
+  intensity, that's not appropriate."* It is now `fa-gauge-high`.
 
 ## Gotchas
 
