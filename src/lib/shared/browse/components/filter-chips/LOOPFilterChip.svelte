@@ -121,11 +121,14 @@ Color-coded icons per primitive. Rotated splits into halved/quartered.
     mode="dropdown"
     expanded={isOpen}
     onclick={handleToggle}
+    ghostKind="browse-filter"
   >
     {#snippet children()}
       {#each optionsWithCounts as option}
         <button
           class="popover-option"
+          data-ghost="safe"
+          data-ghost-kind="filter-option"
           class:selected={activeValue === option.value}
           style={option.value === activeValue && option.color
             ? `color: ${option.color};`

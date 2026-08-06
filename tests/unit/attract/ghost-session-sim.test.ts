@@ -98,7 +98,10 @@ describe("ghost session simulation", () => {
   });
 
   it("plays a long session and reports what it did", async () => {
-    const session = runSession(7, 400);
+    // GHOST_SIM_SEED reproduces a specific session — the fleet reports seeds,
+    // and a seed you cannot replay is a bug report with no repro.
+    const seed = Number(process.env.GHOST_SIM_SEED ?? 7);
+    const session = runSession(seed, 400);
     await session.run();
     const stats = analyze(session.log, session.app.state.peakSeqLen, session.mind.memory.concepts);
     const text = report(stats, session.log);

@@ -24,5 +24,6 @@ Turns pink when active.
   {active}
   chipColor="#ec4899"
   mode="toggle"
+  ghostKind="browse-filter"
   onclick={handleClick}
 />

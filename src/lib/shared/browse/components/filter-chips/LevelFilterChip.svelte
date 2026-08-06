@@ -79,11 +79,14 @@ Options: All, Level 1, Level 2, Level 3. Each shows contextual count.
     mode="dropdown"
     expanded={isOpen}
     onclick={handleToggle}
+    ghostKind="browse-filter"
   >
     {#snippet children()}
       {#each levels as level}
         <button
           class="popover-option"
+          data-ghost="safe"
+          data-ghost-kind="filter-option"
           class:selected={activeLevel === level.value}
           type="button"
           role="option"

@@ -79,10 +79,13 @@ Shows available turn-intensity ceilings with contextual counts.
       expanded={isOpen}
       {disabled}
       onclick={handleToggle}
+      ghostKind="browse-filter"
     >
       {#snippet children()}
         <button
           class="popover-option"
+          data-ghost="safe"
+          data-ghost-kind="filter-option"
           class:selected={activeIntensity === null}
           type="button"
           role="option"
@@ -98,6 +101,8 @@ Shows available turn-intensity ceilings with contextual counts.
           {#if !intensityCounts || (intensityCounts[intensity] ?? 0) > 0}
             <button
               class="popover-option"
+              data-ghost="safe"
+              data-ghost-kind="filter-option"
               class:selected={activeIntensity === intensity}
               type="button"
               role="option"

@@ -50,10 +50,11 @@ export type GhostKind =
    * Completes a sequence that closes on itself. The LOOP payoff, and the most
    * impressive single press in the app.
    *
-   * Gated on `data-ghost-state="extendable"`, published by the panel, because
-   * `canExtend` is computed by sequence-extender.ts and NOTHING in the markup
-   * reflects it. A precondition that guessed here would lie, and a lying
-   * precondition is the one failure mode that makes the presenter look broken.
+   * Needs no published state attribute, which was a pleasant surprise:
+   * `TransformsGridMode` renders the button inside `{#if onExtend && canExtend}`,
+   * so its EXISTENCE is already the extendable signal. The precondition is
+   * therefore the app's own answer rather than an inference, which is the only
+   * way it cannot lie.
    */
   | "extend"
   /** Mirror / Swap / Rotate / Reverse — changes the whole sequence at once. */
@@ -135,6 +136,19 @@ export type GhostKind =
   | "nav-tab"
   | "viewer"
   | "gallery-item"
+  /**
+   * A filter chip in the browse library — level, length, favourites, LOOP type.
+   * Opens a popover of `filter-option`s (or, for favourites, toggles outright).
+   */
+  | "browse-filter"
+  /**
+   * One choice inside an open filter popover. Selecting it applies the filter
+   * AND closes the popover, so open -> choose -> closed is a complete round
+   * trip and the ghost can never be left holding an open overlay.
+   */
+  | "filter-option"
+  /** Jump to a section of the library — a level band, a month. */
+  | "browse-section"
   | "curio";
 
 /**

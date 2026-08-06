@@ -38,6 +38,15 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     onremove?: () => void;
     /** Accessible name for the × segment (defaults to "Remove <label>"). */
     removeAriaLabel?: string;
+    /**
+     * Opt in to the attract presenter being able to press this chip.
+     *
+     * Opt-IN, and only on the main chip body — never the × segment, which
+     * removes a filter and is a destructive action a presenter should not take
+     * on its own. Callers that pass this are stating the chip is safe for
+     * something with no judgement to press repeatedly.
+     */
+    ghostKind?: "browse-filter" | "option-filter";
   }
 
   let {
@@ -53,6 +62,7 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     expanded = false,
     disabled = false,
     ariaLabel,
+    ghostKind,
     children,
     onclick,
     onremove,
@@ -106,6 +116,9 @@ Popover uses fixed positioning to escape overflow:hidden containers.
       aria-label={ariaLabel ?? `${label}${count != null ? ` (${count})` : ""}`}
       {disabled}
       {onclick}
+      data-ghost={ghostKind && !disabled ? "safe" : undefined}
+      data-ghost-kind={ghostKind && !disabled ? ghostKind : undefined}
+      data-ghost-label={ghostKind ? label : undefined}
       bind:this={chipEl}
     >
       {@render chipBody()}
@@ -140,6 +153,9 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     aria-label={ariaLabel ?? `${label}${count != null ? ` (${count})` : ""}`}
     {disabled}
     {onclick}
+    data-ghost={ghostKind && !disabled ? "safe" : undefined}
+    data-ghost-kind={ghostKind && !disabled ? ghostKind : undefined}
+    data-ghost-label={ghostKind ? label : undefined}
     bind:this={chipEl}
   >
     {@render chipBody()}

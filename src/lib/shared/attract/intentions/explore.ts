@@ -280,11 +280,35 @@ export const EXPLORE_INTENTIONS: Intention[] = [
      * one button, 382 times, saying "Can I actually walk around in here?" over
      * and over. Nobody would have called that a character.
      */
-    can: (ctx) => has(ctx, "docent") && !ctx.presenting,
+    /*
+     * And ONCE per docent, for the whole session. Handing the room over a
+     * second time is not a new experience, it is the same tour replayed — and
+     * because the docent button is the only control in an immersive module,
+     * nothing else exists to outscore it while the ghost stands there.
+     *
+     * A 150-session fleet found the trap that earned this: one session spent
+     * 7.7 of its 14 minutes in the museum, in five cycles of press-the-docent,
+     * stand-still-for-92-seconds, press-it-again. `escape-room` was satisfiable
+     * that whole time and simply kept losing the weighted draw to a button with
+     * nothing to compete against.
+     */
+    target: (ctx) =>
+      ctx.rng.pick(
+        visibleAll(safe("docent")).filter(
+          (el) => !ctx.askedAbout.has(encounterKey(el)),
+        ),
+      ) ?? null,
+    can: (ctx) =>
+      !ctx.presenting &&
+      visibleAll(safe("docent")).some(
+        (el) => !ctx.askedAbout.has(encounterKey(el)),
+      ),
     appeal: () => 0.95,
     mood: "delighted",
-    perform: async (g, ctx) => {
-      if (!(await pressKind(g, ctx, "docent", 2500))) return false;
+    perform: async (g, ctx, target) => {
+      if (!target || g.halted()) return false;
+      noteEncounter(ctx, target);
+      await g.moveAndPress(target);
       // Get the pointer out of the middle of the scene and let it play.
       await g.glideTo(window.innerWidth * 0.86, window.innerHeight * 0.82);
       await g.dwell(g.jitter(26_000, 16_000));

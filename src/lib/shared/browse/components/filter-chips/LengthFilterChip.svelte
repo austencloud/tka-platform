@@ -75,10 +75,13 @@ Shows available lengths with contextual counts.
     expanded={isOpen}
     {disabled}
     onclick={handleToggle}
+    ghostKind="browse-filter"
   >
     {#snippet children()}
       <button
         class="popover-option"
+        data-ghost="safe"
+        data-ghost-kind="filter-option"
         class:selected={activeLength === null}
         type="button"
         role="option"
@@ -94,6 +97,8 @@ Shows available lengths with contextual counts.
         {#if !lengthCounts || (lengthCounts[length] ?? 0) > 0}
           <button
             class="popover-option"
+            data-ghost="safe"
+            data-ghost-kind="filter-option"
             class:selected={activeLength === length}
             type="button"
             role="option"

@@ -28,6 +28,9 @@ export interface SimState {
   viewerOpen: boolean;
   propDrawerOpen: boolean;
   actionsPanelOpen: boolean;
+  /** Filters applied in the library. Each one narrows the grid. */
+  browseFilters: number;
+  filterPopoverOpen: boolean;
   /** An unsolicited overlay is up — a first-run prompt. Blocks everything. */
   blockerUp: boolean;
   /** A step is selected and its editor is open. */
@@ -140,8 +143,19 @@ function screenKinds(s: SimState): Record<string, number> {
         curio: 2,
       };
     case "browse":
-    case "library":
-      return { "gallery-item": 12, curio: 1 };
+    case "library": {
+      // A filtered library shows fewer items — that is the whole point of the
+      // filter, and it is also what lets the ghost notice it has narrowed too
+      // far and reach for the reset.
+      const items = s.browseFilters === 0 ? 12 : Math.max(2, 12 - s.browseFilters * 5);
+      return {
+        "gallery-item": items,
+        "browse-filter": 5,
+        "filter-option": s.filterPopoverOpen ? 4 : 0,
+        "browse-section": 4,
+        curio: 1,
+      };
+    }
     case "museum":
       return { docent: 1 };
     case "play":
@@ -163,6 +177,9 @@ const LABELS: Record<string, string[]> = {
   tempo: ["Slow", "Medium", "Fast"],
   curio: ["Mandala", "Tunnel", "Card"],
   "gallery-item": ["someone's sequence"],
+  "browse-filter": ["Level", "Length", "Favorites", "LOOP type", "Turns"],
+  "filter-option": ["All", "Level 2", "Level 3", "8 steps"],
+  "browse-section": ["Level 1", "Level 2", "March", "April"],
   transform: ["Mirror", "Flip", "Swap", "Invert", "Rotate L", "Rotate R"],
   "step-nav": ["Next step", "Previous step", "Restart"],
   "view-toggle": ["Toggle grid", "Motion visibility", "Comparison mode"],
@@ -200,6 +217,8 @@ export function createSimApp(
     actionsPanelOpen: false,
     continuousOnly: false,
     stepEditorOpen: false,
+    browseFilters: 0,
+    filterPopoverOpen: false,
     blockerUp: true,
     word: "",
     playingUntil: 0,
@@ -276,6 +295,10 @@ export function createSimApp(
   }
 
   function goTo(moduleId: string, tabId: string | null = null): void {
+    if (moduleId !== "browse" && moduleId !== "library") {
+      state.browseFilters = 0;
+      state.filterPopoverOpen = false;
+    }
     state.moduleId = moduleId;
     state.tabId = moduleId === "create" ? (tabId ?? "construct") : tabId;
     state.viewerOpen = false;
@@ -343,6 +366,18 @@ export function createSimApp(
         break;
       case "step-edit":
         state.word = `${state.word}*`;
+        break;
+      case "browse-filter":
+        state.filterPopoverOpen = !state.filterPopoverOpen;
+        break;
+      case "filter-option":
+        // Choosing applies the filter AND closes the popover, like handleSelect.
+        state.filterPopoverOpen = false;
+        // Index 0 is the "All" reset in these popovers.
+        state.browseFilters =
+          node.getAttribute("data-sim-index") === "0" ? 0 : state.browseFilters + 1;
+        break;
+      case "browse-section":
         break;
       case "dismiss":
         state.blockerUp = false;

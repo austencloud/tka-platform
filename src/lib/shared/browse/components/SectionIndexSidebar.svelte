@@ -226,6 +226,8 @@
             {#each group.markers as marker (marker.label)}
               <button
                 class="letter-marker"
+                data-ghost="safe"
+                data-ghost-kind="browse-section"
                 class:active={activeLevelInfo?.level === group.level && activeLevelInfo?.label === marker.label}
                 onclick={() => handleClick(marker.title)}
                 title={marker.title}
@@ -250,6 +252,8 @@
             {#each group.markers as marker (marker.label)}
               <button
                 class="month-btn"
+                data-ghost="safe"
+                data-ghost-kind="browse-section"
                 class:active={activeYear === group.year && activeMonthLabel === marker.label}
                 onclick={() => handleClick(marker.title)}
                 title={marker.title}
