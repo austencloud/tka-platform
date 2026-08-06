@@ -71,11 +71,13 @@ $StartupDir  = [Environment]::GetFolderPath('Startup')
 $TerminalFragmentDir = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows Terminal\Fragments\AgentHub'
 $TerminalFragmentPath = Join-Path $TerminalFragmentDir 'session-backgrounds.json'
 $ManagedSkillNames = @('color', 'colorall', 'renameall')
+$ClaudeOnlySkillNames = @('rename', 'rn')
 $ManagedSkillMarker = '.agent-hub-managed'
-$PersonalSkillRoots = @(
+$SharedSkillRoots = @(
     (Join-Path $env:USERPROFILE '.claude\skills'),
     (Join-Path $env:USERPROFILE '.agents\skills')
 )
+$ClaudeSkillRoot = Join-Path $env:USERPROFILE '.claude\skills'
 $TerminalSettingsPaths = @(
     (Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json'),
     (Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminalPreview_8wekyb3d8bbwe\LocalState\settings.json'),
@@ -398,19 +400,30 @@ Write-Ok "terminal color leasing self-test passed"
 Copy-Item (Join-Path $Here 'icons\*') $IconDir -Force
 Write-Ok "copied $((Get-ChildItem $IconDir).Count) icons"
 
-Write-Step "Installing the personal Agent Hub skills for Claude and Codex"
+Write-Step "Installing the personal Agent Hub skills"
 $installedSkills = 0
 foreach ($skillName in $ManagedSkillNames) {
     $skillSource = Join-Path $Here "skills\$skillName"
     if (-not (Test-Path -LiteralPath (Join-Path $skillSource 'SKILL.md') -PathType Leaf)) {
         throw "Agent Hub skill source is missing: $skillSource"
     }
-    foreach ($skillRoot in $PersonalSkillRoots) {
+    foreach ($skillRoot in $SharedSkillRoots) {
         $destination = Join-Path $skillRoot $skillName
         if (Install-AgentHubSkill $skillSource $destination $skillName) {
             $installedSkills++
             Write-Ok $destination
         }
+    }
+}
+foreach ($skillName in $ClaudeOnlySkillNames) {
+    $skillSource = Join-Path $Here "skills\$skillName"
+    if (-not (Test-Path -LiteralPath (Join-Path $skillSource 'SKILL.md') -PathType Leaf)) {
+        throw "Agent Hub skill source is missing: $skillSource"
+    }
+    $destination = Join-Path $ClaudeSkillRoot $skillName
+    if (Install-AgentHubSkill $skillSource $destination $skillName) {
+        $installedSkills++
+        Write-Ok $destination
     }
 }
 if ($installedSkills -eq 0) {

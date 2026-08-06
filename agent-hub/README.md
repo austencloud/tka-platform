@@ -23,7 +23,8 @@ The terminal title starts as `Starting Session`. Bare `/rename` lets Claude or
 Codex choose an accurate two- or three-word name from the conversation. Use
 `/rename Exact Name` when you want to choose it yourself. The same name appears
 in history and Alt+Tab, with no agent or project suffix, and it never changes
-again unless you run `/rename` again.
+again unless you run `/rename` again. Claude resolves the current session from
+Agent Hub's owner process ID, so stale registry names do not affect targeting.
 
 Run `/renameall` in Claude Code or the TKA Codex build to name every unnamed
 live Agent Hub session from its own conversation. Standard Codex uses
@@ -137,7 +138,7 @@ configured server metadata. Other pinned applications are left alone.
    with Windows. No SDK, no npm, no downloads.
 4. Installs them to `%LOCALAPPDATA%\AgentHub\bin` along with the icons.
 5. Installs the personal `color`, `colorall`, and `renameall` skills for Claude
-   and Codex.
+   and Codex, plus Claude's `rename` and `rn` commands.
 6. Creates one shortcut per project in `%USERPROFILE%\AgentHub` and the Start Menu.
 7. Writes `launchers\start-claude.bat` / `start-codex.bat` into any project that
    lacks them, so a bare repo still launches.
