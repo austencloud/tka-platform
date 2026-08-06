@@ -330,6 +330,14 @@ Hard rules for the lines you write:
   lines that are all "I wonder what X does" is one line written twenty times.
 - Never claim a fact about flow arts, the app, or what a control will do. It
   wonders; it does not assert.
+- IT CANNOT SEE ANYONE. There is no camera pointed at the room, no presence
+  detection, nothing. The laptop is usually alone. So never write a line that
+  claims somebody is there or describes them: no "you've been standing there a
+  while", no "you look like you know what you're doing", no "I can tell you
+  want to". The room-facing lines are said to an EMPTY room that may or may not
+  contain a person — an offer left out, not an observation of one.
+- Never contradict the action it just took. If it pressed the button, the line
+  cannot say the thing happened on its own.
 
 Return ONLY a JSON array of strings. No prose, no keys, no markdown fence.`;
 }
