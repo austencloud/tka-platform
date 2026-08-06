@@ -31,7 +31,7 @@ interface PredictionVector {
   value: number;
 }
 
-export interface GhostActivityActualOutcome extends PredictionVector {}
+export type GhostActivityActualOutcome = PredictionVector;
 
 export interface GhostActivityPredictionEvaluation {
   error: number;

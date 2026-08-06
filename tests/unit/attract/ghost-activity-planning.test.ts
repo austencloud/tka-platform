@@ -65,6 +65,28 @@ describe("ghost activity planning", () => {
     expect(scored.rng.next()).toBe(untouched.rng.next());
   });
 
+  it("forms an explicit forecast for every candidate before choosing", () => {
+    const ctx = context();
+    const candidates = scoreActivities(GHOST_ACTIVITIES, ctx, 0);
+
+    expect(candidates.length).toBeGreaterThan(0);
+    expect(
+      candidates.every(
+        ({ definition, prediction }) =>
+          prediction.activityId === definition.id &&
+          prediction.source === "prior" &&
+          prediction.uncertainty === 1
+      )
+    ).toBe(true);
+
+    const selected = startNextActivity(GHOST_ACTIVITIES, ctx, 0);
+    expect(ctx.experience.active?.activityId).toBe(selected?.id);
+    expect(ctx.experience.active?.prediction.activityId).toBe(selected?.id);
+    expect(ctx.experience.lastPrediction?.prediction.activityId).toBe(
+      selected?.id
+    );
+  });
+
   it("only leaves explicit interrupts and invitations unplanned", () => {
     const known = new Set(ALL_INTENTIONS.map((intention) => intention.id));
     expect([...ACTIVITY_INTENTION_IDS].filter((id) => !known.has(id))).toEqual(
