@@ -120,6 +120,12 @@
     flipRequested: number;
     /** Keys currently held by the player (from parent's keyboard handler) */
     heldKeys?: Set<string>;
+    /**
+     * Analog movement from the touch joystick, −1..1 per axis, `z` forward.
+     * The keyboard path is untouched; this is the only way to walk on a phone,
+     * where `heldKeys` can never fill because there is no keyboard to fill it.
+     */
+    moveAxis?: { x: number; z: number };
     /** Top-down camera height above the player (controlled by parent for zoom) */
     topDownHeight?: number;
     /** Callback: fires every frame with the player's current world position + facing */
@@ -1382,6 +1388,7 @@
   {physicsProvider}
   {cameraPreferences}
   enabled={fpsActive && !museum3dEditorState.editorActive}
+  moveAxis={props.moveAxis}
   moveSpeed={3}
   initialYaw={fpsInitialYaw}
   initialPitch={fpsInitialPitch}

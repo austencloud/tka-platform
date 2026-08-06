@@ -9,6 +9,7 @@
   import type { RoomEdge } from "../../domain/layout-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { SOLID_TYPES } from "../../services/museum-physics-provider";
+  import VirtualJoystick from "$lib/shared/components/touch/VirtualJoystick.svelte";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import PlacementPickerPanel from "../editor/PlacementPickerPanel.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
@@ -198,6 +199,52 @@
   // Plain object (not $state) for key tracking - Museum3DScene reads this every frame
   // in its useTask loop, bypassing Svelte reactivity. A raw Set avoids proxy overhead.
   const heldKeys = new Set<string>();
+
+  // ── Touch movement ────────────────────────────────────────────────────────
+  //
+  // Before this the museum was unwalkable on a phone. Look worked — the camera
+  // controller falls back to drag-look when it cannot get pointer lock — but
+  // every movement path in the walker reads `heldKeys`, and a phone has no
+  // keyboard to fill it. You could stand in a chamber and pivot, nothing more.
+  //
+  // The stick drives BOTH paths, because the museum has two: first-person
+  // movement lives in the camera controller (analog, so a half-push is a half
+  // step), and the top-down 2D mode reads `heldKeys`, which is boolean and can
+  // only be fed by synthesising the keys the keyboard would have sent.
+  // Whether to show the stick is decided from the DEVICE, not from having seen
+  // a touch event. The obvious route — the shared InputCapabilities singleton's
+  // shouldShowTouchUI() — cannot work here: the camera controller lives in
+  // @austencloud/camera-3d and calls `createInputCapabilities()` for itself, so
+  // the pointer events it observes never reach the app-side singleton, whose
+  // currentPointerType stays null forever. A coarse pointer means no mouse,
+  // which is the actual question, and it is true on the first frame rather than
+  // after the visitor has already tapped something.
+  let isTouchDevice = $state(false);
+  onMount(() => {
+    const coarse = window.matchMedia("(pointer: coarse)");
+    isTouchDevice = coarse.matches;
+    const onChange = (e: MediaQueryListEvent) => (isTouchDevice = e.matches);
+    coarse.addEventListener("change", onChange);
+    return () => coarse.removeEventListener("change", onChange);
+  });
+
+  let moveAxis = $state({ x: 0, z: 0 });
+  /** Past this the stick counts as "pressed" for the boolean 2D path. */
+  const STICK_KEY_THRESHOLD = 0.35;
+
+  function handleJoystick(x: number, y: number): void {
+    // `y` arrives already inverted by the primitive — pushing the stick UP is
+    // +1, not −1 (VirtualJoystick.calculateInput negates it, and the
+    // procedural-engine consumer passes it straight through as `z`). Negating
+    // it here made forward walk backwards.
+    moveAxis = { x, z: y };
+    const press = (code: string, down: boolean) =>
+      down ? heldKeys.add(code) : heldKeys.delete(code);
+    press("KeyW", y > STICK_KEY_THRESHOLD);
+    press("KeyS", y < -STICK_KEY_THRESHOLD);
+    press("KeyD", x > STICK_KEY_THRESHOLD);
+    press("KeyA", x < -STICK_KEY_THRESHOLD);
+  }
 
   /**
    * The museum's own autopilot. It exists because the presentation-mode ghost
@@ -609,6 +656,7 @@
         {resetRequested}
         {modeChangeRequested}
         {heldKeys}
+        {moveAxis}
         {topDownHeight}
         onPlayerUpdate={handlePlayerUpdate}
         onViewModeChange={handleViewModeChange}
@@ -623,6 +671,14 @@
       />
     </Canvas>
   </div>
+
+  <!-- Touch movement. Sits outside the Canvas so its drags never reach the
+       canvas's own pointer handlers — otherwise steering would also spin the
+       camera. Hidden entirely on mouse/keyboard, and while the editor is open,
+       where the same corner is a drag surface. -->
+  {#if isTouchDevice && !museum3dEditorState.editorActive}
+    <VirtualJoystick onInput={handleJoystick} left={24} bottom={24} size={132} />
+  {/if}
 
   <!-- Placement picker panel (HTML overlay, outside Canvas) -->
   {#if museum3dEditorState.editorActive}
@@ -699,7 +755,13 @@
   <!-- Controls hint (bottom-right) -->
   {#if !showPanel}
     <div class="controls-hint">
-      <span class="hint-text">WASD move {isInFPS ? "• Mouse look" : "• Scroll zoom"} • Q cycle view • E examine</span>
+      <span class="hint-text">
+        {#if isTouchDevice}
+          Stick to move {isInFPS ? "• Drag to look" : "• Pinch to zoom"} • Tap an exhibit to examine
+        {:else}
+          WASD move {isInFPS ? "• Mouse look" : "• Scroll zoom"} • Q cycle view • E examine
+        {/if}
+      </span>
     </div>
   {/if}
 

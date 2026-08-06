@@ -30,6 +30,19 @@
     destinationDefaults?: Record<string, CameraMode>;
     /** External camera preferences instance (shared singleton). If omitted, UCC creates its own. */
     cameraPreferences?: CameraPreferences;
+    /**
+     * Analog movement from a thumbstick, −1..1 on each axis. `z` is forward.
+     *
+     * Optional, and it does not replace the keyboard — it is read alongside it,
+     * and the keys carry on working whenever the stick is at rest. Without this
+     * there is no way to walk on a touch device at all: the whole movement path
+     * is `keys.has("KeyW")`, and a phone has no KeyW.
+     *
+     * Analog rather than four synthesised booleans on purpose. A thresholded
+     * stick is a switch, and a switch cannot ease up — which is exactly what
+     * you want on a narrow stair over a drop.
+     */
+    moveAxis?: { x: number; z: number };
   }
 
   const props: Props = $props();
@@ -414,10 +427,24 @@
       }
     }
 
-    const forwardInput = (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0) -
-                        (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0);
-    const strafeInput = (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) -
-                       (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
+    // Keyboard first, then the stick overrides it while it is being pushed.
+    // Clamped defensively: one NaN from a stray touch event would otherwise
+    // poison moveX/moveZ and freeze the player for the rest of the session.
+    const axis = props.moveAxis;
+    const clamp1 = (v: number | undefined) =>
+      typeof v === "number" && Number.isFinite(v) ? Math.max(-1, Math.min(1, v)) : 0;
+    const stickForward = clamp1(axis?.z);
+    const stickStrafe = clamp1(axis?.x);
+    const stickPushed = stickForward !== 0 || stickStrafe !== 0;
+
+    const forwardInput = stickPushed
+      ? stickForward
+      : (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0) -
+        (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0);
+    const strafeInput = stickPushed
+      ? stickStrafe
+      : (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) -
+        (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
     const isSprinting = keys.has("ShiftLeft") || keys.has("ShiftRight");
     const isJumping = keys.has("Space");
     const isCrouching = keys.has("KeyC");
