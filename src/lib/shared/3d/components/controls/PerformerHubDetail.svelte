@@ -264,9 +264,21 @@
   }
 
   // ─── Effort ───
-  const currentEffort = $derived(
-    performer?.effectiveEffortId ?? viewer.defaultSettings.effortId
-  );
+  const currentEffort = $derived.by<EffortId | null>(() => {
+    if (!isAllMode) {
+      return performer?.effectiveEffortId ?? viewer.defaultSettings.effortId;
+    }
+
+    const first = allPerformers[0]?.effectiveEffortId;
+    if (!first) return viewer.defaultSettings.effortId;
+
+    // All Performers writes an override to every performer. The palette must
+    // read those effective values too; reading the viewer default left Linear
+    // highlighted while every performer visibly used another effort.
+    return allPerformers.every((item) => item.effectiveEffortId === first)
+      ? first
+      : null;
+  });
 
   function handleEffortSelect(effortId: EffortId) {
     const previous = currentEffort;

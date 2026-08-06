@@ -3,7 +3,7 @@
 	import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
 
 	interface Props {
-		selectedEffort: EffortId;
+		selectedEffort: EffortId | null;
 		onSelect: (effort: EffortId) => void;
 	}
 
