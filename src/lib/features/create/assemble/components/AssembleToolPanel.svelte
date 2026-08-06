@@ -185,53 +185,55 @@
     </div>
   {/if}
 
-  <div class="header-section">
-    <BuilderInstructionHeader
-      {builderState}
-      startPositionSetup={isStartPositionSetup}
-    />
-  </div>
+  <div class="builder-surface">
+    <div class="header-section">
+      <BuilderInstructionHeader
+        {builderState}
+        startPositionSetup={isStartPositionSetup}
+      />
+    </div>
 
-  <div class="main-area">
-    <div class="grid-slot" class:start-position-setup={isStartPositionSetup}>
-      {#if isStartPositionSetup}
-        <div class="mobile-start-settings">
-          <GridModePicker
-            gridMode={builderState.gridMode}
-            showCenter={builderState.showCenter}
-            onGridModeChange={(mode) => builderState.setGridMode(mode)}
-            onCenterChange={(show) => builderState.setShowCenter(show)}
-          />
-        </div>
-      {/if}
-      <div class="stage-slot">
+    <div class="main-area">
+      <div class="grid-slot" class:start-position-setup={isStartPositionSetup}>
         {#if isStartPositionSetup}
-          {#key setupKey}
-            <BuildStartPosition
+          <div class="mobile-start-settings">
+            <GridModePicker
               gridMode={builderState.gridMode}
               showCenter={builderState.showCenter}
-              {bluePropType}
-              {redPropType}
-              blueOrientation={setupBlueOrientation}
-              redOrientation={setupRedOrientation}
-              {initialBlueLocation}
-              {initialRedLocation}
-              onBlueOrientationChange={(orientation) => {
-                setupBlueOrientation = orientation;
-              }}
-              onRedOrientationChange={(orientation) => {
-                setupRedOrientation = orientation;
-              }}
-              onApplyPlacement={handleStartPositionApply}
+              onGridModeChange={(mode) => builderState.setGridMode(mode)}
+              onCenterChange={(show) => builderState.setShowCenter(show)}
             />
-          {/key}
-        {:else}
-          <InteractiveGrid {builderState} onStepCapExceeded={checkStepCap} />
+          </div>
+        {/if}
+        <div class="stage-slot">
+          {#if isStartPositionSetup}
+            {#key setupKey}
+              <BuildStartPosition
+                gridMode={builderState.gridMode}
+                showCenter={builderState.showCenter}
+                {bluePropType}
+                {redPropType}
+                blueOrientation={setupBlueOrientation}
+                redOrientation={setupRedOrientation}
+                {initialBlueLocation}
+                {initialRedLocation}
+                onBlueOrientationChange={(orientation) => {
+                  setupBlueOrientation = orientation;
+                }}
+                onRedOrientationChange={(orientation) => {
+                  setupRedOrientation = orientation;
+                }}
+                onApplyPlacement={handleStartPositionApply}
+              />
+            {/key}
+          {:else}
+            <InteractiveGrid {builderState} onStepCapExceeded={checkStepCap} />
+          {/if}
+        </div>
+        {#if !isStartPositionSetup}
+          <BuilderControls {builderState} />
         {/if}
       </div>
-      {#if !isStartPositionSetup}
-        <BuilderControls {builderState} />
-      {/if}
     </div>
   </div>
 
@@ -264,6 +266,21 @@
 
 <style>
   .assemble-tool-panel {
+    --assemble-builder-surface: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #10141f) 96%,
+      black
+    );
+    --assemble-builder-surface-raised: color-mix(
+      in srgb,
+      var(--assemble-builder-surface) 96%,
+      var(--theme-text, #fff)
+    );
+    --assemble-builder-stroke: color-mix(
+      in srgb,
+      var(--theme-stroke, rgba(255, 255, 255, 0.12)) 74%,
+      transparent
+    );
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -274,9 +291,26 @@
     gap: var(--settings-spacing-sm, 8px);
   }
 
-  .header-section {
+  .builder-surface {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
     width: min(100%, 1040px);
+    min-height: 0;
     margin-inline: auto;
+    overflow: hidden;
+    border: 1px solid var(--assemble-builder-stroke);
+    border-radius: var(--settings-radius-lg, 16px);
+    background: linear-gradient(
+      180deg,
+      var(--assemble-builder-surface-raised),
+      var(--assemble-builder-surface)
+    );
+    box-shadow: var(--theme-shadow, 0 18px 48px rgba(0, 0, 0, 0.32));
+  }
+
+  .header-section {
+    width: 100%;
     flex-shrink: 0;
   }
 
@@ -298,8 +332,12 @@
     max-width: 1040px;
     height: 100%;
     display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
     justify-items: center;
+  }
+
+  .grid-slot:not(.start-position-setup) .stage-slot {
+    grid-row: 2;
   }
 
   .stage-slot {
@@ -346,6 +384,13 @@
       gap: 0;
     }
 
+    .builder-surface {
+      width: 100%;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
+
     .main-area {
       flex-direction: column;
       gap: 0;
@@ -353,6 +398,14 @@
 
     .grid-slot {
       width: 100%;
+    }
+
+    .grid-slot:not(.start-position-setup) {
+      grid-template-rows: minmax(0, 1fr);
+    }
+
+    .grid-slot:not(.start-position-setup) .stage-slot {
+      grid-row: 1;
     }
 
     .grid-slot.start-position-setup {

@@ -450,6 +450,12 @@
   const activePhaseColor = $derived<"blue" | "red">(
     builderState.activeHand === MotionColor.BLUE ? "blue" : "red"
   );
+  const currentStepNumber = $derived(
+    (builderState.activeHand === MotionColor.BLUE
+      ? builderState.blueSteps.length
+      : builderState.redSteps.length) +
+      (builderState.phase === "complete" ? 0 : 1)
+  );
   const targetsDisabled = $derived(
     builderState.phase === "animating" || builderState.phase === "complete"
   );
@@ -549,25 +555,29 @@
   role="application"
   aria-label="Visual sequence builder grid"
 >
+  <div
+    class="step-badge"
+    class:blue={builderState.activeHand === MotionColor.BLUE}
+    class:red={builderState.activeHand === MotionColor.RED}
+    aria-label="Building step {currentStepNumber}"
+  >
+    <span>Step</span>
+    <strong>{currentStepNumber}</strong>
+  </div>
   <svg
     viewBox="0 0 950 950"
     xmlns="http://www.w3.org/2000/svg"
     preserveAspectRatio="xMidYMid meet"
   >
-    <!-- Layer 0: Gradient background (semi-transparent on mobile via CSS) -->
-    <defs>
-      <linearGradient id="grid-bg-gradient" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="rgb(20, 25, 40)" />
-        <stop offset="100%" stop-color="rgb(10, 12, 22)" />
-      </linearGradient>
-    </defs>
+    <!-- The builder shell owns the shared surface. This rect keeps the SVG's
+         hit area intact without painting a second, darker layer over it. -->
     <rect
       class="grid-bg"
       x="0"
       y="0"
       width="950"
       height="950"
-      fill="url(#grid-bg-gradient)"
+      fill="transparent"
     />
 
     <!-- Layer 1: Grid lines and points -->
@@ -831,32 +841,67 @@
     aspect-ratio: 1;
     place-self: start center;
     box-sizing: border-box;
-    border-radius: var(--settings-radius-lg, 20px);
+    border-radius: var(--settings-radius-md, 12px);
     overflow: hidden;
-    border: 1.5px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.16));
-    box-shadow:
-      0 18px 48px color-mix(in srgb, var(--theme-shadow, #000) 38%, transparent),
-      0 0 0 1px color-mix(in srgb, var(--theme-accent, #8b6cff) 8%, transparent),
-      inset 0 1px 0 var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid
+      var(
+        --assemble-builder-stroke,
+        var(--theme-stroke, rgba(255, 255, 255, 0.12))
+      );
+    background: transparent;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
-  /* Semi-transparent background - lets the app background bleed through */
-  .interactive-grid :global(.grid-bg) {
-    opacity: 0.9;
-    transition: opacity 0.3s ease;
+  .step-badge {
+    --step-color: var(--theme-accent, #8b6cff);
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    min-height: 36px;
+    padding: 7px 11px;
+    pointer-events: none;
+    border: 1px solid color-mix(in srgb, var(--step-color) 52%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--step-color) 14%, black);
+    color: var(--theme-text, #fff);
+    box-shadow: var(--theme-shadow, 0 8px 22px rgba(0, 0, 0, 0.3));
   }
 
-  /* Slightly more transparent on mobile */
+  .step-badge.blue {
+    --step-color: var(--prop-blue, #2e8bf0);
+  }
+
+  .step-badge.red {
+    --step-color: var(--prop-red, #ed1c24);
+  }
+
+  .step-badge span {
+    color: color-mix(in srgb, var(--step-color) 82%, var(--theme-text, #fff));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 800;
+  }
+
+  .step-badge strong {
+    font-size: 18px;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
   @container tool-panel (max-width: 768px) {
     .interactive-grid {
       place-self: center;
-      border-radius: var(--settings-radius-lg, 16px);
+      border-radius: var(--settings-radius-md, 12px);
       border-color: var(--theme-stroke, rgba(255, 255, 255, 0.06));
-      box-shadow: 0 4px 20px var(--theme-shadow, rgba(0, 0, 0, 0.3));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
     }
 
-    .interactive-grid :global(.grid-bg) {
-      opacity: 0.82;
+    .step-badge {
+      display: none;
     }
   }
 

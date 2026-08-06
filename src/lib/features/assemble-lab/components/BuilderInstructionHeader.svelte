@@ -122,17 +122,12 @@
 <style>
   .control-header {
     width: 100%;
-    padding: 12px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: var(--settings-radius-lg, 16px);
-    background: color-mix(
-      in srgb,
-      var(--theme-panel-bg, rgba(14, 18, 28, 0.94)) 94%,
-      var(--theme-accent, #8b6cff)
-    );
-    box-shadow:
-      0 14px 34px color-mix(in srgb, var(--theme-shadow, #000) 28%, transparent),
-      inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    padding: 12px 16px;
+    border: 0;
+    border-bottom: 1px solid var(--assemble-builder-stroke, var(--theme-stroke));
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .primary-row {

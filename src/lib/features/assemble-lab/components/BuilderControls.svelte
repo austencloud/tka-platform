@@ -6,7 +6,10 @@
 -->
 <script lang="ts">
   import { Popover } from "bits-ui";
-  import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import {
+    MotionColor,
+    RotationDirection,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { AssembleState } from "../state/assemble-state.svelte";
   import OrientationExplainer from "./OrientationExplainer.svelte";
   import GridModePicker from "./GridModePicker.svelte";
@@ -31,6 +34,11 @@
   const showActions = $derived(builderState.canFinishHand || isComplete);
   const actionsDimmed = $derived(isAnimating);
   const handSelectionDisabled = $derived(isAnimating || isComplete);
+  const currentStepNumber = $derived(
+    (builderState.activeHand === MotionColor.BLUE
+      ? builderState.blueSteps.length
+      : builderState.redSteps.length) + (isComplete ? 0 : 1)
+  );
 
   let oriPopoverOpen = $state(false);
   let explainerOpen = $state(false);
@@ -79,7 +87,10 @@
       controlVisibility.motionSettings}
   >
     <div class="status-line">
-      <span class="instruction-text">{phaseInstruction}</span>
+      <span class="instruction-text">
+        <span class="mobile-step-number">Step {currentStepNumber}</span>
+        <span>{phaseInstruction}</span>
+      </span>
 
       <div class="phase-controls">
         <!-- Orientation control: during placing phase -->
@@ -341,6 +352,21 @@
     pointer-events: none;
   }
 
+  .mobile-step-number {
+    display: none;
+    margin-right: 7px;
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  @container tool-panel (max-width: 768px) {
+    .mobile-step-number {
+      display: inline;
+    }
+  }
+
   .has-phase-controls .instruction-text {
     text-align: left;
   }
@@ -502,11 +528,15 @@
   /* ── Action row (desktop only) ── */
   .action-row {
     display: flex;
+    grid-row: 1;
     align-items: stretch;
-    gap: var(--settings-spacing-sm, 8px);
-    padding: 6px 0;
+    gap: var(--settings-spacing-md, 12px);
+    padding: 10px 12px;
+    width: 100%;
     flex-shrink: 0;
     min-height: var(--min-touch-target, 44px);
+    border-bottom: 1px solid var(--assemble-builder-stroke, var(--theme-stroke));
+    background: color-mix(in srgb, var(--theme-text, #fff) 3%, transparent);
   }
 
   .action-row.dimmed {
