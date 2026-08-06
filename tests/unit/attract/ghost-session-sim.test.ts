@@ -512,9 +512,7 @@ describe("ghost session simulation", () => {
                 initialPredictionError: Number(
                   initialPredictionError.toFixed(3)
                 ),
-                recentPredictionError: Number(
-                  recentPredictionError.toFixed(3)
-                ),
+                recentPredictionError: Number(recentPredictionError.toFixed(3)),
                 lastPrediction: experience.lastPrediction,
               },
               activitiesCompleted: Object.fromEntries(

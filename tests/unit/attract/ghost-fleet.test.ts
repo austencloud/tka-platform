@@ -169,8 +169,7 @@ async function flyFleet(): Promise<FleetRow[]> {
       barrenVisitOverruns,
       deliberateSidebarReads: session.mind.memory.navigation.deliberateReads,
       recognizedSidebarReads: session.mind.memory.navigation.recognizedReads,
-      activityEpisodeMismatch:
-        endedActivities - experience.recorded,
+      activityEpisodeMismatch: endedActivities - experience.recorded,
       informedSelections: experience.informedSelections,
       boostedSelections: experience.boostedSelections,
       reducedSelections: experience.reducedSelections,
