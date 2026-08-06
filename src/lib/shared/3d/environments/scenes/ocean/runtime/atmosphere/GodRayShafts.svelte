@@ -40,11 +40,13 @@
 
   interface Props {
     halfRes?: boolean;
+    worldYOffset?: number;
   }
 
-  let { halfRes = false }: Props = $props();
+  let { halfRes = false, worldYOffset = 0 }: Props = $props();
 
-  const groundY = $derived(userProportionsState.groundY);
+  const localGroundY = $derived(userProportionsState.groundY);
+  const worldGroundY = $derived(localGroundY + worldYOffset);
 
   function seededRandom(seed: number) {
     let s = seed;
@@ -106,7 +108,7 @@
       s.set(widthScale, 1, 1);
       // Anchor the shaft TOP to the water plane (groundY + WATER_Y): center sits
       // half a height below it, so the column descends from the surface.
-      pos.set(x, groundY + WATER_Y - HEIGHT * 0.5, z);
+      pos.set(x, localGroundY + WATER_Y - HEIGHT * 0.5, z);
       mat.compose(pos, q, s);
       inst.setMatrixAt(i, mat);
     }
@@ -126,7 +128,7 @@
   });
 
   $effect(() => {
-    material.uniforms.uGroundY!.value = groundY;
+    material.uniforms.uGroundY!.value = worldGroundY;
   });
 
   // Dev A/B toggle — zero intensity when shafts are off (no rebuild).

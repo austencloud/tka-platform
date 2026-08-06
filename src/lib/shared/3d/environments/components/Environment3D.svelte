@@ -8,8 +8,8 @@
    */
 
   import { BackgroundType } from "@austencloud/backgrounds";
-  import { useThrelte } from "@threlte/core";
-  import { untrack } from "svelte";
+  import { T, useTask, useThrelte } from "@threlte/core";
+  import { onDestroy, untrack } from "svelte";
   import ForestScene from "../scenes/ForestScene.svelte";
   import AutumnScene from "../scenes/AutumnScene.svelte";
   import CosmicScene from "../scenes/CosmicScene.svelte";
@@ -20,6 +20,16 @@
   import RainbowScene from "../scenes/RainbowScene.svelte";
   import CelestialScene from "../scenes/CelestialScene.svelte";
   import VoidScene from "../scenes/VoidScene.svelte";
+  import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
+  import { getStageCoordinateFrame } from "../domain/stage-coordinate-frame";
+  import { tryGetEnvironmentTransitionVisualContext } from "../context/environment-transition-visual-context";
+  import {
+    DEFAULT_ENVIRONMENT_TRANSITION_TIMING,
+    advanceEnvironmentTransition,
+    createEnvironmentTransitionState,
+    getEnvironmentVeilOpacity,
+    requestEnvironment,
+  } from "../domain/environment-transition";
 
   interface Props {
     /** Background type from settings */
@@ -34,9 +44,21 @@
     stageZOffset?: number;
   }
 
-  let { backgroundType, performerCount = 1, stageWidth = 6, stageDepth = 6, stageZOffset = 0 }: Props = $props();
+  let {
+    backgroundType,
+    performerCount = 1,
+    stageWidth = 6,
+    stageDepth = 6,
+    stageZOffset = 0,
+  }: Props = $props();
 
   const { scene, renderer } = useThrelte();
+  const sceneFeatures = getSceneFeatureContext();
+  // Full viewer canvases provide the DOM veil and shader readiness signal.
+  // Smaller embedded canvases can still mount Environment3D safely; they use
+  // the reduced-motion timing instead of waiting for a visual host they do not
+  // own.
+  const transitionVisual = tryGetEnvironmentTransitionVisualContext();
 
   // Map BackgroundType to scene type and variant
   type SceneConfig =
@@ -80,14 +102,37 @@
     }
   }
 
-  const config = $derived(getSceneConfig(backgroundType));
+  let transition = $state(
+    createEnvironmentTransitionState(untrack(() => backgroundType))
+  );
+  let prefersReducedMotion = $state(false);
 
-  // Force a clean frame between scene swaps. When the scene type changes,
-  // briefly render nothing so the old scene's fog, sky dome, and objects
-  // are fully removed before the new scene mounts. Without this, stale
-  // Three.js state from the departing scene bleeds into the arriving one.
-  let mountedScene = $state(untrack(() => config.scene));
-  let ready = $state(true);
+  const mountedBackgroundType = $derived(transition.mountedKey);
+  const config = $derived(
+    mountedBackgroundType === null
+      ? ({ scene: "none" } as const)
+      : getSceneConfig(mountedBackgroundType)
+  );
+  const coordinateFrame = $derived(
+    mountedBackgroundType === null
+      ? null
+      : getStageCoordinateFrame(
+          mountedBackgroundType,
+          sceneFeatures.isEnabled("stage")
+        )
+  );
+  const environmentYOffset = $derived(coordinateFrame?.environmentYOffset ?? 0);
+  const transitionTiming = $derived(
+    prefersReducedMotion || !transitionVisual
+      ? { coverDurationMs: 0, revealDurationMs: 0 }
+      : DEFAULT_ENVIRONMENT_TRANSITION_TIMING
+  );
+  const mountedEnvironmentSettled = $derived(
+    mountedBackgroundType !== null &&
+      (sceneFeatures.getError("environment") !== null ||
+        (sceneFeatures.isReady("environment") &&
+          (transitionVisual?.rendererReady ?? true)))
+  );
 
   // Threlte's scene can be a CurrentWritable ({current: Scene}) or the Scene directly
   function getScene() {
@@ -97,48 +142,121 @@
     return (renderer as any)?.current ?? (renderer as any);
   }
 
-  $effect(() => {
-    const next = config.scene;
-    if (next !== mountedScene) {
-      const s = getScene();
-      const r = getRenderer();
-      if (s?.isScene) {
-        s.fog = null;
-        s.background = null;
-        s.environment = null;
-      }
-      if (r?.clear) r.clear();
-      ready = false;
-      mountedScene = next;
-      requestAnimationFrame(() => {
-        ready = true;
-      });
+  function clearSceneGlobals(): void {
+    const s = getScene();
+    const r = getRenderer();
+    if (s?.isScene) {
+      s.fog = null;
+      s.background = null;
+      s.environment = null;
     }
+    if (r?.clear) r.clear();
+  }
+
+  $effect(() => {
+    const requestedBackground = backgroundType;
+    // This effect belongs to the scene-choice prop, not to the animation
+    // state it updates. Reading transition outside untrack makes every frame
+    // reschedule this effect; during covering that used to become an endless
+    // same-scene write before the renderer could paint another frame.
+    untrack(() => {
+      const currentTransition = transition;
+      const nextTransition = requestEnvironment(
+        currentTransition,
+        requestedBackground
+      );
+      if (nextTransition === currentTransition) return;
+
+      if (requestedBackground !== currentTransition.mountedKey) {
+        transitionVisual?.setRendererReady(false);
+      }
+      transition = nextTransition;
+    });
+  });
+
+  $effect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const syncPreference = () => {
+      prefersReducedMotion = media.matches;
+    };
+    syncPreference();
+    media.addEventListener("change", syncPreference);
+    return () => media.removeEventListener("change", syncPreference);
+  });
+
+  let previousMountedBackground = untrack(() => transition.mountedKey);
+  $effect(() => {
+    const mounted = transition.mountedKey;
+    if (mounted === null && previousMountedBackground !== null) {
+      clearSceneGlobals();
+      queueMicrotask(() => sceneFeatures.resetReady("environment"));
+    }
+    previousMountedBackground = mounted;
+  });
+
+  $effect(() => {
+    transitionVisual?.setFrame(
+      getEnvironmentVeilOpacity(transition),
+      transition.phase
+    );
+  });
+
+  useTask((delta) => {
+    transition = advanceEnvironmentTransition(
+      transition,
+      delta * 1000,
+      mountedEnvironmentSettled,
+      transitionTiming
+    );
+  });
+
+  onDestroy(() => {
+    clearSceneGlobals();
+    transitionVisual?.reset();
   });
 </script>
 
-{#if ready}
-  {#if config.scene === "forest"}
-    <ForestScene variant={config.variant} {stageWidth} {stageDepth} {stageZOffset} />
-  {:else if config.scene === "autumn"}
-    <AutumnScene {stageWidth} {stageDepth} {stageZOffset} />
-  {:else if config.scene === "cosmic"}
-    <CosmicScene variant={config.variant} {performerCount} {stageWidth} {stageDepth} />
-  {:else if config.scene === "winter"}
-    <WinterScene {stageWidth} {stageDepth} {stageZOffset} />
-  {:else if config.scene === "ocean"}
-    <OceanScene {performerCount} {stageWidth} {stageDepth} {stageZOffset} />
-  {:else if config.scene === "ember"}
-    <EmberScene {stageWidth} {stageDepth} {stageZOffset} />
-  {:else if config.scene === "blossom"}
-    <BlossomScene {stageWidth} {stageDepth} {stageZOffset} />
-  {:else if config.scene === "rainbow"}
-    <RainbowScene {stageWidth} {stageDepth} {stageZOffset} />
-  {:else if config.scene === "celestial"}
-    <CelestialScene {stageWidth} {stageDepth} {stageZOffset} />
-  {:else if config.scene === "void"}
-    <VoidScene {stageWidth} {stageDepth} {stageZOffset} />
-  {/if}
+{#if coordinateFrame}
+  <T.Group position.y={environmentYOffset}>
+    {#if config.scene === "forest"}
+      <ForestScene
+        variant={config.variant}
+        {stageWidth}
+        {stageDepth}
+        {stageZOffset}
+      />
+    {:else if config.scene === "autumn"}
+      <AutumnScene {stageWidth} {stageDepth} {stageZOffset} />
+    {:else if config.scene === "cosmic"}
+      <CosmicScene
+        variant={config.variant}
+        {performerCount}
+        {stageWidth}
+        {stageDepth}
+      />
+    {:else if config.scene === "winter"}
+      <WinterScene {stageWidth} {stageDepth} {stageZOffset} />
+    {:else if config.scene === "ocean"}
+      <OceanScene
+        {performerCount}
+        {stageWidth}
+        {stageDepth}
+        {stageZOffset}
+        worldYOffset={environmentYOffset}
+      />
+    {:else if config.scene === "ember"}
+      <EmberScene {stageWidth} {stageDepth} {stageZOffset} />
+    {:else if config.scene === "blossom"}
+      <BlossomScene {stageWidth} {stageDepth} {stageZOffset} />
+    {:else if config.scene === "rainbow"}
+      <RainbowScene {stageWidth} {stageDepth} {stageZOffset} />
+    {:else if config.scene === "celestial"}
+      <CelestialScene {stageWidth} {stageDepth} {stageZOffset} />
+    {:else if config.scene === "void"}
+      <VoidScene {stageWidth} {stageDepth} {stageZOffset} />
+    {/if}
+  </T.Group>
 {/if}
 
 <!-- Unrecognized background types render nothing - just the default grid -->

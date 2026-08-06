@@ -38,6 +38,8 @@
   import { getQualityTierDetector } from "../effects/quality/get-quality-tier-detector";
   import { createAdaptiveQualityState } from "../state/adaptive-quality-state.svelte";
   import { setAdaptiveQualityContext } from "../context/adaptive-quality-context";
+  import { setEnvironmentTransitionVisualContext } from "../environments/context/environment-transition-visual-context";
+  import { createEnvironmentTransitionVisualState } from "../environments/state/environment-transition-visual-state.svelte";
   import type { ViewerControlSink } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -96,6 +98,8 @@
   // subtree. PerfMonitor drives it; ScenePostProcessing/scenes read it back.
   const adaptiveQuality = createAdaptiveQualityState(getQualityTierDetector());
   setAdaptiveQualityContext(adaptiveQuality);
+  const environmentTransitionVisual = createEnvironmentTransitionVisualState();
+  setEnvironmentTransitionVisualContext(environmentTransitionVisual);
   const playbackAdapter = $derived.by(() =>
     createAvatarPlaybackAdapter(
       () => viewer3DState.performerManager.performers[0] ?? null,
@@ -120,9 +124,12 @@
   // isolated from the shared `tka-scene-features` key; an ordinary viewer reads
   // and writes that key as before.
   const seededFeatures = viewer3DState.seededSceneFeatures;
-  const sceneFeatureState = createSceneFeatureState(seededFeatures ?? undefined, {
-    isolated: seededFeatures !== null,
-  });
+  const sceneFeatureState = createSceneFeatureState(
+    seededFeatures ?? undefined,
+    {
+      isolated: seededFeatures !== null,
+    }
+  );
   setSceneFeatureContext(sceneFeatureState);
   // Primary performer - gates the Canvas on performer[0] existing. Multi-
   // performer rendering iterates inside Viewer3DScene itself, but the Canvas
@@ -206,6 +213,7 @@
 
   function handleRendererReadyChange(ready: boolean): void {
     rendererReady = ready;
+    environmentTransitionVisual.setRendererReady(ready);
   }
 
   // Tell the parent so it can withhold the 3D rail chrome until the stage is set.

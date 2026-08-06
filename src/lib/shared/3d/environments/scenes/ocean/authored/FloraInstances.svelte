@@ -29,11 +29,17 @@
 
   interface Props {
     quality: OceanQualityConfig;
+    worldYOffset?: number;
     onProgress?: (fraction: number) => void;
     onReady?: () => void;
   }
 
-  let { quality, onProgress, onReady }: Props = $props();
+  let {
+    quality,
+    worldYOffset = 0,
+    onProgress,
+    onReady,
+  }: Props = $props();
 
   // Shared decoder instances (cached per-path by the threlte hooks); detectSupport
   // for KTX2 is wired automatically against the active renderer by useKtx2.
@@ -77,7 +83,7 @@
 
   const swayUniforms = {
     uTime: { value: 0 },
-    uGroundY: { value: userProportionsState.groundY },
+    uGroundY: { value: userProportionsState.groundY + worldYOffset },
     uTallRef: { value: TALL_REF },
     uSwayStrength: { value: SWAY_STRENGTH },
     uCurrentDir: { value: CURRENT_DIR },
@@ -262,7 +268,8 @@
 
   // Keep the sway mask anchored to the live seabed height.
   $effect(() => {
-    swayUniforms.uGroundY.value = userProportionsState.groundY;
+    swayUniforms.uGroundY.value =
+      userProportionsState.groundY + worldYOffset;
   });
 
   // Dev A/B toggle: zero the amplitude when sway is off (no shader recompile —

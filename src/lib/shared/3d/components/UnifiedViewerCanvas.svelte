@@ -20,11 +20,15 @@
   import Viewer2DCamera from "./Viewer2DCamera.svelte";
   import Viewer2DScene from "./Viewer2DScene.svelte";
   import SceneLoadingCurtain from "../scene-features/components/SceneLoadingCurtain.svelte";
+  import SceneShaderWarmup from "./SceneShaderWarmup.svelte";
   import RenderGraphBridge from "./RenderGraphBridge.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { createSceneFeatureState } from "../scene-features/state/scene-feature-state.svelte";
   import { setSceneFeatureContext } from "../scene-features/context/scene-feature-context";
   import { createViewerCameraPlayerState } from "@austencloud/camera-3d";
+  import EnvironmentTransitionRenderPass from "../environments/components/EnvironmentTransitionRenderPass.svelte";
+  import { setEnvironmentTransitionVisualContext } from "../environments/context/environment-transition-visual-context";
+  import { createEnvironmentTransitionVisualState } from "../environments/state/environment-transition-visual-state.svelte";
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
@@ -73,8 +77,12 @@
   const viewer3DState = getViewer3DContext();
   const sceneFeatureState = createSceneFeatureState();
   setSceneFeatureContext(sceneFeatureState);
+  const environmentTransitionVisual = createEnvironmentTransitionVisualState();
+  setEnvironmentTransitionVisualContext(environmentTransitionVisual);
 
-  const avatarState = $derived(viewer3DState.performerManager.performers[0] ?? null);
+  const avatarState = $derived(
+    viewer3DState.performerManager.performers[0] ?? null
+  );
   const cameraPlayer = createViewerCameraPlayerState({ spawnY: -1.5 });
 
   let canvasMountReady = $state(false);
@@ -123,6 +131,11 @@
             {currentStep}
           />
         {:else}
+          <SceneShaderWarmup
+            onReadyChange={(ready) =>
+              environmentTransitionVisual.setRendererReady(ready)}
+          />
+          <EnvironmentTransitionRenderPass />
           <Viewer3DCanvasRef />
           <Viewer3DCamera
             cameraPlayerAvatar={cameraPlayer.avatarState}

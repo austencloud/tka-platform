@@ -39,6 +39,8 @@
     stageWidth?: number;
     stageDepth?: number;
     stageZOffset?: number;
+    /** Translation applied by the shared environment coordinate frame. */
+    worldYOffset?: number;
   }
 
   let {
@@ -46,6 +48,7 @@
     stageWidth = 6,
     stageDepth = 6,
     stageZOffset = 0,
+    worldYOffset = 0,
   }: Props = $props();
 
   // ── Quality detection ─────────────────────────────────────────────────
@@ -200,7 +203,8 @@
     causticUniforms.uTime.value += delta;
   });
   $effect(() => {
-    causticUniforms.uGroundY.value = userProportionsState.groundY;
+    causticUniforms.uGroundY.value =
+      userProportionsState.groundY + worldYOffset;
   });
   $effect(() => {
     // Live-tunable via the dev Caustics slider; the toggle still hard-zeroes it.
@@ -234,6 +238,7 @@
 {#if floraRequired}
   <FloraInstances
     {quality}
+    {worldYOffset}
     onProgress={handleFloraProgress}
     onReady={handleFloraReady}
   />
@@ -245,4 +250,5 @@
   {stageWidth}
   {stageDepth}
   {stageZOffset}
+  {worldYOffset}
 />

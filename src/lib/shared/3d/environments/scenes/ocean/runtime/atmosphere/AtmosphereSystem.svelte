@@ -6,13 +6,14 @@
 
   interface Props {
     quality: OceanQualityConfig;
+    worldYOffset?: number;
   }
 
-  let { quality }: Props = $props();
+  let { quality, worldYOffset = 0 }: Props = $props();
 </script>
 
 {#if quality.enableGodRays}
-  <GodRayShafts halfRes={quality.godRayHalfRes} />
+  <GodRayShafts halfRes={quality.godRayHalfRes} {worldYOffset} />
 {/if}
 <!-- Caustics now project onto the seabed material itself (see seabed-caustics.ts);
      the old flat VoronoiCaustics plane poked cyan through every terrain valley. -->

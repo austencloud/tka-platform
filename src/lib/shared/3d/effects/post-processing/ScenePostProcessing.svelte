@@ -26,6 +26,8 @@
   import { getQualityTierDetector } from "../quality/get-quality-tier-detector";
   import { tryGetAdaptiveQualityContext } from "../../context/adaptive-quality-context";
   import { QualityTier } from "../types";
+  import { tryGetEnvironmentTransitionVisualContext } from "../../environments/context/environment-transition-visual-context";
+  import { EnvironmentTransitionCompositor } from "../../environments/rendering/environment-transition-compositor";
 
   interface Props {
     children: Snippet;
@@ -50,9 +52,12 @@
   const autoRender: { current: boolean; set: (v: boolean) => void } =
     _ctx.autoRender;
   const renderStage = _ctx.renderStage;
+  const autoRenderTask = _ctx.autoRenderTask;
   const viewer3DState = getViewer3DContext();
   const adaptiveQuality = tryGetAdaptiveQualityContext();
   const qualityTierDetector = getQualityTierDetector();
+  const transitionVisual = tryGetEnvironmentTransitionVisualContext();
+  const transitionCompositor = new EnvironmentTransitionCompositor();
 
   const isOcean = $derived.by(() => {
     try {
@@ -257,30 +262,39 @@
 
   useTask(
     (delta) => {
-      if (!shouldCompose || !composer) return;
-
       const cam = camera.current;
-      if (cam) {
+      const scn = (scene as any).current ?? scene;
+      if (!cam || !scn) return;
+
+      if (shouldCompose && composer) {
         composer.setMainCamera(cam);
+
+        renderer.getSize(_sizeVec);
+        const w = Math.round(_sizeVec.x);
+        const h = Math.round(_sizeVec.y);
+        if (w < 1 || h < 1) return;
+        if (w !== lastW || h !== lastH) {
+          composer.setSize(w, h);
+          lastW = w;
+          lastH = h;
+        }
+
+        composer.render(delta);
       }
 
-      renderer.getSize(_sizeVec);
-      const w = Math.round(_sizeVec.x);
-      const h = Math.round(_sizeVec.y);
-      if (w < 1 || h < 1) return;
-      if (w !== lastW || h !== lastH) {
-        composer.setSize(w, h);
-        lastW = w;
-        lastH = h;
-      }
-
-      composer.render(delta);
+      transitionCompositor.render(
+        renderer,
+        scn,
+        cam,
+        transitionVisual?.opacity ?? 0
+      );
     },
-    { stage: renderStage, autoInvalidate: false }
+    { stage: renderStage, after: autoRenderTask, autoInvalidate: false }
   );
 
   onDestroy(() => {
     disposeComposer();
+    transitionCompositor.dispose();
   });
 </script>
 

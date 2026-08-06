@@ -16,6 +16,7 @@
     stageWidth?: number;
     stageDepth?: number;
     stageZOffset?: number;
+    worldYOffset?: number;
   }
 
   let {
@@ -24,6 +25,7 @@
     stageWidth = 6,
     stageDepth = 6,
     stageZOffset = 0,
+    worldYOffset = 0,
   }: Props = $props();
 
   let cursorRay = $state({
@@ -102,12 +104,12 @@
 
 {#if quality.enableAtmosphere}
   <!-- Atmosphere: god rays, caustics, particles -->
-  <AtmosphereSystem {quality} />
+  <AtmosphereSystem {quality} {worldYOffset} />
 {/if}
 
 {#if quality.enableFauna}
   <!-- Fauna: fish boids + jellyfish swarm -->
-  <FaunaSystem {quality} {cursorRay} />
+  <FaunaSystem {quality} {cursorRay} {worldYOffset} />
 
   <!-- Interaction: mouse raycast → fish scatter + audio. Emits the cursor's
        world-space ray; the boid shaders flee fish by perpendicular distance to

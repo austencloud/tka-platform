@@ -7,12 +7,13 @@
   interface Props {
     quality: OceanQualityConfig;
     cursorRay?: CursorRay;
+    worldYOffset?: number;
   }
 
-  let { quality, cursorRay }: Props = $props();
+  let { quality, cursorRay, worldYOffset = 0 }: Props = $props();
 </script>
 
-<FishBoids {cursorRay} />
+<FishBoids {cursorRay} {worldYOffset} />
 
 {#if quality.maxJellyfish > 0}
   <JellyfishSwarm {quality} />

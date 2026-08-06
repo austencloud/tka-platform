@@ -29,6 +29,7 @@
     halfSpeedTime?: number;
     cursorRay?: CursorRay;
     modelBasePath?: string;
+    worldYOffset?: number;
   }
 
   let {
@@ -45,6 +46,7 @@
     halfSpeedTime = 0.5,
     cursorRay,
     modelBasePath = '/models/ocean/pack/',
+    worldYOffset = 0,
   }: Props = $props();
 
   const groundY = $derived(userProportionsState.groundY);
@@ -228,6 +230,7 @@
     const cursorActive = cursorRay?.active ?? false;
     if (cursorRay) {
       cursorRayOrigin.copy(cursorRay.origin);
+      cursorRayOrigin.y -= worldYOffset;
       cursorRayDir.copy(cursorRay.dir);
     }
 
