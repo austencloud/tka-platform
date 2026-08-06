@@ -1,230 +1,320 @@
-# 3D Effects — Rendering and Motion — Handoff (2026-08-06)
+# 3D Effects Full Roster and Animal Motion — Handoff (2026-08-06)
 
 ## Mission
 
-Make the 3D effects look and perform well enough that all sixteen can run at
-once. The work started from
-[2026-08-05-effects-3d-migration.md](../plans/2026-08-05-effects-3d-migration.md)
-— mount `EffectsLayer` so eight stranded effects get a 3D path — and grew into
-three phases: mount them, fix the ones that turned out broken, then find out why
-sixteen at once runs at 1 FPS.
-
-The last phase produced a target architecture (below) that supersedes the
-in-flight instancing work. **Read "Loose ends" before touching code — item #1 is
-not where the previous session was working.**
+Give the 3D viewer the same canonical sixteen effects as the other effect
+surfaces, render every one through bounded scene-level infrastructure, and make
+Animal read as a creature attached to the physical prop tip. The governing
+spec is [Full 3D Effect Roster Design](2026-08-06-effects-3d-full-roster-design.md).
+The roster and native renderers are landed. The work is not finished: the
+latest stationary Animal pose has not been observed in a live frame, the effort
+selection correction is still uncommitted, Ghost needs its original visual
+repro checked, and the completed batching architecture has not been profiled.
 
 ## Done — verified
 
-All twelve commits below are on `origin/main`.
+### Canonical sixteen-effect picker and native roster
 
-Shared evidence, run at the end of the session:
+Commit `7b03f69194141d53a835b595526c3efb515fcb63` lands the canonical picker,
+scene-effect coordinator, pooled renderers, and the formerly missing Ink, Silk,
+Animal, and Pulse renderers. Motion remains a separate scene modifier.
 
-- `npx vitest run tests/unit/effects/ src/lib/shared/effects/translators`
-  → `Test Files 10 passed (10) | Tests 98 passed (98)`
-- `npx svelte-check --threshold error --output human`
-  → `svelte-check found 0 errors and 0 warnings`
+Evidence from 2026-08-06, run after that commit landed:
 
-| SHA | What | Evidence beyond the above |
-|---|---|---|
-| `daa35bf85c` | Per-station effects config in the motif harness | Six stations render six different effects — screenshot |
-| `2c79f7817c` | `EffectOrchestrator3D` mounts `EffectsLayer`; eight effects get their 3D path back | `tests/unit/effects/effect-orchestrator-mounts-layer.test.ts`, written failing first, then 3 passing |
-| `df3579134e` | Fire double-render fix — dropped `EffectsLayer`'s duplicate `FireEmitter` | Before: Fire station blew out to a white disc washing the scene. After: correct flame column. Both frames observed |
-| `59de6509e4` | Harness docs: twelve of sixteen effects render in 3D | — |
-| `d5116e873f` | Harness solo mode (`?e=<id>`) — one effect alone at the origin | Needed because oversized emitters occluded neighbours |
-| `ae9eb2c6e8` | Corrected findings after solo frames | — |
-| `6d42c51607` | **Sparkles**: pixel constants read as metres → 3–7 **metre** sparkles on a 0.86m staff | Solo frame before: one sprite filled the viewport and Chrome timed out compositing. After: tight cluster of glints, page composites instantly. 5 new translator tests |
-| `e73536d9a9` | **Zap**: `BASE_DISPLACEMENT = 25` read as 25 metres; plus a `$effect` rebuilding every BufferGeometry twice per frame | Before: white scribble web filling the frame, tab wedged. After: compact bolt inside the station footprint |
-| `9d6f2810f7` | **Bubbles**: `renderRadius()` computed and never applied — unit sphere, radius 1 | Before: one opaque mass swallowing the station. After: individually legible bubbles |
-| `211b8546c3` | **Bloom**: `rainbowTexture` was a plain `let` read by a `$derived`, so the mount guard never opened | Before: empty ring, playing or paused. After: warm halation at the tips |
-| `a5635f6e6d` | **2D/3D channel**: `EffectsLayer` gated on the effects-config context (the 2D selection) instead of the 3D prop channel | 4 new contract assertions; harness still renders through the prop channel |
-| `2c12f8fb34` | `/test/effect-grid` — all sixteen effects, 4×4, same sequence | Verified at 1920×1080 and 3840×2160 |
+- `pnpm vitest run --config tests/config/vitest.config.ts tests/unit/3d-effects`
+  passed 12 files and 84 tests.
+- `tests/unit/effects/full-roster-3d-panel-contract.test.ts` passed 3/3. It
+  asserts direct use of the canonical registry, keeps Motion separate, and
+  checks all four new effects are resolved and published.
+- `tests/unit/effects/effect-orchestrator-mounts-layer.test.ts` passed 11/11.
+- The HTTPS route probe returned HTTP 200 with `x-sveltekit-page: true`.
 
-**Perf baseline, measured** on `/test/effect-grid` via `renderer.info`
-(16 stations × 2 rigs):
+The original 16-cell test grid and pre-batching baseline landed in
+`2c12f8fb34`. Before the scene-level rewrite it measured:
 
-```
+```text
 2,547 draw calls | 4,180 geometries | 802 textures | 23,852 triangles | 1 FPS
 ```
 
-23,852 triangles across 2,547 calls is ~9 triangles per draw call. The cost is
-per-object submission, not geometry.
+That number explains why batching was required. It is not a current benchmark.
+
+### Per-rig physical tip motion and Ghost's rig-local anchor
+
+Commit `7b03f69194141d53a835b595526c3efb515fcb63` replaces shared prop-center
+motion with each rig's physical tip positions and real delta-time velocity. It
+also applies the same hand-anchor displacement to Ghost captures that the live
+props receive.
+
+Evidence from the current test run:
+
+- `tests/unit/3d-effects/tip-position-bridge.test.ts` passed 15/15, including
+  stationary-center rotation, isolated histories, and rig-local hand-anchor
+  displacement.
+- `tests/unit/effects/effect-orchestrator-mounts-layer.test.ts` passed 11/11,
+  including physical tip publication, no process-wide motion history, and
+  matching hand anchors for both Ghost renderers.
+
+### Animal renderer and six-preset comparison page
+
+Commit `7b03f69194141d53a835b595526c3efb515fcb63` contains the instanced Animal
+anatomy, fixed-length sampled spine, six production presets, and the comparison
+page at:
+
+```text
+https://localhost:5173/test/effect-grid?view=animal-presets
+```
+
+Austen observed all six presets live on 2026-08-06 and called them "cute as
+hell." After the first revision, Austen confirmed the different sequence was
+"one step closer." The comparison page now assigns Animal only to blue prop
+tip `0-1`; its wildcard maps every other tip to `none`. It uses the existing
+`gallery-practice-seq` A/B/D drill instead of the center-biased loop that hid
+endpoint travel.
+
+### Animal endpoint and stationary-body math
+
+Commit `7b03f69194141d53a835b595526c3efb515fcb63` also contains the latest Animal
+math:
+
+- The visible head reads the exact live endpoint every frame even when path
+  retention skips sub-2.8 cm samples.
+- No-motion fallback points toward world-down `(0, -1, 0)`, not stage-left.
+- A frame-rate-independent blend settles the fixed-length spine under its
+  pinned head.
+- Slither amplitude reaches zero when endpoint speed reaches zero.
+- Motion releases the gravity blend faster than rest applies it.
+
+Evidence from the current run:
+
+- `tests/unit/3d-effects/animal-spine-3d.test.ts` passed 6/6. It covers a
+  gravity-hung fixed-length spine, zero stationary wag, 30/60 FPS settling
+  equivalence, rotation-minimizing frames, head pinning, and silhouette
+  differences.
+- `tests/unit/3d-effects/full-roster-renderers-3d.test.ts` passed 8/8. Its
+  regression builds horizontal motion history, holds the endpoint still for
+  two seconds, confirms the tail finishes below the head at full authored
+  length, and measures less than 1 mm of movement on the next idle frame.
+
+This proves the coordinates written to the instance buffers. It does not prove
+the final silhouette looks right in motion.
 
 ## Believed done — unverified
 
-- **The 2D/3D channel fix** (`a5635f6e6d`) is proven by contract test and by the
-  harness rendering through the prop channel. It was **not** re-checked in the
-  real app against Austen's original repro: 2D effect = Goo, 3D effect = LED,
-  which produced "gooey LEDs". Do that check.
-- **Bloom renders but may be too large.** `spriteScale = intent.radius * 0.04`,
-  so the default radius 36 gives a **1.44m** halo on a 0.86m staff, and four tips
-  fuse into one glow. Left alone deliberately: changing the mapping shifts every
-  saved config. Needs Austen's call.
-- **Ghost renders but is inert.** It draws one blue and one red phantom captured
-  at step 0 and never advances, because nothing supplies `currentStep`. See
-  loose end #6.
+### Latest Animal gravity pose
+
+The gravity and zero-speed slither corrections are committed and test-proven,
+but no post-change screenshot was captured. Chrome stayed alive on debug port
+9222 while every Chrome DevTools MCP call returned `Transport closed`, including
+after `scripts/launch-chrome-debug.ps1` reattached to the existing process.
+
+The unresolved visual questions are:
+
+- Does the tail settle down naturally during holds, or does the full vertical
+  equilibrium read as a dangling ribbon?
+- Is the settle rate slow enough to avoid a snap but fast enough to be visible
+  during one held beat?
+- Does the faster release preserve the traced gesture as motion resumes?
+- Do dragon wings and caterpillar legs remain readable when the spine is
+  vertical?
+
+### Ghost displacement
+
+The captured center now uses `resolveRigLocalPropCenter3D(propState.worldPosition,
+handAnchor)`, and tests prove that offset. The original real-viewer repro was
+not repeated after the change. Austen's repro was that Ghost phantoms lacked
+the live prop's forward hand displacement, so old props appeared closer to the
+performer and stabbed through the body.
+
+### Current all-sixteen performance
+
+The scene-level pools, shared atlases, fixed capacities, and coordinator are
+landed. No current `window.__gridPerf` capture exists after all sixteen have
+been active. The old 1 FPS baseline and the intermediate 398-call result are
+superseded measurements.
 
 ## In flight
 
-**Branch: `main`. No worktree.** Everything below is uncommitted working tree.
+Branch: `main`. No worktree.
 
-The instancing attempt. It is **not shippable** — the five converted emitters
-render ~1 particle each instead of dozens.
+One effect-related file remains uncommitted:
 
-```
- M src/lib/shared/3d/effects/bubbles/BubbleEmitter3D.svelte
- M src/lib/shared/3d/effects/particles/SparkleEmitter.svelte
- M src/lib/shared/3d/effects/petals/PetalAmbientShower3D.svelte
- M src/lib/shared/3d/effects/petals/PetalEmitter3D.svelte
- M src/lib/shared/3d/effects/smoke/SmokeRenderer3D.svelte
- M src/lib/shared/3d/effects/water/WaterEmitter3D.svelte
- M src/routes/test/effect-grid/+page.svelte          (wires PerfProbe)
- M src/routes/test/element-motifs/MotifStation.svelte (KEEP — real bug fix)
-?? src/lib/shared/3d/effects/instancing/             (the shared primitive)
-?? src/routes/test/effect-grid/PerfProbe.svelte      (KEEP — the measurement)
+```text
+ M src/lib/shared/3d/components/controls/PerformerHubDetail.svelte
 ```
 
-Measured after conversion: `398 draw calls | 1,042 geometries | 6–7 FPS`. Part
-of that drop is the converted emitters not drawing, so do not read it as a clean
-win. `svelte-check` is clean; the failure is visual, not typed.
+Its `currentEffort` derived value now handles All Performers mode by reading
+every performer's `effectiveEffortId`. If all performers agree, that effort is
+selected; mixed values produce `null`. The previous code always read the viewer
+default, leaving Linear highlighted after every performer visibly changed to a
+different effort.
 
-Two of these are worth keeping regardless of what happens to the conversions:
+This patch has no focused test, no screenshot, and no commit. Treat it as an
+implementation candidate, not a completed fix.
 
-- `MotifStation.svelte` — removes an `$effect` that read and wrote the same
-  state, threw `effect_update_depth_exceeded`, and tore down the component tree.
-- `PerfProbe.svelte` — exposes `window.__gridPerf` (`calls`, `triangles`,
-  `geometries`, `textures`, `fps`). Every number in this doc came from it.
+The rest of the working tree is heavily dirty from unrelated concurrent Museum,
+Autumn, camera, Ink, asset, and document work. Do not revert or stage any of it.
+Re-read `git status` immediately before every commit.
 
 ## Loose ends (ranked)
 
-**#1 — Fix the motion input. Start here, not at the instancing.**
+### 1. Observe the latest Animal motion in the live comparison page
 
-Confirmed by reading the code, not just inferred:
+Start or reuse Chrome only through `scripts/launch-chrome-debug.ps1`. Open a
+task-owned background tab through Chrome DevTools MCP at:
 
-- `EffectsLayer.svelte:252` feeds `bluePropState.worldPosition` /
-  `redPropState.worldPosition` — the prop **CENTRE** — into the position
-  history. A staff rotating around a stationary centre therefore reports
-  **exactly zero** displacement while both tips move fast.
-- `EffectsLayer.svelte:274-280` (`blueVelocityVec`, and `:282` for red) is the
-  raw `curr.clone().sub(prev)` between the last two samples — an unscaled
-  displacement with **no elapsed time in it**. The emitter then divides that by
-  its own frame delta, so even real movement is mis-scaled.
-- `effect-state.svelte.ts:273` is a process-wide singleton, and every
-  `EffectsLayer` instance writes into it. On the grid, 32 rig layers contend for
-  one blue/red history.
+```text
+https://localhost:5173/test/effect-grid?view=animal-presets
+```
 
-Give each rig an isolated motion tracker and compute each tip's world velocity
-from current and previous **tip** positions with real elapsed time.
+Watch at least one full loop. Inspect the stationary holds and the transition
+back into travel. The required result is one creature per station, head pinned
+to the blue right endpoint, tail settling toward world-down without lateral
+wag, and no snap when movement resumes. Capture a WebP frame only after reading
+the motion through a full loop.
 
-This is the "look beautiful" half. These effects currently cannot respond to the
-motion they exist to visualise.
+### 2. Tune the production Animal renderer from that frame
 
-**#2 — Revert the five emitter conversions.** The plan below supersedes their
-granularity (one pool per tip per rig is the wrong boundary). Keep
-`instancing/`, `PerfProbe`, and the `MotifStation` fix. The git hook blocks
-`git checkout --`; restore with `git show HEAD:<path> > <path>` per file.
+If the pose is still wrong, change the renderer, not the comparison sequence.
+The relevant controls are in:
 
-**#3 — One scene-level renderer per effect type**, owning all tips across all
-rigs, following `fire/fire-renderer-3d.ts`. That is ~one draw call per material
-variant rather than one per tip.
+- `src/lib/shared/3d/effects/animal/animal-spine-3d.ts`
+  - `IDLE_SPEED_START = 0.08`
+  - `IDLE_SPEED_END = 0.72`
+  - `GRAVITY_SETTLE_RATE = 4.2`
+  - `GRAVITY_RELEASE_RATE = 9`
+  - stationary slither activity thresholds `0.02` and `0.34`
+- `src/lib/shared/3d/effects/animal/animal-renderer-3d.ts`
+  - live head position, retained path sampling, gravity blend state, and
+    world-down fallback
 
-**#4 — Preallocated structs-of-arrays.** Renderers write position, scale,
-rotation, colour, alpha straight into typed instance attributes. This removes
-the per-frame allocation churn *and* takes Svelte reactivity out of the frame
-loop. At 398 draw calls and 6 FPS the remaining cost is CPU-side.
+Keep the exact endpoint pin, fixed authored body length, bounded history, and
+instanced anatomy. Add or adjust a math regression before changing the settle
+model.
 
-**#5 — Petal textures.** 2,125 textures exist because `getOrBakeTexture` caches
-per **component**, so every emitter instance re-bakes its own. Move to a
-module-scope shape atlas plus tint via instance colour.
+### 3. Finish the All Performers effort-selection fix
 
-**#6 — Plumb `currentStep`** so Ghost advances. `EffectOrchestrator3D` already
-accepts it as an optional prop and forwards it; nothing supplies it. There is no
-local `PerformerRig` — it lives in `@austencloud/scene-3d` and its `effectsSlot`
-snippet carries no step index. Either extend that package's slot signature or
-read step from a context inside the orchestrator.
+Audit the uncommitted `PerformerHubDetail.svelte` diff. Verify these states:
 
-**#7 — Bloom halo scale** (see "Believed done").
+1. All performers share Linear: Linear is selected.
+2. Selecting another effort for All Performers updates the selected button.
+3. Performers have mixed effort overrides: no single button is selected.
+4. Single-performer scope still follows that performer's effective effort.
 
-**#8 — `FireEmitter.svelte` has no callers** after `df3579134e`. Delete it or
-fold it into `FireRenderer3D`; do not leave it as another renderer nothing
-renders.
+Add a focused state/contract test if the component's derived state can be
+extracted without testing Svelte rendering. Commit only this file and its test.
 
-**#9 — `pickSparkleColor` calls `Date.now()` inside a `$derived`**
-(`EffectsLayer.svelte`), so rainbow mode is a static hue per emitter.
+### 4. Repeat the original Ghost repro
 
-**#10 — Re-profile.** Consider GPU/GPGPU simulation only if correctly batched,
-allocation-free CPU pools still miss the frame budget.
+In the real 3D viewer, apply Ghost and use a pose where the hand-anchor offset
+is visually obvious. Compare a fresh phantom with the live prop. The phantom
+center must occupy the prior live prop center, including the forward rig-local
+offset, rather than intersecting the performer.
+
+### 5. Resolve the current batching-contract failure
+
+The combined focused command currently reports 105 passed and 1 failed. The
+failure is:
+
+```text
+tests/unit/effects/scene-effects-batching-contract.test.ts
+initializes the scene coordinator with Threlte's direct Scene value
+Expected: manager.initialize(scene)
+Received code: manager.initialize(parent ?? scene)
+```
+
+`SceneEffectsCoordinator3D.svelte` now supports an optional explicit parent.
+Determine whether the new parent behavior is intentional. If so, update the
+contract to accept `parent ?? scene` while retaining the `scene.current`
+prohibition. If not, fix the coordinator. Do not call the focused suite green
+until this is resolved.
+
+### 6. Re-profile all sixteen effects
+
+Use `/test/effect-grid` and its `window.__gridPerf` probe after every cell has
+emitted. Record calls, triangles, geometries, textures, and FPS at 1920x1080 and
+3840x2160. The target architecture is one scene-level renderer per effect type
+with stable geometry and texture counts. A low call count with missing particles
+does not count as success.
+
+### 7. Complete a real-viewer parity sweep
+
+Confirm the real 3D picker shows the same sixteen effects in the canonical
+order, Motion remains separate, and each newly exposed effect produces a
+visible result. Check at least Ink, Silk, Animal, and Pulse in a normal sequence
+viewer, not only the test page.
 
 ## Decisions already made
 
-- **2026-08-06, Austen:** "full send, this must be efficient" — approval to
-  convert all the emitters, with efficiency as the bar, not just correctness.
-- **2026-08-06, Austen:** "One at a time, with careful validation" — the cadence
-  for the four effect fixes. Each one got its own frame and its own commit.
-- **2026-08-06, Austen:** 3D effects should be beautiful *and* run sixteen at
-  once; asked explicitly whether the overload was expected or a mistake of ours.
-  Answer: a technique defect, evidenced above.
-- **2026-08-05, Austen:** bubbles is the Water room's motif.
-- **Standing:** do not re-add realistic water — goo is goo
-  (`feedback_water_renamed_to_goo`).
-- The four effects with no 3D renderer at all (ink, silk, animal, pulse) stay
-  out of scope; that is a separate build, not a fix.
+- **2026-08-06, Austen:** the 3D picker must expose the same sixteen effects as
+  the other effect surface. "Full send" authorized the full native roster.
+- **2026-08-06, Austen:** Animal receives the production pass. "FULL SEND ON
+  ANIMAL!"
+- **2026-08-06, Austen:** all Animal presets belong side by side on a test page
+  for direct comparison.
+- **2026-08-06, Austen:** the Animal must trace the physical prop endpoint. A
+  body attached near the prop or stuck at the middle is wrong.
+- **2026-08-06, Austen:** the previous center-biased sequence was a bad review
+  input. The comparison page now uses the existing mixed A/B/D drill.
+- **2026-08-06, Austen:** a stationary Animal needs a gravity-aware tail. The
+  tail must know which direction to settle instead of jerking sideways.
+- **2026-08-06, Austen:** changing the All Performers effort must change the
+  selected effort button.
+- **2026-08-06, Austen:** Ghost phantoms need the same forward displacement as
+  the live props.
+- **2026-08-06, Austen:** all sixteen effects must remain efficient when active
+  together. Missing output is not a performance win.
+- Work stays on `main`; no branch or worktree was requested.
 
 ## Gotchas
 
-**Svelte 5 ↔ three.js boundary — this cost most of a session.**
+### A parallel commit captured the completed roster during this handoff audit
 
-- `$state` **deep-proxies** whatever you put in it. Holding a three.js object
-  there and mutating its buffers every frame invalidates the state that effects
-  and tasks read, so the component re-renders continuously: the emitter's
-  particle array and spawn accumulator reset every frame, and `useTask`'s delta
-  comes back **frozen and negative**. Use `$state.raw`.
-- `args={[geometry, material, count]}` inline builds a **new array every
-  render**, and `<T>` treats changed args as "rebuild the object" — it disposed
-  and recreated the mesh, reassigned the bound ref, and re-rendered forever.
-  Hoist args to a stable `const`.
-- An `$effect` that calls a store setter which internally reads the same state
-  loops until `effect_update_depth_exceeded`, which **silently tears down the
-  component tree** — the symptom is a blank scene, not an obvious crash.
+At 17:05:47 CDT on 2026-08-06, another live session committed the full roster,
+Animal gravity work, comparison page, and tests as
+`7b03f69194141d53a835b595526c3efb515fcb63`. Those files are committed even
+though they were untracked earlier in the session. Confirm HEAD and file status
+instead of trusting old terminal output.
 
-**Environment**
+### Chrome DevTools transport was dead, not Chrome
 
-- **The dev server does not pick up a NEW route directory.** It returns 200 and
-  then client-side bounces to `/create/construct`. Restart the server, or start
-  one after the directory exists. This wasted two rounds.
-- **Chrome DevTools MCP jams** (`Network.enable timed out`) when several heavy
-  3D tabs are open in the shared browser. Closing the stale 3D tabs fixes it.
-  When it is unavailable, driving CDP directly over `ws://127.0.0.1:9222` with
-  Node's native `WebSocket` works fine — `Page.navigate`,
-  `Emulation.setDeviceMetricsOverride`, `Page.captureScreenshot`,
-  `Runtime.evaluate`. Those helper scripts lived in the session scratchpad and
-  are gone; they are ~40 lines each and worth rewriting.
-- **`troika-three-text` is not installed**, so Threlte's `<Text>` renders
-  nothing and reports nothing. `/test/effect-grid` labels use a canvas-texture
-  sprite instead (`CellLabel3D.svelte`), the same technique as
-  `BloomBillboard3D`.
-- Effect screenshots: `/test/element-motifs?e=<effectId>` for one effect alone,
-  `/test/effect-grid` for all sixteen.
+`scripts/launch-chrome-debug.ps1` reported Chrome 151 running on port 9222 and
+returned its browser WebSocket URL. Chrome DevTools MCP still returned
+`Transport closed`. A fresh Codex session should reconnect the MCP transport.
+Do not use raw CDP scripts or another browser runtime; current `AGENTS.md`
+requires Chrome DevTools MCP and the shared launcher.
 
-**Dead ends already tried on the ~1-particle bug** — do not repeat:
+### HTTPS only
 
-- Per-instance alpha is **not** the cause. Forcing `alpha = 1.0` in
-  `writeInstances` changed nothing.
-- Instance buffers are present (`instanceAlpha` and `instanceColor` both
-  confirmed at runtime), and the mesh ref binds.
-- `$state.raw` and stable `args` both fixed real remount loops but did not
-  restore particle counts.
+Port 5173 is Austen's shared server. Use `https://localhost:5173`, never HTTP.
+Do not restart, stop, or kill it.
 
-The most probable explanation, consistent with all of it: **the emitters never
-had correct motion input**, and the earlier "dense" petal and bubble output came
-from cross-rig contamination of the velocity singleton acting as a pseudo-random
-velocity source. Petals are motion-only by design and render nothing now, which
-fits. Loose end #1 is the test of that theory.
+### Animal is a hybrid path follower, not a free rope simulation
 
-**Repo hygiene**
+Movement samples a bounded tip history at fixed arc length. Gravity is a
+downstream equilibrium blend applied only as speed falls. This preserves the
+drawn gesture while moving and prevents arbitrary tail direction at rest.
+Replacing it with an unconstrained rope would throw away the endpoint-tracing
+requirement.
 
-- Two tests in `src/lib/shared/effects/domain/effect-control-manifest.test.ts`
-  fail (`trails.tailLength`, `pulse` row count). They are **pre-existing and
-  unrelated** — that file and its inputs are committed and untouched by this
-  work.
-- No expert agent in `.claude/rules/expert-routing.md` owns 3D effects, so no
-  expert file was updated. If this area keeps getting worked, it earns one.
+### The comparison page intentionally isolates one tip
+
+The earlier mirrored V silhouette was two complete creatures attached to
+co-located endpoints. `AnimalPresetStation.svelte` maps wildcard tips to `none`
+and assigns Animal only to `0-1`. Do not restore the wildcard Animal mapping.
+
+### One focused contract is red
+
+The current combined run is 105 passed and 1 failed because the batching
+contract expects the pre-parent coordinator string. The 12-file 3D-effects
+directory remains 84/84 green. Preserve that distinction in status reports.
+
+### Shared checkout and index
+
+Other sessions are actively changing and committing this checkout. Commit with
+explicit pathspecs only. Never stage broadly, never revert unrelated files, and
+check HEAD again immediately before pushing.
+
+### Expert routing
+
+`.claude/rules/expert-routing.md` has no expert owner for 3D effects. No expert
+agent canon file was updated.
