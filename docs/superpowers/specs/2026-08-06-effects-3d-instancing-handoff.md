@@ -8,8 +8,9 @@ Animal read as a creature attached to the physical prop tip. The governing
 spec is [Full 3D Effect Roster Design](2026-08-06-effects-3d-full-roster-design.md).
 The roster and native renderers are landed. The work is not finished: the
 latest stationary Animal pose has not been observed in a live frame, the effort
-selection correction is still uncommitted, Ghost needs its original visual
-repro checked, and the completed batching architecture has not been profiled.
+selection correction has not been visually checked, Ghost needs its original
+visual repro checked, and the completed batching architecture has not been
+profiled.
 
 ## Done — verified
 
@@ -125,6 +126,13 @@ not repeated after the change. Austen's repro was that Ghost phantoms lacked
 the live prop's forward hand displacement, so old props appeared closer to the
 performer and stabbed through the body.
 
+### All Performers effort selection
+
+Commit `65078a7cf46439e0a7ded5f4137258254262cf8e` changes `currentEffort` to
+read every performer's effective effort in All Performers mode. Uniform values
+select that effort; mixed values return `null`. The patch matches Austen's
+reported state bug, but it has no focused test and no post-change screenshot.
+
 ### Current all-sixteen performance
 
 The scene-level pools, shared atlases, fixed capacities, and coordinator are
@@ -136,20 +144,8 @@ superseded measurements.
 
 Branch: `main`. No worktree.
 
-One effect-related file remains uncommitted:
-
-```text
- M src/lib/shared/3d/components/controls/PerformerHubDetail.svelte
-```
-
-Its `currentEffort` derived value now handles All Performers mode by reading
-every performer's `effectiveEffortId`. If all performers agree, that effort is
-selected; mixed values produce `null`. The previous code always read the viewer
-default, leaving Linear highlighted after every performer visibly changed to a
-different effort.
-
-This patch has no focused test, no screenshot, and no commit. Treat it as an
-implementation candidate, not a completed fix.
+No 3D-effects source file is currently uncommitted. The Animal, Ghost, picker,
+batching, comparison-page, and effort-selection changes are all on `main`.
 
 The rest of the working tree is heavily dirty from unrelated concurrent Museum,
 Autumn, camera, Ink, asset, and document work. Do not revert or stage any of it.
@@ -191,9 +187,9 @@ Keep the exact endpoint pin, fixed authored body length, bounded history, and
 instanced anatomy. Add or adjust a math regression before changing the settle
 model.
 
-### 3. Finish the All Performers effort-selection fix
+### 3. Verify the All Performers effort-selection fix
 
-Audit the uncommitted `PerformerHubDetail.svelte` diff. Verify these states:
+Exercise commit `65078a7cf46439e0a7ded5f4137258254262cf8e` in these states:
 
 1. All performers share Linear: Linear is selected.
 2. Selecting another effort for All Performers updates the selected button.
@@ -201,7 +197,8 @@ Audit the uncommitted `PerformerHubDetail.svelte` diff. Verify these states:
 4. Single-performer scope still follows that performer's effective effort.
 
 Add a focused state/contract test if the component's derived state can be
-extracted without testing Svelte rendering. Commit only this file and its test.
+extracted without testing Svelte rendering. If the live state is wrong, keep
+the correction scoped to `PerformerHubDetail.svelte` and that test.
 
 ### 4. Repeat the original Ghost repro
 
@@ -274,6 +271,10 @@ Animal gravity work, comparison page, and tests as
 `7b03f69194141d53a835b595526c3efb515fcb63`. Those files are committed even
 though they were untracked earlier in the session. Confirm HEAD and file status
 instead of trusting old terminal output.
+
+At 17:07:23 CDT, the effort-selection patch was committed separately as
+`65078a7cf46439e0a7ded5f4137258254262cf8e` while this handoff was being
+written. It is committed but remains visually unverified.
 
 ### Chrome DevTools transport was dead, not Chrome
 
