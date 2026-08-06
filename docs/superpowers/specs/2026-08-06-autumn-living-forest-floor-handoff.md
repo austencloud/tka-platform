@@ -96,7 +96,7 @@ owl. The governing plan is
   `019fd88a-36fe-71ec-a7ec-a6a71f0f74af` also reached `SUCCEEDED`; its
   10,219,428-byte source GLB is downloaded. These IDs prevent duplicate paid
   submissions if the session is interrupted.
-- The latest Blender rebuild completes its expanded ecology validator: 54
+- The first horizon-belt rebuild completed its expanded ecology validator: 54
   ferns, 15 boulders, 1,800 fixed leaf cards, 2,000 quality-tiered grass
   clumps, 16 mushroom clusters, 150 twigs, 17 distant trees, a connected owl
   branch, and zero forbidden-placement collisions. The tree belt is 12
@@ -109,7 +109,7 @@ owl. The governing plan is
   `Autumn_Owl_Perch_0.007`. The close QA render at
   `C:\Users\Austen\AppData\Local\Temp\tka-autumn-evidence\autumn_environment_qa_owl.png`
   verifies continuous branch contact and visible talon contact.
-- The final authored asset exported 146 visible meshes to a 154.37 MiB raw GLB
+- That pre-variety asset exported 146 visible meshes to a 154.37 MiB raw GLB
   and optimized to 11,675,576 bytes (SHA-256
   `4636C69917437E92CE31443E4EEDA1442FA64F979D0270F7D18AE9D6F6D9CBF0`). It
   uses meshopt, WebP, mesh quantization, and GPU instancing. Direct GLB JSON
@@ -119,7 +119,27 @@ owl. The governing plan is
 - Final code verification is green: the Autumn layout and coordinate-frame
   suites pass 30/30 focused tests, and `pnpm check` reports 0 errors and 0
   warnings. HTTPS runtime probes return 200 for the Construct route, the
-  11,675,576-byte GLB, `AutumnScene.svelte`, and the coordinate-frame module.
+  environment GLB, `AutumnScene.svelte`, and the coordinate-frame module.
+- Austen approved another tree-variety pass after seeing the 17-tree belt. The
+  target mix keeps the same placement count and replaces repeated birches with
+  four distinct background families: 5 birch clusters, 5 broken snags, 4
+  golden larches, and 3 drooping autumn willows. Together with HeroA and HeroB,
+  the scene contains six clearly different tree silhouettes. Golden-larch
+  Meshy preview `019fd8a3-1542-7e6b-8406-4d9a80e81f22` and refine
+  `019fd8a5-285a-7fdf-9b3e-8e675701bf1d` both succeeded; the raw source is
+  11,709,576 bytes. Autumn-willow preview
+  `019fd8a7-5f19-7f63-8c89-41e637ba9c89` and refine
+  `019fd8a9-2754-70c7-a5dd-7a570ee620ba` both succeeded; the raw source is
+  11,781,812 bytes.
+- The rebuilt Blender validator proves the exact family distribution:
+  `{'Birch': 5, 'Larch': 4, 'Snag': 5, 'Willow': 3}` with the ecology counts
+  and collision checks unchanged. Blender QA hero and reverse views were
+  inspected after the swap. Export retained 146 visible meshes and optimizer
+  inspection found separate 5-, 5-, 4-, and 3-instance family batches.
+- The final varied-tree GLB is 13,080,804 bytes with SHA-256
+  `6B56AC7DFBE127C3E900602CF72F5FA5EEFFFD0FBAEB761C223D81210341802E`.
+  Focused tests remain 30/30, `pnpm check` remains 0 errors and 0 warnings, and
+  HTTPS probes return 200 with the exact 13,080,804-byte asset response.
 
 ## Believed done — unverified
 
@@ -129,8 +149,8 @@ owl. The governing plan is
   rear opening, and distribute fireflies around the pond plus both mushroom
   rings. These code paths typecheck and their pure layout contracts are tested.
   The first two integrated passes have user-supplied visual proof. The newest
-  deck-coordinate correction, 17-tree horizon belt, larger floor UV scale,
-  1,800-card leaf drifts, denser dusk fog, and baked owl-tree connector are
+  deck-coordinate correction, six-family 17-tree horizon belt, larger floor UV
+  scale, 1,800-card leaf drifts, denser dusk fog, and baked owl-tree connector are
   code-/asset-verified and hot served but still need a fresh real-app screenshot
   because this Codex session's Chrome DevTools MCP transport remains closed.
 
@@ -202,9 +222,9 @@ owl. The governing plan is
 
 The shared debug Chrome itself was healthy on port 9222. Both `new_page` and
 `list_pages` failed with `Transport closed`. Independent HTTPS checks returned
-200 for the route and all changed Svelte modules. After the final authored
+200 for the route and all changed Svelte modules. After the final varied-tree
 pass, HTTPS checks returned 200 for `AutumnScene.svelte` (17,377 bytes), the
-coordinate-frame module (6,729 bytes), and the 11,675,576-byte environment
+coordinate-frame module (6,729 bytes), and the 13,080,804-byte environment
 GLB.
 
 ## Decisions already made
