@@ -149,6 +149,8 @@ export interface ForestSceneConfig {
   sky: SkyGradientConfig;
   /** Distant stars visible through the forest canopy. */
   starfield?: StarfieldConfig | null;
+  /** Occasional cool-white streaks across the night sky. */
+  shootingStars?: MeteorStreaksConfig | null;
   /** Camera-facing moon in the night sky. */
   moon?: MoonConfig | null;
   fog: FogConfig;
@@ -339,7 +341,7 @@ export interface PlacementConfig {
   speciesClustering: boolean;
   rockAnchoredKelp: boolean;
   driftAccumulation: boolean;
-  densityCurve: 'flat' | 'bell';
+  densityCurve: "flat" | "bell";
 }
 
 export interface MeshyModelEntry {
@@ -364,7 +366,7 @@ export interface OceanSceneConfig {
   fog: FogConfig;
   ground: GroundConfig;
 
-  qualityTier?: 'auto' | 'ultra' | 'medium' | 'low';
+  qualityTier?: "auto" | "ultra" | "medium" | "low";
 
   zones: OceanZonesConfig;
 
@@ -557,11 +559,15 @@ export interface MeteorStreaksConfig {
   enabled: boolean;
   /** Average interval between meteors (seconds). */
   frequency: number;
-  /** Travel speed (m/s). */
+  /** Visual travel speed used to derive the crossing duration. */
   speed: number;
   colors: string[];
-  /** Trail length (meters). */
+  /** Relative tail length used to derive the screen-space streak. */
   trailLength: number;
+  /** Trail radiance multiplier. Defaults to 1. */
+  brightness?: number;
+  /** Bright head diameter in screen pixels. Omit or set to 0 for a trail-only meteor. */
+  headSize?: number;
 }
 
 export interface LunarCrystalsConfig {
@@ -578,7 +584,7 @@ export interface LunarCrystalsConfig {
 // Crystal Formations (Tier 1 upgrade — replaces LunarCrystals)
 
 export interface CrystalSpeciesConfig {
-  type: 'spire' | 'cluster' | 'plate' | 'branch';
+  type: "spire" | "cluster" | "plate" | "branch";
   count: number;
   sizeRange: [number, number];
   palette: string[];
@@ -745,10 +751,34 @@ const DEFAULT_CAMPFIRE_AUTUMN: CampfireConfig = {
 };
 
 const FOREST_TREE_RINGS: TreeRingConfig[] = [
-  { radius: 14, count: 20, scaleBase: 1.4, scaleVariation: 0.4, radiusJitter: 1.0 },
-  { radius: 17.5, count: 28, scaleBase: 1.25, scaleVariation: 0.35, radiusJitter: 1.5 },
-  { radius: 21, count: 36, scaleBase: 1.1, scaleVariation: 0.3, radiusJitter: 1.75 },
-  { radius: 25, count: 44, scaleBase: 0.9, scaleVariation: 0.25, radiusJitter: 2.0 },
+  {
+    radius: 14,
+    count: 20,
+    scaleBase: 1.4,
+    scaleVariation: 0.4,
+    radiusJitter: 1.0,
+  },
+  {
+    radius: 17.5,
+    count: 28,
+    scaleBase: 1.25,
+    scaleVariation: 0.35,
+    radiusJitter: 1.5,
+  },
+  {
+    radius: 21,
+    count: 36,
+    scaleBase: 1.1,
+    scaleVariation: 0.3,
+    radiusJitter: 1.75,
+  },
+  {
+    radius: 25,
+    count: 44,
+    scaleBase: 0.9,
+    scaleVariation: 0.25,
+    radiusJitter: 2.0,
+  },
 ];
 
 const FOREST_FLOOR_TEXTURES = {
@@ -770,6 +800,15 @@ export function createDefaultForestFireflyConfig(): ForestSceneConfig {
       radius: 90,
       sizeRange: [0.5, 1.8],
       twinkleSpeed: 0.45,
+    },
+    shootingStars: {
+      enabled: true,
+      frequency: 30,
+      speed: 12,
+      colors: ["#ffffff", "#c8dcff", "#f8faff"],
+      trailLength: 12,
+      brightness: 2.5,
+      headSize: 8,
     },
     moon: {
       enabled: true,
@@ -834,6 +873,7 @@ export function createDefaultForestAutumnConfig(): ForestSceneConfig {
       bottomColor: "#3d1a10",
     },
     starfield: null,
+    shootingStars: null,
     moon: null,
     fog: { color: "#1a1008", density: 0.028 },
     ground: {
@@ -876,10 +916,34 @@ export function createDefaultForestAutumnConfig(): ForestSceneConfig {
 // ----- Autumn (standalone scene) -----
 
 const AUTUMN_TREE_RINGS: TreeRingConfig[] = [
-  { radius: 10, count: 8, scaleBase: 1.2, scaleVariation: 0.3, radiusJitter: 1.0 },
-  { radius: 14, count: 14, scaleBase: 1.0, scaleVariation: 0.25, radiusJitter: 1.5 },
-  { radius: 18, count: 20, scaleBase: 0.85, scaleVariation: 0.2, radiusJitter: 1.75 },
-  { radius: 23, count: 28, scaleBase: 0.7, scaleVariation: 0.2, radiusJitter: 2.0 },
+  {
+    radius: 10,
+    count: 8,
+    scaleBase: 1.2,
+    scaleVariation: 0.3,
+    radiusJitter: 1.0,
+  },
+  {
+    radius: 14,
+    count: 14,
+    scaleBase: 1.0,
+    scaleVariation: 0.25,
+    radiusJitter: 1.5,
+  },
+  {
+    radius: 18,
+    count: 20,
+    scaleBase: 0.85,
+    scaleVariation: 0.2,
+    radiusJitter: 1.75,
+  },
+  {
+    radius: 23,
+    count: 28,
+    scaleBase: 0.7,
+    scaleVariation: 0.2,
+    radiusJitter: 2.0,
+  },
 ];
 
 export function createDefaultAutumnConfig(): AutumnSceneConfig {
@@ -954,10 +1018,34 @@ export function createDefaultAutumnConfig(): AutumnSceneConfig {
 // ----- Winter -----
 
 const WINTER_TREE_RINGS: TreeRingConfig[] = [
-  { radius: 14, count: 22, scaleBase: 1.5, scaleVariation: 0.35, radiusJitter: 1.0 },
-  { radius: 17.5, count: 30, scaleBase: 1.3, scaleVariation: 0.3, radiusJitter: 1.5 },
-  { radius: 21, count: 38, scaleBase: 1.1, scaleVariation: 0.3, radiusJitter: 1.75 },
-  { radius: 25, count: 46, scaleBase: 0.9, scaleVariation: 0.25, radiusJitter: 2.0 },
+  {
+    radius: 14,
+    count: 22,
+    scaleBase: 1.5,
+    scaleVariation: 0.35,
+    radiusJitter: 1.0,
+  },
+  {
+    radius: 17.5,
+    count: 30,
+    scaleBase: 1.3,
+    scaleVariation: 0.3,
+    radiusJitter: 1.5,
+  },
+  {
+    radius: 21,
+    count: 38,
+    scaleBase: 1.1,
+    scaleVariation: 0.3,
+    radiusJitter: 1.75,
+  },
+  {
+    radius: 25,
+    count: 46,
+    scaleBase: 0.9,
+    scaleVariation: 0.25,
+    radiusJitter: 2.0,
+  },
 ];
 
 const DEFAULT_CAMPFIRE_WINTER: CampfireConfig = {
@@ -1053,9 +1141,27 @@ export function createDefaultWinterConfig(): WinterSceneConfig {
 // ----- Ocean -----
 
 const OCEAN_KELP_RINGS: TreeRingConfig[] = [
-  { radius: 12, count: 14, scaleBase: 1.2, scaleVariation: 0.4, radiusJitter: 1.0 },
-  { radius: 16, count: 20, scaleBase: 1.0, scaleVariation: 0.3, radiusJitter: 1.5 },
-  { radius: 20, count: 26, scaleBase: 0.8, scaleVariation: 0.25, radiusJitter: 2.0 },
+  {
+    radius: 12,
+    count: 14,
+    scaleBase: 1.2,
+    scaleVariation: 0.4,
+    radiusJitter: 1.0,
+  },
+  {
+    radius: 16,
+    count: 20,
+    scaleBase: 1.0,
+    scaleVariation: 0.3,
+    radiusJitter: 1.5,
+  },
+  {
+    radius: 20,
+    count: 26,
+    scaleBase: 0.8,
+    scaleVariation: 0.25,
+    radiusJitter: 2.0,
+  },
 ];
 
 export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
@@ -1205,7 +1311,7 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
       enabled: true,
       offsetX: 10,
       offsetZ: -2,
-      heightAboveSurface: 1.10,
+      heightAboveSurface: 1.1,
       modelPath: "/models/ocean/boat.glb",
       length: 8,
       width: 2.5,
@@ -1265,24 +1371,108 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
       speciesClustering: true,
       rockAnchoredKelp: true,
       driftAccumulation: true,
-      densityCurve: 'bell',
+      densityCurve: "bell",
     },
     meshyFormations: {
       enabled: true,
       count: 35,
       models: [
-        { path: "basalt_pinnacle.glb", name: "Basalt Pinnacle", baseScale: 1.0, rotationRange: [0, Math.PI * 2], weight: 1.0, category: "landmark" },
-        { path: "coral_encrusted_rock.glb", name: "Coral Encrusted Rock", baseScale: 0.8, rotationRange: [0, Math.PI * 2], weight: 1.5, category: "formation" },
-        { path: "coral_mountain.glb", name: "Coral Mountain", baseScale: 1.2, rotationRange: [0, Math.PI * 2], weight: 1.0, category: "landmark" },
-        { path: "neon_coral_summit.glb", name: "Neon Coral Summit", baseScale: 1.0, rotationRange: [0, Math.PI * 2], weight: 1.0, category: "landmark" },
-        { path: "submerged_coral_citadel.glb", name: "Submerged Coral Citadel", baseScale: 1.0, rotationRange: [0, Math.PI * 2], weight: 1.2, category: "landmark" },
-        { path: "sunlit_coral_arch.glb", name: "Sunlit Coral Arch", baseScale: 0.9, rotationRange: [0, Math.PI * 2], weight: 1.0, category: "landmark" },
-        { path: "underwater_coral_arch.glb", name: "Underwater Coral Arch", baseScale: 0.9, rotationRange: [0, Math.PI * 2], weight: 1.0, category: "any" },
-        { path: "underwater_rock_table.glb", name: "Underwater Rock Table", baseScale: 0.7, rotationRange: [0, Math.PI * 2], weight: 1.3, category: "formation" },
-        { path: "photorealistic_coral_0.glb", name: "Photorealistic Coral A", baseScale: 0.8, rotationRange: [0, Math.PI * 2], weight: 1.0, category: "any" },
-        { path: "photorealistic_coral_1.glb", name: "Photorealistic Coral B", baseScale: 0.8, rotationRange: [0, Math.PI * 2], weight: 1.0, category: "any" },
-        { path: "photorealistic_coral_2.glb", name: "Photorealistic Coral C", baseScale: 0.7, rotationRange: [0, Math.PI * 2], weight: 1.0, category: "formation" },
-        { path: "photorealistic_coral_3.glb", name: "Photorealistic Coral D", baseScale: 0.7, rotationRange: [0, Math.PI * 2], weight: 1.0, category: "formation" },
+        {
+          path: "basalt_pinnacle.glb",
+          name: "Basalt Pinnacle",
+          baseScale: 1.0,
+          rotationRange: [0, Math.PI * 2],
+          weight: 1.0,
+          category: "landmark",
+        },
+        {
+          path: "coral_encrusted_rock.glb",
+          name: "Coral Encrusted Rock",
+          baseScale: 0.8,
+          rotationRange: [0, Math.PI * 2],
+          weight: 1.5,
+          category: "formation",
+        },
+        {
+          path: "coral_mountain.glb",
+          name: "Coral Mountain",
+          baseScale: 1.2,
+          rotationRange: [0, Math.PI * 2],
+          weight: 1.0,
+          category: "landmark",
+        },
+        {
+          path: "neon_coral_summit.glb",
+          name: "Neon Coral Summit",
+          baseScale: 1.0,
+          rotationRange: [0, Math.PI * 2],
+          weight: 1.0,
+          category: "landmark",
+        },
+        {
+          path: "submerged_coral_citadel.glb",
+          name: "Submerged Coral Citadel",
+          baseScale: 1.0,
+          rotationRange: [0, Math.PI * 2],
+          weight: 1.2,
+          category: "landmark",
+        },
+        {
+          path: "sunlit_coral_arch.glb",
+          name: "Sunlit Coral Arch",
+          baseScale: 0.9,
+          rotationRange: [0, Math.PI * 2],
+          weight: 1.0,
+          category: "landmark",
+        },
+        {
+          path: "underwater_coral_arch.glb",
+          name: "Underwater Coral Arch",
+          baseScale: 0.9,
+          rotationRange: [0, Math.PI * 2],
+          weight: 1.0,
+          category: "any",
+        },
+        {
+          path: "underwater_rock_table.glb",
+          name: "Underwater Rock Table",
+          baseScale: 0.7,
+          rotationRange: [0, Math.PI * 2],
+          weight: 1.3,
+          category: "formation",
+        },
+        {
+          path: "photorealistic_coral_0.glb",
+          name: "Photorealistic Coral A",
+          baseScale: 0.8,
+          rotationRange: [0, Math.PI * 2],
+          weight: 1.0,
+          category: "any",
+        },
+        {
+          path: "photorealistic_coral_1.glb",
+          name: "Photorealistic Coral B",
+          baseScale: 0.8,
+          rotationRange: [0, Math.PI * 2],
+          weight: 1.0,
+          category: "any",
+        },
+        {
+          path: "photorealistic_coral_2.glb",
+          name: "Photorealistic Coral C",
+          baseScale: 0.7,
+          rotationRange: [0, Math.PI * 2],
+          weight: 1.0,
+          category: "formation",
+        },
+        {
+          path: "photorealistic_coral_3.glb",
+          name: "Photorealistic Coral D",
+          baseScale: 0.7,
+          rotationRange: [0, Math.PI * 2],
+          weight: 1.0,
+          category: "formation",
+        },
       ],
       tintColor: "#708898",
       tintBlend: 0.15,
@@ -1447,13 +1637,41 @@ export function createDefaultCosmicNightConfig(): CosmicSceneConfig {
       totalCount: 72,
       sizeRange: [0.6, 2.8],
       models: [
-        { path: "/models/cosmic/crystal-spire-prismatic.glb", weight: 2.5, glowIntensity: 0.9 },
-        { path: "/models/cosmic/crystal-pyramid-blue.glb", weight: 2.5, glowIntensity: 0.8 },
-        { path: "/models/cosmic/crystal-cluster-aurora.glb", weight: 2, glowIntensity: 1.0 },
-        { path: "/models/cosmic/crystal-branch-moonlit.glb", weight: 2, glowIntensity: 0.9 },
-        { path: "/models/cosmic/crystal-spire-cyan.glb", weight: 2.5, glowIntensity: 0.85 },
-        { path: "/models/cosmic/crystal-cluster-emerald.glb", weight: 2, glowIntensity: 1.0 },
-        { path: "/models/cosmic/crystal-spire-amethyst.glb", weight: 2.5, glowIntensity: 0.95 },
+        {
+          path: "/models/cosmic/crystal-spire-prismatic.glb",
+          weight: 2.5,
+          glowIntensity: 0.9,
+        },
+        {
+          path: "/models/cosmic/crystal-pyramid-blue.glb",
+          weight: 2.5,
+          glowIntensity: 0.8,
+        },
+        {
+          path: "/models/cosmic/crystal-cluster-aurora.glb",
+          weight: 2,
+          glowIntensity: 1.0,
+        },
+        {
+          path: "/models/cosmic/crystal-branch-moonlit.glb",
+          weight: 2,
+          glowIntensity: 0.9,
+        },
+        {
+          path: "/models/cosmic/crystal-spire-cyan.glb",
+          weight: 2.5,
+          glowIntensity: 0.85,
+        },
+        {
+          path: "/models/cosmic/crystal-cluster-emerald.glb",
+          weight: 2,
+          glowIntensity: 1.0,
+        },
+        {
+          path: "/models/cosmic/crystal-spire-amethyst.glb",
+          weight: 2.5,
+          glowIntensity: 0.95,
+        },
       ],
       species: [],
     },
@@ -1702,13 +1920,41 @@ export function createDefaultCosmicAuroraConfig(): CosmicSceneConfig {
       totalCount: 84,
       sizeRange: [0.6, 3.0],
       models: [
-        { path: "/models/cosmic/crystal-spire-prismatic.glb", weight: 2.5, glowIntensity: 1.0 },
-        { path: "/models/cosmic/crystal-pyramid-blue.glb", weight: 2.5, glowIntensity: 0.9 },
-        { path: "/models/cosmic/crystal-cluster-aurora.glb", weight: 2.5, glowIntensity: 1.2 },
-        { path: "/models/cosmic/crystal-branch-moonlit.glb", weight: 2, glowIntensity: 1.0 },
-        { path: "/models/cosmic/crystal-spire-cyan.glb", weight: 2.5, glowIntensity: 0.9 },
-        { path: "/models/cosmic/crystal-cluster-emerald.glb", weight: 2.5, glowIntensity: 1.1 },
-        { path: "/models/cosmic/crystal-spire-amethyst.glb", weight: 2.5, glowIntensity: 1.0 },
+        {
+          path: "/models/cosmic/crystal-spire-prismatic.glb",
+          weight: 2.5,
+          glowIntensity: 1.0,
+        },
+        {
+          path: "/models/cosmic/crystal-pyramid-blue.glb",
+          weight: 2.5,
+          glowIntensity: 0.9,
+        },
+        {
+          path: "/models/cosmic/crystal-cluster-aurora.glb",
+          weight: 2.5,
+          glowIntensity: 1.2,
+        },
+        {
+          path: "/models/cosmic/crystal-branch-moonlit.glb",
+          weight: 2,
+          glowIntensity: 1.0,
+        },
+        {
+          path: "/models/cosmic/crystal-spire-cyan.glb",
+          weight: 2.5,
+          glowIntensity: 0.9,
+        },
+        {
+          path: "/models/cosmic/crystal-cluster-emerald.glb",
+          weight: 2.5,
+          glowIntensity: 1.1,
+        },
+        {
+          path: "/models/cosmic/crystal-spire-amethyst.glb",
+          weight: 2.5,
+          glowIntensity: 1.0,
+        },
       ],
       species: [],
     },
@@ -1882,8 +2128,20 @@ export interface EmberSceneConfig {
 }
 
 const EMBER_PILLAR_RINGS: TreeRingConfig[] = [
-  { radius: 8, count: 5, scaleBase: 1.2, scaleVariation: 0.3, radiusJitter: 0.8 },
-  { radius: 14, count: 8, scaleBase: 0.9, scaleVariation: 0.25, radiusJitter: 1.2 },
+  {
+    radius: 8,
+    count: 5,
+    scaleBase: 1.2,
+    scaleVariation: 0.3,
+    radiusJitter: 0.8,
+  },
+  {
+    radius: 14,
+    count: 8,
+    scaleBase: 0.9,
+    scaleVariation: 0.25,
+    radiusJitter: 1.2,
+  },
 ];
 
 export function createDefaultEmberConfig(): EmberSceneConfig {
@@ -2029,10 +2287,34 @@ export function createDefaultEmberConfig(): EmberSceneConfig {
 // ----- Blossom -----
 
 const BLOSSOM_TREE_RINGS: TreeRingConfig[] = [
-  { radius: 8, count: 5, scaleBase: 1.5, scaleVariation: 0.35, radiusJitter: 0.8 },
-  { radius: 13, count: 8, scaleBase: 1.3, scaleVariation: 0.3, radiusJitter: 1.2 },
-  { radius: 19, count: 12, scaleBase: 1.1, scaleVariation: 0.25, radiusJitter: 1.5 },
-  { radius: 28, count: 14, scaleBase: 2.0, scaleVariation: 0.4, radiusJitter: 2.5 },
+  {
+    radius: 8,
+    count: 5,
+    scaleBase: 1.5,
+    scaleVariation: 0.35,
+    radiusJitter: 0.8,
+  },
+  {
+    radius: 13,
+    count: 8,
+    scaleBase: 1.3,
+    scaleVariation: 0.3,
+    radiusJitter: 1.2,
+  },
+  {
+    radius: 19,
+    count: 12,
+    scaleBase: 1.1,
+    scaleVariation: 0.25,
+    radiusJitter: 1.5,
+  },
+  {
+    radius: 28,
+    count: 14,
+    scaleBase: 2.0,
+    scaleVariation: 0.4,
+    radiusJitter: 2.5,
+  },
 ];
 
 export function createDefaultBlossomConfig(): BlossomSceneConfig {
@@ -2095,8 +2377,20 @@ export function createDefaultBlossomConfig(): BlossomSceneConfig {
       { x: -4.2, z: 3.8, radius: 0.19, rotationY: 0.4 },
     ],
     lanterns: [
-      { position: { x: 4, z: 5 }, scale: 0.9, lightColor: "#ffaa66", lightIntensity: 10, lightDistance: 8 },
-      { position: { x: -4, z: -5 }, scale: 0.85, lightColor: "#ffaa66", lightIntensity: 10, lightDistance: 8 },
+      {
+        position: { x: 4, z: 5 },
+        scale: 0.9,
+        lightColor: "#ffaa66",
+        lightIntensity: 10,
+        lightDistance: 8,
+      },
+      {
+        position: { x: -4, z: -5 },
+        scale: 0.85,
+        lightColor: "#ffaa66",
+        lightIntensity: 10,
+        lightDistance: 8,
+      },
     ],
     toriiGate: {
       enabled: false,
@@ -2212,8 +2506,20 @@ export interface CelestialSceneConfig {
 }
 
 const CELESTIAL_PILLAR_RINGS: TreeRingConfig[] = [
-  { radius: 10, count: 5, scaleBase: 1.0, scaleVariation: 0.3, radiusJitter: 1.0 },
-  { radius: 16, count: 8, scaleBase: 0.7, scaleVariation: 0.2, radiusJitter: 1.5 },
+  {
+    radius: 10,
+    count: 5,
+    scaleBase: 1.0,
+    scaleVariation: 0.3,
+    radiusJitter: 1.0,
+  },
+  {
+    radius: 16,
+    count: 8,
+    scaleBase: 0.7,
+    scaleVariation: 0.2,
+    radiusJitter: 1.5,
+  },
 ];
 
 export function createDefaultCelestialConfig(): CelestialSceneConfig {

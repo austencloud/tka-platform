@@ -17,6 +17,7 @@
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import Starfield from "../primitives/Starfield.svelte";
   import MoonBillboard from "../primitives/MoonBillboard.svelte";
+  import MeteorStreaks from "./cosmic/MeteorStreaks.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
   import type { ForestVariant } from "../domain/enums/environment-enums";
   import {
@@ -249,6 +250,10 @@
 
 {#if activeConfig.starfield}
   <Starfield config={activeConfig.starfield} />
+{/if}
+
+{#if activeConfig.shootingStars}
+  <MeteorStreaks config={activeConfig.shootingStars} />
 {/if}
 
 {#if activeConfig.moon}
