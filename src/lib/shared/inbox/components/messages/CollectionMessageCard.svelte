@@ -1,21 +1,80 @@
 <script lang="ts">
   import type { MessageAttachment } from "$lib/shared/messaging/domain/models/message-models";
   import { goto } from "$app/navigation";
+  import type { CollectionShareGrant } from "$lib/shared/library/domain/models/collection";
+  import { getCollectionCollaborationManager } from "$lib/shared/library/get-collection-collaboration-manager";
+  import {
+    clearPendingBrowseIntent,
+    createCollectionDetailIntent,
+    setPendingBrowseIntent,
+  } from "$lib/features/browse/state/pending-browse-intent.svelte";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
+  import { inboxState } from "../../state/inbox-state.svelte";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
+  import { resolveCollectionMessageRole } from "../../domain/collection-message-access";
 
   interface Props {
     attachment: MessageAttachment;
     isOwn?: boolean;
+    currentUserId?: string;
+    recipientId?: string;
   }
 
-  let { attachment, isOwn = false }: Props = $props();
+  let {
+    attachment,
+    isOwn = false,
+    currentUserId,
+    recipientId,
+  }: Props = $props();
+  const collaborationManager = getCollectionCollaborationManager();
   const metadata = $derived(attachment.metadata);
+  const collectionId = $derived(metadata?.collectionId);
+  const ownerId = $derived(metadata?.collectionOwnerId);
   const collectionName = $derived(
     metadata?.collectionName || attachment.name || "Collection"
   );
   const sequenceCount = $derived(metadata?.collectionSequenceCount ?? 0);
-  const roleLabel = $derived(
-    metadata?.collectionAccessRole === "editor" ? "Can edit" : "Can view"
+  let liveGrant = $state<CollectionShareGrant | null | undefined>(undefined);
+  let isOpening = $state(false);
+
+  $effect(() => {
+    const owner = ownerId;
+    const collection = collectionId;
+    const recipient = recipientId;
+    liveGrant = undefined;
+    if (!owner || !collection || !recipient) return;
+
+    return collaborationManager.subscribeToGrant(
+      owner,
+      collection,
+      recipient,
+      (grant) => {
+        liveGrant = grant;
+      },
+      (error) => {
+        console.warn(
+          "[CollectionMessageCard] Could not resolve current access:",
+          error
+        );
+      }
+    );
+  });
+
+  const accessRole = $derived(
+    resolveCollectionMessageRole(liveGrant, metadata?.collectionAccessRole)
   );
+  const roleLabel = $derived(
+    accessRole === null
+      ? "Access removed"
+      : accessRole === "editor"
+        ? "Can edit"
+        : "Can view"
+  );
+  const viewerIsOwner = $derived(Boolean(ownerId && currentUserId === ownerId));
+  const hasTarget = $derived(
+    Boolean((ownerId && collectionId) || attachment.url)
+  );
+  const canOpen = $derived(hasTarget && (viewerIsOwner || accessRole !== null));
   const iconClass = $derived.by(() => {
     const icon = metadata?.collectionIcon || "fa-folder";
     return icon.includes("fa-solid") || icon.includes("fas")
@@ -23,8 +82,51 @@
       : `fa-solid ${icon}`;
   });
 
-  function openCollection(): void {
-    if (attachment.url) void goto(attachment.url);
+  async function openCollection(): Promise<void> {
+    if (!canOpen || isOpening) return;
+    isOpening = true;
+
+    try {
+      if (ownerId && collectionId) {
+        setPendingBrowseIntent(
+          createCollectionDetailIntent({
+            ownerId,
+            collectionId,
+            collectionName,
+            viewerId: currentUserId,
+          })
+        );
+        await handleModuleChange("browse", "library");
+        inboxState.close();
+        return;
+      }
+
+      if (attachment.url) {
+        inboxState.close();
+        await goto(attachment.url);
+      }
+    } catch (caught) {
+      clearPendingBrowseIntent();
+      const failure =
+        caught instanceof Error ? caught : new Error(String(caught));
+      console.error(
+        "[CollectionMessageCard] Failed to open collection:",
+        failure
+      );
+      getErrorHandler().showUserError({
+        message: "This collection could not be opened.",
+        technicalDetails: failure.message,
+        error: failure,
+        severity: "error",
+        context: {
+          module: "inbox",
+          tab: "messages",
+          action: "openCollectionAttachment",
+        },
+      });
+    } finally {
+      isOpening = false;
+    }
   }
 </script>
 
@@ -33,8 +135,10 @@
   class="collection-card"
   class:own={isOwn}
   onclick={openCollection}
-  disabled={!attachment.url}
-  aria-label={`Open ${collectionName}`}
+  disabled={!canOpen || isOpening}
+  aria-label={accessRole === null && !viewerIsOwner
+    ? `${collectionName} access removed`
+    : `Open ${collectionName}`}
 >
   <span
     class="collection-icon"

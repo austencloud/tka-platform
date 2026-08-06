@@ -21,7 +21,7 @@ import {
   query,
   where,
   type DocumentData,
-  type QueryDocumentSnapshot,
+  type DocumentSnapshot,
   type Unsubscribe,
 } from "firebase/firestore";
 import type {
@@ -50,9 +50,9 @@ interface LoadMembersResult {
 }
 
 function mapGrant(
-  snapshot: QueryDocumentSnapshot<DocumentData>
+  snapshot: DocumentSnapshot<DocumentData>
 ): CollectionShareGrant {
-  const data = snapshot.data();
+  const data = snapshot.data() ?? {};
   return {
     ownerId: data["ownerId"] ?? "",
     collectionId: data["collectionId"] ?? "",
@@ -178,6 +178,40 @@ export class CollectionCollaborationManager implements ICollectionCollaborationM
                 if (!cancelled) callback(items);
               })
               .catch((error) => onError?.(asError(error)));
+          },
+          (error) => onError?.(asError(error))
+        );
+      })
+      .catch((error) => onError?.(asError(error)));
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }
+
+  subscribeToGrant(
+    ownerId: string,
+    collectionId: string,
+    recipientId: string,
+    callback: (grant: CollectionShareGrant | null) => void,
+    onError?: (error: Error) => void
+  ): () => void {
+    let unsubscribe: Unsubscribe | null = null;
+    let cancelled = false;
+
+    void getFirestoreInstance()
+      .then((firestore) => {
+        if (cancelled) return;
+        unsubscribe = onSnapshot(
+          doc(
+            firestore,
+            `users/${ownerId}/collections/${collectionId}/shares/${recipientId}`
+          ),
+          (snapshot) => {
+            if (!cancelled) {
+              callback(snapshot.exists() ? mapGrant(snapshot) : null);
+            }
           },
           (error) => onError?.(asError(error))
         );

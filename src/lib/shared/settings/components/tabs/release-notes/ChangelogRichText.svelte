@@ -11,13 +11,8 @@
 -->
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { openSheet } from "$lib/shared/navigation/services/sheet-router";
   import { toChangelogSegments } from "$lib/shared/versioning/domain/utils/changelog-rich-text";
-
-  type ChangelogAction = {
-    label: string;
-    href: string;
-    external: boolean;
-  };
 
   let {
     text,
@@ -28,7 +23,11 @@
     onNavigate?: () => void;
   } = $props();
 
-  function handleActionClick(event: MouseEvent, action: ChangelogAction): void {
+  function handleLinkClick(
+    event: MouseEvent,
+    href: string,
+    external: boolean
+  ): void {
     const isModifiedClick =
       event.button !== 0 ||
       event.metaKey ||
@@ -36,63 +35,40 @@
       event.shiftKey ||
       event.altKey;
 
-    if (action.external || event.defaultPrevented || isModifiedClick) return;
+    if (external || event.defaultPrevented || isModifiedClick) return;
 
     event.preventDefault();
-    void goto(action.href);
     onNavigate?.();
+
+    const destination = new URL(href, "https://tkaflowarts.com");
+    if (destination.searchParams.get("sheet") === "inbox") {
+      openSheet("inbox");
+      return;
+    }
+
+    void goto(href);
   }
 
-  // Prose stays prose: link labels render as emphasized text inside the
-  // sentence, and the links themselves drop below as a row of real buttons.
-  // A verb phrase mid-sentence should never look like a button.
-  const parts = $derived.by(() => {
-    const raw = toChangelogSegments(text);
-    const actions: ChangelogAction[] = [];
-    for (const s of raw) {
-      if (s.kind === "link" && !actions.some((a) => a.href === s.href)) {
-        actions.push({
-          label: s.label.charAt(0).toUpperCase() + s.label.slice(1),
-          href: s.href,
-          external: s.external,
-        });
-      }
-    }
-    return { segments: raw, actions };
-  });
+  const segments = $derived(toChangelogSegments(text));
 </script>
 
 <span class="rich-text">
-  <span class="prose">
-    {#each parts.segments as segment}
-      {#if segment.kind === "text"}{segment.value}{:else if segment.kind === "link"}<span
-          class="link-label">{segment.label}</span
-        >{:else}<span class="inline-icon" aria-hidden="true"
-          ><i class="fas {segment.name}"></i></span
-        >{/if}
-    {/each}
-  </span>
-  {#if parts.actions.length > 0}
-    <span class="action-row">
-      {#each parts.actions as action}
-        <a
-          class="action-btn"
-          href={action.href}
-          target={action.external ? "_blank" : undefined}
-          rel={action.external ? "noopener noreferrer" : undefined}
-          onclick={(event) => handleActionClick(event, action)}
-        >
-          {action.label}
-          <i
-            class="fas {action.external
-              ? 'fa-external-link-alt'
-              : 'fa-angle-right'} action-mark"
+  {#each segments as segment}
+    {#if segment.kind === "text"}{segment.value}{:else if segment.kind === "link"}<a
+        class="entry-link"
+        href={segment.href}
+        target={segment.external ? "_blank" : undefined}
+        rel={segment.external ? "noopener noreferrer" : undefined}
+        onclick={(event) =>
+          handleLinkClick(event, segment.href, segment.external)}
+        >{segment.label}{#if segment.external}<i
+            class="fas fa-external-link-alt external-mark"
             aria-hidden="true"
-          ></i>
-        </a>
-      {/each}
-    </span>
-  {/if}
+          ></i>{/if}</a
+      >{:else}<span class="inline-icon" aria-hidden="true"
+        ><i class="fas {segment.name}"></i></span
+      >{/if}
+  {/each}
 </span>
 
 <style>
@@ -100,79 +76,44 @@
     display: inline;
   }
 
-  .prose {
-    display: inline;
-  }
-
-  /* The word the button refers to, emphasized but NOT interactive —
-     the action row below is the click target. */
-  .link-label {
+  /* Release-note destinations are references inside a sentence. Keeping the
+     linked phrase in place lets the note read naturally without repeating it
+     as a second action underneath. */
+  .entry-link {
     color: color-mix(
       in srgb,
       var(--theme-accent, #6ea8fe) 70%,
       var(--theme-text, #fff)
     );
     font-weight: 600;
-  }
-
-  .action-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 8px;
-  }
-
-  /* Real button: anchor with button appearance, 44px-friendly padding. */
-  .action-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45em;
-    min-height: 32px;
-    padding: 5px 14px;
-    background: color-mix(
+    text-decoration: underline;
+    text-decoration-color: color-mix(
       in srgb,
-      var(--theme-accent, #6ea8fe) 12%,
+      var(--theme-accent, #6ea8fe) 42%,
       transparent
     );
-    border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #6ea8fe) 32%, transparent);
-    border-radius: 999px;
-    color: var(--theme-accent, #6ea8fe);
-    font-size: 0.92em;
-    font-weight: 600;
-    line-height: 1.2;
-    text-decoration: none;
-    position: relative;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
     transition:
-      background 0.15s,
-      border-color 0.15s,
-      color 0.15s;
+      color 0.15s,
+      text-decoration-color 0.15s;
   }
 
-  /* Invisible hit-area extension: effective touch target clears 44px. */
-  .action-btn::after {
-    content: "";
-    position: absolute;
-    inset: -7px 0;
+  .entry-link:hover {
+    color: color-mix(in srgb, var(--theme-accent, #6ea8fe) 78%, white);
+    text-decoration-color: currentColor;
   }
 
-  .action-btn:hover {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #6ea8fe) 22%,
-      transparent
-    );
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, #6ea8fe) 55%,
-      transparent
-    );
-    color: color-mix(in srgb, var(--theme-accent, #6ea8fe) 75%, white);
+  .entry-link:focus-visible {
+    border-radius: 2px;
+    outline: 2px solid var(--theme-accent, #6ea8fe);
+    outline-offset: 2px;
   }
 
-  .action-mark {
-    font-size: 0.75em;
-    opacity: 0.8;
+  .external-mark {
+    margin-left: 0.35em;
+    font-size: 0.7em;
+    opacity: 0.75;
   }
 
   .inline-icon {

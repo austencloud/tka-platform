@@ -27,6 +27,7 @@
   import ErrorModal from "../../error/components/ErrorModal.svelte";
   import ErrorToast from "../../error/components/ErrorToast.svelte";
   import InboxSubscriptionProvider from "../../inbox/components/InboxSubscriptionProvider.svelte";
+  import { inboxState } from "../../inbox/state/inbox-state.svelte";
   import { myFeedbackDetailState } from "$lib/shared/feedback/state/my-feedback-detail-state.svelte";
   import { appEntryState } from "../../onboarding/state/app-entry-state.svelte.ts";
   import { createAccountSetupState } from "../../onboarding/state/account-setup-state.svelte";
@@ -180,6 +181,27 @@
   let showTermsSheet = $derived(currentSheetType === "terms");
   let showPrivacySheet = $derived(currentSheetType === "privacy");
 
+  // Settings and Inbox are app surfaces rather than modal components hosted
+  // here. Consume their URL intent, then hand control to the surface that the
+  // user expects to see.
+  async function consumeRoutedAppSheet(sheet: SheetType): Promise<boolean> {
+    if (sheet === "settings") {
+      closeSheet();
+      currentSheetType = null;
+      await handleModuleChange("settings" as ModuleId);
+      return true;
+    }
+
+    if (sheet === "inbox") {
+      closeSheet();
+      currentSheetType = null;
+      inboxState.open("messages");
+      return true;
+    }
+
+    return false;
+  }
+
   // Debug panel state (admin-only) - uses centralized UI state
   let showDebugPanel = $derived(getShowDebugPanel());
 
@@ -275,11 +297,7 @@
           // Re-attach sheet router listener (old one was cleaned up on unmount)
           currentSheetType = getCurrentSheet();
           cleanupSheetListener = onRouteChange(async (state) => {
-            if (state.sheet === "settings") {
-              closeSheet();
-              await handleModuleChange("settings" as ModuleId);
-              return;
-            }
+            if (await consumeRoutedAppSheet(state.sheet ?? null)) return;
             currentSheetType = state.sheet ?? null;
           });
           return;
@@ -315,11 +333,7 @@
         // Initialize sheet router state (now that service is resolved)
         currentSheetType = getCurrentSheet();
 
-        // Check for legacy ?sheet=settings URL and redirect to settings module
-        if (currentSheetType === "settings") {
-          closeSheet();
-          await handleModuleChange("settings" as ModuleId);
-        }
+        await consumeRoutedAppSheet(currentSheetType);
 
         // A ?sheet=auth deep link means "sign in if needed" (the QR scan
         // funnel arrives this way). Drop it when the user is already signed
@@ -331,12 +345,7 @@
         }
 
         cleanupSheetListener = onRouteChange(async (state) => {
-          // Redirect legacy ?sheet=settings to settings module
-          if (state.sheet === "settings") {
-            closeSheet();
-            await handleModuleChange("settings" as ModuleId);
-            return;
-          }
+          if (await consumeRoutedAppSheet(state.sheet ?? null)) return;
 
           currentSheetType = state.sheet ?? null;
         });

@@ -31,6 +31,7 @@
   interface Props {
     message: Message;
     isOwn: boolean;
+    currentUserId?: string;
     isNew?: boolean;
     otherParticipantId?: string;
     showReadReceipt?: boolean;
@@ -41,6 +42,7 @@
   let {
     message,
     isOwn,
+    currentUserId,
     isNew = false,
     otherParticipantId,
     showReadReceipt = false,
@@ -124,7 +126,12 @@
       <p class="content attachment-content">{message.content}</p>
     {/if}
   {:else if collectionAttachment}
-    <CollectionMessageCard attachment={collectionAttachment} {isOwn} />
+    <CollectionMessageCard
+      attachment={collectionAttachment}
+      {isOwn}
+      {currentUserId}
+      recipientId={isOwn ? otherParticipantId : currentUserId}
+    />
     {#if message.content}
       <p class="content attachment-content">{message.content}</p>
     {/if}

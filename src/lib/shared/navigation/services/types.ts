@@ -12,6 +12,7 @@ export type SheetType =
   | "auth"
   | "terms"
   | "privacy"
+  | "inbox"
   | "animation"
   | null;
 export interface AnimationPanelState {

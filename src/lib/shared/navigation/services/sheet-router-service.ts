@@ -20,6 +20,7 @@ export class SheetRouter {
         sheet === "auth" ||
         sheet === "terms" ||
         sheet === "privacy" ||
+        sheet === "inbox" ||
         sheet === "animation")
     ) {
       state.sheet = sheet as SheetType;

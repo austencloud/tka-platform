@@ -171,6 +171,7 @@
           {#each group.messages as message, messageIndex (message.id)}
             <MessageBubble
               {message}
+              {currentUserId}
               isOwn={message.senderId === currentUserId}
               isNew={groupIndex === messageGroups.length - 1 &&
                 messageIndex === group.messages.length - 1}

@@ -4,16 +4,22 @@ import ChangelogRichText from "./ChangelogRichText.svelte";
 
 const navigation = vi.hoisted(() => ({
   goto: vi.fn<(_href: string) => Promise<void>>(),
+  openSheet: vi.fn(),
 }));
 
 vi.mock("$app/navigation", () => ({
   goto: navigation.goto,
 }));
 
+vi.mock("$lib/shared/navigation/services/sheet-router", () => ({
+  openSheet: navigation.openSheet,
+}));
+
 describe("ChangelogRichText navigation", () => {
   beforeEach(() => {
     navigation.goto.mockReset();
     navigation.goto.mockResolvedValue();
+    navigation.openSheet.mockReset();
   });
 
   it("client-routes an ordinary internal action without discarding its href", () => {
@@ -23,7 +29,7 @@ describe("ChangelogRichText navigation", () => {
       onNavigate,
     });
 
-    const link = document.querySelector<HTMLAnchorElement>("a.action-btn");
+    const link = document.querySelector<HTMLAnchorElement>("a.entry-link");
     expect(link).toBeInstanceOf(HTMLAnchorElement);
     expect(link!.getAttribute("href")).toBe("/browse/gallery");
 
@@ -47,7 +53,7 @@ describe("ChangelogRichText navigation", () => {
       onNavigate,
     });
 
-    const link = document.querySelector<HTMLAnchorElement>("a.action-btn");
+    const link = document.querySelector<HTMLAnchorElement>("a.entry-link");
     expect(link).toBeInstanceOf(HTMLAnchorElement);
 
     const click = new MouseEvent("click", {
@@ -68,10 +74,33 @@ describe("ChangelogRichText navigation", () => {
       text: "Read the [documentation](https://example.com/docs).",
     });
 
-    const link = document.querySelector<HTMLAnchorElement>("a.action-btn");
+    const link = document.querySelector<HTMLAnchorElement>("a.entry-link");
     expect(link).toBeInstanceOf(HTMLAnchorElement);
     expect(link!.getAttribute("href")).toBe("https://example.com/docs");
     expect(link!.getAttribute("target")).toBe("_blank");
     expect(link!.getAttribute("rel")).toBe("noopener noreferrer");
+  });
+
+  it("opens an Inbox sheet link without navigating away", () => {
+    const onNavigate = vi.fn();
+    render(ChangelogRichText, {
+      text: "Edit sent messages from the [Inbox](/browse/library?sheet=inbox).",
+      onNavigate,
+    });
+
+    const link = document.querySelector<HTMLAnchorElement>("a.entry-link");
+    expect(link?.getAttribute("href")).toBe("/browse/library?sheet=inbox");
+
+    link?.dispatchEvent(
+      new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+      })
+    );
+
+    expect(navigation.openSheet).toHaveBeenCalledWith("inbox");
+    expect(navigation.goto).not.toHaveBeenCalled();
+    expect(onNavigate).toHaveBeenCalledOnce();
   });
 });

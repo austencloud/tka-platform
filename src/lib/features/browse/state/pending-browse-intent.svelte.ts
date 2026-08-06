@@ -38,7 +38,36 @@ export type ArtShelfIntent = {
   label: string;
 };
 
-export type BrowseIntent = CreatorGalleryIntent | OwnLibraryIntent | ArtShelfIntent;
+/** A message or another module opening one exact Library collection. */
+export type CollectionDetailIntent = {
+  kind: "collection-detail";
+  collectionId: string;
+  collectionName: string;
+  /** Present only when the collection belongs to someone else. */
+  foreignOwnerId?: string;
+};
+
+export type BrowseIntent =
+  | CreatorGalleryIntent
+  | OwnLibraryIntent
+  | ArtShelfIntent
+  | CollectionDetailIntent;
+
+export function createCollectionDetailIntent(input: {
+  collectionId: string;
+  collectionName: string;
+  ownerId: string;
+  viewerId?: string;
+}): CollectionDetailIntent {
+  return {
+    kind: "collection-detail",
+    collectionId: input.collectionId,
+    collectionName: input.collectionName,
+    ...(input.viewerId !== input.ownerId && {
+      foreignOwnerId: input.ownerId,
+    }),
+  };
+}
 
 let pending = $state<BrowseIntent | null>(null);
 

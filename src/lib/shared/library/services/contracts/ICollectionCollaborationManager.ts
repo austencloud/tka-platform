@@ -69,6 +69,13 @@ export interface ICollectionCollaborationManager {
     callback: (items: CollectionShareAccessItem[]) => void,
     onError?: (error: Error) => void
   ): () => void;
+  subscribeToGrant(
+    ownerId: string,
+    collectionId: string,
+    recipientId: string,
+    callback: (grant: CollectionShareGrant | null) => void,
+    onError?: (error: Error) => void
+  ): () => void;
   subscribeToReceivedCollections(
     recipientId: string,
     callback: (items: ReceivedCollectionItem[]) => void,

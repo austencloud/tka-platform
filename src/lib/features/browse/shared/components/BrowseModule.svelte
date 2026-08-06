@@ -213,6 +213,16 @@
       requestAnimationFrame(() =>
         browseNavigationState.viewCollectionDetail(shelfId, label)
       );
+    } else if (intent.kind === "collection-detail") {
+      const contextId = intent.foreignOwnerId
+        ? `${intent.foreignOwnerId}:${intent.collectionId}`
+        : intent.collectionId;
+      requestAnimationFrame(() =>
+        browseNavigationState.viewCollectionDetail(
+          contextId,
+          intent.collectionName
+        )
+      );
     } else {
       requestAnimationFrame(() =>
         browseNavigationState.viewCollectionDetail("all", "All")
@@ -669,5 +679,4 @@
     flex-direction: column;
     overflow: hidden;
   }
-
 </style>
