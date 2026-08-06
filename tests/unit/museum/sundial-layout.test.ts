@@ -5,6 +5,7 @@ import {
   CROSSING_HALF_WIDTH,
   MIN_PILLAR_CLEARANCE,
   EYE_RADIUS_M,
+  SUN_SUMMIT_Y,
   SUN_MEDALLION_RADIUS_M,
   SUN_PILLAR_RADIUS_M,
 } from "$lib/features/museum/data/sundial-layout";
@@ -43,13 +44,49 @@ describe("sundial layout", () => {
     }
   });
 
-  it("puts the centre disc at -0.2 and the rim at -0.4", () => {
+  it("puts the summit at +6 and the rim at -0.4", () => {
     expect(layout.elevationAt(layout.centre.x, layout.centre.z)).toBeCloseTo(
-      -0.2,
+      SUN_SUMMIT_Y,
       2
     );
     const rim = at(10.5, 0);
     expect(layout.elevationAt(rim.x, rim.z)).toBeCloseTo(-0.4, 2);
+  });
+
+  it("climbs the whole way, monotonically, with no step a leg could not take", () => {
+    // The room's premise after 2026-08-05: you walk UP to noon. A helix that
+    // levels off, or jumps, is not a staircase.
+    let previous = -Infinity;
+    let biggestStep = 0;
+    const SAMPLES = 400;
+    for (let i = 0; i <= SAMPLES; i++) {
+      const t = i / SAMPLES;
+      const r = 9 - 5 * t;
+      const p = at(r, layout.crossingStartTheta + (Math.PI / 2) * t);
+      const y = layout.elevationAt(p.x, p.z, previous === -Infinity ? undefined : previous);
+      if (previous !== -Infinity) {
+        expect(y).toBeGreaterThan(previous - 1e-9); // never descends
+        biggestStep = Math.max(biggestStep, y - previous);
+      }
+      previous = y;
+    }
+    // Comfortably inside the physics provider's 0.6 m step-up tolerance, or
+    // the visitor would be stopped dead partway up their own staircase.
+    expect(biggestStep).toBeLessThan(0.3);
+    // And it must actually arrive at the top.
+    expect(previous).toBeCloseTo(SUN_SUMMIT_Y, 2);
+  });
+
+  it("makes the summit reachable only by the stair", () => {
+    // Every bearing around the drum's edge except the crossing is a 10 m drop.
+    let open = 0;
+    for (let i = 0; i < 720; i++) {
+      const theta = (i / 720) * Math.PI * 2;
+      const p = at(4.6, theta);
+      if (!layout.blockedAt(p.x, p.z)) open++;
+    }
+    expect(open).toBeGreaterThan(0);
+    expect(open / 720).toBeLessThan(0.1);
   });
 
   it("sweeps exactly 90 degrees from rim to disc", () => {

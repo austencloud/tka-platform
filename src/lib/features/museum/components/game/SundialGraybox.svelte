@@ -42,7 +42,7 @@
     EYE_RADIUS_M,
     EYE_TOP_Y,
     SUN_CEILING_Y,
-    SUN_DISC_Y,
+    SUN_SUMMIT_Y,
     SUN_MEDALLION_RADIUS_M,
     SUN_RIM_Y,
     SUN_RING_FLOOR_Y,
@@ -70,8 +70,9 @@
   // Graybox values, not final art. The RING floor is the pale one, and that is
   // not a taste call: the performers stand at r=6.5, so at zenith their prop
   // paths drop straight down onto the ring between r=4 and r=9. That ring is
-  // the sheet the noon notation is drawn on, and notation needs paper. The
-  // centre disc the visitor stands on stays plain stone.
+  // the sheet the noon notation is drawn on, and notation needs paper. Now
+  // that the room climbs, the visitor reads it from the summit ten metres
+  // above — looking down at the drawing rather than across at its edge.
   const STONE = "#5c5348";
   const RIM = "#6e6455";
   const DISC = "#7a7160";
@@ -247,7 +248,7 @@
       return {
         x: layout.centre.x + Math.sin(theta) * r,
         z: layout.centre.z + Math.cos(theta) * r,
-        y: SUN_RIM_Y + (SUN_DISC_Y - SUN_RIM_Y) * t,
+        y: SUN_RIM_Y + (SUN_SUMMIT_Y - SUN_RIM_Y) * t,
       };
     };
     const segments: CrossingSegment[] = [];
@@ -257,11 +258,20 @@
       const dx = b.x - a.x;
       const dz = b.z - a.z;
       const length = Math.hypot(dx, dz);
+      // Each tread is a block reaching DOWN from its own walking surface to the
+      // one below it, not a thin slab: the helix climbs 6.4 m over 40 steps, so
+      // thin slabs would leave the risers as gaps and the stair would read as a
+      // ladder of floating tiles. The block's depth is the step's rise plus the
+      // tread thickness, which closes the riser and gives the flight a mass.
+      const rise = Math.max(b.y - a.y, 0);
+      const depth = rise + SLAB_T;
       segments.push({
         id: `sun-crossing-${i}`,
-        // Overlap each slab slightly so the arc reads as one path, not beads.
-        pos: [(a.x + b.x) / 2, (a.y + b.y) / 2 - SLAB_T / 2, (a.z + b.z) / 2],
-        size: [CROSSING_HALF_WIDTH * 2, SLAB_T, length * 1.25],
+        // Sit the tread's TOP at this step's walking height, so what the eye
+        // sees and what elevationAt reports are the same surface.
+        pos: [(a.x + b.x) / 2, b.y - depth / 2, (a.z + b.z) / 2],
+        // Overlap along the run so the flight reads as one stair, not beads.
+        size: [CROSSING_HALF_WIDTH * 2, depth, length * 1.25],
         rotY: Math.atan2(dx, dz),
       });
     }
@@ -417,12 +427,14 @@
         playerPosition.x - layout.centre.x,
         playerPosition.z - layout.centre.z
       ) <= EYE_RADIUS_M
-      ? Math.max(SUN_DISC_Y, playerPosition.y - STANDING_Y)
-      : SUN_DISC_Y
+      ? Math.max(SUN_SUMMIT_Y, playerPosition.y - STANDING_Y)
+      : SUN_SUMMIT_Y
   );
+  /** The plinth's underside — a little below the summit so it always reads. */
+  const eyeBaseY = SUN_SUMMIT_Y - 0.4;
   /** 0 on the ground, 1 at the hatch. Drives how far the iris has opened. */
   const rideProgress = $derived(
-    Math.min(1, Math.max(0, (eyeTopY - SUN_DISC_Y) / (EYE_TOP_Y - SUN_DISC_Y)))
+    Math.min(1, Math.max(0, (eyeTopY - SUN_SUMMIT_Y) / (EYE_TOP_Y - SUN_SUMMIT_Y)))
   );
   /**
    * The hatch must finish opening BEFORE the plinth arrives, or the moment
@@ -504,17 +516,17 @@
       material={materials.collapse}
       position={[
         layout.centre.x,
-        (SUN_RING_FLOOR_Y + SUN_DISC_Y) / 2,
+        (SUN_RING_FLOOR_Y + SUN_SUMMIT_Y) / 2,
         layout.centre.z,
       ]}
-      scale={[1, SUN_DISC_Y - SUN_RING_FLOOR_Y, 1]}
+      scale={[1, SUN_SUMMIT_Y - SUN_RING_FLOOR_Y, 1]}
     />
 
     <!-- The centre disc: noon, and the sheet the shadows are drawn on -->
     <T.Mesh
       geometry={geo.disc}
       material={materials.disc}
-      position={[layout.centre.x, SUN_DISC_Y, layout.centre.z]}
+      position={[layout.centre.x, SUN_SUMMIT_Y, layout.centre.z]}
       rotation={[-Math.PI / 2, 0, 0]}
       receiveShadow
     />
@@ -584,16 +596,20 @@
       </T.Mesh>
     {/each}
 
-    <!-- The eye: the ground that carries the visitor out onto the Moon -->
+    <!-- The eye: the ground that carries the visitor out onto the Moon. It
+         rises from the SUMMIT, not from the pit floor — the drum below it is
+         already solid, and a column drawn from -4 would be ten metres of
+         geometry buried inside it. At rest it is a low disc set into the
+         summit, so there is something to stand on and recognise. -->
     <T.Mesh
       geometry={geo.eye}
       material={materials.disc}
       position={[
         layout.centre.x,
-        eyeTopY - (eyeTopY - SUN_RING_FLOOR_Y) / 2,
+        (eyeBaseY + eyeTopY) / 2,
         layout.centre.z,
       ]}
-      scale={[1, eyeTopY - SUN_RING_FLOOR_Y, 1]}
+      scale={[1, Math.max(eyeTopY - eyeBaseY, 0.01), 1]}
       castShadow
       receiveShadow
     />

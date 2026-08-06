@@ -108,14 +108,46 @@ export function sunChamberCentreMetres(roomWidthTiles: number): {
 export const SUN_DOOR_Y = 0;
 /** The rim walk, r ∈ [9, 12] — where the day starts, sun ~8° above the horizon. */
 export const SUN_RIM_Y = -0.4;
-/** The centre disc, r ≤ 4 — noon, and the pale ring the shadows retract onto. */
-export const SUN_DISC_Y = -0.2;
-/** The collapsed ring floor, 4 < r < 9. Seen, never walked. */
-export const SUN_RING_FLOOR_Y = -4.0;
-/** Top of a pillar cap — the performers stand here, above the collapse. */
-export const SUN_PILLAR_TOP_Y = 0.4;
 
-export const SUN_CEILING_Y = 11.0;
+/**
+ * The summit: the top of the centre drum, r ≤ 4. Noon, and the place the eye
+ * lifts from.
+ *
+ * ── Why the room climbs ─────────────────────────────────────────────────────
+ *
+ * It did not, at first. The crossing ran from −0.4 to −0.2 — a 0.19 m rise
+ * across its whole length, which is to say flat — because the design made
+ * DISTANCE from the centre carry the sun's elevation and deliberately refused
+ * a literal stair, on the grounds that climbing costs zenith and repeats Air's
+ * vertical axis one room later. Austen walked it (2026-08-05): *"I don't
+ * really get the staircase effect it's not really going up like a spiral
+ * staircase"*, and of the eye, *"way too low and I should have to work for
+ * [it] by climbing around a spiral staircase."*
+ *
+ * So the crossing is a helix now. It still sweeps exactly 90°, because that
+ * sweep IS the room's subject — the walk performs Quarter-Same's own phase
+ * offset with the visitor's body — but it climbs 6.4 m while it does it, at
+ * roughly the pitch of a real spiral stair.
+ *
+ * The climb pays for itself twice. The first graybox failed its own gate: from
+ * a centre disc at −0.2 the prop shadows landed on the ring floor at −4.0, at
+ * the bottom of a pit, behind the pillars, invisible from the one spot the
+ * thesis needed them visible. From a summit at +6.0 the visitor looks DOWN ten
+ * metres onto that ring — which is exactly the top-down projection the design
+ * asks for, and the reason the shadows are worth walking to.
+ */
+export const SUN_SUMMIT_Y = 6.0;
+/** The collapsed ring floor, 4 < r < 9. Seen from above, never walked. */
+export const SUN_RING_FLOOR_Y = -4.0;
+/**
+ * Top of a pillar cap. Set near the helix's own mid-height so the visitor
+ * passes the performers at something like eye level on the way up, and still
+ * looks down on all four from the summit.
+ */
+export const SUN_PILLAR_TOP_Y = 2.6;
+
+/** Tall, because the drum is now 10 m of it and the eye rides above that. */
+export const SUN_CEILING_Y = 16.0;
 export const SUN_CORRIDOR_CEILING_Y = 2.6;
 
 /**
@@ -573,11 +605,11 @@ export function buildSundialLayout(grid: MuseumGrid): SundialLayout | null {
     const { r, theta } = polar(x, z);
     if (r > chamberRadius) return SUN_RIM_Y;
     if (r >= CROSSING_OUTER_R) return SUN_RIM_Y;
-    if (r <= CROSSING_INNER_R) return SUN_DISC_Y;
+    if (r <= CROSSING_INNER_R) return SUN_SUMMIT_Y;
     if (onCrossing(r, theta, crossingStartTheta, CROSSING_HALF_WIDTH)) {
       // Lerps with the wind: -0.4 where it leaves the rim, -0.2 at the disc.
       const t = (CROSSING_OUTER_R - r) / (CROSSING_OUTER_R - CROSSING_INNER_R);
-      return SUN_RIM_Y + (SUN_DISC_Y - SUN_RIM_Y) * t;
+      return SUN_RIM_Y + (SUN_SUMMIT_Y - SUN_RIM_Y) * t;
     }
     // Standing on a pillar cap is only possible if something else put the
     // player up there; below that height the answer is the collapsed floor.
