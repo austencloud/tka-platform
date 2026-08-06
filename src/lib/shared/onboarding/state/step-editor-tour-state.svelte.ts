@@ -65,9 +65,7 @@ function createStepEditorTourState() {
       return data.currentStopIndex >= STOPS.length - 1;
     },
 
-    /** Start tour if user hasn't seen it yet. Returns true if tour started.
-     *  No-op while auto-tours are deactivated; restart() (help button) is
-     *  not gated. */
+    /** Start tour if user hasn't seen it yet. Returns true if tour started. */
     triggerIfFirstTime(): boolean {
       if (!AUTO_TOURS_ENABLED) return false;
       if (data.hasCompleted) return false;
@@ -96,12 +94,6 @@ function createStepEditorTourState() {
       data.isActive = false;
       data.hasCompleted = true;
       safeLocalStorageSetItem(TOUR_COMPLETED_KEY, "true");
-    },
-
-    /** Replay the tour (from help button) */
-    restart() {
-      data.isActive = true;
-      data.currentStopIndex = 0;
     },
 
     /** Reset for testing/development */

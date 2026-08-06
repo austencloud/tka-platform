@@ -15,7 +15,6 @@
   import StartPositionEditMode from "./StartPositionEditMode.svelte";
   import DurationControl from "./DurationControl.svelte";
   import PictographInspectModal from "./PictographInspectModal.svelte";
-  import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
   import ArrowAdjustmentPanel from "./ArrowAdjustmentPanel.svelte";
   import ArrowAdjustmentHistory from "./ArrowAdjustmentHistory.svelte";
   import StepEditorTour from "$lib/shared/onboarding/components/step-editor-tour/StepEditorTour.svelte";
@@ -140,7 +139,13 @@
   });
 
   // Derived state - use displayed values for rendering to prevent flicker
-  const hasSelection = $derived(displayedStepNumber !== null);
+  // Data, not just a step number. The preview section is gated on both, so a
+  // number without data used to render the controls alone — floating at the top
+  // of the panel over an empty board area. "Select a step to edit" is the honest
+  // state there, and it is one the panel already draws.
+  const hasSelection = $derived(
+    displayedStepNumber !== null && displayedStepData !== null
+  );
   const isStartPositionSelected = $derived(displayedStepNumber === 0);
   const startBlueMotion = $derived(
     displayedStepData?.motions?.[MotionColor.BLUE]
@@ -509,12 +514,6 @@
     {/if}
 
     <div class="header-actions">
-      <!-- Help button -->
-      <HelpButton
-        onclick={() => stepEditorTourState.restart()}
-        ariaLabel="Replay step editor tour"
-        size="compact"
-      />
       {#if isAdmin() && hasSelection && displayedStepData}
         <button
           class="icon-btn inspect"

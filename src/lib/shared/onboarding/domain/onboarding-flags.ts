@@ -15,10 +15,9 @@
  * So the real behavior with today's flags is "zero auto-popping coach marks,
  * plus exactly one opt-in tutorial offer" — not "zero interruptions."
  *
- * Flip AUTO_TOURS_ENABLED to true when the coach marks are polished. Manual
- * entry points are NOT gated by either flag: every help button still replays
- * its tour via restart(), and the Settings "replay tutorial" path
- * (appEntryState.replay) still works regardless of these flags.
+ * Flip AUTO_TOURS_ENABLED to true when the coach marks are polished. The
+ * Settings "replay tutorial" path (appEntryState.replay) remains available
+ * regardless of these flags.
  */
 export const AUTO_TOURS_ENABLED = false;
 
