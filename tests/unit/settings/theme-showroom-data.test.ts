@@ -14,7 +14,7 @@ describe("theme showroom data", () => {
       BackgroundType.OCEAN,
       BackgroundType.FOREST,
       BackgroundType.WINTER,
-      BackgroundType.RAINBOW,
+      BackgroundType.PRIDE,
       BackgroundType.BLOSSOM,
       BackgroundType.AUTUMN,
       BackgroundType.CELESTIAL,

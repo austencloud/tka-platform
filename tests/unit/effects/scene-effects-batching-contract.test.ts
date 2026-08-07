@@ -64,8 +64,8 @@ describe("scene-level particle batching contract", () => {
     }
   });
 
-  it("initializes the scene coordinator with Threlte's direct Scene value", () => {
-    expect(COORDINATOR).toContain("manager.initialize(scene)");
+  it("initializes the scene coordinator with its parent or Threlte's direct Scene value", () => {
+    expect(COORDINATOR).toContain("manager.initialize(parent ?? scene)");
     expect(COORDINATOR).not.toContain("scene.current");
   });
 

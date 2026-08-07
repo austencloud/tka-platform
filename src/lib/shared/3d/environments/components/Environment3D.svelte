@@ -90,7 +90,7 @@
         return { scene: "ember" };
       case BackgroundType.BLOSSOM:
         return { scene: "blossom" };
-      case BackgroundType.RAINBOW:
+      case BackgroundType.PRIDE:
         return { scene: "rainbow" };
       case BackgroundType.CELESTIAL:
         return { scene: "celestial" };

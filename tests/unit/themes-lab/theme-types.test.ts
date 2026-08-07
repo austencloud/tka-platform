@@ -35,6 +35,12 @@ describe("THEME_OPTIONS", () => {
     expect(cosmic?.sceneId).toBe("cosmic");
   });
 
+  it("maps the Rainbow tab to the package's Pride background identifier", () => {
+    const rainbow = getThemeOption("rainbow");
+    expect(rainbow?.backgroundType).toBe(BackgroundType.PRIDE);
+    expect(rainbow?.sceneId).toBe("rainbow");
+  });
+
   it("returns undefined for invalid ThemeId", () => {
     expect(getThemeOption("invalid" as ThemeId)).toBeUndefined();
   });

@@ -33,15 +33,18 @@
   ];
 
   // Map tab IDs to BackgroundType for theme application
-  const tabToBackgroundType: Record<BackgroundBuilderTab, BackgroundType | null> = {
-    "ocean": BackgroundType.OCEAN,
-    "cosmic": BackgroundType.COSMIC,
-    "forest": BackgroundType.FOREST,
-    "blossom": BackgroundType.BLOSSOM,
-    "rainbow": BackgroundType.RAINBOW,
-    "ember": BackgroundType.EMBER,
-    "winter": BackgroundType.WINTER,
-    "autumn": BackgroundType.AUTUMN,
+  const tabToBackgroundType: Record<
+    BackgroundBuilderTab,
+    BackgroundType | null
+  > = {
+    ocean: BackgroundType.OCEAN,
+    cosmic: BackgroundType.COSMIC,
+    forest: BackgroundType.FOREST,
+    blossom: BackgroundType.BLOSSOM,
+    rainbow: BackgroundType.PRIDE,
+    ember: BackgroundType.EMBER,
+    winter: BackgroundType.WINTER,
+    autumn: BackgroundType.AUTUMN,
   };
 
   function applyThemeForTab(tabId: BackgroundBuilderTab) {

@@ -2,23 +2,25 @@ import { getSettingsPersister } from "$lib/shared/settings/get-settings-persiste
 import { browser } from "$app/environment";
 import { BackgroundType } from "@austencloud/backgrounds";
 import { getSceneUndoManager } from "$lib/shared/3d/undo/get-scene-undo-manager";
-import {
-  updateBodyBackground,
-} from "../utils/background-preloader";
+import { updateBodyBackground } from "../utils/background-preloader";
 import { updateTheme as updateThemeService } from "../../theme/services/theme-service";
-import {
-  applyThemeForBackground,
-} from "../../settings/utils/background-theme-calculator";
+import { applyThemeForBackground } from "../../settings/utils/background-theme-calculator";
 import { GridMode } from "../../pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "../../pictograph/prop/domain/enums/prop-type";
 import type { AppSettings, PropPreset } from "../domain/app-settings";
 // Dynamic import: posthog-activity-logger → posthog → $env/dynamic/public.
 // Static import crashes the composition worker (no globalThis.__sveltekit_dev).
-async function logSettingChange(key: string, oldValue: string | number | boolean, newValue: string | number | boolean): Promise<void> {
-  const mod = await import("$lib/shared/analytics/services/posthog-activity-logger");
+async function logSettingChange(
+  key: string,
+  oldValue: string | number | boolean,
+  newValue: string | number | boolean
+): Promise<void> {
+  const mod =
+    await import("$lib/shared/analytics/services/posthog-activity-logger");
   return mod.logSettingChange(key, oldValue, newValue);
 }
 import type { FirebaseSettingsPersister } from "../services/firebase-settings-persister";
+import { normalizeBackgroundType } from "../domain/background-type-migration";
 import { auth } from "../../auth/firebase";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { getAnimationVisibilityManager } from "../../animation-engine/state/animation-visibility-state.svelte";
@@ -33,31 +35,49 @@ const SETTINGS_STORAGE_KEY = "tka-modern-web-settings";
 const OFFLINE_QUEUE_KEY = "tka-settings-offline-queue";
 
 const DEFAULT_PROP_PRESETS: PropPreset[] = [
-  { bluePropType: PropType.STAFF, redPropType: PropType.STAFF, catDogMode: false },
+  {
+    bluePropType: PropType.STAFF,
+    redPropType: PropType.STAFF,
+    catDogMode: false,
+  },
   { bluePropType: PropType.FAN, redPropType: PropType.FAN, catDogMode: false },
-  { bluePropType: PropType.CLUB, redPropType: PropType.CLUB, catDogMode: false },
-  { bluePropType: PropType.BUUGENG, redPropType: PropType.BUUGENG, catDogMode: false },
-  { bluePropType: PropType.MINIHOOP, redPropType: PropType.MINIHOOP, catDogMode: false },
-  { bluePropType: PropType.TRIAD, redPropType: PropType.TRIAD, catDogMode: false },
-  { bluePropType: PropType.DOUBLESTAR, redPropType: PropType.DOUBLESTAR, catDogMode: false },
-  { bluePropType: PropType.BIGDOUBLESTAR, redPropType: PropType.BIGDOUBLESTAR, catDogMode: false },
-  { bluePropType: PropType.QUIAD, redPropType: PropType.QUIAD, catDogMode: false },
+  {
+    bluePropType: PropType.CLUB,
+    redPropType: PropType.CLUB,
+    catDogMode: false,
+  },
+  {
+    bluePropType: PropType.BUUGENG,
+    redPropType: PropType.BUUGENG,
+    catDogMode: false,
+  },
+  {
+    bluePropType: PropType.MINIHOOP,
+    redPropType: PropType.MINIHOOP,
+    catDogMode: false,
+  },
+  {
+    bluePropType: PropType.TRIAD,
+    redPropType: PropType.TRIAD,
+    catDogMode: false,
+  },
+  {
+    bluePropType: PropType.DOUBLESTAR,
+    redPropType: PropType.DOUBLESTAR,
+    catDogMode: false,
+  },
+  {
+    bluePropType: PropType.BIGDOUBLESTAR,
+    redPropType: PropType.BIGDOUBLESTAR,
+    catDogMode: false,
+  },
+  {
+    bluePropType: PropType.QUIAD,
+    redPropType: PropType.QUIAD,
+    catDogMode: false,
+  },
   { bluePropType: PropType.STAFF, redPropType: PropType.FAN, catDogMode: true },
 ];
-
-const LEGACY_THEME_MAP: Record<string, BackgroundType> = {
-  nightSky: BackgroundType.COSMIC,
-  deepOcean: BackgroundType.OCEAN,
-  fireflyForest: BackgroundType.FOREST,
-  cherryBlossom: BackgroundType.BLOSSOM,
-  emberGlow: BackgroundType.EMBER,
-  snowfall: BackgroundType.WINTER,
-  autumnDrift: BackgroundType.AUTUMN,
-  pureBlack: BackgroundType.VOID,
-  solidColor: BackgroundType.VOID,
-  linearGradient: BackgroundType.COSMIC,
-  pride: BackgroundType.RAINBOW,
-};
 
 const DEFAULT_SETTINGS: AppSettings = {
   gridMode: GridMode.DIAMOND,
@@ -84,6 +104,9 @@ const initialSettings = (() => {
     const parsed = JSON.parse(stored) as AppSettings & {
       _localTimestamp?: number;
     };
+    parsed.backgroundType =
+      normalizeBackgroundType(parsed.backgroundType) ??
+      DEFAULT_SETTINGS.backgroundType;
     // A timestamp without an owning UID cannot establish that browser-global
     // settings are newer than the account Firebase is about to restore.
     delete parsed._localTimestamp;
@@ -111,7 +134,8 @@ class SettingsState {
   private isSavingToFirebase = false;
   private pendingFirebaseSave: Promise<void> | null = null;
   private onlineHandler: (() => void) | null = null;
-  private firebaseSaveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private firebaseSaveDebounceTimer: ReturnType<typeof setTimeout> | null =
+    null;
   private static readonly FIREBASE_SAVE_DEBOUNCE_MS = 300;
 
   constructor() {
@@ -196,10 +220,15 @@ class SettingsState {
         const localBackground = settingsState.backgroundType;
         const isUsingDefault = localBackground === BackgroundType.COSMIC;
 
-        if (firebaseSettings.backgroundType && isUsingDefault) {
-          if (LEGACY_THEME_MAP[firebaseSettings.backgroundType as string]) {
-            const migratedType = LEGACY_THEME_MAP[firebaseSettings.backgroundType as string]!;
-            debug.success(`Firebase has old "${firebaseSettings.backgroundType}", migrating to "${migratedType}"`);
+        const remoteBackgroundType = normalizeBackgroundType(
+          firebaseSettings.backgroundType
+        );
+        if (remoteBackgroundType && isUsingDefault) {
+          if (remoteBackgroundType !== firebaseSettings.backgroundType) {
+            const migratedType = remoteBackgroundType;
+            debug.success(
+              `Firebase has old "${firebaseSettings.backgroundType}", migrating to "${migratedType}"`
+            );
             settingsState.backgroundType = migratedType;
             updateBodyBackground(migratedType);
             applyThemeForBackground(migratedType);
@@ -209,7 +238,7 @@ class SettingsState {
               this.getSettingsForPersistence(userId)
             );
           } else {
-            settingsState.backgroundType = firebaseSettings.backgroundType;
+            settingsState.backgroundType = remoteBackgroundType;
             if (firebaseSettings.backgroundCategory) {
               settingsState.backgroundCategory =
                 firebaseSettings.backgroundCategory;
@@ -225,9 +254,9 @@ class SettingsState {
                 firebaseSettings.gradientDirection;
             }
 
-            updateBodyBackground(firebaseSettings.backgroundType);
-            applyThemeForBackground(firebaseSettings.backgroundType);
-            updateThemeService(firebaseSettings.backgroundType);
+            updateBodyBackground(remoteBackgroundType);
+            applyThemeForBackground(remoteBackgroundType);
+            updateThemeService(remoteBackgroundType);
             this.saveSettingsToStorage(settingsState);
             debug.success("Applied background from Firebase on initial login");
           }
@@ -237,7 +266,9 @@ class SettingsState {
           const animVisManager = getAnimationVisibilityManager();
           if (animVisManager.isDarkMode() !== firebaseSettings.darkMode) {
             animVisManager.setDarkMode(firebaseSettings.darkMode);
-            debug.success(`Synced pictograph dark mode from Firebase: ${firebaseSettings.darkMode}`);
+            debug.success(
+              `Synced pictograph dark mode from Firebase: ${firebaseSettings.darkMode}`
+            );
           }
         }
 
@@ -254,8 +285,12 @@ class SettingsState {
     }
   }
 
-  private getSettingsForPersistence(userId = auth.currentUser?.uid): AppSettings {
-    const snapshot = $state.snapshot(settingsState) as AppSettings & { _localTimestamp?: number };
+  private getSettingsForPersistence(
+    userId = auth.currentUser?.uid
+  ): AppSettings {
+    const snapshot = $state.snapshot(settingsState) as AppSettings & {
+      _localTimestamp?: number;
+    };
     delete snapshot._localTimestamp;
     if (!snapshot.backgroundType) {
       snapshot.backgroundType = BackgroundType.COSMIC;
@@ -291,7 +326,10 @@ class SettingsState {
     };
   }
 
-  private applyRemoteSettings(remoteSettings: AppSettings, userId: string): void {
+  private applyRemoteSettings(
+    remoteSettings: AppSettings,
+    userId: string
+  ): void {
     const { _localTimestamp: _remoteTs, ...remoteWithoutMeta } = remoteSettings;
     const merged = { ...DEFAULT_SETTINGS, ...remoteWithoutMeta };
 
@@ -347,7 +385,10 @@ class SettingsState {
       try {
         listener(settings, userId);
       } catch (error) {
-        console.error("❌ [SettingsState] Remote-applied listener failed:", error);
+        console.error(
+          "❌ [SettingsState] Remote-applied listener failed:",
+          error
+        );
       }
     });
   }
@@ -367,7 +408,10 @@ class SettingsState {
       try {
         listener(settings, userId);
       } catch (error) {
-        console.error("❌ [SettingsState] Remote-applied listener failed:", error);
+        console.error(
+          "❌ [SettingsState] Remote-applied listener failed:",
+          error
+        );
       }
     }
     return () => this.remoteAppliedListeners.delete(listener);
@@ -418,8 +462,12 @@ class SettingsState {
     const isSceneUndoable = key === "backgroundType" || key === "gridMode";
     if (isSceneUndoable) {
       const sceneUndo = getSceneUndoManager();
-      const opType = key === "backgroundType" ? "change-environment" as const : "change-grid-mode" as const;
-      const desc = key === "backgroundType" ? `Environment: ${value}` : `Grid: ${value}`;
+      const opType =
+        key === "backgroundType"
+          ? ("change-environment" as const)
+          : ("change-grid-mode" as const);
+      const desc =
+        key === "backgroundType" ? `Environment: ${value}` : `Grid: ${value}`;
       sceneUndo.captureState(opType, desc);
     }
 
@@ -441,11 +489,7 @@ class SettingsState {
     }
 
     try {
-      void logSettingChange(
-        key,
-        String(previousValue),
-        String(value)
-      );
+      void logSettingChange(key, String(previousValue), String(value));
     } catch {
       // Silent
     }
@@ -505,7 +549,9 @@ class SettingsState {
   private saveToFirebaseWithRetry(): void {
     const userId = auth.currentUser?.uid;
     if (!this.firebasePersistence || !userId) {
-      debug.warn("Cannot save to Firebase: firebasePersistence not initialized");
+      debug.warn(
+        "Cannot save to Firebase: firebasePersistence not initialized"
+      );
       return;
     }
 
@@ -551,7 +597,10 @@ class SettingsState {
         settings,
         timestamp: Date.now(),
       };
-      localStorage.setItem(this.offlineQueueKey(userId), JSON.stringify(queueEntry));
+      localStorage.setItem(
+        this.offlineQueueKey(userId),
+        JSON.stringify(queueEntry)
+      );
     } catch (error) {
       console.error("Failed to queue offline change:", error);
     }
@@ -654,9 +703,12 @@ class SettingsState {
         localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
       }
 
-      const migrated = LEGACY_THEME_MAP[merged.backgroundType as string];
-      if (migrated) {
-        merged.backgroundType = migrated;
+      const normalizedBackgroundType = normalizeBackgroundType(
+        merged.backgroundType
+      );
+      if (normalizedBackgroundType !== merged.backgroundType) {
+        merged.backgroundType =
+          normalizedBackgroundType ?? BackgroundType.COSMIC;
         localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(merged));
       }
 

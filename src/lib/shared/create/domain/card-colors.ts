@@ -153,7 +153,7 @@ const BRIGHT_BACKGROUND_COLORS: CardColors = {
  * Ember: Strong warm glow that washes out lighter colors
  */
 const BRIGHT_BACKGROUNDS = new Set<BackgroundType>([
-  BackgroundType.RAINBOW,
+  BackgroundType.PRIDE,
   BackgroundType.EMBER,
 ]);
 
@@ -172,7 +172,7 @@ export function getCardColors(backgroundType: BackgroundType): CardColors {
  */
 export function getCardColor(
   colorKey: keyof CardColors,
-  backgroundType: BackgroundType,
+  backgroundType: BackgroundType
 ): string {
   return getCardColors(backgroundType)[colorKey].color;
 }

@@ -573,7 +573,7 @@
 
           // Theme colors for each background type - MUST match BACKGROUND_THEME_COLORS
           var BACKGROUND_THEME_COLORS = {
-            rainbow: ["#8b1c1c", "#6b6b00", "#f43f5e", "#fda4af"],
+            pride: ["#8b1c1c", "#6b6b00", "#f43f5e", "#fda4af"],
             winter: ["#1e3a5f", "#3b82f6", "#93c5fd"],
             cosmic: ["#1e1b4b", "#4338ca", "#818cf8"],
             ocean: ["#0c4a6e", "#0891b2", "#22d3ee"],
@@ -807,7 +807,7 @@
 
           // Background gradients mapping - MUST match BackgroundGradients.ts
           var backgroundGradients = {
-            rainbow:
+            pride:
               "linear-gradient(180deg, #0a0a15 0%, #12121f 50%, #0d0d18 100%)",
             winter:
               "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
@@ -827,7 +827,7 @@
 
           // Background animation mapping
           var backgroundAnimations = {
-            rainbow: "rainbow-flow",
+            pride: "rainbow-flow",
             winter: "winter",
             cosmic: "star-twinkle",
             ocean: "ocean-flow",
@@ -862,7 +862,7 @@
               pureBlack: "void",
               solidColor: "void",
               linearGradient: "cosmic",
-              pride: "rainbow",
+              rainbow: "pride",
             };
             if (legacyThemeMap[backgroundType]) {
               backgroundType = legacyThemeMap[backgroundType];

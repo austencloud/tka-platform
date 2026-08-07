@@ -33,6 +33,7 @@ import { BackgroundType } from "@austencloud/backgrounds";
 import { setThemeMode } from "$lib/shared/theme/state/theme-mode-state.svelte";
 import { BACKGROUND_THEME_COLORS } from "$lib/shared/theme/config/tka-theme-config";
 import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
+import { normalizeBackgroundType } from "$lib/shared/settings/domain/background-type-migration";
 
 /**
  * Calculate relative luminance of a color using WCAG formula
@@ -288,7 +289,7 @@ function hslToHex(h: number, s: number, l: number): string {
 export function ensureAccentContrast(
   accent: string,
   mode: ThemeMode,
-  target: number = mode === "light" ? LIGHT_ACCENT_TARGET : DARK_ACCENT_TARGET,
+  target: number = mode === "light" ? LIGHT_ACCENT_TARGET : DARK_ACCENT_TARGET
 ): string {
   const surface = mode === "light" ? LIGHT_WORST_SURFACE : DARK_SURFACE_ANCHOR;
   if (contrastRatio(accent, surface) >= target) return accent;
@@ -460,7 +461,10 @@ export function applyThemeFromColors(
 
   // Store in HMR data for persistence across module reloads
   if (import.meta.hot) {
-    import.meta.hot.data.appliedTheme = { solidColor, gradientColors } as HMRThemeData;
+    import.meta.hot.data.appliedTheme = {
+      solidColor,
+      gradientColors,
+    } as HMRThemeData;
   }
 
   // Calculate luminance
@@ -680,7 +684,8 @@ export function applyThemeForBackground(backgroundType: BackgroundType): void {
  * 3. Is safe to call from anywhere (checks for browser environment)
  */
 export function ensureThemeApplied(): void {
-  if (typeof localStorage === "undefined" || typeof document === "undefined") return;
+  if (typeof localStorage === "undefined" || typeof document === "undefined")
+    return;
 
   try {
     const stored = localStorage.getItem("tka-modern-web-settings");
@@ -691,8 +696,7 @@ export function ensureThemeApplied(): void {
     }
 
     const settings = JSON.parse(stored);
-    let bgType = settings.backgroundType as BackgroundType | undefined;
-    if (bgType === ("pride" as BackgroundType)) bgType = BackgroundType.RAINBOW;
+    const bgType = normalizeBackgroundType(settings.backgroundType);
 
     if (bgType) {
       applyThemeForBackground(bgType);

@@ -26,8 +26,10 @@ import { BackgroundType } from "@austencloud/backgrounds";
  * Consumed here and by settings' background-theme-calculator. Note: src/app.html
  * carries an inline pre-hydration JS copy that must be kept in sync manually.
  */
-export const BACKGROUND_THEME_COLORS: Partial<Record<BackgroundType, string[]>> = {
-  [BackgroundType.RAINBOW]: ["#8b1c1c", "#6b6b00", "#f43f5e", "#fda4af"],
+export const BACKGROUND_THEME_COLORS: Partial<
+  Record<BackgroundType, string[]>
+> = {
+  [BackgroundType.PRIDE]: ["#8b1c1c", "#6b6b00", "#f43f5e", "#fda4af"],
   [BackgroundType.WINTER]: ["#1e3a5f", "#3b82f6", "#93c5fd"],
   [BackgroundType.COSMIC]: ["#1e1b4b", "#4338ca", "#818cf8"],
   [BackgroundType.OCEAN]: ["#0c4a6e", "#0891b2", "#22d3ee"],

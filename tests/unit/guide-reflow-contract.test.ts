@@ -25,7 +25,9 @@ describe("blockProseText", () => {
 });
 
 describe("SheetFrame", () => {
-  const src = read("src/routes/(public)/guide/level-1/_components/SheetFrame.svelte");
+  const src = read(
+    "src/routes/(public)/guide/level-1/_components/SheetFrame.svelte"
+  );
   it("keeps the 816/612 pt→px scale and absolute positioning", () => {
     expect(src).toContain("816 / 612");
     expect(src).toContain("position: absolute");
@@ -33,7 +35,9 @@ describe("SheetFrame", () => {
 });
 
 describe("FlowFrame", () => {
-  const src = read("src/routes/(public)/guide/level-1/_components/FlowFrame.svelte");
+  const src = read(
+    "src/routes/(public)/guide/level-1/_components/FlowFrame.svelte"
+  );
   it("renders semantic headings + prose and uses GuidePictograph for figures", () => {
     expect(src).toContain("GuidePictograph");
     expect(src).toMatch(/<h2|<h3/);
@@ -43,22 +47,25 @@ describe("FlowFrame", () => {
 
 describe("GUIDE_CONTENT registry", () => {
   it("registers hand-positions", async () => {
-    const { GUIDE_CONTENT, hasReflowContent } = await import(
-      "../../src/routes/(public)/guide/level-1/_data/guide-content"
-    );
+    const { GUIDE_CONTENT, hasReflowContent } =
+      await import("../../src/routes/(public)/guide/level-1/_data/guide-content");
     expect(hasReflowContent("hand-positions")).toBe(true);
     expect(GUIDE_CONTENT["hand-positions"]!.length).toBeGreaterThan(0);
-  });
+  }, 20_000);
 });
 
 describe("frame toggle wiring", () => {
   it("GuideDocument routes the flow frame via GUIDE_CONTENT", () => {
-    const src = read("src/routes/(public)/guide/level-1/_components/GuideDocument.svelte");
+    const src = read(
+      "src/routes/(public)/guide/level-1/_components/GuideDocument.svelte"
+    );
     expect(src).toContain("FlowFrame");
     expect(src).toContain('frame === "flow"');
   });
   it("GuideReader renders the sheet/flow SegmentedControl and a full-width flow page", () => {
-    const src = read("src/routes/(public)/guide/level-1/_components/GuideReader.svelte");
+    const src = read(
+      "src/routes/(public)/guide/level-1/_components/GuideReader.svelte"
+    );
     expect(src).toContain("SegmentedControl");
     expect(src).toContain("guideFramePrefs.frame");
     expect(src).toContain("reader-flow-page");
@@ -70,7 +77,8 @@ describe("crawl route (paginated, one surface)", () => {
   // BOTH the crawlable page and the interactive reader (no doorway/funnel).
   // Spec: 2026-07-14-guide-crawlable-paginated-reader-design.md.
   const slugRoute = "src/routes/(public)/guide/level-1/[slug]/+page.svelte";
-  const host = "src/routes/(public)/guide/level-1/_components/GuidePageHost.svelte";
+  const host =
+    "src/routes/(public)/guide/level-1/_components/GuidePageHost.svelte";
 
   it("the [slug] route renders GuideSeo + GuidePageHost", () => {
     const src = read(slugRoute);

@@ -29,7 +29,7 @@ const SCENE_LOADERS: Record<BackgroundType, SceneLoader> = {
     import("$lib/shared/3d/environments/scenes/EmberScene.svelte") as Promise<SceneModule>,
   [BackgroundType.BLOSSOM]: () =>
     import("$lib/shared/3d/environments/scenes/BlossomScene.svelte") as Promise<SceneModule>,
-  [BackgroundType.RAINBOW]: () =>
+  [BackgroundType.PRIDE]: () =>
     import("$lib/shared/3d/environments/scenes/RainbowScene.svelte") as Promise<SceneModule>,
   [BackgroundType.CELESTIAL]: () =>
     import("$lib/shared/3d/environments/scenes/CelestialScene.svelte") as Promise<SceneModule>,

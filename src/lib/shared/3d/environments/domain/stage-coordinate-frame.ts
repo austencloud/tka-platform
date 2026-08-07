@@ -41,7 +41,7 @@ export function getNativeStageSurfaceY(
       return 0.5;
     case BackgroundType.BLOSSOM:
       return 0.35;
-    case BackgroundType.RAINBOW:
+    case BackgroundType.PRIDE:
       return 0.4;
     case BackgroundType.CELESTIAL:
       return 0.01;
@@ -76,7 +76,7 @@ export function isRenderable3DEnvironment(
     case BackgroundType.OCEAN:
     case BackgroundType.EMBER:
     case BackgroundType.BLOSSOM:
-    case BackgroundType.RAINBOW:
+    case BackgroundType.PRIDE:
     case BackgroundType.CELESTIAL:
     case BackgroundType.VOID:
       return true;

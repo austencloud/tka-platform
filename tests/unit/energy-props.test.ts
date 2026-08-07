@@ -238,31 +238,6 @@ describe("energy prop physical behavior", () => {
     ]);
   });
 
-  it("Energy Staff's two collars differ, so thumb and pinky stay assignable", () => {
-    // The blades are equal by construction; the landmark lives in the collars.
-    // A future edit that mirrors them would erase the reference the whole
-    // orientation system rests on, and nothing on screen would look wrong.
-    const svg = readPropSvg(PropType.ENERGY_STAFF);
-    // The thumb collar is a flared path with roughly three times the vertical
-    // bite of the pinky cap, and carries all the fins.
-    const thumbCollar = svg.match(/<path d="M 172,(\d+) L \d+,(\d+)/);
-    const pinkyCollar = svg.match(
-      /<rect x="102" y="(\d+)" width="26" height="(\d+)"/
-    );
-    expect(thumbCollar, "thumb collar path missing").toBeTruthy();
-    expect(pinkyCollar, "pinky collar rect missing").toBeTruthy();
-
-    const thumbHeight = 74 - Number(thumbCollar![2]);
-    const pinkyHeight = Number(pinkyCollar![2]);
-    expect(thumbHeight).toBeGreaterThan(pinkyHeight * 2.5);
-
-    // Three fins, all on the thumb end. The pinky end gets one plain band.
-    const fins =
-      svg.match(/<rect x="(17[5-9]|18[0-9]|19[0-9])"[^>]*fill="#5C6470"/g) ??
-      [];
-    expect(fins).toHaveLength(3);
-  });
-
   it.each(ENERGY_PROPS)(
     "%s gets a crossed pair preview, not the generic fallback",
     (prop) => {

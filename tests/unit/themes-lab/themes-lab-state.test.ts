@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { BackgroundType } from "@austencloud/backgrounds";
 
 // Mock localStorage
 const mockStorage = new Map<string, string>();
@@ -45,24 +46,21 @@ vi.mock(
 );
 
 // Mock composer-editor-state
-vi.mock(
-  "$lib/shared/3d/scene-composer/composer-editor-state.svelte",
-  () => ({
-    createComposerEditorState: () => ({
-      active: false,
-      mode: "browse",
-      selectedObject: null,
-      gizmoMode: "translate",
-      activeCatalogItem: null,
-      ghostValid: false,
-      placements: [],
-      dirty: false,
-      setActive: vi.fn(),
-      toggle: vi.fn(),
-      commands: { push: vi.fn(), undo: vi.fn(), redo: vi.fn() },
-    }),
-  })
-);
+vi.mock("$lib/shared/3d/scene-composer/composer-editor-state.svelte", () => ({
+  createComposerEditorState: () => ({
+    active: false,
+    mode: "browse",
+    selectedObject: null,
+    gizmoMode: "translate",
+    activeCatalogItem: null,
+    ghostValid: false,
+    placements: [],
+    dirty: false,
+    setActive: vi.fn(),
+    toggle: vi.fn(),
+    commands: { push: vi.fn(), undo: vi.fn(), redo: vi.fn() },
+  }),
+}));
 
 import { createThemesLabState } from "$lib/features/themes-lab/state/themes-lab-state.svelte";
 
@@ -87,10 +85,7 @@ describe("createThemesLabState", () => {
       "backgroundCategory",
       "animated"
     );
-    expect(mockUpdateSetting).toHaveBeenCalledWith(
-      "backgroundType",
-      "cosmic"
-    );
+    expect(mockUpdateSetting).toHaveBeenCalledWith("backgroundType", "cosmic");
   });
 
   it("setTheme syncs sceneId to scene-lab state", () => {
@@ -129,10 +124,7 @@ describe("createThemesLabState", () => {
     const state = createThemesLabState();
     state.setTheme("blossom");
     expect(mockSetSceneId).toHaveBeenCalledWith("blossom");
-    expect(mockUpdateSetting).toHaveBeenCalledWith(
-      "backgroundType",
-      "blossom"
-    );
+    expect(mockUpdateSetting).toHaveBeenCalledWith("backgroundType", "blossom");
   });
 
   it("setTheme with rainbow maps to rainbow sceneId", () => {
@@ -141,7 +133,7 @@ describe("createThemesLabState", () => {
     expect(mockSetSceneId).toHaveBeenCalledWith("rainbow");
     expect(mockUpdateSetting).toHaveBeenCalledWith(
       "backgroundType",
-      "rainbow"
+      BackgroundType.PRIDE
     );
   });
 });

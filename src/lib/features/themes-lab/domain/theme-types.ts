@@ -1,4 +1,4 @@
-import type { BackgroundType } from "@austencloud/backgrounds";
+import { BackgroundType } from "@austencloud/backgrounds";
 import type { SceneId } from "$lib/features/lab/tabs/scene-lab/domain/scene-lab-types";
 
 export type ThemeId =
@@ -28,7 +28,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
     label: "Ocean",
     icon: "fa-water",
     color: "#0ea5e9",
-    backgroundType: "ocean" as BackgroundType,
+    backgroundType: BackgroundType.OCEAN,
     sceneId: "ocean",
   },
   {
@@ -36,7 +36,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
     label: "Cosmic",
     icon: "fa-moon",
     color: "#8b5cf6",
-    backgroundType: "cosmic" as BackgroundType,
+    backgroundType: BackgroundType.COSMIC,
     sceneId: "cosmic",
   },
   {
@@ -44,7 +44,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
     label: "Forest",
     icon: "fa-tree",
     color: "#22c55e",
-    backgroundType: "forest" as BackgroundType,
+    backgroundType: BackgroundType.FOREST,
     sceneId: "forest",
   },
   {
@@ -52,7 +52,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
     label: "Blossom",
     icon: "fa-spa",
     color: "#f472b6",
-    backgroundType: "blossom" as BackgroundType,
+    backgroundType: BackgroundType.BLOSSOM,
     sceneId: "blossom",
   },
   {
@@ -60,7 +60,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
     label: "Rainbow",
     icon: "fa-rainbow",
     color: "#f59e0b",
-    backgroundType: "rainbow" as BackgroundType,
+    backgroundType: BackgroundType.PRIDE,
     sceneId: "rainbow",
   },
   {
@@ -68,7 +68,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
     label: "Ember",
     icon: "fa-fire",
     color: "#ef4444",
-    backgroundType: "ember" as BackgroundType,
+    backgroundType: BackgroundType.EMBER,
     sceneId: "ember",
   },
   {
@@ -76,7 +76,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
     label: "Winter",
     icon: "fa-snowflake",
     color: "#67e8f9",
-    backgroundType: "winter" as BackgroundType,
+    backgroundType: BackgroundType.WINTER,
     sceneId: "winter",
   },
   {
@@ -84,7 +84,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
     label: "Autumn",
     icon: "fa-leaf",
     color: "#d97706",
-    backgroundType: "autumn" as BackgroundType,
+    backgroundType: BackgroundType.AUTUMN,
     sceneId: "autumn",
   },
   {
@@ -92,7 +92,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
     label: "Celestial",
     icon: "fa-star",
     color: "#e2e8f0",
-    backgroundType: "celestial" as BackgroundType,
+    backgroundType: BackgroundType.CELESTIAL,
     sceneId: "celestial",
   },
   {
@@ -100,7 +100,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
     label: "Void",
     icon: "fa-square",
     color: "#6b7280",
-    backgroundType: "void" as BackgroundType,
+    backgroundType: BackgroundType.VOID,
     sceneId: "void",
   },
 ];

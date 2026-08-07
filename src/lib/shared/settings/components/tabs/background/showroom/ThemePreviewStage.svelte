@@ -220,7 +220,7 @@
     border-radius: 0;
   }
 
-  .stage[data-theme="rainbow"] .environment-art {
+  .stage[data-theme="pride"] .environment-art {
     background:
       radial-gradient(
         circle at 70% 24%,

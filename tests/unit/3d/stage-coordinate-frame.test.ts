@@ -15,7 +15,7 @@ const BACKGROUNDS = [
   BackgroundType.OCEAN,
   BackgroundType.EMBER,
   BackgroundType.BLOSSOM,
-  BackgroundType.RAINBOW,
+  BackgroundType.PRIDE,
   BackgroundType.CELESTIAL,
   BackgroundType.VOID,
 ] as const;

@@ -51,7 +51,7 @@ const THEME_DEFINITIONS: Array<Omit<ShowroomTheme, "card" | "number">> = [
     camera: { position: [8.5, 4, 10.5], target: [0, 0.8, 0], fov: 48 },
   },
   {
-    id: BackgroundType.RAINBOW,
+    id: BackgroundType.PRIDE,
     label: "Rainbow",
     icon: "fa-rainbow",
     camera: { position: [8, 4.5, 11], target: [0, 1.2, 0], fov: 50 },

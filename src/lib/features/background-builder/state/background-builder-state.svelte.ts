@@ -50,15 +50,18 @@ const VALID_TABS: BackgroundBuilderTab[] = [
 const DEFAULT_TAB: BackgroundBuilderTab = "ocean";
 
 // Map builder tabs to background types for setting the active background
-const TAB_TO_BACKGROUND_TYPE: Record<BackgroundBuilderTab, BackgroundType | null> = {
-  "ocean": BackgroundType.OCEAN,
-  "cosmic": BackgroundType.COSMIC,
-  "forest": BackgroundType.FOREST,
-  "blossom": BackgroundType.BLOSSOM,
-  "rainbow": BackgroundType.RAINBOW,
-  "ember": BackgroundType.EMBER,
-  "winter": BackgroundType.WINTER,
-  "autumn": BackgroundType.AUTUMN,
+const TAB_TO_BACKGROUND_TYPE: Record<
+  BackgroundBuilderTab,
+  BackgroundType | null
+> = {
+  ocean: BackgroundType.OCEAN,
+  cosmic: BackgroundType.COSMIC,
+  forest: BackgroundType.FOREST,
+  blossom: BackgroundType.BLOSSOM,
+  rainbow: BackgroundType.PRIDE,
+  ember: BackgroundType.EMBER,
+  winter: BackgroundType.WINTER,
+  autumn: BackgroundType.AUTUMN,
 };
 
 function isValidTab(value: string): value is BackgroundBuilderTab {
@@ -129,7 +132,9 @@ export function getCosmicSettings(): CosmicLabSettings {
   return labSettings.cosmic ?? { ...DEFAULT_COSMIC_SETTINGS };
 }
 
-export function updateCosmicSettings(settings: Partial<CosmicLabSettings>): void {
+export function updateCosmicSettings(
+  settings: Partial<CosmicLabSettings>
+): void {
   const current = getCosmicSettings();
   const updated = { ...current, ...settings };
   const labSettings = getLabSettings();
@@ -145,7 +150,9 @@ export function getForestSettings(): ForestLabSettings {
   return labSettings.forest ?? { ...DEFAULT_FOREST_SETTINGS };
 }
 
-export function updateForestSettings(settings: Partial<ForestLabSettings>): void {
+export function updateForestSettings(
+  settings: Partial<ForestLabSettings>
+): void {
   const current = getForestSettings();
   const updated = { ...current, ...settings };
   const labSettings = getLabSettings();
@@ -161,7 +168,9 @@ export function getBlossomSettings(): BlossomLabSettings {
   return labSettings.blossom ?? { ...DEFAULT_BLOSSOM_SETTINGS };
 }
 
-export function updateBlossomSettings(settings: Partial<BlossomLabSettings>): void {
+export function updateBlossomSettings(
+  settings: Partial<BlossomLabSettings>
+): void {
   const current = getBlossomSettings();
   const updated = { ...current, ...settings };
   const labSettings = getLabSettings();
@@ -177,7 +186,9 @@ export function getRainbowSettings(): RainbowLabSettings {
   return labSettings.rainbow ?? { ...DEFAULT_RAINBOW_SETTINGS };
 }
 
-export function updateRainbowSettings(settings: Partial<RainbowLabSettings>): void {
+export function updateRainbowSettings(
+  settings: Partial<RainbowLabSettings>
+): void {
   const current = getRainbowSettings();
   const updated = { ...current, ...settings };
   const labSettings = getLabSettings();
@@ -209,7 +220,9 @@ export function getCelestialLabSettings(): CelestialLabSettings {
   return labSettings.celestial ?? { ...DEFAULT_CELESTIAL_LAB_SETTINGS };
 }
 
-export function updateCelestialLabSettings(settings: Partial<CelestialLabSettings>): void {
+export function updateCelestialLabSettings(
+  settings: Partial<CelestialLabSettings>
+): void {
   const current = getCelestialLabSettings();
   const updated = { ...current, ...settings };
   const labSettings = getLabSettings();
@@ -225,7 +238,9 @@ export function getVoidLabSettings(): VoidLabSettings {
   return labSettings.void ?? { ...DEFAULT_VOID_LAB_SETTINGS };
 }
 
-export function updateVoidLabSettings(settings: Partial<VoidLabSettings>): void {
+export function updateVoidLabSettings(
+  settings: Partial<VoidLabSettings>
+): void {
   const current = getVoidLabSettings();
   const updated = { ...current, ...settings };
   const labSettings = getLabSettings();
