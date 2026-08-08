@@ -1,11 +1,13 @@
 """Build the authored terrain and floor materials for Moonlit Firefly Forest.
 
-Gates 1 and 2 own terrain form and material zones. Runtime trees, rocks, bushes,
-deadwood, camp, stage, particles, lighting, and sky stay outside this file.
-Run with Blender 5.0 in background mode, then export with
-``blender-export-forest-full.py``.
+Gates 1 through 3 own terrain form, material zones, paths, and clearing edges.
+Runtime trees, rocks, bushes, deadwood, camp, stage, particles, lighting, and
+sky stay outside this file. Run with Blender 5.0 in background mode, then export
+with ``blender-export-forest-full.py``.
 """
 
+import hashlib
+import json
 import math
 import os
 
@@ -17,8 +19,12 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 BLEND_PATH = os.path.join(PROJECT_ROOT, "blender", "forest_environment.blend")
 TEXTURE_DIR = os.path.join(PROJECT_ROOT, "static", "textures", "forest-floor")
-DIRT_TEXTURE_DIR = os.path.join(PROJECT_ROOT, "static", "textures", "terrain", "dirt")
 ZONED_DIFFUSE_PATH = os.path.join(TEXTURE_DIR, "forest-floor-zoned.jpg")
+PATH_LAYOUT_PATH = os.path.join(SCRIPT_DIR, "forest-path-layout.json")
+with open(PATH_LAYOUT_PATH, "rb") as path_layout_file:
+    PATH_LAYOUT_BYTES = path_layout_file.read()
+PATH_LAYOUT = json.loads(PATH_LAYOUT_BYTES.decode("utf-8"))
+PATH_LAYOUT_SHA256 = hashlib.sha256(PATH_LAYOUT_BYTES).hexdigest()
 QA_DIR = os.path.join(os.environ.get("TEMP", PROJECT_ROOT), "tka-forest-evidence")
 QA_PATHS = {
     name: os.path.join(QA_DIR, f"forest_environment_qa_{name}.png")
@@ -31,15 +37,18 @@ QA_PATHS = {
         "floor",
         "camp",
         "stage",
+        "paths",
+        "pathwalk",
     )
 }
 
-CLEARING_RADIUS = 30.0
-WORLD_RADIUS = 170.0
+CLEARING_RADIUS = float(PATH_LAYOUT["clearingRadius"])
+PERFORMANCE_KEEP_CLEAR_RADIUS = float(PATH_LAYOUT["performanceKeepClearRadius"])
+WORLD_RADIUS = float(PATH_LAYOUT["worldBoundary"]["baseRadius"])
 WORLD_SKIRT_START = 0.84
 WORLD_SKIRT_DEPTH = 18.0
-TERRAIN_ANGULAR_SEGMENTS = 192
-TERRAIN_RADIAL_SEGMENTS = 128
+TERRAIN_ANGULAR_SEGMENTS = 320
+TERRAIN_RADIAL_SEGMENTS = 160
 TERRAIN_UV_METRES = 5.2
 MATERIAL_ZONE_NAMES = (
     "Packed Performance Clearing",
@@ -55,6 +64,8 @@ DAMP_HOLLOWS = (
     (73.0, -43.0, 24.0, 15.0, -0.62),
     (-66.0, -58.0, 31.0, 17.0, 0.24),
 )
+PATHS = tuple(PATH_LAYOUT["paths"])
+ROOT_CROSSINGS = tuple(PATH_LAYOUT["rootCrossings"])
 
 
 def reset_scene():
@@ -78,14 +89,91 @@ def smoothstep(edge0, edge1, value):
     return t * t * (3.0 - 2.0 * t)
 
 
+def harmonic_radius(angle, definition):
+    radius = float(definition["baseRadius"])
+    for harmonic in definition["harmonics"]:
+        phase = angle * float(harmonic["frequency"]) + float(harmonic["phase"])
+        wave = math.cos(phase) if harmonic["function"] == "cos" else math.sin(phase)
+        radius += float(harmonic["amplitude"]) * wave
+    return radius
+
+
 def terrain_boundary_radius(angle):
-    """Return a deterministic, non-circular woodland boundary."""
-    return (
-        WORLD_RADIUS
-        + 9.0 * math.sin(angle * 3.0 + 0.35)
-        + 6.0 * math.sin(angle * 5.0 - 1.25)
-        + 3.5 * math.cos(angle * 9.0 + 0.8)
+    """Return the deterministic, non-circular woodland boundary."""
+    return harmonic_radius(angle, PATH_LAYOUT["worldBoundary"])
+
+
+def clearing_edge_radius(angle):
+    """Return an irregular edge outside the locked performance clearing."""
+    return harmonic_radius(angle, PATH_LAYOUT["clearingEdge"])
+
+
+def point_segment_distance(x, y, first, second):
+    segment_x = second[0] - first[0]
+    segment_y = second[1] - first[1]
+    length_squared = segment_x * segment_x + segment_y * segment_y
+    if length_squared == 0.0:
+        return math.hypot(x - first[0], y - first[1])
+    amount = max(
+        0.0,
+        min(
+            1.0,
+            ((x - first[0]) * segment_x + (y - first[1]) * segment_y)
+            / length_squared,
+        ),
     )
+    closest_x = first[0] + segment_x * amount
+    closest_y = first[1] + segment_y * amount
+    return math.hypot(x - closest_x, y - closest_y)
+
+
+def distance_to_path(x, y, path):
+    points = path["points"]
+    return min(
+        point_segment_distance(x, y, points[index], points[index + 1])
+        for index in range(len(points) - 1)
+    )
+
+
+def path_depression(x, y):
+    if math.hypot(x, y) <= CLEARING_RADIUS:
+        return 0.0
+    depth = 0.0
+    for path in PATHS:
+        maximum_depth = float(path["depression"])
+        if maximum_depth <= 0.0:
+            continue
+        distance = distance_to_path(x, y, path)
+        half_width = float(path["halfWidth"])
+        shoulder = float(path["shoulderWidth"])
+        influence = 1.0 - smoothstep(half_width, half_width + shoulder, distance)
+        depth = max(depth, maximum_depth * influence)
+    return depth
+
+
+def root_crossing_height(x, y):
+    height = 0.0
+    for crossing in ROOT_CROSSINGS:
+        tangent_x, tangent_y = crossing["tangent"]
+        tangent_length = math.hypot(tangent_x, tangent_y)
+        tangent_x /= tangent_length
+        tangent_y /= tangent_length
+        delta_x = x - crossing["center"][0]
+        delta_y = y - crossing["center"][1]
+        along = abs(delta_x * tangent_x + delta_y * tangent_y)
+        across = abs(-delta_x * tangent_y + delta_y * tangent_x)
+        along_influence = 1.0 - smoothstep(
+            float(crossing["halfWidth"]),
+            float(crossing["halfWidth"]) * 2.4,
+            along,
+        )
+        across_influence = 1.0 - smoothstep(
+            float(crossing["halfLength"]),
+            float(crossing["halfLength"]) + 0.9,
+            across,
+        )
+        height += float(crossing["height"]) * along_influence * across_influence
+    return height
 
 
 def terrain_mound(x, y, center_x, center_y, radius, height):
@@ -94,15 +182,16 @@ def terrain_mound(x, y, center_x, center_y, radius, height):
     return height * influence * influence
 
 
-def terrain_height(x, y):
+def base_terrain_height(x, y):
     radius = math.hypot(x, y)
     if radius <= CLEARING_RADIUS:
         return 0.0
 
     # The current Forest and Coven Hub both depend on a broad level clearing.
     # Woodland relief begins outside their maximum authored performance area.
-    basin_rise = smoothstep(CLEARING_RADIUS, 64.0, radius) * 2.2
-    bank_noise = smoothstep(CLEARING_RADIUS, 42.0, radius) * (
+    edge_radius = clearing_edge_radius(math.atan2(y, x))
+    basin_rise = smoothstep(edge_radius, 64.0, radius) * 2.2
+    bank_noise = smoothstep(edge_radius, 42.0, radius) * (
         0.36 * math.sin(x * 0.19 + y * 0.11)
         + 0.22 * math.sin(x * 0.09 - y * 0.23)
         + 0.14 * math.cos((x + y) * 0.31)
@@ -129,6 +218,17 @@ def terrain_height(x, y):
     boundary_radius = terrain_boundary_radius(angle)
     skirt = smoothstep(WORLD_SKIRT_START, 1.0, radius / boundary_radius)
     return base_height - skirt * WORLD_SKIRT_DEPTH
+
+
+def terrain_height(x, y):
+    radius = math.hypot(x, y)
+    if radius <= CLEARING_RADIUS:
+        return 0.0
+    return (
+        base_terrain_height(x, y)
+        - path_depression(x, y)
+        + root_crossing_height(x, y)
+    )
 
 
 def forest_floor_material(
@@ -199,12 +299,24 @@ def create_floor_materials():
     forest_diffuse = ZONED_DIFFUSE_PATH
     forest_normal = os.path.join(TEXTURE_DIR, "normal.jpg")
     forest_roughness = os.path.join(TEXTURE_DIR, "roughness.jpg")
-    dirt_normal = os.path.join(DIRT_TEXTURE_DIR, "normal.jpg")
-    dirt_roughness = os.path.join(DIRT_TEXTURE_DIR, "roughness.jpg")
 
     definitions = (
-        (MATERIAL_ZONE_NAMES[0], forest_diffuse, dirt_normal, dirt_roughness, 0.96, 0.38),
-        (MATERIAL_ZONE_NAMES[1], forest_diffuse, dirt_normal, dirt_roughness, 0.90, 0.52),
+        (
+            MATERIAL_ZONE_NAMES[0],
+            forest_diffuse,
+            forest_normal,
+            forest_roughness,
+            0.96,
+            0.38,
+        ),
+        (
+            MATERIAL_ZONE_NAMES[1],
+            forest_diffuse,
+            forest_normal,
+            forest_roughness,
+            0.96,
+            0.58,
+        ),
         (
             MATERIAL_ZONE_NAMES[2],
             forest_diffuse,
@@ -216,8 +328,8 @@ def create_floor_materials():
         (
             MATERIAL_ZONE_NAMES[3],
             forest_diffuse,
-            dirt_normal,
-            dirt_roughness,
+            forest_normal,
+            forest_roughness,
             1.0,
             0.46,
         ),
@@ -267,10 +379,15 @@ def terrain_material_zone(x, y):
     """Assign ecological material families without changing the landform."""
     radius = math.hypot(x, y)
     noise = zone_noise(x, y)
-    if radius <= CLEARING_RADIUS:
+    if radius <= PERFORMANCE_KEEP_CLEAR_RADIUS:
         return 0
-    if radius <= 38.0 + noise * 2.4:
-        return 1
+    for path in PATHS:
+        path_width = float(path["halfWidth"]) + noise * 0.18
+        if distance_to_path(x, y, path) <= path_width:
+            return 1
+    edge_radius = clearing_edge_radius(math.atan2(y, x))
+    if radius <= edge_radius + noise * 0.45:
+        return 0
     if radius >= 119.0 + noise * 11.0:
         return 5
 
@@ -367,7 +484,19 @@ def create_terrain(materials):
     terrain["tka_material_zone_counts"] = zone_counts
     terrain["tka_uv_metres_per_tile"] = TERRAIN_UV_METRES
     terrain["tka_macro_diffuse"] = os.path.basename(ZONED_DIFFUSE_PATH)
+    terrain["tka_path_phase"] = "path-and-clearing-composition"
+    terrain["tka_path_layout_version"] = int(PATH_LAYOUT["version"])
+    terrain["tka_path_layout_sha256"] = PATH_LAYOUT_SHA256
+    terrain["tka_path_names"] = "|".join(path["name"] for path in PATHS)
+    terrain["tka_path_roles"] = "|".join(path["role"] for path in PATHS)
+    terrain["tka_root_crossing_count"] = len(ROOT_CROSSINGS)
     terrain["tka_clearing_radius"] = CLEARING_RADIUS
+    clearing_edge_radii = [
+        clearing_edge_radius(math.tau * segment / TERRAIN_ANGULAR_SEGMENTS)
+        for segment in range(TERRAIN_ANGULAR_SEGMENTS)
+    ]
+    terrain["tka_clearing_edge_min_radius"] = min(clearing_edge_radii)
+    terrain["tka_clearing_edge_max_radius"] = max(clearing_edge_radii)
     terrain["tka_boundary_shape"] = "irregular-radial"
     terrain["tka_boundary_min_radius"] = min(
         terrain_boundary_radius(math.tau * segment / TERRAIN_ANGULAR_SEGMENTS)
@@ -435,6 +564,65 @@ def verify_terrain():
         f"{minimum_boundary_radius:.3f} to {maximum_boundary_radius:.3f} m"
     )
     print(f"Minimum outer skirt drop:        {minimum_skirt_drop:.3f} m")
+
+
+def verify_path_layout():
+    roles = [path["role"] for path in PATHS]
+    if roles.count("stage-to-camp") != 1:
+        raise RuntimeError("Forest needs one stage-to-camp path")
+    if roles.count("forest-exit") != 2:
+        raise RuntimeError("Forest needs two exit paths")
+    if roles.count("secondary-loop") != 1:
+        raise RuntimeError("Forest needs one secondary loop")
+
+    clearing_edges = [
+        clearing_edge_radius(math.tau * segment / TERRAIN_ANGULAR_SEGMENTS)
+        for segment in range(TERRAIN_ANGULAR_SEGMENTS)
+    ]
+    if min(clearing_edges) < CLEARING_RADIUS:
+        raise RuntimeError("Irregular clearing edge entered the performance area")
+    if max(clearing_edges) - min(clearing_edges) < 2.5:
+        raise RuntimeError("Clearing edge lost its irregular silhouette")
+
+    for path in PATHS:
+        if len(path["points"]) < 2:
+            raise RuntimeError(f"Path has too few points: {path['name']}")
+        if not any(
+            terrain_material_zone(point[0], point[1]) == 1
+            for point in path["points"]
+        ):
+            raise RuntimeError(f"Path has no soil material sample: {path['name']}")
+        for point in path["points"]:
+            radius = math.hypot(point[0], point[1])
+            boundary = terrain_boundary_radius(math.atan2(point[1], point[0]))
+            if radius > boundary + 0.5:
+                raise RuntimeError(f"Path leaves the terrain: {path['name']}")
+
+        expected_depth = float(path["depression"])
+        if expected_depth > 0.0:
+            probe = next(
+                point
+                for point in path["points"]
+                if math.hypot(point[0], point[1]) > CLEARING_RADIUS + 8.0
+            )
+            actual_depth = path_depression(probe[0], probe[1])
+            if actual_depth < expected_depth * 0.95:
+                raise RuntimeError(f"Path grade is too shallow: {path['name']}")
+
+    for crossing in ROOT_CROSSINGS:
+        crossing_height = root_crossing_height(
+            crossing["center"][0], crossing["center"][1]
+        )
+        if crossing_height < float(crossing["height"]) * 0.95:
+            raise RuntimeError(f"Root crossing lost its grade: {crossing['id']}")
+
+    print("\nForest path verification")
+    print(f"Authored paths:                   {len(PATHS)}")
+    print(f"Root grade crossings:             {len(ROOT_CROSSINGS)}")
+    print(
+        "Irregular clearing edge:         "
+        f"{min(clearing_edges):.3f} to {max(clearing_edges):.3f} m"
+    )
 
 
 def principled_material(name, color, roughness=0.8):
@@ -510,8 +698,18 @@ def create_qa_performer():
 
 
 def render_qa_view(camera, location, target, path, lens):
+    camera.data.type = "PERSP"
     camera.location = location
     camera.data.lens = lens
+    aim_at(camera, target)
+    bpy.context.scene.render.filepath = path
+    bpy.ops.render.render(write_still=True)
+
+
+def render_qa_orthographic(camera, location, target, path, scale):
+    camera.data.type = "ORTHO"
+    camera.data.ortho_scale = scale
+    camera.location = location
     aim_at(camera, target)
     bpy.context.scene.render.filepath = path
     bpy.ops.render.render(write_still=True)
@@ -591,6 +789,20 @@ def setup_qa_render():
         QA_PATHS["world"],
         24,
     )
+    render_qa_orthographic(
+        camera,
+        (0.0, 0.0, 520.0),
+        (0.0, 0.0, 0.0),
+        QA_PATHS["paths"],
+        390.0,
+    )
+    render_qa_view(
+        camera,
+        (7.0, -45.0, 2.2),
+        (1.0, -18.0, 0.65),
+        QA_PATHS["pathwalk"],
+        34,
+    )
     bpy.ops.wm.save_as_mainfile(filepath=BLEND_PATH)
 
 
@@ -598,6 +810,7 @@ reset_scene()
 terrain_materials = create_floor_materials()
 create_terrain(terrain_materials)
 verify_terrain()
+verify_path_layout()
 setup_qa_render()
 
 print("\nMoonlit Firefly Forest terrain authored")

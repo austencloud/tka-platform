@@ -2,11 +2,18 @@
 /** Verify the production Moonlit Firefly Forest GLB contract. */
 
 import { readFileSync, realpathSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const glbPath = resolve("static/models/forest/forest-environment.glb");
+const pathLayoutPath = resolve("scripts/forest-path-layout.json");
+const pathLayoutBytes = readFileSync(pathLayoutPath);
+const pathLayout = JSON.parse(pathLayoutBytes.toString("utf8"));
+const pathLayoutSha256 = createHash("sha256")
+  .update(pathLayoutBytes)
+  .digest("hex");
 const maximumBytes = 20 * 1024 * 1024;
 const expectedMaterialZones = [
   "Packed Performance Clearing",
@@ -99,6 +106,42 @@ invariant(
 invariant(
   terrain.tka_macro_diffuse === "forest-floor-zoned.jpg",
   `Unexpected Forest macro diffuse: ${terrain.tka_macro_diffuse}`
+);
+const pathNames = String(terrain.tka_path_names ?? "").split("|");
+const pathRoles = String(terrain.tka_path_roles ?? "").split("|");
+invariant(
+  terrain.tka_path_phase === "path-and-clearing-composition",
+  `Unexpected Forest path phase: ${terrain.tka_path_phase}`
+);
+invariant(
+  Number(terrain.tka_path_layout_version) === pathLayout.version,
+  `Unexpected Forest path layout version: ${terrain.tka_path_layout_version}`
+);
+invariant(
+  terrain.tka_path_layout_sha256 === pathLayoutSha256,
+  "Optimized Forest GLB was not built from the current path layout contract"
+);
+invariant(
+  pathNames.length === pathLayout.paths.length &&
+    pathNames.every((name, index) => name === pathLayout.paths[index].name),
+  `Unexpected Forest paths: ${pathNames.join(", ")}`
+);
+invariant(
+  pathRoles.filter((role) => role === "stage-to-camp").length === 1 &&
+    pathRoles.filter((role) => role === "forest-exit").length === 2 &&
+    pathRoles.filter((role) => role === "secondary-loop").length === 1,
+  `Unexpected Forest path roles: ${pathRoles.join(", ")}`
+);
+invariant(
+  Number(terrain.tka_root_crossing_count) === pathLayout.rootCrossings.length,
+  `Unexpected Forest root crossing count: ${terrain.tka_root_crossing_count}`
+);
+invariant(
+  Number(terrain.tka_clearing_edge_min_radius) >= pathLayout.clearingRadius &&
+    Number(terrain.tka_clearing_edge_max_radius) -
+      Number(terrain.tka_clearing_edge_min_radius) >=
+      2.5,
+  "Forest clearing edge lost its irregular buffer around the performance area"
 );
 for (const material of gltf.materials ?? []) {
   invariant(
@@ -269,6 +312,17 @@ console.log(
         minimumSkirtDrop: actualMinimumSkirtDrop,
       },
       materialZones: Object.fromEntries(materialTriangles),
+      paths: {
+        layoutVersion: pathLayout.version,
+        layoutSha256: pathLayoutSha256,
+        names: pathNames,
+        roles: pathRoles,
+        rootCrossings: Number(terrain.tka_root_crossing_count),
+        clearingEdgeRadius: [
+          Number(terrain.tka_clearing_edge_min_radius),
+          Number(terrain.tka_clearing_edge_max_radius),
+        ],
+      },
     },
     null,
     2

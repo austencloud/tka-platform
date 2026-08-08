@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "coordinateFrame": "Blender x/y equals runtime x/z; metres",
+  "clearingRadius": 30,
+  "performanceKeepClearRadius": 4.5,
+  "worldBoundary": {
+    "baseRadius": 170,
+    "harmonics": [
+      { "frequency": 3, "amplitude": 9, "phase": 0.35, "function": "sin" },
+      { "frequency": 5, "amplitude": 6, "phase": -1.25, "function": "sin" },
+      { "frequency": 9, "amplitude": 3.5, "phase": 0.8, "function": "cos" }
+    ]
+  },
+  "clearingEdge": {
+    "baseRadius": 32,
+    "harmonics": [
+      { "frequency": 3, "amplitude": 1.1, "phase": 0.45, "function": "sin" },
+      { "frequency": 7, "amplitude": 0.7, "phase": -0.7, "function": "sin" }
+    ]
+  },
+  "paths": [
+    {
+      "id": "camp-spur",
+      "name": "Stage to Camp Spur",
+      "role": "stage-to-camp",
+      "halfWidth": 1.2,
+      "shoulderWidth": 1.4,
+      "depression": 0,
+      "labelAt": [10, -5],
+      "points": [
+        [4, -1],
+        [5.5, -3.5],
+        [5, -7],
+        [3, -11]
+      ]
+    },
+    {
+      "id": "southeast-exit",
+      "name": "Southeast Forest Exit",
+      "role": "forest-exit",
+      "halfWidth": 1.8,
+      "shoulderWidth": 2.8,
+      "depression": 0.16,
+      "labelAt": [35, -94],
+      "points": [
+        [3, -10],
+        [2, -18],
+        [0, -27],
+        [5, -39],
+        [12, -52],
+        [14, -67],
+        [22, -82],
+        [35, -100],
+        [43, -121],
+        [56, -144]
+      ]
+    },
+    {
+      "id": "northwest-exit",
+      "name": "Northwest Forest Exit",
+      "role": "forest-exit",
+      "halfWidth": 1.7,
+      "shoulderWidth": 2.6,
+      "depression": 0.14,
+      "labelAt": [-74, 118],
+      "points": [
+        [-6, 17],
+        [-10, 25],
+        [-15, 35],
+        [-21, 48],
+        [-34, 62],
+        [-42, 78],
+        [-60, 95],
+        [-76, 116],
+        [-94, 139]
+      ]
+    },
+    {
+      "id": "west-loop",
+      "name": "West Woodland Loop",
+      "role": "secondary-loop",
+      "halfWidth": 1.3,
+      "shoulderWidth": 2.2,
+      "depression": 0.1,
+      "labelAt": [-44, -8],
+      "points": [
+        [-15, 35],
+        [-28, 28],
+        [-37, 15],
+        [-41, -2],
+        [-35, -20],
+        [-22, -32],
+        [-8, -38],
+        [2, -34],
+        [0, -27]
+      ]
+    }
+  ],
+  "rootCrossings": [
+    {
+      "id": "southeast-root-crossing",
+      "center": [12, -52],
+      "tangent": [2, -15],
+      "halfLength": 3.2,
+      "halfWidth": 0.42,
+      "height": 0.08
+    },
+    {
+      "id": "northwest-root-crossing",
+      "center": [-42, 78],
+      "tangent": [-18, 33],
+      "halfLength": 3,
+      "halfWidth": 0.38,
+      "height": 0.07
+    },
+    {
+      "id": "west-loop-root-crossing",
+      "center": [-39, -8],
+      "tangent": [6, -18],
+      "halfLength": 2.6,
+      "halfWidth": 0.36,
+      "height": 0.06
+    }
+  ]
+}

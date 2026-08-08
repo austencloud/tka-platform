@@ -1,8 +1,8 @@
 # Moonlit Firefly Forest: Gated Rebuild Plan
 
 - **Date:** 2026-08-08
-- **Status:** Gates 0 through 2 are approved. Gate 3, path and clearing
-  composition, is active. Later gates remain blocked.
+- **Status:** Gates 0 through 3 are approved. Gate 4, tree asset lineup, is
+  active. Later gates remain blocked.
 - **Quality reference:** Autumn's Blender-authored environment and runtime split.
 - **Review authority:** Austen approves or rejects every visual gate.
 - **Scene steward:** Bramble
@@ -91,22 +91,24 @@ lighting, interaction, and quality tiers.
    ambiguous paid POST is never retried without task reconciliation.
 10. The production Forest environment GLB stays at or below 20 MiB unless a
     measured visual improvement earns explicit approval for a larger budget.
-11. Gates 1 and 2 change terrain form and materials only. Existing trees,
+11. Gates 1 through 3 change terrain form and materials only. Existing trees,
     rocks, bushes, logs, camp, stage, particles, lighting, and sky stay in
     place.
 
 ## Fixed review views
 
-| View      | Purpose                                                  |
-| --------- | -------------------------------------------------------- |
-| `hero`    | Primary composition and focal hierarchy                  |
-| `reverse` | The side hidden by the hero camera                       |
-| `walk`    | Eye-level scale, paths, and ground contact               |
-| `world`   | Whole environment, boundaries, and empty regions         |
-| `trees`   | Trunk scale, crown depth, and canopy openings            |
-| `floor`   | Soil, moss, roots, litter, and contact detail            |
-| `camp`    | Tent, fire, seating, deadwood, and local light           |
-| `stage`   | Performance zone, stage contact, and audience sightlines |
+| View       | Purpose                                                  |
+| ---------- | -------------------------------------------------------- |
+| `hero`     | Primary composition and focal hierarchy                  |
+| `reverse`  | The side hidden by the hero camera                       |
+| `walk`     | Eye-level scale, paths, and ground contact               |
+| `world`    | Whole environment, boundaries, and empty regions         |
+| `trees`    | Trunk scale, crown depth, and canopy openings            |
+| `floor`    | Soil, moss, roots, litter, and contact detail            |
+| `camp`     | Tent, fire, seating, deadwood, and local light           |
+| `stage`    | Performance zone, stage contact, and audience sightlines |
+| `paths`    | Overhead route hierarchy, loops, exits, and shoulders    |
+| `pathwalk` | Ground-level wear, grade, and approach to the clearing   |
 
 Every packet includes the active views, one deliberately unflattering view,
 the live route, console status, current GLB size, and the exact system that
@@ -179,6 +181,21 @@ the next step.” This answered the requested Gate 2 `approve or revise` verdict
 
 **Review question:** Do the paths make the clearing feel inhabited without
 looking landscaped?
+
+**Gate 3 evidence, 2026-08-08:** One versioned layout contract now defines the
+stage-to-camp spur, southeast and northwest forest exits, west woodland loop,
+three root-grade crossings, and an irregular 30.209 to 33.791 m clearing edge.
+The terrain builder, macro texture generator, diagram, and GLB verifier all
+consume that same contract. The exported paths use shallow 0.10 to 0.16 m soil
+compression, soft 2.2 to 2.8 m shoulders, and 0.06 to 0.08 m root relief while
+the 30 m performance core remains level. The optimized production GLB is
+2,565,316 bytes with 102,080 triangles, six material primitives, three shared
+WebP textures, meshopt compression, and a decoded maximum clearing deviation of
+0.00614 m. The automated contract passes. Approval remains unchecked until
+Austen reviews the route contract and fixed renders.
+
+**Approval:** Austen, 2026-08-08: “Let's gooooo.” This approved Gate 3 and
+advanced Forest to the tree asset lineup.
 
 ### Gate 4: Tree asset lineup
 
@@ -333,6 +350,8 @@ References:
 | Runtime orchestration    | `src/lib/shared/3d/environments/scenes/ForestScene.svelte`                |
 | Review route             | `src/routes/test/forest-scene/+page.svelte`                               |
 | Terrain and authored set | `scripts/build-forest-environment.py`, `blender/forest_environment.blend` |
+| Path layout contract     | `scripts/forest-path-layout.json`                                         |
+| Macro terrain texture    | `scripts/build-forest-floor-texture.mjs`                                  |
 | Export                   | `scripts/blender-export-forest-full.py`                                   |
 | Optimization             | `scripts/optimize-forest-environment.mjs`                                 |
 | GLB contract             | `scripts/verify-forest-environment-glb.mjs`                               |
@@ -344,7 +363,7 @@ References:
 - [x] Gate 0: diagnostic views approved
 - [x] Gate 1: world envelope and terrain approved
 - [x] Gate 2: forest-floor material zones approved
-- [ ] Gate 3: paths and clearing edges approved
+- [x] Gate 3: paths and clearing edges approved
 - [ ] Gate 4: tree lineup approved
 - [ ] Gate 5: forest composition approved
 - [ ] Gate 6: ground-life lineup approved

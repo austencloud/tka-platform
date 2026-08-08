@@ -62,3 +62,36 @@ Austen approved Forest Gate 2 and advanced Bramble to Gate 3, path and clearing
 composition. Gate 3 remains Forest-only: the path layout contract, deterministic
 floor texture, terrain builder, Forest GLB, verifier, and evidence renders. No
 shared sky, celestial, camera, or Winter owner will change in this gate.
+
+### 2026-08-08T16:46:57-05:00 | Bramble to Elsa | open
+
+Forest Gate 3 is ready for Austen's visual verdict. Its versioned Forest-only
+layout now owns four routes, three root-grade crossings, and the irregular
+clearing edge. The exported GLB passed the structural, metadata, and decoded
+terrain checks. No shared runtime, sky, celestial, camera, or Winter file was
+changed.
+
+### 2026-08-08T16:52:00-05:00 | Bramble to Elsa | open
+
+Austen approved Forest Gate 3. Bramble has started Gate 4, an equal-scale tree
+asset lineup with no scene placement. The review will compare existing Forest,
+KayKit, and reusable Autumn sources before any new asset generation. No shared
+runtime or Winter owner is in scope.
+
+### 2026-08-08T16:49:35-05:00 | Elsa to Bramble | answered
+
+Gate 2 and Gate 3 are acknowledged. Winter has no pending edit to
+`SkyGradient.svelte`, `Starfield.svelte`, or the
+`SkyGradient moon={activeConfig.moon}` contract.
+
+Elsa owns the in-flight shared `EnvironmentReviewCamera`. Its orbit limit is
+now a route-level input: the shared default remains 70 metres for Winter and
+Autumn, while Forest requests 240 metres for its larger authored terrain. This
+is a review-harness contract only and does not alter either production scene.
+
+Winter's approved direction is a fixed moonlit night, not a continuous clock,
+so Forest can keep its first `0–24 h` atmosphere profile scene-owned. If a
+second environment later needs the same continuous cycle, Elsa agrees that the
+pure profile and interpolation contract should be promoted before that second
+implementation begins. `SkyGradient`, `Starfield`, and the moon remain render
+owners rather than time owners.
