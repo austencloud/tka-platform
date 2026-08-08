@@ -5,6 +5,7 @@
   import FirstFireGrayboxWalkScene from "./FirstFireGrayboxWalkScene.svelte";
 
   let assetReady = $state(false);
+  let flameCount = $state(0);
   let resetToken = $state(0);
   let position = $state({ x: -28.4, y: 0.88, z: 0 });
 
@@ -30,12 +31,16 @@
   data-player-x={position.x.toFixed(3)}
   data-player-y={position.y.toFixed(3)}
   data-player-z={position.z.toFixed(3)}
+  data-flame-count={flameCount}
 >
   <div class="viewport" aria-label="The First Fire first-person graybox">
     <Canvas dpr={1} shadows={PCFSoftShadowMap} toneMapping={AgXToneMapping}>
       <FirstFireGrayboxWalkScene
         {resetToken}
-        onAssetReady={() => (assetReady = true)}
+        onAssetReady={(details) => {
+          flameCount = details.flameCount;
+          assetReady = true;
+        }}
         onPositionChange={(nextPosition) => (position = nextPosition)}
       />
     </Canvas>

@@ -4,8 +4,8 @@
 
 The creative design, measured floor plan, interaction state, Blender coordinate
 bridge, standalone Blender graybox, optimized review GLB, floor-plan review,
-and isolated first-person walk route now exist. Production museum integration
-has not started.
+isolated first-person walk route, and a runtime fire review pass now exist.
+Production museum integration has not started.
 
 The graybox is intentionally isolated from the live cave. It proves scale,
 route pacing, shrine separation, full-height sightline blockers, torch density,
@@ -55,7 +55,8 @@ and may never share a performance sightline or acoustic field.
 Austen reviewed the interactive floor-plan page on 2026-08-06 and said, "It's
 great." The standalone walk route loads the optimized Blender GLB and uses the
 shared Unified Camera Controller with Rapier collision derived from the same
-coordinate contract. It remains isolated from the live museum.
+coordinate contract. After walking the Blender route, Austen called it "way
+better than the other grayboxes." It remains isolated from the live museum.
 
 ## Sources of truth
 
@@ -125,6 +126,12 @@ the runtime automatons remain authoritative.
 The 126 stems share one mesh. The three flame guide families share three more.
 The optimized GLB uses four `EXT_mesh_gpu_instancing` nodes with instance counts
 of 126, 50, 38, and 38.
+
+The walk route replaces the 126 static cone guides at load time. It reads the
+optimized GLB's instance matrices, hides the cone batches, and feeds the same
+positions and scales into the runtime fire pass. Do not copy torch coordinates
+into another runtime list. The GLB remains the spatial authority for the review
+effect.
 
 ## Rebuild from source
 
@@ -202,6 +209,29 @@ The machine-readable build report is regenerated at
 The validator reports informational notes for extensions it cannot inspect and
 pruned intermediate buffer data. It reports no error or warning severity.
 
+### Runtime fire review pass
+
+- All 126 flame transforms are recovered from the three optimized
+  `EXT_mesh_gpu_instancing` guide batches at runtime.
+- The torch field renders as one instanced batch. Each flame contains a broken
+  main body, two independently moving tongues, and a soft outer volume instead
+  of the original cone silhouette.
+- Six pooled, non-shadowing point lights carry local fire color through the
+  procession without creating 126 dynamic lights.
+- DJ, EK, and FL each receive one independently flickering point light with a
+  frozen 512-pixel cube shadow. Static Blender meshes cast and receive those
+  shadows.
+- Each shrine also uses the shipped `VolumetricFireMesh` at medium quality for
+  a raymarched performer-scale fire volume. The torch field remains the cheaper
+  instanced effect.
+- `prefers-reduced-motion` slows both fire systems instead of removing the
+  spatial cue.
+- Focused flame-anchor, batch, and collision verification passes 6 tests.
+- Full `svelte-check` reports 0 errors and 0 warnings.
+- Live inspection confirms 126 runtime flames, visible local illumination,
+  shrine shadows, and no WebGL shader errors. The only console warning is the
+  pre-existing Rapier initialization deprecation.
+
 ## Runtime ownership boundary
 
 The review GLB is static visual geometry. It does not own collision, orbit
@@ -225,9 +255,11 @@ Meshopt, and KTX2. Do not wire this GLB there until two conditions are met:
    explicitly accepted as always resident. The current authored-room loop is
    not obviously streamed by `RoomLifecycleManager`.
 
-## Current overlap gate
+## Production integration gate
 
-These live museum files still contain uncommitted work from other sessions:
+The previously overlapping live museum files were clean when this handoff was
+updated. The runtime fire pass still belongs only to the review route. Before
+production integration, re-check these files for concurrent work:
 
 - `FirstFireGraybox.svelte`
 - `EarthCanyonGraybox.svelte`
@@ -236,8 +268,8 @@ These live museum files still contain uncommitted work from other sessions:
 - `museum-room-light-pool.ts`
 - `room-lifecycle-manager.ts`
 
-Do not overwrite, revert, or route around those changes. Stay on `main`. No
-branch or worktree is authorized.
+Stay on `main`. Do not overwrite or revert concurrent changes. No branch or
+worktree is authorized.
 
 ## Next owner: start here
 
@@ -291,10 +323,12 @@ branch or worktree is authorized.
 ## Known limitations
 
 - The room has not been walked first-person in the merged museum.
-- The Blender steam, flames, magma, and growth are visual stand-ins.
+- Steam, magma, extinction, coals, and growth are still visual stand-ins. The
+  runtime flame pass proves appearance and lighting, not progression wiring.
 - The performer locators prove scale and placement, not animation or prop
   clearance.
 - Audio isolation has not been measured.
-- Runtime frame time and light pooling have not been measured.
+- The light count is bounded and the flame field is instanced. Foreground frame
+  time still needs measurement in the production museum shell.
 - The final cave ceiling and vertical silhouette need an artist pass.
 - The optimized GLB is not yet referenced by production room data.

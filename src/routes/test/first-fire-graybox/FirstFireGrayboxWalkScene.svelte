@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import { T, useTask } from "@threlte/core";
+  import { Color, Mesh, PointLight, type Object3D } from "three";
   import { CameraMode, UnifiedCameraController } from "@austencloud/camera-3d";
   import type { AvatarState, PhysicsProvider } from "@austencloud/camera-3d";
   import {
@@ -25,10 +26,17 @@
     buildFirstFireGrayboxColliders,
     FIRST_FIRE_GRAYBOX_SPAWN,
   } from "./first-fire-graybox-colliders";
+  import FirstFireProcessionFlames from "./FirstFireProcessionFlames.svelte";
+  import FirstFireShrineVolumes from "./FirstFireShrineVolumes.svelte";
+  import {
+    extractFirstFireFlameAnchors,
+    FIRST_FIRE_EXPECTED_FLAME_COUNT,
+    type FirstFireFlameAnchor,
+  } from "./first-fire-flame-field";
 
   interface Props {
     resetToken: number;
-    onAssetReady?: () => void;
+    onAssetReady?: (details: { flameCount: number }) => void;
     onPositionChange?: (position: { x: number; y: number; z: number }) => void;
   }
 
@@ -43,6 +51,19 @@
       number,
     ],
   }));
+  const shrineLightObjects = shrineLights.map((entry) => {
+    const light = new PointLight(new Color("#ff4a18"), 62, 13, 2);
+    light.position.set(...entry.position);
+    light.castShadow = true;
+    light.shadow.mapSize.set(512, 512);
+    light.shadow.camera.near = 0.2;
+    light.shadow.camera.far = 13;
+    light.shadow.bias = -0.0015;
+    light.shadow.normalBias = 0.025;
+    light.shadow.autoUpdate = false;
+    light.shadow.needsUpdate = true;
+    return { id: entry.id, light };
+  });
 
   let physicsState: PhysicsWorldState | null = null;
   let playerState: PlayerControllerState | null = null;
@@ -50,6 +71,8 @@
   let isInitialized = $state(false);
   let isDisposed = false;
   let appliedResetToken = -1;
+  let fireElapsed = 0;
+  let flameAnchors = $state<FirstFireFlameAnchor[]>([]);
 
   let playerPosition = $state({
     x: FIRST_FIRE_GRAYBOX_SPAWN.x,
@@ -107,6 +130,24 @@
     targetPlayerYaw = FIRST_FIRE_GRAYBOX_SPAWN.yaw;
   }
 
+  function handleGrayboxReady(scene: Object3D): void {
+    flameAnchors = extractFirstFireFlameAnchors(scene);
+    scene.traverse((object) => {
+      if (!(object instanceof Mesh) || !object.visible) return;
+      object.castShadow = true;
+      object.receiveShadow = true;
+    });
+    shrineLightObjects.forEach(({ light }) => {
+      light.shadow.needsUpdate = true;
+    });
+    if (flameAnchors.length !== FIRST_FIRE_EXPECTED_FLAME_COUNT) {
+      console.warn(
+        `[FirstFireGraybox] Expected ${FIRST_FIRE_EXPECTED_FLAME_COUNT} flame guides, found ${flameAnchors.length}.`
+      );
+    }
+    props.onAssetReady?.({ flameCount: flameAnchors.length });
+  }
+
   onMount(async () => {
     physicsState = createPhysicsWorldState();
     await initPhysicsWorld(physicsState, { x: 0, y: -9.81, z: 0 });
@@ -160,6 +201,21 @@
   });
 
   useTask((delta) => {
+    fireElapsed += Math.min(delta, 1 / 20);
+    shrineLightObjects.forEach(({ light }, index) => {
+      const phase = index * 2.17;
+      const flicker =
+        Math.sin(fireElapsed * 1.2 + phase) * 0.12 +
+        Math.sin(fireElapsed * 4.7 + phase) * 0.08 +
+        Math.sin(fireElapsed * 19.3 + phase) * 0.045;
+      light.intensity = 62 * (1 + flicker);
+      light.color.setRGB(
+        1,
+        0.27 + Math.sin(fireElapsed * 2.3 + phase) * 0.025,
+        0.075
+      );
+    });
+
     if (!isInitialized || !physicsState?.world || isDisposed) return;
     stepPhysics(physicsState, Math.min(delta, 1 / 30));
     const position = physicsProvider?.getPlayerPosition();
@@ -172,6 +228,7 @@
       disposePlayerController(physicsState, playerState);
     }
     if (physicsState) disposePhysicsWorld(physicsState);
+    shrineLightObjects.forEach(({ light }) => light.dispose());
   });
 </script>
 
@@ -192,14 +249,8 @@
   distance={13}
   decay={2}
 />
-{#each shrineLights as light (light.id)}
-  <T.PointLight
-    position={light.position}
-    color="#ff4a18"
-    intensity={62}
-    distance={13}
-    decay={2}
-  />
+{#each shrineLightObjects as entry (entry.id)}
+  <T is={entry.light} />
 {/each}
 <T.PointLight
   position={[27.5, 2.2, 12.5]}
@@ -212,8 +263,13 @@
 <GltfAsset
   url="/models/museum/cave/first-fire-torch-procession-graybox.glb"
   emissiveBoost={1.15}
-  onReady={() => props.onAssetReady?.()}
+  onReady={handleGrayboxReady}
 />
+
+{#if flameAnchors.length > 0}
+  <FirstFireProcessionFlames anchors={flameAnchors} />
+  <FirstFireShrineVolumes shrines={shrineLights} />
+{/if}
 
 {#if isInitialized && physicsProvider}
   <UnifiedCameraController
