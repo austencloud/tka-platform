@@ -81,9 +81,10 @@ current source or runtime evidence.
 
 ## 7. Cross the change gate
 
-Before new code, follow `never-hand-roll`: search internally with three terms,
-check the ecosystem when applicable, then state whether the work reuses,
-extends, adopts, or creates.
+Before new code, follow `never-hand-roll`: search internally by concept with at
+least three terms, identify the behavior owner, check the ecosystem when the
+work is shared infrastructure, then state whether the work reuses, extends,
+composes, or creates.
 
 Match verification to risk: focused tests for domain logic, runtime/emulator
 evidence for persistence or auth, and permitted browser evidence for UI.

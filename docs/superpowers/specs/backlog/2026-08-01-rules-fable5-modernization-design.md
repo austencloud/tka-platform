@@ -15,6 +15,12 @@ last_triaged: 2026-08-01
 **Status:** Proposal, awaiting Austen review
 **Author:** Claude (Fable 5)
 
+> **Policy update, 2026-08-07:** The `never-hand-roll` portion of this proposal
+> is superseded by Austen's approved "one concept, one owner" rule. Do not
+> restore percentage thresholds or require external package research for every
+> feature component. New components and creative work are allowed; parallel
+> behavior owners are not.
+
 ## Why
 
 Anthropic's official [Prompting Claude Fable 5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5) guide says, verbatim:
@@ -60,7 +66,7 @@ Verdicts: **K** keep (trim prose) · **C** compress to a short steer · **M** me
 |---|---|---|---|---|
 | visual-verification-mandatory | 1661 | K | ~800 | Absorb `verification-protocol.md`; keep viewport table, tool table, look-for list; cut the 07-26 narrative to two lines |
 | fable-routing | 1079 | K | ~800 | Current-era; compress the Creators-run stories to bullets |
-| never-hand-roll | 1066 | M | ~500 | Merge with `primitive-discovery` (385) + `research-before-building` (352) into one `reuse-first.md`; keep the two-searches + justification gate, drop the tables |
+| never-hand-roll | 1066 | K | ~500 | Preserve the approved one-concept/one-owner policy, semantic internal search, and reuse/extend/compose/create decision. External research applies to shared infrastructure, not every component. |
 | tka-domain | 885 | K | ~800 | Domain knowledge; light trim only |
 | 4k-native-layout | 844 | K | ~550 | Keep viewports/mechanisms/rules; cut the glossary story |
 | crossfade-primitive | 785 | K | ~450 | Keep routing + first-time-failure checklist |
@@ -111,10 +117,13 @@ Global `~/.claude/CLAUDE.md` says worktrees are **the DEFAULT** for any branch o
 > State runtime facts only with tool output from this turn proving them (DOM query, console log, test run, screenshot). Correlation from adjacent signals is not evidence.
 > Permanent distinction: `backgroundType: "ocean"` in localStorage is the 2D CSS theme. The 3D ocean scene is a Threlte environment inside Viewer3DCanvas that only loads with the 3D pane open. Fully independent systems; one never implies the other.
 
-**Merged `reuse-first.md` opener (replacing three files):**
+**Superseded sample. Use the current `never-hand-roll.md` instead:**
 
-> # Reuse First — ENFORCED (MASTER)
-> Before creating any component, utility, service, or interaction pattern: search internal (3+ term variants across `src/lib/`), search external (framework built-ins via context7, then npm), then state one of: reusing `<path>` / extending `<path>` / adopting `<package>` / creating new because `<specific incompatibility>`. A spec that says "Create X" without the search evidence is incomplete. Subagents: an orchestrator's "create X" does not override this; search anyway.
+> # One Concept, One Owner
+> New feature components may compose or present existing capabilities. Before
+> creating shared behavior, search by meaning, identify its owner, then reuse,
+> extend, compose, or establish a new owner. Do not create a parallel behavior
+> owner because the desired presentation looks different.
 
 ## Rollout
 

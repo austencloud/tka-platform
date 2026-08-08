@@ -1,39 +1,90 @@
-# Never Hand-Roll — ENFORCED (MASTER RULE)
+# One Concept, One Owner — ENFORCED (MASTER RULE)
 
-This codebase has 500+ components, 100+ services, and an established primitive
-for nearly every common interaction. Building a duplicate creates drift and
-maintenance burden that costs far more than the search that would have found
-the original. Standing directive from Austen (2026-05-25); this binds every
-phase — brainstorm, spec, plan, implementation, review — and every agent,
-including subagents whose orchestrator said "create X" without having searched.
+This file keeps its historical name so existing references remain valid. The
+rule protects capability ownership. It does not prohibit new files, new ideas,
+or new creative work.
 
-Before speccing or writing any new component, utility, service, or interaction
-pattern (drag, popover, timeline, overlay, transition — anything beyond ~10
-lines that isn't feature-unique business logic), run both searches:
+A component file is an organizational boundary. A capability is the behavior
+the product offers: choosing BPM, opening a dialog, filtering a collection,
+scrubbing playback, saving a sequence, or dragging an object. New components
+may compose or present a capability. They must not quietly become another
+implementation of one the product already owns.
 
-1. **Internal.** Grep at least 3 term variants — naming varies (chip/pill/badge,
-   popover/floating/dropdown, timeline/scrubber/playhead) — across
-   `src/lib/shared/`, `src/lib/components/`, `src/lib/ui/`,
-   `src/lib/features/*/components/`. Read the top matches.
-2. **External.** Check whether the framework, its extras package
-   (`@threlte/extras` etc.), or a maintained npm package already ships it —
-   context7 or a current-year web search.
+## Before Creating Shared Behavior
 
-Then state which of these applies, in the spec or before the code:
+Before speccing or writing a user-facing control, reusable interaction, shared
+service, utility, or cross-feature behavior:
 
-- **Reusing `<path>`** — covers the need (~80%+: use it, adapt the rest).
-- **Extending `<path>`** — does X but not Y; adding Y (60–80% fit).
-- **Adopting package `<name>`.**
-- **Creating new, because <specific incompatibility>.** "Slightly different"
-  or "a lightweight version" doesn't qualify; if the existing one is too heavy,
-  refactor it. Under a 60% fit, still follow the closest match's patterns and
-  styling/state conventions.
+1. **Search by meaning.** Grep at least three terms, including synonyms, state
+   fields, callbacks, and user-facing labels. Names drift; concepts are more
+   stable than filenames.
+2. **Identify the owner.** Read the closest implementation and at least one real
+   consumer. Check `canonical-capabilities.md` and any focused routing rule such
+   as `chip-primitives.md`.
+3. **Choose the relationship.** State one of these before implementation:
+   - **Reuse:** the owner already provides the capability.
+   - **Extend:** the owner needs another supported behavior or variant.
+   - **Compose:** a new feature component will present existing capabilities
+     without reimplementing them.
+   - **Create:** the capability is genuinely new; name its intended owner and
+     why the closest existing concept has a different interaction contract.
 
-A spec that lists files under "Create:" without naming what was searched and
-why the closest match doesn't work is incomplete.
+Different styling, layout, density, or a smaller API does not create a new
+capability. A different presentation may be appropriate, but it must delegate
+shared validation, state transitions, algorithms, accessibility semantics,
+keyboard behavior, and domain constants to the existing owner.
+
+## Duplication Threshold
+
+- The first implementation of a new capability may remain feature-local.
+- The second use triggers an ownership decision: promote the first owner,
+  extract shared behavior, or document why the interaction models are distinct.
+- A third parallel implementation is forbidden unless the distinction is
+  recorded in `canonical-capabilities.md` or a focused rule's keep-separate
+  section.
+
+When several implementations already exist, do not add another. Reuse one for
+presentation work. If the task changes duplicated behavior, establish a shared
+behavior owner within that scope.
+
+## New Work That Is Allowed
+
+Agents may create:
+
+- feature-specific components that compose existing primitives;
+- feature-local business logic that no other feature owns;
+- a new presentation backed by an existing behavior owner;
+- genuinely different interaction models with a recorded reason;
+- new art, trees, illustrations, meshes, textures, scene compositions,
+  animations, shaders, and effects, including AI-generated creative assets.
+
+Existing creative assets are references and reusable material, not a mandatory
+catalog. Creative work still reuses technical infrastructure when appropriate:
+loaders, render loops, controls, accessibility patterns, and shared state.
+
+## When External Research Is Required
+
+Do not perform package research for every feature component. Check the
+framework, its extras, and maintained packages when implementing commodity or
+specialized infrastructure such as drag and drop, popovers, timelines,
+raycasting, animation, physics, parsing, media encoding, authentication, or
+build tooling. Follow `research-before-building.md`.
+
+## Evidence Gate
+
+A spec or implementation that creates shared behavior must record:
+
+- search terms and closest matches;
+- the current or proposed capability owner;
+- whether the change reuses, extends, composes, or creates;
+- any intentionally separate interaction model.
+
+Listing a new file is not a justification. Proving that the capability has no
+owner, or that the new file delegates to that owner, is.
 
 ## Related
 
-- `primitive-discovery.md` — UI-specific arm
-- `research-before-building.md` — external/framework arm
-- `no-fabrication.md` — existence claims need grep proof
+- `canonical-capabilities.md` — searchable ownership and routing index
+- `primitive-discovery.md` — UI-specific discovery procedure
+- `research-before-building.md` — framework and package research boundary
+- `no-fabrication.md` — existence claims require current evidence

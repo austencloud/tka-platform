@@ -183,7 +183,7 @@ You are Codex, working in the same repo as Claude Code. The sections above are t
 
 The rules above are a summary. The authoritative, enforced set is in `.claude/rules/*.md`. They are not optional and they are not Claude-specific. Read the relevant one before the matching work. The load-bearing ones:
 
-- `never-hand-roll.md` (MASTER) — 500+ components exist. Grep before you build anything. Two searches (internal + external) then justify. Do not rebuild what exists.
+- `never-hand-roll.md` (MASTER) — one concept, one behavior owner. New feature components and creative work are allowed; parallel implementations of existing capabilities are not. Search by meaning, then reuse, extend, compose, or establish a new owner.
 - `autonomy-and-completeness.md` — answer your own questions from the code, finish the task, do not ask what a grep would tell you.
 - `verification-protocol.md` + `no-fabrication.md` + `no-assumption-without-evidence.md` — every "done"/"fixed" needs proof in the same message. Never claim a file/function/behavior exists without grep or Read output in the same turn.
 - `visual-verification-mandatory.md` + `4k-native-layout.md` — if your diff changes how something LOOKS, you open a browser and screenshot it yourself, unprompted, at 1920/2560/3840/1440/tablet/960x412/375, and iterate until it is genuinely good. Standing permission — do not ask. A green typecheck is not visual proof.
