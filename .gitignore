@@ -417,3 +417,16 @@ mcp-server/deploy/auth.local.cmd
 # One-off root exports and task-local Vite debug configs
 .kv-bulk-shortcodes.json
 vite.debug*.config.mts
+
+# Agent/session-local review artifacts and generated previews
+/.codex-qft-review.md
+/.codex/visualizations/
+/output/
+/tmp/
+/parity-audit-preview.html
+/src/parity-audit-preview.ts
+/static/ghost-brain-model.html
+/scripts/tmp-*.mjs
+
+# Downloaded 3D authoring inputs (recreated by checked-in fetch scripts)
+/assets/3d-source/
