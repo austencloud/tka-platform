@@ -51,6 +51,7 @@
   let animationFrame: number | null = $state(null);
   let lastFrameTime = 0;
   let initialized = false;
+  let resizeObserver: ResizeObserver | null = null;
 
   function startAnimation() {
     if (!canvas || !system) return;
@@ -94,8 +95,12 @@
     const container = canvas.parentElement;
     if (container) {
       const oldDimensions = { width: canvas.width, height: canvas.height };
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
+      const width = Math.max(1, Math.round(container.clientWidth));
+      const height = Math.max(1, Math.round(container.clientHeight));
+      if (oldDimensions.width === width && oldDimensions.height === height) return;
+
+      canvas.width = width;
+      canvas.height = height;
       const newDimensions = { width: canvas.width, height: canvas.height };
       system?.handleResize?.(oldDimensions, newDimensions);
     }
@@ -140,6 +145,10 @@
     initializeCanvas();
     initialized = true;
     window.addEventListener("resize", handleResize);
+    if (canvas?.parentElement && typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(handleResize);
+      resizeObserver.observe(canvas.parentElement);
+    }
 
     // Notify parent that canvas is ready with dimensions
     if (canvas) {
@@ -150,6 +159,8 @@
   onDestroy(() => {
     stopAnimation();
     window.removeEventListener("resize", handleResize);
+    resizeObserver?.disconnect();
+    resizeObserver = null;
   });
 
   // Expose canvas for parent components that need direct access

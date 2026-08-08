@@ -43,7 +43,7 @@ Redesign the Autumn 2D background so it has a deliberate authored identity inste
   - `packages/backgrounds/src/backgrounds/forest/services/rendering/ForestCanvasRenderer.ts`
   - `packages/backgrounds/src/core/services/MoonRenderer.ts`
   - `packages/backgrounds/src/core/services/owl-silhouette.ts`
-- The prototype currently loads exactly `dead_04.png`, `dead_05.png`, and `dead_06.png`; places them with fixed responsive geometry; draws a shared full moon, stars, ground, pond/reflection, mist, vignette, and owl; anchors leaf release zones to branch regions; and exposes real density/wind/gust controls. The exact trio was this agent's choice, not Austen's command. Opus may choose better silhouettes from the existing curated catalog.
+- The prototype currently loads exactly `dead_04.png`, `dead_05.png`, and `dead_06.png`; places them with fixed responsive geometry; draws a shared full moon, stars, ground, pond/reflection, mist, vignette, and owl; anchors leaf release zones to branch regions; and exposes real density/wind/gust controls. The exact trio was this agent's choice, not Austen's command. Opus may choose other catalog silhouettes or create new silhouettes and scene components.
 - Mechanical verification for this uncommitted implementation:
   - `pnpm --filter @austencloud/backgrounds build` passed.
   - `pnpm --filter @austencloud/backgrounds test` passed: 14 files and 78 tests.
@@ -76,8 +76,8 @@ Redesign the Autumn 2D background so it has a deliberate authored identity inste
 ## Decisions already made
 
 - On 2026-08-06 Austen rejected any return to the retired procedural tree route: "Oh hell no we're not going to use the Bear tree branch generator in Purlin Noise we threw all of that away."
-- The trees must come from the existing authored/generated silhouette catalog already used by Forest. Do not use `BareTree`, procedural branch generation, Perlin noise, random ecological tree selection, or newly generated tree art unless Austen explicitly changes direction.
-- Austen said the existing Forest catalog probably already contains the spooky silhouettes needed. The current exact `dead_04`/`dead_05`/`dead_06` selection is not sacred.
+- Do not restore `BareTree`, procedural branch generation, Perlin noise, or random ecological tree selection. That retired generation route is the rejected part.
+- On 2026-08-07 Austen clarified that the existing Forest silhouettes are options, not a constraint. New trees, new scene components, and ChatGPT-generated silhouettes are allowed. The current exact `dead_04`/`dead_05`/`dead_06` selection is not sacred.
 - Austen authorized implementation with "I trust you. make me swoon," then rejected the resulting prototype on 2026-08-06 and assigned the next visual pass to Opus.
 - Work stays on `main`. Do not create a branch or worktree without Austen explicitly requesting that exact action.
 

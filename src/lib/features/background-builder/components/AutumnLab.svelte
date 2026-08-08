@@ -4,8 +4,39 @@
   import { ChipToggle, ChipGroup } from '@austencloud/chip-toggle';
   import LabPreviewCanvas from "./LabPreviewCanvas.svelte";
 
+  type DensityPreset = "sparse" | "normal" | "dense" | "storm";
+  type WindPreset = "calm" | "breezy" | "windy" | "gusty";
+  type LayerState = {
+    sky: boolean;
+    moon: boolean;
+    trees: boolean;
+    landscape: boolean;
+    leaves: boolean;
+    owl: boolean;
+  };
+
+  interface AutumnLabSystem {
+    initialize(dimensions: { width: number; height: number }, quality: QualityLevel): void;
+    update(dimensions: { width: number; height: number }, frameMultiplier: number): void;
+    draw(ctx: CanvasRenderingContext2D, dimensions: { width: number; height: number }): void;
+    cleanup?(): void;
+    handleResize?(oldDimensions: { width: number; height: number }, newDimensions: { width: number; height: number }): void;
+    setQuality(quality: QualityLevel): void;
+    setLayerVisibility(layers: Partial<LayerState>): void;
+    setDensityPreset?(preset: DensityPreset): void;
+    setWindPreset?(preset: WindPreset): void;
+    triggerGust?(): void;
+    setPointer?(x: number, y: number, active: boolean, pointerType?: string): void;
+    setAccessibility?(settings: { reducedMotion: boolean; highContrast: boolean }): void;
+    getStats(): { leaves: number; treesLoaded?: number };
+  }
+
+  function createAutumnLabSystem(): AutumnLabSystem {
+    return new AutumnBackgroundSystem() as unknown as AutumnLabSystem;
+  }
+
   // Background system
-  let backgroundSystem: AutumnBackgroundSystem | null = $state(null);
+  let backgroundSystem: AutumnLabSystem | null = $state(null);
   let canvasDimensions = $state({ width: 800, height: 600 });
 
   // Quality settings
@@ -15,7 +46,7 @@
   let isLoading = $state(true);
 
   // Layer toggles
-  let layers = $state({
+  let layers: LayerState = $state({
     sky: true,
     moon: true,
     trees: true,
@@ -24,12 +55,8 @@
     owl: true,
   });
 
-  // Density presets
-  type DensityPreset = "sparse" | "normal" | "dense" | "storm";
   let densityPreset: DensityPreset = $state("normal");
 
-  // Wind presets
-  type WindPreset = "calm" | "breezy" | "windy" | "gusty";
   let windPreset: WindPreset = $state("breezy");
 
   // Stats
@@ -39,7 +66,7 @@
   // Initialize system when canvas is ready
   function handleCanvasReady(dimensions: { width: number; height: number }) {
     canvasDimensions = dimensions;
-    backgroundSystem = new AutumnBackgroundSystem();
+    backgroundSystem = createAutumnLabSystem();
     backgroundSystem.initialize(dimensions, quality);
     applySettings();
 
@@ -50,7 +77,11 @@
   function handleFrame() {
     const now = performance.now();
     if (now - lastStatsUpdate > 1000 && backgroundSystem) {
-      stats = backgroundSystem.getStats();
+      const sceneStats = backgroundSystem.getStats();
+      stats = {
+        leaves: sceneStats.leaves,
+        treesLoaded: sceneStats.treesLoaded ?? 0,
+      };
       lastStatsUpdate = now;
     }
   }
@@ -59,7 +90,7 @@
     if (backgroundSystem) {
       backgroundSystem.cleanup?.();
     }
-    backgroundSystem = new AutumnBackgroundSystem();
+    backgroundSystem = createAutumnLabSystem();
     backgroundSystem.initialize(canvasDimensions, quality);
     applySettings();
   }
@@ -67,9 +98,9 @@
   function applySettings() {
     if (!backgroundSystem) return;
     backgroundSystem.setLayerVisibility(layers);
-    backgroundSystem.setDensityPreset(densityPreset);
-    backgroundSystem.setWindPreset(windPreset);
-    backgroundSystem.setAccessibility({
+    backgroundSystem.setDensityPreset?.(densityPreset);
+    backgroundSystem.setWindPreset?.(windPreset);
+    backgroundSystem.setAccessibility?.({
       reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
       highContrast: window.matchMedia("(prefers-contrast: more)").matches,
     });
@@ -82,12 +113,12 @@
 
   function setDensity(preset: DensityPreset) {
     densityPreset = preset;
-    backgroundSystem?.setDensityPreset(preset);
+    backgroundSystem?.setDensityPreset?.(preset);
   }
 
   function setWindPreset(preset: WindPreset) {
     windPreset = preset;
-    backgroundSystem?.setWindPreset(preset);
+    backgroundSystem?.setWindPreset?.(preset);
   }
 
   function toggleLayer(layer: keyof typeof layers) {
@@ -143,7 +174,7 @@
     </ChipGroup>
 
     <div class="actions">
-      <button class="action-btn" onclick={() => backgroundSystem?.triggerGust()}>
+      <button class="action-btn" onclick={() => backgroundSystem?.triggerGust?.()}>
         <i class="fas fa-wind"></i>
         Call a Gust
       </button>
