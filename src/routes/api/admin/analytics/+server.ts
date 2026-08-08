@@ -18,6 +18,7 @@ import { logAdminAction } from "$lib/server/security/audit-logger";
 import { getAdminAuth } from "$lib/server/firebaseAdmin";
 import {
   escapeHogQL,
+  personIdentityFilter,
   pulseProdFilter,
 } from "$lib/server/analytics/hogql-shared";
 
@@ -159,7 +160,6 @@ async function executeHogQLQuery(
 }
 
 function buildEngagementQuery(userId: string, period: TimePeriod): string {
-  const safeId = escapeHogQL(userId);
   return `
     SELECT
       max(ended_at) as last_active,
@@ -172,7 +172,7 @@ function buildEngagementQuery(userId: string, period: TimePeriod): string {
         max(timestamp) as ended_at,
         dateDiff('millisecond', min(timestamp), max(timestamp)) as duration_ms
       FROM events
-      WHERE distinct_id = '${safeId}'
+      WHERE ${personIdentityFilter(userId)}
         AND "$session_id" IS NOT NULL
         ${periodFilter(period)}
       GROUP BY "$session_id"
@@ -181,7 +181,6 @@ function buildEngagementQuery(userId: string, period: TimePeriod): string {
 }
 
 function buildActivityQuery(userId: string, period: TimePeriod): string {
-  const safeId = escapeHogQL(userId);
   // Derive module from the first URL path segment of pageview events.
   // Works with existing autocapture data without custom properties.
   return `
@@ -189,7 +188,7 @@ function buildActivityQuery(userId: string, period: TimePeriod): string {
       splitByChar('/', ifNull(path(properties."$current_url"), ''))[2] as module,
       count() as event_count
     FROM events
-    WHERE distinct_id = '${safeId}'
+    WHERE ${personIdentityFilter(userId)}
       ${periodFilter(period)}
       AND event = '$pageview'
       AND properties."$current_url" IS NOT NULL
@@ -201,13 +200,12 @@ function buildActivityQuery(userId: string, period: TimePeriod): string {
 }
 
 function buildContentQuery(userId: string, period: TimePeriod): string {
-  const safeId = escapeHogQL(userId);
   return `
     SELECT
       event,
       count() as count
     FROM events
-    WHERE distinct_id = '${safeId}'
+    WHERE ${personIdentityFilter(userId)}
       ${periodFilter(period)}
       AND event IN (
         'sequence_create',
@@ -225,7 +223,6 @@ function buildSessionsQuery(
   period: TimePeriod,
   limit: number
 ): string {
-  const safeId = escapeHogQL(userId);
   // Derive modules from pageview URLs instead of properties.module
   return `
     SELECT
@@ -267,7 +264,7 @@ function buildSessionsQuery(
       argMax(properties."$os", timestamp) as operating_system,
       argMax(properties."$device_type", timestamp) as device_type
     FROM events
-    WHERE distinct_id = '${safeId}'
+    WHERE ${personIdentityFilter(userId)}
       AND "$session_id" IS NOT NULL
       ${periodFilter(period)}
     GROUP BY "$session_id"
@@ -281,7 +278,6 @@ function buildSessionEventsQuery(
   sessionId: string,
   limit: number
 ): string {
-  const safeUserId = escapeHogQL(userId);
   const safeSessionId = escapeHogQL(sessionId);
   return `
     SELECT
@@ -302,7 +298,7 @@ function buildSessionEventsQuery(
       properties."$exception_type" as exception_type,
       properties."$exception_message" as exception_message
     FROM events
-    WHERE distinct_id = '${safeUserId}'
+    WHERE ${personIdentityFilter(userId)}
       AND "$session_id" = '${safeSessionId}'
     ORDER BY timestamp ASC
     LIMIT ${Math.min(limit, 500)}

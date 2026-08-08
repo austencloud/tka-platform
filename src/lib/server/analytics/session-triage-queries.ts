@@ -126,14 +126,21 @@ export function buildTriageSessionEventsQuery(sessionId: string, limit: number):
  */
 export function buildFirstSeenQuery(uids: readonly string[]): string {
   if (uids.length === 0) {
-    return `SELECT distinct_id as uid, toString(min(timestamp)) as first_seen
-            FROM events GROUP BY uid LIMIT 0`;
+    return `SELECT identities.distinct_id as uid, toString(min(events.timestamp)) as first_seen
+            FROM events
+            INNER JOIN person_distinct_ids AS identities
+              ON events.person_id = identities.person_id
+            GROUP BY uid LIMIT 0`;
   }
   const list = uids.map((u) => `'${escapeHogQL(u)}'`).join(", ");
   return `
-    SELECT distinct_id as uid, toString(min(timestamp)) as first_seen
+    SELECT
+      identities.distinct_id as uid,
+      toString(min(events.timestamp)) as first_seen
     FROM events
-    WHERE distinct_id IN (${list})
+    INNER JOIN person_distinct_ids AS identities
+      ON events.person_id = identities.person_id
+    WHERE identities.distinct_id IN (${list})
     GROUP BY uid
   `;
 }

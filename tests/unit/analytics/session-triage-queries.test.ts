@@ -56,10 +56,19 @@ describe("buildTriageSessionEventsQuery", () => {
 describe("buildFirstSeenQuery", () => {
   it("returns the first-ever event time per uid", () => {
     const sql = buildFirstSeenQuery(["u_a", "u_b"]);
-    expect(sql).toContain("min(timestamp)");
+    expect(sql).toContain("min(events.timestamp)");
+    expect(sql).toContain("person_distinct_ids AS identities");
+    expect(sql).toContain("events.person_id = identities.person_id");
     expect(sql).toContain("'u_a'");
     expect(sql).toContain("'u_b'");
     expect(sql).toContain("GROUP BY uid");
+  });
+
+  it("backdates an identified account to its anonymous events", () => {
+    const sql = buildFirstSeenQuery(["account-1"]);
+
+    expect(sql).toContain("identities.distinct_id IN ('account-1')");
+    expect(sql).not.toContain("WHERE distinct_id IN");
   });
 
   it("is safe with an empty uid list", () => {

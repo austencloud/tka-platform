@@ -113,6 +113,24 @@ describe("admin analytics endpoint", () => {
     );
   });
 
+  it("queries the full PostHog person so anonymous activity follows the account", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(upstream([]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await POST(
+      event({ type: "activity", userId: "uid", period: "all" }) as never
+    );
+
+    const requestBody = JSON.parse(
+      String((fetchMock.mock.calls[0]?.[1] as RequestInit).body)
+    ) as { query: { query: string } };
+    const sql = requestBody.query.query;
+    expect(sql).toContain("person_id IN");
+    expect(sql).toContain("FROM person_distinct_ids");
+    expect(sql).toContain("distinct_id = 'uid'");
+    expect(sql).not.toMatch(/FROM events\s+WHERE distinct_id = 'uid'/);
+  });
+
   it("applies the selected window to every per-user metric query", async () => {
     const fetchMock = vi
       .fn()

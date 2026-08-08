@@ -20,6 +20,23 @@ export function escapeHogQL(value: string): string {
 }
 
 /**
+ * Match every event PostHog has merged into one account identity.
+ *
+ * `identify()` keeps the original distinct ID on historical events. Filtering
+ * events by the Firebase UID alone therefore drops the anonymous activity that
+ * led to signup. PostHog's identity table is the canonical link between those
+ * IDs and the shared person.
+ */
+export function personIdentityFilter(distinctId: string): string {
+  const safeId = escapeHogQL(distinctId);
+  return `person_id IN (
+    SELECT person_id
+    FROM person_distinct_ids
+    WHERE distinct_id = '${safeId}'
+  )`;
+}
+
+/**
  * Automation identities that browse production. Verified 2026-08-05:
  * `agent-codex-claude` had 91 events on tkaflowarts.com and took two of the
  * top ten friction slots with hour-long "produced nothing" sessions — a parked

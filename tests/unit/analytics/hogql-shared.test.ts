@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   escapeHogQL,
+  personIdentityFilter,
   pulseProdFilter,
   EXCLUDED_ADMIN_UIDS,
 } from "$lib/server/analytics/hogql-shared";
@@ -12,6 +13,20 @@ describe("escapeHogQL", () => {
 
   it("escapes backslashes before quotes", () => {
     expect(escapeHogQL("a\\b")).toBe("a\\\\b");
+  });
+});
+
+describe("personIdentityFilter", () => {
+  it("matches the PostHog person instead of only the account distinct ID", () => {
+    const sql = personIdentityFilter("account-1");
+
+    expect(sql).toContain("person_id IN");
+    expect(sql).toContain("FROM person_distinct_ids");
+    expect(sql).toContain("distinct_id = 'account-1'");
+  });
+
+  it("escapes the distinct ID inside the identity lookup", () => {
+    expect(personIdentityFilter("o'brien")).toContain("o\\'brien");
   });
 });
 
