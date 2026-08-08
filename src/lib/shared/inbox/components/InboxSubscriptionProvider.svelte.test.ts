@@ -1,5 +1,4 @@
 import { render } from "vitest-browser-svelte";
-import { page } from "vitest/browser";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import InboxSubscriptionProvider from "./InboxSubscriptionProvider.svelte";
 
@@ -10,7 +9,6 @@ const mocks = vi.hoisted(() => ({
     setConversations: vi.fn(),
     setNotifications: vi.fn(),
   },
-  claimPrompt: vi.fn<(_userId: string) => Promise<boolean>>(),
   subscribeToConversations: vi.fn(() => vi.fn()),
   subscribeToNotifications: vi.fn(() => vi.fn()),
   startForegroundListener: vi.fn(),
@@ -55,20 +53,15 @@ vi.mock("$lib/shared/push/get-fcm-token-manager", () => ({
   }),
 }));
 
-vi.mock("$lib/shared/push/services/push-permission-prompt-marker", () => ({
-  claimPushPermissionPrompt: mocks.claimPrompt,
-}));
-
 vi.mock("$lib/shared/push/services/foreground-message-handler", () => ({
   startForegroundMessageListener: mocks.startForegroundListener,
   stopForegroundMessageListener: mocks.stopForegroundListener,
 }));
 
-describe("InboxSubscriptionProvider push prompt", () => {
+describe("InboxSubscriptionProvider push registration", () => {
   beforeEach(() => {
     mocks.authState.user = { uid: "user-1" };
     mocks.inboxState.totalUnreadCount = 1;
-    mocks.claimPrompt.mockReset();
     mocks.subscribeToConversations.mockClear();
     mocks.subscribeToNotifications.mockClear();
     mocks.startForegroundListener.mockClear();
@@ -80,33 +73,26 @@ describe("InboxSubscriptionProvider push prompt", () => {
     mocks.getPermissionState.mockResolvedValue("default");
   });
 
-  it("shows the prompt only after claiming its account-level marker", async () => {
-    mocks.claimPrompt.mockResolvedValue(true);
-
+  it("does not turn an unread inbox item into a permission prompt", async () => {
     render(InboxSubscriptionProvider);
 
     await vi.waitFor(() => {
-      expect(mocks.claimPrompt).toHaveBeenCalledWith("user-1");
+      expect(mocks.getPermissionState).toHaveBeenCalled();
     });
-    await expect
-      .element(
-        page.getByRole("alertdialog", {
-          name: "Enable push notifications",
-        })
-      )
-      .toBeInTheDocument();
-  });
 
-  it("does not show a prompt that the account has already claimed", async () => {
-    mocks.claimPrompt.mockResolvedValue(false);
-
-    render(InboxSubscriptionProvider);
-
-    await vi.waitFor(() => {
-      expect(mocks.claimPrompt).toHaveBeenCalledWith("user-1");
-    });
     expect(
       document.querySelector('[aria-label="Enable push notifications"]')
     ).toBeNull();
+    expect(mocks.registerToken).not.toHaveBeenCalled();
+  });
+
+  it("still registers a token when permission was already granted", async () => {
+    mocks.getPermissionState.mockResolvedValue("granted");
+
+    render(InboxSubscriptionProvider);
+
+    await vi.waitFor(() => {
+      expect(mocks.registerToken).toHaveBeenCalledWith("user-1");
+    });
   });
 });

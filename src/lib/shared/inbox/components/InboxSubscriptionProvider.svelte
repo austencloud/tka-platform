@@ -19,8 +19,6 @@
   import { notificationService } from "$lib/shared/feedback/services/notifier";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
-  import PushPermissionPrompt from "$lib/shared/push/components/PushPermissionPrompt.svelte";
-  import { claimPushPermissionPrompt } from "$lib/shared/push/services/push-permission-prompt-marker";
   import {
     startForegroundMessageListener,
     stopForegroundMessageListener,
@@ -30,8 +28,6 @@
   let unsubscribeMessages: (() => void) | null = null;
   let unsubscribeNotifications: (() => void) | null = null;
   let messagingModuleLoaded = $state(false);
-  let showPushPrompt = $state(false);
-  let pushPromptChecked = false;
 
   onMount(() => {
     // Module is now loaded via container
@@ -114,28 +110,6 @@
     }
   });
 
-  // Show push prompt when unread inbox items appear (one-time per session).
-  // Counts notifications too, not just DMs — otherwise a fresh install that
-  // receives notifications (e.g. admin Pulse alerts) is never asked for push
-  // permission and never registers an FCM token.
-  $effect(() => {
-    const messageCount = inboxState.totalUnreadCount;
-    const userId = currentUserId;
-    if (messageCount > 0 && !pushPromptChecked && userId) {
-      pushPromptChecked = true;
-      void (async () => {
-        const fcmTokenManager = getFCMTokenManager();
-        const supported = await fcmTokenManager.isSupported();
-        if (!supported) return;
-        const permission = await fcmTokenManager.getPermissionState();
-        if (permission !== "default") return;
-        const shouldShow = await claimPushPermissionPrompt(userId);
-        if (!shouldShow || currentUserId !== userId) return;
-        showPushPrompt = true;
-      })();
-    }
-  });
-
   // Auto-register FCM token if permission already granted
   $effect(() => {
     if (!currentUserId) return;
@@ -160,12 +134,3 @@
     };
   });
 </script>
-
-{#if showPushPrompt && currentUserId}
-  <PushPermissionPrompt
-    userId={currentUserId}
-    onDismiss={() => {
-      showPushPrompt = false;
-    }}
-  />
-{/if}
