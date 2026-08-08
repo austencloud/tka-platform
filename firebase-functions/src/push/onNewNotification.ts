@@ -17,6 +17,7 @@ import {
   getUnreadCount,
 } from "./pushDispatcher";
 import type { PushPayload } from "./types";
+import { safeInternalActionUrl } from "./internalActionUrl";
 
 export const onNewNotification = onDocumentCreated(
   "users/{userId}/notifications/{notificationId}",
@@ -33,6 +34,7 @@ export const onNewNotification = onDocumentCreated(
     const type: string = notificationData.type;
     const message: string = notificationData.message || "";
     const fromUserName: string | undefined = notificationData.fromUserName;
+    const actionUrl = safeInternalActionUrl(notificationData.actionUrl);
 
     // Skip message-received notifications - handled by onNewMessage
     if (type === "message-received") {
@@ -56,7 +58,7 @@ export const onNewNotification = onDocumentCreated(
     const payload: PushPayload = {
       title,
       body: message,
-      url: "/app?tab=notifications",
+      url: actionUrl ?? "/app?tab=notifications",
       tag: `notification-${type}`,
       type,
       notificationId,
@@ -82,6 +84,7 @@ const PULSE_TITLES: Record<string, string> = {
   "admin-user-returned": "User Returned",
   "admin-new-user-signup": "New Signup",
   "admin-content-created": "New Content",
+  "admin-parity-audit": "Parity Audit",
   "admin-software-submission": "Software submission",
 };
 

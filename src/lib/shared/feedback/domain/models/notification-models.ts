@@ -28,6 +28,7 @@ export const NOTIFICATION_TYPES = [
   "admin-user-returned", // A known user opened the app again
   "admin-qr-scan", // Someone scanned a shared QR code
   "admin-content-created", // A user saved a sequence or created a collection
+  "admin-parity-audit", // The scheduled data-integrity audit found drift or failed
   // System notifications
   "system-announcement", // Important system announcements
   // Moderation notifications
@@ -150,6 +151,35 @@ export interface PulseNotification extends BaseNotification {
   collectionName?: string;
 }
 
+export interface ParityAuditViolation {
+  source: "reconcile" | "shortcode";
+  id?: string;
+  code?: string;
+  ownerId?: string | null;
+  classification: string;
+  detail?: string;
+  storedWord?: string;
+  expectedWord?: string;
+  changedKeys?: string[];
+}
+
+/**
+ * Admin-only data-integrity alert written by the scheduled parity audit.
+ * The report summary travels with the notification so the destination still
+ * works on another device, where the scheduler's local JSON file is absent.
+ */
+export interface ParityAuditNotification extends BaseNotification {
+  type: "admin-parity-audit";
+  auditStatus: "violations" | "failed";
+  actionUrl: string;
+  reportFile?: string;
+  reportGeneratedAt?: string;
+  auditReconcileCount: number;
+  auditShortcodeCount: number;
+  auditViolations: ParityAuditViolation[];
+  auditError?: string;
+}
+
 /**
  * Moderation notification (warning issued to user)
  */
@@ -171,6 +201,7 @@ export type UserNotification =
   | SystemNotification
   | AdminNotification
   | PulseNotification
+  | ParityAuditNotification
   | ModerationNotification;
 
 /**
@@ -345,6 +376,12 @@ export const NOTIFICATION_TYPE_CONFIG: Record<
     color: "#f59e0b",
     icon: "fa-wand-magic-sparkles",
     actionLabel: "View Activity",
+  },
+  "admin-parity-audit": {
+    label: "Parity Audit",
+    color: "#f97316",
+    icon: "fa-shield-halved",
+    actionLabel: "Open Report",
   },
   // System notifications
   "system-announcement": {

@@ -4,8 +4,7 @@
  * Manages tester notifications for feedback updates.
  */
 
-import type {
-  Timestamp} from "firebase/firestore";
+import type { Timestamp } from "firebase/firestore";
 import {
   collection,
   query,
@@ -16,7 +15,7 @@ import {
   updateDoc,
   where,
   onSnapshot,
-  serverTimestamp
+  serverTimestamp,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { firestoreList, firestoreDelete } from "$lib/shared/firestore";
@@ -40,7 +39,7 @@ export class Notifier {
       const items = await firestoreList(
         subcollectionPath,
         UserNotificationSchema,
-        { where: [{ field: "read", op: "==", value: false }] },
+        { where: [{ field: "read", op: "==", value: false }] }
       );
       return items.length;
     } catch (error) {
@@ -64,7 +63,7 @@ export class Notifier {
         {
           orderBy: [{ field: "createdAt", direction: "desc" }],
           limit: maxCount,
-        },
+        }
       );
       // firestoreList returns the flat schema shape (all per-variant fields
       // optional); the validated `type` literal is the discriminant, so a single
@@ -140,6 +139,21 @@ export class Notifier {
         newUserId: data["newUserId"] as string,
         newUserEmail: data["newUserEmail"] as string | null,
         newUserDisplayName: data["newUserDisplayName"] as string,
+      } as UserNotification;
+    } else if (type === "admin-parity-audit") {
+      return {
+        ...baseNotification,
+        type: "admin-parity-audit",
+        auditStatus: data["auditStatus"] as "violations" | "failed",
+        actionUrl: data["actionUrl"] as string,
+        reportFile: data["reportFile"] as string | undefined,
+        reportGeneratedAt: data["reportGeneratedAt"] as string | undefined,
+        auditReconcileCount: (data["auditReconcileCount"] as number) ?? 0,
+        auditShortcodeCount: (data["auditShortcodeCount"] as number) ?? 0,
+        auditViolations: Array.isArray(data["auditViolations"])
+          ? data["auditViolations"]
+          : [],
+        auditError: data["auditError"] as string | undefined,
       } as UserNotification;
     }
 
@@ -247,11 +261,11 @@ export class Notifier {
       const items = await firestoreList(
         subcollectionPath,
         UserNotificationSchema,
-        { where: [{ field: "read", op: "==", value: true }] },
+        { where: [{ field: "read", op: "==", value: true }] }
       );
 
       const deletes = items.map((item) =>
-        firestoreDelete(subcollectionPath, item.id),
+        firestoreDelete(subcollectionPath, item.id)
       );
       await Promise.all(deletes);
     } catch (error) {
@@ -268,11 +282,11 @@ export class Notifier {
       const subcollectionPath = `${USERS_COLLECTION}/${userId}/${NOTIFICATIONS_SUBCOLLECTION}`;
       const items = await firestoreList(
         subcollectionPath,
-        UserNotificationSchema,
+        UserNotificationSchema
       );
 
       const deletes = items.map((item) =>
-        firestoreDelete(subcollectionPath, item.id),
+        firestoreDelete(subcollectionPath, item.id)
       );
       await Promise.all(deletes);
     } catch (error) {

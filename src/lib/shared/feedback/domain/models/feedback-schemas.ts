@@ -266,6 +266,30 @@ export const UserNotificationSchema = z
     // System-specific
     title: z.string().optional(),
     actionUrl: z.string().optional(),
+    // Admin parity-audit report
+    auditStatus: z.enum(["violations", "failed"]).optional(),
+    reportFile: z.string().optional(),
+    reportGeneratedAt: z.string().optional(),
+    auditReconcileCount: z.number().int().nonnegative().optional(),
+    auditShortcodeCount: z.number().int().nonnegative().optional(),
+    auditViolations: z
+      .array(
+        z
+          .object({
+            source: z.enum(["reconcile", "shortcode"]),
+            id: z.string().optional(),
+            code: z.string().optional(),
+            ownerId: z.string().nullable().optional(),
+            classification: z.string(),
+            detail: z.string().optional(),
+            storedWord: z.string().optional(),
+            expectedWord: z.string().optional(),
+            changedKeys: z.array(z.string()).optional(),
+          })
+          .passthrough()
+      )
+      .optional(),
+    auditError: z.string().optional(),
     // Admin-specific
     newUserId: z.string().optional(),
     newUserEmail: z.string().nullable().optional(),

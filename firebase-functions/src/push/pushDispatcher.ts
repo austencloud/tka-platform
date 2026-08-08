@@ -197,6 +197,7 @@ export async function shouldPushForType(
   // System announcements and moderation warnings always push
   if (
     notificationType === "system-announcement" ||
+    notificationType === "admin-parity-audit" ||
     notificationType === "moderation-warning"
   ) {
     return true;

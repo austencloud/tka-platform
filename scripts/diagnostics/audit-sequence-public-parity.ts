@@ -35,9 +35,16 @@
  * manually after every migration.
  */
 import { execSync } from "child_process";
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
 import { initFirestore } from "../lib/firestore-provider.js";
+import {
+  formatParityAuditMessage,
+  isParityAuditReportFilename,
+  parityAuditFingerprint,
+  toParityAuditViolation,
+} from "./parity-audit-alert";
+import type { ParityAuditViolation } from "../../src/lib/shared/feedback/domain/models/notification-models";
 
 type AnyRec = Record<string, unknown>;
 
@@ -62,8 +69,25 @@ interface EngineResult {
     id?: string;
     cls?: string;
     classification?: string;
+    [key: string]: unknown;
   }>;
   manifestPath: string;
+}
+
+interface ParityAuditReport {
+  generatedAt: string;
+  reconcile: {
+    counts: Record<string, number>;
+    manifest: string;
+    actionable: EngineResult["results"];
+  };
+  shortcodes: {
+    counts: Record<string, number>;
+    manifest: string;
+    actionable: EngineResult["results"];
+    improvedFromBaseline: string[];
+  };
+  actionableTotal: number;
 }
 
 function runEngine(script: string, label: string): EngineResult {
@@ -90,7 +114,35 @@ function runEngine(script: string, label: string): EngineResult {
   return { counts: manifest.counts, results: rows, manifestPath };
 }
 
-async function alertAdmins(message: string): Promise<void> {
+interface AuditAlert {
+  message: string;
+  auditStatus: "violations" | "failed";
+  reportFile?: string;
+  reportGeneratedAt?: string;
+  auditReconcileCount: number;
+  auditShortcodeCount: number;
+  auditViolations: ParityAuditViolation[];
+  auditError?: string;
+}
+
+function readLatestReport(): ParityAuditReport | null {
+  const directory = join(REPO_ROOT, "scripts", "migrations", "backups");
+  const latest = readdirSync(directory)
+    .filter(isParityAuditReportFilename)
+    .sort()
+    .at(-1);
+  if (!latest) return null;
+  try {
+    return JSON.parse(
+      readFileSync(join(directory, latest), "utf8")
+    ) as ParityAuditReport;
+  } catch (error) {
+    console.warn(`could not read previous parity report ${latest}:`, error);
+    return null;
+  }
+}
+
+async function alertAdmins(alert: AuditAlert): Promise<void> {
   const { db, FieldValue, isAdmin } = (await initFirestore()) as AnyRec & {
     db: AnyRec;
     FieldValue: { serverTimestamp(): unknown };
@@ -106,14 +158,23 @@ async function alertAdmins(message: string): Promise<void> {
   )("role", "==", "admin").get()) as {
     docs: Array<{
       id: string;
-      ref: { collection(p: string): { add(d: AnyRec): Promise<unknown> } };
+      ref: {
+        collection(p: string): {
+          doc(): {
+            id: string;
+            set(d: AnyRec): Promise<unknown>;
+          };
+        };
+      };
     }>;
   };
   for (const adminDoc of admins.docs) {
-    await adminDoc.ref.collection("notifications").add({
+    const notificationRef = adminDoc.ref.collection("notifications").doc();
+    await notificationRef.set({
       userId: adminDoc.id,
       type: "admin-parity-audit",
-      message,
+      ...alert,
+      actionUrl: `/admin/parity-audit?notification=${encodeURIComponent(notificationRef.id)}`,
       createdAt: FieldValue.serverTimestamp(),
       read: false,
     });
@@ -154,6 +215,7 @@ async function main(): Promise<void> {
 
   const actionableTotal =
     reconcileActionable.length + shortcodeActionable.length;
+  const previousReport = readLatestReport();
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const reportPath = join(
     REPO_ROOT,
@@ -162,28 +224,22 @@ async function main(): Promise<void> {
     "backups",
     `parity-audit-${stamp}.json`
   );
-  writeFileSync(
-    reportPath,
-    JSON.stringify(
-      {
-        generatedAt: new Date().toISOString(),
-        reconcile: {
-          counts: reconcile.counts,
-          manifest: reconcile.manifestPath,
-          actionable: reconcileActionable,
-        },
-        shortcodes: {
-          counts: shortcodes.counts,
-          manifest: shortcodes.manifestPath,
-          actionable: shortcodeActionable,
-          improvedFromBaseline: improved,
-        },
-        actionableTotal,
-      },
-      null,
-      2
-    )
-  );
+  const report: ParityAuditReport = {
+    generatedAt: new Date().toISOString(),
+    reconcile: {
+      counts: reconcile.counts,
+      manifest: reconcile.manifestPath,
+      actionable: reconcileActionable,
+    },
+    shortcodes: {
+      counts: shortcodes.counts,
+      manifest: shortcodes.manifestPath,
+      actionable: shortcodeActionable,
+      improvedFromBaseline: improved,
+    },
+    actionableTotal,
+  };
+  writeFileSync(reportPath, JSON.stringify(report, null, 2));
 
   console.log("════ PARITY AUDIT ════");
   console.log(`reconcile:  ${JSON.stringify(reconcile.counts)}`);
@@ -204,11 +260,41 @@ async function main(): Promise<void> {
       console.log(`  ⚠️  ${JSON.stringify(r)}`);
     }
     if (ALERT) {
-      await alertAdmins(
-        `Parity audit found ${actionableTotal} new violation(s) — ` +
-          `reconcile ${reconcileActionable.length}, shortcodes ${shortcodeActionable.length}. ` +
-          `See parity-audit-${stamp}.json.`
+      const fingerprint = parityAuditFingerprint(
+        reconcileActionable,
+        shortcodeActionable
       );
+      const previousFingerprint = previousReport
+        ? parityAuditFingerprint(
+            previousReport.reconcile.actionable,
+            previousReport.shortcodes.actionable
+          )
+        : null;
+      if (fingerprint === previousFingerprint) {
+        console.log(
+          "unchanged violation set; duplicate admin alert suppressed"
+        );
+      } else {
+        await alertAdmins({
+          message: formatParityAuditMessage(
+            reconcileActionable.length,
+            shortcodeActionable.length
+          ),
+          auditStatus: "violations",
+          reportFile: `parity-audit-${stamp}.json`,
+          reportGeneratedAt: report.generatedAt,
+          auditReconcileCount: reconcileActionable.length,
+          auditShortcodeCount: shortcodeActionable.length,
+          auditViolations: [
+            ...reconcileActionable.map((record) =>
+              toParityAuditViolation("reconcile", record)
+            ),
+            ...shortcodeActionable.map((record) =>
+              toParityAuditViolation("shortcode", record)
+            ),
+          ],
+        });
+      }
     }
     process.exit(2);
   }
@@ -219,9 +305,18 @@ main().catch(async (e) => {
   console.error("parity audit FAILED to run:", e);
   if (ALERT) {
     try {
-      await alertAdmins(
-        `Parity audit FAILED to run: ${String(e instanceof Error ? e.message : e).slice(0, 200)}`
+      const auditError = String(e instanceof Error ? e.message : e).slice(
+        0,
+        200
       );
+      await alertAdmins({
+        message: `Parity audit could not finish: ${auditError}`,
+        auditStatus: "failed",
+        auditReconcileCount: 0,
+        auditShortcodeCount: 0,
+        auditViolations: [],
+        auditError,
+      });
     } catch (alertError) {
       console.error("…and alerting failed too:", alertError);
     }

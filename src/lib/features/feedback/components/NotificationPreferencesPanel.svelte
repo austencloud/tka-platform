@@ -205,7 +205,7 @@
   }
 
   // Preference descriptions (keyed by notification type for clarity)
-  const typeDescriptions: Record<NotificationType, string> = {
+  const typeDescriptions: Partial<Record<NotificationType, string>> = {
     "feedback-resolved": t("feedback_notif_desc_resolved"),
     "feedback-in-progress": t("feedback_notif_desc_in_progress"),
     "feedback-needs-info": t("feedback_notif_desc_needs_info"),

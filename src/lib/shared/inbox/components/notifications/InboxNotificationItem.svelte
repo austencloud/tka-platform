@@ -74,6 +74,8 @@
         return "fa-qrcode";
       case "admin-content-created":
         return "fa-wand-magic-sparkles";
+      case "admin-parity-audit":
+        return "fa-shield-halved";
       case "system-announcement":
         return "fa-bullhorn";
       default:
@@ -98,6 +100,8 @@
         return "var(--semantic-warning)";
       case "message-received":
         return "var(--theme-accent-strong)";
+      case "admin-parity-audit":
+        return "var(--semantic-warning)";
       default:
         return "var(--theme-text-dim)";
     }
@@ -188,6 +192,14 @@
           inboxState.close();
           await handleModuleChange("choreo_card", "scan-activity");
         }
+        break;
+
+      case "admin-parity-audit":
+        inboxState.close();
+        await goto(
+          n["actionUrl"] ||
+            `/admin/parity-audit?notification=${encodeURIComponent(notification.id)}`
+        );
         break;
 
       case "system-announcement":
