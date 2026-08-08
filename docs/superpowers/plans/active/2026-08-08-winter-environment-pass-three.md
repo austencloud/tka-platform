@@ -1,7 +1,9 @@
 # Moonlit Winter Hollow: Pass Three Gated Production Plan
 
 - **Date:** 2026-08-08
-- **Status:** Plan approved for creation. Scene implementation has not started.
+- **Status:** Gate 1 terrain form approved. Gate 2 snow surface is implemented
+  and awaiting visual review; the shared celestial-sky correction is also at
+  its visual gate.
 - **Previous work:**
   [pass-two design](../../specs/active/2026-08-08-moonlit-winter-hollow-design.md)
   and
@@ -335,9 +337,9 @@ the high orbit shows no rectangular stage set.
 
 **Change:** Shared sky configuration and atmospheric balance only.
 
-- Reuse the existing Forest `MoonBillboard` and `Starfield` owners.
+- Reuse the shared `SkyGradient` celestial-Moon owner and `Starfield` owner.
 - Match Forest's moon texture and star behavior, then tune only Winter's
-  placement, scale, density, color, and exposure.
+  direction, angular diameter, density, color, and exposure.
 - Keep the Blender moon absent from the authored GLB.
 - Balance snowfall against the fixed sky so particles add depth without
   becoming visual noise.

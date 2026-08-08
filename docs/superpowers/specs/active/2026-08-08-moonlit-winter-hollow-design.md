@@ -47,8 +47,9 @@ them.
 
 ## Capability ownership
 
-- **Reuse `MoonBillboard.svelte` and `Starfield.svelte`:** Forest already owns
-  the moon and star behavior. Winter supplies its own configuration only.
+- **Reuse `SkyGradient.svelte` and `Starfield.svelte`:** the sky gradient owns
+  the directional, angular-size Moon and Forest already shares the same
+  celestial behavior. Winter supplies its own configuration only.
 - **Reuse Autumn's production rock sources:** `boulder_01.glb`, `rock_07.glb`,
   and `stone_01.glb` already pass through the Blender and optimization path.
 - **Reuse Autumn's detailed fallen-log source:** Winter may retune its material
@@ -133,8 +134,8 @@ The pond is a secondary focal area, not a background puddle.
 ### Sky and horizon
 
 - Remove `Winter_Base_Moon` from the Blender scene and production GLB.
-- Render the moon with the existing shared `MoonBillboard` and
-  `/textures/moon.png`.
+- Composite `/textures/moon.png` inside the shared `SkyGradient` using a fixed
+  celestial direction and apparent angular diameter.
 - Render stars with the existing shared `Starfield`.
 - Retain directional moonlight as scene lighting. It is separate from the moon
   image.

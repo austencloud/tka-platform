@@ -21,7 +21,6 @@
   import AutumnRuntimeSystems from "./autumn/runtime/AutumnRuntimeSystems.svelte";
   import { AUTUMN_POND_LAYOUT } from "./autumn/runtime/water/autumn-pond-layout";
   import SkyGradient from "../primitives/SkyGradient.svelte";
-  import MoonBillboard from "../primitives/MoonBillboard.svelte";
   import Starfield from "../primitives/Starfield.svelte";
   import Stage3D from "../../components/Stage3D.svelte";
   import type {
@@ -113,8 +112,8 @@
   const moonConfig: MoonConfig = {
     enabled: true,
     texture: "/textures/moon.png",
-    position: [-5, 19, -56],
-    diameter: 6.2,
+    direction: [-5, 19, -56],
+    angularDiameterDegrees: 0.52,
     opacity: 0.88,
     glowScale: 1.18,
     glowOpacity: 0.032,
@@ -147,9 +146,13 @@
   });
 </script>
 
-<SkyGradient topColor="#09081d" midColor="#321b3f" bottomColor="#9a4931" />
+<SkyGradient
+  topColor="#09081d"
+  midColor="#321b3f"
+  bottomColor="#9a4931"
+  moon={moonConfig}
+/>
 <Starfield config={starfieldConfig} />
-<MoonBillboard config={moonConfig} />
 
 {#if $autumnEnvironmentGlb}
   <T is={$autumnEnvironmentGlb.scene} position.y={groundY} />

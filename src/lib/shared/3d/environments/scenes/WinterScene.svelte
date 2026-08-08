@@ -24,7 +24,6 @@
   import type { WinterSceneConfig } from "../domain/models/scene-configs";
   import { createDefaultWinterConfig } from "../domain/models/scene-configs";
   import FallingParticles from "../primitives/FallingParticles.svelte";
-  import MoonBillboard from "../primitives/MoonBillboard.svelte";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import Starfield from "../primitives/Starfield.svelte";
   import IcePlatform from "./winter/IcePlatform.svelte";
@@ -170,14 +169,11 @@
   topColor={activeConfig.sky.topColor}
   midColor={activeConfig.sky.midColor}
   bottomColor={activeConfig.sky.bottomColor}
+  moon={activeConfig.moon}
 />
 
 {#if activeConfig.starfield}
   <Starfield config={activeConfig.starfield} />
-{/if}
-
-{#if activeConfig.moon}
-  <MoonBillboard config={activeConfig.moon} />
 {/if}
 
 {#if $winterEnvironment}

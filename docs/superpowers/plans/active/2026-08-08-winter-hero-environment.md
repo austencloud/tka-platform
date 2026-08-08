@@ -13,7 +13,8 @@ the approved design spec.
 
 ## Ownership decisions
 
-- Reuse `MoonBillboard.svelte` and `Starfield.svelte` for Winter sky imagery.
+- Reuse the directional Moon inside `SkyGradient.svelte` and the shared
+  `Starfield.svelte` for Winter sky imagery.
 - Reuse Autumn's Poly Haven rock files and detailed fallen-log source inside the
   Winter Blender build.
 - Extract the shared organic pond outline into one pure function. Autumn water
@@ -60,8 +61,8 @@ the approved design spec.
 3. Replace Winter's `Reflector` with layered physical ice using roughness,
    normal, crack, and cloudy-depth textures.
 4. Add shared `MoonConfig` and `StarfieldConfig` values to Winter defaults.
-5. Render `MoonBillboard` and `Starfield` from `WinterScene.svelte` while
-   preserving directional moonlight.
+5. Pass Winter's Moon configuration into `SkyGradient` and render `Starfield`
+   from `WinterScene.svelte` while preserving directional moonlight.
 
 ### 4. Export and optimize
 

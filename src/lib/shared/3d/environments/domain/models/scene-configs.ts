@@ -657,8 +657,14 @@ export interface StarfieldConfig {
 export interface MoonConfig {
   enabled: boolean;
   texture: string;
-  position: [number, number, number];
-  diameter: number;
+  /** Direction on the celestial dome. Magnitude is ignored. */
+  direction?: [number, number, number];
+  /** Apparent diameter in degrees. Earth's Moon averages about 0.52 degrees. */
+  angularDiameterDegrees?: number;
+  /** @deprecated Legacy world-space position, interpreted only as a direction. */
+  position?: [number, number, number];
+  /** @deprecated Legacy world-space diameter used to migrate apparent size. */
+  diameter?: number;
   opacity: number;
   glowScale: number;
   glowOpacity: number;
@@ -823,8 +829,8 @@ export function createDefaultForestFireflyConfig(): ForestSceneConfig {
     moon: {
       enabled: true,
       texture: "/textures/moon.png",
-      position: [12, 22, -58],
-      diameter: 5.5,
+      direction: [12, 22, -58],
+      angularDiameterDegrees: 0.52,
       opacity: 0.9,
       glowScale: 1.12,
       glowOpacity: 0.025,
@@ -1100,8 +1106,8 @@ export function createDefaultWinterConfig(): WinterSceneConfig {
     moon: {
       enabled: true,
       texture: "/textures/moon.png",
-      position: [12, 22, -58],
-      diameter: 5.5,
+      direction: [12, 14, -89],
+      angularDiameterDegrees: 0.52,
       opacity: 0.9,
       glowScale: 1.12,
       glowOpacity: 0.025,

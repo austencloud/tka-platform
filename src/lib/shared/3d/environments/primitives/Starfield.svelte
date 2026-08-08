@@ -39,7 +39,10 @@
       // per-star twinkle oscillates between 0.6 and 1.0
       vTwinkle = 0.6 + 0.4 * sin(uTime * uTwinkleSpeed + aPhase);
 
-      vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+      // Stars are directions on the celestial sphere. Camera rotation changes
+      // the view, while camera translation cannot create nearby parallax.
+      mat4 rotationalView = mat4(mat3(viewMatrix));
+      vec4 mvPos = rotationalView * vec4(position, 1.0);
       // perspective-correct point size; brighter stars are slightly larger
       gl_PointSize = aSize * vTwinkle * (600.0 / -mvPos.z);
       gl_Position = projectionMatrix * mvPos;
