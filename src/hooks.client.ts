@@ -1,11 +1,14 @@
 /**
  * Client-side hooks
  */
-import type { HandleClientError } from "@sveltejs/kit";
+import type { ClientInit, HandleClientError } from "@sveltejs/kit";
 import { browser, dev } from "$app/environment";
 import { Capacitor } from "@capacitor/core";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
-import { createSwUpdateManager } from "$lib/shared/offline/services/sw-update-manager";
+import {
+  applyWaitingSwUpdateBeforeStart,
+  createSwUpdateManager,
+} from "$lib/shared/offline/services/sw-update-manager";
 if (typeof window !== "undefined" && "Capacitor" in window) {
   import("@capgo/capacitor-updater")
     .then(({ CapacitorUpdater }) => {
@@ -281,38 +284,53 @@ export const handleError: HandleClientError = ({ error, message, status }) => {
 // (The old "tka-sync-queue" Background Sync registration was deleted — the SW
 // has no sync listener, so it was a no-op. Firestore's own persistence queue
 // handles offline writes while a tab is open.)
-if (
-  browser &&
-  !dev &&
-  !Capacitor.isNativePlatform() &&
-  "serviceWorker" in navigator
-) {
-  navigator.serviceWorker
-    .register("/sw.js", { scope: "/" })
-    .then((registration) => {
-      // Prompt to reload when a new deploy is waiting, rather than letting the
-      // new SW silently take over this tab. See sw-update-manager.ts.
-      createSwUpdateManager({
-        registration,
-        onUpdateReady: (apply) => {
-          showToast({
-            message: "A new version is available.",
-            type: "info",
-            duration: 0, // persistent — the user dismisses or reloads
-            action: { label: "Reload", onClick: apply },
-          });
-        },
-      });
-    })
-    .catch((err) => {
-      console.error("[SW] Registration failed:", err);
+export const init: ClientInit = async () => {
+  if (
+    !browser ||
+    dev ||
+    Capacitor.isNativePlatform() ||
+    !("serviceWorker" in navigator)
+  ) {
+    return;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.register("/sw.js", {
+      scope: "/",
+      updateViaCache: "none",
     });
 
-  // Ask the browser to exempt our storage (Cache Storage + IndexedDB — the
+    const startupUpdate = await applyWaitingSwUpdateBeforeStart({
+      registration,
+    });
+    if (startupUpdate === "reloading") {
+      // Keep SvelteKit from hydrating the old app while navigation switches to
+      // the newly activated worker.
+      await new Promise<void>(() => {});
+      return;
+    }
+
+    createSwUpdateManager({
+      registration,
+      activationAlreadyRequested: startupUpdate === "deferred",
+      onUpdateReady: (apply) => {
+        showToast({
+          message: "An update is ready.",
+          type: "info",
+          duration: 15_000,
+          action: { label: "Reload", onClick: apply },
+        });
+      },
+    });
+  } catch (err) {
+    console.error("[SW] Registration failed:", err);
+  }
+
+  // Ask the browser to exempt our storage (Cache Storage + IndexedDB, the
   // whole offline kit) from best-effort eviction. Denials are fine: installed
   // PWAs and engaged origins usually get it, and everything self-heals on the
   // next online visit anyway.
   if (navigator.storage?.persist) {
     navigator.storage.persist().catch(() => {});
   }
-}
+};

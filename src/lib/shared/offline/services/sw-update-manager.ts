@@ -23,6 +23,63 @@ export interface SwUpdateManagerDeps {
   onUpdateReady: (apply: () => void) => void;
   /** Defaults to a full-page reload. Injectable for tests. */
   reload?: () => void;
+  /** A startup path already posted SKIP_WAITING and is awaiting takeover. */
+  activationAlreadyRequested?: boolean;
+}
+
+export interface StartupSwUpdateDeps {
+  registration: ServiceWorkerRegistration;
+  serviceWorker?: ServiceWorkerContainer;
+  reload?: () => void;
+  timeoutMs?: number;
+}
+
+export type StartupSwUpdateResult = "none" | "reloading" | "deferred";
+
+/**
+ * Activates a worker that was already waiting when this page began loading.
+ * The caller runs this from SvelteKit's client init hook, before hydration, so
+ * an old deploy never reaches the visible application just to show a toast.
+ */
+export async function applyWaitingSwUpdateBeforeStart(
+  deps: StartupSwUpdateDeps
+): Promise<StartupSwUpdateResult> {
+  const container = deps.serviceWorker ?? navigator.serviceWorker;
+  const waiting = deps.registration.waiting;
+  if (!waiting || !container.controller) return "none";
+
+  const reload = deps.reload ?? (() => location.reload());
+  const timeoutMs = deps.timeoutMs ?? 2_500;
+
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const cleanup = () => {
+      container.removeEventListener("controllerchange", onControllerChange);
+      clearTimeout(timeoutId);
+    };
+
+    const finish = (result: StartupSwUpdateResult) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(result);
+    };
+
+    const onControllerChange = () => {
+      finish("reloading");
+      reload();
+    };
+
+    const timeoutId = setTimeout(() => finish("deferred"), timeoutMs);
+    container.addEventListener("controllerchange", onControllerChange);
+
+    try {
+      waiting.postMessage({ type: "SKIP_WAITING" });
+    } catch {
+      finish("deferred");
+    }
+  });
 }
 
 /**
@@ -35,8 +92,9 @@ export function createSwUpdateManager(deps: SwUpdateManagerDeps): () => void {
   const reload = deps.reload ?? (() => location.reload());
 
   let notified = false;
-  let activationRequested = false;
+  let activationRequested = deps.activationAlreadyRequested ?? false;
   let refreshing = false;
+  const installingListeners = new Map<ServiceWorker, () => void>();
 
   const apply = () => {
     const waiting = registration.waiting;
@@ -61,17 +119,23 @@ export function createSwUpdateManager(deps: SwUpdateManagerDeps): () => void {
   // Case B: a new worker begins installing now. Fire only once it reaches
   // "installed" AND a controller already exists — otherwise it is the very
   // first install, which should activate silently with no reload prompt.
-  const onUpdateFound = () => {
-    const installing = registration.installing;
+  const watchInstalling = (installing: ServiceWorker | null) => {
     if (!installing) return;
+    if (installingListeners.has(installing)) return;
     const onStateChange = () => {
       if (installing.state === "installed" && container.controller) {
         notify();
       }
     };
+    installingListeners.set(installing, onStateChange);
     installing.addEventListener("statechange", onStateChange);
+    onStateChange();
   };
+  const onUpdateFound = () => watchInstalling(registration.installing);
   registration.addEventListener("updatefound", onUpdateFound);
+  // register() can discover an update before the caller receives the
+  // registration promise. Do not miss an install already in progress.
+  watchInstalling(registration.installing);
 
   // A controllerchange also fires when the very first worker calls
   // clients.claim(). Reload only after this manager explicitly requested a
@@ -87,7 +151,10 @@ export function createSwUpdateManager(deps: SwUpdateManagerDeps): () => void {
   // A long-lived tab discovers a new deploy when it regains focus. Cheap, no
   // timer to leak. update() rejections are non-fatal (offline, etc.).
   const onVisibility = () => {
-    if (typeof document !== "undefined" && document.visibilityState === "visible") {
+    if (
+      typeof document !== "undefined" &&
+      document.visibilityState === "visible"
+    ) {
       registration.update().catch(() => {});
     }
   };
@@ -97,6 +164,10 @@ export function createSwUpdateManager(deps: SwUpdateManagerDeps): () => void {
 
   return () => {
     registration.removeEventListener("updatefound", onUpdateFound);
+    for (const [worker, listener] of installingListeners) {
+      worker.removeEventListener("statechange", listener);
+    }
+    installingListeners.clear();
     container.removeEventListener("controllerchange", onControllerChange);
     if (typeof document !== "undefined") {
       document.removeEventListener("visibilitychange", onVisibility);

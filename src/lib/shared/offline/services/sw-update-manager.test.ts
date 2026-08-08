@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
-import { createSwUpdateManager } from "./sw-update-manager";
+import {
+  applyWaitingSwUpdateBeforeStart,
+  createSwUpdateManager,
+} from "./sw-update-manager";
 
 class FakeWorker extends EventTarget {
   state: string = "installing";
@@ -27,10 +30,48 @@ class FakeContainer extends EventTarget {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const asAny = (x: unknown) => x as any;
 
 describe("createSwUpdateManager", () => {
+  it("watches an update that began installing before the manager was attached", () => {
+    const container = new FakeContainer();
+    container.controller = {};
+    const registration = new FakeRegistration();
+    const worker = new FakeWorker();
+    registration.installing = worker;
+    const onUpdateReady = vi.fn();
+
+    createSwUpdateManager({
+      registration: asAny(registration),
+      serviceWorker: asAny(container),
+      onUpdateReady,
+      reload: vi.fn(),
+    });
+
+    worker.setState("installed");
+
+    expect(onUpdateReady).toHaveBeenCalledTimes(1);
+  });
+
+  it("reloads if a startup activation finishes after the pre-start timeout", () => {
+    const container = new FakeContainer();
+    container.controller = {};
+    const registration = new FakeRegistration();
+    const reload = vi.fn();
+
+    createSwUpdateManager({
+      registration: asAny(registration),
+      serviceWorker: asAny(container),
+      onUpdateReady: vi.fn(),
+      reload,
+      activationAlreadyRequested: true,
+    });
+
+    container.triggerControllerChange();
+
+    expect(reload).toHaveBeenCalledOnce();
+  });
+
   it("fires onUpdateReady when a worker installs over an existing controller", () => {
     const container = new FakeContainer();
     container.controller = {}; // a SW already controls the page → this is an update
@@ -282,5 +323,65 @@ describe("createSwUpdateManager", () => {
     expect(onUpdateReady).not.toHaveBeenCalled();
     expect(reload).not.toHaveBeenCalled();
     expect(registration.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("applyWaitingSwUpdateBeforeStart", () => {
+  it("does nothing when no update is waiting", async () => {
+    const container = new FakeContainer();
+    container.controller = {};
+    const registration = new FakeRegistration();
+
+    await expect(
+      applyWaitingSwUpdateBeforeStart({
+        registration: asAny(registration),
+        serviceWorker: asAny(container),
+        reload: vi.fn(),
+      })
+    ).resolves.toBe("none");
+  });
+
+  it("activates and reloads an update that was waiting before startup", async () => {
+    const container = new FakeContainer();
+    container.controller = {};
+    const registration = new FakeRegistration();
+    const waiting = new FakeWorker();
+    registration.waiting = waiting;
+    const reload = vi.fn();
+
+    const result = applyWaitingSwUpdateBeforeStart({
+      registration: asAny(registration),
+      serviceWorker: asAny(container),
+      reload,
+      timeoutMs: 100,
+    });
+
+    expect(waiting.postMessage).toHaveBeenCalledWith({ type: "SKIP_WAITING" });
+    container.triggerControllerChange();
+
+    await expect(result).resolves.toBe("reloading");
+    expect(reload).toHaveBeenCalledOnce();
+  });
+
+  it("defers to the visible update notice if activation does not finish", async () => {
+    vi.useFakeTimers();
+    try {
+      const container = new FakeContainer();
+      container.controller = {};
+      const registration = new FakeRegistration();
+      registration.waiting = new FakeWorker();
+
+      const result = applyWaitingSwUpdateBeforeStart({
+        registration: asAny(registration),
+        serviceWorker: asAny(container),
+        reload: vi.fn(),
+        timeoutMs: 100,
+      });
+
+      await vi.advanceTimersByTimeAsync(100);
+      await expect(result).resolves.toBe("deferred");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
