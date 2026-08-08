@@ -19,6 +19,11 @@
     TrailMode,
     TrackingMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import { getAnimationScopeContext } from "$lib/shared/animation-engine/state/animation-scope-context";
+  import {
+    resolveEffectivePropsVisibility,
+    toggleEffectivePropsVisibility,
+  } from "$lib/shared/animation-engine/state/effective-prop-visibility";
   import {
     isBilateralProp,
     getBilateralEndLabels,
@@ -36,6 +41,8 @@
   } = $props();
 
   const settingsState = settingsService;
+  const animationScope = getAnimationScopeContext();
+  const animationSettingsState = animationScope?.settings ?? animationSettings;
 
   // Fall back to user's global settings when props not explicitly provided
   const effectiveBluePropType = $derived(
@@ -46,7 +53,8 @@
   );
 
   // Visibility state
-  const visibilityManager = getAnimationVisibilityManager();
+  const visibilityManager =
+    animationScope?.visibility ?? getAnimationVisibilityManager();
   let updateCounter = $state(0);
   function isTrailsActive(): boolean {
     const tipMap = visibilityManager.effectsConfigState?.tipEffectMap ?? {};
@@ -75,15 +83,15 @@
   });
 
   const isBothEnds = $derived(
-    animationSettings.trail.trackingMode === TrackingMode.BOTH_ENDS
+    animationSettingsState.trail.trackingMode === TrackingMode.BOTH_ENDS
   );
 
   const isLeftEnd = $derived(
-    animationSettings.trail.trackingMode === TrackingMode.LEFT_END
+    animationSettingsState.trail.trackingMode === TrackingMode.LEFT_END
   );
 
   const isRightEnd = $derived(
-    animationSettings.trail.trackingMode === TrackingMode.RIGHT_END
+    animationSettingsState.trail.trackingMode === TrackingMode.RIGHT_END
   );
 
   // Get prop-specific labels for the ends (e.g., "Thumb"/"Pinky" for staff)
@@ -103,7 +111,10 @@
   }
   function getProps() {
     updateCounter;
-    return visibilityManager.getVisibility("props");
+    return resolveEffectivePropsVisibility(
+      visibilityManager.getVisibility("props"),
+      animationSettingsState.trail.hideProps
+    );
   }
   function getStepNumbers() {
     updateCounter;
@@ -134,8 +145,7 @@
     updateCounter++;
   }
   function toggleProps() {
-    const current = visibilityManager.getVisibility("props");
-    visibilityManager.setVisibility("props", !current);
+    toggleEffectivePropsVisibility(visibilityManager, animationSettingsState);
     updateCounter++;
   }
   function toggleStepNumbers() {
@@ -167,12 +177,12 @@
   function toggleTrails(style: TrailVisibility) {
     visibilityManager.setActiveEffect(style === "on" ? "trails" : "none");
     if (style === "off") {
-      animationSettings.setTrailMode(TrailMode.OFF);
+      animationSettingsState.setTrailMode(TrailMode.OFF);
     } else {
       // "on" - use hardcoded vivid settings
-      animationSettings.setTrailMode(TrailMode.FADE);
-      animationSettings.setFadeDuration(2500);
-      animationSettings.setTrailAppearance({
+      animationSettingsState.setTrailMode(TrailMode.FADE);
+      animationSettingsState.setFadeDuration(2500);
+      animationSettingsState.setTrailAppearance({
         lineWidth: 3.5,
         maxOpacity: 0.95,
       });
@@ -181,7 +191,7 @@
   }
 
   function setTrackingMode(mode: TrackingMode) {
-    animationSettings.setTrackingMode(mode);
+    animationSettingsState.setTrackingMode(mode);
     updateCounter++;
   }
 </script>

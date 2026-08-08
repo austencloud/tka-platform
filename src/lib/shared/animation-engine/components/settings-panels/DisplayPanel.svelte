@@ -2,6 +2,12 @@
   import { onDestroy } from "svelte";
   import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
   import { getAnimationVisibilityContext } from "../../state/animation-visibility-context";
+  import { getAnimationScopeContext } from "../../state/animation-scope-context";
+  import { animationSettings } from "../../state/animation-settings-state.svelte";
+  import {
+    resolveEffectivePropsVisibility,
+    toggleEffectivePropsVisibility,
+  } from "../../state/effective-prop-visibility";
   import { tryGetViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
   import type { ViewerControlSink } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
   import { reportViewerControlChange } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
@@ -18,7 +24,12 @@
     onSettingChange?: ViewerControlSink;
   } = $props();
 
-  const vm = getAnimationVisibilityContext() ?? getAnimationVisibilityManager();
+  const animationScope = getAnimationScopeContext();
+  const vm =
+    animationScope?.visibility ??
+    getAnimationVisibilityContext() ??
+    getAnimationVisibilityManager();
+  const trailOnlyState = animationScope?.settings ?? animationSettings;
   const viewerVis = tryGetViewerVisibilityContext();
   const showPropChips = $derived(showMotionVisibility && viewerVis !== null);
 
@@ -26,7 +37,13 @@
   let tkaGlyph = $state(vm.getVisibility("tkaGlyph"));
   let elementalGlyph = $state(vm.getVisibility("elementalGlyph"));
   let stepNumbers = $state(vm.getVisibility("stepNumbers"));
-  let propsVisible = $state(vm.getVisibility("props"));
+  let propsVisibilityEnabled = $state(vm.getVisibility("props"));
+  const propsVisible = $derived(
+    resolveEffectivePropsVisibility(
+      propsVisibilityEnabled,
+      trailOnlyState.trail.hideProps
+    )
+  );
   let wordHeader = $state(vm.getVisibility("wordHeader"));
   let progressBar = $state(vm.getVisibility("progressBar"));
   let mandala = $state(vm.getVisibility("mandala"));
@@ -39,7 +56,7 @@
     tkaGlyph = vm.getVisibility("tkaGlyph");
     elementalGlyph = vm.getVisibility("elementalGlyph");
     stepNumbers = vm.getVisibility("stepNumbers");
-    propsVisible = vm.getVisibility("props");
+    propsVisibilityEnabled = vm.getVisibility("props");
     wordHeader = vm.getVisibility("wordHeader");
     progressBar = vm.getVisibility("progressBar");
     mandala = vm.getVisibility("mandala");
@@ -104,7 +121,7 @@
     label: "Props",
     icon: "fas fa-wand-magic",
     active: () => propsVisible,
-    toggle: () => vm.toggleVisibility("props"),
+    toggle: () => toggleEffectivePropsVisibility(vm, trailOnlyState),
   };
 
   const displayChips: Chip[] = [
