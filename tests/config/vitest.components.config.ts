@@ -24,8 +24,10 @@ export default defineConfig({
       "@austencloud/theme",
       "@capacitor/core",
       "@capacitor/haptics",
+      "@capacitor/push-notifications",
       "axe-core",
       "bits-ui",
+      "canvas",
       "dexie",
       "fabric",
       "fflate",
@@ -48,10 +50,19 @@ export default defineConfig({
       $lib: path.resolve(projectRoot, "src/lib"),
       $shared: path.resolve(projectRoot, "src/lib/shared"),
       "$test-helpers": path.resolve(projectRoot, "tests/helpers"),
-      "$app/environment": path.resolve(projectRoot, "tests/setup/stubs/app-environment.ts"),
-      "$app/navigation": path.resolve(projectRoot, "tests/setup/stubs/app-navigation.ts"),
+      "$app/environment": path.resolve(
+        projectRoot,
+        "tests/setup/stubs/app-environment.ts"
+      ),
+      "$app/navigation": path.resolve(
+        projectRoot,
+        "tests/setup/stubs/app-navigation.ts"
+      ),
       "$app/state": path.resolve(projectRoot, "tests/setup/stubs/app-state.ts"),
-      "$app/stores": path.resolve(projectRoot, "tests/setup/stubs/app-stores.ts"),
+      "$app/stores": path.resolve(
+        projectRoot,
+        "tests/setup/stubs/app-stores.ts"
+      ),
       "$env/dynamic/public": path.resolve(
         projectRoot,
         "tests/setup/stubs/env-dynamic-public.ts"
