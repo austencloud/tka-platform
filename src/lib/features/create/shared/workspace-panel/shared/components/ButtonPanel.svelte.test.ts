@@ -130,6 +130,12 @@ function rect(name: string): DOMRect {
   ).getBoundingClientRect();
 }
 
+async function waitForLayout(): Promise<void> {
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+}
+
 beforeEach(() => {
   Object.defineProperty(navigator, "share", {
     configurable: true,
@@ -157,9 +163,7 @@ describe("ButtonPanel narrow geometry", () => {
     });
     screen.container.style.width = "320px";
 
-    await new Promise<void>((resolve) => {
-      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-    });
+    await waitForLayout();
 
     const containerBounds = screen.container.getBoundingClientRect();
     const play = rect("Play sequence");
@@ -199,5 +203,51 @@ describe("ButtonPanel narrow geometry", () => {
         expect(previousButton.right).toBeLessThanOrEqual(currentButton.left);
       }
     }
+  });
+
+  it("adds labels at 1120 CSS pixels without moving Play off center", async () => {
+    const screen = render(ButtonPanel, {
+      props: {
+        onClearSequence: vi.fn(),
+        onViewSequence: vi.fn(),
+      },
+      context: new Map([["createModule", createContext()]]),
+    });
+    const clearLabel = screen.container.querySelector<HTMLElement>(
+      "[data-testid='clear-sequence-button'] .workspace-action-label"
+    );
+    const shareLabel = screen.container.querySelector<HTMLElement>(
+      "[data-testid='workspace-share-button'] .share-action-trigger-label"
+    );
+
+    expect(clearLabel).not.toBeNull();
+    expect(shareLabel).not.toBeNull();
+
+    screen.container.style.width = "1119px";
+    await waitForLayout();
+
+    expect(getComputedStyle(clearLabel!).display).toBe("none");
+    expect(getComputedStyle(shareLabel!).display).toBe("none");
+
+    screen.container.style.width = "1120px";
+    await waitForLayout();
+
+    expect(getComputedStyle(clearLabel!).display).not.toBe("none");
+    expect(getComputedStyle(shareLabel!).display).not.toBe("none");
+
+    const containerBounds = screen.container.getBoundingClientRect();
+    const clear = rect("Clear sequence");
+    const play = rect("Play sequence");
+    const sequenceActions = rect("Sequence actions");
+    const share = rect("Share sequence");
+
+    expect(clear.width).toBeGreaterThan(44);
+    expect(share.width).toBeGreaterThan(44);
+    expect(play.left + play.width / 2).toBeCloseTo(
+      containerBounds.left + containerBounds.width / 2,
+      0
+    );
+    expect(clear.right).toBeLessThanOrEqual(play.left);
+    expect(play.right).toBeLessThanOrEqual(sequenceActions.left);
   });
 });

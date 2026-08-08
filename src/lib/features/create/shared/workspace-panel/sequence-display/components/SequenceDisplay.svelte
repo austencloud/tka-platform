@@ -236,6 +236,8 @@
 
 <style>
   .sequence-container {
+    container-type: inline-size;
+    container-name: sequence-workspace;
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -306,6 +308,21 @@
     justify-self: center;
     width: var(--min-touch-target, 44px);
     height: var(--min-touch-target, 44px);
+  }
+
+  @container sequence-workspace (min-width: 1120px) {
+    .top-bar {
+      --workspace-leading-actions-width: 192px;
+      --workspace-action-label-display: inline;
+      --workspace-action-width: auto;
+      --workspace-action-gap: 8px;
+      --workspace-action-padding-inline: 16px;
+      --workspace-action-radius: 999px;
+    }
+
+    .save-area {
+      width: 100%;
+    }
   }
 
   .step-grid-wrapper {

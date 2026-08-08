@@ -279,6 +279,21 @@
   }
 
   /* Container-based responsive adjustments - Progressive gap reduction to fit 48px buttons */
+  @container button-panel (min-width: 1120px) {
+    .button-panel {
+      --workspace-action-label-display: inline;
+      --workspace-action-width: auto;
+      --workspace-action-gap: 8px;
+      --workspace-action-padding-inline: 16px;
+      --workspace-action-radius: 999px;
+      --share-trigger-label-display: inline;
+      --share-trigger-width: auto;
+      --share-trigger-gap: 8px;
+      --share-trigger-padding-inline: 16px;
+      --share-trigger-radius: 999px;
+    }
+  }
+
   @container button-panel (max-width: 768px) {
     .button-panel {
       padding: clamp(6px, 1.2vh, 12px) clamp(10px, 1.8vw, 18px);

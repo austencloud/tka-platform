@@ -78,6 +78,8 @@ export interface WorkspaceButtonGlyph {
   iconType: "fa" | "svg";
   /** Accessible action name shared by the live button and tutorial. */
   actionLabel: string;
+  /** Short text shown beside the glyph when the workspace has room. */
+  visibleLabel?: string;
 }
 
 export const WORKSPACE_BUTTON_ICON: Record<
@@ -85,7 +87,12 @@ export const WORKSPACE_BUTTON_ICON: Record<
   WorkspaceButtonGlyph
 > = {
   undo: { icon: "undo-svg", iconType: "svg", actionLabel: "Undo" },
-  clear: { icon: "fa-eraser", iconType: "fa", actionLabel: "Clear sequence" },
+  clear: {
+    icon: "fa-eraser",
+    iconType: "fa",
+    actionLabel: "Clear sequence",
+    visibleLabel: "Clear",
+  },
   view: { icon: "fa-play", iconType: "fa", actionLabel: "Play sequence" },
   "sequence-actions": {
     icon: "fa-tools",
@@ -96,11 +103,13 @@ export const WORKSPACE_BUTTON_ICON: Record<
     icon: "fa-share-nodes",
     iconType: "fa",
     actionLabel: "Share",
+    visibleLabel: "Share",
   },
   save: {
     icon: "fa-bookmark",
     iconType: "fa",
     actionLabel: "Save to library",
+    visibleLabel: "Save to library",
   },
   "step-editor": {
     icon: "fa-hand-pointer",

@@ -1,6 +1,7 @@
 <script lang="ts">
   import ShareActionMenu from "$lib/shared/share/components/ShareActionMenu.svelte";
   import type { ShareActionMenuItem } from "$lib/shared/share/domain/models/share-action-menu";
+  import { WORKSPACE_BUTTON_ICON } from "../../workspace-button-layout";
   import {
     getWorkspaceCardMenuAction,
     type WorkspaceSharePreparationPhase,
@@ -199,6 +200,7 @@
   canOpen={hasFullAccount}
   ariaLabel="Share sequence"
   sheetTitle="Share sequence"
+  triggerLabel={WORKSPACE_BUTTON_ICON.share.visibleLabel}
   {tooltip}
   testId="workspace-share-button"
   idBase="workspace-share"

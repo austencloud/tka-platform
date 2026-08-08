@@ -15,6 +15,7 @@
     tooltip?: string;
     sheetTitle?: string;
     triggerIcon?: string;
+    triggerLabel?: string;
     testId?: string;
     idBase?: string;
     menuSide?: "top" | "right" | "bottom" | "left";
@@ -42,6 +43,7 @@
     tooltip = ariaLabel,
     sheetTitle = ariaLabel,
     triggerIcon = "fa-share-nodes",
+    triggerLabel,
     testId,
     idBase = "share-action",
     menuSide = "top",
@@ -113,6 +115,11 @@
         class="fa-solid {triggerBusy ? 'fa-spinner fa-spin' : triggerIcon}"
         aria-hidden="true"
       ></i>
+      {#if triggerLabel}
+        <span class="share-action-trigger-label" aria-hidden="true">
+          {triggerLabel}
+        </span>
+      {/if}
     </button>
 
     {#if useMobileSheet && canOpen}
@@ -188,6 +195,11 @@
                 : triggerIcon}"
               aria-hidden="true"
             ></i>
+            {#if triggerLabel}
+              <span class="share-action-trigger-label" aria-hidden="true">
+                {triggerLabel}
+              </span>
+            {/if}
           </button>
         {/snippet}
       </DropdownMenu.Trigger>
@@ -243,13 +255,19 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: var(--share-trigger-size, var(--min-touch-target, 44px));
+    box-sizing: border-box;
+    width: var(
+      --share-trigger-width,
+      var(--share-trigger-size, var(--min-touch-target, 44px))
+    );
     height: var(--share-trigger-size, var(--min-touch-target, 44px));
     min-width: var(--min-touch-target, 44px);
     min-height: var(--min-touch-target, 44px);
-    padding: 0;
+    gap: var(--share-trigger-gap, 0);
+    padding-block: 0;
+    padding-inline: var(--share-trigger-padding-inline, 0);
     border: 1px solid color-mix(in srgb, var(--theme-accent) 38%, transparent);
-    border-radius: 50%;
+    border-radius: var(--share-trigger-radius, 50%);
     background: linear-gradient(
       135deg,
       var(--theme-accent) 0%,
@@ -299,6 +317,14 @@
     width: 1em;
     font-size: var(--font-size-lg);
     text-align: center;
+  }
+
+  .share-action-trigger-label {
+    display: var(--share-trigger-label-display, none);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+    line-height: 1;
+    white-space: nowrap;
   }
 
   :global(.share-action-menu) {

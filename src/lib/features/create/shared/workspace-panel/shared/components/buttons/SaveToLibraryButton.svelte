@@ -57,6 +57,9 @@
   aria-label="Save to Library"
 >
   <i class="fa-solid {WORKSPACE_BUTTON_ICON.save.icon}" aria-hidden="true"></i>
+  <span class="workspace-action-label" aria-hidden="true">
+    {WORKSPACE_BUTTON_ICON.save.visibleLabel}
+  </span>
 </button>
 
 <style>
@@ -64,12 +67,19 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: var(--min-touch-target);
+    box-sizing: border-box;
+    width: var(--workspace-action-width, var(--min-touch-target));
+    min-width: var(--min-touch-target);
     height: var(--min-touch-target);
-    border: none;
-    border-radius: 50%;
+    gap: var(--workspace-action-gap, 0);
+    padding-inline: var(--workspace-action-padding-inline, 0);
+    border-radius: var(--workspace-action-radius, 50%);
     cursor: pointer;
-    transition: all var(--transition-normal, var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1));
+    transition:
+      transform var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1),
+      background var(--duration-fast) ease,
+      border-color var(--duration-fast) ease,
+      box-shadow var(--duration-fast) ease;
     font-size: var(--font-size-lg);
     color: var(--theme-text);
 
@@ -96,6 +106,14 @@
         var(--theme-accent-strong, var(--theme-accent-strong)) 40%,
         transparent
       );
+  }
+
+  .workspace-action-label {
+    display: var(--workspace-action-label-display, none);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+    line-height: 1;
+    white-space: nowrap;
   }
 
   .save-button:hover:not(:disabled) {
@@ -125,7 +143,7 @@
 
   .save-button:active:not(:disabled) {
     transform: scale(0.95);
-    transition: all var(--duration-instant) ease;
+    transition-duration: var(--duration-instant);
   }
 
   .save-button:focus-visible {
