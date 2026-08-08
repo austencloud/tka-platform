@@ -63,8 +63,10 @@ async function writeTombstone(user: UserRecord): Promise<void> {
     );
 }
 
-async function cascadeDeleteFirestore(uid: string): Promise<void> {
-  const db = admin.firestore();
+export async function _cascadeDeleteFirestore(
+  uid: string,
+  db: admin.firestore.Firestore = admin.firestore()
+): Promise<void> {
   const userRef = db.doc(`users/${uid}`);
   const [following, followers, connections] = await Promise.all([
     userRef.collection("following").listDocuments(),
@@ -85,14 +87,18 @@ async function cascadeDeleteFirestore(uid: string): Promise<void> {
     const reciprocal = db.doc(`users/${ref.id}/connections/${uid}`);
     reciprocalRefs.set(reciprocal.path, reciprocal);
   }
-  await deleteReferences([...reciprocalRefs.values()]);
+  await deleteReferences([...reciprocalRefs.values()], db);
 
   await Promise.all([
-    deleteQuery(db.collection("publicSequences").where("ownerId", "==", uid)),
     deleteQuery(
-      db.collection("publicSequenceHashes").where("ownerId", "==", uid)
+      db.collection("publicSequences").where("ownerId", "==", uid),
+      db
     ),
-    deleteQuery(db.collection("contributors").where("userId", "==", uid)),
+    deleteQuery(
+      db.collection("publicSequenceHashes").where("ownerId", "==", uid),
+      db
+    ),
+    deleteQuery(db.collection("contributors").where("userId", "==", uid), db),
   ]);
 
   // Removes the profile and every current or future user subcollection.
@@ -100,9 +106,9 @@ async function cascadeDeleteFirestore(uid: string): Promise<void> {
 }
 
 async function deleteReferences(
-  refs: admin.firestore.DocumentReference[]
+  refs: admin.firestore.DocumentReference[],
+  db: admin.firestore.Firestore = admin.firestore()
 ): Promise<void> {
-  const db = admin.firestore();
   for (let offset = 0; offset < refs.length; offset += 400) {
     const batch = db.batch();
     for (const ref of refs.slice(offset, offset + 400)) batch.delete(ref);
@@ -110,11 +116,17 @@ async function deleteReferences(
   }
 }
 
-async function deleteQuery(query: admin.firestore.Query): Promise<void> {
+async function deleteQuery(
+  query: admin.firestore.Query,
+  db: admin.firestore.Firestore = admin.firestore()
+): Promise<void> {
   while (true) {
     const snapshot = await query.limit(400).get();
     if (snapshot.empty) return;
-    await deleteReferences(snapshot.docs.map((doc) => doc.ref));
+    await deleteReferences(
+      snapshot.docs.map((doc) => doc.ref),
+      db
+    );
   }
 }
 
@@ -220,7 +232,7 @@ const accountDeletionOperations: AccountDeletionOperations = {
     }
   },
   writeTombstone,
-  cascadeDeleteFirestore,
+  cascadeDeleteFirestore: _cascadeDeleteFirestore,
   removePresence,
   removeInstagramAuthLinks,
   removeAdminMetadata: _removeAdminMetadata,

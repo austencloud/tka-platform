@@ -13,6 +13,7 @@ jest.mock("../pulse/notifyAdmins", () => ({
 }));
 
 import {
+  _cascadeDeleteFirestore,
   _handleAuthUserDeleted,
   _removeAdminMetadata,
   _removeFirebaseStorage,
@@ -90,6 +91,55 @@ describe("Auth account deletion cleanup", () => {
     expect(doc).toHaveBeenCalledWith("userAdminMetadata/user-123");
     expect(doc).toHaveBeenCalledWith("userPrivateProfiles/user-123");
     expect(deleteDocument).toHaveBeenCalledTimes(2);
+  });
+
+  it("deletes public projections and claims owned by the deleted account", async () => {
+    const deletedRefs = {
+      publicSequences: { path: "publicSequences/public-1" },
+      publicSequenceHashes: { path: "publicSequenceHashes/hash-1" },
+      contributors: { path: "contributors/contributor-1" },
+    };
+    const deleteFromBatch = jest.fn();
+    const commit = jest.fn().mockResolvedValue(undefined);
+    const collection = jest.fn((name: keyof typeof deletedRefs) => {
+      let readCount = 0;
+      const get = jest.fn(async () => {
+        readCount += 1;
+        return readCount === 1
+          ? { empty: false, docs: [{ ref: deletedRefs[name] }] }
+          : { empty: true, docs: [] };
+      });
+      const query = { limit: jest.fn(() => ({ get })) };
+      return {
+        where: jest.fn(() => query),
+      };
+    });
+    const listDocuments = jest.fn().mockResolvedValue([]);
+    const userRef = {
+      path: "users/deleted-user",
+      collection: jest.fn(() => ({ listDocuments })),
+    };
+    const db = {
+      collection,
+      doc: jest.fn(() => userRef),
+      batch: jest.fn(() => ({ delete: deleteFromBatch, commit })),
+      recursiveDelete: jest.fn().mockResolvedValue(undefined),
+    };
+
+    await _cascadeDeleteFirestore(
+      "deleted-user",
+      db as unknown as FirebaseFirestore.Firestore
+    );
+
+    expect(collection).toHaveBeenCalledWith("publicSequences");
+    expect(collection).toHaveBeenCalledWith("publicSequenceHashes");
+    expect(collection).toHaveBeenCalledWith("contributors");
+    expect(deleteFromBatch).toHaveBeenCalledWith(deletedRefs.publicSequences);
+    expect(deleteFromBatch).toHaveBeenCalledWith(
+      deletedRefs.publicSequenceHashes
+    );
+    expect(deleteFromBatch).toHaveBeenCalledWith(deletedRefs.contributors);
+    expect(db.recursiveDelete).toHaveBeenCalledWith(userRef);
   });
 
   it.each([
