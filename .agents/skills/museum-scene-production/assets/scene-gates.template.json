@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "new-scene",
+  "title": "New museum scene",
+  "domainProofRequired": false,
+  "currentGate": 0,
+  "authority": {
+    "experienceSpec": null,
+    "roomShellSource": null,
+    "planContract": null,
+    "museumTrackerItems": []
+  },
+  "sequenceFingerprints": [],
+  "claims": [],
+  "exemptions": [],
+  "gates": [
+    { "id": "evidence-preflight", "status": "pending", "evidence": [], "checks": [], "approval": null },
+    { "id": "measured-plan", "status": "pending", "evidence": [], "checks": [], "approval": null },
+    { "id": "playable-graybox", "status": "pending", "evidence": [], "checks": [], "approval": null },
+    { "id": "registered-visual-target", "status": "pending", "evidence": [], "checks": [], "approval": null },
+    { "id": "production-slice", "status": "pending", "evidence": [], "checks": [], "approval": null },
+    { "id": "integrated-room", "status": "pending", "evidence": [], "checks": [], "approval": null },
+    { "id": "final-acceptance", "status": "pending", "evidence": [], "checks": [], "approval": null }
+  ]
+}
