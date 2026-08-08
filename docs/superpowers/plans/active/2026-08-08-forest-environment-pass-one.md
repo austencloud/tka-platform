@@ -1,8 +1,8 @@
 # Moonlit Firefly Forest: Gated Rebuild Plan
 
 - **Date:** 2026-08-08
-- **Status:** Gates 0 through 3 are approved. Gate 4, tree asset lineup, is
-  active. Later gates remain blocked.
+- **Status:** Gates 0 through 4 are approved. Gate 5, Forest composition and
+  canopy depth, is active. Later gates remain blocked.
 - **Quality reference:** Autumn's Blender-authored environment and runtime split.
 - **Review authority:** Austen approves or rejects every visual gate.
 - **Scene steward:** Bramble
@@ -214,6 +214,30 @@ advanced Forest to the tree asset lineup.
 
 **Review question:** Which trees belong in this forest?
 
+**Gate 4 evidence, 2026-08-08:** The versioned lineup contains all three current
+KayKit sources, all six reusable Autumn tree sources, and four fresh Forest
+candidates. A deterministic Blender rig normalizes all 13 candidates to 12 m,
+includes a 1.75 m person, and renders front, 45-degree, and silhouette views.
+The verifier passed 39 square renders, three labeled contact sheets, unique IDs,
+the current contract hash, and all required role labels.
+
+The fresh family was generated from clean-subject ImageGen concepts through a
+guarded Meshy 6 image-to-3D owner. Four paid tasks consumed 120 credits in
+total. The accepted optimized assets retain PBR textures, WebP encoding, and
+meshopt compression: F1 is 31,995 triangles / 1,155,360 bytes, F2 is 25,923
+triangles / 1,138,220 bytes, and F4 is 17,951 triangles / 1,034,760 bytes. F3
+is retained only as rejection evidence because its reconstruction lost most of
+the proposed foliage.
+
+**Approved cut:** F1 is the mature canopy anchor, F2 is the irregular middle
+tier, and F4 is the true young/understory tier. A3 birch, A4 snag, A5 larch,
+and A6 willow remain available as secondary ecological accents. K1, K2, K3,
+A1, A2, and rejected F3 do not enter the Gate 5 placement family.
+
+**Approval:** Austen, 2026-08-08: “I'm totally cool with you generating fresh
+trees that feel more appropriate … more lush and green. … full speed ahead on
+the next phase.” This authorized the fresh family and advanced Forest to Gate 5.
+
 ### Gate 5: Forest composition and canopy depth
 
 **Change:** Tree transforms only.
@@ -352,6 +376,10 @@ References:
 | Terrain and authored set | `scripts/build-forest-environment.py`, `blender/forest_environment.blend` |
 | Path layout contract     | `scripts/forest-path-layout.json`                                         |
 | Macro terrain texture    | `scripts/build-forest-floor-texture.mjs`                                  |
+| Tree lineup contract     | `scripts/forest-tree-lineup.json`                                         |
+| Tree review rig          | `scripts/build-forest-tree-lineup.py`                                     |
+| Tree review sheets       | `scripts/build-forest-tree-lineup-contact-sheet.mjs`                      |
+| Tree lineup verification | `scripts/verify-forest-tree-lineup.mjs`                                   |
 | Export                   | `scripts/blender-export-forest-full.py`                                   |
 | Optimization             | `scripts/optimize-forest-environment.mjs`                                 |
 | GLB contract             | `scripts/verify-forest-environment-glb.mjs`                               |

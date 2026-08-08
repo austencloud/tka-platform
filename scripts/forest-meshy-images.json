@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "imageRoot": "assets/meshy-refs/forest",
+  "outputDirectory": "static/models/forest/trees",
+  "statePath": "blender/forest-meshy-image-tasks.json",
+  "aiModel": "meshy-6",
+  "estimatedCreditsPerAsset": 30,
+  "maxCredits": 120,
+  "assets": [
+    {
+      "id": "lush-canopy-oak",
+      "label": "Lush Canopy Beech",
+      "targetHeightMetres": 16,
+      "roles": ["mature-canopy"],
+      "polycount": 32000,
+      "textureResolution": "2k",
+      "textureSize": 1024,
+      "maximumOptimizedTriangles": 36000,
+      "texturePrompt": "Natural mature European beech with cool brown fissured bark, subtle moss near the root flare, and dense layered broadleaf foliage in deep fern and fresh leaf greens. Neutral diffuse albedo, physically plausible roughness, no baked directional lighting, no autumn colors, no glow."
+    },
+    {
+      "id": "forked-forest-elm",
+      "label": "Forked Forest Elm",
+      "targetHeightMetres": 11,
+      "roles": ["irregular-middle"],
+      "polycount": 26000,
+      "textureResolution": "2k",
+      "textureSize": 1024,
+      "maximumOptimizedTriangles": 30000,
+      "texturePrompt": "Healthy woodland elm or hornbeam with cool gray-brown textured bark, two unequal leaders, modest moss at the base, and airy asymmetrical foliage in dark ivy and fern greens. Neutral diffuse albedo, physically plausible roughness, no baked directional lighting, no autumn colors, no glow."
+    },
+    {
+      "id": "young-beech-sapling",
+      "label": "Young Beech Sapling",
+      "targetHeightMetres": 5,
+      "roles": ["young", "understory"],
+      "polycount": 16000,
+      "textureResolution": "2k",
+      "textureSize": 1024,
+      "maximumOptimizedTriangles": 20000,
+      "texturePrompt": "Young woodland beech or hornbeam with a slender cool brown-gray trunk, fine lateral branches, and an open crown of fresh fern-green leaves with darker interior foliage. Neutral diffuse albedo, physically plausible roughness, no baked directional lighting, no autumn colors, no glow."
+    },
+    {
+      "id": "young-hornbeam",
+      "label": "Leafy Young Hornbeam",
+      "targetHeightMetres": 5,
+      "roles": ["young", "understory"],
+      "polycount": 18000,
+      "textureResolution": "2k",
+      "textureSize": 1024,
+      "maximumOptimizedTriangles": 22000,
+      "texturePrompt": "Healthy young woodland hornbeam with a slender cool gray-brown trunk, connected lateral branches, and broad dense clusters of fresh green leaves. Neutral diffuse albedo, physically plausible roughness, no baked directional lighting, no autumn colors, no glow."
+    }
+  ]
+}

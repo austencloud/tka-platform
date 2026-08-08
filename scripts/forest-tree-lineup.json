@@ -1,0 +1,178 @@
+{
+  "version": 1,
+  "targetHeightMetres": 12,
+  "reviewAnglesDegrees": [0, 45, 110],
+  "candidates": [
+    {
+      "id": "K1",
+      "label": "KayKit Tree 1",
+      "family": "Current Forest",
+      "roles": ["young", "distant-silhouette"],
+      "source": {
+        "kind": "r2-gltf",
+        "url": "https://assets.tkaflowarts.com/models/forest/Tree_1_A_Color1.gltf",
+        "dependencies": [
+          "https://assets.tkaflowarts.com/models/forest/Tree_1_A_Color1.bin",
+          "https://assets.tkaflowarts.com/models/forest/forest_texture.png"
+        ],
+        "localPath": "blender/forest-tree-lineup-sources/kaykit/Tree_1_A_Color1.gltf",
+        "provenance": "KayKit Forest Nature Pack",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "K2",
+      "label": "KayKit Tree 2",
+      "family": "Current Forest",
+      "roles": ["young", "irregular-middle"],
+      "source": {
+        "kind": "r2-gltf",
+        "url": "https://assets.tkaflowarts.com/models/forest/Tree_2_A_Color1.gltf",
+        "dependencies": [
+          "https://assets.tkaflowarts.com/models/forest/Tree_2_A_Color1.bin",
+          "https://assets.tkaflowarts.com/models/forest/forest_texture.png"
+        ],
+        "localPath": "blender/forest-tree-lineup-sources/kaykit/Tree_2_A_Color1.gltf",
+        "provenance": "KayKit Forest Nature Pack",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "K3",
+      "label": "KayKit Tree 3",
+      "family": "Current Forest",
+      "roles": ["young", "irregular-middle"],
+      "source": {
+        "kind": "r2-gltf",
+        "url": "https://assets.tkaflowarts.com/models/forest/Tree_3_A_Color1.gltf",
+        "dependencies": [
+          "https://assets.tkaflowarts.com/models/forest/Tree_3_A_Color1.bin",
+          "https://assets.tkaflowarts.com/models/forest/forest_texture.png"
+        ],
+        "localPath": "blender/forest-tree-lineup-sources/kaykit/Tree_3_A_Color1.gltf",
+        "provenance": "KayKit Forest Nature Pack",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "A1",
+      "label": "Ancient Oak",
+      "family": "Autumn Reuse",
+      "roles": ["mature-canopy"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/autumn/hero-tree-a_raw.glb",
+        "provenance": "TKA Autumn Meshy source",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "A2",
+      "label": "Twisted Maple",
+      "family": "Autumn Reuse",
+      "roles": ["mature-canopy", "irregular-middle"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/autumn/hero-tree-b_raw.glb",
+        "provenance": "TKA Autumn Meshy source",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "A3",
+      "label": "Silver Birch Cluster",
+      "family": "Autumn Reuse",
+      "roles": ["irregular-middle", "young"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/autumn/silver-birch-cluster_raw.glb",
+        "provenance": "TKA Autumn Meshy source",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "A4",
+      "label": "Weathered Snag",
+      "family": "Autumn Reuse",
+      "roles": ["snag", "distant-silhouette"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/autumn/autumn-snag_raw.glb",
+        "provenance": "TKA Autumn Meshy source",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "A5",
+      "label": "Golden Larch",
+      "family": "Autumn Reuse",
+      "roles": ["mature-canopy", "distant-silhouette"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/autumn/golden-larch_raw.glb",
+        "provenance": "TKA Autumn Meshy source",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "A6",
+      "label": "Leaning Willow",
+      "family": "Autumn Reuse",
+      "roles": ["mature-canopy", "irregular-middle"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/autumn/autumn-willow_raw.glb",
+        "provenance": "TKA Autumn Meshy source",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "F1",
+      "label": "Lush Canopy Beech",
+      "family": "Fresh Forest",
+      "roles": ["mature-canopy"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/forest/trees/lush-canopy-oak_raw.glb",
+        "provenance": "TKA Forest ImageGen + Meshy 6",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "F2",
+      "label": "Forked Forest Elm",
+      "family": "Fresh Forest",
+      "roles": ["irregular-middle"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/forest/trees/forked-forest-elm_raw.glb",
+        "provenance": "TKA Forest ImageGen + Meshy 6",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "F3",
+      "label": "Young Beech Sapling",
+      "family": "Fresh Forest",
+      "roles": ["young", "understory"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/forest/trees/young-beech-sapling_raw.glb",
+        "provenance": "TKA Forest ImageGen + Meshy 6",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "F4",
+      "label": "Leafy Young Hornbeam",
+      "family": "Fresh Forest",
+      "roles": ["young", "understory"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/forest/trees/young-hornbeam_raw.glb",
+        "provenance": "TKA Forest ImageGen + Meshy 6",
+        "license": "TKA generated asset"
+      }
+    }
+  ]
+}
