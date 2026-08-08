@@ -33,6 +33,7 @@
   import { createAccountSetupState } from "../../onboarding/state/account-setup-state.svelte";
   import { setAccountSetupContext } from "../../onboarding/context/account-setup-context";
   import { getOnboardingPersister } from "../../onboarding/get-onboarding-persister";
+  import { migrateLegacyDisplayNameFromSettings } from "../../onboarding/services/legacy-display-name-migrator";
   import { loadPropPreferences } from "../../community/services/prop-preference-persister";
   import AccountSetupReminder from "../../onboarding/components/account-setup/AccountSetupReminder.svelte";
   import { propDrawerState } from "../../settings/state/prop-drawer-state.svelte";
@@ -134,6 +135,72 @@
   setAccountSetupContext(accountSetupState);
 
   let loadedAccountSetupIdentity: string | null = null;
+  let legacyDisplayNameCandidate = $state<{
+    userId: string;
+    userName: string | null;
+  } | null>(null);
+  const legacyDisplayNameMigrationsInFlight = new Set<string>();
+  const completedLegacyDisplayNameMigrations = new Set<string>();
+
+  onMount(() =>
+    settingsServiceSingleton.onRemoteSettingsApplied(
+      (remoteSettings, userId) => {
+        legacyDisplayNameCandidate = {
+          userId,
+          userName: remoteSettings?.userName ?? null,
+        };
+      }
+    )
+  );
+
+  // The retired first-run wizard saved a name only in account settings. Wait
+  // for that UID's Firestore settings, then fill Firebase Auth if it is blank.
+  // Never use the browser-local settings mirror here: it can belong to whoever
+  // previously used this device.
+  $effect(() => {
+    const candidate = legacyDisplayNameCandidate;
+    const userId = authState.user?.uid ?? null;
+    const displayName = authState.user?.displayName ?? null;
+    const isFullAccount = authState.isFullAccount;
+
+    if (
+      !candidate ||
+      candidate.userId !== userId ||
+      !isFullAccount ||
+      Boolean(displayName?.trim()) ||
+      legacyDisplayNameMigrationsInFlight.has(candidate.userId) ||
+      completedLegacyDisplayNameMigrations.has(candidate.userId)
+    ) {
+      return;
+    }
+
+    legacyDisplayNameMigrationsInFlight.add(candidate.userId);
+    void migrateLegacyDisplayNameFromSettings({
+      expectedUserId: candidate.userId,
+      legacyUserName: candidate.userName,
+      getIdentity: () => ({
+        userId: authState.user?.uid ?? null,
+        isFullAccount: authState.isFullAccount,
+        displayName: authState.user?.displayName ?? null,
+      }),
+      updateDisplayName: (name) => authState.updateDisplayName(name),
+    })
+      .then((result) => {
+        if (result !== "identity-changed") {
+          completedLegacyDisplayNameMigrations.add(candidate.userId);
+        }
+      })
+      .catch((error) => {
+        console.warn(
+          "[MainApplication] Legacy display name could not be migrated",
+          error
+        );
+      })
+      .finally(() => {
+        legacyDisplayNameMigrationsInFlight.delete(candidate.userId);
+      });
+  });
+
   $effect(() => {
     const identity = authState.isFullAccount
       ? `account:${authState.user?.uid ?? "pending"}`
