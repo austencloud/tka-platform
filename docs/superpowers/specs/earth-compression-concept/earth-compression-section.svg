@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">The Weight: Compression route section and registration view</title>
+  <desc id="desc">An explanatory side section showing a stable floor beneath three colossal rock strata, three full-size performer habitats, a human-scale registration point, a low overhead megalith on the way out, and the sudden vertical release into the Air room.</desc>
+  <defs>
+    <style>
+      .bg { fill: #171a18; }
+      .rock { fill: #4b4c45; stroke: #20231f; stroke-width: 4; }
+      .rock2 { fill: #5d5b50; stroke: #20231f; stroke-width: 4; }
+      .void { fill: #cec6b7; }
+      .floor { fill: #777466; stroke: #20231f; stroke-width: 4; }
+      .habitat { fill: #8c846c; stroke: #252822; stroke-width: 3; }
+      .performer { stroke: #eadcaf; stroke-width: 8; stroke-linecap: round; fill: none; }
+      .visitor { stroke: #4b8667; stroke-width: 8; stroke-linecap: round; fill: none; }
+      .sight { stroke: #c6a848; stroke-width: 3; stroke-dasharray: 12 9; fill: none; }
+      .beat { stroke: #d6b957; stroke-width: 4; stroke-dasharray: 8 7; fill: none; }
+      .air { fill: #b8d7d3; fill-opacity: .34; stroke: #7ba9a2; stroke-width: 3; }
+      .title { fill: #ede7da; font: 700 30px system-ui, sans-serif; letter-spacing: .04em; }
+      .subtitle { fill: #b9c0b8; font: 400 17px system-ui, sans-serif; }
+      .label { fill: #ede7da; font: 650 18px system-ui, sans-serif; }
+      .dark-label { fill: #252822; font: 650 17px system-ui, sans-serif; }
+      .small { fill: #bdc4bc; font: 500 14px system-ui, sans-serif; }
+      .dark-small { fill: #454940; font: 500 14px system-ui, sans-serif; }
+      .measure { stroke: #929990; stroke-width: 2; fill: none; }
+      .measure-text { fill: #929990; font: 600 13px system-ui, sans-serif; }
+      .note { fill: #252822; font: 500 15px system-ui, sans-serif; }
+    </style>
+    <pattern id="strata" width="24" height="18" patternUnits="userSpaceOnUse">
+      <path d="M0 12 Q8 5 24 10" fill="none" stroke="#858071" stroke-width="2" opacity=".52" />
+    </pattern>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0L10 5L0 10Z" fill="#929990" />
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1600" height="900" />
+  <text class="title" x="80" y="56">WHY THIS IS NOT ANOTHER CANYON</text>
+  <text class="subtitle" x="80" y="84">Unwrapped route section · the floor stays stable · mass closes around the visitor · Air opens vertically at the end</text>
+
+  <g id="section" transform="translate(70 125)">
+    <rect class="void" x="0" y="0" width="1460" height="650" rx="12" />
+
+    <!-- Cave roof and three downward-reaching strata. -->
+    <path class="rock" d="M0 0H1460V96 L1365 80 L1260 120 L1140 92 L1030 160 L920 120 L820 168 L700 114 L600 160 L480 105 L350 148 L245 106 L120 136 L0 100Z" />
+    <path d="M0 0H1460V96 L1365 80 L1260 120 L1140 92 L1030 160 L920 120 L820 168 L700 114 L600 160 L480 105 L350 148 L245 106 L120 136 L0 100Z" fill="url(#strata)" />
+
+    <path class="rock2" d="M250 112 L390 126 L410 536 L260 556 L210 430 Z" />
+    <path class="rock2" d="M600 142 L740 112 L796 536 L646 560 L570 380 Z" />
+    <path class="rock2" d="M930 116 L1070 142 L1110 532 L960 558 L900 350 Z" />
+    <path d="M250 112 L390 126 L410 536 L260 556 L210 430 Z M600 142 L740 112 L796 536 L646 560 L570 380 Z M930 116 L1070 142 L1110 532 L960 558 L900 350 Z" fill="url(#strata)" />
+
+    <!-- Rock-cut performer cavities. -->
+    <path class="habitat" d="M284 318 Q330 274 376 318 V540 H284 Z" />
+    <path class="habitat" d="M635 310 Q688 258 742 310 V540 H635 Z" />
+    <path class="habitat" d="M966 318 Q1018 266 1070 318 V540 H966 Z" />
+
+    <!-- Performer stick figures, all full-size and on the same datum. -->
+    <g class="performer" transform="translate(330 358)">
+      <circle cx="0" cy="0" r="18" />
+      <path d="M0 20V105 M0 50L-38 84 M0 50L40 64 M0 105L-28 162 M0 105L32 162 M-54 92L58 56" />
+    </g>
+    <g class="performer" transform="translate(686 358)">
+      <circle cx="0" cy="0" r="18" />
+      <path d="M0 20V105 M0 50L-42 62 M0 50L36 88 M0 105L-28 162 M0 105L32 162 M-58 54L52 96" />
+    </g>
+    <g class="performer" transform="translate(1018 358)">
+      <circle cx="0" cy="0" r="18" />
+      <path d="M0 20V105 M0 50L-36 80 M0 50L44 80 M0 105L-28 162 M0 105L32 162 M-54 86L58 74" />
+    </g>
+
+    <!-- Stable visitor datum and final overhead megalith. -->
+    <path class="floor" d="M0 540 H1460 V650 H0 Z" />
+    <path class="rock" d="M1120 236 L1395 194 L1460 234 V422 L1170 434 Z" />
+    <path d="M1120 236 L1395 194 L1460 234 V422 L1170 434 Z" fill="url(#strata)" />
+
+    <g class="visitor" transform="translate(1160 438)">
+      <circle cx="0" cy="0" r="17" />
+      <path d="M0 18V82 M0 40L-27 66 M0 40L28 62 M0 82L-22 128 M0 82L24 128" />
+    </g>
+    <path class="sight" d="M1160 452 L1018 410 M1160 452 L686 410 M1160 452 L330 410" />
+
+    <!-- Air shaft is intentionally taller than the crop. -->
+    <path class="air" d="M1398 80 H1460 V540 H1370 Z" />
+    <path d="M1428 470V110" stroke="#8fbcb5" stroke-width="7" marker-end="url(#arrow)" />
+
+    <!-- Shared geological beat line. -->
+    <path class="beat" d="M260 438 H1110" />
+    <circle cx="330" cy="438" r="8" fill="#d6b957" />
+    <circle cx="686" cy="438" r="8" fill="#d6b957" />
+    <circle cx="1018" cy="438" r="8" fill="#d6b957" />
+
+    <text class="dark-label" x="330" y="594" text-anchor="middle">G HABITAT</text>
+    <text class="dark-label" x="686" y="594" text-anchor="middle">H HABITAT</text>
+    <text class="dark-label" x="1018" y="594" text-anchor="middle">I HABITAT</text>
+    <text class="dark-small" x="672" y="465" text-anchor="middle">one mineral seam crosses all three habitats at the shared beat height</text>
+    <text class="dark-label" x="1160" y="594" text-anchor="middle">REGISTRATION</text>
+    <text class="dark-small" x="1160" y="617" text-anchor="middle">all three visible together</text>
+    <text class="dark-label" x="1405" y="594" text-anchor="middle">AIR</text>
+
+    <!-- Human clearance dimensions. -->
+    <path class="measure" d="M1240 422H1280 M1240 540H1280 M1260 422V540" />
+    <text class="measure-text" x="1268" y="485">≈2.1 m</text>
+    <path class="measure" d="M60 540H100 M60 136H100 M80 540V136" />
+    <text class="measure-text" x="88" y="330">4–7 m cavities</text>
+
+    <text class="dark-small" x="70" y="626">No pit. No moving floor. No distant stage.</text>
+  </g>
+
+  <g transform="translate(80 818)">
+    <text class="label" x="0" y="0">The visual rule</text>
+    <text class="small" x="178" y="0">The room changes because the visitor moves. Static stone plates hide and reveal the ensemble through parallax.</text>
+    <text class="small" x="0" y="36">The final compression sits over the exit route, then the Air room immediately replaces a 2.1 m ceiling with its 13 m shaft.</text>
+  </g>
+</svg>
