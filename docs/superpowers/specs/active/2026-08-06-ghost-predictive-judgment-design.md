@@ -1,7 +1,7 @@
 # The Ghost predicts what its choices will do
 
 **Date:** 2026-08-06
-**Status:** approved for implementation
+**Status:** implemented and verified
 **Extends:** `2026-08-06-ghost-experience-learning-design.md`
 
 ## The 7.5 target
@@ -109,3 +109,17 @@ lines, DOM controls, storage, network access, or visual layout are introduced.
   1,000-click session and across the seeded fleet.
 - Existing no-failure, no-premature-replay, barren-room, sidebar-memory, and
   activity-coverage contracts remain green.
+
+## Verification
+
+The seeded 1,000-click session recorded 260 evaluated predictions. Mean error
+fell from 0.260 across the first 30 activities to 0.122 across the latest 30.
+It produced 231 predictions at or above 75% accuracy, explored 76 uncertain
+choices, and registered two confident misses that now temper later reliability.
+
+Across 12 independent 400-tick sessions, recent error averaged about 0.17
+against about 0.26 during cold start. The fleet retained zero failed actions,
+zero unexplained idle ticks, zero premature unchanged replays, and zero repeat
+visits after a room proved barren. All Attract tests passed: 63 tests across
+nine files, with the env-gated fleet test skipped in the ordinary suite and
+verified separately.
