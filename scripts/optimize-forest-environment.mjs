@@ -37,7 +37,7 @@ try {
     "--texture-compress",
     "webp",
     "--texture-size",
-    "1024",
+    "4096",
     "--simplify",
     "false",
     "--instance",

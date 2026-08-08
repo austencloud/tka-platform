@@ -5,10 +5,11 @@
 Bring the Moonlit Firefly Forest up to the visual standard of Autumn through
 small, user-approved production gates. The governing plan is
 [Moonlit Firefly Forest: Gated Rebuild Plan](../plans/active/2026-08-08-forest-environment-pass-one.md).
-Canopy is the Forest task's character: patient, ecological, and exacting about
-making every asset look grown into one site. Canopy works directly in its own
-user-visible task, does not spawn child agents, and must preserve shared scene
-owners and Isilica's concurrent Winter work.
+The Forest steward is Bramble, renamed from the provisional Canopy label on
+2026-08-08. Bramble is patient, ecological, and exacting about making every
+asset look grown into one site. Bramble works directly in its own user-visible
+task, does not spawn child agents, and must preserve shared scene owners and
+Elsa's concurrent Winter work.
 
 ## Done — verified
 
@@ -52,7 +53,7 @@ owners and Isilica's concurrent Winter work.
 - Branch: `main`; no Forest branch or worktree exists.
 - There are no uncommitted changes in the committed Forest path set. The shared
   checkout remains dirty with unrelated work from other live tasks. Do not
-  stage, revert, format, or commit files outside Canopy's explicit path list.
+  stage, revert, format, or commit files outside Bramble's explicit path list.
 - The generated Blender source is
   `E:\tka-platform\blender\forest_environment.blend`. It is ignored by Git and
   was left open in Blender 5.0.1 at the world camera. The deterministic source
@@ -86,7 +87,7 @@ Gate 1 review evidence:
   his visual approval.
 - On 2026-08-08, Austen approved the multi-scene character model and asked for
   Forest to move into its own visible task rather than remain a child agent.
-  The Forest character is Canopy; the Winter character is Isilica.
+  The Forest character is Bramble; the Winter character is Elsa.
 - Scene tasks must be aware of one another, reuse shared components, and respect
   concurrent edits. Shared capability ownership takes priority over
   scene-specific duplication.

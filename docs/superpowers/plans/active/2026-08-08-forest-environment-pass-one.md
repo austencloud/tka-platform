@@ -1,10 +1,23 @@
 # Moonlit Firefly Forest: Gated Rebuild Plan
 
 - **Date:** 2026-08-08
-- **Status:** Gate 1 implemented and awaiting Austen's visual approval. Later
-  gates remain blocked.
+- **Status:** Gates 0 through 2 are approved. Gate 3, path and clearing
+  composition, is active. Later gates remain blocked.
 - **Quality reference:** Autumn's Blender-authored environment and runtime split.
 - **Review authority:** Austen approves or rejects every visual gate.
+- **Scene steward:** Bramble
+- **Cross-scene log:**
+  [Bramble and Elsa Scene Coordination](../../specs/active/2026-08-08-bramble-elsa-scene-coordination.md)
+
+## Later atmosphere decision
+
+Austen proposed a continuous day-to-night slider on 2026-08-08. Keep it out of
+the floor and vegetation gates. During the later lighting/sky pass, specify one
+Forest-owned `0–24 h` atmosphere value that derives sky, celestial visibility,
+fog, lighting, exposure, fireflies, and campfire response. Reuse Scene Lab's
+existing `ParamSlider`; keep `SkyGradient` and the celestial components as
+render primitives. Coordinate with Elsa before promoting any interpolation
+contract to shared ownership.
 
 ## Target
 
@@ -78,8 +91,9 @@ lighting, interaction, and quality tiers.
    ambiguous paid POST is never retried without task reconciliation.
 10. The production Forest environment GLB stays at or below 20 MiB unless a
     measured visual improvement earns explicit approval for a larger budget.
-11. Phase 1 changes terrain form only. Existing trees, rocks, bushes, logs,
-    camp, stage, particles, lighting, and sky stay in place.
+11. Gates 1 and 2 change terrain form and materials only. Existing trees,
+    rocks, bushes, logs, camp, stage, particles, lighting, and sky stay in
+    place.
 
 ## Fixed review views
 
@@ -141,6 +155,19 @@ ground level and above, with enough room for later density?
 
 **Review question:** Does the ground read as a forest floor with history rather
 than one tiled photograph?
+
+**Gate 2 evidence, 2026-08-08:** Six exported material zones now separate the
+packed clearing, path soil, leaf duff, shade moss, damp hollows, and distant
+ground. One deterministic 4096 px macro diffuse keeps color transitions
+continuous across material boundaries; a second UV set preserves repeating
+normal and roughness detail. The optimized production GLB is 2,728,616 bytes,
+contains six material primitives and five WebP textures, and retains a flat
+30 m clearing, a 152.787 to 187.206 m irregular boundary, and a 15.346 m
+minimum skirt drop. The automated contract passes. Approval remains unchecked
+until Austen reviews the fixed renders.
+
+**Approval:** Austen, 2026-08-08: “You're doing awesome Please continue with
+the next step.” This answered the requested Gate 2 `approve or revise` verdict.
 
 ### Gate 3: Path and clearing composition
 
@@ -314,9 +341,9 @@ References:
 
 ## Verification ledger
 
-- [ ] Gate 0: diagnostic views approved
-- [ ] Gate 1: world envelope and terrain approved
-- [ ] Gate 2: forest-floor material zones approved
+- [x] Gate 0: diagnostic views approved
+- [x] Gate 1: world envelope and terrain approved
+- [x] Gate 2: forest-floor material zones approved
 - [ ] Gate 3: paths and clearing edges approved
 - [ ] Gate 4: tree lineup approved
 - [ ] Gate 5: forest composition approved

@@ -1,12 +1,21 @@
 #!/usr/bin/env node
 /** Verify the production Moonlit Firefly Forest GLB contract. */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
+import { createRequire } from "node:module";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const glbPath = resolve("static/models/forest/forest-environment.glb");
-const rawGlbPath = resolve("static/models/forest/forest-environment_raw.glb");
 const maximumBytes = 20 * 1024 * 1024;
+const expectedMaterialZones = [
+  "Packed Performance Clearing",
+  "Path Soil",
+  "Leaf Duff",
+  "Shade Moss",
+  "Damp Hollow",
+  "Quiet Distant Ground",
+];
 
 function invariant(condition, message) {
   if (!condition) throw new Error(message);
@@ -29,11 +38,9 @@ function readGlbJson(path) {
 }
 
 const { bytes, json: gltf } = readGlbJson(glbPath);
-const { json: rawGltf } = readGlbJson(rawGlbPath);
 const extensions = new Set(gltf.extensionsUsed ?? []);
 const nodeNames = (gltf.nodes ?? []).map((node) => node.name ?? "");
-const rawNodes = rawGltf.nodes ?? [];
-const terrainNodes = rawNodes.filter(
+const terrainNodes = (gltf.nodes ?? []).filter(
   (node) => node.extras?.tka_role === "terrain"
 );
 const leakedNodes = nodeNames.filter((name) => /^(QA_)/.test(name));
@@ -61,10 +68,53 @@ invariant(
 );
 
 const terrain = terrainNodes[0].extras;
+const materialZoneNames = String(terrain.tka_material_zone_names ?? "").split(
+  "|"
+);
+const materialZoneCounts = Array.from(terrain.tka_material_zone_counts ?? []);
 invariant(
   terrain.tka_phase === "world-envelope",
   `Unexpected Forest terrain phase: ${terrain.tka_phase}`
 );
+invariant(
+  terrain.tka_material_phase === "forest-floor-zones",
+  `Unexpected Forest material phase: ${terrain.tka_material_phase}`
+);
+invariant(
+  materialZoneNames.length === expectedMaterialZones.length &&
+    materialZoneNames.every(
+      (name, index) => name === expectedMaterialZones[index]
+    ),
+  `Unexpected Forest material zones: ${materialZoneNames.join(", ")}`
+);
+invariant(
+  materialZoneCounts.length === expectedMaterialZones.length &&
+    materialZoneCounts.every((count) => Number(count) > 0),
+  `Every Forest material zone must own polygons: ${materialZoneCounts.join(", ")}`
+);
+invariant(
+  Math.abs(Number(terrain.tka_uv_metres_per_tile) - 5.2) < 0.001,
+  `Unexpected Forest texture scale: ${terrain.tka_uv_metres_per_tile}`
+);
+invariant(
+  terrain.tka_macro_diffuse === "forest-floor-zoned.jpg",
+  `Unexpected Forest macro diffuse: ${terrain.tka_macro_diffuse}`
+);
+for (const material of gltf.materials ?? []) {
+  invariant(
+    material.pbrMetallicRoughness?.baseColorTexture?.texCoord === 1,
+    `${material.name} lost its world-scale macro UV`
+  );
+  invariant(
+    (material.normalTexture?.texCoord ?? 0) === 0,
+    `${material.name} normal map lost its repeating detail UV`
+  );
+  invariant(
+    (material.pbrMetallicRoughness?.metallicRoughnessTexture?.texCoord ?? 0) ===
+      0,
+    `${material.name} roughness map lost its repeating detail UV`
+  );
+}
 invariant(
   terrain.tka_boundary_shape === "irregular-radial",
   `Terrain boundary is not irregular-radial: ${terrain.tka_boundary_shape}`
@@ -86,6 +136,119 @@ invariant(
   `Terrain skirt is too shallow: ${terrain.tka_skirt_depth}`
 );
 
+const requireFromCli = createRequire(
+  realpathSync(resolve("node_modules/@gltf-transform/cli/package.json"))
+);
+const [{ NodeIO }, { ALL_EXTENSIONS }, { MeshoptDecoder }] = await Promise.all([
+  import(pathToFileURL(requireFromCli.resolve("@gltf-transform/core"))),
+  import(pathToFileURL(requireFromCli.resolve("@gltf-transform/extensions"))),
+  import(pathToFileURL(requireFromCli.resolve("meshoptimizer"))),
+]);
+await MeshoptDecoder.ready;
+const io = new NodeIO()
+  .registerExtensions(ALL_EXTENSIONS)
+  .registerDependencies({ "meshopt.decoder": MeshoptDecoder });
+const document = await io.read(glbPath);
+const root = document.getRoot();
+const decodedTerrain = root
+  .listNodes()
+  .find((node) => node.getExtras()?.tka_role === "terrain");
+const decodedMesh = decodedTerrain?.getMesh();
+invariant(decodedMesh, "Decoded Forest terrain mesh is missing");
+const terrainWorldMatrix = decodedTerrain.getWorldMatrix();
+
+function transformPoint([x, y, z], matrix) {
+  return [
+    matrix[0] * x + matrix[4] * y + matrix[8] * z + matrix[12],
+    matrix[1] * x + matrix[5] * y + matrix[9] * z + matrix[13],
+    matrix[2] * x + matrix[6] * y + matrix[10] * z + matrix[14],
+  ];
+}
+
+const vertices = [];
+const materialTriangles = new Map();
+for (const primitive of decodedMesh.listPrimitives()) {
+  const positions = primitive.getAttribute("POSITION");
+  invariant(positions, "Forest terrain primitive lost POSITION data");
+  const localPosition = [];
+  for (let index = 0; index < positions.getCount(); index += 1) {
+    positions.getElement(index, localPosition);
+    vertices.push(transformPoint(localPosition, terrainWorldMatrix));
+  }
+  const materialName = primitive.getMaterial()?.getName() ?? "(none)";
+  const triangleCount =
+    (primitive.getIndices()?.getCount() ?? positions.getCount()) / 3;
+  materialTriangles.set(
+    materialName,
+    (materialTriangles.get(materialName) ?? 0) + triangleCount
+  );
+}
+
+for (const zoneName of expectedMaterialZones) {
+  invariant(
+    (materialTriangles.get(zoneName) ?? 0) > 0,
+    `Optimized Forest GLB lost material zone: ${zoneName}`
+  );
+}
+
+const clearingRadius = Number(terrain.tka_clearing_radius);
+const maximumFlatDeviation = vertices
+  .filter(([x, , z]) => Math.hypot(x, z) <= clearingRadius + 0.001)
+  .reduce((maximum, [, y]) => Math.max(maximum, Math.abs(y)), 0);
+invariant(
+  maximumFlatDeviation <= 0.02,
+  `Optimized Forest clearing is not flat: ${maximumFlatDeviation.toFixed(4)}m`
+);
+
+const angularSegments = Number(terrain.tka_angular_segments);
+const rays = Array.from({ length: angularSegments }, () => []);
+for (const [x, y, z] of vertices) {
+  const radius = Math.hypot(x, z);
+  if (radius < 1) continue;
+  const angle = (Math.atan2(z, x) + Math.PI * 2) % (Math.PI * 2);
+  const segment =
+    Math.round((angle / (Math.PI * 2)) * angularSegments) % angularSegments;
+  rays[segment].push({ radius, height: y });
+}
+invariant(
+  rays.every((ray) => ray.length > 0),
+  "Optimized Forest terrain lost one or more radial segments"
+);
+
+const edgeSamples = rays.map((ray) =>
+  ray.reduce((edge, sample) => (sample.radius > edge.radius ? sample : edge))
+);
+const actualMinimumRadius = Math.min(
+  ...edgeSamples.map((sample) => sample.radius)
+);
+const actualMaximumRadius = Math.max(
+  ...edgeSamples.map((sample) => sample.radius)
+);
+const skirtDrops = rays.map((ray, index) => {
+  const edge = edgeSamples[index];
+  const targetRadius = edge.radius * 0.84;
+  const inner = ray.reduce((closest, sample) =>
+    Math.abs(sample.radius - targetRadius) <
+    Math.abs(closest.radius - targetRadius)
+      ? sample
+      : closest
+  );
+  return inner.height - edge.height;
+});
+const actualMinimumSkirtDrop = Math.min(...skirtDrops);
+invariant(
+  actualMinimumRadius >= 148,
+  `Optimized terrain envelope is too small: ${actualMinimumRadius.toFixed(3)}m`
+);
+invariant(
+  actualMaximumRadius - actualMinimumRadius >= 20,
+  "Optimized terrain boundary lost its irregular silhouette"
+);
+invariant(
+  actualMinimumSkirtDrop >= 10,
+  `Optimized terrain skirt is too shallow: ${actualMinimumSkirtDrop.toFixed(3)}m`
+);
+
 console.log(
   JSON.stringify(
     {
@@ -99,11 +262,13 @@ console.log(
       extensions: [...extensions],
       terrainEnvelope: {
         shape: terrain.tka_boundary_shape,
-        clearingRadius: terrain.tka_clearing_radius,
-        minimumRadius: terrain.tka_boundary_min_radius,
-        maximumRadius: terrain.tka_boundary_max_radius,
-        skirtDepth: terrain.tka_skirt_depth,
+        clearingRadius,
+        maximumFlatDeviation,
+        minimumRadius: actualMinimumRadius,
+        maximumRadius: actualMaximumRadius,
+        minimumSkirtDrop: actualMinimumSkirtDrop,
       },
+      materialZones: Object.fromEntries(materialTriangles),
     },
     null,
     2

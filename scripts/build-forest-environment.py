@@ -1,6 +1,6 @@
-"""Build the authored terrain envelope for Moonlit Firefly Forest.
+"""Build the authored terrain and floor materials for Moonlit Firefly Forest.
 
-Phase 1 owns terrain form only. The existing runtime trees, rocks, bushes,
+Gates 1 and 2 own terrain form and material zones. Runtime trees, rocks, bushes,
 deadwood, camp, stage, particles, lighting, and sky stay outside this file.
 Run with Blender 5.0 in background mode, then export with
 ``blender-export-forest-full.py``.
@@ -17,6 +17,8 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 BLEND_PATH = os.path.join(PROJECT_ROOT, "blender", "forest_environment.blend")
 TEXTURE_DIR = os.path.join(PROJECT_ROOT, "static", "textures", "forest-floor")
+DIRT_TEXTURE_DIR = os.path.join(PROJECT_ROOT, "static", "textures", "terrain", "dirt")
+ZONED_DIFFUSE_PATH = os.path.join(TEXTURE_DIR, "forest-floor-zoned.jpg")
 QA_DIR = os.path.join(os.environ.get("TEMP", PROJECT_ROOT), "tka-forest-evidence")
 QA_PATHS = {
     name: os.path.join(QA_DIR, f"forest_environment_qa_{name}.png")
@@ -38,7 +40,21 @@ WORLD_SKIRT_START = 0.84
 WORLD_SKIRT_DEPTH = 18.0
 TERRAIN_ANGULAR_SEGMENTS = 192
 TERRAIN_RADIAL_SEGMENTS = 128
-TERRAIN_UV_METRES = 1.25
+TERRAIN_UV_METRES = 5.2
+MATERIAL_ZONE_NAMES = (
+    "Packed Performance Clearing",
+    "Path Soil",
+    "Leaf Duff",
+    "Shade Moss",
+    "Damp Hollow",
+    "Quiet Distant Ground",
+)
+DAMP_HOLLOWS = (
+    (-58.0, 34.0, 23.0, 14.0, -0.28),
+    (56.0, 47.0, 27.0, 16.0, 0.42),
+    (73.0, -43.0, 24.0, 15.0, -0.62),
+    (-66.0, -58.0, 31.0, 17.0, 0.24),
+)
 
 
 def reset_scene():
@@ -115,51 +131,180 @@ def terrain_height(x, y):
     return base_height - skirt * WORLD_SKIRT_DEPTH
 
 
-def forest_floor_material():
-    material = bpy.data.materials.new("Moonlit Forest Floor")
+def forest_floor_material(
+    name,
+    diffuse_path,
+    normal_path,
+    roughness_path,
+    roughness_scale,
+    normal_strength,
+):
+    """Build one glTF-safe floor material from an existing texture family."""
+    material = bpy.data.materials.new(name)
     material.use_nodes = True
-    material.diffuse_color = (0.16, 0.23, 0.12, 1.0)
     nodes = material.node_tree.nodes
     links = material.node_tree.links
     bsdf = nodes.get("Principled BSDF")
-    bsdf.inputs["Base Color"].default_value = (0.16, 0.23, 0.12, 1.0)
-    bsdf.inputs["Roughness"].default_value = 0.94
-
-    diffuse_path = os.path.join(TEXTURE_DIR, "diffuse.jpg")
-    normal_path = os.path.join(TEXTURE_DIR, "normal.jpg")
-    roughness_path = os.path.join(TEXTURE_DIR, "roughness.jpg")
+    bsdf.inputs["Roughness"].default_value = roughness_scale
 
     if os.path.isfile(diffuse_path):
         diffuse = nodes.new("ShaderNodeTexImage")
-        diffuse.name = "Forest Floor Diffuse"
+        diffuse.name = f"{name} Diffuse"
         diffuse.image = bpy.data.images.load(diffuse_path, check_existing=True)
         diffuse.image.colorspace_settings.name = "sRGB"
+        macro_uv = nodes.new("ShaderNodeUVMap")
+        macro_uv.name = f"{name} Macro UV"
+        macro_uv.uv_map = "Forest Macro UV"
+        links.new(macro_uv.outputs["UV"], diffuse.inputs["Vector"])
         links.new(diffuse.outputs["Color"], bsdf.inputs["Base Color"])
 
     if os.path.isfile(roughness_path):
         roughness = nodes.new("ShaderNodeTexImage")
-        roughness.name = "Forest Floor Roughness"
+        roughness.name = f"{name} Roughness"
         roughness.image = bpy.data.images.load(roughness_path, check_existing=True)
         roughness.image.colorspace_settings.name = "Non-Color"
-        links.new(roughness.outputs["Color"], bsdf.inputs["Roughness"])
+        roughness_factor = nodes.new("ShaderNodeMath")
+        roughness_factor.name = f"{name} Roughness Factor"
+        roughness_factor.operation = "MULTIPLY"
+        roughness_factor.inputs[1].default_value = roughness_scale
+        detail_uv = nodes.new("ShaderNodeUVMap")
+        detail_uv.name = f"{name} Detail UV"
+        detail_uv.uv_map = "Forest Detail UV"
+        links.new(detail_uv.outputs["UV"], roughness.inputs["Vector"])
+        links.new(roughness.outputs["Color"], roughness_factor.inputs[0])
+        links.new(roughness_factor.outputs["Value"], bsdf.inputs["Roughness"])
 
     if os.path.isfile(normal_path):
         normal = nodes.new("ShaderNodeTexImage")
-        normal.name = "Forest Floor Normal"
+        normal.name = f"{name} Normal"
         normal.image = bpy.data.images.load(normal_path, check_existing=True)
         normal.image.colorspace_settings.name = "Non-Color"
+        detail_uv = nodes.get(f"{name} Detail UV") or nodes.new("ShaderNodeUVMap")
+        detail_uv.name = f"{name} Detail UV"
+        detail_uv.uv_map = "Forest Detail UV"
+        links.new(detail_uv.outputs["UV"], normal.inputs["Vector"])
         normal_map = nodes.new("ShaderNodeNormalMap")
-        normal_map.inputs["Strength"].default_value = 0.72
+        normal_map.inputs["Strength"].default_value = normal_strength
         links.new(normal.outputs["Color"], normal_map.inputs["Color"])
         links.new(normal_map.outputs["Normal"], bsdf.inputs["Normal"])
 
     return material
 
 
-def create_terrain(material):
+def create_floor_materials():
+    if not os.path.isfile(ZONED_DIFFUSE_PATH):
+        raise RuntimeError(
+            "Missing zoned Forest diffuse. Run node scripts/build-forest-floor-texture.mjs"
+        )
+    forest_diffuse = ZONED_DIFFUSE_PATH
+    forest_normal = os.path.join(TEXTURE_DIR, "normal.jpg")
+    forest_roughness = os.path.join(TEXTURE_DIR, "roughness.jpg")
+    dirt_normal = os.path.join(DIRT_TEXTURE_DIR, "normal.jpg")
+    dirt_roughness = os.path.join(DIRT_TEXTURE_DIR, "roughness.jpg")
+
+    definitions = (
+        (MATERIAL_ZONE_NAMES[0], forest_diffuse, dirt_normal, dirt_roughness, 0.96, 0.38),
+        (MATERIAL_ZONE_NAMES[1], forest_diffuse, dirt_normal, dirt_roughness, 0.90, 0.52),
+        (
+            MATERIAL_ZONE_NAMES[2],
+            forest_diffuse,
+            forest_normal,
+            forest_roughness,
+            0.98,
+            0.64,
+        ),
+        (
+            MATERIAL_ZONE_NAMES[3],
+            forest_diffuse,
+            dirt_normal,
+            dirt_roughness,
+            1.0,
+            0.46,
+        ),
+        (
+            MATERIAL_ZONE_NAMES[4],
+            forest_diffuse,
+            forest_normal,
+            forest_roughness,
+            0.76,
+            0.72,
+        ),
+        (
+            MATERIAL_ZONE_NAMES[5],
+            forest_diffuse,
+            forest_normal,
+            forest_roughness,
+            1.0,
+            0.42,
+        ),
+    )
+    return [forest_floor_material(*definition) for definition in definitions]
+
+
+def zone_noise(x, y):
+    return (
+        0.54 * math.sin(x * 0.057 + y * 0.031)
+        + 0.31 * math.cos(x * 0.029 - y * 0.063)
+        + 0.15 * math.sin((x + y) * 0.101)
+    )
+
+
+def shade_pattern(x, y):
+    return 0.62 * math.sin(x * 0.043 - y * 0.026) + 0.38 * math.cos(
+        x * 0.024 + y * 0.052
+    )
+
+
+def ellipse_metric(x, y, center_x, center_y, radius_x, radius_y, rotation=0.0):
+    cosine = math.cos(rotation)
+    sine = math.sin(rotation)
+    local_x = (x - center_x) * cosine + (y - center_y) * sine
+    local_y = -(x - center_x) * sine + (y - center_y) * cosine
+    return math.sqrt((local_x / radius_x) ** 2 + (local_y / radius_y) ** 2)
+
+
+def terrain_material_zone(x, y):
+    """Assign ecological material families without changing the landform."""
+    radius = math.hypot(x, y)
+    noise = zone_noise(x, y)
+    if radius <= CLEARING_RADIUS:
+        return 0
+    if radius <= 38.0 + noise * 2.4:
+        return 1
+    if radius >= 119.0 + noise * 11.0:
+        return 5
+
+    if min(
+        ellipse_metric(x, y, center_x, center_y, radius_x, radius_y, rotation)
+        for center_x, center_y, radius_x, radius_y, rotation in DAMP_HOLLOWS
+    ) < 1.0 + noise * 0.08:
+        return 4
+
+    if shade_pattern(x, y) + noise * 0.30 > 0.43:
+        return 3
+    return 2
+
+
+def terrain_detail_uv(x, y):
+    """Keep detail continuous while bending the large repeating grid."""
+    warped_x = x + 0.78 * math.sin(y * 0.031) + 0.32 * math.cos((x + y) * 0.057)
+    warped_y = y + 0.71 * math.cos(x * 0.029) - 0.29 * math.sin((x - y) * 0.061)
+    return warped_x / TERRAIN_UV_METRES, warped_y / TERRAIN_UV_METRES
+
+
+def terrain_macro_uv(x, y):
+    world_extent = 200.0
+    return (
+        (x + world_extent) / (world_extent * 2.0),
+        (y + world_extent) / (world_extent * 2.0),
+    )
+
+
+def create_terrain(materials):
     vertices = [(0.0, 0.0, terrain_height(0.0, 0.0))]
     faces = []
-    uvs = [(0.0, 0.0)]
+    detail_uvs = [terrain_detail_uv(0.0, 0.0)]
+    macro_uvs = [terrain_macro_uv(0.0, 0.0)]
 
     for ring in range(1, TERRAIN_RADIAL_SEGMENTS + 1):
         radial_fraction = ring / TERRAIN_RADIAL_SEGMENTS
@@ -169,7 +314,8 @@ def create_terrain(material):
             x = math.cos(angle) * radius
             y = math.sin(angle) * radius
             vertices.append((x, y, terrain_height(x, y)))
-            uvs.append((x / TERRAIN_UV_METRES, y / TERRAIN_UV_METRES))
+            detail_uvs.append(terrain_detail_uv(x, y))
+            macro_uvs.append(terrain_macro_uv(x, y))
 
     for segment in range(TERRAIN_ANGULAR_SEGMENTS):
         current = 1 + segment
@@ -198,17 +344,29 @@ def create_terrain(material):
     for polygon in mesh.polygons:
         polygon.use_smooth = True
 
-    uv_layer = mesh.uv_layers.new(name="Forest Floor UV")
+    detail_uv_layer = mesh.uv_layers.new(name="Forest Detail UV")
+    macro_uv_layer = mesh.uv_layers.new(name="Forest Macro UV")
+    for material in materials:
+        mesh.materials.append(material)
+    zone_counts = [0] * len(materials)
     for polygon in mesh.polygons:
+        zone_index = terrain_material_zone(polygon.center.x, polygon.center.y)
+        polygon.material_index = zone_index
+        zone_counts[zone_index] += 1
         for loop_index in polygon.loop_indices:
             vertex_index = mesh.loops[loop_index].vertex_index
-            uv_layer.data[loop_index].uv = uvs[vertex_index]
+            detail_uv_layer.data[loop_index].uv = detail_uvs[vertex_index]
+            macro_uv_layer.data[loop_index].uv = macro_uvs[vertex_index]
 
     terrain = bpy.data.objects.new("Forest_Base_WoodlandBasin", mesh)
     bpy.context.collection.objects.link(terrain)
-    terrain.data.materials.append(material)
     terrain["tka_role"] = "terrain"
     terrain["tka_phase"] = "world-envelope"
+    terrain["tka_material_phase"] = "forest-floor-zones"
+    terrain["tka_material_zone_names"] = "|".join(MATERIAL_ZONE_NAMES)
+    terrain["tka_material_zone_counts"] = zone_counts
+    terrain["tka_uv_metres_per_tile"] = TERRAIN_UV_METRES
+    terrain["tka_macro_diffuse"] = os.path.basename(ZONED_DIFFUSE_PATH)
     terrain["tka_clearing_radius"] = CLEARING_RADIUS
     terrain["tka_boundary_shape"] = "irregular-radial"
     terrain["tka_boundary_min_radius"] = min(
@@ -411,7 +569,7 @@ def setup_qa_render():
     )
 
     camera_data = bpy.data.cameras.new("Forest QA Camera")
-    camera_data.clip_end = 500.0
+    camera_data.clip_end = 1200.0
     camera = bpy.data.objects.new("QA_ForestCamera", camera_data)
     bpy.context.collection.objects.link(camera)
     scene.camera = camera
@@ -426,13 +584,19 @@ def setup_qa_render():
     render_qa_view(camera, (1.0, -12.0, 3.1), (9.0, -2.0, 0.15), QA_PATHS["floor"], 41)
     render_qa_view(camera, (11.0, -11.0, 4.8), (5.5, 3.5, 1.1), QA_PATHS["camp"], 42)
     render_qa_view(camera, (-8.0, -12.0, 4.5), (0.0, 0.0, 1.0), QA_PATHS["stage"], 41)
-    render_qa_view(camera, (0.0, -40.0, 52.0), (0.0, 0.0, 1.0), QA_PATHS["world"], 34)
+    render_qa_view(
+        camera,
+        (0.0, -180.0, 520.0),
+        (0.0, 0.0, 1.0),
+        QA_PATHS["world"],
+        24,
+    )
     bpy.ops.wm.save_as_mainfile(filepath=BLEND_PATH)
 
 
 reset_scene()
-terrain_material = forest_floor_material()
-create_terrain(terrain_material)
+terrain_materials = create_floor_materials()
+create_terrain(terrain_materials)
 verify_terrain()
 setup_qa_render()
 
