@@ -11,12 +11,11 @@
    */
 
   import { T, useThrelte } from "@threlte/core";
-  import { useGltf } from "@threlte/extras";
+  import { useGltf, useMeshopt } from "@threlte/extras";
   import TexturedGroundPlane from "../primitives/TexturedGroundPlane.svelte";
   import GroundPlane from "../primitives/GroundPlane.svelte";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import Starfield from "../primitives/Starfield.svelte";
-  import MoonBillboard from "../primitives/MoonBillboard.svelte";
   import MeteorStreaks from "./cosmic/MeteorStreaks.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
   import type { ForestVariant } from "../domain/enums/environment-enums";
@@ -71,6 +70,9 @@
   const tent = useGltf("/models/camping/tent-canvas.glb");
   const fallenLog = useGltf("/models/camping/tree-log.glb");
   const fallenLogSmall = useGltf("/models/camping/tree-log-small.glb");
+  const forestEnvironment = useGltf("/models/forest/forest-environment.glb", {
+    meshoptDecoder: useMeshopt(),
+  });
 
   const { scene, renderer, camera } = useThrelte();
 
@@ -218,7 +220,20 @@
   // instead of jumping 0% → 100%.
   $effect(() => {
     if (!sceneFeatures) return;
-    const glbs = [$tree1, $tree2, $tree3, $rock1, $rock2, $bush1, $bush2, $campfire, $tent, $fallenLog, $fallenLogSmall];
+    const glbs = [
+      $tree1,
+      $tree2,
+      $tree3,
+      $rock1,
+      $rock2,
+      $bush1,
+      $bush2,
+      $campfire,
+      $tent,
+      $fallenLog,
+      $fallenLogSmall,
+      $forestEnvironment,
+    ];
     const loaded = glbs.filter(Boolean).length;
     sceneFeatures.reportProgress("environment", loaded / glbs.length);
     if (loaded === glbs.length) {
@@ -246,6 +261,7 @@
   topColor={activeConfig.sky.topColor}
   midColor={activeConfig.sky.midColor}
   bottomColor={activeConfig.sky.bottomColor}
+  moon={activeConfig.moon}
 />
 
 {#if activeConfig.starfield}
@@ -256,11 +272,9 @@
   <MeteorStreaks config={activeConfig.shootingStars} />
 {/if}
 
-{#if activeConfig.moon}
-  <MoonBillboard config={activeConfig.moon} />
-{/if}
-
-{#if activeConfig.ground.textured && activeConfig.ground.diffuseMap}
+{#if !config && $forestEnvironment}
+  <T is={$forestEnvironment.scene} position.y={groundY} />
+{:else if activeConfig.ground.textured && activeConfig.ground.diffuseMap}
   <TexturedGroundPlane
     color={activeConfig.ground.color}
     size={activeConfig.ground.size}
