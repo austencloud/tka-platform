@@ -32,9 +32,13 @@ export function createSceneLabState() {
   let sceneId = $state<SceneId>(persisted?.sceneId ?? "winter");
   let cosmicVariant = $state<CosmicVariant>(persisted?.cosmicVariant ?? "night");
 
-  let winterConfig = $state<WinterSceneConfig>(
-    persisted?.configs.winter ?? createDefaultWinterConfig()
-  );
+  const winterDefaults = createDefaultWinterConfig();
+  let winterConfig = $state<WinterSceneConfig>({
+    ...winterDefaults,
+    ...persisted?.configs.winter,
+    forestDetail:
+      persisted?.configs.winter?.forestDetail ?? winterDefaults.forestDetail,
+  });
   let forestConfig = $state<ForestSceneConfig>(
     persisted?.configs.forest ?? createDefaultForestFireflyConfig()
   );

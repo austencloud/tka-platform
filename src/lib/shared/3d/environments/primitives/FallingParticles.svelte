@@ -39,6 +39,8 @@
     spin?: boolean;
     /** Whether emitter is active */
     enabled?: boolean;
+    /** Overall particle opacity. */
+    opacity?: number;
   }
 
   // Default values in meters (1 unit = 1 meter)
@@ -51,6 +53,7 @@
     sizeRange = [0.04, 0.08],
     spin = true,
     enabled = true,
+    opacity = 1,
   }: Props = $props();
 
   // Particle data
@@ -178,6 +181,7 @@
   const fragmentShader = `
     uniform vec3 uColors[4];
     uniform float uShape; // 0=circle 1=diamond 2=petal 3=star 4=glow 5=snowflake
+    uniform float uOpacity;
 
     varying float vRotation;
     varying float vColorIndex;
@@ -255,7 +259,7 @@
       int idx = int(floor(vColorIndex));
       vec3 color = uColors[min(idx, 3)];
 
-      gl_FragColor = vec4(color, alpha);
+      gl_FragColor = vec4(color, alpha * uOpacity);
     }
   `;
 
@@ -354,6 +358,7 @@
       uniforms: {
         uColors: { value: colorArray },
         uShape: { value: getShapeIndex() },
+        uOpacity: { value: opacity },
       },
       vertexShader,
       fragmentShader,
@@ -391,6 +396,12 @@
   $effect(() => {
     if (material?.uniforms?.uShape) {
       material.uniforms.uShape.value = getShapeIndex();
+    }
+  });
+
+  $effect(() => {
+    if (material?.uniforms?.uOpacity) {
+      material.uniforms.uOpacity.value = opacity;
     }
   });
 
@@ -510,7 +521,6 @@
     sizeAttr.needsUpdate = true;
     rotAttr.needsUpdate = true;
     colorAttr.needsUpdate = true;
-
   });
 </script>
 

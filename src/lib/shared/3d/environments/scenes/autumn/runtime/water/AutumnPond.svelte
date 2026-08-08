@@ -16,7 +16,6 @@
     MeshPhysicalMaterial,
     NoColorSpace,
     RepeatWrapping,
-    Shape,
     ShapeGeometry,
     TextureLoader,
     Vector2,
@@ -25,6 +24,7 @@
   } from "three";
   import { Reflector } from "three/examples/jsm/objects/Reflector.js";
   import type { AutumnQualityConfig } from "../../quality/autumn-quality";
+  import { createOrganicPondShape } from "../../../../primitives/organic-pond-shape";
   import { AUTUMN_POND_LAYOUT } from "./autumn-pond-layout";
 
   interface Props {
@@ -51,48 +51,6 @@
   const WATER_BODY_COLOR = "#181528";
   const NORMAL_MAP_PATH = "/textures/water/Water_1_M_Normal.jpg";
   const COAT_NORMAL_MAP_PATH = "/textures/water/Water_2_M_Normal.jpg";
-
-  function outlineVariation(angle: number, pondSeed: number): number {
-    return (
-      Math.sin(angle * 2.7 + pondSeed) * 0.075 +
-      Math.cos(angle * 4.6 + pondSeed * 1.3) * 0.045 +
-      Math.sin(angle * 7.1 - pondSeed * 0.4) * 0.025
-    );
-  }
-
-  function createOrganicPondShape(
-    xRadius: number,
-    zRadius: number,
-    pondSeed: number
-  ): Shape {
-    const shape = new Shape();
-    const pointCount = 20;
-    const points: { x: number; y: number }[] = [];
-    for (let index = 0; index < pointCount; index += 1) {
-      const angle = (index / pointCount) * Math.PI * 2;
-      const variation = 1 + outlineVariation(angle, pondSeed);
-      points.push({
-        x: Math.cos(angle) * xRadius * variation,
-        y: Math.sin(angle) * zRadius * variation,
-      });
-    }
-    shape.moveTo(points[0]!.x, points[0]!.y);
-    for (let index = 0; index < pointCount; index += 1) {
-      const point = points[index]!;
-      const next = points[(index + 1) % pointCount]!;
-      const previous = points[(index - 1 + pointCount) % pointCount]!;
-      const following = points[(index + 2) % pointCount]!;
-      shape.bezierCurveTo(
-        point.x + (next.x - previous.x) / 6,
-        point.y + (next.y - previous.y) / 6,
-        next.x - (following.x - point.x) / 6,
-        next.y - (following.y - point.y) / 6,
-        next.x,
-        next.y
-      );
-    }
-    return shape;
-  }
 
   function configureWaterNormal(texture: Texture, repeat: number): void {
     texture.wrapS = RepeatWrapping;
@@ -121,7 +79,7 @@
     }
 
     const geometry = new ShapeGeometry(
-      createOrganicPondShape(radiusX, radiusZ, seed),
+      createOrganicPondShape({ radiusX, radiusZ, seed }),
       48
     );
     const next = new Reflector(geometry, {
@@ -160,7 +118,7 @@
     }
 
     const geometry = new ShapeGeometry(
-      createOrganicPondShape(radiusX, radiusZ, seed),
+      createOrganicPondShape({ radiusX, radiusZ, seed }),
       48
     );
     const loader = new TextureLoader();

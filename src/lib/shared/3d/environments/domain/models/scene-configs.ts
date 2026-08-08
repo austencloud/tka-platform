@@ -233,18 +233,28 @@ export interface AutumnSceneConfig {
 
 export interface WinterSceneConfig {
   sky: SkyGradientConfig;
+  /** Shared night-sky stars, using the Forest scene owner. */
+  starfield: StarfieldConfig;
+  /** Shared camera-facing moon, using the Forest scene owner. */
+  moon: MoonConfig;
   fog: FogConfig;
   ground: GroundConfig;
   /** Falling snow. */
   snow: FallingParticlesConfig;
-  /** Concentric tree rings. */
+  /** Authored scenery detail, from the base hollow (0) to the full tree belt (1). */
+  forestDetail: number;
+  /** @deprecated Kept so existing Scene Lab saves remain readable. */
   treeRings: TreeRingConfig[];
+  /** @deprecated The authored clearing is fixed at eight metres. */
   clearingRadius: number;
+  /** @deprecated Rocks are part of the authored Blender environment. */
   rockCount: number;
-  /** Frozen pond disc (decorative reflective plane). */
+  /** Layered ice surface fitted to the authored pond basin. */
   pond: {
     enabled: boolean;
+    /** @deprecated The authored basin owns the pond position. */
     position: { x: number; z: number };
+    /** @deprecated The authored basin owns the pond radius. */
     radius: number;
     color: string;
     roughness: number;
@@ -1070,17 +1080,33 @@ const DEFAULT_CAMPFIRE_WINTER: CampfireConfig = {
   },
   // Steam plume (heat meeting cold air) - bright white-blue, wispy, not grey smoke
   smokeColors: ["#ffffff", "#eaf4ff", "#c8dceb"],
-  smokeCount: 30,
+  smokeCount: 14,
 };
 
 export function createDefaultWinterConfig(): WinterSceneConfig {
   return {
     sky: {
-      topColor: "#0a1525",
-      midColor: "#3a5c80",
-      bottomColor: "#1a2838",
+      topColor: "#050b1b",
+      midColor: "#132d4b",
+      bottomColor: "#102238",
     },
-    fog: { color: "#8ba3c0", density: 0.018 },
+    starfield: {
+      enabled: true,
+      count: 1400,
+      radius: 90,
+      sizeRange: [0.5, 1.8],
+      twinkleSpeed: 0.45,
+    },
+    moon: {
+      enabled: true,
+      texture: "/textures/moon.png",
+      position: [12, 22, -58],
+      diameter: 5.5,
+      opacity: 0.9,
+      glowScale: 1.12,
+      glowOpacity: 0.025,
+    },
+    fog: { color: "#172c44", density: 0.014 },
     ground: {
       color: "#eaf2fb",
       size: 50,
@@ -1089,8 +1115,8 @@ export function createDefaultWinterConfig(): WinterSceneConfig {
     },
     snow: {
       type: "snow",
-      count: 400,
-      area: { width: 30, height: 10, depth: 30 },
+      count: 520,
+      area: { width: 48, height: 15, depth: 48 },
       speed: 0.2,
       // Four tints = four shape variants in the shader (classic 6-arm, 8-arm
       // delicate, tiny sparkle, soft blur). Per-particle variance makes the
@@ -1099,15 +1125,16 @@ export function createDefaultWinterConfig(): WinterSceneConfig {
       sizeRange: [0.03, 0.16],
       spin: true,
     },
+    forestDetail: 1,
     treeRings: WINTER_TREE_RINGS,
-    clearingRadius: 14,
-    rockCount: 8,
+    clearingRadius: 8,
+    rockCount: 9,
     pond: {
       enabled: true,
-      position: { x: -6, z: 5 },
-      radius: 4.5,
-      color: "#a8c4dc",
-      roughness: 0.15,
+      position: { x: -14, z: 8 },
+      radius: 6,
+      color: "#8ab6d3",
+      roughness: 0.22,
     },
     campfire: DEFAULT_CAMPFIRE_WINTER,
     cabin: {
@@ -1117,14 +1144,14 @@ export function createDefaultWinterConfig(): WinterSceneConfig {
       rotationY: Math.PI * 0.65,
     },
     hemisphereLight: {
-      skyColor: "#c8d8ec",
-      groundColor: "#6a7488",
-      intensity: 0.7,
+      skyColor: "#b9d8ff",
+      groundColor: "#32445f",
+      intensity: 0.58,
     },
     moonLight: {
       enabled: true,
       color: "#d8e4f4",
-      intensity: 0.8,
+      intensity: 1,
       position: [-20, 25, 15],
     },
     platform: {
