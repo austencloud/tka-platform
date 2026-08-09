@@ -10,6 +10,7 @@ const h = vi.hoisted(() => ({
   doc: vi.fn((_firestore: unknown, path: string) => path),
   generateAvatarUrl: vi.fn(() => "generated-avatar"),
   generateUniqueUsername: vi.fn(async () => "matty"),
+  getCurrentPostHogSessionId: vi.fn(() => null),
   getCountFromServer: vi.fn(),
   getDoc: vi.fn(),
   getDocs: vi.fn(),
@@ -52,6 +53,7 @@ vi.mock("$lib/shared/foundation/utils/avatar-generator", () => ({
 
 vi.mock("$lib/shared/analytics/services/posthog", () => ({
   captureWhenReady: h.captureWhenReady,
+  getCurrentPostHogSessionId: h.getCurrentPostHogSessionId,
 }));
 
 vi.mock("$lib/shared/error/services/error-telemetry-reporter", () => ({

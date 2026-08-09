@@ -73,7 +73,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   }
 
   // Resolve the request with security headers
-  const routePath = event.route.id === "/" ? "/" : event.url.pathname;
+  const routePath = event.route?.id === "/" ? "/" : event.url.pathname;
   const response = await resolve(event, {
     preload: (asset) => shouldPreloadRouteAsset(routePath, asset),
     transformPageChunk: createLandingPageTransformer(routePath),

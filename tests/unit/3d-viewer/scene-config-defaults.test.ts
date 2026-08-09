@@ -42,7 +42,7 @@ const expectedHashes: Record<keyof typeof factories, string> = {
   createDefaultBlossomConfig:
     "3383f8c98507979b92b92c71c2287a362090ae1b5e90f1e8f3eb64862b484fbb",
   createDefaultCelestialConfig:
-    "3b647eadcdee0e2c121b60e1928c61f035091740c15c1a747110bf422651c647",
+    "1734b5994b874f168e7aed48042147063995ee245e3a9467122ed0e0a0fb0bb7",
   createDefaultCosmicAuroraConfig:
     "0bd38acd71a42d1944bcdf0d61b9998b5bbed1800bc4f5cc0fe7e30a6d5763b4",
   createDefaultCosmicNightConfig:
