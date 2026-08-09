@@ -17,6 +17,7 @@ Uses organizer and sizer services for section grouping and sizing.
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   // CSS animations used instead of Svelte transitions to avoid carousel dimension issues
   import OptionSection from "./OptionSection.svelte";
+  import { safe } from "$lib/shared/attract/domain/annotations";
   import Option456Row from "./Option456Row.svelte";
   import OptionGrid from "./OptionGrid.svelte";
   import OptionCard from "./OptionCard.svelte";
@@ -398,7 +399,7 @@ Uses organizer and sizer services for section grouping and sizing.
     function targetsOption(target: EventTarget | null): boolean {
       return (
         target instanceof Element &&
-        target.closest('[data-ghost-kind="option"]') !== null
+        target.closest(safe("option")) !== null
       );
     }
 

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { calculateOptionInteractionHintPosition } from "../services/option-interaction-hint-position";
+  import { safe } from "$lib/shared/attract/domain/annotations";
 
   const { containerElement, onDismiss } = $props<{
     containerElement: HTMLElement | null;
@@ -17,9 +18,7 @@
 
   function findFirstVisibleOption(container: HTMLElement): HTMLElement | null {
     const containerBounds = container.getBoundingClientRect();
-    const options = container.querySelectorAll<HTMLElement>(
-      '[data-ghost-kind="option"]'
-    );
+    const options = container.querySelectorAll<HTMLElement>(safe("option"));
 
     return (
       Array.from(options).find((option) => {
@@ -39,6 +38,44 @@
     );
   }
 
+  function findTopObstacle(
+    container: HTMLElement,
+    anchor: HTMLElement
+  ): { element: HTMLElement | null; inset: number } {
+    const containerBounds = container.getBoundingClientRect();
+    const anchorBounds = anchor.getBoundingClientRect();
+    const obstacles = container.querySelectorAll<HTMLElement>(
+      ".utility-shell, .picker-header-slot, .controls-corner"
+    );
+    let element: HTMLElement | null = null;
+    let bottom = containerBounds.top;
+
+    for (const obstacle of obstacles) {
+      const bounds = obstacle.getBoundingClientRect();
+      const style = getComputedStyle(obstacle);
+      if (
+        bounds.width <= 0 ||
+        bounds.height <= 0 ||
+        style.visibility === "hidden" ||
+        style.display === "none" ||
+        bounds.bottom <= containerBounds.top ||
+        bounds.top >= anchorBounds.top
+      ) {
+        continue;
+      }
+
+      if (bounds.bottom > bottom) {
+        element = obstacle;
+        bottom = bounds.bottom;
+      }
+    }
+
+    return {
+      element,
+      inset: Math.max(0, bottom - containerBounds.top),
+    };
+  }
+
   $effect(() => {
     const container = containerElement;
     const hint = hintElement;
@@ -46,6 +83,7 @@
 
     let frame = 0;
     let observedAnchor: HTMLElement | null = null;
+    let observedTopObstacle: HTMLElement | null = null;
     let settlingTimers: number[] = [];
 
     const resizeObserver = new ResizeObserver(scheduleSettledPositionUpdates);
@@ -67,11 +105,19 @@
         resizeObserver.observe(anchor);
       }
 
+      const topObstacle = findTopObstacle(container, anchor);
+      if (topObstacle.element !== observedTopObstacle) {
+        if (observedTopObstacle) resizeObserver.unobserve(observedTopObstacle);
+        observedTopObstacle = topObstacle.element;
+        if (observedTopObstacle) resizeObserver.observe(observedTopObstacle);
+      }
+
       position = calculateOptionInteractionHintPosition({
         container: container.getBoundingClientRect(),
         anchor: anchor.getBoundingClientRect(),
         hintWidth: hint.offsetWidth,
         hintHeight: hint.offsetHeight,
+        topInset: topObstacle.inset,
       });
       isPositioned = true;
     }
