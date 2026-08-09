@@ -93,6 +93,7 @@ export function mapNotificationDocument(
       ...baseNotification,
       type: type as UserNotification["type"],
       newUserId: data["newUserId"] as string,
+      postHogSessionId: data["postHogSessionId"] as string | undefined,
       newUserEmail: data["newUserEmail"] as string | null,
       newUserDisplayName: data["newUserDisplayName"] as string,
     } as UserNotification;

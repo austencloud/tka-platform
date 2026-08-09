@@ -124,6 +124,8 @@ export interface AdminNotification extends BaseNotification {
   newUserId: string;
   newUserEmail: string | null;
   newUserDisplayName: string;
+  /** Exact PostHog browser session the signup happened in, when captured. */
+  postHogSessionId?: string;
 }
 
 /**

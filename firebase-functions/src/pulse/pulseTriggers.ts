@@ -99,6 +99,25 @@ async function lookupReturnSessionId(
 }
 
 /**
+ * Same lookup for a signup, with one retry.
+ *
+ * The client writes the public user doc first and the private profile (which
+ * carries the PostHog session id) immediately after, so this trigger regularly
+ * fires while that second write is still in flight. One short re-read is the
+ * difference between a signup notification that opens the replay and one that
+ * only opens the session list.
+ */
+async function lookupSignupSessionId(
+  userId: string,
+  activityTimestampMs: number
+): Promise<string | null> {
+  const first = await lookupReturnSessionId(userId, activityTimestampMs);
+  if (first) return first;
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+  return lookupReturnSessionId(userId, activityTimestampMs);
+}
+
+/**
  * Signups, guest→full upgrades, and returning users — one trigger, three
  * signals, all derived from writes createOrUpdateUserDocument already makes.
  */
@@ -120,6 +139,11 @@ export const pulseUserActivity = onDocumentWritten(
       if (isGuestSession(identity, after)) return;
       const name = resolveDisplayName(after, identity);
       const email = identity?.email ?? null;
+      const signupTs =
+        toMillis(after.lastActivityDate) ??
+        event.data?.after?.createTime?.toMillis() ??
+        Date.now();
+      const postHogSessionId = await lookupSignupSessionId(userId, signupTs);
       await notifyAdmins({
         type: "admin-new-user-signup",
         message: email
@@ -131,6 +155,7 @@ export const pulseUserActivity = onDocumentWritten(
           newUserId: userId,
           newUserEmail: email,
           newUserDisplayName: name,
+          ...(postHogSessionId ? { postHogSessionId } : {}),
         },
       });
       return;
@@ -141,6 +166,11 @@ export const pulseUserActivity = onDocumentWritten(
       const identity = await lookupIdentity(userId);
       const name = resolveDisplayName(after, identity);
       const email = identity?.email ?? null;
+      const upgradeTs =
+        toMillis(after.lastActivityDate) ??
+        event.data?.after?.updateTime?.toMillis() ??
+        Date.now();
+      const postHogSessionId = await lookupSignupSessionId(userId, upgradeTs);
       await notifyAdmins({
         type: "admin-new-user-signup",
         message: email
@@ -152,6 +182,7 @@ export const pulseUserActivity = onDocumentWritten(
           newUserId: userId,
           newUserEmail: email,
           newUserDisplayName: name,
+          ...(postHogSessionId ? { postHogSessionId } : {}),
         },
       });
       return;

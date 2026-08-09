@@ -109,6 +109,50 @@
     }
   }
 
+  /**
+   * Open an admin notification's subject in the Users module, targeted at the
+   * exact PostHog session that produced the alert when one rode along.
+   * Shared by the signup and returning-user notifications — both answer the
+   * same question and land on the same Activity view.
+   */
+  async function openAdminSession(
+    userId: string | undefined,
+    sessionId: string | undefined,
+    action: string
+  ) {
+    const report = (failure: Error) => {
+      getErrorHandler().showUserError({
+        message: "This session notification could not be opened.",
+        technicalDetails: failure.message,
+        error: failure,
+        severity: "error",
+        context: { module: "inbox", tab: "notifications", action },
+      });
+    };
+
+    if (!userId) {
+      report(new Error("Notification has no user destination"));
+      return;
+    }
+
+    try {
+      inboxState.close();
+      await goto(buildAdminSessionReplayUrl(userId, sessionId), {
+        replaceState: true,
+        keepFocus: true,
+        noScroll: true,
+      });
+      // The catch-all app route preserves the shell across goto(). Update its
+      // module owner explicitly while keeping the deep-link URL intact.
+      await handleModuleChange("admin", "users", { skipHistory: true });
+    } catch (caught) {
+      const failure =
+        caught instanceof Error ? caught : new Error(String(caught));
+      console.error("[InboxNotificationItem] Failed to open session:", failure);
+      report(failure);
+    }
+  }
+
   // Handle card click - navigate directly (Facebook/Instagram pattern)
   async function handleCardClick() {
     hapticService?.trigger("selection");
@@ -178,66 +222,25 @@
         break;
 
       case "admin-new-user-signup":
-        // Navigate to the new user's profile
-        if (n["newUserId"]) {
-          inboxState.close();
-          goto(`/profile/${n["newUserId"]}`);
-        }
+        // A signup is the same question a return is: who is this, and what did
+        // they just do? Same destination — their Activity tab, on the session
+        // that produced the alert when one was captured.
+        await openAdminSession(
+          n["newUserId"] || n["fromUserId"],
+          n["postHogSessionId"],
+          "openNewUserSession"
+        );
         break;
 
       case "admin-user-returned":
-        {
-          // Older live-subscription objects kept the actor but lost the
-          // return-specific alias. Both fields identify the same user on a
-          // returning-user notification, so either can restore the handoff.
-          const returnedUserId = n["returnedUserId"] || n["fromUserId"];
-          if (!returnedUserId) {
-            const failure = new Error(
-              "Returning-user notification has no user destination"
-            );
-            getErrorHandler().showUserError({
-              message: "This session notification could not be opened.",
-              technicalDetails: failure.message,
-              error: failure,
-              severity: "error",
-              context: {
-                module: "inbox",
-                tab: "notifications",
-                action: "openReturnedUserSession",
-              },
-            });
-            break;
-          }
-
-          try {
-            inboxState.close();
-            await goto(
-              buildAdminSessionReplayUrl(returnedUserId, n["postHogSessionId"]),
-              { replaceState: true, keepFocus: true, noScroll: true }
-            );
-            // The catch-all app route preserves the shell across goto(). Update
-            // its module owner explicitly while keeping the deep-link URL intact.
-            await handleModuleChange("admin", "users", { skipHistory: true });
-          } catch (caught) {
-            const failure =
-              caught instanceof Error ? caught : new Error(String(caught));
-            console.error(
-              "[InboxNotificationItem] Failed to open returned user session:",
-              failure
-            );
-            getErrorHandler().showUserError({
-              message: "This session notification could not be opened.",
-              technicalDetails: failure.message,
-              error: failure,
-              severity: "error",
-              context: {
-                module: "inbox",
-                tab: "notifications",
-                action: "openReturnedUserSession",
-              },
-            });
-          }
-        }
+        // Older live-subscription objects kept the actor but lost the
+        // return-specific alias. Both fields identify the same user on a
+        // returning-user notification, so either can restore the handoff.
+        await openAdminSession(
+          n["returnedUserId"] || n["fromUserId"],
+          n["postHogSessionId"],
+          "openReturnedUserSession"
+        );
         break;
 
       case "admin-qr-scan":
