@@ -12,10 +12,42 @@
   interface Props {
     config: LavaCracksConfig;
     groundSize: number;
+    /**
+     * Where to hang the crust. Omitted, it lies on the ground plane exactly as
+     * it always has - the crater floor of the ember scene.
+     *
+     * Supplied, the same crust shader can face any direction, which is what
+     * lets it read as banked coal on a wall or in a bed rather than only as
+     * cracked ground. The shader is the material; the plane is just where it
+     * happens to be pointing.
+     */
+    placement?: {
+      position?: [number, number, number];
+      rotation?: [number, number, number];
+      size?: [number, number];
+    };
+    /**
+     * 1 keeps the radial vignette that fades the crust out before its own
+     * edges - correct for one large ground decal with nothing to hide its
+     * border. 0 carries the crust to the edge of the plane, which is what a
+     * wall panel or a contained coal bed needs, because its border is a real
+     * edge in the geometry.
+     */
+    edgeFade?: number;
   }
 
-  let { config, groundSize }: Props = $props();
+  let { config, groundSize, placement, edgeFade = 1 }: Props = $props();
   const groundY = $derived(userProportionsState.groundY);
+
+  const meshPosition = $derived<[number, number, number]>(
+    placement?.position ?? [0, groundY + 0.02, 0]
+  );
+  const meshRotation = $derived<[number, number, number]>(
+    placement?.rotation ?? [-Math.PI / 2, 0, 0]
+  );
+  const meshSize = $derived<[number, number]>(
+    placement?.size ?? [groundSize * 0.7, groundSize * 0.7]
+  );
 
   const vertexShader = /* glsl */ `
     varying vec2 vUv;
@@ -33,6 +65,7 @@
     uniform float uScale;
     uniform float uPulseSpeed;
     uniform float uPulseIntensity;
+    uniform float uEdgeFade;
     varying vec2 vUv;
 
     vec2 hash22(vec2 p) {
@@ -99,9 +132,10 @@
 
       float alpha = (combinedCrack * 0.9 + combinedGlow * 0.25) * pulsedIntensity;
 
-      // Edge fadeout
+      // Edge fadeout. Full strength on an unbounded ground decal; dialled out
+      // when the plane's own border is real geometry doing the containing.
       float dist = length(vUv - 0.5) * 2.0;
-      alpha *= 1.0 - smoothstep(0.6, 1.0, dist);
+      alpha *= mix(1.0, 1.0 - smoothstep(0.6, 1.0, dist), uEdgeFade);
 
       // Color — brighter at pulse peaks
       vec3 color = uCrackColor * (combinedCrack * 1.5 + combinedGlow * 0.5);
@@ -130,6 +164,7 @@
         uScale: { value: config.scale },
         uPulseSpeed: { value: config.pulseSpeed },
         uPulseIntensity: { value: config.pulseIntensity },
+        uEdgeFade: { value: edgeFade },
       },
       vertexShader,
       fragmentShader,
@@ -147,6 +182,7 @@
     material.uniforms.uScale!.value = config.scale;
     material.uniforms.uPulseSpeed!.value = config.pulseSpeed;
     material.uniforms.uPulseIntensity!.value = config.pulseIntensity;
+    material.uniforms.uEdgeFade!.value = edgeFade;
   });
 
   useTask((delta) => {
@@ -156,11 +192,7 @@
 </script>
 
 {#if config.enabled && material}
-  <T.Mesh
-    position.y={groundY + 0.02}
-    rotation.x={-Math.PI / 2}
-    {material}
-  >
-    <T.PlaneGeometry args={[groundSize * 0.7, groundSize * 0.7]} />
+  <T.Mesh position={meshPosition} rotation={meshRotation} {material}>
+    <T.PlaneGeometry args={meshSize} />
   </T.Mesh>
 {/if}
