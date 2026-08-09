@@ -2,8 +2,8 @@
 <rect width="2280" height="1560" fill="#0d1418"/>
 <text x="60" y="64" fill="#eaf2f4" font-size="34" font-weight="700">The Drowned Gallery — Three Channels · Gate 1 measured plan</text>
 <text x="60" y="96" fill="#9ab4bd" font-size="18">Derived live from buildDrownedGalleryLayout (the same call physics and the graybox read). Datums in metres; museum floor = 0, waterline = -1.5.</text>
-<text x="60" y="106" fill="#eaf2f4" font-size="22" font-weight="600">Top-down plan (north up = toward the grotto)</text>
-<rect x="44.5" y="124.5" width="497.3" height="1181.1" fill="#13202a" fill-opacity="1" stroke="none"/>
+<text x="60" y="128" fill="#eaf2f4" font-size="22" font-weight="600">Top-down plan (north up = toward the grotto)</text>
+<rect x="44.5" y="140.0" width="497.3" height="1165.5" fill="#13202a" fill-opacity="1" stroke="none"/>
 <rect x="60.0" y="559.6" width="466.2" height="466.2" fill="#26333a" fill-opacity="1" stroke="none"/>
 <rect x="98.9" y="140.0" width="388.5" height="341.9" fill="#13202a" fill-opacity="1" stroke="#3f5a68"/>
 <rect x="277.6" y="1103.5" width="38.9" height="186.5" fill="#123c50" fill-opacity="0.7" stroke="#3f5a68"/>
@@ -88,28 +88,22 @@
 <text x="506.8" y="954.2" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">2</text>
 <circle cx="297.0" cy="882.1" r="11" fill="#0d1418" stroke="#8fd8c9" stroke-width="2"/>
 <text x="297.0" y="887.1" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">3</text>
-<circle cx="238.7" cy="882.1" r="11" fill="#0d1418" stroke="#8fd8c9" stroke-width="2"/>
-<text x="238.7" y="887.1" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">4</text>
-<circle cx="126.0" cy="893.7" r="11" fill="#0d1418" stroke="#8fd8c9" stroke-width="2"/>
-<text x="126.0" y="898.7" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">5</text>
 <circle cx="265.9" cy="823.8" r="11" fill="#0d1418" stroke="#8fd8c9" stroke-width="2"/>
-<text x="265.9" y="828.8" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">6</text>
+<text x="265.9" y="828.8" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">4</text>
 <circle cx="238.7" cy="664.5" r="11" fill="#0d1418" stroke="#8fd8c9" stroke-width="2"/>
-<text x="238.7" y="669.5" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">7</text>
-<circle cx="355.3" cy="851.0" r="11" fill="#0d1418" stroke="#8fd8c9" stroke-width="2"/>
-<text x="355.3" y="856.0" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">8</text>
-<circle cx="425.2" cy="711.1" r="11" fill="#0d1418" stroke="#8fd8c9" stroke-width="2"/>
-<text x="425.2" y="716.1" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">9</text>
+<text x="238.7" y="669.5" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">5</text>
+<circle cx="297.0" cy="839.3" r="11" fill="#0d1418" stroke="#8fd8c9" stroke-width="2"/>
+<text x="297.0" y="844.3" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">6</text>
 <circle cx="335.8" cy="711.1" r="11" fill="#0d1418" stroke="#8fd8c9" stroke-width="2"/>
-<text x="335.8" y="716.1" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">10</text>
+<text x="335.8" y="716.1" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">7</text>
 <circle cx="293.1" cy="462.5" r="11" fill="#0d1418" stroke="#8fd8c9" stroke-width="2"/>
-<text x="293.1" y="467.5" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">11</text>
+<text x="293.1" y="467.5" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">8</text>
 <circle cx="186.3" cy="446.9" r="11" fill="#0d1418" stroke="#8fd8c9" stroke-width="2"/>
-<text x="186.3" y="451.9" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">12</text>
+<text x="186.3" y="451.9" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">9</text>
 <circle cx="285.3" cy="276.0" r="11" fill="#0d1418" stroke="#8fd8c9" stroke-width="2"/>
-<text x="285.3" y="281.0" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">13</text>
+<text x="285.3" y="281.0" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">10</text>
 <circle cx="460.2" cy="365.3" r="11" fill="#0d1418" stroke="#8fd8c9" stroke-width="2"/>
-<text x="460.2" y="370.3" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">14</text>
+<text x="460.2" y="370.3" fill="#8fd8c9" font-size="14" font-weight="700" text-anchor="middle">11</text>
 <text x="1020" y="166" fill="#eaf2f4" font-size="20" font-weight="600">Developed long section — the dive: approach → descent → hub → channel B → air-bell B</text>
 <rect x="1020" y="180" width="1050" height="190" fill="#13202a"/>
 <path d="M 1020 281.47727272727275 L 1120 284.0681818181818 L 1120 281.47727272727275 L 1020 281.47727272727275 Z" fill="#1e5f7a" fill-opacity="0.45"/>
@@ -172,52 +166,40 @@
 <text x="1054" y="855" fill="#9ab4bd" font-size="13">Rock closes overhead; no air anywhere · Keeps descending the stair · Pressure — the water owns this space</text>
 <circle cx="1032" cy="884" r="11" fill="none" stroke="#8fd8c9" stroke-width="2"/>
 <text x="1032" y="889" fill="#8fd8c9" font-size="13" font-weight="700" text-anchor="middle">3</text>
-<text x="1054" y="881" fill="#eaf2f4" font-size="15" font-weight="600">Drowned hub</text>
-<text x="1054" y="899" fill="#9ab4bd" font-size="13">One shaft of light overhead; three glowing mouths + the return · Chooses a channel · Light = the way back up; three dives to make</text>
+<text x="1054" y="881" fill="#eaf2f4" font-size="15" font-weight="600">Drowned hub — THE choice</text>
+<text x="1054" y="899" fill="#9ab4bd" font-size="13">One shaft of light overhead; three glowing mouths, the return, and a cool fifth opening · Picks ONE channel — any of the three · Which letter becomes your personal introduction to Water</text>
 <circle cx="1032" cy="928" r="11" fill="none" stroke="#8fd8c9" stroke-width="2"/>
 <text x="1032" y="933" fill="#8fd8c9" font-size="13" font-weight="700" text-anchor="middle">4</text>
-<text x="1054" y="925" fill="#eaf2f4" font-size="15" font-weight="600">Mouth A</text>
-<text x="1054" y="943" fill="#9ab4bd" font-size="13">A dark channel mouth, warm A-firelight through the water · Chooses this dive (any order; length hints difficulty) · Each mouth leads to one letter</text>
+<text x="1054" y="925" fill="#eaf2f4" font-size="15" font-weight="600">The chosen mouth</text>
+<text x="1054" y="943" fill="#9ab4bd" font-size="13">A dark channel, that letter's firelight carried through the water · Dives the one they picked (drawn at B; A and C are the same beat) · One dive is the route; glow and length are character, not rank</text>
 <circle cx="1032" cy="972" r="11" fill="none" stroke="#8fd8c9" stroke-width="2"/>
 <text x="1032" y="977" fill="#8fd8c9" font-size="13" font-weight="700" text-anchor="middle">5</text>
-<text x="1054" y="969" fill="#eaf2f4" font-size="15" font-weight="600">Air-bell A</text>
-<text x="1054" y="987" fill="#9ab4bd" font-size="13">Surface breaks on the stair; one performer at 3.0 m under a 3 m ceiling · Watches A alone, then dives back · Surfacing = meeting a letter (A of A/B/C)</text>
+<text x="1054" y="969" fill="#eaf2f4" font-size="15" font-weight="600">Your air-bell</text>
+<text x="1054" y="987" fill="#9ab4bd" font-size="13">Surface breaks on the stair; one performer at 3.0 m under a 3 m ceiling · Watches their letter alone, then dives back to the hub · Surfacing = meeting your letter, privately</text>
 <circle cx="1032" cy="1016" r="11" fill="none" stroke="#8fd8c9" stroke-width="2"/>
 <text x="1032" y="1021" fill="#8fd8c9" font-size="13" font-weight="700" text-anchor="middle">6</text>
-<text x="1054" y="1013" fill="#eaf2f4" font-size="15" font-weight="600">Mouth B</text>
-<text x="1054" y="1031" fill="#9ab4bd" font-size="13">A dark channel mouth, warm B-firelight through the water · Chooses this dive (any order; length hints difficulty) · Each mouth leads to one letter</text>
+<text x="1054" y="1013" fill="#eaf2f4" font-size="15" font-weight="600">Optional dives</text>
+<text x="1054" y="1031" fill="#9ab4bd" font-size="13">The other two mouths, still glowing, still open · May dive them — or not; nothing gates the way onward · The room asked for one choice, not a checklist</text>
 <circle cx="1032" cy="1060" r="11" fill="none" stroke="#8fd8c9" stroke-width="2"/>
 <text x="1032" y="1065" fill="#8fd8c9" font-size="13" font-weight="700" text-anchor="middle">7</text>
-<text x="1054" y="1057" fill="#eaf2f4" font-size="15" font-weight="600">Air-bell B</text>
-<text x="1054" y="1075" fill="#9ab4bd" font-size="13">Surface breaks on the stair; one performer at 3.0 m under a 3 m ceiling · Watches B alone, then dives back · Surfacing = meeting a letter (B of A/B/C)</text>
+<text x="1054" y="1057" fill="#eaf2f4" font-size="15" font-weight="600">Shaft passage</text>
+<text x="1054" y="1075" fill="#9ab4bd" font-size="13">The fifth opening glowing cool, not warm · Swims/walks the drowned passage north · This is the way onward, open after any single dive</text>
 <circle cx="1032" cy="1104" r="11" fill="none" stroke="#8fd8c9" stroke-width="2"/>
 <text x="1032" y="1109" fill="#8fd8c9" font-size="13" font-weight="700" text-anchor="middle">8</text>
-<text x="1054" y="1101" fill="#eaf2f4" font-size="15" font-weight="600">Mouth C</text>
-<text x="1054" y="1119" fill="#9ab4bd" font-size="13">A dark channel mouth, warm C-firelight through the water · Chooses this dive (any order; length hints difficulty) · Each mouth leads to one letter</text>
+<text x="1054" y="1101" fill="#eaf2f4" font-size="15" font-weight="600">Buoyant shaft</text>
+<text x="1054" y="1119" fill="#9ab4bd" font-size="13">A glowing water column rising 4.2 m · Jumps in and floats up (Gate 2 gravity seam) · Weightlessness — water carries you</text>
 <circle cx="1032" cy="1148" r="11" fill="none" stroke="#8fd8c9" stroke-width="2"/>
 <text x="1032" y="1153" fill="#8fd8c9" font-size="13" font-weight="700" text-anchor="middle">9</text>
-<text x="1054" y="1145" fill="#eaf2f4" font-size="15" font-weight="600">Air-bell C</text>
-<text x="1054" y="1163" fill="#9ab4bd" font-size="13">Surface breaks on the stair; one performer at 3.0 m under a 3 m ceiling · Watches C alone, then dives back · Surfacing = meeting a letter (C of A/B/C)</text>
+<text x="1054" y="1145" fill="#eaf2f4" font-size="15" font-weight="600">Grotto ring apron</text>
+<text x="1054" y="1163" fill="#9ab4bd" font-size="13">The dome, mirror pool, waterfall, doubled firelight · Surfaces over the rim onto the apron · Reflection — the room shows everything twice</text>
 <circle cx="1032" cy="1192" r="11" fill="none" stroke="#8fd8c9" stroke-width="2"/>
 <text x="1032" y="1197" fill="#8fd8c9" font-size="13" font-weight="700" text-anchor="middle">10</text>
-<text x="1054" y="1189" fill="#eaf2f4" font-size="15" font-weight="600">Shaft passage</text>
-<text x="1054" y="1207" fill="#9ab4bd" font-size="13">A fifth opening glowing cool, not warm · Swims/walks the drowned passage north · The dives are done; this is the way onward</text>
+<text x="1054" y="1189" fill="#eaf2f4" font-size="15" font-weight="600">Procession</text>
+<text x="1054" y="1207" fill="#9ab4bd" font-size="13">All three niches doubled in the black pool (finale restaging, Q2) · Walks the ring past the doubled frame · A, B, C together at last — including the two not dived</text>
 <circle cx="1032" cy="1236" r="11" fill="none" stroke="#8fd8c9" stroke-width="2"/>
 <text x="1032" y="1241" fill="#8fd8c9" font-size="13" font-weight="700" text-anchor="middle">11</text>
-<text x="1054" y="1233" fill="#eaf2f4" font-size="15" font-weight="600">Buoyant shaft</text>
-<text x="1054" y="1251" fill="#9ab4bd" font-size="13">A glowing water column rising 4.2 m · Jumps in and floats up (Gate 2 gravity seam) · Weightlessness — water carries you</text>
-<circle cx="1032" cy="1280" r="11" fill="none" stroke="#8fd8c9" stroke-width="2"/>
-<text x="1032" y="1285" fill="#8fd8c9" font-size="13" font-weight="700" text-anchor="middle">12</text>
-<text x="1054" y="1277" fill="#eaf2f4" font-size="15" font-weight="600">Grotto ring apron</text>
-<text x="1054" y="1295" fill="#9ab4bd" font-size="13">The dome, mirror pool, waterfall, doubled firelight · Surfaces over the rim onto the apron · Reflection — the room shows everything twice</text>
-<circle cx="1032" cy="1324" r="11" fill="none" stroke="#8fd8c9" stroke-width="2"/>
-<text x="1032" y="1329" fill="#8fd8c9" font-size="13" font-weight="700" text-anchor="middle">13</text>
-<text x="1054" y="1321" fill="#eaf2f4" font-size="15" font-weight="600">Procession</text>
-<text x="1054" y="1339" fill="#9ab4bd" font-size="13">All three niches doubled in the black pool (finale restaging, Q2) · Walks the ring past the doubled frame · A, B, C together, shown twice</text>
-<circle cx="1032" cy="1368" r="11" fill="none" stroke="#8fd8c9" stroke-width="2"/>
-<text x="1032" y="1373" fill="#8fd8c9" font-size="13" font-weight="700" text-anchor="middle">14</text>
-<text x="1054" y="1365" fill="#eaf2f4" font-size="15" font-weight="600">Gilded threshold</text>
-<text x="1054" y="1383" fill="#9ab4bd" font-size="13">The carved gold-barred frame to Fire · Exits east · Water is complete; Fire is next</text>
+<text x="1054" y="1233" fill="#eaf2f4" font-size="15" font-weight="600">Gilded threshold</text>
+<text x="1054" y="1251" fill="#9ab4bd" font-size="13">The carved gold-barred frame to Fire · Exits east · Water is complete after one dive; Fire is next</text>
 <text x="60" y="1350" fill="#eaf2f4" font-size="20" font-weight="600">Sightline study (moving windows, aimed at the performer floor) · isolation · final frame</text>
 <text x="60" y="1378" fill="#eaf2f4" font-size="15">Bell A — run 7.3 m · 7 samples, 0 blocked · min floor margin 0.08 m · read 3.0 m</text>
 <text x="60" y="1402" fill="#eaf2f4" font-size="15">Bell B — run 10.3 m · 7 samples, 0 blocked · min floor margin 0.07 m · read 3.0 m</text>

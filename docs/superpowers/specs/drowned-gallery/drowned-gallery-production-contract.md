@@ -29,8 +29,8 @@ weightlessness → reflection.
 |---|---|---|---|
 | Creative direction | Design spec + this conversation's direction | `../2026-08-09-drowned-gallery-channels-design.md` | Supersedes the 2026-08-02 single S-path gallery; tracker capture pending |
 | Story canon | Story bible | `docs/museum/story-bible.md` | None known for Water |
-| Room shell and transitions | Compiled cave floor plan | `src/lib/features/museum/data/vulcan-cave-floor-plan.ts` | Bells may not fit the current gallery footprint (open question 3) |
-| Performer roster | Live museum data | `vulcan-cave-floor-plan.ts` (`cave-water-a/b/c`) | Stale `CAVE_MODE_ROOMS` entry for `cave-water` (cosmetic, 2026-08-02 loose end #5) |
+| Room shell and transitions | Compiled cave floor plan | `src/lib/features/museum/data/vulcan-cave-floor-plan.ts` | Resolved: gallery grew to 30 × 30 m (Q3); downstream rooms moved — see Gate 1 notes |
+| Performer roster | Live museum data | `vulcan-cave-floor-plan.ts` (`cave-water-a/b/c` in the gallery's bells) | None — `CAVE_MODE_ROOMS` / `ROOM_CONTENT` repointed to `cave-water-gallery`, retiring the 2026-08-02 loose end #5 |
 | TKA motion | Flow Arts MCP | Calls recorded 2026-08-09 (A, B, C explanations) | None |
 | Selected sequences | `museum-exhibit-sequences.ts` | Fingerprints in `./scene-gates.json` | None — exact live loops, MCP-generated 2026-08-02 |
 | Spatial geometry | `drowned-gallery-terrain.ts` layout | Revised 2026-08-09 (hub, channels, bells, shaft) | None — S-path retired |
@@ -101,7 +101,8 @@ Delivered 2026-08-09:
   pool, waterfall, gilded threshold, all datums, and the elevationAt/blockedAt
   contract carry forward (uncovered bay points still throw).
 - **Plan board + report**: `./drowned-gallery-gate1-board.svg` (top-down plan,
-  two developed long sections — dive and rise, 14-stop route strip, sightline
+  two developed long sections — dive and rise, 11-stop route strip staged as
+  ONE choice + optional dives per the 2026-08-09 one-dive amendment, sightline
   rays, final-frame wedge) and `./drowned-gallery-gate1-report.json`
   (walkability / clearance / sightlines / final-view, all passed). Sightlines
   follow the Earth Gate 1.1 standard: 7 moving route-sampled windows per bell
@@ -111,9 +112,13 @@ Delivered 2026-08-09:
   bell shelves (shared `BELL_SHELF_ANCHORS_M` expression; the grotto holds no
   anchors). `CAVE_MODE_ROOMS` and `ROOM_CONTENT` follow, which also retires
   the stale-entry loose end from 2026-08-02.
-- **Open questions resolved at Gate 1** (recorded in the report): Q1 shaft
-  connects to the HUB as its fifth opening; Q3 the gallery footprint GROWS to
-  30 × 30 m; Q4 falling into the shaft is safe-and-floaty (rim = rendered
+- **Open questions resolved at Gate 1** (recorded in the report): Q1 — one
+  shared column entered from the HUB's fifth opening; every bell reaches it
+  through the hub after any single dive, so ONE dive completes the route and
+  nothing is gated (amendment-compliant; per-bell feeders rejected because the
+  spec pins the gravity seam to one bounded column with one entrance and one
+  exit, and three feeders braid the map). Q3 — the gallery footprint GROWS to
+  30 × 30 m. Q4 — falling into the shaft is safe-and-floaty (rim = rendered
   curb). Q2 (ring finale staging) is PROPOSED as restaging A/B/C on the kept
   ring niches — needs Austen's call at review.
 - **Downstream movement (Q3 consequence)**: every room placed after the
@@ -121,9 +126,10 @@ Delivered 2026-08-09:
   manifest regenerated; earth-long-terrace pinned span updated; downstream
   grayboxes built from pre-move manifests need re-verification at their own
   gates. Full museum unit suite green (402 tests).
-- **Traversal proof**: `drowned-gallery-traversal.test.ts` walks squeeze →
-  descent → hub → all three bells → shaft bottom, then (Gate 2 gravity seam)
-  apron → ring → Fire door; 33 drowned-gallery tests pass.
+- **Traversal proof**: `drowned-gallery-traversal.test.ts` proves the
+  one-dive route for EACH bell (single bell → shaft bottom), plus the full
+  three-bell coverage walk, then (Gate 2 gravity seam) apron → ring → Fire
+  door; 34 drowned-gallery tests pass.
 - **Blender manifest regenerated** from the revised layout (source digest
   `3c39e4cf…b7f0db`); the graybox rebuild itself is Gate 2.
 

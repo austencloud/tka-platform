@@ -132,29 +132,29 @@
         {
           "kind": "floor-plan",
           "path": "docs/superpowers/specs/drowned-gallery/drowned-gallery-gate1-board.svg",
-          "sha256": "7149c47742a97641db67e7037e7fedeab00d82468340fce0715bac46388b8782"
+          "sha256": "e925585a0baa555010feccbcfd1c187a46f0fe3cd8dcd70318fdaa04d9dd8ba1"
         },
         {
           "kind": "vertical-section",
           "path": "docs/superpowers/specs/drowned-gallery/drowned-gallery-gate1-board.svg",
-          "sha256": "7149c47742a97641db67e7037e7fedeab00d82468340fce0715bac46388b8782"
+          "sha256": "e925585a0baa555010feccbcfd1c187a46f0fe3cd8dcd70318fdaa04d9dd8ba1"
         },
         {
           "kind": "route-storyboard",
           "path": "docs/superpowers/specs/drowned-gallery/drowned-gallery-gate1-board.svg",
-          "sha256": "7149c47742a97641db67e7037e7fedeab00d82468340fce0715bac46388b8782"
+          "sha256": "e925585a0baa555010feccbcfd1c187a46f0fe3cd8dcd70318fdaa04d9dd8ba1"
         },
         {
           "kind": "sightline-study",
           "path": "docs/superpowers/specs/drowned-gallery/drowned-gallery-gate1-report.json",
-          "sha256": "7fd00b5d30d68234dcd26432d255d1861c58031c323bdd7e9d586406f6f674b9"
+          "sha256": "eae41196a36185db9a9baa46e13382b835a4cbefc4eee61e2c52ce966308b079"
         }
       ],
       "checks": [
         {
           "name": "walkability",
           "status": "passed",
-          "evidence": "Descent grade 0.52, all three bell stairs 0.60, every channel 2.5 m wide; headless playtest walks squeeze → hub → all three bells → shaft bottom, then apron → ring → Fire door (drowned-gallery-traversal.test.ts, 14 passing)."
+          "evidence": "Descent grade 0.52, all three bell stairs 0.60, every channel 2.5 m wide; headless playtest proves the one-dive route (any single bell then the shaft, per the 2026-08-09 amendment) AND the full three-bell walk, then apron to ring to Fire door (drowned-gallery-traversal.test.ts, 15 passing)."
         },
         {
           "name": "clearance",

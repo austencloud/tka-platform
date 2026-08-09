@@ -168,27 +168,10 @@ interface RouteStop {
   understands: string;
 }
 
-const bellStop = (chan: BellChannel, n: number): RouteStop[] => {
-  const letter = chan.id.toUpperCase();
-  return [
-    {
-      n,
-      at: chan.mouth,
-      title: `Mouth ${letter}`,
-      sees: `A dark channel mouth, warm ${letter}-firelight through the water`,
-      does: "Chooses this dive (any order; length hints difficulty)",
-      understands: `Each mouth leads to one letter`,
-    },
-    {
-      n: n + 1,
-      at: layout.probes.bellDecks[chan.id],
-      title: `Air-bell ${letter}`,
-      sees: `Surface breaks on the stair; one performer at ${sightlines.find((s) => s.bell === chan.id)!.readDistance.toFixed(1)} m under a 3 m ceiling`,
-      does: `Watches ${letter} alone, then dives back`,
-      understands: `Surfacing = meeting a letter (${letter} of A/B/C)`,
-    },
-  ];
-};
+// The 2026-08-09 amendment governs the storyboard: ONE dive is the route;
+// the other two bells are optional. Bell B stands in as the illustrative
+// choice — any of the three completes the room identically.
+const chosen = layout.channels[1];
 
 const routeStops: RouteStop[] = [
   {
@@ -210,24 +193,45 @@ const routeStops: RouteStop[] = [
   {
     n: 3,
     at: layout.probes.hub,
-    title: "Drowned hub",
-    sees: "One shaft of light overhead; three glowing mouths + the return",
-    does: "Chooses a channel",
-    understands: "Light = the way back up; three dives to make",
+    title: "Drowned hub — THE choice",
+    sees: "One shaft of light overhead; three glowing mouths, the return, and a cool fifth opening",
+    does: "Picks ONE channel — any of the three",
+    understands: "Which letter becomes your personal introduction to Water",
   },
-  ...bellStop(layout.channels[0], 4),
-  ...bellStop(layout.channels[1], 6),
-  ...bellStop(layout.channels[2], 8),
   {
-    n: 10,
+    n: 4,
+    at: chosen.mouth,
+    title: "The chosen mouth",
+    sees: "A dark channel, that letter's firelight carried through the water",
+    does: "Dives the one they picked (drawn at B; A and C are the same beat)",
+    understands: "One dive is the route; glow and length are character, not rank",
+  },
+  {
+    n: 5,
+    at: layout.probes.bellDecks[chosen.id],
+    title: "Your air-bell",
+    sees: `Surface breaks on the stair; one performer at ${sightlines.find((s) => s.bell === chosen.id)!.readDistance.toFixed(1)} m under a 3 m ceiling`,
+    does: "Watches their letter alone, then dives back to the hub",
+    understands: "Surfacing = meeting your letter, privately",
+  },
+  {
+    n: 6,
+    at: { x: (layout.hub.minX + layout.hub.maxX) / 2, z: layout.hub.minZ + 1 },
+    title: "Optional dives",
+    sees: "The other two mouths, still glowing, still open",
+    does: "May dive them — or not; nothing gates the way onward",
+    understands: "The room asked for one choice, not a checklist",
+  },
+  {
+    n: 7,
     at: { x: (layout.shaftPassageLeg.minX + layout.shaftPassageLeg.maxX) / 2, z: (layout.shaftPassageLeg.minZ + layout.shaftPassageLeg.maxZ) / 2 },
     title: "Shaft passage",
-    sees: "A fifth opening glowing cool, not warm",
+    sees: "The fifth opening glowing cool, not warm",
     does: "Swims/walks the drowned passage north",
-    understands: "The dives are done; this is the way onward",
+    understands: "This is the way onward, open after any single dive",
   },
   {
-    n: 11,
+    n: 8,
     at: layout.probes.shaftBottom,
     title: "Buoyant shaft",
     sees: "A glowing water column rising 4.2 m",
@@ -235,7 +239,7 @@ const routeStops: RouteStop[] = [
     understands: "Weightlessness — water carries you",
   },
   {
-    n: 12,
+    n: 9,
     at: layout.probes.apron,
     title: "Grotto ring apron",
     sees: "The dome, mirror pool, waterfall, doubled firelight",
@@ -243,20 +247,20 @@ const routeStops: RouteStop[] = [
     understands: "Reflection — the room shows everything twice",
   },
   {
-    n: 13,
+    n: 10,
     at: layout.probes.procession,
     title: "Procession",
     sees: "All three niches doubled in the black pool (finale restaging, Q2)",
     does: "Walks the ring past the doubled frame",
-    understands: "A, B, C together, shown twice",
+    understands: "A, B, C together at last — including the two not dived",
   },
   {
-    n: 14,
+    n: 11,
     at: layout.probes.thresholdOpening,
     title: "Gilded threshold",
     sees: "The carved gold-barred frame to Fire",
     does: "Exits east",
-    understands: "Water is complete; Fire is next",
+    understands: "Water is complete after one dive; Fire is next",
   },
 ];
 
@@ -310,8 +314,8 @@ const pz = (z: number) => PLAN_Y + (z - bay.minZ) * M2P;
 const rect = (r: WorldRect, fill: string, opacity = 1, stroke = "none") =>
   `<rect x="${px(r.minX).toFixed(1)}" y="${pz(r.minZ).toFixed(1)}" width="${((r.maxX - r.minX) * M2P).toFixed(1)}" height="${((r.maxZ - r.minZ) * M2P).toFixed(1)}" fill="${fill}" fill-opacity="${opacity}" stroke="${stroke}"/>`;
 
-svgParts.push(`<text x="${PLAN_X}" y="${PLAN_Y - 34}" fill="${C.text}" font-size="22" font-weight="600">Top-down plan (north up = toward the grotto)</text>`);
-svgParts.push(rect({ minX: bay.minX - 1, minZ: bay.minZ - 1, maxX: bay.maxX + 1, maxZ: bay.maxZ + 1 }, C.panel));
+svgParts.push(`<text x="${PLAN_X}" y="${PLAN_Y - 12}" fill="${C.text}" font-size="22" font-weight="600">Top-down plan (north up = toward the grotto)</text>`);
+svgParts.push(rect({ minX: bay.minX - 1, minZ: bay.minZ, maxX: bay.maxX + 1, maxZ: bay.maxZ + 1 }, C.panel));
 // rooms + rock
 svgParts.push(rect(layout.gallery, C.rock));
 svgParts.push(rect(layout.grotto, C.panel, 1, C.line));
@@ -596,7 +600,7 @@ const report = {
   },
   openQuestionResolutions: {
     q1_bellsToShaftTopology:
-      "The buoyant shaft connects to the HUB as its fifth opening (drowned passage under the north door). Per-bell shaft exits braid the map against 'legibility over maze'; last-bell-only forces an order against structural decision 1 (free choice).",
+      "RESOLVED per the 2026-08-09 one-dive amendment plus this sub-call: ONE shared column entered from the HUB's fifth opening (drowned passage under the north door). Every bell reaches the shaft through the hub after any single dive, so one dive completes the route and nothing is gated. Per-bell feeder columns were rejected because the spec pins the gravity seam to 'one bounded column with one entrance and one exit', and three feeders braid the map against 'legibility over maze'.",
     q2_ringStaging:
       "PROPOSED: after the dives, the finale restages A/B/C on the three kept ring niches (old shore alcoves) so the mirror pool doubles them from the apron/procession. Performer ANCHORS live in the bells; the restaging mechanism is Gate 2+ runtime work. Needs Austen's call.",
     q3_footprint:

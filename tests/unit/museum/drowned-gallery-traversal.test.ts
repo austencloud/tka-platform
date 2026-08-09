@@ -507,6 +507,30 @@ describe("drowned gallery traversal (headless playtest)", () => {
     }
   });
 
+  it("completes the route after a SINGLE dive (2026-08-09 one-dive amendment)", () => {
+    // Any one bell, then straight to the shaft — the other two are optional.
+    for (const chan of channels) {
+      const single: TileCoord[] = [
+        gallerySouthDoor,
+        tileOfWorld({ x: mid(descentStair.minX, descentStair.maxX), z: descentStair.minZ + 0.5 }),
+        hubTile,
+        ...bellDive(channels.indexOf(chan)),
+        tileOfWorld({ x: mid(shaftPassageLeg.minX, shaftPassageLeg.maxX), z: mid(shaftPassageLeg.minZ, shaftPassageLeg.maxZ) }),
+        tileOfWorld({
+          x: mid(buoyantShaft.minX, buoyantShaft.maxX),
+          z: mid(unionRect(layout.galleryCorridor).minZ, unionRect(layout.galleryCorridor).maxZ),
+        }),
+        tileOfWorld(probes.shaftBottom),
+      ];
+      const samples = walk(single);
+      const last = samples.at(-1)!;
+      expect(
+        Math.hypot(last.x - probes.shaftBottom.x, last.z - probes.shaftBottom.z),
+        `single dive via bell ${chan.id} did not reach the shaft`
+      ).toBeLessThan(0.4);
+    }
+  });
+
   it("connects the shaft bottom to the hub, and the apron only over the rim", () => {
     // Bottom: walkable path hub → shaft floor exists (the drowned passage).
     const path = bfsPath(hubTile, tileOfWorld(probes.shaftBottom));
