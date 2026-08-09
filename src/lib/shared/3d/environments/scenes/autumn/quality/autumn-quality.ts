@@ -9,13 +9,20 @@ export interface AutumnQualityConfig {
   sporeCount: number;
   fireflyCount: number;
   wispCount: number;
-  pondReflector: boolean;
-  godRays: boolean;
+  /**
+   * Contact shadows from the moon key. Off on `low` because the extra depth
+   * pass is the first thing a weak GPU cannot afford.
+   */
   shadows: boolean;
+  /**
+   * Shadow map resolution. The camera spans 40m to cover tree-length shadows,
+   * so 1024 gives ~26 texels/m — enough for soft contact, visibly stepped on
+   * trunk edges. High doubles it.
+   */
+  shadowMapSize: number;
 }
 
 const CONFIGS: Record<AutumnQualityTier, AutumnQualityConfig> = {
-  // Ocean "ultra" → autumn "high"
   high: {
     fillTreeCount: 36,
     mushroomCount: 18,
@@ -23,11 +30,9 @@ const CONFIGS: Record<AutumnQualityTier, AutumnQualityConfig> = {
     sporeCount: 60,
     fireflyCount: 36,
     wispCount: 5,
-    pondReflector: false,
-    godRays: false,
-    shadows: false,
+    shadows: true,
+    shadowMapSize: 2048,
   },
-  // Ocean "medium" → autumn "medium"
   medium: {
     fillTreeCount: 28,
     mushroomCount: 14,
@@ -35,11 +40,9 @@ const CONFIGS: Record<AutumnQualityTier, AutumnQualityConfig> = {
     sporeCount: 40,
     fireflyCount: 24,
     wispCount: 4,
-    pondReflector: false,
-    godRays: false,
-    shadows: false,
+    shadows: true,
+    shadowMapSize: 1024,
   },
-  // Ocean "low" → autumn "low"
   low: {
     fillTreeCount: 18,
     mushroomCount: 10,
@@ -47,9 +50,8 @@ const CONFIGS: Record<AutumnQualityTier, AutumnQualityConfig> = {
     sporeCount: 20,
     fireflyCount: 12,
     wispCount: 3,
-    pondReflector: false,
-    godRays: false,
     shadows: false,
+    shadowMapSize: 1024,
   },
 };
 
@@ -62,17 +64,10 @@ export function getAutumnQualityConfig(
 /**
  * Detects the appropriate quality tier for the current device.
  *
- * Heuristic mirrors detectOceanQuality (ocean-quality.ts):
- *   - null renderer → "medium" (no renderer context, assume mid-range; ocean returns "ultra" but
- *     autumn uses "medium" as the safe default since null means SSR / test environment)
- *   - mobile UA or known low-end GPU renderer string → "low"
+ *   - null renderer → "medium" (SSR / test environment, assume mid-range)
+ *   - mobile UA, known low-end GPU string, or <= 4 cores → "low"
  *   - integrated GPU (Intel/UHD/Iris) → "medium"
- *   - everything else (discrete GPU, high core count) → "high"   (maps from ocean's "ultra")
- *
- * Tier name mapping from ocean → autumn:
- *   ocean "ultra"  → autumn "high"
- *   ocean "medium" → autumn "medium"
- *   ocean "low"    → autumn "low"
+ *   - everything else (discrete GPU, high core count) → "high"
  */
 export function detectAutumnQuality(
   renderer: WebGLRenderer | null

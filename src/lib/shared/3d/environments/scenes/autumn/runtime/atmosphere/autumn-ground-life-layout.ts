@@ -84,6 +84,10 @@ export const AUTUMN_LEAF_EMITTERS: readonly AutumnLeafEmitter[] = Object.freeze(
 );
 
 function allocateWeighted(total: number, weights: readonly number[]): number[] {
+  // With no weights the distribution loop below indexes by `i % 0`, which is
+  // NaN, and the function returns garbage rather than failing. An empty
+  // allocation is simply an empty result.
+  if (weights.length === 0) return [];
   const wholeTotal = Math.max(0, Math.floor(total));
   const counts = weights.map((weight) => Math.floor(wholeTotal * weight));
   let assigned = counts.reduce((sum, count) => sum + count, 0);

@@ -46,14 +46,17 @@
       position.y={groundY + emitter.area.height * 0.72}
       position.z={emitter.position[1]}
     >
+      <!-- Sizes run larger than the old confetti so the leaf silhouette has
+           enough screen pixels to read as a leaf rather than a speck. -->
       <FallingParticles
         type="leaves"
         count={leafCounts[index] ?? 0}
         area={emitter.area}
         speed={0.105}
-        colors={["#b5571a", "#d98324", "#8a2e16", "#e0a040"]}
-        sizeRange={[0.04, 0.095]}
+        colors={["#a84a18", "#c47324", "#7d2a14", "#cf9038"]}
+        sizeRange={[0.07, 0.16]}
         spin={true}
+        opacity={0.94}
       />
     </T.Group>
   {/each}

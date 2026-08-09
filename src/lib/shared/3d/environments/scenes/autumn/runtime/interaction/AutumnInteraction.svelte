@@ -4,19 +4,24 @@
   /**
    * One glow target the interaction layer can pulse.
    *
-   * Both upstream producers now emit `{ material, position }` pairs, so each
-   * already carries the world position proximity pulsing needs:
-   *   - WillOWisps.svelte → onWispTargets (core mat + its owning Group's live
-   *     `position` Vector3; the Group drifts every frame, and because it's the
-   *     SAME Vector3 instance, this layer reads the live drifting position for
-   *     free with no per-frame sync).
-   *   - authored/AutumnFlora.svelte → onMushroomTargets (cloned emissive mat +
-   *     the static world position of the mushroom's placement).
+   * The single producer is WillOWisps.svelte → onWispTargets: the core material
+   * plus its owning Group's live `position` Vector3. The Group drifts every
+   * frame, and because it is the SAME Vector3 instance, this layer reads the
+   * live drifting position for free with no per-frame sync. The runtime
+   * composer adds `baseIntensity` from the material's resting
+   * `emissiveIntensity` — the value the glow decays back to.
    *
-   * The orchestrator (AutumnScene) and the runtime composer just thread these
-   * through into PulseTarget[] (adding `baseIntensity` from the material's
-   * resting `emissiveIntensity` — wisp 1.2, mushroom 0.8 at time of writing —
-   * the value glow decays back to). No more pairing of bare materials.
+   * The authored fairy-ring mushrooms are deliberately NOT targets, and this is
+   * a property of the asset pipeline rather than an oversight. The optimizer's
+   * GPU-instancing pass collapses all 16 mushroom clusters into a single
+   * InstancedMesh sharing one material ("Autumn Fairy Mushroom 1"). The pulse
+   * loop below writes `mat.emissiveIntensity` per target in sequence, so a set
+   * of targets sharing one material resolves to "last target wins" rather than
+   * "nearest wins" — and because the two rings sit ~15m apart, approaching one
+   * would visibly light the other. Per-instance emissive would need a custom
+   * instanced shader, which is not a trade this scene should make: runtime
+   * efficiency was its weakest dimension in review. A `mushroomTargets` prop
+   * used to be declared and documented here but was never supplied by anything.
    */
   export interface PulseTarget {
     material: MeshStandardMaterial;
@@ -55,7 +60,14 @@
    */
   import { useThrelte, useTask } from "@threlte/core";
   import { onDestroy } from "svelte";
-  import { Raycaster, Vector2, Vector3, Plane } from "three";
+  import {
+    Raycaster,
+    Vector2,
+    Vector3,
+    Plane,
+    type Camera,
+    type WebGLRenderer,
+  } from "three";
 
   interface Props {
     /**
@@ -84,14 +96,20 @@
 
   const { renderer, camera } = useThrelte();
 
-  // ── Renderer/camera accessors (mirror OceanInteraction's `.current ??`) ──
+  // ── Renderer/camera accessors ───────────────────────────────────────────
+  //
+  // Threlte's context types are honest about the difference: `renderer` is the
+  // renderer itself, while `camera` is a CurrentWritable whose value lives on
+  // `.current`. This used to read `(x as any)?.current ?? (x as any)` for both,
+  // which papered over that difference and contradicted AutumnScene, where the
+  // same two values were cast to plain objects.
 
-  function getGl(): import("three").WebGLRenderer | undefined {
-    return (renderer as any)?.current ?? (renderer as any);
+  function getGl(): WebGLRenderer | undefined {
+    return renderer;
   }
 
-  function getCam(): import("three").Camera | undefined {
-    return (camera as any)?.current ?? (camera as any);
+  function getCam(): Camera | undefined {
+    return camera.current;
   }
 
   // ── Pointer tracking (NDC from the canvas rect) ─────────────────────────

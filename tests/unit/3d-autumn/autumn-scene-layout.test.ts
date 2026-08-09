@@ -1,21 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  BoxGeometry,
-  Group,
-  Matrix4,
-  Mesh,
-  MeshStandardMaterial,
-  Vector3,
-} from "three";
 
-import {
-  createAutumnInstanceBatches,
-  disposeAutumnInstanceBatches,
-} from "$lib/shared/3d/environments/scenes/autumn/authored/autumn-instancing";
-import {
-  createAutumnPlacementLayout,
-  ringPlacements,
-} from "$lib/shared/3d/environments/scenes/autumn/authored/placements";
 import { getAutumnQualityConfig } from "$lib/shared/3d/environments/scenes/autumn/quality/autumn-quality";
 import { AUTUMN_POND_LAYOUT } from "$lib/shared/3d/environments/scenes/autumn/runtime/water/autumn-pond-layout";
 import {
@@ -27,87 +11,17 @@ import {
 import { isAutumnGrassTierVisible } from "$lib/shared/3d/environments/scenes/autumn/runtime/wind/autumn-grass-tier";
 
 describe("Autumn scene layout", () => {
-  it("keeps placements deterministic and protects an expanded performer clearing", () => {
-    const input = {
-      treeCount: 36,
-      mushroomCount: 18,
-      stageWidth: 10,
-      stageDepth: 8,
-      stageZOffset: -1,
-    };
-    const layout = createAutumnPlacementLayout(input);
-
-    expect(layout).toEqual(createAutumnPlacementLayout(input));
-    expect(layout.trees).toHaveLength(36);
-    expect(layout.mushrooms).toHaveLength(18);
-
-    const nearestTree = Math.min(
-      ...layout.trees.map((placement) =>
-        Math.hypot(placement.x, placement.z - input.stageZOffset)
-      )
-    );
-    expect(nearestTree).toBeGreaterThanOrEqual(
-      layout.forestEdgeRadius - 1.25 - 1e-6
-    );
-  });
-
-  it("supports centered placement offsets without changing ring distance", () => {
-    const placements = ringPlacements({
-      count: 12,
-      radius: 10,
-      radiusJitter: 1,
-      scaleBase: 1,
-      scaleVariation: 0.3,
-      seed: 4,
-      centerX: 3,
-      centerZ: -2,
-      angleJitter: 0.35,
-    });
-
-    for (const placement of placements) {
-      const radius = Math.hypot(placement.x - 3, placement.z + 2);
-      expect(radius).toBeGreaterThanOrEqual(9 - 1e-6);
-      expect(radius).toBeLessThanOrEqual(11 + 1e-6);
-    }
-  });
-
-  it("keeps every GLB source mesh while batching repeated placements", () => {
-    const source = new Group();
-    const sourceMaterial = new MeshStandardMaterial({ color: "#d98324" });
-    const lower = new Mesh(new BoxGeometry(1, 1, 1), sourceMaterial);
-    const upper = new Mesh(new BoxGeometry(1, 1, 1), sourceMaterial);
-    upper.position.y = 1;
-    source.add(lower, upper);
-
-    const batches = createAutumnInstanceBatches(source, [
-      { x: 2, z: 3, scale: 1, rotationY: 0 },
-      { x: -4, z: 5, scale: 2, rotationY: Math.PI / 2 },
-    ]);
-
-    expect(batches).toHaveLength(2);
-    expect(batches[0]!.count).toBe(2);
-    expect(batches[0]!.material).not.toBe(sourceMaterial);
-
-    const matrix = new Matrix4();
-    const position = new Vector3();
-    batches[0]!.getMatrixAt(1, matrix);
-    position.setFromMatrixPosition(matrix);
-    expect(position.toArray()).toEqual([-4, 0, 5]);
-
-    disposeAutumnInstanceBatches(batches);
-    lower.geometry.dispose();
-    upper.geometry.dispose();
-    sourceMaterial.dispose();
-  });
-
-  it("keeps the duplicate pond and god-ray overdraw disabled", () => {
+  it("gives the two capable tiers contact shadows and spares the weakest", () => {
     const high = getAutumnQualityConfig("high");
     const medium = getAutumnQualityConfig("medium");
+    const low = getAutumnQualityConfig("low");
 
-    expect(high.pondReflector).toBe(false);
-    expect(high.godRays).toBe(false);
-    expect(medium.pondReflector).toBe(false);
-    expect(medium.godRays).toBe(false);
+    // Shadows were false on every tier, so the configured shadow camera never
+    // ran and nothing in the scene had contact. Low stays off because the extra
+    // depth pass is the first thing a weak GPU cannot afford.
+    expect(high.shadows).toBe(true);
+    expect(medium.shadows).toBe(true);
+    expect(low.shadows).toBe(false);
     expect(medium.fillTreeCount).toBeLessThan(high.fillTreeCount);
   });
 

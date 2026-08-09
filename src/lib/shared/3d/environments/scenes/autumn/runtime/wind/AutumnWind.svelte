@@ -1,6 +1,5 @@
 <script lang="ts">
   import { useTask } from "@threlte/core";
-  import { MediaQuery } from "svelte/reactivity";
   import {
     DoubleSide,
     MeshStandardMaterial,
@@ -14,6 +13,7 @@
     getAutumnGrassTierFromName,
     isAutumnGrassTierVisible,
   } from "./autumn-grass-tier";
+  import { prefersReducedMotion } from "../../../../primitives/motion-preference";
 
   interface Props {
     scene: Object3D | null;
@@ -30,12 +30,25 @@
 
   const windDirection = new Vector2(0.86, 0.5).normalize();
   const activeUniforms = new Set<WindUniforms>();
-  let reducedMotionQuery: MediaQuery | null = null;
 
-  function prefersReducedMotion(): boolean {
-    if (typeof window === "undefined") return false;
-    reducedMotionQuery ??= new MediaQuery("(prefers-reduced-motion: reduce)");
-    return reducedMotionQuery.current;
+  // Peak horizontal offset the wind shader can apply: strength 0.14 times the
+  // primary+flutter envelope (1.24) times the maximum gust (1.0), rounded up.
+  const WIND_BOUNDS_MARGIN = 0.25;
+
+  function expandBoundsForWind(mesh: Mesh): void {
+    const geometry = mesh.geometry;
+    if (!geometry) return;
+    if (geometry.userData.autumnWindBoundsExpanded) return;
+
+    geometry.computeBoundingSphere();
+    if (geometry.boundingSphere) {
+      geometry.boundingSphere.radius += WIND_BOUNDS_MARGIN;
+    }
+    geometry.computeBoundingBox();
+    if (geometry.boundingBox) {
+      geometry.boundingBox.expandByScalar(WIND_BOUNDS_MARGIN);
+    }
+    geometry.userData.autumnWindBoundsExpanded = true;
   }
 
   function patchWindMaterial(material: MeshStandardMaterial): WindUniforms {
@@ -118,7 +131,12 @@
       if (!mesh.isMesh) return;
       mesh.castShadow = false;
       mesh.receiveShadow = true;
-      mesh.frustumCulled = false;
+      // Culling used to be disabled outright, which submitted all three grass
+      // meshes (28,519 triangles) every frame regardless of where the camera
+      // looked. The real reason was the wind shader pushing tips outside the
+      // authored bounds, so the bounds are grown by the shader's maximum
+      // displacement instead and culling is left on.
+      expandBoundsForWind(mesh);
       const materials = Array.isArray(mesh.material)
         ? mesh.material
         : [mesh.material];

@@ -10,6 +10,10 @@
     type Vector3,
   } from "three";
   import type { AutumnQualityConfig } from "../../quality/autumn-quality";
+  import {
+    prefersReducedMotion,
+    resolveMotionScale,
+  } from "../../../../primitives/motion-preference";
 
   interface Props {
     quality: AutumnQualityConfig;
@@ -37,7 +41,13 @@
     group: Group;
     coreMat: MeshStandardMaterial;
     baseX: number;
-    baseY: number;
+    /**
+     * Hover height ABOVE the ground, not an absolute Y. The wisps are built
+     * once and only remount on a tier change, so baking groundY in here left
+     * every wisp stranded at the old height whenever the user changed their
+     * proportions.
+     */
+    baseHeight: number;
     baseZ: number;
     speed: number;
     phase: number;
@@ -45,10 +55,11 @@
     driftRadius: number;
   }
 
-  // One shared unit sphere — scaled per-mesh, disposed once.
-  const sharedCoreGeo = untrack(() => new SphereGeometry(1, 12, 12));
+  // One shared unit sphere — scaled per-mesh, disposed once. This reads no
+  // reactive state, so it needs no untrack.
+  const sharedCoreGeo = new SphereGeometry(1, 12, 12);
 
-  // Build wisp configs/groups/materials ONCE. wispCount: 4 low / 6 med / 9 high.
+  // Build wisp configs/groups/materials ONCE. Counts live in autumn-quality.ts.
   const wisps: Wisp[] = untrack(() => {
     const count = quality.wispCount;
     const built: Wisp[] = [];
@@ -58,9 +69,11 @@
       const radius = 8.0 + (i % 3) * 2.0;
       // Varied hover height between ~1 and ~4 units above the ground.
       const height = 1 + ((i * 0.618) % 1) * 3;
-      // Small core scale, varied per wisp. The emissive bloom supplies the halo;
-      // the geometry itself should never read as a floating white ball.
-      const scale = 0.008 + ((i * 0.41) % 1) * 0.006;
+      // Core scale. The original 0.008-0.014 assumed a bloom pass supplied the
+      // halo, but no bloom runs in this scene, so the bare geometry rendered as
+      // 8-14mm specks indistinguishable from dead pixels. These are sized to
+      // read as glowing motes at performance distance on their own.
+      const scale = 0.05 + ((i * 0.41) % 1) * 0.045;
 
       const group = new Group();
       const wispColor = new Color(WISP_COLORS[i % WISP_COLORS.length]);
@@ -82,7 +95,7 @@
         group,
         coreMat,
         baseX: Math.cos(angle) * radius,
-        baseY: groundY + height,
+        baseHeight: height,
         baseZ: Math.sin(angle) * radius,
         speed: 0.12 + i * 0.03,
         phase: i * 1.7,
@@ -109,13 +122,17 @@
 
   let elapsed = 0;
 
+  const reducedMotion = $derived(prefersReducedMotion());
+  const motionScale = $derived(resolveMotionScale(reducedMotion));
+
   useTask((delta) => {
-    elapsed += delta;
+    elapsed += delta * motionScale;
+    const ground = groundY;
     for (const wisp of wisps) {
       const t = elapsed * wisp.speed + wisp.phase;
       wisp.group.position.set(
         wisp.baseX + Math.sin(t * 0.7) * wisp.driftRadius,
-        wisp.baseY + Math.sin(t) * wisp.bobAmplitude,
+        ground + wisp.baseHeight + Math.sin(t) * wisp.bobAmplitude,
         wisp.baseZ + Math.cos(t * 0.5) * wisp.driftRadius
       );
     }
@@ -132,13 +149,14 @@
   });
 </script>
 
-<!-- Drifting emissive cores. Bloom carries the halo without adding several
-     scene-wide point-light calculations to every ground and flora fragment. -->
+<!-- Drifting emissive cores, sized to read on their own. No bloom pass runs in
+     this scene, so the geometry has to carry the glow rather than relying on a
+     post-process that was never wired. -->
 {#each wisps as wisp (wisp)}
   <T
     is={wisp.group}
     position.x={wisp.baseX}
-    position.y={wisp.baseY}
+    position.y={groundY + wisp.baseHeight}
     position.z={wisp.baseZ}
   />
 {/each}

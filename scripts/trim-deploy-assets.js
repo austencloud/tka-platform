@@ -27,7 +27,46 @@ const DIRS_TO_REMOVE = [
 
 // Individual dev-only files that live in static/ and would otherwise ship.
 // Same reasoning as the sketches directory above.
-const FILES_TO_REMOVE = ["element-icons-preview.html"];
+//
+// The Autumn entries are Blender/forest BUILD INPUTS, not runtime assets. Grep
+// proof: the only runtime fetch under models/autumn is
+// `/models/autumn/autumn-environment.glb` (AutumnScene.svelte), and nothing
+// fetches textures/autumn-floor at all — those PNGs are bake inputs for
+// build-autumn-floor-textures.mjs and build-autumn-environment.py.
+//
+// They are trimmed from the deploy output rather than deleted from the repo
+// because three of them are still needed on disk: forest-tree-layout.json
+// consumes autumn-snag.glb, golden-larch.glb and autumn-willow.glb as
+// sourcePath inputs to the forest builder.
+const FILES_TO_REMOVE = [
+  "element-icons-preview.html",
+  // Optimized per-asset GLBs. The Autumn builder imports the *_raw* variants;
+  // these optimized copies are only consumed by other builders, offline.
+  "models/autumn/hero-tree-a.glb",
+  "models/autumn/hero-tree-b.glb",
+  "models/autumn/fallen-log.glb",
+  "models/autumn/fern-clump.glb",
+  "models/autumn/mushroom-grove.glb",
+  "models/autumn/perched-owl.glb",
+  "models/autumn/autumn-snag.glb",
+  "models/autumn/autumn-willow.glb",
+  "models/autumn/golden-larch.glb",
+  // Floor bake inputs. The shipped GLB carries these baked into its own
+  // KTX2 textures; the source maps are never requested by the browser.
+  "textures/autumn-floor/albedo-source.png",
+  "textures/autumn-floor/albedo.png",
+  "textures/autumn-floor/normal.png",
+  "textures/autumn-floor/roughness.png",
+];
+
+// Raw Meshy/Blender source GLBs. These are gitignored, but .gitignore does not
+// stop SvelteKit copying static/ verbatim into the build output, so every one
+// of them was being published. Only the largest tripped the 25 MiB per-file
+// sweep below; the rest (9-20 MiB each) shipped silently. Nothing fetches a
+// *_raw.glb at runtime — they exist purely as Blender import sources.
+const isRawSourceModel = (path) => path.endsWith("_raw.glb");
+
+let rawRemovedBytes = 0;
 
 function walk(dir) {
   const entries = readdirSync(dir, { withFileTypes: true });
@@ -37,7 +76,13 @@ function walk(dir) {
       walk(fullPath);
     } else {
       const size = statSync(fullPath).size;
-      if (size > MAX_BYTES) {
+      if (isRawSourceModel(entry.name)) {
+        console.log(
+          `  Removing raw source ${fullPath} (${(size / 1024 / 1024).toFixed(1)} MiB)`
+        );
+        rawRemovedBytes += size;
+        unlinkSync(fullPath);
+      } else if (size > MAX_BYTES) {
         console.log(`  Removing ${fullPath} (${(size / 1024 / 1024).toFixed(1)} MiB)`);
         unlinkSync(fullPath);
       }
@@ -64,6 +109,11 @@ for (const file of FILES_TO_REMOVE) {
   }
 }
 
-console.log("Trimming files > 25 MiB...");
+console.log("Trimming raw source models and files > 25 MiB...");
 walk(OUTPUT_DIR);
+if (rawRemovedBytes > 0) {
+  console.log(
+    `  Raw source models removed: ${(rawRemovedBytes / 1024 / 1024).toFixed(1)} MiB`
+  );
+}
 console.log("Done.");

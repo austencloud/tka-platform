@@ -42,42 +42,55 @@ POND_RY = 3.35
 POND_SEED = 4.2
 POND_WATER_HEIGHT = -0.32
 
+# Hero ring. Review found the right-hand crowns reading as the same asset at
+# the same scale: they shared height, rotation and mirroring closely enough that
+# the canopy layering, root buttress and vine drape lined up. Heights now spread
+# 8.4-13.8m instead of 9.2-13.8, every neighbour alternates mirroring, rotations
+# are spaced so no two adjacent crowns present the same face, and radii cluster
+# rather than sitting on one circle.
 TREE_PLACEMENTS = (
     ("HeroTreeA_01", "HeroA", -12.8, 6.5, 12.8, -0.20, 1.0, False, 2.55),
-    ("HeroTreeA_02", "HeroA", 13.6, 8.5, 11.2, 2.48, 1.0, True, 2.35),
-    # The back-center tree moves right to create a second, staggered sightline.
+    ("HeroTreeA_02", "HeroA", 14.9, 9.6, 10.1, 0.42, 0.94, True, 2.20),
+    # The back-center tree stays right of centre for a staggered sightline.
     ("HeroTreeA_03", "HeroA", 6.2, 18.3, 13.8, 3.03, 1.0, False, 2.75),
     ("HeroTreeA_04", "HeroA", -20.5, -0.4, 10.4, 0.72, 1.0, True, 2.25),
     ("HeroTreeB_01", "HeroB", -18.2, -9.2, 10.8, -0.58, 1.0, False, 2.45),
-    ("HeroTreeB_02", "HeroB", 16.0, -6.8, 10.2, 1.08, 1.0, True, 2.30),
+    ("HeroTreeB_02", "HeroB", 16.0, -6.8, 8.4, 1.94, 0.86, False, 1.95),
     ("HeroTreeB_03", "HeroB", -10.4, 16.8, 9.6, 2.66, 1.0, True, 2.20),
-    ("HeroTreeB_04", "HeroB", 18.8, 13.0, 9.2, -2.20, 1.0, False, 2.15),
+    ("HeroTreeB_04", "HeroB", 20.4, 14.6, 12.2, -1.05, 1.08, True, 2.45),
 )
 
 # A second, lower canopy tier closes the empty horizon without turning the
 # performance clearing into a wall. Four deliberately different families form
 # its rhythm: white birch clusters, bare snags, conical golden larches, and
 # low drooping willows. The central gap remains open for the moon.
+# The belt used to sit at a near-constant 26m radius, which read as a literal
+# ring of trees around a circular clearing at wide framings. Radii now range
+# 21.5-29.5m in deliberate clusters with gaps between them, and heights spread
+# 5.8-10.4m so the silhouette against the sky varies instead of forming an even
+# hedge. Two members are pulled inside 22m as near-field framing elements. The
+# central gap above the moon stays open.
 DISTANT_TREE_PLACEMENTS = (
-    ("DistantBirch_01", "Birch", -26.0, 4.5, 7.8, -0.44, 0.94, False, 1.55),
-    ("DistantLarch_01", "Larch", -24.2, 13.4, 8.8, 0.72, 1.02, True, 1.45),
-    ("DistantSnag_01", "Snag", -20.0, 20.5, 9.5, -0.18, 1.0, False, 1.35),
-    ("DistantWillow_01", "Willow", -13.8, 23.8, 7.8, 1.82, 0.96, False, 1.78),
-    ("DistantSnag_02", "Snag", 2.4, 25.8, 8.0, 0.38, 0.92, True, 1.25),
-    ("DistantBirch_02", "Birch", 10.2, 24.8, 8.9, -1.28, 1.04, True, 1.70),
-    ("DistantSnag_03", "Snag", 17.8, 22.0, 9.2, 0.93, 0.96, False, 1.30),
-    ("DistantWillow_02", "Willow", 23.2, 16.8, 7.9, 2.52, 1.0, False, 1.82),
-    ("DistantSnag_04", "Snag", 26.4, 8.5, 9.4, -0.70, 1.02, True, 1.35),
-    ("DistantLarch_02", "Larch", 26.0, -1.8, 8.0, 1.17, 0.93, True, 1.38),
+    ("DistantBirch_01", "Birch", -27.4, 4.5, 8.6, -0.44, 0.94, False, 1.55),
+    ("DistantLarch_01", "Larch", -23.1, 13.4, 10.4, 0.72, 1.02, True, 1.45),
+    ("DistantSnag_01", "Snag", -21.5, 21.8, 9.5, -0.18, 1.0, False, 1.35),
+    ("DistantWillow_01", "Willow", -13.8, 25.4, 7.1, 1.82, 0.96, False, 1.78),
+    ("DistantSnag_02", "Snag", 2.4, 28.2, 6.4, 0.38, 0.92, True, 1.25),
+    ("DistantBirch_02", "Birch", 10.2, 23.6, 9.7, -1.28, 1.04, True, 1.70),
+    ("DistantSnag_03", "Snag", 18.9, 22.0, 8.2, 0.93, 0.96, False, 1.30),
+    ("DistantWillow_02", "Willow", 24.6, 15.1, 7.9, 2.52, 1.0, False, 1.82),
+    ("DistantSnag_04", "Snag", 28.1, 8.5, 10.1, -0.70, 1.02, True, 1.35),
+    ("DistantLarch_02", "Larch", 25.2, -1.8, 6.7, 1.17, 0.93, True, 1.38),
     ("DistantBirch_03", "Birch", -26.2, -5.0, 7.5, -2.14, 0.92, False, 1.45),
     # Lower secondary crowns close the exposed terrain band while keeping the
     # tall-tree spacing and moon opening readable.
-    ("DistantWillow_03", "Willow", -26.0, 17.2, 6.4, 0.42, 0.95, True, 1.52),
-    ("DistantLarch_03", "Larch", -18.0, 25.5, 6.9, -1.62, 1.0, False, 1.18),
+    ("DistantWillow_03", "Willow", -29.5, 17.2, 5.8, 0.42, 0.95, True, 1.52),
+    ("DistantLarch_03", "Larch", -18.0, 27.6, 6.9, -1.62, 1.0, False, 1.18),
     ("DistantBirch_04", "Birch", -10.8, 26.0, 6.5, 2.18, 0.92, True, 1.22),
-    ("DistantLarch_04", "Larch", 6.2, 26.5, 6.9, -0.82, 0.96, False, 1.18),
-    ("DistantBirch_05", "Birch", 15.5, 25.0, 6.9, 1.42, 0.98, True, 1.28),
-    ("DistantSnag_05", "Snag", 25.5, 18.0, 7.2, -2.34, 0.94, False, 1.18),
+    ("DistantLarch_04", "Larch", 6.2, 29.1, 8.4, -0.82, 0.96, False, 1.18),
+    # Pulled inside the belt radius as near-field framing rather than ring fill.
+    ("DistantBirch_05", "Birch", 16.8, 21.6, 6.2, 1.42, 0.98, True, 1.28),
+    ("DistantSnag_05", "Snag", -22.4, -13.8, 7.2, -2.34, 0.94, False, 1.18),
 )
 
 SAPLING_PLACEMENTS = (
@@ -128,9 +141,32 @@ GRASS_COLONIES = (
     (15.3, 11.8, 2.6, 1.7),
     (-17.0, -5.2, 3.0, 1.8),
     (0.0, 17.0, 3.2, 1.8),
+    # Outer colonies. Review found grass existing only as an annulus with a hard
+    # outer termination and completely bare terrain beyond the tree ring. These
+    # sit past the old edge and, combined with the radial acceptance ramp in
+    # sample_grass_positions, let density fade to nothing instead of stopping.
+    (-20.5, 9.5, 3.4, 2.2),
+    (19.5, 4.0, 3.4, 2.2),
+    (-9.5, 21.0, 3.2, 2.0),
+    (9.0, 21.5, 3.2, 2.0),
+    (-19.0, -13.0, 3.0, 2.0),
+    (17.5, -14.0, 3.0, 2.0),
 )
 
-OWL_POSITION = (5.3, 17.55, 7.0)
+# Beyond this radius grass thins out rather than stopping dead.
+GRASS_FEATHER_START = 17.5
+GRASS_FEATHER_END = 26.0
+
+# Owl perch. Review found the owl unlocatable at every runtime framing: at 7.0m
+# up it sat inside the canopy mass of HeroTreeA_03, a dark shape against dark
+# leaves. Dropping it to 5.4m puts it on the open trunk below the crown, where
+# it silhouettes against fog-lit background instead, and the size below is the
+# largest that still reads as a real owl rather than a prop.
+OWL_POSITION = (5.3, 17.55, 5.4)
+OWL_HEIGHT = 1.42
+# The Meshy owl carries a short branch under its closed talons; the connector
+# meets that branch, not the owl's own origin.
+OWL_BRANCH_DROP = 0.52
 
 MOSS_PATCHES = (
     ("MossPatch_01", -15.2, 4.1, 3.8, 2.4, 0.20, 2.0),
@@ -310,18 +346,6 @@ EARTH = forest_floor_material(
     normal_texture_dir=FOREST_FLOOR_TEXTURE_DIR,
     roughness_texture_dir=FOREST_FLOOR_TEXTURE_DIR,
 )
-PACKED_EARTH = forest_floor_material(
-    "Packed Performance Clearing",
-    (1.0, 1.0, 1.0),
-    0.0,
-    0.95,
-    AUTUMN_FLOOR_TEXTURE_DIR,
-    "packed-albedo.jpg",
-    "normal.jpg",
-    "roughness.jpg",
-    DIRT_TEXTURE_DIR,
-    DIRT_TEXTURE_DIR,
-)
 MOSS = forest_floor_material(
     "Shade Moss",
     (1.0, 1.0, 1.0),
@@ -330,8 +354,14 @@ MOSS = forest_floor_material(
     diffuse_name="moss-albedo.jpg",
     normal_name="normal.jpg",
     roughness_name="roughness.jpg",
-    normal_texture_dir=DIRT_TEXTURE_DIR,
-    roughness_texture_dir=DIRT_TEXTURE_DIR,
+    # Surface response matches the surrounding soil on purpose. Moss used to
+    # take its normal and roughness from the dirt set while the terrain took
+    # its own from the forest-floor set, so under the moon key the patches
+    # picked up a different specular response and read as pale wet blobs
+    # sitting on the ground rather than as moss growing in it. Only the albedo
+    # should differ between these two families.
+    normal_texture_dir=FOREST_FLOOR_TEXTURE_DIR,
+    roughness_texture_dir=FOREST_FLOOR_TEXTURE_DIR,
 )
 DAMP_EARTH = forest_floor_material(
     "Damp Pond Bank",
@@ -359,9 +389,14 @@ DARK_EARTH = forest_floor_material(
 ROCK = principled_material("Weathered Basalt", (0.115, 0.100, 0.110), roughness=0.91)
 ROCK_DAMP = principled_material("Damp Basalt", (0.075, 0.068, 0.078), roughness=0.56)
 ROCK_MOSS = principled_material("Moss on Stone", (0.105, 0.185, 0.075), roughness=0.96)
-LEAF_RED = principled_material("Leaf Litter Crimson", (0.43, 0.045, 0.025), roughness=0.88)
-LEAF_ORANGE = principled_material("Leaf Litter Copper", (0.72, 0.19, 0.035), roughness=0.86)
-LEAF_GOLD = principled_material("Leaf Litter Gold", (0.82, 0.43, 0.07), roughness=0.84)
+# Leaf duff, not confetti. The previous values (0.43/0.72/0.82 red) sat far
+# above the forest floor's value range, so every card popped as a bright chip
+# against dark soil regardless of its shape. Real fallen leaves are dark,
+# desaturated and close in value to the duff they lie on; these are pulled down
+# roughly 45% and slightly desaturated so the drifts read as accumulation.
+LEAF_RED = principled_material("Leaf Litter Crimson", (0.185, 0.042, 0.030), roughness=0.90)
+LEAF_ORANGE = principled_material("Leaf Litter Copper", (0.305, 0.108, 0.038), roughness=0.88)
+LEAF_GOLD = principled_material("Leaf Litter Gold", (0.395, 0.216, 0.062), roughness=0.86)
 TWIG = principled_material("Autumn Twig Litter", (0.10, 0.045, 0.022), roughness=0.96)
 GRASS_BASE = principled_material("Autumn Wind Grass Base", (0.18, 0.23, 0.070), roughness=0.93)
 GRASS_MEDIUM = principled_material("Autumn Wind Grass Medium", (0.14, 0.19, 0.055), roughness=0.94)
@@ -416,18 +451,24 @@ def terrain_height(x, y):
     return height
 
 
+TERRAIN_HALF_SIZE = 31.0
+TERRAIN_SEGMENTS = 96
+
+
 def create_terrain():
-    size = 31.0
-    segments = 96
+    size = TERRAIN_HALF_SIZE
+    segments = TERRAIN_SEGMENTS
     vertices = []
     faces = []
     for iy in range(segments + 1):
         y = -size + (2 * size * iy / segments)
         for ix in range(segments + 1):
             x = -size + (2 * size * ix / segments)
-            radius = math.hypot(x, y)
-            edge_drop = max(0.0, radius - 29.5) * 0.24
-            vertices.append((x, y, terrain_height(x, y) - edge_drop))
+            # The old `edge_drop` pulled the rim down by up to 0.4m, carving a
+            # circular cliff inside the square terrain. That cliff IS the
+            # "finite island" the review saw at wide framings. The apron mesh
+            # below now continues the ground instead, so the rim stays level.
+            vertices.append((x, y, terrain_height(x, y)))
     row = segments + 1
     for iy in range(segments):
         for ix in range(segments):
@@ -437,19 +478,44 @@ def create_terrain():
     mesh = bpy.data.meshes.new("Autumn Terrain Mesh")
     mesh.from_pydata(vertices, [], faces)
     mesh.update()
-    for material in (EARTH, PACKED_EARTH, MOSS, DAMP_EARTH, DARK_EARTH):
+    # PACKED_EARTH is deliberately absent. Giving the performance clearing its
+    # own lighter albedo created exactly the defect the deleted decal was blamed
+    # for: a high-contrast patch whose boundary, evaluated per-polygon on a
+    # 96x96 grid, rendered as stair-stepped edges no amount of angular noise
+    # could hide. The clearing now shares the surrounding woodland soil, so no
+    # albedo boundary exists there at all. It still reads as worn because it is
+    # the only flat, grass-free, litter-free ground in the scene.
+    for material in (EARTH, MOSS, DAMP_EARTH, DARK_EARTH):
         mesh.materials.append(material)
     uv = mesh.uv_layers.new(name="Autumn Ground UV")
     for polygon in mesh.polygons:
         center = polygon.center
         radius = math.hypot(center.x, center.y)
         distance = pond_metric(center.x, center.y)
-        if radius <= CLEARING_RADIUS + 0.25:
-            polygon.material_index = 1
-        elif distance < 1.32:
+        # The packed-earth boundary is deliberately ragged. A clean circle at a
+        # fixed radius reads as a machined disc - which is exactly what the
+        # deleted decal looked like. Three octaves of angular noise interlock
+        # the worn earth with the surrounding duff instead.
+        angle = math.atan2(center.y, center.x)
+        # The remaining boundaries are between materials of SIMILAR value, so a
+        # ragged threshold is enough to keep them from reading as machined
+        # circles. A clean threshold follows the 96x96 grid and renders as a
+        # stair-stepped chevron seam.
+        bank_edge = (
+            1.32
+            + 0.10 * math.sin(angle * 4.3 - 0.4)
+            + 0.06 * math.cos(angle * 7.9 + 1.7)
+        )
+        shadow_edge = (
+            23.0
+            + 1.10 * math.sin(angle * 2.6 + 1.9)
+            + 0.60 * math.cos(angle * 6.1 - 0.8)
+            + 0.30 * math.sin(angle * 11.2 + 0.3)
+        )
+        if distance < bank_edge:
+            polygon.material_index = 2
+        elif radius > shadow_edge:
             polygon.material_index = 3
-        elif radius > 23:
-            polygon.material_index = 4
         else:
             polygon.material_index = 0
         polygon.use_smooth = True
@@ -506,25 +572,20 @@ def create_organic_patch(name, cx, cy, rx, ry, material, rotation, seed, z_offse
 
 
 def create_ground_regions():
-    # The textured patch makes the performance area read as deliberately worn,
-    # while surrounding moss islands explain where fern clusters grow.
-    create_organic_patch(
-        "Packed_Performance_Clearing",
-        0.0,
-        0.0,
-        CLEARING_RADIUS - 0.15,
-        CLEARING_RADIUS - 0.25,
-        PACKED_EARTH,
-        0.0,
-        12.0,
-        0.012,
-    )
+    # There is deliberately NO separate performance-clearing decal here.
+    #
+    # A `Packed_Performance_Clearing` disc used to float 12mm above the terrain
+    # carrying PACKED_EARTH. It was redundant - create_terrain() already assigns
+    # PACKED_EARTH to every terrain polygon inside the clearing - and it was the
+    # source of the faceted "crater" in review: the optimizer's simplify pass
+    # decimated its 72-segment rim down to 45 triangles, so its hard albedo
+    # boundary read as a low-poly cut-out. Deleting it removes the boundary
+    # entirely while the worn-earth read survives in the terrain itself.
+    #
+    # Moss islands stay: they are irregular, off-centre, and never sit under the
+    # performance camera's foreground, so their rims do not read as cut-outs.
     for name, x, y, rx, ry, rotation, seed in MOSS_PATCHES:
         create_organic_patch(name, x, y, rx, ry, MOSS, rotation, seed)
-
-    # Macro-scale color variation comes from physical leaf-card drifts below,
-    # not flat overlay meshes. That keeps transitions irregular at leaf scale
-    # and avoids visible material cut-outs when the camera moves.
 
 
 def create_pond_basin():
@@ -601,24 +662,20 @@ def create_floating_pond_leaves():
         distance = math.sqrt(leaf_rng.uniform(0.08 ** 2, 0.72 ** 2))
         x = POND_X + math.cos(angle) * POND_RX * distance
         y = POND_Y + math.sin(angle) * POND_RY * distance
-        half = leaf_rng.uniform(0.08, 0.17)
-        yaw = leaf_rng.uniform(0.0, math.tau)
-        dx = math.cos(yaw) * half
-        dy = math.sin(yaw) * half
-        px = -dy * 0.42
-        py = dx * 0.42
         z = POND_WATER_HEIGHT + 0.032 + leaf_rng.uniform(0.0, 0.008)
-        start = len(vertices)
-        vertices.extend(
-            (
-                (x - dx, y - dy, z),
-                (x + px, y + py, z + 0.004),
-                (x + dx, y + dy, z),
-                (x - px, y - py, z + 0.003),
-            )
+        face_count = append_leaf_card(
+            vertices,
+            faces,
+            x,
+            y,
+            z,
+            leaf_rng.uniform(0.20, 0.38),
+            leaf_rng.uniform(0.70, 1.10),
+            leaf_rng.uniform(0.0, math.tau),
+            leaf_rng.uniform(0.003, 0.010),
+            0.0,
         )
-        faces.append((start, start + 1, start + 2, start + 3))
-        material_indices.append(index % 3)
+        material_indices.extend([index % 3] * face_count)
     mesh = bpy.data.meshes.new("Floating Pond Leaves Mesh")
     mesh.from_pydata(vertices, [], faces)
     mesh.update()
@@ -626,9 +683,10 @@ def create_floating_pond_leaves():
         mesh.materials.append(material)
     for polygon, material_index in zip(mesh.polygons, material_indices):
         polygon.material_index = material_index
+        polygon.use_smooth = True
     obj = bpy.data.objects.new("Pond_Floating_Autumn_Leaves", mesh)
     bpy.context.scene.collection.objects.link(obj)
-    return len(faces)
+    return 16
 
 
 def imported_asset_root(asset_id, path):
@@ -767,6 +825,9 @@ def create_asset_placements():
     }
     for source_key in ("Birch", "Snag", "Larch", "Willow"):
         tune_background_tree_materials(sources[source_key], source_key)
+    print("Understory material audit:")
+    for source_key in ("Fern", "Log"):
+        tune_understory_materials(sources[source_key], source_key)
 
     for name, source_key, x, y, target_height, rotation, variation, mirror, _footprint in TREE_PLACEMENTS:
         place_asset(
@@ -1013,6 +1074,40 @@ def tune_owl_materials(source_root):
                 strength.default_value = 0.0
 
 
+def tune_understory_materials(source_root, label):
+    """Pull off-palette foliage back toward the autumn scheme.
+
+    Review flagged "saturated cobalt-blue flower clumps" in the dusk woodland.
+    The builder authors no flowers, so the colour has to be coming out of a
+    Meshy source texture or base colour. Rather than guess, this reports every
+    base colour it sees and desaturates any material whose blue channel
+    dominates both others - those are the only ones that can read as cobalt.
+    """
+    seen = set()
+    for obj in source_root.children_recursive:
+        if obj.type != "MESH":
+            continue
+        for material in obj.data.materials:
+            if material is None or material in seen:
+                continue
+            seen.add(material)
+            material.use_nodes = True
+            bsdf = material.node_tree.nodes.get("Principled BSDF")
+            if not bsdf:
+                continue
+            base = bsdf.inputs.get("Base Color")
+            if not base or base.is_linked:
+                print(f"  {label}: '{material.name}' base colour is textured")
+                continue
+            r, g, b = base.default_value[:3]
+            print(f"  {label}: '{material.name}' base colour rgb=({r:.3f}, {g:.3f}, {b:.3f})")
+            if b > r * 1.25 and b > g * 1.25:
+                # Rotate the excess blue into warm umber while keeping value.
+                value = max(r, g, b)
+                base.default_value = (value * 0.46, value * 0.34, value * 0.20, 1.0)
+                print(f"    -> off-palette blue rebalanced to autumn umber")
+
+
 def tune_background_tree_materials(source_root, label):
     """Keep distant trees in the dusk value range instead of self-lighting."""
     seen = set()
@@ -1049,8 +1144,10 @@ def create_owl_perch():
         source,
         "Autumn_Owl_Perch",
         (x, y, terrain_height(x, y) + height),
-        1.18,
-        -0.18,
+        OWL_HEIGHT,
+        # Turned to present its profile to the performance camera rather than
+        # its back, which is what made it read as a lumpy grey shape.
+        -1.15,
         1.0,
         False,
     )
@@ -1067,8 +1164,19 @@ def create_owl_tree_connector():
     tapered connector buries that branch into the nearby trunk fork so the
     combined GLB reads as one physical tree-and-owl asset from every camera.
     """
-    start = Vector((5.92, 18.02, terrain_height(5.92, 18.02) + 6.50))
-    end = Vector((5.18, 17.43, terrain_height(5.3, 17.55) + 6.48))
+    owl_x, owl_y, owl_height = OWL_POSITION
+    # Derived from OWL_POSITION so moving the owl can never leave the branch
+    # behind. The start is buried inside HeroTreeA_03's trunk fork.
+    trunk_x = owl_x + 0.62
+    trunk_y = owl_y + 0.47
+    start = Vector((trunk_x, trunk_y, terrain_height(trunk_x, trunk_y) + owl_height - 0.50))
+    end = Vector(
+        (
+            owl_x - 0.12,
+            owl_y - 0.12,
+            terrain_height(owl_x, owl_y) + owl_height - OWL_BRANCH_DROP,
+        )
+    )
     direction = end - start
     midpoint = (start + end) * 0.5
     bpy.ops.mesh.primitive_cone_add(
@@ -1088,7 +1196,9 @@ def create_owl_tree_connector():
 
 def grass_point_is_valid(x, y, rock_placements, mushroom_positions):
     radius = math.hypot(x, y)
-    if radius < CLEARING_RADIUS + 0.35 or radius > 22.5:
+    # Hard bounds only. The density falloff toward the outer edge lives in the
+    # sampler so this stays a deterministic predicate the validator can reuse.
+    if radius < CLEARING_RADIUS + 0.35 or radius > GRASS_FEATHER_END:
         return False
     if in_pond(x, y, margin=0.62):
         return False
@@ -1113,6 +1223,14 @@ def sample_grass_positions(count, seed, rock_placements, mushroom_positions, occ
         y = rng.gauss(center_y, spread_y * 0.48)
         if not grass_point_is_valid(x, y, rock_placements, mushroom_positions):
             continue
+        # Feather the outer boundary. Acceptance falls from 1 to 0 across the
+        # last several metres so the grass thins out; the old hard cut left a
+        # visible line where every blade stopped at once.
+        radius = math.hypot(x, y)
+        if radius > GRASS_FEATHER_START:
+            keep = 1.0 - smoothstep(GRASS_FEATHER_START, GRASS_FEATHER_END, radius)
+            if rng.random() > keep:
+                continue
         cell_x = math.floor(x / cell_size)
         cell_y = math.floor(y / cell_size)
         blocked = False
@@ -1302,6 +1420,74 @@ def create_twig_litter(grass_positions):
     return positions
 
 
+def leaf_outline(samples=5):
+    """Normalized half-profile of an ovate leaf blade.
+
+    Returns (along, half_width) pairs from the petiole to the tip. The
+    fractional power swells the profile quickly off the base so the blade reads
+    rounded where it joins the stem and tapers to a point, and the cosine term
+    puts shallow lobes on the margin. Mirroring this across the midrib gives the
+    full outline.
+
+    This replaces the four-vertex rhombus the litter used to be. Those quads
+    were geometrically diamonds, and at every camera distance they read as
+    scattered paper confetti rather than leaves.
+    """
+    profile = []
+    for index in range(samples + 1):
+        along = index / samples
+        half = 0.34 * math.sin(pow(along, 0.58) * math.pi)
+        half *= 0.88 + 0.12 * math.cos(along * 17.0)
+        profile.append((along, half))
+    return profile
+
+
+LEAF_PROFILE = leaf_outline()
+
+
+def append_leaf_card(vertices, faces, x, y, z, length, width_scale, yaw, curl, tilt):
+    """Emit one leaf-shaped fan at (x, y, z), returning the face count."""
+    forward = Vector((math.cos(yaw), math.sin(yaw)))
+    right = Vector((-forward.y, forward.x))
+    start = len(vertices)
+
+    # Centre of the fan sits slightly proud so the blade is not perfectly flat.
+    vertices.append((x, y, z + curl * 0.45))
+
+    ring = []
+    # Up one margin from the petiole to the tip...
+    for along, half in LEAF_PROFILE:
+        ring.append((along, half))
+    # ...and back down the other, skipping the shared tip and base points.
+    for along, half in reversed(LEAF_PROFILE[1:-1]):
+        ring.append((along, -half))
+
+    for along, half in ring:
+        # `along` runs 0 at the petiole to 1 at the tip; recentre it so the leaf
+        # pivots about its middle like the old quad did.
+        offset = forward * ((along - 0.45) * length) + right * (half * length * width_scale)
+        # Curl lifts the margins, tilt leans the whole blade off the ground.
+        margin_lift = curl * (abs(half) / 0.34)
+        vertices.append(
+            (
+                x + offset.x,
+                y + offset.y,
+                z + margin_lift + (along - 0.45) * tilt,
+            )
+        )
+
+    count = len(ring)
+    for index in range(count):
+        faces.append(
+            (
+                start,
+                start + 1 + index,
+                start + 1 + ((index + 1) % count),
+            )
+        )
+    return count
+
+
 def create_leaf_litter(rock_placements):
     vertices = []
     faces = []
@@ -1337,6 +1523,7 @@ def create_leaf_litter(rock_placements):
         )
     )
 
+    leaf_total = 0
     for center_x, center_y, spread, count in drift_centers:
         placed = 0
         attempts = 0
@@ -1355,25 +1542,26 @@ def create_leaf_litter(rock_placements):
             layer = (placed + attempts) % 4
             z = terrain_height(x, y) + 0.026 + layer * 0.010
             foreground_emphasis = center_y < -10.0 and abs(center_x) < 15.0
-            half = drift_rng.uniform(0.08, 0.20) if foreground_emphasis else drift_rng.uniform(0.055, 0.15)
-            yaw = drift_rng.uniform(0.0, math.tau)
-            dx = math.cos(yaw) * half
-            dy = math.sin(yaw) * half
-            px = -dy * drift_rng.uniform(0.34, 0.54)
-            py = dx * drift_rng.uniform(0.34, 0.54)
-            curl = drift_rng.uniform(0.004, 0.025)
-            start = len(vertices)
-            vertices.extend(
-                (
-                    (x - dx, y - dy, z),
-                    (x + px, y + py, z + curl),
-                    (x + dx, y + dy, z + curl * 0.25),
-                    (x - px, y - py, z + curl * 0.65),
-                )
+            length = (
+                drift_rng.uniform(0.17, 0.40)
+                if foreground_emphasis
+                else drift_rng.uniform(0.12, 0.30)
             )
-            faces.append((start, start + 1, start + 2, start + 3))
-            material_indices.append((placed + attempts) % 3)
+            yaw = drift_rng.uniform(0.0, math.tau)
+            # Narrow and broad blades in the same drift; a single width read as
+            # one stamp repeated across the floor.
+            width_scale = drift_rng.uniform(0.62, 1.15)
+            curl = drift_rng.uniform(0.006, 0.032)
+            tilt = drift_rng.uniform(-0.018, 0.018)
+            face_count = append_leaf_card(
+                vertices, faces, x, y, z, length, width_scale, yaw, curl, tilt
+            )
+            # Colour is spatially coherent rather than strictly alternating, so
+            # drifts show patches of one species instead of even rainbow noise.
+            species = int((math.sin(x * 0.7) + math.cos(y * 0.9) + 2.0) * 1.4) % 3
+            material_indices.extend([species] * face_count)
             placed += 1
+            leaf_total += 1
 
     mesh = bpy.data.meshes.new("Ecological Leaf Drift Mesh")
     mesh.from_pydata(vertices, [], faces)
@@ -1382,10 +1570,12 @@ def create_leaf_litter(rock_placements):
         mesh.materials.append(material)
     for polygon, material_index in zip(mesh.polygons, material_indices):
         polygon.material_index = material_index
+        polygon.use_smooth = True
     obj = bpy.data.objects.new("Autumn_Leaf_Drifts", mesh)
     bpy.context.scene.collection.objects.link(obj)
-    obj["tka_leaf_count"] = len(faces)
-    return len(faces)
+    obj["tka_leaf_count"] = leaf_total
+    obj["tka_leaf_faces"] = len(faces)
+    return leaf_total
 
 
 def verify_ecology(
@@ -1435,6 +1625,7 @@ def verify_ecology(
         if math.hypot(x, y) < CLEARING_RADIUS + 0.20 or in_pond(x, y, margin=0.30)
     ]
     expected_grass = {"base": 500, "medium": 600, "high": 900}
+    leaf_expected = 1800
     count_errors = {
         tier: len(grass_positions[tier])
         for tier, expected in expected_grass.items()
@@ -1471,7 +1662,7 @@ def verify_ecology(
         or distant_tree_errors
         or distant_family_error
         or owl_tree_errors
-        or leaf_count != 1800
+        or leaf_count != leaf_expected
         or len(mushroom_positions) != 16
     ):
         raise RuntimeError(
@@ -1487,11 +1678,16 @@ def verify_ecology(
             f"leaves={leaf_count}"
         )
     print(f"Performance clearing verified: max deviation {maximum:.6f}m")
+    outer_grass = [1 for x, y in all_grass if math.hypot(x, y) > GRASS_FEATHER_START]
     print(
         "Ecology verified: "
         f"{len(fern_positions)} ferns, {len(rock_placements)} boulders, {leaf_count} leaves, "
         f"{len(all_grass)} grass clumps, {len(mushroom_positions)} mushroom clusters, "
         f"{len(twig_positions)} twigs, 0 forbidden-placement collisions"
+    )
+    print(
+        f"Grass feathering: {len(outer_grass)} clumps beyond {GRASS_FEATHER_START}m "
+        f"(hard edge was 22.5m, now ramps to {GRASS_FEATHER_END}m)"
     )
     print(
         f"Distant tree belt verified: {len(DISTANT_TREE_PLACEMENTS)} placements "
@@ -1524,7 +1720,14 @@ def render_qa_view(camera, location, target, path, lens=38):
 
 
 def create_qa_performer_reference():
-    """Add a 1.75 m reference silhouette that is excluded from the GLB export."""
+    """Add a 1.76 m reference silhouette that is excluded from the GLB export.
+
+    The proxy previously stood on legs centred at z=0.42 with depth 0.62, so its
+    feet ended at z=0.11 - 11cm above the ground. Every floor QA render it
+    appeared in therefore showed a visible gap under it, which meant the
+    "level performance footprint" evidence never actually demonstrated contact.
+    Parts below are stacked from z=0 so the soles touch the clearing.
+    """
     material = principled_material(
         "QA Performer Scale Reference",
         (0.95, 0.30, 0.08),
@@ -1534,13 +1737,24 @@ def create_qa_performer_reference():
     )
     parts = []
 
-    bpy.ops.mesh.primitive_cylinder_add(vertices=16, radius=0.19, depth=0.92, location=(0, 0, 1.02))
+    leg_depth = 0.62
+    leg_center = leg_depth * 0.5              # soles at exactly z = 0
+    torso_depth = 0.92
+    torso_center = leg_depth + torso_depth * 0.5
+    head_radius = 0.16
+    head_center = leg_depth + torso_depth + head_radius * 0.65
+
+    bpy.ops.mesh.primitive_cylinder_add(
+        vertices=16, radius=0.19, depth=torso_depth, location=(0, 0, torso_center)
+    )
     torso = bpy.context.object
     torso.name = "QA_Performer_Torso"
     torso.scale = (1.0, 0.62, 1.0)
     parts.append(torso)
 
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=16, ring_count=8, radius=0.16, location=(0, 0, 1.62))
+    bpy.ops.mesh.primitive_uv_sphere_add(
+        segments=16, ring_count=8, radius=head_radius, location=(0, 0, head_center)
+    )
     head = bpy.context.object
     head.name = "QA_Performer_Head"
     parts.append(head)
@@ -1549,8 +1763,8 @@ def create_qa_performer_reference():
         bpy.ops.mesh.primitive_cylinder_add(
             vertices=12,
             radius=0.065,
-            depth=0.62,
-            location=(side * 0.105, 0, 0.42),
+            depth=leg_depth,
+            location=(side * 0.105, 0, leg_center),
         )
         leg = bpy.context.object
         leg.name = f"QA_Performer_Leg_{'L' if side < 0 else 'R'}"
@@ -1558,12 +1772,26 @@ def create_qa_performer_reference():
 
     for part in parts:
         part.data.materials.append(material)
+
+    proxy_height = head_center + head_radius
+    print(f"QA performer proxy: soles at z=0.000m, crown at z={proxy_height:.3f}m")
     return parts
 
 
 def setup_qa_render():
     scene = bpy.context.scene
-    scene.render.engine = "BLENDER_EEVEE"
+    # The EEVEE identifier moved between Blender releases (BLENDER_EEVEE ->
+    # BLENDER_EEVEE_NEXT -> back again). Pick whichever this build advertises so
+    # the QA renders work headless on any installed version.
+    engines = {
+        item.identifier
+        for item in scene.render.bl_rna.properties["engine"].enum_items
+    }
+    for candidate in ("BLENDER_EEVEE_NEXT", "BLENDER_EEVEE"):
+        if candidate in engines:
+            scene.render.engine = candidate
+            break
+    print(f"QA render engine: {scene.render.engine}")
     scene.render.resolution_x = 1600
     scene.render.resolution_y = 900
     scene.render.resolution_percentage = 100
@@ -1603,7 +1831,15 @@ def setup_qa_render():
     for part in performer_reference:
         part.hide_render = True
         part.hide_set(True)
-    render_qa_view(camera, (1.9, 11.9, 8.5), (5.3, 17.55, 7.58), QA_PATHS["owl"], 66)
+    owl_x, owl_y, owl_height = OWL_POSITION
+    owl_center_z = terrain_height(owl_x, owl_y) + owl_height + OWL_HEIGHT * 0.5
+    render_qa_view(
+        camera,
+        (owl_x - 3.4, owl_y - 5.65, owl_center_z + 1.0),
+        (owl_x, owl_y, owl_center_z),
+        QA_PATHS["owl"],
+        66,
+    )
     # Return the editable file to the hero camera view for the visible host.
     camera.location = (0.0, -36.0, 14.2)
     camera.data.lens = 39
