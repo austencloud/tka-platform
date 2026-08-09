@@ -332,6 +332,8 @@
   }
 
   .workspace-container {
+    container-type: inline-size;
+    container-name: create-workspace;
     position: relative;
 
     /* Colored border for visual workspace distinction */

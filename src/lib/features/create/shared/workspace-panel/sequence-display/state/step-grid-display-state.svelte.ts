@@ -15,11 +15,24 @@ import type {
 import { DEFAULT_ANIMATION_TIMING } from "../domain/models/step-grid-display-models";
 
 export interface PictographArrivalRequest {
+  intent: "commit";
   stepIndex: number;
   requestId: number;
   owner: "stage" | "cell";
   phase: "preview" | "landing";
 }
+
+export interface PictographAuditionRequest {
+  intent: "audition";
+  stepIndex: number;
+  requestId: number;
+  owner: "stage";
+  phase: "preview";
+}
+
+export type PictographStageRequest =
+  | PictographArrivalRequest
+  | PictographAuditionRequest;
 
 /**
  * Global flag to indicate a generation is pending.
@@ -267,6 +280,7 @@ export function createStepGridDisplayState() {
     stepsToAnimate.clear();
     arrivalRequest = shouldStageArrival
       ? {
+          intent: "commit",
           stepIndex,
           requestId: ++nextArrivalRequestId,
           owner: "stage",

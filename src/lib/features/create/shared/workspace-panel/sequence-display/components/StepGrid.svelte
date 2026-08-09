@@ -10,6 +10,7 @@
   import type { TimeSignatureKey } from "$lib/shared/foundation/domain/models/time-signature";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { ConstructOptionAudition } from "$lib/shared/create/domain/construct-option-audition";
   import type {
     MandalaPathShape,
     MandalaRenderOptions,
@@ -21,7 +22,9 @@
     isPendingGenerationAnimation,
     setPendingGenerationAnimation,
     consumeSuppressNextAnimation,
+    type PictographAuditionRequest,
     type PictographArrivalRequest,
+    type PictographStageRequest,
   } from "$lib/features/create/shared/workspace-panel/sequence-display/state/step-grid-display-state.svelte";
   import { createScrollState } from "$lib/features/create/shared/workspace-panel/sequence-display/state/scroll-state.svelte";
   import {
@@ -73,6 +76,10 @@
     redPropTypeOverride = undefined,
     sequenceWord = "",
     arrivalSequence = null,
+    optionAudition = null,
+    onAuditionReady,
+    onAuditionCompleted,
+    onAuditionDismiss,
   } = $props<{
     steps: ReadonlyArray<StepData> | StepData[];
     startPosition?: StartPositionData | StepData | null;
@@ -110,6 +117,10 @@
     redPropTypeOverride?: PropType;
     sequenceWord?: string;
     arrivalSequence?: SequenceData | null;
+    optionAudition?: ConstructOptionAudition | null;
+    onAuditionReady?: (requestId: number, autoplay: boolean) => void;
+    onAuditionCompleted?: (requestId: number) => void;
+    onAuditionDismiss?: (requestId: number) => void;
   }>();
 
   // State management
@@ -124,6 +135,30 @@
 
   const activeArrivalRequest = $derived<PictographArrivalRequest | null>(
     activeMode === "construct" ? displayState.arrivalRequest : null
+  );
+  const activeOptionAudition = $derived(
+    activeMode === "construct" ? optionAudition : null
+  );
+  const activeAuditionRequest = $derived.by(
+    (): PictographAuditionRequest | null => {
+      if (!activeOptionAudition) return null;
+
+      return {
+        intent: "audition",
+        stepIndex: activeOptionAudition.stepNumber - 1,
+        requestId: activeOptionAudition.requestId,
+        owner: "stage",
+        phase: "preview",
+      };
+    }
+  );
+  const activeStageRequest = $derived<PictographStageRequest | null>(
+    activeArrivalRequest ?? activeAuditionRequest
+  );
+  const activeStageSequence = $derived(
+    activeArrivalRequest
+      ? arrivalSequence
+      : (activeOptionAudition?.sequence ?? null)
   );
 
   // Breathing room (px, each side) reserved around the grid so a selected or
@@ -590,6 +625,15 @@
       standardGridCenterOffset - displayedStandardGridCenterOffset
     );
   }
+
+  function handleStageComplete(requestId: number) {
+    if (activeOptionAudition?.requestId === requestId) {
+      onAuditionDismiss?.(requestId);
+      return;
+    }
+
+    displayState.completeArrival(requestId);
+  }
 </script>
 
 <div class="step-grid-container" bind:this={containerRef}>
@@ -632,15 +676,17 @@
       bind:scrollContainerRef
     />
 
-    {#if activeArrivalRequest && arrivalSequence}
-      {#key activeArrivalRequest.requestId}
+    {#if activeStageRequest && activeStageSequence}
+      {#key `${activeStageRequest.intent}:${activeStageRequest.requestId}`}
         <PictographArrivalStage
-          request={activeArrivalRequest}
-          sequence={arrivalSequence}
+          request={activeStageRequest}
+          sequence={activeStageSequence}
           getDestinationRect={getArrivalDestinationRect}
           onBeginLanding={displayState.beginArrivalLanding}
           onBeginHandoff={displayState.beginArrivalHandoff}
-          onComplete={displayState.completeArrival}
+          onComplete={handleStageComplete}
+          onReady={onAuditionReady}
+          onMotionComplete={onAuditionCompleted}
           {bluePropTypeOverride}
           {redPropTypeOverride}
         />

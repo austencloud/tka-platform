@@ -86,18 +86,29 @@ export const WORKSPACE_BUTTON_ICON: Record<
   WorkspaceButtonId,
   WorkspaceButtonGlyph
 > = {
-  undo: { icon: "undo-svg", iconType: "svg", actionLabel: "Undo" },
+  undo: {
+    icon: "undo-svg",
+    iconType: "svg",
+    actionLabel: "Undo",
+    visibleLabel: "Undo",
+  },
   clear: {
     icon: "fa-eraser",
     iconType: "fa",
     actionLabel: "Clear sequence",
     visibleLabel: "Clear",
   },
-  view: { icon: "fa-play", iconType: "fa", actionLabel: "Play sequence" },
+  view: {
+    icon: "fa-play",
+    iconType: "fa",
+    actionLabel: "Play sequence",
+    visibleLabel: "Play",
+  },
   "sequence-actions": {
     icon: "fa-tools",
     iconType: "fa",
     actionLabel: "Sequence actions",
+    visibleLabel: "Actions",
   },
   share: {
     icon: "fa-share-nodes",

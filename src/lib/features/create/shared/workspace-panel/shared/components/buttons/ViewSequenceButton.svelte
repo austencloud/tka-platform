@@ -28,6 +28,9 @@
       ? WORKSPACE_BUTTON_ICON.view.actionLabel
       : "Open sequence viewer"
   );
+  const visibleLabel = $derived(
+    purpose === "play" ? WORKSPACE_BUTTON_ICON.view.visibleLabel : "View"
+  );
 
   /**
    * The presenter's role for this button follows its purpose. In the create
@@ -63,6 +66,9 @@
   title={accessibleLabel}
 >
   <i class="fa-solid {icon}" aria-hidden="true"></i>
+  <span class="workspace-action-label" aria-hidden="true">
+    {visibleLabel}
+  </span>
 </button>
 
 <style>
@@ -70,8 +76,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: var(--min-touch-target);
+    box-sizing: border-box;
+    width: var(--workspace-action-width, var(--min-touch-target));
+    min-width: var(--min-touch-target);
     height: var(--min-touch-target);
+    gap: var(--workspace-action-gap, 0);
+    padding-inline: var(--workspace-action-padding-inline, 0);
     background: linear-gradient(
       135deg,
       var(--semantic-success) 0%,
@@ -79,7 +89,7 @@
     );
     border: 1px solid
       color-mix(in srgb, var(--semantic-success) 30%, transparent);
-    border-radius: 50%;
+    border-radius: var(--workspace-action-radius, 50%);
     color: var(--theme-text);
     cursor: pointer;
     box-shadow: 0 4px 12px
@@ -96,7 +106,8 @@
   }
 
   .view-sequence-button.play-purpose {
-    width: 50px;
+    width: var(--workspace-play-action-width, 50px);
+    min-width: 50px;
     height: 50px;
     border-width: 2px;
     transform-origin: center bottom;
@@ -106,6 +117,14 @@
     animation:
       play-arrive 400ms ease-out both,
       play-glow 2.4s ease-in-out 0.5s infinite;
+  }
+
+  .workspace-action-label {
+    display: var(--workspace-action-label-display, none);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+    line-height: 1;
+    white-space: nowrap;
   }
 
   @keyframes play-arrive {

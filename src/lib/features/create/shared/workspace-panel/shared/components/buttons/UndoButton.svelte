@@ -3,6 +3,7 @@
   import { UndoOperationType } from "../../../../services/undo-manager";
   import type { createCreateModuleState } from "$lib/features/create/shared/state/create-module-state.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { WORKSPACE_BUTTON_ICON } from "../../workspace-button-layout";
   import UndoGlyph from "./UndoGlyph.svelte";
 
   type CreateModuleState = ReturnType<typeof createCreateModuleState>;
@@ -131,6 +132,9 @@
   data-ghost-label="Undo"
 >
   <UndoGlyph size={20} {direction} />
+  <span class="workspace-action-label" aria-hidden="true">
+    {direction === "undo" ? WORKSPACE_BUTTON_ICON.undo.visibleLabel : "Redo"}
+  </span>
 </button>
 
 <style>
@@ -138,16 +142,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
     width: var(--min-touch-target);
+    min-width: var(--min-touch-target);
     height: var(--min-touch-target);
+    gap: 0;
+    padding-inline: 0;
     border: none;
     border-radius: 50%;
     cursor: pointer;
-    transition: all
-      var(
-        --transition-normal,
-        var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1)
-      );
+    transition:
+      transform var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1),
+      background var(--duration-fast) ease,
+      border-color var(--duration-fast) ease,
+      box-shadow var(--duration-fast) ease;
     font-size: var(--font-size-lg);
     color: var(--theme-text);
 
@@ -166,6 +174,27 @@
       color-mix(in srgb, var(--theme-accent-strong) 30%, transparent);
     box-shadow: 0 4px 12px
       color-mix(in srgb, var(--theme-accent-strong) 40%, transparent);
+  }
+
+  .workspace-action-label {
+    display: none;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  @container create-workspace (min-width: 768px) {
+    .undo-button {
+      width: auto;
+      gap: 8px;
+      padding-inline: 16px;
+      border-radius: 999px;
+    }
+
+    .workspace-action-label {
+      display: inline;
+    }
   }
 
   .undo-button:hover:not(:disabled) {
@@ -191,7 +220,7 @@
 
   .undo-button:active {
     transform: scale(0.95);
-    transition: all var(--duration-instant) ease;
+    transition-duration: var(--duration-instant);
   }
 
   .undo-button:focus-visible {

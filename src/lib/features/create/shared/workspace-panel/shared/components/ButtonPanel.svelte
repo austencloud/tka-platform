@@ -279,13 +279,14 @@
   }
 
   /* Container-based responsive adjustments - Progressive gap reduction to fit 48px buttons */
-  @container button-panel (min-width: 1120px) {
+  @container button-panel (min-width: 768px) {
     .button-panel {
       --workspace-action-label-display: inline;
       --workspace-action-width: auto;
       --workspace-action-gap: 8px;
       --workspace-action-padding-inline: 16px;
       --workspace-action-radius: 999px;
+      --workspace-play-action-width: auto;
       --share-trigger-label-display: inline;
       --share-trigger-width: auto;
       --share-trigger-gap: 8px;

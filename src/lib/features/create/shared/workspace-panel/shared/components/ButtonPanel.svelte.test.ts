@@ -205,7 +205,7 @@ describe("ButtonPanel narrow geometry", () => {
     }
   });
 
-  it("adds labels at 1120 CSS pixels without moving Play off center", async () => {
+  it("adds labels at 768 CSS pixels without moving Play off center", async () => {
     const screen = render(ButtonPanel, {
       props: {
         onClearSequence: vi.fn(),
@@ -219,20 +219,32 @@ describe("ButtonPanel narrow geometry", () => {
     const shareLabel = screen.container.querySelector<HTMLElement>(
       "[data-testid='workspace-share-button'] .share-action-trigger-label"
     );
+    const playLabel = screen.container.querySelector<HTMLElement>(
+      ".view-sequence-button .workspace-action-label"
+    );
+    const actionsLabel = screen.container.querySelector<HTMLElement>(
+      "[data-testid='sequence-actions-button'] .workspace-action-label"
+    );
 
     expect(clearLabel).not.toBeNull();
+    expect(playLabel).not.toBeNull();
+    expect(actionsLabel).not.toBeNull();
     expect(shareLabel).not.toBeNull();
 
-    screen.container.style.width = "1119px";
+    screen.container.style.width = "767px";
     await waitForLayout();
 
     expect(getComputedStyle(clearLabel!).display).toBe("none");
+    expect(getComputedStyle(playLabel!).display).toBe("none");
+    expect(getComputedStyle(actionsLabel!).display).toBe("none");
     expect(getComputedStyle(shareLabel!).display).toBe("none");
 
-    screen.container.style.width = "1120px";
+    screen.container.style.width = "768px";
     await waitForLayout();
 
     expect(getComputedStyle(clearLabel!).display).not.toBe("none");
+    expect(getComputedStyle(playLabel!).display).not.toBe("none");
+    expect(getComputedStyle(actionsLabel!).display).not.toBe("none");
     expect(getComputedStyle(shareLabel!).display).not.toBe("none");
 
     const containerBounds = screen.container.getBoundingClientRect();
@@ -242,6 +254,8 @@ describe("ButtonPanel narrow geometry", () => {
     const share = rect("Share sequence");
 
     expect(clear.width).toBeGreaterThan(44);
+    expect(play.width).toBeGreaterThan(50);
+    expect(sequenceActions.width).toBeGreaterThan(44);
     expect(share.width).toBeGreaterThan(44);
     expect(play.left + play.width / 2).toBeCloseTo(
       containerBounds.left + containerBounds.width / 2,
@@ -249,5 +263,6 @@ describe("ButtonPanel narrow geometry", () => {
     );
     expect(clear.right).toBeLessThanOrEqual(play.left);
     expect(play.right).toBeLessThanOrEqual(sequenceActions.left);
+    expect(sequenceActions.right).toBeLessThanOrEqual(share.left);
   });
 });

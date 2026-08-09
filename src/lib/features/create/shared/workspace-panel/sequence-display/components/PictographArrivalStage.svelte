@@ -1,5 +1,6 @@
 <script lang="ts">
   import { flushSync, onDestroy, onMount } from "svelte";
+  import { fade } from "svelte/transition";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -13,7 +14,7 @@
     PICTOGRAPH_ARRIVAL_LANDING_EASING,
     PICTOGRAPH_ARRIVAL_LANDING_MS,
   } from "../domain/pictograph-arrival-motion";
-  import type { PictographArrivalRequest } from "../state/step-grid-display-state.svelte";
+  import type { PictographStageRequest } from "../state/step-grid-display-state.svelte";
 
   type ArrivalPhase =
     | "preparing"
@@ -42,15 +43,19 @@
     onBeginLanding,
     onBeginHandoff,
     onComplete,
+    onReady = () => {},
+    onMotionComplete = () => {},
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
   }: {
-    request: PictographArrivalRequest;
+    request: PictographStageRequest;
     sequence: SequenceData;
     getDestinationRect: (stepIndex: number) => ArrivalRect | null;
     onBeginLanding: (requestId: number) => void;
     onBeginHandoff: (requestId: number) => void;
     onComplete: (requestId: number) => void;
+    onReady?: (requestId: number, autoplay: boolean) => void;
+    onMotionComplete?: (requestId: number) => void;
     bluePropTypeOverride?: PropType;
     redPropTypeOverride?: PropType;
   } = $props();
@@ -80,6 +85,7 @@
   const reducedMotionEnabled = $derived(
     (getSettings().reducedMotion ?? false) || systemPrefersReducedMotion
   );
+  const isAudition = $derived(request.intent === "audition");
 
   function clearPhaseTimer() {
     if (phaseTimer === null) return;
@@ -308,6 +314,12 @@
     phase = "holding";
     motionProgress = reducedMotionEnabled ? null : 1;
     arrowOpacity = 1;
+
+    if (isAudition) {
+      onMotionComplete(requestId);
+      return;
+    }
+
     phaseTimer = setTimeout(
       () => void landInGrid(requestId),
       reducedMotionEnabled ? REDUCED_MOTION_HOLD_MS : FINISHED_HOLD_MS
@@ -358,6 +370,7 @@
     if (requestId !== activeRequestId || request.owner !== "stage") return;
 
     clearPhaseTimer();
+    if (isAudition) onReady(requestId, !reducedMotionEnabled);
     void enterStage(requestId);
   }
 
@@ -370,7 +383,13 @@
     arrowOpacity = reducedMotionEnabled ? 1 : 0;
     lastObservedReducedMotion = reducedMotionEnabled;
 
-    phaseTimer = setTimeout(() => handOffToCell(requestId), PREPARE_TIMEOUT_MS);
+    phaseTimer = setTimeout(() => {
+      if (isAudition) {
+        onComplete(requestId);
+        return;
+      }
+      handOffToCell(requestId);
+    }, PREPARE_TIMEOUT_MS);
   }
 
   $effect(() => {
@@ -390,7 +409,11 @@
       clearActiveWork();
       motionProgress = null;
       arrowOpacity = 1;
-      handOffToCell(request.requestId);
+      if (isAudition) {
+        beginHold(request.requestId);
+      } else {
+        handOffToCell(request.requestId);
+      }
     }
   });
 
@@ -411,12 +434,14 @@
   <div
     class="arrival-overlay"
     data-arrival-request-id={request.requestId}
+    data-arrival-intent={request.intent}
     data-arrival-phase={phase}
     data-motion-progress={motionProgress === null
       ? undefined
       : motionProgress.toFixed(4)}
     data-arrow-opacity={arrowOpacity.toFixed(4)}
     aria-hidden="true"
+    out:fade={{ duration: reducedMotionEnabled ? 0 : DURATION.fast }}
   >
     <div
       class="arrival-scrim"
@@ -449,9 +474,11 @@
   </div>
 {/if}
 
-<span class="sr-only" aria-live="polite" aria-atomic="true">
-  Step {request.stepIndex + 1} added
-</span>
+{#if !isAudition}
+  <span class="sr-only" aria-live="polite" aria-atomic="true">
+    Step {request.stepIndex + 1} added
+  </span>
+{/if}
 
 <style>
   .arrival-overlay {

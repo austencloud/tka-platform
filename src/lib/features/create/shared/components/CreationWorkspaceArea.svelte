@@ -19,11 +19,6 @@
   import DurationPreviewWorkspace from "./sequence-actions/DurationPreviewWorkspace.svelte";
   import { getCreateModuleContext } from "../context/create-module-context";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import { getChangedTransitionPlaybackWindow } from "$lib/shared/create/domain/changed-transition-playback";
-  import {
-    logConstructContextPreviewCompleted,
-    logConstructContextPreviewReady,
-  } from "../../construct/services/construct-analytics";
 
   // Get context
   const ctx = getCreateModuleContext();
@@ -54,45 +49,16 @@
   // Duration preview mode - shows split workspace with animation and timeline
   const isDurationPreviewMode = $derived(panelState.isDurationPreviewMode);
   const previewSequence = $derived(panelState.previewSequence);
-  const changedTransitionPlayback = $derived(
-    panelState.changedTransitionPlayback
-  );
-  const changedTransitionWindow = $derived.by(() => {
-    if (!changedTransitionPlayback) return null;
-    return getChangedTransitionPlaybackWindow(
-      changedTransitionPlayback.sequence,
-      changedTransitionPlayback.stepNumber
-    );
-  });
+  const optionAudition = $derived(panelState.optionAudition);
 
   $effect(() => {
     if (
       navigationState.activeTab !== "construct" &&
-      panelState.changedTransitionPlayback
+      panelState.optionAudition
     ) {
-      panelState.exitChangedTransitionPlayback();
+      panelState.exitOptionAudition();
     }
   });
-
-  function handleChangedPreviewReady(latencyMs: number, autoplay: boolean) {
-    const playback = changedTransitionPlayback;
-    if (!playback) return;
-
-    logConstructContextPreviewReady({
-      stepNumber: playback.stepNumber,
-      latencyMs,
-      autoplay,
-    });
-  }
-
-  function handleChangedPreviewComplete() {
-    const playback = changedTransitionPlayback;
-    if (!playback) return;
-
-    logConstructContextPreviewCompleted({
-      stepNumber: playback.stepNumber,
-    });
-  }
 
   // CRITICAL: Derive the active tab's sequence state reactively
   // Track both the active tab AND the sequence within that tab
@@ -114,13 +80,13 @@
   });
 
   $effect(() => {
-    const playback = changedTransitionPlayback;
+    const audition = optionAudition;
     if (
-      playback &&
+      audition &&
       activeSequenceState.currentSequenceRevision !==
-        playback.sourceSequenceRevision
+        audition.sourceSequenceRevision
     ) {
-      panelState.exitChangedTransitionPlayback();
+      panelState.exitOptionAudition();
     }
   });
 </script>
@@ -135,19 +101,6 @@
   {#if isDurationPreviewMode && previewSequence}
     <!-- Duration Preview Mode: Split workspace with animation preview and timeline -->
     <DurationPreviewWorkspace sequence={previewSequence} />
-  {:else if changedTransitionPlayback && changedTransitionWindow}
-    {#key changedTransitionPlayback.requestId}
-      <DurationPreviewWorkspace
-        sequence={changedTransitionPlayback.sequence}
-        variant="changed-transition"
-        startStep={changedTransitionWindow.startStep}
-        endStepExclusive={changedTransitionWindow.endStepExclusive}
-        changedStep={changedTransitionWindow.changedStep}
-        activatedAt={changedTransitionPlayback.activatedAt}
-        onPreviewReady={handleChangedPreviewReady}
-        onPlaybackComplete={handleChangedPreviewComplete}
-      />
-    {/key}
   {:else}
     <!-- CRITICAL: {#key} block ensures fresh StepGrid instances per tab
          This prevents animation state pollution (step-grid-display-state.svelte)

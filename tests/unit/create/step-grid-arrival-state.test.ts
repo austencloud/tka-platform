@@ -8,6 +8,7 @@ describe("step grid pictograph arrival ownership", () => {
     state.handleSingleBeatAddition(2, true);
 
     expect(state.arrivalRequest).toEqual({
+      intent: "commit",
       stepIndex: 2,
       requestId: 1,
       owner: "stage",
@@ -17,6 +18,7 @@ describe("step grid pictograph arrival ownership", () => {
     state.beginArrivalLanding(1);
 
     expect(state.arrivalRequest).toEqual({
+      intent: "commit",
       stepIndex: 2,
       requestId: 1,
       owner: "stage",
@@ -26,6 +28,7 @@ describe("step grid pictograph arrival ownership", () => {
     state.beginArrivalHandoff(1);
 
     expect(state.arrivalRequest).toEqual({
+      intent: "commit",
       stepIndex: 2,
       requestId: 1,
       owner: "cell",
@@ -43,6 +46,7 @@ describe("step grid pictograph arrival ownership", () => {
     state.handleSingleBeatAddition(3, true);
 
     expect(state.arrivalRequest).toEqual({
+      intent: "commit",
       stepIndex: 3,
       requestId: 2,
       owner: "stage",
@@ -54,6 +58,7 @@ describe("step grid pictograph arrival ownership", () => {
     state.completeArrival(1);
 
     expect(state.arrivalRequest).toEqual({
+      intent: "commit",
       stepIndex: 3,
       requestId: 2,
       owner: "stage",

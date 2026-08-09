@@ -1,6 +1,5 @@
 <!--
-  The Create workspace's existing AnimatorCanvas preview surface.
-  Duration editing loops the full sequence; option trials play one bounded range.
+  The Create workspace's AnimatorCanvas preview surface for duration editing.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -12,36 +11,14 @@
   import { formatDurationCompact } from "../../domain/models/duration-pattern-data";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { shouldAutoplayMotion } from "$lib/shared/animation-engine/services/motion-autoplay-policy";
-  import { toAnimatorMotionCursor } from "$lib/shared/create/domain/changed-transition-playback";
 
   interface Props {
     sequence: SequenceData;
-    variant?: "duration" | "changed-transition";
-    /** Inclusive, zero-based playback boundary. */
-    startStep?: number;
-    /** Exclusive, zero-based playback boundary. */
-    endStepExclusive?: number;
-    /** Step held on screen when autoplay is disabled. */
-    changedStep?: number;
     currentStep?: number;
     isPlaying?: boolean;
-    onPreviewReady?: (latencyMs: number, autoplay: boolean) => void;
-    onPlaybackComplete?: () => void;
-    activatedAt?: number;
   }
 
-  let {
-    sequence,
-    variant = "duration",
-    startStep = 0,
-    endStepExclusive = sequence.steps.length,
-    changedStep = startStep,
-    currentStep = startStep,
-    isPlaying = true,
-    onPreviewReady = () => {},
-    onPlaybackComplete = () => {},
-    activatedAt,
-  }: Props = $props();
+  let { sequence, currentStep = 0, isPlaying = true }: Props = $props();
 
   const animationState = createAnimationPanelState();
   let animationFrameId: number | null = null;
@@ -50,9 +27,6 @@
   let localIsPlaying = $state(false);
   let mounted = false;
   let canvasReady = $state(false);
-  let hasStarted = $state(false);
-  let previewReadyReported = false;
-  let playbackCompletionReported = false;
   let systemPrefersReducedMotion = $state(false);
   let blueProp = $state(animationState.bluePropState);
   let redProp = $state(animationState.redPropState);
@@ -71,36 +45,19 @@
       systemPrefersReducedMotion,
     })
   );
-  const isChangedTransition = $derived(variant === "changed-transition");
-  const safeStartStep = $derived(
-    Math.max(0, Math.min(startStep, Math.max(0, sequence.steps.length - 1)))
-  );
-  const safeEndStep = $derived(
-    Math.max(
-      safeStartStep + 1,
-      Math.min(endStepExclusive, sequence.steps.length)
-    )
-  );
-  const safeChangedStep = $derived(
-    Math.max(safeStartStep, Math.min(changedStep, safeEndStep - 1))
-  );
-  // This workspace keeps a zero-based cursor so its bounded window can index
-  // sequence.steps directly. AnimatorCanvas uses 1 for motion 1, 2 for motion
-  // 2, and so on; 0 is the sequence's held start pose.
-  const animatorCurrentStep = $derived(
-    toAnimatorMotionCursor(localCurrentStep)
-  );
+  // This workspace keeps a zero-based cursor so it can index sequence.steps
+  // directly. AnimatorCanvas uses 1 for motion 1, 2 for motion 2, and so on;
+  // 0 is the sequence's held start pose.
+  const animatorCurrentStep = $derived(localCurrentStep + 1);
   const totalDuration = $derived.by(() => {
-    return sequence.steps
-      .slice(safeStartStep, safeEndStep)
-      .reduce((sum, step) => sum + (step.duration ?? 1), 0);
+    return sequence.steps.reduce((sum, step) => sum + (step.duration ?? 1), 0);
   });
 
   $effect(() => {
     if (mounted && reducedMotionSetting) {
       untrack(() => {
         stopPreview();
-        localCurrentStep = safeChangedStep;
+        localCurrentStep = 0;
         animationState.setCurrentStep(animatorCurrentStep);
       });
     }
@@ -122,17 +79,17 @@
       const speed = animationState.speed;
       const baseMs = 1000 / speed;
       let accumulatedDuration = 0;
-      let stepIndex = safeStartStep;
+      let stepIndex = 0;
 
       for (
-        let i = safeStartStep;
-        i < safeEndStep && i < Math.floor(localCurrentStep);
+        let i = 0;
+        i < sequence.steps.length && i < Math.floor(localCurrentStep);
         i++
       ) {
         accumulatedDuration += sequence.steps[i]?.duration ?? 1.0;
       }
 
-      if (Math.floor(localCurrentStep) < safeEndStep) {
+      if (Math.floor(localCurrentStep) < sequence.steps.length) {
         const currentStepDuration =
           sequence.steps[Math.floor(localCurrentStep)]?.duration ?? 1.0;
         accumulatedDuration += (localCurrentStep % 1) * currentStepDuration;
@@ -141,25 +98,17 @@
       accumulatedDuration += deltaMs / baseMs;
 
       const total = totalDuration;
+      if (total <= 0) {
+        stopPreview();
+        return;
+      }
       if (accumulatedDuration >= total) {
-        if (isChangedTransition) {
-          localCurrentStep = Math.max(safeStartStep, safeEndStep - 0.001);
-          animationState.setCurrentStep(animatorCurrentStep);
-          localIsPlaying = false;
-          animationState.setIsPlaying(false);
-          animationFrameId = null;
-          if (!playbackCompletionReported) {
-            playbackCompletionReported = true;
-            onPlaybackComplete();
-          }
-          return;
-        }
         accumulatedDuration %= total;
       }
 
       let remaining = accumulatedDuration;
-      stepIndex = safeStartStep;
-      while (stepIndex < safeEndStep) {
+      stepIndex = 0;
+      while (stepIndex < sequence.steps.length) {
         const stepDuration = sequence.steps[stepIndex]?.duration ?? 1.0;
         if (remaining < stepDuration) {
           break;
@@ -168,11 +117,11 @@
         stepIndex++;
       }
 
-      if (stepIndex < safeEndStep) {
+      if (stepIndex < sequence.steps.length) {
         const stepDuration = sequence.steps[stepIndex]?.duration ?? 1.0;
         localCurrentStep = stepIndex + remaining / stepDuration;
       } else {
-        localCurrentStep = safeStartStep;
+        localCurrentStep = 0;
       }
 
       animationState.setCurrentStep(animatorCurrentStep);
@@ -190,9 +139,7 @@
   }
 
   function playPreview() {
-    hasStarted = true;
-    playbackCompletionReported = false;
-    localCurrentStep = safeStartStep;
+    localCurrentStep = 0;
     animationState.setCurrentStep(animatorCurrentStep);
     localIsPlaying = true;
     animationState.setIsPlaying(true);
@@ -203,23 +150,6 @@
     localIsPlaying = false;
     animationState.setIsPlaying(false);
     stopAnimationLoop();
-  }
-
-  function reportPreviewReady() {
-    if (
-      !mounted ||
-      !canvasReady ||
-      !isChangedTransition ||
-      previewReadyReported
-    ) {
-      return;
-    }
-
-    previewReadyReported = true;
-    onPreviewReady(
-      activatedAt === undefined ? 0 : performance.now() - activatedAt,
-      isPlaying && autoplayAllowed
-    );
   }
 
   function startAutoplayWhenReady() {
@@ -238,7 +168,6 @@
 
   function handleCanvasReady() {
     canvasReady = true;
-    reportPreviewReady();
     startAutoplayWhenReady();
   }
 
@@ -252,7 +181,7 @@
       systemPrefersReducedMotion = event.matches;
       if (event.matches) {
         stopPreview();
-        localCurrentStep = safeChangedStep;
+        localCurrentStep = 0;
         animationState.setCurrentStep(animatorCurrentStep);
       } else {
         startAutoplayWhenReady();
@@ -260,10 +189,8 @@
     };
     reducedMotionQuery.addEventListener("change", handleReducedMotionChange);
 
-    localCurrentStep =
-      isPlaying && autoplayAllowed ? safeStartStep : safeChangedStep;
+    localCurrentStep = 0;
     animationState.setCurrentStep(animatorCurrentStep);
-    reportPreviewReady();
     startAutoplayWhenReady();
 
     return () => {
@@ -281,7 +208,10 @@
   });
 
   const currentStepIndex = $derived(
-    Math.min(safeEndStep - 1, Math.floor(localCurrentStep))
+    Math.max(
+      0,
+      Math.min(sequence.steps.length - 1, Math.floor(localCurrentStep))
+    )
   );
   const currentStepData = $derived(sequence.steps[currentStepIndex] ?? null);
   const currentLetter = $derived(currentStepData?.letter ?? null);
@@ -317,11 +247,7 @@
   });
 </script>
 
-<div
-  class="duration-preview-workspace"
-  class:changed-transition={isChangedTransition}
-  class:audition={isChangedTransition}
->
+<div class="duration-preview-workspace">
   <div class="animation-section">
     <div class="animation-container">
       <AnimatorCanvas
@@ -335,8 +261,6 @@
         currentStep={animatorCurrentStep}
         isPlaying={localIsPlaying}
         previewDarkMode={true}
-        hideProgressBar={isChangedTransition}
-        disableContextMenu={isChangedTransition}
         onInitialized={handleCanvasReady}
       />
       {#if !canvasReady}
@@ -348,63 +272,48 @@
     </div>
   </div>
 
-  {#if isChangedTransition}
-    <div class="context-controls">
-      <div class="context-status" aria-live="polite">
-        <strong>Previewing {currentLetter ?? "movement"}</strong>
-        <span>
-          {#if !autoplayAllowed && !hasStarted}
-            Motion paused. Release to return.
-          {:else}
-            Release to return
-          {/if}
-        </span>
-      </div>
+  <div class="timeline-section">
+    <div class="timeline-header">
+      <span class="timeline-label">Timeline</span>
+      <span class="duration-hint">Width = duration</span>
     </div>
-  {:else}
-    <div class="timeline-section">
-      <div class="timeline-header">
-        <span class="timeline-label">Timeline</span>
-        <span class="duration-hint">Width = duration</span>
-      </div>
-      <div class="timeline-strip" bind:this={timelineRef}>
-        <div class="timeline-track">
-          {#each sequence.steps as step, index}
-            {@const duration = step.duration ?? 1.0}
-            {@const isActive = index === currentStepIndex}
-            {@const width = duration * BASE_UNIT_WIDTH}
-            <div
-              class="timeline-cell"
-              class:active={isActive}
-              style="width: {width}px; min-width: {width}px;"
-            >
-              <div class="cell-pictograph">
-                <PictographContainer
-                  pictographData={step}
-                  propRenderContext="editor"
-                  showTKA={false}
-                  showTnD={false}
-                  showPositions={false}
-                  showReversals={false}
-                  showElemental={false}
-                  disableTransitions={true}
-                />
-              </div>
-              <div class="cell-info">
-                <span class="beat-number">{index + 1}</span>
-                <span class="duration-badge"
-                  >{formatDurationCompact(duration)}</span
-                >
-              </div>
-              {#if step.letter}
-                <span class="letter-badge">{step.letter}</span>
-              {/if}
+    <div class="timeline-strip" bind:this={timelineRef}>
+      <div class="timeline-track">
+        {#each sequence.steps as step, index}
+          {@const duration = step.duration ?? 1.0}
+          {@const isActive = index === currentStepIndex}
+          {@const width = duration * BASE_UNIT_WIDTH}
+          <div
+            class="timeline-cell"
+            class:active={isActive}
+            style="width: {width}px; min-width: {width}px;"
+          >
+            <div class="cell-pictograph">
+              <PictographContainer
+                pictographData={step}
+                propRenderContext="editor"
+                showTKA={false}
+                showTnD={false}
+                showPositions={false}
+                showReversals={false}
+                showElemental={false}
+                disableTransitions={true}
+              />
             </div>
-          {/each}
-        </div>
+            <div class="cell-info">
+              <span class="beat-number">{index + 1}</span>
+              <span class="duration-badge"
+                >{formatDurationCompact(duration)}</span
+              >
+            </div>
+            {#if step.letter}
+              <span class="letter-badge">{step.letter}</span>
+            {/if}
+          </div>
+        {/each}
       </div>
     </div>
-  {/if}
+  </div>
 </div>
 
 <style>
@@ -432,23 +341,6 @@
     overflow: hidden;
   }
 
-  .duration-preview-workspace.audition .animation-section {
-    transform-origin: 50% 100%;
-    animation: audition-canvas-enter 320ms cubic-bezier(0.2, 1.35, 0.35, 1) both;
-  }
-
-  @keyframes audition-canvas-enter {
-    from {
-      opacity: 0;
-      transform: translateY(14px) scale(0.96);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-
   .animation-container {
     position: relative;
     width: 100%;
@@ -471,38 +363,6 @@
     color: var(--theme-text);
     font-size: var(--font-size-sm, 14px);
     pointer-events: none;
-  }
-
-  .context-controls {
-    flex: 0 0 auto;
-    min-height: 68px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--settings-spacing-md, 12px);
-    padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 12px);
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 8px;
-  }
-
-  .context-status {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    color: var(--theme-text);
-  }
-
-  .context-status strong {
-    font-size: var(--font-size-sm, 14px);
-    line-height: 1.25;
-  }
-
-  .context-status span {
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-xs, 12px);
-    line-height: 1.25;
   }
 
   .timeline-section {

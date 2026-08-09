@@ -30,7 +30,13 @@
   data-ghost-kind="sequence-actions"
   data-ghost-label="Sequence actions"
 >
-  <i class="fa-solid {WORKSPACE_BUTTON_ICON['sequence-actions'].icon}" aria-hidden="true"></i>
+  <i
+    class="fa-solid {WORKSPACE_BUTTON_ICON['sequence-actions'].icon}"
+    aria-hidden="true"
+  ></i>
+  <span class="workspace-action-label" aria-hidden="true">
+    {WORKSPACE_BUTTON_ICON["sequence-actions"].visibleLabel}
+  </span>
 </button>
 
 <style>
@@ -38,8 +44,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: var(--min-touch-target);
+    box-sizing: border-box;
+    width: var(--workspace-action-width, var(--min-touch-target));
+    min-width: var(--min-touch-target);
     height: var(--min-touch-target);
+    gap: var(--workspace-action-gap, 0);
+    padding-inline: var(--workspace-action-padding-inline, 0);
     border: 1px solid
       color-mix(
         in srgb,
@@ -56,16 +66,28 @@
         )
         100%
     );
-    border-radius: 50%;
+    border-radius: var(--workspace-action-radius, 50%);
     color: var(--theme-text);
     cursor: pointer;
-    transition: all var(--transition-normal, var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1));
+    transition:
+      transform var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1),
+      background var(--duration-fast) ease,
+      border-color var(--duration-fast) ease,
+      box-shadow var(--duration-fast) ease;
     box-shadow: 0 4px 12px
       color-mix(
         in srgb,
         var(--semantic-success, var(--semantic-success)) 40%,
         transparent
       );
+  }
+
+  .workspace-action-label {
+    display: var(--workspace-action-label-display, none);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+    line-height: 1;
+    white-space: nowrap;
   }
 
   .sequence-actions-button:hover {
@@ -95,7 +117,7 @@
 
   .sequence-actions-button:active {
     transform: scale(0.95);
-    transition: all var(--duration-instant) ease;
+    transition-duration: var(--duration-instant);
   }
 
   .sequence-actions-button:focus-visible {

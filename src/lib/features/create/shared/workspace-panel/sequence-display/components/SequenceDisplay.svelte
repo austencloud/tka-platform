@@ -17,6 +17,10 @@
   import { getIsTimelineMode } from "../state/timeline-mode.svelte";
   import { updateStepDuration } from "../../../services/step-operations/duration-handler";
   import { UndoOperationType } from "../../../services/undo-manager";
+  import {
+    logConstructContextPreviewCompleted,
+    logConstructContextPreviewReady,
+  } from "$lib/features/create/construct/services/construct-analytics";
 
   let {
     sequenceState,
@@ -79,6 +83,7 @@
   const isShiftStartMode = $derived(panelState.isShiftStartMode);
   const isTimelineMode = $derived(getIsTimelineMode());
   const canSaveToLibrary = $derived(CreateModuleState.canShowActionButtons());
+  const optionAudition = $derived(panelState.optionAudition);
 
   // Multi-select highlight: paint every batch-selected beat with the accent
   // ring via the existing StepCell `.highlighted` mechanism. Gold `.selected`
@@ -178,6 +183,31 @@
     );
     updateStepDuration(stepNumber, newDuration, CreateModuleState);
   }
+
+  function handleAuditionReady(requestId: number, autoplay: boolean) {
+    const audition = panelState.optionAudition;
+    if (!audition || audition.requestId !== requestId) return;
+
+    logConstructContextPreviewReady({
+      stepNumber: audition.stepNumber,
+      latencyMs: performance.now() - audition.activatedAt,
+      autoplay,
+    });
+  }
+
+  function handleAuditionCompleted(requestId: number) {
+    const audition = panelState.optionAudition;
+    if (!audition || audition.requestId !== requestId) return;
+
+    logConstructContextPreviewCompleted({
+      stepNumber: audition.stepNumber,
+    });
+  }
+
+  function handleAuditionDismiss(requestId: number) {
+    if (panelState.optionAudition?.requestId !== requestId) return;
+    panelState.exitOptionAudition();
+  }
 </script>
 
 <div class="sequence-container">
@@ -209,6 +239,7 @@
         <StepGrid
           steps={currentSequence?.steps ?? []}
           arrivalSequence={currentSequence}
+          {optionAudition}
           startPosition={startPositionStep() ?? undefined}
           onStepClick={handleStepClick}
           onStartClick={handleStartPositionClick}
@@ -226,6 +257,9 @@
           {highlightedSteps}
           onDurationChange={handleDurationChange}
           onMandalaClick={handleMandalaClick}
+          onAuditionReady={handleAuditionReady}
+          onAuditionCompleted={handleAuditionCompleted}
+          onAuditionDismiss={handleAuditionDismiss}
           manualColumnCount={loopAlignedColumnCount}
           sequenceWord={currentDisplayWord}
         />
@@ -310,7 +344,7 @@
     height: var(--min-touch-target, 44px);
   }
 
-  @container sequence-workspace (min-width: 1120px) {
+  @container sequence-workspace (min-width: 768px) {
     .top-bar {
       --workspace-leading-actions-width: 192px;
       --workspace-action-label-display: inline;
