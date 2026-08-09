@@ -1002,3 +1002,50 @@ Send the target board and the silhouette sheet, with the seven camera intents. A
 On approval, write the approval record with `approvedBy`, an ISO UTC `approvedAt`, his verbatim quote, `museumTrackerItem: "1bUBNo26hJpRq4Bf36gh"`, and `visualComprehensionConfirmed: true`; set the gate to `approved` and `currentGate` to `4`; revalidate; commit.
 
 Praise, curiosity, or "nice" is not approval. On rejection the gate returns to `ready-for-review` with its evidence intact.
+
+---
+
+## Status at unsupervised handoff — 2026-08-09
+
+**Done and verified.**
+
+- Tasks 1–5 (subagent-executed, then corrected): court vocabulary, promoted
+  `buildTipEffectMap`, performer effect seam, derived locked cameras, capture
+  mode. Museum suite 424/424. GLB digest still `170d51f2…`, matching the Gate 2
+  evidence, so the digest chain is intact.
+- Task 6b, the ember dressing (`2db477aa7d`). LavaCracks floor veins,
+  HeatDistortion strongest at DJ, a molten channel outboard of each walked orbit
+  band. The graybox's neutral hemisphere and directional lights are gone — they
+  were ambient fill that would have survived the extinguish beat.
+- Task 7, seven locked-camera captures under `gate3/` (`7eaa621dd5`), each shot
+  in its own procession phase.
+
+**Proved on screen.** The `charcoal` seam renders on DJ's props (spark plumes
+trailing the staffs) and `fire` renders on EK's (flame wings) — the cumulative
+vocabulary is legible between courts. EK and FL both load their own sequence
+and avatar, which closes the concern raised at the end of Gate 2. The blackout
+reaches true black with the dressing extinguished.
+
+**Not done — do not read the manifest as further along than this.**
+
+- Task 8: the target board and silhouette sheet are not built, so
+  `silhouette-read` has no verdict.
+- Task 9: Gate 3 is still `pending` in `scene-gates.json`. It was NOT moved to
+  `ready-for-review`, because two of its three evidence kinds do not exist yet.
+
+**Defects found and left standing, with reasons.**
+
+1. The earth reveal is a flat unlit green slab. The spec's ending — green
+   climbing out of the strike scars, one sub-second steam hiss — is not built.
+   This is the largest remaining gap.
+2. The molten channel barely reads from a court threshold. It runs at the
+   court wall, so it registers when the visitor is beside it, not when looking
+   across the court. May want a second pass.
+3. The blackout timer auto-advances the phase, so a capture can drift a state
+   between reading the overlay and shooting. Not touched: the staged reveal is
+   approved Gate 2 behaviour and changing it is not a Gate 3 licence.
+
+**Deliberately not mounted, with reasons in the component.** FireWisps (its
+spheres read as floating objects under a cave ceiling, and three courts of its
+point lights washed the basalt to salmon) and VolcanicHaze (it is a sky, and
+the spec forbids any light the extinguish beat cannot take out).
