@@ -1,7 +1,8 @@
 # Cinematic Winter Snow Volume
 
 Status: Implemented, verified, and integrated in `@austencloud/backgrounds`
-0.7.4 after Opus 5 review and foreground-atlas refinement.
+0.7.5 after Opus 5 review, foreground-atlas refinement, and pointer-wake
+continuity correction.
 
 ## Outcome
 
@@ -519,6 +520,13 @@ published artifact.
   hash matches the clean release build byte for byte.
 - npm published `@austencloud/backgrounds` 0.7.4 with integrity
   `sha512-VxiGqNbqZsB/p+8LlOOe1eA/yMe1ep5lGKwjXt0qHVqsGy1H2aMByMRJ2IlQQ+PmxjwwumjBrOoOph0+lRhHmg==`.
+- Pointer wakes now ease in and use a soft core instead of switching a full
+  radial force across one pixel. The deterministic worst-case one-pixel force
+  change fell from 1.617 to 0.070. Foreground wind tilt also uses a continuous
+  undirected axis instead of an angle with a 180-degree seam.
+- The clean 0.7.5 archive passed 74 tests, TypeScript build and no-emit checks,
+  `publint`, and tarball inspection. npm published it with integrity
+  `sha512-HnSZt8POImZKOEFBeomVQGWZ9ZXo31ZaOOtCLmca0IefVXRL9rYp2ZDW4thxyIeQ6xMd2foynzjGqfvA4sh0Gw==`.
 
 ## Research basis
 
