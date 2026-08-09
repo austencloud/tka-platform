@@ -21,9 +21,10 @@
   interface Props {
     label: string;
     flowers: Flower[];
-    value: number;
+    /** Null when a canonical preset, rather than a flower, owns the hand. */
+    value: number | null;
     onchange: (index: number) => void;
-    tone: "blue" | "red";
+    tone: "accent" | "blue" | "red";
   }
 
   let { label, flowers, value, onchange, tone }: Props = $props();
@@ -40,7 +41,9 @@
     flowers.map((f) => {
       const points = tracePath(flowerToKnobs(f), PREVIEW_SAMPLES);
       return points
-        .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(3)},${p.y.toFixed(3)}`)
+        .map(
+          (p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(3)},${p.y.toFixed(3)}`
+        )
         .join(" ");
     })
   );
@@ -58,7 +61,10 @@
         aria-checked={i === value}
         onclick={() => onchange(i)}
       >
-        <svg viewBox={`${-HALF} ${-HALF} ${HALF * 2} ${HALF * 2}`} aria-hidden="true">
+        <svg
+          viewBox={`${-HALF} ${-HALF} ${HALF * 2} ${HALF * 2}`}
+          aria-hidden="true"
+        >
           <path d={previews[i]} />
         </svg>
         <span class="ratio">{ratioLabel(f.turns)}</span>
@@ -84,6 +90,10 @@
 
   .picker[data-tone="red"] {
     --tone: var(--dm-motion-red, #ed1c24);
+  }
+
+  .picker[data-tone="accent"] {
+    --tone: var(--theme-accent, #8b5cf6);
   }
 
   .axis-label {

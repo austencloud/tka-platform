@@ -1,13 +1,22 @@
 import { describe, expect, it } from "vitest";
 import {
   buildTrajectoryIncrements,
+  createPendulumTrajectory,
+  hasValidReversalPositions,
   traceTrajectory,
+  trajectoryFromKnobs,
+  trajectoryHandIndexAt,
   trajectoryPosesAt,
   trajectoryPropIndexAt,
   trajectoryPropRateAt,
   trajectoryReversals,
+  withTrajectoryPhase,
   type QftTrajectory,
 } from "../../src/lib/shared/notation/qft/qft-trajectory";
+import {
+  buildIncrements,
+  type QftKnobs,
+} from "../../src/lib/shared/notation/qft/qft-model";
 
 const swing: QftTrajectory = {
   radius: 1,
@@ -84,5 +93,60 @@ describe("QFT per-step trajectory", () => {
     const mirrored: QftTrajectory = { ...swing, handDirection: -1 };
     expect(trajectoryPropRateAt(mirrored, 0)).toBe(-1);
     expect(trajectoryPropRateAt(mirrored, 4)).toBe(1);
+  });
+
+  it("keeps hand and prop phase together when the motion rotates", () => {
+    const rotated = withTrajectoryPhase(swing, 2);
+
+    expect(trajectoryHandIndexAt(rotated, 0)).toBe(2);
+    expect(trajectoryPropIndexAt(rotated, 0)).toBe(4);
+    expect(trajectoryPosesAt(rotated, 0).hand.x).toBeCloseTo(1, 10);
+  });
+
+  it("accepts horizontal reversals and rejects quarter-turned reversals", () => {
+    expect(hasValidReversalPositions(swing)).toBe(true);
+    expect(hasValidReversalPositions(withTrajectoryPhase(swing, 4))).toBe(true);
+    expect(hasValidReversalPositions(withTrajectoryPhase(swing, 2))).toBe(
+      false
+    );
+  });
+});
+
+describe("QFT scalar-to-trajectory bridge", () => {
+  const cases: QftKnobs[] = [
+    { radius: 0, downbeats: 1, spin: "inspin" },
+    { radius: 0.5, downbeats: 1, spin: "inspin", phase: 4 },
+    { radius: 1, downbeats: 3, spin: "antispin" },
+    {
+      radius: 1,
+      downbeats: 5,
+      spin: "inspin",
+      handPhase: 2,
+      handDirection: -1,
+    },
+  ];
+
+  it("reproduces every Drex notation row for scalar hands", () => {
+    for (const knobs of cases) {
+      expect(buildTrajectoryIncrements(trajectoryFromKnobs(knobs))).toEqual(
+        buildIncrements(knobs, "drex")
+      );
+    }
+  });
+
+  it("uses one rate profile for pendulum and extendulum notation", () => {
+    const pendulum = createPendulumTrajectory(0);
+    const extendulum = createPendulumTrajectory(1);
+    const pendulumRows = buildTrajectoryIncrements(pendulum);
+    const extendulumRows = buildTrajectoryIncrements(extendulum);
+
+    expect(pendulumRows.map((row) => row.propDepart)).toEqual([
+      2, 3, 4, 5, 6, 5, 4, 3,
+    ]);
+    expect(extendulumRows.map((row) => row.propDepart)).toEqual(
+      pendulumRows.map((row) => row.propDepart)
+    );
+    expect(pendulumRows.every((row) => row.radius === 0)).toBe(true);
+    expect(extendulumRows.every((row) => row.radius === 1)).toBe(true);
   });
 });

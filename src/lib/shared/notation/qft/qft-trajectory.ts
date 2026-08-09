@@ -1,10 +1,12 @@
 import {
   norm,
   pointAt,
+  propRateForKnobs,
   PROP_LENGTH,
   type DirectionValue,
   type PositionValue,
   type QftIncrement,
+  type QftKnobs,
 } from "./qft-model";
 
 export const QFT_TRAJECTORY_STEPS = 8;
@@ -28,10 +30,20 @@ export type QftPropRateProfile = readonly [
  */
 export interface QftTrajectory {
   radius: number;
+  /** Where the hand begins on the eight-point compass. */
+  handPhase?: number;
   handDirection: 1 | -1;
   propRate: QftPropRateProfile;
+  /** Where the prop begins, measured from the body compass. */
   propPhase: number;
 }
+
+/**
+ * The One Surface app treats a trajectory as one complete hand description.
+ * Keep the established trajectory name for existing consumers while giving
+ * the app the vocabulary used by its design.
+ */
+export type QftHand = QftTrajectory;
 
 export interface QftTrajectoryReversal {
   /** The step whose departure begins the new rate, 1 through 8. */
@@ -70,7 +82,57 @@ export function trajectoryHandIndexAt(
   trajectory: QftTrajectory,
   cursor: number
 ): number {
-  return trajectory.handDirection * cursor;
+  return trajectory.handDirection * cursor + (trajectory.handPhase ?? 0);
+}
+
+export function constantRateProfile(rate: number): QftPropRateProfile {
+  return [rate, rate, rate, rate, rate, rate, rate, rate];
+}
+
+/**
+ * Lift the published scalar model into the per-step owner without changing
+ * any of its geometry. This is the bridge that lets flowers, guide presets,
+ * and reversals share one renderer and one notation pipeline.
+ */
+export function trajectoryFromKnobs(knobs: QftKnobs): QftTrajectory {
+  const handPhase = knobs.handPhase ?? 0;
+  const handDirection = knobs.handDirection ?? 1;
+  const signedDrawingRate = propRateForKnobs(knobs);
+  const relativeRate = signedDrawingRate / handDirection;
+
+  return {
+    radius: knobs.radius,
+    handPhase,
+    handDirection,
+    propRate: constantRateProfile(relativeRate),
+    propPhase: handPhase + (knobs.phase ?? 0),
+  };
+}
+
+/**
+ * The published pendulum and its radius-one extendulum use the same four
+ * forward and four reverse prop steps. Radius changes the hand path without
+ * creating a second motion code path.
+ */
+export function createPendulumTrajectory(radius = 0): QftTrajectory {
+  return {
+    radius,
+    handPhase: 0,
+    handDirection: 1,
+    propRate: [1, 1, 1, 1, -1, -1, -1, -1],
+    propPhase: 2,
+  };
+}
+
+export function withTrajectoryPhase(
+  trajectory: QftTrajectory,
+  phaseOffset: number
+): QftTrajectory {
+  return {
+    ...trajectory,
+    handPhase: (trajectory.handPhase ?? 0) + phaseOffset,
+    propPhase: trajectory.propPhase + phaseOffset,
+  };
 }
 
 /**
@@ -174,6 +236,13 @@ export function trajectoryReversals(
   }
 
   return reversals;
+}
+
+/** Gravity permits a reversal only when the prop is horizontal. */
+export function hasValidReversalPositions(trajectory: QftTrajectory): boolean {
+  return trajectoryReversals(trajectory).every(
+    ({ propPosition }) => propPosition === 2 || propPosition === 6
+  );
 }
 
 export function buildTrajectoryIncrements(
