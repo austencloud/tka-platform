@@ -24,6 +24,7 @@
   import { createEnvironmentTransitionVisualState } from "$lib/shared/3d/environments/state/environment-transition-visual-state.svelte";
   import { setEnvironmentTransitionVisualContext } from "$lib/shared/3d/environments/context/environment-transition-visual-context";
   import HarnessToneMapping from "./HarnessToneMapping.svelte";
+  import { clampPresetBelowWater } from "$lib/shared/3d/environments/scenes/ocean/ocean-camera-bounds";
 
   const sceneFeatureState = createSceneFeatureState();
   setSceneFeatureContext(sceneFeatureState);
@@ -78,7 +79,14 @@
       ? (requestedView as ViewName)
       : "hero"
   );
-  const cameraPreset = $derived(VIEW_PRESETS[view]);
+  // The ocean has no sky and no surface break, so a camera above the water
+  // plane looks up into space that was never authored. `?clamp=0` is the escape
+  // hatch: the `world` preset sits at y=26 specifically to photograph the world
+  // boundary from outside it, which the clamp would otherwise make impossible.
+  const clampEnabled = $derived(page.url.searchParams.get("clamp") !== "0");
+  const cameraPreset = $derived(
+    clampEnabled ? clampPresetBelowWater(VIEW_PRESETS[view]) : VIEW_PRESETS[view]
+  );
 </script>
 
 <svelte:head>

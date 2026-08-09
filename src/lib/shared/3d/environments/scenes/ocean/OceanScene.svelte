@@ -24,6 +24,7 @@
   } from "./runtime/atmosphere/seabed-caustics";
   import FloraInstances from "./authored/FloraInstances.svelte";
   import OceanRuntimeSystems from "./runtime/OceanRuntimeSystems.svelte";
+  import OceanDepthGradient from "./runtime/OceanDepthGradient.svelte";
   import { getSceneFeatureContext } from "../../../scene-features/context/scene-feature-context";
   import { tryGetAdaptiveQualityContext } from "../../../context/adaptive-quality-context";
 
@@ -253,6 +254,14 @@
     onReady={handleFloraReady}
   />
 {/if}
+
+<!--
+  Rendered first for reading order only. Draw order is owned by renderOrder=-1
+  on the mesh itself, and depthTest:false means it always loses to real
+  geometry — so it shows only through gaps, which is what silhouettes the
+  shelf lip against the abyss.
+-->
+<OceanDepthGradient />
 
 <OceanRuntimeSystems
   {quality}

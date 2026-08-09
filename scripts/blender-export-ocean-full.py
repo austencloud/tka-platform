@@ -26,6 +26,11 @@ os.makedirs(output_dir, exist_ok=True)
 SKIP_PREFIXES = [
     "Stage_", "Dais_", "Water", "Torch", "Light", "Camera",
     "Performer", "Grid", "Empty", "Armature",
+    # Seabed ships as its own ocean-environment.glb, because LOW tier loads the
+    # seabed but skips this flora scene entirely. Including it here would leave
+    # LOW with no floor and every other tier with two.
+    # See scripts/blender-export-ocean-seabed.py.
+    "Seabed",
 ]
 # Dais_ skipped: the live stage is the programmatic RuinsPlatform (an animated
 # bioluminescent shader that can't bake to glTF — the Blender-first rule's
