@@ -14,7 +14,6 @@
     StripValue,
   } from "$lib/shared/create/components/pattern-strip/pattern-strip-types";
   import { DURATION_RHYTHMS } from "$lib/shared/create/domain/rhythm/rhythm-catalog";
-  import { stampSingle } from "$lib/shared/create/domain/rhythm/rhythm-mask";
   import { stripToDurationPattern } from "../../domain/pattern-strip-apply";
   import * as durationPatternManager from "$lib/features/create/shared/services/duration-pattern-manager";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -48,11 +47,23 @@
   const seqLen = $derived(sequence?.steps.length ?? 8);
   const initPeriod = $derived(seqLen % 4 === 0 ? 4 : seqLen % 2 === 0 ? 2 : 1);
 
-  let strip = $state<StripValue[][]>([[2, 1, 1, 1]]);
+  let strip = $state<StripValue[][]>([[1, 1, 1, 1]]);
 
-  // Seed the downbeat rhythm (P---) at x2 hold once on mount (entering view).
+  // Seed from the sequence's ACTUAL durations so entering the view previews
+  // no change. A canned downbeat-2× seed used to show step 1 at 2× the moment
+  // the view opened, misrepresenting the loaded sequence. Durations outside
+  // the editor's value list snap to the nearest supported value.
+  function snapToStripValue(duration: number): StripValue {
+    return DUR_VALUES.reduce((best, v) =>
+      Math.abs(v - duration) < Math.abs(best - duration) ? v : best
+    );
+  }
+
   onMount(() => {
-    strip = [stampSingle(DURATION_RHYTHMS[2]!, initPeriod, 2, 1)];
+    const seeded = Array.from({ length: initPeriod }, (_, i) =>
+      snapToStripValue(sequence?.steps[i]?.duration ?? 1)
+    );
+    strip = [seeded];
   });
 
   function applyValues(values: StripValue[][]): DurationResult | null {
