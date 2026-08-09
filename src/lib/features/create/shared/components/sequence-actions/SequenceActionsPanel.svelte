@@ -356,7 +356,16 @@
       if (restoredSubDrawer === "help") helpMode = "selecting";
       else if (restoredSubDrawer === "turnPattern") subView = "turnPattern";
       else if (restoredSubDrawer === "rotationDirection") subView = "rotation";
-      else if (restoredSubDrawer === "duration") subView = "duration";
+      else if (restoredSubDrawer === "duration") {
+        subView = "duration";
+        // Restore must run the same entry side effects as handleDuration():
+        // without an active preview session, DurationPatternView's onPreview
+        // no-ops and pattern changes silently don't show on the timeline
+        // until the user backs out and re-enters.
+        if (isSideBySideLayout && sequence) {
+          panelState.enterDurationPreviewMode(sequence);
+        }
+      }
       else if (restoredSubDrawer === "extend") {
         // Extend is transient and never auto-persisted (see auto-save effect),
         // so a stored "extend" only comes from an explicit launch
