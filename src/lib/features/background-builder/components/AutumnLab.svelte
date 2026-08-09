@@ -54,11 +54,11 @@
   // Layer toggles
   let layers: LayerState = $state({
     sky: true,
-    moon: true,
-    trees: true,
-    landscape: true,
+    moon: false,
+    trees: false,
+    landscape: false,
     leaves: true,
-    owl: true,
+    owl: false,
   });
 
   let densityPreset: DensityPreset = $state("normal");
@@ -66,7 +66,7 @@
   let windPreset: WindPreset = $state("breezy");
 
   // Stats
-  let stats = $state({ leaves: 0, platesLoaded: 0, plateTarget: 3 });
+  let stats = $state({ leaves: 0, platesLoaded: 0, plateTarget: 1 });
   let lastStatsUpdate = 0;
 
   // Initialize system when canvas is ready
@@ -148,7 +148,7 @@
   <div class="controls themed-scrollbar-accent">
     <div class="header">
       <h2>Autumn Lab</h2>
-      <span class="badge">Amber Rain</span>
+      <span class="badge">After Rain</span>
     </div>
 
     <!-- Quality Chips -->
@@ -160,10 +160,7 @@
 
     <!-- Layer Chips -->
     <ChipGroup>
-      <ChipToggle label="Grove" icon="tree" active={layers.sky} color="amber" onclick={() => toggleLayer("sky")} />
-      <ChipToggle label="Light" icon="sun" active={layers.moon} color="amber" onclick={() => toggleLayer("moon")} />
-      <ChipToggle label="Depth" icon="layer-group" active={layers.trees} color="amber" onclick={() => toggleLayer("trees")} />
-      <ChipToggle label="Mist" icon="water" active={layers.landscape} color="amber" onclick={() => toggleLayer("landscape")} />
+      <ChipToggle label="Scene" icon="tree" active={layers.sky} color="amber" onclick={() => toggleLayer("sky")} />
       <ChipToggle label="Leaves" icon="leaf" active={layers.leaves} color="amber" onclick={() => toggleLayer("leaves")} />
     </ChipGroup>
 
@@ -204,7 +201,7 @@
         </div>
         <div class="stat">
           <span class="stat-value">{stats.platesLoaded}/{stats.plateTarget}</span>
-          <span class="stat-label">Art planes</span>
+          <span class="stat-label">Art matte</span>
         </div>
       </div>
     </div>
@@ -213,8 +210,8 @@
     <div class="progress-section">
       <span class="label">Features</span>
       <div class="progress-pills">
-        <span class="pill complete">Multiplane Grove</span>
-        <span class="pill complete">Rain Haze</span>
+        <span class="pill complete">Wide + portrait art</span>
+        <span class="pill complete">Subtle parallax</span>
         <span class="pill complete">Edge Release</span>
         <span class="pill complete">Eased Gusts</span>
       </div>
