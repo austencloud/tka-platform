@@ -1,0 +1,148 @@
+<script lang="ts">
+  import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import type { TunnelViewController } from "../../tunnel/tunnel-view-controller.svelte";
+  import { changeArtSetting, reportArtSetting } from "./art-setting-change";
+  import type {
+    ArtSettingChangeHandler,
+    ArtSettingValue,
+  } from "./art-settings-types";
+
+  interface Props {
+    controller: TunnelViewController;
+    dense: boolean;
+    bpm: number;
+    isPlaying: boolean;
+    onBpmChange: (bpm: number) => void;
+    onPlaybackToggle: () => void;
+    onArtSettingChange?: ArtSettingChangeHandler;
+  }
+
+  let {
+    controller,
+    dense,
+    bpm,
+    isPlaying,
+    onBpmChange,
+    onPlaybackToggle,
+    onArtSettingChange,
+  }: Props = $props();
+
+  function reportSetting(
+    group: string,
+    setting: string,
+    previousValue: ArtSettingValue,
+    value: ArtSettingValue,
+    coalesce = false
+  ): void {
+    reportArtSetting(
+      onArtSettingChange,
+      group,
+      setting,
+      previousValue,
+      value,
+      coalesce
+    );
+  }
+
+  function changeSetting(
+    group: string,
+    setting: string,
+    previousValue: ArtSettingValue,
+    value: ArtSettingValue,
+    mutate: () => void,
+    coalesce = false
+  ): void {
+    changeArtSetting(
+      onArtSettingChange,
+      group,
+      setting,
+      previousValue,
+      value,
+      mutate,
+      coalesce
+    );
+  }
+
+  // Rainbow vs Uniform copy coloring (controller.spectrum), shown in Effects.
+  const colorOptions = [
+    { value: "rainbow", label: "Rainbow" },
+    { value: "uniform", label: "Uniform" },
+  ];
+</script>
+
+<div class="section-pad">
+  <!-- Rainbow (every copy fans across the spectrum) vs Uniform (base blue/red).
+           A real tunnel color mode, formerly in the retired Cast section. -->
+  <div class="rt-section colors-row">
+    <span class="rt-section-label">Colors</span>
+    <SegmentedControl
+      options={colorOptions}
+      value={controller.spectrum ? "rainbow" : "uniform"}
+      onchange={(v) =>
+        changeSetting(
+          "art_tunnel",
+          "colors",
+          controller.spectrum ? "rainbow" : "uniform",
+          v,
+          () => (controller.spectrum = v === "rainbow")
+        )}
+      color="accent"
+      size="sm"
+    />
+    {#if !dense}
+      <p class="section-hint">
+        {controller.spectrum
+          ? "Each copy fans across the spectrum."
+          : "Every copy uses the base blue/red."}
+      </p>
+    {/if}
+  </div>
+  <EffectsPanel
+    layout={dense ? "strip" : "sidebar"}
+    showPlayback={false}
+    {bpm}
+    {onBpmChange}
+    {isPlaying}
+    {onPlaybackToggle}
+    onSettingChange={(setting, previousValue, value, coalesce) =>
+      reportSetting("art_effects", setting, previousValue, value, coalesce)}
+  />
+</div>
+
+<style>
+  .section-pad {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 8px 16px 20px;
+  }
+  .section-hint {
+    font-size: var(--font-size-compact, 12px);
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+    line-height: 1.4;
+    margin: 0;
+    padding: 0 8px;
+  }
+  .rt-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .rt-section-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+  }
+
+  /* Mobile dock tray: tighten the shared section bodies. Buttons/inputs keep
+     their var(--min-touch-target) floor — only gaps and outer paddings collapse
+     so the tray stays compact floating over the art. */
+  :global(.dock-dense) .section-pad {
+    gap: 8px;
+    padding: 2px 2px 6px;
+  }
+</style>

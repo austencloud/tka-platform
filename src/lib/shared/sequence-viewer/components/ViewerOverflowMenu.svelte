@@ -31,6 +31,7 @@
     variant?: "header" | "footer";
     dropDown?: boolean;
     align?: "left" | "right" | "center";
+    showLabel?: boolean;
     trigger?: Snippet<[{ isOpen: boolean; hasMenu: boolean }]>;
     isFavorite?: boolean;
     onFavoriteToggle?: () => void;
@@ -80,6 +81,7 @@
     variant = "header",
     dropDown = false,
     align = "right",
+    showLabel = false,
     trigger,
     isFavorite = false,
     onFavoriteToggle,
@@ -280,6 +282,7 @@
               type="button"
               class="overflow-trigger"
               class:header-variant={variant === "header" && !trigger}
+              class:labelled-trigger={showLabel && !trigger}
               class:title-variant={!!trigger}
               aria-label="More actions"
             >
@@ -287,6 +290,7 @@
                 {@render trigger({ isOpen, hasMenu })}
               {:else}
                 <i class="fas fa-ellipsis-vertical" aria-hidden="true"></i>
+                {#if showLabel}<span>More</span>{/if}
               {/if}
             </button>
           {/snippet}
@@ -422,13 +426,21 @@
   }
 
   .overflow-trigger.header-variant {
-    width: auto;
-    height: auto;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
     min-width: var(--min-touch-target, 44px);
     min-height: var(--min-touch-target, 44px);
-    border: none;
-    border-radius: 8px;
-    background: none;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+  }
+
+  .overflow-trigger.header-variant.labelled-trigger {
+    width: auto;
+    gap: 8px;
+    padding-inline: 12px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
   }
 
   :global(.viewer-overflow-popover) {

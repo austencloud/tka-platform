@@ -10,7 +10,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { goto, replaceState } from "$app/navigation";
+  import { goto } from "$app/navigation";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SequenceViewerOrchestrator from "./SequenceViewerOrchestrator.svelte";
   import SequenceViewerShell from "./SequenceViewerShell.svelte";
@@ -23,6 +23,7 @@
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { getLoopDetector } from "$lib/shared/create/get-loop-detector";
+  import { removeCurrentUrlParams } from "$lib/shared/navigation/services/url-state";
 
   const overlay = getSequenceOverlayState();
 
@@ -30,7 +31,9 @@
 
   $effect(() => {
     if (typeof window !== "undefined") {
-      const check = () => { isMobileWidth = window.innerWidth < 768; };
+      const check = () => {
+        isMobileWidth = window.innerWidth < 768;
+      };
       check();
       window.addEventListener("resize", check);
       return () => window.removeEventListener("resize", check);
@@ -79,7 +82,8 @@
       }
 
       if (overlay.isOpen) return;
-      const stillMatches = new URL(window.location.href).searchParams.get("v") === code;
+      const stillMatches =
+        new URL(window.location.href).searchParams.get("v") === code;
       if (!stillMatches) return;
 
       const hydrated = await hydrateSequence(resolved, {
@@ -96,7 +100,10 @@
       });
       openedSuccessfully = true;
     } catch (error) {
-      console.warn("[SequenceViewerDrawerHost] Failed to bootstrap from ?v= code:", error);
+      console.warn(
+        "[SequenceViewerDrawerHost] Failed to bootstrap from ?v= code:",
+        error
+      );
     } finally {
       if (!openedSuccessfully) stripInvalidV(code);
     }
@@ -106,8 +113,7 @@
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
     if (url.searchParams.get("v") !== code) return;
-    url.searchParams.delete("v");
-    replaceState(url.pathname + url.search + url.hash, {});
+    removeCurrentUrlParams(["v"]);
   }
 
   function handleDismiss() {

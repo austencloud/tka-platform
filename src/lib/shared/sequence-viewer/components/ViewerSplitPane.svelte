@@ -356,16 +356,6 @@
     if (_2dLeftActive) _2dLeftMounted = true;
   });
 
-  // Portrait-mobile still hides the 2D canvas word-header to reclaim vertical
-  // space (the transport itself is now the in-canvas tap-to-play + thin seekable
-  // line on every size — no relocated transport bar).
-  const showMobileTransport = $derived(
-    layout.isMobile &&
-      !layout.isLandscapeMobile &&
-      _2dLeftActive &&
-      (!layout.focusedPane || layout.focusedPane === "animation")
-  );
-
   let _2dRightMounted = $state(false);
   const _2dRightActive = $derived(splitConfig.rightPane === "animation");
   $effect(() => {
@@ -599,7 +589,7 @@
               focused={layout.focusedPane === "animation"}
               suppress2DOverlays={false}
               hideProgressBar={suppressProgress}
-              hideHeader={showMobileTransport}
+              hideHeader
               tapToToggle={true}
               progressLine={true}
               resizePaused={_practiceResizePaused}
@@ -794,6 +784,7 @@
               onProgressBarScrubEnd={onProgressBarScrubEnd ?? null}
               focused={false}
               suppress2DOverlays={false}
+              hideHeader
               hideProgressBar={true}
               resizePaused={_practiceResizePaused}
             />

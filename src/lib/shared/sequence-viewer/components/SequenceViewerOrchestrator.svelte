@@ -7,6 +7,10 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { getSequenceMotionVisibility } from "$lib/shared/foundation/services/sequence-motion-profile";
+  import {
+    clampDisplayedBeatNumber,
+    displayedBeatNumber,
+  } from "$lib/shared/animation-engine/services/step-calculator";
   import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
   import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import type { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -246,6 +250,7 @@
   import { getScanCardCloudProbe } from "$lib/shared/sequence-viewer/scan-card-cloud-context";
   import { isViewerReadyToAutoplay } from "$lib/shared/sequence-viewer/services/viewer-autoplay-readiness";
   import { shouldAutoplayViewer } from "$lib/shared/sequence-viewer/services/viewer-autoplay-policy";
+  import { shouldSequenceViewerDeferEscape } from "$lib/shared/sequence-viewer/domain/sequence-viewer-escape-ownership";
   import { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/modal-accessibility-helper.svelte";
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import type { ShareURLMetadata } from "$lib/shared/navigation/services/types";
@@ -633,11 +638,13 @@
     }
     if (!playback.isPlayingLocal && playback.currentStepLocal < 0.5)
       return null;
-    if (playback.currentStepLocal < 1) return -1;
-    if (showPreviousBeat) {
-      return Math.round(playback.currentStepLocal) - 2;
-    }
-    return Math.floor(playback.currentStepLocal) - 1;
+    const displayedBeat = displayedBeatNumber(
+      playback.currentStepLocal,
+      showPreviousBeat
+    );
+    const totalMotionBeats =
+      modalAnimationState.sequenceData?.steps?.length ?? 0;
+    return clampDisplayedBeatNumber(displayedBeat, totalMotionBeats) - 1;
   });
 
   const currentStepData = $derived.by(() => {
@@ -1249,12 +1256,22 @@
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === "Escape") {
-      event.preventDefault();
-      if (fullscreen.isFullscreen) {
-        fullscreen.exitFullscreen();
-      } else {
-        handleClose();
-      }
+      // A focused menu, popover, input, or browser-fullscreen surface owns the
+      // first Escape press. Closing the viewer here would skip that local
+      // dismissal and unexpectedly navigate away from the sequence.
+      if (shouldSequenceViewerDeferEscape(event)) return;
+
+      // Modal and drawer layers are registered on the same window event. Let
+      // those handlers claim Escape before the viewer applies its fallback.
+      queueMicrotask(() => {
+        if (event.defaultPrevented) return;
+
+        if (fullscreen.isFullscreen) {
+          fullscreen.exitFullscreen();
+        } else {
+          handleClose();
+        }
+      });
       return;
     }
 

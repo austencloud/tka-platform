@@ -1,12 +1,13 @@
 # ADR: SequenceViewerShell — One Chrome, Many Hosts
 
-**Date:** 2026-07-02 (extraction), 2026-07-05 (guardrails)
-**Status:** Shipped (`fcd3a516d8`, `5d3adfb542`)
+**Date:** 2026-07-02 (extraction), 2026-07-05 (guardrails), 2026-08-08 (route integration)
+**Status:** Shipped
 
 ## Context
 
-The sequence viewer renders on multiple surfaces: the in-app bottom drawer and
-the standalone /q/[code] scan page. For days the two were built as parallel
+The sequence viewer renders on multiple surfaces: the in-app bottom drawer,
+the standalone /q/[code] scan page, and the /sequence/[id] route. The first two
+were originally built as parallel
 implementations — a "mirror" header and layout on /q that kept diverging from
 the drawer (different header, hardcoded palette, different breakpoint, export
 tabs on different layout rules). Every parity fix decayed because the surfaces
@@ -18,14 +19,13 @@ Extract the entire viewer chrome into one component and render it from every
 host. Parity by construction, not by discipline.
 
 ```
-SequenceViewerDrawerHost          /q/[code]/+page.svelte
-  (Drawer, overlay state,           (route shell, data resolve,
-   ?v= bootstrap, dismiss)           scan logging, gated export)
-        │                                 │
-        └────── SequenceViewerOrchestrator (state ctx) ──────┘
+SequenceViewerDrawerHost    /q/[code]/+page.svelte    /sequence/[id]
+  (Drawer + dismiss)          (scan + gated export)    (handoff + SEO)
+          │                           │                       │
+          └────────── SequenceViewerOrchestrator (state ctx) ─┘
                           │
                SequenceViewerShell.svelte
-     header · title/overflow menus · rail · split pane
+     header · word/overflow menus · rail · split pane
      export panels (video/card) · practice workstation
      delete dialog · breakpoint + export-narrow math · all chrome CSS
 ```
@@ -42,6 +42,9 @@ through shell props:
 - `startInSplit` — /q boots into split view
 - `exportOverrides` — /q's gated download funnel (sign-in gate for guests)
   replaces `ctx.handleExport`; omitted in-app
+- `navigation` — standalone-route back action in the shared header
+- `contextContent` — route-owned context placed below the shared header
+- `showFullscreenControls` — enables the route's fullscreen affordances
 
 ### Theme parity
 
@@ -60,17 +63,8 @@ only by the shell (including export-narrow fallbacks at desktop widths).
 
 - `.claude/rules/sequence-viewer-shell.md` — always-loaded agent rule
 - `tests/unit/sequence-viewer-shell-contract.test.ts` — static contract test in
-  CI: shell rendered by both hosts, no chrome-internal imports in hosts, no
+  CI: shell rendered by all hosts, no chrome-internal imports in hosts, no
   host theme-var declarations, shared breakpoint, no shell-owned markup markers
-
-## Known gap
-
-`src/routes/sequence/[id]/+page.svelte` predates the shell and still composes
-chrome from internals (ViewerHeader, ViewerSplitPane, export panels, practice
-bars) plus route-only features (fullscreen controls, LAN sync, handoff). It is
-grandfathered: no new chrome features there; the next substantial viewer change
-on that route migrates it to the shell, adding props for its deltas. Migration
-also retires `ViewerHeader.svelte` (the shell has its own header).
 
 ## Rejected
 

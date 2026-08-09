@@ -1,9 +1,13 @@
-import { pushState, replaceState } from "$app/navigation";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 import { getShortCodeShareMessage } from "$lib/shared/qr/domain/short-code-error";
+import {
+  mutateCurrentUrl,
+  removeCurrentUrlParams,
+  writeUrl,
+} from "$lib/shared/navigation/services/url-state";
 
 let _isOpen = $state(false);
 let _sequence = $state<SequenceData | null>(null);
@@ -51,15 +55,17 @@ export function openSequenceOverlay(
   const token = ++_openToken;
 
   if (!options?.skipHistoryPush) {
-    pushState("", { sequenceOverlay: true });
+    writeUrl("", {
+      mode: "push",
+      state: { sequenceOverlay: true },
+    });
   }
 
   if (!options?.fromUrl && typeof window !== "undefined") {
     const url = new URL(window.location.href);
     if (url.searchParams.has("v")) {
-      url.searchParams.delete("v");
-      replaceState(url.pathname + url.search + url.hash, {
-        sequenceOverlay: true,
+      removeCurrentUrlParams(["v"], {
+        state: { sequenceOverlay: true },
       });
     }
     void mintAndSyncShortCode(sequence, token);
@@ -129,19 +135,17 @@ async function mintAndSyncShortCode(
 
   if (!code || token !== _openToken || !_isOpen) return;
   _activeShortCode = code;
-  const url = new URL(window.location.href);
-  url.searchParams.set("v", code);
-  replaceState(url.pathname + url.search + url.hash, { sequenceOverlay: true });
+  mutateCurrentUrl(
+    (url) => {
+      url.searchParams.set("v", code);
+    },
+    { state: { sequenceOverlay: true } }
+  );
 }
 
 export function closeSequenceOverlay(): void {
   if (typeof window !== "undefined") {
-    const url = new URL(window.location.href);
-    if (url.searchParams.has("v")) {
-      url.searchParams.delete("v");
-      const target = url.pathname + (url.search ? url.search : "") + url.hash;
-      replaceState(target, {});
-    }
+    removeCurrentUrlParams(["v"], { removeState: ["sequenceOverlay"] });
   }
   _isOpen = false;
   _sequence = null;

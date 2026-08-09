@@ -1,46 +1,41 @@
 <script lang="ts">
-
-import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
-import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
-import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
-import { loadSequencesByIds } from "$lib/features/choreo-card/services/catalog-loader";
-import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
-  import { viewportFits3D } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
+  import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
+  import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
+  import { loadSequencesByIds } from "$lib/features/choreo-card/services/catalog-loader";
+  import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
   import { page } from "$app/state";
-  import { goto, replaceState } from "$app/navigation";
+  import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
+  import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
   import { onMount, onDestroy } from "svelte";
-  import { fade } from "svelte/transition";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
-  import { parsePropsFromURL, parseSequenceRouteId, decodeSequenceWithCompression, isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
+  import {
+    parsePropsFromURL,
+    parseSequenceRouteId,
+    decodeSequenceWithCompression,
+    isInlineEncoded,
+  } from "$lib/shared/navigation/services/sequence-encoder";
   import { decodeViewMode } from "$lib/shared/browse/domain/browse-view-mode";
   import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/get-public-sequence-hash-matcher";
   import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { setSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
-  import { registerDrawer, unregisterDrawer, generateDrawerId } from "$lib/shared/foundation/ui/drawer/drawer-stack";
+  import {
+    registerDrawer,
+    unregisterDrawer,
+    generateDrawerId,
+  } from "$lib/shared/foundation/ui/drawer/drawer-stack";
   import { createModalSwipeDismiss } from "$lib/shared/sequence-viewer/services/modal-swipe-dismiss";
   import {
     consumeSequenceRouteHandoff,
-    type SequenceRouteHandoff
+    type SequenceRouteHandoff,
   } from "$lib/shared/coordinators/sequence-handoff.svelte";
-  import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
   import SequenceViewerOrchestrator from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
   import type { OrchestratorContext } from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
-
-  // Components
-  import ViewerSplitPane from "$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte";
-  import FullscreenControls from "$lib/shared/sequence-viewer/components/FullscreenControls.svelte";
-  import ExportVideoDrawer from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
-  import ExportImagePanel from "$lib/shared/sequence-viewer/components/ExportImagePanel.svelte";
-  import VideoPreviewPanel from "$lib/shared/sequence-viewer/components/VideoPreviewPanel.svelte";
-  import PracticeBar from "$lib/shared/sequence-viewer/components/PracticeBar.svelte";
-  import PracticeSetupBar from "$lib/shared/sequence-viewer/components/PracticeSetupBar.svelte";
-  import ViewerHeader from "$lib/shared/sequence-viewer/components/ViewerHeader.svelte";
-  import DeleteConfirmDialog from "$lib/shared/sequence-viewer/components/DeleteConfirmDialog.svelte";
+  import SequenceViewerShell from "$lib/shared/sequence-viewer/components/SequenceViewerShell.svelte";
 
   import {
     getIabBannerVisible,
@@ -49,14 +44,7 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
   } from "$lib/shared/auth/state/iab-banner-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
-  import ChoreoCardContextMenuHost from "$lib/shared/sequence-viewer/components/choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
-  import {
-    openSendSequenceSheet,
-    buildSequenceSharePayload,
-    buildThumbnailUrl,
-  } from "$lib/shared/inbox/state/send-sequence-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
-  import { sendToStickerLab } from "$lib/shared/sequence-viewer/services/send-to-sticker-lab";
 
   interface Props {
     data: {
@@ -72,9 +60,15 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
   const sequenceId = $derived(page.params.id);
 
   // URL params for state restoration
-  const urlViewMode = $derived(page.url.searchParams.get("view") as "animation" | "image" | "split" | null);
-  const urlBpm = $derived(parseInt(page.url.searchParams.get("bpm") || "") || null);
-  const urlTime = $derived(parseInt(page.url.searchParams.get("t") || "") || null);
+  const urlViewMode = $derived(
+    page.url.searchParams.get("view") as "animation" | "image" | "split" | null
+  );
+  const urlBpm = $derived(
+    parseInt(page.url.searchParams.get("bpm") || "") || null
+  );
+  const urlTime = $derived(
+    parseInt(page.url.searchParams.get("t") || "") || null
+  );
 
   // URL metadata params (from share URLs)
   const urlWord = $derived(page.url.searchParams.get("word"));
@@ -85,7 +79,9 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
   const urlBirthday = $derived(page.url.searchParams.get("birthday"));
 
   // URL render mode param (2D/3D)
-  const urlRenderMode = $derived(page.url.searchParams.get("render") as '2d' | '3d' | null);
+  const urlRenderMode = $derived(
+    page.url.searchParams.get("render") as "2d" | "3d" | null
+  );
 
   // URL prop params (from QR codes with prop info)
   const urlBlueProp = $derived(page.url.searchParams.get("bp"));
@@ -93,13 +89,19 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
 
   // URL view mode param (from QR codes with browse view mode)
   const urlViewModeParam = $derived(page.url.searchParams.get("vm"));
-  const decodedBrowseViewMode = $derived(urlViewModeParam ? decodeViewMode(urlViewModeParam) : null);
+  const decodedBrowseViewMode = $derived(
+    urlViewModeParam ? decodeViewMode(urlViewModeParam) : null
+  );
   const urlHandPathMode = $derived(decodedBrowseViewMode?.subject === "hands");
   const urlInitialBlueVisible = $derived(
-    decodedBrowseViewMode?.granularity === "solo" ? decodedBrowseViewMode.color === "blue" : true
+    decodedBrowseViewMode?.granularity === "solo"
+      ? decodedBrowseViewMode.color === "blue"
+      : true
   );
   const urlInitialRedVisible = $derived(
-    decodedBrowseViewMode?.granularity === "solo" ? decodedBrowseViewMode.color === "red" : true
+    decodedBrowseViewMode?.granularity === "solo"
+      ? decodedBrowseViewMode.color === "red"
+      : true
   );
 
   // Guest preview mode - forces unauthenticated view for debugging shared link UX
@@ -128,13 +130,6 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
   // Page container ref for swipe visual feedback
   let pageContainer: HTMLElement | null = $state(null);
 
-  // Delete confirmation state
-  let deleteConfirmOpen = $state(false);
-  let isDeleting = $state(false);
-
-  // ChoreoCard context menu
-  let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
-
   // DrawerStack registration - blocks pull-to-refresh on mobile
   const drawerId = generateDrawerId();
 
@@ -144,27 +139,15 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
   // Cleanup
   let resizeCleanup: (() => void) | null = null;
 
-  function handleSendTo() {
-    const seq = sequence;
-    if (!seq) return;
-    const propType = seq.intendedProp?.bluePropType ?? settingsService.settings.bluePropType ?? "staff";
-    const thumbnailUrl = buildThumbnailUrl(seq.word || seq.name, String(propType), false);
-    openSendSequenceSheet(buildSequenceSharePayload({ ...seq, thumbnailUrl }));
-  }
-
-  function handleSendToStickerLab() {
-    const seq = sequence;
-    if (!seq) return;
-    sendToStickerLab(seq);
-  }
-
   onMount(async () => {
     // Non-blocking: settings sync happens in background.
     // Don't block the viewer on service initialization.
     initializeAppServices().catch(() => {});
 
     // Mobile detection
-    const checkMobile = () => { isMobile = window.innerWidth < 768; };
+    const checkMobile = () => {
+      isMobile = window.innerWidth < 768;
+    };
     checkMobile();
     window.addEventListener("resize", checkMobile);
     resizeCleanup = () => window.removeEventListener("resize", checkMobile);
@@ -205,8 +188,10 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
     const updates: Record<string, unknown> = {};
 
     if (urlWord && !seq.word) updates.word = urlWord;
-    if (urlCreator && !seq.ownerDisplayName) updates.ownerDisplayName = urlCreator;
-    if (urlDifficulty && !seq.difficultyLevel) updates.difficultyLevel = urlDifficulty;
+    if (urlCreator && !seq.ownerDisplayName)
+      updates.ownerDisplayName = urlCreator;
+    if (urlDifficulty && !seq.difficultyLevel)
+      updates.difficultyLevel = urlDifficulty;
 
     if (urlNotes) {
       updates.metadata = { ...seq.metadata, notes: urlNotes };
@@ -332,7 +317,10 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
           // Background: try to match against public library for attribution
           void matchPublicRecord(sequence!);
         } catch (err) {
-          console.error("[SequenceRoute] Failed to decode sequence from URL:", err);
+          console.error(
+            "[SequenceRoute] Failed to decode sequence from URL:",
+            err
+          );
           loadError = "Invalid sequence URL";
           isLoading = false;
         }
@@ -396,7 +384,8 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
       }
 
       if (!resolvedSequence) {
-        loadError = "It may have been deleted by the owner while you were browsing the feed.";
+        loadError =
+          "It may have been deleted by the owner while you were browsing the feed.";
         isLoading = false;
         return;
       }
@@ -442,7 +431,8 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
     const shouldDismiss = swipeDismiss.handleTouchEnd();
     if (shouldDismiss) {
       if (pageContainer) {
-        pageContainer.style.transition = "transform 200ms ease-out, opacity 200ms ease-out";
+        pageContainer.style.transition =
+          "transform 200ms ease-out, opacity 200ms ease-out";
         pageContainer.style.transform = "translateY(100%)";
         pageContainer.style.opacity = "0";
         await new Promise((r) => setTimeout(r, 200));
@@ -457,9 +447,9 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
 
   function updateUrlParam(key: string, value: string) {
     if (!browser) return;
-    const url = new URL(window.location.href);
-    url.searchParams.set(key, value);
-    replaceState(url.toString(), {});
+    mutateCurrentUrl((url) => {
+      url.searchParams.set(key, value);
+    });
   }
 </script>
 
@@ -475,7 +465,10 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
       <div class="error-card">
         <i class="fas fa-exclamation-circle error-icon" aria-hidden="true"></i>
         <h1>This sequence isn't available</h1>
-        <p>{loadError || "The link may be broken, or the sequence was deleted by its owner."}</p>
+        <p>
+          {loadError ||
+            "The link may be broken, or the sequence was deleted by its owner."}
+        </p>
         <div class="recovery-actions">
           <a class="recovery-button" href="/browse/gallery">
             <i class="fas fa-compass" aria-hidden="true"></i>
@@ -506,32 +499,8 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
     blockClicks={swipeDismiss.state.blockClicks}
   >
     {#snippet children(ctx)}
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <main
-        class="sequence-route-page"
-        bind:this={pageContainer}
-        data-fullscreen={ctx.isFullscreen}
-        style:padding-bottom={iabBannerShowing
-          ? `${iabBannerHeight || IAB_BANNER_HEIGHT}px`
-          : undefined}
-        ontouchstart={(e) => handleTouchStart(e, ctx)}
-        ontouchmove={(e) => handleTouchMove(e, ctx)}
-        ontouchend={() => handleTouchEnd(ctx)}
-      >
-        <!-- Header -->
-        <ViewerHeader
-          profile="full"
-          {ctx}
-          {isMobile}
-          isFullscreen={ctx.isFullscreen}
-          editingPane={ctx.editingPane}
-          returnLabel={handoffData?.returnLabel || "Back"}
-          homeHref="/browse/gallery"
-          sequence={sequence}
-          onDeleteRequest={() => (deleteConfirmOpen = true)}
-        />
-
-        {#if !ctx.isFullscreen && !ctx.editingPane}
+      {#snippet routeContext()}
+        {#if !ctx.editingPane}
           <section
             class="sequence-context"
             aria-labelledby="sequence-context-heading"
@@ -571,221 +540,33 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
             </details>
           </section>
         {/if}
+      {/snippet}
 
-        <!-- Main content -->
-        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-        <div
-          class="route-body-content"
-          data-fullscreen={ctx.isFullscreen}
-          style:view-transition-name="sequence-{sequence?.id || 'viewer'}"
-          onclick={ctx.isFullscreen ? ctx.handleFullscreenTap : undefined}
-          onkeydown={ctx.isFullscreen ? (e) => { if (e.key === 'Enter' || e.key === ' ') ctx.handleFullscreenTap(); } : undefined}
-          role={ctx.isFullscreen ? "button" : undefined}
-          tabindex={ctx.isFullscreen ? 0 : undefined}
-        >
-          {#if ctx.isFullscreen}
-            <FullscreenControls
-              visible={ctx.fullscreenControlsVisible}
-              viewMode={ctx.viewMode}
-              isPlaying={ctx.isPlayingLocal}
-              bpm={ctx.bpmLocal}
-              onExit={ctx.exitFullscreen}
-              onPlaybackToggle={ctx.handlePlaybackToggle}
-              onStepHalfBeatBackward={ctx.stepHalfBeatBackward}
-              onStepHalfBeatForward={ctx.stepHalfBeatForward}
-              onStepFullBeatBackward={ctx.stepFullBeatBackward}
-              onStepFullBeatForward={ctx.stepFullBeatForward}
-              onRestartToStart={ctx.restartToStart}
-              onBpmChange={ctx.handleBpmChange}
-            />
-          {/if}
-
-          {#if ctx.hasSequence && ctx.effectiveSequence}
-            {@const isVideoExportActive = ctx.editingPane === "animation"}
-            {@const isImageExportActive = ctx.editingPane === "image"}
-            {@const isAnyExportActive = isVideoExportActive || isImageExportActive}
-            <div
-              class="viewer-and-export"
-              class:export-active={isAnyExportActive}
-              class:desktop={!isMobile}
-            >
-              <!-- Mobile 3D fullscreen overlay (lazy-loaded — Three.js is 3.8MB) -->
-              {#if isMobile && ctx.renderMode === '3d' && ctx.effectiveSequence && viewportFits3D()}
-                {#await import("$lib/shared/3d/components/Viewer3DFullscreen.svelte") then mod}
-                  <mod.default
-                    sequenceData={ctx.effectiveSequence}
-                    currentStep={ctx.currentStepLocal}
-                    isPlaying={ctx.isPlayingLocal}
-                    bpm={ctx.bpmLocal}
-                    word={ctx.effectiveSequence.word ?? null}
-                    bluePropType={ctx.bluePropType != null ? String(ctx.bluePropType) : null}
-                    redPropType={ctx.redPropType != null ? String(ctx.redPropType) : null}
-                    onClose={() => ctx.viewerState.setViewerMode('animation')}
-                    onPlaybackToggle={ctx.handlePlaybackToggle}
-                    onBpmChange={ctx.handleBpmChange}
-                    onStepForward={ctx.stepFullBeatForward}
-                    onStepBackward={ctx.stepFullBeatBackward}
-                    immersive={ctx.immersive}
-                    onToggleImmersive={ctx.toggleImmersive}
-                  />
-                {/await}
-              {/if}
-
-              <!-- Single persistent ViewerSplitPane - never destroyed, CSS grid transitions handle focus -->
-              <ViewerSplitPane
-                sequence={ctx.effectiveSequence}
-                renderMode={isMobile ? '2d' : ctx.renderMode}
-                bpm={ctx.bpmLocal}
-                onBpmChange={ctx.handleBpmChange}
-                playback={ctx.splitPanePlayback}
-                imageComposition={isImageExportActive
-                  ? {
-                      showWord: ctx.exportOptions.imageShowWord,
-                      showStepNumbers: ctx.exportOptions.imageShowStepNumbers,
-                      showDifficulty: ctx.exportOptions.imageShowDifficulty,
-                      showStartPos: ctx.exportOptions.imageIncludeStartPosition,
-                      showNotes: ctx.exportOptions.imageShowNotes,
-                      showQRCode: ctx.exportOptions.imageShowQRCode,
-                      darkMode: ctx.exportOptions.imageDarkMode,
-                      // Null delegates to ChoreoCard's per-length composition preference.
-                      columnCount: null,
-                      forceContain: true,
-                    }
-                  : ctx.splitPaneImageComposition}
-                propRendering={ctx.splitPanePropRendering}
-                layout={{
-                  isFullscreen: ctx.isFullscreen,
-                  fullscreenStackVertical: ctx.fullscreenStackVertical,
-                  isMobile,
-                  isLandscapeMobile: false,
-                  focusedPane: ctx.editingPane,
-                  suppressCloseButton: ctx.editingPane !== null,
-                }}
-                onFocusPane={ctx.enterEditMode}
-                onUnfocusPane={ctx.exitEditMode}
-                onStepClick={ctx.handleStepClick}
-                onCanvasReady={ctx.handleCanvasReady}
-                onAutoLayoutResolved={isImageExportActive
-                  ? ctx.setResolvedCardAutoLayout
-                  : undefined}
-                onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
-                practiceActive={ctx.practiceActive}
-                practiceRunning={ctx.practiceRunning}
-                practiceCountdown={ctx.practiceCountdown}
-                practiceCellSize={ctx.practiceViewPrefs.cellSize}
-                practiceCanvasFraction={0.5}
-                practiceMirrorEnabled={ctx.mirrorEnabled}
-              />
-              <ChoreoCardContextMenuHost
-                bind:this={choreoCardMenuHost}
-                isExportMode={isImageExportActive}
-                exportOptions={ctx.exportOptions}
-                onSendTo={sequence ? handleSendTo : undefined}
-                onSendToStickerLab={sequence ? handleSendToStickerLab : undefined}
-                stepCount={sequence?.steps?.length ?? 0}
-              />
-              {#if isAnyExportActive}
-                <div class="export-panel-container" class:sidebar={!isMobile && isVideoExportActive} transition:fade={{ duration: 200 }}>
-                  {#if isVideoExportActive}
-                    {#if ctx.previewBlobUrl}
-                      <VideoPreviewPanel
-                        blobUrl={ctx.previewBlobUrl}
-                        onDismiss={ctx.dismissPreview}
-                        onRedownload={async () => {
-                          // Device-gated: native share sheet on mobile, download on
-                          // desktop — the preview panel's label reads "Share" on mobile
-                          // so the behavior must match (not a blind anchor download).
-                          const word = ctx.effectiveSequence?.word || "sequence";
-                          const blob = await fetch(ctx.previewBlobUrl!).then((r) => r.blob());
-                          await shareOrDownloadBlob(blob, `${word}.mp4`, { title: word });
-                        }}
-                      />
-                    {:else}
-                      <ExportVideoDrawer
-                        exportOptions={ctx.exportOptions}
-                        isExporting={ctx.isExporting}
-                        exportProgress={ctx.exportProgress}
-                        canvasReady={ctx.canvasReady}
-                        layout={isMobile ? "bottom" : "sidebar"}
-                        singlePlayDuration={ctx.singlePlayDuration}
-                        isPlaying={ctx.isPlayingLocal}
-                        bpm={ctx.bpmLocal}
-                        playbackMode={ctx.playbackMode}
-                        onPlaybackToggle={ctx.handlePlaybackToggle}
-                        onPlaybackModeChange={ctx.handlePlaybackModeChange}
-                        onBpmChange={ctx.handleBpmChange}
-                        onExport={ctx.handleExport}
-                        onCancel={ctx.handleCancelExport}
-                      />
-                    {/if}
-                  {:else if isImageExportActive}
-                    <ExportImagePanel
-                      exportOptions={ctx.exportOptions}
-                      isExporting={ctx.isExporting}
-                      stepCount={ctx.effectiveSequence?.steps?.length ?? 0}
-                      resolvedAutoLayout={ctx.resolvedCardAutoLayout}
-                      onExport={ctx.handleExport}
-                      onClose={ctx.exitEditMode}
-                    />
-                  {/if}
-                </div>
-              {/if}
-            </div>
-          {/if}
-        </div>
-
-        {#if ctx.hasSequence}
-          <!-- Stays mounted. Entering practice reserves its row (one canvas resize on
-               enter); Start then slides the cockpit in from the right via composited
-               transform with no layout change → 60fps. Parked + inert when off. -->
-          <div class="practice-bar-rise" class:reserved={ctx.practiceActive} class:up={ctx.practiceActive} inert={!ctx.practiceActive}>
-            <!-- Conveyor: setup config (setup) ↔ running cockpit (running). Config
-                 slides out left as the cockpit slides in. Cockpit is the flow child
-                 (defines bar height); config overlays it. -->
-            <div class="bar-pane config" class:active={!ctx.practiceRunning} inert={ctx.practiceRunning}>
-              <PracticeSetupBar
-                config={ctx.practiceState.userConfig}
-                onSetConfig={ctx.handlePracticeSetConfig}
-                onStart={ctx.handlePracticeStart}
-              />
-            </div>
-            <div class="bar-pane cockpit" class:active={ctx.practiceRunning} inert={!ctx.practiceRunning}>
-              <PracticeBar
-                progress={ctx.practiceState.progress}
-                bpm={ctx.bpmLocal}
-                isPlaying={ctx.isPlayingLocal}
-                onBpmChange={ctx.handleBpmChange}
-                onPlayPause={ctx.handlePlaybackToggle}
-                onStepLevel={ctx.handlePracticeStepLevel}
-                onToggleHold={ctx.handlePracticeToggleHold}
-                onStop={ctx.handlePracticeStop}
-                metronomeOn={ctx.metronomeEnabled}
-                onToggleMetronome={ctx.handleToggleMetronome}
-                mirrorOn={ctx.mirrorEnabled}
-                onToggleMirror={ctx.handleToggleMirror}
-              />
-            </div>
-          </div>
-        {/if}
-      </main>
-
-      {#if deleteConfirmOpen}
-        <DeleteConfirmDialog
-          word={sequence?.word}
-          {isDeleting}
-          positioning="fixed"
-          onConfirm={async () => {
-            isDeleting = true;
-            try {
-              await ctx.handleDelete();
-            } finally {
-              deleteConfirmOpen = false;
-              isDeleting = false;
-            }
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <main
+        class="sequence-route-page"
+        bind:this={pageContainer}
+        data-fullscreen={ctx.isFullscreen}
+        style:padding-bottom={iabBannerShowing
+          ? `${iabBannerHeight || IAB_BANNER_HEIGHT}px`
+          : undefined}
+        ontouchstart={(event) => handleTouchStart(event, ctx)}
+        ontouchmove={(event) => handleTouchMove(event, ctx)}
+        ontouchend={() => handleTouchEnd(ctx)}
+      >
+        <SequenceViewerShell
+          {ctx}
+          {sequence}
+          {isMobile}
+          onClose={handleClose}
+          navigation={{
+            label: `Back to ${handoffData?.returnLabel || "Browse"}`,
           }}
-          onCancel={() => (deleteConfirmOpen = false)}
+          openAppHref="/browse/gallery"
+          contextContent={routeContext}
+          showFullscreenControls
         />
-      {/if}
+      </main>
     {/snippet}
   </SequenceViewerOrchestrator>
 {/if}
@@ -963,76 +744,6 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
     }
   }
 
-  /* Cockpit bar: a flow child that reserves its row when practice is ACTIVE. The
-     row's height animates 0↔auto on the --ws-dur clock so the canvas glides into
-     its practice height instead of snapping; height settles on enter, so Start/
-     Stop never relayout (visible Start motion is a composited slide-in). */
-  .practice-bar-rise {
-    position: relative; /* anchors the absolute config bar-pane */
-    flex-shrink: 0;
-    overflow: hidden;
-    height: 0;
-    transform: translateX(110%);
-    opacity: 0;
-    will-change: transform, opacity, height;
-    /* Scoped to this element only — interpolate-size is inherited, so on an
-       ancestor it leaks the height:auto animation into the viewer subtree. */
-    interpolate-size: allow-keywords;
-    transition:
-      transform var(--ws-dur) var(--ws-ease),
-      opacity var(--ws-dur) var(--ws-ease),
-      height var(--ws-dur) var(--ws-ease);
-  }
-  /* Entering practice (setup OR running) reserves the row, growing it from 0. */
-  .practice-bar-rise.reserved {
-    height: auto;
-  }
-  /* Practice active: bar slides in from the right + fades in (carrying the setup
-     config). Start swaps config→cockpit via the inner conveyor; bar stays put. */
-  .practice-bar-rise.reserved.up {
-    transform: translateX(0);
-    opacity: 1;
-  }
-
-  /* Inner conveyor: config (setup) ↔ cockpit (running). Cockpit is the flow child
-     (defines bar height); config is an absolute overlay. */
-  .bar-pane {
-    transition: transform var(--ws-dur) var(--ws-ease);
-    will-change: transform;
-  }
-  .bar-pane.config {
-    position: absolute;
-    inset: 0;
-    transform: translateX(-100%);
-  }
-  .bar-pane.config.active {
-    transform: translateX(0);
-  }
-  .bar-pane.cockpit {
-    position: relative;
-    transform: translateX(100%);
-  }
-  .bar-pane.cockpit.active {
-    transform: translateX(0);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .practice-bar-rise,
-    .bar-pane { transition: none; }
-  }
-
-  .route-body-content {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .route-body-content[data-fullscreen="true"] {
-    position: relative;
-  }
-
   /* Loading state */
   .loading-container {
     flex: 1;
@@ -1116,61 +827,6 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
     outline-offset: 2px;
   }
 
-  /* Viewer + export panel container. */
-  .viewer-and-export {
-    --export-sidebar-width: 560px;
-    position: relative;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  /* Desktop: always a grid so the sidebar column can transition smoothly
-     from 0px to 560px. Use 0px (not 0fr) - fr and px can't interpolate. */
-  .viewer-and-export.desktop {
-    display: grid;
-    grid-template-columns: 1fr 0px;
-    grid-template-rows: minmax(0, 1fr);
-    transition: grid-template-columns 250ms cubic-bezier(0.2, 0, 0, 1);
-  }
-
-  /* Desktop: ViewerSplitPane participates in grid flow (not absolute) */
-  .viewer-and-export.desktop :global(.view-container) {
-    position: relative;
-    inset: auto;
-  }
-
-  /* Desktop export active: sidebar column expands */
-  .viewer-and-export.export-active.desktop {
-    grid-template-columns: 1fr var(--export-sidebar-width);
-  }
-
-  /* Export panel - grid child on desktop, flex child on mobile */
-  .export-panel-container {
-    overflow: hidden;
-    overflow-y: auto;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    isolation: isolate;
-    min-width: 0;
-  }
-
-  /* Mobile: export panel is inline in flex layout */
-  @media (max-width: 767px) {
-    .viewer-and-export.export-active {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .export-panel-container {
-      width: 100%;
-      flex-shrink: 0;
-      overflow: visible;
-      border-left: none;
-      border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    }
-  }
-
   /* Mobile drawer appearance */
   @media (max-width: 767px) {
     .sequence-route-page {
@@ -1182,12 +838,5 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
       overscroll-behavior-y: contain;
       touch-action: pan-y;
     }
-
-    /* Suppress morph view-transition-name on mobile so the drawer
-       slide-up doesn't fight with a morph animation */
-    .route-body-content {
-      view-transition-name: none !important;
-    }
   }
-
 </style>

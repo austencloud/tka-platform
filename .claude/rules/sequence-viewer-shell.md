@@ -19,25 +19,28 @@ keeps it that way — the same playbook that stopped chip and crossfade drift
 
 `src/lib/shared/sequence-viewer/components/SequenceViewerShell.svelte`
 
-Owns EVERYTHING between the host wrapper and the sequence: header, title menu,
+Owns EVERYTHING between the host wrapper and the sequence: header, word menu,
 overflow menu, rail, split pane, export panels (video + card), practice
 workstation, delete dialog, all layout/breakpoint math, and all chrome CSS.
 
 Host deltas go through the prop seam, never through forked markup:
 
-| Prop              | Purpose                                                        |
-| ----------------- | -------------------------------------------------------------- |
-| `onClose`         | Host-specific dismiss (drawer close vs `goto`)                 |
-| `onRemix`         | Override remix routing (/q → composer handoff)                 |
-| `openAppHref`     | "Open TKA" target for standalone hosts                         |
-| `onAccountSignIn` | Guest sign-in / full-account avatar entry for standalone hosts |
-| `startInSplit`    | Boot into split view (/q scan landing)                         |
-| `exportOverrides` | Host-owned export funnels (gated downloads on /q)              |
+| Prop                     | Purpose                                                        |
+| ------------------------ | -------------------------------------------------------------- |
+| `onClose`                | Host-specific dismiss (drawer close vs `goto`)                 |
+| `onRemix`                | Override remix routing (/q → composer handoff)                 |
+| `openAppHref`            | "Open TKA" target for standalone hosts                         |
+| `onAccountSignIn`        | Guest sign-in / full-account avatar entry for standalone hosts |
+| `startInSplit`           | Boot into split view (/q scan landing)                         |
+| `exportOverrides`        | Host-owned export funnels (gated downloads on /q)              |
+| `navigation`             | Standalone-route back action in the shared header              |
+| `contextContent`         | Host context rendered between the header and viewer body       |
+| `showFullscreenControls` | Enables route-owned fullscreen affordances in the shell        |
 
 ## The Host Contract
 
-A host (today: `SequenceViewerDrawerHost.svelte`, `src/routes/q/[code]/+page.svelte`)
-is THIN. It owns only: its wrapper (Drawer / route page), data
+A host (today: `SequenceViewerDrawerHost.svelte`, `src/routes/q/[code]/+page.svelte`,
+`src/routes/sequence/[id]/SequenceViewerPage.svelte`) is THIN. It owns only: its wrapper (Drawer / route page), data
 resolution/bootstrap, open/close routing, and host-specific funnels (scan
 logging, gated export). Hosts MUST NOT:
 
@@ -65,16 +68,6 @@ contract (shell rendered by both hosts, no chrome imports, no theme-var
 declarations, shared breakpoint) and runs in the `web-ci` unit-test job. If it
 fails, fix the host — do not loosen the test.
 
-## The Third Surface: /sequence/[id]
-
-`src/routes/sequence/[id]/+page.svelte` predates the shell and still
-hand-assembles chrome from internals. It is grandfathered, NOT a pattern:
-
-- Do not extend its legacy chrome with new viewer features.
-- The next substantial viewer change on that route starts by migrating it to
-  `SequenceViewerShell` (add props for its deltas: fullscreen controls, LAN
-  sync, handoff).
-
 ## Forbidden
 
 - A new viewer surface that renders viewer chrome without going through the shell.
@@ -88,5 +81,7 @@ hand-assembles chrome from internals. It is grandfathered, NOT a pattern:
 
 - ADR: `docs/architecture/sequence-viewer-shell.md`
 - Spec: `docs/superpowers/specs/2026-07-05-viewer-shell-anti-drift-design.md`
+- Header identity spec:
+  `docs/superpowers/specs/active/2026-08-08-sequence-viewer-header-identity-design.md`
 - `never-hand-roll.md` (master), `chip-primitives.md`, `crossfade-primitive.md`,
   `no-layout-shift.md`

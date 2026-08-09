@@ -35,6 +35,9 @@ const HOSTS: Record<string, string[]> = {
     "src/routes/q/[code]/+page.svelte",
     "src/routes/q/[code]/QScanPage.svelte",
   ],
+  "/sequence route host": [
+    "src/routes/sequence/[id]/SequenceViewerPage.svelte",
+  ],
 };
 
 /**
@@ -81,6 +84,12 @@ const cardHeaderSource = read(
 const overflowMenuSource = read(
   "src/lib/shared/sequence-viewer/components/ViewerOverflowMenu.svelte"
 );
+const viewerHeaderSource = read(
+  "src/lib/shared/sequence-viewer/components/ViewerHeader.svelte"
+);
+const viewerSplitPaneSource = read(
+  "src/lib/shared/sequence-viewer/components/ViewerSplitPane.svelte"
+);
 const hostEntries = Object.entries(HOSTS).map(
   ([name, rels]) => [name, rels.map(read).join("\n")] as const
 );
@@ -92,47 +101,64 @@ describe("SequenceViewerShell host contract", () => {
     expect(shellSource).toContain("onAccountSignIn");
     expect(shellSource).toContain("startInSplit");
     expect(shellSource).toContain("startInCardThenSplit");
+    expect(shellSource).toContain("contextContent");
+    expect(shellSource).toContain("showFullscreenControls");
+    expect(shellSource).toContain("navigation");
   });
 
   it("keeps the QR account entry inside the shared shell prop seam", () => {
-    expect(shellSource).toContain("authState.isFullAccount");
-    expect(shellSource).toContain("RobustAvatar");
+    expect(shellSource).toContain("<ViewerHeader");
+    expect(viewerHeaderSource).toContain("authState.isFullAccount");
+    expect(viewerHeaderSource).toContain("RobustAvatar");
     expect(scanSource).toMatch(/onAccountSignIn=\{ctx\.openSignInPrompt\}/);
   });
 
   it("uses one shared Share control and keeps Send inside it", () => {
-    expect(shellSource).toContain(
+    expect(viewerHeaderSource).toContain(
       'from "$lib/shared/share/components/ShareActionMenu.svelte"'
     );
-    expect(shellSource).toContain('testId="viewer-share-button"');
-    expect(shellSource).toContain("containDesktopMenu={true}");
+    expect(viewerHeaderSource).toContain('testId="viewer-share-button"');
+    expect(viewerHeaderSource).toContain("containDesktopMenu={true}");
     expect(shellSource).toContain('label: "Share Sequence…"');
     expect(shellSource).toContain('label: "Send in TKA"');
     expect(shellSource).toMatch(
       /label:\s*shareLinkCopied\s*\?\s*"Copied"\s*:\s*"Copy Link"/
     );
-    expect(shellSource).not.toContain('class="header-action-btn utility send"');
-
-    const menuStart = shellSource.indexOf("{#snippet overflowMenu");
-    const menuEnd = shellSource.indexOf("{/snippet}", menuStart);
-    const menuWiring = shellSource.slice(menuStart, menuEnd);
-    expect(menuWiring).not.toContain("onSendTo={handleSendTo}");
+    expect(viewerHeaderSource).not.toContain("onSendTo={handleSendTo}");
   });
 
   it("does not duplicate wide header actions in the More menu", () => {
-    const menuStart = shellSource.indexOf("{#snippet overflowMenu");
-    const menuEnd = shellSource.indexOf("{/snippet}", menuStart);
-    const menuWiring = shellSource.slice(menuStart, menuEnd);
+    expect(viewerHeaderSource).toContain(
+      "onFavoriteToggle={compactChrome ? onFavoriteToggle : undefined}"
+    );
+    expect(viewerHeaderSource).toContain(
+      "onSave={compactChrome ? onSave : undefined}"
+    );
+    expect(viewerHeaderSource).toContain(
+      "onRemix={compactChrome ? onRemix : undefined}"
+    );
+    expect(viewerHeaderSource).toContain(
+      "onCopyData={compactChrome ? onCopyData : undefined}"
+    );
+    expect(viewerHeaderSource).toContain(
+      "onPublish={compactChrome ? onPublish : undefined}"
+    );
+  });
 
-    expect(menuWiring).toMatch(
-      /onFavoriteToggle=\{compactChrome\s*&&\s*headerActions\.onFavoriteToggle/
+  it("keeps the current word as the stable centered identity", () => {
+    expect(viewerHeaderSource).toContain("<WordActionMenu");
+    expect(viewerHeaderSource).toContain("<WordHeader");
+    expect(viewerHeaderSource).toContain(
+      "activeStepNumber={activeWordStepNumber}"
     );
-    expect(menuWiring).toMatch(
-      /onSave=\{compactChrome\s*&&\s*headerActions\.onSave/
+    expect(shellSource).toContain(
+      "sequence={ctx.effectiveSequence ?? sequence}"
     );
-    expect(menuWiring).toMatch(
-      /onRemix=\{compactChrome\s*&&\s*\(onRemix\s*\?\?\s*headerActions\.onRemix\)/
-    );
+    expect(viewerSplitPaneSource.match(/\s+hideHeader\s*\n/g)).toHaveLength(2);
+    expect(viewerHeaderSource).not.toContain('label: "Copy word"');
+    expect(viewerHeaderSource).not.toContain("Sequence Viewer");
+    expect(viewerHeaderSource).not.toContain("Animation Export");
+    expect(viewerHeaderSource).not.toContain("Record Scene");
   });
 
   it("uses Bits UI for the explicit More menu", () => {

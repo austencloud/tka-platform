@@ -21,8 +21,8 @@
   Do NOT rebuild scan-specific header/body variants — extend this shell.
 -->
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
-  import { fade, slide, fly } from "svelte/transition";
+  import { onDestroy, onMount, type Snippet } from "svelte";
+  import { slide, fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import { goto } from "$app/navigation";
   import ViewerSplitPane from "./ViewerSplitPane.svelte";
@@ -32,7 +32,8 @@
   import type { OrchestratorContext } from "./SequenceViewerOrchestrator.svelte";
   import type { ContentType } from "../state/viewer-state.svelte";
   import VideoGallery from "./VideoGallery.svelte";
-  import ViewerOverflowMenu from "./ViewerOverflowMenu.svelte";
+  import ViewerHeader from "./ViewerHeader.svelte";
+  import FullscreenControls from "./FullscreenControls.svelte";
   import { buildHeaderActions } from "../services/viewer-actions";
   import ExportVideoDrawer from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
   import ExportImagePanel from "./ExportImagePanel.svelte";
@@ -47,7 +48,6 @@
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
   import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-  import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import type { DeviceDetector } from "$lib/shared/device/services/device-detector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
@@ -57,7 +57,6 @@
   import VideoPanel from "./video-panel/VideoPanel.svelte";
   import { VIDEO_UPLOAD_ENABLED } from "../config/viewer-feature-flags";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
-  import MotionVisibilityToggle from "./MotionVisibilityToggle.svelte";
   import {
     openSendSequenceSheet,
     buildSequenceSharePayload,
@@ -88,7 +87,6 @@
     ViewerControlValue,
   } from "../domain/viewer-control-analytics";
   import { scanPropProperties } from "$lib/shared/analytics/scan-prop-attribution";
-  import ShareActionMenu from "$lib/shared/share/components/ShareActionMenu.svelte";
   import type { ShareActionMenuItem } from "$lib/shared/share/domain/models/share-action-menu";
 
   /** Host-owned export pipeline (the scan page's gated share-sheet flow).
@@ -156,6 +154,12 @@
      * the hero is there to show.
      */
     embedded?: boolean;
+    /** Route hosts can replace the drawer's Close control with a Back control. */
+    navigation?: { label: string };
+    /** Route-owned context placed between the canonical header and viewer body. */
+    contextContent?: Snippet;
+    /** The full-page sequence route keeps its immersive transport overlay. */
+    showFullscreenControls?: boolean;
   }
 
   let {
@@ -171,6 +175,9 @@
     exportOverrides,
     guideAction = null,
     embedded = false,
+    navigation,
+    contextContent,
+    showFullscreenControls = false,
   }: Props = $props();
 
   const scanInstrumentationEnabled = isScanVisit();
@@ -213,13 +220,6 @@
   // actions into the title menu and collapse the rail to its icon presentation.
   const FULL_CHROME_MIN_WIDTH = 1080;
   const compactChrome = $derived(isMobile || bodyWidth < FULL_CHROME_MIN_WIDTH);
-  // An embed has no account entry, so it also stops being "account crowded" —
-  // which hands the More trigger back to the centered title slot and restores
-  // the header's title in the one layout that had traded it away for room.
-  const hasAccountEntry = $derived(
-    !!openAppHref && !!onAccountSignIn && !embedded
-  );
-  const accountCrowded = $derived(hasAccountEntry && bodyWidth < 460);
   const motionProfile = $derived(
     getSequenceMotionProfile(ctx.effectiveSequence ?? sequence)
   );
@@ -294,7 +294,6 @@
   });
 
   let copyClaudeFeedback = $state(false);
-  let shareMenuOpen = $state(false);
   let shareLinkCopied = $state(false);
   let shareLinkFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -1088,65 +1087,47 @@
   }
 </script>
 
-{#snippet titleTrigger({
-  isOpen,
-  hasMenu,
-}: {
-  isOpen: boolean;
-  hasMenu: boolean;
-})}
-  <span class="drawer-header-title">
-    {#key `${isAnyExportActive}|${isVideoExportActive}|${isImageExportActive}|${ctx.renderMode}`}
-      <span
-        class="drawer-header-title-text"
-        in:fade|local={{ duration: prefersReducedMotion ? 0 : 150 }}
-      >
-        {#if isAnyExportActive}
-          {isVideoExportActive
-            ? ctx.renderMode === "3d"
-              ? "Record Scene"
-              : "Animation Export"
-            : isImageExportActive
-              ? "Card Export"
-              : "Upload Video"}
-        {:else}
-          Sequence Viewer
-        {/if}
-      </span>
-    {/key}
-  </span>
-  {#if hasMenu}
-    <i
-      class="fas fa-ellipsis-vertical drawer-title-more-glyph"
-      class:open={isOpen}
-      aria-hidden="true"
-    ></i>
-  {/if}
-{/snippet}
-
-{#snippet overflowMenu(includeMotion: boolean)}
-  <ViewerOverflowMenu
-    variant="header"
-    dropDown
-    align="center"
-    trigger={titleTrigger}
+<div
+  class="drawer-viewer-container"
+  class:landscape={isLandscape}
+  class:practice-mobile={isMobile && ctx.practiceActive}
+>
+  <ViewerHeader
+    {ctx}
+    sequence={ctx.effectiveSequence ?? sequence}
+    {isMobile}
+    viewerWidth={bodyWidth}
+    onClose={handleClose}
+    hidden={ctx.isFullscreen}
+    {embedded}
+    {navigation}
+    {openAppHref}
+    onAccountSignIn={!embedded ? onAccountSignIn : undefined}
+    onAccountOpenApp={openAppHref && !embedded
+      ? () => recordOpenApp("account_entry")
+      : undefined}
+    {guideAction}
     isFavorite={headerActions.isFavorite}
-    onFavoriteToggle={compactChrome &&
-    headerActions.onFavoriteToggle &&
-    !embedded
+    onFavoriteToggle={headerActions.onFavoriteToggle && !embedded
       ? handleFavoriteToggle
       : undefined}
     isSaved={headerActions.isSaved}
-    onSave={compactChrome && headerActions.onSave && !embedded
-      ? handleSave
-      : undefined}
-    onRemix={compactChrome && (onRemix ?? headerActions.onRemix) && !embedded
+    onSave={headerActions.onSave && !embedded ? handleSave : undefined}
+    onRemix={(onRemix ?? headerActions.onRemix) && !embedded
       ? handleRemix
       : undefined}
+    onPracticeToggle={headerActions.showPractice
+      ? ctx.practiceActive
+        ? handleExitPractice
+        : handleEnterPractice
+      : undefined}
+    {canToggleMotionVisibility}
+    onMotionToggleBlue={() => handleMotionToggle("blue")}
+    onMotionToggleRed={() => handleMotionToggle("red")}
     onCopyData={authState.isAdmin && !embedded
       ? handleCopyForClaude
       : undefined}
-    copyDataFeedback={copyClaudeFeedback}
+    {copyClaudeFeedback}
     onVideoUpload={headerActions.onVideoUpload && !embedded
       ? handleHeaderVideoUpload
       : undefined}
@@ -1159,252 +1140,73 @@
       ? handleDeleteRequest
       : undefined}
     onOpenApp={openAppHref && !embedded ? handleOpenApp : undefined}
-    onGuideAction={guideAction && !embedded ? handleGuideAction : undefined}
-    guideActionLabel={guideAction?.label}
-    motionVisibility={includeMotion
+    exportSettings={isAnyExportActive &&
+    !effectiveMobile &&
+    !isRecordSceneActive &&
+    !isImageExportActive
       ? {
-          showBlue: ctx.viewerVisibility.blueMotion,
-          showRed: ctx.viewerVisibility.redMotion,
-          onToggleBlue: () => handleMotionToggle("blue"),
-          onToggleRed: () => handleMotionToggle("red"),
+          expanded: !exportSidebarCollapsed,
+          onToggle: toggleExportSidebar,
         }
-      : undefined}
-    onOpenChange={(open, reason) =>
+      : null}
+    {shareActions}
+    {shareStatusMessage}
+    onShareActionSelect={handleShareActionSelect}
+    onOverflowOpenChange={(open, reason) =>
       captureScanAction(
         open ? "overflow_open" : "overflow_close",
         {},
-        {
-          count: reason !== "item",
-        }
+        { count: reason !== "item" }
       )}
   />
-{/snippet}
 
-<div
-  class="drawer-viewer-container"
-  class:landscape={isLandscape}
-  class:practice-mobile={isMobile && ctx.practiceActive}
-  class:has-account-entry={hasAccountEntry}
->
-  <header class="drawer-header" class:compact-chrome={compactChrome}>
-    <div class="drawer-header-left-actions">
-      <!-- Both action sets stay mounted and crossfade so entering
-               practice doesn't flash buttons in/out. inert removes the
-               hidden layer from focus + pointer + a11y. -->
-      <div
-        class="left-actions-layer practice"
-        class:active={ctx.practiceActive}
-        inert={!ctx.practiceActive}
-      >
-        <button
-          type="button"
-          class="header-action-btn practice-exit"
-          onclick={handleExitPractice}
-          aria-label="Exit practice mode"
-        >
-          <i class="fas fa-arrow-left" aria-hidden="true"></i>
-          <span>Exit Practice</span>
-        </button>
-      </div>
-
-      <div
-        class="left-actions-layer normal"
-        class:active={!ctx.practiceActive}
-        inert={ctx.practiceActive}
-      >
-        {#if compactChrome}
-          <!-- Compact chrome keeps Practice visible and moves the engagement
-               actions into the explicit More menu. On narrow scan surfaces,
-               More joins this left cluster so the account controls cannot
-               collide with the centered header slot. -->
-          <button
-            type="button"
-            class="header-action-btn practice icon-only"
-            onclick={handleEnterPractice}
-            aria-label="Practice"
-          >
-            <i class="fas fa-dumbbell" aria-hidden="true"></i>
-          </button>
-          {#if accountCrowded}
-            {@render overflowMenu(canToggleMotionVisibility)}
-          {/if}
-        {:else}
-          <button
-            type="button"
-            class="header-action-btn utility"
-            class:favorited={ctx.isFavorite}
-            onclick={handleFavoriteToggle}
-            aria-label="Favorite sequence"
-            aria-pressed={ctx.isFavorite}
-            title={ctx.isFavorite ? "Favorited" : "Favorite"}
-          >
-            <i
-              class="{ctx.isFavorite ? 'fas' : 'far'} fa-heart"
-              aria-hidden="true"
-            ></i>
-          </button>
-
-          <button
-            data-save-shortcut={!ctx.isSaved ? "" : undefined}
-            type="button"
-            class="header-action-btn utility"
-            class:saved={ctx.isSaved}
-            onclick={handleSave}
-            disabled={ctx.isSaved}
-            aria-label={ctx.isSaved ? "Saved to library" : "Save to library"}
-            title={ctx.isSaved ? "Saved to library" : "Save to library"}
-          >
-            <i class="fas fa-bookmark" aria-hidden="true"></i>
-          </button>
-
-          <button
-            type="button"
-            class="header-action-btn utility"
-            onclick={handleRemix}
-            aria-label="Remix sequence"
-            title="Remix"
-          >
-            <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-          </button>
-
-          <button
-            type="button"
-            class="header-action-btn practice"
-            onclick={handleEnterPractice}
-            aria-label="Practice"
-          >
-            <i class="fas fa-dumbbell" aria-hidden="true"></i>
-            <span>Practice</span>
-          </button>
-
-          {#if canToggleMotionVisibility}
-            <span class="header-action-divider"></span>
-
-            <MotionVisibilityToggle
-              onToggleBlue={() => handleMotionToggle("blue")}
-              onToggleRed={() => handleMotionToggle("red")}
-            />
-          {/if}
-        {/if}
-      </div>
-    </div>
-
-    <div class="drawer-header-title-group">
-      {#if ctx.practiceActive}
-        <div class="drawer-header-title">
-          <span class="drawer-header-title-text">Practice Mode</span>
-        </div>
-      {:else}
-        <!-- The title's visible ellipsis identifies this as the More menu.
-             Wide layouts omit actions already shown as buttons. -->
-        {#if !accountCrowded}
-          {@render overflowMenu(compactChrome && canToggleMotionVisibility)}
-        {/if}
-      {/if}
-    </div>
-
-    <div class="drawer-header-right-actions">
-      {#if hasAccountEntry && openAppHref}
-        <!-- The slot keeps the same width across auth restoration, so replacing
-             "Sign in" with the avatar never nudges the title or close button. -->
-        <div class="account-entry-slot">
-          {#if authState.isFullAccount}
-            <a
-              class="account-entry-control avatar"
-              href={openAppHref}
-              aria-label="Open TKA"
-              title="Open TKA"
-              onclick={() => recordOpenApp("account_entry")}
-            >
-              <RobustAvatar
-                src={authState.user?.photoURL}
-                name={authState.user?.displayName ||
-                  authState.user?.email ||
-                  "Account"}
-                alt=""
-                size="sm"
-              />
-            </a>
-          {:else}
-            <button
-              type="button"
-              class="account-entry-control sign-in"
-              onclick={handleAccountSignIn}
-            >
-              <i class="fas fa-user" aria-hidden="true"></i>
-              <span>Sign in</span>
-            </button>
-          {/if}
-        </div>
-      {/if}
-
-      <!-- Card export settings can't be collapsed on desktop — they're
-               required to configure the download. Only Animation Export
-               keeps the hide/show toggle. -->
-      {#if isAnyExportActive && !effectiveMobile && !isRecordSceneActive && !isImageExportActive}
-        <button
-          type="button"
-          class="header-action-btn utility"
-          class:active={!exportSidebarCollapsed}
-          onclick={toggleExportSidebar}
-          aria-label={exportSidebarCollapsed
-            ? "Show export settings"
-            : "Hide export settings"}
-          title={exportSidebarCollapsed ? "Show settings" : "Hide settings"}
-        >
-          <i class="fas fa-sliders" aria-hidden="true"></i>
-        </button>
-      {/if}
-
-      <!-- Share and Close are the two controls that carry the visitor OUT of
-           this viewer, so an embed has neither: the share URL in there is the
-           demo URL, and there is nothing to close to. See `embedded`. -->
-      {#if !embedded}
-        <ShareActionMenu
-          bind:open={shareMenuOpen}
-          actions={shareActions}
-          useMobileSheet={isMobile}
-          disabled={!ctx.hasSequence}
-          ariaLabel="Share sequence"
-          sheetTitle="Share sequence"
-          tooltip="Share sequence"
-          testId="viewer-share-button"
-          idBase="viewer-share"
-          menuSide="bottom"
-          containDesktopMenu={true}
-          statusMessage={shareStatusMessage}
-          onActionSelect={handleShareActionSelect}
-        />
-
-        <!-- The presenter's only real way out of the viewer. Its programmatic
-             escape hatch performs a module switch, which changes what sits
-             UNDER this drawer and leaves the drawer covering it — so without
-             this annotation a viewer with nothing pressable in it (a sequence
-             with no animation data, say) is a dead end it cannot leave. -->
-        <button
-          type="button"
-          class="drawer-close-button"
-          data-escape-shortcut
-          data-escape-shortcut-label="Viewer"
-          data-ghost="safe"
-          data-ghost-kind="close-overlay"
-          data-ghost-label="Close viewer"
-          onclick={handleClose}
-          aria-label="Close viewer"
-        >
-          <i class="fas fa-times" aria-hidden="true"></i>
-        </button>
-      {/if}
-    </div>
-  </header>
+  {#if contextContent && !ctx.isFullscreen}
+    {@render contextContent()}
+  {/if}
 
   <!-- The presenter reads viewer-open from the viewer itself. It used to hang
        off the 2D/3D toggle, which meant "the viewer is open" was really "the
        viewer is open AND in 3D" — so open-viewer stayed satisfiable while the
        viewer sat open in 2D and the ghost kept trying to open what it was
        already looking at. -->
-  <div class="drawer-main" data-ghost-state="viewer-open">
-    <div class="drawer-body-content" bind:clientWidth={bodyWidth}>
+  <div
+    class="drawer-main"
+    data-ghost-state="viewer-open"
+    data-sequence-viewer-shell
+  >
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    <div
+      class="drawer-body-content"
+      bind:clientWidth={bodyWidth}
+      onclick={showFullscreenControls && ctx.isFullscreen
+        ? ctx.handleFullscreenTap
+        : undefined}
+      onkeydown={showFullscreenControls && ctx.isFullscreen
+        ? (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              ctx.handleFullscreenTap();
+            }
+          }
+        : undefined}
+      role={showFullscreenControls && ctx.isFullscreen ? "button" : undefined}
+      tabindex={showFullscreenControls && ctx.isFullscreen ? 0 : undefined}
+    >
+      {#if showFullscreenControls && ctx.isFullscreen}
+        <FullscreenControls
+          visible={ctx.fullscreenControlsVisible}
+          viewMode={ctx.viewMode}
+          isPlaying={ctx.isPlayingLocal}
+          bpm={ctx.bpmLocal}
+          onExit={ctx.exitFullscreen}
+          onPlaybackToggle={ctx.handlePlaybackToggle}
+          onStepHalfBeatBackward={ctx.stepHalfBeatBackward}
+          onStepHalfBeatForward={ctx.stepHalfBeatForward}
+          onStepFullBeatBackward={ctx.stepFullBeatBackward}
+          onStepFullBeatForward={ctx.stepFullBeatForward}
+          onRestartToStart={ctx.restartToStart}
+          onBpmChange={ctx.handleBpmChange}
+        />
+      {/if}
       {#if ctx.hasSequence && ctx.effectiveSequence}
         <div
           class="viewer-and-export"
@@ -1776,311 +1578,6 @@
     background: var(--theme-panel-bg, #0a0a14);
   }
 
-  .drawer-header {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: calc(env(safe-area-inset-top, 0px) + 2px) 12px 2px;
-    min-height: var(--min-touch-target);
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    flex-shrink: 0;
-    overflow: visible;
-    /* Lift the header so the title-trigger dropdown lands above the viewer body. */
-    z-index: 20;
-    container: viewer-header / inline-size;
-  }
-
-  .drawer-header-title-group {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    /* The title group hosts the explicit More trigger when secondary actions
-       exist, so it must accept clicks. */
-    pointer-events: auto;
-    overflow: visible;
-  }
-
-  .drawer-header-title {
-    min-width: 0;
-    overflow: hidden;
-    font-size: var(--font-size-base, 16px);
-    font-weight: 600;
-    line-height: 1.2;
-    color: var(--theme-text, #ffffff);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .drawer-header-title-text {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* Compact chrome reserves a mirrored right-action gutter so its centered
-     title/More target cannot overlap Share or Close on narrow phones. */
-  .drawer-header.compact-chrome .drawer-header-title-group {
-    max-width: calc(
-      100% - 2 * (12px + 2 * var(--min-touch-target, 44px) + 4px + 4px)
-    );
-  }
-
-  .takeover-title-text {
-    color: var(--theme-text, #ffffff);
-    font-size: 1.1rem;
-    font-weight: 650;
-    letter-spacing: 0.01em;
-  }
-
-  /* A familiar overflow glyph makes the title menu discoverable without
-     presenting the title itself as a mystery button. */
-  .drawer-title-more-glyph {
-    font-size: var(--font-size-base, 16px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    transition: color 150ms ease;
-    flex-shrink: 0;
-  }
-  .drawer-title-more-glyph.open {
-    color: var(--theme-accent, #a78bfa);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .drawer-title-more-glyph {
-      transition: none;
-    }
-  }
-
-  .drawer-close-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: var(--min-touch-target);
-    min-height: var(--min-touch-target);
-    background: none;
-    border: none;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    cursor: pointer;
-    border-radius: 8px;
-    transition:
-      background 150ms ease,
-      color 150ms ease;
-    font-size: 16px;
-  }
-
-  .drawer-close-button:hover {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text, #ffffff);
-  }
-
-  .drawer-close-button:focus-visible {
-    outline: 2px solid var(--theme-accent, #f43f5e);
-    outline-offset: 2px;
-  }
-
-  .drawer-header-left-actions {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .drawer-header-right-actions {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: auto;
-  }
-
-  .account-entry-slot {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    inline-size: 5.5rem;
-    block-size: var(--min-touch-target, 44px);
-    flex: 0 0 5.5rem;
-  }
-
-  .account-entry-control {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: var(--min-touch-target, 44px);
-    min-height: var(--min-touch-target, 44px);
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text, #ffffff);
-    cursor: pointer;
-    text-decoration: none;
-    transition:
-      background 150ms ease,
-      border-color 150ms ease;
-  }
-
-  .account-entry-control.sign-in {
-    inline-size: 100%;
-    gap: 7px;
-    padding: 0 12px;
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    white-space: nowrap;
-  }
-
-  .account-entry-control.avatar {
-    border-color: transparent;
-    border-radius: 50%;
-    background: transparent;
-  }
-
-  .account-entry-control:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.28));
-  }
-
-  .account-entry-control:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
-  }
-
-  /* The account entry and close button need more room than the title on the
-     smallest phones. The More trigger moves to the left cluster in markup; hide
-     its title text there so the trigger stays a compact overflow button. */
-  @container viewer-header (max-width: 460px) {
-    .has-account-entry .drawer-header-title {
-      display: none;
-    }
-  }
-
-  .header-action-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: var(--min-touch-target);
-    min-height: var(--min-touch-target);
-    background: none;
-    border: none;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    cursor: pointer;
-    border-radius: 8px;
-    transition:
-      background 150ms ease,
-      color 150ms ease;
-  }
-
-  .header-action-btn:hover {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text, #ffffff);
-  }
-
-  .header-action-btn.utility {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    color: var(--theme-text, #ffffff);
-  }
-
-  .header-action-btn.utility:hover:not(:disabled) {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
-  }
-
-  .header-action-btn.utility:disabled {
-    cursor: default;
-    opacity: 0.62;
-  }
-
-  .header-action-btn.active {
-    color: var(--theme-accent, #6366f1);
-  }
-
-  .header-action-btn.favorited {
-    background: color-mix(
-      in srgb,
-      var(--semantic-error, #ef4444) 16%,
-      transparent
-    );
-    border-color: color-mix(
-      in srgb,
-      var(--semantic-error, #ef4444) 45%,
-      var(--theme-stroke, transparent)
-    );
-    color: var(--semantic-error, #ef4444);
-  }
-
-  .header-action-btn.saved {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #6366f1) 14%,
-      transparent
-    );
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, #6366f1) 40%,
-      var(--theme-stroke, transparent)
-    );
-    color: var(--theme-accent, #a78bfa);
-  }
-
-  /* Practice entry — labeled accent CTA. Tinted accent fill (no border, like
-     .practice-exit) so it stands out from the utility icon buttons. */
-  .header-action-btn.practice {
-    gap: 8px;
-    padding: 0 16px;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-    color: var(--theme-accent, #a78bfa);
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b5cf6) 18%,
-      transparent
-    );
-  }
-  .header-action-btn.practice:hover {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b5cf6) 30%,
-      transparent
-    );
-    color: #fff;
-  }
-  /* Icon-only variant (mobile): square accent button, no label padding. */
-  .header-action-btn.practice.icon-only {
-    gap: 0;
-    padding: 0;
-  }
-
-  .header-action-btn.practice-exit {
-    gap: 8px;
-    padding: 0 16px;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-    color: #fff;
-    background: var(--semantic-error, #ef4444);
-  }
-
-  .header-action-btn.practice-exit:hover {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 85%, white);
-    color: #fff;
-  }
-
-  .header-action-divider {
-    width: 1px;
-    height: 20px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    margin: 0 2px;
-    flex-shrink: 0;
-  }
-
-  .header-action-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #f43f5e);
-    outline-offset: 2px;
-  }
-
   .drawer-main {
     display: flex;
     flex-direction: column;
@@ -2097,29 +1594,6 @@
     flex-direction: column;
     overflow: hidden;
     position: relative;
-  }
-
-  .landscape .drawer-header {
-    padding-top: 2px;
-    padding-bottom: 2px;
-    min-height: 32px;
-    border-bottom: none;
-  }
-
-  /* Landscape used to hide the centered title for vertical space. It now hosts the
-     overflow-menu trigger, so it must stay reachable — kept visible (practice still
-     hides it via .practice-mobile below). */
-
-  /* Mobile-portrait practice: the red "Exit Practice" pill already communicates
-     the mode, and a wide labeled pill collides with the absolutely-centered
-     title. Drop the redundant centered title (landscape already does this). */
-  .practice-mobile .drawer-header-title-group {
-    display: none;
-  }
-
-  .landscape .header-action-btn {
-    min-width: 32px;
-    min-height: 32px;
   }
 
   /* Rail stays mounted; on practice enter it fades + nudges out (composited) AND
@@ -2213,31 +1687,11 @@
     }
   }
 
-  /* Header action layers crossfade on practice toggle — both stay mounted so
-     buttons don't flash in/out. inert handles focus/pointer/a11y on the hidden
-     layer; the inactive layer is taken out of flow so the container sizes to
-     the active set. */
-  .left-actions-layer {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    transition: opacity 180ms ease;
-  }
-  .left-actions-layer:not(.active) {
-    position: absolute;
-    top: 50%;
-    left: 0;
-    transform: translateY(-50%);
-    opacity: 0;
-    pointer-events: none;
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .drawer-viewer-container {
       --ws-dur: 0ms;
     }
     .viewer-rail-wrap,
-    .left-actions-layer,
     .practice-bar-rise {
       transition: none;
     }

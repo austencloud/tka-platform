@@ -9,7 +9,6 @@
  */
 
 import { browser } from "$app/environment";
-import { replaceState } from "$app/navigation";
 import { requiresFullAccount } from "$lib/shared/auth/domain/gated-action-policy";
 import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/auth-nudge-trigger";
 import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
@@ -17,6 +16,10 @@ import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { getPendingActionQueue } from "../get-pending-action-queue";
 import type { PendingActionType } from "$lib/shared/sequence-viewer/services/pending-action-queue";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import {
+  mutateCurrentUrl,
+  removeCurrentUrlParams,
+} from "$lib/shared/navigation/services/url-state";
 
 /**
  * Everything the sign-in sheet can be opened FOR. Pending actions replay after
@@ -74,11 +77,7 @@ export function createAuthActionQueue() {
     signInSheetReason = null;
     pendingActionQueue.clear();
     if (browser) {
-      const parsed = new URL(window.location.href);
-      if (parsed.searchParams.has("pending")) {
-        parsed.searchParams.delete("pending");
-        replaceState(parsed, {});
-      }
+      removeCurrentUrlParams(["pending"]);
     }
   }
 
@@ -90,7 +89,7 @@ export function createAuthActionQueue() {
   function invokeGatedAction(
     type: PendingActionType,
     realHandler: (() => void) | (() => Promise<void>) | undefined,
-    sequence: SequenceData | null,
+    sequence: SequenceData | null
   ) {
     const isFullUser = authState.isAuthenticated && !authState.isAnonymous;
 
@@ -113,9 +112,9 @@ export function createAuthActionQueue() {
 
     pendingActionQueue.enqueue({ type, sequenceId });
     if (browser) {
-      const parsed = new URL(window.location.href);
-      parsed.searchParams.set("pending", type);
-      replaceState(parsed, {});
+      mutateCurrentUrl((url) => {
+        url.searchParams.set("pending", type);
+      });
     }
     openSignInSheet(type);
   }
@@ -160,21 +159,29 @@ export function createAuthActionQueue() {
     if (!pending) return false;
 
     if (browser) {
-      const parsed = new URL(window.location.href);
-      if (parsed.searchParams.has("pending")) {
-        parsed.searchParams.delete("pending");
-        replaceState(parsed, {});
-      }
+      removeCurrentUrlParams(["pending"]);
     }
 
     try {
       switch (pending.type) {
-        case "save":     void callbacks.handleSave(); break;
-        case "favorite": callbacks.handleFavoriteToggle(); break;
-        case "publish":  void callbacks.handlePublishAction(); break;
-        case "remix":    callbacks.handleEdit(); break;
-        case "sendTo":   callbacks.handleShare(); break;
-        case "download": callbacks.handleDownload(); break;
+        case "save":
+          void callbacks.handleSave();
+          break;
+        case "favorite":
+          callbacks.handleFavoriteToggle();
+          break;
+        case "publish":
+          void callbacks.handlePublishAction();
+          break;
+        case "remix":
+          callbacks.handleEdit();
+          break;
+        case "sendTo":
+          callbacks.handleShare();
+          break;
+        case "download":
+          callbacks.handleDownload();
+          break;
       }
       signInSheetOpen = false;
       return true;
@@ -185,11 +192,19 @@ export function createAuthActionQueue() {
   }
 
   return {
-    get signInSheetOpen() { return signInSheetOpen; },
-    set signInSheetOpen(v: boolean) { signInSheetOpen = v; },
-    get signInSheetReason() { return signInSheetReason; },
+    get signInSheetOpen() {
+      return signInSheetOpen;
+    },
+    set signInSheetOpen(v: boolean) {
+      signInSheetOpen = v;
+    },
+    get signInSheetReason() {
+      return signInSheetReason;
+    },
     /** The shared AuthModal's contextual trigger for the current reason. */
-    get signInTrigger() { return signInTriggerFor(signInSheetReason); },
+    get signInTrigger() {
+      return signInTriggerFor(signInSheetReason);
+    },
     openSignInSheet,
     closeSignInSheet,
     invokeGatedAction,
