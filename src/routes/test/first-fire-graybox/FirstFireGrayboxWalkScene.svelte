@@ -23,6 +23,8 @@
   } from "$lib/shared/3d/physics/types";
   import GltfAsset from "$lib/shared/3d/environments/primitives/GltfAsset.svelte";
   import { buildFirstFireBlenderContract } from "$lib/features/museum/data/first-fire-blender-contract";
+  import { findFirstFireLockedCameraView } from "$lib/features/museum/data/first-fire-locked-cameras";
+  import { firstFireCourtEffectId } from "./first-fire-court-vocabulary";
   import type { FirstFireShrineId } from "$lib/features/museum/data/first-fire-procession-plan";
   import {
     buildFirstFireGrayboxColliders,
@@ -71,6 +73,11 @@
 
   const props: Props = $props();
   const contract = buildFirstFireBlenderContract();
+  /** ?camera=<id> stands the player at a Gate 3 locked camera for capture. */
+  const lockedCameraId =
+    typeof window === "undefined"
+      ? null
+      : new URLSearchParams(window.location.search).get("camera");
   const colliders = buildFirstFireGrayboxColliders(contract);
   const heroLight = new PointLight(new Color("#ff4a18"), 0, 13, 2);
   heroLight.castShadow = true;
@@ -178,6 +185,28 @@
     playerYaw = FIRST_FIRE_GRAYBOX_SPAWN.yaw;
     targetPlayerYaw = FIRST_FIRE_GRAYBOX_SPAWN.yaw;
     cameraRevision += 1;
+  }
+
+  /**
+   * Gate 3 evidence capture. Stands the player at one locked camera so the
+   * captured frame is registered to its approved Gate 2 counterpart by
+   * construction rather than by eyeball.
+   */
+  function teleportToLockedCamera(cameraId: string): boolean {
+    const view = findFirstFireLockedCameraView(contract, cameraId);
+    if (!view) return false;
+    const destination = {
+      x: view.position.x,
+      y: view.position.y,
+      z: view.position.z,
+    };
+    physicsProvider?.teleport?.(destination);
+    playerPosition = destination;
+    playerYaw = view.yaw;
+    targetPlayerYaw = view.yaw;
+    avatarState.snapFacingAngle?.(view.yaw);
+    cameraRevision += 1;
+    return true;
   }
 
   function teleportForReviewPhase(): void {
@@ -316,6 +345,7 @@
     });
     physicsProvider = createRapierPhysicsProvider(physicsState, playerState);
     isInitialized = true;
+    if (lockedCameraId) teleportToLockedCamera(lockedCameraId);
   });
 
   $effect(() => {
@@ -334,6 +364,9 @@
     appliedReviewAdvanceToken = props.reviewAdvanceToken;
     reviewState = advanceFirstFireGrayboxProof(reviewState);
     teleportForReviewPhase();
+    // A locked camera outranks the phase teleport: the phase sets the room's
+    // state, the camera decides where the evidence is shot from.
+    if (lockedCameraId) teleportToLockedCamera(lockedCameraId);
   });
 
   $effect(() => {
@@ -510,6 +543,7 @@
       showGrid={displayedShrine.id === activeShrineId}
       showPlatform={false}
       standingSurfaceHeight={0.22}
+      effectId={firstFireCourtEffectId(displayedShrine.id)}
     />
   {/key}
 {/if}

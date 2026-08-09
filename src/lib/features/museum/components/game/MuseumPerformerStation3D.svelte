@@ -29,6 +29,8 @@
     type MuseumSequenceData,
   } from "../../data/museum-exhibit-sequences";
   import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
+  import EffectOrchestrator3D from "$lib/shared/3d/effects/EffectOrchestrator3D.svelte";
+  import { buildTipEffectMap } from "$lib/shared/animation-engine/domain/tip-effect-map";
 
   interface Props {
     stationId: string;
@@ -52,6 +54,12 @@
      * Firestore fallback. Undefined in the official museum (default behavior).
      */
     userSequenceDataMap?: Map<string, SequenceData>;
+    /**
+     * Registry effect id for this performer's props (charcoal, fire, zap, ...).
+     * Omitted or null renders the rig with no effect layer, which is the
+     * museum's existing behaviour.
+     */
+    effectId?: string | null;
   }
 
   const props: Props = $props();
@@ -73,6 +81,11 @@
   // then add the room-owned standing surface height.
   const museumGroundOffset = $derived(
     -userProportionsState.groundY + standingSurfaceHeight
+  );
+
+  // Null means no effect layer at all, which is every existing museum station.
+  const tipEffectMap = $derived(
+    props.effectId ? buildTipEffectMap(props.effectId) : null
   );
 
   // Build a minimal SequenceData from the museum manifest
@@ -222,6 +235,33 @@
       groundOffset={museumGroundOffset}
       enableLocomotion={true}
       enableFootPlanting={true}
-    />
+      showEffects={tipEffectMap !== null}
+      tipEffectMap={tipEffectMap ?? undefined}
+      isPlaying={performerState.isPlaying}
+    >
+      {#snippet effectsSlot({
+        bluePropState,
+        redPropState,
+        blueHandPos,
+        redHandPos,
+        isPlaying: rigPlaying,
+        staffHalfLength,
+        effectsParentRef,
+      })}
+        {#if tipEffectMap}
+          <EffectOrchestrator3D
+            {bluePropState}
+            {redPropState}
+            isPlaying={rigPlaying}
+            {staffHalfLength}
+            {tipEffectMap}
+            {blueHandPos}
+            {redHandPos}
+            {effectsParentRef}
+            currentStep={performerState.currentStepIndex + performerState.progress}
+          />
+        {/if}
+      {/snippet}
+    </PerformerRig>
   {/if}
 </T.Group>

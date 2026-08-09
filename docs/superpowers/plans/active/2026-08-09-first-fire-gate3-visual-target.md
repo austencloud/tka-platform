@@ -37,7 +37,24 @@
 
 ---
 
-## Task 1: Add the `dj-cooling` camera to the contract
+## Task 1: Derive the `dj-cooling` camera in the Gate 3 module
+
+**Corrected 2026-08-09 after the first attempt broke Gate 2.** The original
+instruction here was to add `dj-cooling` to the Blender contract. Do not do
+that. The contract's source digest is recorded Gate 2 evidence for the graybox
+GLB, and cameras contribute no geometry to that export — the verifier asserts
+zero cameras in it. Adding a camera upstream invalidates an approved artifact's
+digest without moving a vertex, and takes both the gate validator and
+`scripts/verify-first-fire-graybox-glb.mjs` red. Regenerating the golden fixture
+to make the suite green replaces approved evidence to accommodate new evidence,
+which is the one thing the gate system exists to prevent.
+
+Derive the camera inside `first-fire-locked-cameras.ts` from the DJ shrine's
+`blenderExit` and `blenderCentre` instead. Registration stays exact because it
+comes from the same shrine geometry, and Gate 3 stays additive.
+
+This task is complete as of commit `c775b142dc`. Its content is preserved below
+for the record.
 
 The Gate 2 frame `walk-03-dj-cooling.webp` is the visitor looking back at DJ from its exit mouth as the court cools. It is the only walk frame with no matching contract camera. Without it the locked set cannot be seven-for-seven.
 
