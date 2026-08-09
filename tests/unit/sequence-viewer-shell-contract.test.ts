@@ -71,6 +71,12 @@ function importSpecifierLines(source: string): string[] {
 }
 
 const shellSource = read(SHELL_PATH);
+const shellModelSource = read(
+  "src/lib/shared/sequence-viewer/services/viewer-shell-model.ts"
+);
+const shellShareStateSource = read(
+  "src/lib/shared/sequence-viewer/state/viewer-shell-share-state.svelte.ts"
+);
 const scanSource = read("src/routes/q/[code]/QScanPage.svelte");
 const drawerSource = read(
   "src/lib/shared/sequence-viewer/components/SequenceViewerDrawerHost.svelte"
@@ -144,10 +150,15 @@ describe("SequenceViewerShell host contract", () => {
     );
     expect(viewerHeaderSource).toContain('testId="viewer-share-button"');
     expect(viewerHeaderSource).toContain("containDesktopMenu={true}");
-    expect(shellSource).toContain('label: "Share Sequence…"');
-    expect(shellSource).toContain('label: "Send in TKA"');
-    expect(shellSource).toMatch(
-      /label:\s*shareLinkCopied\s*\?\s*"Copied"\s*:\s*"Copy Link"/
+    expect(shellSource).toContain("createViewerShellShareState");
+    expect(shellModelSource).toContain('label: "Share Sequence…"');
+    expect(shellModelSource).toContain('label: "Send in TKA"');
+    expect(shellModelSource).toMatch(
+      /label:\s*linkCopied\s*\?\s*"Copied"\s*:\s*"Copy Link"/
+    );
+    expect(shellShareStateSource).toContain("shareLinkCopied = true");
+    expect(shellSource).toContain(
+      "copyDataFeedback={share.copyClaudeFeedback}"
     );
     expect(viewerHeaderSource).not.toContain("onSendTo={handleSendTo}");
   });
