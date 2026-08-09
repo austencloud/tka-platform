@@ -19,8 +19,22 @@
     Color,
   } from "three";
   import type { ParticleType } from "../domain/models/environment-models";
+  import {
+    prefersReducedMotion,
+    resolveMotionScale,
+  } from "./motion-preference";
 
   const _tempVel = new Vector3();
+
+  /** Silhouettes the fragment shader can draw. */
+  type ParticleShape =
+    | "circle"
+    | "diamond"
+    | "petal"
+    | "star"
+    | "glow"
+    | "snowflake"
+    | "leaf";
 
   interface Props {
     /** Particle behavior type */
@@ -41,6 +55,16 @@
     enabled?: boolean;
     /** Overall particle opacity. */
     opacity?: number;
+    /**
+     * Overrides the silhouette this particle type normally draws. Left unset,
+     * each type keeps its own default shape.
+     */
+    shape?: ParticleShape;
+    /**
+     * Forces the animation time multiplier. Left unset, the emitter follows the
+     * operating-system reduced-motion preference.
+     */
+    motionScale?: number;
   }
 
   // Default values in meters (1 unit = 1 meter)
@@ -54,6 +78,8 @@
     spin = true,
     enabled = true,
     opacity = 1,
+    shape,
+    motionScale,
   }: Props = $props();
 
   // Particle data
@@ -70,6 +96,8 @@
     pulsePhase: number;
     pulseSpeed: number;
     baseSize: number;
+    /** Blade narrowness for shapes that read as a silhouette, not a dot. */
+    aspect: number;
   }
 
   let particles: Particle[] = [];
@@ -77,13 +105,18 @@
   let geometry = $state<BufferGeometry | null>(null);
   let material = $state<ShaderMaterial | null>(null);
 
+  const reducedMotion = $derived(prefersReducedMotion());
+  const activeMotionScale = $derived(
+    resolveMotionScale(reducedMotion, motionScale)
+  );
+
   // Type-specific behavior (values in meters)
   const typeConfigs = {
     leaves: {
       gravity: 0.1,
       swayAmount: 0.2,
       blending: NormalBlending,
-      shape: "diamond",
+      shape: "leaf",
       pulses: false,
     },
     snow: {
@@ -163,13 +196,16 @@
     attribute float size;
     attribute float rotation;
     attribute float colorIndex;
+    attribute float aspect;
 
     varying float vRotation;
     varying float vColorIndex;
+    varying float vAspect;
 
     void main() {
       vRotation = rotation;
       vColorIndex = colorIndex;
+      vAspect = aspect;
 
       vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
       gl_PointSize = size * (1000.0 / -mvPosition.z);
@@ -180,11 +216,12 @@
   // Fragment shader with shape support
   const fragmentShader = `
     uniform vec3 uColors[4];
-    uniform float uShape; // 0=circle 1=diamond 2=petal 3=star 4=glow 5=snowflake
+    uniform float uShape; // 0=circle 1=diamond 2=petal 3=star 4=glow 5=snowflake 6=leaf
     uniform float uOpacity;
 
     varying float vRotation;
     varying float vColorIndex;
+    varying float vAspect;
 
     void main() {
       vec2 center = gl_PointCoord - 0.5;
@@ -199,12 +236,15 @@
 
       float dist = length(rotated);
       float alpha = 0.0;
+      // Shape-local shading. Only the leaf uses it; everything else keeps the
+      // flat colour it has always had.
+      float shade = 1.0;
 
       if (uShape < 0.5) {
         // Circle (snow, embers)
         alpha = 1.0 - smoothstep(0.3, 0.5, dist);
       } else if (uShape < 1.5) {
-        // Diamond (leaves)
+        // Diamond - retained for any caller that explicitly asks for it.
         float diamond = abs(rotated.x) + abs(rotated.y);
         alpha = 1.0 - smoothstep(0.35, 0.5, diamond);
       } else if (uShape < 2.5) {
@@ -221,7 +261,7 @@
         float core = 1.0 - smoothstep(0.0, 0.15, dist);
         float halo = (1.0 - smoothstep(0.1, 0.5, dist)) * 0.6;
         alpha = core + halo;
-      } else {
+      } else if (uShape < 5.5) {
         // Snowflake - four per-particle variants keyed to vColorIndex so the
         // field reads as real snow (mix of crystals, sparkles, soft blurs).
         float variant = floor(vColorIndex);
@@ -251,13 +291,39 @@
         // Gentle inner glow on every variant
         float core = 1.0 - smoothstep(0.0, 0.10, dist);
         alpha = min(shapeAlpha + core * 0.35, 1.0);
+      } else {
+        // Leaf - an ovate blade with a rounded base, a drawn-out tip, a shallow
+        // lobed margin, a short petiole and a darker midrib. vAspect narrows
+        // each blade on its own so a drift never reads as one stamp repeated
+        // across the screen, which is what the old diamond did.
+        vec2 p = vec2(rotated.x / max(vAspect, 0.20), rotated.y);
+        float along = clamp(p.y + 0.5, 0.0, 1.0);      // 0 at petiole, 1 at tip
+        float blade = clamp((along - 0.14) / 0.86, 0.0, 1.0);
+        // The fractional power swells the profile quickly off the base, so the
+        // blade reads rounded where it joins the stem and tapers to a point.
+        float halfWidth = 0.30 * sin(pow(blade, 0.58) * 3.14159265);
+        halfWidth *= 0.88 + 0.12 * cos(blade * 17.0);  // shallow margin lobes
+        float aa = 0.018;
+        float body =
+          (1.0 - smoothstep(halfWidth - aa, halfWidth + aa, abs(p.x))) *
+          step(0.14, along);
+        float stem =
+          (1.0 - smoothstep(0.012, 0.028, abs(p.x))) *
+          step(0.02, along) *
+          (1.0 - step(0.18, along));
+        alpha = clamp(body + stem, 0.0, 1.0);
+        // Midrib reads as a darker spine; the margin catches a little more of
+        // the sky, which is what separates a leaf from a coloured quad.
+        shade =
+          mix(0.60, 1.14, smoothstep(0.0, 0.055, abs(p.x))) *
+          mix(0.84, 1.08, blade);
       }
 
       if (alpha < 0.01) discard;
 
       // Select color based on index
       int idx = int(floor(vColorIndex));
-      vec3 color = uColors[min(idx, 3)];
+      vec3 color = uColors[min(idx, 3)] * shade;
 
       gl_FragColor = vec4(color, alpha * uOpacity);
     }
@@ -304,11 +370,13 @@
       pulseSpeed: isFirefly
         ? 0.2 + Math.random() * 0.4
         : 0.5 + Math.random() * 1.5,
+      // Narrow blades and broad blades in the same fall.
+      aspect: 0.42 + Math.random() * 0.55,
     };
   }
 
   function getShapeIndex(): number {
-    switch (config.shape) {
+    switch (shape ?? config.shape) {
       case "circle":
         return 0;
       case "diamond":
@@ -321,6 +389,8 @@
         return 4;
       case "snowflake":
         return 5;
+      case "leaf":
+        return 6;
       default:
         return 0;
     }
@@ -332,6 +402,7 @@
     const sizeBuffer = new Float32Array(count);
     const rotationBuffer = new Float32Array(count);
     const colorIndexBuffer = new Float32Array(count);
+    const aspectBuffer = new Float32Array(count);
 
     geometry = new BufferGeometry();
     geometry.setAttribute(
@@ -346,6 +417,10 @@
     geometry.setAttribute(
       "colorIndex",
       new Float32BufferAttribute(colorIndexBuffer, 1)
+    );
+    geometry.setAttribute(
+      "aspect",
+      new Float32BufferAttribute(aspectBuffer, 1)
     );
 
     // Convert color strings to Color objects
@@ -415,10 +490,15 @@
   // delta keeps the pulse clock in lockstep with the rendered timeline
   // both during live playback (real delta) and during export
   // (synthetic delta = 1/(fps * subFrames)).
+  //
+  // The delta is scaled by the reduced-motion preference. At scale 0 the
+  // particles hold their last pose and the buffers still upload once, so a
+  // reduced-motion viewer gets a still field rather than an empty one.
   let localTime = 0;
-  useTask((delta) => {
+  useTask((rawDelta) => {
     if (!geometry || !material || !enabled) return;
 
+    const delta = rawDelta * activeMotionScale;
     localTime += delta;
     const time = localTime;
     const isFirefly = type === "fireflies";
@@ -428,12 +508,14 @@
     const sizeAttr = geometry.attributes.size;
     const rotAttr = geometry.attributes.rotation;
     const colorAttr = geometry.attributes.colorIndex;
-    if (!posAttr || !sizeAttr || !rotAttr || !colorAttr) return;
+    const aspectAttr = geometry.attributes.aspect;
+    if (!posAttr || !sizeAttr || !rotAttr || !colorAttr || !aspectAttr) return;
 
     const posArray = posAttr.array as Float32Array;
     const sizeArray = sizeAttr.array as Float32Array;
     const rotArray = rotAttr.array as Float32Array;
     const colorArray = colorAttr.array as Float32Array;
+    const aspectArray = aspectAttr.array as Float32Array;
 
     for (let i = 0; i < particles.length; i++) {
       const p = particles[i];
@@ -505,6 +587,7 @@
         p.swaySpeed = newP.swaySpeed;
         p.pulsePhase = newP.pulsePhase;
         p.pulseSpeed = newP.pulseSpeed;
+        p.aspect = newP.aspect;
       }
 
       // Write to geometry attribute arrays
@@ -514,6 +597,7 @@
       sizeArray[i] = p.size;
       rotArray[i] = p.rotation;
       colorArray[i] = p.colorIndex;
+      aspectArray[i] = p.aspect;
     }
 
     // Mark attributes as needing update
@@ -521,6 +605,7 @@
     sizeAttr.needsUpdate = true;
     rotAttr.needsUpdate = true;
     colorAttr.needsUpdate = true;
+    aspectAttr.needsUpdate = true;
   });
 </script>
 

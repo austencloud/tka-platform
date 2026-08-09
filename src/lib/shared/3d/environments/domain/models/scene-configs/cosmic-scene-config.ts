@@ -165,6 +165,24 @@ export interface StarfieldConfig {
   radius: number;
   sizeRange: [number, number];
   twinkleSpeed: number;
+  /**
+   * Multiplies every star's alpha. Above 1 it lifts the dim majority without
+   * blowing out the bright few, which is what a scene fighting a black sky
+   * needs. Defaults to 1 (unchanged).
+   */
+  intensity?: number;
+  /**
+   * Exponent of the magnitude distribution. Higher means more dim stars and
+   * fewer bright ones. Defaults to 3.
+   */
+  magnitudeFalloff?: number;
+  /** Lowest per-star brightness before intensity. Defaults to 0.3. */
+  brightnessFloor?: number;
+  /**
+   * Fraction of the sphere the distribution covers, measured down from the
+   * zenith. Lower values pull stars above the tree line. Defaults to 0.6.
+   */
+  horizonSpread?: number;
 }
 
 export interface MoonConfig {

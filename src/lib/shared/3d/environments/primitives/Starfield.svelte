@@ -8,12 +8,26 @@
     AdditiveBlending,
   } from "three";
   import type { StarfieldConfig } from "../domain/models/scene-configs";
+  import {
+    prefersReducedMotion,
+    resolveMotionScale,
+  } from "./motion-preference";
 
   interface Props {
     config: StarfieldConfig;
   }
 
   let { config }: Props = $props();
+
+  // Legibility knobs. The defaults reproduce the original field exactly, so
+  // Cosmic / Forest / Winter are untouched; only a scene that opts in changes.
+  const magnitudeFalloff = $derived(config.magnitudeFalloff ?? 3);
+  const brightnessFloor = $derived(config.brightnessFloor ?? 0.3);
+  const horizonSpread = $derived(config.horizonSpread ?? 0.6);
+  const intensity = $derived(config.intensity ?? 1);
+
+  const reducedMotion = $derived(prefersReducedMotion());
+  const motionScale = $derived(resolveMotionScale(reducedMotion));
 
   let geometry = $state<BufferGeometry | null>(null);
   let material = $state<ShaderMaterial | null>(null);
@@ -29,12 +43,16 @@
 
     uniform float uTime;
     uniform float uTwinkleSpeed;
+    uniform float uIntensity;
 
     varying float vBrightness;
     varying float vTwinkle;
 
     void main() {
-      vBrightness = aBrightness;
+      // Intensity rides on brightness so the fragment stage needs no second
+      // uniform. Alpha is clamped downstream, so values above 1 lift the dim
+      // majority without blowing out the few bright stars.
+      vBrightness = aBrightness * uIntensity;
 
       // per-star twinkle oscillates between 0.6 and 1.0
       vTwinkle = 0.6 + 0.4 * sin(uTime * uTwinkleSpeed + aPhase);
@@ -96,7 +114,7 @@
       // phi = acos(2*u-1) normally covers full sphere [0, π].
       // Multiplying by 0.6 keeps phi < ~108° — stars stay above horizon.
       const u = Math.random();
-      const phi = Math.acos(2 * u - 1) * 0.6;
+      const phi = Math.acos(2 * u - 1) * horizonSpread;
       const theta = Math.random() * Math.PI * 2;
 
       const sinPhi = Math.sin(phi);
@@ -104,9 +122,11 @@
       positions[i * 3 + 1] = config.radius * Math.cos(phi);
       positions[i * 3 + 2] = config.radius * sinPhi * Math.sin(theta);
 
-      // Cubic distribution: Math.pow(random, 3) produces many dim stars,
-      // few bright ones — matching a realistic stellar magnitude distribution.
-      const magnitude = Math.pow(Math.random(), 3);
+      // Magnitude distribution. A high exponent yields many dim stars and few
+      // bright ones, which is realistic but disappears against a black sky at
+      // small point sizes. Scenes that need the sky to actually read can
+      // flatten the falloff and lift the floor.
+      const magnitude = Math.pow(Math.random(), magnitudeFalloff);
 
       // Map magnitude → size: bright stars are larger
       sizes[i] =
@@ -114,7 +134,7 @@
         magnitude * (config.sizeRange[1] - config.sizeRange[0]);
 
       // brightness tracks magnitude so dim stars fade appropriately
-      brightnesses[i] = 0.3 + magnitude * 0.7;
+      brightnesses[i] = brightnessFloor + magnitude * (1 - brightnessFloor);
 
       // Random phase offset per star so they don't all twinkle in sync
       phases[i] = Math.random() * Math.PI * 2;
@@ -133,6 +153,7 @@
       uniforms: {
         uTime: { value: 0 },
         uTwinkleSpeed: { value: config.twinkleSpeed },
+        uIntensity: { value: intensity },
       },
       vertexShader,
       fragmentShader,
@@ -158,7 +179,9 @@
 
   useTask((delta) => {
     if (!material || !config.enabled) return;
-    elapsed += delta;
+    // Twinkle is the only motion a starfield has, so reduced motion simply
+    // freezes the clock and leaves a still sky.
+    elapsed += delta * motionScale;
     material.uniforms.uTime!.value = elapsed;
   });
 
@@ -169,6 +192,7 @@
   $effect(() => {
     if (!material) return;
     material.uniforms.uTwinkleSpeed!.value = config.twinkleSpeed;
+    material.uniforms.uIntensity!.value = intensity;
   });
 </script>
 
