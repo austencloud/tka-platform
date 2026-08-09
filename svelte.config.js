@@ -38,6 +38,15 @@ const config = {
           '/manifest.webmanifest',
           '/og-default.png',
           '/sw.js',
+          // Serve prerendered pages (landing, about, glossary, …) from the
+          // static asset layer instead of waking the Worker — without this,
+          // "/" returns cf-cache-status: DYNAMIC and pays ~1-2s Worker TTFB.
+          // MUST stay LAST: Cloudflare caps _routes.json at 100 rules and the
+          // adapter truncates overflow. Placed last, only tail-end prerendered
+          // guide pages fall off (already covered by the /guide/* wildcard);
+          // placed first, it would truncate the asset wildcards above and
+          // route every static asset through the Worker.
+          '<prerendered>',
         ]
       }
     }),
