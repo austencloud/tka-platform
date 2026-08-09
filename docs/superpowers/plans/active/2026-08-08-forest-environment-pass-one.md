@@ -1,8 +1,8 @@
 # Moonlit Firefly Forest: Gated Rebuild Plan
 
 - **Date:** 2026-08-08
-- **Status:** Gates 0 through 5 are approved. Gate 6, ground-life asset lineup,
-  is active. Later gates remain blocked.
+- **Status:** Gates 0 through 6 are approved. Gate 7, ground-life ecology, is
+  implemented and awaiting Austen's visual verdict. Later gates remain blocked.
 - **Quality reference:** Autumn's Blender-authored environment and runtime split.
 - **Review authority:** Austen approves or rejects every visual gate.
 - **Scene steward:** Bramble
@@ -321,6 +321,10 @@ times. The deterministic verifier records 27% to 58% negative-space targets,
 **Review question:** Do the family variation and microhabitat causes prevent the
 ground layer from reading as repeated asset stamps?
 
+**Approval:** Austen, 2026-08-08: “I approve.” This approved the six-vignette
+ecology board as Forest's ground-life vocabulary and advanced the scene to
+Gate 7 full placement. Museum tracker decision: `W8SPNRGyTmAbzoV1GvFR`.
+
 ### Gate 7: Ground-life ecology
 
 **Change:** Ground-life placement only.
@@ -328,6 +332,21 @@ ground layer from reading as repeated asset stamps?
 - Place shade families beneath canopy, damp families in hollows, disturbance
   near logs and roots, and sparse growth beside paths.
 - Use clusters and ecological transitions instead of even scatter.
+
+**Evidence packet:** The authored layout contains 21 site-specific habitat
+patches, 339 plant groups, all 17 approved growth variants, and 128 ground
+modules. The six habitat causes remain distinct: damp willow hollows,
+beech-shade fern colonies, fallen-log decomposition, sunlit hazel edges,
+root-crossing litter drifts, and sparse path shoulders. Placement verification
+records a 1.046 m clearing clearance, a 0.492 m path-core clearance, a 19.506 m
+maximum canopy-anchor distance, and zero full circular root islands. The
+production GLB is 17,175,916 bytes with meshopt compression, WebP textures, 13
+source-variant instance groups, four procedural mushroom-part instance groups,
+and 11 repeated-module instance groups. The live review route loaded the asset
+at 1920 x 1080, 2560 x 1440, 3840 x 2160, 1440 x 900, 820 x 1180, 960 x 412,
+and 375 x 667. The fixed hero, floor, and tree views show no legacy bush ring;
+the performance clearing stays open while the lower layer gathers at canopy,
+moisture, deadwood, root, and path-edge causes.
 
 **Review question:** Does the lower layer feel grown in place?
 
@@ -450,6 +469,10 @@ References:
 | Ecology vignette rig      | `scripts/build-forest-ground-life-ecology.py`                             |
 | Ecology review sheet      | `scripts/build-forest-ground-life-ecology-contact-sheet.mjs`              |
 | Ecology verification      | `scripts/verify-forest-ground-life-ecology.mjs`                           |
+| Ground-life layout        | `scripts/forest-ground-life-layout.json`                                  |
+| Ground-life placement     | `scripts/forest_ground_life.py`                                           |
+| Placement review sheet    | `scripts/build-forest-ground-life-layout-contact-sheet.mjs`               |
+| Placement verification    | `scripts/verify-forest-ground-life-layout.mjs`                            |
 | Export                    | `scripts/blender-export-forest-full.py`                                   |
 | Optimization              | `scripts/optimize-forest-environment.mjs`                                 |
 | GLB contract              | `scripts/verify-forest-environment-glb.mjs`                               |
@@ -464,7 +487,7 @@ References:
 - [x] Gate 3: paths and clearing edges approved
 - [x] Gate 4: tree lineup approved
 - [x] Gate 5: forest composition approved
-- [ ] Gate 6: ground-life lineup approved
+- [x] Gate 6: ground-life lineup approved
 - [ ] Gate 7: ground-life ecology approved
 - [ ] Gate 8: rock, root, and deadwood lineup approved
 - [ ] Gate 9: prop ecology approved

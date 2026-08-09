@@ -1,0 +1,220 @@
+{
+  "version": 1,
+  "seed": 731921,
+  "coordinateFrame": "Blender x/y equals runtime x/z; metres",
+  "ecologyContractPath": "scripts/forest-ground-life-ecology.json",
+  "placementRules": {
+    "clearingBufferMetres": 0.9,
+    "pathCoreBufferMetres": 0.45,
+    "outerBoundaryFraction": 0.72,
+    "maximumTreeAnchorDistanceMetres": 22,
+    "maximumMatureMushroomColoniesPerPatch": 1,
+    "maximumFullRootIslandInstances": 0,
+    "minimumPlantInstances": 280,
+    "minimumHabitatPatches": 20,
+    "minimumVariantCoverage": 17,
+    "minimumModuleTypeCoverage": 5
+  },
+  "patches": [
+    {
+      "id": "willow-hollow-west-north",
+      "habitatId": "damp-willow-hollow",
+      "center": [-58, 34],
+      "radii": [11, 8],
+      "rotationDegrees": -20,
+      "densityScale": 1.08,
+      "seed": 1103
+    },
+    {
+      "id": "willow-hollow-east-north",
+      "habitatId": "damp-willow-hollow",
+      "center": [56, 47],
+      "radii": [12, 8],
+      "rotationDegrees": 24,
+      "densityScale": 1.12,
+      "seed": 1117
+    },
+    {
+      "id": "willow-hollow-east-south",
+      "habitatId": "damp-willow-hollow",
+      "center": [73, -43],
+      "radii": [11, 7],
+      "rotationDegrees": -36,
+      "densityScale": 0.96,
+      "seed": 1129
+    },
+    {
+      "id": "willow-hollow-west-south",
+      "habitatId": "damp-willow-hollow",
+      "center": [-66, -58],
+      "radii": [13, 8],
+      "rotationDegrees": 14,
+      "densityScale": 1.05,
+      "seed": 1151
+    },
+    {
+      "id": "beech-fern-west-rise",
+      "habitatId": "beech-shade-fern-colony",
+      "center": [-43, 43],
+      "radii": [9, 7],
+      "rotationDegrees": -12,
+      "densityScale": 1.08,
+      "seed": 2101
+    },
+    {
+      "id": "beech-fern-northeast-rise",
+      "habitatId": "beech-shade-fern-colony",
+      "center": [41, 69],
+      "radii": [10, 7],
+      "rotationDegrees": 31,
+      "densityScale": 1.02,
+      "seed": 2111
+    },
+    {
+      "id": "beech-fern-southwest-grove",
+      "habitatId": "beech-shade-fern-colony",
+      "center": [-46, -42],
+      "radii": [10, 8],
+      "rotationDegrees": 18,
+      "densityScale": 1.13,
+      "seed": 2137
+    },
+    {
+      "id": "fallen-log-east-bank",
+      "habitatId": "fallen-log-decomposition",
+      "center": [48, 19],
+      "radii": [11, 5],
+      "rotationDegrees": 32,
+      "densityScale": 1.04,
+      "seed": 3109
+    },
+    {
+      "id": "fallen-log-west-loop",
+      "habitatId": "fallen-log-decomposition",
+      "center": [-73, 8],
+      "radii": [12, 5],
+      "rotationDegrees": -16,
+      "densityScale": 1.1,
+      "seed": 3121
+    },
+    {
+      "id": "fallen-log-southeast-bank",
+      "habitatId": "fallen-log-decomposition",
+      "center": [34, -70],
+      "radii": [10, 5],
+      "rotationDegrees": -27,
+      "densityScale": 0.94,
+      "seed": 3137
+    },
+    {
+      "id": "hazel-edge-east",
+      "habitatId": "sunlit-hazel-edge",
+      "center": [31, 20],
+      "radii": [8, 6],
+      "rotationDegrees": 28,
+      "densityScale": 0.92,
+      "seed": 4103
+    },
+    {
+      "id": "hazel-edge-northwest",
+      "habitatId": "sunlit-hazel-edge",
+      "center": [-30, 24],
+      "radii": [8, 6],
+      "rotationDegrees": -34,
+      "densityScale": 1.0,
+      "seed": 4127
+    },
+    {
+      "id": "hazel-edge-south",
+      "habitatId": "sunlit-hazel-edge",
+      "center": [25, -29],
+      "radii": [8, 6],
+      "rotationDegrees": 17,
+      "densityScale": 0.88,
+      "seed": 4139
+    },
+    {
+      "id": "root-crossing-southeast",
+      "habitatId": "root-crossing-litter-drift",
+      "center": [12, -52],
+      "radii": [7, 4.5],
+      "rotationDegrees": -82,
+      "densityScale": 0.96,
+      "seed": 5101,
+      "pathId": "southeast-exit",
+      "rootCrossingId": "southeast-root-crossing"
+    },
+    {
+      "id": "root-crossing-northwest",
+      "habitatId": "root-crossing-litter-drift",
+      "center": [-42, 78],
+      "radii": [7, 4.5],
+      "rotationDegrees": 119,
+      "densityScale": 1.03,
+      "seed": 5113,
+      "pathId": "northwest-exit",
+      "rootCrossingId": "northwest-root-crossing"
+    },
+    {
+      "id": "root-crossing-west-loop",
+      "habitatId": "root-crossing-litter-drift",
+      "center": [-39, -8],
+      "radii": [6.5, 4.2],
+      "rotationDegrees": -72,
+      "densityScale": 0.9,
+      "seed": 5129,
+      "pathId": "west-loop",
+      "rootCrossingId": "west-loop-root-crossing"
+    },
+    {
+      "id": "path-shoulder-southeast-near",
+      "habitatId": "sparse-path-shoulder",
+      "center": [10, -42],
+      "radii": [7, 3.5],
+      "rotationDegrees": -75,
+      "densityScale": 0.82,
+      "seed": 6101,
+      "pathId": "southeast-exit"
+    },
+    {
+      "id": "path-shoulder-southeast-far",
+      "habitatId": "sparse-path-shoulder",
+      "center": [28, -84],
+      "radii": [8, 3.5],
+      "rotationDegrees": -47,
+      "densityScale": 0.74,
+      "seed": 6113,
+      "pathId": "southeast-exit"
+    },
+    {
+      "id": "path-shoulder-northwest-near",
+      "habitatId": "sparse-path-shoulder",
+      "center": [-28, 48],
+      "radii": [7, 3.5],
+      "rotationDegrees": 48,
+      "densityScale": 0.8,
+      "seed": 6121,
+      "pathId": "northwest-exit"
+    },
+    {
+      "id": "path-shoulder-northwest-far",
+      "habitatId": "sparse-path-shoulder",
+      "center": [-60, 108],
+      "radii": [8, 3.5],
+      "rotationDegrees": 39,
+      "densityScale": 0.7,
+      "seed": 6131,
+      "pathId": "northwest-exit"
+    },
+    {
+      "id": "path-shoulder-west-loop",
+      "habitatId": "sparse-path-shoulder",
+      "center": [-43, 9],
+      "radii": [7, 3.5],
+      "rotationDegrees": -48,
+      "densityScale": 0.78,
+      "seed": 6143,
+      "pathId": "west-loop"
+    }
+  ]
+}

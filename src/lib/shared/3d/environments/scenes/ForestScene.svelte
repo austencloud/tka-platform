@@ -176,7 +176,9 @@
   });
 
   const bushClones = $derived.by(() => {
-    if (!$bush1 || !$bush2) return [];
+    // Production uses the authored Gate 7 habitat patches in the Forest GLB.
+    // Scene Lab keeps these older rings so its bush controls still respond.
+    if (!config || !$bush1 || !$bush2) return [];
     const models = [$bush1, $bush2];
     return bushPlacements.map((_, i) => models[i % 2]!.scene.clone());
   });

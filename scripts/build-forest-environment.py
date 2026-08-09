@@ -1,9 +1,10 @@
-"""Build the authored terrain, paths, and tree composition for Forest.
+"""Build the authored terrain, paths, trees, and ground ecology for Forest.
 
 Gates 1 through 3 own terrain form, material zones, paths, and clearing edges.
-Gate 5 adds tree transforms only. Rocks, bushes, deadwood, camp, stage,
-particles, lighting, and sky stay outside this file. Run with Blender 5.0 in
-background mode, then export with ``blender-export-forest-full.py``.
+Gate 5 adds tree transforms. Gate 7 composes the approved ground-life families
+through the dedicated ``forest_ground_life`` owner. Rocks, hero deadwood, camp,
+stage, particles, lighting, and sky stay outside this file. Run with Blender 5.0
+in background mode, then export with ``blender-export-forest-full.py``.
 """
 
 import hashlib
@@ -11,6 +12,7 @@ import json
 import math
 import os
 import random
+import sys
 
 import bpy
 from mathutils import Vector
@@ -18,6 +20,12 @@ from mathutils import Vector
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+if SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, SCRIPT_DIR)
+
+from forest_ground_life import build_ground_life
+
+
 BLEND_PATH = os.path.join(PROJECT_ROOT, "blender", "forest_environment.blend")
 TEXTURE_DIR = os.path.join(PROJECT_ROOT, "static", "textures", "forest-floor")
 ZONED_DIFFUSE_PATH = os.path.join(TEXTURE_DIR, "forest-floor-zoned.jpg")
@@ -32,6 +40,16 @@ with open(TREE_LAYOUT_PATH, "rb") as tree_layout_file:
 TREE_LAYOUT = json.loads(TREE_LAYOUT_BYTES.decode("utf-8"))
 TREE_LAYOUT_SHA256 = hashlib.sha256(TREE_LAYOUT_BYTES).hexdigest()
 TREE_ASSETS = {asset["id"]: asset for asset in TREE_LAYOUT["assets"]}
+GROUND_LAYOUT_PATH = os.path.join(SCRIPT_DIR, "forest-ground-life-layout.json")
+with open(GROUND_LAYOUT_PATH, "rb") as ground_layout_file:
+    GROUND_LAYOUT_BYTES = ground_layout_file.read()
+GROUND_LAYOUT = json.loads(GROUND_LAYOUT_BYTES.decode("utf-8"))
+GROUND_LAYOUT_SHA256 = hashlib.sha256(GROUND_LAYOUT_BYTES).hexdigest()
+GROUND_ECOLOGY_PATH = os.path.join(PROJECT_ROOT, GROUND_LAYOUT["ecologyContractPath"])
+with open(GROUND_ECOLOGY_PATH, "rb") as ground_ecology_file:
+    GROUND_ECOLOGY_BYTES = ground_ecology_file.read()
+GROUND_ECOLOGY = json.loads(GROUND_ECOLOGY_BYTES.decode("utf-8"))
+GROUND_ECOLOGY_SHA256 = hashlib.sha256(GROUND_ECOLOGY_BYTES).hexdigest()
 QA_DIR = os.path.join(os.environ.get("TEMP", PROJECT_ROOT), "tka-forest-evidence")
 QA_PATHS = {
     name: os.path.join(QA_DIR, f"forest_environment_qa_{name}.png")
@@ -46,6 +64,9 @@ QA_PATHS = {
         "stage",
         "paths",
         "pathwalk",
+        "ecology-edge",
+        "ecology-hollow",
+        "ecology-root",
     )
 }
 
@@ -1058,6 +1079,27 @@ def setup_qa_render():
         QA_PATHS["pathwalk"],
         34,
     )
+    render_qa_view(
+        camera,
+        (9.0, -26.0, terrain_height(9.0, -26.0) + 2.35),
+        (25.0, -29.0, terrain_height(25.0, -29.0) + 0.72),
+        QA_PATHS["ecology-edge"],
+        42,
+    )
+    render_qa_view(
+        camera,
+        (62.0, -30.0, terrain_height(62.0, -30.0) + 3.35),
+        (73.0, -43.0, terrain_height(73.0, -43.0) + 0.62),
+        QA_PATHS["ecology-hollow"],
+        40,
+    )
+    render_qa_view(
+        camera,
+        (6.0, -43.0, terrain_height(6.0, -43.0) + 3.0),
+        (12.0, -52.0, terrain_height(12.0, -52.0) + 0.46),
+        QA_PATHS["ecology-root"],
+        43,
+    )
     bpy.ops.wm.save_as_mainfile(filepath=BLEND_PATH)
 
 
@@ -1068,9 +1110,25 @@ verify_terrain()
 verify_path_layout()
 tree_placements, tree_counts = create_tree_composition(terrain)
 verify_tree_composition(tree_placements, tree_counts)
+ground_life_metrics = build_ground_life(
+    project_root=PROJECT_ROOT,
+    layout=GROUND_LAYOUT,
+    layout_sha256=GROUND_LAYOUT_SHA256,
+    ecology=GROUND_ECOLOGY,
+    ecology_sha256=GROUND_ECOLOGY_SHA256,
+    terrain=terrain,
+    terrain_height=terrain_height,
+    terrain_boundary_radius=terrain_boundary_radius,
+    clearing_edge_radius=clearing_edge_radius,
+    distance_to_path=distance_to_path,
+    paths=PATHS,
+    tree_placements=tree_placements,
+    tree_assets=TREE_ASSETS,
+    qa_dir=QA_DIR,
+)
 setup_qa_render()
 
-print("\nMoonlit Firefly Forest terrain and trees authored")
+print("\nMoonlit Firefly Forest terrain, trees, and ground ecology authored")
 print(f"Blend: {BLEND_PATH}")
 for label, path in QA_PATHS.items():
     print(f"QA {label:8}: {path}")

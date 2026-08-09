@@ -34,6 +34,25 @@ const expectedTreeCount = Object.values(expectedTreeAssetCounts).reduce(
   (total, count) => total + count,
   0
 );
+const groundLayoutPath = resolve("scripts/forest-ground-life-layout.json");
+const groundLayoutBytes = readFileSync(groundLayoutPath);
+const groundLayout = JSON.parse(groundLayoutBytes.toString("utf8"));
+const groundLayoutSha256 = createHash("sha256")
+  .update(groundLayoutBytes)
+  .digest("hex");
+const groundEcologyPath = resolve("scripts/forest-ground-life-ecology.json");
+const groundEcologyBytes = readFileSync(groundEcologyPath);
+const groundEcology = JSON.parse(groundEcologyBytes.toString("utf8"));
+const groundEcologySha256 = createHash("sha256")
+  .update(groundEcologyBytes)
+  .digest("hex");
+const expectedGroundHabitatIds = groundEcology.habitats.map(
+  (habitat) => habitat.id
+);
+const expectedGroundVariantIds = groundEcology.families.flatMap((family) =>
+  family.variants.map((variant) => `${family.id}-${variant}`)
+);
+const expectedGroundModuleTypes = groundEcology.groundModules;
 const maximumBytes = 20 * 1024 * 1024;
 const expectedMaterialZones = [
   "Packed Performance Clearing",
@@ -73,6 +92,19 @@ const terrainNodes = (gltf.nodes ?? []).filter(
 const instancingNodes = (gltf.nodes ?? []).filter(
   (node) => node.extensions?.EXT_mesh_gpu_instancing
 );
+const instancedMeshName = (node) => gltf.meshes?.[node.mesh]?.name ?? "";
+const treeInstancingNodes = instancingNodes.filter((node) =>
+  instancedMeshName(node).startsWith("ForestTreeMesh_")
+);
+const groundVariantInstancingNodes = instancingNodes.filter((node) =>
+  instancedMeshName(node).startsWith("ForestGroundLifeVariantMesh_")
+);
+const groundMushroomInstancingNodes = instancingNodes.filter((node) =>
+  instancedMeshName(node).startsWith("ForestGroundMushroomMesh_")
+);
+const groundModuleInstancingNodes = instancingNodes.filter((node) =>
+  instancedMeshName(node).startsWith("ForestGroundModuleMesh_")
+);
 const leakedNodes = nodeNames.filter((name) => /^(QA_)/.test(name));
 const lightCount = gltf.extensions?.KHR_lights_punctual?.lights?.length ?? 0;
 
@@ -94,7 +126,7 @@ invariant(
 );
 invariant(
   extensions.has("EXT_mesh_gpu_instancing"),
-  "GLB lost tree GPU instancing"
+  "GLB lost required GPU instancing"
 );
 invariant(
   terrainNodes.length === 1,
@@ -209,6 +241,105 @@ invariant(
     Number(terrain.tka_tree_cluster_count) === treeLayout.clusters.length,
   `Unexpected Forest tree clusters: ${treeClusterNames.join(", ")}`
 );
+const groundHabitatIds = String(terrain.tka_ground_habitat_ids ?? "").split(
+  "|"
+);
+const groundHabitatCounts = Array.from(
+  terrain.tka_ground_habitat_counts ?? []
+).map(Number);
+const groundVariantIds = String(terrain.tka_ground_variant_ids ?? "").split(
+  "|"
+);
+const groundVariantCounts = Array.from(
+  terrain.tka_ground_variant_counts ?? []
+).map(Number);
+const groundModuleTypes = String(terrain.tka_ground_module_types ?? "").split(
+  "|"
+);
+const groundModuleCounts = Array.from(
+  terrain.tka_ground_module_counts ?? []
+).map(Number);
+invariant(
+  terrain.tka_ground_life_phase === "ground-life-ecology",
+  `Unexpected Forest ground-life phase: ${terrain.tka_ground_life_phase}`
+);
+invariant(
+  Number(terrain.tka_ground_layout_version) === groundLayout.version,
+  `Unexpected Forest ground-life layout version: ${terrain.tka_ground_layout_version}`
+);
+invariant(
+  terrain.tka_ground_layout_sha256 === groundLayoutSha256,
+  "Optimized Forest GLB was not built from the current ground-life layout"
+);
+invariant(
+  Number(terrain.tka_ground_ecology_version) === groundEcology.version,
+  `Unexpected Forest ground-life ecology version: ${terrain.tka_ground_ecology_version}`
+);
+invariant(
+  terrain.tka_ground_ecology_sha256 === groundEcologySha256,
+  "Optimized Forest GLB was not built from the approved ecology contract"
+);
+invariant(
+  Number(terrain.tka_ground_patch_count) === groundLayout.patches.length,
+  `Unexpected Forest habitat patch count: ${terrain.tka_ground_patch_count}`
+);
+invariant(
+  Number(terrain.tka_ground_plant_count) >=
+    groundLayout.placementRules.minimumPlantInstances,
+  `Forest ground life is too sparse: ${terrain.tka_ground_plant_count}`
+);
+invariant(
+  groundHabitatIds.length === expectedGroundHabitatIds.length &&
+    groundHabitatIds.every(
+      (habitatId, index) => habitatId === expectedGroundHabitatIds[index]
+    ) &&
+    groundHabitatCounts.length === expectedGroundHabitatIds.length &&
+    groundHabitatCounts.every((count) => count > 0),
+  `Unexpected Forest ground-life habitats: ${groundHabitatIds.join(", ")}`
+);
+invariant(
+  groundHabitatCounts.reduce((total, count) => total + count, 0) ===
+    Number(terrain.tka_ground_plant_count),
+  "Forest habitat counts do not match its authored plant count"
+);
+invariant(
+  groundVariantIds.length === expectedGroundVariantIds.length &&
+    groundVariantIds.every(
+      (variantId, index) => variantId === expectedGroundVariantIds[index]
+    ) &&
+    groundVariantCounts.length === expectedGroundVariantIds.length &&
+    groundVariantCounts.every((count) => count > 0),
+  `Unexpected Forest ground-life variants: ${groundVariantIds.join(", ")}`
+);
+invariant(
+  groundVariantCounts.reduce((total, count) => total + count, 0) ===
+    Number(terrain.tka_ground_plant_count),
+  "Forest variant counts do not match its authored plant count"
+);
+invariant(
+  groundModuleTypes.length === expectedGroundModuleTypes.length &&
+    groundModuleTypes.every(
+      (moduleType, index) => moduleType === expectedGroundModuleTypes[index]
+    ) &&
+    groundModuleCounts.length === expectedGroundModuleTypes.length &&
+    groundModuleCounts.every((count) => count > 0),
+  `Unexpected Forest ground modules: ${groundModuleTypes.join(", ")}`
+);
+invariant(
+  Number(terrain.tka_ground_full_root_island_count) ===
+    groundLayout.placementRules.maximumFullRootIslandInstances,
+  `Forest circular root island returned: ${terrain.tka_ground_full_root_island_count}`
+);
+invariant(
+  Number(terrain.tka_ground_minimum_clearing_clearance) >=
+    groundLayout.placementRules.clearingBufferMetres,
+  `Forest ground life entered the clearing: ${terrain.tka_ground_minimum_clearing_clearance}`
+);
+invariant(
+  Number(terrain.tka_ground_minimum_path_core_clearance) >=
+    groundLayout.placementRules.pathCoreBufferMetres,
+  `Forest ground life entered a path core: ${terrain.tka_ground_minimum_path_core_clearance}`
+);
 invariant(
   terrain.tka_gpu_instances_required === true,
   "Forest terrain lost its required GPU-instancing contract"
@@ -234,7 +365,11 @@ for (const node of instancingNodes) {
     scaleCount === translationCount,
     "Forest instancing node lost its authored scale variation"
   );
-  const meshName = gltf.meshes?.[node.mesh]?.name ?? "";
+}
+for (const node of treeInstancingNodes) {
+  const attributes = node.extensions.EXT_mesh_gpu_instancing.attributes ?? {};
+  const translationCount = gltf.accessors?.[attributes.TRANSLATION]?.count;
+  const meshName = instancedMeshName(node);
   const assetId = meshName.replace(/^ForestTreeMesh_/, "");
   invariant(
     Object.hasOwn(exportedTreeCounts, assetId),
@@ -243,8 +378,8 @@ for (const node of instancingNodes) {
   exportedTreeCounts[assetId] += translationCount;
 }
 invariant(
-  instancingNodes.length === expectedTreeAssetIds.length,
-  `Expected ${expectedTreeAssetIds.length} tree instancing nodes, found ${instancingNodes.length}`
+  treeInstancingNodes.length === expectedTreeAssetIds.length,
+  `Expected ${expectedTreeAssetIds.length} tree instancing nodes, found ${treeInstancingNodes.length}`
 );
 for (const assetId of expectedTreeAssetIds) {
   invariant(
@@ -252,6 +387,50 @@ for (const assetId of expectedTreeAssetIds) {
     `Unexpected exported ${assetId} count: ${exportedTreeCounts[assetId]}`
   );
 }
+const exportedMeshNames = (gltf.meshes ?? []).map((mesh) => mesh.name ?? "");
+for (const family of groundEcology.families.filter(
+  (candidate) => candidate.id !== "mushroom"
+)) {
+  for (const variant of family.variants) {
+    const expectedMeshName = `ForestGroundLifeVariantMesh_${family.id}-${variant}`;
+    invariant(
+      exportedMeshNames.includes(expectedMeshName),
+      `Forest GLB lost ground-life source mesh: ${expectedMeshName}`
+    );
+  }
+}
+invariant(
+  exportedMeshNames.includes(
+    "ForestGroundLifeVariantMesh_mushroom-mature-colony"
+  ),
+  "Forest GLB lost the mature mushroom-colony source mesh"
+);
+for (const mushroomPart of ["stem", "cap-honey", "cap-chestnut", "cap-spent"]) {
+  invariant(
+    exportedMeshNames.includes(`ForestGroundMushroomMesh_${mushroomPart}`),
+    `Forest GLB lost procedural mushroom mesh: ${mushroomPart}`
+  );
+}
+for (const moduleType of expectedGroundModuleTypes) {
+  invariant(
+    exportedMeshNames.some((name) =>
+      name.startsWith(`ForestGroundModuleMesh_${moduleType}-`)
+    ),
+    `Forest GLB lost ground module mesh: ${moduleType}`
+  );
+}
+invariant(
+  groundVariantInstancingNodes.length >= 13,
+  `Forest GLB lost plant-family instancing: ${groundVariantInstancingNodes.length}`
+);
+invariant(
+  groundMushroomInstancingNodes.length === 4,
+  `Forest GLB lost procedural mushroom instancing: ${groundMushroomInstancingNodes.length}`
+);
+invariant(
+  groundModuleInstancingNodes.length > 0,
+  "Forest GLB lost repeated habitat-module instancing"
+);
 invariant(
   Number(terrain.tka_clearing_edge_min_radius) >= pathLayout.clearingRadius &&
     Number(terrain.tka_clearing_edge_max_radius) -
@@ -447,8 +626,48 @@ console.log(
         count: expectedTreeCount,
         clusters: treeClusterNames,
         assetCounts: exportedTreeCounts,
-        instancingNodes: instancingNodes.length,
+        instancingNodes: treeInstancingNodes.length,
         transformAttributes: ["TRANSLATION", "ROTATION", "SCALE"],
+      },
+      groundLife: {
+        layoutVersion: groundLayout.version,
+        layoutSha256: groundLayoutSha256,
+        ecologyVersion: groundEcology.version,
+        ecologySha256: groundEcologySha256,
+        patches: Number(terrain.tka_ground_patch_count),
+        plants: Number(terrain.tka_ground_plant_count),
+        habitatCounts: Object.fromEntries(
+          groundHabitatIds.map((habitatId, index) => [
+            habitatId,
+            groundHabitatCounts[index],
+          ])
+        ),
+        variantCounts: Object.fromEntries(
+          groundVariantIds.map((variantId, index) => [
+            variantId,
+            groundVariantCounts[index],
+          ])
+        ),
+        moduleCounts: Object.fromEntries(
+          groundModuleTypes.map((moduleType, index) => [
+            moduleType,
+            groundModuleCounts[index],
+          ])
+        ),
+        minimumClearingClearanceMetres: Number(
+          terrain.tka_ground_minimum_clearing_clearance
+        ),
+        minimumPathCoreClearanceMetres: Number(
+          terrain.tka_ground_minimum_path_core_clearance
+        ),
+        fullRootIslandInstances: Number(
+          terrain.tka_ground_full_root_island_count
+        ),
+        instancingNodes: {
+          sourceVariants: groundVariantInstancingNodes.length,
+          proceduralMushrooms: groundMushroomInstancingNodes.length,
+          repeatedModules: groundModuleInstancingNodes.length,
+        },
       },
     },
     null,
