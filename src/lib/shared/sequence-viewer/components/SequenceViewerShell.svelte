@@ -30,11 +30,9 @@
   import ViewerModeBottomBar from "./ViewerModeBottomBar.svelte";
   import { dockTrayState } from "./ControlDock.svelte";
   import type { OrchestratorContext } from "./SequenceViewerOrchestrator.svelte";
-  import type { ContentType } from "../state/viewer-state.svelte";
   import VideoGallery from "./VideoGallery.svelte";
   import ViewerHeader from "./ViewerHeader.svelte";
   import FullscreenControls from "./FullscreenControls.svelte";
-  import { buildHeaderActions } from "../services/viewer-actions";
   import ExportVideoDrawer from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
   import ExportImagePanel from "./ExportImagePanel.svelte";
   import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
@@ -49,10 +47,7 @@
   import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
-  import type { DeviceDetector } from "$lib/shared/device/services/device-detector";
-  import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
   import VideoPanel from "./video-panel/VideoPanel.svelte";
   import { VIDEO_UPLOAD_ENABLED } from "../config/viewer-feature-flags";
@@ -77,30 +72,17 @@
     endScanViewerSession,
     isScanVisit,
     registerScanSessionCleanup,
-    type ScanAnalyticsValue,
-    type ScanExportStage,
   } from "$lib/shared/analytics/scan-analytics";
-  import type { TempoPracticeConfig } from "../services/tempo-practice-orchestrator";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import type {
-    ViewerControlEventOptions,
-    ViewerControlValue,
-  } from "../domain/viewer-control-analytics";
-  import { scanPropProperties } from "$lib/shared/analytics/scan-prop-attribution";
-  import type { ShareActionMenuItem } from "$lib/shared/share/domain/models/share-action-menu";
+  import { createViewerShellLayoutState } from "../state/viewer-shell-layout-state.svelte";
+  import { createViewerShellShareState } from "../state/viewer-shell-share-state.svelte";
+  import {
+    createViewerShellInteractionState,
+    type ViewerShellExportOverrides,
+    type ViewerShellGuideAction,
+  } from "../state/viewer-shell-interaction-state.svelte";
 
   /** Host-owned export pipeline (the scan page's gated share-sheet flow).
       Absent → the orchestrator's own ctx.handleExport pipeline (the app). */
-  interface ExportOverrides {
-    onVideoExport: () => void;
-    onCardExport: () => void;
-    videoBusy: boolean;
-    videoProgress: VideoExportProgress | null;
-    cardBusy: boolean;
-    /** AnimationPanel's inline progress; hosts with their own takeover pass false. */
-    showInlineProgress?: boolean;
-  }
-
   interface Props {
     ctx: OrchestratorContext;
     sequence: SequenceData;
@@ -116,10 +98,10 @@
     startInSplit?: boolean;
     /** Present card mode first, then promote after its first stable paint. */
     startInCardThenSplit?: boolean;
-    exportOverrides?: ExportOverrides;
+    exportOverrides?: ViewerShellExportOverrides;
     /** Optional "See it in the Guide" action — host supplies the handler; the
      *  shell renders it in the overflow menu. Omitted → not shown. */
-    guideAction?: { label: string; onSelect: () => void } | null;
+    guideAction?: ViewerShellGuideAction | null;
     /**
      * THE VIEWER IS INSIDE SOMEONE ELSE'S PAGE — trim the chrome that has
      * nowhere to go.
@@ -181,333 +163,75 @@
   }: Props = $props();
 
   const scanInstrumentationEnabled = isScanVisit();
-  const activeArtExports = new Map<
-    "mandala" | "tunnel",
-    Record<string, ScanAnalyticsValue>
-  >();
-
-  onMount(() =>
-    registerScanSessionCleanup((reason) => {
-      for (const [artType, properties] of activeArtExports) {
-        captureScanExport(artType, "canceled", {
-          ...properties,
-          reason,
-          user_initiated: false,
-        });
-      }
-      activeArtExports.clear();
-    })
+  const layout = createViewerShellLayoutState(
+    {
+      getContext: () => ctx,
+      getSequence: () => sequence,
+      getIsMobile: () => isMobile,
+      startInSplit,
+      startInCardThenSplit,
+    },
+    {
+      getDeviceDetector,
+      captureScanSettingChanged,
+      captureScanViewChanged,
+      captureScanViewerOpened,
+      captureScanPlaybackChanged,
+    }
+  );
+  const share = createViewerShellShareState(
+    {
+      getContext: () => ctx,
+      getSequence: () => sequence,
+      getDefaultBluePropType: () => settingsService.settings.bluePropType,
+    },
+    {
+      copyForClaude: (value) => getClaudeCodeCopier().copyForClaude(value),
+      openSendSequenceSheet,
+      buildSequenceSharePayload,
+      buildThumbnailUrl,
+      sendToStickerLab,
+      captureScanAction,
+    }
+  );
+  const interactions = createViewerShellInteractionState(
+    {
+      getContext: () => ctx,
+      getExportOverrides: () => exportOverrides,
+      getOnRemix: () => onRemix,
+      getOpenAppHref: () => openAppHref,
+      getOnAccountSignIn: () => onAccountSignIn,
+      onClose,
+    },
+    {
+      navigate: goto,
+      captureScanAction,
+      captureScanExport,
+      captureScanPlaybackChanged,
+      captureScanPracticeChanged,
+      captureScanSettingChanged,
+      captureScanViewChanged,
+      endScanViewerSession,
+      registerScanSessionCleanup,
+    }
   );
 
-  // Reduced-motion gate for the practice/scene transitions below.
-  let prefersReducedMotion = $state(false);
   onMount(() => {
-    const mq = matchMedia("(prefers-reduced-motion: reduce)");
-    prefersReducedMotion = mq.matches;
-    const onReduceChange = () => (prefersReducedMotion = mq.matches);
-    mq.addEventListener("change", onReduceChange);
-    return () => mq.removeEventListener("change", onReduceChange);
+    const cleanupLayout = layout.mount();
+    const cleanupInteractions = interactions.mount();
+    return () => {
+      cleanupLayout();
+      cleanupInteractions();
+    };
   });
+  onDestroy(share.destroy);
 
-  // Available width of the viewer body. Measured (bind:clientWidth) so this works
-  // when the viewer is embedded in a constrained container, not just full-window.
-  // Seeded from the window so the first paint doesn't flash the wrong layout.
-  let bodyWidth = $state(typeof window !== "undefined" ? window.innerWidth : 0);
-
-  // The full action row needs more room than the viewer's 768px phone/desktop
-  // breakpoint. In this middle range the centered title used to sit on top of
-  // Practice and the Left/Right controls. Keep the desktop rail, but move those
-  // actions into the title menu and collapse the rail to its icon presentation.
-  const FULL_CHROME_MIN_WIDTH = 1080;
-  const compactChrome = $derived(isMobile || bodyWidth < FULL_CHROME_MIN_WIDTH);
   const motionProfile = $derived(
     getSequenceMotionProfile(ctx.effectiveSequence ?? sequence)
   );
   const canToggleMotionVisibility = $derived(
     motionProfile.kind === "paired" || motionProfile.kind === "mixed"
   );
-
-  // Every desktop export (card AND the 2D/3D animation download) puts its settings in
-  // a fixed-width sidebar column beside the content rail and the preview. The preview
-  // is the hero, so it must NEVER be narrower than the settings sidebar — otherwise
-  // the controls dominate a sliver of a preview. Below the width where rail + a hero
-  // at least sidebar-wide + the sidebar all fit, the export falls back to the compact
-  // bottom dock with the preview as the hero (same layout phones get).
-  const EXPORT_SIDEBAR_WIDTH = 560; // keep in sync with --export-sidebar-width in CSS
-  const HERO_MIN_WIDTH = 600; // sidebar 560 + 40px so the preview is clearly larger
-
-  // Rail width is user-persisted (ViewerContentRail's RAIL_WIDTH_KEY), so a dragged-
-  // wider rail raises the bar correctly instead of silently re-crushing the preview.
-  function exportSidebarMinWidth(): number {
-    let rail = 180; // ViewerContentRail DEFAULT_WIDTH
-    try {
-      const raw = localStorage.getItem("tka-viewer-rail-width");
-      if (raw) {
-        const n = parseInt(raw, 10);
-        if (n >= 72 && n <= 300) rail = n;
-      }
-    } catch {
-      /* ignore */
-    }
-    return rail + EXPORT_SIDEBAR_WIDTH + HERO_MIN_WIDTH;
-  }
-
-  let responsiveSettings = $state<ResponsiveSettings | null>(null);
-  let isLandscape = $derived(responsiveSettings?.isLandscapeMobile ?? false);
-
-  onMount(() => {
-    let deviceCleanup: (() => void) | undefined;
-    try {
-      const deviceDetector: DeviceDetector = getDeviceDetector();
-      responsiveSettings = deviceDetector.getResponsiveSettings();
-
-      deviceCleanup = deviceDetector.onCapabilitiesChanged(() => {
-        responsiveSettings = deviceDetector.getResponsiveSettings();
-      });
-    } catch (error) {
-      console.warn(
-        "SequenceViewerShell: Failed to resolve DeviceDetector",
-        error
-      );
-    }
-    return () => deviceCleanup?.();
-  });
-
-  let exportSidebarCollapsed = $state(false);
-
-  function toggleExportSidebar() {
-    const previous = !exportSidebarCollapsed;
-    exportSidebarCollapsed = !exportSidebarCollapsed;
-    captureScanSettingChanged({
-      group: "export",
-      setting: "settings_visible",
-      previous_value: previous,
-      value: !exportSidebarCollapsed,
-      source: "header",
-    });
-  }
-
-  // Fresh sequence → expanded settings (mirrors the drawer's reset-on-open).
-  $effect(() => {
-    void sequence;
-    exportSidebarCollapsed = false;
-  });
-
-  let copyClaudeFeedback = $state(false);
-  let shareLinkCopied = $state(false);
-  let shareLinkFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
-
-  type ViewerShareActionId = "share-sequence" | "send-sequence" | "copy-link";
-
-  const shareActions = $derived.by((): ShareActionMenuItem[] => [
-    {
-      id: "share-sequence",
-      label: "Share Sequence…",
-      icon: "fa-share-nodes",
-      section: "share",
-    },
-    {
-      id: "send-sequence",
-      label: "Send in TKA",
-      icon: "fa-paper-plane",
-      section: "share",
-    },
-    {
-      id: "copy-link",
-      label: shareLinkCopied ? "Copied" : "Copy Link",
-      icon: shareLinkCopied ? "fa-check" : "fa-link",
-      section: "share",
-      tone: shareLinkCopied ? "success" : "default",
-      closeOnSelect: false,
-    },
-  ]);
-  const shareStatusMessage = $derived(shareLinkCopied ? "Link copied." : "");
-
-  onDestroy(() => {
-    if (shareLinkFeedbackTimer) clearTimeout(shareLinkFeedbackTimer);
-  });
-
-  async function handleCopyForClaude() {
-    if (!sequence) return;
-    try {
-      const copier = getClaudeCodeCopier();
-      const result = await copier.copyForClaude(sequence);
-      if (!result.success) {
-        captureScanAction("copy_for_claude", { outcome: "failed" });
-        return;
-      }
-      captureScanAction("copy_for_claude", { outcome: "completed" });
-      copyClaudeFeedback = true;
-      setTimeout(() => {
-        copyClaudeFeedback = false;
-      }, 1500);
-    } catch (error) {
-      captureScanAction("copy_for_claude", { outcome: "failed" });
-      console.error("[SequenceViewerShell] Copy for Claude failed:", error);
-    }
-  }
-
-  function handleSendTo() {
-    if (!sequence) return;
-    captureScanAction("send");
-    const propType =
-      sequence.intendedProp?.bluePropType ??
-      settingsService.settings.bluePropType ??
-      "staff";
-    const thumbnailUrl = buildThumbnailUrl(
-      sequence.word || sequence.name,
-      String(propType),
-      false
-    );
-    openSendSequenceSheet(
-      buildSequenceSharePayload({ ...sequence, thumbnailUrl })
-    );
-  }
-
-  function handleShareSequence(): void {
-    captureScanAction("share");
-    ctx.handleShare();
-  }
-
-  async function handleCopyShareLink(): Promise<void> {
-    captureScanAction("copy_link");
-    const copied = await ctx.handleCopyLink();
-    if (!copied) return;
-
-    shareLinkCopied = true;
-    if (shareLinkFeedbackTimer) clearTimeout(shareLinkFeedbackTimer);
-    shareLinkFeedbackTimer = setTimeout(() => {
-      shareLinkCopied = false;
-      shareLinkFeedbackTimer = null;
-    }, 1800);
-  }
-
-  function handleShareActionSelect(actionId: string): void {
-    switch (actionId as ViewerShareActionId) {
-      case "share-sequence":
-        handleShareSequence();
-        break;
-      case "send-sequence":
-        handleSendTo();
-        break;
-      case "copy-link":
-        void handleCopyShareLink();
-        break;
-    }
-  }
-
-  function handleSendToStickerLab() {
-    if (!sequence) return;
-    captureScanAction("send_to_sticker_lab");
-    sendToStickerLab(sequence);
-  }
-
-  // Named rail/select handlers shared by the rail and the mobile bottom bar.
-  function selectSplitMode(c: OrchestratorContext, track = true) {
-    c.ensureInteractiveServices();
-    const previousMode = c.viewerState.viewerMode;
-    c.viewerState.exitExport();
-    // Side-by-side is hard-coded to 2D + Card on every width — the comparison
-    // pairing bar was retired, so force the pairing here in case a different
-    // one (e.g. 2D + 3D) was persisted before the bar went away.
-    c.viewerState.setSplitConfig({ leftPane: "animation", rightPane: "card" });
-    c.viewerState.setViewerMode("split");
-    if (track) captureScanViewChanged(previousMode, "split", "mode_switcher");
-    // NOTE: do NOT force a rerenderTrigger++ here. The ChoreoCard's render
-    // $effect already reacts to the pane's prop changes via the cache-aware
-    // renderAllCells (in-place swap on a cache hit). rerenderTrigger++ routes to
-    // forceRerenderAllCells, which DELETES the caches and blanks every cell to a
-    // spinner — that was the whole-grid "flash" seen when switching views.
-  }
-
-  function selectViewerMode(
-    c: OrchestratorContext,
-    mode: ContentType,
-    countIntent = true
-  ) {
-    if (mode !== "card") c.ensureInteractiveServices();
-    const previousMode = c.viewerState.viewerMode;
-    if (mode === "animation") {
-      c.viewerState.enterExport("animation-export", "animation");
-    } else if (mode === "animation-3d") {
-      c.viewerState.enterExport("animation-export", "animation-3d");
-    } else if (mode === "card") {
-      c.viewerState.enterExport("image-export");
-    } else if (mode === "mandala") {
-      c.viewerState.exitExport();
-      c.viewerState.setViewerMode("mandala");
-    } else if (mode === "tunnel") {
-      c.viewerState.exitExport();
-      c.viewerState.setViewerMode("tunnel");
-    }
-    captureScanViewChanged(previousMode, mode, "mode_switcher", {
-      count: countIntent,
-    });
-  }
-
-  // QR play badge (Card mode): switch to the 2D animation view and start
-  // playback. handlePlaybackToggle is a toggle, so read isPlayingLocal at click
-  // time and only start when paused — never pauses an already-running anim.
-  function playFromQr(c: OrchestratorContext) {
-    const wasPlaying = c.isPlayingLocal;
-    selectViewerMode(c, "animation", false);
-    if (!wasPlaying) c.handlePlaybackToggle();
-    captureScanPlaybackChanged({
-      action: "qr_play",
-      previous_value: wasPlaying,
-      value: true,
-      source: "card_qr_badge",
-      bpm: c.bpmLocal,
-    });
-  }
-
-  // viewerState persists across the whole origin (tka-viewer-mode /
-  // exportContext), so a scanner whose localStorage holds a stale app-viewer
-  // export context would land mid-export instead of on the split first
-  // impression. One-shot reset when the scan host mounts.
-  onMount(() => {
-    if (startInCardThenSplit) {
-      captureScanViewerOpened("card");
-    } else if (startInSplit) {
-      queueMicrotask(() => {
-        selectSplitMode(ctx, false);
-        captureScanViewerOpened("split");
-      });
-    } else {
-      captureScanViewerOpened(ctx.viewerState.viewerMode);
-    }
-  });
-
-  let progressivePromotionScheduled = false;
-  $effect(() => {
-    if (
-      !startInCardThenSplit ||
-      progressivePromotionScheduled ||
-      !ctx.cardReady
-    ) {
-      return;
-    }
-
-    progressivePromotionScheduled = true;
-    let secondFrame = 0;
-    let promotionTimer: ReturnType<typeof setTimeout> | undefined;
-    const firstFrame = requestAnimationFrame(() => {
-      secondFrame = requestAnimationFrame(() => {
-        // Let the card's double-rAF performance mark land first, then activate
-        // animation services and the existing Side-by-Side surface.
-        promotionTimer = setTimeout(() => selectSplitMode(ctx, false), 0);
-      });
-    });
-
-    return () => {
-      cancelAnimationFrame(firstFrame);
-      if (secondFrame) cancelAnimationFrame(secondFrame);
-      if (promotionTimer !== undefined) clearTimeout(promotionTimer);
-    };
-  });
-
-  let deleteConfirmOpen = $state(false);
-  let isDeleting = $state(false);
 
   let rerenderTrigger = $state(0);
   let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
@@ -517,68 +241,9 @@
   // it doesn't sit over a black "Setting the stage" pane reading as ready.
   let sceneReady3d = $state(false);
 
-  // ── Derived view flags (were {@const} in the drawer's snippet body) ──
-  const isVideoExportActive = $derived(ctx.editingPane === "animation");
-  const isImageExportActive = $derived(ctx.editingPane === "image");
-  const isVideoUploadActive = $derived(ctx.editingPane === "video-upload");
-  const isAnyExportActive = $derived(ctx.editingPane !== null);
-  const isRecordSceneActive = $derived(
-    isVideoExportActive && ctx.renderMode === "3d" && !ctx.previewBlobUrl
-  );
-  const isSidebarExportActive = $derived(
-    isAnyExportActive && !isRecordSceneActive
-  );
-  // Every sidebar export (card + the 2D/3D animation download) needs enough
-  // width for the 560px settings sidebar to sit beside a usable preview + rail.
-  // When the viewer is narrower than that (embedded, split, small window), drive
-  // the whole export view into the mobile layout: preview hero on top, settings
-  // in the bottom dock, modes in the bottom bar. RecordSceneChrome (3D record)
-  // is its own full-bleed UI and is excluded via isRecordSceneActive.
-  const cardExportNarrow = $derived(
-    isImageExportActive && !isMobile && bodyWidth < exportSidebarMinWidth()
-  );
-  const videoExportNarrow = $derived(
-    isVideoExportActive &&
-      !isRecordSceneActive &&
-      !isMobile &&
-      bodyWidth < exportSidebarMinWidth()
-  );
-  const effectiveMobile = $derived(
-    isMobile || cardExportNarrow || videoExportNarrow
-  );
-  // The rail is the desktop mode switcher — it stays at every desktop width,
-  // including the narrow-export fallback, so Card / 2D Animation don't swap to
-  // phone chrome while Split / Mandala / Tunnel keep the rail (inconsistent).
-  // Only real mobile (<768) drops the rail for the bottom bar.
-  const showRail = $derived(!isMobile);
-  // Narrow-desktop export: settings stack under the hero (mobile presentation)
-  // but the rail column persists beside them.
-  const stackedExportWithRail = $derived(
-    isSidebarExportActive && effectiveMobile && !isMobile
-  );
-  const headerActions = $derived(
-    buildHeaderActions(ctx, "full", {
-      onDeleteRequest: () => (deleteConfirmOpen = true),
-    })
-  );
-
-  // ── Export routing: host override (scan gated pipeline) or the orchestrator ──
-  const videoBusy = $derived(exportOverrides?.videoBusy ?? ctx.isExporting);
-  const videoProgress = $derived(
-    exportOverrides?.videoProgress ?? ctx.exportProgress
-  );
-  const cardBusy = $derived(exportOverrides?.cardBusy ?? ctx.isExporting);
-  const showInlineProgress = $derived(
-    exportOverrides?.showInlineProgress ?? true
-  );
-  // The premium export ring over the whole viewer body for the standard
-  // animation export. A host that suppresses the
-  // inline bar (showInlineProgress=false) does so because it renders its OWN
-  // takeover (the scan page), so the shell renders one only when it hasn't.
-  // 2D only — 3D export progress lives in Recording3DOverlay.
-  const shellRendersTakeover = $derived(showInlineProgress);
+  const shellRendersTakeover = $derived(interactions.showInlineProgress);
   const animTakeover = $derived(
-    toExportTakeoverPhase(videoProgress, videoBusy)
+    toExportTakeoverPhase(interactions.videoProgress, interactions.videoBusy)
   );
   const takeoverLabel = $derived(
     ctx.effectiveSequence?.word ||
@@ -587,571 +252,79 @@
       ""
   );
   const takeoverWord = $derived(simplifyRepeatedWord(takeoverLabel));
-  function videoExportAnalyticsConfig(): Record<string, ScanAnalyticsValue> {
-    const options = ctx.exportOptions.getVideoOptions();
-    return {
-      fps: options.fps,
-      loop_count: options.loopCount,
-      resolution: String(options.resolution),
-      include_start_position: options.includeStartPosition,
-      include_end_hold: options.includeEndHold,
-      render_mode: ctx.renderMode,
-      playback_mode: ctx.playbackMode,
-      ...scanPropProperties(ctx.bluePropType, ctx.redPropType),
-    };
-  }
-
-  function cardExportAnalyticsConfig(): Record<string, ScanAnalyticsValue> {
-    return {
-      step_count: ctx.effectiveSequence?.steps?.length ?? 0,
-      dark_mode: ctx.exportOptions.imageDarkMode,
-      include_start_position: ctx.splitPaneImageComposition.showStartPos,
-      hand_path: ctx.splitPaneImageComposition.handPathMode ?? false,
-      ...scanPropProperties(ctx.bluePropType, ctx.redPropType),
-    };
-  }
-
-  function handleVideoExport(stage: "requested" | "retry" = "requested") {
-    captureScanExport("video", stage, videoExportAnalyticsConfig());
-    if (exportOverrides) exportOverrides.onVideoExport();
-    else ctx.handleExport();
-  }
-  function handleCardExport() {
-    captureScanExport("card", "requested", cardExportAnalyticsConfig());
-    if (exportOverrides) exportOverrides.onCardExport();
-    else ctx.handleExport();
-  }
-  function handleRemix() {
-    captureScanAction("remix");
-    endScanViewerSession("remix");
-    if (onRemix) onRemix();
-    else ctx.invokeGatedAction("remix", ctx.handleEdit);
-  }
-  function recordOpenApp(source: "overflow" | "account_entry") {
-    captureScanAction("open_app", { source });
-    endScanViewerSession("open_app");
-  }
-  function handleOpenApp() {
-    if (!openAppHref) return;
-    recordOpenApp("overflow");
-    void goto(openAppHref);
-  }
-  function handleAccountSignIn() {
-    captureScanAction("signin_from_chip");
-    onAccountSignIn?.();
-  }
-
-  function handleGuideAction(): void {
-    if (!guideAction) return;
-    captureScanAction("guide");
-    endScanViewerSession("guide");
-    guideAction.onSelect();
-  }
-
-  function handleClose(): void {
-    endScanViewerSession("close_button");
-    onClose();
-  }
-
-  function handleFavoriteToggle(): void {
-    captureScanAction("favorite", {
-      value: !ctx.isFavorite,
-      gated: !ctx.isLoggedIn,
-    });
-    ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle);
-  }
-
-  function handleSave(): void {
-    captureScanAction("save", { gated: !ctx.isLoggedIn });
-    ctx.invokeGatedAction("save", ctx.handleSave);
-  }
-
-  function handleHeaderVideoUpload(): void {
-    captureScanAction("video_upload");
-    void headerActions.onVideoUpload?.();
-  }
-
-  function handleGalleryVideoUpload(): void {
-    captureScanAction("video_upload");
-    void ctx.handleVideoUpload();
-  }
-
-  function handlePublish(): void {
-    captureScanAction("publish");
-    void headerActions.onPublish?.();
-  }
-
-  function handleUnpublish(): void {
-    captureScanAction("unpublish");
-    void headerActions.onUnpublish?.();
-  }
-
-  function handleDeleteRequest(): void {
-    captureScanAction("delete_requested");
-    headerActions.onDeleteRequest?.();
-  }
-
-  function handleEnterPractice(): void {
-    const previousMode = ctx.viewerState.viewerMode;
-    ctx.enterPracticeMode();
-    captureScanViewChanged(
-      previousMode,
-      ctx.viewerState.viewerMode,
-      "practice_enter",
-      { count: false }
-    );
-    captureScanPracticeChanged("entered");
-  }
-
-  function handleExitPractice(): void {
-    captureScanPracticeChanged("exited", {
-      was_running: ctx.practiceRunning,
-      bpm: ctx.bpmLocal,
-    });
-    ctx.exitPracticeMode();
-  }
-
-  function handlePlaybackToggle(source: string): void {
-    const wasPlaying = ctx.isPlayingLocal;
-    ctx.handlePlaybackToggle();
-    captureScanPlaybackChanged({
-      action: wasPlaying ? "pause" : "play",
-      previous_value: wasPlaying,
-      value: !wasPlaying,
-      source,
-      bpm: ctx.bpmLocal,
-      step: ctx.currentStepLocal,
-    });
-  }
-
-  function handleSystemPlaybackChange(
-    playing: boolean,
-    source: "system_3d_loading"
-  ): void {
-    const previous = ctx.isPlayingLocal;
-    if (previous === playing) return;
-    ctx.handlePlaybackToggle();
-    captureScanPlaybackChanged({
-      action: playing ? "play" : "pause",
-      previous_value: previous,
-      value: playing,
-      source,
-      bpm: ctx.bpmLocal,
-      step: ctx.currentStepLocal,
-      count: false,
-    });
-  }
-
-  function handleBpmChange(bpm: number, source: string): void {
-    const previous = ctx.bpmLocal;
-    ctx.handleBpmChange(bpm);
-    captureScanSettingChanged({
-      group: "playback",
-      setting: "bpm",
-      previous_value: previous,
-      value: bpm,
-      source,
-      coalesce: true,
-    });
-  }
-
-  function handlePropChange(propType: PropType, source: string): void {
-    const previousBlue = ctx.bluePropType ? String(ctx.bluePropType) : null;
-    const previousRed = ctx.redPropType ? String(ctx.redPropType) : null;
-    ctx.handlePropTypeChange(propType);
-    const blue = ctx.bluePropType ? String(ctx.bluePropType) : null;
-    const red = ctx.redPropType ? String(ctx.redPropType) : null;
-    captureScanSettingChanged({
-      group: "props",
-      setting: "prop_type",
-      previous_value: `blue:${previousBlue ?? "none"}|red:${previousRed ?? "none"}`,
-      value: `blue:${blue ?? "none"}|red:${red ?? "none"}`,
-      previous_blue_prop: previousBlue,
-      previous_red_prop: previousRed,
-      blue_prop: blue,
-      red_prop: red,
-      source,
-    });
-  }
-
-  function handlePlaybackModeChange(
-    mode: "continuous" | "step",
-    source: string
-  ): void {
-    const previous = ctx.playbackMode;
-    ctx.handlePlaybackModeChange(mode);
-    captureScanPlaybackChanged({
-      action: "mode",
-      previous_value: previous,
-      value: mode,
-      source,
-    });
-  }
-
-  function handleViewerControlSetting(
-    group: string,
-    setting: string,
-    previousValue: ViewerControlValue,
-    value: ViewerControlValue,
-    options: ViewerControlEventOptions = {}
-  ): void {
-    captureScanSettingChanged({
-      group,
-      setting,
-      previous_value: previousValue,
-      value,
-      source: group === "record_scene" ? "record_scene" : "video_export",
-      coalesce: options.coalesce,
-      count: options.count,
-    });
-  }
-
-  function handleViewer3DSetting(
-    group: string,
-    setting: string,
-    previousValue: ViewerControlValue,
-    value: ViewerControlValue,
-    options: ViewerControlEventOptions = {}
-  ): void {
-    captureScanSettingChanged({
-      group,
-      setting,
-      previous_value: previousValue,
-      value,
-      source: "viewer_3d",
-      coalesce: options.coalesce,
-      count: options.count,
-    });
-  }
-
-  function handleViewer3DAction(
-    action: string,
-    properties: Record<string, ViewerControlValue> = {},
-    options: ViewerControlEventOptions = {}
-  ): void {
-    captureScanAction(
-      action,
-      { source: "viewer_3d", ...properties },
-      { count: options.count }
-    );
-  }
-
-  function handleStepClick(stepIndex: number): void {
-    const previous = ctx.currentStepLocal;
-    ctx.handleStepClick(stepIndex);
-    captureScanPlaybackChanged({
-      action: "step_select",
-      previous_value: previous,
-      value: stepIndex,
-      source: "card_step",
-      step: stepIndex,
-    });
-  }
-
-  function handleProgressBarSeek(targetStep: number): void {
-    const previous = ctx.currentStepLocal;
-    ctx.handleProgressBarSeek(targetStep);
-    captureScanPlaybackChanged({
-      action: "seek",
-      previous_value: previous,
-      value: targetStep,
-      source: "progress_bar",
-      step: targetStep,
-      coalesce: true,
-    });
-  }
-
-  function handleFocusPane(pane: "animation" | "image"): void {
-    captureScanAction("focus_pane", { pane });
-    ctx.enterEditMode(pane);
-  }
-
-  function handleUnfocusPane(): void {
-    captureScanAction("unfocus_pane");
-    ctx.exitEditMode();
-  }
-
-  function handleMotionToggle(hand: "blue" | "red"): void {
-    const previous =
-      hand === "blue"
-        ? ctx.viewerVisibility.blueMotion
-        : ctx.viewerVisibility.redMotion;
-    if (hand === "blue") ctx.viewerVisibility.toggleBlue();
-    else ctx.viewerVisibility.toggleRed();
-    captureScanSettingChanged({
-      group: "motion",
-      setting: `${hand}_visible`,
-      previous_value: previous,
-      value: !previous,
-      source: "header",
-    });
-  }
-
-  function practiceConfigProperties(
-    config: Partial<TempoPracticeConfig>
-  ): Record<string, ScanAnalyticsValue> {
-    return {
-      start_bpm: config.startBpm ?? null,
-      max_bpm: config.maxBpm ?? null,
-      increment: config.increment ?? null,
-      rounds_per_level: config.roundsPerLevel ?? null,
-      target_enabled: config.targetEnabled ?? null,
-      target_bpm: config.targetBpm ?? null,
-    };
-  }
-
-  function handlePracticeSetConfig(patch: Partial<TempoPracticeConfig>): void {
-    ctx.handlePracticeSetConfig(patch);
-    captureScanPracticeChanged(
-      "config_changed",
-      {
-        changed_fields: Object.keys(patch).sort().join(","),
-        ...practiceConfigProperties({
-          ...ctx.practiceState.userConfig,
-          ...patch,
-        }),
-      },
-      true
-    );
-  }
-
-  function handlePracticeStart(): void {
-    captureScanPracticeChanged(
-      "started",
-      practiceConfigProperties(ctx.practiceState.userConfig)
-    );
-    ctx.handlePracticeStart();
-  }
-
-  function handlePracticeStepLevel(direction: 1 | -1): void {
-    captureScanPracticeChanged("tempo_step", {
-      direction,
-      bpm: ctx.bpmLocal,
-      increment: ctx.practiceState.progress.increment,
-    });
-    ctx.handlePracticeStepLevel(direction);
-  }
-
-  function handlePracticeToggleHold(): void {
-    const previous = ctx.practiceState.progress.held;
-    captureScanPracticeChanged("hold_changed", {
-      previous_value: previous,
-      value: !previous,
-      bpm: ctx.bpmLocal,
-    });
-    ctx.handlePracticeToggleHold();
-  }
-
-  function handlePracticeStop(): void {
-    captureScanPracticeChanged("stopped", { bpm: ctx.bpmLocal });
-    ctx.handlePracticeStop();
-  }
-
-  function handleToggleMetronome(): void {
-    captureScanPracticeChanged("metronome_changed", {
-      previous_value: ctx.metronomeEnabled,
-      value: !ctx.metronomeEnabled,
-    });
-    ctx.handleToggleMetronome();
-  }
-
-  function handleToggleMirror(): void {
-    captureScanPracticeChanged("mirror_changed", {
-      previous_value: ctx.mirrorEnabled,
-      value: !ctx.mirrorEnabled,
-    });
-    ctx.handleToggleMirror();
-  }
-
-  function handleArtSettingChange(
-    group: string,
-    setting: string,
-    previousValue: ScanAnalyticsValue,
-    value: ScanAnalyticsValue,
-    coalesce = false,
-    source = "art_panel"
-  ): void {
-    captureScanSettingChanged({
-      group,
-      setting,
-      previous_value: previousValue,
-      value,
-      source,
-      coalesce,
-    });
-  }
-
-  function handleArtAction(
-    action: string,
-    properties: Record<string, ScanAnalyticsValue> = {},
-    options: ViewerControlEventOptions = {}
-  ): void {
-    captureScanAction(action, properties, { count: options.count });
-  }
-
-  function handleCardSettingChange(
-    group: string,
-    setting: string,
-    previousValue: ScanAnalyticsValue,
-    value: ScanAnalyticsValue,
-    coalesce = false
-  ): void {
-    captureScanSettingChanged({
-      group,
-      setting,
-      previous_value: previousValue,
-      value,
-      source: "card_export",
-      coalesce,
-    });
-  }
-
-  function handleCardContextAction(
-    control: string,
-    properties: Record<string, ScanAnalyticsValue> = {},
-    options: ViewerControlEventOptions = {}
-  ): void {
-    captureScanAction(
-      "card_context_action",
-      { control, ...properties },
-      { count: options.count }
-    );
-  }
-
-  function handleDeleteConfirm(): void {
-    captureScanAction("delete_confirmed");
-  }
-
-  function handleDeleteCancel(): void {
-    captureScanAction("delete_canceled");
-    deleteConfirmOpen = false;
-  }
-
-  function handleArtExport(
-    args: Parameters<typeof ctx.handleArtExport>[0]
-  ): void {
-    ctx.handleArtExport(args);
-  }
-
-  function handleArtExportEvent(
-    artType: "mandala" | "tunnel",
-    stage: ScanExportStage,
-    properties: Record<string, ScanAnalyticsValue> = {}
-  ): void {
-    if (stage === "requested" || stage === "retry") {
-      activeArtExports.set(artType, properties);
-    } else if (
-      stage === "completed" ||
-      stage === "failed" ||
-      stage === "canceled"
-    ) {
-      activeArtExports.delete(artType);
-    }
-    captureScanExport(artType, stage, properties);
-  }
-
-  function handleCancelVideoExport(): void {
-    captureScanExport("video", "canceled", {
-      ...videoExportAnalyticsConfig(),
-      user_initiated: true,
-    });
-    ctx.handleCancelExport();
-  }
-
-  function handleStopRecording(): void {
-    captureScanAction("recording_stop", {
-      elapsed_seconds: Math.round(ctx.recordingElapsed),
-      render_mode: "3d",
-    });
-    ctx.handleStopRecording();
-  }
-
-  function handleDismissExportedVideo(): void {
-    captureScanAction("exported_video_dismiss");
-    ctx.dismissPreview();
-  }
-
-  async function handleRedownloadExportedVideo(): Promise<void> {
-    captureScanAction("exported_video_redownload");
-    await ctx.saveExportedVideo();
-  }
-
-  async function handleVideoUploadSaveFirst(): Promise<void> {
-    captureScanAction("video_upload_save_first");
-    await ctx.handleSave();
-  }
-
-  function handleVideoUploadClose(): void {
-    captureScanAction("video_upload_close");
-    ctx.exitEditMode();
-  }
 </script>
 
 <div
   class="drawer-viewer-container"
-  class:landscape={isLandscape}
+  class:landscape={layout.isLandscape}
   class:practice-mobile={isMobile && ctx.practiceActive}
 >
   <ViewerHeader
     {ctx}
     sequence={ctx.effectiveSequence ?? sequence}
     {isMobile}
-    viewerWidth={bodyWidth}
-    onClose={handleClose}
+    viewerWidth={layout.bodyWidth}
+    onClose={interactions.handleClose}
     hidden={ctx.isFullscreen}
     {embedded}
     {navigation}
     {openAppHref}
     onAccountSignIn={!embedded ? onAccountSignIn : undefined}
     onAccountOpenApp={openAppHref && !embedded
-      ? () => recordOpenApp("account_entry")
+      ? () => interactions.recordOpenApp("account_entry")
       : undefined}
     {guideAction}
-    isFavorite={headerActions.isFavorite}
-    onFavoriteToggle={headerActions.onFavoriteToggle && !embedded
-      ? handleFavoriteToggle
+    isFavorite={interactions.headerActions.isFavorite}
+    onFavoriteToggle={interactions.headerActions.onFavoriteToggle && !embedded
+      ? interactions.handleFavoriteToggle
       : undefined}
-    isSaved={headerActions.isSaved}
-    onSave={headerActions.onSave && !embedded ? handleSave : undefined}
-    onRemix={(onRemix ?? headerActions.onRemix) && !embedded
-      ? handleRemix
+    isSaved={interactions.headerActions.isSaved}
+    onSave={interactions.headerActions.onSave && !embedded
+      ? interactions.handleSave
       : undefined}
-    onPracticeToggle={headerActions.showPractice
+    onRemix={(onRemix ?? interactions.headerActions.onRemix) && !embedded
+      ? interactions.handleRemix
+      : undefined}
+    onPracticeToggle={interactions.headerActions.showPractice
       ? ctx.practiceActive
-        ? handleExitPractice
-        : handleEnterPractice
+        ? interactions.handleExitPractice
+        : interactions.handleEnterPractice
       : undefined}
     {canToggleMotionVisibility}
-    onMotionToggleBlue={() => handleMotionToggle("blue")}
-    onMotionToggleRed={() => handleMotionToggle("red")}
+    onMotionToggleBlue={() => interactions.handleMotionToggle("blue")}
+    onMotionToggleRed={() => interactions.handleMotionToggle("red")}
     onCopyData={authState.isAdmin && !embedded
-      ? handleCopyForClaude
+      ? share.copyForClaude
       : undefined}
-    {copyClaudeFeedback}
-    onVideoUpload={headerActions.onVideoUpload && !embedded
-      ? handleHeaderVideoUpload
+    copyDataFeedback={share.copyClaudeFeedback}
+    onVideoUpload={interactions.headerActions.onVideoUpload && !embedded
+      ? interactions.handleHeaderVideoUpload
       : undefined}
-    isPublished={headerActions.isPublished}
-    onPublish={headerActions.onPublish && !embedded ? handlePublish : undefined}
-    onUnpublish={headerActions.onUnpublish && !embedded
-      ? handleUnpublish
+    isPublished={interactions.headerActions.isPublished}
+    onPublish={interactions.headerActions.onPublish && !embedded
+      ? interactions.handlePublish
       : undefined}
-    onDeleteRequest={headerActions.onDeleteRequest && !embedded
-      ? handleDeleteRequest
+    onUnpublish={interactions.headerActions.onUnpublish && !embedded
+      ? interactions.handleUnpublish
       : undefined}
-    onOpenApp={openAppHref && !embedded ? handleOpenApp : undefined}
-    exportSettings={isAnyExportActive &&
-    !effectiveMobile &&
-    !isRecordSceneActive &&
-    !isImageExportActive
+    onDeleteRequest={interactions.headerActions.onDeleteRequest && !embedded
+      ? interactions.handleDeleteRequest
+      : undefined}
+    onOpenApp={openAppHref && !embedded
+      ? interactions.handleOpenApp
+      : undefined}
+    exportSettings={layout.isAnyExportActive &&
+    !layout.effectiveMobile &&
+    !layout.isRecordSceneActive &&
+    !layout.isImageExportActive
       ? {
-          expanded: !exportSidebarCollapsed,
-          onToggle: toggleExportSidebar,
+          expanded: !layout.exportSidebarCollapsed,
+          onToggle: layout.toggleExportSidebar,
         }
       : null}
-    {shareActions}
-    {shareStatusMessage}
-    onShareActionSelect={handleShareActionSelect}
+    shareActions={share.actions}
+    shareStatusMessage={share.statusMessage}
+    onShareActionSelect={share.selectAction}
     onOverflowOpenChange={(open, reason) =>
       captureScanAction(
         open ? "overflow_open" : "overflow_close",
@@ -1177,7 +350,7 @@
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div
       class="drawer-body-content"
-      bind:clientWidth={bodyWidth}
+      bind:clientWidth={layout.bodyWidth}
       onclick={showFullscreenControls && ctx.isFullscreen
         ? ctx.handleFullscreenTap
         : undefined}
@@ -1210,44 +383,44 @@
       {#if ctx.hasSequence && ctx.effectiveSequence}
         <div
           class="viewer-and-export"
-          class:export-active={isSidebarExportActive}
-          class:record-scene-active={isRecordSceneActive}
-          class:desktop={!effectiveMobile}
-          class:stacked-rail={stackedExportWithRail}
-          class:sidebar-collapsed={exportSidebarCollapsed &&
-            !isImageExportActive}
-          class:has-rail={showRail}
+          class:export-active={layout.isSidebarExportActive}
+          class:record-scene-active={layout.isRecordSceneActive}
+          class:desktop={!layout.effectiveMobile}
+          class:stacked-rail={layout.stackedExportWithRail}
+          class:sidebar-collapsed={layout.exportSidebarCollapsed &&
+            !layout.isImageExportActive}
+          class:has-rail={layout.showRail}
         >
-          {#if showRail}
+          {#if layout.showRail}
             <div class="viewer-rail-wrap" class:collapsed={ctx.practiceActive}>
               <ViewerContentRail
                 activeMode={ctx.viewerState.viewerMode}
                 webgl2Available={ctx.viewer3DState.webgl2Available}
-                compact={compactChrome && !isMobile}
-                onSelectSplit={() => selectSplitMode(ctx)}
-                onSelectMode={(mode) => selectViewerMode(ctx, mode)}
+                compact={layout.compactChrome && !isMobile}
+                onSelectSplit={() => layout.selectSplitMode()}
+                onSelectMode={(mode) => layout.selectViewerMode(mode)}
               />
             </div>
           {/if}
-          {#if ctx.viewerState.viewerMode === "videos" && !isSidebarExportActive}
+          {#if ctx.viewerState.viewerMode === "videos" && !layout.isSidebarExportActive}
             <VideoGallery
               {sequence}
               isOwned={ctx.isOwned}
               isLoggedIn={ctx.isLoggedIn}
               onUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED
-                ? handleGalleryVideoUpload
+                ? interactions.handleGalleryVideoUpload
                 : undefined}
             />
           {:else}
             <ViewerSplitPane
               sequence={ctx.effectiveSequence}
               renderMode={ctx.renderMode}
-              isExporting={videoBusy}
+              isExporting={interactions.videoBusy}
               bpm={ctx.bpmLocal}
-              onBpmChange={(bpm) => handleBpmChange(bpm, "viewer")}
-              onPropChange={(prop) => handlePropChange(prop, "viewer")}
+              onBpmChange={(bpm) => interactions.handleBpmChange(bpm, "viewer")}
+              onPropChange={(prop) => interactions.handlePropChange(prop, "viewer")}
               playback={ctx.splitPanePlayback}
-              imageComposition={isImageExportActive
+              imageComposition={layout.isImageExportActive
                 ? {
                     ...ctx.splitPaneImageComposition,
                     darkMode: ctx.exportOptions.imageDarkMode,
@@ -1258,8 +431,8 @@
               layout={{
                 isFullscreen: ctx.isFullscreen,
                 fullscreenStackVertical: ctx.fullscreenStackVertical,
-                isMobile: effectiveMobile,
-                isLandscapeMobile: isLandscape,
+                isMobile: layout.effectiveMobile,
+                isLandscapeMobile: layout.isLandscape,
                 focusedPane:
                   ctx.viewerState.viewerMode !== "split"
                     ? ctx.viewerState.viewerMode === "card"
@@ -1269,27 +442,28 @@
                 suppressCloseButton: ctx.viewerState.viewerMode !== "split",
               }}
               onRenderProgress={ctx.onRenderProgress}
-              onFocusPane={handleFocusPane}
-              onUnfocusPane={handleUnfocusPane}
-              onStepClick={handleStepClick}
+              onFocusPane={interactions.handleFocusPane}
+              onUnfocusPane={interactions.handleUnfocusPane}
+              onStepClick={interactions.handleStepClick}
               onQrPlayClick={ctx.practiceActive
                 ? undefined
-                : () => playFromQr(ctx)}
+                : layout.playFromQr}
               onCanvasReady={ctx.handleCanvasReady}
-              onAutoLayoutResolved={isImageExportActive
+              onAutoLayoutResolved={layout.isImageExportActive
                 ? ctx.setResolvedCardAutoLayout
                 : undefined}
               {rerenderTrigger}
               onChoreoCardContextMenu={(x, y) =>
                 choreoCardMenuHost?.openContextMenu(x, y)}
-              onPlaybackToggle={() => handlePlaybackToggle("viewer_transport")}
-              onSystemPlaybackChange={handleSystemPlaybackChange}
-              onProgressBarSeek={handleProgressBarSeek}
+              onPlaybackToggle={() =>
+                interactions.handlePlaybackToggle("viewer_transport")}
+              onSystemPlaybackChange={interactions.handleSystemPlaybackChange}
+              onProgressBarSeek={interactions.handleProgressBarSeek}
               onProgressBarScrubStart={ctx.handleProgressBarScrubStart}
               onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
               playbackMode={ctx.playbackMode}
               onPlaybackModeChange={(mode) =>
-                handlePlaybackModeChange(mode, "viewer")}
+                interactions.handlePlaybackModeChange(mode, "viewer")}
               onSceneReadyChange={(ready) => (sceneReady3d = ready)}
               splitConfig={ctx.viewerState.viewerMode === "split"
                 ? { leftPane: "animation", rightPane: "card" }
@@ -1306,17 +480,17 @@
                     : ctx.viewerState.splitConfig}
               isLoggedIn={ctx.isLoggedIn}
               onVideoUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED
-                ? handleGalleryVideoUpload
+                ? interactions.handleGalleryVideoUpload
                 : undefined}
-              onArtExport={handleArtExport}
-              onArtExportEvent={handleArtExportEvent}
-              onArtSettingChange={handleArtSettingChange}
-              onArtAction={handleArtAction}
+              onArtExport={interactions.handleArtExport}
+              onArtExportEvent={interactions.handleArtExportEvent}
+              onArtSettingChange={interactions.handleArtSettingChange}
+              onArtAction={interactions.handleArtAction}
               onViewer3DSettingChange={scanInstrumentationEnabled
-                ? handleViewer3DSetting
+                ? interactions.handleViewer3DSetting
                 : undefined}
               onViewer3DAction={scanInstrumentationEnabled
-                ? handleViewer3DAction
+                ? interactions.handleViewer3DAction
                 : undefined}
               practiceActive={ctx.practiceActive}
               practiceRunning={ctx.practiceRunning}
@@ -1331,20 +505,20 @@
               countdownValue={ctx.countdownValue}
               isRecording={ctx.isRecording3D}
               elapsed={ctx.recordingElapsed}
-              onStop={handleStopRecording}
+              onStop={interactions.handleStopRecording}
               exportProgress={ctx.exportProgress}
               isExporting={ctx.isExporting}
-              onCancelExport={handleCancelVideoExport}
+              onCancelExport={interactions.handleCancelVideoExport}
             />
           {/if}
           {#if ctx.renderMode !== "3d" && shellRendersTakeover && animTakeover.phase !== "idle"}
             <ExportTakeover
               phase={animTakeover.phase}
-              progress={videoProgress?.progress ?? 0}
+              progress={interactions.videoProgress?.progress ?? 0}
               phaseLabel={animTakeover.labelKey ? t(animTakeover.labelKey) : ""}
-              error={videoProgress?.error ?? null}
-              onCancel={handleCancelVideoExport}
-              onRetry={() => handleVideoExport("retry")}
+              error={interactions.videoProgress?.error ?? null}
+              onCancel={interactions.handleCancelVideoExport}
+              onRetry={() => interactions.handleVideoExport("retry")}
             >
               {#snippet title()}
                 {#if motionProfile.kind === "solo"}
@@ -1360,45 +534,46 @@
             onRerender={() => {
               rerenderTrigger++;
             }}
-            isExportMode={isImageExportActive}
+            isExportMode={layout.isImageExportActive}
             exportOptions={ctx.exportOptions}
-            onSendTo={handleSendTo}
-            onSendToStickerLab={handleSendToStickerLab}
+            onSendTo={share.sendToInbox}
+            onSendToStickerLab={share.sendToStickerLab}
             stepCount={sequence?.steps?.length ?? 0}
-            onAction={handleCardContextAction}
+            onAction={interactions.handleCardContextAction}
           />
-          {#if isRecordSceneActive && ctx.effectiveSequence && sceneReady3d}
+          {#if layout.isRecordSceneActive && ctx.effectiveSequence && sceneReady3d}
             <RecordSceneChrome
               isExporting={ctx.isExporting}
               canvasReady={ctx.canvasReady}
-              onExport={() => handleVideoExport()}
+              onExport={() => interactions.handleVideoExport()}
               choreography={ctx.viewer3DState.cameraChoreography}
               onSettingChange={scanInstrumentationEnabled
-                ? handleViewerControlSetting
+                ? interactions.handleViewerControlSetting
                 : undefined}
             />
           {/if}
-          {#if isSidebarExportActive}
+          {#if layout.isSidebarExportActive}
             <div
               class="export-panel-container"
-              class:sidebar={!effectiveMobile &&
-                (isVideoExportActive || isVideoUploadActive)}
+              class:sidebar={!layout.effectiveMobile &&
+                (layout.isVideoExportActive || layout.isVideoUploadActive)}
             >
-              {#if isVideoExportActive}
+              {#if layout.isVideoExportActive}
                 {#if ctx.previewBlobUrl}
                   <VideoPreviewPanel
                     blobUrl={ctx.previewBlobUrl}
                     saveLabel="Save"
-                    onDismiss={handleDismissExportedVideo}
-                    onRedownload={() => void handleRedownloadExportedVideo()}
+                    onDismiss={interactions.handleDismissExportedVideo}
+                    onRedownload={() =>
+                      void interactions.handleRedownloadExportedVideo()}
                   />
                 {:else}
                   <ExportVideoDrawer
                     exportOptions={ctx.exportOptions}
-                    isExporting={videoBusy}
-                    exportProgress={videoProgress}
+                    isExporting={interactions.videoBusy}
+                    exportProgress={interactions.videoProgress}
                     canvasReady={ctx.canvasReady}
-                    layout={effectiveMobile ? "bottom" : "sidebar"}
+                    layout={layout.effectiveMobile ? "bottom" : "sidebar"}
                     singlePlayDuration={ctx.singlePlayDuration}
                     isPlaying={ctx.isPlayingLocal}
                     bpm={ctx.bpmLocal}
@@ -1407,20 +582,24 @@
                     selectedPropType={ctx.bluePropType}
                     showInlineExportProgress={false}
                     onPropChange={(prop) =>
-                      handlePropChange(prop, "video_export")}
+                      interactions.handlePropChange(prop, "video_export")}
                     onPlaybackToggle={() =>
-                      handlePlaybackToggle("video_export")}
+                      interactions.handlePlaybackToggle("video_export")}
                     onPlaybackModeChange={(mode) =>
-                      handlePlaybackModeChange(mode, "video_export")}
-                    onBpmChange={(bpm) => handleBpmChange(bpm, "video_export")}
-                    onExport={() => handleVideoExport()}
-                    onCancel={handleCancelVideoExport}
+                      interactions.handlePlaybackModeChange(
+                        mode,
+                        "video_export"
+                      )}
+                    onBpmChange={(bpm) =>
+                      interactions.handleBpmChange(bpm, "video_export")}
+                    onExport={() => interactions.handleVideoExport()}
+                    onCancel={interactions.handleCancelVideoExport}
                     onSettingChange={scanInstrumentationEnabled
-                      ? handleViewerControlSetting
+                      ? interactions.handleViewerControlSetting
                       : undefined}
                   />
                 {/if}
-              {:else if isImageExportActive && !isMobile}
+              {:else if layout.isImageExportActive && !isMobile}
                 <!-- No onClose on desktop widths: the card export settings are
                      required to configure the download and must stay put.
                      Leave the Download Card mode via the content rail. Below
@@ -1428,38 +607,38 @@
                      (layout="bottom") while the rail column persists. -->
                 <ExportImagePanel
                   exportOptions={ctx.exportOptions}
-                  isExporting={cardBusy}
+                  isExporting={interactions.cardBusy}
                   stepCount={ctx.effectiveSequence?.steps?.length ?? 0}
                   resolvedAutoLayout={ctx.resolvedCardAutoLayout}
-                  layout={effectiveMobile ? "bottom" : "sidebar"}
-                  onExport={handleCardExport}
-                  onSettingChange={handleCardSettingChange}
+                  layout={layout.effectiveMobile ? "bottom" : "sidebar"}
+                  onExport={interactions.handleCardExport}
+                  onSettingChange={interactions.handleCardSettingChange}
                 />
-              {:else if isVideoUploadActive}
+              {:else if layout.isVideoUploadActive}
                 <VideoPanel
                   {sequence}
                   isOwned={ctx.isOwned}
                   bpm={ctx.bpmLocal}
-                  onSaveFirst={handleVideoUploadSaveFirst}
-                  onClose={handleVideoUploadClose}
+                  onSaveFirst={interactions.handleVideoUploadSaveFirst}
+                  onClose={interactions.handleVideoUploadClose}
                 />
               {/if}
             </div>
           {/if}
         </div>
-        {#if isMobile && isImageExportActive && ctx.effectiveSequence}
+        {#if isMobile && layout.isImageExportActive && ctx.effectiveSequence}
           <!-- Entrance/exit fly now lives on ControlDock's root
                (shared by every dock); this wrapper only positions. -->
           <div class="export-footer-overlay">
             <ExportImagePanel
               exportOptions={ctx.exportOptions}
-              isExporting={cardBusy}
+              isExporting={interactions.cardBusy}
               stepCount={ctx.effectiveSequence.steps?.length ?? 0}
               resolvedAutoLayout={ctx.resolvedCardAutoLayout}
               layout="bottom"
-              onExport={handleCardExport}
-              onClose={handleUnfocusPane}
-              onSettingChange={handleCardSettingChange}
+              onExport={interactions.handleCardExport}
+              onClose={interactions.handleUnfocusPane}
+              onSettingChange={interactions.handleCardSettingChange}
             />
           </div>
         {/if}
@@ -1474,22 +653,22 @@
            bar, not a pop. -->
       <div
         transition:slide={{
-          duration: prefersReducedMotion ? 0 : 260,
+          duration: layout.prefersReducedMotion ? 0 : 260,
           easing: cubicOut,
         }}
       >
         <div
           transition:fly={{
             y: 72,
-            duration: prefersReducedMotion ? 0 : 260,
+            duration: layout.prefersReducedMotion ? 0 : 260,
             easing: cubicOut,
           }}
         >
           <ViewerModeBottomBar
             activeMode={ctx.viewerState.viewerMode}
             webgl2Available={ctx.viewer3DState.webgl2Available}
-            onSelectSplit={() => selectSplitMode(ctx)}
-            onSelectMode={(mode) => selectViewerMode(ctx, mode)}
+            onSelectSplit={() => layout.selectSplitMode()}
+            onSelectMode={(mode) => layout.selectViewerMode(mode)}
           />
         </div>
       </div>
@@ -1518,8 +697,8 @@
       >
         <PracticeSetupBar
           config={ctx.practiceState.userConfig}
-          onSetConfig={handlePracticeSetConfig}
-          onStart={handlePracticeStart}
+          onSetConfig={interactions.handlePracticeSetConfig}
+          onStart={interactions.handlePracticeStart}
         />
       </div>
       <div
@@ -1531,36 +710,28 @@
           progress={ctx.practiceState.progress}
           bpm={ctx.bpmLocal}
           isPlaying={ctx.isPlayingLocal}
-          onBpmChange={(bpm) => handleBpmChange(bpm, "practice")}
-          onPlayPause={() => handlePlaybackToggle("practice")}
-          onStepLevel={handlePracticeStepLevel}
-          onToggleHold={handlePracticeToggleHold}
-          onStop={handlePracticeStop}
+          onBpmChange={(bpm) =>
+            interactions.handleBpmChange(bpm, "practice")}
+          onPlayPause={() => interactions.handlePlaybackToggle("practice")}
+          onStepLevel={interactions.handlePracticeStepLevel}
+          onToggleHold={interactions.handlePracticeToggleHold}
+          onStop={interactions.handlePracticeStop}
           metronomeOn={ctx.metronomeEnabled}
-          onToggleMetronome={handleToggleMetronome}
+          onToggleMetronome={interactions.handleToggleMetronome}
           mirrorOn={ctx.mirrorEnabled}
-          onToggleMirror={handleToggleMirror}
+          onToggleMirror={interactions.handleToggleMirror}
         />
       </div>
     </div>
   {/if}
 
-  {#if deleteConfirmOpen}
+  {#if interactions.deleteConfirmOpen}
     <DeleteConfirmDialog
       word={sequence?.word}
-      {isDeleting}
+      isDeleting={interactions.isDeleting}
       positioning="absolute"
-      onConfirm={async () => {
-        handleDeleteConfirm();
-        isDeleting = true;
-        try {
-          await ctx.handleDelete();
-        } finally {
-          deleteConfirmOpen = false;
-          isDeleting = false;
-        }
-      }}
-      onCancel={handleDeleteCancel}
+      onConfirm={interactions.handleDeleteConfirm}
+      onCancel={interactions.handleDeleteCancel}
     />
   {/if}
 </div>
