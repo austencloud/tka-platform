@@ -390,51 +390,51 @@
       "blender_name": "Basalt_Columns",
       "objectKey": "meshy-basalt-pinnacle",
       "position": [
-        6.7619,
-        3.8701,
-        -14.5009
+        -20.0,
+        3.9152,
+        -7.5
       ],
       "rotation": [
-        -0.689936,
-        0.154884,
-        0.154884,
-        0.689936
+        -0.560986,
+        0.430459,
+        0.430459,
+        0.560986
       ],
       "scale": [
-        11.152,
-        11.152,
-        11.152
+        10.2682,
+        10.2682,
+        10.2682
       ],
-      "world_extent": 11.152022361755371
+      "world_extent": 10.268216133117676
     },
     {
       "blender_name": "Basalt_Pinnacle",
       "objectKey": "meshy-basalt-pinnacle",
       "position": [
-        -9.464,
-        3.3731,
-        -13.516
+        -12.0,
+        3.528,
+        1.5
       ],
       "rotation": [
-        -0.644693,
-        0.290466,
-        0.290466,
-        0.644693
+        -0.454519,
+        0.541675,
+        0.541675,
+        0.454519
       ],
       "scale": [
-        10.6824,
-        10.6824,
-        10.6824
+        8.7923,
+        8.7923,
+        8.7923
       ],
-      "world_extent": 10.682401657104492
+      "world_extent": 8.792343139648438
     },
     {
       "blender_name": "Living_Rock",
       "objectKey": "meshy-coral-encrusted-rock",
       "position": [
-        -14.7347,
-        0.6376,
-        -1.1127
+        -9.0,
+        0.8778,
+        3.0
       ],
       "rotation": [
         -0.632456,
@@ -447,15 +447,15 @@
         6.4428,
         6.4428
       ],
-      "world_extent": 6.442841529846191
+      "world_extent": 6.44284200668335
     },
     {
       "blender_name": "Coral_Mountain",
       "objectKey": "meshy-coral-mountain",
       "position": [
-        -12.9904,
-        1.9597,
-        -7.5
+        -4.0,
+        2.2371,
+        -18.5
       ],
       "rotation": [
         -0.281942,
@@ -468,15 +468,15 @@
         7.8929,
         7.8929
       ],
-      "world_extent": 7.892871856689453
+      "world_extent": 7.892871022224426
     },
     {
       "blender_name": "Neon_Summit_001",
       "objectKey": "meshy-neon-coral-summit",
       "position": [
-        11.4907,
-        0.7238,
-        9.6418
+        12.0,
+        0.9661,
+        -4.0
       ],
       "rotation": [
         -0.676896,
@@ -489,7 +489,7 @@
         6.9306,
         6.9306
       ],
-      "world_extent": 6.930635452270508
+      "world_extent": 6.930635571479797
     },
     {
       "blender_name": "Sea_Grass_000",
@@ -1020,9 +1020,9 @@
       "blender_name": "Coral_Citadel_001",
       "objectKey": "meshy-submerged-coral-citadel",
       "position": [
-        -1.133,
-        1.5242,
-        -12.9505
+        5.5,
+        1.6556,
+        -17.5
       ],
       "rotation": [
         -0.347003,
@@ -1041,30 +1041,30 @@
       "blender_name": "Sunlit_Arch_001",
       "objectKey": "meshy-sunlit-coral-arch",
       "position": [
-        -10.3416,
-        2.7486,
-        -8.6776
+        0.0,
+        4.65,
+        -13.0
       ],
       "rotation": [
-        -0.020744,
-        0.706802,
-        0.706802,
-        0.020744
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
       ],
       "scale": [
-        6.0,
-        6.0,
-        6.0
+        9.6,
+        9.6,
+        9.6
       ],
-      "world_extent": 6.0
+      "world_extent": 9.600000858306885
     },
     {
       "blender_name": "Tall_Kelp_000",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        17.0338,
+        -16.1254,
         0.2148,
-        -9.0045
+        -14.2482
       ],
       "rotation": [
         -0.707107,
@@ -1083,9 +1083,9 @@
       "blender_name": "Tall_Kelp_001",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        -5.4551,
+        -17.2337,
         0.6503,
-        -18.2835
+        -8.6095
       ],
       "rotation": [
         -0.707107,
@@ -1104,9 +1104,9 @@
       "blender_name": "Tall_Kelp_002",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        12.5196,
+        -5.8284,
         0.4575,
-        -12.8288
+        -17.5268
       ],
       "rotation": [
         -0.707107,
@@ -1125,9 +1125,9 @@
       "blender_name": "Tall_Kelp_003",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        -19.6848,
+        -9.197,
         0.5827,
-        1.2741
+        -17.9516
       ],
       "rotation": [
         -0.707107,
@@ -1146,9 +1146,9 @@
       "blender_name": "Tall_Kelp_004",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        5.5533,
+        -12.4497,
         0.4091,
-        -16.6588
+        -15.3595
       ],
       "rotation": [
         -0.707107,
@@ -1167,9 +1167,9 @@
       "blender_name": "Tall_Kelp_005",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        0.3431,
+        -10.0306,
         0.0985,
-        -19.2369
+        -16.4984
       ],
       "rotation": [
         -0.707107,
@@ -1188,9 +1188,9 @@
       "blender_name": "Tall_Kelp_006",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        -8.1761,
+        -7.3653,
         0.9455,
-        -16.5506
+        -17.7141
       ],
       "rotation": [
         -0.707107,
@@ -1209,9 +1209,9 @@
       "blender_name": "Tall_Kelp_007",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        15.0287,
+        -9.4522,
         0.9731,
-        9.0049
+        -19.2948
       ],
       "rotation": [
         -0.707107,
@@ -1230,9 +1230,9 @@
       "blender_name": "Tall_Kelp_008",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        -18.6927,
+        -17.6665,
         0.2652,
-        -0.5232
+        -10.8017
       ],
       "rotation": [
         -0.707107,
@@ -1251,9 +1251,9 @@
       "blender_name": "Tall_Kelp_009",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        14.8052,
+        -6.5403,
         0.1522,
-        10.8579
+        -14.747
       ],
       "rotation": [
         -0.707107,
@@ -1272,9 +1272,9 @@
       "blender_name": "Tall_Kelp_010",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        -11.5852,
+        -15.2058,
         1.0689,
-        14.9582
+        -9.5091
       ],
       "rotation": [
         -0.707107,
@@ -1293,9 +1293,9 @@
       "blender_name": "Tall_Kelp_011",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        -17.2137,
+        -5.6774,
         0.4497,
-        -3.291
+        -16.6171
       ],
       "rotation": [
         -0.707107,
@@ -1314,9 +1314,9 @@
       "blender_name": "Tall_Kelp_012",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        7.7891,
+        -18.5376,
         0.916,
-        -16.0053
+        -9.4537
       ],
       "rotation": [
         -0.707107,
@@ -1335,9 +1335,9 @@
       "blender_name": "Tall_Kelp_013",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        14.4056,
+        -10.1771,
         0.5184,
-        10.3531
+        -18.3981
       ],
       "rotation": [
         -0.707107,
@@ -1356,9 +1356,9 @@
       "blender_name": "Tall_Kelp_014",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        -8.1385,
+        -15.8313,
         0.838,
-        -12.9015
+        -10.9694
       ],
       "rotation": [
         -0.707107,
@@ -1377,9 +1377,9 @@
       "blender_name": "Tall_Kelp_015",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        -11.9389,
+        -10.4107,
         0.4014,
-        -14.0796
+        -16.5858
       ],
       "rotation": [
         -0.707107,
@@ -1398,9 +1398,9 @@
       "blender_name": "Tall_Kelp_016",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        -5.4135,
+        -9.9301,
         0.1972,
-        -17.1093
+        -14.9986
       ],
       "rotation": [
         -0.707107,
@@ -1419,9 +1419,9 @@
       "blender_name": "Tall_Kelp_017",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        -14.3518,
+        -17.2294,
         0.5397,
-        -12.2671
+        -13.3535
       ],
       "rotation": [
         -0.707107,
@@ -1440,9 +1440,9 @@
       "blender_name": "Tall_Kelp_018",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        -3.0061,
+        -7.6031,
         0.2871,
-        -19.024
+        -14.9949
       ],
       "rotation": [
         -0.707107,
@@ -1461,9 +1461,9 @@
       "blender_name": "Tall_Kelp_019",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        -17.2277,
+        -5.4633,
         0.3885,
-        -8.8764
+        -16.3396
       ],
       "rotation": [
         -0.707107,
@@ -1482,9 +1482,9 @@
       "blender_name": "Tall_Kelp_020",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        -6.3919,
+        -9.4456,
         0.8894,
-        -15.2879
+        -16.7796
       ],
       "rotation": [
         -0.707107,
@@ -1503,9 +1503,9 @@
       "blender_name": "Tall_Kelp_021",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        -9.3149,
+        -7.5135,
         0.9232,
-        -14.8622
+        -12.8245
       ],
       "rotation": [
         -0.707107,
@@ -1524,9 +1524,9 @@
       "blender_name": "Tall_Kelp_022",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        4.524,
+        -16.0666,
         0.5955,
-        -18.3918
+        -10.2591
       ],
       "rotation": [
         -0.707107,
@@ -1545,9 +1545,9 @@
       "blender_name": "Tall_Kelp_023",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        14.0654,
+        -13.8451,
         0.8857,
-        -12.2316
+        -13.7537
       ],
       "rotation": [
         -0.707107,
@@ -1566,9 +1566,9 @@
       "blender_name": "Tall_Kelp_024",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        -17.8691,
+        -5.7315,
         0.2585,
-        -5.8426
+        -17.1142
       ],
       "rotation": [
         -0.707107,
@@ -1587,9 +1587,9 @@
       "blender_name": "Tall_Kelp_025",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        18.2522,
+        -12.1599,
         0.4108,
-        -4.4805
+        -12.2708
       ],
       "rotation": [
         -0.707107,
@@ -1608,9 +1608,9 @@
       "blender_name": "Tall_Kelp_026",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        8.3676,
+        -10.2198,
         1.0177,
-        15.5063
+        -12.5188
       ],
       "rotation": [
         -0.707107,
@@ -1629,9 +1629,9 @@
       "blender_name": "Tall_Kelp_027",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        -17.2399,
+        -14.0901,
         0.0616,
-        -4.8899
+        -16.34
       ],
       "rotation": [
         -0.707107,
@@ -1650,9 +1650,9 @@
       "blender_name": "Tall_Kelp_028",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        19.6244,
+        -12.9897,
         0.2047,
-        -1.583
+        -11.1788
       ],
       "rotation": [
         -0.707107,
@@ -1671,9 +1671,9 @@
       "blender_name": "Tall_Kelp_029",
       "objectKey": "meshy-tall-kelp",
       "position": [
-        17.642,
+        -10.1454,
         0.3467,
-        -6.2009
+        -13.3478
       ],
       "rotation": [
         -0.707107,
@@ -1692,30 +1692,30 @@
       "blender_name": "Underwater_Arch_001",
       "objectKey": "meshy-underwater-coral-arch",
       "position": [
-        0.0,
-        1.4973,
-        -18.0
+        -5.0,
+        1.7695,
+        -15.5
       ],
       "rotation": [
-        -0.134586,
-        -0.694181,
-        -0.694181,
-        0.134586
+        -0.690346,
+        -0.153046,
+        -0.153046,
+        0.690346
       ],
       "scale": [
-        8.8789,
-        8.8789,
-        8.8789
+        9.0425,
+        9.0425,
+        9.0425
       ],
-      "world_extent": 8.878857135772705
+      "world_extent": 9.042465090751648
     },
     {
       "blender_name": "Rock_Table_001",
       "objectKey": "meshy-underwater-rock-table",
       "position": [
-        15.6391,
-        0.4789,
-        7.5459
+        9.0,
+        0.6293,
+        2.0
       ],
       "rotation": [
         -0.225722,
@@ -1728,7 +1728,7 @@
         4.6093,
         4.6093
       ],
-      "world_extent": 4.60933780670166
+      "world_extent": 4.609338760375977
     },
     {
       "blender_name": "PH_boulder_01_000",
@@ -3645,30 +3645,30 @@
       "blender_name": "Coral_Arch",
       "objectKey": "struct-coral-arch",
       "position": [
-        10.3416,
-        2.9568,
-        -8.6776
+        -10.0,
+        2.85,
+        -18.0
       ],
       "rotation": [
-        -0.347003,
-        -0.616108,
-        -0.616108,
-        0.347003
+        -0.640856,
+        -0.298836,
+        -0.298836,
+        0.640856
       ],
       "scale": [
-        6.1098,
-        6.1098,
-        6.1098
+        6.0,
+        6.0,
+        6.0
       ],
-      "world_extent": 6.109804153442383
+      "world_extent": 6.0
     },
     {
       "blender_name": "Coral_Bommie",
       "objectKey": "struct-coral-bommie",
       "position": [
-        -4.9176,
-        1.9615,
-        -18.3526
+        12.0,
+        2.2371,
+        -1.5
       ],
       "rotation": [
         -0.586166,
@@ -3681,15 +3681,15 @@
         7.2772,
         7.2772
       ],
-      "world_extent": 7.277188539505005
+      "world_extent": 7.277189254760742
     },
     {
       "blender_name": "Coral_Tower",
       "objectKey": "struct-coral-tower",
       "position": [
-        15.5885,
-        1.0875,
-        -9.0
+        9.5,
+        1.4577,
+        -14.0
       ],
       "rotation": [
         -0.699127,
@@ -3702,28 +3702,28 @@
         9.0087,
         9.0087
       ],
-      "world_extent": 9.00865364074707
+      "world_extent": 9.008652687072754
     },
     {
       "blender_name": "Reef_Wall",
       "objectKey": "struct-reef-wall",
       "position": [
-        20.5022,
-        0.2633,
-        -4.5453
+        15.0,
+        0.8464,
+        -8.5
       ],
       "rotation": [
-        -0.5,
-        0.5,
-        0.5,
-        0.5
+        -0.707107,
+        0.0,
+        0.0,
+        0.707107
       ],
       "scale": [
         6.0724,
         6.0724,
         6.0724
       ],
-      "world_extent": 6.0724036693573
+      "world_extent": 6.0724029541015625
     }
   ]
 }
