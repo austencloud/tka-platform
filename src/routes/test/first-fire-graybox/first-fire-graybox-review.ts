@@ -11,12 +11,10 @@ import {
 
 export const FIRST_FIRE_NEUTRAL_BLACKOUT_MS = 2200;
 const ENTRY_PROXIMITY_METRES = 1.65;
-const HUB_INSET_METRES = 0.35;
 /**
- * Zone gates as a fraction of a full lap. Each court's viewing sweep is
- * authored in the contract (DJ is a 50 degree canyon arc; EK and FL are full
- * laps), so the gates scale to that sweep. A fixed 280 degree final gate would
- * make the DJ court impossible to complete.
+ * Zone gates as a fraction of a full lap, scaled to each court's authored
+ * viewing sweep (240 degrees for the horseshoe). Scaling rather than fixing
+ * the gates keeps a shorter arc completable.
  */
 const ORBIT_ZONE_LAP_FRACTIONS = [25 / 360, 110 / 360, 195 / 360, 280 / 360] as const;
 
@@ -34,7 +32,6 @@ export interface FirstFireRuntimePosition {
 
 export interface FirstFireGrayboxReviewState {
   procession: FirstFireProcessionState;
-  returnedToHub: Record<"dj" | "ek", boolean>;
   orbitTravelDegrees: Record<FirstFireShrineId, number>;
   lastOrbitAngle: Record<FirstFireShrineId, number | null>;
   blackoutElapsedMs: number;
@@ -45,7 +42,6 @@ export type FirstFireFlameGroup = "field" | FirstFireShrineId;
 export function createFirstFireGrayboxReviewState(): FirstFireGrayboxReviewState {
   return {
     procession: createFirstFireProcessionState(),
-    returnedToHub: { dj: false, ek: false },
     orbitTravelDegrees: { dj: 0, ek: 0, fl: 0 },
     lastOrbitAngle: { dj: null, ek: null, fl: null },
     blackoutElapsedMs: 0,
@@ -91,7 +87,7 @@ export function firstFirePhaseLabel(
   state: FirstFireGrayboxReviewState
 ): string {
   const phase = state.procession.phase;
-  if (phase === "approach") return "DJ gate kindled";
+  if (phase === "approach") return "Ember bridge crossed";
   if (phase === "dj-active")
     return `DJ orbit ${state.procession.orbitProgress.dj}/4`;
   if (phase === "dj-complete") return "DJ lane cooling to coals";
@@ -115,19 +111,6 @@ function distanceToRuntimePoint(
   point: { x: number; y: number }
 ): number {
   return Math.hypot(position.x - point.x, position.z + point.y);
-}
-
-function insideHub(
-  contract: FirstFireBlenderContract,
-  position: FirstFireRuntimePosition
-): boolean {
-  const footprint = contract.hub.blenderFootprint;
-  const hubZ = -footprint.centre.y;
-  return (
-    Math.abs(position.x - footprint.centre.x) <=
-      footprint.sizeX / 2 - HUB_INSET_METRES &&
-    Math.abs(position.z - hubZ) <= footprint.sizeY / 2 - HUB_INSET_METRES
-  );
 }
 
 function signedSmallestDegrees(from: number, to: number): number {
@@ -216,7 +199,7 @@ function enterNearbyShrine(
 /**
  * Advances the canonical procession from first-person position. Local review
  * state only supplies the physical facts the canonical owner does not track:
- * an actual return through the hub, accumulated orbit travel, and blackout time.
+ * accumulated orbit travel and blackout time.
  */
 export function updateFirstFireGrayboxReview(
   state: FirstFireGrayboxReviewState,
@@ -248,27 +231,11 @@ export function updateFirstFireGrayboxReview(
     return enterNearbyShrine(state, contract, position, "dj");
   }
 
-  if (phase === "dj-complete") {
-    const returnedToHub =
-      state.returnedToHub.dj || insideHub(contract, position);
-    const returned = returnedToHub
-      ? { ...state, returnedToHub: { ...state.returnedToHub, dj: true } }
-      : state;
-    return returnedToHub
-      ? enterNearbyShrine(returned, contract, position, "ek")
-      : returned;
-  }
-
-  if (phase === "ek-complete") {
-    const returnedToHub =
-      state.returnedToHub.ek || insideHub(contract, position);
-    const returned = returnedToHub
-      ? { ...state, returnedToHub: { ...state.returnedToHub, ek: true } }
-      : state;
-    return returnedToHub
-      ? enterNearbyShrine(returned, contract, position, "fl")
-      : returned;
-  }
+  // No hub gate is needed: the carved S makes the next court physically
+  // unreachable without walking out of the completed one, and the canonical
+  // procession owner rejects out-of-order entry.
+  if (phase === "dj-complete") return enterNearbyShrine(state, contract, position, "ek");
+  if (phase === "ek-complete") return enterNearbyShrine(state, contract, position, "fl");
 
   return state;
 }
@@ -284,7 +251,7 @@ function completeActiveShrineForProof(
   return {
     ...state,
     procession,
-    orbitTravelDegrees: { ...state.orbitTravelDegrees, [shrineId]: 360 },
+    orbitTravelDegrees: { ...state.orbitTravelDegrees, [shrineId]: 240 },
   };
 }
 
@@ -301,25 +268,11 @@ export function advanceFirstFireGrayboxProof(
   }
   if (phase === "dj-active") return completeActiveShrineForProof(state, "dj");
   if (phase === "dj-complete") {
-    const returned = {
-      ...state,
-      returnedToHub: { ...state.returnedToHub, dj: true },
-    };
-    return {
-      ...returned,
-      procession: enterFirstFireShrine(returned.procession, "ek"),
-    };
+    return { ...state, procession: enterFirstFireShrine(state.procession, "ek") };
   }
   if (phase === "ek-active") return completeActiveShrineForProof(state, "ek");
   if (phase === "ek-complete") {
-    const returned = {
-      ...state,
-      returnedToHub: { ...state.returnedToHub, ek: true },
-    };
-    return {
-      ...returned,
-      procession: enterFirstFireShrine(returned.procession, "fl"),
-    };
+    return { ...state, procession: enterFirstFireShrine(state.procession, "fl") };
   }
   if (phase === "fl-active") return completeActiveShrineForProof(state, "fl");
   if (phase === "fire-extinguished") {

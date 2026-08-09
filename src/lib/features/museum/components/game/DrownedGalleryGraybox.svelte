@@ -556,18 +556,27 @@
     );
 
     // ══ WATER ══
-    layout.waterPlanes.forEach((rect, i) => {
-      if (sx(rect) < 0.05 || sz(rect) < 0.05) return;
+    // Each body carries its own surface: the gallery is submerged at
+    // WATERLINE_Y, the grotto brims at GROTTO_WATERLINE_Y. Rendering both at
+    // one datum is what sank the grotto into a trench.
+    layout.waterPlanes.forEach((plane, i) => {
+      if (sx(plane) < 0.05 || sz(plane) < 0.05) return;
       waterPlanes.push({
         id: `water-plane-${i}`,
-        pos: [cx(rect), WATERLINE_Y, cz(rect)],
-        size: [sx(rect), sz(rect)],
+        pos: [cx(plane), plane.surfaceY, cz(plane)],
+        size: [sx(plane), sz(plane)],
       });
     });
     for (const volume of layout.waterVolumes) {
       if (sz(volume.rect) < 0.05) continue;
       waterVolumes.push(
-        block(volume.id, volume.rect, volume.floorY, WATERLINE_Y, "waterVolume")
+        block(
+          volume.id,
+          volume.rect,
+          volume.floorY,
+          volume.surfaceY,
+          "waterVolume"
+        )
       );
     }
 

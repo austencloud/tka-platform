@@ -20,7 +20,9 @@
   } from "./services/museum-village-manager";
   import RoomPicker from "./components/RoomPicker.svelte";
   import SoundscapeBubble from "./components/audio/SoundscapeBubble.svelte";
+  import MuseumPerformanceOverlay from "./components/game/MuseumPerformanceOverlay.svelte";
   import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
+  import { getMuseumPerformanceRecorder } from "./get-museum-performance-recorder";
 
   import { onMount, untrack } from "svelte";
   import { page } from "$app/state";
@@ -37,6 +39,23 @@
     visible?: boolean;
   }
   let { visible = true }: Props = $props();
+
+  const performanceRecorder = getMuseumPerformanceRecorder();
+  let showPerformanceDiagnostics = $derived(
+    page.url.searchParams.get("museumPerf") === "1"
+  );
+  let performanceRecordingEnabled = $derived(
+    visible && (import.meta.env.DEV || showPerformanceDiagnostics)
+  );
+
+  $effect(() => {
+    if (!performanceRecordingEnabled) {
+      performanceRecorder.stop();
+      return;
+    }
+    performanceRecorder.start();
+    return () => performanceRecorder.stop();
+  });
 
   // ── Loading gate ──
   // A fade-from-black covers the scene until the lobby is ready. A progress
@@ -231,8 +250,7 @@
     const rooms = groupIds
       ? // Preserve group order: buildMuseumGrid spawns the visitor in rooms[0],
         // which stays the room the URL named.
-        groupIds
-          .flatMap((id) => MUSEUM_ROOMS.filter((r) => r.id === id))
+        groupIds.flatMap((id) => MUSEUM_ROOMS.filter((r) => r.id === id))
       : MUSEUM_ROOMS;
     const edges = groupIds
       ? MUSEUM_EDGES.filter(
@@ -400,6 +418,7 @@
             onBuildStage={handleBuildStage}
             startInFps={selectedRoom !== null}
             onWingChange={(id) => soundscapePlayer.setCurrentWing(id)}
+            {performanceRecordingEnabled}
           />
         {/await}
       {/key}
@@ -407,6 +426,10 @@
 
     <!-- Floating music-player bubble - audition ambient tracks per wing -->
     <SoundscapeBubble />
+  {/if}
+
+  {#if showPerformanceDiagnostics}
+    <MuseumPerformanceOverlay />
   {/if}
 </div>
 

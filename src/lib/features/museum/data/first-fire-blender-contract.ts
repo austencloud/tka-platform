@@ -113,7 +113,7 @@ export interface FirstFireBlenderContract {
       clearWidth: number;
     };
   };
-  hub: {
+  threshold: {
     planRect: WorldRect;
     blenderFootprint: BlenderFootprint;
     planCentre: Point2;
@@ -128,10 +128,12 @@ export interface FirstFireBlenderContract {
     blenderThroatCentre: BlenderPoint;
     planBeacon: Point2;
     blenderBeacon: BlenderPoint;
-    planHubApproach: Point2;
-    blenderHubApproach: BlenderPoint;
+    planApproach: Point2;
+    blenderApproach: BlenderPoint;
+    planExitThroat: Point2;
+    blenderExitThroat: BlenderPoint;
     throatWidth: number;
-    sharedEntryAndExit: true;
+    sharedEntryAndExit: false;
   }>;
   shrines: Array<{
     id: string;
@@ -278,9 +280,9 @@ export function buildFirstFireBlenderContract(
   const dj = shrine("dj");
   const ek = shrine("ek");
   const fl = shrine("fl");
-  const hubCentre = {
-    x: (plan.hub.minX + plan.hub.maxX) / 2,
-    z: (plan.hub.minZ + plan.hub.maxZ) / 2,
+  const thresholdCentre = {
+    x: (plan.threshold.minX + plan.threshold.maxX) / 2,
+    z: (plan.threshold.minZ + plan.threshold.maxZ) / 2,
   };
   const gateFor = (id: "dj" | "ek" | "fl") => {
     const result = plan.gates.find((candidate) => candidate.shrineId === id);
@@ -349,14 +351,14 @@ export function buildFirstFireBlenderContract(
         clearWidth: clean(plan.eastDoor.max - plan.eastDoor.min),
       },
     },
-    hub: {
-      planRect: plan.hub,
+    threshold: {
+      planRect: plan.threshold,
       blenderFootprint: firstFirePlanRectToBlenderFootprint(
-        plan.hub,
+        plan.threshold,
         planCentre
       ),
-      planCentre: hubCentre,
-      blenderCentre: toBlender(hubCentre),
+      planCentre: thresholdCentre,
+      blenderCentre: toBlender(thresholdCentre),
     },
     courts: plan.shrines.map((candidate) => {
       const gate = gateFor(candidate.id);
@@ -369,10 +371,12 @@ export function buildFirstFireBlenderContract(
         blenderThroatCentre: toBlender(candidate.entry),
         planBeacon: gate.beacon,
         blenderBeacon: toBlender(gate.beacon),
-        planHubApproach: gate.hubApproach,
-        blenderHubApproach: toBlender(gate.hubApproach),
+        planApproach: gate.approach,
+        blenderApproach: toBlender(gate.approach),
+        planExitThroat: candidate.exit,
+        blenderExitThroat: toBlender(candidate.exit),
         throatWidth: gate.width,
-        sharedEntryAndExit: true as const,
+        sharedEntryAndExit: false as const,
       };
     }),
     shrines: plan.shrines.map((candidate) => ({
@@ -431,16 +435,16 @@ export function buildFirstFireBlenderContract(
       camera(
         "water-entry",
         { x: 2, z: westDoorCentre },
-        hubCentre,
+        thresholdCentre,
         planCentre,
         72
       ),
-      camera("hub-arrival", { x: 20, z: 22 }, dj.entry, planCentre, 68),
+      camera("ember-bridge", thresholdCentre, gateFor("dj").beacon, planCentre, 68),
       camera("dj-threshold", dj.entry, dj.centre, planCentre, 62),
       camera("ek-threshold", ek.entry, ek.centre, planCentre, 62),
       camera("fl-threshold", fl.entry, fl.centre, planCentre, 62),
-      camera("blackout", hubCentre, earthDoor, planCentre, 70),
-      camera("earth-reveal", { x: 40, z: 26 }, earthDoor, planCentre, 68),
+      camera("blackout", fl.exit, earthDoor, planCentre, 70),
+      camera("earth-reveal", { x: 54, z: 28 }, earthDoor, planCentre, 68),
       {
         id: "overview",
         name: "QA_Camera_overview",

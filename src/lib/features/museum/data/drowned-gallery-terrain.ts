@@ -76,6 +76,28 @@ export const GALLERY_ROOF_Y = -1.9;
  */
 export const LANDING_Y = WATERLINE_Y - EYE_ABOVE_FLOOR;
 export const CAUSEWAY_Y = -0.3;
+/**
+ * The GROTTO's own waterline — brimming, 0.15 m under the causeway lip.
+ *
+ * The grotto is not the submerged gallery and must not borrow its datum. The
+ * gallery's WATERLINE_Y (-1.5) is correct there because you walk its bottom at
+ * -4.5 under a roof at -1.9. Applied to the grotto, whose decks sit at
+ * CAUSEWAY_Y (-0.3), it sank the channel and the pool into 1.2 m trenches:
+ * two disconnected slabs of water with a dry lip all round, in a room whose
+ * whole subject is one flooded system. Austen, walking it 2026-08-09: "the
+ * water is disconnected from the floor and from the rest of the water."
+ *
+ * Brimming at -0.45 fixes both complaints with one number. The water meets the
+ * floor at a curb reveal instead of a pit, and because the channel and the
+ * pool now share a level either side of a low causeway, they read as one body
+ * crossed by a path rather than two holes. It also puts the reflecting surface
+ * up at eye-relevant height, which is the whole point of the room: A, B and C
+ * stand on the north shore and double in the channel directly in front of them.
+ *
+ * Keep the 0.15 m reveal. Coplanar water reads as z-fighting, and a visible
+ * lip is what tells the eye where the walkable floor ends.
+ */
+export const GROTTO_WATERLINE_Y = CAUSEWAY_Y - 0.15;
 export const SHELF_Y = -1.0;
 export const CHANNEL_BED_Y = -2.7;
 export const POOL_BOTTOM_Y = -5.0;
@@ -177,6 +199,21 @@ export interface WaterVolume {
   id: string;
   rect: WorldRect;
   floorY: number;
+  /**
+   * Top of this body of water. Explicit per volume: the submerged gallery and
+   * the brimming grotto are at different levels, and a renderer that assumes
+   * one global waterline sinks the grotto into a trench (see
+   * GROTTO_WATERLINE_Y).
+   */
+  surfaceY: number;
+}
+
+/**
+ * A rendered water surface. Carries its own elevation for the same reason
+ * WaterVolume does — never render these at a single global waterline.
+ */
+export interface WaterPlane extends WorldRect {
+  surfaceY: number;
 }
 
 export interface Span {
@@ -253,7 +290,7 @@ export interface DrownedGalleryLayout {
   wallRects: WallRect[];
   ceilingRects: CeilingRect[];
   roofRects: WorldRect[];
-  waterPlanes: WorldRect[];
+  waterPlanes: WaterPlane[];
   waterVolumes: WaterVolume[];
 
   /** Union bbox of the water bay. elevationAt throws inside it when nothing matches. */
@@ -1196,27 +1233,69 @@ export function buildDrownedGalleryLayout(
   const approachRun = approach.maxZ - approach.minZ;
   const approachWadeZ =
     approach.minZ + approachRun * ((WATERLINE_Y - SHALLOWS_Y) / (0 - SHALLOWS_Y));
-  const waterPlanes: WorldRect[] = [
-    ...approachCorridor,
-    { ...approach, maxZ: approachWadeZ },
-    descentOpen,
-    { ...surfacingOpen, minZ: surfaceBreakZ },
-    channel,
-    pool,
+  // The submerged gallery sits at WATERLINE_Y; the grotto brims at its own,
+  // much higher GROTTO_WATERLINE_Y. Two datums, never one.
+  const submerged = (rect: WorldRect): WaterPlane => ({
+    ...rect,
+    surfaceY: WATERLINE_Y,
+  });
+  const brimming = (rect: WorldRect): WaterPlane => ({
+    ...rect,
+    surfaceY: GROTTO_WATERLINE_Y,
+  });
+  const waterPlanes: WaterPlane[] = [
+    ...approachCorridor.map(submerged),
+    submerged({ ...approach, maxZ: approachWadeZ }),
+    submerged(descentOpen),
+    submerged({ ...surfacingOpen, minZ: surfaceBreakZ }),
+    brimming(channel),
+    brimming(pool),
   ];
 
   const waterVolumes: WaterVolume[] = [
-    { id: "vol-descent", rect: descentStair, floorY: GALLERY_FLOOR_Y },
-    { id: "vol-west-run", rect: westRun, floorY: GALLERY_FLOOR_Y },
-    { id: "vol-north-run", rect: northRun, floorY: GALLERY_FLOOR_Y },
-    { id: "vol-east-bend", rect: eastBend, floorY: GALLERY_FLOOR_Y },
+    {
+      id: "vol-descent",
+      rect: descentStair,
+      floorY: GALLERY_FLOOR_Y,
+      surfaceY: WATERLINE_Y,
+    },
+    {
+      id: "vol-west-run",
+      rect: westRun,
+      floorY: GALLERY_FLOOR_Y,
+      surfaceY: WATERLINE_Y,
+    },
+    {
+      id: "vol-north-run",
+      rect: northRun,
+      floorY: GALLERY_FLOOR_Y,
+      surfaceY: WATERLINE_Y,
+    },
+    {
+      id: "vol-east-bend",
+      rect: eastBend,
+      floorY: GALLERY_FLOOR_Y,
+      surfaceY: WATERLINE_Y,
+    },
     {
       id: "vol-surfacing",
       rect: { ...surfacingLower, minZ: surfaceBreakZ },
       floorY: GALLERY_FLOOR_Y,
+      surfaceY: WATERLINE_Y,
     },
-    { id: "vol-channel", rect: channel, floorY: CHANNEL_BED_Y },
-    { id: "vol-pool", rect: pool, floorY: POOL_BOTTOM_Y },
+    // Grotto: brimming, so these are deep bodies read from just under the lip.
+    {
+      id: "vol-channel",
+      rect: channel,
+      floorY: CHANNEL_BED_Y,
+      surfaceY: GROTTO_WATERLINE_Y,
+    },
+    {
+      id: "vol-pool",
+      rect: pool,
+      floorY: POOL_BOTTOM_Y,
+      surfaceY: GROTTO_WATERLINE_Y,
+    },
   ];
 
   const bayBounds = unionRect([

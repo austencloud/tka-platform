@@ -147,9 +147,14 @@ WATER_BODY = material(
     "DG Water Body", (0.035, 0.16, 0.24, 0.28), roughness=0.3,
     emission=(0.015, 0.09, 0.14, 1.0), emission_strength=0.25,
 )
+# The grotto's brimming water. A BLACK MIRROR, not a lit pool: the room's one
+# job is to show A, B and C doubled, and you cannot see a reflection in a
+# surface that is busy glowing. Near-black base, metallic, almost no roughness,
+# zero emission — all the brightness in it has to be the reflected firelight.
+# The previous emissive teal (strength 0.7) read as a swimming pool and hid the
+# doubling entirely.
 POOL_MIRROR = material(
-    "DG Mirror Pool", (0.04, 0.22, 0.32, 0.72), roughness=0.03,
-    emission=(0.02, 0.14, 0.22, 1.0), emission_strength=0.7,
+    "DG Mirror Pool", (0.012, 0.028, 0.035, 1.0), roughness=0.02, metallic=1.0,
 )
 WATERFALL = material(
     "DG Waterfall", (0.30, 0.62, 0.72, 0.8), roughness=0.15,
@@ -298,18 +303,27 @@ for index, rect in enumerate(LAYOUT["rockFill"]):
     )
 
 # ── Water ───────────────────────────────────────────────────────────────────
+# Every body carries its own surfaceY. The submerged gallery sits at
+# WATERLINE_Y; the grotto brims at GROTTO_WATERLINE_Y, 0.15 m under its deck.
+# Rendering both at one datum sank the grotto into a 1.2 m trench and read as
+# two disconnected slabs (2026-08-09).
+GROTTO_WATERLINE = DATUM["GROTTO_WATERLINE_Y"]
 pool_rect = LAYOUT["pool"]
-for index, rect in enumerate(LAYOUT["waterPlanes"]):
-    mat = POOL_MIRROR if rect == pool_rect else WATER_SURFACE
+
+for index, plane in enumerate(LAYOUT["waterPlanes"]):
+    surface = plane["surfaceY"]
+    # Both brimming grotto bodies are mirrors: the channel doubles A/B/C
+    # standing on the north shore, the pool carries the wide still reflection.
+    mat = POOL_MIRROR if surface == GROTTO_WATERLINE else WATER_SURFACE
     rect_box(
-        f"DG_WaterSurface_{index}", rect, WATERLINE - 0.04, WATERLINE, mat,
+        f"DG_WaterSurface_{index}", plane, surface - 0.04, surface, mat,
         COLLECTIONS["WATER"],
     )
 
 for volume in LAYOUT["waterVolumes"]:
     rect_box(
         f"DG_WaterVolume_{volume['id']}", volume["rect"], volume["floorY"],
-        WATERLINE - 0.05, WATER_BODY, COLLECTIONS["WATER"],
+        volume["surfaceY"] - 0.05, WATER_BODY, COLLECTIONS["WATER"],
     )
 
 # Waterfall sheet feeding the channel from the west.
@@ -438,11 +452,14 @@ for letter, anchor in zip("ABC", LAYOUT["alcoves"]):
         (1.0, 0.62, 0.28), 950,
     )
 add_light("QA_Point_Dome", (gcx, gcz, DOME_APEX - 1.2), (0.45, 0.95, 0.8), 1800, 12)
+# Soft fill well ABOVE the brimming surface. At WATERLINE + 1.4 this sat 0.35 m
+# off the raised water and blew it out to flat cyan, which is not what a mirror
+# does. Height is measured from the grotto's own datum now.
 add_light(
     "QA_Point_Pool",
     ((pool_rect["minX"] + pool_rect["maxX"]) / 2,
-     (pool_rect["minZ"] + pool_rect["maxZ"]) / 2, WATERLINE + 1.4),
-    (0.2, 0.6, 0.7), 750,
+     (pool_rect["minZ"] + pool_rect["maxZ"]) / 2, GROTTO_WATERLINE + 4.2),
+    (0.2, 0.6, 0.7), 420,
 )
 for index, shaft in enumerate(LAYOUT["openShafts"]):
     scx, scz = rect_centre(shaft)
@@ -540,6 +557,14 @@ cameras = {
 
 # ── Render setup ────────────────────────────────────────────────────────────
 scene.render.engine = "BLENDER_EEVEE"
+# Reflections are the subject of this room, so the QA evidence has to actually
+# trace them. Without raytracing the mirror pool renders as a flat dark slab
+# and the doubling — the entire point of Water — is invisible in every frame.
+try:
+    scene.eevee.use_raytracing = True
+    scene.eevee.ray_tracing_options.resolution_scale = "1"
+except (AttributeError, TypeError) as exc:  # older EEVEE without raytracing
+    print(f"EEVEE raytracing unavailable, reflections will not render: {exc}")
 scene.render.resolution_x = 1280
 scene.render.resolution_y = 720
 scene.render.resolution_percentage = 100

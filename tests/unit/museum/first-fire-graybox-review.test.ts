@@ -36,7 +36,7 @@ function runtimeOrbitPoint(
 }
 
 describe("First Fire Cinder Court review interaction", () => {
-  it("requires the DJ threshold, accumulated orbit, and a hub return before EK", () => {
+  it("advances DJ -> EK on forward movement through the carved route", () => {
     let state = createFirstFireGrayboxReviewState();
     state = updateFirstFireGrayboxReview(state, contract, { x: 0, z: 0 }, 16);
     expect(state.procession.phase).toBe("approach");
@@ -74,21 +74,8 @@ describe("First Fire Cinder Court review interaction", () => {
     expect(state.procession.phase).toBe("dj-complete");
     expect(state.procession.orbitProgress.dj).toBe(4);
 
-    state = updateFirstFireGrayboxReview(
-      state,
-      contract,
-      runtimeEntry("ek"),
-      16
-    );
-    expect(state.procession.phase).toBe("dj-complete");
-    const hub = contract.hub.blenderCentre;
-    state = updateFirstFireGrayboxReview(
-      state,
-      contract,
-      { x: hub.x, z: -hub.y },
-      16
-    );
-    expect(state.returnedToHub.dj).toBe(true);
+    // Forward movement alone advances the procession: reaching EK's threshold
+    // is only possible after walking out of DJ, so no extra gate is needed.
     state = updateFirstFireGrayboxReview(
       state,
       contract,
@@ -109,8 +96,8 @@ describe("First Fire Cinder Court review interaction", () => {
         expect(thresholds[index]).toBeGreaterThan(thresholds[index - 1]!);
       }
     }
-    // The DJ canyon only offers a 50 degree sweep; a fixed 280 degree final
-    // gate could never be reached there.
+    // A shorter authored arc must stay completable; a fixed 280 degree final
+    // gate could never be reached on one.
     expect(firstFireOrbitZoneThresholds(-50)[3]).toBeLessThan(50);
   });
 

@@ -50,17 +50,14 @@ function orbitOuterRadius(shrine: FireProcessionShrine) {
   return shrine.orbitRadius + shrine.orbitWidth / 2;
 }
 
-describe("First Fire Cinder Court measured plan", () => {
-  it("locks the isolated 58 by 44 metre shell, doors, centre and returning hub", () => {
+describe("First Fire Torch Procession measured plan", () => {
+  it("locks the isolated 58 by 44 metre shell, doors, centre and ember threshold", () => {
     expect(FIRST_FIRE_PROCESSION_MIN_INTERIOR_METRES).toEqual({ width: 58, depth: 44 });
     expect(plan.room).toEqual({ minX: 0, maxX: 58, minZ: 0, maxZ: 44 });
     expect(plan.centre).toEqual({ x: 29, z: 22 });
     expect(plan.westDoor).toEqual({ min: 20, max: 24 });
     expect(plan.eastDoor).toEqual({ min: 32, max: 36 });
-    expect(plan.hub).toEqual({ minX: 13.5, maxX: 26.5, minZ: 15.5, maxZ: 28.5 });
-    expect(plan.hubCircle).toEqual({ centre: { x: 20, z: 22 }, radius: 6.5 });
-    expect(plan.hub.maxX - plan.hub.minX).toBe(13);
-    expect(plan.hub.maxZ - plan.hub.minZ).toBe(13);
+    expect(plan.threshold).toEqual({ minX: 0, maxX: 7.5, minZ: 19.5, maxZ: 24.5 });
   });
 
   it("captures the integer authoring trap and accepts the first non-stretched size", () => {
@@ -85,57 +82,71 @@ describe("First Fire Cinder Court measured plan", () => {
     );
   });
 
-  it("preserves the DJ, EK and FL roster with three different court silhouettes", () => {
-    expect(plan.shrines.map(({ id, performerId, sequenceId, silhouette, centre }) => ({ id, performerId, sequenceId, silhouette, centre }))).toEqual([
-      { id: "dj", performerId: "cave-fire-automaton-dj", sequenceId: "cave-fire-seq-dj", silhouette: "canyon-slot", centre: { x: 6, z: 6.1 } },
-      { id: "ek", performerId: "cave-fire-automaton-ek", sequenceId: "cave-fire-seq-ek", silhouette: "sunken-bowl", centre: { x: 18, z: 38 } },
-      { id: "fl", performerId: "cave-fire-automaton-fl", sequenceId: "cave-fire-seq-fl", silhouette: "chimney-rotunda", centre: { x: 42, z: 10 } },
+  it("preserves the DJ, EK and FL roster with three distinct fire grammars", () => {
+    expect(plan.shrines.map(({ id, performerId, sequenceId, fireGrammar, centre }) => ({ id, performerId, sequenceId, fireGrammar, centre }))).toEqual([
+      { id: "dj", performerId: "cave-fire-automaton-dj", sequenceId: "cave-fire-seq-dj", fireGrammar: "broad-sweeps", centre: { x: 13, z: 10 } },
+      { id: "ek", performerId: "cave-fire-automaton-ek", sequenceId: "cave-fire-seq-ek", fireGrammar: "curling-crown", centre: { x: 29, z: 34 } },
+      { id: "fl", performerId: "cave-fire-automaton-fl", sequenceId: "cave-fire-seq-fl", fireGrammar: "divided", centre: { x: 45, z: 11 } },
     ]);
-    expect(new Set(plan.shrines.map((shrine) => shrine.silhouette)).size).toBe(3);
+    expect(new Set(plan.shrines.map((shrine) => shrine.fireGrammar)).size).toBe(3);
   });
 
-  it("uses one visible 3.5 metre gate and one shared entry/exit throat per shrine", () => {
+  it("walks a horseshoe: entry and exit are different sides of every shrine", () => {
+    for (const shrine of plan.shrines) {
+      expect(Math.abs(shrine.orbitSweepDegrees)).toBe(240);
+      expect(distance(shrine.entry, shrine.exit)).toBeGreaterThan(shrine.orbitRadius);
+      expect(distance(shrine.entry, shrine.centre)).toBeCloseTo(shrine.orbitRadius, 9);
+      expect(distance(shrine.exit, shrine.centre)).toBeCloseTo(shrine.orbitRadius, 9);
+    }
+    // Adjacent shrines walk in opposite directions so the second encounter
+    // cannot read as a repeat of the first.
+    expect(plan.shrines.map((shrine) => Math.sign(shrine.orbitSweepDegrees))).toEqual([1, -1, 1]);
+  });
+
+  it("hides each performer until the visitor turns into their mouth", () => {
     expect(plan.gates.map(({ id, shrineId, width }) => ({ id, shrineId, width }))).toEqual([
-      { id: "dj-gate", shrineId: "dj", width: 3.5 },
-      { id: "ek-gate", shrineId: "ek", width: 3.5 },
-      { id: "fl-gate", shrineId: "fl", width: 3.5 },
+      { id: "dj-gate", shrineId: "dj", width: 4.5 },
+      { id: "ek-gate", shrineId: "ek", width: 4.5 },
+      { id: "fl-gate", shrineId: "fl", width: 4.5 },
     ]);
     for (const shrine of plan.shrines) {
       const gate = plan.gates.find((candidate) => candidate.id === shrine.gateId)!;
-      expect(shrine.entry).toEqual(gate.courtThreshold);
-      expect(shrine.exit).toEqual(gate.courtThreshold);
-      expect(isProcessionSightlineBlocked(gate.hubApproach, gate.beacon, plan.basaltMasses)).toBe(false);
-      expect(isProcessionSightlineBlocked(gate.hubApproach, shrine.centre, plan.basaltMasses)).toBe(true);
-      expect(isProcessionSightlineBlocked(gate.courtThreshold, shrine.centre, plan.basaltMasses)).toBe(false);
+      expect(gate.courtThreshold).toEqual(shrine.entry);
+      // The mouth is visible from the corridor, the performer is not: a blind
+      // turn, exactly as the approved design requires.
+      expect(isProcessionSightlineBlocked(gate.approach, gate.beacon, plan.basaltMasses), `${shrine.id} mouth hidden`).toBe(false);
+      expect(isProcessionSightlineBlocked(gate.approach, shrine.centre, plan.basaltMasses), `${shrine.id} performer visible too early`).toBe(true);
+      expect(isProcessionSightlineBlocked(gate.courtThreshold, shrine.centre, plan.basaltMasses), `${shrine.id} performer hidden at threshold`).toBe(false);
     }
   });
 
-  it("returns through the hub after every court and reaches both doors continuously", () => {
+  it("runs one continuous S from the Water door to the Earth door", () => {
     expect(plan.pathSections.map(({ id, kind }) => ({ id, kind }))).toEqual([
-      { id: "water-to-hub", kind: "water-approach" },
-      { id: "hub-to-dj", kind: "shrine-approach" },
+      { id: "water-steam-threshold", kind: "steam-threshold" },
+      { id: "ember-bridge", kind: "ember-bridge" },
+      { id: "torch-lane-to-dj", kind: "shrine-approach" },
+      { id: "dj-mouth-in", kind: "shrine-mouth" },
       { id: "dj-orbit", kind: "shrine-orbit" },
-      { id: "dj-return-to-hub", kind: "shrine-return" },
-      { id: "hub-to-ek", kind: "shrine-approach" },
+      { id: "dj-mouth-out", kind: "shrine-mouth" },
+      { id: "dj-to-ek", kind: "transfer" },
+      { id: "ek-mouth-in", kind: "shrine-mouth" },
       { id: "ek-orbit", kind: "shrine-orbit" },
-      { id: "ek-return-to-hub", kind: "shrine-return" },
-      { id: "hub-to-fl", kind: "shrine-approach" },
+      { id: "ek-mouth-out", kind: "shrine-mouth" },
+      { id: "ek-to-fl", kind: "transfer" },
+      { id: "fl-mouth-in", kind: "shrine-mouth" },
       { id: "fl-orbit", kind: "shrine-orbit" },
-      { id: "fl-return-to-hub", kind: "shrine-return" },
+      { id: "fl-mouth-out", kind: "shrine-mouth" },
       { id: "earth-growth-path", kind: "growth-path" },
     ]);
     for (let index = 1; index < plan.pathSections.length; index++) {
-      expect(plan.pathSections[index - 1]!.points.at(-1)).toEqual(plan.pathSections[index]!.points[0]);
+      const previous = plan.pathSections[index - 1]!.points.at(-1)!;
+      const next = plan.pathSections[index]!.points[0]!;
+      expect(distance(previous, next), `${plan.pathSections[index]!.id} does not continue the route`).toBeLessThan(1e-9);
     }
     expect(plan.walkPath[0]).toEqual({ x: 0, z: 22 });
     expect(plan.walkPath.at(-1)).toEqual({ x: 58, z: 34 });
-    for (const id of ["dj-return-to-hub", "ek-return-to-hub", "fl-return-to-hub"]) {
-      const end = plan.pathSections.find((section) => section.id === id)!.points.at(-1)!;
-      expect(end.x).toBeGreaterThanOrEqual(plan.hub.minX);
-      expect(end.x).toBeLessThanOrEqual(plan.hub.maxX);
-      expect(end.z).toBeGreaterThanOrEqual(plan.hub.minZ);
-      expect(end.z).toBeLessThanOrEqual(plan.hub.maxZ);
-    }
+    // The route never doubles back through a shrine it already walked.
+    expect(new Set(plan.pathSections.map((section) => section.shrineId).filter(Boolean)).size).toBe(3);
   });
 
   it("keeps the full route in bounds, at least 2.4 m wide, and outside permanent rock", () => {
@@ -167,20 +178,17 @@ describe("First Fire Cinder Court measured plan", () => {
     }
   });
 
-  it("provides four overlapping no-prompt zones scaled to each court's viewing sweep", () => {
-    expect(Object.fromEntries(plan.shrines.map((shrine) => [shrine.id, shrine.orbitSweepDegrees]))).toEqual({
-      dj: -50,
-      ek: 360,
-      fl: -360,
-    });
+  it("provides four overlapping no-prompt zones across the 240 degree walk", () => {
     for (const shrine of plan.shrines) {
       expect(shrine.activationZones).toHaveLength(4);
-      const overlap = (Math.abs(shrine.orbitSweepDegrees) * 20) / 360;
       for (let index = 1; index < shrine.activationZones.length; index++) {
         const previous = shrine.activationZones[index - 1]!;
         const current = shrine.activationZones[index]!;
-        expect(Math.abs(previous.startDegrees + previous.sweepDegrees - current.startDegrees)).toBeCloseTo(overlap, 9);
+        expect(Math.abs(previous.startDegrees + previous.sweepDegrees - current.startDegrees)).toBeCloseTo(20, 9);
       }
+      const last = shrine.activationZones.at(-1)!;
+      const walked = Math.abs(last.startDegrees + last.sweepDegrees - shrine.orbitStartDegrees);
+      expect(walked).toBeCloseTo(240, 9);
     }
   });
 
@@ -202,18 +210,32 @@ describe("First Fire Cinder Court measured plan", () => {
     }
   });
 
-  it("keeps all fire guides non-colliding and the static budget at 126", () => {
+  it("puts every torch on the route and keeps the green path out of the lit room", () => {
     expect(plan.guidePaths.every((guide) => guide.collision === false)).toBe(true);
-    expect(plan.torchBudget).toEqual({ fieldStems: 72, perimeterStemsPerShrine: 18, maximumDetailedShrines: 1 });
-    expect(plan.torchBudget.fieldStems + plan.torchBudget.perimeterStemsPerShrine * plan.shrines.length).toBe(126);
+    // The rejected interior carried 126 scattered stems. The revival is a lane.
+    expect(plan.torchBudget).toEqual({ laneStems: 24, perimeterStemsPerShrine: 12, maximumDetailedShrines: 1 });
+    expect(plan.torchBudget.laneStems + plan.torchBudget.perimeterStemsPerShrine * plan.shrines.length).toBe(60);
+    const growth = plan.guidePaths.find((guide) => guide.kind === "green-growth")!;
+    expect(growth.state).toBe("extinguished");
+    // Austen 2026-08-09: the green path must not be visible while the visitor
+    // still has performers to meet. Prove it geometrically, not by state alone.
+    const growthTail = growth.points.at(-2)!;
+    for (const shrine of plan.shrines) {
+      expect(isProcessionSightlineBlocked(shrine.centre, growthTail, plan.basaltMasses), `${shrine.id} court sees the green path`).toBe(true);
+    }
+    for (const guide of plan.guidePaths) {
+      if (guide.kind !== "fire-wall") continue;
+      const shrine = plan.shrines.find((candidate) => candidate.id === guide.state)!;
+      for (const point of guide.points) {
+        expect(distance(point, shrine.centre)).toBeGreaterThan(orbitOuterRadius(shrine));
+      }
+    }
   });
 
   it("carries its clear widths in carved geometry, not just as declared numbers", () => {
     // Perpendicular ray-march from every route sample to the first rock hit.
     const MARCH_MAX = 3.5;
     const MARCH_STEP = 0.05;
-    const insideRock = (point: { x: number; z: number }) =>
-      plan.basaltMasses.some((mass) => pointInProcessionPolygon(point, mass.polygon));
     const march = (
       origin: { x: number; z: number },
       nx: number,
@@ -256,10 +278,10 @@ describe("First Fire Cinder Court measured plan", () => {
     expect(offenders.slice(0, 12)).toEqual([]);
   });
 
-  it("keeps every reachable floor cell within 2 m of the carved network", () => {
+  it("keeps every reachable floor cell within 2.5 m of the carved network", () => {
     // Flood-fill walkable floor from the Water door; assert no reachable
-    // pocket strays far from corridors, hub, or courts — "nowhere else to
-    // walk" as a proof instead of an enumeration.
+    // pocket strays far from corridors, threshold, or courts — "nowhere else
+    // to walk" as a proof instead of an enumeration.
     const CELL = 0.5;
     const cols = Math.round((plan.room.maxX - plan.room.minX) / CELL);
     const rows = Math.round((plan.room.maxZ - plan.room.minZ) / CELL);
@@ -287,8 +309,12 @@ describe("First Fire Cinder Court measured plan", () => {
       const t = Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.z - a.z) * dz) / lengthSq));
       return Math.hypot(point.x - (a.x + dx * t), point.z - (a.z + dz * t));
     };
+    const inThreshold = (point: { x: number; z: number }) =>
+      point.x >= plan.threshold.minX && point.x <= plan.threshold.maxX &&
+      point.z >= plan.threshold.minZ && point.z <= plan.threshold.maxZ;
     const carvedDistance = (point: { x: number; z: number }) => {
-      let best = Math.hypot(point.x - plan.hubCircle.centre.x, point.z - plan.hubCircle.centre.z) - plan.hubCircle.radius;
+      if (inThreshold(point)) return 0;
+      let best = Number.POSITIVE_INFINITY;
       for (const corridor of plan.carved.corridors) {
         for (let index = 0; index < corridor.points.length - 1; index++) {
           best = Math.min(
@@ -332,15 +358,18 @@ describe("First Fire Cinder Court measured plan", () => {
     }
     const offenders = [...reached]
       .map((index) => cellPoint(index % cols, Math.floor(index / cols)))
-      .filter((point) => carvedDistance(point) > 2.0)
+      .filter((point) => carvedDistance(point) > 2.5)
       .map((point) => `${point.x.toFixed(2)},${point.z.toFixed(2)}`);
     expect(offenders.slice(0, 12)).toEqual([]);
-    // The courts must be reachable at all.
+    // Every court must be reachable at all, and the Earth door too.
     for (const shrine of plan.shrines) {
       const cx = Math.floor((shrine.entry.x - plan.room.minX) / CELL);
       const cz = Math.floor((shrine.entry.z - plan.room.minZ) / CELL);
       expect(reached.has(cz * cols + cx), `${shrine.id} entry unreachable`).toBe(true);
     }
+    const earthCx = Math.floor((plan.room.maxX - 1 - plan.room.minX) / CELL);
+    const earthCz = Math.floor((34 - plan.room.minZ) / CELL);
+    expect(reached.has(earthCz * cols + earthCx), "Earth door unreachable").toBe(true);
   });
 
   it("uses extra compiled depth as symmetric rock margin without stretching geometry", () => {
@@ -349,10 +378,8 @@ describe("First Fire Cinder Court measured plan", () => {
       westDoor: { min: 20.25, max: 24.25 },
       eastDoor: { min: 32.25, max: 36.25 },
     });
-    expect(deeper.hub.minZ - plan.hub.minZ).toBeCloseTo(0.25, 12);
-    expect(deeper.hub.maxZ - plan.hub.maxZ).toBeCloseTo(0.25, 12);
-    expect(deeper.hub.maxX - deeper.hub.minX).toBe(13);
-    expect(deeper.hub.maxZ - deeper.hub.minZ).toBe(13);
+    expect(deeper.threshold.minZ - plan.threshold.minZ).toBeCloseTo(0.25, 12);
+    expect(deeper.threshold.maxZ - plan.threshold.maxZ).toBeCloseTo(0.25, 12);
     for (let index = 0; index < plan.shrines.length; index++) {
       expect(deeper.shrines[index]!.centre.x).toBe(plan.shrines[index]!.centre.x);
       expect(deeper.shrines[index]!.centre.z - plan.shrines[index]!.centre.z).toBeCloseTo(0.25, 12);

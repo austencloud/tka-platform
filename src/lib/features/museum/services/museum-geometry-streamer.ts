@@ -15,9 +15,7 @@
 import type { PerspectiveCamera, Scene, WebGLRenderer } from "three";
 import type { MuseumGrid } from "../domain/museum-grid-types";
 import type { RoomEdge } from "../domain/layout-types";
-import type {
-  RoomChunk,
-} from "./museum-geometry-builder";
+import type { RoomChunk } from "./museum-geometry-builder";
 import {
   bucketMuseumTilesByRoom,
   buildRoomChunk,
@@ -27,6 +25,9 @@ import type { MuseumGeometryDryRun } from "./museum-geometry-builder";
 import type { RoomBuiltResponse } from "../workers/geometry-worker-protocol";
 import type { SerializedBucketEntry } from "../domain/room-descriptor";
 import { RoomLifecycleManager } from "./room-lifecycle-manager";
+import { getMuseumPerformanceRecorder } from "../get-museum-performance-recorder";
+
+const performanceRecorder = getMuseumPerformanceRecorder();
 
 // ── Types ──
 
@@ -78,11 +79,7 @@ export class MuseumGeometryStreamer {
   private readonly TILE_SIZE: number;
   private readonly spawnRoomId: string | null;
 
-  constructor(
-    grid: MuseumGrid,
-    edges: RoomEdge[],
-    tileSize: number,
-  ) {
+  constructor(grid: MuseumGrid, edges: RoomEdge[], tileSize: number) {
     this.grid = grid;
     this.edges = edges;
     this.TILE_SIZE = tileSize;
@@ -93,7 +90,7 @@ export class MuseumGeometryStreamer {
 
     this.worker = new Worker(
       new URL("../workers/geometry-worker.ts", import.meta.url),
-      { type: "module" },
+      { type: "module" }
     );
 
     this.worker.onmessage = (event: MessageEvent) => {
@@ -113,10 +110,16 @@ export class MuseumGeometryStreamer {
     // sticks on "Building lobby" with no error. Surface it and reject pending
     // builds so the await chain unwinds and the scene can reveal what loaded.
     this.worker.onerror = (event) => {
-      this.failAllPending(new Error(`Geometry worker crashed: ${event.message || "unknown error"}`));
+      this.failAllPending(
+        new Error(
+          `Geometry worker crashed: ${event.message || "unknown error"}`
+        )
+      );
     };
     this.worker.onmessageerror = () => {
-      this.failAllPending(new Error("Geometry worker message deserialization failed"));
+      this.failAllPending(
+        new Error("Geometry worker message deserialization failed")
+      );
     };
   }
 
@@ -145,7 +148,12 @@ export class MuseumGeometryStreamer {
   getRoomAtTile(tileX: number, tileY: number): string | null {
     for (const wing of this.grid.wings) {
       const b = wing.bounds;
-      if (tileX >= b.x && tileX < b.x + b.width && tileY >= b.y && tileY < b.y + b.height) {
+      if (
+        tileX >= b.x &&
+        tileX < b.x + b.width &&
+        tileY >= b.y &&
+        tileY < b.y + b.height
+      ) {
         return wing.id;
       }
     }
@@ -182,11 +190,18 @@ export class MuseumGeometryStreamer {
     };
   }
 
-  private requestRoomBuild(roomId: string, priority: number): Promise<RoomBuiltResponse> {
+  private requestRoomBuild(
+    roomId: string,
+    priority: number
+  ): Promise<RoomBuiltResponse> {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         if (this.pendingBuilds.delete(roomId)) {
-          reject(new Error(`Geometry worker timed out building "${roomId}" (no reply in ${BUILD_TIMEOUT_MS}ms)`));
+          reject(
+            new Error(
+              `Geometry worker timed out building "${roomId}" (no reply in ${BUILD_TIMEOUT_MS}ms)`
+            )
+          );
         }
       }, BUILD_TIMEOUT_MS);
       this.pendingBuilds.set(roomId, { resolve, reject, timer });
@@ -215,7 +230,11 @@ export class MuseumGeometryStreamer {
         // No bucket/wing data - posting nothing would hang the promise forever.
         clearTimeout(timer);
         this.pendingBuilds.delete(roomId);
-        reject(new Error(`No geometry data for room "${roomId}" (missing buckets or wing)`));
+        reject(
+          new Error(
+            `No geometry data for room "${roomId}" (missing buckets or wing)`
+          )
+        );
       }
     });
   }
@@ -226,20 +245,24 @@ export class MuseumGeometryStreamer {
     roomId: string,
     priority: number,
     callbacks: StreamerCallbacks,
-    onChunkReady?: (chunk: RoomChunk) => void,
+    onChunkReady?: (chunk: RoomChunk) => void
   ): Promise<void> {
     if (this.activeRoomChunks.has(roomId)) return;
 
+    const workerStartedAt = performanceRecorder.beginPhase();
     const workerResult = await this.requestRoomBuild(roomId, priority);
+    performanceRecorder.endPhase("stream.worker", workerStartedAt);
 
+    const deserializeStartedAt = performanceRecorder.beginPhase();
     const dryRun = dryRunFromWorkerTransfer(
       workerResult.floorBatches,
       workerResult.wallBatches,
       workerResult.pedestalPositions,
       workerResult.signPositions,
       workerResult.totalFloorInstances,
-      workerResult.totalWallInstances,
+      workerResult.totalWallInstances
     );
+    performanceRecorder.endPhase("stream.deserialize", deserializeStartedAt);
 
     // Merge fixture data from original buckets
     const originalBuckets = this.perRoomBuckets.roomBuckets.get(roomId);
@@ -250,8 +273,11 @@ export class MuseumGeometryStreamer {
     }
 
     const wing = this.grid.wings.find((w) => w.id === roomId) ?? null;
+    const buildStartedAt = performanceRecorder.beginPhase();
     const chunk = await buildRoomChunk(dryRun, roomId, wing);
+    performanceRecorder.endPhase("stream.build-chunk", buildStartedAt);
 
+    const attachStartedAt = performanceRecorder.beginPhase();
     callbacks.addChunkToScene(chunk);
     this.activeRoomChunks.set(roomId, chunk);
     if (this.visibleRoomIds.size > 0) {
@@ -260,17 +286,21 @@ export class MuseumGeometryStreamer {
 
     if (!this.firstRoomActivated) {
       this.firstRoomActivated = true;
-      void import("$lib/shared/analytics/boot-profiler").then(({ bootProfiler }) =>
-        bootProfiler.signalReady("museum"),
+      void import("$lib/shared/analytics/boot-profiler").then(
+        ({ bootProfiler }) => bootProfiler.signalReady("museum")
       );
     }
 
     onChunkReady?.(chunk);
+    performanceRecorder.endPhase("stream.attach", attachStartedAt);
   }
 
   // ── BFS distance computation ──
 
-  computeDistancesFromSpawn(spawn: string | null, allRoomIds: string[]): Map<string, number> {
+  computeDistancesFromSpawn(
+    spawn: string | null,
+    allRoomIds: string[]
+  ): Map<string, number> {
     const dist = new Map<string, number>();
     if (!spawn) {
       for (const id of allRoomIds) dist.set(id, 99);
@@ -308,7 +338,9 @@ export class MuseumGeometryStreamer {
     // 1. Build corridors on main thread
     callbacks.onBuildStage?.("Building corridors");
     const corridorDryRun = this.perRoomBuckets.corridorBucket;
+    const corridorStartedAt = performanceRecorder.beginPhase();
     const cc = await buildRoomChunk(corridorDryRun, "__corridor__", null);
+    performanceRecorder.endPhase("stream.build-corridors", corridorStartedAt);
     this.corridorChunk = cc;
 
     const sceneObj = callbacks.getScene();
@@ -328,21 +360,29 @@ export class MuseumGeometryStreamer {
     // here created new material programs for minutes after the museum opened,
     // and any Q press during that work was trapped behind shader linking.
     if (this.spawnRoomId) {
-      const initial = this.lifecycleManager.onPlayerEnteredRoom(this.spawnRoomId);
-      this.applyRoomVisibility(new Set(this.lifecycleManager.getActiveRoomIds()));
+      const initial = this.lifecycleManager.onPlayerEnteredRoom(
+        this.spawnRoomId
+      );
+      this.applyRoomVisibility(
+        new Set(this.lifecycleManager.getActiveRoomIds())
+      );
       const activations: Promise<void>[] = [];
       for (const roomId of initial.toActivate) {
         if (roomId === this.spawnRoomId) continue;
         const priority = initial.priorities.get(roomId) ?? 2;
         activations.push(
-          this.activateRoom(roomId, priority, callbacks).catch((error: unknown) => {
-            console.warn(`[MuseumGeometryStreamer] room "${roomId}" failed to stream:`, error);
-          })
+          this.activateRoom(roomId, priority, callbacks).catch(
+            (error: unknown) => {
+              console.warn(
+                `[MuseumGeometryStreamer] room "${roomId}" failed to stream:`,
+                error
+              );
+            }
+          )
         );
       }
       await Promise.all(activations);
     }
-
   }
 
   // ── Runtime streaming ──
@@ -366,13 +406,22 @@ export class MuseumGeometryStreamer {
     if (this.corridorChunk) this.setChunkVisible(this.corridorChunk, true);
   }
 
-  updateStreaming(playerTX: number, playerTZ: number, fpsActive: boolean): void {
+  updateStreaming(
+    playerTX: number,
+    playerTZ: number,
+    fpsActive: boolean
+  ): void {
     if (!this.geometryReady) return;
 
     let detectedRoomId: string | null = null;
     for (const wing of this.grid.wings) {
       const b = wing.bounds;
-      if (playerTX >= b.x && playerTX < b.x + b.width && playerTZ >= b.y && playerTZ < b.y + b.height) {
+      if (
+        playerTX >= b.x &&
+        playerTX < b.x + b.width &&
+        playerTZ >= b.y &&
+        playerTZ < b.y + b.height
+      ) {
         detectedRoomId = wing.id;
         break;
       }
@@ -385,13 +434,20 @@ export class MuseumGeometryStreamer {
     if (detectedRoomId && detectedRoomId !== this.lastPlayerRoomId) {
       this.lastPlayerRoomId = detectedRoomId;
       const update = this.lifecycleManager.onPlayerEnteredRoom(detectedRoomId);
-      this.applyRoomVisibility(new Set(this.lifecycleManager.getActiveRoomIds()));
+      this.applyRoomVisibility(
+        new Set(this.lifecycleManager.getActiveRoomIds())
+      );
       if (this.callbacks) {
         for (const roomId of update.toActivate) {
           const priority = update.priorities.get(roomId) ?? 2;
-          this.activateRoom(roomId, priority, this.callbacks).catch((error: unknown) => {
-            console.warn(`[MuseumGeometryStreamer] room "${roomId}" failed to stream:`, error);
-          });
+          this.activateRoom(roomId, priority, this.callbacks).catch(
+            (error: unknown) => {
+              console.warn(
+                `[MuseumGeometryStreamer] room "${roomId}" failed to stream:`,
+                error
+              );
+            }
+          );
         }
       }
     } else if (cameraModeChanged) {

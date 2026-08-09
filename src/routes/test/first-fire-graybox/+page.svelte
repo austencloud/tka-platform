@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browser } from "$app/environment";
   import { Canvas } from "@threlte/core";
   import { AgXToneMapping, PCFSoftShadowMap } from "three";
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
@@ -33,6 +34,23 @@
   let flameCount = $state(0);
   let resetToken = $state(0);
   let reviewAdvanceToken = $state(0);
+
+  // Deterministic evidence captures: ?proof=N auto-advances N authored
+  // states once assets are ready, so headless screenshots can reach any
+  // review state without input.
+  const proofSteps = browser
+    ? Number(new URLSearchParams(window.location.search).get("proof") ?? "0")
+    : 0;
+  let proofStepsTaken = 0;
+  $effect(() => {
+    if (!assetReady || proofStepsTaken > 0 || proofSteps <= 0) return;
+    const timer = setInterval(() => {
+      reviewAdvanceToken += 1;
+      proofStepsTaken += 1;
+      if (proofStepsTaken >= proofSteps) clearInterval(timer);
+    }, 600);
+    return () => clearInterval(timer);
+  });
   let position = $state({ x: -27, y: 0.88, z: 0 });
   let review = $state<ReviewDetails>(initialReview);
 

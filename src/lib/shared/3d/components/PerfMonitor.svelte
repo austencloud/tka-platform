@@ -4,12 +4,28 @@
   import type { WebGLRenderer } from "three";
   import { tryGetAdaptiveQualityContext } from "../context/adaptive-quality-context";
 
+  interface RendererPerformanceSample {
+    fps: number;
+    drawCalls: number;
+    triangles: number;
+    geometries: number;
+    textures: number;
+    programs: number;
+  }
+
   interface Props {
     visible?: boolean;
     adaptive?: boolean;
+    active?: boolean;
+    onSample?: (sample: RendererPerformanceSample) => void;
   }
 
-  let { visible = false, adaptive = false }: Props = $props();
+  let {
+    visible = false,
+    adaptive = false,
+    active = false,
+    onSample,
+  }: Props = $props();
 
   // The installed Threlte 8 runtime exposes the renderer directly. The local
   // global.d.ts still describes the pre-v8 `.current` shape, so keep this cast
@@ -43,7 +59,7 @@
           document.visibilityState === "visible")
     );
 
-    if (!visible) return;
+    if (!visible && !active) return;
 
     frameCount++;
     const now = performance.now();
@@ -60,6 +76,7 @@
       geometries = info.memory.geometries;
       textures = info.memory.textures;
       programs = info.programs?.length ?? 0;
+      onSample?.({ fps, drawCalls, triangles, geometries, textures, programs });
     }
   });
 </script>
@@ -112,7 +129,7 @@
     border-radius: 6px;
     padding: 6px 10px;
     font-family: "JetBrains Mono", monospace;
-    font-size: 11px;
+    font-size: 12px;
     color: #ccc;
     pointer-events: none;
     user-select: none;

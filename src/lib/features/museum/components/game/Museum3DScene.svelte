@@ -115,6 +115,7 @@
   } from "../../services/museum-proximity-renderer";
   import { MuseumPlayerController } from "../../services/museum-player-controller";
   import { resolveScene, resolveRenderer } from "../resolve-threlte-scene";
+  import { getMuseumPerformanceRecorder } from "../../get-museum-performance-recorder";
 
   // Plaque texture generation uses module-level cache (generatePlaqueCanvas)
   // Torch materials use module-level template compiled once on first createTorchInstance call
@@ -214,6 +215,7 @@
   }
 
   const props: Props = $props();
+  const performanceRecorder = getMuseumPerformanceRecorder();
 
   // Keep-alive: request a repaint when the scene becomes visible again, so it
   // shows the current frame immediately on resume (render loop was paused while
@@ -798,11 +800,31 @@
     // first visible frame, since the keep-alive host only mounts museum when active.
     if (props.visible === false) return;
 
+    const framePosition = physicsProvider.getPlayerPosition();
+    performanceRecorder.recordFrame(delta * 1_000, {
+      roomId: geometryStreamer.currentPlayerRoomId,
+      cameraMode: museum3dEditorState.editorActive
+        ? "editor"
+        : fpsActive
+          ? lastCameraMode === CameraMode.THIRD_PERSON
+            ? "third-person"
+            : "first-person"
+          : "top-down",
+      position: {
+        x: framePosition.x,
+        y: framePosition.y,
+        z: framePosition.z,
+      },
+      activeRooms: geometryStreamer.activeRoomChunks.size,
+      pendingMounts: pendingMounts.length,
+    });
+
     // In editor mode, OrbitControls owns the camera - skip all movement/animation
     if (museum3dEditorState.editorActive) return;
 
     // Drain pending mount queue (max per frame to avoid spikes)
     if (pendingMounts.length > 0) {
+      const mountStartedAt = performanceRecorder.beginPhase();
       const batch = pendingMounts.splice(0, PROXIMITY_MAX_MOUNTS_PER_FRAME);
       for (const mount of batch) {
         switch (mount.category) {
@@ -826,9 +848,14 @@
             break;
         }
       }
+      performanceRecorder.endPhase(
+        "frame.mount-reactive-objects",
+        mountStartedAt
+      );
     }
 
     // Proximity visibility recheck - when player moves 2+ tiles
+    const proximityStartedAt = performanceRecorder.beginPhase();
     const currentTX = Math.round(playerPosition.x / TILE_SIZE);
     const currentTY = Math.round(playerPosition.z / TILE_SIZE);
     if (proximityRenderer.shouldRecompute(currentTX, currentTY)) {
@@ -837,6 +864,7 @@
 
     // Waterline crossing (runs before the mode-specific early returns below)
     updateSubmersion();
+    performanceRecorder.endPhase("frame.proximity", proximityStartedAt);
 
     // First frame: initialize camera
     if (!flipState.initialized) {
@@ -858,6 +886,7 @@
     // If FPS mode is active, UCC owns the camera - skip everything
     if (fpsActive) {
       // Delegate to player controller for position sync, void recovery, portal check
+      const movementStartedAt = performanceRecorder.beginPhase();
       const fpsResult = playerCtrl.syncFpsPosition();
       if (
         handleEyeLift(
@@ -886,12 +915,18 @@
       playerSpeed = fpsResult.speed;
       playerGrounded = fpsResult.grounded;
       playerVerticalVelocity = fpsResult.velocity.y;
+      performanceRecorder.endPhase("frame.movement", movementStartedAt);
 
       const fpsTileX = Math.round(fpsResult.position.x / TILE_SIZE);
       const fpsTileZ = Math.round(fpsResult.position.z / TILE_SIZE);
+      const atmosphereStartedAt = performanceRecorder.beginPhase();
       updateAtmosphere(fpsTileX, fpsTileZ, delta);
+      performanceRecorder.endPhase("frame.atmosphere", atmosphereStartedAt);
+      const streamingStartedAt = performanceRecorder.beginPhase();
       geometryStreamer.updateStreaming(fpsTileX, fpsTileZ, fpsActive);
       syncPlayerRoomFromStreamer();
+      performanceRecorder.endPhase("frame.streaming", streamingStartedAt);
+      const publishStartedAt = performanceRecorder.beginPhase();
       props.onPlayerUpdate?.(
         fpsResult.position.x,
         fpsResult.position.z,
@@ -901,6 +936,7 @@
         true,
         playerYaw
       );
+      performanceRecorder.endPhase("frame.publish-player", publishStartedAt);
       return;
     }
 
@@ -917,6 +953,7 @@
 
     // ── Top-down WASD movement (when not animating) ──
     if (!animating) {
+      const movementStartedAt = performanceRecorder.beginPhase();
       const keys = props.heldKeys ?? new Set<string>();
       const moveResult = playerCtrl.updateTopDownMovement(
         keys,
@@ -945,13 +982,19 @@
         moveResult.position,
         props.topDownHeight ?? 12
       );
+      performanceRecorder.endPhase("frame.movement", movementStartedAt);
 
       // Report to parent
       const tileX = Math.round(moveResult.position.x / TILE_SIZE);
       const tileZ = Math.round(moveResult.position.z / TILE_SIZE);
+      const atmosphereStartedAt = performanceRecorder.beginPhase();
       updateAtmosphere(tileX, tileZ, delta);
+      performanceRecorder.endPhase("frame.atmosphere", atmosphereStartedAt);
+      const streamingStartedAt = performanceRecorder.beginPhase();
       geometryStreamer.updateStreaming(tileX, tileZ, fpsActive);
       syncPlayerRoomFromStreamer();
+      performanceRecorder.endPhase("frame.streaming", streamingStartedAt);
+      const publishStartedAt = performanceRecorder.beginPhase();
       props.onPlayerUpdate?.(
         moveResult.position.x,
         moveResult.position.z,
@@ -961,10 +1004,12 @@
         false,
         playerYaw
       );
+      performanceRecorder.endPhase("frame.publish-player", publishStartedAt);
       return;
     }
 
     // ── Flip animation ──
+    const flipStartedAt = performanceRecorder.beginPhase();
     const result = cameraFlip.updateFlipAnimation(
       camera,
       delta,
@@ -985,6 +1030,7 @@
       fpsInitialPitch = result.fpsInitialPitch!;
       fpsActive = true;
     }
+    performanceRecorder.endPhase("frame.camera-flip", flipStartedAt);
   });
 
   // When Q is pressed again while in FPS mode, exit back to top-down.
@@ -1201,7 +1247,12 @@
         if (playerAvatarWarmupGroup) playerAvatarWarmupGroup.visible = false;
         scene.updateMatrixWorld(true);
         warmupCamera.updateMatrixWorld(true);
+        const firstWarmupStartedAt = performanceRecorder.beginPhase();
         renderer.render(scene, warmupCamera);
+        performanceRecorder.endPhase(
+          "render.warmup-first-person",
+          firstWarmupStartedAt
+        );
 
         // The second Q press reveals the third-person avatar without changing
         // the FPS light signature. Draw it once from a guaranteed-visible
@@ -1220,7 +1271,12 @@
             playerPosition.z
           );
           warmupCamera.updateMatrixWorld(true);
+          const thirdPersonWarmupStartedAt = performanceRecorder.beginPhase();
           renderer.render(scene, warmupCamera);
+          performanceRecorder.endPhase(
+            "render.warmup-third-person",
+            thirdPersonWarmupStartedAt
+          );
         }
       } catch (error) {
         console.warn("[Museum3DScene] FPS resource warmup failed:", error);
@@ -1626,6 +1682,8 @@
   useTask((delta) => {
     if (props.visible === false) return;
 
+    const lightingStartedAt = performanceRecorder.beginPhase();
+
     lightElapsedSeconds += delta;
     const px = playerPosition.x;
     const pz = playerPosition.z;
@@ -1635,11 +1693,7 @@
     const roomChanged = currentLightingRoomId !== lastLightingRoomId;
     const activeRoomCount = geometryStreamer.activeRoomChunks.size;
 
-    if (
-      movedEnough ||
-      roomChanged ||
-      activeRoomCount !== lastActiveRoomCount
-    ) {
+    if (movedEnough || roomChanged || activeRoomCount !== lastActiveRoomCount) {
       roomLightTarget = recomputeNearbyLightsFromPool(
         px,
         pz,
@@ -1672,6 +1726,7 @@
       authoredPointLightTarget,
       blendAmount
     );
+    performanceRecorder.endPhase("frame.lighting", lightingStartedAt);
   });
 </script>
 

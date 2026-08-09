@@ -11,7 +11,12 @@
   import { useThrelte, useTask } from "@threlte/core";
   import { ACESFilmicToneMapping } from "three";
   import type { WebGLRenderer, Scene, Camera } from "three";
-  import { resolveRenderer, resolveScene, resolveCamera } from "../resolve-threlte-scene";
+  import {
+    resolveRenderer,
+    resolveScene,
+    resolveCamera,
+  } from "../resolve-threlte-scene";
+  import { getMuseumPerformanceRecorder } from "../../get-museum-performance-recorder";
 
   interface Props {
     geometryReady?: boolean;
@@ -24,6 +29,7 @@
 
   const props: Props = $props();
   const ctx = useThrelte();
+  const performanceRecorder = getMuseumPerformanceRecorder();
 
   const getRenderer = (): WebGLRenderer | null => resolveRenderer(ctx);
   const getScene = (): Scene | null => resolveScene(ctx);
@@ -41,11 +47,17 @@
 
     if (configuredRenderer !== renderer) {
       configuredRenderer = renderer;
-      try { (ctx as any).autoRender?.set?.(false); } catch { /* optional across Threlte versions */ }
+      try {
+        (ctx as any).autoRender?.set?.(false);
+      } catch {
+        /* optional across Threlte versions */
+      }
       renderer.toneMapping = ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.1;
     }
 
+    const renderStartedAt = performanceRecorder.beginPhase();
     renderer.render(scene, camera);
+    performanceRecorder.endPhase("render.main", renderStartedAt);
   });
 </script>

@@ -5,7 +5,12 @@
   import Museum3DScene from "./Museum3DScene.svelte";
   import { MUSEUM_EXHIBIT_SEQUENCES } from "../../data/museum-exhibit-sequences";
   import { tileKey } from "../../domain/museum-grid-types";
-  import type { MuseumGrid, ExhibitDefinition, PerformerDefinition, WingRegion } from "../../domain/museum-grid-types";
+  import type {
+    MuseumGrid,
+    ExhibitDefinition,
+    PerformerDefinition,
+    WingRegion,
+  } from "../../domain/museum-grid-types";
   import type { RoomEdge } from "../../domain/layout-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { SOLID_TYPES } from "../../services/museum-physics-provider";
@@ -18,6 +23,8 @@
   import SequenceView from "../panel/SequenceView.svelte";
   import SequenceBrowserOverlay from "$lib/features/museum/scenes/procedural/overlay/SequenceBrowserOverlay.svelte";
   import { getMuseumDocent } from "$lib/features/museum/services/museum-docent.svelte";
+  import PerfMonitor from "$lib/shared/3d/components/PerfMonitor.svelte";
+  import { getMuseumPerformanceRecorder } from "../../get-museum-performance-recorder";
 
   import { onMount } from "svelte";
 
@@ -64,9 +71,12 @@
     /** Optional route-level back action. Defaults to the existing app navigation. */
     onBack?: () => void;
     backAriaLabel?: string;
+    /** Enables museum timing and renderer counters without showing shared debug UI. */
+    performanceRecordingEnabled?: boolean;
   }
 
   const props: Props = $props();
+  const performanceRecorder = getMuseumPerformanceRecorder();
   // Destructure non-reactive props; grid is accessed via props.grid in $derived/$effect for reactivity
   const startInFps = props.startInFps ?? false;
 
@@ -191,7 +201,11 @@
       const tileY = Math.round(state.playerWorldZ / TILE_SIZE);
       const tile = props.grid.tiles.get(`${tileX},${tileY}`);
       if (!tile || SOLID_TYPES.has(tile.type)) {
-        try { sessionStorage.removeItem(HMR_KEY); } catch { /* non-critical */ }
+        try {
+          sessionStorage.removeItem(HMR_KEY);
+        } catch {
+          /* non-critical */
+        }
         return null;
       }
     }
@@ -295,8 +309,12 @@
   let isInFPS = $derived(viewMode !== "top-down");
 
   // ── Player state (updated every frame by Museum3DScene callback) ──
-  let playerWorldX = $state(savedHmrState?.playerWorldX ?? props.grid.spawn.x * TILE_SIZE);
-  let playerWorldZ = $state(savedHmrState?.playerWorldZ ?? props.grid.spawn.y * TILE_SIZE);
+  let playerWorldX = $state(
+    savedHmrState?.playerWorldX ?? props.grid.spawn.x * TILE_SIZE
+  );
+  let playerWorldZ = $state(
+    savedHmrState?.playerWorldZ ?? props.grid.spawn.y * TILE_SIZE
+  );
   let playerTileX = $state(props.grid.spawn.x);
   let playerTileY = $state(props.grid.spawn.y);
   let playerFacing = $state("south");
@@ -373,8 +391,12 @@
   let currentWing = $derived.by<WingRegion | null>(() => {
     for (const wing of props.grid.wings) {
       const b = wing.bounds;
-      if (playerTileX >= b.x && playerTileX < b.x + b.width &&
-          playerTileY >= b.y && playerTileY < b.y + b.height) {
+      if (
+        playerTileX >= b.x &&
+        playerTileX < b.x + b.width &&
+        playerTileY >= b.y &&
+        playerTileY < b.y + b.height
+      ) {
         return wing;
       }
     }
@@ -394,10 +416,14 @@
 
   // ── Interaction detection: is the player facing an interactable tile? ──
   const FACING_OFFSETS: Record<string, { dx: number; dy: number }> = {
-    north: { dx: 0, dy: -1 }, south: { dx: 0, dy: 1 },
-    east: { dx: 1, dy: 0 }, west: { dx: -1, dy: 0 },
-    northeast: { dx: 1, dy: -1 }, northwest: { dx: -1, dy: -1 },
-    southeast: { dx: 1, dy: 1 }, southwest: { dx: -1, dy: 1 },
+    north: { dx: 0, dy: -1 },
+    south: { dx: 0, dy: 1 },
+    east: { dx: 1, dy: 0 },
+    west: { dx: -1, dy: 0 },
+    northeast: { dx: 1, dy: -1 },
+    northwest: { dx: -1, dy: -1 },
+    southeast: { dx: 1, dy: 1 },
+    southwest: { dx: -1, dy: 1 },
   };
 
   let facingExhibit = $derived.by<ExhibitDefinition | null>(() => {
@@ -407,7 +433,9 @@
     const ty = playerTileY + offset.dy;
     const tile = props.grid.tiles.get(tileKey(tx, ty));
     if (!tile || tile.type !== "exhibit-panel") return null;
-    return props.grid.exhibits.find((e) => e.tileX === tx && e.tileY === ty) ?? null;
+    return (
+      props.grid.exhibits.find((e) => e.tileX === tx && e.tileY === ty) ?? null
+    );
   });
 
   let facingPerformer = $derived.by<PerformerDefinition | null>(() => {
@@ -417,14 +445,23 @@
     const ty = playerTileY + offset.dy;
     const tile = props.grid.tiles.get(tileKey(tx, ty));
     if (!tile || tile.type !== "performer-station") return null;
-    return props.grid.performers.find((p) => p.tileX === tx && p.tileY === ty) ?? null;
+    return (
+      props.grid.performers.find((p) => p.tileX === tx && p.tileY === ty) ??
+      null
+    );
   });
 
-  let hasInteractable = $derived(facingExhibit !== null || facingPerformer !== null);
+  let hasInteractable = $derived(
+    facingExhibit !== null || facingPerformer !== null
+  );
 
   // ── Keyboard handling ──
   function handleKeyDown(e: KeyboardEvent) {
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    if (
+      e.target instanceof HTMLInputElement ||
+      e.target instanceof HTMLTextAreaElement
+    )
+      return;
 
     // F2: toggle editor mode
     if (e.key === "F2") {
@@ -512,7 +549,11 @@
       e.preventDefault();
       resetRequested++;
       // Clear stale HMR state so the player doesn't respawn at the old position after HMR
-      try { sessionStorage.removeItem(HMR_KEY); } catch { /* non-critical */ }
+      try {
+        sessionStorage.removeItem(HMR_KEY);
+      } catch {
+        /* non-critical */
+      }
       return;
     }
 
@@ -543,9 +584,12 @@
   }
 
   function handlePlayerUpdate(
-    worldX: number, worldZ: number,
-    tileX: number, tileY: number,
-    facing: string, inFPS: boolean,
+    worldX: number,
+    worldZ: number,
+    tileX: number,
+    tileY: number,
+    facing: string,
+    inFPS: boolean,
     yaw: number
   ) {
     // The docent steers by filling the SAME heldKeys set the keyboard fills, so
@@ -612,7 +656,9 @@
     // the reveal - a usable scene beats an indefinite black screen.
     const watchdog = setTimeout(() => {
       if (!sceneReady) {
-        console.warn("[DimensionFlipProof] Ready watchdog fired - forcing scene reveal");
+        console.warn(
+          "[DimensionFlipProof] Ready watchdog fired - forcing scene reveal"
+        );
         texturesReady = true;
         meshesReady = true;
         checkFullyReady();
@@ -624,9 +670,14 @@
     // other modules' canvases can't grab the wrong one). Deferred so the Canvas
     // has rendered its <canvas> element.
     const canvasHookTimer = setTimeout(() => {
-      canvasEl = canvasAreaEl?.querySelector<HTMLCanvasElement>("canvas") ?? null;
+      canvasEl =
+        canvasAreaEl?.querySelector<HTMLCanvasElement>("canvas") ?? null;
       canvasEl?.addEventListener("webglcontextlost", handleContextLost, false);
-      canvasEl?.addEventListener("webglcontextrestored", handleContextRestored, false);
+      canvasEl?.addEventListener(
+        "webglcontextrestored",
+        handleContextRestored,
+        false
+      );
     }, 0);
 
     return () => {
@@ -640,7 +691,10 @@
       clearTimeout(canvasHookTimer);
       if (contextRestoreTimer) clearTimeout(contextRestoreTimer);
       canvasEl?.removeEventListener("webglcontextlost", handleContextLost);
-      canvasEl?.removeEventListener("webglcontextrestored", handleContextRestored);
+      canvasEl?.removeEventListener(
+        "webglcontextrestored",
+        handleContextRestored
+      );
     };
   });
 
@@ -653,6 +707,10 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="canvas-area" onwheel={handleWheel} bind:this={canvasAreaEl}>
     <Canvas dpr={1}>
+      <PerfMonitor
+        active={props.performanceRecordingEnabled}
+        onSample={(sample) => performanceRecorder.recordRendererSample(sample)}
+      />
       <Museum3DScene
         grid={props.grid}
         edges={props.edges}
@@ -675,7 +733,9 @@
         initialFpsActive={viewMode !== "top-down"}
         initialCameraMode={props.initialCameraMode}
         cameraModePersistenceKey={props.cameraModePersistenceKey}
-        initialPlayerPos={savedHmrState ? { x: savedHmrState.playerWorldX, z: savedHmrState.playerWorldZ } : undefined}
+        initialPlayerPos={savedHmrState
+          ? { x: savedHmrState.playerWorldX, z: savedHmrState.playerWorldZ }
+          : undefined}
         initialPlayerYaw={savedHmrState?.playerYaw}
       />
     </Canvas>
@@ -686,7 +746,12 @@
        camera. Hidden entirely on mouse/keyboard, and while the editor is open,
        where the same corner is a drag surface. -->
   {#if isTouchDevice && !museum3dEditorState.editorActive}
-    <VirtualJoystick onInput={handleJoystick} left={24} bottom={24} size={132} />
+    <VirtualJoystick
+      onInput={handleJoystick}
+      left={24}
+      bottom={24}
+      size={132}
+    />
   {/if}
 
   <!-- Placement picker panel (HTML overlay, outside Canvas) -->
@@ -766,9 +831,11 @@
     <div class="controls-hint">
       <span class="hint-text">
         {#if isTouchDevice}
-          Stick to move {isInFPS ? "• Drag to look" : "• Pinch to zoom"} • Tap an exhibit to examine
+          Stick to move {isInFPS ? "• Drag to look" : "• Pinch to zoom"} • Tap an
+          exhibit to examine
         {:else}
-          WASD move {isInFPS ? "• Mouse look" : "• Scroll zoom"} • Q cycle view • E examine
+          WASD move {isInFPS ? "• Mouse look" : "• Scroll zoom"} • Q cycle view •
+          E examine
         {/if}
       </span>
     </div>
@@ -777,7 +844,15 @@
   <!-- Overlay panel (right side) -->
   {#if showPanel && focusedExhibit}
     <div class="overlay-panel">
-      <button class="panel-close" aria-label="Close exhibit panel" onclick={() => { showPanel = false; focusedExhibit = null; props.onExhibitFocus?.(null); }}>
+      <button
+        class="panel-close"
+        aria-label="Close exhibit panel"
+        onclick={() => {
+          showPanel = false;
+          focusedExhibit = null;
+          props.onExhibitFocus?.(null);
+        }}
+      >
         <i class="fas fa-times" aria-hidden="true"></i>
       </button>
 
@@ -800,7 +875,14 @@
   <!-- Performer panel (right side) -->
   {#if showPanel && focusedPerformer}
     <div class="overlay-panel">
-      <button class="panel-close" aria-label="Close performer panel" onclick={() => { showPanel = false; focusedPerformer = null; }}>
+      <button
+        class="panel-close"
+        aria-label="Close performer panel"
+        onclick={() => {
+          showPanel = false;
+          focusedPerformer = null;
+        }}
+      >
         <i class="fas fa-times" aria-hidden="true"></i>
       </button>
 
@@ -817,7 +899,10 @@
         </div>
       {/if}
 
-      <button class="change-sequence-btn" onclick={() => (showSequencePicker = true)}>
+      <button
+        class="change-sequence-btn"
+        onclick={() => (showSequencePicker = true)}
+      >
         <i class="fas fa-exchange-alt" aria-hidden="true"></i>
         Change Sequence
       </button>
@@ -891,7 +976,10 @@
 
   .docent-status {
     position: absolute;
-    top: calc(var(--museum-hud-edge) + var(--museum-hud-top-offset, 0px) + var(--museum-hud-button) + 0.5rem);
+    top: calc(
+      var(--museum-hud-edge) + var(--museum-hud-top-offset, 0px) +
+        var(--museum-hud-button) + 0.5rem
+    );
     left: calc(var(--museum-hud-edge) + var(--museum-hud-button) + 0.5rem);
     padding: 0.35rem 0.7rem;
     border-radius: 0.5rem;
@@ -920,7 +1008,9 @@
     align-items: center;
     justify-content: center;
     z-index: 90;
-    transition: background 0.15s, color 0.15s;
+    transition:
+      background 0.15s,
+      color 0.15s;
   }
 
   .museum-back-btn:hover {
@@ -1055,13 +1145,23 @@
   }
 
   @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   @keyframes panel-slide-in {
-    from { opacity: 0; transform: translateX(16px); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+      opacity: 0;
+      transform: translateX(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
 
   .performer-info {
@@ -1102,7 +1202,9 @@
     color: rgba(140, 200, 140, 0.7);
     font-size: var(--font-size-min, 14px);
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
+    transition:
+      background 0.15s,
+      border-color 0.15s;
   }
 
   .change-sequence-btn:hover {
@@ -1113,7 +1215,9 @@
 
   @media (max-width: 40rem) {
     .wing-label {
-      max-width: calc(100vw - var(--museum-hud-edge) * 3 - var(--museum-hud-button));
+      max-width: calc(
+        100vw - var(--museum-hud-edge) * 3 - var(--museum-hud-button)
+      );
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
