@@ -5,6 +5,7 @@ import {
   advanceFirstFireGrayboxProof,
   createFirstFireGrayboxReviewState,
   displayedFirstFireShrine,
+  firstFireOrbitZoneThresholds,
   updateFirstFireGrayboxReview,
   visibleFirstFireFlameGroups,
 } from "../../../src/routes/test/first-fire-graybox/first-fire-graybox-review";
@@ -53,7 +54,16 @@ describe("First Fire Cinder Court review interaction", () => {
       runtimeOrbitPoint("dj", 0),
       16
     );
-    for (const travelled of [30, 120, 205, 285]) {
+    const djSweep = Math.abs(
+      contract.shrines.find((candidate) => candidate.id === "dj")!
+        .orbitSweepDegrees
+    );
+    for (const travelled of [
+      djSweep * 0.1,
+      djSweep * 0.35,
+      djSweep * 0.6,
+      djSweep * 0.85,
+    ]) {
       state = updateFirstFireGrayboxReview(
         state,
         contract,
@@ -86,6 +96,41 @@ describe("First Fire Cinder Court review interaction", () => {
       16
     );
     expect(state.procession.phase).toBe("ek-active");
+  });
+
+  it("scales orbit zone gates to each court's authored viewing sweep", () => {
+    for (const shrine of contract.shrines) {
+      const thresholds = firstFireOrbitZoneThresholds(shrine.orbitSweepDegrees);
+      const sweep = Math.min(360, Math.abs(shrine.orbitSweepDegrees));
+      expect(thresholds).toHaveLength(4);
+      expect(thresholds[3]).toBeLessThan(sweep);
+      expect(thresholds[0]).toBeGreaterThan(0);
+      for (let index = 1; index < thresholds.length; index += 1) {
+        expect(thresholds[index]).toBeGreaterThan(thresholds[index - 1]!);
+      }
+    }
+    // The DJ canyon only offers a 50 degree sweep; a fixed 280 degree final
+    // gate could never be reached there.
+    expect(firstFireOrbitZoneThresholds(-50)[3]).toBeLessThan(50);
+  });
+
+  it("completes every court by walking only its own authored sweep", () => {
+    for (const shrine of contract.shrines) {
+      let state = createFirstFireGrayboxReviewState();
+      while (state.procession.phase !== `${shrine.id}-active`) {
+        state = advanceFirstFireGrayboxProof(state);
+      }
+      const sweep = Math.min(360, Math.abs(shrine.orbitSweepDegrees));
+      for (let step = 0; step <= 24; step += 1) {
+        state = updateFirstFireGrayboxReview(
+          state,
+          contract,
+          runtimeOrbitPoint(shrine.id, (sweep * step) / 24),
+          16
+        );
+      }
+      expect(state.procession.orbitProgress[shrine.id]).toBe(4);
+    }
   });
 
   it("keeps exactly one current performer while completed lanes become coals", () => {

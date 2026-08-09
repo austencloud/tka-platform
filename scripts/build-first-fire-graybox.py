@@ -33,6 +33,7 @@ MANIFEST_PATH = (
     / "first-fire-cinder-court-blender-plan.json"
 )
 BLEND_PATH = ROOT / "blender" / "first-fire-cinder-court-graybox.blend"
+RAW_GLB_PATH = ROOT / "artifacts" / "first-fire-cinder-court-raw.glb"
 EVIDENCE_DIR = ROOT / "artifacts" / "first-fire-cinder-court"
 REPORT_PATH = EVIDENCE_DIR / "first-fire-cinder-court-graybox-report.json"
 QA_DIR = Path(tempfile.gettempdir()) / "tka-first-fire-cinder-court-evidence"
@@ -289,16 +290,25 @@ def add_ring(
     mat: bpy.types.Material,
     target: bpy.types.Collection,
     segments: int = 72,
+    start_degrees: float = 0,
+    sweep_degrees: float = 360,
 ) -> bpy.types.Object:
+    """Ribbon between two radii. A partial sweep stays an open arc so a court's
+    orbit lane never runs through the rock that defines the court."""
+    closed = abs(sweep_degrees) >= 359.999
+    ring_points = segments if closed else max(4, int(segments * abs(sweep_degrees) / 360)) + 1
     vertices: list[tuple[float, float, float]] = []
     faces: list[tuple[int, int, int, int]] = []
-    for index in range(segments):
-        angle = math.tau * index / segments
+    for index in range(ring_points):
+        span = math.tau if closed else math.radians(sweep_degrees)
+        divisor = ring_points if closed else ring_points - 1
+        angle = math.radians(start_degrees) + span * index / divisor
         cosine, sine = math.cos(angle), math.sin(angle)
         vertices.append((centre["x"] + cosine * inner_radius, centre["y"] + sine * inner_radius, elevation))
         vertices.append((centre["x"] + cosine * outer_radius, centre["y"] + sine * outer_radius, elevation))
-    for index in range(segments):
-        nxt = (index + 1) % segments
+    quad_count = ring_points if closed else ring_points - 1
+    for index in range(quad_count):
+        nxt = (index + 1) % ring_points
         faces.append((index * 2, nxt * 2, nxt * 2 + 1, index * 2 + 1))
     mesh = bpy.data.meshes.new(f"{name}_Mesh")
     mesh.from_pydata(vertices, [], faces)
@@ -418,17 +428,27 @@ def add_split_side(side: str, door: dict) -> None:
 
 add_split_side("water", CONTRACT["doors"]["water"])
 add_split_side("earth", CONTRACT["doors"]["earth"])
-add_box("FF_Water_Threshold", (min_x + 1.2, 0, 0.025), (2.4, 4, 0.05), WATER, COLLECTIONS["ROUTE"], bevel=0.12)
-
-# Walk ribbon and returning hub.
-hub = CONTRACT["hub"]["blenderFootprint"]
+water_door = CONTRACT["doors"]["water"]
 add_box(
+    "FF_Water_Threshold",
+    (min_x + 1.2, water_door["blender"]["y"], 0.025),
+    (2.4, water_door["clearWidth"], 0.05),
+    WATER,
+    COLLECTIONS["ROUTE"],
+    bevel=0.12,
+)
+
+# Walk ribbon and returning hub. The hub is a circular chamber, so its floor is
+# a disc rather than a slab that would square off the ring of basalt arcs.
+hub = CONTRACT["hub"]["blenderFootprint"]
+add_cylinder(
     "FF_Hub_ReturningCourt",
     (hub["centre"]["x"], hub["centre"]["y"], 0.035),
-    (hub["sizeX"], hub["sizeY"], 0.07),
+    min(hub["sizeX"], hub["sizeY"]) / 2,
+    0.07,
     COURT,
     COLLECTIONS["COURTS"],
-    bevel=0.55,
+    48,
 )
 for section in CONTRACT["pathSections"]:
     mat = GROWTH if section["kind"] == "growth-path" else ROUTE
@@ -438,9 +458,13 @@ for section in CONTRACT["pathSections"]:
             section["width"], 0.075, 0.055, mat, COLLECTIONS["ROUTE"],
         )
 
-# Permanent basalt is the only interior collision owner.
+# Permanent basalt is the only interior collision owner. Court-defining masses
+# carry their authored height exactly — that is what makes the DJ canyon slot,
+# the low EK bowl rim, and the FL chimney shaft read as three different rooms.
+# Only the generic corridor and fill rock gets a silhouette jitter.
 for index, mass in enumerate(CONTRACT["basalt"]):
-    height = mass["minimumHeight"] + (index % 4) * 0.48
+    court_defining = "court" in mass["id"]
+    height = mass["minimumHeight"] + (0 if court_defining else (index % 4) * 0.48)
     obj = add_polygon_prism(
         f"FF_Basalt_{mass['id']}", mass["blenderPolygon"], 0, height,
         BASALT if index % 2 == 0 else BASALT_EDGE, COLLECTIONS["BASALT"],
@@ -464,6 +488,8 @@ for shrine in CONTRACT["shrines"]:
         shrine["orbitRadius"] - shrine["orbitWidth"] / 2,
         shrine["orbitRadius"] + shrine["orbitWidth"] / 2, 0.062,
         ROUTE, COLLECTIONS["ROUTE"],
+        start_degrees=shrine["orbitStartDegrees"],
+        sweep_degrees=shrine["orbitSweepDegrees"],
     )
     add_cylinder(
         f"FF_PerformerPad_{shrine['id']}",
@@ -528,19 +554,45 @@ for guide, count in zip(active_guides, allocations):
         lateral = RNG.uniform(-0.45, 0.45)
         add_torch_anchor("field", x, y + lateral, field_index)
 
-perimeter_index = {"dj": 0, "ek": 0, "fl": 0}
+def court_jamb_points(court: dict, count: int) -> list[tuple[float, float]]:
+    """Stems for a partial-sweep court ride the carved wall, not a full ring the
+    court has no room for. Inset from the authored outline toward its centroid."""
+    outline = court["blenderOutline"]
+    centroid_x = sum(point["x"] for point in outline) / len(outline)
+    centroid_y = sum(point["y"] for point in outline) / len(outline)
+    inset: list[dict] = []
+    for point in outline:
+        dx, dy = centroid_x - point["x"], centroid_y - point["y"]
+        length = math.hypot(dx, dy) or 1.0
+        inset.append({
+            "x": point["x"] + dx / length * 0.6,
+            "y": point["y"] + dy / length * 0.6,
+        })
+    return sample_polyline(inset + [inset[0]], count)
+
+
+perimeter_index = {shrine["id"]: 0 for shrine in CONTRACT["shrines"]}
 for shrine in CONTRACT["shrines"]:
     category = shrine["id"]
-    for index in range(CONTRACT["torchBudget"]["perimeterStemsPerShrine"]):
-        angle = math.tau * index / CONTRACT["torchBudget"]["perimeterStemsPerShrine"]
-        radius = shrine["trenchOuterRadius"] + 0.38
-        perimeter_index[category] += 1
-        add_torch_anchor(
-            category,
-            shrine["blenderCentre"]["x"] + math.cos(angle) * radius,
-            shrine["blenderCentre"]["y"] + math.sin(angle) * radius,
-            perimeter_index[category],
+    count = CONTRACT["torchBudget"]["perimeterStemsPerShrine"]
+    radius = shrine["trenchOuterRadius"] + 0.38
+    if abs(shrine["orbitSweepDegrees"]) >= 359.999:
+        placements = [
+            (
+                shrine["blenderCentre"]["x"] + math.cos(math.tau * index / count) * radius,
+                shrine["blenderCentre"]["y"] + math.sin(math.tau * index / count) * radius,
+            )
+            for index in range(count)
+        ]
+    else:
+        court = next(
+            candidate for candidate in CONTRACT["courts"]
+            if candidate["shrineId"] == shrine["id"]
         )
+        placements = court_jamb_points(court, count)
+    for x, y in placements:
+        perimeter_index[category] += 1
+        add_torch_anchor(category, x, y, perimeter_index[category])
 
 if len(anchor_records) != 126:
     raise RuntimeError(f"Expected 126 flame anchors, built {len(anchor_records)}")
@@ -667,12 +719,29 @@ earth_light.hide_render = False
 scene.camera = cameras["overview"]
 bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH))
 
+# The web GLB carries only FF_ geometry; QA cameras and lights stay in Blender.
+RAW_GLB_PATH.parent.mkdir(parents=True, exist_ok=True)
+bpy.ops.object.select_all(action="DESELECT")
+for obj in export_meshes:
+    obj.select_set(True)
+bpy.context.view_layer.objects.active = export_meshes[0]
+bpy.ops.export_scene.gltf(
+    filepath=str(RAW_GLB_PATH),
+    export_format="GLB",
+    use_selection=True,
+    export_cameras=False,
+    export_lights=False,
+    export_extras=True,
+    export_apply=True,
+)
+
 report = {
     "sceneId": "first-fire-cinder-court",
     "schemaVersion": CONTRACT["schemaVersion"],
     "sourceDigest": SOURCE_DIGEST,
     "manifestPath": str(MANIFEST_PATH),
     "blendPath": str(BLEND_PATH),
+    "rawGlbPath": str(RAW_GLB_PATH.relative_to(ROOT)).replace("\\", "/"),
     "blenderVersion": bpy.app.version_string,
     "exportPrefix": "FF_",
     "exportMeshCount": len(export_meshes),

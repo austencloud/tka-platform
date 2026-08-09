@@ -12,7 +12,20 @@ import {
 export const FIRST_FIRE_NEUTRAL_BLACKOUT_MS = 2200;
 const ENTRY_PROXIMITY_METRES = 1.65;
 const HUB_INSET_METRES = 0.35;
-const ORBIT_ZONE_THRESHOLDS = [25, 110, 195, 280] as const;
+/**
+ * Zone gates as a fraction of a full lap. Each court's viewing sweep is
+ * authored in the contract (DJ is a 50 degree canyon arc; EK and FL are full
+ * laps), so the gates scale to that sweep. A fixed 280 degree final gate would
+ * make the DJ court impossible to complete.
+ */
+const ORBIT_ZONE_LAP_FRACTIONS = [25 / 360, 110 / 360, 195 / 360, 280 / 360] as const;
+
+export function firstFireOrbitZoneThresholds(
+  orbitSweepDegrees: number
+): number[] {
+  const sweep = Math.min(360, Math.abs(orbitSweepDegrees));
+  return ORBIT_ZONE_LAP_FRACTIONS.map((fraction) => fraction * sweep);
+}
 
 export interface FirstFireRuntimePosition {
   x: number;
@@ -154,21 +167,18 @@ function updateActiveOrbit(
   }
 
   const direction = Math.sign(shrine.orbitSweepDegrees);
+  const thresholds = firstFireOrbitZoneThresholds(shrine.orbitSweepDegrees);
   const travelled = Math.max(
     0,
     Math.min(
-      360,
+      Math.min(360, Math.abs(shrine.orbitSweepDegrees)),
       state.orbitTravelDegrees[shrineId] +
         signedSmallestDegrees(previousAngle, angle) * direction
     )
   );
   let procession = state.procession;
-  for (
-    let zoneIndex = 0;
-    zoneIndex < ORBIT_ZONE_THRESHOLDS.length;
-    zoneIndex += 1
-  ) {
-    if (travelled >= ORBIT_ZONE_THRESHOLDS[zoneIndex]!) {
+  for (let zoneIndex = 0; zoneIndex < thresholds.length; zoneIndex += 1) {
+    if (travelled >= thresholds[zoneIndex]!) {
       procession = reachFirstFireOrbitZone(procession, shrineId, zoneIndex);
     }
   }
