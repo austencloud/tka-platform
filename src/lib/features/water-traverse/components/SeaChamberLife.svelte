@@ -190,14 +190,18 @@
     swimHeight is measured from the seabed, so 4-14 keeps them off the floor and
     under the surface.
   -->
-  <T.Group position={[0, floorY, midZ]}>
-    <FishBoids
-      worldYOffset={floorY}
-      swimHeight={[4, 14]}
-      stageRadius={10}
-      boundRadius={Math.min(halfWidth, length / 2)}
-    />
-  </T.Group>
+  <!--
+    No wrapping group: the fish vertex shader builds gl_Position straight from
+    the GPGPU world position and never reads modelMatrix, so a parent transform
+    does nothing at all. Placed at the world origin the school swam at y=4..14
+    over the frozen river, in open air. worldOffset is the seam that moves it.
+  -->
+  <FishBoids
+    worldOffset={[0, floorY, midZ]}
+    swimHeight={[4, 14]}
+    stageRadius={10}
+    boundRadius={Math.min(halfWidth, length / 2)}
+  />
 
   {#if quality.maxJellyfish > 0}
     <T.Group position={[0, floorY, midZ]}>

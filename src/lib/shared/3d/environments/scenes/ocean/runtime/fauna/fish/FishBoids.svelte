@@ -30,6 +30,13 @@
     cursorRay?: CursorRay;
     modelBasePath?: string;
     worldYOffset?: number;
+    /**
+     * Where the school sits in the world. The boids simulate around their own
+     * origin and the vertex shader skips modelMatrix entirely, so a parent
+     * <T.Group> does NOT move them — this prop is the only way to place a
+     * school anywhere but the world origin.
+     */
+    worldOffset?: [number, number, number];
   }
 
   let {
@@ -47,7 +54,12 @@
     cursorRay,
     modelBasePath = '/models/ocean/pack/',
     worldYOffset = 0,
+    worldOffset,
   }: Props = $props();
+
+  const offset = $derived(
+    new Vector3(...(worldOffset ?? [0, worldYOffset, 0])),
+  );
 
   const groundY = $derived(userProportionsState.groundY);
   const { renderer, camera } = useThrelte();
@@ -229,8 +241,7 @@
 
     const cursorActive = cursorRay?.active ?? false;
     if (cursorRay) {
-      cursorRayOrigin.copy(cursorRay.origin);
-      cursorRayOrigin.y -= worldYOffset;
+      cursorRayOrigin.copy(cursorRay.origin).sub(offset);
       cursorRayDir.copy(cursorRay.dir);
     }
 
@@ -398,6 +409,10 @@
       targetSize,
     );
 
+    for (const mat of renderSystem.materials) {
+      mat.uniforms.uWorldOffset?.value.copy(offset);
+    }
+
     // Also update visitor materials
     for (const v of activeVisitors) {
       for (const mat of v.materials) {
@@ -405,6 +420,7 @@
         mat.uniforms.tVelocity!.value = computeSystem.velocityTexture;
         if (mat.uniforms.tState) mat.uniforms.tState.value = computeSystem.stateTexture;
         mat.uniforms.uTime!.value = elapsed;
+        mat.uniforms.uWorldOffset?.value.copy(offset);
       }
     }
   });

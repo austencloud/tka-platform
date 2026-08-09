@@ -6,6 +6,9 @@ uniform sampler2D tState;
 uniform float uSize;
 uniform float uTime;
 uniform float uMaxSpeed;
+// Rigid world-space placement of the whole school. The boids simulate around
+// their own origin; this moves that origin. Zero for the ocean stage.
+uniform vec3 uWorldOffset;
 
 uniform float uSwimFreq;
 uniform float uWaveK;
@@ -86,7 +89,7 @@ void main() {
   float cBend = cStartIntensity * sin(localPos.z * 1.5) * 0.3 * panicCBend;
   localPos.x += cBend;
 
-  vec3 transformed = rot * (localPos * fishScale) + fishPos;
+  vec3 transformed = rot * (localPos * fishScale) + fishPos + uWorldOffset;
   vWorldPos = transformed;
   vNormal = safeNormalize(rot * normal);
 
