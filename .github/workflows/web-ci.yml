@@ -113,6 +113,7 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Component tests (Vitest browser mode)
+        timeout-minutes: 5
         run: pnpm run test:components:ci
         continue-on-error: true # The broader component suite is still being hardened.
 
