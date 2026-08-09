@@ -28,7 +28,13 @@
     triggerGust?(): void;
     setPointer?(x: number, y: number, active: boolean, pointerType?: string): void;
     setAccessibility?(settings: { reducedMotion: boolean; highContrast: boolean }): void;
-    getStats(): { leaves: number; treesLoaded?: number };
+    getStats(): {
+      leaves: number;
+      matteLoaded?: number;
+      treesLoaded?: number;
+      platesLoaded?: number;
+      plateTarget?: number;
+    };
   }
 
   function createAutumnLabSystem(): AutumnLabSystem {
@@ -60,7 +66,7 @@
   let windPreset: WindPreset = $state("breezy");
 
   // Stats
-  let stats = $state({ leaves: 0, treesLoaded: 0 });
+  let stats = $state({ leaves: 0, platesLoaded: 0, plateTarget: 3 });
   let lastStatsUpdate = 0;
 
   // Initialize system when canvas is ready
@@ -80,7 +86,12 @@
       const sceneStats = backgroundSystem.getStats();
       stats = {
         leaves: sceneStats.leaves,
-        treesLoaded: sceneStats.treesLoaded ?? 0,
+        platesLoaded:
+          sceneStats.platesLoaded ??
+          sceneStats.treesLoaded ??
+          sceneStats.matteLoaded ??
+          0,
+        plateTarget: sceneStats.plateTarget ?? 1,
       };
       lastStatsUpdate = now;
     }
@@ -137,7 +148,7 @@
   <div class="controls themed-scrollbar-accent">
     <div class="header">
       <h2>Autumn Lab</h2>
-      <span class="badge">Enchanted Dusk</span>
+      <span class="badge">Amber Rain</span>
     </div>
 
     <!-- Quality Chips -->
@@ -149,12 +160,11 @@
 
     <!-- Layer Chips -->
     <ChipGroup>
-      <ChipToggle label="Sky" icon="fill-drip" active={layers.sky} color="amber" onclick={() => toggleLayer("sky")} />
-      <ChipToggle label="Moon" icon="moon" active={layers.moon} color="amber" onclick={() => toggleLayer("moon")} />
-      <ChipToggle label="Trees" icon="tree" active={layers.trees} color="amber" onclick={() => toggleLayer("trees")} />
-      <ChipToggle label="Pond" icon="water" active={layers.landscape} color="amber" onclick={() => toggleLayer("landscape")} />
+      <ChipToggle label="Grove" icon="tree" active={layers.sky} color="amber" onclick={() => toggleLayer("sky")} />
+      <ChipToggle label="Light" icon="sun" active={layers.moon} color="amber" onclick={() => toggleLayer("moon")} />
+      <ChipToggle label="Depth" icon="layer-group" active={layers.trees} color="amber" onclick={() => toggleLayer("trees")} />
+      <ChipToggle label="Mist" icon="water" active={layers.landscape} color="amber" onclick={() => toggleLayer("landscape")} />
       <ChipToggle label="Leaves" icon="leaf" active={layers.leaves} color="amber" onclick={() => toggleLayer("leaves")} />
-      <ChipToggle label="Owl" icon="crow" active={layers.owl} color="amber" onclick={() => toggleLayer("owl")} />
     </ChipGroup>
 
     <!-- Density Chips -->
@@ -193,8 +203,8 @@
           <span class="stat-label">Leaves</span>
         </div>
         <div class="stat">
-          <span class="stat-value">{stats.treesLoaded}/3</span>
-          <span class="stat-label">Trees</span>
+          <span class="stat-value">{stats.platesLoaded}/{stats.plateTarget}</span>
+          <span class="stat-label">Art planes</span>
         </div>
       </div>
     </div>
@@ -203,10 +213,9 @@
     <div class="progress-section">
       <span class="label">Features</span>
       <div class="progress-pills">
-        <span class="pill complete">Catalog Trees</span>
-        <span class="pill complete">Moonlit Pond</span>
-        <span class="pill complete">Branch Release</span>
-        <span class="pill complete">Perched Owl</span>
+        <span class="pill complete">Multiplane Grove</span>
+        <span class="pill complete">Rain Haze</span>
+        <span class="pill complete">Edge Release</span>
         <span class="pill complete">Eased Gusts</span>
       </div>
     </div>

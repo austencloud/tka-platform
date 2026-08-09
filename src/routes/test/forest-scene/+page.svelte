@@ -1,11 +1,11 @@
 <script lang="ts">
   /** Live verification harness for the Moonlit Firefly Forest rebuild. */
-  import { Canvas, T } from "@threlte/core";
+  import { Canvas } from "@threlte/core";
   import { page } from "$app/state";
   import { WebGLRenderer } from "three";
   import { BackgroundType } from "@austencloud/backgrounds";
   import Environment3D from "$lib/shared/3d/environments/components/Environment3D.svelte";
-  import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
+  import EnvironmentReviewCamera from "$lib/shared/3d/environments/review/EnvironmentReviewCamera.svelte";
   import { createSceneFeatureState } from "$lib/shared/3d/scene-features/state/scene-feature-state.svelte";
   import { setSceneFeatureContext } from "$lib/shared/3d/scene-features/context/scene-feature-context";
   import { createEnvironmentTransitionVisualState } from "$lib/shared/3d/environments/state/environment-transition-visual-state.svelte";
@@ -100,27 +100,12 @@
   >
     <HarnessToneMapping />
     {#key view}
-      <T.PerspectiveCamera
-        makeDefault
-        position={[
-          cameraPreset.position[0],
-          cameraPreset.position[1],
-          cameraPreset.position[2],
-        ]}
-        fov={cameraPreset.fov}
-      >
-        <OrbitControls
-          enableDamping
-          target={[
-            cameraPreset.target[0],
-            cameraPreset.target[1],
-            cameraPreset.target[2],
-          ]}
-          minDistance={2}
-          maxDistance={70}
-          maxPolarAngle={Math.PI / 2 + 0.04}
-        />
-      </T.PerspectiveCamera>
+      <EnvironmentReviewCamera
+        destinationId="forest-scene-review"
+        preset={cameraPreset}
+        walk={view === "walk"}
+        maxOrbitDistance={240}
+      />
     {/key}
     <Environment3D
       backgroundType={BackgroundType.FOREST}

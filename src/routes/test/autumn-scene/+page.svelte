@@ -5,19 +5,20 @@
    * Live verification harness for the Enchanted Autumn Dusk scene rebuild
    * (the "Ocean way"). Mounts the real 3D environment switcher
    * (Environment3D → AutumnScene) inside a Threlte <Canvas> with the same
-   * renderer config + scene-feature context the real viewer uses, plus an
-   * orbit camera so the scene can be inspected from any angle.
+   * renderer config + scene-feature context the real viewer uses, plus the
+   * shared fixed-shot and first-person review camera.
    *
    * This keeps working as AutumnScene evolves in later tasks: it routes through
    * Environment3D rather than importing AutumnScene directly, and tolerates the
    * scene still carrying legacy content. Disposable dev-only route.
    */
-  import { Canvas, T } from "@threlte/core";
+  import { Canvas } from "@threlte/core";
+  import { page } from "$app/state";
   import { WebGLRenderer } from "three";
   import { BackgroundType } from "@austencloud/backgrounds";
 
   import Environment3D from "$lib/shared/3d/environments/components/Environment3D.svelte";
-  import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
+  import EnvironmentReviewCamera from "$lib/shared/3d/environments/review/EnvironmentReviewCamera.svelte";
   import { createSceneFeatureState } from "$lib/shared/3d/scene-features/state/scene-feature-state.svelte";
   import { setSceneFeatureContext } from "$lib/shared/3d/scene-features/context/scene-feature-context";
   import { createEnvironmentTransitionVisualState } from "$lib/shared/3d/environments/state/environment-transition-visual-state.svelte";
@@ -35,6 +36,33 @@
   const transitionVisual = createEnvironmentTransitionVisualState();
   transitionVisual.setRendererReady(true);
   setEnvironmentTransitionVisualContext(transitionVisual);
+
+  const VIEW_PRESETS = {
+    hero: {
+      position: [0, 14, 32],
+      target: [0, 1, 3],
+      fov: 48,
+    },
+    walk: {
+      position: [0, 2.1, 9],
+      target: [0, 1.3, 0],
+      fov: 58,
+    },
+    world: {
+      position: [0, 48, 36],
+      target: [0, 2, 0],
+      fov: 52,
+    },
+  } as const;
+
+  type ViewName = keyof typeof VIEW_PRESETS;
+  const requestedView = $derived(page.url.searchParams.get("view"));
+  const view = $derived(
+    requestedView && requestedView in VIEW_PRESETS
+      ? (requestedView as ViewName)
+      : "hero"
+  );
+  const cameraPreset = $derived(VIEW_PRESETS[view]);
 </script>
 
 <svelte:head>
@@ -50,18 +78,13 @@
          so colors read the same here as in the sequence viewer. -->
     <HarnessToneMapping />
 
-    <!-- Orbit camera: backed by yomotsu/camera-controls via the shared
-         OrbitControls wrapper. Starts at the elevated Composer framing so
-         the clearing, pond, and both sightline openings are visible. -->
-    <T.PerspectiveCamera makeDefault position={[0, 14, 32]} fov={48}>
-      <OrbitControls
-        enableDamping
-        target={[0, 1, 3]}
-        minDistance={1.5}
-        maxDistance={40}
-        maxPolarAngle={Math.PI / 2 + 0.05}
+    {#key view}
+      <EnvironmentReviewCamera
+        destinationId="autumn-scene-review"
+        preset={cameraPreset}
+        walk={view === "walk"}
       />
-    </T.PerspectiveCamera>
+    {/key}
 
     <!-- Real environment switcher. AUTUMN routes to AutumnScene, which
          supplies its own sky, ground, fog, trees, leaves and lighting. -->
