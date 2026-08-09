@@ -85,12 +85,13 @@ describe("First Fire Cinder Court measured plan", () => {
     );
   });
 
-  it("preserves the DJ, EK and FL roster and measured court anchors", () => {
-    expect(plan.shrines.map(({ id, performerId, sequenceId, centre }) => ({ id, performerId, sequenceId, centre }))).toEqual([
-      { id: "dj", performerId: "cave-fire-automaton-dj", sequenceId: "cave-fire-seq-dj", centre: { x: 8.9, z: 9.5 } },
-      { id: "ek", performerId: "cave-fire-automaton-ek", sequenceId: "cave-fire-seq-ek", centre: { x: 9, z: 29.1 } },
-      { id: "fl", performerId: "cave-fire-automaton-fl", sequenceId: "cave-fire-seq-fl", centre: { x: 46.5, z: 10 } },
+  it("preserves the DJ, EK and FL roster with three different court silhouettes", () => {
+    expect(plan.shrines.map(({ id, performerId, sequenceId, silhouette, centre }) => ({ id, performerId, sequenceId, silhouette, centre }))).toEqual([
+      { id: "dj", performerId: "cave-fire-automaton-dj", sequenceId: "cave-fire-seq-dj", silhouette: "canyon-slot", centre: { x: 6, z: 6.1 } },
+      { id: "ek", performerId: "cave-fire-automaton-ek", sequenceId: "cave-fire-seq-ek", silhouette: "sunken-bowl", centre: { x: 18, z: 38 } },
+      { id: "fl", performerId: "cave-fire-automaton-fl", sequenceId: "cave-fire-seq-fl", silhouette: "chimney-rotunda", centre: { x: 42, z: 10 } },
     ]);
+    expect(new Set(plan.shrines.map((shrine) => shrine.silhouette)).size).toBe(3);
   });
 
   it("uses one visible 3.5 metre gate and one shared entry/exit throat per shrine", () => {
@@ -166,14 +167,19 @@ describe("First Fire Cinder Court measured plan", () => {
     }
   });
 
-  it("provides four overlapping no-prompt zones around every complete orbit", () => {
+  it("provides four overlapping no-prompt zones scaled to each court's viewing sweep", () => {
+    expect(Object.fromEntries(plan.shrines.map((shrine) => [shrine.id, shrine.orbitSweepDegrees]))).toEqual({
+      dj: -50,
+      ek: 360,
+      fl: -360,
+    });
     for (const shrine of plan.shrines) {
-      expect(Math.abs(shrine.orbitSweepDegrees)).toBe(360);
       expect(shrine.activationZones).toHaveLength(4);
+      const overlap = (Math.abs(shrine.orbitSweepDegrees) * 20) / 360;
       for (let index = 1; index < shrine.activationZones.length; index++) {
         const previous = shrine.activationZones[index - 1]!;
         const current = shrine.activationZones[index]!;
-        expect(Math.abs(previous.startDegrees + previous.sweepDegrees - current.startDegrees)).toBe(20);
+        expect(Math.abs(previous.startDegrees + previous.sweepDegrees - current.startDegrees)).toBeCloseTo(overlap, 9);
       }
     }
   });
@@ -210,8 +216,8 @@ describe("First Fire Cinder Court measured plan", () => {
     });
     expect(deeper.hub.minZ - plan.hub.minZ).toBeCloseTo(0.25, 12);
     expect(deeper.hub.maxZ - plan.hub.maxZ).toBeCloseTo(0.25, 12);
-    expect(deeper.hub.maxX - deeper.hub.minX).toBe(20);
-    expect(deeper.hub.maxZ - deeper.hub.minZ).toBe(18);
+    expect(deeper.hub.maxX - deeper.hub.minX).toBe(13);
+    expect(deeper.hub.maxZ - deeper.hub.minZ).toBe(13);
     for (let index = 0; index < plan.shrines.length; index++) {
       expect(deeper.shrines[index]!.centre.x).toBe(plan.shrines[index]!.centre.x);
       expect(deeper.shrines[index]!.centre.z - plan.shrines[index]!.centre.z).toBeCloseTo(0.25, 12);

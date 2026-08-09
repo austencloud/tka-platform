@@ -79,12 +79,12 @@
         {
           "kind": "room-shell",
           "path": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
-          "sha256": "2a6760e5018ef0c31c64613f211b91ebb33b3c9953efd2e742c53e31d8b4a9dd"
+          "sha256": "86411a0e363b87df07d3c23e6eb7713a9d040108470b9a4176dd27541e56b712"
         },
         {
           "kind": "catalog-motion-lock",
           "path": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-gate1-report.json",
-          "sha256": "59669696299ace91e89b7cdbbc70fd8162d2b2e1a95fa9bc52b93ada4fdf658a"
+          "sha256": "e87b7414a090a21376625886a757f7a1c83fe52644f454887e8e29b9cb5c6d1b"
         }
       ],
       "checks": [

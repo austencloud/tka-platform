@@ -69,7 +69,8 @@ describe("First Fire Cinder Court Blender coordinate contract", () => {
         (candidate) => candidate.id === court.shrineId
       );
       expect(shrine).toBeDefined();
-      expect(court.planOutline).toHaveLength(16);
+      // DJ is a rectangular canyon slot; EK and FL are 16-gon bowls/rotundas.
+      expect(court.planOutline.length).toBe(court.shrineId === "dj" ? 4 : 16);
       expect(court.throatWidth).toBe(3.5);
       expect(court.sharedEntryAndExit).toBe(true);
       expect(shrine!.planEntry).toEqual(shrine!.planExit);

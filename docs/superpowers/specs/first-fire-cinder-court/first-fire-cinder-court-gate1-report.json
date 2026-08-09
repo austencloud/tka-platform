@@ -16,10 +16,10 @@
       "max": 36
     },
     "hub": {
-      "minX": 16,
-      "maxX": 36,
-      "minZ": 13,
-      "maxZ": 31
+      "minX": 13.5,
+      "maxX": 26.5,
+      "minZ": 15.5,
+      "maxZ": 28.5
     }
   },
   "route": {
@@ -85,24 +85,24 @@
       {
         "shrineId": "dj",
         "centre": {
-          "x": 13.5,
-          "z": 12
+          "x": 12.3,
+          "z": 8.6
         },
         "width": 3.5
       },
       {
         "shrineId": "ek",
         "centre": {
-          "x": 13.75,
-          "z": 27.5
+          "x": 18,
+          "z": 33.65
         },
         "width": 3.5
       },
       {
         "shrineId": "fl",
         "centre": {
-          "x": 40.2,
-          "z": 13.8
+          "x": 37.87,
+          "z": 11.38
         },
         "width": 3.5
       }
@@ -129,8 +129,8 @@
       "catalogId": "tnd-split-opp-jdjd",
       "word": "JDJD",
       "centre": {
-        "x": 8.9,
-        "z": 9.5
+        "x": 6,
+        "z": 6.1
       }
     },
     {
@@ -140,8 +140,8 @@
       "catalogId": "tnd-split-opp-keke",
       "word": "KEKE",
       "centre": {
-        "x": 9,
-        "z": 29.1
+        "x": 18,
+        "z": 38
       }
     },
     {
@@ -151,16 +151,16 @@
       "catalogId": "tnd-split-opp-lflf",
       "word": "LFLF",
       "centre": {
-        "x": 46.5,
+        "x": 42,
         "z": 10
       }
     }
   ],
   "sourceDigests": {
-    "planContract": "45a2100d261232b0c2e148ae79d4c0990d4d72511785514ae098d7fa80dbd651",
+    "planContract": "73f46f3399e0e2926fc89fe55bba8f60d2f2eb246fdbdf1b5879923b56888344",
     "sequenceBinding": "707a7111e769241d86c6d19c6bdbc45da32da318b13a07ddc03bc3a5f0ad3843",
     "catalog": "e6a9af2214c2af0a10c2169e19dd9a0a1b7ac980368f0132fdb6ff158434c730",
-    "board": "cd4560ddecaaf259b3e19e12ae8ea0d7c0b18bf1805a6f84c199907452c8c086"
+    "board": "4ed3749909d846b6c3b82c47206410b626cd6cdcc8b58b2bc15878de3c45f809"
   },
   "sequenceFingerprints": [
     {

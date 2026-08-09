@@ -223,7 +223,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${
   ${routeSections}
   ${fireGuides}
   ${shrines}
-  ${text(px(hubCentre.x), pz(hubCentre.z) + 6, ["RETURNING HUB", "20 × 18 m"], { size: 17, weight: 850, anchor: "middle", lineHeight: 20 })}
+  ${text(px(hubCentre.x), pz(hubCentre.z) + 6, ["RETURNING HUB", "13 m ember cairn"], { size: 17, weight: 850, anchor: "middle", lineHeight: 20 })}
   <rect x="${px(0) - 10}" y="${pz(20)}" width="20" height="${4 * scale}" fill="${COLORS.water}"/>
   ${text(px(0) - 18, pz(22), ["WATER"], { size: 14, fill: COLORS.water, weight: 800, anchor: "end" })}
   <rect x="${px(58) - 10}" y="${pz(32)}" width="20" height="${4 * scale}" fill="${COLORS.green}"/>

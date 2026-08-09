@@ -1,6 +1,9 @@
 # First Fire Cinder Court — Navigation Reset Proposal (2026-08-09)
 
-Status: **awaiting Austen's approval.** This replaces the rejected 2026-08-09
+Status: **APPROVED by Austen 2026-08-09** ("approved — replace the plan and
+regenerate Gate 1"). The plan contract has been replaced and the Gate 1 board
+regenerated; tracker decision `6ZZvhCv6pTJ0NSmtuwZP` supersedes the earlier
+`lock it`. This replaced the rejected 2026-08-09
 interior ("I don't even know where to walk. I'm totally lost."). Nothing
 downstream — Blender, GLB, runtime — gets built from this until the topology is
 approved in first person terms.

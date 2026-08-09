@@ -163,7 +163,7 @@ const TRENCH_OUTER_RADIUS = 2.8;
 const ORBIT_WIDTH = 2.4;
 const ORBIT_SAMPLE_COUNT = 32;
 const GATE_WIDTH = 3.5;
-const WALL_BAND_THICKNESS = 2.5;
+const WALL_BAND_THICKNESS = 1.2;
 const ROCK_HEIGHT = 5.5;
 
 interface CourtDefinition {
@@ -189,10 +189,10 @@ const COURT_DEFINITIONS: readonly CourtDefinition[] = [
     sequenceId: "cave-fire-seq-dj",
     silhouette: "canyon-slot",
     centre: { x: 6, z: 6.1 },
-    entry: { x: 12, z: 6.2 },
+    entry: { x: 12.3, z: 8.6 },
     orbitRadius: 4.3,
-    orbitStartDegrees: 28,
-    orbitSweepDegrees: -56,
+    orbitStartDegrees: 22,
+    orbitSweepDegrees: -50,
     gateCentre: { x: 15.62, z: 17.62 },
     hubApproach: { x: 17.5, z: 19.5 },
   },
@@ -240,27 +240,26 @@ const CORRIDOR_DEFINITIONS = [
     points: [
       { x: 15.62, z: 17.62 },
       { x: 14, z: 12 },
-      { x: 12, z: 8 },
-      { x: 12, z: 6.2 },
+      { x: 12.3, z: 8.6 },
     ],
   },
   {
     id: "ek",
-    width: 3.5,
+    width: 6,
     points: [
       { x: 20, z: 28.2 },
-      { x: 20, z: 32 },
-      { x: 18, z: 33.65 },
+      { x: 19.4, z: 31 },
+      { x: 18.5, z: 32.55 },
     ],
   },
   {
     id: "fl",
-    width: 3.5,
+    width: 6,
     points: [
       { x: 24.38, z: 17.62 },
-      { x: 30, z: 14 },
-      { x: 36, z: 12 },
-      { x: 37.87, z: 11.38 },
+      { x: 30, z: 15 },
+      { x: 33.5, z: 13.2 },
+      { x: 37.2, z: 11.75 },
     ],
   },
   {
@@ -276,6 +275,19 @@ const CORRIDOR_DEFINITIONS = [
   },
 ] as const;
 
+/**
+ * Staggered baffle piers inside the widened EK/FL corridors. Each pair
+ * overlaps across the corridor cross-section so no straight ray can travel
+ * the corridor's length; the walk serpentines around them. In the art pass
+ * they read as brazier stacks — fire as boundary, never as collision.
+ */
+const BAFFLE_PIERS: ReadonlyArray<{ id: string; rect: WorldRect }> = [
+  { id: "ek-pier-east", rect: { minX: 19.1, maxX: 23, minZ: 29.5, maxZ: 30.6 } },
+  { id: "ek-pier-west", rect: { minX: 15.5, maxX: 20.4, minZ: 31.4, maxZ: 32.3 } },
+  { id: "fl-pier-south", rect: { minX: 29, maxX: 30.2, minZ: 14.2, maxZ: 18.2 } },
+  { id: "fl-pier-north", rect: { minX: 32, maxX: 33.2, minZ: 10.2, maxZ: 15 } },
+] as const;
+
 /** Solid uncarved regions modelled explicitly so sightline maths is honest. */
 const FILLER_ROCKS: ReadonlyArray<{ id: string; rect: WorldRect }> = [
   { id: "north-field", rect: { minX: 18, maxX: 35.5, minZ: 0.4, maxZ: 8.7 } },
@@ -283,7 +295,7 @@ const FILLER_ROCKS: ReadonlyArray<{ id: string; rect: WorldRect }> = [
   { id: "east-flank", rect: { minX: 49.8, maxX: 58, minZ: 2.3, maxZ: 31.5 } },
   { id: "west-mid", rect: { minX: 0.4, maxX: 10, minZ: 9.6, maxZ: 19.4 } },
   { id: "west-south", rect: { minX: 0.4, maxX: 9.7, minZ: 24.6, maxZ: 43.6 } },
-  { id: "south-central", rect: { minX: 22, maxX: 38, minZ: 36.6, maxZ: 43.6 } },
+  { id: "south-central", rect: { minX: 23.6, maxX: 38, minZ: 36.6, maxZ: 43.6 } },
   { id: "south-east", rect: { minX: 38, maxX: 49.8, minZ: 36.2, maxZ: 43.6 } },
   { id: "mid-east-a", rect: { minX: 29.5, maxX: 34, minZ: 19.4, maxZ: 27.4 } },
   { id: "mid-east-b", rect: { minX: 34, maxX: 49.5, minZ: 19.4, maxZ: 30.4 } },
@@ -369,21 +381,45 @@ function rectPolygon(rect: WorldRect): Point2[] {
   ];
 }
 
-/** One wall band flanking a corridor segment on one side. */
-function wallBand(a: Point2, b: Point2, halfWidth: number, side: 1 | -1): Point2[] {
-  const dx = b.x - a.x;
-  const dz = b.z - a.z;
-  const length = Math.hypot(dx, dz) || 1;
-  const nx = (-dz / length) * side;
-  const nz = (dx / length) * side;
-  const inner = halfWidth;
-  const outer = halfWidth + WALL_BAND_THICKNESS;
-  return [
-    { x: a.x + nx * inner, z: a.z + nz * inner },
-    { x: b.x + nx * inner, z: b.z + nz * inner },
-    { x: b.x + nx * outer, z: b.z + nz * outer },
-    { x: a.x + nx * outer, z: a.z + nz * outer },
-  ];
+/**
+ * One continuous mitred wall strip flanking a whole corridor on one side. The
+ * mitre join keeps the floor edge exactly `halfWidth` from every segment — no
+ * band ever juts across a bend's floor and no wedge gap opens on the outside.
+ */
+function corridorSideStrip(
+  points: readonly Point2[],
+  halfWidth: number,
+  side: 1 | -1
+): Point2[] {
+  const unit = (from: Point2, to: Point2) => {
+    const length = Math.hypot(to.x - from.x, to.z - from.z) || 1;
+    return { x: (to.x - from.x) / length, z: (to.z - from.z) / length };
+  };
+  const perp = (d: { x: number; z: number }) => ({ x: -d.z * side, z: d.x * side });
+  const inner: Point2[] = [];
+  const outer: Point2[] = [];
+  for (let index = 0; index < points.length; index++) {
+    const at = points[index]!;
+    const before = index > 0 ? perp(unit(points[index - 1]!, at)) : null;
+    const after = index < points.length - 1 ? perp(unit(at, points[index + 1]!)) : null;
+    let normal = before ?? after!;
+    let scale = 1;
+    if (before && after) {
+      const sum = { x: before.x + after.x, z: before.z + after.z };
+      const sumLength = Math.hypot(sum.x, sum.z) || 1e-6;
+      normal = { x: sum.x / sumLength, z: sum.z / sumLength };
+      scale = 1 / Math.max(0.35, normal.x * before.x + normal.z * before.z);
+    }
+    inner.push({
+      x: at.x + normal.x * halfWidth * scale,
+      z: at.z + normal.z * halfWidth * scale,
+    });
+    outer.push({
+      x: at.x + normal.x * (halfWidth + WALL_BAND_THICKNESS) * scale,
+      z: at.z + normal.z * (halfWidth + WALL_BAND_THICKNESS) * scale,
+    });
+  }
+  return [...inner, ...outer.reverse()];
 }
 
 function normalizeDegrees(value: number): number {
@@ -443,19 +479,14 @@ interface LocalBasalt {
 function buildLocalBasalt(): LocalBasalt[] {
   const masses: LocalBasalt[] = [];
 
-  // Corridor wall bands.
+  // One mitred wall strip per corridor side.
   for (const corridor of CORRIDOR_DEFINITIONS) {
-    const half = corridor.width / 2;
-    for (let index = 0; index < corridor.points.length - 1; index++) {
-      const a = corridor.points[index]!;
-      const b = corridor.points[index + 1]!;
-      for (const side of [1, -1] as const) {
-        masses.push({
-          id: `${corridor.id}-wall-${index + 1}${side === 1 ? "s" : "n"}`,
-          polygon: wallBand(a, b, half, side),
-          minimumHeight: ROCK_HEIGHT,
-        });
-      }
+    for (const side of [1, -1] as const) {
+      masses.push({
+        id: `${corridor.id}-wall-${side === 1 ? "s" : "n"}`,
+        polygon: corridorSideStrip(corridor.points, corridor.width / 2, side),
+        minimumHeight: ROCK_HEIGHT,
+      });
     }
   }
 
@@ -476,10 +507,9 @@ function buildLocalBasalt(): LocalBasalt[] {
   const dj = DJ_COURT_RECT;
   const djWalls: Array<{ id: string; rect: WorldRect }> = [
     { id: "dj-court-north", rect: { minX: 1, maxX: 14.5, minZ: 1.1, maxZ: dj.minZ } },
-    { id: "dj-court-south", rect: { minX: 1, maxX: 14.5, minZ: dj.maxZ, maxZ: 11.1 } },
+    { id: "dj-court-south", rect: { minX: 1, maxX: 10.5, minZ: dj.maxZ, maxZ: 11.1 } },
     { id: "dj-court-west", rect: { minX: 1, maxX: dj.minX, minZ: 1.1, maxZ: 11.1 } },
     { id: "dj-court-jamb-north", rect: { minX: dj.maxX, maxX: 14.5, minZ: dj.minZ, maxZ: 5.0 } },
-    { id: "dj-court-jamb-south", rect: { minX: dj.maxX, maxX: 14.5, minZ: 7.4, maxZ: dj.maxZ } },
   ];
   masses.push(
     ...djWalls.map((wall) => ({
@@ -496,7 +526,7 @@ function buildLocalBasalt(): LocalBasalt[] {
       EK_COURT.centre,
       EK_COURT.floorRadius,
       EK_COURT.wallOuter,
-      [{ azimuthDegrees: -90, halfDegrees: 22 }],
+      [{ azimuthDegrees: -90, halfDegrees: 32 }],
       3
     )
   );
@@ -516,6 +546,14 @@ function buildLocalBasalt(): LocalBasalt[] {
       ],
       12
     )
+  );
+
+  masses.push(
+    ...BAFFLE_PIERS.map((pier) => ({
+      id: pier.id,
+      polygon: rectPolygon(pier.rect),
+      minimumHeight: ROCK_HEIGHT,
+    }))
   );
 
   // Solid uncarved interior regions.
@@ -653,7 +691,7 @@ export function buildFirstFireProcessionPlan(
       kind: "shrine-approach",
       shrineId: "dj",
       width: 3,
-      points: [p(18, 22), p(17.5, 19.5), p(15.62, 17.62), p(14, 12), p(12, 8), shrineById.dj.entry],
+      points: [p(18, 22), p(17.5, 19.5), p(15.62, 17.62), p(14, 12), shrineById.dj.entry],
     },
     {
       id: "dj-orbit",
@@ -667,14 +705,14 @@ export function buildFirstFireProcessionPlan(
       kind: "shrine-return",
       shrineId: "dj",
       width: 3,
-      points: [shrineById.dj.exit, p(12, 8), p(14, 12), p(15.62, 17.62), p(17.5, 19.5), p(18, 21)],
+      points: [shrineById.dj.exit, p(14, 12), p(15.62, 17.62), p(17.5, 19.5), p(18, 21)],
     },
     {
       id: "hub-to-ek",
       kind: "shrine-approach",
       shrineId: "ek",
       width: 3,
-      points: [p(18, 21), p(20, 25.5), p(20, 28.2), p(20, 32), shrineById.ek.entry],
+      points: [p(18, 21), p(20, 25.5), p(20, 28.2), p(17.9, 30.05), p(21.6, 31.8), shrineById.ek.entry],
     },
     {
       id: "ek-orbit",
@@ -688,14 +726,14 @@ export function buildFirstFireProcessionPlan(
       kind: "shrine-return",
       shrineId: "ek",
       width: 3,
-      points: [shrineById.ek.exit, p(20, 32), p(20, 28.2), p(20, 25.5), p(21, 23)],
+      points: [shrineById.ek.exit, p(21.6, 31.8), p(17.9, 30.05), p(20, 28.2), p(20, 25.5), p(21, 23)],
     },
     {
       id: "hub-to-fl",
       kind: "shrine-approach",
       shrineId: "fl",
       width: 3,
-      points: [p(21, 23), p(22.5, 19.5), p(24.38, 17.62), p(30, 14), p(36, 12), shrineById.fl.entry],
+      points: [p(21, 23), p(22.5, 19.5), p(24.38, 17.62), p(29.6, 13.4), p(32.6, 15.9), shrineById.fl.entry],
     },
     {
       id: "fl-orbit",
@@ -709,7 +747,7 @@ export function buildFirstFireProcessionPlan(
       kind: "shrine-return",
       shrineId: "fl",
       width: 3,
-      points: [shrineById.fl.exit, p(36, 12), p(30, 14), p(24.38, 17.62), p(22.5, 19.5), p(24, 24)],
+      points: [shrineById.fl.exit, p(32.6, 15.9), p(29.6, 13.4), p(24.38, 17.62), p(22.5, 19.5), p(24, 24)],
     },
     {
       id: "earth-growth-path",
@@ -752,7 +790,7 @@ export function buildFirstFireProcessionPlan(
       state: "dj",
       collision: false,
       width: 0.8,
-      points: [p(17.5, 19.5), p(15.62, 17.62), p(14, 12), p(12, 8), shrineById.dj.entry],
+      points: [p(17.5, 19.5), p(15.62, 17.62), p(14, 12), shrineById.dj.entry],
     },
     {
       id: "ek-live-lane",
@@ -760,7 +798,7 @@ export function buildFirstFireProcessionPlan(
       state: "ek",
       collision: false,
       width: 0.8,
-      points: [p(20, 25.5), p(20, 28.2), p(20, 32), shrineById.ek.entry],
+      points: [p(20, 25.5), p(20, 28.2), p(17.9, 30.05), p(21.6, 31.8), shrineById.ek.entry],
     },
     {
       id: "fl-live-lane",
@@ -768,7 +806,7 @@ export function buildFirstFireProcessionPlan(
       state: "fl",
       collision: false,
       width: 0.8,
-      points: [p(22.5, 19.5), p(24.38, 17.62), p(30, 14), p(36, 12), shrineById.fl.entry],
+      points: [p(22.5, 19.5), p(24.38, 17.62), p(29.6, 13.4), p(32.6, 15.9), shrineById.fl.entry],
     },
     {
       id: "completed-lanes",
@@ -776,7 +814,7 @@ export function buildFirstFireProcessionPlan(
       state: "extinguished",
       collision: false,
       width: 0.5,
-      points: [shrineById.dj.entry, p(14, 12), p(15.62, 17.62), p(20, 28.2), p(20, 32), shrineById.ek.entry],
+      points: [shrineById.dj.entry, p(14, 12), p(15.62, 17.62), p(20, 28.2), p(21.6, 31.8), shrineById.ek.entry],
     },
     {
       id: "earth-growth",
