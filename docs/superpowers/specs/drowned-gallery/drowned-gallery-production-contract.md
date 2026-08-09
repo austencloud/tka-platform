@@ -13,9 +13,13 @@ first capture session for this revision.
 
 ## Outcome
 
-The visitor earns three private audiences — one per letter — by diving flooded
-channels and surfacing into air-bell grottos, then watches all three letters
-doubled in the mirror pool. Felt sequence: descent → choice → breath →
+The visitor chooses ONE flooded channel and earns one private audience — the
+letter they picked becomes their personal introduction to Water — then rises
+the buoyant shaft to discover all three letters doubled in the mirror pool.
+The other two bells stay open as optional dives and replay. One dive is
+required; nothing is a checklist (2026-08-09 Codex-review amendment: earn the
+room's transformation, not every letter — Fire keeps its full set because its
+room state causally requires it). Felt sequence: descent → choice → breath →
 weightlessness → reflection.
 
 ## Authority ledger

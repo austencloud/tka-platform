@@ -23,12 +23,20 @@ revises the layout module; everything downstream regenerates.
 
 ## Outcome
 
-The visitor should leave Water having *earned* three private audiences — one
-per letter — by diving through dark flooded channels and surfacing into
-air-bell grottos. They should understand that A, B and C are the first three
-letters, met one at a time, and that water is the element that shows motion
-twice: the room closes on all three performers doubled in a mirror pool. The
-felt sequence is descent → choice → breath → weightlessness → reflection.
+The visitor should leave Water having *chosen* one letter as their personal
+introduction — one dive, one private air-bell audience — and then discovered
+all three letters together, doubled in the mirror pool. The choice is the
+mechanic: which channel you take determines which performer meets you alone.
+The other two bells stay open as optional dives and replay variation; nothing
+is locked, and nothing is a checklist. The felt sequence is descent → choice
+→ breath → weightlessness → reflection.
+
+**Amended 2026-08-09 (Codex review, accepted):** the original draft required
+earning all three audiences before the shaft. That made Water a three-item
+errand in the same dramatic grammar as Fire. The governing rule now: **make
+the visitor earn the room's transformation, not every letter.** Fire keeps
+its full progression because its room state causally requires the set; Water
+requires exactly one dive.
 
 ## Experience sentence
 
@@ -55,11 +63,13 @@ one bounded column with one entrance and one exit.
 
 ## Structural decisions
 
-1. **Free choice, not forced sequence.** The hub is hub-and-spoke: any channel,
-   any order, full backtracking through every channel. Fire is the cave's
-   forced procession; Water deliberately contrasts it as the explorable room.
-   Channel length implies difficulty order (A shortest → C longest) without
-   enforcing it. *Reversible at Gate 1 if the plan reads better sequenced.*
+1. **One choice, not a checklist.** The hub is hub-and-spoke: the visitor
+   picks ONE channel, meets that letter privately, and that bell feeds the
+   buoyant shaft up to the finale. The other two channels remain open —
+   optional dives before ascending, or replay variation — but the route
+   requires exactly one. Fire is the cave's forced full procession; Water is
+   its opposite: a single meaningful choice. Channel character (length, glow
+   color) differentiates the letters without ranking them as tasks.
 2. **One performer per bell.** A, B and C leave the shared shore shelf. Each
    air-bell stages exactly one performer on its own firelit shelf, close
    (3–4 m read distance), alone — Fire's isolated-shrine intimacy in Water's
@@ -94,8 +104,10 @@ one bounded column with one entrance and one exit.
   LANDING_Y-to-CAUSEWAY_Y, air above the waterline, one performer shelf at
   SHELF_Y-equivalent behind a narrow water margin, firelight niche, and a
   ceiling low enough to feel held (≈ 3 m over the deck) — the opposite of the
-  dome. Each bell's exit returns to its channel (backtracking) and the LAST
-  bell (or all bells — Gate 1 question) also connects to the buoyant shaft.
+  dome. **Every bell connects to the buoyant shaft** (shared column or per-
+  bell feeders — Gate 1 topology call), so any single dive completes the
+  route; each bell's exit also returns to its channel for backtracking and
+  optional further dives.
 - **Buoyant shaft (new):** a vertical water column (~2.5 m square) from
   gallery depth up to the grotto ring apron level. Inside the column, gravity
   scale drops (Moon seam) so a jump floats the player up; a lip at the top
@@ -150,8 +162,9 @@ one bounded column with one entrance and one exit.
 
 ## Open questions for Gate 1
 
-1. Bells → shaft topology: does every bell connect to the shaft, or only the
-   hub after all three (shaft as finale vs. shaft as each bell's exit)?
+1. Bells → shaft topology: RESOLVED by the 2026-08-09 amendment — every bell
+   reaches the shaft, so one dive completes the route. Remaining sub-question:
+   one shared column with three feeders, or the hub as the shaft's entry.
 2. Ring staging of the three performers for the doubled final frame.
 3. Does the gallery room's compiled footprint grow to fit three bells, and if
    so, does the whole cave walk need a re-check (rooms move downstream)?
