@@ -1,0 +1,77 @@
+{
+  "generatedFrom": "docs/superpowers/specs/first-fire-cinder-court/gate3",
+  "crop": {
+    "left": 0,
+    "top": 168,
+    "width": 1399,
+    "height": 600
+  },
+  "board": {
+    "output": "E:\\tka-platform\\docs\\superpowers\\specs\\first-fire-cinder-court\\gate3\\first-fire-gate3-target-board.webp",
+    "width": 2992,
+    "height": 3094
+  },
+  "silhouette": {
+    "output": "E:\\tka-platform\\docs\\superpowers\\specs\\first-fire-cinder-court\\gate3\\first-fire-gate3-silhouette.webp",
+    "width": 2992,
+    "height": 3094
+  },
+  "frames": [
+    {
+      "id": "ember-bridge",
+      "file": "camera-ember-bridge.webp",
+      "phase": "approach",
+      "vocabulary": "none",
+      "sha256": "65f24225074c255cadbfde42ebbdadf31f8b1b8563ff6ad2daf15d593cac4db5",
+      "bytes": 21534
+    },
+    {
+      "id": "dj-threshold",
+      "file": "camera-dj-threshold.webp",
+      "phase": "dj-active",
+      "vocabulary": "charcoal",
+      "sha256": "30cc125d501ecbb5718f741d6ec6b1ab7de5f878c62f12c6d1197441044440cf",
+      "bytes": 46508
+    },
+    {
+      "id": "dj-cooling",
+      "file": "camera-dj-cooling.webp",
+      "phase": "dj-complete",
+      "vocabulary": "charcoal",
+      "sha256": "51c610227e56d53fafe8beb2cd865f6cc3f380ad2dcc6999815197d3e78e8baa",
+      "bytes": 24804
+    },
+    {
+      "id": "ek-threshold",
+      "file": "camera-ek-threshold.webp",
+      "phase": "ek-active",
+      "vocabulary": "charcoal + fire",
+      "sha256": "3dc6fab36650419cf8651c9222d5489d0c2eaf9dc2e21becdc66d88bd435f3c4",
+      "bytes": 39208
+    },
+    {
+      "id": "fl-threshold",
+      "file": "camera-fl-threshold.webp",
+      "phase": "fl-active",
+      "vocabulary": "charcoal + fire + zap",
+      "sha256": "2384b3ae7ea40ff217672e8a4f0484f3b7e922f3328a92966c89d150b50f57b4",
+      "bytes": 37828
+    },
+    {
+      "id": "blackout",
+      "file": "camera-blackout.webp",
+      "phase": "fire-extinguished",
+      "vocabulary": "none",
+      "sha256": "dae93a5c2012fa5ad1a4d900b4fbe5cc530f3258dcb0d6d90305d0121f3f413b",
+      "bytes": 16488
+    },
+    {
+      "id": "earth-reveal",
+      "file": "camera-earth-reveal.webp",
+      "phase": "growth-complete",
+      "vocabulary": "none",
+      "sha256": "a7d4863a473ff6fcacc6acd7e51948fabbdcbf7ce7051d38c563d1ca349f267e",
+      "bytes": 32808
+    }
+  ]
+}
