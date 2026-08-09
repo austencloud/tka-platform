@@ -6,9 +6,10 @@
  * contract that produced the frame, so a Gate 4 render from these cameras is
  * provably the same room the user approved.
  */
-import type {
-  FirstFireBlenderContract,
-  FirstFireBlenderCamera,
+import {
+  FIRST_FIRE_BLENDER_PLAYER_EYE_HEIGHT,
+  type FirstFireBlenderContract,
+  type FirstFireBlenderCamera,
 } from "./first-fire-blender-contract";
 
 export interface FirstFireLockedCamera {
@@ -66,6 +67,45 @@ export const FIRST_FIRE_LOCKED_CAMERAS: readonly FirstFireLockedCamera[] = [
   },
 ] as const;
 
+/**
+ * Cameras Gate 3 needs that the contract does not carry.
+ *
+ * These are derived here rather than added to the contract on purpose. The
+ * contract's source digest is Gate 2 evidence for the graybox GLB, and cameras
+ * contribute no geometry to that GLB — the verifier asserts zero cameras in the
+ * export. Adding a QA camera upstream would invalidate an approved artifact's
+ * digest without changing a single vertex. Deriving from the same shrine
+ * geometry keeps registration exact and keeps Gate 3 additive.
+ */
+function deriveGate3Camera(
+  contract: FirstFireBlenderContract,
+  id: string
+): FirstFireBlenderCamera {
+  if (id !== "dj-cooling") {
+    throw new Error(
+      `Locked camera ${id} is missing from the First Fire contract`
+    );
+  }
+  const dj = contract.shrines.find((candidate) => candidate.id === "dj");
+  if (!dj) {
+    throw new Error("The First Fire contract is missing the DJ court");
+  }
+  // Standing at the exit mouth the visitor actually leaves through, looking
+  // back at the court as it cools to coals.
+  return {
+    id: "dj-cooling",
+    name: "QA_Camera_dj_cooling",
+    position: {
+      x: dj.blenderExit.x,
+      y: dj.blenderExit.y,
+      z: FIRST_FIRE_BLENDER_PLAYER_EYE_HEIGHT,
+    },
+    target: { x: dj.blenderCentre.x, y: dj.blenderCentre.y, z: 1.05 },
+    horizontalFovDegrees: 62,
+    type: "perspective",
+  };
+}
+
 /** The contract's documented exporter transform: (X, Y, Z) -> (X, Z, -Y). */
 function toRuntime(point: { x: number; y: number; z: number }) {
   return { x: point.x, y: point.z, z: -point.y };
@@ -75,14 +115,9 @@ export function buildFirstFireLockedCameraViews(
   contract: FirstFireBlenderContract
 ): FirstFireLockedCameraView[] {
   return FIRST_FIRE_LOCKED_CAMERAS.map((locked) => {
-    const source: FirstFireBlenderCamera | undefined = contract.cameras.find(
-      (candidate) => candidate.id === locked.id
-    );
-    if (!source) {
-      throw new Error(
-        `Locked camera ${locked.id} is missing from the First Fire contract`
-      );
-    }
+    const source: FirstFireBlenderCamera =
+      contract.cameras.find((candidate) => candidate.id === locked.id) ??
+      deriveGate3Camera(contract, locked.id);
     const position = toRuntime(source.position);
     const target = toRuntime(source.target);
     return {

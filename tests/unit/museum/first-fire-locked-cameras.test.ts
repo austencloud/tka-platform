@@ -7,17 +7,27 @@ import {
 
 const contract = buildFirstFireBlenderContract();
 
-describe("First Fire contract cameras", () => {
-  it("carries a dj-cooling camera at the DJ exit mouth looking back at the court", () => {
-    const camera = contract.cameras.find((entry) => entry.id === "dj-cooling");
-    expect(camera).toBeDefined();
+describe("First Fire Gate 3 derived cameras", () => {
+  it("leaves the digested contract untouched", () => {
+    // The contract's source digest is Gate 2 evidence for the graybox GLB, and
+    // cameras contribute no geometry to it. A Gate 3 camera added upstream
+    // would invalidate an approved artifact without moving a vertex.
+    expect(
+      contract.cameras.some((entry) => entry.id === "dj-cooling")
+    ).toBe(false);
+  });
+
+  it("derives dj-cooling at the DJ exit mouth looking back at the court", () => {
+    const view = buildFirstFireLockedCameraViews(contract).find(
+      (entry) => entry.id === "dj-cooling"
+    )!;
     const dj = contract.shrines.find((entry) => entry.id === "dj")!;
     // The camera stands at the exit mouth the visitor actually leaves through.
-    expect(camera!.position.x).toBeCloseTo(dj.blenderExit.x, 3);
-    expect(camera!.position.y).toBeCloseTo(dj.blenderExit.y, 3);
+    expect(view.position.x).toBeCloseTo(dj.blenderExit.x, 3);
+    expect(view.position.z).toBeCloseTo(-dj.blenderExit.y, 3);
     // And it faces the court centre, not the next court.
-    expect(camera!.target.x).toBeCloseTo(dj.blenderCentre.x, 3);
-    expect(camera!.target.y).toBeCloseTo(dj.blenderCentre.y, 3);
+    expect(view.target.x).toBeCloseTo(dj.blenderCentre.x, 3);
+    expect(view.target.z).toBeCloseTo(-dj.blenderCentre.y, 3);
   });
 });
 

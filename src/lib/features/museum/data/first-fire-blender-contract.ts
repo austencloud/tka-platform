@@ -441,7 +441,6 @@ export function buildFirstFireBlenderContract(
       ),
       camera("ember-bridge", thresholdCentre, gateFor("dj").beacon, planCentre, 68),
       camera("dj-threshold", dj.entry, dj.centre, planCentre, 62),
-      camera("dj-cooling", dj.exit, dj.centre, planCentre, 62),
       camera("ek-threshold", ek.entry, ek.centre, planCentre, 62),
       camera("fl-threshold", fl.entry, fl.centre, planCentre, 62),
       camera("blackout", fl.exit, earthDoor, planCentre, 70),
