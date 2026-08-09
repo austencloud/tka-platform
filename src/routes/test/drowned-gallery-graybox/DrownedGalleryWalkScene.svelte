@@ -26,6 +26,8 @@
   } from "$lib/shared/3d/physics/types";
   import GltfAsset from "$lib/shared/3d/environments/primitives/GltfAsset.svelte";
   import {
+    CAUSEWAY_Y,
+    EYE_ABOVE_FLOOR,
     SHELF_Y,
     WATERLINE_Y,
     DOME_APEX_Y,
@@ -137,6 +139,42 @@
     targetPlayerYaw = spawn.yaw;
   }
 
+  /**
+   * Dev-only review bridge. A graybox exists to be LOOKED at, and an agent
+   * verifying its own diff cannot take pointer lock — so without this the only
+   * frame anyone can capture is the spawn point in the dark approach. Takes
+   * PLAN metres (the same numbers the layout module and the Blender QA cameras
+   * use) and converts to the GLB's authoring origin.
+   */
+  function installReviewBridge(): (() => void) | undefined {
+    if (!import.meta.env.DEV || typeof window === "undefined") return;
+    const bridge = {
+      /** Teleport to a plan-space point. `y` is an elevation, not an offset. */
+      go(planX: number, planZ: number, y = CAUSEWAY_Y + EYE_ABOVE_FLOOR) {
+        const target = { x: planX - origin.x, y, z: planZ - origin.z };
+        physicsProvider?.teleport?.(target);
+        playerPosition = target;
+        return target;
+      },
+      /** Face a plan-space point from wherever the player is standing. */
+      lookAt(planX: number, planZ: number) {
+        const angle = Math.atan2(
+          planX - origin.x - playerPosition.x,
+          planZ - origin.z - playerPosition.z
+        );
+        playerYaw = angle;
+        targetPlayerYaw = angle;
+        return angle;
+      },
+      where: () => ({ ...playerPosition, yaw: playerYaw, origin }),
+      layout,
+    };
+    (window as unknown as Record<string, unknown>).__dgWalk = bridge;
+    return () => {
+      delete (window as unknown as Record<string, unknown>).__dgWalk;
+    };
+  }
+
   function handleGrayboxReady(scene: Object3D): void {
     scene.traverse((object) => {
       if (!(object instanceof Mesh) || !object.visible) return;
@@ -149,7 +187,10 @@
     props.onAssetReady?.();
   }
 
+  let removeReviewBridge: (() => void) | undefined;
+
   onMount(async () => {
+    removeReviewBridge = installReviewBridge();
     physicsState = createPhysicsWorldState();
     await initPhysicsWorld(physicsState, { x: 0, y: -9.81, z: 0 });
     if (isDisposed || !physicsState) return;
@@ -210,6 +251,7 @@
 
   onDestroy(() => {
     isDisposed = true;
+    removeReviewBridge?.();
     if (playerState && physicsState) {
       disposePlayerController(physicsState, playerState);
     }
