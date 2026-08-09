@@ -1,0 +1,59 @@
+{
+  "id": "playable-graybox",
+  "status": "ready-for-review",
+  "evidence": [
+    {
+      "kind": "playable-review",
+      "path": "src/routes/test/first-fire-graybox/+page.svelte",
+      "note": "https://localhost:5173/test/first-fire-graybox — first person walk, WASD, plus a deterministic ?proof=N capture path."
+    },
+    {
+      "kind": "graybox-glb",
+      "path": "static/models/museum/cave/first-fire-cinder-court-graybox.glb",
+      "sha256": "170d51f2205b6ca0a8bd54c6043171d2810ad55a1e6fc7a71484d06ae75d6cba"
+    },
+    {
+      "kind": "blender-coordinate-manifest",
+      "path": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-blender-plan.json",
+      "sha256": "c0e3b6761f060c67290e5c9cf1560e281c3ec904afe26471c0fae6053f611de4"
+    },
+    {
+      "kind": "contact-sheet",
+      "path": "docs/superpowers/specs/first-fire-cinder-court/gate2/first-fire-gate2-contact-sheet.webp",
+      "sha256": "d7ef76820a25ae3290993a3e1919d7026f4163c188a449cbe5e771b8dcbd2984"
+    }
+  ],
+  "checks": [
+    {
+      "name": "built-from-the-approved-plan",
+      "status": "passed",
+      "evidence": "scripts/build-first-fire-graybox.py reads the exported plan contract for every court, path section, and flame anchor; the report digest matches the coordinate manifest."
+    },
+    {
+      "name": "glb-budget",
+      "status": "passed",
+      "evidence": "scripts/verify-first-fire-graybox-glb.mjs passes: 156792 bytes, one scene, 15 materials, Draco plus GPU instancing, no QA cameras or lights."
+    },
+    {
+      "name": "torch-budget",
+      "status": "passed",
+      "evidence": "24 lane flames plus 36 court perimeter flames equals 60 anchors, all placed from the contract. The rejected hub interior carried 126 scattered torches."
+    },
+    {
+      "name": "staged-reveal",
+      "status": "passed",
+      "evidence": "The verifier asserts every green mesh carries the runtime staged FF_Growth prefix. Walk frames 1 to 6 contain no green; frame 7 shows the Earth route only after the last fire is out."
+    },
+    {
+      "name": "live-performers",
+      "status": "passed",
+      "evidence": "The review mounts the real MuseumPerformerStation3D. Walk frames 2, 4, and 5 show JDJD, KEKE, and LFLF with their live sequence and catalog identifiers on screen."
+    },
+    {
+      "name": "regression-suite",
+      "status": "passed",
+      "evidence": "407 of 407 museum unit tests pass and svelte-check reports zero errors."
+    }
+  ],
+  "approval": null
+}

@@ -450,10 +450,15 @@ add_box(
     bevel=0.14,
 )
 for section in CONTRACT["pathSections"]:
-    mat = GROWTH if section["kind"] == "growth-path" else ROUTE
+    green = section["kind"] == "growth-path"
+    mat = GROWTH if green else ROUTE
+    # Anything green is staged by the runtime and stays hidden until the fire is
+    # out. The walking ribbon needs the same prefix as the guide, or the Earth
+    # route is visible from the FL court and the reveal is spent early.
+    prefix = "FF_Growth_Route" if green else "FF_Route"
     for index, (start, end) in enumerate(zip(section["blenderPoints"], section["blenderPoints"][1:])):
         add_segment(
-            f"FF_Route_{section['id']}_{index + 1:02d}", start, end,
+            f"{prefix}_{section['id']}_{index + 1:02d}", start, end,
             section["width"], 0.075, 0.055, mat, COLLECTIONS["ROUTE"],
         )
 

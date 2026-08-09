@@ -3,7 +3,7 @@
   "sceneId": "first-fire-cinder-court",
   "title": "First Fire: The Cinder Court",
   "domainProofRequired": true,
-  "currentGate": 0,
+  "currentGate": 1,
   "authority": {
     "experienceSpec": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-production-contract.md",
     "roomShellSource": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
@@ -71,7 +71,7 @@
   "gates": [
     {
       "id": "evidence-preflight",
-      "status": "in-progress",
+      "status": "verified",
       "evidence": [
         {
           "kind": "canon-audit",
@@ -81,10 +81,10 @@
         {
           "kind": "room-shell",
           "path": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
-          "sha256": "86411a0e363b87df07d3c23e6eb7713a9d040108470b9a4176dd27541e56b712"
+          "sha256": "2a6760e5018ef0c31c64613f211b91ebb33b3c9953efd2e742c53e31d8b4a9dd"
         },
         {
-          "kind": "catalog-motion-lock",
+          "kind": "motion-proof",
           "path": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-gate1-report.json",
           "sha256": "e87866468c4a6329a803aa65908fcc2c289584de56a0081f99d373bc6e9ce123"
         }
@@ -107,17 +107,78 @@
         },
         {
           "name": "live-motion-capture",
-          "status": "pending",
-          "evidence": "The playable review must capture the exact three live performer rigs with visible sequence identifiers before Gate 0 is verified."
+          "status": "passed",
+          "evidence": "Gate 2 walk frames 2, 4, and 5 capture the three live rigs with their sequence and catalog identifiers legible on screen: cave-fire-seq-dj/tnd-split-opp-jdjd, cave-fire-seq-ek/tnd-split-opp-keke, cave-fire-seq-fl/tnd-split-opp-lflf."
         }
       ],
       "approval": null
     },
     {
       "id": "measured-plan",
-      "status": "pending",
-      "evidence": [],
-      "checks": [],
+      "status": "ready-for-review",
+      "evidence": [
+        {
+          "kind": "floor-plan",
+          "path": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-gate1-board.svg",
+          "sha256": "b54cfc2aa7cb79214d6436ca0e975800d68b600c3a724da8c62555c83879d159",
+          "note": "Board panel 1: the measured 58 by 44 metre plan with the single S from Water to Earth."
+        },
+        {
+          "kind": "vertical-section",
+          "path": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-gate1-board.svg",
+          "sha256": "b54cfc2aa7cb79214d6436ca0e975800d68b600c3a724da8c62555c83879d159",
+          "note": "Board panel 3: lane into one rock, elevations in metres."
+        },
+        {
+          "kind": "route-storyboard",
+          "path": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-gate1-board.svg",
+          "sha256": "b54cfc2aa7cb79214d6436ca0e975800d68b600c3a724da8c62555c83879d159",
+          "note": "Board storyboard strip: arrival, DJ walked, EK walked, blackout, Earth growth."
+        },
+        {
+          "kind": "sightline-study",
+          "path": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-gate1-report.json",
+          "sha256": "e87866468c4a6329a803aa65908fcc2c289584de56a0081f99d373bc6e9ce123",
+          "note": "checks.performersHiddenUntilTheMouth, measured per court from its approach point."
+        },
+        {
+          "kind": "measured-report",
+          "path": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-gate1-report.json",
+          "sha256": "e87866468c4a6329a803aa65908fcc2c289584de56a0081f99d373bc6e9ce123"
+        },
+        {
+          "kind": "plan-contract",
+          "path": "src/lib/features/museum/data/first-fire-procession-plan.ts",
+          "sha256": "19d6094a3192c9e365f6949b0c5f64dfb4995bb1e03a03cadff0d266ad47a02b"
+        }
+      ],
+      "checks": [
+        {
+          "name": "walkability",
+          "status": "passed",
+          "evidence": "A 0.5 metre grid flood fill from the Water threshold reaches every court mouth, every orbit arc, and the Earth door with no isolated cell. One continuous S across 15 numbered path sections."
+        },
+        {
+          "name": "clearance",
+          "status": "passed",
+          "evidence": "Perpendicular ray marches prove a 3 metre minimum walkable width everywhere, 4.5 metres on the lanes and court throats. The rejected hub interior narrowed to the corridors that read as claustrophobic."
+        },
+        {
+          "name": "final-view",
+          "status": "passed",
+          "evidence": "Board storyboard state 5 and the report's redAbsentBeforeGreen check: the last view is the Earth door with the green route tracing the walk already taken, and no red anywhere."
+        },
+        {
+          "name": "sightlines",
+          "status": "passed",
+          "evidence": "Segment intersection proofs from each court approach show the next performer occluded by basalt until the visitor turns into that court mouth."
+        },
+        {
+          "name": "separate-entry-and-exit",
+          "status": "passed",
+          "evidence": "tests/unit/museum/first-fire-blender-contract.test.ts asserts every court has a distinct entry and exit mouth, so the visitor can never leave a court the way it was entered."
+        }
+      ],
       "approval": null
     },
     {

@@ -98,6 +98,21 @@ invariant(
   report.counts.basaltMasses === manifest.contract.basalt.length,
   "Blender basalt count drifted from the coordinate manifest"
 );
+// Everything green must carry the FF_Growth prefix the runtime stages, or the
+// Earth route renders from the moment the room loads and the reveal is spent
+// while the visitor is still standing at the third performer.
+const greenLeaks = nodeNames.filter(
+  (name) => /growth-path/i.test(name) && !/^FF_Growth/i.test(name)
+);
+invariant(
+  greenLeaks.length === 0,
+  `Green Earth geometry outside the staged FF_Growth prefix: ${greenLeaks.join(", ")}`
+);
+invariant(
+  nodeNames.some((name) => /^FF_Growth_Route_/i.test(name)),
+  "The staged green Earth route is missing from the graybox"
+);
+
 invariant(report.counts.laneFlames === 24, "Lane flame count drifted from 24");
 invariant(report.counts.perimeterFlames === 36, "Court perimeter count drifted from 36");
 invariant(report.counts.totalFlameAnchors === 60, "Total flame anchors drifted from 60");
