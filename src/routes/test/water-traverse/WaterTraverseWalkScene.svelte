@@ -44,6 +44,11 @@
   import ReflectivePool from "$lib/shared/3d/environments/primitives/ReflectivePool.svelte";
   import OceanWaterSurface from "$lib/shared/3d/environments/scenes/ocean/runtime/water/WaterSurface.svelte";
   import SteamColumn from "$lib/features/water-traverse/components/SteamColumn.svelte";
+  import SeaChamberLife from "$lib/features/water-traverse/components/SeaChamberLife.svelte";
+  import {
+    detectOceanQuality,
+    getOceanQualityConfig,
+  } from "$lib/shared/3d/environments/scenes/ocean/quality/ocean-quality";
   import TraverseSky from "$lib/features/water-traverse/components/TraverseSky.svelte";
   import MuseumPerformerStation3D from "$lib/features/museum/components/game/MuseumPerformerStation3D.svelte";
   import {
@@ -312,7 +317,43 @@
       tuning: POOL_TUNING[plane.state],
     }));
 
-  const seaCeiling = layout.waterPlanes.find((plane) => plane.seenFromBelow);
+  /**
+   * The surface seen from underneath.
+   *
+   * This shipped as a 220-unit plane left at the world origin, which covered
+   * z = -110..110 while the trench runs to 190. Standing anywhere past the
+   * midpoint there was simply no surface overhead — which is most of why the
+   * middle leg read as a featureless void. The plane is now centred on the
+   * water rect it belongs to and sized to cover it with margin, so every
+   * upward glance down there ends in open water.
+   */
+  const seaCeilingPlane = layout.waterPlanes.find((plane) => plane.seenFromBelow);
+  const seaCeiling = seaCeilingPlane
+    ? {
+        centreX: (seaCeilingPlane.minX + seaCeilingPlane.maxX) / 2,
+        centreZ: (seaCeilingPlane.minZ + seaCeilingPlane.maxZ) / 2,
+        /**
+         * Sized to the rect exactly, with no margin. The surface is a square
+         * and the trench is long and narrow, so the long axis sets the size and
+         * the overhang on the short axis hides behind the hall walls. Adding
+         * margin on top of that pushed the plane back over the ice chamber,
+         * where it covered the frozen river with a sheet of open sea.
+         */
+        size: Math.max(
+          seaCeilingPlane.maxX - seaCeilingPlane.minX,
+          seaCeilingPlane.maxZ - seaCeilingPlane.minZ
+        ),
+      }
+    : null;
+
+  /**
+   * Quality tier for the borrowed ocean systems. Detected off the live
+   * renderer, exactly as OceanScene does it, so a phone walking this route
+   * gets the same content LOD the ocean scene would give it.
+   */
+  const oceanQuality = $derived(
+    getOceanQualityConfig(detectOceanQuality(threlte.renderer ?? null))
+  );
 
   // ── Performers ────────────────────────────────────────────────────────────
 
@@ -755,10 +796,13 @@
   reflection. The ocean scene already owns that shader.
 -->
 {#if seaCeiling}
-  <T.Group bind:ref={ceilingGroup}>
+  <T.Group
+    bind:ref={ceilingGroup}
+    position={[seaCeiling.centreX, 0, seaCeiling.centreZ]}
+  >
     <OceanWaterSurface
       surfaceY={WATERLINE_Y}
-      size={220}
+      size={seaCeiling.size}
       segments={220}
       opacity={0.62}
       color="#1d7d92"
@@ -767,6 +811,19 @@
     />
   </T.Group>
 {/if}
+
+<!--
+  The trench, populated. See SeaChamberLife for why the ocean's own systems are
+  re-aimed rather than rebuilt, and why the root OceanScene is not used.
+-->
+<SeaChamberLife
+  quality={oceanQuality}
+  floorY={SEA_FLOOR_Y}
+  waterlineY={WATERLINE_Y}
+  fromZ={layout.legs.sea.minZ}
+  toZ={layout.legs.sea.maxZ}
+  halfWidth={layout.legs.sea.maxX}
+/>
 
 {#each layout.performers as performer (performer.id)}
   <MuseumPerformerStation3D
