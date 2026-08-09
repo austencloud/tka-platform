@@ -262,10 +262,14 @@ def floor_slab(floor: dict, mat, target):
 # ── Floors ──────────────────────────────────────────────────────────────────
 for floor in LAYOUT["floorRects"]:
     fid = floor["id"]
-    if fid in ("pool-bottom", "channel-bed", "shore-shelf"):
+    if fid in ("pool-bottom", "channel-bed", "shore-shelf") or "-margin" in fid:
         mat = ROCK_WET
+    elif "-shelf" in fid:
+        mat = STAGE
+    elif "-deck" in fid:
+        mat = STONE_WALK
     elif floor["fromY"] <= GALLERY_FLOOR + 0.6 or fid.startswith(
-        ("descent", "west-run", "north-run", "east-bend", "surfacing")
+        ("descent", "hub", "return-leg", "channel-", "shaft-passage", "buoyant-shaft")
     ):
         mat = STONE_DEEP
     else:
@@ -342,7 +346,38 @@ rect_box(
     COLLECTIONS["FEATURES"],
 )
 
-# Alcove stages, firelight niches and performer locators (A, B, C west→east).
+# Per-letter firelight hues: the glow a channel mouth carries and the warmth
+# of its bell. Distinct enough to read as three invitations, all still fire.
+BELL_GLOW = {
+    "a": material(
+        "DG Firelight A", (1.0, 0.62, 0.25, 1.0), roughness=0.4,
+        emission=(1.0, 0.5, 0.16, 1.0), emission_strength=3.2,
+    ),
+    "b": material(
+        "DG Firelight B", (1.0, 0.45, 0.3, 1.0), roughness=0.4,
+        emission=(1.0, 0.3, 0.18, 1.0), emission_strength=3.2,
+    ),
+    "c": material(
+        "DG Firelight C", (1.0, 0.78, 0.35, 1.0), roughness=0.4,
+        emission=(1.0, 0.68, 0.22, 1.0), emission_strength=3.2,
+    ),
+}
+
+
+def add_locator(name, plan_x, plan_z, base_y):
+    body_loc = plan_to_blender(plan_x, plan_z, base_y + 0.9)
+    bpy.ops.mesh.primitive_cylinder_add(
+        vertices=10, radius=0.24, depth=1.8, location=body_loc
+    )
+    body = bpy.context.active_object
+    body.name = name
+    assign(body, LOCATOR)
+    return move_to_collection(body, COLLECTIONS["LOCATORS"])
+
+
+# Ring niches (the kept v2 alcoves): finale pole of the Q2 state swap. Stage,
+# firelight, and a locator labelled as the NICHE pole — the automaton idles
+# here and returns here for the doubled finale.
 grotto = LAYOUT["grotto"]
 for letter, anchor in zip("ABC", LAYOUT["alcoves"]):
     loc = plan_to_blender(anchor["x"], anchor["z"], SHELF + 0.31)
@@ -350,7 +385,7 @@ for letter, anchor in zip("ABC", LAYOUT["alcoves"]):
         vertices=24, radius=1.1, depth=0.62, location=loc
     )
     stage = bpy.context.active_object
-    stage.name = f"DG_Stage_{letter}"
+    stage.name = f"DG_Stage_Niche_{letter}"
     assign(stage, STAGE)
     move_to_collection(stage, COLLECTIONS["FEATURES"])
 
@@ -358,18 +393,80 @@ for letter, anchor in zip("ABC", LAYOUT["alcoves"]):
         f"DG_Niche_Fire_{letter}",
         (bx(anchor["x"]), by(grotto["minZ"] + 0.35), SHELF + 1.9),
         (2.6, 0.5, 2.4),
-        FIRELIGHT,
+        BELL_GLOW[letter.lower()],
+        COLLECTIONS["FEATURES"],
+    )
+    add_locator(f"LOC_Niche_{letter}", anchor["x"], anchor["z"], SHELF + 0.62)
+
+# Air-bells: the private-audience pole of the state swap. Shelf stage,
+# firelight behind the shelf, and a locator labelled as the BELL pole.
+BELL_FLOOR = DATUM["BELL_FLOOR_Y"]
+for channel in LAYOUT["channels"]:
+    letter = channel["id"].upper()
+    bell = channel["bell"]
+    anchor = bell["shelfAnchor"]
+    glow = BELL_GLOW[channel["id"]]
+
+    loc = plan_to_blender(anchor["x"], anchor["z"], SHELF + 0.31)
+    bpy.ops.mesh.primitive_cylinder_add(
+        vertices=24, radius=1.0, depth=0.62, location=loc
+    )
+    stage = bpy.context.active_object
+    stage.name = f"DG_Stage_Bell_{letter}"
+    assign(stage, STAGE)
+    move_to_collection(stage, COLLECTIONS["FEATURES"])
+
+    # Firelight panel on the wall behind the shelf (opposite the entry side).
+    shelf = bell["shelf"]
+    if bell["facing"] == "east":
+        fire_pos = (bx(shelf["minX"] + 0.3), by(anchor["z"]), SHELF + 1.9)
+        fire_dims = (0.5, 2.6, 2.4)
+    else:
+        fire_pos = (bx(anchor["x"]), by(shelf["minZ"] + 0.3), SHELF + 1.9)
+        fire_dims = (2.6, 0.5, 2.4)
+    add_box(f"DG_Bell_Fire_{letter}", fire_pos, fire_dims, glow, COLLECTIONS["FEATURES"])
+    add_locator(f"LOC_Bell_{letter}", anchor["x"], anchor["z"], SHELF + 0.62)
+
+    # Channel mouth glow: an emissive lintel-and-jambs frame on the hub wall in
+    # this bell's firelight hue — the invitation, readable through the water.
+    mouth = channel["mouth"]
+    first_leg = channel["legs"][0]
+    leg_w = first_leg["maxX"] - first_leg["minX"]
+    leg_d = first_leg["maxZ"] - first_leg["minZ"]
+    horizontal = leg_w >= leg_d  # channel leaves the hub along X
+    frame_h = GALLERY_ROOF - GALLERY_FLOOR
+    if horizontal:
+        jamb_dims = (0.3, 0.3, frame_h)
+        lintel_dims = (0.3, 2.9, 0.3)
+        offsets = [(0, -1.3), (0, 1.3)]
+    else:
+        jamb_dims = (0.3, 0.3, frame_h)
+        lintel_dims = (2.9, 0.3, 0.3)
+        offsets = [(-1.3, 0), (1.3, 0)]
+    for index, (ox_, oz_) in enumerate(offsets):
+        add_box(
+            f"DG_Mouth_{letter}_Jamb_{index}",
+            (bx(mouth["x"] + ox_), by(mouth["z"] + oz_), GALLERY_FLOOR + frame_h / 2),
+            jamb_dims,
+            glow,
+            COLLECTIONS["FEATURES"],
+        )
+    add_box(
+        f"DG_Mouth_{letter}_Lintel",
+        (bx(mouth["x"]), by(mouth["z"]), GALLERY_ROOF - 0.15),
+        lintel_dims,
+        glow,
         COLLECTIONS["FEATURES"],
     )
 
-    body_loc = plan_to_blender(anchor["x"], anchor["z"], SHELF + 0.62 + 0.9)
-    bpy.ops.mesh.primitive_cylinder_add(
-        vertices=10, radius=0.24, depth=1.8, location=body_loc
-    )
-    body = bpy.context.active_object
-    body.name = f"LOC_Performer_{letter}"
-    assign(body, LOCATOR)
-    move_to_collection(body, COLLECTIONS["LOCATORS"])
+# Buoyant shaft dressing: the rendered curb and a glowworm-lined column so the
+# rise is lit (cool, not warm — the way onward, not another letter).
+for index, rect in enumerate(LAYOUT["shaftRim"]):
+    rect_box(f"DG_ShaftRim_{index}", rect, CAUSEWAY, CAUSEWAY + 0.35, ROCK_WET,
+             COLLECTIONS["FEATURES"])
+shaft = LAYOUT["buoyantShaft"]
+shaft_cx, shaft_cz = rect_centre(shaft)
+shaft_w, shaft_d = rect_dims(shaft)
 
 # ── Glowworm dome ───────────────────────────────────────────────────────────
 worm_mesh = None
@@ -398,6 +495,25 @@ for index in range(150):
         continue
     obj = bpy.data.objects.new(f"DG_Glowworm_{worm_count}", worm_mesh)
     obj.location = plan_to_blender(gcx + dx, gcz + dz, height)
+    COLLECTIONS["DOME"].objects.link(obj)
+    worm_count += 1
+
+# Glowworms lining the buoyant shaft's walls, gallery depth → rim.
+for index in range(28):
+    side = RNG.choice(["w", "e", "n", "s"])
+    t = RNG.uniform(0.05, 0.95)
+    inset = 0.12
+    if side == "w":
+        wx, wz = shaft["minX"] + inset, shaft["minZ"] + t * shaft_d
+    elif side == "e":
+        wx, wz = shaft["maxX"] - inset, shaft["minZ"] + t * shaft_d
+    elif side == "n":
+        wx, wz = shaft["minX"] + t * shaft_w, shaft["minZ"] + inset
+    else:
+        wx, wz = shaft["minX"] + t * shaft_w, shaft["maxZ"] - inset
+    height = GALLERY_FLOOR + 0.4 + RNG.uniform(0, 1) * (CAUSEWAY - GALLERY_FLOOR - 0.8)
+    obj = bpy.data.objects.new(f"DG_Glowworm_{worm_count}", worm_mesh)
+    obj.location = plan_to_blender(wx, wz, height)
     COLLECTIONS["DOME"].objects.link(obj)
     worm_count += 1
 
@@ -430,12 +546,25 @@ def add_area_light(name, plan_location, color, energy, size):
     return move_to_collection(light, COLLECTIONS["QA_ONLY"])
 
 
+gallery_rect = LAYOUT["gallery"]
+gallery_cx, gallery_cz = rect_centre(gallery_rect)
 add_area_light("QA_Area_GrottoKey", (gcx, gcz, DOME_APEX - 1.0), (0.55, 0.9, 0.8), 2600, 14)
-add_area_light("QA_Area_GalleryFill", (14.0, 42.0, SHAFT_CEILING + 4.0), (0.25, 0.5, 0.62), 1600, 16)
+add_area_light(
+    "QA_Area_GalleryFill", (gallery_cx, gallery_cz, SHAFT_CEILING + 4.0),
+    (0.25, 0.5, 0.62), 1600, 20,
+)
 for letter, anchor in zip("ABC", LAYOUT["alcoves"]):
     add_light(
-        f"QA_Point_Alcove_{letter}", (anchor["x"], anchor["z"] - 0.6, SHELF + 2.4),
+        f"QA_Point_Niche_{letter}", (anchor["x"], anchor["z"] - 0.6, SHELF + 2.4),
         (1.0, 0.62, 0.28), 950,
+    )
+BELL_LIGHT_RGB = {"a": (1.0, 0.62, 0.25), "b": (1.0, 0.45, 0.3), "c": (1.0, 0.78, 0.35)}
+for channel in LAYOUT["channels"]:
+    anchor = channel["bell"]["shelfAnchor"]
+    add_light(
+        f"QA_Point_Bell_{channel['id'].upper()}",
+        (anchor["x"], anchor["z"], SHELF + 2.2),
+        BELL_LIGHT_RGB[channel["id"]], 900,
     )
 add_light("QA_Point_Dome", (gcx, gcz, DOME_APEX - 1.2), (0.45, 0.95, 0.8), 1800, 12)
 add_light(
@@ -444,16 +573,20 @@ add_light(
      (pool_rect["minZ"] + pool_rect["maxZ"]) / 2, WATERLINE + 1.4),
     (0.2, 0.6, 0.7), 750,
 )
-for index, shaft in enumerate(LAYOUT["openShafts"]):
-    scx, scz = rect_centre(shaft)
+for index, open_shaft in enumerate(LAYOUT["openShafts"]):
+    scx, scz = rect_centre(open_shaft)
     add_light(
-        f"QA_Point_Shaft_{index}", (scx, scz, SHAFT_CEILING - 0.4),
+        f"QA_Point_OpenShaft_{index}", (scx, scz, SHAFT_CEILING - 0.4),
         (0.35, 0.7, 0.75), 520,
     )
 bloom = LAYOUT["bloomAnchor"]
 add_light(
     "QA_Point_Bloom", (bloom["x"], bloom["z"], GALLERY_FLOOR + 2.0),
-    (0.4, 0.85, 0.75), 460,
+    (0.4, 0.85, 0.75), 620,
+)
+add_light(
+    "QA_Point_BuoyantShaft", (shaft_cx, shaft_cz, WATERLINE - 0.4),
+    (0.35, 0.85, 0.8), 700,
 )
 approach = LAYOUT["approach"]
 add_light(
@@ -502,10 +635,20 @@ camera_plan.data.clip_end = 250
 look_at(camera_plan, Vector((bx(bay_cx), by(bay_cz), 0.0)))
 move_to_collection(camera_plan, COLLECTIONS["QA_ONLY"])
 
-landing = LAYOUT["surfacingLanding"]
-landing_cx = (landing["minX"] + landing["maxX"]) / 2
-landing_cz = (landing["minZ"] + landing["maxZ"]) / 2
-LANDING = DATUM["LANDING_Y"]
+hub = LAYOUT["hub"]
+hub_cx, hub_cz = rect_centre(hub)
+descent = LAYOUT["descentStair"]
+descent_cx = (descent["minX"] + descent["maxX"]) / 2
+channel_a = LAYOUT["channels"][0]
+bell_a = channel_a["bell"]
+deck_a_cx, deck_a_cz = rect_centre(bell_a["deck"])
+anchor_a = bell_a["shelfAnchor"]
+breath_a = channel_a["breathPoint"]
+to_c = rect_centre(LAYOUT["thresholdOpening"])
+proc = LAYOUT["probes"]["procession"]
+niche_mid = LAYOUT["alcoves"][1]
+approach_cx = (approach["minX"] + approach["maxX"]) / 2
+SHALLOWS = DATUM["SHALLOWS_Y"]
 
 cameras = {
     "plan": camera_plan,
@@ -514,27 +657,44 @@ cameras = {
         (bay_cx, bay_cz - 6, -1.0), 38,
     ),
     "approach": camera_from_plan(
-        "QA_Camera_Approach", (14.0, 69.5, 1.6), (14.0, 58.5, -1.2), 26
+        "QA_Camera_Approach",
+        (approach_cx, approach["maxZ"] - 1.0, 1.6),
+        (approach_cx, approach["minZ"], -1.2), 26,
     ),
     "descent": camera_from_plan(
-        "QA_Camera_Descent", (14.0, 53.2, SHALLOWS := DATUM["SHALLOWS_Y"] + 1.6),
-        (13.0, 46.0, GALLERY_FLOOR + 1.0), 24,
+        "QA_Camera_Descent",
+        (descent_cx, descent["maxZ"] - 0.6, SHALLOWS + 1.6),
+        (hub_cx, hub_cz, GALLERY_FLOOR + 1.0), 24,
     ),
-    "bloom": camera_from_plan(
-        "QA_Camera_Bloom", (bloom["x"], bloom["z"] + 4.5, GALLERY_FLOOR + 1.6),
-        (bloom["x"], bloom["z"] - 4.0, GALLERY_FLOOR + 1.2), 24,
+    "hub": camera_from_plan(
+        "QA_Camera_Hub",
+        (hub_cx, hub["maxZ"] - 0.8, GALLERY_FLOOR + 1.6),
+        (hub_cx, hub["minZ"], GALLERY_FLOOR + 1.2), 16,
     ),
-    "reveal": camera_from_plan(
-        "QA_Camera_Reveal", (landing_cx, landing_cz, LANDING + 1.7),
-        (landing_cx, 8.0, 0.6), 24,
+    "bell": camera_from_plan(
+        "QA_Camera_BellA",
+        (deck_a_cx, deck_a_cz, DATUM["BELL_FLOOR_Y"] + 1.6),
+        (anchor_a["x"], anchor_a["z"], SHELF + 1.5), 26,
+    ),
+    "breath": camera_from_plan(
+        "QA_Camera_Breath",
+        (breath_a["x"], breath_a["z"], WATERLINE + 0.15),
+        (deck_a_cx, deck_a_cz, DATUM["BELL_FLOOR_Y"] + 1.2), 24,
+    ),
+    "shaftrim": camera_from_plan(
+        "QA_Camera_ShaftRim",
+        (shaft_cx, shaft["maxZ"] + 2.2, CAUSEWAY + 1.6),
+        (shaft_cx, shaft_cz, GALLERY_FLOOR + 2.0), 24,
     ),
     "procession": camera_from_plan(
-        "QA_Camera_Procession", (13.25, 12.2, CAUSEWAY + 1.6),
-        (13.75, 4.5, SHELF + 1.4), 26,
+        "QA_Camera_Procession",
+        (proc["x"], proc["z"], CAUSEWAY + 1.6),
+        (niche_mid["x"], niche_mid["z"], SHELF + 1.4), 26,
     ),
     "threshold": camera_from_plan(
-        "QA_Camera_Threshold", (24.5, 20.6, CAUSEWAY + 1.6),
-        (24.5, 16.8, CAUSEWAY + 1.6), 27,
+        "QA_Camera_Threshold",
+        (to_c[0], LAYOUT["threshold"]["maxZ"] + 2.8, CAUSEWAY + 1.6),
+        (to_c[0], LAYOUT["threshold"]["minZ"], CAUSEWAY + 1.6), 27,
     ),
 }
 

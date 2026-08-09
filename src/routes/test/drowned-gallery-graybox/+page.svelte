@@ -3,20 +3,13 @@
   import { AgXToneMapping, PCFSoftShadowMap } from "three";
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
   import DrownedGalleryWalkScene from "./DrownedGalleryWalkScene.svelte";
+  import { drownedGalleryLocationLabel } from "./drowned-gallery-graybox-colliders";
 
   let assetReady = $state(false);
   let resetToken = $state(0);
   let position = $state({ x: 0.25, y: 0.95, z: 33 });
 
-  // Runtime z runs south (approach) to north (grotto); origin is the bay centre.
-  const locationLabel = $derived.by(() => {
-    if (position.z > 22) return "Flooded approach";
-    if (position.z > 17) return "Descent shaft";
-    if (position.z > -2) return "The drowned gallery";
-    if (position.z > -12) return "Surfacing stair";
-    if (position.z > -24) return "Grotto ring";
-    return "Fire threshold";
-  });
+  const locationLabel = $derived(drownedGalleryLocationLabel(position));
 </script>
 
 <svelte:head>

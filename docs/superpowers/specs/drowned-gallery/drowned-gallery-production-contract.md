@@ -1,7 +1,7 @@
 # Drowned Gallery (Three Channels) production contract
 
 **Status:** Gate 1 APPROVED (Austen, 2026-08-09, "I'm in let's do it" —
-tracker `kZfilqc0ViZpGR3nPOPU`); Gate 2 playable graybox in progress.
+tracker `kZfilqc0ViZpGR3nPOPU`); Gate 2 playable graybox READY FOR REVIEW (walk it at /test/drowned-gallery-graybox).
 Approval riders: Q2 = state swap (automatons idle at ring niches, appear in
 their bell while visited, return for the finale; one body per letter, finale
 complete at any dive count); "three dives" checklist wording must become
@@ -138,7 +138,27 @@ Delivered 2026-08-09:
 - **Blender manifest regenerated** from the revised layout (source digest
   `3c39e4cf…b7f0db`); the graybox rebuild itself is Gate 2.
 
-## Gates 2–6
+## Gate 2: Playable graybox — READY FOR REVIEW
 
-Pending. Gate 2 regenerates the Blender manifest/build/GLB/walk route from the
-revised layout and wires the buoyant-shaft gravity seam for the feel test.
+Delivered 2026-08-09 (choose-one grammar throughout):
+
+- Blender build extended for v3: drowned hub with oculus, three channels with
+  per-letter firelight mouth frames (A amber, B coral, C gold), three air-bells
+  with shelf stages, firelight panels, and locators at BOTH state-swap poles
+  (`LOC_Bell_*` and `LOC_Niche_*`), rendered shaft rim curb, glowworm-lined
+  buoyant column, 9 QA cameras. Optimized GLB 129.5 KB, gltf-validator clean,
+  sequence-parity metadata (performer/sequence ids + layout digest) stamped in
+  asset extras.
+- Walk route updated: colliders from the v3 layout (bell margins/shelves
+  barriered), layout-aware location labels, per-bell shelf lights, and the
+  buoyant-shaft float wired through UCC's LiftingPhysicsProvider seam
+  (2.4 m/s lift inside the column, cut above the rim so the player crests and
+  lands on the apron).
+- Evidence + checks recorded in `./scene-gates.json` (validator PASS);
+  contact sheet at `./drowned-gallery-gate2-contact-sheet.png`.
+- Awaiting Austen's first-person walk: the choice at the hub, the surfacing
+  beat in a bell, the float, and the doubled finale are the judgment calls.
+
+## Gates 3–6
+
+Pending Gate 2 approval.

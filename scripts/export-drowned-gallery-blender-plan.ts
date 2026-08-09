@@ -28,6 +28,8 @@ import {
   DOME_APEX_Y,
   SHAFT_CEILING_Y,
   WALL_THICKNESS,
+  BELL_FLOOR_Y,
+  BELL_CEILING_Y,
 } from "../src/lib/features/museum/data/drowned-gallery-terrain";
 import { canonicalJSON } from "../src/lib/shared/foundation/utils/canonical-json";
 
@@ -77,6 +79,8 @@ export function createDrownedGalleryBlenderManifest() {
       DOME_APEX_Y,
       SHAFT_CEILING_Y,
       WALL_THICKNESS,
+      BELL_FLOOR_Y,
+      BELL_CEILING_Y,
     },
     performers: [
       { id: "cave-water-a", sequenceId: "cave-water-seq-a" },

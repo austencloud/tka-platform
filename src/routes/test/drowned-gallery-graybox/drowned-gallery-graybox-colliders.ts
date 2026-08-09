@@ -36,7 +36,39 @@ export interface DrownedGalleryWalkSetup {
   spawn: { x: number; y: number; z: number; yaw: number };
 }
 
+let cachedSetup: DrownedGalleryWalkSetup | null = null;
+
+/** Human label for a runtime position — the review HUD's location line. */
+export function drownedGalleryLocationLabel(position: {
+  x: number;
+  y: number;
+  z: number;
+}): string {
+  const setup = buildDrownedGalleryWalkSetup();
+  const { layout, origin } = setup;
+  const world = { x: position.x + origin.x, z: position.z + origin.z };
+  const inRect = (r: WorldRect) =>
+    world.x >= r.minX && world.x <= r.maxX && world.z >= r.minZ && world.z <= r.maxZ;
+  if (inRect(layout.buoyantShaft)) return "The buoyant shaft";
+  for (const channel of layout.channels) {
+    const letter = channel.id.toUpperCase();
+    if (inRect(channel.bell.rect)) return `Air-bell ${letter}`;
+    if (inRect(channel.stair) || channel.legs.some(inRect)) {
+      return `Channel ${letter}`;
+    }
+  }
+  if (inRect(layout.hub)) return "The drowned hub";
+  if (inRect(layout.descentStair) || inRect(layout.returnLeg)) return "Descent";
+  if (inRect(layout.shaftPassageLeg) || inRect(layout.shaftPassageJog)) {
+    return "Drowned passage";
+  }
+  if (inRect(layout.approach)) return "Flooded approach";
+  if (inRect(layout.grotto)) return "The grotto ring";
+  return "The Drowned Gallery";
+}
+
 export function buildDrownedGalleryWalkSetup(): DrownedGalleryWalkSetup {
+  if (cachedSetup) return cachedSetup;
   const plan = buildVulcanCaveFloorPlan();
   const layout = buildDrownedGalleryLayout(plan.grid);
   if (!layout) {
@@ -72,8 +104,12 @@ export function buildDrownedGalleryWalkSetup(): DrownedGalleryWalkSetup {
   };
 
   for (const floor of layout.floorRects) {
-    if (["pool-bottom", "channel-bed", "shore-shelf"].includes(floor.id)) {
-      continue; // basins are fenced below, not walked
+    if (
+      ["pool-bottom", "channel-bed", "shore-shelf"].includes(floor.id) ||
+      floor.id.includes("-margin") ||
+      floor.id.includes("-shelf")
+    ) {
+      continue; // basins, bell water margins and performer shelves are fenced below
     }
     if (floor.kind === "flat") {
       box(`floor-${floor.id}`, floor.rect, floor.fromY - FLOOR_T, floor.fromY);
@@ -116,10 +152,15 @@ export function buildDrownedGalleryWalkSetup(): DrownedGalleryWalkSetup {
   layout.balustrades.forEach((rect, index) => {
     box(`rail-${index}`, rect, CAUSEWAY_Y, CAUSEWAY_Y + 0.9);
   });
-  // Water basins and the alcove shore stay unwalkable, as in the museum.
-  box("barrier-pool", layout.pool, layout.waterVolumes.at(-1)!.floorY, BARRIER_TOP);
+  // Water basins, the ring shore, and each bell's margin + performer shelf
+  // stay unwalkable, as in the museum.
+  box("barrier-pool", layout.pool, -5.0, BARRIER_TOP);
   box("barrier-channel", layout.channel, -2.7, BARRIER_TOP);
   box("barrier-shore", layout.shore, -1.0, BARRIER_TOP);
+  for (const channel of layout.channels) {
+    box(`barrier-bell-${channel.id}-margin`, channel.bell.margin, -2.7, 0.4);
+    box(`barrier-bell-${channel.id}-shelf`, channel.bell.shelf, -1.0, 0.4);
+  }
 
   const approach = layout.approach;
   const spawn = {
@@ -129,5 +170,6 @@ export function buildDrownedGalleryWalkSetup(): DrownedGalleryWalkSetup {
     yaw: Math.PI,
   };
 
-  return { layout, origin, colliders, spawn };
+  cachedSetup = { layout, origin, colliders, spawn };
+  return cachedSetup;
 }
