@@ -1,0 +1,222 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "earth-long-terrace",
+  "title": "Earth Long Terrace",
+  "domainProofRequired": true,
+  "currentGate": 1,
+  "authority": {
+    "experienceSpec": "docs/superpowers/specs/earth-long-terrace/earth-long-terrace-production-contract.md",
+    "roomShellSource": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
+    "planContract": "src/lib/features/museum/data/earth-long-terrace-plan.ts",
+    "museumTrackerItems": [
+      "jjjRDt6uwrzf9pBOFD3C",
+      "fsJqYPYkMjY2BESGuIBC",
+      "zf0pfUAmW4ODnjFJnep5",
+      "LUF8Uggz1uwbBrmvhOQp",
+      "ssnUksPqHir2Nr1fk65b",
+      "s278g83rbcQybhjZnIfO",
+      "2VNrQh8GQClDvq9r9wXp",
+      "lbzhhpX5y3UXsXU2jy3B",
+      "WWXT4vkB3zd3AQdHt2CO",
+      "LRVn0dwoX9omGzSTmXlf"
+    ]
+  },
+  "sequenceFingerprints": [
+    {
+      "performerId": "cave-earth-automaton-g",
+      "sequenceId": "cave-earth-seq-g",
+      "sourcePath": "static/data/hero/tnd-base-words.json",
+      "sourceSha256": "e6a9af2214c2af0a10c2169e19dd9a0a1b7ac980368f0132fdb6ff158434c730",
+      "fingerprint": "c901f2a4c7bac55fffab7e8e6b20b28b0b8d5c893b4fc2989ffeb33bd9e130df"
+    },
+    {
+      "performerId": "cave-earth-automaton-h",
+      "sequenceId": "cave-earth-seq-h",
+      "sourcePath": "static/data/hero/tnd-base-words.json",
+      "sourceSha256": "e6a9af2214c2af0a10c2169e19dd9a0a1b7ac980368f0132fdb6ff158434c730",
+      "fingerprint": "7bcea796f6d64a5c563831042549abb5bbc545c5aa39cb0a7822da85aef053ae"
+    },
+    {
+      "performerId": "cave-earth-automaton-i",
+      "sequenceId": "cave-earth-seq-i",
+      "sourcePath": "static/data/hero/tnd-base-words.json",
+      "sourceSha256": "e6a9af2214c2af0a10c2169e19dd9a0a1b7ac980368f0132fdb6ff158434c730",
+      "fingerprint": "1db277641b8103cee6c1eed96215ba96c983494eb1b9a989de617e25a0da49b8"
+    }
+  ],
+  "claims": [
+    {
+      "id": "C-001",
+      "class": "literal",
+      "statement": "G, H, and I share together timing and the same hand path.",
+      "evidence": [
+        "Flow Arts MCP calls made 2026-08-08",
+        "docs/superpowers/specs/earth-long-terrace/earth-long-terrace-gate1-report.json"
+      ]
+    },
+    {
+      "id": "C-002",
+      "class": "literal",
+      "statement": "G is pro/pro, H is anti/anti, and I combines blue anti with red pro.",
+      "evidence": [
+        "Flow Arts MCP calls made 2026-08-08",
+        "static/data/hero/tnd-base-words.json"
+      ]
+    },
+    {
+      "id": "C-003",
+      "class": "metaphor",
+      "statement": "The far wall translates G into twin rings, H into a paired petal trace, and I into both.",
+      "evidence": [
+        "docs/superpowers/specs/earth-long-terrace/earth-long-terrace-gate1-board.svg"
+      ]
+    },
+    {
+      "id": "C-004",
+      "class": "invention",
+      "statement": "Walking near a performer reveals and retains its far-wall trace.",
+      "evidence": [
+        "docs/superpowers/specs/earth-long-terrace/earth-long-terrace-production-contract.md"
+      ]
+    },
+    {
+      "id": "C-005",
+      "class": "invention",
+      "statement": "The near stand briefly brightens retained traces without waiting for a performer beat.",
+      "evidence": [
+        "docs/superpowers/specs/earth-long-terrace/earth-long-terrace-production-contract.md"
+      ]
+    }
+  ],
+  "exemptions": [],
+  "gates": [
+    {
+      "id": "evidence-preflight",
+      "status": "verified",
+      "evidence": [
+        {
+          "kind": "canon-audit",
+          "path": "docs/superpowers/specs/earth-long-terrace/earth-long-terrace-production-contract.md",
+          "sha256": "982fb5ea711671d73592dfdd9b1c9d170ed939813f1d1777449b86b079a52b85"
+        },
+        {
+          "kind": "room-shell",
+          "path": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
+          "sha256": "2a6760e5018ef0c31c64613f211b91ebb33b3c9953efd2e742c53e31d8b4a9dd"
+        },
+        {
+          "kind": "motion-proof",
+          "path": "docs/superpowers/specs/earth-long-terrace/earth-long-terrace-gate1-report.json",
+          "sha256": "c964e2bdee0b5c6ae2d2602c423e7a277ba6bb7013d9dc27eccc6fdec3d392ea"
+        }
+      ],
+      "checks": [
+        {
+          "name": "canon-conflicts",
+          "status": "passed",
+          "evidence": "Production contract records the unresolved sequential-close-encounter interpretation."
+        },
+        {
+          "name": "source-digests",
+          "status": "passed",
+          "evidence": "Room shell, plan contract, sequence binding, catalog, and board digests are recorded in the Gate 1 report."
+        },
+        {
+          "name": "sequence-fingerprints",
+          "status": "passed",
+          "evidence": "All three selected catalog fingerprints are recorded above and in the Gate 1 report."
+        }
+      ],
+      "approval": null
+    },
+    {
+      "id": "measured-plan",
+      "status": "ready-for-review",
+      "evidence": [
+        {
+          "kind": "floor-plan",
+          "path": "docs/superpowers/specs/earth-long-terrace/earth-long-terrace-gate1-board.svg",
+          "sha256": "7e5e197991738026f74cdd085316df662287ec7fd933542c148375357d26cae6"
+        },
+        {
+          "kind": "vertical-section",
+          "path": "docs/superpowers/specs/earth-long-terrace/earth-long-terrace-gate1-board.svg",
+          "sha256": "7e5e197991738026f74cdd085316df662287ec7fd933542c148375357d26cae6"
+        },
+        {
+          "kind": "route-storyboard",
+          "path": "docs/superpowers/specs/earth-long-terrace/earth-long-terrace-gate1-board.svg",
+          "sha256": "7e5e197991738026f74cdd085316df662287ec7fd933542c148375357d26cae6"
+        },
+        {
+          "kind": "sightline-study",
+          "path": "docs/superpowers/specs/earth-long-terrace/earth-long-terrace-gate1-report.json",
+          "sha256": "c964e2bdee0b5c6ae2d2602c423e7a277ba6bb7013d9dc27eccc6fdec3d392ea"
+        },
+        {
+          "kind": "plan-contract",
+          "path": "src/lib/features/museum/data/earth-long-terrace-plan.ts",
+          "sha256": "a5d192c6961f92cb81920f06df2729fd3e6db0d82c4e3ba0757732b1f5fd3de4"
+        }
+      ],
+      "checks": [
+        {
+          "name": "walkability",
+          "status": "passed",
+          "evidence": "46.20 m forward route, 2.4 m clear width, and 6.00 percent maximum grade."
+        },
+        {
+          "name": "clearance",
+          "status": "passed",
+          "evidence": "Three 2.8 m stages use 3.5 m centre spacing, leaving 0.7 m gaps."
+        },
+        {
+          "name": "sightlines",
+          "status": "passed",
+          "evidence": "962 legal route samples and 2,886 floor-directed rays are unobstructed; worst lip margin is +0.42 m."
+        },
+        {
+          "name": "final-view",
+          "status": "passed",
+          "evidence": "All three complete bodies fit the 75 degree vertical frame; minimum apparent height is 9.70 degrees."
+        }
+      ],
+      "approval": null
+    },
+    {
+      "id": "playable-graybox",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "registered-visual-target",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "production-slice",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "integrated-room",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "final-acceptance",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    }
+  ]
+}

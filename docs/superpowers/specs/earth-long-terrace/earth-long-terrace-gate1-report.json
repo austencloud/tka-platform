@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "earth-long-terrace",
+  "gate": 1,
+  "status": "ready-for-review",
+  "approval": null,
+  "room": {
+    "width": 34,
+    "depth": 24,
+    "westDoor": {
+      "min": 12.25,
+      "max": 14.25
+    },
+    "southDoor": {
+      "min": 114.25,
+      "max": 116.25
+    }
+  },
+  "route": {
+    "width": 2.4,
+    "length": 46.20100195077561,
+    "maximumGrade": 0.060024504799878094,
+    "stops": 7,
+    "retraceRequired": false
+  },
+  "performers": [
+    {
+      "id": "g",
+      "performerId": "cave-earth-automaton-g",
+      "sequenceId": "cave-earth-seq-g",
+      "centre": {
+        "x": 101.75,
+        "z": 10.75
+      },
+      "stageElevation": -4.2,
+      "stageDiameter": 2.8,
+      "literalMotion": "Both hands travel extension-to-extension together; both props rotate pro.",
+      "traceShape": "twin-rings"
+    },
+    {
+      "id": "h",
+      "performerId": "cave-earth-automaton-h",
+      "sequenceId": "cave-earth-seq-h",
+      "centre": {
+        "x": 105.25,
+        "z": 10.75
+      },
+      "stageElevation": -4.2,
+      "stageDiameter": 2.8,
+      "literalMotion": "Both hands travel extension-to-extension together; both props rotate anti.",
+      "traceShape": "four-petal"
+    },
+    {
+      "id": "i",
+      "performerId": "cave-earth-automaton-i",
+      "sequenceId": "cave-earth-seq-i",
+      "centre": {
+        "x": 108.75,
+        "z": 10.75
+      },
+      "stageElevation": -4.2,
+      "stageDiameter": 2.8,
+      "literalMotion": "Both hands share the same path and clock; blue is anti while red is pro.",
+      "traceShape": "ring-and-petal"
+    }
+  ],
+  "checks": {
+    "walkability": true,
+    "fireThresholdConcealsTrio": true,
+    "revealShowsTrio": true,
+    "denseSightlines": {
+      "intervalMetres": 0.2,
+      "viewpointCount": 962,
+      "rayCount": 2886,
+      "allUnobstructed": true,
+      "minimumFloorLipMargin": 0.42027027027027086
+    },
+    "finalFrame": {
+      "verticalFovDegrees": 75,
+      "horizontalFovDegrees": 107.51237689469178,
+      "allBodiesInside": true,
+      "apparentBodyHeightDegrees": {
+        "g": 9.697434299612068,
+        "h": 10.90592396577571,
+        "i": 10.989712634754394
+      }
+    }
+  },
+  "hierarchy": [
+    "synchronized G/H/I row",
+    "daylight canyon",
+    "retained motion traces",
+    "lush habitat framing"
+  ],
+  "departuresFromRootObservatory": [
+    "removes the central tree as a competing hero",
+    "replaces the horseshoe with a forward terrace and diagonal near stand",
+    "keeps all three performers visible from the reveal onward",
+    "turns south after Fire instead of north",
+    "tests the full legal route width instead of selected centreline samples"
+  ],
+  "canonReconciliation": "The trio stays synchronized and visible while successive terrace positions make G, H, and I the closest comparison; the final stand enlarges all three together.",
+  "sourceDigests": {
+    "roomShell": "2a6760e5018ef0c31c64613f211b91ebb33b3c9953efd2e742c53e31d8b4a9dd",
+    "planContract": "a5d192c6961f92cb81920f06df2729fd3e6db0d82c4e3ba0757732b1f5fd3de4",
+    "sequenceBinding": "707a7111e769241d86c6d19c6bdbc45da32da318b13a07ddc03bc3a5f0ad3843",
+    "catalog": "e6a9af2214c2af0a10c2169e19dd9a0a1b7ac980368f0132fdb6ff158434c730",
+    "board": "7e5e197991738026f74cdd085316df662287ec7fd933542c148375357d26cae6"
+  },
+  "sequenceFingerprints": [
+    {
+      "performerId": "cave-earth-automaton-g",
+      "sequenceId": "cave-earth-seq-g",
+      "catalogId": "tnd-tog-same-gggg",
+      "fingerprint": "c901f2a4c7bac55fffab7e8e6b20b28b0b8d5c893b4fc2989ffeb33bd9e130df"
+    },
+    {
+      "performerId": "cave-earth-automaton-h",
+      "sequenceId": "cave-earth-seq-h",
+      "catalogId": "tnd-tog-same-hhhh",
+      "fingerprint": "7bcea796f6d64a5c563831042549abb5bbc545c5aa39cb0a7822da85aef053ae"
+    },
+    {
+      "performerId": "cave-earth-automaton-i",
+      "sequenceId": "cave-earth-seq-i",
+      "catalogId": "tnd-tog-same-iiii",
+      "fingerprint": "1db277641b8103cee6c1eed96215ba96c983494eb1b9a989de617e25a0da49b8"
+    }
+  ]
+}

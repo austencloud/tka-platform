@@ -1,0 +1,274 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2200" height="1500" viewBox="0 0 2200 1500" role="img" aria-labelledby="title description">
+  <title id="title">Earth Long Terrace measured Gate 1 floor plan</title>
+  <desc id="description">A measured floor plan, vertical canyon section, eye-level reveal and final ensemble frames, motion translation, metrics, and seven-stop visitor route for the proposed Earth Long Terrace.</desc>
+  <defs>
+    <marker id="arrow" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15" refX="13" refY="7.5" orient="auto"><path d="M0,0 L15,7.5 L0,15 Z" fill="#a7d885"/></marker>
+    <linearGradient id="terrace" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#496342"/><stop offset="1" stop-color="#26372d"/></linearGradient>
+  </defs>
+  <rect width="2200" height="1500" fill="#0b1210"/>
+  <text x="42" y="48" fill="#f5f0df" font-size="31" font-weight="800" text-anchor="start"><tspan x="42" dy="0">EARTH · LONG TERRACE · GATE 1 FLOOR PLAN</tspan></text>
+  <text x="42" y="80" fill="#a8b5aa" font-size="16" font-weight="400" text-anchor="start"><tspan x="42" dy="0">Measured inside the live 34 × 24 m shell · G/H/I use one continuous clock · proposal only · no Blender work authorized</tspan></text>
+
+  <rect x="40" y="104" width="1310" height="920" rx="20" fill="#14201a"/>
+  <text x="72" y="144" fill="#f5f0df" font-size="22" font-weight="800" text-anchor="start"><tspan x="72" dy="0">1 · TOP-DOWN PLAN</tspan></text>
+  <rect x="120" y="176" width="1054" height="744" fill="#07100d" stroke="#f5f0df" stroke-width="5"/>
+  <g stroke="#2b3b31" stroke-width="1"><line x1="120" y1="176" x2="120" y2="920"/><line x1="182" y1="176" x2="182" y2="920"/><line x1="244" y1="176" x2="244" y2="920"/><line x1="306" y1="176" x2="306" y2="920"/><line x1="368" y1="176" x2="368" y2="920"/><line x1="430" y1="176" x2="430" y2="920"/><line x1="492" y1="176" x2="492" y2="920"/><line x1="554" y1="176" x2="554" y2="920"/><line x1="616" y1="176" x2="616" y2="920"/><line x1="678" y1="176" x2="678" y2="920"/><line x1="740" y1="176" x2="740" y2="920"/><line x1="802" y1="176" x2="802" y2="920"/><line x1="864" y1="176" x2="864" y2="920"/><line x1="926" y1="176" x2="926" y2="920"/><line x1="988" y1="176" x2="988" y2="920"/><line x1="1050" y1="176" x2="1050" y2="920"/><line x1="1112" y1="176" x2="1112" y2="920"/><line x1="1174" y1="176" x2="1174" y2="920"/><line x1="120" y1="176" x2="1174" y2="176"/><line x1="120" y1="238" x2="1174" y2="238"/><line x1="120" y1="300" x2="1174" y2="300"/><line x1="120" y1="362" x2="1174" y2="362"/><line x1="120" y1="424" x2="1174" y2="424"/><line x1="120" y1="486" x2="1174" y2="486"/><line x1="120" y1="548" x2="1174" y2="548"/><line x1="120" y1="610" x2="1174" y2="610"/><line x1="120" y1="672" x2="1174" y2="672"/><line x1="120" y1="734" x2="1174" y2="734"/><line x1="120" y1="796" x2="1174" y2="796"/><line x1="120" y1="858" x2="1174" y2="858"/><line x1="120" y1="920" x2="1174" y2="920"/></g>
+  <rect x="436.2000000000001" y="597.5999999999999" width="629.3" height="285.20000000000005" rx="18" fill="url(#terrace)" stroke="#365743" stroke-width="4"/>
+  <rect x="622.2" y="247.3" width="390.5999999999998" height="21.700000000000006" fill="#b79bd5" fill-opacity="0.2" stroke="#b79bd5" stroke-width="3"/>
+  <text x="817.5" y="238.3" fill="#b79bd5" font-size="12" font-weight="700" text-anchor="middle"><tspan x="817.5" dy="0">FAR TRACE WALL · retained rings and petals</tspan></text>
+  <ellipse cx="250.2000000000001" cy="631.7" rx="96.10000000000001" ry="37.199999999999996" fill="#507b4d" fill-opacity="0.3" stroke="#507b4d" stroke-width="3" stroke-dasharray="8 6"/>
+        <text x="250.2000000000001" y="631.7" fill="#f5f0df" font-size="11" font-weight="700" text-anchor="middle"><tspan x="250.2000000000001" dy="0">FERN GULLY</tspan></text><ellipse cx="380.4000000000002" cy="566.5999999999999" rx="74.39999999999999" ry="96.10000000000001" fill="#8b6744" fill-opacity="0.3" stroke="#8b6744" stroke-width="3" stroke-dasharray="8 6"/>
+        <text x="380.4000000000002" y="566.5999999999999" fill="#f5f0df" font-size="11" font-weight="700" text-anchor="middle"><tspan x="380.4000000000002" dy="0">ROOT TURN</tspan></text><ellipse cx="684.2" cy="315.5" rx="130.20000000000002" ry="62" fill="#789064" fill-opacity="0.3" stroke="#789064" stroke-width="3" stroke-dasharray="8 6"/>
+        <text x="684.2" y="315.5" fill="#f5f0df" font-size="11" font-weight="700" text-anchor="middle"><tspan x="684.2" dy="0">MOSS CLIFF</tspan></text><ellipse cx="1034.5" cy="430.2" rx="74.39999999999999" ry="130.20000000000002" fill="#507b4d" fill-opacity="0.3" stroke="#507b4d" stroke-width="3" stroke-dasharray="8 6"/>
+        <text x="1034.5" y="430.2" fill="#f5f0df" font-size="11" font-weight="700" text-anchor="middle"><tspan x="1034.5" dy="0">FERN CLIFF</tspan></text><ellipse cx="684.2" cy="861.1" rx="192.20000000000002" ry="24.8" fill="#507b4d" fill-opacity="0.3" stroke="#507b4d" stroke-width="3" stroke-dasharray="8 6"/>
+        <text x="684.2" y="861.1" fill="#f5f0df" font-size="11" font-weight="700" text-anchor="middle"><tspan x="684.2" dy="0">LOW TERRACE FERNS</tspan></text>
+  <rect x="312.2000000000001" y="455" width="142.59999999999982" height="223.2" rx="28" fill="#8b6744" stroke="#e39472" stroke-width="4"/>
+  <text x="383.5" y="566.6" fill="#f5f0df" font-size="13" font-weight="800" text-anchor="middle"><tspan x="383.5" dy="0">BLIND TURN</tspan><tspan x="383.5" dy="18">kills Fire + row view</tspan></text>
+  <circle cx="709" cy="777.4" r="74.39999999999999" fill="#9bd480" fill-opacity="0.05" stroke="#9bd480" stroke-width="2" stroke-dasharray="6 7"/><circle cx="817.5" cy="777.4" r="74.39999999999999" fill="#e2bd70" fill-opacity="0.05" stroke="#e2bd70" stroke-width="2" stroke-dasharray="6 7"/><circle cx="926" cy="777.4" r="74.39999999999999" fill="#8bc5d9" fill-opacity="0.05" stroke="#8bc5d9" stroke-width="2" stroke-dasharray="6 7"/>
+  <line x1="476.5" y1="777.4" x2="709" y2="470.5" stroke="#f0d57c" stroke-width="2" stroke-dasharray="8 7" opacity="0.85"/><line x1="476.5" y1="777.4" x2="817.5" y2="470.5" stroke="#f0d57c" stroke-width="2" stroke-dasharray="8 7" opacity="0.85"/><line x1="476.5" y1="777.4" x2="926" y2="470.5" stroke="#f0d57c" stroke-width="2" stroke-dasharray="8 7" opacity="0.85"/><line x1="879.5" y1="647.2" x2="709" y2="470.5" stroke="#f0d57c" stroke-width="2" stroke-dasharray="8 7" opacity="0.85"/><line x1="879.5" y1="647.2" x2="817.5" y2="470.5" stroke="#f0d57c" stroke-width="2" stroke-dasharray="8 7" opacity="0.85"/><line x1="879.5" y1="647.2" x2="926" y2="470.5" stroke="#f0d57c" stroke-width="2" stroke-dasharray="8 7" opacity="0.85"/>
+  <circle cx="709" cy="470.5" r="43.4" fill="#9bd480" fill-opacity="0.13" stroke="#9bd480" stroke-width="4"/>
+        <path d="M 719 470.5 A 19 19 0 1 1 681 470.5 A 19 19 0 1 1 719 470.5 M 737 470.5 A 19 19 0 1 1 699 470.5 A 19 19 0 1 1 737 470.5" fill="none" stroke="#9bd480" stroke-width="4"/>
+        <circle cx="709" cy="470.5" r="12" fill="#9bd480"/>
+        <text x="709" y="416.5" fill="#9bd480" font-size="13" font-weight="700" text-anchor="middle"><tspan x="709" dy="0">G</tspan><tspan x="709" dy="17">stage -4.2 m</tspan></text><circle cx="817.5" cy="470.5" r="43.4" fill="#e2bd70" fill-opacity="0.13" stroke="#e2bd70" stroke-width="4"/>
+        <path d="M 817.5 470.5 C 811.25 456.75, 805 454.25, 817.5 445.5 C 830 454.25, 823.75 465.5, 817.5 470.5 C 831.25 464.25, 833.75 458, 842.5 470.5 C 833.75 483, 822.5 476.75, 817.5 470.5 C 823.75 484.25, 830 486.75, 817.5 495.5 C 805 486.75, 811.25 475.5, 817.5 470.5 C 803.75 476.75, 801.25 483, 792.5 470.5 C 801.25 458, 812.5 464.25, 817.5 470.5" fill="none" stroke="#e2bd70" stroke-width="4"/>
+        <circle cx="817.5" cy="470.5" r="12" fill="#e2bd70"/>
+        <text x="817.5" y="416.5" fill="#e2bd70" font-size="13" font-weight="700" text-anchor="middle"><tspan x="817.5" dy="0">H</tspan><tspan x="817.5" dy="17">stage -4.2 m</tspan></text><circle cx="926" cy="470.5" r="43.4" fill="#8bc5d9" fill-opacity="0.13" stroke="#8bc5d9" stroke-width="4"/>
+        <path d="M 939 470.5 A 20 20 0 1 1 899 470.5 A 20 20 0 1 1 939 470.5 M 933 470.5 C 928.25 460.05, 923.5 458.15, 933 451.5 C 942.5 458.15, 937.75 466.7, 933 470.5 C 943.45 465.75, 945.35 461, 952 470.5 C 945.35 480, 936.8 475.25, 933 470.5 C 937.75 480.95, 942.5 482.85, 933 489.5 C 923.5 482.85, 928.25 474.3, 933 470.5 C 922.55 475.25, 920.65 480, 914 470.5 C 920.65 461, 929.2 465.75, 933 470.5" fill="none" stroke="#8bc5d9" stroke-width="4"/>
+        <circle cx="926" cy="470.5" r="12" fill="#8bc5d9"/>
+        <text x="926" y="416.5" fill="#8bc5d9" font-size="13" font-weight="700" text-anchor="middle"><tspan x="926" dy="0">I</tspan><tspan x="926" dy="17">stage -4.2 m</tspan></text>
+  <polyline points="120,548 290.5,548 368,678.2 476.5,777.4 709,777.4 817.5,777.4 926,777.4 879.5,647.2 1034.5,765 1127.5,920" fill="none" stroke="#365743" stroke-width="74.39999999999999" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+  <polyline points="120,548 290.5,548 368,678.2 476.5,777.4 709,777.4 817.5,777.4 926,777.4 879.5,647.2 1034.5,765 1127.5,920" fill="none" stroke="#a7d885" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+  <g>
+        <circle cx="120" cy="548" r="18" fill="#f5f0df" stroke="#0b1210" stroke-width="4"/>
+        <text x="120" y="555" fill="#0b1210" font-size="19" font-weight="800" text-anchor="middle">1</text>
+      </g><g>
+        <circle cx="476.5" cy="777.4" r="18" fill="#f5f0df" stroke="#0b1210" stroke-width="4"/>
+        <text x="476.5" y="784.4" fill="#0b1210" font-size="19" font-weight="800" text-anchor="middle">2</text>
+      </g><g>
+        <circle cx="709" cy="777.4" r="18" fill="#f5f0df" stroke="#0b1210" stroke-width="4"/>
+        <text x="709" y="784.4" fill="#0b1210" font-size="19" font-weight="800" text-anchor="middle">3</text>
+      </g><g>
+        <circle cx="817.5" cy="777.4" r="18" fill="#f5f0df" stroke="#0b1210" stroke-width="4"/>
+        <text x="817.5" y="784.4" fill="#0b1210" font-size="19" font-weight="800" text-anchor="middle">4</text>
+      </g><g>
+        <circle cx="926" cy="777.4" r="18" fill="#f5f0df" stroke="#0b1210" stroke-width="4"/>
+        <text x="926" y="784.4" fill="#0b1210" font-size="19" font-weight="800" text-anchor="middle">5</text>
+      </g><g>
+        <circle cx="879.5" cy="647.2" r="18" fill="#f5f0df" stroke="#0b1210" stroke-width="4"/>
+        <text x="879.5" y="654.2" fill="#0b1210" font-size="19" font-weight="800" text-anchor="middle">6</text>
+      </g><g>
+        <circle cx="1127.5" cy="920" r="18" fill="#f5f0df" stroke="#0b1210" stroke-width="4"/>
+        <text x="1127.5" y="927" fill="#0b1210" font-size="19" font-weight="800" text-anchor="middle">7</text>
+      </g>
+  <rect x="112" y="517" width="16" height="62" fill="#e39472"/>
+  <text x="102" y="548" fill="#e39472" font-size="13" font-weight="800" text-anchor="end"><tspan x="102" dy="0">FROM</tspan><tspan x="102" dy="16">FIRE</tspan></text>
+  <rect x="1096.5" y="912" width="62" height="16" fill="#8bc5d9"/>
+  <text x="1127.5" y="950" fill="#8bc5d9" font-size="13" font-weight="800" text-anchor="middle"><tspan x="1127.5" dy="0">TO AIR</tspan></text>
+  <line x1="148" y1="892" x2="303" y2="892" stroke="#f5f0df" stroke-width="5"/>
+  <text x="225.5" y="881" fill="#f5f0df" font-size="13" font-weight="400" text-anchor="middle"><tspan x="225.5" dy="0">5 m</tspan></text>
+  <text x="1162" y="204" fill="#f5f0df" font-size="16" font-weight="800" text-anchor="end"><tspan x="1162" dy="0">N ↑</tspan></text>
+  <text x="1188" y="220" fill="#a7d885" font-size="14" font-weight="800" text-anchor="start"><tspan x="1188" dy="0">HERO ORDER</tspan></text>
+  <text x="1188" y="249" fill="#f5f0df" font-size="14" font-weight="400" text-anchor="start"><tspan x="1188" dy="0">1  synchronized row</tspan><tspan x="1188" dy="22">2  daylight canyon</tspan><tspan x="1188" dy="22">3  retained traces</tspan><tspan x="1188" dy="22">4  lush habitat</tspan></text>
+  <text x="1188" y="370" fill="#a7d885" font-size="14" font-weight="800" text-anchor="start"><tspan x="1188" dy="0">ROUTE</tspan></text>
+  <text x="1188" y="399" fill="#f5f0df" font-size="14" font-weight="400" text-anchor="start"><tspan x="1188" dy="0">46.2 m forward</tspan><tspan x="1188" dy="22">2.4 m clear ribbon</tspan><tspan x="1188" dy="22">6.0% max grade</tspan><tspan x="1188" dy="22">7 review stops</tspan></text>
+  <text x="1188" y="526" fill="#a7d885" font-size="14" font-weight="800" text-anchor="start"><tspan x="1188" dy="0">ROW</tspan></text>
+  <text x="1188" y="555" fill="#f5f0df" font-size="14" font-weight="400" text-anchor="start"><tspan x="1188" dy="0">3.5 m centres</tspan><tspan x="1188" dy="22">2.8 m stages</tspan><tspan x="1188" dy="22">0.7 m prop gaps</tspan><tspan x="1188" dy="22">south-facing</tspan></text>
+  <text x="1188" y="680" fill="#f0d57c" font-size="14" font-weight="800" text-anchor="start"><tspan x="1188" dy="0">SIGHTLINES</tspan></text>
+  <text x="1188" y="709" fill="#f5f0df" font-size="14" font-weight="400" text-anchor="start"><tspan x="1188" dy="0">962 legal viewpoints</tspan><tspan x="1188" dy="22">2,886 floor rays</tspan><tspan x="1188" dy="22">+0.42 m worst lip margin</tspan><tspan x="1188" dy="22">no centreline shortcut</tspan></text>
+  <text x="1188" y="836" fill="#a7d885" font-size="14" font-weight="800" text-anchor="start"><tspan x="1188" dy="0">ELEVATION</tspan></text>
+  <text x="1188" y="865" fill="#f5f0df" font-size="14" font-weight="400" text-anchor="start"><tspan x="1188" dy="0">terrace -0.6 m</tspan><tspan x="1188" dy="22">stages -4.2 m</tspan><tspan x="1188" dy="22">canyon -25 m</tspan><tspan x="1188" dy="22">eye +1.05 m</tspan></text>
+
+  <rect x="1380" y="104" width="780" height="410" rx="20" fill="#14201a"/>
+  <text x="1412" y="144" fill="#f5f0df" font-size="20" font-weight="800" text-anchor="start"><tspan x="1412" dy="0">2 · VERTICAL SECTION · PUBLIC TERRACE TO CANYON</tspan></text>
+  <path d="M 1420 444.6 L 1502 444.6 L 1535 523.8 L 1665 523.8 L 1700 575.5 L 1860 575.5 L 1910 641.5 L 2090 641.5" fill="none" stroke="#3c5337" stroke-width="28" stroke-linejoin="round"/>
+  <line x1="1420" y1="444.6" x2="1512" y2="444.6" stroke="#a7d885" stroke-width="9"/>
+  <circle cx="1460" cy="426.45" r="8" fill="#f0d57c"/>
+  <line x1="1460" y1="426.45" x2="1688" y2="484.2" stroke="#f0d57c" stroke-width="2" stroke-dasharray="7 6"/>
+  <ellipse cx="1535" cy="484.2" rx="52" ry="9" fill="#9bd480" fill-opacity="0.2" stroke="#9bd480" stroke-width="3"/>
+        <g stroke="#9bd480" stroke-width="3.1" stroke-linecap="round" fill="none">
+    <circle cx="1535" cy="445.76" r="4.96" fill="#9bd480" stroke="none"/>
+    <line x1="1535" y1="450.72" x2="1535" y2="468.7"/>
+    <line x1="1535" y1="453.82" x2="1522.6" y2="450.09999999999997"/>
+    <line x1="1535" y1="453.82" x2="1547.4" y2="458.15999999999997"/>
+    <line x1="1535" y1="468.7" x2="1527.56" y2="484.2"/>
+    <line x1="1535" y1="468.7" x2="1542.44" y2="484.2"/>
+  </g><ellipse cx="1690" cy="484.2" rx="52" ry="9" fill="#e2bd70" fill-opacity="0.2" stroke="#e2bd70" stroke-width="3"/>
+        <g stroke="#e2bd70" stroke-width="3.1" stroke-linecap="round" fill="none">
+    <circle cx="1690" cy="445.76" r="4.96" fill="#e2bd70" stroke="none"/>
+    <line x1="1690" y1="450.72" x2="1690" y2="468.7"/>
+    <line x1="1690" y1="453.82" x2="1677.6" y2="450.09999999999997"/>
+    <line x1="1690" y1="453.82" x2="1702.4" y2="458.15999999999997"/>
+    <line x1="1690" y1="468.7" x2="1682.56" y2="484.2"/>
+    <line x1="1690" y1="468.7" x2="1697.44" y2="484.2"/>
+  </g><ellipse cx="1845" cy="484.2" rx="52" ry="9" fill="#8bc5d9" fill-opacity="0.2" stroke="#8bc5d9" stroke-width="3"/>
+        <g stroke="#8bc5d9" stroke-width="3.1" stroke-linecap="round" fill="none">
+    <circle cx="1845" cy="445.76" r="4.96" fill="#8bc5d9" stroke="none"/>
+    <line x1="1845" y1="450.72" x2="1845" y2="468.7"/>
+    <line x1="1845" y1="453.82" x2="1832.6" y2="450.09999999999997"/>
+    <line x1="1845" y1="453.82" x2="1857.4" y2="458.15999999999997"/>
+    <line x1="1845" y1="468.7" x2="1837.56" y2="484.2"/>
+    <line x1="1845" y1="468.7" x2="1852.44" y2="484.2"/>
+  </g>
+  <text x="1420" y="486" fill="#f0d57c" font-size="12" font-weight="400" text-anchor="start"><tspan x="1420" dy="0">visitor eye +1.05 m</tspan></text>
+  <text x="1535" y="486" fill="#a8b5aa" font-size="12" font-weight="400" text-anchor="start"><tspan x="1535" dy="0">3.6 m stage drop</tspan></text>
+  <text x="1940" y="486" fill="#a8b5aa" font-size="12" font-weight="400" text-anchor="start"><tspan x="1940" dy="0">shelves continue to -25 m</tspan></text>
+
+  <rect x="1380" y="534" width="780" height="296" rx="20" fill="#14201a"/>
+  <text x="1412" y="570" fill="#f5f0df" font-size="20" font-weight="800" text-anchor="start"><tspan x="1412" dy="0">3 · EYE-LEVEL COMPOSITIONS</tspan></text>
+  <g>
+    <rect x="1412" y="586" width="350" height="238" rx="14" fill="#07100d" stroke="#2b3b31" stroke-width="2"/>
+    <path d="M 1412 628 L 1762 594 L 1762 678 L 1412 698 Z" fill="#c6e6d5" opacity="0.18"/>
+    <path d="M 1412 744 C 1497 721, 1657 727, 1762 702 L 1762 824 L 1412 824 Z" fill="#3c5337"/>
+    <ellipse cx="1494" cy="764" rx="21.08" ry="4.34" fill="#9bd480" fill-opacity="0.18"/>
+          <g stroke="#9bd480" stroke-width="3.1" stroke-linecap="round" fill="none">
+    <circle cx="1494" cy="725.5600000000001" r="4.96" fill="#9bd480" stroke="none"/>
+    <line x1="1494" y1="730.52" x2="1494" y2="748.5"/>
+    <line x1="1494" y1="733.62" x2="1481.6" y2="729.9"/>
+    <line x1="1494" y1="733.62" x2="1506.4" y2="737.96"/>
+    <line x1="1494" y1="748.5" x2="1486.56" y2="764"/>
+    <line x1="1494" y1="748.5" x2="1501.44" y2="764"/>
+  </g>
+          <text x="1494" y="798" fill="#9bd480" font-size="11" font-weight="700" text-anchor="middle"><tspan x="1494" dy="0">G · 8.5°</tspan></text><ellipse cx="1588" cy="764" rx="21.08" ry="4.34" fill="#e2bd70" fill-opacity="0.18"/>
+          <g stroke="#e2bd70" stroke-width="3.1" stroke-linecap="round" fill="none">
+    <circle cx="1588" cy="725.5600000000001" r="4.96" fill="#e2bd70" stroke="none"/>
+    <line x1="1588" y1="730.52" x2="1588" y2="748.5"/>
+    <line x1="1588" y1="733.62" x2="1575.6" y2="729.9"/>
+    <line x1="1588" y1="733.62" x2="1600.4" y2="737.96"/>
+    <line x1="1588" y1="748.5" x2="1580.56" y2="764"/>
+    <line x1="1588" y1="748.5" x2="1595.44" y2="764"/>
+  </g>
+          <text x="1588" y="798" fill="#e2bd70" font-size="11" font-weight="700" text-anchor="middle"><tspan x="1588" dy="0">H · 8.5°</tspan></text><ellipse cx="1682" cy="764" rx="21.08" ry="4.34" fill="#8bc5d9" fill-opacity="0.18"/>
+          <g stroke="#8bc5d9" stroke-width="3.1" stroke-linecap="round" fill="none">
+    <circle cx="1682" cy="725.5600000000001" r="4.96" fill="#8bc5d9" stroke="none"/>
+    <line x1="1682" y1="730.52" x2="1682" y2="748.5"/>
+    <line x1="1682" y1="733.62" x2="1669.6" y2="729.9"/>
+    <line x1="1682" y1="733.62" x2="1694.4" y2="737.96"/>
+    <line x1="1682" y1="748.5" x2="1674.56" y2="764"/>
+    <line x1="1682" y1="748.5" x2="1689.44" y2="764"/>
+  </g>
+          <text x="1682" y="798" fill="#8bc5d9" font-size="11" font-weight="700" text-anchor="middle"><tspan x="1682" dy="0">I · 8.5°</tspan></text>
+    <text x="1428" y="614" fill="#f5f0df" font-size="15" font-weight="700" text-anchor="start"><tspan x="1428" dy="0">STOP 2 · DAYLIGHT REVEAL</tspan></text>
+    <line x1="1424" y1="770" x2="1750" y2="770" stroke="#f0d57c" stroke-width="2"/>
+    <text x="1428" y="816" fill="#f0d57c" font-size="11" font-weight="400" text-anchor="start"><tspan x="1428" dy="0">feet and flat stage surfaces remain visible</tspan></text>
+  </g>
+  <g>
+    <rect x="1780" y="586" width="350" height="238" rx="14" fill="#07100d" stroke="#2b3b31" stroke-width="2"/>
+    <path d="M 1780 628 L 2130 594 L 2130 678 L 1780 698 Z" fill="#c6e6d5" opacity="0.18"/>
+    <path d="M 1780 744 C 1865 721, 2025 727, 2130 702 L 2130 824 L 1780 824 Z" fill="#3c5337"/>
+    <ellipse cx="1862" cy="764" rx="26.86" ry="5.53" fill="#9bd480" fill-opacity="0.18"/>
+          <g stroke="#9bd480" stroke-width="3.95" stroke-linecap="round" fill="none">
+    <circle cx="1862" cy="715.0200000000001" r="6.32" fill="#9bd480" stroke="none"/>
+    <line x1="1862" y1="721.34" x2="1862" y2="744.25"/>
+    <line x1="1862" y1="725.2900000000001" x2="1846.2" y2="720.5500000000001"/>
+    <line x1="1862" y1="725.2900000000001" x2="1877.8" y2="730.82"/>
+    <line x1="1862" y1="744.25" x2="1852.52" y2="764"/>
+    <line x1="1862" y1="744.25" x2="1871.48" y2="764"/>
+  </g>
+          <text x="1862" y="798" fill="#9bd480" font-size="11" font-weight="700" text-anchor="middle"><tspan x="1862" dy="0">G · 9.7°</tspan></text><ellipse cx="1956" cy="764" rx="29.92" ry="6.16" fill="#e2bd70" fill-opacity="0.18"/>
+          <g stroke="#e2bd70" stroke-width="4.4" stroke-linecap="round" fill="none">
+    <circle cx="1956" cy="709.4399999999999" r="7.04" fill="#e2bd70" stroke="none"/>
+    <line x1="1956" y1="716.48" x2="1956" y2="742"/>
+    <line x1="1956" y1="720.88" x2="1938.4" y2="715.6"/>
+    <line x1="1956" y1="720.88" x2="1973.6" y2="727.04"/>
+    <line x1="1956" y1="742" x2="1945.44" y2="764"/>
+    <line x1="1956" y1="742" x2="1966.56" y2="764"/>
+  </g>
+          <text x="1956" y="798" fill="#e2bd70" font-size="11" font-weight="700" text-anchor="middle"><tspan x="1956" dy="0">H · 10.9°</tspan></text><ellipse cx="2050" cy="764" rx="30.6" ry="6.3" fill="#8bc5d9" fill-opacity="0.18"/>
+          <g stroke="#8bc5d9" stroke-width="4.5" stroke-linecap="round" fill="none">
+    <circle cx="2050" cy="708.2" r="7.2" fill="#8bc5d9" stroke="none"/>
+    <line x1="2050" y1="715.4" x2="2050" y2="741.5"/>
+    <line x1="2050" y1="719.9" x2="2032" y2="714.5"/>
+    <line x1="2050" y1="719.9" x2="2068" y2="726.1999999999999"/>
+    <line x1="2050" y1="741.5" x2="2039.2" y2="764"/>
+    <line x1="2050" y1="741.5" x2="2060.8" y2="764"/>
+  </g>
+          <text x="2050" y="798" fill="#8bc5d9" font-size="11" font-weight="700" text-anchor="middle"><tspan x="2050" dy="0">I · 11.0°</tspan></text>
+    <text x="1796" y="614" fill="#f5f0df" font-size="15" font-weight="700" text-anchor="start"><tspan x="1796" dy="0">STOP 6 · NEAR ENSEMBLE</tspan></text>
+    <line x1="1792" y1="770" x2="2118" y2="770" stroke="#f0d57c" stroke-width="2"/>
+    <text x="1796" y="816" fill="#f0d57c" font-size="11" font-weight="400" text-anchor="start"><tspan x="1796" dy="0">feet and flat stage surfaces remain visible</tspan></text>
+  </g>
+
+  <rect x="1380" y="850" width="780" height="174" rx="20" fill="#14201a"/>
+  <text x="1412" y="882" fill="#f5f0df" font-size="18" font-weight="800" text-anchor="start"><tspan x="1412" dy="0">4 · PERFORMANCE → ENVIRONMENT</tspan></text>
+  <g>
+        <rect x="1415" y="852" width="220" height="154" rx="14" fill="#1b2a21" stroke="#9bd480" stroke-width="2"/>
+        <text x="1433" y="882" fill="#9bd480" font-size="26" font-weight="800" text-anchor="start"><tspan x="1433" dy="0">G</tspan></text>
+        <path d="M 1595 880 A 19 19 0 1 1 1557 880 A 19 19 0 1 1 1595 880 M 1613 880 A 19 19 0 1 1 1575 880 A 19 19 0 1 1 1613 880" fill="none" stroke="#9bd480" stroke-width="4"/>
+        <text x="1433" y="918" fill="#f5f0df" font-size="13" font-weight="400" text-anchor="start"><tspan x="1433" dy="0">blue cw</tspan><tspan x="1433" dy="19">red cw</tspan><tspan x="1433" dy="19">same path · same clock</tspan></text>
+        <text x="1433" y="988" fill="#a8b5aa" font-size="11" font-weight="400" text-anchor="start"><tspan x="1433" dy="0">Two continuous rings retain G's matched pro rotations.</tspan></text>
+      </g><g>
+        <rect x="1660" y="852" width="220" height="154" rx="14" fill="#1b2a21" stroke="#e2bd70" stroke-width="2"/>
+        <text x="1678" y="882" fill="#e2bd70" font-size="26" font-weight="800" text-anchor="start"><tspan x="1678" dy="0">H</tspan></text>
+        <path d="M 1830 880 C 1823.75 866.25, 1817.5 863.75, 1830 855 C 1842.5 863.75, 1836.25 875, 1830 880 C 1843.75 873.75, 1846.25 867.5, 1855 880 C 1846.25 892.5, 1835 886.25, 1830 880 C 1836.25 893.75, 1842.5 896.25, 1830 905 C 1817.5 896.25, 1823.75 885, 1830 880 C 1816.25 886.25, 1813.75 892.5, 1805 880 C 1813.75 867.5, 1825 873.75, 1830 880" fill="none" stroke="#e2bd70" stroke-width="4"/>
+        <text x="1678" y="918" fill="#f5f0df" font-size="13" font-weight="400" text-anchor="start"><tspan x="1678" dy="0">blue ccw</tspan><tspan x="1678" dy="19">red ccw</tspan><tspan x="1678" dy="19">same path · same clock</tspan></text>
+        <text x="1678" y="988" fill="#a8b5aa" font-size="11" font-weight="400" text-anchor="start"><tspan x="1678" dy="0">A paired petal trace retains H's matched anti rotations.</tspan></text>
+      </g><g>
+        <rect x="1905" y="852" width="220" height="154" rx="14" fill="#1b2a21" stroke="#8bc5d9" stroke-width="2"/>
+        <text x="1923" y="882" fill="#8bc5d9" font-size="26" font-weight="800" text-anchor="start"><tspan x="1923" dy="0">I</tspan></text>
+        <path d="M 2088 880 A 20 20 0 1 1 2048 880 A 20 20 0 1 1 2088 880 M 2082 880 C 2077.25 869.55, 2072.5 867.65, 2082 861 C 2091.5 867.65, 2086.75 876.2, 2082 880 C 2092.45 875.25, 2094.35 870.5, 2101 880 C 2094.35 889.5, 2085.8 884.75, 2082 880 C 2086.75 890.45, 2091.5 892.35, 2082 899 C 2072.5 892.35, 2077.25 883.8, 2082 880 C 2071.55 884.75, 2069.65 889.5, 2063 880 C 2069.65 870.5, 2078.2 875.25, 2082 880" fill="none" stroke="#8bc5d9" stroke-width="4"/>
+        <text x="1923" y="918" fill="#f5f0df" font-size="13" font-weight="400" text-anchor="start"><tspan x="1923" dy="0">blue ccw</tspan><tspan x="1923" dy="19">red cw</tspan><tspan x="1923" dy="19">same path · same clock</tspan></text>
+        <text x="1923" y="988" fill="#a8b5aa" font-size="11" font-weight="400" text-anchor="start"><tspan x="1923" dy="0">H's blue petal and G's red ring remain legible inside one shared clock.</tspan></text>
+      </g>
+
+  <rect x="40" y="1048" width="2120" height="412" rx="20" fill="#14201a"/>
+  <text x="70" y="1074" fill="#f5f0df" font-size="20" font-weight="800" text-anchor="start"><tspan x="70" dy="0">5 · PLAYER EXPERIENCE · A → B → C → G → H → I → ENSEMBLE → AIR</tspan></text>
+  <g>
+        <line x1="346" y1="1112" x2="359" y2="1112" stroke="#a7d885" stroke-width="4" marker-end="url(#arrow)"/>
+        <circle cx="75" cy="1109" r="20" fill="#a7d885"/>
+        <text x="75" y="1116" fill="#0b1210" font-size="19" font-weight="800" text-anchor="middle">1</text>
+        <text x="104" y="1104" fill="#f5f0df" font-size="17" font-weight="700" text-anchor="start"><tspan x="104" dy="0">Fire threshold</tspan></text>
+        <text x="52" y="1162" fill="#a8b5aa" font-size="13" font-weight="400" text-anchor="start"><tspan x="52" dy="0">FIRST FOCUS</tspan><tspan x="52" dy="18">A cool seam around the blind</tspan><tspan x="52" dy="18">turn</tspan></text>
+        <text x="52" y="1250" fill="#f5f0df" font-size="13" font-weight="400" text-anchor="start"><tspan x="52" dy="0">EXPERIENCE</tspan><tspan x="52" dy="18">Fire disappears before Earth</tspan><tspan x="52" dy="18">is revealed.</tspan></text>
+        <text x="52" y="1354" fill="#a7d885" font-size="13" font-weight="400" text-anchor="start"><tspan x="52" dy="0">ROOM RESPONSE</tspan><tspan x="52" dy="18">Heat, orange light, and</tspan><tspan x="52" dy="18">ceiling pressure fall away.</tspan></text>
+      </g><g>
+        <line x1="653" y1="1112" x2="666" y2="1112" stroke="#a7d885" stroke-width="4" marker-end="url(#arrow)"/>
+        <circle cx="382" cy="1109" r="20" fill="#a7d885"/>
+        <text x="382" y="1116" fill="#0b1210" font-size="19" font-weight="800" text-anchor="middle">2</text>
+        <text x="411" y="1104" fill="#f5f0df" font-size="17" font-weight="700" text-anchor="start"><tspan x="411" dy="0">Daylight reveal</tspan></text>
+        <text x="359" y="1162" fill="#a8b5aa" font-size="13" font-weight="400" text-anchor="start"><tspan x="359" dy="0">FIRST FOCUS</tspan><tspan x="359" dy="18">G, H, and I already moving on</tspan><tspan x="359" dy="18">one clock</tspan></text>
+        <text x="359" y="1250" fill="#f5f0df" font-size="13" font-weight="400" text-anchor="start"><tspan x="359" dy="0">EXPERIENCE</tspan><tspan x="359" dy="18">The canyon opens as one wide,</tspan><tspan x="359" dy="18">readable composition.</tspan></text>
+        <text x="359" y="1354" fill="#a7d885" font-size="13" font-weight="400" text-anchor="start"><tspan x="359" dy="0">ROOM RESPONSE</tspan><tspan x="359" dy="18">Cool daylight lands on the</tspan><tspan x="359" dy="18">performers before the scenery.</tspan></text>
+      </g><g>
+        <line x1="960" y1="1112" x2="973" y2="1112" stroke="#a7d885" stroke-width="4" marker-end="url(#arrow)"/>
+        <circle cx="689" cy="1109" r="20" fill="#a7d885"/>
+        <text x="689" y="1116" fill="#0b1210" font-size="19" font-weight="800" text-anchor="middle">3</text>
+        <text x="718" y="1104" fill="#f5f0df" font-size="17" font-weight="700" text-anchor="start"><tspan x="718" dy="0">G comparison</tspan></text>
+        <text x="666" y="1162" fill="#a8b5aa" font-size="13" font-weight="400" text-anchor="start"><tspan x="666" dy="0">FIRST FOCUS</tspan><tspan x="666" dy="18">Matched pro rotations</tspan></text>
+        <text x="666" y="1250" fill="#f5f0df" font-size="13" font-weight="400" text-anchor="start"><tspan x="666" dy="0">EXPERIENCE</tspan><tspan x="666" dy="18">G is closest, but H and I</tspan><tspan x="666" dy="18">remain visible beside it.</tspan></text>
+        <text x="666" y="1354" fill="#a7d885" font-size="13" font-weight="400" text-anchor="start"><tspan x="666" dy="0">ROOM RESPONSE</tspan><tspan x="666" dy="18">Twin ring traces begin</tspan><tspan x="666" dy="18">retaining on the far wall.</tspan></text>
+      </g><g>
+        <line x1="1267" y1="1112" x2="1280" y2="1112" stroke="#a7d885" stroke-width="4" marker-end="url(#arrow)"/>
+        <circle cx="996" cy="1109" r="20" fill="#a7d885"/>
+        <text x="996" y="1116" fill="#0b1210" font-size="19" font-weight="800" text-anchor="middle">4</text>
+        <text x="1025" y="1104" fill="#f5f0df" font-size="17" font-weight="700" text-anchor="start"><tspan x="1025" dy="0">H comparison</tspan></text>
+        <text x="973" y="1162" fill="#a8b5aa" font-size="13" font-weight="400" text-anchor="start"><tspan x="973" dy="0">FIRST FOCUS</tspan><tspan x="973" dy="18">Matched anti rotations</tspan></text>
+        <text x="973" y="1250" fill="#f5f0df" font-size="13" font-weight="400" text-anchor="start"><tspan x="973" dy="0">EXPERIENCE</tspan><tspan x="973" dy="18">The same hand path now</tspan><tspan x="973" dy="18">produces a different prop</tspan><tspan x="973" dy="18">relationship.</tspan></text>
+        <text x="973" y="1354" fill="#a7d885" font-size="13" font-weight="400" text-anchor="start"><tspan x="973" dy="0">ROOM RESPONSE</tspan><tspan x="973" dy="18">Paired petals accumulate</tspan><tspan x="973" dy="18">beside G's rings.</tspan></text>
+      </g><g>
+        <line x1="1574" y1="1112" x2="1587" y2="1112" stroke="#a7d885" stroke-width="4" marker-end="url(#arrow)"/>
+        <circle cx="1303" cy="1109" r="20" fill="#a7d885"/>
+        <text x="1303" y="1116" fill="#0b1210" font-size="19" font-weight="800" text-anchor="middle">5</text>
+        <text x="1332" y="1104" fill="#f5f0df" font-size="17" font-weight="700" text-anchor="start"><tspan x="1332" dy="0">I synthesis</tspan></text>
+        <text x="1280" y="1162" fill="#a8b5aa" font-size="13" font-weight="400" text-anchor="start"><tspan x="1280" dy="0">FIRST FOCUS</tspan><tspan x="1280" dy="18">H's blue behavior plus G's red</tspan><tspan x="1280" dy="18">behavior</tspan></text>
+        <text x="1280" y="1250" fill="#f5f0df" font-size="13" font-weight="400" text-anchor="start"><tspan x="1280" dy="0">EXPERIENCE</tspan><tspan x="1280" dy="18">The hybrid is understood by</tspan><tspan x="1280" dy="18">comparison, not by a label.</tspan></text>
+        <text x="1280" y="1354" fill="#a7d885" font-size="13" font-weight="400" text-anchor="start"><tspan x="1280" dy="0">ROOM RESPONSE</tspan><tspan x="1280" dy="18">A blue petal and red ring</tspan><tspan x="1280" dy="18">interlock without a climax</tspan><tspan x="1280" dy="18">beat.</tspan></text>
+      </g><g>
+        <line x1="1881" y1="1112" x2="1894" y2="1112" stroke="#a7d885" stroke-width="4" marker-end="url(#arrow)"/>
+        <circle cx="1610" cy="1109" r="20" fill="#a7d885"/>
+        <text x="1610" y="1116" fill="#0b1210" font-size="19" font-weight="800" text-anchor="middle">6</text>
+        <text x="1639" y="1104" fill="#f5f0df" font-size="17" font-weight="700" text-anchor="start"><tspan x="1639" dy="0">Near ensemble</tspan></text>
+        <text x="1587" y="1162" fill="#a8b5aa" font-size="13" font-weight="400" text-anchor="start"><tspan x="1587" dy="0">FIRST FOCUS</tspan><tspan x="1587" dy="18">Three bodies, one continuous</tspan><tspan x="1587" dy="18">clock</tspan></text>
+        <text x="1587" y="1250" fill="#f5f0df" font-size="13" font-weight="400" text-anchor="start"><tspan x="1587" dy="0">EXPERIENCE</tspan><tspan x="1587" dy="18">The visitor steps closer and</tspan><tspan x="1587" dy="18">sees the complete relation at</tspan><tspan x="1587" dy="18">once.</tspan></text>
+        <text x="1587" y="1354" fill="#a7d885" font-size="13" font-weight="400" text-anchor="start"><tspan x="1587" dy="0">ROOM RESPONSE</tspan><tspan x="1587" dy="18">All retained traces brighten</tspan><tspan x="1587" dy="18">briefly: the room acknowledges</tspan><tspan x="1587" dy="18">sustained attention.</tspan></text>
+      </g><g>
+        
+        <circle cx="1917" cy="1109" r="20" fill="#a7d885"/>
+        <text x="1917" y="1116" fill="#0b1210" font-size="19" font-weight="800" text-anchor="middle">7</text>
+        <text x="1946" y="1104" fill="#f5f0df" font-size="17" font-weight="700" text-anchor="start"><tspan x="1946" dy="0">Air threshold</tspan></text>
+        <text x="1894" y="1162" fill="#a8b5aa" font-size="13" font-weight="400" text-anchor="start"><tspan x="1894" dy="0">FIRST FOCUS</tspan><tspan x="1894" dy="18">The trio stays visible over</tspan><tspan x="1894" dy="18">the shoulder</tspan></text>
+        <text x="1894" y="1250" fill="#f5f0df" font-size="13" font-weight="400" text-anchor="start"><tspan x="1894" dy="0">EXPERIENCE</tspan><tspan x="1894" dy="18">The route continues forward</tspan><tspan x="1894" dy="18">without retracing the terrace.</tspan></text>
+        <text x="1894" y="1354" fill="#a7d885" font-size="13" font-weight="400" text-anchor="start"><tspan x="1894" dy="0">ROOM RESPONSE</tspan><tspan x="1894" dy="18">The wall traces remain as</tspan><tspan x="1894" dy="18">Earth gives way to vertical</tspan><tspan x="1894" dy="18">air.</tspan></text>
+      </g>
+  <rect x="70" y="1420" width="2060" height="24" rx="12" fill="#e39472" fill-opacity="0.16"/>
+  <text x="1100" y="1437" fill="#e39472" font-size="13" font-weight="700" text-anchor="middle"><tspan x="1100" dy="0">CANON RECONCILIATION PROPOSAL · all three stay visible and synchronized; terrace position makes G, then H, then I the closest read before the final ensemble</tspan></text>
+</svg>
