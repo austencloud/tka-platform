@@ -90,11 +90,36 @@ const viewerHeaderSource = read(
 const viewerSplitPaneSource = read(
   "src/lib/shared/sequence-viewer/components/ViewerSplitPane.svelte"
 );
+const viewerMotionSurfaceSource = read(
+  "src/lib/shared/sequence-viewer/components/ViewerMotionSurface.svelte"
+);
+const viewerCompanionSurfaceSource = read(
+  "src/lib/shared/sequence-viewer/components/ViewerCompanionSurface.svelte"
+);
+const viewerPracticeLaneSource = read(
+  "src/lib/shared/sequence-viewer/components/ViewerPracticeLane.svelte"
+);
 const hostEntries = Object.entries(HOSTS).map(
   ([name, rels]) => [name, rels.map(read).join("\n")] as const
 );
 
 describe("SequenceViewerShell host contract", () => {
+  it("keeps split geometry separate from pane behavior owners", () => {
+    expect(viewerSplitPaneSource).toContain("<ViewerMotionSurface");
+    expect(viewerSplitPaneSource).toContain("<ViewerCompanionSurface");
+    expect(viewerSplitPaneSource).toContain("<ViewerPracticeLane");
+    expect(viewerSplitPaneSource).not.toContain("<AnimatorCanvas");
+    expect(viewerSplitPaneSource).not.toContain("createPaneKeepAlive");
+
+    expect(viewerMotionSurfaceSource).toContain("<AnimatorCanvas");
+    expect(viewerMotionSurfaceSource).toContain("<LazyMount");
+    expect(viewerMotionSurfaceSource).toContain("<RightRail");
+    expect(viewerCompanionSurfaceSource).toContain("createPaneKeepAlive");
+    expect(viewerCompanionSurfaceSource).toContain("<ChoreoCard");
+    expect(viewerCompanionSurfaceSource).toContain("<ArtPane");
+    expect(viewerPracticeLaneSource).toContain("<PracticeLanePane");
+  });
+
   it("shell exists and exposes the host prop seam", () => {
     expect(shellSource).toContain("exportOverrides");
     expect(shellSource).toContain("openAppHref");
@@ -154,7 +179,9 @@ describe("SequenceViewerShell host contract", () => {
     expect(shellSource).toContain(
       "sequence={ctx.effectiveSequence ?? sequence}"
     );
-    expect(viewerSplitPaneSource.match(/\s+hideHeader\s*\n/g)).toHaveLength(2);
+    expect(viewerMotionSurfaceSource.match(/\s+hideHeader\s*\n/g)).toHaveLength(
+      1
+    );
     expect(viewerHeaderSource).not.toContain('label: "Copy word"');
     expect(viewerHeaderSource).not.toContain("Sequence Viewer");
     expect(viewerHeaderSource).not.toContain("Animation Export");

@@ -8,54 +8,28 @@
   - CardFooter (notes and path metadata)
   - CellRenderer (per-cell images, overlays - used by CardGridLayout)
 
-  Owns: motion visibility, solo mode, context menu, animation/interactions,
-  responsive containment, cell rendering pipeline, caching.
+  Public facade for the card contract. Display semantics, responsive sizing,
+  QR generation, render scheduling, and transition invalidation live in named
+  state owners under shared/choreo-card.
 -->
 <script lang="ts">
-  import {
-    DIFFICULTY_LEVELS,
-    DEFAULT_DIFFICULTY_STYLE,
-  } from "$lib/shared/config/difficulty-styles";
   // Note: transition/animation imports (fade, fly, scale, flip, cubicOut) moved to
   // extracted sub-components (CardHeader, CardFooter, CardGridLayout, CellRenderer).
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PreviewCellRenderOptions } from "../services/preview-cell-renderer";
-  import { onMount, onDestroy, tick, untrack } from "svelte";
-  import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
+  import { onDestroy } from "svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-  import {
-    tryGetLoopDisplayResolver,
-    type LoopDisplay,
-  } from "$lib/shared/loop-labeler/get-loop-display-resolver";
-  import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
   import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
   import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
   import { resolveInfoCellDisplay } from "../services/info-cell-display";
-  import { encodeViewMode } from "$lib/shared/browse/domain/browse-view-mode";
   import { createStartPositionFromBeatStart } from "$lib/shared/create/services/sequence-transforms";
-  import {
-    renderCell,
-    deleteCellCache,
-  } from "../services/preview-cell-renderer";
-  import { compositeStepNumberOnBlob } from "../services/step-number-compositor";
-  import { deriveCacheKey } from "../services/cell-cache-key-deriver";
-  import { pictographBlobCache } from "$lib/shared/render/services/pictograph-blob-cache";
-  import {
-    markScan,
-    markScanAfterPaint,
-    reportScanToStable,
-  } from "$lib/shared/analytics/scan-perf";
-  import { buildChoreoCardRenderKeys } from "$lib/shared/choreo-card/services/choreo-card-render-keys";
-  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
   import { getScanCardCloudProbe } from "$lib/shared/sequence-viewer/scan-card-cloud-context";
   import { CANONICAL_CARD_VISIBILITY } from "$lib/shared/render/services/cloud-cell-key";
-  import { calculateTimelineRowsByBeatCount } from "$lib/shared/create/utils/grid-calculations";
-  import type { TimelineRow } from "$lib/shared/create/utils/grid-calculations";
 
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -71,22 +45,22 @@
   import CardGridLayout from "./CardGridLayout.svelte";
 
   // Extracted modules
-  import {
-    type CachedPreview,
-    globalPreviewCache,
-    getPreviewCacheKey,
-    storePreviewInCache,
-    calculateGridPosition,
-    detectMixedDurations,
-    buildRenderOptions,
-  } from "$lib/shared/choreo-card/services/choreo-card-cell-pipeline";
+  import { buildRenderOptions } from "$lib/shared/choreo-card/services/choreo-card-cell-pipeline";
   import {
     formatSoloTurns,
     shortOrientation,
     formatDuration,
   } from "$lib/shared/choreo-card/services/choreo-card-label-format";
   import { createChoreoCardLayoutState } from "$lib/shared/choreo-card/state/choreo-card-layout-state.svelte";
+  import { createChoreoCardSizingState } from "$lib/shared/choreo-card/state/choreo-card-sizing-state.svelte";
+  import { createChoreoCardQrState } from "$lib/shared/choreo-card/state/choreo-card-qr-state.svelte";
+  import { createChoreoCardDisplayState } from "$lib/shared/choreo-card/state/choreo-card-display-state.svelte";
+  import { createChoreoCardRenderLifecycle } from "$lib/shared/choreo-card/state/choreo-card-render-lifecycle.svelte";
   import { createCrossfaderState } from "$lib/shared/choreo-card/state/crossfader-state.svelte";
+  import {
+    createChoreoCardRenderEngine,
+    type ChoreoCardRenderModel,
+  } from "$lib/shared/choreo-card/services/choreo-card-render-engine";
   import { composeMenu } from "$lib/shared/components/context-menu/compose-menu";
   import { buildCardMenuSection } from "$lib/shared/choreo-card/services/card-menu-section";
   import { buildPictographContextMenuItems } from "$lib/shared/pictograph/shared/components/context-menu/pictograph-context-menu-builder";
@@ -199,71 +173,26 @@
   // Images scale down cleanly on lower-resolution displays
   const CELL_SIZE = 240; // Match thumbnail pipeline (240px) for instant cache hits from gallery
 
-  // Individual cell data
-  interface CellData {
-    index: number; // -1 for start position, 0+ for steps
-    label: string; // "Start" or step number
-    imageUrl: string; // Rendered image URL (current mode only)
-    isLoaded: boolean; // Whether the real image has loaded (false = show spinner)
-    renderFailed?: boolean; // Cloud-only scan miss: settled, but no image exists
-    gridColumn: number; // 1-based CSS grid column
-    gridRow: number; // 1-based CSS grid row
-    duration: number; // Duration units (1.0 = standard)
-    fadeOutUrl?: string; // Previous image URL during dark mode cross-fade
-  }
-
-  // State
-  let cells = $state<CellData[]>([]);
-  let columns = $state(0);
-  let rows = $state(0);
-  let isLoading = $state(true);
-  let isRendering = false;
-  let renderQueued = false;
-
-  // Reactive mirror of isRendering, for the UI only. NEVER read this inside the
-  // render path: the render $effect calls renderAllCells(), so reading a $state
-  // there would subscribe the effect to its own busy flag and re-trigger it.
-  // Writing it from inside an effect is safe; reading it is not.
-  let isRefreshing = $state(false);
-  let refreshDelayTimer: ReturnType<typeof setTimeout> | null = null;
-
-  // A warm cache hit settles in a few ms, so a pip that flashed on every toggle
-  // would be pure noise. The affordance only appears once a regeneration has run
-  // long enough to read as "nothing happened" — which is what makes people
-  // hammer the export-panel chips.
-  const REFRESH_AFFORDANCE_DELAY_MS = 200;
-
-  function beginRefresh(): void {
-    // Deliberately does not read isRefreshing: this runs inside the render
-    // $effect's call chain, and reading the flag there would subscribe that
-    // effect to its own busy state and re-trigger it every time the pip
-    // appeared. The timer guard is enough — a redundant re-set is a no-op.
-    if (refreshDelayTimer !== null) return;
-    refreshDelayTimer = setTimeout(() => {
-      refreshDelayTimer = null;
-      isRefreshing = true;
-    }, REFRESH_AFFORDANCE_DELAY_MS);
-  }
-
-  function endRefresh(): void {
-    if (refreshDelayTimer !== null) {
-      clearTimeout(refreshDelayTimer);
-      refreshDelayTimer = null;
-    }
-    isRefreshing = false;
-  }
-  // Suppress cellWidth updates during cell loading. Cell content swaps cause
-  // the preview-stack to micro-fluctuate, cascading into font/header jitter.
-  // Container dimensions (containedWidth/Height) are NEVER suppressed — the
-  // container root is parent-sized and unaffected by cell content.
-  let suppressCellWidthUpdates = false;
-  let cellWidth = $state(0);
+  const renderModel = $state<ChoreoCardRenderModel>({
+    cells: [],
+    columns: 0,
+    rows: 0,
+    isLoading: true,
+    isRefreshing: false,
+    hasMixedDurations: false,
+    durationRows: [],
+    durationColCount: 0,
+  });
+  const cells = $derived(renderModel.cells);
+  const columns = $derived(renderModel.columns);
+  const rows = $derived(renderModel.rows);
+  const isLoading = $derived(renderModel.isLoading);
+  const isRefreshing = $derived(renderModel.isRefreshing);
   let prevEffectiveColumns = $state(0);
   let prevEffectiveRows = $state(0);
-  let suppressFlip = $state(false);
-  let hasMixedDurations = $state(false);
-  let durationRows = $state<TimelineRow[]>([]);
-  let durationColCount = $state(0);
+  const hasMixedDurations = $derived(renderModel.hasMixedDurations);
+  const durationRows = $derived(renderModel.durationRows);
+  const durationColCount = $derived(renderModel.durationColCount);
 
   const crossfader = createCrossfaderState(() => darkMode);
   // Reactive aliases used by the template and internal functions
@@ -272,40 +201,57 @@
 
   // Container-based sizing for "contain" behavior
   let containerElement: HTMLDivElement | undefined = $state();
-  let containedWidth = $state<number | null>(null);
-  let containedHeight = $state<number | null>(null);
-  // Raw container size (px) fed to the layout state for container-aware Auto
-  // layout. Distinct from contained*: those are the aspect-fitted box (which
-  // depends on the chosen columns); these are the parent-driven container size
-  // (independent of the grid), so feeding them back can't create a cycle.
-  let containerRawWidth = $state(0);
-  let containerRawHeight = $state(0);
+  let previewStackElement: HTMLDivElement | undefined = $state();
 
   let gridScrollRef: HTMLDivElement | undefined = $state();
 
-  // Pictograph visibility — ALL flags are sourced from the VisibilityStateManager
-  // below (showGrid / showNonRadial / handPointVis / showTKA / showReversals),
-  // the SAME source the export panel's toggles write to, so the button state and
-  // the rendered cells can never diverge. Reading getSettings().visibility with
-  // hardcoded `?? true` defaults is what produced the non-radial desync — the
-  // render defaulted ON while the toggle (VM) defaulted OFF.
-
-  // Motion visibility - when one hand is hidden, the sequence is a hand-path
-  // view: letters and word become meaningless (letters are defined by both
-  // hands combined), so we suppress the word heading. Level/LOOP stay.
-  // Glyph visibility - VTG/elemental/positions read from VM too so toggling
-  // those in the export panel invalidates the preview cache.
   const vm = getVisibilityStateManager();
-  let glyphVisibilityVersion = $state(0);
-  function onGlyphVisibilityChanged(): void {
-    glyphVisibilityVersion++;
-  }
-  // "all" so the master Grid toggle (which notifies ["all"], not ["glyph"])
-  // re-renders the card cells — without it the grid never toggled off.
-  vm.registerObserver(onGlyphVisibilityChanged, ["glyph", "non_radial", "all"]);
-  onDestroy(() => {
-    vm.unregisterObserver(onGlyphVisibilityChanged);
-  });
+  const viewerVisibility = tryGetViewerVisibilityContext();
+  const displayState = createChoreoCardDisplayState(
+    () => ({
+      sequence,
+      browseViewMode,
+      handPathMode,
+      showWord,
+      showDifficultyLevel,
+      hideSoloHeader,
+      showLoopGlyph,
+      showNotes,
+      showBlueMotion: viewerVisibility?.blueMotion ?? true,
+      showRedMotion: viewerVisibility?.redMotion ?? true,
+    }),
+    vm
+  );
+  const showBlueMotion = $derived(displayState.showBlueMotion);
+  const showRedMotion = $derived(displayState.showRedMotion);
+  const allMotionsVisible = $derived(displayState.allMotionsVisible);
+  const showTnD = $derived(displayState.showTnD);
+  const showElemental = $derived(displayState.showElemental);
+  const showPositions = $derived(displayState.showPositions);
+  const showGrid = $derived(displayState.showGrid);
+  const showNonRadial = $derived(displayState.showNonRadial);
+  const handPointVis = $derived(displayState.handPointVis);
+  const showTKA = $derived(displayState.showTKA);
+  const showReversals = $derived(displayState.showReversals);
+  const isBrowseSoloMode = $derived(displayState.isBrowseSoloMode);
+  const isMotionSoloMode = $derived(displayState.isMotionSoloMode);
+  const isSoloMode = $derived(displayState.isSoloMode);
+  const soloColor = $derived(displayState.soloColor);
+  const isHandsMode = $derived(displayState.isHandsMode);
+  const difficultyLevel = $derived(displayState.difficultyLevel);
+  const currentLevelStyle = $derived(displayState.currentLevelStyle);
+  const loopComponents = $derived(displayState.loopComponents);
+  const loopRotationPeriod = $derived(displayState.loopRotationPeriod);
+  const loopInversionPeriod = $derived(displayState.loopInversionPeriod);
+  const loopReflectionAxis = $derived(displayState.loopReflectionAxis);
+  const loopOverlayComponents = $derived(displayState.loopOverlayComponents);
+  const wordVisible = $derived(displayState.wordVisible);
+  const effectiveShowDifficulty = $derived(
+    displayState.effectiveShowDifficulty
+  );
+  const showHeader = $derived(displayState.showHeader);
+  const hasPathShapeMetadata = $derived(displayState.hasPathShapeMetadata);
+  const showFooter = $derived(displayState.showFooter);
 
   // Observe composition manager so per-step-count settings (start position
   // layout, column overrides) trigger layout re-derivation.
@@ -329,8 +275,7 @@
     void compositionVersion;
     const sc = sequence?.steps?.length ?? 0;
     const compositionColumns =
-      columnCount ??
-      compositionManager.getColumnCountForStepCount(sc);
+      columnCount ?? compositionManager.getColumnCountForStepCount(sc);
     const automaticLayout =
       startPositionLayoutOverride === null &&
       compositionColumns === null &&
@@ -351,8 +296,8 @@
     const spl =
       automaticLayout && automaticLayout.startPlacement !== "none"
         ? automaticLayout.startPlacement
-        : startPositionLayoutOverride ??
-          compositionManager.getStartPositionLayoutForStepCount(sc);
+        : (startPositionLayoutOverride ??
+          compositionManager.getStartPositionLayoutForStepCount(sc));
     const infoCellColumns =
       compositionColumns ??
       (automaticLayout ? getStepColumnsForLayout(automaticLayout) : null);
@@ -373,238 +318,36 @@
   // True only under the /q scan route — makes cells download from the cloud.
   const cloudProbeEnabled = getScanCardCloudProbe();
 
-  // Motion visibility: viewer-scoped. When rendered outside a viewer
-  // (browse previews, export pipeline), fall back to always-visible.
-  const viewerVisibility = tryGetViewerVisibilityContext();
-  const showBlueMotion = $derived(viewerVisibility?.blueMotion ?? true);
-  const showRedMotion = $derived(viewerVisibility?.redMotion ?? true);
-  const allMotionsVisible = $derived(showBlueMotion && showRedMotion);
-  const showTnD = $derived.by(() => {
-    void glyphVisibilityVersion;
-    return vm.getRawGlyphVisibility("tndGlyph");
-  });
-  const showElemental = $derived.by(() => {
-    void glyphVisibilityVersion;
-    return vm.getRawGlyphVisibility("elementalGlyph");
-  });
-  const showPositions = $derived.by(() => {
-    void glyphVisibilityVersion;
-    return vm.getRawGlyphVisibility("positionsGlyph");
-  });
-  const showGrid = $derived.by(() => {
-    void glyphVisibilityVersion;
-    return vm.getGridVisibility();
-  });
-  // Non-radial points: read from the VM — the SAME source as the export panel's
-  // Non-radial toggle — so the button state and the rendered cells can never
-  // diverge. This previously read getSettings().visibility.nonRadialPoints with a
-  // `?? true` default while the VM (and the toggle) default to false, so a
-  // never-toggled card rendered the points the button showed as OFF.
-  const showNonRadial = $derived.by(() => {
-    void glyphVisibilityVersion;
-    return vm.getNonRadialVisibility();
-  });
-  const handPointVis = $derived.by<"all" | "active" | "none">(() => {
-    void glyphVisibilityVersion;
-    return vm.getHandPointVisibility();
-  });
-  const showTKA = $derived.by(() => {
-    void glyphVisibilityVersion;
-    return vm.getRawGlyphVisibility("tkaGlyph");
-  });
-  const showReversals = $derived.by(() => {
-    void glyphVisibilityVersion;
-    return vm.getRawGlyphVisibility("reversalIndicators");
-  });
-
-  // QR code state - generated async, cached by sequence ID + dark mode.
-  // The grid cell is always reserved (via qrGridPosition) so layout doesn't
-  // shift when the QR image loads in.
-  let qrDataUrl = $state<string | null>(null);
-  // True only while a QR is genuinely being minted. Minting is expensive — a
-  // Firestore short-code transaction plus a full two-theme cell warm — so
-  // without this the QR chip toggled a cell that stayed empty for seconds and
-  // read as a dead control. Guests never mint one, so their empty slot is
-  // final, not pending, and must not spin forever.
-  let qrGenerating = $state(false);
-  const qrCacheMap = new Map<string, string>();
-  let lastQrKey = "";
-
-  const encodedViewMode = $derived(
-    browseViewMode ? encodeViewMode(browseViewMode) : undefined
+  const qrState = createChoreoCardQrState(
+    () => ({
+      sequence,
+      showQRCode: effShowQRCode,
+      darkMode,
+      isAuthenticated: authState.isAuthenticated,
+      bluePropType,
+      redPropType,
+      browseViewMode,
+    }),
+    { getGenerator: getQRCodeGenerator }
   );
+  const qrDataUrl = $derived(qrState.dataUrl);
+  const qrPending = $derived(qrState.pending);
 
-  const qrCacheKey = $derived.by(() => {
-    if (!effShowQRCode || !sequence) return "";
-    const seqId = sequence.id ?? sequence.word ?? "unknown";
-    // Auth state is part of the key: guests get inline (offline) QR codes,
-    // signed-in users get Firestore short codes. A guest who signs in
-    // mid-session re-derives the key and regenerates the correct code.
-    const authTag = authState.isAuthenticated ? "a" : "g";
-    return `${seqId}:${darkMode}:${authTag}${encodedViewMode ? `:${encodedViewMode}` : ""}`;
-  });
+  // Layout and DOM sizing are separate owners with a deliberate one-way loop:
+  // raw container measurements feed layout; the resolved layout model then
+  // determines the contained box and cell width.
+  let layoutState: ReturnType<typeof createChoreoCardLayoutState>;
+  const sizingState = createChoreoCardSizingState(() => ({
+    containerElement,
+    previewStackElement,
+    previewAspectRatio: layoutState.previewAspectRatio,
+    forceContain,
+    needsScroll: layoutState.needsScroll,
+    fitWidth,
+    containModel: layoutState.containModel,
+  }));
 
-  $effect(() => {
-    const key = qrCacheKey;
-    if (!key) {
-      qrDataUrl = null;
-      qrGenerating = false;
-      lastQrKey = "";
-      return;
-    }
-
-    // Skip if we already generated for this exact key
-    if (key === lastQrKey) return;
-    lastQrKey = key;
-
-    // Check cache first
-    const cached = qrCacheMap.get(key);
-    if (cached) {
-      qrDataUrl = cached;
-      qrGenerating = false;
-      return;
-    }
-
-    // Generate async - read prop values outside the async callback
-    // to avoid tracking additional reactive dependencies
-    const seq = sequence;
-    const isDark = darkMode;
-    const bProp = bluePropType ? String(bluePropType) : undefined;
-    const rProp = redPropType ? String(redPropType) : undefined;
-    const vm = encodedViewMode;
-    // Guests get no QR at all. The only guest QR we could mint was the dense
-    // self-contained "s~..." code, which was unscannable — so rather than bake
-    // a bad QR we leave the slot empty until the user signs in. Signed-in users
-    // mint a Firebase short code (tka.run/<code>) for the scannable URL + scan
-    // analytics.
-    if (!authState.isAuthenticated) {
-      qrDataUrl = null;
-      qrGenerating = false;
-      return;
-    }
-    const qrGenerator = getQRCodeGenerator();
-    if (!qrGenerator || !seq) {
-      qrGenerating = false;
-      return;
-    }
-
-    // qrDataUrl is deliberately left alone: on a theme switch the existing code
-    // is still worth showing until its replacement lands. qrPending only fires
-    // when there is nothing in the slot yet — the case that looked like a dead
-    // toggle.
-    qrGenerating = true;
-
-    qrGenerator
-      .generateForSequence(seq, {
-        size: 200,
-        margin: 1,
-        style: "modern",
-        darkMode: isDark,
-        bluePropType: bProp,
-        redPropType: rProp,
-        viewMode: vm,
-      })
-      .then((result) => {
-        qrCacheMap.set(key, result.dataUrl);
-        // Only update if this is still the current key (sequence didn't change mid-flight)
-        if (lastQrKey === key) {
-          qrDataUrl = result.dataUrl;
-          qrGenerating = false;
-        }
-      })
-      .catch(() => {
-        // QR is optional - don't block the card. Clear the pending state so the
-        // slot settles empty instead of spinning forever.
-        if (lastQrKey === key) qrGenerating = false;
-      });
-  });
-
-  // The reserved QR cell shows a pending state instead of staying blank while
-  // the code is minted, so toggling the QR chip has an immediate visible result.
-  const qrPending = $derived(effShowQRCode && !qrDataUrl && qrGenerating);
-
-  // Calculate difficulty level (with null safety)
-  const difficultyLevel = $derived.by(() => {
-    if (!sequence?.steps?.length) return 1;
-    return calculateSequenceDifficultyLevel([...sequence.steps]);
-  });
-
-  // Parse LOOP components for the glyph. The resolver handles both the
-  // stored-loopType path (fast) and the on-demand detect path (when a
-  // sequence was edited and its stored loopType might be stale), plus
-  // caching keyed by sequence id.
-  const EMPTY_LOOP_DISPLAY: LoopDisplay = { components: new Set(), period: 1 };
-  const loopDisplay = $derived.by(() => {
-    const resolve = tryGetLoopDisplayResolver();
-    return resolve ? resolve(sequence) : EMPTY_LOOP_DISPLAY;
-  });
-  const loopComponentsRaw = $derived(
-    loopDisplay.components.size > 0 ? loopDisplay.components : null
-  );
-  const loopComponents = $derived.by(() => {
-    if (!loopComponentsRaw) return null;
-    if (!isSoloMode && !isHandsMode) return loopComponentsRaw;
-    const filtered = new Set(loopComponentsRaw);
-    if (isSoloMode) filtered.delete(LOOPComponent.SWAPPED);
-    if (isHandsMode || handPathMode) filtered.delete(LOOPComponent.INVERTED);
-    return filtered.size > 0 ? filtered : null;
-  });
-  const loopRotationPeriod = $derived(loopDisplay.rotationPeriod);
-  const loopInversionPeriod = $derived(loopDisplay.inversionPeriod);
-  const loopReflectionAxis = $derived(loopDisplay.reflectionAxis);
-  const loopOverlayComponents = $derived(loopDisplay.overlayComponents);
-
-  // Solo mode: hide dual-prop metadata (word, letters, difficulty, LOOP)
-  // When browseViewMode has granularity "solo", we're showing one prop/hand only.
-  // The header shows a color label instead of the sequence word.
-  const isBrowseSoloMode = $derived(browseViewMode?.granularity === "solo");
-  // Motion-visibility solo: one color toggled off in the export panel. The
-  // pictograph is effectively single-hand, so letters/VTG/positions are
-  // meaningless (they describe hand PAIRS) and must hide the same way.
-  const isMotionSoloMode = $derived(
-    (showBlueMotion && !showRedMotion) || (showRedMotion && !showBlueMotion)
-  );
-  const isSoloMode = $derived(isBrowseSoloMode || isMotionSoloMode);
-  const soloColor = $derived<"blue" | "red" | undefined>(
-    browseViewMode?.color ??
-      (isMotionSoloMode ? (showBlueMotion ? "blue" : "red") : undefined)
-  );
-
-  const isHandsMode = $derived(browseViewMode?.subject === "hands");
-
-  // Word requires both props visible — meaningless in hands mode or solo mode.
-  const wordVisible = $derived(
-    showWord && !!sequence.word && !isSoloMode && !isHandsMode
-  );
-
-  // Level irrelevant without props or in solo mode.
-  const effectiveShowDifficulty = $derived(
-    showDifficultyLevel && !isHandsMode && !isSoloMode
-  );
-
-  const showHeader = $derived(
-    (isBrowseSoloMode && !hideSoloHeader) ||
-      effectiveShowDifficulty ||
-      (showLoopGlyph && !!loopComponents) ||
-      wordVisible
-  );
-
-  // Personal names and record dates do not belong on the portable card.
-  const hasPathShapeMetadata = $derived(
-    sequence?.metadata?.pathShape === "linear" ||
-      sequence?.metadata?.pathShape === "concave"
-  );
-  const showFooter = $derived(showNotes || hasPathShapeMetadata);
-
-  // Level badge colors - single source of truth shared with the image compositor
-  const currentLevelStyle = $derived.by(() => {
-    const style =
-      DIFFICULTY_LEVELS[difficultyLevel] ?? DEFAULT_DIFFICULTY_STYLE;
-    return { bg: style.cssBg, border: style.border, text: style.text };
-  });
-
-  // Layout state factory (extracted) — computes columns, rows, aspect ratio, sizing
-  const layoutState = createChoreoCardLayoutState(() => ({
+  layoutState = createChoreoCardLayoutState(() => ({
     sequence,
     includeStartPosition,
     columnCount,
@@ -622,11 +365,11 @@
     showRedMotion: isBrowseSoloMode ? soloColor === "red" : showRedMotion,
     startPositionLayoutOverride,
     compositionVersion,
-    cellWidth,
+    cellWidth: sizingState.cellWidth,
     hasMixedDurations,
     durationColCount,
-    containerWidth: containerRawWidth,
-    containerHeight: containerRawHeight,
+    containerWidth: sizingState.containerWidth,
+    containerHeight: sizingState.containerHeight,
   }));
 
   // Reactive aliases for values that move to the layout state factory.
@@ -648,6 +391,12 @@
   const footerFontSize = $derived(layoutState.footerFontSize);
   const footerMargin = $derived(layoutState.footerMargin);
   const qrGridPosition = $derived(layoutState.qrGridPosition);
+  const cellWidth = $derived(sizingState.cellWidth);
+  const containedWidth = $derived(sizingState.containedWidth);
+  const containedHeight = $derived(sizingState.containedHeight);
+  const containerRawWidth = $derived(sizingState.containerWidth);
+  const containerRawHeight = $derived(sizingState.containerHeight);
+  const suppressFlip = $derived(sizingState.flipSuppressed);
 
   // Download Card has a real preview frame while the canvas compositor does
   // not. Publish the measured winner once per geometry change so the eventual
@@ -696,11 +445,7 @@
       (prevEffectiveColumns > 0 && cols !== prevEffectiveColumns) ||
       (prevEffectiveRows > 0 && rws !== prevEffectiveRows);
     if (structureChanged) {
-      suppressFlip = true;
-      // Re-enable flip after the container resize transition completes
-      setTimeout(() => {
-        suppressFlip = false;
-      }, 300);
+      sizingState.suppressFlipFor(300);
     }
     prevEffectiveColumns = cols;
     prevEffectiveRows = rws;
@@ -752,6 +497,69 @@
     };
   }
 
+  let renderLifecycle: ReturnType<typeof createChoreoCardRenderLifecycle>;
+  const renderEngine = createChoreoCardRenderEngine(
+    renderModel,
+    () => ({
+      sequence,
+      renderOptions: buildRenderOptionsFn(),
+      bluePropType,
+      redPropType,
+      browseViewMode,
+      showStepNumbers,
+      includeStartPosition,
+      startPositionLayout,
+      mandalaLayoutOverride,
+      effectiveColumns,
+      effectiveRows,
+      layoutWidthUnits: layoutState.containModel.cols,
+      columnCount,
+      darkMode,
+      showQRCode: effShowQRCode,
+      cloudProbeEnabled,
+      isBrowseSoloMode,
+      isMotionSoloMode,
+      getSoloLocationLabel,
+      onRenderProgress,
+      onRenderSettled: () => renderLifecycle.markRenderSettled(),
+    }),
+    sizingState,
+    crossfader
+  );
+
+  renderLifecycle = createChoreoCardRenderLifecycle(
+    () => ({
+      sequence,
+      bluePropType,
+      redPropType,
+      browseViewMode,
+      catDogModeEnabled,
+      showStepNumbers,
+      showNonRadial,
+      handPointVis,
+      showTKA,
+      showReversals,
+      showTnD,
+      showElemental,
+      showPositions,
+      showGrid,
+      showBlueMotion,
+      showRedMotion,
+      includeStartPosition,
+      startPositionLayout,
+      effectiveColumns,
+      columnCount,
+      darkMode,
+      rerenderTrigger,
+      flipSuppressed: sizingState.flipSuppressed,
+    }),
+    renderModel,
+    renderEngine,
+    crossfader,
+    sizingState
+  );
+  const flipDuration = $derived(renderLifecycle.flipDuration);
+
   /**
    * For solo mode, extract the end location of the kept color's motion
    * for a given step, used as the cell's alt/aria label. The visible start→end
@@ -798,692 +606,13 @@
     return sequence.steps?.[cellIndex]?.motions?.[color] ?? undefined;
   }
 
-  /** Thin wrapper over extracted calculateGridPosition with component-scoped closure values */
-  function calcGridPos(
-    stepIndex: number,
-    cols: number
-  ): { gridColumn: number; gridRow: number } {
-    return calculateGridPosition(
-      stepIndex,
-      cols,
-      includeStartPosition,
-      startPositionLayout,
-      mandalaLayoutOverride
-    );
-  }
-
-  /**
-   * Fast relayout: update grid positions and column/row counts without re-rendering images.
-   * Used when only columnCount or includeStartPosition changes - the pictograph images
-   * are identical, only their positions in the grid change.
-   */
-  function relayoutCells() {
-    if (!sequence?.steps?.length || cells.length === 0) return;
-
-    const stepCount = sequence.steps.length;
-    const cols = effectiveColumns;
-    const rws = effectiveRows;
-
-    columns = cols;
-    rows = rws;
-
-    // Recalculate grid positions for all existing cells
-    cells = cells.map((cell) => {
-      const { gridColumn, gridRow } = calcGridPos(cell.index, cols);
-      return { ...cell, gridColumn, gridRow };
-    });
-
-    // A column-count change resizes every cell even when the stack's outer box
-    // doesn't move (so the ResizeObserver may never fire). Recompute directly.
-    updateCellWidth();
-
-    // Update the global cache entry with new positions
-    const renderOptions = buildRenderOptionsFn();
-    const isDark = darkMode;
-    const cacheKey = getPreviewCacheKey(
-      sequence,
-      renderOptions,
-      columnCount,
-      isDark,
-      startPositionLayout,
-      includeStartPosition
-    );
-    storePreviewInCache(
-      cacheKey,
-      {
-        cells: cells.map((c) => ({
-          index: c.index,
-          label: c.label,
-          imageUrl: c.imageUrl,
-          gridColumn: c.gridColumn,
-          gridRow: c.gridRow,
-          duration: c.duration,
-        })),
-        columns: cols,
-        rows: rws,
-        durationRows,
-        hasMixedDurations,
-        durationColCount,
-      },
-      cells
-    );
-  }
-
-  async function renderAllCells() {
-    if (!sequence?.steps?.length) {
-      isLoading = false;
-      return;
-    }
-
-    if (isRendering) {
-      renderQueued = true;
-      return;
-    }
-    isRendering = true;
-    beginRefresh();
-
-    try {
-      // Calculate layout
-      const stepCount = sequence.steps.length;
-
-      // Detect mixed durations - determines uniform grid vs timeline rows.
-      // Set BEFORE reading effectiveColumns/Rows below: the layout state factory
-      // resolves its uniform-vs-timeline branch (and container-aware Auto) from
-      // this flag, so it must be current when we read the resolved dims.
-      const mixed = detectMixedDurations(sequence.steps);
-      hasMixedDurations = mixed;
-
-      const spl = startPositionLayout;
-
-      // Single source of truth: the layout state factory resolves cols/rows from
-      // best-fit / manual override / composition / long-scroll / table — the SAME
-      // values relayoutCells and the grid template already use. Reading them here
-      // (instead of re-deriving) removes the drift hazard of two parallel copies.
-      let cols = effectiveColumns;
-      let rws = effectiveRows;
-
-      columns = cols;
-
-      // For mixed durations: compute timeline rows using row capacity.
-      // Column mode: start is a separate column barrier, NOT inline in the first row.
-      // Row mode: start occupies its own top row; steps use full width.
-      let computedDurationRows: TimelineRow[] = [];
-      if (mixed) {
-        // cols already accounts for start-column in column mode (subtract 1
-        // to get step columns); in row mode start doesn't consume a column.
-        const stepsPerRow =
-          includeStartPosition && spl === "column" ? cols - 1 : cols;
-        computedDurationRows = calculateTimelineRowsByBeatCount(
-          sequence.steps,
-          stepsPerRow
-        );
-        // Row mode adds a top row for the start position.
-        rws =
-          computedDurationRows.length +
-          (includeStartPosition && spl === "row" ? 1 : 0);
-        durationRows = computedDurationRows;
-        // Compute max step duration units in any row. Column mode adds a
-        // start-position column alongside; row mode does not.
-        let maxStepUnits = 0;
-        for (const row of computedDurationRows) {
-          maxStepUnits = Math.max(maxStepUnits, row.totalDuration);
-        }
-        durationColCount =
-          includeStartPosition && spl === "column"
-            ? maxStepUnits + 1
-            : Math.max(maxStepUnits, includeStartPosition && effShowQRCode ? 2 : 1);
-        if (includeStartPosition && spl === "column" && effShowQRCode) {
-          rws = Math.max(rws, 2);
-        }
-      } else {
-        durationRows = [];
-        durationColCount = 0;
-      }
-
-      rows = rws;
-
-      // Build render options once for all cells
-      const renderOptions = buildRenderOptionsFn();
-
-      // Only render the current mode - halves total render count
-      const isDark = darkMode;
-
-      // Check global cache - avoids re-rendering after drag-to-move
-      const cacheKey = getPreviewCacheKey(
-        sequence,
-        renderOptions,
-        columnCount,
-        isDark,
-        startPositionLayout,
-        includeStartPosition
-      );
-      const cached = globalPreviewCache.get(cacheKey);
-      if (cached && cached.columns === cols && cached.rows === rws) {
-        cells = cached.cells.map((c) => ({ ...c, isLoaded: true }));
-        hasMixedDurations = cached.hasMixedDurations ?? false;
-        durationRows = cached.durationRows ?? [];
-        durationColCount = cached.durationColCount ?? 0;
-        isLoading = false;
-        isRendering = false;
-        // Signal 100% immediately for cache hits
-        onRenderProgress?.(cached.cells.length, cached.cells.length);
-        await tick();
-        markScan("cell-dom-committed");
-        void markScanAfterPaint("first-cell-painted");
-        void markScanAfterPaint("all-cells-stable").then(() => {
-          reportScanToStable();
-        });
-        return;
-      }
-
-      // Collect old blob URLs to revoke AFTER new render completes.
-      // Revoking before render causes ERR_FILE_NOT_FOUND flashes
-      // because the component still displays old URLs during the async gap.
-      const oldBlobUrls = cells
-        .filter((c) => c.imageUrl.startsWith("blob:"))
-        .map((c) => c.imageUrl);
-
-      // Find and remove any global cache entries that reference these URLs.
-      // Without this, toggling dark→light→dark serves revoked URLs from cache.
-      if (oldBlobUrls.length > 0) {
-        const urlSet = new Set(oldBlobUrls);
-        for (const [key, entry] of globalPreviewCache) {
-          if (entry.cells.some((c) => urlSet.has(c.imageUrl))) {
-            globalPreviewCache.delete(key);
-          }
-        }
-      }
-
-      // Pre-populate ALL cells with placeholders immediately.
-      // This gives the grid its full dimensions from frame one - no layout shift
-      // as individual cells render. Cells show a spinner until loaded.
-      const placeholderCells: CellData[] = [];
-
-      // Start position placeholder
-      const firstStep = sequence.steps[0];
-      if (sequence.startPosition || firstStep) {
-        const { gridColumn, gridRow } = calcGridPos(-1, cols);
-        placeholderCells.push({
-          index: -1,
-          label: "Start",
-          imageUrl: "",
-          isLoaded: false,
-          gridColumn,
-          gridRow,
-          duration: 1,
-        });
-      }
-
-      // Step placeholders
-      for (let i = 0; i < sequence.steps.length; i++) {
-        const { gridColumn, gridRow } = calcGridPos(i, cols);
-        placeholderCells.push({
-          index: i,
-          label: isBrowseSoloMode ? getSoloLocationLabel(i) : String(i + 1),
-          imageUrl: "",
-          isLoaded: false,
-          gridColumn,
-          gridRow,
-          duration: sequence.steps[i]?.duration ?? 1,
-        });
-      }
-
-      // Seed cellWidth from whatever containedWidth the observer already set.
-      // Don't call updateContainedDimensions() here — the ResizeObserver on
-      // containerElement is the sole source of truth for container size.
-      // Reading it eagerly during a view-switch transition measures mid-layout
-      // and produces tiny cells.
-      const widthUnits = layoutState.containModel.cols;
-      if (containedWidth && widthUnits > 0) {
-        const newCw = containedWidth / widthUnits;
-        if (Math.abs(newCw - cellWidth) > 0.5) cellWidth = newCw;
-      }
-
-      // Suppress cellWidth observer updates during loading. Cell content swaps
-      // cause preview-stack micro-fluctuations that cascade into font jitter.
-      // Container dimensions are never suppressed (parent-sized, stable).
-      suppressCellWidthUpdates = true;
-
-      // Show grid with full dimensions immediately (placeholders fill all cells)
-      cells = placeholderCells;
-      isLoading = false;
-
-      const totalCellCount = placeholderCells.length;
-      let loadedCount = 0;
-
-      // Build per-cell render tasks ahead of time - we need the pictograph data,
-      // cell options (for mixed-duration widthMultiplier), and cache key for each.
-      interface CellTask {
-        cellIndex: number; // -1 for start, 0..n-1 for steps
-        data: PictographData;
-        stepNumber: number | undefined;
-        options: PreviewCellRenderOptions;
-        cacheKey: string;
-      }
-      const tasks: CellTask[] = [];
-      if (sequence.startPosition || firstStep) {
-        const startData =
-          sequence.startPosition ||
-          createStartPositionFromBeatStart(firstStep!);
-        tasks.push({
-          cellIndex: -1,
-          data: startData,
-          stepNumber: undefined,
-          options: renderOptions,
-          // Look up the NUMBER-FREE base blob (the shared, persistent cache) —
-          // the step number is composited on afterwards, never keyed in.
-          cacheKey: deriveCacheKey(startData, undefined, isDark, {
-            ...renderOptions,
-            showStepNumbers: false,
-          }),
-        });
-      }
-      for (let i = 0; i < sequence.steps.length; i++) {
-        const step = sequence.steps[i];
-        if (!step) continue;
-        const stepDuration = step.duration ?? 1;
-        const cellOpts =
-          mixed && stepDuration !== 1
-            ? { ...renderOptions, widthMultiplier: stepDuration }
-            : renderOptions;
-        tasks.push({
-          cellIndex: i,
-          data: step,
-          stepNumber: i + 1,
-          options: cellOpts,
-          // Number-free base key — number composited on afterwards (see Phase 1).
-          cacheKey: deriveCacheKey(step, undefined, isDark, {
-            ...cellOpts,
-            showStepNumbers: false,
-          }),
-        });
-      }
-
-      // PHASE 1: parallel IDB read for every cell. Any hit lets us paint the
-      // cell instantly in a single batched assignment below. Misses fall
-      // through to Phase 2 where the worker pool renders them in background.
-      markScan("cell-cache-read-start");
-      const blobResults = await Promise.all(
-        tasks.map((t) => pictographBlobCache.get(t.cacheKey).catch(() => null))
-      );
-      markScan("cell-cache-read-end");
-
-      let decodeStarted = false;
-      const decodeForScan = async (imageUrl: string): Promise<void> => {
-        if (!cloudProbeEnabled || typeof Image === "undefined") return;
-        if (!decodeStarted) {
-          decodeStarted = true;
-          markScan("cell-decode-start");
-        }
-        const image = new Image();
-        image.decoding = "async";
-        image.src = imageUrl;
-        try {
-          await image.decode();
-        } catch {
-          // The real DOM image still owns error presentation. A decode hint
-          // failure must not turn a valid cache/cloud hit into a missing cell.
-        }
-      };
-
-      // Composite the step number onto each cache hit so warm cells bake the
-      // number into the image (matching the fresh-render path), then apply all
-      // hits in a single batch assignment — one Svelte flush → one paint.
-      const hitUrls = await Promise.all(
-        blobResults.map(async (blob, t) => {
-          if (!blob) return null;
-          const task = tasks[t]!;
-          const bakeNum =
-            showStepNumbers &&
-            !cloudProbeEnabled &&
-            !isBrowseSoloMode &&
-            !isMotionSoloMode &&
-            task.stepNumber != null &&
-            task.stepNumber !== -1;
-          const finalBlob = bakeNum
-            ? await compositeStepNumberOnBlob(
-                blob,
-                task.stepNumber!,
-                task.options.size,
-                isDark,
-                task.options.widthMultiplier ?? 1
-              )
-            : blob;
-          return URL.createObjectURL(finalBlob);
-        })
-      );
-      await Promise.all(
-        hitUrls.map((url) => (url ? decodeForScan(url) : Promise.resolve()))
-      );
-
-      const updatedCells: CellData[] = cells.map((c) => ({ ...c }));
-      const missedTasks: { task: CellTask; cellArrayIndex: number }[] = [];
-      let hitCount = 0;
-      for (let t = 0; t < tasks.length; t++) {
-        const task = tasks[t]!;
-        const url = hitUrls[t];
-        const idx = updatedCells.findIndex((c) => c.index === task.cellIndex);
-        if (idx === -1) continue;
-        if (url) {
-          updatedCells[idx] = {
-            ...updatedCells[idx]!,
-            imageUrl: url,
-            isLoaded: true,
-          };
-          hitCount++;
-        } else {
-          missedTasks.push({ task, cellArrayIndex: idx });
-        }
-      }
-      cells = updatedCells;
-      loadedCount = hitCount;
-      onRenderProgress?.(loadedCount, totalCellCount);
-      if (hitCount > 0) {
-        await tick();
-        markScan("cell-dom-committed");
-        void markScanAfterPaint("first-cell-painted");
-      }
-
-      // PHASE 2: for cells that missed IDB, render via the worker pool in
-      // parallel. Each cell updates independently as it completes, so the user
-      // sees progressive fill-in for genuinely cold sequences.
-      if (missedTasks.length > 0) {
-        await Promise.allSettled(
-          missedTasks.map(async ({ task, cellArrayIndex }) => {
-            try {
-              const imageUrl = await renderCell(
-                task.data,
-                task.stepNumber,
-                isDark,
-                task.options
-              );
-              await decodeForScan(imageUrl);
-              const current = cells[cellArrayIndex];
-              if (
-                current &&
-                current.index === task.cellIndex &&
-                !current.isLoaded
-              ) {
-                cells[cellArrayIndex] = {
-                  ...current,
-                  imageUrl,
-                  isLoaded: true,
-                };
-                loadedCount++;
-                onRenderProgress?.(loadedCount, totalCellCount);
-                if (loadedCount === 1) {
-                  await tick();
-                  markScan("cell-dom-committed");
-                  void markScanAfterPaint("first-cell-painted");
-                }
-              }
-            } catch (err) {
-              console.warn(
-                "[ChoreoCard] cell image failed for cell",
-                task.cellIndex,
-                err
-              );
-              const current = cells[cellArrayIndex];
-              if (
-                current &&
-                current.index === task.cellIndex &&
-                !current.isLoaded &&
-                !current.renderFailed
-              ) {
-                cells[cellArrayIndex] = { ...current, renderFailed: true };
-                // A failed cloud-only lookup is settled too. This removes the
-                // indefinite spinner and lets scan autoplay wait for every lookup.
-                loadedCount++;
-                onRenderProgress?.(loadedCount, totalCellCount);
-              }
-            }
-          })
-        );
-      }
-      if (decodeStarted) markScan("cell-decode-end");
-
-      // Never cache an integrity failure as a successful preview. A later retry
-      // must probe the cloud again instead of adopting a blank global-cache hit.
-      if (cells.every((cell) => cell.isLoaded)) {
-        storePreviewInCache(
-          cacheKey,
-          {
-            cells: [...cells],
-            columns: cols,
-            rows: rws,
-            durationRows: computedDurationRows,
-            hasMixedDurations: mixed,
-            durationColCount,
-          },
-          cells
-        );
-      }
-
-      // Now safe to revoke old blob URLs - new ones are in the DOM
-      for (const url of oldBlobUrls) {
-        URL.revokeObjectURL(url);
-      }
-
-      await tick();
-      markScan("cell-dom-committed");
-
-      // Align the terminal mark with a frame after the committed cells have had
-      // a paint opportunity. Rendering itself never waits on rAF.
-      void markScanAfterPaint("all-cells-stable").then(() => {
-        reportScanToStable();
-      });
-    } catch (error) {
-      console.error("Failed to render cells:", error);
-    } finally {
-      isRendering = false;
-      suppressCellWidthUpdates = false;
-      // Suppress flip animations during the post-render dimension adjustment.
-      suppressFlip = true;
-      // CellWidth was suppressed during loading — run once now.
-      updateCellWidth();
-      hasMounted = true;
-      requestAnimationFrame(() => {
-        suppressFlip = false;
-        flipEnabled = true;
-      });
-      if (renderQueued) {
-        // A queued pass continues the same visible refresh — don't blink the
-        // affordance off and restart its delay between the two.
-        renderQueued = false;
-        renderAllCells();
-      } else {
-        endRefresh();
-      }
-    }
-  }
-
-  /**
-   * Cross-fade between dark and light mode without showing sequential spinners.
-   * Renders all new-mode images in the background while keeping old images visible,
-   * then swaps all at once with a simultaneous opacity cross-fade.
-   *
-   * `animate: false` skips the fade and swaps the images in place (the <img>
-   * elements persist, keyed by cell index, so only their src changes). Used for
-   * the initial post-mount settle, where async-loaded visibility catching up to
-   * persisted values would otherwise blip every pictograph out and in at once.
-   */
-  async function crossfadeCellImages(
-    mode: "crossfade" | "swap" = "crossfade",
-    animate = true
-  ) {
-    if (!sequence?.steps?.length || cells.length === 0) return;
-
-    if (isRendering) {
-      renderQueued = true;
-      return;
-    }
-    isRendering = true;
-    beginRefresh();
-
-    // Flush any pending cleanup timer from a previous cross-fade
-    crossfader.flushPendingCrossfade(() => {
-      cells = cells.map((c) => ({ ...c, fadeOutUrl: undefined }));
-    });
-
-    try {
-      const isDark = darkMode;
-      const renderOptions = buildRenderOptionsFn();
-
-      // Check global cache first - may already have the target mode rendered
-      const cacheKey = getPreviewCacheKey(
-        sequence,
-        renderOptions,
-        columnCount,
-        isDark,
-        startPositionLayout,
-        includeStartPosition
-      );
-      const cached = globalPreviewCache.get(cacheKey);
-
-      let newUrls: Map<number, string>;
-
-      if (cached) {
-        newUrls = new Map(cached.cells.map((c) => [c.index, c.imageUrl]));
-      } else {
-        // Render all cells in background without updating DOM
-        newUrls = new Map();
-        const firstStep = sequence.steps[0];
-
-        if (sequence.startPosition || firstStep) {
-          const startData =
-            sequence.startPosition ||
-            createStartPositionFromBeatStart(firstStep!);
-          const imageUrl = await renderCell(
-            startData,
-            undefined,
-            isDark,
-            renderOptions
-          );
-          newUrls.set(-1, imageUrl);
-        }
-
-        const mixed = detectMixedDurations(sequence.steps);
-        for (let i = 0; i < sequence.steps.length; i++) {
-          const step = sequence.steps[i];
-          if (!step) continue;
-          const stepDuration = step.duration ?? 1;
-          const cellRenderOptions =
-            mixed && stepDuration !== 1
-              ? { ...renderOptions, widthMultiplier: stepDuration }
-              : renderOptions;
-          const imageUrl = await renderCell(
-            step,
-            i + 1,
-            isDark,
-            cellRenderOptions
-          );
-          newUrls.set(i, imageUrl);
-        }
-
-        // Store in cache for future use
-        storePreviewInCache(
-          cacheKey,
-          {
-            cells: cells.map((c) => ({
-              ...c,
-              imageUrl: newUrls.get(c.index) ?? c.imageUrl,
-              fadeOutUrl: undefined,
-            })),
-            columns,
-            rows,
-            durationRows: [...durationRows],
-            hasMixedDurations,
-            durationColCount,
-          },
-          cells
-        );
-      }
-
-      // If another render was requested while we were working, abort the cross-fade
-      if (renderQueued) {
-        for (const url of newUrls.values()) {
-          if (url.startsWith("blob:")) URL.revokeObjectURL(url);
-        }
-        return;
-      }
-
-      if (!animate) {
-        // In-place swap, no fade: replace each cell's imageUrl on the persistent
-        // <img> element. No fadeOutUrl layer and no crossfadeActive, so nothing
-        // animates — the corrected pictographs just appear. activeDarkMode is set
-        // directly since we skip beginCrossfade (which normally applies it).
-        crossfader.setActiveDarkMode(isDark);
-        cells = cells.map((c) => ({
-          ...c,
-          fadeOutUrl: undefined,
-          imageUrl: newUrls.get(c.index) ?? c.imageUrl,
-        }));
-      } else {
-        // Batch swap: set fadeOutUrl to old image, imageUrl to new image
-        cells = cells.map((c) => ({
-          ...c,
-          fadeOutUrl: c.imageUrl,
-          imageUrl: newUrls.get(c.index) ?? c.imageUrl,
-        }));
-
-        // Wait for DOM to render both images (old at opacity 1, new at opacity 0)
-        await new Promise<void>((resolve) => {
-          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-        });
-
-        crossfader.beginCrossfade(isDark, mode);
-
-        // Clean up after the CSS transition completes.
-        crossfader.scheduleCrossfadeEnd(() => {
-          cells = cells.map((c) => ({ ...c, fadeOutUrl: undefined }));
-        });
-      }
-    } catch (error) {
-      console.error("Failed to cross-fade dark mode:", error);
-      // Fallback: apply dark mode immediately
-      crossfader.setActiveDarkMode(darkMode);
-    } finally {
-      isRendering = false;
-      if (renderQueued) {
-        renderQueued = false;
-        crossfader.abortCrossfade(() => {
-          cells = cells.map((c) => ({ ...c, fadeOutUrl: undefined }));
-        });
-        renderAllCells();
-      } else {
-        endRefresh();
-      }
-    }
-  }
-
-  function clearCellUrls() {
-    const cachedUrls = new Set<string>();
-    for (const entry of globalPreviewCache.values()) {
-      for (const c of entry.cells) {
-        if (c.imageUrl.startsWith("blob:")) cachedUrls.add(c.imageUrl);
-      }
-    }
-    for (const cell of cells) {
-      if (cell.imageUrl.startsWith("blob:") && !cachedUrls.has(cell.imageUrl)) {
-        URL.revokeObjectURL(cell.imageUrl);
-      }
-      if (
-        cell.fadeOutUrl?.startsWith("blob:") &&
-        !cachedUrls.has(cell.fadeOutUrl)
-      ) {
-        URL.revokeObjectURL(cell.fadeOutUrl);
-      }
-    }
-    cells = [];
-  }
-
   // Fallback context menu (when no onContextMenu prop is wired): additive
   // Pictograph section (cells live-follow the visibility manager) + Card
   // section (Re-render for everyone, image actions for admins).
   let contextMenuState: ContextMenuState = $state({ open: false });
 
   const contextMenuItems = $derived.by(() => {
-    void glyphVisibilityVersion;
+    void displayState.visibilityVersion;
     return composeMenu([
       {
         header: "Pictograph",
@@ -1497,7 +626,7 @@
       {
         header: "Card",
         entries: buildCardMenuSection({
-          onRerender: () => void forceRerenderAllCells(),
+          onRerender: () => void renderEngine.forceRerenderAllCells(),
           isAdmin: featureFlagService.isAdmin,
           sequenceForImageActions: sequence,
         }),
@@ -1507,422 +636,13 @@
 
   function handleContextMenu(e: MouseEvent) {
     e.preventDefault();
-    glyphVisibilityVersion++;
+    displayState.refreshVisibility();
     contextMenuState = { open: true, x: e.clientX, y: e.clientY };
   }
 
   function closeContextMenu() {
     contextMenuState = { open: false };
   }
-
-  /**
-   * Force re-render: clear all caches for this sequence and re-render all cells.
-   */
-  async function forceRerenderAllCells(): Promise<void> {
-    if (!sequence?.steps?.length) return;
-
-    const renderOptions = buildRenderOptionsFn();
-    const isDark = darkMode;
-
-    // 1. Clear global in-memory preview cache entry for this sequence
-    const cacheKey = getPreviewCacheKey(
-      sequence,
-      renderOptions,
-      columnCount,
-      isDark,
-      startPositionLayout,
-      includeStartPosition
-    );
-    globalPreviewCache.delete(cacheKey);
-
-    // 2. Delete IndexedDB blobs for all cells of this sequence
-    const firstStep = sequence.steps[0];
-    if (sequence.startPosition || firstStep) {
-      const startData =
-        sequence.startPosition || createStartPositionFromBeatStart(firstStep!);
-      await deleteCellCache(startData, undefined, isDark, renderOptions);
-    }
-    for (let i = 0; i < sequence.steps.length; i++) {
-      const step = sequence.steps[i];
-      if (step) {
-        await deleteCellCache(step, i + 1, isDark, renderOptions);
-      }
-    }
-
-    // 3. Clear current cells and re-render
-    clearCellUrls();
-    isLoading = true;
-    renderAllCells();
-  }
-
-  // Track the preview stack element for ResizeObserver
-  let previewStackElement: HTMLDivElement | undefined = $state();
-  let resizeObserver: ResizeObserver | undefined;
-  let containerObserver: ResizeObserver | undefined;
-
-  // Calculate "contain" dimensions — fit preview-stack inside containerElement
-  // while preserving aspect ratio. Never suppressed: the container root is
-  // parent-sized (width/height: 100%) and unaffected by cell content swaps.
-  // The ResizeObserver on containerElement is the sole trigger.
-  let _containerWasZero = false;
-
-  // Capture the raw container size (before the aspect-fit math) so the layout
-  // state can pick the container-aware Auto layout. The root has no padding, so
-  // clientWidth/Height are the usable dims. Thresholded to avoid churn on
-  // sub-pixel jitter.
-  function captureContainerDims() {
-    if (!containerElement) return;
-    const w = containerElement.clientWidth;
-    const h = containerElement.clientHeight;
-    if (w > 0 && Math.abs(w - containerRawWidth) > 0.5) containerRawWidth = w;
-    if (h > 0 && Math.abs(h - containerRawHeight) > 0.5) containerRawHeight = h;
-  }
-
-  function updateContainedDimensions() {
-    if (
-      !containerElement ||
-      !previewAspectRatio ||
-      !Number.isFinite(previewAspectRatio)
-    ) {
-      return;
-    }
-
-    const style = getComputedStyle(containerElement);
-    const containerWidth =
-      containerElement.clientWidth -
-      parseFloat(style.paddingLeft) -
-      parseFloat(style.paddingRight);
-    const containerHeight =
-      containerElement.clientHeight -
-      parseFloat(style.paddingTop) -
-      parseFloat(style.paddingBottom);
-
-    if (containerWidth === 0 || containerHeight === 0) {
-      _containerWasZero = true;
-      containedWidth = null;
-      containedHeight = null;
-      return;
-    }
-
-    const revealedFromZero = _containerWasZero;
-    _containerWasZero = false;
-
-    let newWidth: number | null;
-    let newHeight: number | null;
-
-    if (needsScroll) {
-      containedWidth = null;
-      containedHeight = null;
-      return;
-    }
-
-    const contentRatio = previewAspectRatio;
-    const containerRatio = containerWidth / containerHeight;
-
-    if (forceContain && fitWidth) {
-      const hFromWidth = containerWidth / contentRatio;
-      if (Number.isFinite(hFromWidth) && hFromWidth > containerHeight) {
-        newHeight = containerHeight;
-        const w = containerHeight * contentRatio;
-        newWidth = Number.isFinite(w) ? w : null;
-      } else {
-        newWidth = containerWidth;
-        newHeight = Number.isFinite(hFromWidth) ? hFromWidth : null;
-      }
-    } else if (contentRatio > containerRatio) {
-      newWidth = containerWidth;
-      const h = containerWidth / contentRatio;
-      newHeight = Number.isFinite(h) ? h : null;
-    } else {
-      newHeight = containerHeight;
-      const w = containerHeight * contentRatio;
-      newWidth = Number.isFinite(w) ? w : null;
-    }
-
-    // The ratio models the header as a fraction of cell width, but on screen
-    // it never renders below headerMinPx (scaledHeaderHeight's floor). Once
-    // cells are small enough that the floor engages, the header is taller
-    // than the box budgeted and the difference comes out of the grid — every
-    // row clips at the bottom. Re-solve in the floored regime: header pinned
-    // at headerMinPx, grid + footer still proportional to width.
-    const model = layoutState.containModel;
-    if (newWidth != null && model.headerMinPx > 0) {
-      const modeledHeaderPx = (newWidth / model.cols) * model.headerUnits;
-      if (modeledHeaderPx < model.headerMinPx) {
-        const perWidthUnits =
-          (model.gridHeightUnits + model.footerUnits) / model.cols;
-        const w = Math.max(
-          0,
-          Math.min(
-            containerWidth,
-            (containerHeight - model.headerMinPx) / perWidthUnits
-          )
-        );
-        newWidth = w;
-        newHeight = model.headerMinPx + w * perWidthUnits;
-      }
-    }
-
-    const widthChanged =
-      newWidth !== containedWidth &&
-      (newWidth === null ||
-        containedWidth === null ||
-        Math.abs(newWidth - containedWidth) > 0.5);
-    const heightChanged =
-      newHeight !== containedHeight &&
-      (newHeight === null ||
-        containedHeight === null ||
-        Math.abs(newHeight - containedHeight) > 0.5);
-
-    if (widthChanged) containedWidth = newWidth;
-    if (heightChanged) containedHeight = newHeight;
-
-    if (revealedFromZero) {
-      suppressFlip = true;
-      requestAnimationFrame(() => {
-        updateCellWidth();
-        requestAnimationFrame(() => {
-          suppressFlip = false;
-        });
-      });
-    }
-  }
-
-  function updateCellWidth() {
-    if (suppressCellWidthUpdates) return;
-
-    // Use physical pictograph units, not just structural columns. A held beat
-    // can span 1.5 or 2 units, and the header/footer must scale from the same
-    // base unit as those wider cells.
-    const widthUnits = layoutState.containModel.cols;
-    if (previewStackElement && widthUnits > 0) {
-      const stackWidth = previewStackElement.clientWidth;
-      if (stackWidth < 1) return;
-      const newCellWidth = Number.isFinite(stackWidth / widthUnits)
-        ? stackWidth / widthUnits
-        : 0;
-      if (Math.abs(newCellWidth - cellWidth) > 0.5) {
-        cellWidth = newCellWidth;
-      }
-    }
-  }
-
-  // Track if initial render is complete (controls visibility gate)
-  let hasMounted = $state(false);
-  // Separate flag for FLIP — enabled one frame AFTER hasMounted so the
-  // visibility reflow doesn't trigger FLIP with duration > 0.
-  let flipEnabled = $state(false);
-  const flipDuration = $derived(flipEnabled && !suppressFlip ? 250 : 0);
-  let lastEffectRenderKey = "";
-  // Tracks the geometry-only key so the grid-stable-image branch can tell a
-  // structural change (swap) from an overlay-only visibility toggle (crossfade).
-  let lastStructuralKey = "";
-  // The FIRST re-render after mount is not a user action — it's async-loaded
-  // visibility settling to persisted values (the global VisibilityStateManager
-  // boots with hardcoded glyph defaults, then applies the user's saved
-  // tnd/elemental/positions/grid visibility one macrotask later; app settings
-  // and prop type settle the same way). Because that lands AFTER the first cells
-  // are painted, the render $effect saw an imageKey change with a stable grid and
-  // fired an animated group crossfade — every pictograph blipping out and in at
-  // once (the reported "flash"). We apply that first settle WITHOUT the crossfade
-  // animation: an in-place src swap on the persistent <img> elements, so the
-  // corrected pictographs appear with no flash. A backstop closes the window so a
-  // genuine user toggle moments later still animates.
-  let settleWindowOpen = true;
-  let settleWindowTimer: ReturnType<typeof setTimeout> | null = null;
-
-  // Re-render when relevant props or visibility settings change.
-  // Three fast paths avoid full sequential re-render:
-  //   1. Dark-mode-only change → cross-fade existing images
-  //   2. Column/layout-only change → relayout grid positions (no image re-render)
-  //   3. Everything else → full re-render
-  $effect(() => {
-    // Track all props that affect rendering by reading them (creates Svelte dependency)
-    const stepCount = sequence?.steps?.length ?? 0;
-    const bpt = bluePropType;
-    const rpt = redPropType;
-    const cdm = catDogModeEnabled;
-    const ssn = showStepNumbers;
-    const cc = columnCount;
-    const isp = includeStartPosition;
-    const snr = showNonRadial;
-    const hpv = handPointVis;
-    const stka = showTKA;
-    const sr = showReversals;
-    const dm = darkMode;
-    const sbm = showBlueMotion;
-    const srm = showRedMotion;
-    const stnd = showTnD;
-    const selm = showElemental;
-    const spos = showPositions;
-    const sgrid = showGrid;
-    // Read effectiveColumns so the effect fires when the composition manager's
-    // column override changes (e.g. via the right-click column picker).
-    const effCols = effectiveColumns;
-    // Read startPositionLayout so a row↔column flip (autoFit re-picking placement
-    // as the side-by-side container aspect changes) re-runs this effect and
-    // relayouts the cells. Without it, cells keep stale positions while the live
-    // qrGridPosition moves, and the QR overlaps an occupied step cell.
-    const spl = startPositionLayout;
-
-    const durationKey =
-      sequence?.steps?.map((s) => s.duration ?? 1).join(",") ?? "";
-
-    // Build the render-trigger keys via the shared builder so this effect and
-    // onMount can never drift — that drift (showGrid missing from one copy's gv)
-    // fired a spurious post-mount "grid-stable-image" crossfade, the "blip out
-    // and in as a group" bug. gridStableKey is still derived just below.
-    const { imageKey, contentKey, structuralKey, renderKey } =
-      buildChoreoCardRenderKeys({
-        sequence,
-        bluePropType: bpt,
-        redPropType: rpt,
-        catDogModeEnabled: cdm,
-        showStepNumbers: ssn,
-        showNonRadial: snr,
-        handPointVis: hpv,
-        showTKA: stka,
-        showReversals: sr,
-        showTnD: stnd,
-        showElemental: selm,
-        showPositions: spos,
-        showGrid: sgrid,
-        showBlueMotion: sbm,
-        showRedMotion: srm,
-        includeStartPosition: isp,
-        startPositionLayout: spl,
-        effectiveColumns: effCols,
-        darkMode: dm,
-      });
-
-    if (!hasMounted) return;
-    if (renderKey === lastEffectRenderKey) return;
-
-    const cellsLoaded = untrack(
-      () => cells.length > 0 && cells.some((c) => c.isLoaded)
-    );
-    const hasDurations = untrack(() => hasMixedDurations);
-    const gridStableKey = `${stepCount}-${durationKey}-cols:${effCols}-isp:${isp}`;
-
-    // activeDarkMode holds the LAST applied theme (set by every branch below /
-    // beginCrossfade), so before this run applies it still reflects the prior
-    // value — comparing against the incoming `dm` tells us whether the theme
-    // flipped in THIS change. Load-bearing for the layout-only gate: a darkMode
-    // flip that coincides with a layout change must not take the no-re-render
-    // relayout path (would strand dark-baked PNGs under a light DOM).
-    const darkModeChanged = untrack(() => crossfader.activeDarkMode) !== dm;
-
-    const changeType = crossfader.classifyChange(
-      contentKey,
-      imageKey,
-      gridStableKey,
-      cellsLoaded,
-      hasDurations,
-      darkModeChanged
-    );
-    // Captured against the PRIOR structuralKey before we overwrite it below.
-    const structuralChanged = structuralKey !== lastStructuralKey;
-
-    lastEffectRenderKey = renderKey;
-    lastStructuralKey = structuralKey;
-    crossfader.updateKeys({ contentKey, imageKey, gridStableKey });
-
-    // The first image-changing re-render after mount is the async settle, not a
-    // user action — apply it with no fade (in-place swap) so it doesn't flash.
-    // Consume the window here so a subsequent genuine change animates normally.
-    const animateChange = !settleWindowOpen;
-    settleWindowOpen = false;
-
-    if (changeType === "dark-mode-only") {
-      untrack(() => {
-        crossfadeCellImages("crossfade", animateChange);
-      });
-    } else if (changeType === "layout-only") {
-      crossfader.setActiveDarkMode(dm);
-      untrack(() => {
-        relayoutCells();
-      });
-    } else if (changeType === "grid-stable-image") {
-      crossfader.setActiveDarkMode(dm);
-      // Structural change (letters/props/motions differ → different arrows) uses
-      // `swap` so the two pictographs never ghost-overlap. Overlay-only change
-      // (non-radial, grid, points, glyphs — base pictograph identical) uses
-      // `crossfade` so the overlay dissolves in/out with no whole-grid blank.
-      const gridStableMode: "swap" | "crossfade" = structuralChanged
-        ? "swap"
-        : "crossfade";
-      untrack(() => {
-        crossfadeCellImages(gridStableMode, animateChange);
-      });
-    } else {
-      crossfader.setActiveDarkMode(dm);
-      untrack(() => {
-        renderAllCells();
-      });
-    }
-  });
-
-  // Set up ResizeObserver for container-based "contain" sizing
-  $effect(() => {
-    if (containerElement) {
-      // Clean up previous observer
-      if (containerObserver) {
-        containerObserver.disconnect();
-      }
-
-      // Create new observer
-      containerObserver = new ResizeObserver(() => {
-        captureContainerDims();
-        updateContainedDimensions();
-      });
-      containerObserver.observe(containerElement);
-
-      // Initial measurement
-      captureContainerDims();
-      updateContainedDimensions();
-    }
-
-    return () => {
-      if (containerObserver) {
-        containerObserver.disconnect();
-      }
-    };
-  });
-
-  // Recalculate contained dimensions when aspect ratio or sizing mode changes
-  $effect(() => {
-    // Track all dependencies that affect the sizing calculation
-    const _ratio = previewAspectRatio;
-    const _fc = forceContain;
-    const _ns = needsScroll;
-    const _fw = fitWidth;
-    updateContainedDimensions();
-  });
-
-  // Set up ResizeObserver for cell width calculation
-  $effect(() => {
-    if (previewStackElement) {
-      // Clean up previous observer
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
-
-      // Create new observer
-      resizeObserver = new ResizeObserver(() => {
-        updateCellWidth();
-      });
-      resizeObserver.observe(previewStackElement);
-
-      // Initial measurement
-      updateCellWidth();
-    }
-
-    return () => {
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
-    };
-  });
 
   // Auto-scroll to keep highlighted step visible during playback.
   // Uses manual scrollTop instead of scrollIntoView() because scrollIntoView
@@ -1957,131 +677,8 @@
     }
   });
 
-  // Watch rerenderTrigger - parent increments to force a full cache-clearing re-render
-  let lastRerenderTrigger = 0;
-  $effect(() => {
-    const trigger = rerenderTrigger;
-    if (!hasMounted || trigger === lastRerenderTrigger) return;
-    lastRerenderTrigger = trigger;
-    untrack(() => {
-      forceRerenderAllCells();
-    });
-  });
-
-  onMount(() => {
-    markScan("card-component-mounted");
-    // Measure the container synchronously before the cache probe so the
-    // container-aware Auto layout is active on the very first paint (avoids a
-    // table→best-fit relayout one frame later).
-    captureContainerDims();
-
-    // Backstop: close the no-flash settle window shortly after mount. The window
-    // is normally consumed by the first post-mount re-render (the async settle);
-    // this timer covers the warm case where settings are already loaded and no
-    // settle fires, so a genuine user toggle later still animates.
-    settleWindowTimer = setTimeout(() => {
-      settleWindowOpen = false;
-    }, 1500);
-
-    // Initialize change-detection keys via the SAME builder the render $effect
-    // uses, so onMount and the effect agree on the very first comparison. (A
-    // mismatch here — onMount's gv omitted showGrid — fired a spurious
-    // "grid-stable-image" crossfade right after the first paint.)
-    const initKeys = buildChoreoCardRenderKeys({
-      sequence,
-      bluePropType,
-      redPropType,
-      catDogModeEnabled,
-      showStepNumbers,
-      showNonRadial,
-      handPointVis,
-      showTKA,
-      showReversals,
-      showTnD,
-      showElemental,
-      showPositions,
-      showGrid,
-      showBlueMotion,
-      showRedMotion,
-      includeStartPosition,
-      startPositionLayout,
-      effectiveColumns,
-      darkMode,
-    });
-    crossfader.updateKeys({
-      contentKey: initKeys.contentKey,
-      imageKey: initKeys.imageKey,
-      gridStableKey: initKeys.gridStableKey,
-    });
-    lastEffectRenderKey = initKeys.renderKey;
-    lastStructuralKey = initKeys.structuralKey;
-
-    // Synchronous cache probe: if the global cache already has this exact render,
-    // populate cells immediately so the first paint shows content instead of a
-    // loading skeleton flash. renderAllCells() would also hit the cache, but it's
-    // async - the component renders at least one frame with isLoading=true first.
-    if (sequence?.steps?.length) {
-      const renderOptions = buildRenderOptionsFn();
-      const cacheKey = getPreviewCacheKey(
-        sequence,
-        renderOptions,
-        columnCount,
-        darkMode,
-        startPositionLayout,
-        includeStartPosition
-      );
-      const cached = globalPreviewCache.get(cacheKey);
-      // Only adopt a cache hit whose grid dimensions match the frame this
-      // instance will size for. The global cache is shared across every
-      // ChoreoCard; layout inputs not folded into the key (mandala/QR fill)
-      // can still produce an entry laid out for a different row/column count.
-      // Adopting it blindly strands cells in a mismatched frame — the start
-      // row gets reserved but unfilled, spreading the step rows. Mirrors the
-      // same guard in renderAllCells().
-      if (
-        cached &&
-        cached.columns === effectiveColumns &&
-        cached.rows === effectiveRows
-      ) {
-        cells = cached.cells.map((c) => ({ ...c, isLoaded: true }));
-        columns = cached.columns;
-        rows = cached.rows;
-        hasMixedDurations = cached.hasMixedDurations ?? false;
-        durationRows = cached.durationRows ?? [];
-        durationColCount = cached.durationColCount ?? 0;
-        isLoading = false;
-        onRenderProgress?.(cached.cells.length, cached.cells.length);
-        updateCellWidth();
-        hasMounted = true;
-        requestAnimationFrame(() => {
-          flipEnabled = true;
-        });
-        void tick().then(() => {
-          markScan("cell-dom-committed");
-          void markScanAfterPaint("first-cell-painted");
-          void markScanAfterPaint("all-cells-stable").then(() => {
-            reportScanToStable();
-          });
-        });
-        return;
-      }
-    }
-
-    renderAllCells();
-  });
-
   onDestroy(() => {
     cancelLongPress();
-    if (refreshDelayTimer !== null) clearTimeout(refreshDelayTimer);
-    clearCellUrls();
-    crossfader.destroy();
-    if (settleWindowTimer !== null) clearTimeout(settleWindowTimer);
-    if (resizeObserver) {
-      resizeObserver.disconnect();
-    }
-    if (containerObserver) {
-      containerObserver.disconnect();
-    }
   });
 </script>
 
