@@ -106,6 +106,11 @@ const groundModuleInstancingNodes = instancingNodes.filter((node) =>
   instancedMeshName(node).startsWith("ForestGroundModuleMesh_")
 );
 const leakedNodes = nodeNames.filter((name) => /^(QA_)/.test(name));
+const leakedNearFrameNodes = (gltf.nodes ?? []).filter(
+  (node) =>
+    node.extras?.tka_export_layer === "near-frame" ||
+    String(node.extras?.tka_role ?? "").startsWith("near-frame-")
+);
 const lightCount = gltf.extensions?.KHR_lights_punctual?.lights?.length ?? 0;
 
 invariant(bytes <= maximumBytes, `GLB exceeds ${maximumBytes} bytes: ${bytes}`);
@@ -115,6 +120,12 @@ invariant(lightCount === 0, "QA lights leaked into the GLB");
 invariant(
   leakedNodes.length === 0,
   `QA nodes leaked: ${leakedNodes.join(", ")}`
+);
+invariant(
+  leakedNearFrameNodes.length === 0,
+  `Near-frame nodes leaked into the Coven-safe environment: ${leakedNearFrameNodes
+    .map((node) => node.name ?? "(unnamed)")
+    .join(", ")}`
 );
 invariant(
   extensions.has("EXT_meshopt_compression"),

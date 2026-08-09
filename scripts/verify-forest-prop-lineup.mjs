@@ -23,15 +23,29 @@ assert.equal(metrics.manifestVersion, manifest.version);
 assert.equal(metrics.framingCandidateCount, manifest.framingCandidates.length);
 assert.equal(metrics.framingCandidateCount, 2);
 assert.equal(metrics.legacyCandidateCount, 4);
-assert.equal(metrics.recommendedCandidateCount, 7);
+assert.equal(metrics.recommendedCandidateCount, 9);
 assert.equal(metrics.paidMeshyCredits, 0);
 assert.equal(metrics.creditReserve, 800);
 assert.equal(metrics.productionFilesChanged, false);
 
 for (const candidate of metrics.framingCandidates) {
-  assert.ok(candidate.clearingMarginMetres >= 0.5, `${candidate.id} clearing margin`);
-  assert.ok(candidate.pathMarginMetres >= 2.9, `${candidate.id} path margin`);
-  assert.ok(candidate.treeSpacingMarginMetres >= 10, `${candidate.id} tree spacing`);
+  assert.ok(candidate.clearingMarginMetres >= 1.0, `${candidate.id} clearing margin`);
+  assert.ok(candidate.maximumFrameMarginMetres >= 0, `${candidate.id} near-frame limit`);
+  assert.ok(candidate.pathMarginMetres >= 4.4, `${candidate.id} path margin`);
+  assert.ok(candidate.treeSpacingMarginMetres >= 15, `${candidate.id} tree spacing`);
+}
+
+assert.equal(metrics.campsite.tentCount, 3);
+assert.equal(metrics.campsite.totalSleepingCapacity, 6);
+assert.ok(metrics.campsite.fireToStageSafetyMarginMetres >= 1.8);
+assert.deepEqual(metrics.campsite.runtimeOwnersPreserved, [
+  "volumetric fire",
+  "smoke",
+  "primary light",
+  "fill light",
+]);
+for (const tent of metrics.campsite.tents) {
+  assert.ok(tent.safetyMarginMetres >= 0.49, `${tent.id} fire safety margin`);
 }
 
 for (const image of Object.values(metrics.outputs)) {
@@ -45,7 +59,7 @@ for (const image of Object.values(metrics.outputs)) {
 await access(board);
 const boardMetadata = await sharp(board).metadata();
 assert.equal(boardMetadata.width, 2864);
-assert.equal(boardMetadata.height, 1830);
+assert.equal(boardMetadata.height, 2678);
 assert.ok((await stat(board)).size > 1_000_000, "review board evidence size");
 
 console.log(

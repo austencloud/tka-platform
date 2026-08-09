@@ -23,6 +23,7 @@
     type ForestSceneConfig,
     createDefaultForestFireflyConfig,
   } from "../domain/models/scene-configs";
+  import { shouldShowForestNearFrame } from "../domain/models/scene-configs/forest-scene-config";
   import { onMount } from "svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
   import Stage3D from "../../components/Stage3D.svelte";
@@ -31,6 +32,7 @@
   import { onDestroy } from "svelte";
   import { disposeSceneGraph } from "../utils/dispose-scene";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
+  import ForestNearFrameLayer from "./forest/ForestNearFrameLayer.svelte";
 
   interface Props {
     /** Color variant. Ignored if `config` is provided. */
@@ -60,6 +62,14 @@
     const base = config ?? createDefaultForestFireflyConfig();
     return clearingRadius != null ? { ...base, clearingRadius } : base;
   });
+  const showNearFrame = $derived(
+    shouldShowForestNearFrame(config, clearingRadius)
+  );
+  let nearFrameReady = $state(false);
+
+  function handleNearFrameReady(): void {
+    nearFrameReady = true;
+  }
 
   import { R2_CDN } from "../../constants/r2-cdn";
 
@@ -170,7 +180,8 @@
   });
 
   const rockClones = $derived.by(() => {
-    if (!$rock1 || !$rock2) return [];
+    // Production replaces the legacy rock ring with two authored edge habitats.
+    if (!config || !$rock1 || !$rock2) return [];
     const models = [$rock1, $rock2];
     return rockPlacements.map((_, i) => models[i % 2]!.scene.clone());
   });
@@ -184,7 +195,8 @@
   });
 
   const logClones = $derived.by(() => {
-    if (!$fallenLog || !$fallenLogSmall) return [];
+    // Production deadwood now has one cause and one location at the beech shelf.
+    if (!config || !$fallenLog || !$fallenLogSmall) return [];
     return fallenLogPlacements.map(([, , , , isLarge]) =>
       (isLarge ? $fallenLog : $fallenLogSmall)!.scene.clone()
     );
@@ -246,9 +258,10 @@
       $fallenLogSmall,
       $forestEnvironment,
     ];
-    const loaded = glbs.filter(Boolean).length;
-    sceneFeatures.reportProgress("environment", loaded / glbs.length);
-    if (loaded === glbs.length) {
+    const requiredAssets = showNearFrame ? [...glbs, nearFrameReady] : glbs;
+    const loaded = requiredAssets.filter(Boolean).length;
+    sceneFeatures.reportProgress("environment", loaded / requiredAssets.length);
+    if (loaded === requiredAssets.length) {
       if (renderer.current && camera.current && scene.current) {
         renderer.current.compile(scene.current, camera.current);
       }
@@ -302,6 +315,10 @@
     size={activeConfig.ground.size}
     opacity={activeConfig.ground.opacity ?? 1}
   />
+{/if}
+
+{#if showNearFrame}
+  <ForestNearFrameLayer {groundY} onReady={handleNearFrameReady} />
 {/if}
 
 {#key activeConfig.leaves.count}

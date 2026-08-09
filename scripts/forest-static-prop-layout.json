@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "coordinateFrame": "Blender x/y equals runtime x/z; metres",
+  "visibility": "default-forest-only",
+  "sourceGate": "Forest Gate 8 revision 2",
+  "frameTrees": [
+    {
+      "id": "southwest-canopy-frame",
+      "assetId": "canopy-beech",
+      "position": [-8.0, -10.5],
+      "scale": 1.1,
+      "rotationDegrees": 32
+    },
+    {
+      "id": "southeast-middle-frame",
+      "assetId": "forked-elm",
+      "position": [13.7, -11.5],
+      "scale": 1.16,
+      "rotationDegrees": -24
+    }
+  ],
+  "sources": [
+    {
+      "id": "weathered-boulder",
+      "path": "static/models/ocean/polyhaven/boulder_01.glb",
+      "provenance": "Poly Haven boulder_01; CC0; already used by Autumn"
+    },
+    {
+      "id": "earth-tone-rock",
+      "path": "static/models/ocean/polyhaven/rock_07.glb",
+      "provenance": "Poly Haven rock_07; CC0; already used by Autumn"
+    },
+    {
+      "id": "quartz-stone",
+      "path": "static/models/ocean/polyhaven/stone_01.glb",
+      "provenance": "Poly Haven stone_01; CC0; already used by Autumn"
+    },
+    {
+      "id": "decomposing-fallen-log",
+      "path": "static/models/autumn/fallen-log.glb",
+      "provenance": "TKA Autumn optimized fallen-log family"
+    }
+  ],
+  "vignettes": [
+    {
+      "id": "southwest-root-shelf",
+      "cause": "The mature foreground beech catches deadwood and displaced stone on its downhill root shelf.",
+      "anchorTreeId": "southwest-canopy-frame",
+      "props": [
+        {
+          "id": "southwest-windfall",
+          "sourceId": "decomposing-fallen-log",
+          "position": [-12.4, -13.6],
+          "targetLongestMetres": 4.2,
+          "rotationDegrees": 18,
+          "buryDepthMetres": 0.12
+        },
+        {
+          "id": "southwest-root-rock",
+          "sourceId": "earth-tone-rock",
+          "position": [-10.8, -8.9],
+          "targetLongestMetres": 1.35,
+          "rotationDegrees": -31,
+          "buryDepthMetres": 0.18
+        },
+        {
+          "id": "southwest-tail-stone",
+          "sourceId": "quartz-stone",
+          "position": [-6.0, -13.0],
+          "targetLongestMetres": 0.82,
+          "rotationDegrees": 47,
+          "buryDepthMetres": 0.16
+        }
+      ]
+    },
+    {
+      "id": "southeast-camp-shoulder",
+      "cause": "Runoff around the forked elm exposes one larger boulder and leaves two smaller stones on the camp-side shoulder without entering the fire pocket.",
+      "anchorTreeId": "southeast-middle-frame",
+      "props": [
+        {
+          "id": "southeast-runoff-stone",
+          "sourceId": "quartz-stone",
+          "position": [18.8, -13.8],
+          "targetLongestMetres": 0.94,
+          "rotationDegrees": -27,
+          "buryDepthMetres": 0.19
+        },
+        {
+          "id": "southeast-weathered-boulder",
+          "sourceId": "weathered-boulder",
+          "position": [17.1, -8.9],
+          "targetLongestMetres": 2.35,
+          "rotationDegrees": 26,
+          "buryDepthMetres": 0.28
+        },
+        {
+          "id": "southeast-shoulder-rock",
+          "sourceId": "earth-tone-rock",
+          "position": [15.7, -14.7],
+          "targetLongestMetres": 1.05,
+          "rotationDegrees": 63,
+          "buryDepthMetres": 0.17
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "performanceKeepClearRadiusMetres": 7.5,
+    "minimumPathShoulderMarginMetres": 1.0,
+    "minimumCampfireCenterDistanceMetres": 5.5,
+    "maximumPropDistanceFromAnchorMetres": 7.0,
+    "minimumDistinctSourceFamilies": 4,
+    "maximumInstancesPerSource": 2,
+    "legacyRuntimeModelsRetired": [
+      "Rock_1_A_Color1.gltf",
+      "Rock_1_B_Color1.gltf",
+      "tree-log.glb",
+      "tree-log-small.glb"
+    ]
+  }
+}

@@ -26,6 +26,8 @@ for obj in bpy.data.objects:
         obj.name.startswith(prefix) for prefix in SKIP_PREFIXES
     ):
         continue
+    if obj.get("tka_export_layer") == "near-frame":
+        continue
     obj.select_set(True)
     selected.append(obj.name)
 

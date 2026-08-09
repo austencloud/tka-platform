@@ -50,6 +50,14 @@ export interface ForestSceneConfig {
   hemisphereLight: HemisphereLightConfig;
 }
 
+/** The close frame belongs only to the authored default Forest composition. */
+export function shouldShowForestNearFrame(
+  config: ForestSceneConfig | undefined,
+  clearingRadius: number | undefined
+): boolean {
+  return config === undefined && clearingRadius === undefined;
+}
+
 const DEFAULT_CAMPFIRE_FIREFLY: CampfireConfig = {
   enabled: true,
   position: { x: 5.5, z: -3.5 },

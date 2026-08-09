@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "coordinateFrame": "Blender x/y equals runtime x/z; metres",
+  "fire": {
+    "position": [9.0, -4.5],
+    "ringRadius": 0.95,
+    "clearedFuelRadius": 3.05,
+    "minimumTentDistance": 4.57,
+    "maximumVisibleFlameHeight": 1.35,
+    "design": "established irregular stone ring over mineral soil; small fire; runtime owns flame, smoke, and light"
+  },
+  "tents": [
+    {
+      "id": "dome-two-person",
+      "assetId": "F1",
+      "capacity": 2,
+      "position": [15.8, -2.5],
+      "footprint": [2.7, 3.0],
+      "padFootprint": [3.3, 3.6],
+      "entranceFacesFire": true
+    },
+    {
+      "id": "tunnel-three-person",
+      "assetId": "F2",
+      "capacity": 3,
+      "position": [14.0, 4.2],
+      "footprint": [3.0, 4.6],
+      "padFootprint": [3.6, 5.2],
+      "entranceFacesFire": true
+    },
+    {
+      "id": "trekking-one-person",
+      "assetId": "F3",
+      "capacity": 1,
+      "position": [7.0, 4.2],
+      "footprint": [2.2, 3.0],
+      "padFootprint": [2.8, 3.6],
+      "entranceFacesFire": true
+    }
+  ],
+  "communalZone": {
+    "chairAnglesDegrees": [155, 215, 285],
+    "seatRadius": 3.45,
+    "fuelStore": [13.0, -7.7],
+    "waterPoint": [6.0, -5.9],
+    "entrySide": "south",
+    "rule": "Keep the camp-spur arrival and the south side of the fire open; sleeping pitches occupy one quiet north/east arc."
+  },
+  "sources": [
+    {
+      "authority": "USDA Forest Service",
+      "rule": "If no existing pit is available and fires are permitted, select a site at least 15 feet from tents, shrubs, trees, and other flammables."
+    },
+    {
+      "authority": "National Park Service",
+      "rule": "Clear litter, duff, and burnable material within a 10-foot circle; keep the fire small and water available."
+    },
+    {
+      "authority": "Leave No Trace Center",
+      "rule": "Prefer an existing fire ring in an established campsite and place tents on durable, already impacted surfaces."
+    }
+  ]
+}

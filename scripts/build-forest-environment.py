@@ -1,10 +1,12 @@
-"""Build the authored terrain, paths, trees, and ground ecology for Forest.
+"""Build the authored terrain, paths, trees, ground ecology, and close frame.
 
 Gates 1 through 3 own terrain form, material zones, paths, and clearing edges.
 Gate 5 adds tree transforms. Gate 7 composes the approved ground-life families
-through the dedicated ``forest_ground_life`` owner. Rocks, hero deadwood, camp,
-stage, particles, lighting, and sky stay outside this file. Run with Blender 5.0
-in background mode, then export with ``blender-export-forest-full.py``.
+through the dedicated ``forest_ground_life`` owner. Gate 9 adds one conditional
+near-frame layer containing the approved close trees and their attached rock and
+deadwood vignettes. Camp, stage, particles, lighting, and sky stay outside this
+file. Run with Blender 5.0 in background mode, then export the main environment
+and near-frame layer separately.
 """
 
 import hashlib
@@ -12,6 +14,7 @@ import json
 import math
 import os
 import random
+import subprocess
 import sys
 
 import bpy
@@ -50,6 +53,20 @@ with open(GROUND_ECOLOGY_PATH, "rb") as ground_ecology_file:
     GROUND_ECOLOGY_BYTES = ground_ecology_file.read()
 GROUND_ECOLOGY = json.loads(GROUND_ECOLOGY_BYTES.decode("utf-8"))
 GROUND_ECOLOGY_SHA256 = hashlib.sha256(GROUND_ECOLOGY_BYTES).hexdigest()
+STATIC_PROP_LAYOUT_PATH = os.path.join(SCRIPT_DIR, "forest-static-prop-layout.json")
+with open(STATIC_PROP_LAYOUT_PATH, "rb") as static_prop_layout_file:
+    STATIC_PROP_LAYOUT_BYTES = static_prop_layout_file.read()
+STATIC_PROP_LAYOUT = json.loads(STATIC_PROP_LAYOUT_BYTES.decode("utf-8"))
+STATIC_PROP_LAYOUT_SHA256 = hashlib.sha256(STATIC_PROP_LAYOUT_BYTES).hexdigest()
+STATIC_PROP_SOURCES = {
+    source["id"]: source for source in STATIC_PROP_LAYOUT["sources"]
+}
+PROP_LINEUP_PATH = os.path.join(SCRIPT_DIR, "forest-prop-lineup.json")
+with open(PROP_LINEUP_PATH, "r", encoding="utf-8") as prop_lineup_file:
+    PROP_LINEUP = json.load(prop_lineup_file)
+CAMPSITE_LAYOUT_PATH = os.path.join(SCRIPT_DIR, "forest-campsite-layout.json")
+with open(CAMPSITE_LAYOUT_PATH, "r", encoding="utf-8") as campsite_layout_file:
+    CAMPSITE_LAYOUT = json.load(campsite_layout_file)
 QA_DIR = os.path.join(os.environ.get("TEMP", PROJECT_ROOT), "tka-forest-evidence")
 QA_PATHS = {
     name: os.path.join(QA_DIR, f"forest_environment_qa_{name}.png")
@@ -67,6 +84,10 @@ QA_PATHS = {
         "ecology-edge",
         "ecology-hollow",
         "ecology-root",
+        "frame-southwest",
+        "frame-southeast",
+        "near-frame-plan",
+        "coven-frame-omitted",
     )
 }
 
@@ -780,6 +801,301 @@ def import_tree_prototype(asset):
     return prototype, source_min_z, source_height
 
 
+def distance_to_rectangle_edge(x, y, half_width, half_depth):
+    delta_x = max(abs(x) - half_width, 0.0)
+    delta_y = max(abs(y) - half_depth, 0.0)
+    return math.hypot(delta_x, delta_y)
+
+
+def decoded_prop_source(source):
+    source_path = os.path.join(PROJECT_ROOT, source["path"])
+    if not os.path.isfile(source_path):
+        raise RuntimeError(f"Missing Forest static prop source: {source_path}")
+    cache_dir = os.path.join(QA_DIR, "forest-static-prop-sources")
+    os.makedirs(cache_dir, exist_ok=True)
+    output_path = os.path.join(cache_dir, os.path.basename(source_path))
+    if not os.path.isfile(output_path) or os.path.getmtime(output_path) < os.path.getmtime(source_path):
+        npx = "npx.cmd" if os.name == "nt" else "npx"
+        subprocess.run(
+            [npx, "gltf-transform", "copy", source_path, output_path],
+            cwd=PROJECT_ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    return output_path
+
+
+def import_prop_prototype(source):
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=decoded_prop_source(source))
+    imported = [obj for obj in bpy.data.objects if obj not in before]
+    meshes = [obj for obj in imported if obj.type == "MESH"]
+    if not meshes:
+        raise RuntimeError(f"Static prop source imported no meshes: {source['id']}")
+    root = bpy.data.objects.new(f"ForestStaticPrototype_{source['id']}", None)
+    bpy.context.collection.objects.link(root)
+    imported_set = set(imported)
+    for obj in imported:
+        if obj.parent not in imported_set:
+            matrix_world = obj.matrix_world.copy()
+            obj.parent = root
+            obj.matrix_world = matrix_world
+    return root
+
+
+def clone_group(prototype, name):
+    root = prototype.copy()
+    root.name = name
+    bpy.context.scene.collection.objects.link(root)
+    mapping = {prototype: root}
+    for original in prototype.children_recursive:
+        clone = original.copy()
+        if original.data is not None:
+            clone.data = original.data
+        clone.name = f"{name}_{original.name}"
+        bpy.context.scene.collection.objects.link(clone)
+        clone.parent = mapping[original.parent]
+        mapping[original] = clone
+    return root
+
+
+def remove_group(root):
+    for obj in [*root.children_recursive, root]:
+        bpy.data.objects.remove(obj, do_unlink=True)
+
+
+def group_world_bounds(root):
+    corners = []
+    for obj in [root, *root.children_recursive]:
+        if obj.type != "MESH":
+            continue
+        corners.extend(obj.matrix_world @ Vector(corner) for corner in obj.bound_box)
+    if not corners:
+        raise RuntimeError(f"Forest static prop {root.name} has no mesh bounds")
+    minimum = Vector(
+        (
+            min(corner.x for corner in corners),
+            min(corner.y for corner in corners),
+            min(corner.z for corner in corners),
+        )
+    )
+    maximum = Vector(
+        (
+            max(corner.x for corner in corners),
+            max(corner.y for corner in corners),
+            max(corner.z for corner in corners),
+        )
+    )
+    return minimum, maximum
+
+
+def fit_static_prop(root, placement):
+    bpy.context.view_layer.update()
+    minimum, maximum = group_world_bounds(root)
+    extent = maximum - minimum
+    longest = max(extent)
+    if longest <= 0.001:
+        raise RuntimeError(f"Static prop {placement['id']} has invalid bounds")
+    scale = float(placement["targetLongestMetres"]) / longest
+    root.scale = (scale, scale, scale)
+    root.rotation_mode = "XYZ"
+    root.rotation_euler[2] = math.radians(float(placement["rotationDegrees"]))
+    bpy.context.view_layer.update()
+    minimum, maximum = group_world_bounds(root)
+    center = (minimum + maximum) * 0.5
+    x, y = map(float, placement["position"])
+    root.location.x += x - center.x
+    root.location.y += y - center.y
+    root.location.z += (
+        terrain_height(x, y)
+        - float(placement["buryDepthMetres"])
+        - minimum.z
+    )
+    bpy.context.view_layer.update()
+
+
+def mark_near_frame_object(obj, role, source_id, vignette_id):
+    obj["tka_role"] = role
+    obj["tka_export_layer"] = "near-frame"
+    obj["tka_static_prop_source"] = source_id
+    obj["tka_static_prop_vignette"] = vignette_id
+    obj["tka_static_prop_layout_version"] = int(STATIC_PROP_LAYOUT["version"])
+    obj["tka_static_prop_layout_sha256"] = STATIC_PROP_LAYOUT_SHA256
+
+
+def validate_static_prop_layout(tree_placements):
+    approved_frames = {
+        candidate["id"]: candidate for candidate in PROP_LINEUP["framingCandidates"]
+    }
+    frames = STATIC_PROP_LAYOUT["frameTrees"]
+    if STATIC_PROP_LAYOUT["visibility"] != "default-forest-only":
+        raise RuntimeError("Forest near-frame layer must remain default-only")
+    if len(frames) != 2:
+        raise RuntimeError("Forest Gate 9 requires exactly two approved frame trees")
+    for frame in frames:
+        approved = approved_frames.get(frame["id"])
+        if approved is None:
+            raise RuntimeError(f"Unapproved Forest frame tree: {frame['id']}")
+        for field in ("assetId", "position", "scale", "rotationDegrees"):
+            if frame[field] != approved[field]:
+                raise RuntimeError(f"Forest frame tree drifted from Gate 8: {frame['id']} {field}")
+        asset = TREE_ASSETS[frame["assetId"]]
+        x, y = map(float, frame["position"])
+        for path in PATHS:
+            required = (
+                float(path["halfWidth"])
+                + float(path["shoulderWidth"])
+                + float(asset["pathClearance"])
+            )
+            if distance_to_path(x, y, path) < required:
+                raise RuntimeError(f"Forest frame tree blocks path: {frame['id']}")
+        for placed in tree_placements:
+            other = TREE_ASSETS[placed["assetId"]]
+            required = float(TREE_LAYOUT["spacingFactor"]) * (
+                float(asset["footprintRadius"]) + float(other["footprintRadius"])
+            )
+            if math.hypot(x - placed["x"], y - placed["y"]) < required:
+                raise RuntimeError(f"Forest frame tree overlaps approved composition: {frame['id']}")
+
+    rules = STATIC_PROP_LAYOUT["rules"]
+    fire_x, fire_y = map(float, CAMPSITE_LAYOUT["fire"]["position"])
+    source_counts = {source_id: 0 for source_id in STATIC_PROP_SOURCES}
+    prop_count = 0
+    path_margins = []
+    camp_margins = []
+    anchor_distances = []
+    frame_by_id = {frame["id"]: frame for frame in frames}
+    for vignette in STATIC_PROP_LAYOUT["vignettes"]:
+        anchor = frame_by_id.get(vignette["anchorTreeId"])
+        if anchor is None:
+            raise RuntimeError(f"Static vignette has no frame-tree anchor: {vignette['id']}")
+        anchor_x, anchor_y = map(float, anchor["position"])
+        if len(vignette["props"]) != 3:
+            raise RuntimeError(f"Static vignette must contain three related props: {vignette['id']}")
+        for placement in vignette["props"]:
+            source_id = placement["sourceId"]
+            if source_id not in STATIC_PROP_SOURCES:
+                raise RuntimeError(f"Unknown Forest static prop source: {source_id}")
+            source_counts[source_id] += 1
+            prop_count += 1
+            x, y = map(float, placement["position"])
+            radius = float(placement["targetLongestMetres"]) * 0.5
+            if math.hypot(x, y) - radius < float(rules["performanceKeepClearRadiusMetres"]):
+                raise RuntimeError(f"Static prop enters performance keep-clear: {placement['id']}")
+            anchor_distance = math.hypot(x - anchor_x, y - anchor_y)
+            anchor_distances.append(anchor_distance)
+            if anchor_distance > float(rules["maximumPropDistanceFromAnchorMetres"]):
+                raise RuntimeError(f"Static prop lost its vignette anchor: {placement['id']}")
+            for path in PATHS:
+                margin = (
+                    distance_to_path(x, y, path)
+                    - float(path["halfWidth"])
+                    - float(path["shoulderWidth"])
+                    - radius
+                )
+                path_margins.append(margin)
+                if margin < float(rules["minimumPathShoulderMarginMetres"]):
+                    raise RuntimeError(f"Static prop blocks path shoulder: {placement['id']}")
+            camp_margin = math.hypot(x - fire_x, y - fire_y) - radius
+            camp_margins.append(camp_margin)
+            if camp_margin < float(rules["minimumCampfireCenterDistanceMetres"]):
+                raise RuntimeError(f"Static prop enters campfire pocket: {placement['id']}")
+
+    if sum(1 for count in source_counts.values() if count > 0) < int(rules["minimumDistinctSourceFamilies"]):
+        raise RuntimeError("Forest static prop layer lost source-family diversity")
+    if max(source_counts.values()) > int(rules["maximumInstancesPerSource"]):
+        raise RuntimeError("Forest static prop source repeats too often")
+    return {
+        "frameTreeCount": len(frames),
+        "vignetteCount": len(STATIC_PROP_LAYOUT["vignettes"]),
+        "propCount": prop_count,
+        "sourceCounts": source_counts,
+        "minimumPathShoulderMarginMetres": min(path_margins),
+        "minimumCampfireCenterDistanceMetres": min(camp_margins),
+        "maximumPropAnchorDistanceMetres": max(anchor_distances),
+    }
+
+
+def create_near_frame_layer(tree_placements):
+    metrics = validate_static_prop_layout(tree_placements)
+    created_meshes = []
+    frames_by_asset = {}
+    for frame in STATIC_PROP_LAYOUT["frameTrees"]:
+        frames_by_asset.setdefault(frame["assetId"], []).append(frame)
+    for asset_id, frames in frames_by_asset.items():
+        asset = TREE_ASSETS[asset_id]
+        prototype, source_min_z, source_height = import_tree_prototype(asset)
+        normalized_scale = float(asset["targetHeightMetres"]) / source_height
+        for frame in frames:
+            x, y = map(float, frame["position"])
+            scale = normalized_scale * float(frame["scale"])
+            tree = prototype.copy()
+            tree.data = prototype.data
+            bpy.context.scene.collection.objects.link(tree)
+            tree.name = f"ForestNearFrameTree_{frame['id']}"
+            tree.scale = (scale, scale, scale)
+            tree.rotation_mode = "XYZ"
+            tree.rotation_euler[2] = math.radians(float(frame["rotationDegrees"]))
+            tree.location = (x, y, terrain_height(x, y) - source_min_z * scale)
+            mark_near_frame_object(tree, "near-frame-tree", asset_id, frame["id"])
+            tree["tka_frame_tree_id"] = frame["id"]
+            created_meshes.append(tree)
+        bpy.data.objects.remove(prototype, do_unlink=True)
+
+    props_by_source = {source_id: [] for source_id in STATIC_PROP_SOURCES}
+    vignette_by_prop = {}
+    for vignette in STATIC_PROP_LAYOUT["vignettes"]:
+        for placement in vignette["props"]:
+            props_by_source[placement["sourceId"]].append(placement)
+            vignette_by_prop[placement["id"]] = vignette["id"]
+
+    for source_id, placements in props_by_source.items():
+        if not placements:
+            continue
+        prototype = import_prop_prototype(STATIC_PROP_SOURCES[source_id])
+        for placement in placements:
+            root = clone_group(prototype, f"ForestNearFrameProp_{placement['id']}")
+            fit_static_prop(root, placement)
+            root["tka_export_layer"] = "near-frame"
+            for obj in root.children_recursive:
+                if obj.type != "MESH":
+                    continue
+                mark_near_frame_object(
+                    obj,
+                    "near-frame-static-prop",
+                    source_id,
+                    vignette_by_prop[placement["id"]],
+                )
+                obj["tka_static_prop_id"] = placement["id"]
+                created_meshes.append(obj)
+        remove_group(prototype)
+
+    metrics_path = os.path.join(QA_DIR, "forest_near_frame_metrics.json")
+    with open(metrics_path, "w", encoding="utf-8") as metrics_file:
+        json.dump(
+            {
+                "contractVersion": STATIC_PROP_LAYOUT["version"],
+                "contractSha256": STATIC_PROP_LAYOUT_SHA256,
+                "visibility": STATIC_PROP_LAYOUT["visibility"],
+                **metrics,
+            },
+            metrics_file,
+            indent=2,
+        )
+        metrics_file.write("\n")
+
+    print("\nForest near-frame verification")
+    print(f"Frame trees:                       {metrics['frameTreeCount']}")
+    print(f"Anchored vignettes:                {metrics['vignetteCount']}")
+    print(f"Static prop instances:             {metrics['propCount']}")
+    print(f"Minimum path shoulder margin:      {metrics['minimumPathShoulderMarginMetres']:.3f} m")
+    print(f"Minimum campfire center distance:  {metrics['minimumCampfireCenterDistanceMetres']:.3f} m")
+    print(f"Maximum prop-anchor distance:      {metrics['maximumPropAnchorDistanceMetres']:.3f} m")
+    print(f"Near-frame metrics:                {metrics_path}")
+    return created_meshes, metrics
+
+
 def create_tree_composition(terrain):
     placements = build_tree_placements()
     counts = {asset_id: 0 for asset_id in TREE_ASSETS}
@@ -991,7 +1307,7 @@ def render_qa_orthographic(camera, location, target, path, scale):
     bpy.ops.render.render(write_still=True)
 
 
-def setup_qa_render():
+def setup_qa_render(near_frame_objects):
     os.makedirs(os.path.dirname(BLEND_PATH), exist_ok=True)
     os.makedirs(QA_DIR, exist_ok=True)
     scene = bpy.context.scene
@@ -1100,6 +1416,38 @@ def setup_qa_render():
         QA_PATHS["ecology-root"],
         43,
     )
+    render_qa_view(
+        camera,
+        (-17.5, -22.0, 4.0),
+        (-8.5, -10.7, 1.25),
+        QA_PATHS["frame-southwest"],
+        44,
+    )
+    render_qa_view(
+        camera,
+        (22.5, -24.0, 4.4),
+        (14.8, -11.6, 1.15),
+        QA_PATHS["frame-southeast"],
+        44,
+    )
+    render_qa_orthographic(
+        camera,
+        (0.0, -1.0, 55.0),
+        (0.0, -1.0, 0.0),
+        QA_PATHS["near-frame-plan"],
+        46.0,
+    )
+    for obj in near_frame_objects:
+        obj.hide_render = True
+    render_qa_view(
+        camera,
+        (0.0, -31.0, 8.0),
+        (0.0, 0.0, 2.0),
+        QA_PATHS["coven-frame-omitted"],
+        38,
+    )
+    for obj in near_frame_objects:
+        obj.hide_render = False
     bpy.ops.wm.save_as_mainfile(filepath=BLEND_PATH)
 
 
@@ -1126,9 +1474,10 @@ ground_life_metrics = build_ground_life(
     tree_assets=TREE_ASSETS,
     qa_dir=QA_DIR,
 )
-setup_qa_render()
+near_frame_objects, near_frame_metrics = create_near_frame_layer(tree_placements)
+setup_qa_render(near_frame_objects)
 
-print("\nMoonlit Firefly Forest terrain, trees, and ground ecology authored")
+print("\nMoonlit Firefly Forest terrain, trees, ground ecology, and close frame authored")
 print(f"Blend: {BLEND_PATH}")
 for label, path in QA_PATHS.items():
     print(f"QA {label:8}: {path}")

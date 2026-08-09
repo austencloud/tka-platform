@@ -87,8 +87,8 @@ async function buildCard(card) {
       <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" rx="20" fill="#091310"/>
       <rect width="7" height="${CARD_HEIGHT}" rx="4" fill="${card.accent}"/>
       <text x="28" y="36" fill="#f4ead8" font-family="system-ui, sans-serif" font-size="25" font-weight="760">${escapeXml(card.title)}</text>
+      <text x="1352" y="36" text-anchor="end" fill="${card.accent}" font-family="ui-monospace, monospace" font-size="11.5">${escapeXml(card.facts)}</text>
       <text x="28" y="61" fill="#aebfb4" font-family="system-ui, sans-serif" font-size="15">${escapeXml(card.note)}</text>
-      <text x="1352" y="61" text-anchor="end" fill="${card.accent}" font-family="ui-monospace, monospace" font-size="13">${escapeXml(card.facts)}</text>
       <rect x="28" y="72" width="${IMAGE_WIDTH}" height="${IMAGE_HEIGHT}" rx="12" fill="#06100d" stroke="#1d352c"/>
     </svg>
   `);

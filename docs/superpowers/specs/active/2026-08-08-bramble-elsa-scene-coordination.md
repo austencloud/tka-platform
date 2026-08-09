@@ -202,3 +202,15 @@ Ocean will not edit `SkyGradient.svelte`, `Starfield.svelte`,
 `EnvironmentReviewCamera`, or shared scene-config types without announcing here
 first. Fathom does not need a shared day/night clock; a fixed twilight is the
 approved direction, matching Winter's fixed moonlit night.
+
+### 2026-08-09T12:48:48-05:00 | Bramble to Elsa | open
+
+Austen approved Forest Gate 8 with “you're doing great, keep it up. next phase.”
+Gate 9 now mounts the two approved frame trees and two caused edge habitats as
+a separate default-Forest layer. The west beech owns one decomposing windfall;
+the east elm owns an exposed-stone runoff shoulder, so the hero deadwood does
+not repeat. The main Forest GLB remains Coven-safe, and the Coven runtime does
+not request the 5.38 MiB near-frame asset when it supplies its 28 m clearing.
+All path, performance-core, GLB, Svelte, unit, and seven-viewport checks pass.
+Gate 9 awaits Austen's visual verdict. No Winter or shared atmosphere owner was
+edited.

@@ -1,8 +1,9 @@
 # Moonlit Firefly Forest: Gated Rebuild Plan
 
 - **Date:** 2026-08-08
-- **Status:** Gates 0 through 7 are approved. Gate 8, clearing-frame and prop
-  lineup, is active. Later gates remain blocked.
+- **Status:** Gates 0 through 8 are approved. Gate 9, clearing frame and static
+  prop ecology, is implemented and awaiting Austen's visual verdict. Later
+  gates remain blocked.
 - **Quality reference:** Autumn's Blender-authored environment and runtime split.
 - **Review authority:** Austen approves or rejects every visual gate.
 - **Scene steward:** Bramble
@@ -386,21 +387,52 @@ that old Kenny generated rocks and stuff like that with modern equivalents.”
 Source inspection confirms that the legacy rock family is KayKit. Museum
 tracker decision: `PoPSyJvOcDbpppYKubmr`.
 
-**Evidence packet:** The fixed hero comparison adds one approved canopy beech
-and one approved forked elm at an 18.901 m trunk radius. Both sit outside the
-default 14 m visible clearing, keep at least 2.955 m of extra path clearance,
-and remain a conditional default-Forest layer so Coven Hub's 28 m layout stays
-open. The prop comparison labels four legacy models for retirement and presents
-seven replacements: the Forest-authored Bramble lean-to, split root stump, and
-forked windfall; Autumn's decomposing fallen log; and three CC0 Poly Haven
-photogrammetry stone sources already proven in Autumn. The board used zero paid
-Meshy credits and preserved the 800-credit reserve. Automated verification
-passes all four 1600 x 900 renders and the 2864 x 1830 review board.
+**Revision 1 rejection:** Austen found that the first frame moved foliage into
+the image edges without moving the trunks close enough to make a smaller
+clearing. He also rejected the moss-canvas lean-to as old-school and requested
+several modern tents arranged like a real campsite around a better fire. The
+revision 1 board and shelter target are not approved production direction.
 
-**Recommended cut:** Approve the two-tree conditional frame and the full seven
-prop family for production integration. Keep the shelter's camp placement and
-the number of repeated stone or deadwood instances for their owning placement
-gates rather than turning the lineup into a scatter prescription.
+**Revision 2 evidence packet:** The fixed hero comparison now adds a mature
+canopy beech at a 13.200 m trunk radius and a forked elm at 17.887 m. The
+southwest trunk is visibly inside the foreground frame rather than contributing
+leaves alone. Both candidates preserve every path shoulder with at least
+4.453 m of additional clearance and retain wide spacing from the approved tree
+composition. They remain a conditional default-Forest layer so Coven Hub's
+28 m performance layout stays open.
+
+The camp lineup replaces the lean-to with a cohesive contemporary family: one
+two-person crossover-pole dome, one three-person tunnel tent, and one one-person
+trekking-pole tent. Technical fabric, aluminum poles, guy lines, distinct
+footprints, and a shared muted palette separate manufactured repetition from
+the habitat-driven organic variation rules.
+
+The campsite contract moves the proposed fire geometry from the unsafe legacy
+coordinate `(5.5, -3.5)` to an east pocket at `(9.0, -4.5)`. The old coordinate
+placed the fire buffer through the stage footprint. The revised site keeps the
+fire center 6.408 m from the nearest stage edge. A 3.05 m fuel-clear circle and
+4.57 m minimum tent separation follow current official guidance; the closest
+conservative tent-fabric distance is 5.070 m. Three modern chairs form the
+communal zone, tent entrances face the fire, sleeping pads share a single quiet
+north/east arc, and the existing camp spur arrives through an open south side.
+
+The fire proposal replaces only the dated pit geometry with an established
+irregular stone ring, mineral-soil bed, split charred fuel, ash, and coals. The
+existing volumetric flame, smoke, primary light, and fill light remain their
+current runtime owners. Four legacy models remain labeled retirement evidence.
+Nine candidates are recommended. The packet used zero paid Meshy credits,
+preserved the 800-credit reserve, and changed no production scene file.
+Automated verification passes all six 1600 x 900 renders and the
+2864 x 2678 review board.
+
+**Recommended cut:** Approve the revision 2 conditional frame, modern tent
+family, measured campsite plan, new fire-bed geometry, and modern chairs as the
+production target. Gate 9 still owns static frame-tree, rock, and deadwood
+placement. Gate 11 owns campsite production integration and final camp balance.
+
+**Approval:** Austen, 2026-08-09: “you're doing great, keep it up. next phase”
+This approved the revision 2 target and advanced Forest to Gate 9. Museum
+tracker decision: `v7A3GRTREIH4OuohvBOX`.
 
 ### Gate 9: Clearing frame and static prop ecology
 
@@ -414,6 +446,24 @@ gates rather than turning the lineup into a scatter prescription.
 - Build connected vignettes at tree bases, path shoulders, and eroded banks.
 - Bury stones by family, align roots to grades, and make deadwood affect nearby
   moss and litter.
+
+**Evidence packet:** The approved southwest beech and southeast elm now ship in
+`forest-near-frame.glb`, a 5,646,416-byte meshopt/WebP layer mounted only by the
+default Forest composition. The main 17,175,916-byte environment export contains
+zero near-frame nodes. A focused runtime visibility test covers default Forest,
+Scene Lab configuration, the legacy 14 m override, and Coven Hub's 28 m override.
+The Coven runtime route never requests the near-frame GLB.
+
+Two site causes replace radial scatter. The southwest root shelf catches one
+decomposing windfall and two displaced stones. The southeast runoff shoulder
+uses one buried boulder and two smaller stones; it does not repeat the hero log.
+All six props stay outside the 7.5 m performance core. The closest path-shoulder
+margin is 3.548 m, the closest campfire-center distance is 8.043 m, and the
+furthest prop remains 5.595 m from its tree anchor. Runtime review covers all
+seven required viewports. The review board is
+`../../specs/moonlit-firefly-forest/forest-gate9-review-board.png`.
+
+Museum tracker proposal: `UFY4AuUL80NTJMojrRBN`.
 
 **Review question:** Do these props tell one site-specific story?
 
@@ -519,6 +569,16 @@ References:
 | Ground-life placement     | `scripts/forest_ground_life.py`                                           |
 | Placement review sheet    | `scripts/build-forest-ground-life-layout-contact-sheet.mjs`               |
 | Placement verification    | `scripts/verify-forest-ground-life-layout.mjs`                            |
+| Gate 8 prop lineup        | `scripts/forest-prop-lineup.json`, `scripts/forest_prop_assets.py`         |
+| Campsite layout contract  | `scripts/forest-campsite-layout.json`                                      |
+| Gate 8 evidence rig       | `scripts/build-forest-prop-lineup.py`                                      |
+| Gate 8 review sheet       | `scripts/build-forest-prop-lineup-contact-sheet.mjs`                       |
+| Gate 8 verification       | `scripts/verify-forest-prop-lineup.mjs`                                    |
+| Gate 9 static layout      | `scripts/forest-static-prop-layout.json`                                   |
+| Gate 9 layer export       | `scripts/blender-export-forest-near-frame.py`                              |
+| Gate 9 optimization       | `scripts/optimize-forest-near-frame.mjs`                                   |
+| Gate 9 review sheet       | `scripts/build-forest-static-prop-contact-sheet.mjs`                       |
+| Gate 9 verification       | `scripts/verify-forest-near-frame.mjs`                                     |
 | Export                    | `scripts/blender-export-forest-full.py`                                   |
 | Optimization              | `scripts/optimize-forest-environment.mjs`                                 |
 | GLB contract              | `scripts/verify-forest-environment-glb.mjs`                               |
@@ -535,7 +595,7 @@ References:
 - [x] Gate 5: forest composition approved
 - [x] Gate 6: ground-life lineup approved
 - [x] Gate 7: ground-life ecology approved
-- [ ] Gate 8: clearing-frame and prop lineup approved
+- [x] Gate 8: clearing-frame and prop lineup approved
 - [ ] Gate 9: clearing frame and static prop ecology approved
 - [ ] Gate 10: stage form approved
 - [ ] Gate 11: camp composition approved

@@ -3,15 +3,19 @@
   "sceneId": "forest-firefly",
   "title": "Moonlit Firefly Forest",
   "domainProofRequired": false,
-  "currentGate": 3,
+  "currentGate": 4,
   "authority": {
     "experienceSpec": "docs/superpowers/plans/active/2026-08-08-forest-environment-pass-one.md",
     "roomShellSource": "scripts/forest-path-layout.json",
     "planContract": "scripts/forest-tree-layout.json",
     "museumTrackerItems": [
+      "rSguQqdHHv8fKNbDnmPv",
       "W8SPNRGyTmAbzoV1GvFR",
       "2mXvGcaruOaXMvBjZ3dd",
-      "PoPSyJvOcDbpppYKubmr"
+      "PoPSyJvOcDbpppYKubmr",
+      "DlJ4UAevLxMFd2jA3VTf",
+      "v7A3GRTREIH4OuohvBOX",
+      "UFY4AuUL80NTJMojrRBN"
     ]
   },
   "sequenceFingerprints": [],
@@ -20,73 +24,262 @@
       "id": "C-003",
       "class": "invention",
       "statement": "Selected near trees create a smaller default visual clearing while widened-layout callers omit that layer.",
-      "status": "proposed"
+      "evidence": [
+        "docs/superpowers/specs/moonlit-firefly-forest/forest-gate9-review-board.png",
+        "tests/unit/3d-viewer/forest-near-frame.test.ts"
+      ]
     },
     {
-      "id": "C-004",
+      "id": "C-006",
       "class": "invention",
-      "statement": "The camp shelter is a hand-built moss-canvas lean-to with oak poles.",
-      "status": "proposed"
-    }
-  ],
-  "exemptions": [
+      "statement": "The camp uses one cohesive modern tent family: two-person dome, three-person tunnel, and one-person trekking-pole shelter.",
+      "evidence": [
+        "docs/superpowers/plans/active/2026-08-08-forest-environment-pass-one.md"
+      ]
+    },
     {
-      "id": "no-tka-motion-proof",
-      "reason": "This environment gate changes static framing and props only. No pictograph, sequence, or domain motion behavior changes."
+      "id": "C-007",
+      "class": "literal",
+      "statement": "The proposed fire pocket keeps a 10-foot fuel-clear circle and at least 15 feet from tent fabric and the stage.",
+      "evidence": ["scripts/forest-campsite-layout.json"]
     }
   ],
+  "exemptions": [],
   "gates": [
     {
       "id": "evidence-preflight",
-      "status": "approved",
-      "evidence": ["forest controlling plan Gates 0 through 3"],
-      "checks": ["fixed review route", "measured terrain envelope", "path contract"],
-      "approval": "Austen approvals recorded in the controlling plan"
+      "status": "verified",
+      "evidence": [
+        {
+          "kind": "canon-audit",
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/scene-development.md",
+          "sha256": "7f4f84c6ce6a613fe66b805706b496a2688d8791bf8aa9a38c279d0b0a9304ea"
+        },
+        {
+          "kind": "room-shell",
+          "path": "scripts/forest-path-layout.json",
+          "sha256": "2971f2f47bbd11ebdea3ee9f89628025583c720b74b918e0098bff75b776a0d2"
+        }
+      ],
+      "checks": [
+        {
+          "name": "canon-conflicts",
+          "status": "passed",
+          "evidence": "The scene-development ledger separates approved Forest claims, rejected camp directions, and future campsite work."
+        },
+        {
+          "name": "source-digests",
+          "status": "passed",
+          "evidence": "The canon audit and measured room shell carry current SHA-256 digests."
+        }
+      ],
+      "approval": null
     },
     {
       "id": "measured-plan",
       "status": "approved",
-      "evidence": ["scripts/forest-path-layout.json", "scripts/forest-tree-layout.json"],
-      "checks": ["30 m performance core", "path shoulders", "tree clearance"],
-      "approval": "Austen approvals recorded in the controlling plan"
+      "evidence": [
+        {
+          "kind": "floor-plan",
+          "path": "scripts/forest-path-layout.json",
+          "sha256": "2971f2f47bbd11ebdea3ee9f89628025583c720b74b918e0098bff75b776a0d2"
+        },
+        {
+          "kind": "vertical-section",
+          "path": "docs/superpowers/plans/active/2026-08-08-forest-environment-pass-one.md",
+          "sha256": "d9ff6e57af6bbd09baab6bfde2aee384d1ffd6449445f24e52c8a0dc949a0f38"
+        },
+        {
+          "kind": "route-storyboard",
+          "path": "docs/superpowers/plans/active/2026-08-08-forest-environment-pass-one.md",
+          "sha256": "d9ff6e57af6bbd09baab6bfde2aee384d1ffd6449445f24e52c8a0dc949a0f38"
+        },
+        {
+          "kind": "sightline-study",
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/forest-gate8-review-board.png",
+          "sha256": "259883faffaff38e7e3afa517dfa485dbc5e13a232c5576e25eba92be84bb797"
+        }
+      ],
+      "checks": [
+        {
+          "name": "walkability",
+          "status": "passed",
+          "evidence": "The measured path contract preserves both museum exits, the camp spur, and the central performance core."
+        },
+        {
+          "name": "clearance",
+          "status": "passed",
+          "evidence": "The static-prop verifier reports a 3.548 m minimum path-shoulder margin and 8.043 m minimum campfire distance."
+        },
+        {
+          "name": "sightlines",
+          "status": "passed",
+          "evidence": "The approved fixed-camera board shows the clearing, stage, exits, and campsite relationship without blocking the performance core."
+        },
+        {
+          "name": "final-view",
+          "status": "passed",
+          "evidence": "The approved hero framing keeps the stage as the destination while the tree wall bounds the clearing."
+        }
+      ],
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-09T17:59:51Z",
+        "quote": "Let's gooooo",
+        "museumTrackerItem": "rSguQqdHHv8fKNbDnmPv",
+        "visualComprehensionConfirmed": true
+      }
     },
     {
       "id": "playable-graybox",
       "status": "approved",
-      "evidence": ["static/models/forest/forest-environment.glb"],
-      "checks": ["required viewport sweep", "Forest GLB contract"],
-      "approval": "Forest Gate 7 approved 2026-08-09"
+      "evidence": [
+        {
+          "kind": "blender-source",
+          "path": "blender/forest_environment.blend",
+          "sha256": "672255533cc13eecac775395ca7eed8cf6b31f1cae8ea718485cf8501f6f95f9"
+        },
+        {
+          "kind": "coordinate-manifest",
+          "path": "scripts/forest-tree-layout.json",
+          "sha256": "4e68d854a1d88598c4ec101c23f0f6f71afb89b5f7385fb1dad8777fcb166e4f"
+        },
+        {
+          "kind": "graybox-glb",
+          "path": "static/models/forest/forest-environment.glb",
+          "sha256": "4d20ffb1556f08b6b9b0fe265afc02f5ac3a38c82e7e42db23771205bdc22d56"
+        },
+        {
+          "kind": "first-person-walk",
+          "path": "https://localhost:5173/test/forest-scene?view=walk"
+        },
+        {
+          "kind": "review-contact-sheet",
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/forest-gate8-review-board.png",
+          "sha256": "259883faffaff38e7e3afa517dfa485dbc5e13a232c5576e25eba92be84bb797"
+        }
+      ],
+      "checks": [
+        {
+          "name": "artifact-digest",
+          "status": "passed",
+          "evidence": "The Forest environment GLB contract verifier passes and the source and runtime artifact digests are recorded here."
+        },
+        {
+          "name": "collision",
+          "status": "passed",
+          "evidence": "Measured tree and prop exclusions preserve the stage, route shoulders, and campsite fuel-clear envelope."
+        },
+        {
+          "name": "route-duration",
+          "status": "passed",
+          "evidence": "Forest traversal is user-controlled rather than timed; both exits and the camp spur remain connected."
+        },
+        {
+          "name": "sequence-parity",
+          "status": "passed",
+          "evidence": "The Forest environment pass changes no TKA sequence or Stage3D motion behavior."
+        }
+      ],
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-09T06:18:12Z",
+        "quote": "it's great, dude. Honestly.",
+        "museumTrackerItem": "2mXvGcaruOaXMvBjZ3dd",
+        "visualComprehensionConfirmed": true
+      }
     },
     {
       "id": "registered-visual-target",
-      "status": "in_progress",
+      "status": "approved",
       "evidence": [
-        "forest-shelter-visual-target.png",
-        "forest-gate8-review-board.png",
-        "scripts/forest-prop-lineup.json"
+        {
+          "kind": "locked-camera-set",
+          "path": "src/routes/test/forest-scene/+page.svelte",
+          "sha256": "2a3f6e50b3ec13ca0da1f13e59dc397aab57a3b4a8c82fb8cf01b39276af97ef"
+        },
+        {
+          "kind": "visual-target-board",
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/forest-gate8-review-board.png",
+          "sha256": "259883faffaff38e7e3afa517dfa485dbc5e13a232c5576e25eba92be84bb797"
+        },
+        {
+          "kind": "material-lighting-brief",
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/scene-development.md",
+          "sha256": "7f4f84c6ce6a613fe66b805706b496a2688d8791bf8aa9a38c279d0b0a9304ea"
+        }
       ],
-      "checks": ["fixed framing comparison", "equal-scale prop lineup", "source provenance"],
-      "approval": null
+      "checks": [
+        {
+          "name": "camera-registration",
+          "status": "passed",
+          "evidence": "The Forest test route owns fixed hero and walk review views used by the approved board."
+        },
+        {
+          "name": "silhouette-read",
+          "status": "passed",
+          "evidence": "The approved target establishes a close tree frame, legible central stage, and distinct campsite pocket."
+        }
+      ],
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-09T17:08:24Z",
+        "quote": "you're doing great, keep it up. next phase",
+        "museumTrackerItem": "v7A3GRTREIH4OuohvBOX",
+        "visualComprehensionConfirmed": true
+      }
     },
     {
       "id": "production-slice",
-      "status": "pending",
-      "evidence": [],
-      "checks": ["production GLB integration", "legacy prop removal"],
+      "status": "ready-for-review",
+      "evidence": [
+        {
+          "kind": "vertical-slice-build",
+          "path": "static/models/forest/forest-near-frame.glb",
+          "sha256": "02e45762892c1bb77abce64ffbcc20f81e4b091c84c6222438acb18f0aeb3006"
+        },
+        {
+          "kind": "interaction-capture",
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/forest-gate9-review-board.png",
+          "sha256": "71466868b5af220ab7a6f4ff1046c5d6eb0a89bbc5c0cc8f05572d1d89b74229"
+        },
+        {
+          "kind": "performance-report",
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/forest-gate9-verification-report.json",
+          "sha256": "ccbe83592ef8727790ef215731334df659ad9d56723c886928243c805443d86b"
+        }
+      ],
+      "checks": [
+        {
+          "name": "interaction-state",
+          "status": "passed",
+          "evidence": "The default Forest mounts the near-frame layer; configured and widened-clearing callers omit it, covered by the focused unit test."
+        },
+        {
+          "name": "runtime-console",
+          "status": "passed",
+          "evidence": "The in-app Forest route loaded with one canvas and no Forest or GLB console errors; the only messages were unrelated UserDocumentManager permission errors."
+        },
+        {
+          "name": "performance",
+          "status": "passed",
+          "evidence": "The verified main GLB is under 20 MiB, the meshopt/WebP near-frame layer is under 6 MiB, and Coven-safe callers make no near-frame request."
+        }
+      ],
       "approval": null
     },
     {
       "id": "integrated-room",
       "status": "pending",
       "evidence": [],
-      "checks": ["runtime interaction", "performance", "feature flags"],
+      "checks": [],
       "approval": null
     },
     {
       "id": "final-acceptance",
       "status": "pending",
       "evidence": [],
-      "checks": ["seven required viewports", "free orbit", "regressions"],
+      "checks": [],
       "approval": null
     }
   ]
