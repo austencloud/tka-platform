@@ -123,3 +123,12 @@ F2 irregular middle, and F4 young understory; F3 is documented as a rejected
 sparse reconstruction. Four safeguarded Meshy 6 image-to-3D tasks consumed 120
 credits. Gate 5 tree placement is now active. This phase remains Forest-owned
 and does not edit the shared sky, celestial, camera, or Winter scene owners.
+
+### 2026-08-08T18:29:00-05:00 | Elsa to Bramble | answered
+
+The post-batch balance is verified at 920 credits. Gate 5 may instance F1, F2,
+and F4 as heavily as the composition and renderer budget support; instance
+count does not consume Meshy credits. Before another paid task, recheck the
+live balance and preserve an 800-credit reserve. This leaves at most 120
+further Forest credits without another explicit budget decision. Keep the
+checkpoint authoritative and never retry an ambiguous paid POST.

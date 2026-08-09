@@ -1,0 +1,313 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "earth-root-observatory",
+  "title": "Earth Root Observatory",
+  "domainProofRequired": true,
+  "currentGate": 1,
+  "authority": {
+    "experienceSpec": "docs/superpowers/specs/earth-root-observatory/earth-root-observatory-production-contract.md",
+    "roomShellSource": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
+    "planContract": "src/lib/features/museum/data/earth-root-observatory-plan.ts",
+    "museumTrackerItems": [
+      "jjjRDt6uwrzf9pBOFD3C",
+      "fsJqYPYkMjY2BESGuIBC",
+      "aN8CmfibQLjWC24E0lmJ",
+      "zf0pfUAmW4ODnjFJnep5",
+      "LUF8Uggz1uwbBrmvhOQp",
+      "ssnUksPqHir2Nr1fk65b",
+      "s278g83rbcQybhjZnIfO",
+      "2VNrQh8GQClDvq9r9wXp",
+      "lbzhhpX5y3UXsXU2jy3B",
+      "WWXT4vkB3zd3AQdHt2CO",
+      "IL6B5Bnwz3moI7ZFFmu3"
+    ]
+  },
+  "sequenceFingerprints": [
+    {
+      "performerId": "cave-earth-automaton-g",
+      "sequenceId": "cave-earth-seq-g",
+      "sourcePath": "static/data/hero/tnd-base-words.json",
+      "sourceSha256": "e6a9af2214c2af0a10c2169e19dd9a0a1b7ac980368f0132fdb6ff158434c730",
+      "fingerprint": "c901f2a4c7bac55fffab7e8e6b20b28b0b8d5c893b4fc2989ffeb33bd9e130df"
+    },
+    {
+      "performerId": "cave-earth-automaton-h",
+      "sequenceId": "cave-earth-seq-h",
+      "sourcePath": "static/data/hero/tnd-base-words.json",
+      "sourceSha256": "e6a9af2214c2af0a10c2169e19dd9a0a1b7ac980368f0132fdb6ff158434c730",
+      "fingerprint": "7bcea796f6d64a5c563831042549abb5bbc545c5aa39cb0a7822da85aef053ae"
+    },
+    {
+      "performerId": "cave-earth-automaton-i",
+      "sequenceId": "cave-earth-seq-i",
+      "sourcePath": "static/data/hero/tnd-base-words.json",
+      "sourceSha256": "e6a9af2214c2af0a10c2169e19dd9a0a1b7ac980368f0132fdb6ff158434c730",
+      "fingerprint": "1db277641b8103cee6c1eed96215ba96c983494eb1b9a989de617e25a0da49b8"
+    }
+  ],
+  "claims": [
+    {
+      "id": "C-001",
+      "class": "literal",
+      "statement": "The selected G, H, and I loops share one south-west-north-east-south hand path.",
+      "evidence": [
+        "static/data/hero/tnd-base-words.json",
+        "docs/superpowers/specs/earth-root-observatory/earth-root-observatory-gate1-report.json"
+      ]
+    },
+    {
+      "id": "C-002",
+      "class": "literal",
+      "statement": "G is pro/pro, H is anti/anti, and I combines blue anti with red pro.",
+      "evidence": [
+        "Flow Arts MCP calls made 2026-08-08",
+        "static/data/hero/tnd-base-words.json"
+      ]
+    },
+    {
+      "id": "C-003",
+      "class": "metaphor",
+      "statement": "The environment translates G into a ring, H into a four-lobed trace, and I into both traces.",
+      "evidence": [
+        "docs/superpowers/specs/earth-root-observatory/earth-root-observatory-gate1-board.svg"
+      ]
+    },
+    {
+      "id": "C-004",
+      "class": "invention",
+      "statement": "Walking near a performer reveals its trace and stores it for the final overlook.",
+      "evidence": [
+        "docs/superpowers/specs/earth-root-observatory/earth-root-observatory-production-contract.md"
+      ]
+    },
+    {
+      "id": "C-005",
+      "class": "invention",
+      "statement": "Completing the route makes the three retained traces converge up the tree and turn the canopy toward the visitor.",
+      "evidence": [
+        "docs/superpowers/specs/earth-root-observatory/earth-root-observatory-production-contract.md"
+      ]
+    }
+  ],
+  "exemptions": [],
+  "revisionHistory": [
+    {
+      "gateId": "playable-graybox",
+      "revision": 1,
+      "status": "superseded-after-review",
+      "reviewedAt": "2026-08-08",
+      "feedback": [
+        "Replace the Blender mannequins with the finished live museum avatar system.",
+        "Turn the ring, petal, and hybrid motifs into flat standing surfaces.",
+        "Improve corridor sightlines, reduce empty green ground, and make the recognition circle an obvious destination."
+      ],
+      "evidence": [
+        {
+          "kind": "blender-source",
+          "sha256": "1bbb332cade009e8d3a68924866df4b64aea21cf82e62b48d9c83d605e82e8ac"
+        },
+        {
+          "kind": "coordinate-manifest",
+          "sha256": "35ce1fa9f0768cfc101b8588c1d73bf6ab5f70f1699eaf3c0a0c0f26f299a4c3"
+        },
+        {
+          "kind": "graybox-glb",
+          "sha256": "ada630e78fd8b4d90c09eb8be16d17a54384dd246f1500119ace28f3e413986c"
+        },
+        {
+          "kind": "first-person-walk",
+          "sha256": "62189cf93010163e21fb643f67aa95132bbf847022ac841be7cfb4d0cd58b82d"
+        },
+        {
+          "kind": "review-contact-sheet",
+          "sha256": "1983ec7ca6a152e6cf5983efeb7fd39716d0b1e9f97538f042a2222e69778bdc"
+        }
+      ]
+    },
+    {
+      "gateId": "measured-plan",
+      "revision": 1,
+      "status": "invalidated-after-walkthrough",
+      "reviewedAt": "2026-08-08",
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-08T20:03:34.622Z",
+        "quote": "Love it. Gate passed.",
+        "museumTrackerItem": "aN8CmfibQLjWC24E0lmJ"
+      },
+      "feedback": [
+        "The board proved clear rays from fixed stops but did not prove full-body visibility beneath the route lip during free walking.",
+        "Increase H and I performer-to-route separation, then re-prove the isolated reads and final ensemble frame."
+      ],
+      "evidence": [
+        {
+          "kind": "floor-plan",
+          "sha256": "c82de76d51d1bc4bcfc296a94b5e6d170eeb3fc0e8be86c5fc0bc908cfcf2d63"
+        },
+        {
+          "kind": "sightline-study",
+          "sha256": "7dd53fd24f7e3599d10a6236a4904818fce45888b81785eff403232f61691ee2"
+        }
+      ]
+    },
+    {
+      "gateId": "playable-graybox",
+      "revision": 2,
+      "status": "rejected-after-review",
+      "reviewedAt": "2026-08-08",
+      "feedback": [
+        "H and I remain too close to the walkway and disappear under its inner lip during free walking.",
+        "The basin needs vegetation and root habitat massing instead of empty green and black ground.",
+        "Remove the unusable click-to-look-around prompt from the in-app review.",
+        "Fix the shared avatar rig-space body-follow defect separately from the Earth scene."
+      ],
+      "evidence": [
+        {
+          "kind": "blender-source",
+          "sha256": "b6959c0e0f5c36eb80f6721d02cdfd7b89275fff2f0d71c79c27f08c2bb53511"
+        },
+        {
+          "kind": "coordinate-manifest",
+          "sha256": "10743062cb62171091688cd925dba68510428e3316235ea4f3f5581a0e1c705d"
+        },
+        {
+          "kind": "graybox-glb",
+          "sha256": "f2c9b0da02fda885461346e5340a13161c5d01f3f085e9b83851e0194ea97599"
+        },
+        {
+          "kind": "first-person-walk",
+          "sha256": "a0980662c7730762a3af89d6540b0c4c9100f3a40d8aaea8c98626d51bb12d6b"
+        },
+        {
+          "kind": "review-contact-sheet",
+          "sha256": "a466800bf4a15e950803563039c93cdaa91b81252e313e8db7fc5d1a2fafdf14"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "evidence-preflight",
+      "status": "verified",
+      "evidence": [
+        {
+          "kind": "canon-audit",
+          "path": "docs/superpowers/specs/earth-root-observatory/earth-root-observatory-production-contract.md",
+          "sha256": "9ca67e5b040e67aa70a763f9a590e2b1cf5abafd0b031f921237a1d68fc3866e"
+        },
+        {
+          "kind": "room-shell",
+          "path": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
+          "sha256": "2a6760e5018ef0c31c64613f211b91ebb33b3c9953efd2e742c53e31d8b4a9dd"
+        },
+        {
+          "kind": "motion-proof",
+          "path": "docs/superpowers/specs/earth-root-observatory/earth-root-observatory-gate1-board.svg",
+          "sha256": "c82de76d51d1bc4bcfc296a94b5e6d170eeb3fc0e8be86c5fc0bc908cfcf2d63"
+        }
+      ],
+      "checks": [
+        {
+          "name": "canon-conflicts",
+          "status": "passed",
+          "evidence": "Production contract records the superseded solo rule, live canyon, and unresolved Sun roster conflict."
+        },
+        {
+          "name": "source-digests",
+          "status": "passed",
+          "evidence": "earth-root-observatory-gate1-report.json"
+        },
+        {
+          "name": "sequence-fingerprints",
+          "status": "passed",
+          "evidence": "Three selected catalog entry fingerprints recorded above and in the Gate 1 report."
+        }
+      ],
+      "approval": null
+    },
+    {
+      "id": "measured-plan",
+      "status": "ready-for-review",
+      "evidence": [
+        {
+          "kind": "floor-plan",
+          "path": "docs/superpowers/specs/earth-root-observatory/earth-root-observatory-gate1-amendment-board.svg",
+          "sha256": "f8f30c1601d0a27f6a37bee526100c833f442c81c11db12a2e83cf4201cdfbce"
+        },
+        {
+          "kind": "vertical-section",
+          "path": "docs/superpowers/specs/earth-root-observatory/earth-root-observatory-gate1-amendment-board.svg",
+          "sha256": "f8f30c1601d0a27f6a37bee526100c833f442c81c11db12a2e83cf4201cdfbce"
+        },
+        {
+          "kind": "route-storyboard",
+          "path": "docs/superpowers/specs/earth-root-observatory/earth-root-observatory-gate1-amendment-board.svg",
+          "sha256": "f8f30c1601d0a27f6a37bee526100c833f442c81c11db12a2e83cf4201cdfbce"
+        },
+        {
+          "kind": "sightline-study",
+          "path": "docs/superpowers/specs/earth-root-observatory/earth-root-observatory-gate1-amendment-report.json",
+          "sha256": "8314caeda5256326a73648e3bb69553b813aa98ab46d5a33ba0da0444d93d9f5"
+        }
+      ],
+      "checks": [
+        {
+          "name": "walkability",
+          "status": "passed",
+          "evidence": "2.4 m route width and 4.2 percent maximum grade in Gate 1 report."
+        },
+        {
+          "name": "clearance",
+          "status": "passed",
+          "evidence": "H and I habitat edges now clear the route edge by 0.64 and 0.60 metres. Five measured habitat fields remain below route datum."
+        },
+        {
+          "name": "sightlines",
+          "status": "passed",
+          "evidence": "Seven moving samples per performer are unobstructed. Worst-case foot-line clearance above the route lip is 0.24 m for G, 0.42 m for H, and 0.31 m for I."
+        },
+        {
+          "name": "final-view",
+          "status": "passed",
+          "evidence": "Focused plan test re-proves that revised G, H, I, and the tree are unobstructed inside the 75-degree final frame."
+        }
+      ],
+      "approval": null
+    },
+    {
+      "id": "playable-graybox",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "registered-visual-target",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "production-slice",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "integrated-room",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "final-acceptance",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "earth-root-observatory",
+  "gate": 1,
+  "room": {
+    "width": 34,
+    "depth": 24,
+    "westDoorWidth": 2,
+    "southDoorWidth": 2
+  },
+  "route": {
+    "width": 2.4,
+    "length": 79.43958715005606,
+    "maximumGrade": 0.04239991520025441,
+    "stops": 7
+  },
+  "checks": {
+    "walkability": true,
+    "isolatedCloseReads": {
+      "g": {
+        "g": true,
+        "h": false,
+        "i": false
+      },
+      "h": {
+        "g": false,
+        "h": true,
+        "i": false
+      },
+      "i": {
+        "g": false,
+        "h": false,
+        "i": true
+      }
+    },
+    "finalView": {
+      "g": {
+        "unobstructed": true,
+        "insideFrame": true
+      },
+      "h": {
+        "unobstructed": true,
+        "insideFrame": true
+      },
+      "i": {
+        "unobstructed": true,
+        "insideFrame": true
+      }
+    },
+    "treeHeroVisibleAtReveal": true
+  },
+  "sequenceFingerprints": [
+    {
+      "catalogId": "tnd-tog-same-gggg",
+      "word": "GGGG",
+      "sha256": "c901f2a4c7bac55fffab7e8e6b20b28b0b8d5c893b4fc2989ffeb33bd9e130df"
+    },
+    {
+      "catalogId": "tnd-tog-same-hhhh",
+      "word": "HHHH",
+      "sha256": "7bcea796f6d64a5c563831042549abb5bbc545c5aa39cb0a7822da85aef053ae"
+    },
+    {
+      "catalogId": "tnd-tog-same-iiii",
+      "word": "IIII",
+      "sha256": "1db277641b8103cee6c1eed96215ba96c983494eb1b9a989de617e25a0da49b8"
+    }
+  ],
+  "sourceDigests": [
+    {
+      "path": "src/lib/features/museum/data/museum-exhibit-sequences.ts",
+      "sha256": "707a7111e769241d86c6d19c6bdbc45da32da318b13a07ddc03bc3a5f0ad3843"
+    },
+    {
+      "path": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
+      "sha256": "2a6760e5018ef0c31c64613f211b91ebb33b3c9953efd2e742c53e31d8b4a9dd"
+    }
+  ],
+  "artifacts": {
+    "board": "./earth-root-observatory-gate1-board.svg",
+    "boardSha256": "c82de76d51d1bc4bcfc296a94b5e6d170eeb3fc0e8be86c5fc0bc908cfcf2d63"
+  }
+}

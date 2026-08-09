@@ -1,11 +1,10 @@
 <script lang="ts">
-
-// propInterpolator and sequenceConverter are now module-level functions
+  // propInterpolator and sequenceConverter are now module-level functions
   /**
    * MuseumPerformerStation3D
    *
-   * A 3D mannequin at a museum performer station that plays a TKA sequence
-   * with spinning staves. Uses PerformerRig for the unified transform hierarchy
+   * A museum performer station that plays a TKA sequence with the shared live
+   * avatar and prop rig. Uses PerformerRig for the unified transform hierarchy
    * - no manual STAGE_LIFT math, no sibling Avatar3D/Prop3D/Grid3D calls.
    */
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
@@ -16,13 +15,19 @@
   import { Plane } from "@austencloud/scene-3d";
   import { PlaneMode } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { createAvatarInstanceState, makeStandaloneDeps } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+  import {
+    createAvatarInstanceState,
+    makeStandaloneDeps,
+  } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { GridMode } from "@austencloud/scene-3d";
-  import { MUSEUM_EXHIBIT_SEQUENCES, type MuseumSequenceData } from "../../data/museum-exhibit-sequences";
+  import {
+    MUSEUM_EXHIBIT_SEQUENCES,
+    type MuseumSequenceData,
+  } from "../../data/museum-exhibit-sequences";
   import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
 
   interface Props {
@@ -37,6 +42,10 @@
     /** Animate only while the visitor is close enough to see this station. */
     active?: boolean;
     showGrid?: boolean;
+    /** Render the station's default pedestal. Disable when the room owns it. */
+    showPlatform?: boolean;
+    /** Height from worldY to the authored standing surface. Default 0.3m. */
+    standingSurfaceHeight?: number;
     /**
      * Optional injection map for resolving a sequenceId to a user's PRIVATE
      * library sequence. Checked BEFORE MUSEUM_EXHIBIT_SEQUENCES and the
@@ -55,15 +64,16 @@
   const facingAngle = props.facingAngle;
   const autoPlay = props.autoPlay ?? false;
   const showGrid = props.showGrid ?? false;
-
-  // Platform height - the physical pedestal disc.
-  const PLATFORM_HEIGHT = 0.3; // matches cylinder geometry (height 0.3, center at 0.15)
+  const showPlatform = props.showPlatform ?? true;
+  const standingSurfaceHeight = props.standingSurfaceHeight ?? 0.3;
 
   // Avatar3D "stage mode" positions feet at groundY (≈ -1.4m below rig origin),
   // designed for the viewer where the ground plane IS at that Y. In the museum,
   // the floor is at y=0, so we offset by -groundY to bring feet to floor level,
-  // then add PLATFORM_HEIGHT to stand on top of the pedestal.
-  const museumGroundOffset = $derived(-userProportionsState.groundY + PLATFORM_HEIGHT);
+  // then add the room-owned standing surface height.
+  const museumGroundOffset = $derived(
+    -userProportionsState.groundY + standingSurfaceHeight
+  );
 
   // Build a minimal SequenceData from the museum manifest
   function buildSequenceData(museumSeq: MuseumSequenceData): SequenceData {
@@ -77,7 +87,9 @@
 
   // Create the avatar instance once - it persists across sequence swaps.
   // loadSequence() is called reactively whenever sequenceId changes.
-  let performerState = $state<ReturnType<typeof createAvatarInstanceState> | null>(null);
+  let performerState = $state<ReturnType<
+    typeof createAvatarInstanceState
+  > | null>(null);
 
   // Resolved sequence data (from hardcoded exhibits or Firestore)
   let resolvedSequence = $state<SequenceData | null>(null);
@@ -131,15 +143,18 @@
       const loader = getBrowseLoader();
       if (!loader) return;
 
-      loader.loadFullSequenceData(id, id).then((seq: SequenceData | null) => {
-        if (!seq || !performerState) return;
-        resolvedSequence = seq;
-        performerState.loadSequence(seq);
-        performerState.loop = true;
-        if (autoPlay && props.active !== false) performerState.play();
-      }).catch((err: unknown) => {
-        console.warn(`[MuseumPerformer] Failed to load sequence ${id}:`, err);
-      });
+      loader
+        .loadFullSequenceData(id, id)
+        .then((seq: SequenceData | null) => {
+          if (!seq || !performerState) return;
+          resolvedSequence = seq;
+          performerState.loadSequence(seq);
+          performerState.loop = true;
+          if (autoPlay && props.active !== false) performerState.play();
+        })
+        .catch((err: unknown) => {
+          console.warn(`[MuseumPerformer] Failed to load sequence ${id}:`, err);
+        });
     });
   });
 
@@ -157,16 +172,22 @@
   // Prop type: prefer the sequence's intended prop, fall back to global settings.
   // This way Shift+P cycles the museum performers too.
   const bluePropType = $derived.by((): PropType => {
-    if (resolvedSequence?.intendedProp?.bluePropType) return resolvedSequence.intendedProp.bluePropType;
+    if (resolvedSequence?.intendedProp?.bluePropType)
+      return resolvedSequence.intendedProp.bluePropType;
     try {
       return settingsService.settings.bluePropType ?? PropType.STAFF;
-    } catch { return PropType.STAFF; }
+    } catch {
+      return PropType.STAFF;
+    }
   });
   const redPropType = $derived.by((): PropType => {
-    if (resolvedSequence?.intendedProp?.redPropType) return resolvedSequence.intendedProp.redPropType;
+    if (resolvedSequence?.intendedProp?.redPropType)
+      return resolvedSequence.intendedProp.redPropType;
     try {
       return settingsService.settings.redPropType ?? PropType.STAFF;
-    } catch { return PropType.STAFF; }
+    } catch {
+      return PropType.STAFF;
+    }
   });
 
   const platformColor = new Color(0x3a3028);
@@ -179,11 +200,13 @@
   position.y={worldY}
   position.z={worldZ}
 >
-  <!-- Circular platform at floor level (not inside rig - independent of groundOffset) -->
-  <T.Mesh position.y={0.15} castShadow receiveShadow>
-    <T.CylinderGeometry args={[0.8, 0.9, 0.3, 24]} />
-    <T.MeshStandardMaterial color={platformColor} roughness={0.85} />
-  </T.Mesh>
+  {#if showPlatform}
+    <!-- Default pedestal. Room-specific stages can replace it without replacing the avatar owner. -->
+    <T.Mesh position.y={0.15} castShadow receiveShadow>
+      <T.CylinderGeometry args={[0.8, 0.9, 0.3, 24]} />
+      <T.MeshStandardMaterial color={platformColor} roughness={0.85} />
+    </T.Mesh>
+  {/if}
 
   {#if performerState}
     <PerformerRig

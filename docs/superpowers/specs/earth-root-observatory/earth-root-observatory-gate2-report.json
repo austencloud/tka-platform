@@ -1,0 +1,77 @@
+{
+  "blendPath": "blender/earth-root-observatory-graybox.blend",
+  "exportObjectCount": 68,
+  "gate": 2,
+  "performerCount": 3,
+  "performerIds": [
+    "cave-earth-automaton-g",
+    "cave-earth-automaton-h",
+    "cave-earth-automaton-i"
+  ],
+  "performerRepresentation": "runtime-avatar",
+  "rawGlbPath": "artifacts/earth-root-observatory-graybox_raw.glb",
+  "renderedFrames": [
+    "docs/superpowers/specs/earth-root-observatory/gate2-renders/earth-root-observatory-fire-threshold.png",
+    "docs/superpowers/specs/earth-root-observatory/gate2-renders/earth-root-observatory-tree-reveal.png",
+    "docs/superpowers/specs/earth-root-observatory/gate2-renders/earth-root-observatory-performer-g.png",
+    "docs/superpowers/specs/earth-root-observatory/gate2-renders/earth-root-observatory-performer-h.png",
+    "docs/superpowers/specs/earth-root-observatory/gate2-renders/earth-root-observatory-performer-i.png",
+    "docs/superpowers/specs/earth-root-observatory/gate2-renders/earth-root-observatory-recognition-overlook.png",
+    "docs/superpowers/specs/earth-root-observatory/gate2-renders/earth-root-observatory-air-exit.png",
+    "docs/superpowers/specs/earth-root-observatory/gate2-renders/earth-root-observatory-overview.png",
+    "docs/superpowers/specs/earth-root-observatory/gate2-renders/earth-root-observatory-plan.png"
+  ],
+  "reviewCameras": [
+    "fire-threshold",
+    "tree-reveal",
+    "performer-g",
+    "performer-h",
+    "performer-i",
+    "recognition-overlook",
+    "air-exit",
+    "overview",
+    "plan"
+  ],
+  "roomFootprint": {
+    "depth": 24,
+    "width": 34
+  },
+  "route": {
+    "capturedDurationSeconds": 30.75,
+    "length": 79.43958715005606,
+    "segments": 11,
+    "walkingDurationSeconds": 24.824870984392515,
+    "width": 2.4
+  },
+  "sceneId": "earth-root-observatory",
+  "schemaVersion": 1,
+  "sequenceFingerprints": [
+    {
+      "catalogId": "tnd-tog-same-gggg",
+      "sha256": "c901f2a4c7bac55fffab7e8e6b20b28b0b8d5c893b4fc2989ffeb33bd9e130df",
+      "word": "GGGG"
+    },
+    {
+      "catalogId": "tnd-tog-same-hhhh",
+      "sha256": "7bcea796f6d64a5c563831042549abb5bbc545c5aa39cb0a7822da85aef053ae",
+      "word": "HHHH"
+    },
+    {
+      "catalogId": "tnd-tog-same-iiii",
+      "sha256": "1db277641b8103cee6c1eed96215ba96c983494eb1b9a989de617e25a0da49b8",
+      "word": "IIII"
+    }
+  ],
+  "sequenceIds": [
+    "cave-earth-seq-g",
+    "cave-earth-seq-h",
+    "cave-earth-seq-i"
+  ],
+  "sourceDigest": "c908f4f918ee3fe5d91528a18aff3135287a402c9fa397978da72b91de0ead51",
+  "stageHeights": [
+    0.62,
+    0.62,
+    0.62
+  ],
+  "walkPath": "artifacts/earth-root-observatory-gate2-first-person-walk.mp4"
+}

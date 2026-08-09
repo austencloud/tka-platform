@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "earth-root-observatory",
+  "gate": 1,
+  "revision": 2,
+  "amendment": "moving-sightlines-and-habitat-massing",
+  "room": {
+    "width": 34,
+    "depth": 24,
+    "westDoorWidth": 2,
+    "southDoorWidth": 2
+  },
+  "route": {
+    "width": 2.4,
+    "length": 79.43958715005606,
+    "maximumGrade": 0.04239991520025441,
+    "stops": 7
+  },
+  "checks": {
+    "walkability": true,
+    "isolatedCloseReads": {
+      "g": {
+        "g": true,
+        "h": false,
+        "i": false
+      },
+      "h": {
+        "g": false,
+        "h": true,
+        "i": false
+      },
+      "i": {
+        "g": false,
+        "h": false,
+        "i": true
+      }
+    },
+    "movingSightlines": {
+      "g": {
+        "sampleCount": 7,
+        "allUnobstructed": true,
+        "minimumFloorMargin": 0.242354980121829
+      },
+      "h": {
+        "sampleCount": 7,
+        "allUnobstructed": true,
+        "minimumFloorMargin": 0.4199582226487838
+      },
+      "i": {
+        "sampleCount": 7,
+        "allUnobstructed": true,
+        "minimumFloorMargin": 0.3118772606230079
+      }
+    },
+    "routeSeparation": {
+      "g": {
+        "centreToRoute": 3.535379512434732,
+        "habitatToRouteEdge": 0.13537951243473145
+      },
+      "h": {
+        "centreToRoute": 4.042327980769224,
+        "habitatToRouteEdge": 0.6423279807692239
+      },
+      "i": {
+        "centreToRoute": 4,
+        "habitatToRouteEdge": 0.5999999999999996
+      }
+    },
+    "habitatMassing": {
+      "fieldCount": 5,
+      "ellipseArea": 67.23008278682157,
+      "allBelowRouteDatum": true
+    },
+    "finalView": {
+      "g": {
+        "unobstructed": true,
+        "insideFrame": true
+      },
+      "h": {
+        "unobstructed": true,
+        "insideFrame": true
+      },
+      "i": {
+        "unobstructed": true,
+        "insideFrame": true
+      }
+    },
+    "treeHeroVisibleAtReveal": true
+  },
+  "sequenceFingerprints": [
+    {
+      "catalogId": "tnd-tog-same-gggg",
+      "word": "GGGG",
+      "sha256": "c901f2a4c7bac55fffab7e8e6b20b28b0b8d5c893b4fc2989ffeb33bd9e130df"
+    },
+    {
+      "catalogId": "tnd-tog-same-hhhh",
+      "word": "HHHH",
+      "sha256": "7bcea796f6d64a5c563831042549abb5bbc545c5aa39cb0a7822da85aef053ae"
+    },
+    {
+      "catalogId": "tnd-tog-same-iiii",
+      "word": "IIII",
+      "sha256": "1db277641b8103cee6c1eed96215ba96c983494eb1b9a989de617e25a0da49b8"
+    }
+  ],
+  "sourceDigests": [
+    {
+      "path": "src/lib/features/museum/data/museum-exhibit-sequences.ts",
+      "sha256": "707a7111e769241d86c6d19c6bdbc45da32da318b13a07ddc03bc3a5f0ad3843"
+    },
+    {
+      "path": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
+      "sha256": "2a6760e5018ef0c31c64613f211b91ebb33b3c9953efd2e742c53e31d8b4a9dd"
+    },
+    {
+      "path": "src/lib/features/museum/data/earth-root-observatory-plan.ts",
+      "sha256": "eda286b8720e562efd249fd68b4271bae8e47df9853e79347bd4c49e7888d8d6"
+    }
+  ],
+  "artifacts": {
+    "board": "./earth-root-observatory-gate1-amendment-board.svg",
+    "boardSha256": "f8f30c1601d0a27f6a37bee526100c833f442c81c11db12a2e83cf4201cdfbce"
+  }
+}
