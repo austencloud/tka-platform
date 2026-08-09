@@ -1038,43 +1038,7 @@
         : "fa-eye"
   );
 
-  // Check if we're using touch input (for UI hints)
-  const isUsingTouch = $derived(
-    inputCaps.current.currentPointerType === "touch"
-  );
 </script>
-
-<!-- Controls hint (when not in game mode or not pointer locked) -->
-{#if enabled && (mode === CameraMode.ORBIT || !isPointerLocked)}
-  <div class="controls-hint">
-    {#if mode === CameraMode.ORBIT}
-      <span>Drag to orbit • Tap to enter game mode</span>
-    {:else if isUsingTouch}
-      <span>Drag to look around</span>
-    {:else}
-      <span>Click to look around</span>
-    {/if}
-    <div class="controls">
-      {#if !isUsingTouch}
-        <kbd>V</kbd> {modeLabel}
-      {/if}
-      {#if isGameMode(mode)}
-        {#if isUsingTouch}
-          <span>Drag to look</span>
-        {:else}
-          <kbd>WASD</kbd> Move
-          <kbd>Mouse</kbd> Look
-        {/if}
-        {#if usePhysics && !isUsingTouch}
-          <kbd>Shift</kbd> Sprint
-          <kbd>Space</kbd> Jump
-        {/if}
-      {:else if !isUsingTouch}
-        <kbd>Scroll</kbd> Zoom
-      {/if}
-    </div>
-  </div>
-{/if}
 
 <!-- Mode indicator (when pointer locked in game mode) -->
 {#if enabled && isPointerLocked && isGameMode(mode)}
@@ -1089,41 +1053,6 @@
 {/if}
 
 <style>
-  .controls-hint {
-    position: fixed;
-    bottom: 100px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1rem 1.5rem;
-    background: rgba(0, 0, 0, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
-    color: white;
-    font-size: 14px;
-    pointer-events: none;
-    z-index: 50;
-  }
-
-  .controls {
-    display: flex;
-    gap: 0.75rem;
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.7);
-  }
-
-  .controls kbd {
-    padding: 0.2rem 0.5rem;
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    font-family: inherit;
-    font-size: 11px;
-  }
-
   .mode-indicator {
     position: fixed;
     top: 20px;
