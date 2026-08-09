@@ -24,10 +24,11 @@ describe("Earth Long Terrace Gate 1 candidate", () => {
     expect(plan!.room.maxX - plan!.room.minX).toBe(34);
     expect(plan!.room.maxZ - plan!.room.minZ).toBe(24);
     expect(plan!.westDoor).toEqual({ min: 12.25, max: 14.25 });
-    // Shifted +2.5 when the Flooded Gallery grew to 30 × 30 m for the
-    // three-channels revision (2026-08-09) and the layout engine moved the
-    // rooms placed after it.
-    expect(plan!.southDoor).toEqual({ min: 116.75, max: 118.75 });
+    // Matches the Earth contract's recorded exit span. The three-channels
+    // Drowned Gallery revision briefly grew the Flooded Gallery to 30 × 30 m
+    // and shifted this +2.5; that revision was rejected (2026-08-09) and the
+    // gallery is back at its "Ring" footprint, so the span is back too.
+    expect(plan!.southDoor).toEqual({ min: 114.25, max: 116.25 });
     expect(plan!.walkPath[0]).toEqual(
       expect.objectContaining({
         x: plan!.room.minX,

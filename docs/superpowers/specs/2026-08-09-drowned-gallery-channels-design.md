@@ -1,5 +1,12 @@
 ---
-status: draft
+status: rejected
+rejected_on: 2026-08-09
+rejected_because: >-
+  Three channels split the ensemble to buy a corridor choice. Water's unique
+  observable is all three letters legible at once, doubled in still black
+  water; this design spent that asset and then needed an automaton state swap
+  to fake it back for the finale. Scene reverts to "The Ring" (grotto,
+  waterfall, mirror-pool reflection) — commit 3b946cfae1.
 value: 4
 effort: L
 tags: [museum, vulcan-cave, water, drowned-gallery, graybox, design]

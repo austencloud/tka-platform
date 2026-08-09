@@ -1,11 +1,10 @@
 /**
- * Terrain + layout invariants for the Drowned Gallery route ("Three Channels").
+ * Terrain + layout invariants for the Drowned Gallery route ("The Ring").
  *
  * The coupling invariants from the design spec live here: one geometry source,
  * every walkable tile inside a rendered floor, no wall over a door, performer
- * anchors identical to layout anchors, bells that never share a sightline, and
- * a loud failure instead of a silent datum-0 when the layout and the walkable
- * grid disagree.
+ * anchors identical to layout anchors, and a loud failure instead of a silent
+ * datum-0 when the layout and the walkable grid disagree.
  */
 import { describe, it, expect } from "vitest";
 import { buildVulcanCaveFloorPlan } from "$lib/features/museum/data/vulcan-cave-floor-plan";
@@ -13,14 +12,9 @@ import {
   buildDrownedGalleryLayout,
   createDrownedGalleryTerrain,
   inRectClosed,
-  segmentCrossesRects,
-  bellViewingSamples,
-  bellFloorSightlineMargin,
   type WorldRect,
   ALCOVE_X_FRACTIONS,
   tileCentredOffset,
-  BELL_FLOOR_Y,
-  BELL_CEILING_Y,
   CAUSEWAY_Y,
   EYE_ABOVE_FLOOR,
   GALLERY_FLOOR_Y,
@@ -93,15 +87,8 @@ describe("drowned gallery terrain", () => {
     expect(prev).toBeLessThan(WATERLINE_Y);
   });
 
-  it("puts the hub and every channel leg on the gallery floor, under a roof below the waterline", () => {
-    const flats = [
-      layout.hub,
-      layout.returnLeg,
-      ...layout.channels.flatMap((chan) => chan.legs),
-      layout.shaftPassageLeg,
-      layout.shaftPassageJog,
-    ];
-    for (const rect of flats) {
+  it("puts the gallery's flat runs on the gallery floor, under a roof below the waterline", () => {
+    for (const rect of [layout.westRun, layout.northRun, layout.eastBend]) {
       const x = (rect.minX + rect.maxX) / 2;
       const z = (rect.minZ + rect.maxZ) / 2;
       expect(terrain.elevationAt(x, z)).toBeCloseTo(GALLERY_FLOOR_Y, 5);
@@ -118,101 +105,13 @@ describe("drowned gallery terrain", () => {
     }
   });
 
-  it("orders the three channel runs A < B < C at roughly 6 / 9 / 12 m", () => {
-    const [a, b, c] = layout.channels;
-    expect(a!.runMetres).toBeLessThan(b!.runMetres);
-    expect(b!.runMetres).toBeLessThan(c!.runMetres);
-    expect(a!.runMetres).toBeGreaterThanOrEqual(4.5);
-    expect(a!.runMetres).toBeLessThanOrEqual(8);
-    expect(b!.runMetres).toBeGreaterThanOrEqual(7.5);
-    expect(b!.runMetres).toBeLessThanOrEqual(11);
-    expect(c!.runMetres).toBeGreaterThanOrEqual(10.5);
-    expect(c!.runMetres).toBeLessThanOrEqual(14.5);
-  });
-
-  it("breaks the surface on each bell's stair (first breath) and keeps the deck dry", () => {
-    for (const chan of layout.channels) {
-      const breath = chan.breathPoint;
-      const elevation = terrain.elevationAt(breath.x, breath.z);
-      expect(elevation).toBeCloseTo(LANDING_Y, 1);
-      expect(elevation + EYE_ABOVE_FLOOR).toBeCloseTo(WATERLINE_Y, 1);
-      const deck = layout.probes.bellDecks[chan.id];
-      const deckElevation = terrain.elevationAt(deck.x, deck.z);
-      expect(deckElevation).toBeCloseTo(BELL_FLOOR_Y, 5);
-      // dry deck: the floor itself sits above the waterline
-      expect(deckElevation).toBeGreaterThan(WATERLINE_Y);
-      // held, not vaulted: ~3 m of air over the deck, air above the waterline
-      expect(BELL_CEILING_Y - deckElevation).toBeGreaterThanOrEqual(2.9);
-      expect(BELL_CEILING_Y).toBeGreaterThan(WATERLINE_Y);
-      expect(terrain.blockedAt(deck.x, deck.z)).toBe(false);
-    }
-  });
-
-  it("blocks each bell's water margin and performer shelf", () => {
-    for (const chan of layout.channels) {
-      const margin = chan.bell.margin;
-      const shelf = chan.bell.shelf;
-      expect(
-        terrain.blockedAt((margin.minX + margin.maxX) / 2, (margin.minZ + margin.maxZ) / 2)
-      ).toBe(true);
-      expect(
-        terrain.blockedAt((shelf.minX + shelf.maxX) / 2, (shelf.minZ + shelf.maxZ) / 2)
-      ).toBe(true);
-    }
-  });
-
-  it("keeps every pair of bells out of each other's sightlines (rock between)", () => {
-    for (const from of layout.channels) {
-      for (const to of layout.channels) {
-        if (from.id === to.id) continue;
-        const viewer = layout.probes.bellDecks[from.id];
-        const performer = to.bell.shelfAnchor;
-        expect(
-          segmentCrossesRects(viewer, performer, layout.rockFill),
-          `bell ${from.id} deck can see bell ${to.id} performer`
-        ).toBe(true);
-      }
-    }
-  });
-
-  it("gives every bell a clear moving sightline window onto its own performer floor", () => {
-    for (const chan of layout.channels) {
-      const samples = bellViewingSamples(chan);
-      for (const sample of samples) {
-        expect(
-          segmentCrossesRects(sample, chan.bell.shelfAnchor, layout.rockFill),
-          `bell ${chan.id} sightline at fraction ${sample.fraction} crosses rock`
-        ).toBe(false);
-        const margin = bellFloorSightlineMargin(chan, sample);
-        expect(
-          margin,
-          `bell ${chan.id} floor sightline at fraction ${sample.fraction}`
-        ).toBeGreaterThan(0);
-      }
-      // close-read intimacy: deck centre to performer within 2.5–4.5 m
-      const deck = layout.probes.bellDecks[chan.id];
-      const d = Math.hypot(
-        deck.x - chan.bell.shelfAnchor.x,
-        deck.z - chan.bell.shelfAnchor.z
-      );
-      expect(d).toBeGreaterThanOrEqual(2.2);
-      expect(d).toBeLessThanOrEqual(4.5);
-    }
-  });
-
-  it("runs the drowned passage and the buoyant shaft at gallery depth into the apron", () => {
-    const shaft = layout.probes.shaftBottom;
-    expect(terrain.elevationAt(shaft.x, shaft.z)).toBeCloseTo(GALLERY_FLOOR_Y, 5);
-    expect(terrain.blockedAt(shaft.x, shaft.z)).toBe(false);
-    // the column footprint sits inside the grotto apron band
-    expect(inRectClosed(layout.apron, shaft.x, shaft.z)).toBe(true);
-    // the walkable apron surrounds the hole at causeway height
-    const apron = layout.probes.apron;
-    expect(terrain.elevationAt(apron.x, apron.z)).toBeCloseTo(CAUSEWAY_Y, 5);
-    // and no apron piece covers the column (one 2-D height per point)
-    for (const piece of layout.apronPieces) {
-      expect(inRectClosed(piece, shaft.x, shaft.z)).toBe(false);
-    }
+  it("breaks the surface ON the landing (first breath and money shot are one instant)", () => {
+    const x = (layout.surfacingLanding.minX + layout.surfacingLanding.maxX) / 2;
+    const z = (layout.surfacingLanding.minZ + layout.surfacingLanding.maxZ) / 2;
+    const elevation = terrain.elevationAt(x, z);
+    expect(elevation).toBeCloseTo(LANDING_Y, 5);
+    expect(elevation + EYE_ABOVE_FLOOR).toBeCloseTo(WATERLINE_Y, 5);
+    expect(layout.surfacingLanding.maxZ - layout.surfacingLanding.minZ).toBeGreaterThanOrEqual(1.2);
   });
 
   it("runs the ring at causeway height and blocks the water and the shore", () => {
@@ -294,11 +193,11 @@ describe("drowned gallery terrain", () => {
     }
   });
 
-  it("keeps the three ring niches on the north shore at the shared fractions", () => {
+  it("puts the three alcoves on the north shore at the shared fractions", () => {
     expect(layout.alcoves).toHaveLength(3);
     const width = layout.grotto.maxX - layout.grotto.minX;
     layout.alcoves.forEach((alcove, i) => {
-      // Snapped to a tile centre so a finale restaging can land on it exactly.
+      // Snapped to a tile centre so a performer station can land on it exactly.
       expect(alcove.x).toBeCloseTo(
         layout.grotto.minX + tileCentredOffset(width * ALCOVE_X_FRACTIONS[i]!),
         5
@@ -309,25 +208,20 @@ describe("drowned gallery terrain", () => {
     });
   });
 
-  it("stages each performer alone on exactly its bell's shelf anchor", () => {
+  it("stages performers on exactly the layout's alcove anchors", () => {
     const performers = grid.performers
       .filter((p) => p.id.startsWith("cave-water-"))
-      .sort((a, b) => a.id.localeCompare(b.id));
+      .sort((a, b) => a.tileX - b.tileX);
     expect(performers.map((p) => p.id)).toEqual([
       "cave-water-a",
       "cave-water-b",
       "cave-water-c",
     ]);
     performers.forEach((performer, i) => {
-      const chan = layout.channels[i]!;
-      const anchor = chan.bell.shelfAnchor;
+      const anchor = layout.alcoves[i]!;
       expect(Math.abs(performer.tileX * TILE - anchor.x)).toBeLessThanOrEqual(0.05);
       expect(Math.abs(performer.tileY * TILE - anchor.z)).toBeLessThanOrEqual(0.05);
       expect(performer.elevation).toBe(SHELF_Y);
-      // one performer per bell, and it stands inside that bell's shelf
-      expect(
-        inRectClosed(chan.bell.shelf, performer.tileX * TILE, performer.tileY * TILE)
-      ).toBe(true);
     });
   });
 
@@ -359,12 +253,9 @@ describe("drowned gallery terrain", () => {
     ).toEqual([]);
   });
 
-  it("never steps more than 0.6 m between neighbouring walkable tiles, except across the shaft rim", () => {
+  it("never steps more than 0.6 m between neighbouring walkable tiles", () => {
     const walkable = new Set(walkableBayTiles.map((t) => `${t.tx},${t.ty}`));
-    const shaft = layout.buoyantShaft;
-    const inShaft = (x: number, z: number) => inRectClosed(shaft, x, z);
     const offenders: string[] = [];
-    let rimCrossings = 0;
     for (const tile of walkableBayTiles) {
       const here = terrain.elevationAt(tile.x, tile.z);
       for (const [dx, dy] of [
@@ -378,13 +269,6 @@ describe("drowned gallery terrain", () => {
         if (!walkable.has(`${nx},${ny}`)) continue;
         const there = terrain.elevationAt(nx * TILE, ny * TILE);
         if (Math.abs(there - here) > 0.6) {
-          // The buoyant shaft's rim is the one designed cliff: the column drops
-          // to gallery depth beside the apron, and falling in is safe water
-          // (design open question 4; the Gate 2 gravity seam floats the player).
-          if (inShaft(tile.x, tile.z) !== inShaft(nx * TILE, ny * TILE)) {
-            rimCrossings++;
-            continue;
-          }
           offenders.push(
             `(${tile.x},${tile.z})=${here.toFixed(2)} -> (${nx * TILE},${ny * TILE})=${there.toFixed(2)}`
           );
@@ -392,8 +276,6 @@ describe("drowned gallery terrain", () => {
       }
     }
     expect(offenders.slice(0, 6)).toEqual([]);
-    // the rim exists — the shaft really is a hole in the apron
-    expect(rimCrossings).toBeGreaterThan(0);
   });
 
   it("leaves every door tile clear of every rendered wall", () => {
@@ -421,6 +303,8 @@ describe("drowned gallery terrain", () => {
           if (grid.tiles.get(tileKey(tx, ty))?.type !== "door") continue;
           doors.push({
             id: `${roomId}:${tx},${ty}`,
+            // A tile occupies the cell CENTRED on its world position — the
+            // same convention the physics provider's Math.round lookup uses.
             rect: {
               minX: tx * TILE - TILE / 2,
               maxX: tx * TILE + TILE / 2,

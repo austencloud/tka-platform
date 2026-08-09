@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "sceneId": "drowned-gallery",
-  "title": "The Drowned Gallery (Three Channels)",
+  "title": "The Drowned Gallery (Three Channels) — REJECTED direction",
   "domainProofRequired": true,
-  "currentGate": 2,
+  "currentGate": 1,
   "authority": {
     "experienceSpec": "docs/superpowers/specs/2026-08-09-drowned-gallery-channels-design.md",
     "roomShellSource": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
@@ -128,139 +128,39 @@
     },
     {
       "id": "measured-plan",
-      "status": "approved",
-      "evidence": [
-        {
-          "kind": "floor-plan",
-          "path": "docs/superpowers/specs/drowned-gallery/drowned-gallery-gate1-board.svg",
-          "sha256": "e925585a0baa555010feccbcfd1c187a46f0fe3cd8dcd70318fdaa04d9dd8ba1"
-        },
-        {
-          "kind": "vertical-section",
-          "path": "docs/superpowers/specs/drowned-gallery/drowned-gallery-gate1-board.svg",
-          "sha256": "e925585a0baa555010feccbcfd1c187a46f0fe3cd8dcd70318fdaa04d9dd8ba1"
-        },
-        {
-          "kind": "route-storyboard",
-          "path": "docs/superpowers/specs/drowned-gallery/drowned-gallery-gate1-board.svg",
-          "sha256": "e925585a0baa555010feccbcfd1c187a46f0fe3cd8dcd70318fdaa04d9dd8ba1"
-        },
-        {
-          "kind": "sightline-study",
-          "path": "docs/superpowers/specs/drowned-gallery/drowned-gallery-gate1-report.json",
-          "sha256": "eae41196a36185db9a9baa46e13382b835a4cbefc4eee61e2c52ce966308b079"
-        }
-      ],
-      "checks": [
-        {
-          "name": "walkability",
-          "status": "passed",
-          "evidence": "Descent grade 0.52, all three bell stairs 0.60, every channel 2.5 m wide; headless playtest proves the one-dive route (any single bell then the shaft, per the 2026-08-09 amendment) AND the full three-bell walk, then apron to ring to Fire door (drowned-gallery-traversal.test.ts, 15 passing)."
-        },
-        {
-          "name": "clearance",
-          "status": "passed",
-          "evidence": "Minimum rock-roof headroom 2.0 m over every roofed run; bell ceilings 3.0 m over dry decks; roof at -1.9 stays below the -1.5 waterline everywhere it covers water."
-        },
-        {
-          "name": "sightlines",
-          "status": "passed",
-          "evidence": "Seven moving route-sampled windows per bell (Earth Gate 1.1 standard), 0 blocked, minimum floor margin 0.07-0.08 m, read distance 3.0 m; all 6 bell-to-bell cross-sightlines blocked by rock (Gate 1 report)."
-        },
-        {
-          "name": "final-view",
-          "status": "passed",
-          "evidence": "From the shaft-rim apron camera the mirror pool, waterfall and all three ring niches sit inside the 75-degree final frame (Gate 1 report finalView)."
-        }
-      ],
-      "approval": {
-        "approvedBy": "Austen Cloud",
-        "approvedAt": "2026-08-09T07:19:48.284Z",
-        "quote": "I'm in let's do it",
-        "museumTrackerItem": "kZfilqc0ViZpGR3nPOPU",
-        "visualComprehensionConfirmed": true
-      }
+      "status": "rejected",
+      "evidence": [],
+      "checks": []
     },
     {
       "id": "playable-graybox",
-      "status": "ready-for-review",
-      "evidence": [
-        {
-          "kind": "blender-source",
-          "path": "blender/drowned-gallery-graybox.blend"
-        },
-        {
-          "kind": "coordinate-manifest",
-          "path": "docs/superpowers/specs/2026-08-09-drowned-gallery-blender-plan.json",
-          "sha256": "c90439a18a44c738f99c992a87fca1f9fb2425562092713c732d573c26ed5f41"
-        },
-        {
-          "kind": "graybox-glb",
-          "path": "static/models/museum/cave/drowned-gallery-graybox.glb",
-          "sha256": "302d0edee32f0047faee3d7b218b159909dd5b0f39401e815e4a6d8ab8217c85"
-        },
-        {
-          "kind": "first-person-walk",
-          "path": "src/routes/test/drowned-gallery-graybox/+page.svelte",
-          "sha256": "315aa6fd845706739e8af4f506c94c7dcecfdb137a20caa12e4f3837d44c686f"
-        },
-        {
-          "kind": "review-contact-sheet",
-          "path": "docs/superpowers/specs/drowned-gallery/drowned-gallery-gate2-contact-sheet.png",
-          "sha256": "2a80e00118ee403e8aaabe20f4952967d709544931d29b687d4f8d6bcf84d25a"
-        }
-      ],
-      "checks": [
-        {
-          "name": "artifact-digest",
-          "status": "passed",
-          "evidence": "Builder verifies manifest digest 4759374a…7323f1 before building; the optimized GLB carries it in asset extras."
-        },
-        {
-          "name": "collision",
-          "status": "passed",
-          "evidence": "Walk-route colliders rebuild from buildDrownedGalleryLayout (ramps as 0.35 m step stacks under the 0.45 m auto-step); bell margins/shelves and basins barriered; drowned-gallery-traversal.test.ts 15/15 covering the one-dive route, all three bells, and the shaft bottom."
-        },
-        {
-          "name": "route-duration",
-          "status": "passed",
-          "evidence": "Gate 1 report channel runs 7.3/10.3/13.3 m; choose-one route (approach, descent, hub, channel A, bell A, return, shaft, ring, threshold) ≈ 55 m walked ≈ 17 s at 3.2 m/s before dwells; full three-bell walk ≈ 100 m."
-        },
-        {
-          "name": "sequence-parity",
-          "status": "passed",
-          "evidence": "GLB asset extras carry cave-water-seq-a/b/c performer ids and the layout source digest (verified by byte inspection post-optimize); live playback parity lands with the Gate 4 state swap."
-        }
-      ],
-      "approval": null
+      "status": "pending",
+      "evidence": [],
+      "checks": []
     },
     {
       "id": "registered-visual-target",
       "status": "pending",
       "evidence": [],
-      "checks": [],
-      "approval": null
+      "checks": []
     },
     {
       "id": "production-slice",
       "status": "pending",
       "evidence": [],
-      "checks": [],
-      "approval": null
+      "checks": []
     },
     {
       "id": "integrated-room",
       "status": "pending",
       "evidence": [],
-      "checks": [],
-      "approval": null
+      "checks": []
     },
     {
       "id": "final-acceptance",
       "status": "pending",
       "evidence": [],
-      "checks": [],
-      "approval": null
+      "checks": []
     }
   ]
 }

@@ -63,10 +63,7 @@ describe("Vulcan Cave floor plan", () => {
   // own terrain program, so the one-performer-per-chamber rule stops applying
   // to it and it is sized as a release rather than a solo.
   const BAY_ROOM_IDS = new Set([
-    // Water's performers moved from the grotto ("cave-water") into the Flooded
-    // Gallery's air-bells with the 2026-08-09 three-channels revision, so the
-    // gallery is now the Water bay's performer room.
-    "cave-water-gallery",
+    "cave-water",
     "cave-fire",
     "cave-earth",
     "cave-air",

@@ -226,9 +226,8 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
     },
   },
 
-  // The Flooded Gallery's three air-bell shelves (three-channels revision):
-  // one letter per bell, met alone after each dive.
-  "cave-water-gallery": {
+  // The Drowned Gallery's three waterline alcoves, west → east.
+  "cave-water": {
     performers: {
       "cave-water-a": { autoPlay: true, sequenceId: "cave-water-seq-a" },
       "cave-water-b": { autoPlay: true, sequenceId: "cave-water-seq-b" },

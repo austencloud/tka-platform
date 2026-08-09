@@ -1,12 +1,8 @@
 /**
- * Headless playtest of the Vulcan Cave water route ("Three Channels"):
- * spawn → squeeze north door → flooded approach → descent stair → the drowned
- * hub → channel A → bell A deck (surface, meet A) → back → channel B → bell B →
- * back → channel C → bell C → back to the hub → the shaft passage under the
- * north door → the buoyant shaft's bottom. The rise up the water column is the
- * Gate 2 gravity seam, so the walk resumes as a second physics segment on the
- * grotto apron: apron → west walkway → procession → east walkway → carved
- * threshold → cave-fire west door, plus ring closure and barrier checks.
+ * Headless playtest of the Vulcan Cave water route ("The Ring"):
+ * spawn → squeeze north door → flooded approach → the flooded gallery's S-path
+ * → the surfacing stair → the grotto apron → west walkway → procession past
+ * A, B and C → carved threshold → cave-fire west door.
  *
  * Drives the REAL stack (buildVulcanCaveFloorPlan + MuseumPhysicsProvider) with
  * repeated movePlayer calls, exactly like the in-game controller does. A
@@ -28,10 +24,9 @@ import {
 import { tileKey } from "$lib/features/museum/domain/museum-grid-types";
 import {
   buildDrownedGalleryLayout,
-  unionRect,
-  BELL_FLOOR_Y,
   CAUSEWAY_Y,
   GALLERY_FLOOR_Y,
+  LANDING_Y,
   TILE_METRES,
   WATERLINE_Y,
 } from "$lib/features/museum/data/drowned-gallery-terrain";
@@ -239,77 +234,59 @@ const squeezeNorthDoor = doorCenterTile("cave-squeeze", "north");
 const approachSouthDoor = doorCenterTile("cave-water-approach", "south");
 const approachNorthDoor = doorCenterTile("cave-water-approach", "north");
 const gallerySouthDoor = doorCenterTile("cave-water-gallery", "south");
+const galleryNorthDoor = doorCenterTile("cave-water-gallery", "north");
+const grottoSouthDoor = doorCenterTile("cave-water", "south");
 const grottoEastDoor = doorCenterTile("cave-water", "east");
 const fireWestDoor = doorCenterTile("cave-fire", "west");
 
 const {
   descentStair,
-  returnLeg,
-  hub,
-  channels,
-  shaftPassageLeg,
-  shaftPassageJog,
-  buoyantShaft,
+  westRun,
+  northRun,
+  eastBend,
+  surfacingLanding,
+  surfacingLower,
   procession,
   westWalkway,
   eastWalkway,
   pool,
+  apron,
   thresholdOpening,
   threshold,
-  probes,
+  alcoves,
 } = layout;
 
-const hubTile = tileOfWorld(probes.hub);
+// Legs of the gallery's S-path, then the ring.
+const GALLERY_LEGS: TileCoord[] = [
+  tileOfWorld({ x: mid(descentStair.minX, descentStair.maxX), z: descentStair.minZ + 0.5 }),
+  tileOfWorld({ x: mid(northRun.minX, northRun.maxX), z: mid(westRun.minZ, westRun.maxZ) }),
+  tileOfWorld({ x: mid(northRun.minX, northRun.maxX), z: mid(eastBend.minZ, eastBend.maxZ) }),
+  tileOfWorld({ x: mid(surfacingLower.minX, surfacingLower.maxX), z: mid(eastBend.minZ, eastBend.maxZ) }),
+  tileOfWorld({ x: mid(surfacingLower.minX, surfacingLower.maxX), z: surfacingLower.maxZ - 0.5 }),
+  tileOfWorld({ x: mid(surfacingLanding.minX, surfacingLanding.maxX), z: mid(surfacingLanding.minZ, surfacingLanding.maxZ) }),
+];
 
-/** Hub → bell deck → hub, through the channel's legs and stair. */
-function bellDive(chanIndex: number): TileCoord[] {
-  const chan = channels[chanIndex]!;
-  const legMids = chan.legs.map((leg) =>
-    tileOfWorld({ x: mid(leg.minX, leg.maxX), z: mid(leg.minZ, leg.maxZ) })
-  );
-  const stairMid = tileOfWorld({
-    x: mid(chan.stair.minX, chan.stair.maxX),
-    z: mid(chan.stair.minZ, chan.stair.maxZ),
-  });
-  const deck = tileOfWorld(probes.bellDecks[chan.id]);
-  return [...legMids, stairMid, deck, stairMid, ...[...legMids].reverse(), hubTile];
-}
+const RING_LEGS: TileCoord[] = [
+  tileOfWorld({ x: mid(apron.minX, apron.maxX), z: mid(apron.minZ, apron.maxZ) }),
+  tileOfWorld({ x: mid(westWalkway.minX, westWalkway.maxX), z: pool.maxZ - 1 }),
+  tileOfWorld({ x: mid(westWalkway.minX, westWalkway.maxX), z: mid(procession.minZ, procession.maxZ) }),
+  ...alcoves.map((a) =>
+    tileOfWorld({ x: a.x, z: mid(procession.minZ, procession.maxZ) })
+  ),
+  tileOfWorld({ x: mid(eastWalkway.minX, eastWalkway.maxX), z: mid(procession.minZ, procession.maxZ) }),
+  tileOfWorld({ x: mid(thresholdOpening.minX, thresholdOpening.maxX), z: threshold.minZ - 1 }),
+  tileOfWorld({ x: mid(thresholdOpening.minX, thresholdOpening.maxX), z: threshold.maxZ + 1 }),
+];
 
-const SEGMENT_1: TileCoord[] = [
+const ROUTE: TileCoord[] = [
   squeezeNorthDoor,
   approachSouthDoor,
   approachNorthDoor,
   gallerySouthDoor,
-  tileOfWorld({ x: mid(descentStair.minX, descentStair.maxX), z: descentStair.minZ + 0.5 }),
-  tileOfWorld({ x: mid(returnLeg.minX, returnLeg.maxX), z: mid(returnLeg.minZ, returnLeg.maxZ) }),
-  hubTile,
-  ...bellDive(0),
-  ...bellDive(1),
-  ...bellDive(2),
-  tileOfWorld({ x: mid(shaftPassageLeg.minX, shaftPassageLeg.maxX), z: mid(shaftPassageLeg.minZ, shaftPassageLeg.maxZ) }),
-  tileOfWorld({ x: mid(shaftPassageJog.minX, shaftPassageJog.maxX), z: mid(shaftPassageJog.minZ, shaftPassageJog.maxZ) }),
-  // Down the drowned corridor's centreline, straight into the shaft column —
-  // hugging the corridor's east wall would skim the shaft's apron rim.
-  tileOfWorld({
-    x: mid(buoyantShaft.minX, buoyantShaft.maxX),
-    z: mid(
-      unionRect(layout.galleryCorridor).minZ,
-      unionRect(layout.galleryCorridor).maxZ
-    ),
-  }),
-  tileOfWorld(probes.shaftBottom),
-];
-
-// The buoyant rise itself is the Gate 2 gravity seam; the walk resumes on the
-// apron, exactly where the column's lip lands the player.
-const SEGMENT_2: TileCoord[] = [
-  tileOfWorld(probes.apron),
-  tileOfWorld({ x: mid(westWalkway.minX, westWalkway.maxX), z: pool.maxZ - 1 }),
-  tileOfWorld({ x: mid(westWalkway.minX, westWalkway.maxX), z: mid(procession.minZ, procession.maxZ) }),
-  tileOfWorld({ x: mid(procession.minX, procession.maxX), z: mid(procession.minZ, procession.maxZ) }),
-  tileOfWorld({ x: mid(eastWalkway.minX, eastWalkway.maxX), z: mid(procession.minZ, procession.maxZ) }),
-  tileOfWorld({ x: mid(thresholdOpening.minX, thresholdOpening.maxX), z: threshold.minZ - 1 }),
-  tileOfWorld({ x: mid(thresholdOpening.minX, thresholdOpening.maxX), z: threshold.maxZ + 1 }),
+  ...GALLERY_LEGS,
+  galleryNorthDoor,
+  grottoSouthDoor,
+  ...RING_LEGS,
   grottoEastDoor,
   fireWestDoor,
 ];
@@ -335,60 +312,37 @@ function walk(waypoints: TileCoord[]): Sample[] {
 }
 
 describe("drowned gallery traversal (headless playtest)", () => {
-  let diveSamples: Sample[];
-  let ringSamples: Sample[];
+  let samples: Sample[];
 
   beforeAll(() => {
-    diveSamples = walk(SEGMENT_1);
-    ringSamples = walk(SEGMENT_2);
+    samples = walk(ROUTE);
   });
 
-  it("walks the dive segment from the squeeze to the buoyant shaft's bottom", () => {
-    expect(diveSamples.length).toBeGreaterThan(100);
-    const target = probes.shaftBottom;
-    const last = diveSamples.at(-1)!;
-    // The walker targets the probe's nearest tile centre, up to half a tile off.
-    expect(Math.hypot(last.x - target.x, last.z - target.z)).toBeLessThan(0.4);
-    expect(last.elevation).toBeCloseTo(GALLERY_FLOOR_Y, 1);
-  });
-
-  it("walks the ring segment from the apron to the Fire door", () => {
-    expect(ringSamples.length).toBeGreaterThan(50);
+  it("walks the whole route from the squeeze to the Fire door", () => {
+    expect(samples.length).toBeGreaterThan(100);
     const target = worldOfTile(fireWestDoor);
-    const last = ringSamples.at(-1)!;
+    const last = samples.at(-1)!;
     expect(Math.hypot(last.x - target.x, last.z - target.z)).toBeLessThan(0.1);
   });
 
-  it("surfaces onto all three bell decks, dry with the eye above the waterline", () => {
-    for (const chan of channels) {
-      const deck = probes.bellDecks[chan.id];
-      const onDeck = diveSamples.filter(
-        (s) => Math.hypot(s.x - deck.x, s.z - deck.z) < 0.6
+  it("passes all three alcove x positions along the procession", () => {
+    for (const alcove of alcoves) {
+      const passed = samples.some(
+        (s) =>
+          Math.abs(s.x - alcove.x) < 0.3 &&
+          s.z >= procession.minZ &&
+          s.z <= procession.maxZ
       );
-      expect(onDeck.length, `never stood on bell ${chan.id}'s deck`).toBeGreaterThan(0);
-      for (const s of onDeck) {
-        expect(s.y).toBeCloseTo(BELL_FLOOR_Y + STANDING_Y, 1);
-        expect(s.y + EYE_OFFSET).toBeGreaterThan(WATERLINE_Y);
-      }
+      expect(passed, `never read the alcove at x=${alcove.x}`).toBe(true);
     }
   });
 
-  it("reads each performer at close range from its bell deck", () => {
-    for (const chan of channels) {
-      const deck = probes.bellDecks[chan.id];
-      const performer = chan.bell.shelfAnchor;
-      const d = Math.hypot(deck.x - performer.x, deck.z - performer.z);
-      expect(d).toBeGreaterThanOrEqual(2.2);
-      expect(d).toBeLessThanOrEqual(4.5);
-    }
-  });
-
-  it("stays submerged for a contiguous 24 m or more through the hub and channels", () => {
+  it("stays submerged for a contiguous 24 m or more through the gallery", () => {
     let best = 0;
     let run = 0;
-    for (let i = 1; i < diveSamples.length; i++) {
-      const prev = diveSamples[i - 1]!;
-      const cur = diveSamples[i]!;
+    for (let i = 1; i < samples.length; i++) {
+      const prev = samples[i - 1]!;
+      const cur = samples[i]!;
       const submerged =
         cur.y + EYE_OFFSET < WATERLINE_Y && prev.y + EYE_OFFSET < WATERLINE_Y;
       if (submerged) {
@@ -401,24 +355,11 @@ describe("drowned gallery traversal (headless playtest)", () => {
     expect(best).toBeGreaterThanOrEqual(MIN_SUBMERGED_RUN);
   });
 
-  it("walks the hub and channels on the gallery floor, not on top of the water", () => {
-    const inHub = diveSamples.filter(
-      (s) =>
-        s.x >= hub.minX && s.x <= hub.maxX && s.z >= hub.minZ && s.z <= hub.maxZ
-    );
-    expect(inHub.length).toBeGreaterThan(0);
-    for (const s of inHub) {
-      expect(s.y).toBeCloseTo(GALLERY_FLOOR_Y + STANDING_Y, 2);
-    }
-  });
-
   it("keeps the procession and the apron out of the water", () => {
-    const dry = ringSamples.filter(
+    const dry = samples.filter(
       (s) =>
         (s.z >= procession.minZ && s.z <= procession.maxZ) ||
-        (s.z >= layout.apron.minZ &&
-          s.z <= layout.apron.maxZ &&
-          !(s.x >= buoyantShaft.minX && s.x <= buoyantShaft.maxX && s.z >= buoyantShaft.minZ))
+        (s.z >= apron.minZ && s.z <= apron.maxZ && s.z <= layout.grotto.maxZ)
     );
     expect(dry.length).toBeGreaterThan(20);
     for (const s of dry) {
@@ -426,18 +367,40 @@ describe("drowned gallery traversal (headless playtest)", () => {
     }
   });
 
+  it("breaks the surface on the mid-stair landing", () => {
+    const onLanding = samples.filter(
+      (s) => Math.abs(s.elevation - LANDING_Y) <= 0.05
+    );
+    expect(onLanding.length).toBeGreaterThan(0);
+    for (const s of onLanding) {
+      expect(Math.abs(s.y + EYE_OFFSET - WATERLINE_Y)).toBeLessThanOrEqual(0.25);
+    }
+  });
+
   it("never pops the floor more than 0.6 m between successive steps", () => {
-    for (const samples of [diveSamples, ringSamples]) {
-      for (let i = 1; i < samples.length; i++) {
-        const jump = Math.abs(samples[i]!.elevation - samples[i - 1]!.elevation);
-        if (jump > 0.6) {
-          throw new Error(
-            `Elevation cliff of ${jump.toFixed(2)} m between ` +
-              `(${samples[i - 1]!.x.toFixed(2)}, ${samples[i - 1]!.z.toFixed(2)}) elev=${samples[i - 1]!.elevation.toFixed(2)} and ` +
-              `(${samples[i]!.x.toFixed(2)}, ${samples[i]!.z.toFixed(2)}) elev=${samples[i]!.elevation.toFixed(2)}`
-          );
-        }
+    for (let i = 1; i < samples.length; i++) {
+      const jump = Math.abs(samples[i]!.elevation - samples[i - 1]!.elevation);
+      if (jump > 0.6) {
+        throw new Error(
+          `Elevation cliff of ${jump.toFixed(2)} m between ` +
+            `(${samples[i - 1]!.x.toFixed(2)}, ${samples[i - 1]!.z.toFixed(2)}) elev=${samples[i - 1]!.elevation.toFixed(2)} and ` +
+            `(${samples[i]!.x.toFixed(2)}, ${samples[i]!.z.toFixed(2)}) elev=${samples[i]!.elevation.toFixed(2)}`
+        );
       }
+    }
+  });
+
+  it("walks the gallery on the gallery floor, not on top of the water", () => {
+    const inGallery = samples.filter(
+      (s) =>
+        s.x >= layout.gallery.minX &&
+        s.x <= layout.gallery.maxX &&
+        s.z >= westRun.minZ &&
+        s.z <= westRun.maxZ
+    );
+    expect(inGallery.length).toBeGreaterThan(0);
+    for (const s of inGallery) {
+      expect(s.y).toBeCloseTo(GALLERY_FLOOR_Y + STANDING_Y, 2);
     }
   });
 
@@ -448,32 +411,32 @@ describe("drowned gallery traversal (headless playtest)", () => {
 
   it("closes the ring: apron → west → procession → east → apron", () => {
     const ring: TileCoord[] = [
-      tileOfWorld(probes.apron),
+      tileOfWorld({ x: mid(apron.minX, apron.maxX), z: mid(apron.minZ, apron.maxZ) }),
       tileOfWorld({ x: mid(westWalkway.minX, westWalkway.maxX), z: pool.maxZ - 1 }),
       tileOfWorld({ x: mid(westWalkway.minX, westWalkway.maxX), z: mid(procession.minZ, procession.maxZ) }),
       tileOfWorld({ x: mid(procession.minX, procession.maxX), z: mid(procession.minZ, procession.maxZ) }),
       tileOfWorld({ x: mid(eastWalkway.minX, eastWalkway.maxX), z: mid(procession.minZ, procession.maxZ) }),
       tileOfWorld({ x: mid(thresholdOpening.minX, thresholdOpening.maxX), z: threshold.maxZ + 1 }),
-      tileOfWorld(probes.apron),
+      tileOfWorld({ x: mid(apron.minX, apron.maxX), z: mid(apron.minZ, apron.maxZ) }),
     ];
-    const loop = walk(ring);
+    const ringSamples = walk(ring);
     const start = worldOfTile(ring[0]!);
-    const end = loop.at(-1)!;
+    const end = ringSamples.at(-1)!;
     expect(Math.hypot(end.x - start.x, end.z - start.z)).toBeLessThan(0.1);
-    for (const s of loop) {
+    for (const s of ringSamples) {
       expect(terrain.blockedAt(s.x, s.z)).toBe(false);
       expect(s.elevation).toBeLessThanOrEqual(CAUSEWAY_Y + 1e-6);
     }
   });
 
   it("keeps the pool a barrier from the procession", () => {
-    const start = probes.procession;
+    const start = layout.probes.procession;
     const physics = new MuseumPhysicsProvider(grid, TILE, {
       x: start.x,
       y: 0,
       z: start.z,
     });
-    const target = probes.pool;
+    const target = layout.probes.pool;
     for (let i = 0; i < 400; i++) {
       const pos = physics.getPlayerPosition();
       const dx = target.x - pos.x;
@@ -491,54 +454,11 @@ describe("drowned gallery traversal (headless playtest)", () => {
     expect(physics.getPlayerPosition().z).toBeLessThanOrEqual(pool.minZ + 0.01);
   });
 
-  it("keeps each bell's performer shelf unreachable from its deck", () => {
-    for (const chan of channels) {
-      const target = tileOfWorld(chan.bell.shelfAnchor);
-      const from = tileOfWorld(probes.bellDecks[chan.id]);
-      expect(() => bfsPath(from, target)).toThrow();
-    }
-  });
-
-  it("keeps the ring niches (old shore) unreachable from the procession", () => {
-    for (const alcove of layout.alcoves) {
+  it("keeps the alcove shore unreachable from the procession", () => {
+    for (const alcove of alcoves) {
       const target = tileOfWorld({ x: alcove.x, z: alcove.z });
-      const from = tileOfWorld(probes.procession);
+      const from = tileOfWorld(layout.probes.procession);
       expect(() => bfsPath(from, target)).toThrow();
     }
-  });
-
-  it("completes the route after a SINGLE dive (2026-08-09 one-dive amendment)", () => {
-    // Any one bell, then straight to the shaft — the other two are optional.
-    for (const chan of channels) {
-      const single: TileCoord[] = [
-        gallerySouthDoor,
-        tileOfWorld({ x: mid(descentStair.minX, descentStair.maxX), z: descentStair.minZ + 0.5 }),
-        hubTile,
-        ...bellDive(channels.indexOf(chan)),
-        tileOfWorld({ x: mid(shaftPassageLeg.minX, shaftPassageLeg.maxX), z: mid(shaftPassageLeg.minZ, shaftPassageLeg.maxZ) }),
-        tileOfWorld({
-          x: mid(buoyantShaft.minX, buoyantShaft.maxX),
-          z: mid(unionRect(layout.galleryCorridor).minZ, unionRect(layout.galleryCorridor).maxZ),
-        }),
-        tileOfWorld(probes.shaftBottom),
-      ];
-      const samples = walk(single);
-      const last = samples.at(-1)!;
-      expect(
-        Math.hypot(last.x - probes.shaftBottom.x, last.z - probes.shaftBottom.z),
-        `single dive via bell ${chan.id} did not reach the shaft`
-      ).toBeLessThan(0.4);
-    }
-  });
-
-  it("connects the shaft bottom to the hub, and the apron only over the rim", () => {
-    // Bottom: walkable path hub → shaft floor exists (the drowned passage).
-    const path = bfsPath(hubTile, tileOfWorld(probes.shaftBottom));
-    expect(path.length).toBeGreaterThan(10);
-    // Top: the apron probe and the shaft column are adjacent in 2-D, but the
-    // column's floor is 4.2 m down — the rise is the Gate 2 buoyancy seam.
-    const apronE = terrain.elevationAt(probes.apron.x, probes.apron.z);
-    const shaftE = terrain.elevationAt(probes.shaftBottom.x, probes.shaftBottom.z);
-    expect(apronE - shaftE).toBeCloseTo(CAUSEWAY_Y - GALLERY_FLOOR_Y, 5);
   });
 });

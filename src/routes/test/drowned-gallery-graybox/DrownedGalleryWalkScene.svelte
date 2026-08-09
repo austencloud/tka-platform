@@ -38,23 +38,6 @@
   const setup = buildDrownedGalleryWalkSetup();
   const { layout, origin, colliders, spawn } = setup;
 
-  const BELL_LIGHT_HEX: Record<string, string> = {
-    a: "#ffa040",
-    b: "#ff734d",
-    c: "#ffc75a",
-  };
-  const bellLightObjects = layout.channels.map((channel) => {
-    const anchor = channel.bell.shelfAnchor;
-    const light = new PointLight(
-      new Color(BELL_LIGHT_HEX[channel.id]),
-      52,
-      10,
-      2
-    );
-    light.position.set(anchor.x - origin.x, SHELF_Y + 2.2, anchor.z - origin.z);
-    return { id: `bell-${channel.id}`, light };
-  });
-
   const alcoveLightObjects = layout.alcoves.map((anchor, index) => {
     const light = new PointLight(new Color("#ffb35c"), 46, 11, 2);
     light.position.set(
@@ -194,30 +177,7 @@
       autoStepMaxHeight: 0.45,
       snapToGroundDistance: 0.35,
     });
-    const baseProvider = createRapierPhysicsProvider(physicsState, playerState);
-    // Buoyant shaft: inside the column and below the rim, water carries the
-    // player upward through UCC's lift seam (LiftingPhysicsProvider).
-    const shaft = layout.buoyantShaft;
-    const shaftRect = {
-      minX: shaft.minX - origin.x,
-      maxX: shaft.maxX - origin.x,
-      minZ: shaft.minZ - origin.z,
-      maxZ: shaft.maxZ - origin.z,
-    };
-    physicsProvider = Object.assign(baseProvider, {
-      updraftSpeedAtPlayer(): number {
-        const position = baseProvider.getPlayerPosition();
-        if (!position) return 0;
-        const inColumn =
-          position.x >= shaftRect.minX &&
-          position.x <= shaftRect.maxX &&
-          position.z >= shaftRect.minZ &&
-          position.z <= shaftRect.maxZ;
-        // Cut the lift just above the apron so the player crests the rim and
-        // lands instead of rocketing into the dome.
-        return inColumn && position.y < 0.35 ? 2.4 : 0;
-      },
-    });
+    physicsProvider = createRapierPhysicsProvider(physicsState, playerState);
     isInitialized = true;
   });
 
@@ -251,7 +211,6 @@
     }
     if (physicsState) disposePhysicsWorld(physicsState);
     alcoveLightObjects.forEach(({ light }) => light.dispose());
-    bellLightObjects.forEach(({ light }) => light.dispose());
   });
 </script>
 
@@ -302,21 +261,6 @@
 {#each alcoveLightObjects as entry (entry.id)}
   <T is={entry.light} />
 {/each}
-{#each bellLightObjects as entry (entry.id)}
-  <T is={entry.light} />
-{/each}
-<!-- Buoyant shaft glow -->
-<T.PointLight
-  position={[
-    (layout.buoyantShaft.minX + layout.buoyantShaft.maxX) / 2 - origin.x,
-    WATERLINE_Y - 0.4,
-    (layout.buoyantShaft.minZ + layout.buoyantShaft.maxZ) / 2 - origin.z,
-  ]}
-  color="#59d8c8"
-  intensity={34}
-  distance={10}
-  decay={2}
-/>
 
 <GltfAsset
   url="/models/museum/cave/drowned-gallery-graybox.glb"

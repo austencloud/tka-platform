@@ -14,8 +14,8 @@ import { computeRoomDimensions } from "../domain/wall-segment-types";
 import { buildMuseumGrid } from "../services/museum-grid-builder";
 import type { MuseumGridBuildResult } from "../services/types";
 import {
-  BELL_IDS,
-  BELL_SHELF_ANCHORS_M,
+  ALCOVE_X_FRACTIONS,
+  ALCOVE_Z_OFFSET_M,
   SHELF_Y,
   TILE_METRES,
   createDrownedGalleryTerrain,
@@ -75,9 +75,7 @@ export interface CaveModeRoom {
 
 export const CAVE_MODE_ROOMS = [
   {
-    // The three-channels revision stages A, B and C in the Flooded Gallery's
-    // air-bells; the grotto keeps the ring finale but holds no anchors.
-    roomId: "cave-water-gallery",
+    roomId: "cave-water",
     label: "Water",
     category: "SS",
     technicalMode: "Split-time / same-direction",
@@ -236,7 +234,11 @@ function torchWall(
   };
 }
 
-/** The Water grotto's authored shell. */
+/**
+ * The Water grotto's authored shell. Declared before VULCAN_CAVE_ROOMS so the
+ * performer stations can be derived from the SAME compiled dimensions the
+ * layout engine will use — see grottoPerformers below.
+ */
 const GROTTO_MIN_INTERIOR_WIDTH = 33;
 const GROTTO_MIN_INTERIOR_HEIGHT = 29;
 
@@ -246,6 +248,12 @@ const grottoWalls = {
   east: doorWall(EDGE_IDS.waterToFire, "end"),
   west: EMPTY_WALL,
 } satisfies Record<WallName, WallDefinition>;
+
+const grottoDimensions = computeRoomDimensions({
+  walls: grottoWalls,
+  minInteriorWidth: GROTTO_MIN_INTERIOR_WIDTH,
+  minInteriorHeight: GROTTO_MIN_INTERIOR_HEIGHT,
+});
 
 /**
  * Converts "n metres from the interior's minimum edge" into the centre-relative
@@ -267,61 +275,27 @@ function interiorOffsetFraction(
 }
 
 /**
- * The Flooded Gallery's authored shell — the three-channels revision (design
- * spec 2026-08-09). Interior = minInterior × ROOM_SCALE (1.5) × TILE (0.5) =
- * ×0.75, so 40 × 40 compiles to ≈ 30 × 30 m: the drowned hub, three channels
- * (≈ 6/9/12 m), three 6 × 5 m air-bells and the shaft passage. This DOUBLES
- * the v2 footprint (18 × 32 → 13.5 × 24 m) — the layout engine moves every
- * room placed after the gallery, which is the settled answer to the design's
- * open question 3.
+ * A, B and C stand on the alcove shelves. Their anchors come off ONE
+ * expression shared with the terrain module (ALCOVE_X_FRACTIONS /
+ * ALCOVE_Z_OFFSET_M / SHELF_Y), so a performer can never drift off the shelf
+ * the graybox renders under it.
  */
-const GALLERY_MIN_INTERIOR_WIDTH = 40;
-const GALLERY_MIN_INTERIOR_HEIGHT = 40;
-
-const galleryWalls = {
-  // Centred 6-tile (3 m) door onto the grotto: the drowned shaft passage, the
-  // corridor and the grotto's own south door share one axis, so the buoyant
-  // shaft rises dead ahead of the apron.
-  north: doorWall(EDGE_IDS.galleryToGrotto, "center", 6),
-  // Flush against the east wall, so the descent lands off-centre and the
-  // return leg runs west into the hub.
-  south: narrowDoorWall(EDGE_IDS.approachToGallery, "end", 3),
-  east: EMPTY_WALL,
-  west: EMPTY_WALL,
-} satisfies Record<WallName, WallDefinition>;
-
-const galleryDimensions = computeRoomDimensions({
-  walls: galleryWalls,
-  minInteriorWidth: GALLERY_MIN_INTERIOR_WIDTH,
-  minInteriorHeight: GALLERY_MIN_INTERIOR_HEIGHT,
-});
-
-/**
- * A, B and C each stand alone on their air-bell's shelf. Their anchors come
- * off ONE expression shared with the terrain module (BELL_SHELF_ANCHORS_M /
- * SHELF_Y), so a performer can never drift off the shelf the graybox renders
- * under it. The v2 grotto alcove staging is retired; the ring niches remain
- * geometry for the proposed mirror-pool finale restaging (Gate 1 question 2).
- */
-const galleryBellPerformers = BELL_IDS.map((bellId) => {
-  const anchor = BELL_SHELF_ANCHORS_M[bellId];
-  return {
-    offsetX: interiorOffsetFraction(
-      anchor.x,
-      galleryDimensions.w,
-      galleryDimensions.w - 2
-    ),
-    offsetY: interiorOffsetFraction(
-      anchor.z,
-      galleryDimensions.h,
-      galleryDimensions.h - 2
-    ),
-    facing: anchor.facing,
-    refId: `cave-water-${bellId}`,
-    collisionRadiusTiles: 2,
-    elevation: SHELF_Y,
-  };
-});
+const grottoPerformers = ALCOVE_X_FRACTIONS.map((fraction, index) => ({
+  offsetX: interiorOffsetFraction(
+    fraction * (grottoDimensions.w - 2) * TILE_METRES,
+    grottoDimensions.w,
+    grottoDimensions.w - 2
+  ),
+  offsetY: interiorOffsetFraction(
+    ALCOVE_Z_OFFSET_M,
+    grottoDimensions.h,
+    grottoDimensions.h - 2
+  ),
+  facing: "south" as const,
+  refId: `cave-water-${["a", "b", "c"][index]}`,
+  collisionRadiusTiles: 2,
+  elevation: SHELF_Y,
+}));
 
 /**
  * The First Fire chamber's authored shell. Declared before VULCAN_CAVE_ROOMS
@@ -659,13 +633,25 @@ export const VULCAN_CAVE_ROOMS: RoomNode[] = [
     name: "The Flooded Gallery",
     material: "stone",
     theme: "cave",
-    minInteriorWidth: GALLERY_MIN_INTERIOR_WIDTH,
-    minInteriorHeight: GALLERY_MIN_INTERIOR_HEIGHT,
+    // Interior ≈ 13.5 × 24 m once ROOM_SCALE (1.5) is applied. Sized by the
+    // walk it has to carry: the submerged span must stay contiguous for 24 m
+    // or more, and the S-path plus its two stairs need the room to hold them.
+    minInteriorWidth: 18,
+    minInteriorHeight: 32,
     description:
-      "A rock-roofed drowned hub with three dark channel mouths, each dived to a private air-bell where one letter performs alone, and a drowned passage to the buoyant shaft rising to the grotto ring.",
+      "A rock-roofed flooded gallery walked on the bottom. The ceiling sits below the waterline, so there is no sign of air until the surfacing stair.",
     roomPresentation: { suppressTileGeometry: true },
-    walls: galleryWalls,
-    performers: galleryBellPerformers,
+    walls: {
+      // Centred 6-tile (3 m) door onto the grotto: the surfacing stair, the
+      // corridor and the grotto's own south door share one axis, which is what
+      // makes the arrival a symmetric centre-south composition.
+      north: doorWall(EDGE_IDS.galleryToGrotto, "center", 6),
+      // Flush against the east wall, so the descent lands off-centre and the
+      // path reads as an S rather than doubling back on itself.
+      south: narrowDoorWall(EDGE_IDS.approachToGallery, "end", 3),
+      east: EMPTY_WALL,
+      west: EMPTY_WALL,
+    },
   },
   {
     id: "cave-water",
@@ -675,9 +661,10 @@ export const VULCAN_CAVE_ROOMS: RoomNode[] = [
     minInteriorWidth: GROTTO_MIN_INTERIOR_WIDTH,
     minInteriorHeight: GROTTO_MIN_INTERIOR_HEIGHT,
     description:
-      "The Water grotto: a ring of walkways around a channel and a mirror pool, with the buoyant shaft surfacing through the apron and three ring niches across the water.",
+      "The Water grotto: a ring of walkways around a channel and a mirror pool, with three alcoves performing A, B, C across the water.",
     roomPresentation: { suppressTileGeometry: true },
     walls: grottoWalls,
+    performers: grottoPerformers,
   },
   {
     id: "cave-fire",

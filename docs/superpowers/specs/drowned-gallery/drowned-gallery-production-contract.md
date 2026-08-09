@@ -1,7 +1,34 @@
-# Drowned Gallery (Three Channels) production contract
+# Drowned Gallery (Three Channels) production contract — REJECTED
 
-**Status:** Gate 1 APPROVED (Austen, 2026-08-09, "I'm in let's do it" —
-tracker `kZfilqc0ViZpGR3nPOPU`); Gate 2 playable graybox READY FOR REVIEW (walk it at /test/drowned-gallery-graybox).
+**Status: REJECTED by Austen, 2026-08-09**, after walking the Gate 2 graybox:
+*"I think we fucked it up I think we should not have gone for three different
+channels to look for I think this is bad I think we need to go back to our
+original plan of the grotto in the waterfall with the reflection."*
+
+The scene reverts to **"The Ring" (v2)** — the grotto, the waterfall and the
+mirror-pool reflection, with A, B and C staged on the three alcove shelves.
+That is the layout of commit `3b946cfae1`, which is restored as the live
+Drowned Gallery. Gate 1 is marked rejected in `./scene-gates.json`; gates 2–6
+returned to pending. Gate 0's evidence (exact sequences, MCP letter proof)
+survives unchanged — those facts are direction-independent.
+
+## Why it failed (keep this; it constrains the next attempt)
+
+Three channels bought interactivity by **splitting the ensemble**. Water's
+strongest asset is all three letters legible at once, doubled in still black
+water — and the redesign spent exactly that to buy a corridor choice. The
+private air-bell audience is a real beat, but it is a beat that hides the other
+two performers to deliver, and the Q2 "state swap" needed to un-hide them for
+the finale was a mechanism invented to repair damage the layout caused. When a
+design needs an automaton teleport to restore the thing it broke, the layout is
+wrong. Reflection, not routing, is what Water uniquely visualizes.
+
+Everything below this line documents the rejected direction as-built.
+
+---
+
+**Superseded status (historical):** Gate 1 APPROVED (Austen, 2026-08-09, "I'm in let's do it" —
+tracker `kZfilqc0ViZpGR3nPOPU`); Gate 2 playable graybox READY FOR REVIEW.
 Approval riders: Q2 = state swap (automatons idle at ring niches, appear in
 their bell while visited, return for the finale; one body per letter, finale
 complete at any dive count); "three dives" checklist wording must become

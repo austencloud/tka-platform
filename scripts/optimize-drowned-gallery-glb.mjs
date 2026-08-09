@@ -47,40 +47,6 @@ run("Optimize Drowned Gallery graybox", [
   "--texture-compress",
   "false",
 ]);
-// Stamp the sequence-parity metadata the Blender exporter drops (it does not
-// export scene custom properties): performer/sequence ids + the layout digest,
-// as glTF asset extras. Runtime automatons stay authoritative; this is the
-// audit trail tying the GLB to its exact layout and live loops.
-{
-  const { readFileSync, writeFileSync } = await import("node:fs");
-  const manifest = JSON.parse(
-    readFileSync(
-      resolve("docs/superpowers/specs/2026-08-09-drowned-gallery-blender-plan.json"),
-      "utf8"
-    )
-  );
-  const glb = readFileSync(output);
-  const jsonLength = glb.readUInt32LE(12);
-  const json = JSON.parse(glb.subarray(20, 20 + jsonLength).toString("utf8"));
-  json.asset.extras = {
-    ...(json.asset.extras ?? {}),
-    drownedGallerySourceDigest: manifest.sourceDigest,
-    drownedGalleryPerformers: manifest.contract.performers,
-  };
-  let jsonBuffer = Buffer.from(JSON.stringify(json), "utf8");
-  const pad = (4 - (jsonBuffer.length % 4)) % 4;
-  if (pad) jsonBuffer = Buffer.concat([jsonBuffer, Buffer.alloc(pad, 0x20)]);
-  const rest = glb.subarray(20 + jsonLength); // remaining chunks (BIN)
-  const header = Buffer.alloc(20);
-  header.writeUInt32LE(0x46546c67, 0); // glTF magic
-  header.writeUInt32LE(2, 4);
-  header.writeUInt32LE(20 + jsonBuffer.length + rest.length, 8);
-  header.writeUInt32LE(jsonBuffer.length, 12);
-  header.writeUInt32LE(0x4e4f534a, 16); // JSON chunk type
-  writeFileSync(output, Buffer.concat([header, jsonBuffer, rest]));
-  console.log("Stamped sequence-parity extras into the GLB.");
-}
-
 run("Validate optimized GLB", ["validate", output]);
 run("Inspect optimized GLB", ["inspect", output]);
 
