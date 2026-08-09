@@ -64,6 +64,10 @@ function sendMessage(message) {
   mcpProcess.stdin.write(`${JSON.stringify(message)}\n`);
 }
 
+// npx resolves chrome-devtools-mcp@latest against the npm registry on every
+// launch; cold or throttled registry lookups alone can take 20+ seconds.
+const INITIALIZE_TIMEOUT_MS = 120_000;
+
 function request(method, params = {}, timeoutMs = 25_000) {
   const id = nextId++;
   sendMessage({ jsonrpc: "2.0", id, method, params });
@@ -115,11 +119,15 @@ let pageId;
 const report = [];
 
 try {
-  await request("initialize", {
-    protocolVersion: "2025-06-18",
-    capabilities: {},
-    clientInfo: { name: "winter-scene-visual-audit", version: "1.0.0" },
-  });
+  await request(
+    "initialize",
+    {
+      protocolVersion: "2025-06-18",
+      capabilities: {},
+      clientInfo: { name: "winter-scene-visual-audit", version: "1.0.0" },
+    },
+    INITIALIZE_TIMEOUT_MS
+  );
   sendMessage({
     jsonrpc: "2.0",
     method: "notifications/initialized",
