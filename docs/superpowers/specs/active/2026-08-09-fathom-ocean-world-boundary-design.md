@@ -229,3 +229,71 @@ Plus two measured checks via `evaluate_script`:
 3. Carried from Gate 2: the additive-shader double-multiply bug, cone geometry
    (not intensity) being what makes a key light read, and near-black stage
    materials making lighting gates unverifiable.
+
+## Verification record — 2026-08-09
+
+Harness: `/test/ocean-scene`. Chrome DevTools MCP against the shared debug
+instance. All frames webp/70.
+
+### What the terrain measures
+
+| Property | Value |
+|---|---|
+| Vertices | 24,770 (was 2,561) |
+| Extent | 220 x 220 m (was 70 x 70) |
+| Wall crest | z = +15.56, above the water plane at +12 |
+| Abyss floor | z = -46.16 |
+| Shelf lip | irregular, 21.9-26.1 m |
+| Shipped size | 3.04 MB |
+| Placements floating or buried | 0 of 320 (worst gap was 44.66 m) |
+| `ocean_terrain_profile` assertions | 12 of 12 pass |
+
+### Views
+
+- `hero`, `reverse`, `world` at 16:9 / 16:10 / 2.33:1 / 0.56:1.
+- 3840 was not shot separately: the harness is a full-bleed 3D canvas with no
+  CSS layout, so 3840x2160 frames identically to 1920x1080. Aspect ratio, not
+  width, changes a perspective camera's composition.
+- `world` needs `?clamp=0` — the preset sits at y = 26 specifically to
+  photograph the boundary from outside it, which the camera clamp exists to
+  prevent in normal use.
+
+### Does the boundary read
+
+From `world`, luminance falls monotonically outward: shelf centre 44.4, near
+the lip 37.4, abyss left 35.7, abyss bottom-left 32.9, upper void 29.2. The
+floor visibly ENDS on three sides against a graded dark, and rises upstage.
+The old failure — a lit disc floating on flat black — is gone.
+
+From every eye-level view the boundary is invisible, which is the point: fog
+reaches opacity well before the lip, so the world has an edge without ever
+showing one.
+
+### Two defects the frames caught that the design did not predict
+
+1. **The seabed was inside the wrong GLB.** `ocean_flora_scene.glb` contained
+   a Seabed, and so did `ocean-environment.glb`. LOW tier skips the flora
+   scene, so it had no floor at all; every other tier drew two. This predates
+   Gate 3 and shipped to production. Fixed by giving the terrain its own
+   export and skipping it in the flora export.
+2. **The water plane's rim was legible** as a black lid with a curved cut-off
+   at 50 m. Enlarged to 110 m, where fog takes it first.
+
+### Not done, and why
+
+- **The reef's hue families are untouched.** The design's palette mechanism was
+  invalid: 45 of the scene's materials are texture-driven with no flat colour
+  to retune, and the only 4 flat-colour materials are the torches, which must
+  stay warm. The sand — the loudest offender and the half of the brief that
+  named a specific colour — is graded via `baseColorFactor`. Collapsing the
+  coral hue families needs its own design pass; the same `baseColorFactor`
+  technique will do it, per material, once the target families are chosen.
+- **R2 upload and deploy are deliberately not done.** Production serves
+  `ocean_flora_scene.glb` from R2 and `ocean-environment.glb` from the site
+  build. Uploading one without deploying the other puts the re-grounded reef
+  on the old flat floor, with 320 objects floating or buried. The two are one
+  coupled release and need Austen's go-ahead.
+- `WaterSurface.svelte` carries the `size = 110` change **uncommitted**:
+  another session has in-flight `surfaceY`/`opacity`/`tirDarkness` props in
+  that same file for the Water Traverse, and committing it would sweep their
+  work.
