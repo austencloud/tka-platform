@@ -272,9 +272,12 @@
       if (recoverOnFailure) recoverFromModuleChunkFailure(moduleName);
       throw err;
     }
-    // Reached only on a clean load — the page is healthy, so re-arm the recovery
-    // guard for any future mid-write edit.
-    clearModuleChunkRecoveryGuard();
+    // Only the active module may re-arm its recovery. A background preload can
+    // finish while the visible module is failing; letting that preload clear
+    // the guard would make the visible module reload forever.
+    if (recoverOnFailure) {
+      clearModuleChunkRecoveryGuard(moduleName);
+    }
     const chunkMs = Math.round(performance.now() - loadStart);
     try {
       performance.mark(`module-chunk:${moduleName}:end`);

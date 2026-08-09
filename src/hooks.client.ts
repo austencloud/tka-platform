@@ -102,14 +102,10 @@ if (browser && dev && "serviceWorker" in navigator) {
           window.location.replace(url.toString());
         }
       } else {
-        // Clean (no controller) — re-arm the escape for any future stale SW and
-        // strip the one-shot cache-bust param so the URL stays tidy.
+        // Clean (no controller) — re-arm the escape for any future stale SW.
+        // The root layout removes the one-shot URL marker after SvelteKit's
+        // router is ready, using its navigation API.
         sessionStorage.removeItem(SW_ESCAPE_KEY);
-        const url = new URL(window.location.href);
-        if (url.searchParams.has("fresh")) {
-          url.searchParams.delete("fresh");
-          window.history.replaceState(null, "", url.toString());
-        }
       }
     } catch {
       // Best-effort cleanup; never block app boot on SW teardown.
@@ -202,15 +198,6 @@ if (browser && !dev) {
     url.searchParams.set("fresh", String(Date.now()));
     window.location.replace(url.toString());
   });
-
-  // Tidy the one-shot cache-bust param after a successful recovery boot.
-  {
-    const url = new URL(window.location.href);
-    if (url.searchParams.has("fresh")) {
-      url.searchParams.delete("fresh");
-      window.history.replaceState(null, "", url.toString());
-    }
-  }
 
   // Report unhandled promise rejections to error telemetry
   window.addEventListener("unhandledrejection", (event) => {

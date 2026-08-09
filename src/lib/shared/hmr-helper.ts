@@ -550,19 +550,40 @@ export function resilientLazyImport<T>(
 const MODULE_CHUNK_RELOAD_KEY = "tka-module-chunk-reload";
 
 /**
+ * Reserve the one automatic reload for the active module that failed. A clean
+ * background preload must not erase another module's reservation, or a
+ * persistent error turns into a reload loop instead of settling on the visible
+ * error state.
+ */
+export function claimModuleChunkRecovery(moduleName: string): boolean {
+  if (typeof window === "undefined") return false;
+
+  try {
+    const guardedModule = sessionStorage.getItem(MODULE_CHUNK_RELOAD_KEY);
+    if (guardedModule === moduleName) return false;
+    if (guardedModule === "1") {
+      // Older builds stored only a boolean marker. Attach it to the module that
+      // is still failing so that module can clear it after a clean load.
+      sessionStorage.setItem(MODULE_CHUNK_RELOAD_KEY, moduleName);
+      return false;
+    }
+    sessionStorage.setItem(MODULE_CHUNK_RELOAD_KEY, moduleName);
+  } catch {
+    // sessionStorage can be blocked. The in-memory reloadScheduled flag still
+    // limits this page instance to one navigation.
+  }
+
+  return true;
+}
+
+/**
  * Self-heal a top-level module chunk that failed to load after retries.
  * Call only for the ACTIVE module — background preloads must not reload the page.
  */
 export function recoverFromModuleChunkFailure(moduleName: string): void {
   if (typeof window === "undefined" || !import.meta.env.DEV) return;
   if (reloadScheduled) return;
-  try {
-    // Already auto-reloaded once for an unresolved failure → don't loop.
-    if (sessionStorage.getItem(MODULE_CHUNK_RELOAD_KEY)) return;
-    sessionStorage.setItem(MODULE_CHUNK_RELOAD_KEY, "1");
-  } catch {
-    /* sessionStorage blocked — fall back to the in-memory reloadScheduled guard */
-  }
+  if (!claimModuleChunkRecovery(moduleName)) return;
   reloadScheduled = true;
   console.warn(`[HMR] Module chunk "${moduleName}" failed after retries — fresh reload`);
   // Use a fresh, cache-busted navigation rather than location.reload(): a plain
@@ -579,9 +600,13 @@ export function recoverFromModuleChunkFailure(moduleName: string): void {
  * successfully we know the page is healthy, so a future mid-write edit is
  * allowed to trigger one fresh recovery reload again.
  */
-export function clearModuleChunkRecoveryGuard(): void {
+export function clearModuleChunkRecoveryGuard(moduleName?: string): void {
   if (typeof window === "undefined") return;
   try {
+    const guardedModule = sessionStorage.getItem(MODULE_CHUNK_RELOAD_KEY);
+    if (moduleName && guardedModule !== moduleName) {
+      return;
+    }
     sessionStorage.removeItem(MODULE_CHUNK_RELOAD_KEY);
   } catch {
     /* ignore */

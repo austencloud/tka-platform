@@ -136,7 +136,10 @@
     const pathname = navigation.to?.url.pathname ?? "";
 
     const url = new URL(window.location.href);
-    let changed = false;
+    // `fresh` only forces the recovered document through the network. Once the
+    // router has accepted that document, it no longer belongs in the URL.
+    let changed = url.searchParams.has("fresh");
+    if (changed) url.searchParams.delete("fresh");
     for (const [param, ownedBy] of Object.entries(OWNED_PARAMS)) {
       if (!url.searchParams.has(param)) continue;
       const allowed = ownedBy.some((prefix) => pathname.startsWith(prefix));
@@ -148,7 +151,9 @@
 
     if (changed) {
       const cleaned = url.pathname + (url.search ? url.search : "") + url.hash;
-      replaceState(cleaned, {});
+      // Initial afterNavigate callbacks run immediately before SvelteKit marks
+      // its router ready. Cross that boundary before using its history API.
+      queueMicrotask(() => replaceState(cleaned, {}));
     }
   });
 
