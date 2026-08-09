@@ -1,0 +1,739 @@
+/* A display:contents mirror of the drill root — it carries the modifier
+     classes and data-section so the rules below can key off them without
+     crossing the component boundary. It adds no box of its own. */
+.drill-ctx {
+  display: contents;
+}
+
+/* Each screen fills its (absolute, stage-sized) crossfade layer and owns its
+     own scroll; short screens center, tall ones scroll from the top. */
+.drill-ctx .drill-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  gap: 0.75rem;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+}
+.drill-ctx .drill-head {
+  display: block;
+  text-align: center;
+}
+.drill-ctx .drill-head h2 {
+  margin: 0 0 0.2rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-transform: none;
+  color: var(--theme-text, #e8edf6);
+}
+/* Headings receive PROGRAMMATIC focus after navigation (screen-reader
+     anchor, WCAG 2.4.3) — a visible ring on a non-interactive heading reads
+     as a broken control. */
+.drill-ctx .drill-head h2:focus {
+  outline: none;
+}
+.drill-ctx .drill-head p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--theme-text-muted, #9aa6b8);
+}
+/* Value-screen header: back control left of the centered title (mirrored
+     1fr columns keep the title truly centered whatever the button's width);
+     hint spans the full row. */
+.drill-ctx .drill-head.with-back {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  row-gap: 0.3rem;
+  /* Back was flush against the title (zero column gap) — a 44px pill welded
+       to the heading reads as one broken control. */
+  column-gap: 0.75rem;
+}
+.drill-ctx .drill-head.with-back h2 {
+  grid-column: 2;
+  margin: 0;
+}
+.drill-ctx .drill-head.with-back p {
+  grid-column: 1 / -1;
+}
+/* The screen's own control (Match any / Match all) sits at the header's far
+     end instead of floating centred on its own row below it. */
+.drill-ctx .head-trailing {
+  display: flex;
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  align-items: center;
+}
+.drill-ctx .head-trailing .segmented-control {
+  width: max-content;
+}
+.drill-ctx .head-trailing .segmented-control button {
+  white-space: nowrap;
+}
+/* Phone-width headers: three things on one row forced the title to wrap to
+     three lines. The control drops to its own row instead. */
+@container drill (max-width: 560px) {
+  .drill-ctx .drill-head.with-back .head-trailing {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    justify-self: center;
+    margin-top: 0.35rem;
+  }
+}
+.drill-ctx .head-back {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 44px;
+  height: 44px;
+  background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--theme-border, #2a3140);
+  border-radius: 999px;
+  color: var(--theme-text, #e8edf6);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+/* Phone: icon-only circle (sits right next to the title, no room needed). */
+.drill-ctx .head-back-label {
+  display: none;
+  font-weight: 600;
+}
+.drill-ctx .head-back:hover {
+  border-color: var(--theme-accent, #6aa0ff);
+}
+.drill-ctx .head-back:focus-visible {
+  outline: 2px solid var(--theme-accent, #6aa0ff);
+  outline-offset: 2px;
+}
+.drill-ctx .value-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+/* Level tiles wear the canonical difficulty gradients (light backgrounds,
+     black text per the canonical config). */
+.drill-ctx .level-tile {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  min-height: 76px;
+  padding: 0.7rem 0.9rem;
+  text-align: left;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    filter 0.16s ease;
+}
+.drill-ctx .level-tile:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+.drill-ctx .level-tile:focus-visible {
+  outline: 2px solid var(--theme-accent, #6366f1);
+  outline-offset: 2px;
+}
+.drill-ctx .length-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  min-height: 56px;
+  padding: 0.55rem 0.9rem;
+  text-align: left;
+  border-radius: 14px;
+  border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  color: var(--theme-text, #e8edf6);
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    transform 0.16s ease;
+}
+.drill-ctx .length-row:hover {
+  border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+  transform: translateY(-1px);
+}
+.drill-ctx .length-row:focus-visible {
+  outline: 2px solid var(--theme-accent, #6366f1);
+  outline-offset: 2px;
+}
+
+/* Monument numeral — same face as DifficultyBadge (Cambria serif). */
+.drill-ctx .value-numeral {
+  font-family: Cambria, Georgia, serif;
+  font-weight: 700;
+  font-size: 2.4rem;
+  line-height: 1;
+  min-width: 2ch;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.drill-ctx .value-numeral.small {
+  font-size: 1.6rem;
+}
+.drill-ctx .value-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+.drill-ctx .value-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.drill-ctx .value-label.muted {
+  color: var(--theme-text-muted, #9aa6b8);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+.drill-ctx .value-desc {
+  font-size: 0.75rem;
+  line-height: 1.25;
+  color: var(--theme-text-muted, #9aa6b8);
+  /* Centered monument descriptions (levels, families) wrap to two lines in
+       their narrow column — balance splits them evenly instead of orphaning
+       the last word ("…the same / way."). No-op on single-line rows. */
+  text-wrap: balance;
+}
+/* On the light level gradients, descriptions read in dark ink. */
+.drill-ctx .value-desc.on-gradient {
+  color: rgba(0, 0, 0, 0.65);
+}
+.drill-ctx .value-img {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 10px;
+}
+.drill-ctx .value-img.plate {
+  background: #fff;
+  padding: 4px;
+}
+/* Real start-position pictograph, rendered by PictographContainer in the
+     user's live theme (grid + props adapt to light/dark). Square box the
+     container fills; scales up on the desktop monument. */
+.drill-ctx .value-pictograph {
+  flex: 0 0 auto;
+  width: 76px;
+  height: 76px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+/* Family rows lead with the element PNG at the loop-icon footprint so the
+     two stacking screens (LOOPs / families) share one row rhythm. */
+.drill-ctx .value-img.family-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 0;
+}
+/* Colored value rows (families, loops, collections) wear their accent at
+     rest, not just when active — panel tinted and edged in the row's color at
+     every tier. Identical charcoal bars undersold the color-coded systems. */
+.drill-ctx .length-row.tinted {
+  background: color-mix(
+    in srgb,
+    var(--row-color) 10%,
+    var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+  );
+  border-color: color-mix(in srgb, var(--row-color) 35%, transparent);
+}
+.drill-ctx .length-row.tinted:hover {
+  border-color: color-mix(in srgb, var(--row-color) 65%, transparent);
+}
+.drill-ctx .length-row.tall {
+  min-height: 76px;
+}
+/* Creator rows: monogram disc + the creator's own work as a trailing fan. */
+.drill-ctx .creator-row {
+  overflow: hidden;
+}
+/* RobustAvatar owns its size (customSize) + circular clip; the row only adds
+     the stroke ring and pins it against the flex layout. */
+.drill-ctx .creator-avatar.robust-avatar {
+  flex: 0 0 auto;
+  border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+}
+.drill-ctx .peek-fan.creator-fan {
+  margin-right: -0.4rem;
+}
+.drill-ctx .peek-fan.creator-fan > .peek + .peek {
+  margin-left: -0.8rem;
+}
+/* Tight rows (phones, the filter sheet): one sample is flavor, three is a
+     squeeze — keep the lead peek, drop the rest. */
+@container drill (max-width: 560px) {
+  .drill-ctx .peek-fan.creator-fan > .peek:nth-child(n + 2) {
+    display: none;
+  }
+}
+/* Loop-structure rows lead with the component's canonical icon + color —
+     the same coding as the LOOP icon strip and deck labels. */
+.drill-ctx .loop-icon {
+  flex: 0 0 auto;
+  width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+/* Applied structure (sheet toggles): border + tint in the component's color. */
+/* Selected reads stronger than the resting .tinted panel. */
+.drill-ctx .length-row.loop-active {
+  border-color: color-mix(in srgb, var(--row-color) 60%, transparent);
+  background: color-mix(in srgb, var(--row-color) 20%, transparent);
+}
+
+/* Stability over deletion: options and catalog tiles that a rule change
+     zeroes out dim instead of unmounting (audit X-4/D-5). */
+.drill-ctx .length-row:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.drill-ctx .length-row:disabled:hover {
+  transform: none;
+  border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+}
+
+/* Single-select editors mark the value already in the host's rule (builder
+     re-entry, audit X-2/C-6/F-12) — same selection language as loop-active,
+     in the accent instead of a component color. */
+.drill-ctx .length-row.value-applied,
+.drill-ctx .letter-chip.value-applied {
+  border-color: color-mix(
+    in srgb,
+    var(--theme-accent, #6366f1) 70%,
+    transparent
+  );
+  background: color-mix(in srgb, var(--theme-accent, #6366f1) 18%, transparent);
+  box-shadow: inset 3px 0 0 var(--theme-accent, #6366f1);
+}
+/* Level tiles carry full-bleed difficulty gradients — a ring reads over
+     them where a background tint cannot. */
+.drill-ctx .level-tile.value-applied {
+  box-shadow:
+    0 0 0 3px var(--theme-panel-bg, #11131a),
+    0 0 0 6px var(--theme-accent, #6366f1);
+}
+.drill-ctx .loop-check {
+  flex: 0 0 auto;
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--row-color);
+  font-size: 0.9rem;
+  visibility: hidden;
+}
+.drill-ctx .loop-check.on {
+  visibility: visible;
+}
+
+/* ── Letter grid ───────────────────────────────────────────────── */
+.drill-ctx .letter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 0.5rem;
+}
+.drill-ctx .letter-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-height: 60px;
+  padding: 0.45rem 0.3rem;
+  border-radius: 12px;
+  border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  color: var(--theme-text, #e8edf6);
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    transform 0.16s ease;
+}
+.drill-ctx .letter-chip:hover {
+  border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+  transform: translateY(-1px);
+}
+.drill-ctx .letter-chip:focus-visible {
+  outline: 2px solid var(--theme-accent, #6366f1);
+  outline-offset: 2px;
+}
+.drill-ctx .letter-glyph {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+}
+.drill-ctx .letter-count {
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-text-muted, #9aa6b8);
+}
+
+/* Density bar: fill = count ÷ largest bucket on screen. Fixed track. */
+.drill-ctx .density-bar {
+  display: block;
+  width: 100%;
+  max-width: 160px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  overflow: hidden;
+}
+.drill-ctx .density-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--theme-text-muted, #9aa6b8);
+}
+.drill-ctx .density-bar.on-gradient {
+  background: rgba(0, 0, 0, 0.15);
+}
+.drill-ctx .density-bar.on-gradient .density-fill {
+  background: rgba(0, 0, 0, 0.55);
+}
+.drill-ctx .value-count {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.drill-ctx .length-row .value-count {
+  color: var(--theme-text, #e8edf6);
+}
+
+/* Instant tap feedback — touch has no :hover, so a press must register
+     visually the moment it lands (the grid paints a beat later). */
+.drill-ctx .length-row:active,
+.drill-ctx .letter-chip:active {
+  transform: scale(0.985);
+}
+.drill-ctx .level-tile:active {
+  transform: scale(0.985);
+  filter: brightness(1.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drill-ctx .level-tile,
+  .drill-ctx .length-row,
+  .drill-ctx .letter-chip {
+    transition: none;
+  }
+  .drill-ctx .level-tile:hover,
+  .drill-ctx .length-row:hover,
+  .drill-ctx .letter-chip:hover,
+  .drill-ctx .level-tile:active,
+  .drill-ctx .length-row:active,
+  .drill-ctx .letter-chip:active {
+    transform: none;
+  }
+}
+
+/* ── Mid tier: unfolded foldables + small tablets (640–899px) ──────
+     Z Fold unfolded portrait (~740cqw) and iPad portrait landed in the phone
+     tier: a 520px ribbon stranding 100px+ of dead space per side while the
+     stacked chooser forced a scroll. Two-up heroes (show-all spanning) and a
+     wrapping mini-grid pull the chooser back above the fold. Value screens
+     keep the phone list — capped and centered as ONE band with their header
+     so Back sits on the content edge, not the far stage edge (same shared-
+     band trick as the desktop tier). Sheet variant (≤480px drawer) can't
+     reach this tier. */
+@container drill (min-width: 640px) and (max-width: 899.98px) {
+  .drill-ctx .drill-screen > .drill-head.with-back,
+  .drill-ctx .drill-screen > .value-list,
+  .drill-ctx .drill-screen > .letter-grid {
+    width: 100%;
+    max-width: 560px;
+    align-self: center;
+  }
+}
+
+/* ── Desktop (wide container) ──────────────────────────────────────
+     The drill was born mobile-first and shipped as a 520px ribbon on every
+     screen size — on a 4K monitor that's a strip floating in empty ocean.
+     Past 900px of container width the stage earns real estate: hero tiles go
+     two-up, the mini-grid spreads to four columns, and every value screen
+     lays its choices out as a multi-column wall instead of a phone list.
+     Nothing here touches the phone layout, and the filter-sheet variant's
+     drawer (≤480px) can never reach these rules. */
+@container drill (min-width: 900px) {
+  .drill-ctx .drill-head h2 {
+    font-size: 1.6rem;
+  }
+  .drill-ctx .drill-head p {
+    font-size: 0.95rem;
+  }
+  .drill-ctx .drill-screen {
+    gap: 1rem;
+  }
+
+  /* Back earns its label once the wide stage strands it away from the title. */
+  .drill-ctx .head-back {
+    padding: 0 1.1rem 0 0.95rem;
+  }
+  .drill-ctx .head-back-label {
+    display: inline;
+  }
+  .drill-ctx .creator-avatar {
+    width: 56px;
+    height: 56px;
+  }
+  .drill-ctx .creator-row {
+    min-height: 96px;
+  }
+
+  /* Value screens: choices tile the width instead of stacking as a phone
+       list. auto-fill keeps short catalogs (3 positions, 2 grid modes)
+       centered-looking without stranding one giant row. */
+  .drill-ctx .value-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 0.8rem;
+  }
+  /* Centered screens (positions, grid mode, creators): cap the header AND the
+       list to one shared band and center it, so Back sits at the content's left
+       edge — matching the full-width screens — instead of floating far left. The
+       cards fill the band (no sub-centering slack) so alignment is exact. */
+  .drill-ctx .screen-positions > .drill-head.with-back,
+  .drill-ctx .screen-positions > .value-list,
+  .drill-ctx .screen-gridmode > .drill-head.with-back,
+  .drill-ctx .screen-gridmode > .value-list,
+  .drill-ctx .screen-creator > .drill-head.with-back,
+  .drill-ctx .screen-creator > .value-list {
+    align-self: center;
+    width: 100%;
+  }
+  .drill-ctx .screen-positions > .drill-head.with-back,
+  .drill-ctx .screen-positions > .value-list {
+    max-width: 840px;
+  }
+  .drill-ctx .screen-gridmode > .drill-head.with-back,
+  .drill-ctx .screen-gridmode > .value-list {
+    max-width: 560px;
+  }
+  .drill-ctx .screen-creator > .drill-head.with-back,
+  .drill-ctx .screen-creator > .value-list {
+    max-width: 720px;
+  }
+  .drill-ctx .screen-positions > .value-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .drill-ctx .screen-gridmode > .value-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  /* Creators are rich horizontal rows (avatar + name + count + work-fan), so
+       a multi-column grid strands the last creator (5 → ragged 4+1). Keep them
+       a single centered column — a most-prolific-first leaderboard that reads
+       the same for 5 creators or 50. */
+  .drill-ctx .value-list.creator-list {
+    grid-template-columns: minmax(0, 720px);
+    justify-content: center;
+  }
+  /* Groups of exactly 6 (the six T&D families, a 6-tile mini-grid) square
+       up as 3x2 — a 4+2 ragged break reads as an accident, not a set. */
+  .drill-ctx .value-list:has(> :nth-child(6):last-child) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Levels: three monument columns — the numeral and gradient carry the
+       screen the way the difficulty badges carry the cards. */
+  .drill-ctx .value-list:has(.level-tile) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .drill-ctx .level-tile {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.6rem;
+    min-height: 230px;
+    padding: 1.4rem 1.2rem;
+    border-radius: 20px;
+  }
+  .drill-ctx .level-tile .value-numeral {
+    font-size: 3.6rem;
+    min-width: 0;
+  }
+  /* Monument order: rank numeral → showcase card → description → count.
+       (DOM keeps the phone row order; flex `order` re-stacks the column.) */
+  .drill-ctx .level-tile .value-numeral {
+    order: 1;
+  }
+  .drill-ctx .level-tile .peek {
+    order: 2;
+  }
+  .drill-ctx .level-tile .value-main {
+    order: 3;
+  }
+  .drill-ctx .level-tile .value-count {
+    order: 4;
+  }
+  .drill-ctx .level-tile .value-main {
+    align-items: center;
+    gap: 0.45rem;
+  }
+  .drill-ctx .level-tile .value-label {
+    font-size: 1.1rem;
+  }
+  .drill-ctx .level-tile .value-desc {
+    font-size: 0.85rem;
+  }
+  .drill-ctx .level-tile .value-count {
+    font-size: 1.05rem;
+  }
+  .drill-ctx .letter-grid {
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: 0.6rem;
+  }
+  .drill-ctx .letter-chip {
+    min-height: 70px;
+  }
+
+  /* Every value screen joins the levels as monument panels: lead media on
+       top, label (+ desc / tag), density, count — centered in a tall column
+       instead of a thin horizontal bar stranded in the wide grid. Creators are
+       the deliberate exception (kept horizontal — the trailing work-fan is the
+       identity, and there are too many for tall panels).
+       (.length-row.monument: must outweigh the base .length-row.tall
+       min-height, and @container adds no specificity.) */
+  .drill-ctx .length-row.monument {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.55rem;
+    /* Floor, not a fixed height — sparse screens (LOOP, family) were
+         stranding the count far below the content in an over-tall panel. */
+    min-height: 168px;
+    padding: 1.2rem 1.2rem;
+    border-radius: 20px;
+  }
+  .drill-ctx .monument .value-main {
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .drill-ctx .monument .density-bar {
+    margin-inline: auto;
+  }
+  .drill-ctx .monument .value-label {
+    font-size: 1.05rem;
+  }
+  .drill-ctx .monument .value-count {
+    font-size: 1.05rem;
+  }
+  /* Lead media grows to monument scale, per screen. */
+  .drill-ctx .monument .value-numeral.small {
+    font-size: 3rem;
+  }
+  .drill-ctx .monument .value-img,
+  .drill-ctx .monument .value-img.family-icon {
+    width: 64px;
+    height: 64px;
+  }
+  .drill-ctx .monument .value-pictograph {
+    width: 148px;
+    height: 148px;
+  }
+  .drill-ctx .monument .loop-icon {
+    font-size: 2.6rem;
+  }
+}
+
+/* ── Ultra-wide (4K-class) ─────────────────────────────────────────
+     Past 1600px the two-up tier starts leaving real acreage unused, so the
+     chooser becomes a three-door hub: level / length / show-all as equal hero
+     panels in one row, with the ultra PEEK art tier filling them. The stage
+     then grows fluidly with its host and caps at 2496px, so 4K canvases gain
+     useful scale without turning choices into edge-to-edge targets. */
+@container drill (min-width: 1600px) {
+  .drill-ctx .drill-head h2 {
+    font-size: 1.85rem;
+  }
+  .drill-ctx .drill-head p {
+    font-size: 1.05rem;
+  }
+  .drill-ctx .value-list {
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 1rem;
+  }
+  .drill-ctx .screen-positions > .drill-head.with-back,
+  .drill-ctx .screen-positions > .value-list {
+    max-width: 960px;
+  }
+  .drill-ctx .screen-gridmode > .drill-head.with-back,
+  .drill-ctx .screen-gridmode > .value-list {
+    max-width: 620px;
+  }
+  .drill-ctx .screen-creator > .drill-head.with-back,
+  .drill-ctx .screen-creator > .value-list {
+    max-width: 820px;
+  }
+  .drill-ctx .value-list.creator-list {
+    grid-template-columns: minmax(0, 820px);
+  }
+  /* Exactly-6 rule again at this tier — the wider auto-fill would break
+       the six families 4+2. */
+  .drill-ctx .value-list:has(> :nth-child(6):last-child) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .drill-ctx .level-tile {
+    min-height: 290px;
+  }
+  .drill-ctx .level-tile .value-numeral {
+    font-size: 4.4rem;
+  }
+  .drill-ctx .length-row {
+    min-height: 64px;
+  }
+  .drill-ctx .length-row.tall {
+    min-height: 88px;
+  }
+  .drill-ctx .letter-grid {
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 0.7rem;
+  }
+  .drill-ctx .letter-chip {
+    min-height: 78px;
+  }
+  .drill-ctx .length-row.monument {
+    min-height: 188px;
+    padding: 1.4rem 1.5rem;
+  }
+  .drill-ctx .monument .value-img,
+  .drill-ctx .monument .value-img.family-icon {
+    width: 76px;
+    height: 76px;
+  }
+  .drill-ctx .monument .value-pictograph {
+    width: 176px;
+    height: 176px;
+  }
+  .drill-ctx .monument .value-numeral.small {
+    font-size: 3.6rem;
+  }
+  .drill-ctx .monument .loop-icon {
+    font-size: 3rem;
+  }
+  .drill-ctx .monument .value-label {
+    font-size: 1.15rem;
+  }
+}

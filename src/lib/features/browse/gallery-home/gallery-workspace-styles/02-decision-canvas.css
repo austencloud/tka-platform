@@ -1,0 +1,878 @@
+/* ── Smart Collection decision canvas ─────────────────────────────
+     The standard Gallery front door remains editorial and progressive. A
+     Smart Collection refinement is a different job: the user has explicitly
+     asked to add one filter inside a fixed-height workspace. Its opt-in canvas
+     therefore shows every available category together and recomposes value
+     choices by their real cardinality. Scrolling remains a safety fallback for
+     an unusually large live catalog, not the default navigation mechanism. */
+.drill-ctx.unified-filter-chooser .screen-chooser {
+  justify-content: safe center;
+  overflow-y: auto;
+}
+.drill-ctx .unified-choice-grid {
+  display: grid;
+  gap: 0.6rem;
+  width: min(100%, 72rem);
+  flex: 0 1 auto;
+  align-self: center;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: minmax(5.5rem, auto);
+}
+.drill-ctx .unified-choice-grid:has(> :nth-child(2):last-child),
+.drill-ctx .unified-choice-grid:has(> :nth-child(4):last-child),
+.drill-ctx .unified-choice-grid:has(> :nth-child(8):last-child),
+.drill-ctx .unified-choice-grid:has(> :nth-child(10):last-child) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.drill-ctx .unified-choice-grid:has(> :nth-child(5):last-child) {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.drill-ctx .unified-choice-grid:has(> :nth-child(5):last-child) > .mini-tile {
+  grid-column: span 2;
+}
+.drill-ctx .unified-choice-grid:has(> :nth-child(5):last-child) > :last-child {
+  grid-column: 2 / span 2;
+}
+.drill-ctx .unified-choice-grid:has(> :nth-child(7):last-child) {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.drill-ctx .unified-choice-grid:has(> :nth-child(7):last-child) > .mini-tile {
+  grid-column: span 2;
+}
+.drill-ctx .unified-choice-grid:has(> :nth-child(7):last-child) > :last-child {
+  grid-column: 3 / span 2;
+}
+.drill-ctx.adaptive-value-layout .drill-head.with-back {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  width: min(100%, var(--decision-band-width, 90rem));
+  max-width: var(--decision-band-width, 90rem);
+  flex: 0 0 auto;
+  align-self: center;
+  padding-bottom: 0.25rem;
+  background: var(--theme-panel-bg, #11131a);
+}
+.drill-ctx.adaptive-value-layout .value-list,
+.drill-ctx.adaptive-value-layout .letter-grid {
+  display: grid;
+  width: min(100%, var(--decision-band-width, 90rem));
+  max-width: var(--decision-band-width, 90rem);
+  flex: 1 1 0;
+  min-height: 0;
+  align-self: center;
+  align-content: center;
+  gap: 0.5rem;
+}
+.drill-ctx.adaptive-value-layout .screen-gridmode .value-grid-preview {
+  display: flex;
+  width: clamp(5.5rem, 24cqw, 9rem);
+  height: clamp(5.5rem, 24cqw, 9rem);
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 1rem;
+}
+.drill-ctx.adaptive-value-layout
+  .screen-gridmode
+  .value-grid-preview
+  .lesson-grid-display,
+.drill-ctx.adaptive-value-layout
+  .screen-gridmode
+  .value-grid-preview
+  .grid-svg {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+}
+.drill-ctx.adaptive-value-layout .screen-gridmode .value-label {
+  font-size: var(--font-size-sm, 14px);
+}
+.drill-ctx.adaptive-value-layout .screen-gridmode .value-desc {
+  font-size: var(--font-size-compact, 12px);
+  line-height: 1.3;
+}
+.drill-ctx.adaptive-value-layout .level-tile,
+.drill-ctx.adaptive-value-layout .length-row.monument {
+  height: auto;
+  min-height: 44px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.7rem;
+  border-radius: 1rem;
+  text-align: center;
+}
+.drill-ctx.adaptive-value-layout .screen-level,
+.drill-ctx.adaptive-value-layout .screen-positions {
+  --decision-band-width: 96rem;
+}
+.drill-ctx.adaptive-value-layout .screen-gridmode {
+  --decision-band-width: 64rem;
+}
+.drill-ctx.adaptive-value-layout .screen-letter {
+  --decision-band-width: 104rem;
+}
+.drill-ctx.adaptive-value-layout .level-tile .value-main,
+.drill-ctx.adaptive-value-layout .monument .value-main {
+  align-items: center;
+  gap: 0.3rem;
+}
+.drill-ctx.adaptive-value-layout .level-tile .density-bar,
+.drill-ctx.adaptive-value-layout .monument .density-bar {
+  margin-inline: auto;
+}
+.drill-ctx.adaptive-value-layout .length-row.monument {
+  position: relative;
+}
+.drill-ctx.adaptive-value-layout .loop-check {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+}
+.drill-ctx.adaptive-value-layout .turn-picker {
+  display: grid;
+  width: min(100%, 48rem);
+  max-width: 48rem;
+  flex: 1 1 0;
+  min-height: 0;
+  align-self: center;
+  align-content: center;
+  gap: 1.25rem;
+  padding: 1rem;
+}
+.drill-ctx .turn-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.45rem;
+  color: var(--theme-text, #e8edf6);
+  font-variant-numeric: tabular-nums;
+}
+.drill-ctx .turn-limit {
+  font-size: clamp(2.75rem, 10cqw, 5rem);
+  font-weight: 800;
+  line-height: 0.9;
+  /* Sized to the widest label ("≤0.5") so stepping through the stops — and
+       swapping in the "Any" word — never re-centres the summary row. */
+  min-width: 4ch;
+  text-align: center;
+}
+/* A word, not a numeral: set it a shade smaller so it reads as prose at
+     display scale rather than shouting like the digits do. */
+.drill-ctx .turn-limit-any {
+  font-size: clamp(2.25rem, 8cqw, 4rem);
+}
+.drill-ctx .turn-unit {
+  color: var(--theme-text-muted, #9aa6b8);
+  font-size: var(--font-size-sm, 14px);
+  font-weight: 700;
+}
+.drill-ctx .turn-count {
+  margin-left: 0.35rem;
+  color: var(--theme-text-muted, #9aa6b8);
+  font-size: var(--font-size-compact, 12px);
+  font-weight: 600;
+}
+.drill-ctx .turn-slider-shell {
+  width: 100%;
+  padding: 0 1rem 1.75rem;
+}
+.drill-ctx .turn-picker .turn-slider-root {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  touch-action: none;
+  user-select: none;
+}
+.drill-ctx .turn-slider-track {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 0.55rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+  box-shadow: inset 0 0 0 1px var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  cursor: pointer;
+}
+.drill-ctx .turn-picker .turn-slider-range {
+  position: absolute;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--theme-accent, #6366f1);
+}
+.drill-ctx .turn-picker .turn-slider-thumb {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 3px solid var(--theme-panel-bg, #11131a);
+  border-radius: 999px;
+  background: var(--theme-accent, #6366f1);
+  box-shadow:
+    0 0 0 1px var(--theme-accent, #6366f1),
+    0 0.35rem 1rem rgba(0, 0, 0, 0.35);
+  cursor: grab;
+}
+
+/* The visual knob stays 1.9rem; the HIT AREA meets the 44px floor at every
+     width (pseudo-elements participate in the element's hit-testing). */
+.drill-ctx .turn-picker .turn-slider-thumb::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(44px, 100%);
+  height: max(44px, 100%);
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+}
+.drill-ctx .turn-picker .turn-slider-thumb:active {
+  cursor: grabbing;
+}
+.drill-ctx .turn-picker .turn-slider-thumb:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--theme-accent, #6366f1) 48%, white);
+  outline-offset: 3px;
+}
+.drill-ctx .turn-picker .turn-slider-tick {
+  z-index: 1;
+  width: 0.42rem;
+  height: 0.42rem;
+  border: 1px solid var(--theme-panel-bg, #11131a);
+  border-radius: 999px;
+  background: var(--theme-text-muted, #9aa6b8);
+  pointer-events: none;
+}
+.drill-ctx .turn-picker .turn-slider-tick[data-bounded] {
+  background: var(--theme-text-on-accent, #fff);
+}
+.drill-ctx .turn-picker .turn-slider-label {
+  padding-top: 0.55rem;
+  color: var(--theme-text-muted, #9aa6b8);
+  font-size: var(--font-size-compact, 12px);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.drill-ctx .turn-picker .turn-slider-label[data-selected] {
+  color: var(--theme-text, #e8edf6);
+}
+
+@container drill (max-width: 639.98px) {
+  .drill-ctx.unified-filter-chooser .drill-screen {
+    gap: 0.55rem;
+  }
+  .drill-ctx .unified-choice-grid {
+    gap: 0.35rem;
+    grid-auto-rows: minmax(4.25rem, auto);
+  }
+
+  /* The complete Smart Collection catalog is ten choices. Two equal columns
+       keep every label readable without sending the user to another screen. */
+  .drill-ctx .unified-choice-grid:has(> :nth-child(2):last-child),
+  .drill-ctx .unified-choice-grid:has(> :nth-child(4):last-child),
+  .drill-ctx .unified-choice-grid:has(> :nth-child(8):last-child),
+  .drill-ctx .unified-choice-grid:has(> :nth-child(10):last-child) {
+    grid-auto-rows: minmax(4.25rem, auto);
+  }
+  .drill-ctx.adaptive-value-layout .drill-screen {
+    gap: 0.45rem;
+  }
+  .drill-ctx.adaptive-value-layout .drill-head h2 {
+    font-size: 1.05rem;
+  }
+  .drill-ctx.adaptive-value-layout .drill-head p {
+    font-size: 0.72rem;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+  .drill-ctx.adaptive-value-layout .value-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: minmax(44px, auto);
+  }
+  .drill-ctx.adaptive-value-layout .screen-level > .value-list,
+  .drill-ctx.adaptive-value-layout .screen-positions > .value-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .drill-ctx.adaptive-value-layout
+    .screen-max-turns
+    > .value-list:has(> :nth-child(6):last-child) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .drill-ctx.adaptive-value-layout
+    .screen-length
+    > .value-list:has(> :nth-child(5):last-child)
+    > :last-child,
+  .drill-ctx.adaptive-value-layout
+    .screen-loop
+    > .value-list:has(> :nth-child(7):last-child)
+    > :last-child,
+  .drill-ctx.adaptive-value-layout
+    .screen-creator
+    > .value-list:has(> :nth-child(7):last-child)
+    > :last-child {
+    width: calc(50% - 0.25rem);
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+  .drill-ctx.adaptive-value-layout .screen-letter > .letter-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-rows: minmax(44px, 3.25rem);
+    align-content: space-evenly;
+    gap: 0.35rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-letter > .letter-grid > * {
+    grid-column: span 2;
+  }
+
+  /* The live catalog currently has 46 letters. Center its final four while
+       retaining six equal-width targets on every complete row. */
+  .drill-ctx.adaptive-value-layout
+    .screen-letter
+    > .letter-grid:has(> :nth-child(46):last-child)
+    > :nth-child(43) {
+    grid-column: 3 / span 2;
+  }
+  .drill-ctx.adaptive-value-layout
+    .screen-letter
+    > .letter-grid:has(> :nth-child(46):last-child)
+    > :nth-child(44) {
+    grid-column: 5 / span 2;
+  }
+  .drill-ctx.adaptive-value-layout
+    .screen-letter
+    > .letter-grid:has(> :nth-child(46):last-child)
+    > :nth-child(45) {
+    grid-column: 7 / span 2;
+  }
+  .drill-ctx.adaptive-value-layout
+    .screen-letter
+    > .letter-grid:has(> :nth-child(46):last-child)
+    > :nth-child(46) {
+    grid-column: 9 / span 2;
+  }
+  .drill-ctx.adaptive-value-layout .letter-chip {
+    height: 100%;
+    min-height: 44px;
+    gap: 0;
+    padding: 0.25rem;
+    border-radius: 0.55rem;
+  }
+
+  /* The glyph is the decision. Counts remain in the accessible name but do
+       not steal the 44px phone target's visual area. */
+  .drill-ctx.adaptive-value-layout .letter-count {
+    display: none;
+  }
+  .drill-ctx.adaptive-value-layout .level-tile {
+    padding: 0.55rem 0.35rem;
+  }
+  .drill-ctx.adaptive-value-layout .level-tile .value-numeral {
+    min-width: 0;
+    font-size: 2rem;
+  }
+  .drill-ctx.adaptive-value-layout .level-tile .value-label,
+  .drill-ctx.adaptive-value-layout .monument .value-label,
+  .drill-ctx.adaptive-value-layout .level-tile .value-count,
+  .drill-ctx.adaptive-value-layout .monument .value-count {
+    font-size: 0.8rem;
+  }
+  .drill-ctx.adaptive-value-layout .level-tile .value-desc,
+  .drill-ctx.adaptive-value-layout .monument .value-desc {
+    font-size: 0.66rem;
+    line-height: 1.2;
+  }
+  .drill-ctx.adaptive-value-layout .monument .value-numeral.small {
+    min-width: 0;
+    font-size: 1.9rem;
+  }
+  .drill-ctx.adaptive-value-layout .monument .value-pictograph {
+    width: 4.25rem;
+    height: 4.25rem;
+  }
+  .drill-ctx.adaptive-value-layout .monument .value-img,
+  .drill-ctx.adaptive-value-layout .monument .value-img.family-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+  .drill-ctx.adaptive-value-layout .monument .loop-icon {
+    width: auto;
+    font-size: 1.65rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-loop .value-desc {
+    display: none;
+  }
+  .drill-ctx.adaptive-value-layout .creator-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .drill-ctx.adaptive-value-layout .creator-row {
+    height: 100%;
+    min-height: 44px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.5rem;
+    text-align: center;
+  }
+  .drill-ctx.adaptive-value-layout .creator-row .value-main {
+    align-items: center;
+  }
+  .drill-ctx.adaptive-value-layout .creator-fan {
+    display: none;
+  }
+
+  /* The phone builder has one job per screen. Bounded catalogs use a
+       composition sized to their real option count, so the full decision is
+       visible without turning the modal body into a scrolling list. */
+  .drill-ctx.adaptive-value-layout .screen-length,
+  .drill-ctx.adaptive-value-layout .screen-loop,
+  .drill-ctx.adaptive-value-layout .screen-family,
+  .drill-ctx.adaptive-value-layout .screen-max-turns {
+    overflow-y: hidden;
+  }
+  .drill-ctx.adaptive-value-layout .screen-length > .value-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-rows: minmax(6.5rem, 7rem);
+    align-content: center;
+    gap: 0.45rem;
+  }
+
+  /* Seven live lengths form a centered 4 + 3 composition. All seven cards
+       keep exactly the same width, unlike the old 3 + 2 + 2 arrangement. */
+  .drill-ctx.adaptive-value-layout
+    .screen-length
+    > .value-list:has(> :nth-child(7):last-child) {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+  .drill-ctx.adaptive-value-layout
+    .screen-length
+    > .value-list:has(> :nth-child(7):last-child)
+    > * {
+    grid-column: span 2;
+  }
+  .drill-ctx.adaptive-value-layout
+    .screen-length
+    > .value-list:has(> :nth-child(7):last-child)
+    > :nth-child(5) {
+    grid-column: 2 / span 2;
+    grid-row: 2;
+  }
+  .drill-ctx.adaptive-value-layout
+    .screen-length
+    > .value-list:has(> :nth-child(7):last-child)
+    > :nth-child(6) {
+    grid-column: 4 / span 2;
+    grid-row: 2;
+  }
+  .drill-ctx.adaptive-value-layout
+    .screen-length
+    > .value-list:has(> :nth-child(7):last-child)
+    > :nth-child(7) {
+    grid-column: 6 / span 2;
+    grid-row: 2;
+  }
+  .drill-ctx.adaptive-value-layout .screen-length .length-row.monument {
+    height: 100%;
+    gap: 0.2rem;
+    padding: 0.4rem 0.25rem;
+    border-radius: 0.8rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-gridmode > .value-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: minmax(13rem, 15rem);
+    align-content: center;
+    gap: 0.65rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-gridmode .length-row.monument {
+    height: 100%;
+    gap: 0.65rem;
+    padding: 0.8rem 0.5rem;
+    border-radius: 1rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-gridmode .value-main {
+    flex: 0 1 auto;
+    gap: 0.35rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-gridmode .density-bar {
+    max-width: 6rem;
+    height: 5px;
+  }
+  .drill-ctx.adaptive-value-layout .screen-gridmode .value-count {
+    font-size: var(--font-size-sm, 14px);
+  }
+  .drill-ctx.adaptive-value-layout .screen-length .value-main {
+    flex: 0 1 auto;
+    gap: 0.2rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-length .value-numeral.small {
+    font-size: 1.65rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-length .value-label,
+  .drill-ctx.adaptive-value-layout .screen-length .value-count {
+    font-size: var(--font-size-compact, 12px);
+  }
+  .drill-ctx.adaptive-value-layout .screen-length .density-bar {
+    max-width: 3rem;
+    height: 4px;
+  }
+
+  /* LOOP names need horizontal room more than poster-sized icons. Seven
+       compact rows keep the labels intact and every composable choice visible. */
+  .drill-ctx.adaptive-value-layout .screen-loop > .value-list {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: minmax(44px, 2.9rem);
+    align-content: center;
+    gap: 0.35rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-loop .length-row.monument {
+    height: 100%;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 0.75rem;
+    text-align: left;
+  }
+  .drill-ctx.adaptive-value-layout .screen-loop .loop-icon {
+    width: 2rem;
+    font-size: 1.25rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-loop .value-main {
+    align-items: stretch;
+    gap: 0.2rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-loop .value-label {
+    overflow: hidden;
+    font-size: var(--font-size-compact, 12px);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .drill-ctx.adaptive-value-layout .screen-loop .density-bar {
+    max-width: none;
+    height: 4px;
+  }
+  .drill-ctx.adaptive-value-layout .screen-loop .value-count {
+    font-size: var(--font-size-compact, 12px);
+  }
+  .drill-ctx.adaptive-value-layout .screen-loop .loop-check {
+    position: static;
+    width: 1rem;
+  }
+  .drill-ctx.adaptive-value-layout
+    .screen-loop
+    > .value-list:has(> :nth-child(7):last-child)
+    > :last-child {
+    width: 100%;
+    grid-column: auto;
+    justify-self: stretch;
+  }
+
+  /* Creator names are the decision. A full-width row gives long names one
+       stable line, while the avatar and count keep each target scannable. */
+  .drill-ctx.adaptive-value-layout .screen-creator > .creator-list {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: minmax(44px, 3rem);
+    align-content: center;
+    gap: 0.35rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-creator .creator-row {
+    width: 100%;
+    height: 100%;
+    min-height: 44px;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 0.6rem;
+    padding: 0.25rem 0.6rem;
+    text-align: left;
+  }
+  .drill-ctx.adaptive-value-layout .screen-creator .creator-row .value-main {
+    align-items: stretch;
+    gap: 0.2rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-creator .value-label {
+    width: 100%;
+    overflow: hidden;
+    font-size: var(--font-size-compact, 12px);
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .drill-ctx.adaptive-value-layout .screen-creator .density-bar {
+    max-width: none;
+    height: 4px;
+  }
+  .drill-ctx.adaptive-value-layout .screen-creator .value-count {
+    margin-left: auto;
+    font-size: var(--font-size-compact, 12px);
+  }
+  .drill-ctx.adaptive-value-layout
+    .screen-creator
+    > .creator-list:has(> :nth-child(7):last-child)
+    > :last-child {
+    width: 100%;
+    grid-column: auto;
+    justify-self: stretch;
+  }
+
+  /* The six Timing & Direction families are a stable 2 × 3 set. The icons
+       carry their elemental identity; repeating WATER / EARTH / etc. only
+       crowds the action label on a phone. */
+  .drill-ctx.adaptive-value-layout .screen-family > .value-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: minmax(5.25rem, 5.5rem);
+    align-content: center;
+    gap: 0.45rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-family .length-row.monument {
+    height: 100%;
+    gap: 0.2rem;
+    padding: 0.35rem;
+    border-radius: 0.8rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-family .value-img.family-icon {
+    width: 2rem;
+    height: 2rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-family .value-main {
+    gap: 0.2rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-family .value-label,
+  .drill-ctx.adaptive-value-layout .screen-family .value-count {
+    font-size: var(--font-size-compact, 12px);
+  }
+  .drill-ctx.adaptive-value-layout .screen-family .density-bar {
+    max-width: 4rem;
+    height: 4px;
+  }
+
+  /* Six turn ceilings stay in a stable 3 × 2 grid from first paint. This
+       avoids the transient two-column overflow that could flash a scrollbar
+       while the live counts arrived. */
+  .drill-ctx.adaptive-value-layout .screen-max-turns > .value-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-rows: minmax(5.5rem, 6rem);
+    align-content: center;
+    gap: 0.4rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-max-turns .length-row.monument {
+    height: 100%;
+    gap: 0.25rem;
+    padding: 0.4rem 0.2rem;
+    border-radius: 0.8rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-max-turns .value-numeral.small {
+    font-size: 1.5rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-max-turns .value-main {
+    flex: 0 1 auto;
+    gap: 0.2rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-max-turns .value-label,
+  .drill-ctx.adaptive-value-layout .screen-max-turns .value-count {
+    font-size: var(--font-size-compact, 12px);
+  }
+  .drill-ctx.adaptive-value-layout .screen-max-turns .density-bar {
+    max-width: 3rem;
+    height: 4px;
+  }
+}
+
+@container drill (min-width: 640px) {
+  .drill-ctx.adaptive-value-layout .value-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: minmax(7rem, auto);
+  }
+  .drill-ctx.adaptive-value-layout .screen-level > .value-list,
+  .drill-ctx.adaptive-value-layout .screen-positions > .value-list,
+  .drill-ctx.adaptive-value-layout .screen-max-turns > .value-list,
+  .drill-ctx.adaptive-value-layout .screen-family > .value-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .drill-ctx.adaptive-value-layout .screen-creator > .creator-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: none;
+  }
+  .drill-ctx.adaptive-value-layout .screen-letter > .letter-grid {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-auto-rows: minmax(4rem, auto);
+  }
+}
+
+@container drill (min-width: 640px) and (max-width: 899.98px) {
+  .drill-ctx.unified-filter-chooser .unified-choice-grid {
+    grid-auto-rows: minmax(5.5rem, auto);
+  }
+}
+
+@container drill (min-width: 900px) {
+  .drill-ctx .unified-choice-grid {
+    width: min(100%, clamp(64rem, 78cqw, 94rem));
+    gap: 1rem;
+    grid-auto-rows: minmax(8rem, auto);
+  }
+  .drill-ctx.unified-filter-chooser .unified-choice-grid:has(> :nth-child(9)) {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .drill-ctx.adaptive-value-layout
+    .screen-length
+    > .value-list:has(> :nth-child(5):last-child) {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .drill-ctx.adaptive-value-layout
+    .screen-length
+    > .value-list:has(> :nth-child(5):last-child)
+    > * {
+    grid-column: span 2;
+  }
+  .drill-ctx.adaptive-value-layout
+    .screen-length
+    > .value-list:has(> :nth-child(5):last-child)
+    > :nth-child(4) {
+    grid-column: 2 / span 2;
+  }
+  .drill-ctx.adaptive-value-layout
+    .screen-loop
+    > .value-list:has(> :nth-child(7):last-child) {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+  .drill-ctx.adaptive-value-layout
+    .screen-loop
+    > .value-list:has(> :nth-child(7):last-child)
+    > * {
+    grid-column: span 2;
+  }
+  .drill-ctx.adaptive-value-layout
+    .screen-loop
+    > .value-list:has(> :nth-child(7):last-child)
+    > :nth-child(5) {
+    grid-column: 2 / span 2;
+  }
+  .drill-ctx.adaptive-value-layout .screen-letter > .letter-grid {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    grid-auto-rows: minmax(4.5rem, auto);
+  }
+  .drill-ctx.adaptive-value-layout {
+    --decision-band-width: clamp(64rem, 78cqw, 96rem);
+  }
+  .drill-ctx.adaptive-value-layout .screen-level,
+  .drill-ctx.adaptive-value-layout .screen-positions {
+    --decision-band-width: clamp(64rem, 78cqw, 96rem);
+  }
+  .drill-ctx.adaptive-value-layout .screen-gridmode {
+    --decision-band-width: clamp(48rem, 56cqw, 64rem);
+  }
+  .drill-ctx.adaptive-value-layout .screen-letter {
+    --decision-band-width: clamp(68rem, 82cqw, 104rem);
+  }
+  .drill-ctx.adaptive-value-layout .level-tile {
+    min-height: clamp(17rem, 19cqw, 27rem);
+  }
+  .drill-ctx.adaptive-value-layout .length-row.monument {
+    min-height: clamp(9.5rem, 11cqw, 17rem);
+  }
+}
+
+@container drill (min-width: 1600px) {
+  .drill-ctx.unified-filter-chooser .unified-choice-grid {
+    width: min(100%, clamp(90rem, 70cqw, 132rem));
+    grid-auto-rows: minmax(10rem, auto);
+  }
+  .drill-ctx.adaptive-value-layout {
+    --decision-band-width: clamp(90rem, 72cqw, 132rem);
+  }
+  .drill-ctx.adaptive-value-layout .screen-gridmode {
+    --decision-band-width: clamp(64rem, 48cqw, 90rem);
+  }
+  .drill-ctx.adaptive-value-layout .screen-letter {
+    --decision-band-width: clamp(96rem, 76cqw, 150rem);
+  }
+  .drill-ctx.adaptive-value-layout .level-tile {
+    min-height: clamp(21rem, 16cqw, 31rem);
+  }
+  .drill-ctx.adaptive-value-layout .length-row.monument {
+    min-height: clamp(11rem, 9cqw, 19rem);
+  }
+
+  /* The slider is the entire decision surface on this screen. Let it grow
+       with native desktop canvases instead of leaving a phone-sized control
+       floating in the middle of a 2K modal. */
+  .drill-ctx.adaptive-value-layout .screen-max-turns .turn-picker {
+    width: min(100%, clamp(64rem, 54cqw, 84rem));
+    max-width: none;
+    gap: 2rem;
+    padding: 2rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-max-turns .turn-limit {
+    font-size: clamp(4.75rem, 4.2cqw, 6.75rem);
+  }
+  .drill-ctx.adaptive-value-layout .screen-max-turns .turn-unit {
+    font-size: 1rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-max-turns .turn-count {
+    font-size: 0.9rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-max-turns .turn-slider-track {
+    height: 0.75rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-max-turns .turn-slider-thumb {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-max-turns .turn-slider-label {
+    padding-top: 0.75rem;
+    font-size: 1rem;
+  }
+}
+
+@container drill (min-width: 2600px) {
+  .drill-ctx.adaptive-value-layout .level-tile {
+    gap: 0.85rem;
+    padding: 2rem;
+  }
+  .drill-ctx.adaptive-value-layout .level-tile .value-numeral {
+    font-size: 5.25rem;
+  }
+  .drill-ctx.adaptive-value-layout .level-tile .value-label,
+  .drill-ctx.adaptive-value-layout .monument .value-label {
+    font-size: 1.65rem;
+  }
+  .drill-ctx.adaptive-value-layout .level-tile .value-desc,
+  .drill-ctx.adaptive-value-layout .monument .value-desc {
+    font-size: 1.1rem;
+    line-height: 1.35;
+  }
+  .drill-ctx.adaptive-value-layout .level-tile .value-count,
+  .drill-ctx.adaptive-value-layout .monument .value-count {
+    font-size: 1.4rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-max-turns .turn-picker {
+    width: min(100%, clamp(88rem, 52cqw, 112rem));
+    gap: 2.75rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-max-turns .turn-limit {
+    font-size: clamp(6.75rem, 3.6cqw, 8.5rem);
+  }
+  .drill-ctx.adaptive-value-layout .screen-max-turns .turn-unit {
+    font-size: 1.25rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-max-turns .turn-count {
+    font-size: 1.1rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-max-turns .turn-slider-track {
+    height: 0.9rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-max-turns .turn-slider-thumb {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
+  .drill-ctx.adaptive-value-layout .screen-max-turns .turn-slider-label {
+    padding-top: 0.9rem;
+    font-size: 1.2rem;
+  }
+}

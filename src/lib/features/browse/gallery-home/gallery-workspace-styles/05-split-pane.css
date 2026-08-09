@@ -1,0 +1,225 @@
+/* ── Split pane (LAST: must outrank every tier above) ──────────── */
+/* Split pane: the editor is a COLUMN under the catalog, not a stage of its
+     own. Vertically centering a short option set there opens a hole under the
+     header; start at the top and let the column breathe at the bottom, where
+     the results grid beside it is already carrying the eye. */
+.drill-ctx.split-pane .drill-screen {
+  justify-content: flex-start;
+  padding-top: 0.25rem;
+}
+/* `.drill-screen >` matches the per-screen tier rules' weight (they key off
+     .screen-loop / .screen-length on this same element), so this override wins
+     on order rather than losing on specificity.
+
+     The list is sized by its ROWS, not by the column. The pane budget fits the
+     row height between the per-screen bounds below, then publishes exact
+     catalog/editor sizes whose sum fills the column. A list only scrolls when
+     even its minimum rows cannot fit. */
+.drill-ctx.split-pane .drill-screen > .value-list,
+.drill-ctx.split-pane .drill-screen > .letter-grid,
+.drill-ctx.split-pane .drill-screen > .turn-picker {
+  flex: 0 1 auto;
+}
+/* Every per-screen tier caps its rows (`minmax(5.25rem, 5.5rem)` etc.) so the
+     phone composition can't balloon. In the pane that ceiling is exactly what
+     leaves the hole — raise it, but keep a ceiling: two grid-mode cards given a
+     free `1fr` grew to 570px each and stranded their art in a huge empty box,
+     which is the same defect wearing the opposite sign. Rows grow to a sane
+     maximum and the leftover distributes evenly, so short option sets read as a
+     spaced card list instead of a pile at the top. */
+/* A fixed length as the minmax MINIMUM ignores what the card holds. Once a
+     list has more rows than the column has height there is no free space left,
+     every track freezes at that length, and a card needing more spills — the
+     folder glyph out the top, the count out the bottom, into the gaps between
+     rows, so consecutive rows read as overlapping (Austen, 2026-08-05: "notice
+     how the icon is spilling out of its container"). Collections showed it
+     because it is the one screen whose content exceeds its zone.
+
+     Cards that are a stack of text plus a fixed glyph therefore floor at
+     `min-content` (`--pane-row-fit`) — a row can never be shorter than what it
+     holds — and the numeric floor moves onto the card as `min-height`, where it
+     still holds SHORT cards open but can no longer crush a tall one.
+
+     The art-led screens (start position, grid mode, T&D) opt out deliberately:
+     their art is a PERCENTAGE of the card, so it already shrinks with the box,
+     and a percentage cannot resolve during min-content sizing — it falls back
+     to the pictograph's intrinsic size and inflates the floor to a height the
+     column never had. Those keep the numeric floor. */
+.drill-ctx.split-pane .drill-screen > .value-list,
+.drill-ctx.split-pane .drill-screen > .letter-grid {
+  grid-auto-rows: minmax(
+    var(--pane-row-fit, var(--pane-row-min, 4.5rem)),
+    var(--pane-row-size, var(--pane-row-max, 8rem))
+  );
+  align-content: start;
+}
+.drill-ctx.split-pane .screen-collections > .value-list,
+.drill-ctx.split-pane .screen-loop > .value-list,
+.drill-ctx.split-pane .screen-creator > .value-list,
+.drill-ctx.split-pane .screen-level > .value-list,
+.drill-ctx.split-pane .screen-length > .value-list,
+.drill-ctx.split-pane .screen-max-turns > .value-list,
+.drill-ctx.split-pane .screen-letter > .letter-grid {
+  --pane-row-fit: min-content;
+}
+.drill-ctx.split-pane .drill-screen > .value-list > *,
+.drill-ctx.split-pane .drill-screen > .letter-grid > * {
+  min-height: var(--pane-row-min, 4.5rem);
+}
+.drill-ctx.split-pane .screen-letter > .letter-grid {
+  --pane-row-min: 3.25rem;
+  --pane-row-max: 4.5rem;
+}
+.drill-ctx.split-pane .screen-length > .value-list,
+.drill-ctx.split-pane .screen-max-turns > .value-list {
+  --pane-row-min: 5rem;
+  --pane-row-max: 10rem;
+}
+.drill-ctx.split-pane .screen-family > .value-list,
+.drill-ctx.split-pane .screen-loop > .value-list,
+.drill-ctx.split-pane .screen-collections > .value-list,
+.drill-ctx.split-pane .screen-creator > .value-list {
+  --pane-row-min: 5.25rem;
+  --pane-row-max: 8.5rem;
+}
+.drill-ctx.split-pane .screen-level > .value-list,
+.drill-ctx.split-pane .screen-gridmode > .value-list,
+.drill-ctx.split-pane .screen-positions > .value-list {
+  --pane-row-min: 8rem;
+  --pane-row-max: 18rem;
+}
+/* LOOPs is seven options, and seven into two columns strands Rewound alone on
+     the last row — a row of one, which `4k-native-layout.md` rule 2 forbids.
+     The count is pinned here rather than inherited from the tier soup so the
+     orphan rule below is provably correct: in a two-column grid the last child
+     is alone exactly when its index is odd. Same trick as the catalog's
+     eleventh tile. */
+@container drill (min-width: 640px) {
+  .drill-ctx.split-pane .screen-loop > .value-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .drill-ctx.split-pane
+    .screen-loop
+    > .value-list
+    > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+/* The art scales with the CARD, not with the tier. Every one of these boxes
+     was a constant (76px pictograph, 44px family icon), so a card that grew to
+     fill its zone grew around a piece of art that stayed the size it is on a
+     phone — Austen, 2026-08-05: "all the pictographs are very small, and yet
+     all that empty space is also present". A percentage of the card's own
+     height with a rem ceiling makes the art a passenger of the budget. */
+.drill-ctx.split-pane .screen-positions .value-pictograph {
+  width: auto;
+  max-width: 100%;
+  height: min(68%, 18rem);
+  aspect-ratio: 1;
+}
+.drill-ctx.split-pane .screen-gridmode .value-grid-preview {
+  width: auto;
+  max-width: 100%;
+  height: min(56%, 15rem);
+  aspect-ratio: 1;
+}
+.drill-ctx.split-pane .screen-family .value-img.family-icon,
+.drill-ctx.split-pane .screen-collections .value-img {
+  width: auto;
+  max-width: 100%;
+  height: min(44%, 7rem);
+  aspect-ratio: 1;
+}
+.drill-ctx.split-pane .screen-loop .loop-icon {
+  width: auto;
+  font-size: 1.75rem;
+}
+/* `.value-main { flex: 1 }` is a ROW rule — in a portrait card it grows into
+     all the height the budget just handed the card and strands the count at
+     the far bottom, which reads as a hole inside the card. The card's contents
+     are one centred group. */
+.drill-ctx.split-pane .monument .value-main,
+.drill-ctx.split-pane .creator-row .value-main {
+  flex: 0 1 auto;
+}
+/* Back stays: the catalog above shows every category, but the landing (hero
+     doors, peeks, "Show all") is only reachable through it. */
+.drill-ctx.split-pane .drill-head.with-back {
+  position: static;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  justify-items: start;
+  text-align: left;
+  background: transparent;
+}
+.drill-ctx.split-pane .drill-head.with-back .head-back {
+  height: 36px;
+  min-width: 36px;
+  padding: 0 0.75rem 0 0.65rem;
+}
+.drill-ctx.split-pane .drill-head.with-back h2 {
+  grid-column: 2;
+  font-size: 1.15rem;
+}
+.drill-ctx.split-pane .drill-head.with-back p {
+  grid-column: 1 / -1;
+  text-align: left;
+}
+
+/* Wide column (4K@150% and up — the drill's own 2300px seam widens the
+     left column past 640px). The row ceilings above are sized for a ~440px
+     column; at 736px+ they leave the same hole the pane was built to close, so
+     every ceiling steps with the column. */
+@container drill (min-width: 640px) {
+  .drill-ctx.split-pane .drill-screen > .value-list,
+  .drill-ctx.split-pane .drill-screen > .letter-grid {
+    --pane-row-max: 14rem;
+  }
+  .drill-ctx.split-pane .screen-letter > .letter-grid {
+    --pane-row-max: 6rem;
+  }
+  .drill-ctx.split-pane .screen-level > .value-list,
+  .drill-ctx.split-pane .screen-gridmode > .value-list,
+  .drill-ctx.split-pane .screen-positions > .value-list {
+    --pane-row-max: 26rem;
+  }
+  .drill-ctx.split-pane .screen-loop .loop-icon {
+    font-size: 2.5rem;
+  }
+}
+
+/* Very tall columns (4K at 100%, portrait desktops). The catalog takes most
+     of the extra (CategoryRail's own tall-viewport ceiling), but a card that
+     stops at its 1080p ceiling inside a 1100px zone still reads as stranded,
+     so the ceilings step once more here. */
+@media (min-height: 1600px) {
+  .drill-ctx.split-pane .drill-screen > .value-list,
+  .drill-ctx.split-pane .drill-screen > .letter-grid {
+    --pane-row-max: 11rem;
+  }
+  .drill-ctx.split-pane .screen-letter > .letter-grid {
+    --pane-row-max: 5.5rem;
+  }
+  .drill-ctx.split-pane .screen-level > .value-list,
+  .drill-ctx.split-pane .screen-gridmode > .value-list,
+  .drill-ctx.split-pane .screen-positions > .value-list {
+    --pane-row-max: 22rem;
+  }
+  @container drill (min-width: 640px) {
+    .drill-ctx.split-pane .drill-screen > .value-list,
+    .drill-ctx.split-pane .drill-screen > .letter-grid {
+      --pane-row-max: 18rem;
+    }
+    .drill-ctx.split-pane .screen-letter > .letter-grid {
+      --pane-row-max: 7rem;
+    }
+    .drill-ctx.split-pane .screen-level > .value-list,
+    .drill-ctx.split-pane .screen-gridmode > .value-list,
+    .drill-ctx.split-pane .screen-positions > .value-list {
+      --pane-row-max: 30rem;
+    }
+  }
+}
+.drill-ctx.sheet .drill-screen {
+  justify-content: flex-start;
+}
