@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "seraphic-vault",
+  "units": "metres",
+  "coordinateSystem": {
+    "x": "screen-right",
+    "y": "up",
+    "z": "depth; negative values recede behind the performance floor"
+  },
+  "heroCamera": {
+    "position": [0, 7.8, 34],
+    "target": [0, 3, -3.8],
+    "fovDegrees": 48,
+    "aspect": 1.7777777778
+  },
+  "cameraPresets": {
+    "desktop": {
+      "label": "Desktop 16:9",
+      "position": [0, 7.8, 34],
+      "target": [0, 3, -3.8],
+      "fovDegrees": 48,
+      "aspect": 1.7777777778
+    },
+    "portrait": {
+      "label": "Portrait phone",
+      "position": [0, 8.2, 33],
+      "target": [0, 3.1, -3.8],
+      "fovDegrees": 78,
+      "aspect": 0.5622188906
+    },
+    "landscapePhone": {
+      "label": "Landscape phone",
+      "position": [0, 7.2, 32],
+      "target": [0, 2.9, -3.8],
+      "fovDegrees": 32,
+      "aspect": 2.3300970874
+    }
+  },
+  "mainStage": {
+    "surfaceY": 0.01,
+    "performanceClearRadius": 5.5,
+    "visualWidth": 27.1,
+    "bounds": {
+      "min": [-13.4, -0.68, -11.4],
+      "max": [13.7, 0.01, 7.6]
+    },
+    "outlineXZ": [
+      [-9.7, -7.7],
+      [-5.8, -9.5],
+      [2.5, -9.8],
+      [8.6, -8.6],
+      [10.3, -3.9],
+      [10.7, 2.2],
+      [8.7, 6.2],
+      [3.5, 7.4],
+      [-2.7, 7.6],
+      [-8.2, 6.8],
+      [-10.4, 2.9],
+      [-10.1, -2.4]
+    ]
+  },
+  "sun": {
+    "position": [0, 6.2, -27],
+    "diameter": 7.4
+  },
+  "protectedHeroBand": {
+    "ndcMinX": -0.2,
+    "ndcMaxX": 0.2,
+    "purpose": "Keep the centered sun, inner feather ribs, and performer silhouette unobstructed."
+  },
+  "desktopFeatherExclusionZones": [
+    {
+      "id": "left-outer-feather",
+      "ndcBounds": [-0.66, -0.32, -0.48, 0.68]
+    },
+    {
+      "id": "right-outer-feather",
+      "ndcBounds": [0.32, 0.66, -0.48, 0.68]
+    }
+  ],
+  "distantPlatforms": [
+    {
+      "id": "broken-vigil",
+      "name": "Broken Vigil",
+      "position": [-32.972, -12.157, -18],
+      "responsivePositions": {
+        "portrait": [-17.259, -24.02, -18],
+        "landscapePhone": [-26.409, -6.959, -18]
+      },
+      "targetNdc": {
+        "desktop": [-0.77, -0.55],
+        "portrait": [-0.69, -0.56],
+        "landscapePhone": [-0.77, -0.55]
+      },
+      "worldScale": 0.46,
+      "targetScreenWidthRatio": 0.3,
+      "silhouette": "A partial stone deck carrying one broken outer feather arc.",
+      "cloudCollarRadius": 7.2,
+      "atmosphericOpacity": 0.55,
+      "blueShift": 0.28,
+      "detailTier": "near-distance"
+    },
+    {
+      "id": "twin-choir",
+      "name": "Twin Choir",
+      "position": [39.341, -9.797, -28],
+      "responsivePositions": {
+        "portrait": [19.822, -18.05, -28],
+        "landscapePhone": [31.867, -6.011, -28]
+      },
+      "targetNdc": {
+        "desktop": [0.78, -0.34],
+        "portrait": [0.68, -0.34],
+        "landscapePhone": [0.78, -0.34]
+      },
+      "worldScale": 0.33,
+      "targetScreenWidthRatio": 0.18,
+      "silhouette": "A narrow deck with two inner feather spires and no outer wings.",
+      "cloudCollarRadius": 5.5,
+      "atmosphericOpacity": 0.38,
+      "blueShift": 0.46,
+      "detailTier": "middle-distance"
+    },
+    {
+      "id": "eroded-halo",
+      "name": "Eroded Halo",
+      "position": [-16.447, -4.614, -42],
+      "responsivePositions": {
+        "portrait": [-10.042, -4.681, -42],
+        "landscapePhone": [-13.482, -3.415, -42]
+      },
+      "targetNdc": {
+        "desktop": [-0.27, -0.08],
+        "portrait": [-0.29, -0.04],
+        "landscapePhone": [-0.27, -0.08]
+      },
+      "worldScale": 0.222,
+      "targetScreenWidthRatio": 0.1,
+      "silhouette": "An eroded ring plinth with no intact feather architecture.",
+      "cloudCollarRadius": 4.1,
+      "atmosphericOpacity": 0.24,
+      "blueShift": 0.66,
+      "detailTier": "far-distance"
+    },
+    {
+      "id": "cloud-crown",
+      "name": "Cloud Crown",
+      "position": [18.939, 13.076, -56],
+      "responsivePositions": {
+        "portrait": [10.985, 22.637, -56],
+        "landscapePhone": [15.761, 7.228, -56]
+      },
+      "targetNdc": {
+        "desktop": [0.27, 0.42],
+        "portrait": [0.28, 0.38],
+        "landscapePhone": [0.27, 0.42]
+      },
+      "worldScale": 0.155,
+      "targetScreenWidthRatio": 0.06,
+      "silhouette": "A nearly abstract cloud-wrapped stone crown with no readable small detail.",
+      "cloudCollarRadius": 3.2,
+      "atmosphericOpacity": 0.15,
+      "blueShift": 0.82,
+      "detailTier": "deep-distance"
+    }
+  ],
+  "attentionRoute": [
+    {
+      "stop": 1,
+      "focus": "Main feather vault and centered sun",
+      "understanding": "This is the primary performance sanctuary."
+    },
+    {
+      "stop": 2,
+      "focus": "Broken Vigil on the lower left",
+      "understanding": "The sanctuary belongs to a larger field of floating structures."
+    },
+    {
+      "stop": 3,
+      "focus": "Twin Choir and Eroded Halo alternating across the frame",
+      "understanding": "The platforms are related but not cloned."
+    },
+    {
+      "stop": 4,
+      "focus": "Cloud Crown dissolving into the far atmosphere",
+      "understanding": "The celestial field continues beyond readable architecture."
+    }
+  ]
+}

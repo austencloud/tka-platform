@@ -1,0 +1,267 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "seraphic-vault",
+  "title": "Seraphic Vault Phase 2",
+  "domainProofRequired": false,
+  "currentGate": 2,
+  "authority": {
+    "experienceSpec": "docs/superpowers/specs/active/2026-08-09-seraphic-vault-celestial-design.md",
+    "roomShellSource": "scripts/build-celestial-environment.py",
+    "planContract": "scripts/seraphic-vault-phase2-layout.json",
+    "museumTrackerItems": [
+      "9jdkCjal42M5pqkTUtfW",
+      "tC1HqVtMXpyDLxSb2Sol",
+      "EiR6GvhtzW1A3OEaZ9Zi",
+      "bqLJGrbCRN7kTnoz9NuQ"
+    ]
+  },
+  "sequenceFingerprints": [],
+  "claims": [
+    {
+      "id": "C-001",
+      "class": "literal",
+      "statement": "The current Seraph shell retains a 5.5 metre clear performance radius and six mirrored feather ribs.",
+      "evidence": [
+        "scripts/build-celestial-environment.py",
+        "scripts/verify-celestial-environment-glb.mjs"
+      ]
+    },
+    {
+      "id": "C-002",
+      "class": "invention",
+      "statement": "Four distant platforms use 30, 18, 10, and 6 percent of the main deck's hero-frame width.",
+      "evidence": [
+        "scripts/seraphic-vault-phase2-layout.json",
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-report-r2.json"
+      ]
+    },
+    {
+      "id": "C-003",
+      "class": "invention",
+      "statement": "Each distant platform has a distinct silhouette while preserving the Seraph stone-and-feather vocabulary.",
+      "evidence": [
+        "scripts/seraphic-vault-phase2-layout.json"
+      ]
+    },
+    {
+      "id": "C-004",
+      "class": "invention",
+      "statement": "No distant platform intersects the protected central 20 percent of the hero frame.",
+      "evidence": [
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-report-r2.json"
+      ]
+    }
+  ],
+  "exemptions": [
+    {
+      "gateId": "playable-graybox",
+      "type": "evidence",
+      "name": "first-person-walk",
+      "rationale": "The Celestial scene is a fixed-camera performance background with no player locomotion. The registered desktop, portrait, landscape-phone, top, and profile views are the correct spatial proof.",
+      "approvedBy": "Austen Cloud",
+      "approvedAt": "2026-08-09T17:48:20.898Z",
+      "museumTrackerItem": "EiR6GvhtzW1A3OEaZ9Zi"
+    },
+    {
+      "gateId": "playable-graybox",
+      "type": "check",
+      "name": "route-duration",
+      "rationale": "This fixed-camera environment has an attention sequence rather than a timed walking route.",
+      "approvedBy": "Austen Cloud",
+      "approvedAt": "2026-08-09T17:48:20.898Z",
+      "museumTrackerItem": "EiR6GvhtzW1A3OEaZ9Zi"
+    },
+    {
+      "gateId": "playable-graybox",
+      "type": "check",
+      "name": "sequence-parity",
+      "rationale": "Seraphic Vault Phase 2 carries no selected museum performance sequence or TKA motion data.",
+      "approvedBy": "Austen Cloud",
+      "approvedAt": "2026-08-09T17:48:20.898Z",
+      "museumTrackerItem": "EiR6GvhtzW1A3OEaZ9Zi"
+    }
+  ],
+  "gates": [
+    {
+      "id": "evidence-preflight",
+      "status": "verified",
+      "evidence": [
+        {
+          "kind": "canon-audit",
+          "path": "docs/superpowers/specs/seraphic-vault/gate0-canon-audit.md"
+        },
+        {
+          "kind": "room-shell",
+          "path": "static/models/celestial/celestial-environment.glb"
+        }
+      ],
+      "checks": [
+        {
+          "name": "canon-conflicts",
+          "status": "passed",
+          "evidence": "Gate 0 audit resolves the historical 2026-05 spec beneath the active 2026-08 Seraph direction and keeps the 2D package out of scope."
+        },
+        {
+          "name": "source-digests",
+          "status": "passed",
+          "evidence": "Gate 1 report fingerprints the active spec, Blender builder, runtime owner, config owner, and optimized GLB."
+        }
+      ],
+      "approval": null
+    },
+    {
+      "id": "measured-plan",
+      "status": "approved",
+      "evidence": [
+        {
+          "kind": "floor-plan",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-board-r2.png"
+        },
+        {
+          "kind": "vertical-section",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-board-r2.png"
+        },
+        {
+          "kind": "route-storyboard",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-board-r2.png"
+        },
+        {
+          "kind": "sightline-study",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-board-r2.png"
+        },
+        {
+          "kind": "independent-review",
+          "path": "docs/superpowers/specs/seraphic-vault/2026-08-09-opus-gate1-review.md"
+        },
+        {
+          "kind": "rejected-plan",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-board-r1-rejected.png"
+        },
+        {
+          "kind": "independent-followup",
+          "path": "docs/superpowers/specs/seraphic-vault/2026-08-09-opus-gate1-r2-review.md"
+        }
+      ],
+      "checks": [
+        {
+          "name": "walkability",
+          "status": "passed",
+          "evidence": "The existing 5.5 metre central performance radius is unchanged."
+        },
+        {
+          "name": "clearance",
+          "status": "passed",
+          "evidence": "The plan verifier confirms every distant shell clears the main stage envelope."
+        },
+        {
+          "name": "sightlines",
+          "status": "passed",
+          "evidence": "Revision 2 separates every registered-camera platform center by at least 0.15 NDC on both axes, preserves the central band, and clears the desktop outer-feather masks."
+        },
+        {
+          "name": "final-view",
+          "status": "passed",
+          "evidence": "Revision 2 keeps all four platforms visible in desktop, portrait-phone, and landscape-phone frames at the registered NDC targets."
+        }
+      ],
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-09T17:48:20.898Z",
+        "quote": "Looks fine to me, let's put it together.",
+        "museumTrackerItem": "EiR6GvhtzW1A3OEaZ9Zi",
+        "visualComprehensionConfirmed": true
+      }
+    },
+    {
+      "id": "playable-graybox",
+      "status": "ready-for-review",
+      "evidence": [
+        {
+          "kind": "blender-source",
+          "path": "blender/seraphic_vault_phase2_graybox.blend",
+          "sha256": "ed766baaa16b01c5353aeaa75e5b663c6a3800593840ecd8a122fc10eb45e6c4"
+        },
+        {
+          "kind": "coordinate-manifest",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-coordinate-manifest.json",
+          "sha256": "54c40ca00ce72f48532bb1c975b57c1dc8d4d5f54549c9c9ab359167e9f42d9e"
+        },
+        {
+          "kind": "graybox-glb",
+          "path": "static/models/celestial/review/seraphic-vault-phase2-graybox.glb",
+          "sha256": "d28c80cba202c0b3a6b41f420afd28228427699cc84f48789531b8392d9b847b"
+        },
+        {
+          "kind": "review-contact-sheet",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-contact-sheet.png",
+          "sha256": "2f9f63551198116282183ffd27eafa3ebda9cd8bcac632b7f8bd3c06d67a7dc9"
+        },
+        {
+          "kind": "registered-camera-set",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-report.json"
+        },
+        {
+          "kind": "spatial-verification",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-verification.json",
+          "sha256": "e6b8393341e7823fa90ec124aa0af97b8437028e8b8f88834782c83a8f166f0a"
+        }
+      ],
+      "checks": [
+        {
+          "name": "artifact-digest",
+          "status": "passed",
+          "evidence": "Gate 2 report records SHA-256 digests for the Blender source, derived coordinate contract, review GLB, five registered renders, verification report, and contact sheet."
+        },
+        {
+          "name": "collision",
+          "status": "passed",
+          "evidence": "All responsive platform shells clear the main sanctuary envelope; the tightest calculated margin is 3.0 metres beyond the combined shell radii."
+        },
+        {
+          "name": "registered-silhouette-clearance",
+          "status": "passed",
+          "evidence": "Blender vertex projection confirms every solid platform silhouette clears every real Meshy feather rib in desktop, portrait, and landscape-phone cameras."
+        },
+        {
+          "name": "projection-parity",
+          "status": "passed",
+          "evidence": "Every responsive platform root lands within 0.0005 NDC of its registered target."
+        },
+        {
+          "name": "review-glb-structure",
+          "status": "passed",
+          "evidence": "The review GLB contains one scene, no cameras, all four platform families, and 46 tagged Gate 2 mesh nodes."
+        }
+      ],
+      "approval": null
+    },
+    {
+      "id": "registered-visual-target",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "production-slice",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "integrated-room",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "final-acceptance",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    }
+  ]
+}

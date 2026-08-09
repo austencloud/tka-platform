@@ -1,0 +1,101 @@
+{
+  "generatedAt": "2026-08-09T17:27:24.099Z",
+  "layoutPath": "scripts/seraphic-vault-phase2-layout.json",
+  "artifacts": {
+    "svg": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-board.svg",
+    "png": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-board.png"
+  },
+  "sourceDigests": {
+    "docs/superpowers/specs/active/2026-08-09-seraphic-vault-celestial-design.md": "adce341ebf9ea762a6ca4cc53a6206b7a9e1e0c289f229a761f5d70395fba600",
+    "scripts/build-celestial-environment.py": "b87f6dd056b321c9a2215a6444ebd18d4478b697fd7a3c5a7b49ba8c37a88162",
+    "src/lib/shared/3d/environments/scenes/CelestialScene.svelte": "579dcf5712179e8b960872c5cf9be53b0d514d40c6696b3176ee9496e427ee6e",
+    "src/lib/shared/3d/environments/domain/models/scene-configs/celestial-scene-config.ts": "3548d5a129fdc33efcdd718a3a0aabe3ebc6496e77b9961ba13dfa4d8630fcc7",
+    "static/models/celestial/celestial-environment.glb": "f1a8e4eccf0a944c946d35990f0ecff351ce8c5a50351f2f946921caabf76086"
+  },
+  "protectedHeroBand": {
+    "ndcMinX": -0.2,
+    "ndcMaxX": 0.2,
+    "purpose": "Keep the centered sun, inner feather ribs, and performer silhouette unobstructed."
+  },
+  "mainProjectedWidth": 0.986,
+  "platformMetrics": [
+    {
+      "id": "broken-vigil",
+      "name": "Broken Vigil",
+      "projectedCenter": {
+        "x": -0.548,
+        "y": -0.21
+      },
+      "ndcBoundsX": [
+        -0.696,
+        -0.399
+      ],
+      "screenWidthRatio": 0.301,
+      "targetScreenWidthRatio": 0.3
+    },
+    {
+      "id": "twin-choir",
+      "name": "Twin Choir",
+      "projectedCenter": {
+        "x": 0.479,
+        "y": -0.216
+      },
+      "ndcBoundsX": [
+        0.39,
+        0.569
+      ],
+      "screenWidthRatio": 0.181,
+      "targetScreenWidthRatio": 0.18
+    },
+    {
+      "id": "eroded-halo",
+      "name": "Eroded Halo",
+      "projectedCenter": {
+        "x": -0.587,
+        "y": -0.2
+      },
+      "ndcBoundsX": [
+        -0.636,
+        -0.538
+      ],
+      "screenWidthRatio": 0.099,
+      "targetScreenWidthRatio": 0.1
+    },
+    {
+      "id": "cloud-crown",
+      "name": "Cloud Crown",
+      "projectedCenter": {
+        "x": 0.463,
+        "y": 0.117
+      },
+      "ndcBoundsX": [
+        0.433,
+        0.492
+      ],
+      "screenWidthRatio": 0.06,
+      "targetScreenWidthRatio": 0.06
+    }
+  ],
+  "checks": [
+    {
+      "name": "walkability",
+      "passed": true,
+      "evidence": "5.5 m central performance radius remains unchanged."
+    },
+    {
+      "name": "clearance",
+      "passed": true,
+      "evidence": "Every distant platform clears the main shell by at least 2 m beyond combined visual radii."
+    },
+    {
+      "name": "sightlines",
+      "passed": true,
+      "evidence": "No platform intersects the protected central 20% hero band around the sun and inner ribs."
+    },
+    {
+      "name": "final-view",
+      "passed": true,
+      "evidence": "All four islands fit the 16:9 hero frame and match the 30/18/10/6% screen-width targets."
+    }
+  ]
+}

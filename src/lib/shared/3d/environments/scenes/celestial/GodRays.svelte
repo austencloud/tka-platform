@@ -16,7 +16,7 @@
 
   let { config }: Props = $props();
 
-  const geometry = new PlaneGeometry(40, 25, 1, 1);
+  const geometry = new PlaneGeometry(38, 28, 1, 1);
 
   const vertexShader = /* glsl */ `
     varying vec2 vUv;
@@ -36,21 +36,25 @@
     float hash(float n) { return fract(sin(n) * 43758.5453); }
 
     void main() {
+      const float sourceY = 0.53;
+      float descent = clamp((sourceY - vUv.y) / sourceY, 0.0, 1.0);
+      float belowSun = 1.0 - smoothstep(sourceY, sourceY + 0.035, vUv.y);
       float beams = 0.0;
       for (float i = 0.0; i < 8.0; i++) {
         if (i >= uCount) break;
-        float offset = hash(i * 127.1) * 0.8 + 0.1;
-        float width = 0.02 + hash(i * 311.7) * 0.03;
-        float drift = sin(uTime * 0.5 + i * 2.1) * 0.03;
-        float beam = smoothstep(width, 0.0, abs(vUv.x - offset - drift));
-        beam *= (0.6 + hash(i * 197.3) * 0.4);
+        float fan = (hash(i * 127.1) - 0.5) * 1.35;
+        float drift = sin(uTime * 0.28 + i * 2.1) * 0.015;
+        float center = 0.5 + fan * descent + drift * descent;
+        float width = 0.035 + descent * (0.085 + hash(i * 311.7) * 0.055);
+        float beam = smoothstep(width, 0.0, abs(vUv.x - center));
+        beam *= (0.32 + hash(i * 197.3) * 0.28);
         beams += beam;
       }
 
-      float vFade = smoothstep(0.0, 0.25, vUv.y) * smoothstep(1.0, 0.4, vUv.y);
+      float vFade = smoothstep(0.0, 0.12, vUv.y) * belowSun;
 
-      float noise = fract(sin(dot(vUv * 40.0 + uTime * 0.1, vec2(12.9898, 78.233))) * 43758.5453);
-      beams *= (0.85 + noise * 0.15);
+      float noise = fract(sin(dot(vUv * 32.0 + uTime * 0.06, vec2(12.9898, 78.233))) * 43758.5453);
+      beams *= (0.9 + noise * 0.1);
 
       float alpha = beams * vFade * uIntensity;
 
@@ -101,9 +105,8 @@
   <T.Mesh
     {geometry}
     {material}
-    position.y={15}
-    position.x={-3}
-    rotation.x={-0.35}
-    rotation.y={0.2}
+    position.y={5}
+    position.z={-25}
+    renderOrder={-1}
   />
 {/if}

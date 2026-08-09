@@ -7,7 +7,7 @@
    * and doesn't depend on scene.background timing.
    */
 
-  import { T } from "@threlte/core";
+  import { T, useTask, useThrelte } from "@threlte/core";
   import { useTexture } from "@threlte/extras";
   import { onDestroy, untrack } from "svelte";
   import {
@@ -16,6 +16,7 @@
     BackSide,
     Color,
     MathUtils,
+    type Mesh,
     Vector3,
   } from "three";
   import type { MoonConfig } from "../domain/models/scene-configs";
@@ -29,6 +30,10 @@
     midColor?: string;
     /** Radius of the sky dome */
     radius?: number;
+    /** Raw sky-latitude value mapped to the bottom gradient stop. */
+    gradientStart?: number;
+    /** Raw sky-latitude value mapped to the top gradient stop. */
+    gradientEnd?: number;
     /** Optional celestial moon composited into the sky itself. */
     moon?: MoonConfig | null;
   }
@@ -38,11 +43,14 @@
     bottomColor = "#0a0a12",
     midColor,
     radius = 200,
+    gradientStart = 0,
+    gradientEnd = 1,
     moon = null,
   }: Props = $props();
 
   const geometry = untrack(() => new SphereGeometry(radius, 32, 32));
   const moonTexture = useTexture(moon?.texture ?? "/textures/moon.png");
+  const { camera } = useThrelte();
 
   function resolveMoonDirection(config: MoonConfig | null): Vector3 {
     const source = config?.direction ?? config?.position ?? [0, 0.25, -1];
@@ -67,50 +75,47 @@
     return 0.52;
   }
 
-  let material = $state<ShaderMaterial | undefined>(undefined);
-
-  $effect(() => {
-    const top = new Color(topColor);
-    const mid = midColor ? new Color(midColor) : null;
-    const bottom = new Color(bottomColor);
-    const moonDirection = resolveMoonDirection(moon);
-    const moonAngularDiameter = resolveMoonAngularDiameter(moon);
-
-    const mat = new ShaderMaterial({
-      uniforms: {
-        uTopColor: { value: top },
-        uMidColor: { value: mid ?? new Color().lerpColors(top, bottom, 0.5) },
-        uBottomColor: { value: bottom },
-        uHasMid: { value: mid ? 1.0 : 0.0 },
-        uMoonEnabled: { value: moon?.enabled && $moonTexture ? 1.0 : 0.0 },
-        uMoonTexture: { value: $moonTexture ?? null },
-        uMoonDirection: { value: moonDirection },
-        uMoonAngularRadius: {
-          value: MathUtils.degToRad(moonAngularDiameter * 0.5),
+  // The material must exist when Threlte creates the mesh. Supplying
+  // `undefined` on the first render and replacing it from an effect left the
+  // sky mesh on Three's fallback material path in some runtimes, so only the
+  // scene clear colour was visible. Keep one stable material and update its
+  // uniforms reactively instead.
+  const material = untrack(
+    () =>
+      new ShaderMaterial({
+        uniforms: {
+          uTopColor: { value: new Color(topColor) },
+          uMidColor: { value: new Color(midColor ?? topColor) },
+          uBottomColor: { value: new Color(bottomColor) },
+          uHasMid: { value: midColor ? 1.0 : 0.0 },
+          uGradientStart: { value: gradientStart },
+          uGradientEnd: { value: gradientEnd },
+          uMoonEnabled: { value: 0.0 },
+          uMoonTexture: { value: null },
+          uMoonDirection: { value: resolveMoonDirection(moon) },
+          uMoonAngularRadius: {
+            value: MathUtils.degToRad(resolveMoonAngularDiameter(moon) * 0.5),
+          },
+          uMoonOpacity: { value: moon?.opacity ?? 1.0 },
+          uMoonGlowScale: { value: moon?.glowScale ?? 1.12 },
+          uMoonGlowOpacity: { value: moon?.glowOpacity ?? 0.025 },
         },
-        uMoonOpacity: { value: moon?.opacity ?? 1.0 },
-        uMoonGlowScale: { value: moon?.glowScale ?? 1.12 },
-        uMoonGlowOpacity: { value: moon?.glowOpacity ?? 0.025 },
-      },
-      vertexShader: /* glsl */ `
+        vertexShader: /* glsl */ `
         varying vec3 vSkyDirection;
 
         void main() {
           vSkyDirection = normalize(position);
 
-          // A celestial background has orientation but no camera translation.
-          // Removing the translation makes every point effectively optical
-          // infinity: rotation changes the view, walking does not add parallax.
-          mat4 rotationalView = mat4(mat3(viewMatrix));
-          vec4 clipPosition = projectionMatrix * rotationalView * vec4(position, 1.0);
-          gl_Position = clipPosition.xyww;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
-      `,
-      fragmentShader: /* glsl */ `
+        `,
+        fragmentShader: /* glsl */ `
         uniform vec3 uTopColor;
         uniform vec3 uMidColor;
         uniform vec3 uBottomColor;
         uniform float uHasMid;
+        uniform float uGradientStart;
+        uniform float uGradientEnd;
         uniform float uMoonEnabled;
         uniform sampler2D uMoonTexture;
         uniform vec3 uMoonDirection;
@@ -122,7 +127,12 @@
 
         void main() {
           vec3 skyDirection = normalize(vSkyDirection);
-          float h = skyDirection.y * 0.5 + 0.5;
+          float rawHeight = skyDirection.y * 0.5 + 0.5;
+          float h = clamp(
+            (rawHeight - uGradientStart) / max(uGradientEnd - uGradientStart, 0.0001),
+            0.0,
+            1.0
+          );
 
           vec3 color;
           if (uHasMid > 0.5) {
@@ -180,15 +190,60 @@
 
           gl_FragColor = vec4(color, 1.0);
         }
-      `,
-      side: BackSide,
-      depthWrite: false,
-    });
-    material = mat;
-    return () => mat.dispose();
+        `,
+        side: BackSide,
+        depthTest: false,
+        depthWrite: false,
+      })
+  );
+
+  $effect(() => {
+    const top = new Color(topColor);
+    const mid = midColor ? new Color(midColor) : null;
+    const bottom = new Color(bottomColor);
+    material.uniforms.uTopColor!.value.copy(top);
+    material.uniforms.uMidColor!.value.copy(
+      mid ?? new Color().lerpColors(top, bottom, 0.5)
+    );
+    material.uniforms.uBottomColor!.value.copy(bottom);
+    material.uniforms.uHasMid!.value = mid ? 1.0 : 0.0;
+    material.uniforms.uGradientStart!.value = gradientStart;
+    material.uniforms.uGradientEnd!.value = gradientEnd;
+    material.uniforms.uMoonEnabled!.value =
+      moon?.enabled && $moonTexture ? 1.0 : 0.0;
+    material.uniforms.uMoonTexture!.value = $moonTexture ?? null;
+    material.uniforms.uMoonDirection!.value.copy(resolveMoonDirection(moon));
+    material.uniforms.uMoonAngularRadius!.value = MathUtils.degToRad(
+      resolveMoonAngularDiameter(moon) * 0.5
+    );
+    material.uniforms.uMoonOpacity!.value = moon?.opacity ?? 1.0;
+    material.uniforms.uMoonGlowScale!.value = moon?.glowScale ?? 1.12;
+    material.uniforms.uMoonGlowOpacity!.value = moon?.glowOpacity ?? 0.025;
   });
 
-  onDestroy(() => geometry.dispose());
+  let skyMesh: Mesh | undefined;
+
+  // Keep the dome centred on the active camera. This gives celestial features
+  // orientation without translation parallax and lets Three handle projection
+  // with its proven camera path instead of forcing every vertex onto the far
+  // clip plane.
+  useTask(() => {
+    const activeCamera = camera.current;
+    if (activeCamera && skyMesh) {
+      skyMesh.position.copy(activeCamera.position);
+    }
+  });
+
+  onDestroy(() => {
+    geometry.dispose();
+    material.dispose();
+  });
 </script>
 
-<T.Mesh {geometry} {material} renderOrder={-1} frustumCulled={false} />
+<T.Mesh
+  bind:ref={skyMesh}
+  {geometry}
+  {material}
+  renderOrder={-1}
+  frustumCulled={false}
+/>

@@ -1,0 +1,574 @@
+{
+  "generatedAt": "2026-08-09T17:41:21.937Z",
+  "layoutPath": "scripts/seraphic-vault-phase2-layout.json",
+  "artifacts": {
+    "svg": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-board-r2.svg",
+    "png": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-board-r2.png"
+  },
+  "sourceDigests": {
+    "docs/superpowers/specs/active/2026-08-09-seraphic-vault-celestial-design.md": "adce341ebf9ea762a6ca4cc53a6206b7a9e1e0c289f229a761f5d70395fba600",
+    "scripts/build-celestial-environment.py": "b87f6dd056b321c9a2215a6444ebd18d4478b697fd7a3c5a7b49ba8c37a88162",
+    "src/lib/shared/3d/environments/scenes/CelestialScene.svelte": "579dcf5712179e8b960872c5cf9be53b0d514d40c6696b3176ee9496e427ee6e",
+    "src/lib/shared/3d/environments/domain/models/scene-configs/celestial-scene-config.ts": "3548d5a129fdc33efcdd718a3a0aabe3ebc6496e77b9961ba13dfa4d8630fcc7",
+    "static/models/celestial/celestial-environment.glb": "f1a8e4eccf0a944c946d35990f0ecff351ce8c5a50351f2f946921caabf76086"
+  },
+  "protectedHeroBand": {
+    "ndcMinX": -0.2,
+    "ndcMaxX": 0.2,
+    "purpose": "Keep the centered sun, inner feather ribs, and performer silhouette unobstructed."
+  },
+  "desktopFeatherExclusionZones": [
+    {
+      "id": "left-outer-feather",
+      "ndcBounds": [
+        -0.66,
+        -0.32,
+        -0.48,
+        0.68
+      ]
+    },
+    {
+      "id": "right-outer-feather",
+      "ndcBounds": [
+        0.32,
+        0.66,
+        -0.48,
+        0.68
+      ]
+    }
+  ],
+  "mainProjectedWidth": 0.986,
+  "platformMetrics": [
+    {
+      "id": "broken-vigil",
+      "name": "Broken Vigil",
+      "worldPosition": [
+        -32.972,
+        -12.157,
+        -18
+      ],
+      "projectedCenter": {
+        "x": -0.77,
+        "y": -0.55
+      },
+      "ndcBoundsX": [
+        -0.916,
+        -0.624
+      ],
+      "ndcBoundsY": [
+        -0.605,
+        -0.495
+      ],
+      "screenWidthRatio": 0.295,
+      "targetScreenWidthRatio": 0.3,
+      "targetNdc": [
+        -0.77,
+        -0.55
+      ]
+    },
+    {
+      "id": "twin-choir",
+      "name": "Twin Choir",
+      "worldPosition": [
+        39.341,
+        -9.797,
+        -28
+      ],
+      "projectedCenter": {
+        "x": 0.78,
+        "y": -0.34
+      },
+      "ndcBoundsX": [
+        0.691,
+        0.869
+      ],
+      "ndcBoundsY": [
+        -0.374,
+        -0.306
+      ],
+      "screenWidthRatio": 0.18,
+      "targetScreenWidthRatio": 0.18,
+      "targetNdc": [
+        0.78,
+        -0.34
+      ]
+    },
+    {
+      "id": "eroded-halo",
+      "name": "Eroded Halo",
+      "worldPosition": [
+        -16.447,
+        -4.614,
+        -42
+      ],
+      "projectedCenter": {
+        "x": -0.27,
+        "y": -0.08
+      },
+      "ndcBoundsX": [
+        -0.319,
+        -0.221
+      ],
+      "ndcBoundsY": [
+        -0.099,
+        -0.061
+      ],
+      "screenWidthRatio": 0.1,
+      "targetScreenWidthRatio": 0.1,
+      "targetNdc": [
+        -0.27,
+        -0.08
+      ]
+    },
+    {
+      "id": "cloud-crown",
+      "name": "Cloud Crown",
+      "worldPosition": [
+        18.939,
+        13.076,
+        -56
+      ],
+      "projectedCenter": {
+        "x": 0.27,
+        "y": 0.42
+      },
+      "ndcBoundsX": [
+        0.24,
+        0.3
+      ],
+      "ndcBoundsY": [
+        0.409,
+        0.431
+      ],
+      "screenWidthRatio": 0.061,
+      "targetScreenWidthRatio": 0.06,
+      "targetNdc": [
+        0.27,
+        0.42
+      ]
+    }
+  ],
+  "cameraMetrics": {
+    "desktop": {
+      "label": "Desktop 16:9",
+      "preset": {
+        "label": "Desktop 16:9",
+        "position": [
+          0,
+          7.8,
+          34
+        ],
+        "target": [
+          0,
+          3,
+          -3.8
+        ],
+        "fovDegrees": 48,
+        "aspect": 1.7777777778
+      },
+      "mainProjectedWidth": 0.986,
+      "sunProjection": [
+        0,
+        0.226
+      ],
+      "platforms": [
+        {
+          "id": "broken-vigil",
+          "name": "Broken Vigil",
+          "worldPosition": [
+            -32.972,
+            -12.157,
+            -18
+          ],
+          "projectedCenter": {
+            "x": -0.77,
+            "y": -0.55
+          },
+          "ndcBoundsX": [
+            -0.916,
+            -0.624
+          ],
+          "ndcBoundsY": [
+            -0.605,
+            -0.495
+          ],
+          "screenWidthRatio": 0.295,
+          "targetScreenWidthRatio": 0.3,
+          "targetNdc": [
+            -0.77,
+            -0.55
+          ]
+        },
+        {
+          "id": "twin-choir",
+          "name": "Twin Choir",
+          "worldPosition": [
+            39.341,
+            -9.797,
+            -28
+          ],
+          "projectedCenter": {
+            "x": 0.78,
+            "y": -0.34
+          },
+          "ndcBoundsX": [
+            0.691,
+            0.869
+          ],
+          "ndcBoundsY": [
+            -0.374,
+            -0.306
+          ],
+          "screenWidthRatio": 0.18,
+          "targetScreenWidthRatio": 0.18,
+          "targetNdc": [
+            0.78,
+            -0.34
+          ]
+        },
+        {
+          "id": "eroded-halo",
+          "name": "Eroded Halo",
+          "worldPosition": [
+            -16.447,
+            -4.614,
+            -42
+          ],
+          "projectedCenter": {
+            "x": -0.27,
+            "y": -0.08
+          },
+          "ndcBoundsX": [
+            -0.319,
+            -0.221
+          ],
+          "ndcBoundsY": [
+            -0.099,
+            -0.061
+          ],
+          "screenWidthRatio": 0.1,
+          "targetScreenWidthRatio": 0.1,
+          "targetNdc": [
+            -0.27,
+            -0.08
+          ]
+        },
+        {
+          "id": "cloud-crown",
+          "name": "Cloud Crown",
+          "worldPosition": [
+            18.939,
+            13.076,
+            -56
+          ],
+          "projectedCenter": {
+            "x": 0.27,
+            "y": 0.42
+          },
+          "ndcBoundsX": [
+            0.24,
+            0.3
+          ],
+          "ndcBoundsY": [
+            0.409,
+            0.431
+          ],
+          "screenWidthRatio": 0.061,
+          "targetScreenWidthRatio": 0.06,
+          "targetNdc": [
+            0.27,
+            0.42
+          ]
+        }
+      ]
+    },
+    "portrait": {
+      "label": "Portrait phone",
+      "preset": {
+        "label": "Portrait phone",
+        "position": [
+          0,
+          8.2,
+          33
+        ],
+        "target": [
+          0,
+          3.1,
+          -3.8
+        ],
+        "fovDegrees": 78,
+        "aspect": 0.5622188906
+      },
+      "mainProjectedWidth": 1.76,
+      "sunProjection": [
+        0,
+        0.129
+      ],
+      "platforms": [
+        {
+          "id": "broken-vigil",
+          "name": "Broken Vigil",
+          "worldPosition": [
+            -17.259,
+            -24.02,
+            -18
+          ],
+          "projectedCenter": {
+            "x": -0.69,
+            "y": -0.56
+          },
+          "ndcBoundsX": [
+            -0.939,
+            -0.441
+          ],
+          "ndcBoundsY": [
+            -0.655,
+            -0.465
+          ],
+          "screenWidthRatio": 0.283,
+          "targetScreenWidthRatio": 0.3,
+          "targetNdc": [
+            -0.69,
+            -0.56
+          ]
+        },
+        {
+          "id": "twin-choir",
+          "name": "Twin Choir",
+          "worldPosition": [
+            19.822,
+            -18.05,
+            -28
+          ],
+          "projectedCenter": {
+            "x": 0.68,
+            "y": -0.34
+          },
+          "ndcBoundsX": [
+            0.527,
+            0.833
+          ],
+          "ndcBoundsY": [
+            -0.398,
+            -0.282
+          ],
+          "screenWidthRatio": 0.174,
+          "targetScreenWidthRatio": 0.18,
+          "targetNdc": [
+            0.68,
+            -0.34
+          ]
+        },
+        {
+          "id": "eroded-halo",
+          "name": "Eroded Halo",
+          "worldPosition": [
+            -10.042,
+            -4.681,
+            -42
+          ],
+          "projectedCenter": {
+            "x": -0.29,
+            "y": -0.04
+          },
+          "ndcBoundsX": [
+            -0.377,
+            -0.203
+          ],
+          "ndcBoundsY": [
+            -0.073,
+            -0.007
+          ],
+          "screenWidthRatio": 0.099,
+          "targetScreenWidthRatio": 0.1,
+          "targetNdc": [
+            -0.29,
+            -0.04
+          ]
+        },
+        {
+          "id": "cloud-crown",
+          "name": "Cloud Crown",
+          "worldPosition": [
+            10.985,
+            22.637,
+            -56
+          ],
+          "projectedCenter": {
+            "x": 0.28,
+            "y": 0.38
+          },
+          "ndcBoundsX": [
+            0.226,
+            0.334
+          ],
+          "ndcBoundsY": [
+            0.36,
+            0.4
+          ],
+          "screenWidthRatio": 0.061,
+          "targetScreenWidthRatio": 0.06,
+          "targetNdc": [
+            0.28,
+            0.38
+          ]
+        }
+      ]
+    },
+    "landscapePhone": {
+      "label": "Landscape phone",
+      "preset": {
+        "label": "Landscape phone",
+        "position": [
+          0,
+          7.2,
+          32
+        ],
+        "target": [
+          0,
+          2.9,
+          -3.8
+        ],
+        "fovDegrees": 32,
+        "aspect": 2.3300970874
+      },
+      "mainProjectedWidth": 1.243,
+      "sunProjection": [
+        0,
+        0.359
+      ],
+      "platforms": [
+        {
+          "id": "broken-vigil",
+          "name": "Broken Vigil",
+          "worldPosition": [
+            -26.409,
+            -6.959,
+            -18
+          ],
+          "projectedCenter": {
+            "x": -0.77,
+            "y": -0.55
+          },
+          "ndcBoundsX": [
+            -0.952,
+            -0.588
+          ],
+          "ndcBoundsY": [
+            -0.619,
+            -0.481
+          ],
+          "screenWidthRatio": 0.292,
+          "targetScreenWidthRatio": 0.3,
+          "targetNdc": [
+            -0.77,
+            -0.55
+          ]
+        },
+        {
+          "id": "twin-choir",
+          "name": "Twin Choir",
+          "worldPosition": [
+            31.867,
+            -6.011,
+            -28
+          ],
+          "projectedCenter": {
+            "x": 0.78,
+            "y": -0.34
+          },
+          "ndcBoundsX": [
+            0.671,
+            0.889
+          ],
+          "ndcBoundsY": [
+            -0.382,
+            -0.298
+          ],
+          "screenWidthRatio": 0.176,
+          "targetScreenWidthRatio": 0.18,
+          "targetNdc": [
+            0.78,
+            -0.34
+          ]
+        },
+        {
+          "id": "eroded-halo",
+          "name": "Eroded Halo",
+          "worldPosition": [
+            -13.482,
+            -3.415,
+            -42
+          ],
+          "projectedCenter": {
+            "x": -0.27,
+            "y": -0.08
+          },
+          "ndcBoundsX": [
+            -0.33,
+            -0.21
+          ],
+          "ndcBoundsY": [
+            -0.103,
+            -0.057
+          ],
+          "screenWidthRatio": 0.097,
+          "targetScreenWidthRatio": 0.1,
+          "targetNdc": [
+            -0.27,
+            -0.08
+          ]
+        },
+        {
+          "id": "cloud-crown",
+          "name": "Cloud Crown",
+          "worldPosition": [
+            15.761,
+            7.228,
+            -56
+          ],
+          "projectedCenter": {
+            "x": 0.27,
+            "y": 0.42
+          },
+          "ndcBoundsX": [
+            0.234,
+            0.306
+          ],
+          "ndcBoundsY": [
+            0.406,
+            0.434
+          ],
+          "screenWidthRatio": 0.058,
+          "targetScreenWidthRatio": 0.06,
+          "targetNdc": [
+            0.27,
+            0.42
+          ]
+        }
+      ]
+    }
+  },
+  "checks": [
+    {
+      "name": "walkability",
+      "passed": true,
+      "evidence": "5.5 m central performance radius remains unchanged."
+    },
+    {
+      "name": "clearance",
+      "passed": true,
+      "evidence": "Every responsive platform transform clears the main shell by at least 2 m beyond combined visual radii."
+    },
+    {
+      "name": "sightlines",
+      "passed": true,
+      "evidence": "All registered cameras keep the center clear, separate platform columns and heights by at least 0.15 NDC, and keep desktop platforms outside the outer-feather silhouette masks."
+    },
+    {
+      "name": "final-view",
+      "passed": true,
+      "evidence": "All four islands fit the desktop, portrait-phone, and landscape-phone frames at the registered NDC targets and preserve the 30/18/10/6% width progression."
+    }
+  ]
+}

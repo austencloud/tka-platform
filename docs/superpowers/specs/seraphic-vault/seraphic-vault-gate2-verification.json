@@ -1,0 +1,465 @@
+{
+  "sceneId": "seraphic-vault",
+  "gateId": "playable-graybox",
+  "artifactDigests": {
+    "blender/seraphic_vault_phase2_graybox.blend": "ed766baaa16b01c5353aeaa75e5b663c6a3800593840ecd8a122fc10eb45e6c4",
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-coordinate-manifest.json": "54c40ca00ce72f48532bb1c975b57c1dc8d4d5f54549c9c9ab359167e9f42d9e",
+    "static/models/celestial/review/seraphic-vault-phase2-graybox.glb": "d28c80cba202c0b3a6b41f420afd28228427699cc84f48789531b8392d9b847b"
+  },
+  "registeredViews": {
+    "desktop": {
+      "featherBounds": {
+        "FeatherRib_Inner_Left": [
+          0.0724,
+          0.1525,
+          -0.1372,
+          0.2429
+        ],
+        "FeatherRib_Inner_Right": [
+          -0.1525,
+          -0.0724,
+          -0.1372,
+          0.2429
+        ],
+        "FeatherRib_Middle_Left": [
+          0.1467,
+          0.2516,
+          -0.1765,
+          0.4089
+        ],
+        "FeatherRib_Middle_Right": [
+          -0.2516,
+          -0.1467,
+          -0.1765,
+          0.4089
+        ],
+        "FeatherRib_Outer_Left": [
+          0.2157,
+          0.4176,
+          -0.2408,
+          0.6943
+        ],
+        "FeatherRib_Outer_Right": [
+          -0.4176,
+          -0.2157,
+          -0.2408,
+          0.6943
+        ]
+      },
+      "platforms": {
+        "broken-vigil": {
+          "solidBounds": [
+            -0.9166,
+            -0.6263,
+            -0.6227,
+            -0.3689
+          ],
+          "atmosphericBounds": [
+            -0.934,
+            -0.6181,
+            -0.6259,
+            -0.3689
+          ]
+        },
+        "twin-choir": {
+          "solidBounds": [
+            0.693,
+            0.8704,
+            -0.3764,
+            -0.1476
+          ],
+          "atmosphericBounds": [
+            0.6769,
+            0.8912,
+            -0.385,
+            -0.1476
+          ]
+        },
+        "eroded-halo": {
+          "solidBounds": [
+            -0.5509,
+            -0.4893,
+            -0.0946,
+            0.0204
+          ],
+          "atmosphericBounds": [
+            -0.5839,
+            -0.4552,
+            -0.0995,
+            0.0204
+          ]
+        },
+        "cloud-crown": {
+          "solidBounds": [
+            0.4931,
+            0.5503,
+            0.4138,
+            0.4767
+          ],
+          "atmosphericBounds": [
+            0.4754,
+            0.5608,
+            0.4091,
+            0.4767
+          ]
+        }
+      }
+    },
+    "portrait": {
+      "featherBounds": {
+        "FeatherRib_Inner_Left": [
+          0.1286,
+          0.2708,
+          -0.0788,
+          0.1353
+        ],
+        "FeatherRib_Inner_Right": [
+          -0.2708,
+          -0.1286,
+          -0.0788,
+          0.1353
+        ],
+        "FeatherRib_Middle_Left": [
+          0.2609,
+          0.4473,
+          -0.1027,
+          0.2283
+        ],
+        "FeatherRib_Middle_Right": [
+          -0.4473,
+          -0.2609,
+          -0.1027,
+          0.2283
+        ],
+        "FeatherRib_Outer_Left": [
+          0.3845,
+          0.7457,
+          -0.1417,
+          0.3886
+        ],
+        "FeatherRib_Outer_Right": [
+          -0.7457,
+          -0.3845,
+          -0.1417,
+          0.3886
+        ]
+      },
+      "platforms": {
+        "broken-vigil": {
+          "solidBounds": [
+            -0.9401,
+            -0.4545,
+            -0.6145,
+            -0.4659
+          ],
+          "atmosphericBounds": [
+            -0.9619,
+            -0.4431,
+            -0.6162,
+            -0.4659
+          ]
+        },
+        "twin-choir": {
+          "solidBounds": [
+            0.5397,
+            0.8252,
+            -0.3656,
+            -0.2371
+          ],
+          "atmosphericBounds": [
+            0.5052,
+            0.8598,
+            -0.3702,
+            -0.2371
+          ]
+        },
+        "eroded-halo": {
+          "solidBounds": [
+            -0.4101,
+            -0.3076,
+            -0.2922,
+            -0.2269
+          ],
+          "atmosphericBounds": [
+            -0.4685,
+            -0.2544,
+            -0.2958,
+            -0.2269
+          ]
+        },
+        "cloud-crown": {
+          "solidBounds": [
+            0.3114,
+            0.4144,
+            0.4739,
+            0.5134
+          ],
+          "atmosphericBounds": [
+            0.2811,
+            0.4302,
+            0.4713,
+            0.5134
+          ]
+        }
+      }
+    },
+    "landscapePhone": {
+      "featherBounds": {
+        "FeatherRib_Inner_Left": [
+          0.0902,
+          0.1899,
+          -0.2176,
+          0.4016
+        ],
+        "FeatherRib_Inner_Right": [
+          -0.1899,
+          -0.0902,
+          -0.2176,
+          0.4016
+        ],
+        "FeatherRib_Middle_Left": [
+          0.1834,
+          0.3143,
+          -0.2803,
+          0.6759
+        ],
+        "FeatherRib_Middle_Right": [
+          -0.3143,
+          -0.1834,
+          -0.2803,
+          0.6759
+        ],
+        "FeatherRib_Outer_Left": [
+          0.2715,
+          0.5241,
+          -0.3841,
+          1.158
+        ],
+        "FeatherRib_Outer_Right": [
+          -0.5241,
+          -0.2715,
+          -0.3841,
+          1.158
+        ]
+      },
+      "platforms": {
+        "broken-vigil": {
+          "solidBounds": [
+            -0.9533,
+            -0.5949,
+            -0.6495,
+            -0.2488
+          ],
+          "atmosphericBounds": [
+            -0.9726,
+            -0.5842,
+            -0.6553,
+            -0.2488
+          ]
+        },
+        "twin-choir": {
+          "solidBounds": [
+            0.6754,
+            0.8897,
+            -0.3914,
+            -0.0257
+          ],
+          "atmosphericBounds": [
+            0.654,
+            0.9152,
+            -0.4055,
+            -0.0257
+          ]
+        },
+        "eroded-halo": {
+          "solidBounds": [
+            -0.8094,
+            -0.7326,
+            -0.1021,
+            0.0809
+          ],
+          "atmosphericBounds": [
+            -0.8485,
+            -0.6896,
+            -0.11,
+            0.0809
+          ]
+        },
+        "cloud-crown": {
+          "solidBounds": [
+            0.7373,
+            0.8069,
+            0.4123,
+            0.5084
+          ],
+          "atmosphericBounds": [
+            0.7163,
+            0.8203,
+            0.4005,
+            0.5084
+          ]
+        }
+      }
+    }
+  },
+  "checks": {
+    "artifact-digest": {
+      "passed": true,
+      "evidence": "SHA-256 digests captured for the Blender source, derived coordinate manifest, and review GLB."
+    },
+    "collision": {
+      "passed": true,
+      "evidence": [
+        {
+          "preset": "desktop",
+          "platform": "broken-vigil",
+          "passed": true,
+          "clearanceMetres": 15.632
+        },
+        {
+          "preset": "desktop",
+          "platform": "twin-choir",
+          "passed": true,
+          "clearanceMetres": 28.117
+        },
+        {
+          "preset": "desktop",
+          "platform": "eroded-halo",
+          "passed": true,
+          "clearanceMetres": 33.897
+        },
+        {
+          "preset": "desktop",
+          "platform": "cloud-crown",
+          "passed": true,
+          "clearanceMetres": 49.031
+        },
+        {
+          "preset": "portrait",
+          "platform": "broken-vigil",
+          "passed": true,
+          "clearanceMetres": 3.004
+        },
+        {
+          "preset": "portrait",
+          "platform": "twin-choir",
+          "passed": true,
+          "clearanceMetres": 14.134
+        },
+        {
+          "preset": "portrait",
+          "platform": "eroded-halo",
+          "passed": true,
+          "clearanceMetres": 25.203
+        },
+        {
+          "preset": "portrait",
+          "platform": "cloud-crown",
+          "passed": true,
+          "clearanceMetres": 39.917
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "broken-vigil",
+          "passed": true,
+          "clearanceMetres": 10.027
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "twin-choir",
+          "passed": true,
+          "clearanceMetres": 22.249
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "eroded-halo",
+          "passed": true,
+          "clearanceMetres": 38.234
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "cloud-crown",
+          "passed": true,
+          "clearanceMetres": 54.008
+        }
+      ]
+    },
+    "registered-silhouette-clearance": {
+      "passed": true,
+      "evidence": [
+        {
+          "preset": "desktop",
+          "platform": "broken-vigil",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "desktop",
+          "platform": "twin-choir",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "desktop",
+          "platform": "eroded-halo",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "desktop",
+          "platform": "cloud-crown",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "portrait",
+          "platform": "broken-vigil",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "portrait",
+          "platform": "twin-choir",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "portrait",
+          "platform": "eroded-halo",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "portrait",
+          "platform": "cloud-crown",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "broken-vigil",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "twin-choir",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "eroded-halo",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "cloud-crown",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        }
+      ]
+    }
+  }
+}

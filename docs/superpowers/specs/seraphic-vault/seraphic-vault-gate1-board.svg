@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#07182c"/><stop offset="1" stop-color="#0b2440"/></linearGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6184b6"/><stop offset="1" stop-color="#b7c9db"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <style>
+      text { font-family: Arial, sans-serif; fill: #eef6ff; }
+      .title { font-size: 34px; font-weight: 700; letter-spacing: 1.5px; }
+      .subtitle { font-size: 17px; fill: #9fc1df; }
+      .panelTitle { font-size: 21px; font-weight: 700; fill: #fff4d7; }
+      .small { font-size: 14px; fill: #d7e7f6; }
+      .tiny { font-size: 12px; font-weight: 700; fill: #e4f0fb; }
+      .label { font-size: 15px; font-weight: 700; fill: #ffd38a; }
+      .number { font-size: 13px; font-weight: 800; fill: #102947; }
+      .cardTitle { font-size: 14px; font-weight: 700; fill: #fff4d7; }
+      .cardBody { font-size: 12px; fill: #a9c7e1; }
+    </style>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="48" y="52" class="title">SERAPHIC VAULT · PHASE 2 · GATE 1</text>
+  <text x="48" y="82" class="subtitle">Measured composition candidate · four distant sanctuaries · central hero band protected</text>
+  <text x="1872" y="55" text-anchor="end" class="label">WORLD METRES / HERO CAMERA 48°</text>
+
+  <rect x="48" y="116" width="884" height="422" rx="18" fill="#102947" stroke="#4776a4" stroke-width="2"/>
+  <text x="72" y="147" class="panelTitle">1. Top-down composition plan</text>
+  <line x1="86" y1="370.95238095238096" x2="894" y2="370.95238095238096" stroke="#315778" stroke-dasharray="5 7"/>
+  <line x1="490" y1="158" x2="490" y2="502" stroke="#315778" stroke-dasharray="5 7"/>
+  <path d="M 490 482.34285714285716 L 94.78260869565217 158 M 490 482.34285714285716 L 885.2173913043478 158" stroke="#4776a4" stroke-opacity="0.45" fill="none"/>
+  <polygon points="404.8,345.7 439.1,339.8 512,338.8 565.5,342.8 580.5,358.2 584,378.2 566.4,391.3 520.7,395.2 466.3,395.9 418,393.2 398.7,380.5 401.3,363.1" fill="#fff4d7" fill-opacity="0.84" stroke="#ffd38a" stroke-width="2"/>
+  <circle cx="490" cy="370.95238095238096" r="48.30434782608696" fill="none" stroke="#fff" stroke-dasharray="7 6" stroke-width="2"/>
+  <text x="500" y="358.95238095238096" class="small">5.5 m clear performance radius</text>
+  <ellipse cx="288" cy="311.9809523809524" rx="50.362640000000006" ry="21.1523088" fill="#8db8e8" fill-opacity="0.55" stroke="#b8d6ef" stroke-width="2"/><text x="345.36264" y="315.9809523809524" class="small">1. Broken Vigil</text><ellipse cx="700.7826086956522" cy="279.2190476190476" rx="36.129720000000006" ry="15.174482400000002" fill="#8db8e8" fill-opacity="0.38" stroke="#b8d6ef" stroke-width="2"/><text x="743.9123286956523" y="283.2190476190476" class="small">2. Twin Choir</text><ellipse cx="173.82608695652175" cy="233.35238095238094" rx="24.305448000000002" ry="10.20828816" fill="#8db8e8" fill-opacity="0.24" stroke="#b8d6ef" stroke-width="2"/><text x="205.13153495652176" y="237.35238095238094" class="small">3. Eroded Halo</text><ellipse cx="779.8260869565217" cy="187.4857142857143" rx="16.97002" ry="7.1274084" fill="#8db8e8" fill-opacity="0.15" stroke="#b8d6ef" stroke-width="2"/><text x="803.7961069565217" y="191.4857142857143" class="small">4. Cloud Crown</text>
+  <circle cx="490" cy="282.4952380952381" r="10" fill="#ffd38a" filter="url(#glow)"/>
+  <text x="505" y="287.4952380952381" class="small">Sun</text>
+  <path d="M 481 494.34285714285716 L 490 474.34285714285716 L 499 494.34285714285716 Z" fill="#ffd38a"/>
+  <text x="506" y="490.34285714285716" class="small">Hero camera</text>
+  <text x="70" y="520" class="small">FRONT / CAMERA</text><text x="910" y="520" text-anchor="end" class="small">DEEP SKY ↑</text>
+
+  <rect x="988" y="116" width="884" height="422" rx="18" fill="#102947" stroke="#4776a4" stroke-width="2"/>
+  <text x="1012" y="147" class="panelTitle">2. Vertical section · camera to deep sky</text>
+  <line x1="1026" y1="328" x2="1834" y2="328" stroke="#54789a" stroke-dasharray="6 6"/>
+  <rect x="1438.4647619047619" y="323.85333333333335" width="146.20952380952394" height="8" rx="4" fill="#fff4d7"/>
+  <circle cx="1526.1904761904761" cy="213.60000000000002" r="7" fill="#ffd38a"/><text x="1538.1904761904761" y="217.60000000000002" class="small">Hero camera · 7.8 m</text>
+  <circle cx="1318.4190476190477" cy="237.06666666666666" r="13" fill="#ffd38a" filter="url(#glow)"/><text x="1336.4190476190477" y="242.06666666666666" class="small">Sun · 6.2 m</text>
+  <path d="M 1341.6586666666667 383.73333333333335 Q 1387.6761904761906 375.73333333333335 1433.6937142857143 383.73333333333335" fill="none" stroke="#8db8e8" stroke-opacity="0.55" stroke-width="6" stroke-linecap="round"/><text x="1387.6761904761906" y="370.73333333333335" text-anchor="middle" class="tiny">1</text><path d="M 1277.711238095238 418.93333333333334 Q 1310.7238095238095 410.93333333333334 1343.7363809523808 418.93333333333334" fill="none" stroke="#8db8e8" stroke-opacity="0.38" stroke-width="6" stroke-linecap="round"/><text x="1310.7238095238095" y="405.93333333333334" text-anchor="middle" class="tiny">2</text><path d="M 1180.782019047619 457.06666666666666 Q 1202.9904761904763 449.06666666666666 1225.1989333333333 457.06666666666666" fill="none" stroke="#8db8e8" stroke-opacity="0.36" stroke-width="6" stroke-linecap="round"/><text x="1202.9904761904763" y="444.06666666666666" text-anchor="middle" class="tiny">3</text><path d="M 1079.751238095238 311.8666666666667 Q 1095.2571428571428 303.8666666666667 1110.7630476190477 311.8666666666667" fill="none" stroke="#8db8e8" stroke-opacity="0.36" stroke-width="6" stroke-linecap="round"/><text x="1095.2571428571428" y="298.8666666666667" text-anchor="middle" class="tiny">4</text>
+  <path d="M 1787.8285714285714 213.60000000000002 L 1318.4190476190477 237.06666666666666" stroke="#ffd38a" stroke-opacity="0.35" stroke-dasharray="6 6"/>
+  <path d="M 1026 345.59999999999997 C 1295.3333333333333 330.93333333333334, 1564.6666666666665 358.8, 1834 342.66666666666663" fill="none" stroke="#b8d6ef" stroke-opacity="0.62" stroke-width="11"/>
+  <text x="1012" y="520" class="small">Platforms 1–3 descend below the main deck. Platform 4 is the only high distant accent.</text>
+
+  <rect x="48" y="590" width="884" height="430" rx="18" fill="#102947" stroke="#4776a4" stroke-width="2"/>
+  <text x="72" y="621" class="panelTitle">3. Numbered attention route</text>
+  <text x="72" y="646" class="small">This fixed-camera environment has no walking route. The gate tracks the intended visual read instead.</text>
+  <g><rect x="76" y="672" width="198" height="286" rx="16" fill="#0a2038" stroke="#355f87"/><circle cx="100" cy="696" r="14" fill="#ffd38a"/><text x="100" y="701" text-anchor="middle" class="number">1</text><rect x="94" y="720" width="162" height="92" rx="10" fill="#6f95c5"/><path d="M 131 802 Q 121 740 164 734" fill="none" stroke="#fff4d7" stroke-width="7" stroke-linecap="round"/><path d="M 219 802 Q 229 740 186 734" fill="none" stroke="#fff4d7" stroke-width="7" stroke-linecap="round"/><circle cx="175" cy="754" r="9" fill="#ffd38a"/><text x="94" y="840" class="cardTitle"><tspan x="94" dy="0">Main feather vault and</tspan><tspan x="94" dy="18">centered sun</tspan></text><text x="94" y="902" class="cardBody"><tspan x="94" dy="0">This is the primary</tspan><tspan x="94" dy="18">performance sanctuary.</tspan></text></g><g><rect x="287" y="672" width="198" height="286" rx="16" fill="#0a2038" stroke="#355f87"/><circle cx="311" cy="696" r="14" fill="#ffd38a"/><text x="311" y="701" text-anchor="middle" class="number">2</text><rect x="305" y="720" width="162" height="92" rx="10" fill="#6f95c5"/><path d="M 342 802 Q 332 740 375 734" fill="none" stroke="#fff4d7" stroke-width="7" stroke-linecap="round"/><path d="M 430 802 Q 440 740 397 734" fill="none" stroke="#fff4d7" stroke-width="7" stroke-linecap="round"/><circle cx="344" cy="787" r="9" fill="#ffd38a"/><text x="305" y="840" class="cardTitle"><tspan x="305" dy="0">Broken Vigil on the</tspan><tspan x="305" dy="18">lower left</tspan></text><text x="305" y="902" class="cardBody"><tspan x="305" dy="0">The sanctuary belongs to a</tspan><tspan x="305" dy="18">larger field of floating</tspan><tspan x="305" dy="18">structures.</tspan></text></g><g><rect x="498" y="672" width="198" height="286" rx="16" fill="#0a2038" stroke="#355f87"/><circle cx="522" cy="696" r="14" fill="#ffd38a"/><text x="522" y="701" text-anchor="middle" class="number">3</text><rect x="516" y="720" width="162" height="92" rx="10" fill="#6f95c5"/><path d="M 553 802 Q 543 740 586 734" fill="none" stroke="#fff4d7" stroke-width="7" stroke-linecap="round"/><path d="M 641 802 Q 651 740 608 734" fill="none" stroke="#fff4d7" stroke-width="7" stroke-linecap="round"/><circle cx="634" cy="793" r="9" fill="#ffd38a"/><text x="516" y="840" class="cardTitle"><tspan x="516" dy="0">Twin Choir and Eroded</tspan><tspan x="516" dy="18">Halo alternating across</tspan><tspan x="516" dy="18">the frame</tspan></text><text x="516" y="902" class="cardBody"><tspan x="516" dy="0">The platforms are related but</tspan><tspan x="516" dy="18">not cloned.</tspan></text></g><g><rect x="709" y="672" width="198" height="286" rx="16" fill="#0a2038" stroke="#355f87"/><circle cx="733" cy="696" r="14" fill="#ffd38a"/><text x="733" y="701" text-anchor="middle" class="number">4</text><rect x="727" y="720" width="162" height="92" rx="10" fill="#6f95c5"/><path d="M 764 802 Q 754 740 797 734" fill="none" stroke="#fff4d7" stroke-width="7" stroke-linecap="round"/><path d="M 852 802 Q 862 740 819 734" fill="none" stroke="#fff4d7" stroke-width="7" stroke-linecap="round"/><circle cx="860" cy="743" r="9" fill="#ffd38a"/><text x="727" y="840" class="cardTitle"><tspan x="727" dy="0">Cloud Crown dissolving</tspan><tspan x="727" dy="18">into the far atmosphere</tspan></text><text x="727" y="902" class="cardBody"><tspan x="727" dy="0">The celestial field continues</tspan><tspan x="727" dy="18">beyond readable architecture.</tspan></text></g>
+
+  <rect x="988" y="590" width="884" height="430" rx="18" fill="#102947" stroke="#4776a4" stroke-width="2"/>
+  <text x="1012" y="621" class="panelTitle">4. Registered 16:9 hero sightline</text>
+  <text x="1012" y="646" class="small">Dashed band stays empty. Platform widths are 30%, 18%, 10%, and 6% of the main deck on screen.</text>
+  <rect x="1024" y="670" width="812" height="304" rx="10" fill="url(#sky)" stroke="#78a4cf"/>
+  <rect x="1348.8" y="670" width="162.4000000000001" height="304" fill="none" stroke="#ffd38a" stroke-dasharray="7 7" stroke-width="2"/>
+  <path d="M 1251.3600000000001 879.76 Q 1206.7 746 1324.44 726.24" fill="none" stroke="#fff4d7" stroke-width="15" stroke-linecap="round"/>
+  <path d="M 1608.6399999999999 879.76 Q 1653.3000000000002 746 1535.56 726.24" fill="none" stroke="#fff4d7" stroke-width="15" stroke-linecap="round"/>
+  <ellipse cx="1430" cy="885.8399999999999" rx="170" ry="26" fill="#fff4d7" fill-opacity="0.9"/>
+  <circle cx="1430" cy="787.7168041117101" r="24" fill="#ffd38a" filter="url(#glow)"/>
+  <ellipse cx="1207.512" cy="853.92" rx="60.29099999999998" ry="21.704759999999993" fill="#8db8e8" fill-opacity="0.55" stroke="#b8d6ef" stroke-opacity="0.7"/><text x="1207.512" y="827.3919599999999" text-anchor="middle" class="tiny">1</text><ellipse cx="1624.4740000000002" cy="854.832" rx="36.33699999999999" ry="13.081319999999996" fill="#8db8e8" fill-opacity="0.38" stroke="#b8d6ef" stroke-opacity="0.7"/><text x="1624.4740000000002" y="838.84372" text-anchor="middle" class="tiny">2</text><ellipse cx="1191.678" cy="852.4" rx="19.893999999999995" ry="7.161839999999998" fill="#8db8e8" fill-opacity="0.24" stroke="#b8d6ef" stroke-opacity="0.7"/><text x="1191.678" y="842.4" text-anchor="middle" class="tiny">3</text><ellipse cx="1617.978" cy="804.216" rx="11.976999999999999" ry="5" fill="#8db8e8" fill-opacity="0.15" stroke="#b8d6ef" stroke-opacity="0.7"/><text x="1617.978" y="794.216" text-anchor="middle" class="tiny">4</text>
+  <text x="1430" y="688" text-anchor="middle" class="tiny">PROTECTED HERO BAND</text>
+  <text x="1012" y="1002" class="small">Hierarchy: vault + sun → Broken Vigil → alternating middle echoes → Cloud Crown dissolves.</text>
+</svg>

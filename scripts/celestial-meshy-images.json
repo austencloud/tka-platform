@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "imageRoot": "assets/meshy-refs/celestial",
+  "outputDirectory": "static/models/celestial/source",
+  "statePath": "blender/celestial-meshy-image-tasks.json",
+  "aiModel": "meshy-6",
+  "estimatedCreditsPerAsset": 30,
+  "maxCredits": 90,
+  "polycount": 28000,
+  "assets": [
+    {
+      "id": "outer-feather-rib",
+      "label": "Outer Feather Rib",
+      "targetHeightMetres": 14,
+      "roles": ["hero", "outer-frame"],
+      "polycount": 34000,
+      "textureResolution": "2k",
+      "maximumOptimizedTriangles": 38000,
+      "texturePrompt": "Ancient carved ivory alabaster with cool gray mineral veins, layered feather ridges, chipped structural edges, shallow weathering, and restrained warm nacre in narrow seams. Neutral diffuse albedo, matte stone roughness, physically plausible PBR, no baked directional light, no glow, no gold, no clouds."
+    },
+    {
+      "id": "middle-feather-rib",
+      "label": "Middle Feather Rib",
+      "targetHeightMetres": 10,
+      "roles": ["middle-frame"],
+      "polycount": 28000,
+      "textureResolution": "2k",
+      "maximumOptimizedTriangles": 32000,
+      "texturePrompt": "Cool ivory alabaster carved into overlapping feather plates, fine gray veins, worn cavities, fractured ancient edges, and very subtle pearly seams. Neutral diffuse albedo, matte stone roughness, physically plausible PBR, no baked directional light, no glow, no gold, no clouds."
+    },
+    {
+      "id": "inner-feather-spire",
+      "label": "Inner Feather Spire",
+      "targetHeightMetres": 7,
+      "roles": ["inner-frame", "sightline"],
+      "polycount": 24000,
+      "textureResolution": "2k",
+      "maximumOptimizedTriangles": 28000,
+      "texturePrompt": "Weathered white alabaster with three carved feather blades, cool gray shadowed grooves, hairline mineral veins, broken tips, and restrained nacre at the deepest seams. Neutral diffuse albedo, matte stone roughness, physically plausible PBR, no baked directional light, no glow, no gold, no clouds."
+    }
+  ]
+}
