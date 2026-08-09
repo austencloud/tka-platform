@@ -98,9 +98,43 @@
     snowRidge: new MeshStandardMaterial({ color: "#dde8ef", roughness: 0.95 }),
     seaRidge: new MeshStandardMaterial({ color: "#33403f", roughness: 1 }),
     springRidge: new MeshStandardMaterial({ color: "#57493d", roughness: 0.9 }),
+    /**
+     * The building. Poured concrete, deliberately plain: the dioramas are the
+     * expensive part and the shell should read as the thing they were
+     * installed inside, not as more landscape. A little emissive keeps the
+     * ceiling from going to black overhead, where no light reaches it.
+     */
+    hallShell: new MeshStandardMaterial({
+      color: "#8d8b86",
+      roughness: 0.94,
+      emissive: "#4a4a48",
+      emissiveIntensity: 0.9,
+    }),
+    /** Portal jambs and lintels. Heavier stone, so the arch reads as built. */
+    portal: new MeshStandardMaterial({
+      color: "#4d5157",
+      roughness: 0.85,
+      emissive: "#1b1f24",
+      emissiveIntensity: 0.5,
+    }),
+    /**
+     * The painted backdrop each diorama is built against. Pale and self-lit,
+     * with no texture to catch a highlight — the flatness is the tell that
+     * this is a wall and not a distance, and the piece is better for admitting
+     * it.
+     */
+    cyclorama: new MeshStandardMaterial({
+      color: "#cfe3ee",
+      roughness: 1,
+      emissive: "#9dc4d8",
+      emissiveIntensity: 0.85,
+    }),
   };
 
   function materialFor(id: string): MeshStandardMaterial {
+    if (id.startsWith("cyclorama-")) return MATERIALS.cyclorama;
+    if (id.startsWith("hall-")) return MATERIALS.hallShell;
+    if (id.startsWith("portal-")) return MATERIALS.portal;
     if (id.startsWith("snowfield")) return MATERIALS.snow;
     if (id === "frozen-river-bed") return MATERIALS.ice;
     if (id === "descent") return MATERIALS.rock;

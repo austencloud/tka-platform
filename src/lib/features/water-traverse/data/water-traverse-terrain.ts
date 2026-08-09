@@ -184,6 +184,124 @@ const SPRING_END_Z = 244;
 
 export const TOTAL_LENGTH_M = SPRING_END_Z;
 
+/**
+ * ── The hall ────────────────────────────────────────────────────────────────
+ *
+ * This is a room in a museum, not a valley. The peaks, the trench and the
+ * spring are set dressing built at absurd expense by an organisation with more
+ * money than restraint, and the shell around them is what says so: you can
+ * always see a ceiling, and the ceiling is man-made.
+ *
+ * Without it the piece read as the outdoors, which is a different work. The
+ * fix is not to shrink the dioramas — they are the point — but to admit the
+ * building that contains them.
+ *
+ * The volume steps up once per chamber. Ice is a train shed, the sea is a
+ * hangar, the spring is a cathedral. Walking the route is watching the room
+ * get bigger three times, which is the whole argument for how much it cost.
+ */
+const CHAMBER_CEILING: Record<Leg, number> = {
+  snowfield: WATERLINE_Y + 34,
+  sea: WATERLINE_Y + 52,
+  spring: WATERLINE_Y + 80,
+};
+/**
+ * Hall half-width per chamber. These sit OUTSIDE the ridge blocks, which reach
+ * roughly 74 m at their deepest, so the peaks stand inside the room rather
+ * than punching through its walls.
+ */
+const CHAMBER_HALF_W: Record<Leg, number> = {
+  snowfield: 78,
+  sea: 92,
+  spring: 112,
+};
+/** Chamber extents along Z. The seams are where the portals stand. */
+const CHAMBER_Z: Record<Leg, [number, number]> = {
+  snowfield: [SNOW_START_Z, SNOW_END_Z],
+  sea: [SNOW_END_Z, ASCENT_END_Z],
+  spring: [ASCENT_END_Z, SPRING_END_Z],
+};
+const HALL_THICKNESS = 3;
+/** The lowest floor anywhere. Walls are built down to it so none of them float. */
+const HALL_BASE_Y = SEA_FLOOR_Y - 2;
+
+/**
+ * A portal at a chamber seam: jambs either side and a lintel over the opening.
+ *
+ * This is the piece the earlier ceiling experiment was missing. Flat lids at
+ * three heights read as floating plates because you saw the OUTSIDE of the next
+ * room's roof. Through a portal you see the INSIDE of the next room, lit, with
+ * its own ceiling above it — which is what makes the step in volume legible
+ * instead of alarming.
+ *
+ * The openings are sized off the one sightline the piece cannot lose: the steam
+ * plume at the far end, visible from the first step. The near opening only has
+ * to clear the plume's lower third at that distance; the far one is an arch
+ * nearly the full height of the sea hall.
+ */
+function buildPortal(
+  id: string,
+  z: number,
+  halfWidth: number,
+  ceilingY: number,
+  openingHalfW: number,
+  openingTopY: number
+): WallRect[] {
+  const minZ = z - HALL_THICKNESS / 2;
+  const maxZ = z + HALL_THICKNESS / 2;
+  return [
+    {
+      id: `portal-${id}-west`,
+      rect: rect(-halfWidth, minZ, -openingHalfW, maxZ),
+      baseY: HALL_BASE_Y,
+      topY: ceilingY,
+    },
+    {
+      id: `portal-${id}-east`,
+      rect: rect(openingHalfW, minZ, halfWidth, maxZ),
+      baseY: HALL_BASE_Y,
+      topY: ceilingY,
+    },
+    {
+      id: `portal-${id}-lintel`,
+      rect: rect(-openingHalfW, minZ, openingHalfW, maxZ),
+      baseY: openingTopY,
+      topY: ceilingY,
+    },
+  ];
+}
+
+/** Side walls and ceiling for one chamber. */
+function buildChamber(leg: Leg): WallRect[] {
+  const [minZ, maxZ] = CHAMBER_Z[leg];
+  const halfW = CHAMBER_HALF_W[leg];
+  const ceilingY = CHAMBER_CEILING[leg];
+  const walls: WallRect[] = [];
+
+  for (const side of [-1, 1] as const) {
+    walls.push({
+      id: `hall-${leg}-${side < 0 ? "west" : "east"}`,
+      rect: rect(
+        side < 0 ? -halfW - HALL_THICKNESS : halfW,
+        minZ,
+        side < 0 ? -halfW : halfW + HALL_THICKNESS,
+        maxZ
+      ),
+      baseY: HALL_BASE_Y,
+      topY: ceilingY,
+    });
+  }
+
+  walls.push({
+    id: `hall-${leg}-ceiling`,
+    rect: rect(-halfW, minZ, halfW, maxZ),
+    baseY: ceilingY,
+    topY: ceilingY + HALL_THICKNESS,
+  });
+
+  return walls;
+}
+
 function rect(minX: number, minZ: number, maxX: number, maxZ: number): WorldRect {
   return { minX, minZ, maxX, maxZ };
 }
@@ -251,13 +369,16 @@ function floorYAt(floors: FloorRect[], z: number): number {
 /**
  * Ridge legs: [id, from Z, to Z, base, nominal top].
  */
-const RIDGE_LEGS: [string, number, number, number, number, number][] = [
-  ["snow", SNOW_START_Z, SNOW_END_Z, SNOW_Y, SNOW_RIDGE_TOP, SNOW_HALF_W],
-  ["descent", SNOW_END_Z, DESCENT_END_Z, SEA_FLOOR_Y, DESCENT_RIDGE_TOP, SEA_HALF_W],
-  ["sea", DESCENT_END_Z, SEA_END_Z, SEA_FLOOR_Y, SEA_RIDGE_TOP, SEA_HALF_W],
-  ["ascent", SEA_END_Z, ASCENT_END_Z, SEA_FLOOR_Y, SEA_RIDGE_TOP, SEA_HALF_W],
-  ["spring", ASCENT_END_Z, SPRING_END_Z, SPRING_FLOOR_Y, SPRING_RIDGE_TOP, SPRING_HALF_W],
+const RIDGE_LEGS: [string, number, number, number, number, number, Leg][] = [
+  ["snow", SNOW_START_Z, SNOW_END_Z, SNOW_Y, SNOW_RIDGE_TOP, SNOW_HALF_W, "snowfield"],
+  ["descent", SNOW_END_Z, DESCENT_END_Z, SEA_FLOOR_Y, DESCENT_RIDGE_TOP, SEA_HALF_W, "sea"],
+  ["sea", DESCENT_END_Z, SEA_END_Z, SEA_FLOOR_Y, SEA_RIDGE_TOP, SEA_HALF_W, "sea"],
+  ["ascent", SEA_END_Z, ASCENT_END_Z, SEA_FLOOR_Y, SEA_RIDGE_TOP, SEA_HALF_W, "sea"],
+  ["spring", ASCENT_END_Z, SPRING_END_Z, SPRING_FLOOR_Y, SPRING_RIDGE_TOP, SPRING_HALF_W, "spring"],
 ];
+
+/** Clearance the peaks keep under their chamber's roof. */
+const RIDGE_HEADROOM = 4;
 
 /** Deterministic value in [0,1). Terrain must be identical every reload. */
 function jitter(seed: number): number {
@@ -281,7 +402,13 @@ function buildRidge(
   maxZ: number,
   baseY: number,
   nominalTop: number,
-  halfWidth: number
+  halfWidth: number,
+  /**
+   * Ceiling of the chamber this range stands in. The peaks are scenery inside
+   * a building, so they stop short of its roof — a summit that vanishes into
+   * the ceiling would read as a modelling mistake rather than as a mountain.
+   */
+  maxTop: number
 ): WallRect[] {
   const BLOCK = 17;
   const count = Math.max(2, Math.round((maxZ - minZ) / BLOCK));
@@ -292,7 +419,10 @@ function buildRidge(
     for (let i = 0; i < count; i += 1) {
       const seed = (id.length * 31 + i) * (side < 0 ? 1 : 7.3) + i * 2.7;
       const height = nominalTop - baseY;
-      const top = baseY + height * (0.62 + jitter(seed) * 0.95);
+      const top = Math.min(
+        baseY + height * (0.62 + jitter(seed) * 0.95),
+        maxTop
+      );
       // Pull some blocks back and push others in, so the valley breathes
       // instead of running at one width for 372 m.
       const inset = -2.5 + jitter(seed + 11) * 9;
@@ -374,22 +504,72 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
   }
 
   const wallRects: WallRect[] = [];
-  for (const [id, minZ, maxZ, baseY, topY, halfWidth] of RIDGE_LEGS) {
-    wallRects.push(...buildRidge(id, minZ, maxZ, baseY, topY, halfWidth));
+  for (const [id, minZ, maxZ, baseY, topY, halfWidth, chamber] of RIDGE_LEGS) {
+    wallRects.push(
+      ...buildRidge(
+        id,
+        minZ,
+        maxZ,
+        baseY,
+        topY,
+        halfWidth,
+        CHAMBER_CEILING[chamber] - RIDGE_HEADROOM
+      )
+    );
   }
+  // The building. Three chambers, each taller and wider than the last, joined
+  // by portals rather than roofed over independently.
+  for (const leg of ["snowfield", "sea", "spring"] as const) {
+    wallRects.push(...buildChamber(leg));
+  }
+  wallRects.push(
+    // Near portal: only has to clear the plume's lower third at 168 m of
+    // distance, so it stays a doorway rather than a missing wall.
+    ...buildPortal(
+      "ice-sea",
+      SNOW_END_Z,
+      CHAMBER_HALF_W.sea,
+      CHAMBER_CEILING.sea,
+      30,
+      WATERLINE_Y + 26
+    ),
+    // Far portal: the plume is close enough here that anything shorter would
+    // guillotine it. An arch nearly the full height of the sea hall, opening
+    // into a room half again as tall.
+    ...buildPortal(
+      "sea-spring",
+      ASCENT_END_Z,
+      CHAMBER_HALF_W.spring,
+      CHAMBER_CEILING.spring,
+      26,
+      WATERLINE_Y + 42
+    )
+  );
+
   // Close both ends. The walk is forward-only; there is nothing behind you and
-  // nothing past the last pool.
+  // nothing past the last pool. These are the cycloramas: the end walls the
+  // dioramas are built against, running the full height of their chamber.
   wallRects.push({
-    id: "cap-start",
-    rect: rect(-SNOW_HALF_W, SNOW_START_Z - RIDGE_THICKNESS, SNOW_HALF_W, SNOW_START_Z),
-    baseY: SNOW_Y,
-    topY: SNOW_RIDGE_TOP,
+    id: "cyclorama-start",
+    rect: rect(
+      -CHAMBER_HALF_W.snowfield,
+      SNOW_START_Z - HALL_THICKNESS,
+      CHAMBER_HALF_W.snowfield,
+      SNOW_START_Z
+    ),
+    baseY: HALL_BASE_Y,
+    topY: CHAMBER_CEILING.snowfield,
   });
   wallRects.push({
-    id: "cap-end",
-    rect: rect(-SPRING_HALF_W, SPRING_END_Z, SPRING_HALF_W, SPRING_END_Z + RIDGE_THICKNESS),
-    baseY: SPRING_FLOOR_Y,
-    topY: SPRING_RIDGE_TOP,
+    id: "cyclorama-end",
+    rect: rect(
+      -CHAMBER_HALF_W.spring,
+      SPRING_END_Z,
+      CHAMBER_HALF_W.spring,
+      SPRING_END_Z + HALL_THICKNESS
+    ),
+    baseY: HALL_BASE_Y,
+    topY: CHAMBER_CEILING.spring,
   });
 
   /**
@@ -490,11 +670,14 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
   }
 
   return {
+    // The building's footprint, not the valley's. Bounds are what the resume
+    // clamp checks against, so they have to describe the space you can
+    // actually stand in.
     bounds: rect(
-      -VALLEY_HALF_W - RIDGE_THICKNESS,
-      SNOW_START_Z - RIDGE_THICKNESS,
-      VALLEY_HALF_W + RIDGE_THICKNESS,
-      SPRING_END_Z + RIDGE_THICKNESS
+      -CHAMBER_HALF_W.spring - HALL_THICKNESS,
+      SNOW_START_Z - HALL_THICKNESS,
+      CHAMBER_HALF_W.spring + HALL_THICKNESS,
+      SPRING_END_Z + HALL_THICKNESS
     ),
     floorRects,
     wallRects,
