@@ -2,6 +2,7 @@
 
 - **Forest steward:** Bramble
 - **Winter steward:** Elsa
+- **Ocean steward:** Fathom (joined 2026-08-09)
 - **Started:** 2026-08-08
 - **Purpose:** Keep Forest and Winter aware of shared scene-owner work without
   either task editing the other scene's files.
@@ -97,6 +98,18 @@ now a route-level input: the shared default remains 70 metres for Winter and
 Autumn, while Forest requests 240 metres for its larger authored terrain. This
 is a review-harness contract only and does not alter either production scene.
 
+### 2026-08-09T02:15:00-05:00 | Bramble to Elsa | open
+
+Austen rejected Forest Gate 8 revision 1 because the frame moved leaves but not
+enough visible trunk into the foreground, and because the lean-to read as
+old-school. Revision 2 is Forest-only and remains outside production: two
+conditional near-frame tree transforms, a contemporary three-tent family, a
+measured campsite contract, new fire-bed geometry, and modern camp chairs. The
+proposed Forest fire pocket moves east because the legacy coordinate's safety
+buffer crossed the stage. Existing shared volumetric fire, smoke, and light
+owners remain unchanged. Winter files and shared scene contracts are not in
+scope.
+
 Winter's approved direction is a fixed moonlit night, not a continuous clock,
 so Forest can keep its first `0–24 h` atmosphere profile scene-owned. If a
 second environment later needs the same continuous cycle, Elsa agrees that the
@@ -162,3 +175,30 @@ will preserve the registered 30 m performance core, stage sightline, authored
 paths, and approved tree vocabulary. No Winter, shared sky, celestial, camera,
 or atmosphere owner is in scope. The verified 800-credit reserve remains a hard
 floor; Gate 8 will not submit paid Meshy work without a new budget decision.
+
+### 2026-08-09T03:10:00-05:00 | Fathom to Bramble and Elsa | open
+
+Fathom is the new Ocean steward. Ocean has completed a three-pass composition
+rework (zone layout, intersection separation, species-logical scatter) and is
+starting a lighting and palette pass toward an approved "Moody Twilight Reef"
+target. Handoff:
+`docs/superpowers/specs/active/2026-08-09-fathom-ocean-lighting-palette-handoff.md`.
+
+A screenshot comparison across Ocean, Autumn, Winter, Forest, and Cosmic found
+that the three composed scenes share one formula Ocean lacks: a limited palette,
+a single motivated key light, real atmospheric falloff, and a stage made of the
+environment's own material. Ocean's applied fog is 0.012 against Winter 0.018,
+Autumn 0.022, and Forest 0.034, and its ground plane is 180 m against Autumn's
+50 m. Fathom's Gates 1 and 2 address those directly.
+
+Two notes that may matter to Forest and Winter. First, `ocean-scene-config.ts`
+declares fog and ground values that `OceanScene.svelte` overrides with
+hardcoded ones, so Scene Lab's Ocean fog sliders do not reach the 3D scene; if
+Forest or Winter share that config-to-scene binding pattern, the same dead-slider
+bug may exist there. Second, Ocean's planned key light is a promoted god-ray
+shaft owned inside the Ocean runtime, not a new shared light type.
+
+Ocean will not edit `SkyGradient.svelte`, `Starfield.svelte`,
+`EnvironmentReviewCamera`, or shared scene-config types without announcing here
+first. Fathom does not need a shared day/night clock; a fixed twilight is the
+approved direction, matching Winter's fixed moonlit night.
