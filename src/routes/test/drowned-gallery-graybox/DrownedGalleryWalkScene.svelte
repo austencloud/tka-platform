@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
-  import { T, useTask } from "@threlte/core";
+  import { T, useTask, useThrelte } from "@threlte/core";
   import { Color, Mesh, PointLight, type Object3D } from "three";
   import { CameraMode, UnifiedCameraController } from "@austencloud/camera-3d";
   import type { AvatarState, PhysicsProvider } from "@austencloud/camera-3d";
@@ -25,8 +25,10 @@
     PlayerControllerState,
   } from "$lib/shared/3d/physics/types";
   import GltfAsset from "$lib/shared/3d/environments/primitives/GltfAsset.svelte";
+  import PlanarReflector from "$lib/shared/3d/environments/primitives/PlanarReflector.svelte";
   import {
     CAUSEWAY_Y,
+    GROTTO_WATERLINE_Y,
     EYE_ABOVE_FLOOR,
     SHELF_Y,
     WATERLINE_Y,
@@ -41,6 +43,7 @@
   }
 
   const props: Props = $props();
+  const threlte = useThrelte();
   const setup = buildDrownedGalleryWalkSetup();
   const { layout, origin, colliders, spawn } = setup;
 
@@ -74,6 +77,25 @@
     x: layout.bloomAnchor.x - origin.x,
     z: layout.bloomAnchor.z - origin.z,
   };
+  /**
+   * The grotto's whole reason to exist is the reflection, and the GLB cannot
+   * carry one — a metallic material with no environment renders black. Each
+   * brimming water body gets a real planar reflector laid on its surface,
+   * lifted a hair so it does not z-fight the baked slab beneath it.
+   */
+  const grottoReflectors = layout.waterPlanes
+    .filter((plane) => plane.surfaceY === GROTTO_WATERLINE_Y)
+    .map((plane, index) => ({
+      id: `grotto-reflector-${index}`,
+      width: plane.maxX - plane.minX,
+      depth: plane.maxZ - plane.minZ,
+      position: [
+        (plane.minX + plane.maxX) / 2 - origin.x,
+        plane.surfaceY + 0.006,
+        (plane.minZ + plane.maxZ) / 2 - origin.z,
+      ] as [number, number, number],
+    }));
+
   const shaftLights = layout.openShafts.map((shaft, index) => ({
     id: `shaft-${index}`,
     position: [
@@ -167,6 +189,9 @@
         return angle;
       },
       where: () => ({ ...playerPosition, yaw: playerYaw, origin }),
+      /** The live scene graph, so a review pass can count what actually mounted. */
+      scene: () => threlte.scene,
+      reflectors: grottoReflectors,
       layout,
     };
     (window as unknown as Record<string, unknown>).__dgWalk = bridge;
@@ -306,6 +331,18 @@
 {/each}
 {#each alcoveLightObjects as entry (entry.id)}
   <T is={entry.light} />
+{/each}
+
+{#each grottoReflectors as entry (entry.id)}
+  <PlanarReflector
+    width={entry.width}
+    height={entry.depth}
+    position={entry.position}
+    rotation={[-Math.PI / 2, 0, 0]}
+    textureWidth={1024}
+    textureHeight={1024}
+    color={0x8aa6ac}
+  />
 {/each}
 
 <GltfAsset
