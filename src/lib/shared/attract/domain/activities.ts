@@ -647,6 +647,34 @@ export function repairActivity(
   return false;
 }
 
+/**
+ * IN-FLIGHT RE-PLAN. Something the Ghost expected to work just did nothing, so
+ * the assumptions behind the rest of this plan are suspect. Drop the remaining
+ * optional steps its ledger already calls dead here, and carry on with what is
+ * left rather than walking through detours it now has reason to doubt.
+ *
+ * The spine is untouched: only optional steps can be dropped, so the activity
+ * still finishes as the activity it was.
+ */
+export function replanRemaining(
+  memory: GhostActivityMemory,
+  ctx: GhostContext
+): number {
+  const activity = memory.current;
+  if (!activity) return 0;
+  const situation = activitySituation(ctx);
+  const head = activity.steps.slice(0, activity.stepIndex + 1);
+  const tail = activity.steps.slice(activity.stepIndex + 1);
+  const keptTail = tail.filter(
+    (step) =>
+      !step.optional ||
+      !judgeStep(ctx.experience, step.intentionId, situation).dead
+  );
+  const dropped = tail.length - keptTail.length;
+  if (dropped > 0) activity.steps = [...head, ...keptTail];
+  return dropped;
+}
+
 export function advanceActivity(
   memory: GhostActivityMemory,
   now: number

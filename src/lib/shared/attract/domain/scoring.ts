@@ -88,6 +88,7 @@ export function createMemory(rng: Rng, trail: Trail): GhostMemory {
       noticedDuds: 0,
       prunedSteps: 0,
       repairedActivities: 0,
+      replannedSteps: 0,
       recorded: 0,
       valueTotal: 0,
       lowValueEpisodes: 0,

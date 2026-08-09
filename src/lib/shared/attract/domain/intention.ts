@@ -68,6 +68,8 @@ export interface GhostActivityObservation {
   sequenceWord: string | null;
   effectIds: string[];
   presentationRevision: number;
+  /** Which revision the Ghost has actually shown — a replay moves nothing. */
+  playedRevision: number;
   understoodConcepts: number;
   encounteredControls: number;
 }
@@ -181,6 +183,8 @@ export interface GhostExperienceMemory {
   prunedSteps: number;
   /** Activities rescued by skipping an impossible step instead of dying. */
   repairedActivities: number;
+  /** Steps dropped mid-activity after a surprise, not at selection time. */
+  replannedSteps: number;
   recorded: number;
   valueTotal: number;
   lowValueEpisodes: number;

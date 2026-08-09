@@ -23,8 +23,18 @@ import { evaluateActivityPrediction } from "./activity-prediction";
 
 export const MAX_ACTIVITY_EPISODES = 200;
 export const INITIAL_PREDICTION_WINDOW = 30;
-/** Evidence needed before step history is allowed to change a plan. */
-export const MIN_STEP_EVIDENCE = 4;
+/**
+ * Evidence needed before step history is allowed to change a plan.
+ *
+ * Overridable so the whole step-learning layer can be switched off for an A/B
+ * measurement without reverting the code: set it out of reach and no step is
+ * ever `proven`, so nothing is pruned, re-planned, or noticed as a dud. That
+ * control arm is how the layer's effect gets separated from run-to-run noise.
+ */
+export const MIN_STEP_EVIDENCE = Number(
+  (globalThis as { process?: { env?: Record<string, string | undefined> } })
+    .process?.env?.GHOST_MIN_STEP_EVIDENCE ?? 4
+);
 /** At or below this productive rate an optional step is dead weight. */
 export const DEAD_STEP_RATE = 0.15;
 /** Above this, the Ghost genuinely expects the step to do something. */
@@ -65,6 +75,11 @@ export function observeActivityWorld(
     sequenceWord: ctx.sequenceWord,
     effectIds: [...ctx.activeEffectIds].sort(),
     presentationRevision: ctx.playback.presentationRevision,
+    // Playing something the Ghost has not shown yet is a real event; playing
+    // the same revision again is the definition of a wasted press. Without
+    // this the observation cannot tell the two apart, and every play looks
+    // identical to doing nothing.
+    playedRevision: ctx.playback.lastPlayedRevision,
     understoodConcepts: [...ctx.concepts.values()].filter(
       (stage) => stage === "understood"
     ).length,
@@ -83,8 +98,11 @@ export function stepSituationKey(situation: GhostActivitySituation): string {
   return [
     situation.moduleId ?? "none",
     situation.tabId ?? "none",
-    situation.sequenceBand,
-    situation.hasEffects ? "fx" : "plain",
+    // Whether a sequence EXISTS changes what a step can do; its exact length
+    // and whether effects are on do not. Keying on those too splintered the
+    // ledger into 127 buckets a session, half of which never reached the
+    // evidence bar — the mechanism starved rather than being wrong.
+    situation.sequenceBand === "empty" ? "empty" : "has-sequence",
   ].join("|");
 }
 
@@ -174,6 +192,7 @@ function sameObservation(
     left.sequenceLength === right.sequenceLength &&
     left.sequenceWord === right.sequenceWord &&
     left.presentationRevision === right.presentationRevision &&
+    left.playedRevision === right.playedRevision &&
     left.understoodConcepts === right.understoodConcepts &&
     left.encounteredControls === right.encounteredControls &&
     arraysEqual(left.effectIds, right.effectIds) &&
@@ -190,9 +209,10 @@ export function observeActivityIntention(
   watchedPayoff: boolean,
   ctx: GhostContext,
   optional = false
-): void {
+): { productive: boolean; noticedDud: boolean } {
+  const inert = { productive: false, noticedDud: false };
   const active = memory.active;
-  if (!active) return;
+  if (!active) return inert;
   if (!ok) {
     active.failedSteps += 1;
     active.steps.push({
@@ -202,7 +222,7 @@ export function observeActivityIntention(
       visible: false,
       optional,
     });
-    return;
+    return inert;
   }
   if (intention.operation === "perceive") {
     active.perceptions += 1;
@@ -217,16 +237,16 @@ export function observeActivityIntention(
   // CREDIT ASSIGNMENT. Diff the world across this one step rather than across
   // the whole activity, so the outcome lands on the step that caused it.
   const after = observeActivityWorld(ctx);
-  const moved = !sameObservation(after, active.lastObservation);
-  // A step that produced something worth watching did its job even when it
-  // left no trace in the observation — playing a sequence changes nothing
-  // structural and is the entire point of the show.
-  const productive = moved || watchedPayoff;
+  // Productivity is measured, never granted. An earlier cut let `watchedPayoff`
+  // stand in for it, which meant any step that triggered a savor counted as
+  // useful — and since replaying an unchanged sequence savors too, the single
+  // largest source of dead presses was invisible to the Ghost's own learning.
+  const productive = !sameObservation(after, active.lastObservation);
   const visible =
-    watchedPayoff ||
     after.sequenceLength !== active.lastObservation.sequenceLength ||
     after.sequenceWord !== active.lastObservation.sequenceWord ||
     after.presentationRevision !== active.lastObservation.presentationRevision ||
+    after.playedRevision !== active.lastObservation.playedRevision ||
     !arraysEqual(after.effectIds, active.lastObservation.effectIds);
 
   // Keyed on the situation the Ghost was in when it CHOSE the step: the
@@ -234,9 +254,9 @@ export function observeActivityIntention(
   const situation = active.lastObservation.situation;
   // LOCATED SURPRISE. Not a post-hoc diagnostic on a finished episode — the
   // Ghost notices, at the step, that a thing it expected to work did not.
-  if (!productive && judgeStep(memory, intention.id, situation).expected) {
-    memory.noticedDuds += 1;
-  }
+  const noticedDud =
+    !productive && judgeStep(memory, intention.id, situation).expected;
+  if (noticedDud) memory.noticedDuds += 1;
   bumpStepStat(
     memory,
     stepStatKey(intention.id, situation),
@@ -252,6 +272,7 @@ export function observeActivityIntention(
     optional,
   });
   active.lastObservation = after;
+  return { productive, noticedDud };
 }
 
 function arraysEqual(

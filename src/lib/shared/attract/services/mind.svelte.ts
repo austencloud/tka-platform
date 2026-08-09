@@ -37,6 +37,7 @@ import {
   abandonActivity,
   advanceActivity,
   currentActivityStep,
+  replanRemaining,
   repairActivity,
   scoreActivities,
   startNextActivity,
@@ -543,14 +544,24 @@ export function createGhostMind(opts: {
       // FRESH context: the step's outcome is the difference this step made, so
       // it has to be measured against the world as it is now, not the snapshot
       // the tick started with.
-      observeActivityIntention(
+      const afterContext = readContext();
+      const stepOutcome = observeActivityIntention(
         memory.experience,
         intention,
         ok,
         watchedPayoff,
-        readContext(),
+        afterContext,
         plannedOptional
       );
+      // The reaction to a surprise happens NOW, to the rest of this plan —
+      // not as a note filed against the episode after it has already run its
+      // remaining detours.
+      if (stepOutcome.noticedDud) {
+        memory.experience.replannedSteps += replanRemaining(
+          memory.activities,
+          afterContext
+        );
+      }
       if (ok) {
         rememberActivityOutcome(
           advanceActivity(memory.activities, now()),
