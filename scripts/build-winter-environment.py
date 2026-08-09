@@ -51,7 +51,7 @@ WORLD_SKIRT_START = 0.86
 WORLD_SKIRT_DEPTH = 14.0
 TERRAIN_ANGULAR_SEGMENTS = 192
 TERRAIN_RADIAL_SEGMENTS = 128
-TERRAIN_UV_METRES = 7.0
+TERRAIN_UV_METRES = 14.0
 RANDOM_SEED = 20260808
 
 # name, source family, x, y, target height, crown width, yaw, age class, tier
@@ -173,7 +173,7 @@ def snow_material():
             links.new(texture.outputs["Color"], bsdf.inputs[direct_input])
         elif special == "Normal":
             normal = nodes.new("ShaderNodeNormalMap")
-            normal.inputs["Strength"].default_value = 0.48
+            normal.inputs["Strength"].default_value = 0.34
             links.new(texture.outputs["Color"], normal.inputs["Color"])
             links.new(normal.outputs["Normal"], bsdf.inputs["Normal"])
     return material
@@ -274,10 +274,17 @@ def terrain_height(x, y):
     return base_height + pond_depression + pond_bank - skirt * WORLD_SKIRT_DEPTH
 
 
+def terrain_snow_uv(x, y):
+    """World-planar snow mapping with a smooth warp that breaks grid cadence."""
+    warped_x = x + 2.4 * math.sin(y * 0.055) + 1.2 * math.sin((x + y) * 0.037)
+    warped_y = y + 2.1 * math.sin(x * 0.049) - 1.0 * math.sin((x - y) * 0.041)
+    return (warped_x / TERRAIN_UV_METRES, warped_y / TERRAIN_UV_METRES)
+
+
 def create_terrain():
     vertices = [(0.0, 0.0, terrain_height(0.0, 0.0))]
     faces = []
-    uvs = [(0.0, 0.0)]
+    uvs = [terrain_snow_uv(0.0, 0.0)]
     for ring in range(1, TERRAIN_RADIAL_SEGMENTS + 1):
         radial_fraction = ring / TERRAIN_RADIAL_SEGMENTS
         for segment in range(TERRAIN_ANGULAR_SEGMENTS):
@@ -286,7 +293,7 @@ def create_terrain():
             x = math.cos(angle) * radius
             y = math.sin(angle) * radius
             vertices.append((x, y, terrain_height(x, y)))
-            uvs.append((x / TERRAIN_UV_METRES, y / TERRAIN_UV_METRES))
+            uvs.append(terrain_snow_uv(x, y))
 
     for segment in range(TERRAIN_ANGULAR_SEGMENTS):
         current = 1 + segment
@@ -335,6 +342,8 @@ def create_terrain():
     terrain["tka_skirt_depth"] = WORLD_SKIRT_DEPTH
     terrain["tka_radial_segments"] = TERRAIN_RADIAL_SEGMENTS
     terrain["tka_angular_segments"] = TERRAIN_ANGULAR_SEGMENTS
+    terrain["tka_snow_surface_source"] = "ambientcg-snow004"
+    terrain["tka_snow_uv_metres"] = TERRAIN_UV_METRES
     return terrain
 
 

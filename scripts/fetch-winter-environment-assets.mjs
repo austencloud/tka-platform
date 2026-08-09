@@ -3,6 +3,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
+import JSZip from "jszip";
 
 const SOURCE_ROOT = resolve("assets/3d-source/winter");
 const TEXTURE_ROOT = resolve("static/textures/winter");
@@ -14,6 +15,11 @@ const MODEL_IDS = [
   "tree_stump_01",
   "dead_tree_trunk_02",
 ];
+
+const SNOW_ARCHIVE_URL =
+  "https://ambientcg.com/get?file=Snow004_1K-JPG.zip";
+const SNOW_ARCHIVE_SHA256 =
+  "8d954173843674de72662459d79dbaa145e8562ede541f457c8460724a8d67e3";
 
 async function fetchJson(url) {
   const response = await fetch(url);
@@ -56,6 +62,29 @@ async function download(url, destination, expectedMd5) {
   );
 }
 
+async function writeAssetBytes(destination, bytes) {
+  await mkdir(dirname(destination), { recursive: true });
+  const expectedSha256 = createHash("sha256").update(bytes).digest("hex");
+
+  try {
+    const existing = await readFile(destination);
+    const existingSha256 = createHash("sha256")
+      .update(existing)
+      .digest("hex");
+    if (existingSha256 === expectedSha256) {
+      console.log(`  reuse ${destination}`);
+      return;
+    }
+  } catch {
+    // The first run has nothing to reuse.
+  }
+
+  await writeFile(destination, bytes);
+  console.log(
+    `  wrote ${destination} (${(bytes.length / 1024 / 1024).toFixed(2)} MiB)`
+  );
+}
+
 async function fetchModel(id) {
   console.log(`\n${id}`);
   const manifest = await fetchJson(`https://api.polyhaven.com/files/${id}`);
@@ -77,17 +106,35 @@ async function fetchModel(id) {
 }
 
 async function fetchTextureSet() {
-  console.log("\nsnow_02");
-  const manifest = await fetchJson("https://api.polyhaven.com/files/snow_02");
+  console.log("\nambientCG Snow 004 (CC0)");
+  const response = await fetch(SNOW_ARCHIVE_URL);
+  if (!response.ok) {
+    throw new Error(
+      `Snow archive request failed (${response.status}): ${SNOW_ARCHIVE_URL}`
+    );
+  }
+
+  const archive = Buffer.from(await response.arrayBuffer());
+  const archiveSha256 = createHash("sha256").update(archive).digest("hex");
+  if (archiveSha256 !== SNOW_ARCHIVE_SHA256) {
+    throw new Error(
+      `Snow archive checksum mismatch: expected ${SNOW_ARCHIVE_SHA256}, received ${archiveSha256}`
+    );
+  }
+
+  const zip = await JSZip.loadAsync(archive);
   const files = [
-    [manifest.Diffuse?.["1k"]?.jpg, "snow-albedo.jpg"],
-    [manifest.nor_gl?.["1k"]?.jpg, "snow-normal.jpg"],
-    [manifest.Rough?.["1k"]?.jpg, "snow-roughness.jpg"],
+    ["Snow004_1K-JPG_Color.jpg", "snow-albedo.jpg"],
+    ["Snow004_1K-JPG_NormalGL.jpg", "snow-normal.jpg"],
+    ["Snow004_1K-JPG_Roughness.jpg", "snow-roughness.jpg"],
+    ["Snow004_1K-JPG_Displacement.jpg", "snow-displacement.jpg"],
   ];
 
-  for (const [file, name] of files) {
-    if (!file?.url) throw new Error(`Poly Haven Snow 02 is missing ${name}`);
-    await download(file.url, resolve(TEXTURE_ROOT, name), file.md5);
+  for (const [entryName, destinationName] of files) {
+    const entry = zip.file(entryName);
+    if (!entry) throw new Error(`Snow archive is missing ${entryName}`);
+    const bytes = await entry.async("nodebuffer");
+    await writeAssetBytes(resolve(TEXTURE_ROOT, destinationName), bytes);
   }
 }
 

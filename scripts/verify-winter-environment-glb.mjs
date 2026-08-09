@@ -158,6 +158,14 @@ invariant(
   `Terrain skirt is too shallow: ${terrain.tka_skirt_depth}`
 );
 invariant(
+  terrain.tka_snow_surface_source === "ambientcg-snow004",
+  `Unexpected snow surface source: ${terrain.tka_snow_surface_source}`
+);
+invariant(
+  terrain.tka_snow_uv_metres >= 12,
+  `Snow UV scale is too small: ${terrain.tka_snow_uv_metres}`
+);
+invariant(
   [...rocks, ...deadwood, ...stumps].every(
     (node) => node.extras.tka_burial_fraction >= 0.2
   ),
@@ -201,6 +209,10 @@ console.log(
         minimumRadius: terrain.tka_boundary_min_radius,
         maximumRadius: terrain.tka_boundary_max_radius,
         skirtDepth: terrain.tka_skirt_depth,
+      },
+      snowSurface: {
+        source: terrain.tka_snow_surface_source,
+        uvMetres: terrain.tka_snow_uv_metres,
       },
     },
     null,

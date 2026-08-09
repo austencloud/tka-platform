@@ -1,9 +1,9 @@
 # Moonlit Winter Hollow: Pass Three Gated Production Plan
 
 - **Date:** 2026-08-08
-- **Status:** Gate 1 terrain form approved. Gate 2 snow surface is implemented
-  and awaiting visual review; the shared celestial-sky correction is also at
-  its visual gate.
+- **Status:** Gates 0 through 2 approved. Gate 3 performance-stage form is next.
+  The shared celestial-sky correction is accepted spatially; final moon
+  luminance and atmospheric balance remain owned by Gate 12.
 - **Previous work:**
   [pass-two design](../../specs/active/2026-08-08-moonlit-winter-hollow-design.md)
   and
@@ -415,9 +415,9 @@ regression evidence is included.
 
 ## Verification ledger
 
-- [ ] Gate 0: diagnostic views and baseline approved
-- [ ] Gate 1: world envelope and terrain form approved
-- [ ] Gate 2: snow surface approved
+- [x] Gate 0: diagnostic views and baseline approved
+- [x] Gate 1: world envelope and terrain form approved
+- [x] Gate 2: snow surface approved
 - [ ] Gate 3: stage form approved
 - [ ] Gate 4: pond basin and shoreline approved
 - [ ] Gate 5: pond ice approved
