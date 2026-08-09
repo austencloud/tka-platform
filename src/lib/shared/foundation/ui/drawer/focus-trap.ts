@@ -21,6 +21,7 @@ export const DEFAULT_INERT_EXCLUSIONS = [
   "desktop-navigation-sidebar", // Allow navigation away from drawer
   "bottom-navigation", // Allow module switching on mobile
   "drawer-overlay", // Allow backdrop click to dismiss
+  "mind-overlay", // The ghost presenter's operator card must outlive any drawer
 ] as const;
 
 export interface FocusTrapOptions {

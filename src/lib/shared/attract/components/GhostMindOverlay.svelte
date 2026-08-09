@@ -1,12 +1,18 @@
 <!--
-  Developer HUD for the Ghost's live decision hierarchy.
+  The Ghost's card — a small draggable window for the person running a demo.
 
-  The public thought bubble says what the character is thinking. This panel
-  answers the engineering questions behind it: which activity owns the next
-  several steps, which step is running, whether the Ghost is perceiving or
-  acting, and which sidebar labels it actually read before choosing.
+  This used to be a dense engineering HUD (activity, intention, target,
+  sidebar reads, candidate scores). Austen's verdict (2026-08-09): he is not
+  going to read that. What earns the pixels is the character — its thought,
+  its mood, its plan — plus somewhere sensible for the parked ghost to live.
+  The full decision hierarchy stays inspectable at window.__ghost.status().
+
+  When the tour is parked (the visitor took the wheel), the ghost docks HERE:
+  the pointer dot hides and this card grows a Play button, so resuming is a
+  visible control instead of a dot hiding behind a panel.
 -->
 <script lang="ts">
+  import { portal } from "$lib/features/create/generate/components/modals/portal";
   import type { GhostMood } from "../domain/intention";
   import type { GhostMindStatus } from "../services/mind.svelte";
 
@@ -16,6 +22,8 @@
     mood,
     seed,
     stage = false,
+    parked = false,
+    onResume,
     onClose,
   }: {
     status: GhostMindStatus;
@@ -23,36 +31,105 @@
     mood: GhostMood;
     seed: number;
     stage?: boolean;
-    /** Hide the HUD entirely (window.__ghost.debug(true) brings it back). */
+    /** The visitor has the wheel; the ghost is docked here waiting. */
+    parked?: boolean;
+    /** Resume the tour from the card's Play button. */
+    onResume?: () => void;
+    /** Hide the card entirely (window.__ghost.debug(true) brings it back). */
     onClose?: () => void;
   } = $props();
 
-  // Collapsed = just the pill header. The panel is a debugging instrument,
-  // not part of the show — it must never be the thing hiding the ghost.
+  // Collapsed = just the pill header. The card is for the operator,
+  // not the audience — it must never be the thing hiding the ghost.
   let minimized = $state(false);
 
-  const activityPosition = $derived(
-    status.activityStepCount
-      ? `${status.activityStepIndex + 1}/${status.activityStepCount}`
-      : "0/0"
+  // Drag anywhere: grab the header, drop the card where it isn't in the way.
+  // Until the first drag it sits in its default bottom-right corner.
+  let card = $state<HTMLElement | null>(null);
+  let pos = $state<{ x: number; y: number } | null>(null);
+  let dragging = $state(false);
+  let grabX = 0;
+  let grabY = 0;
+
+  function startDrag(event: PointerEvent): void {
+    if (!card || (event.target as HTMLElement).closest("button")) return;
+    const rect = card.getBoundingClientRect();
+    grabX = event.clientX - rect.left;
+    grabY = event.clientY - rect.top;
+    dragging = true;
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  }
+
+  function moveDrag(event: PointerEvent): void {
+    if (!dragging || !card) return;
+    pos = {
+      x: Math.min(
+        Math.max(0, event.clientX - grabX),
+        window.innerWidth - card.offsetWidth
+      ),
+      y: Math.min(
+        Math.max(0, event.clientY - grabY),
+        window.innerHeight - card.offsetHeight
+      ),
+    };
+  }
+
+  function endDrag(): void {
+    dragging = false;
+  }
+
+  const planLabel = $derived(
+    status.activityId
+      ? `${status.activityId}${
+          status.activityVariantId && status.activityVariantId !== "default"
+            ? ` · ${status.activityVariantId}`
+            : ""
+        } · ${status.activityStepIndex + 1}/${status.activityStepCount}`
+      : null
   );
-  const optionSummary = $derived(
-    status.navigationOptions
-      .map((option) => option.label)
-      .slice(0, 8)
-      .join(" · ") || "Nothing read yet"
+  const currentStep = $derived(status.plan[status.activityStepIndex] ?? null);
+  const nextSteps = $derived(
+    status.plan.slice(status.activityStepIndex + 1, status.activityStepIndex + 4)
   );
 </script>
 
-<aside class="mind-overlay" class:stage class:minimized>
-  <header>
-    <span class="eyebrow">Ghost mind</span>
-    <span class="phase phase-{status.phase}">{status.phase}</span>
+<!-- Portaled to <body>: PresenterHost mounts inside .tka-app, whose z-index:2
+     stacking context traps the card BELOW body-level drawers — their footer
+     was eating the card's clicks even while the card looked on top. -->
+<aside
+  use:portal
+  class="mind-overlay"
+  class:stage
+  class:minimized
+  class:dragging
+  bind:this={card}
+  style={pos ? `left: ${pos.x}px; top: ${pos.y}px; right: auto; bottom: auto;` : ""}
+>
+  <header
+    title="seed {seed} — drag to move"
+    onpointerdown={startDrag}
+    onpointermove={moveDrag}
+    onpointerup={endDrag}
+    onpointercancel={endDrag}
+  >
+    <span class="eyebrow">Ghost</span>
+    <span class="phase phase-{parked ? 'parked' : status.phase}">
+      {parked ? "parked" : status.phase}
+    </span>
+    <span class="mood">{mood}</span>
     <span class="controls">
+      {#if parked && minimized}
+        <button
+          type="button"
+          class="hud-button play-small"
+          aria-label="Resume the ghost"
+          onclick={() => onResume?.()}>▶</button
+        >
+      {/if}
       <button
         type="button"
         class="hud-button"
-        aria-label={minimized ? "Expand ghost mind panel" : "Minimize ghost mind panel"}
+        aria-label={minimized ? "Expand ghost card" : "Minimize ghost card"}
         onclick={() => (minimized = !minimized)}
       >
         {minimized ? "▴" : "▾"}
@@ -60,7 +137,7 @@
       <button
         type="button"
         class="hud-button"
-        aria-label="Close ghost mind panel"
+        aria-label="Close ghost card"
         onclick={() => onClose?.()}
       >
         ✕
@@ -69,68 +146,30 @@
   </header>
 
   {#if !minimized}
-  <div class="facts">
-    <span class="label">Activity</span>
-    <span class="value">
-      {status.activityId ?? "none"}{status.activityVariantId &&
-      status.activityVariantId !== "default"
-        ? ` · ${status.activityVariantId}`
-        : ""}
-      <span class="counter">{activityPosition}</span>
-    </span>
+    <p class="thought">{thought ?? "Watching quietly."}</p>
 
-    <span class="label">Intention</span>
-    <span class="value">{status.intentionId ?? "choosing"}</span>
-
-    <span class="label">Target</span>
-    <span class="value">{status.targetLabel ?? "none"}</span>
-
-    <span class="label">Mood</span>
-    <span class="value">{mood}</span>
-  </div>
-
-  <div class="section">
-    <span class="section-label">Plan</span>
     <div class="plan">
-      {#each status.plan as step, index}
-        <span
-          class="plan-step"
-          class:current={index === status.activityStepIndex}
-          class:done={index < status.activityStepIndex}
-          title={step}>{step}</span
-        >
+      {#if planLabel && currentStep}
+        <span class="plan-label">{planLabel}</span>
+        <span class="plan-now">{currentStep}</span>
+        {#if nextSteps.length}
+          <span class="plan-next">then {nextSteps.join(" · ")}</span>
+        {/if}
       {:else}
-        <span class="empty">Waiting for an activity</span>
-      {/each}
+        <span class="plan-label">between activities</span>
+      {/if}
     </div>
-  </div>
 
-  <div class="section readout">
-    <span class="section-label">Sidebar read</span>
-    <span class="read-value">{optionSummary}</span>
-    {#if status.navigationChoice}
-      <span class="choice">
-        Chose {status.navigationChoice.label}
-      </span>
+    {#if parked}
+      <button
+        type="button"
+        class="resume"
+        aria-label="Resume the ghost tour"
+        onclick={() => onResume?.()}
+      >
+        ▶ Resume the ghost
+      </button>
     {/if}
-  </div>
-
-  <div class="section thought">
-    <span class="section-label">Thought</span>
-    <span class="thought-value">{thought ?? "Watching quietly"}</span>
-  </div>
-
-  <footer>
-    <span>seed {seed}</span>
-    {#if status.activityCandidates.length}
-      <span class="candidates">
-        considered {status.activityCandidates
-          .slice(0, 3)
-          .map(({ id, score }) => `${id} ${score.toFixed(2)}`)
-          .join(" · ")}
-      </span>
-    {/if}
-  </footer>
   {/if}
 </aside>
 
@@ -140,96 +179,65 @@
     right: 16px;
     bottom: 16px;
     z-index: 2147483002;
-    width: min(360px, calc(100vw - 32px));
-    height: 300px;
+    width: min(320px, calc(100vw - 32px));
     box-sizing: border-box;
-    overflow: hidden;
-    padding: 14px 16px;
+    padding: 10px 12px 12px;
     border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #8b8cff) 42%, transparent);
+      color-mix(in srgb, var(--theme-accent, #8b8cff) 45%, black);
     border-radius: 14px;
-    background: color-mix(
-      in srgb,
-      var(--theme-panel-bg, #101018) 94%,
-      transparent
+    /* Fully opaque on purpose: app content bleeding through made the card
+       unreadable and the card made the content unreadable — nobody won.
+       --theme-panel-bg is itself translucent (rgba alpha), so paint it OVER
+       an opaque base instead of using it alone. */
+    background-color: #0d0d16;
+    background-image: linear-gradient(
+      var(--theme-panel-bg, #101018),
+      var(--theme-panel-bg, #101018)
     );
     box-shadow:
       0 18px 48px -20px rgba(0, 0, 0, 0.78),
-      0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
     color: var(--theme-text, #f4f4f8);
     font-family:
       ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 12px;
-    line-height: 1.35;
-    /* The panel itself stays inert so it can never eat an app click the
-       ghost is about to make; only its own buttons take the pointer. */
+    line-height: 1.4;
+    /* The body stays inert so the card can never eat an app click the ghost
+       is about to make; the header (drag) and buttons opt back in. */
     pointer-events: none;
   }
 
   .mind-overlay.minimized {
-    height: auto;
-    padding: 6px 10px;
     width: auto;
-    min-width: 240px;
+    min-width: 230px;
+    padding: 6px 10px;
   }
 
-  .mind-overlay.minimized header {
-    margin-bottom: 0;
-  }
-
-  .controls {
-    display: flex;
-    gap: 4px;
-    margin-left: 8px;
-  }
-
-  .hud-button {
-    pointer-events: auto;
-    display: grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    margin: -4px 0;
-    padding: 0;
-    border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #8b8cff) 30%, transparent);
-    border-radius: 8px;
-    background: color-mix(
-      in srgb,
-      var(--theme-panel-bg, #101018) 70%,
-      transparent
-    );
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    font: inherit;
-    font-size: 12px;
-    line-height: 1;
-    cursor: pointer;
-  }
-
-  .hud-button:hover {
-    color: var(--theme-text, #f4f4f8);
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, #8b8cff) 60%,
-      transparent
-    );
-  }
-
-  header,
-  footer,
-  .value {
-    display: flex;
-    align-items: center;
+  .mind-overlay.dragging {
+    user-select: none;
   }
 
   header {
-    justify-content: space-between;
-    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: -4px -6px 6px;
+    padding: 4px 6px;
+    border-radius: 8px;
+    cursor: grab;
+    pointer-events: auto;
+    touch-action: none;
   }
 
-  .eyebrow,
-  .section-label,
-  .label {
+  .mind-overlay.dragging header {
+    cursor: grabbing;
+  }
+
+  .mind-overlay.minimized header {
+    margin-bottom: -4px;
+  }
+
+  .eyebrow {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -237,8 +245,7 @@
   }
 
   .phase {
-    min-width: 9ch;
-    padding: 3px 7px;
+    padding: 3px 8px;
     border-radius: 999px;
     background: color-mix(
       in srgb,
@@ -246,9 +253,8 @@
       transparent
     );
     color: var(--theme-accent, #a7a8ff);
-    text-align: center;
     text-transform: uppercase;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 800;
   }
 
@@ -268,173 +274,134 @@
     background: rgba(139, 92, 246, 0.14);
   }
 
-  .facts {
-    display: grid;
-    grid-template-columns: 72px minmax(0, 1fr);
-    gap: 3px 8px;
+  .phase-parked {
+    color: #86efac;
+    background: rgba(74, 222, 128, 0.16);
   }
 
-  .value {
-    min-width: 0;
-    justify-content: space-between;
+  .mood {
     overflow: hidden;
-    color: #e2e8f0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    font-style: italic;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
 
-  .counter {
-    margin-left: 8px;
-    color: #93c5fd;
-    font-variant-numeric: tabular-nums;
+  .controls {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
   }
 
-  .section {
-    margin-top: 9px;
+  .hud-button {
+    pointer-events: auto;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin: -12px -6px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    font: inherit;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
   }
 
-  .section-label {
-    display: block;
-    margin-bottom: 4px;
-    font-size: 12px;
+  .hud-button:hover {
+    color: var(--theme-text, #f4f4f8);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b8cff) 20%,
+      transparent
+    );
+  }
+
+  .play-small {
+    color: #86efac;
+  }
+
+  .thought {
+    display: -webkit-box;
+    overflow: hidden;
+    margin: 0 0 8px;
+    color: #f8fafc;
+    font-style: italic;
+    font-size: 13px;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   .plan {
-    display: flex;
-    gap: 4px;
-    height: 24px;
-    overflow: hidden;
+    display: grid;
+    gap: 2px;
   }
 
-  .plan-step {
-    flex: 0 1 auto;
-    min-width: 16px;
-    max-width: 94px;
-    overflow: hidden;
-    padding: 3px 6px;
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    border-radius: 6px;
-    color: rgba(255, 255, 255, 0.58);
-    white-space: nowrap;
-    text-overflow: ellipsis;
+  .plan-label {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 10px;
+    font-weight: 700;
   }
 
-  .plan-step.done {
-    opacity: 0.36;
-    text-decoration: line-through;
-  }
-
-  .plan-step.current {
-    flex-shrink: 0;
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, #8b8cff) 65%,
-      transparent
-    );
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b8cff) 18%,
-      transparent
-    );
+  .plan-now {
     color: #fff;
+    font-weight: 700;
   }
 
-  .readout,
-  .thought {
-    position: relative;
-    height: 41px;
-    overflow: hidden;
-  }
-
-  .read-value,
-  .thought-value {
+  .plan-next {
     display: -webkit-box;
     overflow: hidden;
-    color: #cbd5e1;
+    color: rgba(255, 255, 255, 0.5);
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
-    line-clamp: 1;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
-  .thought-value {
-    color: #f8fafc;
-    font-family: inherit;
-    font-style: italic;
+  .resume {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 10px;
+    border: 1px solid rgba(74, 222, 128, 0.45);
+    border-radius: 10px;
+    background: rgba(74, 222, 128, 0.14);
+    color: #86efac;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
   }
 
-  .choice {
-    position: absolute;
-    right: 0;
-    top: 0;
-    max-width: 55%;
-    overflow: hidden;
-    color: #67e8f9;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-
-  .empty {
-    color: rgba(255, 255, 255, 0.42);
-    font-style: italic;
-  }
-
-  footer {
-    position: absolute;
-    right: 16px;
-    bottom: 10px;
-    left: 16px;
-    justify-content: space-between;
-    gap: 12px;
-    color: rgba(255, 255, 255, 0.4);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .candidates {
-    min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+  .resume:hover {
+    background: rgba(74, 222, 128, 0.24);
+    color: #bbf7d0;
   }
 
   .mind-overlay.stage {
-    width: min(560px, calc(100vw - 48px));
-    height: 410px;
-    padding: 22px 24px;
-    border-radius: 22px;
-    font-size: 16px;
+    width: min(480px, calc(100vw - 48px));
+    padding: 16px 18px;
+    border-radius: 20px;
+    font-size: 15px;
   }
 
-  .mind-overlay.stage .phase,
-  .mind-overlay.stage .section-label {
-    font-size: 14px;
-  }
-
-  .mind-overlay.stage .facts {
-    grid-template-columns: 104px minmax(0, 1fr);
-    gap: 7px 12px;
-  }
-
-  .mind-overlay.stage .section {
-    margin-top: 16px;
-  }
-
-  .mind-overlay.stage .plan {
-    height: 34px;
-  }
-
-  .mind-overlay.stage .plan-step {
-    max-width: 150px;
-    padding: 6px 9px;
-  }
-
-  .mind-overlay.stage .readout,
   .mind-overlay.stage .thought {
-    height: 56px;
+    font-size: 17px;
   }
 
-  .mind-overlay.stage footer {
-    right: 24px;
-    bottom: 18px;
-    left: 24px;
+  .mind-overlay.stage .phase {
+    font-size: 13px;
+  }
+
+  .mind-overlay.stage .plan-label {
+    font-size: 12px;
   }
 </style>

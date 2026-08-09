@@ -186,6 +186,9 @@
         : 0;
     const onRealPointer = (event: PointerEvent) => {
       if (!event.isTrusted) return;
+      // Operating the ghost's own card (drag, minimize, resume) is the
+      // OPERATOR's hand, not a visitor takeover — it must not pause the tour.
+      if ((event.target as HTMLElement).closest?.(".mind-overlay")) return;
       lastHumanInputAt = performance.now();
       act.pause();
       presentationState.markPaused();
@@ -270,6 +273,7 @@
 
 <div
   class="presenter-overlay"
+  class:docked={ghost.parked && showMindOverlay}
   style={`transform: translate(${originX}px, ${originY}px)`}
 >
   <GhostPointer
@@ -304,6 +308,8 @@
     mood={mind.mood}
     seed={mind.seed}
     stage={presentationState.stage}
+    parked={ghost.parked}
+    onResume={resumeTour}
     onClose={() => (showMindOverlay = false)}
   />
 {/if}
@@ -323,5 +329,13 @@
        press, and never eats a visitor's click. */
     z-index: 2147483000;
     pointer-events: none;
+  }
+
+  /* Parked WITH the card visible: the ghost docks into the card (its Play
+     button is the resume control), so the loose parked dot — which sat
+     behind the panel where it could not even be clicked — disappears. The
+     dot-only park remains for kiosk runs with the card closed. */
+  .presenter-overlay.docked {
+    visibility: hidden;
   }
 </style>
