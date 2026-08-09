@@ -10,28 +10,22 @@
   interface Props {
     selectedProps: PropType[];
     saving: boolean;
-    onadvance: () => void;
+    canFinish: boolean;
+    choosingFavorite: boolean;
+    onfavoritepick: () => void;
     ondone: () => void;
   }
 
-  let { selectedProps, saving, onadvance, ondone }: Props = $props();
+  let {
+    selectedProps,
+    saving,
+    canFinish,
+    choosingFavorite,
+    onfavoritepick,
+    ondone,
+  }: Props = $props();
 
   const count = $derived(selectedProps.length);
-  const showSetFavorite = $derived(count >= 2);
-  const ctaLabel = $derived(showSetFavorite ? "Set favorite" : "Done");
-  const ctaAriaLabel = $derived(
-    showSetFavorite
-      ? `Set favorite from ${count} selected props`
-      : "Save and close"
-  );
-
-  function handleCta() {
-    if (showSetFavorite) {
-      onadvance();
-    } else {
-      ondone();
-    }
-  }
 </script>
 
 {#if count > 0}
@@ -47,16 +41,33 @@
       <span class="chip-count">{count} {count === 1 ? "prop" : "props"}</span>
     </div>
 
-    <button
-      class="cta-button"
-      onclick={handleCta}
-      aria-label={ctaAriaLabel}
-    >
-      {ctaLabel}
-      {#if showSetFavorite}
-        <i class="fas fa-arrow-right cta-arrow" aria-hidden="true"></i>
-      {/if}
-    </button>
+    <div class="footer-actions">
+      <button
+        class="footer-button favorite-button"
+        class:active={choosingFavorite}
+        onclick={onfavoritepick}
+        aria-label={choosingFavorite
+          ? "Select favorite: stop choosing"
+          : "Select favorite"}
+        aria-pressed={choosingFavorite}
+        disabled={saving}
+      >
+        <i class="fas fa-star" aria-hidden="true"></i>
+        <span>Select favorite</span>
+      </button>
+
+      <button
+        class="footer-button cta-button"
+        onclick={ondone}
+        aria-label={canFinish
+          ? "Done: save and close"
+          : "Done: choose a favorite before closing"}
+        aria-busy={saving}
+        disabled={saving || !canFinish}
+      >
+        Done
+      </button>
+    </div>
   </div>
 {/if}
 
@@ -100,14 +111,20 @@
     margin-left: 4px;
   }
 
-  .cta-button {
+  .footer-actions {
     display: flex;
     align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .footer-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     gap: 6px;
     padding: 8px 16px;
-    background: var(--theme-accent, #6366f1);
     color: white;
-    border: none;
     border-radius: 999px;
     font-size: var(--font-size-sm, 14px);
     font-weight: 600;
@@ -115,30 +132,87 @@
     white-space: nowrap;
     flex-shrink: 0;
     transition: opacity var(--duration-fast, 150ms) ease;
-    min-height: 36px;
+    min-height: 44px;
     min-width: 44px;
   }
 
-  .cta-button:hover:not(:disabled) {
+  .favorite-button {
+    color: var(--theme-text, white);
+    background: var(--theme-card-bg, #11141c);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.24));
+  }
+
+  .favorite-button i {
+    color: var(--semantic-warning, #f59e0b);
+  }
+
+  .favorite-button.active {
+    color: var(--semantic-warning, #f59e0b);
+    background: color-mix(
+      in srgb,
+      var(--semantic-warning, #f59e0b) 16%,
+      var(--theme-card-bg, #11141c)
+    );
+    border-color: var(--semantic-warning, #f59e0b);
+  }
+
+  .cta-button {
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 78%, black);
+    border: none;
+  }
+
+  .footer-button:hover:not(:disabled) {
     opacity: 0.9;
   }
 
-  .cta-button:focus-visible {
+  .footer-button:focus-visible {
     outline: 2px solid white;
     outline-offset: 2px;
   }
 
-  .cta-button:disabled {
+  .footer-button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }
 
-  .cta-arrow {
-    font-size: var(--font-size-compact, 12px);
+  @media (max-width: 480px) {
+    .chip-image {
+      display: none;
+    }
+
+    .footer-button {
+      padding-inline: 12px;
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .selection-footer {
+      gap: 1.25rem;
+      padding: 1.25rem 2rem;
+    }
+
+    .selected-chips {
+      gap: 0.5rem;
+    }
+
+    .chip-image {
+      width: 3rem;
+      height: 3rem;
+    }
+
+    .chip-count,
+    .footer-button {
+      font-size: 1.5rem;
+    }
+
+    .footer-button {
+      min-height: 4.5rem;
+      padding: 1rem 2rem;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .cta-button {
+    .footer-button {
       transition: none;
     }
   }

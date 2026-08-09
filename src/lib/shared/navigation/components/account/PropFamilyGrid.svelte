@@ -41,11 +41,20 @@
   interface Props {
     selectedProps: PropType[];
     favoriteProp: PropType | null;
+    choosingFavorite: boolean;
     disabled?: boolean;
     ontoggle: (propType: PropType) => void;
+    onfavorite: (propType: PropType) => void;
   }
 
-  let { selectedProps, favoriteProp, disabled = false, ontoggle }: Props = $props();
+  let {
+    selectedProps,
+    favoriteProp,
+    choosingFavorite,
+    disabled = false,
+    ontoggle,
+    onfavorite,
+  }: Props = $props();
 
   const selectedSet = $derived(new Set(selectedProps));
 </script>
@@ -57,8 +66,10 @@
       label={family.label}
       selected={selectedSet.has(family.base)}
       isFavorite={favoriteProp === family.base}
+      {choosingFavorite}
       {disabled}
       {ontoggle}
+      {onfavorite}
     />
   {/each}
 </div>
@@ -66,8 +77,40 @@
 <style>
   .prop-family-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 10px;
-    padding: 0 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.625rem;
+    padding: 0 0.5rem;
+  }
+
+  @container (min-width: 28rem) {
+    .prop-family-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @container (min-width: 40rem) {
+    .prop-family-grid {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+  }
+
+  @container (min-width: 56rem) {
+    .prop-family-grid {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+  }
+
+  @container (min-width: 90rem) {
+    .prop-family-grid {
+      gap: 1rem;
+      padding: 0 1rem;
+    }
+  }
+
+  @container (min-width: 140rem) {
+    .prop-family-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1.25rem;
+    }
   }
 </style>
