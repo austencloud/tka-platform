@@ -1,15 +1,16 @@
-"""Build the authored terrain and floor materials for Moonlit Firefly Forest.
+"""Build the authored terrain, paths, and tree composition for Forest.
 
 Gates 1 through 3 own terrain form, material zones, paths, and clearing edges.
-Runtime trees, rocks, bushes, deadwood, camp, stage, particles, lighting, and
-sky stay outside this file. Run with Blender 5.0 in background mode, then export
-with ``blender-export-forest-full.py``.
+Gate 5 adds tree transforms only. Rocks, bushes, deadwood, camp, stage,
+particles, lighting, and sky stay outside this file. Run with Blender 5.0 in
+background mode, then export with ``blender-export-forest-full.py``.
 """
 
 import hashlib
 import json
 import math
 import os
+import random
 
 import bpy
 from mathutils import Vector
@@ -25,6 +26,12 @@ with open(PATH_LAYOUT_PATH, "rb") as path_layout_file:
     PATH_LAYOUT_BYTES = path_layout_file.read()
 PATH_LAYOUT = json.loads(PATH_LAYOUT_BYTES.decode("utf-8"))
 PATH_LAYOUT_SHA256 = hashlib.sha256(PATH_LAYOUT_BYTES).hexdigest()
+TREE_LAYOUT_PATH = os.path.join(SCRIPT_DIR, "forest-tree-layout.json")
+with open(TREE_LAYOUT_PATH, "rb") as tree_layout_file:
+    TREE_LAYOUT_BYTES = tree_layout_file.read()
+TREE_LAYOUT = json.loads(TREE_LAYOUT_BYTES.decode("utf-8"))
+TREE_LAYOUT_SHA256 = hashlib.sha256(TREE_LAYOUT_BYTES).hexdigest()
+TREE_ASSETS = {asset["id"]: asset for asset in TREE_LAYOUT["assets"]}
 QA_DIR = os.path.join(os.environ.get("TEMP", PROJECT_ROOT), "tka-forest-evidence")
 QA_PATHS = {
     name: os.path.join(QA_DIR, f"forest_environment_qa_{name}.png")
@@ -625,6 +632,254 @@ def verify_path_layout():
     )
 
 
+def inside_rotated_ellipse(x, y, definition):
+    center_x, center_y = definition["center"]
+    radius_x, radius_y = definition["radii"]
+    angle = math.radians(float(definition.get("rotationDegrees", 0.0)))
+    cosine = math.cos(angle)
+    sine = math.sin(angle)
+    delta_x = x - float(center_x)
+    delta_y = y - float(center_y)
+    local_x = delta_x * cosine + delta_y * sine
+    local_y = -delta_x * sine + delta_y * cosine
+    return (local_x / float(radius_x)) ** 2 + (local_y / float(radius_y)) ** 2 <= 1.0
+
+
+def sample_cluster_point(rng, cluster):
+    amount = math.sqrt(rng.random())
+    angle = rng.random() * math.tau
+    local_x = math.cos(angle) * float(cluster["radii"][0]) * amount
+    local_y = math.sin(angle) * float(cluster["radii"][1]) * amount
+    rotation = math.radians(float(cluster.get("rotationDegrees", 0.0)))
+    cosine = math.cos(rotation)
+    sine = math.sin(rotation)
+    return (
+        float(cluster["center"][0]) + local_x * cosine - local_y * sine,
+        float(cluster["center"][1]) + local_x * sine + local_y * cosine,
+    )
+
+
+def tree_position_is_valid(x, y, asset, placements):
+    radius = math.hypot(x, y)
+    angle = math.atan2(y, x)
+    if radius < clearing_edge_radius(angle) + float(asset["clearingSetback"]):
+        return False
+    if radius > terrain_boundary_radius(angle) * float(TREE_LAYOUT["outerBoundaryFraction"]):
+        return False
+    for path in PATHS:
+        required = (
+            float(path["halfWidth"])
+            + float(path["shoulderWidth"])
+            + float(asset["pathClearance"])
+        )
+        if distance_to_path(x, y, path) < required:
+            return False
+    if any(inside_rotated_ellipse(x, y, opening) for opening in TREE_LAYOUT["openings"]):
+        return False
+    for placed in placements:
+        other = TREE_ASSETS[placed["assetId"]]
+        minimum = float(TREE_LAYOUT["spacingFactor"]) * (
+            float(asset["footprintRadius"]) + float(other["footprintRadius"])
+        )
+        if math.hypot(x - placed["x"], y - placed["y"]) < minimum:
+            return False
+    return True
+
+
+def build_tree_placements():
+    placements = []
+    for cluster_index, cluster in enumerate(TREE_LAYOUT["clusters"]):
+        rng = random.Random(int(TREE_LAYOUT["seed"]) + cluster_index * 104729)
+        requested = [
+            asset_id
+            for asset_id, count in cluster["counts"].items()
+            for _ in range(int(count))
+        ]
+        rng.shuffle(requested)
+        for asset_id in requested:
+            asset = TREE_ASSETS.get(asset_id)
+            if asset is None:
+                raise RuntimeError(f"Unknown tree asset in cluster: {asset_id}")
+            for _ in range(5000):
+                x, y = sample_cluster_point(rng, cluster)
+                if not tree_position_is_valid(x, y, asset, placements):
+                    continue
+                placements.append(
+                    {
+                        "assetId": asset_id,
+                        "clusterId": cluster["id"],
+                        "x": x,
+                        "y": y,
+                        "rotation": rng.random() * math.tau,
+                        "scaleVariation": rng.uniform(
+                            float(asset["scaleRange"][0]),
+                            float(asset["scaleRange"][1]),
+                        ),
+                    }
+                )
+                break
+            else:
+                raise RuntimeError(
+                    f"Could not place {asset_id} in cluster {cluster['id']} without overlap"
+                )
+    return placements
+
+
+def import_tree_prototype(asset):
+    source_path = os.path.join(PROJECT_ROOT, asset["stagedPath"])
+    if not os.path.isfile(source_path):
+        raise RuntimeError(
+            f"Missing staged tree source {source_path}; run prepare-forest-composition-sources.mjs"
+        )
+    before = {obj.name for obj in bpy.data.objects}
+    bpy.ops.import_scene.gltf(filepath=source_path)
+    imported = [obj for obj in bpy.data.objects if obj.name not in before]
+    meshes = [obj for obj in imported if obj.type == "MESH"]
+    if len(meshes) != 1:
+        raise RuntimeError(
+            f"Tree {asset['id']} must import as one mesh, found {len(meshes)}"
+        )
+    prototype = meshes[0]
+    for obj in imported:
+        if obj is not prototype:
+            bpy.data.objects.remove(obj, do_unlink=True)
+    prototype.parent = None
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.context.view_layer.objects.active = prototype
+    prototype.select_set(True)
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    prototype.select_set(False)
+    prototype.location = (0.0, 0.0, 0.0)
+    source_min_z = min(corner[2] for corner in prototype.bound_box)
+    source_max_z = max(corner[2] for corner in prototype.bound_box)
+    source_height = source_max_z - source_min_z
+    if source_height <= 0.01:
+        raise RuntimeError(f"Tree {asset['id']} has invalid height {source_height}")
+    prototype.data.name = f"ForestTreeMesh_{asset['id']}"
+    return prototype, source_min_z, source_height
+
+
+def create_tree_composition(terrain):
+    placements = build_tree_placements()
+    counts = {asset_id: 0 for asset_id in TREE_ASSETS}
+    by_asset = {asset_id: [] for asset_id in TREE_ASSETS}
+    for placement in placements:
+        by_asset[placement["assetId"]].append(placement)
+
+    for asset_id, asset_placements in by_asset.items():
+        if not asset_placements:
+            continue
+        asset = TREE_ASSETS[asset_id]
+        prototype, source_min_z, source_height = import_tree_prototype(asset)
+        normalized_scale = float(asset["targetHeightMetres"]) / source_height
+        for index, placement in enumerate(asset_placements):
+            scale = normalized_scale * placement["scaleVariation"]
+            tree = prototype.copy()
+            tree.data = prototype.data
+            bpy.context.collection.objects.link(tree)
+            tree.name = f"ForestTree_{asset_id}_{index:03d}"
+            tree.scale = (scale, scale, scale)
+            # Imported glTF nodes use quaternion rotation mode. Switch the
+            # linked instance before assigning its authored random yaw or the
+            # Euler value is stored but omitted from the exported transform.
+            tree.rotation_mode = "XYZ"
+            tree.rotation_euler[2] = placement["rotation"]
+            tree.location = (
+                placement["x"],
+                placement["y"],
+                terrain_height(placement["x"], placement["y"]) - source_min_z * scale,
+            )
+            tree["tka_role"] = "tree"
+            tree["tka_phase"] = "forest-composition"
+            tree["tka_tree_asset"] = asset_id
+            tree["tka_tree_family"] = asset["family"]
+            tree["tka_tree_roles"] = "|".join(asset["roles"])
+            tree["tka_target_height_metres"] = float(asset["targetHeightMetres"])
+            tree["tka_tree_layout_version"] = int(TREE_LAYOUT["version"])
+            tree["tka_tree_layout_sha256"] = TREE_LAYOUT_SHA256
+            counts[asset_id] += 1
+        bpy.data.objects.remove(prototype, do_unlink=True)
+
+    terrain["tka_tree_phase"] = "forest-composition"
+    terrain["tka_tree_layout_version"] = int(TREE_LAYOUT["version"])
+    terrain["tka_tree_layout_sha256"] = TREE_LAYOUT_SHA256
+    terrain["tka_tree_count"] = len(placements)
+    terrain["tka_tree_asset_ids"] = "|".join(TREE_ASSETS.keys())
+    terrain["tka_tree_asset_counts"] = [counts[asset_id] for asset_id in TREE_ASSETS]
+    terrain["tka_tree_cluster_names"] = "|".join(
+        cluster["id"] for cluster in TREE_LAYOUT["clusters"]
+    )
+    terrain["tka_tree_cluster_count"] = len(TREE_LAYOUT["clusters"])
+    terrain["tka_gpu_instances_required"] = True
+    return placements, counts
+
+
+def verify_tree_composition(placements, counts):
+    expected = sum(
+        int(count)
+        for cluster in TREE_LAYOUT["clusters"]
+        for count in cluster["counts"].values()
+    )
+    if len(placements) != expected:
+        raise RuntimeError(f"Expected {expected} trees, placed {len(placements)}")
+    if len(TREE_LAYOUT["clusters"]) < 8:
+        raise RuntimeError("Forest composition needs connected near and far masses")
+    for placement in placements:
+        asset = TREE_ASSETS[placement["assetId"]]
+        if not tree_position_is_valid(
+            placement["x"], placement["y"], asset,
+            [other for other in placements if other is not placement],
+        ):
+            raise RuntimeError(f"Tree composition contract failed at {placement}")
+
+    minimum_spacing = min(
+        math.hypot(first["x"] - second["x"], first["y"] - second["y"])
+        for index, first in enumerate(placements)
+        for second in placements[index + 1 :]
+    )
+    minimum_path_clearance = min(
+        distance_to_path(placement["x"], placement["y"], path)
+        - float(path["halfWidth"])
+        - float(path["shoulderWidth"])
+        for placement in placements
+        for path in PATHS
+    )
+    role_counts = {}
+    for asset_id, count in counts.items():
+        for role in TREE_ASSETS[asset_id]["roles"]:
+            role_counts[role] = role_counts.get(role, 0) + count
+    for role in ("mature-canopy", "irregular-middle", "young", "snag"):
+        if role_counts.get(role, 0) <= 0:
+            raise RuntimeError(f"Forest composition lost the {role} role")
+
+    metrics_path = os.path.join(QA_DIR, "forest_environment_tree_metrics.json")
+    os.makedirs(QA_DIR, exist_ok=True)
+    with open(metrics_path, "w", encoding="utf-8") as metrics_file:
+        json.dump(
+            {
+                "contractVersion": TREE_LAYOUT["version"],
+                "contractSha256": TREE_LAYOUT_SHA256,
+                "treeCount": len(placements),
+                "clusterCount": len(TREE_LAYOUT["clusters"]),
+                "assetCounts": counts,
+                "roleCounts": role_counts,
+                "minimumTrunkSpacingMetres": minimum_spacing,
+                "minimumPathShoulderClearanceMetres": minimum_path_clearance,
+            },
+            metrics_file,
+            indent=2,
+        )
+        metrics_file.write("\n")
+
+    print("\nForest tree verification")
+    print(f"Tree instances:                    {len(placements)}")
+    print(f"Connected masses:                  {len(TREE_LAYOUT['clusters'])}")
+    print(f"Minimum trunk spacing:             {minimum_spacing:.3f} m")
+    print(f"Minimum path shoulder clearance:   {minimum_path_clearance:.3f} m")
+    print(f"Asset counts:                      {counts}")
+    print(f"Tree metrics:                      {metrics_path}")
+
+
 def principled_material(name, color, roughness=0.8):
     material = bpy.data.materials.new(name)
     material.use_nodes = True
@@ -778,7 +1033,7 @@ def setup_qa_render():
     render_qa_view(camera, (0.0, -31.0, 8.0), (0.0, 0.0, 2.0), QA_PATHS["hero"], 38)
     render_qa_view(camera, (0.0, 31.0, 9.0), (0.0, 0.0, 2.0), QA_PATHS["reverse"], 38)
     render_qa_view(camera, (0.0, -9.0, 2.2), (0.0, 0.0, 1.35), QA_PATHS["walk"], 31)
-    render_qa_view(camera, (2.0, -20.0, 6.5), (16.0, -3.0, 5.5), QA_PATHS["trees"], 41)
+    render_qa_view(camera, (8.0, -24.0, 5.5), (39.0, 4.0, 7.0), QA_PATHS["trees"], 41)
     render_qa_view(camera, (1.0, -12.0, 3.1), (9.0, -2.0, 0.15), QA_PATHS["floor"], 41)
     render_qa_view(camera, (11.0, -11.0, 4.8), (5.5, 3.5, 1.1), QA_PATHS["camp"], 42)
     render_qa_view(camera, (-8.0, -12.0, 4.5), (0.0, 0.0, 1.0), QA_PATHS["stage"], 41)
@@ -808,12 +1063,14 @@ def setup_qa_render():
 
 reset_scene()
 terrain_materials = create_floor_materials()
-create_terrain(terrain_materials)
+terrain = create_terrain(terrain_materials)
 verify_terrain()
 verify_path_layout()
+tree_placements, tree_counts = create_tree_composition(terrain)
+verify_tree_composition(tree_placements, tree_counts)
 setup_qa_render()
 
-print("\nMoonlit Firefly Forest terrain authored")
+print("\nMoonlit Firefly Forest terrain and trees authored")
 print(f"Blend: {BLEND_PATH}")
 for label, path in QA_PATHS.items():
     print(f"QA {label:8}: {path}")

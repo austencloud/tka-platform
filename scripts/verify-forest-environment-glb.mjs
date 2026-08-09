@@ -14,6 +14,26 @@ const pathLayout = JSON.parse(pathLayoutBytes.toString("utf8"));
 const pathLayoutSha256 = createHash("sha256")
   .update(pathLayoutBytes)
   .digest("hex");
+const treeLayoutPath = resolve("scripts/forest-tree-layout.json");
+const treeLayoutBytes = readFileSync(treeLayoutPath);
+const treeLayout = JSON.parse(treeLayoutBytes.toString("utf8"));
+const treeLayoutSha256 = createHash("sha256")
+  .update(treeLayoutBytes)
+  .digest("hex");
+const expectedTreeAssetIds = treeLayout.assets.map((asset) => asset.id);
+const expectedTreeAssetCounts = Object.fromEntries(
+  expectedTreeAssetIds.map((assetId) => [
+    assetId,
+    treeLayout.clusters.reduce(
+      (count, cluster) => count + Number(cluster.counts[assetId] ?? 0),
+      0
+    ),
+  ])
+);
+const expectedTreeCount = Object.values(expectedTreeAssetCounts).reduce(
+  (total, count) => total + count,
+  0
+);
 const maximumBytes = 20 * 1024 * 1024;
 const expectedMaterialZones = [
   "Packed Performance Clearing",
@@ -50,6 +70,9 @@ const nodeNames = (gltf.nodes ?? []).map((node) => node.name ?? "");
 const terrainNodes = (gltf.nodes ?? []).filter(
   (node) => node.extras?.tka_role === "terrain"
 );
+const instancingNodes = (gltf.nodes ?? []).filter(
+  (node) => node.extensions?.EXT_mesh_gpu_instancing
+);
 const leakedNodes = nodeNames.filter((name) => /^(QA_)/.test(name));
 const lightCount = gltf.extensions?.KHR_lights_punctual?.lights?.length ?? 0;
 
@@ -68,6 +91,10 @@ invariant(
 invariant(
   extensions.has("EXT_texture_webp"),
   "GLB textures are not WebP encoded"
+);
+invariant(
+  extensions.has("EXT_mesh_gpu_instancing"),
+  "GLB lost tree GPU instancing"
 );
 invariant(
   terrainNodes.length === 1,
@@ -136,6 +163,95 @@ invariant(
   Number(terrain.tka_root_crossing_count) === pathLayout.rootCrossings.length,
   `Unexpected Forest root crossing count: ${terrain.tka_root_crossing_count}`
 );
+const treeAssetIds = String(terrain.tka_tree_asset_ids ?? "").split("|");
+const treeAssetCounts = Array.from(terrain.tka_tree_asset_counts ?? []).map(
+  Number
+);
+const treeClusterNames = String(terrain.tka_tree_cluster_names ?? "").split(
+  "|"
+);
+invariant(
+  terrain.tka_tree_phase === "forest-composition",
+  `Unexpected Forest tree phase: ${terrain.tka_tree_phase}`
+);
+invariant(
+  Number(terrain.tka_tree_layout_version) === treeLayout.version,
+  `Unexpected Forest tree layout version: ${terrain.tka_tree_layout_version}`
+);
+invariant(
+  terrain.tka_tree_layout_sha256 === treeLayoutSha256,
+  "Optimized Forest GLB was not built from the current tree layout contract"
+);
+invariant(
+  Number(terrain.tka_tree_count) === expectedTreeCount,
+  `Unexpected Forest tree count: ${terrain.tka_tree_count}`
+);
+invariant(
+  treeAssetIds.length === expectedTreeAssetIds.length &&
+    treeAssetIds.every(
+      (assetId, index) => assetId === expectedTreeAssetIds[index]
+    ),
+  `Unexpected Forest tree assets: ${treeAssetIds.join(", ")}`
+);
+invariant(
+  treeAssetCounts.length === expectedTreeAssetIds.length &&
+    treeAssetCounts.every(
+      (count, index) =>
+        count === expectedTreeAssetCounts[expectedTreeAssetIds[index]]
+    ),
+  `Unexpected Forest tree asset counts: ${treeAssetCounts.join(", ")}`
+);
+invariant(
+  treeClusterNames.length === treeLayout.clusters.length &&
+    treeClusterNames.every(
+      (name, index) => name === treeLayout.clusters[index].id
+    ) &&
+    Number(terrain.tka_tree_cluster_count) === treeLayout.clusters.length,
+  `Unexpected Forest tree clusters: ${treeClusterNames.join(", ")}`
+);
+invariant(
+  terrain.tka_gpu_instances_required === true,
+  "Forest terrain lost its required GPU-instancing contract"
+);
+
+const exportedTreeCounts = Object.fromEntries(
+  expectedTreeAssetIds.map((assetId) => [assetId, 0])
+);
+for (const node of instancingNodes) {
+  const attributes = node.extensions.EXT_mesh_gpu_instancing.attributes ?? {};
+  const translationCount = gltf.accessors?.[attributes.TRANSLATION]?.count;
+  const rotationCount = gltf.accessors?.[attributes.ROTATION]?.count;
+  const scaleCount = gltf.accessors?.[attributes.SCALE]?.count;
+  invariant(
+    Number.isInteger(translationCount) && translationCount > 0,
+    "Forest instancing node lost TRANSLATION data"
+  );
+  invariant(
+    rotationCount === translationCount,
+    "Forest instancing node lost its authored rotation variation"
+  );
+  invariant(
+    scaleCount === translationCount,
+    "Forest instancing node lost its authored scale variation"
+  );
+  const meshName = gltf.meshes?.[node.mesh]?.name ?? "";
+  const assetId = meshName.replace(/^ForestTreeMesh_/, "");
+  invariant(
+    Object.hasOwn(exportedTreeCounts, assetId),
+    `Unexpected instanced Forest tree mesh: ${meshName}`
+  );
+  exportedTreeCounts[assetId] += translationCount;
+}
+invariant(
+  instancingNodes.length === expectedTreeAssetIds.length,
+  `Expected ${expectedTreeAssetIds.length} tree instancing nodes, found ${instancingNodes.length}`
+);
+for (const assetId of expectedTreeAssetIds) {
+  invariant(
+    exportedTreeCounts[assetId] === expectedTreeAssetCounts[assetId],
+    `Unexpected exported ${assetId} count: ${exportedTreeCounts[assetId]}`
+  );
+}
 invariant(
   Number(terrain.tka_clearing_edge_min_radius) >= pathLayout.clearingRadius &&
     Number(terrain.tka_clearing_edge_max_radius) -
@@ -143,7 +259,9 @@ invariant(
       2.5,
   "Forest clearing edge lost its irregular buffer around the performance area"
 );
-for (const material of gltf.materials ?? []) {
+for (const material of (gltf.materials ?? []).filter((candidate) =>
+  expectedMaterialZones.includes(candidate.name)
+)) {
   invariant(
     material.pbrMetallicRoughness?.baseColorTexture?.texCoord === 1,
     `${material.name} lost its world-scale macro UV`
@@ -322,6 +440,15 @@ console.log(
           Number(terrain.tka_clearing_edge_min_radius),
           Number(terrain.tka_clearing_edge_max_radius),
         ],
+      },
+      trees: {
+        layoutVersion: treeLayout.version,
+        layoutSha256: treeLayoutSha256,
+        count: expectedTreeCount,
+        clusters: treeClusterNames,
+        assetCounts: exportedTreeCounts,
+        instancingNodes: instancingNodes.length,
+        transformAttributes: ["TRANSLATION", "ROTATION", "SCALE"],
       },
     },
     null,

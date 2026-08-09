@@ -36,7 +36,10 @@ bpy.ops.export_scene.gltf(
     filepath=OUTPUT_PATH,
     use_selection=True,
     export_format="GLB",
-    export_apply=True,
+    # Linked tree meshes must remain shared so glTF Transform can promote the
+    # repeated nodes to EXT_mesh_gpu_instancing. There are no production
+    # modifiers in this Gate 5 scene that need destructive application.
+    export_apply=False,
     export_yup=True,
     export_texcoords=True,
     export_normals=True,

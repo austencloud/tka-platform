@@ -1,0 +1,245 @@
+{
+  "version": 1,
+  "seed": 194611,
+  "coordinateFrame": "Blender x/y equals runtime x/z; metres",
+  "outerBoundaryFraction": 0.8,
+  "spacingFactor": 0.56,
+  "assets": [
+    {
+      "id": "canopy-beech",
+      "label": "Lush Canopy Beech",
+      "family": "Fresh Forest",
+      "roles": ["mature-canopy"],
+      "sourcePath": "static/models/forest/trees/lush-canopy-oak.glb",
+      "stagedPath": "blender/forest-composition-sources/canopy-beech.glb",
+      "targetHeightMetres": 16,
+      "scaleRange": [0.84, 1.17],
+      "footprintRadius": 6.2,
+      "pathClearance": 1.8,
+      "clearingSetback": 4.2
+    },
+    {
+      "id": "forked-elm",
+      "label": "Forked Forest Elm",
+      "family": "Fresh Forest",
+      "roles": ["irregular-middle"],
+      "sourcePath": "static/models/forest/trees/forked-forest-elm.glb",
+      "stagedPath": "blender/forest-composition-sources/forked-elm.glb",
+      "targetHeightMetres": 11,
+      "scaleRange": [0.82, 1.18],
+      "footprintRadius": 4.5,
+      "pathClearance": 1.5,
+      "clearingSetback": 3.3
+    },
+    {
+      "id": "young-hornbeam",
+      "label": "Leafy Young Hornbeam",
+      "family": "Fresh Forest",
+      "roles": ["young", "understory"],
+      "sourcePath": "static/models/forest/trees/young-hornbeam.glb",
+      "stagedPath": "blender/forest-composition-sources/young-hornbeam.glb",
+      "targetHeightMetres": 5,
+      "scaleRange": [0.78, 1.22],
+      "footprintRadius": 2.5,
+      "pathClearance": 1.0,
+      "clearingSetback": 2.4
+    },
+    {
+      "id": "weathered-snag",
+      "label": "Weathered Snag",
+      "family": "Autumn Reuse",
+      "roles": ["snag", "distant-silhouette"],
+      "sourcePath": "static/models/autumn/autumn-snag.glb",
+      "stagedPath": "blender/forest-composition-sources/weathered-snag.glb",
+      "targetHeightMetres": 12,
+      "scaleRange": [0.86, 1.15],
+      "footprintRadius": 3.0,
+      "pathClearance": 1.5,
+      "clearingSetback": 3.2
+    },
+    {
+      "id": "narrow-larch",
+      "label": "Narrow Larch",
+      "family": "Autumn Reuse",
+      "roles": ["mature-canopy", "distant-silhouette"],
+      "sourcePath": "static/models/autumn/golden-larch.glb",
+      "stagedPath": "blender/forest-composition-sources/narrow-larch.glb",
+      "targetHeightMetres": 15,
+      "scaleRange": [0.86, 1.16],
+      "footprintRadius": 3.8,
+      "pathClearance": 1.6,
+      "clearingSetback": 3.8
+    },
+    {
+      "id": "pale-willow",
+      "label": "Pale Willow",
+      "family": "Autumn Reuse",
+      "roles": ["irregular-middle", "damp-hollow"],
+      "sourcePath": "static/models/autumn/autumn-willow.glb",
+      "stagedPath": "blender/forest-composition-sources/pale-willow.glb",
+      "targetHeightMetres": 11,
+      "scaleRange": [0.86, 1.14],
+      "footprintRadius": 5.0,
+      "pathClearance": 1.8,
+      "clearingSetback": 4.0
+    }
+  ],
+  "openings": [
+    {
+      "id": "north-canopy-window",
+      "center": [0, 48],
+      "radii": [12, 23],
+      "rotationDegrees": 0
+    },
+    {
+      "id": "south-hero-entry",
+      "center": [2, -60],
+      "radii": [10, 32],
+      "rotationDegrees": -5
+    }
+  ],
+  "clusters": [
+    {
+      "id": "north-rim",
+      "center": [0, 56],
+      "radii": [50, 24],
+      "rotationDegrees": 0,
+      "counts": {
+        "canopy-beech": 7,
+        "forked-elm": 10,
+        "young-hornbeam": 12,
+        "narrow-larch": 2
+      }
+    },
+    {
+      "id": "northeast-rise",
+      "center": [66, 54],
+      "radii": [35, 38],
+      "rotationDegrees": 25,
+      "counts": {
+        "canopy-beech": 6,
+        "forked-elm": 9,
+        "young-hornbeam": 12,
+        "narrow-larch": 2
+      }
+    },
+    {
+      "id": "east-hollow",
+      "center": [76, -12],
+      "radii": [34, 48],
+      "rotationDegrees": -15,
+      "counts": {
+        "canopy-beech": 5,
+        "forked-elm": 9,
+        "young-hornbeam": 12,
+        "pale-willow": 3
+      }
+    },
+    {
+      "id": "southeast-shoulder",
+      "center": [48, -70],
+      "radii": [32, 34],
+      "rotationDegrees": 15,
+      "counts": {
+        "canopy-beech": 4,
+        "forked-elm": 7,
+        "young-hornbeam": 10,
+        "narrow-larch": 2
+      }
+    },
+    {
+      "id": "southwest-grove",
+      "center": [-47, -64],
+      "radii": [43, 32],
+      "rotationDegrees": -15,
+      "counts": {
+        "canopy-beech": 6,
+        "forked-elm": 9,
+        "young-hornbeam": 12,
+        "weathered-snag": 2
+      }
+    },
+    {
+      "id": "west-loop-grove",
+      "center": [-67, 0],
+      "radii": [30, 50],
+      "rotationDegrees": 8,
+      "counts": {
+        "canopy-beech": 5,
+        "forked-elm": 9,
+        "young-hornbeam": 12,
+        "weathered-snag": 2
+      }
+    },
+    {
+      "id": "northwest-gateway",
+      "center": [-65, 68],
+      "radii": [35, 35],
+      "rotationDegrees": -25,
+      "counts": {
+        "canopy-beech": 5,
+        "forked-elm": 8,
+        "young-hornbeam": 11,
+        "narrow-larch": 2
+      }
+    },
+    {
+      "id": "far-north-depth",
+      "center": [16, 113],
+      "radii": [70, 24],
+      "rotationDegrees": 0,
+      "counts": { "canopy-beech": 6, "forked-elm": 7, "narrow-larch": 5 }
+    },
+    {
+      "id": "far-west-depth",
+      "center": [-112, -24],
+      "radii": [24, 65],
+      "rotationDegrees": 0,
+      "counts": { "canopy-beech": 6, "forked-elm": 7, "narrow-larch": 5 }
+    },
+    {
+      "id": "far-east-depth",
+      "center": [115, -5],
+      "radii": [25, 70],
+      "rotationDegrees": 0,
+      "counts": {
+        "canopy-beech": 6,
+        "forked-elm": 7,
+        "narrow-larch": 5,
+        "pale-willow": 1
+      }
+    },
+    {
+      "id": "far-south-depth",
+      "center": [0, -118],
+      "radii": [70, 23],
+      "rotationDegrees": 0,
+      "counts": { "canopy-beech": 6, "forked-elm": 7, "narrow-larch": 5 }
+    },
+    {
+      "id": "northeast-depth-bridge",
+      "center": [71, 91],
+      "radii": [43, 26],
+      "rotationDegrees": 28,
+      "counts": {
+        "canopy-beech": 3,
+        "forked-elm": 4,
+        "young-hornbeam": 5,
+        "narrow-larch": 1
+      }
+    },
+    {
+      "id": "southwest-depth-bridge",
+      "center": [-72, -96],
+      "radii": [47, 25],
+      "rotationDegrees": 20,
+      "counts": {
+        "canopy-beech": 3,
+        "forked-elm": 4,
+        "young-hornbeam": 5,
+        "weathered-snag": 1,
+        "pale-willow": 1
+      }
+    }
+  ]
+}

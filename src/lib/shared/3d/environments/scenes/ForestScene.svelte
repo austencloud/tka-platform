@@ -47,8 +47,13 @@
   }
 
   let {
-    variant = "firefly", config, stageWidth = 6, stageDepth = 4.5, stageZOffset = 0,
-    showStage = true, clearingRadius,
+    variant = "firefly",
+    config,
+    stageWidth = 6,
+    stageDepth = 4.5,
+    stageZOffset = 0,
+    showStage = true,
+    clearingRadius,
   }: Props = $props();
 
   const activeConfig = $derived.by(() => {
@@ -81,7 +86,9 @@
   // ========================================
 
   // Scene feature context - gate campfire/tent visibility and report loading readiness
-  let sceneFeatures = $state<ReturnType<typeof getSceneFeatureContext> | null>(null);
+  let sceneFeatures = $state<ReturnType<typeof getSceneFeatureContext> | null>(
+    null
+  );
   try {
     sceneFeatures = getSceneFeatureContext();
   } catch {
@@ -154,7 +161,10 @@
   // ── Clone caching — clone once per GLB load, not per render ─────────
 
   const treeClones = $derived.by(() => {
-    if (!$tree1 || !$tree2 || !$tree3) return [];
+    // Production gets its connected canopy masses from the authored Forest
+    // GLB. Scene Lab keeps the older reactive rings so its tree controls still
+    // produce an immediate preview while the later integration gate is locked.
+    if (!config || !$tree1 || !$tree2 || !$tree3) return [];
     const models = [$tree1, $tree2, $tree3];
     return treePlacements.map((_, i) => models[i % 3]!.scene.clone());
   });
@@ -320,22 +330,50 @@
 
 {#each treeClones as clone, i}
   {@const [x, z, scale, rotY] = treePlacements[i] ?? [0, 0, 1, 0]}
-  <T is={clone} position.x={x} position.y={groundY} position.z={z} {scale} rotation.y={rotY} />
+  <T
+    is={clone}
+    position.x={x}
+    position.y={groundY}
+    position.z={z}
+    {scale}
+    rotation.y={rotY}
+  />
 {/each}
 
 {#each rockClones as clone, i}
   {@const [x, z, scale, rotY] = rockPlacements[i] ?? [0, 0, 1, 0]}
-  <T is={clone} position.x={x} position.y={groundY} position.z={z} {scale} rotation.y={rotY} />
+  <T
+    is={clone}
+    position.x={x}
+    position.y={groundY}
+    position.z={z}
+    {scale}
+    rotation.y={rotY}
+  />
 {/each}
 
 {#each bushClones as clone, i}
   {@const [x, z, scale, rotY] = bushPlacements[i] ?? [0, 0, 1, 0]}
-  <T is={clone} position.x={x} position.y={groundY} position.z={z} {scale} rotation.y={rotY} />
+  <T
+    is={clone}
+    position.x={x}
+    position.y={groundY}
+    position.z={z}
+    {scale}
+    rotation.y={rotY}
+  />
 {/each}
 
 {#each logClones as clone, i}
   {@const [x, z, scale, rotY] = fallenLogPlacements[i] ?? [0, 0, 1, 0, true]}
-  <T is={clone} position.x={x} position.y={groundY} position.z={z} {scale} rotation.y={rotY} />
+  <T
+    is={clone}
+    position.x={x}
+    position.y={groundY}
+    position.z={z}
+    {scale}
+    rotation.y={rotY}
+  />
 {/each}
 
 {#if activeConfig.campfire?.enabled && campfireClone && (sceneFeatures?.isEnabled("campfire") ?? true)}

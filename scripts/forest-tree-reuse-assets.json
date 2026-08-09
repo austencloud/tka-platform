@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "autumn-snag",
+      "label": "Weathered Snag",
+      "textureSize": 1024
+    },
+    {
+      "id": "golden-larch",
+      "label": "Narrow Larch",
+      "textureSize": 1024
+    },
+    {
+      "id": "autumn-willow",
+      "label": "Pale Willow",
+      "textureSize": 1024
+    }
+  ]
+}

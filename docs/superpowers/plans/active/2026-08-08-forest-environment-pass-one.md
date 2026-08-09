@@ -1,8 +1,8 @@
 # Moonlit Firefly Forest: Gated Rebuild Plan
 
 - **Date:** 2026-08-08
-- **Status:** Gates 0 through 4 are approved. Gate 5, Forest composition and
-  canopy depth, is active. Later gates remain blocked.
+- **Status:** Gates 0 through 5 are approved. Gate 6, ground-life asset lineup,
+  is active. Later gates remain blocked.
 - **Quality reference:** Autumn's Blender-authored environment and runtime split.
 - **Review authority:** Austen approves or rejects every visual gate.
 - **Scene steward:** Bramble
@@ -250,6 +250,26 @@ the next phase.” This authorized the fresh family and advanced Forest to Gate 
 **Review question:** Does the forest feel dense, varied, and deep without
 turning the clearing into a wall?
 
+**Gate 5 evidence, 2026-08-08:** The deterministic composition now places 295
+trees from six approved families in 13 irregular near, bridge, and distant
+masses. The layout preserves both authored canopy openings and every path
+shoulder. Its measured minimum trunk spacing is 2.989 m, and its minimum clear
+distance beyond a path shoulder is 1.825 m. The production runtime no longer
+draws the legacy KayKit rings over the authored woodland; Scene Lab retains
+those rings for its reactive controls.
+
+The optimized production GLB is 7,691,940 bytes and contains seven meshes in
+seven nodes: one terrain node plus six `EXT_mesh_gpu_instancing` nodes. The
+verifier accounted for all 295 exported instances by family and confirmed that
+translation, rotation, and scale accessors survived optimization. Meshopt,
+WebP, the flat clearing, material zones, four paths, three root crossings, and
+the irregular terrain envelope all remain intact. The fixed Blender and runtime
+renders were reviewed before the approval below.
+
+**Approval:** Austen, 2026-08-08: “These are fantastic I can't wait to see you
+next step please continue.” This approved Gate 5 and advanced Forest to the
+ground-life asset lineup.
+
 ### Gate 6: Ground-life asset lineup
 
 **Change:** Candidate ferns, bushes, mushrooms, roots, grass, and litter only.
@@ -377,6 +397,7 @@ References:
 | Path layout contract     | `scripts/forest-path-layout.json`                                         |
 | Macro terrain texture    | `scripts/build-forest-floor-texture.mjs`                                  |
 | Tree lineup contract     | `scripts/forest-tree-lineup.json`                                         |
+| Tree layout contract     | `scripts/forest-tree-layout.json`                                         |
 | Tree review rig          | `scripts/build-forest-tree-lineup.py`                                     |
 | Tree review sheets       | `scripts/build-forest-tree-lineup-contact-sheet.mjs`                      |
 | Tree lineup verification | `scripts/verify-forest-tree-lineup.mjs`                                   |
@@ -392,8 +413,8 @@ References:
 - [x] Gate 1: world envelope and terrain approved
 - [x] Gate 2: forest-floor material zones approved
 - [x] Gate 3: paths and clearing edges approved
-- [ ] Gate 4: tree lineup approved
-- [ ] Gate 5: forest composition approved
+- [x] Gate 4: tree lineup approved
+- [x] Gate 5: forest composition approved
 - [ ] Gate 6: ground-life lineup approved
 - [ ] Gate 7: ground-life ecology approved
 - [ ] Gate 8: rock, root, and deadwood lineup approved

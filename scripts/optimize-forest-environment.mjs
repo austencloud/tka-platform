@@ -41,7 +41,7 @@ try {
     "--simplify",
     "false",
     "--instance",
-    "false",
+    "true",
     "--flatten",
     "false",
     "--join",
