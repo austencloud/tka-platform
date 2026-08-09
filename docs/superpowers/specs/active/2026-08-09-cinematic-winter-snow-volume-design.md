@@ -1,7 +1,7 @@
 # Cinematic Winter Snow Volume
 
-Status: Approved for implementation after Opus 5 review. The current
-shared-package overlap still requires coordination before source edits begin.
+Status: Implemented, verified, and integrated in `@austencloud/backgrounds`
+0.7.3 after Opus 5 review.
 
 ## Outcome
 
@@ -52,6 +52,8 @@ does not change while the particle crosses the viewport.
 | Foreground | Large, translucent, partially defocused flakes | Strongest parallax and gust response |           8 to 12% |
 
 The percentage ranges describe the population, not equal visual weight.
+They are pre-cap targets. When a foreground cap binds, its remainder is
+redistributed across powder and crystal; measured gates use the capped targets.
 Foreground snow must remain sparse.
 
 ### Powder
@@ -488,6 +490,29 @@ After visual approval, verify the installed package in the real
 run the TKA project check, and repeat the performance sample against the
 published artifact.
 
+## Verification record
+
+- The standalone preview passed visual review at 1920 by 1080, 2560 by 1440,
+  3840 by 2160, 1440 by 900, 820 by 1180, 960 by 412, and 375 by 667. Pointer,
+  gust, touch flattening, edge clipping, and reduced-motion states were also
+  inspected.
+- The uncontended 3840 by 2160 benchmark used 300 warm-up frames and 600
+  measured gust frames. Version 0.7.2 measured 1.8535 ms average and 3.0 ms
+  p95. The implemented renderer measured 1.3805 ms average and 2.3 ms p95,
+  ratios of 0.745 and 0.767 respectively.
+- Later installed-package samples ran while unrelated 3D verification scenes
+  were active in the shared Chrome process and were rejected as contaminated.
+  The installed `SnowflakeSystem.js` and `SnowVolumeRenderer.js` hashes match
+  the passing build byte for byte.
+- The clean release archive passed 71 tests, TypeScript build and no-emit
+  checks, `publint`, and tarball inspection. The broader dirty-checkout package
+  run passed 101 tests. TKA `svelte-check` completed with zero errors and zero
+  warnings.
+- The 1024 by 1024 RGBA atlas is 282,456 bytes. The installed runtime loaded it
+  once, reported all three band counts, and returned no optics warnings.
+- npm published `@austencloud/backgrounds` 0.7.3 with integrity
+  `sha512-wpJE1IcRQUMA9ZD1Vj8q5f9Wvm6JjKomM7Yo4xDAzmo4mPlfrghqVDKyYJOvloLEDt3l2c+xjl2mbqNMfvBe7Q==`.
+
 ## Research basis
 
 - Canvas performance guidance recommends pre-rendering repeated artwork into a
@@ -501,17 +526,12 @@ published artifact.
   not part of the runtime contract:
   <https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/filter>.
 
-## Concurrent-work gate
+## Concurrent-work resolution
 
-The shared-package checkout currently has uncommitted changes that replace
-`WinterParallaxTracker` with the shared `DepthParallaxTracker`. Those changes
-also touch `SnowflakeSystem.ts` and `WinterBackgroundSystem.ts`, which are
-required by this design.
-
-Implementation must not begin until that overlap is committed, handed off, or
-otherwise coordinated in the primary checkout. Do not create a branch or
-worktree to bypass the conflict. The spec itself is safe to commit in the TKA
-repository because it does not overlap those source files.
+The completed Autumn handoff that introduced the shared
+`DepthParallaxTracker` was preserved and incorporated. Commit `802a2e5` makes
+that tracker the shared owner while keeping unrelated Autumn source out of the
+Winter release archive.
 
 ## Release gate
 

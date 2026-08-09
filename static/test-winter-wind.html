@@ -121,7 +121,12 @@
     </div>
 
     <script type="module">
-      import { WinterBackgroundSystem } from "/@fs/E:/shared-packages/packages/backgrounds/dist/index.js";
+      const packageUrl =
+        (new URLSearchParams(window.location.search).has("baseline")
+          ? "/@fs/E:/tka-platform/node_modules/@austencloud/backgrounds/dist/index.js"
+          : "/@fs/E:/shared-packages/packages/backgrounds/dist/index.js") +
+        "?winter-volume=0.7.3";
+      const { WinterBackgroundSystem } = await import(packageUrl);
 
       const canvas = document.querySelector("canvas");
       const context = canvas.getContext("2d");
@@ -134,7 +139,34 @@
       let initialized = false;
       let lastFrameAt = performance.now();
       let frameCount = 0;
-      let updateTotalMs = 0;
+      let updateDrawSamples = [];
+      let animationFrameId = 0;
+      let animationEnabled = true;
+
+      function getPerformanceSample() {
+        if (updateDrawSamples.length === 0) {
+          return {
+            sampleCount: 0,
+            averageUpdateDrawMs: 0,
+            p95UpdateDrawMs: 0,
+          };
+        }
+
+        const sorted = [...updateDrawSamples].sort(
+          (left, right) => left - right
+        );
+        const p95Index = Math.min(
+          sorted.length - 1,
+          Math.floor(sorted.length * 0.95)
+        );
+        return {
+          sampleCount: updateDrawSamples.length,
+          averageUpdateDrawMs:
+            updateDrawSamples.reduce((sum, value) => sum + value, 0) /
+            updateDrawSamples.length,
+          p95UpdateDrawMs: sorted[p95Index] ?? 0,
+        };
+      }
 
       function applyAccessibility() {
         system.setAccessibility({
@@ -161,17 +193,53 @@
       }
 
       function animate(now) {
+        if (!animationEnabled) return;
         const frameMultiplier = Math.min(4, (now - lastFrameAt) / 16.67);
         lastFrameAt = now;
 
-        const updateStartedAt = performance.now();
+        const updateDrawStartedAt = performance.now();
         system.update(dimensions, frameMultiplier);
-        updateTotalMs += performance.now() - updateStartedAt;
-        frameCount += 1;
 
         context.clearRect(0, 0, dimensions.width, dimensions.height);
         system.draw(context, dimensions);
-        requestAnimationFrame(animate);
+        updateDrawSamples.push(performance.now() - updateDrawStartedAt);
+        if (updateDrawSamples.length > 600) updateDrawSamples.shift();
+        frameCount += 1;
+        animationFrameId = requestAnimationFrame(animate);
+      }
+
+      function samplePerformance(
+        width,
+        height,
+        warmupFrames = 300,
+        frames = 600
+      ) {
+        animationEnabled = false;
+        cancelAnimationFrame(animationFrameId);
+
+        const sampleDimensions = { width, height };
+        system.handleResize(dimensions, sampleDimensions);
+        dimensions = sampleDimensions;
+        canvas.width = width;
+        canvas.height = height;
+
+        for (let frame = 0; frame < warmupFrames; frame += 1) {
+          system.update(dimensions, 1);
+          context.clearRect(0, 0, width, height);
+          system.draw(context, dimensions);
+        }
+
+        const samples = [];
+        for (let frame = 0; frame < frames; frame += 1) {
+          const startedAt = performance.now();
+          system.update(dimensions, 1);
+          context.clearRect(0, 0, width, height);
+          system.draw(context, dimensions);
+          samples.push(performance.now() - startedAt);
+        }
+
+        updateDrawSamples = samples;
+        return getPerformanceSample();
       }
 
       window.addEventListener("resize", resize);
@@ -201,7 +269,7 @@
       applyAccessibility();
       status.textContent =
         "Move the pointer to stir and light the snow, or send a gust.";
-      requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
 
       window.__winterWindPreview = {
         system,
@@ -210,8 +278,12 @@
           ...system.getStats(),
           dimensions,
           frameCount,
-          averageUpdateMs: frameCount === 0 ? 0 : updateTotalMs / frameCount,
+          ...getPerformanceSample(),
         }),
+        resetPerformanceSample: () => {
+          updateDrawSamples = [];
+        },
+        samplePerformance,
       };
     </script>
   </body>
