@@ -1,8 +1,8 @@
 # Moonlit Firefly Forest: Gated Rebuild Plan
 
 - **Date:** 2026-08-08
-- **Status:** Gates 0 through 6 are approved. Gate 7, ground-life ecology, is
-  implemented and awaiting Austen's visual verdict. Later gates remain blocked.
+- **Status:** Gates 0 through 7 are approved. Gate 8, clearing-frame and prop
+  lineup, is active. Later gates remain blocked.
 - **Quality reference:** Autumn's Blender-authored environment and runtime split.
 - **Review authority:** Austen approves or rejects every visual gate.
 - **Scene steward:** Bramble
@@ -350,21 +350,67 @@ moisture, deadwood, root, and path-edge causes.
 
 **Review question:** Does the lower layer feel grown in place?
 
-### Gate 8: Rock, root, and deadwood lineup
+**Approval:** Austen, 2026-08-09: “it's great, dude. Honestly.” He specifically
+approved the new trees and advanced Forest to a tighter clearing frame plus
+replacement of the legacy tent, camping logs, and KayKit rocks. Museum tracker
+decision: `2mXvGcaruOaXMvBjZ3dd`.
 
-**Change:** Candidate props only.
+### Gate 8: Clearing-frame and prop lineup
 
-- Present approved Autumn rock families, existing Forest props, stumps, root
-  flares, branches, and focused Meshy candidates.
+**Change:** Candidate transforms and props only. Do not place the selected
+family in the production scene yet.
+
+- Present a fixed-camera framing study that brings selected approved Forest
+  trees closer to the left, right, and overhead edges while preserving the
+  central stage footprint, paths, stage sightline, and camp access. Keep the
+  30 m terrain surface physically level, but do not mistake that surface budget
+  for the default scene's visible tree line.
+- Present approved Autumn rock and deadwood families, existing Forest props,
+  stumps, root flares, branches, and fresh Forest-authored candidates where the
+  existing library has a measured gap.
+- Include a Forest-specific shelter and camp-material study so the legacy tent
+  can be retired from the same visual vocabulary as the rocks and deadwood.
 - Reject polygon boulders, smooth cylinders, flat cut ends, floating roots,
-  and weak walking-distance textures.
+  repeated radial placement, unsupported foreground trees, and weak
+  walking-distance textures.
+- Retire the legacy KayKit rock ring, the two camping-log GLBs, and the canvas
+  tent GLB from the approved production direction. Keep them only as labeled
+  baseline evidence on the lineup board.
 
-**Review question:** Which prop families are good enough for close use?
+**Review question:** Does the closer frame make the clearing feel intimate, and
+which rock, deadwood, and shelter family is good enough for close use?
 
-### Gate 9: Rock, root, and deadwood ecology
+**Direction:** Austen, 2026-08-09: “have some trees that are close closer so
+it's a smaller clearing. Then let's replace that tent and the logs and any of
+that old Kenny generated rocks and stuff like that with modern equivalents.”
+Source inspection confirms that the legacy rock family is KayKit. Museum
+tracker decision: `PoPSyJvOcDbpppYKubmr`.
 
-**Change:** Static prop placement only.
+**Evidence packet:** The fixed hero comparison adds one approved canopy beech
+and one approved forked elm at an 18.901 m trunk radius. Both sit outside the
+default 14 m visible clearing, keep at least 2.955 m of extra path clearance,
+and remain a conditional default-Forest layer so Coven Hub's 28 m layout stays
+open. The prop comparison labels four legacy models for retirement and presents
+seven replacements: the Forest-authored Bramble lean-to, split root stump, and
+forked windfall; Autumn's decomposing fallen log; and three CC0 Poly Haven
+photogrammetry stone sources already proven in Autumn. The board used zero paid
+Meshy credits and preserved the 800-credit reserve. Automated verification
+passes all four 1600 x 900 renders and the 2864 x 1830 review board.
 
+**Recommended cut:** Approve the two-tree conditional frame and the full seven
+prop family for production integration. Keep the shelter's camp placement and
+the number of repeated stone or deadwood instances for their owning placement
+gates rather than turning the lineup into a scatter prescription.
+
+### Gate 9: Clearing frame and static prop ecology
+
+**Change:** Approved frame-tree transforms and static prop placement only.
+
+- Add the minimum number of near-frame trees needed to compress the hero view
+  without blocking the registered stage, default 14 m clearing, or routes.
+- Export the near-frame trees as a Forest-owned conditional layer. The default
+  scene mounts it; callers that request a widened clearing, including Coven
+  Hub's 28 m layout, omit it and retain the existing outer woodland belt.
 - Build connected vignettes at tree bases, path shoulders, and eroded banks.
 - Bury stones by family, align roots to grades, and make deadwood affect nearby
   moss and litter.
@@ -488,9 +534,9 @@ References:
 - [x] Gate 4: tree lineup approved
 - [x] Gate 5: forest composition approved
 - [x] Gate 6: ground-life lineup approved
-- [ ] Gate 7: ground-life ecology approved
-- [ ] Gate 8: rock, root, and deadwood lineup approved
-- [ ] Gate 9: prop ecology approved
+- [x] Gate 7: ground-life ecology approved
+- [ ] Gate 8: clearing-frame and prop lineup approved
+- [ ] Gate 9: clearing frame and static prop ecology approved
 - [ ] Gate 10: stage form approved
 - [ ] Gate 11: camp composition approved
 - [ ] Gate 12: lighting and depth approved

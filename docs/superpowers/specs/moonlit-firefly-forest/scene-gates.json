@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "forest-firefly",
+  "title": "Moonlit Firefly Forest",
+  "domainProofRequired": false,
+  "currentGate": 3,
+  "authority": {
+    "experienceSpec": "docs/superpowers/plans/active/2026-08-08-forest-environment-pass-one.md",
+    "roomShellSource": "scripts/forest-path-layout.json",
+    "planContract": "scripts/forest-tree-layout.json",
+    "museumTrackerItems": [
+      "W8SPNRGyTmAbzoV1GvFR",
+      "2mXvGcaruOaXMvBjZ3dd",
+      "PoPSyJvOcDbpppYKubmr"
+    ]
+  },
+  "sequenceFingerprints": [],
+  "claims": [
+    {
+      "id": "C-003",
+      "class": "invention",
+      "statement": "Selected near trees create a smaller default visual clearing while widened-layout callers omit that layer.",
+      "status": "proposed"
+    },
+    {
+      "id": "C-004",
+      "class": "invention",
+      "statement": "The camp shelter is a hand-built moss-canvas lean-to with oak poles.",
+      "status": "proposed"
+    }
+  ],
+  "exemptions": [
+    {
+      "id": "no-tka-motion-proof",
+      "reason": "This environment gate changes static framing and props only. No pictograph, sequence, or domain motion behavior changes."
+    }
+  ],
+  "gates": [
+    {
+      "id": "evidence-preflight",
+      "status": "approved",
+      "evidence": ["forest controlling plan Gates 0 through 3"],
+      "checks": ["fixed review route", "measured terrain envelope", "path contract"],
+      "approval": "Austen approvals recorded in the controlling plan"
+    },
+    {
+      "id": "measured-plan",
+      "status": "approved",
+      "evidence": ["scripts/forest-path-layout.json", "scripts/forest-tree-layout.json"],
+      "checks": ["30 m performance core", "path shoulders", "tree clearance"],
+      "approval": "Austen approvals recorded in the controlling plan"
+    },
+    {
+      "id": "playable-graybox",
+      "status": "approved",
+      "evidence": ["static/models/forest/forest-environment.glb"],
+      "checks": ["required viewport sweep", "Forest GLB contract"],
+      "approval": "Forest Gate 7 approved 2026-08-09"
+    },
+    {
+      "id": "registered-visual-target",
+      "status": "in_progress",
+      "evidence": [
+        "forest-shelter-visual-target.png",
+        "forest-gate8-review-board.png",
+        "scripts/forest-prop-lineup.json"
+      ],
+      "checks": ["fixed framing comparison", "equal-scale prop lineup", "source provenance"],
+      "approval": null
+    },
+    {
+      "id": "production-slice",
+      "status": "pending",
+      "evidence": [],
+      "checks": ["production GLB integration", "legacy prop removal"],
+      "approval": null
+    },
+    {
+      "id": "integrated-room",
+      "status": "pending",
+      "evidence": [],
+      "checks": ["runtime interaction", "performance", "feature flags"],
+      "approval": null
+    },
+    {
+      "id": "final-acceptance",
+      "status": "pending",
+      "evidence": [],
+      "checks": ["seven required viewports", "free orbit", "regressions"],
+      "approval": null
+    }
+  ]
+}

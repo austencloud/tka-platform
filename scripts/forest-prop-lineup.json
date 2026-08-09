@@ -1,0 +1,227 @@
+{
+  "version": 2,
+  "reviewViews": [
+    "framing-baseline",
+    "framing-candidate",
+    "legacy-camp",
+    "modern-tent-family",
+    "campsite-plan",
+    "campsite-ground"
+  ],
+  "candidates": [
+    {
+      "id": "K1",
+      "label": "KayKit Rock A",
+      "family": "Legacy Forest",
+      "roles": ["baseline-rock"],
+      "verdict": "retire",
+      "source": {
+        "kind": "r2-gltf",
+        "url": "https://assets.tkaflowarts.com/models/forest/Rock_1_A_Color1.gltf",
+        "dependencies": [
+          "https://assets.tkaflowarts.com/models/forest/Rock_1_A_Color1.bin",
+          "https://assets.tkaflowarts.com/models/forest/forest_texture.png"
+        ],
+        "localPath": "blender/forest-prop-lineup-sources/kaykit/Rock_1_A_Color1.gltf",
+        "provenance": "KayKit Forest Nature Pack",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "K2",
+      "label": "KayKit Rock B",
+      "family": "Legacy Forest",
+      "roles": ["baseline-rock"],
+      "verdict": "retire",
+      "source": {
+        "kind": "r2-gltf",
+        "url": "https://assets.tkaflowarts.com/models/forest/Rock_1_B_Color1.gltf",
+        "dependencies": [
+          "https://assets.tkaflowarts.com/models/forest/Rock_1_B_Color1.bin",
+          "https://assets.tkaflowarts.com/models/forest/forest_texture.png"
+        ],
+        "localPath": "blender/forest-prop-lineup-sources/kaykit/Rock_1_B_Color1.gltf",
+        "provenance": "KayKit Forest Nature Pack",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "K3",
+      "label": "Camping Log",
+      "family": "Legacy Forest",
+      "roles": ["baseline-deadwood"],
+      "verdict": "retire",
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/camping/tree-log.glb",
+        "provenance": "Legacy camping pack",
+        "license": "Repository asset"
+      }
+    },
+    {
+      "id": "K4",
+      "label": "Canvas Tent",
+      "family": "Legacy Forest",
+      "roles": ["baseline-shelter"],
+      "verdict": "retire",
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/camping/tent-canvas.glb",
+        "provenance": "Legacy camping pack",
+        "license": "Repository asset"
+      }
+    },
+    {
+      "id": "A1",
+      "label": "Weathered Boulder",
+      "family": "Poly Haven / Autumn",
+      "roles": ["hero-boulder", "bank-anchor"],
+      "verdict": "recommend",
+      "source": {
+        "kind": "local-glb-meshopt",
+        "localPath": "static/models/ocean/polyhaven/boulder_01.glb",
+        "provenance": "Poly Haven boulder_01; already used by Autumn",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "A2",
+      "label": "Earth-Tone Rock",
+      "family": "Poly Haven / Autumn",
+      "roles": ["path-shoulder", "camp-seat"],
+      "verdict": "recommend",
+      "source": {
+        "kind": "local-glb-meshopt",
+        "localPath": "static/models/ocean/polyhaven/rock_07.glb",
+        "provenance": "Poly Haven rock_07; already used by Autumn",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "A3",
+      "label": "Quartz Stone",
+      "family": "Poly Haven / Autumn",
+      "roles": ["small-stone", "fire-bed"],
+      "verdict": "recommend",
+      "source": {
+        "kind": "local-glb-meshopt",
+        "localPath": "static/models/ocean/polyhaven/stone_01.glb",
+        "provenance": "Poly Haven stone_01; already used by Autumn",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "A4",
+      "label": "Decomposing Fallen Log",
+      "family": "Autumn Reuse",
+      "roles": ["hero-deadwood", "fungi-host"],
+      "verdict": "recommend",
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/autumn/fallen-log_raw.glb",
+        "provenance": "TKA Autumn Meshy source",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "F1",
+      "label": "Two-Person Modern Dome",
+      "family": "Forest Authored",
+      "roles": ["two-person-sleeping-pitch", "modern-tent"],
+      "verdict": "recommend",
+      "source": {
+        "kind": "blender-authored",
+        "localPath": null,
+        "provenance": "TKA deterministic Blender build from contemporary tent-family visual target",
+        "license": "TKA authored asset"
+      }
+    },
+    {
+      "id": "F2",
+      "label": "Three-Person Modern Tunnel",
+      "family": "Forest Authored",
+      "roles": ["three-person-sleeping-pitch", "modern-tent"],
+      "verdict": "recommend",
+      "source": {
+        "kind": "blender-authored",
+        "localPath": null,
+        "provenance": "TKA deterministic Blender build from contemporary tent-family visual target",
+        "license": "TKA authored asset"
+      }
+    },
+    {
+      "id": "F3",
+      "label": "One-Person Trekking-Pole Tent",
+      "family": "Forest Authored",
+      "roles": ["one-person-sleeping-pitch", "modern-tent"],
+      "verdict": "recommend",
+      "source": {
+        "kind": "blender-authored",
+        "localPath": null,
+        "provenance": "TKA deterministic Blender build from contemporary tent-family visual target",
+        "license": "TKA authored asset"
+      }
+    },
+    {
+      "id": "F4",
+      "label": "Established Forest Fire Bed",
+      "family": "Forest Authored",
+      "roles": ["campfire-geometry", "mineral-soil-ring"],
+      "verdict": "recommend",
+      "source": {
+        "kind": "blender-authored",
+        "localPath": null,
+        "provenance": "TKA deterministic Blender build; runtime flame, smoke, and lights remain separate owners",
+        "license": "TKA authored asset"
+      }
+    },
+    {
+      "id": "F5",
+      "label": "Compact Folding Camp Chair",
+      "family": "Forest Authored",
+      "roles": ["communal-seating", "modern-campsite-furniture"],
+      "verdict": "recommend",
+      "source": {
+        "kind": "blender-authored",
+        "localPath": null,
+        "provenance": "TKA deterministic Blender build; repeated manufactured gear is varied by fabric color and orientation",
+        "license": "TKA authored asset"
+      }
+    }
+  ],
+  "framingCandidates": [
+    {
+      "id": "southwest-canopy-frame",
+      "assetId": "canopy-beech",
+      "position": [-8.0, -10.5],
+      "scale": 1.1,
+      "rotationDegrees": 32
+    },
+    {
+      "id": "southeast-middle-frame",
+      "assetId": "forked-elm",
+      "position": [13.7, -11.5],
+      "scale": 1.16,
+      "rotationDegrees": -24
+    }
+  ],
+  "rules": {
+    "defaultVisualClearingRadiusMetres": 8.0,
+    "minimumTrunkRadiusFromOriginMetres": 11.5,
+    "maximumNearFrameTrunkRadiusMetres": 18.0,
+    "performanceCoreRadiusMetres": 30.0,
+    "nearFrameVisibility": "default Forest only; omit when a caller supplies a widened clearingRadius such as Coven Hub's 28 m",
+    "preservePathShoulders": true,
+    "campsiteLayout": "scripts/forest-campsite-layout.json",
+    "campfireGeometryOwnerOnly": true,
+    "legacyProductionModels": [
+      "Rock_1_A_Color1.gltf",
+      "Rock_1_B_Color1.gltf",
+      "tree-log.glb",
+      "tree-log-small.glb",
+      "tent-canvas.glb"
+    ],
+    "maximumPaidMeshyCredits": 0,
+    "creditReserve": 800
+  }
+}

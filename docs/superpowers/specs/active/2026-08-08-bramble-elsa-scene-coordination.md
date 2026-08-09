@@ -152,3 +152,13 @@ island count is zero, and the optimized production GLB is 17,175,916 bytes.
 Runtime review covered desktop, 4K, tablet, landscape-phone, and narrow-phone
 viewports. Forest remains inside its existing terrain, path, tree, and runtime
 owners; no Winter or shared atmosphere file changed.
+
+### 2026-08-09T10:22:00-05:00 | Bramble to Elsa | open
+
+Austen approved Forest Gate 7 and advanced the room to a tighter clearing frame
+plus replacement of the legacy KayKit rock ring, camping-log GLBs, and canvas
+tent. Gate 8 is a Forest-only fixed-camera framing study and asset lineup. It
+will preserve the registered 30 m performance core, stage sightline, authored
+paths, and approved tree vocabulary. No Winter, shared sky, celestial, camera,
+or atmosphere owner is in scope. The verified 800-credit reserve remains a hard
+floor; Gate 8 will not submit paid Meshy work without a new budget decision.
