@@ -3,7 +3,13 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
 
-const manifestPath = resolve("scripts/forest-tree-lineup.json");
+const args = process.argv.slice(2);
+const manifestIndex = args.indexOf("--manifest");
+const manifestPath = resolve(
+  manifestIndex >= 0
+    ? args[manifestIndex + 1]
+    : "scripts/forest-tree-lineup.json"
+);
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 
 async function download(url, destination) {

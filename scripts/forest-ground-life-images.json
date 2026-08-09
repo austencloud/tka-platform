@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "imageRoot": "assets/meshy-refs/forest/ground-life",
+  "outputDirectory": "static/models/forest/ground-life",
+  "statePath": "blender/forest-ground-life-meshy-tasks.json",
+  "aiModel": "meshy-6",
+  "estimatedCreditsPerAsset": 30,
+  "maxCredits": 120,
+  "assets": [
+    {
+      "id": "woodland-hazel-shrub",
+      "label": "Woodland Hazel Shrub",
+      "targetHeightMetres": 1.6,
+      "roles": ["shrub", "shade-edge"],
+      "polycount": 24000,
+      "textureResolution": "2k",
+      "textureSize": 1024,
+      "maximumOptimizedTriangles": 28000,
+      "texturePrompt": "Natural temperate woodland hazel shrub with several cool gray-brown arching stems, subtle moss at the shared crown, and dense broad leaves in deep fern green and fresh spring green. Neutral diffuse albedo, physically plausible roughness, no baked directional lighting, no flowers, no fruit, no autumn colors, no glow."
+    },
+    {
+      "id": "damp-sedge-tussock",
+      "label": "Damp Sedge Tussock",
+      "targetHeightMetres": 0.8,
+      "roles": ["grass", "damp-hollow"],
+      "polycount": 18000,
+      "textureResolution": "2k",
+      "textureSize": 1024,
+      "maximumOptimizedTriangles": 22000,
+      "texturePrompt": "Dense damp woodland sedge tussock with broad ribbon-like blades in deep bottle green, moss green, and restrained pale weathered tips. Matte moist leaf surfaces, a connected dark root crown, neutral diffuse albedo, physically plausible roughness, no baked directional lighting, no flowers, no seed heads, no glow."
+    },
+    {
+      "id": "chestnut-mushroom-colony",
+      "label": "Chestnut Mushroom Colony",
+      "targetHeightMetres": 0.55,
+      "roles": ["mushroom", "damp-hollow"],
+      "polycount": 18000,
+      "textureResolution": "2k",
+      "textureSize": 1024,
+      "maximumOptimizedTriangles": 22000,
+      "texturePrompt": "Natural temperate woodland mushroom colony with moist chestnut and muted honey-amber caps, cream gills, sturdy pale stems, and restrained moss at the connected base. Neutral diffuse albedo, physically plausible roughness, no baked directional lighting, no neon colors, no glow."
+    },
+    {
+      "id": "moss-root-litter-island",
+      "label": "Moss Root and Litter Island",
+      "targetHeightMetres": 0.35,
+      "roles": ["root", "leaf-litter", "ground-contact"],
+      "polycount": 26000,
+      "textureResolution": "2k",
+      "textureSize": 1024,
+      "maximumOptimizedTriangles": 30000,
+      "texturePrompt": "Low temperate forest-floor vignette with partly buried twisting hardwood roots, weathered gray-brown bark, saturated deep green moss cushions, black-brown damp soil, and layered oak and beech leaves in umber and muted copper. Neutral diffuse albedo, physically plausible roughness, no baked directional lighting, no mushrooms, no flowers, no glow."
+    }
+  ]
+}

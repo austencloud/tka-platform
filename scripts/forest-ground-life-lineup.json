@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "reviewViews": ["front", "three-quarter", "overhead", "silhouette"],
+  "candidates": [
+    {
+      "id": "K1",
+      "label": "KayKit Broad Bush",
+      "family": "Current Forest",
+      "targetHeightMetres": 1.2,
+      "roles": ["shrub", "shade-edge"],
+      "source": {
+        "kind": "r2-gltf",
+        "url": "https://assets.tkaflowarts.com/models/forest/Bush_1_A_Color1.gltf",
+        "dependencies": [
+          "https://assets.tkaflowarts.com/models/forest/Bush_1_A_Color1.bin",
+          "https://assets.tkaflowarts.com/models/forest/forest_texture.png"
+        ],
+        "localPath": "blender/forest-ground-life-lineup-sources/kaykit/Bush_1_A_Color1.gltf",
+        "provenance": "KayKit Forest Nature Pack",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "K2",
+      "label": "KayKit Small Bush",
+      "family": "Current Forest",
+      "targetHeightMetres": 0.75,
+      "roles": ["shrub", "understory"],
+      "source": {
+        "kind": "r2-gltf",
+        "url": "https://assets.tkaflowarts.com/models/forest/Bush_2_A_Color1.gltf",
+        "dependencies": [
+          "https://assets.tkaflowarts.com/models/forest/Bush_2_A_Color1.bin",
+          "https://assets.tkaflowarts.com/models/forest/forest_texture.png"
+        ],
+        "localPath": "blender/forest-ground-life-lineup-sources/kaykit/Bush_2_A_Color1.gltf",
+        "provenance": "KayKit Forest Nature Pack",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "K3",
+      "label": "Quaternius Grass Clump",
+      "family": "Current Kit",
+      "targetHeightMetres": 0.5,
+      "roles": ["grass", "path-edge"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/vegetation/grass/grass_leafsLarge.glb",
+        "provenance": "Quaternius Ultimate Stylized Nature Pack",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "A1",
+      "label": "Lush Fern Clump",
+      "family": "Autumn Reuse",
+      "targetHeightMetres": 1,
+      "roles": ["fern", "shade-edge", "damp-hollow"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/autumn/fern-clump_raw.glb",
+        "provenance": "TKA Autumn ImageGen + Meshy",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "A2",
+      "label": "Bioluminescent Mushroom Grove",
+      "family": "Autumn Reuse",
+      "targetHeightMetres": 0.8,
+      "roles": ["mushroom", "damp-hollow"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/autumn/mushroom-grove_raw.glb",
+        "provenance": "TKA Autumn ImageGen + Meshy",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "F1",
+      "label": "Woodland Hazel Shrub",
+      "family": "Fresh Forest",
+      "targetHeightMetres": 1.6,
+      "roles": ["shrub", "shade-edge"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/forest/ground-life/woodland-hazel-shrub_raw.glb",
+        "provenance": "TKA Forest ImageGen + Meshy 6",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "F2",
+      "label": "Damp Sedge Tussock",
+      "family": "Fresh Forest",
+      "targetHeightMetres": 0.8,
+      "roles": ["grass", "damp-hollow"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/forest/ground-life/damp-sedge-tussock_raw.glb",
+        "provenance": "TKA Forest ImageGen + Meshy 6",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "F3",
+      "label": "Chestnut Mushroom Colony",
+      "family": "Fresh Forest",
+      "targetHeightMetres": 0.55,
+      "roles": ["mushroom", "damp-hollow"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/forest/ground-life/chestnut-mushroom-colony_raw.glb",
+        "provenance": "TKA Forest ImageGen + Meshy 6",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "F4",
+      "label": "Moss Root and Litter Island",
+      "family": "Fresh Forest",
+      "targetHeightMetres": 0.35,
+      "roles": ["root", "leaf-litter", "ground-contact"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/forest/ground-life/moss-root-litter-island_raw.glb",
+        "provenance": "TKA Forest ImageGen + Meshy 6",
+        "license": "TKA generated asset"
+      }
+    }
+  ]
+}

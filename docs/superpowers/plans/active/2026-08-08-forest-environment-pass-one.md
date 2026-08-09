@@ -279,6 +279,30 @@ ground-life asset lineup.
 - Reject alpha damage, melted stems, fused clusters, poor root contact, and
   texture lighting that fights the scene lights.
 
+**Evidence packet:** Nine candidates were rendered at fixed front, 45-degree,
+overhead, and silhouette views beside a segmented 1 m scale post. The resulting
+2296 x 1780 contact sheet covers two current Forest bushes, one current grass
+clump, two reusable Autumn families, and four Forest-specific Meshy candidates.
+The four fresh candidates consumed 120 Meshy credits; the verified balance after
+generation was 800 credits. Their optimized GLBs pass the Forest asset contract
+with WebP textures, meshopt compression, and decoded triangle counts between
+17,553 and 22,251.
+
+**Recommended cut for Austen's review:**
+
+- Keep A1 Lush Fern Clump as the primary shade and damp-floor anchor.
+- Keep F1 Woodland Hazel Shrub as the primary woody understory family.
+- Keep F2 Damp Sedge Tussock for hollows and wet transitions.
+- Keep F3 Chestnut Mushroom Colony as the natural fungi family.
+- Keep F4 Moss Root and Litter Island as a restrained, partly buried contact
+  accent; its looping roots read too strongly when fully exposed overhead.
+- Reject K1 and K2 KayKit bushes from Forest production because their smooth,
+  faceted crowns conflict with the authored tree family.
+- Reject K3 Quaternius grass because its crystalline silhouette breaks at
+  walking distance.
+- Keep A2 Bioluminescent Mushroom Grove in Autumn only. Its glow competes with
+  Forest's firefly and campfire hierarchy.
+
 **Review question:** Which ground-life families survive close inspection?
 
 ### Gate 7: Ground-life ecology
@@ -401,6 +425,11 @@ References:
 | Tree review rig          | `scripts/build-forest-tree-lineup.py`                                     |
 | Tree review sheets       | `scripts/build-forest-tree-lineup-contact-sheet.mjs`                      |
 | Tree lineup verification | `scripts/verify-forest-tree-lineup.mjs`                                   |
+| Ground-life generation   | `scripts/forest-ground-life-images.json`                                  |
+| Ground-life lineup       | `scripts/forest-ground-life-lineup.json`                                  |
+| Ground-life review rig   | `scripts/build-forest-ground-life-lineup.py`                              |
+| Ground-life review sheet | `scripts/build-forest-ground-life-lineup-contact-sheet.mjs`               |
+| Ground-life verification | `scripts/verify-forest-ground-life-lineup.mjs`                            |
 | Export                   | `scripts/blender-export-forest-full.py`                                   |
 | Optimization             | `scripts/optimize-forest-environment.mjs`                                 |
 | GLB contract             | `scripts/verify-forest-environment-glb.mjs`                               |

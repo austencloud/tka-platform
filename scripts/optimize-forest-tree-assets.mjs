@@ -8,7 +8,12 @@ import { resolve } from "node:path";
 const args = process.argv.slice(2);
 const onlyIndex = args.indexOf("--only");
 const only = onlyIndex >= 0 ? args[onlyIndex + 1] : null;
-const manifestPath = resolve("scripts/forest-meshy-images.json");
+const manifestIndex = args.indexOf("--manifest");
+const manifestPath = resolve(
+  manifestIndex >= 0
+    ? args[manifestIndex + 1]
+    : "scripts/forest-meshy-images.json"
+);
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 const outputDirectory = resolve(manifest.outputDirectory);
 
@@ -45,5 +50,7 @@ for (const asset of manifest.assets) {
     ],
     { stdio: "inherit" }
   );
-  console.log(`-> ${output} (${(statSync(output).size / 1024).toFixed(1)} KiB)`);
+  console.log(
+    `-> ${output} (${(statSync(output).size / 1024).toFixed(1)} KiB)`
+  );
 }

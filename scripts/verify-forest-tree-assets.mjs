@@ -10,9 +10,14 @@ function invariant(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-const manifest = JSON.parse(
-  await readFile(resolve("scripts/forest-meshy-images.json"), "utf8")
+const args = process.argv.slice(2);
+const manifestIndex = args.indexOf("--manifest");
+const manifestPath = resolve(
+  manifestIndex >= 0
+    ? args[manifestIndex + 1]
+    : "scripts/forest-meshy-images.json"
 );
+const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 const requireFromCli = createRequire(
   realpathSync(resolve("node_modules/@gltf-transform/cli/package.json"))
 );
@@ -42,7 +47,10 @@ for (const asset of manifest.assets) {
     extensions.has("EXT_meshopt_compression"),
     `${asset.id} lost meshopt compression`
   );
-  invariant(extensions.has("EXT_texture_webp"), `${asset.id} textures are not WebP`);
+  invariant(
+    extensions.has("EXT_texture_webp"),
+    `${asset.id} textures are not WebP`
+  );
   invariant((json.scenes?.length ?? 0) === 1, `${asset.id} needs one scene`);
   invariant((json.meshes?.length ?? 0) > 0, `${asset.id} has no meshes`);
 
@@ -51,7 +59,8 @@ for (const asset of manifest.assets) {
   for (const mesh of document.getRoot().listMeshes()) {
     for (const primitive of mesh.listPrimitives()) {
       const positions = primitive.getAttribute("POSITION");
-      triangles += (primitive.getIndices()?.getCount() ?? positions?.getCount() ?? 0) / 3;
+      triangles +=
+        (primitive.getIndices()?.getCount() ?? positions?.getCount() ?? 0) / 3;
     }
   }
   invariant(triangles > 0, `${asset.id} has no triangles`);
@@ -70,4 +79,10 @@ for (const asset of manifest.assets) {
   });
 }
 
-console.log(JSON.stringify({ contractVersion: manifest.version, assets: results }, null, 2));
+console.log(
+  JSON.stringify(
+    { contractVersion: manifest.version, assets: results },
+    null,
+    2
+  )
+);
