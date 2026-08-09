@@ -99,7 +99,14 @@
   aria-valuemax={MAX_DURATION}
   tabindex={0}
 >
-  <div class="handle-line"></div>
+  <div class="handle-grip">
+    <span class="grip-dot"></span>
+    <span class="grip-dot"></span>
+    <span class="grip-dot"></span>
+  </div>
+  <div class="duration-chip" aria-hidden="true">
+    {currentDuration}&times;
+  </div>
 </div>
 
 <style>
@@ -128,24 +135,69 @@
     right: -21px;
   }
 
-  .handle-line {
-    width: 2px;
-    height: 40%;
-    min-height: 12px;
-    max-height: 32px;
-    border-radius: 1px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+  /* Visible grip: a pill with dots reads as draggable, where the old 2px
+     hairline read as a border. Rendered only on the selected step, so the
+     stronger presence never clutters the resting grid. */
+  .handle-grip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    width: 8px;
+    height: 44%;
+    min-height: 24px;
+    max-height: 44px;
+    border-radius: 4px;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, rgba(139, 92, 246, 0.8)) 55%,
+      transparent
+    );
     transition: background 0.15s ease, transform 0.15s ease;
   }
 
-  .duration-resize-handle:hover .handle-line,
-  .duration-resize-handle:focus-visible .handle-line {
-    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.4));
+  .grip-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
   }
 
-  .duration-resize-handle.dragging .handle-line {
+  .duration-resize-handle:hover .handle-grip,
+  .duration-resize-handle:focus-visible .handle-grip {
     background: var(--theme-accent, rgba(139, 92, 246, 0.8));
-    transform: scaleY(1.3);
+  }
+
+  .duration-resize-handle.dragging .handle-grip {
+    background: var(--theme-accent, rgba(139, 92, 246, 0.9));
+    transform: scaleY(1.15);
+  }
+
+  /* Live duration value while interacting. Absolutely positioned above the
+     grip so it never reflows the timeline (no-layout-shift). */
+  .duration-chip {
+    position: absolute;
+    bottom: calc(50% + 30px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .duration-resize-handle:hover .duration-chip,
+  .duration-resize-handle:focus-visible .duration-chip,
+  .duration-resize-handle.dragging .duration-chip {
+    opacity: 1;
   }
 
   .duration-resize-handle:focus-visible {
@@ -155,7 +207,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .handle-line {
+    .handle-grip,
+    .duration-chip {
       transition: none;
     }
   }

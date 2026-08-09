@@ -85,6 +85,16 @@
   const canSaveToLibrary = $derived(CreateModuleState.canShowActionButtons());
   const optionAudition = $derived(panelState.optionAudition);
 
+  // Duration pattern preview renders on this same editable timeline: while a
+  // preview session is active, the grid shows the previewed durations without
+  // touching the active sequence. Apply/cancel semantics stay with the panel.
+  const isDurationPreviewMode = $derived(panelState.isDurationPreviewMode);
+  const displaySequence = $derived.by(() =>
+    isDurationPreviewMode && panelState.previewSequence
+      ? panelState.previewSequence
+      : currentSequence
+  );
+
   // Multi-select highlight: paint every batch-selected beat with the accent
   // ring via the existing StepCell `.highlighted` mechanism. Gold `.selected`
   // stays reserved for single-select (selectedStepNumber is null in multi mode).
@@ -237,8 +247,8 @@
 
       <div class="step-grid-wrapper" class:shift-mode={isShiftStartMode}>
         <StepGrid
-          steps={currentSequence?.steps ?? []}
-          arrivalSequence={currentSequence}
+          steps={displaySequence?.steps ?? []}
+          arrivalSequence={displaySequence}
           {optionAudition}
           startPosition={startPositionStep() ?? undefined}
           onStepClick={handleStepClick}
@@ -255,7 +265,9 @@
           {activeMode}
           {isTimelineMode}
           {highlightedSteps}
-          onDurationChange={handleDurationChange}
+          onDurationChange={isDurationPreviewMode
+            ? undefined
+            : handleDurationChange}
           onMandalaClick={handleMandalaClick}
           onAuditionReady={handleAuditionReady}
           onAuditionCompleted={handleAuditionCompleted}
