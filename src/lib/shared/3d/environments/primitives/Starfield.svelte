@@ -113,14 +113,27 @@
       // Upper-hemisphere distribution: phi clamped to ≈ upper 60% of sphere
       // phi = acos(2*u-1) normally covers full sphere [0, π].
       // Multiplying by 0.6 keeps phi < ~108° — stars stay above horizon.
-      const u = Math.random();
-      const phi = Math.acos(2 * u - 1) * horizonSpread;
       const theta = Math.random() * Math.PI * 2;
-
-      const sinPhi = Math.sin(phi);
-      positions[i * 3] = config.radius * sinPhi * Math.cos(theta);
-      positions[i * 3 + 1] = config.radius * Math.cos(phi);
-      positions[i * 3 + 2] = config.radius * sinPhi * Math.sin(theta);
+      if (config.elevationRangeDegrees) {
+        const [minimumElevation, maximumElevation] =
+          config.elevationRangeDegrees;
+        const elevation =
+          ((minimumElevation +
+            Math.random() * (maximumElevation - minimumElevation)) *
+            Math.PI) /
+          180;
+        const horizontalRadius = config.radius * Math.cos(elevation);
+        positions[i * 3] = horizontalRadius * Math.cos(theta);
+        positions[i * 3 + 1] = config.radius * Math.sin(elevation);
+        positions[i * 3 + 2] = horizontalRadius * Math.sin(theta);
+      } else {
+        const u = Math.random();
+        const phi = Math.acos(2 * u - 1) * horizonSpread;
+        const sinPhi = Math.sin(phi);
+        positions[i * 3] = config.radius * sinPhi * Math.cos(theta);
+        positions[i * 3 + 1] = config.radius * Math.cos(phi);
+        positions[i * 3 + 2] = config.radius * sinPhi * Math.sin(theta);
+      }
 
       // Magnitude distribution. A high exponent yields many dim stars and few
       // bright ones, which is realistic but disappears against a black sky at

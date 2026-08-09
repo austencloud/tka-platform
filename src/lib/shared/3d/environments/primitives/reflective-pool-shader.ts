@@ -23,7 +23,7 @@
  */
 import { Color, Vector2, Vector3 } from "three";
 
-export interface WaterSurfaceUniformValues {
+export interface ReflectivePoolUniformValues {
   /** Colour toward the middle of the body, where light has been absorbed. */
   deepColor: Color;
   /** Colour at the rim, where the bottom is close enough to bounce light back. */
@@ -45,7 +45,7 @@ export interface WaterSurfaceUniformValues {
   shoreFade: number;
 }
 
-export const WATER_SURFACE_DEFAULTS: WaterSurfaceUniformValues = {
+export const REFLECTIVE_POOL_DEFAULTS: ReflectivePoolUniformValues = {
   deepColor: new Color(0x0a2f3a),
   shallowColor: new Color(0x2f8ea0),
   reflectionTint: new Color(0x9fbcc2),
@@ -58,8 +58,8 @@ export const WATER_SURFACE_DEFAULTS: WaterSurfaceUniformValues = {
   shoreFade: 2.2,
 };
 
-export const WaterSurfaceShader = {
-  name: "WaterSurfaceShader",
+export const ReflectivePoolShader = {
+  name: "ReflectivePoolShader",
 
   uniforms: {
     // Reflector owns these three and writes them every frame.
@@ -68,15 +68,15 @@ export const WaterSurfaceShader = {
     textureMatrix: { value: null },
 
     uTime: { value: 0 },
-    uDeepColor: { value: WATER_SURFACE_DEFAULTS.deepColor.clone() },
-    uShallowColor: { value: WATER_SURFACE_DEFAULTS.shallowColor.clone() },
-    uSize: { value: WATER_SURFACE_DEFAULTS.size.clone() },
-    uSunDirection: { value: WATER_SURFACE_DEFAULTS.sunDirection.clone() },
-    uSunColor: { value: WATER_SURFACE_DEFAULTS.sunColor.clone() },
-    uRippleScale: { value: WATER_SURFACE_DEFAULTS.rippleScale },
-    uRippleStrength: { value: WATER_SURFACE_DEFAULTS.rippleStrength },
-    uFoamWidth: { value: WATER_SURFACE_DEFAULTS.foamWidth },
-    uShoreFade: { value: WATER_SURFACE_DEFAULTS.shoreFade },
+    uDeepColor: { value: REFLECTIVE_POOL_DEFAULTS.deepColor.clone() },
+    uShallowColor: { value: REFLECTIVE_POOL_DEFAULTS.shallowColor.clone() },
+    uSize: { value: REFLECTIVE_POOL_DEFAULTS.size.clone() },
+    uSunDirection: { value: REFLECTIVE_POOL_DEFAULTS.sunDirection.clone() },
+    uSunColor: { value: REFLECTIVE_POOL_DEFAULTS.sunColor.clone() },
+    uRippleScale: { value: REFLECTIVE_POOL_DEFAULTS.rippleScale },
+    uRippleStrength: { value: REFLECTIVE_POOL_DEFAULTS.rippleStrength },
+    uFoamWidth: { value: REFLECTIVE_POOL_DEFAULTS.foamWidth },
+    uShoreFade: { value: REFLECTIVE_POOL_DEFAULTS.shoreFade },
   },
 
   vertexShader: /* glsl */ `

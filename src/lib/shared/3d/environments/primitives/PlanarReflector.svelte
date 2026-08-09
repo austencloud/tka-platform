@@ -30,7 +30,7 @@
     active?: boolean;
     /**
      * Reflector's own extension point: swap how the reflected image resolves
-     * onto the plane. Water passes WaterSurfaceShader here rather than forking
+     * onto the plane. Water passes ReflectivePoolShader here rather than forking
      * this component. Reflector still owns color/tDiffuse/textureMatrix, so a
      * custom shader must declare those three uniforms.
      */

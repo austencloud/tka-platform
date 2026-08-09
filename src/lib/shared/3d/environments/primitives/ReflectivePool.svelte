@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
-   * WaterSurface — a horizontal body of water: PlanarReflector driving the
-   * WaterSurfaceShader, plus the clock that moves its ripples.
+   * ReflectivePool — a horizontal body of water: PlanarReflector driving the
+   * ReflectivePoolShader, plus the clock that moves its ripples.
    *
    * The reflection technique still belongs to PlanarReflector. This composes
    * it with water optics (Fresnel, depth absorption, ripple normals, foam) so
@@ -13,9 +13,9 @@
 
   import PlanarReflector from "./PlanarReflector.svelte";
   import {
-    WATER_SURFACE_DEFAULTS,
-    WaterSurfaceShader,
-  } from "./water-surface-shader";
+    REFLECTIVE_POOL_DEFAULTS,
+    ReflectivePoolShader,
+  } from "./reflective-pool-shader";
 
   interface Props {
     /** Metres along world X. */
@@ -42,7 +42,7 @@
 
   const props: Props = $props();
 
-  const defaults = WATER_SURFACE_DEFAULTS;
+  const defaults = REFLECTIVE_POOL_DEFAULTS;
 
   const uniforms: Record<string, unknown> = {
     uDeepColor: new Color(props.deepColor ?? defaults.deepColor),
@@ -81,7 +81,7 @@
   textureWidth={props.textureWidth ?? 1024}
   textureHeight={props.textureHeight ?? 1024}
   color={props.reflectionTint ?? defaults.reflectionTint.getHex()}
-  shader={WaterSurfaceShader}
+  shader={ReflectivePoolShader}
   {uniforms}
   active={props.active}
   onReady={handleReady}

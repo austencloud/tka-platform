@@ -99,6 +99,8 @@
           uMoonOpacity: { value: moon?.opacity ?? 1.0 },
           uMoonGlowScale: { value: moon?.glowScale ?? 1.12 },
           uMoonGlowOpacity: { value: moon?.glowOpacity ?? 0.025 },
+          uMoonSurfaceLift: { value: moon?.surfaceLift ?? 0.0 },
+          uMoonHorizonWarmth: { value: moon?.horizonWarmth ?? 1.0 },
         },
         vertexShader: /* glsl */ `
         varying vec3 vSkyDirection;
@@ -123,6 +125,8 @@
         uniform float uMoonOpacity;
         uniform float uMoonGlowScale;
         uniform float uMoonGlowOpacity;
+        uniform float uMoonSurfaceLift;
+        uniform float uMoonHorizonWarmth;
         varying vec3 vSkyDirection;
 
         void main() {
@@ -173,13 +177,22 @@
             // a restrained forward-scattering halo near the horizon.
             float elevation = clamp(moonDirection.y, 0.0, 1.0);
             float atmospherePath = smoothstep(0.0, 0.42, elevation);
-            float transmittance = mix(0.48, 1.0, atmospherePath);
-            vec3 atmosphericTint = mix(
+            float transmittance = mix(0.82, 1.0, atmospherePath);
+            vec3 horizonTint = mix(
+              vec3(0.94, 0.97, 1.0),
               vec3(1.0, 0.67, 0.42),
+              uMoonHorizonWarmth
+            );
+            vec3 atmosphericTint = mix(
+              horizonTint,
               vec3(0.92, 0.96, 1.0),
               atmospherePath
             );
-            vec3 moonColor = moonSample.rgb * atmosphericTint * transmittance;
+            // Preserve crater detail while keeping a horizon moon luminous
+            // enough to lead the composition after filmic tone mapping.
+            vec3 moonSurface = pow(max(moonSample.rgb, vec3(0.0)), vec3(0.72));
+            moonSurface = mix(moonSurface, vec3(1.0), uMoonSurfaceLift);
+            vec3 moonColor = moonSurface * atmosphericTint * transmittance;
 
             float haloRadius = max(uMoonGlowScale, 1.001);
             float halo = 1.0 - smoothstep(1.0, haloRadius, radialDistance);
@@ -219,6 +232,8 @@
     material.uniforms.uMoonOpacity!.value = moon?.opacity ?? 1.0;
     material.uniforms.uMoonGlowScale!.value = moon?.glowScale ?? 1.12;
     material.uniforms.uMoonGlowOpacity!.value = moon?.glowOpacity ?? 0.025;
+    material.uniforms.uMoonSurfaceLift!.value = moon?.surfaceLift ?? 0.0;
+    material.uniforms.uMoonHorizonWarmth!.value = moon?.horizonWarmth ?? 1.0;
   });
 
   let skyMesh: Mesh | undefined;

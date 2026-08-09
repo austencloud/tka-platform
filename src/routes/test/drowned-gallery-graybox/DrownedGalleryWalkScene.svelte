@@ -25,7 +25,7 @@
     PlayerControllerState,
   } from "$lib/shared/3d/physics/types";
   import GltfAsset from "$lib/shared/3d/environments/primitives/GltfAsset.svelte";
-  import WaterSurface from "$lib/shared/3d/environments/primitives/WaterSurface.svelte";
+  import ReflectivePool from "$lib/shared/3d/environments/primitives/ReflectivePool.svelte";
   import {
     CAUSEWAY_Y,
     GROTTO_WATERLINE_Y,
@@ -90,7 +90,7 @@
    * renders pure black in Three.js — that black hole is what read as "no water
    * at all". A plain planar mirror in its place was no better: reflection at
    * full strength from every angle reads as an opening in the floor, not as a
-   * pool. WaterSurface adds the view-dependent part (Fresnel, absorption,
+   * pool. ReflectivePool adds the view-dependent part (Fresnel, absorption,
    * ripples, foam) that makes it a liquid.
    */
   const grottoWater = layout.waterPlanes
@@ -437,7 +437,7 @@
 {/each}
 
 {#each grottoWater as entry (entry.id)}
-  <WaterSurface
+  <ReflectivePool
     width={entry.width}
     depth={entry.depth}
     position={[entry.centre[0], entry.surfaceY, entry.centre[1]]}
