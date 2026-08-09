@@ -680,8 +680,6 @@
     mode === CameraMode.THIRD_PERSON ? "3rd Person" : "1st Person"
   );
 
-  const isUsingTouch = $derived(inputCaps.current.currentPointerType === "touch");
-
   function portalToBody(node: HTMLElement) {
     document.body.appendChild(node);
     return {
@@ -691,41 +689,6 @@
     };
   }
 </script>
-
-{#if enabled && props.showControlsHint !== false && (mode === CameraMode.ORBIT || !isPointerLocked)}
-  <div use:portalToBody class="controls-hint">
-    {#if mode === CameraMode.ORBIT}
-      <span>Drag to orbit &middot; Click to enter game mode</span>
-    {:else if isUsingTouch}
-      <span>Drag to look around</span>
-    {:else}
-      <span>Click to look around</span>
-    {/if}
-    <div class="controls">
-      {#if !isUsingTouch}
-        {#if props.disableModeToggle}
-          <span>{modeLabel}</span>
-        {:else}
-          <kbd>V</kbd> {modeLabel}
-        {/if}
-      {/if}
-      {#if isGameMode(mode)}
-        {#if isUsingTouch}
-          <span>Drag to look</span>
-        {:else}
-          <kbd>WASD</kbd> Move
-          <kbd>Mouse</kbd> Look
-        {/if}
-        {#if !isUsingTouch}
-          <kbd>Shift</kbd> Sprint
-          <kbd>Space</kbd> Jump
-        {/if}
-      {:else if !isUsingTouch}
-        <kbd>Scroll</kbd> Zoom
-      {/if}
-    </div>
-  </div>
-{/if}
 
 {#if enabled && isPointerLocked && isGameMode(mode)}
   <div use:portalToBody class="mode-indicator">
@@ -744,43 +707,6 @@
 {/if}
 
 <style>
-  .controls-hint {
-    position: fixed;
-    bottom: 100px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1rem 1.5rem;
-    width: min(calc(100vw - 2rem), 34rem);
-    box-sizing: border-box;
-    background: rgba(0, 0, 0, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
-    color: white;
-    font-size: 14px;
-    pointer-events: none;
-    z-index: 50;
-  }
-  .controls {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.7);
-  }
-  .controls kbd {
-    padding: 0.2rem 0.5rem;
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    font-family: inherit;
-    font-size: 11px;
-  }
   .mode-indicator {
     position: fixed;
     top: 20px;
@@ -819,36 +745,8 @@
   }
 
   @media (max-width: 600px) {
-    .controls-hint {
-      bottom: max(1rem, env(safe-area-inset-bottom));
-      gap: 0.4rem;
-      padding: 0.75rem 0.875rem;
-      font-size: 13px;
-    }
-
-    .controls {
-      column-gap: 0.5rem;
-      row-gap: 0.35rem;
-      font-size: 11px;
-    }
-
     .mode-indicator {
       top: max(0.75rem, env(safe-area-inset-top));
-    }
-  }
-
-  @media (max-height: 500px) {
-    .controls-hint {
-      bottom: max(0.5rem, env(safe-area-inset-bottom));
-      gap: 0.25rem;
-      padding: 0.5rem 0.75rem;
-      font-size: 12px;
-    }
-
-    .controls {
-      column-gap: 0.45rem;
-      row-gap: 0.25rem;
-      font-size: 10px;
     }
   }
 </style>
