@@ -27,6 +27,119 @@ import { UserNotificationSchema } from "$lib/shared/feedback/domain/models/feedb
 const USERS_COLLECTION = "users";
 const NOTIFICATIONS_SUBCOLLECTION = "notifications";
 
+/**
+ * Convert a Firestore notification document into the discriminated shape the
+ * inbox consumes. The live subscription and one-shot reads must preserve the
+ * same deep-link fields or a card can look clickable while having no target.
+ */
+export function mapNotificationDocument(
+  id: string,
+  data: Record<string, unknown>
+): UserNotification {
+  const baseNotification = {
+    id,
+    userId: data["userId"] as string,
+    type: data["type"] as UserNotification["type"],
+    message: data["message"] as string,
+    createdAt: (data["createdAt"] as Timestamp)?.toDate() || new Date(),
+    read: data["read"] as boolean,
+    readAt: (data["readAt"] as Timestamp)?.toDate(),
+    fromUserId: data["fromUserId"] as string | undefined,
+    fromUserName: data["fromUserName"] as string | undefined,
+  };
+
+  const type = data["type"] as string;
+
+  if (type.startsWith("feedback-")) {
+    return {
+      ...baseNotification,
+      type: type as UserNotification["type"],
+      feedbackId: data["feedbackId"] as string,
+      feedbackTitle: data["feedbackTitle"] as string,
+      fromUserId: data["fromUserId"] as string,
+      fromUserName: data["fromUserName"] as string,
+    } as UserNotification;
+  }
+  if (type.startsWith("sequence-")) {
+    return {
+      ...baseNotification,
+      type: type as UserNotification["type"],
+      sequenceId: data["sequenceId"] as string,
+      sequenceTitle: data["sequenceTitle"] as string,
+      fromUserId: data["fromUserId"] as string,
+      fromUserName: data["fromUserName"] as string,
+      videoUrl: data["videoUrl"] as string | undefined,
+      commentText: data["commentText"] as string | undefined,
+    } as UserNotification;
+  }
+  if (type === "user-followed" || type === "achievement-unlocked") {
+    return {
+      ...baseNotification,
+      type: type as UserNotification["type"],
+      achievementId: data["achievementId"] as string | undefined,
+      achievementName: data["achievementName"] as string | undefined,
+    } as UserNotification;
+  }
+  if (type === "system-announcement") {
+    return {
+      ...baseNotification,
+      type: type as UserNotification["type"],
+      title: data["title"] as string,
+      actionUrl: data["actionUrl"] as string | undefined,
+    } as UserNotification;
+  }
+  if (type === "admin-new-user-signup") {
+    return {
+      ...baseNotification,
+      type: type as UserNotification["type"],
+      newUserId: data["newUserId"] as string,
+      newUserEmail: data["newUserEmail"] as string | null,
+      newUserDisplayName: data["newUserDisplayName"] as string,
+    } as UserNotification;
+  }
+  if (
+    type === "admin-user-returned" ||
+    type === "admin-qr-scan" ||
+    type === "admin-content-created"
+  ) {
+    return {
+      ...baseNotification,
+      type,
+      returnedUserId: data["returnedUserId"] as string | undefined,
+      postHogSessionId: data["postHogSessionId"] as string | undefined,
+      shortCode: data["shortCode"] as string | undefined,
+      scanCity: data["scanCity"] as string | null | undefined,
+      scanCountry: data["scanCountry"] as string | null | undefined,
+      scanLat: data["scanLat"] as number | null | undefined,
+      scanLng: data["scanLng"] as number | null | undefined,
+      scanCount: data["scanCount"] as number | undefined,
+      contentType: data["contentType"] as "sequence" | "collection" | undefined,
+      sequenceId: data["sequenceId"] as string | undefined,
+      collectionId: data["collectionId"] as string | undefined,
+      word: data["word"] as string | undefined,
+      collectionName: data["collectionName"] as string | undefined,
+    };
+  }
+  if (type === "admin-parity-audit") {
+    return {
+      ...baseNotification,
+      type: "admin-parity-audit",
+      auditStatus: data["auditStatus"] as "violations" | "failed",
+      actionUrl: data["actionUrl"] as string,
+      reportFile: data["reportFile"] as string | undefined,
+      reportGeneratedAt: data["reportGeneratedAt"] as string | undefined,
+      auditReconcileCount: (data["auditReconcileCount"] as number) ?? 0,
+      auditShortcodeCount: (data["auditShortcodeCount"] as number) ?? 0,
+      auditViolations: Array.isArray(data["auditViolations"])
+        ? data["auditViolations"]
+        : [],
+      auditError: data["auditError"] as string | undefined,
+    } as UserNotification;
+  }
+
+  return baseNotification as UserNotification;
+}
+
 export class Notifier {
   private unsubscribe: (() => void) | null = null;
 
@@ -83,82 +196,7 @@ export class Notifier {
     id: string,
     data: Record<string, unknown>
   ): UserNotification {
-    const baseNotification = {
-      id,
-      userId: data["userId"] as string,
-      type: data["type"] as UserNotification["type"],
-      message: data["message"] as string,
-      createdAt: (data["createdAt"] as Timestamp)?.toDate() || new Date(),
-      read: data["read"] as boolean,
-      readAt: (data["readAt"] as Timestamp)?.toDate(),
-      fromUserId: data["fromUserId"] as string | undefined,
-      fromUserName: data["fromUserName"] as string | undefined,
-    };
-
-    const type = data["type"] as string;
-
-    // Map to specific notification type based on type field
-    if (type.startsWith("feedback-")) {
-      return {
-        ...baseNotification,
-        type: type as UserNotification["type"],
-        feedbackId: data["feedbackId"] as string,
-        feedbackTitle: data["feedbackTitle"] as string,
-        fromUserId: data["fromUserId"] as string,
-        fromUserName: data["fromUserName"] as string,
-      } as UserNotification;
-    } else if (type.startsWith("sequence-")) {
-      return {
-        ...baseNotification,
-        type: type as UserNotification["type"],
-        sequenceId: data["sequenceId"] as string,
-        sequenceTitle: data["sequenceTitle"] as string,
-        fromUserId: data["fromUserId"] as string,
-        fromUserName: data["fromUserName"] as string,
-        videoUrl: data["videoUrl"] as string | undefined,
-        commentText: data["commentText"] as string | undefined,
-      } as UserNotification;
-    } else if (type === "user-followed" || type === "achievement-unlocked") {
-      return {
-        ...baseNotification,
-        type: type as UserNotification["type"],
-        achievementId: data["achievementId"] as string | undefined,
-        achievementName: data["achievementName"] as string | undefined,
-      } as UserNotification;
-    } else if (type === "system-announcement") {
-      return {
-        ...baseNotification,
-        type: type as UserNotification["type"],
-        title: data["title"] as string,
-        actionUrl: data["actionUrl"] as string | undefined,
-      } as UserNotification;
-    } else if (type === "admin-new-user-signup") {
-      return {
-        ...baseNotification,
-        type: type as UserNotification["type"],
-        newUserId: data["newUserId"] as string,
-        newUserEmail: data["newUserEmail"] as string | null,
-        newUserDisplayName: data["newUserDisplayName"] as string,
-      } as UserNotification;
-    } else if (type === "admin-parity-audit") {
-      return {
-        ...baseNotification,
-        type: "admin-parity-audit",
-        auditStatus: data["auditStatus"] as "violations" | "failed",
-        actionUrl: data["actionUrl"] as string,
-        reportFile: data["reportFile"] as string | undefined,
-        reportGeneratedAt: data["reportGeneratedAt"] as string | undefined,
-        auditReconcileCount: (data["auditReconcileCount"] as number) ?? 0,
-        auditShortcodeCount: (data["auditShortcodeCount"] as number) ?? 0,
-        auditViolations: Array.isArray(data["auditViolations"])
-          ? data["auditViolations"]
-          : [],
-        auditError: data["auditError"] as string | undefined,
-      } as UserNotification;
-    }
-
-    // Fallback for unknown types - treat as base notification
-    return baseNotification as UserNotification;
+    return mapNotificationDocument(id, data);
   }
 
   /**

@@ -17,6 +17,7 @@
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { buildAdminSessionReplayUrl } from "$lib/features/admin/domain/session-replay-target";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 
   interface Props {
     notification: UserNotification;
@@ -185,18 +186,57 @@
         break;
 
       case "admin-user-returned":
-        if (n["returnedUserId"]) {
-          inboxState.close();
-          await goto(
-            buildAdminSessionReplayUrl(
-              n["returnedUserId"],
-              n["postHogSessionId"]
-            ),
-            { replaceState: true, keepFocus: true, noScroll: true }
-          );
-          // The catch-all app route preserves the shell across goto(). Update
-          // its module owner explicitly while keeping the deep-link URL intact.
-          await handleModuleChange("admin", "users", { skipHistory: true });
+        {
+          // Older live-subscription objects kept the actor but lost the
+          // return-specific alias. Both fields identify the same user on a
+          // returning-user notification, so either can restore the handoff.
+          const returnedUserId = n["returnedUserId"] || n["fromUserId"];
+          if (!returnedUserId) {
+            const failure = new Error(
+              "Returning-user notification has no user destination"
+            );
+            getErrorHandler().showUserError({
+              message: "This session notification could not be opened.",
+              technicalDetails: failure.message,
+              error: failure,
+              severity: "error",
+              context: {
+                module: "inbox",
+                tab: "notifications",
+                action: "openReturnedUserSession",
+              },
+            });
+            break;
+          }
+
+          try {
+            inboxState.close();
+            await goto(
+              buildAdminSessionReplayUrl(returnedUserId, n["postHogSessionId"]),
+              { replaceState: true, keepFocus: true, noScroll: true }
+            );
+            // The catch-all app route preserves the shell across goto(). Update
+            // its module owner explicitly while keeping the deep-link URL intact.
+            await handleModuleChange("admin", "users", { skipHistory: true });
+          } catch (caught) {
+            const failure =
+              caught instanceof Error ? caught : new Error(String(caught));
+            console.error(
+              "[InboxNotificationItem] Failed to open returned user session:",
+              failure
+            );
+            getErrorHandler().showUserError({
+              message: "This session notification could not be opened.",
+              technicalDetails: failure.message,
+              error: failure,
+              severity: "error",
+              context: {
+                module: "inbox",
+                tab: "notifications",
+                action: "openReturnedUserSession",
+              },
+            });
+          }
         }
         break;
 
