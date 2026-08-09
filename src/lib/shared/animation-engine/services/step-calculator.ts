@@ -85,6 +85,19 @@ export function displayedBeatNumber(
 }
 
 /**
+ * Keep a displayed beat inside the sequence's real motion beats. Freeform
+ * playback adds one timeline beat after the final motion so the ending pose
+ * can stay on screen; that hold still belongs to the final pictograph.
+ */
+export function clampDisplayedBeatNumber(
+  beatNumber: number,
+  totalMotionBeats: number
+): number {
+  if (totalMotionBeats <= 0) return 0;
+  return Math.max(0, Math.min(beatNumber, totalMotionBeats));
+}
+
+/**
  * Validate step data array
  */
 export function validateSteps(steps: readonly Step[]): boolean {

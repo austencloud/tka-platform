@@ -10,7 +10,10 @@ Dark mode: Controlled via prop (for preview isolation) or falls back to :root.da
 Supports letter highlighting during animation playback.
 -->
 <script lang="ts">
-  import { simplifyAndTruncate, compressWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import {
+    simplifyAndTruncate,
+    compressWord,
+  } from "$lib/shared/foundation/utils/word-simplifier";
   import { untrack } from "svelte";
   import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
@@ -18,7 +21,10 @@ Supports letter highlighting during animation playback.
   import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import type { LoopReflectionAxis } from "@tka/render-composition";
   import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
-  import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
+  import {
+    isDashLetter,
+    getBaseLetter,
+  } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
   import { browser } from "$app/environment";
   import { fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
@@ -37,13 +43,14 @@ Supports letter highlighting during animation playback.
 
   function isAlphaGlyph(letter: string): boolean {
     const base = isDashLetter(letter) ? getBaseLetter(letter) : letter;
-    return base === 'α';
+    return base === "α";
   }
 
   let {
     word = null,
     visible = true,
     darkMode = false,
+    presentation = "canvas",
     activeStepNumber = null,
     difficultyLevel = null,
     loopComponents = null,
@@ -55,6 +62,7 @@ Supports letter highlighting during animation playback.
     word?: string | null;
     visible?: boolean;
     darkMode?: boolean;
+    presentation?: "canvas" | "chrome";
     activeStepNumber?: number | null;
     difficultyLevel?: number | null;
     loopComponents?: Set<LOOPComponent> | null;
@@ -112,17 +120,22 @@ Supports letter highlighting during animation playback.
     const currentDisplayedWord = untrack(() => displayedWord);
     const currentPhase = untrack(() => animationPhase);
 
-    const wordChanged = currentWord !== prevWord && currentWord !== null && prevWord !== null;
+    const wordChanged =
+      currentWord !== prevWord && currentWord !== null && prevWord !== null;
     const becameVisible = currentlyVisible && !prevVisible;
-    const initialMount = currentlyVisible && currentDisplayedWord === null && currentWord !== null;
+    const initialMount =
+      currentlyVisible && currentDisplayedWord === null && currentWord !== null;
 
     if (wordChanged && currentlyVisible && currentPhase === "idle") {
       // Word changed while visible: exit old, then enter new
       clearAnimationTimers();
       animationPhase = "exiting";
 
-      const oldLetterCount = currentDisplayedWord ? simplifyAndTruncate(currentDisplayedWord, 12).length : 1;
-      const exitDuration = EXIT_DURATION_BASE + (oldLetterCount * EXIT_STAGGER_PER_LETTER);
+      const oldLetterCount = currentDisplayedWord
+        ? simplifyAndTruncate(currentDisplayedWord, 12).length
+        : 1;
+      const exitDuration =
+        EXIT_DURATION_BASE + oldLetterCount * EXIT_STAGGER_PER_LETTER;
 
       exitTimer = setTimeout(() => {
         displayedWord = currentWord;
@@ -221,7 +234,11 @@ Supports letter highlighting during animation playback.
       });
       return units;
     }
-    return parsedLetters.map((letter, i) => ({ kind: "letter" as const, letter, letterIdx: i }));
+    return parsedLetters.map((letter, i) => ({
+      kind: "letter" as const,
+      letter,
+      letterIdx: i,
+    }));
   });
 
   /**
@@ -261,7 +278,11 @@ Supports letter highlighting during animation playback.
     ...new Set(
       displayUnits.flatMap((unit) =>
         unit.kind === "letter"
-          ? [isDashLetter(unit.letter) ? getBaseLetter(unit.letter) : unit.letter]
+          ? [
+              isDashLetter(unit.letter)
+                ? getBaseLetter(unit.letter)
+                : unit.letter,
+            ]
           : []
       )
     ),
@@ -291,7 +312,10 @@ Supports letter highlighting during animation playback.
   const activeLetterIndex = $derived.by(() => {
     if (!hasActiveHighlighting) return -1;
     if (compressedSegments) {
-      const total = compressedSegments.reduce((n, s) => n + s.tokens.length * s.repeat, 0);
+      const total = compressedSegments.reduce(
+        (n, s) => n + s.tokens.length * s.repeat,
+        0
+      );
       if (total === 0) return -1;
       let s0 = (activeStepNumber! - 1) % total;
       let offset = 0;
@@ -307,20 +331,24 @@ Supports letter highlighting during animation playback.
     // activeStepNumber is 1-indexed, modulo to wrap around
     return (activeStepNumber! - 1) % parsedLetters.length;
   });
-
-
 </script>
 
 {#if visible && displayUnits.length > 0}
-  <div
+  <svelte:element
+    this={presentation === "chrome" ? "span" : "div"}
     class="word-header"
     class:dark-mode={darkMode}
+    class:chrome={presentation === "chrome"}
     data-controlled="true"
     out:fade={{ duration: motionDuration(DURATION.normal), easing: cubicOut }}
   >
     {#if difficultyLevel != null}
       <div class="badge-wrapper">
-        <DifficultyBadge level={difficultyLevel} size="clamp(24px, 7cqw, 34px)" fontSize="clamp(12px, 4cqw, 18px)" />
+        <DifficultyBadge
+          level={difficultyLevel}
+          size="clamp(24px, 7cqw, 34px)"
+          fontSize="clamp(12px, 4cqw, 18px)"
+        />
       </div>
     {/if}
 
@@ -338,8 +366,15 @@ Supports letter highlighting during animation playback.
               class:active={activeLetterIndex === unit.letterIdx}
             >
               {#if url}
-                <img src={url} alt={unit.letter} class="glyph-img" class:alpha-baseline={isAlphaGlyph(unit.letter)} draggable="false" />
-                {#if isDashLetter(unit.letter)}<span class="dash-bar"></span>{/if}
+                <img
+                  src={url}
+                  alt={unit.letter}
+                  class="glyph-img"
+                  class:alpha-baseline={isAlphaGlyph(unit.letter)}
+                  draggable="false"
+                />
+                {#if isDashLetter(unit.letter)}<span class="dash-bar"
+                  ></span>{/if}
               {:else}{unit.letter}{/if}
             </span>
           {/if}
@@ -352,7 +387,9 @@ Supports letter highlighting during animation playback.
               class:entering={animationPhase === "entering"}
               class:exiting={animationPhase === "exiting"}
               class:visible={animationPhase === "idle"}
-              style="--letter-index: {index}; --total-letters: {displayUnits.length}; --reverse-index: {displayUnits.length - 1 - index}"
+              style="--letter-index: {index}; --total-letters: {displayUnits.length}; --reverse-index: {displayUnits.length -
+                1 -
+                index}"
             ></span>
           {:else}
             {@const url = getGlyphUrl(unit.letter)}
@@ -361,11 +398,20 @@ Supports letter highlighting during animation playback.
               class:entering={animationPhase === "entering"}
               class:exiting={animationPhase === "exiting"}
               class:visible={animationPhase === "idle"}
-              style="--letter-index: {index}; --total-letters: {displayUnits.length}; --reverse-index: {displayUnits.length - 1 - index}"
+              style="--letter-index: {index}; --total-letters: {displayUnits.length}; --reverse-index: {displayUnits.length -
+                1 -
+                index}"
             >
               {#if url}
-                <img src={url} alt={unit.letter} class="glyph-img" class:alpha-baseline={isAlphaGlyph(unit.letter)} draggable="false" />
-                {#if isDashLetter(unit.letter)}<span class="dash-bar"></span>{/if}
+                <img
+                  src={url}
+                  alt={unit.letter}
+                  class="glyph-img"
+                  class:alpha-baseline={isAlphaGlyph(unit.letter)}
+                  draggable="false"
+                />
+                {#if isDashLetter(unit.letter)}<span class="dash-bar"
+                  ></span>{/if}
               {:else}{unit.letter}{/if}
             </span>
           {/if}
@@ -382,12 +428,12 @@ Supports letter highlighting during animation playback.
           {reflectionAxis}
           overlayComponents={overlayComponents ?? undefined}
           size={20}
-          darkMode={darkMode}
+          {darkMode}
           showFreeformWhenEmpty={false}
         />
       </div>
     {/if}
-  </div>
+  </svelte:element>
 {/if}
 
 <style>
@@ -497,6 +543,24 @@ Supports letter highlighting during animation playback.
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
+  /* Viewer chrome uses the same glyph loading, compression, entrance motion,
+     and active-letter treatment without bringing the canvas band along. */
+  .word-header.chrome,
+  .word-header.chrome.dark-mode {
+    min-height: 28px;
+    background: transparent;
+    border-bottom: 0;
+  }
+
+  .word-header.chrome .word-text {
+    width: 100%;
+    padding: 0;
+    font-size: min(
+      clamp(12px, 11cqw, 28px),
+      calc(98cqw / max(var(--word-em, 1), 1))
+    );
+  }
+
   :global(:root.dark) .word-header:not([data-controlled]) {
     background: var(--theme-panel-bg, rgb(15, 15, 20));
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
@@ -523,8 +587,8 @@ Supports letter highlighting during animation playback.
 
   .dash-bar {
     display: inline-block;
-    height: 0.20em;
-    width: 0.70em;
+    height: 0.2em;
+    width: 0.7em;
     background: currentColor;
     border-radius: 9999px;
     flex-shrink: 0;
@@ -539,7 +603,9 @@ Supports letter highlighting during animation playback.
        it — did not. */
     flex-shrink: 0;
     font-family: "TKA Letters", var(--font-sans, sans-serif);
-    font-feature-settings: "liga" 1, "dlig" 1;
+    font-feature-settings:
+      "liga" 1,
+      "dlig" 1;
     font-weight: normal;
     opacity: 0.2;
     transition:
@@ -576,16 +642,22 @@ Supports letter highlighting during animation playback.
 
   .letter.animated.entering,
   .group-dot.animated.entering {
-    animation: letterEnter var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    animation-delay: calc(var(--letter-index) * (180ms / max(var(--total-letters), 4)));
+    animation: letterEnter var(--duration-emphasis)
+      cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation-delay: calc(
+      var(--letter-index) * (180ms / max(var(--total-letters), 4))
+    );
   }
 
   .letter.animated.exiting,
   .group-dot.animated.exiting {
     opacity: 1;
     transform: translateY(0) scale(1);
-    animation: letterExit var(--duration-normal) cubic-bezier(0.4, 0, 1, 1) forwards;
-    animation-delay: calc(var(--letter-index) * (120ms / max(var(--total-letters), 4)));
+    animation: letterExit var(--duration-normal) cubic-bezier(0.4, 0, 1, 1)
+      forwards;
+    animation-delay: calc(
+      var(--letter-index) * (120ms / max(var(--total-letters), 4))
+    );
   }
 
   .letter.animated.visible,
@@ -610,23 +682,47 @@ Supports letter highlighting during animation playback.
   }
 
   @keyframes dotEnter {
-    from { opacity: 0; transform: translateY(8px) scale(0.8); }
-    to { opacity: 0.4; transform: translateY(0) scale(1); }
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.8);
+    }
+    to {
+      opacity: 0.4;
+      transform: translateY(0) scale(1);
+    }
   }
 
   @keyframes dotExit {
-    from { opacity: 0.4; transform: translateY(0) scale(1); }
-    to { opacity: 0; transform: translateY(-6px) scale(0.85); }
+    from {
+      opacity: 0.4;
+      transform: translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.85);
+    }
   }
 
   @keyframes letterEnter {
-    from { opacity: 0; transform: translateY(8px) scale(0.8); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
   }
 
   @keyframes letterExit {
-    from { opacity: 1; transform: translateY(0) scale(1); }
-    to { opacity: 0; transform: translateY(-6px) scale(0.85); }
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.85);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { displayedBeatNumber } from "../step-calculator";
+import {
+  clampDisplayedBeatNumber,
+  displayedBeatNumber,
+} from "../step-calculator";
 
 // Boundary attribution for glyph/labels. An integer currentStep is both the end
 // of beat N-1's motion and the start of beat N's; which beat gets displayed
@@ -50,4 +53,16 @@ describe("displayedBeatNumber", () => {
 			expect(displayedBeatNumber(0, true)).toBe(0);
 		});
 	});
+});
+
+describe("clampDisplayedBeatNumber", () => {
+  it("attributes a freeform end hold to the final motion beat", () => {
+    expect(clampDisplayedBeatNumber(9, 8)).toBe(8);
+    expect(clampDisplayedBeatNumber(8.5, 8)).toBe(8);
+  });
+
+  it("preserves the start position and in-range motion beats", () => {
+    expect(clampDisplayedBeatNumber(0, 8)).toBe(0);
+    expect(clampDisplayedBeatNumber(5, 8)).toBe(5);
+  });
 });
