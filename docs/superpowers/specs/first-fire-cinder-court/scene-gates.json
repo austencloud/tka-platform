@@ -51,16 +51,18 @@
     {
       "id": "C-002",
       "class": "invention",
-      "statement": "The player revisits one central fire court between three permanently isolated performer courts.",
+      "statement": "The player walks one continuous S from the Water door to the Earth door, horseshoeing 240 degrees around each of three isolated performers through a separate entry and exit mouth.",
       "evidence": [
+        "docs/superpowers/specs/2026-08-06-first-fire-torch-procession-design.md",
         "Museum tracker decision 1bUBNo26hJpRq4Bf36gh"
       ]
     },
     {
       "id": "C-003",
       "class": "invention",
-      "statement": "Completed routes cool to coals, then all red extinguishes before green crosses the hub toward Earth.",
+      "statement": "Walked courts cool to coals behind the visitor, all red extinguishes, and only then does the green Earth route appear along the route already walked.",
       "evidence": [
+        "docs/superpowers/specs/2026-08-06-first-fire-torch-procession-design.md",
         "Museum tracker decision 1bUBNo26hJpRq4Bf36gh"
       ]
     }
@@ -74,7 +76,7 @@
         {
           "kind": "canon-audit",
           "path": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-production-contract.md",
-          "sha256": "23055891f8a1d5328df8763b8a9632c0d0ba41675c94c015ee0a1423ccff2077"
+          "sha256": "c4c2ca609ef265a5d7a2d61ea839f608a9bcb9bfc53517ff547a6da203fca6b2"
         },
         {
           "kind": "room-shell",
@@ -84,14 +86,14 @@
         {
           "kind": "catalog-motion-lock",
           "path": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-gate1-report.json",
-          "sha256": "76defe33cb5566f1abf2f004c6385d08b61f6ec3de9d53762b8f92a955e778d9"
+          "sha256": "e87866468c4a6329a803aa65908fcc2c289584de56a0081f99d373bc6e9ce123"
         }
       ],
       "checks": [
         {
           "name": "canon-conflicts",
           "status": "passed",
-          "evidence": "The production contract records the superseded S-procession and isolates the 58 by 44 metre candidate from the undersized live shell."
+          "evidence": "The production contract records the revived S-procession and isolates the 58 by 44 metre candidate from the undersized live shell."
         },
         {
           "name": "source-digests",

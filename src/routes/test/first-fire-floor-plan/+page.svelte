@@ -11,7 +11,7 @@
   const roomWidth = plan.room.maxX - plan.room.minX;
   const roomDepth = plan.room.maxZ - plan.room.minZ;
   const totalTorchStems =
-    plan.torchBudget.fieldStems +
+    plan.torchBudget.laneStems +
     plan.shrines.length * plan.torchBudget.perimeterStemsPerShrine;
 
   const stageOptions = FIRST_FIRE_REVIEW_STAGES.map((stage) => ({

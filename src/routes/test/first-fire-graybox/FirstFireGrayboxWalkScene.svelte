@@ -197,7 +197,17 @@
     const targetShrine = contract.shrines.find(
       (candidate) => candidate.id === targetShrineId
     );
-    const hub = contract.hub.blenderCentre;
+    // The S-procession has no hub: between courts the visitor stands at the
+    // exit mouth of the court they just finished, facing the next one.
+    const previousShrine =
+      phase === "dj-complete"
+        ? contract.shrines.find((candidate) => candidate.id === "dj")
+        : phase === "ek-complete"
+          ? contract.shrines.find((candidate) => candidate.id === "ek")
+          : undefined;
+    const fallback = previousShrine
+      ? previousShrine.blenderExit
+      : contract.threshold.blenderCentre;
     const destination =
       phase === "approach"
         ? {
@@ -213,13 +223,17 @@
             }
           : phase === "growth-complete"
             ? {
-                x: contract.pathSections.at(-1)?.blenderPoints[1]?.x ?? hub.x,
+                x: contract.pathSections.at(-1)?.blenderPoints[1]?.x ?? fallback.x,
                 y: FIRST_FIRE_GRAYBOX_SPAWN.y,
                 z: -(
-                  contract.pathSections.at(-1)?.blenderPoints[1]?.y ?? hub.y
+                  contract.pathSections.at(-1)?.blenderPoints[1]?.y ?? fallback.y
                 ),
               }
-            : { x: hub.x, y: FIRST_FIRE_GRAYBOX_SPAWN.y, z: -hub.y };
+            : {
+                x: fallback.x,
+                y: FIRST_FIRE_GRAYBOX_SPAWN.y,
+                z: -fallback.y,
+              };
     const target = shrine
       ? { x: shrine.blenderCentre.x, z: -shrine.blenderCentre.y }
       : targetShrine

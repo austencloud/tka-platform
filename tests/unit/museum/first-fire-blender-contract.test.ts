@@ -58,7 +58,7 @@ describe("First Fire Cinder Court Blender coordinate contract", () => {
     }
   });
 
-  it("preserves one shared 3.5 metre throat for each distinct court", () => {
+  it("gives every court a separate entry and exit mouth", () => {
     expect(contract.courts.map((court) => court.id)).toEqual([
       "dj-court",
       "ek-court",
@@ -69,27 +69,32 @@ describe("First Fire Cinder Court Blender coordinate contract", () => {
         (candidate) => candidate.id === court.shrineId
       );
       expect(shrine).toBeDefined();
-      // DJ is a rectangular canyon slot; EK and FL are 16-gon bowls/rotundas.
-      expect(court.planOutline.length).toBe(court.shrineId === "dj" ? 4 : 16);
-      expect(court.throatWidth).toBe(3.5);
-      expect(court.sharedEntryAndExit).toBe(true);
-      expect(shrine!.planEntry).toEqual(shrine!.planExit);
+      // Every court is a two-gap ring: the visitor walks in one mouth,
+      // horseshoes around the performer, and leaves through the other.
+      expect(court.planOutline.length).toBe(16);
+      expect(court.throatWidth).toBe(4.5);
+      expect(court.sharedEntryAndExit).toBe(false);
+      expect(shrine!.planEntry).not.toEqual(shrine!.planExit);
       expect(court.planThroatCentre).toEqual(shrine!.planEntry);
     }
   });
 
-  it("carries the returning route, activation arcs, basalt, and non-colliding fire guides", () => {
+  it("carries the continuous S route, activation arcs, basalt, and non-colliding fire guides", () => {
     expect(contract.pathSections.map((section) => section.id)).toEqual([
-      "water-to-hub",
-      "hub-to-dj",
+      "water-steam-threshold",
+      "ember-bridge",
+      "torch-lane-to-dj",
+      "dj-mouth-in",
       "dj-orbit",
-      "dj-return-to-hub",
-      "hub-to-ek",
+      "dj-mouth-out",
+      "dj-to-ek",
+      "ek-mouth-in",
       "ek-orbit",
-      "ek-return-to-hub",
-      "hub-to-fl",
+      "ek-mouth-out",
+      "ek-to-fl",
+      "fl-mouth-in",
       "fl-orbit",
-      "fl-return-to-hub",
+      "fl-mouth-out",
       "earth-growth-path",
     ]);
     expect(
@@ -121,7 +126,7 @@ describe("First Fire Cinder Court Blender coordinate contract", () => {
     );
     expect(contract.cameras.map((camera) => camera.id)).toEqual([
       "water-entry",
-      "hub-arrival",
+      "ember-bridge",
       "dj-threshold",
       "ek-threshold",
       "fl-threshold",

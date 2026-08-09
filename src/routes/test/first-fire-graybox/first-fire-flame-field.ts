@@ -21,7 +21,7 @@ import {
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { FirstFireFlameGroup } from "./first-fire-graybox-review";
 
-export const FIRST_FIRE_EXPECTED_FLAME_COUNT = 126;
+export const FIRST_FIRE_EXPECTED_FLAME_COUNT = 60;
 
 export type FirstFireFlamePalette = 0 | 1 | 2;
 
@@ -394,7 +394,7 @@ function selectPooledLightAnchors(
   });
 }
 
-/** One noise-flame batch and a small pooled light rig for all 126 Cinder Court fires. */
+/** One noise-flame batch and a small pooled light rig for every Cinder Court fire. */
 export class FirstFireFlameFieldRenderer {
   readonly object3D = new Group();
   readonly mesh: InstancedMesh;

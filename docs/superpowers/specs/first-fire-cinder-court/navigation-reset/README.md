@@ -1,12 +1,20 @@
 # First Fire Cinder Court — Navigation Reset Proposal (2026-08-09)
 
-Status: **APPROVED by Austen 2026-08-09** ("approved — replace the plan and
-regenerate Gate 1"). The plan contract has been replaced and the Gate 1 board
-regenerated; tracker decision `6ZZvhCv6pTJ0NSmtuwZP` supersedes the earlier
-`lock it`. This replaced the rejected 2026-08-09
-interior ("I don't even know where to walk. I'm totally lost."). Nothing
-downstream — Blender, GLB, runtime — gets built from this until the topology is
-approved in first person terms.
+Status: **SUPERSEDED 2026-08-09.** Austen approved this hub-and-spoke proposal
+in the morning, then rejected the built result the same day: too many torches
+placed "willy nilly", corridors that felt claustrophobic, and a green Earth path
+already visible before the performers had been seen. He asked for the original
+2026-08-06 torch procession back — "the one that goes just around loops where
+you walk around each performer."
+
+The live design is
+`docs/superpowers/specs/2026-08-06-first-fire-torch-procession-design.md`. The
+plan contract, Blender manifest, GLB, Gate 1 board and runtime review were all
+rebuilt on it. The three defects above are addressed structurally: 60 torches
+that all sit on the walked route, 4.5 m corridors, and an Earth path that is
+both state-gated and hidden behind rock from every court.
+
+Everything below is retained as the record of the rejected direction.
 
 ## The design in one line
 

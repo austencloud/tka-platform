@@ -1,6 +1,17 @@
 # First Fire: The Cinder Court production contract
 
-**Status:** Gate 0 motion capture pending; Gate 1 measured package ready for review
+**Status:** Gate 0 motion capture pending; Gate 1 measured package and Gate 2
+graybox rebuilt on the revived S-procession (2026-08-09)
+
+**Revision, 2026-08-09:** Austen rejected the hub-and-spoke Cinder Court
+interior ("a shit load of different torches placed willy nilly", claustrophobic
+paths, and a green route already visible before the performers had been seen)
+and asked for the original 2026-08-06 torch procession back. The room is once
+again one continuous S: 4.5 m corridors, 240 degree horseshoe orbits with a
+separate entry and exit mouth per court, 60 torches all sitting on the walked
+route, and an Earth path that is both state-gated and hidden behind rock from
+every court. The design authority is
+`docs/superpowers/specs/2026-08-06-first-fire-torch-procession-design.md`.
 
 **Scene ID:** `first-fire-cinder-court`
 
@@ -13,8 +24,9 @@
 
 The player should leave understanding that Fire noticed their movement, kept a
 visible memory of each encounter, and then voluntarily surrendered the room to
-Earth. The room teaches this through one central court that changes every time
-the player returns, not through a linear sequence of unrelated corridors.
+Earth. The room teaches this by walking the visitor once around each performer
+in turn and letting the fire go out behind them, not by sending them back to a
+hub between encounters.
 
 ## Authority ledger
 
@@ -26,8 +38,8 @@ the player returns, not through a linear sequence of unrelated corridors.
 | Performer roster | Live museum room data | `src/lib/features/museum/data/vulcan-cave-floor-plan.ts`; `src/lib/features/museum/data/museum-room-content.ts` | None: the live roster already contains DJ, EK, and FL. |
 | TKA motion | Flow Arts MCP | `get_domain_topic(elemental-model)`, 2026-08-08 | Do not infer motion behavior from the old design prose. |
 | Selected sequence variants | Exact live museum sequence source and catalog | `src/lib/features/museum/data/museum-exhibit-sequences.ts`; `static/data/hero/tnd-base-words.json` | The review route does not yet mount the three live performers. |
-| Spatial geometry | Room-relative TypeScript plan | `src/lib/features/museum/data/first-fire-procession-plan.ts` | The file still carries the superseded S-plan until the Cinder Court plan pass lands. |
-| Blender output | Derived Blender contract and deterministic builder | `src/lib/features/museum/data/first-fire-blender-contract.ts`; `scripts/build-first-fire-graybox.py` | The current manifest and GLB are historical S-plan evidence. |
+| Spatial geometry | Room-relative TypeScript plan | `src/lib/features/museum/data/first-fire-procession-plan.ts` | None: the plan carries the revived S-procession, proven by `tests/unit/museum/first-fire-procession-plan.test.ts`. |
+| Blender output | Derived Blender contract and deterministic builder | `src/lib/features/museum/data/first-fire-blender-contract.ts`; `scripts/build-first-fire-graybox.py` | None: the manifest and GLB were rebuilt from the revived plan on 2026-08-09. |
 | Runtime behavior | Isolated First Fire review route | `src/routes/test/first-fire-graybox/` | Current walking and fire rendering do not consume the procession state owner. |
 
 ## Claim ledger
@@ -36,9 +48,9 @@ the player returns, not through a linear sequence of unrelated corridors.
 |---|---|---|---|---|
 | C-001 | literal | The live Fire roster contains exactly the DJ, EK, and FL performers and their three selected sequence IDs. | Live museum roster and room-content files | verified |
 | C-002 | literal | The selected Fire sequences are the exact live `JDJD`, `KEKE`, and `LFLF` entries in diamond mode. | Live sequence source, catalog fingerprints, Flow Arts MCP | preflight |
-| C-003 | invention | The player revisits one central ground-torch court between three isolated performer courts. | Accepted tracker decision `1bUBNo26hJpRq4Bf36gh` | approved concept |
+| C-003 | invention | The player walks one continuous S and horseshoes 240 degrees around each of three isolated performers, entering and leaving each court through different mouths. | Accepted tracker decision `1bUBNo26hJpRq4Bf36gh` | approved concept |
 | C-004 | invention | One next gate kindles while completed lanes remain as coals. | Accepted tracker decision `1bUBNo26hJpRq4Bf36gh` | approved concept |
-| C-005 | invention | FL completion extinguishes every red source before green crosses the known court toward Earth. | Accepted tracker decision `1bUBNo26hJpRq4Bf36gh` | approved concept |
+| C-005 | invention | FL completion extinguishes every red source before green appears along the route already walked, toward Earth. | Accepted tracker decision `1bUBNo26hJpRq4Bf36gh` | approved concept |
 | C-006 | invention | Fire walls create visual pressure but never own collision or trap the player. Permanent basalt owns navigation and performer isolation. | Approved Cinder Court visual candidate | measured proof required |
 
 ## Experience sentence

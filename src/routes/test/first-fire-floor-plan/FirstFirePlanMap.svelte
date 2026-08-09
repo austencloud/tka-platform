@@ -36,10 +36,14 @@
 
   const stageSections = $derived<Record<ReviewStage, string[]>>({
     overview: plan.pathSections.map((section) => section.id),
-    threshold: ["water-to-steam", "ember-bridge", "torch-field-to-dj"],
-    dj: ["torch-field-to-dj", "dj-orbit"],
-    ek: ["dj-to-ek", "ek-orbit"],
-    fl: ["ek-to-fl", "fl-orbit"],
+    threshold: [
+      "water-steam-threshold",
+      "ember-bridge",
+      "torch-lane-to-dj",
+    ],
+    dj: ["torch-lane-to-dj", "dj-mouth-in", "dj-orbit", "dj-mouth-out"],
+    ek: ["dj-to-ek", "ek-mouth-in", "ek-orbit", "ek-mouth-out"],
+    fl: ["ek-to-fl", "fl-mouth-in", "fl-orbit", "fl-mouth-out"],
     earth: ["earth-growth-path"],
   });
 

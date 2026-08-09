@@ -15,104 +15,136 @@
       "min": 32,
       "max": 36
     },
-    "hub": {
-      "minX": 13.5,
-      "maxX": 26.5,
-      "minZ": 15.5,
-      "maxZ": 28.5
+    "threshold": {
+      "minX": 0,
+      "maxX": 7.5,
+      "minZ": 19.5,
+      "maxZ": 24.5
     }
   },
   "route": {
-    "safeWidth": 2.4,
+    "safeWidth": 3,
     "sections": [
       {
-        "id": "water-to-hub",
-        "kind": "water-approach",
-        "width": 4
+        "id": "water-steam-threshold",
+        "kind": "steam-threshold",
+        "width": 4.5
       },
       {
-        "id": "hub-to-dj",
+        "id": "ember-bridge",
+        "kind": "ember-bridge",
+        "width": 4.5
+      },
+      {
+        "id": "torch-lane-to-dj",
         "kind": "shrine-approach",
+        "width": 4.5
+      },
+      {
+        "id": "dj-mouth-in",
+        "kind": "shrine-mouth",
         "width": 3
       },
       {
         "id": "dj-orbit",
         "kind": "shrine-orbit",
-        "width": 2.4
-      },
-      {
-        "id": "dj-return-to-hub",
-        "kind": "shrine-return",
         "width": 3
       },
       {
-        "id": "hub-to-ek",
-        "kind": "shrine-approach",
+        "id": "dj-mouth-out",
+        "kind": "shrine-mouth",
+        "width": 3
+      },
+      {
+        "id": "dj-to-ek",
+        "kind": "transfer",
+        "width": 4.5
+      },
+      {
+        "id": "ek-mouth-in",
+        "kind": "shrine-mouth",
         "width": 3
       },
       {
         "id": "ek-orbit",
         "kind": "shrine-orbit",
-        "width": 2.4
-      },
-      {
-        "id": "ek-return-to-hub",
-        "kind": "shrine-return",
         "width": 3
       },
       {
-        "id": "hub-to-fl",
-        "kind": "shrine-approach",
+        "id": "ek-mouth-out",
+        "kind": "shrine-mouth",
+        "width": 3
+      },
+      {
+        "id": "ek-to-fl",
+        "kind": "transfer",
+        "width": 4.5
+      },
+      {
+        "id": "fl-mouth-in",
+        "kind": "shrine-mouth",
         "width": 3
       },
       {
         "id": "fl-orbit",
         "kind": "shrine-orbit",
-        "width": 2.4
+        "width": 3
       },
       {
-        "id": "fl-return-to-hub",
-        "kind": "shrine-return",
+        "id": "fl-mouth-out",
+        "kind": "shrine-mouth",
         "width": 3
       },
       {
         "id": "earth-growth-path",
         "kind": "growth-path",
-        "width": 3.2
+        "width": 4
       }
     ],
-    "sharedThroats": [
+    "courtMouths": [
       {
         "shrineId": "dj",
-        "centre": {
-          "x": 11.6,
-          "z": 8.7
+        "entry": {
+          "x": 13,
+          "z": 15
         },
-        "width": 3.5
+        "approach": {
+          "x": 7,
+          "z": 22
+        },
+        "width": 4.5
       },
       {
         "shrineId": "ek",
-        "centre": {
-          "x": 14.03,
-          "z": 36.23
+        "entry": {
+          "x": 29,
+          "z": 29
         },
-        "width": 3.5
+        "approach": {
+          "x": 24.5,
+          "z": 24
+        },
+        "width": 4.5
       },
       {
         "shrineId": "fl",
-        "centre": {
-          "x": 40.16,
-          "z": 13.94
+        "entry": {
+          "x": 40.170370868554656,
+          "z": 12.294095225512605
         },
-        "width": 3.5
+        "approach": {
+          "x": 37,
+          "z": 18
+        },
+        "width": 4.5
       }
     ]
   },
   "checks": {
     "shell": true,
     "doorClearance": true,
-    "oneSharedThroatPerCourt": true,
-    "performersHiddenFromHub": {
+    "separateEntryAndExitPerCourt": true,
+    "performersHiddenUntilTheMouth": {
       "dj": true,
       "ek": true,
       "fl": true
@@ -129,8 +161,8 @@
       "catalogId": "tnd-split-opp-jdjd",
       "word": "JDJD",
       "centre": {
-        "x": 6,
-        "z": 6.1
+        "x": 13,
+        "z": 10
       }
     },
     {
@@ -140,8 +172,8 @@
       "catalogId": "tnd-split-opp-keke",
       "word": "KEKE",
       "centre": {
-        "x": 18,
-        "z": 38
+        "x": 29,
+        "z": 34
       }
     },
     {
@@ -151,16 +183,16 @@
       "catalogId": "tnd-split-opp-lflf",
       "word": "LFLF",
       "centre": {
-        "x": 42,
-        "z": 10
+        "x": 45,
+        "z": 11
       }
     }
   ],
   "sourceDigests": {
-    "planContract": "e1eab221c1e1cc7e106e8ef757e948e6aaf18b9fd6633f657842840e8f19cb6c",
+    "planContract": "19d6094a3192c9e365f6949b0c5f64dfb4995bb1e03a03cadff0d266ad47a02b",
     "sequenceBinding": "707a7111e769241d86c6d19c6bdbc45da32da318b13a07ddc03bc3a5f0ad3843",
     "catalog": "e6a9af2214c2af0a10c2169e19dd9a0a1b7ac980368f0132fdb6ff158434c730",
-    "board": "f7acd9b940aa30949c6b109d3b07ea9f15956ee18afc1a66a86070cd0bfa9a24"
+    "board": "b54cfc2aa7cb79214d6436ca0e975800d68b600c3a724da8c62555c83879d159"
   },
   "sequenceFingerprints": [
     {

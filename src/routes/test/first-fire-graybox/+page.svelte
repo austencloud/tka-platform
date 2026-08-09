@@ -57,6 +57,14 @@
   const proofButtonLabel = $derived(
     review.phase === "growth-complete" ? "Restart proof" : "Next proof state"
   );
+
+  const revealNote = $derived(
+    review.phase === "growth-complete"
+      ? "The fire is out. The green route follows the walk you already took."
+      : review.phase === "fire-extinguished"
+        ? "Every fire is out. Nothing green has appeared yet."
+        : "Performer hidden until you turn into the court mouth."
+  );
 </script>
 
 <svelte:head>
@@ -119,8 +127,7 @@
           </div>
         </dl>
       {:else}
-        <span class="reveal-note">Performer hidden until the DJ threshold.</span
-        >
+        <span class="reveal-note">{revealNote}</span>
       {/if}
     </section>
 

@@ -438,17 +438,16 @@ add_box(
     bevel=0.12,
 )
 
-# Walk ribbon and returning hub. The hub is a circular chamber, so its floor is
-# a disc rather than a slab that would square off the ring of basalt arcs.
-hub = CONTRACT["hub"]["blenderFootprint"]
-add_cylinder(
-    "FF_Hub_ReturningCourt",
-    (hub["centre"]["x"], hub["centre"]["y"], 0.035),
-    min(hub["sizeX"], hub["sizeY"]) / 2,
-    0.07,
+# Walk ribbon and the steam threshold. The S never returns anywhere, so this is
+# a landing slab at the water door rather than a hub the visitor keeps crossing.
+threshold = CONTRACT["threshold"]["blenderFootprint"]
+add_box(
+    "FF_Steam_Threshold",
+    (threshold["centre"]["x"], threshold["centre"]["y"], 0.035),
+    (threshold["sizeX"], threshold["sizeY"], 0.07),
     COURT,
     COLLECTIONS["COURTS"],
-    48,
+    bevel=0.14,
 )
 for section in CONTRACT["pathSections"]:
     mat = GROWTH if section["kind"] == "growth-path" else ROUTE
@@ -501,14 +500,19 @@ for shrine in CONTRACT["shrines"]:
 for guide in CONTRACT["fireGuides"]:
     if guide["kind"] not in {"coal-memory", "green-growth"}:
         continue
-    mat = GROWTH if guide["kind"] == "green-growth" else COAL
+    green = guide["kind"] == "green-growth"
+    mat = GROWTH if green else COAL
+    # The runtime stages anything named FF_Growth_ and reveals it only after the
+    # blackout, so the green route must carry that prefix or it never appears.
+    prefix = "FF_Growth" if green else "FF_Guide"
     for index, (start, end) in enumerate(zip(guide["blenderPoints"], guide["blenderPoints"][1:])):
         add_segment(
-            f"FF_Guide_{guide['id']}_{index + 1:02d}", start, end,
+            f"{prefix}_{guide['id']}_{index + 1:02d}", start, end,
             guide["width"], 0.045, 0.09, mat, COLLECTIONS["FIRE_GUIDES"],
         )
 
-# Exactly 126 organic multi-tongue guide flames: 72 field + 18 per court.
+# Organic multi-tongue guide flames, budgeted by the manifest: every stem sits
+# on the walked lane or on one court perimeter, never scattered off-route.
 flame_meshes = {category: flame_mesh(category) for category in FLAME_MATERIALS}
 anchor_records: list[dict] = []
 
@@ -532,7 +536,7 @@ def add_torch_anchor(category: str, x: float, y: float, index: int) -> None:
     anchor_records.append({"category": category, "x": x, "y": y, "height": stem_height})
 
 
-active_guides = [guide for guide in CONTRACT["fireGuides"] if guide["kind"] in {"torch-field", "fire-wall"}]
+active_guides = [guide for guide in CONTRACT["fireGuides"] if guide["kind"] in {"torch-lane", "fire-wall"}]
 guide_lengths = []
 for guide in active_guides:
     length = sum(
@@ -541,10 +545,13 @@ for guide in active_guides:
     )
     guide_lengths.append(length)
 length_total = sum(guide_lengths)
-allocations = [max(3, round(72 * length / length_total)) for length in guide_lengths]
-while sum(allocations) > 72:
+LANE_STEMS = CONTRACT["torchBudget"]["laneStems"]
+PERIMETER_STEMS = CONTRACT["torchBudget"]["perimeterStemsPerShrine"]
+EXPECTED_ANCHORS = LANE_STEMS + PERIMETER_STEMS * len(CONTRACT["shrines"])
+allocations = [max(2, round(LANE_STEMS * length / length_total)) for length in guide_lengths]
+while sum(allocations) > LANE_STEMS:
     allocations[allocations.index(max(allocations))] -= 1
-while sum(allocations) < 72:
+while sum(allocations) < LANE_STEMS:
     allocations[allocations.index(min(allocations))] += 1
 
 field_index = 0
@@ -574,7 +581,7 @@ def court_jamb_points(court: dict, count: int) -> list[tuple[float, float]]:
 perimeter_index = {shrine["id"]: 0 for shrine in CONTRACT["shrines"]}
 for shrine in CONTRACT["shrines"]:
     category = shrine["id"]
-    count = CONTRACT["torchBudget"]["perimeterStemsPerShrine"]
+    count = PERIMETER_STEMS
     radius = shrine["trenchOuterRadius"] + 0.38
     if abs(shrine["orbitSweepDegrees"]) >= 359.999:
         placements = [
@@ -594,8 +601,10 @@ for shrine in CONTRACT["shrines"]:
         perimeter_index[category] += 1
         add_torch_anchor(category, x, y, perimeter_index[category])
 
-if len(anchor_records) != 126:
-    raise RuntimeError(f"Expected 126 flame anchors, built {len(anchor_records)}")
+if len(anchor_records) != EXPECTED_ANCHORS:
+    raise RuntimeError(
+        f"Expected {EXPECTED_ANCHORS} flame anchors, built {len(anchor_records)}"
+    )
 
 # QA lighting and cameras are excluded from the FF_ export.
 scene.world = bpy.data.worlds.new("FF_CinderCourt_World")
@@ -755,7 +764,7 @@ report = {
         "basaltMasses": len(CONTRACT["basalt"]),
         "courts": len(CONTRACT["courts"]),
         "pathSections": len(CONTRACT["pathSections"]),
-        "fieldFlames": CONTRACT["torchBudget"]["fieldStems"],
+        "laneFlames": CONTRACT["torchBudget"]["laneStems"],
         "perimeterFlames": CONTRACT["torchBudget"]["perimeterStemsPerShrine"] * len(CONTRACT["shrines"]),
         "totalFlameAnchors": len(anchor_records),
         "maximumDetailedShrines": CONTRACT["torchBudget"]["maximumDetailedShrines"],

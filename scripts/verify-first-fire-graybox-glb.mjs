@@ -98,9 +98,9 @@ invariant(
   report.counts.basaltMasses === manifest.contract.basalt.length,
   "Blender basalt count drifted from the coordinate manifest"
 );
-invariant(report.counts.fieldFlames === 72, "Field flame count drifted from 72");
-invariant(report.counts.perimeterFlames === 54, "Court perimeter count drifted from 54");
-invariant(report.counts.totalFlameAnchors === 126, "Total flame anchors drifted from 126");
+invariant(report.counts.laneFlames === 24, "Lane flame count drifted from 24");
+invariant(report.counts.perimeterFlames === 36, "Court perimeter count drifted from 36");
+invariant(report.counts.totalFlameAnchors === 60, "Total flame anchors drifted from 60");
 invariant(
   report.counts.maximumDetailedShrines === 1,
   "Detailed hero fire budget must remain one"

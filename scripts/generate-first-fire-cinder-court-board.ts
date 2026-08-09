@@ -91,10 +91,13 @@ function polyline(points: Array<{ x: number; z: number }>, px: (x: number) => nu
 }
 
 const plan = buildNominalFirstFireProcessionPlan();
-const hubCentre = {
-  x: (plan.hub.minX + plan.hub.maxX) / 2,
-  z: (plan.hub.minZ + plan.hub.maxZ) / 2,
+const thresholdCentre = {
+  x: (plan.threshold.minX + plan.threshold.maxX) / 2,
+  z: (plan.threshold.minZ + plan.threshold.maxZ) / 2,
 };
+/** Where the visitor stands one step before turning into each court mouth. */
+const approachFor = (shrineId: string) =>
+  plan.gates.find((gate) => gate.shrineId === shrineId)!.approach;
 const catalog = JSON.parse(readFileSync(CATALOG_PATH, "utf8")) as CatalogEntry[];
 const selectedCatalog = plan.shrines.map((shrine) => {
   const expected = SEQUENCE_CATALOG[shrine.id];
@@ -162,7 +165,7 @@ const routeSections = plan.pathSections
 
 const fireGuides = [
   ...plan.guidePaths
-    .filter((guide) => guide.kind === "torch-field" || guide.kind === "fire-wall")
+    .filter((guide) => guide.kind === "torch-lane" || guide.kind === "fire-wall")
     .map(
       (guide) => `<polyline points="${polyline(guide.points, px, pz)}" fill="none" stroke="${COLORS.red}" stroke-width="5" stroke-dasharray="3 9" stroke-linecap="round" opacity="0.86"/>`
     ),
@@ -174,23 +177,23 @@ const fireGuides = [
 const shrines = plan.shrines
   .map((shrine, index) => {
     const blocked = isProcessionSightlineBlocked(
-      hubCentre,
+      approachFor(shrine.id),
       shrine.centre,
       plan.occluders
     );
     return `<circle cx="${px(shrine.centre.x)}" cy="${pz(shrine.centre.z)}" r="${shrine.trenchOuterRadius * scale}" fill="#160b08" stroke="${COLORS.red}" stroke-width="8"/>
       <circle cx="${px(shrine.centre.x)}" cy="${pz(shrine.centre.z)}" r="${shrine.habitatRadius * scale}" fill="${COLORS.ember}"/>
       ${text(px(shrine.centre.x), pz(shrine.centre.z) - 2, [shrine.label, SEQUENCE_CATALOG[shrine.id].word], { size: 18, weight: 800, anchor: "middle", lineHeight: 20 })}
-      ${text(px(shrine.centre.x), pz(shrine.centre.z) + 56, [`COURT ${index + 1} · ${blocked ? "hidden from hub" : "SIGHTLINE ERROR"}`], { size: 10, fill: COLORS.muted, weight: 700, anchor: "middle" })}`;
+      ${text(px(shrine.centre.x), pz(shrine.centre.z) + 56, [`COURT ${index + 1} · ${blocked ? "hidden from the approach" : "SIGHTLINE ERROR"}`], { size: 10, fill: COLORS.muted, weight: 700, anchor: "middle" })}`;
   })
   .join("");
 
 const stateCards = [
-  ["1 · ARRIVAL", "hub torches", "DJ gate kindles", COLORS.red],
-  ["2 · DJ RETURN", "DJ lane cools", "EK gate kindles", COLORS.ember],
-  ["3 · EK RETURN", "two coal memories", "FL gate kindles", COLORS.ember],
+  ["1 · ARRIVAL", "ember bridge lights", "DJ gate kindles", COLORS.red],
+  ["2 · DJ WALKED", "horseshoe closes behind you", "EK gate kindles", COLORS.ember],
+  ["3 · EK WALKED", "two coal memories", "FL gate kindles", COLORS.ember],
   ["4 · BLACKOUT", "all red absent", "neutral pause", "#7d7772"],
-  ["5 · EARTH", "green crosses hub", "known route transforms", COLORS.green],
+  ["5 · EARTH", "green appears only now", "the walked S transforms", COLORS.green],
 ] as const;
 
 const storyboard = stateCards
@@ -214,16 +217,16 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${
   ${text(72, 92, ["GATE 1 MEASURED CONTRACT · isolated review shell · 1 m units"], { size: 16, fill: COLORS.muted, weight: 650 })}
 
   <rect x="48" y="118" width="880" height="700" rx="20" fill="${COLORS.panel}"/>
-  ${text(72, 144, ["1 · FLOOR PLAN · WATER → RETURNING HUB → DJ → EK → FL → EARTH"], { size: 17, weight: 800 })}
+  ${text(72, 144, ["1 · FLOOR PLAN · ONE S FROM WATER → DJ → EK → FL → EARTH"], { size: 17, weight: 800 })}
   <g stroke="#4b3025" stroke-width="1" opacity="0.55">${grid}</g>
   <rect x="${px(0)}" y="${pz(0)}" width="${58 * scale}" height="${44 * scale}" fill="${COLORS.floor}" stroke="${COLORS.basaltEdge}" stroke-width="5"/>
   ${courtShapes}
-  <rect x="${px(plan.hub.minX)}" y="${pz(plan.hub.minZ)}" width="${(plan.hub.maxX - plan.hub.minX) * scale}" height="${(plan.hub.maxZ - plan.hub.minZ) * scale}" rx="24" fill="${COLORS.safe}" fill-opacity="0.72" stroke="${COLORS.route}" stroke-width="3"/>
+  <rect x="${px(plan.threshold.minX)}" y="${pz(plan.threshold.minZ)}" width="${(plan.threshold.maxX - plan.threshold.minX) * scale}" height="${(plan.threshold.maxZ - plan.threshold.minZ) * scale}" rx="24" fill="${COLORS.safe}" fill-opacity="0.72" stroke="${COLORS.route}" stroke-width="3"/>
   ${occluders}
   ${routeSections}
   ${fireGuides}
   ${shrines}
-  ${text(px(hubCentre.x), pz(hubCentre.z) + 6, ["RETURNING HUB", "13 m ember cairn"], { size: 17, weight: 850, anchor: "middle", lineHeight: 20 })}
+  ${text(px(thresholdCentre.x), pz(thresholdCentre.z) + 6, ["STEAM THRESHOLD", "water door landing"], { size: 17, weight: 850, anchor: "middle", lineHeight: 20 })}
   <rect x="${px(0) - 10}" y="${pz(20)}" width="20" height="${4 * scale}" fill="${COLORS.water}"/>
   ${text(px(0) - 18, pz(22), ["WATER"], { size: 14, fill: COLORS.water, weight: 800, anchor: "end" })}
   <rect x="${px(58) - 10}" y="${pz(32)}" width="20" height="${4 * scale}" fill="${COLORS.green}"/>
@@ -234,13 +237,13 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${
   <rect x="952" y="118" width="900" height="330" rx="20" fill="${COLORS.panel}"/>
   ${text(980, 153, ["2 · MEASURED CONTRACT"], { size: 19, weight: 800 })}
   ${text(980, 198, ["SHELL", "58 × 44 m isolated candidate", "Water (0,22) · Earth (58,34)", "4 m transition clearances"], { size: 15, fill: COLORS.muted, lineHeight: 24 })}
-  ${text(1260, 198, ["NAVIGATION", "3.5 m hub + throat lanes", "one shared throat per court", "basalt owns collision", "fire never blocks the player"], { size: 15, fill: COLORS.muted, lineHeight: 24 })}
-  ${text(1550, 198, ["FIRE BUDGET", "72 field torches", "54 court perimeter cues", "126 static anchors total", "1 detailed hero fire maximum"], { size: 15, fill: COLORS.muted, lineHeight: 24 })}
+  ${text(1260, 198, ["NAVIGATION", "4.5 m walking corridors", "separate in and out mouth per court", "240° horseshoe around each performer", "basalt owns collision, fire never does"], { size: 15, fill: COLORS.muted, lineHeight: 24 })}
+  ${text(1550, 198, ["FIRE BUDGET", `${plan.torchBudget.laneStems} torches on the walked lane`, `${plan.torchBudget.perimeterStemsPerShrine} per court perimeter`, `${plan.torchBudget.laneStems + plan.shrines.length * plan.torchBudget.perimeterStemsPerShrine} static anchors total`, "1 detailed hero fire maximum"], { size: 15, fill: COLORS.muted, lineHeight: 24 })}
   ${text(980, 350, ["SIGHTLINE PROOF"], { size: 14, fill: COLORS.sightline, weight: 800 })}
-  ${text(980, 382, plan.shrines.map((shrine) => `${shrine.label} hidden from hub: ${isProcessionSightlineBlocked(hubCentre, shrine.centre, plan.occluders) ? "PASS" : "FAIL"}`), { size: 15, lineHeight: 24 })}
+  ${text(980, 382, plan.shrines.map((shrine) => `${shrine.label} hidden until you turn in: ${isProcessionSightlineBlocked(approachFor(shrine.id), shrine.centre, plan.occluders) ? "PASS" : "FAIL"}`), { size: 15, lineHeight: 24 })}
 
   <rect x="952" y="470" width="900" height="348" rx="20" fill="${COLORS.panel}"/>
-  ${text(980, 505, ["3 · VERTICAL SECTION · HUB TO ONE ROCK-ISOLATED COURT"], { size: 19, weight: 800 })}
+  ${text(980, 505, ["3 · VERTICAL SECTION · LANE INTO ONE ROCK-ISOLATED COURT"], { size: 19, weight: 800 })}
   <path d="M 1000 ${sy(0)} L 1150 ${sy(0)} L 1190 ${sy(0.3)} L 1360 ${sy(0.3)} L 1400 ${sy(0)} L 1600 ${sy(0)}" fill="none" stroke="${COLORS.safe}" stroke-width="24" stroke-linejoin="round"/>
   <path d="M 1120 ${sy(0)} L 1165 ${sy(7.2)} L 1210 ${sy(0)}" fill="${COLORS.basalt}" stroke="${COLORS.basaltEdge}" stroke-width="3"/>
   <circle cx="1460" cy="${sy(1.2)}" r="34" fill="${COLORS.red}" opacity="0.8"/>
@@ -248,7 +251,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${
   ${text(1010, sy(1.7) - 12, ["player eye 1.7 m"], { size: 12, fill: COLORS.sightline })}
   ${text(1165, sy(7.2) - 12, ["basalt 6.4–8.4 m"], { size: 13, anchor: "middle", fill: COLORS.muted })}
   ${text(1460, sy(4.3), ["performer +", "engulfing fire"], { size: 14, anchor: "middle", weight: 750 })}
-  ${text(980, 796, ["The beacon reads from the hub. The performer does not. The player crosses the bent throat before the court opens."], { size: 14, fill: COLORS.muted })}
+  ${text(980, 796, ["The beacon reads from the lane. The performer does not. The court opens only once the player turns into the mouth."], { size: 14, fill: COLORS.muted })}
 
   <rect x="48" y="840" width="1804" height="100" rx="18" fill="${COLORS.panelRaised}"/>
   ${text(72, 868, ["4 · EXACT LIVE MOTION SOURCES"], { size: 17, weight: 800 })}
@@ -256,7 +259,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${
   ${text(980, 870, ["Live word parity: PASS", "Catalog fingerprints: LOCKED", "Visible runtime path diagnostics: Gate 0 capture pending"], { size: 13, fill: COLORS.sightline, lineHeight: 18 })}
 
   ${storyboard}
-  ${text(72, 1224, ["Gate 1 proves measured intent. The next Blender pass must preserve this returning-hub topology and may not mutate the live cave shell."], { size: 14, fill: COLORS.muted })}
+  ${text(72, 1224, ["Gate 1 proves measured intent. The next Blender pass must preserve this single-S topology and may not mutate the live cave shell."], { size: 14, fill: COLORS.muted })}
 </svg>`;
 
 mkdirSync(dirname(BOARD_PATH), { recursive: true });
@@ -273,7 +276,7 @@ const report = {
     depth: 44,
     waterDoor: plan.westDoor,
     earthDoor: plan.eastDoor,
-    hub: plan.hub,
+    threshold: plan.threshold,
   },
   route: {
     safeWidth: Math.min(...plan.pathSections.map((section) => section.width)),
@@ -282,22 +285,27 @@ const report = {
       kind,
       width,
     })),
-    sharedThroats: plan.gates.map((gate) => ({
+    courtMouths: plan.gates.map((gate) => ({
       shrineId: gate.shrineId,
-      centre: gate.courtThreshold,
+      entry: gate.courtThreshold,
+      approach: gate.approach,
       width: gate.width,
     })),
   },
   checks: {
     shell: plan.room.maxX - plan.room.minX === 58 && plan.room.maxZ - plan.room.minZ === 44,
     doorClearance: plan.westDoor.max - plan.westDoor.min >= 3.5 && plan.eastDoor.max - plan.eastDoor.min >= 3.5,
-    oneSharedThroatPerCourt: plan.shrines.every((shrine) =>
-      JSON.stringify(shrine.entry) === JSON.stringify(shrine.exit)
+    separateEntryAndExitPerCourt: plan.shrines.every(
+      (shrine) => JSON.stringify(shrine.entry) !== JSON.stringify(shrine.exit)
     ),
-    performersHiddenFromHub: Object.fromEntries(
+    performersHiddenUntilTheMouth: Object.fromEntries(
       plan.shrines.map((shrine) => [
         shrine.id,
-        isProcessionSightlineBlocked(hubCentre, shrine.centre, plan.occluders),
+        isProcessionSightlineBlocked(
+          approachFor(shrine.id),
+          shrine.centre,
+          plan.occluders
+        ),
       ])
     ),
     detailedHeroFireBudget: plan.torchBudget.maximumDetailedShrines,
