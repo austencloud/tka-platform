@@ -19,6 +19,7 @@ export type {
 
 // Constants
 export { CAMERA_DEFAULTS } from "./lib/constants";
+export { normalizeCameraFrameDelta } from "./lib/frame-delta";
 
 // Components
 export { default as UnifiedCameraController } from "./lib/components/UnifiedCameraController.svelte";

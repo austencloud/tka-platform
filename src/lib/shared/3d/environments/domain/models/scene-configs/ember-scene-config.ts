@@ -1,0 +1,300 @@
+/** Ember environment configuration and production defaults. */
+
+import type {
+  FallingParticlesConfig,
+  SkyGradientConfig,
+} from "../environment-models";
+import type {
+  CampfireConfig,
+  FogConfig,
+  GroundConfig,
+  HemisphereLightConfig,
+  ObsidianPlatformConfig,
+  TreeRingConfig,
+} from "./shared-scene-config";
+
+export interface LavaPoolConfig {
+  enabled: boolean;
+  position: { x: number; z: number };
+  radius: number;
+  baseColor: string;
+  hotColor: string;
+  crustColor: string;
+  flowSpeed: number;
+  lightIntensity: number;
+  lightDistance: number;
+  pulseSpeed: number;
+  warpIntensity: number;
+  craterDepth?: number;
+  craterWallColor?: string;
+}
+
+export interface LavaCracksConfig {
+  enabled: boolean;
+  crackColor: string;
+  intensity: number;
+  speed: number;
+  scale: number;
+  pulseSpeed: number;
+  pulseIntensity: number;
+}
+
+export interface LavaRiverChannelConfig {
+  angle: number;
+  length: number;
+  curvature: number;
+  widthScale: number;
+}
+
+export interface LavaRiversConfig {
+  enabled: boolean;
+  channels: LavaRiverChannelConfig[];
+  baseColor: string;
+  hotColor: string;
+  crustColor: string;
+  flowSpeed: number;
+  width: number;
+  warpIntensity: number;
+}
+
+export interface ObsidianPillarsConfig {
+  enabled: boolean;
+  rings: TreeRingConfig[];
+  clearingRadius: number;
+  veinColor: string;
+  veinIntensity: number;
+  baseColor: string;
+  heightRange: [number, number];
+  pulseSpeed: number;
+  pulseColor: string;
+}
+
+export interface FireWispsConfig {
+  enabled: boolean;
+  count: number;
+  spawnRadius: number;
+  heightRange: [number, number];
+  driftSpeed: number;
+  pulseSpeed: number;
+  colors: string[];
+  lightIntensity: number;
+  lightDistance: number;
+}
+
+export interface EmberFountainsConfig {
+  enabled: boolean;
+  count: number;
+  riseSpeed: number;
+  colors: string[];
+  sizeRange: [number, number];
+  spawnRadius: number;
+  maxHeight: number;
+  gravity: number;
+  burstInterval: number;
+  burstCount: number;
+}
+
+export interface VolcanicHazeConfig {
+  enabled: boolean;
+  color1: string;
+  color2: string;
+  opacity: number;
+  scale: number;
+  animationSpeed: number;
+  lightningInterval: number;
+  lightningIntensity: number;
+  innerGlowColor: string;
+}
+
+export interface EmberSceneConfig {
+  sky: SkyGradientConfig;
+  fog: FogConfig;
+  ground: GroundConfig;
+
+  lavaCracks: LavaCracksConfig;
+  lavaPool: LavaPoolConfig;
+  lavaRivers: LavaRiversConfig | null;
+  obsidianPillars: ObsidianPillarsConfig;
+
+  fireVent: CampfireConfig | null;
+  fireWisps: FireWispsConfig | null;
+  emberFountains: EmberFountainsConfig | null;
+  volcanicHaze: VolcanicHazeConfig | null;
+
+  embers: FallingParticlesConfig;
+  ash: FallingParticlesConfig | null;
+  smoke: FallingParticlesConfig | null;
+  cinders: FallingParticlesConfig | null;
+
+  rockCount: number;
+  clearingRadius: number;
+  rockTintColor: string;
+  rockTintBlend: number;
+
+  hemisphereLight: HemisphereLightConfig;
+
+  skyLight: {
+    enabled: boolean;
+    color: string;
+    intensity: number;
+    position: [number, number, number];
+  } | null;
+  platform: ObsidianPlatformConfig;
+}
+
+const EMBER_PILLAR_RINGS: TreeRingConfig[] = [
+  {
+    radius: 8,
+    count: 5,
+    scaleBase: 1.2,
+    scaleVariation: 0.3,
+    radiusJitter: 0.8,
+  },
+  {
+    radius: 14,
+    count: 8,
+    scaleBase: 0.9,
+    scaleVariation: 0.25,
+    radiusJitter: 1.2,
+  },
+];
+
+export function createDefaultEmberConfig(): EmberSceneConfig {
+  return {
+    sky: {
+      topColor: "#080204",
+      midColor: "#1a0808",
+      bottomColor: "#2a0c06",
+    },
+    fog: { color: "#0f0604", density: 0.022 },
+    ground: {
+      color: "#1a0a08",
+      size: 50,
+      textured: false,
+      opacity: 1,
+    },
+    lavaCracks: {
+      enabled: true,
+      crackColor: "#ff4400",
+      intensity: 0.35,
+      speed: 0.015,
+      scale: 3.0,
+      pulseSpeed: 0.4,
+      pulseIntensity: 0.6,
+    },
+    lavaPool: {
+      enabled: false,
+      position: { x: -5, z: 4.5 },
+      radius: 5.0,
+      baseColor: "#cc2200",
+      hotColor: "#ff6600",
+      crustColor: "#3a1208",
+      flowSpeed: 0.08,
+      lightIntensity: 50,
+      lightDistance: 22,
+      pulseSpeed: 0.3,
+      warpIntensity: 4.0,
+      craterDepth: 0.6,
+      craterWallColor: "#1a0806",
+    },
+    lavaRivers: null,
+    obsidianPillars: {
+      enabled: true,
+      rings: EMBER_PILLAR_RINGS,
+      clearingRadius: 8,
+      veinColor: "#ff4400",
+      veinIntensity: 0.6,
+      baseColor: "#0a0808",
+      heightRange: [2.0, 6.0],
+      pulseSpeed: 0.8,
+      pulseColor: "#ff6600",
+    },
+    fireVent: null,
+    fireWisps: {
+      enabled: true,
+      count: 3,
+      spawnRadius: 7,
+      heightRange: [1.5, 4.5],
+      driftSpeed: 0.25,
+      pulseSpeed: 0.8,
+      colors: ["#ff6600", "#ff4400", "#ffaa00"],
+      lightIntensity: 12,
+      lightDistance: 6,
+    },
+    emberFountains: {
+      enabled: false,
+      count: 40,
+      riseSpeed: 0.6,
+      colors: ["#ff4400", "#ff6600", "#ffaa00", "#ff2200"],
+      sizeRange: [0.03, 0.08],
+      spawnRadius: 3,
+      maxHeight: 8,
+      gravity: 0.3,
+      burstInterval: 3.5,
+      burstCount: 12,
+    },
+    volcanicHaze: {
+      enabled: true,
+      color1: "#331100",
+      color2: "#110000",
+      opacity: 0.12,
+      scale: 2.0,
+      animationSpeed: 0.01,
+      lightningInterval: 6.0,
+      lightningIntensity: 0.8,
+      innerGlowColor: "#ff4400",
+    },
+    embers: {
+      type: "embers",
+      count: 200,
+      area: { width: 20, height: 6, depth: 20 },
+      speed: 0.12,
+      colors: ["#ff6b35", "#ff8c42", "#ffc145", "#ff4500", "#ff2200"],
+      sizeRange: [0.015, 0.06],
+      spin: false,
+    },
+    ash: {
+      type: "dust",
+      count: 150,
+      area: { width: 25, height: 8, depth: 25 },
+      speed: 0.04,
+      colors: ["#3a2a2a", "#2a1a1a", "#4a3030", "#1a1010"],
+      sizeRange: [0.02, 0.07],
+      spin: false,
+    },
+    smoke: {
+      type: "smoke",
+      count: 40,
+      area: { width: 8, height: 5, depth: 8 },
+      speed: 0.03,
+      colors: ["#1a0a0a", "#110808", "#0a0505", "#220e0e"],
+      sizeRange: [0.15, 0.5],
+      spin: false,
+    },
+    cinders: null,
+    rockCount: 8,
+    clearingRadius: 10,
+    rockTintColor: "#1a0a08",
+    rockTintBlend: 0.4,
+    hemisphereLight: {
+      skyColor: "#ff4422",
+      groundColor: "#1a0808",
+      intensity: 0.5,
+    },
+    skyLight: {
+      enabled: true,
+      color: "#ff6644",
+      intensity: 0.4,
+      position: [-15, 20, 10],
+    },
+    platform: {
+      enabled: true,
+      radius: 4.5,
+      height: 0.5,
+      primaryColor: "#1a1a1a",
+      glowIntensity: 0.8,
+      crackIntensity: 1.0,
+      lavaSpeed: 0.5,
+    },
+  };
+}

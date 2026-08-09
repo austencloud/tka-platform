@@ -1,5 +1,6 @@
 import { BackgroundType } from "@austencloud/backgrounds";
 import type { Component } from "svelte";
+import { PRIDE_BACKGROUND_TYPE } from "$lib/shared/settings/domain/background-type-migration";
 
 export interface PreviewSceneProps {
   variant?: "firefly" | "night";
@@ -14,7 +15,7 @@ export type PreviewSceneComponent = Component<PreviewSceneProps>;
 type SceneModule = { default: PreviewSceneComponent };
 type SceneLoader = () => Promise<SceneModule>;
 
-const SCENE_LOADERS: Record<BackgroundType, SceneLoader> = {
+const SCENE_LOADERS = {
   [BackgroundType.FOREST]: () =>
     import("$lib/shared/3d/environments/scenes/ForestScene.svelte") as Promise<SceneModule>,
   [BackgroundType.AUTUMN]: () =>
@@ -29,13 +30,13 @@ const SCENE_LOADERS: Record<BackgroundType, SceneLoader> = {
     import("$lib/shared/3d/environments/scenes/EmberScene.svelte") as Promise<SceneModule>,
   [BackgroundType.BLOSSOM]: () =>
     import("$lib/shared/3d/environments/scenes/BlossomScene.svelte") as Promise<SceneModule>,
-  [BackgroundType.PRIDE]: () =>
+  [PRIDE_BACKGROUND_TYPE]: () =>
     import("$lib/shared/3d/environments/scenes/RainbowScene.svelte") as Promise<SceneModule>,
   [BackgroundType.CELESTIAL]: () =>
     import("$lib/shared/3d/environments/scenes/CelestialScene.svelte") as Promise<SceneModule>,
   [BackgroundType.VOID]: () =>
     import("$lib/shared/3d/environments/scenes/VoidScene.svelte") as Promise<SceneModule>,
-};
+} as Record<BackgroundType, SceneLoader>;
 
 export function loadThemeScene(
   backgroundType: BackgroundType

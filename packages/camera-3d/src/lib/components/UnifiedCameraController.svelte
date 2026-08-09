@@ -5,6 +5,7 @@
   import { CameraMode, getNextCameraMode, isGameMode, type PhysicsProvider, type AvatarState } from "../types";
   import { createCameraPreferences, type CameraPreferences } from "../camera-preferences.svelte";
   import { CAMERA_DEFAULTS } from "../constants";
+  import { normalizeCameraFrameDelta } from "../frame-delta";
   import { createInputCapabilities } from "../input-capabilities";
   import { collectCameraColliders } from "../camera-collider-index";
 
@@ -25,6 +26,8 @@
     externalPitch?: number | null;
     allowedModes?: CameraMode[];
     disableModeToggle?: boolean;
+    /** Show the pointer-lock and movement instructions while the cursor is free. */
+    showControlsHint?: boolean;
     /** Custom storage key for camera preferences */
     preferencesKey?: string;
     /** Default camera modes per destination ID */
@@ -155,7 +158,7 @@
       maxPitch: 1.2,
     },
     firstPerson: {
-      height: 0.75,
+      height: CAMERA_DEFAULTS.FIRST_PERSON_CAMERA_OFFSET,
       forwardOffset: 0.05,
       minPitch: -1.4,
       maxPitch: 1.4,
@@ -416,6 +419,12 @@
   useTask((delta) => {
     if (!enabled || !camera.current) return;
 
+    // Background tabs, debugger pauses, and renderer handoffs can produce a
+    // negative or abnormally large task delta. A negative limit makes the
+    // zero-input movement clamp divide by zero and poisons the camera with
+    // NaN coordinates. Normalize once at the frame boundary.
+    const frameDelta = normalizeCameraFrameDelta(delta);
+
     if (mode === CameraMode.ORBIT) {
       avatarState.setMoveInput({ x: 0, z: 0 });
       return;
@@ -489,18 +498,18 @@
     let moveZ: number;
 
     if (isNoclip) {
-      moveX = (_forward3D.x * forwardInput + _right.x * strafeInput) * speed * delta;
-      moveY = (_forward3D.y * forwardInput) * speed * delta;
-      moveZ = (_forward3D.z * forwardInput + _right.z * strafeInput) * speed * delta;
+      moveX = (_forward3D.x * forwardInput + _right.x * strafeInput) * speed * frameDelta;
+      moveY = (_forward3D.y * forwardInput) * speed * frameDelta;
+      moveZ = (_forward3D.z * forwardInput + _right.z * strafeInput) * speed * frameDelta;
     } else {
-      moveX = (_forward.x * forwardInput + _right.x * strafeInput) * speed * delta;
+      moveX = (_forward.x * forwardInput + _right.x * strafeInput) * speed * frameDelta;
       moveY = 0;
-      moveZ = (_forward.z * forwardInput + _right.z * strafeInput) * speed * delta;
+      moveZ = (_forward.z * forwardInput + _right.z * strafeInput) * speed * frameDelta;
     }
 
     const moveLen = Math.sqrt(moveX * moveX + moveZ * moveZ);
-    if (moveLen > speed * delta) {
-      const scale = (speed * delta) / moveLen;
+    if (moveLen > speed * frameDelta) {
+      const scale = (speed * frameDelta) / moveLen;
       moveX *= scale;
       moveZ *= scale;
     }
@@ -522,13 +531,13 @@
           (physicsProvider as LiftingPhysicsProvider).updraftSpeedAtPlayer?.() ?? 0;
 
         if (lift !== 0) {
-          verticalVelocity += (lift - verticalVelocity) * Math.min(1, UPDRAFT_RISE_EASE * delta);
+          verticalVelocity += (lift - verticalVelocity) * Math.min(1, UPDRAFT_RISE_EASE * frameDelta);
         } else {
           if (isJumping && physicsProvider.isGrounded() && verticalVelocity <= 0) {
             verticalVelocity = jumpForce;
           }
           if (!physicsProvider.isGrounded()) {
-            verticalVelocity -= gravity * delta;
+            verticalVelocity -= gravity * frameDelta;
             verticalVelocity = Math.max(verticalVelocity, CAMERA_DEFAULTS.TERMINAL_VELOCITY);
           } else if (verticalVelocity < 0) {
             verticalVelocity = 0;
@@ -536,9 +545,9 @@
         }
         // Leaving a column does NOT zero verticalVelocity: letting the residual
         // rise decay under gravity is what makes the crest read as an arc.
-        moveY = verticalVelocity * delta;
+        moveY = verticalVelocity * frameDelta;
       }
-      physicsProvider.movePlayer({ x: moveX, y: moveY, z: moveZ }, delta);
+      physicsProvider.movePlayer({ x: moveX, y: moveY, z: moveZ }, frameDelta);
       const newPos = physicsProvider.getPlayerPosition();
       targetX = newPos.x;
       targetY = newPos.y;
@@ -552,13 +561,13 @@
         verticalVelocity = jumpForce;
       }
       if (!isGrounded) {
-        verticalVelocity -= gravity * delta;
+        verticalVelocity -= gravity * frameDelta;
         verticalVelocity = Math.max(verticalVelocity, CAMERA_DEFAULTS.TERMINAL_VELOCITY);
       } else if (verticalVelocity < 0) {
         verticalVelocity = 0;
       }
       let newX = avatarState.position.x + moveX;
-      let newY = (avatarState.position.y ?? 0) + verticalVelocity * delta;
+      let newY = (avatarState.position.y ?? 0) + verticalVelocity * frameDelta;
       let newZ = avatarState.position.z + moveZ;
       newX = Math.max(SCENE_BOUNDS.minX, Math.min(SCENE_BOUNDS.maxX, newX));
       newZ = Math.max(SCENE_BOUNDS.minZ, Math.min(SCENE_BOUNDS.maxZ, newZ));
@@ -584,10 +593,10 @@
       }
     }
 
-    avatarState.updateLocomotion?.(delta);
+    avatarState.updateLocomotion?.(frameDelta);
 
     const crouchTarget = isCrouching ? CROUCH_HEIGHT_DROP : 0;
-    const crouchBlend = 1 - Math.exp(-CROUCH_LERP_SPEED * delta);
+    const crouchBlend = 1 - Math.exp(-CROUCH_LERP_SPEED * frameDelta);
     crouchHeightOffset += (crouchTarget - crouchHeightOffset) * crouchBlend;
 
     if (mode === CameraMode.FIRST_PERSON) {
@@ -632,14 +641,14 @@
       }
 
       const lerpSpeed = targetDistance < smoothedCameraDistance ? CAMERA_PULL_IN_SPEED : CAMERA_RECOVERY_SPEED;
-      smoothedCameraDistance += (targetDistance - smoothedCameraDistance) * (1 - Math.exp(-lerpSpeed * delta));
+      smoothedCameraDistance += (targetDistance - smoothedCameraDistance) * (1 - Math.exp(-lerpSpeed * frameDelta));
       smoothedCameraDistance = Math.max(MIN_CAMERA_DISTANCE, Math.min(desiredDistance, smoothedCameraDistance));
 
       const finalCamX = targetX - Math.sin(yaw) * smoothedCameraDistance * cosPitch;
       const finalCamY = targetY + cfg.height + Math.sin(pitch) * smoothedCameraDistance * 0.5;
       const finalCamZ = targetZ - Math.cos(yaw) * smoothedCameraDistance * cosPitch;
 
-      const dampFactor = 1 - Math.exp(-CAMERA_DAMPING_SPEED * delta);
+      const dampFactor = 1 - Math.exp(-CAMERA_DAMPING_SPEED * frameDelta);
       const lookTargetX = targetX;
       const lookTargetY = targetY + cfg.lookAtHeight;
       const lookTargetZ = targetZ;
@@ -672,10 +681,19 @@
   );
 
   const isUsingTouch = $derived(inputCaps.current.currentPointerType === "touch");
+
+  function portalToBody(node: HTMLElement) {
+    document.body.appendChild(node);
+    return {
+      destroy() {
+        node.remove();
+      },
+    };
+  }
 </script>
 
-{#if enabled && (mode === CameraMode.ORBIT || !isPointerLocked)}
-  <div class="controls-hint">
+{#if enabled && props.showControlsHint !== false && (mode === CameraMode.ORBIT || !isPointerLocked)}
+  <div use:portalToBody class="controls-hint">
     {#if mode === CameraMode.ORBIT}
       <span>Drag to orbit &middot; Click to enter game mode</span>
     {:else if isUsingTouch}
@@ -685,7 +703,11 @@
     {/if}
     <div class="controls">
       {#if !isUsingTouch}
-        <kbd>V</kbd> {modeLabel}
+        {#if props.disableModeToggle}
+          <span>{modeLabel}</span>
+        {:else}
+          <kbd>V</kbd> {modeLabel}
+        {/if}
       {/if}
       {#if isGameMode(mode)}
         {#if isUsingTouch}
@@ -706,12 +728,18 @@
 {/if}
 
 {#if enabled && isPointerLocked && isGameMode(mode)}
-  <div class="mode-indicator">
+  <div use:portalToBody class="mode-indicator">
     <span>{modeLabel}</span>
     {#if noclipEnabled}
       <span class="noclip-badge">FLY</span>
     {/if}
-    <span class="hint">V to switch &middot; G fly &middot; ESC to exit</span>
+    <span class="hint">
+      {#if props.disableModeToggle}
+        G fly &middot; ESC releases cursor
+      {:else}
+        V to switch &middot; G fly &middot; ESC to exit
+      {/if}
+    </span>
   </div>
 {/if}
 
@@ -726,6 +754,8 @@
     align-items: center;
     gap: 0.5rem;
     padding: 1rem 1.5rem;
+    width: min(calc(100vw - 2rem), 34rem);
+    box-sizing: border-box;
     background: rgba(0, 0, 0, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 12px;
@@ -736,6 +766,9 @@
   }
   .controls {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
     gap: 0.75rem;
     font-size: 12px;
     color: rgba(255, 255, 255, 0.7);
@@ -757,6 +790,10 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
+    max-width: calc(100vw - 2rem);
+    box-sizing: border-box;
+    flex-wrap: wrap;
+    justify-content: center;
     background: rgba(0, 0, 0, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
@@ -779,5 +816,39 @@
     font-weight: 700;
     color: #fcd34d;
     letter-spacing: 0.5px;
+  }
+
+  @media (max-width: 600px) {
+    .controls-hint {
+      bottom: max(1rem, env(safe-area-inset-bottom));
+      gap: 0.4rem;
+      padding: 0.75rem 0.875rem;
+      font-size: 13px;
+    }
+
+    .controls {
+      column-gap: 0.5rem;
+      row-gap: 0.35rem;
+      font-size: 11px;
+    }
+
+    .mode-indicator {
+      top: max(0.75rem, env(safe-area-inset-top));
+    }
+  }
+
+  @media (max-height: 500px) {
+    .controls-hint {
+      bottom: max(0.5rem, env(safe-area-inset-bottom));
+      gap: 0.25rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 12px;
+    }
+
+    .controls {
+      column-gap: 0.45rem;
+      row-gap: 0.25rem;
+      font-size: 10px;
+    }
   }
 </style>
