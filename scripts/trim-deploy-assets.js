@@ -4,11 +4,40 @@
  * 1. Remove entire directories that are dev-only or served from R2/CDN
  * 2. Remove individual files larger than the 25 MiB per-file limit
  */
-import { readdirSync, statSync, unlinkSync, rmSync, existsSync } from "fs";
+import {
+  existsSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from "fs";
 import { join } from "path";
+import { normalizeCloudflareRouteRules } from "./cloudflare-route-rules.js";
 
 const MAX_BYTES = 25 * 1024 * 1024;
 const OUTPUT_DIR = ".svelte-kit/cloudflare";
+
+function normalizeRoutesFile() {
+  const routesPath = join(OUTPUT_DIR, "_routes.json");
+  if (!existsSync(routesPath)) return;
+
+  const routes = JSON.parse(readFileSync(routesPath, "utf8"));
+  const normalized = normalizeCloudflareRouteRules(routes);
+  const removed =
+    routes.include.length +
+    routes.exclude.length -
+    normalized.include.length -
+    normalized.exclude.length;
+
+  if (removed === 0) return;
+
+  writeFileSync(routesPath, `${JSON.stringify(normalized, null, 2)}\n`);
+  console.log(
+    `  Removed ${removed} overlapping Cloudflare route rule${removed === 1 ? "" : "s"}`
+  );
+}
 
 // guides/ stays: 3 downloadable PDFs (~28 MB total), each under the 25 MiB
 // per-file cap. They were swept in with the May-13 deploy-size trim but are
@@ -91,6 +120,7 @@ function walk(dir) {
 }
 
 console.log(`Trimming deploy output in ${OUTPUT_DIR}...`);
+normalizeRoutesFile();
 
 for (const dir of DIRS_TO_REMOVE) {
   const fullPath = join(OUTPUT_DIR, dir);
