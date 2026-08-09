@@ -16,6 +16,7 @@ export interface AnimalAnatomySource3D {
   sourceId: number;
   params: Animal3DParams;
   clock: number;
+  motionBlend: number;
   sampled: Float32Array;
   frames: AnimalSpineFrameBuffers3D;
 }
@@ -55,8 +56,16 @@ export class AnimalAnatomy3D {
       (0.58 + params.intensity * 0.52) *
       animalBuildMultiplier(params.creature);
     const spacing = params.bodyLengthWorld / (count - 1);
+    const visualStride = params.creature === "caterpillar" ? 4 : 1;
 
     for (let segment = 0; segment < count; segment++) {
+      if (
+        params.creature === "caterpillar" &&
+        segment % visualStride !== 0 &&
+        segment !== count - 1
+      ) {
+        continue;
+      }
       const i3 = segment * 3;
       const progress = segment / (count - 1);
       const radius =
@@ -76,7 +85,7 @@ export class AnimalAnatomy3D {
       w.setFrame(frames, segment);
       const segmentLength =
         params.creature === "caterpillar"
-          ? Math.max(radius * 0.92, spacing * 0.62)
+          ? Math.max(radius * 0.7, spacing * visualStride * 0.72)
           : Math.max(radius * 1.08, spacing * 0.82);
       w.sphere(
         w.bodyNormal,
@@ -121,9 +130,16 @@ export class AnimalAnatomy3D {
       if (
         params.creature !== "caterpillar" &&
         segment > 1 &&
-        segment % 3 === 0
+        segment % (params.creature === "dragon" ? 4 : 5) === 0
       ) {
-        this.writeScalePair(sampled, frames, segment, radius, highlightAlpha);
+        this.writeDorsalScale(
+          sampled,
+          frames,
+          segment,
+          radius,
+          highlightAlpha,
+          params.creature === "dragon"
+        );
       }
     }
 
@@ -136,42 +152,44 @@ export class AnimalAnatomy3D {
       baseRadius,
       alpha,
       clock,
+      motionBlend: source.motionBlend,
       sampled,
       frames,
       ...head,
     });
   }
 
-  private writeScalePair(
+  private writeDorsalScale(
     sampled: Float32Array,
     frames: AnimalSpineFrameBuffers3D,
     segment: number,
     radius: number,
-    alpha: number
+    alpha: number,
+    isDragon: boolean
   ): void {
     const w = this.writer;
     const i3 = segment * 3;
     w.setFrame(frames, segment);
-    for (const sign of [-1, 1] as const) {
-      w.sphere(
-        w.bodyEmissive,
-        sampled[i3]! +
-          frames.binormals[i3]! * radius * 0.56 * sign +
-          frames.normals[i3]! * radius * 0.2,
-        sampled[i3 + 1]! +
-          frames.binormals[i3 + 1]! * radius * 0.56 * sign +
-          frames.normals[i3 + 1]! * radius * 0.2,
-        sampled[i3 + 2]! +
-          frames.binormals[i3 + 2]! * radius * 0.56 * sign +
-          frames.normals[i3 + 2]! * radius * 0.2,
-        radius * 0.2,
-        radius * 0.38,
-        radius * 0.12,
-        w.highlightColor,
-        alpha * 0.72,
-        w.orientation
-      );
-    }
+    const stagger = segment % 2 === 0 ? 1 : -1;
+    const height = isDragon ? 0.88 : 0.68;
+    w.sphere(
+      w.bodyEmissive,
+      sampled[i3]! +
+        frames.normals[i3]! * radius * height +
+        frames.binormals[i3]! * radius * 0.1 * stagger,
+      sampled[i3 + 1]! +
+        frames.normals[i3 + 1]! * radius * height +
+        frames.binormals[i3 + 1]! * radius * 0.1 * stagger,
+      sampled[i3 + 2]! +
+        frames.normals[i3 + 2]! * radius * height +
+        frames.binormals[i3 + 2]! * radius * 0.1 * stagger,
+      radius * (isDragon ? 0.3 : 0.18),
+      radius * (isDragon ? 0.58 : 0.34),
+      radius * 0.12,
+      w.highlightColor,
+      alpha * (isDragon ? 0.82 : 0.58),
+      w.orientation
+    );
   }
 
   private writeHead(

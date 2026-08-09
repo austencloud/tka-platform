@@ -11,6 +11,14 @@ import { InkRenderer3D } from "$lib/shared/3d/effects/ink/ink-renderer-3d";
 import { SilkRenderer3D } from "$lib/shared/3d/effects/silk/silk-renderer-3d";
 import { AnimalRenderer3D } from "$lib/shared/3d/effects/animal/animal-renderer-3d";
 import { PulseRenderer3D } from "$lib/shared/3d/effects/pulse/pulse-renderer-3d";
+import { TipPositionBridge3D } from "$lib/shared/3d/effects/tip-position-bridge-3d";
+import { MUSEUM_EXHIBIT_SEQUENCES } from "$lib/features/museum/data/museum-exhibit-sequences";
+import {
+  getStartPositionConfigs,
+  sequenceToMotionConfigs,
+} from "$lib/shared/3d/services/sequence-converter";
+import { calculatePropState } from "$lib/shared/3d/services/prop-state-interpolator";
+import { Plane } from "@austencloud/scene-3d";
 import type {
   AnimalTipSource3D,
   InkTipSource3D,
@@ -206,6 +214,10 @@ describe("native 3D full-roster renderers", () => {
     renderer.update([source], 1 / 60);
     source.currentStep = 0;
     source.position.x = 10;
+    // The bridge reports the teleport as a huge finite-difference velocity.
+    // Loop reset must ignore that vector when it seeds the new body.
+    source.velocity = { x: 120, y: 0, z: 0 };
+    source.speed = 120;
     renderer.update([source], 1 / 60);
 
     const centers = meshAtRenderOrder(scene, 111).geometry.getAttribute(
@@ -215,6 +227,69 @@ describe("native 3D full-roster renderers", () => {
     for (let segment = 0; segment < source.params.segmentCount; segment++) {
       expect(centers.getX(segment)).toBeGreaterThan(6);
     }
+    expect(centers.getY(source.params.segmentCount - 1)).toBeLessThan(-1);
+    renderer.dispose();
+  });
+
+  it("keeps Animal's tail bounded through the gallery B turn", () => {
+    const scene = new Scene();
+    const renderer = new AnimalRenderer3D();
+    const bridge = new TipPositionBridge3D();
+    const sequence = MUSEUM_EXHIBIT_SEQUENCES["gallery-practice-seq"]!;
+    const start = getStartPositionConfigs(sequence, Plane.WALL)!;
+    const steps = [start, ...sequenceToMotionConfigs(sequence, Plane.WALL)];
+    const source: AnimalTipSource3D = {
+      ...base,
+      position: { x: 0, y: 0, z: 0 },
+      velocity: { x: 0, y: 0, z: 0 },
+      speed: 0,
+      effect: "animal",
+      params: resolveAnimal3D(DEFAULT_EFFECTS_CONFIG.animal),
+    };
+    renderer.initialize(scene);
+
+    let previousTail: [number, number, number] | null = null;
+    let maxTailMovement = 0;
+    for (let stepIndex = 0; stepIndex <= 2; stepIndex++) {
+      const config = steps[stepIndex]!.blue!;
+      for (let frame = 0; frame <= 60; frame++) {
+        const progress = frame / 60;
+        const propState = calculatePropState(config, progress);
+        const tip = bridge.update(
+          0,
+          propState,
+          propState.worldPosition,
+          0.5,
+          1 / 60
+        ).tips[1]!;
+        source.position = { ...tip.position };
+        source.velocity = { ...tip.velocity };
+        source.speed = tip.speed;
+        source.currentStep = stepIndex + progress;
+        renderer.update([source], 1 / 60);
+
+        const centers = meshAtRenderOrder(scene, 111).geometry.getAttribute(
+          "aCenter"
+        );
+        const tailIndex = source.params.segmentCount - 1;
+        const tail: [number, number, number] = [
+          centers.getX(tailIndex),
+          centers.getY(tailIndex),
+          centers.getZ(tailIndex),
+        ];
+        if (stepIndex === 2 && previousTail) {
+          const movement = Math.hypot(
+            tail[0] - previousTail[0],
+            tail[1] - previousTail[1],
+            tail[2] - previousTail[2]
+          );
+          maxTailMovement = Math.max(maxTailMovement, movement);
+        }
+        previousTail = tail;
+      }
+    }
+
+    expect(maxTailMovement).toBeLessThan(0.2);
     renderer.dispose();
   });
 

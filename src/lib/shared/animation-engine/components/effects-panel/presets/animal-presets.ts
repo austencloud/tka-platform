@@ -1,10 +1,8 @@
 import type { EffectPreset, EffectPresetGroup } from "./types";
 
-// Tuned-down candidate set (2026-07-06). Thinner, shorter, calmer, more
-// translucent than the original bold lineup — the creature reads as a garnish,
-// not the main subject. width·25+5 = px half-thickness; bodyLength·360+120 = px;
-// slither·42 = px wag; intensity = layer alpha. Austen picks favorites; losers
-// get pruned.
+// A deliberate silhouette ladder: Wisp is small and lively, Whisper is long
+// and restrained, Serpent is heavy, the two dragons separate width from length,
+// and Inchworm is short and broad. Both render backends consume this same set.
 export const ANIMAL_PRESETS: EffectPreset<"animal">[] = [
   {
     id: "animal-wisp",
@@ -13,10 +11,10 @@ export const ANIMAL_PRESETS: EffectPreset<"animal">[] = [
     patch: {
       creature: "snake",
       palette: "ethereal",
-      intensity: 0.45,
-      width: 0.25,
-      bodyLength: 0.45,
-      slither: 0.4,
+      intensity: 0.42,
+      width: 0.18,
+      bodyLength: 0.36,
+      slither: 0.48,
       trackingMode: "right_end",
     },
   },
@@ -27,10 +25,10 @@ export const ANIMAL_PRESETS: EffectPreset<"animal">[] = [
     patch: {
       creature: "snake",
       palette: "shadow",
-      intensity: 0.5,
-      width: 0.28,
-      bodyLength: 0.4,
-      slither: 0.3,
+      intensity: 0.52,
+      width: 0.24,
+      bodyLength: 0.48,
+      slither: 0.16,
       trackingMode: "right_end",
     },
   },
@@ -41,10 +39,10 @@ export const ANIMAL_PRESETS: EffectPreset<"animal">[] = [
     patch: {
       creature: "snake",
       palette: "velvet",
-      intensity: 0.65,
-      width: 0.32,
-      bodyLength: 0.5,
-      slither: 0.35,
+      intensity: 0.7,
+      width: 0.4,
+      bodyLength: 0.66,
+      slither: 0.34,
       trackingMode: "right_end",
     },
   },
@@ -56,10 +54,10 @@ export const ANIMAL_PRESETS: EffectPreset<"animal">[] = [
     patch: {
       creature: "dragon",
       palette: "ember",
-      intensity: 0.6,
-      width: 0.35,
-      bodyLength: 0.55,
-      slither: 0.28,
+      intensity: 0.68,
+      width: 0.44,
+      bodyLength: 0.56,
+      slither: 0.32,
       trackingMode: "right_end",
     },
   },
@@ -70,10 +68,10 @@ export const ANIMAL_PRESETS: EffectPreset<"animal">[] = [
     patch: {
       creature: "dragon",
       palette: "gold_leaf",
-      intensity: 0.6,
-      width: 0.3,
-      bodyLength: 0.6,
-      slither: 0.25,
+      intensity: 0.72,
+      width: 0.34,
+      bodyLength: 0.75,
+      slither: 0.18,
       trackingMode: "right_end",
     },
   },
@@ -84,10 +82,10 @@ export const ANIMAL_PRESETS: EffectPreset<"animal">[] = [
     patch: {
       creature: "caterpillar",
       palette: "ethereal",
-      intensity: 0.6,
-      width: 0.35,
-      bodyLength: 0.35,
-      slither: 0.38,
+      intensity: 0.68,
+      width: 0.52,
+      bodyLength: 0.3,
+      slither: 0.46,
       trackingMode: "right_end",
     },
   },

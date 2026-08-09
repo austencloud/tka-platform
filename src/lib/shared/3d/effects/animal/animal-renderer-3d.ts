@@ -1,4 +1,4 @@
-import { type Object3D, Vector3 } from "three";
+import type { Object3D } from "three";
 import { BoundedSourcePath3D } from "../scene-effects/bounded-source-path-3d";
 import {
   isTrackedTip,
@@ -7,15 +7,17 @@ import {
 import type { Animal3DParams } from "$lib/shared/effects/translators/webgl3d-types";
 import { AnimalAnatomy3D } from "./animal-anatomy-3d";
 import {
-  applyAnimalGravity3D,
   applyAnimalSlither3D,
-  dampAnimalGravityBlend3D,
+  createAnimalSpineDynamics3D,
+  dampAnimalMotionBlend3D,
+  stepAnimalSpineDynamics3D,
   writeAnimalRotationMinimizingFrames3D,
+  type AnimalHeadFrameSeed3D,
+  type AnimalSpineDynamics3D,
 } from "./animal-spine-3d";
 
 const PATH_CAPACITY = 384;
 const MAX_SEGMENTS = 64;
-const FALLBACK_TAIL = new Vector3(0, -1, 0);
 
 interface AnimalState {
   path: BoundedSourcePath3D;
@@ -24,17 +26,18 @@ interface AnimalState {
   currentX: number;
   currentY: number;
   currentZ: number;
-  velocityX: number;
-  velocityY: number;
-  velocityZ: number;
-  speed: number;
-  gravityBlend: number;
+  motionBlend: number;
   lastStep: number;
+  dynamics: AnimalSpineDynamics3D;
+  resetDynamics: boolean;
+  hasHeadFrame: boolean;
+  headFrameSeed: AnimalHeadFrameSeed3D;
 }
 
 export class AnimalRenderer3D {
   private readonly anatomy = new AnimalAnatomy3D();
   private readonly states = new Map<number, AnimalState>();
+  private readonly target = new Float32Array(MAX_SEGMENTS * 3);
   private readonly sampled = new Float32Array(MAX_SEGMENTS * 3);
   private readonly tangents = new Float32Array(MAX_SEGMENTS * 3);
   private readonly normals = new Float32Array(MAX_SEGMENTS * 3);
@@ -44,7 +47,6 @@ export class AnimalRenderer3D {
     normals: this.normals,
     binormals: this.binormals,
   };
-  private readonly tailDirection = new Vector3();
   private clock = 0;
   private epoch = 0;
 
@@ -67,29 +69,29 @@ export class AnimalRenderer3D {
           currentX: source.position.x,
           currentY: source.position.y,
           currentZ: source.position.z,
-          velocityX: source.velocity.x,
-          velocityY: source.velocity.y,
-          velocityZ: source.velocity.z,
-          speed: source.speed,
-          gravityBlend: source.speed <= 0.08 ? 1 : 0,
+          motionBlend: source.speed > 0.08 ? 1 : 0,
           lastStep: source.currentStep,
+          dynamics: createAnimalSpineDynamics3D(MAX_SEGMENTS),
+          resetDynamics: false,
+          hasHeadFrame: false,
+          headFrameSeed: { x: 0, y: 1, z: 0 },
         };
         this.states.set(source.sourceId, state);
       }
       // A loop or backward scrub teleports the head to an earlier pose. Keeping
       // the old polyline would stretch one giant body segment across the stage.
-      if (source.currentStep + 0.001 < state.lastStep) state.path.clear();
+      if (source.currentStep + 0.001 < state.lastStep) {
+        state.path.clear();
+        state.resetDynamics = true;
+        state.hasHeadFrame = false;
+      }
       state.params = source.params;
       state.seenEpoch = this.epoch;
       state.currentX = source.position.x;
       state.currentY = source.position.y;
       state.currentZ = source.position.z;
-      state.velocityX = source.velocity.x;
-      state.velocityY = source.velocity.y;
-      state.velocityZ = source.velocity.z;
-      state.speed = source.speed;
-      state.gravityBlend = dampAnimalGravityBlend3D(
-        state.gravityBlend,
+      state.motionBlend = dampAnimalMotionBlend3D(
+        state.motionBlend,
         source.speed,
         dt
       );
@@ -107,11 +109,12 @@ export class AnimalRenderer3D {
         MAX_SEGMENTS,
         Math.max(8, state.params.segmentCount)
       );
-      this.sampleSpine(state, count);
+      this.sampleSpine(state, count, dt);
       this.anatomy.writeCreature({
         sourceId,
         params: state.params,
         clock: this.clock,
+        motionBlend: state.motionBlend,
         sampled: this.sampled,
         frames: this.frames,
       });
@@ -128,14 +131,14 @@ export class AnimalRenderer3D {
     this.anatomy.dispose();
   }
 
-  private sampleSpine(state: AnimalState, count: number): void {
+  private sampleSpine(state: AnimalState, count: number, delta: number): void {
     const { path, params } = state;
     // History is distance-throttled so the bounded buffer retains useful arc
     // length during slow movement. The head is not: it must remain pinned to
     // the live prop endpoint on every frame, including sub-threshold motion.
-    this.sampled[0] = state.currentX;
-    this.sampled[1] = state.currentY;
-    this.sampled[2] = state.currentZ;
+    this.target[0] = state.currentX;
+    this.target[1] = state.currentY;
+    this.target[2] = state.currentZ;
     const spacing = params.bodyLengthWorld / (count - 1);
     let written = 1;
     let targetDistance = spacing;
@@ -160,9 +163,9 @@ export class AnimalRenderer3D {
         const amount =
           segmentLength > 0 ? (targetDistance - travelled) / segmentLength : 0;
         const i3 = written * 3;
-        this.sampled[i3] = previousX + dx * amount;
-        this.sampled[i3 + 1] = previousY + dy * amount;
-        this.sampled[i3 + 2] = previousZ + dz * amount;
+        this.target[i3] = previousX + dx * amount;
+        this.target[i3 + 1] = previousY + dy * amount;
+        this.target[i3 + 2] = previousZ + dz * amount;
         written++;
         targetDistance += spacing;
       }
@@ -172,52 +175,62 @@ export class AnimalRenderer3D {
       previousZ = currentZ;
     }
 
-    if (written > 1) {
-      const previousIndex = (written - 2) * 3;
-      const lastIndex = (written - 1) * 3;
-      this.tailDirection.set(
-        this.sampled[lastIndex]! - this.sampled[previousIndex]!,
-        this.sampled[lastIndex + 1]! - this.sampled[previousIndex + 1]!,
-        this.sampled[lastIndex + 2]! - this.sampled[previousIndex + 2]!
-      );
-    } else {
-      this.tailDirection.set(
-        -state.velocityX,
-        -state.velocityY,
-        -state.velocityZ
-      );
-    }
-    if (this.tailDirection.lengthSq() < 1e-6) {
-      this.tailDirection.copy(FALLBACK_TAIL);
-    } else {
-      this.tailDirection.normalize();
-    }
-
+    const pathTargetCount = written;
     while (written < count) {
       const previousIndex = (written - 1) * 3;
       const i3 = written * 3;
-      this.sampled[i3] =
-        this.sampled[previousIndex]! + this.tailDirection.x * spacing;
-      this.sampled[i3 + 1] =
-        this.sampled[previousIndex + 1]! + this.tailDirection.y * spacing;
-      this.sampled[i3 + 2] =
-        this.sampled[previousIndex + 2]! + this.tailDirection.z * spacing;
+      // Missing path is not motion. Seed it downward for initialization and
+      // let the persistent chain own it until real prop history reaches that
+      // segment. Extending one fresh velocity vector through the whole body is
+      // what made the tail spear diagonally at the start of B.
+      this.target[i3] = this.target[previousIndex]!;
+      this.target[i3 + 1] = this.target[previousIndex + 1]! - spacing;
+      this.target[i3 + 2] = this.target[previousIndex + 2]!;
       written++;
     }
 
-    applyAnimalGravity3D(this.sampled, count, spacing, state.gravityBlend);
-    writeAnimalRotationMinimizingFrames3D(this.sampled, count, this.frames);
+    const headFrameSeed = state.hasHeadFrame ? state.headFrameSeed : undefined;
+    writeAnimalRotationMinimizingFrames3D(
+      this.target,
+      count,
+      this.frames,
+      headFrameSeed
+    );
     applyAnimalSlither3D(
-      this.sampled,
+      this.target,
       count,
       this.frames,
       this.clock,
       spacing,
       params.slitherAmplitudeWorld,
-      Math.min(1, state.speed / 3)
+      state.motionBlend
     );
-    // Orient anatomy from the visible curve after displacement, not the
-    // unmodified history, so every ornament stays attached to the final body.
-    writeAnimalRotationMinimizingFrames3D(this.sampled, count, this.frames);
+    stepAnimalSpineDynamics3D(
+      state.dynamics,
+      this.target,
+      count,
+      spacing,
+      state.motionBlend,
+      delta,
+      state.resetDynamics,
+      pathTargetCount
+    );
+    state.resetDynamics = false;
+    for (let scalar = 0; scalar < count * 3; scalar++) {
+      this.sampled[scalar] = state.dynamics.points[scalar]!;
+    }
+
+    // Orient anatomy from the final constrained curve and carry the head frame
+    // through time so ornaments cannot roll 180 degrees near a vertical hold.
+    writeAnimalRotationMinimizingFrames3D(
+      this.sampled,
+      count,
+      this.frames,
+      headFrameSeed
+    );
+    state.headFrameSeed.x = this.frames.normals[0]!;
+    state.headFrameSeed.y = this.frames.normals[1]!;
+    state.headFrameSeed.z = this.frames.normals[2]!;
+    state.hasHeadFrame = true;
   }
 }

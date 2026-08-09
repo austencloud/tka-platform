@@ -16,6 +16,7 @@ export interface AnimalVariantAnatomyContext3D {
   baseRadius: number;
   alpha: number;
   clock: number;
+  motionBlend: number;
   sampled: Float32Array;
   frames: AnimalSpineFrameBuffers3D;
   headX: number;
@@ -114,14 +115,14 @@ function writeDragonBody(context: AnimalVariantAnatomyContext3D): void {
       sampled[i3 + 1]! + normals[i3 + 1]! * radius * 0.55,
       sampled[i3 + 2]! + normals[i3 + 2]! * radius * 0.55,
       sampled[i3]! +
-        normals[i3]! * radius * 2.35 -
-        tangents[i3]! * radius * 0.35,
+        normals[i3]! * radius * 1.45 -
+        tangents[i3]! * radius * 0.22,
       sampled[i3 + 1]! +
-        normals[i3 + 1]! * radius * 2.35 -
-        tangents[i3 + 1]! * radius * 0.35,
+        normals[i3 + 1]! * radius * 1.45 -
+        tangents[i3 + 1]! * radius * 0.22,
       sampled[i3 + 2]! +
-        normals[i3 + 2]! * radius * 2.35 -
-        tangents[i3 + 2]! * radius * 0.35,
+        normals[i3 + 2]! * radius * 1.45 -
+        tangents[i3 + 2]! * radius * 0.22,
       radius * 0.24,
       w.highlightColor,
       alpha * 0.45 * (1 - progress * 0.58)
@@ -141,34 +142,34 @@ function writeDragonBody(context: AnimalVariantAnatomyContext3D): void {
         sampled[i3 + 2]! + binormals[i3 + 2]! * radius * 0.45 * sign;
       const tipX =
         sampled[i3]! +
-        binormals[i3]! * radius * 3.2 * sign -
-        tangents[i3]! * radius * 0.9 +
-        normals[i3]! * radius * 0.55;
+        binormals[i3]! * radius * 1.65 * sign -
+        tangents[i3]! * radius * 0.35 +
+        normals[i3]! * radius * 0.95;
       const tipY =
         sampled[i3 + 1]! +
-        binormals[i3 + 1]! * radius * 3.2 * sign -
-        tangents[i3 + 1]! * radius * 0.9 +
-        normals[i3 + 1]! * radius * 0.55;
+        binormals[i3 + 1]! * radius * 1.65 * sign -
+        tangents[i3 + 1]! * radius * 0.35 +
+        normals[i3 + 1]! * radius * 0.95;
       const tipZ =
         sampled[i3 + 2]! +
-        binormals[i3 + 2]! * radius * 3.2 * sign -
-        tangents[i3 + 2]! * radius * 0.9 +
-        normals[i3 + 2]! * radius * 0.55;
+        binormals[i3 + 2]! * radius * 1.65 * sign -
+        tangents[i3 + 2]! * radius * 0.35 +
+        normals[i3 + 2]! * radius * 0.95;
       const rearX =
         sampled[i3]! +
-        binormals[i3]! * radius * 2.2 * sign +
-        tangents[i3]! * radius * 1.7 +
-        normals[i3]! * radius * 0.12;
+        binormals[i3]! * radius * 2.35 * sign -
+        tangents[i3]! * radius * 2.4 +
+        normals[i3]! * radius * 0.2;
       const rearY =
         sampled[i3 + 1]! +
-        binormals[i3 + 1]! * radius * 2.2 * sign +
-        tangents[i3 + 1]! * radius * 1.7 +
-        normals[i3 + 1]! * radius * 0.12;
+        binormals[i3 + 1]! * radius * 2.35 * sign -
+        tangents[i3 + 1]! * radius * 2.4 +
+        normals[i3 + 1]! * radius * 0.2;
       const rearZ =
         sampled[i3 + 2]! +
-        binormals[i3 + 2]! * radius * 2.2 * sign +
-        tangents[i3 + 2]! * radius * 1.7 +
-        normals[i3 + 2]! * radius * 0.12;
+        binormals[i3 + 2]! * radius * 2.35 * sign -
+        tangents[i3 + 2]! * radius * 2.4 +
+        normals[i3 + 2]! * radius * 0.2;
       w.rod(
         w.ornamentNormal,
         rootX,
@@ -265,6 +266,7 @@ function writeCaterpillarBody(context: AnimalVariantAnatomyContext3D): void {
     baseRadius,
     alpha,
     clock,
+    motionBlend,
   } = context;
   const { tangents, normals, binormals } = frames;
   for (let segment = 4; segment < count - 3; segment += 4) {
@@ -272,7 +274,8 @@ function writeCaterpillarBody(context: AnimalVariantAnatomyContext3D): void {
     const radius =
       baseRadius *
       animalBodyRadiusProfile("caterpillar", segment / (count - 1));
-    const walking = Math.sin(clock * 6 + segment * 0.9) * radius * 0.42;
+    const walking =
+      Math.sin(clock * 6 + segment * 0.9) * radius * 0.42 * motionBlend;
     for (const sign of [-1, 1] as const) {
       w.rod(
         w.ornamentNormal,
