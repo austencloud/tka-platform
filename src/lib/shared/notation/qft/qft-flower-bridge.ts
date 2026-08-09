@@ -18,6 +18,11 @@
 import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
 import type { VtgMode } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
 import type { QftKnobs } from "./qft-model";
+import {
+  trajectoryFromKnobs,
+  withTrajectoryPhase,
+  type QftTrajectory,
+} from "./qft-trajectory";
 
 /**
  * Hand-path radius, in prop lengths.
@@ -44,20 +49,64 @@ export const FLOWER_RADIUS = 1;
  * number as the VTG ratio's numerator (`ratioLabel`).
  */
 export function flowerToKnobs(flower: Flower): QftKnobs {
-	return {
-		radius: FLOWER_RADIUS,
-		downbeats: 2 * flower.turns + 1,
-		spin: flower.style === "pro" ? "inspin" : "antispin",
-		/* Radial orientation: the prop points along the hand's own bearing, or
+  return {
+    radius: FLOWER_RADIUS,
+    downbeats: 2 * flower.turns + 1,
+    spin: flower.style === "pro" ? "inspin" : "antispin",
+    /* Radial orientation: the prop points along the hand's own bearing, or
 		   straight back down it. Four eighths is half the compass. */
-		phase: flower.ori === "out" ? 0 : 4,
-		/* Box mode rotates the whole flower 45°, which is one compass position. */
-		handPhase: flower.grid === "box" ? 1 : 0
-	};
+    phase: flower.ori === "out" ? 0 : 4,
+    /* Box mode rotates the whole flower 45°, which is one compass position. */
+    handPhase: flower.grid === "box" ? 1 : 0,
+  };
+}
+
+export function flowerToTrajectory(
+  flower: Flower,
+  radius = FLOWER_RADIUS
+): QftTrajectory {
+  return trajectoryFromKnobs({ ...flowerToKnobs(flower), radius });
 }
 
 /** Hand offset between the two hands, in eighths, for each VTG timing. */
 const TIMING_OFFSET = { T: 0, Q: 2, S: 4 } as const;
+
+/** Apply a VTG relationship to two already-selected QfT hands. */
+export function relateTrajectories(
+  blue: QftTrajectory,
+  red: QftTrajectory,
+  mode: VtgMode
+): { blue: QftTrajectory; red: QftTrajectory } {
+  const timing = mode[0] as keyof typeof TIMING_OFFSET;
+  const opposed = mode[1] === "O";
+  const relatedRed = withTrajectoryPhase(red, TIMING_OFFSET[timing]);
+  const redDirection: 1 | -1 = opposed
+    ? blue.handDirection === 1
+      ? -1
+      : 1
+    : blue.handDirection;
+
+  return {
+    blue,
+    red: {
+      ...relatedRed,
+      handDirection: redDirection,
+    },
+  };
+}
+
+export function realizationToTrajectories(
+  blue: Flower,
+  red: Flower,
+  mode: VtgMode,
+  radii: { blue?: number; red?: number } = {}
+): { blue: QftTrajectory; red: QftTrajectory } {
+  return relateTrajectories(
+    flowerToTrajectory(blue, radii.blue),
+    flowerToTrajectory(red, radii.red),
+    mode
+  );
+}
 
 /**
  * A whole matrix cell — two flowers in one VTG mode — as a pair of QfT hands.
@@ -74,22 +123,22 @@ const TIMING_OFFSET = { T: 0, Q: 2, S: 4 } as const;
  * comparable at a glance.
  */
 export function realizationToHands(
-	blue: Flower,
-	red: Flower,
-	mode: VtgMode
+  blue: Flower,
+  red: Flower,
+  mode: VtgMode
 ): { blue: QftKnobs; red: QftKnobs } {
-	const timing = mode[0] as keyof typeof TIMING_OFFSET;
-	const opposed = mode[1] === "O";
+  const timing = mode[0] as keyof typeof TIMING_OFFSET;
+  const opposed = mode[1] === "O";
 
-	const blueKnobs = flowerToKnobs(blue);
-	const redKnobs = flowerToKnobs(red);
+  const blueKnobs = flowerToKnobs(blue);
+  const redKnobs = flowerToKnobs(red);
 
-	return {
-		blue: blueKnobs,
-		red: {
-			...redKnobs,
-			handPhase: (redKnobs.handPhase ?? 0) + TIMING_OFFSET[timing],
-			handDirection: opposed ? -1 : 1
-		}
-	};
+  return {
+    blue: blueKnobs,
+    red: {
+      ...redKnobs,
+      handPhase: (redKnobs.handPhase ?? 0) + TIMING_OFFSET[timing],
+      handDirection: opposed ? -1 : 1,
+    },
+  };
 }

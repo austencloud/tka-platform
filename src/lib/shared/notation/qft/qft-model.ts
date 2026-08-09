@@ -21,50 +21,50 @@ export type PositionValue = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export type DirectionValue = PositionValue | "n";
 
 export interface QftKnobs {
-	/** Hand path radius, in units of one prop length. The source's own unit. */
-	radius: number;
-	/** Prop rotations per hand rotation. */
-	downbeats: number;
-	spin: Spin;
-	/**
-	 * Prop offset from the hand, in eighths. Zero for flowers and extensions;
-	 * 4 for isolations, where the prop sits opposite the hand on the compass.
-	 */
-	phase?: number;
-	/**
-	 * Where on the compass the hand starts, in eighths.
-	 *
-	 * QfT as published always starts the hand at 8, because it describes one
-	 * hand in isolation and the choice of starting point is free. It stops being
-	 * free the moment a second hand is on the stage: the offset BETWEEN the two
-	 * hands is the whole of VTG timing — together 0, quarter 2, split 4 — and
-	 * there is nowhere else in the model to put it.
-	 *
-	 * It also buys the 45°-rotated box grid for nothing, that rotation being
-	 * exactly one compass position.
-	 */
-	handPhase?: number;
-	/**
-	 * Which way the hand travels: +1 clockwise, -1 counter.
-	 *
-	 * Same reasoning. One hand alone may as well go clockwise; two hands going
-	 * the same way or opposite ways is the direction half of a VTG mode, and it
-	 * cannot be expressed by any amount of phase.
-	 *
-	 * Note this is the HAND's direction. `spin` stays relative to the hand, so
-	 * an inspin flower is inspin whichever way its hand is going.
-	 */
-	handDirection?: 1 | -1;
+  /** Hand path radius, in units of one prop length. The source's own unit. */
+  radius: number;
+  /** Prop rotations per hand rotation. */
+  downbeats: number;
+  spin: Spin;
+  /**
+   * Prop offset from the hand, in eighths. Zero for flowers and extensions;
+   * 4 for isolations, where the prop sits opposite the hand on the compass.
+   */
+  phase?: number;
+  /**
+   * Where on the compass the hand starts, in eighths.
+   *
+   * QfT as published always starts the hand at 8, because it describes one
+   * hand in isolation and the choice of starting point is free. It stops being
+   * free the moment a second hand is on the stage: the offset BETWEEN the two
+   * hands is the whole of VTG timing — together 0, quarter 2, split 4 — and
+   * there is nowhere else in the model to put it.
+   *
+   * It also buys the 45°-rotated box grid for nothing, that rotation being
+   * exactly one compass position.
+   */
+  handPhase?: number;
+  /**
+   * Which way the hand travels: +1 clockwise, -1 counter.
+   *
+   * Same reasoning. One hand alone may as well go clockwise; two hands going
+   * the same way or opposite ways is the direction half of a VTG mode, and it
+   * cannot be expressed by any amount of phase.
+   *
+   * Note this is the HAND's direction. `spin` stays relative to the hand, so
+   * an inspin flower is inspin whichever way its hand is going.
+   */
+  handDirection?: 1 | -1;
 }
 
 export interface QftIncrement {
-	propDepart: PositionValue;
-	propDirDepart: DirectionValue;
-	handDepart: PositionValue;
-	radius: number;
-	handArrive: PositionValue;
-	propDirArrive: DirectionValue;
-	propArrive: PositionValue;
+  propDepart: PositionValue;
+  propDirDepart: DirectionValue;
+  handDepart: PositionValue;
+  radius: number;
+  handArrive: PositionValue;
+  propDirArrive: DirectionValue;
+  propArrive: PositionValue;
 }
 
 const STEPS = 8;
@@ -78,19 +78,22 @@ export const PROP_LENGTH = 1;
  * numbers the top position 8, not 0.
  */
 export function norm(k: number): PositionValue {
-	const m = ((Math.round(k) % STEPS) + STEPS) % STEPS;
-	return (m === 0 ? STEPS : m) as PositionValue;
+  const m = ((Math.round(k) % STEPS) + STEPS) % STEPS;
+  return (m === 0 ? STEPS : m) as PositionValue;
 }
 
 /** Compass angle in radians for a position, measured clockwise from straight up. */
 export function angleOf(position: number): number {
-	return position * EIGHTH;
+  return position * EIGHTH;
 }
 
 /** Screen-space point for a position at a given radius. Screen y grows downward. */
-export function pointAt(position: number, radius: number): { x: number; y: number } {
-	const a = angleOf(position);
-	return { x: radius * Math.sin(a), y: -radius * Math.cos(a) };
+export function pointAt(
+  position: number,
+  radius: number
+): { x: number; y: number } {
+  const a = angleOf(position);
+  return { x: radius * Math.sin(a), y: -radius * Math.cos(a) };
 }
 
 const spinSign = (spin: Spin): 1 | -1 => (spin === "inspin" ? 1 : -1);
@@ -118,7 +121,7 @@ const STATIONARY_RADIUS = 0.01;
  * archive rather than papered over.
  */
 function handPositionAt(knobs: QftKnobs, u: number): PositionValue {
-	return knobs.radius < STATIONARY_RADIUS ? 8 : norm(handIndexAt(knobs, u));
+  return knobs.radius < STATIONARY_RADIUS ? 8 : norm(handIndexAt(knobs, u));
 }
 
 /** Which way the hand travels. Clockwise unless the caller says otherwise. */
@@ -131,7 +134,7 @@ const handSign = (knobs: QftKnobs): 1 | -1 => knobs.handDirection ?? 1;
  * which is what every published QfT table assumes.
  */
 export function handIndexAt(knobs: QftKnobs, u: number): number {
-	return handSign(knobs) * u + (knobs.handPhase ?? 0);
+  return handSign(knobs) * u + (knobs.handPhase ?? 0);
 }
 
 /**
@@ -144,9 +147,9 @@ export function handIndexAt(knobs: QftKnobs, u: number): number {
  * that from no rotation at all.
  */
 export function propIndexAt(knobs: QftKnobs, u: number): number {
-	return (
-		propRate(knobs) * u + (knobs.handPhase ?? 0) + (knobs.phase ?? 0)
-	);
+  return (
+    propRateForKnobs(knobs) * u + (knobs.handPhase ?? 0) + (knobs.phase ?? 0)
+  );
 }
 
 /**
@@ -157,8 +160,8 @@ export function propIndexAt(knobs: QftKnobs, u: number): number {
  * Without it, reversing a hand would silently convert its inspin flower to an
  * antispin one, which is a different shape with a different petal count.
  */
-function propRate(knobs: QftKnobs): number {
-	return handSign(knobs) * spinSign(knobs.spin) * knobs.downbeats;
+export function propRateForKnobs(knobs: QftKnobs): number {
+  return handSign(knobs) * spinSign(knobs.spin) * knobs.downbeats;
 }
 
 /**
@@ -169,21 +172,25 @@ function propRate(knobs: QftKnobs): number {
  * chain rule drops out because only the direction matters.
  */
 function headTangent(knobs: QftKnobs, u: number): { x: number; y: number } {
-	const handAngle = angleOf(handIndexAt(knobs, u));
-	const propAngle = angleOf(propIndexAt(knobs, u));
-	const h = handSign(knobs);
-	const s = propRate(knobs);
-	return {
-		x: knobs.radius * h * Math.cos(handAngle) + PROP_LENGTH * s * Math.cos(propAngle),
-		y: knobs.radius * h * Math.sin(handAngle) + PROP_LENGTH * s * Math.sin(propAngle)
-	};
+  const handAngle = angleOf(handIndexAt(knobs, u));
+  const propAngle = angleOf(propIndexAt(knobs, u));
+  const h = handSign(knobs);
+  const s = propRateForKnobs(knobs);
+  return {
+    x:
+      knobs.radius * h * Math.cos(handAngle) +
+      PROP_LENGTH * s * Math.cos(propAngle),
+    y:
+      knobs.radius * h * Math.sin(handAngle) +
+      PROP_LENGTH * s * Math.sin(propAngle),
+  };
 }
 
 /** Compass angle of a screen-space vector, in eighths. Not necessarily integral. */
 function eighthsOf(v: { x: number; y: number }): number {
-	const a = Math.atan2(v.x, -v.y);
-	const positive = a < 0 ? a + Math.PI * 2 : a;
-	return positive / EIGHTH;
+  const a = Math.atan2(v.x, -v.y);
+  const positive = a < 0 ? a + Math.PI * 2 : a;
+  return positive / EIGHTH;
 }
 
 const TOLERANCE = 1e-6;
@@ -194,11 +201,11 @@ const TOLERANCE = 1e-6;
  * compass, the value is out of resolution and the cell reads `n`.
  */
 function directionCharlie(knobs: QftKnobs, u: number): DirectionValue {
-	const t = headTangent(knobs, u);
-	if (Math.hypot(t.x, t.y) < TOLERANCE) return "n";
-	const e = eighthsOf(t);
-	const nearest = Math.round(e);
-	return Math.abs(e - nearest) < TOLERANCE ? norm(nearest) : "n";
+  const t = headTangent(knobs, u);
+  if (Math.hypot(t.x, t.y) < TOLERANCE) return "n";
+  const e = eighthsOf(t);
+  const nearest = Math.round(e);
+  return Math.abs(e - nearest) < TOLERANCE ? norm(nearest) : "n";
 }
 
 /**
@@ -207,13 +214,21 @@ function directionCharlie(knobs: QftKnobs, u: number): DirectionValue {
  * the hand, two behind when spinning against it.
  */
 function directionDrex(knobs: QftKnobs, u: number): DirectionValue {
-	/* Two eighths off the tether, on the side the prop is actually heading —
+  /* Two eighths off the tether, on the side the prop is actually heading —
 	   which reverses with the hand, same as the prop's own rate does. */
-	return norm(propIndexAt(knobs, u) + 2 * handSign(knobs) * spinSign(knobs.spin));
+  return norm(
+    propIndexAt(knobs, u) + 2 * handSign(knobs) * spinSign(knobs.spin)
+  );
 }
 
-function directionAt(knobs: QftKnobs, u: number, convention: Convention): DirectionValue {
-	return convention === "charlie" ? directionCharlie(knobs, u) : directionDrex(knobs, u);
+function directionAt(
+  knobs: QftKnobs,
+  u: number,
+  convention: Convention
+): DirectionValue {
+  return convention === "charlie"
+    ? directionCharlie(knobs, u)
+    : directionDrex(knobs, u);
 }
 
 /**
@@ -223,20 +238,23 @@ function directionAt(knobs: QftKnobs, u: number, convention: Convention): Direct
  * writes movement as origin and destination, assuming a continuous path
  * between them rather than drawing every infinitesimal step.
  */
-export function buildIncrements(knobs: QftKnobs, convention: Convention): QftIncrement[] {
-	const rows: QftIncrement[] = [];
-	for (let i = 0; i < STEPS; i += 1) {
-		rows.push({
-			propDepart: norm(propIndexAt(knobs, i)),
-			propDirDepart: directionAt(knobs, i, convention),
-			handDepart: handPositionAt(knobs, i),
-			radius: knobs.radius,
-			handArrive: handPositionAt(knobs, i + 1),
-			propDirArrive: directionAt(knobs, i + 1, convention),
-			propArrive: norm(propIndexAt(knobs, i + 1))
-		});
-	}
-	return rows;
+export function buildIncrements(
+  knobs: QftKnobs,
+  convention: Convention
+): QftIncrement[] {
+  const rows: QftIncrement[] = [];
+  for (let i = 0; i < STEPS; i += 1) {
+    rows.push({
+      propDepart: norm(propIndexAt(knobs, i)),
+      propDirDepart: directionAt(knobs, i, convention),
+      handDepart: handPositionAt(knobs, i),
+      radius: knobs.radius,
+      handArrive: handPositionAt(knobs, i + 1),
+      propDirArrive: directionAt(knobs, i + 1, convention),
+      propArrive: norm(propIndexAt(knobs, i + 1)),
+    });
+  }
+  return rows;
 }
 
 /**
@@ -255,56 +273,59 @@ const PENDULUM_PATH = [2, 3, 4, 5, 6, 5, 4, 3, 2];
  * a pendulum reverses, and `propIndexAt` only ever advances.
  */
 export function pendulumIndexAt(u: number): number {
-	const t = ((u % STEPS) + STEPS) % STEPS;
-	const i = Math.floor(t);
-	const frac = t - i;
-	const from = PENDULUM_PATH[i] as number;
-	const to = PENDULUM_PATH[i + 1] as number;
-	return from + (to - from) * frac;
+  const t = ((u % STEPS) + STEPS) % STEPS;
+  const i = Math.floor(t);
+  const frac = t - i;
+  const from = PENDULUM_PATH[i] as number;
+  const to = PENDULUM_PATH[i + 1] as number;
+  return from + (to - from) * frac;
 }
 
 /** Hand and prop-head positions for the pendulum. The hand never leaves centre. */
 export function pendulumPosesAt(u: number) {
-	const head = pointAt(pendulumIndexAt(u), PROP_LENGTH);
-	return { hand: { x: 0, y: 0 }, head };
+  const head = pointAt(pendulumIndexAt(u), PROP_LENGTH);
+  return { hand: { x: 0, y: 0 }, head };
 }
 
 /** Sample points of the swung arc, for drawing the trail. */
 export function tracePendulum(samples = 240): Array<{ x: number; y: number }> {
-	return Array.from({ length: samples + 1 }, (_, i) =>
-		pointAt(pendulumIndexAt((i / samples) * STEPS), PROP_LENGTH)
-	);
+  return Array.from({ length: samples + 1 }, (_, i) =>
+    pointAt(pendulumIndexAt((i / samples) * STEPS), PROP_LENGTH)
+  );
 }
 
 export function buildPendulum(): QftIncrement[] {
-	const path = PENDULUM_PATH;
-	return Array.from({ length: STEPS }, (_, i) => {
-		const depart = path[i] as number;
-		const arrive = path[i + 1] as number;
-		const descending = arrive > depart;
-		return {
-			propDepart: norm(depart),
-			propDirDepart: norm(depart + (descending ? 2 : -2)),
-			handDepart: 8,
-			radius: 0,
-			handArrive: 8,
-			propDirArrive: norm(arrive + (descending ? 2 : -2)),
-			propArrive: norm(arrive)
-		};
-	});
+  const path = PENDULUM_PATH;
+  return Array.from({ length: STEPS }, (_, i) => {
+    const depart = path[i] as number;
+    const arrive = path[i + 1] as number;
+    const descending = arrive > depart;
+    return {
+      propDepart: norm(depart),
+      propDirDepart: norm(depart + (descending ? 2 : -2)),
+      handDepart: 8,
+      radius: 0,
+      handArrive: 8,
+      propDirArrive: norm(arrive + (descending ? 2 : -2)),
+      propArrive: norm(arrive),
+    };
+  });
 }
 
 /** Sample points of the traced path, for drawing the trail. */
-export function tracePath(knobs: QftKnobs, samples = 240): Array<{ x: number; y: number }> {
-	const points: Array<{ x: number; y: number }> = [];
-	const revolutions = revolutionsToClose(knobs);
-	for (let i = 0; i <= samples; i += 1) {
-		const u = (i / samples) * STEPS * revolutions;
-		const hand = pointAt(handIndexAt(knobs, u), knobs.radius);
-		const prop = pointAt(propIndexAt(knobs, u), PROP_LENGTH);
-		points.push({ x: hand.x + prop.x, y: hand.y + prop.y });
-	}
-	return points;
+export function tracePath(
+  knobs: QftKnobs,
+  samples = 240
+): Array<{ x: number; y: number }> {
+  const points: Array<{ x: number; y: number }> = [];
+  const revolutions = revolutionsToClose(knobs);
+  for (let i = 0; i <= samples; i += 1) {
+    const u = (i / samples) * STEPS * revolutions;
+    const hand = pointAt(handIndexAt(knobs, u), knobs.radius);
+    const prop = pointAt(propIndexAt(knobs, u), PROP_LENGTH);
+    points.push({ x: hand.x + prop.x, y: hand.y + prop.y });
+  }
+  return points;
 }
 
 /**
@@ -312,12 +333,12 @@ export function tracePath(knobs: QftKnobs, samples = 240): Array<{ x: number; y:
  * number of turns per hand circle closes in one; anything else needs more.
  */
 export function revolutionsToClose(knobs: QftKnobs): number {
-	return Number.isInteger(knobs.downbeats) ? 1 : 8;
+  return Number.isInteger(knobs.downbeats) ? 1 : 8;
 }
 
 /** Hand and prop-head positions at a continuous step, for rendering. */
 export function posesAt(knobs: QftKnobs, u: number) {
-	const hand = pointAt(handIndexAt(knobs, u), knobs.radius);
-	const offset = pointAt(propIndexAt(knobs, u), PROP_LENGTH);
-	return { hand, head: { x: hand.x + offset.x, y: hand.y + offset.y } };
+  const hand = pointAt(handIndexAt(knobs, u), knobs.radius);
+  const offset = pointAt(propIndexAt(knobs, u), PROP_LENGTH);
+  return { hand, head: { x: hand.x + offset.x, y: hand.y + offset.y } };
 }

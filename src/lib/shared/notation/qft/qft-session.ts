@@ -1,125 +1,240 @@
-/**
- * Session persistence for the QfT app.
- *
- * A reload should put you back exactly where you were — same move or same knob
- * values, same point in the cycle, playing or paused. During development the
- * page reloads constantly, and losing the shape you were studying every time is
- * what makes a visual tool tiring to work on.
- *
- * Stored under a versioned key. A shape change bumps the version rather than
- * trying to migrate, because the whole payload is cheap to rebuild and a
- * half-restored state is worse than a fresh one.
- */
+/** Session persistence and migration for the QfT One Surface app. */
 
 import { normalizeLayers, type QftLayers } from "./qft-layers";
+import { GUIDE_MOVES } from "./qft-guide";
+import {
+  createPendulumTrajectory,
+  trajectoryFromKnobs,
+  type QftTrajectory,
+} from "./qft-trajectory";
 import type { Spin } from "./qft-model";
 import {
-	MODE_ORDER,
-	type VtgMode
+  MODE_ORDER,
+  type VtgMode,
 } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
 
-const KEY = "qft:session:v2";
+export const QFT_SESSION_KEY = "qft:session:v3";
+export const QFT_LEGACY_SESSION_KEY = "qft:session:v2";
 
-/** Flowers per matrix axis: the shape matrix's `large` preset. */
 const AXIS_LENGTH = 12;
+const MAX_RADIUS = 1.5;
+const MAX_RATE = 8;
+const GUIDE_IDS = new Set(GUIDE_MOVES.map(({ id }) => id));
 
-export interface QftSession {
-	/**
-	 * Whether this visitor has been past the landing card.
-	 *
-	 * Stored explicitly, because the app saves a payload the moment it mounts —
-	 * including while the card is still up. Inferring this from the presence of
-	 * a payload would therefore mark every visitor entered within a frame, and
-	 * the card would never survive a reload.
-	 *
-	 * A payload written before this field existed has no value for it. Those are
-	 * read as entered: reaching that state at all means the page was used, and
-	 * showing the doorway to an existing reader is the worse error.
-	 */
-	entered: boolean;
-	appMode: "guide" | "instrument" | "matrix";
-	moveIndex: number;
-	/** Index into the twelve-flower matrix axis, per hand. */
-	blueIndex: number;
-	redIndex: number;
-	vtgMode: VtgMode;
-	radius: number;
-	downbeats: number;
-	spin: Spin;
-	phase: number;
-	pendulum: boolean;
-	/** Continuous position in the eight-step cycle. */
-	cursor: number;
-	playing: boolean;
-	/**
-	 * Which stage layers are on. Stored loosely and validated on the way back in
-	 * by `normalizeLayers`, so a layer added after a payload was written simply
-	 * restores on rather than invalidating the whole session.
-	 */
-	layers: QftLayers;
+export type QftHandCount = "one" | "two";
+
+export type QftHandSource =
+  | { kind: "flower"; index: number }
+  | { kind: "preset"; id: string }
+  | { kind: "custom"; trajectory: QftTrajectory };
+
+export interface QftSessionHand {
+  source: QftHandSource;
+  radius: number;
 }
 
-const SPINS: Spin[] = ["inspin", "antispin"];
+export interface QftSession {
+  entered: boolean;
+  handCount: QftHandCount;
+  blue: QftSessionHand;
+  red: QftSessionHand;
+  /** Whole-app rotation in compass eighths. */
+  originPhase: number;
+  vtgMode: VtgMode;
+  /** Continuous position in the eight-step cycle. */
+  cursor: number;
+  playing: boolean;
+  layers: QftLayers;
+}
 
-const num = (v: unknown, min: number, max: number, fallback: number): number =>
-	typeof v === "number" && Number.isFinite(v) && v >= min && v <= max ? v : fallback;
+const DEFAULT_BLUE: QftSessionHand = {
+  source: { kind: "flower", index: 6 },
+  radius: 1,
+};
 
-/**
- * Restore, or null if there is nothing usable.
- *
- * Every field is validated rather than trusted. Stored state outlives the code
- * that wrote it — a knob whose range narrowed, or a move list that got shorter,
- * would otherwise restore a value the app can no longer represent.
- */
-export function loadQftSession(moveCount: number): QftSession | null {
-	if (typeof localStorage === "undefined") return null;
+const DEFAULT_RED: QftSessionHand = {
+  source: { kind: "flower", index: 7 },
+  radius: 1,
+};
 
-	let raw: unknown;
-	try {
-		const stored = localStorage.getItem(KEY);
-		if (!stored) return null;
-		raw = JSON.parse(stored);
-	} catch {
-		return null;
-	}
+const num = (
+  value: unknown,
+  min: number,
+  max: number,
+  fallback: number
+): number =>
+  typeof value === "number" &&
+  Number.isFinite(value) &&
+  value >= min &&
+  value <= max
+    ? value
+    : fallback;
 
-	if (!raw || typeof raw !== "object") return null;
-	const s = raw as Record<string, unknown>;
+const normalizedPhase = (value: unknown, fallback = 0): number => {
+  const phase = Math.round(num(value, -64, 64, fallback));
+  return ((phase % 8) + 8) % 8;
+};
 
-	return {
-		/* Absent means a pre-landing payload, which counts as entered. */
-		entered: s.entered === undefined ? true : s.entered === true,
-		/*
-		 * Defaults to the matrix, not the guide. Combining two flowers is the
-		 * front door; the guide is where the notation's provenance lives. A
-		 * payload written before that flip carries an explicit `appMode`, so
-		 * nobody is moved out of the mode they left in.
-		 */
-		appMode:
-			s.appMode === "instrument" || s.appMode === "guide"
-				? (s.appMode as "instrument" | "guide")
-				: "matrix",
-		moveIndex: Math.floor(num(s.moveIndex, 0, moveCount - 1, 0)),
-		blueIndex: Math.floor(num(s.blueIndex, 0, AXIS_LENGTH - 1, 6)),
-		redIndex: Math.floor(num(s.redIndex, 0, AXIS_LENGTH - 1, 7)),
-		vtgMode: MODE_ORDER.includes(s.vtgMode as VtgMode) ? (s.vtgMode as VtgMode) : "SS",
-		radius: num(s.radius, 0, 1.5, 1),
-		downbeats: Math.floor(num(s.downbeats, 1, 8, 3)),
-		spin: SPINS.includes(s.spin as Spin) ? (s.spin as Spin) : "antispin",
-		phase: Math.floor(num(s.phase, 0, 7, 0)),
-		pendulum: s.pendulum === true,
-		cursor: num(s.cursor, 0, 8, 0),
-		playing: s.playing !== false,
-		layers: normalizeLayers(s.layers)
-	};
+function readTrajectory(value: unknown): QftTrajectory | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  if (!Array.isArray(raw.propRate) || raw.propRate.length !== 8) return null;
+
+  const propRate = raw.propRate.map((rate) =>
+    num(rate, -MAX_RATE, MAX_RATE, Number.NaN)
+  );
+  if (propRate.some((rate) => Number.isNaN(rate))) return null;
+  if (raw.handDirection !== 1 && raw.handDirection !== -1) return null;
+  const [rate0, rate1, rate2, rate3, rate4, rate5, rate6, rate7] = propRate;
+
+  return {
+    radius: num(raw.radius, 0, MAX_RADIUS, 1),
+    handPhase: normalizedPhase(raw.handPhase),
+    handDirection: raw.handDirection,
+    propRate: [rate0, rate1, rate2, rate3, rate4, rate5, rate6, rate7],
+    propPhase: normalizedPhase(raw.propPhase),
+  };
+}
+
+function readSource(value: unknown, fallback: QftHandSource): QftHandSource {
+  if (!value || typeof value !== "object") return fallback;
+  const raw = value as Record<string, unknown>;
+
+  if (raw.kind === "flower") {
+    return {
+      kind: "flower",
+      index: Math.floor(num(raw.index, 0, AXIS_LENGTH - 1, 0)),
+    };
+  }
+
+  if (raw.kind === "preset" && GUIDE_IDS.has(String(raw.id))) {
+    return { kind: "preset", id: String(raw.id) };
+  }
+
+  if (raw.kind === "custom") {
+    const trajectory = readTrajectory(raw.trajectory);
+    if (trajectory) return { kind: "custom", trajectory };
+  }
+
+  return fallback;
+}
+
+function readHand(value: unknown, fallback: QftSessionHand): QftSessionHand {
+  if (!value || typeof value !== "object") return fallback;
+  const raw = value as Record<string, unknown>;
+  return {
+    source: readSource(raw.source, fallback.source),
+    radius: num(raw.radius, 0, MAX_RADIUS, fallback.radius),
+  };
+}
+
+function readV3(raw: unknown): QftSession | null {
+  if (!raw || typeof raw !== "object") return null;
+  const session = raw as Record<string, unknown>;
+
+  return {
+    entered: session.entered === true,
+    handCount: session.handCount === "one" ? "one" : "two",
+    blue: readHand(session.blue, DEFAULT_BLUE),
+    red: readHand(session.red, DEFAULT_RED),
+    originPhase: normalizedPhase(session.originPhase),
+    vtgMode: MODE_ORDER.includes(session.vtgMode as VtgMode)
+      ? (session.vtgMode as VtgMode)
+      : "SS",
+    cursor: num(session.cursor, 0, 8, 0),
+    playing: session.playing !== false,
+    layers: normalizeLayers(session.layers),
+  };
+}
+
+function legacyInstrumentSource(
+  session: Record<string, unknown>
+): QftHandSource {
+  const spins: Spin[] = ["inspin", "antispin"];
+  const radius = num(session.radius, 0, MAX_RADIUS, 1);
+  if (session.pendulum === true) {
+    return { kind: "custom", trajectory: createPendulumTrajectory(radius) };
+  }
+
+  const spin = spins.includes(session.spin as Spin)
+    ? (session.spin as Spin)
+    : "antispin";
+  return {
+    kind: "custom",
+    trajectory: trajectoryFromKnobs({
+      radius,
+      downbeats: Math.floor(num(session.downbeats, 1, MAX_RATE, 3)),
+      spin,
+      phase: normalizedPhase(session.phase),
+    }),
+  };
+}
+
+function readV2(raw: unknown): QftSession | null {
+  if (!raw || typeof raw !== "object") return null;
+  const session = raw as Record<string, unknown>;
+  const appMode = session.appMode;
+  const moveIndex = Math.floor(
+    num(session.moveIndex, 0, GUIDE_MOVES.length - 1, 0)
+  );
+  const move = GUIDE_MOVES[moveIndex] ?? GUIDE_MOVES[0]!;
+  const radius = num(session.radius, 0, MAX_RADIUS, 1);
+
+  const blueSource: QftHandSource =
+    appMode === "guide"
+      ? { kind: "preset", id: move.id }
+      : appMode === "instrument"
+        ? legacyInstrumentSource(session)
+        : {
+            kind: "flower",
+            index: Math.floor(num(session.blueIndex, 0, AXIS_LENGTH - 1, 6)),
+          };
+
+  return {
+    entered: session.entered === undefined ? true : session.entered === true,
+    handCount: appMode === "matrix" ? "two" : "one",
+    blue: { source: blueSource, radius },
+    red: {
+      source: {
+        kind: "flower",
+        index: Math.floor(num(session.redIndex, 0, AXIS_LENGTH - 1, 7)),
+      },
+      radius: 1,
+    },
+    originPhase: 0,
+    vtgMode: MODE_ORDER.includes(session.vtgMode as VtgMode)
+      ? (session.vtgMode as VtgMode)
+      : "SS",
+    cursor: num(session.cursor, 0, 8, 0),
+    playing: session.playing !== false,
+    layers: normalizeLayers(session.layers),
+  };
+}
+
+function readStored(key: string): unknown | null {
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Restore a validated v3 session, or migrate the previous route payload. */
+export function loadQftSession(): QftSession | null {
+  if (typeof localStorage === "undefined") return null;
+  return (
+    readV3(readStored(QFT_SESSION_KEY)) ??
+    readV2(readStored(QFT_LEGACY_SESSION_KEY))
+  );
 }
 
 export function saveQftSession(session: QftSession): void {
-	if (typeof localStorage === "undefined") return;
-	try {
-		localStorage.setItem(KEY, JSON.stringify(session));
-	} catch {
-		/* Storage full or blocked. Persistence is a convenience, never a
-		   requirement — the app works fine without it. */
-	}
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(QFT_SESSION_KEY, JSON.stringify(session));
+    localStorage.removeItem(QFT_LEGACY_SESSION_KEY);
+  } catch {
+    // Persistence is a convenience. The app remains usable when storage is blocked.
+  }
 }
