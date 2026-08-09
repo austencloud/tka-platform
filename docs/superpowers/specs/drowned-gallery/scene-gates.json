@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "drowned-gallery",
+  "title": "The Drowned Gallery (Three Channels)",
+  "domainProofRequired": true,
+  "currentGate": 1,
+  "authority": {
+    "experienceSpec": "docs/superpowers/specs/2026-08-09-drowned-gallery-channels-design.md",
+    "roomShellSource": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
+    "planContract": "src/lib/features/museum/data/drowned-gallery-terrain.ts",
+    "museumTrackerItems": [
+      "DRct0NTnvfNc20F1Z4ee"
+    ]
+  },
+  "sequenceFingerprints": [
+    {
+      "performerId": "cave-water-a",
+      "sequenceId": "cave-water-seq-a",
+      "sourcePath": "src/lib/features/museum/data/museum-exhibit-sequences.ts",
+      "sourceSha256": "707a7111e769241d86c6d19c6bdbc45da32da318b13a07ddc03bc3a5f0ad3843",
+      "fingerprint": "32372ee83b959d584e73c9cf00d11c25609179885a215f4cf2b7c4c68f4dde8c"
+    },
+    {
+      "performerId": "cave-water-b",
+      "sequenceId": "cave-water-seq-b",
+      "sourcePath": "src/lib/features/museum/data/museum-exhibit-sequences.ts",
+      "sourceSha256": "707a7111e769241d86c6d19c6bdbc45da32da318b13a07ddc03bc3a5f0ad3843",
+      "fingerprint": "a7ad76c247a110a9d9d333f65be37c96ecb8efd459cf07f91a80b9ce55987a7a"
+    },
+    {
+      "performerId": "cave-water-c",
+      "sequenceId": "cave-water-seq-c",
+      "sourcePath": "src/lib/features/museum/data/museum-exhibit-sequences.ts",
+      "sourceSha256": "707a7111e769241d86c6d19c6bdbc45da32da318b13a07ddc03bc3a5f0ad3843",
+      "fingerprint": "25dfe083297055aabe01c75718df5e897904a09cd010a90ad013a6fe71d7dca0"
+    }
+  ],
+  "claims": [
+    {
+      "id": "C-001",
+      "class": "literal",
+      "statement": "Water stages the exact museum sequences AAAA, BBBB and CCCC (cave-water-seq-a/b/c), alpha3-to-alpha3 loops.",
+      "evidence": [
+        "src/lib/features/museum/data/museum-exhibit-sequences.ts",
+        "docs/superpowers/specs/drowned-gallery/drowned-gallery-production-contract.md"
+      ]
+    },
+    {
+      "id": "C-002",
+      "class": "literal",
+      "statement": "A, B and C are the Split-Same group of Type 1 Dual-Shift: A blue pro/red pro, B anti/anti, C blue anti/red pro.",
+      "evidence": [
+        "Flow Arts MCP get_letter_explanation A/B/C, 2026-08-09",
+        "src/lib/features/museum/data/museum-exhibit-sequences.ts"
+      ]
+    },
+    {
+      "id": "C-003",
+      "class": "metaphor",
+      "statement": "Channel length encodes letter order: A shortest, C (the hybrid) longest.",
+      "evidence": []
+    },
+    {
+      "id": "C-004",
+      "class": "metaphor",
+      "statement": "The mirror pool doubling all three performers expresses water showing motion twice.",
+      "evidence": []
+    },
+    {
+      "id": "C-005",
+      "class": "invention",
+      "statement": "Private air-bell audiences: surfacing and meeting a letter are the same moment.",
+      "evidence": []
+    },
+    {
+      "id": "C-006",
+      "class": "invention",
+      "statement": "A reduced-gravity buoyant water shaft carries the player up to the grotto ring after the dives.",
+      "evidence": []
+    },
+    {
+      "id": "C-007",
+      "class": "invention",
+      "statement": "Each channel mouth glows with its bell's firelight color through the water.",
+      "evidence": []
+    }
+  ],
+  "exemptions": [],
+  "gates": [
+    {
+      "id": "evidence-preflight",
+      "status": "verified",
+      "evidence": [
+        {
+          "kind": "canon-audit",
+          "path": "docs/superpowers/specs/drowned-gallery/drowned-gallery-production-contract.md"
+        },
+        {
+          "kind": "room-shell",
+          "path": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts"
+        },
+        {
+          "kind": "motion-proof",
+          "path": "src/lib/features/museum/data/museum-exhibit-sequences.ts"
+        }
+      ],
+      "checks": [
+        {
+          "name": "canon-conflicts",
+          "status": "passed",
+          "evidence": "Production contract records the S-path supersession, footprint-growth question, avatar body-follow defect, and stale CAVE_MODE_ROOMS entry."
+        },
+        {
+          "name": "source-digests",
+          "status": "passed",
+          "evidence": "museum-exhibit-sequences.ts sha256 707a7111e769241d86c6d19c6bdbc45da32da318b13a07ddc03bc3a5f0ad3843 recorded with per-sequence fingerprints."
+        },
+        {
+          "name": "sequence-fingerprints",
+          "status": "passed",
+          "evidence": "Three live-loop fingerprints recorded above; motions re-verified against Flow Arts MCP get_letter_explanation A/B/C on 2026-08-09."
+        }
+      ],
+      "approval": null
+    },
+    {
+      "id": "measured-plan",
+      "status": "in-progress",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "playable-graybox",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "registered-visual-target",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "production-slice",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "integrated-room",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "final-acceptance",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    }
+  ]
+}
