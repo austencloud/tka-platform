@@ -35,6 +35,10 @@
   import FirstFireShrineVolumes from "./FirstFireShrineVolumes.svelte";
   import FirstFireEmberDressing from "./FirstFireEmberDressing.svelte";
   import {
+    applyFirstFireCourtMaterials,
+    type FirstFireMaterialReport,
+  } from "./first-fire-court-materials";
+  import {
     extractFirstFireFlameAnchors,
     FIRST_FIRE_EXPECTED_FLAME_COUNT,
     type FirstFireFlameAnchor,
@@ -99,6 +103,8 @@
   let assetRevision = $state(0);
   let cameraRevision = $state(0);
   let stagedMeshes: Mesh[] = [];
+  /** Re-materialisation counts, surfaced for verification. */
+  let materialReport: FirstFireMaterialReport | null = $state(null);
   let flameAnchors = $state<FirstFireFlameAnchor[]>([]);
   let reviewState = $state(createFirstFireGrayboxReviewState());
 
@@ -289,6 +295,9 @@
 
   function handleGrayboxReady(scene: Object3D): void {
     flameAnchors = extractFirstFireFlameAnchors(scene, contract.fireGuides);
+    // Give each court its own rock, pad and molten channel. The GLB is
+    // digest-locked Gate 2 evidence, so this re-materialises in memory only.
+    materialReport = applyFirstFireCourtMaterials(scene);
     stagedMeshes = [];
     scene.traverse((object) => {
       if (!(object instanceof Mesh)) return;
@@ -305,6 +314,17 @@
       }
     });
     assetRevision += 1;
+    // Verification seam: the re-materialisation counts have to be readable
+    // from the page, otherwise "each court is its own environment" is a claim
+    // rather than a measurement.
+    (globalThis as Record<string, unknown>).__firstFireMaterialReport =
+      materialReport;
+    // Scene-graph handle for the same reason: composition defects have to be
+    // measurable (which mesh, what size, where) instead of guessed at from a
+    // screenshot. Root is the render tree, not just the graybox subtree.
+    let root: Object3D = scene;
+    while (root.parent) root = root.parent;
+    (globalThis as Record<string, unknown>).__firstFireScene = root;
     if (flameAnchors.length !== FIRST_FIRE_EXPECTED_FLAME_COUNT) {
       console.warn(
         `[FirstFireGraybox] Expected ${FIRST_FIRE_EXPECTED_FLAME_COUNT} semantic flame guides, found ${flameAnchors.length}.`
