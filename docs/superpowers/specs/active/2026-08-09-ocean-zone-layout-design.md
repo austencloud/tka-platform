@@ -82,6 +82,18 @@ Three depth bands from the default camera, one story beat per quadrant:
 7. **`open-sand-south`** — deliberately kept sparse (the ray's patrol ground;
    negative space is part of the composition, not a bug).
 
+### Hero presentation rule (2026-08-09 addition, per Austen)
+
+Every hero asset is staged individually — clear sightline, breathing room, a
+deliberate best face toward the default camera. Heroes are never scatter
+filler. The full per-hero staging directives live in
+`scripts/ocean-zone-layout.json` → `heroPresentations`: the three arches as a
+swim-through colonnade off the proscenium, `reef-wall` broadside as the eastern
+backdrop shoulder, basalt pinnacles as a navigable slot canyon (not a fence),
+the citadel/mountain/tower as a stepped skyline trio, specimen corals (brain,
+fan, staghorn, table, bommie, photoreal) on museum pads inside the coral
+garden, the wreck bow-toward-stage, and rock tables as structural perches.
+
 ### Placement rules (layout JSON `placementRules`)
 
 - `stageExclusionRadiusMetres: 5` (existing, hard)
