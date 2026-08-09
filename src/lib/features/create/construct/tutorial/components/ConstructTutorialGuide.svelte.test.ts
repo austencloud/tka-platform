@@ -22,7 +22,7 @@ describe("ConstructTutorialGuide", () => {
     ).toHaveLength(0);
   });
 
-  it("asks for the next pictograph without inventing another required action", async () => {
+  it("explains both option interactions without inventing another required action", async () => {
     render(ConstructTutorialGuideHarness, { atPictographStep: true });
 
     await expect
@@ -33,7 +33,7 @@ describe("ConstructTutorialGuide", () => {
       .toBeInTheDocument();
     await expect
       .element(
-        page.getByText("Choose a pictograph for the next step.", {
+        page.getByText("Tap a pictograph to add it. Hold one to preview it.", {
           exact: true,
         })
       )

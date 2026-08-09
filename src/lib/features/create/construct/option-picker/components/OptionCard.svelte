@@ -45,7 +45,7 @@ Receives pre-calculated data, just renders it.
   /*
    * data-ghost-label carries JUST the letter. The presentation-mode ghost
    * narrates the control it is about to press, and with only an aria-label to
-   * read it thought out loud in UI copy — "What does Select M. Hold to preview.
+   * read it thought out loud in UI copy — "What does Add M. Hold to preview.
    * do?" A label is what a person would call the thing, not what a screen
    * reader says about it.
    */
@@ -77,9 +77,9 @@ Receives pre-calculated data, just renders it.
   data-ghost="safe"
   data-ghost-kind="option"
   data-ghost-label={pictograph.letter}
-  aria-label="Select {pictograph.letter}. Hold to preview."
+  aria-label="Add {pictograph.letter}. Hold to preview."
   aria-keyshortcuts="Shift+Space"
-  title="Tap to select. Hold to preview."
+  title="Tap to add. Hold to preview."
   {@attach holdToAudition}
 >
   <OptionCardContent {pictograph} {blueReversal} {redReversal} />

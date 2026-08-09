@@ -74,6 +74,8 @@ Delegates all rendering to child components.
      *  its own turns so a user's sticky Create-tab turns never leak in. */
     blueTurnsOverride?: number | "fl";
     redTurnsOverride?: number | "fl";
+    /** Suppress first-use interaction teaching in embedded documentation. */
+    showInteractionHint?: boolean;
   }
 
   const {
@@ -90,6 +92,7 @@ Delegates all rendering to child components.
     redPropTypeOverride = undefined,
     blueTurnsOverride = undefined,
     redTurnsOverride = undefined,
+    showInteractionHint = true,
   }: Props = $props();
 
   const createContext = tryGetCreateModuleContext();
@@ -280,7 +283,7 @@ Delegates all rendering to child components.
     });
 
     hapticService?.trigger("selection");
-    createContext.panelState.enterChangedTransitionPlayback({
+    createContext.panelState.enterOptionAudition({
       sequence: application.sequence,
       sourceSequenceRevision:
         createContext.CreateModuleState.sequenceState.currentSequenceRevision,
@@ -291,7 +294,7 @@ Delegates all rendering to child components.
   }
 
   function handleAuditionEnd() {
-    createContext?.panelState.exitChangedTransitionPlayback();
+    createContext?.panelState.exitOptionAudition();
   }
 
   function handleSlotClicked(typeSection: string, slotIndex: number) {
@@ -522,6 +525,7 @@ Delegates all rendering to child components.
     onRedTurnsChange={handleRedTurnsChange}
     onBlueRotationChange={handleBlueRotationChange}
     onRedRotationChange={handleRedRotationChange}
+    {showInteractionHint}
   />
 {/if}
 

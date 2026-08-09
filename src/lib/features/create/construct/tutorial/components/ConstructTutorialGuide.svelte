@@ -17,7 +17,7 @@
           title: constructTutorialState.positionLabel
             ? `Start position: ${constructTutorialState.positionLabel}`
             : "Start position set",
-          instruction: "Choose a pictograph for the next step.",
+          instruction: "Tap a pictograph to add it. Hold one to preview it.",
         };
       case "play-sequence":
         return {

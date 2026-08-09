@@ -38,7 +38,7 @@ import type {
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
 import type { CreateModuleState } from "$lib/shared/create/state/create-module-state-types";
-import type { ChangedTransitionPlayback } from "$lib/shared/create/domain/changed-transition-playback";
+import type { ConstructOptionAudition } from "$lib/shared/create/domain/construct-option-audition";
 
 // Lazy import to break circular dependency
 // panel-coordination-state ↔ create-module-state-ref ↔ construct-tab-state (cycle)
@@ -338,12 +338,12 @@ export interface PanelCoordinationState {
   exitDurationPreviewMode(apply: boolean): { sequence: SequenceData | null };
   setPreviewSequence(sequence: SequenceData): void;
 
-  // Temporary contextual playback while a Construct option is held
-  get changedTransitionPlayback(): ChangedTransitionPlayback | null;
-  enterChangedTransitionPlayback(
-    playback: Omit<ChangedTransitionPlayback, "requestId">
+  // Temporary contextual audition while a Construct option is held
+  get optionAudition(): ConstructOptionAudition | null;
+  enterOptionAudition(
+    audition: Omit<ConstructOptionAudition, "requestId">
   ): void;
-  exitChangedTransitionPlayback(): void;
+  exitOptionAudition(): void;
 
   // LOOP Completion Flow (triggers confirmation dialog in CreateModule)
   requestLoopCompletion(loopType: LOOPType): void;
@@ -455,10 +455,8 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   let isDurationPreviewMode = $state(false);
   let previewSequence = $state<SequenceData | null>(null);
   let originalSequence = $state<SequenceData | null>(null);
-  let changedTransitionPlayback = $state<ChangedTransitionPlayback | null>(
-    null
-  );
-  let changedTransitionPlaybackRequestId = 0;
+  let optionAudition = $state<ConstructOptionAudition | null>(null);
+  let optionAuditionRequestId = 0;
 
   // Preset drawer state
   let isPresetDrawerOpen = $state(false);
@@ -513,7 +511,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     isPresetDrawerOpen = false;
 
     isSequenceViewerOpen = false;
-    changedTransitionPlayback = null;
+    optionAudition = null;
   }
 
   return {
@@ -952,7 +950,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     },
 
     enterDurationPreviewMode(sequence: SequenceData) {
-      changedTransitionPlayback = null;
+      optionAudition = null;
       isDurationPreviewMode = true;
       originalSequence = sequence;
       previewSequence = sequence;
@@ -970,23 +968,23 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       previewSequence = sequence;
     },
 
-    get changedTransitionPlayback() {
-      return changedTransitionPlayback;
+    get optionAudition() {
+      return optionAudition;
     },
 
-    enterChangedTransitionPlayback(playback) {
+    enterOptionAudition(audition) {
       isDurationPreviewMode = false;
       previewSequence = null;
       originalSequence = null;
-      changedTransitionPlaybackRequestId += 1;
-      changedTransitionPlayback = {
-        ...playback,
-        requestId: changedTransitionPlaybackRequestId,
+      optionAuditionRequestId += 1;
+      optionAudition = {
+        ...audition,
+        requestId: optionAuditionRequestId,
       };
     },
 
-    exitChangedTransitionPlayback() {
-      changedTransitionPlayback = null;
+    exitOptionAudition() {
+      optionAudition = null;
     },
 
     // LOOP Completion Flow

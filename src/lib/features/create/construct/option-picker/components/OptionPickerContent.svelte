@@ -37,6 +37,14 @@ Uses organizer and sizer services for section grouping and sizing.
     logConstructLetterTypeGroupSelected,
     type LetterTypeNavigationSource,
   } from "../../services/construct-analytics";
+  import type { Attachment } from "svelte/attachments";
+  import { onMount } from "svelte";
+  import OptionInteractionHint from "./OptionInteractionHint.svelte";
+  import { createOptionInteractionHintState } from "../state/option-interaction-hint-state.svelte";
+  import {
+    hasSeenOptionInteractionHint,
+    markOptionInteractionHintSeen,
+  } from "../services/option-interaction-hint-marker";
 
   interface Props {
     options: PreparedPictographData[];
@@ -75,6 +83,7 @@ Uses organizer and sizer services for section grouping and sizing.
     onRedTurnsChange: (value: TurnValue) => void;
     onBlueRotationChange: (dir: RotationDirection) => void;
     onRedRotationChange: (dir: RotationDirection) => void;
+    showInteractionHint?: boolean;
   }
 
   const {
@@ -100,7 +109,15 @@ Uses organizer and sizer services for section grouping and sizing.
     onRedTurnsChange,
     onBlueRotationChange,
     onRedRotationChange,
+    showInteractionHint = true,
   }: Props = $props();
+  const interactionHintState = createOptionInteractionHintState({
+    hasSeen: hasSeenOptionInteractionHint,
+    markSeen: markOptionInteractionHintSeen,
+  });
+  onMount(() => {
+    if (showInteractionHint) interactionHintState.revealIfUnseen();
+  });
   // Track container dimensions with simple resize observer
   let containerElement: HTMLDivElement | null = $state(null);
   let containerWidth = $state(800); // Default to desktop-size to avoid mobile flash
@@ -376,12 +393,43 @@ Uses organizer and sizer services for section grouping and sizing.
       observer.disconnect();
     };
   });
+
+  const dismissInteractionHintOnUse: Attachment<HTMLDivElement> = (node) => {
+    function targetsOption(target: EventTarget | null): boolean {
+      return (
+        target instanceof Element &&
+        target.closest('[data-ghost-kind="option"]') !== null
+      );
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      if (targetsOption(event.target)) interactionHintState.dismiss();
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (
+        (event.key === "Enter" || event.key === " ") &&
+        targetsOption(event.target)
+      ) {
+        interactionHintState.dismiss();
+      }
+    }
+
+    node.addEventListener("pointerdown", handlePointerDown);
+    node.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      node.removeEventListener("pointerdown", handlePointerDown);
+      node.removeEventListener("keydown", handleKeyDown);
+    };
+  };
 </script>
 
 <div
   class="option-picker-content"
   data-testid="option-picker"
   bind:this={containerElement}
+  {@attach dismissInteractionHintOnUse}
 >
   {#if sizingStable}
     <!-- Content stays mounted so pictographs transition in place instead of remounting -->
@@ -545,6 +593,13 @@ Uses organizer and sizer services for section grouping and sizing.
         </div>
       {/if}
     </div>
+  {/if}
+
+  {#if showInteractionHint && interactionHintState.isVisible && options.length > 0}
+    <OptionInteractionHint
+      {containerElement}
+      onDismiss={() => interactionHintState.dismiss()}
+    />
   {/if}
 </div>
 

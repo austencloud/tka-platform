@@ -366,9 +366,9 @@ Renders a section with:
         data-option-index={index}
         data-ghost="safe"
         data-ghost-kind="option"
-        aria-label="Select {pictograph.letter ?? 'movement'}. Hold to preview."
+        aria-label="Add {pictograph.letter ?? 'movement'}. Hold to preview."
         aria-keyshortcuts="Shift+Space"
-        title="Tap to select. Hold to preview."
+        title="Tap to add. Hold to preview."
         {@attach holdToAudition}
       >
         <OptionPictographCell

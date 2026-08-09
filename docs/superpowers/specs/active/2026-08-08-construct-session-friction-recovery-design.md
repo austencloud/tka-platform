@@ -1,7 +1,7 @@
 # Construct Session Friction Recovery
 
 - **Date:** 2026-08-08
-- **Status:** Phase 1 implemented and verified locally. Phase 2 visual prototype verified locally and awaiting screenshot approval. Phases 3 through 5 remain individually gated.
+- **Status:** Phase 1 implemented and verified locally. Phase 2 approved and verified locally. Phase 3's shared preview engine and first-use interaction hint are implemented; pending-hold feedback remains separately gated. Phases 4 and 5 remain individually gated.
 - **Origin session:** Noah Morgan, `019fd2c5-e0dc-71db-990f-4c0a7a1a0c30`
 - **Routes:** `/create/generate` to `/create/construct`
 
@@ -11,8 +11,8 @@ Use one real Create session to remove four distinct sources of friction without
 bundling their design decisions together:
 
 1. Make the Props control tell the truth and respond on the first click.
-2. Add adaptive text labels to Clear, Share, and Save to library when their
-   local workspace containers have enough room.
+2. Add adaptive text labels to Undo, Save to library, Clear, Play, Actions, and
+   Share when their local workspace containers have enough room.
 3. Retain hold-to-preview and give its 350 ms hold state visible, cohesive
    feedback.
 4. Offer an on-demand, approximately 22-second Build demonstration that shows
@@ -86,7 +86,8 @@ committing it. They solve different problems. Hold-to-preview stays.
 
 - Noah did not explicitly save the sequence to his Library before the session
   ended.
-- Clear, Share, and Save to library are icon-only in the current workspace.
+- Undo, Save to library, Clear, Play, Sequence actions, and Share are icon-only
+  in the current workspace.
 - Create already keeps a recoverable draft. A draft and a Library item have
   different meanings, so this work does not turn abandoned drafts into Library
   saves and does not add an exit prompt.
@@ -99,7 +100,7 @@ it. Save semantics remain unchanged.
 | Area            | Decision                                                                            | Explicit non-goal                                                            |
 | --------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | Props           | Give effective prop visibility one truthful user-facing state and one command path. | Do not paper over repeated clicks with a debounce.                           |
-| Action labels   | Show `Clear`, `Share`, and `Save to library` only in proven roomy containers.       | Do not use physical screen resolution or one global viewport breakpoint.     |
+| Action labels   | Label all six workspace actions only in proven roomy containers.                    | Do not use physical screen resolution or one global viewport breakpoint.     |
 | Hold-to-preview | Retain it and add visible pending, active, cancel, and release states.              | Do not make a hold commit the option or duplicate tap arrival.               |
 | Build teaching  | Add an on-demand isolated demonstration using the real placement grid.              | Do not mutate the user's live start pose or autoplay every time Build opens. |
 | Saving          | Keep local draft recovery and explicit Library save as separate concepts.           | No automatic Library save and no leave-page confirmation in this scope.      |
@@ -123,12 +124,16 @@ No implementation phase begins automatically when the preceding phase ends.
   `effective-prop-visibility.ts`.
 - The conflicting persisted state is covered by four focused state tests and a
   browser component test that activates the real Props chip once.
-- Phase 2 now has a local, unshipped adaptive-label prototype at a 1120 CSS-pixel
-  container seam. Its breakpoint tests, real-page measurements, and required
-  viewport screenshots are complete; production acceptance still requires
-  Austen's visual approval.
-- Neither implemented phase has been deployed. Phases 3 through 5 have not
-  started.
+- Phase 2 now has a local, unshipped adaptive-label implementation for all six
+  workspace actions at a 768 CSS-pixel container seam. Its breakpoint tests,
+  real-page measurements, and required viewport screenshots are complete and
+  Austen approved the responsive result.
+- Hold-to-preview now uses `PictographArrivalStage`, the same motion owner used
+  by a committed tap, but stops before commit-only landing. A first-use
+  coachmark teaches `Tap to add` and `Hold to preview` without moving the grid.
+  The Construct guide repeats the distinction after the coachmark is dismissed.
+- The 350 ms pending-hold treatment remains a separate visual slice. Phases 4
+  and 5 have not started.
 
 ## Phase 1: truthful Props visibility
 
@@ -186,9 +191,12 @@ resolved result. Repeated clicking is not the success condition.
 
 ### Copy
 
-- `Clear`
-- `Share`
+- `Undo`
 - `Save to library`
+- `Clear`
+- `Play`
+- `Actions`
+- `Share`
 
 Accessible names can remain more specific, such as `Clear sequence`. The
 visible wording above is the approved compact copy.
@@ -198,18 +206,18 @@ visible wording above is the approved compact copy.
 The labels respond to available component width, not to device identity and
 not directly to `window.innerWidth`.
 
-- `ButtonPanel.svelte` already owns the named `button-panel` inline-size
-  container. Clear and Share use that container.
-- The sequence top bar gains its own named inline-size container for Save to
-  library.
+- `ButtonPanel.svelte` owns the named `button-panel` inline-size container.
+  Clear, Play, Actions, and Share use that container.
+- The sequence top bar owns a named inline-size container for Save to library.
+- The outer Create workspace owns a named inline-size container for Undo.
 - Compact tier: icon-only controls with their existing accessible names and
   minimum touch targets.
 - Roomy tier: icon plus visible label. The label is one line and its button has
   a stable width within the tier.
-- The top bar keeps equal leading and trailing action tracks when Save expands,
-  so the sequence word stays mathematically centered.
-- The bottom Play control stays centered. Expanding Clear and Share may not
-  invade its protected center zone.
+- The top bar keeps equal leading and trailing action tracks when Undo and Save
+  expand, so the sequence word stays mathematically centered.
+- The bottom Play control stays centered. Expanding Clear, Play, Actions, and
+  Share may not invade its protected center zone or overlap one another.
 - Tier changes are deterministic. There is no ResizeObserver-driven label
   toggle and no intermediate state that pushes adjacent controls during normal
   interaction.
@@ -256,59 +264,71 @@ For each frame, record the top-bar and bottom-panel container widths, active
 label tier, `scrollWidth`, and center offset of the sequence word and Play
 button. Acceptance requires no horizontal overflow and no visible center drift.
 
-### Prototype result: 1120 CSS pixels
+### Prototype result: 768 CSS pixels
 
-The local prototype uses the same `min-width: 1120px` seam for the named
-`button-panel` and `sequence-workspace` containers. The query is deliberately
-in CSS pixels, so App Shell root-font scaling cannot move the tier boundary.
+The local implementation uses the same `min-width: 768px` seam for the named
+`button-panel`, `sequence-workspace`, and `create-workspace` containers. The
+query is deliberately in CSS pixels, so App Shell root-font scaling cannot move
+the tier boundary.
 
-At the roomy tier, the measured controls are 97.09 px for Clear, 96.09 px for
-Share, and 159.19 px for Save to library. Labels compute to 14 px on both the
-2560 and 4K frames. The root font remains 16 px, with 8 px icon gaps and 16 px
-inline padding.
+At the roomy tier, the measured controls are 97.02 px for Undo, 159.19 px for
+Save to library, 97.09 px for Clear, 106.27 px for Play, 112.88 px for Actions,
+and 96.09 px for Share. Labels compute to 14 px on both the 2560 and 4K frames.
+The root font remains 16 px, with 8 px icon gaps and 16 px inline padding.
 
 The 192 px equal top-bar tracks provide the longest control with
 `(192 - 159.19) / 2 = 16.405px` on each side. Adding the existing 8 px grid gap
 leaves 24.405 px between Save and the word column, exceeding the required one
-gap plus one root-relative text unit reserve of 24 px. The bottom rail is less
-constrained: using the maximum 24 px panel padding, its 50 px Play control, the
-44 px Sequence actions control, the 12 px action gap, and the 96.09 px labeled
-Share control leaves 358.91 px between Play and the trailing action zone at the
-seam. The leading side leaves 413.91 px.
+gap plus one root-relative text unit reserve of 24 px. Undo has 47.49 px on each
+side of its equal track.
 
-| Container width | Label tier | Clear / Share / Save widths | Play offset | Word offset | Overlap |
-| --------------- | ---------- | --------------------------- | ----------- | ----------- | ------- |
-| 1088 px         | Compact    | 44 / 44 / 44 px             | 0 px        | 0 px        | None    |
-| 1119 px         | Compact    | 44 / 44 / 44 px             | 0 px        | 0 px        | None    |
-| 1120 px         | Roomy      | 97.09 / 96.09 / 159.19 px   | 0 px        | 0 px        | None    |
-| 1121 px         | Roomy      | 97.09 / 96.09 / 159.19 px   | -0.01 px    | 0 px        | None    |
-| 1152 px         | Roomy      | 97.09 / 96.09 / 159.19 px   | 0 px        | 0 px        | None    |
+The bottom rail remains comfortable at the lower seam. The 768 px query also
+uses the existing constrained-panel values: 18 px horizontal padding and a
+10 px trailing-group gap. The trailing group is therefore
+`112.88 + 10 + 96.09 = 218.97px`. Half of the panel minus its padding, that
+group, and half of the 106.27 px Play control leaves
+`384 - 18 - 218.97 - 53.135 = 93.895px` between Play and the trailing action
+zone. The leading side leaves
+`384 - 18 - 97.09 - 53.135 = 215.775px`. The centered word column retains
+344 px and continues to use its existing fit-and-ellipsis behavior.
+
+| Container width | Label tier | Undo / Save / Clear / Play / Actions / Share widths | Play offset | Word offset | Overlap |
+| --------------- | ---------- | --------------------------------------------------- | ----------- | ----------- | ------- |
+| 736 px          | Compact    | 44 / 44 / 44 / 50 / 44 / 44 px                      | 0 px        | 0 px        | None    |
+| 767 px          | Compact    | 44 / 44 / 44 / 50 / 44 / 44 px                      | 0 px        | 0 px        | None    |
+| 768 px          | Roomy      | 97.02 / 159.19 / 97.09 / 106.27 / 112.88 / 96.09 px | 0 px        | 0 px        | None    |
+| 769 px          | Roomy      | 97.02 / 159.19 / 97.09 / 106.27 / 112.88 / 96.09 px | 0 px        | 0 px        | None    |
+| 800 px          | Roomy      | 97.02 / 159.19 / 97.09 / 106.27 / 112.88 / 96.09 px | 0 px        | 0 px        | None    |
 
 The populated Construct sweep produced these real local widths:
 
 | CSS viewport / condition        | Bottom / top container | Label tier | Maximum center drift | Horizontal overflow |
 | ------------------------------- | ---------------------- | ---------- | -------------------- | ------------------- |
-| 1440 by 900                     | 682.24 px              | Compact    | 0 px                 | None                |
-| 1920 by 1080                    | 922.24 px              | Compact    | 0 px                 | None                |
-| 2560 by 1440                    | 1242.24 px             | Roomy      | 0 px                 | None                |
-| 3840 by 2160                    | 1882.24 px             | Roomy      | 0 px                 | None                |
-| 820 by 1180 tablet              | 818.67 px              | Compact    | 0 px                 | None                |
-| 960 by 412 mobile landscape     | 442.67 px              | Compact    | 0 px                 | None                |
-| 375 by 667 phone                | 374 px                 | Compact    | 0 px                 | None                |
+| 1440 by 900                     | 681.67 px              | Compact    | 0 px                 | None                |
+| 1698 by 1078 requested desktop  | 810.67 px              | Roomy      | 0 px                 | None                |
+| 1920 by 1080                    | 928.84 px              | Roomy      | 0.01 px              | None                |
+| 2560 by 1440                    | 1241.67 px             | Roomy      | 0 px                 | None                |
+| 3840 by 2160                    | 1881.67 px             | Roomy      | 0 px                 | None                |
+| 820 by 1180 tablet              | 808.67 px              | Roomy      | 0 px                 | None                |
+| 960 by 412 mobile landscape     | 437.67 px              | Compact    | 0 px                 | None                |
+| 375 by 667 phone                | 364 px                 | Compact    | 0 px                 | None                |
 | 1920 by 1080 at 200% equivalent | 438.24 px              | Compact    | 0 px                 | None                |
 
-The visual sweep found no console warnings or errors. Four related browser
-component files pass 10 tests, including an exact 1119-to-1120 tier assertion;
-`svelte-check` reports zero errors and zero warnings. This remains an unshipped
-prototype until Austen approves the screenshots and threshold.
+The in-app browser sweep found no label, overlap, overflow, or centering errors.
+Its isolated unauthenticated session logged one Firebase token-refresh network
+error that did not affect the page. Six related browser component files pass
+13 tests, including exact 767-to-768 tier assertions; `svelte-check` reports
+zero errors and zero warnings. This remains unshipped until Austen approves the
+screenshots and threshold.
 
 ### Expected code scope
 
-- existing workspace button components:
-  `ClearSequenceButton.svelte`, `WorkspaceShareControl.svelte`, and
+- existing workspace button components: `UndoButton.svelte`,
+  `ClearSequenceButton.svelte`, `ViewSequenceButton.svelte`,
+  `SequenceActionsButton.svelte`, `WorkspaceShareControl.svelte`, and
   `SaveToLibraryButton.svelte`
-- `ButtonPanel.svelte`
-- `SequenceDisplay.svelte`
+- `StandardWorkspaceLayout.svelte`, `ButtonPanel.svelte`, and
+  `SequenceDisplay.svelte`
 - `workspace-button-layout.ts`, which already owns the canonical action names
 - the existing shared Share trigger primitive if it needs an optional visible
   label
@@ -317,6 +337,24 @@ No parallel toolbar button component is introduced. The implementation extends
 the existing controls.
 
 ## Phase 3: cohesive hold-to-preview motion
+
+### Approved discoverability slice
+
+The first-use hint is deliberately smaller than the pending-motion prototype:
+
+- It points to the first visible option and says `Tap to add` and
+  `Hold to preview`.
+- It is an absolute, nonmodal overlay. It neither moves nor blocks the option
+  grid.
+- It dismisses after the first option interaction or its explicit close button
+  and records that dismissal locally.
+- The public Level 1 guide suppresses the automatic hint because that surface
+  already teaches its own interaction sequence.
+- Step 2 of the optional Construct guide preserves the same explanation, so the
+  distinction remains available after the one-time hint is gone.
+
+This approval does not include the pending progress halo or an active-preview
+status label. Those remain behind their own live visual review.
 
 ### Interaction contract
 
@@ -331,13 +369,16 @@ the existing controls.
 
 ### Motion language
 
-The audition should feel related to tap arrival without looking like the same
-action.
+The audition and tap arrival share one animation owner, with different endings.
 
 - Pending uses a restrained progress halo and press response around the source
   card. It communicates that continued pressure is doing work.
-- Active audition uses the arrival stage's scale, shadow, and easing vocabulary
-  where practical, but it does not fly toward the sequence grid.
+- Active audition uses `PictographArrivalStage` to animate the candidate from
+  the current sequence endpoint to its completed pictograph, then holds that
+  completed frame until release.
+- Tap continues from that shared hold phase into grid landing and handoff.
+  Audition never enters those commit-only phases and does not announce that a
+  step was added.
 - The contextual preview and the source card share one continuous visual state
   so activation does not look like an unrelated screen change.
 - Release reverses the audition state with no flash, stale highlight, or layout
@@ -354,10 +395,13 @@ option-card renderers.
 - `src/lib/features/create/construct/option-picker/services/hold-to-audition.ts`
 - `OptionCard.svelte`
 - `swipe-layout/components/OptionViewerSection.svelte`
-- the existing option audition context and contextual preview host
-- the existing pictograph arrival motion tokens or a shared motion vocabulary,
-  if a true common owner is needed
+- the existing option audition context and panel coordination state
+- `PictographArrivalStage.svelte`, `StepGrid.svelte`, and
+  `SequenceDisplay.svelte`
+- removal of the obsolete AnimatorCanvas changed-transition preview branch
 - `tests/unit/create/hold-to-audition.test.ts`
+- a browser component regression test that proves audition reaches the completed
+  motion frame and never begins grid landing
 
 ### Verification
 
@@ -494,8 +538,8 @@ Add only telemetry needed to tell whether each intervention works:
 
 - effective Props state before and after a user command, including whether a
   hidden trail-only veto was cleared;
-- action-label tier and owning container width when Clear, Share, or Save is
-  activated;
+- action-label tier and owning container width when any of the six workspace
+  actions is activated;
 - audition pending, activated, canceled, and released, with pointer type and
   cancellation reason;
 - Build demo opened, completed, dismissed, replayed, and entry source.
@@ -507,8 +551,8 @@ session-replay data for this work.
 
 - Props become visible after one intentional activation from the conflicting
   persisted state.
-- Clear, Share, and Save to library gain labels only when their own containers
-  meet measured, approved thresholds.
+- Undo, Save to library, Clear, Play, Actions, and Share gain labels only when
+  their own containers meet measured, approved thresholds.
 - No required viewport shows overlap, wrapping, horizontal overflow, or center
   displacement.
 - Hold-to-preview remains reversible, gains immediate feedback, and stays
