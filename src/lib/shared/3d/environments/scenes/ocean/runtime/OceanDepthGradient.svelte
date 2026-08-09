@@ -29,7 +29,12 @@
   } from "three";
 
   interface Props {
-    /** Just under the water plane, where light still reaches. */
+    /**
+     * Looking up. Only a slight lift off the fog — the water plane is a finite
+     * 50 m disc, so anything brighter than this behind its rim turns the rim
+     * into a visible hole. Light-from-above is carried by the god rays and the
+     * plane itself, not by the backdrop.
+     */
     shallowColor?: string;
     /** Eye level. Matches the scene fog so geometry and void agree. */
     midColor?: string;
@@ -39,7 +44,7 @@
   }
 
   let {
-    shallowColor = "#1d5f74",
+    shallowColor = "#0e3049",
     midColor = "#0a2438",
     deepColor = "#01060b",
     radius = 180,
