@@ -499,13 +499,34 @@ export function createAttractGhost(opts: {
     if (!root || halted()) return;
     setHover(null);
     const rr = root.getBoundingClientRect();
-    // Toward whichever bottom corner the ghost is already nearer, so the retreat
-    // is a short step aside rather than a march across the thing being admired.
-    const left = ghost.x < rr.width / 2;
-    await glideTo(
-      left ? jitter(46, 34) : rr.width - jitter(46, 34),
-      rr.height - jitter(52, 30)
-    );
+    // A person watching something rests their cursor ON the thing they are
+    // watching, not in the corner of the screen. The corner retreat read as
+    // the ghost leaving (and parked it under the dev HUD, so it vanished).
+    // Aim at the admired surface itself — the same data-ghost-linger element
+    // the linger intention uses — sitting in its lower third so the pointer
+    // shares the frame without covering the middle of the motion.
+    // Several surfaces can be lingerable at once (a wall of playing
+    // thumbnails); the one being admired is the biggest thing on screen.
+    const watched = [...root.querySelectorAll<HTMLElement>("[data-ghost-linger]")]
+      .filter((el) => {
+        if (el.offsetParent === null) return false;
+        const r = el.getBoundingClientRect();
+        return r.width >= 80 && r.height >= 80;
+      })
+      .sort((a, b) => {
+        const ra = a.getBoundingClientRect();
+        const rb = b.getBoundingClientRect();
+        return rb.width * rb.height - ra.width * ra.height;
+      })[0];
+    if (watched) {
+      const r = watched.getBoundingClientRect();
+      await glideTo(
+        r.left - rr.left + r.width * (0.5 + (choose() - 0.5) * 0.4),
+        r.top - rr.top + r.height * (0.68 + (choose() - 0.5) * 0.2)
+      );
+    }
+    // No watchable surface found: stay where the hand already is. Standing
+    // still while something plays is human; marching to a corner is not.
     if (halted()) return;
     ghost.dimmed = true;
     await dwell(ms);

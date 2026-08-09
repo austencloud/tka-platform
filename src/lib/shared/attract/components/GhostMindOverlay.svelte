@@ -16,13 +16,20 @@
     mood,
     seed,
     stage = false,
+    onClose,
   }: {
     status: GhostMindStatus;
     thought: string | null;
     mood: GhostMood;
     seed: number;
     stage?: boolean;
+    /** Hide the HUD entirely (window.__ghost.debug(true) brings it back). */
+    onClose?: () => void;
   } = $props();
+
+  // Collapsed = just the pill header. The panel is a debugging instrument,
+  // not part of the show — it must never be the thing hiding the ghost.
+  let minimized = $state(false);
 
   const activityPosition = $derived(
     status.activityStepCount
@@ -37,12 +44,31 @@
   );
 </script>
 
-<aside class="mind-overlay" class:stage aria-hidden="true">
+<aside class="mind-overlay" class:stage class:minimized>
   <header>
     <span class="eyebrow">Ghost mind</span>
     <span class="phase phase-{status.phase}">{status.phase}</span>
+    <span class="controls">
+      <button
+        type="button"
+        class="hud-button"
+        aria-label={minimized ? "Expand ghost mind panel" : "Minimize ghost mind panel"}
+        onclick={() => (minimized = !minimized)}
+      >
+        {minimized ? "▴" : "▾"}
+      </button>
+      <button
+        type="button"
+        class="hud-button"
+        aria-label="Close ghost mind panel"
+        onclick={() => onClose?.()}
+      >
+        ✕
+      </button>
+    </span>
   </header>
 
+  {#if !minimized}
   <div class="facts">
     <span class="label">Activity</span>
     <span class="value">
@@ -105,6 +131,7 @@
       </span>
     {/if}
   </footer>
+  {/if}
 </aside>
 
 <style>
@@ -134,7 +161,58 @@
       ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 12px;
     line-height: 1.35;
+    /* The panel itself stays inert so it can never eat an app click the
+       ghost is about to make; only its own buttons take the pointer. */
     pointer-events: none;
+  }
+
+  .mind-overlay.minimized {
+    height: auto;
+    padding: 6px 10px;
+    width: auto;
+    min-width: 240px;
+  }
+
+  .mind-overlay.minimized header {
+    margin-bottom: 0;
+  }
+
+  .controls {
+    display: flex;
+    gap: 4px;
+    margin-left: 8px;
+  }
+
+  .hud-button {
+    pointer-events: auto;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    margin: -4px 0;
+    padding: 0;
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #8b8cff) 30%, transparent);
+    border-radius: 8px;
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #101018) 70%,
+      transparent
+    );
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    font: inherit;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .hud-button:hover {
+    color: var(--theme-text, #f4f4f8);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #8b8cff) 60%,
+      transparent
+    );
   }
 
   header,

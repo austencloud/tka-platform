@@ -538,6 +538,7 @@ Last audit: 2025-12-27
   data-ghost="safe"
   data-ghost-kind="stage"
   data-ghost-state={isPlaying ? "playing" : undefined}
+  data-ghost-linger={isPlaying ? "" : undefined}
   data-ghost-word={word || undefined}
   oncontextmenu={handleContextMenu}
   onpointerdown={handlePointerDown}

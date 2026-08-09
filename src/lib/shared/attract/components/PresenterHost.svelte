@@ -304,6 +304,7 @@
     mood={mind.mood}
     seed={mind.seed}
     stage={presentationState.stage}
+    onClose={() => (showMindOverlay = false)}
   />
 {/if}
 
