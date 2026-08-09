@@ -130,6 +130,36 @@ function updateActiveOrbit(
     (candidate) => candidate.id === shrineId
   );
   if (!shrine) return state;
+
+  // Reaching the far mouth completes the court, whatever the accumulated
+  // sweep says. The exit is on the other side of the performer, so a visitor
+  // standing in it has been round. Without this the court could be left
+  // unfinished, and every later court then stayed dark forever: no performer,
+  // no fire, no way to recover short of a reload.
+  const court = contract.courts.find(
+    (candidate) => candidate.shrineId === shrineId
+  );
+  const mouthRadius = Math.max(
+    ENTRY_PROXIMITY_METRES,
+    (court?.throatWidth ?? 0) / 2
+  );
+  if (distanceToRuntimePoint(position, shrine.blenderExit) <= mouthRadius) {
+    let procession = state.procession;
+    for (let zoneIndex = 0; zoneIndex < 4; zoneIndex += 1) {
+      procession = reachFirstFireOrbitZone(procession, shrineId, zoneIndex);
+    }
+    return procession === state.procession
+      ? state
+      : {
+          ...state,
+          procession,
+          orbitTravelDegrees: {
+            ...state.orbitTravelDegrees,
+            [shrineId]: Math.abs(shrine.orbitSweepDegrees),
+          },
+        };
+  }
+
   const centre = {
     x: shrine.blenderCentre.x,
     z: -shrine.blenderCentre.y,
@@ -137,8 +167,14 @@ function updateActiveOrbit(
   const dx = position.x - centre.x;
   const dz = position.z - centre.z;
   const radius = Math.hypot(dx, dz);
+  // Credit the walk anywhere in the court, not only on the painted ribbon.
+  // A visitor who rounds the performer a metre wide is still looking at the
+  // performer, and gating on the ribbon froze the court at incomplete, which
+  // stranded every later court dark.
   const halfWidth = shrine.orbitWidth / 2 + 0.35;
-  if (Math.abs(radius - shrine.orbitRadius) > halfWidth) return state;
+  const onRibbon = Math.abs(radius - shrine.orbitRadius) <= halfWidth;
+  const inCourt = radius > 0.75 && isInsideCourt(contract, position, shrineId);
+  if (!onRibbon && !inCourt) return state;
 
   const angle = (Math.atan2(dz, dx) * 180) / Math.PI;
   const previousAngle = state.lastOrbitAngle[shrineId];
@@ -176,6 +212,36 @@ function updateActiveOrbit(
   };
 }
 
+/**
+ * A court is entered by walking into it, not by clipping a point. Ray-cast
+ * containment against the authored court outline is the honest test: a ball
+ * around the entry locator is missed by any ordinary walk that takes the mouth
+ * a metre off centre, which left EK and FL dark with no performer and no fire.
+ */
+function isInsideCourt(
+  contract: FirstFireBlenderContract,
+  position: FirstFireRuntimePosition,
+  shrineId: FirstFireShrineId
+): boolean {
+  const court = contract.courts.find(
+    (candidate) => candidate.shrineId === shrineId
+  );
+  if (!court || court.blenderOutline.length < 3) return false;
+  let inside = false;
+  const outline = court.blenderOutline;
+  for (let i = 0, j = outline.length - 1; i < outline.length; j = i, i += 1) {
+    const ax = outline[i].x;
+    const az = -outline[i].y;
+    const bx = outline[j].x;
+    const bz = -outline[j].y;
+    const straddles = az > position.z !== bz > position.z;
+    if (!straddles) continue;
+    const crossingX = ax + ((position.z - az) / (bz - az)) * (bx - ax);
+    if (position.x < crossingX) inside = !inside;
+  }
+  return inside;
+}
+
 function enterNearbyShrine(
   state: FirstFireGrayboxReviewState,
   contract: FirstFireBlenderContract,
@@ -185,11 +251,18 @@ function enterNearbyShrine(
   const shrine = contract.shrines.find(
     (candidate) => candidate.id === shrineId
   );
-  if (
-    !shrine ||
-    distanceToRuntimePoint(position, shrine.blenderEntry) >
-      ENTRY_PROXIMITY_METRES
-  ) {
+  if (!shrine) return state;
+  const court = contract.courts.find(
+    (candidate) => candidate.shrineId === shrineId
+  );
+  // Half the authored throat, so crossing anywhere in the mouth counts.
+  const mouthRadius = Math.max(
+    ENTRY_PROXIMITY_METRES,
+    (court?.throatWidth ?? 0) / 2
+  );
+  const atMouth =
+    distanceToRuntimePoint(position, shrine.blenderEntry) <= mouthRadius;
+  if (!atMouth && !isInsideCourt(contract, position, shrineId)) {
     return state;
   }
   const procession = enterFirstFireShrine(state.procession, shrineId);

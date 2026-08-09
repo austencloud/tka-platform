@@ -134,6 +134,67 @@ describe("First Fire Cinder Court review interaction", () => {
     ]);
   });
 
+  it("carries an ordinary sloppy walk through all three courts", () => {
+    // A visitor does not trace the painted ribbon. Walking each court a metre
+    // wide once froze the orbit at incomplete, which left EK and FL dark with
+    // no performer and no fire for the rest of the room.
+    // Wider than the old ribbon band (orbitWidth/2 + 0.35 = 1.85 m) and still
+    // inside the 7 m court, so this fails against the band gate and passes
+    // against court containment.
+    const wide = 1.95;
+    let state = createFirstFireGrayboxReviewState();
+    for (const shrineId of ["dj", "ek", "fl"] as const) {
+      const shrine = contract.shrines.find((c) => c.id === shrineId)!;
+      const centre = { x: shrine.blenderCentre.x, z: -shrine.blenderCentre.y };
+      const mouth = runtimeEntry(shrineId);
+      state = updateFirstFireGrayboxReview(state, contract, mouth, 16);
+      expect(state.procession.phase).toBe(`${shrineId}-active`);
+
+      const sweep = Math.abs(shrine.orbitSweepDegrees);
+      const direction = Math.sign(shrine.orbitSweepDegrees);
+      for (let travelled = 0; travelled <= sweep; travelled += 2) {
+        const radians =
+          ((shrine.orbitStartDegrees + direction * travelled) * Math.PI) / 180;
+        const radius = shrine.orbitRadius + wide;
+        state = updateFirstFireGrayboxReview(
+          state,
+          contract,
+          {
+            x: centre.x + Math.cos(radians) * radius,
+            z: centre.z + Math.sin(radians) * radius,
+          },
+          16
+        );
+      }
+      expect(state.procession.phase).not.toBe(`${shrineId}-active`);
+    }
+    expect(state.procession.phase).toBe("fire-extinguished");
+  });
+
+  it("completes a court at its exit mouth even when the sweep was not tracked", () => {
+    // The failure this locks: a visitor who cuts the horseshoe leaves the
+    // court unfinished, and EK and FL then never light for the rest of the run.
+    let state = createFirstFireGrayboxReviewState();
+    for (const shrineId of ["dj", "ek", "fl"] as const) {
+      const shrine = contract.shrines.find((c) => c.id === shrineId)!;
+      state = updateFirstFireGrayboxReview(
+        state,
+        contract,
+        runtimeEntry(shrineId),
+        16
+      );
+      expect(state.procession.phase).toBe(`${shrineId}-active`);
+      state = updateFirstFireGrayboxReview(
+        state,
+        contract,
+        { x: shrine.blenderExit.x, z: -shrine.blenderExit.y },
+        16
+      );
+      expect(state.procession.phase).not.toBe(`${shrineId}-active`);
+    }
+    expect(state.procession.phase).toBe("fire-extinguished");
+  });
+
   it("holds a timed neutral blackout before exposing the green Earth route", () => {
     let state = createFirstFireGrayboxReviewState();
     for (let index = 0; index < 6; index += 1) {

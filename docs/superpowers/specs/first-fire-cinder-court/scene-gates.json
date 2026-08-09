@@ -3,7 +3,7 @@
   "sceneId": "first-fire-cinder-court",
   "title": "First Fire: The Cinder Court",
   "domainProofRequired": true,
-  "currentGate": 1,
+  "currentGate": 3,
   "authority": {
     "experienceSpec": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-production-contract.md",
     "roomShellSource": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
@@ -115,7 +115,7 @@
     },
     {
       "id": "measured-plan",
-      "status": "ready-for-review",
+      "status": "approved",
       "evidence": [
         {
           "kind": "floor-plan",
@@ -179,14 +179,87 @@
           "evidence": "tests/unit/museum/first-fire-blender-contract.test.ts asserts every court has a distinct entry and exit mouth, so the visitor can never leave a court the way it was entered."
         }
       ],
-      "approval": null
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-09T19:00:00Z",
+        "quote": "It brings me around a corner and I cannot see EK which is fine I like that Let's start gate three",
+        "museumTrackerItem": "1bUBNo26hJpRq4Bf36gh",
+        "visualComprehensionConfirmed": true,
+        "note": "Austen read the space correctly from the walk: the horseshoe turn occludes the next court until its mouth, which is exactly what the sightline-study measured."
+      }
     },
     {
       "id": "playable-graybox",
-      "status": "pending",
-      "evidence": [],
-      "checks": [],
-      "approval": null
+      "status": "approved",
+      "evidence": [
+        {
+          "kind": "blender-source",
+          "path": "scripts/build-first-fire-graybox.py",
+          "sha256": "355b8b5edfeb07bbe52dc94e29ddd6a883b2113832b16a4a464591803cbf3e5a",
+          "note": "Headless Blender build driven entirely by the approved plan contract."
+        },
+        {
+          "kind": "coordinate-manifest",
+          "path": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-blender-plan.json",
+          "sha256": "c0e3b6761f060c67290e5c9cf1560e281c3ec904afe26471c0fae6053f611de4"
+        },
+        {
+          "kind": "graybox-glb",
+          "path": "static/models/museum/cave/first-fire-cinder-court-graybox.glb",
+          "sha256": "170d51f2205b6ca0a8bd54c6043171d2810ad55a1e6fc7a71484d06ae75d6cba"
+        },
+        {
+          "kind": "first-person-walk",
+          "path": "docs/superpowers/specs/first-fire-cinder-court/gate2/walk-02-dj-mouth.webp",
+          "sha256": "828c2c873b2fb14072da96271d1faf989d47769525d5df339ce7784220e4eee9",
+          "note": "Seven walk frames captured at 1408 by 792 from https://localhost:5173/test/first-fire-graybox, walk-01 through walk-07 in the same directory."
+        },
+        {
+          "kind": "review-contact-sheet",
+          "path": "docs/superpowers/specs/first-fire-cinder-court/gate2/first-fire-gate2-contact-sheet.webp",
+          "sha256": "d7ef76820a25ae3290993a3e1919d7026f4163c188a449cbe5e771b8dcbd2984"
+        }
+      ],
+      "checks": [
+        {
+          "name": "artifact-digest",
+          "status": "passed",
+          "evidence": "scripts/verify-first-fire-graybox-glb.mjs passes: 156792 bytes, one scene, 151 nodes, 15 materials, Draco plus GPU instancing, no QA cameras or lights, and the report digest matches the coordinate manifest."
+        },
+        {
+          "name": "collision",
+          "status": "passed",
+          "evidence": "Fire never owns collision: the walk player collides with basalt and court walls only. 24 lane flames plus 36 court perimeter flames equals 60 anchors, all pass-through, all placed from the contract."
+        },
+        {
+          "name": "route-duration",
+          "status": "passed",
+          "evidence": "The single S from the Water door to the Earth door is walkable end to end. tests/unit/museum/first-fire-graybox-review.test.ts carries both a ribbon walk and an ordinary sloppy walk through all three courts to fire-extinguished, and completes a court at its exit mouth when the sweep was not tracked."
+        },
+        {
+          "name": "sequence-parity",
+          "status": "passed",
+          "evidence": "The review mounts the real MuseumPerformerStation3D. Walk frames 2, 4, and 5 show the live rigs with their sequence and catalog identifiers legible: cave-fire-seq-dj/tnd-split-opp-jdjd, cave-fire-seq-ek/tnd-split-opp-keke, cave-fire-seq-fl/tnd-split-opp-lflf."
+        },
+        {
+          "name": "staged-reveal",
+          "status": "passed",
+          "evidence": "The verifier asserts every green mesh carries the runtime staged FF_Growth prefix. Walk frames 1 to 6 contain no green; frame 7 shows the Earth route only after the last fire is out."
+        },
+        {
+          "name": "regression-suite",
+          "status": "passed",
+          "evidence": "413 of 413 museum unit tests pass (vitest, 2026-08-09)."
+        }
+      ],
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-09T18:40:00Z",
+        "quote": "I think we're really on the right track and I'm pretty happy with the Gray box now. What's the next major phase?",
+        "museumTrackerItem": "1bUBNo26hJpRq4Bf36gh",
+        "visualComprehensionConfirmed": true,
+        "note": "Approval confirmed by the later walk report, where Austen described the horseshoe turn and the occluded EK court from his own play session."
+      }
     },
     {
       "id": "registered-visual-target",
