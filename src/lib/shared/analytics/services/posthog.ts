@@ -289,7 +289,10 @@ async function initializePostHog(): Promise<void> {
 
     // Session recording configuration for accurate replay
     session_recording: {
-      maskAllInputs: false, // We want to see what users type (except sensitive)
+      // A replay should explain the interaction, not expose what somebody
+      // typed. Password masking alone left names, searches, messages, and
+      // sequence text visible in a recording.
+      maskAllInputs: true,
       maskInputOptions: {
         password: true,
       },
@@ -525,13 +528,29 @@ export function stopSessionRecording(): void {
 }
 
 /**
+ * Return the browser session PostHog will use for replay.
+ *
+ * User profile maintenance can race the deferred analytics boot. Going
+ * through the canonical initializer makes the session handoff deterministic
+ * without teaching auth code how PostHog starts.
+ */
+export async function getCurrentPostHogSessionId(): Promise<string | null> {
+  if (!browser) return null;
+  await initPostHog();
+  if (!initialized) return null;
+
+  const sessionId = posthog.get_session_id();
+  return typeof sessionId === "string" && sessionId.length > 0
+    ? sessionId
+    : null;
+}
+
+/**
  * Get the current session replay URL.
  * Useful for support tickets or bug reports.
  */
 export async function getSessionReplayUrl(): Promise<string | null> {
-  if (!browser || !initialized) return null;
-
-  const sessionId = posthog.get_session_id();
+  const sessionId = await getCurrentPostHogSessionId();
   if (!sessionId) return null;
 
   const env = publicEnv;

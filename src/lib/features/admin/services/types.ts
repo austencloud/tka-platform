@@ -227,6 +227,19 @@ export interface PostHogSessionEvent {
   } | null;
 }
 
+export type PostHogReplayAccessState =
+  | "ready"
+  | "processing"
+  | "unavailable"
+  | "configuration"
+  | "error";
+
+export interface PostHogReplayAccess {
+  state: PostHogReplayAccessState;
+  embedUrl: string | null;
+  message: string;
+}
+
 export type TimePeriod = "today" | "week" | "month" | "all";
 
 // === From IUserActivityTracker ===

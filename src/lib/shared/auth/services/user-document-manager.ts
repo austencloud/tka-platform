@@ -15,7 +15,10 @@ import { retryAuthenticatedFirestoreOperation } from "./retry-authenticated-fire
 
 import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
 import { PUBLIC_PROFILE_VERSION } from "$lib/shared/community/domain/models/public-profile-contract";
-import { captureWhenReady } from "$lib/shared/analytics/services/posthog";
+import {
+  captureWhenReady,
+  getCurrentPostHogSessionId,
+} from "$lib/shared/analytics/services/posthog";
 import { reportErrorTelemetry } from "$lib/shared/error/services/error-telemetry-reporter";
 
 /**
@@ -121,6 +124,7 @@ export class UserDocumentManager {
 
       // Get provider IDs for reliable profile picture URLs
       const providerIds = getProviderIds(user);
+      const postHogSessionId = await getCurrentPostHogSessionId();
 
       // Capture the Google provider's photo URL separately so we can
       // always offer "Use Google Photo" even after the user switches to
@@ -181,6 +185,12 @@ export class UserDocumentManager {
             googleId: providerIds.googleId || null,
             googlePhotoURL,
             facebookId: providerIds.facebookId || null,
+            ...(postHogSessionId
+              ? {
+                  postHogSessionId,
+                  postHogSessionCapturedAt: serverTimestamp(),
+                }
+              : {}),
           },
           { merge: true }
         );
@@ -243,6 +253,12 @@ export class UserDocumentManager {
             googleId: providerIds.googleId || null,
             facebookId: providerIds.facebookId || null,
             ...(googlePhotoURL ? { googlePhotoURL } : {}),
+            ...(postHogSessionId
+              ? {
+                  postHogSessionId,
+                  postHogSessionCapturedAt: serverTimestamp(),
+                }
+              : {}),
           },
           { merge: true }
         );

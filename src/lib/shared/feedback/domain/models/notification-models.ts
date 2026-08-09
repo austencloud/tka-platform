@@ -134,6 +134,8 @@ export interface AdminNotification extends BaseNotification {
 export interface PulseNotification extends BaseNotification {
   type: "admin-user-returned" | "admin-qr-scan" | "admin-content-created";
   returnedUserId?: string;
+  /** Exact PostHog browser session that produced a returning-user alert. */
+  postHogSessionId?: string;
   shortCode?: string;
   scanCity?: string | null;
   scanCountry?: string | null;

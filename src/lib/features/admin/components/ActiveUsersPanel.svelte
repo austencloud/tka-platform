@@ -13,6 +13,13 @@
   import GlobalUserMap from "$lib/features/community/components/GlobalUserMap.svelte";
   import { buildUserPins } from "$lib/features/admin/services/user-pins";
   import type { UserActivityTracker } from "../services/user-activity-tracker";
+  import { page } from "$app/state";
+  import { removeCurrentUrlParams } from "$lib/shared/navigation/services/url-state";
+  import {
+    ADMIN_SESSION_TARGET_PARAM,
+    ADMIN_USER_TARGET_PARAM,
+    parseAdminSessionReplayTarget,
+  } from "../domain/session-replay-target";
 
   // Services
   let userActivityService: UserActivityTracker | null = null;
@@ -23,6 +30,9 @@
   let isLoading = $state(true);
   let error = $state<string | null>(null);
   let modalOpen = $state(false);
+  let initialDetailTab = $state<"profile" | "activity">("profile");
+  let targetSessionId = $state<string | null>(null);
+  let consumedTargetKey = $state("");
 
   // Filter state: "all" | "active" | "inactive"
   let statusFilter = $state<"all" | "active" | "inactive">("all");
@@ -63,6 +73,22 @@
   // Unsubscribe function
   let unsubscribe: (() => void) | null = null;
 
+  $effect(() => {
+    const target = parseAdminSessionReplayTarget(page.url.searchParams);
+    if (!target) {
+      consumedTargetKey = "";
+      return;
+    }
+
+    const targetKey = `${target.userId}:${target.sessionId ?? ""}`;
+    if (targetKey === consumedTargetKey) return;
+    consumedTargetKey = targetKey;
+    selectedUserId = target.userId;
+    targetSessionId = target.sessionId;
+    initialDetailTab = "activity";
+    modalOpen = true;
+  });
+
   onMount(async () => {
     try {
       userActivityService = getUserActivityTracker();
@@ -88,12 +114,20 @@
   });
 
   function selectUser(userId: string) {
+    initialDetailTab = "profile";
+    targetSessionId = null;
     selectedUserId = userId;
     modalOpen = true;
   }
 
   function closeModal() {
     modalOpen = false;
+    targetSessionId = null;
+    initialDetailTab = "profile";
+    removeCurrentUrlParams([
+      ADMIN_USER_TARGET_PARAM,
+      ADMIN_SESSION_TARGET_PARAM,
+    ]);
   }
 
   function handleUserDeleted() {
@@ -252,6 +286,8 @@
   <UserDetailModal
     bind:open={modalOpen}
     userId={selectedUserId}
+    initialTab={initialDetailTab}
+    {targetSessionId}
     onclose={closeModal}
     onUserDeleted={handleUserDeleted}
   />

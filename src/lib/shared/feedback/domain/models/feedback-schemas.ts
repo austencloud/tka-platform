@@ -294,6 +294,8 @@ export const UserNotificationSchema = z
     newUserId: z.string().optional(),
     newUserEmail: z.string().nullable().optional(),
     newUserDisplayName: z.string().optional(),
+    returnedUserId: z.string().optional(),
+    postHogSessionId: z.string().optional(),
     // Moderation-specific
     reportId: z.string().optional(),
     category: z.string().optional(),

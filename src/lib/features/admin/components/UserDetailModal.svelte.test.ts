@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   getContentMetrics: vi.fn(),
   getRecentSessions: vi.fn(),
   getSessionEvents: vi.fn(),
+  getSessionReplayAccess: vi.fn(),
 }));
 
 vi.mock("$lib/shared/community/services/user-repository", () => ({
@@ -90,6 +91,11 @@ describe("UserDetailModal async identity loading", () => {
     });
     mocks.getRecentSessions.mockReset().mockResolvedValue([]);
     mocks.getSessionEvents.mockReset().mockResolvedValue([]);
+    mocks.getSessionReplayAccess.mockReset().mockResolvedValue({
+      state: "unavailable",
+      embedUrl: null,
+      message: "No recording",
+    });
     vi.unstubAllGlobals();
   });
 

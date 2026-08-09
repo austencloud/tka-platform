@@ -16,6 +16,7 @@
   import { setScanNotificationTarget } from "$lib/features/choreo-card/state/scan-notification-target.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { buildAdminSessionReplayUrl } from "$lib/features/admin/domain/session-replay-target";
 
   interface Props {
     notification: UserNotification;
@@ -122,7 +123,9 @@
         | "conversationId"
         | "newUserId"
         | "actionUrl"
-        | "shortCode",
+        | "shortCode"
+        | "returnedUserId"
+        | "postHogSessionId",
         string
       >
     > & { scanLat?: number | null; scanLng?: number | null };
@@ -178,6 +181,22 @@
         if (n["newUserId"]) {
           inboxState.close();
           goto(`/profile/${n["newUserId"]}`);
+        }
+        break;
+
+      case "admin-user-returned":
+        if (n["returnedUserId"]) {
+          inboxState.close();
+          await goto(
+            buildAdminSessionReplayUrl(
+              n["returnedUserId"],
+              n["postHogSessionId"]
+            ),
+            { replaceState: true, keepFocus: true, noScroll: true }
+          );
+          // The catch-all app route preserves the shell across goto(). Update
+          // its module owner explicitly while keeping the deep-link URL intact.
+          await handleModuleChange("admin", "users", { skipHistory: true });
         }
         break;
 

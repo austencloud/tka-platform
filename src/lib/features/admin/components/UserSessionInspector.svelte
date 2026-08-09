@@ -4,11 +4,13 @@
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import SessionReplayPanel from "./SessionReplayPanel.svelte";
   import { getPostHogUserAnalytics } from "$lib/features/admin/get-post-hog-user-analytics";
   import { buildSessionExceptionReport } from "../domain/session-exception-report";
   import type {
     PostHogSessionEvent,
     PostHogSessionSummary,
+    PostHogReplayAccessState,
   } from "../services/types";
 
   interface Props {
@@ -16,6 +18,7 @@
     userDisplayName?: string | null;
     userUsername?: string | null;
     userEmail?: string | null;
+    targetSessionId?: string | null;
     sessions: PostHogSessionSummary[];
   }
 
@@ -24,6 +27,7 @@
     userDisplayName = null,
     userUsername = null,
     userEmail = null,
+    targetSessionId = null,
     sessions,
   }: Props = $props();
 
@@ -40,7 +44,13 @@
   let eventError = $state<string | null>(null);
   let retryGeneration = $state(0);
   let syncedUserId = "";
+  let consumedTargetKey = "";
   let requestGeneration = 0;
+  let replayState = $state<PostHogReplayAccessState | "loading">("loading");
+  let replayUrl = $state<string | null>(null);
+  let replayMessage = $state<string | null>(null);
+  let replayRetryGeneration = $state(0);
+  let replayRequestGeneration = 0;
 
   const selectedSession = $derived(
     sessions.find((session) => session.sessionId === selectedSessionId) ?? null
@@ -62,6 +72,33 @@
     if (uid === syncedUserId) return;
     syncedUserId = uid;
     untrack(closeSession);
+  });
+
+  $effect(() => {
+    const sessionId = selectedSessionId;
+    replayRetryGeneration;
+    if (!sessionId) return;
+
+    const generation = ++replayRequestGeneration;
+    const controller = new AbortController();
+    void loadReplay(sessionId, generation, controller.signal);
+    return () => controller.abort();
+  });
+
+  $effect(() => {
+    const target = targetSessionId;
+    const targetKey = `${userId}:${target ?? ""}`;
+    if (!target) {
+      consumedTargetKey = "";
+      return;
+    }
+    if (targetKey === consumedTargetKey) return;
+    const session = sessions.find((item) => item.sessionId === target);
+    consumedTargetKey = targetKey;
+    untrack(() => {
+      if (session) inspectSession(session);
+      else inspectTargetSession(target);
+    });
   });
 
   $effect(() => {
@@ -105,22 +142,60 @@
     }
   }
 
+  async function loadReplay(
+    sessionId: string,
+    generation: number,
+    signal: AbortSignal
+  ) {
+    replayState = "loading";
+    replayUrl = null;
+    replayMessage = null;
+    try {
+      const access = await getPostHogUserAnalytics().getSessionReplayAccess(
+        sessionId,
+        signal
+      );
+      if (generation !== replayRequestGeneration || signal.aborted) return;
+      replayState = access.state;
+      replayUrl = access.embedUrl;
+      replayMessage = access.message;
+    } catch (cause) {
+      if (generation !== replayRequestGeneration || signal.aborted) return;
+      replayState = "error";
+      replayMessage =
+        cause instanceof Error ? cause.message : "Replay request failed";
+    }
+  }
+
   function inspectSession(session: PostHogSessionSummary) {
     eventFilter = session.exceptionCount > 0 ? "exceptions" : "all";
     selectedSessionId = session.sessionId;
   }
 
+  function inspectTargetSession(sessionId: string) {
+    eventFilter = "all";
+    selectedSessionId = sessionId;
+  }
+
   function closeSession() {
     requestGeneration += 1;
+    replayRequestGeneration += 1;
     selectedSessionId = null;
     events = [];
     eventFilter = "all";
     eventError = null;
     loadingEvents = false;
+    replayState = "loading";
+    replayUrl = null;
+    replayMessage = null;
   }
 
   function retryEvents() {
     retryGeneration += 1;
+  }
+
+  function retryReplay() {
+    replayRetryGeneration += 1;
   }
 
   function openPostHog() {
@@ -238,7 +313,7 @@
   }
 </script>
 
-{#if selectedSession}
+{#if selectedSessionId}
   <div class="session-detail">
     <div class="detail-toolbar">
       <AdminActionButton
@@ -249,7 +324,7 @@
         Sessions
       </AdminActionButton>
       <div class="detail-actions">
-        {#if selectedSession.exceptionCount > 0}
+        {#if selectedSession && selectedSession.exceptionCount > 0}
           <CopyForAIButton
             getData={getExceptionReport}
             ariaLabel="Copy session exceptions as a report for AI"
@@ -269,7 +344,7 @@
             useToast={true}
           />
         {/if}
-        {#if selectedSession.postHogUrl}
+        {#if selectedSession?.postHogUrl}
           <AdminActionButton
             variant="info"
             icon="fa-arrow-up-right-from-square"
@@ -281,60 +356,86 @@
       </div>
     </div>
 
-    <div class="detail-heading">
-      <div>
-        <span class="detail-kicker">Session inspection</span>
-        <h4>{sessionDate(selectedSession.startedAt)}</h4>
+    {#if selectedSession}
+      <div class="detail-heading">
+        <div>
+          <span class="detail-kicker">Session inspection</span>
+          <h4>{sessionDate(selectedSession.startedAt)}</h4>
+        </div>
+        {#if selectedSession.exceptionCount > 0}
+          <span class="exception-badge">
+            <i class="fas fa-bug" aria-hidden="true"></i>
+            {selectedSession.exceptionCount}
+          </span>
+        {:else}
+          <span class="clean-badge">
+            <i class="fas fa-circle-check" aria-hidden="true"></i>
+            Clean
+          </span>
+        {/if}
       </div>
-      {#if selectedSession.exceptionCount > 0}
-        <span class="exception-badge">
-          <i class="fas fa-bug" aria-hidden="true"></i>
-          {selectedSession.exceptionCount}
-        </span>
-      {:else}
-        <span class="clean-badge">
-          <i class="fas fa-circle-check" aria-hidden="true"></i>
-          Clean
-        </span>
-      {/if}
-    </div>
 
-    <div class="session-stats" aria-label="Session summary">
-      <div>
-        <strong>{duration(selectedSession.duration)}</strong><span
-          >Duration</span
-        >
+      <div class="session-stats" aria-label="Session summary">
+        <div>
+          <strong>{duration(selectedSession.duration)}</strong><span
+            >Duration</span
+          >
+        </div>
+        <div>
+          <strong>{selectedSession.eventCount}</strong><span>Events</span>
+        </div>
+        <div>
+          <strong>{selectedSession.contentActionCount}</strong><span
+            >Content actions</span
+          >
+        </div>
+        <div class:has-exceptions={selectedSession.exceptionCount > 0}>
+          <strong>{selectedSession.exceptionCount}</strong><span
+            >Exceptions</span
+          >
+        </div>
       </div>
-      <div>
-        <strong>{selectedSession.eventCount}</strong><span>Events</span>
-      </div>
-      <div>
-        <strong>{selectedSession.contentActionCount}</strong><span
-          >Content actions</span
-        >
-      </div>
-      <div class:has-exceptions={selectedSession.exceptionCount > 0}>
-        <strong>{selectedSession.exceptionCount}</strong><span>Exceptions</span>
-      </div>
-    </div>
 
-    <div class="session-context">
-      <div>
-        <span>Route</span>
-        <strong>{routeSummary(selectedSession)}</strong>
+      <div class="session-context">
+        <div>
+          <span>Route</span>
+          <strong>{routeSummary(selectedSession)}</strong>
+        </div>
+        <div>
+          <span>Client</span>
+          <strong>{deviceSummary(selectedSession) || "Not captured"}</strong>
+        </div>
       </div>
-      <div>
-        <span>Client</span>
-        <strong>{deviceSummary(selectedSession) || "Not captured"}</strong>
+    {:else}
+      <div class="detail-heading pending-heading">
+        <div>
+          <span class="detail-kicker">Session inspection</span>
+          <h4>Current session</h4>
+        </div>
+        <span class="pending-badge">
+          <i class="fas fa-clock" aria-hidden="true"></i>
+          Indexing
+        </span>
       </div>
-    </div>
+      <p class="pending-session-note" role="status">
+        Replay requested from the return notification. Session details will
+        appear after PostHog indexes them.
+      </p>
+    {/if}
+
+    <SessionReplayPanel
+      state={replayState}
+      embedUrl={replayUrl}
+      message={replayMessage}
+      onretry={retryReplay}
+    />
 
     <div class="timeline-heading">
       <div>
         <h5>Event trail</h5>
         <span>{visibleEvents.length} shown · {events.length} loaded</span>
       </div>
-      {#if selectedSession.exceptionCount > 0}
+      {#if selectedSession && selectedSession.exceptionCount > 0}
         <div class="event-filter">
           <SegmentedControl
             options={eventFilterOptions}
@@ -533,7 +634,8 @@
 
   .duration-badge,
   .exception-badge,
-  .clean-badge {
+  .clean-badge,
+  .pending-badge {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
@@ -558,6 +660,11 @@
   .clean-badge {
     background: color-mix(in srgb, var(--semantic-success) 14%, transparent);
     color: var(--semantic-success);
+  }
+
+  .pending-badge {
+    background: color-mix(in srgb, var(--semantic-warning) 14%, transparent);
+    color: var(--semantic-warning);
   }
 
   .row-chevron {
@@ -669,6 +776,17 @@
     font-weight: 550;
     overflow-wrap: anywhere;
     text-transform: capitalize;
+  }
+
+  .pending-session-note {
+    margin: 0;
+    padding: 0.875rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.75rem;
+    background: var(--theme-panel-bg);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
   }
 
   .detail-state {

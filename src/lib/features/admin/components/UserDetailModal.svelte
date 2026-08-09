@@ -36,6 +36,8 @@
   interface Props {
     open: boolean;
     userId: string | null;
+    initialTab?: Tab;
+    targetSessionId?: string | null;
     onclose: () => void;
     onUserDeleted?: () => void;
   }
@@ -43,6 +45,8 @@
   let {
     open = $bindable(false),
     userId,
+    initialTab = "profile",
+    targetSessionId = null,
     onclose,
     onUserDeleted,
   }: Props = $props();
@@ -88,12 +92,13 @@
   $effect(() => {
     const uid = userId;
     const shouldLoad = open && !!uid;
+    const requestedTab = initialTab;
     retryGeneration;
     if (!shouldLoad || !uid) return;
     const generation = ++requestGeneration;
     const controller = new AbortController();
-    activeTab = "profile";
-    hasVisitedActivity = false;
+    activeTab = requestedTab;
+    hasVisitedActivity = requestedTab === "activity";
     hasVisitedAdmin = false;
     void resetBodyScroll();
     void loadUser(uid, generation, controller.signal);
@@ -525,6 +530,7 @@
             userDisplayName={userProfile.displayName}
             userUsername={userProfile.username}
             userEmail={authData?.email}
+            {targetSessionId}
           />
         </div>
       {/if}

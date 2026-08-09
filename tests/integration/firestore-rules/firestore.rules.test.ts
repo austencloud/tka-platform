@@ -331,6 +331,12 @@ describe("protected user document boundaries", () => {
 
     await assertSucceeds(getDoc(doc(owner, path)));
     await assertSucceeds(updateDoc(doc(owner, path), { email: "new@test.io" }));
+    await assertSucceeds(
+      updateDoc(doc(owner, path), {
+        postHogSessionId: "session-123",
+        postHogSessionCapturedAt: new Date(),
+      })
+    );
     await assertFails(updateDoc(doc(owner, path), { adminNotes: "no" }));
     await assertFails(getDoc(doc(other, path)));
     await assertFails(updateDoc(doc(other, path), { email: "no@test.io" }));

@@ -9,6 +9,7 @@ const service = vi.hoisted(() => ({
   getContentMetrics: vi.fn(),
   getRecentSessions: vi.fn(),
   getSessionEvents: vi.fn(),
+  getSessionReplayAccess: vi.fn(),
 }));
 vi.mock("$lib/features/admin/get-post-hog-user-analytics", () => ({
   getPostHogUserAnalytics: () => service,
@@ -43,6 +44,11 @@ describe("UserActivityAnalytics transitions", () => {
     service.getContentMetrics.mockResolvedValue(emptyContent);
     service.getRecentSessions.mockResolvedValue([]);
     service.getSessionEvents.mockResolvedValue([]);
+    service.getSessionReplayAccess.mockResolvedValue({
+      state: "unavailable",
+      embedUrl: null,
+      message: "No recording",
+    });
   });
 
   it("preserves genuine empty analytics and reloads the selected period", async () => {
@@ -184,6 +190,77 @@ describe("UserActivityAnalytics transitions", () => {
     expect(service.getSessionEvents).toHaveBeenCalledWith(
       "uid",
       "session-1",
+      expect.any(AbortSignal)
+    );
+    expect(service.getSessionReplayAccess).toHaveBeenCalledWith(
+      "session-1",
+      expect.any(AbortSignal)
+    );
+  });
+
+  it("opens a notification target once and leaves the session list usable", async () => {
+    service.getRecentSessions.mockResolvedValue([
+      {
+        sessionId: "target-session",
+        startedAt: new Date("2026-08-09T12:00:00.000Z"),
+        endedAt: null,
+        duration: 60_000,
+        modules: ["create"],
+        eventCount: 5,
+        exceptionCount: 0,
+        contentActionCount: 1,
+        entryPath: "/create",
+        exitPath: "/create",
+        browser: "Chrome",
+        operatingSystem: "Windows",
+        deviceType: "Desktop",
+        postHogUrl: "https://us.posthog.com/project/1/replay/target-session",
+      },
+    ]);
+
+    render(UserActivityAnalytics, {
+      userId: "uid",
+      targetSessionId: "target-session",
+    });
+
+    await expect.element(page.getByText("Session inspection")).toBeVisible();
+    await page.getByRole("button", { name: "Sessions" }).click();
+    await expect
+      .element(page.getByRole("button", { name: /Inspect session from/ }))
+      .toBeVisible();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await expect
+      .element(page.getByRole("button", { name: /Inspect session from/ }))
+      .toBeVisible();
+  });
+
+  it("opens the exact notification replay before PostHog indexes its summary", async () => {
+    service.getRecentSessions.mockResolvedValue([]);
+
+    render(UserActivityAnalytics, {
+      userId: "uid",
+      targetSessionId: "fresh-session",
+    });
+
+    await expect.element(page.getByText("Current session")).toBeVisible();
+    await expect.element(page.getByText("Indexing")).toBeVisible();
+    await expect
+      .element(
+        page.getByText(
+          "Replay requested from the return notification. Session details will appear after PostHog indexes them."
+        )
+      )
+      .toBeVisible();
+    await expect
+      .poll(() => service.getSessionReplayAccess.mock.calls.length)
+      .toBe(1);
+    expect(service.getSessionReplayAccess).toHaveBeenCalledWith(
+      "fresh-session",
+      expect.any(AbortSignal)
+    );
+    expect(service.getSessionEvents).toHaveBeenCalledWith(
+      "uid",
+      "fresh-session",
       expect.any(AbortSignal)
     );
   });

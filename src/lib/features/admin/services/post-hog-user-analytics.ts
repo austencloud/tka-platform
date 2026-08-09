@@ -4,6 +4,8 @@ import type {
   ContentMetrics,
   ModuleActivityBreakdown,
   PostHogSessionEvent,
+  PostHogReplayAccess,
+  PostHogReplayAccessState,
   PostHogSessionSummary,
   TimePeriod,
   UserEngagementSummary,
@@ -27,6 +29,43 @@ export class AnalyticsResponseError extends Error {
 }
 
 export class PostHogUserAnalytics {
+  async getSessionReplayAccess(
+    sessionId: string,
+    signal?: AbortSignal
+  ): Promise<PostHogReplayAccess> {
+    const user = auth.currentUser;
+    if (!user) throw new AnalyticsResponseError("Admin session expired", 401);
+    const token = await user.getIdToken();
+    const response = await fetch("/api/admin/session-replay", {
+      method: "POST",
+      signal,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ sessionId }),
+    });
+    const body = (await response.json().catch(() => null)) as {
+      state?: unknown;
+      embedUrl?: unknown;
+      message?: unknown;
+    } | null;
+    if (body && isReplayAccessState(body.state)) {
+      return {
+        state: body.state,
+        embedUrl: typeof body.embedUrl === "string" ? body.embedUrl : null,
+        message:
+          typeof body.message === "string"
+            ? body.message
+            : "Replay access did not include a status message.",
+      };
+    }
+    throw new AnalyticsResponseError(
+      `Replay request failed (${response.status})`,
+      response.status
+    );
+  }
+
   async getEngagementSummary(
     userId: string,
     period: TimePeriod,
@@ -130,6 +169,18 @@ export class PostHogUserAnalytics {
       throw new AnalyticsResponseError("Analytics response omitted data");
     return body.data;
   }
+}
+
+function isReplayAccessState(
+  value: unknown
+): value is PostHogReplayAccessState {
+  return [
+    "ready",
+    "processing",
+    "unavailable",
+    "configuration",
+    "error",
+  ].includes(String(value));
 }
 
 function record(value: unknown, label: string): Record<string, unknown> {

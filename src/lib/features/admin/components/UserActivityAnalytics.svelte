@@ -18,6 +18,7 @@
     userDisplayName?: string | null;
     userUsername?: string | null;
     userEmail?: string | null;
+    targetSessionId?: string | null;
     compact?: boolean;
   }
 
@@ -28,6 +29,7 @@
     userDisplayName = null,
     userUsername = null,
     userEmail = null,
+    targetSessionId = null,
     compact = false,
   }: Props = $props();
 
@@ -522,7 +524,7 @@
             >{recentSessions.length} loaded</span
           >{/if}
       </div>
-      {#if loading.sessions && recentSessions.length === 0}
+      {#if loading.sessions && recentSessions.length === 0 && !targetSessionId}
         <div
           class="session-skeletons"
           role="status"
@@ -532,7 +534,7 @@
               class="skeleton-session"
             ></div>{/each}
         </div>
-      {:else if errors.sessions && recentSessions.length === 0}
+      {:else if errors.sessions && recentSessions.length === 0 && !targetSessionId}
         <div class="inline-state error" role="alert">
           <span>{errors.sessions}</span>
           <AdminActionButton
@@ -541,13 +543,14 @@
             onclick={() => retry("sessions")}>Retry</AdminActionButton
           >
         </div>
-      {:else if recentSessions.length > 0}
+      {:else if recentSessions.length > 0 || targetSessionId}
         {#key `${userId}:${selectedPeriod}`}
           <UserSessionInspector
             {userId}
             {userDisplayName}
             {userUsername}
             {userEmail}
+            {targetSessionId}
             sessions={recentSessions}
           />
         {/key}

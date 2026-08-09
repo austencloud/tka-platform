@@ -18,6 +18,8 @@ const ROUTE_SCOPED_PARAMETERS: readonly RouteScopedParameter[] = [
   { name: "room", isValidForPath: startsWith("/museum") },
   { name: "seq", isValidForPath: isLoopLabelerPath },
   { name: "filter", isValidForPath: isLoopLabelerPath },
+  { name: "inspectUser", isValidForPath: startsWith("/admin/users") },
+  { name: "inspectSession", isValidForPath: startsWith("/admin/users") },
 ];
 
 const ONE_REQUEST_PARAMETERS = ["fresh", "from", "code", "section"] as const;

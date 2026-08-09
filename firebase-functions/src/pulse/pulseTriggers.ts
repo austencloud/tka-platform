@@ -31,6 +31,7 @@ import {
   resolveDisplayName,
 } from "./pulseIdentity";
 import { simplifyRepeatedWord } from "./wordSimplifier";
+import { resolveFreshPostHogSessionId } from "./returnSessionContext";
 
 const db = admin.firestore();
 
@@ -79,6 +80,20 @@ async function lookupIdentity(userId: string): Promise<AuthIdentity | null> {
       isAnonymous: user.providerData.length === 0 && !user.email,
     };
   } catch {
+    return null;
+  }
+}
+
+async function lookupReturnSessionId(
+  userId: string,
+  activityTimestampMs: number
+): Promise<string | null> {
+  try {
+    const profile = await db.doc(`userPrivateProfiles/${userId}`).get();
+    return resolveFreshPostHogSessionId(profile.data(), activityTimestampMs);
+  } catch {
+    // Replay context enriches the notification, but a transient private-profile
+    // read must not suppress the returning-user alert itself.
     return null;
   }
 }
@@ -177,12 +192,17 @@ export const pulseUserActivity = onDocumentWritten(
       { merge: true }
     );
 
+    const postHogSessionId = await lookupReturnSessionId(userId, afterTs);
+
     await notifyAdmins({
       type: "admin-user-returned",
       message: `${name} is back in the app`,
       fromUserId: userId,
       fromUserName: name,
-      data: { returnedUserId: userId },
+      data: {
+        returnedUserId: userId,
+        ...(postHogSessionId ? { postHogSessionId } : {}),
+      },
     });
   }
 );

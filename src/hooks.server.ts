@@ -124,7 +124,7 @@ export const handle: Handle = async ({ event, resolve }) => {
       "media-src 'self' blob: https://firebasestorage.googleapis.com https://storage.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       // firebaseio.com: RTDB falls back to an iframe transport when its websocket fails
-      "frame-src 'self' blob: https://accounts.google.com https://*.firebaseapp.com https://*.firebaseio.com",
+      "frame-src 'self' blob: https://accounts.google.com https://*.firebaseapp.com https://*.firebaseio.com https://*.posthog.com",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
