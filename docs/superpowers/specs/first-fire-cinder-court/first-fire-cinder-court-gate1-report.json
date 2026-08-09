@@ -85,24 +85,24 @@
       {
         "shrineId": "dj",
         "centre": {
-          "x": 12.3,
-          "z": 8.6
+          "x": 11.6,
+          "z": 8.7
         },
         "width": 3.5
       },
       {
         "shrineId": "ek",
         "centre": {
-          "x": 18,
-          "z": 33.65
+          "x": 14.03,
+          "z": 36.23
         },
         "width": 3.5
       },
       {
         "shrineId": "fl",
         "centre": {
-          "x": 37.87,
-          "z": 11.38
+          "x": 40.16,
+          "z": 13.94
         },
         "width": 3.5
       }
@@ -157,10 +157,10 @@
     }
   ],
   "sourceDigests": {
-    "planContract": "73f46f3399e0e2926fc89fe55bba8f60d2f2eb246fdbdf1b5879923b56888344",
+    "planContract": "e1eab221c1e1cc7e106e8ef757e948e6aaf18b9fd6633f657842840e8f19cb6c",
     "sequenceBinding": "707a7111e769241d86c6d19c6bdbc45da32da318b13a07ddc03bc3a5f0ad3843",
     "catalog": "e6a9af2214c2af0a10c2169e19dd9a0a1b7ac980368f0132fdb6ff158434c730",
-    "board": "4ed3749909d846b6c3b82c47206410b626cd6cdcc8b58b2bc15878de3c45f809"
+    "board": "f7acd9b940aa30949c6b109d3b07ea9f15956ee18afc1a66a86070cd0bfa9a24"
   },
   "sequenceFingerprints": [
     {

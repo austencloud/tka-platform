@@ -208,6 +208,141 @@ describe("First Fire Cinder Court measured plan", () => {
     expect(plan.torchBudget.fieldStems + plan.torchBudget.perimeterStemsPerShrine * plan.shrines.length).toBe(126);
   });
 
+  it("carries its clear widths in carved geometry, not just as declared numbers", () => {
+    // Perpendicular ray-march from every route sample to the first rock hit.
+    const MARCH_MAX = 3.5;
+    const MARCH_STEP = 0.05;
+    const insideRock = (point: { x: number; z: number }) =>
+      plan.basaltMasses.some((mass) => pointInProcessionPolygon(point, mass.polygon));
+    const march = (
+      origin: { x: number; z: number },
+      nx: number,
+      nz: number
+    ): { t: number; id: string } => {
+      for (let t = MARCH_STEP; t <= MARCH_MAX; t += MARCH_STEP) {
+        const point = { x: origin.x + nx * t, z: origin.z + nz * t };
+        const hit = plan.basaltMasses.find((mass) =>
+          pointInProcessionPolygon(point, mass.polygon)
+        );
+        if (hit) return { t, id: hit.id };
+      }
+      return { t: MARCH_MAX, id: "" };
+    };
+    const offenders: string[] = [];
+    for (const section of plan.pathSections) {
+      for (let index = 0; index < section.points.length - 1; index++) {
+        const from = section.points[index]!;
+        const to = section.points[index + 1]!;
+        const length = Math.hypot(to.x - from.x, to.z - from.z) || 1;
+        const nx = -(to.z - from.z) / length;
+        const nz = (to.x - from.x) / length;
+        const steps = Math.max(1, Math.ceil(length / 0.25));
+        for (let step = 0; step <= steps; step++) {
+          const t = step / steps;
+          const sample = { x: from.x + (to.x - from.x) * t, z: from.z + (to.z - from.z) * t };
+          const left = march(sample, nx, nz);
+          const right = march(sample, -nx, -nz);
+          if (
+            Math.min(left.t, right.t) < 0.9 ||
+            left.t + right.t < Math.min(section.width, 2.4)
+          ) {
+            offenders.push(
+              `${section.id} ${sample.x.toFixed(2)},${sample.z.toFixed(2)} sides ${left.t.toFixed(2)}(${left.id})/${right.t.toFixed(2)}(${right.id})`
+            );
+          }
+        }
+      }
+    }
+    expect(offenders.slice(0, 12)).toEqual([]);
+  });
+
+  it("keeps every reachable floor cell within 2 m of the carved network", () => {
+    // Flood-fill walkable floor from the Water door; assert no reachable
+    // pocket strays far from corridors, hub, or courts — "nowhere else to
+    // walk" as a proof instead of an enumeration.
+    const CELL = 0.5;
+    const cols = Math.round((plan.room.maxX - plan.room.minX) / CELL);
+    const rows = Math.round((plan.room.maxZ - plan.room.minZ) / CELL);
+    const cellPoint = (cx: number, cz: number) => ({
+      x: plan.room.minX + (cx + 0.5) * CELL,
+      z: plan.room.minZ + (cz + 0.5) * CELL,
+    });
+    const walkable: boolean[] = new Array(cols * rows);
+    for (let cz = 0; cz < rows; cz++) {
+      for (let cx = 0; cx < cols; cx++) {
+        const point = cellPoint(cx, cz);
+        walkable[cz * cols + cx] = !plan.basaltMasses.some((mass) =>
+          pointInProcessionPolygon(point, mass.polygon)
+        );
+      }
+    }
+    const distToSegment = (
+      point: { x: number; z: number },
+      a: { x: number; z: number },
+      b: { x: number; z: number }
+    ) => {
+      const dx = b.x - a.x;
+      const dz = b.z - a.z;
+      const lengthSq = dx * dx + dz * dz || 1;
+      const t = Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.z - a.z) * dz) / lengthSq));
+      return Math.hypot(point.x - (a.x + dx * t), point.z - (a.z + dz * t));
+    };
+    const carvedDistance = (point: { x: number; z: number }) => {
+      let best = Math.hypot(point.x - plan.hubCircle.centre.x, point.z - plan.hubCircle.centre.z) - plan.hubCircle.radius;
+      for (const corridor of plan.carved.corridors) {
+        for (let index = 0; index < corridor.points.length - 1; index++) {
+          best = Math.min(
+            best,
+            distToSegment(point, corridor.points[index]!, corridor.points[index + 1]!) - corridor.width / 2
+          );
+        }
+      }
+      for (const shrine of plan.shrines) {
+        if (pointInProcessionPolygon(point, shrine.courtPolygon)) return 0;
+        for (let index = 0; index < shrine.courtPolygon.length; index++) {
+          best = Math.min(
+            best,
+            distToSegment(
+              point,
+              shrine.courtPolygon[index]!,
+              shrine.courtPolygon[(index + 1) % shrine.courtPolygon.length]!
+            )
+          );
+        }
+      }
+      return Math.max(0, best);
+    };
+    const start = { cx: Math.floor(1 / CELL), cz: Math.floor(22 / CELL) };
+    expect(walkable[start.cz * cols + start.cx]).toBe(true);
+    const reached = new Set<number>([start.cz * cols + start.cx]);
+    const queue = [start.cz * cols + start.cx];
+    while (queue.length > 0) {
+      const index = queue.pop()!;
+      const cx = index % cols;
+      const cz = Math.floor(index / cols);
+      for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+        const nextX = cx + dx;
+        const nextZ = cz + dz;
+        if (nextX < 0 || nextX >= cols || nextZ < 0 || nextZ >= rows) continue;
+        const next = nextZ * cols + nextX;
+        if (reached.has(next) || !walkable[next]) continue;
+        reached.add(next);
+        queue.push(next);
+      }
+    }
+    const offenders = [...reached]
+      .map((index) => cellPoint(index % cols, Math.floor(index / cols)))
+      .filter((point) => carvedDistance(point) > 2.0)
+      .map((point) => `${point.x.toFixed(2)},${point.z.toFixed(2)}`);
+    expect(offenders.slice(0, 12)).toEqual([]);
+    // The courts must be reachable at all.
+    for (const shrine of plan.shrines) {
+      const cx = Math.floor((shrine.entry.x - plan.room.minX) / CELL);
+      const cz = Math.floor((shrine.entry.z - plan.room.minZ) / CELL);
+      expect(reached.has(cz * cols + cx), `${shrine.id} entry unreachable`).toBe(true);
+    }
+  });
+
   it("uses extra compiled depth as symmetric rock margin without stretching geometry", () => {
     const deeper = buildFirstFireProcessionPlan({
       room: { minX: 0, maxX: 58, minZ: 0, maxZ: 44.5 },
