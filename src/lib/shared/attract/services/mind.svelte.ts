@@ -37,6 +37,7 @@ import {
   abandonActivity,
   advanceActivity,
   currentActivityStep,
+  repairActivity,
   scoreActivities,
   startNextActivity,
 } from "../domain/activities";
@@ -299,6 +300,7 @@ export function createGhostMind(opts: {
       : status.activityCandidates;
     publishStatus("choosing", ctx, null, null, activityCandidates);
     let fromActivity = false;
+    let plannedOptional = false;
     let intention: Intention | null = null;
 
     // Blockers and genuine traps are allowed to break a train of thought. They
@@ -355,6 +357,7 @@ export function createGhostMind(opts: {
       if (plannedIntention && possible) {
         intention = plannedIntention;
         fromActivity = true;
+        plannedOptional = plannedStep.optional ?? false;
         break;
       }
       if (plannedStep.optional) {
@@ -362,6 +365,19 @@ export function createGhostMind(opts: {
           advanceActivity(memory.activities, now()),
           "completed"
         );
+      } else if (
+        // The required step is impossible, but the rest of the idea may still
+        // stand. Skipping to a step this world supports beats binning an
+        // activity that was halfway to something.
+        repairActivity(memory.activities, (step) => {
+          try {
+            return intentionsById.get(step.intentionId)?.can(ctx) ?? false;
+          } catch {
+            return false;
+          }
+        })
+      ) {
+        memory.experience.repairedActivities += 1;
       } else {
         rememberActivityOutcome(
           abandonActivity(memory.activities, now()),
@@ -396,7 +412,14 @@ export function createGhostMind(opts: {
       }
       if (!target) {
         if (fromActivity) {
-          observeActivityIntention(memory.experience, intention, false, false);
+          observeActivityIntention(
+            memory.experience,
+            intention,
+            false,
+            false,
+            ctx,
+            plannedOptional
+          );
           rememberActivityOutcome(
             abandonActivity(memory.activities, now()),
             "abandoned"
@@ -517,7 +540,17 @@ export function createGhostMind(opts: {
       if (currentModuleId) memory.barrenModules.delete(currentModuleId);
     }
     if (fromActivity) {
-      observeActivityIntention(memory.experience, intention, ok, watchedPayoff);
+      // FRESH context: the step's outcome is the difference this step made, so
+      // it has to be measured against the world as it is now, not the snapshot
+      // the tick started with.
+      observeActivityIntention(
+        memory.experience,
+        intention,
+        ok,
+        watchedPayoff,
+        readContext(),
+        plannedOptional
+      );
       if (ok) {
         rememberActivityOutcome(
           advanceActivity(memory.activities, now()),

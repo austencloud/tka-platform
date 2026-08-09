@@ -103,6 +103,9 @@ export interface GhostActivityPrediction {
 export interface ActiveGhostActivityExperience {
   activityId: GhostActivityId;
   variantId: string;
+  /** Rolling snapshot so each step can be diffed against the one before it. */
+  lastObservation: GhostActivityObservation;
+  steps: GhostStepOutcome[];
   goal: GhostActivityGoal;
   startedAt: number;
   before: GhostActivityObservation;
@@ -144,10 +147,40 @@ export interface GhostActivityEpisode {
   resultSignature: string;
 }
 
+/**
+ * What one step of a plan actually did. The episode used to be the smallest
+ * unit of learning, which meant the Ghost could learn "that variant scored
+ * badly" but never "THAT step is the one wasting my time".
+ */
+export interface GhostStepOutcome {
+  intentionId: string;
+  ok: boolean;
+  /** Anything at all moved: a drawer, an overlay, the sequence, the screen. */
+  productive: boolean;
+  /** Something the audience can see moved. */
+  visible: boolean;
+  optional: boolean;
+}
+
+/** Running tally for one intention in one kind of situation. */
+export interface GhostStepStat {
+  attempts: number;
+  productive: number;
+  visible: number;
+}
+
 export interface GhostExperienceMemory {
   active: ActiveGhostActivityExperience | null;
   episodes: GhostActivityEpisode[];
   last: GhostActivityEpisode | null;
+  /** Keyed `intentionId|situation` — the step-level ledger. */
+  stepStats: Map<string, GhostStepStat>;
+  /** Landed steps that produced nothing where history expected something. */
+  noticedDuds: number;
+  /** Optional steps dropped from a plan because history calls them dead. */
+  prunedSteps: number;
+  /** Activities rescued by skipping an impossible step instead of dying. */
+  repairedActivities: number;
   recorded: number;
   valueTotal: number;
   lowValueEpisodes: number;

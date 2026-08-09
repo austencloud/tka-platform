@@ -26,15 +26,30 @@ export interface SessionRecord {
   t: number;
   intentionId: string;
   category: string;
+  /** perceive vs act — a perception that changes nothing is not waste. */
+  operation: string;
   thought: string;
   moduleId: string | null;
   tabId: string | null;
   ok: boolean;
   seqLen: number;
+  /** Words are how a transform proves it changed something. */
+  word: string;
   effects: number;
   playing: boolean;
   presentationRevision: number;
   playbackSurface: string | null;
+  /** Which activity (and imagined future) owned this step. */
+  activityId: string | null;
+  variantId: string | null;
+  /**
+   * The WHOLE app state, stringified. A step that leaves this untouched moved
+   * nothing at all — no drawer, no overlay, no filter, no playback. Measuring
+   * waste against a hand-picked subset of fields instead scores `play-it` and
+   * `open-viewer` as useless, which is a lie about a presenter whose entire
+   * job is to open things and play them.
+   */
+  fingerprint: string;
 }
 
 export function runSession(seed: number, decisions: number) {
@@ -132,20 +147,31 @@ export function runSession(seed: number, decisions: number) {
           continue;
         }
         lastT = e.t;
+        const definition = ALL_INTENTIONS.find((x) => x.id === e.intentionId);
         log.push({
           t: e.t,
           intentionId: e.intentionId,
-          category:
-            ALL_INTENTIONS.find((x) => x.id === e.intentionId)?.category ?? "?",
+          category: definition?.category ?? "?",
+          operation: definition?.operation ?? "act",
           thought: e.thought,
           moduleId: e.moduleId,
           tabId: app.state.tabId,
           ok: e.ok,
           seqLen: app.state.seqLen,
+          word: app.state.word,
           effects: app.state.activeEffects.size,
           playing: app.state.isPlaying,
           presentationRevision: mind.memory.playback.presentationRevision,
           playbackSurface: mind.memory.playback.lastPlayedSurface,
+          activityId: mind.memory.activities.current?.id ?? null,
+          variantId: mind.memory.activities.current?.variantId ?? null,
+          fingerprint: JSON.stringify({
+            ...app.state,
+            activeEffects: [...app.state.activeEffects].sort(),
+            // Clock-driven, not caused by the step that happens to follow it.
+            playingUntil: 0,
+            presentingUntil: 0,
+          }),
         });
       }
     },

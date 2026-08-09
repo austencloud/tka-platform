@@ -22,6 +22,7 @@ import {
 import {
   activitySituation,
   beginActivityExperience,
+  judgeStep,
 } from "./activity-experience";
 import {
   activityPredictionMultiplier,
@@ -452,6 +453,28 @@ export function scoreActivities(
  * and weight it by how the forecast advises selection. Pure, for tests and
  * for the HUD.
  */
+/**
+ * The plan the Ghost writes for itself: the authored one, minus the optional
+ * steps its own step ledger says do nothing in this situation.
+ *
+ * This is where step-level credit assignment turns into visible behaviour. A
+ * hand-authored variant pair can only offer futures a person thought of; this
+ * one is composed from what actually worked, so a detour that never pays off
+ * here stops being taken — without anyone editing the activity.
+ */
+function pruneDeadSteps(
+  steps: GhostActivityStep[],
+  ctx: GhostContext
+): { steps: GhostActivityStep[]; dropped: number } {
+  const situation = activitySituation(ctx);
+  const kept = steps.filter((step) => {
+    // Required steps are the activity's spine. Only detours are negotiable.
+    if (!step.optional) return true;
+    return !judgeStep(ctx.experience, step.intentionId, situation).dead;
+  });
+  return { steps: kept, dropped: steps.length - kept.length };
+}
+
 export function imagineActivityFutures(
   definition: GhostActivityDefinition,
   ctx: GhostContext
@@ -467,6 +490,18 @@ export function imagineActivityFutures(
       { id: DEFAULT_ACTIVITY_VARIANT, steps: definition.plan(ctx) },
     ];
   }
+
+  // Offer the self-composed future alongside the authored ones, but only when
+  // it is genuinely a different plan — an identical "pruned" twin would just
+  // dilute the draw.
+  const base = variants[0];
+  if (base) {
+    const pruned = pruneDeadSteps(base.steps, ctx);
+    if (pruned.dropped > 0 && pruned.steps.length > 0) {
+      variants = [...variants, { id: "pruned", steps: pruned.steps }];
+    }
+  }
+
   return variants
     .filter((variant) => variant.steps.length > 0)
     .map((variant) => {
@@ -523,6 +558,13 @@ export function startNextActivity(
       }
     }
   }
+  if (future.variant.id === "pruned") {
+    const authored = futures[0]?.variant.steps.length ?? 0;
+    ctx.experience.prunedSteps += Math.max(
+      0,
+      authored - future.variant.steps.length
+    );
+  }
   const activity: ActiveGhostActivity = {
     id: selected.definition.id,
     variantId: future.variant.id,
@@ -576,6 +618,33 @@ function endActivity(
   memory.lastEndedAt.set(activity.id, now);
   memory.current = null;
   return activity;
+}
+
+/**
+ * PLAN REPAIR. A required step became impossible; instead of throwing the whole
+ * idea away, look for a later step of the same plan that the world supports
+ * right now and carry on from there.
+ *
+ * Safe by construction: the Ghost only jumps to a step whose own `can` is true
+ * in this exact world, so it can never skip a prerequisite the next step needed.
+ */
+export function repairActivity(
+  memory: GhostActivityMemory,
+  canRun: (step: GhostActivityStep) => boolean
+): boolean {
+  const activity = memory.current;
+  if (!activity) return false;
+  for (
+    let index = activity.stepIndex + 1;
+    index < activity.steps.length;
+    index++
+  ) {
+    if (canRun(activity.steps[index]!)) {
+      activity.stepIndex = index;
+      return true;
+    }
+  }
+  return false;
 }
 
 export function advanceActivity(

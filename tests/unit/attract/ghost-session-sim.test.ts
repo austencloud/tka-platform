@@ -493,13 +493,28 @@ describe("ghost session simulation", () => {
       expect(experience.initialPredictionCount).toBe(30);
       expect(experience.informedSelections).toBeGreaterThan(0);
       expect(experience.boostedSelections).toBeGreaterThan(0);
-      // Negative judgment now acts in two places: reducing a chosen activity,
-      // or passing over an imagined future forecast below neutral. Either
-      // counts as experience talking the ghost out of something.
+      // Negative judgment now acts in three places: reducing a chosen
+      // activity, passing over an imagined future forecast below neutral, or
+      // dropping a step the step ledger has proven does nothing here. Any of
+      // them is experience talking the ghost out of something.
       expect(
-        experience.reducedSelections + experience.suppressedFutures
+        experience.reducedSelections +
+          experience.suppressedFutures +
+          experience.prunedSteps
       ).toBeGreaterThan(0);
       expect(experience.counterfactualSelections).toBeGreaterThan(0);
+      // Step-level credit assignment: the ghost knows which steps do nothing
+      // WHERE, and composes a plan without them.
+      expect(experience.stepStats.size).toBeGreaterThan(0);
+      expect(experience.prunedSteps).toBeGreaterThan(0);
+      expect(
+        [...experience.stepStats.values()].every(
+          (stat) =>
+            stat.attempts > 0 &&
+            stat.productive <= stat.attempts &&
+            stat.visible <= stat.attempts
+        )
+      ).toBe(true);
       expect(experience.exploratorySelections).toBeGreaterThan(0);
       expect(experience.accuratePredictions).toBeGreaterThan(0);
       expect(experience.highValueEpisodes).toBeGreaterThan(0);

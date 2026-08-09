@@ -16,12 +16,19 @@ import type {
   GhostContext,
   GhostExperienceMemory,
   GhostSequenceBand,
+  GhostStepStat,
   Intention,
 } from "./intention";
 import { evaluateActivityPrediction } from "./activity-prediction";
 
 export const MAX_ACTIVITY_EPISODES = 200;
 export const INITIAL_PREDICTION_WINDOW = 30;
+/** Evidence needed before step history is allowed to change a plan. */
+export const MIN_STEP_EVIDENCE = 4;
+/** At or below this productive rate an optional step is dead weight. */
+export const DEAD_STEP_RATE = 0.15;
+/** Above this, the Ghost genuinely expects the step to do something. */
+export const EXPECTED_STEP_RATE = 0.6;
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
@@ -65,6 +72,75 @@ export function observeActivityWorld(
   };
 }
 
+/**
+ * How coarse a "situation" is for step learning.
+ *
+ * Deliberately blunter than the situation used for activity prediction: a key
+ * that is too specific never collects enough samples to act on, so the ledger
+ * fills with singletons and every step looks unproven forever.
+ */
+export function stepSituationKey(situation: GhostActivitySituation): string {
+  return [
+    situation.moduleId ?? "none",
+    situation.tabId ?? "none",
+    situation.sequenceBand,
+    situation.hasEffects ? "fx" : "plain",
+  ].join("|");
+}
+
+export function stepStatKey(
+  intentionId: string,
+  situation: GhostActivitySituation
+): string {
+  return `${intentionId}@${stepSituationKey(situation)}`;
+}
+
+export interface GhostStepJudgment {
+  attempts: number;
+  productiveRate: number;
+  /** Enough evidence to act on. */
+  proven: boolean;
+  /** Proven, and reliably does nothing here. */
+  dead: boolean;
+  /** Proven, and reliably does something here. */
+  expected: boolean;
+}
+
+export function judgeStep(
+  memory: GhostExperienceMemory,
+  intentionId: string,
+  situation: GhostActivitySituation
+): GhostStepJudgment {
+  const stat = memory.stepStats.get(stepStatKey(intentionId, situation));
+  const attempts = stat?.attempts ?? 0;
+  const productiveRate = attempts ? (stat?.productive ?? 0) / attempts : 0;
+  const proven = attempts >= MIN_STEP_EVIDENCE;
+  return {
+    attempts,
+    productiveRate,
+    proven,
+    dead: proven && productiveRate <= DEAD_STEP_RATE,
+    expected: proven && productiveRate >= EXPECTED_STEP_RATE,
+  };
+}
+
+function bumpStepStat(
+  memory: GhostExperienceMemory,
+  key: string,
+  productive: boolean,
+  visible: boolean
+): void {
+  const stat: GhostStepStat = memory.stepStats.get(key) ?? {
+    attempts: 0,
+    productive: 0,
+    visible: 0,
+  };
+  stat.attempts += 1;
+  if (productive) stat.productive += 1;
+  if (visible) stat.visible += 1;
+  memory.stepStats.set(key, stat);
+}
+
 export function beginActivityExperience(
   memory: GhostExperienceMemory,
   activity: ActiveGhostActivity,
@@ -73,12 +149,15 @@ export function beginActivityExperience(
   ctx: GhostContext,
   now: number
 ): void {
+  const before = observeActivityWorld(ctx);
   memory.active = {
     activityId: activity.id,
     variantId: activity.variantId,
     goal,
     startedAt: now,
-    before: observeActivityWorld(ctx),
+    before,
+    lastObservation: before,
+    steps: [],
     prediction,
     successfulActions: 0,
     perceptions: 0,
@@ -87,16 +166,42 @@ export function beginActivityExperience(
   };
 }
 
+function sameObservation(
+  left: GhostActivityObservation,
+  right: GhostActivityObservation
+): boolean {
+  return (
+    left.sequenceLength === right.sequenceLength &&
+    left.sequenceWord === right.sequenceWord &&
+    left.presentationRevision === right.presentationRevision &&
+    left.understoodConcepts === right.understoodConcepts &&
+    left.encounteredControls === right.encounteredControls &&
+    arraysEqual(left.effectIds, right.effectIds) &&
+    left.situation.moduleId === right.situation.moduleId &&
+    left.situation.tabId === right.situation.tabId &&
+    arraysEqual(left.situation.capabilities, right.situation.capabilities)
+  );
+}
+
 export function observeActivityIntention(
   memory: GhostExperienceMemory,
   intention: Intention,
   ok: boolean,
-  watchedPayoff: boolean
+  watchedPayoff: boolean,
+  ctx: GhostContext,
+  optional = false
 ): void {
   const active = memory.active;
   if (!active) return;
   if (!ok) {
     active.failedSteps += 1;
+    active.steps.push({
+      intentionId: intention.id,
+      ok: false,
+      productive: false,
+      visible: false,
+      optional,
+    });
     return;
   }
   if (intention.operation === "perceive") {
@@ -108,6 +213,45 @@ export function observeActivityIntention(
     active.successfulActions += 1;
   }
   if (watchedPayoff) active.watchedPayoffs += 1;
+
+  // CREDIT ASSIGNMENT. Diff the world across this one step rather than across
+  // the whole activity, so the outcome lands on the step that caused it.
+  const after = observeActivityWorld(ctx);
+  const moved = !sameObservation(after, active.lastObservation);
+  // A step that produced something worth watching did its job even when it
+  // left no trace in the observation — playing a sequence changes nothing
+  // structural and is the entire point of the show.
+  const productive = moved || watchedPayoff;
+  const visible =
+    watchedPayoff ||
+    after.sequenceLength !== active.lastObservation.sequenceLength ||
+    after.sequenceWord !== active.lastObservation.sequenceWord ||
+    after.presentationRevision !== active.lastObservation.presentationRevision ||
+    !arraysEqual(after.effectIds, active.lastObservation.effectIds);
+
+  // Keyed on the situation the Ghost was in when it CHOSE the step: the
+  // lesson is "here, this does nothing", not "afterwards, that was true".
+  const situation = active.lastObservation.situation;
+  // LOCATED SURPRISE. Not a post-hoc diagnostic on a finished episode — the
+  // Ghost notices, at the step, that a thing it expected to work did not.
+  if (!productive && judgeStep(memory, intention.id, situation).expected) {
+    memory.noticedDuds += 1;
+  }
+  bumpStepStat(
+    memory,
+    stepStatKey(intention.id, situation),
+    productive,
+    visible
+  );
+
+  active.steps.push({
+    intentionId: intention.id,
+    ok: true,
+    productive,
+    visible,
+    optional,
+  });
+  active.lastObservation = after;
 }
 
 function arraysEqual(
