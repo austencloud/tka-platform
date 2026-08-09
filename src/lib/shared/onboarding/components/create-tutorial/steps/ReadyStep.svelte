@@ -87,7 +87,7 @@
 
 {#snippet glyph(id: WorkspaceButtonId, size: number)}
   {#if WORKSPACE_BUTTON_ICON[id].iconType === "svg"}
-    <UndoGlyph {size} />
+    <UndoGlyph {size} direction={id === "redo" ? "redo" : "undo"} />
   {:else}
     <i class="fa-solid {WORKSPACE_BUTTON_ICON[id].icon}" aria-hidden="true"></i>
   {/if}
@@ -270,7 +270,10 @@
 
   .top-bar {
     display: grid;
-    grid-template-columns: 48px minmax(0, 1fr) 48px;
+    grid-template-columns:
+      calc(96px + var(--settings-spacing-sm, 8px))
+      minmax(0, 1fr)
+      calc(96px + var(--settings-spacing-sm, 8px));
     align-items: center;
     gap: var(--settings-spacing-sm, 8px);
     padding: 10px 14px;
@@ -290,6 +293,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: var(--settings-spacing-sm, 8px);
   }
 
   .header-trailing {
@@ -371,7 +375,8 @@
     transform: translate(-50%, -50%);
   }
 
-  /* Inline number badge for the in-grid "tap a step" hint (badge 6). */
+  /* Inline number badge for the in-grid "tap a step" hint. Its number comes
+     from the shared layout's `grid` zone, so it follows the button order. */
   .tap-hint .grid-badge {
     position: static;
     width: 18px;

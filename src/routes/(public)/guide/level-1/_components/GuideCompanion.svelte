@@ -53,7 +53,10 @@
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import { sequenceToStrip, stripToSequence } from "../_data/guide-sequence-adapter";
+  import {
+    sequenceToStrip,
+    stripToSequence,
+  } from "../_data/guide-sequence-adapter";
   import {
     hasOverride,
     hasRevisionsCached,
@@ -68,7 +71,10 @@
     stepsOf,
     truncateStripAt,
   } from "../_data/guide-inline-edit";
-  import { mirrorSequence, swapColors } from "$lib/shared/create/services/sequence-transformer";
+  import {
+    mirrorSequence,
+    swapColors,
+  } from "$lib/shared/create/services/sequence-transformer";
   import { rotateSequenceGeometry } from "$lib/shared/create/services/sequence-derived-fields";
   import OptionPicker from "$lib/features/create/construct/option-picker/components/OptionPicker.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
@@ -148,7 +154,9 @@
   const editGridMode = $derived(
     (stagedStrip?.[0]?.gridMode as GridMode | undefined) ?? GridMode.DIAMOND
   );
-  const editPropTypeOverride = $derived(propType === "staff" ? PropType.STAFF : PropType.HAND);
+  const editPropTypeOverride = $derived(
+    propType === "staff" ? PropType.STAFF : PropType.HAND
+  );
 
   // Revert availability is fetched lazily (Firestore read) whenever a new
   // strip is clicked while signed in as admin - cached in the override module
@@ -182,7 +190,9 @@
     if (!stripKey) return;
     try {
       const ok = await revertOverride(stripKey);
-      toast[ok ? "success" : "error"](ok ? "Reverted to the previous save." : "Nothing to revert.");
+      toast[ok ? "success" : "error"](
+        ok ? "Reverted to the previous save." : "Nothing to revert."
+      );
     } catch (err) {
       console.error("[GuideCompanion] Revert failed:", err);
       toast.error("Failed to revert.");
@@ -293,7 +303,11 @@
 
 {#snippet editPanel()}
   <div class="edit-panel">
-    <div class="edit-strip" role="group" aria-label="Staged steps: tap a step to rebuild from there">
+    <div
+      class="edit-strip"
+      role="group"
+      aria-label="Staged steps: tap a step to rebuild from there"
+    >
       {#each stagedStrip ?? [] as box, i (box.id ?? i)}
         {@const stepNumber = box.stepNumber ?? 0}
         <button
@@ -301,7 +315,9 @@
           class="edit-cell"
           class:is-start={stepNumber === 0}
           onclick={() => handleTruncateAt(stepNumber)}
-          aria-label={stepNumber === 0 ? "Start position" : `Step ${stepNumber}: tap to rebuild from here`}
+          aria-label={stepNumber === 0
+            ? "Start position"
+            : `Step ${stepNumber}: tap to rebuild from here`}
         >
           <PictographContainer
             pictographData={box}
@@ -320,15 +336,27 @@
         currentGridMode={editGridMode}
         onOptionSelected={handleEditOptionSelected}
         hideFilters={true}
+        showInteractionHint={false}
       />
     </div>
 
     <div class="edit-actions" role="group" aria-label="Save or cancel editing">
-      <button class="admin-btn" type="button" onclick={cancelEdit} disabled={editSaving}>
+      <button
+        class="admin-btn"
+        type="button"
+        onclick={cancelEdit}
+        disabled={editSaving}
+      >
         <i class="fas fa-xmark" aria-hidden="true"></i>
         <span>Cancel</span>
       </button>
-      <button data-save-shortcut class="admin-btn is-primary" type="button" onclick={saveEdit} disabled={editSaving}>
+      <button
+        data-save-shortcut
+        class="admin-btn is-primary"
+        type="button"
+        onclick={saveEdit}
+        disabled={editSaving}
+      >
         <i class="fas fa-check" aria-hidden="true"></i>
         <span>{editSaving ? "Saving…" : "Save"}</span>
       </button>
@@ -344,7 +372,12 @@
 
 {#snippet adminActions(stacked = false, includeCopyForAI = false)}
   {#if authState.isAdmin && stripKey}
-    <div class="admin-row" class:stacked role="group" aria-label="Edit this guide sequence">
+    <div
+      class="admin-row"
+      class:stacked
+      role="group"
+      aria-label="Edit this guide sequence"
+    >
       {#if includeCopyForAI}
         <CopyForAIButton
           variant="icon-text"
@@ -356,7 +389,11 @@
           class="admin-copy-btn"
         />
       {/if}
-      <button class="admin-btn" type="button" onclick={() => (pickerOpen = true)}>
+      <button
+        class="admin-btn"
+        type="button"
+        onclick={() => (pickerOpen = true)}
+      >
         <i class="fas fa-right-left" aria-hidden="true"></i>
         <span>Replace</span>
       </button>
@@ -381,7 +418,12 @@
       <Popover.Root bind:open={transformOpen}>
         <Popover.Trigger>
           {#snippet child({ props })}
-            <button {...props} class="admin-btn" type="button" disabled={!sequence || transformBusy}>
+            <button
+              {...props}
+              class="admin-btn"
+              type="button"
+              disabled={!sequence || transformBusy}
+            >
               <i class="fas fa-shuffle" aria-hidden="true"></i>
               <span>Transform</span>
             </button>
@@ -440,11 +482,21 @@
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>
-      <button class="admin-btn" type="button" disabled={!sequence} onclick={handleRemix}>
+      <button
+        class="admin-btn"
+        type="button"
+        disabled={!sequence}
+        onclick={handleRemix}
+      >
         <i class="fas fa-pen-to-square" aria-hidden="true"></i>
         <span>Remix</span>
       </button>
-      <button class="admin-btn" type="button" disabled={!sequence} onclick={startEdit}>
+      <button
+        class="admin-btn"
+        type="button"
+        disabled={!sequence}
+        onclick={startEdit}
+      >
         <i class="fas fa-pen" aria-hidden="true"></i>
         <span>Edit steps</span>
       </button>
@@ -475,14 +527,21 @@
 <div class="companion" class:mobile={isMobile}>
   {#if isMobile}
     <div class="sheet-bar">
-      <button class="grab-handle" type="button" onclick={onClose} aria-label="Close animation"></button>
+      <button
+        class="grab-handle"
+        type="button"
+        onclick={onClose}
+        aria-label="Close animation"
+      ></button>
       {#if !(editing && stagedStrip)}
         <button
           class="overflow-toggle"
           type="button"
           onclick={() => (overflowOpen = !overflowOpen)}
           aria-expanded={overflowOpen}
-          aria-label={overflowOpen ? "Hide animation controls" : "Show animation controls"}
+          aria-label={overflowOpen
+            ? "Hide animation controls"
+            : "Show animation controls"}
         >
           <i class="fas fa-ellipsis" aria-hidden="true"></i>
         </button>
@@ -494,7 +553,12 @@
         {@render editPanel()}
       </div>
     {:else}
-      <div class="sheet-scroll" class:expanded={overflowOpen} aria-hidden={!overflowOpen} inert={!overflowOpen}>
+      <div
+        class="sheet-scroll"
+        class:expanded={overflowOpen}
+        aria-hidden={!overflowOpen}
+        inert={!overflowOpen}
+      >
         {#if isCodexMode}
           <GuideCodexControls />
         {/if}
@@ -507,7 +571,8 @@
     {/if}
   {:else}
     <div class="head">
-      <span class="ttl">{isCodexMode && !sequence ? "Codex" : "Animation"}</span>
+      <span class="ttl">{isCodexMode && !sequence ? "Codex" : "Animation"}</span
+      >
       <div class="head-actions">
         {#if authState.isAdmin}
           <CopyForAIButton
@@ -518,7 +583,9 @@
             disabled={!sequence}
           />
         {/if}
-        <button class="close" onclick={onClose} aria-label="Close animation">✕</button>
+        <button class="close" onclick={onClose} aria-label="Close animation"
+          >✕</button
+        >
       </div>
     </div>
 
@@ -537,7 +604,11 @@
   {/if}
 </div>
 
-<SequencePickerModal open={pickerOpen} onSelect={handleReplace} onClose={() => (pickerOpen = false)} />
+<SequencePickerModal
+  open={pickerOpen}
+  onSelect={handleReplace}
+  onClose={() => (pickerOpen = false)}
+/>
 
 <style>
   .companion {
@@ -623,7 +694,9 @@
     opacity: 0;
     overflow: hidden;
     padding: 0 0.75rem;
-    transition: max-height var(--duration-normal, 260ms) ease, opacity var(--duration-fast, 150ms) ease,
+    transition:
+      max-height var(--duration-normal, 260ms) ease,
+      opacity var(--duration-fast, 150ms) ease,
       padding var(--duration-normal, 260ms) ease;
   }
   .sheet-scroll.expanded {
@@ -688,7 +761,9 @@
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
   .ttl {
-    font: 700 0.9rem system-ui, sans-serif;
+    font:
+      700 0.9rem system-ui,
+      sans-serif;
     color: var(--theme-text, #e8e6f0);
   }
   .head-actions {
@@ -715,7 +790,8 @@
     }
   }
   .close:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent, #8b5cf6) 70%, transparent);
+    outline: 2px solid
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 70%, transparent);
     outline-offset: -2px;
   }
 
@@ -736,7 +812,10 @@
   .hint {
     margin: auto;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font: italic 0.9rem/1.4 "Cormorant Garamond", Georgia, serif;
+    font:
+      italic 0.9rem/1.4 "Cormorant Garamond",
+      Georgia,
+      serif;
     text-align: center;
   }
 
@@ -820,7 +899,9 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     -webkit-tap-highlight-color: transparent;
-    transition: background var(--duration-fast, 150ms) ease, opacity var(--duration-fast, 150ms) ease;
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      opacity var(--duration-fast, 150ms) ease;
   }
   @media (hover: hover) and (pointer: fine) {
     .admin-btn:hover:not(:disabled) {

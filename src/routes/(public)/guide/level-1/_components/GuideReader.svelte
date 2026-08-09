@@ -11,7 +11,7 @@
    * touching nav or companion (see docs/superpowers/specs/2026-07-07-guide-reader-design.md).
    */
   import { onMount, flushSync, tick } from "svelte";
-  import { replaceState } from "$app/navigation";
+  import { writeUrl } from "$lib/shared/navigation/services/url-state";
   import "../_styles/guide.css";
   import "../_styles/guide-print.css";
   import {
@@ -22,8 +22,14 @@
   import GuidePage from "./GuidePage.svelte";
   import GuidePageNav from "./GuidePageNav.svelte";
   import GuideCompanion from "./GuideCompanion.svelte";
-  import { GuideActiveStep, setGuideActiveStep } from "../_data/guide-active-step.svelte";
-  import { SequenceSelection, setSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
+  import {
+    GuideActiveStep,
+    setGuideActiveStep,
+  } from "../_data/guide-active-step.svelte";
+  import {
+    SequenceSelection,
+    setSequenceSelection,
+  } from "$lib/shared/selection/sequence-selection.svelte";
   import "$lib/shared/selection/selection.css";
   import { stripToSequence } from "../_data/guide-sequence-adapter";
   import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
@@ -36,12 +42,18 @@
     slugFromPath,
   } from "../_data/guide-page-links";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import { consumeGuideScanIntent, fireCodexCell } from "../_data/guide-scan-intent";
+  import {
+    consumeGuideScanIntent,
+    fireCodexCell,
+  } from "../_data/guide-scan-intent";
   import {
     suppressBackground,
     releaseBackground,
   } from "$lib/shared/background/shared/state/background-suppression.svelte";
-  import { LEVEL1_READER_CONFIG, type GuideReaderConfig } from "../_data/guide-reader-config";
+  import {
+    LEVEL1_READER_CONFIG,
+    type GuideReaderConfig,
+  } from "../_data/guide-reader-config";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import {
@@ -55,7 +67,8 @@
   // level-1-only deep-link / QR-scan / codex machinery is live. Defaults to
   // Level 1, so an unparameterized <GuideReader /> is byte-for-byte the
   // historical reader. GuideTab passes the Level-2 config for the L2 view.
-  let { config = LEVEL1_READER_CONFIG }: { config?: GuideReaderConfig } = $props();
+  let { config = LEVEL1_READER_CONFIG }: { config?: GuideReaderConfig } =
+    $props();
   const Doc = $derived(config.document);
 
   // Faithful pages render in print STYLE (ink-on-white, static pictographs).
@@ -101,7 +114,9 @@
   // visibility, transforms) even before any cell is clicked - see
   // GuideCodexControls.svelte / guide-codex-state.svelte.ts.
   const isCodexPage = $derived(
-    config.isCodexSlug(config.bodyPages[activeIndex - config.frontMatterCount]?.id ?? "")
+    config.isCodexSlug(
+      config.bodyPages[activeIndex - config.frontMatterCount]?.id ?? ""
+    )
   );
   $effect(() => {
     if (isCodexPage) {
@@ -233,7 +248,8 @@
     const isHandStrip = String(clickedPropType).toLowerCase() === "hand";
     clickedShowPositionGlyph = payload.showPositionGlyph ?? isHandStrip;
     clickedKey = payload.key ?? null;
-    clickedPageTitle = config.bodyPages[activeIndex - config.frontMatterCount]?.title ?? "";
+    clickedPageTitle =
+      config.bodyPages[activeIndex - config.frontMatterCount]?.title ?? "";
     const seq = stripToSequence(payload.strip, { word: payload.word });
     clicked = (await ensureMotionData(seq)) ?? seq;
     companionOpen = true;
@@ -256,7 +272,9 @@
   // own height changes (compact <-> overflow-open) via the ResizeObserver
   // wired up in onMount below.
   function currentSelectedCell(): HTMLElement | null {
-    return docWrap?.querySelector<HTMLElement>(".tka-seq-cell.is-selected") ?? null;
+    return (
+      docWrap?.querySelector<HTMLElement>(".tka-seq-cell.is-selected") ?? null
+    );
   }
 
   function prefersReducedMotion(): boolean {
@@ -275,7 +293,8 @@
     const docRect = docWrap.getBoundingClientRect();
     // Cell's vertical center, expressed in docWrap's own scroll-content
     // coordinate space (independent of the current scroll position).
-    const cellCenterInContent = cellRect.top - docRect.top + docWrap.scrollTop + cellRect.height / 2;
+    const cellCenterInContent =
+      cellRect.top - docRect.top + docWrap.scrollTop + cellRect.height / 2;
     // Where we want that center to land, in the SAME viewport-relative frame
     // docRect.top already lives in.
     const bandCenterInViewport = bandBottomPx / 2;
@@ -361,9 +380,8 @@
     if (!slug) return;
     const t = setTimeout(() => {
       if (window.location.pathname !== `${GUIDE_READER_BASE}/${slug}`) {
-        replaceState(
-          `${GUIDE_READER_BASE}/${slug}${window.location.search}${window.location.hash}`,
-          {}
+        writeUrl(
+          `${GUIDE_READER_BASE}/${slug}${window.location.search}${window.location.hash}`
         );
       }
     }, 200);
@@ -436,9 +454,14 @@
       deepLinkIndex !== null
         ? () => {
             if (!docWrap) return null;
-            const el = docWrap.querySelectorAll<HTMLElement>(".reader-page")[deepLinkIndex];
+            const el =
+              docWrap.querySelectorAll<HTMLElement>(".reader-page")[
+                deepLinkIndex
+              ];
             if (!el) return null;
-            const delta = el.getBoundingClientRect().top - docWrap.getBoundingClientRect().top;
+            const delta =
+              el.getBoundingClientRect().top -
+              docWrap.getBoundingClientRect().top;
             return docWrap.scrollTop + delta;
           }
         : fixedTarget > 0
@@ -475,7 +498,8 @@
           lastHeight = scrollHeight;
         }
         const maxScroll = scrollHeight - docWrap.clientHeight;
-        if ((stableFrames >= 3 && maxScroll < target) || attempts >= 90) return reveal();
+        if ((stableFrames >= 3 && maxScroll < target) || attempts >= 90)
+          return reveal();
         requestAnimationFrame(park);
       };
       park(); // first attempt synchronously (pre-paint); retries via rAF if needed
@@ -515,7 +539,9 @@
   // The active body page's manifest id - drives whether the sheet/flow toggle
   // shows (only pages with single-source reflow content can reflow).
   const activeReflowable = $derived(
-    hasReflowContent(config.bodyPages[activeIndex - config.frontMatterCount]?.id ?? "")
+    hasReflowContent(
+      config.bodyPages[activeIndex - config.frontMatterCount]?.id ?? ""
+    )
   );
 
   // Re-observe the sheet element whenever it (re)mounts (companionOpen
@@ -543,7 +569,11 @@
   {:else}
     <div class="reader-page">
       <div class="page-fixed" style="transform: scale({scale})">
-        <GuidePage title={meta.title} pageNumber={meta.pageNumber} fullBleed={meta.fullBleed}>
+        <GuidePage
+          title={meta.title}
+          pageNumber={meta.pageNumber}
+          fullBleed={meta.fullBleed}
+        >
           {@render meta.content()}
         </GuidePage>
       </div>
@@ -553,7 +583,12 @@
 
 <div class="reader" bind:this={readerEl}>
   <aside class="reader-aside">
-    <GuidePageNav rows={config.navRows} hrefFor={config.hrefFor} {activeIndex} onSelect={go} />
+    <GuidePageNav
+      rows={config.navRows}
+      hrefFor={config.hrefFor}
+      {activeIndex}
+      onSelect={go}
+    />
   </aside>
 
   <div class="reader-stage" bind:this={stageEl}>
@@ -582,7 +617,11 @@
       onscrollend={onScroll}
       style="--w:{PAGE_W * scale}px; --h:{PAGE_H * scale}px"
     >
-      <Doc built={config.built} page={sheetFrame} frame={guideFramePrefs.frame} />
+      <Doc
+        built={config.built}
+        page={sheetFrame}
+        frame={guideFramePrefs.frame}
+      />
     </div>
   </div>
 
@@ -706,7 +745,9 @@
     overflow: hidden;
     background: var(--theme-panel-bg, oklch(0.15 0.02 270 / 0.6));
     border-left: 0 solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    transition: width 240ms ease, min-width 240ms ease;
+    transition:
+      width 240ms ease,
+      min-width 240ms ease;
   }
   .reader-companion.open {
     width: clamp(360px, 40vw, 560px);

@@ -12,7 +12,7 @@
 <LegalPageShell>
   <div class="header-content">
     <h1>Privacy Policy</h1>
-    <p class="last-updated">Last Updated: July 22, 2026</p>
+    <p class="last-updated">Last Updated: August 9, 2026</p>
   </div>
 
   <div class="legal-card">
@@ -244,10 +244,11 @@
           >)
         </li>
         <li>
-          <strong>PostHog:</strong> Anonymous usage statistics to understand how people
-          use TKA. This includes page views, approximate location, device type, and
-          session recordings. You can disable this in your browser settings or by
-          using an ad blocker.
+          <strong>PostHog:</strong> Usage analytics and session recordings used to
+          understand how TKA is used and diagnose problems. Signed-in activity may
+          be linked to your account. Text entered into forms is masked before a recording
+          is sent. You can block tracking through browser privacy controls or an ad
+          blocker.
         </li>
         <li>
           <strong>Meta:</strong> Optional Instagram and Facebook account authorization.

@@ -1,0 +1,9 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "attach-5176",
+      "url": "https://localhost:5176"
+    }
+  ]
+}
