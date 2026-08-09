@@ -1,0 +1,88 @@
+<script lang="ts">
+  /**
+   * WaterSurface — a horizontal body of water: PlanarReflector driving the
+   * WaterSurfaceShader, plus the clock that moves its ripples.
+   *
+   * The reflection technique still belongs to PlanarReflector. This composes
+   * it with water optics (Fresnel, depth absorption, ripple normals, foam) so
+   * the surface reads as liquid instead of as an opening in the floor.
+   */
+  import { useTask } from "@threlte/core";
+  import { Color, Vector2, Vector3, type ShaderMaterial } from "three";
+  import type { Reflector } from "three/examples/jsm/objects/Reflector.js";
+
+  import PlanarReflector from "./PlanarReflector.svelte";
+  import {
+    WATER_SURFACE_DEFAULTS,
+    WaterSurfaceShader,
+  } from "./water-surface-shader";
+
+  interface Props {
+    /** Metres along world X. */
+    width: number;
+    /** Metres along world Z. */
+    depth: number;
+    /** Centre of the surface in world space. */
+    position: [number, number, number];
+    textureWidth?: number;
+    textureHeight?: number;
+    deepColor?: string | number;
+    shallowColor?: string | number;
+    reflectionTint?: number;
+    sunDirection?: [number, number, number];
+    rippleScale?: number;
+    rippleStrength?: number;
+    foamWidth?: number;
+    /** Metres over which the rim colour gives way to the deep colour. */
+    shoreFade?: number;
+    /** Ripple speed multiplier. Still water is not motionless water. */
+    flowSpeed?: number;
+    active?: boolean;
+  }
+
+  const props: Props = $props();
+
+  const defaults = WATER_SURFACE_DEFAULTS;
+
+  const uniforms: Record<string, unknown> = {
+    uDeepColor: new Color(props.deepColor ?? defaults.deepColor),
+    uShallowColor: new Color(props.shallowColor ?? defaults.shallowColor),
+    uSize: new Vector2(props.width, props.depth),
+    uSunDirection: props.sunDirection
+      ? new Vector3(...props.sunDirection).normalize()
+      : defaults.sunDirection.clone(),
+    uSunColor: defaults.sunColor.clone(),
+    uRippleScale: props.rippleScale ?? defaults.rippleScale,
+    uRippleStrength: props.rippleStrength ?? defaults.rippleStrength,
+    uFoamWidth: props.foamWidth ?? defaults.foamWidth,
+    uShoreFade: props.shoreFade ?? defaults.shoreFade,
+    uTime: 0,
+  };
+
+  const flowSpeed = props.flowSpeed ?? 1;
+  let material = $state.raw<ShaderMaterial | null>(null);
+
+  function handleReady(reflector: Reflector): void {
+    material = reflector.material as ShaderMaterial;
+  }
+
+  useTask((delta) => {
+    const uTime = material?.uniforms.uTime;
+    if (!uTime) return;
+    uTime.value += delta * flowSpeed;
+  });
+</script>
+
+<PlanarReflector
+  width={props.width}
+  height={props.depth}
+  position={props.position}
+  rotation={[-Math.PI / 2, 0, 0]}
+  textureWidth={props.textureWidth ?? 1024}
+  textureHeight={props.textureHeight ?? 1024}
+  color={props.reflectionTint ?? defaults.reflectionTint.getHex()}
+  shader={WaterSurfaceShader}
+  {uniforms}
+  active={props.active}
+  onReady={handleReady}
+/>

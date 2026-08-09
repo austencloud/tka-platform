@@ -12,7 +12,7 @@
   import { useThrelte } from "@threlte/core";
   import { onMount } from "svelte";
   import { Reflector } from "three/examples/jsm/objects/Reflector.js";
-  import { PlaneGeometry } from "three";
+  import { PlaneGeometry, type ShaderMaterial } from "three";
 
   interface Props {
     width?: number;
@@ -28,6 +28,22 @@
     clipBias?: number;
     /** False keeps the surface mounted but skips its full-scene reflection pass. */
     active?: boolean;
+    /**
+     * Reflector's own extension point: swap how the reflected image resolves
+     * onto the plane. Water passes WaterSurfaceShader here rather than forking
+     * this component. Reflector still owns color/tDiffuse/textureMatrix, so a
+     * custom shader must declare those three uniforms.
+     */
+    shader?: {
+      name?: string;
+      uniforms: Record<string, { value: unknown }>;
+      vertexShader: string;
+      fragmentShader: string;
+    };
+    /** Initial values for uniforms the custom shader adds. */
+    uniforms?: Record<string, unknown>;
+    /** Receives the live reflector so a caller can animate its uniforms. */
+    onReady?: (reflector: Reflector) => void;
   }
 
   const props: Props = $props();
@@ -57,7 +73,16 @@
       textureWidth,
       textureHeight,
       color,
+      ...(props.shader ? { shader: props.shader } : {}),
     });
+
+    if (props.uniforms) {
+      const material = reflector.material as ShaderMaterial;
+      for (const [key, value] of Object.entries(props.uniforms)) {
+        const uniform = material.uniforms[key];
+        if (uniform) uniform.value = value;
+      }
+    }
 
     reflector.position.set(...position);
     reflector.rotation.set(...rotation);
@@ -67,6 +92,7 @@
     // was always undefined, so the guard swallowed every reflector and the
     // surface rendered black — the bug that made the grotto look waterless.
     scene.add(reflector);
+    props.onReady?.(reflector);
 
     return () => {
       if (!reflector) return;

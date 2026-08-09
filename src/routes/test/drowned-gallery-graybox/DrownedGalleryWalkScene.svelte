@@ -25,7 +25,7 @@
     PlayerControllerState,
   } from "$lib/shared/3d/physics/types";
   import GltfAsset from "$lib/shared/3d/environments/primitives/GltfAsset.svelte";
-  import PlanarReflector from "$lib/shared/3d/environments/primitives/PlanarReflector.svelte";
+  import WaterSurface from "$lib/shared/3d/environments/primitives/WaterSurface.svelte";
   import {
     CAUSEWAY_Y,
     GROTTO_WATERLINE_Y,
@@ -85,15 +85,14 @@
     z: layout.bloomAnchor.z - origin.z,
   };
   /**
-   * The grotto's water is built at runtime, in two layers, because the GLB
-   * cannot carry either one. Blender's mirror slab exports as metalness 1 with
-   * no environment, which renders pure black in Three.js — that black hole is
-   * what read as "no water at all". So the baked slab is hidden and replaced by
-   * a planar reflector with a tinted, translucent surface laid just above it.
-   * The reflection alone is not enough: it mirrors a dark cave, so without the
-   * tint there is nothing to tell you a surface is there.
+   * The grotto's water is built at runtime because the GLB cannot carry it.
+   * Blender's mirror slab exports as metalness 1 with no environment, which
+   * renders pure black in Three.js — that black hole is what read as "no water
+   * at all". A plain planar mirror in its place was no better: reflection at
+   * full strength from every angle reads as an opening in the floor, not as a
+   * pool. WaterSurface adds the view-dependent part (Fresnel, absorption,
+   * ripples, foam) that makes it a liquid.
    */
-  const GROTTO_REFLECTOR_DROP = 0.014;
   const grottoWater = layout.waterPlanes
     .filter((plane) => plane.surfaceY === GROTTO_WATERLINE_Y)
     .map((plane, index) => ({
@@ -105,7 +104,6 @@
         (plane.minZ + plane.maxZ) / 2 - origin.z,
       ] as [number, number],
       surfaceY: plane.surfaceY,
-      reflectorY: plane.surfaceY - GROTTO_REFLECTOR_DROP,
     }));
 
   const shaftLights = layout.openShafts.map((shaft, index) => ({
@@ -439,31 +437,19 @@
 {/each}
 
 {#each grottoWater as entry (entry.id)}
-  <PlanarReflector
+  <WaterSurface
     width={entry.width}
-    height={entry.depth}
-    position={[entry.centre[0], entry.reflectorY, entry.centre[1]]}
-    rotation={[-Math.PI / 2, 0, 0]}
-    textureWidth={1024}
-    textureHeight={1024}
-    color={0x9fbcc2}
-  />
-  <!-- The tint is what makes it read as water rather than as a hole. -->
-  <T.Mesh
+    depth={entry.depth}
     position={[entry.centre[0], entry.surfaceY, entry.centre[1]]}
-    rotation={[-Math.PI / 2, 0, 0]}
-    renderOrder={2}
-  >
-    <T.PlaneGeometry args={[entry.width, entry.depth]} />
-    <T.MeshStandardMaterial
-      color="#1d6d80"
-      transparent={true}
-      opacity={0.42}
-      roughness={0.12}
-      metalness={0}
-      depthWrite={false}
-    />
-  </T.Mesh>
+    deepColor="#0a2c38"
+    shallowColor="#2c8394"
+    reflectionTint={0x9fbcc2}
+    shoreFade={2.6}
+    rippleScale={1.25}
+    rippleStrength={0.09}
+    foamWidth={0.2}
+    flowSpeed={0.8}
+  />
 {/each}
 
 <GltfAsset
