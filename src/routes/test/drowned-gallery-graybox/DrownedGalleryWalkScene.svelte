@@ -5,6 +5,10 @@
   import { CameraMode, UnifiedCameraController } from "@austencloud/camera-3d";
   import type { AvatarState, PhysicsProvider } from "@austencloud/camera-3d";
   import {
+    MUSEUM_GRAVITY,
+    MUSEUM_JUMP_VELOCITY,
+  } from "$lib/features/museum/domain/museum-design-rules";
+  import {
     createPhysicsWorldState,
     createRigidBody,
     disposePhysicsWorld,
@@ -280,7 +284,7 @@
     disableModeToggle={true}
     moveSpeed={3.2}
     sprintMultiplier={1.8}
-    gravity={9.81}
-    jumpForce={4.5}
+    gravity={MUSEUM_GRAVITY}
+    jumpForce={MUSEUM_JUMP_VELOCITY}
   />
 {/if}

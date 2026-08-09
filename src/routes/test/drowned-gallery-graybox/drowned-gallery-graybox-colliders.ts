@@ -15,6 +15,7 @@ import {
   type DrownedGalleryLayout,
   type WorldRect,
 } from "$lib/features/museum/data/drowned-gallery-terrain";
+import { MIN_UNCROSSABLE_BARRIER } from "$lib/features/museum/domain/museum-design-rules";
 
 export interface DrownedGalleryCollider {
   id: string;
@@ -26,8 +27,13 @@ export interface DrownedGalleryCollider {
 const FLOOR_T = 0.5;
 /** Rise per generated ramp step; must stay under the walker's 0.45 auto-step. */
 const STEP_RISE = 0.35;
-/** Water basins are fenced with an invisible barrier this far above the deck. */
-const BARRIER_TOP = CAUSEWAY_Y + 1.1;
+/**
+ * Water basins are fenced with an invisible barrier derived from the jump arc,
+ * never a guessed number. The old hand-picked 1.1 m was shorter than a jump
+ * apex PLUS the character controller's 0.45 auto-step, so the player mounted
+ * the fence and stood in the mirror pool (2026-08-09).
+ */
+const BARRIER_TOP = CAUSEWAY_Y + MIN_UNCROSSABLE_BARRIER;
 
 export interface DrownedGalleryWalkSetup {
   layout: DrownedGalleryLayout;

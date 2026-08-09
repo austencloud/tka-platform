@@ -35,6 +35,7 @@
     MOON_GRAVITY_SCALE,
     MOON_ROOM_ID,
   } from "../../data/moon-layout";
+  import { MUSEUM_GRAVITY } from "../../domain/museum-design-rules";
   import {
     buildSundialLayout,
     EYE_RADIUS_M,
@@ -565,11 +566,10 @@
    * room announces itself. `isLowGravityAt` owns that boundary — this only
    * asks it.
    *
-   * The museum's normal figure is UnifiedCameraController's own default, read
-   * from the package rather than restated, so a change there cannot silently
-   * make the Moon the heavier room.
+   * The museum's normal figure now lives in museum-design-rules as
+   * MUSEUM_GRAVITY, shared with every graybox review route so a route can
+   * never review the museum in a different body.
    */
-  const MUSEUM_GRAVITY = Math.abs(CAMERA_DEFAULTS.GRAVITY) * 2.5;
   let playerJumpRequested = $state(false);
 
   // Detect jump input on the EXACT frame Space is pressed - no physics delay.
