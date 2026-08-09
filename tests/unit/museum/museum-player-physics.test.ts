@@ -13,7 +13,13 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { buildDrownedGalleryLayout } from "../../../src/lib/features/museum/data/drowned-gallery-terrain";
+import {
+  buildDrownedGalleryLayout,
+  CAUSEWAY_Y,
+  GROTTO_WATERLINE_Y,
+  WATERLINE_Y,
+  type WorldRect,
+} from "../../../src/lib/features/museum/data/drowned-gallery-terrain";
 import { buildVulcanCaveFloorPlan } from "../../../src/lib/features/museum/data/vulcan-cave-floor-plan";
 import {
   MIN_UNCROSSABLE_BARRIER,
@@ -42,25 +48,75 @@ describe("museum player physics", () => {
     expect(MIN_UNCROSSABLE_BARRIER).toBeGreaterThan(MUSEUM_JUMP_APEX + AUTO_STEP);
   });
 
-  it("keeps every Drowned Gallery water basin unreachable from its banks", () => {
+  it("keeps every Drowned Gallery water basin unreachable from any nearby floor", () => {
     const layout = buildDrownedGalleryLayout(buildVulcanCaveFloorPlan().grid);
-    const barrierTop = -0.3 + MIN_UNCROSSABLE_BARRIER; // CAUSEWAY_Y + min
 
-    // Highest floor anyone can take off from anywhere in the room.
-    const highestFloor = Math.max(
-      ...layout.floorRects.map((floor) =>
-        Math.max(floor.fromY ?? -99, floor.toY ?? -99)
-      )
+    // A running jump carries roughly this far horizontally, so any floor
+    // within it is a launch pad for the basin next to it.
+    const JUMP_REACH_M = 2.5;
+    const near = (a: WorldRect, b: WorldRect) =>
+      a.minX - JUMP_REACH_M < b.maxX &&
+      a.maxX + JUMP_REACH_M > b.minX &&
+      a.minZ - JUMP_REACH_M < b.maxZ &&
+      a.maxZ + JUMP_REACH_M > b.minZ;
+
+    // Only the GROTTO basins are fenced; the submerged gallery is meant to be
+    // walked through, so it is not part of this sweep.
+    const fenced = layout.waterVolumes.filter(
+      (volume) => volume.surfaceY === GROTTO_WATERLINE_Y
     );
-    const reachableFrom = (takeOffY: number) =>
-      takeOffY + MUSEUM_JUMP_APEX + AUTO_STEP;
+    expect(fenced.length).toBeGreaterThan(0);
 
-    // Banks around the basins sit at the causeway datum.
-    expect(reachableFrom(-0.3)).toBeLessThan(barrierTop);
+    const offenders: string[] = [];
+    for (const volume of fenced) {
+      // The shipped fence for this basin, computed exactly as the collider
+      // does: from the highest floor that can launch at it.
+      let highestLaunch = CAUSEWAY_Y;
+      for (const floor of layout.floorRects) {
+        if (!near(volume.rect, floor.rect)) continue;
+        highestLaunch = Math.max(highestLaunch, floor.fromY, floor.toY);
+      }
+      const fenceTop = highestLaunch + MIN_UNCROSSABLE_BARRIER;
 
-    // And the room's highest floor is not secretly a diving board: if it ever
-    // rises enough to clear the fence, this fails and the fence must follow.
-    expect(highestFloor).toBeLessThanOrEqual(0);
+      for (const floor of layout.floorRects) {
+        if (!near(volume.rect, floor.rect)) continue;
+        const takeOff = Math.max(floor.fromY, floor.toY);
+        const reach = takeOff + MUSEUM_JUMP_APEX + AUTO_STEP;
+        if (reach >= fenceTop) {
+          offenders.push(
+            `${floor.id} (top ${takeOff.toFixed(2)}, reaches ${reach.toFixed(
+              2
+            )}) can enter ${volume.id} over a fence at ${fenceTop.toFixed(2)}`
+          );
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps the grotto water brimming at its deck, never sunk in a trench", () => {
+    const layout = buildDrownedGalleryLayout(buildVulcanCaveFloorPlan().grid);
+
+    // The 2026-08-09 defect: grotto water inherited the submerged gallery's
+    // WATERLINE_Y (-1.5) while its decks sat at -0.3, leaving a 1.2 m dry lip
+    // that read as two disconnected slabs. A reveal is legible, a pit is not.
+    const reveal = CAUSEWAY_Y - GROTTO_WATERLINE_Y;
+    expect(reveal).toBeGreaterThan(0); // never coplanar — that is z-fighting
+    expect(reveal).toBeLessThanOrEqual(0.3); // never a trench
+
+    // Both grotto bodies share ONE surface, so they read as one flooded room
+    // crossed by a causeway rather than as separate holes.
+    const grottoSurfaces = new Set(
+      layout.waterVolumes
+        .filter((volume) => volume.surfaceY > WATERLINE_Y)
+        .map((volume) => volume.surfaceY)
+    );
+    expect([...grottoSurfaces]).toEqual([GROTTO_WATERLINE_Y]);
+
+    // And every rendered plane agrees with the volume it caps.
+    for (const plane of layout.waterPlanes) {
+      expect([WATERLINE_Y, GROTTO_WATERLINE_Y]).toContain(plane.surfaceY);
+    }
   });
 
   it("never lets a graybox review route restate gravity by hand", () => {

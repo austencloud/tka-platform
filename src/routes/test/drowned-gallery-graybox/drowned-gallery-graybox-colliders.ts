@@ -28,12 +28,37 @@ const FLOOR_T = 0.5;
 /** Rise per generated ramp step; must stay under the walker's 0.45 auto-step. */
 const STEP_RISE = 0.35;
 /**
- * Water basins are fenced with an invisible barrier derived from the jump arc,
- * never a guessed number. The old hand-picked 1.1 m was shorter than a jump
- * apex PLUS the character controller's 0.45 auto-step, so the player mounted
- * the fence and stood in the mirror pool (2026-08-09).
+ * How far a running jump carries horizontally. Any floor inside this radius of
+ * a basin is a launch pad for it.
  */
-const BARRIER_TOP = CAUSEWAY_Y + MIN_UNCROSSABLE_BARRIER;
+export const JUMP_REACH_M = 2.5;
+
+/**
+ * Water basins are fenced with an invisible barrier derived from the jump arc,
+ * never a guessed number, and measured from the HIGHEST floor that can launch
+ * at them rather than from the causeway.
+ *
+ * Two bugs live in this one line's history. The hand-picked 1.1 m was shorter
+ * than a jump apex plus the controller's 0.45 auto-step, so the player mounted
+ * the fence and stood in the mirror pool. Rebasing it on CAUSEWAY_Y then still
+ * missed the exit ramp, which climbs to the museum datum (0) within 1.5 m of
+ * the pool's corner and clears a causeway-relative fence by 0.15 m. Both were
+ * found by a sweep, not by eye — see museum-player-physics.test.ts.
+ */
+function fenceTopFor(layout: DrownedGalleryLayout, basin: WorldRect): number {
+  let highestLaunch = CAUSEWAY_Y;
+  for (const floor of layout.floorRects) {
+    const r = floor.rect;
+    const withinReach =
+      r.minX - JUMP_REACH_M < basin.maxX &&
+      r.maxX + JUMP_REACH_M > basin.minX &&
+      r.minZ - JUMP_REACH_M < basin.maxZ &&
+      r.maxZ + JUMP_REACH_M > basin.minZ;
+    if (!withinReach) continue;
+    highestLaunch = Math.max(highestLaunch, floor.fromY, floor.toY);
+  }
+  return highestLaunch + MIN_UNCROSSABLE_BARRIER;
+}
 
 export interface DrownedGalleryWalkSetup {
   layout: DrownedGalleryLayout;
@@ -122,10 +147,21 @@ export function buildDrownedGalleryWalkSetup(): DrownedGalleryWalkSetup {
   layout.balustrades.forEach((rect, index) => {
     box(`rail-${index}`, rect, CAUSEWAY_Y, CAUSEWAY_Y + 0.9);
   });
-  // Water basins and the alcove shore stay unwalkable, as in the museum.
-  box("barrier-pool", layout.pool, layout.waterVolumes.at(-1)!.floorY, BARRIER_TOP);
-  box("barrier-channel", layout.channel, -2.7, BARRIER_TOP);
-  box("barrier-shore", layout.shore, -1.0, BARRIER_TOP);
+  // Water basins and the alcove shore stay unwalkable, as in the museum. Each
+  // fence is sized against the highest floor that can jump at THAT basin.
+  box(
+    "barrier-pool",
+    layout.pool,
+    layout.waterVolumes.at(-1)!.floorY,
+    fenceTopFor(layout, layout.pool)
+  );
+  box(
+    "barrier-channel",
+    layout.channel,
+    -2.7,
+    fenceTopFor(layout, layout.channel)
+  );
+  box("barrier-shore", layout.shore, -1.0, fenceTopFor(layout, layout.shore));
 
   const approach = layout.approach;
   const spawn = {
