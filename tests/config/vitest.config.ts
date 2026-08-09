@@ -58,6 +58,7 @@ export default defineConfig({
         projectRoot,
         "tests/setup/stubs/app-navigation.ts"
       ),
+      "$app/state": path.resolve(projectRoot, "tests/setup/stubs/app-state.ts"),
       "$app/stores": path.resolve(
         projectRoot,
         "tests/setup/stubs/app-stores.ts"

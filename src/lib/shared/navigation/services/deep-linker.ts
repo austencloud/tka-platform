@@ -9,11 +9,12 @@
  */
 
 import { browser } from "$app/environment";
-import { goto, replaceState } from "$app/navigation";
+import { goto } from "$app/navigation";
 import { navigationState } from "../state/navigation-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { DeepLinkResult, DeepLinkData, ModuleMapping } from "./types";
 import { parseDeepLink } from "./sequence-encoder";
+import { removeCurrentUrlParams } from "./url-state";
 
 /**
  * Internal storage structure for deep link data
@@ -32,7 +33,10 @@ const MODULE_MAPPINGS: Record<string, ModuleMapping> = {
   construct: { moduleId: "create", tabId: "construct" },
   // Legacy alias. `satisfies` needed: TS skips contextual typing for a
   // literal property named `constructor`, so moduleId would widen to string.
-  constructor: { moduleId: "create", tabId: "construct" } satisfies ModuleMapping,
+  constructor: {
+    moduleId: "create",
+    tabId: "construct",
+  } satisfies ModuleMapping,
   assemble: { moduleId: "create", tabId: "assemble" },
   assembler: { moduleId: "create", tabId: "assemble" }, // Legacy alias
   generate: { moduleId: "create", tabId: "generate" },
@@ -169,13 +173,7 @@ export class DeepLinker {
   clearDeepLinkFromURL(): void {
     if (!browser) return;
 
-    const url = new URL(window.location.href);
-    const hasOpenParam = url.searchParams.has("open");
-
-    if (hasOpenParam) {
-      url.searchParams.delete("open");
-      replaceState(url.toString(), {});
-    }
+    removeCurrentUrlParams(["open"]);
   }
 
   getModuleMapping(moduleName: string): ModuleMapping | undefined {

@@ -1,6 +1,6 @@
 import { browser } from "$app/environment";
-import { replaceState } from "$app/navigation";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+import { writeUrl } from "$lib/shared/navigation/services/url-state";
 import type { ModuleId } from "../../../navigation/domain/types";
 import { featureFlagService } from "../../../auth/services/post-hog-feature-flag-service.svelte";
 import { navigationState } from "../../../navigation/state/navigation-state.svelte";
@@ -400,7 +400,9 @@ export async function initializeModulePersistence(): Promise<void> {
         // Fix the URL if it had an invalid module
         if (rawEffectiveModule) {
           const correctedPath = `/create/construct`;
-          replaceState(correctedPath, {});
+          writeUrl(correctedPath, {
+            state: { moduleId: "create", sectionId: "construct" },
+          });
         }
       }
     }

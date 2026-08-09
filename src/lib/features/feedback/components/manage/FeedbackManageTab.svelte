@@ -9,7 +9,10 @@
     getNotificationTargetFeedback,
     setNotificationTargetFeedback,
   } from "$lib/shared/feedback/state/notification-action-state.svelte";
-  import { replaceState } from "$app/navigation";
+  import {
+    mutateCurrentUrl,
+    removeCurrentUrlParams,
+  } from "$lib/shared/navigation/services/url-state";
   import { onMount } from "svelte";
   import FeedbackKanbanBoard from "./FeedbackKanbanBoard.svelte";
   import FeedbackDetailPanel from "./FeedbackDetailPanel.svelte";
@@ -54,11 +57,7 @@
     return () => {
       const params = new URLSearchParams(window.location.search);
       if (params.has("openFeedback")) {
-        params.delete("openFeedback");
-        const newUrl = params.toString()
-          ? `${window.location.pathname}?${params.toString()}`
-          : window.location.pathname;
-        replaceState(newUrl, {});
+        removeCurrentUrlParams(["openFeedback"]);
       }
     };
   });
@@ -71,16 +70,12 @@
 
     // Only update URL if it's different from current selection
     if (selectedId && selectedId !== currentUrlId) {
-      urlParams.set("openFeedback", selectedId);
-      const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
-      replaceState(newUrl, {});
+      mutateCurrentUrl((url) => {
+        url.searchParams.set("openFeedback", selectedId);
+      });
     } else if (!selectedId && currentUrlId) {
       // Clear URL param when panel is closed
-      urlParams.delete("openFeedback");
-      const newUrl = urlParams.toString()
-        ? `${window.location.pathname}?${urlParams.toString()}`
-        : window.location.pathname;
-      replaceState(newUrl, {});
+      removeCurrentUrlParams(["openFeedback"]);
     }
   });
 

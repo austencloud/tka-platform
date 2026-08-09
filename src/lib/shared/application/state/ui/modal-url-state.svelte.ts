@@ -14,9 +14,10 @@
  * - Use clearModalUrlState() when closing modals
  */
 
-import { goto, replaceState } from "$app/navigation";
+import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import type { SequenceData } from "../../../foundation/domain/models/sequence-data";
+import { writeUrl } from "../../../navigation/services/url-state";
 
 // ============================================================================
 // TYPES
@@ -24,7 +25,12 @@ import type { SequenceData } from "../../../foundation/domain/models/sequence-da
 
 export type ModalType = "sequence" | "spotlight" | null;
 export type SequenceViewMode = "split" | "animation" | "image";
-export type SpotlightDisplayMode = "image" | "stepgrid" | "animation" | "video" | "split";
+export type SpotlightDisplayMode =
+  | "image"
+  | "stepgrid"
+  | "animation"
+  | "video"
+  | "split";
 
 export interface ModalUrlState {
   modal: ModalType;
@@ -94,7 +100,8 @@ function parseUrlParams(searchParams: URLSearchParams): ModalUrlState {
   const modal = searchParams.get("modal") as ModalType;
   const sequenceId = searchParams.get("id");
   const view = (searchParams.get("view") || "split") as SequenceViewMode;
-  const spotlightMode = (searchParams.get("mode") || "split") as SpotlightDisplayMode;
+  const spotlightMode = (searchParams.get("mode") ||
+    "split") as SpotlightDisplayMode;
   const playbackTimeMs = parseInt(searchParams.get("t") || "0", 10) || 0;
   const bpm = parseInt(searchParams.get("bpm") || "60", 10) || 60;
 
@@ -120,7 +127,11 @@ function buildUrlParams(state: Partial<ModalUrlState>): URLSearchParams {
   if (state.modal === "sequence" && state.view && state.view !== "split") {
     params.set("view", state.view);
   }
-  if (state.modal === "spotlight" && state.spotlightMode && state.spotlightMode !== "split") {
+  if (
+    state.modal === "spotlight" &&
+    state.spotlightMode &&
+    state.spotlightMode !== "split"
+  ) {
     params.set("mode", state.spotlightMode);
   }
   // Include playback time if > 0 (rounded to avoid excessive URL changes)
@@ -193,12 +204,19 @@ export function setViewModeUrl(view: SequenceViewMode): void {
 let lastUrlUpdateTime = 0;
 const URL_UPDATE_DEBOUNCE_MS = 500; // Update URL at most every 500ms
 
-export function setPlaybackTimeUrl(timeMs: number, force: boolean = false): void {
+export function setPlaybackTimeUrl(
+  timeMs: number,
+  force: boolean = false
+): void {
   const now = Date.now();
   const timeDiff = Math.abs(timeMs - currentState.playbackTimeMs);
 
   // Skip if not enough time has passed and change is small (unless forced)
-  if (!force && now - lastUrlUpdateTime < URL_UPDATE_DEBOUNCE_MS && timeDiff < 100) {
+  if (
+    !force &&
+    now - lastUrlUpdateTime < URL_UPDATE_DEBOUNCE_MS &&
+    timeDiff < 100
+  ) {
     return;
   }
 
@@ -331,7 +349,7 @@ function updateUrlFast(params: URLSearchParams): void {
   currentState = parseUrlParams(newUrl.searchParams);
 
   // Update browser URL without navigation
-  replaceState(newUrl.toString(), {});
+  writeUrl(newUrl);
 }
 
 // ============================================================================

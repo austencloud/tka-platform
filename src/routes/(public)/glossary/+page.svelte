@@ -5,6 +5,7 @@
   import { DURATION } from "$lib/shared/transitions/transitions";
   import GlossaryNav from "./_components/GlossaryNav.svelte";
   import GlossaryTermDetail from "./_components/GlossaryTermDetail.svelte";
+  import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
 
   let { data } = $props();
 
@@ -212,7 +213,9 @@
       return;
     }
     selected = slug;
-    history.replaceState(null, "", `#${slug}`);
+    mutateCurrentUrl((url) => {
+      url.hash = slug;
+    });
   }
 
   /** Select a term, make sure its category is on screen, and scroll to it.
@@ -234,7 +237,9 @@
       behavior: reduced ? "auto" : "smooth",
       block: "nearest",
     });
-    history.replaceState(null, "", `#${slug}`);
+    mutateCurrentUrl((url) => {
+      url.hash = slug;
+    });
   }
 
   /** Sidebar / drawer link handler: category headings drill, terms reveal. */
@@ -402,7 +407,10 @@
 
     <a class="back-link" href="/notation">← Flow Arts Notation</a>
 
-    <header class="editorial-header" style:view-transition-name="launchpad-glossary">
+    <header
+      class="editorial-header"
+      style:view-transition-name="launchpad-glossary"
+    >
       <h1 class="page-title">Flow Arts Glossary</h1>
       <p class="page-subtitle">The Kinetic Alphabet Lexicon</p>
     </header>
@@ -877,7 +885,9 @@
       border: 1px solid oklch(0.45 0.04 270 / 0.25);
       border-radius: 999px;
       outline: none;
-      transition: border-color 160ms ease, background 160ms ease;
+      transition:
+        border-color 160ms ease,
+        background 160ms ease;
     }
     .hub-search input::placeholder {
       color: oklch(0.55 0.02 270);

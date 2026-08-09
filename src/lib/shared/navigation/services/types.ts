@@ -3,12 +3,13 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { ModuleId, Section } from '../domain/types';
+import type { ModuleId, Section } from "../domain/types";
 
 // === From ISheetRouter ===
 
 export type SheetType =
   | "settings"
+  | "profile-settings"
   | "auth"
   | "terms"
   | "privacy"
@@ -61,6 +62,10 @@ export interface URLSyncOptions {
   immediate?: boolean;
   /** Allow clearing URL when sequence is empty (default: true) */
   allowClear?: boolean;
+}
+export interface DebouncedUrlSync {
+  (sequence: SequenceData | null): void;
+  cancel: () => void;
 }
 
 // === From ISequenceEncoder ===

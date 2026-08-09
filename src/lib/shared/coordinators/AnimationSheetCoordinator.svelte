@@ -19,16 +19,18 @@
     />
 -->
 <script lang="ts">
-
-import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
-import { ensureVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
-import { getVideoExporter } from "$lib/shared/animation-engine/get-video-exporter";
-import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+  import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get-animation-playback-controller";
+  import { ensureVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
+  import { getVideoExporter } from "$lib/shared/animation-engine/get-video-exporter";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { replaceState } from "$app/navigation";
   import AnimationShareDrawer from "../animation-engine/components/AnimationShareDrawer.svelte";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
-import type { IVideoExportOrchestrator, VideoExportProgress, VideoExportFormat } from "$lib/shared/compose/domain/video-export-types";
+  import type {
+    IVideoExportOrchestrator,
+    VideoExportProgress,
+    VideoExportFormat,
+  } from "$lib/shared/compose/domain/video-export-types";
   import type { VideoExporter } from "$lib/shared/animation-engine/services/video-exporter";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
@@ -49,7 +51,7 @@ import type { IVideoExportOrchestrator, VideoExportProgress, VideoExportFormat }
     ANIMATION_AUTO_START_DELAY_MS,
     VIDEO_EXPORT_SUCCESS_DELAY_MS,
   } from "$lib/shared/animation-engine/domain/constants/timing";
-import type { AnimationPanelState } from "../navigation/services/types";
+  import type { AnimationPanelState } from "../navigation/services/types";
   import { createComponentLogger } from "../utils/debug-logger";
   import { setAnimationPlaybackRef } from "./animation-playback-ref.svelte";
 
@@ -244,10 +246,7 @@ import type { AnimationPanelState } from "../navigation/services/types";
         "Animation services resolved, ready to initialize playback"
       );
     } catch (error) {
-      console.error(
-        "Failed to resolve animation services:",
-        error
-      );
+      console.error("Failed to resolve animation services:", error);
       animationPanelState.setError("Failed to initialize animation services");
     }
 
@@ -507,18 +506,9 @@ import type { AnimationPanelState } from "../navigation/services/types";
         lastLoadedSequenceId = null;
         _animatingBeatNumber = null;
 
-        // Clear URL parameters by replacing state (more reliable than history.back())
+        // Keep panel history and URL cleanup owned by the sheet router.
         if (typeof window !== "undefined") {
-          const url = new URL(window.location.href);
-          url.searchParams.delete("sheet");
-          url.searchParams.delete("animSeqId");
-          url.searchParams.delete("animSpeed");
-          url.searchParams.delete("animPlaying");
-          url.searchParams.delete("animStep");
-          url.searchParams.delete("animGrid");
-          replaceState(url, {});
-          // Dispatch route change event
-          window.dispatchEvent(new CustomEvent("route-change", { detail: {} }));
+          closeSheet();
         }
       }
     }
@@ -548,8 +538,7 @@ import type { AnimationPanelState } from "../navigation/services/types";
       ) {
         // Double-check that the current route is actually showing animation sheet
         // This prevents "Cannot update animation panel state when animation sheet is not open" errors
-        const currentState =
-          getCurrentAnimationPanelState();
+        const currentState = getCurrentAnimationPanelState();
         if (currentState !== null) {
           updateAnimationPanelState({
             speed: currentSpeed,
@@ -649,8 +638,14 @@ import type { AnimationPanelState } from "../navigation/services/types";
           format,
           // App mode: thread the user's chosen prop so the offscreen export engine
           // loads the matching textures instead of falling back to default "staff".
-          bluePropType: settingsService.settings.bluePropType ?? settingsService.settings.propType ?? "staff",
-          redPropType: settingsService.settings.redPropType ?? settingsService.settings.propType ?? "staff",
+          bluePropType:
+            settingsService.settings.bluePropType ??
+            settingsService.settings.propType ??
+            "staff",
+          redPropType:
+            settingsService.settings.redPropType ??
+            settingsService.settings.propType ??
+            "staff",
         }
       );
 

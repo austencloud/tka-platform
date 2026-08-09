@@ -14,6 +14,8 @@ declare global {
       moduleId?: string;
       sectionId?: string;
       sequenceOverlay?: boolean;
+      /** Marks history entries created for a dismissible URL overlay. */
+      urlOverlay?: "sheet" | "spotlight";
       // SheetRouter route state
       sheet?: string | null;
       spotlight?: string;
@@ -41,12 +43,22 @@ declare global {
         // Native Cloudflare ratelimit bindings (see wrangler.toml [[ratelimits]]).
         // Optional: absent under `vite dev`, where withRateLimit falls back to
         // the in-memory window. Shape matches CfRateLimiter in rate-limiter.ts.
-        RL_GENERAL?: { limit(o: { key: string }): Promise<{ success: boolean }> };
-        RL_AI_CHAT?: { limit(o: { key: string }): Promise<{ success: boolean }> };
-        RL_AI_RENDER?: { limit(o: { key: string }): Promise<{ success: boolean }> };
+        RL_GENERAL?: {
+          limit(o: { key: string }): Promise<{ success: boolean }>;
+        };
+        RL_AI_CHAT?: {
+          limit(o: { key: string }): Promise<{ success: boolean }>;
+        };
+        RL_AI_RENDER?: {
+          limit(o: { key: string }): Promise<{ success: boolean }>;
+        };
         RL_ADMIN?: { limit(o: { key: string }): Promise<{ success: boolean }> };
-        RL_CARD_ISSUE?: { limit(o: { key: string }): Promise<{ success: boolean }> };
-        RL_CARD_SCAN?: { limit(o: { key: string }): Promise<{ success: boolean }> };
+        RL_CARD_ISSUE?: {
+          limit(o: { key: string }): Promise<{ success: boolean }>;
+        };
+        RL_CARD_SCAN?: {
+          limit(o: { key: string }): Promise<{ success: boolean }>;
+        };
       };
     }
   }

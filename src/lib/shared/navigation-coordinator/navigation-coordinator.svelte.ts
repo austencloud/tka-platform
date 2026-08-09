@@ -44,11 +44,9 @@ import {
   featureFlagService,
   featureFlagState,
 } from "../auth/services/post-hog-feature-flag-service.svelte";
-import {
-  pushState as svelteKitPushState,
-  replaceState as svelteKitReplaceState,
-} from "$app/navigation";
 import { parseCreatorPathname } from "../navigation/services/creator-routes";
+import { pruneParamsForNavigation } from "../navigation/services/url-parameter-policy";
+import { writeUrl } from "../navigation/services/url-state";
 import { buildNavigationDestinationId } from "../navigation/domain/navigation-visit";
 import { getNavigationVisitPersister } from "../navigation/get-navigation-visit-persister";
 
@@ -630,7 +628,7 @@ function replaceHistoryState(moduleId: ModuleId, sectionId?: string) {
     url.pathname = canonical;
   }
   url.hash = "";
-  svelteKitReplaceState(url, { moduleId, sectionId });
+  writeUrl(url, { state: { moduleId, sectionId } });
   recordNavigationVisit(moduleId, sectionId);
 }
 
@@ -639,7 +637,11 @@ function pushHistoryState(moduleId: ModuleId, sectionId?: string) {
   const url = new URL(window.location.href);
   url.pathname = buildPath(moduleId, sectionId);
   url.hash = "";
-  svelteKitPushState(url, { moduleId, sectionId });
+  pruneParamsForNavigation(url, url.pathname);
+  writeUrl(url, {
+    mode: "push",
+    state: { moduleId, sectionId },
+  });
   recordNavigationVisit(moduleId, sectionId);
 }
 
@@ -683,7 +685,7 @@ function parsePathNavigation(): {
       if (creatorPath.isLegacy) {
         const url = new URL(window.location.href);
         url.pathname = creatorPath.canonicalPath;
-        svelteKitReplaceState(url, { moduleId: "creators" });
+        writeUrl(url, { state: { moduleId: "creators" } });
       }
     } else if (moduleId === ("library" as unknown)) {
       // Your library lives in Browse > Library (Collections module)
@@ -704,9 +706,8 @@ function parsePathNavigation(): {
       sectionId = "collections";
       const url = new URL(window.location.href);
       url.pathname = "/browse/collections";
-      svelteKitReplaceState(url, {
-        moduleId: "browse",
-        sectionId: "collections",
+      writeUrl(url, {
+        state: { moduleId: "browse", sectionId: "collections" },
       });
     } else if (
       moduleId === ("browse" as ModuleId) &&
@@ -723,7 +724,9 @@ function parsePathNavigation(): {
       sectionId = "library";
       const url = new URL(window.location.href);
       url.pathname = `/browse/library/${parts[2]}`;
-      svelteKitReplaceState(url, { moduleId: "browse", sectionId: "library" });
+      writeUrl(url, {
+        state: { moduleId: "browse", sectionId: "library" },
+      });
     }
 
     // Validate module exists

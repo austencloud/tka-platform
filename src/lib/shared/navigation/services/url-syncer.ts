@@ -11,10 +11,10 @@
  */
 
 import { browser } from "$app/environment";
-import { replaceState } from "$app/navigation";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { URLSyncOptions } from "./types";
+import type { DebouncedUrlSync, URLSyncOptions } from "./types";
 import { generateShareURL } from "./sequence-encoder";
+import { mutateCurrentUrl, removeCurrentUrlParams } from "./url-state";
 
 export class URLSyncer {
   private pendingUpdate: ReturnType<typeof setTimeout> | null = null;
@@ -41,21 +41,19 @@ export class URLSyncer {
 
     const updateURL = () => {
       try {
-        const { url } = generateShareURL(
-          sequence,
-          module,
-          { compress: true }
-        );
+        const { url } = generateShareURL(sequence, module, { compress: true });
 
-        // Extract just the search params
         const urlObj = new URL(url);
-        const newSearch = urlObj.search;
+        const nextOpenParam = urlObj.searchParams.get("open");
 
-        // Only update if the URL actually changed
-        if (window.location.search !== newSearch) {
-          // Use replaceState to avoid creating history entries
-          const newURL = `${window.location.pathname}${newSearch}`;
-          replaceState(newURL, {});
+        if (
+          nextOpenParam &&
+          new URL(window.location.href).searchParams.get("open") !==
+            nextOpenParam
+        ) {
+          mutateCurrentUrl((currentUrl) => {
+            currentUrl.searchParams.set("open", nextOpenParam);
+          });
         }
       } catch (error) {
         console.error("Failed to sync URL with sequence:", error);
@@ -74,13 +72,7 @@ export class URLSyncer {
   clearSequenceFromURL(): void {
     if (!browser) return;
 
-    const urlObj = new URL(window.location.href);
-    const hasOpenParam = urlObj.searchParams.has("open");
-
-    if (hasOpenParam) {
-      urlObj.searchParams.delete("open");
-      replaceState(urlObj.toString(), {});
-    }
+    removeCurrentUrlParams(["open"]);
   }
 
   hasSequenceInURL(): boolean {
@@ -89,13 +81,10 @@ export class URLSyncer {
     return params.has("open");
   }
 
-  createDebouncedSync(
-    module: string,
-    debounceMs = 500
-  ): (sequence: SequenceData | null) => void {
+  createDebouncedSync(module: string, debounceMs = 500): DebouncedUrlSync {
     let timeout: ReturnType<typeof setTimeout> | null = null;
 
-    return (sequence: SequenceData | null) => {
+    const sync: DebouncedUrlSync = (sequence: SequenceData | null) => {
       if (timeout) {
         clearTimeout(timeout);
       }
@@ -105,6 +94,15 @@ export class URLSyncer {
         timeout = null;
       }, debounceMs);
     };
+
+    sync.cancel = () => {
+      if (timeout) {
+        clearTimeout(timeout);
+        timeout = null;
+      }
+    };
+
+    return sync;
   }
 
   cancelPendingUpdates(): void {

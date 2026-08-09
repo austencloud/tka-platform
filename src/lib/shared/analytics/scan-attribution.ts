@@ -1,6 +1,6 @@
 import { browser } from "$app/environment";
 import { captureEvent } from "./services/posthog";
-import { replaceState } from "$app/navigation";
+import { removeCurrentUrlParams } from "$lib/shared/navigation/services/url-state";
 
 const SCAN_SOURCE_CODE_KEY = "tka_scan_source_code";
 
@@ -19,9 +19,7 @@ export function detectAndCaptureScanEntry(): void {
     short_code: code,
   });
 
-  url.searchParams.delete("from");
-  url.searchParams.delete("code");
-  replaceState(url.pathname + (url.search || "") + url.hash, {});
+  removeCurrentUrlParams(["from", "code"]);
 }
 
 export function getScanSourceCode(): string | null {

@@ -7,8 +7,8 @@
  * Domain: Export Panel - URL State Management
  */
 
-import { replaceState } from "$app/navigation";
 import {
+  closeSheet,
   onRouteChange,
   getCurrentAnimationPanelState,
   openAnimationPanel,
@@ -72,17 +72,7 @@ export class ExportUrlManager {
   clearUrlState(): void {
     if (!browser) return;
 
-    // Clear all export panel URL parameters
-    const url = new URL(window.location.href);
-    url.searchParams.delete("sheet");
-    url.searchParams.delete("animSeqId");
-    url.searchParams.delete("animSpeed");
-    url.searchParams.delete("animPlaying");
-    url.searchParams.delete("animStep");
-    url.searchParams.delete("animGrid");
-
-    replaceState(url, {});
-    window.dispatchEvent(new CustomEvent("route-change", { detail: {} }));
+    closeSheet();
   }
 
   shouldAnimationPanelBeOpen(): boolean {

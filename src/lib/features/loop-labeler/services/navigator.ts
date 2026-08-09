@@ -1,14 +1,17 @@
-import {
-  pushState as svelteKitPushState,
-  replaceState as svelteKitReplaceState,
-} from "$app/navigation";
 import type { LabeledSequence } from "./types";
+import {
+  mutateCurrentUrl,
+  writeUrl,
+} from "$lib/shared/navigation/services/url-state";
 
 /**
  * Navigation and utility functions for the LOOP labeler
  */
 
-export function getNextIndex(currentIndex: number, totalSequences: number): number {
+export function getNextIndex(
+  currentIndex: number,
+  totalSequences: number
+): number {
   if (currentIndex < totalSequences - 1) {
     return currentIndex + 1;
   }
@@ -41,15 +44,14 @@ export function updateUrlWithSequence(
   }
 
   // Store sequence ID in history state for popstate handling
-  const state = { sequenceId, filterMode };
-
-  if (addToHistory) {
-    // Use pushState to enable browser back/forward navigation
-    svelteKitPushState(url.toString(), state);
-  } else {
-    // Use replaceState when we don't want to add a history entry
-    svelteKitReplaceState(url.toString(), state);
-  }
+  writeUrl(url, {
+    mode: addToHistory ? "push" : "replace",
+    state: {
+      sequenceId,
+      ...(filterMode ? { filterMode } : {}),
+    },
+    removeState: ["sequenceId", "filterMode"],
+  });
 }
 
 export function getSequenceFromUrl(): string | null {
@@ -69,9 +71,12 @@ export function getFilterFromUrl(): string | null {
 export function updateUrlWithFilter(filterMode: string): void {
   if (typeof window === "undefined") return;
 
-  const url = new URL(window.location.href);
-  url.searchParams.set("filter", filterMode);
-  svelteKitReplaceState(url.toString(), {});
+  mutateCurrentUrl(
+    (url) => {
+      url.searchParams.set("filter", filterMode);
+    },
+    { state: { filterMode } }
+  );
 }
 
 export function exportLabelsAsJson(labels: Map<string, LabeledSequence>): void {

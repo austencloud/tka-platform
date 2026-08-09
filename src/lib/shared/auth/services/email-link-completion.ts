@@ -27,6 +27,7 @@ import {
   signInWithEmailLink,
 } from "firebase/auth";
 import { httpsCallable } from "firebase/functions";
+import { writeUrl } from "$lib/shared/navigation/services/url-state";
 import {
   auth,
   configureAuthPersistence,
@@ -281,11 +282,7 @@ export async function completeEmailLinkSignIn(): Promise<EmailLinkCompletionResu
         "continueUrl",
         MAGIC_LINK_STATE_PARAM,
       ].forEach((p) => url.searchParams.delete(p));
-      window.history.replaceState(
-        window.history.state,
-        "",
-        url.pathname + url.search + url.hash
-      );
+      writeUrl(url.pathname + url.search + url.hash);
     } catch {
       // URL cleanup is cosmetic — never block sign-in on it.
     }

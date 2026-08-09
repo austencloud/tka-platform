@@ -14,7 +14,7 @@
 <script lang="ts">
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { onMount, untrack } from "svelte";
-  import { replaceState } from "$app/navigation";
+  import { removeCurrentUrlParams } from "$lib/shared/navigation/services/url-state";
   import { getComposeModuleState } from "./shared/state/compose-module-state.svelte.ts";
   import type { ComposeTab } from "./shared/state/compose-module-state.svelte.ts";
   import type { URLSyncer } from "$lib/shared/navigation/services/url-syncer";
@@ -84,6 +84,7 @@
     const url = new URL(window.location.href);
     if (url.searchParams.has("handoff")) {
       const handoff = consumeSequenceHandoff();
+      removeCurrentUrlParams(["handoff"]);
       if (handoff) {
         // Navigate to Arrange tab
         navigationState.setActiveTab("arrange");
@@ -92,10 +93,14 @@
         // Set up single cell layout and add the sequence
         arrangeGridState.setPresetLayout("single");
         const firstCell = arrangeGridState.visibleCells[0];
-        const word = handoff.sequence.word || handoff.sequence.name || "Sequence";
+        const word =
+          handoff.sequence.word || handoff.sequence.name || "Sequence";
 
         if (firstCell) {
-          const result = arrangeGridState.addLayerToCell(firstCell.id, handoff.sequence);
+          const result = arrangeGridState.addLayerToCell(
+            firstCell.id,
+            handoff.sequence
+          );
           if (result.success) {
             showToast({
               message: `Loaded "${word}" into Compose`,
@@ -110,10 +115,6 @@
             });
           }
         }
-
-        // Clean up URL (remove handoff param)
-        url.searchParams.delete("handoff");
-        replaceState(url.pathname + url.search, {});
       }
     }
 

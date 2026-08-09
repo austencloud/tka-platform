@@ -3,11 +3,9 @@
  */
 
 import { browser } from "$app/environment";
-import {
-  pushState as svelteKitPushState,
-  replaceState as svelteKitReplaceState,
-} from "$app/navigation";
+import { page } from "$app/state";
 import type { SheetType, RouteState, AnimationPanelState } from "./types";
+import { writeUrl } from "./url-state";
 
 // ============================================================================
 // PRIVATE HELPERS
@@ -103,11 +101,27 @@ function updateURL(state: RouteState, mode: "push" | "replace" = "push"): void {
     }
   }
 
-  if (mode === "push") {
-    svelteKitPushState(url, state);
-  } else {
-    svelteKitReplaceState(url, state);
-  }
+  const urlOverlay =
+    mode === "push"
+      ? state.sheet
+        ? "sheet"
+        : state.spotlight
+          ? "spotlight"
+          : undefined
+      : page.state.urlOverlay === "sheet" && state.sheet
+        ? "sheet"
+        : page.state.urlOverlay === "spotlight" && state.spotlight
+          ? "spotlight"
+          : undefined;
+
+  writeUrl(url, {
+    mode,
+    state: {
+      ...state,
+      ...(urlOverlay ? { urlOverlay } : {}),
+    },
+    removeState: ["sheet", "spotlight", "animationPanel", "urlOverlay"],
+  });
 }
 
 function dispatchRouteChange(state: RouteState): void {
@@ -123,7 +137,10 @@ export function openSheet(sheetType: SheetType): void {
   if (!sheetType || !browser) return;
 
   const currentState = parseRouteState();
-  const newState: RouteState = { ...currentState, sheet: sheetType };
+  const newState: RouteState = {
+    ...(currentState.spotlight ? { spotlight: currentState.spotlight } : {}),
+    sheet: sheetType,
+  };
 
   updateURL(newState, "push");
   dispatchRouteChange(newState);
@@ -135,8 +152,14 @@ export function closeSheet(): void {
   const currentState = parseRouteState();
 
   if (currentState.sheet) {
+    if (page.state.urlOverlay === "sheet") {
+      window.history.back();
+      return;
+    }
+
     const newState: RouteState = { ...currentState };
     delete newState.sheet;
+    delete newState.animationPanel;
 
     updateURL(newState, "replace");
     dispatchRouteChange(newState);
@@ -166,6 +189,11 @@ export function closeSpotlight(): void {
   const currentState = parseRouteState();
 
   if (currentState.spotlight) {
+    if (page.state.urlOverlay === "spotlight") {
+      window.history.back();
+      return;
+    }
+
     const newState: RouteState = { ...currentState };
     delete newState.spotlight;
 
@@ -250,7 +278,9 @@ export function closeAll(): void {
   }
 }
 
-export function onRouteChange(callback: (state: RouteState) => void): () => void {
+export function onRouteChange(
+  callback: (state: RouteState) => void
+): () => void {
   if (!browser) return () => {};
 
   const handlePopState = () => {
