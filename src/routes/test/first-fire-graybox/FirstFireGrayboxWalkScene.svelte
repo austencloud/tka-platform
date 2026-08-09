@@ -4,6 +4,7 @@
   import { Color, Mesh, PointLight, type Object3D } from "three";
   import { CameraMode, UnifiedCameraController } from "@austencloud/camera-3d";
   import type { AvatarState, PhysicsProvider } from "@austencloud/camera-3d";
+  import MuseumPerformerStation3D from "$lib/features/museum/components/game/MuseumPerformerStation3D.svelte";
   import {
     createPhysicsWorldState,
     createRigidBody,
@@ -22,10 +23,12 @@
   } from "$lib/shared/3d/physics/types";
   import GltfAsset from "$lib/shared/3d/environments/primitives/GltfAsset.svelte";
   import { buildFirstFireBlenderContract } from "$lib/features/museum/data/first-fire-blender-contract";
+  import type { FirstFireShrineId } from "$lib/features/museum/data/first-fire-procession-plan";
   import {
     buildFirstFireGrayboxColliders,
     FIRST_FIRE_GRAYBOX_SPAWN,
   } from "./first-fire-graybox-colliders";
+  import FirstFireCinderStateEffects from "./FirstFireCinderStateEffects.svelte";
   import FirstFireProcessionFlames from "./FirstFireProcessionFlames.svelte";
   import FirstFireShrineVolumes from "./FirstFireShrineVolumes.svelte";
   import {
@@ -33,37 +36,49 @@
     FIRST_FIRE_EXPECTED_FLAME_COUNT,
     type FirstFireFlameAnchor,
   } from "./first-fire-flame-field";
+  import {
+    activeFirstFireShrine,
+    advanceFirstFireGrayboxProof,
+    createFirstFireGrayboxReviewState,
+    displayedFirstFireShrine,
+    firstFirePhaseLabel,
+    updateFirstFireGrayboxReview,
+    visibleFirstFireFlameGroups,
+  } from "./first-fire-graybox-review";
+
+  interface FirstFireGrayboxReviewDetails {
+    phase: string;
+    label: string;
+    activeShrineId: FirstFireShrineId | null;
+    displayedShrineId: FirstFireShrineId | null;
+    orbitProgress: Record<FirstFireShrineId, number>;
+    blackoutElapsedMs: number;
+    performer: {
+      performerId: string;
+      sequenceId: string;
+      catalogId: string;
+      word: string;
+    } | null;
+  }
 
   interface Props {
     resetToken: number;
+    reviewAdvanceToken: number;
     onAssetReady?: (details: { flameCount: number }) => void;
     onPositionChange?: (position: { x: number; y: number; z: number }) => void;
+    onReviewChange?: (details: FirstFireGrayboxReviewDetails) => void;
   }
 
   const props: Props = $props();
   const contract = buildFirstFireBlenderContract();
   const colliders = buildFirstFireGrayboxColliders(contract);
-  const shrineLights = contract.shrines.map((shrine) => ({
-    id: shrine.id,
-    position: [shrine.blenderCentre.x, 2.3, -shrine.blenderCentre.y] as [
-      number,
-      number,
-      number,
-    ],
-  }));
-  const shrineLightObjects = shrineLights.map((entry) => {
-    const light = new PointLight(new Color("#ff4a18"), 62, 13, 2);
-    light.position.set(...entry.position);
-    light.castShadow = true;
-    light.shadow.mapSize.set(512, 512);
-    light.shadow.camera.near = 0.2;
-    light.shadow.camera.far = 13;
-    light.shadow.bias = -0.0015;
-    light.shadow.normalBias = 0.025;
-    light.shadow.autoUpdate = false;
-    light.shadow.needsUpdate = true;
-    return { id: entry.id, light };
-  });
+  const heroLight = new PointLight(new Color("#ff4a18"), 0, 13, 2);
+  heroLight.castShadow = true;
+  heroLight.shadow.mapSize.set(512, 512);
+  heroLight.shadow.camera.near = 0.2;
+  heroLight.shadow.camera.far = 13;
+  heroLight.shadow.bias = -0.0015;
+  heroLight.shadow.normalBias = 0.025;
 
   let physicsState: PhysicsWorldState | null = null;
   let playerState: PlayerControllerState | null = null;
@@ -71,8 +86,13 @@
   let isInitialized = $state(false);
   let isDisposed = false;
   let appliedResetToken = -1;
+  let appliedReviewAdvanceToken = props.reviewAdvanceToken;
   let fireElapsed = 0;
+  let assetRevision = $state(0);
+  let cameraRevision = $state(0);
+  let stagedMeshes: Mesh[] = [];
   let flameAnchors = $state<FirstFireFlameAnchor[]>([]);
+  let reviewState = $state(createFirstFireGrayboxReviewState());
 
   let playerPosition = $state({
     x: FIRST_FIRE_GRAYBOX_SPAWN.x,
@@ -83,6 +103,34 @@
   let targetPlayerYaw = $state(FIRST_FIRE_GRAYBOX_SPAWN.yaw);
   let isMoving = $state(false);
   let moveDirection = $state({ x: 0, z: 0 });
+
+  const activeShrineId = $derived(
+    activeFirstFireShrine(reviewState.procession.phase)
+  );
+  const displayedShrineId = $derived(
+    displayedFirstFireShrine(reviewState.procession.phase)
+  );
+  const activeShrine = $derived(
+    contract.shrines.find((candidate) => candidate.id === activeShrineId) ??
+      null
+  );
+  const displayedShrine = $derived(
+    contract.shrines.find((candidate) => candidate.id === displayedShrineId) ??
+      null
+  );
+  const visibleFlameGroups = $derived(
+    visibleFirstFireFlameGroups(reviewState.procession.phase)
+  );
+  const growthVisible = $derived(
+    reviewState.procession.phase === "growth-complete"
+  );
+
+  function yawToward(
+    from: { x: number; z: number },
+    to: { x: number; z: number }
+  ): number {
+    return Math.atan2(to.x - from.x, to.z - from.z);
+  }
 
   const avatarState: AvatarState = {
     get position() {
@@ -118,31 +166,98 @@
     },
   };
 
-  function resetPlayer(): void {
+  function resetReview(): void {
     const spawn = {
       x: FIRST_FIRE_GRAYBOX_SPAWN.x,
       y: FIRST_FIRE_GRAYBOX_SPAWN.y,
       z: FIRST_FIRE_GRAYBOX_SPAWN.z,
     };
+    reviewState = createFirstFireGrayboxReviewState();
     physicsProvider?.teleport?.(spawn);
     playerPosition = spawn;
     playerYaw = FIRST_FIRE_GRAYBOX_SPAWN.yaw;
     targetPlayerYaw = FIRST_FIRE_GRAYBOX_SPAWN.yaw;
+    cameraRevision += 1;
+  }
+
+  function teleportForReviewPhase(): void {
+    const phase = reviewState.procession.phase;
+    const shrineId = activeFirstFireShrine(phase);
+    const shrine = contract.shrines.find(
+      (candidate) => candidate.id === shrineId
+    );
+    const targetShrineId =
+      phase === "approach"
+        ? "dj"
+        : phase === "dj-complete"
+          ? "ek"
+          : phase === "ek-complete"
+            ? "fl"
+            : shrineId;
+    const targetShrine = contract.shrines.find(
+      (candidate) => candidate.id === targetShrineId
+    );
+    const hub = contract.hub.blenderCentre;
+    const destination =
+      phase === "approach"
+        ? {
+            x: FIRST_FIRE_GRAYBOX_SPAWN.x,
+            y: FIRST_FIRE_GRAYBOX_SPAWN.y,
+            z: FIRST_FIRE_GRAYBOX_SPAWN.z,
+          }
+        : shrine
+          ? {
+              x: shrine.blenderEntry.x,
+              y: FIRST_FIRE_GRAYBOX_SPAWN.y,
+              z: -shrine.blenderEntry.y,
+            }
+          : phase === "growth-complete"
+            ? {
+                x: contract.pathSections.at(-1)?.blenderPoints[1]?.x ?? hub.x,
+                y: FIRST_FIRE_GRAYBOX_SPAWN.y,
+                z: -(
+                  contract.pathSections.at(-1)?.blenderPoints[1]?.y ?? hub.y
+                ),
+              }
+            : { x: hub.x, y: FIRST_FIRE_GRAYBOX_SPAWN.y, z: -hub.y };
+    const target = shrine
+      ? { x: shrine.blenderCentre.x, z: -shrine.blenderCentre.y }
+      : targetShrine
+      ? {
+          x: targetShrine.blenderEntry.x,
+          z: -targetShrine.blenderEntry.y,
+        }
+      : {
+          x: contract.doors.earth.blender.x,
+          z: -contract.doors.earth.blender.y,
+        };
+    physicsProvider?.teleport?.(destination);
+    playerPosition = destination;
+    avatarState.snapFacingAngle?.(yawToward(destination, target));
+    cameraRevision += 1;
   }
 
   function handleGrayboxReady(scene: Object3D): void {
-    flameAnchors = extractFirstFireFlameAnchors(scene);
+    flameAnchors = extractFirstFireFlameAnchors(scene, contract.fireGuides);
+    stagedMeshes = [];
     scene.traverse((object) => {
-      if (!(object instanceof Mesh) || !object.visible) return;
-      object.castShadow = true;
-      object.receiveShadow = true;
+      if (!(object instanceof Mesh)) return;
+      if (object.visible) {
+        object.castShadow = true;
+        object.receiveShadow = true;
+      }
+      if (
+        /^FF_(Trench_.*_Magma|Growth_|Bridge_EmberBed|FireState_)/i.test(
+          object.name
+        )
+      ) {
+        stagedMeshes.push(object);
+      }
     });
-    shrineLightObjects.forEach(({ light }) => {
-      light.shadow.needsUpdate = true;
-    });
+    assetRevision += 1;
     if (flameAnchors.length !== FIRST_FIRE_EXPECTED_FLAME_COUNT) {
       console.warn(
-        `[FirstFireGraybox] Expected ${FIRST_FIRE_EXPECTED_FLAME_COUNT} flame guides, found ${flameAnchors.length}.`
+        `[FirstFireGraybox] Expected ${FIRST_FIRE_EXPECTED_FLAME_COUNT} semantic flame guides, found ${flameAnchors.length}.`
       );
     }
     props.onAssetReady?.({ flameCount: flameAnchors.length });
@@ -163,21 +278,16 @@
             y: collider.position[1],
             z: collider.position[2],
           },
+          ...(collider.rotation ? { rotation: collider.rotation } : {}),
         },
-        collider.shape === "box"
-          ? {
-              type: "box",
-              size: {
-                x: collider.size[0],
-                y: collider.size[1],
-                z: collider.size[2],
-              },
-            }
-          : {
-              type: "cylinder",
-              radius: collider.radius,
-              halfHeight: collider.halfHeight,
-            }
+        {
+          type: "box",
+          size: {
+            x: collider.size[0],
+            y: collider.size[1],
+            z: collider.size[2],
+          },
+        }
       );
     }
 
@@ -197,29 +307,104 @@
   $effect(() => {
     if (!isInitialized || props.resetToken === appliedResetToken) return;
     appliedResetToken = props.resetToken;
-    resetPlayer();
+    resetReview();
+  });
+
+  $effect(() => {
+    if (
+      !isInitialized ||
+      props.reviewAdvanceToken === appliedReviewAdvanceToken
+    ) {
+      return;
+    }
+    appliedReviewAdvanceToken = props.reviewAdvanceToken;
+    reviewState = advanceFirstFireGrayboxProof(reviewState);
+    teleportForReviewPhase();
+  });
+
+  $effect(() => {
+    const phase = reviewState.procession.phase;
+    const groups = visibleFlameGroups;
+    assetRevision;
+    stagedMeshes.forEach((mesh) => {
+      const name = mesh.name.toLowerCase();
+      if (name.startsWith("ff_firestate_")) {
+        mesh.visible = false;
+        return;
+      }
+      if (name.startsWith("ff_growth_")) {
+        mesh.visible = phase === "growth-complete";
+        return;
+      }
+      if (name.includes("trench_dj_")) mesh.visible = groups.has("dj");
+      else if (name.includes("trench_ek_")) mesh.visible = groups.has("ek");
+      else if (name.includes("trench_fl_")) mesh.visible = groups.has("fl");
+      else mesh.visible = groups.size > 0;
+    });
+  });
+
+  $effect(() => {
+    const shrine = activeShrine;
+    if (!shrine) {
+      heroLight.intensity = 0;
+      heroLight.visible = false;
+      return;
+    }
+    heroLight.position.set(
+      shrine.blenderCentre.x,
+      2.3,
+      -shrine.blenderCentre.y
+    );
+    heroLight.intensity = 68;
+    heroLight.visible = true;
+  });
+
+  $effect(() => {
+    props.onReviewChange?.({
+      phase: reviewState.procession.phase,
+      label: firstFirePhaseLabel(reviewState),
+      activeShrineId,
+      displayedShrineId,
+      orbitProgress: { ...reviewState.procession.orbitProgress },
+      blackoutElapsedMs: reviewState.blackoutElapsedMs,
+      performer: displayedShrine
+        ? {
+            performerId: displayedShrine.performerId,
+            sequenceId: displayedShrine.sequenceId,
+            catalogId: displayedShrine.catalogId,
+            word: displayedShrine.word,
+          }
+        : null,
+    });
   });
 
   useTask((delta) => {
     fireElapsed += Math.min(delta, 1 / 20);
-    shrineLightObjects.forEach(({ light }, index) => {
-      const phase = index * 2.17;
-      const flicker =
-        Math.sin(fireElapsed * 1.2 + phase) * 0.12 +
-        Math.sin(fireElapsed * 4.7 + phase) * 0.08 +
-        Math.sin(fireElapsed * 19.3 + phase) * 0.045;
-      light.intensity = 62 * (1 + flicker);
-      light.color.setRGB(
+    const flicker =
+      Math.sin(fireElapsed * 1.2) * 0.12 +
+      Math.sin(fireElapsed * 4.7) * 0.08 +
+      Math.sin(fireElapsed * 19.3) * 0.045;
+    if (heroLight.visible) {
+      heroLight.intensity = 68 * (1 + flicker);
+      heroLight.color.setRGB(
         1,
-        0.27 + Math.sin(fireElapsed * 2.3 + phase) * 0.025,
+        0.27 + Math.sin(fireElapsed * 2.3) * 0.025,
         0.075
       );
-    });
+    }
 
     if (!isInitialized || !physicsState?.world || isDisposed) return;
     stepPhysics(physicsState, Math.min(delta, 1 / 30));
     const position = physicsProvider?.getPlayerPosition();
-    if (position) props.onPositionChange?.(position);
+    if (!position) return;
+    playerPosition = position;
+    reviewState = updateFirstFireGrayboxReview(
+      reviewState,
+      contract,
+      position,
+      delta * 1000
+    );
+    props.onPositionChange?.(position);
   });
 
   onDestroy(() => {
@@ -228,62 +413,109 @@
       disposePlayerController(physicsState, playerState);
     }
     if (physicsState) disposePhysicsWorld(physicsState);
-    shrineLightObjects.forEach(({ light }) => light.dispose());
+    heroLight.dispose();
   });
 </script>
 
-<T.Color attach="background" args={["#050202"]} />
-<T.FogExp2 attach="fog" args={["#100504", 0.018]} />
+<T.Color attach="background" args={["#040303"]} />
+<T.FogExp2 attach="fog" args={["#0b0807", 0.012]} />
 
-<T.HemisphereLight color="#8c7980" groundColor="#170402" intensity={0.34} />
+<T.HemisphereLight color="#716b69" groundColor="#080605" intensity={0.22} />
 <T.DirectionalLight
   position={[-8, 16, 4]}
-  color="#d6b5a5"
-  intensity={0.55}
+  color="#b8aca4"
+  intensity={0.32}
   castShadow={false}
 />
 <T.PointLight
-  position={[-26, 2.6, 0]}
+  position={[-27, 2.6, 0]}
   color="#7cc7dd"
-  intensity={32}
-  distance={13}
+  intensity={24}
+  distance={11}
   decay={2}
 />
-{#each shrineLightObjects as entry (entry.id)}
-  <T is={entry.light} />
-{/each}
-<T.PointLight
-  position={[27.5, 2.2, 12.5]}
-  color="#73c946"
-  intensity={38}
-  distance={12}
-  decay={2}
-/>
+<T is={heroLight} />
+{#if growthVisible}
+  <T.PointLight
+    position={[
+      contract.doors.earth.blender.x - 2.5,
+      2.1,
+      -contract.doors.earth.blender.y,
+    ]}
+    color="#72d957"
+    intensity={52}
+    distance={15}
+    decay={2}
+    castShadow
+    shadow.mapSize.width={512}
+    shadow.mapSize.height={512}
+  />
+{/if}
 
 <GltfAsset
-  url="/models/museum/cave/first-fire-torch-procession-graybox.glb"
-  emissiveBoost={1.15}
+  url="/models/museum/cave/first-fire-cinder-court-graybox.glb"
+  emissiveBoost={1.05}
   onReady={handleGrayboxReady}
 />
 
 {#if flameAnchors.length > 0}
-  <FirstFireProcessionFlames anchors={flameAnchors} />
-  <FirstFireShrineVolumes shrines={shrineLights} />
+  <FirstFireProcessionFlames
+    anchors={flameAnchors}
+    visibleGroups={visibleFlameGroups}
+  />
+{/if}
+
+<FirstFireCinderStateEffects {contract} {reviewState} />
+
+{#if activeShrine}
+  <FirstFireShrineVolumes
+    shrineId={activeShrine.id}
+    position={[activeShrine.blenderCentre.x, 0, -activeShrine.blenderCentre.y]}
+  />
+{/if}
+
+{#if displayedShrine}
+  {#key displayedShrine.id}
+    {@const entry = {
+      x: displayedShrine.blenderEntry.x,
+      z: -displayedShrine.blenderEntry.y,
+    }}
+    {@const centre = {
+      x: displayedShrine.blenderCentre.x,
+      z: -displayedShrine.blenderCentre.y,
+    }}
+    <MuseumPerformerStation3D
+      stationId={displayedShrine.performerId}
+      worldX={centre.x}
+      worldY={0}
+      worldZ={centre.z}
+      facingAngle={yawToward(centre, entry)}
+      sequenceId={displayedShrine.sequenceId}
+      autoPlay={true}
+      active={displayedShrine.id === activeShrineId}
+      showGrid={displayedShrine.id === activeShrineId}
+      showPlatform={false}
+      standingSurfaceHeight={0.22}
+    />
+  {/key}
 {/if}
 
 {#if isInitialized && physicsProvider}
-  <UnifiedCameraController
-    destinationId="first-fire-graybox-walk"
-    {avatarState}
-    {physicsProvider}
-    enabled={true}
-    initialYaw={FIRST_FIRE_GRAYBOX_SPAWN.yaw}
-    initialPitch={0}
-    allowedModes={[CameraMode.FIRST_PERSON]}
-    disableModeToggle={true}
-    moveSpeed={3.2}
-    sprintMultiplier={1.8}
-    gravity={9.81}
-    jumpForce={4.5}
-  />
+  {#key cameraRevision}
+    <UnifiedCameraController
+      destinationId="first-fire-cinder-court-graybox-walk"
+      {avatarState}
+      {physicsProvider}
+      enabled={true}
+      initialYaw={playerYaw}
+      initialPitch={0}
+      allowedModes={[CameraMode.FIRST_PERSON]}
+      disableModeToggle={true}
+      showControlsHint={false}
+      moveSpeed={4}
+      sprintMultiplier={1.8}
+      gravity={9.81}
+      jumpForce={4.5}
+    />
+  {/key}
 {/if}

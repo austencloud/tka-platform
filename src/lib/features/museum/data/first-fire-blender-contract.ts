@@ -1,11 +1,9 @@
 /**
- * Coordinate bridge from the measured First Fire floor plan to Blender.
+ * Blender authoring bridge for First Fire: The Cinder Court.
  *
- * Museum room GLBs are mounted at the compiled room centre. Blender authors on
- * an X/Y ground plane with Z up, while the runtime uses X/Z with Y up. Blender's
- * glTF exporter converts `(X, Y, Z)` to runtime `(X, Z, -Y)`, so plan depth must
- * be negated here. Keeping the transform in one pure module prevents an artist
- * or build script from inventing a second coordinate system.
+ * The measured plan remains the spatial owner. This module converts its X/Z
+ * ground plane into Blender's local X/Y plane with Z up and packages only the
+ * information an artist or deterministic graybox builder needs.
  */
 import type { Point2, WorldRect } from "./drowned-gallery-terrain";
 import {
@@ -13,21 +11,28 @@ import {
   type FirstFireProcessionPlan,
 } from "./first-fire-procession-plan";
 
-export const FIRST_FIRE_BLENDER_CONTRACT_SCHEMA_VERSION = 1;
-export const FIRST_FIRE_BLENDER_SCENE_NAME =
-  "First Fire Torch Procession Graybox";
+export const FIRST_FIRE_BLENDER_CONTRACT_SCHEMA_VERSION = 2;
+export const FIRST_FIRE_BLENDER_SCENE_NAME = "First Fire Cinder Court Graybox";
+export const FIRST_FIRE_BLENDER_PLAYER_EYE_HEIGHT = 1.7;
 
 export const FIRST_FIRE_BLENDER_COLLECTIONS = [
   "SHELL",
-  "ROCK_RIBS",
-  "SHRINES",
-  "TRENCHES",
-  "BRIDGE",
-  "TORCH_GUIDES",
+  "BASALT",
+  "COURTS",
+  "ROUTE",
+  "PERFORMERS",
+  "FIRE_GUIDES",
   "REFERENCE",
   "LOCATORS",
+  "CAMERAS",
   "QA_ONLY",
 ] as const;
+
+export const FIRST_FIRE_SEQUENCE_CATALOG = {
+  dj: { catalogId: "tnd-split-opp-jdjd", word: "JDJD" },
+  ek: { catalogId: "tnd-split-opp-keke", word: "KEKE" },
+  fl: { catalogId: "tnd-split-opp-lflf", word: "LFLF" },
+} as const;
 
 export interface BlenderPoint {
   x: number;
@@ -41,11 +46,21 @@ export interface BlenderFootprint {
   sizeY: number;
 }
 
+export interface FirstFireBlenderCamera {
+  id: string;
+  name: string;
+  position: BlenderPoint;
+  target: BlenderPoint;
+  horizontalFovDegrees: number;
+  type: "perspective" | "orthographic";
+  orthographicScale?: number;
+}
+
 export interface FirstFireBlenderContract {
   schemaVersion: number;
   sceneName: string;
   units: "metres";
-  sourceModule: string;
+  sourceModules: readonly string[];
   collections: readonly string[];
   coordinateSystem: {
     plan: {
@@ -65,7 +80,8 @@ export interface FirstFireBlenderContract {
       groundAxes: "X/Z";
       upAxis: "+Y";
       exporterTransform: "(Blender X, Y, Z) -> (runtime X, Z, -Y)";
-      mount: "compiled cave-fire interior centre";
+      mount: "isolated 58 x 44 metre Gate 2 review shell";
+      integrationStatus: "not-the-compiled-cave-fire-room";
       rotationRadians: readonly [0, 0, 0];
       scale: 1;
     };
@@ -75,6 +91,7 @@ export interface FirstFireBlenderContract {
     planCentre: Point2;
     width: number;
     depth: number;
+    playerEyeHeight: number;
     blenderBounds: {
       minX: number;
       maxX: number;
@@ -96,11 +113,33 @@ export interface FirstFireBlenderContract {
       clearWidth: number;
     };
   };
+  hub: {
+    planRect: WorldRect;
+    blenderFootprint: BlenderFootprint;
+    planCentre: Point2;
+    blenderCentre: BlenderPoint;
+  };
+  courts: Array<{
+    id: string;
+    shrineId: string;
+    planOutline: Point2[];
+    blenderOutline: BlenderPoint[];
+    planThroatCentre: Point2;
+    blenderThroatCentre: BlenderPoint;
+    planBeacon: Point2;
+    blenderBeacon: BlenderPoint;
+    planHubApproach: Point2;
+    blenderHubApproach: BlenderPoint;
+    throatWidth: number;
+    sharedEntryAndExit: true;
+  }>;
   shrines: Array<{
     id: string;
     label: string;
     performerId: string;
     sequenceId: string;
+    catalogId: string;
+    word: string;
     planCentre: Point2;
     blenderCentre: BlenderPoint;
     planEntry: Point2;
@@ -114,28 +153,40 @@ export interface FirstFireBlenderContract {
     orbitWidth: number;
     orbitStartDegrees: number;
     orbitSweepDegrees: number;
+    activationZones: Array<{
+      id: string;
+      startDegrees: number;
+      sweepDegrees: number;
+    }>;
   }>;
   pathSections: Array<{
     id: string;
     kind: string;
+    shrineId?: string;
     width: number;
     planPoints: Point2[];
     blenderPoints: BlenderPoint[];
   }>;
-  occluders: Array<{
+  basalt: Array<{
     id: string;
     kind: string;
     planRect: WorldRect;
     blenderFootprint: BlenderFootprint;
+    planPolygon: Point2[];
+    blenderPolygon: BlenderPoint[];
+    minimumHeight: number;
   }>;
-  sightlines: Array<{
+  fireGuides: Array<{
     id: string;
-    fromShrine: string;
-    toShrine: string;
-    from: BlenderPoint;
-    to: BlenderPoint;
+    kind: string;
+    state: string;
+    collision: false;
+    width: number;
+    planPoints: Point2[];
+    blenderPoints: BlenderPoint[];
   }>;
   torchBudget: FirstFireProcessionPlan["torchBudget"];
+  cameras: FirstFireBlenderCamera[];
 }
 
 function clean(value: number): number {
@@ -183,6 +234,27 @@ export function firstFirePlanRectToBlenderFootprint(
   };
 }
 
+function camera(
+  id: string,
+  position: Point2,
+  target: Point2,
+  planCentre: Point2,
+  horizontalFovDegrees = 68
+): FirstFireBlenderCamera {
+  return {
+    id,
+    name: `QA_Camera_${id.replaceAll("-", "_")}`,
+    position: firstFirePlanPointToBlender(
+      position,
+      planCentre,
+      FIRST_FIRE_BLENDER_PLAYER_EYE_HEIGHT
+    ),
+    target: firstFirePlanPointToBlender(target, planCentre, 1.05),
+    horizontalFovDegrees,
+    type: "perspective",
+  };
+}
+
 export function buildFirstFireBlenderContract(
   plan = buildNominalFirstFireProcessionPlan()
 ): FirstFireBlenderContract {
@@ -196,12 +268,35 @@ export function buildFirstFireBlenderContract(
     firstFirePlanPointToBlender(point, planCentre, elevation);
   const westDoorCentre = (plan.westDoor.min + plan.westDoor.max) / 2;
   const eastDoorCentre = (plan.eastDoor.min + plan.eastDoor.max) / 2;
+  const waterDoor = { x: plan.room.minX, z: westDoorCentre };
+  const earthDoor = { x: plan.room.maxX, z: eastDoorCentre };
+  const shrine = (id: "dj" | "ek" | "fl") => {
+    const result = plan.shrines.find((candidate) => candidate.id === id);
+    if (!result) throw new Error(`First Fire Blender contract: missing ${id}`);
+    return result;
+  };
+  const dj = shrine("dj");
+  const ek = shrine("ek");
+  const fl = shrine("fl");
+  const hubCentre = {
+    x: (plan.hub.minX + plan.hub.maxX) / 2,
+    z: (plan.hub.minZ + plan.hub.maxZ) / 2,
+  };
+  const gateFor = (id: "dj" | "ek" | "fl") => {
+    const result = plan.gates.find((candidate) => candidate.shrineId === id);
+    if (!result) {
+      throw new Error(`First Fire Blender contract: missing ${id} gate`);
+    }
+    return result;
+  };
 
   return {
     schemaVersion: FIRST_FIRE_BLENDER_CONTRACT_SCHEMA_VERSION,
     sceneName: FIRST_FIRE_BLENDER_SCENE_NAME,
     units: "metres",
-    sourceModule: "src/lib/features/museum/data/first-fire-procession-plan.ts",
+    sourceModules: [
+      "src/lib/features/museum/data/first-fire-procession-plan.ts",
+    ],
     collections: FIRST_FIRE_BLENDER_COLLECTIONS,
     coordinateSystem: {
       plan: {
@@ -221,7 +316,8 @@ export function buildFirstFireBlenderContract(
         groundAxes: "X/Z",
         upAxis: "+Y",
         exporterTransform: "(Blender X, Y, Z) -> (runtime X, Z, -Y)",
-        mount: "compiled cave-fire interior centre",
+        mount: "isolated 58 x 44 metre Gate 2 review shell",
+        integrationStatus: "not-the-compiled-cave-fire-room",
         rotationRadians: [0, 0, 0],
         scale: 1,
       },
@@ -231,6 +327,7 @@ export function buildFirstFireBlenderContract(
       planCentre,
       width,
       depth,
+      playerEyeHeight: FIRST_FIRE_BLENDER_PLAYER_EYE_HEIGHT,
       blenderBounds: {
         minX: clean(plan.room.minX - planCentre.x),
         maxX: clean(plan.room.maxX - planCentre.x),
@@ -241,61 +338,126 @@ export function buildFirstFireBlenderContract(
     doors: {
       water: {
         side: "west",
-        plan: { x: plan.room.minX, z: westDoorCentre },
-        blender: toBlender({ x: plan.room.minX, z: westDoorCentre }),
+        plan: waterDoor,
+        blender: toBlender(waterDoor),
         clearWidth: clean(plan.westDoor.max - plan.westDoor.min),
       },
       earth: {
         side: "east",
-        plan: { x: plan.room.maxX, z: eastDoorCentre },
-        blender: toBlender({ x: plan.room.maxX, z: eastDoorCentre }),
+        plan: earthDoor,
+        blender: toBlender(earthDoor),
         clearWidth: clean(plan.eastDoor.max - plan.eastDoor.min),
       },
     },
-    shrines: plan.shrines.map((shrine) => ({
-      id: shrine.id,
-      label: shrine.label,
-      performerId: shrine.performerId,
-      sequenceId: shrine.sequenceId,
-      planCentre: shrine.centre,
-      blenderCentre: toBlender(shrine.centre),
-      planEntry: shrine.entry,
-      blenderEntry: toBlender(shrine.entry),
-      planExit: shrine.exit,
-      blenderExit: toBlender(shrine.exit),
-      habitatRadius: shrine.habitatRadius,
-      trenchInnerRadius: shrine.trenchInnerRadius,
-      trenchOuterRadius: shrine.trenchOuterRadius,
-      orbitRadius: shrine.orbitRadius,
-      orbitWidth: shrine.orbitWidth,
-      orbitStartDegrees: shrine.orbitStartDegrees,
-      orbitSweepDegrees: shrine.orbitSweepDegrees,
+    hub: {
+      planRect: plan.hub,
+      blenderFootprint: firstFirePlanRectToBlenderFootprint(
+        plan.hub,
+        planCentre
+      ),
+      planCentre: hubCentre,
+      blenderCentre: toBlender(hubCentre),
+    },
+    courts: plan.shrines.map((candidate) => {
+      const gate = gateFor(candidate.id);
+      return {
+        id: `${candidate.id}-court`,
+        shrineId: candidate.id,
+        planOutline: candidate.courtPolygon,
+        blenderOutline: candidate.courtPolygon.map((point) => toBlender(point)),
+        planThroatCentre: candidate.entry,
+        blenderThroatCentre: toBlender(candidate.entry),
+        planBeacon: gate.beacon,
+        blenderBeacon: toBlender(gate.beacon),
+        planHubApproach: gate.hubApproach,
+        blenderHubApproach: toBlender(gate.hubApproach),
+        throatWidth: gate.width,
+        sharedEntryAndExit: true as const,
+      };
+    }),
+    shrines: plan.shrines.map((candidate) => ({
+      id: candidate.id,
+      label: candidate.label,
+      performerId: candidate.performerId,
+      sequenceId: candidate.sequenceId,
+      catalogId: FIRST_FIRE_SEQUENCE_CATALOG[candidate.id].catalogId,
+      word: FIRST_FIRE_SEQUENCE_CATALOG[candidate.id].word,
+      planCentre: candidate.centre,
+      blenderCentre: toBlender(candidate.centre),
+      planEntry: candidate.entry,
+      blenderEntry: toBlender(candidate.entry),
+      planExit: candidate.exit,
+      blenderExit: toBlender(candidate.exit),
+      habitatRadius: candidate.habitatRadius,
+      trenchInnerRadius: candidate.trenchInnerRadius,
+      trenchOuterRadius: candidate.trenchOuterRadius,
+      orbitRadius: candidate.orbitRadius,
+      orbitWidth: candidate.orbitWidth,
+      orbitStartDegrees: candidate.orbitStartDegrees,
+      orbitSweepDegrees: candidate.orbitSweepDegrees,
+      activationZones: candidate.activationZones,
     })),
     pathSections: plan.pathSections.map((section) => ({
       id: section.id,
       kind: section.kind,
+      ...(section.shrineId ? { shrineId: section.shrineId } : {}),
       width: section.width,
       planPoints: section.points,
       blenderPoints: section.points.map((point) => toBlender(point, 0.035)),
     })),
-    occluders: plan.occluders.map((occluder) => ({
-      id: occluder.id,
-      kind: occluder.kind,
-      planRect: occluder.rect,
+    basalt: plan.basaltMasses.map((mass) => ({
+      id: mass.id,
+      kind: mass.kind,
+      planRect: mass.rect,
       blenderFootprint: firstFirePlanRectToBlenderFootprint(
-        occluder.rect,
+        mass.rect,
         planCentre
       ),
+      planPolygon: mass.polygon,
+      blenderPolygon: mass.polygon.map((point) => toBlender(point)),
+      minimumHeight: mass.minimumHeight,
     })),
-    sightlines: plan.shrines.flatMap((from, fromIndex) =>
-      plan.shrines.slice(fromIndex + 1).map((to) => ({
-        id: `${from.id}-to-${to.id}`,
-        fromShrine: from.id,
-        toShrine: to.id,
-        from: toBlender(from.centre, 1.7),
-        to: toBlender(to.centre, 1.7),
-      }))
-    ),
+    fireGuides: plan.guidePaths.map((guide) => ({
+      id: guide.id,
+      kind: guide.kind,
+      state: guide.state,
+      collision: guide.collision,
+      width: guide.width,
+      planPoints: guide.points,
+      blenderPoints: guide.points.map((point) => toBlender(point, 0.04)),
+    })),
     torchBudget: plan.torchBudget,
+    cameras: [
+      camera(
+        "water-entry",
+        { x: 2, z: westDoorCentre },
+        hubCentre,
+        planCentre,
+        72
+      ),
+      camera("hub-arrival", { x: 20, z: 22 }, dj.entry, planCentre, 68),
+      camera("dj-threshold", dj.entry, dj.centre, planCentre, 62),
+      camera("ek-threshold", ek.entry, ek.centre, planCentre, 62),
+      camera("fl-threshold", fl.entry, fl.centre, planCentre, 62),
+      camera("blackout", hubCentre, earthDoor, planCentre, 70),
+      camera("earth-reveal", { x: 40, z: 26 }, earthDoor, planCentre, 68),
+      {
+        id: "overview",
+        name: "QA_Camera_overview",
+        position: { x: 34, y: -31, z: 30 },
+        target: { x: 0, y: 0, z: 1.2 },
+        horizontalFovDegrees: 52,
+        type: "perspective",
+      },
+      {
+        id: "plan",
+        name: "QA_Camera_plan",
+        position: { x: 0, y: 0, z: 52 },
+        target: { x: 0, y: 0, z: 0 },
+        horizontalFovDegrees: 52,
+        type: "orthographic",
+        orthographicScale: 62,
+      },
+    ],
   };
 }

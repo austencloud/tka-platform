@@ -12,85 +12,201 @@ import { canonicalJSON } from "$lib/shared/foundation/utils/canonical-json";
 
 const contract = buildFirstFireBlenderContract();
 const manifestPath = resolve(
-  "docs/superpowers/specs/2026-08-06-first-fire-blender-plan.json"
+  "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-blender-plan.json"
 );
 
-describe("First Fire Blender coordinate contract", () => {
-  it("centres the authored asset on the runtime room mount", () => {
-    expect(contract.room.planCentre).toEqual({ x: 30, z: 15 });
+describe("First Fire Cinder Court Blender coordinate contract", () => {
+  it("centres the isolated 58 by 44 metre shell without claiming live integration", () => {
+    expect(contract.schemaVersion).toBe(2);
+    expect(contract.sceneName).toBe("First Fire Cinder Court Graybox");
+    expect(contract.room.planCentre).toEqual({ x: 29, z: 22 });
     expect(contract.room.blenderBounds).toEqual({
-      minX: -30,
-      maxX: 30,
-      minY: -15,
-      maxY: 15,
+      minX: -29,
+      maxX: 29,
+      minY: -22,
+      maxY: 22,
     });
-    expect(contract.doors.water.blender).toEqual({ x: -30, y: 0, z: 0 });
-    expect(contract.doors.earth.blender).toEqual({ x: 30, y: -13, z: 0 });
-    expect(contract.coordinateSystem.gltfRuntime.rotationRadians).toEqual([
-      0, 0, 0,
-    ]);
-    expect(contract.coordinateSystem.gltfRuntime.scale).toBe(1);
+    expect(contract.doors.water.blender).toEqual({ x: -29, y: 0, z: 0 });
+    expect(contract.doors.earth.blender).toEqual({ x: 29, y: -12, z: 0 });
+    expect(contract.coordinateSystem.gltfRuntime.mount).toBe(
+      "isolated 58 x 44 metre Gate 2 review shell"
+    );
+    expect(contract.coordinateSystem.gltfRuntime.integrationStatus).toBe(
+      "not-the-compiled-cave-fire-room"
+    );
   });
 
-  it("round-trips plan points through Blender without axis drift", () => {
-    for (const section of contract.pathSections) {
-      for (const point of section.planPoints) {
-        const blender = firstFirePlanPointToBlender(
-          point,
-          contract.room.planCentre,
-          2.25
-        );
-        const roundTrip = firstFireBlenderPointToPlan(
-          blender,
-          contract.room.planCentre
-        );
-        expect(roundTrip.x).toBeCloseTo(point.x, 12);
-        expect(roundTrip.z).toBeCloseTo(point.z, 12);
-      }
+  it("round-trips every authored route, court, basalt, and fire-guide point", () => {
+    const planPoints = [
+      ...contract.pathSections.flatMap((section) => section.planPoints),
+      ...contract.courts.flatMap((court) => court.planOutline),
+      ...contract.basalt.flatMap((mass) => mass.planPolygon),
+      ...contract.fireGuides.flatMap((guide) => guide.planPoints),
+    ];
+    for (const point of planPoints) {
+      const blender = firstFirePlanPointToBlender(
+        point,
+        contract.room.planCentre,
+        2.25
+      );
+      const roundTrip = firstFireBlenderPointToPlan(
+        blender,
+        contract.room.planCentre
+      );
+      expect(roundTrip.x).toBeCloseTo(point.x, 12);
+      expect(roundTrip.z).toBeCloseTo(point.z, 12);
     }
   });
 
-  it("maps the three performer anchors to their centred Blender positions", () => {
+  it("preserves one shared 3.5 metre throat for each distinct court", () => {
+    expect(contract.courts.map((court) => court.id)).toEqual([
+      "dj-court",
+      "ek-court",
+      "fl-court",
+    ]);
+    for (const court of contract.courts) {
+      const shrine = contract.shrines.find(
+        (candidate) => candidate.id === court.shrineId
+      );
+      expect(shrine).toBeDefined();
+      expect(court.planOutline).toHaveLength(16);
+      expect(court.throatWidth).toBe(3.5);
+      expect(court.sharedEntryAndExit).toBe(true);
+      expect(shrine!.planEntry).toEqual(shrine!.planExit);
+      expect(court.planThroatCentre).toEqual(shrine!.planEntry);
+    }
+  });
+
+  it("carries the returning route, activation arcs, basalt, and non-colliding fire guides", () => {
+    expect(contract.pathSections.map((section) => section.id)).toEqual([
+      "water-to-hub",
+      "hub-to-dj",
+      "dj-orbit",
+      "dj-return-to-hub",
+      "hub-to-ek",
+      "ek-orbit",
+      "ek-return-to-hub",
+      "hub-to-fl",
+      "fl-orbit",
+      "fl-return-to-hub",
+      "earth-growth-path",
+    ]);
     expect(
-      contract.shrines.map(({ id, blenderCentre }) => ({ id, blenderCentre }))
-    ).toEqual([
-      { id: "dj", blenderCentre: { x: -13.5, y: 6.5, z: 0 } },
-      { id: "ek", blenderCentre: { x: 1.5, y: -6.5, z: 0 } },
-      { id: "fl", blenderCentre: { x: 17, y: 6.5, z: 0 } },
+      contract.shrines.every((shrine) => shrine.activationZones.length === 4)
+    ).toBe(true);
+    expect(contract.basalt.length).toBeGreaterThanOrEqual(3);
+    expect(new Set(contract.basalt.map((mass) => mass.id)).size).toBe(
+      contract.basalt.length
+    );
+    expect(contract.basalt.every((mass) => mass.planPolygon.length >= 4)).toBe(
+      true
+    );
+    expect(contract.fireGuides.map((guide) => guide.state)).toEqual([
+      "always",
+      "dj",
+      "ek",
+      "fl",
+      "extinguished",
+      "extinguished",
     ]);
+    expect(contract.fireGuides.every((guide) => !guide.collision)).toBe(true);
+    expect(contract.torchBudget.maximumDetailedShrines).toBe(1);
   });
 
-  it("keeps every Blender path point inside the centred room footprint", () => {
-    const bounds = contract.room.blenderBounds;
-    for (const section of contract.pathSections) {
-      for (const point of section.blenderPoints) {
-        expect(point.x).toBeGreaterThanOrEqual(bounds.minX);
-        expect(point.x).toBeLessThanOrEqual(bounds.maxX);
-        expect(point.y).toBeGreaterThanOrEqual(bounds.minY);
-        expect(point.y).toBeLessThanOrEqual(bounds.maxY);
-      }
-    }
-  });
-
-  it("locks the artist-facing collection contract", () => {
+  it("locks artist collections and the fixed review camera set", () => {
     expect(contract.collections).toEqual(FIRST_FIRE_BLENDER_COLLECTIONS);
     expect(new Set(contract.collections).size).toBe(
       contract.collections.length
     );
+    expect(contract.cameras.map((camera) => camera.id)).toEqual([
+      "water-entry",
+      "hub-arrival",
+      "dj-threshold",
+      "ek-threshold",
+      "fl-threshold",
+      "blackout",
+      "earth-reveal",
+      "overview",
+      "plan",
+    ]);
   });
 
-  it("keeps the checked-in manifest synchronized and hash-stamped", () => {
+  it("keeps the new manifest synchronized with exact catalog and live-source parity", () => {
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
       hashAlgorithm: string;
       sourceDigest: string;
+      digestPayloadCanonical: string;
+      sequenceSources: {
+        catalog: { path: string; sha256: string };
+        liveMuseum: { path: string; sha256: string };
+      };
+      sequenceFingerprints: Array<{
+        catalogId: string;
+        catalogFingerprintSha256: string;
+        parity: Record<string, boolean>;
+      }>;
       contract: unknown;
     };
     const digest = createHash("sha256")
-      .update(canonicalJSON(contract), "utf8")
+      .update(
+        canonicalJSON({
+          contract: manifest.contract,
+          sequenceSources: manifest.sequenceSources,
+          sequenceFingerprints: manifest.sequenceFingerprints,
+        }),
+        "utf8"
+      )
       .digest("hex");
 
     expect(manifest.hashAlgorithm).toBe("sha256");
+    expect(JSON.parse(manifest.digestPayloadCanonical)).toEqual({
+      contract: manifest.contract,
+      sequenceSources: manifest.sequenceSources,
+      sequenceFingerprints: manifest.sequenceFingerprints,
+    });
+    expect(manifest.digestPayloadCanonical).toBe(
+      canonicalJSON({
+        contract: manifest.contract,
+        sequenceSources: manifest.sequenceSources,
+        sequenceFingerprints: manifest.sequenceFingerprints,
+      })
+    );
     expect(manifest.sourceDigest).toBe(digest);
     expect(manifest.contract).toEqual(contract);
+    expect(manifest.sequenceSources.catalog.path).toBe(
+      "static/data/hero/tnd-base-words.json"
+    );
+    expect(manifest.sequenceSources.liveMuseum.path).toBe(
+      "src/lib/features/museum/data/museum-exhibit-sequences.ts"
+    );
+    expect(
+      manifest.sequenceFingerprints.map(
+        ({ catalogId, catalogFingerprintSha256 }) => ({
+          catalogId,
+          catalogFingerprintSha256,
+        })
+      )
+    ).toEqual([
+      {
+        catalogId: "tnd-split-opp-jdjd",
+        catalogFingerprintSha256:
+          "22640f3d4be6de1b99f7201bba701432084835210869e6cda2ae655fa948ce29",
+      },
+      {
+        catalogId: "tnd-split-opp-keke",
+        catalogFingerprintSha256:
+          "a550324310e6e4a8bff54b78bcefdf2d56b7a8496767a7534aead1c39f78bad9",
+      },
+      {
+        catalogId: "tnd-split-opp-lflf",
+        catalogFingerprintSha256:
+          "91e4e6e0bdb58a269fcfcad36d82e68f59d1d589986e67624357ccb65e7475e0",
+      },
+    ]);
+    expect(
+      manifest.sequenceFingerprints.every((entry) =>
+        Object.values(entry.parity).every(Boolean)
+      )
+    ).toBe(true);
   });
 });

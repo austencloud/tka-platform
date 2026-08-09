@@ -1,5 +1,5 @@
 import {
-  BufferGeometry,
+  AdditiveBlending,
   Color,
   DoubleSide,
   Float32BufferAttribute,
@@ -7,16 +7,19 @@ import {
   InstancedBufferAttribute,
   InstancedMesh,
   Matrix4,
+  Mesh,
   PlaneGeometry,
   PointLight,
   Quaternion,
   ShaderMaterial,
   StaticDrawUsage,
   Vector3,
+  type BufferGeometry,
   type Material,
   type Object3D,
 } from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import type { FirstFireFlameGroup } from "./first-fire-graybox-review";
 
 export const FIRST_FIRE_EXPECTED_FLAME_COUNT = 126;
 
@@ -26,7 +29,14 @@ export interface FirstFireFlameAnchor {
   position: [number, number, number];
   scale: [number, number, number];
   palette: FirstFireFlamePalette;
+  group: FirstFireFlameGroup;
   seed: number;
+}
+
+export interface FirstFireFlameGuideClassification {
+  kind: string;
+  state: string;
+  blenderPoints: readonly { x: number; y: number; z: number }[];
 }
 
 const FLAME_VERTEX_SHADER = /* glsl */ `
@@ -34,17 +44,20 @@ const FLAME_VERTEX_SHADER = /* glsl */ `
   attribute float aSeed;
   attribute float aPalette;
   attribute float aLayer;
+  attribute float aVisibility;
 
   varying vec2 vUv;
   varying float vSeed;
   varying float vPalette;
   varying float vLayer;
+  varying float vVisibility;
 
   void main() {
     vUv = uv;
     vSeed = aSeed;
     vPalette = aPalette;
     vLayer = aLayer;
+    vVisibility = aVisibility;
 
     vec4 worldCenter = modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
     float flameWidth = length(instanceMatrix[0].xyz);
@@ -92,6 +105,7 @@ const FLAME_FRAGMENT_SHADER = /* glsl */ `
   varying float vSeed;
   varying float vPalette;
   varying float vLayer;
+  varying float vVisibility;
 
   float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
@@ -120,6 +134,7 @@ const FLAME_FRAGMENT_SHADER = /* glsl */ `
   }
 
   void main() {
+    if (vVisibility < 0.01) discard;
     float y = clamp(vUv.y, 0.0, 1.0);
     float centeredX = (vUv.x - 0.5) * 2.0;
     float layerSeed = vSeed + vLayer * 0.173;
@@ -188,22 +203,42 @@ const FLAME_FRAGMENT_SHADER = /* glsl */ `
     float layerGain = vLayer < 0.5 ? 0.92 : 0.78;
     color *= (0.94 + n * 0.22) * uIntensity * layerGain;
 
-    gl_FragColor = vec4(color, alpha * (vLayer < 0.5 ? 0.88 : 0.72));
+    gl_FragColor = vec4(color, alpha * (vLayer < 0.5 ? 0.52 : 0.34));
   }
 `;
 
 const paletteLightColors = ["#ff4d17", "#ff7424", "#ff3219"] as const;
-const corridorLightCount = 6;
+const pooledLightCount = 6;
 
 function materialNames(material: Material | Material[]): string {
   const materials = Array.isArray(material) ? material : [material];
   return materials.map((candidate) => candidate.name).join(" ");
 }
 
-function resolvePalette(sourceName: string): FirstFireFlamePalette | null {
-  if (/DJ Flame/i.test(sourceName)) return 0;
-  if (/EK Flame/i.test(sourceName)) return 1;
-  if (/FL Flame/i.test(sourceName)) return 2;
+function resolveFlameSemantic(
+  sourceName: string
+): { palette: FirstFireFlamePalette; group: FirstFireFlameGroup } | null {
+  const semantic = sourceName
+    .match(/FF_FlameGuide_(Field|DJ|EK|FL)(?:_Perimeter)?_/i)?.[1]
+    ?.toLowerCase();
+  if (semantic === "field") {
+    const palette = /EK Flame/i.test(sourceName)
+      ? 1
+      : /FL Flame/i.test(sourceName)
+        ? 2
+        : 0;
+    return { palette, group: "field" };
+  }
+  if (semantic === "dj") return { palette: 0, group: "dj" };
+  if (semantic === "ek") return { palette: 1, group: "ek" };
+  if (semantic === "fl") return { palette: 2, group: "fl" };
+
+  // The fallback keeps old review exports inspectable without making their
+  // material names part of the new Cinder Court contract.
+  if (/Field Flame/i.test(sourceName)) return { palette: 0, group: "field" };
+  if (/DJ Flame/i.test(sourceName)) return { palette: 0, group: "dj" };
+  if (/EK Flame/i.test(sourceName)) return { palette: 1, group: "ek" };
+  if (/FL Flame/i.test(sourceName)) return { palette: 2, group: "fl" };
   return null;
 }
 
@@ -215,6 +250,64 @@ function deterministicSeed(position: Vector3, index: number): number {
       index * 0.37
   );
   return value - Math.floor(value);
+}
+
+function pointSegmentDistanceSquared(
+  pointX: number,
+  pointZ: number,
+  start: { x: number; y: number },
+  end: { x: number; y: number }
+): number {
+  const startZ = -start.y;
+  const endZ = -end.y;
+  const dx = end.x - start.x;
+  const dz = endZ - startZ;
+  const lengthSquared = dx * dx + dz * dz;
+  const projection =
+    lengthSquared > 0
+      ? Math.max(
+          0,
+          Math.min(
+            1,
+            ((pointX - start.x) * dx + (pointZ - startZ) * dz) / lengthSquared
+          )
+        )
+      : 0;
+  const nearestX = start.x + dx * projection;
+  const nearestZ = startZ + dz * projection;
+  return (pointX - nearestX) ** 2 + (pointZ - nearestZ) ** 2;
+}
+
+function classifyFieldGroup(
+  anchor: FirstFireFlameAnchor,
+  guides: readonly FirstFireFlameGuideClassification[]
+): FirstFireFlameGroup {
+  let closestGroup: FirstFireFlameGroup = "field";
+  let closestDistance = Number.POSITIVE_INFINITY;
+  for (const guide of guides) {
+    if (
+      !["torch-field", "fire-wall"].includes(guide.kind) ||
+      guide.blenderPoints.length < 2
+    ) {
+      continue;
+    }
+    const group: FirstFireFlameGroup = ["dj", "ek", "fl"].includes(guide.state)
+      ? (guide.state as FirstFireFlameGroup)
+      : "field";
+    for (let index = 0; index < guide.blenderPoints.length - 1; index += 1) {
+      const distance = pointSegmentDistanceSquared(
+        anchor.position[0],
+        anchor.position[2],
+        guide.blenderPoints[index]!,
+        guide.blenderPoints[index + 1]!
+      );
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestGroup = group;
+      }
+    }
+  }
+  return closestGroup;
 }
 
 function createLayeredFlameGeometry(): BufferGeometry {
@@ -233,11 +326,12 @@ function createLayeredFlameGeometry(): BufferGeometry {
 }
 
 /**
- * Replaces the GLB's static cone guides with runtime anchors. The optimized GLB
+ * Replaces the GLB's static graybox guides with runtime anchors. The optimized GLB
  * owns the transforms, so the Blender layout remains the only coordinate source.
  */
 export function extractFirstFireFlameAnchors(
-  root: Object3D
+  root: Object3D,
+  fireGuides: readonly FirstFireFlameGuideClassification[] = []
 ): FirstFireFlameAnchor[] {
   const anchors: FirstFireFlameAnchor[] = [];
   const instanceMatrix = new Matrix4();
@@ -248,45 +342,59 @@ export function extractFirstFireFlameAnchors(
 
   root.updateMatrixWorld(true);
   root.traverse((object) => {
-    if (!(object instanceof InstancedMesh)) return;
-
+    if (!(object instanceof Mesh)) return;
     const sourceName = `${object.name} ${object.geometry.name} ${materialNames(object.material)}`;
-    const palette = resolvePalette(sourceName);
-    if (palette === null) return;
+    const semantic = resolveFlameSemantic(sourceName);
+    if (!semantic) return;
 
     object.visible = false;
-    for (let index = 0; index < object.count; index += 1) {
-      object.getMatrixAt(index, instanceMatrix);
-      worldMatrix.multiplyMatrices(object.matrixWorld, instanceMatrix);
-      worldMatrix.decompose(position, quaternion, scale);
-      anchors.push({
-        position: [position.x, position.y, position.z],
-        scale: [Math.abs(scale.x), Math.abs(scale.y), Math.abs(scale.z)],
-        palette,
-        seed: deterministicSeed(position, anchors.length),
-      });
+    if (object instanceof InstancedMesh) {
+      for (let index = 0; index < object.count; index += 1) {
+        object.getMatrixAt(index, instanceMatrix);
+        worldMatrix.multiplyMatrices(object.matrixWorld, instanceMatrix);
+        worldMatrix.decompose(position, quaternion, scale);
+        anchors.push({
+          position: [position.x, position.y, position.z],
+          scale: [Math.abs(scale.x), Math.abs(scale.y), Math.abs(scale.z)],
+          ...semantic,
+          seed: deterministicSeed(position, anchors.length),
+        });
+      }
+      return;
     }
+
+    object.matrixWorld.decompose(position, quaternion, scale);
+    anchors.push({
+      position: [position.x, position.y, position.z],
+      scale: [Math.abs(scale.x), Math.abs(scale.y), Math.abs(scale.z)],
+      ...semantic,
+      seed: deterministicSeed(position, anchors.length),
+    });
   });
 
-  return anchors;
+  return anchors.map((anchor) =>
+    anchor.group === "field" && fireGuides.length > 0
+      ? { ...anchor, group: classifyFieldGroup(anchor, fireGuides) }
+      : anchor
+  );
 }
 
-function selectCorridorLightAnchors(
+function selectPooledLightAnchors(
   anchors: readonly FirstFireFlameAnchor[]
 ): FirstFireFlameAnchor[] {
-  if (anchors.length <= corridorLightCount) return [...anchors];
+  if (anchors.length <= pooledLightCount) return [...anchors];
   const ordered = [...anchors].sort(
     (left, right) => left.position[0] - right.position[0]
   );
-  return Array.from({ length: corridorLightCount }, (_, index) => {
-    const fraction = (index + 0.5) / corridorLightCount;
+  return Array.from({ length: pooledLightCount }, (_, index) => {
+    const fraction = (index + 0.5) / pooledLightCount;
     return ordered[
       Math.min(ordered.length - 1, Math.floor(fraction * ordered.length))
     ]!;
   });
 }
 
-/** One billboard batch and a small pooled light rig for all 126 procession flames. */
+/** One noise-flame batch and a small pooled light rig for all 126 Cinder Court fires. */
 export class FirstFireFlameFieldRenderer {
   readonly object3D = new Group();
   readonly mesh: InstancedMesh;
@@ -294,15 +402,24 @@ export class FirstFireFlameFieldRenderer {
 
   private readonly geometry: BufferGeometry;
   private readonly material: ShaderMaterial;
+  private readonly anchors: readonly FirstFireFlameAnchor[];
+  private readonly lightAnchors: readonly FirstFireFlameAnchor[];
+  private readonly visibility: InstancedBufferAttribute;
+  private visibleGroups: ReadonlySet<FirstFireFlameGroup> = new Set([
+    "field",
+    "dj",
+  ]);
   private elapsed = 0;
 
   constructor(anchors: readonly FirstFireFlameAnchor[]) {
-    this.object3D.name = "FirstFireProcessionFlames";
+    this.object3D.name = "FirstFireCinderCourtFlames";
+    this.anchors = anchors;
 
     this.geometry = createLayeredFlameGeometry();
     this.material = new ShaderMaterial({
       transparent: true,
       depthWrite: false,
+      blending: AdditiveBlending,
       side: DoubleSide,
       uniforms: {
         uTime: { value: 0 },
@@ -320,19 +437,20 @@ export class FirstFireFlameFieldRenderer {
 
     const seeds = new Float32Array(anchors.length);
     const palettes = new Float32Array(anchors.length);
+    const visibility = new Float32Array(anchors.length);
     const matrix = new Matrix4();
     const quaternion = new Quaternion();
     const position = new Vector3();
     const scale = new Vector3();
 
     anchors.forEach((anchor, index) => {
-      const radius = Math.max(anchor.scale[0], anchor.scale[2]);
       position.set(...anchor.position);
-      scale.set(radius * 2.35, anchor.scale[1] * 1.16, 1);
+      scale.set(anchor.scale[0] * 0.48, anchor.scale[1] * 0.88, 1);
       matrix.compose(position, quaternion, scale);
       this.mesh.setMatrixAt(index, matrix);
       seeds[index] = anchor.seed;
       palettes[index] = anchor.palette;
+      visibility[index] = this.visibleGroups.has(anchor.group) ? 1 : 0;
     });
     this.mesh.instanceMatrix.needsUpdate = true;
     this.geometry.setAttribute("aSeed", new InstancedBufferAttribute(seeds, 1));
@@ -340,9 +458,12 @@ export class FirstFireFlameFieldRenderer {
       "aPalette",
       new InstancedBufferAttribute(palettes, 1)
     );
+    this.visibility = new InstancedBufferAttribute(visibility, 1);
+    this.geometry.setAttribute("aVisibility", this.visibility);
     this.object3D.add(this.mesh);
 
-    this.lights = selectCorridorLightAnchors(anchors).map((anchor) => {
+    this.lightAnchors = selectPooledLightAnchors(anchors);
+    this.lights = this.lightAnchors.map((anchor) => {
       const light = new PointLight(
         new Color(paletteLightColors[anchor.palette]),
         18,
@@ -351,9 +472,23 @@ export class FirstFireFlameFieldRenderer {
       );
       light.position.set(...anchor.position);
       light.position.y += 0.12;
+      light.castShadow = true;
+      light.shadow.mapSize.set(256, 256);
+      light.shadow.camera.near = 0.2;
+      light.shadow.camera.far = 7.5;
+      light.shadow.bias = -0.0015;
+      light.shadow.normalBias = 0.025;
       this.object3D.add(light);
       return light;
     });
+  }
+
+  setVisibleGroups(groups: ReadonlySet<FirstFireFlameGroup>): void {
+    this.visibleGroups = groups;
+    this.anchors.forEach((anchor, index) => {
+      this.visibility.setX(index, groups.has(anchor.group) ? 1 : 0);
+    });
+    this.visibility.needsUpdate = true;
   }
 
   update(delta: number, motionScale = 1): void {
@@ -367,11 +502,14 @@ export class FirstFireFlameFieldRenderer {
     this.material.uniforms.uIntensity!.value = 0.96 + slow + medium + crackle;
 
     this.lights.forEach((light, index) => {
+      const anchor = this.lightAnchors[index];
+      const isVisible = anchor ? this.visibleGroups.has(anchor.group) : false;
       const phase = index * 1.91;
       const localFlicker =
         Math.sin(this.elapsed * 3.7 + phase) * 0.1 +
         Math.sin(this.elapsed * 13.1 + phase * 0.7) * 0.055;
-      light.intensity = 18 * (1 + slow + localFlicker);
+      light.intensity = isVisible ? 18 * (1 + slow + localFlicker) : 0;
+      light.visible = isVisible;
     });
   }
 

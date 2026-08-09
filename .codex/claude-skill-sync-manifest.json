@@ -55,6 +55,7 @@
     ".agents/skills/museum-scene-production/assets/scene-gates.template.json",
     ".agents/skills/museum-scene-production/references/gate-contracts.md",
     ".agents/skills/museum-scene-production/references/process-review-ledger.md",
+    ".agents/skills/museum-scene-production/references/reviews/2026-08-08-fable.md",
     ".agents/skills/museum-scene-production/references/reviews/2026-08-08-opus.md",
     ".agents/skills/museum-scene-production/references/visual-bridge.md",
     ".agents/skills/museum-scene-production/scripts/validate-scene-gates.mjs",

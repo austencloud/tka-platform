@@ -4,25 +4,48 @@
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
   import FirstFireGrayboxWalkScene from "./FirstFireGrayboxWalkScene.svelte";
 
+  interface ReviewDetails {
+    phase: string;
+    label: string;
+    activeShrineId: "dj" | "ek" | "fl" | null;
+    displayedShrineId: "dj" | "ek" | "fl" | null;
+    orbitProgress: Record<"dj" | "ek" | "fl", number>;
+    blackoutElapsedMs: number;
+    performer: {
+      performerId: string;
+      sequenceId: string;
+      catalogId: string;
+      word: string;
+    } | null;
+  }
+
+  const initialReview: ReviewDetails = {
+    phase: "approach",
+    label: "DJ gate kindled",
+    activeShrineId: null,
+    displayedShrineId: null,
+    orbitProgress: { dj: 0, ek: 0, fl: 0 },
+    blackoutElapsedMs: 0,
+    performer: null,
+  };
+
   let assetReady = $state(false);
   let flameCount = $state(0);
   let resetToken = $state(0);
-  let position = $state({ x: -28.4, y: 0.88, z: 0 });
+  let reviewAdvanceToken = $state(0);
+  let position = $state({ x: -27, y: 0.88, z: 0 });
+  let review = $state<ReviewDetails>(initialReview);
 
-  const locationLabel = $derived.by(() => {
-    if (position.x < -21) return "Water threshold";
-    if (position.x < -6) return "DJ approach";
-    if (position.x < 9) return "EK passage";
-    if (position.x < 23) return "FL passage";
-    return "Earth pull";
-  });
+  const proofButtonLabel = $derived(
+    review.phase === "growth-complete" ? "Restart proof" : "Next proof state"
+  );
 </script>
 
 <svelte:head>
-  <title>Walk The First Fire graybox</title>
+  <title>Walk The First Fire: Cinder Court</title>
   <meta
     name="description"
-    content="First-person spatial review of The First Fire Torch Procession graybox."
+    content="Interactive first-person spatial review of The First Fire Cinder Court graybox."
   />
 </svelte:head>
 
@@ -32,49 +55,88 @@
   data-player-y={position.y.toFixed(3)}
   data-player-z={position.z.toFixed(3)}
   data-flame-count={flameCount}
+  data-review-phase={review.phase}
+  data-active-shrine={review.activeShrineId ?? "none"}
+  data-displayed-shrine={review.displayedShrineId ?? "none"}
+  data-live-word={review.performer?.word ?? "none"}
+  data-live-sequence-id={review.performer?.sequenceId ?? "none"}
+  data-live-catalog-id={review.performer?.catalogId ?? "none"}
+  data-blackout-ms={Math.round(review.blackoutElapsedMs)}
 >
-  <div class="viewport" aria-label="The First Fire first-person graybox">
+  <div class="viewport" aria-label="The First Fire Cinder Court graybox">
     <Canvas dpr={1} shadows={PCFSoftShadowMap} toneMapping={AgXToneMapping}>
       <FirstFireGrayboxWalkScene
         {resetToken}
+        {reviewAdvanceToken}
         onAssetReady={(details) => {
           flameCount = details.flameCount;
           assetReady = true;
         }}
         onPositionChange={(nextPosition) => (position = nextPosition)}
+        onReviewChange={(details) => (review = details)}
       />
     </Canvas>
   </div>
 
   <header class="review-hud">
-    <div class="review-label">
-      <p>Vulcan Cave spatial review</p>
-      <h1>The First Fire</h1>
-      <span>{locationLabel}</span>
-    </div>
-    <ActionButton
-      label="Reset to Water"
-      icon="fa-arrow-rotate-left"
-      color="fuse"
-      onclick={() => (resetToken += 1)}
-    />
+    <section class="review-label" aria-label="Cinder Court review state">
+      <p>Vulcan Cave · Gate 2 interaction proof</p>
+      <div class="title-line">
+        <h1>The Cinder Court</h1>
+        <span class="phase-chip">{review.label}</span>
+      </div>
+      {#if review.performer}
+        <dl class="live-proof">
+          <div>
+            <dt>Live word</dt>
+            <dd>{review.performer.word}</dd>
+          </div>
+          <div>
+            <dt>Sequence</dt>
+            <dd>{review.performer.sequenceId}</dd>
+          </div>
+          <div>
+            <dt>Catalog</dt>
+            <dd>{review.performer.catalogId}</dd>
+          </div>
+        </dl>
+      {:else}
+        <span class="reveal-note">Performer hidden until the DJ threshold.</span
+        >
+      {/if}
+    </section>
+
+    <nav class="review-actions" aria-label="Graybox review controls">
+      <ActionButton
+        label={proofButtonLabel}
+        icon="fa-forward-step"
+        color="fuse"
+        onclick={() => (reviewAdvanceToken += 1)}
+      />
+      <ActionButton
+        label="Reset to Water"
+        icon="fa-arrow-rotate-left"
+        color="default"
+        onclick={() => (resetToken += 1)}
+      />
+    </nav>
   </header>
 
   {#if !assetReady}
     <div class="loading" role="status" aria-live="polite">
       <span class="loading-mark" aria-hidden="true"></span>
       <div>
-        <strong>Lighting the procession</strong>
-        <span>Loading the Blender graybox</span>
+        <strong>Opening the Cinder Court</strong>
+        <span>Loading the measured Blender graybox</span>
       </div>
     </div>
   {/if}
 
   <aside class="walk-note">
-    <strong>Walk the route</strong>
-    <span
-      >Click the room, then use WASD and the mouse. Shift sprints. Esc releases
-      the cursor.</span
+    <strong>Walk the ordinary route</strong>
+    <span>Click the room, then use WASD and the mouse. Shift sprints.</span>
+    <span class="review-shortcut"
+      >Review shortcut: advance one authored state at a time.</span
     >
   </aside>
 </main>
@@ -83,13 +145,13 @@
   :global(body) {
     margin: 0;
     overflow: hidden;
-    background: #050202;
+    background: #040303;
   }
 
   .walk-page {
     --theme-accent: #f97316;
-    --theme-card-bg: rgba(18, 8, 5, 0.82);
-    --theme-card-hover-bg: rgba(42, 15, 7, 0.92);
+    --theme-card-bg: rgba(18, 8, 5, 0.86);
+    --theme-card-hover-bg: rgba(42, 15, 7, 0.94);
     --theme-stroke: rgba(255, 218, 185, 0.2);
     --theme-stroke-strong: rgba(251, 146, 60, 0.58);
     --theme-text: #fff7ed;
@@ -128,15 +190,29 @@
     pointer-events: none;
   }
 
-  .review-hud :global(button) {
+  .review-actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 0.7rem;
     pointer-events: auto;
+  }
+
+  .review-actions :global(button) {
+    min-inline-size: 10.5rem;
+  }
+
+  .review-actions :global(button[data-color="default"]) {
+    --action-gradient: linear-gradient(135deg, #251914, #3a241b);
+    --action-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
+    --action-shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.38);
+    --action-focus: #fed7aa;
   }
 
   .review-label,
   .walk-note,
   .loading {
     border: 1px solid rgba(255, 218, 185, 0.18);
-    background: rgba(10, 5, 4, 0.76);
+    background: rgba(10, 5, 4, 0.78);
     box-shadow:
       0 1rem 3rem rgba(0, 0, 0, 0.34),
       inset 0 1px rgba(255, 255, 255, 0.035);
@@ -144,8 +220,9 @@
   }
 
   .review-label {
-    min-inline-size: min(21rem, calc(100vw - 12rem));
-    padding: 0.75rem 1rem 0.85rem;
+    inline-size: min(42rem, calc(100vw - 25rem));
+    min-block-size: 7.5rem;
+    padding: 0.78rem 1rem 0.9rem;
     border-radius: 0.9rem;
   }
 
@@ -154,24 +231,66 @@
     margin: 0;
   }
 
-  .review-label p {
+  .review-label > p {
     color: #fb923c;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 760;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.11em;
     text-transform: uppercase;
   }
 
+  .title-line {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-block: 0.18rem 0.65rem;
+  }
+
   .review-label h1 {
-    margin-block: 0.16rem 0.1rem;
     font-family: Georgia, "Times New Roman", serif;
     font-size: clamp(1.45rem, 1.8vw, 2.25rem);
     font-weight: 540;
     line-height: 1;
   }
 
-  .review-label span {
-    color: #d3c2b4;
+  .phase-chip {
+    flex: 0 0 auto;
+    color: #fed7aa;
+    font-size: 0.84rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .live-proof {
+    display: grid;
+    grid-template-columns: 0.7fr 1.2fr 1.55fr;
+    gap: 0.45rem 1rem;
+    margin: 0;
+  }
+
+  .live-proof div {
+    min-inline-size: 0;
+  }
+
+  .live-proof dt {
+    color: #a99588;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .live-proof dd {
+    margin: 0.12rem 0 0;
+    overflow: hidden;
+    color: #fff1e6;
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-size: 0.82rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .reveal-note {
+    color: #c6b6ab;
     font-size: 0.88rem;
   }
 
@@ -183,7 +302,7 @@
     display: flex;
     align-items: center;
     gap: 0.8rem;
-    max-inline-size: min(44rem, calc(100vw - 2rem));
+    max-inline-size: min(62rem, calc(100vw - 2rem));
     padding: 0.72rem 1rem;
     border-radius: 0.8rem;
     transform: translateX(-50%);
@@ -202,6 +321,12 @@
     line-height: 1.35;
   }
 
+  .walk-note .review-shortcut {
+    padding-inline-start: 0.8rem;
+    border-inline-start: 1px solid rgba(251, 146, 60, 0.35);
+    color: #f3b988;
+  }
+
   .loading {
     position: absolute;
     inset: 50% auto auto 50%;
@@ -209,7 +334,7 @@
     display: flex;
     align-items: center;
     gap: 0.9rem;
-    min-inline-size: 17rem;
+    min-inline-size: 18rem;
     padding: 1rem 1.2rem;
     border-radius: 1rem;
     transform: translate(-50%, -50%);
@@ -250,15 +375,18 @@
       padding: 0.95rem 1.2rem 1rem;
     }
 
-    .review-label p {
+    .review-label > p,
+    .live-proof dt {
       font-size: 0.8rem;
     }
 
-    .review-label span,
+    .phase-chip,
+    .reveal-note,
     .walk-note strong {
       font-size: 1rem;
     }
 
+    .live-proof dd,
     .walk-note span {
       font-size: 0.92rem;
     }
@@ -271,12 +399,14 @@
     }
 
     .review-label {
-      min-inline-size: 31rem;
+      inline-size: min(62rem, calc(100vw - 38rem));
+      min-block-size: 11rem;
       padding: 1.35rem 1.65rem 1.5rem;
       border-radius: 1.4rem;
     }
 
-    .review-label p {
+    .review-label > p,
+    .live-proof dt {
       font-size: 1.05rem;
     }
 
@@ -285,24 +415,30 @@
       font-size: 3.2rem;
     }
 
-    .review-label span {
-      font-size: 1.35rem;
+    .phase-chip,
+    .reveal-note {
+      font-size: 1.3rem;
     }
 
-    .review-hud :global(button) {
+    .live-proof dd {
+      font-size: 1.2rem;
+    }
+
+    .review-actions {
+      gap: 1rem;
+    }
+
+    .review-actions :global(button) {
       min-block-size: 4.25rem;
+      min-inline-size: 14rem;
       padding: 1.15rem 2rem;
       border-radius: 1.6rem;
       font-size: 1.25rem;
     }
 
-    .review-hud :global(button i) {
-      font-size: 1.15rem;
-    }
-
     .walk-note {
       gap: 1.15rem;
-      max-inline-size: 64rem;
+      max-inline-size: 80rem;
       padding: 1.1rem 1.5rem;
       border-radius: 1.25rem;
     }
@@ -316,19 +452,47 @@
     }
   }
 
-  @media (max-width: 42rem) {
+  @media (max-width: 64rem) {
     .review-hud {
       align-items: stretch;
       flex-direction: column;
     }
 
     .review-label {
-      min-inline-size: 0;
       inline-size: 100%;
     }
 
-    .review-hud :global(button) {
+    .review-actions {
       align-self: flex-end;
+    }
+  }
+
+  @media (max-width: 42rem) {
+    .review-label {
+      min-block-size: 0;
+    }
+
+    .title-line {
+      align-items: start;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .live-proof {
+      grid-template-columns: 1fr;
+    }
+
+    .live-proof div:not(:first-child) {
+      display: none;
+    }
+
+    .review-actions {
+      inline-size: 100%;
+    }
+
+    .review-actions :global(button) {
+      flex: 1 1 0;
+      min-inline-size: 0;
     }
 
     .walk-note {
@@ -336,18 +500,29 @@
       flex-direction: column;
       gap: 0.25rem;
     }
+
+    .review-shortcut {
+      display: none;
+    }
   }
 
   @media (max-height: 31rem) {
-    .review-label p,
-    .review-label span,
+    .review-label > p,
+    .phase-chip,
+    .live-proof,
+    .reveal-note,
     .walk-note {
       display: none;
     }
 
     .review-label {
-      min-inline-size: 0;
+      inline-size: auto;
+      min-block-size: 0;
       padding: 0.55rem 0.75rem;
+    }
+
+    .title-line {
+      margin: 0;
     }
 
     .review-label h1 {

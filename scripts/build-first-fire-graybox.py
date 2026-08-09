@@ -1,21 +1,13 @@
-"""Build the standalone First Fire Torch Procession graybox in Blender.
+"""Build the isolated First Fire Cinder Court Gate 2 graybox in Blender.
 
-The measured TypeScript plan is exported first to a hash-stamped JSON contract.
-This script verifies that digest, creates an editable Blender scene, and renders
-the six review views required by the handoff. It never opens or modifies the
-shared interactive Blender scene.
+The scene is derived only from the hash-stamped schema-v2 coordinate manifest.
+It never opens or modifies the shared interactive Blender scene.
 
 Run from the repository root:
 
   pnpm exec tsx scripts/export-first-fire-blender-plan.ts
-  "C:/Program Files/Blender Foundation/Blender 5.0/blender.exe" ^
-    --background --factory-startup ^
-    --python scripts/build-first-fire-graybox.py
-
-Outputs:
-  blender/first-fire-torch-procession-graybox.blend
-  %TEMP%/tka-first-fire-graybox-evidence/*.png
-  artifacts/first-fire-graybox-report.json
+  "C:/Program Files/Blender Foundation/Blender 5.0/blender.exe" \
+    --background --factory-startup --python scripts/build-first-fire-graybox.py
 """
 
 from __future__ import annotations
@@ -23,7 +15,6 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import os
 import random
 import tempfile
 from pathlib import Path
@@ -38,51 +29,59 @@ MANIFEST_PATH = (
     / "docs"
     / "superpowers"
     / "specs"
-    / "2026-08-06-first-fire-blender-plan.json"
+    / "first-fire-cinder-court"
+    / "first-fire-cinder-court-blender-plan.json"
 )
-BLEND_PATH = ROOT / "blender" / "first-fire-torch-procession-graybox.blend"
-REPORT_PATH = ROOT / "artifacts" / "first-fire-graybox-report.json"
-QA_DIR = Path(tempfile.gettempdir()) / "tka-first-fire-graybox-evidence"
-RNG = random.Random(0xF1F1)
+BLEND_PATH = ROOT / "blender" / "first-fire-cinder-court-graybox.blend"
+EVIDENCE_DIR = ROOT / "artifacts" / "first-fire-cinder-court"
+REPORT_PATH = EVIDENCE_DIR / "first-fire-cinder-court-graybox-report.json"
+QA_DIR = Path(tempfile.gettempdir()) / "tka-first-fire-cinder-court-evidence"
+RNG = random.Random(0xC1D3C0)
 
 
-def load_contract() -> tuple[dict, str]:
+def load_contract() -> tuple[dict, dict, str]:
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     contract = manifest["contract"]
-    canonical = json.dumps(
-        contract,
-        ensure_ascii=False,
-        separators=(",", ":"),
-        sort_keys=True,
-    )
+    canonical = manifest["digestPayloadCanonical"]
+    decoded_payload = json.loads(canonical)
+    expected_payload = {
+        "contract": contract,
+        "sequenceSources": manifest["sequenceSources"],
+        "sequenceFingerprints": manifest["sequenceFingerprints"],
+    }
+    if decoded_payload != expected_payload:
+        raise RuntimeError(
+            "First Fire Cinder Court canonical digest payload does not match its manifest fields."
+        )
     digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
     if digest != manifest["sourceDigest"]:
         raise RuntimeError(
-            "First Fire Blender manifest digest mismatch. "
+            "First Fire Cinder Court manifest digest mismatch. "
             "Regenerate it from the TypeScript plan before building."
         )
-    return contract, digest
+    if contract["schemaVersion"] != 2:
+        raise RuntimeError("The Cinder Court builder requires contract schema v2")
+    if contract["room"]["width"] != 58 or contract["room"]["depth"] != 44:
+        raise RuntimeError("Refusing to build a stale non-58-by-44 First Fire plan")
+    return manifest, contract, digest
 
 
-CONTRACT, SOURCE_DIGEST = load_contract()
+MANIFEST, CONTRACT, SOURCE_DIGEST = load_contract()
 ROOM = CONTRACT["room"]
-ROOM_BOUNDS = ROOM["blenderBounds"]
-
+BOUNDS = ROOM["blenderBounds"]
+EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
 BLEND_PATH.parent.mkdir(parents=True, exist_ok=True)
-REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
 QA_DIR.mkdir(parents=True, exist_ok=True)
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
 scene.name = CONTRACT["sceneName"]
+scene["first_fire_scene_id"] = "first-fire-cinder-court"
 scene["first_fire_contract_schema"] = CONTRACT["schemaVersion"]
 scene["first_fire_source_digest"] = SOURCE_DIGEST
-scene["first_fire_source_module"] = CONTRACT["sourceModule"]
+scene["first_fire_source_modules"] = json.dumps(CONTRACT["sourceModules"])
 scene["first_fire_runtime_mount"] = CONTRACT["coordinateSystem"]["gltfRuntime"][
     "mount"
-]
-scene["first_fire_axis_transform"] = CONTRACT["coordinateSystem"]["gltfRuntime"][
-    "exporterTransform"
 ]
 
 
@@ -94,15 +93,16 @@ def create_collection(
     return result
 
 
-export_root = create_collection("EXPORT_FirstFire")
-COLLECTIONS = {
-    name: create_collection(name, export_root)
-    for name in CONTRACT["collections"]
-    if name not in ("REFERENCE", "LOCATORS", "QA_ONLY")
-}
-COLLECTIONS["REFERENCE"] = create_collection("REFERENCE")
-COLLECTIONS["LOCATORS"] = create_collection("LOCATORS")
-COLLECTIONS["QA_ONLY"] = create_collection("QA_ONLY")
+export_root = create_collection("EXPORT_FirstFireCinderCourt")
+COLLECTIONS: dict[str, bpy.types.Collection] = {}
+for collection_name in CONTRACT["collections"]:
+    parent = (
+        export_root
+        if collection_name
+        not in {"REFERENCE", "LOCATORS", "CAMERAS", "QA_ONLY"}
+        else None
+    )
+    COLLECTIONS[collection_name] = create_collection(collection_name, parent)
 
 
 def move_to_collection(
@@ -117,7 +117,8 @@ def move_to_collection(
 def material(
     name: str,
     color: tuple[float, float, float, float],
-    roughness: float = 0.8,
+    *,
+    roughness: float = 0.85,
     metallic: float = 0.0,
     emission: tuple[float, float, float, float] | None = None,
     emission_strength: float = 0.0,
@@ -133,74 +134,52 @@ def material(
         if emission:
             bsdf.inputs["Emission Color"].default_value = emission
             bsdf.inputs["Emission Strength"].default_value = emission_strength
-        if color[3] < 1.0:
-            bsdf.inputs["Alpha"].default_value = color[3]
-            try:
-                result.surface_render_method = "DITHERED"
-            except AttributeError:
-                pass
     return result
 
 
-BASALT = material("FF Basalt", (0.075, 0.068, 0.064, 1.0), roughness=0.95)
-BASALT_DARK = material(
-    "FF Basalt Shadow", (0.026, 0.025, 0.027, 1.0), roughness=0.98
-)
+BASALT = material("FF Basalt", (0.055, 0.043, 0.039, 1), roughness=0.96)
 BASALT_EDGE = material(
-    "FF Fractured Edge", (0.145, 0.125, 0.105, 1.0), roughness=0.9
+    "FF Fractured Basalt", (0.13, 0.095, 0.073, 1), roughness=0.93
 )
-PATH_STONE = material(
-    "FF Walkable Stone", (0.20, 0.17, 0.14, 1.0), roughness=0.92
+FLOOR = material("FF Cinder Floor", (0.105, 0.065, 0.048, 1), roughness=0.97)
+ROUTE = material("FF Safe Route", (0.28, 0.15, 0.085, 1), roughness=0.88)
+COURT = material("FF Court Stone", (0.19, 0.105, 0.068, 1), roughness=0.92)
+TRENCH = material(
+    "FF Trench Ember", (0.74, 0.025, 0.005, 1), roughness=0.45,
+    emission=(1, 0.015, 0.001, 1), emission_strength=3.3,
 )
-PATH_STEAM = material(
-    "FF Steam Threshold", (0.18, 0.32, 0.38, 1.0), roughness=0.65
-)
-PATH_BRIDGE = material(
-    "FF Ember Bridge", (0.30, 0.16, 0.075, 1.0), roughness=0.82
-)
-PATH_GROWTH = material(
-    "FF Earth Growth", (0.035, 0.22, 0.055, 1.0), roughness=0.84,
-    emission=(0.015, 0.22, 0.03, 1.0), emission_strength=0.45
-)
-MAGMA = material(
-    "FF Magma Placeholder", (0.78, 0.055, 0.012, 1.0), roughness=0.42,
-    emission=(1.0, 0.025, 0.002, 1.0), emission_strength=3.4
-)
-EMBER = material(
-    "FF Ember Placeholder", (0.48, 0.038, 0.006, 1.0), roughness=0.55,
-    emission=(1.0, 0.055, 0.004, 1.0), emission_strength=2.4
-)
-WOOD = material("FF Charred Torch Wood", (0.055, 0.023, 0.012, 1.0), roughness=0.93)
-DJ_FLAME = material(
-    "FF DJ Flame Guide", (1.0, 0.18, 0.015, 1.0), roughness=0.3,
-    emission=(1.0, 0.035, 0.002, 1.0), emission_strength=2.8
-)
-EK_FLAME = material(
-    "FF EK Flame Guide", (1.0, 0.33, 0.015, 1.0), roughness=0.3,
-    emission=(1.0, 0.085, 0.002, 1.0), emission_strength=2.8
-)
-FL_FLAME = material(
-    "FF FL Flame Guide", (0.95, 0.07, 0.025, 1.0), roughness=0.3,
-    emission=(1.0, 0.012, 0.003, 1.0), emission_strength=2.8
-)
-STEAM = material(
-    "FF Steam", (0.16, 0.34, 0.40, 1.0), roughness=0.55,
-    emission=(0.05, 0.20, 0.25, 1.0), emission_strength=0.3
+COAL = material(
+    "FF Coal Memory", (0.28, 0.012, 0.004, 1), roughness=0.65,
+    emission=(0.65, 0.012, 0.001, 1), emission_strength=1.4,
 )
 GROWTH = material(
-    "FF Moss Growth", (0.055, 0.43, 0.08, 1.0), roughness=0.86,
-    emission=(0.02, 0.25, 0.035, 1.0), emission_strength=0.7
+    "FF Earth Growth", (0.02, 0.26, 0.045, 1), roughness=0.82,
+    emission=(0.02, 0.34, 0.035, 1), emission_strength=1.1,
 )
-LOCATOR_DJ = material("DJ Locator", (0.96, 0.78, 0.40, 1.0), roughness=0.6)
-LOCATOR_EK = material("EK Locator", (0.86, 0.64, 0.30, 1.0), roughness=0.6)
-LOCATOR_FL = material("FL Locator", (0.98, 0.54, 0.25, 1.0), roughness=0.6)
-REFERENCE_CYAN = material(
-    "QA Coordinate Reference", (0.04, 0.75, 0.95, 0.55), roughness=0.4
+STEM = material("FF Charred Torch", (0.025, 0.009, 0.005, 1), roughness=0.95)
+FLAME_MATERIALS = {
+    "field": material(
+        "FF Field Flame Guide", (1, 0.16, 0.008, 1), roughness=0.34,
+        emission=(1, 0.025, 0.001, 1), emission_strength=4.2,
+    ),
+    "dj": material(
+        "FF DJ Flame Guide", (1, 0.22, 0.009, 1), roughness=0.32,
+        emission=(1, 0.04, 0.001, 1), emission_strength=4.5,
+    ),
+    "ek": material(
+        "FF EK Flame Guide", (1, 0.38, 0.012, 1), roughness=0.32,
+        emission=(1, 0.09, 0.001, 1), emission_strength=4.5,
+    ),
+    "fl": material(
+        "FF FL Flame Guide", (0.95, 0.055, 0.014, 1), roughness=0.32,
+        emission=(1, 0.008, 0.002, 1), emission_strength=4.5,
+    ),
+}
+WATER = material(
+    "FF Water Threshold", (0.04, 0.22, 0.30, 1), roughness=0.55,
+    emission=(0.02, 0.16, 0.24, 1), emission_strength=0.55,
 )
-SIGHTLINE_RED = material(
-    "QA Sightline", (0.95, 0.05, 0.05, 0.65), roughness=0.4,
-    emission=(0.65, 0.01, 0.01, 1.0), emission_strength=1.0
-)
+PERFORMER = material("FF Performer Locator", (0.36, 0.24, 0.13, 1), roughness=0.8)
 
 
 def assign(obj: bpy.types.Object, mat: bpy.types.Material) -> None:
@@ -215,10 +194,11 @@ def add_box(
     dimensions: tuple[float, float, float],
     mat: bpy.types.Material,
     target: bpy.types.Collection,
-    bevel: float = 0.0,
-    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
+    *,
+    rotation_z: float = 0,
+    bevel: float = 0,
 ) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_cube_add(size=1.0, location=location, rotation=rotation)
+    bpy.ops.mesh.primitive_cube_add(size=1, location=location, rotation=(0, 0, rotation_z))
     obj = bpy.context.active_object
     obj.name = name
     obj.dimensions = dimensions
@@ -226,7 +206,7 @@ def add_box(
     assign(obj, mat)
     move_to_collection(obj, target)
     if bevel:
-        modifier = obj.modifiers.new(name="Fractured edge softening", type="BEVEL")
+        modifier = obj.modifiers.new("Fractured edge", "BEVEL")
         modifier.width = bevel
         modifier.segments = 2
     return obj
@@ -240,14 +220,9 @@ def add_cylinder(
     mat: bpy.types.Material,
     target: bpy.types.Collection,
     vertices: int = 12,
-    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
 ) -> bpy.types.Object:
     bpy.ops.mesh.primitive_cylinder_add(
-        vertices=vertices,
-        radius=radius,
-        depth=depth,
-        location=location,
-        rotation=rotation,
+        vertices=vertices, radius=radius, depth=depth, location=location
     )
     obj = bpy.context.active_object
     obj.name = name
@@ -255,785 +230,397 @@ def add_cylinder(
     return move_to_collection(obj, target)
 
 
-def add_cone(
+def add_polygon_prism(
     name: str,
-    location: tuple[float, float, float],
-    radius1: float,
-    radius2: float,
-    depth: float,
-    mat: bpy.types.Material,
-    target: bpy.types.Collection,
-    vertices: int = 10,
-) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_cone_add(
-        vertices=vertices,
-        radius1=radius1,
-        radius2=radius2,
-        depth=depth,
-        location=location,
-    )
-    obj = bpy.context.active_object
-    obj.name = name
-    assign(obj, mat)
-    return move_to_collection(obj, target)
-
-
-def add_rock(
-    name: str,
-    location: tuple[float, float, float],
-    scale: tuple[float, float, float],
+    points: list[dict],
+    bottom: float,
+    top: float,
     mat: bpy.types.Material,
     target: bpy.types.Collection,
 ) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_ico_sphere_add(
-        subdivisions=1,
-        radius=1.0,
-        location=location,
-        rotation=(
-            RNG.uniform(-0.25, 0.25),
-            RNG.uniform(-0.25, 0.25),
-            RNG.uniform(-math.pi, math.pi),
-        ),
-    )
-    obj = bpy.context.active_object
-    obj.name = name
-    obj.scale = scale
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    count = len(points)
+    vertices = [(point["x"], point["y"], bottom) for point in points]
+    vertices += [(point["x"], point["y"], top) for point in points]
+    faces: list[tuple[int, ...]] = []
+    faces.append(tuple(reversed(range(count))))
+    faces.append(tuple(range(count, count * 2)))
+    for index in range(count):
+        nxt = (index + 1) % count
+        faces.append((index, nxt, count + nxt, count + index))
+    mesh = bpy.data.meshes.new(f"{name}_Mesh")
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    target.objects.link(obj)
     assign(obj, mat)
-    return move_to_collection(obj, target)
+    return obj
+
+
+def add_segment(
+    name: str,
+    start: dict,
+    end: dict,
+    width: float,
+    height: float,
+    elevation: float,
+    mat: bpy.types.Material,
+    target: bpy.types.Collection,
+) -> bpy.types.Object:
+    dx = end["x"] - start["x"]
+    dy = end["y"] - start["y"]
+    length = math.hypot(dx, dy)
+    return add_box(
+        name,
+        ((start["x"] + end["x"]) / 2, (start["y"] + end["y"]) / 2, elevation),
+        (length, width, height),
+        mat,
+        target,
+        rotation_z=math.atan2(dy, dx),
+        bevel=min(0.12, width * 0.08),
+    )
 
 
 def add_ring(
     name: str,
-    centre: tuple[float, float],
+    centre: dict,
     inner_radius: float,
     outer_radius: float,
-    z: float,
+    elevation: float,
     mat: bpy.types.Material,
     target: bpy.types.Collection,
-    segments: int = 96,
+    segments: int = 72,
 ) -> bpy.types.Object:
     vertices: list[tuple[float, float, float]] = []
     faces: list[tuple[int, int, int, int]] = []
     for index in range(segments):
         angle = math.tau * index / segments
-        cosine = math.cos(angle)
-        sine = math.sin(angle)
-        vertices.append(
-            (centre[0] + cosine * inner_radius, centre[1] + sine * inner_radius, z)
-        )
-        vertices.append(
-            (centre[0] + cosine * outer_radius, centre[1] + sine * outer_radius, z)
-        )
+        cosine, sine = math.cos(angle), math.sin(angle)
+        vertices.append((centre["x"] + cosine * inner_radius, centre["y"] + sine * inner_radius, elevation))
+        vertices.append((centre["x"] + cosine * outer_radius, centre["y"] + sine * outer_radius, elevation))
     for index in range(segments):
-        following = (index + 1) % segments
-        faces.append((index * 2, following * 2, following * 2 + 1, index * 2 + 1))
-    mesh = bpy.data.meshes.new(f"{name}Mesh")
+        nxt = (index + 1) % segments
+        faces.append((index * 2, nxt * 2, nxt * 2 + 1, index * 2 + 1))
+    mesh = bpy.data.meshes.new(f"{name}_Mesh")
     mesh.from_pydata(vertices, [], faces)
-    mesh.materials.append(mat)
+    mesh.update()
     obj = bpy.data.objects.new(name, mesh)
     target.objects.link(obj)
-    solidify = obj.modifiers.new(name="Trench depth", type="SOLIDIFY")
-    solidify.thickness = 0.12
+    assign(obj, mat)
     return obj
 
 
-def add_ribbon(
-    name: str,
-    points: list[dict],
-    width: float,
-    mat: bpy.types.Material,
-    target: bpy.types.Collection,
-) -> bpy.types.Object:
-    vertices: list[tuple[float, float, float]] = []
-    faces: list[tuple[int, int, int, int]] = []
-    half = width / 2
-    for index, point in enumerate(points):
-        previous = points[max(0, index - 1)]
-        following = points[min(len(points) - 1, index + 1)]
-        tangent_x = following["x"] - previous["x"]
-        tangent_y = following["y"] - previous["y"]
-        length = math.hypot(tangent_x, tangent_y) or 1.0
-        normal_x = -tangent_y / length
-        normal_y = tangent_x / length
-        vertices.append(
-            (
-                point["x"] + normal_x * half,
-                point["y"] + normal_y * half,
-                point["z"],
-            )
-        )
-        vertices.append(
-            (
-                point["x"] - normal_x * half,
-                point["y"] - normal_y * half,
-                point["z"],
-            )
-        )
-    for index in range(len(points) - 1):
-        base = index * 2
-        faces.append((base, base + 2, base + 3, base + 1))
-    mesh = bpy.data.meshes.new(f"{name}Mesh")
-    mesh.from_pydata(vertices, [], faces)
-    mesh.materials.append(mat)
-    obj = bpy.data.objects.new(name, mesh)
-    target.objects.link(obj)
-    solidify = obj.modifiers.new(name="Walkable surface thickness", type="SOLIDIFY")
-    solidify.thickness = 0.06
-    bevel = obj.modifiers.new(name="Walkable edge softening", type="BEVEL")
-    bevel.width = 0.06
-    bevel.segments = 2
-    return obj
-
-
-def plan_to_blender(x: float, z: float, elevation: float = 0.0) -> Vector:
-    centre = ROOM["planCentre"]
-    return Vector((x - centre["x"], centre["z"] - z, elevation))
-
-
-def add_curve_between(
-    name: str,
-    start: Vector,
-    end: Vector,
-    bevel_depth: float,
-    mat: bpy.types.Material,
-    target: bpy.types.Collection,
-) -> bpy.types.Object:
-    curve = bpy.data.curves.new(f"{name}Curve", type="CURVE")
-    curve.dimensions = "3D"
-    curve.resolution_u = 1
-    curve.bevel_depth = bevel_depth
-    curve.bevel_resolution = 2
-    spline = curve.splines.new("POLY")
-    spline.points.add(1)
-    spline.points[0].co = (*start, 1.0)
-    spline.points[1].co = (*end, 1.0)
-    obj = bpy.data.objects.new(name, curve)
-    target.objects.link(obj)
-    obj.data.materials.append(mat)
-    return obj
-
-
-def add_text(
-    name: str,
-    body: str,
-    location: tuple[float, float, float],
-    size: float,
-    mat: bpy.types.Material,
-    target: bpy.types.Collection,
-) -> bpy.types.Object:
-    bpy.ops.object.text_add(location=location)
-    obj = bpy.context.active_object
-    obj.name = name
-    obj.data.body = body
-    obj.data.align_x = "CENTER"
-    obj.data.align_y = "CENTER"
-    obj.data.size = size
-    obj.data.extrude = 0.025
-    obj.data.bevel_depth = 0.006
-    obj.data.materials.append(mat)
-    return move_to_collection(obj, target)
-
-
-def unit_cylinder_mesh(
-    name: str, mat: bpy.types.Material, segments: int = 8
-) -> bpy.types.Mesh:
-    vertices = []
-    for z in (-0.5, 0.5):
+def add_flame_tongue(
+    vertices: list[tuple[float, float, float]],
+    faces: list[tuple[int, ...]],
+    *,
+    offset_x: float,
+    offset_y: float,
+    radius: float,
+    height: float,
+    phase: float,
+    segments: int = 10,
+) -> None:
+    first = len(vertices)
+    rings = [(0, radius), (0.27, radius * 0.92), (0.58, radius * 0.65), (0.82, radius * 0.38)]
+    for fraction, ring_radius in rings:
+        sway_x = math.sin(phase + fraction * 4.8) * radius * fraction * 0.48
+        sway_y = math.cos(phase * 1.4 + fraction * 3.2) * radius * fraction * 0.25
         for index in range(segments):
             angle = math.tau * index / segments
-            vertices.append((math.cos(angle), math.sin(angle), z))
-    faces = []
+            vertices.append((
+                offset_x + sway_x + math.cos(angle) * ring_radius,
+                offset_y + sway_y + math.sin(angle) * ring_radius * 0.82,
+                fraction * height,
+            ))
+    tip = len(vertices)
+    vertices.append((
+        offset_x + math.sin(phase + 4.8) * radius * 0.62,
+        offset_y + math.cos(phase * 1.4 + 3.2) * radius * 0.35,
+        height,
+    ))
+    for ring_index in range(len(rings) - 1):
+        ring_start = first + ring_index * segments
+        next_start = ring_start + segments
+        for index in range(segments):
+            nxt = (index + 1) % segments
+            faces.append((ring_start + index, ring_start + nxt, next_start + nxt, next_start + index))
+    last_ring = first + (len(rings) - 1) * segments
     for index in range(segments):
-        following = (index + 1) % segments
-        faces.append((index, following, segments + following, segments + index))
-    faces.append(tuple(reversed(range(segments))))
-    faces.append(tuple(range(segments, segments * 2)))
-    mesh = bpy.data.meshes.new(name)
+        faces.append((last_ring + index, last_ring + (index + 1) % segments, tip))
+    faces.append(tuple(reversed(range(first, first + segments))))
+
+
+def flame_mesh(category: str) -> bpy.types.Mesh:
+    vertices: list[tuple[float, float, float]] = []
+    faces: list[tuple[int, ...]] = []
+    add_flame_tongue(vertices, faces, offset_x=0, offset_y=0, radius=0.28, height=1.35, phase=0.4)
+    add_flame_tongue(vertices, faces, offset_x=-0.22, offset_y=0.04, radius=0.17, height=0.92, phase=2.1)
+    add_flame_tongue(vertices, faces, offset_x=0.22, offset_y=-0.03, radius=0.15, height=0.76, phase=4.3)
+    mesh = bpy.data.meshes.new(f"FF_{category}_OrganicFlame_Mesh")
     mesh.from_pydata(vertices, [], faces)
-    mesh.materials.append(mat)
+    mesh.update()
+    for polygon in mesh.polygons:
+        polygon.use_smooth = True
+    mesh.materials.append(FLAME_MATERIALS[category])
     return mesh
 
 
-def unit_cone_mesh(
-    name: str, mat: bpy.types.Material, segments: int = 9
-) -> bpy.types.Mesh:
-    vertices = [
-        (math.cos(math.tau * index / segments), math.sin(math.tau * index / segments), -0.5)
-        for index in range(segments)
-    ]
-    vertices.append((0.0, 0.0, 0.5))
-    faces = [
-        (index, (index + 1) % segments, segments) for index in range(segments)
-    ]
-    faces.append(tuple(reversed(range(segments))))
-    mesh = bpy.data.meshes.new(name)
-    mesh.from_pydata(vertices, [], faces)
-    mesh.materials.append(mat)
-    return mesh
-
-
-TORCH_STEM_MESH = unit_cylinder_mesh("FF_Shared_TorchStem_Mesh", WOOD)
-TORCH_FLAME_MESHES = {
-    mat.name: unit_cone_mesh(f"FF_Shared_{key}_Flame_Mesh", mat)
-    for key, mat in (
-        ("DJ", DJ_FLAME),
-        ("EK", EK_FLAME),
-        ("FL", FL_FLAME),
-    )
-}
-
-
-# The floor is the exact nominal room footprint. Runtime tile geometry remains
-# responsible for collision; this slab only gives the graybox a spatial shell.
-add_box(
-    "FF_Shell_Floor",
-    (0.0, 0.0, -0.18),
-    (ROOM["width"], ROOM["depth"], 0.36),
-    BASALT_DARK,
-    COLLECTIONS["SHELL"],
-    bevel=0.12,
-)
-
-
-def wall_segment(
-    name: str,
-    centre: tuple[float, float],
-    dimensions: tuple[float, float],
-    seed_offset: int,
-) -> None:
-    height = 5.7
-    add_box(
-        f"FF_Shell_{name}_Core",
-        (centre[0], centre[1], height / 2),
-        (dimensions[0], dimensions[1], height),
-        BASALT,
-        COLLECTIONS["SHELL"],
-        bevel=0.55,
-    )
-    count = max(2, int(max(dimensions) / 2.8))
-    along_x = dimensions[0] >= dimensions[1]
+def sample_polyline(points: list[dict], count: int) -> list[tuple[float, float]]:
+    segments: list[tuple[dict, dict, float]] = []
+    total = 0.0
+    for start, end in zip(points, points[1:]):
+        length = math.hypot(end["x"] - start["x"], end["y"] - start["y"])
+        if length > 1e-6:
+            segments.append((start, end, length))
+            total += length
+    result: list[tuple[float, float]] = []
     for index in range(count):
-        fraction = (index + 0.5) / count - 0.5
-        x = centre[0] + (fraction * dimensions[0] if along_x else RNG.uniform(-0.5, 0.5))
-        y = centre[1] + (RNG.uniform(-0.5, 0.5) if along_x else fraction * dimensions[1])
-        rock_height = RNG.uniform(3.8, 7.4)
-        add_rock(
-            f"FF_Shell_{name}_Rock_{seed_offset + index:03d}",
-            (x, y, rock_height * 0.52),
-            (RNG.uniform(1.0, 2.1), RNG.uniform(0.9, 1.7), rock_height * 0.55),
-            BASALT_EDGE if index % 4 == 0 else BASALT,
+        target = total * ((index + 0.5) / count)
+        walked = 0.0
+        for start, end, length in segments:
+            if walked + length >= target:
+                t = (target - walked) / length
+                result.append((
+                    start["x"] + (end["x"] - start["x"]) * t,
+                    start["y"] + (end["y"] - start["y"]) * t,
+                ))
+                break
+            walked += length
+    return result
+
+
+# Shell and transition thresholds.
+min_x, max_x = BOUNDS["minX"], BOUNDS["maxX"]
+min_y, max_y = BOUNDS["minY"], BOUNDS["maxY"]
+wall_height = 8.5
+wall_thickness = 0.8
+add_box("FF_Shell_Floor", (0, 0, -0.22), (ROOM["width"], ROOM["depth"], 0.44), FLOOR, COLLECTIONS["SHELL"])
+add_box("FF_Shell_North", (0, max_y + wall_thickness / 2, wall_height / 2), (ROOM["width"] + wall_thickness * 2, wall_thickness, wall_height), BASALT, COLLECTIONS["SHELL"])
+add_box("FF_Shell_South", (0, min_y - wall_thickness / 2, wall_height / 2), (ROOM["width"] + wall_thickness * 2, wall_thickness, wall_height), BASALT, COLLECTIONS["SHELL"])
+
+
+def add_split_side(side: str, door: dict) -> None:
+    x = min_x - wall_thickness / 2 if side == "water" else max_x + wall_thickness / 2
+    door_y = door["blender"]["y"]
+    half = door["clearWidth"] / 2
+    lower_end, upper_start = door_y - half, door_y + half
+    for suffix, start, end in (("Lower", min_y, lower_end), ("Upper", upper_start, max_y)):
+        if end <= start:
+            continue
+        add_box(
+            f"FF_Shell_{side.title()}_{suffix}",
+            (x, (start + end) / 2, wall_height / 2),
+            (wall_thickness, end - start, wall_height),
+            BASALT,
             COLLECTIONS["SHELL"],
         )
 
 
-# Perimeter shell, with the exact Water and Earth door openings left clear.
-wall_segment("North", (0.0, 15.55), (61.6, 1.1), 0)
-wall_segment("South", (0.0, -15.55), (61.6, 1.1), 30)
-wall_segment("WestNorth", (-30.55, 8.0), (1.1, 14.0), 60)
-wall_segment("WestSouth", (-30.55, -8.0), (1.1, 14.0), 70)
-wall_segment("EastNorth", (30.55, 1.5), (1.1, 27.0), 80)
-wall_segment("EastSouth", (30.55, -14.5), (1.1, 1.0), 95)
+add_split_side("water", CONTRACT["doors"]["water"])
+add_split_side("earth", CONTRACT["doors"]["earth"])
+add_box("FF_Water_Threshold", (min_x + 1.2, 0, 0.025), (2.4, 4, 0.05), WATER, COLLECTIONS["ROUTE"], bevel=0.12)
 
-
-# Walkable route surfaces. Their widths come directly from the plan contract.
-path_materials = {
-    "steam-threshold": PATH_STEAM,
-    "ember-bridge": PATH_BRIDGE,
-    "torch-field": PATH_STONE,
-    "shrine-orbit": PATH_STONE,
-    "transfer": PATH_STONE,
-    "growth-path": PATH_STONE,
-}
-for section in CONTRACT["pathSections"]:
-    add_ribbon(
-        f"FF_Path_{section['id'].replace('-', '_')}",
-        section["blenderPoints"],
-        section["width"],
-        path_materials[section["kind"]],
-        COLLECTIONS["SHELL"],
-    )
-
-growth_section = next(
-    section for section in CONTRACT["pathSections"] if section["kind"] == "growth-path"
-)
-add_ribbon(
-    "FF_Growth_CrackGuide",
-    growth_section["blenderPoints"],
-    0.28,
-    PATH_GROWTH,
-    COLLECTIONS["SHELL"],
-)
-
-
-# Steam occupies a low Water threshold before the bridge and first visible fire.
-# Narrow rising wisps preserve visibility; broad transparent volumes produced
-# misleading full-frame fog in first-person review.
-for index in range(11):
-    base_x = -28.1 + (index % 6) * 0.72
-    base_y = -1.25 + (index // 6) * 2.25 + RNG.uniform(-0.18, 0.18)
-    height = RNG.uniform(1.35, 2.8)
-    curve = bpy.data.curves.new(f"FF_Steam_Wisp_{index + 1:02d}Curve", type="CURVE")
-    curve.dimensions = "3D"
-    curve.resolution_u = 2
-    curve.bevel_depth = RNG.uniform(0.055, 0.11)
-    curve.bevel_resolution = 2
-    spline = curve.splines.new("BEZIER")
-    spline.bezier_points.add(3)
-    for point_index, point in enumerate(spline.bezier_points):
-        fraction = point_index / 3
-        point.co = (
-            base_x + math.sin(fraction * math.pi * 2 + index) * 0.14,
-            base_y + math.cos(fraction * math.pi * 1.5 + index) * 0.12,
-            0.08 + height * fraction,
-        )
-        point.handle_left_type = "AUTO"
-        point.handle_right_type = "AUTO"
-    wisp = bpy.data.objects.new(f"FF_Steam_Wisp_{index + 1:02d}", curve)
-    COLLECTIONS["SHELL"].objects.link(wisp)
-    wisp.data.materials.append(STEAM)
-    bpy.ops.object.select_all(action="DESELECT")
-    bpy.context.view_layer.objects.active = wisp
-    wisp.select_set(True)
-    bpy.ops.object.convert(target="MESH")
-    wisp.select_set(False)
-
-
-# Ember bridge: six uneven basalt slabs span a shallow incandescent fissure.
+# Walk ribbon and returning hub.
+hub = CONTRACT["hub"]["blenderFootprint"]
 add_box(
-    "FF_Bridge_EmberBed",
-    (-22.25, 0.0, -0.10),
-    (5.0, 4.8, 0.16),
-    EMBER,
-    COLLECTIONS["BRIDGE"],
-    bevel=0.18,
+    "FF_Hub_ReturningCourt",
+    (hub["centre"]["x"], hub["centre"]["y"], 0.035),
+    (hub["sizeX"], hub["sizeY"], 0.07),
+    COURT,
+    COLLECTIONS["COURTS"],
+    bevel=0.55,
 )
-for index in range(6):
-    x = -24.15 + index * 0.76
-    add_box(
-        f"FF_Bridge_Slab_{index + 1:02d}",
-        (x, RNG.uniform(-0.08, 0.08), 0.14 + RNG.uniform(-0.025, 0.025)),
-        (0.68, 3.0 + RNG.uniform(-0.18, 0.18), 0.30),
-        BASALT_EDGE if index in (0, 5) else BASALT,
-        COLLECTIONS["BRIDGE"],
-        bevel=0.10,
-        rotation=(0.0, RNG.uniform(-0.025, 0.025), RNG.uniform(-0.035, 0.035)),
-    )
-
-
-# Rock ribs are full-height sightline blockers, not decorative piles. Irregular
-# boulders soften their rectangular measured footprints without opening gaps.
-for occluder_index, occluder in enumerate(CONTRACT["occluders"]):
-    footprint = occluder["blenderFootprint"]
-    centre = footprint["centre"]
-    if occluder["kind"] == "torch-curtain":
-        continue
-    height = 5.3 + occluder_index * 0.22
-    add_box(
-        f"FF_RockRib_{occluder['id'].replace('-', '_')}_Core",
-        (centre["x"], centre["y"], height / 2),
-        (footprint["sizeX"], footprint["sizeY"], height),
-        BASALT,
-        COLLECTIONS["ROCK_RIBS"],
-        bevel=min(0.65, min(footprint["sizeX"], footprint["sizeY"]) * 0.18),
-    )
-    long_axis = max(footprint["sizeX"], footprint["sizeY"])
-    count = max(3, int(long_axis / 2.3))
-    along_x = footprint["sizeX"] >= footprint["sizeY"]
-    for index in range(count):
-        fraction = (index + 0.5) / count - 0.5
-        x = centre["x"] + (
-            fraction * footprint["sizeX"] if along_x else RNG.uniform(-0.65, 0.65)
-        )
-        y = centre["y"] + (
-            RNG.uniform(-0.65, 0.65) if along_x else fraction * footprint["sizeY"]
-        )
-        rock_height = RNG.uniform(3.6, 6.8)
-        add_rock(
-            f"FF_RockRib_{occluder_index:02d}_Rock_{index:02d}",
-            (x, y, rock_height / 2),
-            (RNG.uniform(0.8, 1.5), RNG.uniform(0.8, 1.6), rock_height * 0.54),
-            BASALT_EDGE if index % 3 == 0 else BASALT,
-            COLLECTIONS["ROCK_RIBS"],
+for section in CONTRACT["pathSections"]:
+    mat = GROWTH if section["kind"] == "growth-path" else ROUTE
+    for index, (start, end) in enumerate(zip(section["blenderPoints"], section["blenderPoints"][1:])):
+        add_segment(
+            f"FF_Route_{section['id']}_{index + 1:02d}", start, end,
+            section["width"], 0.075, 0.055, mat, COLLECTIONS["ROUTE"],
         )
 
-
-locator_materials = {"dj": LOCATOR_DJ, "ek": LOCATOR_EK, "fl": LOCATOR_FL}
-flame_materials = {"dj": DJ_FLAME, "ek": EK_FLAME, "fl": FL_FLAME}
-
-
-def add_performer_locator(shrine: dict) -> None:
-    centre = shrine["blenderCentre"]
-    mat = locator_materials[shrine["id"]]
-    add_cylinder(
-        f"LOC_Performer_{shrine['label']}_Body",
-        (centre["x"], centre["y"], 1.05),
-        0.28,
-        1.45,
-        mat,
-        COLLECTIONS["LOCATORS"],
-        vertices=10,
+# Permanent basalt is the only interior collision owner.
+for index, mass in enumerate(CONTRACT["basalt"]):
+    height = mass["minimumHeight"] + (index % 4) * 0.48
+    obj = add_polygon_prism(
+        f"FF_Basalt_{mass['id']}", mass["blenderPolygon"], 0, height,
+        BASALT if index % 2 == 0 else BASALT_EDGE, COLLECTIONS["BASALT"],
     )
-    bpy.ops.mesh.primitive_ico_sphere_add(
-        subdivisions=2,
-        radius=0.34,
-        location=(centre["x"], centre["y"], 1.96),
-    )
-    head = bpy.context.active_object
-    head.name = f"LOC_Performer_{shrine['label']}_Head"
-    assign(head, mat)
-    move_to_collection(head, COLLECTIONS["LOCATORS"])
-    add_text(
-        f"LOC_Label_{shrine['label']}",
-        shrine["label"],
-        (centre["x"], centre["y"], 0.23),
-        1.15,
-        mat,
-        COLLECTIONS["LOCATORS"],
-    )
+    obj.rotation_euler.z = ((index % 3) - 1) * 0.008
 
-
+# Court floors, orbit rings, ember trenches, and runtime performer pads.
 for shrine in CONTRACT["shrines"]:
-    centre = shrine["blenderCentre"]
-    add_cylinder(
-        f"FF_Shrine_{shrine['label']}_Habitat",
-        (centre["x"], centre["y"], -0.02),
-        shrine["habitatRadius"],
-        0.22,
-        BASALT_EDGE,
-        COLLECTIONS["SHRINES"],
-        vertices=48,
+    court = next(candidate for candidate in CONTRACT["courts"] if candidate["shrineId"] == shrine["id"])
+    add_polygon_prism(
+        f"FF_Court_{shrine['id']}", court["blenderOutline"], 0.005, 0.055,
+        COURT, COLLECTIONS["COURTS"],
     )
     add_ring(
-        f"FF_Trench_{shrine['label']}_Magma",
-        (centre["x"], centre["y"]),
-        shrine["trenchInnerRadius"],
-        shrine["trenchOuterRadius"],
-        0.015,
-        MAGMA,
-        COLLECTIONS["TRENCHES"],
+        f"FF_Trench_{shrine['id']}", shrine["blenderCentre"],
+        shrine["trenchInnerRadius"], shrine["trenchOuterRadius"], 0.075,
+        TRENCH, COLLECTIONS["COURTS"],
     )
-    for ring_index, radius in enumerate(
-        (shrine["trenchInnerRadius"] - 0.08, shrine["trenchOuterRadius"] + 0.08)
-    ):
-        bpy.ops.mesh.primitive_torus_add(
-            major_radius=radius,
-            minor_radius=0.12,
-            major_segments=64,
-            minor_segments=8,
-            location=(centre["x"], centre["y"], 0.09),
+    add_ring(
+        f"FF_Orbit_{shrine['id']}", shrine["blenderCentre"],
+        shrine["orbitRadius"] - shrine["orbitWidth"] / 2,
+        shrine["orbitRadius"] + shrine["orbitWidth"] / 2, 0.062,
+        ROUTE, COLLECTIONS["ROUTE"],
+    )
+    add_cylinder(
+        f"FF_PerformerPad_{shrine['id']}",
+        (shrine["blenderCentre"]["x"], shrine["blenderCentre"]["y"], 0.22),
+        shrine["habitatRadius"], 0.44, PERFORMER, COLLECTIONS["PERFORMERS"], 20,
+    )
+
+# Non-colliding coal memory and final Earth growth cues.
+for guide in CONTRACT["fireGuides"]:
+    if guide["kind"] not in {"coal-memory", "green-growth"}:
+        continue
+    mat = GROWTH if guide["kind"] == "green-growth" else COAL
+    for index, (start, end) in enumerate(zip(guide["blenderPoints"], guide["blenderPoints"][1:])):
+        add_segment(
+            f"FF_Guide_{guide['id']}_{index + 1:02d}", start, end,
+            guide["width"], 0.045, 0.09, mat, COLLECTIONS["FIRE_GUIDES"],
         )
-        rim = bpy.context.active_object
-        rim.name = f"FF_Trench_{shrine['label']}_Rim_{ring_index + 1}"
-        assign(rim, BASALT)
-        move_to_collection(rim, COLLECTIONS["TRENCHES"])
-    add_performer_locator(shrine)
+
+# Exactly 126 organic multi-tongue guide flames: 72 field + 18 per court.
+flame_meshes = {category: flame_mesh(category) for category in FLAME_MATERIALS}
+anchor_records: list[dict] = []
 
 
-def add_torch(
-    index: int,
-    category: str,
-    location: Vector,
-    height: float,
-    flame_mat: bpy.types.Material,
-) -> None:
-    tilt_x = RNG.uniform(-0.075, 0.075)
-    tilt_y = RNG.uniform(-0.075, 0.075)
-    radius = RNG.uniform(0.075, 0.13)
-    stem = bpy.data.objects.new(
-        f"FF_TorchStem_{category}_{index:03d}", TORCH_STEM_MESH
+def add_torch_anchor(category: str, x: float, y: float, index: int) -> None:
+    stem_height = RNG.uniform(0.72, 1.85)
+    stem_radius = RNG.uniform(0.07, 0.115)
+    add_cylinder(
+        f"FF_TorchStem_{category}_{index:03d}",
+        (x, y, stem_height / 2), stem_radius, stem_height,
+        STEM, COLLECTIONS["FIRE_GUIDES"], 8,
     )
-    COLLECTIONS["TORCH_GUIDES"].objects.link(stem)
-    stem.location = (location.x, location.y, height / 2)
-    stem.scale = (radius, radius, height)
-    stem.rotation_euler = (tilt_x, tilt_y, RNG.uniform(-0.08, 0.08))
-
-    flame_radius = RNG.uniform(0.19, 0.27)
-    flame_depth = RNG.uniform(0.62, 0.92)
     flame = bpy.data.objects.new(
-        f"FF_FlameGuide_{category}_{index:03d}",
-        TORCH_FLAME_MESHES[flame_mat.name],
+        f"FF_FlameGuide_{category}_{index:03d}", flame_meshes[category]
     )
-    COLLECTIONS["TORCH_GUIDES"].objects.link(flame)
-    flame.location = (location.x, location.y, height + 0.34)
-    flame.scale = (flame_radius, flame_radius, flame_depth)
+    flame.location = (x, y, stem_height * 0.92)
+    scale = RNG.uniform(0.72, 1.18)
+    flame.scale = (scale, scale * RNG.uniform(0.86, 1.12), scale * RNG.uniform(0.9, 1.28))
+    flame.rotation_euler.z = RNG.uniform(-math.pi, math.pi)
+    COLLECTIONS["FIRE_GUIDES"].objects.link(flame)
+    anchor_records.append({"category": category, "x": x, "y": y, "height": stem_height})
 
 
-def sample_field_paths(count: int) -> list[tuple[Vector, Vector, float]]:
-    segments: list[tuple[dict, dict, float, float]] = []
-    for section in CONTRACT["pathSections"]:
-        if section["kind"] not in ("torch-field", "transfer"):
-            continue
-        points = section["planPoints"]
-        for start, end in zip(points, points[1:]):
-            length = math.hypot(end["x"] - start["x"], end["z"] - start["z"])
-            segments.append((start, end, section["width"], length))
-    total = sum(segment[3] for segment in segments)
-    result: list[tuple[Vector, Vector, float]] = []
-    for index in range(count):
-        distance = total * (index + 0.5) / count
-        travelled = 0.0
-        for start, end, width, length in segments:
-            if travelled + length < distance:
-                travelled += length
-                continue
-            fraction = (distance - travelled) / length
-            plan_x = start["x"] + (end["x"] - start["x"]) * fraction
-            plan_z = start["z"] + (end["z"] - start["z"]) * fraction
-            tangent = Vector((end["x"] - start["x"], -(end["z"] - start["z"]), 0))
-            tangent.normalize()
-            result.append((plan_to_blender(plan_x, plan_z), tangent, width))
-            break
-    return result
-
-
-# Ten tall stems form the first curtain. The remaining 62 line both sides of
-# the authored transfers, keeping the total field budget exactly at 72.
-field_torch_index = 0
-curtain = next(
-    occluder for occluder in CONTRACT["occluders"] if occluder["kind"] == "torch-curtain"
-)
-rect = curtain["planRect"]
-for index in range(10):
-    fraction = (index + 0.5) / 10
-    point = plan_to_blender(
-        (rect["minX"] + rect["maxX"]) / 2,
-        rect["minZ"] + (rect["maxZ"] - rect["minZ"]) * fraction,
+active_guides = [guide for guide in CONTRACT["fireGuides"] if guide["kind"] in {"torch-field", "fire-wall"}]
+guide_lengths = []
+for guide in active_guides:
+    length = sum(
+        math.hypot(end["x"] - start["x"], end["y"] - start["y"])
+        for start, end in zip(guide["blenderPoints"], guide["blenderPoints"][1:])
     )
-    field_torch_index += 1
-    add_torch(
-        field_torch_index,
-        "Field",
-        point,
-        2.45 + 0.75 * math.sin(fraction * math.pi),
-        DJ_FLAME,
-    )
+    guide_lengths.append(length)
+length_total = sum(guide_lengths)
+allocations = [max(3, round(72 * length / length_total)) for length in guide_lengths]
+while sum(allocations) > 72:
+    allocations[allocations.index(max(allocations))] -= 1
+while sum(allocations) < 72:
+    allocations[allocations.index(min(allocations))] += 1
 
-for sample_index, (point, tangent, width) in enumerate(sample_field_paths(31)):
-    normal = Vector((-tangent.y, tangent.x, 0))
-    for side in (-1, 1):
-        field_torch_index += 1
-        offset = width / 2 + 0.82 + 0.24 * math.sin(sample_index * 1.71 + side)
-        torch_point = point + normal * offset * side
-        add_torch(
-            field_torch_index,
-            "Field",
-            torch_point,
-            0.95 + 1.35 * (0.5 + 0.5 * math.sin(sample_index * 0.83 + side)),
-            DJ_FLAME if sample_index < 11 else EK_FLAME if sample_index < 21 else FL_FLAME,
-        )
+field_index = 0
+for guide, count in zip(active_guides, allocations):
+    for x, y in sample_polyline(guide["blenderPoints"], count):
+        field_index += 1
+        lateral = RNG.uniform(-0.45, 0.45)
+        add_torch_anchor("field", x, y + lateral, field_index)
 
-perimeter_torch_count = 0
+perimeter_index = {"dj": 0, "ek": 0, "fl": 0}
 for shrine in CONTRACT["shrines"]:
-    centre = shrine["blenderCentre"]
+    category = shrine["id"]
     for index in range(CONTRACT["torchBudget"]["perimeterStemsPerShrine"]):
         angle = math.tau * index / CONTRACT["torchBudget"]["perimeterStemsPerShrine"]
-        radius = shrine["trenchInnerRadius"] + 0.28
-        point = Vector(
-            (
-                centre["x"] + math.cos(angle) * radius,
-                centre["y"] + math.sin(angle) * radius,
-                0.0,
-            )
-        )
-        if shrine["id"] == "dj":
-            height = 1.35 + 0.45 * (0.5 + 0.5 * math.sin(angle * 2))
-        elif shrine["id"] == "ek":
-            height = 1.20 + 0.85 * abs(math.sin(angle * 3))
-        else:
-            height = 1.05 + (0.95 if math.cos(angle) > 0 else 0.35)
-        perimeter_torch_count += 1
-        add_torch(
-            index + 1,
-            f"{shrine['label']}_Perimeter",
-            point,
-            height,
-            flame_materials[shrine["id"]],
+        radius = shrine["trenchOuterRadius"] + 0.38
+        perimeter_index[category] += 1
+        add_torch_anchor(
+            category,
+            shrine["blenderCentre"]["x"] + math.cos(angle) * radius,
+            shrine["blenderCentre"]["y"] + math.sin(angle) * radius,
+            perimeter_index[category],
         )
 
+if len(anchor_records) != 126:
+    raise RuntimeError(f"Expected 126 flame anchors, built {len(anchor_records)}")
 
-# The final route makes green the only saturated direction after the planned
-# extinction. These markers are static graybox cues, not the runtime animation.
-growth_points = growth_section["blenderPoints"]
-for index in range(18):
-    fraction = index / 17
-    segment_position = fraction * (len(growth_points) - 1)
-    segment_index = min(len(growth_points) - 2, int(segment_position))
-    local = segment_position - segment_index
-    start = growth_points[segment_index]
-    end = growth_points[segment_index + 1]
-    x = start["x"] + (end["x"] - start["x"]) * local
-    y = start["y"] + (end["y"] - start["y"]) * local
-    add_rock(
-        f"FF_Growth_Moss_{index + 1:02d}",
-        (x + RNG.uniform(-0.35, 0.35), y + RNG.uniform(-0.35, 0.35), 0.07),
-        (RNG.uniform(0.18, 0.42), RNG.uniform(0.18, 0.55), RNG.uniform(0.04, 0.10)),
-        GROWTH,
-        COLLECTIONS["SHELL"],
-    )
-
-
-# Artist locators: doors, route eye-height samples, performer anchors, and
-# sightline rays remain in the .blend but are excluded from the FF_ export.
-for door_id, door in CONTRACT["doors"].items():
-    point = door["blender"]
-    add_box(
-        f"LOC_Door_{door_id.title()}",
-        (point["x"], point["y"], 1.2),
-        (0.18, door["clearWidth"], 2.4),
-        REFERENCE_CYAN,
-        COLLECTIONS["LOCATORS"],
-        bevel=0.04,
-    )
-for sightline in CONTRACT["sightlines"]:
-    add_curve_between(
-        f"REF_Sightline_{sightline['id']}",
-        Vector(tuple(sightline["from"].values())),
-        Vector(tuple(sightline["to"].values())),
-        0.035,
-        SIGHTLINE_RED,
-        COLLECTIONS["REFERENCE"],
-    )
-for index, point in enumerate(
-    [
-        (-28.5, 0.0),
-        (-18.0, -0.5),
-        (-4.2, -10.2),
-        (11.5, 9.0),
-        (24.5, -11.5),
-    ]
-):
-    add_cylinder(
-        f"REF_Visitor_Eye_{index + 1:02d}",
-        (point[0], point[1], 0.85),
-        0.22,
-        1.7,
-        REFERENCE_CYAN,
-        COLLECTIONS["REFERENCE"],
-        vertices=12,
-    )
-
-COLLECTIONS["REFERENCE"].hide_render = True
+# QA lighting and cameras are excluded from the FF_ export.
+scene.world = bpy.data.worlds.new("FF_CinderCourt_World")
+scene.world.color = (0.002, 0.001, 0.001)
 
 
 def add_light(
     name: str,
-    light_type: str,
     location: tuple[float, float, float],
-    energy: float,
     color: tuple[float, float, float],
-    size: float = 5.0,
+    energy: float,
+    radius: float,
 ) -> bpy.types.Object:
-    data = bpy.data.lights.new(name=name, type=light_type)
-    data.energy = energy
+    data = bpy.data.lights.new(name, "POINT")
     data.color = color
-    if light_type == "AREA":
-        data.shape = "DISK"
-        data.size = size
-    if light_type == "POINT":
-        data.shadow_soft_size = size
+    data.energy = energy
+    data.shadow_soft_size = radius
     obj = bpy.data.objects.new(name, data)
-    COLLECTIONS["QA_ONLY"].objects.link(obj)
     obj.location = location
+    COLLECTIONS["QA_ONLY"].objects.link(obj)
     return obj
 
 
-add_light("QA_Area_WarmKey", "AREA", (-8.0, 1.0, 11.5), 1800, (1.0, 0.42, 0.13), 10.0)
-add_light("QA_Area_CoolFill", "AREA", (8.0, -3.0, 10.0), 1300, (0.18, 0.35, 0.58), 12.0)
-add_light("QA_Point_Bridge", "POINT", (-22.0, 0.0, 1.0), 520, (1.0, 0.07, 0.01), 2.0)
-for shrine in CONTRACT["shrines"]:
-    centre = shrine["blenderCentre"]
-    add_light(
-        f"QA_Point_{shrine['label']}",
-        "POINT",
-        (centre["x"], centre["y"], 1.4),
-        640,
-        (1.0, 0.055 if shrine["id"] != "ek" else 0.12, 0.008),
-        2.4,
-    )
-add_light("QA_Point_Earth", "POINT", (27.0, -11.0, 1.4), 900, (0.04, 0.55, 0.07), 3.4)
+add_light("QA_WaterLight", (min_x + 2, 0, 2.5), (0.12, 0.58, 0.8), 820, 2.2)
+red_lights: list[bpy.types.Object] = []
+for index, shrine in enumerate(CONTRACT["shrines"]):
+    red_lights.append(add_light(
+        f"QA_Fire_{shrine['id']}",
+        (shrine["blenderCentre"]["x"], shrine["blenderCentre"]["y"], 2.1),
+        (1, 0.12 + index * 0.04, 0.015), 1350, 2.5,
+    ))
+earth_light = add_light("QA_EarthLight", (max_x - 4, -12, 2.4), (0.18, 0.9, 0.14), 980, 2.7)
 
 
 def look_at(obj: bpy.types.Object, target: Vector) -> None:
-    direction = target - obj.location
-    obj.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
+    obj.rotation_euler = (target - obj.location).to_track_quat("-Z", "Y").to_euler()
 
 
-def camera_from_plan(
-    name: str,
-    plan_location: tuple[float, float, float],
-    plan_target: tuple[float, float, float],
-    lens: float = 24.0,
-) -> bpy.types.Object:
-    location = plan_to_blender(plan_location[0], plan_location[1], plan_location[2])
-    target = plan_to_blender(plan_target[0], plan_target[1], plan_target[2])
-    bpy.ops.object.camera_add(location=location)
-    camera = bpy.context.active_object
-    camera.name = name
-    camera.data.lens = lens
-    camera.data.sensor_width = 36
-    camera.data.clip_start = 0.05
-    camera.data.clip_end = 250
-    look_at(camera, target)
-    return move_to_collection(camera, COLLECTIONS["QA_ONLY"])
-
-
-bpy.ops.object.camera_add(location=(0.0, 0.0, 67.0))
-camera_plan = bpy.context.active_object
-camera_plan.name = "QA_Camera_Plan"
-camera_plan.data.type = "ORTHO"
-camera_plan.data.ortho_scale = 68.0
-camera_plan.data.clip_end = 250
-look_at(camera_plan, Vector((0.0, 0.0, 0.0)))
-move_to_collection(camera_plan, COLLECTIONS["QA_ONLY"])
-
-cameras = {
-    "plan": camera_plan,
-    "overview": camera_from_plan(
-        "QA_Camera_Overview", (30.0, 35.0, 38.0), (30.0, 15.0, 0.75), 42
-    ),
-    "threshold": camera_from_plan(
-        "QA_Camera_Threshold", (0.5, 15.0, 1.7), (15.5, 9.5, 1.8), 23
-    ),
-    "dj": camera_from_plan(
-        "QA_Camera_DJ", (11.2, 15.6, 1.7), (16.5, 8.5, 1.15), 24
-    ),
-    "ek": camera_from_plan(
-        "QA_Camera_EK", (25.2, 25.4, 1.7), (31.5, 21.5, 1.15), 25
-    ),
-    "fl": camera_from_plan(
-        "QA_Camera_FL", (41.2, 6.0, 1.7), (47.0, 8.5, 1.15), 24
-    ),
-    "earth": camera_from_plan(
-        "QA_Camera_Earth", (51.2, 11.2, 1.7), (58.5, 27.5, 0.75), 23
-    ),
-}
-
+cameras: dict[str, bpy.types.Object] = {}
+for camera_spec in CONTRACT["cameras"]:
+    data = bpy.data.cameras.new(camera_spec["name"])
+    camera = bpy.data.objects.new(camera_spec["name"], data)
+    camera.location = (
+        camera_spec["position"]["x"],
+        camera_spec["position"]["y"],
+        camera_spec["position"]["z"],
+    )
+    data.clip_start = 0.05
+    data.clip_end = 250
+    if camera_spec["type"] == "orthographic":
+        data.type = "ORTHO"
+        data.ortho_scale = camera_spec["orthographicScale"]
+    else:
+        horizontal_fov = math.radians(camera_spec["horizontalFovDegrees"])
+        data.sensor_width = 36
+        data.lens = data.sensor_width / (2 * math.tan(horizontal_fov / 2))
+    look_at(camera, Vector((
+        camera_spec["target"]["x"],
+        camera_spec["target"]["y"],
+        camera_spec["target"]["z"],
+    )))
+    COLLECTIONS["CAMERAS"].objects.link(camera)
+    cameras[camera_spec["id"]] = camera
 
 scene.render.engine = "BLENDER_EEVEE"
 scene.render.resolution_x = 1280
 scene.render.resolution_y = 720
 scene.render.resolution_percentage = 100
 scene.render.image_settings.file_format = "PNG"
-scene.render.film_transparent = False
 scene.render.image_settings.color_mode = "RGBA"
+scene.render.film_transparent = False
 scene.render.image_settings.color_depth = "8"
 scene.view_settings.look = "AgX - Medium High Contrast"
-scene.view_settings.exposure = -0.45
-scene.world = bpy.data.worlds.new("First Fire QA World")
-scene.world.use_nodes = True
-background = scene.world.node_tree.nodes.get("Background")
-background.inputs["Color"].default_value = (0.004, 0.006, 0.012, 1.0)
-background.inputs["Strength"].default_value = 0.09
 
 
-def object_world_bounds(objects: list[bpy.types.Object]) -> dict[str, float]:
-    points = [
-        obj.matrix_world @ Vector(corner)
-        for obj in objects
-        if obj.type == "MESH"
-        for corner in obj.bound_box
-    ]
+def world_bounds(objects: list[bpy.types.Object]) -> dict[str, float]:
+    points = [obj.matrix_world @ Vector(corner) for obj in objects for corner in obj.bound_box]
     return {
         "minX": min(point.x for point in points),
         "maxX": max(point.x for point in points),
@@ -1044,106 +631,79 @@ def object_world_bounds(objects: list[bpy.types.Object]) -> dict[str, float]:
     }
 
 
-export_meshes = [
-    obj for obj in scene.objects if obj.type == "MESH" and obj.name.startswith("FF_")
-]
-export_lights_or_cameras = [
-    obj
-    for obj in scene.objects
-    if obj.name.startswith("FF_") and obj.type in ("LIGHT", "CAMERA")
-]
-field_stems = [
-    obj for obj in export_meshes if obj.name.startswith("FF_TorchStem_Field_")
-]
-perimeter_stems = [
-    obj for obj in export_meshes if "_Perimeter_" in obj.name and "TorchStem" in obj.name
-]
+export_meshes = [obj for obj in scene.objects if obj.type == "MESH" and obj.name.startswith("FF_")]
+if any(obj.type in {"LIGHT", "CAMERA"} for obj in export_meshes):
+    raise RuntimeError("QA light or camera leaked into the FF_ export set")
 
-if len(field_stems) != CONTRACT["torchBudget"]["fieldStems"]:
-    raise RuntimeError(
-        f"Expected {CONTRACT['torchBudget']['fieldStems']} field stems, "
-        f"built {len(field_stems)}"
-    )
-expected_perimeter = (
-    len(CONTRACT["shrines"])
-    * CONTRACT["torchBudget"]["perimeterStemsPerShrine"]
-)
-if len(perimeter_stems) != expected_perimeter:
-    raise RuntimeError(
-        f"Expected {expected_perimeter} perimeter stems, built {len(perimeter_stems)}"
-    )
-if export_lights_or_cameras:
-    raise RuntimeError("FF_ export prefix includes a QA light or camera")
-if set(CONTRACT["collections"]) != {
-    collection.name for collection in COLLECTIONS.values()
-}:
-    raise RuntimeError("Blender collection contract is incomplete")
-
-bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH))
-
-render_paths: dict[str, str] = {}
-growth_objects = [
-    obj
-    for obj in scene.objects
-    if obj.name.startswith("FF_Growth_")
-]
+growth_objects = [obj for obj in export_meshes if "Earth" in obj.name or "earth" in obj.name]
 red_objects = [
-    obj
-    for obj in scene.objects
+    obj for obj in export_meshes
     if obj.name.startswith("FF_FlameGuide_")
-    or obj.name.startswith("FF_Trench_") and "Magma" in obj.name
-    or obj.name == "FF_Bridge_EmberBed"
+    or obj.name.startswith("FF_Trench_")
+    or "Coal" in obj.name
 ]
-red_lights = [
-    obj
-    for obj in scene.objects
-    if obj.name.startswith("QA_Point_") and obj.name != "QA_Point_Earth"
-]
-earth_light = scene.objects.get("QA_Point_Earth")
-for name, camera in cameras.items():
-    show_growth = name in ("plan", "earth")
-    show_red = name != "earth"
-    for obj in growth_objects:
-        obj.hide_render = not show_growth
+render_paths: dict[str, str] = {}
+for camera_id, camera in cameras.items():
+    show_red = camera_id not in {"blackout", "earth-reveal"}
+    show_growth = camera_id in {"plan", "earth-reveal"}
     for obj in red_objects:
         obj.hide_render = not show_red
+    for obj in growth_objects:
+        obj.hide_render = not show_growth
     for light in red_lights:
         light.hide_render = not show_red
-    if earth_light:
-        earth_light.hide_render = not show_growth
+    earth_light.hide_render = not show_growth
     scene.camera = camera
-    render_path = QA_DIR / f"first-fire-graybox-{name}.png"
-    scene.render.filepath = str(render_path)
+    path = QA_DIR / f"first-fire-cinder-court-{camera_id}.png"
+    scene.render.filepath = str(path)
     bpy.ops.render.render(write_still=True)
-    render_paths[name] = str(render_path)
+    render_paths[camera_id] = str(path)
 
+for obj in export_meshes:
+    obj.hide_render = False
+for light in red_lights:
+    light.hide_render = False
+earth_light.hide_render = False
 scene.camera = cameras["overview"]
 bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH))
 
 report = {
-    "sourceDigest": SOURCE_DIGEST,
+    "sceneId": "first-fire-cinder-court",
     "schemaVersion": CONTRACT["schemaVersion"],
-    "blenderVersion": bpy.app.version_string,
-    "blendPath": str(BLEND_PATH),
+    "sourceDigest": SOURCE_DIGEST,
     "manifestPath": str(MANIFEST_PATH),
+    "blendPath": str(BLEND_PATH),
+    "blenderVersion": bpy.app.version_string,
     "exportPrefix": "FF_",
     "exportMeshCount": len(export_meshes),
     "materialCount": len(bpy.data.materials),
-    "fieldTorchStems": len(field_stems),
-    "perimeterTorchStems": len(perimeter_stems),
     "roomFootprint": {
         "width": ROOM["width"],
         "depth": ROOM["depth"],
-        "blenderBounds": ROOM_BOUNDS,
+        "blenderBounds": BOUNDS,
     },
-    "exportObjectBounds": object_world_bounds(export_meshes),
-    "collections": sorted(collection.name for collection in COLLECTIONS.values()),
+    "counts": {
+        "basaltMasses": len(CONTRACT["basalt"]),
+        "courts": len(CONTRACT["courts"]),
+        "pathSections": len(CONTRACT["pathSections"]),
+        "fieldFlames": CONTRACT["torchBudget"]["fieldStems"],
+        "perimeterFlames": CONTRACT["torchBudget"]["perimeterStemsPerShrine"] * len(CONTRACT["shrines"]),
+        "totalFlameAnchors": len(anchor_records),
+        "maximumDetailedShrines": CONTRACT["torchBudget"]["maximumDetailedShrines"],
+    },
+    "flameCategories": {
+        category: sum(1 for anchor in anchor_records if anchor["category"] == category)
+        for category in FLAME_MATERIALS
+    },
+    "exportObjectBounds": world_bounds(export_meshes),
+    "collections": list(CONTRACT["collections"]),
     "renders": render_paths,
 }
 REPORT_PATH.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 
-print(f"Verified First Fire source digest: {SOURCE_DIGEST}")
+print(f"Verified Cinder Court source digest: {SOURCE_DIGEST}")
+print(f"Built {len(anchor_records)} organic flame guides; no cone guides used")
 print(f"Saved editable graybox: {BLEND_PATH}")
 print(f"Wrote QA report: {REPORT_PATH}")
-for name, path in render_paths.items():
-    print(f"Rendered {name:>9}: {path}")
+for camera_id, path in render_paths.items():
+    print(f"Rendered {camera_id:>14}: {path}")

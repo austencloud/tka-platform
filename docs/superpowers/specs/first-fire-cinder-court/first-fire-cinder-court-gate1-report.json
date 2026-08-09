@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "first-fire-cinder-court",
+  "gate": 1,
+  "status": "ready-for-review",
+  "approval": null,
+  "room": {
+    "width": 58,
+    "depth": 44,
+    "waterDoor": {
+      "min": 20,
+      "max": 24
+    },
+    "earthDoor": {
+      "min": 32,
+      "max": 36
+    },
+    "hub": {
+      "minX": 16,
+      "maxX": 36,
+      "minZ": 13,
+      "maxZ": 31
+    }
+  },
+  "route": {
+    "safeWidth": 2.4,
+    "sections": [
+      {
+        "id": "water-to-hub",
+        "kind": "water-approach",
+        "width": 4
+      },
+      {
+        "id": "hub-to-dj",
+        "kind": "shrine-approach",
+        "width": 3
+      },
+      {
+        "id": "dj-orbit",
+        "kind": "shrine-orbit",
+        "width": 2.4
+      },
+      {
+        "id": "dj-return-to-hub",
+        "kind": "shrine-return",
+        "width": 3
+      },
+      {
+        "id": "hub-to-ek",
+        "kind": "shrine-approach",
+        "width": 3
+      },
+      {
+        "id": "ek-orbit",
+        "kind": "shrine-orbit",
+        "width": 2.4
+      },
+      {
+        "id": "ek-return-to-hub",
+        "kind": "shrine-return",
+        "width": 3
+      },
+      {
+        "id": "hub-to-fl",
+        "kind": "shrine-approach",
+        "width": 3
+      },
+      {
+        "id": "fl-orbit",
+        "kind": "shrine-orbit",
+        "width": 2.4
+      },
+      {
+        "id": "fl-return-to-hub",
+        "kind": "shrine-return",
+        "width": 3
+      },
+      {
+        "id": "earth-growth-path",
+        "kind": "growth-path",
+        "width": 3.2
+      }
+    ],
+    "sharedThroats": [
+      {
+        "shrineId": "dj",
+        "centre": {
+          "x": 13.5,
+          "z": 12
+        },
+        "width": 3.5
+      },
+      {
+        "shrineId": "ek",
+        "centre": {
+          "x": 13.75,
+          "z": 27.5
+        },
+        "width": 3.5
+      },
+      {
+        "shrineId": "fl",
+        "centre": {
+          "x": 40.2,
+          "z": 13.8
+        },
+        "width": 3.5
+      }
+    ]
+  },
+  "checks": {
+    "shell": true,
+    "doorClearance": true,
+    "oneSharedThroatPerCourt": true,
+    "performersHiddenFromHub": {
+      "dj": true,
+      "ek": true,
+      "fl": true
+    },
+    "detailedHeroFireBudget": 1,
+    "fireGuidesOwnNoCollision": true,
+    "redAbsentBeforeGreen": true
+  },
+  "performers": [
+    {
+      "id": "dj",
+      "performerId": "cave-fire-automaton-dj",
+      "sequenceId": "cave-fire-seq-dj",
+      "catalogId": "tnd-split-opp-jdjd",
+      "word": "JDJD",
+      "centre": {
+        "x": 8.9,
+        "z": 9.5
+      }
+    },
+    {
+      "id": "ek",
+      "performerId": "cave-fire-automaton-ek",
+      "sequenceId": "cave-fire-seq-ek",
+      "catalogId": "tnd-split-opp-keke",
+      "word": "KEKE",
+      "centre": {
+        "x": 9,
+        "z": 29.1
+      }
+    },
+    {
+      "id": "fl",
+      "performerId": "cave-fire-automaton-fl",
+      "sequenceId": "cave-fire-seq-fl",
+      "catalogId": "tnd-split-opp-lflf",
+      "word": "LFLF",
+      "centre": {
+        "x": 46.5,
+        "z": 10
+      }
+    }
+  ],
+  "sourceDigests": {
+    "planContract": "45a2100d261232b0c2e148ae79d4c0990d4d72511785514ae098d7fa80dbd651",
+    "sequenceBinding": "707a7111e769241d86c6d19c6bdbc45da32da318b13a07ddc03bc3a5f0ad3843",
+    "catalog": "e6a9af2214c2af0a10c2169e19dd9a0a1b7ac980368f0132fdb6ff158434c730",
+    "board": "cd4560ddecaaf259b3e19e12ae8ea0d7c0b18bf1805a6f84c199907452c8c086"
+  },
+  "sequenceFingerprints": [
+    {
+      "performerId": "cave-fire-automaton-dj",
+      "sequenceId": "cave-fire-seq-dj",
+      "catalogId": "tnd-split-opp-jdjd",
+      "liveWordParity": true,
+      "fingerprint": "22640f3d4be6de1b99f7201bba701432084835210869e6cda2ae655fa948ce29"
+    },
+    {
+      "performerId": "cave-fire-automaton-ek",
+      "sequenceId": "cave-fire-seq-ek",
+      "catalogId": "tnd-split-opp-keke",
+      "liveWordParity": true,
+      "fingerprint": "a550324310e6e4a8bff54b78bcefdf2d56b7a8496767a7534aead1c39f78bad9"
+    },
+    {
+      "performerId": "cave-fire-automaton-fl",
+      "sequenceId": "cave-fire-seq-fl",
+      "catalogId": "tnd-split-opp-lflf",
+      "liveWordParity": true,
+      "fingerprint": "91e4e6e0bdb58a269fcfcad36d82e68f59d1d589986e67624357ccb65e7475e0"
+    }
+  ]
+}

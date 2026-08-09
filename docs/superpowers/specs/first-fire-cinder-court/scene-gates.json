@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "first-fire-cinder-court",
+  "title": "First Fire: The Cinder Court",
+  "domainProofRequired": true,
+  "currentGate": 0,
+  "authority": {
+    "experienceSpec": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-production-contract.md",
+    "roomShellSource": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
+    "planContract": "src/lib/features/museum/data/first-fire-procession-plan.ts",
+    "museumTrackerItems": [
+      "1bUBNo26hJpRq4Bf36gh",
+      "fsJqYPYkMjY2BESGuIBC",
+      "jjjRDt6uwrzf9pBOFD3C"
+    ]
+  },
+  "sequenceFingerprints": [
+    {
+      "performerId": "cave-fire-automaton-dj",
+      "sequenceId": "cave-fire-seq-dj",
+      "sourcePath": "static/data/hero/tnd-base-words.json",
+      "sourceSha256": "e6a9af2214c2af0a10c2169e19dd9a0a1b7ac980368f0132fdb6ff158434c730",
+      "fingerprint": "22640f3d4be6de1b99f7201bba701432084835210869e6cda2ae655fa948ce29"
+    },
+    {
+      "performerId": "cave-fire-automaton-ek",
+      "sequenceId": "cave-fire-seq-ek",
+      "sourcePath": "static/data/hero/tnd-base-words.json",
+      "sourceSha256": "e6a9af2214c2af0a10c2169e19dd9a0a1b7ac980368f0132fdb6ff158434c730",
+      "fingerprint": "a550324310e6e4a8bff54b78bcefdf2d56b7a8496767a7534aead1c39f78bad9"
+    },
+    {
+      "performerId": "cave-fire-automaton-fl",
+      "sequenceId": "cave-fire-seq-fl",
+      "sourcePath": "static/data/hero/tnd-base-words.json",
+      "sourceSha256": "e6a9af2214c2af0a10c2169e19dd9a0a1b7ac980368f0132fdb6ff158434c730",
+      "fingerprint": "91e4e6e0bdb58a269fcfcad36d82e68f59d1d589986e67624357ccb65e7475e0"
+    }
+  ],
+  "claims": [
+    {
+      "id": "C-001",
+      "class": "literal",
+      "statement": "The selected Fire roster consists of the exact live DJ, EK, and FL sequence sources in diamond mode.",
+      "evidence": [
+        "src/lib/features/museum/data/museum-exhibit-sequences.ts",
+        "static/data/hero/tnd-base-words.json",
+        "Flow Arts MCP get_domain_topic(elemental-model), 2026-08-08"
+      ]
+    },
+    {
+      "id": "C-002",
+      "class": "invention",
+      "statement": "The player revisits one central fire court between three permanently isolated performer courts.",
+      "evidence": [
+        "Museum tracker decision 1bUBNo26hJpRq4Bf36gh"
+      ]
+    },
+    {
+      "id": "C-003",
+      "class": "invention",
+      "statement": "Completed routes cool to coals, then all red extinguishes before green crosses the hub toward Earth.",
+      "evidence": [
+        "Museum tracker decision 1bUBNo26hJpRq4Bf36gh"
+      ]
+    }
+  ],
+  "exemptions": [],
+  "gates": [
+    {
+      "id": "evidence-preflight",
+      "status": "in-progress",
+      "evidence": [
+        {
+          "kind": "canon-audit",
+          "path": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-production-contract.md",
+          "sha256": "23055891f8a1d5328df8763b8a9632c0d0ba41675c94c015ee0a1423ccff2077"
+        },
+        {
+          "kind": "room-shell",
+          "path": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
+          "sha256": "2a6760e5018ef0c31c64613f211b91ebb33b3c9953efd2e742c53e31d8b4a9dd"
+        },
+        {
+          "kind": "catalog-motion-lock",
+          "path": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-gate1-report.json",
+          "sha256": "59669696299ace91e89b7cdbbc70fd8162d2b2e1a95fa9bc52b93ada4fdf658a"
+        }
+      ],
+      "checks": [
+        {
+          "name": "canon-conflicts",
+          "status": "passed",
+          "evidence": "The production contract records the superseded S-procession and isolates the 58 by 44 metre candidate from the undersized live shell."
+        },
+        {
+          "name": "source-digests",
+          "status": "passed",
+          "evidence": "The Gate 1 report locks the plan, live sequence binding, catalog, and generated board digests."
+        },
+        {
+          "name": "sequence-fingerprints",
+          "status": "passed",
+          "evidence": "Exact JDJD, KEKE, and LFLF catalog fingerprints and live word parity are recorded above and in the Gate 1 report."
+        },
+        {
+          "name": "live-motion-capture",
+          "status": "pending",
+          "evidence": "The playable review must capture the exact three live performer rigs with visible sequence identifiers before Gate 0 is verified."
+        }
+      ],
+      "approval": null
+    },
+    {
+      "id": "measured-plan",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "playable-graybox",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "registered-visual-target",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "production-slice",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "integrated-room",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "final-acceptance",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    }
+  ]
+}

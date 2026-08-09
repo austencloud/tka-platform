@@ -15,7 +15,7 @@ process during the independent review.
 | Stage | Status | Review artifact |
 |---|---|---|
 | Claude Opus independent review | complete | [`references/reviews/2026-08-08-opus.md`](reviews/2026-08-08-opus.md) |
-| Fable independent review | pending | `references/reviews/2026-08-08-fable.md` |
+| Fable independent review | complete | [`references/reviews/2026-08-08-fable.md`](reviews/2026-08-08-fable.md) |
 | Cross-review synthesis | blocked | `references/reviews/2026-08-08-synthesis.md` |
 | Approved changes incorporated | blocked | link after implementation |
 | Skill and validator revalidated | blocked | record commands and results |

@@ -5,9 +5,11 @@
     FirstFireFlameFieldRenderer,
     type FirstFireFlameAnchor,
   } from "./first-fire-flame-field";
+  import type { FirstFireFlameGroup } from "./first-fire-graybox-review";
 
   interface Props {
     anchors: readonly FirstFireFlameAnchor[];
+    visibleGroups: ReadonlySet<FirstFireFlameGroup>;
   }
 
   const props: Props = $props();
@@ -18,6 +20,10 @@
   function syncMotionPreference(): void {
     motionScale = reducedMotionQuery?.matches ? 0.35 : 1;
   }
+
+  $effect(() => {
+    renderer.setVisibleGroups(props.visibleGroups);
+  });
 
   onMount(() => {
     reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
