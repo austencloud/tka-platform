@@ -45,6 +45,7 @@ const PUBLIC_PATH_PREFIXES = [
   // boot module persistence, which would treat `/test` as an invalid app tab.
   "/test/smart-collections",
   "/test/sequence-actions",
+  "/test/prop-size-audit",
   "/test/environment-transition",
   // Museum floor-plan and 3D review surfaces also own their page chrome. Keep
   // them out of module persistence so direct review links are not rewritten to

@@ -17,6 +17,8 @@
   should be sitting near.
 -->
 <script lang="ts">
+  import { page } from "$app/state";
+  import PropPickerReview from "./PropPickerReview.svelte";
   import { VIEWBOX_SIZE } from "$lib/shared/render/core/constants/viewbox";
   import { getPropDimensions } from "$lib/shared/animation-engine/services/IPropTextureLoader";
   import { getTipPointsBaseline } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
@@ -79,6 +81,7 @@
     .sort((a, b) => a.reach - b.reach);
 
   let showBig = $state(true);
+  const reviewingPicker = $derived(page.url.searchParams.get("review") === "picker");
   const visible = $derived(
     showBig ? rows : rows.filter((r) => !r.type.toString().startsWith("big"))
   );
@@ -92,9 +95,13 @@
   }
 </script>
 
-<svelte:head><title>Prop size audit</title></svelte:head>
+<svelte:head><title>{reviewingPicker ? "Prop Picker Review" : "Prop size audit"}</title></svelte:head>
 
-<div class="page">
+{#if reviewingPicker}
+  <PropPickerReview />
+{/if}
+
+<div class="page" class:review-hidden={reviewingPicker}>
   <header>
     <h1>Prop size audit</h1>
     <p>
@@ -160,6 +167,10 @@
     color: #e8e6f4;
     padding: 2rem clamp(1rem, 3vw, 3rem) 4rem;
     font-family: system-ui, sans-serif;
+  }
+
+  .review-hidden {
+    display: none;
   }
 
   header {
