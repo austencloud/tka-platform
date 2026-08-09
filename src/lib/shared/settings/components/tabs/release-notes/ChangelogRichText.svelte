@@ -11,6 +11,12 @@
 -->
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
+  import {
+    getModuleDefinition,
+    isValidModule,
+    isValidTabForModule,
+  } from "$lib/shared/navigation/services/navigation-validator";
   import { openSheet } from "$lib/shared/navigation/services/sheet-router";
   import { toChangelogSegments } from "$lib/shared/versioning/domain/utils/changelog-rich-text";
 
@@ -44,6 +50,21 @@
     if (destination.searchParams.get("sheet") === "inbox") {
       openSheet("inbox");
       return;
+    }
+
+    const [moduleId, tabId, extraPath] = destination.pathname
+      .split("/")
+      .filter(Boolean);
+    if (moduleId && !extraPath && isValidModule(moduleId)) {
+      const moduleDefinition = getModuleDefinition(moduleId);
+      const isModuleDestination =
+        !moduleDefinition?.linkHref &&
+        (!tabId || isValidTabForModule(moduleId, tabId));
+
+      if (isModuleDestination) {
+        void handleModuleChange(moduleId, tabId);
+        return;
+      }
     }
 
     void goto(href);

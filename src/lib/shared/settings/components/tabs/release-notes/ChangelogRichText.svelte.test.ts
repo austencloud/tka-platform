@@ -4,6 +4,8 @@ import ChangelogRichText from "./ChangelogRichText.svelte";
 
 const navigation = vi.hoisted(() => ({
   goto: vi.fn<(_href: string) => Promise<void>>(),
+  handleModuleChange:
+    vi.fn<(_moduleId: string, _tabId?: string) => Promise<void>>(),
   openSheet: vi.fn(),
 }));
 
@@ -15,36 +17,77 @@ vi.mock("$lib/shared/navigation/services/sheet-router", () => ({
   openSheet: navigation.openSheet,
 }));
 
+vi.mock(
+  "$lib/shared/navigation-coordinator/navigation-coordinator.svelte",
+  () => ({
+    handleModuleChange: navigation.handleModuleChange,
+  })
+);
+
 describe("ChangelogRichText navigation", () => {
   beforeEach(() => {
     navigation.goto.mockReset();
     navigation.goto.mockResolvedValue();
+    navigation.handleModuleChange.mockReset();
+    navigation.handleModuleChange.mockResolvedValue();
     navigation.openSheet.mockReset();
   });
 
-  it("client-routes an ordinary internal action without discarding its href", () => {
-    const onNavigate = vi.fn();
-    render(ChangelogRichText, {
-      text: "Browse the new [Gallery](/browse/gallery).",
-      onNavigate,
-    });
+  it.each([
+    {
+      label: "Winter background",
+      href: "/settings/theme",
+      moduleId: "settings",
+      tabId: "theme",
+    },
+    {
+      label: "Construct",
+      href: "/create/construct",
+      moduleId: "create",
+      tabId: "construct",
+    },
+    {
+      label: "Gallery",
+      href: "/browse/gallery",
+      moduleId: "browse",
+      tabId: "gallery",
+    },
+    {
+      label: "Creators",
+      href: "/creators",
+      moduleId: "creators",
+      tabId: undefined,
+    },
+  ])(
+    "routes $label through the app navigation coordinator",
+    ({ label, href, moduleId, tabId }) => {
+      const onNavigate = vi.fn();
+      render(ChangelogRichText, {
+        text: `Open [${label}](${href}).`,
+        onNavigate,
+      });
 
-    const link = document.querySelector<HTMLAnchorElement>("a.entry-link");
-    expect(link).toBeInstanceOf(HTMLAnchorElement);
-    expect(link!.getAttribute("href")).toBe("/browse/gallery");
+      const link = document.querySelector<HTMLAnchorElement>("a.entry-link");
+      expect(link).toBeInstanceOf(HTMLAnchorElement);
+      expect(link!.getAttribute("href")).toBe(href);
 
-    const click = new MouseEvent("click", {
-      bubbles: true,
-      cancelable: true,
-      button: 0,
-    });
-    link!.dispatchEvent(click);
+      const click = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+      });
+      link!.dispatchEvent(click);
 
-    expect(click.defaultPrevented).toBe(true);
-    expect(navigation.goto).toHaveBeenCalledOnce();
-    expect(navigation.goto).toHaveBeenCalledWith("/browse/gallery");
-    expect(onNavigate).toHaveBeenCalledOnce();
-  });
+      expect(click.defaultPrevented).toBe(true);
+      expect(navigation.handleModuleChange).toHaveBeenCalledOnce();
+      expect(navigation.handleModuleChange).toHaveBeenCalledWith(
+        moduleId,
+        tabId
+      );
+      expect(navigation.goto).not.toHaveBeenCalled();
+      expect(onNavigate).toHaveBeenCalledOnce();
+    }
+  );
 
   it("leaves modified internal clicks to the browser and keeps the host open", () => {
     const onNavigate = vi.fn();
@@ -66,7 +109,30 @@ describe("ChangelogRichText navigation", () => {
 
     expect(click.defaultPrevented).toBe(false);
     expect(navigation.goto).not.toHaveBeenCalled();
+    expect(navigation.handleModuleChange).not.toHaveBeenCalled();
     expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it("keeps public internal pages on the SvelteKit router", () => {
+    const onNavigate = vi.fn();
+    render(ChangelogRichText, {
+      text: "Browse the [Shop](/shop).",
+      onNavigate,
+    });
+
+    const link = document.querySelector<HTMLAnchorElement>("a.entry-link");
+    link?.dispatchEvent(
+      new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        button: 0,
+      })
+    );
+
+    expect(navigation.goto).toHaveBeenCalledOnce();
+    expect(navigation.goto).toHaveBeenCalledWith("/shop");
+    expect(navigation.handleModuleChange).not.toHaveBeenCalled();
+    expect(onNavigate).toHaveBeenCalledOnce();
   });
 
   it("keeps external actions as protected new-tab links", () => {
@@ -101,6 +167,7 @@ describe("ChangelogRichText navigation", () => {
 
     expect(navigation.openSheet).toHaveBeenCalledWith("inbox");
     expect(navigation.goto).not.toHaveBeenCalled();
+    expect(navigation.handleModuleChange).not.toHaveBeenCalled();
     expect(onNavigate).toHaveBeenCalledOnce();
   });
 });
