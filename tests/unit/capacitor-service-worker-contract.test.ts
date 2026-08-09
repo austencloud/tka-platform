@@ -6,9 +6,10 @@ describe("Capacitor service-worker contract", () => {
   it("does not register the web app service worker in a native shell", () => {
     const source = readFileSync(resolve("src/hooks.client.ts"), "utf8");
 
-    expect(source).toContain("!Capacitor.isNativePlatform()");
+    // The init guard must bail out on native platforms before any register
+    // call, whichever way the condition is formatted.
     expect(source).toMatch(
-      /!Capacitor\.isNativePlatform\(\)[\s\S]*navigator\.serviceWorker[\s\S]*\.register\("\/sw\.js"/
+      /if \([\s\S]*?Capacitor\.isNativePlatform\(\)[\s\S]*?\)\s*\{\s*return;[\s\S]*navigator\.serviceWorker[\s\S]*\.register\("\/sw\.js"/
     );
   });
 
