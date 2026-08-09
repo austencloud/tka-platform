@@ -52,7 +52,30 @@ corrected here.
 Ordered by leverage per unit of effort. Items 1–8 are config and lighting and
 should land before any Blender work.
 
-### Gate 1 — Atmosphere and depth (cheapest, largest win)
+### Gate 1 — Atmosphere and depth — **DONE 2026-08-09**
+
+Shipped: `OCEAN_FOG_DENSITY = 0.026` named constant at `OceanScene.svelte`,
+replacing the inline 0.012. Verified in Scene Lab 3D. Mid and far field now
+recede into blue; the seabed edge is no longer legible at normal camera
+heights.
+
+**Two items in the original list were wrong and are corrected here.**
+
+- **Item 2 (ground 180 m → 60 m) does not apply to the 3D path.** The 3D scene
+  renders the 70 m seabed GLB; the config's `ground.size: 180` belongs to a
+  different (2D/procedural) ocean renderer and never reaches `OceanScene`.
+  Fog is the only depth lever in 3D. No change made.
+- **Item 4 is bigger than described.** `ScenePreview.svelte:296` renders
+  `<OceanScene />` with **no config prop at all**, while every other scene gets
+  `config={labState.xConfig}`. The entire Ocean panel — sky, fog, ground, zones,
+  coral, fish — is disconnected from the 3D scene, not just the fog slider.
+  Wiring it is its own task, deliberately not folded into this gate.
+
+Held at 0.026 rather than pushing higher: the far field is still less dissolved
+than Ember or Winter, but Gate 2's key light will darken the periphery on its
+own. Re-evaluate the value after Gate 2, not before.
+
+### Gate 1 — original item list (for reference)
 
 1. **Raise fog density from 0.012 to ~0.025–0.030.** `OceanScene.svelte:139`.
    The reef should emerge from blue darkness and dissolve back into it. This
