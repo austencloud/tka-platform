@@ -60,7 +60,7 @@ const SURFACE_STOPS: Stop[] = [
     hemiIntensity: 0.95,
   },
   {
-    at: 150,
+    at: 92,
     background: 0x9dc3d8,
     fogColor: 0xb6d3e2,
     fogDensity: 0.005,
@@ -71,7 +71,7 @@ const SURFACE_STOPS: Stop[] = [
     hemiIntensity: 0.9,
   },
   {
-    at: 265,
+    at: 178,
     background: 0xa8c2c0,
     fogColor: 0xc2d1c8,
     fogDensity: 0.010,
@@ -82,7 +82,7 @@ const SURFACE_STOPS: Stop[] = [
     hemiIntensity: 0.95,
   },
   {
-    at: 312,
+    at: 206,
     background: 0xcfc9ba,
     fogColor: 0xcac2b1,
     fogDensity: 0.018,
@@ -93,7 +93,7 @@ const SURFACE_STOPS: Stop[] = [
     hemiIntensity: 1.05,
   },
   {
-    at: 372,
+    at: 244,
     background: 0xdcd3c0,
     fogColor: 0xd6ccb8,
     fogDensity: 0.024,

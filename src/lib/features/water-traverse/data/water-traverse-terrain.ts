@@ -168,12 +168,19 @@ const SPRING_RIDGE_TOP = SPRING_BANK_Y + 20;
 /** The watercourse: one ribbon, constant width, centred on x = 0 throughout. */
 export const CHANNEL_HALF_W = 4.5;
 
+/**
+ * Leg lengths. The two flat legs were originally 118 m and 80 m, which walked
+ * as 88 seconds of holding W for the whole route. The transitions are the
+ * interesting parts and they keep their full run — the descent has to stay a
+ * 40 m ramp or the grade turns into a cliff, and the ascent carries the
+ * surface break — so the compression comes entirely out of the flats.
+ */
 const SNOW_START_Z = 0;
-const SNOW_END_Z = 118;
-const DESCENT_END_Z = 158;
-const SEA_END_Z = 246;
-const ASCENT_END_Z = 292;
-const SPRING_END_Z = 372;
+const SNOW_END_Z = 52;
+const DESCENT_END_Z = 92;
+const SEA_END_Z = 144;
+const ASCENT_END_Z = 190;
+const SPRING_END_Z = 244;
 
 export const TOTAL_LENGTH_M = SPRING_END_Z;
 
@@ -439,33 +446,39 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
    * Verified against the Flow Arts MCP 2026-08-09.
    */
   const performers: PerformerAnchor[] = [
+    /**
+     * A, then B, then C, in that order along the walk. The first mapping put
+     * the hybrid letter on the liquid leg because liquid is the hybrid state,
+     * which was a nice idea nobody walking the route could ever read: what a
+     * visitor actually reads is the alphabet counting up as they go.
+     */
     {
       id: "ice-performer",
       leg: "snowfield",
       letter: "A",
       effectId: "sparkles",
       x: 0,
-      z: 74,
+      z: (SNOW_START_Z + SNOW_END_Z) / 2 + 6,
       y: WATERLINE_Y,
       facingAngle: Math.PI,
     },
     {
       id: "sea-performer",
       leg: "sea",
-      letter: "C",
+      letter: "B",
       effectId: "goo",
       x: 0,
-      z: 200,
+      z: (DESCENT_END_Z + SEA_END_Z) / 2,
       y: SEA_FLOOR_Y,
       facingAngle: Math.PI,
     },
     {
       id: "steam-performer",
       leg: "spring",
-      letter: "B",
+      letter: "C",
       effectId: "smoke",
       x: 0,
-      z: ASCENT_END_Z + 54,
+      z: ASCENT_END_Z + 30,
       y: SPRING_FLOOR_Y,
       facingAngle: Math.PI,
     },
@@ -502,7 +515,7 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
      */
     plume: {
       x: 0,
-      z: ASCENT_END_Z + 54,
+      z: ASCENT_END_Z + 30,
       baseY: WATERLINE_Y,
       height: 46,
     },

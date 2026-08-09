@@ -48,6 +48,8 @@
   import MuseumPerformerStation3D from "$lib/features/museum/components/game/MuseumPerformerStation3D.svelte";
   import {
     EYE_ABOVE_FLOOR,
+    SEA_FLOOR_Y,
+    SNOW_Y,
     WATERLINE_Y,
     legAt,
     type WaterState,
@@ -448,6 +450,20 @@
       ) {
         return null;
       }
+      // A resume point saved against an older layout can sit outside the
+      // current one, and a body spawned outside every floor collider falls
+      // forever. The route's length is a design variable that will keep
+      // changing, so the stored point is checked against the live bounds
+      // rather than trusted.
+      const { bounds } = layout;
+      const inside =
+        point.x! > bounds.minX &&
+        point.x! < bounds.maxX &&
+        point.z! > bounds.minZ &&
+        point.z! < bounds.maxZ &&
+        point.y! > SEA_FLOOR_Y - 8 &&
+        point.y! < SNOW_Y + 60;
+      if (!inside) return null;
       return point as ResumePoint;
     } catch {
       return null;
