@@ -1,7 +1,7 @@
 # Cinematic Winter Snow Volume
 
-Status: Design specification. Implementation requires explicit approval after
-the current shared-package overlap is resolved.
+Status: Approved for implementation after Opus 5 review. The current
+shared-package overlap still requires coordination before source edits begin.
 
 ## Outcome
 
@@ -57,6 +57,9 @@ Foreground snow must remain sparse.
 ### Powder
 
 - Powder ranges from roughly 0.6 to 2.2 CSS pixels at a 1x backing scale.
+- Powder never renders below 0.8 device pixels. Below that floor, radius holds
+  at 0.8 device pixels and alpha decreases proportionally. Positions remain
+  fractional rather than snapping to integer pixels.
 - It uses low opacity and cool gray-blue values rather than pure white.
 - Powder may batch into a small number of paths by opacity bucket.
 - Neighboring powder particles must reveal the broad wind field without
@@ -79,8 +82,9 @@ Foreground snow must remain sparse.
   viewports and 16 to 48 CSS pixels on narrow screens.
 - Their edges are soft, but their internal structure remains faintly readable.
   They must not resemble soap bubbles, lens dust, flower petals, or fog discs.
-- Most enter through the outer 22 percent of the viewport. A small minority may
-  cross the central field so the depth does not look staged.
+- Most enter through the outer 22 percent of the viewport. One weighted
+  horizontal-birth function must serve both initial creation and recycling. A
+  small minority may cross the central field so the depth does not look staged.
 - A flake may begin partly outside the viewport. Clipping at the screen edge is
   desirable because it implies a larger object passing close to the viewer.
 - Foreground opacity stays low enough that one particle cannot hide a control,
@@ -135,12 +139,22 @@ Atlas requirements:
 
 - maximum dimensions: 1024 by 1024 pixels;
 - compressed file size target: 512 KiB or less;
+- each cell has at least 192 pixels of native resolution and at least 12 pixels
+  of transparent padding;
+- no cell is drawn above 1.25 times its native dimensions;
 - alpha around every cell must be clean at dark and light winter values;
 - cell geometry and source rectangles live in one typed winter-owned module;
 - the same crystal must not appear in adjacent focus cells with mismatched
   rotation or branch structure;
 - medium and high quality decode the atlas once;
 - low quality does not request it.
+
+The package loads the atlas from the consumer-served runtime URL
+`/images/backgrounds/winter/snow-optics.webp`, declared once in the typed
+winter-owned atlas module. TKA serves that URL from
+`static/images/backgrounds/winter/snow-optics.webp`. One orientation-neutral
+atlas serves every viewport. Loading and failure metrics follow the existing
+Autumn scenery-loader convention.
 
 The current procedural `Path2D` renderer is the loading and failure fallback.
 Until the image is decoded, the scene remains complete and animated.
@@ -164,11 +178,29 @@ does not depend on the uneven browser support of
 - reduced-motion state.
 
 It gains stable optical metadata and delegates drawing to one winter renderer.
+It also maintains three readonly index views, one per optical class. The views
+are rebuilt only after initialization, resize, or quality change, and remain
+depth-ascending inside each band. `SnowVolumeRenderer` iterates those views
+without sorting, filtering, or partitioning the particle array per frame.
+
+`SnowflakeSystem` owns one weighted horizontal-birth function used by initial
+creation and recycling. Powder and crystal births remain uniform. Foreground
+births use the edge-weighted distribution, and the long-sample center-share
+criterion applies to recycled births as well as the initial population.
+
+Resize must preserve the volume instead of truncating the depth-sorted array.
+Shrink removes particles from each band in proportion to its target share.
+Growth creates preclassified particles against the new viewport's ratios and
+caps. Foreground caps are recalculated for width and orientation on every
+resize. Surplus foreground particles retire off-screen or fade over at least 30
+frames rather than disappearing in one frame.
 
 ### Reuse
 
-- Reuse `DepthParallaxTracker` for all three snow bands. Do not restore or
-  recreate `WinterParallaxTracker`.
+- Reuse `DepthParallaxTracker` for all three snow bands. Winter injects an
+  explicit profile with a 64-pixel horizontal maximum and 34-pixel vertical
+  maximum while retaining the tracker's default ratios. Do not edit the shared
+  default profile, restore `WinterParallaxTracker`, or add another tracker.
 - Reuse `WinterWindField`; no second force field or gust scheduler is allowed.
 - Reuse `WinterCursorLightTracker`; it remains the only cursor-light owner.
 - Follow the `FishSpriteManager` and tree-rendering convention for decoded or
@@ -213,16 +245,19 @@ required image cropping, alpha compositing, rotation, and scaling.
 
 ## Data model
 
-Extend `Snowflake` with stable visual data assigned only during creation:
+Extend `Snowflake` with stable, flat visual fields assigned only during
+creation:
 
 ```ts
 type SnowOpticalClass = "powder" | "crystal" | "foreground";
 
-interface SnowOpticalProfile {
-  class: SnowOpticalClass;
-  variant: number;
-  focus: number;
-  renderScale: number;
+interface Snowflake {
+  // Existing motion fields remain unchanged.
+  opticalClass: SnowOpticalClass;
+  opticalVariant: number;
+  opticalFocus: number;
+  opticalScale: number;
+  opticalAlpha: number;
 }
 ```
 
@@ -230,15 +265,17 @@ The final field names may follow the surrounding model style, but the contract
 is fixed:
 
 - no random choice occurs inside `draw`;
-- `variant` stays within the atlas or procedural-variant bounds;
-- `focus` is clamped from 0 to 1;
-- `renderScale` is finite and positive;
+- `opticalVariant` stays within the atlas or procedural-variant bounds;
+- `opticalFocus` is clamped from 0 to 1;
+- `opticalScale` and `opticalAlpha` are finite and positive;
 - depth remains the source for wind and parallax response;
 - optical class survives resize and ordinary recycling.
 
-Use one seeded or injected random source in pure classification helpers so
-distribution tests are deterministic. Do not introduce a global seeded-random
-framework.
+`createSnowflakeSystem(options?: { random?: () => number })` threads one random
+source through particle creation, classification, recycling, and
+`WinterWindField`. Classification helpers are pure functions of depth,
+viewport, quality, and that source. Tests inject a counter-based generator and
+never stub `Math.random`. Do not introduce a global seeded-random framework.
 
 ## Rendering path
 
@@ -251,8 +288,10 @@ framework.
 6. The existing shooting-star pass retains its current ordering unless visual
    review proves a specific overlap is wrong.
 
-The renderer may build batched powder paths each frame. It may not allocate a
-new canvas, image, gradient, `Path2D`, or atlas structure during the frame loop.
+Powder uses three fixed opacity buckets. The renderer allocates their reusable
+state during initialization, then issues one `beginPath()` per bucket and adds
+subpaths through the existing context each frame. It does not construct a
+canvas, image, gradient, `Path2D`, or atlas structure during the frame loop.
 
 Foreground atlas cells use `drawImage` source rectangles. Nonuniform scaling
 may express mild gust motion, but the long axis may not exceed 1.35 times the
@@ -264,7 +303,14 @@ short axis. This cap prevents snow from becoming streaked rain.
 - Crystals retain the current facet response and rare sharp glints.
 - Foreground snow receives a soft alpha lift. It does not receive sharp glint
   crosses because a defocused object cannot produce a crisp screen-space star.
-- Light intensity falls with distance from the pointer and with optical depth.
+- Resolved light equals the tracker intensity multiplied by a renderer-owned
+  band response: 1.0 for crystal, 0.55 for powder, and 0.35 for foreground.
+- Large foreground flakes sample the tracker at the center and at two points
+  offset by 0.4 times their render scale along the long axis, then use the mean.
+  This prevents a large flake from blinking as its center crosses the light
+  boundary.
+- `WinterCursorLightTracker` keeps sole ownership of position, easing, radius,
+  and its existing depth curve. Band weighting lives in `SnowVolumeRenderer`.
 - At zero resolved light intensity, the renderer must not enter additive
   compositing for that particle.
 
@@ -280,10 +326,10 @@ cursor light. Touch movement must not disturb the wind field.
 Reduced motion:
 
 - disables pointer parallax, cursor wakes, automatic gusts, and cursor light;
-- removes foreground flakes;
+- stops foreground births immediately and fades active foreground flakes over
+  20 frames;
 - retains a sparse powder and crystal fall with the existing faint ambient
-  drift;
-- resets any active foreground contribution immediately when enabled.
+  drift.
 
 ### Mouse and pen
 
@@ -302,32 +348,47 @@ existing wake, but it does not change optical-class population.
 | Cursor glints       | Current rate               | Reduced rate              | Off                   |
 | Gust stretch        | Full capped treatment      | Crystal and powder only   | Off                   |
 
-Thumbnail mode, if present at the controller boundary, disables foreground
-optics and uses a stable calm frame. The implementation must not add a separate
+`setQuality` recomputes population targets and band caps. Counts converge by at
+most 5 percent of the target population per frame. New particles begin
+off-screen; retired particles leave off-screen or fade. The atlas is first
+requested on transition into medium or high and remains cached after a
+downgrade.
+
+Winter thumbnail mode is not part of this work. A future controller may force
+low quality through the existing quality path, but it must not add a separate
 thumbnail renderer.
 
 ## Performance contract
 
-At 3840 by 2160 with high quality after a five-second warm-up:
+Before implementation, record the current winter `update + draw` average and
+p95 at 3840 by 2160. The evidence names the CPU, GPU, browser build, package
+commit, and sample harness. At the same viewport with high quality after a
+five-second warm-up:
 
 - average winter `update + draw` time is at most 2.0 ms on the development
   machine;
 - p95 `update + draw` time is at most 4.0 ms;
+- average time does not exceed 1.6 times the recorded baseline;
+- p95 does not exceed 1.8 times the recorded baseline;
 - frame-time sampling runs for at least 600 frames;
-- no per-frame canvas or image allocation occurs;
+- no per-frame canvas, image, gradient, `Path2D`, or atlas allocation occurs;
 - no runtime blur filter is used;
 - atlas decode occurs once per system lifetime;
 - particle values remain finite through a gust, pointer wake, resize, and
   quality change.
 
-If the budget fails, reduce foreground count and powder batching cost before
-removing the three-band composition.
+Existing per-particle object churn in `SnowflakeSystem.update` is outside this
+allocation clause. New optical metadata stays flat so it does not add nested
+object allocation. If the budget fails, reduce foreground count and powder
+batching cost before removing the three-band composition.
 
 ## Failure behavior
 
 - Atlas loading failure keeps procedural snowfall visible.
-- `getMetrics()` reports one warning while the atlas is loading and a distinct
-  warning after a confirmed load failure.
+- `WinterBackgroundSystem` implements `getMetrics(): PerformanceMetrics`,
+  reporting particle count plus `winter-optics-loading` while the atlas is
+  loading and `winter-optics-failed` after a confirmed failure. Its metric shape
+  follows `AutumnBackgroundSystem.getMetrics()`.
 - A retry may occur after an aspect-neutral system reinitialization, but not on
   every frame.
 - Invalid atlas-cell metadata falls back to the procedural crystal renderer for
@@ -346,8 +407,8 @@ Shared backgrounds package:
 - `packages/backgrounds/src/backgrounds/winter/services/SnowflakeSystem.ts`
 - `packages/backgrounds/src/backgrounds/winter/services/SnowflakeSystem.test.ts`
 - `packages/backgrounds/src/backgrounds/winter/services/WinterBackgroundSystem.ts`
-- winter constants only where a value is genuinely shared by creation and
-  rendering.
+- a typed winter atlas/constants module containing the runtime URL, source
+  rectangles, and values genuinely shared by creation and rendering.
 
 TKA application:
 
@@ -368,10 +429,12 @@ Focused deterministic tests must prove:
 - foreground birth weighting favors the outer frame without empty lanes;
 - visual variant and focus values remain stable across updates;
 - drawing consumes no random values;
-- resize keeps positions, scales, and atlas indices finite and valid;
+- resize keeps positions, scales, and atlas indices finite and valid while
+  preserving target shares instead of truncating the foreground band;
 - gust stretch stays within its aspect-ratio cap;
 - touch disables parallax and light without removing normal snow depth;
-- reduced motion removes foreground optics and stops gust response;
+- reduced motion stops foreground births and gust response, then fades active
+  foreground over 20 frames;
 - low quality never requests the atlas;
 - an atlas failure preserves procedural snow and reports the correct metric;
 - pointer-light falloff differs correctly by optical class;
@@ -380,7 +443,7 @@ Focused deterministic tests must prove:
 Do not add pixel-golden unit tests for the final image. A visibly broken image
 is not silent. Visual composition belongs to browser review.
 
-## Visual approval gates
+## Approval gates
 
 The first visual gate uses the standalone winter preview and pauses before
 package publication. Austen reviews the result before integration.
@@ -395,7 +458,20 @@ Capture and inspect:
 6. Final composed frames at 2560 by 1440, 3840 by 2160, 1440 by 900,
    820 by 1180, 960 by 412, and 375 by 667.
 
-The visual pass fails if:
+### Measured gates
+
+- Per-band counts remain within 10 percent of their target at every captured
+  viewport after convergence.
+- Foreground counts never exceed the quality and orientation caps.
+- Foreground gust aspect ratio never exceeds 1.35.
+- No more than 35 percent of 5,000 deterministic foreground births land in the
+  middle 46 percent of viewport width.
+- A pixel comparison with the pointer parked over empty sky shows zero sky
+  change. Only snow pixels may respond to cursor light.
+
+### Human judgment gates
+
+Austen rejects the visual pass if:
 
 - foreground snow resembles bubbles or petals;
 - the center is repeatedly covered by large flakes;
