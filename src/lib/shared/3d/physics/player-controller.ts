@@ -199,6 +199,13 @@ export function teleportPlayer(
 	if (!playerState.rigidBody) return;
 
 	playerState.rigidBody.setTranslation(position, true);
+	// The player is a kinematic position-based body, and movePlayer queues a
+	// next-kinematic-translation every frame. Without clearing that queued
+	// target the very next step drags the body back and the teleport looks
+	// like it never happened — only the camera moved.
+	if (playerState.rigidBody.isKinematic()) {
+		playerState.rigidBody.setNextKinematicTranslation(position);
+	}
 	playerState.velocity = { x: 0, y: 0, z: 0 };
 }
 

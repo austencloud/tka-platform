@@ -44,6 +44,13 @@
 
   const props: Props = $props();
   const threlte = useThrelte();
+  /**
+   * Reviewing a graybox means editing and reloading over and over, and being
+   * thrown back to the dark approach each time makes the far end of the room
+   * the expensive end to iterate on. The walk position survives a reload;
+   * "Reset to approach" is how you go back on purpose.
+   */
+  const RESUME_KEY = "drowned-gallery-walk-resume";
   const setup = buildDrownedGalleryWalkSetup();
   const { layout, origin, colliders, spawn } = setup;
 
@@ -78,22 +85,27 @@
     z: layout.bloomAnchor.z - origin.z,
   };
   /**
-   * The grotto's whole reason to exist is the reflection, and the GLB cannot
-   * carry one — a metallic material with no environment renders black. Each
-   * brimming water body gets a real planar reflector laid on its surface,
-   * lifted a hair so it does not z-fight the baked slab beneath it.
+   * The grotto's water is built at runtime, in two layers, because the GLB
+   * cannot carry either one. Blender's mirror slab exports as metalness 1 with
+   * no environment, which renders pure black in Three.js — that black hole is
+   * what read as "no water at all". So the baked slab is hidden and replaced by
+   * a planar reflector with a tinted, translucent surface laid just above it.
+   * The reflection alone is not enough: it mirrors a dark cave, so without the
+   * tint there is nothing to tell you a surface is there.
    */
-  const grottoReflectors = layout.waterPlanes
+  const GROTTO_REFLECTOR_DROP = 0.014;
+  const grottoWater = layout.waterPlanes
     .filter((plane) => plane.surfaceY === GROTTO_WATERLINE_Y)
     .map((plane, index) => ({
-      id: `grotto-reflector-${index}`,
+      id: `grotto-water-${index}`,
       width: plane.maxX - plane.minX,
       depth: plane.maxZ - plane.minZ,
-      position: [
+      centre: [
         (plane.minX + plane.maxX) / 2 - origin.x,
-        plane.surfaceY + 0.006,
         (plane.minZ + plane.maxZ) / 2 - origin.z,
-      ] as [number, number, number],
+      ] as [number, number],
+      surfaceY: plane.surfaceY,
+      reflectorY: plane.surfaceY - GROTTO_REFLECTOR_DROP,
     }));
 
   const shaftLights = layout.openShafts.map((shaft, index) => ({
@@ -110,12 +122,19 @@
   let physicsProvider = $state<PhysicsProvider | null>(null);
   let isInitialized = $state(false);
   let isDisposed = false;
-  let appliedResetToken = -1;
+  const UNSEEN_RESET_TOKEN = Symbol("unseen");
+  let appliedResetToken: number | symbol = UNSEEN_RESET_TOKEN;
   let fireElapsed = 0;
 
-  let playerPosition = $state({ x: spawn.x, y: spawn.y, z: spawn.z });
-  let playerYaw = $state(spawn.yaw);
-  let targetPlayerYaw = $state(spawn.yaw);
+  const resumePoint = readResumePoint();
+  const bootPoint = resumePoint ?? { ...spawn };
+
+  let playerPosition = $state({ x: bootPoint.x, y: bootPoint.y, z: bootPoint.z });
+  let playerYaw = $state(bootPoint.yaw);
+  let targetPlayerYaw = $state(bootPoint.yaw);
+  /** Physics-owned position, mirrored each frame so a reload can resume here. */
+  let livePosition = { x: bootPoint.x, y: bootPoint.y, z: bootPoint.z };
+  let resumeSaveElapsed = 0;
   let isMoving = $state(false);
   let moveDirection = $state({ x: 0, z: 0 });
 
@@ -153,12 +172,58 @@
     },
   };
 
+  interface ResumePoint {
+    x: number;
+    y: number;
+    z: number;
+    yaw: number;
+  }
+
+  function readResumePoint(): ResumePoint | null {
+    if (typeof sessionStorage === "undefined") return null;
+    try {
+      const raw = sessionStorage.getItem(RESUME_KEY);
+      if (!raw) return null;
+      const point = JSON.parse(raw) as Partial<ResumePoint>;
+      const values = [point.x, point.y, point.z, point.yaw];
+      if (!values.every((value) => typeof value === "number" && isFinite(value))) {
+        return null;
+      }
+      return point as ResumePoint;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeResumePoint(): void {
+    if (typeof sessionStorage === "undefined") return;
+    try {
+      // Physics owns the live position; playerPosition only moves on teleport.
+      sessionStorage.setItem(
+        RESUME_KEY,
+        JSON.stringify({ ...livePosition, yaw: playerYaw })
+      );
+    } catch {
+      // A full or blocked sessionStorage costs a convenience, not the review.
+    }
+  }
+
+  function clearResumePoint(): void {
+    if (typeof sessionStorage === "undefined") return;
+    try {
+      sessionStorage.removeItem(RESUME_KEY);
+    } catch {
+      // See writeResumePoint.
+    }
+  }
+
   function resetPlayer(): void {
     const target = { x: spawn.x, y: spawn.y, z: spawn.z };
     physicsProvider?.teleport?.(target);
     playerPosition = target;
     playerYaw = spawn.yaw;
     targetPlayerYaw = spawn.yaw;
+    clearResumePoint();
   }
 
   /**
@@ -191,7 +256,7 @@
       where: () => ({ ...playerPosition, yaw: playerYaw, origin }),
       /** The live scene graph, so a review pass can count what actually mounted. */
       scene: () => threlte.scene,
-      reflectors: grottoReflectors,
+      water: grottoWater,
       layout,
     };
     (window as unknown as Record<string, unknown>).__dgWalk = bridge;
@@ -200,9 +265,27 @@
     };
   }
 
+  /**
+   * Blender's mirror pool is metalness 1 / roughness 0.02. EEVEE raytraces it;
+   * Three.js has no environment to sample and renders it black. The runtime
+   * water above replaces it, so the baked slab is hidden rather than lit.
+   */
+  function isBakedGrottoMirror(mesh: Mesh): boolean {
+    if (!mesh.name.startsWith("DG_WaterSurface")) return false;
+    const material = Array.isArray(mesh.material)
+      ? mesh.material[0]
+      : mesh.material;
+    return (material as { metalness?: number })?.metalness === 1;
+  }
+
   function handleGrayboxReady(scene: Object3D): void {
     scene.traverse((object) => {
-      if (!(object instanceof Mesh) || !object.visible) return;
+      if (!(object instanceof Mesh)) return;
+      if (isBakedGrottoMirror(object)) {
+        object.visible = false;
+        return;
+      }
+      if (!object.visible) return;
       object.castShadow = true;
       object.receiveShadow = true;
     });
@@ -213,9 +296,13 @@
   }
 
   let removeReviewBridge: (() => void) | undefined;
+  let removePageHide: (() => void) | undefined;
 
   onMount(async () => {
     removeReviewBridge = installReviewBridge();
+    const onPageHide = () => writeResumePoint();
+    window.addEventListener("pagehide", onPageHide);
+    removePageHide = () => window.removeEventListener("pagehide", onPageHide);
     physicsState = createPhysicsWorldState();
     await initPhysicsWorld(physicsState, { x: 0, y: -9.81, z: 0 });
     if (isDisposed || !physicsState) return;
@@ -243,7 +330,7 @@
     }
 
     playerState = createPlayerController(physicsState, {
-      position: { x: spawn.x, y: spawn.y, z: spawn.z },
+      position: { x: bootPoint.x, y: bootPoint.y, z: bootPoint.z },
       autoStepMaxHeight: 0.45,
       snapToGroundDistance: 0.35,
     });
@@ -252,7 +339,15 @@
   });
 
   $effect(() => {
-    if (!isInitialized || props.resetToken === appliedResetToken) return;
+    if (!isInitialized) return;
+    // The first run is mount, not a press. Adopting the token instead of
+    // acting on it is what lets a resumed position survive — otherwise this
+    // teleported to spawn and cleared the stored point on every load.
+    if (appliedResetToken === UNSEEN_RESET_TOKEN) {
+      appliedResetToken = props.resetToken;
+      return;
+    }
+    if (props.resetToken === appliedResetToken) return;
     appliedResetToken = props.resetToken;
     resetPlayer();
   });
@@ -271,11 +366,21 @@
     if (!isInitialized || !physicsState?.world || isDisposed) return;
     stepPhysics(physicsState, Math.min(delta, 1 / 30));
     const position = physicsProvider?.getPlayerPosition();
-    if (position) props.onPositionChange?.(position);
+    if (!position) return;
+    props.onPositionChange?.(position);
+    livePosition = position;
+    resumeSaveElapsed += delta;
+    if (resumeSaveElapsed >= 0.5) {
+      resumeSaveElapsed = 0;
+      writeResumePoint();
+    }
   });
 
   onDestroy(() => {
     isDisposed = true;
+    // A hard reload skips onDestroy's usual timing, so pagehide carries it too.
+    writeResumePoint();
+    removePageHide?.();
     removeReviewBridge?.();
     if (playerState && physicsState) {
       disposePlayerController(physicsState, playerState);
@@ -333,16 +438,32 @@
   <T is={entry.light} />
 {/each}
 
-{#each grottoReflectors as entry (entry.id)}
+{#each grottoWater as entry (entry.id)}
   <PlanarReflector
     width={entry.width}
     height={entry.depth}
-    position={entry.position}
+    position={[entry.centre[0], entry.reflectorY, entry.centre[1]]}
     rotation={[-Math.PI / 2, 0, 0]}
     textureWidth={1024}
     textureHeight={1024}
-    color={0x8aa6ac}
+    color={0x9fbcc2}
   />
+  <!-- The tint is what makes it read as water rather than as a hole. -->
+  <T.Mesh
+    position={[entry.centre[0], entry.surfaceY, entry.centre[1]]}
+    rotation={[-Math.PI / 2, 0, 0]}
+    renderOrder={2}
+  >
+    <T.PlaneGeometry args={[entry.width, entry.depth]} />
+    <T.MeshStandardMaterial
+      color="#1d6d80"
+      transparent={true}
+      opacity={0.42}
+      roughness={0.12}
+      metalness={0}
+      depthWrite={false}
+    />
+  </T.Mesh>
 {/each}
 
 <GltfAsset
