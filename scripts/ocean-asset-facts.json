@@ -1,0 +1,1185 @@
+{
+  "anemone": {
+    "path": "anemone.glb",
+    "source": "root",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.2093,
+    "footprintRadius": 0.5,
+    "size": [
+      3.042,
+      1.328,
+      2.9752
+    ],
+    "maxExtent": 3.042,
+    "signature": {
+      "vertices": 17188,
+      "ratio": [
+        1,
+        0.437,
+        0.978
+      ]
+    }
+  },
+  "boat": {
+    "path": "boat.glb",
+    "source": "root",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.3241,
+    "footprintRadius": 0.5,
+    "size": [
+      1.9093,
+      1.2378,
+      0.5564
+    ],
+    "maxExtent": 1.9093,
+    "signature": {
+      "vertices": 4130,
+      "ratio": [
+        1,
+        0.648,
+        0.291
+      ]
+    }
+  },
+  "jellyfish": {
+    "path": "jellyfish.glb",
+    "source": "root",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.7423,
+    "footprintRadius": 0.2318,
+    "size": [
+      2.339,
+      5.0446,
+      2.339
+    ],
+    "maxExtent": 5.0446,
+    "signature": {
+      "vertices": 13662,
+      "ratio": [
+        0.464,
+        1,
+        0.464
+      ]
+    }
+  },
+  "jellyfish_small": {
+    "path": "jellyfish_small.glb",
+    "source": "root",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.4905,
+    "footprintRadius": 0.3261,
+    "size": [
+      2.4319,
+      3.8822,
+      2.5319
+    ],
+    "maxExtent": 3.8822,
+    "signature": {
+      "vertices": 9735,
+      "ratio": [
+        0.626,
+        1,
+        0.652
+      ]
+    }
+  },
+  "kelp/breathing_kelp": {
+    "path": "kelp/breathing_kelp.glb",
+    "source": "kelp",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.1635,
+    "footprintRadius": 0.5,
+    "size": [
+      0.3147,
+      0.0615,
+      0.0968
+    ],
+    "maxExtent": 0.3147,
+    "signature": {
+      "vertices": 23690,
+      "ratio": [
+        1,
+        0.195,
+        0.308
+      ]
+    }
+  },
+  "kelp/leafy_kelp": {
+    "path": "kelp/leafy_kelp.glb",
+    "source": "kelp",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -39.3834,
+    "footprintRadius": 0.5,
+    "size": [
+      0.0254,
+      0.0101,
+      0.0046
+    ],
+    "maxExtent": 0.0254,
+    "signature": {
+      "vertices": 7441,
+      "ratio": [
+        1,
+        0.399,
+        0.183
+      ]
+    }
+  },
+  "kelp_plant": {
+    "path": "kelp_plant.glb",
+    "source": "root",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": 0,
+    "footprintRadius": 0.0601,
+    "size": [
+      16.7462,
+      142.8617,
+      17.1836
+    ],
+    "maxExtent": 142.8617,
+    "signature": {
+      "vertices": 12524,
+      "ratio": [
+        0.117,
+        1,
+        0.12
+      ]
+    }
+  },
+  "meshy/basalt_pinnacle": {
+    "path": "meshy/basalt_pinnacle.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.4854,
+    "footprintRadius": 0.5,
+    "size": [
+      1.8882,
+      1.8443,
+      1.9054
+    ],
+    "maxExtent": 1.9054,
+    "signature": {
+      "vertices": 12452,
+      "ratio": [
+        0.991,
+        0.968,
+        1
+      ]
+    }
+  },
+  "meshy/brain_coral": {
+    "path": "meshy/brain_coral.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.4045,
+    "footprintRadius": 0.5,
+    "size": [
+      1.8983,
+      1.5333,
+      1.8262
+    ],
+    "maxExtent": 1.8983,
+    "signature": {
+      "vertices": 459529,
+      "ratio": [
+        1,
+        0.808,
+        0.962
+      ]
+    }
+  },
+  "meshy/coral_encrusted_rock": {
+    "path": "meshy/coral_encrusted_rock.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.4728,
+    "footprintRadius": 0.5,
+    "size": [
+      1.8952,
+      1.7988,
+      1.9068
+    ],
+    "maxExtent": 1.9068,
+    "signature": {
+      "vertices": 13052,
+      "ratio": [
+        0.994,
+        0.943,
+        1
+      ]
+    }
+  },
+  "meshy/coral_mountain": {
+    "path": "meshy/coral_mountain.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.423,
+    "footprintRadius": 0.5,
+    "size": [
+      1.8619,
+      1.5965,
+      1.8727
+    ],
+    "maxExtent": 1.8727,
+    "signature": {
+      "vertices": 42084,
+      "ratio": [
+        0.994,
+        0.853,
+        1
+      ]
+    }
+  },
+  "meshy/fan_coral": {
+    "path": "meshy/fan_coral.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.298,
+    "footprintRadius": 0.5,
+    "size": [
+      1.8936,
+      1.1294,
+      1.8964
+    ],
+    "maxExtent": 1.8964,
+    "signature": {
+      "vertices": 569218,
+      "ratio": [
+        0.999,
+        0.596,
+        1
+      ]
+    }
+  },
+  "meshy/kelp": {
+    "path": "meshy/kelp.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.5004,
+    "footprintRadius": 0.3137,
+    "size": [
+      1.0226,
+      1.8985,
+      1.1911
+    ],
+    "maxExtent": 1.8985,
+    "signature": {
+      "vertices": 364482,
+      "ratio": [
+        0.539,
+        1,
+        0.627
+      ]
+    }
+  },
+  "meshy/neon_coral_summit": {
+    "path": "meshy/neon_coral_summit.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.2254,
+    "footprintRadius": 0.5,
+    "size": [
+      1.8877,
+      0.8432,
+      1.8886
+    ],
+    "maxExtent": 1.8886,
+    "signature": {
+      "vertices": 48805,
+      "ratio": [
+        1,
+        0.446,
+        1
+      ]
+    }
+  },
+  "meshy/photorealistic_coral_0": {
+    "path": "meshy/photorealistic_coral_0.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.3927,
+    "footprintRadius": 0.5,
+    "size": [
+      1.8984,
+      1.4896,
+      1.8071
+    ],
+    "maxExtent": 1.8984,
+    "signature": {
+      "vertices": 274836,
+      "ratio": [
+        1,
+        0.785,
+        0.952
+      ]
+    }
+  },
+  "meshy/photorealistic_coral_1": {
+    "path": "meshy/photorealistic_coral_1.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.3925,
+    "footprintRadius": 0.5,
+    "size": [
+      1.8983,
+      1.4874,
+      1.8232
+    ],
+    "maxExtent": 1.8983,
+    "signature": {
+      "vertices": 1317700,
+      "ratio": [
+        1,
+        0.784,
+        0.96
+      ]
+    }
+  },
+  "meshy/photorealistic_coral_2": {
+    "path": "meshy/photorealistic_coral_2.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.3887,
+    "footprintRadius": 0.5,
+    "size": [
+      1.8985,
+      1.4737,
+      1.8289
+    ],
+    "maxExtent": 1.8985,
+    "signature": {
+      "vertices": 507849,
+      "ratio": [
+        1,
+        0.776,
+        0.963
+      ]
+    }
+  },
+  "meshy/photorealistic_coral_3": {
+    "path": "meshy/photorealistic_coral_3.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.3391,
+    "footprintRadius": 0.5,
+    "size": [
+      1.8225,
+      1.2831,
+      1.8981
+    ],
+    "maxExtent": 1.8981,
+    "signature": {
+      "vertices": 2239529,
+      "ratio": [
+        0.96,
+        0.676,
+        1
+      ]
+    }
+  },
+  "meshy/ribbon_seaweed": {
+    "path": "meshy/ribbon_seaweed.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.5005,
+    "footprintRadius": 0.2342,
+    "size": [
+      0.8895,
+      1.8993,
+      0.8876
+    ],
+    "maxExtent": 1.8993,
+    "signature": {
+      "vertices": 203407,
+      "ratio": [
+        0.468,
+        1,
+        0.467
+      ]
+    }
+  },
+  "meshy/sea_grass": {
+    "path": "meshy/sea_grass.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.2833,
+    "footprintRadius": 0.5,
+    "size": [
+      1.8512,
+      1.1958,
+      0.9269
+    ],
+    "maxExtent": 1.8512,
+    "signature": {
+      "vertices": 243093,
+      "ratio": [
+        1,
+        0.646,
+        0.501
+      ]
+    }
+  },
+  "meshy/staghorn_coral": {
+    "path": "meshy/staghorn_coral.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.3513,
+    "footprintRadius": 0.5,
+    "size": [
+      1.8987,
+      1.3352,
+      1.768
+    ],
+    "maxExtent": 1.8987,
+    "signature": {
+      "vertices": 353777,
+      "ratio": [
+        1,
+        0.703,
+        0.931
+      ]
+    }
+  },
+  "meshy/submerged_coral_citadel": {
+    "path": "meshy/submerged_coral_citadel.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.1649,
+    "footprintRadius": 0.5,
+    "size": [
+      1.9103,
+      0.6271,
+      0.4244
+    ],
+    "maxExtent": 1.9103,
+    "signature": {
+      "vertices": 39677,
+      "ratio": [
+        1,
+        0.328,
+        0.222
+      ]
+    }
+  },
+  "meshy/sunlit_coral_arch": {
+    "path": "meshy/sunlit_coral_arch.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.5019,
+    "footprintRadius": 0.4512,
+    "size": [
+      1.7198,
+      1.9057,
+      0.9064
+    ],
+    "maxExtent": 1.9057,
+    "signature": {
+      "vertices": 12673,
+      "ratio": [
+        0.902,
+        1,
+        0.476
+      ]
+    },
+    "aliasOf": "structures/coral-arch"
+  },
+  "meshy/table_coral": {
+    "path": "meshy/table_coral.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.2064,
+    "footprintRadius": 0.5,
+    "size": [
+      1.8989,
+      0.7813,
+      1.8987
+    ],
+    "maxExtent": 1.8989,
+    "signature": {
+      "vertices": 157502,
+      "ratio": [
+        1,
+        0.411,
+        1
+      ]
+    }
+  },
+  "meshy/tall_kelp": {
+    "path": "meshy/tall_kelp.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.5001,
+    "footprintRadius": 0.2351,
+    "size": [
+      0.8923,
+      1.898,
+      0.7825
+    ],
+    "maxExtent": 1.898,
+    "signature": {
+      "vertices": 303494,
+      "ratio": [
+        0.47,
+        1,
+        0.412
+      ]
+    }
+  },
+  "meshy/underwater_coral_arch": {
+    "path": "meshy/underwater_coral_arch.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.2752,
+    "footprintRadius": 0.5,
+    "size": [
+      1.9079,
+      1.0463,
+      1.7402
+    ],
+    "maxExtent": 1.9079,
+    "signature": {
+      "vertices": 12614,
+      "ratio": [
+        1,
+        0.548,
+        0.912
+      ]
+    }
+  },
+  "meshy/underwater_rock_table": {
+    "path": "meshy/underwater_rock_table.glb",
+    "source": "meshy",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.2146,
+    "footprintRadius": 0.5,
+    "size": [
+      1.9092,
+      0.8195,
+      1.4934
+    ],
+    "maxExtent": 1.9092,
+    "signature": {
+      "vertices": 11044,
+      "ratio": [
+        1,
+        0.429,
+        0.782
+      ]
+    }
+  },
+  "octopus": {
+    "path": "octopus.glb",
+    "source": "root",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.3529,
+    "footprintRadius": 0.5,
+    "size": [
+      3.7663,
+      3.5917,
+      3.8022
+    ],
+    "maxExtent": 3.8022,
+    "signature": {
+      "vertices": 1361,
+      "ratio": [
+        0.991,
+        0.945,
+        1
+      ]
+    }
+  },
+  "polyhaven/boulder_01": {
+    "path": "polyhaven/boulder_01.glb",
+    "source": "polyhaven",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.0402,
+    "footprintRadius": 0.5,
+    "size": [
+      1.2721,
+      1.0038,
+      1.8303
+    ],
+    "maxExtent": 1.8303,
+    "signature": {
+      "vertices": 66829,
+      "ratio": [
+        0.695,
+        0.548,
+        1
+      ]
+    }
+  },
+  "polyhaven/coast_rocks_05": {
+    "path": "polyhaven/coast_rocks_05.glb",
+    "source": "polyhaven",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.0628,
+    "footprintRadius": 0.5,
+    "size": [
+      4.0387,
+      1.3308,
+      3.7478
+    ],
+    "maxExtent": 4.0387,
+    "signature": {
+      "vertices": 379057,
+      "ratio": [
+        1,
+        0.33,
+        0.928
+      ]
+    }
+  },
+  "polyhaven/rock_07": {
+    "path": "polyhaven/rock_07.glb",
+    "source": "polyhaven",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.006,
+    "footprintRadius": 0.5,
+    "size": [
+      0.1689,
+      0.1437,
+      0.3203
+    ],
+    "maxExtent": 0.3203,
+    "signature": {
+      "vertices": 7889,
+      "ratio": [
+        0.527,
+        0.449,
+        1
+      ]
+    }
+  },
+  "polyhaven/sand_rocks_small_01": {
+    "path": "polyhaven/sand_rocks_small_01.glb",
+    "source": "polyhaven",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.0226,
+    "footprintRadius": 0.5,
+    "size": [
+      4.6264,
+      0.5348,
+      3.8832
+    ],
+    "maxExtent": 4.6264,
+    "signature": {
+      "vertices": 280167,
+      "ratio": [
+        1,
+        0.116,
+        0.839
+      ]
+    }
+  },
+  "polyhaven/stone_01": {
+    "path": "polyhaven/stone_01.glb",
+    "source": "polyhaven",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.0997,
+    "footprintRadius": 0.5,
+    "size": [
+      0.1469,
+      0.0718,
+      0.0891
+    ],
+    "maxExtent": 0.1469,
+    "signature": {
+      "vertices": 27619,
+      "ratio": [
+        1,
+        0.489,
+        0.606
+      ]
+    }
+  },
+  "ray": {
+    "path": "ray.glb",
+    "source": "root",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.2439,
+    "footprintRadius": 0.5,
+    "size": [
+      13.9533,
+      13.7203,
+      17.5988
+    ],
+    "maxExtent": 17.5988,
+    "signature": {
+      "vertices": 1100,
+      "ratio": [
+        0.793,
+        0.78,
+        1
+      ]
+    }
+  },
+  "rock_0": {
+    "path": "rock_0.glb",
+    "source": "root",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.4854,
+    "footprintRadius": 0.5,
+    "size": [
+      1.8882,
+      1.8443,
+      1.9054
+    ],
+    "maxExtent": 1.9054,
+    "signature": {
+      "vertices": 12642,
+      "ratio": [
+        0.991,
+        0.968,
+        1
+      ]
+    },
+    "aliasOf": "meshy/basalt_pinnacle"
+  },
+  "rock_1": {
+    "path": "rock_1.glb",
+    "source": "root",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.4728,
+    "footprintRadius": 0.5,
+    "size": [
+      1.8952,
+      1.7988,
+      1.9068
+    ],
+    "maxExtent": 1.9068,
+    "signature": {
+      "vertices": 13112,
+      "ratio": [
+        0.994,
+        0.943,
+        1
+      ]
+    },
+    "aliasOf": "meshy/coral_encrusted_rock"
+  },
+  "rock_2": {
+    "path": "rock_2.glb",
+    "source": "root",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.2146,
+    "footprintRadius": 0.5,
+    "size": [
+      1.9092,
+      0.8195,
+      1.4934
+    ],
+    "maxExtent": 1.9092,
+    "signature": {
+      "vertices": 11221,
+      "ratio": [
+        1,
+        0.429,
+        0.782
+      ]
+    },
+    "aliasOf": "meshy/underwater_rock_table"
+  },
+  "rock_3": {
+    "path": "rock_3.glb",
+    "source": "root",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.2752,
+    "footprintRadius": 0.5,
+    "size": [
+      1.9079,
+      1.0463,
+      1.7402
+    ],
+    "maxExtent": 1.9079,
+    "signature": {
+      "vertices": 12713,
+      "ratio": [
+        1,
+        0.548,
+        0.912
+      ]
+    },
+    "aliasOf": "meshy/underwater_coral_arch"
+  },
+  "rock_4": {
+    "path": "rock_4.glb",
+    "source": "root",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.1649,
+    "footprintRadius": 0.5,
+    "size": [
+      1.9106,
+      0.627,
+      0.4245
+    ],
+    "maxExtent": 1.9106,
+    "signature": {
+      "vertices": 41617,
+      "ratio": [
+        1,
+        0.328,
+        0.222
+      ]
+    },
+    "aliasOf": "structures/reef-wall"
+  },
+  "rock_5": {
+    "path": "rock_5.glb",
+    "source": "root",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.2255,
+    "footprintRadius": 0.5,
+    "size": [
+      1.8877,
+      0.8434,
+      1.8886
+    ],
+    "maxExtent": 1.8886,
+    "signature": {
+      "vertices": 49148,
+      "ratio": [
+        1,
+        0.447,
+        1
+      ]
+    },
+    "aliasOf": "structures/coral-tower"
+  },
+  "sea_urchin": {
+    "path": "sea_urchin.glb",
+    "source": "root",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.4838,
+    "footprintRadius": 0.5,
+    "size": [
+      2.8574,
+      2.7646,
+      2.7322
+    ],
+    "maxExtent": 2.8574,
+    "signature": {
+      "vertices": 1680,
+      "ratio": [
+        1,
+        0.968,
+        0.956
+      ]
+    }
+  },
+  "shell": {
+    "path": "shell.glb",
+    "source": "root",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.352,
+    "footprintRadius": 0.5,
+    "size": [
+      2.5375,
+      2.0512,
+      2.1339
+    ],
+    "maxExtent": 2.5375,
+    "signature": {
+      "vertices": 1240,
+      "ratio": [
+        1,
+        0.808,
+        0.841
+      ]
+    }
+  },
+  "starfish": {
+    "path": "starfish.glb",
+    "source": "root",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.092,
+    "footprintRadius": 0.5,
+    "size": [
+      3.4439,
+      0.634,
+      3.4103
+    ],
+    "maxExtent": 3.4439,
+    "signature": {
+      "vertices": 1328,
+      "ratio": [
+        1,
+        0.184,
+        0.99
+      ]
+    }
+  },
+  "structures/coral-arch": {
+    "path": "structures/coral-arch.glb",
+    "source": "structures",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.5019,
+    "footprintRadius": 0.4512,
+    "size": [
+      1.7198,
+      1.9057,
+      0.9064
+    ],
+    "maxExtent": 1.9057,
+    "signature": {
+      "vertices": 12750,
+      "ratio": [
+        0.902,
+        1,
+        0.476
+      ]
+    }
+  },
+  "structures/coral-bommie": {
+    "path": "structures/coral-bommie.glb",
+    "source": "structures",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.423,
+    "footprintRadius": 0.5,
+    "size": [
+      1.8619,
+      1.5965,
+      1.8727
+    ],
+    "maxExtent": 1.8727,
+    "signature": {
+      "vertices": 42540,
+      "ratio": [
+        0.994,
+        0.853,
+        1
+      ]
+    },
+    "aliasOf": "meshy/coral_mountain"
+  },
+  "structures/coral-tower": {
+    "path": "structures/coral-tower.glb",
+    "source": "structures",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.2255,
+    "footprintRadius": 0.5,
+    "size": [
+      1.8877,
+      0.8434,
+      1.8886
+    ],
+    "maxExtent": 1.8886,
+    "signature": {
+      "vertices": 49148,
+      "ratio": [
+        1,
+        0.447,
+        1
+      ]
+    }
+  },
+  "structures/reef-wall": {
+    "path": "structures/reef-wall.glb",
+    "source": "structures",
+    "species": null,
+    "sizeMetres": null,
+    "facing": null,
+    "silhouette": null,
+    "upAxis": "y",
+    "baseOffset": -0.1649,
+    "footprintRadius": 0.5,
+    "size": [
+      1.9106,
+      0.627,
+      0.4245
+    ],
+    "maxExtent": 1.9106,
+    "signature": {
+      "vertices": 41617,
+      "ratio": [
+        1,
+        0.328,
+        0.222
+      ]
+    }
+  }
+}
