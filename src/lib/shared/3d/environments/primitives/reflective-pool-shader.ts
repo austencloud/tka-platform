@@ -148,6 +148,15 @@ export const ReflectivePoolShader = {
       vec3 normal = normalize( vec3( -dx * 0.7, 1.0, -dz * 0.7 ) );
       vec3 viewDir = normalize( cameraPosition - vWorldPosition );
 
+      // Flatten the ripple with distance. A metre-scale wave train sampled at a
+      // grazing angle across a long basin puts many wavelengths inside one
+      // pixel, and the result is moire banding rather than water. Real distant
+      // water flattens to a mirror for the same reason, so this is both the
+      // cheap fix and the correct one.
+      float viewDistance = length( cameraPosition - vWorldPosition );
+      float rippleFade = 1.0 - smoothstep( 12.0, 70.0, viewDistance );
+      normal = normalize( mix( vec3( 0.0, 1.0, 0.0 ), normal, rippleFade ) );
+
       // Distance to the nearest rim, in metres — drives both depth and foam.
       vec2 toEdge = ( 0.5 - abs( vPlaneUv - 0.5 ) ) * uSize;
       float edgeDistance = min( toEdge.x, toEdge.y );
