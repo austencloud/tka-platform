@@ -82,10 +82,8 @@
   useTask((delta) => {
     if (fire) {
       elapsedTime += delta;
-      fire.update(elapsedTime);
-
-      // Update position
       fire.position.copy(posVec);
+      fire.update(elapsedTime);
     }
   });
 

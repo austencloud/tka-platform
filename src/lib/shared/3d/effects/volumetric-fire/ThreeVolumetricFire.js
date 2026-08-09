@@ -269,6 +269,14 @@ export class VolumetricFire extends THREE.Mesh {
   update(elapsed) {
     this.material.uniforms.time.value = elapsed;
 
+    // Threlte tasks run before Three's render pass updates world matrices.
+    // Camera controllers can therefore change position/rotation while the
+    // inverse view matrix still describes the previous frame. Refresh both
+    // matrices here so view-aligned slicing never starts from invalid data.
+    this._camera.updateMatrixWorld(true);
+    this._camera.matrixWorldInverse.copy(this._camera.matrixWorld).invert();
+    this.updateMatrixWorld(true);
+
     // Calculate view vector in local space
     const modelViewMatrix = new THREE.Matrix4();
     modelViewMatrix.multiplyMatrices(
@@ -282,6 +290,14 @@ export class VolumetricFire extends THREE.Mesh {
         -modelViewMatrix.elements[10]
       )
       .normalize();
+
+    if (
+      !Number.isFinite(this._viewVector.x) ||
+      !Number.isFinite(this._viewVector.y) ||
+      !Number.isFinite(this._viewVector.z)
+    ) {
+      return;
+    }
 
     // Perform slicing
     this._slice();
