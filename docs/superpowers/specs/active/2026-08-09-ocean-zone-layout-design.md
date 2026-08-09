@@ -146,12 +146,18 @@ Visitor rotation (`SpeciesRotationManager`) is untouched.
 
 ## Ledger
 
-- [ ] `scripts/ocean-zone-layout.json` finalized (draft committed with this spec)
-- [ ] Blender recomposition of `ocean_scene.blend` to the zone contract
+- [x] `scripts/ocean-zone-layout.json` finalized (hero presentations added 2026-08-09)
+- [x] Blender recomposition of `ocean_scene.blend` to the zone contract
+      (`scripts/ocean_zone_recompose.py`, headless, idempotent; backup at
+      `blender/ocean_scene.pre-zone-pass.blend`; 5 m exclusion audit clean)
 - [ ] Boat + octopus decimation pass and placement in `wreck-hollow-southeast`
-- [ ] Placements re-export → `placements.ts` regenerated
-- [ ] `ocean_flora_scene.glb` re-baked and optimized
+      (boat/octopus are NOT in ocean_scene.blend yet — import step required)
+- [x] Placements re-export → `placements.ts` regenerated (43 entries updated)
+- [x] `ocean_flora_scene.glb` re-baked and optimized (36.8 MB; prod still
+      serves from R2 — **R2 re-upload is an open deploy step**)
 - [ ] Stage crack/rim-light treatment
 - [ ] Fauna cluster anchors wired to zone anchor points
-- [ ] `verify-ocean-zone-layout.mjs` green
-- [ ] Contact sheet + Scene Lab before/after screenshots reviewed
+- [ ] `verify-ocean-zone-layout.mjs` green (script not yet written; exclusion
+      audit currently lives inline in ocean_zone_recompose.py)
+- [x] Blender renders (`blender/previews/zone-pass-*.png`) + live Scene Lab
+      screenshots from two orbit angles reviewed 2026-08-09
