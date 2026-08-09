@@ -4,9 +4,9 @@ Status: IMPLEMENTED 2026-08-08 (approved "go forth"). Lifecycle fix + tests in
 `14069b0..e72ed4a4a7`; DurationPreviewWorkspace retired (option a); preview
 renders on the editable timeline; grip + duration chip shipped. Verified at
 runtime (X-close recovery, pattern preview → timeline) and across the viewport
-sweep. Known pre-existing gap: the panel's persisted duration subview restores
-after a full page reload without re-entering preview mode, so pattern changes
-in that stale subview don't preview until Back → Duration re-entry.
+sweep. Follow-up fixed 2026-08-09 (`e1b8e666e6`): the persisted duration
+subview now re-enters preview mode on restore, so the first pattern change
+after a reload previews live without requiring Apply.
 Origin: read-only audit handoff `2026-08-08-duration-editing-audit-handoff.md`.
 
 ## Problem
