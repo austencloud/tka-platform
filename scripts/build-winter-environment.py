@@ -26,6 +26,7 @@ PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 SOURCE_DIR = os.path.join(PROJECT_ROOT, "assets", "3d-source", "winter")
 TEXTURE_DIR = os.path.join(PROJECT_ROOT, "static", "textures", "winter")
 ROCK_SOURCE_DIR = os.path.join(PROJECT_ROOT, "static", "models", "ocean", "polyhaven")
+MESHY_TREE_DIR = os.path.join(PROJECT_ROOT, "static", "models", "winter", "trees")
 AUTUMN_MODEL_DIR = os.path.join(PROJECT_ROOT, "static", "models", "autumn")
 BLEND_PATH = os.path.join(PROJECT_ROOT, "blender", "winter_environment.blend")
 QA_DIR = os.path.join(tempfile.gettempdir(), "tka-winter-evidence")
@@ -56,40 +57,40 @@ RANDOM_SEED = 20260808
 
 # name, source family, x, y, target height, crown width, yaw, age class, tier
 TREE_PLACEMENTS = (
-    ("Winter_Base_MatureFir_West", "fir_medium_a", -21.0, 4.0, 17.5, 1.30, -0.18, "mature", "base"),
-    ("Winter_Base_MatureFir_East", "fir_medium_b", 16.5, 4.5, 18.5, 1.38, 0.36, "mature", "base"),
-    ("Winter_Base_MatureFir_RearWest", "fir_medium_c", -8.5, 18.5, 16.2, 1.26, 2.72, "mature", "base"),
-    ("Winter_Base_MatureFir_RearEast", "fir_medium_a", 10.5, 19.5, 17.0, 1.34, -2.38, "mature", "base"),
-    ("Winter_Base_MatureFir_WestRear", "fir_medium_b", -22.5, 15.0, 15.2, 1.22, 0.58, "mature", "base"),
-    ("Winter_Base_MatureFir_EastRear", "fir_medium_c", 22.0, 13.5, 15.8, 1.28, -1.48, "mature", "base"),
-    ("Winter_Base_MatureFir_FrontEast", "fir_medium_a", 15.5, -12.5, 14.5, 1.24, 1.14, "mature", "base"),
-    ("Winter_Base_MatureFir_FarWest", "fir_medium_c", -27.0, 9.0, 14.2, 1.20, 0.93, "mature", "base"),
-    ("Winter_Base_MidFir_NorthWest", "fir_medium_b", -14.0, 25.0, 11.8, 1.10, -1.42, "mid", "base"),
-    ("Winter_Base_MidFir_NorthEast", "fir_medium_c", 15.5, 25.0, 11.5, 1.12, 1.90, "mid", "base"),
-    ("Winter_Base_MidFir_East", "fir_medium_a", 27.5, 3.0, 10.8, 1.08, -2.12, "mid", "base"),
-    ("Winter_Base_MidFir_SouthEast", "fir_medium_b", 24.0, -11.0, 10.2, 1.10, 1.32, "mid", "base"),
-    ("Winter_Base_MidFir_South", "fir_medium_c", 7.0, -21.0, 10.8, 1.06, 0.18, "mid", "base"),
-    ("Winter_Base_MidFir_West", "fir_medium_a", -30.0, -2.0, 10.5, 1.12, 2.65, "mid", "base"),
-    ("Winter_Medium_MidFir_01", "fir_medium_b", -27.0, 23.0, 9.8, 1.06, 0.72, "mid", "medium"),
-    ("Winter_Medium_MidFir_02", "fir_medium_c", 27.0, 21.0, 10.3, 1.08, -0.55, "mid", "medium"),
-    ("Winter_Medium_MidFir_03", "fir_medium_a", 18.0, -21.0, 9.6, 1.04, -2.72, "mid", "medium"),
-    ("Winter_Medium_MidFir_04", "fir_medium_b", -18.0, 19.0, 9.4, 1.06, 0.85, "mid", "medium"),
-    ("Winter_Medium_MidFir_05", "fir_medium_c", -29.0, 19.0, 9.2, 1.04, 0.26, "mid", "medium"),
-    ("Winter_Medium_MidPine_06", "pine_a", 30.0, -9.0, 8.0, 1.12, 1.38, "mid", "medium"),
-    ("Winter_Base_YoungFir_01", "fir_a", -10.0, 12.0, 7.2, 1.02, -0.85, "young", "base"),
-    ("Winter_Base_YoungPine_02", "pine_b", 10.0, 12.0, 7.5, 1.06, 2.18, "young", "base"),
-    ("Winter_Base_YoungFir_03", "fir_c", 1.0, 14.0, 6.6, 1.00, -2.38, "young", "base"),
-    ("Winter_Base_YoungPine_04", "pine_c", 10.5, -12.5, 6.8, 1.08, 0.52, "young", "base"),
-    ("Winter_Medium_YoungFir_05", "fir_b", -21.0, 28.0, 6.4, 1.02, 1.46, "young", "medium"),
-    ("Winter_Medium_YoungPine_06", "pine_a", 5.0, 30.0, 6.8, 1.04, -0.28, "young", "medium"),
-    ("Winter_Medium_YoungFir_07", "fir_c", 30.0, 16.0, 6.2, 1.04, 2.52, "young", "medium"),
-    ("Winter_Medium_YoungPine_08", "pine_b", 30.0, -20.0, 6.5, 1.06, -1.55, "young", "medium"),
-    ("Winter_Medium_YoungFir_09", "fir_a", -25.0, 15.0, 6.0, 1.02, 0.62, "young", "medium"),
-    ("Winter_High_YoungPine_10", "pine_c", -31.0, 16.0, 5.8, 1.04, -2.12, "young", "high"),
-    ("Winter_High_YoungFir_11", "fir_b", 20.0, 29.0, 5.5, 1.00, 1.08, "young", "high"),
-    ("Winter_High_YoungPine_12", "pine_a", 33.0, 5.0, 5.2, 1.04, -0.62, "young", "high"),
-    ("Winter_High_YoungFir_13", "fir_c", 10.0, -31.0, 4.8, 1.00, 0.44, "young", "high"),
-    ("Winter_High_YoungPine_14", "pine_b", -5.0, -32.0, 4.6, 1.02, -1.20, "young", "high"),
+    ("Winter_Base_MatureFir_West", "spruce_mature_a", -21.0, 4.0, 17.5, 1.30, -0.18, "mature", "base"),
+    ("Winter_Base_MatureFir_East", "pine_lush_a", 16.5, 4.5, 18.5, 1.38, 0.36, "mature", "base"),
+    ("Winter_Base_MatureFir_RearWest", "spruce_mature_a", -8.5, 18.5, 16.2, 1.26, 2.72, "mature", "base"),
+    ("Winter_Base_MatureFir_RearEast", "pine_lush_a", 10.5, 19.5, 17.0, 1.34, -2.38, "mature", "base"),
+    ("Winter_Base_MatureFir_WestRear", "spruce_mature_a", -22.5, 15.0, 15.2, 1.22, 0.58, "mature", "base"),
+    ("Winter_Base_MatureFir_EastRear", "pine_lush_a", 22.0, 13.5, 15.8, 1.28, -1.48, "mature", "base"),
+    ("Winter_Base_MatureFir_FrontEast", "spruce_mature_a", 15.5, -12.5, 14.5, 1.24, 1.14, "mature", "base"),
+    ("Winter_Base_MatureFir_FarWest", "spruce_mature_a", -27.0, 9.0, 14.2, 1.20, 0.93, "mature", "base"),
+    ("Winter_Base_MidFir_NorthWest", "fir_mid_a", -14.0, 25.0, 11.8, 1.10, -1.42, "mid", "base"),
+    ("Winter_Base_MidFir_NorthEast", "fir_mid_a", 15.5, 25.0, 11.5, 1.12, 1.90, "mid", "base"),
+    ("Winter_Base_MidFir_East", "fir_mid_a", 27.5, 3.0, 10.8, 1.08, -2.12, "mid", "base"),
+    ("Winter_Base_MidFir_SouthEast", "fir_mid_a", 24.0, -11.0, 10.2, 1.10, 1.32, "mid", "base"),
+    ("Winter_Base_MidFir_South", "fir_mid_a", 7.0, -21.0, 10.8, 1.06, 0.18, "mid", "base"),
+    ("Winter_Base_MidFir_West", "fir_mid_a", -30.0, -2.0, 10.5, 1.12, 2.65, "mid", "base"),
+    ("Winter_Medium_MidFir_01", "fir_mid_a", -27.0, 23.0, 9.8, 1.06, 0.72, "mid", "medium"),
+    ("Winter_Medium_MidFir_02", "fir_mid_a", 27.0, 21.0, 10.3, 1.08, -0.55, "mid", "medium"),
+    ("Winter_Medium_MidFir_03", "fir_mid_a", 18.0, -21.0, 9.6, 1.04, -2.72, "mid", "medium"),
+    ("Winter_Medium_MidFir_04", "fir_mid_a", -18.0, 19.0, 9.4, 1.06, 0.85, "mid", "medium"),
+    ("Winter_Medium_MidFir_05", "fir_mid_a", -29.0, 19.0, 9.2, 1.04, 0.26, "mid", "medium"),
+    ("Winter_Medium_MidPine_06", "pine_lush_a", 30.0, -9.0, 8.0, 1.12, 1.38, "mid", "medium"),
+    ("Winter_Base_YoungFir_01", "sapling_young_a", -10.0, 12.0, 7.2, 1.02, -0.85, "young", "base"),
+    ("Winter_Base_YoungPine_02", "sapling_young_a", 10.0, 12.0, 7.5, 1.06, 2.18, "young", "base"),
+    ("Winter_Base_YoungFir_03", "sapling_young_a", 1.0, 14.0, 6.6, 1.00, -2.38, "young", "base"),
+    ("Winter_Base_YoungPine_04", "sapling_young_a", 10.5, -12.5, 6.8, 1.08, 0.52, "young", "base"),
+    ("Winter_Medium_YoungFir_05", "sapling_young_a", -21.0, 28.0, 6.4, 1.02, 1.46, "young", "medium"),
+    ("Winter_Medium_YoungPine_06", "sapling_young_a", 5.0, 30.0, 6.8, 1.04, -0.28, "young", "medium"),
+    ("Winter_Medium_YoungFir_07", "sapling_young_a", 30.0, 16.0, 6.2, 1.04, 2.52, "young", "medium"),
+    ("Winter_Medium_YoungPine_08", "sapling_young_a", 30.0, -20.0, 6.5, 1.06, -1.55, "young", "medium"),
+    ("Winter_Medium_YoungFir_09", "sapling_young_a", -25.0, 15.0, 6.0, 1.02, 0.62, "young", "medium"),
+    ("Winter_High_YoungPine_10", "conifer_distant_a", -31.0, 16.0, 5.8, 1.04, -2.12, "young", "high"),
+    ("Winter_High_YoungFir_11", "conifer_distant_a", 20.0, 29.0, 5.5, 1.00, 1.08, "young", "high"),
+    ("Winter_High_YoungPine_12", "conifer_distant_a", 33.0, 5.0, 5.2, 1.04, -0.62, "young", "high"),
+    ("Winter_High_YoungFir_13", "conifer_distant_a", 10.0, -31.0, 4.8, 1.00, 0.44, "young", "high"),
+    ("Winter_High_YoungPine_14", "conifer_distant_a", -5.0, -32.0, 4.6, 1.02, -1.20, "young", "high"),
 )
 
 ROCK_PLACEMENTS = (
@@ -389,13 +390,15 @@ def create_pond_preview():
 
 def import_tree_sources():
     paths = {
-        "fir": (os.path.join(SOURCE_DIR, "fir_sapling", "fir_sapling_1k.gltf"), 3),
-        "fir_medium": (
-            os.path.join(SOURCE_DIR, "fir_sapling_medium", "fir_sapling_medium_1k.gltf"),
-            3,
-        ),
-        "pine": (os.path.join(SOURCE_DIR, "pine_sapling_small", "pine_sapling_small_1k.gltf"), 3),
         "stump": (os.path.join(SOURCE_DIR, "tree_stump_01", "tree_stump_01_1k.gltf"), 1),
+        # Winter Meshy 6 conifer lineup (Gate 6), replacing the Poly Haven
+        # sapling stand-ins. One variant per family; yaw + scale in the
+        # placement table provide the visual variety.
+        "spruce_mature": (os.path.join(MESHY_TREE_DIR, "mature-snow-spruce_raw.glb"), 1),
+        "pine_lush": (os.path.join(MESHY_TREE_DIR, "lush-snow-pine_raw.glb"), 1),
+        "fir_mid": (os.path.join(MESHY_TREE_DIR, "mid-snow-fir_raw.glb"), 1),
+        "sapling_young": (os.path.join(MESHY_TREE_DIR, "young-snow-sapling_raw.glb"), 1),
+        "conifer_distant": (os.path.join(MESHY_TREE_DIR, "distant-snow-conifer_raw.glb"), 1),
     }
     sources = {}
     for family, (path, expected_count) in paths.items():

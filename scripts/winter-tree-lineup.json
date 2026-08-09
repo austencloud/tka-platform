@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "targetHeightMetres": 12,
+  "reviewAnglesDegrees": [0, 45, 110],
+  "candidates": [
+    {
+      "id": "W1",
+      "label": "Mature Snow Spruce",
+      "family": "Winter Meshy",
+      "roles": ["mature-canopy"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/winter/trees/mature-snow-spruce_raw.glb",
+        "provenance": "TKA Winter Meshy 6 text-to-3D",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "W2",
+      "label": "Mid-Age Snow Fir",
+      "family": "Winter Meshy",
+      "roles": ["irregular-middle"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/winter/trees/mid-snow-fir_raw.glb",
+        "provenance": "TKA Winter Meshy 6 text-to-3D",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "W3",
+      "label": "Young Snow Sapling",
+      "family": "Winter Meshy",
+      "roles": ["young", "understory"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/winter/trees/young-snow-sapling_raw.glb",
+        "provenance": "TKA Winter Meshy 6 text-to-3D",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "W4",
+      "label": "Lush Snow Pine",
+      "family": "Winter Meshy",
+      "roles": ["lush", "mature-canopy"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/winter/trees/lush-snow-pine_raw.glb",
+        "provenance": "TKA Winter Meshy 6 text-to-3D",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "W5",
+      "label": "Sparse Windswept Spruce",
+      "family": "Winter Meshy",
+      "roles": ["sparse", "irregular-middle"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/winter/trees/sparse-windswept-spruce_raw.glb",
+        "provenance": "TKA Winter Meshy 6 text-to-3D",
+        "license": "TKA generated asset"
+      }
+    },
+    {
+      "id": "W6",
+      "label": "Distant Snow Conifer",
+      "family": "Winter Meshy",
+      "roles": ["distant-silhouette"],
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/winter/trees/distant-snow-conifer_raw.glb",
+        "provenance": "TKA Winter Meshy 6 text-to-3D",
+        "license": "TKA generated asset"
+      }
+    }
+  ]
+}

@@ -1,7 +1,8 @@
 # Moonlit Winter Hollow: Pass Three Gated Production Plan
 
 - **Date:** 2026-08-08
-- **Status:** Gates 0 through 2 approved. Gate 3 performance-stage form is next.
+- **Status:** Gates 0 through 2 approved. Gate 3 performance-stage form is
+  implemented and ready for Austen's visual review.
   The shared celestial-sky correction is accepted spatially; final moon
   luminance and atmospheric balance remain owned by Gate 12.
 - **Previous work:**
@@ -183,6 +184,25 @@ or does it still look like a glowing object sitting on the ground?
 **Gate 3 passes when:** the stage reads as embedded ice from hero, walking,
 side, and high views. Austen approves the silhouette before material tuning
 continues.
+
+**Current review evidence:** the irregular shelf, shallow buried body,
+snow-contact collar, and fixed `stage` camera are implemented. The 1920 hero,
+stage, walk, and world frames plus the seven-size hero sweep are stored in the
+local Gate 3 evidence packet. Shape approval remains open; pond and tree work
+have not started.
+
+**2026-08-09 revision (Austen direction):** keep the embedded organic outline
+but raise it into an elevated ICE stage. The full configured height (0.45 m,
+matching the registered Winter native surface in `stage-coordinate-frame.ts`)
+is now exposed, with a banked snow drift extruded against the base walls so the
+stage stays embedded in the clearing. Two defects fixed along the way: the
+frost shader surface had always rendered buried under the ExtrudeGeometry top
+bevel (now lifted above it — the crystalline ice surface is visible for the
+first time), and performer clearance now uses the bounding diagonal
+`hypot(w, d) / 2` instead of `max(w, d) / 2`. Deep-ice shader palette and
+finer fracture veining tuned so the deck reads as glassy ice, not snow.
+Evidence packet recaptured. **Approved by Austen 2026-08-09 ("It's good")** —
+the elevated embedded ice stage form passes Gate 3.
 
 ### Gate 4: Pond basin and shoreline shape
 

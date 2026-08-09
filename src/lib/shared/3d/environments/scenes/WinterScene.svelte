@@ -54,7 +54,9 @@
 
   const baseConfig = $derived(config ?? createDefaultWinterConfig());
   const activeConfig = $derived.by(() => {
-    const neededRadius = Math.max(stageWidth, stageDepth) / 2;
+    // Bounding-diagonal clearance: a performer pushed to a rectangle corner
+    // sits hypot(w, d) / 2 from center, farther than max(w, d) / 2.
+    const neededRadius = Math.hypot(stageWidth, stageDepth) / 2;
     const radius = Math.max(baseConfig.platform.radius, neededRadius);
     if (radius === baseConfig.platform.radius) return baseConfig;
     return {
@@ -273,4 +275,6 @@
   />
 {/if}
 
-<IcePlatform config={activeConfig.platform} />
+<T.Group position.z={stageZOffset}>
+  <IcePlatform config={activeConfig.platform} />
+</T.Group>

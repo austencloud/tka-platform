@@ -1,0 +1,47 @@
+{
+  "stylePrefix": "cinematic stylized realism, premium fantasy game asset, cohesive moonlit winter forest conifers, isolated complete object, no text, no background,",
+  "polycount": 24000,
+  "estimatedCreditsPerAsset": 30,
+  "maxCredits": 200,
+  "assets": [
+    {
+      "id": "mature-snow-spruce",
+      "prompt": "tall mature snow-laden spruce, one straight tapered trunk, dense layered drooping branch tiers each carrying thick sculpted snow shelves, dark green needles visible beneath the snow, open gaps between tiers, roots visibly enter the ground, strong conical conifer silhouette, full tree from roots to crown",
+      "texturePrompt": "deep gray-brown fissured spruce bark, dark blue-green needles, clean cool-white packed snow on upper branch surfaces only, physically based winter materials, diffuse albedo without baked lighting, no glow",
+      "textureSize": 2048
+    },
+    {
+      "id": "mid-snow-fir",
+      "prompt": "mid-age winter fir tree, slightly asymmetrical layered branches with moderate fresh snow resting on upper boughs, dark green needle foliage still clearly visible, single tapered trunk, roots visibly enter the ground, readable conical silhouette, full tree from roots to crown",
+      "texturePrompt": "gray-brown fir bark, rich dark green needles, light fresh snow dusting on upper branch surfaces, physically based winter materials, diffuse albedo without baked lighting, no glow",
+      "textureSize": 2048
+    },
+    {
+      "id": "young-snow-sapling",
+      "prompt": "young slender spruce sapling in winter, thin straight trunk, sparse fine young branch whorls each holding a small cap of fresh snow, small open crown, roots visibly enter the ground, delicate narrow silhouette, full tree from roots to crown",
+      "polycount": 14000,
+      "texturePrompt": "smooth young gray-brown bark, fresh green needles, small clean snow caps on branch tips, physically based winter materials, diffuse albedo without baked lighting, no glow",
+      "textureSize": 2048
+    },
+    {
+      "id": "lush-snow-pine",
+      "prompt": "lush full-bodied winter pine, broad dense rounded crown heavily loaded with thick sculpted snow, layered boughs bending gently under snow weight, dark green needles peeking through, sturdy trunk, roots visibly enter the ground, wide generous silhouette, full tree from roots to crown",
+      "texturePrompt": "warm gray-brown plated pine bark, deep green needles, heavy clean sculpted snow masses on all upper surfaces, physically based winter materials, diffuse albedo without baked lighting, no glow",
+      "textureSize": 2048
+    },
+    {
+      "id": "sparse-windswept-spruce",
+      "prompt": "sparse windswept winter spruce, narrow irregular crown with wide gaps between thin branch tiers, snow clinging in small patches to windward branches, slightly leaning weathered trunk, roots visibly enter the ground, gaunt readable silhouette, full tree from roots to crown",
+      "polycount": 18000,
+      "texturePrompt": "weathered gray spruce bark with pale exposed wood, thin dark green needle tufts, patchy wind-scoured snow, physically based winter materials, diffuse albedo without baked lighting, no glow",
+      "textureSize": 2048
+    },
+    {
+      "id": "distant-snow-conifer",
+      "prompt": "simplified background winter conifer for distant forest silhouettes, clean conical form with softly massed snow-covered branch tiers, minimal fine detail, single trunk, roots visibly enter the ground, bold readable dark-and-white silhouette, full tree from roots to crown",
+      "polycount": 8000,
+      "texturePrompt": "dark blue-green massed needle foliage, cool white snow on upper tier surfaces, muted gray-brown trunk, physically based winter materials, diffuse albedo without baked lighting, no glow",
+      "textureSize": 2048
+    }
+  ]
+}

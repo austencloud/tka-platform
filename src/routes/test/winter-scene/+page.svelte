@@ -49,6 +49,11 @@
       target: [0, 1.3, 0],
       fov: 58,
     },
+    stage: {
+      position: [10.5, 2.6, 9.5],
+      target: [0, 0.12, 0],
+      fov: 43,
+    },
     world: {
       position: [0, 48, 36],
       target: [0, 2, 0],
