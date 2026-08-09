@@ -19,7 +19,12 @@ from mathutils import Vector
 SEED = 733331
 rng = random.Random(SEED)
 STAGE_CLEAR = 5.5
-BOUNDARY = 20.0
+# Matches placementRules.outerBoundaryMetres in scripts/ocean-zone-layout.json.
+# 20 was what literally encoded the ring: content stopped at 20 because this
+# said 20. It is now the shelf lip, past which the floor falls into the abyss.
+# NOTE: ground_snap below still snaps to an ABSOLUTE z and knows nothing about
+# terrain height. Run scripts/reground-ocean-placements.py after this script.
+BOUNDARY = 24.0
 
 
 def obj(name):

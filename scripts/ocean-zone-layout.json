@@ -7,7 +7,7 @@
     "stageExclusionRadiusMetres": 5,
     "foregroundMaxHeightMetres": 1.5,
     "minSpacingMetres": 0.8,
-    "outerBoundaryMetres": 20,
+    "outerBoundaryMetres": 24,
     "minimumZones": 7,
     "minimumInstances": 160
   },
