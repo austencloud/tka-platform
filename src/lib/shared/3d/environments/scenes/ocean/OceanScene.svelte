@@ -32,6 +32,14 @@
   // room reflection flattens the underwater grade.
   const OCEAN_ENVIRONMENT_INTENSITY = 0.08;
 
+  // Moody Twilight Reef depth grade. The seabed GLB is 70 m across while the
+  // authored reef occupies a ~20 m radius, so at the old 0.012 the far edge of
+  // the floor was only ~50% fogged and the bare sand beyond the reef stayed
+  // fully legible — the "objects on a floor" read. At 0.026 the reef sits at
+  // ~24% haze, the sand past it goes to ~80%, and the floor edge is gone.
+  // Comparison: Winter 0.018, Autumn 0.022, Forest 0.034.
+  const OCEAN_FOG_DENSITY = 0.026;
+
   // ── Props ─────────────────────────────────────────────────────────────
 
   interface Props {
@@ -136,7 +144,7 @@
     // distance haze veil so a reviewer can see how much of the washout it owns.
     s.background = fogColor;
     s.fog = oceanDebugToggles.fog
-      ? new FogExp2(fogColor.getHex(), 0.012)
+      ? new FogExp2(fogColor.getHex(), OCEAN_FOG_DENSITY)
       : null;
     return () => {
       if (s) {

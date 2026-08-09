@@ -22,13 +22,48 @@ function readGlbJson(path) {
     "GLB header length is invalid"
   );
   const jsonLength = buffer.readUInt32LE(12);
+  const binaryChunkHeader = 20 + jsonLength;
+  invariant(
+    buffer.readUInt32LE(binaryChunkHeader + 4) === 0x004e4942,
+    "GLB binary chunk is missing"
+  );
   return {
     bytes: buffer.length,
+    buffer,
+    binaryOffset: binaryChunkHeader + 8,
     json: JSON.parse(buffer.subarray(20, 20 + jsonLength).toString("utf8")),
   };
 }
 
-const { bytes, json: gltf } = readGlbJson(glbPath);
+function ktx2Dimensions(gltfDocument, glbBuffer, binaryOffset, imageIndex) {
+  const image = gltfDocument.images?.[imageIndex];
+  invariant(image?.bufferView !== undefined, `Texture image ${imageIndex} is not embedded`);
+  const bufferView = gltfDocument.bufferViews?.[image.bufferView];
+  invariant(bufferView, `Texture image ${imageIndex} has no buffer view`);
+  const start = binaryOffset + (bufferView.byteOffset ?? 0);
+  const identifier = glbBuffer.subarray(start, start + 12).toString("hex");
+  invariant(
+    identifier === "ab4b5458203230bb0d0a1a0a",
+    `Texture image ${imageIndex} is not KTX2`
+  );
+  return {
+    width: glbBuffer.readUInt32LE(start + 20),
+    height: glbBuffer.readUInt32LE(start + 24),
+  };
+}
+
+function textureImageIndex(gltfDocument, textureIndex) {
+  const texture = gltfDocument.textures?.[textureIndex];
+  invariant(texture, `Material references missing texture ${textureIndex}`);
+  return texture.extensions?.KHR_texture_basisu?.source ?? texture.source;
+}
+
+const {
+  bytes,
+  buffer: glbBuffer,
+  binaryOffset,
+  json: gltf,
+} = readGlbJson(glbPath);
 const { json: rawGltf } = readGlbJson(rawGlbPath);
 const extensions = new Set(gltf.extensionsUsed ?? []);
 const nodeNames = (gltf.nodes ?? []).map((node) => node.name ?? "");
@@ -60,6 +95,32 @@ const stumps = semanticNodes.filter((node) => node.extras.tka_role === "stump");
 const terrainNodes = semanticNodes.filter(
   (node) => node.extras.tka_role === "terrain"
 );
+const detailTextureIndices = new Set();
+const colorTextureIndices = new Set();
+for (const material of gltf.materials ?? []) {
+  for (const textureInfo of [
+    material.normalTexture,
+    material.occlusionTexture,
+    material.pbrMetallicRoughness?.metallicRoughnessTexture,
+  ]) {
+    if (textureInfo?.index !== undefined) detailTextureIndices.add(textureInfo.index);
+  }
+  for (const textureInfo of [
+    material.emissiveTexture,
+    material.pbrMetallicRoughness?.baseColorTexture,
+  ]) {
+    if (textureInfo?.index !== undefined) colorTextureIndices.add(textureInfo.index);
+  }
+}
+const textureDimensions = (gltf.textures ?? []).map((_, textureIndex) => {
+  const imageIndex = textureImageIndex(gltf, textureIndex);
+  invariant(imageIndex !== undefined, `Texture ${textureIndex} has no image source`);
+  return {
+    textureIndex,
+    imageIndex,
+    ...ktx2Dimensions(gltf, glbBuffer, binaryOffset, imageIndex),
+  };
+});
 const lightCount = gltf.extensions?.KHR_lights_punctual?.lights?.length ?? 0;
 const instanceNodes = (gltf.nodes ?? []).filter(
   (node) => node.extensions?.EXT_mesh_gpu_instancing
@@ -71,6 +132,30 @@ const instanceCounts = instanceNodes
     return gltf.accessors?.[accessor]?.count ?? 0;
   })
   .sort((left, right) => left - right);
+const renderedVertexCount = (gltf.nodes ?? []).reduce((total, node) => {
+  if (node.mesh === undefined) return total;
+  const mesh = gltf.meshes?.[node.mesh];
+  const instanceAccessor = node.extensions?.EXT_mesh_gpu_instancing?.attributes
+    ?.TRANSLATION;
+  const instanceCount =
+    instanceAccessor === undefined ? 1 : gltf.accessors?.[instanceAccessor]?.count ?? 0;
+  const drawCount = (mesh?.primitives ?? []).reduce((meshTotal, primitive) => {
+    if (primitive.indices === undefined) return meshTotal;
+    return meshTotal + (gltf.accessors?.[primitive.indices]?.count ?? 0);
+  }, 0);
+  return total + drawCount * instanceCount;
+}, 0);
+const uploadedPositionVertexCount = (gltf.meshes ?? []).reduce(
+  (total, mesh) =>
+    total +
+    mesh.primitives.reduce(
+      (meshTotal, primitive) =>
+        meshTotal +
+        (gltf.accessors?.[primitive.attributes?.POSITION]?.count ?? 0),
+      0
+    ),
+  0
+);
 
 invariant(bytes <= maximumBytes, `GLB exceeds ${maximumBytes} bytes: ${bytes}`);
 invariant(gltf.scenes?.length === 1, "GLB must contain exactly one scene");
@@ -90,8 +175,35 @@ invariant(
 );
 invariant(extensions.has("EXT_mesh_gpu_instancing"), "GLB lost GPU instancing");
 invariant(
-  extensions.has("EXT_texture_webp"),
-  "GLB textures are not WebP encoded"
+  extensions.has("KHR_texture_basisu"),
+  "GLB textures are not GPU-compressed KTX2"
+);
+invariant(
+  !extensions.has("EXT_texture_webp"),
+  "Legacy WebP textures survived the KTX2 delivery pass"
+);
+invariant(
+  (gltf.textures?.length ?? 0) <= 42,
+  `Winter texture count exceeds its budget: ${gltf.textures?.length ?? 0}`
+);
+invariant(
+  renderedVertexCount <= 1_350_000,
+  `Winter render vertex budget exceeded: ${renderedVertexCount}`
+);
+invariant(
+  uploadedPositionVertexCount <= 150_000,
+  `Winter upload vertex budget exceeded: ${uploadedPositionVertexCount}`
+);
+invariant(
+  textureDimensions.every(({ width, height }) => width <= 1024 && height <= 1024),
+  "A Winter texture exceeds the 1024px delivery ceiling"
+);
+invariant(
+  [...detailTextureIndices].every((textureIndex) => {
+    const dimensions = textureDimensions[textureIndex];
+    return dimensions.width <= 512 && dimensions.height <= 512;
+  }),
+  "A Winter detail texture exceeds the 512px delivery ceiling"
 );
 invariant((tiers.base?.length ?? 0) > 0, "Base detail tier is missing");
 invariant((tiers.medium?.length ?? 0) > 0, "Medium detail tier is missing");
@@ -115,6 +227,16 @@ invariant(
 invariant(
   conifers.every((node) => node.extras.tka_crown_ratio >= 0.3),
   "A sparse conifer crown escaped the authored contract"
+);
+invariant(
+  conifers.every(
+    (node) =>
+      Number.isFinite(node.extras.tka_grounding_error) &&
+      node.extras.tka_grounding_error <= 0.015 &&
+      node.extras.tka_root_bed_depth >= 0.22 &&
+      node.extras.tka_root_bed_depth <= 0.45
+  ),
+  "A conifer escaped the terrain-contact contract"
 );
 invariant(
   (treesByAge.young ?? []).every((node) => node.extras.tka_target_height <= 8),
@@ -158,6 +280,10 @@ invariant(
   `Terrain skirt is too shallow: ${terrain.tka_skirt_depth}`
 );
 invariant(
+  terrain.tka_underside_closed === true,
+  "Terrain underside is open to low orbit views"
+);
+invariant(
   terrain.tka_snow_surface_source === "ambientcg-snow004",
   `Unexpected snow surface source: ${terrain.tka_snow_surface_source}`
 );
@@ -187,6 +313,18 @@ console.log(
       meshes: gltf.meshes?.length ?? 0,
       materials: gltf.materials?.length ?? 0,
       textures: gltf.textures?.length ?? 0,
+      textureDelivery: {
+        format: "KTX2",
+        maximumDimension: Math.max(
+          ...textureDimensions.flatMap(({ width, height }) => [width, height])
+        ),
+        detailTextureCount: detailTextureIndices.size,
+        colorTextureCount: colorTextureIndices.size,
+      },
+      geometryDelivery: {
+        renderedVertexCount,
+        uploadedPositionVertexCount,
+      },
       extensions: [...extensions],
       instanceCounts,
       detailTiers: {
@@ -198,6 +336,17 @@ console.log(
         mature: treesByAge.mature?.length ?? 0,
         mid: treesByAge.mid?.length ?? 0,
         young: treesByAge.young?.length ?? 0,
+      },
+      treeGrounding: {
+        maximumError: Math.max(
+          ...conifers.map((node) => node.extras.tka_grounding_error)
+        ),
+        minimumBedDepth: Math.min(
+          ...conifers.map((node) => node.extras.tka_root_bed_depth)
+        ),
+        maximumBedDepth: Math.max(
+          ...conifers.map((node) => node.extras.tka_root_bed_depth)
+        ),
       },
       authoredProps: {
         rocks: rocks.length,

@@ -1,5 +1,161 @@
 # Autumn Living Forest Floor — Handoff (2026-08-06)
 
+---
+
+# ADDENDUM — Opus 5 audit remediation pass (2026-08-09)
+
+A read-only Opus evaluator graded the shipped Autumn scene, then a separate
+Opus fixer session implemented the justified findings. This addendum records
+the baseline, what changed, what was measured, and what was rejected. Nothing
+below was committed; every change sits uncommitted in the shared checkout on
+`main`.
+
+## Baseline the evaluator recorded
+
+Code: Architecture B-, Code Quality B, Svelte 5 A-, Accessibility C+,
+UX States C, UI Consistency A-, Performance D, Security A.
+
+Scene craft (out of 10): art 5, composition 4, performer/contact 5, ground 2,
+ecology 4, trees 3, lighting/atmosphere 3, pond/story 4, motion 4, runtime
+efficiency 2, responsive framing 3, production readiness 4. Average 3.6.
+
+## Measured results after the pass
+
+| Measure | Before | After |
+|---|---|---|
+| GPU texture memory | 290.7 MB | **23.33 MB** |
+| Texture format | WebP (no KTX2) | 51 KTX2 — 29 UASTC @512, 22 ETC1S @1024 |
+| `KHR_texture_basisu` in asset | absent | **present** (so `useKtx2` is no longer a lie) |
+| GLB on disk | 13.51 MiB | 17.17 MiB |
+| glPrimitives | 380K | 390K |
+| Focused tests | 30/30 | **38/38** |
+| `pnpm check` | — | **0 errors, 0 warnings** |
+| Grass beyond 17.5m | hard cut at 22.5m | 623 clumps, ramped to 26m |
+| QA proxy feet | floating 0.11m | **soles at z=0.000m**, crown 1.804m |
+
+The GLB grew 3.7 MiB because UASTC is larger on disk than WebP. That is the
+correct trade: it buys a 92% cut in VRAM, which is the binding constraint on
+mobile WebGL. Normal/metallicRoughness/occlusion drop to 512 precisely to keep
+that disk cost bounded — leaving them at 1024 produced a 38.92 MiB GLB.
+
+## What changed
+
+**Pixels**
+- Leaf litter is real leaf geometry, not diamonds. `append_leaf_card` emits an
+  ovate blade (rounded base, drawn-out tip, lobed margin) with per-leaf length,
+  width, curl and tilt. Airborne leaves get a matching `leaf` SDF in
+  `FallingParticles` with per-particle aspect jitter and a darker midrib. The
+  litter palette was also pulled down ~45%: shape alone did not stop bright
+  chips reading as confetti.
+- The `Packed_Performance_Clearing` decal is gone. It was redundant — the
+  terrain already carried that material — and the optimizer decimated its rim to
+  45 triangles, which is what produced the faceted "crater". Giving the clearing
+  its own lighter albedo was then tried and also rejected: on a 96×96 grid the
+  boundary rendered as stair-steps. The clearing now shares the surrounding
+  soil, so no albedo boundary exists there at all.
+- Contact shadows on high/medium from a moon-aligned key, budgeted by
+  `resolveAutumnShadowRole` so only near-field silhouettes cast.
+  `shadow.intensity 0.58` plus a dedicated non-casting fill fixed the
+  ink-black pools of the first attempt.
+- **The finite world edge is fixed geometrically, not with fog.** A terrain
+  apron carries the ground to 165m. Fog could never have solved this: the old
+  rim sat ~31m out and the camera ~34m back, so any fog thick enough to hide
+  the edge also erased the scene. Fog density landed at 0.020 after 0.034
+  visibly collapsed the whole image into one milky value.
+- `scene.background` now matches SkyGradient's `topColor`. The 200-radius sky
+  dome is clipped by the camera far plane, and the mismatch showed as a hard
+  curved black band across the top of frame.
+- Starfield gained opt-in legibility knobs (`intensity`, `magnitudeFalloff`,
+  `brightnessFloor`, `horizonSpread`), all defaulting to today's behaviour so
+  Cosmic/Forest/Winter are untouched. Stars now register in-frame.
+- Pond: visible silty bed, higher transmission, bank tucked under the terrain
+  instead of standing proud (that lip was the hard pale rim), and a cheap
+  additive moon-glint column instead of a second full scene render.
+- Moss patches now take normal/roughness from the same set as the terrain.
+  Mismatched surface response, not albedo, was making them read as pale wet
+  blobs — `soil` measures brighter (58.8) than `moss` (52.2).
+- Tree rhythm: hero heights spread 8.4–13.8m with alternating mirroring; the
+  belt moved off its constant ~26m radius to 21.5–29.5m with deliberate gaps.
+- Owl dropped from 7.0m to 5.4m and turned to present its profile, so it
+  silhouettes against fogged background instead of vanishing into canopy.
+
+**Code**
+- Deleted the orphaned `autumn/authored/` subtree and `GodRayShafts.svelte`.
+- Deleted the `godRays` / `pondReflector` dead gates and the test that pinned
+  them false, plus the `Reflector` import.
+- Restored frustum culling on grass; bounds are grown by the wind shader's
+  maximum displacement instead of culling being disabled outright.
+- Reduced motion now honoured by particles, stars, wisps and pond, via one
+  shared `motion-preference` module, not just the wind.
+- Real GLB error state through `asyncWritable`'s `.error` store.
+- Fixed the lying `as unknown as` / `as any` Threlte casts, the no-op
+  `untrack`, the stranded `groundY` in wisps, comment drift, and the
+  NaN-fragile `allocateWeighted`.
+
+## Rejected recommendations, with evidence
+
+- **"Delete the nine unreferenced build-input GLBs."** Three of them —
+  `autumn-snag.glb`, `golden-larch.glb`, `autumn-willow.glb` — are consumed by
+  `scripts/forest-tree-layout.json` as `sourcePath` inputs to the forest
+  builder. Deleting them breaks another scene. They are instead trimmed from
+  the **deploy output** in `scripts/trim-deploy-assets.js`, which keeps them on
+  disk for builders while the CDN stops serving them.
+- **"Recolour the cobalt-blue flower clumps."** The builder authors no flowers.
+  A material audit added to the build prints every understory base colour and
+  reported both Fern and Log as *textured*, with no flat blue value to
+  recolour. The blue cast comes from lighting, which this pass rebalanced.
+- **"The 12-segment clearing disc."** `create_organic_patch` passes `12.0` as
+  the *seed* argument; the segment count is 72. The faceting came from the
+  optimizer's simplify pass, not the builder.
+- **"Wire `mushroomTargets` into `PulseTarget[]`."** GPU instancing collapses
+  all 16 mushroom clusters into one `InstancedMesh` sharing one material, and
+  the pulse loop writes `emissiveIntensity` per target in sequence — so shared
+  materials resolve to "last target wins", and approaching one ring would light
+  the other 15m away. Took the report's sanctioned alternative: removed the
+  prop and documented why.
+- **"The pond's vertical material seam."** That artifact lives in the Blender
+  QA render only. `QA_Pond_Water` is excluded from the GLB export by the
+  `QA_` prefix, so it never shipped.
+
+## Bonus finding
+
+`.gitignore` does not stop SvelteKit copying `static/` into the build, so every
+`*_raw.glb` was being published — ~146 MiB of Blender source models, of which
+only the largest tripped the existing 25 MiB per-file sweep. The deploy trimmer
+now removes them by suffix.
+
+## Evidence — screenshots
+
+Seven-viewport sweep, all CSS-viewport-verified via `innerWidth/innerHeight`
+(DevTools `emulate` lands a tier low on this display, so targets are passed
+×1.1):
+
+`C:\Users\Austen\AppData\Local\Temp\autumn-opus-v2-{1920x1080,2560x1440,3840x2160,1440x900,820x1180,960x412,375x667}.webp`
+
+Performer contact was verified in the real app at `/q/S0K3` → 3D Animation:
+four figures planted on the deck with soft contact pools, no float, no clipping.
+
+## Remaining risks
+
+1. **Portrait still spends ~25% on empty foreground and never shows the moon.**
+   This is camera-owned, not scene-owned. The harness preset pitches down ~22°
+   with a 48° fov, putting the top of frame at ~+2°; the moon sits at 25°
+   elevation and cannot be in frame at any aspect. Moon elevation is locked to
+   the key light by design, so lowering it to chase framing would flatten the
+   shadows it exists to cast. Resolving this needs an aspect-aware camera in
+   `@austencloud/camera-3d`, which was out of scope.
+2. A faint bright arc remains on the pond's near shore. It survived both the
+   glint reduction and the bank-height fix, so it is basin geometry rather than
+   the reflection quad. Much subtler than the original hard rim, but not gone.
+3. The frame-rate sample (30 FPS median, 150ms p95 at 1920) was taken with five
+   other sessions' live 3D tabs on the same GPU. It is contaminated and should
+   not be read as a clean benchmark.
+4. Ferns, saplings and mushrooms do not cast shadows: GPU instancing strips
+   their names, so they fall to the receive-only default. Documented in
+   `autumn-shadow-roles.ts`.
+
+---
+
 ## Mission
 
 Turn the rebuilt Autumn 3D environment into a performer-scale living woodland

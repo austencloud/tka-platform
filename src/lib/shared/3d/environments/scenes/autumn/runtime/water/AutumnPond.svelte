@@ -60,7 +60,7 @@
     waterLevelOffset = AUTUMN_POND_LAYOUT.waterLevelOffset,
   }: Props = $props();
 
-  const WATER_BODY_COLOR = "#141227";
+  const WATER_BODY_COLOR = "#283650";
   const NORMAL_MAP_PATH = "/textures/water/Water_1_M_Normal.jpg";
   const COAT_NORMAL_MAP_PATH = "/textures/water/Water_2_M_Normal.jpg";
 
@@ -100,24 +100,24 @@
     // rather than an opaque cut-out in the ground.
     const material = new MeshPhysicalMaterial({
       color: new Color(WATER_BODY_COLOR),
-      emissive: new Color("#071922"),
-      emissiveIntensity: 0.1,
-      roughness: 0.14,
+      emissive: new Color("#0b1d2d"),
+      emissiveIntensity: 0.18,
+      roughness: 0.34,
       metalness: 0.04,
       transparent: true,
-      opacity: 0.72,
+      opacity: 0.68,
       ior: 1.333,
-      transmission: 0.34,
-      thickness: 0.5,
-      attenuationColor: new Color("#241533"),
-      attenuationDistance: 1.6,
-      clearcoat: 0.85,
-      clearcoatRoughness: 0.1,
+      transmission: 0.42,
+      thickness: 0.42,
+      attenuationColor: new Color("#31264a"),
+      attenuationDistance: 2.4,
+      clearcoat: 0.38,
+      clearcoatRoughness: 0.32,
       normalMap: normal0,
       normalScale: new Vector2(0.28, 0.28),
       clearcoatNormalMap: normal1,
       clearcoatNormalScale: new Vector2(0.2, 0.2),
-      envMapIntensity: 0.92,
+      envMapIntensity: 0.58,
       depthWrite: false,
     });
 
@@ -163,7 +163,7 @@
         uniforms: {
           uTime: { value: 0 },
           uColor: { value: new Color("#cddcff") },
-          uStrength: { value: 0.18 },
+          uStrength: { value: 0.055 },
         },
         transparent: true,
         depthWrite: false,
@@ -187,10 +187,15 @@
             // The first pass used hard-ish masks with a high-frequency band
             // term, which rendered as a striped rectangle sitting on the water
             // rather than a reflection.
-            float across = 1.0 - smoothstep(0.02, 0.22, abs(p.x));
-            float along = 1.0 - smoothstep(0.05, 0.46, abs(p.y));
-            across *= across;
-            along *= along;
+            // Everything here is squared twice. A flat additive quad viewed at
+            // a grazing angle - which is exactly how a walk-level camera sees a
+            // pond - compresses vertically and turns any firm edge into a hard
+            // bright streak lying on the water. Only a very soft falloff
+            // survives that projection as a reflection.
+            float across = 1.0 - smoothstep(0.0, 0.20, abs(p.x));
+            float along = 1.0 - smoothstep(0.0, 0.44, abs(p.y));
+            across *= across * across;
+            along *= along * along;
             // Gentle ripple banding, low contrast so it reads as broken
             // reflection rather than as scanlines.
             float bands = 0.78 + 0.22 * sin(p.y * 21.0 + uTime * 1.1);

@@ -57,40 +57,40 @@ RANDOM_SEED = 20260808
 
 # name, source family, x, y, target height, crown width, yaw, age class, tier
 TREE_PLACEMENTS = (
-    ("Winter_Base_MatureFir_West", "spruce_mature_a", -21.0, 4.0, 17.5, 1.30, -0.18, "mature", "base"),
-    ("Winter_Base_MatureFir_East", "pine_lush_a", 16.5, 4.5, 18.5, 1.38, 0.36, "mature", "base"),
-    ("Winter_Base_MatureFir_RearWest", "spruce_mature_a", -8.5, 18.5, 16.2, 1.26, 2.72, "mature", "base"),
-    ("Winter_Base_MatureFir_RearEast", "pine_lush_a", 10.5, 19.5, 17.0, 1.34, -2.38, "mature", "base"),
-    ("Winter_Base_MatureFir_WestRear", "spruce_mature_a", -22.5, 15.0, 15.2, 1.22, 0.58, "mature", "base"),
-    ("Winter_Base_MatureFir_EastRear", "pine_lush_a", 22.0, 13.5, 15.8, 1.28, -1.48, "mature", "base"),
-    ("Winter_Base_MatureFir_FrontEast", "spruce_mature_a", 15.5, -12.5, 14.5, 1.24, 1.14, "mature", "base"),
-    ("Winter_Base_MatureFir_FarWest", "spruce_mature_a", -27.0, 9.0, 14.2, 1.20, 0.93, "mature", "base"),
-    ("Winter_Base_MidFir_NorthWest", "fir_mid_a", -14.0, 25.0, 11.8, 1.10, -1.42, "mid", "base"),
-    ("Winter_Base_MidFir_NorthEast", "fir_mid_a", 15.5, 25.0, 11.5, 1.12, 1.90, "mid", "base"),
-    ("Winter_Base_MidFir_East", "fir_mid_a", 27.5, 3.0, 10.8, 1.08, -2.12, "mid", "base"),
-    ("Winter_Base_MidFir_SouthEast", "fir_mid_a", 24.0, -11.0, 10.2, 1.10, 1.32, "mid", "base"),
-    ("Winter_Base_MidFir_South", "fir_mid_a", 7.0, -21.0, 10.8, 1.06, 0.18, "mid", "base"),
-    ("Winter_Base_MidFir_West", "fir_mid_a", -30.0, -2.0, 10.5, 1.12, 2.65, "mid", "base"),
-    ("Winter_Medium_MidFir_01", "fir_mid_a", -27.0, 23.0, 9.8, 1.06, 0.72, "mid", "medium"),
-    ("Winter_Medium_MidFir_02", "fir_mid_a", 27.0, 21.0, 10.3, 1.08, -0.55, "mid", "medium"),
-    ("Winter_Medium_MidFir_03", "fir_mid_a", 18.0, -21.0, 9.6, 1.04, -2.72, "mid", "medium"),
-    ("Winter_Medium_MidFir_04", "fir_mid_a", -18.0, 19.0, 9.4, 1.06, 0.85, "mid", "medium"),
-    ("Winter_Medium_MidFir_05", "fir_mid_a", -29.0, 19.0, 9.2, 1.04, 0.26, "mid", "medium"),
-    ("Winter_Medium_MidPine_06", "pine_lush_a", 30.0, -9.0, 8.0, 1.12, 1.38, "mid", "medium"),
-    ("Winter_Base_YoungFir_01", "sapling_young_a", -10.0, 12.0, 7.2, 1.02, -0.85, "young", "base"),
-    ("Winter_Base_YoungPine_02", "sapling_young_a", 10.0, 12.0, 7.5, 1.06, 2.18, "young", "base"),
-    ("Winter_Base_YoungFir_03", "sapling_young_a", 1.0, 14.0, 6.6, 1.00, -2.38, "young", "base"),
-    ("Winter_Base_YoungPine_04", "sapling_young_a", 10.5, -12.5, 6.8, 1.08, 0.52, "young", "base"),
-    ("Winter_Medium_YoungFir_05", "sapling_young_a", -21.0, 28.0, 6.4, 1.02, 1.46, "young", "medium"),
-    ("Winter_Medium_YoungPine_06", "sapling_young_a", 5.0, 30.0, 6.8, 1.04, -0.28, "young", "medium"),
-    ("Winter_Medium_YoungFir_07", "sapling_young_a", 30.0, 16.0, 6.2, 1.04, 2.52, "young", "medium"),
-    ("Winter_Medium_YoungPine_08", "sapling_young_a", 30.0, -20.0, 6.5, 1.06, -1.55, "young", "medium"),
-    ("Winter_Medium_YoungFir_09", "sapling_young_a", -25.0, 15.0, 6.0, 1.02, 0.62, "young", "medium"),
-    ("Winter_High_YoungPine_10", "conifer_distant_a", -31.0, 16.0, 5.8, 1.04, -2.12, "young", "high"),
-    ("Winter_High_YoungFir_11", "conifer_distant_a", 20.0, 29.0, 5.5, 1.00, 1.08, "young", "high"),
-    ("Winter_High_YoungPine_12", "conifer_distant_a", 33.0, 5.0, 5.2, 1.04, -0.62, "young", "high"),
-    ("Winter_High_YoungFir_13", "conifer_distant_a", 10.0, -31.0, 4.8, 1.00, 0.44, "young", "high"),
-    ("Winter_High_YoungPine_14", "conifer_distant_a", -5.0, -32.0, 4.6, 1.02, -1.20, "young", "high"),
+    ("Winter_Base_MatureFir_West", "spruce_mature_a", -21.0, 4.0, 12.5, 1.00, -0.18, "mature", "base"),
+    ("Winter_Base_MatureFir_East", "pine_lush_a", 16.5, 4.5, 13.0, 1.06, 0.36, "mature", "base"),
+    ("Winter_Base_MatureFir_RearWest", "spruce_mature_a", -8.5, 18.5, 11.6, 0.98, 2.72, "mature", "base"),
+    ("Winter_Base_MatureFir_RearEast", "pine_lush_a", 10.5, 19.5, 12.0, 1.04, -2.38, "mature", "base"),
+    ("Winter_Base_MatureFir_WestRear", "spruce_mature_a", -22.5, 15.0, 10.8, 0.96, 0.58, "mature", "base"),
+    ("Winter_Base_MatureFir_EastRear", "pine_lush_a", 22.0, 13.5, 11.2, 1.02, -1.48, "mature", "base"),
+    ("Winter_Base_MatureFir_FrontEast", "spruce_mature_a", 15.5, -12.5, 10.6, 0.96, 1.14, "mature", "base"),
+    ("Winter_Base_MatureFir_FarWest", "spruce_mature_a", -27.0, 9.0, 10.2, 0.94, 0.93, "mature", "base"),
+    ("Winter_Base_MidFir_NorthWest", "fir_mid_a", -14.0, 25.0, 8.4, 1.00, -1.42, "mid", "base"),
+    ("Winter_Base_MidFir_NorthEast", "fir_mid_a", 15.5, 25.0, 8.2, 1.02, 1.90, "mid", "base"),
+    ("Winter_Base_MidFir_East", "fir_mid_a", 27.5, 3.0, 7.7, 0.98, -2.12, "mid", "base"),
+    ("Winter_Base_MidFir_SouthEast", "fir_mid_a", 24.0, -11.0, 7.3, 1.00, 1.32, "mid", "base"),
+    ("Winter_Base_MidFir_South", "fir_mid_a", 7.0, -21.0, 7.8, 0.98, 0.18, "mid", "base"),
+    ("Winter_Base_MidFir_West", "fir_mid_a", -30.0, -2.0, 7.5, 1.02, 2.65, "mid", "base"),
+    ("Winter_Medium_MidFir_01", "fir_mid_a", -27.0, 23.0, 7.0, 0.98, 0.72, "mid", "medium"),
+    ("Winter_Medium_MidFir_02", "fir_mid_a", 27.0, 21.0, 7.4, 1.00, -0.55, "mid", "medium"),
+    ("Winter_Medium_MidFir_03", "fir_mid_a", 18.0, -21.0, 6.9, 0.96, -2.72, "mid", "medium"),
+    ("Winter_Medium_MidFir_04", "fir_mid_a", -18.0, 19.0, 6.7, 0.98, 0.85, "mid", "medium"),
+    ("Winter_Medium_MidFir_05", "fir_mid_a", -29.0, 19.0, 6.6, 0.96, 0.26, "mid", "medium"),
+    ("Winter_Medium_MidPine_06", "pine_lush_a", 30.0, -9.0, 7.1, 1.04, 1.38, "mid", "medium"),
+    ("Winter_Base_YoungFir_01", "sapling_young_a", -10.0, 12.0, 4.8, 0.96, -0.85, "young", "base"),
+    ("Winter_Base_YoungPine_02", "sapling_young_a", 10.0, 12.0, 5.0, 1.00, 2.18, "young", "base"),
+    ("Winter_Base_YoungFir_03", "sapling_young_a", 1.0, 14.0, 4.4, 0.94, -2.38, "young", "base"),
+    ("Winter_Base_YoungPine_04", "sapling_young_a", 10.5, -12.5, 4.6, 1.00, 0.52, "young", "base"),
+    ("Winter_Medium_YoungFir_05", "sapling_young_a", -21.0, 28.0, 4.2, 0.96, 1.46, "young", "medium"),
+    ("Winter_Medium_YoungPine_06", "sapling_young_a", 5.0, 30.0, 4.4, 0.98, -0.28, "young", "medium"),
+    ("Winter_Medium_YoungFir_07", "sapling_young_a", 30.0, 16.0, 4.0, 0.96, 2.52, "young", "medium"),
+    ("Winter_Medium_YoungPine_08", "sapling_young_a", 30.0, -20.0, 4.2, 0.98, -1.55, "young", "medium"),
+    ("Winter_Medium_YoungFir_09", "sapling_young_a", -25.0, 15.0, 4.0, 0.96, 0.62, "young", "medium"),
+    ("Winter_High_YoungPine_10", "conifer_distant_a", -31.0, 16.0, 3.8, 0.98, -2.12, "young", "high"),
+    ("Winter_High_YoungFir_11", "conifer_distant_a", 20.0, 29.0, 3.6, 0.94, 1.08, "young", "high"),
+    ("Winter_High_YoungPine_12", "conifer_distant_a", 33.0, 5.0, 3.4, 0.98, -0.62, "young", "high"),
+    ("Winter_High_YoungFir_13", "conifer_distant_a", 10.0, -31.0, 3.2, 0.94, 0.44, "young", "high"),
+    ("Winter_High_YoungPine_14", "conifer_distant_a", -5.0, -32.0, 3.0, 0.96, -1.20, "young", "high"),
 )
 
 ROCK_PLACEMENTS = (
@@ -315,6 +315,31 @@ def create_terrain():
                 )
             )
 
+    # Close the authored snow shell beneath the irregular outer skirt. Free
+    # orbit cameras can dip below the horizon, and an open terrain mesh reads
+    # as a paper-thin plate from those otherwise valid review angles.
+    outer_start = 1 + (TERRAIN_RADIAL_SEGMENTS - 1) * TERRAIN_ANGULAR_SEGMENTS
+    bottom_z = min(vertex[2] for vertex in vertices) - 0.6
+    bottom_center = len(vertices)
+    vertices.append((0.0, 0.0, bottom_z))
+    uvs.append(terrain_snow_uv(0.0, 0.0))
+    bottom_start = len(vertices)
+    for segment in range(TERRAIN_ANGULAR_SEGMENTS):
+        top = vertices[outer_start + segment]
+        vertices.append((top[0], top[1], bottom_z))
+        uvs.append(terrain_snow_uv(top[0], top[1]))
+    for segment in range(TERRAIN_ANGULAR_SEGMENTS):
+        following = (segment + 1) % TERRAIN_ANGULAR_SEGMENTS
+        faces.append(
+            (
+                outer_start + segment,
+                bottom_start + segment,
+                bottom_start + following,
+                outer_start + following,
+            )
+        )
+        faces.append((bottom_center, bottom_start + following, bottom_start + segment))
+
     mesh = bpy.data.meshes.new("Winter Sculpted Snow Mesh")
     mesh.from_pydata(vertices, [], faces)
     if mesh.validate(verbose=True):
@@ -341,6 +366,7 @@ def create_terrain():
         for segment in range(TERRAIN_ANGULAR_SEGMENTS)
     )
     terrain["tka_skirt_depth"] = WORLD_SKIRT_DEPTH
+    terrain["tka_underside_closed"] = True
     terrain["tka_radial_segments"] = TERRAIN_RADIAL_SEGMENTS
     terrain["tka_angular_segments"] = TERRAIN_ANGULAR_SEGMENTS
     terrain["tka_snow_surface_source"] = "ambientcg-snow004"
@@ -413,10 +439,42 @@ def import_tree_sources():
         for index, obj in enumerate(imported[:expected_count]):
             key = f"{family}_{chr(ord('a') + index)}"
             obj.name = f"AssetSource_{key}"
+            # Meshy GLBs arrive with their origin at the model centre. Bake the
+            # import transform once so every placement can use stable local
+            # bounds and ground the actual root geometry, not the object origin.
+            bpy.ops.object.select_all(action="DESELECT")
+            if obj.parent is not None:
+                world_transform = obj.matrix_world.copy()
+                obj.parent = None
+                obj.matrix_world = world_transform
+            obj.select_set(True)
+            bpy.context.view_layer.objects.active = obj
+            bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
             obj.hide_render = True
             obj.hide_set(True)
             sources[key] = obj
     return sources
+
+
+def local_vertical_bounds(source):
+    minimum = min(corner[2] for corner in source.bound_box)
+    maximum = max(corner[2] for corner in source.bound_box)
+    if maximum - minimum < 0.001:
+        raise RuntimeError(f"Tree source has no usable height: {source.name}")
+    return minimum, maximum
+
+
+def terrain_contact_height(x, y, footprint_radius):
+    samples = [terrain_height(x, y)]
+    for index in range(12):
+        angle = math.tau * index / 12
+        samples.append(
+            terrain_height(
+                x + math.cos(angle) * footprint_radius,
+                y + math.sin(angle) * footprint_radius,
+            )
+        )
+    return min(samples)
 
 
 def duplicate_tree(source, name, x, y, target_height, crown_width, yaw, age_class, tier):
@@ -424,11 +482,16 @@ def duplicate_tree(source, name, x, y, target_height, crown_width, yaw, age_clas
     tree.data = source.data
     bpy.context.collection.objects.link(tree)
     tree.name = name
-    source_height = max(source.dimensions.z, 0.001)
+    source_minimum_z, source_maximum_z = local_vertical_bounds(source)
+    source_height = source_maximum_z - source_minimum_z
     scale = target_height / source_height
     tree.scale = (scale * crown_width, scale * crown_width, scale)
-    tree.rotation_euler[2] = yaw
-    tree.location = (x, y, terrain_height(x, y))
+    tree.rotation_euler = (0.0, 0.0, yaw)
+    footprint_radius = min(1.1, max(0.35, target_height * crown_width * 0.055))
+    contact_height = terrain_contact_height(x, y, footprint_radius)
+    bed_depth = min(0.45, max(0.22, target_height * 0.035))
+    intended_minimum_z = contact_height - bed_depth
+    tree.location = (x, y, intended_minimum_z - source_minimum_z * scale)
     tree.hide_render = False
     tree.hide_set(False)
     tree["tka_detail_tier"] = tier
@@ -438,6 +501,14 @@ def duplicate_tree(source, name, x, y, target_height, crown_width, yaw, age_clas
     tree["tka_crown_ratio"] = (
         max(source.dimensions.x, source.dimensions.y) / source_height * crown_width
     )
+    grounded_minimum_z = tree.location.z + source_minimum_z * scale
+    grounding_error = abs(grounded_minimum_z - intended_minimum_z)
+    tree["tka_source_minimum_z"] = source_minimum_z
+    tree["tka_root_contact_radius"] = footprint_radius
+    tree["tka_contact_height"] = contact_height
+    tree["tka_root_bed_depth"] = bed_depth
+    tree["tka_grounded_minimum_z"] = grounded_minimum_z
+    tree["tka_grounding_error"] = grounding_error
     return tree
 
 
@@ -625,8 +696,9 @@ def create_cylinder_between(name, start, end, radius, material, vertices=18):
 
 
 def create_stumps(source):
-    placements = (("Winter_Base_DeadwoodStump_East", 9.3, 10.7, 1.35, 1.24, -0.35, 0.22, "base"),)
-    source_height = max(source.dimensions.z, 0.001)
+    placements = (("Winter_Base_DeadwoodStump_East", 9.3, 10.7, 0.78, 0.96, -0.35, 0.22, "base"),)
+    source_minimum_z, source_maximum_z = local_vertical_bounds(source)
+    source_height = source_maximum_z - source_minimum_z
     for name, x, y, target_height, width, yaw, burial, tier in placements:
         stump = source.copy()
         stump.data = source.data
@@ -635,7 +707,13 @@ def create_stumps(source):
         scale = target_height / source_height
         stump.scale = (scale * width, scale * width, scale)
         stump.rotation_euler = (0.05, -0.08, yaw)
-        stump.location = (x, y, terrain_height(x, y) - target_height * burial)
+        footprint_radius = max(0.28, target_height * width * 0.36)
+        contact_height = terrain_contact_height(x, y, footprint_radius)
+        stump.location = (
+            x,
+            y,
+            contact_height - target_height * burial - source_minimum_z * scale,
+        )
         stump.hide_render = False
         stump.hide_set(False)
         stump["tka_detail_tier"] = tier
@@ -699,6 +777,14 @@ def verify_layout(tree_records):
             raise RuntimeError(f"Tree entered the pond buffer: {tree.name}")
         if tree["tka_age_class"] == "young" and tree["tka_target_height"] > 8.0:
             raise RuntimeError(f"Sapling exceeded eight metres: {tree.name}")
+        if tree["tka_grounding_error"] > 0.015:
+            raise RuntimeError(
+                f"Tree root contact drifted: {tree.name}="
+                f"{tree['tka_grounding_error']:.4f}m"
+            )
+        expected_bed = tree["tka_contact_height"] - tree["tka_root_bed_depth"]
+        if abs(tree["tka_grounded_minimum_z"] - expected_bed) > 0.015:
+            raise RuntimeError(f"Tree is floating above its snow bed: {tree.name}")
 
     age_counts = {
         age: sum(1 for tree in tree_records if tree["tka_age_class"] == age)
@@ -736,6 +822,10 @@ def verify_layout(tree_records):
     print(f"Tree age classes:               {age_counts}")
     print(f"Tree tiers:                     {tier_counts}")
     print(f"Lush crown count:               {lush_count}")
+    print(
+        "Maximum tree grounding error:  "
+        f"{max(tree['tka_grounding_error'] for tree in tree_records):.4f} m"
+    )
 
 
 def aim_at(obj, target):

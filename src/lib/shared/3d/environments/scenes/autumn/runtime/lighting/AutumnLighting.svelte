@@ -106,10 +106,10 @@
      grazing angle and produced a hot pale rim around the water. -->
 <T.PointLight
   color="#8170c5"
-  intensity={1.25}
+  intensity={0.45}
   distance={16}
   decay={2}
-  position.x={-10.5}
+  position.x={-14}
   position.y={4.2 + groundY}
-  position.z={7}
+  position.z={9}
 />

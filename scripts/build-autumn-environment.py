@@ -404,12 +404,16 @@ GRASS_HIGH = principled_material("Autumn Wind Grass High", (0.22, 0.25, 0.080), 
 for grass_material in (GRASS_BASE, GRASS_MEDIUM, GRASS_HIGH):
     grass_material.diffuse_color = (*grass_material.diffuse_color[:3], 1.0)
     grass_material.surface_render_method = "DITHERED"
+# The pond bed. The old values were so close to black that looking "into" the
+# water revealed nothing, so the surface read as an opaque cut-out in the
+# ground no matter how transparent it was made. A silty bed that is actually
+# visible is what makes water look like water.
 POND_GLOW = principled_material(
     "Pond Underlight",
-    (0.004, 0.018, 0.024),
-    roughness=0.62,
-    emission=(0.003, 0.018, 0.021),
-    emission_strength=0.025,
+    (0.055, 0.072, 0.068),
+    roughness=0.78,
+    emission=(0.006, 0.026, 0.030),
+    emission_strength=0.06,
 )
 QA_WATER = preview_water_material()
 
@@ -533,6 +537,84 @@ def create_terrain():
     terrain["tka_pond_radii"] = (POND_RX, POND_RY)
 
 
+def square_perimeter_points(half_size, segments):
+    """Walk a square's perimeter with the same parametrisation at any size.
+
+    Two rings sampled this way have matching point counts and matching corner
+    placement, so consecutive rings can be stitched without any seam. The inner
+    ring reproduces the authored terrain's own boundary vertices exactly.
+    """
+    points = []
+    step = 2.0 * half_size / segments
+    for i in range(segments):  # bottom edge, left to right
+        points.append((-half_size + step * i, -half_size))
+    for i in range(segments):  # right edge, bottom to top
+        points.append((half_size, -half_size + step * i))
+    for i in range(segments):  # top edge, right to left
+        points.append((half_size - step * i, half_size))
+    for i in range(segments):  # left edge, top to bottom
+        points.append((-half_size, half_size - step * i))
+    return points
+
+
+def create_terrain_apron():
+    """Extend the ground far past the authored terrain so no camera sees an edge.
+
+    Raising fog density cannot solve a finite world. The terrain rim sits ~31m
+    out and the performance camera sits ~34m back, so the edge is at roughly the
+    same depth as the trees framing it - any fog thick enough to hide the rim
+    also erases the scene. The fix is geometric: keep going. This apron carries
+    the ground out to 165m, which at the scene's fog density is around 99%
+    extinction, so it fades into the sky rather than ending.
+
+    It is deliberately cheap: 5 quad rings on the same perimeter
+    parametrisation as the terrain boundary, ~3.8k triangles total, one
+    material, no textures of its own.
+    """
+    ring_half_sizes = (TERRAIN_HALF_SIZE, 38.0, 52.0, 76.0, 112.0, 165.0)
+    segments = TERRAIN_SEGMENTS
+    span = ring_half_sizes[-1] - ring_half_sizes[0]
+
+    vertices = []
+    for ring_index, half_size in enumerate(ring_half_sizes):
+        blend = (half_size - ring_half_sizes[0]) / span
+        for x, y in square_perimeter_points(half_size, segments):
+            if ring_index == 0:
+                # Exactly the terrain's own boundary height: no seam, no crack.
+                z = terrain_height(x, y)
+            else:
+                # The outer ground falls beneath the camera's horizon while fog
+                # erases it. Raising this ring built a dark wall across the top
+                # of every runtime framing and left almost no sky for the moon.
+                far = -1.0 - 7.5 * blend**1.15
+                far += (1.4 * math.sin(x * 0.041) + 1.1 * math.cos(y * 0.035)) * blend
+                z = terrain_height(x, y) * (1.0 - blend) + far * blend
+            vertices.append((x, y, z))
+
+    perimeter = segments * 4
+    faces = []
+    for ring_index in range(len(ring_half_sizes) - 1):
+        base = ring_index * perimeter
+        nxt = (ring_index + 1) * perimeter
+        for i in range(perimeter):
+            j = (i + 1) % perimeter
+            faces.append((base + i, base + j, nxt + j, nxt + i))
+
+    mesh = bpy.data.meshes.new("Autumn Terrain Apron Mesh")
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    mesh.materials.append(DARK_EARTH)
+    uv = mesh.uv_layers.new(name="Autumn Apron UV")
+    for polygon in mesh.polygons:
+        polygon.use_smooth = True
+        for loop_index in polygon.loop_indices:
+            vertex = mesh.vertices[mesh.loops[loop_index].vertex_index]
+            uv.data[loop_index].uv = (vertex.co.x / 5.2, vertex.co.y / 5.2)
+    apron = bpy.data.objects.new("Autumn_Terrain_Apron", mesh)
+    bpy.context.scene.collection.objects.link(apron)
+    return len(faces)
+
+
 def organic_outline(cx, cy, rx, ry, seed, count=32, rotation=0.0):
     points = []
     for index in range(count):
@@ -599,7 +681,11 @@ def create_pond_basin():
             x = POND_X + math.cos(angle) * POND_RX * scale * irregular
             y = POND_Y + math.sin(angle) * POND_RY * scale * irregular
             if ring_index == 0:
-                z = terrain_height(x, y) + 0.025
+                # Tucked slightly UNDER the terrain rather than standing 25mm
+                # proud of it. Standing proud gave the bank a lip that caught
+                # the pond light at a grazing angle and ringed the water with a
+                # hard pale rim.
+                z = terrain_height(x, y) - 0.03
             elif ring_index == 1:
                 z = POND_WATER_HEIGHT - 0.10
             elif ring_index == 2:
@@ -1848,6 +1934,7 @@ def setup_qa_render():
 
 
 create_terrain()
+apron_face_count = create_terrain_apron()
 create_ground_regions()
 create_pond_basin()
 floating_leaf_count = create_floating_pond_leaves()
@@ -1876,6 +1963,7 @@ for label, path in QA_PATHS.items():
 print(f"Mesh objects:    {sum(1 for obj in bpy.data.objects if obj.type == 'MESH' and obj.visible_get())}")
 print(f"Unique meshes:   {len(bpy.data.meshes)}")
 print(f"Materials:       {len(bpy.data.materials)}")
+print(f"Terrain apron:   {apron_face_count} quads out to 165m")
 print(f"Floating leaves: {floating_leaf_count}")
 print(f"Grass clumps:    {sum(len(tier) for tier in grass_positions.values())}")
 print(f"Mushroom ring:   {len(mushroom_positions)} clusters")

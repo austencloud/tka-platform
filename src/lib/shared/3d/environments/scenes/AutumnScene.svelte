@@ -178,7 +178,9 @@
     // haze that separates it from the near-black upper sky instead of
     // dissolving into it. That is what gives the belt atmospheric perspective.
     const fogColor = new Color("#20153a");
-    const backgroundColor = new Color("#110b20");
+    // The gradient dome owns the visible sky; this is its near-black fallback
+    // while textures and shaders are still compiling.
+    const backgroundColor = new Color("#09081d");
     // Tuned against real frames, not arithmetic. 0.016 hid nothing - the finite
     // terrain edge stayed a hard sawtooth against black. 0.034 overshot badly:
     // the review harness parks its camera ~34m out, so at that density the
@@ -198,8 +200,10 @@
 
 <SkyGradient
   topColor="#09081d"
-  midColor="#321b3f"
-  bottomColor="#9a4931"
+  midColor="#38265a"
+  bottomColor="#7f5b9e"
+  gradientStart={0.43}
+  gradientEnd={0.53}
   moon={moonConfig}
 />
 <Starfield config={starfieldConfig} />
