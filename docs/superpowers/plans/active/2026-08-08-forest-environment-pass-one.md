@@ -294,8 +294,8 @@ with WebP textures, meshopt compression, and decoded triangle counts between
 - Keep F1 Woodland Hazel Shrub as the primary woody understory family.
 - Keep F2 Damp Sedge Tussock for hollows and wet transitions.
 - Keep F3 Chestnut Mushroom Colony as the natural fungi family.
-- Keep F4 Moss Root and Litter Island as a restrained, partly buried contact
-  accent; its looping roots read too strongly when fully exposed overhead.
+- Reject F4 Moss Root and Litter Island as a repeated full object. Preserve its
+  material idea through separate root arcs, moss mats, leaf drifts, and twigs.
 - Reject K1 and K2 KayKit bushes from Forest production because their smooth,
   faceted crowns conflict with the authored tree family.
 - Reject K3 Quaternius grass because its crystalline silhouette breaks at
@@ -303,7 +303,23 @@ with WebP textures, meshopt compression, and decoded triangle counts between
 - Keep A2 Bioluminescent Mushroom Grove in Autumn only. Its glow competes with
   Forest's firefly and campfire hierarchy.
 
-**Review question:** Which ground-life families survive close inspection?
+**Organic ecology revision:** Austen kept Gate 6 open on 2026-08-08 after
+identifying the risk that repeated bushes, mushroom colonies, and the circular
+root island would read as a spread-out generated scatter. He approved a revised
+family-and-microhabitat direction with “that sounds good,” then cancelled the
+proposed outside review with “yknow lets' do it ourselves.”
+
+The revised Gate 6 board presents six separate 8 x 8 m habitat studies: a damp
+willow hollow, beech-shade fern colony, fallen-log decomposition patch, sunlit
+hazel edge, root crossing with a directional litter drift, and sparse path
+shoulder. Across the board, four source plants become 17 visible silhouettes or
+growth stages. Ground contact uses five modular systems. No habitat repeats one
+complete plant variant, and the rejected circular root island appears zero
+times. The deterministic verifier records 27% to 58% negative-space targets,
+960 x 640 source renders, and a 2832 x 1570 review sheet.
+
+**Review question:** Do the family variation and microhabitat causes prevent the
+ground layer from reading as repeated asset stamps?
 
 ### Gate 7: Ground-life ecology
 
@@ -413,28 +429,32 @@ References:
 
 ## File ownership
 
-| Area                     | Owner                                                                     |
-| ------------------------ | ------------------------------------------------------------------------- |
-| Runtime orchestration    | `src/lib/shared/3d/environments/scenes/ForestScene.svelte`                |
-| Review route             | `src/routes/test/forest-scene/+page.svelte`                               |
-| Terrain and authored set | `scripts/build-forest-environment.py`, `blender/forest_environment.blend` |
-| Path layout contract     | `scripts/forest-path-layout.json`                                         |
-| Macro terrain texture    | `scripts/build-forest-floor-texture.mjs`                                  |
-| Tree lineup contract     | `scripts/forest-tree-lineup.json`                                         |
-| Tree layout contract     | `scripts/forest-tree-layout.json`                                         |
-| Tree review rig          | `scripts/build-forest-tree-lineup.py`                                     |
-| Tree review sheets       | `scripts/build-forest-tree-lineup-contact-sheet.mjs`                      |
-| Tree lineup verification | `scripts/verify-forest-tree-lineup.mjs`                                   |
-| Ground-life generation   | `scripts/forest-ground-life-images.json`                                  |
-| Ground-life lineup       | `scripts/forest-ground-life-lineup.json`                                  |
-| Ground-life review rig   | `scripts/build-forest-ground-life-lineup.py`                              |
-| Ground-life review sheet | `scripts/build-forest-ground-life-lineup-contact-sheet.mjs`               |
-| Ground-life verification | `scripts/verify-forest-ground-life-lineup.mjs`                            |
-| Export                   | `scripts/blender-export-forest-full.py`                                   |
-| Optimization             | `scripts/optimize-forest-environment.mjs`                                 |
-| GLB contract             | `scripts/verify-forest-environment-glb.mjs`                               |
-| Production asset         | `static/models/forest/forest-environment.glb`                             |
-| Later Meshy assets       | Forest manifests, task state, source GLBs, and Forest-only optimized GLBs |
+| Area                      | Owner                                                                     |
+| ------------------------- | ------------------------------------------------------------------------- |
+| Runtime orchestration     | `src/lib/shared/3d/environments/scenes/ForestScene.svelte`                |
+| Review route              | `src/routes/test/forest-scene/+page.svelte`                               |
+| Terrain and authored set  | `scripts/build-forest-environment.py`, `blender/forest_environment.blend` |
+| Path layout contract      | `scripts/forest-path-layout.json`                                         |
+| Macro terrain texture     | `scripts/build-forest-floor-texture.mjs`                                  |
+| Tree lineup contract      | `scripts/forest-tree-lineup.json`                                         |
+| Tree layout contract      | `scripts/forest-tree-layout.json`                                         |
+| Tree review rig           | `scripts/build-forest-tree-lineup.py`                                     |
+| Tree review sheets        | `scripts/build-forest-tree-lineup-contact-sheet.mjs`                      |
+| Tree lineup verification  | `scripts/verify-forest-tree-lineup.mjs`                                   |
+| Ground-life generation    | `scripts/forest-ground-life-images.json`                                  |
+| Ground-life lineup        | `scripts/forest-ground-life-lineup.json`                                  |
+| Ground-life review rig    | `scripts/build-forest-ground-life-lineup.py`                              |
+| Ground-life review sheet  | `scripts/build-forest-ground-life-lineup-contact-sheet.mjs`               |
+| Ground-life verification  | `scripts/verify-forest-ground-life-lineup.mjs`                            |
+| Ecology vignette contract | `scripts/forest-ground-life-ecology.json`                                 |
+| Ecology vignette rig      | `scripts/build-forest-ground-life-ecology.py`                             |
+| Ecology review sheet      | `scripts/build-forest-ground-life-ecology-contact-sheet.mjs`              |
+| Ecology verification      | `scripts/verify-forest-ground-life-ecology.mjs`                           |
+| Export                    | `scripts/blender-export-forest-full.py`                                   |
+| Optimization              | `scripts/optimize-forest-environment.mjs`                                 |
+| GLB contract              | `scripts/verify-forest-environment-glb.mjs`                               |
+| Production asset          | `static/models/forest/forest-environment.glb`                             |
+| Later Meshy assets        | Forest manifests, task state, source GLBs, and Forest-only optimized GLBs |
 
 ## Verification ledger
 

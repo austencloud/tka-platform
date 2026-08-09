@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "coordinateFrame": "Each review patch is a local 8 x 8 metre Blender x/y habitat",
+  "patchSizeMetres": 8,
+  "sources": [
+    {
+      "id": "fern",
+      "label": "Lush Fern",
+      "path": "static/models/autumn/fern-clump_raw.glb",
+      "targetHeightMetres": 1
+    },
+    {
+      "id": "hazel",
+      "label": "Woodland Hazel",
+      "path": "static/models/forest/ground-life/woodland-hazel-shrub_raw.glb",
+      "targetHeightMetres": 1.6
+    },
+    {
+      "id": "sedge",
+      "label": "Damp Sedge",
+      "path": "static/models/forest/ground-life/damp-sedge-tussock_raw.glb",
+      "targetHeightMetres": 0.8
+    },
+    {
+      "id": "mature-mushroom-colony",
+      "label": "Chestnut Mushroom Colony",
+      "path": "static/models/forest/ground-life/chestnut-mushroom-colony_raw.glb",
+      "targetHeightMetres": 0.55
+    }
+  ],
+  "families": [
+    {
+      "id": "hazel",
+      "variants": ["wide", "leaning", "young", "coppiced"],
+      "minimumSilhouettes": 4
+    },
+    {
+      "id": "fern",
+      "variants": ["mature", "fan", "leaning", "juvenile"],
+      "minimumSilhouettes": 4
+    },
+    {
+      "id": "sedge",
+      "variants": ["upright", "wind-bent", "broad", "young"],
+      "minimumSilhouettes": 4
+    },
+    {
+      "id": "mushroom",
+      "variants": [
+        "single",
+        "pair",
+        "small-colony",
+        "mature-colony",
+        "spent-colony"
+      ],
+      "minimumSilhouettes": 5
+    }
+  ],
+  "groundModules": ["root-arc", "moss-mat", "leaf-drift", "twig", "fallen-log"],
+  "habitats": [
+    {
+      "id": "damp-willow-hollow",
+      "label": "Damp willow hollow",
+      "premise": "Sedges follow a shallow seep; fungi occupy protected wood and root contact.",
+      "dominantFamilies": ["sedge", "mushroom"],
+      "supportFamilies": ["fern"],
+      "placementGrammar": "crescent colonies around a wet depression with an open seep",
+      "negativeSpaceFraction": 0.3,
+      "seed": 17291
+    },
+    {
+      "id": "beech-shade-fern-colony",
+      "label": "Beech-shade fern colony",
+      "premise": "Fern ages radiate away from a mature root flare without forming a ring.",
+      "dominantFamilies": ["fern"],
+      "supportFamilies": ["hazel", "mushroom"],
+      "placementGrammar": "one mature anchor, offset juveniles, and a dark litter pocket",
+      "negativeSpaceFraction": 0.34,
+      "seed": 28403
+    },
+    {
+      "id": "fallen-log-decomposition",
+      "label": "Fallen-log decomposition",
+      "premise": "Moss, fungi, and ferns track the shaded side of decaying wood.",
+      "dominantFamilies": ["mushroom", "fern"],
+      "supportFamilies": ["sedge"],
+      "placementGrammar": "linear succession along one log with unequal colony ages",
+      "negativeSpaceFraction": 0.27,
+      "seed": 39107
+    },
+    {
+      "id": "sunlit-hazel-edge",
+      "label": "Sunlit hazel edge",
+      "premise": "A multi-age hazel thicket occupies the bright edge while the foreground stays open.",
+      "dominantFamilies": ["hazel"],
+      "supportFamilies": ["fern", "sedge"],
+      "placementGrammar": "asymmetric thicket with one leaning crown and a sparse herb fringe",
+      "negativeSpaceFraction": 0.42,
+      "seed": 44621
+    },
+    {
+      "id": "root-crossing-litter-drift",
+      "label": "Root crossing and litter drift",
+      "premise": "Exposed root arcs cross the grade; leaves collect on one sheltered side.",
+      "dominantFamilies": ["fern"],
+      "supportFamilies": ["mushroom"],
+      "placementGrammar": "directional roots and a leeward drift, never a circular ground island",
+      "negativeSpaceFraction": 0.38,
+      "seed": 55711
+    },
+    {
+      "id": "sparse-path-shoulder",
+      "label": "Sparse path shoulder",
+      "premise": "Foot traffic and compacted soil keep the path edge broken and mostly bare.",
+      "dominantFamilies": ["sedge"],
+      "supportFamilies": ["fern", "hazel"],
+      "placementGrammar": "small interrupted pockets with no planted border rhythm",
+      "negativeSpaceFraction": 0.58,
+      "seed": 66103
+    }
+  ],
+  "reviewRules": {
+    "minimumHabitats": 6,
+    "minimumDistinctPlantVariants": 17,
+    "minimumGroundModuleTypes": 5,
+    "maximumFullRootIslandInstances": 0,
+    "maximumRepeatedFullMeshPerHabitat": 1,
+    "requiresNamedEcologicalCause": true
+  }
+}
