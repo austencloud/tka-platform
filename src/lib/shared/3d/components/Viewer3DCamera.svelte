@@ -15,7 +15,8 @@
   import OrbitControls from "./OrbitControls.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import type { CameraStateSnapshot } from "@austencloud/scene-3d";
-  import UnifiedCameraController from "../camera/UnifiedCameraController.svelte";
+  import { UnifiedCameraController } from "@austencloud/camera-3d";
+  import { cameraPreferences } from "../camera/camera-preferences.svelte";
   import { CameraMode } from "../camera/types";
   import type { AvatarState, PhysicsProvider } from "../camera/types";
   import type { ViewerControlSink } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
@@ -422,6 +423,7 @@
        no gravity, no ground. Click canvas to enter pointer lock. -->
   <UnifiedCameraController
     destinationId="viewer-3d-fly"
+    {cameraPreferences}
     avatarState={cameraPlayerAvatar}
     physicsProvider={cameraPlayerPhysics}
     enabled={true}

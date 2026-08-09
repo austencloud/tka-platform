@@ -8,6 +8,13 @@
   import { normalizeCameraFrameDelta } from "../frame-delta";
   import { createInputCapabilities } from "../input-capabilities";
   import { collectCameraColliders } from "../camera-collider-index";
+  import {
+    CLEAN_FLY_INTERACTION,
+    flushFlyInteraction,
+    markFlyInteractionDirty,
+    type FlyInteractionDirtyState,
+    type FlyInteractionKind,
+  } from "../fly-interaction-dirty";
 
   interface Props {
     destinationId: string;
@@ -47,6 +54,12 @@
      * you want on a narrow stair over a drop.
      */
     moveAxis?: { x: number; z: number };
+    /**
+     * Fired when a continuous look/move gesture completes (pointer released,
+     * pointer lock exited, keys blurred). Lets hosts log one analytics event
+     * per gesture instead of one per frame.
+     */
+    onInteractionEnd?: (kind: FlyInteractionKind) => void;
   }
 
   const props: Props = $props();
@@ -81,6 +94,34 @@
 
   const keys = new Set<string>();
   const inputCaps = createInputCapabilities();
+
+  const MOVEMENT_KEYS = new Set([
+    "KeyW",
+    "KeyA",
+    "KeyS",
+    "KeyD",
+    "KeyC",
+    "Space",
+    "ShiftLeft",
+    "ShiftRight",
+    "ArrowUp",
+    "ArrowDown",
+    "ArrowLeft",
+    "ArrowRight",
+  ]);
+  let flyInteractionState: FlyInteractionDirtyState = {
+    ...CLEAN_FLY_INTERACTION,
+  };
+
+  function markFlyInteraction(kind: "keyboard" | "pointer"): void {
+    flyInteractionState = markFlyInteractionDirty(flyInteractionState, kind);
+  }
+
+  function flushCompletedInteraction(): void {
+    const result = flushFlyInteraction(flyInteractionState);
+    flyInteractionState = result.state;
+    if (result.kind) props.onInteractionEnd?.(result.kind);
+  }
 
   let cachedCanvas: HTMLCanvasElement | null = null;
   let isDragging = $state(false);
@@ -215,8 +256,10 @@
     }
 
     if (isGameMode(mode)) {
+      const isMovementKey = MOVEMENT_KEYS.has(e.code);
+      if (isMovementKey && !e.repeat) markFlyInteraction("keyboard");
       keys.add(e.code);
-      if (["KeyW", "KeyA", "KeyS", "KeyD", "KeyC", "Space", "ShiftLeft", "ShiftRight", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
+      if (isMovementKey) {
         e.preventDefault();
       }
     }
@@ -231,6 +274,9 @@
     if (mode === CameraMode.ORBIT) return;
 
     if (isPointerLocked) {
+      if (e.movementX !== 0 || e.movementY !== 0) {
+        markFlyInteraction("pointer");
+      }
       yaw -= e.movementX * SETTINGS.lookSensitivity;
       pitch += e.movementY * SETTINGS.lookSensitivity;
       const config = mode === CameraMode.FIRST_PERSON ? SETTINGS.firstPerson : SETTINGS.thirdPerson;
@@ -238,6 +284,7 @@
     } else if (isDragging) {
       const deltaX = e.clientX - lastPointerPos.x;
       const deltaY = e.clientY - lastPointerPos.y;
+      if (deltaX !== 0 || deltaY !== 0) markFlyInteraction("pointer");
       lastPointerPos = { x: e.clientX, y: e.clientY };
       yaw -= deltaX * SETTINGS.lookSensitivity;
       pitch += deltaY * SETTINGS.lookSensitivity;
@@ -265,7 +312,9 @@
   }
 
   function handlePointerUp(_e: PointerEvent) {
+    const wasDragging = isDragging;
     isDragging = false;
+    if (wasDragging) flushCompletedInteraction();
   }
 
   function handlePointerMove(e: PointerEvent) {
@@ -276,6 +325,7 @@
       e.preventDefault();
       const deltaX = e.clientX - lastPointerPos.x;
       const deltaY = e.clientY - lastPointerPos.y;
+      if (deltaX !== 0 || deltaY !== 0) markFlyInteraction("pointer");
       lastPointerPos = { x: e.clientX, y: e.clientY };
       yaw -= deltaX * SETTINGS.lookSensitivity;
       pitch += deltaY * SETTINGS.lookSensitivity;
@@ -289,8 +339,12 @@
     if (!canvas) return;
     const wasLocked = isPointerLocked;
     isPointerLocked = document.pointerLockElement === canvas;
-    if (wasLocked && !isPointerLocked && mode !== CameraMode.ORBIT) {
-      if (!allowedModes || allowedModes.includes(CameraMode.ORBIT)) {
+    if (wasLocked && !isPointerLocked) {
+      flushCompletedInteraction();
+      if (
+        mode !== CameraMode.ORBIT &&
+        (!allowedModes || allowedModes.includes(CameraMode.ORBIT))
+      ) {
         returnToOrbit();
       }
     }
@@ -321,6 +375,7 @@
   }
 
   function handleBlur() {
+    flushCompletedInteraction();
     keys.clear();
   }
 
@@ -334,6 +389,7 @@
 
   function detachFromCanvas() {
     if (!attached) return;
+    flushCompletedInteraction();
     attached = false;
     const canvas = cachedCanvas;
     window.removeEventListener("keydown", handleKeyDown);

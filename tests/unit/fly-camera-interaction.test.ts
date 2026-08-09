@@ -3,7 +3,7 @@ import {
   CLEAN_FLY_INTERACTION,
   flushFlyInteraction,
   markFlyInteractionDirty,
-} from "$lib/shared/3d/domain/fly-interaction-dirty";
+} from "@austencloud/camera-3d";
 
 describe("fly camera interaction boundaries", () => {
   it("flushes repeated pointer activity as one completed interaction", () => {

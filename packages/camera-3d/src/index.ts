@@ -19,6 +19,15 @@ export type {
 
 // Constants
 export { CAMERA_DEFAULTS } from "./lib/constants";
+export {
+	CLEAN_FLY_INTERACTION,
+	flushFlyInteraction,
+	markFlyInteractionDirty,
+} from "./lib/fly-interaction-dirty";
+export type {
+	FlyInteractionDirtyState,
+	FlyInteractionKind,
+} from "./lib/fly-interaction-dirty";
 export { normalizeCameraFrameDelta } from "./lib/frame-delta";
 
 // Components
