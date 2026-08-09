@@ -340,11 +340,10 @@
     const {
       approach,
       descentRoofed,
-      westRun,
-      northRun,
-      eastBend,
-      surfacingUpper,
-      surfacingLower,
+      hub,
+      hubOculus,
+      channels,
+      buoyantShaft,
       shore,
       channel,
       pool,
@@ -364,8 +363,9 @@
 
     const stairIds = new Set([
       "descent-stair",
-      "surfacing-upper",
-      "surfacing-lower",
+      "channel-a-stair",
+      "channel-b-stair",
+      "channel-c-stair",
     ]);
 
     // ══ FLOORS ══ one box per layout floor rect, so the visible floor and the
@@ -407,7 +407,7 @@
             floor.id,
             floor.rect,
             floor.fromY,
-            floor.id === "surfacing-landing" ? "stone" : material
+            floor.id.endsWith("-deck") ? "stone" : material
           )
         );
       }
@@ -584,12 +584,12 @@
       rect.minZ + inset + rng() * Math.max(sz(rect) - inset * 2, 0.05),
     ];
 
-    // The bloom: thickest at the north run's midpoint, thinning along the path.
+    // The bloom: thickest at the hub centre, under the oculus light.
     const bloomRect: WorldRect = {
-      minX: northRun.minX,
-      maxX: northRun.maxX,
-      minZ: Math.max(northRun.minZ, bloomAnchor.z - 3),
-      maxZ: Math.min(northRun.maxZ, bloomAnchor.z + 3),
+      minX: Math.max(hub.minX, bloomAnchor.x - 3),
+      maxX: Math.min(hub.maxX, bloomAnchor.x + 3),
+      minZ: Math.max(hub.minZ, bloomAnchor.z - 3),
+      maxZ: Math.min(hub.maxZ, bloomAnchor.z + 3),
     };
     for (let i = 0; i < 10; i++) {
       plants.push({
@@ -600,11 +600,7 @@
     }
     const pathRects = [
       descentRoofed,
-      westRun,
-      northRun,
-      eastBend,
-      westRun,
-      northRun,
+      ...channels.flatMap((chan) => chan.legs),
     ];
     pathRects.forEach((rect, i) => {
       plants.push({
@@ -647,18 +643,12 @@
         distance: 12,
       },
       {
-        id: "gallery-bend-west",
-        pos: [cx(northRun), GALLERY_ROOF_Y - 0.5, westRun.minZ],
+        // the hub oculus: light = the way back up
+        id: "hub-oculus",
+        pos: [cx(hubOculus), WATERLINE_Y + 0.6, cz(hubOculus)],
         color: "#5fbfd8",
-        intensity: 8,
-        distance: 16,
-      },
-      {
-        id: "gallery-bend-north",
-        pos: [cx(northRun), GALLERY_ROOF_Y - 0.5, eastBend.maxZ],
-        color: "#5fbfd8",
-        intensity: 8,
-        distance: 16,
+        intensity: 9,
+        distance: 18,
       },
       {
         id: "gallery-bloom",
@@ -668,13 +658,13 @@
         distance: 18,
       },
       {
-        // warm spill down the surfacing stair — visible through the water from
-        // the last bend, which is the cue to turn
-        id: "surfacing-spill",
-        pos: [cx(surfacingUpper), CAUSEWAY_Y + 1.6, surfacingUpper.minZ + 1],
-        color: FIRELIGHT,
-        intensity: 14,
-        distance: 22,
+        // cool upward glow out of the buoyant shaft's hole in the apron —
+        // visible from the ring, the promise of the way the player arrives
+        id: "buoyant-shaft-glow",
+        pos: [cx(buoyantShaft), WATERLINE_Y + 0.4, cz(buoyantShaft)],
+        color: "#5fbfd8",
+        intensity: 10,
+        distance: 14,
       },
       {
         id: "apron-fill",
@@ -706,6 +696,26 @@
         intensity: 18,
         distance: 20,
       });
+    });
+    // One firelight per air-bell (the private audience), and the bell's warmth
+    // carried down to its channel mouth through the water (claim C-007).
+    channels.forEach((chan) => {
+      lights.push(
+        {
+          id: `bell-${chan.id}-firelight`,
+          pos: [chan.bell.shelfAnchor.x, SHELF_Y + 1.6, chan.bell.shelfAnchor.z],
+          color: FIRELIGHT,
+          intensity: 16,
+          distance: 14,
+        },
+        {
+          id: `channel-${chan.id}-mouth-glow`,
+          pos: [chan.mouth.x, GALLERY_FLOOR_Y + 1.4, chan.mouth.z],
+          color: FIRELIGHT,
+          intensity: 6,
+          distance: 8,
+        }
+      );
     });
 
     return { boxes, waterPlanes, waterVolumes, glyphs, plants, fish, lights };

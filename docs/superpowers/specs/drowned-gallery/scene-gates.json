@@ -58,7 +58,9 @@
       "id": "C-003",
       "class": "metaphor",
       "statement": "Channel length encodes letter order: A shortest, C (the hybrid) longest.",
-      "evidence": []
+      "evidence": [
+        "docs/superpowers/specs/drowned-gallery/drowned-gallery-gate1-report.json"
+      ]
     },
     {
       "id": "C-004",
@@ -125,9 +127,51 @@
     },
     {
       "id": "measured-plan",
-      "status": "in-progress",
-      "evidence": [],
-      "checks": [],
+      "status": "ready-for-review",
+      "evidence": [
+        {
+          "kind": "floor-plan",
+          "path": "docs/superpowers/specs/drowned-gallery/drowned-gallery-gate1-board.svg",
+          "sha256": "7149c47742a97641db67e7037e7fedeab00d82468340fce0715bac46388b8782"
+        },
+        {
+          "kind": "vertical-section",
+          "path": "docs/superpowers/specs/drowned-gallery/drowned-gallery-gate1-board.svg",
+          "sha256": "7149c47742a97641db67e7037e7fedeab00d82468340fce0715bac46388b8782"
+        },
+        {
+          "kind": "route-storyboard",
+          "path": "docs/superpowers/specs/drowned-gallery/drowned-gallery-gate1-board.svg",
+          "sha256": "7149c47742a97641db67e7037e7fedeab00d82468340fce0715bac46388b8782"
+        },
+        {
+          "kind": "sightline-study",
+          "path": "docs/superpowers/specs/drowned-gallery/drowned-gallery-gate1-report.json",
+          "sha256": "7fd00b5d30d68234dcd26432d255d1861c58031c323bdd7e9d586406f6f674b9"
+        }
+      ],
+      "checks": [
+        {
+          "name": "walkability",
+          "status": "passed",
+          "evidence": "Descent grade 0.52, all three bell stairs 0.60, every channel 2.5 m wide; headless playtest walks squeeze → hub → all three bells → shaft bottom, then apron → ring → Fire door (drowned-gallery-traversal.test.ts, 14 passing)."
+        },
+        {
+          "name": "clearance",
+          "status": "passed",
+          "evidence": "Minimum rock-roof headroom 2.0 m over every roofed run; bell ceilings 3.0 m over dry decks; roof at -1.9 stays below the -1.5 waterline everywhere it covers water."
+        },
+        {
+          "name": "sightlines",
+          "status": "passed",
+          "evidence": "Seven moving route-sampled windows per bell (Earth Gate 1.1 standard), 0 blocked, minimum floor margin 0.07-0.08 m, read distance 3.0 m; all 6 bell-to-bell cross-sightlines blocked by rock (Gate 1 report)."
+        },
+        {
+          "name": "final-view",
+          "status": "passed",
+          "evidence": "From the shaft-rim apron camera the mirror pool, waterfall and all three ring niches sit inside the 75-degree final frame (Gate 1 report finalView)."
+        }
+      ],
       "approval": null
     },
     {

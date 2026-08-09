@@ -1,6 +1,7 @@
 # Drowned Gallery (Three Channels) production contract
 
-**Status:** Gate 0 verified; Gate 1 measured plan in progress
+**Status:** Gate 0 verified; Gate 1 measured plan READY FOR REVIEW (awaiting
+Austen's comprehension check + approval)
 
 **Scene ID:** `drowned-gallery`
 
@@ -32,7 +33,7 @@ weightlessness → reflection.
 | Performer roster | Live museum data | `vulcan-cave-floor-plan.ts` (`cave-water-a/b/c`) | Stale `CAVE_MODE_ROOMS` entry for `cave-water` (cosmetic, 2026-08-02 loose end #5) |
 | TKA motion | Flow Arts MCP | Calls recorded 2026-08-09 (A, B, C explanations) | None |
 | Selected sequences | `museum-exhibit-sequences.ts` | Fingerprints in `./scene-gates.json` | None — exact live loops, MCP-generated 2026-08-02 |
-| Spatial geometry | `drowned-gallery-terrain.ts` layout | To be revised at Gate 1 (hub, channels, bells, shaft) | Current module still builds the S-path |
+| Spatial geometry | `drowned-gallery-terrain.ts` layout | Revised 2026-08-09 (hub, channels, bells, shaft) | None — S-path retired |
 | Blender output | 2026-08-09 pipeline | `scripts/build-drowned-gallery-graybox.py` + manifest | Rebuilds from the revised layout after Gate 1 |
 | Runtime behavior | `/test/drowned-gallery-graybox` walk route, then integrated museum | `src/routes/test/drowned-gallery-graybox/` | Buoyant-shaft gravity seam not yet wired |
 
@@ -87,15 +88,44 @@ anti, red anti; C = blue anti, red pro; group Split-Same (ABC). The museum
 loops are the exact catalog of these letters at four beats each, not newly
 generated variants.
 
-## Gate 1: Measured plan — IN PROGRESS
+## Gate 1: Measured plan — READY FOR REVIEW
 
-Deliverables per gate contract: revised layout module (drowned hub, three
-channels, three air-bells, buoyant shaft), plan board (top-down + long section
-through a channel-and-bell + numbered route strip + moving sightline windows
-per bell + doubled final frame), automated report, plan contract in code.
+Delivered 2026-08-09:
 
-The sightline check follows the Earth Gate 1.1 standard: continuous
-route-sampled windows aimed at the performer floor, not fixed stops.
+- **Revised layout module** (`drowned-gallery-terrain.ts` v3): drowned hub
+  (7.5 × 7.5 m, oculus overhead), three roofed channels (measured runs 7.3 /
+  10.3 / 13.3 m, A < B < C), three 6 × 5 m air-bells (dry deck at new datum
+  `BELL_FLOOR_Y = -1.2`, water margin, performer shelf at `SHELF_Y`, 3 m
+  ceiling), drowned shaft passage under the north door, buoyant shaft column
+  (2.5 m sq) through a rimmed hole in the grotto apron. Grotto ring, mirror
+  pool, waterfall, gilded threshold, all datums, and the elevationAt/blockedAt
+  contract carry forward (uncovered bay points still throw).
+- **Plan board + report**: `./drowned-gallery-gate1-board.svg` (top-down plan,
+  two developed long sections — dive and rise, 14-stop route strip, sightline
+  rays, final-frame wedge) and `./drowned-gallery-gate1-report.json`
+  (walkability / clearance / sightlines / final-view, all passed). Sightlines
+  follow the Earth Gate 1.1 standard: 7 moving route-sampled windows per bell
+  aimed at the performer floor; all clear; all 6 bell↔bell cross-sightlines
+  blocked by rock.
+- **Performer anchors moved**: `cave-water-a/b/c` now stage one-per-bell on the
+  bell shelves (shared `BELL_SHELF_ANCHORS_M` expression; the grotto holds no
+  anchors). `CAVE_MODE_ROOMS` and `ROOM_CONTENT` follow, which also retires
+  the stale-entry loose end from 2026-08-02.
+- **Open questions resolved at Gate 1** (recorded in the report): Q1 shaft
+  connects to the HUB as its fifth opening; Q3 the gallery footprint GROWS to
+  30 × 30 m; Q4 falling into the shaft is safe-and-floaty (rim = rendered
+  curb). Q2 (ring finale staging) is PROPOSED as restaging A/B/C on the kept
+  ring niches — needs Austen's call at review.
+- **Downstream movement (Q3 consequence)**: every room placed after the
+  gallery moved (Earth's south door shifted +2.5 m). Earth-canyon Blender
+  manifest regenerated; earth-long-terrace pinned span updated; downstream
+  grayboxes built from pre-move manifests need re-verification at their own
+  gates. Full museum unit suite green (402 tests).
+- **Traversal proof**: `drowned-gallery-traversal.test.ts` walks squeeze →
+  descent → hub → all three bells → shaft bottom, then (Gate 2 gravity seam)
+  apron → ring → Fire door; 33 drowned-gallery tests pass.
+- **Blender manifest regenerated** from the revised layout (source digest
+  `3c39e4cf…b7f0db`); the graybox rebuild itself is Gate 2.
 
 ## Gates 2–6
 
