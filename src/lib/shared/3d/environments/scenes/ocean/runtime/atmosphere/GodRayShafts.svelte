@@ -18,25 +18,47 @@
   import vertexShader from "../../shaders/atmosphere/god-ray.vert?raw";
   import fragmentShader from "../../shaders/atmosphere/god-ray.frag?raw";
   import { oceanDebugToggles } from "../../quality/ocean-debug-toggles.svelte";
+  import {
+    WATER_Y,
+    SHAFT_HEIGHT,
+    LEAN,
+    LEAN_AXIS,
+    HERO_TARGET_XZ,
+    shaftCentreForTarget,
+  } from "./god-ray-axis";
 
   // ── Config ─────────────────────────────────────────────────────────────
+  // One hero column plus a supporting cast. The hero descends from the water
+  // plane onto the stage and is the scene's key light made visible; the other 13
+  // are background depth cues, deliberately far dimmer so they cannot compete
+  // with it. A flat ring of 14 equal shafts is wallpaper, not a key.
   const COUNT = 14;
-  const INTENSITY = 0.3; // gentle (moody mid-depth target)
+  // NOT comparable to the pre-2026-08-09 value — see god-ray.frag, which used to
+  // square its own alpha through the additive blend. The same visible result now
+  // needs roughly 1/25th the number.
+  const INTENSITY = 0.42;
   const WIDTH = 3.5;
-  const HEIGHT = 18;
+  const HEIGHT = SHAFT_HEIGHT;
   const SPEED = 0.3;
 
-  // One coherent sun: shafts lean toward the directional light at [10,30,-20]
-  // (same vector OceanRuntimeSystems uses), tinted to the sun color, with tops
-  // anchored to the water plane. World-space geometry — discrete light columns
-  // that physically cannot become a screen-space haze.
-  const SUN_POS = new Vector3(10, 30, -20);
-  const WATER_Y = 12; // matches WaterSurface (groundY + 12)
-  const LEAN = 0.26; // base column lean toward the sun, radians
-  // Lean axis = horizontal axis perpendicular to the sun's ground azimuth, so
-  // every column tips the same way (toward the sun) regardless of its Y spin.
-  const SUN_AZ = Math.atan2(SUN_POS.x, SUN_POS.z);
-  const LEAN_AXIS = new Vector3(Math.cos(SUN_AZ), 0, -Math.sin(SUN_AZ)).normalize();
+  // Narrower than the 8 m stage and at full opacity. Tight-and-bright reads as a
+  // beam; wide-and-dim reads as haze, and the hero sits directly in front of the
+  // proscenium arch where haze just washes the arch out. 2.6x/1.0 washed it,
+  // 1.9x/0.8 disappeared into it; this is the beam.
+  const HERO_WIDTH_SCALE = 1.5;
+  const HERO_OPACITY = 1;
+  const SUPPORT_RADIUS_MIN = 7.5;
+  const SUPPORT_RADIUS_MAX = 15;
+  // Trimmed from 0.16/0.34. The hero is partly occluded by the arch (it reads
+  // THROUGH the aperture, which is the composition we want), so a support that
+  // lands in open water beside the arch was winning the frame outright at 0.34.
+  // The supporting cast has to stay quiet enough that the eye never mistakes one
+  // of them for the key.
+  const SUPPORT_OPACITY_MIN = 0.1;
+  const SUPPORT_OPACITY_MAX = 0.2;
+  // Golden angle: distributes the supporting columns without clumping and
+  // without the visible ring that an even angular step produces.
+  const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
   interface Props {
     halfRes?: boolean;
@@ -92,23 +114,59 @@
     const euler = new Euler();
 
     for (let i = 0; i < COUNT; i++) {
-      const x = (rng() - 0.5) * 22;
-      const z = (rng() - 0.5) * 22;
-      const rotY = rng() * Math.PI * 2;
-      const widthScale = 0.5 + rng() * 0.8;
-      opacities[i] = 0.4 + rng() * 0.6;
+      const isHero = i === 0;
+
+      let rotY: number;
+      let widthScale: number;
+      let leanJitter: number;
+
+      if (isHero) {
+        // Broadside to the default camera (which looks down -Z at the stage), so
+        // the hero reads as a beam rather than an edge-on sliver. No lean jitter:
+        // this column has to stay coaxial with the key spot light.
+        rotY = 0;
+        widthScale = HERO_WIDTH_SCALE;
+        leanJitter = 0;
+        // Solve the centre backwards from where the column must LAND — the tilt
+        // means a shaft centred over the stage would come down beside it.
+        pos.copy(
+          shaftCentreForTarget(
+            localGroundY,
+            HERO_TARGET_XZ.x,
+            HERO_TARGET_XZ.z
+          )
+        );
+        opacities[i] = HERO_OPACITY;
+      } else {
+        const t = (i - 1) / (COUNT - 2);
+        const angle = (i - 1) * GOLDEN_ANGLE;
+        const radius =
+          SUPPORT_RADIUS_MIN +
+          t * (SUPPORT_RADIUS_MAX - SUPPORT_RADIUS_MIN) +
+          (rng() - 0.5) * 2.5;
+        rotY = rng() * Math.PI * 2;
+        widthScale = 0.5 + rng() * 0.8;
+        leanJitter = (rng() - 0.5) * 0.08;
+        opacities[i] =
+          SUPPORT_OPACITY_MIN +
+          rng() * (SUPPORT_OPACITY_MAX - SUPPORT_OPACITY_MIN);
+        // Annulus, never the middle: the supporting columns ring the reef and
+        // leave the frame's centre to the hero.
+        pos.set(
+          Math.cos(angle) * radius,
+          localGroundY + WATER_Y - HEIGHT * 0.5,
+          Math.sin(angle) * radius
+        );
+      }
 
       // Each column keeps its own Y spin (so the planes face many ways and read
       // as a volume), then all tip toward the one sun by LEAN (+ small jitter).
       euler.set(0, rotY, 0);
       spinQ.setFromEuler(euler);
-      leanQ.setFromAxisAngle(LEAN_AXIS, LEAN + (rng() - 0.5) * 0.08);
+      leanQ.setFromAxisAngle(LEAN_AXIS, LEAN + leanJitter);
       q.copy(leanQ).multiply(spinQ);
 
       s.set(widthScale, 1, 1);
-      // Anchor the shaft TOP to the water plane (groundY + WATER_Y): center sits
-      // half a height below it, so the column descends from the surface.
-      pos.set(x, localGroundY + WATER_Y - HEIGHT * 0.5, z);
       mat.compose(pos, q, s);
       inst.setMatrixAt(i, mat);
     }

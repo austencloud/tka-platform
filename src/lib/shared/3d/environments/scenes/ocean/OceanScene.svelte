@@ -30,7 +30,9 @@
   // RoomEnvironment is intentionally only a soft specular fill. Direct light,
   // caustics, and shadows should define the reef's form; a full-strength white
   // room reflection flattens the underwater grade.
-  const OCEAN_ENVIRONMENT_INTENSITY = 0.08;
+  // Trimmed 0.08 → 0.05 with the Gate 2 key light: an omnidirectional specular
+  // wash is exactly the thing that stops a keyed scene from having a dark side.
+  const OCEAN_ENVIRONMENT_INTENSITY = 0.05;
 
   // Moody Twilight Reef depth grade. The seabed GLB is 70 m across while the
   // authored reef occupies a ~20 m radius, so at the old 0.012 the far edge of

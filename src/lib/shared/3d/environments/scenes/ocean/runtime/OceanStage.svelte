@@ -17,7 +17,14 @@
     depth: 6,
     height: 0.5,
     elevation: 0.5,
-    stoneColor: "#1a2028",
+    // Was #1a2028 — near-black, which under the Gate 2 key rendered the deck as
+    // a flat silhouette. The rune network is the stage's entire design feature
+    // and it was invisible, and with no legible surface there was no way to
+    // judge whether the key light was pooling or just filling. This is Gate 4's
+    // item pulled forward because Gate 2 cannot be verified without it: a
+    // weathered blue-grey dark enough to stay moody, light enough to show the
+    // spot's falloff gradient across the stone.
+    stoneColor: "#5a6672",
     runeGlowColor: "#44ddaa",
     glowIntensity: 0.5,
     mossIntensity: 0.8,

@@ -95,7 +95,79 @@ own. Re-evaluate the value after Gate 2, not before.
    owner. Austen's Scene Lab sliders currently do nothing for 3D fog, which
    will waste his time the moment he tries to tune this himself.
 
-### Gate 2 — One motivated key light
+### Gate 2 — One motivated key light — **DONE 2026-08-09**
+
+Shipped. The scene now has one axis, one key, and real darkness around it.
+
+**A shader bug was the actual reason no god ray had ever been visible.**
+`god-ray.frag` ended with `gl_FragColor = vec4(color * alpha, alpha * 0.35)`.
+Under `AdditiveBlending` (`SrcAlpha × One`) the blend multiplies by alpha a
+second time, so the emitted premultiplied colour was squared: a nominal 0.216
+alpha reached the framebuffer at `0.35 × 0.216² = 0.016`. The shafts were
+mathematically invisible. Fixed to `vec4(color, alpha)`. **Consequence:
+`uIntensity` now reads roughly 25× stronger than the same number did before —
+do not compare it to any historical value.** The vertical fade was also
+inverted (`smoothstep(1.0, 0.5, vUv.y)` erased the entire top half, so a shaft
+was brightest in the dark deep and absent where it enters the water); replaced
+with a top-down attenuation plus a `depthFalloff` term.
+
+**New shared owner: `runtime/atmosphere/god-ray-axis.ts`.** The sun vector, the
+lean angle, the water plane, the hero's landing point, and the stage deck height
+were previously duplicated across `GodRayShafts` and `OceanRuntimeSystems`, so
+the visible column and the light it was supposed to explain could drift apart
+silently. Everything now derives from `COLUMN_UP`, including
+`shaftCentreForTarget()` (solves a tilted column's centre backwards from where
+it must land) and `keyLightPosition()` (walks the same axis up to the water
+plane).
+
+**What landed, per item:**
+
+| Item | Result |
+|---|---|
+| 5 — dominant hero shaft | Promoted instance 0 of the existing `GodRayShafts` instanced mesh; no new light type. Broadside to camera, no lean jitter, coaxial with the key spot. Supporting cast is 13 golden-angle columns on a 7.5–15 m annulus, trimmed to 0.10–0.20 opacity so none of them outranks the hero. |
+| 6 — rebalance the rig | Hemisphere 0.2 → 0.09, directional 0.9 → 0.28, and a new `SpotLight` (260, `angle 0.30`, `penumbra 0.55`, `distance 34`, `decay 2`) travelling down the hero column's axis onto the deck. No `castShadow` on the spot — the reef is ~54M verts/frame and the directional already spends one shadow pass; the cone's falloff is what makes the darkness. |
+| 7 — torches as accents | 40 → 26, and reach 18 → 10. The reach was the real problem: an 18 m radius from the stage's front corners washed the entire foreground seabed orange, which is a large part of what read as "salmon sand". |
+| 8 — IBL | 0.08 → 0.05. An omnidirectional specular wash is exactly what stops a keyed scene from having a dark side. |
+
+**Two corrections to the original item list:**
+
+- **The sun's colour had to change, and item 6 did not anticipate it.**
+  `#ffffdd` → `#dde8ee`. At 10 m depth sunlight is already strongly
+  blue-shifted, and the warm sun was the single largest amplifier of the salmon
+  seabed albedo. An intermediate attempt at `#cfe0f0` over-cooled and bleached
+  the mid-ground coral to pale cyan; `#dde8ee` at 0.28 holds the coral's colour.
+- **Cone geometry, not intensity, is what makes a key read.** The first working
+  version used `angle 0.42 / penumbra 0.8`, which puts a 9 m-wide circle over an
+  8×6 m stage — the cone was *larger than its subject*, every falloff edge fell
+  outside the frame, and the result read as fill. Narrowing to 0.30 (a ~6.1 m
+  pool that sits inside the deck) is what produced a visible pool. Intensity
+  followed the area, 190 → 260. **Do not tune this light by intensity alone.**
+
+**Gate 4 item 13 was pulled forward, because Gate 2 could not be verified
+without it.** At `stoneColor: "#1a2028"` the deck rendered as a flat black
+silhouette: the rune network — the stage's entire design feature — was
+invisible, and with no legible surface there was no way to tell a pool from a
+wash. Now `#5a6672`. An intermediate `#3d4753` was still near-black in linear
+terms (only ~4× `#1a2028`, which was already black) and is recorded here so the
+next pass does not retry it. Items 14–16 remain open.
+
+**Verified** in Scene Lab 3D at 1920, 3840, 1440×900, 820×1180, 960×412, and
+375×667 (the distinct aspect ratios; 2560 is the same 1.78 framing as 1920 at a
+different scale). `npm run check`: 0 errors, 0 warnings. Before/after at 1920:
+`ocean-gate2-before-1920.webp` / `ocean-gate2-after-1920.webp`.
+
+**Honest residual — read this before Gate 3.** Two things still hold the frame
+back and neither is a Gate 2 item:
+
+1. **The foreground sand is still the brightest thing in the lower half.** It is
+   salmon, it is high-albedo, and it pulls the eye off the stage. This is item
+   11 and it is a Blender/texture change.
+2. **The hero shaft is partly occluded by the arch.** It reads *through* the
+   aperture, which is a genuinely good composition, but it means the beam is
+   atmospheric rather than unmistakable. Whether to move the stage, the arch, or
+   the hero's landing point is a Gate 4 composition call, not a lighting one.
+
+### Gate 2 — original item list (for reference)
 
 5. **Establish a single dominant god-ray shaft from the surface, landing on
    the stage.** This is the ocean's campfire: a key light the setting itself
