@@ -33,6 +33,7 @@
   import FirstFireCinderStateEffects from "./FirstFireCinderStateEffects.svelte";
   import FirstFireProcessionFlames from "./FirstFireProcessionFlames.svelte";
   import FirstFireShrineVolumes from "./FirstFireShrineVolumes.svelte";
+  import FirstFireEmberDressing from "./FirstFireEmberDressing.svelte";
   import {
     extractFirstFireFlameAnchors,
     FIRST_FIRE_EXPECTED_FLAME_COUNT,
@@ -127,6 +128,12 @@
   );
   const visibleFlameGroups = $derived(
     visibleFirstFireFlameGroups(reviewState.procession.phase)
+  );
+  // The volcanic dressing is the room's only light source, so it must go out
+  // at the extinguish beat for the blackout to actually be black.
+  const emberDressingLit = $derived(
+    reviewState.procession.phase !== "fire-extinguished" &&
+      reviewState.procession.phase !== "growth-complete"
   );
   const growthVisible = $derived(
     reviewState.procession.phase === "growth-complete"
@@ -467,12 +474,18 @@
 <T.Color attach="background" args={["#040303"]} />
 <T.FogExp2 attach="fog" args={["#0b0807", 0.012]} />
 
-<T.HemisphereLight color="#716b69" groundColor="#080605" intensity={0.22} />
-<T.DirectionalLight
-  position={[-8, 16, 4]}
-  color="#b8aca4"
-  intensity={0.32}
-  castShadow={false}
+<!--
+  Gate 3: no ambient fill and no key light. Every photon in the Cinder Court
+  comes from something that is burning, which is the only way the extinguish
+  beat can take the room to true black. The graybox's neutral hemisphere and
+  directional pair washed the basalt to salmon and are deliberately gone. A
+  floor-level bounce term stands in for radiosity off the magma without
+  surviving the blackout.
+-->
+<T.HemisphereLight
+  color="#3a1206"
+  groundColor="#1a0704"
+  intensity={emberDressingLit ? 0.09 : 0}
 />
 <T.PointLight
   position={[-27, 2.6, 0]}
@@ -513,6 +526,12 @@
 {/if}
 
 <FirstFireCinderStateEffects {contract} {reviewState} />
+
+<FirstFireEmberDressing
+  {contract}
+  lit={emberDressingLit}
+  activeShrineId={activeShrineId ?? null}
+/>
 
 {#if activeShrine}
   <FirstFireShrineVolumes
