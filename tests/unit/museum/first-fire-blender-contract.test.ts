@@ -128,6 +128,7 @@ describe("First Fire Cinder Court Blender coordinate contract", () => {
       "water-entry",
       "ember-bridge",
       "dj-threshold",
+      "dj-cooling",
       "ek-threshold",
       "fl-threshold",
       "blackout",
