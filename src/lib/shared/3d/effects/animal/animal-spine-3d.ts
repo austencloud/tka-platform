@@ -481,6 +481,19 @@ export function applyAnimalSlither3D(
   }
 }
 
+/**
+ * Species shape the authored slither instead of replacing it. Snakes stay
+ * close to the recorded prop trail, while the heavier fantasy silhouettes can
+ * carry more secondary motion without losing their path.
+ */
+export function animalSlitherMultiplier(
+  creature: AnimalIntent["creature"]
+): number {
+  if (creature === "snake") return 0.22;
+  if (creature === "dragon") return 0.62;
+  return 0.46;
+}
+
 export function animalBodyRadiusProfile(
   creature: AnimalIntent["creature"],
   progress: number
@@ -507,7 +520,7 @@ export function animalBuildMultiplier(
 ): number {
   if (creature === "caterpillar") return 1.28;
   if (creature === "dragon") return 1.12;
-  return 1;
+  return 0.86;
 }
 
 function writeTangents(

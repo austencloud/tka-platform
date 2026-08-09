@@ -9,8 +9,8 @@ describe("SceneEffectsManager3D", () => {
     const manager = new SceneEffectsManager3D();
     manager.initialize(scene);
 
-    // Existing six particle/material variants plus twelve pooled variants for
-    // Ink, Silk, Animal, and Pulse.
+    // Existing six particle/material variants plus twelve scene-level visual
+    // layers for Ink, Silk, Animal, and Pulse.
     expect(scene.children).toHaveLength(18);
     manager.update(1 / 60);
     manager.dispose();

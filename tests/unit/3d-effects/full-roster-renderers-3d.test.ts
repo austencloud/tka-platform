@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { InstancedMesh, Scene } from "three";
+import { InstancedMesh, Mesh, Scene } from "three";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import {
   resolveAnimal3D,
@@ -75,7 +75,7 @@ describe("native 3D full-roster renderers", () => {
     expect(scene.children).toHaveLength(0);
   });
 
-  it("renders Silk as a body strip with two highlighted edges", () => {
+  it("renders Silk as one continuous fabric surface with a glint layer", () => {
     const scene = new Scene();
     const renderer = new SilkRenderer3D();
     renderer.initialize(scene);
@@ -89,7 +89,54 @@ describe("native 3D full-roster renderers", () => {
     renderer.update([source], 1 / 60);
     source.position.x = 0.2;
     renderer.update([source], 1 / 60);
-    expect(visibleInstances(scene)).toBe(3);
+    source.position = { x: 0.4, y: 0.18, z: 0.08 };
+    renderer.update([source], 1 / 60);
+
+    const fabric = scene.children.find(
+      (child): child is Mesh =>
+        child instanceof Mesh && child.renderOrder === 108
+    );
+    const glint = scene.children.find(
+      (child): child is Mesh =>
+        child instanceof Mesh && child.renderOrder === 109
+    );
+    expect(fabric).toBeDefined();
+    expect(glint).toBeDefined();
+    expect(fabric?.geometry).toBe(glint?.geometry);
+    expect(fabric?.geometry.drawRange.count).toBe(12);
+    const positions = fabric!.geometry.getAttribute("position");
+    const normals = fabric!.geometry.getAttribute("normal");
+    for (let vertex = 0; vertex < 6; vertex++) {
+      expect(Number.isFinite(positions.getX(vertex))).toBe(true);
+      expect(Number.isFinite(positions.getY(vertex))).toBe(true);
+      expect(Number.isFinite(positions.getZ(vertex))).toBe(true);
+      expect(
+        Math.hypot(
+          normals.getX(vertex),
+          normals.getY(vertex),
+          normals.getZ(vertex)
+        )
+      ).toBeCloseTo(1, 5);
+    }
+    expect((positions.getX(0) + positions.getX(1)) * 0.5).toBeCloseTo(
+      source.position.x,
+      5
+    );
+    expect((positions.getY(0) + positions.getY(1)) * 0.5).toBeCloseTo(
+      source.position.y,
+      5
+    );
+    expect((positions.getZ(0) + positions.getZ(1)) * 0.5).toBeCloseTo(
+      source.position.z,
+      5
+    );
+    expect(
+      Math.hypot(
+        positions.getX(0) - positions.getX(1),
+        positions.getY(0) - positions.getY(1),
+        positions.getZ(0) - positions.getZ(1)
+      )
+    ).toBeGreaterThan(0.05);
     renderer.dispose();
     expect(scene.children).toHaveLength(0);
   });

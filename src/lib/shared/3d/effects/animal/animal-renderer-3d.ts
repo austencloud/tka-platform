@@ -8,6 +8,7 @@ import type { Animal3DParams } from "$lib/shared/effects/translators/webgl3d-typ
 import { AnimalAnatomy3D } from "./animal-anatomy-3d";
 import {
   applyAnimalSlither3D,
+  animalSlitherMultiplier,
   createAnimalSpineDynamics3D,
   dampAnimalMotionBlend3D,
   stepAnimalSpineDynamics3D,
@@ -202,7 +203,7 @@ export class AnimalRenderer3D {
       this.frames,
       this.clock,
       spacing,
-      params.slitherAmplitudeWorld,
+      params.slitherAmplitudeWorld * animalSlitherMultiplier(params.creature),
       state.motionBlend
     );
     stepAnimalSpineDynamics3D(

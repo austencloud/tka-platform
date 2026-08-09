@@ -86,7 +86,9 @@ export class AnimalAnatomy3D {
       const segmentLength =
         params.creature === "caterpillar"
           ? Math.max(radius * 0.7, spacing * visualStride * 0.72)
-          : Math.max(radius * 1.08, spacing * 0.82);
+          : params.creature === "snake"
+            ? Math.max(radius * 1.08, spacing * 1.12)
+            : Math.max(radius * 1.08, spacing * 0.82);
       w.sphere(
         w.bodyNormal,
         sampled[i3]!,
@@ -127,18 +129,14 @@ export class AnimalAnatomy3D {
         highlightAlpha * (1 - progress * 0.48),
         w.orientation
       );
-      if (
-        params.creature !== "caterpillar" &&
-        segment > 1 &&
-        segment % (params.creature === "dragon" ? 4 : 5) === 0
-      ) {
+      if (params.creature === "dragon" && segment > 1 && segment % 4 === 0) {
         this.writeDorsalScale(
           sampled,
           frames,
           segment,
           radius,
           highlightAlpha,
-          params.creature === "dragon"
+          true
         );
       }
     }
@@ -207,7 +205,7 @@ export class AnimalAnatomy3D {
         ? 1.42
         : params.creature === "caterpillar"
           ? 1.18
-          : 1.28);
+          : 1.08);
     // sampled[0] is the tracked prop endpoint. Keep the visible skull centered
     // on that contract instead of pushing it ahead of the source and making
     // the neck look like the thing attached to the prop.

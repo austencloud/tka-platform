@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   animalBodyRadiusProfile,
   animalBuildMultiplier,
+  animalSlitherMultiplier,
   applyAnimalSlither3D,
   createAnimalSpineDynamics3D,
   dampAnimalMotionBlend3D,
@@ -210,6 +211,9 @@ describe("Animal 3D spine", () => {
     );
     expect(animalBodyRadiusProfile("caterpillar", 0.7)).toBeGreaterThan(
       animalBodyRadiusProfile("snake", 0.7)
+    );
+    expect(animalSlitherMultiplier("snake")).toBeLessThan(
+      animalSlitherMultiplier("dragon") * 0.5
     );
   });
 });
