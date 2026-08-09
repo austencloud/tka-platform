@@ -1,0 +1,192 @@
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type {
+  DeckRelease,
+  DeckReleaseCard,
+  DeckRecipe,
+} from "../../../domain/models/DeckRelease";
+import {
+  extractReleasedSequenceIds,
+  findDuplicateRelease,
+  isGalleryRelease,
+  isLoopRelease,
+  isTnDRelease,
+} from "../deck-release-model";
+import type { DeckReleaserState } from "./deck-releaser-state.svelte";
+
+export interface DeckReleaseStateDependencies {
+  getAll(): Promise<DeckRelease[]>;
+  getNextNumber(): Promise<number>;
+  create(
+    cards: DeckReleaseCard[],
+    theme: string,
+    notes: string,
+    metadata: {
+      name: string;
+      description: string;
+      bluePropType: PropType;
+      redPropType: PropType;
+    },
+    recipe: DeckRecipe
+  ): Promise<DeckRelease>;
+  updateMetadata(deckNumber: number, metadata: { name: string }): Promise<void>;
+  delete(deckNumber: number): Promise<void>;
+}
+
+export function createDeckReleaseState(
+  deck: DeckReleaserState,
+  deps: DeckReleaseStateDependencies
+) {
+  let releases = $state<DeckRelease[]>([]);
+  let isLoading = $state(true);
+
+  const tndReleases = $derived(releases.filter(isTnDRelease));
+  const galleryReleases = $derived(releases.filter(isGalleryRelease));
+  const loopReleases = $derived(releases.filter(isLoopRelease));
+  const releasedSequenceIds = $derived(extractReleasedSequenceIds(releases));
+
+  async function load(): Promise<void> {
+    try {
+      releases = await deps.getAll();
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  async function loadNextNumber(): Promise<void> {
+    try {
+      deck.nextDeckNumber = await deps.getNextNumber();
+    } catch {
+      deck.nextDeckNumber = 1;
+    }
+  }
+
+  function findDuplicate(cards: DeckReleaseCard[]): DeckRelease | null {
+    return findDuplicateRelease(cards, releases);
+  }
+
+  async function remove(deckNumber: number): Promise<unknown | null> {
+    try {
+      await deps.delete(deckNumber);
+      releases = releases.filter(
+        (release) => release.deckNumber !== deckNumber
+      );
+      if (deck.viewingRelease?.deckNumber === deckNumber) {
+        deck.viewingRelease = null;
+        deck.themeOverride = null;
+        deck.bluePropOverride = null;
+        deck.redPropOverride = null;
+        deck.step = "configure";
+        deck.persist();
+      }
+      return null;
+    } catch (error) {
+      return error;
+    }
+  }
+
+  async function create(
+    name: string,
+    description: string
+  ): Promise<DeckRelease> {
+    deck.isReleasing = true;
+    try {
+      const release = await deps.create(
+        deck.cards,
+        deck.theme,
+        deck.notes,
+        {
+          name,
+          description,
+          bluePropType: deck.bluePropType,
+          redPropType: deck.redPropType,
+        },
+        deck.toRecipe()
+      );
+      deck.name = name;
+      deck.description = description;
+      deck.releasedNumber = release.deckNumber;
+      deck.nextDeckNumber = release.deckNumber + 1;
+      releases = [release, ...releases];
+      deck.step = "released";
+      deck.persist();
+      return release;
+    } finally {
+      deck.isReleasing = false;
+    }
+  }
+
+  async function rename(name: string): Promise<unknown | null> {
+    const trimmed = name.trim();
+    if (!trimmed || !deck.viewingRelease) return null;
+
+    const deckNumber = deck.viewingRelease.deckNumber;
+    deck.name = trimmed;
+    releases = releases.map((release) =>
+      release.deckNumber === deckNumber
+        ? { ...release, name: trimmed }
+        : release
+    );
+    deck.viewingRelease = { ...deck.viewingRelease, name: trimmed };
+    deck.persist();
+    try {
+      await deps.updateMetadata(deckNumber, { name: trimmed });
+      return null;
+    } catch (error) {
+      return error;
+    }
+  }
+
+  function activate(release: DeckRelease): void {
+    deck.viewingRelease = release;
+    deck.cards = release.sequences;
+    deck.notes = release.notes;
+    deck.name =
+      release.name ??
+      release.notes ??
+      `Deck #${String(release.deckNumber).padStart(3, "0")}`;
+    deck.description = release.description ?? "";
+    deck.nextDeckNumber = release.deckNumber;
+    deck.themeOverride = release.theme ?? null;
+    if (isLoopRelease(release)) {
+      deck.bluePropOverride =
+        (release.bluePropType as PropType | undefined) ?? null;
+      deck.redPropOverride =
+        (release.redPropType as PropType | undefined) ?? null;
+    } else {
+      deck.bluePropOverride = null;
+      deck.redPropOverride = null;
+    }
+    deck.step = "review";
+    deck.persist();
+  }
+
+  return {
+    get releases() {
+      return releases;
+    },
+    get isLoading() {
+      return isLoading;
+    },
+    get tndReleases() {
+      return tndReleases;
+    },
+    get galleryReleases() {
+      return galleryReleases;
+    },
+    get loopReleases() {
+      return loopReleases;
+    },
+    get releasedSequenceIds() {
+      return releasedSequenceIds;
+    },
+    load,
+    loadNextNumber,
+    findDuplicate,
+    remove,
+    create,
+    rename,
+    activate,
+  };
+}
+
+export type DeckReleaseState = ReturnType<typeof createDeckReleaseState>;

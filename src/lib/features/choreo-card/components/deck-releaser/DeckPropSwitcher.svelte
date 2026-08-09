@@ -12,7 +12,9 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
-  import { releaserState as rs } from "./deck-releaser-state.svelte";
+  import { getDeckReleaserContext } from "./context/deck-releaser-context";
+
+  const { state: rs } = getDeckReleaserContext();
 
   let open = $state(false);
 

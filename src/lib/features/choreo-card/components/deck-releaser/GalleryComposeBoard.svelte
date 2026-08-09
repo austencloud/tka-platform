@@ -7,7 +7,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
-  import { releaserState as rs } from "./deck-releaser-state.svelte";
+  import { getDeckReleaserContext } from "./context/deck-releaser-context";
+
+  const { state: rs } = getDeckReleaserContext();
 
   // Loaded collections (operator's library). Empty until the async load resolves
   // or when signed-out / no collections — the board still works (collection filter

@@ -40,7 +40,9 @@
   import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
   import type { StepCountWeight } from "../../domain/models/DeckRelease";
   import type { CatalogSourceSummary } from "../../services/deck-composer";
-  import { releaserState as rs } from "./deck-releaser-state.svelte";
+  import { getDeckReleaserContext } from "./context/deck-releaser-context";
+
+  const { state: rs } = getDeckReleaserContext();
 
   interface Props {
     weights: StepCountWeight[];
