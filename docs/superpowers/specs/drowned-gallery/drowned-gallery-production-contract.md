@@ -1,7 +1,12 @@
 # Drowned Gallery (Three Channels) production contract
 
-**Status:** Gate 0 verified; Gate 1 measured plan READY FOR REVIEW (awaiting
-Austen's comprehension check + approval)
+**Status:** Gate 1 APPROVED (Austen, 2026-08-09, "I'm in let's do it" —
+tracker `kZfilqc0ViZpGR3nPOPU`); Gate 2 playable graybox in progress.
+Approval riders: Q2 = state swap (automatons idle at ring niches, appear in
+their bell while visited, return for the finale; one body per letter, finale
+complete at any dive count); "three dives" checklist wording must become
+choose-one grammar in every Gate 2+ artifact; zero-dive ascent allowed;
+30 × 30 m footprint and Earth door shift accepted.
 
 **Scene ID:** `drowned-gallery`
 

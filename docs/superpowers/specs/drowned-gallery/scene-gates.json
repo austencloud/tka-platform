@@ -3,13 +3,14 @@
   "sceneId": "drowned-gallery",
   "title": "The Drowned Gallery (Three Channels)",
   "domainProofRequired": true,
-  "currentGate": 1,
+  "currentGate": 2,
   "authority": {
     "experienceSpec": "docs/superpowers/specs/2026-08-09-drowned-gallery-channels-design.md",
     "roomShellSource": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
     "planContract": "src/lib/features/museum/data/drowned-gallery-terrain.ts",
     "museumTrackerItems": [
-      "DRct0NTnvfNc20F1Z4ee"
+      "DRct0NTnvfNc20F1Z4ee",
+      "kZfilqc0ViZpGR3nPOPU"
     ]
   },
   "sequenceFingerprints": [
@@ -127,7 +128,7 @@
     },
     {
       "id": "measured-plan",
-      "status": "ready-for-review",
+      "status": "approved",
       "evidence": [
         {
           "kind": "floor-plan",
@@ -172,11 +173,17 @@
           "evidence": "From the shaft-rim apron camera the mirror pool, waterfall and all three ring niches sit inside the 75-degree final frame (Gate 1 report finalView)."
         }
       ],
-      "approval": null
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-09T07:19:48.284Z",
+        "quote": "I'm in let's do it",
+        "museumTrackerItem": "kZfilqc0ViZpGR3nPOPU",
+        "visualComprehensionConfirmed": true
+      }
     },
     {
       "id": "playable-graybox",
-      "status": "pending",
+      "status": "in-progress",
       "evidence": [],
       "checks": [],
       "approval": null
