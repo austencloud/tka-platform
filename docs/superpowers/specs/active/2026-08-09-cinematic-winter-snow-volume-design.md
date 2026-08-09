@@ -1,7 +1,7 @@
 # Cinematic Winter Snow Volume
 
 Status: Implemented, verified, and integrated in `@austencloud/backgrounds`
-0.7.3 after Opus 5 review.
+0.7.4 after Opus 5 review and foreground-atlas refinement.
 
 ## Outcome
 
@@ -508,10 +508,17 @@ published artifact.
   checks, `publint`, and tarball inspection. The broader dirty-checkout package
   run passed 101 tests. TKA `svelte-check` completed with zero errors and zero
   warnings.
-- The 1024 by 1024 RGBA atlas is 282,456 bytes. The installed runtime loaded it
-  once, reported all three band counts, and returned no optics warnings.
-- npm published `@austencloud/backgrounds` 0.7.3 with integrity
-  `sha512-wpJE1IcRQUMA9ZD1Vj8q5f9Wvm6JjKomM7Yo4xDAzmo4mPlfrghqVDKyYJOvloLEDt3l2c+xjl2mbqNMfvBe7Q==`.
+- The foreground atlas refinement replaced both soft-focus rows with branched
+  six-point crystals and samples their eight variants with a 70/30 split. Opus
+  rejected the first pass for flower-like silhouettes, then passed the corrected
+  atlas at all seven target viewports with no edge bleed or console errors.
+- The 1024 by 1024 RGBA atlas is 299,902 bytes. Every foreground cell retains a
+  transparent gutter of at least five pixels.
+- The installed 0.7.4 artifact passed fresh desktop and phone captures with the
+  299,902-byte atlas and no console warnings or errors. Its winter optics module
+  hash matches the clean release build byte for byte.
+- npm published `@austencloud/backgrounds` 0.7.4 with integrity
+  `sha512-VxiGqNbqZsB/p+8LlOOe1eA/yMe1ep5lGKwjXt0qHVqsGy1H2aMByMRJ2IlQQ+PmxjwwumjBrOoOph0+lRhHmg==`.
 
 ## Research basis
 
