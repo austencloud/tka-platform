@@ -38,6 +38,18 @@ export interface GhostActivityStep {
 
 export type GhostActivityGoal = "make" | "inspect" | "discover" | "correct";
 
+/**
+ * One imaginable future of an activity: the same goal pursued through a
+ * different step sequence. The Ghost forecasts each variant separately and
+ * chooses between its own imagined futures — the counterfactual step.
+ */
+export interface GhostActivityVariant {
+  id: string;
+  steps: GhostActivityStep[];
+}
+
+export const DEFAULT_ACTIVITY_VARIANT = "default";
+
 export type GhostSequenceBand = "empty" | "fragment" | "formed" | "long";
 
 export interface GhostActivitySituation {
@@ -73,6 +85,7 @@ export type GhostActivityPredictionDimension =
 /** Observable consequences the Ghost expects before choosing an activity. */
 export interface GhostActivityPrediction {
   activityId: GhostActivityId;
+  variantId: string;
   goal: GhostActivityGoal;
   source: GhostActivityPredictionSource;
   matches: number;
@@ -89,6 +102,7 @@ export interface GhostActivityPrediction {
 
 export interface ActiveGhostActivityExperience {
   activityId: GhostActivityId;
+  variantId: string;
   goal: GhostActivityGoal;
   startedAt: number;
   before: GhostActivityObservation;
@@ -109,6 +123,7 @@ export interface GhostActivityEvidence {
 
 export interface GhostActivityEpisode {
   activityId: GhostActivityId;
+  variantId: string;
   goal: GhostActivityGoal;
   situation: GhostActivitySituation;
   outcome: "completed" | "abandoned";
@@ -147,6 +162,12 @@ export interface GhostExperienceMemory {
   initialPredictionErrorTotal: number;
   accuratePredictions: number;
   confidentMisses: number;
+  /** Selections where two or more imagined futures were actually compared. */
+  counterfactualSelections: number;
+  /** Counterfactual selections that rejected the activity's default future. */
+  counterfactualDivergences: number;
+  /** Imagined futures forecast below neutral that the comparison passed over. */
+  suppressedFutures: number;
   lastPrediction: {
     prediction: GhostActivityPrediction;
     multiplier: number;
@@ -155,6 +176,7 @@ export interface GhostExperienceMemory {
 
 export interface ActiveGhostActivity {
   id: GhostActivityId;
+  variantId: string;
   steps: GhostActivityStep[];
   stepIndex: number;
   startedAt: number;

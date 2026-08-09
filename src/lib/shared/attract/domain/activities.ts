@@ -8,14 +8,16 @@
  * as one behavior instead of a new coin flip every frame.
  */
 
-import type {
-  ActiveGhostActivity,
-  GhostActivityGoal,
-  GhostActivityId,
-  GhostActivityMemory,
-  GhostActivityPrediction,
-  GhostActivityStep,
-  GhostContext,
+import {
+  DEFAULT_ACTIVITY_VARIANT,
+  type ActiveGhostActivity,
+  type GhostActivityGoal,
+  type GhostActivityId,
+  type GhostActivityMemory,
+  type GhostActivityPrediction,
+  type GhostActivityStep,
+  type GhostActivityVariant,
+  type GhostContext,
 } from "./intention";
 import {
   activitySituation,
@@ -33,6 +35,18 @@ export interface GhostActivityDefinition {
   can: (ctx: GhostContext) => boolean;
   appeal: (ctx: GhostContext) => number;
   plan: (ctx: GhostContext) => GhostActivityStep[];
+  /**
+   * Alternative futures of the same activity. When present, the Ghost
+   * forecasts each variant separately and chooses between them — plan() is
+   * then only the fallback for a variant list that comes back empty.
+   */
+  variants?: (ctx: GhostContext) => GhostActivityVariant[];
+}
+
+export interface ImaginedActivityFuture {
+  variant: GhostActivityVariant;
+  prediction: GhostActivityPrediction;
+  weight: number;
 }
 
 export interface ScoredGhostActivity {
@@ -82,6 +96,52 @@ function visitableModules(ctx: GhostContext): string[] {
   );
 }
 
+function composeSteps(
+  ctx: GhostContext,
+  detoured: boolean
+): GhostActivityStep[] {
+  const targetLength = 7 + ctx.rng.int(4);
+  const currentLength = ctx.hasSequence ? ctx.sequenceLength : 1;
+  const additions = Math.max(0, targetLength - currentLength);
+  const steps: GhostActivityStep[] = [];
+  if (!ctx.hasSequence) {
+    steps.push(step("overwhelmed", { optional: true }), step("pick-start"));
+  }
+  for (let i = 0; i < additions; i++) {
+    if (detoured && i === 2)
+      steps.push(step("filter-continuous", { optional: true }));
+    if (detoured && i === 4)
+      steps.push(step("fiddle-turns", { optional: true }));
+    steps.push(step("add-step"));
+  }
+  steps.push(step("play-it"));
+  return steps;
+}
+
+function browseSteps(ctx: GhostContext, openOne: boolean): GhostActivityStep[] {
+  return [
+    ...(ctx.moduleId === "library" ? [] : navigateToModule("library")),
+    step("filter-the-library"),
+    step("browse-gallery"),
+    step("jump-to-section", { optional: true }),
+    // After the Firestore budget is spent, Library stays a place to browse
+    // without becoming permission to keep opening paid records forever.
+    ...(openOne ? [step("open-someone-elses", { optional: true })] : []),
+    step("clear-the-filters", { optional: true }),
+    ...navigateToModule("create"),
+  ];
+}
+
+function styleSteps(reconsider: boolean): GhostActivityStep[] {
+  return [
+    step("try-effect"),
+    step("tune-effect", { optional: true }),
+    step("play-it", { optional: true }),
+    step("linger", { optional: true }),
+    ...(reconsider ? [step("reject-effect", { optional: true })] : []),
+  ];
+}
+
 export const GHOST_ACTIVITIES: readonly GhostActivityDefinition[] = [
   {
     id: "compose",
@@ -93,22 +153,11 @@ export const GHOST_ACTIVITIES: readonly GhostActivityDefinition[] = [
       ctx.sequenceLength < 8 &&
       (has(ctx, "start-position") || has(ctx, "option")),
     appeal: (ctx) => (ctx.hasSequence ? 0.82 : 1),
-    plan: (ctx) => {
-      const targetLength = 7 + ctx.rng.int(4);
-      const currentLength = ctx.hasSequence ? ctx.sequenceLength : 1;
-      const additions = Math.max(0, targetLength - currentLength);
-      const steps: GhostActivityStep[] = [];
-      if (!ctx.hasSequence) {
-        steps.push(step("overwhelmed", { optional: true }), step("pick-start"));
-      }
-      for (let i = 0; i < additions; i++) {
-        if (i === 2) steps.push(step("filter-continuous", { optional: true }));
-        if (i === 4) steps.push(step("fiddle-turns", { optional: true }));
-        steps.push(step("add-step"));
-      }
-      steps.push(step("play-it"));
-      return steps;
-    },
+    plan: (ctx) => composeSteps(ctx, true),
+    variants: (ctx) => [
+      { id: "detoured", steps: composeSteps(ctx, true) },
+      { id: "direct", steps: composeSteps(ctx, false) },
+    ],
   },
   {
     id: "generate",
@@ -200,14 +249,10 @@ export const GHOST_ACTIVITIES: readonly GhostActivityDefinition[] = [
     cooldownMs: 65_000,
     can: (ctx) => ctx.hasSequence && has(ctx, "effect"),
     appeal: () => 0.58,
-    plan: (ctx) => [
-      step("try-effect"),
-      step("tune-effect", { optional: true }),
-      step("play-it", { optional: true }),
-      step("linger", { optional: true }),
-      ...(ctx.rng.next() < 0.35
-        ? [step("reject-effect", { optional: true })]
-        : []),
+    plan: (ctx) => styleSteps(ctx.rng.next() < 0.35),
+    variants: () => [
+      { id: "keep", steps: styleSteps(false) },
+      { id: "reconsider", steps: styleSteps(true) },
     ],
   },
   {
@@ -256,16 +301,10 @@ export const GHOST_ACTIVITIES: readonly GhostActivityDefinition[] = [
       (ctx.moduleId === "library" || ctx.lastIntentionId !== "go-to-module") &&
       (ctx.moduleId === "library" || ctx.reachableModules.includes("library")),
     appeal: (ctx) => 0.32 + Math.min(0.18, ctx.moduleDwellMs / 600_000),
-    plan: (ctx) => [
-      ...(ctx.moduleId === "library" ? [] : navigateToModule("library")),
-      step("filter-the-library"),
-      step("browse-gallery"),
-      step("jump-to-section", { optional: true }),
-      // After the Firestore budget is spent, Library stays a place to browse
-      // without becoming permission to keep opening paid records forever.
-      step("open-someone-elses", { optional: true }),
-      step("clear-the-filters", { optional: true }),
-      ...navigateToModule("create"),
+    plan: (ctx) => browseSteps(ctx, true),
+    variants: (ctx) => [
+      { id: "open-one", steps: browseSteps(ctx, true) },
+      { id: "browse-only", steps: browseSteps(ctx, false) },
     ],
   },
   {
@@ -408,6 +447,44 @@ export function scoreActivities(
     .sort((a, b) => b.score - a.score);
 }
 
+/**
+ * Imagine each future of an activity: forecast every variant against memory
+ * and weight it by how the forecast advises selection. Pure, for tests and
+ * for the HUD.
+ */
+export function imagineActivityFutures(
+  definition: GhostActivityDefinition,
+  ctx: GhostContext
+): ImaginedActivityFuture[] {
+  let variants: GhostActivityVariant[] = [];
+  try {
+    variants = definition.variants?.(ctx) ?? [];
+  } catch {
+    variants = [];
+  }
+  if (!variants.length) {
+    variants = [
+      { id: DEFAULT_ACTIVITY_VARIANT, steps: definition.plan(ctx) },
+    ];
+  }
+  return variants
+    .filter((variant) => variant.steps.length > 0)
+    .map((variant) => {
+      const prediction = predictActivityOutcome(
+        ctx.experience,
+        definition.id,
+        definition.goal,
+        activitySituation(ctx),
+        variant.id
+      );
+      return {
+        variant,
+        prediction,
+        weight: activityPredictionMultiplier(prediction),
+      };
+    });
+}
+
 export function startNextActivity(
   definitions: readonly GhostActivityDefinition[],
   ctx: GhostContext,
@@ -416,35 +493,64 @@ export function startNextActivity(
   const candidates = scoreActivities(definitions, ctx, now).slice(0, 4);
   const selected = ctx.rng.weighted(candidates, (candidate) => candidate.score);
   if (!selected) return null;
-  const steps = selected.definition.plan(ctx);
-  if (!steps.length) return null;
+  // Candidates whose learned forecast argued against them and who then lost
+  // the draw: experience talking the ghost out of an option before it is
+  // ever chosen. This is where most negative judgment now shows up — a
+  // reduced option rarely survives to be the selection it used to be.
+  for (const candidate of candidates) {
+    if (
+      candidate !== selected &&
+      candidate.prediction.source !== "prior" &&
+      candidate.predictionMultiplier < 1
+    ) {
+      ctx.experience.suppressedFutures += 1;
+    }
+  }
+  // The counterfactual step: compare this activity's imagined futures and
+  // draw between them. Learned judgment shifts the odds (each weight is the
+  // bounded 0.75–1.25 multiplier) but never imprisons the choice.
+  const futures = imagineActivityFutures(selected.definition, ctx);
+  const future = ctx.rng.weighted(futures, (candidate) => candidate.weight);
+  if (!future) return null;
+  if (futures.length > 1) {
+    ctx.experience.counterfactualSelections += 1;
+    if (future !== futures[0]) {
+      ctx.experience.counterfactualDivergences += 1;
+    }
+    for (const candidate of futures) {
+      if (candidate !== future && candidate.weight < 1) {
+        ctx.experience.suppressedFutures += 1;
+      }
+    }
+  }
   const activity: ActiveGhostActivity = {
     id: selected.definition.id,
-    steps,
+    variantId: future.variant.id,
+    steps: future.variant.steps,
     stepIndex: 0,
     startedAt: now,
   };
   ctx.activities.current = activity;
   ctx.experience.lastPrediction = {
-    prediction: selected.prediction,
-    multiplier: selected.predictionMultiplier,
+    prediction: future.prediction,
+    multiplier: future.weight,
   };
-  if (selected.prediction.source !== "prior") {
+  if (future.prediction.source !== "prior") {
     ctx.experience.informedSelections += 1;
-    if (selected.predictionMultiplier > 1) {
+    if (future.weight > 1) {
       ctx.experience.boostedSelections += 1;
-    } else if (selected.predictionMultiplier < 1) {
+    } else if (future.weight < 1) {
       ctx.experience.reducedSelections += 1;
     }
   }
-  if (selected.prediction.uncertainty >= 0.65) {
+  if (future.prediction.uncertainty >= 0.65) {
     ctx.experience.exploratorySelections += 1;
   }
   beginActivityExperience(
     ctx.experience,
     activity,
     selected.definition.goal,
-    selected.prediction,
+    future.prediction,
     ctx,
     now
   );

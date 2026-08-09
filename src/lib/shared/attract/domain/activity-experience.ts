@@ -75,6 +75,7 @@ export function beginActivityExperience(
 ): void {
   memory.active = {
     activityId: activity.id,
+    variantId: activity.variantId,
     goal,
     startedAt: now,
     before: observeActivityWorld(ctx),
@@ -189,8 +190,6 @@ export function finishActivityExperience(
   };
   const achievement = achievementFor(active.goal, active, evidence);
   const completionValue = outcome === "completed" ? 1 : 0;
-  const rawValue = achievement * 0.75 + completionValue * 0.25;
-  const value = outcome === "completed" ? rawValue : Math.min(0.45, rawValue);
   const signature = resultSignature(after, evidence);
   const identicalResults = memory.episodes.filter(
     (episode) =>
@@ -198,6 +197,13 @@ export function finishActivityExperience(
       episode.resultSignature === signature
   ).length;
   const novelty = identicalResults === 0 ? 1 : 1 / (1 + identicalResults);
+  // Novelty is part of worth, not just a side channel: reproducing an
+  // identical result is worth less each time. This is the deterministic
+  // negative-learning pressure — without it the world only ever rewards, and
+  // the predictor's value forecasts have nothing real to be wrong about.
+  const rawValue =
+    achievement * 0.6 + completionValue * 0.2 + clamp01(novelty) * 0.2;
+  const value = outcome === "completed" ? rawValue : Math.min(0.45, rawValue);
   const predictionEvaluation = evaluateActivityPrediction(active.prediction, {
     completion: outcome === "completed" ? 1 : 0,
     achievement: clamp01(achievement),
@@ -210,6 +216,7 @@ export function finishActivityExperience(
 
   const episode: GhostActivityEpisode = {
     activityId: activity.id,
+    variantId: active.variantId,
     goal: active.goal,
     situation: active.before.situation,
     outcome,

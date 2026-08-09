@@ -438,6 +438,36 @@ describe("ghost session simulation", () => {
         ...session.mind.memory.activities.abandoned.values(),
       ].reduce((total, count) => total + count, 0);
 
+      if (process.env.GHOST_1000_DEBUG) {
+        const values = experience.episodes.map(({ value }) => value);
+        console.log(
+          "GHOST_1000_DEBUG " +
+            JSON.stringify({
+              recorded: experience.recorded,
+              lowValueEpisodes: experience.lowValueEpisodes,
+              minEpisodeValue: Math.min(...values),
+              meanEpisodeValue:
+                values.reduce((total, value) => total + value, 0) /
+                values.length,
+              counterfactualSelections: experience.counterfactualSelections,
+              counterfactualDivergences: experience.counterfactualDivergences,
+              suppressedFutures: experience.suppressedFutures,
+              reducedSelections: experience.reducedSelections,
+              boostedSelections: experience.boostedSelections,
+              minForecastValue: Math.min(
+                ...experience.episodes.map(({ prediction }) => prediction.value)
+              ),
+              byActivity: experience.episodes.reduce<Record<string, number>>(
+                (acc, { activityId, variantId }) => {
+                  const key = `${activityId}:${variantId}`;
+                  acc[key] = (acc[key] ?? 0) + 1;
+                  return acc;
+                },
+                {}
+              ),
+            })
+        );
+      }
       expect(session.app.presses.length).toBeGreaterThanOrEqual(1_000);
       expect(session.log.every((record) => record.ok)).toBe(true);
       expect(prematureReplays).toEqual([]);
@@ -463,7 +493,13 @@ describe("ghost session simulation", () => {
       expect(experience.initialPredictionCount).toBe(30);
       expect(experience.informedSelections).toBeGreaterThan(0);
       expect(experience.boostedSelections).toBeGreaterThan(0);
-      expect(experience.reducedSelections).toBeGreaterThan(0);
+      // Negative judgment now acts in two places: reducing a chosen activity,
+      // or passing over an imagined future forecast below neutral. Either
+      // counts as experience talking the ghost out of something.
+      expect(
+        experience.reducedSelections + experience.suppressedFutures
+      ).toBeGreaterThan(0);
+      expect(experience.counterfactualSelections).toBeGreaterThan(0);
       expect(experience.exploratorySelections).toBeGreaterThan(0);
       expect(experience.accuratePredictions).toBeGreaterThan(0);
       expect(experience.highValueEpisodes).toBeGreaterThan(0);

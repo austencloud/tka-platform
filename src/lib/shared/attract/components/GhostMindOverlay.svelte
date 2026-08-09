@@ -46,7 +46,10 @@
   <div class="facts">
     <span class="label">Activity</span>
     <span class="value">
-      {status.activityId ?? "none"}
+      {status.activityId ?? "none"}{status.activityVariantId &&
+      status.activityVariantId !== "default"
+        ? ` · ${status.activityVariantId}`
+        : ""}
       <span class="counter">{activityPosition}</span>
     </span>
 

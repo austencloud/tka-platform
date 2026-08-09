@@ -39,8 +39,18 @@ function context(): GhostContext {
   };
 }
 
-function activity(id: GhostActivityId, startedAt: number): ActiveGhostActivity {
-  return { id, steps: [{ intentionId: "test" }], stepIndex: 0, startedAt };
+function activity(
+  id: GhostActivityId,
+  startedAt: number,
+  variantId = "default"
+): ActiveGhostActivity {
+  return {
+    id,
+    variantId,
+    steps: [{ intentionId: "test" }],
+    stepIndex: 0,
+    startedAt,
+  };
 }
 
 function record(
@@ -48,14 +58,16 @@ function record(
   id: GhostActivityId,
   goal: GhostActivityGoal,
   startedAt: number,
-  mutate: () => void = () => {}
+  mutate: () => void = () => {},
+  variantId = "default"
 ) {
-  const active = activity(id, startedAt);
+  const active = activity(id, startedAt, variantId);
   const prediction = predictActivityOutcome(
     ctx.experience,
     id,
     goal,
-    activitySituation(ctx)
+    activitySituation(ctx),
+    variantId
   );
   beginActivityExperience(
     ctx.experience,
@@ -88,7 +100,8 @@ describe("ghost activity experience", () => {
     expect(made.achievement).toBe(1);
     expect(made.value).toBe(1);
     expect(emptyVisit.achievement).toBe(0);
-    expect(emptyVisit.value).toBe(0.25);
+    // Completed (0.2) plus first-time novelty (0.2), zero achievement.
+    expect(emptyVisit.value).toBeCloseTo(0.4);
   });
 
   it("predicts useful and disappointing consequences without banning either", () => {
@@ -208,6 +221,82 @@ describe("ghost activity experience", () => {
     expect(missedEpisode.surprises).toContain("achievement");
     expect(ctx.experience.confidentMisses).toBe(1);
     expect(afterMiss.reliability).toBeLessThan(beforeMiss.reliability);
+  });
+
+  it("buys real confidence from consistent, similar, recent evidence", () => {
+    const ctx = context();
+    for (let index = 0; index < 6; index++) {
+      record(ctx, "compose", "make", index * 2_000, () => {
+        ctx.playback.presentationRevision += 1;
+        ctx.sequenceWord = `WORD-${index}`;
+      });
+    }
+
+    const prediction = predictActivityOutcome(
+      ctx.experience,
+      "compose",
+      "make",
+      activitySituation(ctx)
+    );
+
+    // Six consistent matches in the same situation must be actionable
+    // evidence, not the 0.25 confidence the squared-similarity curve gave.
+    expect(prediction.matches).toBe(6);
+    expect(prediction.confidence).toBeGreaterThan(0.6);
+    expect(prediction.confidence).toBeLessThanOrEqual(1);
+  });
+
+  it("devalues reproducing an identical result", () => {
+    const ctx = context();
+    const values: number[] = [];
+    for (let index = 0; index < 4; index++) {
+      values.push(record(ctx, "visit", "discover", index * 2_000).value);
+    }
+
+    // Same signature every time: worth declines, and by the repeats the
+    // episode is genuinely below the neutral expectation — negative evidence
+    // the predictor can act on.
+    expect(values[0]).toBeGreaterThan(values[3]!);
+    expect(values[3]).toBeLessThan(0.5);
+  });
+
+  it("forecasts each variant from its own episodes before cross-variant ones", () => {
+    const ctx = context();
+    for (let index = 0; index < 3; index++) {
+      record(
+        ctx,
+        "browse",
+        "discover",
+        index * 2_000,
+        () => {
+          ctx.askedAbout.add(`control-${index}`);
+        },
+        "browse-only"
+      );
+      record(ctx, "browse", "discover", index * 2_000 + 1_000, () => {}, "open-one");
+    }
+
+    const good = predictActivityOutcome(
+      ctx.experience,
+      "browse",
+      "discover",
+      activitySituation(ctx),
+      "browse-only"
+    );
+    const poor = predictActivityOutcome(
+      ctx.experience,
+      "browse",
+      "discover",
+      activitySituation(ctx),
+      "open-one"
+    );
+
+    expect(good.source).toBe("activity");
+    expect(poor.source).toBe("activity");
+    expect(good.value).toBeGreaterThan(poor.value);
+    expect(activityPredictionMultiplier(good)).toBeGreaterThan(
+      activityPredictionMultiplier(poor)
+    );
   });
 
   it("keeps a bounded recent history while retaining the lifetime count", () => {

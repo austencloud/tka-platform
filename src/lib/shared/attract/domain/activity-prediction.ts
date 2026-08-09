@@ -6,20 +6,23 @@
  * no activity-specific reward rules, model calls, or hidden persistence.
  */
 
-import type {
-  GhostActivityEpisode,
-  GhostActivityGoal,
-  GhostActivityId,
-  GhostActivityPrediction,
-  GhostActivityPredictionDimension,
-  GhostActivitySituation,
-  GhostExperienceMemory,
+import {
+  DEFAULT_ACTIVITY_VARIANT,
+  type GhostActivityEpisode,
+  type GhostActivityGoal,
+  type GhostActivityId,
+  type GhostActivityPrediction,
+  type GhostActivityPredictionDimension,
+  type GhostActivitySituation,
+  type GhostExperienceMemory,
 } from "./intention";
 
 export const NEUTRAL_EXPECTED_VALUE = 0.72;
 const MAX_RETRIEVED_EPISODES = 6;
 const MIN_SIMILARITY = 0.55;
 const SAME_GOAL_EVIDENCE_SCALE = 0.55;
+/** Same activity, different step sequence: strong but not variant-exact. */
+const CROSS_VARIANT_EVIDENCE_SCALE = 0.85;
 const SURPRISE_THRESHOLD = 0.45;
 
 interface PredictionVector {
@@ -143,7 +146,9 @@ export function predictActivityOutcome(
   memory: GhostExperienceMemory,
   activityId: GhostActivityId,
   goal: GhostActivityGoal,
-  situation: GhostActivitySituation
+  situation: GhostActivitySituation,
+  /** Omit to forecast the activity across all of its variants. */
+  variantId?: string
 ): GhostActivityPrediction {
   const prior = GOAL_PRIORS[goal];
   const eligible = memory.episodes
@@ -156,9 +161,19 @@ export function predictActivityOutcome(
       ({ episode, similarity }) =>
         episode.goal === goal && similarity >= MIN_SIMILARITY
     );
-  const sameActivity = eligible.filter(
+  const sameActivityAnyVariant = eligible.filter(
     ({ episode }) => episode.activityId === activityId
   );
+  // Variant-exact evidence first: the forecast is about THIS step sequence,
+  // not the activity in the abstract. Cross-variant episodes still speak, at
+  // a discount, when the exact variant has never been tried.
+  const sameVariant =
+    variantId === undefined
+      ? sameActivityAnyVariant
+      : sameActivityAnyVariant.filter(
+          ({ episode }) => episode.variantId === variantId
+        );
+  const sameActivity = sameVariant.length ? sameVariant : sameActivityAnyVariant;
   const source = sameActivity.length
     ? "activity"
     : eligible.length
@@ -174,6 +189,7 @@ export function predictActivityOutcome(
   if (!evidence.length) {
     return {
       activityId,
+      variantId: variantId ?? DEFAULT_ACTIVITY_VARIANT,
       goal,
       source: "prior",
       matches: 0,
@@ -184,7 +200,12 @@ export function predictActivityOutcome(
     };
   }
 
-  const evidenceScale = source === "activity" ? 1 : SAME_GOAL_EVIDENCE_SCALE;
+  const evidenceScale =
+    source === "activity"
+      ? sameVariant.length
+        ? 1
+        : CROSS_VARIANT_EVIDENCE_SCALE
+      : SAME_GOAL_EVIDENCE_SCALE;
   const totals: PredictionVector = {
     completion: 0,
     achievement: 0,
@@ -196,7 +217,11 @@ export function predictActivityOutcome(
   let totalWeight = 0;
   let weightedAccuracy = 0;
   for (const { episode, similarity, recency } of evidence) {
-    const weight = similarity * similarity * recency * evidenceScale;
+    // Linear in similarity, not squared: with the 0.55 similarity floor,
+    // squaring made near-full confidence unreachable from realistic evidence
+    // — six consistent same-activity matches read as 0.25 confidence, which
+    // is under-calibration by construction, not epistemic caution.
+    const weight = similarity * recency * evidenceScale;
     const actual = episodeVector(episode);
     totalWeight += weight;
     weightedAccuracy += weight * episode.predictionAccuracy;
@@ -205,8 +230,10 @@ export function predictActivityOutcome(
     }
   }
 
-  const sampleConfidence = clamp01(totalWeight / 2.2);
-  const reliabilityEvidence = clamp01(totalWeight / 3);
+  // Calibration target: six consistent, similar, recent episodes should buy
+  // roughly 0.5–0.7 confidence — enough to act on, short of certainty.
+  const sampleConfidence = clamp01(totalWeight / 2.6);
+  const reliabilityEvidence = clamp01(totalWeight / 3.4);
   const observedAccuracy = weightedAccuracy / totalWeight;
   const reliability = clamp01(
     0.5 + (observedAccuracy - 0.5) * reliabilityEvidence
@@ -218,6 +245,7 @@ export function predictActivityOutcome(
 
   return {
     activityId,
+    variantId: variantId ?? DEFAULT_ACTIVITY_VARIANT,
     goal,
     source,
     matches: evidence.length,
@@ -257,7 +285,12 @@ export function activityPredictionMultiplier(
     NEUTRAL_EXPECTED_VALUE +
     (prediction.value - NEUTRAL_EXPECTED_VALUE) * prediction.confidence;
   const valueSignal = (learnedValue - NEUTRAL_EXPECTED_VALUE) * 0.9;
-  const explorationBonus = prediction.uncertainty * prediction.novelty * 0.06;
+  // Uncertainty squared: the try-it bonus belongs to the genuinely unknown.
+  // Linear uncertainty let a half-known option keep half the bonus, which
+  // drowned every mildly negative learned value and made the multiplier
+  // structurally unable to advise against anything.
+  const explorationBonus =
+    prediction.uncertainty * prediction.uncertainty * prediction.novelty * 0.06;
   const reliabilityPenalty =
     prediction.confidence * Math.max(0, 0.65 - prediction.reliability) * 0.08;
   return Math.max(

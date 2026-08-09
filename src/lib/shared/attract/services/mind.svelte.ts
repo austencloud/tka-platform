@@ -76,6 +76,7 @@ export type GhostMindPhase =
 export interface GhostMindStatus {
   phase: GhostMindPhase;
   activityId: string | null;
+  activityVariantId: string | null;
   activityStepIndex: number;
   activityStepCount: number;
   plan: string[];
@@ -151,6 +152,7 @@ export function createGhostMind(opts: {
   let status = $state.raw<GhostMindStatus>({
     phase: "waiting",
     activityId: null,
+    activityVariantId: null,
     activityStepIndex: 0,
     activityStepCount: 0,
     plan: [],
@@ -258,6 +260,7 @@ export function createGhostMind(opts: {
     status = {
       phase,
       activityId: activity?.id ?? null,
+      activityVariantId: activity?.variantId ?? null,
       activityStepIndex: activity?.stepIndex ?? 0,
       activityStepCount: activity?.steps.length ?? 0,
       plan: activity?.steps.map((item) => item.intentionId) ?? [],

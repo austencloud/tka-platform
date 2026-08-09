@@ -4,9 +4,16 @@ import {
   GHOST_ACTIVITIES,
   advanceActivity,
   currentActivityStep,
+  imagineActivityFutures,
   scoreActivities,
   startNextActivity,
 } from "$lib/shared/attract/domain/activities";
+import {
+  activitySituation,
+  beginActivityExperience,
+  finishActivityExperience,
+} from "$lib/shared/attract/domain/activity-experience";
+import { predictActivityOutcome } from "$lib/shared/attract/domain/activity-prediction";
 import {
   EMPTY_WORLD,
   type GhostContext,
@@ -85,6 +92,71 @@ describe("ghost activity planning", () => {
     expect(ctx.experience.lastPrediction?.prediction.activityId).toBe(
       selected?.id
     );
+  });
+
+  it("counts a real comparison between imagined futures on selection", () => {
+    const ctx = context();
+    const activity = startNextActivity(GHOST_ACTIVITIES, ctx, 0);
+
+    // compose declares two variants, so choosing it must have compared them.
+    expect(activity?.id).toBe("compose");
+    expect(["detoured", "direct"]).toContain(activity?.variantId);
+    expect(ctx.experience.counterfactualSelections).toBe(1);
+    expect(ctx.experience.active?.variantId).toBe(activity?.variantId);
+  });
+
+  it("learns to prefer the variant whose episodes paid off", () => {
+    const ctx = context();
+    const browse = GHOST_ACTIVITIES.find(({ id }) => id === "browse")!;
+
+    // Same situation, opposite outcomes: browse-only visits keep discovering
+    // controls, open-one visits reproduce the same empty result.
+    for (let index = 0; index < 4; index++) {
+      for (const [variantId, discovers] of [
+        ["browse-only", true],
+        ["open-one", false],
+      ] as const) {
+        const active = {
+          id: browse.id,
+          variantId,
+          steps: [{ intentionId: "test" }],
+          stepIndex: 0,
+          startedAt: index * 2_000,
+        };
+        const prediction = predictActivityOutcome(
+          ctx.experience,
+          browse.id,
+          browse.goal,
+          activitySituation(ctx),
+          variantId
+        );
+        beginActivityExperience(
+          ctx.experience,
+          active,
+          browse.goal,
+          prediction,
+          ctx,
+          index * 2_000
+        );
+        if (discovers) ctx.askedAbout.add(`control-${index}`);
+        finishActivityExperience(
+          ctx.experience,
+          active,
+          "completed",
+          ctx,
+          index * 2_000 + 1_000
+        );
+      }
+    }
+
+    const futures = imagineActivityFutures(browse, ctx);
+    const weightOf = (id: string) =>
+      futures.find(({ variant }) => variant.id === id)!.weight;
+
+    expect(futures).toHaveLength(2);
+    expect(weightOf("browse-only")).toBeGreaterThan(weightOf("open-one"));
+    // Judgment shifts the odds; the clamp keeps either future choosable.
+    expect(weightOf("open-one")).toBeGreaterThanOrEqual(0.75);
   });
 
   it("only leaves explicit interrupts and invitations unplanned", () => {
