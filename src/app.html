@@ -111,6 +111,30 @@
       }
     </script>
 
+    <!-- The root transform removes app-only boot blocks after this tiny
+         connection-aware bootstrap has classified the homepage. -->
+    <script>
+      (function () {
+        if (window.location.pathname !== "/") return;
+
+        window.__tkaIsLanding = true;
+        var connection =
+          navigator.connection ||
+          navigator.mozConnection ||
+          navigator.webkitConnection;
+        window.__tkaLandingConstrained = Boolean(
+          connection &&
+            (connection.saveData ||
+              connection.effectiveType === "slow-2g" ||
+              connection.effectiveType === "2g" ||
+              connection.effectiveType === "3g" ||
+              (connection.downlink > 0 && connection.downlink < 2) ||
+              connection.rtt >= 300)
+        );
+      })();
+    </script>
+
+    <!-- tka-root-app-only:start -->
     <!-- 🚀 Preconnect to external origins for faster requests (app mode only) -->
     <!-- Landing visitors don't need Firebase/Google APIs - skip these to save ~500ms -->
     <script>
@@ -222,6 +246,7 @@
         }
       })();
     </script>
+    <!-- tka-root-app-only:end -->
 
     <!-- Viewport Configuration -->
     <meta
@@ -258,6 +283,7 @@
       rel="apple-touch-icon"
       href="%sveltekit.assets%/pwa/icons/icon-180x180.png"
     />
+    <!-- tka-root-app-only:start -->
     <link
       rel="apple-touch-startup-image"
       href="%sveltekit.assets%/pwa/splash-2048x2732.png"
@@ -914,44 +940,93 @@
         }
       })();
     </script>
+    <!-- tka-root-app-only:end -->
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="%sveltekit.assets%/pwa/manifest.webmanifest" />
 
-    <!-- Font Awesome CSS -->
-    <!-- crossorigin="anonymous" is REQUIRED for PostHog session replay to capture styles -->
-    <!-- Preload critical font: icons render immediately instead of after CSS parse -->
-    <link
-      rel="preload"
-      href="/fonts/webfonts/fa-solid-900.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin="anonymous"
-    />
-    <link
-      rel="stylesheet"
-      href="/fonts/css/fontawesome.min.css"
-      crossorigin="anonymous"
-    />
-    <link
-      rel="stylesheet"
-      href="/fonts/css/solid.min.css"
-      crossorigin="anonymous"
-    />
-    <link
-      rel="stylesheet"
-      href="/fonts/css/fa-supplement.css"
-      crossorigin="anonymous"
-    />
+    <!-- App chrome needs its icon font at boot. Public routes use icons only as
+         decoration, so healthy connections fetch it after the first useful
+         paint and constrained connections keep the bandwidth for content. -->
+    <script>
+      (function () {
+        var loaded = false;
 
-    <!-- Playfair Display: serif voice for in-app hint headings (matches landing) -->
-    <!-- Self-hosted (offline-safe) — replaces the Google Fonts CDN, which the SW
-         can't cache cross-origin so headings fell back to system serif offline. -->
-    <link rel="stylesheet" href="/fonts/css/playfair.css" />
+        function loadFontAwesome() {
+          if (loaded) return;
+          loaded = true;
 
-    <!-- Fraunces 700 italic: the brand wordmark voice. Available app-wide so the
-         desktop-nav "TKA" wordmark matches the landing SiteHeader wordmark. -->
-    <link rel="stylesheet" href="/fonts/css/fraunces.css" />
+          var preload = document.createElement("link");
+          preload.rel = "preload";
+          preload.href = "/fonts/webfonts/fa-solid-900.woff2";
+          preload.as = "font";
+          preload.type = "font/woff2";
+          preload.crossOrigin = "anonymous";
+          document.head.appendChild(preload);
+
+          [
+            "/fonts/css/fontawesome.min.css",
+            "/fonts/css/solid.min.css",
+            "/fonts/css/fa-supplement.css",
+          ].forEach(function (href) {
+            var stylesheet = document.createElement("link");
+            stylesheet.rel = "stylesheet";
+            stylesheet.href = href;
+            stylesheet.crossOrigin = "anonymous";
+            document.head.appendChild(stylesheet);
+          });
+        }
+
+        var connection =
+          navigator.connection ||
+          navigator.mozConnection ||
+          navigator.webkitConnection;
+        var constrained =
+          window.__tkaIsLanding &&
+          connection &&
+          (connection.saveData ||
+            connection.effectiveType === "slow-2g" ||
+            connection.effectiveType === "2g" ||
+            connection.effectiveType === "3g" ||
+            (connection.downlink > 0 && connection.downlink < 2) ||
+            connection.rtt >= 300);
+        window.__tkaLandingConstrained = Boolean(constrained);
+
+        if (!window.__tkaIsLanding) {
+          loadFontAwesome();
+          return;
+        }
+
+        if (constrained) return;
+
+        setTimeout(function () {
+          if (typeof requestIdleCallback === "function") {
+            requestIdleCallback(loadFontAwesome, { timeout: 2000 });
+          } else {
+            loadFontAwesome();
+          }
+        }, 5000);
+      })();
+    </script>
+
+    <!-- Self-hosted brand fonts. Constrained landing visits keep the system
+         fallbacks so the headline does not wait for a second font round trip. -->
+    <script>
+      (function () {
+        if (window.__tkaIsLanding && window.__tkaLandingConstrained === true) {
+          return;
+        }
+
+        ["/fonts/css/playfair.css", "/fonts/css/fraunces.css"].forEach(
+          function (href) {
+            var stylesheet = document.createElement("link");
+            stylesheet.rel = "stylesheet";
+            stylesheet.href = href;
+            document.head.appendChild(stylesheet);
+          }
+        );
+      })();
+    </script>
 
     <!-- Google Identity Services (app mode only - landing doesn't need auth) -->
     <script>
@@ -980,6 +1055,32 @@
         background: var(--gradient-cosmic, #0a0a0a);
       }
 
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      * {
+        margin: 0;
+      }
+
+      html,
+      body {
+        min-height: 100vh;
+        min-height: 100dvh;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+    </style>
+
+    <!-- tka-root-app-only:start -->
+    <style>
       #app-loading {
         position: fixed;
         inset: 0;
@@ -1078,6 +1179,7 @@
         src: url("/fonts/webfonts/fa-solid-900.woff2") format("woff2");
       }
     </style>
+    <!-- tka-root-app-only:end -->
 
     %sveltekit.head%
   </head>
@@ -1085,6 +1187,7 @@
     data-sveltekit-preload-data="hover"
     class="bg-background text-foreground"
   >
+    <!-- tka-root-app-only:start -->
     <div
       id="app-loading"
       aria-label="Loading Flow Arts Composer"
@@ -1349,6 +1452,7 @@
         }
       }, 15000);
     </script>
+    <!-- tka-root-app-only:end -->
     <div style="display: contents">%sveltekit.body%</div>
     <noscript>
       <footer

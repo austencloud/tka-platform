@@ -353,29 +353,36 @@
     }
     window.addEventListener("resize", updateViewportHeight);
 
-    // Analytics: PostHog (same instance as app mode - lightweight, no DI needed).
-    // FIRST, and off the critical path. This used to sit behind `await
-    // import(i18n)` + initI18n(), so on a QR scan PostHog only came up after the
-    // i18n chunk had been fetched AND evaluated. Session replay arms at init, so
-    // that delay is dead air at the front of every scan recording — and when an
-    // identity reset landed inside the window, the whole session was orphaned.
-    // Nothing here needs i18n, so the two now race instead of chaining.
-    void import("$lib/shared/analytics/services/posthog")
-      .then(({ initPostHog }) => initPostHog())
-      .then(() => {
-        const startWebVitals = () => {
-          void import("$lib/shared/analytics/web-vitals")
-            .then(({ initWebVitals }) => initWebVitals())
-            .catch((error) => console.warn("Web Vitals failed:", error));
-        };
+    let analyticsDelay: ReturnType<typeof setTimeout> | null = null;
+    let analyticsIdle: number | null = null;
 
+    // Session replay and Web Vitals observe the landing page; they are not part
+    // of making it usable. Healthy connections start them after first paint.
+    // Save-Data and slow links skip them so measurement cannot extend the delay
+    // it is trying to measure.
+    if (!isConstrainedConnection()) {
+      const startAnalytics = () => {
+        void import("$lib/shared/analytics/services/posthog")
+          .then(({ initPostHog }) => initPostHog())
+          .then(() =>
+            import("$lib/shared/analytics/web-vitals").then(
+              ({ initWebVitals }) => initWebVitals()
+            )
+          )
+          .catch((error) => console.warn("Landing analytics failed:", error));
+      };
+
+      analyticsDelay = setTimeout(() => {
+        analyticsDelay = null;
         if (typeof requestIdleCallback !== "undefined") {
-          requestIdleCallback(startWebVitals, { timeout: 2000 });
+          analyticsIdle = requestIdleCallback(startAnalytics, {
+            timeout: 4000,
+          });
         } else {
-          setTimeout(startWebVitals, 0);
+          startAnalytics();
         }
-      })
-      .catch((error) => console.warn("PostHog failed:", error));
+      }, 2500);
+    }
 
     // i18n is lightweight - safe for landing
     const { initI18n } = await import("$lib/shared/i18n/i18n.svelte.js");
@@ -385,6 +392,10 @@
     containerReady = true;
 
     return () => {
+      if (analyticsDelay !== null) clearTimeout(analyticsDelay);
+      if (analyticsIdle !== null && typeof cancelIdleCallback !== "undefined") {
+        cancelIdleCallback(analyticsIdle);
+      }
       if (window.visualViewport) {
         window.visualViewport.removeEventListener(
           "resize",

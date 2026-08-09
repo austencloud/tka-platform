@@ -82,11 +82,14 @@ export function createHeroAct(options?: {
   /** Fraction of GENERATED draws shown in box mode (default 1/3). Set 0 to
    *  disable — then no box roll is drawn. */
   boxFraction?: number;
+  /** A baked SSR-safe opening sequence. The homepage uses this to make the
+   *  preview immediately meaningful without running the generator at boot. */
+  initialSequence?: SequenceData | null;
 }) {
   const random = options?.random ?? Math.random;
   const matrixFraction = options?.matrixFraction ?? DEFAULT_MATRIX_FRACTION;
   const boxFraction = options?.boxFraction ?? DEFAULT_BOX_FRACTION;
-  let current = $state<SequenceData | null>(null);
+  let current = $state<SequenceData | null>(options?.initialSequence ?? null);
   let currentElement = $state<TnDElement | null>(null);
   let currentProp = $state<PropType>(PropType.STAFF);
   // True while the first sequence is generating or a later swap is in flight.
@@ -123,9 +126,8 @@ export function createHeroAct(options?: {
     // random call order identical to the pre-matrix act for callers that opt out.
     if (matrixFraction > 0 && random() < matrixFraction) {
       try {
-        const { drawMatrixRealization } = await import(
-          "$lib/shared/landing/data/shape-matrix-hero-pool"
-        );
+        const { drawMatrixRealization } =
+          await import("$lib/shared/landing/data/shape-matrix-hero-pool");
         const draw = await drawMatrixRealization({
           chainStartPosition: opts.chainStartPosition ?? null,
           random,
@@ -146,9 +148,8 @@ export function createHeroAct(options?: {
     });
     if (boxFraction > 0 && random() < boxFraction) {
       try {
-        const { applyBoxMode } = await import(
-          "$lib/features/choreo-card/services/deck-variation"
-        );
+        const { applyBoxMode } =
+          await import("$lib/features/choreo-card/services/deck-variation");
         sequence = applyBoxMode(sequence, "box");
       } catch {
         // keep the diamond sequence on any transform failure
@@ -254,6 +255,12 @@ export function createHeroAct(options?: {
   function start(): void {
     if (started) return;
     started = true;
+
+    if (current) {
+      preparedNextProp = nextPropInCycle(currentProp);
+      prepareNext(currentProp);
+      return;
+    }
 
     // Choose only after hydration. Running this during factory construction
     // would let SSR and the browser pick different props for the same page.

@@ -18,9 +18,7 @@
     TipEffectMap,
     TipEffortMap,
   } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
-  import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-  import { getSequenceRepository } from "$lib/shared/create/get-sequence-repository";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import type { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -259,7 +257,6 @@
   const minimal = $derived(chrome === "minimal");
 
   // Services - per-instance to allow multiple simultaneous players (e.g., Arena)
-  let sequenceService: SequenceRepository | null = null;
   let playbackController: AnimationPlaybackController | null = null;
   let servicesReady = $state(false);
   let loading = $state(true);
@@ -367,8 +364,6 @@
   // InlineAnimationPlayers can run simultaneously (e.g., Arena side-by-side)
   onMount(async () => {
     try {
-      sequenceService = getSequenceRepository();
-
       // Stateful services - fresh instance per player
       const stateManager = new AnimationStateManager();
       const loop = new AnimationLoop();
@@ -496,7 +491,7 @@
   });
 
   async function loadAnimation() {
-    if (!sequenceService || !playbackController || !sequence) return;
+    if (!playbackController || !sequence) return;
 
     loading = true;
     error = null;
@@ -550,8 +545,6 @@
   async function loadSequenceData(
     seq: SequenceData
   ): Promise<SequenceData | null> {
-    if (!sequenceService) return null;
-
     const hasMotionData = (s: SequenceData) =>
       Array.isArray(s.steps) &&
       s.steps.length > 0 &&
@@ -564,7 +557,9 @@
     // Try to load from gallery
     const identifier = seq.word || seq.name || seq.id;
     if (identifier) {
-      const loaded = await sequenceService.getSequence(identifier);
+      const { getSequenceRepository } =
+        await import("$lib/shared/create/get-sequence-repository");
+      const loaded = await getSequenceRepository().getSequence(identifier);
       if (loaded && hasMotionData(loaded)) {
         return loaded;
       }

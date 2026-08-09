@@ -4,18 +4,6 @@
 </script>
 
 <svelte:head>
-  <!-- Playfair Display for landing page headings -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link
-    rel="preconnect"
-    href="https://fonts.gstatic.com"
-    crossorigin="anonymous"
-  />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&display=swap"
-    rel="stylesheet"
-  />
-
   <title>Flow Arts Notation | The Kinetic Alphabet</title>
   <meta
     name="description"

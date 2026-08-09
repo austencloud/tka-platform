@@ -17,6 +17,7 @@
   import { fade } from "svelte/transition";
   import { isNamedRouteMorphActive } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import { motionDuration } from "$lib/shared/transitions/motion";
+  import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
   import SiteHeader from "./SiteHeader.svelte";
   import SiteFooter from "./SiteFooter.svelte";
 
@@ -32,6 +33,8 @@
   let LiveBackground = $state<BackgroundHostComponent | null>(null);
 
   onMount(() => {
+    if (isConstrainedConnection()) return;
+
     let mounted = true;
     let secondFrame = 0;
 
@@ -71,22 +74,6 @@
   // 200ms fade.
   const suppressContentFade = $derived(isNamedRouteMorphActive());
 </script>
-
-<svelte:head>
-  <!-- Inter is the marketing/editorial typeface (public-editorial.css asks for
-       it). Loaded here so every page wrapped in this chrome gets the same
-       typography by construction. -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link
-    rel="preconnect"
-    href="https://fonts.gstatic.com"
-    crossorigin="anonymous"
-  />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&display=swap"
-    rel="stylesheet"
-  />
-</svelte:head>
 
 <div class="mkt-shell">
   <div class="mkt-fallback" aria-hidden="true"></div>

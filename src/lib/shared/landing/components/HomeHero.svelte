@@ -15,6 +15,8 @@
   import { onMount } from "svelte";
   import SequenceHeroDemo from "./SequenceHeroDemo.svelte";
   import { createHeroAct } from "$lib/shared/landing/data/hero-act.svelte";
+  import { FALLBACK_DEMO } from "$lib/shared/landing/data/per-visit-demo";
+  import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
   import { runAfterNamedRouteMorphIdle } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import {
     HERO_TRAIL_PRESET,
@@ -25,9 +27,10 @@
     trackDemoInteraction,
   } from "$lib/shared/analytics/landing-events";
 
-  const heroAct = createHeroAct();
+  const heroAct = createHeroAct({ initialSequence: FALLBACK_DEMO });
 
   onMount(() => {
+    if (isConstrainedConnection()) return;
     return runAfterNamedRouteMorphIdle(heroAct.start);
   });
 
@@ -66,6 +69,7 @@
     externalBpm={HERO_BPM}
     showNotationStrip={true}
     showWordHeader={true}
+    connectionAware={true}
   />
 
   <nav class="hero-actions" aria-label="Start here">

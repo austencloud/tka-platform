@@ -732,6 +732,24 @@ const classifyChunk = (id: string): string | undefined => {
     if (id.includes("node_modules/@capacitor/core/")) {
       return "vendor-capacitor-core";
     }
+    // Analytics is always dynamically imported. Keep the SDK and the packages
+    // it owns out of the general vendor bucket so observing a landing visit
+    // cannot drag unrelated dependencies onto the route's critical path.
+    if (
+      id.includes("node_modules/posthog-js/") ||
+      id.includes("node_modules/@posthog/") ||
+      id.includes("node_modules/@rrweb/") ||
+      id.includes("node_modules/rrweb") ||
+      id.includes("node_modules/@opentelemetry/") ||
+      id.includes("node_modules/core-js/") ||
+      id.includes("node_modules/dompurify/") ||
+      id.includes("node_modules/fflate/") ||
+      id.includes("node_modules/preact/") ||
+      id.includes("node_modules/query-selector-shadow-dom/") ||
+      id.includes("node_modules/web-vitals/")
+    ) {
+      return "vendor-posthog";
+    }
     if (id.includes("fabric")) return "vendor-fabric";
     if (id.includes("pdfjs-dist")) return "vendor-pdf";
     // CSP-sensitive libs (use `new Function` — no unsafe-eval allowed).

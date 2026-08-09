@@ -107,6 +107,33 @@ beforeEach(() => {
 });
 
 describe("createHeroAct", () => {
+  it("publishes a baked opening without generation and prepares only its continuation on start", async () => {
+    const initial = fakeSequence("baked", "baked-pos");
+    const random = vi.fn(() => 0.75);
+    const act = createHeroAct({
+      initialSequence: initial,
+      random,
+      ...NO_MATRIX,
+    });
+
+    expect(act.sequence?.id).toBe("baked");
+    expect(act.propType).toBe(PropType.STAFF);
+    expect(random).not.toHaveBeenCalled();
+    expect(mocks.generatePerVisitDemo).not.toHaveBeenCalled();
+
+    act.start();
+    act.start();
+    await flush();
+
+    expect(random).not.toHaveBeenCalled();
+    expect(mocks.generatePerVisitDemo).toHaveBeenCalledTimes(1);
+    expect(mocks.generatePerVisitDemo.mock.calls[0]?.[0]).toEqual({
+      propType: PropType.FAN,
+      startPosition: expect.objectContaining({ startPosition: "baked-pos" }),
+    });
+    expect(act.sequence?.id).toBe("baked");
+  });
+
   it("waits until client start before choosing and generating the opening prop", async () => {
     const random = vi.fn(() => 0.75);
     const act = createHeroAct({ random, ...NO_MATRIX });
@@ -376,7 +403,11 @@ describe("createHeroAct — shape-matrix source", () => {
       element: FAKE_ELEMENT,
     });
     // matrixFraction 1 → source roll always picks the matrix; boxFraction 0.
-    const act = createHeroAct({ random: () => 0, matrixFraction: 1, boxFraction: 0 });
+    const act = createHeroAct({
+      random: () => 0,
+      matrixFraction: 1,
+      boxFraction: 0,
+    });
     act.start();
     await flushUntil(() => act.sequence != null);
 
@@ -388,7 +419,11 @@ describe("createHeroAct — shape-matrix source", () => {
 
   it("falls back to a generated draw (no element) when the matrix draw returns null", async () => {
     mocks.drawMatrixRealization.mockResolvedValue(null);
-    const act = createHeroAct({ random: () => 0, matrixFraction: 1, boxFraction: 0 });
+    const act = createHeroAct({
+      random: () => 0,
+      matrixFraction: 1,
+      boxFraction: 0,
+    });
     act.start();
     await flushUntil(() => act.sequence != null);
 
@@ -399,7 +434,11 @@ describe("createHeroAct — shape-matrix source", () => {
   });
 
   it("generated draws never carry an element (no indicator)", async () => {
-    const act = createHeroAct({ random: () => 0, matrixFraction: 0, boxFraction: 0 });
+    const act = createHeroAct({
+      random: () => 0,
+      matrixFraction: 0,
+      boxFraction: 0,
+    });
     act.start();
     await flush();
 

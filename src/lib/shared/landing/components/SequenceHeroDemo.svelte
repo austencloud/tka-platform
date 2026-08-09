@@ -39,6 +39,7 @@
   import type { PreparedSequenceHandoff } from "$lib/shared/animation-engine/domain/chaining-types";
   import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { syncHeroElementalGlyphVisibility } from "$lib/shared/landing/services/hero-elemental-glyph-visibility";
+  import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
 
   let {
     sequence,
@@ -57,6 +58,7 @@
     showNotationStrip = false,
     showWordHeader = false,
     loadPriority = "idle",
+    connectionAware = false,
   }: {
     /** Null while the host is still producing the sequence (e.g. /composer's
         per-visit generated demo) — the stage box and caption line keep their
@@ -110,6 +112,9 @@
         Below-the-fold embeds keep the default so they do not contend with the
         page's first paint. */
     loadPriority?: "idle" | "immediate";
+    /** Leaves the live player behind an explicit tap on slow links and
+        Save-Data while preserving the complete reserved stage. */
+    connectionAware?: boolean;
   } = $props();
 
   type LoadStatus = "idle" | "loading" | "loaded" | "error";
@@ -140,11 +145,28 @@
   );
 
   let active = $state(false);
+  // SSR renders the same reserved manual-preview state that a constrained
+  // client will keep. Healthy clients clear it as soon as the near-viewport
+  // activation runs, normally before their first paint.
+  let manualActivationAvailable = $state(connectionAware);
+  let manualActivationRequested = $state(false);
   let playerLoadStatus = $state<LoadStatus>("idle");
   let notationLoadStatus = $state<LoadStatus>("idle");
+
+  $effect(() => {
+    if (
+      connectionAware &&
+      isConstrainedConnection() &&
+      !manualActivationRequested
+    ) {
+      manualActivationAvailable = true;
+    }
+  });
+
   const pending = $derived(
     sequence
-      ? playerLoadStatus === "idle" || playerLoadStatus === "loading"
+      ? !manualActivationAvailable &&
+          (playerLoadStatus === "idle" || playerLoadStatus === "loading")
       : !errorMessage
   );
   const notationBusy = $derived(
@@ -170,19 +192,49 @@
   function activatePlayerWhenNear(node: HTMLElement) {
     return activateWhenNear(node, {
       rootMargin: "240px",
-      activate: () => (active = true),
+      activate: () => {
+        if (
+          connectionAware &&
+          isConstrainedConnection() &&
+          !manualActivationRequested
+        ) {
+          manualActivationAvailable = true;
+          return;
+        }
+        manualActivationAvailable = false;
+        active = true;
+      },
       deferUntilIdle: loadPriority === "idle",
       idleTimeout: 2500,
       fallbackDelay: 300,
     });
   }
+
+  function activatePlayerManually(): void {
+    manualActivationRequested = true;
+    manualActivationAvailable = false;
+    active = true;
+  }
 </script>
 
 {#snippet playerPlaceholder()}
-  <div class="demo-pending" role="status">
-    <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-    <span>Preparing a live sequence...</span>
-  </div>
+  {#if manualActivationAvailable}
+    <div class="demo-pending">
+      <button
+        type="button"
+        class="preview-load-button"
+        onclick={activatePlayerManually}
+      >
+        <span aria-hidden="true">▶</span>
+        <span>Play live preview</span>
+      </button>
+    </div>
+  {:else}
+    <div class="demo-pending" role="status">
+      <span class="pending-dot" aria-hidden="true"></span>
+      <span>Preparing a live sequence...</span>
+    </div>
+  {/if}
 {/snippet}
 
 {#snippet notationPlaceholder()}
@@ -208,7 +260,9 @@
                footprint holds constant, so no layout shift either way. -->
           <LazyMount
             loader={() =>
-              import("$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte")}
+              import(
+                "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
+              )}
             active={active && !!sequence && !isNamedRouteMorphActive()}
             placeholder={playerPlaceholder}
             onStatusChange={(status) => (playerLoadStatus = status)}
@@ -404,9 +458,33 @@
     color: oklch(0.7 0.04 270);
     font-size: var(--font-size-min, 0.875rem);
   }
-  .demo-pending i {
-    color: oklch(0.76 0.12 285);
-    font-size: 1.25rem;
+  .pending-dot {
+    width: 0.85rem;
+    height: 0.85rem;
+    border: 2px solid oklch(0.76 0.12 285 / 0.35);
+    border-top-color: oklch(0.76 0.12 285);
+    border-radius: 50%;
+    animation: pending-dot-spin 900ms linear infinite;
+  }
+  @keyframes pending-dot-spin {
+    to {
+      transform: rotate(1turn);
+    }
+  }
+  .preview-load-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    min-height: 44px;
+    padding: 0 1rem;
+    color: oklch(0.94 0.02 270);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+    border: 1px solid oklch(0.62 0.1 270 / 0.55);
+    border-radius: 999px;
+    background: oklch(0.36 0.08 270 / 0.5);
   }
 
   .demo-load-error button {
@@ -666,6 +744,9 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .pending-dot {
+      animation: none;
+    }
     .notation-placeholder {
       animation: none;
     }
