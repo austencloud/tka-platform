@@ -194,7 +194,7 @@ describe("Create workspace action rail contract", () => {
   it("keeps recovery in the leading header and four controls below it", () => {
     expect(
       workspaceButtonsInZone("header-leading").map((button) => button.id)
-    ).toEqual(["undo"]);
+    ).toEqual(["undo", "redo"]);
     expect(workspaceButtonsInZone("right").map((button) => button.id)).toEqual([
       "sequence-actions",
       "share",
@@ -206,6 +206,7 @@ describe("Create workspace action rail contract", () => {
       icon: "fa-share-nodes",
       iconType: "fa",
       actionLabel: "Share",
+      visibleLabel: "Share",
     });
     expect(WORKSPACE_BUTTON_TUTORIAL.share.label).toBe("Share");
     expect(WORKSPACE_BUTTON_TUTORIAL.share.description).toContain(
@@ -217,6 +218,9 @@ describe("Create workspace action rail contract", () => {
     expect(buttonPanelSource).not.toContain("<SaveToLibraryButton");
     expect(standardWorkspaceSource).toContain("<UndoButton");
     expect(standardWorkspaceSource).toContain('direction="redo"');
+    expect(standardWorkspaceSource).not.toMatch(
+      /\{#if isAssembleTab\}[\s\S]*direction="redo"/
+    );
     expect(sequenceDisplaySource).not.toContain("<UndoButton");
     expect(sequenceDisplaySource).not.toContain("<SequenceActionsButton");
     expect(sequenceDisplaySource).toContain("<SaveToLibraryButton");

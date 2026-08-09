@@ -11,7 +11,6 @@
   import { createStepCellAnimationManager } from "../services/step-cell-animation-manager";
   import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
 
-
   let {
     step,
     index = 0,
@@ -37,6 +36,7 @@
     // Prop type overrides for demo/preview rendering (bypasses global settings)
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
+    transitionKey = null,
   } = $props<{
     step: StepData;
     index?: number;
@@ -62,6 +62,8 @@
     bluePropTypeOverride?: PropType;
     /** Override prop type for red hand. Bypasses global settings for demo/preview rendering. */
     redPropTypeOverride?: PropType;
+    /** Stable history identity used to preserve prop and arrow motion through reordering. */
+    transitionKey?: string | null;
   }>();
 
   // Services
@@ -113,7 +115,9 @@
   let arrowModalColor = $state<"blue" | "red">("blue");
 
   // Show arrow adjustment in context menu for admin users on non-blank beats
-  const showArrowAdjustment = $derived(isAdmin() && !step.isBlank && step.stepNumber !== 0);
+  const showArrowAdjustment = $derived(
+    isAdmin() && !step.isBlank && step.stepNumber !== 0
+  );
 
   function handleAdjustArrow(color: "blue" | "red") {
     arrowModalColor = color;
@@ -349,6 +353,7 @@
     {musicalPosition}
     {widthMultiplier}
     cellIndex={index}
+    {transitionKey}
     {bluePropTypeOverride}
     {redPropTypeOverride}
   />

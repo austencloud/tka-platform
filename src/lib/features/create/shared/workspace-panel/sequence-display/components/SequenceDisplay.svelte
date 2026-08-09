@@ -80,6 +80,12 @@
     sequenceState.getRemovingStepIndices()
   );
   const isClearing = $derived.by(() => sequenceState.getIsClearing());
+  const historyTransition = $derived.by(
+    () => sequenceState.animationState.historyTransition
+  );
+  const historyTransitionEpoch = $derived.by(
+    () => sequenceState.animationState.historyTransitionEpoch
+  );
   const isShiftStartMode = $derived(panelState.isShiftStartMode);
   const isTimelineMode = $derived(getIsTimelineMode());
   const canSaveToLibrary = $derived(CreateModuleState.canShowActionButtons());
@@ -232,6 +238,8 @@
             scrollMode={false}
             {letterSources}
             activeStepNumber={practiceStepNumber}
+            {historyTransitionEpoch}
+            historyWordChanged={historyTransition?.wordChanged ?? false}
           />
         </div>
 
@@ -259,6 +267,8 @@
           {removingStepIndex}
           {removingStepIndices}
           {isClearing}
+          {historyTransition}
+          {historyTransitionEpoch}
           {shouldOrbitAroundCenter}
           {practiceStepNumber}
           {isSideBySideLayout}

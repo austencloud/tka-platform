@@ -37,7 +37,6 @@
     layout,
   } = ctx;
 
-
   // Derive values from context
   const isSideBySideLayout = () => layout.shouldUseSideBySideLayout;
   const isFilterPanelOpen = $derived(panelState.isFilterPanelOpen);
@@ -112,12 +111,8 @@
       null
   );
   const isEditingExistingStart = $derived(
-    isStartPositionSelected &&
-      activeSequenceState.currentSequence !== null
+    isStartPositionSelected && activeSequenceState.currentSequence !== null
   );
-
-  // Transition state for undo animations
-  let isUndoingOption = $state(false);
 
   let pendingStartPosition = $state<{
     path: StartPositionPath;
@@ -177,7 +172,6 @@
     completeTutorialStartPosition(committedPosition, pending.path);
     pendingStartPosition = null;
   });
-
 </script>
 
 <div class="tool-panel-wrapper">
@@ -210,7 +204,6 @@
                 lockStartGridMode={isEditingExistingStart}
                 startPositionValidationMessage={constructTabState.error}
                 {onOptionSelected}
-                {isUndoingOption}
                 onStartPositionNavigateToAdvanced={() => {}}
                 onStartPositionNavigateToDefault={() => {}}
                 {isSideBySideLayout}
@@ -226,7 +219,8 @@
           {:else if activeToolPanel === "generate"}
             <!-- Generator Mode - Automatic sequence generation (deferred chunk) -->
             <LazyMount
-              loader={() => import("../../generate/components/GeneratePanel.svelte")}
+              loader={() =>
+                import("../../generate/components/GeneratePanel.svelte")}
               active
               props={{
                 sequenceState: createModuleState.getActiveTabSequenceState(),
@@ -238,7 +232,8 @@
             {@const assembleTabState = createModuleState.assembleTabState}
             {#if assembleTabState}
               <LazyMount
-                loader={() => import("../../assemble/components/AssembleToolPanel.svelte")}
+                loader={() =>
+                  import("../../assemble/components/AssembleToolPanel.svelte")}
                 active
                 props={{ tabState: assembleTabState }}
               />
@@ -249,7 +244,10 @@
             {/if}
           {:else if activeToolPanel === "fuse"}
             <!-- Fuse Mode - Combine two sequences into one (deferred chunk) -->
-            <LazyMount loader={() => import("$lib/features/fuse/FuseTab.svelte")} active />
+            <LazyMount
+              loader={() => import("$lib/features/fuse/FuseTab.svelte")}
+              active
+            />
           {/if}
         </div>
       {/key}
@@ -293,7 +291,6 @@
     /* Use 'size' (not 'inline-size') to enable height queries */
     container-type: size;
     container-name: tool-panel;
-
   }
 
   /* Loading states */
@@ -316,5 +313,4 @@
     font-size: var(--font-size-sm);
     margin: 0;
   }
-
 </style>

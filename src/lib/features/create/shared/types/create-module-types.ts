@@ -20,7 +20,6 @@ import type { SequenceState } from "../state/sequence-state-orchestrator.svelte"
 export type ICreateModuleState = ReturnType<typeof createCreateModuleState> & {
   setShowStartPositionPickerCallback?: (callback: () => void) => void;
   setSyncPickerStateCallback?: (callback: () => void) => void;
-  setOnUndoingOptionCallback?: (callback: (isUndoing: boolean) => void) => void;
   [key: string]: unknown;
 };
 

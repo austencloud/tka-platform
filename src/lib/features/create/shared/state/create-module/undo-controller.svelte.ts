@@ -12,10 +12,10 @@ import type { UndoMetadata } from "../../services/undo-manager";
 import { UndoOperationType } from "../../services/undo-manager";
 import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-import { clearPropPositionCache } from "$lib/shared/pictograph/prop/prop-position-cache";
-import { clearArrowPositionCache } from "$lib/shared/pictograph/arrow/rendering/arrow-position-cache";
-import { setSuppressNextAnimation } from "../../workspace-panel/sequence-display/state/step-grid-display-state.svelte";
-import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+import {
+  createHistoryTransitionPlan,
+  type HistoryDirection,
+} from "../../services/history-transition-planner";
 
 type UndoControllerDeps = {
   UndoManager: UndoManager;
@@ -41,7 +41,6 @@ export function createUndoController({
 }: UndoControllerDeps) {
   let showStartPositionPickerCallback: (() => void) | null = null;
   let syncPickerStateCallback: (() => void) | null = null;
-  let onUndoingOptionCallback: ((isUndoing: boolean) => void) | null = null; // eslint-disable-line @typescript-eslint/no-unused-vars
 
   let undoChangeCounter = $state(0);
   let historySuspended = $state(false);
@@ -49,26 +48,6 @@ export function createUndoController({
   UndoManager.onChange(() => {
     undoChangeCounter++;
   });
-
-  /**
-   * Suppress all visual transitions before restoring a sequence.
-   * Disables: StepGrid entrance animations, prop/arrow CSS transitions,
-   * and position cache slide-in effects.
-   */
-  function suppressTransitionsForRestore() {
-    setSuppressNextAnimation(true);
-    clearPropPositionCache();
-    clearArrowPositionCache();
-
-    // Temporarily disable CSS transitions on props/arrows via the
-    // "transforming" flag (adds .no-transition class). Re-enable after
-    // the browser paints the restored state.
-    const visManager = getAnimationVisibilityManager();
-    visManager.setTransforming(true);
-    requestAnimationFrame(() => {
-      visManager.setTransforming(false);
-    });
-  }
 
   function pushUndoSnapshot(type: UndoOperationType, metadata?: UndoMetadata) {
     if (historySuspended) {
@@ -110,15 +89,57 @@ export function createUndoController({
     });
   }
 
+  function captureCurrentState(activeSection: BuildModeId) {
+    const currentSequence = sequenceState.currentSequence;
+
+    return {
+      sequence: currentSequence
+        ? {
+            ...currentSequence,
+            steps: currentSequence.steps.map((step) =>
+              step ? { ...step } : step
+            ),
+          }
+        : null,
+      selectedStepNumber: sequenceState.selectedStepNumber,
+      activeSection,
+      timestamp: Date.now(),
+    };
+  }
+
+  function beginHistoryTransition(
+    direction: HistoryDirection,
+    type: UndoOperationType,
+    label: string,
+    fromState: ReturnType<typeof captureCurrentState>,
+    toState: {
+      sequence: SequenceData | null;
+      selectedStepNumber: number | null;
+    }
+  ) {
+    sequenceState.animationState.startHistoryTransition(
+      createHistoryTransitionPlan({
+        direction,
+        operation: type,
+        label,
+        fromSequence: fromState.sequence,
+        toSequence: toState.sequence,
+        fromSelectedStepNumber: fromState.selectedStepNumber,
+        toSelectedStepNumber: toState.selectedStepNumber,
+      })
+    );
+  }
+
   function undo(): boolean {
     if (historySuspended) {
       return false;
     }
 
     const currentSection = getActiveSection();
+    const currentState = captureCurrentState(currentSection);
 
     // Only undo entries from the current tab
-    const lastEntry = UndoManager.undo(currentSection);
+    const lastEntry = UndoManager.undo(currentSection, currentState);
     if (!lastEntry) {
       return false;
     }
@@ -132,6 +153,14 @@ export function createUndoController({
       toast.info(`Undid ${undoDescription}`, 1500);
     }
 
+    beginHistoryTransition(
+      "undo",
+      lastEntry.type,
+      undoDescription,
+      currentState,
+      lastEntry.beforeState
+    );
+
     if (lastEntry.type === UndoOperationType.SELECT_START_POSITION) {
       void sequenceState.clearSequenceCompletely();
       if (showStartPositionPickerCallback) {
@@ -139,8 +168,6 @@ export function createUndoController({
       }
       return true;
     }
-
-    suppressTransitionsForRestore();
 
     // Restore the sequence directly
     sequenceState.setCurrentSequence(lastEntry.beforeState.sequence);
@@ -169,24 +196,41 @@ export function createUndoController({
       return false;
     }
 
-    const entry = UndoManager.redo();
+    const currentSection = getActiveSection();
+    const currentState = captureCurrentState(currentSection);
+    const nextEntry = UndoManager.getLastRedoEntry(currentSection);
+    if (!nextEntry?.afterState) {
+      return false;
+    }
+    const afterState = nextEntry.afterState;
+
+    const entry = UndoManager.redo(currentSection);
     if (!entry) {
       return false;
     }
 
-    // For redo, we want to restore the state that was undone
-    // This is typically stored in afterState, or we can get it from the current position
-    const afterState = entry.afterState;
-    if (!afterState) {
-      // If no afterState, just return true (the service already moved it back to undo history)
-      return true;
-    }
-
-    suppressTransitionsForRestore();
+    const redoDescription =
+      entry.metadata?.description ||
+      UndoManager.getOperationDescription(entry.type);
+    beginHistoryTransition(
+      "redo",
+      entry.type,
+      redoDescription,
+      currentState,
+      afterState
+    );
 
     // Restore the sequence from the after state
     sequenceState.setCurrentSequence(afterState.sequence);
     restoreSelection(afterState.selectedStepNumber);
+
+    if (syncPickerStateCallback) {
+      syncPickerStateCallback();
+    }
+
+    if (redoDescription) {
+      toast.info(`Redid ${redoDescription}`, 1500);
+    }
 
     return true;
   }
@@ -215,10 +259,6 @@ export function createUndoController({
     syncPickerStateCallback = callback;
   }
 
-  function setOnUndoingOptionCallback(callback: (isUndoing: boolean) => void) {
-    onUndoingOptionCallback = callback;
-  }
-
   /**
    * Jump to a specific history entry and restore that state
    * Used by history panel to allow jumping to any point in history
@@ -232,12 +272,22 @@ export function createUndoController({
     const timeline = UndoManager.getTimeline();
     const entry = timeline.find((e) => e.id === entryId);
     if (!entry) return false;
+    const currentState = captureCurrentState(getActiveSection());
 
     // Perform the jump in the manager
     const result = UndoManager.jumpToState(entryId);
     if (!result) return false;
 
-    suppressTransitionsForRestore();
+    const description =
+      entry.metadata?.description ||
+      UndoManager.getOperationDescription(entry.type);
+    beginHistoryTransition(
+      "jump",
+      entry.type,
+      description,
+      currentState,
+      entry.beforeState
+    );
 
     // Restore the state from the entry's beforeState
     if (entry.type === UndoOperationType.SELECT_START_POSITION) {
@@ -258,9 +308,6 @@ export function createUndoController({
     }
 
     // Show toast indicating the jump
-    const description =
-      entry.metadata?.description ||
-      UndoManager.getOperationDescription(entry.type);
     toast.info(`Jumped to: ${description}`, 1500);
 
     return true;
@@ -276,7 +323,6 @@ export function createUndoController({
     jumpToState,
     setShowStartPositionPickerCallback,
     setSyncPickerStateCallback,
-    setOnUndoingOptionCallback,
     get canUndo() {
       void undoChangeCounter;
       return (
@@ -285,7 +331,10 @@ export function createUndoController({
     },
     get canRedo() {
       void undoChangeCounter;
-      return !historySuspended && UndoManager.canRedo;
+      return Boolean(
+        !historySuspended &&
+        UndoManager.getLastRedoEntry(getActiveSection())?.afterState
+      );
     },
     get undoHistory() {
       return historySuspended ? [] : UndoManager.undoHistory;
@@ -298,6 +347,13 @@ export function createUndoController({
       return historySuspended
         ? null
         : UndoManager.getLastUndoEntry(getActiveSection());
+    },
+    get nextRedoEntry() {
+      void undoChangeCounter;
+      if (historySuspended) return null;
+
+      const entry = UndoManager.getLastRedoEntry(getActiveSection());
+      return entry?.afterState ? entry : null;
     },
     getTimeline() {
       void undoChangeCounter;

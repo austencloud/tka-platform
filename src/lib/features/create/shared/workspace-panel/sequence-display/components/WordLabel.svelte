@@ -12,6 +12,7 @@
     getBaseLetter,
   } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
   import { browser } from "$app/environment";
+  import { motionDuration } from "$lib/shared/transitions/motion";
 
   const cache = browser ? getGlyphCache() : null;
 
@@ -21,6 +22,8 @@
     scrollMode = false,
     letterSources = null,
     activeStepNumber = null,
+    historyTransitionEpoch = 0,
+    historyWordChanged = false,
   } = $props<{
     word?: string;
     scrollMode?: boolean;
@@ -28,6 +31,8 @@
     letterSources?: LetterSource[] | null;
     /** Optional: Current beat number during animation playback (1-indexed) for letter highlighting */
     activeStepNumber?: number | null;
+    historyTransitionEpoch?: number;
+    historyWordChanged?: boolean;
   }>();
 
   // Computed: Whether we have letter source data to render styled letters
@@ -44,6 +49,25 @@
   // Overflow detection state
   let labelElement: HTMLButtonElement | null = $state(null);
   let scaleFactor = $state(1);
+
+  $effect(() => {
+    const epoch = historyTransitionEpoch;
+    if (!historyWordChanged || epoch === 0 || !labelElement) return;
+
+    const duration = motionDuration(240);
+    if (duration === 0) return;
+    const animation = labelElement.animate(
+      [
+        { opacity: 0.5, filter: "brightness(1.2)" },
+        { opacity: 1, filter: "brightness(1)" },
+      ],
+      {
+        duration,
+        easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+      }
+    );
+    return () => animation.cancel();
+  });
 
   // Check if this is a contextual message (not a word)
   const isContextualMessage = $derived.by(() => {

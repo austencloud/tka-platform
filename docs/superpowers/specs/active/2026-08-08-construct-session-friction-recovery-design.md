@@ -1,7 +1,7 @@
 # Construct Session Friction Recovery
 
 - **Date:** 2026-08-08
-- **Status:** Phase 1 implemented and verified locally. Phase 2 approved and verified locally. Phase 3's shared preview engine and first-use interaction hint are implemented; pending-hold feedback remains separately gated. Phases 4 and 5 remain individually gated.
+- **Status:** Phase 1 implemented and verified locally. Phase 2 approved and verified locally. Phase 3's shared preview engine and adaptive first-use interaction hint are implemented; pending-hold feedback remains separately gated. Phases 4 and 5 remain individually gated.
 - **Origin session:** Noah Morgan, `019fd2c5-e0dc-71db-990f-4c0a7a1a0c30`
 - **Routes:** `/create/generate` to `/create/construct`
 
@@ -130,8 +130,10 @@ No implementation phase begins automatically when the preceding phase ends.
   Austen approved the responsive result.
 - Hold-to-preview now uses `PictographArrivalStage`, the same motion owner used
   by a committed tap, but stops before commit-only landing. A first-use
-  coachmark teaches `Tap to add` and `Hold to preview` without moving the grid.
-  The Construct guide repeats the distinction after the coachmark is dismissed.
+  teaching cue says `Tap to add` and `Hold to preview`. It appears in the
+  workspace action rail below a 1536 CSS-pixel picker width and points to the
+  first option only on genuinely roomy, native-4K layouts. The Construct guide
+  repeats the distinction after the one-time cue is dismissed.
 - The 350 ms pending-hold treatment remains a separate visual slice. Phases 4
   and 5 have not started.
 
@@ -342,16 +344,32 @@ the existing controls.
 
 The first-use hint is deliberately smaller than the pending-motion prototype:
 
-- It points to the first visible option and says `Tap to add` and
-  `Hold to preview`.
-- It is an absolute, nonmodal overlay. It neither moves nor blocks the option
-  grid.
+- It says `Tap to add` and `Hold to preview` in both presentations.
+- Below a 1536 CSS-pixel option-picker width, it rises from the empty center of
+  the workspace action rail after a start pose exists and before the first
+  movement is added. This opaque banner sits between Clear and Actions and
+  never covers an option.
+- At or above a 1536 CSS-pixel option-picker width in side-by-side layout, it
+  becomes the original anchored cue and points to the first visible option.
+- The threshold uses the measured picker container, not physical display size
+  or a global viewport media query. Focused tests pin both the 1535 and 1536
+  boundaries.
+- Both presentations are absolute and nonmodal, so neither changes layout. The
+  compact banner enters with a 12 px rise and fade; reduced motion removes the
+  movement.
 - It dismisses after the first option interaction or its explicit close button
   and records that dismissal locally.
+- Adding the first movement removes the cue before Play enters the action rail.
 - The public Level 1 guide suppresses the automatic hint because that surface
   already teaches its own interaction sequence.
 - Step 2 of the optional Construct guide preserves the same explanation, so the
   distinction remains available after the one-time hint is gone.
+
+Responsive verification covers 320×568, 375×812, 768×1024, 960×412,
+1440×900, 1920×1080, 2560×1440, and 3840×2160 in the live Create route, plus
+the 1535/1536 picker-container seam in focused tests. The compact layouts keep
+the banner between the action buttons with no horizontal overflow and place the
+option grid entirely below it. Native 4K retains the anchored presentation.
 
 This approval does not include the pending progress halo or an active-preview
 status label. Those remain behind their own live visual review.

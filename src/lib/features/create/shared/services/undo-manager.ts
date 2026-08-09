@@ -216,8 +216,14 @@ export class UndoManager {
       this._undoHistory.shift();
     }
 
-    // Clear redo history when new action is performed
-    this._redoHistory = [];
+    // A new edit replaces the future for its own workspace. Other Create tabs
+    // keep separate sequence states, so their pending redo actions remain valid.
+    this._redoHistory = beforeState.activeSection
+      ? this._redoHistory.filter(
+          (entry) =>
+            entry.beforeState.activeSection !== beforeState.activeSection
+        )
+      : [];
 
     // Persist to storage
     this.saveHistory().catch((error) => {
@@ -237,7 +243,10 @@ export class UndoManager {
    * Undo the last operation.
    * If activeSection is provided, only undoes entries from that tab.
    */
-  undo(activeSection?: string | null): UndoHistoryEntry | null {
+  undo(
+    activeSection?: string | null,
+    afterState?: CreateModuleStateSnapshot
+  ): UndoHistoryEntry | null {
     if (!this.canUndo) {
       return null;
     }
@@ -256,6 +265,9 @@ export class UndoManager {
       // Remove from undo history and move to redo history
       const [entry] = this._undoHistory.splice(targetIndex, 1);
       if (!entry) return null;
+      if (afterState) {
+        entry.afterState = afterState;
+      }
       this._redoHistory.push(entry);
 
       this.saveHistory().catch((error) => {
@@ -272,6 +284,10 @@ export class UndoManager {
     const entry = this._undoHistory.pop();
     if (!entry) {
       return null;
+    }
+
+    if (afterState) {
+      entry.afterState = afterState;
     }
 
     // Move to redo history
@@ -299,15 +315,36 @@ export class UndoManager {
   }
 
   /**
+   * Check if there are redoable entries for a specific tab
+   */
+  canRedoForSection(activeSection: string): boolean {
+    return this.getLastRedoEntry(activeSection) !== null;
+  }
+
+  /**
    * Redo the last undone operation
    */
-  redo(): UndoHistoryEntry | null {
+  redo(activeSection?: string | null): UndoHistoryEntry | null {
     if (!this.canRedo) {
       return null;
     }
 
-    // Pop from redo history
-    const entry = this._redoHistory.pop();
+    let entry: UndoHistoryEntry | undefined;
+    if (activeSection) {
+      let targetIndex = -1;
+      for (let i = this._redoHistory.length - 1; i >= 0; i--) {
+        if (this._redoHistory[i]!.beforeState.activeSection === activeSection) {
+          targetIndex = i;
+          break;
+        }
+      }
+      if (targetIndex === -1) return null;
+
+      [entry] = this._redoHistory.splice(targetIndex, 1);
+    } else {
+      entry = this._redoHistory.pop();
+    }
+
     if (!entry) {
       return null;
     }
@@ -390,6 +427,29 @@ export class UndoManager {
   }
 
   /**
+   * Get the entry that Redo would restore next.
+   * If activeSection is provided, entries from other Create tabs are skipped.
+   */
+  getLastRedoEntry(activeSection?: string | null): UndoHistoryEntry | null {
+    if (!this.canRedo) {
+      return null;
+    }
+
+    if (!activeSection) {
+      return this._redoHistory[this._redoHistory.length - 1] ?? null;
+    }
+
+    for (let i = this._redoHistory.length - 1; i >= 0; i--) {
+      const entry = this._redoHistory[i];
+      if (entry?.beforeState.activeSection === activeSection) {
+        return entry;
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Get description of last undoable action.
    * If activeSection is provided, returns description of the last entry from that tab.
    */
@@ -411,12 +471,8 @@ export class UndoManager {
   /**
    * Get description of last redoable action
    */
-  getLastRedoDescription(): string | null {
-    if (!this.canRedo) {
-      return null;
-    }
-
-    const lastEntry = this._redoHistory[this._redoHistory.length - 1];
+  getLastRedoDescription(activeSection?: string | null): string | null {
+    const lastEntry = this.getLastRedoEntry(activeSection);
     if (!lastEntry) {
       return null;
     }
@@ -508,13 +564,11 @@ export class UndoManager {
   /**
    * Peek at the state that would be restored by redo
    */
-  peekRedoState(): CreateModuleStateSnapshot | null {
-    if (!this.canRedo) {
-      return null;
-    }
-
+  peekRedoState(
+    activeSection?: string | null
+  ): CreateModuleStateSnapshot | null {
     // For redo, we want the "after" state, which is the current state when the action was performed
-    const entry = this._redoHistory[this._redoHistory.length - 1];
+    const entry = this.getLastRedoEntry(activeSection);
     return entry ? entry.afterState || null : null;
   }
 

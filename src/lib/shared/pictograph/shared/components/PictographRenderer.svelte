@@ -20,7 +20,10 @@ Usage:
 
 <script lang="ts">
   import type { PreparedPictographData } from "../domain/models/prepared-pictograph-data";
-  import { isVisibleMotion, type MotionData } from "../domain/models/motion-data";
+  import {
+    isVisibleMotion,
+    type MotionData,
+  } from "../domain/models/motion-data";
   import GridSvg from "../../grid/components/GridSvg.svelte";
   import PropSvg from "../../prop/components/PropSvg.svelte";
   import type { PropPosition } from "../../prop/domain/models/prop-position";
@@ -110,6 +113,7 @@ Usage:
     widthMultiplier = 1,
     // Cell index for position caching (enables smooth transitions on regeneration)
     cellIndex = null,
+    transitionKey = null,
     // Live motion geometry. When present, the same prop SVGs used by
     // the finished pictograph render at these interpolated coordinates.
     propPositionOverrides = null,
@@ -174,6 +178,8 @@ Usage:
     widthMultiplier?: number;
     /** Cell index for position caching (enables smooth transitions on regeneration) */
     cellIndex?: number | null;
+    /** Stable editor identity for prop and arrow position caching. */
+    transitionKey?: string | null;
     /** Per-hand live positions for an in-place pictograph motion. */
     propPositionOverrides?: Partial<
       Record<"blue" | "red", PropPosition>
@@ -211,14 +217,14 @@ Usage:
       if (pictograph._prepared?.gridMode) {
         return pictograph._prepared.gridMode;
       }
-      if (!isVisibleMotion(pictograph.motions?.blue) || !isVisibleMotion(pictograph.motions?.red)) {
+      if (
+        !isVisibleMotion(pictograph.motions?.blue) ||
+        !isVisibleMotion(pictograph.motions?.red)
+      ) {
         return GridMode.DIAMOND;
       }
       try {
-        return deriveGridMode(
-          pictograph.motions.blue,
-          pictograph.motions.red
-        );
+        return deriveGridMode(pictograph.motions.blue, pictograph.motions.red);
       } catch {
         return GridMode.DIAMOND;
       }
@@ -241,18 +247,22 @@ Usage:
   // Motions to render (filtered by visibleHand only; visibility controls opacity, not presence)
   const motions = $derived.by(() => {
     if (!pictograph.motions) return [];
-    return Object.entries(pictograph.motions)
-      // invisible placeholder = hand not really there (both-required Step shape)
-      .filter((entry): entry is [string, MotionData] =>
-        isVisibleMotion(entry[1] as MotionData | undefined)
-      )
-      .filter(([color]) => visibleHand === null || color === visibleHand)
-      .sort(([a], [b]) => (a === "blue" ? -1 : 1))
-      .map(([color, data]) => ({
-        color: color as "blue" | "red",
-        data,
-        opacity: (color === "blue" ? blueMotionVisible : redMotionVisible) ? 1 : DIMMED_OPACITY,
-      }));
+    return (
+      Object.entries(pictograph.motions)
+        // invisible placeholder = hand not really there (both-required Step shape)
+        .filter((entry): entry is [string, MotionData] =>
+          isVisibleMotion(entry[1] as MotionData | undefined)
+        )
+        .filter(([color]) => visibleHand === null || color === visibleHand)
+        .sort(([a], [b]) => (a === "blue" ? -1 : 1))
+        .map(([color, data]) => ({
+          color: color as "blue" | "red",
+          data,
+          opacity: (color === "blue" ? blueMotionVisible : redMotionVisible)
+            ? 1
+            : DIMMED_OPACITY,
+        }))
+    );
   });
 
   // Arrow tip z-promotion: detect when behind-arrow's tip is buried under front-arrow's shaft
@@ -260,8 +270,8 @@ Usage:
     // Need exactly 2 arrows with split data to detect overlap
     if (motions.length < 2) return false;
 
-    const blue = motions.find(m => m.color === "blue");
-    const red = motions.find(m => m.color === "red");
+    const blue = motions.find((m) => m.color === "blue");
+    const red = motions.find((m) => m.color === "red");
     if (!blue || !red) return false;
 
     const blueAssets = arrowAssets["blue"];
@@ -299,7 +309,9 @@ Usage:
   });
 
   // Both motions fully visible - glyphs that depend on both hands use this
-  const bothMotionsFullyVisible = $derived(blueMotionVisible && redMotionVisible);
+  const bothMotionsFullyVisible = $derived(
+    blueMotionVisible && redMotionVisible
+  );
 
   // Glyph opacity: full when both motions visible, dimmed when one is off
   const glyphOpacity = $derived(bothMotionsFullyVisible ? 1 : DIMMED_OPACITY);
@@ -315,13 +327,18 @@ Usage:
   // Accessible description (screen readers / search / AI / raw HTML). Built from
   // the data the renderer already has, reusing the derived TnD mode. Replaces the
   // static "Pictograph" label so the SVG image is machine-readable everywhere.
-  const a11yLabel = $derived(describePictograph(pictograph, { tndMode: tndInfo.tndMode }));
+  const a11yLabel = $derived(
+    describePictograph(pictograph, { tndMode: tndInfo.tndMode })
+  );
 
   // Turns tuple generation
   // NOTE: Fallback must be "(0, 0)" not "(s, 0, 0)" - the "s" prefix would cause
   // DirectionDot to show incorrectly on all pictographs
   const turnsTuple = $derived.by(() => {
-    if (!isVisibleMotion(pictograph?.motions?.blue) || !isVisibleMotion(pictograph?.motions?.red)) {
+    if (
+      !isVisibleMotion(pictograph?.motions?.blue) ||
+      !isVisibleMotion(pictograph?.motions?.red)
+    ) {
       return "(0, 0)";
     }
     try {
@@ -333,7 +350,8 @@ Usage:
 
   // Check if we have valid data for glyphs
   const hasValidData = $derived(
-    isVisibleMotion(pictograph?.motions?.blue) || isVisibleMotion(pictograph?.motions?.red)
+    isVisibleMotion(pictograph?.motions?.blue) ||
+      isVisibleMotion(pictograph?.motions?.red)
   );
 
   // Track loaded letter dimensions with $state for reactivity
@@ -371,7 +389,6 @@ Usage:
 
   // Parse direction from turns tuple for direction dot
   const parsedDirection = $derived(parseTurnsTuple(turnsTuple).direction);
-
 </script>
 
 <div class="pictograph-renderer">
@@ -425,7 +442,7 @@ Usage:
         {@const motionPosition =
           propPositionOverrides?.[color] ?? propPositions[color]}
         {#if propAssets[color] && motionPosition}
-          <g opacity={opacity}>
+          <g {opacity}>
             <PropSvg
               motionData={data}
               propAssets={propAssets[color]}
@@ -437,6 +454,7 @@ Usage:
                 ? () => onPropClick(color)
                 : undefined}
               {cellIndex}
+              {transitionKey}
               directPositioning={propPositionOverrides?.[color] !== undefined}
               {propRenderContext}
               darkMode={darkMode ?? false}
@@ -447,181 +465,184 @@ Usage:
 
       <!-- Arrows -->
       <g class="pictograph-arrows" opacity={effectiveArrowOpacity}>
-      {#if tipPromotionNeeded}
-        <!-- Split rendering: shafts first, then tips on top -->
-        {#each motions as { color, data, opacity } (color + "-shaft")}
-          {#if arrowAssets[color] && arrowPositions[color]}
-            <g opacity={opacity}>
-              <ArrowSvg
-                motionData={data}
-                {color}
-                pictographData={pictograph}
-                arrowAssets={arrowAssets[color]}
-                arrowPosition={arrowPositions[color]}
-                shouldMirror={arrowMirroring[color] || false}
-                {showArrow}
-                isClickable={arrowsClickable}
-                {cellIndex}
-                {darkMode}
-                renderPart="shaft"
-              />
-            </g>
-          {/if}
-        {/each}
-        {#each motions as { color, data, opacity } (color + "-tip")}
-          {#if arrowAssets[color] && arrowPositions[color]}
-            <g opacity={opacity}>
-              <ArrowSvg
-                motionData={data}
-                {color}
-                pictographData={pictograph}
-                arrowAssets={arrowAssets[color]}
-                arrowPosition={arrowPositions[color]}
-                shouldMirror={arrowMirroring[color] || false}
-                {showArrow}
-                isClickable={arrowsClickable}
-                {cellIndex}
-                {darkMode}
-                renderPart="tip"
-              />
-            </g>
-          {/if}
-        {/each}
-      {:else}
-        <!-- Normal rendering: single combined path per arrow (identical to current behavior) -->
-        {#each motions as { color, data, opacity } (color)}
-          {#if arrowAssets[color] && arrowPositions[color]}
-            <g opacity={opacity}>
-              <ArrowSvg
-                motionData={data}
-                {color}
-                pictographData={pictograph}
-                arrowAssets={arrowAssets[color]}
-                arrowPosition={arrowPositions[color]}
-                shouldMirror={arrowMirroring[color] || false}
-                {showArrow}
-                isClickable={arrowsClickable}
-                {cellIndex}
-                {darkMode}
-              />
-            </g>
-          {/if}
-        {/each}
-      {/if}
+        {#if tipPromotionNeeded}
+          <!-- Split rendering: shafts first, then tips on top -->
+          {#each motions as { color, data, opacity } (color + "-shaft")}
+            {#if arrowAssets[color] && arrowPositions[color]}
+              <g {opacity}>
+                <ArrowSvg
+                  motionData={data}
+                  {color}
+                  pictographData={pictograph}
+                  arrowAssets={arrowAssets[color]}
+                  arrowPosition={arrowPositions[color]}
+                  shouldMirror={arrowMirroring[color] || false}
+                  {showArrow}
+                  isClickable={arrowsClickable}
+                  {cellIndex}
+                  {transitionKey}
+                  {darkMode}
+                  renderPart="shaft"
+                />
+              </g>
+            {/if}
+          {/each}
+          {#each motions as { color, data, opacity } (color + "-tip")}
+            {#if arrowAssets[color] && arrowPositions[color]}
+              <g {opacity}>
+                <ArrowSvg
+                  motionData={data}
+                  {color}
+                  pictographData={pictograph}
+                  arrowAssets={arrowAssets[color]}
+                  arrowPosition={arrowPositions[color]}
+                  shouldMirror={arrowMirroring[color] || false}
+                  {showArrow}
+                  isClickable={arrowsClickable}
+                  {cellIndex}
+                  {transitionKey}
+                  {darkMode}
+                  renderPart="tip"
+                />
+              </g>
+            {/if}
+          {/each}
+        {:else}
+          <!-- Normal rendering: single combined path per arrow (identical to current behavior) -->
+          {#each motions as { color, data, opacity } (color)}
+            {#if arrowAssets[color] && arrowPositions[color]}
+              <g {opacity}>
+                <ArrowSvg
+                  motionData={data}
+                  {color}
+                  pictographData={pictograph}
+                  arrowAssets={arrowAssets[color]}
+                  arrowPosition={arrowPositions[color]}
+                  shouldMirror={arrowMirroring[color] || false}
+                  {showArrow}
+                  isClickable={arrowsClickable}
+                  {cellIndex}
+                  {transitionKey}
+                  {darkMode}
+                />
+              </g>
+            {/if}
+          {/each}
+        {/if}
       </g>
     </g>
 
     <!-- Corner glyphs - positioned at edges of expanded viewBox -->
-      <!-- TKA Glyph (fades when one motion is dimmed since it represents both hands) -->
-      {#if pictograph.letter}
-        <g opacity={glyphOpacity}>
-          <TKAGlyph
-            letter={pictograph.letter}
-            pictographData={pictograph}
-            visible={showTKA}
-            {previewMode}
-            {animateVisibility}
-            {darkMode}
-            onToggle={onToggleTKA}
-          />
-        </g>
-      {/if}
-
-      <!-- Turns Column (part of TKA) -->
+    <!-- TKA Glyph (fades when one motion is dimmed since it represents both hands) -->
+    {#if pictograph.letter}
       <g opacity={glyphOpacity}>
-        <TurnsColumn
-          {turnsTuple}
+        <TKAGlyph
           letter={pictograph.letter}
           pictographData={pictograph}
           visible={showTKA}
           {previewMode}
           {animateVisibility}
-          standalone={false}
+          {darkMode}
           onToggle={onToggleTKA}
         />
       </g>
+    {/if}
 
-      <!-- Direction Dot (same/opp indicator) - positioned relative to letter -->
-      {#if pictograph.letter}
-        <g opacity={glyphOpacity}>
-          <DirectionDot
-            direction={parsedDirection}
-            letter={pictograph.letter}
-            {letterDimensions}
-            visible={showTKA}
-            {previewMode}
-            {animateVisibility}
-            {darkMode}
-          />
-        </g>
-      {/if}
-
-      <!-- Beat number overlay -->
-      <StepNumber
-        {stepNumber}
-        showStepNumber={shouldShowBeatNumber}
-        {animateVisibility}
-        {isStartPosition}
-        {hasValidData}
-        {darkMode}
-      />
-
-      <!-- Reversal indicators -->
-      <ReversalIndicators
-        {blueReversal}
-        {redReversal}
-        {hasValidData}
-        visible={showReversals}
+    <!-- Turns Column (part of TKA) -->
+    <g opacity={glyphOpacity}>
+      <TurnsColumn
+        {turnsTuple}
+        letter={pictograph.letter}
+        pictographData={pictograph}
+        visible={showTKA}
         {previewMode}
-        onToggle={onToggleReversals}
-        {blueMotionVisible}
-        {redMotionVisible}
+        {animateVisibility}
+        standalone={false}
+        onToggle={onToggleTKA}
       />
+    </g>
 
-      <!-- Fused Elemental + TnD glyph (bottom-right) -->
+    <!-- Direction Dot (same/opp indicator) - positioned relative to letter -->
+    {#if pictograph.letter}
       <g opacity={glyphOpacity}>
-        <ElementalGlyph
-          elementalType={tndInfo.elementalType}
+        <DirectionDot
+          direction={parsedDirection}
           letter={pictograph.letter}
-          {hasValidData}
-          visible={showElemental || showTnD}
+          {letterDimensions}
+          visible={showTKA}
           {previewMode}
           {animateVisibility}
-          onToggle={onToggleElemental ?? onToggleTnD}
-          xOffset={rightGlyphOffset}
+          {darkMode}
         />
       </g>
+    {/if}
 
-      <!-- Position glyph -->
-      <g opacity={glyphOpacity}>
-        <PositionGlyph
-          startPosition={pictograph.startPosition}
-          endPosition={pictograph.endPosition}
-          letter={pictograph.letter}
-          {hasValidData}
-          visible={showPositions}
-          {previewMode}
-          {animateVisibility}
-          onToggle={onTogglePositions}
-          centerX={expandedWidth / 2}
-        />
-      </g>
+    <!-- Beat number overlay -->
+    <StepNumber
+      {stepNumber}
+      showStepNumber={shouldShowBeatNumber}
+      {animateVisibility}
+      {isStartPosition}
+      {hasValidData}
+      {darkMode}
+    />
 
-      <!-- Duration glyph (shows "2×", "0.5×", etc. when duration != 1) -->
-      <!-- In timeline mode, use widthMultiplier as the live duration (reflects drag preview) -->
-      <DurationGlyph
-        duration={isExpanded ? widthMultiplier : duration}
+    <!-- Reversal indicators -->
+    <ReversalIndicators
+      {blueReversal}
+      {redReversal}
+      {hasValidData}
+      visible={showReversals}
+      {previewMode}
+      onToggle={onToggleReversals}
+      {blueMotionVisible}
+      {redMotionVisible}
+    />
+
+    <!-- Fused Elemental + TnD glyph (bottom-right) -->
+    <g opacity={glyphOpacity}>
+      <ElementalGlyph
+        elementalType={tndInfo.elementalType}
+        letter={pictograph.letter}
         {hasValidData}
-        {darkMode}
+        visible={showElemental || showTnD}
+        {previewMode}
+        {animateVisibility}
+        onToggle={onToggleElemental ?? onToggleTnD}
+        xOffset={rightGlyphOffset}
+      />
+    </g>
+
+    <!-- Position glyph -->
+    <g opacity={glyphOpacity}>
+      <PositionGlyph
+        startPosition={pictograph.startPosition}
+        endPosition={pictograph.endPosition}
+        letter={pictograph.letter}
+        {hasValidData}
+        visible={showPositions}
+        {previewMode}
+        {animateVisibility}
+        onToggle={onTogglePositions}
         centerX={expandedWidth / 2}
       />
+    </g>
 
-      <!-- Path shape accidental glyph (top center, only when per-step override set) -->
-      <PathShapeGlyph
-        blueMotion={pictograph.motions?.blue}
-        redMotion={pictograph.motions?.red}
-        {darkMode}
-      />
+    <!-- Duration glyph (shows "2×", "0.5×", etc. when duration != 1) -->
+    <!-- In timeline mode, use widthMultiplier as the live duration (reflects drag preview) -->
+    <DurationGlyph
+      duration={isExpanded ? widthMultiplier : duration}
+      {hasValidData}
+      {darkMode}
+      centerX={expandedWidth / 2}
+    />
+
+    <!-- Path shape accidental glyph (top center, only when per-step override set) -->
+    <PathShapeGlyph
+      blueMotion={pictograph.motions?.blue}
+      redMotion={pictograph.motions?.red}
+      {darkMode}
+    />
   </svg>
 </div>
 

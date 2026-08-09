@@ -10,7 +10,10 @@ at the cached position and animate to the new one, enabling smooth transitions
 even when Svelte recreates the component instance.
 -->
 <script module lang="ts">
-  import { getArrowPositionCache, clearArrowPositionCache } from "../arrow-position-cache";
+  import {
+    getArrowPositionCache,
+    clearArrowPositionCache,
+  } from "../arrow-position-cache";
   const arrowPositionCache = getArrowPositionCache();
   export { clearArrowPositionCache };
 
@@ -48,6 +51,7 @@ even when Svelte recreates the component instance.
     isClickable = false,
     // Cell index for position caching (enables smooth transitions on regeneration)
     cellIndex = null,
+    transitionKey = null,
     // Dark mode override - when provided, takes precedence over global state.
     // This lets containers like PictographTimeline force dark mode even when
     // the user's global setting is light mode.
@@ -64,6 +68,8 @@ even when Svelte recreates the component instance.
     isClickable?: boolean;
     /** Cell index for position caching (enables smooth transitions on regeneration) */
     cellIndex?: number | null;
+    /** Stable editor identity used instead of the mutable grid index when available. */
+    transitionKey?: string | null;
     /** Dark mode override. When set, overrides global AnimationVisibilityStateManager detection. */
     darkMode?: boolean;
     renderPart?: "shaft" | "tip";
@@ -77,7 +83,9 @@ even when Svelte recreates the component instance.
   // containers rendered on dark backgrounds (e.g. PictographTimeline) don't
   // get the white drop-shadow meant for light backgrounds.
   let globalIsDarkMode = $state(visibilityManager.isDarkMode());
-  let isDarkMode = $derived(darkMode !== undefined ? darkMode : globalIsDarkMode);
+  let isDarkMode = $derived(
+    darkMode !== undefined ? darkMode : globalIsDarkMode
+  );
   let cachedColors = $state(visibilityManager.getMotionColors());
   let isTransforming = $state(visibilityManager.isTransforming());
 
@@ -104,8 +112,7 @@ even when Svelte recreates the component instance.
 
   // Get the glow color based on motion color
   const glowColor = $derived(
-    MOTION_COLORS[motionData.color as "blue" | "red"] ??
-      MOTION_COLORS["blue"]
+    MOTION_COLORS[motionData.color as "blue" | "red"] ?? MOTION_COLORS["blue"]
   );
 
   // Background-matching halo that separates the arrow from a same-color prop
@@ -176,14 +183,15 @@ even when Svelte recreates the component instance.
 
     // No cell index means we're not in a grid context (option picker, etc.)
     // Set position immediately without caching
-    if (cellIndex === null) {
+    const cacheIdentity = transitionKey ?? cellIndex;
+    if (cacheIdentity === null) {
       displayedX = targetX;
       displayedY = targetY;
       return;
     }
 
     // Build cache key from cell index and arrow color
-    const key = `${cellIndex}-${color}`;
+    const key = `${cacheIdentity}-${color}`;
     const cached = arrowPositionCache.get(key);
 
     if (cached && (cached.x !== targetX || cached.y !== targetY)) {
@@ -468,7 +476,11 @@ even when Svelte recreates the component instance.
     style="
       transform: translate({displayedX}px, {displayedY}px)
                  rotate({displayedRotation}deg)
-                 {shouldMirror ? (motionData.segment ? 'scale(1, -1)' : 'scale(-1, 1)') : ''};
+                 {shouldMirror
+      ? motionData.segment
+        ? 'scale(1, -1)'
+        : 'scale(-1, 1)'
+      : ''};
     "
   >
     <!-- Background-matching halo filter (shared with the export pipeline via
@@ -529,15 +541,36 @@ even when Svelte recreates the component instance.
   }
 
   .arrow-svg.clickable:hover {
-    filter: drop-shadow(0 0 8px color-mix(in srgb, var(--color-accent, var(--semantic-warning)) 60%, transparent));
+    filter: drop-shadow(
+      0 0 8px
+        color-mix(
+          in srgb,
+          var(--color-accent, var(--semantic-warning)) 60%,
+          transparent
+        )
+    );
   }
 
   .arrow-svg.clickable:active {
-    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--color-accent, var(--semantic-warning)) 40%, transparent));
+    filter: drop-shadow(
+      0 0 4px
+        color-mix(
+          in srgb,
+          var(--color-accent, var(--semantic-warning)) 40%,
+          transparent
+        )
+    );
   }
 
   .arrow-svg.selected {
-    filter: drop-shadow(0 0 12px color-mix(in srgb, var(--color-accent, var(--semantic-warning)) 90%, transparent));
+    filter: drop-shadow(
+      0 0 12px
+        color-mix(
+          in srgb,
+          var(--color-accent, var(--semantic-warning)) 90%,
+          transparent
+        )
+    );
   }
 
   .selection-glow {

@@ -28,10 +28,16 @@
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { shareTarget } from "$lib/shared/mobile/share-action.svelte";
   import { logConstructFullPlay } from "$lib/features/create/construct/services/construct-analytics";
+  import OptionInteractionBanner from "$lib/features/create/construct/option-picker/components/OptionInteractionBanner.svelte";
 
   // Get context - ButtonPanel is ONLY used inside CreateModule, so context is always available
-  const { CreateModuleState, constructTutorialState, panelState, layout } =
-    getCreateModuleContext();
+  const {
+    CreateModuleState,
+    constructTabState,
+    constructTutorialState,
+    panelState,
+    layout,
+  } = getCreateModuleContext();
 
   // Zone membership + order come from the shared workspace button layout, so the
   // create tutorial's diagram of this panel can never drift from it.
@@ -69,6 +75,25 @@
     return tabState?.currentSequence ?? null;
   });
   const isConstructTab = $derived(navigationState.activeTab === "construct");
+  const shouldShowOptionInteractionBanner = $derived.by(() => {
+    if (
+      !isConstructTab ||
+      constructTutorialState.isActive ||
+      !constructTabState.optionInteractionHintState.isVisible ||
+      constructTabState.optionInteractionHintState.presentation !==
+        "workspace-banner"
+    ) {
+      return false;
+    }
+
+    const sequence = currentSequence;
+    if (!sequence) return false;
+
+    const hasStartPosition = !!(
+      sequence.startingPosition || sequence.startPosition
+    );
+    return hasStartPosition && (sequence.steps?.length ?? 0) === 0;
+  });
   const isPlayTutorialTarget = $derived(
     constructTutorialState.isActive &&
       constructTutorialState.stage === "play-sequence"
@@ -183,6 +208,13 @@
           {/if}
         {/each}
       </div>
+
+      {#if shouldShowOptionInteractionBanner}
+        <OptionInteractionBanner
+          onDismiss={() =>
+            constructTabState.optionInteractionHintState.dismiss()}
+        />
+      {/if}
     </div>
   </div>
 {/if}

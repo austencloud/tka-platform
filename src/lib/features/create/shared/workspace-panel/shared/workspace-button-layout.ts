@@ -14,6 +14,7 @@
 
 export type WorkspaceButtonId =
   | "undo"
+  | "redo"
   | "clear"
   | "view"
   | "sequence-actions"
@@ -22,10 +23,10 @@ export type WorkspaceButtonId =
   | "step-editor";
 
 /**
- * Zones map to the real workspace layout. Undo occupies the familiar leading
- * navigation position, while `header-trailing` holds Save beside the centered
- * word. `grid` is NOT a real button — the user taps a step in the grid to edit
- * it; it exists only so the tutorial can label that affordance.
+ * Zones map to the real workspace layout. Undo and Redo occupy the familiar
+ * leading navigation position, while `header-trailing` holds Save beside the
+ * centered word. `grid` is NOT a real button — the user taps a step in the grid
+ * to edit it; it exists only so the tutorial can label that affordance.
  */
 export type WorkspaceButtonZone =
   | "header-leading"
@@ -45,12 +46,13 @@ export interface WorkspaceButtonLayoutEntry {
 /** THE source of truth. Order = left-to-right reading order across the panel. */
 export const WORKSPACE_BUTTON_LAYOUT: WorkspaceButtonLayoutEntry[] = [
   { id: "undo", zone: "header-leading", order: 1 },
-  { id: "clear", zone: "left", order: 2 },
-  { id: "view", zone: "center", order: 3 },
-  { id: "sequence-actions", zone: "right", order: 4 },
-  { id: "share", zone: "right", order: 5 },
-  { id: "save", zone: "header-trailing", order: 6 },
-  { id: "step-editor", zone: "grid", order: 7 },
+  { id: "redo", zone: "header-leading", order: 2 },
+  { id: "clear", zone: "left", order: 3 },
+  { id: "view", zone: "center", order: 4 },
+  { id: "sequence-actions", zone: "right", order: 5 },
+  { id: "share", zone: "right", order: 6 },
+  { id: "save", zone: "header-trailing", order: 7 },
+  { id: "step-editor", zone: "grid", order: 8 },
 ];
 
 /** Buttons in a zone, in reading order. */
@@ -91,6 +93,12 @@ export const WORKSPACE_BUTTON_ICON: Record<
     iconType: "svg",
     actionLabel: "Undo",
     visibleLabel: "Undo",
+  },
+  redo: {
+    icon: "undo-svg",
+    iconType: "svg",
+    actionLabel: "Redo",
+    visibleLabel: "Redo",
   },
   clear: {
     icon: "fa-eraser",
@@ -148,7 +156,12 @@ export const WORKSPACE_BUTTON_TUTORIAL: Record<
 > = {
   undo: {
     label: "Undo",
-    description: "Removes the last step you added.",
+    description: "Steps back to before your last action.",
+    colorClass: "accent",
+  },
+  redo: {
+    label: "Redo",
+    description: "Restores the last action you undid.",
     colorClass: "accent",
   },
   clear: {

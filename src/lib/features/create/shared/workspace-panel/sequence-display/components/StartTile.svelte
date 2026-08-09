@@ -69,11 +69,12 @@
   <StepCell
     step={startPosition}
     index={-1}
+    transitionKey="start-position"
     {shouldAnimate}
     {isSelected}
     {isPracticeStep}
     {activeMode}
-    onLongPress={onLongPress}
+    {onLongPress}
     onDelete={() => onDelete?.(0)}
     {isTimelineMode}
     {animationEpoch}

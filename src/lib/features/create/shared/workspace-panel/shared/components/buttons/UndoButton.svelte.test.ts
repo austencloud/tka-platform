@@ -22,6 +22,9 @@ const createModuleState = {
     nextUndoEntry: {
       metadata: { description: "Add step 1" },
     },
+    nextRedoEntry: {
+      metadata: { description: "Add step 1" },
+    },
   },
   undo: vi.fn(() => true),
   redo: vi.fn(() => false),
@@ -62,5 +65,30 @@ describe("UndoButton roomy workspace label", () => {
 
     expect(getComputedStyle(label!).display).not.toBe("none");
     expect(button.element().getBoundingClientRect().width).toBeGreaterThan(44);
+  });
+
+  it("uses the redo action, shortcut target, and mirrored glyph", async () => {
+    const redo = vi.fn(() => true);
+    const screen = render(UndoButton, {
+      props: {
+        CreateModuleState: {
+          ...createModuleState,
+          canRedo: true,
+          redo,
+        } as never,
+        direction: "redo",
+      },
+    });
+    const button = page.getByRole("button", { name: "Redo Add step 1" });
+
+    expect(button.element().hasAttribute("data-redo-shortcut")).toBe(true);
+    expect(button.element().hasAttribute("data-undo-shortcut")).toBe(false);
+    expect(
+      screen.container.querySelector(".undo-glyph")?.classList.contains("redo")
+    ).toBe(true);
+
+    await button.click();
+
+    expect(redo).toHaveBeenCalledOnce();
   });
 });

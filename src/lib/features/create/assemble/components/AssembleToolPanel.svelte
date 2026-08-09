@@ -23,10 +23,39 @@
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/auth-nudge-trigger";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { motionDuration } from "$lib/shared/transitions/motion";
 
   const props: { tabState: AssembleTabState } = $props();
 
   const builderState = $derived(props.tabState.assembleBuilderState);
+  let builderSurfaceRef: HTMLDivElement | null = $state(null);
+
+  $effect(() => {
+    const plan = builderState.historyTransition;
+    const epoch = builderState.historyTransitionEpoch;
+    if (!plan || !builderSurfaceRef || epoch === 0 || !plan.affectsControls) {
+      return;
+    }
+
+    const duration = motionDuration(240);
+    if (duration === 0) return;
+    const targets = builderSurfaceRef.querySelectorAll<HTMLElement>(
+      ".header-section, .builder-controls-overlay, .action-row"
+    );
+    const animations = Array.from(targets).map((target) =>
+      target.animate(
+        [
+          { opacity: 0.62, transform: "translateY(-3px)" },
+          { opacity: 1, transform: "translateY(0)" },
+        ],
+        {
+          duration,
+          easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+        }
+      )
+    );
+    return () => animations.forEach((animation) => animation.cancel());
+  });
 
   // Auth/tier state for step cap enforcement
   const accessTier = $derived(
@@ -129,7 +158,11 @@
     </div>
   {/if}
 
-  <div class="builder-surface">
+  <div
+    bind:this={builderSurfaceRef}
+    class="builder-surface"
+    data-history-direction={builderState.historyTransition?.direction}
+  >
     <div class="header-section">
       <BuilderInstructionHeader {builderState} />
     </div>

@@ -24,7 +24,10 @@ import type { SequenceRepository } from "$lib/shared/create/services/sequence-re
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/sequence-transforms/sequence-transformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
-import { reversalDetector, type ReversalDetector } from "$lib/shared/create/services/reversal-detector";
+import {
+  reversalDetector,
+  type ReversalDetector,
+} from "$lib/shared/create/services/reversal-detector";
 import { createSequenceState } from "./sequence-state-orchestrator.svelte";
 import type { SequenceState } from "./sequence-state-orchestrator.svelte";
 import type { UndoMetadata } from "../services/undo-manager";
@@ -34,6 +37,11 @@ import type { IFilterPersister } from "../../construct/option-picker/services/fi
 import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
 import { invalidateLoopDisplayCache } from "$lib/shared/create/services/loop-certificate";
 import { updateSequenceStartPosition } from "../../construct/start-position-picker/services/update-sequence-start-position";
+import { createOptionInteractionHintState } from "../../construct/option-picker/state/option-interaction-hint-state.svelte";
+import {
+  hasSeenOptionInteractionHint,
+  markOptionInteractionHintSeen,
+} from "../../construct/option-picker/services/option-interaction-hint-marker";
 
 /**
  * Minimal interface for createModuleState dependency
@@ -136,8 +144,7 @@ export function createConstructTabState(
     ? createUndoController({
         UndoManager: undoManager,
         sequenceState,
-        getActiveSection: () =>
-          createModuleState?.activeSection || "construct",
+        getActiveSection: () => createModuleState?.activeSection || "construct",
         setActiveSectionInternal: async (_panel, _addToHistory) => {
           // Construct tab doesn't need to change active section since it's always construct
           // This is just for compatibility with the undo controller interface
@@ -148,6 +155,10 @@ export function createConstructTabState(
   // Sub-states (construct-specific)
   // Start position state service using proper simplified state
   const startPositionStateService = createSimplifiedStartPositionState();
+  const optionInteractionHintState = createOptionInteractionHintState({
+    hasSeen: hasSeenOptionInteractionHint,
+    markSeen: markOptionInteractionHintSeen,
+  });
   let unsubscribeStartPositionListener: (() => void) | null = null;
 
   // Creation failed, so there is no sequence to add steps to. Send the user back
@@ -668,6 +679,9 @@ export function createConstructTabState(
     // Sub-states
     get startPositionStateService() {
       return startPositionStateService;
+    },
+    get optionInteractionHintState() {
+      return optionInteractionHintState;
     },
 
     // Undo controller (tab-scoped)

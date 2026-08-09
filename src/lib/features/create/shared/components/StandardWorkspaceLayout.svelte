@@ -209,9 +209,7 @@
     {#if shouldShowWorkspace}
       <div class="workspace-history-actions">
         <UndoButton {CreateModuleState} onAction={handleWorkspaceUndo} />
-        {#if isAssembleTab}
-          <UndoButton {CreateModuleState} direction="redo" />
-        {/if}
+        <UndoButton {CreateModuleState} direction="redo" />
       </div>
     {/if}
 
@@ -347,7 +345,7 @@
       border-color 300ms ease;
   }
 
-  .workspace-container.assemble-workspace {
+  .workspace-container {
     --workspace-leading-actions-width: calc(
       var(--min-touch-target, 44px) * 2 + var(--settings-spacing-sm, 8px)
     );

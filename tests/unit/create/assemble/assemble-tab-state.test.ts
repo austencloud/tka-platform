@@ -148,12 +148,18 @@ describe("Assemble tab document synchronization", () => {
 
     expect(tabState.undo()).toBe(true);
     expect(sequenceState.currentSequence?.steps[0]?.duration).toBe(2);
+    expect(sequenceState.animationState.historyTransition).toEqual(
+      expect.objectContaining({ direction: "undo", kind: "content" })
+    );
     expect(tabState.assembleBuilderState.blueSteps[0]?.endPosition).toBe(
       GridLocation.EAST
     );
 
     expect(tabState.redo()).toBe(true);
     expect(sequenceState.currentSequence?.steps[0]?.duration).toBe(3);
+    expect(sequenceState.animationState.historyTransition).toEqual(
+      expect.objectContaining({ direction: "redo", kind: "content" })
+    );
     expect(tabState.assembleBuilderState.blueSteps[0]?.endPosition).toBe(
       GridLocation.SOUTH
     );

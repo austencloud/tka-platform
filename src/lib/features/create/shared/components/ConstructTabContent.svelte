@@ -27,7 +27,6 @@
     initialStartPosition = null,
     lockStartGridMode = false,
     startPositionValidationMessage = null,
-    isUndoingOption = false,
     onStartPositionNavigateToAdvanced,
     onStartPositionNavigateToDefault,
     isSideBySideLayout = () => false,
@@ -46,7 +45,6 @@
     initialStartPosition?: PictographData | null;
     lockStartGridMode?: boolean;
     startPositionValidationMessage?: string | null;
-    isUndoingOption?: boolean;
     onStartPositionNavigateToAdvanced?: () => void;
     onStartPositionNavigateToDefault?: () => void;
     isSideBySideLayout?: () => boolean;
@@ -96,7 +94,6 @@
             {currentSequence}
             {currentGridMode}
             {isSideBySideLayout}
-            {isUndoingOption}
             {isContinuousOnly}
             {onToggleContinuous}
           />

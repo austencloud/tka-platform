@@ -58,7 +58,6 @@ Delegates all rendering to child components.
     isContinuousOnly?: boolean;
     onToggleContinuous?: (value: boolean) => void;
     isSideBySideLayout?: () => boolean;
-    isUndoingOption?: boolean;
     /** Optional predicate to further filter options (e.g., loop-only for tutorials) */
     filterPredicate?: (option: PictographData) => boolean;
     /** Hide the All/Continuous filter UI (e.g. simplified tutorial grid) */
@@ -85,7 +84,6 @@ Delegates all rendering to child components.
     isContinuousOnly = false,
     onToggleContinuous,
     isSideBySideLayout = () => false,
-    isUndoingOption = false,
     filterPredicate,
     hideFilters = false,
     bluePropTypeOverride = undefined,

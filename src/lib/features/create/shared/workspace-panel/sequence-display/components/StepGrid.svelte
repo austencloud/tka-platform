@@ -21,7 +21,6 @@
     createStepGridDisplayState,
     isPendingGenerationAnimation,
     setPendingGenerationAnimation,
-    consumeSuppressNextAnimation,
     type PictographAuditionRequest,
     type PictographArrivalRequest,
     type PictographStageRequest,
@@ -42,6 +41,10 @@
   } from "../domain/pictograph-arrival-geometry";
   import PictographArrivalStage from "./PictographArrivalStage.svelte";
   import WorkspaceGrid from "./WorkspaceGrid.svelte";
+  import {
+    createStableStepIdentities,
+    type HistoryTransitionPlan,
+  } from "$lib/features/create/shared/services/history-transition-planner";
 
   // Services
   const hapticService = getHapticFeedback();
@@ -58,6 +61,8 @@
     removingStepIndex = null,
     removingStepIndices = new Set<number>(),
     isClearing = false,
+    historyTransition = null,
+    historyTransitionEpoch = 0,
     practiceStepNumber = null,
     isSideBySideLayout = false,
     shouldOrbitAroundCenter = false,
@@ -94,6 +99,8 @@
     removingStepIndex?: number | null;
     removingStepIndices?: Set<number>;
     isClearing?: boolean;
+    historyTransition?: HistoryTransitionPlan | null;
+    historyTransitionEpoch?: number;
     practiceStepNumber?: number | null;
     isSideBySideLayout?: boolean;
     shouldOrbitAroundCenter?: boolean;
@@ -381,15 +388,6 @@
     const currentStepCount = steps.length;
     const beatsArrayChanged = steps !== previousStepsRef;
 
-    // Undo/redo/jumpToState sets this flag before restoring.
-    // Skip all entrance animations and just update tracking refs.
-    if (beatsArrayChanged && consumeSuppressNextAnimation()) {
-      displayState.cleanupAnimation();
-      previousStepCount = currentStepCount;
-      previousStepsRef = steps;
-      return;
-    }
-
     if (isFirstRender && currentStepCount > 0) {
       isFirstRender = false;
 
@@ -601,9 +599,9 @@
     onStartClick?.();
   }
 
-  // Composite key guard to avoid Svelte each_key_duplicate
-  const getStepKey = (beat: StepData, index: number) =>
-    `${beat.id ?? "no-id"}-${beat.stepNumber ?? index}-${index}`;
+  const stepIdentities = $derived(createStableStepIdentities(steps));
+  const getStepKey = (_step: StepData, index: number) =>
+    stepIdentities[index] ?? `missing-step:${index}`;
 
   // Helper to get duration display for a step
   function getDurationDisplay(stepIndex: number): string {
@@ -660,6 +658,8 @@
       {removingStepIndex}
       {removingStepIndices}
       {isClearing}
+      {historyTransition}
+      {historyTransitionEpoch}
       {highlightedSteps}
       onStepClick={handleStepClick}
       onStartClick={handleStartClick}

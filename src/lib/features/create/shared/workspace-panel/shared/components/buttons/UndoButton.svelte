@@ -66,15 +66,16 @@
       return `${direction === "undo" ? "Undo" : "Redo"} ${label ?? "Last Action"}`;
     }
 
-    if (direction === "redo") return "Redo Last Action";
-
-    const lastEntry = CreateModuleState.undoController?.nextUndoEntry ?? null;
+    const lastEntry =
+      direction === "undo"
+        ? (CreateModuleState.undoController?.nextUndoEntry ?? null)
+        : (CreateModuleState.undoController?.nextRedoEntry ?? null);
     if (lastEntry?.metadata?.description) {
-      return `Undo ${lastEntry.metadata.description}`;
+      return `${direction === "undo" ? "Undo" : "Redo"} ${lastEntry.metadata.description}`;
     }
 
     const lastType = lastEntry?.type as UndoOperationType | undefined;
-    return `Undo ${lastType ? typeDescriptions[lastType] : "Last Action"}`;
+    return `${direction === "undo" ? "Undo" : "Redo"} ${lastType ? typeDescriptions[lastType] : "Last Action"}`;
   });
 
   const historyTooltip = $derived(() => {
@@ -89,14 +90,15 @@
       return `${direction === "undo" ? "Undo" : "Redo"}: ${label ?? "last action"}`;
     }
 
-    if (direction === "redo") return "Redo last action";
-
-    const lastEntry = CreateModuleState.undoController?.nextUndoEntry ?? null;
+    const lastEntry =
+      direction === "undo"
+        ? (CreateModuleState.undoController?.nextUndoEntry ?? null)
+        : (CreateModuleState.undoController?.nextRedoEntry ?? null);
     if (lastEntry?.metadata?.description) {
-      return `Undo: ${lastEntry.metadata.description}`;
+      return `${direction === "undo" ? "Undo" : "Redo"}: ${lastEntry.metadata.description}`;
     }
 
-    return `Undo last action (${lastEntry?.type || "Unknown"})`;
+    return `${direction === "undo" ? "Undo" : "Redo"} last action (${lastEntry?.type || "Unknown"})`;
   });
 
   // Simple click handler
@@ -113,6 +115,7 @@
 </script>
 
 <button
+  type="button"
   data-undo-shortcut={direction === "undo" ? "" : undefined}
   data-redo-shortcut={direction === "redo" ? "" : undefined}
   data-undo-shortcut-label={direction === "undo"
@@ -127,13 +130,13 @@
   disabled={!canAct}
   title={historyTooltip()}
   aria-label={historyButtonText()}
-  data-ghost={canAct ? "safe" : undefined}
-  data-ghost-kind="undo"
-  data-ghost-label="Undo"
+  data-ghost={direction === "undo" && canAct ? "safe" : undefined}
+  data-ghost-kind={direction === "undo" ? "undo" : undefined}
+  data-ghost-label={direction === "undo" ? "Undo" : undefined}
 >
   <UndoGlyph size={20} {direction} />
   <span class="workspace-action-label" aria-hidden="true">
-    {direction === "undo" ? WORKSPACE_BUTTON_ICON.undo.visibleLabel : "Redo"}
+    {WORKSPACE_BUTTON_ICON[direction].visibleLabel}
   </span>
 </button>
 

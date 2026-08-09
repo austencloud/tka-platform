@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { createStartPositionData } from "$lib/shared/foundation/domain/factories/create-start-position-data";
 import ButtonPanel from "./ButtonPanel.svelte";
 
 vi.mock("$lib/shared/mobile/share-action.svelte", () => ({
@@ -64,6 +65,11 @@ const sequence = createSequenceData({
   name: "A",
   steps: [createStepData({ letter: "A" })],
 });
+const startOnlySequence = createSequenceData({
+  id: "toolbar-teaching-banner",
+  startPosition: createStartPositionData({ id: "toolbar-start" }),
+  steps: [],
+});
 
 type ButtonPanelCreateModuleStateFixture = Pick<
   CreateModuleContext["CreateModuleState"],
@@ -84,6 +90,13 @@ type ButtonPanelCreateModuleStateFixture = Pick<
 
 type ButtonPanelContextFixture = {
   CreateModuleState: ButtonPanelCreateModuleStateFixture;
+  constructTabState: {
+    optionInteractionHintState: {
+      readonly isVisible: boolean;
+      readonly presentation: "anchored" | "workspace-banner";
+      dismiss: () => void;
+    };
+  };
   constructTutorialState: Pick<
     CreateModuleContext["constructTutorialState"],
     "isActive" | "stage" | "recordFullPlay"
@@ -108,6 +121,13 @@ function createContext(): ButtonPanelContextFixture {
       undo: () => false,
       redo: () => false,
       assembleTabState: null,
+    },
+    constructTabState: {
+      optionInteractionHintState: {
+        isVisible: false,
+        presentation: "anchored",
+        dismiss: vi.fn(),
+      },
     },
     constructTutorialState: {
       isActive: false,
@@ -153,6 +173,71 @@ afterEach(() => {
 });
 
 describe("ButtonPanel narrow geometry", () => {
+  it("fits the compact interaction banner between start-only actions", async () => {
+    const context = createContext();
+    const dismiss = vi.fn();
+    context.CreateModuleState.canShowActionButtons = () => false;
+    context.CreateModuleState.canShowSequenceActionsButton = () => true;
+    context.CreateModuleState.getActiveTabSequenceState = () => ({
+      currentSequence: startOnlySequence,
+    });
+    context.constructTabState.optionInteractionHintState = {
+      isVisible: true,
+      presentation: "workspace-banner",
+      dismiss,
+    };
+
+    const screen = render(ButtonPanel, {
+      props: {
+        onClearSequence: vi.fn(),
+        onViewSequence: vi.fn(),
+      },
+      context: new Map([["createModule", context]]),
+    });
+    screen.container.style.width = "320px";
+
+    await waitForLayout();
+
+    const banner = screen.container.querySelector<HTMLElement>(
+      ".option-interaction-banner"
+    );
+    const clear = rect("Clear sequence");
+    const actions = rect("Sequence actions");
+    const bannerBounds = banner?.getBoundingClientRect();
+
+    expect(banner).not.toBeNull();
+    expect(bannerBounds?.left).toBeGreaterThanOrEqual(clear.right);
+    expect(bannerBounds?.right).toBeLessThanOrEqual(actions.left);
+    expect(bannerBounds?.width).toBeGreaterThanOrEqual(200);
+
+    await page.getByRole("button", { name: "Dismiss option hint" }).click();
+    expect(dismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("removes the interaction banner before Play enters", async () => {
+    const context = createContext();
+    context.constructTabState.optionInteractionHintState = {
+      isVisible: true,
+      presentation: "workspace-banner",
+      dismiss: vi.fn(),
+    };
+
+    const screen = render(ButtonPanel, {
+      props: {
+        onClearSequence: vi.fn(),
+        onViewSequence: vi.fn(),
+      },
+      context: new Map([["createModule", context]]),
+    });
+
+    expect(
+      screen.container.querySelector(".option-interaction-banner")
+    ).toBeNull();
+    await expect
+      .element(page.getByRole("button", { name: "Play sequence" }))
+      .toBeInTheDocument();
+  });
+
   it("keeps four controls in one centered row at 320 CSS pixels", async () => {
     const screen = render(ButtonPanel, {
       props: {

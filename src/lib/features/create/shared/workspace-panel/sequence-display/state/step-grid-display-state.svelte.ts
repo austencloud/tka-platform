@@ -53,25 +53,6 @@ export function isPendingGenerationAnimation(): boolean {
 }
 
 /**
- * When true, the next sequence change should NOT trigger entrance animations.
- * Set by undo/redo/jumpToState before restoring a sequence so that the grid
- * renders the restored state instantly instead of playing the generation animation.
- */
-let suppressNextAnimation = false;
-
-export function setSuppressNextAnimation(suppress: boolean) {
-  suppressNextAnimation = suppress;
-}
-
-export function consumeSuppressNextAnimation(): boolean {
-  if (suppressNextAnimation) {
-    suppressNextAnimation = false;
-    return true;
-  }
-  return false;
-}
-
-/**
  * Create step grid display animation state
  */
 export function createStepGridDisplayState() {

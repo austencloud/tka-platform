@@ -43,6 +43,7 @@
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { PropRenderData } from "$lib/shared/pictograph/prop/domain/models/prop-render-data";
+  import { motionDuration } from "$lib/shared/transitions/motion";
 
   let {
     builderState,
@@ -83,6 +84,7 @@
   let activePropGroupRef: SVGGElement | null = $state(null);
   let ghostBluePropGroupRef: SVGGElement | null = $state(null);
   let ghostRedPropGroupRef: SVGGElement | null = $state(null);
+  let interactiveGridRef: HTMLDivElement | null = $state(null);
 
   // Track whether the active prop just appeared (for scale-in animation)
   let justPlaced = $state(false);
@@ -92,6 +94,55 @@
   let redPropData = $state<PropRenderData | null>(null);
   let previewLocation = $state<GridLocation | null>(null);
   let startAimPreview = $state<Orientation | null>(null);
+
+  $effect(() => {
+    const plan = builderState.historyTransition;
+    const epoch = builderState.historyTransitionEpoch;
+    if (!plan || !interactiveGridRef || epoch === 0) return;
+
+    const duration = motionDuration(280);
+    if (duration === 0) return;
+    const animations: Animation[] = [];
+
+    if (plan.affectsGrid || plan.affectsBuilderPath) {
+      const svg = interactiveGridRef.querySelector<SVGSVGElement>("svg");
+      if (svg) {
+        animations.push(
+          svg.animate(
+            [
+              { opacity: 0.58, filter: "brightness(1.18)" },
+              { opacity: 1, filter: "brightness(1)" },
+            ],
+            {
+              duration,
+              easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+            }
+          )
+        );
+      }
+    }
+
+    if (plan.affectsControls) {
+      const badge =
+        interactiveGridRef.querySelector<HTMLElement>(".step-badge");
+      if (badge) {
+        animations.push(
+          badge.animate(
+            [
+              { opacity: 0.55, transform: "translateY(-4px) scale(0.94)" },
+              { opacity: 1, transform: "translateY(0) scale(1)" },
+            ],
+            {
+              duration: motionDuration(220),
+              easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+            }
+          )
+        );
+      }
+    }
+
+    return () => animations.forEach((animation) => animation.cancel());
+  });
 
   // Reactive prop types for rotation checks
   const currentBluePropType = $derived(
@@ -552,7 +603,10 @@
 </script>
 
 <div
+  bind:this={interactiveGridRef}
   class="interactive-grid"
+  data-history-direction={builderState.historyTransition?.direction}
+  data-history-label={builderState.historyTransition?.label}
   role="application"
   aria-label="Visual sequence builder grid"
 >

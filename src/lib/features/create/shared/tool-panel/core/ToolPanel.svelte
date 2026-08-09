@@ -19,7 +19,7 @@
 <script lang="ts">
   import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
+  import type { DeviceDetector } from "$lib/shared/device/services/device-detector";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount } from "svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
@@ -95,9 +95,6 @@
     previousStep: () => {},
   });
 
-  // Transition state for undo animations
-  let isUndoingOption = $state(false);
-
   // ============================================================================
   // LIFECYCLE
   // ============================================================================
@@ -115,11 +112,6 @@
         updateNavigationLayout();
       });
     }
-
-    // Set up callback for undo option animation
-    createModuleState.setOnUndoingOptionCallback?.((isUndoing: boolean) => {
-      isUndoingOption = isUndoing;
-    });
 
     return undefined;
   });
@@ -231,7 +223,6 @@
   function handleNavigateToDefault() {
     hapticService?.trigger("selection");
   }
-
 </script>
 
 <!-- ============================================================================ -->
@@ -282,7 +273,6 @@
                 startPositionState={constructTabState.startPositionStateService}
                 currentSequence={currentSequenceData}
                 {onOptionSelected}
-                {isUndoingOption}
                 onStartPositionNavigateToAdvanced={handleNavigateToAdvanced}
                 onStartPositionNavigateToDefault={handleNavigateToDefault}
                 {isSideBySideLayout}
@@ -375,5 +365,4 @@
     height: 200px;
     color: #666;
   }
-
 </style>

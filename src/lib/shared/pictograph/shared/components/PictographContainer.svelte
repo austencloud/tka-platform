@@ -104,6 +104,7 @@ with pre-prepared data for better performance.
     widthMultiplier = 1,
     // Cell index for position caching (enables smooth transitions on regeneration)
     cellIndex = null,
+    transitionKey = null,
     // Musical position string (e.g., "1", "1.5", "2e") for beat number display (timeline mode)
     musicalPosition = undefined,
     // Fires once after the first successful prepare has been applied and rendered
@@ -164,6 +165,8 @@ with pre-prepared data for better performance.
     widthMultiplier?: number;
     /** Cell index for position caching (enables smooth transitions on regeneration) */
     cellIndex?: number | null;
+    /** Stable editor identity for cache continuity when a step changes grid index. */
+    transitionKey?: string | null;
     /** Musical position string (e.g., "1", "1.5", "2e") for beat number display in timeline mode */
     musicalPosition?: string;
     /** Fires once after the first prepared render commits to the DOM (deterministic export readiness signal). */
@@ -201,7 +204,8 @@ with pre-prepared data for better performance.
   let syncedVisibility = $state({
     showGrid: visibilityManager.getGridVisibility(),
     tkaGlyph: visibilityManager.getGlyphVisibility("tkaGlyph"),
-    reversalIndicators: visibilityManager.getGlyphVisibility("reversalIndicators"),
+    reversalIndicators:
+      visibilityManager.getGlyphVisibility("reversalIndicators"),
     nonRadialPoints: visibilityManager.getNonRadialVisibility(),
     tndGlyph: visibilityManager.getGlyphVisibility("tndGlyph"),
     elementalGlyph: visibilityManager.getGlyphVisibility("elementalGlyph"),
@@ -214,7 +218,9 @@ with pre-prepared data for better performance.
   // Step numbers honor the global visibility toggle (right-click → Step Numbers).
   // Start positions never show a number; 0/null already excluded downstream.
   const showStepNumber = $derived(
-    stepNumber !== null && !isStartPosition && (stepNumberOverride ?? syncedVisibility.stepNumbers)
+    stepNumber !== null &&
+      !isStartPosition &&
+      (stepNumberOverride ?? syncedVisibility.stepNumbers)
   );
 
   function handleVisibilityChange() {
@@ -223,7 +229,8 @@ with pre-prepared data for better performance.
     syncedVisibility = {
       showGrid: visibilityManager.getGridVisibility(),
       tkaGlyph: visibilityManager.getGlyphVisibility("tkaGlyph"),
-      reversalIndicators: visibilityManager.getGlyphVisibility("reversalIndicators"),
+      reversalIndicators:
+        visibilityManager.getGlyphVisibility("reversalIndicators"),
       nonRadialPoints: visibilityManager.getNonRadialVisibility(),
       tndGlyph: visibilityManager.getGlyphVisibility("tndGlyph"),
       elementalGlyph: visibilityManager.getGlyphVisibility("elementalGlyph"),
@@ -285,7 +292,9 @@ with pre-prepared data for better performance.
   );
 
   const effectiveShowNonRadialPoints = $derived(
-    showNonRadialPoints !== undefined ? showNonRadialPoints : syncedVisibility.nonRadialPoints
+    showNonRadialPoints !== undefined
+      ? showNonRadialPoints
+      : syncedVisibility.nonRadialPoints
   );
 
   // Extended glyph visibility
@@ -303,13 +312,17 @@ with pre-prepared data for better performance.
   );
 
   const effectiveShowPositions = $derived(
-    showPositions !== undefined ? showPositions : syncedVisibility.positionsGlyph
+    showPositions !== undefined
+      ? showPositions
+      : syncedVisibility.positionsGlyph
   );
 
   // Hand point visibility mode - prop override forces show-all or hide-inactive, else use global
   const effectiveHandPointVisibility = $derived<"all" | "active" | "none">(
     showHandPoints !== undefined
-      ? (showHandPoints ? "all" : "none")
+      ? showHandPoints
+        ? "all"
+        : "none"
       : syncedVisibility.handPointVisibility
   );
 
@@ -358,8 +371,12 @@ with pre-prepared data for better performance.
   // Resolve prop types: use explicit overrides if provided, otherwise fall back to global settings.
   // These are used both in the cache key and when preparing, so the start position
   // (which has no overrides) correctly picks up the user's selected prop type.
-  const effectiveBluePropType = $derived(bluePropTypeOverride ?? getSettings().bluePropType);
-  const effectiveRedPropType = $derived(redPropTypeOverride ?? getSettings().redPropType);
+  const effectiveBluePropType = $derived(
+    bluePropTypeOverride ?? getSettings().bluePropType
+  );
+  const effectiveRedPropType = $derived(
+    redPropTypeOverride ?? getSettings().redPropType
+  );
 
   // Create a stable key for data preparation dependencies
   // Include effectiveDarkMode so that when it changes (via prop OR global toggle), we re-prepare with correct colors
@@ -373,35 +390,39 @@ with pre-prepared data for better performance.
     const blueMotion = pictographData.motions?.blue;
     const redMotion = pictographData.motions?.red;
 
-    const blueFingerprint = blueMotion ? {
-      startLoc: blueMotion.startLocation,
-      endLoc: blueMotion.endLocation,
-      startPos: blueMotion.startPosition,
-      endPos: blueMotion.endPosition,
-      motionType: blueMotion.motionType,
-      rotation: blueMotion.rotationDirection,
-      // Include orientations so prop rotation updates when orientation changes propagate
-      startOrientation: blueMotion.startOrientation,
-      endOrientation: blueMotion.endOrientation,
-      // Include manual adjustments so arrow moves when adjusted
-      manualAdjustX: blueMotion.arrowPlacementData?.manualAdjustmentX ?? 0,
-      manualAdjustY: blueMotion.arrowPlacementData?.manualAdjustmentY ?? 0,
-    } : null;
+    const blueFingerprint = blueMotion
+      ? {
+          startLoc: blueMotion.startLocation,
+          endLoc: blueMotion.endLocation,
+          startPos: blueMotion.startPosition,
+          endPos: blueMotion.endPosition,
+          motionType: blueMotion.motionType,
+          rotation: blueMotion.rotationDirection,
+          // Include orientations so prop rotation updates when orientation changes propagate
+          startOrientation: blueMotion.startOrientation,
+          endOrientation: blueMotion.endOrientation,
+          // Include manual adjustments so arrow moves when adjusted
+          manualAdjustX: blueMotion.arrowPlacementData?.manualAdjustmentX ?? 0,
+          manualAdjustY: blueMotion.arrowPlacementData?.manualAdjustmentY ?? 0,
+        }
+      : null;
 
-    const redFingerprint = redMotion ? {
-      startLoc: redMotion.startLocation,
-      endLoc: redMotion.endLocation,
-      startPos: redMotion.startPosition,
-      endPos: redMotion.endPosition,
-      motionType: redMotion.motionType,
-      rotation: redMotion.rotationDirection,
-      // Include orientations so prop rotation updates when orientation changes propagate
-      startOrientation: redMotion.startOrientation,
-      endOrientation: redMotion.endOrientation,
-      // Include manual adjustments so arrow moves when adjusted
-      manualAdjustX: redMotion.arrowPlacementData?.manualAdjustmentX ?? 0,
-      manualAdjustY: redMotion.arrowPlacementData?.manualAdjustmentY ?? 0,
-    } : null;
+    const redFingerprint = redMotion
+      ? {
+          startLoc: redMotion.startLocation,
+          endLoc: redMotion.endLocation,
+          startPos: redMotion.startPosition,
+          endPos: redMotion.endPosition,
+          motionType: redMotion.motionType,
+          rotation: redMotion.rotationDirection,
+          // Include orientations so prop rotation updates when orientation changes propagate
+          startOrientation: redMotion.startOrientation,
+          endOrientation: redMotion.endOrientation,
+          // Include manual adjustments so arrow moves when adjusted
+          manualAdjustX: redMotion.arrowPlacementData?.manualAdjustmentX ?? 0,
+          manualAdjustY: redMotion.arrowPlacementData?.manualAdjustmentY ?? 0,
+        }
+      : null;
 
     return JSON.stringify({
       id: pictographData.id,
@@ -460,12 +481,15 @@ with pre-prepared data for better performance.
       try {
         const currentDarkMode = effectiveDarkMode;
         const prepareOptions = {
-          themeMode: currentDarkMode ? "dark" as const : "light" as const,
+          themeMode: currentDarkMode ? ("dark" as const) : ("light" as const),
           bluePropType: effectiveBluePropType,
           redPropType: effectiveRedPropType,
         };
         const [result, startResult] = await Promise.all([
-          pictographPreparer.prepareSingle(data as PictographData, prepareOptions),
+          pictographPreparer.prepareSingle(
+            data as PictographData,
+            prepareOptions
+          ),
           startData
             ? pictographPreparer.prepareSingle(startData, prepareOptions)
             : Promise.resolve(null),
@@ -526,8 +550,12 @@ with pre-prepared data for better performance.
   // label is present server-side, everywhere a pictograph renders. Blank/empty
   // pictographs stay decorative (no role/label). Wraps the whole node as role=img,
   // which AT treats as a leaf — so the inner glyph labels aren't double-announced.
-  const a11yLabel = $derived(pictographData ? describePictograph(pictographData) : "");
-  const hasA11yLabel = $derived(!!a11yLabel && a11yLabel !== "Pictograph (empty)");
+  const a11yLabel = $derived(
+    pictographData ? describePictograph(pictographData) : ""
+  );
+  const hasA11yLabel = $derived(
+    !!a11yLabel && a11yLabel !== "Pictograph (empty)"
+  );
 
   // Deterministic readiness signal for offscreen/export rendering.
   // This effect runs after the DOM is updated, so once preparedData is committed
@@ -599,6 +627,7 @@ with pre-prepared data for better performance.
         {onToggleNonRadial}
         {widthMultiplier}
         {cellIndex}
+        {transitionKey}
         {duration}
         propPositionOverrides={motionPropPositionOverrides}
         {arrowOpacity}
@@ -644,6 +673,7 @@ with pre-prepared data for better performance.
             {onToggleNonRadial}
             {widthMultiplier}
             {cellIndex}
+            {transitionKey}
             {duration}
             propPositionOverrides={motionPropPositionOverrides}
             {arrowOpacity}
@@ -655,7 +685,11 @@ with pre-prepared data for better performance.
   {:else}
     <div class="empty-state">
       <svg width="100%" height="100%" viewBox="0 0 950 950">
-        <rect width="950" height="950" fill={effectiveDarkMode ? "#0a0a0f" : "white"} />
+        <rect
+          width="950"
+          height="950"
+          fill={effectiveDarkMode ? "#0a0a0f" : "white"}
+        />
       </svg>
     </div>
   {/if}

@@ -92,6 +92,7 @@
     );
 
     function updatePosition() {
+      if (!hint) return;
       frame = 0;
       const anchor = findFirstVisibleOption(container);
       if (!anchor) {

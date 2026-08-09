@@ -21,6 +21,7 @@ interface PositionInput {
   hintHeight: number;
   gap?: number;
   edgePadding?: number;
+  topInset?: number;
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -34,6 +35,7 @@ export function calculateOptionInteractionHintPosition({
   hintHeight,
   gap = 12,
   edgePadding = 8,
+  topInset = 0,
 }: PositionInput): OptionInteractionHintPosition {
   const anchorCenter = anchor.left - container.left + anchor.width / 2;
   const left = clamp(
@@ -41,7 +43,8 @@ export function calculateOptionInteractionHintPosition({
     edgePadding,
     container.width - hintWidth - edgePadding
   );
-  const spaceAbove = anchor.top - container.top;
+  const topBoundary = Math.max(edgePadding, topInset + edgePadding);
+  const spaceAbove = anchor.top - container.top - topBoundary;
   const spaceBelow = container.bottom - anchor.bottom;
   const placement =
     spaceAbove >= hintHeight + gap || spaceAbove >= spaceBelow
@@ -53,7 +56,7 @@ export function calculateOptionInteractionHintPosition({
       : anchor.bottom - container.top + gap;
   const top = clamp(
     desiredTop,
-    edgePadding,
+    topBoundary,
     container.height - hintHeight - edgePadding
   );
   const arrowLeft = clamp(anchorCenter - left, 18, hintWidth - 18);

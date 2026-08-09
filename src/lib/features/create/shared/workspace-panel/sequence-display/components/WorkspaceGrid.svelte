@@ -1,6 +1,8 @@
 <!-- WorkspaceGrid.svelte - Unified workspace grid with standard and timeline layout modes -->
 <script lang="ts">
   import { flip } from "svelte/animate";
+  import { tick } from "svelte";
+  import { fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
@@ -48,6 +50,7 @@
     MandalaPathShape,
     MandalaRenderOptions,
   } from "$lib/shared/mandala/domain/mandala-types";
+  import type { HistoryTransitionPlan } from "$lib/features/create/shared/services/history-transition-planner";
 
   const MANDALA_CELL_SCALE = 0.78;
   const hapticService = getHapticFeedback();
@@ -69,6 +72,8 @@
     removingStepIndex = null,
     removingStepIndices = new Set<number>(),
     isClearing = false,
+    historyTransition = null,
+    historyTransitionEpoch = 0,
     highlightedSteps = null,
     onStepClick,
     onStartClick,
@@ -100,6 +105,8 @@
     removingStepIndex?: number | null;
     removingStepIndices?: Set<number>;
     isClearing?: boolean;
+    historyTransition?: HistoryTransitionPlan | null;
+    historyTransitionEpoch?: number;
     highlightedSteps?: Map<number, { bg: string; border: string }> | null;
     onStepClick?: (
       stepNumber: number,
@@ -248,12 +255,17 @@
   const standardStepCells = $derived.by(() => {
     const layoutVersion = `${gridLayout.columns}:${gridLayout.cellSize}`;
     if (isTimelineMode) return [];
-    return steps.map((step, index) => ({ step, index, layoutVersion }));
+    return steps.map((step, index) => ({
+      step,
+      index,
+      identity: getStepKey(step, index),
+      layoutVersion,
+    }));
   });
 
   function getLayoutFlipDuration(): number {
     if (
-      activeMode !== "construct" ||
+      (activeMode !== "construct" && historyTransition === null) ||
       removingStepIndex !== null ||
       isClearing ||
       displayState.isClearingForGeneration
@@ -262,6 +274,158 @@
     }
     return motionDuration(PICTOGRAPH_ARRIVAL_LANDING_MS);
   }
+
+  let gridSurfaceRef: HTMLDivElement | null = null;
+  let gridHistoryAnimation: Animation | null = null;
+
+  function getHistoryMembershipDuration(identity: string): number {
+    if (!historyTransition) return 0;
+    const changesMembership =
+      historyTransition.insertedStepIdentities.has(identity) ||
+      historyTransition.removedStepIdentities.has(identity);
+    return changesMembership ? motionDuration(180) : 0;
+  }
+
+  function getHistoryStartDuration(): number {
+    return historyTransition?.startPositionChanged ? motionDuration(180) : 0;
+  }
+
+  function getHistoryStepElements(): Map<string, HTMLElement> {
+    if (!gridSurfaceRef) return new Map();
+    return new Map(
+      Array.from(
+        gridSurfaceRef.querySelectorAll<HTMLElement>(
+          "[data-history-step-identity]"
+        )
+      ).map((element) => [element.dataset.historyStepIdentity!, element])
+    );
+  }
+
+  function cancelHistoryAnimations(element: HTMLElement): void {
+    const shell = element.querySelector<HTMLElement>(".history-step-shell");
+    shell?.getAnimations().forEach((animation) => animation.cancel());
+    element
+      .querySelector<HTMLElement>(".step-cell")
+      ?.getAnimations()
+      .forEach((animation) => animation.cancel());
+  }
+
+  $effect.pre(() => {
+    const plan = historyTransition;
+    const epoch = historyTransitionEpoch;
+    if (!plan || !gridSurfaceRef) return;
+
+    gridHistoryAnimation?.cancel();
+    gridHistoryAnimation = null;
+
+    const beforeElements = getHistoryStepElements();
+    const beforeRects = new Map<string, DOMRect>();
+    for (const [identity, element] of beforeElements) {
+      beforeRects.set(identity, element.getBoundingClientRect());
+      cancelHistoryAnimations(element);
+    }
+
+    void tick().then(() => {
+      if (epoch !== historyTransitionEpoch || plan !== historyTransition)
+        return;
+
+      const duration = motionDuration(300);
+      const currentElements = getHistoryStepElements();
+
+      if (
+        duration > 0 &&
+        (plan.startPositionChanged ||
+          plan.gridModeChanged ||
+          plan.circularityChanged)
+      ) {
+        const surface = gridSurfaceRef;
+        if (!surface) return;
+        gridHistoryAnimation = surface.animate(
+          [
+            { opacity: 0.68, filter: "brightness(1.14)" },
+            { opacity: 1, filter: "brightness(1)" },
+          ],
+          {
+            duration: motionDuration(240),
+            easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+          }
+        );
+        if (gridHistoryAnimation) {
+          const animation = gridHistoryAnimation;
+          animation.onfinish = () => {
+            animation.cancel();
+            if (gridHistoryAnimation === animation) {
+              gridHistoryAnimation = null;
+            }
+          };
+        }
+      }
+
+      for (const transition of plan.steps) {
+        if (transition.fromIndex === null || transition.toIndex === null) {
+          continue;
+        }
+
+        const beforeRect = beforeRects.get(transition.identity);
+        const element = currentElements.get(transition.identity);
+        const shell = element?.querySelector<HTMLElement>(
+          ".history-step-shell"
+        );
+        if (!beforeRect || !element || !shell) continue;
+
+        const afterRect = element.getBoundingClientRect();
+        const deltaX = beforeRect.left - afterRect.left;
+        const deltaY = beforeRect.top - afterRect.top;
+        const scaleX =
+          afterRect.width > 0 ? beforeRect.width / afterRect.width : 1;
+        const scaleY =
+          afterRect.height > 0 ? beforeRect.height / afterRect.height : 1;
+        const geometryChanged =
+          Math.abs(deltaX) > 0.5 ||
+          Math.abs(deltaY) > 0.5 ||
+          Math.abs(scaleX - 1) > 0.005 ||
+          Math.abs(scaleY - 1) > 0.005;
+
+        if (duration > 0 && geometryChanged) {
+          const animation = shell.animate(
+            [
+              {
+                transform: `translate(${deltaX}px, ${deltaY}px) scale(${scaleX}, ${scaleY})`,
+              },
+              { transform: "none" },
+            ],
+            {
+              duration,
+              easing: PICTOGRAPH_ARRIVAL_LANDING_EASING,
+              fill: "both",
+            }
+          );
+          animation.onfinish = () => animation.cancel();
+        }
+
+        const selectionAffected =
+          plan.selectionChanged &&
+          (element.dataset.stepNumber === String(plan.fromSelectedStepNumber) ||
+            element.dataset.stepNumber === String(plan.toSelectedStepNumber));
+        if (
+          duration > 0 &&
+          (transition.changes.size > 0 || selectionAffected)
+        ) {
+          const content = element.querySelector<HTMLElement>(".step-cell");
+          content?.animate(
+            [
+              { opacity: 0.58, filter: "brightness(1.22)" },
+              { opacity: 1, filter: "brightness(1)" },
+            ],
+            {
+              duration: motionDuration(240),
+              easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+            }
+          );
+        }
+      }
+    });
+  });
 
   const timelineStartMandalas = $derived.by(() => {
     if (!isTimelineMode) return [];
@@ -374,6 +538,7 @@
   bind:this={scrollContainerRef}
 >
   <div
+    bind:this={gridSurfaceRef}
     class="grid-surface"
     class:standard={!isTimelineMode}
     class:timeline={isTimelineMode}
@@ -397,6 +562,8 @@
             class="timeline-cell"
             class:cell-selected={selectedStepNumber === 0}
             class:cell-practice={practiceStepNumber === 0}
+            in:fade={{ duration: getHistoryStartDuration() }}
+            out:fade={{ duration: getHistoryStartDuration() }}
           >
             <StartTile
               {startPosition}
@@ -449,6 +616,7 @@
           <div class="timeline-row">
             {#each row.steps as { stepIndex, duration } (getStepKey(steps[stepIndex]!, stepIndex))}
               {@const step = steps[stepIndex]!}
+              {@const identity = getStepKey(step, stepIndex)}
               {@const isDeleting = removingStepIndices.has(stepIndex)}
               {@const shouldSlide =
                 removingStepIndex !== null &&
@@ -473,6 +641,8 @@
                 class:cell-selected={selectedStepNumber === step.stepNumber}
                 class:cell-practice={practiceStepNumber === step.stepNumber}
                 data-step-index={stepIndex}
+                data-step-number={step.stepNumber}
+                data-history-step-identity={identity}
                 data-arrival-destination-state={isArrivalDestination(stepIndex)
                   ? isArrivalDestinationHidden(stepIndex)
                     ? "hidden"
@@ -486,26 +656,31 @@
                 style:animation-delay={shouldSlide
                   ? `${Math.min(stepIndex - removingStepIndex - 1, 5) * 50}ms`
                   : "0ms"}
+                in:fade={{ duration: getHistoryMembershipDuration(identity) }}
+                out:fade={{ duration: getHistoryMembershipDuration(identity) }}
               >
-                <StepCell
-                  {step}
-                  index={stepIndex}
-                  onClick={(mods) => onStepClick?.(step.stepNumber, mods)}
-                  onDelete={() => onStepDelete?.(step.stepNumber)}
-                  onLongPress={() => onStepLongPress?.(step.stepNumber)}
-                  shouldAnimate={displayState.shouldBeatAnimate(stepIndex)}
-                  isSelected={selectedStepNumber === step.stepNumber}
-                  isPracticeStep={practiceStepNumber === step.stepNumber}
-                  {activeMode}
-                  highlightStyle={highlightedSteps?.get(step.stepNumber) ??
-                    null}
-                  {musicalPosition}
-                  isTimelineMode={true}
-                  widthMultiplier={effectiveDuration}
-                  animationEpoch={displayState.animationEpoch}
-                  {bluePropTypeOverride}
-                  {redPropTypeOverride}
-                />
+                <div class="history-step-shell">
+                  <StepCell
+                    {step}
+                    index={stepIndex}
+                    transitionKey={identity}
+                    onClick={(mods) => onStepClick?.(step.stepNumber, mods)}
+                    onDelete={() => onStepDelete?.(step.stepNumber)}
+                    onLongPress={() => onStepLongPress?.(step.stepNumber)}
+                    shouldAnimate={displayState.shouldBeatAnimate(stepIndex)}
+                    isSelected={selectedStepNumber === step.stepNumber}
+                    isPracticeStep={practiceStepNumber === step.stepNumber}
+                    {activeMode}
+                    highlightStyle={highlightedSteps?.get(step.stepNumber) ??
+                      null}
+                    {musicalPosition}
+                    isTimelineMode={true}
+                    widthMultiplier={effectiveDuration}
+                    animationEpoch={displayState.animationEpoch}
+                    {bluePropTypeOverride}
+                    {redPropTypeOverride}
+                  />
+                </div>
                 {#if onDurationChange && selectedStepNumber === step.stepNumber}
                   <DurationResizeHandle
                     currentDuration={duration}
@@ -533,6 +708,8 @@
             duration: getLayoutFlipDuration(),
             easing: cubicOut,
           }}
+          in:fade={{ duration: getHistoryStartDuration() }}
+          out:fade={{ duration: getHistoryStartDuration() }}
         >
           <StartTile
             startPosition={startCell.startPosition}
@@ -550,7 +727,7 @@
         </div>
       {/each}
 
-      {#each standardStepCells as { step, index } (getStepKey(step, index))}
+      {#each standardStepCells as { step, index, identity } (identity)}
         {@const position = calculateStepPosition(index, gridLayout.columns)}
         {@const isDeleting = removingStepIndices.has(index)}
         {@const shouldSlide =
@@ -566,6 +743,8 @@
           class:arrival-destination-hidden={isArrivalDestinationHidden(index)}
           class:hidden-for-sequential={displayState.shouldBeatBeHidden(index)}
           data-step-index={index}
+          data-step-number={step.stepNumber}
+          data-history-step-identity={identity}
           data-arrival-destination-state={isArrivalDestination(index)
             ? isArrivalDestinationHidden(index)
               ? "hidden"
@@ -579,26 +758,31 @@
             ? `${Math.min(index - removingStepIndex - 1, 5) * 50}ms`
             : "0ms"}
           animate:flip={{
-            duration: getLayoutFlipDuration(),
+            duration: historyTransition ? 0 : getLayoutFlipDuration(),
             easing: cubicOut,
           }}
+          in:fade={{ duration: getHistoryMembershipDuration(identity) }}
+          out:fade={{ duration: getHistoryMembershipDuration(identity) }}
         >
-          <StepCell
-            {step}
-            {index}
-            onClick={(mods) => onStepClick?.(step.stepNumber, mods)}
-            onDelete={() => onStepDelete?.(step.stepNumber)}
-            onLongPress={() => onStepLongPress?.(step.stepNumber)}
-            shouldAnimate={displayState.shouldBeatAnimate(index)}
-            isSelected={selectedStepNumber === step.stepNumber}
-            isPracticeStep={practiceStepNumber === step.stepNumber}
-            {activeMode}
-            highlightStyle={highlightedSteps?.get(step.stepNumber) ?? null}
-            {musicalPosition}
-            animationEpoch={displayState.animationEpoch}
-            {bluePropTypeOverride}
-            {redPropTypeOverride}
-          />
+          <div class="history-step-shell">
+            <StepCell
+              {step}
+              {index}
+              transitionKey={identity}
+              onClick={(mods) => onStepClick?.(step.stepNumber, mods)}
+              onDelete={() => onStepDelete?.(step.stepNumber)}
+              onLongPress={() => onStepLongPress?.(step.stepNumber)}
+              shouldAnimate={displayState.shouldBeatAnimate(index)}
+              isSelected={selectedStepNumber === step.stepNumber}
+              isPracticeStep={practiceStepNumber === step.stepNumber}
+              {activeMode}
+              highlightStyle={highlightedSteps?.get(step.stepNumber) ?? null}
+              {musicalPosition}
+              animationEpoch={displayState.animationEpoch}
+              {bluePropTypeOverride}
+              {redPropTypeOverride}
+            />
+          </div>
         </div>
       {/each}
 
@@ -775,6 +959,14 @@
     height: 100%;
     min-width: 0;
     min-height: 0;
+  }
+
+  .history-step-shell {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    transform-origin: center;
   }
 
   .step-container.deleting {

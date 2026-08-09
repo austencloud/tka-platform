@@ -255,9 +255,16 @@ describe("Assemble state invariants", () => {
     expect(state.undoStep()).toBe(true);
     expect(state.startPoses).toEqual({});
     expect(state.phase).toBe("idle");
+    expect(state.historyTransition?.direction).toBe("undo");
+    expect([...(state.historyTransition?.consequences ?? [])]).toEqual(
+      expect.arrayContaining(["phase", "start-poses", "cursor"])
+    );
+    expect(state.historyTransitionEpoch).toBe(1);
 
     expect(state.redoStep()).toBe(true);
     expect(state.startPoses[MotionColor.RED]?.location).toBe(GridLocation.WEST);
+    expect(state.historyTransition?.direction).toBe("redo");
+    expect(state.historyTransitionEpoch).toBe(2);
   });
 
   it("restores a starting pose removed by a grid change", () => {
@@ -271,6 +278,7 @@ describe("Assemble state invariants", () => {
 
     state.undoStep();
     expect(state.gridMode).toBe(GridMode.DIAMOND);
+    expect(state.historyTransition?.affectsGrid).toBe(true);
     expect(state.startPoses[MotionColor.BLUE]?.location).toBe(
       GridLocation.NORTH
     );

@@ -411,10 +411,6 @@ export function createCreateModuleState(
       const controller = getActiveTabUndoController();
       controller?.setSyncPickerStateCallback(callback);
     },
-    setOnUndoingOptionCallback: (callback: (isUndoing: boolean) => void) => {
-      const controller = getActiveTabUndoController();
-      controller?.setOnUndoingOptionCallback(callback);
-    },
     get canUndo() {
       if (tutorialWorkspaceActive) {
         return false;

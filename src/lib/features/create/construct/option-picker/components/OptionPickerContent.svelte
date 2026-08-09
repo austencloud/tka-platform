@@ -46,6 +46,8 @@ Uses organizer and sizer services for section grouping and sizing.
     hasSeenOptionInteractionHint,
     markOptionInteractionHintSeen,
   } from "../services/option-interaction-hint-marker";
+  import { tryGetCreateModuleContext } from "$lib/features/create/shared/context/create-module-context";
+  import { selectOptionInteractionHintPresentation } from "../services/option-interaction-hint-presentation";
 
   interface Props {
     options: PreparedPictographData[];
@@ -112,12 +114,26 @@ Uses organizer and sizer services for section grouping and sizing.
     onRedRotationChange,
     showInteractionHint = true,
   }: Props = $props();
-  const interactionHintState = createOptionInteractionHintState({
-    hasSeen: hasSeenOptionInteractionHint,
-    markSeen: markOptionInteractionHintSeen,
+  const createContext = tryGetCreateModuleContext();
+  const interactionHintState =
+    createContext?.constructTabState.optionInteractionHintState ??
+    createOptionInteractionHintState({
+      hasSeen: hasSeenOptionInteractionHint,
+      markSeen: markOptionInteractionHintSeen,
+    });
+  const isBeforeFirstStep = $derived.by(() => {
+    const sequence =
+      createContext?.constructTabState.sequenceState?.currentSequence;
+    if (sequence) return (sequence.steps?.length ?? 0) === 0;
+    return currentSequence.length === 0;
   });
+  const isAutomaticHintAllowed = $derived(
+    createContext?.constructTutorialState.isActive !== true
+  );
   onMount(() => {
-    if (showInteractionHint) interactionHintState.revealIfUnseen();
+    if (showInteractionHint && isBeforeFirstStep && isAutomaticHintAllowed) {
+      interactionHintState.revealIfUnseen();
+    }
   });
   // Track container dimensions with simple resize observer
   let containerElement: HTMLDivElement | null = $state(null);
@@ -147,6 +163,17 @@ Uses organizer and sizer services for section grouping and sizing.
   // Narrow layout (< 750px): Horizontal swipe layout between type sections
   const WIDE_LAYOUT_THRESHOLD = 750;
   const shouldUseWideLayout = $derived(containerWidth >= WIDE_LAYOUT_THRESHOLD);
+  const interactionHintPresentation = $derived(
+    selectOptionInteractionHintPresentation({
+      isSideBySide: isSideBySideLayout(),
+      pickerWidth: containerWidth,
+    })
+  );
+
+  $effect(() => {
+    if (!showInteractionHint || !sizingStable) return;
+    interactionHintState.setPresentation(interactionHintPresentation);
+  });
 
   // Column count: 8 for wide, 4 for narrow/swipe
   const columns = $derived(() => {
@@ -398,8 +425,7 @@ Uses organizer and sizer services for section grouping and sizing.
   const dismissInteractionHintOnUse: Attachment<HTMLDivElement> = (node) => {
     function targetsOption(target: EventTarget | null): boolean {
       return (
-        target instanceof Element &&
-        target.closest(safe("option")) !== null
+        target instanceof Element && target.closest(safe("option")) !== null
       );
     }
 
@@ -596,7 +622,7 @@ Uses organizer and sizer services for section grouping and sizing.
     </div>
   {/if}
 
-  {#if showInteractionHint && interactionHintState.isVisible && options.length > 0}
+  {#if showInteractionHint && isAutomaticHintAllowed && interactionHintState.isVisible && interactionHintState.presentation === "anchored" && isBeforeFirstStep && options.length > 0}
     <OptionInteractionHint
       {containerElement}
       onDismiss={() => interactionHintState.dismiss()}

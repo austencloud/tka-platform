@@ -45,6 +45,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { getPropUnlockManager } from "$lib/shared/gamification/get-prop-unlock-manager";
 import { generateSequenceWord } from "$lib/features/create/shared/services/sequence-stats-calculator";
+import { createHistoryTransitionPlan } from "$lib/features/create/shared/services/history-transition-planner";
 
 export function createAssembleTabState(
   sequenceService?: SequenceRepository,
@@ -69,6 +70,22 @@ export function createAssembleTabState(
     onDocumentChange: syncBuilderToSequence,
     captureDocument: () => sequenceState?.currentSequence ?? null,
     restoreDocument: restoreBuilderDocument,
+    onHistoryTransition: (direction, label, from, to) => {
+      if (!sequenceState) return;
+      sequenceState.animationState.startHistoryTransition(
+        createHistoryTransitionPlan({
+          direction,
+          operation: `assemble:${label}`,
+          label,
+          fromSequence: (from.document as SequenceData | null) ?? null,
+          toSequence: (to.document as SequenceData | null) ?? null,
+          fromSelectedStepNumber:
+            from.selectedStepIndex === null ? null : from.selectedStepIndex + 1,
+          toSelectedStepNumber:
+            to.selectedStepIndex === null ? null : to.selectedStepIndex + 1,
+        })
+      );
+    },
   });
 
   // Isolated editable sequence document for this tab.
