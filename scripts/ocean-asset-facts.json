@@ -2,10 +2,14 @@
   "anemone": {
     "path": "anemone.glb",
     "source": "root",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Anthopleura sp. (sea anemone)",
+    "sizeMetres": {
+      "min": 0.15,
+      "max": 0.5,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "mound",
     "upAxis": "y",
     "baseOffset": -0.2093,
     "footprintRadius": 0.5,
@@ -27,10 +31,14 @@
   "boat": {
     "path": "boat.glb",
     "source": "root",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "small wooden hull (wreck)",
+    "sizeMetres": {
+      "min": 3,
+      "max": 6,
+      "axis": "length"
+    },
+    "facing": 0,
+    "silhouette": "wreck",
     "upAxis": "y",
     "baseOffset": -0.3241,
     "footprintRadius": 0.5,
@@ -52,10 +60,14 @@
   "jellyfish": {
     "path": "jellyfish.glb",
     "source": "root",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Chrysaora sp. (sea nettle)",
+    "sizeMetres": {
+      "min": 0.35,
+      "max": 1,
+      "axis": "height"
+    },
+    "facing": 0,
+    "silhouette": "swimmer",
     "upAxis": "y",
     "baseOffset": -0.7423,
     "footprintRadius": 0.2318,
@@ -77,10 +89,14 @@
   "jellyfish_small": {
     "path": "jellyfish_small.glb",
     "source": "root",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Aurelia aurita (moon jelly)",
+    "sizeMetres": {
+      "min": 0.15,
+      "max": 0.4,
+      "axis": "height"
+    },
+    "facing": 0,
+    "silhouette": "swimmer",
     "upAxis": "y",
     "baseOffset": -0.4905,
     "footprintRadius": 0.3261,
@@ -102,10 +118,14 @@
   "kelp/breathing_kelp": {
     "path": "kelp/breathing_kelp.glb",
     "source": "kelp",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Laminaria sp. (kelp frond)",
+    "sizeMetres": {
+      "min": 1.5,
+      "max": 4,
+      "axis": "height"
+    },
+    "facing": 0,
+    "silhouette": "blade",
     "upAxis": "y",
     "baseOffset": -0.1635,
     "footprintRadius": 0.5,
@@ -127,10 +147,14 @@
   "kelp/leafy_kelp": {
     "path": "kelp/leafy_kelp.glb",
     "source": "kelp",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Laminaria sp. (kelp frond)",
+    "sizeMetres": {
+      "min": 1.5,
+      "max": 4,
+      "axis": "height"
+    },
+    "facing": 0,
+    "silhouette": "blade",
     "upAxis": "y",
     "baseOffset": -39.3834,
     "footprintRadius": 0.5,
@@ -152,10 +176,14 @@
   "kelp_plant": {
     "path": "kelp_plant.glb",
     "source": "root",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Macrocystis pyrifera (giant kelp)",
+    "sizeMetres": {
+      "min": 4,
+      "max": 11,
+      "axis": "height"
+    },
+    "facing": 0,
+    "silhouette": "blade",
     "upAxis": "y",
     "baseOffset": 0,
     "footprintRadius": 0.0601,
@@ -177,10 +205,14 @@
   "meshy/basalt_pinnacle": {
     "path": "meshy/basalt_pinnacle.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "basalt pinnacle",
+    "sizeMetres": {
+      "min": 6,
+      "max": 12,
+      "axis": "height"
+    },
+    "facing": 0,
+    "silhouette": "column",
     "upAxis": "y",
     "baseOffset": -0.4854,
     "footprintRadius": 0.5,
@@ -202,10 +234,14 @@
   "meshy/brain_coral": {
     "path": "meshy/brain_coral.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Pseudodiploria strigosa (brain coral)",
+    "sizeMetres": {
+      "min": 0.4,
+      "max": 2,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "mound",
     "upAxis": "y",
     "baseOffset": -0.4045,
     "footprintRadius": 0.5,
@@ -227,10 +263,14 @@
   "meshy/coral_encrusted_rock": {
     "path": "meshy/coral_encrusted_rock.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "encrusted basalt boulder",
+    "sizeMetres": {
+      "min": 1,
+      "max": 3,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "boulder",
     "upAxis": "y",
     "baseOffset": -0.4728,
     "footprintRadius": 0.5,
@@ -252,10 +292,14 @@
   "meshy/coral_mountain": {
     "path": "meshy/coral_mountain.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "reef bommie (mixed massive corals)",
+    "sizeMetres": {
+      "min": 3,
+      "max": 8,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "mound",
     "upAxis": "y",
     "baseOffset": -0.423,
     "footprintRadius": 0.5,
@@ -277,10 +321,14 @@
   "meshy/fan_coral": {
     "path": "meshy/fan_coral.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Gorgonia ventalina (sea fan)",
+    "sizeMetres": {
+      "min": 0.5,
+      "max": 1.5,
+      "axis": "width"
+    },
+    "facing": 90,
+    "silhouette": "plate",
     "upAxis": "y",
     "baseOffset": -0.298,
     "footprintRadius": 0.5,
@@ -302,10 +350,14 @@
   "meshy/kelp": {
     "path": "meshy/kelp.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Laminaria sp. (kelp)",
+    "sizeMetres": {
+      "min": 2,
+      "max": 5,
+      "axis": "height"
+    },
+    "facing": 0,
+    "silhouette": "blade",
     "upAxis": "y",
     "baseOffset": -0.5004,
     "footprintRadius": 0.3137,
@@ -327,10 +379,14 @@
   "meshy/neon_coral_summit": {
     "path": "meshy/neon_coral_summit.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "reef pinnacle (mixed corals)",
+    "sizeMetres": {
+      "min": 2,
+      "max": 5,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "mound",
     "upAxis": "y",
     "baseOffset": -0.2254,
     "footprintRadius": 0.5,
@@ -352,10 +408,14 @@
   "meshy/photorealistic_coral_0": {
     "path": "meshy/photorealistic_coral_0.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Acropora sp. (branching coral)",
+    "sizeMetres": {
+      "min": 0.5,
+      "max": 1.5,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "branching",
     "upAxis": "y",
     "baseOffset": -0.3927,
     "footprintRadius": 0.5,
@@ -377,10 +437,14 @@
   "meshy/photorealistic_coral_1": {
     "path": "meshy/photorealistic_coral_1.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Acropora sp. (branching coral)",
+    "sizeMetres": {
+      "min": 0.5,
+      "max": 1.5,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "branching",
     "upAxis": "y",
     "baseOffset": -0.3925,
     "footprintRadius": 0.5,
@@ -402,10 +466,14 @@
   "meshy/photorealistic_coral_2": {
     "path": "meshy/photorealistic_coral_2.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Acropora sp. (branching coral)",
+    "sizeMetres": {
+      "min": 0.5,
+      "max": 1.5,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "branching",
     "upAxis": "y",
     "baseOffset": -0.3887,
     "footprintRadius": 0.5,
@@ -427,10 +495,14 @@
   "meshy/photorealistic_coral_3": {
     "path": "meshy/photorealistic_coral_3.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Acropora sp. (branching coral)",
+    "sizeMetres": {
+      "min": 0.5,
+      "max": 1.5,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "branching",
     "upAxis": "y",
     "baseOffset": -0.3391,
     "footprintRadius": 0.5,
@@ -452,10 +524,14 @@
   "meshy/ribbon_seaweed": {
     "path": "meshy/ribbon_seaweed.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Macrocystis blade (ribbon weed)",
+    "sizeMetres": {
+      "min": 1,
+      "max": 3,
+      "axis": "height"
+    },
+    "facing": 0,
+    "silhouette": "blade",
     "upAxis": "y",
     "baseOffset": -0.5005,
     "footprintRadius": 0.2342,
@@ -477,10 +553,14 @@
   "meshy/sea_grass": {
     "path": "meshy/sea_grass.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Thalassia testudinum (turtle grass)",
+    "sizeMetres": {
+      "min": 0.3,
+      "max": 0.8,
+      "axis": "height"
+    },
+    "facing": 0,
+    "silhouette": "blade",
     "upAxis": "y",
     "baseOffset": -0.2833,
     "footprintRadius": 0.5,
@@ -502,10 +582,14 @@
   "meshy/staghorn_coral": {
     "path": "meshy/staghorn_coral.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Acropora cervicornis (staghorn coral)",
+    "sizeMetres": {
+      "min": 1,
+      "max": 2.5,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "branching",
     "upAxis": "y",
     "baseOffset": -0.3513,
     "footprintRadius": 0.5,
@@ -527,10 +611,14 @@
   "meshy/submerged_coral_citadel": {
     "path": "meshy/submerged_coral_citadel.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "encrusted reef buttress",
+    "sizeMetres": {
+      "min": 4,
+      "max": 9,
+      "axis": "length"
+    },
+    "facing": 0,
+    "silhouette": "wall",
     "upAxis": "y",
     "baseOffset": -0.1649,
     "footprintRadius": 0.5,
@@ -552,10 +640,14 @@
   "meshy/sunlit_coral_arch": {
     "path": "meshy/sunlit_coral_arch.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "eroded reef arch",
+    "sizeMetres": {
+      "min": 3,
+      "max": 8,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "arch",
     "upAxis": "y",
     "baseOffset": -0.5019,
     "footprintRadius": 0.4512,
@@ -578,10 +670,14 @@
   "meshy/table_coral": {
     "path": "meshy/table_coral.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Acropora hyacinthus (table coral)",
+    "sizeMetres": {
+      "min": 1,
+      "max": 3,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "plate",
     "upAxis": "y",
     "baseOffset": -0.2064,
     "footprintRadius": 0.5,
@@ -603,10 +699,14 @@
   "meshy/tall_kelp": {
     "path": "meshy/tall_kelp.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Macrocystis pyrifera (giant kelp)",
+    "sizeMetres": {
+      "min": 4,
+      "max": 10,
+      "axis": "height"
+    },
+    "facing": 0,
+    "silhouette": "blade",
     "upAxis": "y",
     "baseOffset": -0.5001,
     "footprintRadius": 0.2351,
@@ -628,10 +728,14 @@
   "meshy/underwater_coral_arch": {
     "path": "meshy/underwater_coral_arch.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "eroded reef arch",
+    "sizeMetres": {
+      "min": 3,
+      "max": 7,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "arch",
     "upAxis": "y",
     "baseOffset": -0.2752,
     "footprintRadius": 0.5,
@@ -653,10 +757,14 @@
   "meshy/underwater_rock_table": {
     "path": "meshy/underwater_rock_table.glb",
     "source": "meshy",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "undercut rock table",
+    "sizeMetres": {
+      "min": 2,
+      "max": 5,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "plate",
     "upAxis": "y",
     "baseOffset": -0.2146,
     "footprintRadius": 0.5,
@@ -678,10 +786,14 @@
   "octopus": {
     "path": "octopus.glb",
     "source": "root",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Octopus vulgaris (common octopus)",
+    "sizeMetres": {
+      "min": 0.3,
+      "max": 1,
+      "axis": "length"
+    },
+    "facing": 0,
+    "silhouette": "swimmer",
     "upAxis": "y",
     "baseOffset": -0.3529,
     "footprintRadius": 0.5,
@@ -703,10 +815,14 @@
   "polyhaven/boulder_01": {
     "path": "polyhaven/boulder_01.glb",
     "source": "polyhaven",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "granite boulder",
+    "sizeMetres": {
+      "min": 0.8,
+      "max": 2.5,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "boulder",
     "upAxis": "y",
     "baseOffset": -0.0402,
     "footprintRadius": 0.5,
@@ -728,10 +844,14 @@
   "polyhaven/coast_rocks_05": {
     "path": "polyhaven/coast_rocks_05.glb",
     "source": "polyhaven",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "coastal rock cluster",
+    "sizeMetres": {
+      "min": 1.5,
+      "max": 4,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "boulder",
     "upAxis": "y",
     "baseOffset": -0.0628,
     "footprintRadius": 0.5,
@@ -753,10 +873,14 @@
   "polyhaven/rock_07": {
     "path": "polyhaven/rock_07.glb",
     "source": "polyhaven",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "cobble",
+    "sizeMetres": {
+      "min": 0.3,
+      "max": 1,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "boulder",
     "upAxis": "y",
     "baseOffset": -0.006,
     "footprintRadius": 0.5,
@@ -778,10 +902,14 @@
   "polyhaven/sand_rocks_small_01": {
     "path": "polyhaven/sand_rocks_small_01.glb",
     "source": "polyhaven",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "sand-scattered rubble",
+    "sizeMetres": {
+      "min": 0.5,
+      "max": 1.5,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "boulder",
     "upAxis": "y",
     "baseOffset": -0.0226,
     "footprintRadius": 0.5,
@@ -803,10 +931,14 @@
   "polyhaven/stone_01": {
     "path": "polyhaven/stone_01.glb",
     "source": "polyhaven",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "pebble",
+    "sizeMetres": {
+      "min": 0.2,
+      "max": 0.6,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "boulder",
     "upAxis": "y",
     "baseOffset": -0.0997,
     "footprintRadius": 0.5,
@@ -828,10 +960,14 @@
   "ray": {
     "path": "ray.glb",
     "source": "root",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Taeniura lymma (blue-spotted ray)",
+    "sizeMetres": {
+      "min": 1,
+      "max": 2,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "swimmer",
     "upAxis": "y",
     "baseOffset": -0.2439,
     "footprintRadius": 0.5,
@@ -853,10 +989,14 @@
   "rock_0": {
     "path": "rock_0.glb",
     "source": "root",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "basalt pinnacle",
+    "sizeMetres": {
+      "min": 6,
+      "max": 12,
+      "axis": "height"
+    },
+    "facing": 0,
+    "silhouette": "column",
     "upAxis": "y",
     "baseOffset": -0.4854,
     "footprintRadius": 0.5,
@@ -879,10 +1019,14 @@
   "rock_1": {
     "path": "rock_1.glb",
     "source": "root",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "encrusted basalt boulder",
+    "sizeMetres": {
+      "min": 1,
+      "max": 3,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "boulder",
     "upAxis": "y",
     "baseOffset": -0.4728,
     "footprintRadius": 0.5,
@@ -905,10 +1049,14 @@
   "rock_2": {
     "path": "rock_2.glb",
     "source": "root",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "undercut rock table",
+    "sizeMetres": {
+      "min": 2,
+      "max": 5,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "plate",
     "upAxis": "y",
     "baseOffset": -0.2146,
     "footprintRadius": 0.5,
@@ -931,10 +1079,14 @@
   "rock_3": {
     "path": "rock_3.glb",
     "source": "root",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "eroded reef arch",
+    "sizeMetres": {
+      "min": 3,
+      "max": 7,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "arch",
     "upAxis": "y",
     "baseOffset": -0.2752,
     "footprintRadius": 0.5,
@@ -957,10 +1109,14 @@
   "rock_4": {
     "path": "rock_4.glb",
     "source": "root",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "reef buttress wall",
+    "sizeMetres": {
+      "min": 4,
+      "max": 10,
+      "axis": "length"
+    },
+    "facing": 0,
+    "silhouette": "wall",
     "upAxis": "y",
     "baseOffset": -0.1649,
     "footprintRadius": 0.5,
@@ -983,10 +1139,14 @@
   "rock_5": {
     "path": "rock_5.glb",
     "source": "root",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "reef pinnacle",
+    "sizeMetres": {
+      "min": 3,
+      "max": 7,
+      "axis": "height"
+    },
+    "facing": 0,
+    "silhouette": "column",
     "upAxis": "y",
     "baseOffset": -0.2255,
     "footprintRadius": 0.5,
@@ -1009,10 +1169,14 @@
   "sea_urchin": {
     "path": "sea_urchin.glb",
     "source": "root",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Diadema antillarum (long-spined urchin)",
+    "sizeMetres": {
+      "min": 0.08,
+      "max": 0.25,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "mound",
     "upAxis": "y",
     "baseOffset": -0.4838,
     "footprintRadius": 0.5,
@@ -1034,10 +1198,14 @@
   "shell": {
     "path": "shell.glb",
     "source": "root",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Strombus gigas (queen conch shell)",
+    "sizeMetres": {
+      "min": 0.1,
+      "max": 0.35,
+      "axis": "length"
+    },
+    "facing": 0,
+    "silhouette": "shell",
     "upAxis": "y",
     "baseOffset": -0.352,
     "footprintRadius": 0.5,
@@ -1059,10 +1227,14 @@
   "starfish": {
     "path": "starfish.glb",
     "source": "root",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "Oreaster reticulatus (cushion star)",
+    "sizeMetres": {
+      "min": 0.15,
+      "max": 0.4,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "shell",
     "upAxis": "y",
     "baseOffset": -0.092,
     "footprintRadius": 0.5,
@@ -1084,10 +1256,14 @@
   "structures/coral-arch": {
     "path": "structures/coral-arch.glb",
     "source": "structures",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "eroded reef arch",
+    "sizeMetres": {
+      "min": 3,
+      "max": 8,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "arch",
     "upAxis": "y",
     "baseOffset": -0.5019,
     "footprintRadius": 0.4512,
@@ -1109,10 +1285,14 @@
   "structures/coral-bommie": {
     "path": "structures/coral-bommie.glb",
     "source": "structures",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "reef bommie (mixed massive corals)",
+    "sizeMetres": {
+      "min": 3,
+      "max": 8,
+      "axis": "width"
+    },
+    "facing": 0,
+    "silhouette": "mound",
     "upAxis": "y",
     "baseOffset": -0.423,
     "footprintRadius": 0.5,
@@ -1135,10 +1315,14 @@
   "structures/coral-tower": {
     "path": "structures/coral-tower.glb",
     "source": "structures",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "reef pinnacle",
+    "sizeMetres": {
+      "min": 3,
+      "max": 7,
+      "axis": "height"
+    },
+    "facing": 0,
+    "silhouette": "column",
     "upAxis": "y",
     "baseOffset": -0.2255,
     "footprintRadius": 0.5,
@@ -1160,10 +1344,14 @@
   "structures/reef-wall": {
     "path": "structures/reef-wall.glb",
     "source": "structures",
-    "species": null,
-    "sizeMetres": null,
-    "facing": null,
-    "silhouette": null,
+    "species": "reef buttress wall",
+    "sizeMetres": {
+      "min": 4,
+      "max": 10,
+      "axis": "length"
+    },
+    "facing": 0,
+    "silhouette": "wall",
     "upAxis": "y",
     "baseOffset": -0.1649,
     "footprintRadius": 0.5,

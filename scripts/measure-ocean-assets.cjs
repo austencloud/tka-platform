@@ -97,6 +97,15 @@ for (const asset of assets) {
   if (AUTHORED_FIELDS.some((f) => row[f] === null)) needsAuthoring.push(asset.id);
 }
 
+// An asset whose geometry sits far from its own origin cannot be seated on the
+// terrain: baseOffset is applied as a multiple of the chosen metre size, so
+// -39 means "bury this 39 sizes deep". kelp/leafy_kelp exports this way.
+// Flagged rather than auto-corrected -- the fix belongs in the GLB.
+const BASE_OFFSET_SANE = 1.5;
+const brokenOrigin = Object.entries(facts)
+  .filter(([, r]) => Math.abs(r.baseOffset) > BASE_OFFSET_SANE)
+  .map(([id, r]) => `${id} (baseOffset ${r.baseOffset})`);
+
 // Duplicate detection. `structures/` and the numbered `rock_*` files turned out
 // to be re-exports of meshy assets -- byte-identical vertex counts and bounds.
 // The generator must treat an alias as the asset it copies, or a zone that asks
@@ -150,6 +159,11 @@ console.log(`${aliases} duplicate re-exports aliased; ${measured - aliases} dist
 if (dropped.length) console.log(`Dropped ${dropped.length} stale rows: ${dropped.join(", ")}`);
 // An alias inherits its canonical row's authored fields, so it never needs a
 // human of its own.
+if (brokenOrigin.length) {
+  console.log(`\nBroken origins -- these cannot be seated on terrain until fixed in the GLB:`);
+  for (const line of brokenOrigin) console.log(`  ${line}`);
+}
+
 const pending = needsAuthoring.filter((id) => facts[id] && !facts[id].aliasOf);
 if (pending.length) {
   console.log(`\n${pending.length} rows need authored fields:`);
