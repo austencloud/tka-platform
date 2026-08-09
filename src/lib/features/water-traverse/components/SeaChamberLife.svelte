@@ -196,11 +196,25 @@
     does nothing at all. Placed at the world origin the school swam at y=4..14
     over the frozen river, in open air. worldOffset is the seam that moves it.
   -->
+  <!--
+    Sized to the EYE, not to the trench. The roster is 87 reef fish and most of
+    them are 16-60 cm; spread across a 78 m disc they were a few pixels each and
+    read as nothing. Bound to a 22 m disc around the reef they become a shoal
+    the visitor walks into, and targetSize is pushed past life-size because this
+    is an exhibit 18 m down in fog — legibility beats accuracy.
+    swimHeight is measured from the seabed and the eye is 0.9 above it, so
+    1-9 puts most of the school at and just above eye level.
+  -->
   <FishBoids
     worldOffset={[0, floorY, midZ]}
-    swimHeight={[4, 14]}
-    stageRadius={10}
-    boundRadius={Math.min(halfWidth, length / 2)}
+    swimHeight={[2, 10]}
+    stageRadius={4}
+    boundRadius={14}
+    targetSize={2.2}
+    fogColor="#0a3b4e"
+    fogNear={26}
+    fogFar={70}
+    ambient={0.8}
   />
 
   {#if quality.maxJellyfish > 0}

@@ -262,6 +262,7 @@ export function createFishComputeSystem(
 	posU.uSpawnPositions = { value: new Float32Array(64 * 4) };
 	posU.uDespawnCount = { value: 0 };
 	posU.uDespawnStartIdx = { value: 0 };
+	posU.uFloorY = { value: gy + Math.min(hMin * 0.5, 0.6) };
 
 	// ── State uniforms ──
 	const trophicRoles = new Int32Array(50);

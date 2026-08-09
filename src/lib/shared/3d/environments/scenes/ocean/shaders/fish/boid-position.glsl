@@ -4,6 +4,10 @@ uniform int uSpawnStartIdx;
 uniform vec4 uSpawnPositions[64];
 uniform int uDespawnCount;
 uniform int uDespawnStartIdx;
+// Hard seabed. The velocity pass only STEERS away from the floor, which a fast
+// fish overshoots — in an open-water stage that reads as a dive, but over a
+// solid trench floor it is a fish swimming through rock. This is the clamp.
+uniform float uFloorY;
 
 void main() {
   int fishIdx = int(gl_FragCoord.y) * int(resolution.x) + int(gl_FragCoord.x);
@@ -36,6 +40,8 @@ void main() {
       (hash3 - 0.5) * 20.0
     );
   }
+
+  posData.y = max(posData.y, uFloorY);
 
   gl_FragColor = posData;
 }

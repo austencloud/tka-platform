@@ -37,6 +37,17 @@
      * school anywhere but the world origin.
      */
     worldOffset?: [number, number, number];
+    /**
+     * The fish fragment shader carries its OWN fog, tuned for a stage you
+     * stand in front of: everything past 25 m is solid #1a3040. In a corridor
+     * that is a school of black silhouettes. A host with its own atmosphere
+     * passes its values here so the fish sit in the same air as everything
+     * else.
+     */
+    fogColor?: string;
+    fogNear?: number;
+    fogFar?: number;
+    ambient?: number;
   }
 
   let {
@@ -55,6 +66,10 @@
     modelBasePath = '/models/ocean/pack/',
     worldYOffset = 0,
     worldOffset,
+    fogColor,
+    fogNear,
+    fogFar,
+    ambient,
   }: Props = $props();
 
   const offset = $derived(
@@ -217,6 +232,15 @@
       }
       mesh.instanceMatrix.needsUpdate = true;
     });
+  }
+
+  /** Push the caller's placement and atmosphere onto a fish material. */
+  function applyHostLook(mat: ShaderMaterial): void {
+    mat.uniforms.uWorldOffset?.value.copy(offset);
+    if (fogColor !== undefined) mat.uniforms.uFogColor?.value.set(fogColor);
+    if (fogNear !== undefined) mat.uniforms.uFogNear!.value = fogNear;
+    if (fogFar !== undefined) mat.uniforms.uFogFar!.value = fogFar;
+    if (ambient !== undefined) mat.uniforms.uAmbient!.value = ambient;
   }
 
   // ── Per-frame update ──────────────────────────────────────────────────
@@ -409,9 +433,7 @@
       targetSize,
     );
 
-    for (const mat of renderSystem.materials) {
-      mat.uniforms.uWorldOffset?.value.copy(offset);
-    }
+    for (const mat of renderSystem.materials) applyHostLook(mat);
 
     // Also update visitor materials
     for (const v of activeVisitors) {
@@ -420,7 +442,7 @@
         mat.uniforms.tVelocity!.value = computeSystem.velocityTexture;
         if (mat.uniforms.tState) mat.uniforms.tState.value = computeSystem.stateTexture;
         mat.uniforms.uTime!.value = elapsed;
-        mat.uniforms.uWorldOffset?.value.copy(offset);
+        applyHostLook(mat);
       }
     }
   });
