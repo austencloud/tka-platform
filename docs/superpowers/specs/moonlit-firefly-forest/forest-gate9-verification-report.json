@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "forest-firefly",
+  "gate": 9,
+  "generatedAt": "2026-08-09T17:51:30Z",
+  "layout": {
+    "path": "scripts/forest-static-prop-layout.json",
+    "version": 1,
+    "sha256": "36e2fb874708d0f449845c77608f4a33dcb36d9a7236db5e75e5af947fbb0db0",
+    "frameTrees": 2,
+    "vignettes": 2,
+    "staticProps": 6,
+    "sourceFamilies": 4
+  },
+  "placement": {
+    "performanceKeepClearRadiusMetres": 7.5,
+    "minimumPathShoulderMarginMetres": 3.5483966866553835,
+    "minimumCampfireCenterDistanceMetres": 8.042917335276988,
+    "maximumPropAnchorDistanceMetres": 5.594640292279747
+  },
+  "assets": {
+    "mainEnvironment": {
+      "path": "static/models/forest/forest-environment.glb",
+      "bytes": 17175916,
+      "maximumBytes": 20971520,
+      "nearFrameNodes": 0,
+      "compression": [
+        "EXT_mesh_gpu_instancing",
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
+    },
+    "nearFrame": {
+      "path": "static/models/forest/forest-near-frame.glb",
+      "bytes": 5646416,
+      "maximumBytes": 6291456,
+      "nodes": 8,
+      "compression": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ]
+    }
+  },
+  "runtime": {
+    "route": "https://localhost:5173/test/forest-scene?view=hero",
+    "browserSurface": "Codex in-app browser",
+    "visibleCapture": "forest-gate9-review-board.png",
+    "loadingOverlayCleared": true,
+    "canvasCount": 1,
+    "defaultForestRequestsNearFrame": true,
+    "covenRequestsNearFrame": false,
+    "console": {
+      "forestSceneErrors": 0,
+      "unrelatedErrors": [
+        "UserDocumentManager could not create or update a user document because the preview account lacks permission"
+      ]
+    }
+  },
+  "verification": {
+    "forestEnvironmentGlb": "passed",
+    "forestNearFrameGlb": "passed",
+    "focusedVisibilityTest": "1 passed",
+    "svelteCheck": "0 errors and 0 warnings",
+    "reviewBoard": "2864 x 2678 with 6 cards"
+  },
+  "approvalStatus": "awaiting-user-visual-verdict",
+  "museumTrackerProposal": "UFY4AuUL80NTJMojrRBN"
+}
