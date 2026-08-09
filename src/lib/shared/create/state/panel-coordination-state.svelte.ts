@@ -512,6 +512,17 @@ export function createPanelCoordinationState(): PanelCoordinationState {
 
     isSequenceViewerOpen = false;
     optionAudition = null;
+
+    cancelDurationPreview();
+  }
+
+  // Duration preview is global state, but it is driven from the Sequence
+  // Actions duration subview. Every close/replace path must end it, or
+  // CreationWorkspaceArea keeps rendering the preview with no editor attached.
+  function cancelDurationPreview() {
+    isDurationPreviewMode = false;
+    previewSequence = null;
+    originalSequence = null;
   }
 
   return {
@@ -724,6 +735,7 @@ export function createPanelCoordinationState(): PanelCoordinationState {
 
     closeSequenceActionsPanel() {
       isSequenceActionsPanelOpen = false;
+      cancelDurationPreview();
     },
 
     // Target Hand Selection
