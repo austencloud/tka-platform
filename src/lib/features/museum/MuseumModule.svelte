@@ -199,17 +199,46 @@
     }
   }
 
-  // Build grid for the given room filter. When a single room is selected,
-  // we pass only that room and no edges (no corridors needed). When null,
-  // the full museum is built.
+  // Some "rooms" are multi-room suites: the Drowned Gallery spans the water
+  // approach, gallery, and grotto, and the gallery graybox only mounts when
+  // cave-water-gallery is in the grid. Isolating any water room without its
+  // siblings renders a black void, so isolation expands to the whole suite.
+  const ROOM_ISOLATION_GROUPS: Record<string, readonly string[]> = {
+    "cave-water": ["cave-water", "cave-water-gallery", "cave-water-approach"],
+    "cave-water-gallery": [
+      "cave-water-gallery",
+      "cave-water-approach",
+      "cave-water",
+    ],
+    "cave-water-approach": [
+      "cave-water-approach",
+      "cave-water-gallery",
+      "cave-water",
+    ],
+  };
+
+  // Build grid for the given room filter. When a room is selected, we pass
+  // that room's isolation group (usually just itself) plus the edges between
+  // group members, so multi-room suites keep their internal corridors. When
+  // null, the full museum is built.
   function buildGridForRoom(roomFilter: string | null): {
     grid: MuseumGrid;
     validation: { valid: boolean; errors: string[] };
   } {
-    const rooms = roomFilter
-      ? MUSEUM_ROOMS.filter((r) => r.id === roomFilter)
+    const groupIds = roomFilter
+      ? (ROOM_ISOLATION_GROUPS[roomFilter] ?? [roomFilter])
+      : null;
+    const rooms = groupIds
+      ? // Preserve group order: buildMuseumGrid spawns the visitor in rooms[0],
+        // which stays the room the URL named.
+        groupIds
+          .flatMap((id) => MUSEUM_ROOMS.filter((r) => r.id === id))
       : MUSEUM_ROOMS;
-    const edges = roomFilter ? [] : MUSEUM_EDGES;
+    const edges = groupIds
+      ? MUSEUM_EDGES.filter(
+          (e) => groupIds.includes(e.from) && groupIds.includes(e.to)
+        )
+      : MUSEUM_EDGES;
 
     // Only use cache for the full museum (isolated rooms are cheap to build)
     if (!roomFilter) {
