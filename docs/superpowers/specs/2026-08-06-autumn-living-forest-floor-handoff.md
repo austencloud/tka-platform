@@ -893,3 +893,84 @@ Required change: reconstruct and blend the border regions so the left edge conti
 Invariants: keep the center and overall material identity unchanged; keep many small realistic leaves; no perspective; no directional light; no baked shadow; no new large object.
 Avoid: visible seams, mirrored edge strips, kaleidoscope symmetry, obvious repeating quadrants, central focal point, blur, text, watermark.
 ```
+
+## Ground atlas v2 and root-envelope grounding, 2026-08-10
+
+The former owl-tree correction moved a named instance by a fixed amount. That
+did not prove contact because the imported asset origin does not describe the
+underside of its broad, irregular root plate.
+
+The builder now evaluates transformed root geometry after scale, rotation,
+mirroring, and lean. Root-zone vertices are binned into 0.42 m terrain-space
+cells, the lowest vertex in each cell is compared with
+`world_surface_height(x, y)`, and the whole tree is lowered until every sampled
+contact point is below terrain by a 0.14 m safety margin. The build fails if a
+sample remains above that threshold. The same rule covers all 84 tree
+placements, including hero, imported-depth, procedural far, and sapling trees.
+
+Final measurements:
+
+- `HeroTreeA_03`: 1.430 m grounding offset, 433 contact samples, -0.140 m
+  maximum post-grounding clearance.
+- All trees: 6,837 contact samples, -0.140 m maximum clearance.
+- The owl mesh and perch connector inherit the tree offset, preserving their
+  authored relationship.
+
+The floor was rebaked at the same time. Broad ecological color weights were
+capped so the ground reads as one soil family, and the cabin lane now starts
+beneath the stage edge before continuing to the shack. It remains part of the
+single baked atlas rather than a visible overlay.
+
+Final proof:
+
+- `C:\Users\Austen\AppData\Local\Temp\tka-autumn-ground-treatment\after-hero-ground-v2.png`
+- `C:\Users\Austen\AppData\Local\Temp\tka-autumn-ground-treatment\after-settlement-ground-v2.png`
+- `C:\Users\Austen\AppData\Local\Temp\tka-autumn-ground-treatment\after-owl-root-contact-v2.png`
+- Focused Autumn tests: 18/18 passed.
+- `pnpm check`: zero errors and zero warnings.
+- Optimized GLB: 16.15 MiB, 1,981,355 rendered source triangles, zero
+  uncompressed textures, 2048 x 2048 baked ground atlas.
+
+## Ground treatment v6, 2026-08-10
+
+The completed floor no longer depends on the macro atlas surviving moonlight by
+itself. `AutumnGroundDetail` now combines the atlas with a tiled compressed
+micro-detail map, world-space metre-scale variation, a ground-only warm grade,
+and a shader-owned cabin-lane mask derived from the same authored path points.
+The route stays darker than the surrounding duff without reading as a decal or
+an illuminated strip.
+
+The rebuilt environment contains 3,504 physical leaves and 2,000 grass clumps.
+The optimized ship asset is 18,166,992 bytes with 2,004,286 rendered triangles,
+47 KTX2 textures, and no uncompressed texture fallback. All 20 focused Autumn
+tests and `pnpm check` pass. The four final runtime views have no console errors
+or warnings.
+
+Evidence:
+
+- `C:\Users\Austen\AppData\Local\Temp\tka-autumn-ground-treatment\after-hero-ground-v6.png`
+- `C:\Users\Austen\AppData\Local\Temp\tka-autumn-ground-treatment\after-settlement-ground-v6.png`
+- `C:\Users\Austen\AppData\Local\Temp\tka-autumn-ground-treatment\after-walk-ground-v6.png`
+- `C:\Users\Austen\AppData\Local\Temp\tka-autumn-ground-treatment\after-owl-root-contact-v6.png`
+
+## Depth asset cohesion, 2026-08-10
+
+The imported depth families no longer rely on neutral source colour beneath a
+violet fog. The optimizer owns deterministic seasonal grades for birch, larch,
+snag, and willow. Runtime then retains those family colours after fog using a
+shared material patch; hero materials remain untouched. The scene fog is now a
+warm plum that still separates depth without making the middle belt read as a
+snowy grove.
+
+No geometry, texture count, draw-call strategy, or Meshy credit changed. The
+ship asset remains 18,166,992 bytes with 2,004,286 rendered triangles, 47 KTX2
+textures, and no uncompressed fallback. All 23 focused Autumn tests and
+`pnpm check` pass, and the hero, settlement, and walking views have clean
+browser logs.
+
+Evidence:
+
+- `C:\Users\Austen\AppData\Local\Temp\tka-autumn-ground-treatment\before-cohesion-hero.png`
+- `C:\Users\Austen\AppData\Local\Temp\tka-autumn-ground-treatment\after-cohesion-v4-hero.png`
+- `C:\Users\Austen\AppData\Local\Temp\tka-autumn-ground-treatment\after-cohesion-v4-settlement.png`
+- `C:\Users\Austen\AppData\Local\Temp\tka-autumn-ground-treatment\after-cohesion-v4-walk.png`

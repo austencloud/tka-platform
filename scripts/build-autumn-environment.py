@@ -527,10 +527,10 @@ EARTH = forest_floor_material(
     0.0,
     texture_dir=AUTUMN_FLOOR_TEXTURE_DIR,
     diffuse_name="autumn-ground-zoned.jpg",
-    normal_name="normal.jpg",
-    roughness_name="roughness.jpg",
-    normal_texture_dir=FOREST_FLOOR_TEXTURE_DIR,
-    roughness_texture_dir=FOREST_FLOOR_TEXTURE_DIR,
+    normal_name="normal.png",
+    roughness_name="roughness.png",
+    normal_texture_dir=AUTUMN_FLOOR_TEXTURE_DIR,
+    roughness_texture_dir=AUTUMN_FLOOR_TEXTURE_DIR,
     diffuse_uv_name="Autumn Ground Macro UV",
     detail_uv_name="Autumn Ground Detail UV",
 )
@@ -554,9 +554,9 @@ ROCK_MOSS = principled_material("Moss on Stone", (0.105, 0.185, 0.075), roughnes
 # against dark soil regardless of its shape. Real fallen leaves are dark,
 # desaturated and close in value to the duff they lie on; these are pulled down
 # roughly 45% and slightly desaturated so the drifts read as accumulation.
-LEAF_RED = principled_material("Leaf Litter Crimson", (0.185, 0.042, 0.030), roughness=0.90)
-LEAF_ORANGE = principled_material("Leaf Litter Copper", (0.305, 0.108, 0.038), roughness=0.88)
-LEAF_GOLD = principled_material("Leaf Litter Gold", (0.395, 0.216, 0.062), roughness=0.86)
+LEAF_RED = principled_material("Leaf Litter Crimson", (0.145, 0.034, 0.026), roughness=0.92)
+LEAF_ORANGE = principled_material("Leaf Litter Copper", (0.245, 0.082, 0.030), roughness=0.91)
+LEAF_GOLD = principled_material("Leaf Litter Gold", (0.315, 0.165, 0.050), roughness=0.90)
 TWIG = principled_material("Autumn Twig Litter", (0.10, 0.045, 0.022), roughness=0.96)
 HABITATION_WOOD = principled_material(
     "Weathered Settlement Timber", (0.12, 0.052, 0.021), roughness=0.92
@@ -584,9 +584,9 @@ FAR_CANOPY_GOLD = principled_material(
 FAR_CANOPY_SHADOW = principled_material(
     "Far Autumn Canopy Shadow", (0.085, 0.035, 0.065), roughness=0.98
 )
-GRASS_BASE = principled_material("Autumn Wind Grass Base", (0.18, 0.23, 0.070), roughness=0.93)
-GRASS_MEDIUM = principled_material("Autumn Wind Grass Medium", (0.14, 0.19, 0.055), roughness=0.94)
-GRASS_HIGH = principled_material("Autumn Wind Grass High", (0.22, 0.25, 0.080), roughness=0.92)
+GRASS_BASE = principled_material("Autumn Wind Grass Base", (0.095, 0.125, 0.035), roughness=0.95)
+GRASS_MEDIUM = principled_material("Autumn Wind Grass Medium", (0.075, 0.105, 0.028), roughness=0.96)
+GRASS_HIGH = principled_material("Autumn Wind Grass High", (0.115, 0.135, 0.040), roughness=0.94)
 MUSHROOM_STEM_PALE = principled_material(
     "Autumn Mushroom Pale Stem", (0.46, 0.38, 0.27), roughness=0.91
 )
@@ -2488,10 +2488,10 @@ def create_grass_tier(name, count, seed, material, rock_placements, mushroom_pos
     vertex_uvs = []
 
     for clump_x, clump_y in positions:
-        blade_count = 5 + rng.randrange(4)
+        blade_count = 7 + rng.randrange(6)
         for _blade in range(blade_count):
             offset_angle = rng.uniform(0.0, math.tau)
-            offset_radius = math.sqrt(rng.random()) * 0.13
+            offset_radius = math.sqrt(rng.random()) * 0.11
             root_x = clump_x + math.cos(offset_angle) * offset_radius
             root_y = clump_y + math.sin(offset_angle) * offset_radius
             root_z = terrain_height(root_x, root_y) + 0.014
@@ -2501,8 +2501,8 @@ def create_grass_tier(name, count, seed, material, rock_placements, mushroom_pos
             lean_angle = yaw + rng.uniform(-0.65, 0.65)
             lean_x = math.cos(lean_angle)
             lean_y = math.sin(lean_angle)
-            width = rng.uniform(0.018, 0.036)
-            height = rng.uniform(0.18, 0.44)
+            width = rng.uniform(0.009, 0.022)
+            height = rng.uniform(0.12, 0.34)
             mid_lean = rng.uniform(0.008, 0.025)
             tip_lean = rng.uniform(0.025, 0.072)
             start = len(vertices)
@@ -2771,6 +2771,7 @@ def create_leaf_litter(rock_placements):
 
     leaf_total = 0
     for center_x, center_y, spread, count in drift_centers:
+        count *= 2
         placed = 0
         attempts = 0
         while placed < count and attempts < count * 40:
@@ -2797,9 +2798,9 @@ def create_leaf_litter(rock_placements):
             z = world_surface_height(x, y) + 0.026 + layer * 0.010
             foreground_emphasis = center_y < -10.0 and abs(center_x) < 15.0
             length = (
-                drift_rng.uniform(0.17, 0.40)
+                drift_rng.uniform(0.11, 0.26)
                 if foreground_emphasis
-                else drift_rng.uniform(0.12, 0.30)
+                else drift_rng.uniform(0.08, 0.20)
             )
             yaw = drift_rng.uniform(0.0, math.tau)
             # Narrow and broad blades in the same drift; a single width read as
@@ -2848,7 +2849,7 @@ def create_leaf_litter(rock_placements):
             if in_maintained_ground(x, y, lane_clearance=0.36, trail_clearance=0.24):
                 continue
             z = world_surface_height(x, y) + 0.028 + (placed % 3) * 0.009
-            length = stage_bank_rng.uniform(0.14, 0.28)
+            length = stage_bank_rng.uniform(0.10, 0.22)
             yaw = stage_bank_rng.uniform(0.0, math.tau)
             width_scale = stage_bank_rng.uniform(0.68, 1.08)
             curl = stage_bank_rng.uniform(0.008, 0.026)
@@ -2974,7 +2975,7 @@ def verify_ecology(
         if math.hypot(x, y) < CLEARING_RADIUS + 0.20 or in_pond(x, y, margin=0.30)
     ]
     expected_grass = {"base": 500, "medium": 600, "high": 900}
-    leaf_expected = 1800
+    leaf_expected = 3504
     count_errors = {
         tier: len(grass_positions[tier])
         for tier, expected in expected_grass.items()

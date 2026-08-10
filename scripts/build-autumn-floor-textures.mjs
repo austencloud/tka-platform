@@ -11,6 +11,8 @@
  *   node scripts/build-autumn-floor-textures.mjs
  */
 
+import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdir, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
@@ -23,13 +25,26 @@ const FOREST_FLOOR_PATH = resolve("static/textures/forest-floor/diffuse.jpg");
 const DIRT_PATH = resolve("static/textures/terrain/dirt/diffuse.jpg");
 const GROUND_LAYOUT_PATH = resolve("scripts/autumn-ground-layout.json");
 const ZONED_OUTPUT_PATH = resolve(OUTPUT_DIRECTORY, "autumn-ground-zoned.jpg");
+const DETAIL_MODULATION_PATH = resolve(
+  OUTPUT_DIRECTORY,
+  "ground-detail-modulation.png"
+);
+const DETAIL_MODULATION_KTX2_PATH = resolve(
+  OUTPUT_DIRECTORY,
+  "ground-detail-modulation.ktx2"
+);
 const SIZE = 2048;
 const DERIVED_SIZE = 1024;
+const DETAIL_SIZE = 1024;
 const SEAM_BAND = 128;
 const ZONED_SIZE = 4096;
 const MACRO_SIZE = 512;
 const SAMPLE_TILE_SIZE = 256;
 const groundLayout = JSON.parse(await readFile(GROUND_LAYOUT_PATH, "utf8"));
+const TOKTX_PATH = [
+  resolve(".tools/ktx/toktx.exe"),
+  resolve(".tools/ktx/toktx"),
+].find(existsSync);
 
 function smoothstep(value) {
   const clamped = Math.max(0, Math.min(1, value));
@@ -219,6 +234,101 @@ function clamp(value, minimum = 0, maximum = 1) {
   return Math.min(maximum, Math.max(minimum, value));
 }
 
+function srgbToLinear(value) {
+  const channel = value / 255;
+  return channel <= 0.04045
+    ? channel / 12.92
+    : Math.pow((channel + 0.055) / 1.055, 2.4);
+}
+
+function linearToSrgb(value) {
+  const channel = clamp(value);
+  const encoded =
+    channel <= 0.0031308
+      ? channel * 12.92
+      : 1.055 * Math.pow(channel, 1 / 2.4) - 0.055;
+  return Math.round(encoded * 255);
+}
+
+async function buildGroundDetailModulation(albedo) {
+  if (!TOKTX_PATH) {
+    throw new Error("KTX-Software is required to build Autumn ground detail.");
+  }
+
+  const detail = await sharp(albedo, {
+    raw: { width: SIZE, height: SIZE, channels: 3 },
+  })
+    .resize(DETAIL_SIZE, DETAIL_SIZE, { kernel: sharp.kernel.lanczos3 })
+    .raw()
+    .toBuffer();
+  const localAverage = await sharp(detail, {
+    raw: { width: DETAIL_SIZE, height: DETAIL_SIZE, channels: 3 },
+  })
+    .blur(14)
+    .raw()
+    .toBuffer();
+  const modulation = new Uint8Array(detail.length);
+
+  for (let index = 0; index < detail.length; index += 3) {
+    const sourceLinear = [
+      srgbToLinear(detail[index]),
+      srgbToLinear(detail[index + 1]),
+      srgbToLinear(detail[index + 2]),
+    ];
+    const averageLinear = [
+      srgbToLinear(localAverage[index]),
+      srgbToLinear(localAverage[index + 1]),
+      srgbToLinear(localAverage[index + 2]),
+    ];
+    const luminance =
+      sourceLinear[0] * 0.2126 +
+      sourceLinear[1] * 0.7152 +
+      sourceLinear[2] * 0.0722;
+
+    for (let channel = 0; channel < 3; channel += 1) {
+      // The runtime multiplies this texture over the world-space atlas. A
+      // neutral 0.5 linear value therefore means "leave the macro colour
+      // alone". Local leaf edges and veins move above or below that midpoint,
+      // while a restrained amount of warm chroma survives the high-pass.
+      const highFrequency =
+        (sourceLinear[channel] - averageLinear[channel]) * 1.65;
+      const chroma = (sourceLinear[channel] - luminance) * 0.22;
+      modulation[index + channel] = linearToSrgb(
+        clamp(0.5 + highFrequency + chroma, 0.22, 0.78)
+      );
+    }
+  }
+
+  await sharp(modulation, {
+    raw: { width: DETAIL_SIZE, height: DETAIL_SIZE, channels: 3 },
+  })
+    .png({ compressionLevel: 9 })
+    .toFile(DETAIL_MODULATION_PATH);
+
+  execFileSync(
+    TOKTX_PATH,
+    [
+      "--encode",
+      "uastc",
+      "--uastc_quality",
+      "2",
+      "--uastc_rdo_l",
+      "0.55",
+      "--zcmp",
+      "18",
+      "--genmipmap",
+      "--assign_oetf",
+      "srgb",
+      "--target_type",
+      "RGB",
+      "--",
+      DETAIL_MODULATION_KTX2_PATH,
+      DETAIL_MODULATION_PATH,
+    ],
+    { stdio: "inherit" }
+  );
+}
+
 function smoothstepRange(edge0, edge1, value) {
   const amount = clamp((value - edge0) / (edge1 - edge0));
   return amount * amount * (3 - 2 * amount);
@@ -229,6 +339,14 @@ function zoneNoise(x, y) {
     0.49 * Math.sin(x * 0.111 + y * 0.073) +
     0.31 * Math.cos(x * 0.067 - y * 0.129) +
     0.20 * Math.sin((x + y) * 0.193)
+  );
+}
+
+function materialBreakup(x, y) {
+  return (
+    0.46 * Math.sin(x * 0.43 + y * 0.31) +
+    0.31 * Math.cos(x * 0.91 - y * 0.57) +
+    0.23 * Math.sin(x * 1.73 + y * 1.19)
   );
 }
 
@@ -307,7 +425,7 @@ function pathInfluence(x, y, path, noise) {
   const shoulder = path.shoulderWidth + noise * 0.08;
   const core = 1 - smoothstepRange(edge * 0.48, edge, distance);
   const feather = 1 - smoothstepRange(edge, edge + shoulder, distance);
-  const strength = path.id === "cabin_lane" ? 0.84 : 0.64;
+  const strength = path.id === "cabin_lane" ? 0.94 : 0.72;
   return Math.max(core * strength, feather * strength * 0.44);
 }
 
@@ -450,9 +568,12 @@ async function buildZonedGroundAlbedo() {
       let red = source.soil[sourceIndex];
       let green = source.soil[sourceIndex + 1];
       let blue = source.soil[sourceIndex + 2];
-      const duffWeight = expandedWeights[weightIndex + 1] / 255;
-      const coolWeight = expandedWeights[weightIndex + 2] / 255;
-      const mossWeight = expandedWeights[weightIndex + 3] / 255;
+      // Ecological regions should alter the forest floor without becoming
+      // giant colored islands. Their source textures now share one value
+      // family, and these caps keep the broad masks subordinate to the route.
+      const duffWeight = Math.min(0.42, expandedWeights[weightIndex + 1] / 255);
+      const coolWeight = Math.min(0.34, expandedWeights[weightIndex + 2] / 255);
+      const mossWeight = Math.min(0.30, expandedWeights[weightIndex + 3] / 255);
       const packedWeight = expandedWeights[weightIndex] / 255;
 
       red += (source.golden[sourceIndex] - red) * duffWeight;
@@ -469,6 +590,38 @@ async function buildZonedGroundAlbedo() {
       red += (source.packed[sourceIndex] - red) * packedWeight;
       green += (source.packed[sourceIndex + 1] - green) * packedWeight;
       blue += (source.packed[sourceIndex + 2] - blue) * packedWeight;
+
+      // A walked lane is not merely a second leaf texture. Foot traffic
+      // compresses away most of the high-contrast litter, leaving a quieter,
+      // warmer soil ribbon. The old path blended another noisy source tile,
+      // so its signal disappeared inside the forest floor even at full atlas
+      // resolution. Re-evaluate the spline here and collapse its local value
+      // range around compacted ochre-brown; the soft spline shoulders keep the
+      // route organic while this lower variance lets it survive fog and mip
+      // reduction all the way from the stage to the shack.
+      const routeWeight = Math.max(
+        ...bakedPaths.map((path) =>
+          pathInfluence(worldX, worldY, path, zoneNoise(worldX, worldY))
+        )
+      );
+      const compactedRed = 78 + (source.packed[sourceIndex] - 103) * 0.18;
+      const compactedGreen = 51 + (source.packed[sourceIndex + 1] - 95) * 0.16;
+      const compactedBlue = 32 + (source.packed[sourceIndex + 2] - 67) * 0.14;
+      red += (compactedRed - red) * routeWeight;
+      green += (compactedGreen - green) * routeWeight;
+      blue += (compactedBlue - blue) * routeWeight;
+
+      // The atlas resolves paths and habitat zones, but without a middle
+      // scale the camera averages every leaf tile into one flat value. These
+      // overlapping fields create metre-scale damp, warm, and compressed
+      // pockets. Their amplitude stays below eight percent, so they break up
+      // the floor without becoming visible painted islands.
+      const breakup = materialBreakup(worldX, worldY);
+      const valueShift = 1 + breakup * 0.075;
+      const warmth = 0.026 * Math.sin(worldX * 0.37 - worldY * 0.23 + breakup);
+      red *= valueShift + warmth;
+      green *= valueShift + warmth * 0.32;
+      blue *= valueShift - warmth * 0.44;
 
       output[outputIndex] = Math.round(clamp(red, 0, 255));
       output[outputIndex + 1] = Math.round(clamp(green, 0, 255));
@@ -519,21 +672,23 @@ await Promise.all([
     .toFile(resolve(QA_DIRECTORY, "autumn-floor-tile-preview-2x2.jpg")),
 ]);
 
+await buildGroundDetailModulation(albedo);
+
 // The periodic Autumn albedo must be on disk before its warm and cool grades
 // are derived. This keeps first-run builds deterministic instead of depending
 // on which parallel image write happens to finish first.
 await Promise.all([
-  writeColorGrade(FOREST_FLOOR_PATH, "soil-albedo.jpg", {
-    brightness: 0.65,
-    saturation: 0.65,
-    tint: [110, 70, 45],
-    tintStrength: 0.42,
+  writeColorGrade(resolve(OUTPUT_DIRECTORY, "albedo.png"), "soil-albedo.jpg", {
+    brightness: 0.86,
+    saturation: 0.62,
+    tint: [128, 82, 52],
+    tintStrength: 0.20,
   }),
   writeColorGrade(DIRT_PATH, "packed-albedo.jpg", {
-    brightness: 0.68,
-    saturation: 0.48,
-    tint: [135, 88, 48],
-    tintStrength: 0.42,
+    brightness: 0.78,
+    saturation: 0.62,
+    tint: [150, 103, 62],
+    tintStrength: 0.28,
   }),
   writeColorGrade(DIRT_PATH, "moss-albedo.jpg", {
     brightness: 0.55,
@@ -548,16 +703,16 @@ await Promise.all([
     tintStrength: 0.58,
   }),
   writeColorGrade(resolve(OUTPUT_DIRECTORY, "albedo.png"), "golden-albedo.jpg", {
-    brightness: 0.92,
-    saturation: 0.85,
-    tint: [235, 130, 45],
-    tintStrength: 0.25,
+    brightness: 1.10,
+    saturation: 0.78,
+    tint: [190, 120, 62],
+    tintStrength: 0.12,
   }),
   writeColorGrade(resolve(OUTPUT_DIRECTORY, "albedo.png"), "cool-albedo.jpg", {
-    brightness: 0.7,
-    saturation: 0.55,
-    tint: [80, 55, 90],
-    tintStrength: 0.5,
+    brightness: 0.78,
+    saturation: 0.58,
+    tint: [92, 78, 104],
+    tintStrength: 0.24,
   }),
 ]);
 
@@ -595,6 +750,8 @@ console.log(
         "golden-albedo.jpg",
         "cool-albedo.jpg",
         "autumn-ground-zoned.jpg",
+        "ground-detail-modulation.png",
+        "ground-detail-modulation.ktx2",
       ],
       groundLayoutVersion: groundLayout.version,
       zonedSize: `${ZONED_SIZE}x${ZONED_SIZE}`,

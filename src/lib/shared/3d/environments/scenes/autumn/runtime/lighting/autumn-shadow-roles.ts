@@ -5,7 +5,13 @@
  * caster set is deliberate. A caster costs a second depth rasterisation every
  * frame, so the list is limited to things whose silhouette actually lands
  * inside the clearing-sized shadow camera and reads at performance distance:
- * hero trees, saplings, logs, boulders, ferns and the owl.
+ * logs, boulders, ferns and the owl.
+ *
+ * The imported hero-tree crowns are intentionally receive-only. Their broad,
+ * low-poly leaf clusters project metre-wide polygon islands onto the terrain,
+ * making the shadow pass look like broken ground texturing. The trunks and
+ * roots still receive the moon key and every smaller prop keeps its contact
+ * shadow, while the authored floor remains legible across the clearing.
  *
  * The near belt and the new middle/far depth groves are excluded on purpose.
  * They begin outside the clearing-sized shadow camera and continue beyond the
@@ -64,9 +70,6 @@ const RECEIVER_PREFIXES = [
 
 /** Standing geometry whose silhouette is worth a depth pass. */
 const CASTER_PREFIXES = [
-  "HeroTreeA",
-  "HeroTreeB",
-  "Sapling",
   "FallenLog",
   "Fern_",
   "Shore_Boulder",

@@ -6,11 +6,8 @@ import { resolveMotionScale } from "$lib/shared/3d/environments/primitives/motio
 import { allocateAutumnFireflies } from "$lib/shared/3d/environments/scenes/autumn/runtime/atmosphere/autumn-ground-life-layout";
 
 describe("Autumn shadow budget", () => {
-  it("casts from near-field silhouettes only", () => {
+  it("casts only from compact near-field silhouettes", () => {
     for (const name of [
-      "HeroTreeA_01",
-      "HeroTreeB_03",
-      "Sapling_02",
       "FallenLog_01",
       "Fern_12",
       "Shore_Boulder_04",
@@ -19,6 +16,15 @@ describe("Autumn shadow budget", () => {
     ]) {
       expect(resolveAutumnShadowRole(name)).toEqual({
         cast: true,
+        receive: true,
+      });
+    }
+  });
+
+  it("keeps broad low-poly tree crowns out of the shadow pass", () => {
+    for (const name of ["HeroTreeA_01", "HeroTreeB_03", "Sapling_02"]) {
+      expect(resolveAutumnShadowRole(name)).toEqual({
+        cast: false,
         receive: true,
       });
     }

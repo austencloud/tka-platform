@@ -19,6 +19,11 @@
 
   import Environment3D from "$lib/shared/3d/environments/components/Environment3D.svelte";
   import EnvironmentReviewCamera from "$lib/shared/3d/environments/review/EnvironmentReviewCamera.svelte";
+  import EnvironmentReviewViewSource from "$lib/shared/3d/environments/review/EnvironmentReviewViewSource.svelte";
+  import {
+    environmentReviewPresetFromPose,
+    type EnvironmentReviewReading,
+  } from "$lib/shared/3d/environments/review/environment-review-view-source";
   import { createSceneFeatureState } from "$lib/shared/3d/scene-features/state/scene-feature-state.svelte";
   import { setSceneFeatureContext } from "$lib/shared/3d/scene-features/context/scene-feature-context";
   import { createEnvironmentTransitionVisualState } from "$lib/shared/3d/environments/state/environment-transition-visual-state.svelte";
@@ -27,6 +32,10 @@
   import PerfMonitor from "$lib/shared/3d/components/PerfMonitor.svelte";
   import { autumnQualityOverride } from "$lib/shared/3d/environments/scenes/autumn/quality/autumn-quality-override.svelte";
   import type { AutumnQualityTier } from "$lib/shared/3d/environments/scenes/autumn/quality/autumn-quality";
+  import {
+    captureCurrentView,
+    parseViewParam,
+  } from "$lib/shared/review/view-capture";
 
   // The Autumn scene calls getSceneFeatureContext() (for reportReady +
   // stage gating). Provide the same state factory the real Viewer3DCanvas
@@ -95,12 +104,20 @@
 
   type ViewName = keyof typeof VIEW_PRESETS;
   const requestedView = $derived(page.url.searchParams.get("view"));
+  const replayPose = $derived(parseViewParam(page.url.search));
   const view = $derived(
     requestedView && requestedView in VIEW_PRESETS
       ? (requestedView as ViewName)
-      : "hero"
+      : replayPose
+        ? "walk"
+        : "hero"
   );
-  const cameraPreset = $derived(VIEW_PRESETS[view]);
+  const cameraPreset = $derived(
+    replayPose
+      ? environmentReviewPresetFromPose(replayPose, VIEW_PRESETS.walk.fov)
+      : VIEW_PRESETS[view]
+  );
+  const cameraKey = $derived(JSON.stringify(cameraPreset));
   const showPerf = $derived(page.url.searchParams.get("perf") === "1");
   const renderDpr = $derived.by(() => {
     const requested = Number(page.url.searchParams.get("dpr") ?? "1");
@@ -114,6 +131,34 @@
       ? requested
       : "auto";
   });
+
+  let reading = $state<EnvironmentReviewReading | null>(null);
+  let captureNote = $state<string | null>(null);
+  let captureNoteTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const formatPoint = (value: { x: number; y: number; z: number }) =>
+    `${value.x.toFixed(2)}, ${value.y.toFixed(2)}, ${value.z.toFixed(2)}`;
+
+  const targetLabel = $derived.by(() => {
+    const target = reading?.target;
+    if (!target) return "No centre hit";
+    const family = target.materials?.join(" + ") ?? target.object;
+    return target.instance === undefined
+      ? family
+      : `${family} · instance ${target.instance}`;
+  });
+
+  async function copyCurrentView() {
+    const capture = await captureCurrentView();
+    if (captureNoteTimer) clearTimeout(captureNoteTimer);
+    captureNote =
+      capture.delivery === "console"
+        ? "View recorded in console; clipboard unavailable"
+        : "frameError" in capture && capture.frameError
+          ? `Coordinates copied; frame failed: ${capture.frameError}`
+          : "Exact view copied";
+    captureNoteTimer = setTimeout(() => (captureNote = null), 4000);
+  }
 
   $effect(() => {
     autumnQualityOverride.tier = requestedQuality;
@@ -138,13 +183,23 @@
     <HarnessToneMapping />
     <PerfMonitor visible={showPerf} active={showPerf} />
 
-    {#key view}
+    {#key cameraKey}
       <EnvironmentReviewCamera
         destinationId="autumn-scene-review"
         preset={cameraPreset}
-        walk={view === "walk"}
+        walk={view === "walk" || Boolean(replayPose)}
       />
     {/key}
+
+    <EnvironmentReviewViewSource
+      sceneId="autumn-scene"
+      state={() => ({
+        shot: view,
+        quality: requestedQuality,
+        dpr: renderDpr,
+      })}
+      onReading={(nextReading) => (reading = nextReading)}
+    />
 
     <!-- Real environment switcher. AUTUMN routes to AutumnScene, which
          supplies its own sky, ground, fog, trees, leaves and lighting. -->
@@ -156,6 +211,42 @@
       stageZOffset={0}
     />
   </Canvas>
+
+  <aside class="view-inspector" aria-label="Autumn review coordinates">
+    <button type="button" onclick={copyCurrentView}>
+      <span>Copy exact view</span>
+      <kbd>P</kbd>
+    </button>
+    {#if reading}
+      <dl>
+        <div>
+          <dt>Camera</dt>
+          <dd>{formatPoint(reading.camera)}</dd>
+        </div>
+        <div class="target-reading">
+          <dt>Centre target</dt>
+          <dd>{targetLabel}</dd>
+        </div>
+        {#if reading.target}
+          <div>
+            <dt>Target origin</dt>
+            <dd>{formatPoint(reading.target.origin)}</dd>
+          </div>
+          <div>
+            <dt>Surface hit</dt>
+            <dd>{formatPoint(reading.target.point)}</dd>
+          </div>
+        {/if}
+      </dl>
+    {:else}
+      <span class="waiting">Reading camera…</span>
+    {/if}
+    {#if captureNote}
+      <span class="capture-note" role="status" aria-live="polite"
+        >{captureNote}</span
+      >
+    {/if}
+  </aside>
 </div>
 
 <style>
@@ -168,5 +259,178 @@
     /* Warm dusk gradient backs the transparent canvas while the scene's
        own sky dome paints in. */
     background: linear-gradient(#1a1206 0%, #3a2410 60%, #5a3a1c 100%);
+  }
+
+  .view-inspector {
+    position: absolute;
+    inset-block-end: clamp(0.75rem, 1.5vw, 1.5rem);
+    inset-inline-start: clamp(0.75rem, 1.5vw, 1.5rem);
+    z-index: 20;
+    display: grid;
+    gap: 0.65rem;
+    inline-size: min(25rem, calc(100vw - 1.5rem));
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 210, 153, 0.18);
+    border-radius: 0.85rem;
+    background: rgba(20, 10, 8, 0.78);
+    box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.32);
+    color: #fff7ed;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    backdrop-filter: blur(0.7rem);
+  }
+
+  button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-block-size: 2.75rem;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid rgba(251, 146, 60, 0.4);
+    border-radius: 0.6rem;
+    background: linear-gradient(145deg, #5f2411, #32140c);
+    color: #fff7ed;
+    font: inherit;
+    font-weight: 720;
+    cursor: pointer;
+  }
+
+  button:hover {
+    border-color: rgba(253, 186, 116, 0.8);
+    background: linear-gradient(145deg, #7c2d12, #431407);
+  }
+
+  button:focus-visible {
+    outline: 2px solid #fed7aa;
+    outline-offset: 2px;
+  }
+
+  kbd {
+    min-inline-size: 1.8rem;
+    padding: 0.18rem 0.38rem;
+    border: 1px solid rgba(255, 237, 213, 0.25);
+    border-radius: 0.35rem;
+    background: rgba(0, 0, 0, 0.32);
+    color: #fed7aa;
+    font:
+      700 0.76rem ui-monospace,
+      "SFMono-Regular",
+      Consolas,
+      monospace;
+    text-align: center;
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem 0.8rem;
+    margin: 0;
+  }
+
+  dl div {
+    min-inline-size: 0;
+  }
+
+  dt {
+    color: #fdba74;
+    font-size: 0.68rem;
+    font-weight: 720;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  dd {
+    margin: 0.16rem 0 0;
+    overflow: hidden;
+    color: #ffedd5;
+    font:
+      0.76rem/1.35 ui-monospace,
+      "SFMono-Regular",
+      Consolas,
+      monospace;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .target-reading {
+    grid-column: 1 / -1;
+  }
+
+  .target-reading dd {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .waiting,
+  .capture-note {
+    color: #fed7aa;
+    font-size: 0.8rem;
+  }
+
+  @media (min-width: 1680px) {
+    .view-inspector {
+      inline-size: 29rem;
+      padding: 0.9rem;
+    }
+
+    button {
+      min-block-size: 3rem;
+      font-size: 1rem;
+    }
+
+    dt {
+      font-size: 0.75rem;
+    }
+
+    dd,
+    .waiting,
+    .capture-note {
+      font-size: 0.88rem;
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .view-inspector {
+      inline-size: 39rem;
+      gap: 0.95rem;
+      padding: 1.2rem;
+      border-radius: 1.2rem;
+    }
+
+    button {
+      min-block-size: 4rem;
+      padding-inline: 1rem;
+      border-radius: 0.9rem;
+      font-size: 1.3rem;
+    }
+
+    kbd {
+      min-inline-size: 2.5rem;
+      font-size: 1rem;
+    }
+
+    dt {
+      font-size: 0.95rem;
+    }
+
+    dd,
+    .waiting,
+    .capture-note {
+      font-size: 1.1rem;
+    }
+  }
+
+  @media (max-width: 42rem), (max-height: 31rem) {
+    .view-inspector {
+      inline-size: min(17rem, calc(100vw - 1.5rem));
+    }
+
+    dl div:nth-child(n + 2) {
+      display: none;
+    }
+
+    dl {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

@@ -27,6 +27,8 @@
   import AutumnInteraction from "./interaction/AutumnInteraction.svelte";
   import AutumnWind from "./wind/AutumnWind.svelte";
   import AutumnLanternFlicker from "./lighting/AutumnLanternFlicker.svelte";
+  import AutumnGroundDetail from "./ground/AutumnGroundDetail.svelte";
+  import AutumnDepthCohesion from "./atmosphere/AutumnDepthCohesion.svelte";
 
   interface Props {
     quality: AutumnQualityConfig;
@@ -53,6 +55,16 @@
 <!-- Authored grass stays rooted while its tips share one deterministic shader
      clock. The quality tier reveals cumulative Blender-authored density. -->
 <AutumnWind scene={environmentScene} {tier} />
+
+<!-- The macro atlas owns paths and habitat zones. This second compressed map
+     restores leaf-scale colour at walking distance using the existing detail
+     UV, so the 330-metre atlas does not turn into flat grey ground. -->
+<AutumnGroundDetail scene={environmentScene} />
+
+<!-- These imported families only live beyond the hero ring. Their source
+     textures keep their detail while this grade stops violet fog from turning
+     the entire middle grove into one silver material. -->
+<AutumnDepthCohesion scene={environmentScene} />
 
 <!-- Moon-aligned dusk light rig -->
 <AutumnLighting {quality} {groundY} />

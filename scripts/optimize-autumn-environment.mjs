@@ -39,6 +39,8 @@ import { resolve } from "node:path";
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 import sharp from "sharp";
+import { AUTUMN_DEPTH_MATERIAL_GRADES } from "./autumn-depth-material-grades.mjs";
+import { AUTUMN_HERO_MATERIAL_GRADES } from "./autumn-hero-material-grades.mjs";
 
 const INPUT = resolve("static/models/autumn/autumn-environment_raw.glb");
 const OUTPUT = resolve("static/models/autumn/autumn-environment.glb");
@@ -55,42 +57,8 @@ const GROUND_TEXTURE_PREFIX = "autumn-ground-zoned";
 // Procedural terrain, leaf litter, grass, mushrooms, and far silhouettes are
 // already authored in that range and therefore do not need a profile here.
 const AUTUMN_MATERIAL_PROFILES = [
-  {
-    prefix: "Autumn Hero A PBR",
-    tint: [0.84, 0.89, 0.97, 1.0],
-    normalScale: 0.76,
-    roughnessFloor: 0.76,
-  },
-  {
-    prefix: "Autumn Hero B PBR",
-    tint: [0.88, 0.92, 0.98, 1.0],
-    normalScale: 0.76,
-    roughnessFloor: 0.76,
-  },
-  {
-    prefix: "Autumn Birch PBR",
-    tint: [0.9, 0.78, 0.62, 1.0],
-    normalScale: 0.68,
-    roughnessFloor: 0.8,
-  },
-  {
-    prefix: "Autumn Larch PBR",
-    tint: [0.94, 0.86, 0.72, 1.0],
-    normalScale: 0.7,
-    roughnessFloor: 0.8,
-  },
-  {
-    prefix: "Autumn Snag PBR",
-    tint: [0.82, 0.8, 0.88, 1.0],
-    normalScale: 0.66,
-    roughnessFloor: 0.84,
-  },
-  {
-    prefix: "Autumn Willow PBR",
-    tint: [0.9, 0.82, 0.72, 1.0],
-    normalScale: 0.68,
-    roughnessFloor: 0.82,
-  },
+  ...Object.values(AUTUMN_HERO_MATERIAL_GRADES),
+  ...Object.values(AUTUMN_DEPTH_MATERIAL_GRADES),
   {
     prefix: "Autumn Fern PBR",
     tint: [0.72, 0.82, 0.62, 1.0],

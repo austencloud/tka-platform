@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "worldExtent": 165,
   "detailMetres": 5.2,
   "clearingRadius": 6.5,
@@ -15,7 +15,8 @@
       "destination": "woodland-shack-door",
       "shoulderWidth": 0.95,
       "points": [
-        [0.0, 6.4, 1.48],
+        [0.0, 2.9, 1.68],
+        [-0.35, 6.0, 1.64],
         [-1.0, 9.5, 1.58],
         [-2.7, 13.0, 1.72],
         [-3.2, 17.5, 1.82],

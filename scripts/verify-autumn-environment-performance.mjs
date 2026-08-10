@@ -5,10 +5,16 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const glbPath = resolve("static/models/autumn/autumn-environment.glb");
+const groundDetailPath = resolve(
+  "static/textures/autumn-floor/ground-detail-modulation.ktx2"
+);
 const maximumBytes = 20 * 1024 * 1024;
 const maximumFernTriangles = 8_000;
 const maximumRenderedTriangles = 2_200_000;
 const expectedFernInstances = 54;
+const expectedGroundTextureSize = 2_048;
+const expectedGroundDetailSize = 1_024;
+const treeGroundingStrategy = "transformed-root-envelope-v1";
 
 function invariant(condition, message) {
   if (!condition) throw new Error(message);
@@ -24,8 +30,15 @@ function readGlbJson(path) {
     "GLB header length is invalid"
   );
   const jsonLength = buffer.readUInt32LE(12);
+  const binaryHeaderOffset = 20 + jsonLength;
+  invariant(
+    buffer.readUInt32LE(binaryHeaderOffset + 4) === 0x004e4942,
+    "GLB binary chunk is missing"
+  );
   return {
     bytes: buffer.length,
+    buffer,
+    binaryOffset: binaryHeaderOffset + 8,
     json: JSON.parse(buffer.subarray(20, 20 + jsonLength).toString("utf8")),
   };
 }
@@ -73,7 +86,36 @@ function textureImage(gltf, texture) {
   return gltf.images[imageIndex];
 }
 
-const { bytes, json: gltf } = readGlbJson(glbPath);
+function ktx2Dimensions(buffer, binaryOffset, gltf, image) {
+  invariant(image.mimeType === "image/ktx2", `${image.name} is not KTX2`);
+  const view = gltf.bufferViews[image.bufferView];
+  invariant(view, `${image.name} lost its buffer view`);
+  const start = binaryOffset + (view.byteOffset ?? 0);
+  const identifier = buffer.subarray(start, start + 12).toString("hex");
+  invariant(
+    identifier === "ab4b5458203230bb0d0a1a0a",
+    `${image.name} has an invalid KTX2 identifier`
+  );
+  return {
+    width: buffer.readUInt32LE(start + 20),
+    height: buffer.readUInt32LE(start + 24),
+  };
+}
+
+function standaloneKtx2Dimensions(path) {
+  const buffer = readFileSync(path);
+  invariant(
+    buffer.subarray(0, 12).toString("hex") === "ab4b5458203230bb0d0a1a0a",
+    "Autumn ground detail has an invalid KTX2 identifier"
+  );
+  return {
+    width: buffer.readUInt32LE(20),
+    height: buffer.readUInt32LE(24),
+    bytes: buffer.length,
+  };
+}
+
+const { bytes, buffer, binaryOffset, json: gltf } = readGlbJson(glbPath);
 const extensions = new Set(gltf.extensionsUsed ?? []);
 const meshNodes = (gltf.nodes ?? []).filter((node) =>
   Number.isInteger(node.mesh)
@@ -81,6 +123,25 @@ const meshNodes = (gltf.nodes ?? []).filter((node) =>
 const fernNodes = meshNodes.filter((node) =>
   meshUsesMaterial(gltf, node.mesh, "Autumn Fern PBR")
 );
+const terrainNode = meshNodes.find((node) => node.name === "Autumn_Terrain");
+const owlTreeNode = meshNodes.find((node) => node.name === "HeroTreeA_03_0");
+const groundMaterial = (gltf.materials ?? []).find(
+  (material) => material.name === "Autumn Living Forest Floor"
+);
+
+invariant(terrainNode, "Autumn terrain node is missing");
+invariant(owlTreeNode, "Owl tree node HeroTreeA_03_0 is missing");
+invariant(groundMaterial, "Autumn living forest floor material is missing");
+const groundTextureIndex = groundMaterial.pbrMetallicRoughness?.baseColorTexture?.index;
+invariant(Number.isInteger(groundTextureIndex), "Ground base-color texture is missing");
+const groundImage = textureImage(gltf, gltf.textures[groundTextureIndex]);
+const groundTextureDimensions = ktx2Dimensions(
+  buffer,
+  binaryOffset,
+  gltf,
+  groundImage
+);
+const groundDetailDimensions = standaloneKtx2Dimensions(groundDetailPath);
 
 invariant(bytes <= maximumBytes, `GLB exceeds ${maximumBytes} bytes: ${bytes}`);
 for (const extension of [
@@ -94,6 +155,41 @@ for (const extension of [
 invariant(
   fernNodes.length === 1,
   `Expected one instanced fern batch, found ${fernNodes.length}`
+);
+invariant(
+  terrainNode.extras?.tka_ground_treatment === "baked-living-floor",
+  "Terrain lost its baked living-floor contract"
+);
+invariant(
+  groundMaterial.pbrMetallicRoughness.baseColorTexture.texCoord === 1,
+  "Ground macro color must use TEXCOORD_1"
+);
+invariant(
+  groundMaterial.normalTexture?.texCoord == null ||
+    groundMaterial.normalTexture.texCoord === 0,
+  "Ground normal detail must use TEXCOORD_0"
+);
+invariant(
+  groundTextureDimensions.width === expectedGroundTextureSize &&
+    groundTextureDimensions.height === expectedGroundTextureSize,
+  `Ground atlas must remain ${expectedGroundTextureSize}px, found ${groundTextureDimensions.width}x${groundTextureDimensions.height}`
+);
+invariant(
+  groundDetailDimensions.width === expectedGroundDetailSize &&
+    groundDetailDimensions.height === expectedGroundDetailSize,
+  `Ground detail must remain ${expectedGroundDetailSize}px, found ${groundDetailDimensions.width}x${groundDetailDimensions.height}`
+);
+invariant(
+  owlTreeNode.extras?.tka_grounding_strategy === treeGroundingStrategy,
+  "Owl tree lost its transformed root-envelope grounding proof"
+);
+invariant(
+  Number(owlTreeNode.extras?.tka_root_contact_samples) >= 100,
+  "Owl tree grounding proof has too few root-contact samples"
+);
+invariant(
+  Number(owlTreeNode.extras?.tka_root_max_clearance_after) <= -0.13,
+  "Owl tree root envelope is not safely below terrain"
 );
 
 const fernNode = fernNodes[0];
@@ -136,6 +232,24 @@ console.log(
       meshes: gltf.meshes?.length ?? 0,
       nodes: gltf.nodes?.length ?? 0,
       textures: gltf.textures?.length ?? 0,
+      ground: {
+        treatment: terrainNode.extras.tka_ground_treatment,
+        texture: groundImage.name,
+        dimensions: groundTextureDimensions,
+        colorTexCoord: groundMaterial.pbrMetallicRoughness.baseColorTexture.texCoord,
+        detailTexCoord: groundMaterial.normalTexture?.texCoord ?? 0,
+        tiledColorDetail: {
+          path: groundDetailPath,
+          ...groundDetailDimensions,
+        },
+      },
+      owlTreeGrounding: {
+        strategy: owlTreeNode.extras.tka_grounding_strategy,
+        depth: owlTreeNode.extras.tka_grounding_depth,
+        samples: owlTreeNode.extras.tka_root_contact_samples,
+        maximumClearanceAfter:
+          owlTreeNode.extras.tka_root_max_clearance_after,
+      },
       fern: {
         instances: fernInstances,
         triangles: fernTriangles,

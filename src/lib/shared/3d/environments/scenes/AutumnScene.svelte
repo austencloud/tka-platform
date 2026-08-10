@@ -181,17 +181,20 @@
     // lighter, warmer violet than the sky, so distant geometry fades toward a
     // haze that separates it from the near-black upper sky instead of
     // dissolving into it. That is what gives the belt atmospheric perspective.
-    const fogColor = new Color("#20153a");
+    // A warm plum haze belongs to the leaf-and-bark palette while retaining
+    // enough blue to read as moonlit air. The previous violet pushed pale bark
+    // and distant crowns toward silver, making the imported depth belt look
+    // like a separate winter biome.
+    const fogColor = new Color("#2b172f");
     // The gradient dome owns the visible sky; this is its near-black fallback
     // while textures and shaders are still compiling.
     const backgroundColor = new Color("#120b2b");
-    // Tuned against real frames, not arithmetic. 0.016 hid nothing - the finite
-    // terrain edge stayed a hard sawtooth against black. 0.034 overshot badly:
-    // the review harness parks its camera ~34m out, so at that density the
-    // ENTIRE scene sat under 40%+ extinction and collapsed into one milky
-    // value. 0.020 puts the 31m terrain rim under ~50% while the hero trees
-    // still hold their own colour.
-    s.fog = new FogExp2(fogColor.getHex(), 0.02);
+    // The terrain now owns a stitched 165m fog apron, so haze no longer has to
+    // conceal a finite edge. At 0.020 the 54m cabin lane lost so much contrast
+    // that its authored surface vanished halfway to the shack. 0.016 keeps
+    // atmospheric separation across the tree belts while preserving the full
+    // lived-in sightline from the stage clearing to the cabin door.
+    s.fog = new FogExp2(fogColor.getHex(), 0.016);
     s.background = backgroundColor;
     return () => {
       if (s) {
