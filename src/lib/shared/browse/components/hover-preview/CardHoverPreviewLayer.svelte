@@ -45,6 +45,15 @@
 
   let playback = $state<Playback | null>(null);
   let currentStep = $state(0);
+  let boxWidth = $state(0);
+  let boxHeight = $state(0);
+  // The rail follows the free axis: a wide box grows one to the right, a tall
+  // one lays it below. Below the floors there is no room for a legible cell, so
+  // the preview stays the bare animator rather than shipping unreadable glyphs.
+  const railRight = $derived(boxWidth > boxHeight * 1.15);
+  const showRail = $derived(
+    railRight ? boxWidth >= 320 && boxHeight >= 180 : boxWidth >= 200 && boxHeight >= 260
+  );
   let frameId: number | null = null;
   let startTime: number | null = null;
   /** Guards against a slow hydration landing after the pointer moved on. */
@@ -144,8 +153,16 @@
 </script>
 
 {#if playback && frame}
-  <div class="preview-layer" transition:fade={{ duration: DURATION.fast }} aria-hidden="true">
-    <AnimatorCanvas
+  <div
+    class="preview-layer"
+    class:rail-right={railRight}
+    bind:clientWidth={boxWidth}
+    bind:clientHeight={boxHeight}
+    transition:fade={{ duration: DURATION.fast }}
+    aria-hidden="true"
+  >
+    <div class="stage">
+      <AnimatorCanvas
       blueProp={playback.animState.bluePropState}
       redProp={playback.animState.redPropState}
       sequenceData={playback.sequence}
@@ -161,9 +178,28 @@
       hideStepNumbers={true}
       hideProgressBar={true}
       disableContextMenu={true}
-      visibilityManagerOverride={visibility}
-      onInitialized={enableMandala}
-    />
+        visibilityManagerOverride={visibility}
+        onInitialized={enableMandala}
+      />
+    </div>
+
+    {#if showRail}
+      <div class="rail">
+        {#await import("$lib/shared/timeline/StepStrip.svelte") then mod}
+          <mod.default
+            sequence={playback.sequence}
+            currentStep={frame.step}
+            bpm={BPM}
+            density="compact"
+            fillHeight={true}
+            anchor="center"
+            orientation={railRight ? "vertical" : "horizontal"}
+            loop={false}
+            stepPulse={false}
+          />
+        {/await}
+      </div>
+    {/if}
   </div>
 {/if}
 
@@ -179,6 +215,43 @@
        the mandala. The preview runs previewDarkMode, so this is its floor. */
     background: #08080f;
     container-type: size;
+
+    display: flex;
+    flex-direction: column;
+    /* The card's chip row lives at bottom-right, over this layer. Clearing it
+       keeps the rail's far cells from disappearing under the play chip. */
+    padding-bottom: calc(var(--min-touch-target, 44px) + 12px);
+  }
+
+  .preview-layer.rail-right {
+    flex-direction: row;
+  }
+
+  .stage {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    position: relative;
+  }
+
+  .rail {
+    flex: 0 0 auto;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Horizontal rail below the animation. */
+  .preview-layer:not(.rail-right) .rail {
+    height: clamp(64px, 24cqh, 92px);
+  }
+
+  /* Vertical rail beside it. */
+  .preview-layer.rail-right .rail {
+    width: clamp(64px, 20cqw, 96px);
+    align-self: stretch;
   }
 
   @media (prefers-reduced-motion: reduce) {
