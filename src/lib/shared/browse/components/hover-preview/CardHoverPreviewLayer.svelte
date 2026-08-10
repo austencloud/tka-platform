@@ -201,7 +201,7 @@
           sequence={playback.sequence}
           currentStep={frame.step}
           bpm={BPM}
-          density="compact"
+          density={railRight ? "compact" : "standard"}
           fillHeight={true}
           anchor="center"
           orientation={railRight ? "vertical" : "horizontal"}
@@ -228,6 +228,7 @@
 
     display: flex;
     flex-direction: column;
+    justify-content: center;
     /* The card's chip row lives at bottom-right, over this layer. Clearing it
        keeps the rail's far cells from disappearing under the play chip. */
     padding-bottom: calc(var(--min-touch-target, 44px) + 12px);
@@ -237,15 +238,28 @@
     flex-direction: row;
   }
 
+  /* The animation is square — a fixed-size rail either starves it or wastes the
+     leftover. So the stage claims its square off the SHORT axis and the rail
+     takes everything left over on the long one. Whichever way the card leans,
+     both halves are as big as the box allows. */
   .stage {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     min-width: 0;
     min-height: 0;
     position: relative;
+    aspect-ratio: 1;
+  }
+
+  .preview-layer:not(.rail-right) .stage {
+    width: 100%;
+  }
+
+  .preview-layer.rail-right .stage {
+    height: 100%;
   }
 
   .rail {
-    flex: 0 0 auto;
+    flex: 1 1 auto;
     min-width: 0;
     min-height: 0;
     display: flex;
@@ -253,14 +267,19 @@
     justify-content: center;
   }
 
-  /* Horizontal rail below the animation. */
+  /* Floors keep a cell legible on a nearly-square card; ceilings stop a very
+     long card from handing the rail more room than the animation. */
   .preview-layer:not(.rail-right) .rail {
-    height: clamp(64px, 24cqh, 92px);
+    min-height: 64px;
+    max-height: 45cqh;
   }
 
-  /* Vertical rail beside it. */
+  /* A vertical rail is sized by the cells it can stack, which is a function of
+     its HEIGHT — hand it more width than that and the surplus is dead margin
+     the animation could have used. */
   .preview-layer.rail-right .rail {
-    width: clamp(64px, 20cqw, 96px);
+    min-width: 60px;
+    max-width: 34cqh;
     align-self: stretch;
   }
 
