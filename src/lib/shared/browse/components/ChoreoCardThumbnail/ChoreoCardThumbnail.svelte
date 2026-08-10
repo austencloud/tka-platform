@@ -32,7 +32,14 @@ Variation support:
     buildSequenceSharePayload,
     buildThumbnailUrl,
   } from "$lib/shared/inbox/state/send-sequence-state.svelte";
-  import { onDestroy, untrack } from "svelte";
+  import { onDestroy, tick, untrack } from "svelte";
+  import SheetMorphOverlay from "./SheetMorphOverlay.svelte";
+  import {
+    computeSheetRegionMap,
+    type SheetRegionMap,
+  } from "$lib/shared/browse/services/sheet-region-map";
+  import { galleryStepCount } from "$lib/shared/browse/services/gallery-render-input";
+  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { claimViewTransitionName } from "$lib/shared/transitions/view-transition-name-registry";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import VariationPill from "./VariationPill.svelte";
@@ -258,11 +265,105 @@ Variation support:
   // means the data is already hydrated by the time the chip is tapped.
   const previewActive = $derived(cardHoverPreview.isActive(displayedSequence.id));
 
-  function togglePreview(): void {
+  // ── Play/stop morph ────────────────────────────────────────────────
+  // The static thumbnail is one baked <img>, so its header/grid/cells can't
+  // carry view-transition-names directly. SheetMorphOverlay sprite-crops the
+  // same image into named regions for the frames around the transition, and
+  // the preview layer carries the matching names — the browser interpolates
+  // between the card's own pixels and the live player. When any precondition
+  // fails (no VT support, reduced motion, image not loaded, no steps data),
+  // the layer's original dissolve runs instead.
+  let thumbnailContainerEl = $state<HTMLDivElement | null>(null);
+  let morphStaging = $state(false);
+  let morphRegions = $state<SheetRegionMap | null>(null);
+  let morphSrc = $state("");
+  let morphBox = $state({ w: 0, h: 0 });
+  /** True while the morph owns the play/stop animation — collapses the
+   * preview layer's own dissolve so only one system moves things. */
+  let morphDriven = $state(false);
+  let previewReadyResolve: (() => void) | null = null;
+
+  function morphCapable(): boolean {
+    return (
+      typeof document !== "undefined" &&
+      "startViewTransition" in document &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    );
+  }
+
+  /** Compute crop geometry + grab the displayed raster. False → fall back. */
+  function prepareMorph(): boolean {
+    const el = thumbnailContainerEl;
+    const img = el?.querySelector("img");
+    const seq = displayedSequence;
+    if (!el || !img || !img.currentSrc || !img.complete || !seq.steps?.length) {
+      return false;
+    }
+    try {
+      const layout = getImageCompositionManager().getStartPositionLayoutForStepCount(
+        galleryStepCount(seq)
+      );
+      morphRegions = computeSheetRegionMap(seq, layout);
+    } catch {
+      return false;
+    }
+    morphSrc = img.currentSrc;
+    morphBox = { w: el.clientWidth, h: el.clientHeight };
+    return true;
+  }
+
+  const nextFrame = () =>
+    new Promise<void>((r) => requestAnimationFrame(() => r()));
+  const delay = (ms: number) =>
+    new Promise<void>((r) => setTimeout(r, ms));
+
+  async function togglePreview(): Promise<void> {
+    const seq = displayedSequence;
+    if (!morphCapable() || !prepareMorph()) {
+      morphDriven = false;
+      if (previewActive) cardHoverPreview.dismiss(seq.id);
+      else cardHoverPreview.request(seq);
+      return;
+    }
+    morphDriven = true;
     if (previewActive) {
-      cardHoverPreview.dismiss(displayedSequence.id);
+      // Stop: old state = live preview, new state = static card + crops. The
+      // crops mount inside the same mutation so the player shrinks back into
+      // the exact sheet regions it grew from.
+      const vt = document.startViewTransition(async () => {
+        morphStaging = true;
+        cardHoverPreview.dismiss(seq.id);
+        await tick();
+      });
+      try {
+        await vt.finished;
+      } catch {
+        /* skipped transitions still applied the DOM change */
+      }
+      morphStaging = false;
     } else {
-      cardHoverPreview.request(displayedSequence);
+      // Play: the crops must be PAINTED before the old-state capture, so they
+      // mount a frame ahead of the transition.
+      morphStaging = true;
+      await tick();
+      await nextFrame();
+      const ready = new Promise<void>((r) => (previewReadyResolve = r));
+      const vt = document.startViewTransition(async () => {
+        morphStaging = false;
+        cardHoverPreview.request(seq);
+        // The preview hydrates motion data async; capture the new state only
+        // once a playable frame exists. The race keeps a stalled load from
+        // freezing the page — the VT degrades to a quick fade.
+        await Promise.race([ready, delay(1500)]);
+        await tick();
+      });
+      try {
+        await vt.finished;
+      } catch {
+        /* skipped */
+      }
+      previewReadyResolve = null;
+      morphStaging = false;
     }
   }
 
@@ -477,6 +578,7 @@ Variation support:
        /sequence/[id]. Undefined on any duplicate copy of this sequence that is
        mounted at the same time (see the morph-name claim above). -->
   <div
+    bind:this={thumbnailContainerEl}
     class="thumbnail-container"
     class:crossfade={variationCount > 0}
     style:view-transition-name={morphName}
@@ -499,8 +601,21 @@ Variation support:
 
     {#if previewActive}
       {#await import("$lib/shared/browse/components/hover-preview/CardHoverPreviewLayer.svelte") then mod}
-        <mod.default sequence={displayedSequence} />
+        <mod.default
+          sequence={displayedSequence}
+          instant={morphDriven}
+          onReady={() => previewReadyResolve?.()}
+        />
       {/await}
+    {/if}
+
+    {#if morphStaging && morphRegions}
+      <SheetMorphOverlay
+        src={morphSrc}
+        regions={morphRegions}
+        boxWidth={morphBox.w}
+        boxHeight={morphBox.h}
+      />
     {/if}
   </div>
 

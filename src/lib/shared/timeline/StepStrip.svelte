@@ -287,6 +287,7 @@
           class:start-cell={item.cell.isStart}
           class:is-focus={item.dist === 0}
           class:clickable={!!onCellClick}
+          data-step-number={item.cell.stepNumber}
           style="{vertical ? 'top' : 'left'}: {item.vi *
             STRIDE}px; opacity: {cellOpacity(item.dist)}"
           role={onCellClick ? "button" : undefined}

@@ -26,7 +26,23 @@
   import { DURATION, SLIDE, STAGGER } from "$lib/shared/transitions/transitions";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
-  const { sequence }: { sequence: SequenceData } = $props();
+  const {
+    sequence,
+    instant = false,
+    onReady,
+  }: {
+    sequence: SequenceData;
+    /** Collapse the layer's own dissolve to zero. The card sets this when a
+     * view-transition morph is running the show — two animation systems
+     * moving the same elements reads as a glitch, and a lingering |global
+     * outro would leave duplicate view-transition-names in the new state,
+     * which aborts the whole transition. */
+    instant?: boolean;
+    /** Fires once, when the first playable frame exists — the card's morph
+     * awaits this before letting the view transition capture the new state,
+     * so it never snapshots a half-hydrated preview. */
+    onReady?: () => void;
+  } = $props();
 
   const BPM = 60;
   const MS_PER_BEAT = 60000 / BPM;
@@ -129,6 +145,14 @@
     return { step, stepData: active.sequence.steps?.[index] ?? null };
   });
 
+  let readyFired = false;
+  $effect(() => {
+    if (playback && frame && !readyFired) {
+      readyFired = true;
+      onReady?.();
+    }
+  });
+
   // A repeating word always displays in its smallest form — FΨ, never FΨFΨFΨFΨ.
   const displayWord = $derived.by(() => {
     const raw = playback?.sequence.word || playback?.sequence.name || "";
@@ -160,7 +184,7 @@
     class:rail-right={railRight}
     bind:clientWidth={boxWidth}
     bind:clientHeight={boxHeight}
-    transition:popIn|global={{ duration: DURATION.emphasis, start: 0.94 }}
+    transition:popIn|global={{ duration: instant ? 0 : DURATION.emphasis, start: 0.94 }}
     aria-hidden="true"
   >
     <div class="stage">
@@ -190,8 +214,8 @@
     <div
       class="rail"
       transition:flyFade|global={{
-        duration: DURATION.emphasis,
-        delay: STAGGER.relaxed,
+        duration: instant ? 0 : DURATION.emphasis,
+        delay: instant ? 0 : STAGGER.relaxed,
         x: railRight ? SLIDE.md : 0,
         y: railRight ? 0 : SLIDE.md,
       }}
@@ -256,6 +280,38 @@
 
   .preview-layer.rail-right .stage {
     height: 100%;
+  }
+
+  /* ── Morph pairing ──────────────────────────────────────────────────
+     These names match the sprite-crops SheetMorphOverlay paints over the
+     static thumbnail during the play/stop view transition: the card's grid
+     region grows into the stage (the mandala "expands forward"), the baked
+     word header becomes the animator's, and the start cell plus the first
+     step cells fly into the rail. Only one preview layer exists app-wide and
+     the overlay mounts only on the toggling card, so the static names stay
+     unique document-wide. */
+  .stage {
+    view-transition-name: card-morph-stage;
+  }
+
+  .stage :global(.word-header) {
+    view-transition-name: card-morph-header;
+  }
+
+  .rail :global(.step-cell[data-step-number="0"]) {
+    view-transition-name: card-morph-cell-0;
+  }
+  .rail :global(.step-cell[data-step-number="1"]) {
+    view-transition-name: card-morph-cell-1;
+  }
+  .rail :global(.step-cell[data-step-number="2"]) {
+    view-transition-name: card-morph-cell-2;
+  }
+  .rail :global(.step-cell[data-step-number="3"]) {
+    view-transition-name: card-morph-cell-3;
+  }
+  .rail :global(.step-cell[data-step-number="4"]) {
+    view-transition-name: card-morph-cell-4;
   }
 
   .rail {
