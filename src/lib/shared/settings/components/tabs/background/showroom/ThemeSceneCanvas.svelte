@@ -183,8 +183,8 @@
           smoothTime={0.1}
           draggingSmoothTime={0.06}
           target={camera.target}
-          minDistance={2.5}
-          maxDistance={30}
+          minDistance={camera.minDistance ?? 2.5}
+          maxDistance={camera.maxDistance ?? 30}
           maxPolarAngle={Math.PI / 2 + 0.04}
           rotateSpeed={0.55}
           zoomSpeed={1.2}

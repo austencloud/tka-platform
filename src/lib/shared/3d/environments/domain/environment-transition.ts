@@ -17,6 +17,13 @@ export interface EnvironmentTransitionState<Key extends string> {
   gapFramesRemaining: number;
 }
 
+export interface EnvironmentTransitionObservation<Key extends string> {
+  requestedKey: Key;
+  mountedKey: Key | null;
+  phase: EnvironmentTransitionPhase;
+  settled: boolean;
+}
+
 export interface EnvironmentTransitionTiming {
   coverDurationMs: number;
   revealDurationMs: number;

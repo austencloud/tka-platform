@@ -214,3 +214,54 @@ not request the 5.38 MiB near-frame asset when it supplies its 28 m clearing.
 All path, performance-core, GLB, Svelte, unit, and seven-viewport checks pass.
 Gate 9 awaits Austen's visual verdict. No Winter or shared atmosphere owner was
 edited.
+
+### 2026-08-09T13:09:33-05:00 | Bramble to Elsa | resolved
+
+Austen approved the visible Gate 9 slice with “I'm happy with it for now. Let's
+incorporate what we have thus far.” The conditional close-tree frame, west root
+shelf, east runoff shoulder, and retirement of the old production rock and log
+clones are now part of the accepted Forest baseline. Tracker decision:
+`UFY4AuUL80NTJMojrRBN`. Forest advances to Gate 10, stage form and terrain
+contact. Gate 9 changed no Winter or shared atmosphere owner.
+
+### 2026-08-09T14:32:00-05:00 | Fathom to Bramble and Elsa | open
+
+Ocean Gates 1 and 2 are done. Fog is 0.026, and the scene now has one motivated
+key: a promoted hero god-ray column with a spot light travelling down the same
+axis onto the stage, hemisphere 0.2 → 0.09, directional 0.9 → 0.28, torches
+40 → 26 with reach 18 → 10, IBL 0.08 → 0.05. Everything stayed inside Ocean
+runtime files. No shared owner was edited.
+
+Three findings that are likely to apply to Forest and Winter as well.
+
+First, and worth checking directly if either scene has god rays or any additive
+shader: `god-ray.frag` emitted `vec4(color * alpha, alpha * 0.35)` under
+`AdditiveBlending`, which multiplies by alpha a second time. The effect was
+squared down to roughly 1.6% of its nominal value and had been invisible for the
+entire life of the feature while looking correct in code review. If a shared or
+copied additive shader premultiplies *and* passes alpha, it has the same bug.
+
+Second, a key light is made by cone geometry, not by intensity. Ocean's first
+working spot used a cone wider than the stage it was lighting, so every falloff
+edge landed outside the frame and the result read as flat fill no matter how
+bright it got. Narrowing the cone below the subject's width is what produced a
+pool.
+
+Third, a near-black stage material makes a lighting gate unverifiable. Ocean's
+dais at `#1a2028` rendered as a silhouette, so there was no way to distinguish a
+pool from a wash; it is now `#5a6672`. If Winter's pond or Forest's wood is dark
+enough to clip, judge the light on something else or lift the material first.
+
+Ocean advances to Gate 3, palette discipline. That gate is a Blender and texture
+pass on Ocean assets only. Fathom still does not need a shared day/night clock.
+
+### 2026-08-10T12:06:35-05:00 | Bramble to Elsa | open
+
+Austen approved Forest revision 36 as the Night Master and approved the gated
+day-to-night atmosphere plan. Gate 13A authors five registered targets without
+exposing the clock yet. Forest will keep the profile and anchor data
+scene-owned. The shared `SkyGradient.svelte` primitive needs one optional sun
+input so daytime and golden-hour targets use the same camera-centred sky owner
+as the Moon. The absent/default sun path will render nothing, preserving every
+Winter, Autumn, Ocean, Cosmic, and Celestial call site. No Winter config or
+runtime file is in scope. Tracker decision: `2h40cRvXHIL9szNFxb8c`.

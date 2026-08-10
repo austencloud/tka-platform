@@ -9,6 +9,8 @@ export interface ThemeCameraFraming {
   position: [number, number, number];
   target: [number, number, number];
   fov: number;
+  minDistance?: number;
+  maxDistance?: number;
 }
 
 export interface ShowroomTheme {
@@ -49,7 +51,13 @@ const THEME_DEFINITIONS: Array<Omit<ShowroomTheme, "card" | "number">> = [
     id: BackgroundType.WINTER,
     label: "Winter",
     icon: "fa-snowflake",
-    camera: { position: [8.5, 4, 10.5], target: [0, 0.8, 0], fov: 48 },
+    camera: {
+      position: [0, 34, 52],
+      target: [0, 1, 0],
+      fov: 48,
+      minDistance: 16,
+      maxDistance: 85,
+    },
   },
   {
     id: PRIDE_BACKGROUND_TYPE,

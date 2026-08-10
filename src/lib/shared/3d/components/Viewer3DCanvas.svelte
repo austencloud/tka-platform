@@ -44,6 +44,8 @@
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { CameraStateSnapshot } from "@austencloud/scene-3d";
+  import type { BackgroundType } from "@austencloud/backgrounds";
+  import type { EnvironmentTransitionObservation } from "../environments/domain/environment-transition";
 
   interface Props {
     sequenceData: SequenceData | null;
@@ -56,7 +58,10 @@
     hideOverlays?: boolean;
     fullScreen?: boolean;
     onExitFullScreen?: () => void;
-    onRendererReady?: (renderer: unknown) => void;
+    onRendererReady?: (renderer: WebGLRenderer | null) => void;
+    onEnvironmentTransitionChange?: (
+      observation: EnvironmentTransitionObservation<BackgroundType>
+    ) => void;
     onCameraStateChange?: (state: CameraStateSnapshot) => void;
     onPlaybackToggle?: () => void;
     onSystemPlaybackChange?: (
@@ -83,6 +88,8 @@
     hideOverlays = false,
     fullScreen = false,
     onExitFullScreen,
+    onRendererReady,
+    onEnvironmentTransitionChange,
     onCameraStateChange,
     onPlaybackToggle,
     onSystemPlaybackChange,
@@ -277,7 +284,7 @@
           visible={viewer3DState.showPerf}
           adaptive={sceneReady && isPlaying && !viewer3DState.isExporting}
         />
-        <Viewer3DCanvasRef />
+        <Viewer3DCanvasRef {onRendererReady} />
         {#if adaptiveQuality.initialized}
           <SceneShaderWarmup onReadyChange={handleRendererReadyChange} />
           <ScenePostProcessing>
@@ -293,6 +300,7 @@
               {avatarState}
               bluePropTypeOverride={bluePropType}
               redPropTypeOverride={redPropType}
+              {onEnvironmentTransitionChange}
             />
           </ScenePostProcessing>
         {/if}

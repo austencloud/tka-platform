@@ -1,46 +1,82 @@
 <script lang="ts">
   import { sceneAudioState } from "../state/scene-audio-state.svelte";
-  import { getTracksForVariant, getTrackById, getDefaultTrackForVariant, type AudioTrack } from "../audio/ocean-audio-tracks";
+  import {
+    getTracksForVariant,
+    getTrackById,
+    getDefaultTrackForVariant,
+    type AudioTrack,
+    type SceneAudioVariant,
+  } from "../audio/ocean-audio-tracks";
   import type { OceanVariant } from "../environments/domain/enums/environment-enums";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
-  import { getViewer3DContext } from "../context/viewer-3d-context";
+  import { tryGetViewer3DContext } from "../context/viewer-3d-context";
 
-  const viewer3DState = getViewer3DContext();
+  interface Props {
+    backgroundType?: BackgroundType;
+  }
 
-  const isOcean = $derived.by(() => {
+  let { backgroundType }: Props = $props();
+
+  const viewer3DState = tryGetViewer3DContext();
+
+  const activeBackgroundType = $derived.by(() => {
+    if (backgroundType !== undefined) return backgroundType;
     try {
-      return settingsService.settings?.backgroundType === BackgroundType.OCEAN;
+      return settingsService.settings?.backgroundType;
     } catch {
-      return false;
+      return undefined;
     }
   });
 
-  const oceanVariant = $derived.by((): OceanVariant => {
-    return viewer3DState.oceanVariant ?? "abyss";
+  const isOcean = $derived.by(() => {
+    return activeBackgroundType === BackgroundType.OCEAN;
   });
+
+  const isCelestial = $derived(
+    activeBackgroundType === BackgroundType.CELESTIAL
+  );
+
+  const isAudioScene = $derived(isOcean || isCelestial);
+
+  const oceanVariant = $derived.by((): OceanVariant => {
+    return viewer3DState?.oceanVariant ?? "abyss";
+  });
+
+  const activeVariant = $derived<SceneAudioVariant>(
+    isCelestial ? "celestial" : oceanVariant
+  );
 
   let expanded = $state(false);
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
   let idle = $state(false);
 
-  const variantTracks = $derived(getTracksForVariant(oceanVariant));
+  const variantTracks = $derived(getTracksForVariant(activeVariant));
 
   const activeTrack = $derived.by((): AudioTrack => {
-    const prefId = sceneAudioState.getTrackPreference(oceanVariant);
+    const prefId = sceneAudioState.getTrackPreference(activeVariant);
     if (prefId) {
       const t = getTrackById(prefId);
-      if (t && t.variant === oceanVariant) return t;
+      if (t && t.variant === activeVariant) return t;
     }
-    return getDefaultTrackForVariant(oceanVariant);
+    return getDefaultTrackForVariant(activeVariant);
   });
 
-  const variantLabel = $derived(oceanVariant.charAt(0).toUpperCase() + oceanVariant.slice(1));
+  const variantLabel = $derived(
+    isCelestial
+      ? "Olive Cloudbreak"
+      : oceanVariant.charAt(0).toUpperCase() + oceanVariant.slice(1)
+  );
 
   function resetIdle() {
     idle = false;
     if (idleTimer) clearTimeout(idleTimer);
-    idleTimer = setTimeout(() => { idle = true; }, expanded ? 8000 : 5000);
+    idleTimer = setTimeout(
+      () => {
+        idle = true;
+      },
+      expanded ? 8000 : 5000
+    );
   }
 
   function toggle() {
@@ -49,7 +85,7 @@
   }
 
   function selectTrack(track: AudioTrack) {
-    sceneAudioState.setTrackPreference(oceanVariant, track.id);
+    sceneAudioState.setTrackPreference(activeVariant, track.id);
     resetIdle();
   }
 
@@ -57,11 +93,14 @@
     const idx = variantTracks.findIndex((t) => t.id === activeTrack.id);
     const next = (idx + dir + variantTracks.length) % variantTracks.length;
     const nextTrack = variantTracks[next];
-    if (nextTrack) sceneAudioState.setTrackPreference(oceanVariant, nextTrack.id);
+    if (nextTrack)
+      sceneAudioState.setTrackPreference(activeVariant, nextTrack.id);
     resetIdle();
   }
 
-  function stop(e: Event) { e.stopPropagation(); }
+  function stop(e: Event) {
+    e.stopPropagation();
+  }
 
   function togglePlay(e?: Event) {
     e?.stopPropagation();
@@ -76,13 +115,14 @@
   }
 
   $effect(() => {
-    if (isOcean) resetIdle();
-    return () => { if (idleTimer) clearTimeout(idleTimer); };
+    if (isAudioScene) resetIdle();
+    return () => {
+      if (idleTimer) clearTimeout(idleTimer);
+    };
   });
-
 </script>
 
-{#if isOcean}
+{#if isAudioScene}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="scene-audio-player"
@@ -94,15 +134,28 @@
     <div
       class="player-shell"
       class:expanded
-      class:playing={sceneAudioState.playing && sceneAudioState.audioUnlocked && !expanded}
-      onclick={() => { if (!expanded) toggle(); }}
-      onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!expanded) toggle(); } }}
+      class:playing={sceneAudioState.playing &&
+        sceneAudioState.audioUnlocked &&
+        !expanded}
+      onclick={() => {
+        if (!expanded) toggle();
+      }}
+      onkeydown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          if (!expanded) toggle();
+        }
+      }}
       role="button"
       tabindex={0}
       aria-label={expanded ? "Audio player" : "Open audio player"}
     >
       <div class="collapsed-icon" class:hidden={expanded}>
-        <i class="fa-solid {sceneAudioState.muted ? 'fa-volume-xmark' : 'fa-music'}"></i>
+        <i
+          class="fa-solid {sceneAudioState.muted
+            ? 'fa-volume-xmark'
+            : 'fa-music'}"
+        ></i>
       </div>
 
       <div class="expanded-content" class:visible={expanded}>
@@ -111,19 +164,52 @@
             <i class="fa-solid fa-music"></i>
             {variantLabel}: {activeTrack.name}
           </span>
-          <button type="button" class="close-btn" onclick={(e) => { stop(e); toggle(); }} aria-label="Collapse player">
+          <button
+            type="button"
+            class="close-btn"
+            onclick={(e) => {
+              stop(e);
+              toggle();
+            }}
+            aria-label="Collapse player"
+          >
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
 
         <div class="controls">
-          <button type="button" class="ctrl-btn" onclick={(e) => { stop(e); cycleTrack(-1); }} aria-label="Previous track">
+          <button
+            type="button"
+            class="ctrl-btn"
+            onclick={(e) => {
+              stop(e);
+              cycleTrack(-1);
+            }}
+            aria-label="Previous track"
+          >
             <i class="fa-solid fa-backward-step"></i>
           </button>
-          <button type="button" class="ctrl-btn play-btn" onclick={(e) => togglePlay(e)} aria-label={sceneAudioState.playing ? "Pause" : "Play"}>
-            <i class="fa-solid {sceneAudioState.playing ? 'fa-pause' : 'fa-play'}"></i>
+          <button
+            type="button"
+            class="ctrl-btn play-btn"
+            onclick={(e) => togglePlay(e)}
+            aria-label={sceneAudioState.playing ? "Pause" : "Play"}
+          >
+            <i
+              class="fa-solid {sceneAudioState.playing
+                ? 'fa-pause'
+                : 'fa-play'}"
+            ></i>
           </button>
-          <button type="button" class="ctrl-btn" onclick={(e) => { stop(e); cycleTrack(1); }} aria-label="Next track">
+          <button
+            type="button"
+            class="ctrl-btn"
+            onclick={(e) => {
+              stop(e);
+              cycleTrack(1);
+            }}
+            aria-label="Next track"
+          >
             <i class="fa-solid fa-forward-step"></i>
           </button>
           <input
@@ -140,10 +226,17 @@
           <button
             type="button"
             class="ctrl-btn mute-btn"
-            onclick={(e) => { stop(e); sceneAudioState.toggleMute(); }}
+            onclick={(e) => {
+              stop(e);
+              sceneAudioState.toggleMute();
+            }}
             aria-label={sceneAudioState.muted ? "Unmute" : "Mute"}
           >
-            <i class="fa-solid {sceneAudioState.muted ? 'fa-volume-xmark' : 'fa-volume-high'}"></i>
+            <i
+              class="fa-solid {sceneAudioState.muted
+                ? 'fa-volume-xmark'
+                : 'fa-volume-high'}"
+            ></i>
           </button>
         </div>
 
@@ -153,7 +246,10 @@
               type="button"
               class="track-item"
               class:active={track.id === activeTrack.id}
-              onclick={(e) => { stop(e); selectTrack(track); }}
+              onclick={(e) => {
+                stop(e);
+                selectTrack(track);
+              }}
             >
               {#if track.id === activeTrack.id}
                 <i class="fa-solid fa-caret-right"></i>
@@ -219,8 +315,13 @@
   }
 
   @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 4px rgba(255, 255, 255, 0.05); }
-    50% { box-shadow: 0 0 12px rgba(255, 255, 255, 0.15); }
+    0%,
+    100% {
+      box-shadow: 0 0 4px rgba(255, 255, 255, 0.05);
+    }
+    50% {
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.15);
+    }
   }
 
   .collapsed-icon {

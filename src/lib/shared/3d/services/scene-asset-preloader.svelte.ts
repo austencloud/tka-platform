@@ -21,7 +21,6 @@ const FOREST_URLS = [
 
 const CAMPING_URLS = [
 	"/models/camping/campfire-pit.glb",
-	"/models/camping/tent-canvas.glb",
 	"/models/camping/tree-log.glb",
 	"/models/camping/tree-log-small.glb",
 ];

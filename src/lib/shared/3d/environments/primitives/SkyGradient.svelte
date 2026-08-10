@@ -20,6 +20,7 @@
     Vector3,
   } from "three";
   import type { MoonConfig } from "../domain/models/scene-configs";
+  import type { SkySunConfig } from "../domain/models/environment-models";
 
   interface Props {
     /** Top color of gradient */
@@ -36,6 +37,8 @@
     gradientEnd?: number;
     /** Optional celestial moon composited into the sky itself. */
     moon?: MoonConfig | null;
+    /** Optional solar disk composited by the same camera-centred sky owner. */
+    sun?: SkySunConfig | null;
   }
 
   let {
@@ -46,6 +49,7 @@
     gradientStart = 0,
     gradientEnd = 1,
     moon = null,
+    sun = null,
   }: Props = $props();
 
   const geometry = untrack(() => new SphereGeometry(radius, 32, 32));
@@ -75,6 +79,10 @@
     return 0.52;
   }
 
+  function resolveSunDirection(config: SkySunConfig | null): Vector3 {
+    return new Vector3(...(config?.direction ?? [0, 0.5, -1])).normalize();
+  }
+
   // The material must exist when Threlte creates the mesh. Supplying
   // `undefined` on the first render and replacing it from an effect left the
   // sky mesh on Three's fallback material path in some runtimes, so only the
@@ -101,6 +109,17 @@
           uMoonGlowOpacity: { value: moon?.glowOpacity ?? 0.025 },
           uMoonSurfaceLift: { value: moon?.surfaceLift ?? 0.0 },
           uMoonHorizonWarmth: { value: moon?.horizonWarmth ?? 1.0 },
+          uSunEnabled: { value: 0.0 },
+          uSunDirection: { value: resolveSunDirection(sun) },
+          uSunAngularRadius: {
+            value: MathUtils.degToRad(
+              (sun?.angularDiameterDegrees ?? 0.53) * 0.5
+            ),
+          },
+          uSunColor: { value: new Color(sun?.color ?? "#fff4d2") },
+          uSunOpacity: { value: sun?.opacity ?? 1.0 },
+          uSunGlowScale: { value: sun?.glowScale ?? 6.0 },
+          uSunGlowOpacity: { value: sun?.glowOpacity ?? 0.12 },
         },
         vertexShader: /* glsl */ `
         varying vec3 vSkyDirection;
@@ -127,6 +146,13 @@
         uniform float uMoonGlowOpacity;
         uniform float uMoonSurfaceLift;
         uniform float uMoonHorizonWarmth;
+        uniform float uSunEnabled;
+        uniform vec3 uSunDirection;
+        uniform float uSunAngularRadius;
+        uniform vec3 uSunColor;
+        uniform float uSunOpacity;
+        uniform float uSunGlowScale;
+        uniform float uSunGlowOpacity;
         varying vec3 vSkyDirection;
 
         void main() {
@@ -148,6 +174,22 @@
             }
           } else {
             color = mix(uBottomColor, uTopColor, h);
+          }
+
+          if (uSunEnabled > 0.5) {
+            float sunAngle = acos(clamp(
+              dot(skyDirection, normalize(uSunDirection)),
+              -1.0,
+              1.0
+            ));
+            float sunRadius = max(uSunAngularRadius, 0.00001);
+            float diskDistance = sunAngle / sunRadius;
+            float disk = 1.0 - smoothstep(0.82, 1.0, diskDistance);
+            float haloRadius = max(uSunGlowScale, 1.001);
+            float halo = 1.0 - smoothstep(1.0, haloRadius, diskDistance);
+            halo = pow(max(halo, 0.0), 2.2) * (1.0 - disk);
+            color += uSunColor * halo * uSunGlowOpacity;
+            color = mix(color, uSunColor, disk * uSunOpacity);
           }
 
           if (uMoonEnabled > 0.5) {
@@ -234,9 +276,18 @@
     material.uniforms.uMoonGlowOpacity!.value = moon?.glowOpacity ?? 0.025;
     material.uniforms.uMoonSurfaceLift!.value = moon?.surfaceLift ?? 0.0;
     material.uniforms.uMoonHorizonWarmth!.value = moon?.horizonWarmth ?? 1.0;
+    material.uniforms.uSunEnabled!.value = sun?.enabled ? 1.0 : 0.0;
+    material.uniforms.uSunDirection!.value.copy(resolveSunDirection(sun));
+    material.uniforms.uSunAngularRadius!.value = MathUtils.degToRad(
+      (sun?.angularDiameterDegrees ?? 0.53) * 0.5
+    );
+    material.uniforms.uSunColor!.value.set(sun?.color ?? "#fff4d2");
+    material.uniforms.uSunOpacity!.value = sun?.opacity ?? 1.0;
+    material.uniforms.uSunGlowScale!.value = sun?.glowScale ?? 6.0;
+    material.uniforms.uSunGlowOpacity!.value = sun?.glowOpacity ?? 0.12;
   });
 
-  let skyMesh: Mesh | undefined;
+  let skyMesh = $state<Mesh>();
 
   // Keep the dome centred on the active camera. This gives celestial features
   // orientation without translation parallax and lets Three handle projection

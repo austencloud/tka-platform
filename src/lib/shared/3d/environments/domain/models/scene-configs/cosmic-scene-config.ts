@@ -183,6 +183,8 @@ export interface StarfieldConfig {
    * zenith. Lower values pull stars above the tree line. Defaults to 0.6.
    */
   horizonSpread?: number;
+  /** Optional art-directed elevation band in degrees, from lower to upper. */
+  elevationRangeDegrees?: [number, number];
 }
 
 export interface MoonConfig {
@@ -199,6 +201,10 @@ export interface MoonConfig {
   opacity: number;
   glowScale: number;
   glowOpacity: number;
+  /** Lift the darkest crater values toward white. Defaults to 0. */
+  surfaceLift?: number;
+  /** Warmth of the low-horizon atmospheric tint, 0 cool to 1 amber. */
+  horizonWarmth?: number;
 }
 
 export interface CosmicSceneConfig {

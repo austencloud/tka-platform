@@ -10,6 +10,7 @@ export interface RootedWindUniforms {
   time: { value: number };
   strength: { value: number };
   direction: { value: Vector2 };
+  spatialVariation: { value: number };
 }
 
 interface RootedWindOptions {
@@ -17,6 +18,7 @@ interface RootedWindOptions {
   strength: number;
   cacheKey: string;
   storageKey: string;
+  spatialVariation?: number;
 }
 
 export function expandBoundsForRootedWind(
@@ -47,6 +49,7 @@ export function patchRootedWindMaterial(
     time: { value: 0 },
     strength: { value: options.strength },
     direction: { value: options.direction.clone() },
+    spatialVariation: { value: options.spatialVariation ?? 0 },
   };
   const previousCompile = material.onBeforeCompile.bind(material);
   const previousCacheKey = material.customProgramCacheKey.bind(material);
@@ -59,12 +62,14 @@ export function patchRootedWindMaterial(
     shader.uniforms.uRootedWindTime = uniforms.time;
     shader.uniforms.uRootedWindStrength = uniforms.strength;
     shader.uniforms.uRootedWindDirection = uniforms.direction;
+    shader.uniforms.uRootedWindSpatialVariation = uniforms.spatialVariation;
     shader.vertexShader = shader.vertexShader.replace(
       "#include <common>",
       /* glsl */ `#include <common>
         uniform float uRootedWindTime;
         uniform float uRootedWindStrength;
-        uniform vec2 uRootedWindDirection;`
+        uniform vec2 uRootedWindDirection;
+        uniform float uRootedWindSpatialVariation;`
     );
     shader.vertexShader = shader.vertexShader.replace(
       "#include <begin_vertex>",
@@ -74,15 +79,45 @@ export function patchRootedWindMaterial(
           float rootedWindWeight = smoothstep(0.02, 0.96, uv.y);
           rootedWindWeight *= rootedWindWeight;
           float rootedWindPhase = dot(rootedWindWorldPos.xz, uRootedWindDirection);
+          vec2 rootedWindCrossDirection = vec2(
+            -uRootedWindDirection.y,
+            uRootedWindDirection.x
+          );
+          float rootedWindCrossPhase = dot(
+            rootedWindWorldPos.xz,
+            rootedWindCrossDirection
+          );
           float rootedWindPrimary = sin(uRootedWindTime * 0.72 + rootedWindPhase * 0.44);
           float rootedWindFlutter = sin(uRootedWindTime * 2.05 + rootedWindPhase * 1.17) * 0.24;
           float rootedWindGust = 0.72 + 0.28 * sin(uRootedWindTime * 0.19 + rootedWindPhase * 0.08);
+          float rootedWindZone =
+            sin(
+              uRootedWindTime * 0.11
+              + rootedWindPhase * 0.13
+              + rootedWindCrossPhase * 0.21
+            ) * 0.65
+            + sin(
+              -uRootedWindTime * 0.07
+              + rootedWindPhase * 0.043
+              - rootedWindCrossPhase * 0.078
+            ) * 0.35;
+          float rootedWindZoneStrength =
+            1.0 + rootedWindZone * uRootedWindSpatialVariation;
           float rootedWindSway = (rootedWindPrimary + rootedWindFlutter) * rootedWindGust
-            * rootedWindWeight * uRootedWindStrength;
+            * rootedWindWeight * uRootedWindStrength * rootedWindZoneStrength;
+          float rootedWindCrossSway =
+            sin(uRootedWindTime * 0.51 + rootedWindCrossPhase * 0.33)
+            * rootedWindWeight
+            * uRootedWindStrength
+            * uRootedWindSpatialVariation
+            * 0.12;
+          vec2 rootedWindHorizontalOffset =
+            uRootedWindDirection * rootedWindSway
+            + rootedWindCrossDirection * rootedWindCrossSway;
           vec3 rootedWindWorldOffset = vec3(
-            uRootedWindDirection.x * rootedWindSway,
+            rootedWindHorizontalOffset.x,
             abs(rootedWindSway) * 0.045,
-            uRootedWindDirection.y * rootedWindSway
+            rootedWindHorizontalOffset.y
           );
           mat3 rootedWindBasis = mat3(modelMatrix);
           vec3 rootedWindInvSq = vec3(
@@ -98,6 +133,9 @@ export function patchRootedWindMaterial(
     `${previousCacheKey()}|${options.cacheKey}`;
   material.userData[options.storageKey] = uniforms;
   material.side = DoubleSide;
+  // Rooted wind is used on thin grass cards. Rendering their transparent back
+  // faces in a separate pass adds cost but no useful depth ordering.
+  material.forceSinglePass = true;
   material.needsUpdate = true;
   return uniforms;
 }

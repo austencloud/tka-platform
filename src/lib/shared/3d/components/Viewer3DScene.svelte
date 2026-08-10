@@ -36,7 +36,9 @@
     getStageCoordinateFrame,
     isRenderable3DEnvironment,
   } from "../environments/domain/stage-coordinate-frame";
+  import { getPerformerStageBounds } from "../environments/domain/performer-stage-bounds";
   import { tryGetEnvironmentTransitionVisualContext } from "../environments/context/environment-transition-visual-context";
+  import type { EnvironmentTransitionObservation } from "../environments/domain/environment-transition";
   import {
     BASE_SCENE_LAYER,
     PROTECTED_PERFORMER_LAYER,
@@ -58,9 +60,20 @@
      *  pass through without needing to import PropType. */
     bluePropTypeOverride?: string | null;
     redPropTypeOverride?: string | null;
+    onEnvironmentTransitionChange?: (
+      observation: EnvironmentTransitionObservation<BackgroundType>
+    ) => void;
   }
 
-  let { sequenceData, currentStep, isPlaying, avatarState, bluePropTypeOverride = null, redPropTypeOverride = null }: Props = $props();
+  let {
+    sequenceData,
+    currentStep,
+    isPlaying,
+    avatarState,
+    bluePropTypeOverride = null,
+    redPropTypeOverride = null,
+    onEnvironmentTransitionChange,
+  }: Props = $props();
   // The `avatarState` prop is kept for backward-compat with Viewer3DCanvas;
   // Task 14 removes it. The scene now iterates viewer3DState.performerManager.
   $effect(() => {
@@ -69,7 +82,9 @@
 
   const viewer3DState = getViewer3DContext();
   const sceneFeatures = getSceneFeatureContext();
-  const sceneEffectsManager = setSceneEffectsContext(new SceneEffectsManager3D());
+  const sceneEffectsManager = setSceneEffectsContext(
+    new SceneEffectsManager3D()
+  );
   const transitionVisual = tryGetEnvironmentTransitionVisualContext();
   const { renderer, camera, scene } = useThrelte();
   const { scheduler, resetFrameInvalidation } = useScheduler();
@@ -84,7 +99,9 @@
     if (seeded) return seeded as BackgroundType;
     try {
       return settingsService.settings?.backgroundType ?? BackgroundType.COSMIC;
-    } catch { return BackgroundType.COSMIC; }
+    } catch {
+      return BackgroundType.COSMIC;
+    }
   });
 
   // Reconstructs Threlte's default setAnimationLoop callback. We restore
@@ -108,15 +125,21 @@
   // manual pacing. Resume restores the identical callback Threlte set up.
   function pauseAutoLoop() {
     if ("setAnimationLoop" in renderer) {
-      (renderer as { setAnimationLoop(cb: ((time: number) => void) | null): void })
-        .setAnimationLoop(null);
+      (
+        renderer as {
+          setAnimationLoop(cb: ((time: number) => void) | null): void;
+        }
+      ).setAnimationLoop(null);
     }
   }
 
   function resumeAutoLoop() {
     if ("setAnimationLoop" in renderer) {
-      (renderer as { setAnimationLoop(cb: ((time: number) => void) | null): void })
-        .setAnimationLoop(autoLoopCallback);
+      (
+        renderer as {
+          setAnimationLoop(cb: ((time: number) => void) | null): void;
+        }
+      ).setAnimationLoop(autoLoopCallback);
     }
   }
 
@@ -152,7 +175,8 @@
   $effect(() => {
     // Sync on mount and whenever visibility settings change
     const updateMap = () => {
-      globalTipEffectMap = visibilityManager.effectsConfigState?.tipEffectMap ?? {};
+      globalTipEffectMap =
+        visibilityManager.effectsConfigState?.tipEffectMap ?? {};
     };
     visibilityManager.registerObserver(updateMap);
     updateMap();
@@ -185,16 +209,17 @@
     // as live playback - so the $derived chain (currentStepIndex →
     // bluePropState → Avatar3D props) resolves within the same frame.
     const step = viewer3DState.isExporting
-      ? viewer3DState.exportCurrentStep ?? currentStep
+      ? (viewer3DState.exportCurrentStep ?? currentStep)
       : currentStep;
 
     const stepNumber = Math.floor(step);
     const subBeatProgress = step - stepNumber;
 
     for (const p of performerManager.performers) {
-      const wrappedBeat = p.totalSteps > 0 && stepNumber >= p.totalSteps
-        ? stepNumber % p.totalSteps
-        : stepNumber;
+      const wrappedBeat =
+        p.totalSteps > 0 && stepNumber >= p.totalSteps
+          ? stepNumber % p.totalSteps
+          : stepNumber;
       p.goToStep(wrappedBeat);
       p.setProgress(subBeatProgress);
     }
@@ -232,7 +257,8 @@
   function findPerformerIndexFromHit(obj: Object3D | null): number | null {
     let cur: Object3D | null = obj;
     while (cur) {
-      const idx = (cur.userData as { performerIndex?: number } | undefined)?.performerIndex;
+      const idx = (cur.userData as { performerIndex?: number } | undefined)
+        ?.performerIndex;
       if (typeof idx === "number") return idx;
       cur = cur.parent;
     }
@@ -282,7 +308,7 @@
     _detachUndo = attachSceneUndoKeyboard(
       getSceneUndoManager(),
       (desc) => toast.info(`Undid: ${desc}`, 1500),
-      (desc) => toast.info(`Redid: ${desc}`, 1500),
+      (desc) => toast.info(`Redid: ${desc}`, 1500)
     );
   });
 
@@ -295,21 +321,29 @@
   // prop, then creator config, then global settings.
   const bluePropType = $derived.by((): PropType => {
     if (bluePropTypeOverride) return bluePropTypeOverride as PropType;
-    if (sequenceData?.intendedProp?.bluePropType) return sequenceData.intendedProp.bluePropType;
-    if (sequenceData?.creatorIntent?.propConfig?.bluePropType) return sequenceData.creatorIntent.propConfig.bluePropType;
+    if (sequenceData?.intendedProp?.bluePropType)
+      return sequenceData.intendedProp.bluePropType;
+    if (sequenceData?.creatorIntent?.propConfig?.bluePropType)
+      return sequenceData.creatorIntent.propConfig.bluePropType;
     try {
       const settings = settingsService;
       return (settings as any)?.settings?.bluePropType ?? PropType.STAFF;
-    } catch { return PropType.STAFF; }
+    } catch {
+      return PropType.STAFF;
+    }
   });
   const redPropType = $derived.by((): PropType => {
     if (redPropTypeOverride) return redPropTypeOverride as PropType;
-    if (sequenceData?.intendedProp?.redPropType) return sequenceData.intendedProp.redPropType;
-    if (sequenceData?.creatorIntent?.propConfig?.redPropType) return sequenceData.creatorIntent.propConfig.redPropType;
+    if (sequenceData?.intendedProp?.redPropType)
+      return sequenceData.intendedProp.redPropType;
+    if (sequenceData?.creatorIntent?.propConfig?.redPropType)
+      return sequenceData.creatorIntent.propConfig.redPropType;
     try {
       const settings = settingsService;
       return (settings as any)?.settings?.redPropType ?? PropType.STAFF;
-    } catch { return PropType.STAFF; }
+    } catch {
+      return PropType.STAFF;
+    }
   });
 
   const explicitPlanes = $derived(viewer3DState.visiblePlanes as Set<Plane>);
@@ -323,39 +357,17 @@
   );
 
   const stageCoordinateFrame = $derived(
-    getStageCoordinateFrame(
-      backgroundType,
-      sceneFeatures.isEnabled("stage"),
-    ),
+    getStageCoordinateFrame(backgroundType, sceneFeatures.isEnabled("stage"))
   );
   const stageGroundOffset = $derived(stageCoordinateFrame.performerAnchorY);
 
   const performerCount = $derived(performerManager.performers.length);
 
-  const BASE_STAGE_WIDTH = 6;
-  const BASE_STAGE_DEPTH = 6;
-  const PERFORMER_BODY_PADDING = 1.5;
-
-  const stageDimensions = $derived.by(() => {
-    const performers = performerManager.performers;
-    if (performers.length <= 1) return { width: BASE_STAGE_WIDTH, depth: BASE_STAGE_DEPTH, zOffset: 0 };
-
-    let minX = Infinity, maxX = -Infinity;
-    let minZ = Infinity, maxZ = -Infinity;
-    for (const p of performers) {
-      if (p.position.x < minX) minX = p.position.x;
-      if (p.position.x > maxX) maxX = p.position.x;
-      if (p.position.z < minZ) minZ = p.position.z;
-      if (p.position.z > maxZ) maxZ = p.position.z;
-    }
-
-    const neededWidth = (maxX - minX) + PERFORMER_BODY_PADDING * 2;
-    const neededDepth = (maxZ - minZ) + PERFORMER_BODY_PADDING * 2;
-    const width = Math.max(BASE_STAGE_WIDTH, neededWidth);
-    const depth = Math.max(BASE_STAGE_DEPTH, neededDepth);
-    const zOffset = -(depth - BASE_STAGE_DEPTH) / 2;
-    return { width, depth, zOffset };
-  });
+  const stageDimensions = $derived(
+    getPerformerStageBounds(
+      performerManager.performers.map((performer) => performer.position)
+    )
+  );
 
   const stageZOffset = $derived(stageDimensions.zOffset);
 
@@ -389,7 +401,14 @@
 
 <!-- Environment (gated by scene feature toggle) -->
 {#if hasEnvironment && sceneFeatures.isEnabled("environment")}
-  <Environment3D {backgroundType} {performerCount} stageWidth={stageDimensions.width} stageDepth={stageDimensions.depth} {stageZOffset} />
+  <Environment3D
+    {backgroundType}
+    {performerCount}
+    stageWidth={stageDimensions.width}
+    stageDepth={stageDimensions.depth}
+    {stageZOffset}
+    onTransitionChange={onEnvironmentTransitionChange}
+  />
 {/if}
 
 <!-- Seated audience (gated by scene feature toggle) -->
@@ -398,8 +417,13 @@
 {/if}
 
 <!-- Lighting - reduced when the environment provides its own -->
-<T.AmbientLight intensity={isNightEnvironment ? 0.2 : hasEnvironment ? 0.3 : 0.4} />
-<T.DirectionalLight position={[5, 10, 5]} intensity={isNightEnvironment ? 0.4 : hasEnvironment ? 0.6 : 0.8} />
+<T.AmbientLight
+  intensity={isNightEnvironment ? 0.2 : hasEnvironment ? 0.3 : 0.4}
+/>
+<T.DirectionalLight
+  position={[5, 10, 5]}
+  intensity={isNightEnvironment ? 0.4 : hasEnvironment ? 0.6 : 0.8}
+/>
 
 <!-- Stable performer-only lighting for the protected transition pass. -->
 <T.AmbientLight intensity={0.75} layers={PROTECTED_PERFORMER_LAYER} />
@@ -423,139 +447,165 @@
   position.z={stageZOffset}
   layers={[BASE_SCENE_LAYER, PROTECTED_PERFORMER_LAYER]}
 >
-{#each performerManager.performers as performer, i (performer.id)}
-  <T.Group userData={{ performerIndex: i }}>
-    {@const performerGridMode = (sequenceData?.gridMode ?? "diamond") as GridMode}
-    {@const performerGridOffset = GRID_OFFSETS[performer.planeMode]}
-    {@const perfStaffCm = performer.settings.staffLengthCm}
-    {@const propLength = perfStaffCm != null ? cmToUnits(perfStaffCm) : undefined}
-    <!-- Per-performer effect cascade: this performer's override, else the
+  {#each performerManager.performers as performer, i (performer.id)}
+    <T.Group userData={{ performerIndex: i }}>
+      {@const performerGridMode = (sequenceData?.gridMode ??
+        "diamond") as GridMode}
+      {@const performerGridOffset = GRID_OFFSETS[performer.planeMode]}
+      {@const perfStaffCm = performer.settings.staffLengthCm}
+      {@const propLength =
+        perfStaffCm != null ? cmToUnits(perfStaffCm) : undefined}
+      <!-- Per-performer effect cascade: this performer's override, else the
          global default (effects-config wildcard). This is what makes the
          Performer Hub effect selection actually reach the renderer. -->
-    {@const perfEffect = performer.rawEffect ?? globalTipEffectMap["*"]?.effect ?? "none"}
-    {@const perfTipMap = { "*": { effect: perfEffect } }}
-    <AvatarSwapTransition
-      {performer}
-      performerIndex={i}
-      groundOffset={stageGroundOffset}
-    >
-      {#snippet children({ onAvatarSwapped, avatarOpacity })}
-        <PerformerRig
-          position={performer.position}
-          groundOffset={stageGroundOffset}
-          facingAngle={performer.facingAngle}
-          planeMode={performer.planeMode}
-          avatarState={performer}
-          avatarId={performer.avatarModelId}
-          visiblePlanes={explicitPlanes}
-          gridMode={performerGridMode}
-          bluePropType={toScenePropType(resolvePerformerProp(performer, bluePropType))}
-          redPropType={toScenePropType(resolvePerformerProp(performer, redPropType))}
-          bluePropState={performer.bluePropState}
-          redPropState={performer.redPropState}
-          tipEffectMap={perfTipMap}
-          {propLength}
-          {isPlaying}
-          enableLocomotion={true}
-          enableFootPlanting={true}
-          {onAvatarSwapped}
-          {avatarOpacity}
-        >
-          {#snippet gridSlot()}
-            <T.Group position.z={performerGridOffset} layers={BASE_SCENE_LAYER}>
-              <Grid3D
-                visiblePlanes={explicitPlanes}
-                gridMode={performerGridMode}
-                showLabels={viewer3DState.showGridLabels}
+      {@const perfEffect =
+        performer.rawEffect ?? globalTipEffectMap["*"]?.effect ?? "none"}
+      {@const perfTipMap = { "*": { effect: perfEffect } }}
+      <AvatarSwapTransition
+        {performer}
+        performerIndex={i}
+        groundOffset={stageGroundOffset}
+      >
+        {#snippet children({ onAvatarSwapped, avatarOpacity })}
+          <PerformerRig
+            position={performer.position}
+            groundOffset={stageGroundOffset}
+            facingAngle={performer.facingAngle}
+            planeMode={performer.planeMode}
+            avatarState={performer}
+            avatarId={performer.avatarModelId}
+            visiblePlanes={explicitPlanes}
+            gridMode={performerGridMode}
+            bluePropType={toScenePropType(
+              resolvePerformerProp(performer, bluePropType)
+            )}
+            redPropType={toScenePropType(
+              resolvePerformerProp(performer, redPropType)
+            )}
+            bluePropState={performer.bluePropState}
+            redPropState={performer.redPropState}
+            tipEffectMap={perfTipMap}
+            {propLength}
+            {isPlaying}
+            enableLocomotion={true}
+            enableFootPlanting={true}
+            {onAvatarSwapped}
+            {avatarOpacity}
+          >
+            {#snippet gridSlot()}
+              <T.Group
+                position.z={performerGridOffset}
+                layers={BASE_SCENE_LAYER}
+              >
+                <Grid3D
+                  visiblePlanes={explicitPlanes}
+                  gridMode={performerGridMode}
+                  showLabels={viewer3DState.showGridLabels}
+                />
+              </T.Group>
+            {/snippet}
+            {#snippet effectsSlot({
+              bluePropState,
+              redPropState,
+              blueHandPos,
+              redHandPos,
+              isPlaying: rigPlaying,
+              staffHalfLength,
+              effectsParentRef,
+            })}
+              <EffectOrchestrator3D
+                {bluePropState}
+                {redPropState}
+                isPlaying={rigPlaying}
+                {staffHalfLength}
+                tipEffectMap={perfTipMap}
+                {blueHandPos}
+                {redHandPos}
+                {effectsParentRef}
+                {currentStep}
               />
-            </T.Group>
-          {/snippet}
-          {#snippet effectsSlot({ bluePropState, redPropState, blueHandPos, redHandPos, isPlaying: rigPlaying, staffHalfLength, effectsParentRef })}
-            <EffectOrchestrator3D
-              {bluePropState}
-              {redPropState}
-              isPlaying={rigPlaying}
-              {staffHalfLength}
-              tipEffectMap={perfTipMap}
-              {blueHandPos}
-              {redHandPos}
-              {effectsParentRef}
-              {currentStep}
-            />
-          {/snippet}
-        </PerformerRig>
-      {/snippet}
-    </AvatarSwapTransition>
+            {/snippet}
+          </PerformerRig>
+        {/snippet}
+      </AvatarSwapTransition>
 
-    {@const isSelected = viewer3DState.selectedPerformerIndex === i}
-    {@const isAllMode = viewer3DState.selectedPerformerIndex === null}
-    {@const glowColor = Number.parseInt(getPerformerColor(i).slice(1), 16)}
-    {@const groundLevel = userProportionsState.groundY + stageGroundOffset}
+      {@const isSelected = viewer3DState.selectedPerformerIndex === i}
+      {@const isAllMode = viewer3DState.selectedPerformerIndex === null}
+      {@const glowColor = Number.parseInt(getPerformerColor(i).slice(1), 16)}
+      {@const groundLevel = userProportionsState.groundY + stageGroundOffset}
 
-    <T.PointLight
-      position={[performer.position.x, stageGroundOffset + 2.5, performer.position.z + 0.3]}
-      intensity={isSelected ? 6 : 0}
-      color={0xfff5e6}
-      distance={5}
-      decay={1.5}
-    />
-
-    <T.Group
-      position={[performer.position.x, groundLevel + 0.015, performer.position.z]}
-      rotation={[-Math.PI / 2, 0, 0]}
-      visible={isSelected}
-    >
-      <T.Mesh>
-        <T.RingGeometry args={[0.42, 0.58, 64]} />
-        <T.MeshBasicMaterial
-          color={glowColor}
-          transparent
-          opacity={ringPulse * 0.9}
-          blending={AdditiveBlending}
-          depthWrite={false}
-        />
-      </T.Mesh>
-      <T.Mesh>
-        <T.RingGeometry args={[0.58, 1.0, 64]} />
-        <T.MeshBasicMaterial
-          color={glowColor}
-          transparent
-          opacity={ringPulse * 0.3}
-          blending={AdditiveBlending}
-          depthWrite={false}
-        />
-      </T.Mesh>
-      <T.Mesh>
-        <T.CircleGeometry args={[0.42, 64]} />
-        <T.MeshBasicMaterial
-          color={glowColor}
-          transparent
-          opacity={0.15}
-        />
-      </T.Mesh>
-    </T.Group>
-
-    <T.Mesh
-      position={[performer.position.x, userProportionsState.groundY + stageGroundOffset + 0.01, performer.position.z]}
-      rotation={[-Math.PI / 2, 0, 0]}
-      visible={isAllMode}
-    >
-      <T.CircleGeometry args={[0.35, 32]} />
-      <T.MeshBasicMaterial color={0x6b7280} transparent opacity={0.15} />
-    </T.Mesh>
-
-    <!-- Floating numbered badge above performer head -->
-    <T.Group
-      position.x={performer.position.x}
-      position.y={stageGroundOffset}
-      position.z={performer.position.z}
-    >
-      <PerformerBadge3D
-        index={i}
-        selected={viewer3DState.selectedPerformerIndex === i}
-        allMode={viewer3DState.selectedPerformerIndex === null}
+      <T.PointLight
+        position={[
+          performer.position.x,
+          stageGroundOffset + 2.5,
+          performer.position.z + 0.3,
+        ]}
+        intensity={isSelected ? 6 : 0}
+        color={0xfff5e6}
+        distance={5}
+        decay={1.5}
       />
+
+      <T.Group
+        position={[
+          performer.position.x,
+          groundLevel + 0.015,
+          performer.position.z,
+        ]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        visible={isSelected}
+      >
+        <T.Mesh>
+          <T.RingGeometry args={[0.42, 0.58, 64]} />
+          <T.MeshBasicMaterial
+            color={glowColor}
+            transparent
+            opacity={ringPulse * 0.9}
+            blending={AdditiveBlending}
+            depthWrite={false}
+          />
+        </T.Mesh>
+        <T.Mesh>
+          <T.RingGeometry args={[0.58, 1.0, 64]} />
+          <T.MeshBasicMaterial
+            color={glowColor}
+            transparent
+            opacity={ringPulse * 0.3}
+            blending={AdditiveBlending}
+            depthWrite={false}
+          />
+        </T.Mesh>
+        <T.Mesh>
+          <T.CircleGeometry args={[0.42, 64]} />
+          <T.MeshBasicMaterial color={glowColor} transparent opacity={0.15} />
+        </T.Mesh>
+      </T.Group>
+
+      <T.Mesh
+        position={[
+          performer.position.x,
+          userProportionsState.groundY + stageGroundOffset + 0.01,
+          performer.position.z,
+        ]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        visible={isAllMode}
+      >
+        <T.CircleGeometry args={[0.35, 32]} />
+        <T.MeshBasicMaterial color={0x6b7280} transparent opacity={0.15} />
+      </T.Mesh>
+
+      <!-- Floating numbered badge above performer head -->
+      <T.Group
+        position.x={performer.position.x}
+        position.y={stageGroundOffset}
+        position.z={performer.position.z}
+      >
+        <PerformerBadge3D
+          index={i}
+          selected={viewer3DState.selectedPerformerIndex === i}
+          allMode={viewer3DState.selectedPerformerIndex === null}
+        />
+      </T.Group>
     </T.Group>
-  </T.Group>
-{/each}
+  {/each}
 </T.Group>

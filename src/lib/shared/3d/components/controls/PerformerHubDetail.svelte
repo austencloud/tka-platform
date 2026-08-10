@@ -67,9 +67,20 @@
   const sequenceWord = $derived(sequence?.word ?? sequence?.name ?? null);
   const sequenceSteps = $derived(sequence?.steps?.length ?? null);
 
+  const currentAvatarId = $derived.by<AvatarId | null>(() => {
+    if (!isAllMode) return performer?.avatarModelId ?? null;
+
+    const first = allPerformers[0]?.avatarModelId;
+    if (!first) return null;
+
+    return allPerformers.every((item) => item.avatarModelId === first)
+      ? first
+      : null;
+  });
+
   function pickAvatar(id: AvatarId) {
-    const previous = performer?.avatarModelId ?? null;
-    performer?.setAvatarModel(id);
+    const previous = currentAvatarId;
+    applyToScope((p) => p?.setAvatarModel(id));
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_performer",
@@ -155,6 +166,7 @@
   ];
 
   const GLOBAL_TABS: { id: HubTab; label: string; icon: string }[] = [
+    { id: "avatar", label: "Avatar", icon: "fa-user" },
     { id: "prop", label: "Prop", icon: "fa-shapes" },
     { id: "planes", label: "Planes", icon: "fa-layer-group" },
     { id: "effort", label: "Effort", icon: "fa-gauge-high" },
@@ -165,7 +177,7 @@
   const tabIndex = $derived(TABS.findIndex((t) => t.id === activeTab));
 
   $effect(() => {
-    if (isAllMode && (activeTab === "avatar" || activeTab === "sequence")) {
+    if (isAllMode && activeTab === "sequence") {
       const previous = activeTab;
       activeTab = "prop";
       reportViewerControlChange(
@@ -391,7 +403,7 @@
 
   <!-- ─── Tab panes ─── -->
   <div class="tab-content">
-    {#if !isAllMode && activeTab === "avatar"}
+    {#if activeTab === "avatar"}
       <div
         id="hub-panel-avatar"
         class="tab-pane active"
@@ -404,10 +416,10 @@
             {#each AVATAR_DEFINITIONS as def (def.id)}
               <button
                 class="avatar-card"
-                class:selected={performer?.avatarModelId === def.id}
+                class:selected={currentAvatarId === def.id}
                 class:has-thumb={loadedThumbs.has(def.id)}
                 role="radio"
-                aria-checked={performer?.avatarModelId === def.id}
+                aria-checked={currentAvatarId === def.id}
                 onclick={() => pickAvatar(def.id as AvatarId)}
                 title={def.description}
               >
@@ -428,7 +440,7 @@
               </button>
             {/each}
           </div>
-          {#if canRemove}
+          {#if !isAllMode && canRemove}
             <button class="remove-btn" onclick={removePerformer}>
               <i class="fas fa-trash-alt" aria-hidden="true"></i>
               <span>Remove Performer</span>

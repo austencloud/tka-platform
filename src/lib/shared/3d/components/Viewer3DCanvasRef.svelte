@@ -9,8 +9,15 @@
    */
 
   import { useThrelte } from "@threlte/core";
-  import { onDestroy } from "svelte";
+  import { onDestroy, onMount } from "svelte";
+  import type { WebGLRenderer } from "three";
   import { getViewer3DContext } from "../context/viewer-3d-context";
+
+  interface Props {
+    onRendererReady?: (renderer: WebGLRenderer | null) => void;
+  }
+
+  let { onRendererReady }: Props = $props();
 
   // Use `canvas` from useThrelte() directly, not `renderer.current?.domElement`.
   // The prior code relied on `renderer.current` which is populated asynchronously
@@ -23,11 +30,21 @@
   // doesn't surface the `canvas` field even though it exists at runtime.
   const threlte = useThrelte() as unknown as {
     canvas: HTMLCanvasElement;
-    renderer: { current: import("three").WebGLRenderer };
+    renderer: WebGLRenderer | { current: WebGLRenderer };
   };
   const viewer3DState = getViewer3DContext();
 
+  function getRenderer(): WebGLRenderer | null {
+    const renderer = threlte.renderer;
+    if ("current" in renderer) return renderer.current ?? null;
+    return renderer;
+  }
+
   viewer3DState.setWebglCanvas(threlte.canvas);
+
+  onMount(() => {
+    onRendererReady?.(getRenderer());
+  });
 
   // Aggressively tear down WebGL on page unload to prevent Chrome navigation hang.
   // The fish GPUComputationRenderer creates a framebuffer feedback loop
@@ -37,14 +54,16 @@
   // force context loss as a belt-and-suspenders measure.
   function teardownWebGLOnUnload() {
     try {
-      const r = threlte.renderer?.current;
+      const r = getRenderer();
       if (r) {
         r.dispose();
         r.forceContextLoss();
       }
     } catch {
       // Last resort: raw context loss
-      const gl = threlte.canvas?.getContext("webgl2") || threlte.canvas?.getContext("webgl");
+      const gl =
+        threlte.canvas?.getContext("webgl2") ||
+        threlte.canvas?.getContext("webgl");
       gl?.getExtension("WEBGL_lose_context")?.loseContext();
     }
   }
@@ -55,6 +74,7 @@
   }
 
   onDestroy(() => {
+    onRendererReady?.(null);
     viewer3DState.setWebglCanvas(null);
     if (typeof window !== "undefined") {
       window.removeEventListener("beforeunload", teardownWebGLOnUnload);

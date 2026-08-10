@@ -36,4 +36,26 @@ describe("theme showroom data", () => {
       expect(getShowroomTheme(theme.id)).toBe(theme);
     }
   });
+
+  it("keeps the Winter review orbit outside the authored tree belt", () => {
+    const camera = getShowroomTheme(BackgroundType.WINTER).camera;
+    const distanceFromTarget = Math.hypot(
+      camera.position[0] - camera.target[0],
+      camera.position[1] - camera.target[1],
+      camera.position[2] - camera.target[2]
+    );
+
+    expect(distanceFromTarget).toBeGreaterThan(48);
+    expect(camera.minDistance).toBe(16);
+    expect(camera.maxDistance).toBeGreaterThan(distanceFromTarget);
+  });
+
+  it("keeps Autumn and Void adjacent to Celestial for the Gate 5 integration route", () => {
+    const celestialIndex = SHOWROOM_THEMES.findIndex(
+      (theme) => theme.id === BackgroundType.CELESTIAL
+    );
+
+    expect(SHOWROOM_THEMES[celestialIndex - 1]?.id).toBe(BackgroundType.AUTUMN);
+    expect(SHOWROOM_THEMES[celestialIndex + 1]?.id).toBe(BackgroundType.VOID);
+  });
 });

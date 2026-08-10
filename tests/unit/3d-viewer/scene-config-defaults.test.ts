@@ -42,7 +42,7 @@ const expectedHashes: Record<keyof typeof factories, string> = {
   createDefaultBlossomConfig:
     "3383f8c98507979b92b92c71c2287a362090ae1b5e90f1e8f3eb64862b484fbb",
   createDefaultCelestialConfig:
-    "1734b5994b874f168e7aed48042147063995ee245e3a9467122ed0e0a0fb0bb7",
+    "1c24ee80a538e3131858e1c32719b94d3da17a7b26e1c2f23c4963c0713b2966",
   createDefaultCosmicAuroraConfig:
     "0bd38acd71a42d1944bcdf0d61b9998b5bbed1800bc4f5cc0fe7e30a6d5763b4",
   createDefaultCosmicNightConfig:
@@ -50,9 +50,9 @@ const expectedHashes: Record<keyof typeof factories, string> = {
   createDefaultEmberConfig:
     "119e2009e26ef6b7c891534a94a2ee14026ece6ab23275c37e5272b84a669c14",
   createDefaultForestAutumnConfig:
-    "f768146e340c8fda5ea41f573595ef40275ac8e507bb2c98cca77ca8a929b5bb",
+    "5429d3c565a020b03582d6fe83b48e2a430f160e7f533363d4d6ebe689f70a8e",
   createDefaultForestFireflyConfig:
-    "f14f73826c33c5401a767b7f67ff5312cce934ea64a20022fd0514a0d52b4737",
+    "cf1c3bb1de132b2d8cc79c70271a1affa94ce3e3ae62dcec739342ea035a329d",
   createDefaultOceanAbyssConfig:
     "dd6e6f77065d6ffc6b3957e39d256e09e7f72fdabb6130cf9a8b82e5b259bd84",
   createDefaultOceanCinematicConfig:

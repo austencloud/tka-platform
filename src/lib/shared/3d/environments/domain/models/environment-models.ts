@@ -30,6 +30,20 @@ export interface SkyGradientConfig {
   radius?: number;
 }
 
+/** A camera-centred solar disk rendered by the shared sky dome. */
+export interface SkySunConfig {
+  enabled: boolean;
+  /** Direction from the viewer toward the Sun. */
+  direction: [number, number, number];
+  /** Apparent diameter in degrees. The real Sun is roughly 0.53 degrees. */
+  angularDiameterDegrees?: number;
+  color?: string;
+  opacity?: number;
+  /** Halo radius as a multiple of the disk radius. */
+  glowScale?: number;
+  glowOpacity?: number;
+}
+
 /**
  * Particle type for FallingParticles
  */

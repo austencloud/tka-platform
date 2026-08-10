@@ -1,4 +1,8 @@
-import type { TrackParams, NoiseType, DetailEventType } from "./ocean-audio-tracks";
+import type {
+  TrackParams,
+  NoiseType,
+  DetailEventType,
+} from "./ocean-audio-tracks";
 
 interface AudioGraph {
   masterGain: GainNode;
@@ -22,15 +26,21 @@ function createNoiseBuffer(ctx: AudioContext, type: NoiseType): AudioBuffer {
   if (type === "white") {
     for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
   } else if (type === "pink") {
-    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+    let b0 = 0,
+      b1 = 0,
+      b2 = 0,
+      b3 = 0,
+      b4 = 0,
+      b5 = 0,
+      b6 = 0;
     for (let i = 0; i < len; i++) {
       const w = Math.random() * 2 - 1;
       b0 = 0.99886 * b0 + w * 0.0555179;
       b1 = 0.99332 * b1 + w * 0.0750759;
-      b2 = 0.96900 * b2 + w * 0.1538520;
-      b3 = 0.86650 * b3 + w * 0.3104856;
-      b4 = 0.55000 * b4 + w * 0.5329522;
-      b5 = -0.7616 * b5 - w * 0.0168980;
+      b2 = 0.969 * b2 + w * 0.153852;
+      b3 = 0.8665 * b3 + w * 0.3104856;
+      b4 = 0.55 * b4 + w * 0.5329522;
+      b5 = -0.7616 * b5 - w * 0.016898;
       data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11;
       b6 = w * 0.115926;
     }
@@ -50,7 +60,7 @@ function scheduleDetailEvent(
   detailGain: GainNode,
   type: DetailEventType,
   params: TrackParams,
-  onScheduleNext: () => void,
+  onScheduleNext: () => void
 ): void {
   if (type === "none") return;
   const t = ctx.currentTime;
@@ -94,7 +104,10 @@ function scheduleDetailEvent(
       osc.frequency.value = fundamental * h;
       const env = ctx.createGain();
       env.gain.setValueAtTime(0, t);
-      env.gain.linearRampToValueAtTime(params.detailGain / harmonics.length, t + 2);
+      env.gain.linearRampToValueAtTime(
+        params.detailGain / harmonics.length,
+        t + 2
+      );
       env.gain.setValueAtTime(params.detailGain / harmonics.length, t + 5);
       env.gain.linearRampToValueAtTime(0, t + 7);
       osc.connect(env);
@@ -140,6 +153,10 @@ export class OceanAudioEngine {
 
   get hasContext(): boolean {
     return this.ctx !== null;
+  }
+
+  get isPlaying(): boolean {
+    return this.graph !== null;
   }
 
   play(params: TrackParams, volume: number): void {
@@ -248,9 +265,17 @@ export class OceanAudioEngine {
     noiseSource.start();
 
     this.graph = {
-      masterGain, drone, droneGain, sub, subGain,
-      lfo, lfoGain, noiseSource, noiseFilter,
-      noiseGain: noiseGainNode, detailGain: detailGainNode,
+      masterGain,
+      drone,
+      droneGain,
+      sub,
+      subGain,
+      lfo,
+      lfoGain,
+      noiseSource,
+      noiseFilter,
+      noiseGain: noiseGainNode,
+      detailGain: detailGainNode,
       detailTimer: null,
     };
 
@@ -263,7 +288,10 @@ export class OceanAudioEngine {
     if (!this.graph || !this.ctx || !this.currentParams) return;
     const p = this.currentParams;
     if (p.detailEvent === "none") return;
-    const delay = (p.detailMinInterval + Math.random() * (p.detailMaxInterval - p.detailMinInterval)) * 1000;
+    const delay =
+      (p.detailMinInterval +
+        Math.random() * (p.detailMaxInterval - p.detailMinInterval)) *
+      1000;
     const g = this.graph;
     g.detailTimer = setTimeout(() => {
       if (!this.ctx || !this.graph || this.graph !== g) return;
@@ -275,10 +303,14 @@ export class OceanAudioEngine {
 
   private teardown(g: AudioGraph): void {
     try {
-      g.drone.stop(); g.drone.disconnect();
-      g.sub.stop(); g.sub.disconnect();
-      g.lfo.stop(); g.lfo.disconnect();
-      g.noiseSource.stop(); g.noiseSource.disconnect();
+      g.drone.stop();
+      g.drone.disconnect();
+      g.sub.stop();
+      g.sub.disconnect();
+      g.lfo.stop();
+      g.lfo.disconnect();
+      g.noiseSource.stop();
+      g.noiseSource.disconnect();
       g.noiseFilter.disconnect();
       g.droneGain.disconnect();
       g.subGain.disconnect();
@@ -286,6 +318,8 @@ export class OceanAudioEngine {
       g.lfoGain.disconnect();
       g.detailGain.disconnect();
       g.masterGain.disconnect();
-    } catch { /* already stopped */ }
+    } catch {
+      /* already stopped */
+    }
   }
 }

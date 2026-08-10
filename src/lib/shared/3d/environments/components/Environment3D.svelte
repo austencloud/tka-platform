@@ -23,12 +23,14 @@
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
   import { getStageCoordinateFrame } from "../domain/stage-coordinate-frame";
   import { tryGetEnvironmentTransitionVisualContext } from "../context/environment-transition-visual-context";
+  import type { ForestSceneConfig } from "../domain/models/scene-configs/forest-scene-config";
   import {
     DEFAULT_ENVIRONMENT_TRANSITION_TIMING,
     advanceEnvironmentTransition,
     createEnvironmentTransitionState,
     getEnvironmentVeilOpacity,
     requestEnvironment,
+    type EnvironmentTransitionObservation,
   } from "../domain/environment-transition";
 
   interface Props {
@@ -42,6 +44,12 @@
     stageDepth?: number;
     /** Z offset for stage expansion (keeps front edge fixed). */
     stageZOffset?: number;
+    /** Forest-only authored atmosphere override. Other scenes ignore it. */
+    forestConfig?: ForestSceneConfig;
+    /** Reports the transition owner's semantic state for hosts and diagnostics. */
+    onTransitionChange?: (
+      observation: EnvironmentTransitionObservation<BackgroundType>
+    ) => void;
   }
 
   let {
@@ -50,6 +58,8 @@
     stageWidth = 6,
     stageDepth = 6,
     stageZOffset = 0,
+    forestConfig,
+    onTransitionChange,
   }: Props = $props();
 
   const { scene, renderer } = useThrelte();
@@ -190,7 +200,10 @@
     const mounted = transition.mountedKey;
     if (mounted === null && previousMountedBackground !== null) {
       clearSceneGlobals();
-      queueMicrotask(() => sceneFeatures.resetReady("environment"));
+      // Clear readiness in the empty-frame phase itself. Deferring this to a
+      // microtask can erase the next environment's cached-asset ready signal
+      // after it mounts, stranding the transition until the safety timeout.
+      sceneFeatures.resetReady("environment");
     }
     previousMountedBackground = mounted;
   });
@@ -200,6 +213,16 @@
       getEnvironmentVeilOpacity(transition),
       transition.phase
     );
+  });
+
+  $effect(() => {
+    const observation: EnvironmentTransitionObservation<BackgroundType> = {
+      requestedKey: transition.requestedKey,
+      mountedKey: transition.mountedKey,
+      phase: transition.phase,
+      settled: transition.phase === "idle" && mountedEnvironmentSettled,
+    };
+    untrack(() => onTransitionChange?.(observation));
   });
 
   useTask((delta) => {
@@ -222,6 +245,7 @@
     {#if config.scene === "forest"}
       <ForestScene
         variant={config.variant}
+        config={forestConfig}
         {stageWidth}
         {stageDepth}
         {stageZOffset}

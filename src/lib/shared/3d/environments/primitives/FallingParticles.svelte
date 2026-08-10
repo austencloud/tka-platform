@@ -65,6 +65,11 @@
      * operating-system reduced-motion preference.
      */
     motionScale?: number;
+    /**
+     * Shapes the horizontal spawn footprint. Ellipse keeps particles beneath
+     * a rounded canopy instead of filling the corners of its bounding box.
+     */
+    emissionShape?: "box" | "ellipse";
   }
 
   // Default values in meters (1 unit = 1 meter)
@@ -80,6 +85,7 @@
     opacity = 1,
     shape,
     motionScale,
+    emissionShape = "box",
   }: Props = $props();
 
   // Particle data
@@ -330,8 +336,17 @@
   `;
 
   function spawnParticle(): Particle {
-    const x = (Math.random() - 0.5) * area.width;
-    const z = (Math.random() - 0.5) * area.depth;
+    let x: number;
+    let z: number;
+    if (emissionShape === "ellipse") {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.sqrt(Math.random());
+      x = Math.cos(angle) * radius * area.width * 0.5;
+      z = Math.sin(angle) * radius * area.depth * 0.5;
+    } else {
+      x = (Math.random() - 0.5) * area.width;
+      z = (Math.random() - 0.5) * area.depth;
+    }
 
     // Fireflies spawn throughout the area, others at top
     const isFirefly = type === "fireflies";

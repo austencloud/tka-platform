@@ -38,6 +38,8 @@ export interface PointLightConfig {
 export interface CampfireConfig {
   enabled: boolean;
   position: { x: number; z: number };
+  /** Elevation of the local fire and campsite surface above scene ground. */
+  groundOffset?: number;
   /** Scale of the campfire pit model. */
   modelScale: number;
   /** Scale of the volumetric fire. */

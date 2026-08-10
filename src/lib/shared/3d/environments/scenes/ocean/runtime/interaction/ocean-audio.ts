@@ -1,6 +1,6 @@
-import { OceanAudioEngine } from '../../../../../audio/ocean-audio-engine';
-import { sceneAudioState } from '../../../../../state/scene-audio-state.svelte';
-import { OCEAN_TRACKS } from '../../../../../audio/ocean-audio-tracks';
+import { OceanAudioEngine } from "../../../../../audio/ocean-audio-engine";
+import { sceneAudioState } from "../../../../../state/scene-audio-state.svelte";
+import { OCEAN_TRACKS } from "../../../../../audio/ocean-audio-tracks";
 
 export function createOceanAudio() {
   const engine = new OceanAudioEngine();
@@ -13,8 +13,8 @@ export function createOceanAudio() {
     // play (sceneAudioState.playing → syncPlayback). No auto-start.
     if (sceneAudioState.audioUnlocked) return;
     sceneAudioState.audioUnlocked = true;
-    window.removeEventListener('pointerdown', handleInteraction);
-    window.removeEventListener('keydown', handleInteraction);
+    window.removeEventListener("pointerdown", handleInteraction);
+    window.removeEventListener("keydown", handleInteraction);
   }
 
   function syncVolume(): void {
@@ -23,8 +23,8 @@ export function createOceanAudio() {
 
   function syncPlayback(): void {
     if (!sceneAudioState.audioUnlocked) return;
-    if (sceneAudioState.playing && !engine.hasContext) {
-      engine.createContext();
+    if (sceneAudioState.playing && !engine.isPlaying) {
+      if (!engine.hasContext) engine.createContext();
       engine.play(track.params, sceneAudioState.effectiveVolume);
     } else if (!sceneAudioState.playing) {
       engine.stop();
@@ -33,9 +33,9 @@ export function createOceanAudio() {
 
   function dispose(): void {
     engine.dispose();
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('pointerdown', handleInteraction);
-      window.removeEventListener('keydown', handleInteraction);
+    if (typeof window !== "undefined") {
+      window.removeEventListener("pointerdown", handleInteraction);
+      window.removeEventListener("keydown", handleInteraction);
     }
   }
 
