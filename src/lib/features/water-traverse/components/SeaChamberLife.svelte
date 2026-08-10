@@ -29,13 +29,21 @@
    * scene.background and scene.environment directly, which would fight the
    * traverse's own continuous atmosphere field.
    */
-  import { T, useThrelte } from "@threlte/core";
-  import { PMREMGenerator, type Group, type Mesh, type Material } from "three";
+  import { T, useThrelte, useTask } from "@threlte/core";
+  import {
+    PMREMGenerator,
+    Vector3,
+    type Camera,
+    type Group,
+    type Mesh,
+    type Material,
+  } from "three";
   import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
   import type { OceanQualityConfig } from "$lib/shared/3d/environments/scenes/ocean/quality/ocean-quality";
   import GodRayShafts from "$lib/shared/3d/environments/scenes/ocean/runtime/atmosphere/GodRayShafts.svelte";
   import MarineParticles from "$lib/shared/3d/environments/scenes/ocean/runtime/atmosphere/MarineParticles.svelte";
   import FishBoids from "$lib/shared/3d/environments/scenes/ocean/runtime/fauna/fish/FishBoids.svelte";
+  import { createFishScatterState } from "$lib/shared/3d/environments/scenes/ocean/runtime/interaction/fish-scatter";
   import JellyfishSwarm from "$lib/shared/3d/environments/scenes/ocean/runtime/fauna/jellyfish/JellyfishSwarm.svelte";
   import TrenchGallery from "./TrenchGallery.svelte";
   import { WATER_Y } from "$lib/shared/3d/environments/scenes/ocean/runtime/atmosphere/god-ray-axis";
@@ -105,7 +113,7 @@
    * reef subtree only. Intensity is under 1 because RoomEnvironment is a bright
    * studio box and this is 18 m of water.
    */
-  const { renderer } = useThrelte();
+  const { renderer, camera } = useThrelte();
   const REEF_ENV_INTENSITY = 0.55;
   let reefGroup = $state.raw<Group | null>(null);
 
@@ -145,6 +153,64 @@
     lightTheReef();
     onFloraReady?.();
   }
+
+  /**
+   * Fish scatter, driven by the visitor instead of by a cursor over a canvas.
+   *
+   * The whole scatter system already exists on FishBoids — `cursorRay`,
+   * `scatterRadius`, `scatterForce` — and the boid shader tests each fish's
+   * perpendicular distance to that ray. It was simply never supplied here, so
+   * the school ignored the person swimming through it.
+   *
+   * ONE ray covers both things a walker expects, because of how the shader
+   * measures: `alongRay` is clamped at zero, so a fish beside the ORIGIN is
+   * measured straight to the origin.
+   *
+   *   - Origin is the eye. Walk into a school and it breaks around you.
+   *   - Direction is the look vector. Fish out along the sightline scatter
+   *     too — and in this walk the mouse IS the look vector, so aiming at a
+   *     shoal spooks it.
+   *
+   * OceanInteraction is not reused wholesale: it also owns the ocean's audio,
+   * and its NDC pointer tracking goes dead under pointer lock, which is the
+   * normal state of this walk. Only the ray state itself is shared.
+   */
+  const scatter = createFishScatterState();
+  const cursorRay = $state({
+    origin: new Vector3(),
+    dir: new Vector3(0, 0, -1),
+    active: false,
+  });
+
+  // Pointer lock parks the OS cursor, so screen-space NDC stops meaning
+  // anything; the reticle at (0, 0) is where the visitor is actually looking.
+  // Unlocked (a review pass, or a menu open) the real pointer drives it again.
+  let pointerNdcX = 0;
+  let pointerNdcY = 0;
+
+  function onPointerMove(event: PointerEvent): void {
+    pointerNdcX = (event.clientX / window.innerWidth) * 2 - 1;
+    pointerNdcY = -(event.clientY / window.innerHeight) * 2 + 1;
+  }
+
+  $effect(() => {
+    window.addEventListener("pointermove", onPointerMove);
+    return () => window.removeEventListener("pointermove", onPointerMove);
+  });
+
+  useTask(() => {
+    const cam = (camera as unknown as { current?: Camera })?.current ??
+      (camera as unknown as Camera);
+    if (!cam) return;
+    const locked =
+      typeof document !== "undefined" && document.pointerLockElement !== null;
+    scatter.update(locked ? 0 : pointerNdcX, locked ? 0 : pointerNdcY, cam);
+    cursorRay.origin.copy(scatter.origin);
+    cursorRay.dir.copy(scatter.dir);
+    // Unlike the ocean's hero camera, the visitor is always in the water. There
+    // is no "cursor left the canvas" state to go quiet for.
+    cursorRay.active = true;
+  });
 
   const shaftTiles = $derived(tiles(SHAFT_STRIDE));
   const particleTiles = $derived(tiles(PARTICLE_STRIDE));
@@ -205,7 +271,15 @@
     swimHeight is measured from the seabed and the eye is 0.9 above it, so
     1-9 puts most of the school at and just above eye level.
   -->
+  <!--
+    scatterRadius is pulled in from the ocean's 8.5: that default is sized for
+    a hero camera looking at the whole stage, and on a 14 m school it scatters
+    everything at once. At 5 m the school parts around the visitor and closes
+    again behind, which is the effect worth having.
+  -->
   <FishBoids
+    {cursorRay}
+    scatterRadius={5.0}
     worldOffset={[0, floorY, midZ]}
     swimHeight={[2, 10]}
     stageRadius={4}

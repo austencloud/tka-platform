@@ -76,7 +76,20 @@
     new Vector3(...(worldOffset ?? [0, worldYOffset, 0])),
   );
 
-  const groundY = $derived(userProportionsState.groundY);
+  /**
+   * The seabed, in the boids' own local space. Everything vertical hangs off
+   * this: the swimHeight band, the floor steer, and the hard clamp in
+   * boid-position.glsl.
+   *
+   * `userProportionsState.groundY` is the AVATAR's ground, which tracks the
+   * performer's proportions and is not zero (it measured -1.56 during the
+   * traverse review). The ocean stage gets away with using it because its stage
+   * and its avatar share a floor. A consumer that passes `worldOffset` does not:
+   * it has already put the seabed at offset.y, so local zero IS the seabed, and
+   * borrowing the avatar's ground pushed the clamp 0.96 m UNDERGROUND — which is
+   * exactly where 21 of 87 fish were found, piled on it.
+   */
+  const groundY = $derived(worldOffset ? 0 : userProportionsState.groundY);
   const { renderer, camera } = useThrelte();
 
   // ── State ─────────────────────────────────────────────────────────────

@@ -8,6 +8,9 @@ uniform int uDespawnStartIdx;
 // fish overshoots — in an open-water stage that reads as a dive, but over a
 // solid trench floor it is a fish swimming through rock. This is the clamp.
 uniform float uFloorY;
+// Hard ceiling, for the same reason: overshooting the top of the swim band puts
+// a fish through the surface and into the air.
+uniform float uCeilingY;
 
 void main() {
   int fishIdx = int(gl_FragCoord.y) * int(resolution.x) + int(gl_FragCoord.x);
@@ -41,7 +44,7 @@ void main() {
     );
   }
 
-  posData.y = max(posData.y, uFloorY);
+  posData.y = clamp(posData.y, uFloorY, uCeilingY);
 
   gl_FragColor = posData;
 }

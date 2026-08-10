@@ -619,6 +619,13 @@
       atmosphere: () =>
         sampleAtmosphere(playerPosition.z, playerPosition.y),
       scene: () => threlte.scene,
+      /**
+       * The fauna are GPGPU: fish positions live in a float texture, not in the
+       * scene graph, so "did the school actually scatter" cannot be answered by
+       * traversing objects or by reading a screenshot. The renderer is what
+       * makes those textures readable back.
+       */
+      renderer: () => threlte.renderer,
       layout,
     };
     (window as unknown as Record<string, unknown>).__waterWalk = bridge;

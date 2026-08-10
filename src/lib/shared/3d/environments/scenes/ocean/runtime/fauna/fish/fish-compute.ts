@@ -263,6 +263,11 @@ export function createFishComputeSystem(
 	posU.uDespawnCount = { value: 0 };
 	posU.uDespawnStartIdx = { value: 0 };
 	posU.uFloorY = { value: gy + Math.min(hMin * 0.5, 0.6) };
+	// The ceiling is the floor's mirror and fails the same way: the velocity pass
+	// only steers down from the top of the band, and a scattering fish overshoots
+	// it. In open water that reads as a leap; under a surface it is a fish in the
+	// air. Headroom above the band, then a hard stop.
+	posU.uCeilingY = { value: gy + hMax + 1.5 };
 
 	// ── State uniforms ──
 	const trophicRoles = new Int32Array(50);
