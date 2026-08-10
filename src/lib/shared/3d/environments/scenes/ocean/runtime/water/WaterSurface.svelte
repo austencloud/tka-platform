@@ -27,6 +27,14 @@
     color?: string;
     skyColor?: string;
     tirDarkness?: number;
+    /**
+     * A raw ShaderMaterial gets none of Three's fog chunks, so the surface has
+     * to be told the scene's haze itself. Defaults match OceanScene's FogExp2.
+     * Without this the plane is the only object in the scene that keeps its
+     * colour at distance, and its rim reads as the edge of a lid.
+     */
+    fogColor?: string;
+    fogDensity?: number;
   }
 
   let {
@@ -43,7 +51,9 @@
     opacity = 0.12,
     color = "#0d3050",
     skyColor = "#3f7892",
-    tirDarkness = 0.82,
+    tirDarkness = 1.0,
+    fogColor = "#0a2438",
+    fogDensity = 0.026,
   }: Props = $props();
 
   const waterY = $derived(surfaceY ?? groundY + 12);
@@ -61,11 +71,16 @@
       uSize: { value: size },
       uColor: { value: new Color(color) },
       uOpacity: { value: opacity },
-      // The 2.2 base wave keeps the shortest octave spread over roughly 4.5
-      // segments at the default tessellation: detailed, but still sampled.
-      uWaveScale: { value: 2.2 },
-      uWaveSpeed: { value: 0.35 },
-      uWaveAmplitude: { value: 0.12 },
+      // Wavelength is 2*pi/uWaveScale, so 0.62 is an 10.1 m swell and the
+      // fourth octave lands at 3.2 m. The old 2.2 was a 2.9 m chop whose
+      // octaves ran down to 0.9 m -- below a metre, seen from ten metres
+      // underneath, through fog. It could not read as anything but texture,
+      // which is half of why the surface looked programmatic. Amplitude rises
+      // with it: 0.12 m on a 2.9 m wave is a ripple, 0.34 m on a 10 m swell is
+      // a shape the eye can follow across the frame.
+      uWaveScale: { value: 0.62 },
+      uWaveSpeed: { value: 0.5 },
+      uWaveAmplitude: { value: 0.34 },
       uCameraPosition: { value: new Vector3() },
       uSnellEnabled: { value: true },
       uSkyColor: { value: new Color(skyColor) },
@@ -73,10 +88,23 @@
       uSunSize: { value: 0.08 },
       uTirDarkness: { value: tirDarkness },
       uEdgeSoftness: { value: 0.08 },
-      uNoiseScale: { value: 1.4 },
-      uNoiseSpeed: { value: 0.4 },
-      uNoiseAmplitude: { value: 0.012 },
+      // 0.11 puts the noise lattice on a ~9 m cell, matched to the swell it is
+      // supposed to be riding. At 1.4 the cell was 71 cm, so the value noise
+      // resolved as a visible grid of blobs rather than as wave shape.
+      uNoiseScale: { value: 0.11 },
+      uNoiseSpeed: { value: 0.06 },
+      // 0.012 perturbed the Snell boundary by a pixel or two, leaving a
+      // geometrically perfect circle. 0.085 is enough to bend the boundary
+      // into the swell, which is the whole reason the term exists.
+      uNoiseAmplitude: { value: 0.085 },
+      uFogColor: { value: new Color(fogColor) },
+      uFogDensity: { value: fogDensity },
     },
+  });
+
+  $effect(() => {
+    material.uniforms.uFogColor!.value.set(fogColor);
+    material.uniforms.uFogDensity!.value = fogDensity;
   });
 
   // PlaneGeometry has no overlapping layers that benefit from Three's default

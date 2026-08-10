@@ -16,7 +16,7 @@
   import { useThrelte } from "@threlte/core";
   import { Box3, Matrix4, Vector3, type Mesh, type Object3D } from "three";
 
-  const { scene, camera } = useThrelte();
+  const { scene, camera, renderer } = useThrelte();
 
   $effect(() => {
     if (!import.meta.env.DEV) return;
@@ -95,6 +95,22 @@
       },
       measure,
       near,
+      renderer,
+      /**
+       * Swap the tone curve live. "Washed out" and "too dark" are the same
+       * complaint when the grade is the cause, and the only way to tell a grade
+       * problem from a lighting problem is to change one and look. Recompiles
+       * every material, because tone mapping is baked into the shader.
+       */
+      grade: (toneMapping: number, exposure = 1) => {
+        renderer.toneMapping = toneMapping;
+        renderer.toneMappingExposure = exposure;
+        scene.traverse((o: Object3D) => {
+          const m = (o as Mesh).material;
+          if (!m) return;
+          for (const mat of Array.isArray(m) ? m : [m]) mat.needsUpdate = true;
+        });
+      },
       /** Objects whose largest dimension is under `metres` -- invisible specks. */
       specks: (metres = 0.3) =>
         (measure() as { size: number[] }[]).filter(

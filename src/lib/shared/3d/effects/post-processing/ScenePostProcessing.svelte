@@ -6,7 +6,7 @@
     HalfFloatType,
     Vector2,
     Vector3,
-    AgXToneMapping,
+    ACESFilmicToneMapping,
     NoToneMapping,
   } from "three";
   import {
@@ -77,7 +77,7 @@
   const tierBloom = $derived(tierConfig.enableBloom);
   // Preserve the ocean's core grade when a capable device temporarily steps
   // down for frame pressure. Bloom/distortion/chromatic still follow the live
-  // tier, while AgX + absorption + vignette remain. A device detected LOW at
+  // tier, while ACES + absorption + vignette remain. A device detected LOW at
   // startup keeps the original composer-free emergency budget.
   const allowOceanComposer = $derived(
     isOcean &&
@@ -118,8 +118,14 @@
 
     if (isOcean) {
       renderer.shadowMap.enabled = tierConfig.enableShadows;
-      renderer.toneMapping = AgXToneMapping;
-      renderer.toneMappingExposure = 0.9;
+      // ACES, not AgX. AgX is a low-contrast, deliberately desaturating curve
+      // intended to be finished with a look LUT; without one it rendered the
+      // whole reef as uniform slate, which is what "the colors all seem sort
+      // of washed out" was describing. ACES restores the coral warms and the
+      // jellyfish cyans. Exposure matches the ocean harness so the two agree
+      // on the curve and differ only by this composer's effect chain.
+      renderer.toneMapping = ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.15;
     }
 
     if (isOcean && oceanDebugToggles.waterTint) {

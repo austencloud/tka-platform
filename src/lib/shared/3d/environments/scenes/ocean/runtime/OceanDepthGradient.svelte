@@ -30,10 +30,13 @@
 
   interface Props {
     /**
-     * Looking up. Only a slight lift off the fog — the water plane is a finite
-     * 50 m disc, so anything brighter than this behind its rim turns the rim
-     * into a visible hole. Light-from-above is carried by the god rays and the
-     * plane itself, not by the backdrop.
+     * Looking up. Kept close to the fog because the water plane is a finite
+     * disc and anything that DISAGREES with the haze behind its rim turns the
+     * rim into a visible edge. That used to mean keeping this dark, on the
+     * theory that brighter meant a hole. It cut the other way: the plane was
+     * exempt from fog, so its rim was bright against a dark backdrop and read
+     * as a black wedge sweeping into frame. Now that the surface fogs, the
+     * backdrop has to meet it at the haze value instead of below it.
      */
     shallowColor?: string;
     /** Eye level. Matches the scene fog so geometry and void agree. */
@@ -44,7 +47,7 @@
   }
 
   let {
-    shallowColor = "#0e3049",
+    shallowColor = "#123c55",
     midColor = "#0a2438",
     deepColor = "#01060b",
     radius = 180,
