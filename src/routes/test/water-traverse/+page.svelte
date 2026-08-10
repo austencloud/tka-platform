@@ -4,11 +4,11 @@
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
   import {
     TOTAL_LENGTH_M,
-    WATERLINE_Y,
     ceilingAt,
     hallHalfWidthAt,
     regionAt,
     relationToWater,
+    waterLevelAt,
   } from "$lib/features/water-traverse/data/water-traverse-terrain";
   import WaterTraverseWalkScene from "./WaterTraverseWalkScene.svelte";
 
@@ -17,10 +17,9 @@
 
   /**
    * The title names the ROOM; the line under it names the visitor's
-   * relationship to the waterline. Those are two different questions — the sea
-   * leg spans both the trench and the cave, and you are under the water for
-   * all of it; the canyon starts you waist-deep and ends with you below the
-   * line in the same room.
+   * relationship to the nearest surface. Those are two different questions —
+   * four rooms in a row all answer "under the water", and the springs answer
+   * three different ways across their own thirty-four metres.
    */
   const REGION_LABEL = {
     snowfield: "The frozen river",
@@ -37,11 +36,17 @@
    * it was wrong at both ends of the sea: still claiming "under the water"
    * 22 m after the head broke the surface, and claiming "in the water" while
    * standing 0.7 m above it.
+   *
+   * "Above" is the one the walk now ENDS on, and it used to be missing: the
+   * springs shore is dry rock four metres over its pool, and calling that "on
+   * the water" gave it the same words as the frozen river, where the floor and
+   * the surface are the same plane.
    */
   const RELATIONSHIP = {
     on: "on the water",
     in: "in the water",
     under: "under the water",
+    above: "above the water",
   } as const;
 
   /**
@@ -56,8 +61,15 @@
   const region = $derived(regionAt(position.z));
   const walked = $derived(Math.max(0, Math.min(position.z, TOTAL_LENGTH_M)));
   const progress = $derived(Math.round((walked / TOTAL_LENGTH_M) * 100));
-  /** Eye height against the one waterline the whole piece is measured from. */
-  const relativeToLine = $derived(position.y - WATERLINE_Y);
+  /**
+   * Eye height against the surface that is actually here.
+   *
+   * Not against WATERLINE_Y. The springs chamber has its own pool 23 m lower,
+   * and measured from the sea the last twelve metres of the walk read as
+   * "-27.4 m from the waterline" while the visitor stands on dry rock in air —
+   * a number that flatly contradicts what they can see.
+   */
+  const relativeToLine = $derived(position.y - waterLevelAt(position.z));
   /** Ceiling above the eye. The answer to "is there a roof, and how high". */
   const headroom = $derived(ceilingAt(position.z) - position.y);
   /** Wall to wall, here. Steps six times inside the cave alone. */
@@ -105,7 +117,7 @@
       <span class="relationship">
         You are <strong>{RELATIONSHIP[relation]}</strong> ·
         {relativeToLine >= 0 ? "+" : ""}{relativeToLine.toFixed(1)} m from the
-        waterline
+        surface
       </span>
 
       <!--

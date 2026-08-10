@@ -21,7 +21,7 @@
  * would still be correct if the ramp moved.
  */
 
-import { WATERLINE_Y } from "./water-traverse-terrain";
+import { waterLevelAt } from "./water-traverse-terrain";
 
 export interface AtmosphereSample {
   /** Sky / clear colour, hex. */
@@ -210,18 +210,24 @@ function samplePalette(stops: Stop[], at: number): Palette {
 
 /**
  * How submerged the view is. The blend spans a metre either side of the
- * waterline rather than switching at it: a hard cut at eye level flickers every
+ * surface rather than switching at it: a hard cut at eye level flickers every
  * time the walk cycle bobs, and a real head breaking a surface takes about that
  * long anyway.
+ *
+ * Measured against `waterLevelAt(z)`, not against WATERLINE_Y. The piece has two
+ * surfaces 23 m apart, and keyed to the sea alone this function would report the
+ * springs chamber as 27 m under water for every metre of it — including the last
+ * twelve, which the visitor walks in air, on rock, having just climbed out of a
+ * pool. That is the difference between an ending and a corridor.
  */
-export function submersionAt(eyeY: number): number {
-  return 1 - ease((eyeY - (WATERLINE_Y - 0.55)) / 1.1);
+export function submersionAt(eyeY: number, z: number): number {
+  return 1 - ease((eyeY - (waterLevelAt(z) - 0.55)) / 1.1);
 }
 
 export function sampleAtmosphere(z: number, eyeY: number): AtmosphereSample {
   const surface = samplePalette(SURFACE_STOPS, z);
-  const depth = samplePalette(DEPTH_STOPS, Math.max(0, WATERLINE_Y - eyeY));
-  const submersion = submersionAt(eyeY);
+  const depth = samplePalette(DEPTH_STOPS, Math.max(0, waterLevelAt(z) - eyeY));
+  const submersion = submersionAt(eyeY, z);
 
   return {
     background: mixHex(surface.background, depth.background, submersion),
