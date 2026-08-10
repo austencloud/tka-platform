@@ -283,6 +283,29 @@ Variation support:
   let morphDriven = $state(false);
   let previewReadyResolve: (() => void) | null = null;
 
+  // Where the baked sheet's header band sits, as a height fraction of the
+  // card. The preview layer renders its live header in exactly this band so
+  // the word never moves across the play/stop toggle. Cards whose steps
+  // aren't hydrated (Community entries) get a step-count shim — the layout
+  // math only needs the count.
+  const sheetHeaderFrac = $derived.by(() => {
+    const seq = displayedSequence;
+    try {
+      const layout = getImageCompositionManager().getStartPositionLayoutForStepCount(
+        galleryStepCount(seq)
+      );
+      const source = seq.steps?.length
+        ? seq
+        : ({
+            ...seq,
+            steps: Array.from({ length: galleryStepCount(seq) }, () => ({})),
+          } as unknown as SequenceData);
+      return computeSheetRegionMap(source, layout).header?.h ?? 0;
+    } catch {
+      return 0;
+    }
+  });
+
   function morphCapable(): boolean {
     return (
       typeof document !== "undefined" &&
@@ -604,6 +627,7 @@ Variation support:
         <mod.default
           sequence={displayedSequence}
           instant={morphDriven}
+          headerFrac={sheetHeaderFrac}
           onReady={() => previewReadyResolve?.()}
         />
       {/await}

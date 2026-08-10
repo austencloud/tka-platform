@@ -17,6 +17,12 @@
   import { onDestroy, untrack } from "svelte";
   import { flyFade, popIn } from "$lib/shared/transitions/motion";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+  import WordHeader from "$lib/shared/animation-engine/components/layers/WordHeader.svelte";
+  import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
+  import {
+    tryGetLoopDisplayResolver,
+    type LoopDisplay,
+  } from "$lib/shared/loop-labeler/get-loop-display-resolver";
   import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
   import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
   import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -30,8 +36,14 @@
     sequence,
     instant = false,
     onReady,
+    headerFrac = 0,
   }: {
     sequence: SequenceData;
+    /** Height of the baked sheet's header band as a fraction of the card box
+     * (from computeSheetRegionMap). The live header renders in exactly that
+     * band, so toggling the preview never moves the word — it's the same
+     * header in the same place, whichever mode the card is in. */
+    headerFrac?: number;
     /** Collapse the layer's own dissolve to zero. The card sets this when a
      * view-transition morph is running the show — two animation systems
      * moving the same elements reads as a glitch, and a lingering |global
@@ -159,6 +171,39 @@
     return raw ? simplifyRepeatedWord(raw) : null;
   });
 
+  // ── Header inputs ───────────────────────────────────────────────────
+  // Mirrors AnimatorCanvas's own header computation (difficulty, LOOP badge,
+  // active-letter underline) — the header moved out of the animator so it can
+  // span the full card width, but it must show exactly what the animator's
+  // would have.
+  const headerDifficulty = $derived.by(() => {
+    const steps = playback?.sequence.steps;
+    return steps?.length ? calculateDifficultyLevel([...steps]) : null;
+  });
+
+  const EMPTY_LOOP_DISPLAY = {
+    components: new Set(),
+    rotationPeriod: undefined,
+    inversionPeriod: undefined,
+    reflectionAxis: undefined,
+    overlayComponents: undefined,
+    period: 1,
+  } as unknown as LoopDisplay;
+
+  const headerLoop = $derived.by(() => {
+    const seq = playback?.sequence;
+    if (!seq) return EMPTY_LOOP_DISPLAY;
+    const resolver = tryGetLoopDisplayResolver();
+    return resolver ? resolver(seq) : EMPTY_LOOP_DISPLAY;
+  });
+
+  const headerActiveStepNumber = $derived.by(() => {
+    const stepCount = playback?.sequence.steps?.length ?? 0;
+    if (!stepCount || !frame) return null;
+    const n = Math.floor(frame.step);
+    return n >= 1 && n <= stepCount ? n : null;
+  });
+
   /**
    * The engine only builds the mandala overlay canvas on a *change* in the
    * mandala flag (playback-sync.ts:404). Switching it on after the canvas
@@ -181,58 +226,84 @@
 {#if playback && frame}
   <div
     class="preview-layer"
-    class:rail-right={railRight}
-    bind:clientWidth={boxWidth}
-    bind:clientHeight={boxHeight}
+    style:--sheet-header-frac={headerFrac}
     transition:popIn|global={{ duration: instant ? 0 : DURATION.emphasis, start: 0.94 }}
     aria-hidden="true"
   >
-    <div class="stage">
-      <AnimatorCanvas
-        blueProp={playback.animState.bluePropState}
-        redProp={playback.animState.redPropState}
-        sequenceData={playback.sequence}
-        gridVisible={true}
-        gridMode={playback.sequence.gridMode ?? null}
-        letter={frame.stepData?.letter ?? null}
-        stepData={frame.stepData}
-        currentStep={frame.step}
-        isPlaying={true}
+    <!-- The header is NOT part of the swap. It renders full-width at the top,
+         sized to exactly the baked sheet's header band, so toggling between
+         card and preview leaves the word/badges in the same place — the same
+         header, whichever mode the card is in. The animator's own header is
+         hidden (hideHeader) so it can't render a second, narrower copy inside
+         the square stage. -->
+    <div class="header-band">
+      <WordHeader
         word={displayWord}
-        previewDarkMode={true}
-        hideTkaGlyph={true}
-        hideStepNumbers={true}
-        hideProgressBar={true}
-        disableContextMenu={true}
-        visibilityManagerOverride={visibility}
-        onInitialized={enableMandala}
+        darkMode={true}
+        activeStepNumber={headerActiveStepNumber}
+        difficultyLevel={headerDifficulty}
+        loopComponents={headerLoop.components.size > 0 ? headerLoop.components : null}
+        rotationPeriod={headerLoop.rotationPeriod}
+        inversionPeriod={headerLoop.inversionPeriod}
+        reflectionAxis={headerLoop.reflectionAxis}
+        overlayComponents={headerLoop.overlayComponents}
       />
     </div>
 
-    <!-- The rail arrives a beat after the animator so the two read as one
-         thing settling into place rather than two panels appearing at once. -->
     <div
-      class="rail"
-      transition:flyFade|global={{
-        duration: instant ? 0 : DURATION.emphasis,
-        delay: instant ? 0 : STAGGER.relaxed,
-        x: railRight ? SLIDE.md : 0,
-        y: railRight ? 0 : SLIDE.md,
-      }}
+      class="preview-body"
+      class:rail-right={railRight}
+      bind:clientWidth={boxWidth}
+      bind:clientHeight={boxHeight}
     >
-      {#await import("$lib/shared/timeline/StepStrip.svelte") then mod}
-        <mod.default
-          sequence={playback.sequence}
+      <div class="stage">
+        <AnimatorCanvas
+          blueProp={playback.animState.bluePropState}
+          redProp={playback.animState.redPropState}
+          sequenceData={playback.sequence}
+          gridVisible={true}
+          gridMode={playback.sequence.gridMode ?? null}
+          letter={frame.stepData?.letter ?? null}
+          stepData={frame.stepData}
           currentStep={frame.step}
-          bpm={BPM}
-          density={railRight ? "compact" : "standard"}
-          fillHeight={true}
-          anchor="center"
-          orientation={railRight ? "vertical" : "horizontal"}
-          loop={false}
-          stepPulse={false}
+          isPlaying={true}
+          word={displayWord}
+          hideHeader={true}
+          previewDarkMode={true}
+          hideTkaGlyph={true}
+          hideStepNumbers={true}
+          hideProgressBar={true}
+          disableContextMenu={true}
+          visibilityManagerOverride={visibility}
+          onInitialized={enableMandala}
         />
-      {/await}
+      </div>
+
+      <!-- The rail arrives a beat after the animator so the two read as one
+           thing settling into place rather than two panels appearing at once. -->
+      <div
+        class="rail"
+        transition:flyFade|global={{
+          duration: instant ? 0 : DURATION.emphasis,
+          delay: instant ? 0 : STAGGER.relaxed,
+          x: railRight ? SLIDE.md : 0,
+          y: railRight ? 0 : SLIDE.md,
+        }}
+      >
+        {#await import("$lib/shared/timeline/StepStrip.svelte") then mod}
+          <mod.default
+            sequence={playback.sequence}
+            currentStep={frame.step}
+            bpm={BPM}
+            density={railRight ? "compact" : "standard"}
+            fillHeight={true}
+            anchor="center"
+            orientation={railRight ? "vertical" : "horizontal"}
+            loop={false}
+            stepPulse={false}
+          />
+        {/await}
+      </div>
     </div>
   </div>
 {/if}
@@ -248,6 +319,26 @@
        static thumbnail ghosting through at 25% doubles the word and muddies
        the mandala. The preview runs previewDarkMode, so this is its floor. */
     background: #08080f;
+
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Pinned to the baked sheet's header geometry: same top edge, same full
+     width, same height fraction — so the word never moves across the toggle.
+     A floor keeps it usable on very tall cards where the baked band is thin. */
+  .header-band {
+    flex: 0 0 auto;
+    height: max(calc(var(--sheet-header-frac, 0.1) * 100%), 28px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    view-transition-name: card-morph-header;
+  }
+
+  .preview-body {
+    flex: 1 1 auto;
+    min-height: 0;
     container-type: size;
 
     display: flex;
@@ -258,7 +349,7 @@
     padding-bottom: calc(var(--min-touch-target, 44px) + 12px);
   }
 
-  .preview-layer.rail-right {
+  .preview-body.rail-right {
     flex-direction: row;
   }
 
@@ -274,11 +365,11 @@
     aspect-ratio: 1;
   }
 
-  .preview-layer:not(.rail-right) .stage {
+  .preview-body:not(.rail-right) .stage {
     width: 100%;
   }
 
-  .preview-layer.rail-right .stage {
+  .preview-body.rail-right .stage {
     height: 100%;
   }
 
@@ -292,10 +383,6 @@
      unique document-wide. */
   .stage {
     view-transition-name: card-morph-stage;
-  }
-
-  .stage :global(.word-header) {
-    view-transition-name: card-morph-header;
   }
 
   .rail :global(.step-cell[data-step-number="0"]) {
@@ -325,7 +412,7 @@
 
   /* Floors keep a cell legible on a nearly-square card; ceilings stop a very
      long card from handing the rail more room than the animation. */
-  .preview-layer:not(.rail-right) .rail {
+  .preview-body:not(.rail-right) .rail {
     min-height: 64px;
     max-height: 45cqh;
   }
@@ -333,7 +420,7 @@
   /* A vertical rail is sized by the cells it can stack, which is a function of
      its HEIGHT — hand it more width than that and the surplus is dead margin
      the animation could have used. */
-  .preview-layer.rail-right .rail {
+  .preview-body.rail-right .rail {
     min-width: 60px;
     max-width: 34cqh;
     align-self: stretch;
