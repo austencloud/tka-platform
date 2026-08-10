@@ -75,52 +75,73 @@ export async function generatePerVisitDemo(options?: {
       difficultyPool[Math.floor(random() * difficultyPool.length)] ??
       models.DifficultyLevel.INTERMEDIATE;
 
+    async function rollBest(
+      startPosition: PictographData | null
+    ): Promise<SequenceData | null> {
+      let best: SequenceData | null = null;
+      let bestScore = -1;
+      for (let roll = 0; roll < MAX_ROLLS; roll++) {
+        // The showcase shape stays 16-count, rotated, and QUARTERED while the
+        // difficulty and letters vary from one sequence to the next. Quartered
+        // on a 16-count is a 4-step seed repeated four times, so
+        // simplifyRepeatedWord renders a tidy 4-glyph title instead of an
+        // overwhelming one.
+        const seq = await generationOrchestrator.generateSequence({
+          mode: models.GenerationMode.CIRCULAR,
+          loopType: circular.LOOPType.ROTATED,
+          period: circular.Period.QUARTERED,
+          length: 16,
+          // Keep the homepage's turn ceiling even when the level draw permits a
+          // wider palette. This prevents the public demo from drifting back into
+          // the triple-spin intensity that prompted the 2026-07-19 tuning.
+          turnIntensity: 1.5,
+          gridMode: grid.GridMode.DIAMOND,
+          propType: options?.propType ?? prop.PropType.STAFF,
+          difficulty,
+          constraintPreset: "smooth",
+          ...(startPosition ? { startPosition } : {}),
+        });
+        // Plain-ify reactive proxies before handing to players/canvases.
+        const plain = JSON.parse(JSON.stringify(seq)) as SequenceData;
+        const letters = plain.steps
+          .map((s) => String(s.letter ?? ""))
+          .filter(Boolean);
+        if (letters.length === 0) continue;
+        const familiarFraction =
+          letters.filter((l) => FAMILIAR_GLYPH.test(l)).length / letters.length;
+        const uniqueCount = new Set(letters).size;
+        if (
+          familiarFraction >= MIN_FAMILIAR_FRACTION &&
+          uniqueCount >= MIN_UNIQUE_LETTERS
+        ) {
+          return plain;
+        }
+        // Familiarity dominates; variety breaks ties among comparable rolls.
+        const score = familiarFraction + uniqueCount / 10;
+        if (score > bestScore) {
+          best = plain;
+          bestScore = score;
+        }
+      }
+      return best;
+    }
+
+    const constrained = options?.startPosition ?? null;
     let best: SequenceData | null = null;
-    let bestScore = -1;
-    for (let roll = 0; roll < MAX_ROLLS; roll++) {
-      // The showcase shape stays 16-count, rotated, and QUARTERED while the
-      // difficulty and letters vary from one sequence to the next. Quartered
-      // on a 16-count is a 4-step seed repeated four times, so
-      // simplifyRepeatedWord renders a tidy 4-glyph title instead of an
-      // overwhelming one.
-      const seq = await generationOrchestrator.generateSequence({
-        mode: models.GenerationMode.CIRCULAR,
-        loopType: circular.LOOPType.ROTATED,
-        period: circular.Period.QUARTERED,
-        length: 16,
-        // Keep the homepage's turn ceiling even when the level draw permits a
-        // wider palette. This prevents the public demo from drifting back into
-        // the triple-spin intensity that prompted the 2026-07-19 tuning.
-        turnIntensity: 1.5,
-        gridMode: grid.GridMode.DIAMOND,
-        propType: options?.propType ?? prop.PropType.STAFF,
-        difficulty,
-        constraintPreset: "smooth",
-        ...(options?.startPosition
-          ? { startPosition: options.startPosition }
-          : {}),
-      });
-      // Plain-ify reactive proxies before handing to players/canvases.
-      const plain = JSON.parse(JSON.stringify(seq)) as SequenceData;
-      const letters = plain.steps
-        .map((s) => String(s.letter ?? ""))
-        .filter(Boolean);
-      if (letters.length === 0) continue;
-      const familiarFraction =
-        letters.filter((l) => FAMILIAR_GLYPH.test(l)).length / letters.length;
-      const uniqueCount = new Set(letters).size;
-      if (
-        familiarFraction >= MIN_FAMILIAR_FRACTION &&
-        uniqueCount >= MIN_UNIQUE_LETTERS
-      ) {
-        return plain;
-      }
-      // Familiarity dominates; variety breaks ties among comparable rolls.
-      const score = familiarFraction + uniqueCount / 10;
-      if (score > bestScore) {
-        best = plain;
-        bestScore = score;
-      }
+    try {
+      best = await rollBest(constrained);
+    } catch (constrainedError) {
+      // A start position the builder cannot reach (a box-mode pose asked of a
+      // diamond draw, say) exhausts every attempt and throws. Falling straight
+      // through to the baked fixture makes the hero replay the same sequence
+      // it just showed; a fresh unconstrained roll is a real sequence, and the
+      // only cost is that it does not pick up where the last one ended.
+      if (!constrained) throw constrainedError;
+      console.warn(
+        "[per-visit-demo] constrained roll failed, retrying unchained:",
+        constrainedError
+      );
+      best = await rollBest(null);
     }
     if (best) return best;
   } catch (e) {

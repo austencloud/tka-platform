@@ -194,6 +194,13 @@ function elementOf(seq: SequenceData): TnDElement | null {
 export interface MatrixDraw {
   sequence: SequenceData;
   element: TnDElement;
+  /**
+   * Which grid the realization was built on. The caller chains the NEXT draw to
+   * this one's start position, and the generated draw path only ever runs in
+   * diamond — handing it a box start position asks for a path that does not
+   * exist. See hero-act.svelte.ts.
+   */
+  grid: "diamond" | "box";
 }
 
 /**
@@ -260,7 +267,11 @@ export async function drawMatrixRealization(opts?: {
     // Repeat the 4-beat flower so it holds the stage like a 16-count draw, then
     // plain-ify (strip any reactive proxies) before handing to the player.
     const tiled = tileClosedLoop(sequence, REPEAT);
-    return { sequence: JSON.parse(JSON.stringify(tiled)) as SequenceData, element };
+    return {
+      sequence: JSON.parse(JSON.stringify(tiled)) as SequenceData,
+      element,
+      grid: cell.grid,
+    };
   }
 
   return null;
