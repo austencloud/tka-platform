@@ -146,25 +146,48 @@
     ruler: new MeshBasicMaterial({ color: "#e08640" }),
     stop: new MeshBasicMaterial({ color: "#4f9ad0" }),
     /**
-     * The vent column in the springs chamber.
+     * The vents in the springs chamber.
      *
-     * Translucent because the thing it stands in for is steam, and an opaque
-     * cylinder would put a solid white slab across the far half of the only
-     * room that has a far half. It was 0.3, which was tuned when this column
-     * stood in a shaft of daylight and had contrast to spare; the chamber it
-     * lives in now is uniform mid-grey on every surface, and at 0.3 the marker
-     * simply did not appear in any frame. 0.55 overshot and turned the left
-     * quarter of the chamber into fog. 0.35 with the narrower base is the value
-     * at which the head wall stays visible THROUGH it — which is what makes it
-     * read as vapour standing in a room rather than as a wall of the room.
+     * Translucent because the thing they stand in for is steam, and opaque
+     * cylinders would put solid white slabs across the far half of the only
+     * room that has a far half. It was 0.3, tuned when there was ONE of these
+     * and it stood in a shaft of daylight with contrast to spare; the chamber
+     * is uniform mid-grey on every surface now, and at 0.3 the marker did not
+     * appear in any frame. 0.55 overshot and turned the left quarter to fog.
+     *
+     * 0.35 was right for one column and is wrong for six: `depthWrite: false`
+     * means they all composite, so two overlapping at 0.35 read as 0.58 and
+     * three as 0.72 — an opaque wall assembled out of things that are each
+     * individually translucent. Then 0.22 solved the stacking and lost the
+     * object: a near-white at 0.22 over a mid-grey wall is about a 10% lift in
+     * value, and the vents disappeared out of every frame in the chamber.
+     *
+     * 0.3 is where it sits, and the stacking problem is answered by the mouths
+     * below instead of by the plume. The plume says how tall; the mouth says
+     * where, and the mouth is opaque, so no amount of translucency tuning can
+     * take the vent out of the frame again.
      */
     beacon: new MeshBasicMaterial({
       color: "#dfe5e9",
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.3,
       depthWrite: false,
       side: DoubleSide,
     }),
+    /**
+     * The vent mouth: the hole the spring comes out of, drawn on the floor.
+     *
+     * This is the mark that actually answers the question the room is being
+     * asked. A translucent column says "there is vapour here"; a hard-edged
+     * disc lying in the floor says "there is an opening here, and it is in the
+     * GROUND" — which is the whole content of the word spring, and the half
+     * that six faint cylinders were never going to carry on their own.
+     *
+     * Opaque and warm, and warm on purpose rather than as decoration: these are
+     * the only heat in the piece, and the next room is the volcano. It is the
+     * one place a graybox is allowed to say which way the walk is going.
+     */
+    vent: new MeshBasicMaterial({ color: "#c4562f" }),
   };
 
   /**
@@ -343,16 +366,16 @@
   }));
 
   /**
-   * The vent column, as a plain cylinder.
+   * The vents, as plain cylinders.
    *
-   * It used to be the piece's one long sightline — visible from the first step
-   * through two portals — and that is gone with the shaft it stood in. It is
-   * now a local object in the springs chamber, and the geometry question it
-   * answers is a different one: does the room have anything in it besides the
-   * performer and the door. Still the dumbest possible cylinder; that is the
+   * They used to be one, and it used to be the piece's one long sightline —
+   * visible from the first step through two portals — and that is gone with the
+   * shaft it stood in. They are now local objects in the springs chamber, and
+   * the geometry question they answer is a different one: does the water in this
+   * room come from anywhere. Still the dumbest possible cylinders; that is the
    * right fidelity for a graybox.
    */
-  const beacon = layout.plume;
+  const vents = layout.vents;
 
   /**
    * The waterline, drawn as the layout's own planes rather than one sheet
@@ -388,14 +411,41 @@
    */
   const background = new Color("#a9b1b6");
   const fog = new FogExp2(0xa9b1b6, 0.0026);
-  const hemi = new HemisphereLight(0xffffff, 0x7d848a, 1.1);
+  /**
+   * Sky term full, ground term dark — and the ground term is what lights every
+   * ceiling in the piece, so it is the single number that decides whether the
+   * back half reads as a cave.
+   *
+   * It was 0x7d848a, a mid-grey, chosen when the walk was mostly outdoors and a
+   * ceiling was a rare thing 60 m overhead. The back half is now a fully
+   * enclosed chamber, and a mid-grey ground term lifts its roof and its walls
+   * to within a hair of its floor: every surface arrives at the same value, the
+   * room loses its corners, and what should read as being inside rock reads as
+   * standing on a pale plain. Dark, the ordering the palette already encodes —
+   * floor lightest, wall mid, ceiling darkest — is the ordering you actually
+   * see, and the chamber closes around the visitor without a single metre of
+   * geometry moving.
+   *
+   * 0x5a6166 and not lower, because the ground term is also half of what every
+   * VERTICAL gets — a hemisphere light mixes sky and ground by the normal's Y,
+   * so a wall takes the average of the two. Crushed to near-black it took the
+   * walls down with the ceilings and turned the frozen river into night.
+   */
+  const hemi = new HemisphereLight(0xffffff, 0x5a6166, 0.85);
   /**
    * Key. Deliberately not strong: shadows are here to seat objects on the
    * floor, not to model a time of day. Turned up, the ridge blocks throw hard
    * diagonals across the snowfield that read as terrain features which are not
    * there.
+   *
+   * Halved from 1.15 for the same reason the ground term dropped. Summed with
+   * the hemisphere and the bounce, the old rig put about 3.2 of intensity on a
+   * palette whose lightest value is #9aa0a3 — so the bright surfaces clipped to
+   * near-white and every value distinction the greys were carrying was thrown
+   * away at the top end. Around 1.5 total is where the materials render as the
+   * values they were chosen to be, which is the entire job of a graybox.
    */
-  const sun = new DirectionalLight(0xffffff, 1.15);
+  const sun = new DirectionalLight(0xffffff, 0.45);
   /**
    * Bounce, aimed straight up, and the reason the ceilings are visible at all.
    *
@@ -407,8 +457,16 @@
    * every wall in the scene at the same time. An upward light fixes only the
    * surfaces with the problem: it lands square on ceilings, grazes verticals,
    * and misses floors entirely.
+   *
+   * It is still doing that job at 0.16; it was doing it far too well at 0.95.
+   * The failure it was written against was a BLACK ceiling, and the fix
+   * overshot into a ceiling as bright as the floor under it. A ceiling should
+   * be the darkest surface in the room and still legible — visible enough to
+   * be a lid, dark enough to be one. This is the one light that must stay
+   * small: it hits ceilings and nothing else, so any generosity here goes
+   * straight into erasing the top of the value ordering.
    */
-  const bounce = new DirectionalLight(0xffffff, 0.95);
+  const bounce = new DirectionalLight(0xffffff, 0.16);
 
   /** Low and behind-left, so form reads and the walk is toward the light. */
   const SUN_OFFSET = new Vector3(-46, 62, -78);
@@ -858,16 +916,34 @@
 {/each}
 
 <!--
-  The vent column. It was 12 m across at the base, which was sized when it had
-  to be picked out at 200 m; walked past at 6 m it stopped being a column and
-  became a pale fog across the left third of every frame in the chamber. 8 m at
-  the base still reads from the far side of a 52 m room and lets the visitor
-  see the room while standing next to it.
+  The vents, in two parts: a mouth in the floor and a plume over it.
+
+  The plume is narrow at the floor and wide at the top, which is the opposite of
+  what this was: a 8 m base tapering to 5 m at the ceiling read as a pile of
+  something, heaped on the floor. A plume entrains water as it rises, so it
+  opens as it goes — and a shape that starts at a POINT on the floor and opens
+  upward is the one that says the thing came out of a hole down there.
+
+  The mouth is what makes that claim survive being looked at. Translucent white
+  in a room whose every surface is mid-grey is a weak mark at any opacity that
+  does not also stack into a wall; a hard warm disc lying IN the floor cannot be
+  missed and cannot be mistaken for anything but an opening. Pitched to the
+  grade it lies in, because this floor is climbing 18° and a flat disc on it
+  buries one edge and floats the other.
 -->
-<T.Mesh position={[beacon.x, beacon.baseY + beacon.height / 2, beacon.z]}>
-  <T.CylinderGeometry args={[2.5, 4, beacon.height, 16, 1, true]} />
-  <T is={MARK.beacon} />
-</T.Mesh>
+{#each vents as v, i (i)}
+  <T.Mesh
+    position={[v.x, v.baseY + 0.06, v.z]}
+    rotation.x={-Math.PI / 2 - v.floorPitch}
+  >
+    <T.CircleGeometry args={[v.radius * 0.55, 20]} />
+    <T is={MARK.vent} />
+  </T.Mesh>
+  <T.Mesh position={[v.x, v.baseY + v.height / 2, v.z]}>
+    <T.CylinderGeometry args={[v.radius, v.radius * 0.32, v.height, 14, 1, true]} />
+    <T is={MARK.beacon} />
+  </T.Mesh>
+{/each}
 
 {#if isInitialized && physicsProvider}
   <UnifiedCameraController

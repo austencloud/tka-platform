@@ -104,8 +104,29 @@ export interface WaterTraverseLayout {
   legs: Record<Leg, WorldRect>;
   /** Where the visitor's eye breaks the surface on the ascent. */
   surfaceBreak: { x: number; z: number; y: number };
-  /** The steam column, visible from the snowfield across the whole route. */
-  plume: { x: number; z: number; baseY: number; height: number };
+  /**
+   * The springs: vents on the chamber floor, with the heat standing over each.
+   *
+   * Plural, and that is the whole correction. One column in the middle of a
+   * room is a monument; a scatter of them coming off a floor that is climbing
+   * past you is a source.
+   */
+  vents: {
+    x: number;
+    z: number;
+    baseY: number;
+    height: number;
+    radius: number;
+    /**
+     * The grade of the floor the vent's mouth lies in, in radians.
+     *
+     * Carried in the data rather than recomputed by the renderer because the
+     * floor's shape is the terrain's business and a mouth that lies FLAT in a
+     * floor tilted 18° buries half of itself and floats the other half — which
+     * is the exact clipping the graybox is meant to be free of.
+     */
+    floorPitch: number;
+  }[];
   spawn: { x: number; y: number; z: number; yaw: number };
 }
 
@@ -339,11 +360,29 @@ const CANYON_FLOOR_END_Y = WATERLINE_Y - 6;
  * the passage is full.
  *
  * `sump` is the caving word for exactly this: a passage flooded to its roof.
+ *
+ * And the sump is the BOTTOM. Everything from here rises again — see the
+ * springs. The first cut ran the back half dead flat at −19 from the pinch to
+ * the door, which is a descent followed by a corridor, and a corridor is not a
+ * spring. The pinch is the low point of the walk; the chamber climbs out of it.
  */
 const SUMP_START_Z = 212;
 const SUMP_END_Z = 250;
-/** Floor at the sump's far end — 19 m under the line, and still falling into it. */
-const SUMP_FLOOR_END_Y = WATERLINE_Y - 19;
+/**
+ * Floor at the pinch: 30 m under the line, and the deepest metre of the piece.
+ *
+ * It was 19, which was chosen when the chamber beyond it was flat and 19 was
+ * therefore also the floor of every remaining metre. Once the chamber climbs,
+ * this number stops being a depth and becomes an AMPLITUDE — how far down you
+ * go in order to have somewhere to come back up from. Eleven metres of rise
+ * over the chamber is enough to read on the depth readout and in the grade
+ * underfoot; less than that and the climb is deniable.
+ *
+ * It cannot be bought at the other end instead. The whole back half is under
+ * a waterline at y = 0 and has to stay there, so raising the door raises the
+ * mouth's lintel into the surface. The rise has to be paid for by going deeper.
+ */
+const SUMP_FLOOR_END_Y = WATERLINE_Y - 30;
 /**
  * The pinch. 7 m across with 3.5 m of headroom, tighter than the cave's 12 × 6,
  * because the cave already spent that card: a second squeeze that is not worse
@@ -378,15 +417,41 @@ const SUMP_SLICES = 24;
  * ── The springs ─────────────────────────────────────────────────────────────
  *
  * The sump lets out into a chamber that is flooded to its roof: 52 m across,
- * 16 m tall, and every metre of it under water. The vents are on its floor and
- * the heat goes UP into rock instead of out into sky.
+ * and every metre of it under water. The vents are on its floor and the heat
+ * goes UP into rock instead of out into sky.
  *
- * This chamber is the volcano's first room. The walk ends here because the
- * next one starts here.
+ * And the floor CLIMBS. That is the half this room was missing, and it is the
+ * half that makes the word "springs" true. A spring is not a body of water, it
+ * is a direction: something arriving from below. If the visitor walks in on
+ * the flat, the only thing rising in the room is a decoration, and the room is
+ * a flooded hall that happens to have a column in it.
+ *
+ * So the shape of the back half is a U. Down through the canyon, down through
+ * the sump, the pinch at the bottom of it, and then thirty-four metres of
+ * climb out — with the vents coming up off that rising floor alongside you and
+ * the roof staying flat overhead, which is the only reference you have down
+ * here that the ground is moving and you are moving with it.
+ *
+ * The roof stays put on purpose. If the ceiling climbed too, the section would
+ * be constant and the ascent would be invisible: no horizon, no sky, nothing
+ * to measure against. A flat roof that the floor comes up to meet turns the
+ * climb into something you can SEE, as the 27 m of headroom at the flare
+ * closes to 16 at the door.
+ *
+ * This chamber is the volcano's first room, and the door is at the top of the
+ * climb — so the handoff happens already ascending, and Fire carries it on up.
  */
 const SPRINGS_HALF_W = 26;
 const SPRINGS_ROOF_Y = WATERLINE_Y - 3;
-const SPRINGS_FLOOR_Y = SUMP_FLOOR_END_Y;
+/**
+ * Floor at the DOOR — the top of the climb, not the level of the room.
+ *
+ * Still −19, which is what the whole chamber used to be. Keeping the far end
+ * where it was is what makes the head wall, the mouth, its 8 m lintel and the
+ * throat behind it all survive this change untouched: the geometry that reads
+ * correctly still reads correctly, and only the ground under it moved.
+ */
+const SPRINGS_FLOOR_Y = WATERLINE_Y - 19;
 /** The flare: how far it takes to go from the throat to the full chamber. */
 const SPRINGS_FLARE_LENGTH = 6;
 
@@ -436,8 +501,16 @@ const BACK_OUTER_HALF_W =
 const BACK_OUTER_TOP_Y = CANYON_ROOF_Y + ROCK_THICKNESS;
 
 const HALL_THICKNESS = 3;
-/** The lowest floor anywhere. Walls are built down to it so none of them float. */
-const HALL_BASE_Y = SEA_FLOOR_Y - 2;
+/**
+ * The lowest floor anywhere. Walls are built down to it so none of them float.
+ *
+ * Keyed to the sump's pinch rather than to the sea floor, because the pinch is
+ * now 12 m deeper than the sea and every wall in the back half stands in the
+ * same trench. Keyed to the sea it would have left the springs chamber's walls
+ * starting 10 m above their own floor — a band of open nothing running the
+ * length of a room the visitor walks the whole way down.
+ */
+const HALL_BASE_Y = SUMP_FLOOR_END_Y - 2;
 
 /**
  * The near face of the head-wall portal — where the chamber's 16 m of roof
@@ -624,6 +697,26 @@ function sumpFloorYAt(z: number): number {
   return (
     CANYON_FLOOR_END_Y + (SUMP_FLOOR_END_Y - CANYON_FLOOR_END_Y) * sumpT(z)
   );
+}
+
+/**
+ * The springs floor: the climb out, and the second half of the U.
+ *
+ * One straight grade from the pinch at −30 to the door at −19 — 11 m of rise
+ * over 34 m, a little under 18°. Steep enough to be felt underfoot and to move
+ * the depth readout a metre every three paces, shallow enough that it is a
+ * floor rather than a ramp you notice as an object.
+ *
+ * Clamped past the door, so the throat behind the mouth runs on flat. The
+ * visitor never stands there; what matters is that the floor they are looking
+ * down does not keep tilting away, which would turn a passage into a chute.
+ */
+function springsFloorYAt(z: number): number {
+  const t = Math.max(
+    0,
+    Math.min(1, (z - SUMP_END_Z) / (SPRING_END_Z - SUMP_END_Z))
+  );
+  return SUMP_FLOOR_END_Y + (SPRINGS_FLOOR_Y - SUMP_FLOOR_END_Y) * t;
 }
 
 /**
@@ -912,6 +1005,29 @@ function ramp(id: string, r: WorldRect, fromY: number, toY: number): FloorRect {
 }
 
 /**
+ * A vent on the springs floor.
+ *
+ * Its base comes off the climbing floor rather than off a constant, and its
+ * height is a FRACTION of the clearance over it rather than a number of metres.
+ * Both for the same reason: the ground under this room moves 11 m between its
+ * near end and its far one. An absolute 21 m column authored at the flare is a
+ * full-height plume there and pokes three metres through the ceiling once the
+ * floor has climbed to meet it.
+ */
+function vent(x: number, z: number, rise: number, radius: number) {
+  const baseY = springsFloorYAt(z);
+  const ahead = springsFloorYAt(z + 1) - baseY;
+  return {
+    x,
+    z,
+    baseY,
+    radius,
+    height: (SPRINGS_ROOF_Y - baseY) * rise,
+    floorPitch: Math.atan2(ahead, 1),
+  };
+}
+
+/**
  * The ascent is split at the surface-break landing so the visitor's head
  * leaves the water on flat ground. Returns the two ramps and the landing
  * between them, plus where that landing sits.
@@ -1189,19 +1305,44 @@ function buildBaseFloorRects(): FloorRect[] {
   }
 
   /**
-   * The springs chamber floor. Flat, and 19 m under a surface that is no
-   * longer anywhere — the visitor arrives at the bottom of the piece.
+   * The springs chamber floor: one ramp, climbing 11 m from the pinch to the
+   * door. The visitor arrives at the bottom of the piece and walks back up out
+   * of it.
    *
-   * Runs the length of the throat as well. Nobody walks there, but everybody
-   * looks down it from the mouth, and a passage whose floor stops short would
-   * show its own edge at exactly the moment it is meant to read as continuing.
+   * One rect and not a stack of slices, because a `ramp-z` IS the slope — the
+   * sump is sliced only because its WIDTH changes down the run and an
+   * axis-aligned rect cannot taper. This chamber is the same 52 m wide the
+   * whole way, so slicing it would buy a staircase where a plane already fits.
    */
   floorRects.push(
-    flat(
+    ramp(
       "springs-floor",
       rect(
         -SPRINGS_HALF_W - ROCK_THICKNESS,
         SUMP_END_Z,
+        SPRINGS_HALF_W + ROCK_THICKNESS,
+        SPRING_END_Z
+      ),
+      springsFloorYAt(SUMP_END_Z),
+      springsFloorYAt(SPRING_END_Z)
+    )
+  );
+
+  /**
+   * And the throat's floor, flat at the door's level.
+   *
+   * Nobody walks there, but everybody looks down it from the mouth, and a
+   * passage whose floor stops short would show its own edge at exactly the
+   * moment it is meant to read as continuing. Flat rather than still climbing
+   * because a floor that keeps tilting away past the doorway reads as a chute,
+   * and the next room is meant to be somewhere you walk into.
+   */
+  floorRects.push(
+    flat(
+      "springs-throat-floor",
+      rect(
+        -SPRINGS_HALF_W - ROCK_THICKNESS,
+        SPRING_END_Z,
         SPRINGS_HALF_W + ROCK_THICKNESS,
         SPRING_END_Z + SPRINGS_THROAT_LENGTH
       ),
@@ -1389,6 +1530,7 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
    * the same motion as A inverted, which is what steam is to ice.
    * Verified against the Flow Arts MCP 2026-08-09.
    */
+  const ICE_PERFORMER_Z = (SNOW_START_Z + SNOW_END_Z) / 2 + 6;
   const performers: PerformerAnchor[] = [
     /**
      * A, then B, then C, in that order along the walk. The first mapping put
@@ -1402,8 +1544,11 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
       letter: "A",
       effectId: "sparkles",
       x: 0,
-      z: (SNOW_START_Z + SNOW_END_Z) / 2 + 6,
-      y: WATERLINE_Y,
+      z: ICE_PERFORMER_Z,
+      // Off the floor, not off the waterline. Those are the same number on the
+      // frozen river and 0.28 m apart here, which is enough to see a figure
+      // hovering once you are standing next to it.
+      y: floorYAt(floorRects, ICE_PERFORMER_Z),
       facingAngle: Math.PI,
     },
     {
@@ -1445,7 +1590,10 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
       effectId: "smoke",
       x: -11,
       z: SUMP_END_Z + 18,
-      y: SPRINGS_FLOOR_Y,
+      // Off the floor function, not off SPRINGS_FLOOR_Y. That constant is the
+      // floor at the DOOR now; taking it literally here would stand the figure
+      // five metres up in open water, halfway up its own room.
+      y: springsFloorYAt(SUMP_END_Z + 18),
       facingAngle: Math.PI,
     },
   ];
@@ -1478,29 +1626,59 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
     },
     surfaceBreak: { x: 0, z: ascent.breakZ, y: SURFACE_BREAK_Y },
     /**
-     * The vent column: heat coming off the chamber floor and hitting rock.
+     * The vents: heat coming off the chamber floor and hitting rock.
      *
-     * It used to be a steam plume standing in a shaft of daylight and going up
-     * through the roof — the piece's one long sightline, visible from the
-     * first step through two portals. That is gone, and both halves of the
-     * loss are the point. A column you can see for the whole walk is a
-     * promise; a room you cannot see into until you are inside it is a reveal.
-     * And a plume that exits through the ceiling asks the visitor to look UP
-     * and out, which is an exit — the last thing this room should offer, when
-     * its whole job is handing them to the volcano through the far wall.
+     * There used to be one, and it used to stand in a shaft of daylight and go
+     * up through the roof — the piece's one long sightline, visible from the
+     * first step through two portals. That is gone, and both halves of the loss
+     * are the point. A column you can see for the whole walk is a promise; a
+     * room you cannot see into until you are inside it is a reveal. And a plume
+     * that exits through the ceiling asks the visitor to look UP and out, which
+     * is an exit — the last thing this room should offer, when its whole job is
+     * handing them to the volcano through the far wall.
      *
-     * So it starts on the floor 19 m down and stops dead at the roof, because
-     * that is what a vent under 19 m of water actually does: the heat has
-     * nowhere to go. Set off the centreline so the visitor walks PAST it
-     * rather than into it, and so it reads against the far dark rather than
-     * against the performer.
+     * What was still wrong after that: ONE of them, standing in the middle of
+     * the floor, is a monument to a spring rather than a spring. Six of them,
+     * scattered across a floor that is rising past you, are a source — and the
+     * room stops being a flooded hall with a column in it.
+     *
+     * Two are full height and stop dead at the roof, because that is what a
+     * vent under thirty metres of water does: the heat has nowhere to go. The
+     * other four peter out, which is what keeps the tall two reading as tall.
+     * Ranged in Z so the room reveals them in sequence rather than all at once,
+     * and one (the 4 m one at z 265) sits close enough to the centreline to be
+     * PASSED — the difference between watching springs across a room and
+     * walking through them.
      */
-    plume: {
-      x: 10,
-      z: SUMP_END_Z + 20,
-      baseY: SPRINGS_FLOOR_Y,
-      height: SPRINGS_ROOF_Y - SPRINGS_FLOOR_Y,
-    },
+    vents: [
+      // The pair that flanks the door, and the two that carry the room.
+      //
+      // Full height, hard against the mouth's shoulders at x ±10 — the opening
+      // is 14 m across, so they stand just outside it and frame it without
+      // covering it. They are here rather than in the middle of the floor
+      // because they are the only vents visible for the WHOLE walk: from the
+      // pinch they are 30 m ahead and 10 m off, which is 18° — dead in the
+      // forward cone — and they stay in it every metre of the climb. The last
+      // thing the room shows before handing over is its heat standing either
+      // side of the way out.
+      vent(-10, 281, 1, 3),
+      vent(10.5, 280, 1, 2.8),
+      // The middle pair, close enough to the centreline to be in frame from the
+      // entrance and to be walked BETWEEN halfway up. This is the correction
+      // the first scatter needed: lateral offset only means anything against
+      // forward distance. 11 m out at 6 m ahead is 61° off-centreline, which is
+      // off the side of the screen; the same 11 m at 18 m ahead is 31°, which
+      // is the edge of the picture. Vents ranged by distance instead of spread
+      // by width left the middle of the walk with nothing in front of it.
+      vent(-6, 273, 0.5, 2),
+      vent(7.5, 268, 0.45, 1.9),
+      // And the wide, early ones — met in the first few steps out of the sump,
+      // passed close, and gone. They are peripheral on purpose: something has
+      // to go by at arm's length or the room is a thing watched from a path.
+      vent(-19, 262, 0.35, 2.2),
+      vent(20, 265, 0.3, 2.4),
+      vent(6.5, 258, 0.25, 1.5),
+    ],
     spawn: { x: 0, y: SNOW_Y + 1.0, z: SNOW_START_Z + 6, yaw: 0 },
   };
 }
