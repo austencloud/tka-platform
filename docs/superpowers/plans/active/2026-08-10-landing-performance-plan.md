@@ -395,3 +395,72 @@ then `new_page` (background: true) on the target URL, then
 **The contract test is load-bearing.** It exists because every one of these
 regressions still compiles and still looks fine on a fast desktop. If it fails,
 fix the source — do not loosen the test.
+
+## P5 RESOLVED TO A ROOT CAUSE (2026-08-10, measured)
+
+**My earlier framing of P5 was wrong twice. Corrected here.**
+
+Wrong #1: "landing initializes Firebase, defer it." False. `initLandingMode()`
+(`src/routes/+layout.svelte:353`) never imports Firebase/DI/auth, and
+`preloadedImports` (:312) only calls `startAppImports()` when
+`detectSiteMode() === "app"`. That path is already correct.
+
+Wrong #2: "so P5 is already done." Also false. Firebase loads on landing anyway,
+via a component import chain — not via boot.
+
+### Measured, cold + signed-out (isolated browser context, verified isolated:
+### 14 localStorage keys vs 1653 in the default context)
+
+Landing (`/`, `.mkt-shell` present, header shows "Sign in") loads the FULL
+Firebase stack:
+
+| module | start |
+|---|---|
+| `deps/firebase_auth.js` | 1646 ms |
+| `deps/firebase_app.js` | 2129 ms |
+| `deps/firebase_firestore.js` | 2130 ms |
+| `deps/firebase_database.js` | 2835 ms |
+| `deps/firebase_messaging.js` | 2855 ms |
+| `deps/firebase_functions.js` | 3865 ms |
+
+Plus 6 live `identitytoolkit` / `firestore.googleapis` requests.
+
+### The chain
+
+`LaunchpadTile.svelte:200` dynamically imports `ChoreoCard.svelte` for the tile
+preview (lazy, fine) -> `ChoreoCard.svelte:22` **statically** imports
+`authState` -> `auth-state.svelte.ts` -> `auth/firebase.ts` -> whole SDK.
+
+`SiteHeader.svelte:19-38` already solved this exact problem for itself: type-only
+import + an SDK-free IndexedDB probe for `firebaseLocalStorageDb`, loading the
+real `authState` only when a persisted session exists. Its comment literally
+warns "must NOT statically import authState - that drags the whole Firebase
+stack". ChoreoCard bypasses that.
+
+### What it's all for
+
+ONE boolean. `authState.isAuthenticated`, read at ChoreoCard lines 293, 312,
+326, 358 - every one of them only gates whether a QR code renders.
+
+### Recommended fix (NOT yet applied)
+
+Do not hook `auth-state`: `_state` is reassigned wholesale (`_state = {..._state,
+user}`) with no single mutation site, so a push-based presence signal means
+editing a primitive with ~50 consumers.
+
+Preferred, contained: ChoreoCard stops importing `authState` statically and
+loads it dynamically ONLY when `showQRCode` is true, defaulting to `false`
+until resolved. Landing tiles render with QR off, so they never touch Firebase;
+app-mode QR cards load it, where it is already loaded regardless.
+
+Before implementing, confirm `showQRCode` is false for the landing tile path,
+and check the other 3 landing-reachable static `authState` importers if any
+(grep `from ".*auth-state"` across components rendered by LaunchpadTile).
+
+### Verification method note (cost me two wrong readings)
+
+`performance.getEntriesByType('resource')` silently caps at **250 entries**.
+Both of my first two readings hit exactly 250 and reported "zero Firebase
+requests" - false. Always navigate with
+`initScript: performance.setResourceTimingBufferSize(5000)` and assert
+`total < 5000` before trusting any absence claim.
