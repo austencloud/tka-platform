@@ -55,6 +55,16 @@ LIP_MARGIN = 1.5
 CAMERA_DIRECTION_DEGREES = -90.0
 # Blades align to a nominal current running across the stage.
 CURRENT_DEGREES = 20.0
+# The default hero camera looks upstage at the dais from about 19 m downstage.
+# Anything tall inside this corridor stands between the audience and the
+# performer, which is the one thing a staged reef may never do. Outside the
+# corridor tall objects are welcome -- there they frame instead of block.
+SIGHTLINE_HALF_WIDTH = 8.0
+# Floor scatter: low life everywhere the zones do not reach. Nothing taller than
+# a knee, so it can cross the camera corridor without hiding the performer.
+FLOOR_SCATTER_SILHOUETTES = ("shell", "plate", "blade")
+FLOOR_SCATTER_MAX_HEIGHT = 0.9
+FLOOR_SCATTER_PER_SQM = 0.06
 
 
 def validate_rules(rules):
@@ -126,7 +136,9 @@ def is_clear(occupied, x, y, row, size, rule):
     Enforcing companionSpacing against everything put one arch in the arch zone
     and rejected 959 candidates behind it.
     """
-    physical = row["footprintRadius"] * size
+    # footprintRadius and baseOffset are normalised against max extent, so they
+    # scale with the SCALE FACTOR, not with the authored metre size.
+    physical = row["footprintRadius"] * scale_for_size(row, size)
     companion = physical * rule["companionSpacing"]
     for ox, oy, o_physical, o_companion, o_silhouette in occupied:
         distance = math.hypot(x - ox, y - oy)
@@ -138,8 +150,64 @@ def is_clear(occupied, x, y, row, size, rule):
 
 
 def occupancy(x, y, row, size, rule):
-    physical = row["footprintRadius"] * size
+    # footprintRadius and baseOffset are normalised against max extent, so they
+    # scale with the SCALE FACTOR, not with the authored metre size.
+    physical = row["footprintRadius"] * scale_for_size(row, size)
     return (x, y, physical, physical * rule["companionSpacing"], row["silhouette"])
+
+
+AXIS_INDEX = {"x": 0, "y": 1, "z": 2}
+
+
+def measured_extent_for_axis(row):
+    """Normalised extent of the axis the authored size actually refers to.
+
+    Geometry is normalised to 1-unit MAX extent at import, so a scale factor
+    sets the longest axis. But "giant kelp is 10 m tall" names its height, and
+    for a kelp sheet whose longest axis is horizontal those are not the same
+    number. Scaling by height directly produced an 11 m wide slab where a frond
+    belonged -- visible immediately in a render, invisible in the JSON.
+    """
+    up = AXIS_INDEX[row["upAxis"]]
+    horizontal = [a for a in (0, 1, 2) if a != up]
+    axis = row["sizeMetres"]["axis"]
+    extent = (
+        row["size"][up]
+        if axis == "height"
+        else max(row["size"][horizontal[0]], row["size"][horizontal[1]])
+    )
+    return extent / row["maxExtent"]
+
+
+def scale_for_size(row, metres):
+    """Convert an authored metre size along its own axis into a scale factor."""
+    extent = measured_extent_for_axis(row)
+    return metres / extent if extent > 1e-6 else metres
+
+
+def contradicts_silhouette(row):
+    """Reject geometry that cannot be what the index says it is.
+
+    A blade or a column is by definition taller than it is wide. When the
+    measured mesh says otherwise the asset is mis-exported -- lying down, or
+    with the wrong up axis -- and no scale factor rescues it.
+    """
+    up = AXIS_INDEX[row["upAxis"]]
+    horizontal = [a for a in (0, 1, 2) if a != up]
+    footprint = max(row["size"][horizontal[0]], row["size"][horizontal[1]])
+    if footprint < 1e-6:
+        return None
+    aspect = row["size"][up] / footprint
+    # A column must actually be taller than it is wide -- that is the whole
+    # silhouette. A blade need not be: a turtle-grass patch spreads wider than
+    # it stands, and that is correct. What a blade may not be is a flat sheet.
+    minimum = 1.0 if row["silhouette"] == "column" else 0.5
+    if row["silhouette"] in {"blade", "column"} and aspect < minimum:
+        return (
+            f"{row['silhouette']} aspect {aspect:.2f} is below {minimum:.1f} "
+            f"(up {row['size'][up]:.3f} vs footprint {footprint:.3f})"
+        )
+    return None
 
 
 def zone_area(zone):
@@ -235,11 +303,20 @@ def main():
     # Asset pool keyed by silhouette, aliases excluded so a zone asking for
     # three different rocks stops getting the same rock three times.
     by_silhouette = {}
+    excluded = []
     for asset_id, row in facts.items():
         if asset_id.startswith("_") or row.get("aliasOf"):
             continue
+        if row.get("broken"):
+            excluded.append(f"{asset_id}: {row['broken']}")
+            continue
         if abs(row["baseOffset"]) > 1.5:
             # Broken origin: seating it would bury it dozens of sizes deep.
+            excluded.append(f"{asset_id}: origin {row['baseOffset']} max extents from geometry")
+            continue
+        contradiction = contradicts_silhouette(row)
+        if contradiction:
+            excluded.append(f"{asset_id}: {contradiction}")
             continue
         by_silhouette.setdefault(row["silhouette"], []).append(asset_id)
 
@@ -321,8 +398,14 @@ def main():
                 continue
 
             size = rng.uniform(row["sizeMetres"]["min"], row["sizeMetres"]["max"])
-            if zone["role"] == "foreground-silhouette" and size > foreground_max_height:
-                # The fringe frames the stage; anything tall there occludes it.
+            # Downstage of the dais and inside the camera corridor, height is
+            # capped for every zone -- not only the fringe. Blade assets were
+            # putting 9 m kelp two metres in front of the stage, which reads as
+            # a curtain drawn across the performer.
+            in_corridor = by < -1.0 and abs(bx) < SIGHTLINE_HALF_WIDTH
+            if (in_corridor or zone["role"] == "foreground-silhouette") and (
+                size > foreground_max_height
+            ):
                 rejected += 1
                 continue
 
@@ -341,7 +424,8 @@ def main():
                 if member == 0:
                     mx, my = bx, by
                 else:
-                    spread = row["footprintRadius"] * size * rule["companionSpacing"]
+                    spread = row["footprintRadius"] * scale_for_size(row, size)
+                    spread *= rule["companionSpacing"]
                     spread *= rng.uniform(1.0, 2.4)
                     phi = rng.random() * math.tau
                     mx, my = bx + math.cos(phi) * spread, by + math.sin(phi) * spread
@@ -354,6 +438,8 @@ def main():
                     ):
                         continue
                     size = rng.uniform(row["sizeMetres"]["min"], row["sizeMetres"]["max"])
+                    if my < -1.0 and abs(mx) < SIGHTLINE_HALF_WIDTH and size > foreground_max_height:
+                        continue
                     if not is_clear(occupied, mx, my, row, size, rule):
                         continue
 
@@ -361,7 +447,7 @@ def main():
                 # baseOffset is normalised against max extent, so multiplying by
                 # the chosen metre size seats the asset's lowest point on the
                 # ground regardless of how large it was drawn.
-                z_world = ground["height"] - row["baseOffset"] * size
+                z_world = ground["height"] - row["baseOffset"] * scale_for_size(row, size)
                 if row["silhouette"] == "swimmer":
                     # Pelagic: hovers rather than sits.
                     z_world = ground["height"] + rng.uniform(1.2, 4.0)
@@ -380,11 +466,13 @@ def main():
                         "zone": zone["id"],
                         "substrate": ground["substrate"],
                         "sizeMetres": round(size, 3),
-                        # Geometry is normalised to 1-unit max extent at import,
-                        # so the scale factor IS the metre size.
-                        "scale": round(size, 3),
+                        # Geometry is normalised to 1-unit MAX extent at import,
+                        # so the scale factor sets the longest axis -- which is
+                        # only the authored size when that axis is the one the
+                        # size names.
+                        "scale": round(scale_for_size(row, size), 4),
                         "position": [round(mx, 4), round(my, 4), round(z_world, 4)],
-                        "rotation": [round(c, 6) for c in rotation],
+                        "rotation": [round(c, 8) for c in rotation],
                     }
                 )
                 occupied.append(occupancy(mx, my, row, size, rule))
@@ -400,6 +488,72 @@ def main():
         elif unplaced_heroes or hero_queue:
             note = "unplaced heroes: " + ", ".join(unplaced_heroes + hero_queue)
         summary.append((zone["id"], placed, rejected, note))
+
+    # Floor scatter. The zones cover roughly 730 of the world's 1400 usable
+    # square metres, and the first render showed the rest as bald sand: the
+    # reef read as set pieces standing on a parking lot. Real seabed carries
+    # low life everywhere between the features, so this pass dresses the whole
+    # annulus with nothing tall enough to compete with a zone or block a view.
+    scatter_rng = random.Random(layout.get("scatterSeed", 90210))
+    scatter_pool = [
+        asset_id
+        for silhouette in FLOOR_SCATTER_SILHOUETTES
+        for asset_id in by_silhouette.get(silhouette, [])
+        if facts[asset_id]["sizeMetres"]["min"] <= FLOOR_SCATTER_MAX_HEIGHT
+    ]
+    scatter_budget = round(
+        math.pi * (outer_boundary**2 - stage_exclusion**2) * FLOOR_SCATTER_PER_SQM
+    )
+    scattered = 0
+    scatter_attempts = 0
+    while scatter_pool and scattered < scatter_budget and scatter_attempts < scatter_budget * MAX_ATTEMPTS_PER_INSTANCE:
+        scatter_attempts += 1
+        asset_id = scatter_rng.choice(scatter_pool)
+        row = canonical(facts, asset_id)
+        rule = rules[row["silhouette"]]
+
+        angle = scatter_rng.random() * math.tau
+        radius = math.sqrt(scatter_rng.uniform(0.0, 1.0)) * outer_boundary
+        bx, by = math.cos(angle) * radius, math.sin(angle) * radius
+        if radius < stage_exclusion or not within_lip(bx, by):
+            continue
+
+        ground = sample(bx, by)
+        if rule["substrate"] != ["any"] and ground["substrate"] not in rule["substrate"]:
+            continue
+        if not rule["slopeRange"][0] <= ground["slope"] <= rule["slopeRange"][1]:
+            continue
+
+        ceiling = min(row["sizeMetres"]["max"], FLOOR_SCATTER_MAX_HEIGHT)
+        size = scatter_rng.uniform(row["sizeMetres"]["min"], ceiling)
+        if not is_clear(occupied, bx, by, row, size, rule):
+            continue
+
+        rotation = compose_quaternions(
+            tilt_quaternion(ground["normal"], rule["tiltJitter"], scatter_rng),
+            yaw_quaternion(yaw_for(rule["yawPolicy"], row["facing"], bx, by, scatter_rng)),
+        )
+        placements.append(
+            {
+                "asset": asset_id,
+                "path": row["path"],
+                "silhouette": row["silhouette"],
+                "species": row["species"],
+                "zone": "floor-scatter",
+                "substrate": ground["substrate"],
+                "sizeMetres": round(size, 3),
+                "scale": round(scale_for_size(row, size), 4),
+                "position": [
+                    round(bx, 4),
+                    round(by, 4),
+                    round(ground["height"] - row["baseOffset"] * scale_for_size(row, size), 4),
+                ],
+                "rotation": [round(c, 8) for c in rotation],
+            }
+        )
+        occupied.append(occupancy(bx, by, row, size, rule))
+        scattered += 1
+    summary.append(("floor-scatter", scattered, scatter_attempts - scattered, ""))
 
     payload = {
         "generator": "scripts/generate-ocean-composition.py",
@@ -424,6 +578,11 @@ def main():
     print("\nBy silhouette:")
     for silhouette in sorted(counts, key=lambda s: -counts[s]):
         print(f"  {silhouette:11} {counts[silhouette]}")
+
+    if excluded:
+        print("\nExcluded assets (geometry contradicts the index):")
+        for line in sorted(excluded):
+            print(f"  {line}")
 
     if unresolved_heroes:
         print("\nZone heroes with no facts row:")

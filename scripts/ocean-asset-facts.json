@@ -176,6 +176,7 @@
   "kelp_plant": {
     "path": "kelp_plant.glb",
     "source": "root",
+    "broken": "GLB contains a default Icosphere plus a 141 m stray object (Object_7); no usable kelp geometry",
     "species": "Macrocystis pyrifera (giant kelp)",
     "sizeMetres": {
       "min": 4,
@@ -212,7 +213,7 @@
       "axis": "height"
     },
     "facing": 0,
-    "silhouette": "column",
+    "silhouette": "boulder",
     "upAxis": "y",
     "baseOffset": -0.4854,
     "footprintRadius": 0.5,
@@ -996,7 +997,7 @@
       "axis": "height"
     },
     "facing": 0,
-    "silhouette": "column",
+    "silhouette": "boulder",
     "upAxis": "y",
     "baseOffset": -0.4854,
     "footprintRadius": 0.5,
@@ -1146,7 +1147,7 @@
       "axis": "height"
     },
     "facing": 0,
-    "silhouette": "column",
+    "silhouette": "mound",
     "upAxis": "y",
     "baseOffset": -0.2255,
     "footprintRadius": 0.5,
@@ -1322,7 +1323,7 @@
       "axis": "height"
     },
     "facing": 0,
-    "silhouette": "column",
+    "silhouette": "mound",
     "upAxis": "y",
     "baseOffset": -0.2255,
     "footprintRadius": 0.5,

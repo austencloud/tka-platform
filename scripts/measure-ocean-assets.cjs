@@ -38,7 +38,10 @@ const NOT_SCENERY = new Set([
   "stage_meshy_raw",
 ]);
 
+// "broken" is authored too: it records a defect found by opening the asset,
+// which no measurement of its bounds can rediscover.
 const AUTHORED_FIELDS = ["species", "sizeMetres", "facing", "silhouette", "upAxis"];
+const OPTIONAL_AUTHORED_FIELDS = ["broken"];
 const AXIS_INDEX = { x: 0, y: 1, z: 2 };
 
 function listAssets() {
@@ -77,6 +80,9 @@ for (const asset of assets) {
   const horizontal = [0, 1, 2].filter((a) => a !== up);
 
   const row = { path: asset.path, source: asset.path.includes("/") ? asset.path.split("/")[0] : "root" };
+  for (const field of OPTIONAL_AUTHORED_FIELDS) {
+    if (existing[field] !== undefined) row[field] = existing[field];
+  }
   for (const field of AUTHORED_FIELDS) {
     row[field] = existing[field] ?? (field === "upAxis" ? "y" : null);
   }

@@ -430,3 +430,8 @@ vite.debug*.config.mts
 
 # Downloaded 3D authoring inputs (recreated by checked-in fetch scripts)
 /assets/3d-source/
+
+# Ocean composition build artifacts (recreated by prepare-ocean-sources.mjs
+# and build-ocean-composition.py from checked-in inputs)
+/static/models/ocean/.sources/
+/blender/ocean_composed.blend
