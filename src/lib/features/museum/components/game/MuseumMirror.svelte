@@ -1,12 +1,11 @@
 <script lang="ts">
   /**
-   * MuseumMirror - a gilded wall mirror: PlanarReflector plus its frame.
-   * The reflection itself belongs to PlanarReflector; this component owns only
-   * the frame and where the two sit relative to each other.
+   * MuseumMirror - a polished static mirror surface with a gilded frame.
+   * Real-time planar reflection redrew the complete museum from this plane and
+   * caused multi-million-triangle spikes during a walk.
    */
   import { T } from "@threlte/core";
   import { MeshStandardMaterial } from "three";
-  import PlanarReflector from "$lib/shared/3d/environments/primitives/PlanarReflector.svelte";
 
   interface Props {
     width?: number;
@@ -18,8 +17,6 @@
     rotation?: [number, number, number];
     frameColor?: string;
     frameThickness?: number;
-    /** Real-time reflections only run while the visitor can actually use them. */
-    active?: boolean;
   }
 
   const props: Props = $props();
@@ -51,20 +48,8 @@
   ];
 </script>
 
-<PlanarReflector
-  {width}
-  {height}
-  {position}
-  {rotation}
-  textureWidth={props.textureWidth ?? 512}
-  textureHeight={props.textureHeight ?? 768}
-  color={props.color ?? 0xc8b890}
-  active={props.active}
-/>
-
-<!-- Keep an inexpensive mirror surface visible when the live reflection is gated. -->
+<!-- Polished surface: one ordinary draw, never a nested scene render. -->
 <T.Mesh
-  visible={props.active === false}
   position.x={position[0]}
   position.y={position[1]}
   position.z={position[2]}

@@ -2,6 +2,7 @@ import type {
   IMuseumPerformanceRecorder,
   MuseumFrameContext,
   MuseumHitchSample,
+  MuseumPerformanceOverlaySnapshot,
   MuseumPerformanceSnapshot,
   MuseumPhaseSummary,
   MuseumRendererSample,
@@ -11,7 +12,7 @@ const MAX_FRAME_SAMPLES = 1_800;
 const MAX_PHASE_SAMPLES = 600;
 const MAX_HITCH_SAMPLES = 80;
 const HITCH_THRESHOLD_MS = 50;
-const USER_TIMING_THRESHOLD_MS = 4;
+const USER_TIMING_THRESHOLD_MS = 16.7;
 
 interface LongAnimationFrameEntry extends PerformanceEntry {
   blockingDuration?: number;
@@ -26,11 +27,44 @@ interface LongAnimationFrameEntry extends PerformanceEntry {
   }>;
 }
 
-function percentile(values: readonly number[], quantile: number): number {
-  if (values.length === 0) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  return sorted[
-    Math.min(sorted.length - 1, Math.ceil(quantile * sorted.length) - 1)
+class RollingNumberSamples {
+  private readonly samples: number[];
+  private writeIndex = 0;
+  private sampleCount = 0;
+
+  constructor(private readonly capacity: number) {
+    this.samples = new Array<number>(capacity);
+  }
+
+  push(value: number): void {
+    this.samples[this.writeIndex] = value;
+    this.writeIndex = (this.writeIndex + 1) % this.capacity;
+    this.sampleCount = Math.min(this.sampleCount + 1, this.capacity);
+  }
+
+  clear(): void {
+    this.writeIndex = 0;
+    this.sampleCount = 0;
+  }
+
+  toArray(): number[] {
+    if (this.sampleCount < this.capacity) {
+      return this.samples.slice(0, this.sampleCount);
+    }
+    return [
+      ...this.samples.slice(this.writeIndex),
+      ...this.samples.slice(0, this.writeIndex),
+    ];
+  }
+}
+
+function percentile(sortedValues: readonly number[], quantile: number): number {
+  if (sortedValues.length === 0) return 0;
+  return sortedValues[
+    Math.min(
+      sortedValues.length - 1,
+      Math.ceil(quantile * sortedValues.length) - 1
+    )
   ]!;
 }
 
@@ -43,14 +77,15 @@ function summarize(
   values: readonly number[]
 ): MuseumPhaseSummary {
   const total = values.reduce((sum, value) => sum + value, 0);
+  const sorted = [...values].sort((a, b) => a - b);
   return {
     name,
     count: values.length,
     averageMs: rounded(total / Math.max(values.length, 1)),
-    p50Ms: rounded(percentile(values, 0.5)),
-    p95Ms: rounded(percentile(values, 0.95)),
-    p99Ms: rounded(percentile(values, 0.99)),
-    maxMs: rounded(Math.max(0, ...values)),
+    p50Ms: rounded(percentile(sorted, 0.5)),
+    p95Ms: rounded(percentile(sorted, 0.95)),
+    p99Ms: rounded(percentile(sorted, 0.99)),
+    maxMs: rounded(sorted.at(-1) ?? 0),
   };
 }
 
@@ -58,8 +93,8 @@ export class MuseumPerformanceRecorder implements IMuseumPerformanceRecorder {
   enabled = false;
 
   private startedAt: number | null = null;
-  private frameSamples: number[] = [];
-  private readonly phaseSamples = new Map<string, number[]>();
+  private readonly frameSamples = new RollingNumberSamples(MAX_FRAME_SAMPLES);
+  private readonly phaseSamples = new Map<string, RollingNumberSamples>();
   private rendererSample: MuseumRendererSample | null = null;
   private hitches: MuseumHitchSample[] = [];
   private currentContext: MuseumFrameContext | null = null;
@@ -70,8 +105,8 @@ export class MuseumPerformanceRecorder implements IMuseumPerformanceRecorder {
     if (this.enabled) return;
     this.enabled = true;
     this.startedAt = performance.now();
-    this.installBrowserObservers(options.observeBrowser ?? true);
     this.exposeBrowserApi();
+    this.installBrowserObservers(options.observeBrowser ?? true);
   }
 
   stop(): void {
@@ -81,7 +116,7 @@ export class MuseumPerformanceRecorder implements IMuseumPerformanceRecorder {
   }
 
   clear(): void {
-    this.frameSamples = [];
+    this.frameSamples.clear();
     this.phaseSamples.clear();
     this.rendererSample = null;
     this.hitches = [];
@@ -102,9 +137,10 @@ export class MuseumPerformanceRecorder implements IMuseumPerformanceRecorder {
 
   recordPhaseDuration(name: string, durationMs: number): void {
     if (!this.enabled || !Number.isFinite(durationMs) || durationMs < 0) return;
-    const samples = this.phaseSamples.get(name) ?? [];
+    const samples =
+      this.phaseSamples.get(name) ??
+      new RollingNumberSamples(MAX_PHASE_SAMPLES);
     samples.push(durationMs);
-    if (samples.length > MAX_PHASE_SAMPLES) samples.shift();
     this.phaseSamples.set(name, samples);
     this.currentFramePhases.set(name, durationMs);
 
@@ -130,7 +166,6 @@ export class MuseumPerformanceRecorder implements IMuseumPerformanceRecorder {
       position: { ...context.position },
     };
     this.frameSamples.push(durationMs);
-    if (this.frameSamples.length > MAX_FRAME_SAMPLES) this.frameSamples.shift();
 
     if (durationMs >= HITCH_THRESHOLD_MS) {
       this.pushHitch({
@@ -141,6 +176,7 @@ export class MuseumPerformanceRecorder implements IMuseumPerformanceRecorder {
         styleAndLayoutMs: null,
         worstPhase: this.getWorstCurrentPhase(),
         context: this.currentContext,
+        renderer: this.rendererSample,
         scripts: [],
         source: "frame",
       });
@@ -153,11 +189,21 @@ export class MuseumPerformanceRecorder implements IMuseumPerformanceRecorder {
     this.rendererSample = { ...sample, timestamp: performance.now() };
   }
 
+  getOverlaySnapshot(): MuseumPerformanceOverlaySnapshot {
+    const { frames, phases } = this.summarizeSamples();
+    const latestHitch =
+      this.findLatestHitch("long-animation-frame") ?? this.hitches.at(-1) ?? null;
+    return {
+      frames,
+      phases,
+      renderer: this.rendererSample ? { ...this.rendererSample } : null,
+      latestHitch: latestHitch ? this.cloneHitch(latestHitch) : null,
+    };
+  }
+
   getSnapshot(): MuseumPerformanceSnapshot {
-    const frames = summarize("frame", this.frameSamples);
-    const phases = [...this.phaseSamples.entries()]
-      .map(([name, samples]) => summarize(name, samples))
-      .sort((a, b) => b.p95Ms - a.p95Ms || b.maxMs - a.maxMs);
+    this.exposeBrowserApi();
+    const { frameSamples, frames, phases } = this.summarizeSamples();
     return {
       enabled: this.enabled,
       startedAt: this.startedAt,
@@ -169,19 +215,69 @@ export class MuseumPerformanceRecorder implements IMuseumPerformanceRecorder {
         p95Ms: frames.p95Ms,
         p99Ms: frames.p99Ms,
         maxMs: frames.maxMs,
-        over33Ms: this.frameSamples.filter((value) => value >= 33.4).length,
-        over50Ms: this.frameSamples.filter((value) => value >= 50).length,
-        over100Ms: this.frameSamples.filter((value) => value >= 100).length,
+        over33Ms: frameSamples.filter((value) => value >= 33.4).length,
+        over50Ms: frameSamples.filter((value) => value >= 50).length,
+        over100Ms: frameSamples.filter((value) => value >= 100).length,
       },
       phases,
       renderer: this.rendererSample ? { ...this.rendererSample } : null,
-      hitches: this.hitches.map((hitch) => ({
-        ...hitch,
-        context: hitch.context
-          ? { ...hitch.context, position: { ...hitch.context.position } }
-          : null,
-        scripts: hitch.scripts.map((script) => ({ ...script })),
-      })),
+      hitches: this.hitches.map((hitch) => this.cloneHitch(hitch)),
+    };
+  }
+
+  private summarizeSamples(): {
+    frameSamples: number[];
+    frames: MuseumPerformanceSnapshot["frames"];
+    phases: MuseumPhaseSummary[];
+  } {
+    const frameSamples = this.frameSamples.toArray();
+    const frameSummary = summarize("frame", frameSamples);
+    let over33Ms = 0;
+    let over50Ms = 0;
+    let over100Ms = 0;
+    for (const value of frameSamples) {
+      if (value >= 33.4) over33Ms++;
+      if (value >= 50) over50Ms++;
+      if (value >= 100) over100Ms++;
+    }
+    const phases = [...this.phaseSamples.entries()]
+      .map(([name, samples]) => summarize(name, samples.toArray()))
+      .sort((a, b) => b.p95Ms - a.p95Ms || b.maxMs - a.maxMs);
+    return {
+      frameSamples,
+      frames: {
+        count: frameSummary.count,
+        averageMs: frameSummary.averageMs,
+        p50Ms: frameSummary.p50Ms,
+        p95Ms: frameSummary.p95Ms,
+        p99Ms: frameSummary.p99Ms,
+        maxMs: frameSummary.maxMs,
+        over33Ms,
+        over50Ms,
+        over100Ms,
+      },
+      phases,
+    };
+  }
+
+  private findLatestHitch(
+    source: MuseumHitchSample["source"]
+  ): MuseumHitchSample | null {
+    for (let index = this.hitches.length - 1; index >= 0; index--) {
+      const hitch = this.hitches[index];
+      if (hitch?.source === source) return hitch;
+    }
+    return null;
+  }
+
+  private cloneHitch(hitch: MuseumHitchSample): MuseumHitchSample {
+    return {
+      ...hitch,
+      context: hitch.context
+        ? { ...hitch.context, position: { ...hitch.context.position } }
+        : null,
+      renderer: hitch.renderer ? { ...hitch.renderer } : null,
+      scripts: hitch.scripts.map((script) => ({ ...script })),
     };
   }
 
@@ -233,6 +329,7 @@ export class MuseumPerformanceRecorder implements IMuseumPerformanceRecorder {
               : null,
             worstPhase: this.getWorstCurrentPhase(),
             context: this.currentContext,
+            renderer: this.rendererSample,
             scripts,
             source: "long-animation-frame",
           });
@@ -260,6 +357,7 @@ export class MuseumPerformanceRecorder implements IMuseumPerformanceRecorder {
             styleAndLayoutMs: null,
             worstPhase: this.getWorstCurrentPhase(),
             context: this.currentContext,
+            renderer: this.rendererSample,
             scripts: [],
             source: "long-task",
           });

@@ -190,7 +190,7 @@
     },
     {
       "id": "playable-graybox",
-      "status": "ready-for-review",
+      "status": "rejected",
       "evidence": [
         {
           "kind": "blender-source",
@@ -261,8 +261,8 @@
         },
         {
           "name": "collision",
-          "status": "passed",
-          "evidence": "Unchanged by the carve. Colliders are derived from the contract in first-fire-graybox-colliders.ts, not from GLB geometry, so removing the basalt prisms does not move a collision face. The carved wall foot stands 0.30m outboard of every collider face, so the visitor stops on the collider before touching rock. Fire still owns no collision: 24 lane plus 36 court perimeter equals 60 pass-through anchors."
+          "status": "failed",
+          "evidence": "This check passed on the reasoning that collision is derived from the contract rather than from GLB geometry. That is exactly the defect. Measured 2026-08-10 from first-fire-graybox-colliders.ts against the contract: the carved shell has zero colliders of its own, while 308 box colliders are still generated from the 27 contract.basalt polygons - including the nine fill-* masses the carve deleted from geometry - so the visitor is stopped by the rejected blockout and passes through the rock that replaced it. The floor is one flat 58 by 44 box whose top face is y=0 and which spans x -29 to 29, but the water and earth door apertures run out to x -30.6 and 30.6 against their threshold-stop colliders, leaving a 1.6m pocket of visible carved floor with no floor collider under it at each door."
         },
         {
           "name": "route-duration",
@@ -293,6 +293,15 @@
       "approval": null,
       "rejection": {
         "rejectedBy": "Austen Cloud",
+        "rejectedAt": "2026-08-10T17:39:26Z",
+        "quote": "let's get the Gray box working right let's feel very satisfied with a mostly empty room that has all the corners and the fucking walkways and all the stupid regular bullshit that we need to have before we start making things pretty",
+        "museumTrackerItem": "1bUBNo26hJpRq4Bf36gh",
+        "finding": "The carve remediation of 2026-08-09 was never re-approved, and Gate 3 dressing was applied on top of it for three days. Walking the room on 2026-08-10 Austen fell through the floor, saw the floor/wall seam split open with the void behind it, and passed wall fittings floating off the rock. All three trace to one cause: the carve rebuilt the shell as a swept and domed void, but nothing downstream was re-derived from it. Collision still comes from the pre-carve contract blockout (see the collision check above). Dressing still places wall fittings at pathSections[].width / 2, which is a nominal corridor half-width of 2.25m where the nearest real shell vertex at the ember-bridge centreline measures 3.15m - and that stretch is not corridor at all, it is inside the wider Water vestibule volume, so the dressing does not know which carved room it is standing in. The 24 FF_TorchStem_field posts sit between 0.42m and 2.59m from the nearest shell vertex with no placement rule of any kind. Gate 1's route, widths and sightlines are unaffected and stand.",
+        "remedy": "Judge the shell alone before anything else is placed in it. Mount the review route bare - carved shell, route ribbon, thresholds, court floors, performer rigs, neutral light, nothing else - and re-derive collision from the carved shell so the surface the visitor sees is the surface they stand on and stop against. Then fix the floor/wall seam and mitre the route ribbon, and present an empty-room walk for approval. Placement rules, torch identity and prop balance are Gate 3 and do not start until this gate is approved.",
+        "evidenceRetained": true,
+        "note": "Second rejection at this gate. The carve evidence below stays as the record of what was built on 2026-08-09; it is superseded only by the bare-shell walk.",
+        "supersedes": {
+        "rejectedBy": "Austen Cloud",
         "rejectedAt": "2026-08-09T22:10:00Z",
         "quote": "the floor is all fucked up doesn't connect to the walls The walls are kind of randomly spaced I just don't really feel a sense of great cohesion here maybe it's because it's meant to be a tunnel system it's going to have textures replacing the walls If so we should just build it that way",
         "museumTrackerItem": "1bUBNo26hJpRq4Bf36gh",
@@ -307,7 +316,9 @@
         "evidenceRetained": true,
         "note": "Rejection returns the scene to Gate 2 without discarding its evidence: the artifacts below remain the record of what was walked and approved on 2026-08-09, and are superseded only when the carved shell replaces them.",
         "remediatedAt": "2026-08-09T23:55:00Z",
-        "remediation": "The shell is carved. scripts/build-first-fire-graybox.py now sweeps a mitred tunnel section along every contract path centreline, revolves a per-court chamber where corridors meet, joins those 25 volumes into one negative and subtracts it from a single rock mass with an exact boolean. FF_Shell_Floor, FF_Shell_North, FF_Shell_South and all 27 free-standing FF_Basalt_ prisms - including the nine fill-* masses - no longer exist as geometry. The GLB carries one FF_Shell_Rock object of 1585 faces, and the verifier fails the build if a basalt prism ever returns."
+        "remediation": "The shell is carved. scripts/build-first-fire-graybox.py now sweeps a mitred tunnel section along every contract path centreline, revolves a per-court chamber where corridors meet, joins those 25 volumes into one negative and subtracts it from a single rock mass with an exact boolean. FF_Shell_Floor, FF_Shell_North, FF_Shell_South and all 27 free-standing FF_Basalt_ prisms - including the nine fill-* masses - no longer exist as geometry. The GLB carries one FF_Shell_Rock object of 1585 faces, and the verifier fails the build if a basalt prism ever returns.",
+          "remediationIncomplete": "The carve changed the geometry and stopped there. Collision, dressing and the fire guides were all left reading the pre-carve contract, which is what the 2026-08-10 rejection above is about."
+        }
       }
     },
     {

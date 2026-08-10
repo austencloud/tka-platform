@@ -1,25 +1,32 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { getMuseumPerformanceRecorder } from "../../get-museum-performance-recorder";
-  import type { MuseumPerformanceSnapshot } from "../../services/contracts/IMuseumPerformanceRecorder";
+  import type { MuseumPerformanceOverlaySnapshot } from "../../services/contracts/IMuseumPerformanceRecorder";
 
   const recorder = getMuseumPerformanceRecorder();
-  let snapshot = $state<MuseumPerformanceSnapshot>(recorder.getSnapshot());
+  let snapshot = $state<MuseumPerformanceOverlaySnapshot>(
+    recorder.getOverlaySnapshot()
+  );
   let copyLabel = $state("Copy JSON");
 
-  const latestHitch = $derived(snapshot.hitches.at(-1) ?? null);
-  const topPhases = $derived(snapshot.phases.slice(0, 5));
+  const latestHitch = $derived(snapshot.latestHitch);
+  const topScript = $derived(latestHitch?.scripts[0] ?? null);
+  const topPhases = $derived(
+    snapshot.phases
+      .filter((phase) => phase.name !== "stream.worker")
+      .slice(0, 5)
+  );
 
   onMount(() => {
     const interval = setInterval(() => {
-      snapshot = recorder.getSnapshot();
-    }, 500);
+      snapshot = recorder.getOverlaySnapshot();
+    }, 1_000);
     return () => clearInterval(interval);
   });
 
   function clearSamples(): void {
     recorder.clear();
-    snapshot = recorder.getSnapshot();
+    snapshot = recorder.getOverlaySnapshot();
   }
 
   async function copySnapshot(): Promise<void> {
@@ -96,6 +103,24 @@
             in {latestHitch.context.roomId}
           {/if}
         </p>
+        {#if topScript}
+          <p class="detail">
+            Script: {topScript.sourceFunctionName || topScript.invoker || "anonymous"}
+            ({topScript.durationMs.toFixed(1)} ms)
+          </p>
+        {/if}
+        {#if latestHitch.renderMs !== null || latestHitch.styleAndLayoutMs !== null}
+          <p class="detail">
+            Render {latestHitch.renderMs?.toFixed(1) ?? "?"} ms · Layout
+            {latestHitch.styleAndLayoutMs?.toFixed(1) ?? "?"} ms
+          </p>
+        {/if}
+        {#if latestHitch.renderer}
+          <p class="detail">
+            {latestHitch.renderer.programs} programs · {latestHitch.renderer.drawCalls}
+            draws · {Math.round(latestHitch.renderer.triangles / 1_000)}k triangles
+          </p>
+        {/if}
       {:else}
         <p class="empty">No 50 ms hitch captured</p>
       {/if}

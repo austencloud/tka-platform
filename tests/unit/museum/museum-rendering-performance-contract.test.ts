@@ -59,6 +59,62 @@ describe("museum rendering performance contract", () => {
     expect(shell).toContain("<Canvas dpr={1}>");
   });
 
+  it("keeps museum mirrors out of the render loop", () => {
+    const mirror = read(
+      "src/lib/features/museum/components/game/MuseumMirror.svelte"
+    );
+
+    expect(mirror).toContain("<T.MeshStandardMaterial");
+    expect(mirror).not.toContain("PlanarReflector");
+    expect(mirror).not.toContain("Reflector");
+  });
+
+  it("keeps portals out of the museum's render loop", () => {
+    const portal = read(
+      "src/lib/features/museum/components/game/MuseumPortal.svelte"
+    );
+
+    expect(portal).toContain("<T.MeshBasicMaterial");
+    expect(portal).not.toContain("WebGLRenderTarget");
+    expect(portal).not.toContain("useTask");
+    expect(portal).not.toMatch(/\.render\(/);
+  });
+
+  it("instances the decorative cave rocks before the first doorway", () => {
+    const caveScenery = read(
+      "src/lib/features/museum/components/game/VulcanCaveScenicLayer.svelte"
+    );
+
+    expect(caveScenery).toContain("new InstancedMesh(");
+    expect(caveScenery).toContain('<T is={scenicRocks} />');
+    expect(caveScenery).not.toContain("useGltf");
+    expect(caveScenery).not.toContain("source.clone(true)");
+    expect(caveScenery).not.toContain("{#each rockInstances");
+  });
+
+  it("pauses and hides the village outside the Collaboration room", () => {
+    const scene = read(
+      "src/lib/features/museum/components/game/Museum3DScene.svelte"
+    );
+    const village = read(
+      "src/lib/features/museum/components/game/MuseumVillageEmbed.svelte"
+    );
+
+    expect(scene).toContain("visible={props.visible !== false && nearCollab}");
+    expect(village).toContain("setMuseumVillageVisible(visible)");
+    expect(village).toContain("<T.Group visible={visible}");
+    expect(village).not.toContain("setMuseumVillageVisible(true)");
+  });
+
+  it("does not start a docent walk before shader warmup finishes", () => {
+    const shell = read(
+      "src/lib/features/museum/components/game/DimensionFlipProof.svelte"
+    );
+
+    expect(shell).toContain("if (!sceneReady && !docent.active) return");
+    expect(shell).toContain("disabled={!sceneReady && !docent.active}");
+  });
+
   it("draws both 3D camera variants behind the loading gate", () => {
     const scene = read(
       "src/lib/features/museum/components/game/Museum3DScene.svelte"

@@ -2137,7 +2137,7 @@
     centerX={collabCenterX}
     centerZ={collabCenterZ}
     showLabels={nearCollab}
-    visible={props.visible}
+    visible={props.visible !== false && nearCollab}
   />
 {/if}
 
@@ -2288,7 +2288,6 @@
     destRotation={portalConfig.orangeRot}
     color="#0088ff"
     label="Gallery"
-    {playerPosition}
     visible={props.visible !== false && portalsVisible}
   />
   <MuseumPortal
@@ -2298,7 +2297,6 @@
     destRotation={portalConfig.blueRot}
     color="#ff8800"
     label="Cave"
-    {playerPosition}
     visible={props.visible !== false && portalsVisible}
   />
 {/if}

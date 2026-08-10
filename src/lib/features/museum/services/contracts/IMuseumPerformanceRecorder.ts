@@ -34,6 +34,7 @@ export interface MuseumHitchSample {
   styleAndLayoutMs: number | null;
   worstPhase: { name: string; durationMs: number } | null;
   context: MuseumFrameContext | null;
+  renderer: MuseumRendererSample | null;
   scripts: Array<{
     sourceURL: string;
     sourceFunctionName: string;
@@ -64,6 +65,13 @@ export interface MuseumPerformanceSnapshot {
   hitches: MuseumHitchSample[];
 }
 
+export interface MuseumPerformanceOverlaySnapshot {
+  frames: MuseumPerformanceSnapshot["frames"];
+  phases: MuseumPhaseSummary[];
+  renderer: MuseumRendererSample | null;
+  latestHitch: MuseumHitchSample | null;
+}
+
 export interface IMuseumPerformanceRecorder {
   readonly enabled: boolean;
   start(options?: { observeBrowser?: boolean }): void;
@@ -74,5 +82,6 @@ export interface IMuseumPerformanceRecorder {
   recordPhaseDuration(name: string, durationMs: number): void;
   recordFrame(durationMs: number, context: MuseumFrameContext): void;
   recordRendererSample(sample: Omit<MuseumRendererSample, "timestamp">): void;
+  getOverlaySnapshot(): MuseumPerformanceOverlaySnapshot;
   getSnapshot(): MuseumPerformanceSnapshot;
 }

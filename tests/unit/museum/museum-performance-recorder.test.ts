@@ -47,6 +47,14 @@ describe("MuseumPerformanceRecorder", () => {
   it("keeps the slowest measured phase with a hitch", () => {
     recorder = new MuseumPerformanceRecorder();
     recorder.start({ observeBrowser: false });
+    recorder.recordRendererSample({
+      fps: 42,
+      drawCalls: 67,
+      triangles: 79_000,
+      geometries: 54,
+      textures: 31,
+      programs: 18,
+    });
     recorder.recordPhaseDuration("frame.movement", 4);
     recorder.recordPhaseDuration("render.main", 72);
 
@@ -57,6 +65,22 @@ describe("MuseumPerformanceRecorder", () => {
       source: "frame",
       worstPhase: { name: "render.main", durationMs: 72 },
       context,
+      renderer: {
+        fps: 42,
+        drawCalls: 67,
+        triangles: 79_000,
+        geometries: 54,
+        textures: 31,
+        programs: 18,
+      },
+    });
+    expect(recorder.getOverlaySnapshot()).toMatchObject({
+      latestHitch: {
+        frameMs: 88,
+        source: "frame",
+        worstPhase: { name: "render.main", durationMs: 72 },
+      },
+      renderer: { drawCalls: 67, triangles: 79_000 },
     });
   });
 

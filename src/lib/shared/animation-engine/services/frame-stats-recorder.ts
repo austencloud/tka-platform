@@ -15,10 +15,10 @@
  *    small, the cost is downstream of the loop (rendering/reactivity), not in
  *    the engine math.
  *
- * Reporting: a summary line every REPORT_INTERVAL_MS while frames are flowing
- * (console.info, tag [FrameStats]), plus `window.__tkaFrameStats.summary()`
- * for an on-demand cumulative readout and `.reset()` to start a fresh
- * measurement window.
+ * Reporting: `window.__tkaFrameStats.summary()` provides an on-demand
+ * cumulative readout and `.reset()` starts a fresh measurement window. Set
+ * localStorage "tka-frame-stats-live" to "1" when automatic five-second
+ * console reports are useful for a focused profiling session.
  *
  * Cost & gating: enabled only in dev builds, or when localStorage
  * "tka-frame-stats" === "1" (prod debugging escape hatch). When disabled,
@@ -53,7 +53,8 @@ function computeStats(deltas: number[], updates: number[]): WindowStats | null {
   return {
     frames: sorted.length,
     avgMs: sum / sorted.length,
-    p95Ms: sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))]!,
+    p95Ms:
+      sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))]!,
     worstMs: sorted[sorted.length - 1]!,
     hitches,
     hitchPct: (hitches / sorted.length) * 100,
@@ -74,6 +75,7 @@ function fmt(s: WindowStats): string {
 
 class FrameStatsRecorder {
   readonly enabled: boolean;
+  readonly liveReporting: boolean;
 
   // Rolling window (flushed each report)
   #deltas: number[] = [];
@@ -84,9 +86,17 @@ class FrameStatsRecorder {
   #lastReport = 0;
 
   constructor() {
+    let liveReporting = false;
+    try {
+      liveReporting = localStorage.getItem("tka-frame-stats-live") === "1";
+    } catch {
+      // Storage is optional; on-demand dev measurements still work without it.
+    }
+    this.liveReporting = liveReporting;
     this.enabled =
       typeof window !== "undefined" &&
       (import.meta.env.DEV ||
+        liveReporting ||
         (() => {
           try {
             return localStorage.getItem("tka-frame-stats") === "1";
@@ -105,16 +115,21 @@ class FrameStatsRecorder {
   record(rafDelta: number, updateMs: number): void {
     if (!this.enabled) return;
     if (rafDelta <= 0 || rafDelta > OUTLIER_CUTOFF_MS) return;
-    this.#deltas.push(rafDelta);
-    this.#updates.push(updateMs);
     this.#allDeltas.push(rafDelta);
     this.#allUpdates.push(updateMs);
+
+    if (!this.liveReporting) return;
+    this.#deltas.push(rafDelta);
+    this.#updates.push(updateMs);
 
     const now = performance.now();
     if (this.#lastReport === 0) this.#lastReport = now;
     if (now - this.#lastReport >= REPORT_INTERVAL_MS) {
       const stats = computeStats(this.#deltas, this.#updates);
-      if (stats) console.info(`[FrameStats] last ${((now - this.#lastReport) / 1000).toFixed(1)}s: ${fmt(stats)}`);
+      if (stats)
+        console.info(
+          `[FrameStats] last ${((now - this.#lastReport) / 1000).toFixed(1)}s: ${fmt(stats)}`
+        );
       this.#deltas = [];
       this.#updates = [];
       this.#lastReport = now;
@@ -125,7 +140,10 @@ class FrameStatsRecorder {
   summary(): WindowStats | null {
     const stats = computeStats(this.#allDeltas, this.#allUpdates);
     if (stats) console.info(`[FrameStats] cumulative: ${fmt(stats)}`);
-    else console.info("[FrameStats] no frames recorded yet — start playback first");
+    else
+      console.info(
+        "[FrameStats] no frames recorded yet — start playback first"
+      );
     return stats;
   }
 

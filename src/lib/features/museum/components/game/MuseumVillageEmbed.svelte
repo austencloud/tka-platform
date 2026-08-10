@@ -20,7 +20,6 @@
 		getMuseumVillageManager,
 		setMuseumVillageVisible,
 	} from "../../services/museum-village-manager";
-	import { onDestroy } from "svelte";
 	import { Vector3 } from "three";
 
 	interface Props {
@@ -46,8 +45,13 @@
 	if (manager) {
 		setVillageContext(manager.villageState);
 		setVillageVisualContext(manager.visualState);
-		setMuseumVillageVisible(true);
 	}
+
+	$effect(() => {
+		if (!manager) return;
+		setMuseumVillageVisible(visible);
+		return () => setMuseumVillageVisible(false);
+	});
 
 	const villageState = manager?.villageState ?? null;
 	const visualState = manager?.visualState ?? null;
@@ -124,14 +128,10 @@
 		return "minimal";
 	}
 
-	onDestroy(() => {
-		// Pause the sim when leaving - don't destroy
-		setMuseumVillageVisible(false);
-	});
 </script>
 
 {#if manager}
-<T.Group position.x={centerX} position.z={centerZ}>
+<T.Group visible={visible} position.x={centerX} position.z={centerZ}>
 	<!-- Forest environment -->
 	<T.Group position.y={forestLift + 0.05}>
 		<ForestScene variant="firefly" />

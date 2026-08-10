@@ -275,6 +275,7 @@
   const docent = getMuseumDocent({ getGrid: () => props.grid });
 
   function toggleDocent(): void {
+    if (!sceneReady && !docent.active) return;
     if (docent.active) {
       docent.stop("button");
       // Release whatever it was holding, or the player keeps walking into a wall.
@@ -780,12 +781,17 @@
       class="museum-docent-btn"
       class:on={docent.active}
       onclick={toggleDocent}
+      disabled={!sceneReady && !docent.active}
       data-ghost="safe"
       data-ghost-kind={docent.active ? undefined : "docent"}
       data-ghost-label="Look around"
       aria-pressed={docent.active}
       aria-label={docent.active ? "Stop walking me around" : "Walk me around"}
-      title={docent.active ? "Stop the tour" : "Show me around"}
+      title={docent.active
+        ? "Stop the tour"
+        : sceneReady
+          ? "Show me around"
+          : "Museum is still loading"}
     >
       <i
         class="fas {docent.active ? 'fa-stop' : 'fa-person-walking'}"

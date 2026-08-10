@@ -1,14 +1,16 @@
 <script lang="ts">
   import { T } from "@threlte/core";
-  import { useGltf } from "@threlte/extras";
   import {
     Color,
-    Mesh,
-    MeshBasicMaterial,
+    Euler,
+    IcosahedronGeometry,
+    InstancedMesh,
+    Matrix4,
     MeshStandardMaterial,
-    type Material,
-    type Object3D,
+    Quaternion,
+    Vector3,
   } from "three";
+  import { onDestroy } from "svelte";
   import FallingParticles from "$lib/shared/3d/environments/primitives/FallingParticles.svelte";
   import type { WingRegion } from "../../domain/museum-grid-types";
   import type { AuthoredPointLightPlanChange } from "../../services/museum-room-light-pool";
@@ -43,10 +45,6 @@
     rotation: [number, number, number];
     scale: [number, number, number];
     tint: string;
-  }
-
-  interface RockInstance extends RockPlacement {
-    object: Object3D;
   }
 
   interface MoodLightSlot {
@@ -105,10 +103,6 @@
       tint: "#2f344d",
     },
   };
-
-  const rockWideA = useGltf("/models/vegetation/rock/rock_largeA.glb");
-  const rockWideC = useGltf("/models/vegetation/rock/rock_largeC.glb");
-  const rockTall = useGltf("/models/vegetation/rock/rock_tallC.glb");
 
   // Rooms dressed by an authored shell or graybox own their own rocks, floor
   // discs, and dust — the generic cave dressing would double up inside them.
@@ -238,64 +232,57 @@
   }
 
   const rockPlacements = buildRockPlacements();
-  let rockInstances = $state<RockInstance[]>([]);
+  // These rocks used to be deep clones of three multi-mesh GLTFs. The first
+  // cave doorway brought hundreds of their child meshes into the camera frustum
+  // at once, producing ~694 draw calls and a repeatable shader-link freeze.
+  // One low-poly instanced field preserves the silhouettes and per-room tint
+  // while making the entire decorative layer a single draw call.
+  const scenicRockGeometry = new IcosahedronGeometry(0.55, 1);
+  const scenicRockMaterial = new MeshStandardMaterial({
+    color: "#ffffff",
+    roughness: 0.96,
+    metalness: 0,
+    flatShading: true,
+  });
+  const scenicRocks = new InstancedMesh(
+    scenicRockGeometry,
+    scenicRockMaterial,
+    rockPlacements.length
+  );
+  scenicRocks.name = "museum-vulcan-scenic-rocks";
+  scenicRocks.castShadow = true;
+  scenicRocks.receiveShadow = true;
+  // All placements share one tiny geometry; rendering the complete field is
+  // cheaper and more reliable than maintaining a giant aggregate bounds box.
+  scenicRocks.frustumCulled = false;
 
-  function cloneRock(
-    source: Object3D,
-    tint: string
-  ): { object: Object3D; materials: Material[] } {
-    const object = source.clone(true);
-    const materials: Material[] = [];
-    const tintColor = new Color(tint);
-
-    object.traverse((child) => {
-      const mesh = child as Mesh;
-      if (!mesh.isMesh || !mesh.material) return;
-      const originals = Array.isArray(mesh.material)
-        ? mesh.material
-        : [mesh.material];
-      const replacements = originals.map((material) => {
-        const clone = material.clone();
-        if (
-          clone instanceof MeshBasicMaterial ||
-          clone instanceof MeshStandardMaterial
-        ) {
-          clone.color.lerp(tintColor, 0.72);
-        }
-        if (clone instanceof MeshStandardMaterial) {
-          clone.roughness = 0.96;
-          clone.metalness = 0;
-        }
-        materials.push(clone);
-        return clone;
-      });
-      mesh.material = Array.isArray(mesh.material)
-        ? replacements
-        : replacements[0]!;
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-    });
-
-    return { object, materials };
+  const rockMatrix = new Matrix4();
+  const rockPosition = new Vector3();
+  const rockRotation = new Quaternion();
+  const rockScale = new Vector3();
+  const neutralRockColor = new Color("#7e7468");
+  for (const [index, placement] of rockPlacements.entries()) {
+    const verticalHalfExtent = 0.55 * placement.scale[1];
+    const y =
+      placement.position[1] > 2
+        ? placement.position[1] - verticalHalfExtent
+        : placement.position[1] + verticalHalfExtent;
+    rockPosition.set(placement.position[0], y, placement.position[2]);
+    rockRotation.setFromEuler(new Euler(...placement.rotation));
+    rockScale.set(...placement.scale);
+    rockMatrix.compose(rockPosition, rockRotation, rockScale);
+    scenicRocks.setMatrixAt(index, rockMatrix);
+    scenicRocks.setColorAt(
+      index,
+      neutralRockColor.clone().lerp(new Color(placement.tint), 0.72)
+    );
   }
+  scenicRocks.instanceMatrix.needsUpdate = true;
+  if (scenicRocks.instanceColor) scenicRocks.instanceColor.needsUpdate = true;
 
-  $effect(() => {
-    const sources = [$rockWideA?.scene, $rockWideC?.scene, $rockTall?.scene];
-    if (sources.some((source) => !source)) return;
-
-    const ownedMaterials: Material[] = [];
-    const next = rockPlacements.map((placement) => {
-      const source = sources[placement.variant]!;
-      const cloned = cloneRock(source, placement.tint);
-      ownedMaterials.push(...cloned.materials);
-      return { ...placement, object: cloned.object };
-    });
-    rockInstances = next;
-
-    return () => {
-      for (const material of ownedMaterials) material.dispose();
-      if (rockInstances === next) rockInstances = [];
-    };
+  onDestroy(() => {
+    scenicRockGeometry.dispose();
+    scenicRockMaterial.dispose();
   });
 
   function inactiveLightSlot(): MoodLightSlot {
@@ -365,11 +352,7 @@
   });
 </script>
 
-{#each rockInstances as rock (rock.id)}
-  <T.Group position={rock.position} rotation={rock.rotation} scale={rock.scale}>
-    <T is={rock.object} />
-  </T.Group>
-{/each}
+<T is={scenicRocks} />
 
 {#each chambers as chamber (chamber.id)}
   {#if !chamber.suppressed}
