@@ -28,14 +28,15 @@
   import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
   import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
-  import { extractScanCode } from "$lib/shared/qr/services/extract-scan-code";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getCaptionPresetManager } from "$lib/shared/share/state/caption-presets.svelte";
   import {
     buildArtifactFilename,
+    buildPostLink,
     copyCaption,
     copyImageAndOpenFacebook,
     downloadArtifact,
+    isPostLink,
     resolveDestinations,
     shareArtifactNatively,
     type HandoffDestinationId,
@@ -61,10 +62,10 @@
     isOpen: boolean;
     sequence: SequenceData | null;
     /**
-     * Canonical share link for this sequence. Only used for the caption when
-     * it is already a tka.run short link (the visual harness passes one) — the
-     * viewer's own URL carries the sequence inline and is far too long to post,
-     * so the sheet mints a short code instead.
+     * Canonical share link for this sequence. Used for the caption only when it
+     * is already a post link (the visual harness passes one) — the viewer's own
+     * URL carries the sequence inline and is far too long to post, so the sheet
+     * mints a short code and builds the link itself.
      */
     shareUrl: string;
     /** Object URL of an already-rendered export, if the viewer has one. */
@@ -120,7 +121,7 @@
   let cardPreviewUrl = $state<string | null>(null);
   let videoBlob = $state<Blob | null>(null);
 
-  /** tka.run link for this sequence, once the code lands. */
+  /** Post link for this sequence, once the code lands. */
   let shortUrl = $state<string | null>(null);
 
   let qrDataUrl = $state<string | null>(null);
@@ -141,12 +142,12 @@
   );
 
   /**
-   * A caller-supplied link is postable only if it is already a scan code —
-   * extractScanCode is the app's own reader for tka.run links, so this asks
-   * the owner rather than guessing at length. Non-short links are dropped.
+   * A caller-supplied link is used only if it is already the post-link form.
+   * The visual harness passes one; the viewer passes its own inline-encoded
+   * share URL, which is dropped in favour of the minted code below.
    */
   const seededShortUrl = $derived(
-    extractScanCode(shareUrl ?? "") ? shareUrl.trim() : ""
+    isPostLink(shareUrl ?? "") ? shareUrl.trim() : ""
   );
 
   /** The only link that ever reaches a caption. */
@@ -332,7 +333,9 @@
         const result = await getShortCodeManager().createShortCode(target, {
           embedSequenceData: true,
         });
-        if (!stale) shortUrl = result.url;
+        // result.url is the QR form (HTTPS://TKA.RUN/CODE). A caption takes the
+        // share route instead — see buildPostLink for why.
+        if (!stale) shortUrl = buildPostLink(result.code);
       } catch (error) {
         // Short codes are signed-in-only, and a sequence that switches between
         // one-hand and two-hand choreography has none. Both are ordinary — the

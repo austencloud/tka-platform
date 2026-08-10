@@ -126,7 +126,10 @@ wasted) and blocking on the render (today's behavior).
 An **editable textarea** seeded by **preset chips**. The textarea is the source
 of truth; chips only fill it. Presets:
 
-- `{word} — tka.run/{code}` — always correct, no authoring
+- `{word} — tkaflowarts.com/sequence/{code}` — always correct, no authoring.
+  **Not** `tka.run/{code}` or `/q/{code}`: those are the QR-scan route, which
+  cannot tell a camera scan from a clicked link, so caption clicks would post
+  as physical-card scans. See `buildPostLink` in `post-handoff.ts`.
 - the above **plus the saved hashtag set** (edited once in settings, applies
   forever)
 - any custom preset the user saves from the current text

@@ -8,7 +8,11 @@
   import { browser } from "$app/environment";
   import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
   import { onMount, onDestroy } from "svelte";
-  import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
+  import {
+    configureShortCodeManager,
+    getShortCodeManager,
+  } from "$lib/shared/qr/get-short-code-manager";
+  import type { ShortCodeSequenceLoader } from "$lib/shared/qr/services/short-code-manager";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
@@ -140,6 +144,24 @@
   let resizeCleanup: (() => void) | null = null;
 
   onMount(async () => {
+    // The root layout only imports composition-root in app mode, so this
+    // standalone route never got the short-code registration and
+    // getShortCodeManager() threw on EVERY id that is not an inline blob —
+    // short codes, library doc ids, sync-room ids all dead-ended at "Failed to
+    // load sequence". Wire the one registration this route consumes, the way
+    // /q/[code] wires the three its bare layout skips. Resolution reads the
+    // short-code doc directly; it never needs the public gallery loader.
+    // Only when nothing else configured it — in app mode the composition root
+    // supplies the real browse loader and must win (same guard the store's
+    // hero-scan-code uses).
+    try {
+      getShortCodeManager();
+    } catch {
+      configureShortCodeManager({
+        loadFullSequenceData: async () => null,
+      } satisfies ShortCodeSequenceLoader);
+    }
+
     // Non-blocking: settings sync happens in background.
     // Don't block the viewer on service initialization.
     initializeAppServices().catch(() => {});

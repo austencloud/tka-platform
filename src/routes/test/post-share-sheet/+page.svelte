@@ -134,7 +134,7 @@
 <PostShareSheet
   {isOpen}
   {sequence}
-  shareUrl="https://tka.run/a3f9"
+  shareUrl="https://tkaflowarts.com/sequence/A3F9"
   {videoBlobUrl}
   {isExportingVideo}
   {exportProgress}

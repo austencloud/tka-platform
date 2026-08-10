@@ -104,34 +104,61 @@ in its column. The second grid track is content-floored by the CTA (477px
 min-content), so the first track is just "the leftover". Reverted; tracks are
 back to 356.5 / 419.5.
 
-## 6. The caption / short link (done today)
+## 6. The caption link (done today) — and why it is NOT tka.run
 
 He saw the long viewer URL in the caption: *"we need to use the short code that
 is abysmal."* He is right — `getShareUrl()` returns a `buildViewerShareDetails`
 URL that carries the whole sequence inline and runs past 200 characters.
 
-What now happens:
+Then he named the danger in using the code: *"the short code's supposed to be
+reserved for QR scans only. So maybe we should use tkaflowarts.com/q/CODE."*
+The instinct is right and the destination is not — **`/q/` IS the scan route**,
+and tka.run redirects into it. `qr/utils/scan-detection.ts` says so in its own
+header: browser navigation timing cannot tell a camera scan from a clicked
+link, so *the route is the attribution boundary*. Proven on a dev server: a
+plain browser visit to `/q/EHWE` wrote `tka:scanned:EHWE:legacy` to
+sessionStorage and entered the scan funnel. Every click from an Instagram
+caption would have counted as a physical-card scan.
 
-- The sheet mints `getShortCodeManager().createShortCode(sequence, { embedSequenceData: true })`
-  on open — the same call `ShareButton.svelte` makes. Content-deduped, so an
+The share route is `/sequence/[id]` — no scan tracking, and it already tries
+`resolveShortCode(id)` before anything else. So the caption link is
+**`https://tkaflowarts.com/sequence/CODE`**, built by `buildPostLink` in
+`post-handoff.ts`. It is also exactly what the page emits as its own canonical
+URL (`routes/sequence/[id]/sequence-seo.ts`), and it puts the real domain in
+the caption instead of an unrecognized shortener.
+
+**That route was broken.** `/sequence/<anything that is not an inline blob>`
+threw `getShortCodeManager(): call configureShortCodeManager() first` and
+dead-ended at "Failed to load sequence" — short codes, library doc ids and
+sync-room ids alike. Cause: the root layout only imports `composition-root` in
+app mode, and this standalone route never got the registration. Fixed in
+`SequenceViewerPage.svelte`'s `onMount` with the same guarded stub-loader
+pattern `/q/[code]` and the store's `hero-scan-code.ts` already use.
+
+The rest of the caption behavior:
+
+- The sheet mints `createShortCode(sequence, { embedSequenceData: true })` on
+  open — the same call `ShareButton.svelte` makes. Content-deduped, so an
   existing code comes straight back.
 - Until it lands the caption is **just the word**. The long URL never appears,
   not even for a frame.
-- The `shareUrl` prop is used only when it is *already* a tka.run link — tested
-  with `extractScanCode`, the app's own reader, not a length guess. The harness
-  passes one; the viewer's long URL is dropped.
-- Captions lowercase the scheme and host. Codes are minted as
-  `HTTPS://TKA.RUN/CODE` (uppercase is what QR alphanumeric mode encodes
-  densely, and what printed cards carry). `new URL(...).toString()` lowercases
-  scheme+host and leaves the path alone, so the code's own case is untouched.
+- The `shareUrl` prop is used only when it is already a post link (`isPostLink`
+  — prefix plus a 4–6 char code). The harness passes one; the viewer's long URL
+  is dropped.
+- Captions lowercase scheme and host (`forCaption` in `caption-presets`). Codes
+  are minted `HTTPS://TKA.RUN/CODE` because uppercase is what QR alphanumeric
+  mode encodes densely; `new URL(...).toString()` lowercases scheme+host and
+  leaves the path alone. **The code's case must survive** — the resolver reads
+  `doc(firestore, SHORTCODES_COLLECTION, code)`, which is case-sensitive.
 - Short codes are **signed-in only**, and a sequence that mixes one-hand and
   two-hand choreography throws `MIXED_CHOREOGRAPHY_UNSUPPORTED`. Both are
   ordinary: the caption carries the word alone and the share still works.
 
-Verified in the real viewer (`/browse/gallery?v=EHWE` → Share → Share
-Sequence…): caption reads `"A"` on open, settles to
-`"A — https://tka.run/EHWE"`. No console errors. `svelte-check` 0/0; 318 share
-tests pass.
+Verified on a dev server: `/sequence/EHWE` loads the right sequence (word A)
+and writes **no** scan key; the viewer's sheet settles to
+`"A — https://tkaflowarts.com/sequence/EHWE"`; the harness reads
+`"FΨ — https://tkaflowarts.com/sequence/A3F9"`. `svelte-check` 0/0, 344 share +
+shell-contract tests pass.
 
 ## 7. Repo state — read before you commit
 
@@ -168,7 +195,15 @@ tests pass.
    list: `navigator.share` reaching the Instagram app with a real video File on
    a phone, and a QR scanned on a real phone saving the video to the camera
    roll. Neither can be done from this machine — they need Austen's phone.
-4. Phase 3 (post history, scheduling, carousels) is deliberately unscoped.
+4. **Link previews on `/sequence/CODE` are generic.** Its `+page.server.ts`
+   resolves SEO meta by published-doc id, so a short code misses and the OG
+   card falls back to the default image. `/q/[code]`'s server load reads the
+   shortcode doc and gets the real thumbnail. It does not bite the main flow —
+   Instagram ignores links in captions, and a Facebook photo post renders the
+   photo, not a link card — but a bare link shared anywhere else looks plain.
+   The fix is teaching the `/sequence` server load to resolve a code the way
+   `/q` does.
+5. Phase 3 (post history, scheduling, carousels) is deliberately unscoped.
 
 ## 9. Traps already paid for
 

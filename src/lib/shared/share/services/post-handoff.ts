@@ -219,6 +219,39 @@ export async function copyImageAndOpenFacebook(
   return { status: "done", message: "Image copied — paste into your post" };
 }
 
+/**
+ * The link that goes in a post: `https://tkaflowarts.com/sequence/A1F8`.
+ *
+ * Deliberately NOT `tka.run/A1F8` or `/q/A1F8`, even though both resolve the
+ * same code. `/q/` is the QR-scan route and the attribution boundary — it
+ * cannot tell a camera scan from a clicked link (see
+ * `qr/utils/scan-detection.ts`), so every click from a caption would post as a
+ * physical-card scan and corrupt scan counts. tka.run redirects straight into
+ * it, so it has the same problem plus a domain nobody recognizes in a feed.
+ * `/sequence/[id]` is the share route: it resolves the code, tracks nothing,
+ * and is already what the page emits as its own canonical URL
+ * (`routes/sequence/[id]/sequence-seo.ts`).
+ *
+ * Codes are minted uppercase for QR density; the path keeps that case because
+ * the resolver is case-sensitive.
+ */
+export function buildPostLink(code: string): string {
+  return `${POST_LINK_PREFIX}${encodeURIComponent(code)}`;
+}
+
+const POST_LINK_PREFIX = "https://tkaflowarts.com/sequence/";
+
+/**
+ * Whether a caller already handed us a postable link. The viewer's own share
+ * URL is the same route but carries the whole sequence inline and runs past
+ * 200 characters, so it fails this on length alone — a code is 4–6 chars.
+ */
+export function isPostLink(url: string): boolean {
+  const trimmed = url.trim();
+  if (!trimmed.startsWith(POST_LINK_PREFIX)) return false;
+  return /^[0-9A-Za-z]{4,6}$/.test(trimmed.slice(POST_LINK_PREFIX.length));
+}
+
 /** `FΨ.png` / `FΨ.mp4`, Greek glyphs preserved, repeats simplified. */
 export function buildArtifactFilename(
   word: string,
