@@ -149,7 +149,9 @@ export const POST: RequestHandler = async (event) => {
   if (deviceBlocked) return deviceBlocked;
 
   try {
-    const firestore = getFirestoreRest();
+    const firestore = getFirestoreRest(
+      event.platform?.env?.FIREBASE_SERVICE_ACCOUNT_JSON
+    );
     const shortCodeDocument = await firestore.getDocument(
       `shortcodes/${request.shortCode}`,
       SHORTCODE_MASK

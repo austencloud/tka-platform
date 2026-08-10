@@ -88,7 +88,9 @@ export const POST: RequestHandler = async (event) => {
     }
     const request = validation.value;
 
-    const firestore = getFirestoreRest();
+    const firestore = getFirestoreRest(
+      event.platform?.env?.FIREBASE_SERVICE_ACCOUNT_JSON
+    );
     const path = `cardPrintRuns/${request.printRunId}`;
     const run = await firestore.getDocument(path, [
       "status",

@@ -162,7 +162,9 @@ export const POST: RequestHandler = async (event) => {
       );
     }
 
-    const firestore = getFirestoreRest();
+    const firestore = getFirestoreRest(
+      event.platform?.env?.FIREBASE_SERVICE_ACCOUNT_JSON
+    );
     const codeDocuments = new Map<string, FirestoreDocument>();
     const uniqueCodes = [
       ...new Set(request.cards.map((card) => card.shortCode)),

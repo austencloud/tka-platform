@@ -2,10 +2,7 @@ import { env } from "$env/dynamic/private";
 import { dev } from "$app/environment";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import {
-  toFirestoreFields,
-  type FirestoreFields,
-} from "./firestore-value-codec";
+import { type FirestoreFields } from "./firestore-value-codec";
 
 export {
   fromFirestoreFields,
@@ -105,7 +102,12 @@ function parseServiceAccount(
   return parsed as ServiceAccountCredentials;
 }
 
-function loadCredentialSource(): string | undefined {
+function loadCredentialSource(platformCredential?: string): string | undefined {
+  // Cloudflare Pages exposes request bindings on event.platform.env. Prefer
+  // that source so credentialed routes do not depend on adapter env hydration.
+  const requestScoped = platformCredential?.trim();
+  if (requestScoped) return requestScoped;
+
   const configured = env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
   if (configured) return configured;
   if (!dev) return undefined;
@@ -316,8 +318,8 @@ export class FirestoreRest {
 let client: FirestoreRest | null = null;
 let credentialSource: string | null = null;
 
-export function getFirestoreRest(): FirestoreRest {
-  const raw = loadCredentialSource();
+export function getFirestoreRest(platformCredential?: string): FirestoreRest {
+  const raw = loadCredentialSource(platformCredential);
   if (!client || credentialSource !== raw) {
     client = new FirestoreRest(parseServiceAccount(raw));
     credentialSource = raw ?? null;

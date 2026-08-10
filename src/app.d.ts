@@ -37,6 +37,7 @@ declare global {
     }
     interface Platform {
       env: {
+        FIREBASE_SERVICE_ACCOUNT_JSON?: string;
         QR_VIDEOS: R2Bucket;
         TKA_ASSETS: R2Bucket;
         R2_PUBLIC_URL: string;
