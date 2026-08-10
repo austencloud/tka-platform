@@ -110,6 +110,21 @@
     resolveDestinations({ artifact, blob: activeBlob, filename })
   );
 
+  // One filled call-to-action, the rest as compact tiles — the hierarchy an OS
+  // share sheet uses, so the obvious move reads as obvious.
+  const primaryDestination = $derived(
+    destinations.find((destination) => destination.primary) ?? null
+  );
+  const secondaryDestinations = $derived(
+    destinations.filter((destination) => !destination.primary)
+  );
+
+  const previewReady = $derived(
+    !qrDataUrl &&
+      ((artifact === "card" && !!cardPreviewUrl) ||
+        (artifact === "video" && !!videoBlobUrl))
+  );
+
   const videoBusy = $derived(artifact === "video" && !videoBlob);
 
   const progressLabel = $derived.by(() => {
@@ -276,31 +291,49 @@
   placement="bottom"
   ariaLabel="Share this sequence"
   class="post-share-drawer"
+  focusContainerOnOpen={true}
   onOpenChange={(open) => {
     if (!open && isOpen) onClose();
   }}
 >
   <div class="sheet">
     <header class="sheet-header">
-      <h2>Share {word}</h2>
+      <div class="title-group">
+        <span class="eyebrow">Share</span>
+        <h2>{word}</h2>
+      </div>
+      <button
+        type="button"
+        class="close"
+        onclick={onClose}
+        aria-label="Close share sheet"
+      >
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
     </header>
 
-    <!-- Two short labels: the control sizes to them, it does not span the
-         sheet (.claude/rules/visual-verification-mandatory.md, wide-control). -->
-    <div class="artifact-picker">
-      <SegmentedControl
-        options={[
-          { value: "card", label: "Card" },
-          { value: "video", label: "Video" },
-        ]}
-        value={artifact}
-        onchange={handleArtifactChange}
-        ariaLabel="What to share"
-        semantics="radiogroup"
-      />
-    </div>
+    <!-- A compact glass pill, not a full-width bar: two short labels size to
+         their labels (.claude/rules/visual-verification-mandatory.md). It sits
+         above the artwork rather than on it, because the card preview IS the
+         content and an overlay would cover a pictograph. -->
+    {#if !qrDataUrl}
+      <div class="artifact-picker">
+        <SegmentedControl
+          options={[
+            { value: "card", label: "Card" },
+            { value: "video", label: "Video" },
+          ]}
+          value={artifact}
+          onchange={handleArtifactChange}
+          ariaLabel="What to share"
+          semantics="radiogroup"
+          size="sm"
+          color="accent"
+        />
+      </div>
+    {/if}
 
-    <div class="stage">
+    <div class="stage" class:showing-media={!!previewReady}>
       {#if qrDataUrl}
         <div class="qr-view">
           <img src={qrDataUrl} alt="QR code linking to the uploaded file" />
@@ -322,21 +355,15 @@
           <span>{progressLabel || "Preparing…"}</span>
         </div>
       {/if}
+
     </div>
 
     {#if !qrDataUrl}
       <div class="caption-block">
-        <div class="caption-head">
-          <label for="post-share-caption">Caption</label>
-          <button
-            type="button"
-            class="link-action"
-            onclick={saveCurrentAsPreset}
-            disabled={!caption.trim()}
-          >
-            Save as preset
-          </button>
-        </div>
+        <!-- One scrolling chip row instead of a label row plus a chip row: the
+             presets and "save this one" are the same gesture family, and the
+             placeholder already names the field. -->
+        <label class="visually-hidden" for="post-share-caption">Caption</label>
 
         <div class="presets">
           {#each presets as preset (preset.id)}
@@ -347,6 +374,14 @@
               onclick={() => applyPreset(preset.text)}
             />
           {/each}
+          <FilterChipBase
+            label="Save current"
+            icon="fa-solid fa-plus"
+            mode="action"
+            size="sm"
+            disabled={!caption.trim()}
+            onclick={saveCurrentAsPreset}
+          />
         </div>
 
         <textarea
@@ -358,88 +393,215 @@
         ></textarea>
       </div>
 
-      <div class="destinations">
-        {#each destinations as destination (destination.id)}
-          <button
-            type="button"
-            class="destination"
-            class:primary={destination.primary}
-            disabled={(destination.id !== "copy-caption" && !activeBlob) ||
-              busyDestination !== null ||
-              qrPending}
-            onclick={() => runDestination(destination.id)}
-          >
-            <i
-              class={busyDestination === destination.id || (destination.id === "send-to-phone" && qrPending)
-                ? "fa-solid fa-circle-notch fa-spin"
-                : destination.icon}
-              aria-hidden="true"
-            ></i>
-            <span class="destination-text">
-              <span class="destination-label">{destination.label}</span>
-              {#if destination.hint}
-                <span class="destination-hint">{destination.hint}</span>
-              {/if}
-            </span>
-          </button>
-        {/each}
-      </div>
+      {#if primaryDestination}
+        <button
+          type="button"
+          class="cta"
+          disabled={!activeBlob || busyDestination !== null || qrPending}
+          onclick={() => runDestination(primaryDestination.id)}
+        >
+          <i
+            class={busyDestination === primaryDestination.id || qrPending
+              ? "fa-solid fa-circle-notch fa-spin"
+              : primaryDestination.icon}
+            aria-hidden="true"
+          ></i>
+          <span class="cta-text">
+            <span class="cta-label">{primaryDestination.label}</span>
+            {#if primaryDestination.hint}
+              <span class="cta-hint">{primaryDestination.hint}</span>
+            {/if}
+          </span>
+        </button>
+      {/if}
+
+      {#if secondaryDestinations.length}
+        <div class="tiles">
+          {#each secondaryDestinations as destination (destination.id)}
+            <button
+              type="button"
+              class="tile"
+              aria-label={destination.label}
+              title={destination.hint
+                ? `${destination.label} · ${destination.hint}`
+                : destination.label}
+              disabled={(destination.id !== "copy-caption" && !activeBlob) ||
+                busyDestination !== null ||
+                qrPending}
+              onclick={() => runDestination(destination.id)}
+            >
+              <span class="tile-icon">
+                <i
+                  class={busyDestination === destination.id
+                    ? "fa-solid fa-circle-notch fa-spin"
+                    : destination.icon}
+                  aria-hidden="true"
+                ></i>
+              </span>
+              <span class="tile-label">{destination.short}</span>
+            </button>
+          {/each}
+        </div>
+      {/if}
     {/if}
 
     <!-- Reserved row: status text appears and disappears without moving the
          sheet's contents. -->
     <p class="status" role="status" class:visible={!!(statusMessage || qrError)}>
-      {qrError || statusMessage || " "}
+      {qrError || statusMessage || " "}
     </p>
   </div>
 </Drawer>
 
 <style>
+  /* Skin the shared Drawer rather than re-declaring a sheet: glass over the
+     app, a hairline top edge, and a shadow that lifts it off the page. */
+  :global(.post-share-drawer) {
+    --sheet-bg: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--theme-surface, #14141c) 92%, transparent) 0%,
+      color-mix(in srgb, var(--theme-surface, #14141c) 98%, transparent) 100%
+    );
+    --sheet-filter: blur(28px) saturate(160%);
+    --sheet-shadow: 0 -1.5rem 4rem rgba(0, 0, 0, 0.55);
+    --sheet-border-radius-top-left: 1.5rem;
+    --sheet-border-radius-top-right: 1.5rem;
+  }
+
+  /* Phone portrait is the tight case, so it is the base: everything from the
+     title to the tile row has to fit above the fold at 375x667. Taller
+     viewports get the roomier version back in the min-height tier below. */
   .sheet {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    padding: 1.25rem;
+    gap: 0.625rem;
+    padding: 1rem;
     width: min(34rem, 100%);
     margin: 0 auto;
   }
 
+  .sheet-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
 
-  .artifact-picker {
-    width: min(16rem, 100%);
+  .title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 0;
+  }
+
+  .eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.55));
   }
 
   .sheet-header h2 {
     margin: 0;
     font-size: 1.25rem;
-    font-weight: 600;
+    font-weight: 650;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
     color: var(--theme-text, #fff);
+    overflow-wrap: anywhere;
+  }
+
+  .close {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    /* Visual size is 36px; the padding carries the hit area to the 44px floor. */
+    margin: -0.25rem -0.25rem 0 0;
+    padding: 0.25rem;
+    box-sizing: content-box;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 999px;
+    background: var(--theme-surface-2, rgba(255, 255, 255, 0.06));
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
+    font-size: 1rem;
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease,
+      transform 0.12s ease;
+  }
+
+  .close:hover {
+    background: var(--theme-surface-3, rgba(255, 255, 255, 0.12));
+    color: var(--theme-text, #fff);
+  }
+
+  .close:active {
+    transform: scale(0.94);
   }
 
   /* Fixed box: the preview, the pending spinner and the QR view all live here,
      so swapping between them never resizes the sheet. */
   .stage {
+    position: relative;
     display: grid;
     place-items: center;
-    min-height: 16rem;
+    min-height: 12rem;
     padding: 0.75rem;
-    border-radius: 0.75rem;
-    background: var(--theme-surface-2, rgba(255, 255, 255, 0.06));
+    border-radius: 1.125rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    background:
+      radial-gradient(
+        120% 100% at 50% 0%,
+        rgba(255, 255, 255, 0.05) 0%,
+        transparent 70%
+      ),
+      var(--theme-surface-2, rgba(255, 255, 255, 0.04));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    overflow: hidden;
   }
 
+  /* Capped in rem, not %: the stage row is content-sized, so a percentage here
+     resolves against an indefinite height and stops capping anything. Each
+     cap is the tier's stage min-height minus its padding. */
   .preview {
     max-width: 100%;
-    max-height: 14.5rem;
+    max-height: 10.5rem;
     object-fit: contain;
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.45);
   }
 
   .stage-pending {
     display: flex;
     align-items: center;
     gap: 0.625rem;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
     font-size: 0.9375rem;
+  }
+
+  /* One glass pill, centered above the artwork. The control itself IS the
+     pill — nesting a 999px wrapper around its 8px corners left a visible
+     rectangle inside the capsule. Width is its labels', never the sheet's
+     (.claude/rules/visual-verification-mandatory.md). */
+  .artifact-picker {
+    align-self: center;
+    max-width: 100%;
+  }
+
+  .artifact-picker :global(.segmented-control) {
+    width: auto;
+    border-radius: 999px;
+    background: rgba(10, 10, 14, 0.5);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+  }
+
+  .artifact-picker :global(.indicator) {
+    border-radius: 999px;
   }
 
   .qr-view {
@@ -453,9 +615,10 @@
   .qr-view img {
     width: 11rem;
     height: 11rem;
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
     background: #fff;
     padding: 0.5rem;
+    box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.45);
   }
 
   .qr-view p {
@@ -471,140 +634,218 @@
     gap: 0.5rem;
   }
 
-  .caption-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
-  .caption-head label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
-  }
-
+  /* Scrolls rather than wraps: a second chip line is 44px the phone doesn't
+     have, and a row that grows by a line is layout shift. */
   .presets {
     display: flex;
-    flex-wrap: wrap;
     gap: 0.375rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 0.125rem;
+    /* Bleed to the sheet edges so a scrolled row reads as scrollable. */
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+  }
+
+  .presets::-webkit-scrollbar {
+    display: none;
+  }
+
+  .presets > :global(*) {
+    flex: 0 0 auto;
   }
 
   textarea {
     width: 100%;
     resize: vertical;
-    padding: 0.625rem 0.75rem;
-    border-radius: 0.5rem;
-    border: 1px solid var(--theme-border, rgba(255, 255, 255, 0.14));
-    background: var(--theme-surface-2, rgba(255, 255, 255, 0.06));
+    padding: 0.75rem 0.875rem;
+    border-radius: 0.875rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-surface-2, rgba(255, 255, 255, 0.05));
     color: var(--theme-text, #fff);
     font: inherit;
     font-size: 0.9375rem;
-    line-height: 1.4;
+    line-height: 1.45;
+    height: 4rem;
+    min-height: 4rem;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
   }
 
-  textarea:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 1px;
+  textarea::placeholder {
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.4));
   }
 
-  .destinations {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+  textarea:focus {
+    outline: none;
+    border-color: var(--theme-accent, #6366f1);
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--theme-accent, #6366f1) 28%, transparent);
   }
 
-  /* Buttons, never text links — every clickable here reads as clickable
-     (.claude/rules/clickables-look-like-buttons.md). */
-  .destination {
+  /* One filled action. Buttons, never text links: every clickable here reads as
+     clickable (.claude/rules/clickables-look-like-buttons.md). */
+  .cta {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    min-height: 2.75rem;
-    padding: 0.625rem 0.875rem;
-    border-radius: 0.625rem;
-    border: 1px solid var(--theme-border, rgba(255, 255, 255, 0.14));
-    background: var(--theme-surface-2, rgba(255, 255, 255, 0.06));
-    color: var(--theme-text, #fff);
+    gap: 0.875rem;
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.75rem 1.125rem;
+    border: none;
+    border-radius: 1rem;
+    background: linear-gradient(
+      135deg,
+      var(--theme-accent, #6366f1) 0%,
+      var(--theme-accent-strong, #8b5cf6) 100%
+    );
+    color: var(--theme-on-accent, #fff);
     font: inherit;
     text-align: left;
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    box-shadow: 0 0.625rem 1.5rem
+      color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
+    transition:
+      transform 0.12s ease,
+      box-shadow 0.15s ease,
+      filter 0.15s ease;
   }
 
-  .destination:hover:not(:disabled) {
-    background: var(--theme-surface-3, rgba(255, 255, 255, 0.12));
-    border-color: var(--theme-accent, #6366f1);
-  }
-
-  .destination.primary {
-    background: var(--theme-accent, #6366f1);
-    border-color: var(--theme-accent, #6366f1);
-    color: var(--theme-on-accent, #fff);
-  }
-
-  .destination.primary:hover:not(:disabled) {
-    filter: brightness(1.08);
-    background: var(--theme-accent, #6366f1);
-  }
-
-  .destination:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .destination i {
-    width: 1.25rem;
+  .cta i {
+    font-size: 1.125rem;
+    width: 1.5rem;
     text-align: center;
   }
 
-  .destination-text {
+  .cta-text {
     display: flex;
     flex-direction: column;
+    min-width: 0;
   }
 
-  .destination-label {
-    font-size: 0.9375rem;
-    font-weight: 500;
+  .cta-label {
+    font-size: 1rem;
+    font-weight: 600;
   }
 
-  .destination-hint {
+  .cta-hint {
     font-size: 0.8125rem;
-    opacity: 0.75;
+    opacity: 0.8;
   }
 
-  .link-action {
-    background: none;
-    border: none;
-    padding: 0.25rem;
-    color: var(--theme-accent, #6366f1);
+  .cta:hover:not(:disabled) {
+    filter: brightness(1.06);
+    box-shadow: 0 0.75rem 2rem
+      color-mix(in srgb, var(--theme-accent, #6366f1) 45%, transparent);
+  }
+
+  .cta:active:not(:disabled) {
+    transform: scale(0.985);
+  }
+
+  .cta:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  /* Equal columns: the row must not reflow as the destination set changes with
+     artifact or device (.claude/rules/no-layout-shift.md). */
+  .tiles {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .tile {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 0.4375rem;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.375rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 1rem;
+    background: var(--theme-surface-2, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #fff);
     font: inherit;
-    font-size: 0.8125rem;
     cursor: pointer;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease,
+      transform 0.12s ease;
   }
 
-  .link-action:disabled {
+  .tile-icon {
+    display: grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 999px;
+    background: var(--theme-surface-3, rgba(255, 255, 255, 0.09));
+    color: var(--theme-text, #fff);
+    font-size: 0.9375rem;
+  }
+
+  .tile-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.72));
+    white-space: nowrap;
+  }
+
+  .tile:hover:not(:disabled) {
+    background: var(--theme-surface-3, rgba(255, 255, 255, 0.09));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
+  }
+
+  .tile:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+
+  .tile:disabled {
     opacity: 0.4;
     cursor: not-allowed;
   }
 
   .secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     min-height: 2.75rem;
-    padding: 0.5rem 1rem;
-    border-radius: 0.625rem;
-    border: 1px solid var(--theme-border, rgba(255, 255, 255, 0.14));
+    padding: 0.5rem 1.125rem;
+    border-radius: 999px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
     background: var(--theme-surface-2, rgba(255, 255, 255, 0.06));
     color: var(--theme-text, #fff);
     font: inherit;
     cursor: pointer;
   }
 
-  /* Always occupies its row — appearing text must not push the sheet. */
+  .secondary:hover {
+    background: var(--theme-surface-3, rgba(255, 255, 255, 0.12));
+  }
+
+  /* Always occupies its row: appearing text must not push the sheet. */
   .status {
     margin: 0;
     min-height: 1.25rem;
-    font-size: 0.875rem;
     text-align: center;
+    font-size: 0.8125rem;
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
     visibility: hidden;
   }
@@ -613,14 +854,52 @@
     visibility: visible;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .destination {
-      transition: none;
+  /* A phone in portrait has to fit the whole sheet above the fold, so the stage
+     stays small there and only claims its full height once the viewport can
+     afford it. */
+  @media (min-height: 800px) {
+    .sheet {
+      gap: 1rem;
+      padding: 1.25rem;
+    }
+
+    .sheet-header h2 {
+      font-size: 1.5rem;
+    }
+
+    .stage {
+      min-height: 16rem;
+    }
+
+    .preview {
+      max-height: 14.5rem;
+    }
+
+    textarea {
+      height: 5.5rem;
+      min-height: 5.5rem;
+    }
+
+    .cta {
+      min-height: 3.5rem;
+    }
+
+    .tile {
+      flex-direction: column;
+      gap: 0.4375rem;
+      padding: 0.75rem 0.375rem;
+    }
+
+    .tile-icon {
+      width: 2.75rem;
+      height: 2.75rem;
+      font-size: 1.0625rem;
     }
   }
+
   /* Wide and short (folded Z Fold landscape, small laptops in a browser with
-     chrome): stacked, the 16rem preview pushes every destination below the
-     fold. Put the preview beside the controls and use the wide axis instead. */
+     chrome): stacked, the 16rem preview pushes every action below the fold.
+     Put the preview beside the controls and use the wide axis instead. */
   @media (min-width: 700px) and (max-height: 620px) {
     .sheet {
       display: grid;
@@ -630,52 +909,47 @@
         "stage header"
         "stage picker"
         "stage caption"
-        "stage destinations"
+        "stage cta"
+        "stage tiles"
         "stage status";
-      grid-template-rows: auto auto auto 1fr auto;
+      grid-template-rows: auto auto auto auto auto 1fr;
       align-content: start;
       column-gap: 1.25rem;
-      row-gap: 0.375rem;
-      padding: 0.5rem 1rem;
-    }
-
-    .status {
-      min-height: 0.875rem;
-      font-size: 0.75rem;
-    }
-
-    .caption-block {
-      gap: 0.375rem;
-    }
-
-    .presets {
-      gap: 0.25rem;
+      row-gap: 0.5rem;
+      padding: 0.25rem 1rem 0.5rem;
     }
 
     .sheet-header {
       grid-area: header;
-    }
-    .artifact-picker {
-      grid-area: picker;
     }
     .stage {
       grid-area: stage;
       min-height: 0;
       align-self: stretch;
     }
+    .artifact-picker {
+      grid-area: picker;
+      justify-self: start;
+    }
     .caption-block {
       grid-area: caption;
     }
-    /* Two rows of two: four stacked rows do not fit 412px of height. */
-    .destinations {
-      grid-area: destinations;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      align-content: start;
-      gap: 0.5rem;
+    .cta {
+      grid-area: cta;
+      min-height: 3rem;
+    }
+    .tiles {
+      grid-area: tiles;
+      align-self: start;
     }
     .status {
       grid-area: status;
+      min-height: 0.875rem;
+      font-size: 0.75rem;
+    }
+
+    .sheet-header h2 {
+      font-size: 1.25rem;
     }
 
     .preview {
@@ -686,16 +960,10 @@
       height: 3.25rem;
       min-height: 3.25rem;
     }
-
-    /* The labels carry the meaning here; the hints are what push the last row
-       off a 412px-tall screen. */
-    .destination-hint {
-      display: none;
-    }
   }
 
-  /* A bottom drawer on a 4K panel reads as a phone strip unless the sheet
-     grows with the canvas (.claude/rules/4k-native-layout.md, 1680 seam). */
+  /* A bottom drawer on a 4K panel reads as a phone strip unless the sheet grows
+     with the canvas (.claude/rules/4k-native-layout.md, 1680 seam). */
   @media (min-width: 1680px) {
     .sheet {
       width: min(42rem, 100%);
@@ -704,7 +972,7 @@
     }
 
     .sheet-header h2 {
-      font-size: 1.5rem;
+      font-size: 1.875rem;
     }
 
     .stage {
@@ -715,20 +983,26 @@
       max-height: 18.5rem;
     }
 
-    .destination-label,
+    .cta-label,
     textarea {
       font-size: 1.0625rem;
     }
 
-    .destination-hint,
-    .caption-head label,
-    .link-action,
+    .cta-hint,
+    .tile-label,
     .status {
+      font-size: 0.9375rem;
+    }
+
+    .artifact-picker :global(.segment),
+    .presets :global(.chip-label) {
       font-size: 0.9375rem;
     }
   }
 
-  @media (min-width: 2600px) {
+  /* 2350, not 2600: 4K at 150% scaling lands here, and it is the tier a single
+     big-screen seam always misses (.claude/rules/4k-native-layout.md). */
+  @media (min-width: 2350px) {
     .sheet {
       width: min(52rem, 100%);
       gap: 1.5rem;
@@ -736,7 +1010,11 @@
     }
 
     .sheet-header h2 {
-      font-size: 1.875rem;
+      font-size: 2.25rem;
+    }
+
+    .eyebrow {
+      font-size: 0.8125rem;
     }
 
     .stage {
@@ -752,27 +1030,126 @@
       height: 15rem;
     }
 
-    .destination {
-      min-height: 3.5rem;
-      padding: 0.875rem 1.125rem;
+    .cta {
+      min-height: 4.5rem;
+      border-radius: 1.25rem;
     }
 
-    .destination-label,
+    .cta i {
+      font-size: 1.5rem;
+      width: 2rem;
+    }
+
+    .cta-label,
     textarea {
-      font-size: 1.25rem;
+      font-size: 1.3125rem;
     }
 
-    .destination-hint,
-    .caption-head label,
-    .link-action,
+    .cta-hint,
+    .tile-label,
     .status {
       font-size: 1.0625rem;
     }
 
-    .destination i {
-      width: 1.75rem;
+    .tile-icon {
+      width: 3rem;
+      height: 3rem;
       font-size: 1.25rem;
+    }
+
+    .close {
+      width: 3rem;
+      height: 3rem;
+      font-size: 1.375rem;
+    }
+
+    .artifact-picker :global(.segment),
+    .presets :global(.chip-label) {
+      font-size: 1.125rem;
     }
   }
 
+  /* 4K at 100%, or a TV across the room: nothing is scaling for you, so type
+     and elements step again rather than the band alone. */
+  @media (min-width: 3200px) {
+    .sheet {
+      width: min(64rem, 100%);
+      gap: 1.75rem;
+      padding: 2.5rem;
+    }
+
+    .sheet-header h2 {
+      font-size: 2.75rem;
+    }
+
+    .eyebrow {
+      font-size: 1rem;
+    }
+
+    .stage {
+      min-height: 32rem;
+    }
+
+    .preview {
+      max-height: 30rem;
+    }
+
+    .qr-view img {
+      width: 19rem;
+      height: 19rem;
+    }
+
+    .cta {
+      min-height: 5.5rem;
+      border-radius: 1.5rem;
+    }
+
+    .cta i {
+      font-size: 1.875rem;
+      width: 2.5rem;
+    }
+
+    .cta-label,
+    textarea {
+      font-size: 1.625rem;
+    }
+
+    .cta-hint,
+    .tile-label,
+    .status {
+      font-size: 1.3125rem;
+    }
+
+    .tile-icon {
+      width: 3.75rem;
+      height: 3.75rem;
+      font-size: 1.5rem;
+    }
+
+    .close {
+      width: 3.75rem;
+      height: 3.75rem;
+      font-size: 1.75rem;
+    }
+
+    .artifact-picker :global(.segment),
+    .presets :global(.chip-label) {
+      font-size: 1.375rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cta,
+    .tile,
+    .close,
+    textarea {
+      transition: none;
+    }
+
+    .cta:active:not(:disabled),
+    .tile:active:not(:disabled),
+    .close:active {
+      transform: none;
+    }
+  }
 </style>

@@ -42,6 +42,8 @@ export interface HandoffDestination {
   icon: string;
   /** Primary renders as the filled button; the rest are secondary. */
   primary: boolean;
+  /** One-word form for the compact tile row; the full label stays the a11y name. */
+  short: string;
   /** Shown under the label when the action needs a word of explanation. */
   hint?: string;
 }
@@ -74,6 +76,7 @@ export function resolveDestinations(ctx: HandoffContext): HandoffDestination[] {
       destinations.push({
         id: "native-share",
         label: "Share",
+        short: "Share",
         icon: "fa-solid fa-share-nodes",
         primary: true,
         hint: "Opens Instagram, Facebook, Messages…",
@@ -83,6 +86,7 @@ export function resolveDestinations(ctx: HandoffContext): HandoffDestination[] {
     destinations.push({
       id: "send-to-phone",
       label: "Send to phone",
+      short: "Phone",
       icon: "fa-solid fa-qrcode",
       primary: true,
       hint: "Scan, save, post from Instagram",
@@ -92,6 +96,7 @@ export function resolveDestinations(ctx: HandoffContext): HandoffDestination[] {
       destinations.push({
         id: "copy-image-facebook",
         label: "Copy image & open Facebook",
+        short: "Facebook",
         // Solid only: the app loads solid.min.css, never brands.min.css, so a
         // fa-brands class renders as an empty box.
         icon: "fa-solid fa-image",
@@ -104,6 +109,7 @@ export function resolveDestinations(ctx: HandoffContext): HandoffDestination[] {
   destinations.push({
     id: "download",
     label: isMobile ? "Save file" : "Download",
+    short: isMobile ? "Save" : "Download",
     icon: "fa-solid fa-download",
     primary: false,
   });
@@ -111,6 +117,7 @@ export function resolveDestinations(ctx: HandoffContext): HandoffDestination[] {
   destinations.push({
     id: "copy-caption",
     label: "Copy caption",
+    short: "Caption",
     icon: "fa-solid fa-clipboard",
     primary: false,
   });

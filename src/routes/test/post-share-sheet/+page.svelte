@@ -5,20 +5,54 @@
   the no-layout-shift behavior can be checked at every required viewport
   without driving the whole create → save → viewer flow.
 
-  The sequence carries no steps, so the card artwork itself is not exercised
-  here — that render belongs to the already-proven sequence renderer. What this
-  harness verifies is the sheet: control widths, caption block, destination
-  rows, and the fixed-size stage.
+  The sequence carries real steps so the card artwork actually renders — a
+  preview stage judged against an empty box tells you nothing about how the
+  sheet composes around real media.
 -->
 <script lang="ts">
   import PostShareSheet from "$lib/shared/share/components/PostShareSheet.svelte";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
+  import { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import {
+    MotionColor,
+    MotionType,
+    RotationDirection,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   const sequence = createSequenceData({
     id: "harness-sequence",
     // Repeated on purpose: the header and filename must read FΨ, never FΨFΨFΨFΨ.
     word: "FΨFΨFΨFΨ",
     name: "Harness sequence",
+    steps: Array.from({ length: 8 }, (_, index) => {
+      const stepNumber = index + 1;
+      return createStepData({
+        id: `harness-step-${stepNumber}`,
+        stepNumber,
+        startPosition: GridPosition.ALPHA1,
+        endPosition: GridPosition.BETA1,
+        motions: {
+          blue: createMotionData({
+            color: MotionColor.BLUE,
+            motionType: MotionType.PRO,
+            rotationDirection:
+              stepNumber % 2 === 0
+                ? RotationDirection.CLOCKWISE
+                : RotationDirection.COUNTER_CLOCKWISE,
+          }),
+          red: createMotionData({
+            color: MotionColor.RED,
+            motionType: MotionType.ANTI,
+            rotationDirection:
+              stepNumber % 2 === 0
+                ? RotationDirection.COUNTER_CLOCKWISE
+                : RotationDirection.CLOCKWISE,
+          }),
+        },
+      });
+    }),
   });
 
   let isOpen = $state(true);
