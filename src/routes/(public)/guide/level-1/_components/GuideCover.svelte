@@ -103,8 +103,13 @@
 </script>
 
 <svelte:head>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,500;1,600&family=Fraunces:ital,opsz,wght@1,9..144,400..900&display=swap" rel="stylesheet" />
+  <!-- Both faces are self-hosted. This cover renders inside a landing launchpad
+       tile (LaunchpadTile -> BookCoverArt -> GuideCover), so the old
+       fonts.googleapis.com pair opened two extra origins at 2.58s for every
+       first-time visitor to the homepage. Fraunces was already self-hosted at
+       the exact italic 700 face used below; Cormorant now is too. -->
+  <link rel="stylesheet" href="/fonts/css/fraunces.css" />
+  <link rel="stylesheet" href="/fonts/css/cormorant.css" />
 </svelte:head>
 
 <div class="cover {theme}" bind:clientWidth={w}>

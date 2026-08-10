@@ -1,0 +1,41 @@
+/* Cormorant Garamond 500 italic — self-hosted (SIL OFL 1.1).
+
+   The guide book cover's subtitle, level word and byline. It used to come from
+   fonts.googleapis.com, which opened two extra origins at 2.58s on the LANDING
+   page: the cover renders inside a launchpad tile via LaunchpadTile ->
+   BookCoverArt -> GuideCover, so every first-time visitor paid a DNS + TLS
+   handshake pair for a decorative book cover.
+
+   That request also asked for Fraunces, which this repo already self-hosts at
+   the exact face the cover uses (italic 700, /fonts/css/fraunces.css) — so half
+   of it was pure duplication.
+
+   Weight 500, not 400: the cover's CSS asks for italic with no weight (=400),
+   but the old Google URL only ever delivered italic 500 and 600, so 400 was
+   already resolving to 500. Shipping 500 as the only italic face reproduces
+   what shipped before rather than quietly restyling the cover.
+
+   Served from /fonts/, so the service worker's /fonts cache-first rule and the
+   long _headers cache window both cover it. */
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/fonts/cormorant/cormorant-garamond-latin-500-italic.woff2)
+    format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/fonts/cormorant/cormorant-garamond-latin-ext-500-italic.woff2)
+    format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
