@@ -362,6 +362,30 @@ class CollectionsState {
   }
 
   /**
+   * Save a collection's editable details: its name, its notes, and a free-text
+   * credit for a contributor who has no profile to link to yet. Empty strings
+   * clear notes and credit — updateDoc rejects undefined, so "" is the erase
+   * value and the mapper reads it back as absent.
+   */
+  async saveDetails(
+    collectionId: string,
+    details: { name: string; description: string; credit: string }
+  ): Promise<boolean> {
+    const name = details.name.trim();
+    if (!name) return false;
+    try {
+      await updateCollection(collectionId, {
+        name,
+        description: details.description.trim(),
+        credit: details.credit.trim(),
+      });
+      return true;
+    } catch {
+      return false; // manager already toasted
+    }
+  }
+
+  /**
    * Publish or unpublish a collection. Public collections appear in
    * Browse > Collections > Community for everyone; private ones are yours
    * alone. Returns false when the write fails (manager toasts).

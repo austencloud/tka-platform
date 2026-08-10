@@ -803,7 +803,7 @@ service cloud.firestore {
         || (isAuthenticated()
           && get(/databases/$(database)/documents/users/$(userId)/collections/$(collectionId)/shares/$(request.auth.uid)).data.role == 'editor'
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'name', 'description', 'coverImageUrl', 'color', 'icon', 'updatedAt'
+            'name', 'description', 'credit', 'coverImageUrl', 'color', 'icon', 'updatedAt'
           ]));
 
       // Deleting never publishes anything; owner-only regardless of isPublic.

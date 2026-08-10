@@ -25,6 +25,7 @@ first and only removes the folder — the sequences inside stay in the library.
   } from "$lib/shared/components/context-menu/context-menu-types";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import CollectionCardSurface from "./CollectionCardSurface.svelte";
+  import CollectionDetailsDialog from "./CollectionDetailsDialog.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { openShareCollectionSheet } from "$lib/shared/inbox/state/send-sequence-state.svelte";
 
@@ -66,6 +67,7 @@ first and only removes the folder — the sequences inside stay in the library.
   let renameValue = $state("");
   let saving = $state(false);
   let deleteConfirmOpen = $state(false);
+  let detailsOpen = $state(false);
 
   const menuItems: ContextMenuEntry[] = $derived.by(() => {
     if (onUnfollow) {
@@ -119,6 +121,15 @@ first and only removes the folder — the sequences inside stay in the library.
         menuState = { open: false };
         renameValue = collection.name;
         renaming = true;
+      },
+    },
+    {
+      id: "details",
+      label: "Edit details",
+      icon: "fa-circle-info",
+      action() {
+        menuState = { open: false };
+        detailsOpen = true;
       },
     },
     // Smart collections are private-only in v1 — no publish action.
@@ -243,6 +254,8 @@ first and only removes the folder — the sequences inside stay in the library.
   items={menuItems}
   onClose={() => (menuState = { open: false })}
 />
+
+<CollectionDetailsDialog {collection} bind:open={detailsOpen} />
 
 <ConfirmDialog
   bind:isOpen={deleteConfirmOpen}

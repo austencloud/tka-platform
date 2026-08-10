@@ -402,7 +402,13 @@ export async function updateCollection(
   updates: Partial<
     Pick<
       LibraryCollection,
-      "name" | "description" | "coverImageUrl" | "color" | "icon" | "isPublic"
+      | "name"
+      | "description"
+      | "credit"
+      | "coverImageUrl"
+      | "color"
+      | "icon"
+      | "isPublic"
     >
   >
 ): Promise<LibraryCollection> {

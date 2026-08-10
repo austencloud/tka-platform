@@ -128,8 +128,16 @@ export interface LibraryCollection {
   /** Collection name (user-defined, or system-defined for system collections) */
   readonly name: string;
 
-  /** Optional description */
+  /** Optional description — free notes shown on the collection's detail header */
   readonly description?: string;
+
+  /**
+   * Free-text attribution for someone who isn't on the platform yet: "Concepts
+   * by Gage DeMello". Rendered in the same card line as `ownerName`, which only
+   * resolves for people who have a profile. When they do sign up, this is the
+   * string to replace with a real link.
+   */
+  readonly credit?: string;
 
   /** Owner user ID */
   readonly ownerId: string;

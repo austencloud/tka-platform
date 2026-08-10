@@ -78,6 +78,9 @@ export function mapDocToCollection(
     id,
     name: data["name"] ?? "",
     description: data["description"],
+    // Cleared fields are written as "" rather than deleted (updateDoc rejects
+    // undefined), so normalise the empty string back to absent here.
+    credit: data["credit"] || undefined,
     ownerId: data["ownerId"] ?? "",
     sequenceIds: data["sequenceIds"] ?? [],
     sequenceOwnerIds: data["sequenceOwnerIds"],

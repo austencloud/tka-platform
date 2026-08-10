@@ -105,6 +105,10 @@
             by {ownerName}{#if accessRole}
               · {accessRole === "editor" ? "Can edit" : "Can view"}{/if}
           </span>
+        {:else if collection.credit}
+          <!-- Hand-written attribution for a contributor with no profile to
+               link to. Same slot as ownerName, so a card never shows both. -->
+          <span class="tile-owner">{collection.credit}</span>
         {/if}
       </span>
     </button>
