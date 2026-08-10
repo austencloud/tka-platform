@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
-  import { T, useTask } from "@threlte/core";
-  import { Color, Mesh, PointLight, type Object3D } from "three";
+  import { T, useTask, useThrelte } from "@threlte/core";
+  import { Box3, Color, Mesh, PointLight, type Object3D } from "three";
   import { CameraMode, UnifiedCameraController } from "@austencloud/camera-3d";
   import type { AvatarState, PhysicsProvider } from "@austencloud/camera-3d";
   import MuseumPerformerStation3D from "$lib/features/museum/components/game/MuseumPerformerStation3D.svelte";
@@ -30,6 +30,17 @@
     buildFirstFireGrayboxColliders,
     FIRST_FIRE_GRAYBOX_SPAWN,
   } from "./first-fire-graybox-colliders";
+  import {
+    applyBareShellShading,
+    BARE_SHELL_BACKGROUND,
+    isBareShellRequested,
+    isHiddenInBareShell,
+  } from "./first-fire-graybox-bare-shell";
+  import {
+    captureView,
+    parseViewParam,
+    type ViewPose,
+  } from "$lib/shared/3d/review/view-capture";
   import FirstFireCinderStateEffects from "./FirstFireCinderStateEffects.svelte";
   import FirstFireProcessionFlames from "./FirstFireProcessionFlames.svelte";
   import FirstFireShrineVolumes from "./FirstFireShrineVolumes.svelte";
@@ -79,12 +90,28 @@
   }
 
   const props: Props = $props();
+  const threlte = useThrelte();
   const contract = buildFirstFireBlenderContract();
   /** ?camera=<id> stands the player at a Gate 3 locked camera for capture. */
   const lockedCameraId =
     typeof window === "undefined"
       ? null
       : new URLSearchParams(window.location.search).get("camera");
+  /**
+   * ?shell=bare strips Gate 3 dressing so the carved shell can be judged on its
+   * own. Gate 2 is reopened and the room cannot be read underneath the fittings.
+   */
+  const bareShell = isBareShellRequested();
+  /**
+   * ?view=<encoded> stands the player at a copied pose. Unlike ?camera=, which
+   * names an authored camera, this replays an arbitrary view Austen was looking
+   * at when he hit Copy view - which is the whole point: the agent judges the
+   * frame that drew the complaint, not one nearby.
+   */
+  const replayPose =
+    typeof window === "undefined"
+      ? null
+      : parseViewParam(window.location.search);
   const colliders = buildFirstFireGrayboxColliders(contract);
   const heroLight = new PointLight(new Color("#ff4a18"), 0, 13, 2);
   heroLight.castShadow = true;
@@ -108,6 +135,15 @@
   /** Re-materialisation counts, surfaced for verification. */
   let materialReport: FirstFireMaterialReport | null = $state(null);
   let flameAnchors = $state<FirstFireFlameAnchor[]>([]);
+  /**
+   * Top of each court's FF_PerformerPad_*, measured from the loaded GLB.
+   *
+   * The rig used to be handed a typed 0.22m while the pads actually top out at
+   * 0.44m, so every performer stood 22cm inside their own plinth. Measuring the
+   * mesh means the number cannot drift from the geometry again: rebuild the pad
+   * in Blender at any height and the rig follows it.
+   */
+  let padSurfaceHeights = $state<Record<string, number>>({});
   let reviewState = $state(createFirstFireGrayboxReviewState());
 
   let playerPosition = $state({
@@ -117,6 +153,14 @@
   });
   let playerYaw = $state(FIRST_FIRE_GRAYBOX_SPAWN.yaw);
   let targetPlayerYaw = $state(FIRST_FIRE_GRAYBOX_SPAWN.yaw);
+  /**
+   * Live pitch, mirrored out of the camera controller. Yaw is owned here (the
+   * room turns the player at gates), but pitch is the controller's alone, so a
+   * capture has to read it back rather than assume it.
+   */
+  let playerPitch = $state(0);
+  /** Pitch handed to the controller on mount. Only a ?view= replay sets it. */
+  let initialPitch = $state(0);
   let isMoving = $state(false);
   let moveDirection = $state({ x: 0, z: 0 });
 
@@ -226,6 +270,61 @@
     return true;
   }
 
+  /**
+   * Stand the player at a copied pose. Same mechanism as the locked-camera
+   * teleport: move the body, set the yaw, and bump cameraRevision so the
+   * controller remounts and picks up the new initial angles.
+   */
+  function teleportToPose(pose: ViewPose): void {
+    const destination = { x: pose.x, y: pose.y, z: pose.z };
+    physicsProvider?.teleport?.(destination);
+    playerPosition = destination;
+    playerYaw = pose.yaw;
+    targetPlayerYaw = pose.yaw;
+    playerPitch = pose.pitch;
+    initialPitch = pose.pitch;
+    avatarState.snapFacingAngle?.(pose.yaw);
+    cameraRevision += 1;
+  }
+
+  /**
+   * Copy the current view - image, pose and a replay URL - to the clipboard.
+   * Called by the P key and the HUD button; exported so the page owns the
+   * affordance and this component owns the numbers.
+   */
+  export async function captureCurrentView() {
+    return captureView({
+      sceneId: "first-fire-graybox",
+      pose: {
+        x: playerPosition.x,
+        y: playerPosition.y,
+        z: playerPosition.z,
+        yaw: playerYaw,
+        pitch: playerPitch,
+      },
+      canvas: threlte.renderer?.domElement ?? null,
+      state: {
+        phase: reviewState.procession.phase,
+        shell: bareShell ? "bare" : "dressed",
+        activeShrine: activeShrineId ?? "none",
+        displayedShrine: displayedShrineId ?? "none",
+      },
+    });
+  }
+
+  /**
+   * Put the player wherever the URL asked for, after any teleport the room did
+   * on its own. A copied ?view= outranks an authored ?camera=: the whole reason
+   * a view was copied is that it shows something the authored cameras do not.
+   */
+  function applyEntryView(): void {
+    if (replayPose) {
+      teleportToPose(replayPose);
+      return;
+    }
+    if (lockedCameraId) teleportToLockedCamera(lockedCameraId);
+  }
+
   function teleportForReviewPhase(): void {
     const phase = reviewState.procession.phase;
     const shrineId = activeFirstFireShrine(phase);
@@ -301,10 +400,23 @@
     flameAnchors = extractFirstFireFlameAnchors(scene, contract.fireGuides);
     // Give each court its own rock, pad and molten channel. The GLB is
     // digest-locked Gate 2 evidence, so this re-materialises in memory only.
-    materialReport = applyFirstFireCourtMaterials(scene);
+    // Bare mode leaves the GLB's own materials alone: the per-court art
+    // direction is a Gate 3 decision and one honest rock reads the geometry
+    // better than three tinted ones.
+    materialReport = bareShell ? null : applyFirstFireCourtMaterials(scene);
     stagedMeshes = [];
     scene.traverse((object) => {
       if (!(object instanceof Mesh)) return;
+      if (bareShell && isHiddenInBareShell(object.name)) {
+        object.visible = false;
+        return;
+      }
+      // The carved shell ships smooth-shaded, which averages normals straight
+      // across the hard corners a boolean produces: walls read as one smeared
+      // gradient and whole facets go dark for no reason the geometry explains.
+      // Flat shading gives every triangle its own normal, so a wall is a wall,
+      // a corner is a corner, and a boolean artifact is visible as one.
+      if (bareShell) applyBareShellShading(object);
       if (object.visible) {
         object.castShadow = true;
         object.receiveShadow = true;
@@ -313,7 +425,11 @@
       // for FF_Trench_*_Magma, which the GLB has never contained, so no trench
       // was ever staged and all three molten channels glowed from load - the
       // finished court's channel included.
+      // Bare mode stages nothing. It is a static reading of the room, not a
+      // proof of the procession, and the growth ribbon out to the Earth door
+      // matches this filter - staging it would hide the last walkway.
       if (
+        !bareShell &&
         /^FF_(Trench_(dj|ek|fl)|Growth_|Bridge_EmberBed|FireState_)/i.test(
           object.name
         )
@@ -321,6 +437,16 @@
         stagedMeshes.push(object);
       }
     });
+    // Measure the pedestals the room owns, rather than trusting a typed height.
+    const measuredPads: Record<string, number> = {};
+    scene.traverse((object) => {
+      const match = /^FF_PerformerPad_(dj|ek|fl)\b/i.exec(object.name);
+      if (!match || !(object instanceof Mesh)) return;
+      measuredPads[match[1]!.toLowerCase()] = new Box3().setFromObject(object)
+        .max.y;
+    });
+    padSurfaceHeights = measuredPads;
+
     assetRevision += 1;
     // Verification seam: the re-materialisation counts have to be readable
     // from the page, otherwise "each court is its own environment" is a claim
@@ -380,7 +506,7 @@
     });
     physicsProvider = createRapierPhysicsProvider(physicsState, playerState);
     isInitialized = true;
-    if (lockedCameraId) teleportToLockedCamera(lockedCameraId);
+    applyEntryView();
   });
 
   $effect(() => {
@@ -390,7 +516,7 @@
     // The initial reset token lands right after mount, so without this the
     // spawn teleport silently overwrites the ?camera= capture position and
     // every locked-camera frame is shot from the Water arrival instead.
-    if (lockedCameraId) teleportToLockedCamera(lockedCameraId);
+    applyEntryView();
   });
 
   $effect(() => {
@@ -405,7 +531,7 @@
     teleportForReviewPhase();
     // A locked camera outranks the phase teleport: the phase sets the room's
     // state, the camera decides where the evidence is shot from.
-    if (lockedCameraId) teleportToLockedCamera(lockedCameraId);
+    applyEntryView();
   });
 
   $effect(() => {
@@ -436,7 +562,7 @@
 
   $effect(() => {
     const shrine = activeShrine;
-    if (!shrine) {
+    if (bareShell || !shrine) {
       heroLight.intensity = 0;
       heroLight.visible = false;
       return;
@@ -508,31 +634,51 @@
   });
 </script>
 
-<T.Color attach="background" args={["#040303"]} />
-<T.FogExp2 attach="fog" args={["#0b0807", 0.012]} />
+{#if bareShell}
+  <!--
+    Gate 2 review lighting. A grey-blue background rather than near-black, so a
+    hole in the shell reads as a hole instead of as one more shadow. No fog: the
+    far end of a corridor is exactly what needs judging.
 
-<!--
-  Gate 3: no ambient fill and no key light. Every photon in the Cinder Court
-  comes from something that is burning, which is the only way the extinguish
-  beat can take the room to true black. The graybox's neutral hemisphere and
-  directional pair washed the basalt to salmon and are deliberately gone. A
-  floor-level bounce term stands in for radiosity off the magma without
-  surviving the blackout.
--->
-<T.HemisphereLight
-  color="#3a1206"
-  groundColor="#1a0704"
-  intensity={emberDressingLit ? 0.09 : 0}
-/>
-<T.PointLight
-  position={[-27, 2.6, 0]}
-  color="#7cc7dd"
-  intensity={24}
-  distance={11}
-  decay={2}
-/>
+    No hemisphere light here, which is the obvious choice and the wrong one - a
+    vault's normals point down, so a sky/ground hemisphere hands the whole
+    ceiling its ground colour and the room reads as an open trench with a black
+    lid. Ambient carries base visibility and four directionals give form,
+    including one aimed up from below the floor purely to describe the vault.
+  -->
+  <T.Color attach="background" args={[BARE_SHELL_BACKGROUND]} />
+  <T.AmbientLight color="#eef1f5" intensity={0.85} />
+  <T.DirectionalLight position={[-18, 24, 14]} intensity={0.75} />
+  <T.DirectionalLight position={[16, 14, -20]} intensity={0.4} />
+  <T.DirectionalLight position={[0, -14, 6]} intensity={0.5} />
+  <T.DirectionalLight position={[24, 6, 18]} intensity={0.3} />
+{:else}
+  <T.Color attach="background" args={["#040303"]} />
+  <T.FogExp2 attach="fog" args={["#0b0807", 0.012]} />
+
+  <!--
+    Gate 3: no ambient fill and no key light. Every photon in the Cinder Court
+    comes from something that is burning, which is the only way the extinguish
+    beat can take the room to true black. The graybox's neutral hemisphere and
+    directional pair washed the basalt to salmon and are deliberately gone. A
+    floor-level bounce term stands in for radiosity off the magma without
+    surviving the blackout.
+  -->
+  <T.HemisphereLight
+    color="#3a1206"
+    groundColor="#1a0704"
+    intensity={emberDressingLit ? 0.09 : 0}
+  />
+  <T.PointLight
+    position={[-27, 2.6, 0]}
+    color="#7cc7dd"
+    intensity={24}
+    distance={11}
+    decay={2}
+  />
+{/if}
 <T is={heroLight} />
-{#if growthVisible}
+{#if growthVisible && !bareShell}
   <T.PointLight
     position={[
       contract.doors.earth.blender.x - 2.5,
@@ -555,35 +701,43 @@
   onReady={handleGrayboxReady}
 />
 
-{#if flameAnchors.length > 0}
-  <FirstFireProcessionFlames
-    anchors={flameAnchors}
-    visibleGroups={visibleFlameGroups}
+<!-- Everything from here to the performer rigs is Gate 3, and none of it mounts
+     in bare mode. The anchors are still extracted above so the page's readiness
+     count and the flame-guide warning stay honest. -->
+{#if !bareShell}
+  {#if flameAnchors.length > 0}
+    <FirstFireProcessionFlames
+      anchors={flameAnchors}
+      visibleGroups={visibleFlameGroups}
+    />
+  {/if}
+
+  <FirstFireCinderStateEffects {contract} {reviewState} />
+
+  <FirstFireEmberDressing
+    {contract}
+    lit={emberDressingLit}
+    activeShrineId={litShrineId ?? null}
   />
-{/if}
 
-<FirstFireCinderStateEffects {contract} {reviewState} />
+  <!-- The coal vocabulary applied to the first section of the walk. Follows the
+       same lit flag as the rest of the dressing so the extinguish beat still
+       takes the room to true black. -->
+  <FirstFireCoalDressing {contract} lit={emberDressingLit} />
 
-<FirstFireEmberDressing
-  {contract}
-  lit={emberDressingLit}
-  activeShrineId={litShrineId ?? null}
-/>
-
-<!-- The coal vocabulary applied to the first section of the walk. Follows the
-     same lit flag as the rest of the dressing so the extinguish beat still
-     takes the room to true black. -->
-<FirstFireCoalDressing {contract} lit={emberDressingLit} />
-
-{#if activeShrine}
-  <FirstFireShrineVolumes
-    shrineId={activeShrine.id}
-    position={[activeShrine.blenderCentre.x, 0, -activeShrine.blenderCentre.y]}
-  />
+  {#if activeShrine}
+    <FirstFireShrineVolumes
+      shrineId={activeShrine.id}
+      position={[activeShrine.blenderCentre.x, 0, -activeShrine.blenderCentre.y]}
+    />
+  {/if}
 {/if}
 
 {#if displayedShrine}
-  {#key displayedShrine.id}
+  <!-- Keyed on the measurement too: the station reads standingSurfaceHeight once
+       at mount, so a rig mounted before the GLB resolved would keep the stale
+       height for the rest of the walk. -->
+  {#key `${displayedShrine.id}:${padSurfaceHeights[displayedShrine.id] ?? "unmeasured"}`}
     {@const entry = {
       x: displayedShrine.blenderEntry.x,
       z: -displayedShrine.blenderEntry.y,
@@ -603,7 +757,7 @@
       active={displayedShrine.id === litShrineId}
       showGrid={displayedShrine.id === activeShrineId}
       showPlatform={false}
-      standingSurfaceHeight={0.22}
+      standingSurfaceHeight={padSurfaceHeights[displayedShrine.id] ?? 0.22}
       effectId={firstFireCourtEffectId(displayedShrine.id)}
     />
   {/key}
@@ -617,7 +771,8 @@
       {physicsProvider}
       enabled={true}
       initialYaw={playerYaw}
-      initialPitch={0}
+      {initialPitch}
+      onRotationChange={(_yaw, pitch) => (playerPitch = pitch)}
       allowedModes={[CameraMode.FIRST_PERSON]}
       disableModeToggle={true}
       showControlsHint={false}

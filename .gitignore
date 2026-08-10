@@ -435,3 +435,6 @@ vite.debug*.config.mts
 # and build-ocean-composition.py from checked-in inputs)
 /static/models/ocean/.sources/
 /blender/ocean_composed.blend
+
+# Throwaway review frames written by /api/dev/view-capture. Not assets.
+/static/captures/

@@ -1,9 +1,10 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import { Canvas } from "@threlte/core";
-  import { AgXToneMapping, PCFSoftShadowMap } from "three";
+  import { AgXToneMapping, PCFSoftShadowMap, WebGLRenderer } from "three";
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
   import FirstFireGrayboxWalkScene from "./FirstFireGrayboxWalkScene.svelte";
+  import type { ViewCapture } from "$lib/shared/3d/review/view-capture";
 
   interface ReviewDetails {
     phase: string;
@@ -51,6 +52,39 @@
     }, 600);
     return () => clearInterval(timer);
   });
+  // Structural rather than the component type: all this page needs from the
+  // scene is the capture call, and a structural type keeps the two decoupled.
+  let walkScene = $state<{
+    captureCurrentView: () => Promise<ViewCapture>;
+  } | null>(null);
+  /** Transient confirmation under the HUD button. Cleared on the next capture. */
+  let captureNote = $state<string | null>(null);
+  let captureNoteTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /**
+   * Copy the current view - frame, pose and replay URL - so a specific defect
+   * can be handed to an agent instead of described. Bound to P as well as the
+   * button: C, V and G are already taken by the camera controller.
+   */
+  async function copyCurrentView() {
+    if (!walkScene) return;
+    const capture = await walkScene.captureCurrentView();
+    if (captureNoteTimer) clearTimeout(captureNoteTimer);
+    captureNote = capture.frameError
+      ? `Pose copied, no frame: ${capture.frameError}`
+      : "Copied - paste to Claude";
+    captureNoteTimer = setTimeout(() => (captureNote = null), 4000);
+  }
+
+  function handleCaptureKey(event: KeyboardEvent) {
+    if (event.code !== "KeyP" || event.repeat) return;
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    const target = event.target as HTMLElement | null;
+    if (target?.isContentEditable || /^(INPUT|TEXTAREA)$/.test(target?.tagName ?? "")) return;
+    event.preventDefault();
+    void copyCurrentView();
+  }
+
   let position = $state({ x: -27, y: 0.88, z: 0 });
   let review = $state<ReviewDetails>(initialReview);
 
@@ -66,6 +100,8 @@
         : "Performer hidden until you turn into the court mouth."
   );
 </script>
+
+<svelte:window onkeydown={handleCaptureKey} />
 
 <svelte:head>
   <title>Walk The First Fire: Cinder Court</title>
@@ -90,8 +126,15 @@
   data-blackout-ms={Math.round(review.blackoutElapsedMs)}
 >
   <div class="viewport" aria-label="The First Fire Cinder Court graybox">
-    <Canvas dpr={1} shadows={PCFSoftShadowMap} toneMapping={AgXToneMapping}>
+    <Canvas
+      dpr={1}
+      shadows={PCFSoftShadowMap}
+      toneMapping={AgXToneMapping}
+      createRenderer={(canvas) =>
+        new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
+    >
       <FirstFireGrayboxWalkScene
+        bind:this={walkScene}
         {resetToken}
         {reviewAdvanceToken}
         onAssetReady={(details) => {
@@ -139,6 +182,12 @@
         onclick={() => (reviewAdvanceToken += 1)}
       />
       <ActionButton
+        label="Copy view"
+        icon="fa-camera"
+        color="default"
+        onclick={copyCurrentView}
+      />
+      <ActionButton
         label="Reset to Water"
         icon="fa-arrow-rotate-left"
         color="default"
@@ -163,6 +212,14 @@
     <span class="review-shortcut"
       >Review shortcut: advance one authored state at a time.</span
     >
+    <span class="review-shortcut"
+      >Press P (or Copy view) to copy this exact view for Claude.</span
+    >
+    {#if captureNote}
+      <span class="capture-note" role="status" aria-live="polite"
+        >{captureNote}</span
+      >
+    {/if}
   </aside>
 </main>
 
@@ -201,6 +258,11 @@
   .viewport {
     position: absolute;
     inset: 0;
+  }
+
+  .capture-note {
+    color: var(--theme-accent);
+    font-weight: 600;
   }
 
   .review-hud {

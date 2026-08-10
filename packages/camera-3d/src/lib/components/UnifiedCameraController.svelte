@@ -87,9 +87,18 @@
   let mode = $state<CameraMode>(CameraMode.ORBIT);
   $effect.pre(() => { mode = _initMode; });
 
-  let yaw = $state(0);
-  let pitch = $state(0);
-  $effect.pre(() => { yaw = props.initialYaw ?? 0; pitch = props.initialPitch ?? 0.3; });
+  // `initial*` means initial. These used to be assigned from an $effect.pre,
+  // which read both props reactively - so any consumer passing a live value for
+  // initialYaw (WorldSceneContent and the First Fire graybox both pass the
+  // player's own yaw) re-ran the effect on every turn and slammed pitch back to
+  // its initial value each time. Symptom: the camera looks left and right
+  // normally and cannot look up or down at all. Museum3DScene had already found
+  // this and worked around it by freezing the values it passes, with the comment
+  // "these must NOT update while UCC is mounted" - that is the real contract, so
+  // it belongs here rather than in each consumer. Re-seeding is done by
+  // remounting, which consumers already do with {#key}.
+  let yaw = $state(props.initialYaw ?? 0);
+  let pitch = $state(props.initialPitch ?? 0.3);
   let isPointerLocked = $state(false);
 
   const keys = new Set<string>();
