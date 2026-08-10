@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "imageRoot": "assets/meshy-refs/celestial/cloudbreak",
+  "outputDirectory": "static/models/celestial/cloudbreak/source",
+  "statePath": "blender/cloudbreak-meshy-image-tasks.json",
+  "aiModel": "meshy-6",
+  "estimatedCreditsPerAsset": 30,
+  "maxCredits": 60,
+  "polycount": 52000,
+  "assets": [
+    {
+      "id": "olive-west-ancient",
+      "label": "Ancient Olive West",
+      "targetHeightMetres": 7,
+      "roles": ["hero", "stage-frame", "western-grove"],
+      "polycount": 60000,
+      "textureResolution": "2k",
+      "maximumOptimizedTriangles": 65000,
+      "texturePrompt": "Photorealistic ancient Mediterranean olive tree. Naturally weathered silver-gray bark with deep fissures and subtle warm wood in hollows; small narrow muted silver-green leaves; dry root flare. Physically plausible PBR with neutral diffuse albedo and rough bark, no baked directional light, no glow, no flowers, no fruit, no moss, no fantasy ornament. Preserve airy gaps through the crown."
+    },
+    {
+      "id": "olive-east-windswept",
+      "label": "Windswept Olive East",
+      "targetHeightMetres": 6,
+      "roles": ["hero", "stage-frame", "eastern-grove"],
+      "polycount": 52000,
+      "textureResolution": "2k",
+      "maximumOptimizedTriangles": 58000,
+      "texturePrompt": "Photorealistic mature Mediterranean olive tree shaped by steady wind. Weathered silver-gray bark with natural fissures; small narrow muted silver-green leaves; dry root flare. Physically plausible PBR with neutral diffuse albedo and rough bark, no baked directional light, no glow, no flowers, no fruit, no moss, no fantasy ornament. Keep the directional crown open and graceful."
+    }
+  ]
+}

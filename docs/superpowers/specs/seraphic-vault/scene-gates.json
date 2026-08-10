@@ -3,7 +3,7 @@
   "sceneId": "seraphic-vault",
   "title": "Olive Cloudbreak Celestial Environment",
   "domainProofRequired": false,
-  "currentGate": 5,
+  "currentGate": 1,
   "authority": {
     "experienceSpec": "docs/superpowers/specs/active/2026-08-09-olive-cloudbreak-celestial-pivot.md",
     "roomShellSource": "scripts/seraphic-vault-cloudbreak-layout.json",
@@ -35,7 +35,12 @@
       "kyODD673tTBSKQDeqKkf",
       "ixw1oGTjSEwS4osxe6EP",
       "dBANZU7fhXPPEO8SKlg5",
-      "STxNJnLKSlsriZFVbfsq"
+      "STxNJnLKSlsriZFVbfsq",
+      "yLirCGXp7BP5ZThFHBqg",
+      "wLtsIC1y0UhIDwu88ULw",
+      "pHK4L3DvITTkhMyR6192",
+      "YRzymqYQL7NHDnB2SSag",
+      "IhLgSyXG6tHNsFSDhv3H"
     ]
   },
   "sequenceFingerprints": [],
@@ -70,10 +75,20 @@
     {
       "id": "C-014",
       "class": "invention",
-      "statement": "One far natural sun sits beyond every mesa and governs the warm light hierarchy.",
+      "statement": "One camera-centred angular sun reads infinitely far beyond every mesa and governs the warm light hierarchy.",
       "evidence": [
         "scripts/seraphic-vault-cloudbreak-layout.json",
-        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r2-report.json"
+        "src/routes/test/celestial-asset-catalog/CloudbreakAssetCatalogScene.svelte"
+      ]
+    },
+    {
+      "id": "C-015",
+      "class": "invention",
+      "statement": "A worn circulation band links the dry performance terrace to a monumental rear limestone threshold, establishing the terrace as part of a larger inhabited sanctuary.",
+      "evidence": [
+        "pHK4L3DvITTkhMyR6192",
+        "scripts/seraphic-vault-cloudbreak-layout.json",
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r3-rear.png"
       ]
     }
   ],
@@ -448,6 +463,251 @@
           "sha256": "57ca8582e633cbd98b36b6c9326f367c621e3601022066bddd0da5319052efbd"
         }
       ]
+    },
+    {
+      "gateId": "production-slice",
+      "revision": "olive-cloudbreak-r2-asset-quality",
+      "status": "reopened-after-model-quality-audit",
+      "reviewedAt": "2026-08-10",
+      "feedback": [
+        "The accepted Gate 4 composition used procedurally authored olive trees, mesas, and stone forms rather than production-quality reusable or Meshy models.",
+        "Austen reopened Gate 4 and directed a reuse-first asset catalog before any new Meshy hunt.",
+        "Gates 1 through 3 remain binding. Gate 5 returns to pending until the rebuilt production slice passes visual and performance review."
+      ],
+      "evidence": [
+        {
+          "kind": "asset-catalog-report",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate4-cloudbreak-r2-asset-catalog.md",
+          "sha256": "3c3dc236d041fde46dcf38c3b589ec3232f6e178f5e0e9eb2483283a7044c9ed"
+        },
+        {
+          "kind": "in-app-review-route",
+          "path": "https://127.0.0.1:5176/test/celestial-integration?view=assets"
+        }
+      ],
+      "museumTrackerItem": "wLtsIC1y0UhIDwu88ULw",
+      "previousApproval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-10T16:58:23.879Z",
+        "quote": "Gate passed.",
+        "museumTrackerItem": "dBANZU7fhXPPEO8SKlg5",
+        "visualComprehensionConfirmed": true
+      }
+    },
+    {
+      "gateId": "integrated-room",
+      "revision": "olive-cloudbreak-r1-before-gate4-reopen",
+      "status": "invalidated-by-gate4-asset-quality-reopen",
+      "reviewedAt": "2026-08-10",
+      "feedback": [
+        "The integrated evidence remains useful, but it cannot approve a room whose production-model gate has reopened.",
+        "Repeat Gate 5 after the rebuilt Gate 4 slice passes with final trees, stone, mesas, and lagoon-edge assets."
+      ],
+      "evidence": [
+        {
+          "kind": "integrated-walk",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate5-cloudbreak-r1-integrated-walk.md",
+          "sha256": "f4c3b42afd0b50a53e2cdc0275779ec599e6b37789baa3d5240b16c12b8dfee5"
+        },
+        {
+          "kind": "transition-captures",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate5-cloudbreak-r1-transition-captures.md",
+          "sha256": "dcff902a07f4396d73840a1e7f689bd271731ff9b6764d19afc9d4e6982b719f"
+        },
+        {
+          "kind": "audio-review",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate5-cloudbreak-r1-audio-review.md",
+          "sha256": "4765faaaeb4b4a51bb01bc3d2c09da7d3b95870c0ed83b08812db76d28857ac3"
+        },
+        {
+          "kind": "performance-report",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate5-cloudbreak-r1-performance-report.json",
+          "sha256": "fc683d38c55dacc81b6c0e974b620257bd7bf322872976b086b05f9c868ddbb5"
+        }
+      ],
+      "checks": [
+        {
+          "name": "museum-connectivity",
+          "status": "passed",
+          "evidence": "The production-composed review route exposed Cloudbreak in its real background selector and completed the adjacent Autumn, Void, and Ocean paths."
+        },
+        {
+          "name": "backtracking",
+          "status": "passed",
+          "evidence": "Eight performers returned intact from Autumn, Void, and Ocean to a settled Cloudbreak scene."
+        },
+        {
+          "name": "state-persistence",
+          "status": "passed",
+          "evidence": "The Celestial background setting, performer count, and audio state remained coherent across the reviewed transitions."
+        },
+        {
+          "name": "runtime-console",
+          "status": "passed",
+          "evidence": "The in-app browser review produced zero application exceptions, transition timeouts, or failed resource requests."
+        },
+        {
+          "name": "performance",
+          "status": "passed",
+          "evidence": "The corrected eight-performer scene held 60 FPS across twelve consecutive warm 4K samples before the Gate 4 asset-quality reopening."
+        }
+      ],
+      "museumTrackerItem": "yLirCGXp7BP5ZThFHBqg"
+    },
+    {
+      "gateId": "measured-plan",
+      "revision": "olive-cloudbreak-r2",
+      "status": "invalidated-by-rear-sanctuary-amendment",
+      "reviewedAt": "2026-08-10",
+      "feedback": [
+        "The registered front remains binding, including the dry stage, right-edge lagoon, paired olives, and four-mesa horizon.",
+        "The newly accepted direction adds a worn circulation route, monumental rear threshold, restored distant banks, and camera-centred sun, so Gate 1 must prove the complete front-to-back shelf before production assets are commissioned."
+      ],
+      "evidence": [
+        {
+          "kind": "review-board",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r2.png",
+          "sha256": "efb2a4136ca0d15c7a98dd22cf50977c4c2e4d7471d37b86f13d939103f47d3a"
+        },
+        {
+          "kind": "automated-report",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r2-report.json",
+          "sha256": "6a1783f559232ed3b9f513790fe4eb22c6ec67b9ba20f8382a9dee164dde9362"
+        }
+      ],
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-10T01:28:44.819Z",
+        "quote": "Yes that sounds great!",
+        "museumTrackerItem": "QhANUCIS6yZH6RaAMz5Z",
+        "visualComprehensionConfirmed": true
+      }
+    },
+    {
+      "gateId": "playable-graybox",
+      "revision": "olive-cloudbreak-r2",
+      "status": "invalidated-by-gate1-spatial-amendment",
+      "reviewedAt": "2026-08-10",
+      "feedback": [
+        "The approved graybox remains evidence for the front terrace but does not contain the new rear threshold or its circulation route.",
+        "Rebuild Gate 2 only after the amended Gate 1 spatial read is approved."
+      ],
+      "evidence": [
+        {
+          "kind": "blender-source",
+          "path": "blender/olive_cloudbreak_graybox_r2.blend",
+          "sha256": "932c2803d0667709e06a1d3b8ca0d87e77805f85fff7fcd5aabf3573f75539af"
+        },
+        {
+          "kind": "review-contact-sheet",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-contact-sheet.png",
+          "sha256": "f79012e62ca088c42bf76ff7863d7b63f7d5e50de66df4ace8e5f1ea4ac736ad"
+        }
+      ],
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-10T02:01:05.755Z",
+        "quote": "You know what it's perfect The spatial read is that I love it and it seems well composed You don't arrive or leave this is mainly location we pass through I don't know about the arrival and the leavings and the items in relationship to the dry stage is great I love it",
+        "museumTrackerItem": "Iehzrhi3HOUVuwV3rYtr",
+        "visualComprehensionConfirmed": true
+      }
+    },
+    {
+      "gateId": "registered-visual-target",
+      "revision": "olive-cloudbreak-r1",
+      "status": "invalidated-by-gate1-spatial-amendment",
+      "reviewedAt": "2026-08-10",
+      "feedback": [
+        "The approved front target remains the color and composition reference.",
+        "A replacement Gate 3 must add the rear threshold, worn route, restored banks, reflective lagoon optics, and infinite-sun behavior without losing the approved front hierarchy."
+      ],
+      "evidence": [
+        {
+          "kind": "visual-target-board",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-visual-target-board.png",
+          "sha256": "42c99818b7e3fdd3eda442057b8c6fc9b0212852ef2e1ab61b666b40edede895"
+        }
+      ],
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-10T03:10:38.730Z",
+        "quote": "It's great let's go for it",
+        "museumTrackerItem": "kyODD673tTBSKQDeqKkf",
+        "visualComprehensionConfirmed": true
+      }
+    },
+    {
+      "gateId": "production-slice",
+      "revision": "olive-cloudbreak-r2-asset-audit",
+      "status": "returned-to-gate1-spatial-amendment",
+      "reviewedAt": "2026-08-10",
+      "feedback": [
+        "The reuse audit remains valid and now feeds the Gate 1 asset hunt sheet.",
+        "No Meshy credits may be spent until the amended front, rear, and plan relationship passes review."
+      ],
+      "evidence": [
+        {
+          "kind": "asset-catalog-report",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate4-cloudbreak-r2-asset-catalog.md",
+          "sha256": "3c3dc236d041fde46dcf38c3b589ec3232f6e178f5e0e9eb2483283a7044c9ed"
+        },
+        {
+          "kind": "in-app-review-route",
+          "path": "https://127.0.0.1:5176/test/celestial-integration?view=assets"
+        }
+      ],
+      "museumTrackerItem": "pHK4L3DvITTkhMyR6192"
+    },
+    {
+      "gateId": "measured-plan",
+      "revision": "olive-cloudbreak-r3-before-asset-production",
+      "status": "superseded-by-r4-asset-production",
+      "reviewedAt": "2026-08-10",
+      "feedback": [
+        "Austen accepted the revised spatial direction and explicitly authorized the production pass.",
+        "Revision 4 enlarges the sanctuary, raises the stage, replaces the placeholder olives and shoreline stones, adds reflected lagoon optics, and animates the waterfall system."
+      ],
+      "evidence": [
+        {
+          "kind": "floor-plan",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r3-plan.png",
+          "sha256": "be09a6bdf2d0b5af05d2e6828ed591b830dca7f16f5b364fdcc0a38f4c559255"
+        },
+        {
+          "kind": "vertical-section",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r3-rear.png",
+          "sha256": "6cee048d5a41b77247047277087096c49900b2a175514982c6b5bbd0ba75a5bc"
+        },
+        {
+          "kind": "sightline-study",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r3-front.png",
+          "sha256": "72e041a9d42b3787a0fec3ec7c6491364d1a201ab84ad7971c6cf58e164acff6"
+        }
+      ],
+      "museumTrackerItem": "YRzymqYQL7NHDnB2SSag"
+    },
+    {
+      "gateId": "measured-plan",
+      "revision": "olive-cloudbreak-r4-asset-production",
+      "status": "superseded-by-r5-visual-integration",
+      "reviewedAt": "2026-08-10",
+      "feedback": [
+        "The custom olives, raised stage, larger animated waterfall, and retained distant banks remain accepted production ingredients.",
+        "Revision 5 must remove the rectangular water overlay and copied shoreline ring, unify the geology material, connect the overflow to the lagoon, restore production clouds, and strengthen the worn route."
+      ],
+      "evidence": [
+        {
+          "kind": "route-storyboard",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-r4-asset-production.md",
+          "sha256": "4acdf5c2f858014def2ea906eac562692103240266f5852c9b20d974bfb1d7c2"
+        },
+        {
+          "kind": "sightline-study",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r4-front.png",
+          "sha256": "249415f7dac62ca9b668e75ba573a59d8135b36142bae7864421e888abe128b8"
+        }
+      ],
+      "museumTrackerItem": "IhLgSyXG6tHNsFSDhv3H"
     }
   ],
   "gates": [
@@ -480,267 +740,96 @@
     },
     {
       "id": "measured-plan",
-      "status": "approved",
+      "status": "ready-for-review",
       "evidence": [
         {
           "kind": "floor-plan",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r2.png"
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r5-plan.png",
+          "sha256": "a4f207f1699fd28416000a9fc49796942e89955b28ce6944349c89747cbd78a5"
         },
         {
           "kind": "vertical-section",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r2.png"
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r5-rear.png",
+          "sha256": "ad83b61cfb4d48a20e646166bd7fdb46e2f187fa3ca88186b50d84ce0eccbeb5"
         },
         {
           "kind": "route-storyboard",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r2.png"
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-r5-visual-integration.md",
+          "sha256": "efaef5960b149bdd62eb806bc1dfe2f6d382bf8237b450aa543e985f9c929eb9"
         },
         {
           "kind": "sightline-study",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r2.png"
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r5-front.png",
+          "sha256": "b9b6e8eea843d664b61162ce46755cb2b20e639b2b63ae513c66ca706cad4309"
         },
         {
-          "kind": "automated-report",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r2-report.json"
+          "kind": "room-shell",
+          "path": "scripts/seraphic-vault-cloudbreak-layout.json",
+          "sha256": "b3b8e663913ab13d4a13b6bf1692905e28bab5341949e57a7f9b987394af9884"
+        },
+        {
+          "kind": "asset-audit-trees",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r5-trees.png",
+          "sha256": "01dcf0d4b52fba9ed5b80582c2fc6a7ccfdabd19f170a4eb5bd6bfb78768dabf"
+        },
+        {
+          "kind": "asset-audit-stone",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r5-stone.png",
+          "sha256": "6919bed0d2366055d8a63aa7a8360ee7930ff6fae5339dd51f896c59c894d10b"
+        },
+        {
+          "kind": "in-app-review-route",
+          "path": "https://127.0.0.1:5176/test/celestial-asset-catalog"
         }
       ],
       "checks": [
         {
           "name": "walkability",
           "status": "passed",
-          "evidence": "The measured landmass provides an 8.0 metre rear shelf beyond the camera and a 5.75 metre dry central performance radius."
+          "evidence": "One 5.25 metre weathered circulation band runs continuously from the raised performance terrace to the deep sanctuary opening while the 5.75 metre performer circle remains clear."
         },
         {
           "name": "clearance",
           "status": "passed",
-          "evidence": "The lagoon clears the performance circle by 3.71 metres, and both olive-tree exclusions remain outside it."
+          "evidence": "The 12 metre sanctuary opening is wider than the worn route, the optimized CC0 shoreline stays outside the raised dry stage, and the 1.75 metre figure clears the opening with monumental headroom."
         },
         {
           "name": "sightlines",
           "status": "passed",
-          "evidence": "Desktop, portrait, and landscape-phone cameras keep the sun near center and clear of every mesa silhouette, the lagoon at the right edge, and both olive trunks outside the protected performer band."
+          "evidence": "The fitted in-app Front camera preserves both custom olives, the raised stage, the complete irregular right-edge lagoon, connected animated overflow, four-mesa depth field, and production cloud panorama. The reverse camera presents one connected sanctuary graybox mass."
         },
         {
           "name": "final-view",
           "status": "passed",
-          "evidence": "Three mesas rise above the terrace, the sun sits at Z -115 beyond every mesa, and at least three mesas remain visible in every registered frame."
+          "evidence": "Front, Rear, Plan, Trees, and Stone captures come from one runtime study. The shared reflector follows the six-point lagoon outline, the production panorama is present, and only two distinct limestone-treated shoreline clusters remain."
         }
       ],
-      "approval": {
-        "approvedBy": "Austen Cloud",
-        "approvedAt": "2026-08-10T01:28:44.819Z",
-        "quote": "Yes that sounds great!",
-        "museumTrackerItem": "QhANUCIS6yZH6RaAMz5Z",
-        "visualComprehensionConfirmed": true
-      }
+      "approval": null
     },
     {
       "id": "playable-graybox",
-      "status": "approved",
-      "evidence": [
-        {
-          "kind": "blender-source",
-          "path": "blender/olive_cloudbreak_graybox_r2.blend",
-          "sha256": "932c2803d0667709e06a1d3b8ca0d87e77805f85fff7fcd5aabf3573f75539af"
-        },
-        {
-          "kind": "coordinate-manifest",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-coordinate-manifest.json",
-          "sha256": "942b6cf507edbb6295ed610fa2293f97b8e7313da182a293e5888deec097b276"
-        },
-        {
-          "kind": "graybox-glb",
-          "path": "static/models/celestial/review/olive-cloudbreak-graybox-r2.glb",
-          "sha256": "f2b5fe202f773e04d97779cf16fc6c301649a8f5f789d92053e5ee551ab30245"
-        },
-        {
-          "kind": "review-contact-sheet",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-contact-sheet.png",
-          "sha256": "f79012e62ca088c42bf76ff7863d7b63f7d5e50de66df4ace8e5f1ea4ac736ad"
-        },
-        {
-          "kind": "spatial-verification",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-verification.json",
-          "sha256": "7830dff2e88998d568845627fdca941a56fb5353867a0cc86e4c020d9f09791e"
-        },
-        {
-          "kind": "automated-report",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-report.json",
-          "sha256": "e07d5e0378170fe52fef543fd862cd537f1959ba08fa859a8009c505d18de72f"
-        }
-      ],
-      "checks": [
-        {
-          "name": "artifact-digest",
-          "status": "passed",
-          "evidence": "The Gate 2 report records SHA-256 digests for the Blender source, coordinate manifest, review GLB, five registered renders, verification report, and contact sheet."
-        },
-        {
-          "name": "collision",
-          "status": "passed",
-          "evidence": "The lagoon clears the dry performance radius by 3.71 metres, both olive exclusions remain outside it, and the Blender artifact retains separate tagged stage and lagoon geometry."
-        },
-        {
-          "name": "coordinate-parity",
-          "status": "passed",
-          "evidence": "The Blender cameras, sun, and olive trunks match the derived runtime-to-Blender coordinate contract."
-        },
-        {
-          "name": "registered-camera-layout",
-          "status": "passed",
-          "evidence": "Actual Blender projections match the approved desktop, portrait, and landscape-phone stage, lagoon, and sun targets."
-        },
-        {
-          "name": "solar-silhouette-clearance",
-          "status": "passed",
-          "evidence": "The rendered sun bounds remain clear of all four rendered mesa bounds in every registered camera."
-        },
-        {
-          "name": "hero-band-clearance",
-          "status": "passed",
-          "evidence": "Both rendered olive trunks remain outside the protected central performer band in every registered camera."
-        }
-      ],
-      "approval": {
-        "approvedBy": "Austen Cloud",
-        "approvedAt": "2026-08-10T02:01:05.755Z",
-        "quote": "You know what it's perfect The spatial read is that I love it and it seems well composed You don't arrive or leave this is mainly location we pass through I don't know about the arrival and the leavings and the items in relationship to the dry stage is great I love it",
-        "museumTrackerItem": "Iehzrhi3HOUVuwV3rYtr",
-        "visualComprehensionConfirmed": true
-      }
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
     },
     {
       "id": "registered-visual-target",
-      "status": "approved",
-      "evidence": [
-        {
-          "kind": "locked-camera-set",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-camera-lock.json",
-          "sha256": "b2adf8f54bb60c57f003a0ad2365a8f17a6779ab8816a0a776a06a326845d362"
-        },
-        {
-          "kind": "visual-target-board",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-visual-target-board.png",
-          "sha256": "42c99818b7e3fdd3eda442057b8c6fc9b0212852ef2e1ab61b666b40edede895"
-        },
-        {
-          "kind": "desktop-target",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-desktop-target.png",
-          "sha256": "8e21ed3d66bd9f806288db8f3cab15b7b3f7d79fcb29c375cd6df7322854e9d7"
-        },
-        {
-          "kind": "portrait-target",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-portrait-target.png",
-          "sha256": "a610de50598a44cf8cb765ccbb220311255808d5dab56402dbe8388d6f61f9f3"
-        },
-        {
-          "kind": "landscape-phone-target",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-landscape-phone-target.png",
-          "sha256": "1d70a141734d4c0b2157251afbd961b32f3f310604efd78012872ebd468fd58d"
-        },
-        {
-          "kind": "material-lighting-brief",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-material-lighting-brief.md",
-          "sha256": "1564f04607757be0e8ad56b4914c445101f8dcf5c5d5cfb0ec788e77cc0c8326"
-        },
-        {
-          "kind": "imagegen-prompt-record",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-imagegen-prompts.md",
-          "sha256": "90ba47860b353f749d502d961edcbebabf084484047bfe8a2bebaadb4901ce1c"
-        },
-        {
-          "kind": "registration-report",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-registration-report.json",
-          "sha256": "014da267c307ec36b3ecfed2f8011f412ea8a14bdb736a92e2aac51111695c5f"
-        }
-      ],
-      "checks": [
-        {
-          "name": "camera-registration",
-          "status": "passed",
-          "evidence": "All three targets preserve their registered Gate 2 aspect ratios within 0.15 percent."
-        },
-        {
-          "name": "silhouette-read",
-          "status": "passed",
-          "evidence": "Manual comparison against the graybox confirms the continuous shelf, open center, paired olive framing, single right-edge lagoon, and four separated mesas in every target."
-        },
-        {
-          "name": "natural-sun-read",
-          "status": "passed",
-          "evidence": "Each target has one distant white-gold solar disk, clear of the mesa silhouettes, governing the stone rims, cloud glow, and lagoon reflection without a graphic halo."
-        },
-        {
-          "name": "motif-restraint",
-          "status": "passed",
-          "evidence": "The targets contain no castle, temple, column, ruin, statue, feather, wing, shrine, or religious symbol."
-        }
-      ],
-      "approval": {
-        "approvedBy": "Austen Cloud",
-        "approvedAt": "2026-08-10T03:10:38.730Z",
-        "quote": "It's great let's go for it",
-        "museumTrackerItem": "kyODD673tTBSKQDeqKkf",
-        "visualComprehensionConfirmed": true
-      }
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
     },
     {
       "id": "production-slice",
-      "status": "approved",
-      "evidence": [
-        {
-          "kind": "vertical-slice-build",
-          "path": "static/models/celestial/olive-cloudbreak-production-slice.glb",
-          "sha256": "2a7b39d7bdbecf23978f29a25b52c164eda48b0164a5e108f1989465e04e2832"
-        },
-        {
-          "kind": "slice-report",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate4-cloudbreak-r1-vertical-slice.md",
-          "sha256": "1c8385c61260e8d0041df0f0feb560a626834d712f769bb96b86f9dcaa1af9cc"
-        },
-        {
-          "kind": "interaction-capture",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate4-cloudbreak-r1-interaction-capture.png",
-          "sha256": "3e8fb8e1ac304d184e678217379832541703cd934abe0206c2859d6aa39e4a83"
-        },
-        {
-          "kind": "performance-report",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate4-cloudbreak-r1-performance-report.json",
-          "sha256": "be1b8e90a0440d38ffe8cd5b7f7113a88da5ae629955005699b85bc3052ed5f4"
-        },
-        {
-          "kind": "viewport-evidence",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate4-cloudbreak-r1-viewport-board.png",
-          "sha256": "3846bef745243a69532c64d9369cc17f2c79e6ee7601a126b57843d240a25141"
-        }
-      ],
-      "checks": [
-        {
-          "name": "interaction-state",
-          "status": "passed",
-          "evidence": "Pointer and keyboard activation drive the shared lagoon and natural-sun pulse. The idle and activated 1920 by 1080 captures differ across 270,796 channels above a value of two."
-        },
-        {
-          "name": "runtime-console",
-          "status": "passed",
-          "evidence": "The final live review route produced zero console errors, warnings, or issues."
-        },
-        {
-          "name": "performance",
-          "status": "passed",
-          "evidence": "A 300-frame live sample held 59.996 FPS with a 16.8 ms p95, 17.0 ms maximum, and no frames above 25 ms, matching the blank-page baseline."
-        }
-      ],
-      "approval": {
-        "approvedBy": "Austen Cloud",
-        "approvedAt": "2026-08-10T16:58:23.879Z",
-        "quote": "Gate passed.",
-        "museumTrackerItem": "dBANZU7fhXPPEO8SKlg5",
-        "visualComprehensionConfirmed": true
-      }
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
     },
     {
       "id": "integrated-room",
-      "status": "in-progress",
+      "status": "pending",
       "evidence": [],
       "checks": [],
       "approval": null

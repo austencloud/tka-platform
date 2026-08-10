@@ -1,6 +1,7 @@
 <script lang="ts">
   import { T, useTask, useThrelte } from "@threlte/core";
   import { useGltf, useKtx2, useMeshopt } from "@threlte/extras";
+  import { userProportionsState } from "@austencloud/scene-3d";
   import { Color, Mesh, MeshStandardMaterial, type Object3D } from "three";
   import {
     prefersReducedMotion,
@@ -152,7 +153,11 @@
 </script>
 
 {#if $cloudbreak}
-  <T.Group scale.x={-1} scale.z={-1}>
+  <T.Group
+    position.y={userProportionsState.groundY}
+    scale.x={-1}
+    scale.z={-1}
+  >
     <T is={$cloudbreak.scene} />
   </T.Group>
 {/if}

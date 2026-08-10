@@ -14,6 +14,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { page } from "$app/state";
+  import CloudbreakAssetCatalog from "../celestial-asset-catalog/+page.svelte";
 
   interface RendererSample {
     fps: number;
@@ -94,9 +95,11 @@
     textures: 0,
     programs: 0,
   });
+  const initialBackgroundType =
+    settingsService.settings.backgroundType ?? BackgroundType.CELESTIAL;
   let transition = $state<EnvironmentTransitionObservation<BackgroundType>>({
-    requestedKey: settingsService.settings.backgroundType,
-    mountedKey: settingsService.settings.backgroundType,
+    requestedKey: initialBackgroundType,
+    mountedKey: initialBackgroundType,
     phase: "idle",
     settled: false,
   });
@@ -104,7 +107,10 @@
   let frames = 0;
   let sampleStartedAt = 0;
 
-  const backgroundType = $derived(settingsService.settings.backgroundType);
+  const backgroundType = $derived(
+    settingsService.settings.backgroundType ?? initialBackgroundType
+  );
+  const catalogMode = $derived(page.url.searchParams.get("view") === "assets");
   const performerCount = $derived(viewer.performerManager.performers.length);
   const stageBounds = $derived(
     getPerformerStageBounds(
@@ -198,6 +204,7 @@
   }
 
   onMount(async () => {
+    if (catalogMode) return;
     viewer.enter3D(sequence);
     mounted = true;
 
@@ -259,105 +266,123 @@
 />
 
 <svelte:head>
-  <title>Olive Cloudbreak Gate 5 integration</title>
+  <title
+    >{catalogMode
+      ? "Olive Cloudbreak asset bench"
+      : "Olive Cloudbreak Gate 5 integration"}</title
+  >
   <meta name="robots" content="noindex, nofollow" />
 </svelte:head>
 
-<main
-  class="gate-five"
-  data-background={backgroundType}
-  data-mounted-background={transition.mountedKey ?? "none"}
-  data-transition-phase={transition.phase}
-  data-transition-settled={transition.settled}
-  data-performer-count={performerCount}
-  data-scene-ready={sceneReady}
-  data-audio-visible={audioVisible}
->
-  <section class="viewer-stage" aria-label="Olive Cloudbreak production viewer">
-    {#if mounted}
-      <Viewer3DCanvas
-        sequenceData={sequence}
-        currentStep={0}
-        isPlaying={false}
-        bpm={60}
-        bluePropType="staff"
-        redPropType="staff"
-        onSceneReadyChange={(ready) => {
-          sceneReady = ready;
-          applyReviewCamera();
-        }}
-        onRendererReady={handleRendererReady}
-        onEnvironmentTransitionChange={handleTransitionChange}
-      />
+{#if catalogMode}
+  <CloudbreakAssetCatalog />
+{:else}
+  <main
+    class="gate-five"
+    data-background={backgroundType}
+    data-mounted-background={transition.mountedKey ?? "none"}
+    data-transition-phase={transition.phase}
+    data-transition-settled={transition.settled}
+    data-performer-count={performerCount}
+    data-scene-ready={sceneReady}
+    data-audio-visible={audioVisible}
+    data-renderer-fps={rendererSample.fps}
+    data-renderer-draw-calls={rendererSample.drawCalls}
+    data-renderer-triangles={rendererSample.triangles}
+    data-renderer-geometries={rendererSample.geometries}
+    data-renderer-textures={rendererSample.textures}
+    data-renderer-programs={rendererSample.programs}
+  >
+    <section
+      class="viewer-stage"
+      aria-label="Olive Cloudbreak production viewer"
+    >
+      {#if mounted}
+        <Viewer3DCanvas
+          sequenceData={sequence}
+          currentStep={0}
+          isPlaying={false}
+          bpm={60}
+          bluePropType="staff"
+          redPropType="staff"
+          onSceneReadyChange={(ready) => {
+            sceneReady = ready;
+            applyReviewCamera();
+          }}
+          onRendererReady={handleRendererReady}
+          onEnvironmentTransitionChange={handleTransitionChange}
+        />
+      {/if}
+    </section>
+
+    <div class="status-card" aria-live="polite">
+      <span class="gate-label">Gate 5</span>
+      <strong
+        >{environmentOptions.find(({ type }) => type === backgroundType)
+          ?.label ?? backgroundType}</strong
+      >
+      <span
+        >{performerCount}
+        {performerCount === 1 ? "performer" : "performers"}</span
+      >
+      <span class:ready={transition.settled}>
+        {transition.settled ? "Integrated" : transition.phase}
+      </span>
+    </div>
+
+    {#if !hideControls}
+      <aside class="review-panel" aria-label="Gate 5 review controls">
+        <div class="review-heading">
+          <span>Integration review</span>
+          <output
+            >{rendererSample.fps} FPS · {rendererSample.geometries}
+            geometries</output
+          >
+        </div>
+
+        <div class="control-section">
+          <span class="control-label">Environment</span>
+          <div
+            class="option-grid environments"
+            role="group"
+            aria-label="Environment"
+          >
+            {#each environmentOptions as option}
+              <button
+                type="button"
+                class:active={backgroundType === option.type}
+                aria-pressed={backgroundType === option.type}
+                onclick={() => void selectEnvironment(option.type)}
+              >
+                {option.label}
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <div class="control-section performer-section">
+          <span class="control-label">Performers</span>
+          <div
+            class="option-grid performers"
+            role="group"
+            aria-label="Performer count"
+          >
+            {#each performerOptions as count}
+              <button
+                type="button"
+                class:active={performerCount === count}
+                aria-pressed={performerCount === count}
+                onclick={() => setPerformerCount(count)}
+              >
+                {count === 1 ? "Solo" : count}
+              </button>
+            {/each}
+          </div>
+        </div>
+      </aside>
     {/if}
-  </section>
-
-  <div class="status-card" aria-live="polite">
-    <span class="gate-label">Gate 5</span>
-    <strong
-      >{environmentOptions.find(({ type }) => type === backgroundType)?.label ??
-        backgroundType}</strong
-    >
-    <span
-      >{performerCount}
-      {performerCount === 1 ? "performer" : "performers"}</span
-    >
-    <span class:ready={transition.settled}>
-      {transition.settled ? "Integrated" : transition.phase}
-    </span>
-  </div>
-
-  {#if !hideControls}
-    <aside class="review-panel" aria-label="Gate 5 review controls">
-      <div class="review-heading">
-        <span>Integration review</span>
-        <output
-          >{rendererSample.fps} FPS · {rendererSample.drawCalls} draws</output
-        >
-      </div>
-
-      <div class="control-section">
-        <span class="control-label">Environment</span>
-        <div
-          class="option-grid environments"
-          role="group"
-          aria-label="Environment"
-        >
-          {#each environmentOptions as option}
-            <button
-              type="button"
-              class:active={backgroundType === option.type}
-              aria-pressed={backgroundType === option.type}
-              onclick={() => void selectEnvironment(option.type)}
-            >
-              {option.label}
-            </button>
-          {/each}
-        </div>
-      </div>
-
-      <div class="control-section performer-section">
-        <span class="control-label">Performers</span>
-        <div
-          class="option-grid performers"
-          role="group"
-          aria-label="Performer count"
-        >
-          {#each performerOptions as count}
-            <button
-              type="button"
-              class:active={performerCount === count}
-              aria-pressed={performerCount === count}
-              onclick={() => setPerformerCount(count)}
-            >
-              {count === 1 ? "Solo" : count}
-            </button>
-          {/each}
-        </div>
-      </div>
-    </aside>
-  {/if}
-</main>
+  </main>
+{/if}
 
 <style>
   :global(body) {
@@ -395,7 +420,8 @@
   }
 
   .status-card {
-    top: 1rem;
+    top: auto;
+    bottom: 4.9rem;
     left: 1rem;
     display: flex;
     align-items: center;
@@ -507,9 +533,7 @@
 
   @media (max-width: 70rem) {
     .status-card {
-      top: auto;
       right: 0.75rem;
-      bottom: 4.9rem;
       left: 0.75rem;
       justify-content: center;
       width: fit-content;

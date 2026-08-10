@@ -2,6 +2,7 @@
 
 import type {
   FallingParticlesConfig,
+  SkyCloudConfig,
   SkyGradientConfig,
 } from "../environment-models";
 import type {
@@ -11,16 +12,7 @@ import type {
   TreeRingConfig,
 } from "./shared-scene-config";
 
-export interface CloudDomeConfig {
-  enabled: boolean;
-  density: number;
-  coverage: number;
-  driftSpeed: number;
-  sunDirection: [number, number, number];
-  litColor: string;
-  shadowColor: string;
-  opacity: number;
-}
+export type CloudDomeConfig = SkyCloudConfig;
 
 export interface CelestialGodRaysConfig {
   enabled: boolean;

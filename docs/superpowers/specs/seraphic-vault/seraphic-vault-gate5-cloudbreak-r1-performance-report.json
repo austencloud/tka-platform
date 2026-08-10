@@ -1,0 +1,41 @@
+{
+  "sceneId": "seraphic-vault",
+  "gate": 5,
+  "revision": "cloudbreak-r1",
+  "capturedAt": "2026-08-10",
+  "reviewSurface": "/test/celestial-integration?performers=8",
+  "browserSurface": "Codex in-app browser",
+  "performerCount": 8,
+  "viewportCaptures": [
+    { "width": 1920, "height": 1080, "fps": 60 },
+    { "width": 2560, "height": 1440, "fps": 60 },
+    { "width": 3840, "height": 2160, "fps": 58 },
+    { "width": 1440, "height": 900, "fps": 52 },
+    { "width": 820, "height": 1180, "fps": 46 },
+    { "width": 960, "height": 412, "fps": 58 },
+    { "width": 375, "height": 667, "fps": 56 }
+  ],
+  "warm4kSample": {
+    "intervalMs": 500,
+    "samples": [60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60],
+    "averageFps": 60,
+    "minimumFps": 60,
+    "maximumFps": 60
+  },
+  "warmedMultiSceneResources": {
+    "geometries": 260,
+    "textures": 217,
+    "programs": 335,
+    "note": "Resource counts include Cloudbreak, Autumn, Void, and Ocean assets retained after the transition review."
+  },
+  "runtimeConsole": {
+    "errors": 0,
+    "warnings": 1,
+    "warningDisposition": "Driver shader precision diagnostic from WebGLProgram; no application exception, transition timeout, or failed resource request."
+  },
+  "focusedVerification": {
+    "testFilesPassed": 8,
+    "testsPassed": 32
+  },
+  "result": "passed"
+}

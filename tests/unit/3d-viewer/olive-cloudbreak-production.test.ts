@@ -46,4 +46,13 @@ describe("Olive Cloudbreak production contract", () => {
     );
     expect(sliceSource).not.toContain("position.z={stageZOffset}");
   });
+
+  it("anchors the authored terrace to the avatar feet plane", () => {
+    expect(sliceSource).toContain(
+      'import { userProportionsState } from "@austencloud/scene-3d"'
+    );
+    expect(sliceSource).toContain(
+      "position.y={userProportionsState.groundY}"
+    );
+  });
 });

@@ -1,22 +1,25 @@
 # Olive Cloudbreak celestial production contract
 
-**Status:** Gate 2 revision 2 approved; Gate 3 is next
+**Status:** Gate 1 revision 5 visual-integration pass ready for review
 
 **Scene ID:** `seraphic-vault`
 
 **Gate manifest:** `./scene-gates.json`
 
 **Current creative provenance:** `zFBOeHQh11FPogHCOuQj`,
-`gxtDuAKzjk0GEVbaIjrE`
+`gxtDuAKzjk0GEVbaIjrE`, `pHK4L3DvITTkhMyR6192`,
+`YRzymqYQL7NHDnB2SSag`, `IhLgSyXG6tHNsFSDhv3H`
 
 ## Active outcome
 
 The Celestial background becomes a sunlit natural refuge built from one broad
-limestone landmass continuing behind the camera, a dry central
-terrace, two olive trees, one peripheral lagoon, raised eroded mesas, thin
-waterfalls, clouds, and one far natural sun. No castle, columns, feather vault,
-religious symbols, or disconnected display platform survives into the new
-geometry.
+limestone landmass continuing behind the camera, a dry central terrace, two
+olive trees, one peripheral lagoon, raised eroded mesas, thin waterfalls,
+clouds, and one camera-centred angular sun. A weathered walking band connects
+the terrace to a monumental rear limestone threshold, making the location feel
+inhabited without turning it into a castle, temple, or arrival corridor. No
+columns, feather vault, religious symbols, or disconnected display platform
+survives into the new geometry.
 
 ## Active evidence
 
@@ -24,28 +27,29 @@ geometry.
   `../active/2026-08-09-olive-cloudbreak-celestial-pivot.md`
 - Gate 0 audit: `./gate0-cloudbreak-canon-audit.md`
 - Measured layout: `scripts/seraphic-vault-cloudbreak-layout.json`
-- Gate 1 board: `./seraphic-vault-gate1-cloudbreak-r2.png`
-- Gate 1 report: `./seraphic-vault-gate1-cloudbreak-r2-report.json`
-- Gate 2 coordinate manifest:
-  `./seraphic-vault-gate2-cloudbreak-r2-coordinate-manifest.json`
-- Gate 2 Blender source: `blender/olive_cloudbreak_graybox_r2.blend`
-- Gate 2 review GLB:
-  `static/models/celestial/review/olive-cloudbreak-graybox-r2.glb`
-- Gate 2 review board:
-  `./seraphic-vault-gate2-cloudbreak-r2-contact-sheet.png`
-- Gate 2 verification:
-  `./seraphic-vault-gate2-cloudbreak-r2-verification.json`
+- Gate 1 revision 5 integration brief:
+  `./seraphic-vault-gate1-r5-visual-integration.md`
+- Gate 1 registered front:
+  `./seraphic-vault-gate1-cloudbreak-r5-front.png`
+- Gate 1 reverse camera:
+  `./seraphic-vault-gate1-cloudbreak-r5-rear.png`
+- Gate 1 measured overview:
+  `./seraphic-vault-gate1-cloudbreak-r5-plan.png`
+- Production olive comparison:
+  `./seraphic-vault-gate1-cloudbreak-r5-trees.png`
+- Optimized CC0 stone comparison:
+  `./seraphic-vault-gate1-cloudbreak-r5-stone.png`
+- In-app review route:
+  `https://127.0.0.1:5176/test/celestial-asset-catalog`
 
-Gate 1 revision 1 was approved by Austen with: "Fully approved my friend."
-The first Gate 2 diagnostic then exposed the highest mesa crossing the solar
-silhouette. Revision 2 moves only that distant mesa sideways and adds an
-automated sun-to-mesa clearance check. Austen approved revision 2 with: "Yes
-that sounds great!" Gate 2 now derives its Blender coordinates from that frozen
-plan. Runtime geometry remains unchanged.
-
-Gate 2 was approved after Austen confirmed the composition and clarified that
-Celestial is a fixed location, not a literal arrival-and-exit route. The plan
-and review artifacts now describe a five-step attention sequence instead.
+The approved revision 2 front composition remains the starting point. Revision
+5 integrates the revision 4 production assets into one material and atmospheric
+language. The reflector is clipped to the lagoon's authored outline, two unique
+CC0 clusters inherit the shelf limestone material, the overflow begins at the
+waterline, the worn route is stronger, and the review uses the production cloud
+panorama. The rear sanctuary remains an explicit spatial graybox until the
+production-model pass. Gates 2 through 6 stay pending until this revised spatial
+and asset read passes review.
 
 ---
 
@@ -75,32 +79,32 @@ required viewport sweep. The base gate sequence remains unchanged.
 
 ## Authority ledger
 
-| Concern              | Canonical owner                    | Evidence path                                                                     | Current conflict                                                               |
-| -------------------- | ---------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Creative direction   | Museum tracker                     | Items listed above                                                                | The environment-gate standard remains an open tracker question.                |
-| Active visual spec   | Seraphic Vault design              | `../active/2026-08-09-seraphic-vault-celestial-design.md`                         | None                                                                           |
-| Current scene shell  | Deterministic Blender builder      | `scripts/build-celestial-environment.py`                                          | None                                                                           |
-| Approved composition | Phase 2 layout contract            | `scripts/seraphic-vault-phase2-layout.json`                                       | Gate 1 approved; Gate 2 derives exact responsive transforms from it            |
-| Blender coordinates  | Gate 2 coordinate manifest         | `./seraphic-vault-gate2-coordinate-manifest.json`                                 | Includes the real-feather clearance correction                                 |
-| Review drawing       | Gate 1 generator                   | `scripts/generate-seraphic-vault-gate1.mjs`                                       | None; consumes the layout contract                                             |
-| Blender output       | Celestial Blend and clean exporter | `blender/celestial_environment.blend`, `scripts/blender-export-celestial-full.py` | Production file remains unchanged; Gate 2 uses a separate review blend and GLB |
+| Concern              | Canonical owner                    | Evidence path                                                                     | Current conflict                                                                  |
+| -------------------- | ---------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Creative direction   | Museum tracker                     | Items listed above                                                                | The environment-gate standard remains an open tracker question.                   |
+| Active visual spec   | Seraphic Vault design              | `../active/2026-08-09-seraphic-vault-celestial-design.md`                         | None                                                                              |
+| Current scene shell  | Deterministic Blender builder      | `scripts/build-celestial-environment.py`                                          | None                                                                              |
+| Approved composition | Phase 2 layout contract            | `scripts/seraphic-vault-phase2-layout.json`                                       | Gate 1 approved; Gate 2 derives exact responsive transforms from it               |
+| Blender coordinates  | Gate 2 coordinate manifest         | `./seraphic-vault-gate2-coordinate-manifest.json`                                 | Includes the real-feather clearance correction                                    |
+| Review drawing       | Gate 1 generator                   | `scripts/generate-seraphic-vault-gate1.mjs`                                       | None; consumes the layout contract                                                |
+| Blender output       | Celestial Blend and clean exporter | `blender/celestial_environment.blend`, `scripts/blender-export-celestial-full.py` | Production file remains unchanged; Gate 2 uses a separate review blend and GLB    |
 | Runtime behavior     | Celestial scene owner              | `src/lib/shared/3d/environments/scenes/CelestialScene.svelte`                     | Gate 3.1 awaits approval before the unified solar owner and visual pass are built |
-| Gate progression     | Evidence index                     | `./scene-gates.json`                                                              | Gate 5 revision 1 was rejected; Gate 3.1 is the active gate                    |
+| Gate progression     | Evidence index                     | `./scene-gates.json`                                                              | Gate 5 revision 1 was rejected; Gate 3.1 is the active gate                       |
 
 ## Claim ledger
 
-| ID    | Class     | Statement                                                                                                            | Evidence or proposal source                      | Status                                               |
-| ----- | --------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------- |
-| C-001 | literal   | The current shell retains a 5.5 m clear performance radius and six mirrored feather ribs.                            | GLB verifier and Blender builder                 | verified                                             |
-| C-002 | invention | Four distant platforms use 30%, 18%, 10%, and 6% of the main deck's screen width.                                    | Austen's direction plus Opus 5 review            | Gate 1 approved                                      |
-| C-003 | invention | Each platform has a different silhouette while preserving the same stone-and-feather civilization.                   | Opus 5 review, refined in the layout contract    | Gate 1 approved                                      |
-| C-004 | invention | The center 20% of the hero frame remains free of distant platforms.                                                  | Phase 2 layout contract                          | verified by projection report                        |
-| C-005 | invention | The main floor becomes cooler weathered marble while feather edges receive warmer backlight.                         | Opus 5 material review                           | renewed in Gate 3.1 target                           |
-| C-006 | invention | A restrained circular floor inlay and stronger contact shadows establish the performance center.                     | Opus 5 material review                           | renewed in Gate 3.1 target                           |
-| C-007 | invention | Layered cloud fields must reduce the severe open-blue gaps without hiding the sanctuary or distant platforms.        | Austen review, tracker `JHp6gIMCiG2cufT0j0GU`    | accepted direction; represented in Gate 2 massing    |
-| C-008 | invention | The centered light needs a readable core and atmospheric corona so it reads as a sun rather than a plain ball.       | Austen review, superseded by `NqtbLpPGntxwmalkZDNL` | revised in Gate 3.1; graphic aureole rejected     |
-| C-009 | invention | Eroded Halo occupies the upper-left field so the composition has two lower sanctuaries and two elevated sanctuaries. | Austen direction, tracker `81biesVcUJSc9mqT8Dbl` | accepted direction; represented in Gate 2 revision 3 |
-| C-010 | invention | One natural white-gold sun governs the cloud glow, warm stone edges, floor reflection, and rays with no graphic ornament. | Austen review, tracker `NqtbLpPGntxwmalkZDNL` | Gate 3.1 ready for review                            |
+| ID    | Class     | Statement                                                                                                                 | Evidence or proposal source                         | Status                                               |
+| ----- | --------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- | ---------------------------------------------------- |
+| C-001 | literal   | The current shell retains a 5.5 m clear performance radius and six mirrored feather ribs.                                 | GLB verifier and Blender builder                    | verified                                             |
+| C-002 | invention | Four distant platforms use 30%, 18%, 10%, and 6% of the main deck's screen width.                                         | Austen's direction plus Opus 5 review               | Gate 1 approved                                      |
+| C-003 | invention | Each platform has a different silhouette while preserving the same stone-and-feather civilization.                        | Opus 5 review, refined in the layout contract       | Gate 1 approved                                      |
+| C-004 | invention | The center 20% of the hero frame remains free of distant platforms.                                                       | Phase 2 layout contract                             | verified by projection report                        |
+| C-005 | invention | The main floor becomes cooler weathered marble while feather edges receive warmer backlight.                              | Opus 5 material review                              | renewed in Gate 3.1 target                           |
+| C-006 | invention | A restrained circular floor inlay and stronger contact shadows establish the performance center.                          | Opus 5 material review                              | renewed in Gate 3.1 target                           |
+| C-007 | invention | Layered cloud fields must reduce the severe open-blue gaps without hiding the sanctuary or distant platforms.             | Austen review, tracker `JHp6gIMCiG2cufT0j0GU`       | accepted direction; represented in Gate 2 massing    |
+| C-008 | invention | The centered light needs a readable core and atmospheric corona so it reads as a sun rather than a plain ball.            | Austen review, superseded by `NqtbLpPGntxwmalkZDNL` | revised in Gate 3.1; graphic aureole rejected        |
+| C-009 | invention | Eroded Halo occupies the upper-left field so the composition has two lower sanctuaries and two elevated sanctuaries.      | Austen direction, tracker `81biesVcUJSc9mqT8Dbl`    | accepted direction; represented in Gate 2 revision 3 |
+| C-010 | invention | One natural white-gold sun governs the cloud glow, warm stone edges, floor reflection, and rays with no graphic ornament. | Austen review, tracker `NqtbLpPGntxwmalkZDNL`       | Gate 3.1 ready for review                            |
 
 ## Experience sentence
 
