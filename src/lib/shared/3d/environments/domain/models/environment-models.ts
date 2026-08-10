@@ -44,6 +44,27 @@ export interface SkySunConfig {
   glowOpacity?: number;
 }
 
+/** A camera-centred cloud field lit from the same direction as the sky Sun. */
+export interface SkyCloudConfig {
+  enabled: boolean;
+  /** Visible cloud fraction from 0 (clear) to 1 (overcast). */
+  coverage: number;
+  /** Internal body and edge definition. */
+  density: number;
+  /** Sky-relative drift speed. */
+  driftSpeed: number;
+  sunDirection: [number, number, number];
+  litColor: string;
+  shadowColor: string;
+  opacity: number;
+  /** Size of the dominant cloud cells. Higher values create smaller forms. */
+  scale?: number;
+  /** Lowest sky latitude at which the field becomes visible. */
+  horizonFade?: number;
+  /** Keeps the cloud ceiling from becoming a solid cap above the camera. */
+  zenithFade?: number;
+}
+
 /**
  * Particle type for FallingParticles
  */

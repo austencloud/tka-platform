@@ -4,7 +4,7 @@
   import { FogExp2, Color } from "three";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
-  import CloudDome from "./celestial/CloudDome.svelte";
+  import CloudSkyDome from "../primitives/CloudSkyDome.svelte";
   import GodRays from "./celestial/GodRays.svelte";
   import CelestialCloudBanks from "./celestial/CelestialCloudBanks.svelte";
   import CelestialCloudPanorama from "./celestial/CelestialCloudPanorama.svelte";
@@ -101,7 +101,7 @@
 <CelestialCloudPanorama />
 
 <!-- Volumetric cloud dome -->
-<CloudDome config={activeConfig.cloudDome} />
+<CloudSkyDome config={activeConfig.cloudDome} />
 
 <OliveCloudbreakSlice {interactionPulse} onReady={handleCloudbreakReady} />
 
