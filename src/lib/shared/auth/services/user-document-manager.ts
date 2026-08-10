@@ -55,6 +55,12 @@ function capitalizeName(name: string): string {
     .join(" ");
 }
 
+interface ProfileSyncStep {
+  action: string;
+  message: string;
+  path?: string;
+}
+
 export class UserDocumentManager {
   constructor() {}
 
@@ -68,6 +74,11 @@ export class UserDocumentManager {
    * Updates existing document with latest auth data if exists.
    */
   async createOrUpdateUserDocument(user: User): Promise<void> {
+    let currentStep: ProfileSyncStep = {
+      action: "initialize-profile-sync",
+      message: "Could not initialize the signed-in user's profile sync",
+    };
+
     try {
       // Dev guard: localhost writes straight to production Firestore (no
       // emulator wired). Skip minting a public profile doc for anonymous guest
@@ -77,22 +88,29 @@ export class UserDocumentManager {
 
       const firestore = await getFirestoreInstance();
       const userDocRef = doc(firestore, `users/${user.uid}`);
+      const mergePrivateProfile = async (
+        profile: Record<string, unknown>
+      ): Promise<void> => {
+        currentStep = {
+          action: "set-private-profile",
+          message: "Could not update the signed-in user's private profile",
+          path: `userPrivateProfiles/${user.uid}`,
+        };
+        await retryAuthenticatedFirestoreOperation(user, () =>
+          setDoc(doc(firestore, "userPrivateProfiles", user.uid), profile, {
+            merge: true,
+          })
+        );
+      };
+
+      currentStep = {
+        action: "get",
+        message: "Could not read the signed-in user's profile document",
+        path: `users/${user.uid}`,
+      };
       const userDoc = await retryAuthenticatedFirestoreOperation(user, () =>
         getDoc(userDocRef)
-      ).catch(async (error: unknown) => {
-        const reportedError =
-          error instanceof Error ? error : new Error(String(error));
-        await reportErrorTelemetry({
-          message: "Could not read the signed-in user's profile document",
-          error: reportedError,
-          context: {
-            module: "firestore",
-            action: "get",
-            additionalData: { path: `users/${user.uid}` },
-          },
-        });
-        throw error;
-      });
+      );
 
       // This event is the denominator for the autonomous production review.
       // It proves the exact owner-scoped read ran under deployed rules; generic
@@ -102,6 +120,11 @@ export class UserDocumentManager {
         telemetry_path_shape: "users/{id}",
         profile_document_exists: userDoc.exists(),
       });
+
+      currentStep = {
+        action: "prepare-profile-sync",
+        message: "Could not prepare the signed-in user's profile sync",
+      };
 
       // Determine display name and auto-capitalize.
       //
@@ -146,6 +169,11 @@ export class UserDocumentManager {
         // Email is available via Firebase Auth for the user themselves
         const fallbackAvatar = generateAvatarUrl(displayName, 256);
 
+        currentStep = {
+          action: "create-public-profile",
+          message: "Could not create the signed-in user's public profile",
+          path: `users/${user.uid}`,
+        };
         await retryAuthenticatedFirestoreOperation(user, () =>
           setDoc(userDocRef, {
             publicProfileVersion: PUBLIC_PROFILE_VERSION,
@@ -178,24 +206,25 @@ export class UserDocumentManager {
           })
         );
 
-        await setDoc(
-          doc(firestore, "userPrivateProfiles", user.uid),
-          {
-            email: user.email ?? null,
-            googleId: providerIds.googleId || null,
-            googlePhotoURL,
-            facebookId: providerIds.facebookId || null,
-            ...(postHogSessionId
-              ? {
-                  postHogSessionId,
-                  postHogSessionCapturedAt: serverTimestamp(),
-                }
-              : {}),
-          },
-          { merge: true }
-        );
+        await mergePrivateProfile({
+          email: user.email ?? null,
+          googleId: providerIds.googleId || null,
+          googlePhotoURL,
+          facebookId: providerIds.facebookId || null,
+          ...(postHogSessionId
+            ? {
+                postHogSessionId,
+                postHogSessionCapturedAt: serverTimestamp(),
+              }
+            : {}),
+        });
 
         if (!user.isAnonymous) {
+          currentStep = {
+            action: "claim-username",
+            message: "Could not claim the signed-in user's username",
+            path: `usernames/${usernameLowercase}`,
+          };
           await retryAuthenticatedFirestoreOperation(user, () =>
             claimUsername(user.uid, username)
           );
@@ -246,28 +275,29 @@ export class UserDocumentManager {
         // Don't null it out - the provider's photoURL becomes null after the
         // user switches to a generated avatar, but we want to keep the
         // original so "Use Google Photo" always works.
-        await setDoc(
-          doc(firestore, "userPrivateProfiles", user.uid),
-          {
-            email: user.email ?? null,
-            googleId: providerIds.googleId || null,
-            facebookId: providerIds.facebookId || null,
-            ...(googlePhotoURL ? { googlePhotoURL } : {}),
-            ...(postHogSessionId
-              ? {
-                  postHogSessionId,
-                  postHogSessionCapturedAt: serverTimestamp(),
-                }
-              : {}),
-          },
-          { merge: true }
-        );
+        await mergePrivateProfile({
+          email: user.email ?? null,
+          googleId: providerIds.googleId || null,
+          facebookId: providerIds.facebookId || null,
+          ...(googlePhotoURL ? { googlePhotoURL } : {}),
+          ...(postHogSessionId
+            ? {
+                postHogSessionId,
+                postHogSessionCapturedAt: serverTimestamp(),
+              }
+            : {}),
+        });
 
         // Add usernameLowercase if missing (backfill for existing users)
         if (existingUsername && !existingData?.usernameLowercase) {
           updateData.usernameLowercase = formatUsername(existingUsername);
         }
 
+        currentStep = {
+          action: "update-public-profile",
+          message: "Could not update the signed-in user's public profile",
+          path: `users/${user.uid}`,
+        };
         await retryAuthenticatedFirestoreOperation(user, () =>
           setDoc(userDocRef, updateData, { merge: true })
         );
@@ -276,16 +306,31 @@ export class UserDocumentManager {
         // token was still being replaced and whose first username claim was
         // consequently denied.
         if (existingUsername && !user.isAnonymous) {
+          currentStep = {
+            action: "claim-username",
+            message: "Could not claim the signed-in user's username",
+            path: `usernames/${formatUsername(existingUsername)}`,
+          };
           await retryAuthenticatedFirestoreOperation(user, () =>
             claimUsername(user.uid, existingUsername)
           );
         }
       }
     } catch (error) {
-      console.error(
-        `❌ [UserDocumentManager] Failed to create/update user document:`,
-        error
-      );
+      const reportedError =
+        error instanceof Error ? error : new Error(String(error));
+      await reportErrorTelemetry({
+        message: currentStep.message,
+        error: reportedError,
+        context: {
+          module: "firestore",
+          action: currentStep.action,
+          ...(currentStep.path
+            ? { additionalData: { path: currentStep.path } }
+            : {}),
+        },
+      });
+      console.error(`[UserDocumentManager] ${currentStep.message}:`, error);
       // Don't throw - this shouldn't block authentication
     }
   }

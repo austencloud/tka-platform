@@ -76,6 +76,7 @@ function fullUser(): User {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  h.setDoc.mockResolvedValue(undefined);
   h.getDoc.mockResolvedValue({
     exists: () => false,
   });
@@ -143,6 +144,57 @@ describe("UserDocumentManager parent reconstruction", () => {
       })
     );
     expect(h.captureWhenReady).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it("refreshes auth and retries a denied private-profile write", async () => {
+    const user = fullUser();
+    const error = Object.assign(
+      new Error("Missing or insufficient permissions"),
+      { code: "permission-denied" }
+    );
+    h.setDoc
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(error)
+      .mockResolvedValueOnce(undefined);
+
+    await new UserDocumentManager().createOrUpdateUserDocument(user);
+
+    expect(h.setDoc).toHaveBeenCalledTimes(3);
+    expect(user.getIdToken).toHaveBeenCalledWith(true);
+    expect(h.reportErrorTelemetry).not.toHaveBeenCalled();
+    expect(h.claimUsername).toHaveBeenCalledWith("user-1", "matty");
+  });
+
+  it("reports the exact private-profile step after its retry is denied", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const error = Object.assign(
+      new Error("Missing or insufficient permissions"),
+      { code: "permission-denied" }
+    );
+    h.setDoc
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(error)
+      .mockRejectedValueOnce(error);
+
+    await new UserDocumentManager().createOrUpdateUserDocument(fullUser());
+
+    expect(h.reportErrorTelemetry).toHaveBeenCalledWith({
+      message: "Could not update the signed-in user's private profile",
+      error,
+      context: {
+        module: "firestore",
+        action: "set-private-profile",
+        additionalData: { path: "userPrivateProfiles/user-1" },
+      },
+    });
+    expect(consoleError).toHaveBeenCalledWith(
+      "[UserDocumentManager] Could not update the signed-in user's private profile:",
+      error
+    );
+    expect(h.claimUsername).not.toHaveBeenCalled();
     consoleError.mockRestore();
   });
 

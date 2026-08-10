@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { BackgroundType } from "@austencloud/backgrounds";
 
 type RemoteSettings = Record<string, unknown>;
 
@@ -225,5 +226,18 @@ describe("account settings synchronization", () => {
       })
     );
     expect(localStorage.getItem(userBQueueKey)).toBeNull();
+  });
+
+  it("persists the selected Celestial environment in the local settings owner", async () => {
+    const service = await loadSettingsService();
+
+    await service.updateSetting("backgroundType", BackgroundType.CELESTIAL);
+
+    expect(service.currentSettings.backgroundType).toBe(
+      BackgroundType.CELESTIAL
+    );
+    expect(JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}")).toEqual(
+      expect.objectContaining({ backgroundType: BackgroundType.CELESTIAL })
+    );
   });
 });
