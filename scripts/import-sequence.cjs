@@ -88,6 +88,9 @@ function convertToEngineStep(step, index) {
     letter: step.letter,
     startPosition: step.startPosition,
     endPosition: step.endPosition,
+    // The detector's sameLOOPSignal reads `motions.{blue,red}`; the transform
+    // comparators read `blueMotion`/`redMotion`. Emit both.
+    motions: { blue, red },
     blueMotion: {
       motionType: blue.motionType,
       startLocation: blue.startLocation,
@@ -124,11 +127,27 @@ function detectLoop(raw) {
     const startGridPos = startPos?.startPosition || startPos?.gridPosition;
 
     // Build engine-format steps with start position as step 0
+    const startBlue = {
+      motionType: "static",
+      startLocation: startPos?.motions?.blue?.startLocation || "n",
+      endLocation: startPos?.motions?.blue?.endLocation || "n",
+      rotationDirection: "noRotation",
+      turns: 0,
+    };
+    const startRed = {
+      motionType: "static",
+      startLocation: startPos?.motions?.red?.startLocation || "n",
+      endLocation: startPos?.motions?.red?.endLocation || "n",
+      rotationDirection: "noRotation",
+      turns: 0,
+    };
+
     const engineSteps = [
       {
         letter: startPos?.letter || "β",
         startPosition: startGridPos || "beta1",
         endPosition: startPos?.endPosition || startGridPos || "beta1",
+        motions: { blue: startBlue, red: startRed },
         blueMotion: {
           motionType: "static",
           startLocation: startPos?.motions?.blue?.startLocation || "n",

@@ -1,0 +1,128 @@
+#!/usr/bin/env node
+/**
+ * Import the 72 SpiroAnim Eight Step base cells as 12-step CAP sequences,
+ * then group them in a "Gage's 12-step CAPs" collection.
+ *
+ * Source data: docs/research/spiroanim/eightstep-72-sequences.json, produced
+ * and validated by tests/unit/spiroanim-72-validate.test.ts (1728/1728
+ * orientation agreements against TKA's own engine, 0 continuity breaks).
+ *
+ * Concepts and handpaths are Gage DeMello's; the generated geometry is Ryan
+ * Girard's spiroanim implementation over them.
+ *
+ * Usage:
+ *   node scripts/import-spiroanim-eight-step.cjs --dry-run
+ *   node scripts/import-spiroanim-eight-step.cjs --commit
+ */
+
+const { readFileSync } = require("fs");
+const { resolve } = require("path");
+const crypto = require("crypto");
+const { AUSTEN_UID, detectLoop, buildFirestoreDoc } = require("./import-sequence.cjs");
+
+const args = process.argv.slice(2);
+const isCommit = args.includes("--commit");
+
+const COLLECTION_NAME = "Gage's 12-step CAPs";
+const COLLECTION_DESCRIPTION =
+  "The 72 base cells of the 8-Step Concepts, by Gage DeMello. Each is a closed " +
+  "12-step capped antispin pattern: one hand caps while the other runs continually. " +
+  "Transcribed from Ryan Girard's spiroanim, which generates the geometry.";
+const NOTES = "8-Step Concepts by Gage DeMello — spiroanim cell";
+
+const cells = JSON.parse(
+  readFileSync(resolve(__dirname, "../docs/research/spiroanim/eightstep-72-sequences.json"), "utf8")
+);
+
+async function main() {
+  console.log(`Cells: ${cells.length}`);
+
+  const mockFieldValue = { serverTimestamp: () => "<SERVER_TIMESTAMP>" };
+  const fieldValue = isCommit
+    ? require("firebase-admin").firestore.FieldValue
+    : mockFieldValue;
+
+  let db = null;
+  if (isCommit) {
+    const admin = require("firebase-admin");
+    const serviceAccount = JSON.parse(
+      readFileSync(resolve(__dirname, "../serviceAccountKey.json"), "utf8")
+    );
+    if (!admin.apps.length) {
+      admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+    }
+    db = admin.firestore();
+  }
+
+  const built = [];
+  for (const cell of cells) {
+    const loopInfo = detectLoop(cell);
+    const { id, data } = buildFirestoreDoc(cell, fieldValue, loopInfo, {
+      visibility: "private",
+      notes: `${NOTES} ${cell.metadata.cell}`,
+    });
+    // Collision guard: buildFirestoreDoc derives ids from Date.now() + 4 random
+    // bytes, and 72 docs are minted inside the same millisecond.
+    const uniqueId = `${id}_${cell.metadata.cell.replace("-", "")}`;
+    built.push({ id: uniqueId, data: { ...data, id: uniqueId }, cell: cell.metadata.cell });
+  }
+
+  const ids = new Set(built.map((b) => b.id));
+  if (ids.size !== built.length) throw new Error("duplicate sequence ids");
+
+  const circular = built.filter((b) => b.data.isCircular).length;
+  const withLoop = built.filter((b) => b.data.loopType).length;
+  console.log(`Built: ${built.length}   circular: ${circular}   loopType detected: ${withLoop}`);
+  console.log(`Sample: ${built[0].cell} "${built[0].data.word}" loopType=${built[0].data.loopType ?? "-"}`);
+  console.log(`Fields: ${Object.keys(built[0].data).join(", ")}`);
+
+  const collectionId = `col_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+  const collectionDoc = {
+    id: collectionId,
+    name: COLLECTION_NAME,
+    description: COLLECTION_DESCRIPTION,
+    ownerId: AUSTEN_UID,
+    sequenceIds: built.map((b) => b.id),
+    sequenceCount: built.length,
+    icon: "fa-folder",
+    isPublic: false,
+    sortOrder: 0,
+    kind: "manual",
+    createdAt: fieldValue.serverTimestamp(),
+    updatedAt: fieldValue.serverTimestamp(),
+  };
+
+  if (!isCommit) {
+    console.log(`\n[DRY RUN] Would write ${built.length} docs to users/${AUSTEN_UID}/sequences/`);
+    console.log(`[DRY RUN] Would write collection users/${AUSTEN_UID}/collections/${collectionId}`);
+    console.log(`[DRY RUN] "${COLLECTION_NAME}" with ${collectionDoc.sequenceCount} sequences`);
+    return;
+  }
+
+  // Firestore batches cap at 500 writes; 72 + 1 fits in one.
+  const batch = db.batch();
+  for (const b of built) {
+    batch.set(db.doc(`users/${AUSTEN_UID}/sequences/${b.id}`), b.data);
+  }
+  batch.set(db.doc(`users/${AUSTEN_UID}/collections/${collectionId}`), collectionDoc);
+  await batch.commit();
+
+  const admin = require("firebase-admin");
+  await db.doc(`users/${AUSTEN_UID}`).set(
+    {
+      sequenceCount: admin.firestore.FieldValue.increment(built.length),
+      lastActivityDate: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  console.log(`\nWrote ${built.length} sequences.`);
+  console.log(`Collection: users/${AUSTEN_UID}/collections/${collectionId}`);
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.error("Error:", err);
+    process.exit(1);
+  });
