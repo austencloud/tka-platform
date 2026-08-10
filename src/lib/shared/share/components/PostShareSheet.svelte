@@ -71,6 +71,13 @@
     /** Object URL of an already-rendered export, if the viewer has one. */
     videoBlobUrl: string | null;
     isExportingVideo: boolean;
+    /**
+     * A 3D scene video is a live camera performance the user drives and stops,
+     * not a background render. While that take is running the viewer owns the
+     * screen, so the sheet must neither ask for a second one nor call it
+     * "rendering".
+     */
+    isRecordingScene?: boolean;
     /** 0–1 render progress, or null when idle. */
     exportProgress: number | null;
     /** Asks the viewer to start a video export. Non-blocking. */
@@ -93,6 +100,7 @@
     shareUrl,
     videoBlobUrl,
     isExportingVideo,
+    isRecordingScene = false,
     exportProgress,
     onRequestVideo,
     onClose,
@@ -140,6 +148,15 @@
       sequence?.displayName || sequence?.word || sequence?.intendedWord || ""
     )
   );
+
+  /**
+   * The header renders in the alphabet, so it takes the alphabet word rather
+   * than {@link word} — a custom displayName is prose and has no glyphs. It is
+   * simplified for the same reason every other surface is: a LOOP repeats its
+   * word by construction, and FΨ is the word, not FΨFΨFΨFΨ
+   * (.claude/rules/simplified-word-display.md).
+   */
+  const glyphWord = $derived(simplifyRepeatedWord(sequence?.word ?? ""));
 
   /**
    * A caller-supplied link is used only if it is already the post-link form.
@@ -263,6 +280,9 @@
 
   const progressLabel = $derived.by(() => {
     if (!videoBusy) return "";
+    // A scene take is the user recording, not the machine rendering. Saying
+    // "Rendering video…" over it is what made the 3D path look hung.
+    if (isRecordingScene) return "Recording the scene…";
     if (isExportingVideo && exportProgress !== null) {
       return `Rendering video… ${Math.round(exportProgress * 100)}%`;
     }
@@ -387,7 +407,9 @@
     // selected, so the posted-state resets with the artifact.
     postedPermalinks = {};
 
-    if (next === "video" && !videoBlob && !isExportingVideo) {
+    // isRecordingScene counts as in flight: a 3D take reads as idle to both
+    // other flags, so without it re-picking Video starts a second recording.
+    if (next === "video" && !videoBlob && !isExportingVideo && !isRecordingScene) {
       onRequestVideo();
     }
   }
@@ -657,7 +679,10 @@
     if (!open && isOpen) onClose();
   }}
 >
-  <div class="sheet">
+  <!-- The QR is a focused step, not a sibling of the setup controls: with the
+       picker, caption, tiles and connections all hidden, the two-column grid
+       leaves the whole right column empty under the title. One column. -->
+  <div class="sheet" class:qr-step={!!qrDataUrl}>
     <header class="panel-header">
       <!-- The word is a word in this alphabet, so it renders in the alphabet —
            the same glyph component the card, the gallery and compose use. A
@@ -667,7 +692,7 @@
              tier rules in CSS, so a zero-width sizer carries it across. -->
         <span class="glyph-sizer" bind:clientHeight={glyphHeight}></span>
         <TKAWordGlyph
-          word={sequence.word}
+          word={glyphWord}
           height={glyphHeight || 26}
           darkMode
         />
@@ -737,9 +762,15 @@
 
         <div class="presets">
           {#each presets as preset (preset.id)}
+            <!-- Toggle, not action: these are one-of-N choices where the Nth
+                 option is "typed my own", so the row has a none-selected state
+                 and no indicator to slide. Without `active` all the presets
+                 rendered identically and nothing said which caption you were
+                 looking at. -->
             <FilterChipBase
               label={preset.label}
-              mode="action"
+              mode="toggle"
+              active={caption === preset.text}
               size="sm"
               onclick={() => applyPreset(preset.text)}
             />
@@ -1097,9 +1128,11 @@
     text-align: center;
   }
 
+  /* The vh cap is what keeps the step's own Back button above the fold on a
+     short window — the code is the only part of this view that can give. */
   .qr-view img {
-    width: 11rem;
-    height: 11rem;
+    width: min(11rem, 26vh);
+    height: min(11rem, 26vh);
     border-radius: 0.75rem;
     background: #fff;
     padding: 0.5rem;
@@ -1563,6 +1596,15 @@
     .connections {
       grid-area: connections;
     }
+
+    /* Scanning distance is arm's length across a desk, not phone-in-hand — but
+       capped against the viewport, because the QR step also has to clear the
+       fold on a wide-and-short window (960x412), where a fixed 13rem code
+       pushes its own Back button off the bottom. */
+    .qr-view img {
+      width: min(13rem, 34vh);
+      height: min(13rem, 34vh);
+    }
   }
 
   /* Wide AND short (folded Z Fold landscape, a laptop with browser chrome
@@ -1677,8 +1719,8 @@
     }
 
     .qr-view img {
-      width: 15rem;
-      height: 15rem;
+      width: min(15rem, 34vh);
+      height: min(15rem, 34vh);
     }
 
     .cta {
@@ -1735,8 +1777,8 @@
     }
 
     .qr-view img {
-      width: 19rem;
-      height: 19rem;
+      width: min(19rem, 34vh);
+      height: min(19rem, 34vh);
     }
 
     .cta {
@@ -1770,6 +1812,40 @@
     .presets :global(.chip-label),
     .connections :global(.chip-label) {
       font-size: 1.375rem;
+    }
+  }
+
+  /* The QR step, at every width. Higher specificity than the tier rules above,
+     so it re-collapses the two-column grid they build: with everything but the
+     title and the code hidden, those tiers otherwise leave a 90rem sheet whose
+     right half is empty. Last in the file so it reads as the state it is. */
+  .sheet.qr-step {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "header"
+      "stage";
+    grid-template-rows: auto auto;
+    width: min(34rem, 100%);
+    row-gap: 1.25rem;
+  }
+
+  .sheet.qr-step .stage {
+    justify-self: center;
+    align-self: center;
+  }
+
+  /* Tracks the QR's own step (15rem, then 19rem) rather than the setup sheet's
+     width. Any wider and the title and the close button drift to opposite ends
+     of a column holding one code. */
+  @media (min-width: 2350px) {
+    .sheet.qr-step {
+      width: min(38rem, 100%);
+    }
+  }
+
+  @media (min-width: 3200px) {
+    .sheet.qr-step {
+      width: min(44rem, 100%);
     }
   }
 

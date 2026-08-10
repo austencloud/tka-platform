@@ -253,6 +253,42 @@
       ""
   );
   const takeoverWord = $derived(simplifyRepeatedWord(takeoverLabel));
+
+  /**
+   * Share sheet ⇄ 3D scene take.
+   *
+   * Picking Video in the share sheet asks the viewer to export. In 2D that is a
+   * background render and the sheet fills in. In 3D it is a live camera
+   * performance: the scene records in real time and ends when the user presses
+   * Stop on the REC pill. The sheet covers the stage and shows none of that, so
+   * the take used to look like a hung "Rendering video…" over a scene the user
+   * could neither see nor stop. Step aside for the take, come back with it.
+   */
+  let awaitingSceneTake = $state(false);
+  /** previewBlobUrl at step-aside, so an older export can't count as the take. */
+  let takeBaselineUrl = $state<string | null>(null);
+
+  $effect(() => {
+    if (!ctx.isRecording3D || !share.postSheetOpen) return;
+    awaitingSceneTake = true;
+    takeBaselineUrl = ctx.previewBlobUrl;
+    share.setPostSheetOpen(false);
+  });
+
+  $effect(() => {
+    if (!awaitingSceneTake) return;
+    // Came back on their own — the sheet is theirs again, stop waiting to
+    // reopen it.
+    if (share.postSheetOpen) {
+      awaitingSceneTake = false;
+      return;
+    }
+    if (ctx.isRecording3D || ctx.isExporting) return;
+    const url = ctx.previewBlobUrl;
+    if (!url || url === takeBaselineUrl) return;
+    awaitingSceneTake = false;
+    share.setPostSheetOpen(true);
+  });
 </script>
 
 <div
@@ -744,6 +780,7 @@
     shareUrl={share.postSheetOpen ? share.getShareUrl() : ""}
     videoBlobUrl={ctx.previewBlobUrl}
     isExportingVideo={ctx.isExporting}
+    isRecordingScene={ctx.isRecording3D}
     exportProgress={ctx.exportProgress?.progress ?? null}
     onRequestVideo={ctx.handleExport}
     onClose={() => share.setPostSheetOpen(false)}
