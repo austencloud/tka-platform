@@ -2,6 +2,361 @@
 
 ---
 
+# ADDENDUM: asset cohesion pass (2026-08-09)
+
+Open follow-up: the settlement camera exposes a break in the cabin lane. Dark
+floor patches visually cut across the route, so its geometry reads as separate
+slabs before reaching the shack. Preserve the irregular path edges, but keep a
+continuous maintained-ground value from the stage clearing to the cabin door.
+Verify in both settlement and hero cameras. Evidence:
+`C:\Users\Austen\AppData\Local\Temp\codex-clipboard-7de56384-5ac1-4cca-95c8-6d2f63127183.png`.
+
+Root-contact correction: `HeroTreeA_01` floated above the shallow terrain roll
+after its silhouette lean was introduced. The builder now embeds that instance
+by 1.30m while retaining the shared hero-tree mesh. A vertex-to-terrain audit
+showed that the earlier 0.68m correction left the median low-root vertex 11.5cm
+above grade. At 1.30m the median sits 48.8cm below grade and the visible root
+tips carry into the soil. Evidence:
+`C:\Users\Austen\AppData\Local\Temp\tka-autumn-evidence\autumn-tree-root-contact-1.30m-blender.png`.
+
+This pass makes the existing Autumn asset library read as one art-directed
+world. It spends no Meshy credits and adds no replacement meshes.
+
+- The builder now normalizes every imported hero tree, secondary tree, fern,
+  fallen log, cabin, owl, and rock through one material-tuning owner. Imported
+  materials receive ecological names, physically valid organic metalness,
+  roughness floors where needed, and no unintended emission.
+- The optimizer applies 13 restrained Autumn material profiles after geometry
+  optimization and before texture compression. Existing texture detail remains;
+  color factors, normal strength, and surface response now sit in the same dusk
+  grade.
+- The eight hero trees retain shared source geometry but gain controlled
+  horizontal shaping and slight trunk lean. Their major silhouettes no longer
+  repeat at identical proportions, without creating unique mesh copies.
+- Ninety-six leaves were reallocated from broad foreground and distant drifts
+  into six irregular stage-edge banks. The top of the performance stage and the
+  maintained route remain clear, and the total leaf budget remains exactly
+  1,800.
+
+Delivery facts:
+
+- Runtime asset: `static/models/autumn/autumn-environment.glb`, 17,736,324
+  bytes, SHA-256
+  `C58EB5EA4277DE046826C1952D3BE140409004196A3FFA9C720393E6E35960D2`.
+  All 46 surviving textures are KTX2; no PNG fallback remains. Meshopt and GPU
+  instancing remain present. The asset is 28,984 bytes smaller than the prior
+  baseline.
+- Geometry proof: the runtime GLB reports 563,936 uploaded vertices versus
+  564,252 without instancing. The builder still reports 306 mesh objects, 75
+  unique meshes, 45 materials, 1,800 leaves, and zero forbidden-placement
+  collisions.
+- Verification: all 18 focused Autumn tests passed, Python compilation and Node
+  syntax checks passed, the optimized GLB parsed successfully, the HTTPS hero
+  route returned 200, and scoped `git diff --check` passed.
+- Matched runtime evidence:
+  `C:\Users\Austen\AppData\Local\Temp\tka-autumn-cohesion\before-settlement.png`
+  and `after-settlement.png`. Additional hero frames are in the same directory.
+  The in-app browser blocked the final depth screenshot under its URL security
+  policy after the runtime capture reset; no alternate browser or protocol
+  workaround was used.
+- Root-contact evidence uses the fixed `?view=rootContact&perf=1` review camera:
+  `C:\Users\Austen\AppData\Local\Temp\tka-autumn-evidence\autumn-tree-root-contact-1.30m-blender.png`.
+
+# ADDENDUM: final environmental finish pass (2026-08-09)
+
+This pass finishes the motion and surface details without raising the scene's
+mesh, material, or particle budgets.
+
+- The terrain and apron now use a deterministic macro-scale UV warp. It breaks
+  the visible texture grid into uneven fibers and value pockets without adding
+  decals, materials, geometry, or draw calls.
+- Falling leaves originate from six actual hero-tree canopies. Each tree has a
+  fitted elliptical emission volume, its own four-color palette, and a slightly
+  different fall speed. The volumes now reach to 20cm above the ground instead
+  of ending visibly in midair.
+- Rooted vegetation keeps the shared GPU wind owner and adds a subtle
+  world-space zone field. Neighboring patches no longer sway in lockstep. Thin
+  double-sided grass cards use Three.js single-pass rendering to avoid a second
+  transparent draw.
+- The route lantern now varies its existing emissive material between 93% and
+  107% of its authored strength. It adds no light, shadow caster, geometry, or
+  draw call, and reduced-motion mode leaves the material at its authored value.
+- The test scene exposes the existing performance monitor only when `?perf=1`
+  is present, so normal test views remain unchanged.
+
+Delivery facts:
+
+- Editable scene: `blender/autumn_environment.blend`, 306 mesh objects, 75
+  unique meshes, and 45 materials.
+- Runtime asset: `static/models/autumn/autumn-environment.glb`, 17,765,308
+  bytes, SHA-256
+  `6EC4C1414DFD11A8E9FD8EEC1F43A42B9E7D2376E2A2FB56EE3FB979AD9998CF`.
+  All 51 embedded textures are KTX2; no PNG fallback remains. Meshopt and GPU
+  instancing remain present.
+- Builder proof: 49.8m cabin lane, 75.6m forest trail, 23 habitation pieces,
+  54 ferns, 15 boulders, 1,800 leaves, 2,000 grass clumps, 50 mushrooms, 150
+  twigs, and zero forbidden-placement collisions.
+- Static visual proof:
+  `C:\Users\Austen\AppData\Local\Temp\tka-autumn-evidence\autumn_environment_qa.png`,
+  `autumn_environment_qa_floor.png`, and
+  `autumn_environment_qa_settlement.png` in the same directory.
+- Verification: 18 focused Autumn tests passed, `svelte-check` reported 0
+  errors and 0 warnings, Python compilation passed, the final GLB parsed
+  successfully, the HTTPS test route returned 200, and scoped
+  `git diff --check` passed.
+- The in-app browser timed out while loading the heavy scene and then blocked
+  further reads under its URL security policy. No alternate browser or raw
+  protocol workaround was used. A final live FPS sample and motion frame remain
+  the only uncollected proof from this pass.
+
+# ADDENDUM: lived-in clearing and cabin route (2026-08-09)
+
+This pass replaces the loose path-to-nowhere composition with a readable route
+between the performance stage and the caretaker shack. It supersedes the shack
+offset and path-length figures in the older addenda below.
+
+- `Autumn_Cabin_Lane` runs 49.8m from the stage clearing to the shack door. Its
+  width narrows with distance, the bends avoid the major trees, and the final
+  section lands on three irregular threshold stones.
+- `Autumn_Shared_Yard` broadens the lane near the stage into a maintained patch.
+  A rough bench and two tapered stump seats sit outside the travel line. The
+  stump seats have pale cut faces so they read as wood under the red key light.
+- `Autumn_Shack_Door_Yard` contains the threshold, a stacked woodpile, chopping
+  block, and water pail. One low emissive lantern marks the last bend without
+  adding a point light or another shadow caster.
+- `Autumn_Forest_Trail` branches from the yard and continues 75.6m toward the
+  gold-larch sightline. It is narrower and lower contrast than the cabin lane.
+- The small sapling and one boulder that blocked the route were moved into the
+  surrounding ecology. Grass, ferns, mushrooms, rocks, and loose leaf scatter
+  now reject both paths and both maintained-ground patches. The same 1,800-leaf
+  budget is concentrated along the route shoulders rather than across its core.
+- The shack remains 56.9m from the stage and now sits 1.5m from the cabin lane.
+  Its roof and chimney remain partially screened from the stage; the closer QA
+  view shows the route reaching the actual door.
+
+Delivery facts:
+
+- Editable scene: `blender/autumn_environment.blend`, 306 mesh objects, 75
+  unique meshes, and 45 materials.
+- Runtime asset: `static/models/autumn/autumn-environment.glb`, 17,762,336
+  bytes, SHA-256
+  `83BACBB1B10FF2EC8E9DB7F2CD2ADCD5AC43DF3E55FFA2AE4101FF25F3795361`.
+  Meshopt, KTX2, and GPU instancing remain present.
+- Builder proof: 49.8m cabin lane, 75.6m forest trail, 23 habitation pieces,
+  54 ferns, 15 boulders, 1,800 leaves, 2,000 grass clumps, 50 mushrooms, 150
+  twigs, and zero forbidden-placement collisions.
+- Runtime proof:
+  `C:\Users\Austen\AppData\Local\Temp\autumn-lived-in-clearing-settlement-2026-08-09.png`
+  and
+  `C:\Users\Austen\AppData\Local\Temp\autumn-lived-in-clearing-shack-2026-08-09.png`.
+  `/test/autumn-scene?view=settlement` is the stage-to-shack composition check;
+  `/test/autumn-scene?view=shack` is the threshold-detail check.
+- Verification: 16 focused Autumn tests passed, `svelte-check` reported 0
+  errors and 0 warnings, Python compilation passed, and scoped
+  `git diff --check` passed. The only browser-console error was the existing
+  test-user Firestore permission failure from `UserDocumentManager`.
+
+# ADDENDUM: distant woodland shack (2026-08-09)
+
+The open sightline now contains one restrained sign of habitation. Meshy 6
+generated a complete caretaker shack with log walls, an uneven shingle roof,
+a chimney, dark window, open doorway, and foundation steps. The paid task used
+30 credits and was checkpointed before polling, so it can be resumed without a
+duplicate submission.
+
+The cabin sits 56.9m from the stage and 12.5m off the worn path. Its lower
+walls disappear into terrain and violet fog. From the depth camera, the roof
+corner and chimney appear between the western middle trees. The moon, stage,
+and central path remain stronger focal elements. No runtime light or glowing
+window was added.
+
+Asset facts:
+
+- Raw Meshy source: `distant-woodland-shack_raw.glb`, 10,013,900 bytes,
+  SHA-256 `DE0F57AFDF7BC27E2D93565295C928BE3C61B909CEFBB0292EA0E11491A8B1BA`.
+- Standalone optimized model: `distant-woodland-shack.glb`, 1,420,356 bytes,
+  SHA-256 `1FABF9FC36C58288DB0F493AE85A83658A20EF63E61446E660DFF61D5DFAFB65`.
+- Final Autumn environment: 17,720,516 bytes, SHA-256
+  `9877821A325B2097C0AE936EEA9882D6DEA3ECF2727D0981703EEF606A92F9F5`.
+  It renders 11,627,604 vertices and uploads 562,040.
+- Runtime evidence:
+  `C:\Users\Austen\AppData\Local\Temp\autumn-shack-nearer-depth-2026-08-09.png`
+  and `autumn-shack-nearer-hero-2026-08-09.png` in the same directory.
+- `/test/autumn-scene?view=shack` provides a close material inspection. The
+  normal user-facing proof remains `/test/autumn-scene?view=depth`.
+
+# ADDENDUM: horizon depth and sightline pass (2026-08-09)
+
+Autumn's terrain reached the fog horizon, but its trees stopped after the
+21-30m belt. Wide cameras exposed an empty band beyond the last trunks. This
+pass kept that belt and added connected depth masses instead of another ring.
+
+- 22 textured birch, larch, willow, and snag placements now form asymmetric
+  middle groves from 33-58m. Bridge trees overlap the old belt without closing
+  the central opening.
+- 33 procedural red, gold, larch, and snag silhouettes continue the woodland
+  from 47-103m. Four shared low-poly sources are GPU-instanced, so the far tier
+  adds silhouette rhythm without repeating high-resolution Meshy geometry.
+- A 93.2m leaf-worn path leaves the rear of the stage, bends around the
+  mushroom habitat, and ends at a distant gold larch. Grass and ferns clear its
+  center. Alternating leaf banks keep the edge irregular.
+- Side and reverse placements keep tree overlap intact when the camera moves
+  off the hero axis. No building was added; the stage and path provide enough
+  human presence.
+- Every middle and far tree is excluded from the clearing shadow pass. The
+  path receives shadows but does not cast them.
+
+The finished optimized asset is 16,686,220 bytes with SHA-256
+`4B30B7675B83017A91B54711D149949966183D97BDBBEEDDFD630A42A82F1012`.
+It renders 11,594,136 vertices while uploading 543,878, an increase of roughly
+1.13M rendered vertices and 630 uploaded vertices over the previous asset.
+
+Proof:
+
+- Builder validation: 17 near-belt trees, 22 middle trees, 33 far trees,
+  93.2m unobstructed path, and zero forbidden ecology collisions.
+- Real runtime frames:
+  `C:\Users\Austen\AppData\Local\Temp\autumn-depth-runtime-final-2026-08-09.png`,
+  `autumn-hero-runtime-final-2026-08-09.png`, and
+  `autumn-world-runtime-final-2026-08-09.png` in the same directory.
+- The real scene harness supports `/test/autumn-scene?view=depth`. The tab was
+  left there for the next reviewer.
+- 16 focused Autumn tests passed. `svelte-check` completed with 0 errors and 0
+  warnings. Python compilation and scoped `git diff --check` also passed.
+- The runtime produced no Autumn rendering errors. The harness still logs the
+  existing `UserDocumentManager` Firestore permission error for its test user.
+
+# ADDENDUM: mushroom ecology rebuild (2026-08-09)
+
+The decorative fairy rings were rejected after live review. The old treatment
+repeated one 64,755-vertex Meshy mushroom-grove asset 16 times, including its
+own soil mound, as two evenly spaced circles. It read as duplicated fantasy
+ornament rather than forest ecology.
+
+## Replacement composition
+
+- One interrupted part-ring of 20 small buff fairy-ring champignons
+  (`Marasmius oreades`) sits in open grass behind the stage. Four missing
+  positions break the geometry into an irregular arc.
+- Three loose drifts of five amethyst deceivers (`Laccaria amethystina`) sit in
+  root-zone leaf litter. They are small purple discoveries, not large clumps.
+- Two deadwood colonies contain eight and seven honey fungus fruiting bodies
+  (`Armillaria` species). Dense clustering is reserved for the fallen-log
+  habitat where it makes visual and ecological sense.
+- The Meshy grove asset is no longer included in the exported environment.
+  Three procedural cap meshes and three low-poly stem meshes are shared across
+  all 50 fruiting bodies through GPU instancing. Caps use a closed shallow dome
+  and tucked underside instead of a scaled sphere.
+- Grass exclusion is only 0.14m around each mushroom, preventing the large
+  empty halos that made the old clusters look planted.
+
+The species and habitat choices were checked against the RHS, Woodland Trust,
+and US Forest Service before implementation. The builder now validates exact
+species counts, clearing and pond exclusion, rock conflicts, root-zone
+placement, and maximum distance from deadwood. The final build reported zero
+forbidden-placement collisions.
+
+## Evidence and delivery
+
+- Focused Blender QA:
+  `C:\Users\Austen\AppData\Local\Temp\tka-autumn-evidence\autumn_environment_qa_champignon.png`,
+  `autumn_environment_qa_amethyst.png`, and
+  `autumn_environment_qa_honey.png` in the same directory.
+- Shipped-scene Browser frames:
+  `C:\Users\Austen\AppData\Local\Temp\autumn-ecology-wide-2026-08-09.png`
+  and `autumn-ecology-fungi-2026-08-09.png`.
+- The verification harness now supports
+  `/test/autumn-scene?view=fungi`, framing the real shipped champignon arc at
+  ground level without manual camera steering.
+- Fresh optimized ship asset: 16,656,272 bytes, SHA-256
+  `4C93916CB3040C6CAE4B878E0959E41175C272FC223AB678A11F18791A1EE266`.
+  It retains `EXT_mesh_gpu_instancing`, Meshopt, and KTX2. The old grove texture
+  names are absent; only `FairyChampignon_Cap_Mesh`,
+  `AmethystDeceiver_Cap_Mesh`, and `HoneyFungus_Cap_Mesh` remain.
+- Builder proof: 50 fruiting bodies, exact `20/15/15` species counts, zero
+  forbidden-placement collisions, and successful Blender Python compilation.
+- Runtime proof: 16 focused Autumn layout/runtime tests passed. The broader
+  stage-coordinate suite remains blocked by a pre-existing missing
+  `@austencloud/scene-3d/dist/lib/index` package artifact. The in-app Browser
+  loaded the real optimized GLB with no Autumn rendering errors. Its only
+  console error was the existing verification-account Firestore permission
+  failure from `UserDocumentManager`.
+
+# ADDENDUM — art-direction gate pass (2026-08-09)
+
+This pass took the Opus-remediated scene through three visually confirmed art
+direction gates in the in-app Browser. It remains uncommitted in the shared
+`main` checkout.
+
+## Shipped visual changes
+
+- **Gate 1, world continuity:** corrected the sky-dome projection and camera
+  centering, matched the fallback background to the dome, rebuilt the pond basin
+  with stable UVs, and removed the pond's hard white shoreline crescent.
+- **Gate 2, focal lighting:** separated the authored moon direction from the
+  physical key light, enlarged and sharpened the moon presentation, increased
+  star legibility, and added a restrained warm pool around the stage. The moon
+  now occupies the protected canopy gap in the hero frame without flattening
+  the tree shadows.
+- **Gate 3, ground composition:** kept the exact 1,800-leaf budget but replaced
+  generic edge scatter with six staggered wind pockets and processional leaf
+  banks. Stage, pond, rock, and ecology exclusion zones still validate at zero
+  collisions.
+- **Final camera polish:** moved the visual moon slightly toward the hero axis,
+  lifted the upper sky from black to a deep aubergine, and added a 1.2–4m
+  smoothstep treatment to will-o'-wisps. It reduces both scale and opacity, so
+  a nearby sprite cannot become a screen-filling lavender orb and returns to
+  full presence across the clearing.
+- **Live Composer framing:** the Left camera is the strongest performer view.
+  It creates a clear tree corridor, keeps both feet planted on the stage, and
+  gives the performer useful scale against the foreground mushrooms, pond,
+  grass, and roots.
+
+## Current evidence
+
+- Gate screenshots:
+  `C:\Users\Austen\AppData\Local\Temp\autumn-inapp-gate1-final.png`,
+  `autumn-inapp-gate2-refined.png`, and
+  `autumn-inapp-gate3-final.png` in the same directory.
+- Final environment frames:
+  `C:\Users\Austen\AppData\Local\Temp\autumn-final-hero-moon-check.png`,
+  `autumn-final-walk-fixed.png`, and `autumn-final-world-before.png`.
+- Clean real-Composer proof:
+  `C:\Users\Austen\AppData\Local\Temp\autumn-final-composer-clean.png` at
+  `https://localhost:5173/create/construct?v=LPJM`, Scene = Autumn,
+  Camera = Left. The camera panel is closed in the captured frame. The scene
+  stayed live for ten seconds after the final wisp update; the earlier wisp
+  callback ReferenceError did not recur.
+- Responsive sweep, all visually inspected:
+  `autumn-sweep-1920x1080.png`, `autumn-sweep-2560x1440.png`,
+  `autumn-sweep-3840x2160.png`, `autumn-sweep-1440x900.png`,
+  `autumn-sweep-1024x768.png`, `autumn-sweep-960x412.png`, and
+  `autumn-sweep-375x812.png` in the Windows temp directory. Desktop and tablet
+  preserve the complete stage corridor; the narrow portrait intentionally
+  crops to the performer and one monumental tree rather than shrinking the
+  performer into an unreadable wide shot.
+- Fresh optimized ship asset: 18,008,376 bytes, SHA-256
+  `861853A2FB67EBE2F446CB7ECB22114DB39DB801BF300591C02B0CABB8437188`.
+- Fresh verification: 38/38 focused tests passed across Autumn layout, Autumn
+  runtime contracts, and the canonical stage coordinate frame. `pnpm check`
+  reports 0 errors and 0 warnings; the builder's Python compile check and
+  `git diff --check` pass.
+
+## Reviewer notes
+
+The strongest metric gain in this pass is art direction: the frame now has a
+foreground invitation, a performer-scale stage, an alternating tree corridor,
+an illuminated focal pocket, and a moon/canopy counterweight. The remaining
+deliberate constraint is that low, level walk cameras do not show the moon; the
+moon is composed for the hero view and still drives believable shadow direction
+instead of following the camera.
+
+The next review should judge the clean Composer frame first, then the three gate
+frames. If another polish pass is requested, spend it on near-ground material
+response and selective understory color accents, not more object count. The
+scene is already composition-rich and its 2,000 grass clumps plus 1,800 leaves
+are at the intended density budget.
+
 # ADDENDUM — Opus 5 audit remediation pass (2026-08-09)
 
 A read-only Opus evaluator graded the shipped Autumn scene, then a separate
@@ -21,17 +376,17 @@ efficiency 2, responsive framing 3, production readiness 4. Average 3.6.
 
 ## Measured results after the pass
 
-| Measure | Before | After |
-|---|---|---|
-| GPU texture memory | 290.7 MB | **23.33 MB** |
-| Texture format | WebP (no KTX2) | 51 KTX2 — 29 UASTC @512, 22 ETC1S @1024 |
-| `KHR_texture_basisu` in asset | absent | **present** (so `useKtx2` is no longer a lie) |
-| GLB on disk | 13.51 MiB | 17.17 MiB |
-| glPrimitives | 380K | 390K |
-| Focused tests | 30/30 | **38/38** |
-| `pnpm check` | — | **0 errors, 0 warnings** |
-| Grass beyond 17.5m | hard cut at 22.5m | 623 clumps, ramped to 26m |
-| QA proxy feet | floating 0.11m | **soles at z=0.000m**, crown 1.804m |
+| Measure                       | Before            | After                                         |
+| ----------------------------- | ----------------- | --------------------------------------------- |
+| GPU texture memory            | 290.7 MB          | **23.33 MB**                                  |
+| Texture format                | WebP (no KTX2)    | 51 KTX2 — 29 UASTC @512, 22 ETC1S @1024       |
+| `KHR_texture_basisu` in asset | absent            | **present** (so `useKtx2` is no longer a lie) |
+| GLB on disk                   | 13.51 MiB         | 17.17 MiB                                     |
+| glPrimitives                  | 380K              | 390K                                          |
+| Focused tests                 | 30/30             | **38/38**                                     |
+| `pnpm check`                  | —                 | **0 errors, 0 warnings**                      |
+| Grass beyond 17.5m            | hard cut at 22.5m | 623 clumps, ramped to 26m                     |
+| QA proxy feet                 | floating 0.11m    | **soles at z=0.000m**, crown 1.804m           |
 
 The GLB grew 3.7 MiB because UASTC is larger on disk than WebP. That is the
 correct trade: it buys a 92% cut in VRAM, which is the binding constraint on
@@ -41,6 +396,7 @@ that disk cost bounded — leaving them at 1024 produced a 38.92 MiB GLB.
 ## What changed
 
 **Pixels**
+
 - Leaf litter is real leaf geometry, not diamonds. `append_leaf_card` emits an
   ovate blade (rounded base, drawn-out tip, lobed margin) with per-leaf length,
   width, curl and tilt. Airborne leaves get a matching `leaf` SDF in
@@ -80,6 +436,7 @@ that disk cost bounded — leaving them at 1024 produced a 38.92 MiB GLB.
   silhouettes against fogged background instead of vanishing into canopy.
 
 **Code**
+
 - Deleted the orphaned `autumn/authored/` subtree and `GodRayShafts.svelte`.
 - Deleted the `godRays` / `pondReflector` dead gates and the test that pinned
   them false, plus the `Reflector` import.
@@ -102,10 +459,10 @@ that disk cost bounded — leaving them at 1024 produced a 38.92 MiB GLB.
   disk for builders while the CDN stops serving them.
 - **"Recolour the cobalt-blue flower clumps."** The builder authors no flowers.
   A material audit added to the build prints every understory base colour and
-  reported both Fern and Log as *textured*, with no flat blue value to
+  reported both Fern and Log as _textured_, with no flat blue value to
   recolour. The blue cast comes from lighting, which this pass rebalanced.
 - **"The 12-segment clearing disc."** `create_organic_patch` passes `12.0` as
-  the *seed* argument; the segment count is 72. The faceting came from the
+  the _seed_ argument; the segment count is 72. The faceting came from the
   optimizer's simplify pass, not the builder.
 - **"Wire `mushroomTargets` into `PulseTarget[]`."** GPU instancing collapses
   all 16 mushroom clusters into one `InstancedMesh` sharing one material, and
@@ -398,14 +755,47 @@ owl. The governing plan is
   Floor pass and belong to the preceding hero-environment workstream; do not
   revert or stage them casually.
 
+## Performance and capture-readiness pass (2026-08-10)
+
+Autumn's former weakest grade is now governed by
+`docs/superpowers/specs/2026-08-10-autumn-performance-plan.md` and the executable
+asset contract in `scripts/verify-autumn-environment-performance.mjs`.
+
+The dominant cost was not the hero grove, shadow map, or runtime particles. It
+was the 44K-triangle Meshy fern source repeated 54 times. The builder now makes
+one texture-preserving linked web LOD before duplication. All 54 authored
+placements remain, but the optimized source is 7,108 triangles and the batch
+cost is 383,832 triangles instead of 2,278,314. The whole GLB now lands at
+1,982,350 rendered source triangles and 16,982,540 bytes, with all 46 textures
+in KTX2 and GPU instancing plus meshopt intact.
+
+The real browser harness, forced to a 3840 × 2160 backing buffer on the high
+tier, held 60 FPS while reported hero-view triangle work fell from 7.76 million
+to 3.97 million. Settlement held 60 FPS at 3.80 million. The close fern review
+held 60 FPS at 1.81 million and retained the understory silhouette. Autumn now
+reads `adaptiveQuality.tier`, so shared frame-pressure downgrades lower its
+grass, particles, wisps, and shadow budget together with DPR.
+
+Proof paths:
+
+- Before: `C:\Users\Austen\AppData\Local\Temp\tka-autumn-performance\autumn-before-4k.png`
+- After hero: `C:\Users\Austen\AppData\Local\Temp\tka-autumn-performance\autumn-after-4k.png`
+- After settlement: `C:\Users\Austen\AppData\Local\Temp\tka-autumn-performance\autumn-after-settlement-4k.png`
+- After close ferns: `C:\Users\Austen\AppData\Local\Temp\tka-autumn-performance\autumn-after-ferns-4k.png`
+
+Verification passed: Blender ecology and placement validation, 20 focused
+Autumn tests, the GLB performance contract, `svelte-check` with zero errors and
+warnings, and a clean browser console.
+
 ## Loose ends (ranked)
 
 1. Fapel and Opus should judge the final integrated desktop frame, the three
    responsive harness frames, and the five Blender close QA views. If they ask
    for more floor variation, add or reshape physical leaf-card drift centers;
    do not restore broad overlay meshes.
-2. Profile recording/export mode separately if the next review includes video
-   capture. Interactive playback is already measured.
+2. If future recording work changes post-processing or avatar complexity,
+   profile that cross-feature capture stack separately. Autumn's controlled 4K
+   environment budget is now recorded and locked.
 3. Trace the Composer route's HTTP 429 as a separate application-infrastructure
    issue if it remains reproducible.
 4. Commit the implementation with explicit Autumn-only pathspecs after the
@@ -414,17 +804,15 @@ owl. The governing plan is
 
 ### Browser resume recipe
 
-1. Reuse the shared browser with
-   `pwsh -NoProfile -File scripts/launch-chrome-debug.ps1 -Url about:blank`.
-2. Create one background tab for `https://localhost:5173/create/construct?v=S0K3`
-   and retain its page ID for every call.
-3. Switch 3D Scene to Autumn, choose the Front camera, close the camera panel,
-   and zoom out four small wheel increments. That reproduces the final desktop
-   composition without mutating Austen's visible browser window.
+1. Use the Codex in-app Browser, not Chrome DevTools or whole-PC automation.
+2. Open `https://localhost:5173/create/construct?v=LPJM` in one task-owned tab.
+3. Switch 3D Scene to Autumn, choose the Left camera, close the camera panel,
+   and use one small zoom-out wheel increment if needed. That reproduces the
+   final performer-scale composition.
 4. For environment-only responsive review, use
    `https://localhost:5173/test/autumn-scene`; the full Composer enters its
    dedicated mobile viewer at small widths.
-5. Clear emulation and close only the task-owned tab when finished.
+5. Keep the Composer tab as the deliverable when finished.
 
 ## Decisions already made
 
@@ -447,9 +835,9 @@ owl. The governing plan is
 
 - Port 5173 is Austen's HTTPS/2 dev server. Never start, stop, restart, or kill
   it. Use `https://localhost:5173`.
-- Browser verification must use `scripts/launch-chrome-debug.ps1`, one
-  task-owned background tab, explicit page IDs, and per-page viewport emulation.
-  Never resize the shared Chrome window.
+- Browser verification for this workstream uses the Codex in-app Browser. Do
+  not substitute Chrome DevTools or whole-PC automation unless Austen explicitly
+  changes that instruction.
 - Fresh harness navigations can spend about 20 seconds behind the app's
   `Resolving services` or `Connecting to cloud` curtain even when the route and
   GLB are healthy. Wait for the curtain instead of treating it as a render

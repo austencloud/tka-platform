@@ -66,11 +66,11 @@ const vegetationItems: ObjectDefinition[] = [
 	},
 	{
 		key: "mushroom-cluster",
-		name: "Mushroom Cluster",
+		name: "Small Mushroom Drift",
 		type: "prop",
 		icon: "fa-fan",
 		fallbackGeometry: "sphere",
-		defaultScale: 0.15,
+		defaultScale: 0.08,
 		defaultHeight: 0,
 		snapToGround: true,
 		canRotate: true,

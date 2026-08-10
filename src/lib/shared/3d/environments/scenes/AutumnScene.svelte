@@ -20,7 +20,7 @@
   import { autumnQualityOverride } from "./autumn/quality/autumn-quality-override.svelte";
   import AutumnRuntimeSystems from "./autumn/runtime/AutumnRuntimeSystems.svelte";
   import { AUTUMN_POND_LAYOUT } from "./autumn/runtime/water/autumn-pond-layout";
-  import { AUTUMN_MOON_DIRECTION } from "./autumn/runtime/lighting/autumn-moon";
+  import { AUTUMN_MOON_VISUAL_DIRECTION } from "./autumn/runtime/lighting/autumn-moon";
   import { resolveAutumnShadowRole } from "./autumn/runtime/lighting/autumn-shadow-roles";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import Starfield from "../primitives/Starfield.svelte";
@@ -54,7 +54,7 @@
   const tier = $derived(
     autumnQualityOverride.tier !== "auto"
       ? autumnQualityOverride.tier
-      : (adaptiveQuality?.contentTier ?? detectAutumnQuality(renderer))
+      : (adaptiveQuality?.tier ?? detectAutumnQuality(renderer))
   );
   const quality = $derived(getAutumnQualityConfig(tier));
 
@@ -66,10 +66,13 @@
 
   // ── Blender-authored environment ──────────────────────────────────────
 
-  const autumnEnvironmentGlb = useGltf("/models/autumn/autumn-environment.glb", {
-    meshoptDecoder: useMeshopt(),
-    ktx2Loader: useKtx2("/basis/"),
-  });
+  const autumnEnvironmentGlb = useGltf(
+    "/models/autumn/autumn-environment.glb",
+    {
+      meshoptDecoder: useMeshopt(),
+      ktx2Loader: useKtx2("/basis/"),
+    }
+  );
   const environmentScene = $derived($autumnEnvironmentGlb?.scene ?? null);
 
   // asyncWritable exposes the rejection as its own store, so a 404 or a decode
@@ -143,13 +146,13 @@
   const moonConfig: MoonConfig = {
     enabled: true,
     texture: "/textures/moon.png",
-    // Shared with the key light so the brightest thing in the sky is also what
-    // lights the forest. See autumn-moon.ts.
-    direction: AUTUMN_MOON_DIRECTION,
-    angularDiameterDegrees: 0.62,
-    opacity: 0.94,
-    glowScale: 1.35,
-    glowOpacity: 0.055,
+    direction: AUTUMN_MOON_VISUAL_DIRECTION,
+    angularDiameterDegrees: 2.8,
+    opacity: 0.96,
+    glowScale: 1.52,
+    glowOpacity: 0.075,
+    surfaceLift: 0.34,
+    horizonWarmth: 0.25,
   };
 
   // Star legibility: the old field used the primitive's realistic cubic
@@ -159,14 +162,15 @@
   // spread keeps them above the tree line rather than buried in the canopy.
   const starfieldConfig: StarfieldConfig = $derived({
     enabled: true,
-    count: tier === "high" ? 1600 : tier === "medium" ? 1100 : 620,
+    count: tier === "high" ? 720 : tier === "medium" ? 520 : 320,
     radius: 88,
-    sizeRange: [0.85, 2.6],
+    sizeRange: [1.0, 3.0],
     twinkleSpeed: 0.34,
-    intensity: 1.5,
-    magnitudeFalloff: 1.5,
-    brightnessFloor: 0.42,
+    intensity: 2.0,
+    magnitudeFalloff: 1.25,
+    brightnessFloor: 0.6,
     horizonSpread: 0.52,
+    elevationRangeDegrees: [-8, 12],
   });
 
   // ── Fog + background (dusk violet) ─────────────────────────────────────
@@ -180,7 +184,7 @@
     const fogColor = new Color("#20153a");
     // The gradient dome owns the visible sky; this is its near-black fallback
     // while textures and shaders are still compiling.
-    const backgroundColor = new Color("#09081d");
+    const backgroundColor = new Color("#120b2b");
     // Tuned against real frames, not arithmetic. 0.016 hid nothing - the finite
     // terrain edge stayed a hard sawtooth against black. 0.034 overshot badly:
     // the review harness parks its camera ~34m out, so at that density the
@@ -199,7 +203,7 @@
 </script>
 
 <SkyGradient
-  topColor="#09081d"
+  topColor="#120b2b"
   midColor="#38265a"
   bottomColor="#7f5b9e"
   gradientStart={0.43}

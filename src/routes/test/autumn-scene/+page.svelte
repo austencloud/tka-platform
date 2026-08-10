@@ -24,6 +24,9 @@
   import { createEnvironmentTransitionVisualState } from "$lib/shared/3d/environments/state/environment-transition-visual-state.svelte";
   import { setEnvironmentTransitionVisualContext } from "$lib/shared/3d/environments/context/environment-transition-visual-context";
   import HarnessToneMapping from "./HarnessToneMapping.svelte";
+  import PerfMonitor from "$lib/shared/3d/components/PerfMonitor.svelte";
+  import { autumnQualityOverride } from "$lib/shared/3d/environments/scenes/autumn/quality/autumn-quality-override.svelte";
+  import type { AutumnQualityTier } from "$lib/shared/3d/environments/scenes/autumn/quality/autumn-quality";
 
   // The Autumn scene calls getSceneFeatureContext() (for reportReady +
   // stage gating). Provide the same state factory the real Viewer3DCanvas
@@ -53,6 +56,41 @@
       target: [0, 2, 0],
       fov: 52,
     },
+    depth: {
+      position: [0, 9, 29],
+      target: [0, 2, -42],
+      fov: 46,
+    },
+    settlement: {
+      position: [1, 7, 16],
+      target: [-5, 1, -32],
+      fov: 48,
+    },
+    shack: {
+      position: [-10, 4, -40],
+      target: [-10, 1.5, -56],
+      fov: 50,
+    },
+    fungi: {
+      position: [4, 2.1, -7.2],
+      target: [4, 0.08, -12],
+      fov: 46,
+    },
+    ferns: {
+      position: [-15.6, 1.65, 1.2],
+      target: [-15.6, 0.35, -3.5],
+      fov: 46,
+    },
+    rootContact: {
+      position: [-3, 2.4, 7.5],
+      target: [-12.8, 0.7, -6.5],
+      fov: 52,
+    },
+    owlRootContact: {
+      position: [0, 2.4, -2],
+      target: [6.2, 0.7, -18.3],
+      fov: 52,
+    },
   } as const;
 
   type ViewName = keyof typeof VIEW_PRESETS;
@@ -63,6 +101,26 @@
       : "hero"
   );
   const cameraPreset = $derived(VIEW_PRESETS[view]);
+  const showPerf = $derived(page.url.searchParams.get("perf") === "1");
+  const renderDpr = $derived.by(() => {
+    const requested = Number(page.url.searchParams.get("dpr") ?? "1");
+    return Number.isFinite(requested)
+      ? Math.min(3, Math.max(0.5, requested))
+      : 1;
+  });
+  const requestedQuality = $derived.by<AutumnQualityTier | "auto">(() => {
+    const requested = page.url.searchParams.get("quality");
+    return requested === "low" || requested === "medium" || requested === "high"
+      ? requested
+      : "auto";
+  });
+
+  $effect(() => {
+    autumnQualityOverride.tier = requestedQuality;
+    return () => {
+      autumnQualityOverride.tier = "auto";
+    };
+  });
 </script>
 
 <svelte:head>
@@ -71,12 +129,14 @@
 
 <div class="page">
   <Canvas
+    dpr={renderDpr}
     createRenderer={(canvas) =>
       new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
   >
     <!-- Match the real viewer's ScenePostProcessing tone mapping (AgX, 1.0)
          so colors read the same here as in the sequence viewer. -->
     <HarnessToneMapping />
+    <PerfMonitor visible={showPerf} active={showPerf} />
 
     {#key view}
       <EnvironmentReviewCamera

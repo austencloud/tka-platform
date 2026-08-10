@@ -5,11 +5,12 @@
  * caster set is deliberate. A caster costs a second depth rasterisation every
  * frame, so the list is limited to things whose silhouette actually lands
  * inside the clearing-sized shadow camera and reads at performance distance:
- * hero trees, saplings, logs, boulders, ferns, mushrooms and the owl.
+ * hero trees, saplings, logs, boulders, ferns and the owl.
  *
- * The distant tree belt is excluded on purpose. It sits 24-27m out, outside the
- * shadow camera entirely, so casting from it would pay the depth pass for
- * geometry that can never darken a visible pixel.
+ * The near belt and the new middle/far depth groves are excluded on purpose.
+ * They begin outside the clearing-sized shadow camera and continue beyond the
+ * fog horizon, so casting from them would pay large depth passes for geometry
+ * that can never darken a visible performance-space pixel.
  *
  * Grass is excluded from BOTH roles here because AutumnWind owns those meshes
  * and already sets them to receive-only; claiming them twice would make the
@@ -17,7 +18,7 @@
  *
  * One consequence of the asset pipeline is worth knowing: the optimizer's
  * GPU-instancing pass collapses every repeated asset (ferns, saplings, the
- * fairy-ring mushrooms, birches, snags, the Poly Haven rocks) into unnamed
+ * small procedural fungi, birches, snags, the Poly Haven rocks) into unnamed
  * InstancedMesh batches. Those hit the receive-only default rather than the
  * caster list. That is the right outcome anyway - they are small understory and
  * far-belt geometry - but it does mean the caster prefixes below only ever
@@ -40,11 +41,19 @@ const EXCLUDED_PREFIXES = [
   "DistantLarch",
   "DistantSnag",
   "DistantWillow",
+  "MidDepth",
+  "FarDepth",
 ];
 
 /** Ground-ish surfaces that should catch contact darkening but never cast. */
 const RECEIVER_PREFIXES = [
   "Autumn_Terrain",
+  "Autumn_Depth_Path",
+  "Autumn_Cabin_Lane",
+  "Autumn_Forest_Trail",
+  "Autumn_Shared_Yard",
+  "Autumn_Shack_Door_Yard",
+  "DistantWoodlandShack",
   "MossPatch",
   "Packed_Performance_Clearing",
   "Pond_Sculpted_Basin",
@@ -62,7 +71,6 @@ const CASTER_PREFIXES = [
   "Fern_",
   "Shore_Boulder",
   "Forest_Boulder",
-  "FairyRing",
   "Autumn_Owl",
 ];
 

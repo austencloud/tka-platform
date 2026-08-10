@@ -11,7 +11,7 @@
  *   node scripts/build-autumn-floor-textures.mjs
  */
 
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import sharp from "sharp";
@@ -21,9 +21,15 @@ const QA_DIRECTORY = resolve(tmpdir(), "tka-autumn-evidence");
 const SOURCE_PATH = resolve(OUTPUT_DIRECTORY, "albedo-source.png");
 const FOREST_FLOOR_PATH = resolve("static/textures/forest-floor/diffuse.jpg");
 const DIRT_PATH = resolve("static/textures/terrain/dirt/diffuse.jpg");
+const GROUND_LAYOUT_PATH = resolve("scripts/autumn-ground-layout.json");
+const ZONED_OUTPUT_PATH = resolve(OUTPUT_DIRECTORY, "autumn-ground-zoned.jpg");
 const SIZE = 2048;
 const DERIVED_SIZE = 1024;
 const SEAM_BAND = 128;
+const ZONED_SIZE = 4096;
+const MACRO_SIZE = 512;
+const SAMPLE_TILE_SIZE = 256;
+const groundLayout = JSON.parse(await readFile(GROUND_LAYOUT_PATH, "utf8"));
 
 function smoothstep(value) {
   const clamped = Math.max(0, Math.min(1, value));
@@ -209,6 +215,274 @@ async function writeColorGrade(
     .toFile(resolve(OUTPUT_DIRECTORY, outputName));
 }
 
+function clamp(value, minimum = 0, maximum = 1) {
+  return Math.min(maximum, Math.max(minimum, value));
+}
+
+function smoothstepRange(edge0, edge1, value) {
+  const amount = clamp((value - edge0) / (edge1 - edge0));
+  return amount * amount * (3 - 2 * amount);
+}
+
+function zoneNoise(x, y) {
+  return (
+    0.49 * Math.sin(x * 0.111 + y * 0.073) +
+    0.31 * Math.cos(x * 0.067 - y * 0.129) +
+    0.20 * Math.sin((x + y) * 0.193)
+  );
+}
+
+function ellipseMetric(x, y, region) {
+  const [centerX, centerY] = region.center;
+  const [radiusX, radiusY] = region.radii;
+  const cosine = Math.cos(region.rotation ?? 0);
+  const sine = Math.sin(region.rotation ?? 0);
+  const localX = (x - centerX) * cosine + (y - centerY) * sine;
+  const localY = -(x - centerX) * sine + (y - centerY) * cosine;
+  return Math.hypot(localX / radiusX, localY / radiusY);
+}
+
+function ellipseInfluence(x, y, region, noise, inner = 0.62, outer = 1.28) {
+  const edgeNoise = noise * 0.10 + 0.04 * Math.sin(x * 0.71 - y * 0.53);
+  return (
+    (1 - smoothstepRange(inner + edgeNoise, outer + edgeNoise, ellipseMetric(x, y, region))) *
+    (region.strength ?? 1)
+  );
+}
+
+function chaikinPath(points, iterations = 2) {
+  let smoothed = points.map((point) => [...point]);
+  for (let iteration = 0; iteration < iterations; iteration += 1) {
+    const next = [smoothed[0]];
+    for (let index = 0; index < smoothed.length - 1; index += 1) {
+      const first = smoothed[index];
+      const second = smoothed[index + 1];
+      next.push(
+        first.map((value, axis) => value * 0.75 + second[axis] * 0.25),
+        first.map((value, axis) => value * 0.25 + second[axis] * 0.75)
+      );
+    }
+    next.push(smoothed.at(-1));
+    smoothed = next;
+  }
+  return smoothed;
+}
+
+const bakedPaths = groundLayout.paths.map((path) => ({
+  ...path,
+  points: chaikinPath(path.points),
+}));
+
+function nearestPathSample(x, y, path) {
+  let nearestDistance = Number.POSITIVE_INFINITY;
+  let nearestWidth = path.points[0][2];
+  for (let index = 0; index < path.points.length - 1; index += 1) {
+    const first = path.points[index];
+    const second = path.points[index + 1];
+    const segmentX = second[0] - first[0];
+    const segmentY = second[1] - first[1];
+    const lengthSquared = segmentX * segmentX + segmentY * segmentY;
+    const amount =
+      lengthSquared <= 0.000001
+        ? 0
+        : clamp(
+            ((x - first[0]) * segmentX + (y - first[1]) * segmentY) /
+              lengthSquared
+          );
+    const distance = Math.hypot(
+      x - (first[0] + segmentX * amount),
+      y - (first[1] + segmentY * amount)
+    );
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestWidth = first[2] + (second[2] - first[2]) * amount;
+    }
+  }
+  return { distance: nearestDistance, halfWidth: nearestWidth };
+}
+
+function pathInfluence(x, y, path, noise) {
+  const { distance, halfWidth } = nearestPathSample(x, y, path);
+  const edge = halfWidth + noise * 0.10;
+  const shoulder = path.shoulderWidth + noise * 0.08;
+  const core = 1 - smoothstepRange(edge * 0.48, edge, distance);
+  const feather = 1 - smoothstepRange(edge, edge + shoulder, distance);
+  const strength = path.id === "cabin_lane" ? 0.84 : 0.64;
+  return Math.max(core * strength, feather * strength * 0.44);
+}
+
+async function tiledSource(path) {
+  return sharp(path)
+    .resize(SAMPLE_TILE_SIZE, SAMPLE_TILE_SIZE, {
+      fit: "fill",
+      kernel: sharp.kernel.lanczos3,
+    })
+    .removeAlpha()
+    .raw()
+    .toBuffer();
+}
+
+async function buildZonedGroundAlbedo() {
+  const worldExtent = Number(groundLayout.worldExtent);
+  const detailMetres = Number(groundLayout.detailMetres);
+  const clearingRadius = Number(groundLayout.clearingRadius);
+  const [pondX, pondY] = groundLayout.pond.center;
+  const [pondRadiusX, pondRadiusY] = groundLayout.pond.radii;
+  const sources = await Promise.all(
+    ["soil", "packed", "golden", "cool", "moss"].map(async (name) => ({
+      name,
+      pixels: await tiledSource(resolve(OUTPUT_DIRECTORY, `${name}-albedo.jpg`)),
+    }))
+  );
+  const source = Object.fromEntries(sources.map(({ name, pixels }) => [name, pixels]));
+
+  // RGBA stores packed-earth, leaf-duff, cool-root, and moss weights. These
+  // broad fields are generated at macro resolution, then cubic interpolation
+  // turns every ecological boundary into a soft transition before the detail
+  // textures are sampled.
+  const weights = Buffer.allocUnsafe(MACRO_SIZE * MACRO_SIZE * 4);
+  for (let pixelY = 0; pixelY < MACRO_SIZE; pixelY += 1) {
+    const worldY = worldExtent - (pixelY / (MACRO_SIZE - 1)) * worldExtent * 2;
+    for (let pixelX = 0; pixelX < MACRO_SIZE; pixelX += 1) {
+      const worldX = -worldExtent + (pixelX / (MACRO_SIZE - 1)) * worldExtent * 2;
+      const noise = zoneNoise(worldX, worldY);
+      const radius = Math.hypot(worldX, worldY);
+      const ecologicalGate = smoothstepRange(
+        clearingRadius - 0.3 + noise * 0.18,
+        clearingRadius + 2.0 + noise * 0.34,
+        radius
+      );
+
+      const clearingPacked =
+        (1 -
+          smoothstepRange(
+            clearingRadius - 1.9 + noise * 0.28,
+            clearingRadius + 2.0 + noise * 0.42,
+            radius
+          )) *
+        0.42;
+      const pathPacked = Math.max(
+        ...bakedPaths.map((path) => pathInfluence(worldX, worldY, path, noise))
+      );
+      const yardPacked = Math.max(
+        ...groundLayout.yards.map((yard) =>
+          ellipseInfluence(worldX, worldY, { ...yard, strength: 0.70 }, noise, 0.62, 1.34)
+        )
+      );
+      const packedWeight = Math.max(clearingPacked, pathPacked, yardPacked);
+
+      const duffWeight =
+        Math.max(
+          0,
+          ...groundLayout.duffBeds.map((region) =>
+            ellipseInfluence(worldX, worldY, region, noise, 0.54, 1.34)
+          )
+        ) * ecologicalGate;
+      const rootWeight =
+        Math.max(
+          0,
+          ...groundLayout.rootShadows.map((region) =>
+            ellipseInfluence(worldX, worldY, region, noise, 0.50, 1.32)
+          )
+        ) * ecologicalGate;
+      const pondMetric = Math.hypot(
+        (worldX - pondX) / pondRadiusX,
+        (worldY - pondY) / pondRadiusY
+      );
+      const pondBankWeight =
+        (1 - smoothstepRange(0.72 + noise * 0.05, 1.62 + noise * 0.08, pondMetric)) *
+        0.72;
+      const coolWeight = Math.max(rootWeight, pondBankWeight);
+      const mossWeight =
+        Math.max(
+          0,
+          ...groundLayout.mossSeeps.map((region) =>
+            ellipseInfluence(worldX, worldY, region, noise, 0.48, 1.38)
+          )
+        ) * ecologicalGate;
+
+      const index = (pixelY * MACRO_SIZE + pixelX) * 4;
+      weights[index] = Math.round(clamp(packedWeight) * 255);
+      weights[index + 1] = Math.round(clamp(duffWeight) * 255);
+      weights[index + 2] = Math.round(clamp(coolWeight) * 255);
+      weights[index + 3] = Math.round(clamp(mossWeight) * 255);
+    }
+  }
+
+  const expandedWeights = await sharp(weights, {
+    raw: { width: MACRO_SIZE, height: MACRO_SIZE, channels: 4 },
+  })
+    .resize(ZONED_SIZE, ZONED_SIZE, { kernel: sharp.kernel.cubic })
+    .raw()
+    .toBuffer();
+  const output = Buffer.allocUnsafe(ZONED_SIZE * ZONED_SIZE * 3);
+
+  for (let pixelY = 0; pixelY < ZONED_SIZE; pixelY += 1) {
+    const worldY = worldExtent - (pixelY / (ZONED_SIZE - 1)) * worldExtent * 2;
+    for (let pixelX = 0; pixelX < ZONED_SIZE; pixelX += 1) {
+      const worldX = -worldExtent + (pixelX / (ZONED_SIZE - 1)) * worldExtent * 2;
+      const warpedX =
+        worldX +
+        0.39 * Math.sin(worldY * 0.29) +
+        0.17 * Math.sin(worldX * 0.73 + worldY * 0.18);
+      const warpedY =
+        worldY +
+        0.35 * Math.cos(worldX * 0.31) +
+        0.15 * Math.sin(worldY * 0.67 - worldX * 0.16);
+      const sourceX = Math.min(
+        SAMPLE_TILE_SIZE - 1,
+        Math.floor(
+          ((warpedX / detailMetres - Math.floor(warpedX / detailMetres)) + 1) % 1 *
+            SAMPLE_TILE_SIZE
+        )
+      );
+      const sourceY = Math.min(
+        SAMPLE_TILE_SIZE - 1,
+        Math.floor(
+          (1 - (((warpedY / detailMetres - Math.floor(warpedY / detailMetres)) + 1) % 1)) *
+            (SAMPLE_TILE_SIZE - 1)
+        )
+      );
+      const sourceIndex = (sourceY * SAMPLE_TILE_SIZE + sourceX) * 3;
+      const outputIndex = (pixelY * ZONED_SIZE + pixelX) * 3;
+      const weightIndex = (pixelY * ZONED_SIZE + pixelX) * 4;
+
+      let red = source.soil[sourceIndex];
+      let green = source.soil[sourceIndex + 1];
+      let blue = source.soil[sourceIndex + 2];
+      const duffWeight = expandedWeights[weightIndex + 1] / 255;
+      const coolWeight = expandedWeights[weightIndex + 2] / 255;
+      const mossWeight = expandedWeights[weightIndex + 3] / 255;
+      const packedWeight = expandedWeights[weightIndex] / 255;
+
+      red += (source.golden[sourceIndex] - red) * duffWeight;
+      green += (source.golden[sourceIndex + 1] - green) * duffWeight;
+      blue += (source.golden[sourceIndex + 2] - blue) * duffWeight;
+      red += (source.cool[sourceIndex] - red) * coolWeight;
+      green += (source.cool[sourceIndex + 1] - green) * coolWeight;
+      blue += (source.cool[sourceIndex + 2] - blue) * coolWeight;
+      red += (source.moss[sourceIndex] - red) * mossWeight;
+      green += (source.moss[sourceIndex + 1] - green) * mossWeight;
+      blue += (source.moss[sourceIndex + 2] - blue) * mossWeight;
+      // Maintained ground wins last so the cabin lane never disappears under
+      // duff, roots, or the 31-metre terrain/apron boundary.
+      red += (source.packed[sourceIndex] - red) * packedWeight;
+      green += (source.packed[sourceIndex + 1] - green) * packedWeight;
+      blue += (source.packed[sourceIndex + 2] - blue) * packedWeight;
+
+      output[outputIndex] = Math.round(clamp(red, 0, 255));
+      output[outputIndex + 1] = Math.round(clamp(green, 0, 255));
+      output[outputIndex + 2] = Math.round(clamp(blue, 0, 255));
+    }
+  }
+
+  await sharp(output, {
+    raw: { width: ZONED_SIZE, height: ZONED_SIZE, channels: 3 },
+  })
+    .jpeg({ quality: 90, chromaSubsampling: "4:4:4", mozjpeg: true })
+    .toFile(ZONED_OUTPUT_PATH);
+}
+
 await mkdir(OUTPUT_DIRECTORY, { recursive: true });
 await mkdir(QA_DIRECTORY, { recursive: true });
 
@@ -256,10 +530,10 @@ await Promise.all([
     tintStrength: 0.42,
   }),
   writeColorGrade(DIRT_PATH, "packed-albedo.jpg", {
-    brightness: 0.52,
-    saturation: 0.4,
-    tint: [105, 65, 40],
-    tintStrength: 0.55,
+    brightness: 0.68,
+    saturation: 0.48,
+    tint: [135, 88, 48],
+    tintStrength: 0.42,
   }),
   writeColorGrade(DIRT_PATH, "moss-albedo.jpg", {
     brightness: 0.55,
@@ -286,6 +560,8 @@ await Promise.all([
     tintStrength: 0.5,
   }),
 ]);
+
+await buildZonedGroundAlbedo();
 
 const albedoEdges = edgeMeanDifference(albedo, SIZE, SIZE, 3);
 const normalEdges = edgeMeanDifference(normal, SIZE, SIZE, 3);
@@ -318,7 +594,10 @@ console.log(
         "shadow-albedo.jpg",
         "golden-albedo.jpg",
         "cool-albedo.jpg",
+        "autumn-ground-zoned.jpg",
       ],
+      groundLayoutVersion: groundLayout.version,
+      zonedSize: `${ZONED_SIZE}x${ZONED_SIZE}`,
     },
     null,
     2

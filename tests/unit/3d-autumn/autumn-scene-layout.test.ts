@@ -69,6 +69,17 @@ describe("Autumn scene layout", () => {
       expect(Math.hypot(...emitter.position)).toBeGreaterThan(11);
       expect(emitter.area.width).toBeLessThanOrEqual(8.5);
       expect(emitter.area.depth).toBeLessThanOrEqual(7);
+      expect(emitter.fallSpeed).toBeGreaterThanOrEqual(0.088);
+      expect(emitter.fallSpeed).toBeLessThanOrEqual(0.118);
     }
+
+    expect(AUTUMN_LEAF_EMITTERS.map((emitter) => emitter.position)).toEqual([
+      [-12.8, -6.5],
+      [14.9, -9.6],
+      [-10.4, -16.8],
+      [6.2, -18.3],
+      [20.4, -14.6],
+      [-18.2, 9.2],
+    ]);
   });
 });

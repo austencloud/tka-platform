@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { T, useTask } from "@threlte/core";
+  import { T, useTask, useThrelte } from "@threlte/core";
   import { onDestroy, untrack } from "svelte";
   import {
     SphereGeometry,
@@ -58,6 +58,7 @@
   // One shared unit sphere — scaled per-mesh, disposed once. This reads no
   // reactive state, so it needs no untrack.
   const sharedCoreGeo = new SphereGeometry(1, 12, 12);
+  const { camera } = useThrelte();
 
   // Build wisp configs/groups/materials ONCE. Counts live in autumn-quality.ts.
   const wisps: Wisp[] = untrack(() => {
@@ -128,6 +129,7 @@
   useTask((delta) => {
     elapsed += delta * motionScale;
     const ground = groundY;
+    const activeCamera = camera.current;
     for (const wisp of wisps) {
       const t = elapsed * wisp.speed + wisp.phase;
       wisp.group.position.set(
@@ -135,6 +137,23 @@
         ground + wisp.baseHeight + Math.sin(t) * wisp.bobAmplitude,
         wisp.baseZ + Math.cos(t * 0.5) * wisp.driftRadius
       );
+
+      // A 10cm wisp is a readable mote across the clearing but becomes a
+      // screen-filling lavender disk if its orbit crosses the camera. Ease
+      // down both scale and opacity in that near-camera interval; the wisp
+      // returns at full strength by 4m and keeps the same path, count, and
+      // interaction target.
+      if (activeCamera) {
+        const distance = wisp.group.position.distanceTo(activeCamera.position);
+        const linearProximity = Math.max(
+          0,
+          Math.min(1, (distance - 1.2) / 2.8)
+        );
+        const proximity =
+          linearProximity * linearProximity * (3 - 2 * linearProximity);
+        wisp.group.scale.setScalar(0.25 + proximity * 0.75);
+        wisp.coreMat.opacity = 0.58 * proximity;
+      }
     }
   });
 

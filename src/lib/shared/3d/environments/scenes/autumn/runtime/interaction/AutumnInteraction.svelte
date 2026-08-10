@@ -11,17 +11,11 @@
    * composer adds `baseIntensity` from the material's resting
    * `emissiveIntensity` — the value the glow decays back to.
    *
-   * The authored fairy-ring mushrooms are deliberately NOT targets, and this is
-   * a property of the asset pipeline rather than an oversight. The optimizer's
-   * GPU-instancing pass collapses all 16 mushroom clusters into a single
-   * InstancedMesh sharing one material ("Autumn Fairy Mushroom 1"). The pulse
-   * loop below writes `mat.emissiveIntensity` per target in sequence, so a set
-   * of targets sharing one material resolves to "last target wins" rather than
-   * "nearest wins" — and because the two rings sit ~15m apart, approaching one
-   * would visibly light the other. Per-instance emissive would need a custom
-   * instanced shader, which is not a trade this scene should make: runtime
-   * efficiency was its weakest dimension in review. A `mushroomTargets` prop
-   * used to be declared and documented here but was never supplied by anything.
+   * The authored mushrooms are deliberately NOT targets. The optimizer groups
+   * each species into GPU instances that share one material, so changing one
+   * fruiting body would brighten every member of that species. Per-instance
+   * emission would require a custom shader for a detail that is meant to stay
+   * quiet and natural; the drifting wisps remain the scene's responsive glow.
    */
   export interface PulseTarget {
     material: MeshStandardMaterial;
@@ -41,8 +35,8 @@
    * AutumnInteraction
    *
    * The scene's premium differentiator: the forest responds to presence. As the
-   * pointer moves across the forest floor, nearby will-o-wisp and mushroom
-   * emissive materials brighten, then decay back to their resting glow.
+   * pointer moves across the forest floor, nearby will-o-wisp emissive
+   * materials brighten, then decay back to their resting glow.
    *
    * Pointer tracking + cursor-ray construction mirror
    * ocean/runtime/interaction/OceanInteraction.svelte exactly (NDC from the
@@ -73,7 +67,7 @@
     /**
      * Glow targets assembled by the orchestrator (Task 13). Each pairs an
      * emissive material with its world position + resting intensity. See the
-     * PulseTarget docs in the module block for how wisps vs mushrooms are paired.
+     * PulseTarget docs in the module block for how drifting wisps are paired.
      */
     targets?: PulseTarget[];
     /** Forest-floor height the cursor ray intersects to find the focus point. */

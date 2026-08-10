@@ -15,7 +15,6 @@ describe("Autumn shadow budget", () => {
       "Fern_12",
       "Shore_Boulder_04",
       "Forest_Boulder_11",
-      "FairyRing_East_03",
       "Autumn_Owl_Perch",
     ]) {
       expect(resolveAutumnShadowRole(name)).toEqual({
@@ -28,10 +27,18 @@ describe("Autumn shadow budget", () => {
   it("keeps ground surfaces as receivers so contact reads without a depth pass", () => {
     for (const name of [
       "Autumn_Terrain",
+      "Autumn_Cabin_Lane",
+      "Autumn_Forest_Trail",
+      "Autumn_Shared_Yard",
+      "Autumn_Shack_Door_Yard",
+      "DistantWoodlandShack",
       "MossPatch_04",
       "Pond_Sculpted_Basin",
       "Autumn_Leaf_Drifts",
       "Autumn_Twig_Litter",
+      "FairyChampignonArc_01",
+      "AmethystWestRoot_01",
+      "HoneyFungusLogOne_01",
     ]) {
       expect(resolveAutumnShadowRole(name)).toEqual({
         cast: false,
@@ -40,14 +47,16 @@ describe("Autumn shadow budget", () => {
     }
   });
 
-  it("excludes the distant belt and the wind-owned grass entirely", () => {
-    // The belt sits ~24-27m out, outside the +/-12 shadow camera, so casting
-    // from it would pay a depth pass that can never darken a visible pixel.
+  it("excludes every distant tree layer and the wind-owned grass entirely", () => {
+    // Every depth tier sits outside the +/-12 shadow camera, so casting from it
+    // would pay a depth pass that can never darken a performance-space pixel.
     for (const name of [
       "DistantBirch_02",
       "DistantLarch_01",
       "DistantSnag_05",
       "DistantWillow_03",
+      "MidDepthBirch_NW_01",
+      "FarDepthGoldenSentinel",
       // AutumnWind owns these; claiming them here too would make the winner
       // depend on effect ordering.
       "Autumn_Grass_Base",

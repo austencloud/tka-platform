@@ -4,7 +4,6 @@ export type AutumnQualityTier = "low" | "medium" | "high";
 
 export interface AutumnQualityConfig {
   fillTreeCount: number;
-  mushroomCount: number;
   leafCount: number;
   sporeCount: number;
   fireflyCount: number;
@@ -25,7 +24,6 @@ export interface AutumnQualityConfig {
 const CONFIGS: Record<AutumnQualityTier, AutumnQualityConfig> = {
   high: {
     fillTreeCount: 36,
-    mushroomCount: 18,
     leafCount: 140,
     sporeCount: 60,
     fireflyCount: 36,
@@ -35,7 +33,6 @@ const CONFIGS: Record<AutumnQualityTier, AutumnQualityConfig> = {
   },
   medium: {
     fillTreeCount: 28,
-    mushroomCount: 14,
     leafCount: 90,
     sporeCount: 40,
     fireflyCount: 24,
@@ -45,7 +42,6 @@ const CONFIGS: Record<AutumnQualityTier, AutumnQualityConfig> = {
   },
   low: {
     fillTreeCount: 18,
-    mushroomCount: 10,
     leafCount: 50,
     sporeCount: 20,
     fireflyCount: 12,

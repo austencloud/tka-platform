@@ -26,6 +26,7 @@
   import AutumnPond from "./water/AutumnPond.svelte";
   import AutumnInteraction from "./interaction/AutumnInteraction.svelte";
   import AutumnWind from "./wind/AutumnWind.svelte";
+  import AutumnLanternFlicker from "./lighting/AutumnLanternFlicker.svelte";
 
   interface Props {
     quality: AutumnQualityConfig;
@@ -55,6 +56,10 @@
 
 <!-- Moon-aligned dusk light rig -->
 <AutumnLighting {quality} {groundY} />
+
+<!-- The distant wayfinding lantern breathes through its existing emissive
+     material. It adds no point light, shadow pass, or draw call. -->
+<AutumnLanternFlicker scene={environmentScene} />
 
 <!-- Leaves + spores + fireflies; fireflies cluster on the pond center -->
 <AutumnParticles {quality} {groundY} {pondCenter} />

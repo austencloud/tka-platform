@@ -16,3 +16,16 @@
  *     still covers.
  */
 export const AUTUMN_MOON_DIRECTION: [number, number, number] = [-6, 26, -56];
+
+/**
+ * Art-directed disk placement for performance cameras.
+ *
+ * The physical key above keeps enough elevation for useful shadows. The disk
+ * shares its azimuth but sits on the visible horizon band, where downward-
+ * pitched stage cameras can actually include it. Horizontal agreement carries
+ * the readable shadow direction; separating elevation prevents the moon from
+ * disappearing above five of the seven review framings.
+ */
+export const AUTUMN_MOON_VISUAL_DIRECTION: [number, number, number] = [
+  -13, -3, -56,
+];

@@ -43,7 +43,7 @@
   {#each AUTUMN_LEAF_EMITTERS as emitter, index (emitter.id)}
     <T.Group
       position.x={emitter.position[0]}
-      position.y={groundY + emitter.area.height * 0.72}
+      position.y={groundY + emitter.area.height * 0.5 + 0.2}
       position.z={emitter.position[1]}
     >
       <!-- Sizes run larger than the old confetti so the leaf silhouette has
@@ -52,11 +52,12 @@
         type="leaves"
         count={leafCounts[index] ?? 0}
         area={emitter.area}
-        speed={0.105}
-        colors={["#a84a18", "#c47324", "#7d2a14", "#cf9038"]}
+        speed={emitter.fallSpeed}
+        colors={[...emitter.colors]}
         sizeRange={[0.07, 0.16]}
         spin={true}
         opacity={0.94}
+        emissionShape="ellipse"
       />
     </T.Group>
   {/each}
@@ -80,7 +81,7 @@
 {/key}
 
 <!-- ── Fireflies ──────────────────────────────────────────────────────────── -->
-<!-- Warm-glow pulses live around the pond and both authored mushroom rings. -->
+<!-- Warm-glow pulses live around the pond, fallen wood, and the subtle rear arc. -->
 {#key quality.fireflyCount}
   {#each AUTUMN_FIREFLY_CLUSTERS as cluster, index (cluster.id)}
     <T.Group

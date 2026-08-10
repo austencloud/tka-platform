@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "worldExtent": 165,
+  "detailMetres": 5.2,
+  "clearingRadius": 6.5,
+  "pond": {
+    "center": [-10.5, -7.0],
+    "radii": [4.45, 3.35]
+  },
+  "paths": [
+    {
+      "id": "cabin_lane",
+      "name": "Autumn_Cabin_Lane",
+      "role": "settlement-path",
+      "destination": "woodland-shack-door",
+      "shoulderWidth": 0.95,
+      "points": [
+        [0.0, 6.4, 1.48],
+        [-1.0, 9.5, 1.58],
+        [-2.7, 13.0, 1.72],
+        [-3.2, 17.5, 1.82],
+        [-2.4, 22.0, 1.72],
+        [-2.0, 27.0, 1.58],
+        [-3.2, 33.0, 1.46],
+        [-4.8, 39.5, 1.34],
+        [-6.5, 45.0, 1.22],
+        [-8.5, 50.0, 1.10],
+        [-9.6, 53.0, 1.00],
+        [-10.0, 54.5, 0.92]
+      ]
+    },
+    {
+      "id": "forest_trail",
+      "name": "Autumn_Forest_Trail",
+      "role": "depth-path",
+      "destination": "golden-larch-sentinel",
+      "shoulderWidth": 0.55,
+      "points": [
+        [-2.4, 22.0, 0.72],
+        [1.2, 31.0, 0.76],
+        [-1.5, 41.0, 0.80],
+        [3.2, 54.0, 0.86],
+        [2.0, 72.0, 0.92],
+        [8.0, 96.0, 0.98]
+      ]
+    }
+  ],
+  "yards": [
+    {
+      "name": "Autumn_Shared_Yard",
+      "center": [-2.4, 17.5],
+      "radii": [4.9, 6.3],
+      "rotation": -0.1,
+      "seed": 19.0
+    },
+    {
+      "name": "Autumn_Shack_Door_Yard",
+      "center": [-10.0, 52.6],
+      "radii": [2.6, 1.9],
+      "rotation": 0.03,
+      "seed": 23.0
+    }
+  ],
+  "duffBeds": [
+    { "center": [-12.8, 6.5], "radii": [7.1, 5.2], "rotation": 0.18, "strength": 0.86 },
+    { "center": [14.9, 9.6], "radii": [6.5, 5.0], "rotation": -0.28, "strength": 0.82 },
+    { "center": [6.2, 18.3], "radii": [7.4, 5.4], "rotation": 0.08, "strength": 0.88 },
+    { "center": [-20.5, -0.4], "radii": [6.0, 4.5], "rotation": 0.5, "strength": 0.72 },
+    { "center": [-18.2, -9.2], "radii": [6.6, 4.8], "rotation": -0.36, "strength": 0.78 },
+    { "center": [16.0, -6.8], "radii": [5.8, 4.2], "rotation": 0.44, "strength": 0.70 },
+    { "center": [-10.4, -16.8], "radii": [6.5, 4.8], "rotation": 0.24, "strength": 0.76 },
+    { "center": [20.4, 14.6], "radii": [6.7, 4.6], "rotation": -0.5, "strength": 0.74 },
+    { "center": [-12.2, 12.9], "radii": [5.1, 2.6], "rotation": 0.72, "strength": 0.56 },
+    { "center": [10.4, 6.8], "radii": [4.8, 2.4], "rotation": -0.58, "strength": 0.58 }
+  ],
+  "rootShadows": [
+    { "center": [-12.8, 6.5], "radii": [4.2, 3.4], "rotation": 0.1, "strength": 0.48 },
+    { "center": [14.9, 9.6], "radii": [3.8, 3.1], "rotation": -0.2, "strength": 0.44 },
+    { "center": [6.2, 18.3], "radii": [4.5, 3.5], "rotation": 0.06, "strength": 0.50 },
+    { "center": [-18.2, -9.2], "radii": [4.0, 3.0], "rotation": -0.3, "strength": 0.42 },
+    { "center": [16.0, -6.8], "radii": [3.6, 2.8], "rotation": 0.4, "strength": 0.38 }
+  ],
+  "mossSeeps": [
+    { "center": [-15.2, 4.1], "radii": [3.8, 2.4], "rotation": 0.20, "strength": 0.40 },
+    { "center": [11.0, 5.5], "radii": [3.4, 2.0], "rotation": -0.45, "strength": 0.36 },
+    { "center": [-9.0, 10.8], "radii": [3.2, 2.0], "rotation": 0.55, "strength": 0.34 },
+    { "center": [10.2, 14.8], "radii": [3.2, 1.8], "rotation": -0.20, "strength": 0.34 },
+    { "center": [-15.4, -3.2], "radii": [2.6, 1.6], "rotation": 0.35, "strength": 0.30 },
+    { "center": [14.4, -2.8], "radii": [2.9, 1.7], "rotation": -0.50, "strength": 0.28 },
+    { "center": [-6.8, 5.3], "radii": [2.8, 1.5], "rotation": 0.18, "strength": 0.26 },
+    { "center": [5.0, 7.8], "radii": [2.6, 1.4], "rotation": -0.28, "strength": 0.24 },
+    { "center": [-3.2, -8.0], "radii": [2.8, 1.5], "rotation": 0.52, "strength": 0.26 },
+    { "center": [8.7, 1.6], "radii": [2.6, 1.5], "rotation": -0.12, "strength": 0.24 }
+  ]
+}

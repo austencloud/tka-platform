@@ -67,6 +67,14 @@
       "texturePrompt": "natural barred owl feathers in charcoal, deep umber, muted copper, and cream, subtle amber eyes with a tiny catchlight, realistic layered feather texture, rough weathered bark, restrained dusk color, no baked shadow, no glowing body",
       "polycount": 25000,
       "textureSize": 2048
+    },
+    {
+      "id": "distant-woodland-shack",
+      "stylePrefix": "cinematic stylized realism, premium fantasy game environment asset, cohesive with a realistic ancient autumn forest, isolated complete building, no scenery, no ground mound, no trees, no text, no background,",
+      "prompt": "small abandoned woodland caretaker shack, crooked hand-hewn timber walls, compact rectangular footprint, steep sagging shingle roof with one broken corner, short fractured stone chimney, narrow collapsed porch, one dark square window and one warped closed plank door, subtle asymmetry and age, structurally readable silhouette from a distance, complete building from foundation to roof ridge, no Halloween decorations, no pumpkins, no fence, no graveyard",
+      "texturePrompt": "weathered charcoal-brown timber, desaturated gray shingles, dark moss and lichen along the roof and foundation, muted rust hardware, sparse copper autumn leaves caught in roof creases, physically based woodland materials, diffuse albedo without baked lighting, black unlit window, no glow, no signage",
+      "polycount": 18000,
+      "textureSize": 2048
     }
   ]
 }

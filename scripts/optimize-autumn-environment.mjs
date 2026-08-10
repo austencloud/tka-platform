@@ -22,7 +22,7 @@
  * (sharp), then KTX2 encoding, then meshopt last.
  *
  * Passes:
- *   1. optimize  geometry simplify/instance + resize textures -> 1024 (webp),
+ *   1. optimize  geometry simplify/instance + resize textures -> 2048 (webp),
  *                geometry left UNCOMPRESSED so pass 2 can read it
  *   2. (API)     normalize all textures -> PNG (KTX-readable, via sharp)
  *   3. uastc     KTX2 UASTC for normal / metallicRoughness / occlusion
@@ -47,6 +47,93 @@ const TMP_PNG = resolve("static/models/autumn/_autumn-png.glb");
 const TMP_UASTC = resolve("static/models/autumn/_autumn-uastc.glb");
 const TMP_ETC = resolve("static/models/autumn/_autumn-etc.glb");
 const TEMPORARIES = [TMP_SLIM, TMP_PNG, TMP_UASTC, TMP_ETC];
+const GROUND_TEXTURE_PREFIX = "autumn-ground-zoned";
+
+// Scene-wide material grammar for imported assets. glTF baseColorFactor
+// multiplies the original texture, so these factors retain every authored map
+// while pulling unrelated sources into the same violet-and-copper dusk range.
+// Procedural terrain, leaf litter, grass, mushrooms, and far silhouettes are
+// already authored in that range and therefore do not need a profile here.
+const AUTUMN_MATERIAL_PROFILES = [
+  {
+    prefix: "Autumn Hero A PBR",
+    tint: [0.84, 0.89, 0.97, 1.0],
+    normalScale: 0.76,
+    roughnessFloor: 0.76,
+  },
+  {
+    prefix: "Autumn Hero B PBR",
+    tint: [0.88, 0.92, 0.98, 1.0],
+    normalScale: 0.76,
+    roughnessFloor: 0.76,
+  },
+  {
+    prefix: "Autumn Birch PBR",
+    tint: [0.9, 0.78, 0.62, 1.0],
+    normalScale: 0.68,
+    roughnessFloor: 0.8,
+  },
+  {
+    prefix: "Autumn Larch PBR",
+    tint: [0.94, 0.86, 0.72, 1.0],
+    normalScale: 0.7,
+    roughnessFloor: 0.8,
+  },
+  {
+    prefix: "Autumn Snag PBR",
+    tint: [0.82, 0.8, 0.88, 1.0],
+    normalScale: 0.66,
+    roughnessFloor: 0.84,
+  },
+  {
+    prefix: "Autumn Willow PBR",
+    tint: [0.9, 0.82, 0.72, 1.0],
+    normalScale: 0.68,
+    roughnessFloor: 0.82,
+  },
+  {
+    prefix: "Autumn Fern PBR",
+    tint: [0.72, 0.82, 0.62, 1.0],
+    normalScale: 0.64,
+    roughnessFloor: 0.86,
+  },
+  {
+    prefix: "Autumn Fallen Log PBR",
+    tint: [0.82, 0.75, 0.7, 1.0],
+    normalScale: 0.7,
+    roughnessFloor: 0.84,
+  },
+  {
+    prefix: "Autumn Woodland Cabin PBR",
+    tint: [0.78, 0.8, 0.88, 1.0],
+    normalScale: 0.72,
+    roughnessFloor: 0.82,
+  },
+  {
+    prefix: "Autumn Boulder PBR",
+    tint: [0.72, 0.67, 0.72, 1.0],
+    normalScale: 0.62,
+    roughnessFloor: 0.86,
+  },
+  {
+    prefix: "Autumn Rounded Rock PBR",
+    tint: [0.72, 0.67, 0.72, 1.0],
+    normalScale: 0.62,
+    roughnessFloor: 0.86,
+  },
+  {
+    prefix: "Autumn Field Stone PBR",
+    tint: [0.74, 0.69, 0.73, 1.0],
+    normalScale: 0.62,
+    roughnessFloor: 0.86,
+  },
+  {
+    prefix: "Autumn Owl PBR",
+    tint: [0.84, 0.78, 0.7, 1.0],
+    normalScale: 0.7,
+    roughnessFloor: 0.84,
+  },
+];
 
 // Local KTX-Software on PATH so the uastc/etc1s passes can transcode.
 const KTX_BIN = resolve(".tools/ktx");
@@ -84,6 +171,70 @@ function clean() {
   }
 }
 
+function harmonizeAutumnMaterials(document) {
+  const matchCounts = new Map(
+    AUTUMN_MATERIAL_PROFILES.map((profile) => [profile.prefix, 0])
+  );
+
+  for (const material of document.getRoot().listMaterials()) {
+    const profile = AUTUMN_MATERIAL_PROFILES.find(({ prefix }) =>
+      material.getName().startsWith(prefix)
+    );
+    if (!profile) continue;
+
+    const base = material.getBaseColorFactor();
+    material.setBaseColorFactor(
+      base.map((channel, index) =>
+        Math.min(1, channel * profile.tint[index])
+      )
+    );
+    material.setMetallicFactor(0);
+    material.setRoughnessFactor(
+      Math.max(profile.roughnessFloor, material.getRoughnessFactor())
+    );
+    material.setEmissiveFactor([0, 0, 0]);
+    material.setEmissiveTexture(null);
+    if (material.getNormalTexture()) {
+      material.setNormalScale(profile.normalScale);
+    }
+
+    matchCounts.set(profile.prefix, matchCounts.get(profile.prefix) + 1);
+    console.log(
+      `  ${material.getName()}: tint ${profile.tint.slice(0, 3).join("/")}, ` +
+        `normal ${profile.normalScale.toFixed(2)}`
+    );
+  }
+
+  const missing = [...matchCounts]
+    .filter(([, count]) => count === 0)
+    .map(([prefix]) => prefix);
+  if (missing.length) {
+    throw new Error(
+      `Autumn material profiles matched no exported material: ${missing.join(", ")}`
+    );
+  }
+}
+
+async function normalizeTextureSizes(document) {
+  for (const texture of document.getRoot().listTextures()) {
+    const isGroundAtlas = texture.getName().startsWith(GROUND_TEXTURE_PREFIX);
+    const maximumSize = isGroundAtlas ? 2048 : 1024;
+    const image = await sharp(texture.getImage())
+      .resize({
+        width: maximumSize,
+        height: maximumSize,
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .png()
+      .toBuffer();
+    texture.setImage(image).setMimeType("image/png");
+    if (isGroundAtlas) {
+      console.log(`  preserved ${texture.getName()} at ${maximumSize}px`);
+    }
+  }
+}
+
 if (!existsSync(INPUT)) {
   console.error(`Input not found: ${INPUT}`);
   console.error("Run the Blender export first (blender-export-autumn-full.py).");
@@ -112,9 +263,10 @@ try {
       `"${INPUT}" "${TMP_SLIM}"`,
       "--compress false",
       "--texture-compress webp",
-      // The terrain albedo carries the entire floor read at 5.2m per tile, so
-      // it stays at 1024. ETC1S below is what actually collapses the memory.
-      "--texture-size 1024",
+      // Start at 2048 so the world-space ground atlas retains enough pixels to
+      // draw a one-metre trail across 330m. Pass 2 returns every other texture
+      // to the established 1024/512 delivery budget.
+      "--texture-size 2048",
       "--simplify true",
       "--simplify-ratio 0.55",
       "--simplify-error 0.004",
@@ -124,8 +276,9 @@ try {
     ].join(" ")
   );
 
-  // 2. Normalize ALL textures -> PNG so KTX-Software can read them, then drop
-  //    the UASTC-bound maps to 512.
+  // 2. Normalize ALL textures -> PNG so KTX-Software can read them, preserve
+  //    the world-space ground atlas at 2048, then drop every other source to
+  //    1024 and the UASTC-bound maps to 512.
   //
   //    UASTC is the expensive format on BOTH axes: a 1024 normal map is 1.4 MB
   //    in VRAM and about 1.1 MB on disk, where the same map ETC1S-encoded would
@@ -137,9 +290,9 @@ try {
   {
     const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
     const doc = await io.read(TMP_SLIM);
-    await doc.transform(
-      textureCompress({ encoder: sharp, targetFormat: "png" })
-    );
+    console.log("\n── Harmonize imported Autumn materials ──");
+    harmonizeAutumnMaterials(doc);
+    await normalizeTextureSizes(doc);
     await doc.transform(
       textureCompress({
         encoder: sharp,

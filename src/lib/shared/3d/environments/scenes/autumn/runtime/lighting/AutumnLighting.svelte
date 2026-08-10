@@ -48,7 +48,7 @@
      ground. Texel density is bought back with a 2048 map on the high tier. -->
 <T.DirectionalLight
   color="#b9c6f2"
-  intensity={1.85}
+  intensity={2.05}
   position.x={moonKey[0]}
   position.y={moonKey[1] + groundY}
   position.z={moonKey[2]}
@@ -112,4 +112,17 @@
   position.x={-14}
   position.y={4.2 + groundY}
   position.z={9}
+/>
+
+<!-- Warm practical focused on the performance clearing. It creates a readable
+     human-scale pool inside the vast forest without flattening the surrounding
+     moonlit trunks. -->
+<T.PointLight
+  color="#ffad67"
+  intensity={1.15}
+  distance={14}
+  decay={2}
+  position.x={0}
+  position.y={5.5 + groundY}
+  position.z={2.5}
 />
