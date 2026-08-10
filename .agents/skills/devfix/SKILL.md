@@ -16,9 +16,16 @@ cloudflared runs the locally-managed `tka-dev` tunnel exposing it as
 `https://dev.tkaflowarts.com`. `scripts/start-dev.ps1` orchestrates both and
 its header comments are the canonical doc — read it before theorizing.
 
-**`:5173` is Austen's server.** Never start/kill/restart it yourself (hooks
-block it). Diagnose with `curl.exe -k`; if his server needs a restart, ask him to
-run it, e.g. `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-dev.ps1`.
+**`:5173` is Austen's server.** Never start/kill/restart it yourself — not by
+`npm run dev`, not by running `scripts/start-dev.ps1`, not via pm2, not by
+killing the port holder. **He restarts it from a button in Agent Hub**, which
+carries the tunnel and pm2 supervision a hand-run vite does not. Diagnose
+freely, then ask him to press it. See
+`.claude/rules/never-start-the-dev-server.md`.
+
+Diagnose with `curl -k -g 'https://[::1]:5173/'` — `dev` is `vite --host ::`
+(IPv6), so plain `localhost` resolves to IPv4 and returns `000` on a healthy
+server.
 
 ## First: split the fault domain
 
