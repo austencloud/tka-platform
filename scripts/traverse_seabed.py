@@ -56,7 +56,7 @@ SURFACE_BREAK_Y = WATERLINE_Y - EYE_ABOVE_FLOOR
 
 SNOW_END_Z = 52.0
 DESCENT_END_Z = 92.0
-SEA_END_Z = 144.0
+SEA_END_Z = 124.0
 ASCENT_END_Z = 190.0
 
 CHANNEL_HALF_W = 4.5
@@ -105,12 +105,14 @@ def base_floor_y(z: float) -> float:
     if z <= SEA_END_Z:
         return SEA_FLOOR_Y
 
-    landing_length = 4.0
-    rise = SPRING_FLOOR_Y - SEA_FLOOR_Y
-    to_break = SURFACE_BREAK_Y - SEA_FLOOR_Y
-    span = ASCENT_END_Z - SEA_END_Z - landing_length
-    lower_run = span * (to_break / rise)
-    lower_end_z = SEA_END_Z + lower_run
+    # Mirrors buildAscent() in water-traverse-terrain.ts, including its pinned
+    # break. The proportional split both files used to run put the break at
+    # z 184.3, 5.7 m from the sea plane's far edge, so the visitor surfaced
+    # with all of the water behind them.
+    landing_length = 6.0
+    surface_break_z = 165.0
+    lower_end_z = surface_break_z - landing_length / 2.0
+    lower_run = lower_end_z - SEA_END_Z
     landing_end_z = lower_end_z + landing_length
 
     if z < lower_end_z:

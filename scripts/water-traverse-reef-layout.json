@@ -8,7 +8,7 @@
   "geometry": {
     "_doc": "Read from src/lib/features/water-traverse/data/water-traverse-terrain.ts. If those constants move, these move with them — the generator asserts nothing, so a stale copy here plants coral inside a wall.",
     "trenchStartZ": 92,
-    "flatEndZ": 144,
+    "flatEndZ": 124,
     "ascentEndZ": 190,
     "floorHalfWidth": 42,
     "ridgeThickness": 6,

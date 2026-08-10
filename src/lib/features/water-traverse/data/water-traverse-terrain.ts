@@ -188,7 +188,7 @@ export const CHANNEL_HALF_W = 4.5;
 const SNOW_START_Z = 0;
 const SNOW_END_Z = 52;
 const DESCENT_END_Z = 92;
-const SEA_END_Z = 144;
+const SEA_END_Z = 124;
 const ASCENT_END_Z = 190;
 const SPRING_END_Z = 244;
 
@@ -330,14 +330,23 @@ function ramp(id: string, r: WorldRect, fromY: number, toY: number): FloorRect {
  * between them, plus where that landing sits.
  */
 function buildAscent(): { floors: FloorRect[]; breakZ: number } {
-  const LANDING_LENGTH = 4;
-  const rise = SPRING_FLOOR_Y - SEA_FLOOR_Y;
-  const toBreak = SURFACE_BREAK_Y - SEA_FLOOR_Y;
-  const span = ASCENT_END_Z - SEA_END_Z - LANDING_LENGTH;
-  // Split the horizontal run in proportion to how much of the climb happens
-  // either side of the break, so both ramps hold the same grade.
-  const lowerRun = span * (toBreak / rise);
-  const lowerEndZ = SEA_END_Z + lowerRun;
+  const LANDING_LENGTH = 6;
+  // Where the head leaves the water. Pinned, not derived.
+  //
+  // Splitting the run in proportion to the climb either side of the break
+  // reads as fair and puts the break wherever the arithmetic lands — which
+  // was z 184.3, with 1.7 m of ascent left after it. The visitor surfaced
+  // 5.7 m from the sea plane's own far edge, so at the one moment the walk
+  // exists to sell, the water was a 3.5-degree sliver at the horizon and
+  // every drop of it was behind them. Hiding the surface entirely changed
+  // nothing in that frame.
+  //
+  // 165 is the colonnade's last bay. The reef's monumental band runs to 162,
+  // so surfacing here happens among the hero structures instead of 22 m past
+  // them on bare ramp, and leaves ~25 m of open water ahead — the sea is
+  // still in front of the visitor at the moment they rise out of it.
+  const SURFACE_BREAK_Z = 165;
+  const lowerEndZ = SURFACE_BREAK_Z - LANDING_LENGTH / 2;
   const landingEndZ = lowerEndZ + LANDING_LENGTH;
   const r = rect(-VALLEY_HALF_W, 0, VALLEY_HALF_W, 0);
 
