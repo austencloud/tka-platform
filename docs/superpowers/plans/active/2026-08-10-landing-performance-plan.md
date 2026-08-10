@@ -136,10 +136,35 @@ for a marketing hero. The hypothesis — **unverified, verify before acting** �
 is that it pulls the animation engine, effects registry and prop geometry in as
 one graph, and that `chrome: "minimal"` is a render flag that trims no bundle.
 
+**Step 1 findings (2026-08-10, static analysis — chunk not yet weighed):**
+
+The graph is leaner than assumed. `InlineAnimationPlayer` has 16 static
+imports; `AnimatorCanvas` has 28. **The effects runtime is NOT in this chunk** —
+`effect-registry` is imported only by the effects-panel components, and
+`AnimatorCanvas`'s `fire-types` / `led-types` / `tip-effect-types` are all
+`import type`, so they erase at build. Do not repeat the claim that the hero
+drags in the effects system; it does not.
+
+What IS statically imported, and therefore in the chunk no matter what
+`chrome: "minimal"` does at render time:
+
+| Pulled in | Does the hero use it? |
+|---|---|
+| `UnifiedTimeline` | No |
+| `CanvasContextMenuHost` + context-menu types | No |
+| `BpmChips` (via the player) | No |
+| `sequence-difficulty-calculator` (value import) | No |
+| `WordHeader`, `SequenceProgressBar` | No |
+
+`chrome: "minimal"` is a render flag, not a bundle boundary — confirmed. That
+is the case for a hero-weight entry point, and it is a smaller, better-defined
+carve than "split the animation engine".
+
 **Do, in order:**
-1. Measure the chunk. `list_network_requests` filtered to the player chunk on a
-   production load: transfer size, decoded size, and what it pulls in after.
-   Do not skip to a fix.
+1. Weigh the chunk before cutting. `list_network_requests` filtered to the
+   player chunk on a production load: transfer size, decoded size, and what it
+   pulls in after. The static graph above says *what* is in it, not *how much*
+   any of it costs. Needs a green CI first (see the deploy trap below).
 2. If the graph is bloated: carve a hero-weight entry — play a sequence,
    minimal chrome, no effects panel, no export, no practice.
 3. Independently of 2: `<link rel="modulepreload">` the player chunk so the
