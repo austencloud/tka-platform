@@ -13,7 +13,6 @@ import {
   DEFAULT_BLOSSOM_SETTINGS,
   DEFAULT_RAINBOW_SETTINGS,
   DEFAULT_EMBER_SETTINGS,
-  DEFAULT_CELESTIAL_LAB_SETTINGS,
   DEFAULT_VOID_LAB_SETTINGS,
   type CosmicLabSettings,
   type ForestLabSettings,
@@ -24,6 +23,7 @@ import {
   type VoidLabSettings,
   type BackgroundLabSettings,
 } from "$lib/shared/background-builder/domain/lab-settings-types";
+import { normalizeCelestialLabSettings } from "$lib/shared/background-builder/domain/celestial-lab-settings";
 
 const STORAGE_KEY = "tka-background-builder-active-tab";
 
@@ -217,7 +217,7 @@ export function updateEmberSettings(settings: Partial<EmberLabSettings>): void {
 
 export function getCelestialLabSettings(): CelestialLabSettings {
   const labSettings = getLabSettings();
-  return labSettings.celestial ?? { ...DEFAULT_CELESTIAL_LAB_SETTINGS };
+  return normalizeCelestialLabSettings(labSettings.celestial);
 }
 
 export function updateCelestialLabSettings(

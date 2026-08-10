@@ -12,23 +12,12 @@
     updateCelestialLabSettings,
   } from "../state/background-builder-state.svelte";
 
-  // The UI exposes four conceptual layers (clouds / godRays / islands / pillars)
-  // whose names predate the package. The package's CelestialBackgroundSystem
-  // only models `clouds` from that set; setLayerVisibility merges any extra keys
-  // into its layer bag harmlessly. We type the payload as the package's partial
-  // widened with the UI-only keys so the call is type-checked without `as any`.
-  type CelestialLayerVisibility = Partial<CelestialLayers> & {
-    godRays: boolean;
-    islands: boolean;
-    pillars: boolean;
-  };
-
-  function buildLayerVisibility(): CelestialLayerVisibility {
+  function buildLayerVisibility(): Partial<CelestialLayers> {
     return {
       clouds: layers.clouds,
-      godRays: layers.godRays,
-      islands: layers.islands,
-      pillars: layers.pillars,
+      sunGlow: layers.sunGlow,
+      atmosphere: layers.atmosphere,
+      vignette: layers.vignette,
     };
   }
 
@@ -76,24 +65,63 @@
   <div class="controls themed-scrollbar-accent">
     <div class="header">
       <h2>Celestial Lab</h2>
-      <span class="badge">God Rays</span>
+      <span class="badge">Cloudscape</span>
     </div>
 
     <ChipGroup>
-      <ChipToggle label="High" active={quality === "high"} color="amber" onclick={() => setQuality("high")} />
-      <ChipToggle label="Medium" active={quality === "medium"} color="amber" onclick={() => setQuality("medium")} />
-      <ChipToggle label="Low" active={quality === "low"} color="amber" onclick={() => setQuality("low")} />
+      <ChipToggle
+        label="High"
+        active={quality === "high"}
+        color="cyan"
+        onclick={() => setQuality("high")}
+      />
+      <ChipToggle
+        label="Medium"
+        active={quality === "medium"}
+        color="cyan"
+        onclick={() => setQuality("medium")}
+      />
+      <ChipToggle
+        label="Low"
+        active={quality === "low"}
+        color="cyan"
+        onclick={() => setQuality("low")}
+      />
     </ChipGroup>
 
     <ChipGroup>
-      <ChipToggle label="Clouds" icon="cloud" active={layers.clouds} color="amber" onclick={() => toggleLayer("clouds")} />
-      <ChipToggle label="God Rays" icon="sun" active={layers.godRays} color="amber" onclick={() => toggleLayer("godRays")} />
-      <ChipToggle label="Islands" icon="mountain" active={layers.islands} color="amber" onclick={() => toggleLayer("islands")} />
-      <ChipToggle label="Pillars" icon="landmark" active={layers.pillars} color="amber" onclick={() => toggleLayer("pillars")} />
+      <ChipToggle
+        label="Clouds"
+        icon="cloud"
+        active={layers.clouds}
+        color="cyan"
+        onclick={() => toggleLayer("clouds")}
+      />
+      <ChipToggle
+        label="Sun Glow"
+        icon="sun"
+        active={layers.sunGlow}
+        color="cyan"
+        onclick={() => toggleLayer("sunGlow")}
+      />
+      <ChipToggle
+        label="Atmosphere"
+        icon="smog"
+        active={layers.atmosphere}
+        color="cyan"
+        onclick={() => toggleLayer("atmosphere")}
+      />
+      <ChipToggle
+        label="Vignette"
+        icon="circle"
+        active={layers.vignette}
+        color="cyan"
+        onclick={() => toggleLayer("vignette")}
+      />
     </ChipGroup>
 
     <button class="action-btn" onclick={regenerate}>
-      <i class="fas fa-star"></i>
+      <i class="fas fa-cloud-sun"></i>
       Regenerate
     </button>
   </div>
@@ -101,14 +129,19 @@
   <LabPreviewCanvas
     system={backgroundSystem}
     {isLoading}
-    accentColor="#ffd080"
-    backgroundColor="rgba(10, 26, 74, 0.9)"
+    accentColor="#8dc4e8"
+    backgroundColor="rgba(32, 112, 200, 0.9)"
     onCanvasReady={handleCanvasReady}
   />
 </div>
 
 <style>
   .celestial-lab {
+    --celestial-accent: #4a9ae8;
+    --celestial-accent-strong: #2070c8;
+    --celestial-accent-deep: #17569b;
+    --celestial-highlight: #8dc4e8;
+
     display: grid;
     grid-template-columns: 300px 1fr;
     gap: 20px;
@@ -142,12 +175,13 @@
 
   .badge {
     padding: 4px 10px;
-    background: linear-gradient(135deg, rgba(255, 208, 128, 0.3), rgba(184, 144, 80, 0.3));
-    border: 1px solid rgba(255, 208, 128, 0.4);
+    background: color-mix(in srgb, var(--celestial-accent) 30%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--celestial-highlight) 45%, transparent);
     border-radius: 20px;
     font-size: var(--font-size-compact, 0.75rem);
     font-weight: 600;
-    color: #ffd080;
+    color: var(--celestial-highlight);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
@@ -158,7 +192,11 @@
     justify-content: center;
     gap: 8px;
     padding: 12px 20px;
-    background: linear-gradient(135deg, #b89050, #8a6a3a);
+    background: linear-gradient(
+      135deg,
+      var(--celestial-accent-strong),
+      var(--celestial-accent-deep)
+    );
     border: none;
     border-radius: 12px;
     color: #ffffff;
@@ -170,7 +208,8 @@
 
   .action-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 8px 20px rgba(184, 144, 80, 0.35);
+    box-shadow: 0 8px 20px
+      color-mix(in srgb, var(--celestial-accent) 35%, transparent);
   }
 
   .action-btn:active {
@@ -178,7 +217,7 @@
   }
 
   .action-btn:focus-visible {
-    outline: 2px solid #ffd080;
+    outline: 2px solid var(--celestial-highlight);
     outline-offset: 2px;
   }
 

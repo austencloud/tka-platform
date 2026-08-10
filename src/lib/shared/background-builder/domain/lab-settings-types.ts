@@ -306,9 +306,9 @@ export const DEFAULT_EMBER_SETTINGS: EmberLabSettings = {
 
 export interface CelestialLabLayers {
   clouds: boolean;
-  godRays: boolean;
-  islands: boolean;
-  pillars: boolean;
+  sunGlow: boolean;
+  atmosphere: boolean;
+  vignette: boolean;
 }
 
 export interface CelestialLabSettings {
@@ -320,9 +320,9 @@ export const DEFAULT_CELESTIAL_LAB_SETTINGS: CelestialLabSettings = {
   quality: "high",
   layers: {
     clouds: true,
-    godRays: true,
-    islands: true,
-    pillars: false,
+    sunGlow: true,
+    atmosphere: true,
+    vignette: true,
   },
 };
 

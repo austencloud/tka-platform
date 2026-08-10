@@ -91,7 +91,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
     id: "celestial",
     label: "Celestial",
     icon: "fa-star",
-    color: "#e2e8f0",
+    color: "#4a9ae8",
     backgroundType: BackgroundType.CELESTIAL,
     sceneId: "celestial",
   },

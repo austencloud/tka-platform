@@ -280,7 +280,7 @@
     "@ai-sdk/anthropic": "^3.0.13",
     "@ai-sdk/deepseek": "^1.0.33",
     "@ai-sdk/svelte": "^4.0.27",
-    "@austencloud/backgrounds": "^0.7.11",
+    "@austencloud/backgrounds": "^0.7.12",
     "@austencloud/camera-3d": "workspace:*",
     "@austencloud/chip-toggle": "^0.1.0",
     "@austencloud/media-spotlight": "^1.0.2",

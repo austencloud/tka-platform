@@ -37,7 +37,7 @@ export const BACKGROUND_THEME_COLORS: Partial<
   [BackgroundType.BLOSSOM]: ["#831843", "#db2777", "#f9a8d4"],
   [BackgroundType.FOREST]: ["#0d3320", "#166534", "#22c55e", "#bef264"],
   [BackgroundType.AUTUMN]: ["#92400e", "#d97706", "#dc2626", "#78350f"],
-  [BackgroundType.CELESTIAL]: ["#0a1a4a", "#b89050", "#ffd080", "#ffe0a0"],
+  [BackgroundType.CELESTIAL]: ["#2070c8", "#4a9ae8", "#8dc4e8", "#d4c8a0"],
   [BackgroundType.VOID]: ["#000000", "#6b7280", "#9ca3af"],
 };
 
