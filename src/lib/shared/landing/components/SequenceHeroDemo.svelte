@@ -39,7 +39,7 @@
   import type { PreparedSequenceHandoff } from "$lib/shared/animation-engine/domain/chaining-types";
   import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { syncHeroElementalGlyphVisibility } from "$lib/shared/landing/services/hero-elemental-glyph-visibility";
-  import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
+  import { prefersReducedData } from "$lib/shared/platform/network-conditions";
 
   let {
     sequence,
@@ -148,9 +148,14 @@
   );
 
   let active = $state(false);
-  // SSR renders the same reserved manual-preview state that a constrained
+  // SSR renders the same reserved manual-preview state that a data-saver
   // client will keep. Healthy clients clear it as soon as the near-viewport
   // activation runs, normally before their first paint.
+  //
+  // The gate reads ONLY explicit data-saver, never a bandwidth estimate:
+  // Chrome reports effectiveType '3g' at well under 1 Mbps on gigabit
+  // desktops, which parked the hero on "Play live preview" for people who
+  // should have seen it playing immediately.
   let manualActivationAvailable = $state(connectionAware);
   let manualActivationRequested = $state(false);
   let playerLoadStatus = $state<LoadStatus>("idle");
@@ -159,7 +164,7 @@
   $effect(() => {
     if (
       connectionAware &&
-      isConstrainedConnection() &&
+      prefersReducedData() &&
       !manualActivationRequested
     ) {
       manualActivationAvailable = true;
@@ -198,7 +203,7 @@
       activate: () => {
         if (
           connectionAware &&
-          isConstrainedConnection() &&
+          prefersReducedData() &&
           !manualActivationRequested
         ) {
           manualActivationAvailable = true;

@@ -221,9 +221,11 @@ describe("homepage constrained enhancement boundaries", () => {
       "src/lib/shared/landing/components/SequenceHeroDemo.svelte"
     );
 
-    expect(sequenceHero).toMatch(
-      /connectionAware\s*&&\s*isConstrainedConnection\(\)/
-    );
+    // Data-saver only, deliberately NOT isConstrainedConnection(): that
+    // predicate's bandwidth estimate reports '3g' under 1 Mbps on gigabit
+    // desktops, which stranded the hero behind "Play live preview" for
+    // everyone instead of only genuine data-saver users.
+    expect(sequenceHero).toMatch(/connectionAware\s*&&\s*prefersReducedData\(\)/);
     expect(sequenceHero).toContain("manualActivationAvailable = true;");
     expect(sequenceHero).toContain(
       "manualActivationAvailable = $state(connectionAware);"

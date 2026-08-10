@@ -85,14 +85,14 @@
       if (!destroyed) jsReady = true;
     });
 
+    // Stagger MOUNTS so six components never render in one frame — but never
+    // gate the next tile on the previous one finishing. Gating on settle made
+    // the five chunk downloads strictly serial, and each turn waited out a
+    // ~1.8s idle timeout that a busy homepage rarely beats, so the last tile's
+    // art landed many seconds late. The chunks themselves warm in parallel via
+    // each LazyMount's `prefetch`, leaving only render cost to spread out.
     function scheduleNextMedia(): void {
-      if (
-        destroyed ||
-        activationScheduled ||
-        mediaLoadingId ||
-        mediaQueue.length === 0
-      )
-        return;
+      if (destroyed || activationScheduled || mediaQueue.length === 0) return;
 
       activationScheduled = true;
       const mountNext = () => {
@@ -107,10 +107,14 @@
         const next = new Set(mediaActive);
         next.add(id);
         mediaActive = next;
+
+        // Keep draining on the stagger. A tile that settles sooner pulls the
+        // next one forward through handleMediaSettled.
+        scheduleNextMedia();
       };
       cancelScheduled = runAfterNamedRouteMorphIdle(mountNext, {
-        timeout: 1800,
-        fallbackDelay: 120,
+        timeout: 200,
+        fallbackDelay: 32,
       });
     }
 
@@ -123,9 +127,12 @@
       scheduleNextMedia();
     }
 
+    // Advance early when a tile settles before its stagger turn comes up.
     function handleMediaSettled(id: string): void {
       if (id !== mediaLoadingId) return;
       mediaLoadingId = null;
+      cancelScheduled();
+      activationScheduled = false;
       scheduleNextMedia();
     }
     reportMediaSettled = handleMediaSettled;

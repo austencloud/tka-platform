@@ -182,6 +182,7 @@
                 loader={() =>
                   import("$lib/shared/mandala/components/SequenceMandala.svelte")}
                 {active}
+                prefetch={visible}
                 onStatusChange={handleMediaStatus}
                 props={{
                   sequence: demoSequence,
@@ -198,6 +199,7 @@
                 loader={() =>
                   import("$lib/shared/sequence-viewer/components/ChoreoCard.svelte")}
                 {active}
+                prefetch={visible}
                 onStatusChange={handleMediaStatus}
                 props={{
                   sequence: demoSequence,
@@ -212,6 +214,7 @@
                 loader={() =>
                   import("$lib/shared/pictograph/shared/components/PictographContainer.svelte")}
                 {active}
+                prefetch={visible}
                 onStatusChange={handleMediaStatus}
                 props={{
                   pictographData: demoStep,
@@ -226,6 +229,7 @@
               <LazyMount
                 loader={() => import("./PictographFadeCard.svelte")}
                 {active}
+                prefetch={visible}
                 onStatusChange={handleMediaStatus}
                 props={{
                   steps: demoSequence.steps.slice(0, 4),
@@ -238,6 +242,7 @@
               <LazyMount
                 loader={() => import("./GlossaryDictionaryCard.svelte")}
                 {active}
+                prefetch={visible}
                 onStatusChange={handleMediaStatus}
                 props={{ startDelayMs: index * 900 }}
               />
@@ -248,6 +253,7 @@
                 loader={() =>
                   import("$lib/features/store/components/BookCoverArt.svelte")}
                 {active}
+                prefetch={visible}
                 onStatusChange={handleMediaStatus}
                 props={{ width: "100%" }}
               />
@@ -257,6 +263,7 @@
               <LazyMount
                 loader={() => import("./AlphabetMarquee.svelte")}
                 {active}
+                prefetch={visible}
                 onStatusChange={handleMediaStatus}
               />
             </span>
@@ -264,6 +271,7 @@
             <LazyMount
               loader={tile.mediaLoader}
               {active}
+              prefetch={visible}
               onStatusChange={handleMediaStatus}
               props={tile.mediaProps}
             />
