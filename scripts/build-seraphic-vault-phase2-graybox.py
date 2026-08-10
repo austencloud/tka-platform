@@ -11,6 +11,8 @@ import json
 import math
 import os
 import random
+import runpy
+import sys
 from pathlib import Path
 
 import bpy
@@ -19,6 +21,14 @@ from mathutils import Vector
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
+
+if "--cloudbreak" in sys.argv:
+    runpy.run_path(
+        str(SCRIPT_DIR / "lib" / "build-seraphic-vault-cloudbreak-graybox.py"),
+        run_name="__main__",
+    )
+    raise SystemExit(0)
+
 SOURCE_BLEND = PROJECT_ROOT / "blender" / "celestial_environment.blend"
 COORDINATE_MANIFEST = (
     PROJECT_ROOT
@@ -86,6 +96,14 @@ def tag_object(obj: bpy.types.Object, platform_id: str, role: str) -> None:
     obj["tka_gate"] = 2
     obj["tka_platform"] = platform_id
     obj["tka_role"] = role
+
+
+def tag_atmosphere_object(obj: bpy.types.Object, role: str, guide_id: str | None = None) -> None:
+    obj["tka_scene"] = "seraphic-vault"
+    obj["tka_gate"] = 2
+    obj["tka_role"] = role
+    if guide_id:
+        obj["tka_atmosphere_guide"] = guide_id
 
 
 def bevel_object(obj: bpy.types.Object, width: float) -> None:
@@ -224,6 +242,173 @@ def add_cloud_collar(
         puff.data.materials.append(material)
         tag_object(puff, platform_id, "graybox-cloud-collar")
         bpy.ops.object.shade_smooth()
+
+
+def create_atmosphere_guides(
+    contract: dict,
+) -> tuple[bpy.types.Collection, dict[str, bpy.types.Object]]:
+    old_collection = bpy.data.collections.get("Gate2_AtmosphereGuides")
+    if old_collection:
+        for obj in list(old_collection.objects):
+            bpy.data.objects.remove(obj, do_unlink=True)
+        bpy.data.collections.remove(old_collection)
+
+    collection = bpy.data.collections.new("Gate2_AtmosphereGuides")
+    bpy.context.scene.collection.children.link(collection)
+    material = create_material(
+        "Gate2_LayeredCloudField",
+        (0.74, 0.83, 0.93, 1.0),
+        roughness=1.0,
+        emission_strength=0.11,
+    )
+    roots = {}
+    for guide in contract["atmosphereGuides"]:
+        guide_id = guide["id"]
+        root = bpy.data.objects.new(f"Gate2_Atmosphere_{guide_id}_Root", None)
+        collection.objects.link(root)
+        root.empty_display_type = "SPHERE"
+        root.empty_display_size = 0.6
+        tag_atmosphere_object(root, "responsive-cloud-bank-root", guide_id)
+        roots[guide_id] = root
+        rng = random.Random(f"seraphic-atmosphere:{guide_id}")
+        for index in range(guide["puffCount"]):
+            normalized = index / max(1, guide["puffCount"] - 1)
+            x = (normalized - 0.5) * guide["width"]
+            x += rng.uniform(-guide["width"] * 0.08, guide["width"] * 0.08)
+            bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=1.0)
+            puff = bpy.context.object
+            puff.name = f"Gate2_Atmosphere_{guide_id}_{index:02d}"
+            move_to_collection(puff, collection)
+            puff.parent = root
+            puff.location = (
+                x,
+                rng.uniform(-guide["depthWidth"] * 0.5, guide["depthWidth"] * 0.5),
+                rng.uniform(-guide["height"] * 0.22, guide["height"] * 0.22),
+            )
+            scale = rng.uniform(0.72, 1.2)
+            puff.scale = (
+                guide["width"] * 0.13 * scale,
+                guide["depthWidth"] * 0.22 * scale,
+                guide["height"] * 0.24 * scale,
+            )
+            puff.rotation_euler[2] = rng.uniform(-0.12, 0.12)
+            puff.data.materials.append(material)
+            tag_atmosphere_object(puff, "graybox-layered-cloud", guide_id)
+            bpy.ops.object.shade_smooth()
+    return collection, roots
+
+
+def set_atmosphere_positions(
+    contract: dict,
+    roots: dict[str, bpy.types.Object],
+    preset_name: str,
+) -> None:
+    for guide in contract["atmosphereGuides"]:
+        roots[guide["id"]].location = runtime_to_blender(guide["positions"][preset_name])
+    bpy.context.view_layer.update()
+
+
+def create_sun_ray(
+    name: str,
+    inner: tuple[float, float, float],
+    outer: tuple[float, float, float],
+    radius: float,
+    material: bpy.types.Material,
+    collection: bpy.types.Collection,
+) -> bpy.types.Object:
+    curve = bpy.data.curves.new(f"{name}Curve", type="CURVE")
+    curve.dimensions = "3D"
+    curve.resolution_u = 1
+    curve.bevel_depth = radius
+    curve.bevel_resolution = 3
+    spline = curve.splines.new("POLY")
+    spline.points.add(1)
+    spline.points[0].co = (*inner, 1.0)
+    spline.points[1].co = (*outer, 1.0)
+    obj = bpy.data.objects.new(name, curve)
+    collection.objects.link(obj)
+    obj.data.materials.append(material)
+    tag_atmosphere_object(obj, "graybox-solar-ray")
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
+    bpy.ops.object.convert(target="MESH")
+    obj = bpy.context.object
+    obj.select_set(False)
+    return obj
+
+
+def create_solar_focus(contract: dict, collection: bpy.types.Collection) -> None:
+    original = bpy.data.objects.get("QA_SunDisk")
+    if original:
+        original.hide_render = True
+        original.hide_set(True)
+
+    center = runtime_to_blender(contract["sun"]["position"])
+    core_material = create_material(
+        "Gate2_SunCoreMaterial",
+        (1.0, 0.63, 0.2, 1.0),
+        roughness=0.18,
+        emission_strength=6.0,
+    )
+    aureole_material = create_material(
+        "Gate2_SunAureoleMaterial",
+        (1.0, 0.46, 0.09, 1.0),
+        roughness=0.25,
+        emission_strength=3.4,
+    )
+    core_radius = contract["sun"]["diameter"] * 0.25
+    bpy.ops.mesh.primitive_uv_sphere_add(
+        segments=48,
+        ring_count=24,
+        radius=core_radius,
+        location=center,
+    )
+    core = bpy.context.object
+    core.name = "Gate2_Sun_Core"
+    move_to_collection(core, collection)
+    core.data.materials.append(core_material)
+    tag_atmosphere_object(core, "graybox-solar-core")
+    bpy.ops.object.shade_smooth()
+
+    for index, (major_radius, minor_radius) in enumerate(
+        ((core_radius * 1.34, core_radius * 0.055), (core_radius * 1.68, core_radius * 0.026))
+    ):
+        bpy.ops.mesh.primitive_torus_add(
+            major_radius=major_radius,
+            minor_radius=minor_radius,
+            major_segments=64,
+            minor_segments=8,
+            location=center,
+            rotation=(math.radians(90.0), 0.0, 0.0),
+        )
+        ring = bpy.context.object
+        ring.name = f"Gate2_Sun_Aureole_{index + 1}"
+        move_to_collection(ring, collection)
+        ring.data.materials.append(aureole_material)
+        tag_atmosphere_object(ring, "graybox-solar-aureole")
+
+    for index in range(16):
+        angle = math.tau * index / 16
+        inner_radius = core_radius * 1.82
+        outer_radius = core_radius * (2.18 if index % 2 == 0 else 2.02)
+        inner = (
+            center[0] + math.cos(angle) * inner_radius,
+            center[1],
+            center[2] + math.sin(angle) * inner_radius,
+        )
+        outer = (
+            center[0] + math.cos(angle) * outer_radius,
+            center[1],
+            center[2] + math.sin(angle) * outer_radius,
+        )
+        create_sun_ray(
+            f"Gate2_Sun_Ray_{index:02d}",
+            inner,
+            outer,
+            core_radius * 0.035,
+            aureole_material,
+            collection,
+        )
 
 
 def add_broken_vigil(
@@ -449,7 +634,11 @@ def configure_render() -> None:
     scene.render.image_settings.compression = 35
 
 
-def render_registered_views(contract: dict, roots: dict[str, bpy.types.Object]) -> list[str]:
+def render_registered_views(
+    contract: dict,
+    roots: dict[str, bpy.types.Object],
+    atmosphere_roots: dict[str, bpy.types.Object],
+) -> list[str]:
     scene = bpy.context.scene
     outputs = []
     render_settings = {
@@ -459,6 +648,7 @@ def render_registered_views(contract: dict, roots: dict[str, bpy.types.Object]) 
     }
     for preset_name, (width, height, filename) in render_settings.items():
         set_platform_positions(contract, roots, preset_name)
+        set_atmosphere_positions(contract, atmosphere_roots, preset_name)
         camera = create_registered_camera(
             f"Gate2_Camera_{preset_name}", contract["cameraPresets"][preset_name]
         )
@@ -470,6 +660,7 @@ def render_registered_views(contract: dict, roots: dict[str, bpy.types.Object]) 
         outputs.append(scene.render.filepath)
 
     set_platform_positions(contract, roots, "desktop")
+    set_atmosphere_positions(contract, atmosphere_roots, "desktop")
     spatial_cameras = (
         (
             "Gate2_Camera_Overview",
@@ -493,7 +684,7 @@ def render_registered_views(contract: dict, roots: dict[str, bpy.types.Object]) 
     cloud_visibility = {
         obj.name: obj.hide_render
         for obj in bpy.data.objects
-        if obj.name.startswith("QA_Cloud_")
+        if obj.name.startswith("QA_Cloud_") or obj.name.startswith("Gate2_Atmosphere_")
     }
     for object_name in cloud_visibility:
         bpy.data.objects[object_name].hide_render = True
@@ -547,10 +738,14 @@ def main() -> None:
     contract = load_contract()
     bpy.ops.wm.open_mainfile(filepath=str(SOURCE_BLEND))
     _, roots = create_platforms(contract)
+    atmosphere_collection, atmosphere_roots = create_atmosphere_guides(contract)
+    create_solar_focus(contract, atmosphere_collection)
     set_platform_positions(contract, roots, "desktop")
+    set_atmosphere_positions(contract, atmosphere_roots, "desktop")
     configure_render()
-    renders = render_registered_views(contract, roots)
+    renders = render_registered_views(contract, roots, atmosphere_roots)
     set_platform_positions(contract, roots, "desktop")
+    set_atmosphere_positions(contract, atmosphere_roots, "desktop")
     bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT_BLEND))
     selected = export_graybox()
     bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT_BLEND))

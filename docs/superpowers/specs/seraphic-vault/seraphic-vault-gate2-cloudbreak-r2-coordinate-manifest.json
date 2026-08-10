@@ -1,0 +1,723 @@
+{
+  "generatedAt": "2026-08-10T01:57:33.856Z",
+  "sceneId": "seraphic-vault",
+  "revision": "olive-cloudbreak-r2",
+  "source": {
+    "path": "scripts/seraphic-vault-cloudbreak-layout.json",
+    "sha256": "7c6e9f8d98b101b9e8cda24b29feb71f2d51aedb0297e55fad0793b589b53259"
+  },
+  "coordinateTransform": {
+    "runtime": "[x, y-up, z-depth]",
+    "blender": "[-x, z-depth, y-up]",
+    "matrixDescription": "Blender X = -runtime X; Blender Y = runtime Z; Blender Z = runtime Y."
+  },
+  "landmass": {
+    "name": "Olive Cloudbreak shelf",
+    "surfaceY": 0.01,
+    "minimumThickness": 7.5,
+    "outlineXZ": [
+      [
+        -18,
+        42
+      ],
+      [
+        -13,
+        50
+      ],
+      [
+        13,
+        50
+      ],
+      [
+        18,
+        42
+      ],
+      [
+        17,
+        23
+      ],
+      [
+        15,
+        13
+      ],
+      [
+        16,
+        4
+      ],
+      [
+        14,
+        -7
+      ],
+      [
+        8,
+        -13
+      ],
+      [
+        0,
+        -15
+      ],
+      [
+        -9,
+        -13
+      ],
+      [
+        -15,
+        -7
+      ],
+      [
+        -16,
+        4
+      ],
+      [
+        -15,
+        13
+      ],
+      [
+        -17,
+        24
+      ]
+    ],
+    "continuesBeyondRearFrame": true,
+    "outlineBlenderXY": [
+      [
+        18,
+        42
+      ],
+      [
+        13,
+        50
+      ],
+      [
+        -13,
+        50
+      ],
+      [
+        -18,
+        42
+      ],
+      [
+        -17,
+        23
+      ],
+      [
+        -15,
+        13
+      ],
+      [
+        -16,
+        4
+      ],
+      [
+        -14,
+        -7
+      ],
+      [
+        -8,
+        -13
+      ],
+      [
+        0,
+        -15
+      ],
+      [
+        9,
+        -13
+      ],
+      [
+        15,
+        -7
+      ],
+      [
+        16,
+        4
+      ],
+      [
+        15,
+        13
+      ],
+      [
+        17,
+        24
+      ]
+    ]
+  },
+  "approach": {
+    "entryXZ": [
+      0,
+      48
+    ],
+    "exitXZ": [
+      0,
+      48
+    ],
+    "isLiteralTraversalRoute": false,
+    "centerlineXZ": [
+      [
+        0,
+        48
+      ],
+      [
+        0,
+        10
+      ],
+      [
+        0,
+        1
+      ]
+    ],
+    "minimumWidth": 8,
+    "surfaceY": 0.01,
+    "description": "A broad natural shelf continues behind the camera and grounds the terrace; no literal arrival or exit is staged."
+  },
+  "performanceTerrace": {
+    "centerXZ": [
+      0,
+      -1
+    ],
+    "clearRadius": 5.75,
+    "visualWidth": 30,
+    "visualDepth": 25,
+    "surfaceY": 0.01
+  },
+  "lagoon": {
+    "name": "Right-edge reflecting lagoon",
+    "surfaceY": 0.14,
+    "outlineXZ": [
+      [
+        9.5,
+        5.5
+      ],
+      [
+        13.5,
+        6.5
+      ],
+      [
+        16,
+        3
+      ],
+      [
+        15.5,
+        -3.5
+      ],
+      [
+        12,
+        -6
+      ],
+      [
+        9.25,
+        -3
+      ]
+    ],
+    "overflowXZ": [
+      15.5,
+      -2.5
+    ],
+    "minimumClearanceFromPerformance": 2,
+    "outlineBlenderXY": [
+      [
+        -9.5,
+        5.5
+      ],
+      [
+        -13.5,
+        6.5
+      ],
+      [
+        -16,
+        3
+      ],
+      [
+        -15.5,
+        -3.5
+      ],
+      [
+        -12,
+        -6
+      ],
+      [
+        -9.25,
+        -3
+      ]
+    ],
+    "overflowBlenderXY": [
+      -15.5,
+      -2.5
+    ]
+  },
+  "oliveTrees": [
+    {
+      "id": "olive-left",
+      "position": [
+        -9.2,
+        0.01,
+        -0.5
+      ],
+      "height": 5.6,
+      "exclusionRadius": 1.2,
+      "blenderPosition": [
+        9.2,
+        -0.5,
+        0.01
+      ]
+    },
+    {
+      "id": "olive-right",
+      "position": [
+        8.2,
+        0.01,
+        1.6
+      ],
+      "height": 5.9,
+      "exclusionRadius": 1.2,
+      "blenderPosition": [
+        -8.2,
+        1.6,
+        0.01
+      ]
+    }
+  ],
+  "distantMesas": [
+    {
+      "id": "left-fall",
+      "position": [
+        -24,
+        5.5,
+        -43
+      ],
+      "width": 9,
+      "topY": 5.5,
+      "cloudBaseY": -9,
+      "waterfall": true,
+      "blenderPosition": [
+        24,
+        -43,
+        5.5
+      ]
+    },
+    {
+      "id": "right-fall",
+      "position": [
+        25,
+        8.5,
+        -50
+      ],
+      "width": 11,
+      "topY": 8.5,
+      "cloudBaseY": -10,
+      "waterfall": true,
+      "blenderPosition": [
+        -25,
+        -50,
+        8.5
+      ]
+    },
+    {
+      "id": "high-olive",
+      "position": [
+        14,
+        12.5,
+        -69
+      ],
+      "width": 7,
+      "topY": 12.5,
+      "cloudBaseY": -8,
+      "waterfall": true,
+      "tinyOlive": true,
+      "blenderPosition": [
+        -14,
+        -69,
+        12.5
+      ]
+    },
+    {
+      "id": "far-right-shelf",
+      "position": [
+        38,
+        3.5,
+        -79
+      ],
+      "width": 14,
+      "topY": 3.5,
+      "cloudBaseY": -11,
+      "waterfall": false,
+      "blenderPosition": [
+        -38,
+        -79,
+        3.5
+      ]
+    }
+  ],
+  "sun": {
+    "position": [
+      0,
+      14,
+      -115
+    ],
+    "visualDiameter": 9,
+    "description": "One far natural sun governs the warm light hierarchy.",
+    "blenderPosition": [
+      0,
+      -115,
+      14
+    ]
+  },
+  "cloudOcean": {
+    "averageTopY": -9.5,
+    "depth": 12
+  },
+  "protectedHeroBand": {
+    "ndcMinX": -0.2,
+    "ndcMaxX": 0.2,
+    "ndcMinY": -0.48,
+    "ndcMaxY": 0.18
+  },
+  "attentionRoute": [
+    {
+      "stop": 1,
+      "title": "GROUNDING",
+      "focus": "The limestone shelf continues beyond the camera frame.",
+      "understanding": "This is one location on a larger landmass, not a display platform."
+    },
+    {
+      "stop": 2,
+      "title": "OPEN STAGE",
+      "focus": "The broad dry center and paired olive trees.",
+      "understanding": "The performer owns the foreground."
+    },
+    {
+      "stop": 3,
+      "title": "ONE LAGOON",
+      "focus": "A single reflective pool sits at the right edge.",
+      "understanding": "Water is an accent, not the setting."
+    },
+    {
+      "stop": 4,
+      "title": "DEEP SKY",
+      "focus": "Raised mesas, thin falls, and the far sun.",
+      "understanding": "Natural geology replaces castle architecture."
+    },
+    {
+      "stop": 5,
+      "title": "WHOLE COMPOSITION",
+      "focus": "The stage, lagoon, mesas, clouds, and sun settle into one view.",
+      "understanding": "The environment reads as a complete celestial location without implying a literal route."
+    }
+  ],
+  "scaleFigure": {
+    "height": 1.75,
+    "position": [
+      -3.2,
+      0.01,
+      8
+    ],
+    "blenderPosition": [
+      3.2,
+      8,
+      0.01
+    ]
+  },
+  "cameraPresets": {
+    "desktop": {
+      "label": "Desktop hero",
+      "position": [
+        0,
+        7.8,
+        30
+      ],
+      "target": [
+        0,
+        0.8,
+        -5
+      ],
+      "fovDegrees": 48,
+      "aspect": 1.7777777778,
+      "blenderPosition": [
+        0,
+        30,
+        7.8
+      ],
+      "blenderTarget": [
+        0,
+        -5,
+        0.8
+      ],
+      "projections": {
+        "stage": [
+          0,
+          -0.1097
+        ],
+        "lagoon": [
+          0.5145,
+          -0.1167
+        ],
+        "sun": [
+          0,
+          0.5499
+        ],
+        "trees": [
+          [
+            -0.3757,
+            0.0591
+          ],
+          [
+            0.359,
+            0.0416
+          ]
+        ],
+        "mesas": [
+          [
+            -0.4209,
+            0.3761
+          ],
+          [
+            0.4033,
+            0.4697
+          ],
+          [
+            0.1839,
+            0.5612
+          ],
+          [
+            0.4457,
+            0.3578
+          ]
+        ]
+      }
+    },
+    "portrait": {
+      "label": "Portrait",
+      "position": [
+        0,
+        9.5,
+        45
+      ],
+      "target": [
+        0,
+        1,
+        -5
+      ],
+      "fovDegrees": 64,
+      "aspect": 0.5625,
+      "blenderPosition": [
+        0,
+        45,
+        9.5
+      ],
+      "blenderTarget": [
+        0,
+        -5,
+        1
+      ],
+      "projections": {
+        "stage": [
+          0,
+          -0.0561
+        ],
+        "lagoon": [
+          0.7806,
+          -0.0581
+        ],
+        "sun": [
+          0,
+          0.3186
+        ],
+        "trees": [
+          [
+            -0.5687,
+            0.0262
+          ],
+          [
+            0.531,
+            0.0195
+          ]
+        ],
+        "mesas": [
+          [
+            -0.781,
+            0.1978
+          ],
+          [
+            0.7581,
+            0.2548
+          ],
+          [
+            0.356,
+            0.3156
+          ],
+          [
+            0.8772,
+            0.193
+          ]
+        ]
+      }
+    },
+    "landscapePhone": {
+      "label": "Landscape phone",
+      "position": [
+        0,
+        7.2,
+        29
+      ],
+      "target": [
+        0,
+        0.7,
+        -5
+      ],
+      "fovDegrees": 46,
+      "aspect": 2.3300970874,
+      "blenderPosition": [
+        0,
+        29,
+        7.2
+      ],
+      "blenderTarget": [
+        0,
+        -5,
+        0.7
+      ],
+      "projections": {
+        "stage": [
+          0,
+          -0.1092
+        ],
+        "lagoon": [
+          0.427,
+          -0.1161
+        ],
+        "sun": [
+          0,
+          0.5667
+        ],
+        "trees": [
+          [
+            -0.3116,
+            0.0752
+          ],
+          [
+            0.2986,
+            0.0586
+          ]
+        ],
+        "mesas": [
+          [
+            -0.3416,
+            0.393
+          ],
+          [
+            0.3268,
+            0.4907
+          ],
+          [
+            0.1486,
+            0.5838
+          ],
+          [
+            0.3598,
+            0.3673
+          ]
+        ]
+      }
+    }
+  },
+  "solarSilhouetteClearance": {
+    "desktop": [
+      {
+        "id": "left-fall",
+        "horizontalClearance": 0.3017
+      },
+      {
+        "id": "right-fall",
+        "horizontalClearance": 0.2743
+      },
+      {
+        "id": "high-olive",
+        "horizontalClearance": 0.0976
+      },
+      {
+        "id": "far-right-shelf",
+        "horizontalClearance": 0.3232
+      }
+    ],
+    "portrait": [
+      {
+        "id": "left-fall",
+        "horizontalClearance": 0.553
+      },
+      {
+        "id": "right-fall",
+        "horizontalClearance": 0.5097
+      },
+      {
+        "id": "high-olive",
+        "horizontalClearance": 0.1854
+      },
+      {
+        "id": "far-right-shelf",
+        "horizontalClearance": 0.634
+      }
+    ],
+    "landscapePhone": [
+      {
+        "id": "left-fall",
+        "horizontalClearance": 0.2451
+      },
+      {
+        "id": "right-fall",
+        "horizontalClearance": 0.2224
+      },
+      {
+        "id": "high-olive",
+        "horizontalClearance": 0.079
+      },
+      {
+        "id": "far-right-shelf",
+        "horizontalClearance": 0.2611
+      }
+    ]
+  },
+  "measurements": {
+    "lagoonClearance": 3.7137,
+    "treeClearances": [
+      {
+        "id": "olive-left",
+        "clearance": 2.2636
+      },
+      {
+        "id": "olive-right",
+        "clearance": 1.6523
+      }
+    ]
+  },
+  "checks": [
+    {
+      "name": "coordinate-transform",
+      "passed": true,
+      "evidence": "All authored positions use the declared runtime-to-Blender axis mapping."
+    },
+    {
+      "name": "source-parity",
+      "passed": true,
+      "evidence": "The manifest carries one full landmass outline, two olive trees, and four distant mesas from the approved plan."
+    },
+    {
+      "name": "collision",
+      "passed": true,
+      "evidence": "The lagoon clears the dry performance radius by 3.71 m, and both olive exclusions remain outside it."
+    },
+    {
+      "name": "registered-cameras",
+      "passed": true,
+      "evidence": "Every registered camera centers the stage and sun while holding the lagoon to the right."
+    },
+    {
+      "name": "solar-silhouette-clearance",
+      "passed": true,
+      "evidence": "Every registered camera preserves positive horizontal clearance between the sun and all four mesa silhouettes."
+    },
+    {
+      "name": "attention-route",
+      "passed": true,
+      "evidence": "The five-stop fixed-camera attention sequence describes one location without implying literal arrival or departure."
+    }
+  ]
+}

@@ -28,6 +28,9 @@ const ENV = {
 const CLI_PACKAGE = resolve(
   "node_modules/.pnpm/@gltf-transform+cli@4.3.0/node_modules/@gltf-transform/cli/package.json"
 );
+const GLTF_CLI = `"${process.execPath}" "${resolve(
+  "node_modules/.pnpm/@gltf-transform+cli@4.3.0/node_modules/@gltf-transform/cli/bin/cli.js"
+)}"`;
 const requireFromCli = createRequire(CLI_PACKAGE);
 const { NodeIO } = await import(
   pathToFileURL(requireFromCli.resolve("@gltf-transform/core"))
@@ -70,7 +73,7 @@ try {
   run(
     "Preserve the feather silhouette while deduplicating delivery data",
     [
-      "npx gltf-transform optimize",
+      `${GLTF_CLI} optimize`,
       `"${INPUT}" "${TMP_SLIM}"`,
       "--compress false",
       "--texture-compress webp",
@@ -85,7 +88,7 @@ try {
   );
   run(
     "Collapse mirrored rib pairs into GPU instances",
-    `npx gltf-transform instance "${TMP_SLIM}" "${TMP_INSTANCED}" --min 2`
+    `${GLTF_CLI} instance "${TMP_SLIM}" "${TMP_INSTANCED}" --min 2`
   );
 
   console.log("\nNormalize textures for KTX2 encoding");
@@ -110,7 +113,7 @@ try {
   run(
     "Encode normal and material maps as KTX2 UASTC",
     [
-      "npx gltf-transform uastc",
+      `${GLTF_CLI} uastc`,
       `"${TMP_PNG}" "${TMP_UASTC}"`,
       '--slots "{normalTexture,metallicRoughnessTexture,occlusionTexture}"',
       "--level 4",
@@ -120,7 +123,7 @@ try {
   run(
     "Encode color and emissive maps as KTX2 ETC1S",
     [
-      "npx gltf-transform etc1s",
+      `${GLTF_CLI} etc1s`,
       `"${TMP_UASTC}" "${TMP_ETC}"`,
       '--slots "{baseColorTexture,emissiveTexture}"',
       "--quality 200",
@@ -128,14 +131,11 @@ try {
   );
   run(
     "Apply meshopt geometry compression",
-    `npx gltf-transform meshopt "${TMP_ETC}" "${OUTPUT}"`
+    `${GLTF_CLI} meshopt "${TMP_ETC}" "${OUTPUT}"`
   );
 } finally {
   clean();
 }
 
 console.log(`\nOutput: ${OUTPUT} (${size(OUTPUT)})`);
-run(
-  "Inspect optimized Celestial asset",
-  `npx gltf-transform inspect "${OUTPUT}"`
-);
+run("Inspect optimized Celestial asset", `${GLTF_CLI} inspect "${OUTPUT}"`);

@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "seraphic-vault",
+  "gateId": "production-slice",
+  "revision": "olive-cloudbreak-r1",
+  "capturedAt": "2026-08-10T11:29:59.5451718-05:00",
+  "status": "passed",
+  "runtime": {
+    "reviewRoute": "https://localhost:5173/test/celestial-scene?view=hero",
+    "captureRoute": "https://localhost:5175/test/celestial-scene?view=hero",
+    "captureNote": "The shared port 5173 process entered a Vite SSR timeout during hot reload, so final evidence was captured from an isolated Vite process on port 5175 without restarting or altering the shared process.",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 (0x00002684) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "canvasPixels": [1919, 1080],
+    "displayScaledCssViewport": [1745, 982],
+    "devicePixelRatio": 1.1000000963608443
+  },
+  "asset": {
+    "path": "static/models/celestial/olive-cloudbreak-production-slice.glb",
+    "bytes": 944364,
+    "sha256": "2a7b39d7bdbecf23978f29a25b52c164eda48b0164a5e108f1989465e04e2832",
+    "scenes": 1,
+    "nodes": 33,
+    "meshes": 33,
+    "materials": 5,
+    "textures": 3,
+    "extensions": [
+      "EXT_mesh_gpu_instancing",
+      "EXT_meshopt_compression",
+      "KHR_materials_ior",
+      "KHR_materials_transmission",
+      "KHR_mesh_quantization",
+      "KHR_texture_basisu"
+    ],
+    "semanticRoles": {
+      "cloudbreak-landmass": 1,
+      "cloudbreak-landmass-strata": 4,
+      "cloudbreak-weathered-surface": 1,
+      "cloudbreak-surface-stone": 1,
+      "cloudbreak-performance-terrace": 1,
+      "cloudbreak-lagoon-water": 1,
+      "cloudbreak-lagoon-rim": 1,
+      "cloudbreak-waterfall": 4,
+      "cloudbreak-olive-trunk": 3,
+      "cloudbreak-olive-canopy": 3,
+      "cloudbreak-root-stone": 27,
+      "cloudbreak-distant-mesa": 4,
+      "cloudbreak-distant-mesa-cap": 4
+    }
+  },
+  "panorama": {
+    "path": "static/textures/celestial/olive-cloudbreak-panorama-r1.webp",
+    "bytes": 79072,
+    "sha256": "56ddcfbc1226342527a3087f8608fb1337dc043ae219ebccc0898722cf384716"
+  },
+  "frameSample": {
+    "frameCount": 300,
+    "durationMs": 5000.29999999702,
+    "fps": 59.9964002160228,
+    "meanMs": 16.667666666656732,
+    "medianMs": 16.69999999552965,
+    "p95Ms": 16.799999997019768,
+    "p99Ms": 16.80000000447035,
+    "maxMs": 17,
+    "framesOver25Ms": 0,
+    "framesOver33Ms": 0
+  },
+  "blankPageBaseline": {
+    "frameCount": 300,
+    "durationMs": 5000.4,
+    "fps": 59.995200383969284,
+    "meanMs": 16.668,
+    "medianMs": 16.69999999999891,
+    "p95Ms": 16.799999999999272,
+    "p99Ms": 16.80000000000109,
+    "maxMs": 16.80000000000291,
+    "framesOver25Ms": 0,
+    "framesOver33Ms": 0,
+    "viewport": [1920, 1080],
+    "devicePixelRatio": 1.0000000298023224
+  },
+  "runtimeConsole": {
+    "errors": 0,
+    "warnings": 0,
+    "issues": 0,
+    "result": "passed"
+  },
+  "interaction": {
+    "event": "pointerdown",
+    "response": "lagoon shimmer and natural sun pulse",
+    "frameWidth": 1920,
+    "frameHeight": 1080,
+    "meanAbsoluteChannelDifference": 0.47699106224279836,
+    "maximumChannelDifference": 102,
+    "channelsChangedAbove2": 270796,
+    "totalChannels": 6220800,
+    "result": "passed"
+  },
+  "viewportEvidence": [
+    {
+      "viewport": "1920x1080",
+      "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate4-cloudbreak-r1-desktop.webp",
+      "sha256": "db8d8f53b876e7bb29d040612884c7bd55cc3a408e3a20ab7a7349fbc5d1e618"
+    },
+    {
+      "viewport": "2560x1440",
+      "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate4-cloudbreak-r1-2560.webp",
+      "sha256": "6be649682addd31bbea53338df26362d00011a2a007badf7b92449b9b7961af3"
+    },
+    {
+      "viewport": "3840x2160",
+      "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate4-cloudbreak-r1-4k.webp",
+      "sha256": "4952b69e502ed1a32e51f61e31c86278b2a25e66822d2956380b1817dd3f11c3"
+    },
+    {
+      "viewport": "1440x900",
+      "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate4-cloudbreak-r1-1440.webp",
+      "sha256": "ff00730a85d9b24c59539f8619c966fb2b1c1c179296a4900d023279683a5656"
+    },
+    {
+      "viewport": "1080x1920",
+      "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate4-cloudbreak-r1-portrait.webp",
+      "sha256": "c889ceb42c8717aaeee596306e6c6a51a50f4eb0d7e43f0ed722dc8b53cb75a9"
+    },
+    {
+      "viewport": "1024x768",
+      "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate4-cloudbreak-r1-tablet.webp",
+      "sha256": "70531860fe88bb9d85f0e5a681d013b4f95d60dd840c5ae5e735e633abbe1cfe"
+    },
+    {
+      "viewport": "960x412",
+      "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate4-cloudbreak-r1-landscape-phone.webp",
+      "sha256": "b611c3664b1139a135a5ceb4dca33f5ce81e9126b75c71fa17dfe9c41a3893f3"
+    },
+    {
+      "viewport": "375x812",
+      "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate4-cloudbreak-r1-phone.webp",
+      "sha256": "3a1cc0168fe62069eec862463a853dbce669f70069eff1919b0e6663a71a7527"
+    }
+  ],
+  "reviewBoards": {
+    "viewportBoard": {
+      "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate4-cloudbreak-r1-viewport-board.png",
+      "sha256": "3846bef745243a69532c64d9369cc17f2c79e6ee7601a126b57843d240a25141"
+    },
+    "interactionCapture": {
+      "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate4-cloudbreak-r1-interaction-capture.png",
+      "sha256": "3e8fb8e1ac304d184e678217379832541703cd934abe0206c2859d6aa39e4a83"
+    }
+  },
+  "focusedVerification": {
+    "spatialAndProductionContracts": "6 passed",
+    "celestialConfigSnapshot": "1 passed",
+    "assetVerifier": "passed"
+  }
+}

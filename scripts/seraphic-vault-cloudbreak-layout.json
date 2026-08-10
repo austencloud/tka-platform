@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "seraphic-vault",
+  "revision": "olive-cloudbreak-r2",
+  "units": "metres",
+  "coordinateSystem": {
+    "x": "right",
+    "y": "up",
+    "z": "toward the larger landmass and camera"
+  },
+  "landmass": {
+    "name": "Olive Cloudbreak shelf",
+    "surfaceY": 0.01,
+    "minimumThickness": 7.5,
+    "outlineXZ": [
+      [-18, 42],
+      [-13, 50],
+      [13, 50],
+      [18, 42],
+      [17, 23],
+      [15, 13],
+      [16, 4],
+      [14, -7],
+      [8, -13],
+      [0, -15],
+      [-9, -13],
+      [-15, -7],
+      [-16, 4],
+      [-15, 13],
+      [-17, 24]
+    ],
+    "continuesBeyondRearFrame": true
+  },
+  "approach": {
+    "entryXZ": [0, 48],
+    "exitXZ": [0, 48],
+    "isLiteralTraversalRoute": false,
+    "centerlineXZ": [[0, 48], [0, 10], [0, 1]],
+    "minimumWidth": 8,
+    "surfaceY": 0.01,
+    "description": "A broad natural shelf continues behind the camera and grounds the terrace; no literal arrival or exit is staged."
+  },
+  "performanceTerrace": {
+    "centerXZ": [0, -1],
+    "clearRadius": 5.75,
+    "visualWidth": 30,
+    "visualDepth": 25,
+    "surfaceY": 0.01
+  },
+  "lagoon": {
+    "name": "Right-edge reflecting lagoon",
+    "surfaceY": 0.14,
+    "outlineXZ": [[9.5, 5.5], [13.5, 6.5], [16, 3], [15.5, -3.5], [12, -6], [9.25, -3]],
+    "overflowXZ": [15.5, -2.5],
+    "minimumClearanceFromPerformance": 2
+  },
+  "oliveTrees": [
+    {
+      "id": "olive-left",
+      "position": [-9.2, 0.01, -0.5],
+      "height": 5.6,
+      "exclusionRadius": 1.2
+    },
+    {
+      "id": "olive-right",
+      "position": [8.2, 0.01, 1.6],
+      "height": 5.9,
+      "exclusionRadius": 1.2
+    }
+  ],
+  "distantMesas": [
+    {
+      "id": "left-fall",
+      "position": [-24, 5.5, -43],
+      "width": 9,
+      "topY": 5.5,
+      "cloudBaseY": -9,
+      "waterfall": true
+    },
+    {
+      "id": "right-fall",
+      "position": [25, 8.5, -50],
+      "width": 11,
+      "topY": 8.5,
+      "cloudBaseY": -10,
+      "waterfall": true
+    },
+    {
+      "id": "high-olive",
+      "position": [14, 12.5, -69],
+      "width": 7,
+      "topY": 12.5,
+      "cloudBaseY": -8,
+      "waterfall": true,
+      "tinyOlive": true
+    },
+    {
+      "id": "far-right-shelf",
+      "position": [38, 3.5, -79],
+      "width": 14,
+      "topY": 3.5,
+      "cloudBaseY": -11,
+      "waterfall": false
+    }
+  ],
+  "sun": {
+    "position": [0, 14, -115],
+    "visualDiameter": 9,
+    "description": "One far natural sun governs the warm light hierarchy."
+  },
+  "cloudOcean": {
+    "averageTopY": -9.5,
+    "depth": 12
+  },
+  "cameraPresets": {
+    "desktop": {
+      "label": "Desktop hero",
+      "position": [0, 7.8, 30],
+      "target": [0, 0.8, -5],
+      "fovDegrees": 48,
+      "aspect": 1.7777777778
+    },
+    "portrait": {
+      "label": "Portrait",
+      "position": [0, 9.5, 45],
+      "target": [0, 1, -5],
+      "fovDegrees": 64,
+      "aspect": 0.5625
+    },
+    "landscapePhone": {
+      "label": "Landscape phone",
+      "position": [0, 7.2, 29],
+      "target": [0, 0.7, -5],
+      "fovDegrees": 46,
+      "aspect": 2.3300970874
+    }
+  },
+  "protectedHeroBand": {
+    "ndcMinX": -0.2,
+    "ndcMaxX": 0.2,
+    "ndcMinY": -0.48,
+    "ndcMaxY": 0.18
+  },
+  "scaleFigure": {
+    "height": 1.75,
+    "position": [-3.2, 0.01, 8]
+  },
+  "attentionRoute": [
+    {
+      "stop": 1,
+      "title": "GROUNDING",
+      "focus": "The limestone shelf continues beyond the camera frame.",
+      "understanding": "This is one location on a larger landmass, not a display platform."
+    },
+    {
+      "stop": 2,
+      "title": "OPEN STAGE",
+      "focus": "The broad dry center and paired olive trees.",
+      "understanding": "The performer owns the foreground."
+    },
+    {
+      "stop": 3,
+      "title": "ONE LAGOON",
+      "focus": "A single reflective pool sits at the right edge.",
+      "understanding": "Water is an accent, not the setting."
+    },
+    {
+      "stop": 4,
+      "title": "DEEP SKY",
+      "focus": "Raised mesas, thin falls, and the far sun.",
+      "understanding": "Natural geology replaces castle architecture."
+    },
+    {
+      "stop": 5,
+      "title": "WHOLE COMPOSITION",
+      "focus": "The stage, lagoon, mesas, clouds, and sun settle into one view.",
+      "understanding": "The environment reads as a complete celestial location without implying a literal route."
+    }
+  ]
+}

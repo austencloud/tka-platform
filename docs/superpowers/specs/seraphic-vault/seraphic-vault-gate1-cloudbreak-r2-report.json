@@ -1,0 +1,357 @@
+{
+  "generatedAt": "2026-08-10T02:01:05.683Z",
+  "revision": "olive-cloudbreak-r2",
+  "layoutPath": "scripts/seraphic-vault-cloudbreak-layout.json",
+  "artifacts": {
+    "svg": {
+      "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r2.svg",
+      "sha256": "94bc29785474a1d3a84160aea5468bf45b453d3c724539c4de5345fc547df178"
+    },
+    "png": {
+      "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r2.png",
+      "sha256": "efb2a4136ca0d15c7a98dd22cf50977c4c2e4d7471d37b86f13d939103f47d3a"
+    }
+  },
+  "sourceDigests": {
+    "scripts/seraphic-vault-cloudbreak-layout.json": "7c6e9f8d98b101b9e8cda24b29feb71f2d51aedb0297e55fad0793b589b53259",
+    "docs/superpowers/specs/active/2026-08-09-olive-cloudbreak-celestial-pivot.md": "ebc0755ea2e964cf12adac32c7fe9d84df5ab557e71bc22a3b3aa7d50c4ec015"
+  },
+  "measurements": {
+    "approachWidth": 8,
+    "performanceClearRadius": 5.75,
+    "lagoonClearance": 3.714,
+    "treeClearances": [
+      {
+        "id": "olive-left",
+        "clearance": 2.264
+      },
+      {
+        "id": "olive-right",
+        "clearance": 1.652
+      }
+    ],
+    "raisedMesaCount": 3,
+    "highestMesaTopY": 12.5,
+    "sunDepthZ": -115
+  },
+  "cameraMetrics": {
+    "desktop": {
+      "label": "Desktop hero",
+      "preset": {
+        "label": "Desktop hero",
+        "position": [
+          0,
+          7.8,
+          30
+        ],
+        "target": [
+          0,
+          0.8,
+          -5
+        ],
+        "fovDegrees": 48,
+        "aspect": 1.7777777778
+      },
+      "stage": {
+        "x": 0,
+        "y": -0.11
+      },
+      "lagoon": {
+        "x": 0.523,
+        "y": -0.126
+      },
+      "sun": {
+        "x": 0,
+        "y": 0.55
+      },
+      "trees": [
+        {
+          "id": "olive-left",
+          "projection": {
+            "x": -0.376,
+            "y": 0.059
+          }
+        },
+        {
+          "id": "olive-right",
+          "projection": {
+            "x": 0.359,
+            "y": 0.042
+          }
+        }
+      ],
+      "mesas": [
+        {
+          "id": "left-fall",
+          "projection": {
+            "x": -0.421,
+            "y": 0.376
+          },
+          "raised": true
+        },
+        {
+          "id": "right-fall",
+          "projection": {
+            "x": 0.403,
+            "y": 0.47
+          },
+          "raised": true
+        },
+        {
+          "id": "high-olive",
+          "projection": {
+            "x": 0.184,
+            "y": 0.561
+          },
+          "raised": true
+        },
+        {
+          "id": "far-right-shelf",
+          "projection": {
+            "x": 0.446,
+            "y": 0.358
+          },
+          "raised": false
+        }
+      ]
+    },
+    "portrait": {
+      "label": "Portrait",
+      "preset": {
+        "label": "Portrait",
+        "position": [
+          0,
+          9.5,
+          45
+        ],
+        "target": [
+          0,
+          1,
+          -5
+        ],
+        "fovDegrees": 64,
+        "aspect": 0.5625
+      },
+      "stage": {
+        "x": 0,
+        "y": -0.056
+      },
+      "lagoon": {
+        "x": 0.789,
+        "y": -0.062
+      },
+      "sun": {
+        "x": 0,
+        "y": 0.319
+      },
+      "trees": [
+        {
+          "id": "olive-left",
+          "projection": {
+            "x": -0.569,
+            "y": 0.026
+          }
+        },
+        {
+          "id": "olive-right",
+          "projection": {
+            "x": 0.531,
+            "y": 0.02
+          }
+        }
+      ],
+      "mesas": [
+        {
+          "id": "left-fall",
+          "projection": {
+            "x": -0.781,
+            "y": 0.198
+          },
+          "raised": true
+        },
+        {
+          "id": "right-fall",
+          "projection": {
+            "x": 0.758,
+            "y": 0.255
+          },
+          "raised": true
+        },
+        {
+          "id": "high-olive",
+          "projection": {
+            "x": 0.356,
+            "y": 0.316
+          },
+          "raised": true
+        },
+        {
+          "id": "far-right-shelf",
+          "projection": {
+            "x": 0.877,
+            "y": 0.193
+          },
+          "raised": false
+        }
+      ]
+    },
+    "landscapePhone": {
+      "label": "Landscape phone",
+      "preset": {
+        "label": "Landscape phone",
+        "position": [
+          0,
+          7.2,
+          29
+        ],
+        "target": [
+          0,
+          0.7,
+          -5
+        ],
+        "fovDegrees": 46,
+        "aspect": 2.3300970874
+      },
+      "stage": {
+        "x": 0,
+        "y": -0.109
+      },
+      "lagoon": {
+        "x": 0.434,
+        "y": -0.126
+      },
+      "sun": {
+        "x": 0,
+        "y": 0.567
+      },
+      "trees": [
+        {
+          "id": "olive-left",
+          "projection": {
+            "x": -0.312,
+            "y": 0.075
+          }
+        },
+        {
+          "id": "olive-right",
+          "projection": {
+            "x": 0.299,
+            "y": 0.059
+          }
+        }
+      ],
+      "mesas": [
+        {
+          "id": "left-fall",
+          "projection": {
+            "x": -0.342,
+            "y": 0.393
+          },
+          "raised": true
+        },
+        {
+          "id": "right-fall",
+          "projection": {
+            "x": 0.327,
+            "y": 0.491
+          },
+          "raised": true
+        },
+        {
+          "id": "high-olive",
+          "projection": {
+            "x": 0.149,
+            "y": 0.584
+          },
+          "raised": true
+        },
+        {
+          "id": "far-right-shelf",
+          "projection": {
+            "x": 0.36,
+            "y": 0.367
+          },
+          "raised": false
+        }
+      ]
+    }
+  },
+  "solarSilhouetteClearance": {
+    "desktop": [
+      {
+        "id": "left-fall",
+        "horizontalClearance": 0.302
+      },
+      {
+        "id": "right-fall",
+        "horizontalClearance": 0.274
+      },
+      {
+        "id": "high-olive",
+        "horizontalClearance": 0.098
+      },
+      {
+        "id": "far-right-shelf",
+        "horizontalClearance": 0.323
+      }
+    ],
+    "portrait": [
+      {
+        "id": "left-fall",
+        "horizontalClearance": 0.553
+      },
+      {
+        "id": "right-fall",
+        "horizontalClearance": 0.51
+      },
+      {
+        "id": "high-olive",
+        "horizontalClearance": 0.185
+      },
+      {
+        "id": "far-right-shelf",
+        "horizontalClearance": 0.634
+      }
+    ],
+    "landscapePhone": [
+      {
+        "id": "left-fall",
+        "horizontalClearance": 0.245
+      },
+      {
+        "id": "right-fall",
+        "horizontalClearance": 0.222
+      },
+      {
+        "id": "high-olive",
+        "horizontalClearance": 0.079
+      },
+      {
+        "id": "far-right-shelf",
+        "horizontalClearance": 0.261
+      }
+    ]
+  },
+  "checks": [
+    {
+      "name": "walkability",
+      "passed": true,
+      "evidence": "8.0 m rear-shelf width and 5.75 m dry performance radius."
+    },
+    {
+      "name": "clearance",
+      "passed": true,
+      "evidence": "Lagoon clears the performance circle by 3.71 m; both tree exclusions remain outside it."
+    },
+    {
+      "name": "sightlines",
+      "passed": true,
+      "evidence": "All registered cameras keep the sun near center and clear of every mesa silhouette, the lagoon on the right edge, and both olive trunks outside the protected hero band."
+    },
+    {
+      "name": "final-view",
+      "passed": true,
+      "evidence": "3 mesas rise above the terrace; the sun is 115 m deep and at least three mesas remain visible in every registered frame."
+    }
+  ]
+}

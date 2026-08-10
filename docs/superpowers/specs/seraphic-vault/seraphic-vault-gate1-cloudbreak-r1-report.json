@@ -1,0 +1,301 @@
+{
+  "generatedAt": "2026-08-10T00:47:49.940Z",
+  "revision": "olive-cloudbreak-r1",
+  "layoutPath": "scripts/seraphic-vault-cloudbreak-layout.json",
+  "artifacts": {
+    "svg": {
+      "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r1.svg",
+      "sha256": "1996d2c60d594fe07c7966b2553b6dc1b0230f7e7c404371ad793e4641fd0af0"
+    },
+    "png": {
+      "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r1.png",
+      "sha256": "36ae8bb4dd43ccf3bb43d2412ebfdfb5c0486a682ff7af33dc3ff11389bd5194"
+    }
+  },
+  "sourceDigests": {
+    "scripts/seraphic-vault-cloudbreak-layout.json": "ee712d62faa1506eb81d131cdb58443545868e37988a3021e27e7fe804d8ab49",
+    "docs/superpowers/specs/active/2026-08-09-olive-cloudbreak-celestial-pivot.md": "651bc2c85a73f344b1fc042e8927d98fb10fa0bf1f4ae8c4c2c727a3097cdf43"
+  },
+  "measurements": {
+    "approachWidth": 8,
+    "performanceClearRadius": 5.75,
+    "lagoonClearance": 3.714,
+    "treeClearances": [
+      {
+        "id": "olive-left",
+        "clearance": 2.264
+      },
+      {
+        "id": "olive-right",
+        "clearance": 1.652
+      }
+    ],
+    "raisedMesaCount": 3,
+    "highestMesaTopY": 12.5,
+    "sunDepthZ": -115
+  },
+  "cameraMetrics": {
+    "desktop": {
+      "label": "Desktop hero",
+      "preset": {
+        "label": "Desktop hero",
+        "position": [
+          0,
+          7.8,
+          30
+        ],
+        "target": [
+          0,
+          0.8,
+          -5
+        ],
+        "fovDegrees": 48,
+        "aspect": 1.7777777778
+      },
+      "stage": {
+        "x": 0,
+        "y": -0.11
+      },
+      "lagoon": {
+        "x": 0.523,
+        "y": -0.126
+      },
+      "sun": {
+        "x": 0,
+        "y": 0.55
+      },
+      "trees": [
+        {
+          "id": "olive-left",
+          "projection": {
+            "x": -0.376,
+            "y": 0.059
+          }
+        },
+        {
+          "id": "olive-right",
+          "projection": {
+            "x": 0.359,
+            "y": 0.042
+          }
+        }
+      ],
+      "mesas": [
+        {
+          "id": "left-fall",
+          "projection": {
+            "x": -0.421,
+            "y": 0.376
+          },
+          "raised": true
+        },
+        {
+          "id": "right-fall",
+          "projection": {
+            "x": 0.403,
+            "y": 0.47
+          },
+          "raised": true
+        },
+        {
+          "id": "high-olive",
+          "projection": {
+            "x": 0.066,
+            "y": 0.561
+          },
+          "raised": true
+        },
+        {
+          "id": "far-right-shelf",
+          "projection": {
+            "x": 0.446,
+            "y": 0.358
+          },
+          "raised": false
+        }
+      ]
+    },
+    "portrait": {
+      "label": "Portrait",
+      "preset": {
+        "label": "Portrait",
+        "position": [
+          0,
+          9.5,
+          45
+        ],
+        "target": [
+          0,
+          1,
+          -5
+        ],
+        "fovDegrees": 64,
+        "aspect": 0.5625
+      },
+      "stage": {
+        "x": 0,
+        "y": -0.056
+      },
+      "lagoon": {
+        "x": 0.789,
+        "y": -0.062
+      },
+      "sun": {
+        "x": 0,
+        "y": 0.319
+      },
+      "trees": [
+        {
+          "id": "olive-left",
+          "projection": {
+            "x": -0.569,
+            "y": 0.026
+          }
+        },
+        {
+          "id": "olive-right",
+          "projection": {
+            "x": 0.531,
+            "y": 0.02
+          }
+        }
+      ],
+      "mesas": [
+        {
+          "id": "left-fall",
+          "projection": {
+            "x": -0.781,
+            "y": 0.198
+          },
+          "raised": true
+        },
+        {
+          "id": "right-fall",
+          "projection": {
+            "x": 0.758,
+            "y": 0.255
+          },
+          "raised": true
+        },
+        {
+          "id": "high-olive",
+          "projection": {
+            "x": 0.127,
+            "y": 0.316
+          },
+          "raised": true
+        },
+        {
+          "id": "far-right-shelf",
+          "projection": {
+            "x": 0.877,
+            "y": 0.193
+          },
+          "raised": false
+        }
+      ]
+    },
+    "landscapePhone": {
+      "label": "Landscape phone",
+      "preset": {
+        "label": "Landscape phone",
+        "position": [
+          0,
+          7.2,
+          29
+        ],
+        "target": [
+          0,
+          0.7,
+          -5
+        ],
+        "fovDegrees": 46,
+        "aspect": 2.3300970874
+      },
+      "stage": {
+        "x": 0,
+        "y": -0.109
+      },
+      "lagoon": {
+        "x": 0.434,
+        "y": -0.126
+      },
+      "sun": {
+        "x": 0,
+        "y": 0.567
+      },
+      "trees": [
+        {
+          "id": "olive-left",
+          "projection": {
+            "x": -0.312,
+            "y": 0.075
+          }
+        },
+        {
+          "id": "olive-right",
+          "projection": {
+            "x": 0.299,
+            "y": 0.059
+          }
+        }
+      ],
+      "mesas": [
+        {
+          "id": "left-fall",
+          "projection": {
+            "x": -0.342,
+            "y": 0.393
+          },
+          "raised": true
+        },
+        {
+          "id": "right-fall",
+          "projection": {
+            "x": 0.327,
+            "y": 0.491
+          },
+          "raised": true
+        },
+        {
+          "id": "high-olive",
+          "projection": {
+            "x": 0.053,
+            "y": 0.584
+          },
+          "raised": true
+        },
+        {
+          "id": "far-right-shelf",
+          "projection": {
+            "x": 0.36,
+            "y": 0.367
+          },
+          "raised": false
+        }
+      ]
+    }
+  },
+  "checks": [
+    {
+      "name": "walkability",
+      "passed": true,
+      "evidence": "8.0 m approach width and 5.75 m dry performance radius."
+    },
+    {
+      "name": "clearance",
+      "passed": true,
+      "evidence": "Lagoon clears the performance circle by 3.71 m; both tree exclusions remain outside it."
+    },
+    {
+      "name": "sightlines",
+      "passed": true,
+      "evidence": "All registered cameras keep the sun near center, the lagoon on the right edge, and both olive trunks outside the protected hero band."
+    },
+    {
+      "name": "final-view",
+      "passed": true,
+      "evidence": "3 mesas rise above the terrace; the sun is 115 m deep and at least three mesas remain visible in every registered frame."
+    }
+  ]
+}

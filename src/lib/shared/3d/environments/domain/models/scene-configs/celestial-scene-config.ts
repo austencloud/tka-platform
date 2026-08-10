@@ -104,11 +104,11 @@ const CELESTIAL_PILLAR_RINGS: TreeRingConfig[] = [
 export function createDefaultCelestialConfig(): CelestialSceneConfig {
   return {
     sky: {
-      topColor: "#5f7fb4",
-      midColor: "#a9c3e2",
-      bottomColor: "#b7c3d3",
+      topColor: "#6797cf",
+      midColor: "#a9c9e7",
+      bottomColor: "#f4d6ab",
     },
-    fog: { color: "#8696ae", density: 0.017 },
+    fog: { color: "#b7c9d7", density: 0.009 },
     ground: {
       color: "#8d9caf",
       size: 50,
@@ -116,20 +116,20 @@ export function createDefaultCelestialConfig(): CelestialSceneConfig {
       opacity: 0.3,
     },
     cloudDome: {
-      enabled: true,
-      density: 0.7,
-      coverage: 0.46,
-      driftSpeed: 0.012,
-      sunDirection: [0.1, 0.55, -1],
+      enabled: false,
+      density: 0.58,
+      coverage: 0.5,
+      driftSpeed: 0.009,
+      sunDirection: [0, 0.12, -1],
       litColor: "#fffaf0",
-      shadowColor: "#70829f",
-      opacity: 0.52,
+      shadowColor: "#879eb7",
+      opacity: 0.24,
     },
     godRays: {
-      enabled: true,
+      enabled: false,
       color: "#ffe0a8",
-      intensity: 0.13,
-      count: 5,
+      intensity: 0.17,
+      count: 6,
       speed: 0.005,
     },
     cloudPlatform: {
@@ -141,14 +141,14 @@ export function createDefaultCelestialConfig(): CelestialSceneConfig {
       driftSpeed: 0.015,
     },
     cloudIslands: {
-      enabled: true,
-      count: 16,
+      enabled: false,
+      count: 18,
       driftSpeed: 0.1,
       bobSpeed: 0.3,
-      heightRange: [0.2, 1.8],
-      spawnRadius: 10.8,
-      sizeRange: [2.8, 5.4],
-      color: "#eaf1fa",
+      heightRange: [-7, -3.5],
+      spawnRadius: 15.5,
+      sizeRange: [4.2, 7.4],
+      color: "#f6f4f0",
     },
     celestialPillars: {
       enabled: false,
@@ -161,7 +161,7 @@ export function createDefaultCelestialConfig(): CelestialSceneConfig {
     },
     motes: {
       type: "fireflies",
-      count: 34,
+      count: 24,
       area: { width: 12, height: 6, depth: 12 },
       speed: 0.004,
       colors: ["#f6d7a4", "#ffffff", "#c9def8", "#f0c98d"],
@@ -170,15 +170,15 @@ export function createDefaultCelestialConfig(): CelestialSceneConfig {
     },
     wisps: null,
     hemisphereLight: {
-      skyColor: "#e8f2ff",
-      groundColor: "#526984",
-      intensity: 1.1,
+      skyColor: "#f2f7ff",
+      groundColor: "#725f4d",
+      intensity: 1.22,
     },
     sunLight: {
       enabled: true,
       color: "#ffe1ad",
-      intensity: 3.2,
-      position: [-4, 16, -14],
+      intensity: 4.1,
+      position: [0, 14, -115],
     },
   };
 }

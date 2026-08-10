@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "seraphic-vault",
+  "gateId": "integrated-room",
+  "capturedAt": "2026-08-09T22:05:38.326Z",
+  "runtime": {
+    "url": "https://localhost:5173/test/celestial-scene?view=hero&controls=1",
+    "requestedViewport": {
+      "width": 1920,
+      "height": 1080,
+      "deviceScaleFactor": 1
+    },
+    "reportedCssViewport": {
+      "width": 1745,
+      "height": 982,
+      "devicePixelRatio": 1.1000000963608443
+    },
+    "note": "Chrome's saved 110 percent page zoom changes the reported CSS viewport. DevTools captured and emulated the requested 1920 by 1080 output surface."
+  },
+  "frameSample": {
+    "frames": 300,
+    "averageMs": 16.618666666662904,
+    "estimatedFps": 60.17329910142569,
+    "p95Ms": 16.79999999998836,
+    "p99Ms": 16.79999999998836,
+    "framesOver25Ms": 0,
+    "framesOver50Ms": 0
+  },
+  "integratedAsset": {
+    "path": "static/models/celestial/seraphic-vault-integrated-sanctuaries.glb",
+    "bytes": 1391168,
+    "sha256": "7b74e90637704e06418b0c8a133e994f2323c86f8bee8d40eaf1e93d9c41dcc7",
+    "nodes": 64,
+    "meshes": 59,
+    "materials": 6,
+    "textures": 7,
+    "compression": [
+      "EXT_meshopt_compression",
+      "KHR_mesh_quantization",
+      "KHR_texture_basisu"
+    ]
+  },
+  "runtimeChecks": {
+    "cameraPresets": ["hero", "aisle", "stage", "profile"],
+    "transitionRoute": ["seraph", "cosmic", "seraph", "ocean", "seraph"],
+    "finalAudioTrack": "Choir of Air",
+    "finalVolume": 0.7,
+    "celestialConsoleErrors": 0,
+    "celestialConsoleWarnings": 0,
+    "knownExternalConsoleMessages": [
+      "UserDocumentManager could not create or update the signed-out Firebase user document because this review route lacks permission."
+    ]
+  },
+  "viewportSweep": [
+    "1920x1080",
+    "2560x1440",
+    "3840x2160",
+    "1440x900",
+    "820x1180",
+    "960x412",
+    "375x667"
+  ],
+  "result": "passed"
+}

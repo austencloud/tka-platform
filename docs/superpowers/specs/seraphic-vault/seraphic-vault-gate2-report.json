@@ -1,48 +1,48 @@
 {
-  "generatedAt": "2026-08-09T18:02:45.239Z",
+  "generatedAt": "2026-08-09T19:08:14.166Z",
   "sceneId": "seraphic-vault",
   "gateId": "playable-graybox",
   "sourceGateApproval": "EiR6GvhtzW1A3OEaZ9Zi",
   "artifacts": {
     "blender/seraphic_vault_phase2_graybox.blend": {
-      "bytes": 32173408,
-      "sha256": "ed766baaa16b01c5353aeaa75e5b663c6a3800593840ecd8a122fc10eb45e6c4"
+      "bytes": 32233119,
+      "sha256": "f3fb4a4203d1e02f122a87e9617ce42aba8b70a96ea36c9f4df53bf3a35438c2"
     },
     "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-coordinate-manifest.json": {
-      "bytes": 19882,
-      "sha256": "54c40ca00ce72f48532bb1c975b57c1dc8d4d5f54549c9c9ab359167e9f42d9e"
+      "bytes": 23959,
+      "sha256": "593ff64f71e412d272ed04fd879b6a4302be5d91fc23cb88f310e36cb1005870"
     },
     "static/models/celestial/review/seraphic-vault-phase2-graybox.glb": {
-      "bytes": 31179100,
-      "sha256": "d28c80cba202c0b3a6b41f420afd28228427699cc84f48789531b8392d9b847b"
+      "bytes": 31488220,
+      "sha256": "c7d927bf8fdbe96b4abb65af141eabc0f5b819650280af7178ffc9ae9692157c"
     },
     "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-desktop.png": {
-      "bytes": 1439040,
-      "sha256": "7462064ea800f6a519d0618faeebe3199ceb0d73d26b6f9bcdd0dc01b72134c3"
+      "bytes": 1463725,
+      "sha256": "5607346a888b786b279237c20537ca34a4cdfa1618ed16d60b32eec16a227991"
     },
     "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-portrait.png": {
-      "bytes": 813263,
-      "sha256": "0b43be10fefae47a08d299f357f6ce1cc03d3fe722ca423946c5937c992cfc7f"
+      "bytes": 832303,
+      "sha256": "2c4e8a966404876946c164b5e419bc39f19716c3981d260145a3a9db4e71b956"
     },
     "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-landscape-phone.png": {
-      "bytes": 1180507,
-      "sha256": "b70a8f9d827adab201a204586d0d3caf310dada30a7f74f2cb3a06360ff55046"
+      "bytes": 1212535,
+      "sha256": "c030c4647b8520820b1cab962577a4979289e8eac562041d5f9df83cd053af9a"
     },
     "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-overview.png": {
-      "bytes": 1345679,
-      "sha256": "b8334af33d2509722d117795e30d455336f3921a3f14bcea76917f89b8e8a9a2"
+      "bytes": 1345558,
+      "sha256": "8109905d9116a3bfb9b0431e4c5054816df2d77ab2fa4dc91dddf5a137465184"
     },
     "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-profile.png": {
-      "bytes": 1346917,
-      "sha256": "8b9c3c00ca74debacaca9ecc2c026665685797945867acc4939318e4f69ff356"
+      "bytes": 1345989,
+      "sha256": "1a2ca9997955881aee088d0399cc7429925e0cf458cf2fd6b5a3bfa0cecb4f97"
     },
     "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-verification.json": {
-      "bytes": 10924,
-      "sha256": "e6b8393341e7823fa90ec124aa0af97b8437028e8b8f88834782c83a8f166f0a"
+      "bytes": 10912,
+      "sha256": "d1003e277107043948bfd435b6024a36df1b3b3d30d2ac2011c72079f4f69fa0"
     },
     "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-contact-sheet.png": {
-      "bytes": 1651357,
-      "sha256": "2f9f63551198116282183ffd27eafa3ebda9cd8bcac632b7f8bd3c06d67a7dc9"
+      "bytes": 1712028,
+      "sha256": "4d1c9ac60cc5e1c1af999bd24a2466cc171e57bafb80206c397e02d30fd0013b"
     }
   },
   "glb": {
@@ -54,7 +54,20 @@
       "eroded-halo",
       "twin-choir"
     ],
-    "gate2MeshNodes": 46
+    "atmosphereGuideIds": [
+      "far-left-shoulder",
+      "far-right-shoulder",
+      "middle-left-bank",
+      "middle-right-bank",
+      "upper-left-canopy",
+      "upper-right-canopy"
+    ],
+    "solarNodes": {
+      "graybox-solar-core": 1,
+      "graybox-solar-aureole": 2,
+      "graybox-solar-ray": 16
+    },
+    "gate2MeshNodes": 113
   },
   "checks": [
     {
@@ -62,44 +75,44 @@
       "passed": true,
       "evidence": {
         "blender/seraphic_vault_phase2_graybox.blend": {
-          "bytes": 32173408,
-          "sha256": "ed766baaa16b01c5353aeaa75e5b663c6a3800593840ecd8a122fc10eb45e6c4"
+          "bytes": 32233119,
+          "sha256": "f3fb4a4203d1e02f122a87e9617ce42aba8b70a96ea36c9f4df53bf3a35438c2"
         },
         "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-coordinate-manifest.json": {
-          "bytes": 19882,
-          "sha256": "54c40ca00ce72f48532bb1c975b57c1dc8d4d5f54549c9c9ab359167e9f42d9e"
+          "bytes": 23959,
+          "sha256": "593ff64f71e412d272ed04fd879b6a4302be5d91fc23cb88f310e36cb1005870"
         },
         "static/models/celestial/review/seraphic-vault-phase2-graybox.glb": {
-          "bytes": 31179100,
-          "sha256": "d28c80cba202c0b3a6b41f420afd28228427699cc84f48789531b8392d9b847b"
+          "bytes": 31488220,
+          "sha256": "c7d927bf8fdbe96b4abb65af141eabc0f5b819650280af7178ffc9ae9692157c"
         },
         "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-desktop.png": {
-          "bytes": 1439040,
-          "sha256": "7462064ea800f6a519d0618faeebe3199ceb0d73d26b6f9bcdd0dc01b72134c3"
+          "bytes": 1463725,
+          "sha256": "5607346a888b786b279237c20537ca34a4cdfa1618ed16d60b32eec16a227991"
         },
         "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-portrait.png": {
-          "bytes": 813263,
-          "sha256": "0b43be10fefae47a08d299f357f6ce1cc03d3fe722ca423946c5937c992cfc7f"
+          "bytes": 832303,
+          "sha256": "2c4e8a966404876946c164b5e419bc39f19716c3981d260145a3a9db4e71b956"
         },
         "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-landscape-phone.png": {
-          "bytes": 1180507,
-          "sha256": "b70a8f9d827adab201a204586d0d3caf310dada30a7f74f2cb3a06360ff55046"
+          "bytes": 1212535,
+          "sha256": "c030c4647b8520820b1cab962577a4979289e8eac562041d5f9df83cd053af9a"
         },
         "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-overview.png": {
-          "bytes": 1345679,
-          "sha256": "b8334af33d2509722d117795e30d455336f3921a3f14bcea76917f89b8e8a9a2"
+          "bytes": 1345558,
+          "sha256": "8109905d9116a3bfb9b0431e4c5054816df2d77ab2fa4dc91dddf5a137465184"
         },
         "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-profile.png": {
-          "bytes": 1346917,
-          "sha256": "8b9c3c00ca74debacaca9ecc2c026665685797945867acc4939318e4f69ff356"
+          "bytes": 1345989,
+          "sha256": "1a2ca9997955881aee088d0399cc7429925e0cf458cf2fd6b5a3bfa0cecb4f97"
         },
         "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-verification.json": {
-          "bytes": 10924,
-          "sha256": "e6b8393341e7823fa90ec124aa0af97b8437028e8b8f88834782c83a8f166f0a"
+          "bytes": 10912,
+          "sha256": "d1003e277107043948bfd435b6024a36df1b3b3d30d2ac2011c72079f4f69fa0"
         },
         "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-contact-sheet.png": {
-          "bytes": 1651357,
-          "sha256": "2f9f63551198116282183ffd27eafa3ebda9cd8bcac632b7f8bd3c06d67a7dc9"
+          "bytes": 1712028,
+          "sha256": "4d1c9ac60cc5e1c1af999bd24a2466cc171e57bafb80206c397e02d30fd0013b"
         }
       }
     },
@@ -123,7 +136,7 @@
           "preset": "desktop",
           "platform": "eroded-halo",
           "passed": true,
-          "clearanceMetres": 33.897
+          "clearanceMetres": 33.6
         },
         {
           "preset": "desktop",
@@ -147,7 +160,7 @@
           "preset": "portrait",
           "platform": "eroded-halo",
           "passed": true,
-          "clearanceMetres": 25.203
+          "clearanceMetres": 31.443
         },
         {
           "preset": "portrait",
@@ -171,7 +184,7 @@
           "preset": "landscapePhone",
           "platform": "eroded-halo",
           "passed": true,
-          "clearanceMetres": 38.234
+          "clearanceMetres": 37.986
         },
         {
           "preset": "landscapePhone",
@@ -276,8 +289,26 @@
           "eroded-halo",
           "twin-choir"
         ],
-        "gate2MeshNodes": 46
+        "atmosphereGuideIds": [
+          "far-left-shoulder",
+          "far-right-shoulder",
+          "middle-left-bank",
+          "middle-right-bank",
+          "upper-left-canopy",
+          "upper-right-canopy"
+        ],
+        "solarNodes": {
+          "graybox-solar-core": 1,
+          "graybox-solar-aureole": 2,
+          "graybox-solar-ray": 16
+        },
+        "gate2MeshNodes": 113
       }
+    },
+    {
+      "name": "atmosphere-structure",
+      "passed": true,
+      "evidence": "The review artifact contains six responsive cloud-field guides plus a tagged solar core, two aureole rings, and sixteen ray segments."
     }
   ],
   "fixedCameraAdaptation": {

@@ -1,0 +1,490 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "seraphic-vault",
+  "title": "Olive Cloudbreak Celestial Environment",
+  "gateId": "registered-visual-target",
+  "revision": "olive-cloudbreak-r1",
+  "generatedAt": "2026-08-10T03:04:57.027Z",
+  "gate2ApprovalTrackerItem": "Iehzrhi3HOUVuwV3rYtr",
+  "generationMode": "built-in image generation, registered sketch-to-render paintover",
+  "artifacts": {
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-coordinate-manifest.json": {
+      "bytes": 12203,
+      "sha256": "942b6cf507edbb6295ed610fa2293f97b8e7313da182a293e5888deec097b276"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-camera-lock.json": {
+      "bytes": 9789,
+      "sha256": "b2adf8f54bb60c57f003a0ad2365a8f17a6779ab8816a0a776a06a326845d362"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-material-lighting-brief.md": {
+      "bytes": 3356,
+      "sha256": "1564f04607757be0e8ad56b4914c445101f8dcf5c5d5cfb0ec788e77cc0c8326"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-imagegen-prompts.md": {
+      "bytes": 11495,
+      "sha256": "90ba47860b353f749d502d961edcbebabf084484047bfe8a2bebaadb4901ce1c"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-desktop-target.png": {
+      "bytes": 2453004,
+      "sha256": "8e21ed3d66bd9f806288db8f3cab15b7b3f7d79fcb29c375cd6df7322854e9d7"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-portrait-target.png": {
+      "bytes": 2182891,
+      "sha256": "a610de50598a44cf8cb765ccbb220311255808d5dab56402dbe8388d6f61f9f3"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-landscape-phone-target.png": {
+      "bytes": 2352837,
+      "sha256": "1d70a141734d4c0b2157251afbd961b32f3f310604efd78012872ebd468fd58d"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-visual-target-board.png": {
+      "bytes": 4682405,
+      "sha256": "42c99818b7e3fdd3eda442057b8c6fc9b0212852ef2e1ab61b666b40edede895"
+    }
+  },
+  "views": {
+    "desktop": {
+      "camera": {
+        "label": "Desktop hero",
+        "position": [
+          0,
+          7.8,
+          30
+        ],
+        "target": [
+          0,
+          0.8,
+          -5
+        ],
+        "fovDegrees": 48,
+        "aspect": 1.7777777778,
+        "blenderPosition": [
+          0,
+          30,
+          7.8
+        ],
+        "blenderTarget": [
+          0,
+          -5,
+          0.8
+        ],
+        "projections": {
+          "stage": [
+            0,
+            -0.1097
+          ],
+          "lagoon": [
+            0.5145,
+            -0.1167
+          ],
+          "sun": [
+            0,
+            0.5499
+          ],
+          "trees": [
+            [
+              -0.3757,
+              0.0591
+            ],
+            [
+              0.359,
+              0.0416
+            ]
+          ],
+          "mesas": [
+            [
+              -0.4209,
+              0.3761
+            ],
+            [
+              0.4033,
+              0.4697
+            ],
+            [
+              0.1839,
+              0.5612
+            ],
+            [
+              0.4457,
+              0.3578
+            ]
+          ]
+        }
+      },
+      "source": {
+        "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-desktop.png",
+        "width": 1600,
+        "height": 900,
+        "aspect": 1.7777777777777777,
+        "bytes": 1442158,
+        "sha256": "9b7ddb28db69543f9b0c170d0e8cfb1a8acf5865774c79963971a842e38d0f92"
+      },
+      "target": {
+        "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-desktop-target.png",
+        "width": 1672,
+        "height": 941,
+        "aspect": 1.7768331562167907,
+        "bytes": 2453004,
+        "sha256": "8e21ed3d66bd9f806288db8f3cab15b7b3f7d79fcb29c375cd6df7322854e9d7"
+      },
+      "relativeAspectError": 0.000531349640548523,
+      "aspectRegistered": true,
+      "protectedProjection": {
+        "stage": [
+          0,
+          -0.1097
+        ],
+        "lagoon": [
+          0.5145,
+          -0.1167
+        ],
+        "sun": [
+          0,
+          0.5499
+        ],
+        "trees": [
+          [
+            -0.3757,
+            0.0591
+          ],
+          [
+            0.359,
+            0.0416
+          ]
+        ],
+        "mesas": [
+          [
+            -0.4209,
+            0.3761
+          ],
+          [
+            0.4033,
+            0.4697
+          ],
+          [
+            0.1839,
+            0.5612
+          ],
+          [
+            0.4457,
+            0.3578
+          ]
+        ]
+      }
+    },
+    "portrait": {
+      "camera": {
+        "label": "Portrait",
+        "position": [
+          0,
+          9.5,
+          45
+        ],
+        "target": [
+          0,
+          1,
+          -5
+        ],
+        "fovDegrees": 64,
+        "aspect": 0.5625,
+        "blenderPosition": [
+          0,
+          45,
+          9.5
+        ],
+        "blenderTarget": [
+          0,
+          -5,
+          1
+        ],
+        "projections": {
+          "stage": [
+            0,
+            -0.0561
+          ],
+          "lagoon": [
+            0.7806,
+            -0.0581
+          ],
+          "sun": [
+            0,
+            0.3186
+          ],
+          "trees": [
+            [
+              -0.5687,
+              0.0262
+            ],
+            [
+              0.531,
+              0.0195
+            ]
+          ],
+          "mesas": [
+            [
+              -0.781,
+              0.1978
+            ],
+            [
+              0.7581,
+              0.2548
+            ],
+            [
+              0.356,
+              0.3156
+            ],
+            [
+              0.8772,
+              0.193
+            ]
+          ]
+        }
+      },
+      "source": {
+        "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-portrait.png",
+        "width": 675,
+        "height": 1200,
+        "aspect": 0.5625,
+        "bytes": 830845,
+        "sha256": "4c94f65f3901a9f708bc27b381c9dbc69a6b6d9ba3c891a84f70cd36d92159e5"
+      },
+      "target": {
+        "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-portrait-target.png",
+        "width": 941,
+        "height": 1672,
+        "aspect": 0.562799043062201,
+        "bytes": 2182891,
+        "sha256": "a610de50598a44cf8cb765ccbb220311255808d5dab56402dbe8388d6f61f9f3"
+      },
+      "relativeAspectError": 0.0005316321105794941,
+      "aspectRegistered": true,
+      "protectedProjection": {
+        "stage": [
+          0,
+          -0.0561
+        ],
+        "lagoon": [
+          0.7806,
+          -0.0581
+        ],
+        "sun": [
+          0,
+          0.3186
+        ],
+        "trees": [
+          [
+            -0.5687,
+            0.0262
+          ],
+          [
+            0.531,
+            0.0195
+          ]
+        ],
+        "mesas": [
+          [
+            -0.781,
+            0.1978
+          ],
+          [
+            0.7581,
+            0.2548
+          ],
+          [
+            0.356,
+            0.3156
+          ],
+          [
+            0.8772,
+            0.193
+          ]
+        ]
+      }
+    },
+    "landscapePhone": {
+      "camera": {
+        "label": "Landscape phone",
+        "position": [
+          0,
+          7.2,
+          29
+        ],
+        "target": [
+          0,
+          0.7,
+          -5
+        ],
+        "fovDegrees": 46,
+        "aspect": 2.3300970874,
+        "blenderPosition": [
+          0,
+          29,
+          7.2
+        ],
+        "blenderTarget": [
+          0,
+          -5,
+          0.7
+        ],
+        "projections": {
+          "stage": [
+            0,
+            -0.1092
+          ],
+          "lagoon": [
+            0.427,
+            -0.1161
+          ],
+          "sun": [
+            0,
+            0.5667
+          ],
+          "trees": [
+            [
+              -0.3116,
+              0.0752
+            ],
+            [
+              0.2986,
+              0.0586
+            ]
+          ],
+          "mesas": [
+            [
+              -0.3416,
+              0.393
+            ],
+            [
+              0.3268,
+              0.4907
+            ],
+            [
+              0.1486,
+              0.5838
+            ],
+            [
+              0.3598,
+              0.3673
+            ]
+          ]
+        }
+      },
+      "source": {
+        "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-landscape-phone.png",
+        "width": 1600,
+        "height": 687,
+        "aspect": 2.328966521106259,
+        "bytes": 1113337,
+        "sha256": "44aeb0076d85b53e67350d83d71ca819a7e67432f742f3fc01966105a6452322"
+      },
+      "target": {
+        "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-cloudbreak-r1-landscape-phone-target.png",
+        "width": 1915,
+        "height": 821,
+        "aspect": 2.33252131546894,
+        "bytes": 2352837,
+        "sha256": "1d70a141734d4c0b2157251afbd961b32f3f310604efd78012872ebd468fd58d"
+      },
+      "relativeAspectError": 0.0010403978795772814,
+      "aspectRegistered": true,
+      "protectedProjection": {
+        "stage": [
+          0,
+          -0.1092
+        ],
+        "lagoon": [
+          0.427,
+          -0.1161
+        ],
+        "sun": [
+          0,
+          0.5667
+        ],
+        "trees": [
+          [
+            -0.3116,
+            0.0752
+          ],
+          [
+            0.2986,
+            0.0586
+          ]
+        ],
+        "mesas": [
+          [
+            -0.3416,
+            0.393
+          ],
+          [
+            0.3268,
+            0.4907
+          ],
+          [
+            0.1486,
+            0.5838
+          ],
+          [
+            0.3598,
+            0.3673
+          ]
+        ]
+      }
+    }
+  },
+  "visualAnchorAudit": {
+    "desktop": {
+      "method": "manual visual comparison against the approved Gate 2 graybox",
+      "continuousForegroundShelf": true,
+      "openDryPerformanceCenter": true,
+      "twoOliveTrees": true,
+      "oneRightEdgeLagoon": true,
+      "fourSeparatedMesas": true,
+      "oneNaturalSun": true,
+      "sunClearOfMesaSilhouettes": true,
+      "noReligiousOrArchitecturalMotifs": true
+    },
+    "portrait": {
+      "method": "manual visual comparison against the approved Gate 2 graybox",
+      "continuousForegroundShelf": true,
+      "openDryPerformanceCenter": true,
+      "twoOliveTrees": true,
+      "oneRightEdgeLagoon": true,
+      "fourSeparatedMesas": true,
+      "oneNaturalSun": true,
+      "sunClearOfMesaSilhouettes": true,
+      "noReligiousOrArchitecturalMotifs": true
+    },
+    "landscapePhone": {
+      "method": "manual visual comparison against the approved Gate 2 graybox",
+      "continuousForegroundShelf": true,
+      "openDryPerformanceCenter": true,
+      "twoOliveTrees": true,
+      "oneRightEdgeLagoon": true,
+      "fourSeparatedMesas": true,
+      "oneNaturalSun": true,
+      "sunClearOfMesaSilhouettes": true,
+      "noReligiousOrArchitecturalMotifs": true
+    }
+  },
+  "checks": [
+    {
+      "name": "camera-aspect-registration",
+      "passed": true,
+      "evidence": "All three targets preserve their registered Gate 2 aspect ratios within 0.15 percent."
+    },
+    {
+      "name": "composition-read",
+      "passed": true,
+      "evidence": "Manual comparison against the graybox confirms the shelf, open center, paired olive framing, single right-edge lagoon, and four separated mesas in every registered target."
+    },
+    {
+      "name": "natural-sun-read",
+      "passed": true,
+      "evidence": "Each target has one distant white-gold solar disk, clear of the mesa silhouettes, governing the stone rims, cloud glow, and lagoon reflection without a graphic halo."
+    },
+    {
+      "name": "motif-restraint",
+      "passed": true,
+      "evidence": "Manual visual audit found no castle, temple, column, ruin, statue, feather, wing, shrine, or religious symbol."
+    }
+  ]
+}

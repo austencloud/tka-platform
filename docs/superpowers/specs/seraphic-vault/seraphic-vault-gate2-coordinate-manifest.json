@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "sceneId": "seraphic-vault",
   "gateId": "playable-graybox",
-  "generatedAt": "2026-08-09T17:59:50.737Z",
+  "generatedAt": "2026-08-09T19:05:42.526Z",
   "source": {
     "path": "scripts/seraphic-vault-phase2-layout.json",
     "sha256": "96ddedc157a166128b762bc4662c4325aa1c6bd0815df81ad6f938cc9a07f5e4",
@@ -138,6 +138,14 @@
       ]
     ]
   },
+  "sun": {
+    "position": [
+      0,
+      6.2,
+      -27
+    ],
+    "diameter": 7.4
+  },
   "protectedHeroBand": {
     "ndcMinX": -0.2,
     "ndcMaxX": 0.2,
@@ -267,31 +275,31 @@
       "targetNdc": {
         "desktop": [
           -0.52,
-          -0.08
+          0.2
         ],
         "portrait": [
-          -0.36,
-          -0.28
+          -0.82,
+          0.28
         ],
         "landscapePhone": [
           -0.77,
-          -0.08
+          0.2
         ]
       },
       "positions": {
         "desktop": [
-          -31.6752,
-          -4.6139,
+          -31.1794,
+          4.9489,
           -42
         ],
         "portrait": [
-          -12.8125,
-          -20.0884,
+          -27.4059,
+          14.61,
           -42
         ],
         "landscapePhone": [
-          -38.4505,
-          -3.415,
+          -38.0822,
+          2.5873,
           -42
         ]
       },
@@ -357,6 +365,242 @@
       "detailTier": "deep-distance"
     }
   ],
+  "atmosphereGuides": [
+    {
+      "id": "upper-left-canopy",
+      "depth": -48,
+      "width": 17,
+      "depthWidth": 5.8,
+      "height": 3.8,
+      "puffCount": 9,
+      "targetNdc": {
+        "desktop": [
+          -0.5,
+          0.72
+        ],
+        "portrait": [
+          -0.42,
+          0.78
+        ],
+        "landscapePhone": [
+          -0.56,
+          0.68
+        ]
+      },
+      "positions": {
+        "desktop": [
+          -31.4333,
+          23.0527,
+          -48
+        ],
+        "portrait": [
+          -14.3779,
+          44.9221,
+          -48
+        ],
+        "landscapePhone": [
+          -29.4581,
+          13.0529,
+          -48
+        ]
+      }
+    },
+    {
+      "id": "upper-right-canopy",
+      "depth": -52,
+      "width": 18,
+      "depthWidth": 6.2,
+      "height": 4,
+      "puffCount": 9,
+      "targetNdc": {
+        "desktop": [
+          0.5,
+          0.7
+        ],
+        "portrait": [
+          0.42,
+          0.75
+        ],
+        "landscapePhone": [
+          0.56,
+          0.66
+        ]
+      },
+      "positions": {
+        "desktop": [
+          33.0025,
+          23.0775,
+          -52
+        ],
+        "portrait": [
+          15.1348,
+          44.9506,
+          -52
+        ],
+        "landscapePhone": [
+          30.9518,
+          12.8787,
+          -52
+        ]
+      }
+    },
+    {
+      "id": "middle-left-bank",
+      "depth": -36,
+      "width": 16,
+      "depthWidth": 5.4,
+      "height": 3.4,
+      "puffCount": 8,
+      "targetNdc": {
+        "desktop": [
+          -0.72,
+          0.17
+        ],
+        "portrait": [
+          -0.64,
+          0.28
+        ],
+        "landscapePhone": [
+          -0.82,
+          0.12
+        ]
+      },
+      "positions": {
+        "desktop": [
+          -39.83,
+          4.2435,
+          -36
+        ],
+        "portrait": [
+          -19.6788,
+          14.0972,
+          -36
+        ],
+        "landscapePhone": [
+          -37.3691,
+          1.3962,
+          -36
+        ]
+      }
+    },
+    {
+      "id": "middle-right-bank",
+      "depth": -40,
+      "width": 16,
+      "depthWidth": 5.4,
+      "height": 3.4,
+      "puffCount": 8,
+      "targetNdc": {
+        "desktop": [
+          0.7,
+          0.13
+        ],
+        "portrait": [
+          0.64,
+          0.24
+        ],
+        "landscapePhone": [
+          0.82,
+          0.1
+        ]
+      },
+      "positions": {
+        "desktop": [
+          41.0283,
+          2.7236,
+          -40
+        ],
+        "portrait": [
+          20.9106,
+          12.1638,
+          -40
+        ],
+        "landscapePhone": [
+          39.5944,
+          0.6391,
+          -40
+        ]
+      }
+    },
+    {
+      "id": "far-left-shoulder",
+      "depth": -58,
+      "width": 10,
+      "depthWidth": 4,
+      "height": 2.5,
+      "puffCount": 7,
+      "targetNdc": {
+        "desktop": [
+          -0.28,
+          0.34
+        ],
+        "portrait": [
+          -0.22,
+          0.48
+        ],
+        "landscapePhone": [
+          -0.35,
+          0.32
+        ]
+      },
+      "positions": {
+        "desktop": [
+          -20.1656,
+          10.0019,
+          -58
+        ],
+        "portrait": [
+          -8.7314,
+          29.7966,
+          -58
+        ],
+        "landscapePhone": [
+          -20.9667,
+          4.676,
+          -58
+        ]
+      }
+    },
+    {
+      "id": "far-right-shoulder",
+      "depth": -62,
+      "width": 10,
+      "depthWidth": 4,
+      "height": 2.5,
+      "puffCount": 7,
+      "targetNdc": {
+        "desktop": [
+          0.28,
+          0.31
+        ],
+        "portrait": [
+          0.22,
+          0.45
+        ],
+        "landscapePhone": [
+          0.35,
+          0.28
+        ]
+      },
+      "positions": {
+        "desktop": [
+          21.0774,
+          8.8413,
+          -62
+        ],
+        "portrait": [
+          9.1444,
+          28.6212,
+          -62
+        ],
+        "landscapePhone": [
+          21.9285,
+          3.4924,
+          -62
+        ]
+      }
+    }
+  ],
   "registeredViews": {
     "desktop": {
       "camera": {
@@ -419,21 +663,21 @@
           "id": "eroded-halo",
           "projectedCenter": [
             -0.52,
-            -0.08
+            0.2
           ],
           "ndcBounds": [
-            -0.5694,
-            -0.4706,
-            -0.0988,
-            -0.0612
+            -0.5702,
+            -0.4698,
+            0.1809,
+            0.2191
           ],
           "solidNdcBounds": [
-            -0.5516,
-            -0.4884,
-            -0.092,
-            -0.068
+            -0.5521,
+            -0.4879,
+            0.1878,
+            0.2122
           ],
-          "screenWidthRatio": 0.1001
+          "screenWidthRatio": 0.1017
         },
         {
           "id": "cloud-crown",
@@ -517,22 +761,22 @@
         {
           "id": "eroded-halo",
           "projectedCenter": [
-            -0.36,
-            -0.28
+            -0.82,
+            0.28
           ],
           "ndcBounds": [
-            -0.4445,
-            -0.2755,
-            -0.3121,
-            -0.2479
+            -0.91,
+            -0.73,
+            0.2458,
+            0.3142
           ],
           "solidNdcBounds": [
-            -0.4141,
-            -0.3059,
-            -0.3006,
-            -0.2594
+            -0.8776,
+            -0.7624,
+            0.2581,
+            0.3019
           ],
-          "screenWidthRatio": 0.096
+          "screenWidthRatio": 0.1023
         },
         {
           "id": "cloud-crown",
@@ -617,21 +861,21 @@
           "id": "eroded-halo",
           "projectedCenter": [
             -0.77,
-            -0.08
+            0.2
           ],
           "ndcBounds": [
-            -0.8302,
-            -0.7098,
-            -0.1029,
-            -0.0571
+            -0.8308,
+            -0.7092,
+            0.1769,
+            0.2231
           ],
           "solidNdcBounds": [
-            -0.8086,
-            -0.7314,
-            -0.0946,
-            -0.0653
+            -0.8089,
+            -0.7311,
+            0.1852,
+            0.2148
           ],
-          "screenWidthRatio": 0.0969
+          "screenWidthRatio": 0.0979
         },
         {
           "id": "cloud-crown",
@@ -701,7 +945,7 @@
           "preset": "portrait",
           "platform": "eroded-halo",
           "passed": true,
-          "projectionError": 0.000001
+          "projectionError": 0
         },
         {
           "preset": "portrait",
@@ -755,7 +999,7 @@
           "preset": "desktop",
           "platform": "eroded-halo",
           "passed": true,
-          "clearanceMetres": 33.897
+          "clearanceMetres": 33.6
         },
         {
           "preset": "desktop",
@@ -779,7 +1023,7 @@
           "preset": "portrait",
           "platform": "eroded-halo",
           "passed": true,
-          "clearanceMetres": 25.203
+          "clearanceMetres": 31.443
         },
         {
           "preset": "portrait",
@@ -803,7 +1047,7 @@
           "preset": "landscapePhone",
           "platform": "eroded-halo",
           "passed": true,
-          "clearanceMetres": 38.234
+          "clearanceMetres": 37.986
         },
         {
           "preset": "landscapePhone",
@@ -844,10 +1088,10 @@
           "platform": "eroded-halo",
           "passed": true,
           "solidNdcBounds": [
-            -0.5516,
-            -0.4884,
-            -0.092,
-            -0.068
+            -0.5521,
+            -0.4879,
+            0.1878,
+            0.2122
           ]
         },
         {
@@ -888,10 +1132,10 @@
           "platform": "eroded-halo",
           "passed": true,
           "solidNdcBounds": [
-            -0.4141,
-            -0.3059,
-            -0.3006,
-            -0.2594
+            -0.8776,
+            -0.7624,
+            0.2581,
+            0.3019
           ]
         },
         {
@@ -932,10 +1176,10 @@
           "platform": "eroded-halo",
           "passed": true,
           "solidNdcBounds": [
-            -0.8086,
-            -0.7314,
-            -0.0946,
-            -0.0653
+            -0.8089,
+            -0.7311,
+            0.1852,
+            0.2148
           ]
         },
         {

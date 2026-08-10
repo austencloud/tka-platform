@@ -1,0 +1,238 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "seraphic-vault",
+  "gateId": "registered-visual-target",
+  "generatedAt": "2026-08-09T19:28:19.626Z",
+  "gate2ApprovalTrackerItem": "8gVDiuCU9YCztmsm3z1K",
+  "generationMode": "built-in image generation, registered paint-over",
+  "artifacts": {
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-coordinate-manifest.json": {
+      "bytes": 23959,
+      "sha256": "593ff64f71e412d272ed04fd879b6a4302be5d91fc23cb88f310e36cb1005870"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-camera-lock.json": {
+      "bytes": 5339,
+      "sha256": "4de30e3e8c750e3a1e52b760e95607f1c9657f33bd37a542053194e47cef17ae"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-material-lighting-brief.md": {
+      "bytes": 3496,
+      "sha256": "b647abfa5de3c9aac06671581b289f762c59c8740dc6d8723ff909f157ff803d"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-imagegen-prompts.md": {
+      "bytes": 1954,
+      "sha256": "660671a67891bea16c85ab17f03b9cb41a2c7e4ecd2cfc51601590c7aa7f3fd0"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-desktop-target.png": {
+      "bytes": 2028469,
+      "sha256": "b8af221481073ece53c2664329973e603bc965465bc4991b9e39cb3dd2b9bee5"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-portrait-target.png": {
+      "bytes": 1986785,
+      "sha256": "0a2c1cd29c2b585b993e858b9824b0d73404646ae4a37322e978d32044fc4ba5"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-landscape-phone-target.png": {
+      "bytes": 2175642,
+      "sha256": "d20e6cfc62d803de75eef273b5cb4aca177088b7089319357eaaee998af8918e"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-visual-target-board.png": {
+      "bytes": 4406357,
+      "sha256": "b4ef2a01f296dacbf52565fa19e7cd4f26a8ed3579f605367b128e1bbf44c605"
+    }
+  },
+  "views": {
+    "desktop": {
+      "camera": {
+        "label": "Desktop 16:9",
+        "position": [
+          0,
+          7.8,
+          34
+        ],
+        "target": [
+          0,
+          3,
+          -3.8
+        ],
+        "fovDegrees": 48,
+        "aspect": 1.7777777778
+      },
+      "source": {
+        "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-desktop.png",
+        "width": 1600,
+        "height": 900,
+        "aspect": 1.7777777777777777,
+        "bytes": 1463725,
+        "sha256": "5607346a888b786b279237c20537ca34a4cdfa1618ed16d60b32eec16a227991"
+      },
+      "target": {
+        "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-desktop-target.png",
+        "width": 1672,
+        "height": 941,
+        "aspect": 1.7768331562167907,
+        "bytes": 2028469,
+        "sha256": "b8af221481073ece53c2664329973e603bc965465bc4991b9e39cb3dd2b9bee5"
+      },
+      "relativeAspectError": 0.000531349640548523,
+      "aspectRegistered": true,
+      "targetNdc": {
+        "broken-vigil": [
+          -0.77,
+          -0.55
+        ],
+        "twin-choir": [
+          0.78,
+          -0.34
+        ],
+        "eroded-halo": [
+          -0.52,
+          0.2
+        ],
+        "cloud-crown": [
+          0.52,
+          0.42
+        ]
+      }
+    },
+    "portrait": {
+      "camera": {
+        "label": "Portrait phone",
+        "position": [
+          0,
+          8.2,
+          33
+        ],
+        "target": [
+          0,
+          3.1,
+          -3.8
+        ],
+        "fovDegrees": 78,
+        "aspect": 0.5622188906
+      },
+      "source": {
+        "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-portrait.png",
+        "width": 675,
+        "height": 1200,
+        "aspect": 0.5625,
+        "bytes": 832303,
+        "sha256": "2c4e8a966404876946c164b5e419bc39f19716c3981d260145a3a9db4e71b956"
+      },
+      "target": {
+        "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-portrait-target.png",
+        "width": 941,
+        "height": 1672,
+        "aspect": 0.562799043062201,
+        "bytes": 1986785,
+        "sha256": "0a2c1cd29c2b585b993e858b9824b0d73404646ae4a37322e978d32044fc4ba5"
+      },
+      "relativeAspectError": 0.0010318978460184102,
+      "aspectRegistered": true,
+      "targetNdc": {
+        "broken-vigil": [
+          -0.69,
+          -0.56
+        ],
+        "twin-choir": [
+          0.68,
+          -0.34
+        ],
+        "eroded-halo": [
+          -0.82,
+          0.28
+        ],
+        "cloud-crown": [
+          0.36,
+          0.48
+        ]
+      }
+    },
+    "landscapePhone": {
+      "camera": {
+        "label": "Landscape phone",
+        "position": [
+          0,
+          7.2,
+          32
+        ],
+        "target": [
+          0,
+          2.9,
+          -3.8
+        ],
+        "fovDegrees": 32,
+        "aspect": 2.3300970874
+      },
+      "source": {
+        "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-landscape-phone.png",
+        "width": 1600,
+        "height": 687,
+        "aspect": 2.328966521106259,
+        "bytes": 1212535,
+        "sha256": "c030c4647b8520820b1cab962577a4979289e8eac562041d5f9df83cd053af9a"
+      },
+      "target": {
+        "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate3-landscape-phone-target.png",
+        "width": 1915,
+        "height": 821,
+        "aspect": 2.33252131546894,
+        "bytes": 2175642,
+        "sha256": "d20e6cfc62d803de75eef273b5cb4aca177088b7089319357eaaee998af8918e"
+      },
+      "relativeAspectError": 0.0010403978795772814,
+      "aspectRegistered": true,
+      "targetNdc": {
+        "broken-vigil": [
+          -0.77,
+          -0.55
+        ],
+        "twin-choir": [
+          0.78,
+          -0.34
+        ],
+        "eroded-halo": [
+          -0.77,
+          0.2
+        ],
+        "cloud-crown": [
+          0.77,
+          0.42
+        ]
+      }
+    }
+  },
+  "visualAnchorAudit": {
+    "desktop": {
+      "oneSun": true,
+      "sixFeatherRibs": true,
+      "centralPerformerLaneClear": true,
+      "platformsSeparated": true,
+      "verticalOrder": "Broken Vigil and Twin Choir below; Eroded Halo upper left; Cloud Crown highest upper right"
+    },
+    "portrait": {
+      "oneSun": true,
+      "sixFeatherRibs": true,
+      "centralPerformerLaneClear": true,
+      "platformsSeparated": true,
+      "verticalOrder": "Broken Vigil and Twin Choir below; Eroded Halo upper left; Cloud Crown highest upper right"
+    },
+    "landscapePhone": {
+      "oneSun": true,
+      "sixFeatherRibs": true,
+      "centralPerformerLaneClear": true,
+      "platformsSeparated": true,
+      "verticalOrder": "Broken Vigil and Twin Choir below; Eroded Halo upper left; Cloud Crown highest upper right"
+    }
+  },
+  "checks": [
+    {
+      "name": "camera-registration",
+      "passed": true,
+      "evidence": "All target images preserve their registered Gate 2 aspect ratios within 0.15 percent and inherit the locked camera and NDC contract."
+    },
+    {
+      "name": "silhouette-read",
+      "passed": true,
+      "evidence": "Manual visual audit confirms one sun, six feather ribs, a clear performer lane, and four separated sanctuary silhouettes in all registered views."
+    }
+  ]
+}

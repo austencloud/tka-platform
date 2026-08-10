@@ -7,6 +7,15 @@ import process from "node:process";
 import sharp from "sharp";
 
 const root = process.cwd();
+
+if (process.argv.includes("--cloudbreak")) {
+  const { generateOliveCloudbreakGate2Review } = await import(
+    "./lib/seraphic-vault-cloudbreak-gate2-review.mjs"
+  );
+  await generateOliveCloudbreakGate2Review({ root });
+  process.exit(0);
+}
+
 const specDirectory = path.resolve(
   root,
   "docs/superpowers/specs/seraphic-vault"
@@ -78,10 +87,23 @@ const platformIds = new Set(
     .map((node) => node.extras?.tka_platform)
     .filter(Boolean)
 );
+const atmosphereGuideIds = new Set(
+  (gltf.nodes ?? [])
+    .map((node) => node.extras?.tka_atmosphere_guide)
+    .filter(Boolean)
+);
+const solarRoles = Object.groupBy(
+  (gltf.nodes ?? []).filter((node) => String(node.extras?.tka_role ?? "").startsWith("graybox-solar-")),
+  (node) => node.extras.tka_role
+);
 const glbChecks = {
   sceneCount: gltf.scenes?.length ?? 0,
   cameraCount: gltf.cameras?.length ?? 0,
   platformIds: [...platformIds].sort(),
+  atmosphereGuideIds: [...atmosphereGuideIds].sort(),
+  solarNodes: Object.fromEntries(
+    Object.entries(solarRoles).map(([role, nodes]) => [role, nodes.length])
+  ),
   gate2MeshNodes: (gltf.nodes ?? []).filter(
     (node) => Number(node.extras?.tka_gate) === 2 && Number.isInteger(node.mesh)
   ).length,
@@ -89,6 +111,10 @@ const glbChecks = {
 invariant(glbChecks.sceneCount === 1, "Graybox GLB must contain one scene");
 invariant(glbChecks.cameraCount === 0, "Registered cameras leaked into the review GLB");
 invariant(glbChecks.platformIds.length === 4, "Graybox GLB lost a platform family");
+invariant(glbChecks.atmosphereGuideIds.length === 6, "Graybox GLB lost a cloud-field guide");
+invariant(glbChecks.solarNodes["graybox-solar-core"] === 1, "Graybox GLB lost the solar core");
+invariant(glbChecks.solarNodes["graybox-solar-aureole"] === 2, "Graybox GLB lost a solar aureole ring");
+invariant(glbChecks.solarNodes["graybox-solar-ray"] === 16, "Graybox GLB lost a solar ray");
 invariant(glbChecks.gate2MeshNodes >= 20, "Graybox GLB lost primitive silhouette geometry");
 
 const canvas = sharp({
@@ -132,7 +158,7 @@ const desktopPoint = (ndcX, ndcY) => [
 ];
 const [brokenX, brokenY] = desktopPoint(-0.77, -0.55);
 const [twinX, twinY] = desktopPoint(0.78, -0.34);
-const [erodedX, erodedY] = desktopPoint(-0.52, -0.08);
+const [erodedX, erodedY] = desktopPoint(-0.52, 0.2);
 const [crownX, crownY] = desktopPoint(0.52, 0.42);
 
 const overlay = Buffer.from(`
@@ -149,8 +175,8 @@ const overlay = Buffer.from(`
     .platform { font-size: 17px; font-weight: 700; fill: #fff4d7; }
     .detail { font-size: 14px; fill: #9ebbd5; }
   </style>
-  <text x="40" y="52" class="title">SERAPHIC VAULT · GATE 2 · PLAYABLE GRAYBOX</text>
-  <text x="40" y="83" class="subtitle">Four silhouette families projected against the real Meshy feather shell. The main sanctuary remains the hero.</text>
+  <text x="40" y="52" class="title">SERAPHIC VAULT · GATE 2 · ATMOSPHERIC GRAYBOX</text>
+  <text x="40" y="83" class="subtitle">Four silhouette families, layered cloud massing, and a solar aureole projected against the real Meshy feather shell.</text>
   <text x="1540" y="108" text-anchor="end" class="label">DESKTOP · 16:9 · 48°</text>
   <text x="2000" y="108" text-anchor="end" class="label">PORTRAIT · 375×667 · 78°</text>
   <text x="2520" y="108" text-anchor="end" class="label">LANDSCAPE PHONE · 960×412 · 32°</text>
@@ -181,7 +207,9 @@ const overlay = Buffer.from(`
   <text x="40" y="1296" class="check">✓ PROJECTION PARITY</text>
   <text x="310" y="1296" class="check">✓ SHELL COLLISION</text>
   <text x="565" y="1296" class="check">✓ REAL FEATHER CLEARANCE</text>
-  <text x="40" y="1352" class="subtitle">Review only: primitive massing, distance, and silhouette. Materials, sculpting, atmospheric density, and the floor focal design belong to later gates.</text>
+  <text x="885" y="1296" class="check">✓ SIX CLOUD LAYERS</text>
+  <text x="1160" y="1296" class="check">✓ SOLAR AUREOLE</text>
+  <text x="40" y="1352" class="subtitle">Review only: primitive platform and cloud massing, distance, silhouette, and solar focal read. Materials, sculpting, and the floor design belong to later gates.</text>
 </svg>`);
 
 await canvas
@@ -245,6 +273,11 @@ const report = {
       name: "review-glb-structure",
       passed: true,
       evidence: glbChecks,
+    },
+    {
+      name: "atmosphere-structure",
+      passed: true,
+      evidence: "The review artifact contains six responsive cloud-field guides plus a tagged solar core, two aureole rings, and sixteen ray segments.",
     },
   ],
   fixedCameraAdaptation: {

@@ -1,0 +1,288 @@
+{
+  "generatedAt": "2026-08-09T18:02:45.239Z",
+  "sceneId": "seraphic-vault",
+  "gateId": "playable-graybox",
+  "sourceGateApproval": "EiR6GvhtzW1A3OEaZ9Zi",
+  "artifacts": {
+    "blender/seraphic_vault_phase2_graybox.blend": {
+      "bytes": 32173408,
+      "sha256": "ed766baaa16b01c5353aeaa75e5b663c6a3800593840ecd8a122fc10eb45e6c4"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-coordinate-manifest.json": {
+      "bytes": 19882,
+      "sha256": "54c40ca00ce72f48532bb1c975b57c1dc8d4d5f54549c9c9ab359167e9f42d9e"
+    },
+    "static/models/celestial/review/seraphic-vault-phase2-graybox.glb": {
+      "bytes": 31179100,
+      "sha256": "d28c80cba202c0b3a6b41f420afd28228427699cc84f48789531b8392d9b847b"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-desktop.png": {
+      "bytes": 1439040,
+      "sha256": "7462064ea800f6a519d0618faeebe3199ceb0d73d26b6f9bcdd0dc01b72134c3"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-portrait.png": {
+      "bytes": 813263,
+      "sha256": "0b43be10fefae47a08d299f357f6ce1cc03d3fe722ca423946c5937c992cfc7f"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-landscape-phone.png": {
+      "bytes": 1180507,
+      "sha256": "b70a8f9d827adab201a204586d0d3caf310dada30a7f74f2cb3a06360ff55046"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-overview.png": {
+      "bytes": 1345679,
+      "sha256": "b8334af33d2509722d117795e30d455336f3921a3f14bcea76917f89b8e8a9a2"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-profile.png": {
+      "bytes": 1346917,
+      "sha256": "8b9c3c00ca74debacaca9ecc2c026665685797945867acc4939318e4f69ff356"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-verification.json": {
+      "bytes": 10924,
+      "sha256": "e6b8393341e7823fa90ec124aa0af97b8437028e8b8f88834782c83a8f166f0a"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-contact-sheet.png": {
+      "bytes": 1651357,
+      "sha256": "2f9f63551198116282183ffd27eafa3ebda9cd8bcac632b7f8bd3c06d67a7dc9"
+    }
+  },
+  "glb": {
+    "sceneCount": 1,
+    "cameraCount": 0,
+    "platformIds": [
+      "broken-vigil",
+      "cloud-crown",
+      "eroded-halo",
+      "twin-choir"
+    ],
+    "gate2MeshNodes": 46
+  },
+  "checks": [
+    {
+      "name": "artifact-digest",
+      "passed": true,
+      "evidence": {
+        "blender/seraphic_vault_phase2_graybox.blend": {
+          "bytes": 32173408,
+          "sha256": "ed766baaa16b01c5353aeaa75e5b663c6a3800593840ecd8a122fc10eb45e6c4"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-coordinate-manifest.json": {
+          "bytes": 19882,
+          "sha256": "54c40ca00ce72f48532bb1c975b57c1dc8d4d5f54549c9c9ab359167e9f42d9e"
+        },
+        "static/models/celestial/review/seraphic-vault-phase2-graybox.glb": {
+          "bytes": 31179100,
+          "sha256": "d28c80cba202c0b3a6b41f420afd28228427699cc84f48789531b8392d9b847b"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-desktop.png": {
+          "bytes": 1439040,
+          "sha256": "7462064ea800f6a519d0618faeebe3199ceb0d73d26b6f9bcdd0dc01b72134c3"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-portrait.png": {
+          "bytes": 813263,
+          "sha256": "0b43be10fefae47a08d299f357f6ce1cc03d3fe722ca423946c5937c992cfc7f"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-landscape-phone.png": {
+          "bytes": 1180507,
+          "sha256": "b70a8f9d827adab201a204586d0d3caf310dada30a7f74f2cb3a06360ff55046"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-overview.png": {
+          "bytes": 1345679,
+          "sha256": "b8334af33d2509722d117795e30d455336f3921a3f14bcea76917f89b8e8a9a2"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-profile.png": {
+          "bytes": 1346917,
+          "sha256": "8b9c3c00ca74debacaca9ecc2c026665685797945867acc4939318e4f69ff356"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-verification.json": {
+          "bytes": 10924,
+          "sha256": "e6b8393341e7823fa90ec124aa0af97b8437028e8b8f88834782c83a8f166f0a"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-contact-sheet.png": {
+          "bytes": 1651357,
+          "sha256": "2f9f63551198116282183ffd27eafa3ebda9cd8bcac632b7f8bd3c06d67a7dc9"
+        }
+      }
+    },
+    {
+      "name": "collision",
+      "passed": true,
+      "evidence": [
+        {
+          "preset": "desktop",
+          "platform": "broken-vigil",
+          "passed": true,
+          "clearanceMetres": 15.632
+        },
+        {
+          "preset": "desktop",
+          "platform": "twin-choir",
+          "passed": true,
+          "clearanceMetres": 28.117
+        },
+        {
+          "preset": "desktop",
+          "platform": "eroded-halo",
+          "passed": true,
+          "clearanceMetres": 33.897
+        },
+        {
+          "preset": "desktop",
+          "platform": "cloud-crown",
+          "passed": true,
+          "clearanceMetres": 49.031
+        },
+        {
+          "preset": "portrait",
+          "platform": "broken-vigil",
+          "passed": true,
+          "clearanceMetres": 3.004
+        },
+        {
+          "preset": "portrait",
+          "platform": "twin-choir",
+          "passed": true,
+          "clearanceMetres": 14.134
+        },
+        {
+          "preset": "portrait",
+          "platform": "eroded-halo",
+          "passed": true,
+          "clearanceMetres": 25.203
+        },
+        {
+          "preset": "portrait",
+          "platform": "cloud-crown",
+          "passed": true,
+          "clearanceMetres": 39.917
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "broken-vigil",
+          "passed": true,
+          "clearanceMetres": 10.027
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "twin-choir",
+          "passed": true,
+          "clearanceMetres": 22.249
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "eroded-halo",
+          "passed": true,
+          "clearanceMetres": 38.234
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "cloud-crown",
+          "passed": true,
+          "clearanceMetres": 54.008
+        }
+      ]
+    },
+    {
+      "name": "registered-silhouette-clearance",
+      "passed": true,
+      "evidence": [
+        {
+          "preset": "desktop",
+          "platform": "broken-vigil",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "desktop",
+          "platform": "twin-choir",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "desktop",
+          "platform": "eroded-halo",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "desktop",
+          "platform": "cloud-crown",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "portrait",
+          "platform": "broken-vigil",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "portrait",
+          "platform": "twin-choir",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "portrait",
+          "platform": "eroded-halo",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "portrait",
+          "platform": "cloud-crown",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "broken-vigil",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "twin-choir",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "eroded-halo",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "cloud-crown",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        }
+      ]
+    },
+    {
+      "name": "projection-parity",
+      "passed": true,
+      "evidence": "Every platform root projects to its registered NDC target within 0.0005 in desktop, portrait, and landscape-phone views."
+    },
+    {
+      "name": "review-glb-structure",
+      "passed": true,
+      "evidence": {
+        "sceneCount": 1,
+        "cameraCount": 0,
+        "platformIds": [
+          "broken-vigil",
+          "cloud-crown",
+          "eroded-halo",
+          "twin-choir"
+        ],
+        "gate2MeshNodes": 46
+      }
+    }
+  ],
+  "fixedCameraAdaptation": {
+    "firstPersonWalk": "Not applicable. The Celestial scene is a fixed-camera performance background.",
+    "routeDuration": "Not applicable. The reviewed route is an attention sequence, not locomotion.",
+    "sequenceParity": "Not applicable. This environment carries no selected museum performance sequence."
+  }
+}

@@ -4,10 +4,20 @@ from __future__ import annotations
 
 import hashlib
 import json
+import runpy
+import sys
 from pathlib import Path
 
 import bpy
 from bpy_extras.object_utils import world_to_camera_view
+
+
+if "--cloudbreak" in sys.argv:
+    runpy.run_path(
+        str(Path(__file__).resolve().parent / "lib" / "verify-seraphic-vault-cloudbreak-graybox.py"),
+        run_name="__main__",
+    )
+    raise SystemExit(0)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent

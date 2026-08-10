@@ -7,6 +7,15 @@ import process from "node:process";
 import { PerspectiveCamera, Vector3 } from "three";
 
 const root = process.cwd();
+
+if (process.argv.includes("--cloudbreak")) {
+  const { generateOliveCloudbreakGate2Coordinates } = await import(
+    "./lib/seraphic-vault-cloudbreak-gate2-coordinates.mjs"
+  );
+  await generateOliveCloudbreakGate2Coordinates({ root });
+  process.exit(0);
+}
+
 const sourcePath = path.resolve(root, "scripts/seraphic-vault-phase2-layout.json");
 const outputPath = path.resolve(
   root,
@@ -19,9 +28,9 @@ await mkdir(path.dirname(outputPath), { recursive: true });
 
 const targetOverrides = {
   "eroded-halo": {
-    desktop: [-0.52, -0.08],
-    portrait: [-0.36, -0.28],
-    landscapePhone: [-0.77, -0.08],
+    desktop: [-0.52, 0.2],
+    portrait: [-0.82, 0.28],
+    landscapePhone: [-0.77, 0.2],
   },
   "cloud-crown": {
     desktop: [0.52, 0.42],
@@ -29,6 +38,87 @@ const targetOverrides = {
     landscapePhone: [0.77, 0.42],
   },
 };
+
+const atmosphereGuideDefinitions = [
+  {
+    id: "upper-left-canopy",
+    depth: -48,
+    width: 17,
+    depthWidth: 5.8,
+    height: 3.8,
+    puffCount: 9,
+    targetNdc: {
+      desktop: [-0.5, 0.72],
+      portrait: [-0.42, 0.78],
+      landscapePhone: [-0.56, 0.68],
+    },
+  },
+  {
+    id: "upper-right-canopy",
+    depth: -52,
+    width: 18,
+    depthWidth: 6.2,
+    height: 4,
+    puffCount: 9,
+    targetNdc: {
+      desktop: [0.5, 0.7],
+      portrait: [0.42, 0.75],
+      landscapePhone: [0.56, 0.66],
+    },
+  },
+  {
+    id: "middle-left-bank",
+    depth: -36,
+    width: 16,
+    depthWidth: 5.4,
+    height: 3.4,
+    puffCount: 8,
+    targetNdc: {
+      desktop: [-0.72, 0.17],
+      portrait: [-0.64, 0.28],
+      landscapePhone: [-0.82, 0.12],
+    },
+  },
+  {
+    id: "middle-right-bank",
+    depth: -40,
+    width: 16,
+    depthWidth: 5.4,
+    height: 3.4,
+    puffCount: 8,
+    targetNdc: {
+      desktop: [0.7, 0.13],
+      portrait: [0.64, 0.24],
+      landscapePhone: [0.82, 0.1],
+    },
+  },
+  {
+    id: "far-left-shoulder",
+    depth: -58,
+    width: 10,
+    depthWidth: 4,
+    height: 2.5,
+    puffCount: 7,
+    targetNdc: {
+      desktop: [-0.28, 0.34],
+      portrait: [-0.22, 0.48],
+      landscapePhone: [-0.35, 0.32],
+    },
+  },
+  {
+    id: "far-right-shoulder",
+    depth: -62,
+    width: 10,
+    depthWidth: 4,
+    height: 2.5,
+    puffCount: 7,
+    targetNdc: {
+      desktop: [0.28, 0.31],
+      portrait: [0.22, 0.45],
+      landscapePhone: [0.35, 0.28],
+    },
+  },
+];
 
 function sha256(buffer) {
   return createHash("sha256").update(buffer).digest("hex");
@@ -110,6 +200,18 @@ const platforms = source.distantPlatforms.map((platform) => {
     detailTier: platform.detailTier,
   };
 });
+
+const atmosphereGuides = atmosphereGuideDefinitions.map((guide) => ({
+  ...guide,
+  positions: Object.fromEntries(
+    Object.entries(guide.targetNdc).map(([presetName, ndc]) => [
+      presetName,
+      solveWorldPoint(cameras[presetName], ndc, guide.depth).map((value) =>
+        round(value, 4)
+      ),
+    ])
+  ),
+}));
 
 const shellRadius = Math.max(
   Math.abs(source.mainStage.bounds.min[0]),
@@ -234,9 +336,11 @@ const manifest = {
   responsivePolicy: "One approved silhouette family with registered transforms per viewport; no platform enters the protected hero band.",
   cameraPresets: source.cameraPresets,
   mainStage: source.mainStage,
+  sun: source.sun,
   protectedHeroBand: source.protectedHeroBand,
   desktopFeatherExclusionZones: source.desktopFeatherExclusionZones,
   platforms,
+  atmosphereGuides,
   registeredViews,
   checks,
 };

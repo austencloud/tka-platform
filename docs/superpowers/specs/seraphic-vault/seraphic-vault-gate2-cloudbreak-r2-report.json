@@ -1,0 +1,596 @@
+{
+  "generatedAt": "2026-08-10T01:59:24.852Z",
+  "sceneId": "seraphic-vault",
+  "gateId": "playable-graybox",
+  "revision": "olive-cloudbreak-r2",
+  "sourceGateApproval": "QhANUCIS6yZH6RaAMz5Z",
+  "artifacts": {
+    "blender/olive_cloudbreak_graybox_r2.blend": {
+      "bytes": 215907,
+      "sha256": "932c2803d0667709e06a1d3b8ca0d87e77805f85fff7fcd5aabf3573f75539af"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-coordinate-manifest.json": {
+      "bytes": 12203,
+      "sha256": "942b6cf507edbb6295ed610fa2293f97b8e7313da182a293e5888deec097b276"
+    },
+    "static/models/celestial/review/olive-cloudbreak-graybox-r2.glb": {
+      "bytes": 227680,
+      "sha256": "f2b5fe202f773e04d97779cf16fc6c301649a8f5f789d92053e5ee551ab30245"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-desktop.png": {
+      "bytes": 1442158,
+      "sha256": "9b7ddb28db69543f9b0c170d0e8cfb1a8acf5865774c79963971a842e38d0f92"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-portrait.png": {
+      "bytes": 830845,
+      "sha256": "4c94f65f3901a9f708bc27b381c9dbc69a6b6d9ba3c891a84f70cd36d92159e5"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-landscape-phone.png": {
+      "bytes": 1113337,
+      "sha256": "44aeb0076d85b53e67350d83d71ca819a7e67432f742f3fc01966105a6452322"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-overview.png": {
+      "bytes": 1365386,
+      "sha256": "550f63e1ae8c7b7a00a71c6c0dfe7dced86bc376bbf5e5acf41c32806129a095"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-profile.png": {
+      "bytes": 1418316,
+      "sha256": "07194d121781ab1a62e5f84594faad470904f9aa8b7f7d116657fea9846d741a"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-verification.json": {
+      "bytes": 13070,
+      "sha256": "7830dff2e88998d568845627fdca941a56fb5353867a0cc86e4c020d9f09791e"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-contact-sheet.png": {
+      "bytes": 1342370,
+      "sha256": "f79012e62ca088c42bf76ff7863d7b63f7d5e50de66df4ace8e5f1ea4ac736ad"
+    }
+  },
+  "glb": {
+    "sceneCount": 1,
+    "cameraCount": 0,
+    "gate2MeshNodes": 32,
+    "roleCounts": {
+      "graybox-landmass": 1,
+      "graybox-performance-zone": 1,
+      "graybox-lagoon": 1,
+      "graybox-lagoon-overflow": 1,
+      "graybox-approach-guide": 2,
+      "graybox-olive-trunk": 2,
+      "graybox-olive-canopy": 2,
+      "graybox-distant-mesa": 4,
+      "graybox-distant-mesa-top": 4,
+      "graybox-distant-waterfall": 3,
+      "graybox-distant-olive": 2,
+      "graybox-cloud-ocean": 1,
+      "graybox-cloud-bank": 5,
+      "graybox-far-sun": 1,
+      "graybox-scale-figure": 2
+    },
+    "elementIds": [
+      "cloud-bank-1",
+      "cloud-bank-2",
+      "cloud-bank-3",
+      "cloud-bank-4",
+      "cloud-bank-5",
+      "cloud-ocean",
+      "far-right-shelf",
+      "far-sun",
+      "high-olive",
+      "lagoon",
+      "landmass",
+      "left-fall",
+      "olive-left",
+      "olive-right",
+      "performance-terrace",
+      "right-fall",
+      "scale-figure"
+    ]
+  },
+  "checks": [
+    {
+      "name": "artifact-digest",
+      "passed": true,
+      "evidence": {
+        "blender/olive_cloudbreak_graybox_r2.blend": {
+          "bytes": 215907,
+          "sha256": "932c2803d0667709e06a1d3b8ca0d87e77805f85fff7fcd5aabf3573f75539af"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-coordinate-manifest.json": {
+          "bytes": 12203,
+          "sha256": "942b6cf507edbb6295ed610fa2293f97b8e7313da182a293e5888deec097b276"
+        },
+        "static/models/celestial/review/olive-cloudbreak-graybox-r2.glb": {
+          "bytes": 227680,
+          "sha256": "f2b5fe202f773e04d97779cf16fc6c301649a8f5f789d92053e5ee551ab30245"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-desktop.png": {
+          "bytes": 1442158,
+          "sha256": "9b7ddb28db69543f9b0c170d0e8cfb1a8acf5865774c79963971a842e38d0f92"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-portrait.png": {
+          "bytes": 830845,
+          "sha256": "4c94f65f3901a9f708bc27b381c9dbc69a6b6d9ba3c891a84f70cd36d92159e5"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-landscape-phone.png": {
+          "bytes": 1113337,
+          "sha256": "44aeb0076d85b53e67350d83d71ca819a7e67432f742f3fc01966105a6452322"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-overview.png": {
+          "bytes": 1365386,
+          "sha256": "550f63e1ae8c7b7a00a71c6c0dfe7dced86bc376bbf5e5acf41c32806129a095"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-profile.png": {
+          "bytes": 1418316,
+          "sha256": "07194d121781ab1a62e5f84594faad470904f9aa8b7f7d116657fea9846d741a"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-verification.json": {
+          "bytes": 13070,
+          "sha256": "7830dff2e88998d568845627fdca941a56fb5353867a0cc86e4c020d9f09791e"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-contact-sheet.png": {
+          "bytes": 1342370,
+          "sha256": "f79012e62ca088c42bf76ff7863d7b63f7d5e50de66df4ace8e5f1ea4ac736ad"
+        }
+      }
+    },
+    {
+      "name": "collision",
+      "passed": true,
+      "evidence": "The lagoon clears the dry performance radius by 3.71 m, and both olive exclusions remain outside it."
+    },
+    {
+      "name": "coordinate-parity",
+      "passed": true,
+      "evidence": {
+        "cameras": [
+          {
+            "camera": "desktop",
+            "passed": true
+          },
+          {
+            "camera": "portrait",
+            "passed": true
+          },
+          {
+            "camera": "landscapePhone",
+            "passed": true
+          }
+        ],
+        "sun": true,
+        "trees": [
+          {
+            "id": "olive-left",
+            "passed": true
+          },
+          {
+            "id": "olive-right",
+            "passed": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "registered-camera-layout",
+      "passed": true,
+      "evidence": [
+        {
+          "camera": "desktop",
+          "passed": true,
+          "stageCenter": [
+            0,
+            -0.1229
+          ],
+          "expectedStage": [
+            0,
+            -0.1097
+          ],
+          "lagoonCenter": [
+            0.5337,
+            -0.151
+          ],
+          "expectedLagoon": [
+            0.5145,
+            -0.1167
+          ],
+          "sunCenter": [
+            0,
+            0.5504
+          ],
+          "expectedSun": [
+            0,
+            0.5499
+          ]
+        },
+        {
+          "camera": "portrait",
+          "passed": true,
+          "stageCenter": [
+            0,
+            -0.0586
+          ],
+          "expectedStage": [
+            0,
+            -0.0561
+          ],
+          "lagoonCenter": [
+            0.7987,
+            -0.0687
+          ],
+          "expectedLagoon": [
+            0.7806,
+            -0.0581
+          ],
+          "sunCenter": [
+            0,
+            0.3188
+          ],
+          "expectedSun": [
+            0,
+            0.3186
+          ]
+        },
+        {
+          "camera": "landscapePhone",
+          "passed": true,
+          "stageCenter": [
+            0,
+            -0.1234
+          ],
+          "expectedStage": [
+            0,
+            -0.1092
+          ],
+          "lagoonCenter": [
+            0.444,
+            -0.153
+          ],
+          "expectedLagoon": [
+            0.427,
+            -0.1161
+          ],
+          "sunCenter": [
+            0,
+            0.5672
+          ],
+          "expectedSun": [
+            0,
+            0.5667
+          ]
+        }
+      ]
+    },
+    {
+      "name": "solar-silhouette-clearance",
+      "passed": true,
+      "evidence": [
+        {
+          "camera": "desktop",
+          "mesa": "left-fall",
+          "passed": true,
+          "sunBounds": [
+            -0.0403,
+            0.0403,
+            0.4767,
+            0.6242
+          ],
+          "mesaBounds": [
+            -0.507,
+            -0.33,
+            -0.0945,
+            0.3911
+          ]
+        },
+        {
+          "camera": "desktop",
+          "mesa": "right-fall",
+          "passed": true,
+          "sunBounds": [
+            -0.0403,
+            0.0403,
+            0.4767,
+            0.6242
+          ],
+          "mesaBounds": [
+            0.2963,
+            0.4992,
+            -0.0805,
+            0.4823
+          ]
+        },
+        {
+          "camera": "desktop",
+          "mesa": "high-olive",
+          "passed": true,
+          "sunBounds": [
+            -0.0403,
+            0.0403,
+            0.4767,
+            0.6242
+          ],
+          "mesaBounds": [
+            0.131,
+            0.2299,
+            0.0772,
+            0.5746
+          ]
+        },
+        {
+          "camera": "desktop",
+          "mesa": "far-right-shelf",
+          "passed": true,
+          "sunBounds": [
+            -0.0403,
+            0.0403,
+            0.4767,
+            0.6242
+          ],
+          "mesaBounds": [
+            0.3549,
+            0.5298,
+            0.0373,
+            0.3704
+          ]
+        },
+        {
+          "camera": "portrait",
+          "mesa": "left-fall",
+          "passed": true,
+          "sunBounds": [
+            -0.0816,
+            0.0816,
+            0.2721,
+            0.3656
+          ],
+          "mesaBounds": [
+            -0.9357,
+            -0.6196,
+            -0.0782,
+            0.2078
+          ]
+        },
+        {
+          "camera": "portrait",
+          "mesa": "right-fall",
+          "passed": true,
+          "sunBounds": [
+            -0.0816,
+            0.0816,
+            0.2721,
+            0.3656
+          ],
+          "mesaBounds": [
+            0.5646,
+            0.9324,
+            -0.0723,
+            0.2616
+          ]
+        },
+        {
+          "camera": "portrait",
+          "mesa": "high-olive",
+          "passed": true,
+          "sunBounds": [
+            -0.0816,
+            0.0816,
+            0.2721,
+            0.3656
+          ],
+          "mesaBounds": [
+            0.2563,
+            0.4448,
+            0.0194,
+            0.3225
+          ]
+        },
+        {
+          "camera": "portrait",
+          "mesa": "far-right-shelf",
+          "passed": true,
+          "sunBounds": [
+            -0.0816,
+            0.0816,
+            0.2721,
+            0.3656
+          ],
+          "mesaBounds": [
+            0.7034,
+            1.0382,
+            -0.0061,
+            0.2017
+          ]
+        },
+        {
+          "camera": "landscapePhone",
+          "mesa": "left-fall",
+          "passed": true,
+          "sunBounds": [
+            -0.0325,
+            0.0325,
+            0.4895,
+            0.6449
+          ],
+          "mesaBounds": [
+            -0.4118,
+            -0.2682,
+            -0.1075,
+            0.4078
+          ]
+        },
+        {
+          "camera": "landscapePhone",
+          "mesa": "right-fall",
+          "passed": true,
+          "sunBounds": [
+            -0.0325,
+            0.0325,
+            0.4895,
+            0.6449
+          ],
+          "mesaBounds": [
+            0.2405,
+            0.4048,
+            -0.0935,
+            0.5055
+          ]
+        },
+        {
+          "camera": "landscapePhone",
+          "mesa": "high-olive",
+          "passed": true,
+          "sunBounds": [
+            -0.0325,
+            0.0325,
+            0.4895,
+            0.6449
+          ],
+          "mesaBounds": [
+            0.106,
+            0.1858,
+            0.0715,
+            0.5987
+          ]
+        },
+        {
+          "camera": "landscapePhone",
+          "mesa": "far-right-shelf",
+          "passed": true,
+          "sunBounds": [
+            -0.0325,
+            0.0325,
+            0.4895,
+            0.6449
+          ],
+          "mesaBounds": [
+            0.2869,
+            0.4281,
+            0.0284,
+            0.3799
+          ]
+        }
+      ]
+    },
+    {
+      "name": "hero-band-clearance",
+      "passed": true,
+      "evidence": [
+        {
+          "camera": "desktop",
+          "tree": "olive-left",
+          "passed": true,
+          "bounds": [
+            -0.3946,
+            -0.3528,
+            -0.1226,
+            0.1059
+          ]
+        },
+        {
+          "camera": "desktop",
+          "tree": "olive-right",
+          "passed": true,
+          "bounds": [
+            0.3346,
+            0.3793,
+            -0.1631,
+            0.0944
+          ]
+        },
+        {
+          "camera": "portrait",
+          "tree": "olive-left",
+          "passed": true,
+          "bounds": [
+            -0.5957,
+            -0.5382,
+            -0.0613,
+            0.0486
+          ]
+        },
+        {
+          "camera": "portrait",
+          "tree": "olive-right",
+          "passed": true,
+          "bounds": [
+            0.4991,
+            0.5592,
+            -0.0769,
+            0.0441
+          ]
+        },
+        {
+          "camera": "landscapePhone",
+          "tree": "olive-left",
+          "passed": true,
+          "bounds": [
+            -0.3275,
+            -0.2927,
+            -0.1227,
+            0.1259
+          ]
+        },
+        {
+          "camera": "landscapePhone",
+          "tree": "olive-right",
+          "passed": true,
+          "bounds": [
+            0.2784,
+            0.3157,
+            -0.1649,
+            0.116
+          ]
+        }
+      ]
+    },
+    {
+      "name": "review-glb-structure",
+      "passed": true,
+      "evidence": {
+        "sceneCount": 1,
+        "cameraCount": 0,
+        "gate2MeshNodes": 32,
+        "roleCounts": {
+          "graybox-landmass": 1,
+          "graybox-performance-zone": 1,
+          "graybox-lagoon": 1,
+          "graybox-lagoon-overflow": 1,
+          "graybox-approach-guide": 2,
+          "graybox-olive-trunk": 2,
+          "graybox-olive-canopy": 2,
+          "graybox-distant-mesa": 4,
+          "graybox-distant-mesa-top": 4,
+          "graybox-distant-waterfall": 3,
+          "graybox-distant-olive": 2,
+          "graybox-cloud-ocean": 1,
+          "graybox-cloud-bank": 5,
+          "graybox-far-sun": 1,
+          "graybox-scale-figure": 2
+        },
+        "elementIds": [
+          "cloud-bank-1",
+          "cloud-bank-2",
+          "cloud-bank-3",
+          "cloud-bank-4",
+          "cloud-bank-5",
+          "cloud-ocean",
+          "far-right-shelf",
+          "far-sun",
+          "high-olive",
+          "lagoon",
+          "landmass",
+          "left-fall",
+          "olive-left",
+          "olive-right",
+          "performance-terrace",
+          "right-fall",
+          "scale-figure"
+        ]
+      }
+    }
+  ],
+  "fixedCameraAdaptation": {
+    "firstPersonWalk": "Exempt. Celestial is a fixed-camera performance background.",
+    "routeDuration": "Exempt. The reviewed route is an attention sequence, not locomotion.",
+    "sequenceParity": "Exempt. This environment carries no selected museum performance sequence."
+  }
+}

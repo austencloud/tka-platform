@@ -2,9 +2,9 @@
   "sceneId": "seraphic-vault",
   "gateId": "playable-graybox",
   "artifactDigests": {
-    "blender/seraphic_vault_phase2_graybox.blend": "ed766baaa16b01c5353aeaa75e5b663c6a3800593840ecd8a122fc10eb45e6c4",
-    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-coordinate-manifest.json": "54c40ca00ce72f48532bb1c975b57c1dc8d4d5f54549c9c9ab359167e9f42d9e",
-    "static/models/celestial/review/seraphic-vault-phase2-graybox.glb": "d28c80cba202c0b3a6b41f420afd28228427699cc84f48789531b8392d9b847b"
+    "blender/seraphic_vault_phase2_graybox.blend": "f3fb4a4203d1e02f122a87e9617ce42aba8b70a96ea36c9f4df53bf3a35438c2",
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-coordinate-manifest.json": "593ff64f71e412d272ed04fd879b6a4302be5d91fc23cb88f310e36cb1005870",
+    "static/models/celestial/review/seraphic-vault-phase2-graybox.glb": "c7d927bf8fdbe96b4abb65af141eabc0f5b819650280af7178ffc9ae9692157c"
   },
   "registeredViews": {
     "desktop": {
@@ -77,16 +77,16 @@
         },
         "eroded-halo": {
           "solidBounds": [
-            -0.5509,
-            -0.4893,
-            -0.0946,
-            0.0204
+            -0.5514,
+            -0.4888,
+            0.1902,
+            0.3034
           ],
           "atmosphericBounds": [
-            -0.5839,
-            -0.4552,
-            -0.0995,
-            0.0204
+            -0.5849,
+            -0.4541,
+            0.1806,
+            0.3034
           ]
         },
         "cloud-crown": {
@@ -175,16 +175,16 @@
         },
         "eroded-halo": {
           "solidBounds": [
-            -0.4101,
-            -0.3076,
-            -0.2922,
-            -0.2269
+            -0.8752,
+            -0.7637,
+            0.2734,
+            0.34
           ],
           "atmosphericBounds": [
-            -0.4685,
-            -0.2544,
-            -0.2958,
-            -0.2269
+            -0.9358,
+            -0.7024,
+            0.2686,
+            0.34
           ]
         },
         "cloud-crown": {
@@ -273,16 +273,16 @@
         },
         "eroded-halo": {
           "solidBounds": [
-            -0.8094,
-            -0.7326,
-            -0.1021,
-            0.0809
+            -0.8098,
+            -0.7322,
+            0.1829,
+            0.3637
           ],
           "atmosphericBounds": [
-            -0.8485,
-            -0.6896,
-            -0.11,
-            0.0809
+            -0.8492,
+            -0.6889,
+            0.1694,
+            0.3637
           ]
         },
         "cloud-crown": {
@@ -326,7 +326,7 @@
           "preset": "desktop",
           "platform": "eroded-halo",
           "passed": true,
-          "clearanceMetres": 33.897
+          "clearanceMetres": 33.6
         },
         {
           "preset": "desktop",
@@ -350,7 +350,7 @@
           "preset": "portrait",
           "platform": "eroded-halo",
           "passed": true,
-          "clearanceMetres": 25.203
+          "clearanceMetres": 31.443
         },
         {
           "preset": "portrait",
@@ -374,7 +374,7 @@
           "preset": "landscapePhone",
           "platform": "eroded-halo",
           "passed": true,
-          "clearanceMetres": 38.234
+          "clearanceMetres": 37.986
         },
         {
           "preset": "landscapePhone",

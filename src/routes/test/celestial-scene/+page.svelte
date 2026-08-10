@@ -11,6 +11,9 @@
   import { createEnvironmentTransitionVisualState } from "$lib/shared/3d/environments/state/environment-transition-visual-state.svelte";
   import { setEnvironmentTransitionVisualContext } from "$lib/shared/3d/environments/context/environment-transition-visual-context";
   import HarnessToneMapping from "../winter-scene/HarnessToneMapping.svelte";
+  import SceneAudioPlayer from "$lib/shared/3d/components/SceneAudioPlayer.svelte";
+  import SceneShaderWarmup from "$lib/shared/3d/components/SceneShaderWarmup.svelte";
+  import EnvironmentTransitionRenderPass from "$lib/shared/3d/environments/components/EnvironmentTransitionRenderPass.svelte";
 
   const sceneFeatureState = createSceneFeatureState();
   setSceneFeatureContext(sceneFeatureState);
@@ -20,8 +23,8 @@
 
   const VIEW_PRESETS = {
     hero: {
-      position: [0, 7.8, 34],
-      target: [0, 3, -3.8],
+      position: [0, 7.8, 30],
+      target: [0, 0.8, -5],
       fov: 48,
     },
     aisle: {
@@ -51,21 +54,25 @@
     },
   } as const;
   const PORTRAIT_PHONE_PRESET = {
-    position: [0, 8.2, 33],
-    target: [0, 3.1, -3.8],
-    fov: 68,
+    position: [0, 9.5, 45],
+    target: [0, 1, -5],
+    fov: 64,
   } as const;
   const LANDSCAPE_PHONE_PRESET = {
-    position: [0, 7.2, 32],
-    target: [0, 2.9, -3.8],
-    fov: 32,
+    position: [0, 7.2, 29],
+    target: [0, 0.7, -5],
+    fov: 46,
   } as const;
 
   type ViewName = keyof typeof VIEW_PRESETS;
   let viewportWidth = $state(1920);
   let viewportHeight = $state(1080);
-  const requestedView = $derived(page.url.searchParams.get("view"));
-  const view = $derived(
+  let selectedBackground = $state(BackgroundType.CELESTIAL);
+  const requestedView = page.url.searchParams.get("view");
+  const showTransitionControls = $derived(
+    page.url.searchParams.has("controls")
+  );
+  let view = $state<ViewName>(
     requestedView && requestedView in VIEW_PRESETS
       ? (requestedView as ViewName)
       : "hero"
@@ -73,7 +80,7 @@
   const cameraPreset = $derived(
     view === "hero" && viewportHeight <= 500
       ? LANDSCAPE_PHONE_PRESET
-      : view === "hero" && viewportWidth <= 500
+      : view === "hero" && viewportWidth / Math.max(1, viewportHeight) <= 0.8
         ? PORTRAIT_PHONE_PRESET
         : VIEW_PRESETS[view]
   );
@@ -85,7 +92,7 @@
 />
 
 <svelte:head>
-  <title>Seraphic Vault verification</title>
+  <title>Olive Cloudbreak verification</title>
 </svelte:head>
 
 <div class="page">
@@ -99,20 +106,75 @@
       })}
   >
     <HarnessToneMapping />
-    {#key view}
+    <SceneShaderWarmup
+      onReadyChange={(ready) => transitionVisual.setRendererReady(ready)}
+    />
+    <EnvironmentTransitionRenderPass />
+    {#key cameraPreset}
       <EnvironmentReviewCamera
         destinationId="celestial-scene-review"
         preset={cameraPreset}
       />
     {/key}
     <Environment3D
-      backgroundType={BackgroundType.CELESTIAL}
+      backgroundType={selectedBackground}
       performerCount={1}
       stageWidth={6}
       stageDepth={6}
       stageZOffset={0}
     />
   </Canvas>
+  <SceneAudioPlayer backgroundType={selectedBackground} />
+  {#if showTransitionControls}
+    <div class="review-controls">
+      <div class="control-group" role="group" aria-label="Camera review">
+        <button
+          type="button"
+          class:active={view === "hero"}
+          onclick={() => (view = "hero")}>Hero</button
+        >
+        <button
+          type="button"
+          class:active={view === "aisle"}
+          onclick={() => (view = "aisle")}>Aisle</button
+        >
+        <button
+          type="button"
+          class:active={view === "stage"}
+          onclick={() => (view = "stage")}>Stage</button
+        >
+        <button
+          type="button"
+          class:active={view === "profile"}
+          onclick={() => (view = "profile")}>Profile</button
+        >
+      </div>
+      <div
+        class="control-group"
+        role="group"
+        aria-label="Environment transition review"
+      >
+        <button
+          type="button"
+          class:active={selectedBackground === BackgroundType.COSMIC}
+          onclick={() => (selectedBackground = BackgroundType.COSMIC)}
+          >Cosmic</button
+        >
+        <button
+          type="button"
+          class:active={selectedBackground === BackgroundType.CELESTIAL}
+          onclick={() => (selectedBackground = BackgroundType.CELESTIAL)}
+          >Cloudbreak</button
+        >
+        <button
+          type="button"
+          class:active={selectedBackground === BackgroundType.OCEAN}
+          onclick={() => (selectedBackground = BackgroundType.OCEAN)}
+          >Ocean</button
+        >
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -123,5 +185,43 @@
     height: 100vh;
     overflow: hidden;
     background: linear-gradient(#6f92c5 0%, #a7c6e8 58%, #f6d9b0 100%);
+  }
+
+  .review-controls {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.35rem;
+  }
+
+  .control-group {
+    display: flex;
+    gap: 0.35rem;
+    padding: 0.35rem;
+    border: 1px solid rgb(255 255 255 / 0.34);
+    border-radius: 999px;
+    background: rgb(20 29 42 / 0.78);
+  }
+
+  .control-group button {
+    min-height: 2.75rem;
+    padding: 0.55rem 0.85rem;
+    border: 0;
+    border-radius: 999px;
+    color: #eaf2fb;
+    font:
+      600 max(14px, 0.875rem) / 1 system-ui,
+      sans-serif;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .control-group button.active {
+    color: #172234;
+    background: #eef5fb;
   }
 </style>

@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "seraphic-vault",
+  "gate": 4,
+  "capturedAt": "2026-08-09T20:34:42.507Z",
+  "runtime": {
+    "url": "https://127.0.0.1:5175/test/celestial-scene?view=hero",
+    "viewport": {
+      "width": 1920,
+      "height": 1080,
+      "devicePixelRatio": 1
+    },
+    "renderer": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+    "maxTextureSize": 16384
+  },
+  "deliveryAssets": [
+    {
+      "path": "static/models/celestial/celestial-environment.glb",
+      "bytes": 3028348,
+      "sha256": "10677ca5d3c44bc32c9d0c53759c69b1d62fe0a22477c1c0075ade880b13bcd0",
+      "extensions": [
+        "EXT_mesh_gpu_instancing",
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization",
+        "KHR_texture_basisu"
+      ]
+    },
+    {
+      "path": "static/models/celestial/seraphic-vault-production-slice.glb",
+      "bytes": 694324,
+      "sha256": "8f8060f8dafe33bcaa2a7d116e006a6782c4b73ae81c2ecded0a049e10e0ae48",
+      "extensions": [
+        "EXT_meshopt_compression",
+        "KHR_materials_specular",
+        "KHR_mesh_quantization",
+        "KHR_texture_basisu"
+      ]
+    },
+    {
+      "path": "static/textures/celestial/seraphic-cloud-panorama.webp",
+      "bytes": 128278,
+      "sha256": "a368f908e0c3afb6a9a1e76931dcdc7d7067a20f4f7972fcdda8c836ccf1c5e3"
+    }
+  ],
+  "assetStructure": {
+    "mainEnvironment": {
+      "scenes": 1,
+      "nodes": 7,
+      "meshes": 7,
+      "materials": 5,
+      "textures": 11,
+      "featherRibs": 6,
+      "stageFragments": 3,
+      "texturedStage": true
+    },
+    "brokenVigil": {
+      "scenes": 1,
+      "nodes": 9,
+      "meshes": 9,
+      "materials": 4,
+      "textures": 3,
+      "deck": 1,
+      "inlays": 2,
+      "breakFaces": 1,
+      "featherArcs": 1,
+      "fractureStones": 4
+    }
+  },
+  "performance": {
+    "sampleFrames": 300,
+    "averageFrameMs": 16.613333333333333,
+    "estimatedFps": 60.192616372391655,
+    "p95FrameMs": 16.80000000000291,
+    "p99FrameMs": 16.90000000000873,
+    "maxFrameMs": 17.10000000000582,
+    "framesOver25Ms": 0,
+    "framesOver50Ms": 0,
+    "observedCls": 0,
+    "cpuThrottling": "1x",
+    "networkThrottling": "none",
+    "result": "passed"
+  },
+  "interaction": {
+    "track": "Choir of Air",
+    "initialControl": "Play",
+    "activatedControl": "Pause",
+    "audioUnlockedByPointer": true,
+    "motionCapture": {
+      "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate4-interaction-capture.gif",
+      "width": 960,
+      "height": 540,
+      "frames": 24,
+      "durationSeconds": 3.01
+    },
+    "result": "passed"
+  },
+  "console": {
+    "environmentProgress": [20, 100],
+    "environmentReady": true,
+    "errors": 0,
+    "warnings": 0,
+    "devOnlyIssues": [
+      "The Vite development server reports its standard Content Security Policy eval issue."
+    ],
+    "result": "passed"
+  },
+  "viewportSweep": [
+    {
+      "viewport": "1920x1080",
+      "result": "passed",
+      "note": "Registered Gate 4 hero frame; Broken Vigil is readable at lower left."
+    },
+    {
+      "viewport": "2560x1440",
+      "result": "passed"
+    },
+    {
+      "viewport": "3840x2160",
+      "result": "passed"
+    },
+    {
+      "viewport": "1440x900",
+      "result": "passed"
+    },
+    {
+      "viewport": "1024x768",
+      "result": "passed"
+    },
+    {
+      "viewport": "960x412",
+      "result": "passed",
+      "note": "The landscape review camera intentionally crops the outer feather tips."
+    },
+    {
+      "viewport": "375x812",
+      "result": "passed",
+      "note": "The portrait review camera preserves the sun, performer lane, and main sanctuary."
+    }
+  ],
+  "verification": {
+    "assetVerifier": "passed",
+    "focusedAudioTest": "passed: 1 test",
+    "svelteCheck": "passed: 0 errors and 0 warnings at the error threshold",
+    "runtimeRequests": "passed: both GLBs and the cloud panorama returned HTTP 304 from cache after an initial successful load",
+    "knownBoundary": "Gate 4 proves one desktop distant sanctuary. Gate 5 integrates and verifies all four responsive sanctuary positions."
+  },
+  "result": "passed"
+}

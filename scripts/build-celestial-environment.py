@@ -100,6 +100,7 @@ def create_travertine_image(
     vein_color: tuple[float, float, float],
     phase: float,
     size: int = 1024,
+    inlay: bool = False,
 ) -> bpy.types.Image:
     """Create a restrained, tileable heaven-stone color map for glTF export."""
     y, x = np.mgrid[0:size, 0:size]
@@ -124,6 +125,15 @@ def create_travertine_image(
     color += variation
     color = color * (1.0 - veins[..., None]) + vein * veins[..., None]
     color -= pores[..., None]
+
+    if inlay:
+        radial = np.sqrt(np.square(u - 0.5) + np.square((v - 0.5) * 0.86))
+        ring_a = np.exp(-np.square((radial - 0.235) / 0.0065))
+        ring_b = np.exp(-np.square((radial - 0.375) / 0.0055))
+        ring = np.clip(ring_a * 0.8 + ring_b * 0.65, 0.0, 1.0)
+        inlay_color = np.array((0.55, 0.62, 0.72), dtype=np.float32)
+        color = color * (1.0 - ring[..., None] * 0.38) + inlay_color * ring[..., None] * 0.38
+
     color = np.clip(color, 0.0, 1.0)
 
     alpha = np.ones((size, size, 1), dtype=np.float32)
@@ -307,20 +317,21 @@ def create_extruded_slab(
 def create_floor() -> None:
     floor_image = create_travertine_image(
         "SeraphicTravertine",
-        (0.88, 0.83, 0.73),
-        (0.57, 0.61, 0.67),
+        (0.89, 0.89, 0.88),
+        (0.58, 0.63, 0.70),
         phase=0.17,
+        inlay=True,
     )
     edge_image = create_travertine_image(
         "SeraphicTravertineEdges",
-        (0.64, 0.67, 0.70),
+        (0.70, 0.72, 0.76),
         (0.37, 0.43, 0.51),
         phase=0.61,
     )
     alabaster = principled_material(
         "AlabasterPerformanceFloor",
         (1.0, 1.0, 1.0, 1.0),
-        roughness=0.76,
+        roughness=0.58,
     )
     edge_stone = principled_material(
         "AlabasterBrokenEdges",

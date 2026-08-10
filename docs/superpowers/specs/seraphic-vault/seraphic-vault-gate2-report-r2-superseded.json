@@ -1,0 +1,319 @@
+{
+  "generatedAt": "2026-08-09T18:14:48.260Z",
+  "sceneId": "seraphic-vault",
+  "gateId": "playable-graybox",
+  "sourceGateApproval": "EiR6GvhtzW1A3OEaZ9Zi",
+  "artifacts": {
+    "blender/seraphic_vault_phase2_graybox.blend": {
+      "bytes": 32232951,
+      "sha256": "249481607f245c19f18bfa1733c09fc0cddf8198ac2ae146cd20eb3251d82f22"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-coordinate-manifest.json": {
+      "bytes": 23999,
+      "sha256": "e1cb8f91764a531e9bcaae94c9c0ddafd81d99ebd8bf26686ac3cfbd90b79900"
+    },
+    "static/models/celestial/review/seraphic-vault-phase2-graybox.glb": {
+      "bytes": 31488228,
+      "sha256": "fb79d0aabc0489afc253da6aa295c2cda208d2d004f8d61af9c6b0925d4c730c"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-desktop.png": {
+      "bytes": 1463728,
+      "sha256": "bcb02ba81bf604f7bd3fd45d901669461831046e095e77a4e5cfe2cf032eb3a2"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-portrait.png": {
+      "bytes": 831798,
+      "sha256": "20b97eba7ef7914e901deab0af9c476a9bcc51fb046a41afbe818319352ed1cf"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-landscape-phone.png": {
+      "bytes": 1212318,
+      "sha256": "9356a8bd909b59807a83c1383006d598a8121648dda1338a4fe7783aa741393f"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-overview.png": {
+      "bytes": 1345893,
+      "sha256": "a1ddf8d33eb9268730dde4736f9a8d92b5e77317f193b6d693d90986a4a7bd8d"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-profile.png": {
+      "bytes": 1347668,
+      "sha256": "3da149a9138405cf6ec768257510fa4f0e506450e6f5d5c9afd21e3007668b7c"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-verification.json": {
+      "bytes": 10924,
+      "sha256": "cf76c19279e03c71d2e505c0ff95a2704b5321f57bd0eba2f6dfbb7e55dedafd"
+    },
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-contact-sheet.png": {
+      "bytes": 1713430,
+      "sha256": "e741c56c566b04885698dc943c7e0611fa0363aacbcd8432fda8ae204fe1b1b8"
+    }
+  },
+  "glb": {
+    "sceneCount": 1,
+    "cameraCount": 0,
+    "platformIds": [
+      "broken-vigil",
+      "cloud-crown",
+      "eroded-halo",
+      "twin-choir"
+    ],
+    "atmosphereGuideIds": [
+      "far-left-shoulder",
+      "far-right-shoulder",
+      "middle-left-bank",
+      "middle-right-bank",
+      "upper-left-canopy",
+      "upper-right-canopy"
+    ],
+    "solarNodes": {
+      "graybox-solar-core": 1,
+      "graybox-solar-aureole": 2,
+      "graybox-solar-ray": 16
+    },
+    "gate2MeshNodes": 113
+  },
+  "checks": [
+    {
+      "name": "artifact-digest",
+      "passed": true,
+      "evidence": {
+        "blender/seraphic_vault_phase2_graybox.blend": {
+          "bytes": 32232951,
+          "sha256": "249481607f245c19f18bfa1733c09fc0cddf8198ac2ae146cd20eb3251d82f22"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-coordinate-manifest.json": {
+          "bytes": 23999,
+          "sha256": "e1cb8f91764a531e9bcaae94c9c0ddafd81d99ebd8bf26686ac3cfbd90b79900"
+        },
+        "static/models/celestial/review/seraphic-vault-phase2-graybox.glb": {
+          "bytes": 31488228,
+          "sha256": "fb79d0aabc0489afc253da6aa295c2cda208d2d004f8d61af9c6b0925d4c730c"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-desktop.png": {
+          "bytes": 1463728,
+          "sha256": "bcb02ba81bf604f7bd3fd45d901669461831046e095e77a4e5cfe2cf032eb3a2"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-portrait.png": {
+          "bytes": 831798,
+          "sha256": "20b97eba7ef7914e901deab0af9c476a9bcc51fb046a41afbe818319352ed1cf"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-landscape-phone.png": {
+          "bytes": 1212318,
+          "sha256": "9356a8bd909b59807a83c1383006d598a8121648dda1338a4fe7783aa741393f"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-overview.png": {
+          "bytes": 1345893,
+          "sha256": "a1ddf8d33eb9268730dde4736f9a8d92b5e77317f193b6d693d90986a4a7bd8d"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-profile.png": {
+          "bytes": 1347668,
+          "sha256": "3da149a9138405cf6ec768257510fa4f0e506450e6f5d5c9afd21e3007668b7c"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-verification.json": {
+          "bytes": 10924,
+          "sha256": "cf76c19279e03c71d2e505c0ff95a2704b5321f57bd0eba2f6dfbb7e55dedafd"
+        },
+        "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-contact-sheet.png": {
+          "bytes": 1713430,
+          "sha256": "e741c56c566b04885698dc943c7e0611fa0363aacbcd8432fda8ae204fe1b1b8"
+        }
+      }
+    },
+    {
+      "name": "collision",
+      "passed": true,
+      "evidence": [
+        {
+          "preset": "desktop",
+          "platform": "broken-vigil",
+          "passed": true,
+          "clearanceMetres": 15.632
+        },
+        {
+          "preset": "desktop",
+          "platform": "twin-choir",
+          "passed": true,
+          "clearanceMetres": 28.117
+        },
+        {
+          "preset": "desktop",
+          "platform": "eroded-halo",
+          "passed": true,
+          "clearanceMetres": 33.897
+        },
+        {
+          "preset": "desktop",
+          "platform": "cloud-crown",
+          "passed": true,
+          "clearanceMetres": 49.031
+        },
+        {
+          "preset": "portrait",
+          "platform": "broken-vigil",
+          "passed": true,
+          "clearanceMetres": 3.004
+        },
+        {
+          "preset": "portrait",
+          "platform": "twin-choir",
+          "passed": true,
+          "clearanceMetres": 14.134
+        },
+        {
+          "preset": "portrait",
+          "platform": "eroded-halo",
+          "passed": true,
+          "clearanceMetres": 25.203
+        },
+        {
+          "preset": "portrait",
+          "platform": "cloud-crown",
+          "passed": true,
+          "clearanceMetres": 39.917
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "broken-vigil",
+          "passed": true,
+          "clearanceMetres": 10.027
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "twin-choir",
+          "passed": true,
+          "clearanceMetres": 22.249
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "eroded-halo",
+          "passed": true,
+          "clearanceMetres": 38.234
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "cloud-crown",
+          "passed": true,
+          "clearanceMetres": 54.008
+        }
+      ]
+    },
+    {
+      "name": "registered-silhouette-clearance",
+      "passed": true,
+      "evidence": [
+        {
+          "preset": "desktop",
+          "platform": "broken-vigil",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "desktop",
+          "platform": "twin-choir",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "desktop",
+          "platform": "eroded-halo",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "desktop",
+          "platform": "cloud-crown",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "portrait",
+          "platform": "broken-vigil",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "portrait",
+          "platform": "twin-choir",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "portrait",
+          "platform": "eroded-halo",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "portrait",
+          "platform": "cloud-crown",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "broken-vigil",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "twin-choir",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "eroded-halo",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        },
+        {
+          "preset": "landscapePhone",
+          "platform": "cloud-crown",
+          "passed": true,
+          "overlappingFeatherBounds": []
+        }
+      ]
+    },
+    {
+      "name": "projection-parity",
+      "passed": true,
+      "evidence": "Every platform root projects to its registered NDC target within 0.0005 in desktop, portrait, and landscape-phone views."
+    },
+    {
+      "name": "review-glb-structure",
+      "passed": true,
+      "evidence": {
+        "sceneCount": 1,
+        "cameraCount": 0,
+        "platformIds": [
+          "broken-vigil",
+          "cloud-crown",
+          "eroded-halo",
+          "twin-choir"
+        ],
+        "atmosphereGuideIds": [
+          "far-left-shoulder",
+          "far-right-shoulder",
+          "middle-left-bank",
+          "middle-right-bank",
+          "upper-left-canopy",
+          "upper-right-canopy"
+        ],
+        "solarNodes": {
+          "graybox-solar-core": 1,
+          "graybox-solar-aureole": 2,
+          "graybox-solar-ray": 16
+        },
+        "gate2MeshNodes": 113
+      }
+    },
+    {
+      "name": "atmosphere-structure",
+      "passed": true,
+      "evidence": "The review artifact contains six responsive cloud-field guides plus a tagged solar core, two aureole rings, and sixteen ray segments."
+    }
+  ],
+  "fixedCameraAdaptation": {
+    "firstPersonWalk": "Not applicable. The Celestial scene is a fixed-camera performance background.",
+    "routeDuration": "Not applicable. The reviewed route is an attention sequence, not locomotion.",
+    "sequenceParity": "Not applicable. This environment carries no selected museum performance sequence."
+  }
+}

@@ -1,0 +1,615 @@
+{
+  "sceneId": "seraphic-vault",
+  "gateId": "playable-graybox",
+  "revision": "olive-cloudbreak-r2",
+  "artifactDigests": {
+    "blender/olive_cloudbreak_graybox_r2.blend": "932c2803d0667709e06a1d3b8ca0d87e77805f85fff7fcd5aabf3573f75539af",
+    "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate2-cloudbreak-r2-coordinate-manifest.json": "942b6cf507edbb6295ed610fa2293f97b8e7313da182a293e5888deec097b276",
+    "static/models/celestial/review/olive-cloudbreak-graybox-r2.glb": "f2b5fe202f773e04d97779cf16fc6c301649a8f5f789d92053e5ee551ab30245"
+  },
+  "registeredViews": {
+    "desktop": {
+      "stageBounds": [
+        -0.2313,
+        0.2313,
+        -0.229,
+        -0.0167
+      ],
+      "lagoonBounds": [
+        0.3448,
+        0.7227,
+        -0.2745,
+        -0.0275
+      ],
+      "sunBounds": [
+        -0.0403,
+        0.0403,
+        0.4767,
+        0.6242
+      ],
+      "mesaBounds": {
+        "left-fall": [
+          -0.507,
+          -0.33,
+          -0.0945,
+          0.3911
+        ],
+        "right-fall": [
+          0.2963,
+          0.4992,
+          -0.0805,
+          0.4823
+        ],
+        "high-olive": [
+          0.131,
+          0.2299,
+          0.0772,
+          0.5746
+        ],
+        "far-right-shelf": [
+          0.3549,
+          0.5298,
+          0.0373,
+          0.3704
+        ]
+      },
+      "treeTrunkBounds": {
+        "olive-left": [
+          -0.3946,
+          -0.3528,
+          -0.1226,
+          0.1059
+        ],
+        "olive-right": [
+          0.3346,
+          0.3793,
+          -0.1631,
+          0.0944
+        ]
+      }
+    },
+    "portrait": {
+      "stageBounds": [
+        -0.3512,
+        0.3512,
+        -0.101,
+        -0.0161
+      ],
+      "lagoonBounds": [
+        0.5379,
+        1.0595,
+        -0.1163,
+        -0.021
+      ],
+      "sunBounds": [
+        -0.0816,
+        0.0816,
+        0.2721,
+        0.3656
+      ],
+      "mesaBounds": {
+        "left-fall": [
+          -0.9357,
+          -0.6196,
+          -0.0782,
+          0.2078
+        ],
+        "right-fall": [
+          0.5646,
+          0.9324,
+          -0.0723,
+          0.2616
+        ],
+        "high-olive": [
+          0.2563,
+          0.4448,
+          0.0194,
+          0.3225
+        ],
+        "far-right-shelf": [
+          0.7034,
+          1.0382,
+          -0.0061,
+          0.2017
+        ]
+      },
+      "treeTrunkBounds": {
+        "olive-left": [
+          -0.5957,
+          -0.5382,
+          -0.0613,
+          0.0486
+        ],
+        "olive-right": [
+          0.4991,
+          0.5592,
+          -0.0769,
+          0.0441
+        ]
+      }
+    },
+    "landscapePhone": {
+      "stageBounds": [
+        -0.1921,
+        0.1921,
+        -0.2342,
+        -0.0127
+      ],
+      "lagoonBounds": [
+        0.2854,
+        0.6026,
+        -0.2823,
+        -0.0238
+      ],
+      "sunBounds": [
+        -0.0325,
+        0.0325,
+        0.4895,
+        0.6449
+      ],
+      "mesaBounds": {
+        "left-fall": [
+          -0.4118,
+          -0.2682,
+          -0.1075,
+          0.4078
+        ],
+        "right-fall": [
+          0.2405,
+          0.4048,
+          -0.0935,
+          0.5055
+        ],
+        "high-olive": [
+          0.106,
+          0.1858,
+          0.0715,
+          0.5987
+        ],
+        "far-right-shelf": [
+          0.2869,
+          0.4281,
+          0.0284,
+          0.3799
+        ]
+      },
+      "treeTrunkBounds": {
+        "olive-left": [
+          -0.3275,
+          -0.2927,
+          -0.1227,
+          0.1259
+        ],
+        "olive-right": [
+          0.2784,
+          0.3157,
+          -0.1649,
+          0.116
+        ]
+      }
+    }
+  },
+  "checks": {
+    "artifact-digest": {
+      "passed": true,
+      "evidence": "SHA-256 digests captured for the Blender source, coordinate manifest, and review GLB."
+    },
+    "source-parity": {
+      "passed": true,
+      "evidence": {
+        "graybox-landmass": 1,
+        "graybox-performance-zone": 1,
+        "graybox-lagoon": 1,
+        "graybox-olive-trunk": 2,
+        "graybox-olive-canopy": 2,
+        "graybox-distant-mesa": 4,
+        "graybox-distant-mesa-top": 4,
+        "graybox-far-sun": 1,
+        "graybox-scale-figure": 2
+      }
+    },
+    "coordinate-parity": {
+      "passed": true,
+      "evidence": {
+        "cameras": [
+          {
+            "camera": "desktop",
+            "passed": true
+          },
+          {
+            "camera": "portrait",
+            "passed": true
+          },
+          {
+            "camera": "landscapePhone",
+            "passed": true
+          }
+        ],
+        "sun": true,
+        "trees": [
+          {
+            "id": "olive-left",
+            "passed": true
+          },
+          {
+            "id": "olive-right",
+            "passed": true
+          }
+        ]
+      }
+    },
+    "collision": {
+      "passed": true,
+      "evidence": "The lagoon clears the dry performance radius by 3.71 m, and both olive exclusions remain outside it."
+    },
+    "registered-camera-layout": {
+      "passed": true,
+      "evidence": [
+        {
+          "camera": "desktop",
+          "passed": true,
+          "stageCenter": [
+            0.0,
+            -0.1229
+          ],
+          "expectedStage": [
+            0,
+            -0.1097
+          ],
+          "lagoonCenter": [
+            0.5337,
+            -0.151
+          ],
+          "expectedLagoon": [
+            0.5145,
+            -0.1167
+          ],
+          "sunCenter": [
+            0.0,
+            0.5504
+          ],
+          "expectedSun": [
+            0,
+            0.5499
+          ]
+        },
+        {
+          "camera": "portrait",
+          "passed": true,
+          "stageCenter": [
+            0.0,
+            -0.0586
+          ],
+          "expectedStage": [
+            0,
+            -0.0561
+          ],
+          "lagoonCenter": [
+            0.7987,
+            -0.0687
+          ],
+          "expectedLagoon": [
+            0.7806,
+            -0.0581
+          ],
+          "sunCenter": [
+            0.0,
+            0.3188
+          ],
+          "expectedSun": [
+            0,
+            0.3186
+          ]
+        },
+        {
+          "camera": "landscapePhone",
+          "passed": true,
+          "stageCenter": [
+            0.0,
+            -0.1234
+          ],
+          "expectedStage": [
+            0,
+            -0.1092
+          ],
+          "lagoonCenter": [
+            0.444,
+            -0.153
+          ],
+          "expectedLagoon": [
+            0.427,
+            -0.1161
+          ],
+          "sunCenter": [
+            0.0,
+            0.5672
+          ],
+          "expectedSun": [
+            0,
+            0.5667
+          ]
+        }
+      ]
+    },
+    "solar-silhouette-clearance": {
+      "passed": true,
+      "evidence": [
+        {
+          "camera": "desktop",
+          "mesa": "left-fall",
+          "passed": true,
+          "sunBounds": [
+            -0.0403,
+            0.0403,
+            0.4767,
+            0.6242
+          ],
+          "mesaBounds": [
+            -0.507,
+            -0.33,
+            -0.0945,
+            0.3911
+          ]
+        },
+        {
+          "camera": "desktop",
+          "mesa": "right-fall",
+          "passed": true,
+          "sunBounds": [
+            -0.0403,
+            0.0403,
+            0.4767,
+            0.6242
+          ],
+          "mesaBounds": [
+            0.2963,
+            0.4992,
+            -0.0805,
+            0.4823
+          ]
+        },
+        {
+          "camera": "desktop",
+          "mesa": "high-olive",
+          "passed": true,
+          "sunBounds": [
+            -0.0403,
+            0.0403,
+            0.4767,
+            0.6242
+          ],
+          "mesaBounds": [
+            0.131,
+            0.2299,
+            0.0772,
+            0.5746
+          ]
+        },
+        {
+          "camera": "desktop",
+          "mesa": "far-right-shelf",
+          "passed": true,
+          "sunBounds": [
+            -0.0403,
+            0.0403,
+            0.4767,
+            0.6242
+          ],
+          "mesaBounds": [
+            0.3549,
+            0.5298,
+            0.0373,
+            0.3704
+          ]
+        },
+        {
+          "camera": "portrait",
+          "mesa": "left-fall",
+          "passed": true,
+          "sunBounds": [
+            -0.0816,
+            0.0816,
+            0.2721,
+            0.3656
+          ],
+          "mesaBounds": [
+            -0.9357,
+            -0.6196,
+            -0.0782,
+            0.2078
+          ]
+        },
+        {
+          "camera": "portrait",
+          "mesa": "right-fall",
+          "passed": true,
+          "sunBounds": [
+            -0.0816,
+            0.0816,
+            0.2721,
+            0.3656
+          ],
+          "mesaBounds": [
+            0.5646,
+            0.9324,
+            -0.0723,
+            0.2616
+          ]
+        },
+        {
+          "camera": "portrait",
+          "mesa": "high-olive",
+          "passed": true,
+          "sunBounds": [
+            -0.0816,
+            0.0816,
+            0.2721,
+            0.3656
+          ],
+          "mesaBounds": [
+            0.2563,
+            0.4448,
+            0.0194,
+            0.3225
+          ]
+        },
+        {
+          "camera": "portrait",
+          "mesa": "far-right-shelf",
+          "passed": true,
+          "sunBounds": [
+            -0.0816,
+            0.0816,
+            0.2721,
+            0.3656
+          ],
+          "mesaBounds": [
+            0.7034,
+            1.0382,
+            -0.0061,
+            0.2017
+          ]
+        },
+        {
+          "camera": "landscapePhone",
+          "mesa": "left-fall",
+          "passed": true,
+          "sunBounds": [
+            -0.0325,
+            0.0325,
+            0.4895,
+            0.6449
+          ],
+          "mesaBounds": [
+            -0.4118,
+            -0.2682,
+            -0.1075,
+            0.4078
+          ]
+        },
+        {
+          "camera": "landscapePhone",
+          "mesa": "right-fall",
+          "passed": true,
+          "sunBounds": [
+            -0.0325,
+            0.0325,
+            0.4895,
+            0.6449
+          ],
+          "mesaBounds": [
+            0.2405,
+            0.4048,
+            -0.0935,
+            0.5055
+          ]
+        },
+        {
+          "camera": "landscapePhone",
+          "mesa": "high-olive",
+          "passed": true,
+          "sunBounds": [
+            -0.0325,
+            0.0325,
+            0.4895,
+            0.6449
+          ],
+          "mesaBounds": [
+            0.106,
+            0.1858,
+            0.0715,
+            0.5987
+          ]
+        },
+        {
+          "camera": "landscapePhone",
+          "mesa": "far-right-shelf",
+          "passed": true,
+          "sunBounds": [
+            -0.0325,
+            0.0325,
+            0.4895,
+            0.6449
+          ],
+          "mesaBounds": [
+            0.2869,
+            0.4281,
+            0.0284,
+            0.3799
+          ]
+        }
+      ]
+    },
+    "hero-band-clearance": {
+      "passed": true,
+      "evidence": [
+        {
+          "camera": "desktop",
+          "tree": "olive-left",
+          "passed": true,
+          "bounds": [
+            -0.3946,
+            -0.3528,
+            -0.1226,
+            0.1059
+          ]
+        },
+        {
+          "camera": "desktop",
+          "tree": "olive-right",
+          "passed": true,
+          "bounds": [
+            0.3346,
+            0.3793,
+            -0.1631,
+            0.0944
+          ]
+        },
+        {
+          "camera": "portrait",
+          "tree": "olive-left",
+          "passed": true,
+          "bounds": [
+            -0.5957,
+            -0.5382,
+            -0.0613,
+            0.0486
+          ]
+        },
+        {
+          "camera": "portrait",
+          "tree": "olive-right",
+          "passed": true,
+          "bounds": [
+            0.4991,
+            0.5592,
+            -0.0769,
+            0.0441
+          ]
+        },
+        {
+          "camera": "landscapePhone",
+          "tree": "olive-left",
+          "passed": true,
+          "bounds": [
+            -0.3275,
+            -0.2927,
+            -0.1227,
+            0.1259
+          ]
+        },
+        {
+          "camera": "landscapePhone",
+          "tree": "olive-right",
+          "passed": true,
+          "bounds": [
+            0.2784,
+            0.3157,
+            -0.1649,
+            0.116
+          ]
+        }
+      ]
+    }
+  }
+}

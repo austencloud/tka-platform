@@ -8,6 +8,15 @@ import sharp from "sharp";
 import { PerspectiveCamera, Vector3 } from "three";
 
 const root = process.cwd();
+
+if (process.argv.includes("--cloudbreak")) {
+  const { generateOliveCloudbreakGate1 } = await import(
+    "./lib/seraphic-vault-cloudbreak-gate1.mjs"
+  );
+  await generateOliveCloudbreakGate1({ root });
+  process.exit(0);
+}
+
 const layoutPath = path.resolve(root, "scripts/seraphic-vault-phase2-layout.json");
 const outputDirectory = path.resolve(
   root,

@@ -1,19 +1,15 @@
 <script lang="ts">
   import { T, useThrelte } from "@threlte/core";
-  import { useGltf, useKtx2, useMeshopt } from "@threlte/extras";
   import { onMount } from "svelte";
-  import {
-    FogExp2,
-    Color,
-    Mesh,
-    MeshStandardMaterial,
-    type Object3D,
-  } from "three";
+  import { FogExp2, Color } from "three";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
   import CloudDome from "./celestial/CloudDome.svelte";
   import GodRays from "./celestial/GodRays.svelte";
   import CelestialCloudBanks from "./celestial/CelestialCloudBanks.svelte";
+  import CelestialCloudPanorama from "./celestial/CelestialCloudPanorama.svelte";
+  import CelestialInteraction from "./celestial/CelestialInteraction.svelte";
+  import OliveCloudbreakSlice from "./celestial/OliveCloudbreakSlice.svelte";
   import CelestialSun from "./celestial/CelestialSun.svelte";
   import {
     type CelestialSceneConfig,
@@ -40,26 +36,20 @@
 
   const activeConfig = $derived(baseConfig);
 
-  const { scene, renderer, camera } = useThrelte();
+  const { scene } = useThrelte();
   const adaptiveQuality = tryGetAdaptiveQualityContext();
   const cloudBankCount = $derived(
     adaptiveQuality?.contentTier === "low"
-      ? 10
+      ? 12
       : adaptiveQuality?.contentTier === "high"
-        ? 20
-        : 16
+        ? 26
+        : 20
   );
-  const celestialEnvironment = useGltf(
-    "/models/celestial/celestial-environment.glb?v=seraph-20260809",
-    {
-      meshoptDecoder: useMeshopt(),
-      ktx2Loader: useKtx2("/basis/"),
-    }
-  );
-
   let sceneFeatures = $state<ReturnType<typeof getSceneFeatureContext> | null>(
     null
   );
+  let cloudbreakLoaded = $state(false);
+  let interactionPulse = $state(0);
   try {
     sceneFeatures = getSceneFeatureContext();
   } catch {
@@ -79,43 +69,15 @@
     };
   });
 
+  function handleCloudbreakReady(): void {
+    cloudbreakLoaded = true;
+  }
+
   $effect(() => {
-    const root = $celestialEnvironment?.scene;
-    if (!root) {
-      sceneFeatures?.reportProgress("environment", 0);
-      return;
+    sceneFeatures?.reportProgress("environment", cloudbreakLoaded ? 1 : 0);
+    if (cloudbreakLoaded) {
+      sceneFeatures?.reportReady("environment");
     }
-    root.traverse((child: Object3D) => {
-      if (!(child instanceof Mesh)) return;
-      const isStage = child.name.startsWith("Stage_");
-      child.castShadow = !isStage;
-      child.receiveShadow = true;
-      const materials = Array.isArray(child.material)
-        ? child.material
-        : [child.material];
-      for (const material of materials) {
-        if (!(material instanceof MeshStandardMaterial)) continue;
-        material.metalness = 0;
-        material.roughness = Math.max(material.roughness, 0.62);
-        material.envMapIntensity = 0.35;
-        if (isStage) {
-          material.color.set("#fffaf0");
-          material.emissive.set("#5b4933");
-          material.emissiveIntensity = 0.035;
-        } else {
-          material.color.set("#fffaf1");
-          material.emissiveMap = material.map;
-          material.emissive.set("#fff2d8");
-          material.emissiveIntensity = 0.32;
-        }
-        material.needsUpdate = true;
-      }
-    });
-    if (renderer.current && camera.current && scene.current) {
-      renderer.current.compile(scene.current, camera.current);
-    }
-    sceneFeatures?.reportProgress("environment", 1);
-    sceneFeatures?.reportReady("environment");
   });
 
   onMount(() => {
@@ -136,16 +98,14 @@
   bottomColor={activeConfig.sky.bottomColor}
 />
 
+<CelestialCloudPanorama />
+
 <!-- Volumetric cloud dome -->
 <CloudDome config={activeConfig.cloudDome} />
 
-{#if $celestialEnvironment}
-  <T.Group position.z={stageZOffset}>
-    <T is={$celestialEnvironment.scene} />
-  </T.Group>
-{/if}
+<OliveCloudbreakSlice {interactionPulse} onReady={handleCloudbreakReady} />
 
-<CelestialSun />
+<CelestialSun pulse={interactionPulse} />
 
 {#if activeConfig.godRays.enabled}
   <GodRays config={activeConfig.godRays} />
@@ -205,14 +165,14 @@
     position.y={sl.position[1]}
     position.z={sl.position[2]}
     castShadow
-    shadow.mapSize.width={2048}
-    shadow.mapSize.height={2048}
+    shadow.mapSize.width={1024}
+    shadow.mapSize.height={1024}
     shadow.camera.near={1}
-    shadow.camera.far={80}
-    shadow.camera.left={-20}
-    shadow.camera.right={20}
-    shadow.camera.top={20}
-    shadow.camera.bottom={-20}
+    shadow.camera.far={180}
+    shadow.camera.left={-32}
+    shadow.camera.right={32}
+    shadow.camera.top={28}
+    shadow.camera.bottom={-28}
     shadow.bias={-0.0007}
     shadow.normalBias={0.05}
     shadow.radius={3}
@@ -221,19 +181,11 @@
 {/if}
 
 <T.DirectionalLight
-  color="#b8d1f2"
-  intensity={0.82}
-  position.x={0}
-  position.y={9}
-  position.z={18}
+  color="#bfd3e8"
+  intensity={0.42}
+  position.x={-18}
+  position.y={12}
+  position.z={24}
 />
 
-<T.PointLight
-  color="#ffd09a"
-  intensity={72}
-  distance={52}
-  decay={2}
-  position.x={0}
-  position.y={7.5}
-  position.z={-15}
-/>
+<CelestialInteraction onActivate={() => (interactionPulse += 1)} />
