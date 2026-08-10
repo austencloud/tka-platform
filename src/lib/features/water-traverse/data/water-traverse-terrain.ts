@@ -152,10 +152,66 @@ export const WATERLINE_Y = 0;
  */
 export const EYE_ABOVE_FLOOR = 1.6;
 
+/**
+ * ── The size of the world ───────────────────────────────────────────────────
+ *
+ * One factor on every dimension in this file. At 1 the piece is 284 m and 1:07
+ * of walking, with 210 of those metres — fifty seconds — spent under water.
+ * Walked, that is too much of one thing. Austen (2026-08-10): "it feels like
+ * the underwater section lasts for a very very long time so I'd say let's start
+ * everything smaller and then we'll fill it in later and maybe expand it when
+ * that time comes."
+ *
+ * So the graybox is built small and grown later, and this is the one number
+ * that grows it. Uniform scale is the whole point: every inequality in this
+ * file compares one dimension against another, so multiplying all of them
+ * preserves every relation already verified — the sump's roof still drowns its
+ * own exit, the pool still breaks mid-room, no wall floats, no seam opens. The
+ * proportions are not re-derived at each scale. They cannot change.
+ *
+ * At 0.6, measured: 170.4 m and 0:41, with 123 m — 29 seconds — under water.
+ * One floor trough, five waterline crossings in the same order, worst floor
+ * step 0.11 m, every vent and performer still sitting on the floor.
+ *
+ * TWO THINGS DO NOT SCALE, and they are the two that are not part of the world:
+ *
+ *   WATERLINE_Y      the datum everything is measured from, and 0 × anything
+ *                    is 0. Named here because it looks like an omission.
+ *   EYE_ABOVE_FLOOR  the visitor. A person does not get smaller because the
+ *                    room did, and that is exactly what makes a smaller world
+ *                    feel tighter rather than merely nearer. Walking speed
+ *                    (WaterTraverseWalkScene) is the same kind of constant and
+ *                    is left alone for the same reason.
+ *
+ * So the metres this file reports stay honest metres. The canyon at 0.6 is not
+ * a 48 m canyon drawn small; it is a 29 m canyon, and the HUD, the distance
+ * posts and the clock all agree with each other about that.
+ *
+ * TWO CONSEQUENCES of a visitor who does not shrink, both found by walking it:
+ *
+ *   Anything measured against the EYE needs a floor, or the world closes on
+ *   the camera before it closes on the room. SUMP_THROAT_CLEARANCE is the one
+ *   place that bites, and it carries the fix and the frame that proved it.
+ *
+ *   Anything set by a GRADE holds its length at any scale, because grades are
+ *   ratios. The emergence from the pool is 6.5 m whether the world is 284 m or
+ *   170 — so shrinking the walk did not shorten the payoff, it enlarged it
+ *   from 1.7% of the route to 3.8%. That one came out right for free.
+ *
+ * The knob has a hard lower bound of 0.38; the two constraints that set it are
+ * derived on SPRINGS_WATER_Y, next to the constant that breaks first.
+ */
+export const WORLD_SCALE = 0.6;
+
+/** Metres, scaled. Every dimension in this file is authored through it. */
+function m(metres: number): number {
+  return metres * WORLD_SCALE;
+}
+
 /** Snow sits a little proud of the ice so the river reads as a cut ribbon. */
-export const SNOW_Y = WATERLINE_Y + 0.28;
+export const SNOW_Y = WATERLINE_Y + m(0.28);
 /** The sea floor. Deep enough that the surface overhead reads as a sky. */
-export const SEA_FLOOR_Y = -18;
+export const SEA_FLOOR_Y = -m(18);
 /**
  * Floor at the cave's far end. The passage DESCENDS — three metres over
  * sixty-six, a grade you feel underfoot without ever seeing it as a ramp.
@@ -172,7 +228,7 @@ export const SEA_FLOOR_Y = -18;
  * see SPRINGS_WATER_Y — so the walk now goes down once and comes up once, and
  * the coming up is the last thing that happens.
  */
-export const CAVE_FLOOR_END_Y = WATERLINE_Y - 21;
+export const CAVE_FLOOR_END_Y = WATERLINE_Y - m(21);
 
 // ── Plan ────────────────────────────────────────────────────────────────────
 
@@ -183,13 +239,13 @@ export const CAVE_FLOOR_END_Y = WATERLINE_Y - 21;
  * plain opens out again. The narrowing at the descent is what makes the drop
  * feel like a gorge closing before it lets go.
  */
-const SNOW_HALF_W = 48;
-const SEA_HALF_W = 42;
+const SNOW_HALF_W = m(48);
+const SEA_HALF_W = m(42);
 /** Widest of the three; only used for whole-route bounds. */
-const VALLEY_HALF_W = 48;
+const VALLEY_HALF_W = m(48);
 /** Ridge walls that contain the walk without ever being the subject. */
-const RIDGE_THICKNESS = 6;
-const SNOW_RIDGE_TOP = SNOW_Y + 30;
+const RIDGE_THICKNESS = m(6);
+const SNOW_RIDGE_TOP = SNOW_Y + m(30);
 /**
  * The seabed ridges top out BELOW the waterline on purpose. Built to the same
  * 30 m as the snowfield's they made a roofed canyon: from the trench floor the
@@ -198,12 +254,12 @@ const SNOW_RIDGE_TOP = SNOW_Y + 30;
  * sea. Keeping them under the line means every upward glance down there ends
  * in open water and the light coming through it.
  */
-const SEA_RIDGE_TOP = WATERLINE_Y - 3.5;
+const SEA_RIDGE_TOP = WATERLINE_Y - m(3.5);
 /** The gorge walls at the descent: high enough to funnel, too low to roof. */
-const DESCENT_RIDGE_TOP = SNOW_Y + 9;
+const DESCENT_RIDGE_TOP = SNOW_Y + m(9);
 
 /** The watercourse: one ribbon, constant width, centred on x = 0 throughout. */
-export const CHANNEL_HALF_W = 4.5;
+export const CHANNEL_HALF_W = m(4.5);
 
 /**
  * Leg lengths. The two flat legs were originally 118 m and 80 m, which walked
@@ -213,16 +269,17 @@ export const CHANNEL_HALF_W = 4.5;
  * out of the flats.
  */
 const SNOW_START_Z = 0;
-const SNOW_END_Z = 52;
-const DESCENT_END_Z = 92;
-const SEA_END_Z = 124;
+const SNOW_END_Z = m(52);
+const DESCENT_END_Z = m(92);
+const SEA_END_Z = m(124);
 /**
- * The last step. Held as a literal rather than derived from SUMP_END_Z because
- * that constant is declared with the rest of the sump, below, and a module-scope
- * const cannot read one that has not been initialised yet. The arithmetic it
- * stands for: 250 (sump end) + 34 m of springs chamber.
+ * The last step. Written out at full size rather than derived from SUMP_END_Z
+ * because that constant is declared with the rest of the sump, below, and a
+ * module-scope const cannot read one that has not been initialised yet. The
+ * arithmetic it stands for: 250 (sump end) + 34 m of springs chamber, before
+ * scale. Both ends go through m(), so the seam stays exact at any WORLD_SCALE.
  */
-const SPRING_END_Z = 284;
+const SPRING_END_Z = m(284);
 
 /**
  * The cave: from the sea hall's end wall to the canyon's near one.
@@ -231,7 +288,7 @@ const SPRING_END_Z = 284;
  * was a climb. The name went with the climb.
  */
 const CAVE_START_Z = SEA_END_Z;
-const CAVE_END_Z = 190;
+const CAVE_END_Z = m(190);
 
 export const TOTAL_LENGTH_M = SPRING_END_Z;
 
@@ -280,8 +337,8 @@ type HallRegion = "snowfield" | "sea";
  * argument for how much the Order spent on it.
  */
 export const CHAMBER_CEILING: Record<HallRegion, number> = {
-  snowfield: WATERLINE_Y + 34,
-  sea: WATERLINE_Y + 52,
+  snowfield: WATERLINE_Y + m(34),
+  sea: WATERLINE_Y + m(52),
 };
 /**
  * Hall half-width per chamber. These sit OUTSIDE the ridge blocks, which reach
@@ -289,8 +346,8 @@ export const CHAMBER_CEILING: Record<HallRegion, number> = {
  * than punching through its walls.
  */
 export const CHAMBER_HALF_W: Record<HallRegion, number> = {
-  snowfield: 78,
-  sea: 92,
+  snowfield: m(78),
+  sea: m(92),
 };
 /** Chamber extents along Z. The seams are where the portals stand. */
 const CHAMBER_Z: Record<HallRegion, [number, number]> = {
@@ -323,16 +380,16 @@ const CAVE_SLICES = 6;
  * 12 m across the channel itself is 9 of them, which is the right relationship
  * for a flooded slot: the water fills the passage and you wade up it.
  */
-const CAVE_HALF_W_MOUTH = 6;
-const CAVE_HALF_W_INNER = 12;
+const CAVE_HALF_W_MOUTH = m(6);
+const CAVE_HALF_W_INNER = m(12);
 /**
  * Headroom at the mouth and at the canyon end, measured at each slice's FAR
  * end so the number is the worst case in that slice rather than the best. Six
  * metres, under a hall that is seventy, is the squeeze the walk was missing.
  */
-const CAVE_CLEARANCE_MOUTH = 6;
-const CAVE_CLEARANCE_INNER = 12;
-const ROCK_THICKNESS = 6;
+const CAVE_CLEARANCE_MOUTH = m(6);
+const CAVE_CLEARANCE_INNER = m(12);
+const ROCK_THICKNESS = m(6);
 
 // ── The canyon, the sump, and the springs ───────────────────────────────────
 
@@ -345,8 +402,8 @@ const ROCK_THICKNESS = 6;
  * a big room; it is a section TALLER THAN IT IS WIDE, and that only works if
  * both walls are in shot at once.
  */
-const CANYON_HALF_W = 24;
-const CANYON_ROOF_Y = WATERLINE_Y + 58;
+const CANYON_HALF_W = m(24);
+const CANYON_ROOF_Y = WATERLINE_Y + m(58);
 /**
  * Floor at the canyon's far end: the descent carrying on, two metres over
  * twenty-two, with the walls the full 48 m apart the whole way.
@@ -358,7 +415,7 @@ const CANYON_ROOF_Y = WATERLINE_Y + 58;
  * 58 m of rock overhead, and the sea's surface twenty-three metres of water
  * above the eye — visible, lit, and completely out of reach.
  */
-const CANYON_FLOOR_END_Y = WATERLINE_Y - 23;
+const CANYON_FLOOR_END_Y = WATERLINE_Y - m(23);
 
 /**
  * ── The sump ────────────────────────────────────────────────────────────────
@@ -382,8 +439,8 @@ const CANYON_FLOOR_END_Y = WATERLINE_Y - 23;
  * the door, which is a descent followed by a corridor, and a corridor is not a
  * spring. The pinch is the low point of the walk; the chamber climbs out of it.
  */
-const SUMP_START_Z = 212;
-const SUMP_END_Z = 250;
+const SUMP_START_Z = m(212);
+const SUMP_END_Z = m(250);
 /**
  * Floor at the pinch: 30 m under the line, and the deepest metre of the piece.
  *
@@ -398,14 +455,40 @@ const SUMP_END_Z = 250;
  * a waterline at y = 0 and has to stay there, so raising the door raises the
  * mouth's lintel into the surface. The rise has to be paid for by going deeper.
  */
-const SUMP_FLOOR_END_Y = WATERLINE_Y - 30;
+const SUMP_FLOOR_END_Y = WATERLINE_Y - m(30);
 /**
  * The pinch. 7 m across with 3.5 m of headroom, tighter than the cave's 12 × 6,
  * because the cave already spent that card: a second squeeze that is not worse
  * than the first one is not a squeeze, it is a repeat.
  */
-const SUMP_THROAT_HALF_W = 3.5;
-const SUMP_THROAT_CLEARANCE = 3.5;
+const SUMP_THROAT_HALF_W = m(3.5);
+/**
+ * The one dimension in this file with a floor under it, and the exception
+ * proves the rule that produced it.
+ *
+ * Every other measure here is compared against another measure, so uniform
+ * scale preserves it. This one is compared against the VISITOR, who does not
+ * scale — and the visitor is a camera at eye height with no crouch, so the
+ * roof's whole job is to be low without being in their face.
+ *
+ * Pure m(3.5) got that wrong at 0.6. It left 0.5 m over the eye, and 0.5 m of
+ * air over a camera is not a squeeze you feel, it is a black slab across the
+ * top half of the frame with the springs opening hidden behind it. Screenshot
+ * at z 148 (2026-08-10): unlit ceiling filling 45% of the view, the room beyond
+ * invisible. Claustrophobia you cannot see out of is just a blind spot.
+ *
+ * So the clearance is whichever is larger: the scaled value, or enough air to
+ * stoop under. PINCH_OVER_EYE is that second term — a metre, which reads as
+ * duck-your-head and still leaves a letterbox onto what comes next.
+ *
+ * At scale 1 the scaled value wins (3.5 > 2.6) and the full-size world is
+ * untouched. Below scale ~0.74 the floor takes over, which is the point of it.
+ */
+const PINCH_OVER_EYE = 1.0;
+const SUMP_THROAT_CLEARANCE = Math.max(
+  m(3.5),
+  EYE_ABOVE_FLOOR + PINCH_OVER_EYE
+);
 /**
  * How hard the closing is front-loaded. Both are eased rather than linear
  * because linear from 58 m of roof spends three quarters of the run still
@@ -464,8 +547,8 @@ const SUMP_SLICES = 24;
  * This chamber is the volcano's first room, and the door is at the top of the
  * climb — so the handoff happens already ascending, and Fire carries it on up.
  */
-const SPRINGS_HALF_W = 26;
-const SPRINGS_ROOF_Y = WATERLINE_Y - 3;
+const SPRINGS_HALF_W = m(26);
+const SPRINGS_ROOF_Y = WATERLINE_Y - m(3);
 /**
  * Floor at the DOOR — the top of the climb, not the level of the room.
  *
@@ -474,7 +557,7 @@ const SPRINGS_ROOF_Y = WATERLINE_Y - 3;
  * throat behind it all survive this change untouched: the geometry that reads
  * correctly still reads correctly, and only the ground under it moved.
  */
-const SPRINGS_FLOOR_Y = WATERLINE_Y - 19;
+const SPRINGS_FLOOR_Y = WATERLINE_Y - m(19);
 
 /**
  * The pool: a SECOND water surface, twenty-three metres under the first one,
@@ -494,8 +577,28 @@ const SPRINGS_FLOOR_Y = WATERLINE_Y - 19;
  * mid-room rather than at either wall: they leave the sump with 5.4 m over the
  * eye, break the surface halfway up the climb, wade out a few paces later, and
  * finish four metres above the pool at the door.
+ *
+ * Those figures are at WORLD_SCALE 1. Both constraints have a floor under them,
+ * and this is where WORLD_SCALE's own lower bound comes from — recorded here
+ * rather than up at the knob because these are the two things that break.
+ *
+ *   Water over the EYE at the sump's exit:  7·s − 1.6 > 0  →  s > 0.229.
+ *     Below that the visitor walks out of the sump with their head already in
+ *     the air and the emergence has nowhere to happen.
+ *
+ *   Water over the sump's ROOF:  7·s − SUMP_THROAT_CLEARANCE > 0.
+ *     This used to be scale-free — roof and water both scaled, so the margin
+ *     was always 3.5·s. It stopped being scale-free when the clearance gained
+ *     a floor of its own (eye + 1 m, see SUMP_THROAT_CLEARANCE), because that
+ *     floor lifts the roof faster than the water at small scales. Under
+ *     s ≈ 0.743 the margin is 7·s − 2.6, which reaches zero at s = 0.371 —
+ *     the roof surfacing through the pool, and the seam the pool exists to
+ *     hide becoming a hole in it.
+ *
+ * The second binds first. **0.38 is the floor on WORLD_SCALE.** At 0.6 the
+ * margins are 2.6 m over the eye and 1.6 m over the roof.
  */
-const SPRINGS_WATER_Y = WATERLINE_Y - 23;
+const SPRINGS_WATER_Y = WATERLINE_Y - m(23);
 
 /** Where the springs floor reaches a given elevation. Inverse of springsFloorYAt. */
 function springsZAtFloorY(y: number): number {
@@ -515,7 +618,7 @@ const SPRINGS_BREAK_Z = springsZAtFloorY(SPRINGS_WATER_Y - EYE_ABOVE_FLOOR);
 const SPRINGS_SHORE_Z = springsZAtFloorY(SPRINGS_WATER_Y);
 
 /** The flare: how far it takes to go from the throat to the full chamber. */
-const SPRINGS_FLARE_LENGTH = 6;
+const SPRINGS_FLARE_LENGTH = m(6);
 /** Steps the flare's walls, roof and pool are all cut into. */
 const SPRINGS_FLARE_SLICES = 3;
 
@@ -536,8 +639,8 @@ const SPRINGS_FLARE_SLICES = 3;
  * runs on into the dark behind it. A hole reads as somewhere to go in a way no
  * taper does, and the last step of the water walk lands in it.
  */
-const SPRINGS_MOUTH_HALF_W = 7;
-const SPRINGS_MOUTH_TOP_Y = SPRINGS_FLOOR_Y + 8;
+const SPRINGS_MOUTH_HALF_W = m(7);
+const SPRINGS_MOUTH_TOP_Y = SPRINGS_FLOOR_Y + m(8);
 /**
  * Sixty metres of throat, and the length is doing one job: the cap has to be
  * far enough away that the fog takes it. At 22 m it did not, and the end wall
@@ -546,7 +649,7 @@ const SPRINGS_MOUTH_TOP_Y = SPRINGS_FLOOR_Y + 8;
  * shaft out of the canyon was meant to stop saying. Nobody walks this passage,
  * so its only cost is a few rects, and what it buys is a hole that goes dark.
  */
-const SPRINGS_THROAT_LENGTH = 60;
+const SPRINGS_THROAT_LENGTH = m(60);
 
 /**
  * One outer boundary for the whole rock half, rather than each space's own
@@ -564,7 +667,7 @@ const BACK_OUTER_HALF_W =
 /** And one top plane, for the same reason, so no seam opens above a roof. */
 const BACK_OUTER_TOP_Y = CANYON_ROOF_Y + ROCK_THICKNESS;
 
-const HALL_THICKNESS = 3;
+const HALL_THICKNESS = m(3);
 /**
  * The lowest floor anywhere. Walls are built down to it so none of them float.
  *
@@ -574,7 +677,7 @@ const HALL_THICKNESS = 3;
  * starting 10 m above their own floor — a band of open nothing running the
  * length of a room the visitor walks the whole way down.
  */
-const HALL_BASE_Y = SUMP_FLOOR_END_Y - 2;
+const HALL_BASE_Y = SUMP_FLOOR_END_Y - m(2);
 
 /**
  * The near face of the head-wall portal — where the chamber's 16 m of roof
@@ -1097,14 +1200,23 @@ function ramp(id: string, r: WorldRect, fromY: number, toY: number): FloorRect {
  * full-height plume there and pokes three metres through the ceiling once the
  * floor has climbed to meet it.
  */
+/**
+ * Position, spread and radius are authored at full size and scaled here, so the
+ * seven call sites below stay legible against their own comments ("x ±10", "z
+ * 265", "30 m ahead") whatever WORLD_SCALE is. `rise` is a FRACTION of the gap
+ * to the roof, so it is already scale-free and must not be touched.
+ */
 function vent(x: number, z: number, rise: number, radius: number) {
-  const baseY = springsFloorYAt(z);
-  const ahead = springsFloorYAt(z + 1) - baseY;
+  const worldZ = m(z);
+  const baseY = springsFloorYAt(worldZ);
+  // Sampled over a real metre. The springs floor is a straight ramp, so one
+  // metre of run reports its exact grade at any scale.
+  const ahead = springsFloorYAt(worldZ + 1) - baseY;
   return {
-    x,
-    z,
+    x: m(x),
+    z: worldZ,
     baseY,
-    radius,
+    radius: m(radius),
     height: (SPRINGS_ROOF_Y - baseY) * rise,
     floorPitch: Math.atan2(ahead, 1),
   };
@@ -1135,7 +1247,7 @@ const RIDGE_LEGS: [string, number, number, number, number, number, HallRegion][]
 ];
 
 /** Clearance the peaks keep under their chamber's roof. */
-const RIDGE_HEADROOM = 4;
+const RIDGE_HEADROOM = m(4);
 
 /** Deterministic value in [0,1). Terrain must be identical every reload. */
 function jitter(seed: number): number {
@@ -1167,7 +1279,7 @@ function buildRidge(
    */
   maxTop: number
 ): WallRect[] {
-  const BLOCK = 17;
+  const BLOCK = m(17);
   const count = Math.max(2, Math.round((maxZ - minZ) / BLOCK));
   const step = (maxZ - minZ) / count;
   const walls: WallRect[] = [];
@@ -1181,9 +1293,9 @@ function buildRidge(
         maxTop
       );
       // Pull some blocks back and push others in, so the valley breathes
-      // instead of running at one width for 372 m.
-      const inset = -2.5 + jitter(seed + 11) * 9;
-      const depth = RIDGE_THICKNESS + jitter(seed + 23) * 14;
+      // instead of running at one width for the whole leg.
+      const inset = m(-2.5 + jitter(seed + 11) * 9);
+      const depth = RIDGE_THICKNESS + m(jitter(seed + 23) * 14);
       const near = halfWidth + inset;
       const far = near + depth;
 
@@ -1420,8 +1532,8 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
       SNOW_END_Z,
       CHAMBER_HALF_W.sea,
       CHAMBER_CEILING.sea,
-      30,
-      WATERLINE_Y + 26
+      m(30),
+      WATERLINE_Y + m(26)
     ),
     // The cave mouth: a 26 m hole at the foot of a wall 184 m across and 70 m
     // tall. It has to be small enough that the sea hall reads as ending, and
@@ -1582,9 +1694,9 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
    * the same motion as A inverted, which is what steam is to ice.
    * Verified against the Flow Arts MCP 2026-08-09.
    */
-  const ICE_PERFORMER_Z = (SNOW_START_Z + SNOW_END_Z) / 2 + 6;
+  const ICE_PERFORMER_Z = (SNOW_START_Z + SNOW_END_Z) / 2 + m(6);
   /** Just clear of the water's edge — see the anchor's own note below. */
-  const STEAM_PERFORMER_Z = SPRINGS_SHORE_Z + 1.4;
+  const STEAM_PERFORMER_Z = SPRINGS_SHORE_Z + m(1.4);
   const performers: PerformerAnchor[] = [
     /**
      * A, then B, then C, in that order along the walk. The first mapping put
@@ -1638,7 +1750,7 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
       leg: "spring",
       letter: "C",
       effectId: "smoke",
-      x: -11,
+      x: -m(11),
       z: STEAM_PERFORMER_Z,
       // Off the floor function, not off SPRINGS_FLOOR_Y. That constant is the
       // floor at the DOOR; taking it literally here would stand the figure
@@ -1649,7 +1761,7 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
   ];
 
   const route: { x: number; z: number; y: number }[] = [];
-  for (let z = SNOW_START_Z + 2; z <= SPRING_END_Z - 2; z += 4) {
+  for (let z = SNOW_START_Z + m(2); z <= SPRING_END_Z - m(2); z += m(4)) {
     route.push({ x: 0, z, y: floorYAt(floorRects, z) });
   }
 
@@ -1729,7 +1841,7 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
       vent(20, 265, 0.3, 2.4),
       vent(6.5, 258, 0.25, 1.5),
     ],
-    spawn: { x: 0, y: SNOW_Y + 1.0, z: SNOW_START_Z + 6, yaw: 0 },
+    spawn: { x: 0, y: SNOW_Y + 1.0, z: SNOW_START_Z + m(6), yaw: 0 },
   };
 }
 
