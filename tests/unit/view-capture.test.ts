@@ -4,7 +4,7 @@ import {
   parseViewParam,
   VIEW_PARAM,
   type ViewPose,
-} from "$lib/shared/3d/review/view-capture";
+} from "$lib/shared/review/view-capture";
 
 const POSE: ViewPose = {
   x: -14.2371,

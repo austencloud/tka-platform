@@ -4,7 +4,7 @@
   import { AgXToneMapping, PCFSoftShadowMap, WebGLRenderer } from "three";
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
   import FirstFireGrayboxWalkScene from "./FirstFireGrayboxWalkScene.svelte";
-  import type { ViewCapture } from "$lib/shared/3d/review/view-capture";
+  import { captureCurrentView } from "$lib/shared/review/view-capture";
 
   interface ReviewDetails {
     phase: string;
@@ -52,37 +52,23 @@
     }, 600);
     return () => clearInterval(timer);
   });
-  // Structural rather than the component type: all this page needs from the
-  // scene is the capture call, and a structural type keeps the two decoupled.
-  let walkScene = $state<{
-    captureCurrentView: () => Promise<ViewCapture>;
-  } | null>(null);
   /** Transient confirmation under the HUD button. Cleared on the next capture. */
   let captureNote = $state<string | null>(null);
   let captureNoteTimer: ReturnType<typeof setTimeout> | null = null;
 
   /**
-   * Copy the current view - frame, pose and replay URL - so a specific defect
-   * can be handed to an agent instead of described. Bound to P as well as the
-   * button: C, V and G are already taken by the camera controller.
+   * The HUD affordance for the global P shortcut. P itself is handled at the
+   * root layout; this button exists because a keystroke alone is not
+   * discoverable.
    */
   async function copyCurrentView() {
-    if (!walkScene) return;
-    const capture = await walkScene.captureCurrentView();
+    const capture = await captureCurrentView();
     if (captureNoteTimer) clearTimeout(captureNoteTimer);
-    captureNote = capture.frameError
-      ? `Pose copied, no frame: ${capture.frameError}`
+    const failed = "frameError" in capture ? capture.frameError : undefined;
+    captureNote = failed
+      ? `Pose copied, no frame: ${failed}`
       : "Copied - paste to Claude";
     captureNoteTimer = setTimeout(() => (captureNote = null), 4000);
-  }
-
-  function handleCaptureKey(event: KeyboardEvent) {
-    if (event.code !== "KeyP" || event.repeat) return;
-    if (event.metaKey || event.ctrlKey || event.altKey) return;
-    const target = event.target as HTMLElement | null;
-    if (target?.isContentEditable || /^(INPUT|TEXTAREA)$/.test(target?.tagName ?? "")) return;
-    event.preventDefault();
-    void copyCurrentView();
   }
 
   let position = $state({ x: -27, y: 0.88, z: 0 });
@@ -100,8 +86,6 @@
         : "Performer hidden until you turn into the court mouth."
   );
 </script>
-
-<svelte:window onkeydown={handleCaptureKey} />
 
 <svelte:head>
   <title>Walk The First Fire: Cinder Court</title>
@@ -134,7 +118,6 @@
         new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
     >
       <FirstFireGrayboxWalkScene
-        bind:this={walkScene}
         {resetToken}
         {reviewAdvanceToken}
         onAssetReady={(details) => {

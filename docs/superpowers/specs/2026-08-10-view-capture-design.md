@@ -2,7 +2,14 @@
 
 **Date:** 2026-08-10
 **Status:** approved (Austen, 2026-08-10)
-**Scope:** shared module + dev endpoint, wired into the First Fire graybox walk route only
+**Scope:** shared module + dev endpoint + one root-layout listener, so P works on every route
+
+> **Revised 2026-08-10, same day.** First built into the First Fire graybox
+> route alone. Austen pressed P on `/browse/gallery` and nothing happened:
+> *"it did not copy the state ... I would have expected to press P and then
+> press control V and copy the coordinates directly."* "When I see something in
+> the app" means any route. The handler moved to the root layout and the module
+> moved out of `3d/`, because most of the app is not a room.
 
 ## The problem
 
@@ -38,7 +45,7 @@ the agent stand in the same spot after a change and compare like for like.
 
 ## Design
 
-### `src/lib/shared/3d/review/view-capture.ts`
+### `src/lib/shared/review/view-capture.ts`
 
 The shared module. Scene-agnostic — it knows about a pose, a canvas, and a
 clipboard, and nothing about First Fire.
@@ -69,7 +76,22 @@ pastes.
 `static/captures/` is gitignored. These are throwaway review frames, not
 assets, and they must never enter a build.
 
-### Scene wiring (First Fire only, this pass)
+### Global handler, per-scene registration
+
+`ViewCaptureListener.svelte` mounts once in `src/routes/+layout.svelte` and owns
+the P key everywhere. A 3D scene calls `registerViewSource({sceneId, pose,
+canvas, state})` in `onMount` and returns the disposer; the listener uses it
+when one is registered.
+
+With no registered source - the gallery, the library, any 2D page - P captures
+the page instead: URL, route, viewport, scroll, and the element under the
+cursor with its DOM path, text and identifying `data-*`. No image there. A DOM
+page has no single canvas to read, and the honest alternatives (a screen-share
+picker on every press, or shipping a rasteriser) cost more than they return
+when Austen can already take a screenshot himself. The identifiers are the part
+he cannot paste by hand.
+
+### Scene wiring (First Fire)
 
 - `+page.svelte` passes `createRenderer` to Threlte's `<Canvas>` with
   `preserveDrawingBuffer: true`. Without it `toDataURL` returns a blank frame,
@@ -77,7 +99,7 @@ assets, and they must never enter a build.
   compositing.
 - `FirstFireGrayboxWalkScene.svelte` tracks live pitch from
   `onRotationChange`, applies `?view=` on mount exactly where `?camera=`
-  applies, and exposes a `captureCurrentView()` to the page.
+  applies, and registers its pose source with the global listener.
 - Trigger: **`P`** plus a "Copy view" button in the review HUD. `C` is crouch,
   `V` is the mode toggle and `G` is grab in the camera controller, so those are
   unavailable. The button exists because a keystroke alone is not discoverable
@@ -135,5 +157,5 @@ adopted the pose, and the live check cannot prove the encoding is stable.
 
 No capture gallery, no saved-view list, no annotation, no diffing of two frames.
 The request is copy-and-paste and that is the entire loop. Other walk scenes
-adopt the module when they need it, one import each — they are not wired now,
-because Gate 2 for the Cinder Court is what is being judged.
+adopt the pose half with one `registerViewSource` call each; until they do, P
+still captures their page.

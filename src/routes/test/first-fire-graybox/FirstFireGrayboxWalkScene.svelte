@@ -37,10 +37,10 @@
     isHiddenInBareShell,
   } from "./first-fire-graybox-bare-shell";
   import {
-    captureView,
     parseViewParam,
+    registerViewSource,
     type ViewPose,
-  } from "$lib/shared/3d/review/view-capture";
+  } from "$lib/shared/review/view-capture";
   import FirstFireCinderStateEffects from "./FirstFireCinderStateEffects.svelte";
   import FirstFireProcessionFlames from "./FirstFireProcessionFlames.svelte";
   import FirstFireShrineVolumes from "./FirstFireShrineVolumes.svelte";
@@ -288,29 +288,29 @@
   }
 
   /**
-   * Copy the current view - image, pose and a replay URL - to the clipboard.
-   * Called by the P key and the HUD button; exported so the page owns the
-   * affordance and this component owns the numbers.
+   * Contribute this room's camera to the global P handler. Registered rather
+   * than key-bound: the shortcut is app-wide, and a room only supplies the
+   * pose and the frame that the shared capture wraps.
    */
-  export async function captureCurrentView() {
-    return captureView({
+  onMount(() =>
+    registerViewSource({
       sceneId: "first-fire-graybox",
-      pose: {
+      pose: () => ({
         x: playerPosition.x,
         y: playerPosition.y,
         z: playerPosition.z,
         yaw: playerYaw,
         pitch: playerPitch,
-      },
-      canvas: threlte.renderer?.domElement ?? null,
-      state: {
+      }),
+      canvas: () => threlte.renderer?.domElement ?? null,
+      state: () => ({
         phase: reviewState.procession.phase,
         shell: bareShell ? "bare" : "dressed",
         activeShrine: activeShrineId ?? "none",
         displayedShrine: displayedShrineId ?? "none",
-      },
-    });
-  }
+      }),
+    })
+  );
 
   /**
    * Put the player wherever the URL asked for, after any teleport the room did
