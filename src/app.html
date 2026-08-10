@@ -122,14 +122,17 @@
           navigator.connection ||
           navigator.mozConnection ||
           navigator.webkitConnection;
+        // Data-saver ONLY — never a bandwidth estimate. This flag defers
+        // hydration to window.load, withholds every module preload, holds the
+        // deferred stylesheets, and drops the brand fonts back to system
+        // fallbacks. Chrome reports effectiveType "3g" at well under 1 Mbps on
+        // gigabit desktops, so an effectiveType/downlink/rtt test hands a
+        // healthy visitor the degraded page — wrong typeface and all. Mirrors
+        // prefersReducedData() in shared/platform/network-conditions.ts, which
+        // was narrowed for exactly this reason after the same guess froze every
+        // launchpad tile on its placeholder poster.
         window.__tkaLandingConstrained = Boolean(
-          connection &&
-            (connection.saveData ||
-              connection.effectiveType === "slow-2g" ||
-              connection.effectiveType === "2g" ||
-              connection.effectiveType === "3g" ||
-              (connection.downlink > 0 && connection.downlink < 2) ||
-              connection.rtt >= 300)
+          connection && connection.saveData
         );
       })();
     </script>
@@ -981,15 +984,10 @@
           navigator.connection ||
           navigator.mozConnection ||
           navigator.webkitConnection;
+        // Data-saver only, matching the classifier above. Re-derived here
+        // because this block also runs on non-landing routes.
         var constrained =
-          window.__tkaIsLanding &&
-          connection &&
-          (connection.saveData ||
-            connection.effectiveType === "slow-2g" ||
-            connection.effectiveType === "2g" ||
-            connection.effectiveType === "3g" ||
-            (connection.downlink > 0 && connection.downlink < 2) ||
-            connection.rtt >= 300);
+          window.__tkaIsLanding && connection && connection.saveData;
         window.__tkaLandingConstrained = Boolean(constrained);
 
         if (!window.__tkaIsLanding) {

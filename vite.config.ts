@@ -843,6 +843,32 @@ const classifyChunk = (id: string): string | undefined => {
   return undefined;
 };
 
+// Collapse Rollup's automatic micro-chunks in the CLIENT bundle only.
+//
+// WHY A PLUGIN. The obvious spelling is `experimentalMinChunkSize` inline in
+// build.rollupOptions.output, gated on defineConfig's `isSsrBuild`. That gate
+// does not hold: SvelteKit drives both builds through Vite 7's environments
+// API, the config factory is evaluated once, and `isSsrBuild` was undefined —
+// so the option reached the SERVER build too, where merging folds neighbouring
+// modules into a route's own chunk and SvelteKit's endpoint analysis aborts:
+//   Error: Invalid export 'P' in /api/gallery-write
+// (Verified: baseline builds clean, inline+isSsrBuild reproduces the abort.)
+// `outputOptions` runs per build with the resolved output dir, which is an
+// unambiguous discriminator — SvelteKit writes the browser bundle to
+// .svelte-kit/output/client and the server bundle to .../server.
+//
+// Server bundles are read off local disk and gain nothing from fewer files;
+// the round trips this fixes are the browser's.
+const clientOnlyChunkMergePlugin = () => ({
+  name: "tka-client-chunk-merge",
+  apply: "build" as const,
+  outputOptions(options: { dir?: string; experimentalMinChunkSize?: number }) {
+    const dir = (options.dir ?? "").replace(/\\/g, "/");
+    if (!dir.includes("/output/client")) return null;
+    return { ...options, experimentalMinChunkSize: 20_000 };
+  },
+});
+
 // HTTP/2 DEV SERVER: load the mkcert-signed cert if present so Vite serves over
 // HTTP/2 (multiplexed — no 6-connection-per-origin HTTP/1.1 ceiling). That ceiling
 // is the root of the "stuck on Loading…" freeze, render-queue timeouts, and hung
@@ -919,6 +945,7 @@ export default defineConfig(({ command, mode }) => ({
     // vite-plugin-svelte 6 — preserveLocalState/injectCss no longer exist.
     // For state preservation across HMR, use `// @hmr:keep-all` comments.
     sveltekit(),
+    clientOnlyChunkMergePlugin(),
     dictionaryPlugin(),
     screenshotsPlugin(), // Screenshot gallery for Lab module
     fontCorsPlugin(), // 📱 CORS headers for fonts (mobile debugging)
@@ -1055,6 +1082,28 @@ export default defineConfig(({ command, mode }) => ({
         // Strategic chunking — see classifyChunk() above the config for the
         // full rationale (incl. the 2026-06-16 vendor-three ⇄ vendor TDZ fix).
         manualChunks: classifyChunk,
+        // classifyChunk only names node_modules chunks; every src/lib module
+        // falls through to Rollup's automatic split, which emits one chunk per
+        // distinct set of reachable entry points. On a dynamic-import-heavy
+        // graph that shatters into hundreds of micro-chunks: the homepage
+        // launchpad's media closure alone was 238 files, of which 202 were
+        // under 10 KB and carried just 505 KB between them — 85% of the
+        // requests for 10% of the bytes, each one a round trip that cannot
+        // start until its parent parses. Measured max critical path latency
+        // was 6,225 ms with the last resource landing at 6.8 s.
+        //
+        // Rollup merges anything below this into a sibling with a compatible
+        // dependent-entry set. Manual chunks are assigned BEFORE this runs
+        // (getChunkAssignments → getChunkDefinitionsFromManualChunks) and are
+        // never merged, so vendor-three/vendor-svelte and the acyclicity they
+        // buy are untouched. Merging also respects side-effect ordering.
+        //
+        // The tradeoff is deliberate: a merged chunk can pull in a little code
+        // a given route doesn't need. At these sizes that is a few KB against
+        // a round trip, and the round trips were the whole cost.
+        //
+        // Applied CLIENT-ONLY by the clientOnlyChunkMergePlugin below — see
+        // there for why this cannot live inline.
       },
     },
     chunkSizeWarningLimit: 1000, // Warn for 1MB+ chunks
