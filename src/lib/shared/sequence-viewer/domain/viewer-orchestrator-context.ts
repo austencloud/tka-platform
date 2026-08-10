@@ -135,6 +135,8 @@ export interface OrchestratorContext {
   handleVideoUpload: () => Promise<void>;
   handleShare: () => void;
   handleCopyLink: () => Promise<boolean>;
+  /** Canonical share link for the current sequence. Seeds share-sheet captions. */
+  getShareUrl: () => string;
   handleDelete: () => Promise<void>;
   handleOpenInBrowser: (pendingType?: PendingActionType | null) => void;
   invokeGatedAction: (

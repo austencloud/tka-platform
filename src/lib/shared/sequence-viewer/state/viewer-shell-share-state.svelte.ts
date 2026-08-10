@@ -25,6 +25,7 @@ export function createViewerShellShareState(
 ) {
   let copyClaudeFeedback = $state(false);
   let shareLinkCopied = $state(false);
+  let postSheetOpen = $state(false);
   let copyClaudeFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
   let shareLinkFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -80,9 +81,16 @@ export function createViewerShellShareState(
     );
   }
 
+  /**
+   * Opens the post-handoff sheet.
+   *
+   * Deliberately NOT ctx.handleShare() any more: that shared a bare LINK, and
+   * Instagram rejects a URL share as a feed post, so the OS sheet was a dead
+   * end for the case people actually want. The sheet carries the file.
+   */
   function shareSequence(): void {
     dependencies.captureScanAction("share");
-    inputs.getContext().handleShare();
+    postSheetOpen = true;
   }
 
   async function copyShareLink(): Promise<void> {
@@ -126,6 +134,15 @@ export function createViewerShellShareState(
     },
     get copyClaudeFeedback() {
       return copyClaudeFeedback;
+    },
+    get postSheetOpen() {
+      return postSheetOpen;
+    },
+    setPostSheetOpen(open: boolean) {
+      postSheetOpen = open;
+    },
+    getShareUrl(): string {
+      return inputs.getContext().getShareUrl();
     },
     copyForClaude,
     sendToInbox,

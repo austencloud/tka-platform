@@ -49,6 +49,7 @@
   import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
+  import PostShareSheet from "$lib/shared/share/components/PostShareSheet.svelte";
   import VideoPanel from "./video-panel/VideoPanel.svelte";
   import { VIDEO_UPLOAD_ENABLED } from "../config/viewer-feature-flags";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
@@ -734,6 +735,19 @@
       onCancel={interactions.handleDeleteCancel}
     />
   {/if}
+
+  <!-- Post handoff. Lives in the shell, never in a host, so the drawer, /q and
+       /sequence surfaces are identical by construction. -->
+  <PostShareSheet
+    isOpen={share.postSheetOpen}
+    sequence={ctx.effectiveSequence ?? null}
+    shareUrl={share.postSheetOpen ? share.getShareUrl() : ""}
+    videoBlobUrl={ctx.previewBlobUrl}
+    isExportingVideo={ctx.isExporting}
+    exportProgress={ctx.exportProgress?.progress ?? null}
+    onRequestVideo={ctx.handleExport}
+    onClose={() => share.setPostSheetOpen(false)}
+  />
 </div>
 
 <style>

@@ -610,6 +610,7 @@
       handleVideoUpload: destinationActions.handleVideoUpload,
       handleShare: shareActions.handleShare,
       handleCopyLink: shareActions.handleCopyLink,
+      getShareUrl: shareActions.getShareUrl,
       handleOpenInBrowser: shareActions.handleOpenInBrowser,
       invokeGatedAction: (type, realHandler) =>
         authQueue.invokeGatedAction(type, realHandler, sequence),

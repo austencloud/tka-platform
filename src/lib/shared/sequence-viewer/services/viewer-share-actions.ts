@@ -117,9 +117,15 @@ export function createViewerShareActions(
     }
   }
 
+  /** Canonical share link, for callers that need the URL rather than an action. */
+  function getShareUrl(): string {
+    return getShareDetails().url;
+  }
+
   return {
     handleShare,
     handleCopyLink,
     handleOpenInBrowser,
+    getShareUrl,
   };
 }

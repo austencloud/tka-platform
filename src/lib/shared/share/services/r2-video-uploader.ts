@@ -617,6 +617,46 @@ export class R2VideoUploader {
     }
   }
 
+  /**
+   * Upload a share artifact (card PNG or exported video) so a phone can fetch
+   * it by QR, and so Phase 2's Graph API publish has a URL to hand Meta.
+   *
+   * Timestamped filename on purpose: this must never overwrite the sequence's
+   * canonical thumbnail the way uploadSequenceThumbnail would. Lands under the
+   * same per-user prefixes deleteSequenceAssets already sweeps, so a deleted
+   * sequence takes its handoff artifacts with it.
+   */
+  async uploadShareArtifact(
+    sequenceId: string,
+    blob: Blob,
+    artifact: "card" | "video",
+    options?: UploadOptions
+  ): Promise<VideoUploadResult> {
+    try {
+      const userId = this.getUserId();
+      const timestamp = Date.now();
+      const isVideo = artifact === "video";
+      const fileName = `${timestamp}_share.${isVideo ? "mp4" : "png"}`;
+      const contentType = blob.type || (isVideo ? "video/mp4" : "image/png");
+      const category = isVideo ? "recordings" : "thumbnails";
+
+      if (blob.size >= MULTIPART_THRESHOLD) {
+        return await this.uploadMultipart(
+          fileName, contentType, blob, userId, category, sequenceId, options
+        );
+      }
+      return await this.uploadSingle(
+        fileName, contentType, blob, userId, category, sequenceId, options
+      );
+    } catch (error) {
+      if ((error as Error).name === "AbortError") throw error;
+      return this.handleError(error, "upload-share-artifact", {
+        sequenceId,
+        artifact,
+      });
+    }
+  }
+
   async deleteSequenceAssets(sequenceId: string): Promise<void> {
     try {
       const userId = this.getUserId();
