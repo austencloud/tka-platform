@@ -190,10 +190,21 @@
     WATER,
   ];
 
+  /**
+   * Role, not mood. A grey says what a surface DOES — hold you up, stop you,
+   * cover you, let you through — so that a frame can be read for volume
+   * without anybody deciding what rock looks like yet.
+   *
+   * Overhead surfaces are matched on `-ceiling`/`-roof` ANYWHERE in the id,
+   * not just at the end: the cave's roof is cut into six numbered slices and
+   * the canyon's into four named ones, and an endsWith test painted every one
+   * of them as floor.
+   */
   function materialFor(id: string): MeshStandardMaterial {
     if (id.startsWith("portal-")) return GRAY.portal;
-    if (id.endsWith("-ceiling")) return GRAY.ceiling;
+    if (id.includes("-ceiling") || id.includes("-roof")) return GRAY.ceiling;
     if (id.startsWith("hall-")) return GRAY.wall;
+    if (id.startsWith("cave-") || id.startsWith("canyon-")) return GRAY.wall;
     if (id.startsWith("ridge-") || id.startsWith("cap-")) return GRAY.mass;
     if (id.startsWith("cyclorama-")) return GRAY.wall;
     return GRAY.floor;
@@ -338,12 +349,24 @@
    */
   const beacon = layout.plume;
 
-  /** The waterline sheet, sized to the whole route. */
-  const waterSheet = {
-    width: (layout.bounds.maxX - layout.bounds.minX) * 0.98,
-    depth: TOTAL_LENGTH_M,
-    centreZ: TOTAL_LENGTH_M / 2,
-  };
+  /**
+   * The waterline, drawn as the layout's own planes rather than one sheet
+   * across the whole footprint.
+   *
+   * The single sheet was a graybox shortcut that has stopped being true: it
+   * flooded the canyon wall to wall when only the stream and the pools are
+   * water, and it ran the sea straight through the cave's rock. Each plane
+   * knows its own extent, so drawing them one for one is both less code and
+   * the only version that answers "where is there water" honestly.
+   */
+  const waterSheets = layout.waterPlanes.map((plane) => ({
+    id: plane.id,
+    width: plane.maxX - plane.minX,
+    depth: plane.maxZ - plane.minZ,
+    x: (plane.minX + plane.maxX) / 2,
+    y: plane.surfaceY,
+    z: (plane.minZ + plane.maxZ) / 2,
+  }));
 
   // ── Light ───────────────────────────────────────────────────────────────────
 
@@ -791,14 +814,13 @@
   </T.Mesh>
 {/each}
 
-<!-- The waterline: y = 0, from the first step to the last. -->
-<T.Mesh
-  position={[0, WATERLINE_Y, waterSheet.centreZ]}
-  rotation.x={-Math.PI / 2}
->
-  <T.PlaneGeometry args={[waterSheet.width, waterSheet.depth]} />
-  <T is={WATER} />
-</T.Mesh>
+<!-- The waterline: y = 0 in every one of them, from the first step to the last. -->
+{#each waterSheets as sheet (sheet.id)}
+  <T.Mesh position={[sheet.x, sheet.y, sheet.z]} rotation.x={-Math.PI / 2}>
+    <T.PlaneGeometry args={[sheet.width, sheet.depth]} />
+    <T is={WATER} />
+  </T.Mesh>
+{/each}
 
 <!-- Ruler: 20 m posts, 5 m tall every 100 m. -->
 {#each posts as post (post.id)}

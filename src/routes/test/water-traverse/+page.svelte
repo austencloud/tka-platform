@@ -3,21 +3,29 @@
   import { AgXToneMapping, PCFSoftShadowMap } from "three";
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
   import {
-    CHAMBER_CEILING,
-    CHAMBER_HALF_W,
     TOTAL_LENGTH_M,
     WATERLINE_Y,
+    ceilingAt,
+    hallHalfWidthAt,
     legAt,
+    regionAt,
   } from "$lib/features/water-traverse/data/water-traverse-terrain";
   import WaterTraverseWalkScene from "./WaterTraverseWalkScene.svelte";
 
   let resetToken = $state(0);
   let position = $state({ x: 0, y: 1.28, z: 6 });
 
-  const LEG_LABEL = {
+  /**
+   * The title names the ROOM; the line under it names the visitor's
+   * relationship to the waterline. Those are two different questions now — the
+   * sea leg spans both the trench and the cave, and you are under the water
+   * for all of it.
+   */
+  const REGION_LABEL = {
     snowfield: "The frozen river",
     sea: "The trench",
-    spring: "The steaming plain",
+    cave: "The cave",
+    canyon: "The canyon",
   } as const;
 
   const RELATIONSHIP = {
@@ -35,14 +43,15 @@
   const WALK_SPEED = 4.2;
 
   const leg = $derived(legAt(position.z));
+  const region = $derived(regionAt(position.z));
   const walked = $derived(Math.max(0, Math.min(position.z, TOTAL_LENGTH_M)));
   const progress = $derived(Math.round((walked / TOTAL_LENGTH_M) * 100));
   /** Eye height against the one waterline the whole piece is measured from. */
   const relativeToLine = $derived(position.y - WATERLINE_Y);
   /** Ceiling above the eye. The answer to "is there a roof, and how high". */
-  const headroom = $derived(CHAMBER_CEILING[leg] - position.y);
-  /** Wall to wall across this chamber. */
-  const hallWidth = $derived(CHAMBER_HALF_W[leg] * 2);
+  const headroom = $derived(ceilingAt(position.z) - position.y);
+  /** Wall to wall, here. Steps six times inside the cave alone. */
+  const hallWidth = $derived(Math.round(hallHalfWidthAt(position.z) * 2));
   const secondsWalked = $derived(walked / WALK_SPEED);
   const secondsLeft = $derived((TOTAL_LENGTH_M - walked) / WALK_SPEED);
 
@@ -66,6 +75,7 @@
   data-player-y={position.y.toFixed(2)}
   data-player-z={position.z.toFixed(2)}
   data-leg={leg}
+  data-region={region}
 >
   <div class="viewport" aria-label="The Water Traverse, first person">
     <Canvas dpr={1} shadows={PCFSoftShadowMap} toneMapping={AgXToneMapping}>
@@ -79,7 +89,7 @@
   <header class="review-hud">
     <div class="review-label">
       <p>Water · graybox</p>
-      <h1>{LEG_LABEL[leg]}</h1>
+      <h1>{REGION_LABEL[region]}</h1>
       <span class="relationship">
         You are <strong>{RELATIONSHIP[leg]}</strong> ·
         {relativeToLine >= 0 ? "+" : ""}{relativeToLine.toFixed(1)} m from the
@@ -133,10 +143,20 @@
      puts a mood back on a pass whose entire purpose is having no mood — and
      worse, it flatters the frames. Grey chrome, orange for the numbers, which
      is the same orange the rulers in the scene are painted. */
+  :global(html),
   :global(body) {
     margin: 0;
     overflow: hidden;
     background: #15181a;
+  }
+
+  /* app.css sets `scrollbar-gutter: stable` on the root, which shrinks the
+     initial containing block by the scrollbar's width whether or not one is
+     showing. On a full-bleed page that put a 10 px strip of page background
+     down the right edge of every frame — the fixed shell measured 810 against
+     an 820 viewport. The forest-scene review page opts out the same way. */
+  :global(html) {
+    scrollbar-gutter: auto;
   }
 
   .walk-page {

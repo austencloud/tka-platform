@@ -173,7 +173,6 @@ const SNOW_RIDGE_TOP = SNOW_Y + 30;
 const SEA_RIDGE_TOP = WATERLINE_Y - 3.5;
 /** The gorge walls at the descent: high enough to funnel, too low to roof. */
 const DESCENT_RIDGE_TOP = SNOW_Y + 9;
-const SPRING_RIDGE_TOP = SPRING_BANK_Y + 20;
 
 /** The watercourse: one ribbon, constant width, centred on x = 0 throughout. */
 export const CHANNEL_HALF_W = 4.5;
@@ -192,45 +191,135 @@ const SEA_END_Z = 124;
 const ASCENT_END_Z = 190;
 const SPRING_END_Z = 244;
 
+/**
+ * The cave occupies the ascent's run exactly. Named separately because the
+ * ascent is a FLOOR fact — two ramps and a landing — and the cave is a
+ * containment fact, and after this change the two are authored by different
+ * code even though they cover the same metres.
+ */
+const CAVE_START_Z = SEA_END_Z;
+const CAVE_END_Z = ASCENT_END_Z;
+
 export const TOTAL_LENGTH_M = SPRING_END_Z;
 
 /**
- * ── The hall ────────────────────────────────────────────────────────────────
+ * ── Four spaces, not three ──────────────────────────────────────────────────
  *
- * This is a room in a museum, not a valley. The peaks, the trench and the
- * spring are set dressing built at absurd expense by an organisation with more
- * money than restraint, and the shell around them is what says so: you can
- * always see a ceiling, and the ceiling is man-made.
+ * The route used to climb down into the sea and climb straight back out into
+ * an open geothermal plain. Walked as a graybox that read as three rooms in a
+ * row, each bigger than the last, with no moment of compression anywhere and
+ * 24 m of empty ground after the payoff.
  *
- * Without it the piece read as the outdoors, which is a different work. The
- * fix is not to shrink the dioramas — they are the point — but to admit the
- * building that contains them.
+ * It now goes DOWN, INTO A CAVE, and the cave CLIMBS until it opens into an
+ * underground canyon with the springs at the bottom of it:
  *
- * The volume steps up once per chamber. Ice is a train shed, the sea is a
- * hangar, the spring is a cathedral. Walking the route is watching the room
- * get bigger three times, which is the whole argument for how much it cost.
+ *   snowfield   a basin you cross            wide, roofed, man-made
+ *   sea         a hangar you are down inside vast, roofed, man-made
+ *   cave        a flooded passage that climbs TIGHT and dark — the only
+ *                                             compression in the walk
+ *   canyon      where the heat comes out      vast again, and all rock
+ *
+ * The shape is big → big → SMALL → big. The cave is what makes the canyon
+ * land: you cannot feel a room open up if you have not just been squeezed.
+ *
+ * The first two are still dioramas in a hall — you can see a ceiling and it is
+ * man-made. From the cave mouth onward the ceiling is rock, because a cave
+ * that admits it is a building is not a cave.
  */
-export const CHAMBER_CEILING: Record<Leg, number> = {
+export type Region = "snowfield" | "sea" | "cave" | "canyon";
+
+/** The two spaces that are still a room in a museum. */
+type HallRegion = "snowfield" | "sea";
+
+/**
+ * The volume steps up once per hall chamber. Ice is a train shed, the sea is a
+ * hangar. Walking the first half is watching the room get bigger, which is the
+ * argument for how much the Order spent on it.
+ */
+export const CHAMBER_CEILING: Record<HallRegion, number> = {
   snowfield: WATERLINE_Y + 34,
   sea: WATERLINE_Y + 52,
-  spring: WATERLINE_Y + 80,
 };
 /**
  * Hall half-width per chamber. These sit OUTSIDE the ridge blocks, which reach
  * roughly 74 m at their deepest, so the peaks stand inside the room rather
  * than punching through its walls.
  */
-export const CHAMBER_HALF_W: Record<Leg, number> = {
+export const CHAMBER_HALF_W: Record<HallRegion, number> = {
   snowfield: 78,
   sea: 92,
-  spring: 112,
 };
 /** Chamber extents along Z. The seams are where the portals stand. */
-const CHAMBER_Z: Record<Leg, [number, number]> = {
+const CHAMBER_Z: Record<HallRegion, [number, number]> = {
   snowfield: [SNOW_START_Z, SNOW_END_Z],
-  sea: [SNOW_END_Z, ASCENT_END_Z],
-  spring: [ASCENT_END_Z, SPRING_END_Z],
+  sea: [SNOW_END_Z, CAVE_START_Z],
 };
+
+// ── The cave ────────────────────────────────────────────────────────────────
+
+/**
+ * The cave takes over the ascent's run. Its FLOOR is unchanged — the same two
+ * ramps and the same landing, so the visitor's head still leaves the water at
+ * z 165 on flat ground. What changes is everything around that floor: the
+ * trench's far wall closes into a face with a hole at its foot, and the walk
+ * spends 66 m inside rock instead of under open water.
+ *
+ * Surfacing inside a flooded passage is a better version of the same moment
+ * than surfacing on an open ramp. It is the difference between a level change
+ * and an event.
+ */
+const CAVE_SLICES = 6;
+/**
+ * Half-width at the mouth and at the canyon end. The passage doubles as it
+ * climbs, so the release starts before the canyon does.
+ *
+ * The first attempt used 13 → 21, giving a passage 31 m wide and 13 m tall.
+ * Walked, that is a road tunnel: at a 40 m sightline a 13 m roof sits only 18
+ * degrees above the eye, which puts it in the top fifth of the frame where it
+ * exerts no pressure at all. Tightness is an ANGLE, not a metre count — the
+ * roof and walls have to be far enough into peripheral vision to be felt. At
+ * 12 m across the channel itself is 9 of them, which is the right relationship
+ * for a flooded slot: the water fills the passage and you wade up it.
+ */
+const CAVE_HALF_W_MOUTH = 6;
+const CAVE_HALF_W_INNER = 12;
+/**
+ * Headroom at the mouth and at the canyon end, measured at each slice's HIGH
+ * end so the number is the worst case in that slice rather than the best. Six
+ * metres, under a hall that is seventy, is the squeeze the walk was missing.
+ */
+const CAVE_CLEARANCE_MOUTH = 6;
+const CAVE_CLEARANCE_INNER = 12;
+const ROCK_THICKNESS = 6;
+
+// ── The canyon ──────────────────────────────────────────────────────────────
+
+/**
+ * Tall and comparatively narrow: 92 m across against 59 m of height, where the
+ * spring hall it replaces was 224 across against 81. A canyon is a shape, and
+ * the shape is the ratio — a room twice as wide as it is tall reads as a hall
+ * no matter what the walls are made of.
+ */
+/**
+ * The canyon's cross-section: 48 m across against 59 m of height.
+ *
+ * The first cut was 92 m across. Walked, its walls were 46 m out on each side
+ * — off the edges of the frame — so the only thing visible from the mouth was
+ * a floor and a distant end wall, and the room read as a hall. A canyon is not
+ * a big room; it is a section TALLER THAN IT IS WIDE, and that only works if
+ * both walls are in shot at once.
+ */
+const CANYON_HALF_W = 24;
+const CANYON_ROOF_Y = WATERLINE_Y + 58;
+/** How far the canyon runs past the point the walk stops, and how far it pinches. */
+const CANYON_TAIL_LENGTH = 20;
+const CANYON_TAIL_HALF_W = 9;
+/**
+ * The shaft: a collapse in the canyon roof over the springs. It is the only
+ * opening in the room, which makes it the only light and the only way the
+ * steam leaves — so the last thing the walk asks the visitor to do is look up.
+ */
+const SHAFT = { halfW: 8, minZ: 216, maxZ: 240 };
 const HALL_THICKNESS = 3;
 /** The lowest floor anywhere. Walls are built down to it so none of them float. */
 const HALL_BASE_Y = SEA_FLOOR_Y - 2;
@@ -281,8 +370,8 @@ function buildPortal(
   ];
 }
 
-/** Side walls and ceiling for one chamber. */
-function buildChamber(leg: Leg): WallRect[] {
+/** Side walls and ceiling for one hall chamber. */
+function buildChamber(leg: HallRegion): WallRect[] {
   const [minZ, maxZ] = CHAMBER_Z[leg];
   const halfW = CHAMBER_HALF_W[leg];
   const ceilingY = CHAMBER_CEILING[leg];
@@ -308,6 +397,186 @@ function buildChamber(leg: Leg): WallRect[] {
     baseY: ceilingY,
     topY: ceilingY + HALL_THICKNESS,
   });
+
+  return walls;
+}
+
+/**
+ * One slice of the cave tube.
+ *
+ * The passage is cut into slices rather than swept because a WallRect is an
+ * axis-aligned box and the floor beneath it climbs at roughly 14 degrees. Six
+ * stepped slices give a roof that follows the floor without a single one of
+ * them lying about the clearance: each slice's roof is set from the floor at
+ * its HIGH end, so the stated headroom is the tightest point in that slice and
+ * every other point in it has more.
+ */
+function caveSlice(index: number): {
+  minZ: number;
+  maxZ: number;
+  halfW: number;
+  roofY: number;
+} {
+  const span = CAVE_END_Z - CAVE_START_Z;
+  const t = index / CAVE_SLICES;
+  const minZ = CAVE_START_Z + span * t;
+  const maxZ = CAVE_START_Z + span * ((index + 1) / CAVE_SLICES);
+  const clearance =
+    CAVE_CLEARANCE_MOUTH + (CAVE_CLEARANCE_INNER - CAVE_CLEARANCE_MOUTH) * t;
+  return {
+    minZ,
+    maxZ,
+    halfW: caveHalfWAt(minZ),
+    roofY: baseFloorYAt(maxZ) + clearance,
+  };
+}
+
+/**
+ * Half-width of the passage at world Z, as pure arithmetic.
+ *
+ * Split out from `caveSlice` because the FLOOR needs the passage width too and
+ * cannot get it from there: `caveSlice` asks `baseFloorYAt` where the floor is,
+ * so a floor that asked `caveSlice` how wide to be would define itself in a
+ * circle. This function touches nothing but constants.
+ *
+ * It exists because the first cut of the cave left the ascent floor at the old
+ * trench's 96 m width. Inside a passage 20 m across, that put 38 m of lit floor
+ * on the far side of each wall — the walk read as open ground with some rocks
+ * near the middle, which is the exact opposite of the compression the cave is
+ * for.
+ */
+function caveHalfWAt(z: number): number {
+  const t = (z - CAVE_START_Z) / (CAVE_END_Z - CAVE_START_Z);
+  return (
+    CAVE_HALF_W_MOUTH +
+    (CAVE_HALF_W_INNER - CAVE_HALF_W_MOUTH) * Math.max(0, Math.min(1, t))
+  );
+}
+
+/** The cave tube: rock either side and rock overhead, for 66 m. */
+function buildCave(): WallRect[] {
+  const walls: WallRect[] = [];
+
+  for (let i = 0; i < CAVE_SLICES; i += 1) {
+    const { minZ, maxZ, halfW, roofY } = caveSlice(i);
+    // Half a metre of overlap into the next slice, so the stepped roof has no
+    // seam a visitor can see daylight through.
+    const farZ = maxZ + 0.5;
+
+    for (const side of [-1, 1] as const) {
+      walls.push({
+        id: `cave-${side < 0 ? "west" : "east"}-${i}`,
+        rect: rect(
+          side < 0 ? -halfW - ROCK_THICKNESS : halfW,
+          minZ,
+          side < 0 ? -halfW : halfW + ROCK_THICKNESS,
+          farZ
+        ),
+        baseY: HALL_BASE_Y,
+        topY: roofY,
+      });
+    }
+
+    walls.push({
+      id: `cave-roof-${i}`,
+      rect: rect(-halfW, minZ, halfW, farZ),
+      baseY: roofY,
+      topY: roofY + ROCK_THICKNESS,
+    });
+  }
+
+  return walls;
+}
+
+/**
+ * The canyon: two rock walls, an end wall, and a roof with a hole in it.
+ *
+ * Solid slabs rather than the broken ridge blocks the open legs use. A ridge
+ * is a skyline seen against something beyond it; a canyon wall has nothing
+ * beyond it, and gaps between blocks would show the hall the room is trying
+ * not to be.
+ */
+function buildCanyon(): WallRect[] {
+  const walls: WallRect[] = [];
+
+  for (const side of [-1, 1] as const) {
+    walls.push({
+      id: `canyon-${side < 0 ? "west" : "east"}`,
+      rect: rect(
+        side < 0 ? -CANYON_HALF_W - ROCK_THICKNESS : CANYON_HALF_W,
+        CAVE_END_Z,
+        side < 0 ? -CANYON_HALF_W : CANYON_HALF_W + ROCK_THICKNESS,
+        SPRING_END_Z
+      ),
+      baseY: HALL_BASE_Y,
+      topY: CANYON_ROOF_Y,
+    });
+  }
+
+  /**
+   * The tail: the canyon keeps going after the visitor stops.
+   *
+   * It used to end at a flat slab across the full width at z 244. Stood at the
+   * canyon mouth, that slab was half the frame — one unbroken face, 48 m out,
+   * with nothing in front of it. It read as the back of a room, and a room is
+   * the one thing this space must not be.
+   *
+   * So the walls converge past the springs instead and the cap sits 20 m
+   * further on, small and deep in shadow. The route still ends at 244; the
+   * SPACE does not, which is the whole difference between a canyon and a hall.
+   */
+  const TAIL_SLICES = 4;
+  for (let i = 0; i < TAIL_SLICES; i += 1) {
+    const minZ = SPRING_END_Z + (CANYON_TAIL_LENGTH * i) / TAIL_SLICES;
+    const maxZ = SPRING_END_Z + (CANYON_TAIL_LENGTH * (i + 1)) / TAIL_SLICES;
+    const halfW =
+      CANYON_HALF_W +
+      (CANYON_TAIL_HALF_W - CANYON_HALF_W) * ((i + 1) / TAIL_SLICES);
+    for (const side of [-1, 1] as const) {
+      walls.push({
+        id: `canyon-tail-${side < 0 ? "west" : "east"}-${i}`,
+        rect: rect(
+          side < 0 ? -halfW - ROCK_THICKNESS : halfW,
+          minZ,
+          side < 0 ? -halfW : halfW + ROCK_THICKNESS,
+          maxZ + 0.5
+        ),
+        baseY: HALL_BASE_Y,
+        topY: CANYON_ROOF_Y,
+      });
+    }
+    walls.push({
+      id: `canyon-tail-roof-${i}`,
+      rect: rect(-halfW, minZ, halfW, maxZ + 0.5),
+      baseY: CANYON_ROOF_Y,
+      topY: CANYON_ROOF_Y + ROCK_THICKNESS,
+    });
+  }
+
+  walls.push({
+    id: "canyon-head",
+    rect: rect(
+      -CANYON_TAIL_HALF_W,
+      SPRING_END_Z + CANYON_TAIL_LENGTH,
+      CANYON_TAIL_HALF_W,
+      SPRING_END_Z + CANYON_TAIL_LENGTH + ROCK_THICKNESS
+    ),
+    baseY: HALL_BASE_Y,
+    topY: CANYON_ROOF_Y,
+  });
+
+  // Roof in four slabs around the shaft.
+  const roof = (id: string, r: WorldRect) =>
+    walls.push({
+      id: `canyon-roof-${id}`,
+      rect: r,
+      baseY: CANYON_ROOF_Y,
+      topY: CANYON_ROOF_Y + ROCK_THICKNESS,
+    });
+  roof("near", rect(-CANYON_HALF_W, CAVE_END_Z, CANYON_HALF_W, SHAFT.minZ));
+  roof("head", rect(-CANYON_HALF_W, SHAFT.maxZ, CANYON_HALF_W, SPRING_END_Z));
+  roof("west", rect(-CANYON_HALF_W, SHAFT.minZ, -SHAFT.halfW, SHAFT.maxZ));
+  roof("east", rect(SHAFT.halfW, SHAFT.minZ, CANYON_HALF_W, SHAFT.maxZ));
 
   return walls;
 }
@@ -348,30 +617,58 @@ function buildAscent(): { floors: FloorRect[]; breakZ: number } {
   const SURFACE_BREAK_Z = 165;
   const lowerEndZ = SURFACE_BREAK_Z - LANDING_LENGTH / 2;
   const landingEndZ = lowerEndZ + LANDING_LENGTH;
-  const r = rect(-VALLEY_HALF_W, 0, VALLEY_HALF_W, 0);
 
-  return {
-    breakZ: (lowerEndZ + landingEndZ) / 2,
-    floors: [
-      ramp(
-        "ascent-lower",
-        { ...r, minZ: SEA_END_Z, maxZ: lowerEndZ },
-        SEA_FLOOR_Y,
-        SURFACE_BREAK_Y
-      ),
-      flat(
-        "ascent-landing",
-        { ...r, minZ: lowerEndZ, maxZ: landingEndZ },
-        SURFACE_BREAK_Y
-      ),
-      ramp(
-        "ascent-upper",
-        { ...r, minZ: landingEndZ, maxZ: ASCENT_END_Z },
-        SURFACE_BREAK_Y,
-        SPRING_FLOOR_Y
-      ),
-    ],
-  };
+  /**
+   * The elevation profile, which the cave did not change: two ramps around a
+   * landing, so the head still leaves the water at z 165. Only the WIDTH is
+   * new. Keeping the profile as data and the width as a separate pass is what
+   * lets the cave be reshaped without ever touching where the visitor surfaces.
+   */
+  const profile = [
+    { id: "ascent-lower", minZ: SEA_END_Z, maxZ: lowerEndZ, fromY: SEA_FLOOR_Y, toY: SURFACE_BREAK_Y },
+    { id: "ascent-landing", minZ: lowerEndZ, maxZ: landingEndZ, fromY: SURFACE_BREAK_Y, toY: SURFACE_BREAK_Y },
+    { id: "ascent-upper", minZ: landingEndZ, maxZ: ASCENT_END_Z, fromY: SURFACE_BREAK_Y, toY: SPRING_FLOOR_Y },
+  ];
+
+  /**
+   * Cut at every cave-slice boundary AND every profile boundary. The two sets
+   * do not align — six 11 m slices against a 38/6/22 m profile — so the union
+   * is the only set of pieces where each piece has both one constant width and
+   * one straight elevation.
+   */
+  const cuts = new Set<number>([SEA_END_Z, lowerEndZ, landingEndZ, ASCENT_END_Z]);
+  for (let i = 1; i < CAVE_SLICES; i += 1) {
+    cuts.add(CAVE_START_Z + ((CAVE_END_Z - CAVE_START_Z) * i) / CAVE_SLICES);
+  }
+  const edges = [...cuts].sort((a, b) => a - b);
+
+  const floors: FloorRect[] = [];
+  for (let i = 0; i < edges.length - 1; i += 1) {
+    const minZ = edges[i];
+    const maxZ = edges[i + 1];
+    const segment = profile.find((s) => minZ >= s.minZ && maxZ <= s.maxZ);
+    if (!segment) continue;
+
+    const span = segment.maxZ - segment.minZ;
+    const yAt = (z: number) =>
+      segment.fromY +
+      (segment.toY - segment.fromY) * ((z - segment.minZ) / span);
+
+    // Width from the WIDE end of the piece, plus the rock's thickness, so the
+    // slab always reaches past the wall it meets. Under-reaching would leave a
+    // slot along the base of the passage to fall through; over-reaching is
+    // buried in rock and costs nothing.
+    const halfW = caveHalfWAt(maxZ) + ROCK_THICKNESS;
+    const r = rect(-halfW, minZ, halfW, maxZ);
+
+    floors.push(
+      minZ >= segment.minZ && segment.fromY === segment.toY
+        ? flat(`${segment.id}-${i}`, r, segment.fromY)
+        : ramp(`${segment.id}-${i}`, r, yAt(minZ), yAt(maxZ))
+    );
+  }
+
+  return { breakZ: (lowerEndZ + landingEndZ) / 2, floors };
 }
 
 /** Elevation of the walkable floor at a point on the centreline. */
@@ -386,14 +683,16 @@ function floorYAt(floors: FloorRect[], z: number): number {
 }
 
 /**
- * Ridge legs: [id, from Z, to Z, base, nominal top].
+ * Ridge legs: [id, from Z, to Z, base, nominal top, half width, chamber].
+ *
+ * Only the two hall chambers get ridges. The cave and the canyon are cut rock
+ * with their own containment; a broken skyline inside them would be a mountain
+ * range indoors.
  */
-const RIDGE_LEGS: [string, number, number, number, number, number, Leg][] = [
+const RIDGE_LEGS: [string, number, number, number, number, number, HallRegion][] = [
   ["snow", SNOW_START_Z, SNOW_END_Z, SNOW_Y, SNOW_RIDGE_TOP, SNOW_HALF_W, "snowfield"],
   ["descent", SNOW_END_Z, DESCENT_END_Z, SEA_FLOOR_Y, DESCENT_RIDGE_TOP, SEA_HALF_W, "sea"],
   ["sea", DESCENT_END_Z, SEA_END_Z, SEA_FLOOR_Y, SEA_RIDGE_TOP, SEA_HALF_W, "sea"],
-  ["ascent", SEA_END_Z, ASCENT_END_Z, SEA_FLOOR_Y, SEA_RIDGE_TOP, SEA_HALF_W, "sea"],
-  ["spring", ASCENT_END_Z, SPRING_END_Z, SPRING_FLOOR_Y, SPRING_RIDGE_TOP, SPRING_HALF_W, "spring"],
 ];
 
 /** Clearance the peaks keep under their chamber's roof. */
@@ -506,9 +805,21 @@ function buildBaseFloorRects(): FloorRect[] {
     ),
     flat("sea-floor", { ...full, minZ: DESCENT_END_Z, maxZ: SEA_END_Z }, SEA_FLOOR_Y),
     ...ascent.floors,
+    // Reaches the canyon walls, not the old valley's 40 m. SPRING_HALF_W left
+    // a 6 m slot down to nothing along the base of each wall — a floor that
+    // stops short of the room it is in is the same defect as one that runs
+    // past it, read from the other side.
     flat(
       "spring-plain",
-      rect(-SPRING_HALF_W, ASCENT_END_Z, SPRING_HALF_W, SPRING_END_Z),
+      rect(
+        -CANYON_HALF_W - ROCK_THICKNESS,
+        ASCENT_END_Z,
+        CANYON_HALF_W + ROCK_THICKNESS,
+        // Under the tail as well. The visitor never walks there, but they can
+        // see it, and a canyon that runs on past a floor that does not would
+        // show its own edge — the exact tell the tail exists to avoid.
+        SPRING_END_Z + CANYON_TAIL_LENGTH
+      ),
       SPRING_FLOOR_Y
     ),
   ];
@@ -520,9 +831,9 @@ function buildBaseFloorRects(): FloorRect[] {
       flat(
         `spring-bank-${side < 0 ? "west" : "east"}`,
         rect(
-          side < 0 ? -SPRING_HALF_W : CHANNEL_HALF_W + 2.5,
+          side < 0 ? -CANYON_HALF_W : CHANNEL_HALF_W + 2.5,
           ASCENT_END_Z + 6,
-          side < 0 ? -CHANNEL_HALF_W - 2.5 : SPRING_HALF_W,
+          side < 0 ? -CHANNEL_HALF_W - 2.5 : CANYON_HALF_W,
           SPRING_END_Z - 8
         ),
         SPRING_BANK_Y
@@ -537,6 +848,13 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
   const ascent = buildAscent();
   const floorRects: FloorRect[] = buildBaseFloorRects();
 
+  // STALE SINCE THE CAVE: the baked height field runs z 52 → 189.7 at ±42 m,
+  // which is the old open-water trench. Past the cave mouth at z 124 the walk
+  // is inside a passage 13–21 m wide, so the last 66 m of this field is seabed
+  // relief growing through solid rock. Harmless today — the graybox draws
+  // boxes and loads no trimesh — but scripts/traverse_seabed.py has to re-bake
+  // to end at CAVE_START_Z before any art pass loads it.
+  //
   // The sculpted seabed sits on top of the flat trench floor as one trimesh.
   // The route down the middle has zero relief by construction, so it is a
   // perfectly smooth strip of that mesh; the dunes either side carry all the
@@ -557,14 +875,18 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
       )
     );
   }
-  // The building. Three chambers, each taller and wider than the last, joined
-  // by portals rather than roofed over independently.
-  for (const leg of ["snowfield", "sea", "spring"] as const) {
+  // The building: two chambers, the second taller and wider than the first,
+  // joined by a portal rather than roofed over independently.
+  for (const leg of ["snowfield", "sea"] as const) {
     wallRects.push(...buildChamber(leg));
   }
+  // Then the rock: a flooded passage that climbs, and the room it opens into.
+  wallRects.push(...buildCave(), ...buildCanyon());
+
+  const mouth = caveSlice(0);
+  const throat = caveSlice(CAVE_SLICES - 1);
   wallRects.push(
-    // Near portal: only has to clear the plume's lower third at 168 m of
-    // distance, so it stays a doorway rather than a missing wall.
+    // Ice → sea. A doorway rather than a missing wall.
     ...buildPortal(
       "ice-sea",
       SNOW_END_Z,
@@ -573,22 +895,33 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
       30,
       WATERLINE_Y + 26
     ),
-    // Far portal: the plume is close enough here that anything shorter would
-    // guillotine it. An arch nearly the full height of the sea hall, opening
-    // into a room half again as tall.
+    // The cave mouth: a 26 m hole at the foot of a wall 184 m across and 70 m
+    // tall. It has to be small enough that the sea hall reads as ending, and
+    // it has to sit on the FLOOR — a cave you enter through an arch halfway up
+    // a wall is a doorway with rock texture on it.
     ...buildPortal(
-      "sea-spring",
-      ASCENT_END_Z,
-      CHAMBER_HALF_W.spring,
-      CHAMBER_CEILING.spring,
-      26,
-      WATERLINE_Y + 42
+      "cave-mouth",
+      CAVE_START_Z,
+      CHAMBER_HALF_W.sea,
+      CHAMBER_CEILING.sea,
+      CAVE_HALF_W_MOUTH,
+      mouth.roofY
+    ),
+    // Cave → canyon. The reveal: you leave a 16 m tube through a hole in the
+    // near wall of a room nearly four times as tall.
+    ...buildPortal(
+      "cave-canyon",
+      CAVE_END_Z,
+      CANYON_HALF_W,
+      CANYON_ROOF_Y,
+      CAVE_HALF_W_INNER,
+      throat.roofY
     )
   );
 
-  // Close both ends. The walk is forward-only; there is nothing behind you and
-  // nothing past the last pool. These are the cycloramas: the end walls the
-  // dioramas are built against, running the full height of their chamber.
+  // Close the near end. The walk is forward-only and there is nothing behind
+  // you: this is the cyclorama, the end wall the first diorama is built
+  // against. The far end is the canyon's head wall, built with the canyon.
   wallRects.push({
     id: "cyclorama-start",
     rect: rect(
@@ -599,17 +932,6 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
     ),
     baseY: HALL_BASE_Y,
     topY: CHAMBER_CEILING.snowfield,
-  });
-  wallRects.push({
-    id: "cyclorama-end",
-    rect: rect(
-      -CHAMBER_HALF_W.spring,
-      SPRING_END_Z,
-      CHAMBER_HALF_W.spring,
-      SPRING_END_Z + HALL_THICKNESS
-    ),
-    baseY: HALL_BASE_Y,
-    topY: CHAMBER_CEILING.spring,
   });
 
   /**
@@ -626,7 +948,17 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
     },
     {
       id: "sea-surface",
-      ...rect(-SEA_HALF_W, SNOW_END_Z, SEA_HALF_W, ASCENT_END_Z),
+      ...rect(-SEA_HALF_W, SNOW_END_Z, SEA_HALF_W, CAVE_START_Z),
+      surfaceY: WATERLINE_Y,
+      state: "sea",
+      seenFromBelow: true,
+    },
+    // The cave is FLOODED. Its floor climbs from -18 to -0.9 and the waterline
+    // does not move, so the visitor walks up through the water and out of it
+    // inside the rock. This plane is the thing their head breaks at z 165.
+    {
+      id: "cave-water",
+      ...rect(-CAVE_HALF_W_INNER, CAVE_START_Z, CAVE_HALF_W_INNER, CAVE_END_Z),
       surfaceY: WATERLINE_Y,
       state: "sea",
       seenFromBelow: true,
@@ -714,10 +1046,10 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
     // clamp checks against, so they have to describe the space you can
     // actually stand in.
     bounds: rect(
-      -CHAMBER_HALF_W.spring - HALL_THICKNESS,
+      -CHAMBER_HALF_W.sea - HALL_THICKNESS,
       SNOW_START_Z - HALL_THICKNESS,
-      CHAMBER_HALF_W.spring + HALL_THICKNESS,
-      SPRING_END_Z + HALL_THICKNESS
+      CHAMBER_HALF_W.sea + HALL_THICKNESS,
+      SPRING_END_Z + CANYON_TAIL_LENGTH + ROCK_THICKNESS
     ),
     floorRects,
     seabedMesh,
@@ -728,20 +1060,28 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
     legs: {
       snowfield: rect(-SNOW_HALF_W, SNOW_START_Z, SNOW_HALF_W, DESCENT_END_Z),
       sea: rect(-SEA_HALF_W, DESCENT_END_Z, SEA_HALF_W, ASCENT_END_Z),
-      spring: rect(-SPRING_HALF_W, ASCENT_END_Z, SPRING_HALF_W, SPRING_END_Z),
+      spring: rect(-CANYON_HALF_W, ASCENT_END_Z, CANYON_HALF_W, SPRING_END_Z),
     },
     surfaceBreak: { x: 0, z: ascent.breakZ, y: SURFACE_BREAK_Y },
     /**
-     * The steam column. It stands at the far end and rises well above the
-     * snowfield's ridges, so the end of the walk is visible from its
-     * beginning — the sightline that carries "all three states are everywhere"
-     * without staging anything.
+     * The steam column, standing under the shaft and going out through it.
+     *
+     * It used to be the piece's one long sightline, visible from the first
+     * step through two portals. Putting the springs underground costs that,
+     * and the cost is worth paying: a column you can see for the whole walk is
+     * a promise, and a room you cannot see into until you are in it is a
+     * reveal. What carries the visitor forward instead is the water — which
+     * the terrain header already says is the only wayfinding — and, once the
+     * trench opens up, a hole in the far wall with heat coming out of it.
+     *
+     * It clears the roof rather than stopping under it, because steam that
+     * stops at a ceiling is smoke in a room.
      */
     plume: {
       x: 0,
-      z: ASCENT_END_Z + 30,
+      z: (SHAFT.minZ + SHAFT.maxZ) / 2,
       baseY: WATERLINE_Y,
-      height: 46,
+      height: CANYON_ROOF_Y + ROCK_THICKNESS + 8 - WATERLINE_Y,
     },
     spawn: { x: 0, y: SNOW_Y + 1.0, z: SNOW_START_Z + 6, yaw: 0 },
   };
@@ -760,6 +1100,51 @@ export function baseFloorYAt(z: number): number {
   return floorYAt(baseFloors, z);
 }
 let baseFloors: FloorRect[] | null = null;
+
+/**
+ * Which SPACE a world Z is in.
+ *
+ * Separate from `legAt` on purpose, and the split is the point of the route
+ * change: a leg is the visitor's relationship to the waterline (on it, under
+ * it, in it), a region is the room they are standing in. Those used to be the
+ * same three things. Now the sea leg spans two rooms — the hangar and the
+ * cave — because you are still under the sea for the whole climb.
+ */
+export function regionAt(z: number): Region {
+  if (z < SNOW_END_Z) return "snowfield";
+  if (z < CAVE_START_Z) return "sea";
+  if (z < CAVE_END_Z) return "cave";
+  return "canyon";
+}
+
+/** Which cave slice a world Z falls in. Clamped at both ends. */
+function caveSliceAt(z: number) {
+  const t = (z - CAVE_START_Z) / (CAVE_END_Z - CAVE_START_Z);
+  return caveSlice(Math.max(0, Math.min(CAVE_SLICES - 1, Math.floor(t * CAVE_SLICES))));
+}
+
+/**
+ * The ceiling directly overhead, and the walls either side.
+ *
+ * Queried by Z rather than read off a per-leg map, because the cave's roof
+ * steps six times inside one leg. A readout that answered "52 m to ceiling"
+ * while the visitor stood in a nine-metre tube would be reporting the room
+ * they just left.
+ */
+export function ceilingAt(z: number): number {
+  const region = regionAt(z);
+  if (region === "cave") return caveSliceAt(z).roofY;
+  if (region === "canyon") return CANYON_ROOF_Y;
+  return CHAMBER_CEILING[region];
+}
+
+/** Half the distance between the walls at this Z. */
+export function hallHalfWidthAt(z: number): number {
+  const region = regionAt(z);
+  if (region === "cave") return caveSliceAt(z).halfW;
+  if (region === "canyon") return CANYON_HALF_W;
+  return CHAMBER_HALF_W[region];
+}
 
 /** Which leg a world Z belongs to. */
 export function legAt(z: number): Leg {
