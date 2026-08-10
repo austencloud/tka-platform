@@ -4,7 +4,7 @@
   visual language. Hosts provide callbacks instead of rebuilding the chrome.
 -->
 <script lang="ts">
-  import type { OrchestratorContext } from "./SequenceViewerOrchestrator.svelte";
+  import type { OrchestratorContext } from "../domain/viewer-orchestrator-context";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { ShareActionMenuItem } from "$lib/shared/share/domain/models/share-action-menu";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";

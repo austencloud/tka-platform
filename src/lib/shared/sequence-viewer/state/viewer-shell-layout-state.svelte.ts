@@ -2,7 +2,7 @@ import type { DeviceDetector } from "$lib/shared/device/services/device-detector
 import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ContentType } from "./viewer-state.svelte";
-import type { OrchestratorContext } from "../components/SequenceViewerOrchestrator.svelte";
+import type { OrchestratorContext } from "../domain/viewer-orchestrator-context";
 import { resolveExportSidebarMinWidth } from "../services/viewer-shell-model";
 
 interface ViewerShellLayoutInputs {

@@ -1,0 +1,139 @@
+import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
+import type { ExportCoordinatorState } from "../components/export-coordinator.svelte";
+import type { PlaybackControllerState } from "../components/playback-controller.svelte";
+import type { MandalaViewerController } from "./mandala-viewer-controller.svelte";
+import type { ViewerInteractiveServicesState } from "./viewer-interactive-services-state.svelte";
+import type { createViewerState } from "./viewer-state.svelte";
+import type { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
+import type { createModalAccessibilityHelper } from "../services/modal-accessibility-helper.svelte";
+
+type ViewerState = ReturnType<typeof createViewerState>;
+type AccessibilityHelper = ReturnType<typeof createModalAccessibilityHelper>;
+type EditingPane = "animation" | "image" | "video-upload";
+
+interface ViewerEditModeInputs {
+  viewerState: ViewerState;
+  playback: PlaybackControllerState;
+  interactive: ViewerInteractiveServicesState;
+  exportCoordinator: ExportCoordinatorState;
+  modalAnimationState: AnimationPanelState;
+  accessibilityHelper: AccessibilityHelper;
+  getEditingPane: () => EditingPane | null;
+  getEffectiveSequence: () => SequenceData | null;
+  getIsHandPath: () => boolean;
+  getResolvedCardAutoLayout: () => ResolvedAutoLayout | null;
+}
+
+export function createViewerEditModeState(inputs: ViewerEditModeInputs) {
+  let playbackRestoreOnExit = false;
+
+  function enterEditMode(pane: EditingPane): void {
+    inputs.interactive.hapticService?.trigger("selection");
+
+    if (pane === "animation") {
+      const leftContent = inputs.viewerState.splitConfig.leftPane;
+      const contentType =
+        leftContent === "animation-3d" ? "animation-3d" : "animation";
+      inputs.viewerState.enterExport("animation-export", contentType);
+      if (
+        !inputs.playback.isPlayingLocal &&
+        inputs.interactive.playbackController
+      ) {
+        inputs.interactive.playbackController.togglePlayback();
+      }
+      playbackRestoreOnExit = false;
+    } else if (pane === "image") {
+      playbackRestoreOnExit = inputs.playback.isPlayingLocal;
+      if (
+        inputs.playback.isPlayingLocal &&
+        inputs.interactive.playbackController
+      ) {
+        inputs.interactive.playbackController.togglePlayback();
+      }
+      inputs.viewerState.enterExport("image-export");
+    } else {
+      playbackRestoreOnExit = inputs.playback.isPlayingLocal;
+      if (
+        inputs.playback.isPlayingLocal &&
+        inputs.interactive.playbackController
+      ) {
+        inputs.interactive.playbackController.togglePlayback();
+      }
+      inputs.viewerState.setViewerMode("videos");
+    }
+
+    if (pane === "video-upload") {
+      inputs.accessibilityHelper.announce(
+        "Upload a performance video for this sequence.",
+        "assertive"
+      );
+      return;
+    }
+
+    const label = pane === "animation" ? "Animation" : "Card";
+    inputs.accessibilityHelper.announce(
+      `${label} export. Configure settings and tap Export when ready.`,
+      "assertive"
+    );
+  }
+
+  function exitEditMode(): void {
+    inputs.interactive.hapticService?.trigger("selection");
+    inputs.viewerState.exitExport();
+    inputs.exportCoordinator.dismissPreview();
+
+    if (
+      playbackRestoreOnExit &&
+      !inputs.playback.isPlayingLocal &&
+      inputs.interactive.playbackController
+    ) {
+      inputs.interactive.playbackController.togglePlayback();
+    }
+    playbackRestoreOnExit = false;
+    inputs.accessibilityHelper.announce("Export closed");
+  }
+
+  async function handleExport(): Promise<void> {
+    await inputs.exportCoordinator.handleExport(
+      inputs.getEditingPane(),
+      inputs.getEffectiveSequence(),
+      inputs.interactive.playbackController,
+      inputs.modalAnimationState,
+      inputs.interactive.hapticService,
+      inputs.playback.isPlayingLocal,
+      inputs.playback.bpmLocal,
+      inputs.getIsHandPath(),
+      inputs.getResolvedCardAutoLayout()
+    );
+  }
+
+  function handleArtExport(args: {
+    artType: "mandala" | "tunnel";
+    controller: TunnelViewController;
+    mandalaController: MandalaViewerController;
+  }): void {
+    if (args.artType === "mandala") {
+      args.mandalaController.startExport();
+      return;
+    }
+
+    void inputs.exportCoordinator.exportTunnel(
+      inputs.interactive.playbackController,
+      inputs.modalAnimationState,
+      inputs.interactive.hapticService,
+      (beat: number) => args.controller.additionalLayersAt(beat),
+      args.controller.spectrum
+    );
+  }
+
+  return {
+    enterEditMode,
+    exitEditMode,
+    handleExport,
+    handleArtExport,
+  };
+}
+
+export type ViewerEditModeState = ReturnType<typeof createViewerEditModeState>;
