@@ -1641,6 +1641,14 @@ export class AnimationRenderLoop {
       !params.suppress2DOverlays
     ) {
       try {
+        // A hidden hand should take its LEDs with it. The base prop state stays
+        // available so the Canvas2D renderer can fade the sprite out, but the
+        // LED tracker must not keep emitting points for that hidden prop or any
+        // of its tunnel copies.
+        const visibleBlueProp = effectiveBlueMotionVisible
+          ? props.blueProp
+          : null;
+        const visibleRedProp = effectiveRedMotionVisible ? props.redProp : null;
         const tipTrackerConfig: LedTipTrackerConfig = {
           canvasSize: this.canvasSize,
           bluePropDimensions: props.bluePropDimensions,
@@ -1651,16 +1659,16 @@ export class AnimationRenderLoop {
           additionalLayers:
             props.additionalLayers.length > 0
               ? props.additionalLayers.map((l) => ({
-                  blueProp: l.blueProp,
-                  redProp: l.redProp,
+                  blueProp: effectiveBlueMotionVisible ? l.blueProp : null,
+                  redProp: effectiveRedMotionVisible ? l.redProp : null,
                 }))
               : undefined,
           tunnelSpectrum: props.tunnelSpectrum ?? true,
         };
 
         const allLedTips = this.ledTipTracker.update(
-          props.blueProp,
-          props.redProp,
+          visibleBlueProp,
+          visibleRedProp,
           tipTrackerConfig,
           currentTime,
           params.ledConfig
@@ -1672,17 +1680,17 @@ export class AnimationRenderLoop {
           (t) => resolveEffect(t.propIndex, t.tipIndex, ledTipMap, {}) === "led"
         );
 
-        if (ledTips.length > 0) {
-          activeLedRenderer.renderLeds(
-            {
-              tips: ledTips,
-              currentTime,
-              canvasWidth: this.canvasSize,
-              canvasHeight: this.canvasSize,
-            },
-            params.ledConfig
-          );
-        }
+        // The renderer clears its retained glow and trail buffers when the tip
+        // list is empty. Skipping that frame leaves the last LED image visible.
+        activeLedRenderer.renderLeds(
+          {
+            tips: ledTips,
+            currentTime,
+            canvasWidth: this.canvasSize,
+            canvasHeight: this.canvasSize,
+          },
+          params.ledConfig
+        );
 
         // Successful frame resets the error counter
         this.consecutiveLedErrors = 0;
