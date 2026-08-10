@@ -146,18 +146,22 @@
     ruler: new MeshBasicMaterial({ color: "#e08640" }),
     stop: new MeshBasicMaterial({ color: "#4f9ad0" }),
     /**
-     * The far target. Its whole job is being visible from the first step.
+     * The vent column in the springs chamber.
      *
-     * Translucent because the thing it stands in for is a steam column, and an
-     * opaque one lies twice: it turns the last 30 m of the walk into a blank
-     * white wall, and it swallows performer C, who stands at exactly the
-     * plume's coordinates (x 0, z 220). Both of those are properties of the
-     * marker, not of the room.
+     * Translucent because the thing it stands in for is steam, and an opaque
+     * cylinder would put a solid white slab across the far half of the only
+     * room that has a far half. It was 0.3, which was tuned when this column
+     * stood in a shaft of daylight and had contrast to spare; the chamber it
+     * lives in now is uniform mid-grey on every surface, and at 0.3 the marker
+     * simply did not appear in any frame. 0.55 overshot and turned the left
+     * quarter of the chamber into fog. 0.35 with the narrower base is the value
+     * at which the head wall stays visible THROUGH it — which is what makes it
+     * read as vapour standing in a room rather than as a wall of the room.
      */
     beacon: new MeshBasicMaterial({
       color: "#dfe5e9",
       transparent: true,
-      opacity: 0.3,
+      opacity: 0.35,
       depthWrite: false,
       side: DoubleSide,
     }),
@@ -339,13 +343,14 @@
   }));
 
   /**
-   * The far target, as a plain column.
+   * The vent column, as a plain cylinder.
    *
-   * The steam plume is the piece's only long sightline: it has to be visible
-   * from the first step of a 244 m walk, through two portals. Whether that
-   * actually works is a GEOMETRY question — portal opening heights against
-   * distance — so it belongs in the graybox, drawn as the dumbest possible
-   * cylinder.
+   * It used to be the piece's one long sightline — visible from the first step
+   * through two portals — and that is gone with the shaft it stood in. It is
+   * now a local object in the springs chamber, and the geometry question it
+   * answers is a different one: does the room have anything in it besides the
+   * performer and the door. Still the dumbest possible cylinder; that is the
+   * right fidelity for a graybox.
    */
   const beacon = layout.plume;
 
@@ -852,9 +857,15 @@
   </T.Group>
 {/each}
 
-<!-- The far target, as a column. Visible from step one, or the plan is wrong. -->
+<!--
+  The vent column. It was 12 m across at the base, which was sized when it had
+  to be picked out at 200 m; walked past at 6 m it stopped being a column and
+  became a pale fog across the left third of every frame in the chamber. 8 m at
+  the base still reads from the far side of a 52 m room and lets the visitor
+  see the room while standing next to it.
+-->
 <T.Mesh position={[beacon.x, beacon.baseY + beacon.height / 2, beacon.z]}>
-  <T.CylinderGeometry args={[4, 6, beacon.height, 16, 1, true]} />
+  <T.CylinderGeometry args={[2.5, 4, beacon.height, 16, 1, true]} />
   <T is={MARK.beacon} />
 </T.Mesh>
 

@@ -7,8 +7,8 @@
     WATERLINE_Y,
     ceilingAt,
     hallHalfWidthAt,
-    legAt,
     regionAt,
+    relationToWater,
   } from "$lib/features/water-traverse/data/water-traverse-terrain";
   import WaterTraverseWalkScene from "./WaterTraverseWalkScene.svelte";
 
@@ -17,21 +17,31 @@
 
   /**
    * The title names the ROOM; the line under it names the visitor's
-   * relationship to the waterline. Those are two different questions now — the
-   * sea leg spans both the trench and the cave, and you are under the water
-   * for all of it.
+   * relationship to the waterline. Those are two different questions — the sea
+   * leg spans both the trench and the cave, and you are under the water for
+   * all of it; the canyon starts you waist-deep and ends with you below the
+   * line in the same room.
    */
   const REGION_LABEL = {
     snowfield: "The frozen river",
     sea: "The trench",
     cave: "The cave",
     canyon: "The canyon",
+    sump: "The sump",
+    springs: "The springs",
   } as const;
 
+  /**
+   * Keyed off the eye and the floor rather than off the leg. The leg-keyed
+   * version was a fact about the route, not about the person walking it, and
+   * it was wrong at both ends of the sea: still claiming "under the water"
+   * 22 m after the head broke the surface, and claiming "in the water" while
+   * standing 0.7 m above it.
+   */
   const RELATIONSHIP = {
-    snowfield: "on the water",
-    sea: "under the water",
-    spring: "in the water",
+    on: "on the water",
+    in: "in the water",
+    under: "under the water",
   } as const;
 
   /**
@@ -42,7 +52,7 @@
    */
   const WALK_SPEED = 4.2;
 
-  const leg = $derived(legAt(position.z));
+  const relation = $derived(relationToWater(position.y, position.z));
   const region = $derived(regionAt(position.z));
   const walked = $derived(Math.max(0, Math.min(position.z, TOTAL_LENGTH_M)));
   const progress = $derived(Math.round((walked / TOTAL_LENGTH_M) * 100));
@@ -74,8 +84,10 @@
   data-player-x={position.x.toFixed(2)}
   data-player-y={position.y.toFixed(2)}
   data-player-z={position.z.toFixed(2)}
-  data-leg={leg}
+  data-relation={relation}
   data-region={region}
+  data-headroom={headroom.toFixed(1)}
+  data-hall={hallWidth}
 >
   <div class="viewport" aria-label="The Water Traverse, first person">
     <Canvas dpr={1} shadows={PCFSoftShadowMap} toneMapping={AgXToneMapping}>
@@ -91,7 +103,7 @@
       <p>Water · graybox</p>
       <h1>{REGION_LABEL[region]}</h1>
       <span class="relationship">
-        You are <strong>{RELATIONSHIP[leg]}</strong> ·
+        You are <strong>{RELATIONSHIP[relation]}</strong> ·
         {relativeToLine >= 0 ? "+" : ""}{relativeToLine.toFixed(1)} m from the
         waterline
       </span>
@@ -157,6 +169,19 @@
      an 820 viewport. The forest-scene review page opts out the same way. */
   :global(html) {
     scrollbar-gutter: auto;
+  }
+
+  /* The 4K lockstep ramp, same formula as app.css (which scopes it to
+     `.mkt-shell` / `.legal-container` and so never reaches a /test route).
+     Every measure in this HUD is already in rem, so ramping the root grows the
+     card, the type, the padding and the button by one multiplier — nothing can
+     outgrow its neighbours. Without it the readout sat at a 557 px card and
+     16 px type in a 3840 px field, which is the size Austen has to lean in to
+     read while judging a room. See .claude/rules/4k-native-layout.md. */
+  @media (min-width: 1680px) {
+    :global(html) {
+      font-size: clamp(16px, calc(16px + (100vw - 1680px) * 8 / 2160), 24px);
+    }
   }
 
   .walk-page {
