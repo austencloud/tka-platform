@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "sceneId": "moonlit-winter-hollow",
+  "asset": {
+    "id": "winter-keeper-lodge",
+    "source": "static/models/winter/settlement/winter-keeper-lodge_raw.glb",
+    "targetDimensions": [7.8, 6.4, 5.2],
+    "burialDepth": 0.16,
+    "decimationRatio": 0.82,
+    "yawCorrectionDegrees": 0,
+    "textureBudgetContribution": 4
+  },
+  "chimney": {
+    "local": [2.15, 0.95, 5.05],
+    "smokeArea": [1.2, 4.8, 1.2],
+    "smokeCount": 18,
+    "smokeColors": ["#87909a", "#a7b0ba", "#c5cbd1"],
+    "smokeSizeRange": [0.22, 0.56],
+    "smokeSpeed": 0.05,
+    "smokeOpacity": 0.16
+  },
+  "windows": [
+    {
+      "id": "front-west",
+      "local": [-1.72, -3.12, 1.72],
+      "dimensions": [0.92, 0.08, 0.82],
+      "yawDegrees": 0
+    },
+    {
+      "id": "east-side",
+      "local": [3.93, -0.82, 1.68],
+      "dimensions": [0.08, 0.9, 0.78],
+      "yawDegrees": 0
+    }
+  ],
+  "windowLight": {
+    "local": [-0.35, -3.8, 1.6],
+    "color": "#ff8a3d",
+    "intensity": 16,
+    "distance": 9,
+    "decay": 1.7
+  },
+  "woodpile": {
+    "centerLocal": [-4.18, -1.05],
+    "rows": 3,
+    "columns": 4,
+    "logLength": 1.05,
+    "logRadius": 0.095,
+    "rackWidth": 1.42,
+    "rackHeight": 0.82
+  },
+  "requirements": {
+    "windowCount": 2,
+    "minimumWoodpileLogs": 10,
+    "maximumEnvelopeErrorMetres": 0.03
+  }
+}

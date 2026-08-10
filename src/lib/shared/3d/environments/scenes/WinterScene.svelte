@@ -81,8 +81,6 @@
     meshoptDecoder: useMeshopt(),
     ktx2Loader: useKtx2("/basis/"),
   });
-  const campfire = useGltf("/models/camping/campfire-pit.glb");
-  const campfireScene = $derived($campfire?.scene ?? null);
 
   $effect(() => {
     const root = $winterEnvironment?.scene;
@@ -124,7 +122,7 @@
       (campfireConfig.fireHeight * campfireConfig.fireScale) / 2;
     return new Vector3(
       campfireConfig.position.x,
-      groundY + fireHalfHeight,
+      groundY + (campfireConfig.groundOffset ?? 0) + fireHalfHeight,
       campfireConfig.position.z
     );
   });
@@ -145,9 +143,9 @@
   const sceneFeatures = getSceneFeatureContext();
   let readyReported = false;
   $effect(() => {
-    const loaded = [$winterEnvironment, $campfire].filter(Boolean).length;
-    sceneFeatures?.reportProgress("environment", loaded / 2);
-    if (loaded === 2 && !readyReported) {
+    const loaded = $winterEnvironment ? 1 : 0;
+    sceneFeatures?.reportProgress("environment", loaded);
+    if (loaded === 1 && !readyReported) {
       readyReported = true;
       if (renderer.current && camera.current && scene.current) {
         renderer.current.compile(scene.current, camera.current);
@@ -202,15 +200,8 @@
   />
 {/key}
 
-{#if activeConfig.campfire?.enabled && campfireScene}
+{#if activeConfig.campfire?.enabled}
   {@const fire = activeConfig.campfire}
-  <T
-    is={campfireScene}
-    position.x={fire.position.x}
-    position.y={groundY}
-    position.z={fire.position.z}
-    scale={fire.modelScale}
-  />
   <VolumetricFireComponent
     position={firePosition}
     width={1}
@@ -221,7 +212,9 @@
   />
   <T.PointLight
     position.x={fire.position.x}
-    position.y={groundY + fire.primaryLight.heightOffset}
+    position.y={groundY +
+      (fire.groundOffset ?? 0) +
+      fire.primaryLight.heightOffset}
     position.z={fire.position.z}
     color={fire.primaryLight.color}
     intensity={fire.primaryLight.intensity}
@@ -230,7 +223,9 @@
   />
   <T.PointLight
     position.x={fire.position.x}
-    position.y={groundY + fire.fillLight.heightOffset}
+    position.y={groundY +
+      (fire.groundOffset ?? 0) +
+      fire.fillLight.heightOffset}
     position.z={fire.position.z}
     color={fire.fillLight.color}
     intensity={fire.fillLight.intensity}
@@ -239,7 +234,10 @@
   />
   <T.Group
     position.x={fire.position.x}
-    position.y={groundY + (fire.fireHeight * fire.fireScale) / 2 + 0.4}
+    position.y={groundY +
+      (fire.groundOffset ?? 0) +
+      (fire.fireHeight * fire.fireScale) / 2 +
+      0.4}
     position.z={fire.position.z}
   >
     {#key fire.smokeCount}
@@ -255,6 +253,42 @@
       />
     {/key}
   </T.Group>
+{/if}
+
+{#if activeConfig.cabin.enabled}
+  {@const lodge = activeConfig.cabin}
+  {#if lodge.smoke.enabled}
+    <T.Group
+      position.x={lodge.smoke.position.x}
+      position.y={groundY + lodge.smoke.heightOffset}
+      position.z={lodge.smoke.position.z}
+    >
+      {#key lodge.smoke.count}
+        <FallingParticles
+          type="smoke"
+          count={lodge.smoke.count}
+          area={lodge.smoke.area}
+          speed={lodge.smoke.speed}
+          colors={lodge.smoke.colors}
+          sizeRange={lodge.smoke.sizeRange}
+          spin={false}
+          opacity={lodge.smoke.opacity}
+          emissionShape="ellipse"
+        />
+      {/key}
+    </T.Group>
+  {/if}
+  {#if lodge.windowLight.enabled}
+    <T.PointLight
+      position.x={lodge.windowLight.position.x}
+      position.y={groundY + lodge.windowLight.heightOffset}
+      position.z={lodge.windowLight.position.z}
+      color={lodge.windowLight.color}
+      intensity={lodge.windowLight.intensity}
+      distance={lodge.windowLight.distance}
+      decay={lodge.windowLight.decay}
+    />
+  {/if}
 {/if}
 
 <T.HemisphereLight

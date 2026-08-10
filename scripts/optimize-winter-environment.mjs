@@ -24,6 +24,8 @@ const TMP_PNG = resolve("static/models/winter/_winter-png.glb");
 const TMP_UASTC = resolve("static/models/winter/_winter-uastc.glb");
 const TMP_ETC = resolve("static/models/winter/_winter-etc.glb");
 const TEMPORARIES = [TMP_SLIM, TMP_INSTANCED, TMP_PNG, TMP_UASTC, TMP_ETC];
+const KEEP_INTERMEDIATES =
+  process.env.TKA_KEEP_WINTER_OPTIMIZATION_INTERMEDIATES === "1";
 const GLTF_TRANSFORM = resolve("node_modules/@gltf-transform/cli/bin/cli.js");
 const KTX_BIN = resolve(".tools/ktx");
 const PATH_SEPARATOR = process.platform === "win32" ? ";" : ":";
@@ -149,7 +151,7 @@ try {
   ]);
   run("Apply meshopt geometry compression", ["meshopt", TMP_ETC, OUTPUT]);
 } finally {
-  clean();
+  if (!KEEP_INTERMEDIATES) clean();
 }
 
 console.log(`\nOutput: ${OUTPUT} (${size(OUTPUT)})`);

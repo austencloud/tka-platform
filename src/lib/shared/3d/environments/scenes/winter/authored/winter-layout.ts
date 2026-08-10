@@ -2,12 +2,12 @@ export const WINTER_PERFORMANCE_CLEARING_RADIUS = 8;
 
 /** Blender X maps to Three X; Blender Y maps to negative Three Z. */
 export const WINTER_POND_LAYOUT = {
-  centerX: -14,
-  centerZ: 8,
+  centerX: 16,
+  centerZ: -10,
   radiusX: 6,
   radiusZ: 4.4,
   seed: 2.6,
-  waterLevelOffset: 0.05,
+  waterLevelOffset: 0.15,
 } as const;
 
 export type WinterDetailTier = "low" | "medium" | "high";

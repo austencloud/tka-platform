@@ -1,0 +1,433 @@
+{
+  "version": 5,
+  "seed": 20260809,
+  "coordinateFrame": "Blender x/y exports to runtime x/-z; metres",
+  "intent": "Path-led winter forest depth with overlapping near, mid, and far masses",
+  "clearingRadius": 8,
+  "outerBoundaryFraction": 0.83,
+  "spacingFactor": 0.46,
+  "bands": {
+    "near": {
+      "minimumRadius": 11,
+      "maximumRadius": 44,
+      "detailTier": "base"
+    },
+    "mid": {
+      "minimumRadius": 34,
+      "maximumRadius": 96,
+      "detailTier": "medium"
+    },
+    "far": {
+      "minimumRadius": 80,
+      "maximumRadius": 150,
+      "detailTier": "high"
+    }
+  },
+  "assets": [
+    {
+      "id": "mature-spruce",
+      "sourceKey": "spruce_mature_a",
+      "sourceFile": "mature-snow-spruce_raw.glb",
+      "minimumSourceDecimationRatio": 0.52,
+      "ageClass": "mature",
+      "targetHeightMetres": 12.6,
+      "heightRange": [0.9, 1.16],
+      "crownWidthRange": [0.92, 1.08],
+      "footprintRadius": 3.3,
+      "corridorClearance": 1.8,
+      "clearingSetback": 3.2
+    },
+    {
+      "id": "lush-pine",
+      "sourceKey": "pine_lush_a",
+      "sourceFile": "lush-snow-pine_raw.glb",
+      "minimumSourceDecimationRatio": 0.52,
+      "ageClass": "mature",
+      "targetHeightMetres": 13.2,
+      "heightRange": [0.88, 1.15],
+      "crownWidthRange": [0.94, 1.1],
+      "footprintRadius": 3.6,
+      "corridorClearance": 2,
+      "clearingSetback": 3.6
+    },
+    {
+      "id": "middle-fir",
+      "sourceKey": "fir_mid_a",
+      "sourceFile": "mid-snow-fir_raw.glb",
+      "minimumSourceDecimationRatio": 0.48,
+      "ageClass": "mid",
+      "targetHeightMetres": 8.1,
+      "heightRange": [0.84, 1.16],
+      "crownWidthRange": [0.9, 1.08],
+      "footprintRadius": 2.4,
+      "corridorClearance": 1.4,
+      "clearingSetback": 2.4
+    },
+    {
+      "id": "young-sapling",
+      "sourceKey": "sapling_young_a",
+      "sourceFile": "young-snow-sapling_raw.glb",
+      "minimumSourceDecimationRatio": 0.44,
+      "ageClass": "young",
+      "targetHeightMetres": 4.8,
+      "heightRange": [0.78, 1.2],
+      "crownWidthRange": [0.88, 1.12],
+      "footprintRadius": 1.45,
+      "corridorClearance": 0.9,
+      "clearingSetback": 1.4
+    },
+    {
+      "id": "distance-tall",
+      "sourceKey": "fir_distant_a",
+      "sourceFile": "mid-snow-fir_raw.glb",
+      "minimumSourceDecimationRatio": 0.26,
+      "ageClass": "mid",
+      "targetHeightMetres": 11.2,
+      "heightRange": [0.86, 1.18],
+      "crownWidthRange": [0.84, 1.08],
+      "footprintRadius": 1.8,
+      "corridorClearance": 1,
+      "clearingSetback": 2
+    },
+    {
+      "id": "distance-small",
+      "sourceKey": "sapling_distant_a",
+      "sourceFile": "young-snow-sapling_raw.glb",
+      "minimumSourceDecimationRatio": 0.24,
+      "ageClass": "young",
+      "targetHeightMetres": 7.6,
+      "heightRange": [0.78, 1.05],
+      "crownWidthRange": [0.92, 1.18],
+      "footprintRadius": 1.3,
+      "corridorClearance": 0.7,
+      "clearingSetback": 1.2
+    },
+    {
+      "id": "distance-windswept",
+      "sourceKey": "spruce_windswept_a",
+      "sourceFile": "sparse-windswept-spruce_raw.glb",
+      "minimumSourceDecimationRatio": 0.3,
+      "ageClass": "mid",
+      "targetHeightMetres": 10.4,
+      "heightRange": [0.82, 1.18],
+      "crownWidthRange": [0.88, 1.12],
+      "footprintRadius": 1.65,
+      "corridorClearance": 0.9,
+      "clearingSetback": 1.8
+    }
+  ],
+  "corridors": [
+    {
+      "id": "hero-approach",
+      "role": "primary-sightline",
+      "halfWidth": 4.8,
+      "shoulderWidth": 1.6,
+      "points": [
+        [3, -78],
+        [5, -58],
+        [8, -38],
+        [5, -28],
+        [2, -18],
+        [0, -9]
+      ]
+    },
+    {
+      "id": "pond-branch",
+      "role": "landmark-sightline",
+      "halfWidth": 2.8,
+      "shoulderWidth": 1.2,
+      "points": [
+        [0, 5],
+        [6, 8],
+        [12, 9],
+        [16, 10]
+      ]
+    },
+    {
+      "id": "northwest-exit",
+      "role": "depth-sightline",
+      "halfWidth": 4.6,
+      "shoulderWidth": 1.6,
+      "points": [
+        [-2, 8],
+        [-8, 23],
+        [-5, 42],
+        [-18, 69],
+        [-36, 104]
+      ]
+    }
+  ],
+  "clusters": [
+    {
+      "id": "near-front-west",
+      "band": "near",
+      "center": [-23, -25],
+      "radii": [17, 14],
+      "rotationDegrees": -24,
+      "counts": {
+        "mature-spruce": 2,
+        "lush-pine": 2,
+        "middle-fir": 4,
+        "young-sapling": 7
+      }
+    },
+    {
+      "id": "near-front-east",
+      "band": "near",
+      "center": [25, -24],
+      "radii": [18, 14],
+      "rotationDegrees": 16,
+      "counts": {
+        "mature-spruce": 2,
+        "lush-pine": 2,
+        "middle-fir": 4,
+        "young-sapling": 7
+      }
+    },
+    {
+      "id": "near-pond-grove",
+      "band": "near",
+      "center": [-29, 1],
+      "radii": [12, 17],
+      "rotationDegrees": 13,
+      "counts": {
+        "mature-spruce": 2,
+        "lush-pine": 2,
+        "middle-fir": 4,
+        "young-sapling": 4
+      }
+    },
+    {
+      "id": "near-fire-grove",
+      "band": "near",
+      "center": [29, 5],
+      "radii": [13, 17],
+      "rotationDegrees": -12,
+      "counts": {
+        "mature-spruce": 2,
+        "lush-pine": 2,
+        "middle-fir": 4,
+        "young-sapling": 4
+      }
+    },
+    {
+      "id": "near-rear-frame",
+      "band": "near",
+      "center": [1, 29],
+      "radii": [34, 12],
+      "rotationDegrees": 2,
+      "counts": {
+        "mature-spruce": 3,
+        "lush-pine": 3,
+        "middle-fir": 7,
+        "young-sapling": 7
+      }
+    },
+    {
+      "id": "near-path-west-gate",
+      "band": "near",
+      "center": [-24, 26],
+      "radii": [13, 10],
+      "rotationDegrees": -18,
+      "counts": {
+        "mature-spruce": 1,
+        "lush-pine": 1,
+        "middle-fir": 5,
+        "young-sapling": 5
+      }
+    },
+    {
+      "id": "near-path-east-gate",
+      "band": "near",
+      "center": [18, 27],
+      "radii": [13, 10],
+      "rotationDegrees": 16,
+      "counts": {
+        "mature-spruce": 1,
+        "lush-pine": 1,
+        "middle-fir": 5,
+        "young-sapling": 5
+      }
+    },
+    {
+      "id": "mid-west-slope",
+      "band": "mid",
+      "center": [-62, -21],
+      "radii": [30, 28],
+      "rotationDegrees": 10,
+      "counts": {
+        "mature-spruce": 1,
+        "lush-pine": 1,
+        "middle-fir": 4,
+        "distance-tall": 6,
+        "distance-small": 8
+      }
+    },
+    {
+      "id": "mid-east-slope",
+      "band": "mid",
+      "center": [64, -23],
+      "radii": [31, 29],
+      "rotationDegrees": -11,
+      "counts": {
+        "mature-spruce": 1,
+        "lush-pine": 1,
+        "middle-fir": 4,
+        "distance-tall": 6,
+        "distance-small": 8
+      }
+    },
+    {
+      "id": "mid-northwest-bank",
+      "band": "mid",
+      "center": [-49, 48],
+      "radii": [31, 26],
+      "rotationDegrees": -24,
+      "counts": {
+        "mature-spruce": 1,
+        "lush-pine": 1,
+        "middle-fir": 4,
+        "distance-tall": 6,
+        "distance-small": 8
+      }
+    },
+    {
+      "id": "mid-northeast-bank",
+      "band": "mid",
+      "center": [53, 47],
+      "radii": [33, 27],
+      "rotationDegrees": 22,
+      "counts": {
+        "mature-spruce": 1,
+        "lush-pine": 1,
+        "middle-fir": 4,
+        "distance-tall": 6,
+        "distance-small": 8
+      }
+    },
+    {
+      "id": "mid-north-bridge",
+      "band": "mid",
+      "center": [7, 64],
+      "radii": [46, 24],
+      "rotationDegrees": -4,
+      "counts": {
+        "mature-spruce": 1,
+        "lush-pine": 1,
+        "middle-fir": 3,
+        "distance-tall": 10,
+        "distance-small": 18
+      }
+    },
+    {
+      "id": "mid-path-west-bank",
+      "band": "mid",
+      "center": [-30, 52],
+      "radii": [20, 18],
+      "rotationDegrees": -18,
+      "counts": { "middle-fir": 4, "distance-tall": 5, "distance-small": 5 }
+    },
+    {
+      "id": "mid-path-east-bank",
+      "band": "mid",
+      "center": [23, 54],
+      "radii": [22, 18],
+      "rotationDegrees": 17,
+      "counts": { "middle-fir": 4, "distance-tall": 5, "distance-small": 5 }
+    },
+    {
+      "id": "far-west-horizon",
+      "band": "far",
+      "center": [-117, 10],
+      "radii": [34, 62],
+      "rotationDegrees": -3,
+      "counts": {
+        "distance-tall": 10,
+        "distance-small": 23,
+        "distance-windswept": 2
+      }
+    },
+    {
+      "id": "far-east-horizon",
+      "band": "far",
+      "center": [118, 9],
+      "radii": [35, 63],
+      "rotationDegrees": 4,
+      "counts": {
+        "distance-tall": 10,
+        "distance-small": 23,
+        "distance-windswept": 2
+      }
+    },
+    {
+      "id": "far-north-horizon",
+      "band": "far",
+      "center": [7, 112],
+      "radii": [79, 31],
+      "rotationDegrees": -2,
+      "counts": {
+        "distance-tall": 18,
+        "distance-small": 46,
+        "distance-windswept": 8
+      }
+    },
+    {
+      "id": "far-north-backstop",
+      "band": "far",
+      "center": [8, 135],
+      "radii": [24, 12],
+      "rotationDegrees": 3,
+      "counts": {
+        "distance-tall": 8,
+        "distance-small": 12,
+        "distance-windswept": 2
+      }
+    },
+    {
+      "id": "far-central-hill",
+      "band": "far",
+      "center": [3, 94],
+      "radii": [14, 9],
+      "rotationDegrees": -4,
+      "counts": {
+        "distance-tall": 10,
+        "distance-small": 8,
+        "distance-windswept": 1
+      }
+    },
+    {
+      "id": "far-southwest-depth",
+      "band": "far",
+      "center": [-79, -104],
+      "radii": [52, 28],
+      "rotationDegrees": 28,
+      "counts": {
+        "distance-tall": 6,
+        "distance-small": 15,
+        "distance-windswept": 4
+      }
+    },
+    {
+      "id": "far-southeast-depth",
+      "band": "far",
+      "center": [82, -101],
+      "radii": [53, 28],
+      "rotationDegrees": -26,
+      "counts": {
+        "distance-tall": 6,
+        "distance-small": 15,
+        "distance-windswept": 4
+      }
+    }
+  ],
+  "requirements": {
+    "treeCount": 472,
+    "clusterCount": 21,
+    "minimumBandCounts": { "near": 95, "mid": 138, "far": 225 },
+    "minimumCorridorClearanceMetres": 0.5,
+    "maximumRadialGapMetres": 18,
+    "minimumPathBankReliefMetres": 0.08,
+    "minimumFarTreeBedDepthMetres": 0.4,
+    "forbiddenSourceFiles": ["distant-snow-conifer_raw.glb"]
+  }
+}

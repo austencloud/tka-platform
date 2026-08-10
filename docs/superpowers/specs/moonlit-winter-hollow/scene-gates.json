@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "moonlit-winter-hollow",
+  "title": "Moonlit Winter Hollow",
+  "domainProofRequired": false,
+  "currentGate": 1,
+  "authority": {
+    "experienceSpec": "docs/superpowers/plans/active/2026-08-08-winter-environment-pass-three.md",
+    "roomShellSource": "scripts/winter-settlement-layout.json",
+    "planContract": "scripts/winter-composition-gate1-r2.json",
+    "museumTrackerItems": ["tZdDqKHsPqx8pQ7C5KC9"]
+  },
+  "sequenceFingerprints": [],
+  "claims": [
+    {
+      "id": "C-001",
+      "class": "invention",
+      "statement": "An unnamed seasonal caretaker maintains a warming lodge for four or five visiting performers.",
+      "evidence": ["tZdDqKHsPqx8pQ7C5KC9"]
+    },
+    {
+      "id": "C-003",
+      "class": "literal",
+      "statement": "Revision 2 places the lodge 44.9 m from the stage and the hearth 12.8 m from the lodge in a 3.1 m cleared pocket.",
+      "evidence": ["scripts/winter-composition-gate1-r2.json"]
+    }
+  ],
+  "exemptions": [],
+  "gates": [
+    {
+      "id": "evidence-preflight",
+      "status": "verified",
+      "evidence": [
+        {
+          "kind": "canon-audit",
+          "path": "docs/superpowers/specs/moonlit-winter-hollow/scene-development.md",
+          "sha256": "c301211e3cac000e626c4fece048ba2acd67658a155d11077b1ded3d0d86c08c"
+        },
+        {
+          "kind": "room-shell",
+          "path": "scripts/winter-composition-gate1-r2.json",
+          "sha256": "9d06fe58feaa364adb3a42965093088b71d0419ad2c22ce9d164f434aa77290a"
+        }
+      ],
+      "checks": [
+        {
+          "name": "canon-conflicts",
+          "status": "passed",
+          "evidence": "The active lodge story is recorded as a proposal; Autumn's distant abandoned shack remains a separate scene identity."
+        },
+        {
+          "name": "source-digests",
+          "status": "passed",
+          "evidence": "The canon audit and measured settlement contract carry current SHA-256 digests."
+        },
+        {
+          "name": "scope-boundary",
+          "status": "passed",
+          "evidence": "The graybox pass authorizes no paid generation, final lodge asset, open-water pond, wildlife, or ambient crowd."
+        }
+      ],
+      "approval": null
+    },
+    {
+      "id": "measured-plan",
+      "status": "ready-for-review",
+      "evidence": [
+        {
+          "kind": "floor-plan",
+          "path": "scripts/winter-settlement-layout.json",
+          "sha256": "2ed59b80a3aae2da184748ac42424e6a798291783b61c1e734dff362b85ad6cb"
+        },
+        {
+          "kind": "vertical-section",
+          "path": "docs/superpowers/specs/moonlit-winter-hollow/scene-development.md",
+          "sha256": "c301211e3cac000e626c4fece048ba2acd67658a155d11077b1ded3d0d86c08c"
+        },
+        {
+          "kind": "route-storyboard",
+          "path": "docs/superpowers/specs/moonlit-winter-hollow/scene-development.md",
+          "sha256": "c301211e3cac000e626c4fece048ba2acd67658a155d11077b1ded3d0d86c08c"
+        },
+        {
+          "kind": "sightline-study",
+          "path": "docs/superpowers/specs/moonlit-winter-hollow/scene-development.md",
+          "sha256": "c301211e3cac000e626c4fece048ba2acd67658a155d11077b1ded3d0d86c08c"
+        },
+        {
+          "kind": "review-board",
+          "path": "docs/superpowers/specs/moonlit-winter-hollow/winter-gate1-r2-review.png",
+          "sha256": "1d8094295d9cdef92de9ab4036de423fb6f3c02f922faec59da5bd6877760732"
+        },
+        {
+          "kind": "review-presentation",
+          "path": "src/routes/test/winter-scene/WinterCompositionPlan.svelte",
+          "sha256": "2da8f6e491a8609c0f892bef1fefc68c746967bbd01e5adb33ba9f74ade7abe1"
+        }
+      ],
+      "checks": [
+        {
+          "name": "walkability",
+          "status": "passed",
+          "evidence": "A broad ramp and packed-snow route connect the south entry, performance deck, and lodge at no more than a 12% target grade; the hearth sits in a separate side pocket."
+        },
+        {
+          "name": "clearance",
+          "status": "passed",
+          "evidence": "The lodge is 44.94 m from the stage, the hearth is 12.81 m from the lodge inside a 3.1 m cleared pocket, and the pond remains 18.87 m from the stage."
+        },
+        {
+          "name": "sightlines",
+          "status": "passed",
+          "evidence": "The proposed 44-degree hero view presents the bright performance deck first, lodge second, hearth beside the lodge third, and natural frozen pond fourth."
+        },
+        {
+          "name": "final-view",
+          "status": "passed",
+          "evidence": "The responsive Gate 1 review presentation records the hero frame, top-down coordinates, vertical section, and attention order without changing the production scene."
+        }
+      ],
+      "approval": null
+    },
+    {
+      "id": "playable-graybox",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "registered-visual-target",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "production-slice",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "integrated-room",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    },
+    {
+      "id": "final-acceptance",
+      "status": "pending",
+      "evidence": [],
+      "checks": [],
+      "approval": null
+    }
+  ]
+}

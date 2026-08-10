@@ -14,6 +14,34 @@ import type {
   TreeRingConfig,
 } from "./shared-scene-config";
 
+export interface WinterCabinConfig {
+  /** The lodge mesh is embedded in the authored GLB; this enables its runtime signs of life. */
+  enabled: boolean;
+  position: { x: number; z: number };
+  scale: number;
+  rotationY: number;
+  smoke: {
+    enabled: boolean;
+    position: { x: number; z: number };
+    heightOffset: number;
+    area: { width: number; height: number; depth: number };
+    count: number;
+    speed: number;
+    colors: string[];
+    sizeRange: [number, number];
+    opacity: number;
+  };
+  windowLight: {
+    enabled: boolean;
+    position: { x: number; z: number };
+    heightOffset: number;
+    color: string;
+    intensity: number;
+    distance: number;
+    decay: number;
+  };
+}
+
 export interface WinterSceneConfig {
   sky: SkyGradientConfig;
   /** Shared night-sky stars, using the Forest scene owner. */
@@ -43,13 +71,8 @@ export interface WinterSceneConfig {
     roughness: number;
   } | null;
   campfire: CampfireConfig | null;
-  /** Log cabin position & scale. */
-  cabin: {
-    enabled: boolean;
-    position: { x: number; z: number };
-    scale: number;
-    rotationY: number;
-  };
+  /** Runtime signs of life for the authored Winter Keeper's lodge. */
+  cabin: WinterCabinConfig;
   hemisphereLight: HemisphereLightConfig;
   /** Optional directional key light for snow sparkle. */
   moonLight: {
@@ -94,27 +117,32 @@ const WINTER_TREE_RINGS: TreeRingConfig[] = [
 
 const DEFAULT_CAMPFIRE_WINTER: CampfireConfig = {
   enabled: true,
-  position: { x: 5.5, z: -3.5 },
-  modelScale: 2.5,
-  fireScale: 1.0,
-  fireHeight: 2.0,
+  // The approved lodge-side hearth is clear of the performance route. The
+  // Blender settlement contract owns the same (-34, -30) runtime coordinate.
+  position: { x: -34, z: -30 },
+  // The hearth pad is 2.45 m above the scene origin. Starting the flame inside
+  // the upper split logs keeps it attached to the authored fire bed.
+  groundOffset: 2.59,
+  modelScale: 1,
+  fireScale: 1.04,
+  fireHeight: 1.7,
   primaryLight: {
     color: "#ff7744",
-    intensity: 45,
-    distance: 22,
-    decay: 1.2,
-    heightOffset: 1.5,
+    intensity: 32,
+    distance: 12,
+    decay: 1.7,
+    heightOffset: 1.15,
   },
   fillLight: {
     color: "#ff4400",
-    intensity: 25,
-    distance: 15,
-    decay: 1.5,
-    heightOffset: 0.25,
+    intensity: 15,
+    distance: 7,
+    decay: 2,
+    heightOffset: 0.18,
   },
   // Steam plume (heat meeting cold air) - bright white-blue, wispy, not grey smoke
   smokeColors: ["#ffffff", "#eaf4ff", "#c8dceb"],
-  smokeCount: 14,
+  smokeCount: 10,
 };
 
 export function createDefaultWinterConfig(): WinterSceneConfig {
@@ -165,17 +193,37 @@ export function createDefaultWinterConfig(): WinterSceneConfig {
     rockCount: 9,
     pond: {
       enabled: true,
-      position: { x: -14, z: 8 },
+      position: { x: 16, z: -10 },
       radius: 6,
-      color: "#8ab6d3",
-      roughness: 0.22,
+      color: "#385b72",
+      roughness: 0.62,
     },
     campfire: DEFAULT_CAMPFIRE_WINTER,
     cabin: {
-      enabled: false,
-      position: { x: -5.0, z: -4.0 },
-      scale: 2.25,
-      rotationY: Math.PI * 0.65,
+      enabled: true,
+      position: { x: -24, z: -38 },
+      scale: 1,
+      rotationY: 0.5633162614919681,
+      smoke: {
+        enabled: true,
+        position: { x: -22.689492200301995, z: -39.951299389363584 },
+        heightOffset: 7.49,
+        area: { width: 1.2, height: 4.8, depth: 1.2 },
+        count: 18,
+        speed: 0.05,
+        colors: ["#87909a", "#a7b0ba", "#c5cbd1"],
+        sizeRange: [0.22, 0.56],
+        opacity: 0.16,
+      },
+      windowLight: {
+        enabled: true,
+        position: { x: -22.266747748786507, z: -34.60024462149652 },
+        heightOffset: 4.04,
+        color: "#ff8a3d",
+        intensity: 16,
+        distance: 9,
+        decay: 1.7,
+      },
     },
     hemisphereLight: {
       skyColor: "#b9d8ff",

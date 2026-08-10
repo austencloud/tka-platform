@@ -61,40 +61,37 @@
       }),
       48
     );
-    const tint = new Color(pond.color).lerp(new Color("#ffffff"), 0.72);
+    const tint = new Color(pond.color).lerp(new Color("#8fa7b8"), 0.18);
     const nextBodyMaterial = new MeshPhysicalMaterial({
       color: tint,
       map: colorMap,
       roughnessMap,
-      roughness: Math.min(0.62, pond.roughness + 0.2),
-      metalness: 0.025,
-      emissive: new Color("#0b3045"),
-      emissiveMap: colorMap,
-      emissiveIntensity: 0.32,
+      roughness: Math.max(0.56, pond.roughness),
+      metalness: 0.015,
       normalMap: bodyNormal,
       normalScale:
         surfaceDetail === "full"
-          ? new Vector2(0.2, 0.2)
-          : new Vector2(0.1, 0.1),
-      clearcoat: 0.74,
-      clearcoatRoughness: 0.17,
+          ? new Vector2(0.3, 0.28)
+          : new Vector2(0.16, 0.14),
+      clearcoat: 0.26,
+      clearcoatRoughness: 0.42,
       clearcoatNormalMap: coatNormal,
-      clearcoatNormalScale: new Vector2(0.11, 0.11),
+      clearcoatNormalScale: new Vector2(0.07, 0.07),
       ior: 1.31,
-      envMapIntensity: 0.76,
+      envMapIntensity: 0.48,
     });
     const nextClearMaterial = new MeshPhysicalMaterial({
-      color: new Color("#bce9ff"),
-      roughness: 0.08,
+      color: new Color("#9fb8c9"),
+      roughness: 0.48,
       metalness: 0,
       transparent: true,
-      opacity: surfaceDetail === "full" ? 0.11 : 0.065,
+      opacity: surfaceDetail === "full" ? 0.045 : 0.025,
       depthWrite: false,
-      clearcoat: 1,
-      clearcoatRoughness: 0.08,
+      clearcoat: 0.18,
+      clearcoatRoughness: 0.5,
       normalMap: coatNormal,
-      normalScale: new Vector2(0.08, 0.08),
-      envMapIntensity: 1.05,
+      normalScale: new Vector2(0.05, 0.05),
+      envMapIntensity: 0.38,
     });
 
     untrack(() => {

@@ -1,0 +1,15 @@
+{
+  "stylePrefix": "cinematic stylized realism, premium fantasy game environment prop, cohesive with a maintained moonlit winter lodge retreat, isolated complete object, no scenery, no ground mound, no people, no text, no background,",
+  "polycount": 20000,
+  "estimatedCreditsPerAsset": 30,
+  "maxCredits": 30,
+  "assets": [
+    {
+      "id": "winter-cedar-adirondack-chair",
+      "prompt": "sturdy rustic Adirondack fireside chair built from broad hand-finished cedar planks, gently reclined slatted back, wide armrests, deep usable seat, splayed stable feet, subtly irregular handmade bevels and joinery, realistic human proportions, light windblown frost only along upper edges while the seat and back remain deliberately brushed clear, complete chair from feet to back crest, no cushion, no blanket, no detached props",
+      "texturePrompt": "weathered dark honey cedar with visible grain and slightly darker end grain, restrained charcoal iron fasteners, thin cool-white frost along upward-facing outer edges only, dry clear sitting surfaces, physically based wood and frost materials, diffuse albedo without baked shadows, no glow, no paint, no logo",
+      "polycount": 20000,
+      "textureSize": 2048
+    }
+  ]
+}

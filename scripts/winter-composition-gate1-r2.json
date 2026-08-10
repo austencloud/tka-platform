@@ -1,0 +1,168 @@
+{
+  "version": 2,
+  "sceneId": "moonlit-winter-hollow",
+  "status": "approved",
+  "approval": {
+    "gate": 1,
+    "approver": "Austen",
+    "approvedAt": "2026-08-10T12:09:23.7844481-05:00",
+    "quote": "Sounds glorious to me, full send",
+    "museumTrackerItem": "nXwi8yYiKJRSBi3rgAZs",
+    "visualComprehensionConfirmed": true
+  },
+  "coordinateFrame": "Runtime x/z in metres; north and upstage are negative z",
+  "intent": "One cinematic winter-retreat composition: performance ice first, inhabited lodge second, natural frozen pond third",
+  "currentArrangement": {
+    "lodgeCenter": [-16, -28],
+    "hearthCenter": [-11, -15],
+    "pondCenter": [-14, 8],
+    "heroCamera": {
+      "position": [0, 8, 31],
+      "target": [-3, 2, 2],
+      "fovDegrees": 48
+    }
+  },
+  "proposedArrangement": {
+    "entry": {
+      "center": [8, 38],
+      "routeWidth": 2.4,
+      "playerEyeHeight": 1.65
+    },
+    "stage": {
+      "center": [0, 0],
+      "radius": 5,
+      "deckHeight": 0.45,
+      "role": "primary hero",
+      "treatment": "Illuminated performance ice inset into a visible timber-and-stone deck"
+    },
+    "lodge": {
+      "center": [-24, -38],
+      "footprint": [7.8, 6.4],
+      "targetPadElevation": 2.6,
+      "role": "warm secondary anchor",
+      "treatment": "Partly nested into the upstage-left tree line with the porch and windows facing the stage route"
+    },
+    "hearth": {
+      "center": [-34, -30],
+      "clearedRadius": 3.1,
+      "seatRadius": 3.05,
+      "targetPadElevation": 2.45,
+      "role": "lodge-side social pocket",
+      "treatment": "A lateral spur beside the lodge, never a checkpoint between lodge and stage"
+    },
+    "pond": {
+      "center": [16, -10],
+      "radiusX": 6,
+      "radiusZ": 4.4,
+      "surfaceElevation": 0.15,
+      "role": "quiet natural counterweight",
+      "treatment": "Fully frozen, dark, rough, irregular, snow-banked, and non-emissive"
+    },
+    "heroCamera": {
+      "position": [10, 5.2, 30],
+      "target": [-6, 1.8, -9],
+      "fovDegrees": 44,
+      "composition": "Stage fills the lower-middle frame; lodge sits on the upper-left third; pond rests on the middle-right; moon remains above the open center"
+    }
+  },
+  "routes": [
+    {
+      "id": "south-entry-to-stage",
+      "role": "arrival",
+      "width": 2.4,
+      "points": [
+        [8, 38],
+        [5, 28],
+        [2, 18],
+        [0, 8],
+        [0, 5]
+      ]
+    },
+    {
+      "id": "stage-to-lodge",
+      "role": "primary retreat route",
+      "width": 1.8,
+      "points": [
+        [-3.2, -4.2],
+        [-6, -9],
+        [-10, -16],
+        [-15, -24],
+        [-20, -32],
+        [-24, -35]
+      ]
+    },
+    {
+      "id": "lodge-to-hearth-spur",
+      "role": "optional social spur",
+      "width": 1.6,
+      "points": [
+        [-23, -34],
+        [-27, -32],
+        [-31, -30]
+      ]
+    },
+    {
+      "id": "pond-overlook-spur",
+      "role": "quiet visual branch",
+      "width": 1.4,
+      "points": [
+        [-5, -11],
+        [2, -13],
+        [8, -12]
+      ]
+    }
+  ],
+  "sightlines": [
+    {
+      "id": "hero-to-stage",
+      "from": [10, 30],
+      "to": [0, 0],
+      "halfAngleDegrees": 10,
+      "priority": 1
+    },
+    {
+      "id": "hero-to-lodge",
+      "from": [10, 30],
+      "to": [-24, -38],
+      "halfAngleDegrees": 5,
+      "priority": 2
+    },
+    {
+      "id": "hero-to-pond",
+      "from": [10, 30],
+      "to": [16, -10],
+      "halfAngleDegrees": 5,
+      "priority": 3
+    }
+  ],
+  "verticalSection": {
+    "route": "south entry to stage to lodge porch",
+    "samples": [
+      [0, 0.45],
+      [18, 0.2],
+      [33, 0],
+      [38.8, 0],
+      [44, 0.45],
+      [58, 1.25],
+      [72, 2.05],
+      [84, 2.6]
+    ],
+    "maximumTargetGrade": 0.12
+  },
+  "attentionSequence": [
+    "The illuminated stage catches the eye first and explains the clearing.",
+    "The packed route carries attention through the stage toward the warm lodge.",
+    "The lodge-side hearth confirms habitation without interrupting the main route.",
+    "The natural frozen pond reads last as a quiet environmental counterweight."
+  ],
+  "requirements": {
+    "minimumStageToLodgeMetres": 40,
+    "minimumHearthToLodgeMetres": 10,
+    "minimumPondToStageMetres": 16,
+    "minimumPrimaryRouteWidthMetres": 1.8,
+    "minimumEntryRouteWidthMetres": 2.4,
+    "maximumRouteGrade": 0.12,
+    "pondMustBeFullyFrozen": true,
+    "hearthMayNotIntersectStageLodgeSightline": true
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "stylePrefix": "cinematic stylized realism, premium fantasy game environment asset, cohesive with a moonlit winter conifer forest, isolated complete building, no scenery, no ground mound, no trees, no people, no text, no background,",
+  "polycount": 28000,
+  "estimatedCreditsPerAsset": 30,
+  "maxCredits": 30,
+  "assets": [
+    {
+      "id": "winter-keeper-lodge",
+      "prompt": "occupied woodland warming lodge, compact 7.8 by 6.4 meter rectangle, hand-hewn cedar log walls on a low fieldstone foundation, steep believable gabled roof with deep eaves, modest covered front porch, central plank door, two square front windows, sturdy side-wall stone chimney, readable timber joinery, welcoming silhouette from twenty meters, thick natural snow on the upper roof and porch cap while the entrance stays clear, complete from foundation edge to ridge, no damage, no fence, no detached props",
+      "texturePrompt": "weathered dark cedar logs with visible warm brown grain, rough gray fieldstone foundation and chimney, muted iron hardware, clean cool-white packed snow on upward-facing roof and porch surfaces, dark window frames and restrained amber glass, physically based winter materials, diffuse albedo without baked shadows, no glowing walls, no signage",
+      "polycount": 28000,
+      "textureSize": 2048
+    }
+  ]
+}

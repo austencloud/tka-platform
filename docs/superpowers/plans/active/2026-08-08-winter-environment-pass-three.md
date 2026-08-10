@@ -283,6 +283,37 @@ leaving a deliberate clearing?
 **Gate 7 passes when:** Austen approves hero, reverse, walking, tree close-up,
 and world views. No later prop pass may be used to repair sparse trees.
 
+**2026-08-09 implementation checkpoint:** Austen directed Winter to adapt the
+Forest scene's layered, path-led depth logic without copying its assets or
+palette. `scripts/winter-tree-layout.json` is now the versioned composition
+contract. Version 3 authors 472 linked conifers in 21 irregular habitat
+clusters: 98 near trees, 141 middle trees, and 233 far trees. Four curved
+sightline corridors preserve the hero approach, pond, fire, and northwest
+depth exit. Two near gates, two middle banks, a far backstop, and a central
+hill cluster keep the runtime hero camera's route legible without exposing an
+empty horizon. The generated layout leaves at least 0.510 m beyond every
+required tree-crown and corridor shoulder, while the largest measured gap
+between radial depth layers is 2.716 m. The age mix is 36 mature, 195 mid-age,
+and 241 young trees.
+
+The rejected `distant-snow-conifer_raw.glb` silhouette source is forbidden by
+the contract and absent from the export. The far belt instead reuses measured
+LODs of the detailed mid fir, young sapling, and windswept spruce families.
+Every far tree is bedded at least 0.40 m into sampled terrain; the maximum
+exported grounding error is below 0.000001 m. The narrowed hero approach has
+0.143 m of verified snow-bank relief and is feathered with scanned rocks and
+detailed deadwood.
+
+The optimized production asset remains within its delivery contract at 11.04
+MiB, 2,083,674 rendered vertices, and 89,119 uploaded position vertices. It
+uses KTX2 textures, meshopt compression, and GPU instance batches as large as
+202 trees. The live in-app hero, walk, and world samples measured 50.6, 59.0,
+and 57.8 average FPS respectively. Blender and runtime hero, walking, and
+world views pass the deterministic layout verifier and are ready for Austen's
+visual composition verdict. Gate 7 remains open until that verdict; the
+metrics prove coverage, provenance, grounding, and performance, not aesthetic
+approval.
+
 ### Gate 8: Rock and deadwood lineup
 
 **Change:** Candidate props only. Do not place them in the scene yet.

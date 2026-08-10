@@ -1,0 +1,146 @@
+{
+  "version": 2,
+  "sceneId": "moonlit-winter-hollow",
+  "coordinateFrame": "Runtime x/z in metres; Blender receives x/-z",
+  "derivedFrom": "scripts/winter-composition-gate1-r2.json",
+  "intent": "The approved retreat triangle: performance ice first, lodge second, lodge-side hearth third, and natural frozen pond opposite",
+  "story": {
+    "place": "Winter Keeper's Hollow",
+    "resident": "An unnamed seasonal caretaker",
+    "guests": "Four or five visiting performers",
+    "stagePurpose": "A low timber-and-stone deck flooded into a permanently level illuminated ice floor",
+    "waterRule": "The separate natural pond is fully frozen",
+    "excludedMotifs": [
+      "tents",
+      "random fence fragments",
+      "duplicate outdoor furnace",
+      "unbundled ambient people"
+    ]
+  },
+  "stage": {
+    "center": [0, 0],
+    "radius": 5,
+    "height": 0.45
+  },
+  "ramp": {
+    "id": "stage-snow-ramp",
+    "inner": [0, 5],
+    "outer": [0, 9],
+    "width": 2.4,
+    "topHeight": 0.45
+  },
+  "lodge": {
+    "id": "warming-lodge",
+    "center": [-24, -38],
+    "footprint": [7.8, 6.4],
+    "wallHeight": 3.1,
+    "ridgeHeight": 5.2,
+    "targetPadElevation": 2.6,
+    "frontFaces": [0, 0],
+    "yardClearance": 1.4
+  },
+  "hearth": {
+    "id": "caretaker-hearth",
+    "center": [-34, -30],
+    "clearedRadius": 3.1,
+    "seatRadius": 3.05,
+    "seatCount": 5,
+    "targetPadElevation": 2.45,
+    "seatAnglesDegrees": [20, 70, 120, 170, 220],
+    "openSideFaces": [-24, -38]
+  },
+  "pond": {
+    "id": "natural-frozen-pond",
+    "center": [16, -10],
+    "radiusX": 6,
+    "radiusZ": 4.4,
+    "surfaceElevation": 0.15,
+    "seed": 2.6,
+    "treatment": "fully frozen, dark, rough, snow-banked, and non-emissive"
+  },
+  "paths": [
+    {
+      "id": "south-entry-to-stage",
+      "role": "arrival",
+      "width": 2.4,
+      "treeHalfWidth": 1.8,
+      "treeShoulderWidth": 1.1,
+      "targetElevations": [0.2, 0.12],
+      "points": [
+        [8, 38],
+        [5, 28],
+        [2, 18],
+        [0, 9]
+      ]
+    },
+    {
+      "id": "stage-to-lodge",
+      "role": "primary-retreat-route",
+      "width": 1.8,
+      "treeHalfWidth": 1.35,
+      "treeShoulderWidth": 1,
+      "targetElevations": [0, 2.6],
+      "clearingExitProgress": 0.07291736365351514,
+      "points": [
+        [-3.2, -4.2],
+        [-6, -9],
+        [-10, -16],
+        [-15, -24],
+        [-20, -32],
+        [-24, -35]
+      ]
+    },
+    {
+      "id": "lodge-to-hearth-spur",
+      "role": "optional-social-spur",
+      "width": 1.6,
+      "treeHalfWidth": 1.2,
+      "treeShoulderWidth": 0.9,
+      "targetElevations": [2.6, 2.45],
+      "points": [
+        [-24, -35],
+        [-27, -32],
+        [-31, -30]
+      ]
+    },
+    {
+      "id": "pond-overlook-spur",
+      "role": "quiet-visual-branch",
+      "width": 1.4,
+      "treeHalfWidth": 1,
+      "treeShoulderWidth": 0.8,
+      "targetElevations": [0.55, 0.54],
+      "points": [
+        [-5, -11],
+        [2, -13],
+        [8, -12]
+      ]
+    }
+  ],
+  "treeExclusions": [
+    {
+      "id": "lodge-yard",
+      "shape": "lodge-rectangle",
+      "center": [-24, -38],
+      "halfSize": [5.3, 4.6],
+      "frontFaces": [0, 0]
+    },
+    {
+      "id": "hearth-pocket",
+      "shape": "circle",
+      "center": [-34, -30],
+      "radius": 5.2
+    }
+  ],
+  "requirements": {
+    "minimumStageToHearthMetres": 40,
+    "minimumStageToLodgeMetres": 40,
+    "minimumHearthToLodgeMetres": 10,
+    "minimumPondToStageMetres": 16,
+    "minimumRouteWidthMetres": 1.4,
+    "maximumRampGrade": 0.12,
+    "maximumRouteGrade": 0.12,
+    "seatCount": 5,
+    "minimumTreeExclusionMarginMetres": 0.5
+  }
+}
