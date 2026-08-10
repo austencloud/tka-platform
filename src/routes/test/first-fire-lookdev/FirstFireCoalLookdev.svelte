@@ -21,10 +21,10 @@
   import FallingParticles from "$lib/shared/3d/environments/primitives/FallingParticles.svelte";
   import type { LavaCracksConfig } from "$lib/shared/3d/environments/domain/models/scene-configs";
   import { FIRST_FIRE_BASALT_COLOR } from "../first-fire-graybox/first-fire-court-identity";
-  import FirstFireCoalLamp from "./FirstFireCoalLamp.svelte";
-  import FirstFireCoalBank from "./FirstFireCoalBank.svelte";
-  import FirstFireCoalWall from "./FirstFireCoalWall.svelte";
-  import FirstFireSteamVent from "./FirstFireSteamVent.svelte";
+  import FirstFireCoalLamp from "$lib/shared/3d/environments/scenes/first-fire/FirstFireCoalLamp.svelte";
+  import FirstFireCoalBank from "$lib/shared/3d/environments/scenes/first-fire/FirstFireCoalBank.svelte";
+  import FirstFireCoalWall from "$lib/shared/3d/environments/scenes/first-fire/FirstFireCoalWall.svelte";
+  import FirstFireSteamVent from "$lib/shared/3d/environments/scenes/first-fire/FirstFireSteamVent.svelte";
   import {
     LOOKDEV_STATIONS,
     STATION_PITCH,

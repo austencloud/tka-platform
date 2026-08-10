@@ -43,6 +43,14 @@
     /** Light thrown into the room per bay. */
     lightIntensity?: number;
     lightDistance?: number;
+    /**
+     * How far the cribbing stands proud of its wall face, as a multiple of the
+     * hearth profile. A hearth someone stands at can afford the full 1.5m of
+     * relief; a corridor cannot - at full depth a run down both sides of a
+     * 4.5m transfer leaves 1.5m to walk through. Scale it down instead of
+     * pushing the run back into the wall band, where the bank is simply buried.
+     */
+    relief?: number;
     seed?: number;
     material: MeshStandardMaterial;
   }
@@ -56,16 +64,37 @@
     lumpsPerBay = 520,
     lightIntensity = 7.5,
     lightDistance = 12,
+    relief = 1,
     seed = 11,
     material,
   }: Props = $props();
 
+  /**
+   * Lump radii. Coal off a screening plant runs 5-25cm across; the first pass
+   * ran to 44cm, which is not coal, it is rubble - and rubble reads as cave-in
+   * debris rather than as fuel someone stacked here.
+   */
+  const LUMP_SIZE_RANGE: [number, number] = [0.05, 0.14];
+
+  /** Every forward measurement in this component, scaled by `relief`. */
+  const crustZ = $derived(0.04 * relief);
+  const bankZ = $derived(0.62 * relief);
+  const bankDepth = $derived(0.55 * relief);
+  const lightZ = $derived(0.32 * relief);
+  const grateZ = $derived(1.02 * relief);
+  const postZ = $derived(1.14 * relief);
+  const postDepth = $derived(0.66 * relief);
+  const kerbDepth = $derived(0.5 * relief);
+
   const coals: LavaCracksConfig = $derived({
     enabled: true,
     crackColor: emberColor,
-    intensity: 1.05,
+    intensity: 0.85,
     speed: 0.008,
-    scale: 4.5,
+    // Fine enough that what shows between lumps reads as gaps in a heap. At
+    // 4.5 the cells were metre-wide and any patch the coal failed to cover
+    // read as a cracked lava plate behind a rack, not as fire inside fuel.
+    scale: 11,
     pulseSpeed: 0.25,
     pulseIntensity: 0.4,
   });
@@ -102,7 +131,7 @@
       groundSize={1}
       edgeFade={0}
       placement={{
-        position: [0, height / 2 + 0.2, 0.04],
+        position: [0, height / 2 + 0.2, crustZ],
         rotation: [0, 0, 0],
         size: [bayWidth, height],
       }}
@@ -112,13 +141,13 @@
       <!-- The same heat, now with cold lumps standing in front of it. The lumps
            carry almost no glow of their own; they chop the shader behind them
            into hot slivers, which is what a coal bank actually looks like. -->
-      <T.Group position={[0, 0.28, 0.62]}>
+      <T.Group position={[0, 0.28, bankZ]}>
         <FirstFireCoalBank
           width={bayWidth - 0.2}
           height={height - 0.1}
-          depth={0.55}
+          depth={bankDepth}
           count={lumpsPerBay}
-          sizeRange={[0.07, 0.22]}
+          sizeRange={LUMP_SIZE_RANGE}
           {emberColor}
           heat="banked"
           seed={seed + bay * 7}
@@ -130,13 +159,33 @@
          that: behind it, the lumps bury it and the wall loses the one cue that
          says a person stacked this fuel here. -->
     {#each bayBars as bar, i (i)}
-      <T.Mesh position={[bar.x, height / 2 + 0.2, 1.02]} {material}>
+      <T.Mesh position={[bar.x, height / 2 + 0.2, grateZ]} {material}>
         <T.BoxGeometry args={[0.09, height, 0.09]} />
       </T.Mesh>
     {/each}
 
+    <!-- Two lights, because one cannot do both jobs.
+
+         The bank light sits INSIDE the coal at mid depth. Its only job is to
+         cut the bank into hot slivers, so it is close to the lumps and must be
+         scaled by relief squared: halve the relief and every lump sits at half
+         the distance, which quadruples the light it catches. Without that term
+         a shallow corridor bay blows its coal out to pale pink rubble - the
+         exact failure the lumps exist to prevent.
+
+         The room light stands out in front of the grate at a fixed distance,
+         so how much light the wall throws down the corridor does not change
+         when the profile gets shallower. Far enough out that it grazes the
+         coal instead of flooding it. -->
     <T.PointLight
-      position={[0, height / 2 + 0.2, 1.1]}
+      position={[0, height / 2 + 0.2, lightZ]}
+      color={emberColor}
+      intensity={lightIntensity * 1.6 * relief * relief}
+      distance={lightDistance * relief}
+      decay={2}
+    />
+    <T.PointLight
+      position={[0, height / 2 + 0.2, grateZ + 0.9]}
       color={emberColor}
       intensity={lightIntensity}
       distance={lightDistance}
@@ -147,18 +196,18 @@
 
 <!-- Kerb and lintel run unbroken across every bay: the cribbing is one built
      thing with divisions in it, not a row of separate hearths. -->
-<T.Mesh position={[0, 0.24, 1.02]} {material}>
-  <T.BoxGeometry args={[runWidth + 0.3, 0.36, 0.5]} />
+<T.Mesh position={[0, 0.24, grateZ]} {material}>
+  <T.BoxGeometry args={[runWidth + 0.3, 0.36, kerbDepth]} />
 </T.Mesh>
-<T.Mesh position={[0, height + 0.2, 1.02]} {material}>
-  <T.BoxGeometry args={[runWidth + 0.3, 0.2, 0.3]} />
+<T.Mesh position={[0, height + 0.2, grateZ]} {material}>
+  <T.BoxGeometry args={[runWidth + 0.3, 0.2, 0.3 * relief]} />
 </T.Mesh>
 
 <!-- Posts between bays. Deeper than the grate so they cast the bay next door
      into shadow at a glancing angle - that is what turns a long wall into a
      sequence of lit pockets rather than one continuous smear of orange. -->
 {#each posts as postX, i (i)}
-  <T.Mesh position={[postX, height / 2 + 0.2, 1.14]} {material}>
-    <T.BoxGeometry args={[0.26, height + 0.5, 0.66]} />
+  <T.Mesh position={[postX, height / 2 + 0.2, postZ]} {material}>
+    <T.BoxGeometry args={[0.26, height + 0.5, postDepth]} />
   </T.Mesh>
 {/each}

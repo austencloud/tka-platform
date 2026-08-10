@@ -34,6 +34,7 @@
   import FirstFireProcessionFlames from "./FirstFireProcessionFlames.svelte";
   import FirstFireShrineVolumes from "./FirstFireShrineVolumes.svelte";
   import FirstFireEmberDressing from "./FirstFireEmberDressing.svelte";
+  import FirstFireCoalDressing from "./FirstFireCoalDressing.svelte";
   import {
     applyFirstFireCourtMaterials,
     type FirstFireMaterialReport,
@@ -552,6 +553,11 @@
   lit={emberDressingLit}
   activeShrineId={activeShrineId ?? null}
 />
+
+<!-- The coal vocabulary applied to the first section of the walk. Follows the
+     same lit flag as the rest of the dressing so the extinguish beat still
+     takes the room to true black. -->
+<FirstFireCoalDressing {contract} lit={emberDressingLit} />
 
 {#if activeShrine}
   <FirstFireShrineVolumes
