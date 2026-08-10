@@ -57,10 +57,27 @@ export interface LavaRiversConfig {
   warpIntensity: number;
 }
 
+/**
+ * A corridor the ring generator must leave empty, in the pillar group's own
+ * local XZ space. `points` is a polyline; anything whose centre lands within
+ * `radius` of it is dropped.
+ */
+export interface PillarKeepOut {
+  points: [number, number][];
+  radius: number;
+}
+
 export interface ObsidianPillarsConfig {
   enabled: boolean;
   rings: TreeRingConfig[];
   clearingRadius: number;
+  /**
+   * Optional. The rings are laid out by angle alone, so in a scene where people
+   * walk THROUGH the ring rather than standing inside it, whole pillars land in
+   * the walkway. Listing the walked route here punches a gate in the ring
+   * instead. Omit it and placement is unchanged.
+   */
+  keepOut?: PillarKeepOut[];
   veinColor: string;
   veinIntensity: number;
   baseColor: string;

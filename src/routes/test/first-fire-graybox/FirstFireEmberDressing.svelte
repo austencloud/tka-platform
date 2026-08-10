@@ -69,14 +69,51 @@
    * and embers spout off the pool. This is the room the visitor should read as
    * "inside the mountain" before any prop effect has fired.
    */
+  /**
+   * The walked route, in coordinates local to a court group, plus the room's
+   * own corridor half-width. Anything the ring generator would put here stands
+   * in the visitor's way: the rings are laid out by angle alone and know
+   * nothing about the plan's path sections.
+   *
+   * The extra 0.9m is the pillar's own footprint - a scaled shaft is ~0.45m
+   * across and its secondary shard leans 0.3m further out, so clearing only to
+   * the corridor edge still leaves rock overhanging the walkway.
+   */
+  const PILLAR_FOOTPRINT = 0.9;
+  function routeKeepOut(courtX: number, courtZ: number) {
+    return props.contract.pathSections.map((section) => ({
+      points: section.blenderPoints.map(
+        (point) => [point.x - courtX, -point.y - courtZ] as [number, number]
+      ),
+      radius: section.width / 2 + PILLAR_FOOTPRINT,
+    }));
+  }
+
+  /**
+   * DJ's ring, sized to the court it closes rather than to the room.
+   *
+   * The first pass ran the rings at 9.2m and 12.6m around a court whose own
+   * outline is radius 7. At that reach the outer ring stopped being the court's
+   * wall and became free-standing rock scattered across the whole west end of
+   * the room - two of them landed 0.35m and 1.8m from the centre of the walked
+   * corridor, which is a 9m obsidian column planted in the middle of the path
+   * the visitor is walking down. Pulled in to hug the rim, they read as what
+   * they are: the chamber's edge, with a gate cut where the route comes in.
+   *
+   * Heights are budgeted against the plan's vertical clearance (5.5m over the
+   * route, 6m in a court) rather than the open-air ember scene's. The pillar
+   * spire adds 30% over its shaft, and the group scale multiplies both, so the
+   * tallest instance here finishes at about 5.5m instead of punching 12m
+   * through the ceiling.
+   */
   const djPillars = {
     ...ember.obsidianPillars,
-    clearingRadius: 8.4,
+    clearingRadius: 7.4,
     rings: [
-      { radius: 9.2, count: 7, scaleBase: 1.3, scaleVariation: 0.35, radiusJitter: 0.7 },
-      { radius: 12.6, count: 10, scaleBase: 1.1, scaleVariation: 0.4, radiusJitter: 1.1 },
+      { radius: 8.3, count: 9, scaleBase: 1.05, scaleVariation: 0.2, radiusJitter: 0.6 },
+      { radius: 10.6, count: 12, scaleBase: 0.95, scaleVariation: 0.2, radiusJitter: 0.9 },
     ],
-    heightRange: [2.6, 7.4] as [number, number],
+    heightRange: [2.4, 3.4] as [number, number],
     veinColor: "#ff4a12",
     veinIntensity: 0.75,
     baseColor: "#0a0708",
@@ -139,7 +176,9 @@
     <!-- DJ: the magma chamber. -->
     {#each courts.filter((court) => court.id === "dj") as court (court.id)}
       <T.Group position.x={court.x} position.z={court.z}>
-        <ObsidianPillars config={djPillars} />
+        <ObsidianPillars
+          config={{ ...djPillars, keepOut: routeKeepOut(court.x, court.z) }}
+        />
         <LavaPool config={djPool} />
         <LavaRivers config={djRivers} poolPosition={djPool.position} />
         <EmberFountains config={djFountains} />

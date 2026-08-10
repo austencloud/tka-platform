@@ -179,6 +179,39 @@
     return { group, material };
   }
 
+  /**
+   * Distance from a point to a polyline, in the pillar group's local XZ.
+   * A ring is generated from an angle alone, so without this a pillar can land
+   * squarely in a corridor the visitor walks down.
+   */
+  function distanceToPolyline(
+    x: number,
+    z: number,
+    points: readonly [number, number][],
+  ): number {
+    if (points.length === 0) return Infinity;
+    if (points.length === 1) {
+      return Math.hypot(x - points[0]![0], z - points[0]![1]);
+    }
+    let best = Infinity;
+    for (let i = 0; i < points.length - 1; i++) {
+      const [ax, az] = points[i]!;
+      const [bx, bz] = points[i + 1]!;
+      const dx = bx - ax;
+      const dz = bz - az;
+      const lengthSq = dx * dx + dz * dz;
+      const t =
+        lengthSq < 1e-9
+          ? 0
+          : Math.max(
+              0,
+              Math.min(1, ((x - ax) * dx + (z - az) * dz) / lengthSq),
+            );
+      best = Math.min(best, Math.hypot(x - (ax + dx * t), z - (az + dz * t)));
+    }
+    return best;
+  }
+
   const pillars = $derived.by(() => {
     if (!config.enabled) return [];
     const result: {
@@ -198,6 +231,11 @@
           ring.radius + Math.sin(seed * 3.7) * ring.radiusJitter;
         const x = Math.cos(angle) * radiusVariation;
         const z = Math.sin(angle) * radiusVariation;
+        const blocked = config.keepOut?.some(
+          (corridor) =>
+            distanceToPolyline(x, z, corridor.points) < corridor.radius,
+        );
+        if (blocked) continue;
         const scale =
           ring.scaleBase +
           Math.abs(Math.sin(seed * 2.3) * ring.scaleVariation);
