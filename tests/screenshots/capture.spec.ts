@@ -134,51 +134,45 @@ async function loginWithCredentials(
   page: Page,
   credentials: Credentials
 ): Promise<boolean> {
-  // The app's startup sequence for unauthenticated users:
-  //   1. Splash screen covers everything (app.html #app-loading)
-  //   2. SvelteKit hydrates, +layout.svelte advances progress to ~55%
-  //   3. Firebase auth check completes → "Checking authentication..." state
-  //   4. Not authenticated → renders LandingPage ("Welcome back!")
-  //   5. __tkaLoadProgress(100) is NEVER called (it's in the authenticated path)
-  //   6. Splash eventually disappears via 15-second safety timeout
-  //
-  // Strategy: wait for the splash to go away (naturally or force it), THEN
-  // wait for the login UI. We use a generous timeout because the splash
-  // takes up to 15 seconds on the safety timeout path.
+  // Guest access means "/" never shows a login screen anymore — the app opens
+  // straight into guest mode, so "no login screen appeared" is NOT proof of
+  // being signed in (that assumption once shipped a full sweep of guest-state
+  // captures). Instead: go to the Library tab, which renders an explicit
+  // signed-out block with a "Log in" button, open the auth drawer from there,
+  // and hard-verify the signed-in state before returning true.
+  await page.goto("/browse/library", {
+    waitUntil: "load",
+    timeout: TIMEOUTS.INITIAL_LOAD,
+  });
+  await dismissSplashScreen(page);
 
-  // Wait for splash to clear, then detect login screen
-
-  // Wait for the splash screen to go away first. For auth routes hitting "/",
-  // the splash may sit for up to 15 seconds since __tkaLoadProgress(100) is only
-  // called in the authenticated initialization path.
-  try {
-    await page.waitForSelector("#app-loading", {
-      state: "detached",
-      timeout: 20_000,
-    });
-    // Splash dismissed
-  } catch {
-    // Force-remove splash after 20s timeout
-    await dismissSplashScreen(page);
-  }
-
-  // Wait for the app to settle into either login screen or authenticated state.
-  // Poll the DOM text content directly — Playwright's isVisible() can return false
-  // for elements mid-Svelte-transition even when they're rendered and readable.
-  let loginVisible = false;
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const hasLoginText = await page.evaluate(() => {
+  // Wait for the Library tab to settle into signed-out or signed-in state.
+  let libState = "loading";
+  for (let attempt = 0; attempt < 40; attempt++) {
+    libState = await page.evaluate(() => {
       const text = document.body.innerText;
-      return text.includes("Sign in to continue") || text.includes("Welcome back");
+      if (text.includes("Your library lives in your account")) return "signed-out";
+      if (document.querySelector(".shelf-heading, .collections-list .card-grid"))
+        return "signed-in";
+      return "loading";
     });
-    if (hasLoginText) {
-      loginVisible = true;
-      break;
-    }
+    if (libState !== "loading") break;
     await page.waitForTimeout(TIMEOUTS.LOGIN_POLL_INTERVAL);
   }
 
-  if (!loginVisible) return true; // Already logged in — no login screen appeared within 10s
+  if (libState === "signed-in") return true; // Session persisted from a prior run
+  if (libState !== "signed-out") {
+    console.warn("[login] Library tab never settled into a known auth state");
+    return false;
+  }
+
+  // Open the auth drawer via the signed-out block's "Log in" button
+  await page.evaluate(() => {
+    const buttons = Array.from(document.querySelectorAll("button"));
+    const login = buttons.find((b) => b.textContent?.trim() === "Log in");
+    if (login) (login as HTMLElement).click();
+  });
+  await page.waitForTimeout(TIMEOUTS.LOGIN_STEP_SETTLE);
 
   // Step 1: Click "Continue with email" to expand the email auth section.
   //         Use evaluate() + click to bypass Svelte transition visibility issues.
@@ -223,17 +217,11 @@ async function loginWithCredentials(
     if (btn) btn.click();
   });
 
-  // Step 6: Wait for login to complete — poll until login text disappears
-  for (let i = 0; i < 30; i++) {
+  // Step 6: Wait for login to complete. The ONLY acceptable success signal is
+  // the Library tab re-rendering into its signed-in state — the signed-out
+  // block disappearing. Anything else is a failure; never fall back to guest.
+  for (let i = 0; i < 40; i++) {
     await page.waitForTimeout(TIMEOUTS.LOGIN_POLL_INTERVAL);
-    const stillOnLogin = await page.evaluate(() => {
-      const text = document.body.innerText;
-      return text.includes("Sign in to continue") || text.includes("Welcome back");
-    });
-    if (!stillOnLogin) {
-      return true;
-    }
-    // Check for error messages
     const hasError = await page.evaluate(() => {
       const el = document.querySelector(".message.error");
       return el?.textContent || null;
@@ -242,9 +230,19 @@ async function loginWithCredentials(
       console.warn(`[login] Auth error: ${hasError}`);
       return false;
     }
+    // POSITIVE signal only: the signed-in library shelves must actually render.
+    // "Signed-out text gone" is not proof — the drawer overlay can hide it.
+    const signedIn = await page.evaluate(
+      () =>
+        document.querySelector(".shelf-heading") !== null &&
+        !document.body.innerText.includes("Your library lives in your account")
+    );
+    if (signedIn) {
+      return true;
+    }
   }
 
-  console.warn("[login] Login timed out after 15s");
+  console.warn("[login] Login timed out after 20s");
   return false;
 }
 
@@ -478,7 +476,11 @@ async function stabilize(page: Page, route: RouteConfig): Promise<void> {
   //    fallback) to actually disappear. In vite dev mode a heavy module can sit
   //    on this for many seconds while its chunk compiles; a fixed probe races it
   //    and captures mid-load, so poll until the leaf "Loading…" node is gone.
-  const loadingDeadline = Date.now() + TIMEOUTS.LOADING_DISAPPEAR;
+  //    Matches any leaf whose text STARTS with "loading" — "Loading…",
+  //    "Loading 3D viewer...", "Loading sequence..." — not just the bare word.
+  //    Routes with slow async surfaces (3D scenes) extend the deadline.
+  const loadingDeadline =
+    Date.now() + TIMEOUTS.LOADING_DISAPPEAR + (route.settleMs ?? 0);
   while (Date.now() < loadingDeadline) {
     const stillLoading = await page
       .evaluate(() => {
@@ -496,12 +498,36 @@ async function stabilize(page: Page, route: RouteConfig): Promise<void> {
         return Array.from(document.querySelectorAll("body *")).some((el) => {
           if (el.children.length > 0) return false; // leaf text nodes only
           const t = (el.textContent || "").trim();
-          return /^loading[.…\s]*$/i.test(t) && visible(el);
+          return /^loading\b/i.test(t) && visible(el);
         });
       })
       .catch(() => false);
     if (!stillLoading) break;
     await page.waitForTimeout(500);
+  }
+
+  // 5b. The content selector may only exist AFTER the loading state clears
+  //     (lazy chunks compiling in dev mode). If it wasn't found in step 2,
+  //     give it one more short chance now.
+  if (route.waitSelector) {
+    const selectors = route.waitSelector.split(",").map((s) => s.trim());
+    for (const selector of selectors) {
+      const present = await page
+        .locator(selector)
+        .first()
+        .isVisible()
+        .catch(() => false);
+      if (present) break;
+      try {
+        await page.waitForSelector(selector, {
+          state: "visible",
+          timeout: 10_000,
+        });
+        break;
+      } catch {
+        // Try next selector
+      }
+    }
   }
 
   // 6. Freeze animations for deterministic screenshots.
@@ -522,8 +548,9 @@ async function stabilize(page: Page, route: RouteConfig): Promise<void> {
     document.querySelectorAll('[class*="verification-banner"]').forEach((el) => el.remove());
   });
 
-  // 8. Final settle — let the paint cycle complete after freezing animations
-  await page.waitForTimeout(TIMEOUTS.FINAL_SETTLE);
+  // 8. Final settle — let the paint cycle complete after freezing animations.
+  //    Routes with async-loading surfaces (3D scenes) declare extra settle time.
+  await page.waitForTimeout(TIMEOUTS.FINAL_SETTLE + (route.settleMs ?? 0));
 }
 
 // ─── SPA Navigation ──────────────────────────────────────────────────────────
@@ -648,8 +675,22 @@ if (authRoutes.length > 0 && hasAuth) {
       test(`${route.label}`, async ({}, testInfo) => {
         const deviceSlug = testInfo.project.name;
 
+        // Slow async surfaces (3D scenes) can exceed the default test timeout
+        // once their extended waits are added up.
+        if (route.settleMs) testInfo.setTimeout(180_000);
+
         // New page in the shared context — inherits auth + localStorage
         const page = await sharedContext.newPage();
+
+        // Seed route-specific localStorage BEFORE the app boots (e.g. the
+        // sequence-viewer surface via tka-viewer-mode).
+        if (route.storageSeed) {
+          await page.addInitScript((seed: Record<string, string>) => {
+            for (const [key, value] of Object.entries(seed)) {
+              localStorage.setItem(key, value);
+            }
+          }, route.storageSeed);
+        }
 
         // Navigate directly to the target module/tab via URL
         await navigateToRoute(page, route);

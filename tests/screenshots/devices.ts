@@ -178,6 +178,15 @@ export interface RouteConfig {
   tabId?: string;
   /** CSS selector(s) to wait for before capturing. Comma-separated = any match. */
   waitSelector?: string;
+  /**
+   * localStorage entries seeded via addInitScript BEFORE navigation, so the app
+   * boots into the desired state. Used to select the sequence-viewer surface
+   * (tka-viewer-mode: animation | animation-3d | mandala | tunnel | split) the
+   * same way open-tunnel-in-viewer / open-3d-scene do via persistViewerMode().
+   */
+  storageSeed?: Record<string, string>;
+  /** Extra settle time (ms) after stabilization — for async-loading 3D scenes. */
+  settleMs?: number;
 }
 
 export const PUBLIC_ROUTES: RouteConfig[] = [
@@ -217,6 +226,49 @@ export const PUBLIC_ROUTES: RouteConfig[] = [
     waitSelector: ".playable-viewport .room-title",
   },
 ];
+
+/**
+ * 16-step public loop "CΨΩX" — the viewer showcase sequence, addressed by its
+ * short code (library doc ids don't resolve on the standalone /sequence route;
+ * short codes do, via shortCodeManager.resolveShortCode).
+ */
+const VIEWER_SEQUENCE_ID = "2LKS";
+
+/**
+ * 3D-viewer showcase state for the viewer--3d capture. A fresh profile defaults
+ * to ONE performer with the "behind" camera — a closeup of a mannequin's back.
+ * This seeds the 2x2 four-performer formation (petals effect) and the wide
+ * elevated camera, plus the ocean environment (the showcase scene; the 3D
+ * environment follows the app-wide backgroundType setting).
+ */
+const VIEWER_3D_PERFORMER = (x: number, z: number) => ({
+  position: { x, z },
+  facingAngle: 0,
+  customBluePlane: "wall",
+  customRedPlane: "wall",
+  name: null,
+  settings: { prop: null, effortId: "linear", effect: "petals", staffLengthCm: null },
+});
+const VIEWER_3D_SEED: Record<string, string> = {
+  "tka-modern-web-settings": '{"backgroundType":"ocean"}',
+  "tka-viewer3d-renderMode": "3d",
+  "tka-viewer3d-cameraPreset": "main",
+  "tka-viewer3d-activeFormation": "manual",
+  "tka-viewer3d-selectedIndex": "null",
+  "tka-viewer3d-performers": JSON.stringify([
+    VIEWER_3D_PERFORMER(-1, 1),
+    VIEWER_3D_PERFORMER(1, 1),
+    VIEWER_3D_PERFORMER(-1, -1),
+    VIEWER_3D_PERFORMER(1, -1),
+  ]),
+  "tka-viewer3d-camera": JSON.stringify({
+    position: { x: 0, y: 4.73, z: -5.76 },
+    rotation: { x: -2.579, y: 0, z: 3.1416 },
+    fov: 50,
+    target: { x: 0, y: 1.1, z: 0 },
+    timestamp: 1786398618448,
+  }),
+};
 
 export const APP_MODULES: RouteConfig[] = [
   // ── Create module ──────────────────────────────────────────────────────────
@@ -275,6 +327,16 @@ export const APP_MODULES: RouteConfig[] = [
     moduleId: "browse",
     tabId: "gallery",
     waitSelector: ".sequence-card, .browse-grid",
+    // The Browse module restores its own persisted nav history on mount and
+    // overrides the URL tab (browse-navigation-state.svelte.ts restoreState).
+    // The login flow visits /browse/library, so without this seed the gallery
+    // capture lands on Library.
+    storageSeed: {
+      "tka-browse-nav-state": JSON.stringify({
+        history: [{ tab: "gallery", view: "list" }],
+        currentIndex: 0,
+      }),
+    },
   },
   {
     path: "/creators",
@@ -334,14 +396,40 @@ export const APP_MODULES: RouteConfig[] = [
     waitSelector: ".quiz-selector",
   },
   {
+    // Tab id renamed codex → guide (Level 1 interactive textbook)
     path: "/app",
-    label: "learn--codex",
+    label: "learn--guide",
     requiresAuth: true,
     isModule: true,
     moduleId: "learn",
-    tabId: "codex",
-    waitSelector: ".codex-component",
+    tabId: "guide",
+    waitSelector: ".guide-tab, .codex-component",
   },
+
+  // ── Sequence viewer (standalone route — the app's showcase surface) ────────
+  // One strong 16-step public loop from the library; the storageSeed picks the
+  // viewer surface exactly the way the app's own "open in viewer" services do.
+  ...(["animation-3d", "tunnel", "mandala", "animation"] as const).map(
+    (mode) => ({
+      path: `/sequence/${VIEWER_SEQUENCE_ID}`,
+      label: `viewer--${mode === "animation-3d" ? "3d" : mode}`,
+      requiresAuth: true,
+      isModule: false,
+      storageSeed: {
+        "tka-viewer-mode": mode,
+        ...(mode === "animation-3d" ? VIEWER_3D_SEED : {}),
+      },
+      settleMs: mode === "animation-3d" ? 20_000 : 4_000,
+      waitSelector:
+        mode === "animation-3d"
+          ? ".viewer-3d-canvas"
+          : mode === "tunnel"
+            ? ".tunnel-art"
+            : mode === "mandala"
+              ? ".mandala-stage"
+              : ".animator-canvas, .animation-player",
+    })
+  ),
 
   // ── Watch module ───────────────────────────────────────────────────────────
   {

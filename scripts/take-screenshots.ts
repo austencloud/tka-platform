@@ -270,7 +270,9 @@ async function main() {
       cwd: ROOT,
       stdio: "inherit",
       env,
-      timeout: 900_000, // 15 minutes max
+      // Multi-device sweeps with slow 3D routes and login retries exceed 15
+      // minutes; a mid-run kill silently drops every remaining project.
+      timeout: 3_600_000, // 60 minutes max
     });
   } catch {
     // Playwright may exit non-zero if some tests fail. Continue to gallery.
