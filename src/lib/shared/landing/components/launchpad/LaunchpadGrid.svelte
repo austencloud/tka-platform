@@ -26,7 +26,7 @@
     type LaunchpadTileDef,
   } from "./launchpad-tiles";
   import { trackLaunchpadClick } from "$lib/shared/analytics/landing-events";
-  import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
+  import { prefersReducedData } from "$lib/shared/platform/network-conditions";
 
   // Every prop defaults to the homepage's current behavior, so `<LaunchpadGrid />`
   // (the +page.svelte call site) renders byte-identically to before this became
@@ -64,7 +64,10 @@
 
   onMount(() => {
     let destroyed = false;
-    const constrainedConnection = isConstrainedConnection();
+    // Data-saver only. These are local chunks, not speculative fetches, and
+    // Chrome's bandwidth estimate is too unreliable to decide whether the
+    // homepage shows its real art or its placeholder posters forever.
+    const constrainedConnection = prefersReducedData();
     let activationScheduled = false;
     let mediaLoadingId: string | null = null;
     let cancelScheduled = () => {};

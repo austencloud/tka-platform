@@ -116,6 +116,25 @@ export function isConstrainedConnection(): boolean {
 }
 
 /**
+ * True only when the user has explicitly asked the browser to conserve data.
+ *
+ * For work that is NOT a speculative network fetch — mounting a local JS chunk,
+ * rendering a decorative embed — this is the correct predicate, not
+ * isConstrainedConnection(). Chrome's NetInfo estimate is unreliable enough to
+ * be disqualifying here: on a gigabit desktop it routinely reports
+ * effectiveType '3g' with downlink under 1 Mbps, which made every homepage
+ * launchpad tile serve its CSS placeholder poster permanently instead of the
+ * real mandala / choreo card / book cover.
+ *
+ * A wrong "slow" reading costs a deferred prefetch (recoverable) but costs a
+ * permanently degraded page here, so this reads only the one signal the user
+ * actually set themselves.
+ */
+export function prefersReducedData(): boolean {
+	return getNetworkConditions().saveData;
+}
+
+/**
  * True when the background should render at reduced canvas resolution.
  *
  * Deliberately distinct from isConstrainedConnection(). That predicate keys off a
