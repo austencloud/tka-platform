@@ -52,9 +52,24 @@ MAX_ATTEMPTS_PER_INSTANCE = 40
 CLUMP_ATTEMPTS = 8
 # Keep content inside the shelf lip. The abyss reads as depth only while empty.
 LIP_MARGIN = 1.5
-# The default hero camera sits downstage on +z (runtime frame), so "toward the
-# audience" is -y in Blender's frame.
-CAMERA_DIRECTION_DEGREES = -90.0
+# Yaw, in degrees about Blender +Z, that turns an asset whose `facing` is 0
+# broadside to the audience.
+#
+# This was -90.0, which confused a DIRECTION with a ROTATION. The camera axis
+# really is -y in Blender's frame, and -90 degrees really is the compass bearing
+# of -y -- but the assets are not authored pointing along +x, so that bearing is
+# not the rotation they need. The y-up -> z-up import already lands an asset's
+# presenting face across the y axis at yaw 0, so -90 turned every one of them a
+# quarter turn AWAY from the audience.
+#
+# Measured, not reasoned: the single coral arch baked a yaw of -85 degrees and
+# rendered with a world AABB of 2.68 m across a footprint that is 4.34 m wide
+# and 2.29 m deep. That is edge-on, which is why the arch read as one column --
+# its two legs were lined up behind each other. This is the whole
+# face-camera-biased population: the arch, two reef walls, the wreck, and 24
+# plates, which are the fan and table corals whose entire appeal is the broad
+# face they were never showing.
+CAMERA_DIRECTION_DEGREES = 0.0
 # Blades align to a nominal current running across the stage.
 CURRENT_DEGREES = 20.0
 # The default hero camera looks upstage at the dais from about 19 m downstage.

@@ -24,6 +24,7 @@
   import { createEnvironmentTransitionVisualState } from "$lib/shared/3d/environments/state/environment-transition-visual-state.svelte";
   import { setEnvironmentTransitionVisualContext } from "$lib/shared/3d/environments/context/environment-transition-visual-context";
   import HarnessToneMapping from "./HarnessToneMapping.svelte";
+  import HarnessInspector from "./HarnessInspector.svelte";
   import { clampPresetBelowWater } from "$lib/shared/3d/environments/scenes/ocean/ocean-camera-bounds";
 
   const sceneFeatureState = createSceneFeatureState();
@@ -84,9 +85,33 @@
   // hatch: the `world` preset sits at y=26 specifically to photograph the world
   // boundary from outside it, which the clamp would otherwise make impossible.
   const clampEnabled = $derived(page.url.searchParams.get("clamp") !== "0");
+
+  // Free camera: ?cam=x,y,z&look=x,y,z&fov=n. The seven named presets answer
+  // the lighting questions they were built for, but none of them frames an
+  // arbitrary placement, and "is that arch the right size" cannot be settled
+  // from a preset 30 m away. Reviewing a composed scene means being able to
+  // walk up to any one object, so the harness takes a camera from the URL.
+  // Falls back to the named preset when the params are absent or malformed.
+  const triple = (raw: string | null) => {
+    const parts = raw?.split(",").map(Number);
+    return parts?.length === 3 && parts.every((n) => Number.isFinite(n))
+      ? ([parts[0], parts[1], parts[2]] as [number, number, number])
+      : null;
+  };
+  const freePreset = $derived.by(() => {
+    const position = triple(page.url.searchParams.get("cam"));
+    if (!position) return null;
+    const target = triple(page.url.searchParams.get("look")) ?? [0, 1, 0];
+    const fov = Number(page.url.searchParams.get("fov"));
+    return { position, target, fov: Number.isFinite(fov) && fov > 0 ? fov : 46 };
+  });
+
+  const basePreset = $derived(freePreset ?? VIEW_PRESETS[view]);
   const cameraPreset = $derived(
-    clampEnabled ? clampPresetBelowWater(VIEW_PRESETS[view]) : VIEW_PRESETS[view]
+    clampEnabled ? clampPresetBelowWater(basePreset) : basePreset
   );
+  // Remount the camera whenever the framing changes, not just the named view.
+  const cameraKey = $derived(JSON.stringify(cameraPreset));
 </script>
 
 <svelte:head>
@@ -104,11 +129,12 @@
       })}
   >
     <HarnessToneMapping />
-    {#key view}
+    <HarnessInspector />
+    {#key cameraKey}
       <EnvironmentReviewCamera
         destinationId="ocean-scene-review"
         preset={cameraPreset}
-        walk={view === "walk"}
+        walk={!freePreset && view === "walk"}
       />
     {/key}
     <Environment3D
