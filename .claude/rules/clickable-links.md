@@ -11,6 +11,23 @@ localhost (2026-06-22).
 - No: `http://localhost:5173/...` — the vite dev server runs HTTPS/h2, so an
   `http://` link returns ERR_EMPTY_RESPONSE. Use `https://`.
 
+## Never put a URL in a code fence (2026-08-10)
+
+A fenced block renders as monospace text. Nothing inside it links — the URL
+looks right and does nothing when clicked, which is worse than a bare URL
+because it looks deliberate. Code fences are for **shell commands** (the app
+adds a Run button to `bash`-tagged blocks). They are not for links.
+
+- Yes: `The caption carries [tkaflowarts.com/sequence/EHWE](https://tkaflowarts.com/sequence/EHWE).`
+- No: a ```` ``` ```` block containing `https://tkaflowarts.com/sequence/EHWE`
+- No: inline backticks around a URL — same problem, monospace and dead.
+
+This applies to URLs that appear **inside** something else you are quoting, too
+— example output, a caption, a config value, a log line. Show the block if the
+exact text matters, then repeat the URL as a markdown link underneath so he can
+click it. Austen (2026-08-10), on a link shown in a fence: *"Please fix this so
+it auto links."*
+
 ## Why
 
 Bare `host:port/path` without a scheme is not clickable in Austen's terminal, so
