@@ -501,3 +501,33 @@ top four - consistent with the P5 finding that the launchpad tile renders it.
   planning around it.
 - Not yet done: the `modulepreload` work, and confirming which of these four
   the landing page ALREADY has warm from other tiles.
+
+## P5 PARTIAL FIX LANDED (2026-08-10)
+
+`ChoreoCard.svelte` no longer statically imports `authState`. It now uses a
+type-only import plus a lazy load gated on `showQRCode`, mirroring
+`SiteHeader.svelte`. `isAuthenticated` reads false until resolved, which is the
+correct answer for the signed-out landing visitor. `npm run check`: 0 errors,
+0 warnings.
+
+Measured cold + signed-out, isolated context, buffer raised (987 entries, not capped):
+
+| | before | after |
+|---|---|---|
+| `auth-state.svelte` module loaded | yes, 1339 ms | **no** |
+| identitytoolkit / firestore network calls | **6** | **0** |
+| Firebase SDK chunks still fetched | 6 | 5 |
+
+**Not finished.** The Firebase SDK still arrives from a SECOND importer, and it
+is not auth-state. Evidence: `firebase_firestore` now loads FIRST (4974 ms),
+before `firebase_app`/`firebase_auth` (5647 ms) — so something imports firestore
+directly rather than coming in via the auth barrel.
+
+Ruled out so far: `scan-card-cloud-context`, `cloud-cell-key`,
+`choreo-card-render-engine`, `choreo-card-qr-state` (no firebase imports), and
+`landing/services/software-submissions.ts` (real static `firebase/firestore`
+import, but its only consumer is `SoftwareSubmitForm.svelte`, which is not on `/`).
+
+Next step: repeat the manifest reverse-walk used for the Three.js trace, but
+target the firestore chunk, starting from the landing entry rather than guessing
+importers. Do NOT trust a grep sweep for this — two guesses already missed.

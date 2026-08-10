@@ -19,7 +19,7 @@
   import type { PreviewCellRenderOptions } from "../services/preview-cell-renderer";
   import { onDestroy } from "svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import type { authState as AuthStateModule } from "$lib/shared/auth/state/auth-state.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
   import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
@@ -154,6 +154,37 @@
     startPositionLayoutOverride = null,
     onAutoLayoutResolved,
   }: Props = $props();
+
+  // Auth-aware WITHOUT dragging Firebase onto pages that never need it.
+  //
+  // This card renders on the landing launchpad tile (LaunchpadTile.svelte,
+  // media="choreo-card"), which passes showQRCode: false. A STATIC `authState`
+  // import pulled the entire Firebase SDK — auth, app, firestore, database,
+  // messaging, functions — into that first-paint path for signed-out visitors,
+  // measured 2026-08-10 in a cold isolated context: firebase_auth at 1646ms
+  // through firebase_functions at 3865ms, plus 6 identitytoolkit/firestore
+  // round trips. SiteHeader.svelte already avoids this the same way and its
+  // comment warns about exactly this import.
+  //
+  // The flag is only ever read to decide whether a QR code renders, so load the
+  // real authState lazily and ONLY when a QR code is actually in play. Until it
+  // resolves the answer is false — which is also the correct answer for the
+  // signed-out visitor who dominates the landing path.
+  let authApi = $state<typeof AuthStateModule | null>(null);
+  let authLoadPromise: Promise<void> | null = null;
+  function ensureAuthLoaded(): void {
+    if (authLoadPromise) return;
+    authLoadPromise = (async () => {
+      const mod = await import("$lib/shared/auth/state/auth-state.svelte");
+      authApi = mod.authState;
+      // Idempotent; app-mode boot has normally already run it.
+      await mod.authState.initialize();
+    })();
+  }
+  $effect(() => {
+    if (showQRCode) ensureAuthLoaded();
+  });
+  const isAuthenticated = $derived(authApi?.isAuthenticated ?? false);
 
   // Long-press state for touch context menu
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -290,7 +321,7 @@
             containerHeight: containerRawHeight,
             showHeader,
             showFooter,
-            showQRCode: sc > 1 && showQRCode && authState.isAuthenticated,
+            showQRCode: sc > 1 && showQRCode && isAuthenticated,
           })
         : null;
     const spl =
@@ -309,7 +340,7 @@
       showQRCode,
       showMandala,
       infoCellChoice: compositionManager.getInfoCellChoiceForStepCount(sc),
-      isAuthenticated: authState.isAuthenticated,
+      isAuthenticated,
     });
   });
   const effShowQRCode = $derived(effectiveInfoCell.showQRCode);
@@ -323,7 +354,7 @@
       sequence,
       showQRCode: effShowQRCode,
       darkMode,
-      isAuthenticated: authState.isAuthenticated,
+      isAuthenticated,
       bluePropType,
       redPropType,
       browseViewMode,
@@ -355,7 +386,7 @@
     showFooter,
     showQRCode: effShowQRCode,
     autoLayoutReservesQRCode:
-      sequence.steps.length > 1 && showQRCode && authState.isAuthenticated,
+      sequence.steps.length > 1 && showQRCode && isAuthenticated,
     showMandala: effShowMandala,
     forceContain,
     // These feed ONLY the mandala placement (which color fills the info cell).
