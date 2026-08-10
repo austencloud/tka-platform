@@ -210,7 +210,7 @@ export const TOTAL_LENGTH_M = SPRING_END_Z;
  * hangar, the spring is a cathedral. Walking the route is watching the room
  * get bigger three times, which is the whole argument for how much it cost.
  */
-const CHAMBER_CEILING: Record<Leg, number> = {
+export const CHAMBER_CEILING: Record<Leg, number> = {
   snowfield: WATERLINE_Y + 34,
   sea: WATERLINE_Y + 52,
   spring: WATERLINE_Y + 80,
@@ -220,7 +220,7 @@ const CHAMBER_CEILING: Record<Leg, number> = {
  * roughly 74 m at their deepest, so the peaks stand inside the room rather
  * than punching through its walls.
  */
-const CHAMBER_HALF_W: Record<Leg, number> = {
+export const CHAMBER_HALF_W: Record<Leg, number> = {
   snowfield: 78,
   sea: 92,
   spring: 112,

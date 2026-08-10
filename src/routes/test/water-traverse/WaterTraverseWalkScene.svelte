@@ -1,11 +1,43 @@
 <script lang="ts">
   /**
-   * The Water Traverse — walkable graybox.
+   * The Water Traverse — graybox.
    *
-   * Every visible box is drawn from the same collider list the physics world is
-   * built from, so what you can see and what you can stand on cannot drift
-   * apart. Atmosphere is sampled continuously from the player's position rather
-   * than switched per landscape; see water-traverse-atmosphere.ts.
+   * ── What this file is for ──────────────────────────────────────────────────
+   *
+   * ONE question: is the box right? Does the walk pace well, is everything the
+   * size it should be, do the walls contain, do the chambers actually join, is
+   * the floor continuous, is there a ceiling overhead, and can you tell where to
+   * go without being told. Nothing else.
+   *
+   * It is deliberately, aggressively undressed. There is no reef, no seabed
+   * sculpt, no fauna, no sky dome, no water shader, no steam, no performers, and
+   * no per-leg palette. Every one of those existed here and was removed on
+   * 2026-08-10, because the room had been dressed to a fourth-gate finish
+   * without its second gate ever being checked — and it showed. Snow peaks were
+   * four-sided cones 42 m wide, painted flat white and unlit, which read as
+   * igloos. Reef specimens ran to 66 m. Backdrop planes floated with nothing
+   * joining them to the ground.
+   *
+   * None of that was a rendering bug. It was art applied to a volume nobody had
+   * ever stood inside and judged. So the volume gets judged first.
+   *
+   * ── The rules this file keeps ──────────────────────────────────────────────
+   *
+   * 1. EVERY visible box is a collider, and every collider is a visible box.
+   *    What you see is exactly what you can stand on and walk into. The
+   *    terrain program (water-traverse-terrain.ts) is the single source; a
+   *    surface it does not know about cannot appear here.
+   *
+   * 2. Material carries ROLE, not mood. Floor, wall, ceiling, portal, mass —
+   *    five values of grey, and that is the whole palette. Two accent colours
+   *    exist and are not scenery: orange is a measuring instrument, blue is a
+   *    place the visitor is meant to stop.
+   *
+   * 3. Light is constant. It does not change by leg, depth, or position. A
+   *    graybox that relights itself as you walk cannot tell you whether a wall
+   *    is too tall — it only tells you the lighting is pretty.
+   *
+   * Dressing comes back later, on top of a box that has been approved.
    */
   import { onDestroy, onMount } from "svelte";
   import { T, useTask, useThrelte } from "@threlte/core";
@@ -13,8 +45,8 @@
     Color,
     DirectionalLight,
     FogExp2,
-    Group,
     HemisphereLight,
+    DoubleSide,
     MeshBasicMaterial,
     MeshStandardMaterial,
     Quaternion,
@@ -42,26 +74,15 @@
     PhysicsWorldState,
     PlayerControllerState,
   } from "$lib/shared/3d/physics/types";
-  import ReflectivePool from "$lib/shared/3d/environments/primitives/ReflectivePool.svelte";
-  import OceanWaterSurface from "$lib/shared/3d/environments/scenes/ocean/runtime/water/WaterSurface.svelte";
-  import SteamColumn from "$lib/features/water-traverse/components/SteamColumn.svelte";
-  import SeaChamberLife from "$lib/features/water-traverse/components/SeaChamberLife.svelte";
-  import TrenchFloor from "$lib/features/water-traverse/components/TrenchFloor.svelte";
   import {
-    detectOceanQuality,
-    getOceanQualityConfig,
-  } from "$lib/shared/3d/environments/scenes/ocean/quality/ocean-quality";
-  import TraverseSky from "$lib/features/water-traverse/components/TraverseSky.svelte";
-  import MuseumPerformerStation3D from "$lib/features/museum/components/game/MuseumPerformerStation3D.svelte";
-  import {
+    CHANNEL_HALF_W,
     EYE_ABOVE_FLOOR,
     SEA_FLOOR_Y,
     SNOW_Y,
+    TOTAL_LENGTH_M,
     WATERLINE_Y,
     legAt,
-    type WaterState,
   } from "$lib/features/water-traverse/data/water-traverse-terrain";
-  import { sampleAtmosphere } from "$lib/features/water-traverse/data/water-traverse-atmosphere";
   import {
     buildWaterTraverseSetup,
     type TraverseCollider,
@@ -79,90 +100,103 @@
   const props: Props = $props();
   const threlte = useThrelte();
 
-  /**
-   * The walk is 372 m long and the far end is the expensive end to iterate on.
-   * Position survives a reload; "Return to the snowfield" goes back on purpose.
-   */
+  /** Position survives a reload; "Return to the snowfield" goes back on purpose. */
   const RESUME_KEY = "water-traverse-resume";
-  const { layout, colliders, trimeshes, spawn } = buildWaterTraverseSetup();
+  const { layout, colliders, spawn } = buildWaterTraverseSetup();
 
-  // ── Surfaces ──────────────────────────────────────────────────────────────
+  /** How fast the walk actually moves, in m/s. Pacing is measured against it. */
+  const WALK_SPEED = 4.2;
+
+  // ── Palette ─────────────────────────────────────────────────────────────────
 
   /**
-   * Graybox materials. Each is a real reading of what the surface is, not a
-   * debug colour: the point of the pass is to judge composition and light, and
-   * flat magenta boxes would answer neither.
+   * Five greys and two instruments.
+   *
+   * The greys are separated by VALUE only, in the order a visitor reads a room:
+   * the floor is the brightest thing because you are standing on it, the ceiling
+   * is the darkest because no light reaches it, and the walls sit between. That
+   * ordering is doing real work — it is what lets you judge whether a ceiling is
+   * too low or a hall too wide from a still frame, without colour telling you
+   * where to look.
+   *
+   * `portal` is deliberately the lightest surface in the scene. The seams
+   * between chambers are the thing most likely to be wrong, so they are the
+   * thing made most visible.
    */
-  const MATERIALS: Record<string, MeshStandardMaterial> = {
-    snow: new MeshStandardMaterial({ color: "#f4f9fc", roughness: 0.95 }),
-    // The bed under the frozen river. Dark, so the ice above it has something
-    // to be translucent over.
-    ice: new MeshStandardMaterial({ color: "#183a46", roughness: 0.6 }),
-    rock: new MeshStandardMaterial({ color: "#6d7a80", roughness: 0.95 }),
-    seabed: new MeshStandardMaterial({ color: "#41504e", roughness: 1 }),
-    basalt: new MeshStandardMaterial({ color: "#3a342e", roughness: 0.88 }),
-    sinter: new MeshStandardMaterial({ color: "#cdc1a8", roughness: 0.8 }),
-    snowRidge: new MeshStandardMaterial({ color: "#dde8ef", roughness: 0.95 }),
-    seaRidge: new MeshStandardMaterial({ color: "#33403f", roughness: 1 }),
-    springRidge: new MeshStandardMaterial({ color: "#57493d", roughness: 0.9 }),
+  const GRAY = {
+    floor: new MeshStandardMaterial({ color: "#9aa0a3", roughness: 0.92 }),
+    /** The watercourse. One value down from the floor, so the path reads. */
+    channel: new MeshStandardMaterial({ color: "#7c888f", roughness: 0.9 }),
+    wall: new MeshStandardMaterial({ color: "#767c80", roughness: 0.95 }),
+    ceiling: new MeshStandardMaterial({ color: "#6e7479", roughness: 0.98 }),
+    portal: new MeshStandardMaterial({ color: "#b7bdc1", roughness: 0.85 }),
+    /** Ridge blocks: scenery volume, drawn as the boxes they actually are. */
+    mass: new MeshStandardMaterial({ color: "#868c8f", roughness: 0.96 }),
+  };
+
+  /**
+   * Instruments, not scenery.
+   *
+   * Unlit on purpose: a measuring stick that changes value as it moves through
+   * the room is a bad measuring stick. Orange reads distance and human height,
+   * blue reads a place the visitor is meant to stop. If either colour ever
+   * looks like part of the world, the graybox has failed at being a graybox.
+   */
+  const MARK = {
+    ruler: new MeshBasicMaterial({ color: "#e08640" }),
+    stop: new MeshBasicMaterial({ color: "#4f9ad0" }),
     /**
-     * The building. Poured concrete, deliberately plain: the dioramas are the
-     * expensive part and the shell should read as the thing they were
-     * installed inside, not as more landscape.
+     * The far target. Its whole job is being visible from the first step.
      *
-     * It used to be pale concrete lifted further by a 0.9 emissive, which put
-     * the building in the same value band as the exhibit inside it. In a real
-     * museum the hall is the DARK thing and the diorama is the lit thing —
-     * that contrast is the entire reason a diorama reads as an object on
-     * display rather than as the world. Dropping the shell four stops is what
-     * makes the water the brightest thing in frame, and it costs nothing.
-     *
-     * The emissive stays, barely, for the ceiling: no light reaches it and
-     * pure black overhead reads as a missing surface rather than as a roof.
+     * Translucent because the thing it stands in for is a steam column, and an
+     * opaque one lies twice: it turns the last 30 m of the walk into a blank
+     * white wall, and it swallows performer C, who stands at exactly the
+     * plume's coordinates (x 0, z 220). Both of those are properties of the
+     * marker, not of the room.
      */
-    hallShell: new MeshStandardMaterial({
-      color: "#2f3134",
-      roughness: 0.96,
-      emissive: "#14161a",
-      emissiveIntensity: 0.6,
-    }),
-    /** Portal jambs and lintels. Heavier stone, so the arch reads as built. */
-    portal: new MeshStandardMaterial({
-      color: "#4d5157",
-      roughness: 0.85,
-      emissive: "#1b1f24",
-      emissiveIntensity: 0.5,
-    }),
-    /**
-     * The painted backdrop each diorama is built against. Pale and self-lit,
-     * with no texture to catch a highlight — the flatness is the tell that
-     * this is a wall and not a distance, and the piece is better for admitting
-     * it.
-     */
-    cyclorama: new MeshStandardMaterial({
-      color: "#cfe3ee",
-      roughness: 1,
-      emissive: "#9dc4d8",
-      emissiveIntensity: 0.85,
+    beacon: new MeshBasicMaterial({
+      color: "#dfe5e9",
+      transparent: true,
+      opacity: 0.3,
+      depthWrite: false,
+      side: DoubleSide,
     }),
   };
 
+  /**
+   * The waterline, as a sheet of glass at y = 0.
+   *
+   * This is the one idea of the piece — walked ON, UNDER, and IN — so the
+   * graybox has to show it, but it must not become a water shader or the pass
+   * turns into a look pass again. A flat translucent plane is enough to see
+   * exactly where the line cuts the terrain and the visitor.
+   */
+  const WATER = new MeshBasicMaterial({
+    color: "#7ec6de",
+    transparent: true,
+    opacity: 0.22,
+    depthWrite: false,
+    // Double-sided is load-bearing, not tidiness. A ground plane faces up, so
+    // back-face culling hides it from anyone standing below it — which is the
+    // trench, the entire middle leg, the one place the surface overhead IS the
+    // idea. The first pass shipped it single-sided and the sea read as a dry
+    // plain.
+    side: DoubleSide,
+  });
+
+  const ALL_MATERIALS = [
+    ...Object.values(GRAY),
+    ...Object.values(MARK),
+    WATER,
+  ];
+
   function materialFor(id: string): MeshStandardMaterial {
-    if (id.startsWith("cyclorama-")) return MATERIALS.cyclorama;
-    if (id.startsWith("hall-")) return MATERIALS.hallShell;
-    if (id.startsWith("portal-")) return MATERIALS.portal;
-    if (id.startsWith("snowfield")) return MATERIALS.snow;
-    if (id === "frozen-river-bed") return MATERIALS.ice;
-    if (id === "descent") return MATERIALS.rock;
-    if (id === "sea-floor" || id.startsWith("ascent")) return MATERIALS.seabed;
-    if (id === "spring-plain") return MATERIALS.basalt;
-    if (id.startsWith("spring-bank")) return MATERIALS.sinter;
-    if (id.startsWith("ridge-snow") || id === "cap-start")
-      return MATERIALS.snowRidge;
-    if (id.startsWith("ridge-descent")) return MATERIALS.snowRidge;
-    if (id.startsWith("ridge-sea") || id.startsWith("ridge-ascent"))
-      return MATERIALS.seaRidge;
-    return MATERIALS.springRidge;
+    if (id.startsWith("portal-")) return GRAY.portal;
+    if (id.endsWith("-ceiling")) return GRAY.ceiling;
+    if (id.startsWith("hall-")) return GRAY.wall;
+    if (id.startsWith("ridge-") || id.startsWith("cap-")) return GRAY.mass;
+    if (id.startsWith("cyclorama-")) return GRAY.wall;
+    return GRAY.floor;
   }
 
   interface SurfaceMesh extends TraverseCollider {
@@ -171,171 +205,15 @@
   }
 
   /**
-   * The peaks are painted scenery, not terrain.
+   * Every collider, drawn. No filter, no exceptions.
    *
-   * They were lit rock: MeshStandardMaterial taking the sun, casting and
-   * receiving shadow, sitting in the same value band as everything else. Two
-   * things went wrong with that. They read as unfinished low-poly mountains
-   * rather than as a deliberate flat, and — because they answer to the same
-   * light as the water — nothing in frame said which was the exhibit and which
-   * was the room around it.
-   *
-   * So: matte, unlit, and mixed toward the cyclorama behind them by distance
-   * from the route. A painted backdrop does not have a specular response and
-   * does not get darker on its shadow side; the flatness IS the tell, the same
-   * argument the cyclorama material already makes. Austen chose this over
-   * sculpting them for real (2026-08-09).
+   * The old scene skipped the sea floor, the descent and the ascent ramps
+   * because a sculpted GLB drew them instead — which quietly broke the rule
+   * this route was built on, since the thing you saw and the thing you stood on
+   * were then two different surfaces authored in two different places. They are
+   * back to being the same boxes.
    */
-  const BACKDROP_TINT = new Color("#cfe3ee");
-
-  /** Painted flat. `flatShading` keeps the facets crisp; nothing here is lit. */
-  function paintedFlat(hex: string, towardBackdrop: number): MeshBasicMaterial {
-    return new MeshBasicMaterial({
-      color: new Color(hex).lerp(BACKDROP_TINT, towardBackdrop),
-      fog: true,
-    });
-  }
-
-  const RIDGE_BODY: Record<string, MeshBasicMaterial> = {
-    snow: paintedFlat("#7d8b95", 0.34),
-    sea: paintedFlat("#33423f", 0.16),
-    spring: paintedFlat("#4b3f34", 0.2),
-  };
-  /**
-   * Submerged ridges stay LIT.
-   *
-   * A painted flat is a background device and only works at background
-   * distance. The trench's flanking walls are three metres from the visitor
-   * and eighteen metres underwater, and stripping their light turned them into
-   * a black jagged mass with pale caps — a hole in the picture rather than a
-   * wall. Anything the visitor is standing INSIDE keeps its light; only the
-   * scenery standing beyond the diorama gets flattened.
-   */
-  const RIDGE_BODY_LIT: Record<string, MeshStandardMaterial> = {
-    snow: new MeshStandardMaterial({ color: "#5f6a72", roughness: 0.98 }),
-    sea: new MeshStandardMaterial({ color: "#2b3736", roughness: 1 }),
-    spring: new MeshStandardMaterial({ color: "#3d332a", roughness: 0.95 }),
-  };
-  const RIDGE_CAP_LIT: Record<string, MeshStandardMaterial> = {
-    snow: new MeshStandardMaterial({ color: "#eef6fb", roughness: 0.92 }),
-    sea: new MeshStandardMaterial({ color: "#44544d", roughness: 1 }),
-    spring: new MeshStandardMaterial({ color: "#8d7663", roughness: 0.92 }),
-  };
-  /**
-   * The cap is the lit face a scenic painter would put on: one value up, warmer
-   * on the spring side, and pushed further toward the backdrop so the tops sink
-   * into it rather than cutting a hard silhouette against the hall.
-   */
-  const RIDGE_CAP: Record<string, MeshBasicMaterial> = {
-    snow: paintedFlat("#eef6fb", 0.42),
-    sea: paintedFlat("#55655d", 0.3),
-    spring: paintedFlat("#9c8471", 0.34),
-  };
-
-  interface RidgeMesh {
-    id: string;
-    x: number;
-    z: number;
-    baseY: number;
-    yaw: number;
-    skirtRadius: number;
-    skirtHeight: number;
-    peakRadius: number;
-    peakHeight: number;
-    peakBase: number;
-    body: MeshBasicMaterial | MeshStandardMaterial;
-    cap: MeshBasicMaterial | MeshStandardMaterial;
-  }
-
-  /** Stable pseudo-random in 0..1 from a string, so the range never reshuffles. */
-  function idNoise(id: string, salt: number): number {
-    let hash = salt;
-    for (let index = 0; index < id.length; index += 1) {
-      hash = (hash * 31 + id.charCodeAt(index)) % 100003;
-    }
-    return (Math.sin(hash * 0.618) + 1) / 2;
-  }
-
-  /**
-   * Which palette a ridge wears.
-   *
-   * Depth decides it before the id does. The descent's flanking ridges run the
-   * whole ramp from the snowfield down to the sea floor, so keying purely off
-   * `ridge-descent` painted the submerged half snow-white: a row of bright
-   * icebergs standing on the seabed, lit from a sun that is 18 m of water away.
-   * A ridge whose base sits below the waterline is underwater rock, whatever
-   * leg of the walk it belongs to.
-   */
-  function ridgeFamily(id: string, baseY: number): "snow" | "sea" | "spring" {
-    if (baseY < WATERLINE_Y) return "sea";
-    if (id.startsWith("ridge-snow") || id.startsWith("ridge-descent"))
-      return "snow";
-    if (id.startsWith("ridge-sea") || id.startsWith("ridge-ascent"))
-      return "sea";
-    return "spring";
-  }
-
-  const ridges: RidgeMesh[] = colliders
-    .filter((collider) => collider.id.startsWith("ridge-"))
-    .map((collider) => {
-      const height = collider.size[1];
-      const family = ridgeFamily(
-        collider.id,
-        collider.position[1] - height / 2,
-      );
-      const submerged = collider.position[1] - height / 2 < WATERLINE_Y;
-      const footprint = Math.max(collider.size[0], collider.size[2]);
-      const lean = idNoise(collider.id, 7);
-      // The peak carries most of the height; the skirt is the mass it stands
-      // on. Varying the split is what stops a range of cones reading as a row
-      // of identical tents.
-      const skirtHeight = height * (0.34 + lean * 0.24);
-      // Base-to-height near 1:1. The first pass used the collider footprint
-      // straight, which gave 10 m wide cones under 40 m of height: a field of
-      // needles. Real massifs are wider than they are tall, and the cone only
-      // reads as rock once its flank is shallow enough to catch the sun
-      // differently from its shaded side.
-      const spread = footprint * 2.1;
-      return {
-        id: collider.id,
-        x: collider.position[0],
-        z: collider.position[2],
-        baseY: collider.position[1] - height / 2,
-        yaw: idNoise(collider.id, 13) * Math.PI * 2,
-        skirtRadius: spread * (0.68 + lean * 0.26),
-        skirtHeight,
-        peakRadius: spread * (0.38 + idNoise(collider.id, 23) * 0.19),
-        peakHeight: height - skirtHeight * 0.62,
-        peakBase: skirtHeight * 0.38,
-        // Submerged = a wall you are inside; above water = scenery beyond
-        // the diorama. Only the latter is painted.
-        body: submerged ? RIDGE_BODY_LIT[family] : RIDGE_BODY[family],
-        cap: submerged ? RIDGE_CAP_LIT[family] : RIDGE_CAP[family],
-      };
-    });
-
-  /**
-   * Surfaces the sculpted floor GLB draws, so the graybox must not.
-   *
-   * `sea-floor`, `descent` and the ascent ramps are still COLLIDERS — they are
-   * the flat safety plane the seabed trimesh sits on — they are simply no
-   * longer the thing you see. Drawing both would put a flat teal plane through
-   * the middle of every dune.
-   */
-  function drawnByTrenchFloor(id: string): boolean {
-    return (
-      id === "sea-floor" || id === "descent" || id.startsWith("ascent")
-    );
-  }
-
-  const surfaces: SurfaceMesh[] = colliders
-    .filter(
-      (collider) =>
-        !collider.id.startsWith("ridge-") &&
-        !collider.id.startsWith("cap-") &&
-        !drawnByTrenchFloor(collider.id)
-    )
-    .map((collider) => ({
+  const surfaces: SurfaceMesh[] = colliders.map((collider) => ({
     ...collider,
     material: materialFor(collider.id),
     quaternion: collider.rotation
@@ -348,201 +226,183 @@
       : new Quaternion(),
   }));
 
-  /** Reflective surfaces, one per water plane the visitor sees from above. */
-  const POOL_TUNING: Record<
-    WaterState,
-    {
-      deepColor: string;
-      shallowColor: string;
-      reflectionTint: number;
-      rippleStrength: number;
-      rippleScale: number;
-      foamWidth: number;
-      flowSpeed: number;
-      shoreFade: number;
-    }
-  > = {
-    /**
-     * Ice is the same optics with the motion taken out of it. Near-still
-     * ripples and a wide pale shore read as a frozen surface without needing a
-     * second shader — which is exactly the claim the piece is making about ice
-     * and water being one substance.
-     */
-    ice: {
-      deepColor: "#20505f",
-      shallowColor: "#a8ccd6",
-      reflectionTint: 0xdceef4,
-      rippleStrength: 0.012,
-      rippleScale: 0.5,
-      foamWidth: 0.9,
-      flowSpeed: 0.06,
-      shoreFade: 3.5,
-    },
-    sea: {
-      deepColor: "#062a3e",
-      shallowColor: "#2c8394",
-      reflectionTint: 0x9fbcc2,
-      rippleStrength: 0.09,
-      rippleScale: 1.25,
-      foamWidth: 0.2,
-      flowSpeed: 0.8,
-      shoreFade: 2.6,
-    },
-    spring: {
-      deepColor: "#123a3c",
-      shallowColor: "#63b9ae",
-      reflectionTint: 0xd8cdb6,
-      rippleStrength: 0.05,
-      rippleScale: 1.6,
-      foamWidth: 0.45,
-      flowSpeed: 0.45,
-      shoreFade: 1.8,
-    },
-  };
+  // ── Instruments ─────────────────────────────────────────────────────────────
 
-  const pools = layout.waterPlanes
-    .filter((plane) => !plane.seenFromBelow)
-    .map((plane) => ({
-      id: plane.id,
-      width: plane.maxX - plane.minX,
-      depth: plane.maxZ - plane.minZ,
-      centreX: (plane.minX + plane.maxX) / 2,
-      centreZ: (plane.minZ + plane.maxZ) / 2,
-      surfaceY: plane.surfaceY,
-      tuning: POOL_TUNING[plane.state],
-    }));
+  /** Floor elevation on the centreline at a given Z, from the route samples. */
+  function routeYAt(z: number): number {
+    const sample = layout.route.reduce((best, point) =>
+      Math.abs(point.z - z) < Math.abs(best.z - z) ? point : best
+    );
+    return sample.y;
+  }
 
   /**
-   * The surface seen from underneath.
+   * The channel, as a ribbon of slabs laid on the floor down the centreline.
    *
-   * This shipped as a 220-unit plane left at the world origin, which covered
-   * z = -110..110 while the trench runs to 190. Standing anywhere past the
-   * midpoint there was simply no surface overhead — which is most of why the
-   * middle leg read as a featureless void. The plane is now centred on the
-   * water rect it belongs to and sized to cover it with margin, so every
-   * upward glance down there ends in open water.
+   * This is the only wayfinding in the piece — no signage, no marker, follow the
+   * water — so "is the pathway clear" is answered by whether you can see this
+   * strip running away from you from any point on the walk.
+   *
+   * Each slab spans one route segment and is PITCHED to that segment's grade.
+   * The first version laid flat 4 m slabs at each sample's elevation, which is
+   * fine on the flats and a disaster on the descent: 1.83 m of drop per sample
+   * turned the ribbon into a staircase with metre-and-a-half risers, drawn over
+   * a ramp that is actually one smooth slab. A path that lies about the floor
+   * underneath it is worse than no path at all.
    */
-  const seaCeilingPlane = layout.waterPlanes.find((plane) => plane.seenFromBelow);
-  const seaCeiling = seaCeilingPlane
-    ? {
-        centreX: (seaCeilingPlane.minX + seaCeilingPlane.maxX) / 2,
-        centreZ: (seaCeilingPlane.minZ + seaCeilingPlane.maxZ) / 2,
-        /**
-         * Sized to the rect exactly, with no margin. The surface is a square
-         * and the trench is long and narrow, so the long axis sets the size and
-         * the overhang on the short axis hides behind the hall walls. Adding
-         * margin on top of that pushed the plane back over the ice chamber,
-         * where it covered the frozen river with a sheet of open sea.
-         */
-        size: Math.max(
-          seaCeilingPlane.maxX - seaCeilingPlane.minX,
-          seaCeilingPlane.maxZ - seaCeilingPlane.minZ
-        ),
-      }
-    : null;
+  const channelSlabs = layout.route.slice(0, -1).map((from, index) => {
+    const to = layout.route[index + 1];
+    const run = to.z - from.z;
+    const rise = to.y - from.y;
+    const length = Math.hypot(run, rise);
+    // Same convention as the floor colliders: +Z is the slab's own length
+    // axis, so a far end that sits higher is a negative rotation about X.
+    const pitch = -Math.atan2(rise, run);
+    // Lift along the slab's OWN normal, not world +Y, so a pitched slab clears
+    // its ramp by the same 4 cm everywhere instead of sinking at one end.
+    const normalY = run / length;
+    const normalZ = -rise / length;
+    const LIFT = 0.04;
+    return {
+      id: `channel-${index}`,
+      y: (from.y + to.y) / 2 + normalY * LIFT,
+      z: (from.z + to.z) / 2 + normalZ * LIFT,
+      length,
+      pitch,
+    };
+  });
 
   /**
-   * Quality tier for the borrowed ocean systems. Detected off the live
-   * renderer, exactly as OceanScene does it, so a phone walking this route
-   * gets the same content LOD the ocean scene would give it.
+   * Distance posts every 20 m, doubled in height every 100 m.
+   *
+   * Two jobs. They are a ruler — the walk is 244 m and no one can judge that by
+   * eye — and they are a speedometer: watching posts go by is how you feel
+   * whether the pace is right, which is the thing that cannot be read from a
+   * plan drawing at all.
    */
-  const oceanQuality = $derived(
-    getOceanQualityConfig(detectOceanQuality(threlte.renderer ?? null))
+  const POST_SPACING = 20;
+  const posts = Array.from(
+    { length: Math.floor(TOTAL_LENGTH_M / POST_SPACING) + 1 },
+    (_, index) => {
+      const z = index * POST_SPACING;
+      const major = z % 100 === 0;
+      return {
+        id: `post-${z}`,
+        z,
+        y: routeYAt(z),
+        height: major ? 5 : 2,
+        x: CHANNEL_HALF_W + 1.6,
+      };
+    }
   );
 
-  // ── Performers ────────────────────────────────────────────────────────────
+  /**
+   * A 1.8 m human, every 40 m, standing beside the path.
+   *
+   * The single most useful object in a graybox and the one this scene never
+   * had. Every scale error already shipped here — the 42 m peaks, the 66 m
+   * coral, a 78 m hall half-width — was invisible precisely because there was
+   * nothing human-sized in frame to measure any of it against.
+   */
+  const HUMAN_SPACING = 40;
+  const humans = Array.from(
+    { length: Math.floor(TOTAL_LENGTH_M / HUMAN_SPACING) + 1 },
+    (_, index) => {
+      const z = index * HUMAN_SPACING;
+      return {
+        id: `human-${z}`,
+        z,
+        y: routeYAt(z),
+        x: -(CHANNEL_HALF_W + 1.6),
+      };
+    }
+  );
+
+  /** Where a performer stands. A body-sized post on a disc you can see coming. */
+  const stops = layout.performers.map((performer) => ({
+    id: performer.id,
+    x: performer.x,
+    y: performer.y,
+    z: performer.z,
+    letter: performer.letter,
+  }));
 
   /**
-   * One performer per water state, standing on the centreline so the visitor
-   * walks straight at them. The sequences are the museum's own: A is pro/pro
-   * (ice), C is the anti-blue/pro-red hybrid (liquid), B is anti/anti (steam).
+   * The far target, as a plain column.
+   *
+   * The steam plume is the piece's only long sightline: it has to be visible
+   * from the first step of a 244 m walk, through two portals. Whether that
+   * actually works is a GEOMETRY question — portal opening heights against
+   * distance — so it belongs in the graybox, drawn as the dumbest possible
+   * cylinder.
    */
-  const PERFORMER_SEQUENCE: Record<string, string> = {
-    A: "cave-water-seq-a",
-    B: "cave-water-seq-b",
-    C: "cave-water-seq-c",
+  const beacon = layout.plume;
+
+  /** The waterline sheet, sized to the whole route. */
+  const waterSheet = {
+    width: (layout.bounds.maxX - layout.bounds.minX) * 0.98,
+    depth: TOTAL_LENGTH_M,
+    centreZ: TOTAL_LENGTH_M / 2,
   };
 
-  /**
-   * Animation range. A performer 120 m down a fogged trench is a silhouette at
-   * best, and three live avatar rigs stepping at once is the one thing in this
-   * scene with a real per-frame cost.
-   */
-  const PERFORMER_ACTIVE_RANGE = 90;
-
-  // ── Atmosphere ────────────────────────────────────────────────────────────
-
-  const background = new Color();
-  const fog = new FogExp2(0xffffff, 0.01);
-  const sun = new DirectionalLight(0xffffff, 2);
-  const hemi = new HemisphereLight(0xffffff, 0xffffff, 1);
-  /** Zenith colour for the dome; the fog colour is its horizon. */
-  const zenith = new Color();
-  /** Shared with the sky dome, mutated in place rather than re-rendered. */
-  const live = { submersion: 0 };
+  // ── Light ───────────────────────────────────────────────────────────────────
 
   /**
-   * Where the sun sits relative to the visitor. Low and behind-left, so the
-   * ridges cast down the valley and the walk is toward the light.
+   * Constant, and that is the point.
+   *
+   * The scene this replaced sampled a full atmosphere program off the player's
+   * position every frame — sky colour, fog density, sun intensity, hemisphere
+   * ground bounce, all interpolating continuously along two axes. That program
+   * is good and it is kept (water-traverse-atmosphere.ts); it is simply not a
+   * graybox's business. Lighting that changes as you walk makes every volume
+   * judgement unreliable, because you can no longer tell whether a chamber got
+   * bigger or the light just got brighter.
    */
+  const background = new Color("#a9b1b6");
+  const fog = new FogExp2(0xa9b1b6, 0.0026);
+  const hemi = new HemisphereLight(0xffffff, 0x7d848a, 1.1);
+  /**
+   * Key. Deliberately not strong: shadows are here to seat objects on the
+   * floor, not to model a time of day. Turned up, the ridge blocks throw hard
+   * diagonals across the snowfield that read as terrain features which are not
+   * there.
+   */
+  const sun = new DirectionalLight(0xffffff, 1.15);
+  /**
+   * Bounce, aimed straight up, and the reason the ceilings are visible at all.
+   *
+   * Every ceiling in this hall is a down-facing normal 34–80 m overhead. A key
+   * light from above never touches it and a hemisphere light gives it only the
+   * ground term, so the first graybox frame rendered all three ceilings as
+   * black — worse than no ceiling, because a black slab reads as a hole in the
+   * roof. Raising the hemisphere ground colour far enough to fix that flattens
+   * every wall in the scene at the same time. An upward light fixes only the
+   * surfaces with the problem: it lands square on ceilings, grazes verticals,
+   * and misses floors entirely.
+   */
+  const bounce = new DirectionalLight(0xffffff, 0.95);
+
+  /** Low and behind-left, so form reads and the walk is toward the light. */
   const SUN_OFFSET = new Vector3(-46, 62, -78);
-  const sunDirection = SUN_OFFSET.clone().normalize();
 
   /**
-   * The physics body reports its capsule CENTRE, which sits halfHeight+radius
-   * above the floor; the eye is EYE_ABOVE_FLOOR above it. Submersion is
-   * measured at the eye, so the difference is not cosmetic — 0.75 m is half
-   * the height of the moment the whole third act is built around.
+   * The light rides with the visitor. A 244 m walk cannot fit in one shadow
+   * frustum, and an unshadowed graybox loses the contact between an object and
+   * the floor it stands on — which is exactly how a floating backdrop plane
+   * survived review here in the first place.
    */
-  const EYE_ABOVE_BODY = EYE_ABOVE_FLOOR - 0.85;
-
-  let ceilingGroup = $state.raw<Group | null>(null);
-
-
-  function applyAtmosphere(x: number, bodyY: number, z: number): void {
-
-    // The underside of the sea is a 220 m patch, not the whole 174 m leg plus
-
-    // its width, so it rides above the visitor. Anchoring it to the centre of
-
-    // the trench left the far ends of the walk with open black overhead.
-
-    if (ceilingGroup && seaCeiling) {
-
-      ceilingGroup.position.set(
-
-        Math.max(seaCeiling.minX, Math.min(seaCeiling.maxX, x)),
-
-        0,
-
-        Math.max(seaCeiling.minZ, Math.min(seaCeiling.maxZ, z))
-
-      );
-
-    }
-    const y = bodyY + EYE_ABOVE_BODY;
-    const sample = sampleAtmosphere(z, y);
-    live.submersion = sample.submersion;
-    // A touch deeper than the horizon in every palette; the dome needs a ramp
-    // to draw and the sample only carries one sky value.
-    zenith.setHex(sample.background).multiplyScalar(0.72);
-    background.setHex(sample.background);
-    fog.color.setHex(sample.fogColor);
-    fog.density = sample.fogDensity;
-    sun.color.setHex(sample.sunColor);
-    sun.intensity = sample.sunIntensity;
-    hemi.color.setHex(sample.skyColor);
-    hemi.groundColor.setHex(sample.groundColor);
-    hemi.intensity = sample.hemiIntensity;
-    // Keep the sun a fixed offset from the visitor so a 372 m walk never runs
-    // out of its shadow frustum or its highlight.
+  function followSun(x: number, y: number, z: number): void {
     sun.position.set(x + SUN_OFFSET.x, y + SUN_OFFSET.y, z + SUN_OFFSET.z);
     sun.target.position.set(x, y, z);
     sun.target.updateMatrixWorld();
+    // Straight up through the visitor: position below, target above.
+    bounce.position.set(x, y - 40, z);
+    bounce.target.position.set(x, y, z);
+    bounce.target.updateMatrixWorld();
   }
-  applyAtmosphere(spawn.x, spawn.y, spawn.z);
+  followSun(spawn.x, spawn.y, spawn.z);
 
-  // ── Physics ───────────────────────────────────────────────────────────────
+  // ── Physics ─────────────────────────────────────────────────────────────────
 
   let physicsState: PhysicsWorldState | null = null;
   let playerState: PlayerControllerState | null = null;
@@ -666,7 +526,7 @@
     physicsProvider?.teleport?.(target);
     playerPosition = target;
     livePosition = target;
-    applyAtmosphere(x, y, z);
+    followSun(x, y, z);
   }
 
   function resetPlayer(): void {
@@ -684,16 +544,21 @@
   function installReviewBridge(): (() => void) | undefined {
     if (!import.meta.env.DEV || typeof window === "undefined") return;
     const bridge = {
-      /** Stand on the route at world Z, eye height derived from the floor. */
+      /**
+       * Stand on the route at world Z, eye height derived from the floor.
+       *
+       * Releases any held aim first. A review pass that teleports while the
+       * camera is still detached leaves the walker unable to look around, which
+       * is a genuinely maddening thing to hand back to somebody.
+       */
       at(z: number, x = 0) {
-        const sample = layout.route.reduce((best, point) =>
-          Math.abs(point.z - z) < Math.abs(best.z - z) ? point : best
-        );
-        const target = { x, y: sample.y + EYE_ABOVE_FLOOR, z };
+        reviewAim = null;
+        const target = { x, y: routeYAt(z) + EYE_ABOVE_FLOOR, z };
         teleport(target.x, target.y, target.z);
         return { ...target, leg: legAt(z) };
       },
       go(x: number, y: number, z: number) {
+        reviewAim = null;
         teleport(x, y, z);
         return { x, y, z };
       },
@@ -701,23 +566,17 @@
        * Face a world point from wherever the visitor is standing.
        *
        * This takes the camera off UnifiedCameraController and drives it
-       * directly. Writing `playerYaw` does not turn the camera — the
-       * controller owns it and overwrites any heading we set, which meant
-       * every review frame captured before 2026-08-09 was shot at the boot
-       * heading no matter what this function returned. A verification bridge
-       * that silently ignores half its own API is worse than no bridge.
+       * directly. Writing `playerYaw` does not turn the camera — the controller
+       * owns it and overwrites any heading we set.
        */
       lookAt(x: number, z: number, y?: number) {
-        const yaw = Math.atan2(
-          x - playerPosition.x,
-          z - playerPosition.z,
-        );
+        const yaw = Math.atan2(x - playerPosition.x, z - playerPosition.z);
         const pitch =
           y === undefined
             ? 0
             : Math.atan2(
                 y - playerPosition.y,
-                Math.hypot(x - playerPosition.x, z - playerPosition.z),
+                Math.hypot(x - playerPosition.x, z - playerPosition.z)
               );
         reviewAim = { yaw, pitch };
         return { yaw, pitch };
@@ -737,16 +596,14 @@
         reviewAim = null;
         return true;
       },
-      where: () => ({ ...playerPosition, yaw: playerYaw, leg: legAt(playerPosition.z) }),
-      atmosphere: () =>
-        sampleAtmosphere(playerPosition.z, playerPosition.y),
+      where: () => ({
+        ...playerPosition,
+        yaw: playerYaw,
+        leg: legAt(playerPosition.z),
+      }),
+      /** What the graybox exists to answer, as numbers. */
+      pacing: () => pacing,
       scene: () => threlte.scene,
-      /**
-       * The fauna are GPGPU: fish positions live in a float texture, not in the
-       * scene graph, so "did the school actually scatter" cannot be answered by
-       * traversing objects or by reading a screenshot. The renderer is what
-       * makes those textures readable back.
-       */
       renderer: () => threlte.renderer,
       layout,
     };
@@ -755,6 +612,33 @@
       delete (window as unknown as Record<string, unknown>).__waterWalk;
     };
   }
+
+  /**
+   * Leg lengths and the time each one costs at walking speed.
+   *
+   * Computed rather than asserted, so the number in the HUD is the number the
+   * geometry actually produces. Pacing was the first thing asked of this pass
+   * and it had never once been measured.
+   */
+  const pacing = (() => {
+    const legs = (["snowfield", "sea", "spring"] as const).map((leg) => {
+      const rect = layout.legs[leg];
+      const metres = rect.maxZ - rect.minZ;
+      return {
+        leg,
+        fromZ: rect.minZ,
+        toZ: rect.maxZ,
+        metres,
+        seconds: +(metres / WALK_SPEED).toFixed(1),
+      };
+    });
+    return {
+      totalMetres: TOTAL_LENGTH_M,
+      totalSeconds: +(TOTAL_LENGTH_M / WALK_SPEED).toFixed(1),
+      walkSpeed: WALK_SPEED,
+      legs,
+    };
+  })();
 
   let removeReviewBridge: (() => void) | undefined;
   let removePageHide: (() => void) | undefined;
@@ -769,17 +653,9 @@
     await initPhysicsWorld(physicsState, { x: 0, y: -9.81, z: 0 });
     if (isDisposed || !physicsState) return;
 
-    // The sculpted seabed, as one static triangle soup. It goes in before the
-    // boxes so that if anything ever spawns during setup it lands on the real
-    // ground rather than the flat safety plane underneath it.
-    for (const mesh of trimeshes) {
-      createRigidBody(
-        physicsState,
-        { type: "static", position: { x: 0, y: 0, z: 0 } },
-        { type: "trimesh", vertices: mesh.vertices, indices: mesh.indices }
-      );
-    }
-
+    // Boxes only. The sculpted seabed trimesh is deliberately NOT loaded: it is
+    // art, and while it was collidable the surface you stood on and the surface
+    // this file draws were different objects.
     for (const collider of colliders) {
       createRigidBody(
         physicsState,
@@ -836,8 +712,8 @@
     const aim = reviewAim;
     const cam = threlte.camera.current;
     if (!aim || !cam) return;
-    // Aim by look-target rather than by writing Euler angles: the bridge's
-    // yaw is atan2(dx, dz) (0 = down-route, +Z), which is not Three's camera
+    // Aim by look-target rather than by writing Euler angles: the bridge's yaw
+    // is atan2(dx, dz) (0 = down-route, +Z), which is not Three's camera
     // convention, and converting between them by hand is how the heading got
     // silently wrong in the first place.
     const cosPitch = Math.cos(aim.pitch);
@@ -845,7 +721,7 @@
     cam.lookAt(
       playerPosition.x + Math.sin(aim.yaw) * cosPitch,
       playerPosition.y + Math.sin(aim.pitch),
-      playerPosition.z + Math.cos(aim.yaw) * cosPitch,
+      playerPosition.z + Math.cos(aim.yaw) * cosPitch
     );
   });
 
@@ -856,7 +732,7 @@
     if (!position) return;
     props.onPositionChange?.(position);
     livePosition = position;
-    applyAtmosphere(position.x, position.y, position.z);
+    followSun(position.x, position.y, position.z);
 
     resumeSaveElapsed += delta;
     if (resumeSaveElapsed >= 0.5) {
@@ -874,26 +750,22 @@
       disposePlayerController(physicsState, playerState);
     }
     if (physicsState) disposePhysicsWorld(physicsState);
-    Object.values(MATERIALS).forEach((material) => material.dispose());
+    ALL_MATERIALS.forEach((material) => material.dispose());
     sun.dispose();
+    bounce.dispose();
     hemi.dispose();
   });
 </script>
 
 <T is={background} attach="background" />
 <T is={fog} attach="fog" />
-
-<TraverseSky
-  horizon={fog.color}
-  {zenith}
-  sunColor={sun.color}
-  {sunDirection}
-  {live}
-/>
 <T is={hemi} />
-<T is={sun} />
+<T is={sun} castShadow />
 <T is={sun.target} />
+<T is={bounce} />
+<T is={bounce.target} />
 
+<!-- The room and the ground: every collider, drawn as the box it is. -->
 {#each surfaces as surface (surface.id)}
   <T.Mesh
     position={surface.position}
@@ -904,115 +776,65 @@
       surface.quaternion.w,
     ]}
     receiveShadow
+    castShadow
   >
     <T.BoxGeometry args={surface.size} />
     <T is={surface.material} />
   </T.Mesh>
 {/each}
 
-<!--
-  The visible ridges. The colliders behind them stay boxes — a wall the visitor
-  can never reach does not need an accurate shape — but a box you CAN see is a
-  building. Flat tops in two tidy rows read as a city street, which is the exact
-  thing this piece is not. Each block gets a low skirt and a taller peak, both
-  four-sided cones under a random yaw, in two values: dark body, bright cap.
--->
-{#each ridges as ridge (ridge.id)}
-  <T.Group position={[ridge.x, ridge.baseY, ridge.z]} rotation.y={ridge.yaw}>
-    <T.Mesh position.y={ridge.skirtHeight / 2}>
-      <T.ConeGeometry args={[ridge.skirtRadius, ridge.skirtHeight, 5, 1]} />
-      <T is={ridge.body} />
+<!-- The watercourse. The only wayfinding the visitor gets. -->
+{#each channelSlabs as slab (slab.id)}
+  <T.Mesh position={[0, slab.y, slab.z]} rotation.x={slab.pitch} receiveShadow>
+    <T.BoxGeometry args={[CHANNEL_HALF_W * 2, 0.08, slab.length]} />
+    <T is={GRAY.channel} />
+  </T.Mesh>
+{/each}
+
+<!-- The waterline: y = 0, from the first step to the last. -->
+<T.Mesh
+  position={[0, WATERLINE_Y, waterSheet.centreZ]}
+  rotation.x={-Math.PI / 2}
+>
+  <T.PlaneGeometry args={[waterSheet.width, waterSheet.depth]} />
+  <T is={WATER} />
+</T.Mesh>
+
+<!-- Ruler: 20 m posts, 5 m tall every 100 m. -->
+{#each posts as post (post.id)}
+  <T.Mesh position={[post.x, post.y + post.height / 2, post.z]} castShadow>
+    <T.BoxGeometry args={[0.35, post.height, 0.35]} />
+    <T is={MARK.ruler} />
+  </T.Mesh>
+{/each}
+
+<!-- 1.8 m of human, every 40 m. The scale reference this scene never had. -->
+{#each humans as human (human.id)}
+  <T.Mesh position={[human.x, human.y + 0.9, human.z]} castShadow>
+    <T.BoxGeometry args={[0.5, 1.8, 0.3]} />
+    <T is={MARK.ruler} />
+  </T.Mesh>
+{/each}
+
+<!-- Where a performer stands, and how far off you can tell. -->
+{#each stops as stop (stop.id)}
+  <T.Group position={[stop.x, stop.y, stop.z]}>
+    <T.Mesh position.y={0.03} rotation.x={-Math.PI / 2}>
+      <T.CircleGeometry args={[2.6, 24]} />
+      <T is={MARK.stop} />
     </T.Mesh>
-    <T.Mesh position.y={ridge.peakBase + ridge.peakHeight / 2} rotation.y={0.7}>
-      <T.ConeGeometry args={[ridge.peakRadius, ridge.peakHeight, 4, 1]} />
-      <T is={ridge.cap} />
+    <T.Mesh position.y={0.9} castShadow>
+      <T.BoxGeometry args={[0.5, 1.8, 0.3]} />
+      <T is={MARK.stop} />
     </T.Mesh>
   </T.Group>
 {/each}
 
-{#each pools as pool (pool.id)}
-  <ReflectivePool
-    width={pool.width}
-    depth={pool.depth}
-    position={[pool.centreX, pool.surfaceY, pool.centreZ]}
-    textureWidth={512}
-    textureHeight={512}
-    deepColor={pool.tuning.deepColor}
-    shallowColor={pool.tuning.shallowColor}
-    reflectionTint={pool.tuning.reflectionTint}
-    rippleScale={pool.tuning.rippleScale}
-    rippleStrength={pool.tuning.rippleStrength}
-    foamWidth={pool.tuning.foamWidth}
-    shoreFade={pool.tuning.shoreFade}
-    flowSpeed={pool.tuning.flowSpeed}
-  />
-{/each}
-
-<!--
-  The sea leg's surface is seen from underneath, which is a different
-  capability from a reflective pool: it needs the Snell window — the bright
-  circle of the whole sky compressed overhead, ringed by total internal
-  reflection. The ocean scene already owns that shader.
--->
-{#if seaCeiling}
-  <T.Group
-    bind:ref={ceilingGroup}
-    position={[seaCeiling.centreX, 0, seaCeiling.centreZ]}
-  >
-    <OceanWaterSurface
-      surfaceY={WATERLINE_Y}
-      size={seaCeiling.size}
-      segments={220}
-      opacity={0.62}
-      color="#1d7d92"
-      skyColor="#bde9f4"
-      tirDarkness={0.22}
-    />
-  </T.Group>
-{/if}
-
-<!--
-  The ground itself. Drawn before everything that stands on it, and the reason
-  the sea-floor / descent / ascent graybox slabs above are collider-only now.
--->
-<TrenchFloor />
-
-<!--
-  The trench, populated. See SeaChamberLife for why the ocean's own systems are
-  re-aimed rather than rebuilt, and why the root OceanScene is not used.
--->
-<SeaChamberLife
-  quality={oceanQuality}
-  floorY={SEA_FLOOR_Y}
-  waterlineY={WATERLINE_Y}
-  fromZ={layout.legs.sea.minZ}
-  toZ={layout.legs.sea.maxZ}
-  halfWidth={layout.legs.sea.maxX}
-/>
-
-{#each layout.performers as performer (performer.id)}
-  <MuseumPerformerStation3D
-    stationId={`water-traverse-${performer.id}`}
-    worldX={performer.x}
-    worldZ={performer.z}
-    worldY={performer.y}
-    standingSurfaceHeight={0}
-    facingAngle={performer.facingAngle}
-    sequenceId={PERFORMER_SEQUENCE[performer.letter]}
-    effectId={performer.effectId}
-    autoPlay={true}
-    showGrid={false}
-    showPlatform={false}
-    active={Math.abs(playerPosition.z - performer.z) < PERFORMER_ACTIVE_RANGE}
-  />
-{/each}
-
-<SteamColumn
-  position={[layout.plume.x, layout.plume.baseY, layout.plume.z]}
-  height={layout.plume.height}
-  radius={7}
-  {fog}
-/>
+<!-- The far target, as a column. Visible from step one, or the plan is wrong. -->
+<T.Mesh position={[beacon.x, beacon.baseY + beacon.height / 2, beacon.z]}>
+  <T.CylinderGeometry args={[4, 6, beacon.height, 16, 1, true]} />
+  <T is={MARK.beacon} />
+</T.Mesh>
 
 {#if isInitialized && physicsProvider}
   <UnifiedCameraController
@@ -1024,7 +846,7 @@
     initialPitch={0}
     allowedModes={[CameraMode.FIRST_PERSON]}
     disableModeToggle={true}
-    moveSpeed={4.2}
+    moveSpeed={WALK_SPEED}
     sprintMultiplier={2.2}
     gravity={MUSEUM_GRAVITY}
     jumpForce={MUSEUM_JUMP_VELOCITY}

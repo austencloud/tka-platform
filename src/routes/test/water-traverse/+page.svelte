@@ -3,6 +3,8 @@
   import { AgXToneMapping, PCFSoftShadowMap } from "three";
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
   import {
+    CHAMBER_CEILING,
+    CHAMBER_HALF_W,
     TOTAL_LENGTH_M,
     WATERLINE_Y,
     legAt,
@@ -24,12 +26,30 @@
     spring: "in the water",
   } as const;
 
+  /**
+   * The walker's speed, from UnifiedCameraController's `moveSpeed` in the
+   * scene. Every time below is distance ÷ this, NOT a wall clock — the question
+   * is how long the route takes to walk, which should not change because
+   * somebody stopped to look at a wall.
+   */
+  const WALK_SPEED = 4.2;
+
   const leg = $derived(legAt(position.z));
-  const progress = $derived(
-    Math.round((Math.min(position.z, TOTAL_LENGTH_M) / TOTAL_LENGTH_M) * 100)
-  );
+  const walked = $derived(Math.max(0, Math.min(position.z, TOTAL_LENGTH_M)));
+  const progress = $derived(Math.round((walked / TOTAL_LENGTH_M) * 100));
   /** Eye height against the one waterline the whole piece is measured from. */
   const relativeToLine = $derived(position.y - WATERLINE_Y);
+  /** Ceiling above the eye. The answer to "is there a roof, and how high". */
+  const headroom = $derived(CHAMBER_CEILING[leg] - position.y);
+  /** Wall to wall across this chamber. */
+  const hallWidth = $derived(CHAMBER_HALF_W[leg] * 2);
+  const secondsWalked = $derived(walked / WALK_SPEED);
+  const secondsLeft = $derived((TOTAL_LENGTH_M - walked) / WALK_SPEED);
+
+  function clock(seconds: number): string {
+    const whole = Math.round(seconds);
+    return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
+  }
 </script>
 
 <svelte:head>
@@ -58,13 +78,38 @@
 
   <header class="review-hud">
     <div class="review-label">
-      <p>Water · spatial review</p>
+      <p>Water · graybox</p>
       <h1>{LEG_LABEL[leg]}</h1>
-      <span>
+      <span class="relationship">
         You are <strong>{RELATIONSHIP[leg]}</strong> ·
         {relativeToLine >= 0 ? "+" : ""}{relativeToLine.toFixed(1)} m from the
         waterline
       </span>
+
+      <!--
+        The four numbers this pass exists to answer. Nothing here is decoration:
+        pacing is walked/left, sizing is headroom and hall width, and each is a
+        thing you cannot judge by eye at this scale.
+      -->
+      <dl class="readout">
+        <div>
+          <dt>Walked</dt>
+          <dd>{walked.toFixed(0)} <em>of {TOTAL_LENGTH_M} m</em></dd>
+        </div>
+        <div>
+          <dt>Time</dt>
+          <dd>{clock(secondsWalked)} <em>· {clock(secondsLeft)} left</em></dd>
+        </div>
+        <div>
+          <dt>Headroom</dt>
+          <dd>{headroom.toFixed(0)} <em>m to ceiling</em></dd>
+        </div>
+        <div>
+          <dt>Hall</dt>
+          <dd>{hallWidth} <em>m wall to wall</em></dd>
+        </div>
+      </dl>
+
       <div
         class="progress"
         role="img"
@@ -84,20 +129,24 @@
 </main>
 
 <style>
+  /* The panel is deliberately neutral. A teal-and-cyan HUD over a grey room
+     puts a mood back on a pass whose entire purpose is having no mood — and
+     worse, it flatters the frames. Grey chrome, orange for the numbers, which
+     is the same orange the rulers in the scene are painted. */
   :global(body) {
     margin: 0;
     overflow: hidden;
-    background: #0a1a22;
+    background: #15181a;
   }
 
   .walk-page {
-    --theme-accent: #7fd8ea;
-    --theme-card-bg: rgba(6, 20, 26, 0.82);
-    --theme-card-hover-bg: rgba(12, 34, 44, 0.92);
-    --theme-stroke: rgba(186, 230, 253, 0.2);
-    --theme-stroke-strong: rgba(127, 216, 234, 0.58);
-    --theme-text: #ecfeff;
-    --theme-text-on-accent: #03121a;
+    --theme-accent: #e08640;
+    --theme-card-bg: rgba(18, 21, 23, 0.86);
+    --theme-card-hover-bg: rgba(32, 36, 39, 0.94);
+    --theme-stroke: rgba(226, 232, 236, 0.18);
+    --theme-stroke-strong: rgba(224, 134, 64, 0.6);
+    --theme-text: #eef1f3;
+    --theme-text-on-accent: #17110a;
     --min-touch-target: 44px;
     --duration-normal: 160ms;
     position: fixed;
@@ -137,14 +186,14 @@
   }
 
   .review-label {
-    min-inline-size: min(23rem, calc(100vw - 12rem));
+    min-inline-size: min(25rem, calc(100vw - 12rem));
     padding: 0.75rem 1rem 0.9rem;
-    border: 1px solid rgba(186, 230, 253, 0.18);
+    border: 1px solid rgba(226, 232, 236, 0.16);
     border-radius: 0.9rem;
-    background: rgba(4, 14, 19, 0.72);
+    background: rgba(16, 19, 21, 0.78);
     box-shadow:
-      0 1rem 3rem rgba(0, 0, 0, 0.34),
-      inset 0 1px rgba(255, 255, 255, 0.035);
+      0 1rem 3rem rgba(0, 0, 0, 0.4),
+      inset 0 1px rgba(255, 255, 255, 0.045);
     backdrop-filter: blur(0.7rem);
   }
 
@@ -154,7 +203,7 @@
   }
 
   .review-label p {
-    color: #7fd8ea;
+    color: #e08640;
     font-size: 0.72rem;
     font-weight: 760;
     letter-spacing: 0.12em;
@@ -169,8 +218,8 @@
     line-height: 1;
   }
 
-  .review-label span {
-    color: #a8c8d4;
+  .relationship {
+    color: #b3bcc2;
     font-size: 0.88rem;
     /* The distance readout changes every frame; tabular digits keep the row
        from twitching as it counts. */
@@ -178,22 +227,56 @@
   }
 
   .review-label strong {
-    color: #ecfeff;
+    color: #eef1f3;
     font-weight: 640;
   }
 
+  /* Two fixed columns, not auto-fit: the values change every frame, and a grid
+     that resizes to its content would shove the whole panel around as the
+     numbers gain and lose digits. */
+  .readout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem 1rem;
+    margin: 0.7rem 0 0;
+  }
+
+  .readout dt {
+    color: #8c959b;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .readout dd {
+    margin: 0.1rem 0 0;
+    color: #eef1f3;
+    font-size: 1.05rem;
+    font-weight: 620;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15;
+  }
+
+  .readout em {
+    color: #98a1a7;
+    font-size: 0.76rem;
+    font-style: normal;
+    font-weight: 500;
+  }
+
   .progress {
-    margin-block-start: 0.6rem;
+    margin-block-start: 0.7rem;
     block-size: 0.25rem;
     border-radius: 999px;
-    background: rgba(186, 230, 253, 0.16);
+    background: rgba(226, 232, 236, 0.16);
   }
 
   .progress span {
     display: block;
     block-size: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, #cfe6ef, #7fd8ea 55%, #ffd9a0);
+    background: #e08640;
   }
 
   @media (min-width: 1680px) {
@@ -205,8 +288,12 @@
       font-size: 0.8rem;
     }
 
-    .review-label span {
+    .relationship {
       font-size: 1rem;
+    }
+
+    .readout dd {
+      font-size: 1.2rem;
     }
   }
 
@@ -231,8 +318,20 @@
       font-size: 3.2rem;
     }
 
-    .review-label span {
+    .relationship {
       font-size: 1.35rem;
+    }
+
+    .readout dt {
+      font-size: 0.92rem;
+    }
+
+    .readout dd {
+      font-size: 1.7rem;
+    }
+
+    .readout em {
+      font-size: 1.05rem;
     }
 
     .progress {
@@ -251,6 +350,55 @@
     .review-hud {
       align-items: stretch;
       flex-direction: column;
+    }
+  }
+
+  /* Wide and SHORT — a folded Fold, a phone in landscape, a laptop with the
+     browser half-height. Vertical space is the scarce one here, and a panel
+     stacked five rows deep ate over half the frame at 960x412. Spend the width
+     instead: one row of four, tighter type, less padding. */
+  @media (max-height: 30rem) {
+    .review-label {
+      min-inline-size: min(34rem, calc(100vw - 14rem));
+      padding: 0.45rem 0.75rem 0.55rem;
+      border-radius: 0.7rem;
+    }
+
+    .review-label p {
+      font-size: 0.66rem;
+    }
+
+    .review-label h1 {
+      margin-block: 0.08rem 0.04rem;
+      font-size: 1.15rem;
+    }
+
+    .relationship {
+      font-size: 0.78rem;
+    }
+
+    .readout {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.2rem 0.7rem;
+      margin-block-start: 0.45rem;
+    }
+
+    .readout dt {
+      font-size: 0.6rem;
+    }
+
+    .readout dd {
+      margin-block-start: 0.02rem;
+      font-size: 0.92rem;
+    }
+
+    .readout em {
+      font-size: 0.66rem;
+    }
+
+    .progress {
+      margin-block-start: 0.45rem;
+      block-size: 0.2rem;
     }
   }
 </style>
