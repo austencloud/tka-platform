@@ -300,12 +300,14 @@ ViewerFooter becomes layout switcher: ResizeObserver + conditional delegation.
 | `state/phrase-effort-lab-state.svelte.ts` | ~200 | Reactive state, playback loop, session persistence, timeline manipulation, presets. |
 | `services/phrase-effort-lab-persister.ts` | ~60 | Firestore save logic. |
 
-**SequenceActionsPanel.svelte (1,012 → ~350 lines)**
+**SequenceActionsPanel.svelte (1,439 → 1,166 scanner lines)**
 
 | Extracted module | Lines | Contents |
 |---|---|---|
-| `services/sequence-actions-orchestrator.ts` | ~200 | withTransform, all 7 transform handlers, extend/bridge/transfer/shift-start/copy flows. |
-| `state/sequence-actions-subdrawer-state.svelte.ts` | ~80 | Sub-drawer state, persistence/restoration effects, help mode state machine. |
+| `services/sequence-actions-orchestrator.ts` | 317 | Undo ordering, transform dispatch, extension workflows, pattern application, shift-start execution, and JSON copy. |
+| `state/sequence-actions-panel-state.svelte.ts` | 377 | Inline navigation, persistence/restoration decisions, help and dialog state, extension data, and busy guards. |
+
+The component remains the sole markup and CSS owner. See the shipped Sequence Actions decomposition design for the behavior locks and verification.
 
 **DeckBrowser.svelte (1,011 → ~860 lines)**
 

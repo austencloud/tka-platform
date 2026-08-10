@@ -589,8 +589,9 @@ git commit -m "refactor(render): extract glyph renderer, transform helper, cell 
 - Create: `src/lib/features/phrase-effort-lab/services/phrase-effort-lab-persister.ts` (~60 lines)
 
 **SequenceActionsPanel.svelte:**
-- Create: `src/lib/features/create/shared/services/sequence-actions-orchestrator.ts` (~200 lines)
-- Create: `src/lib/features/create/shared/state/sequence-actions-subdrawer-state.svelte.ts` (~80 lines)
+- Completed 2026-08-09: rewrote and activated `src/lib/features/create/shared/services/sequence-actions-orchestrator.ts`
+- Completed 2026-08-09: replaced the unused subdrawer model with `src/lib/features/create/shared/state/sequence-actions-panel-state.svelte.ts`
+- Shipped design: `docs/superpowers/specs/shipped/2026-08-09-sequence-actions-panel-decomposition-design.md`
 
 **DeckBrowser.svelte:**
 - Create: `src/lib/features/choreo-card/domain/deck-vtg-labels.ts` (~50 lines)
