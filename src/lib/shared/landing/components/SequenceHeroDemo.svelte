@@ -40,6 +40,7 @@
   import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { syncHeroElementalGlyphVisibility } from "$lib/shared/landing/services/hero-elemental-glyph-visibility";
   import { prefersReducedData } from "$lib/shared/platform/network-conditions";
+  import { markLanding } from "$lib/shared/performance/landing-marks";
 
   let {
     sequence,
@@ -224,6 +225,7 @@
           return;
         }
         manualActivationAvailable = false;
+        markLanding("hero:activate");
         active = true;
       },
       deferUntilIdle: loadPriority === "idle",
@@ -309,7 +311,10 @@
               import("$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte")}
             active={active && !!sequence && !isNamedRouteMorphActive()}
             placeholder={playerPlaceholder}
-            onStatusChange={(status) => (playerLoadStatus = status)}
+            onStatusChange={(status) => {
+              if (status === "loaded") markLanding("hero:player-loaded");
+              playerLoadStatus = status;
+            }}
             props={{
               sequence,
               autoPlay: true,

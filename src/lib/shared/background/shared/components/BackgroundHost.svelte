@@ -12,6 +12,7 @@
 	import { browser } from '$app/environment';
 	import { onMount, onDestroy } from 'svelte';
 	import { BackgroundType, getBackgroundController } from '@austencloud/backgrounds';
+	import { markLanding } from '$lib/shared/performance/landing-marks';
 	import {
 		createJellyfishChime,
 		buildPentatonicNotes,
@@ -178,6 +179,7 @@
 	onMount(() => {
 		if (!browser || !containerRef || !controller) return;
 		mounted = true;
+		markLanding('background:first-frame');
 		onReady?.();
 
 		// Dev-only escape hatch so automated verification (DevTools MCP) can query

@@ -10,6 +10,10 @@
   import { navigationMorphs } from "$lib/shared/transitions/navigation-morphs";
   import { runNamedRouteMorph } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
+  import {
+    markLanding,
+    installLandingMarkReader,
+  } from "$lib/shared/performance/landing-marks";
   import { getIabBannerHeight } from "$lib/shared/auth/state/iab-banner-state.svelte";
   import type { LayoutData } from "./$types";
   import "../app.css";
@@ -666,6 +670,11 @@
   }
 
   onMount(() => {
+    // First thing, before any other mount work: hydration is done. Everything
+    // after this point is the app's own scheduling, not the network's.
+    markLanding("hydrated");
+    installLandingMarkReader();
+
     // Back-gesture guard: in standalone PWA mode, one accidental back swipe
     // exits the app. Push a dummy history entry and re-push on popstate so
     // the first swipe is absorbed. Rapid double-back still exits.
