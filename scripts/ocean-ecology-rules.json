@@ -10,145 +10,317 @@
     "yawPolicy": "free | face-camera-biased | face-current",
     "design": "docs/superpowers/specs/active/2026-08-09-ocean-composition-matrix-design.md"
   },
-
   "roleAdmits": {
     "_doc": "Which silhouette classes each zone role may draw from. Zones own staging and sightlines; this is where the theatre overrides the biology. A reef that composed itself purely from ecology would put a pinnacle in front of the stage.",
-    "primary-frame": ["arch", "wall", "column", "mound", "branching"],
-    "color-mass": ["branching", "plate", "mound", "shell"],
-    "backdrop-wall": ["blade", "column", "wall"],
-    "geological-feature": ["column", "boulder", "wall", "mound"],
-    "secondary-focal": ["wreck", "boulder", "swimmer", "branching", "shell"],
-    "midground-bridge": ["boulder", "plate", "mound", "shell", "blade"],
-    "negative-space": ["shell", "blade"],
-    "foreground-silhouette": ["shell", "mound", "blade", "boulder"]
+    "primary-frame": [
+      "arch",
+      "wall",
+      "column",
+      "mound",
+      "branching"
+    ],
+    "color-mass": [
+      "branching",
+      "plate",
+      "mound",
+      "shell"
+    ],
+    "backdrop-wall": [
+      "blade",
+      "column",
+      "wall"
+    ],
+    "geological-feature": [
+      "column",
+      "boulder",
+      "wall",
+      "mound"
+    ],
+    "secondary-focal": [
+      "wreck",
+      "boulder",
+      "swimmer",
+      "branching",
+      "shell"
+    ],
+    "midground-bridge": [
+      "boulder",
+      "plate",
+      "mound",
+      "shell",
+      "blade"
+    ],
+    "negative-space": [
+      "shell",
+      "blade"
+    ],
+    "foreground-silhouette": [
+      "shell",
+      "mound",
+      "blade",
+      "boulder"
+    ],
+    "reef-body": [
+      "mound",
+      "branching",
+      "boulder",
+      "plate",
+      "shell"
+    ],
+    "backdrop-height": [
+      "wall",
+      "boulder",
+      "mound",
+      "arch"
+    ]
   },
-
   "plate": {
-    "substrate": ["rock", "reef"],
-    "slopeRange": [0, 25],
-    "depthBand": [2, 16],
+    "substrate": [
+      "rock",
+      "reef"
+    ],
+    "slopeRange": [
+      0,
+      25
+    ],
+    "depthBand": [
+      2,
+      16
+    ],
     "habit": "solitary",
-    "clumpSize": [1, 1],
+    "clumpSize": [
+      1,
+      1
+    ],
     "companionSpacing": 1.6,
     "tiltJitter": 8,
     "yawPolicy": "face-camera-biased",
     "notes": "Tables and fans need hard substrate and near-flat ground; a table coral on a 30-degree face reads as debris."
   },
-
   "branching": {
-    "substrate": ["reef", "rock"],
-    "slopeRange": [0, 35],
-    "depthBand": [2, 16],
+    "substrate": [
+      "reef",
+      "rock"
+    ],
+    "slopeRange": [
+      0,
+      35
+    ],
+    "depthBand": [
+      2,
+      16
+    ],
     "habit": "clumping",
-    "clumpSize": [2, 5],
+    "clumpSize": [
+      2,
+      5
+    ],
     "companionSpacing": 1.1,
     "tiltJitter": 10,
     "yawPolicy": "free",
     "notes": "Staghorn grows in thickets. A single isolated staghorn is the tell that a reef was placed by a random walk."
   },
-
   "mound": {
-    "substrate": ["reef", "rock", "sand"],
-    "slopeRange": [0, 30],
-    "depthBand": [2, 18],
+    "substrate": [
+      "reef",
+      "rock",
+      "sand"
+    ],
+    "slopeRange": [
+      0,
+      30
+    ],
+    "depthBand": [
+      2,
+      18
+    ],
     "habit": "solitary",
-    "clumpSize": [1, 1],
+    "clumpSize": [
+      1,
+      1
+    ],
     "companionSpacing": 2.0,
     "tiltJitter": 6,
     "yawPolicy": "free",
     "notes": "Massive corals are slow and old. They earn space around them; crowding them reads as fake."
   },
-
   "column": {
-    "substrate": ["rock", "reef"],
-    "slopeRange": [0, 30],
-    "depthBand": [3, 20],
+    "substrate": [
+      "rock",
+      "reef"
+    ],
+    "slopeRange": [
+      0,
+      30
+    ],
+    "depthBand": [
+      3,
+      20
+    ],
     "habit": "solitary",
-    "clumpSize": [1, 1],
+    "clumpSize": [
+      1,
+      1
+    ],
     "companionSpacing": 3.0,
     "tiltJitter": 4,
     "yawPolicy": "free",
     "notes": "Pinnacles are landmarks at 6-12 m. Two adjacent ones cancel each other out as landmarks. Admits reef as well as rock: substrate 'rock' is derived from slope above 35 degrees, so rock alone plus a 30-degree cap can never be satisfied."
   },
-
   "blade": {
-    "substrate": ["sand", "reef"],
-    "slopeRange": [0, 20],
-    "depthBand": [4, 20],
+    "substrate": [
+      "sand",
+      "reef"
+    ],
+    "slopeRange": [
+      0,
+      20
+    ],
+    "depthBand": [
+      4,
+      20
+    ],
     "habit": "colonial",
-    "clumpSize": [5, 14],
+    "clumpSize": [
+      5,
+      14
+    ],
     "companionSpacing": 0.55,
     "tiltJitter": 5,
     "yawPolicy": "face-current",
     "notes": "Kelp and grass are beds, not specimens. Dense, aligned to the current, on soft ground."
   },
-
   "boulder": {
-    "substrate": ["sand", "rock", "reef"],
-    "slopeRange": [0, 40],
+    "substrate": [
+      "sand",
+      "rock",
+      "reef"
+    ],
+    "slopeRange": [
+      0,
+      40
+    ],
     "habit": "clumping",
-    "depthBand": [1, 40],
-    "clumpSize": [1, 4],
+    "depthBand": [
+      1,
+      40
+    ],
+    "clumpSize": [
+      1,
+      4
+    ],
     "companionSpacing": 1.2,
     "tiltJitter": 25,
     "yawPolicy": "free",
     "notes": "Rock does not care which way it sits. Heavy tilt jitter is what stops a boulder field looking placed."
   },
-
   "shell": {
-    "substrate": ["sand"],
-    "slopeRange": [0, 12],
-    "depthBand": [4, 18],
+    "substrate": [
+      "sand"
+    ],
+    "slopeRange": [
+      0,
+      12
+    ],
+    "depthBand": [
+      4,
+      18
+    ],
     "habit": "clumping",
-    "clumpSize": [1, 3],
+    "clumpSize": [
+      1,
+      3
+    ],
     "companionSpacing": 2.5,
     "tiltJitter": 20,
     "yawPolicy": "free",
     "notes": "Small sand detail. Collects in flat ground, never on a slope it would roll off."
   },
-
   "arch": {
-    "substrate": ["rock", "reef"],
-    "slopeRange": [0, 18],
-    "depthBand": [3, 18],
+    "substrate": [
+      "rock",
+      "reef"
+    ],
+    "slopeRange": [
+      0,
+      18
+    ],
+    "depthBand": [
+      3,
+      18
+    ],
     "habit": "solitary",
-    "clumpSize": [1, 1],
+    "clumpSize": [
+      1,
+      1
+    ],
     "companionSpacing": 4.0,
     "tiltJitter": 3,
     "yawPolicy": "face-camera-biased",
     "notes": "An arch only works if you can see through it. Camera-biased yaw is load-bearing, not a nicety."
   },
-
   "wall": {
-    "substrate": ["rock", "reef"],
-    "slopeRange": [0, 30],
-    "depthBand": [2, 22],
+    "substrate": [
+      "rock",
+      "reef"
+    ],
+    "slopeRange": [
+      0,
+      30
+    ],
+    "depthBand": [
+      2,
+      22
+    ],
     "habit": "solitary",
-    "clumpSize": [1, 1],
+    "clumpSize": [
+      1,
+      1
+    ],
     "companionSpacing": 2.5,
     "tiltJitter": 4,
     "yawPolicy": "face-camera-biased",
     "notes": "Buttresses frame. They face the audience or they are a slab seen edge-on."
   },
-
   "swimmer": {
-    "substrate": ["any"],
-    "slopeRange": [0, 90],
-    "depthBand": [2, 14],
+    "substrate": [
+      "any"
+    ],
+    "slopeRange": [
+      0,
+      90
+    ],
+    "depthBand": [
+      2,
+      14
+    ],
     "habit": "clumping",
-    "clumpSize": [1, 3],
+    "clumpSize": [
+      1,
+      3
+    ],
     "companionSpacing": 2.0,
     "tiltJitter": 12,
     "yawPolicy": "face-current",
     "notes": "Pelagic: hovers above the floor rather than sitting on it. The generator lifts these off the terrain."
   },
-
   "wreck": {
-    "substrate": ["sand"],
-    "slopeRange": [0, 15],
-    "depthBand": [4, 20],
+    "substrate": [
+      "sand"
+    ],
+    "slopeRange": [
+      0,
+      15
+    ],
+    "depthBand": [
+      4,
+      20
+    ],
     "habit": "solitary",
-    "clumpSize": [1, 1],
+    "clumpSize": [
+      1,
+      1
+    ],
     "companionSpacing": 6.0,
     "tiltJitter": 18,
     "yawPolicy": "face-camera-biased",

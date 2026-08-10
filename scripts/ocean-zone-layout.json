@@ -9,126 +9,232 @@
     "minSpacingMetres": 0.8,
     "outerBoundaryMetres": 24,
     "minimumZones": 7,
-    "minimumInstances": 160
+    "minimumInstances": 160,
+    "stageClearance": {
+      "halfXMetres": 4.0,
+      "halfYMetres": 3.0,
+      "marginMetres": 2.5,
+      "note": "The dais is an 8x6 m rectangle, so a 5 m exclusion circle touches its own corners -- plants ended up 0.34 m off the deck. Clearance is the deck footprint plus a working margin."
+    }
   },
   "heroPresentations": {
-    "principle": "Every hero asset is staged individually — clear sightline, breathing room, a deliberate viewing angle from the default camera. Heroes are never scatter-filler.",
+    "principle": "Every hero asset is staged individually \u00e2\u20ac\u201d clear sightline, breathing room, a deliberate viewing angle from the default camera. Heroes are never scatter-filler.",
     "arch-colonnade": {
-      "assets": ["sunlit_coral_arch", "underwater_coral_arch", "coral-arch"],
+      "assets": [
+        "sunlit_coral_arch",
+        "underwater_coral_arch",
+        "coral-arch"
+      ],
       "staging": "The three arches read as one family: sunlit_coral_arch is the upstage proscenium framing the stage; the other two chain off it as a receding swim-through colonnade curving toward the kelp curtain, portals aligned so visitor fish schools stream through them."
     },
     "reef-wall": {
-      "assets": ["reef-wall"],
-      "staging": "The wide reef presents BROADSIDE to the default camera as the eastern backdrop shoulder of coral-garden-east — never edge-on, never half-hidden behind another hero."
+      "assets": [
+        "reef-wall"
+      ],
+      "staging": "The wide reef presents BROADSIDE to the default camera as the eastern backdrop shoulder of coral-garden-east \u00e2\u20ac\u201d never edge-on, never half-hidden behind another hero."
     },
     "basalt-canyon": {
-      "assets": ["basalt_pinnacle"],
+      "assets": [
+        "basalt_pinnacle"
+      ],
       "staging": "Pinnacles form a slot canyon, not a fence: two staggered parallel ridge lines with a 3-4 m navigable gap between them, tallest pinnacles at the upstage end. A fish cluster anchor sits in the gap so schools thread the canyon."
     },
     "coral-skyline": {
-      "assets": ["submerged_coral_citadel", "coral_mountain", "coral-tower"],
-      "staging": "Stepped silhouette trio behind the proscenium: citadel tallest and center-left, mountain mid-height right, tower as the near accent. Three distinct heights against the fog — never two at the same apparent height from the default camera."
+      "assets": [
+        "submerged_coral_citadel",
+        "coral_mountain",
+        "coral-tower"
+      ],
+      "staging": "Stepped silhouette trio behind the proscenium: citadel tallest and center-left, mountain mid-height right, tower as the near accent. Three distinct heights against the fog \u00e2\u20ac\u201d never two at the same apparent height from the default camera."
     },
     "specimen-corals": {
-      "assets": ["brain_coral", "fan_coral", "staghorn_coral", "table_coral", "coral-bommie", "photorealistic_coral_0-3"],
+      "assets": [
+        "brain_coral",
+        "fan_coral",
+        "staghorn_coral",
+        "table_coral",
+        "coral-bommie",
+        "photorealistic_coral_0-3"
+      ],
       "staging": "Museum-specimen rule inside coral-garden-east: each specimen gets its own clear pad with nothing taller within 1.5 m, oriented to its best face. Fan coral presents broadside; table coral gets a low neighbor cluster under its overhang; bommie anchors the garden's downstage corner."
     },
     "wreck": {
-      "assets": ["boat", "octopus"],
+      "assets": [
+        "boat",
+        "octopus"
+      ],
       "staging": "Half-buried, listing ~20 degrees, bow toward the stage so the sightline from the default camera runs stage-to-wreck. Octopus posed in the hull shadow."
     },
     "rock-tables": {
-      "assets": ["underwater_rock_table", "coast_rocks_05", "boulder_01", "stone_01", "sand_rocks_small_01", "rock_07"],
-      "staging": "Structural supporting cast: rock_table as a mid-ground perch (fish anchor), the rest as stepping-stone cluster cores — grouped in odd numbers, partially buried, never floating."
+      "assets": [
+        "underwater_rock_table",
+        "coast_rocks_05",
+        "boulder_01",
+        "stone_01",
+        "sand_rocks_small_01",
+        "rock_07"
+      ],
+      "staging": "Structural supporting cast: rock_table as a mid-ground perch (fish anchor), the rest as stepping-stone cluster cores \u00e2\u20ac\u201d grouped in odd numbers, partially buried, never floating."
     }
   },
   "zones": [
     {
       "id": "proscenium-arch-north",
       "role": "primary-frame",
-      "center": [0, -13],
-      "radii": [6, 4],
+      "center": [
+        0,
+        -13
+      ],
+      "radii": [
+        6,
+        4
+      ],
       "rotationDegrees": 0,
       "densityScale": 0.9,
       "seed": 7103,
-      "heroObjects": ["meshy-sunlit-coral-arch"],
+      "heroObjects": [
+        "meshy-sunlit-coral-arch"
+      ],
       "notes": "Arch relocated upstage-center and scaled to frame the stage from the default camera. Flanked by citadel and mid corals."
     },
     {
       "id": "coral-garden-east",
       "role": "color-mass",
-      "center": [14, -6],
-      "radii": [7, 5],
+      "center": [
+        14,
+        -6
+      ],
+      "radii": [
+        7,
+        5
+      ],
       "rotationDegrees": -25,
       "densityScale": 1.15,
       "seed": 7121,
-      "heroObjects": ["meshy-neon-coral-summit", "photorealistic_coral_3"],
+      "heroObjects": [
+        "meshy-neon-coral-summit",
+        "photorealistic_coral_3"
+      ],
       "faunaAnchor": "reef",
       "notes": "Densest, most colorful zone. Reef-fish cluster anchor."
     },
     {
       "id": "kelp-curtain-northwest",
       "role": "backdrop-wall",
-      "center": [-12, -14],
-      "radii": [8, 4],
+      "center": [
+        -12,
+        -14
+      ],
+      "radii": [
+        8,
+        4
+      ],
       "rotationDegrees": 35,
       "densityScale": 1.2,
       "seed": 7139,
-      "heroObjects": ["meshy-tall-kelp"],
+      "heroObjects": [
+        "meshy-tall-kelp"
+      ],
       "notes": "Kelp massed as one curtain wall, not scattered singles. Sway shader picks these up automatically."
     },
     {
       "id": "basalt-canyon-west",
       "role": "geological-feature",
-      "center": [-16, -3],
-      "radii": [5, 8],
+      "center": [
+        -16,
+        -3
+      ],
+      "radii": [
+        5,
+        8
+      ],
       "rotationDegrees": 80,
       "densityScale": 1.0,
       "seed": 7151,
-      "heroObjects": ["meshy-basalt-pinnacle"],
+      "heroObjects": [
+        "meshy-basalt-pinnacle"
+      ],
       "faunaAnchor": "canyon-run",
-      "notes": "ALL basalt pinnacles as a slot canyon per heroPresentations.basalt-canyon — two staggered ridge lines, navigable gap, fish thread it. Cool rim light in Blender bake resolves the dark-rock material clash."
+      "notes": "ALL basalt pinnacles as a slot canyon per heroPresentations.basalt-canyon \u00e2\u20ac\u201d two staggered ridge lines, navigable gap, fish thread it. Cool rim light in Blender bake resolves the dark-rock material clash."
     },
     {
       "id": "wreck-hollow-southeast",
       "role": "secondary-focal",
-      "center": [13, 10],
-      "radii": [5, 4],
+      "center": [
+        13,
+        10
+      ],
+      "radii": [
+        5,
+        4
+      ],
       "rotationDegrees": -40,
       "densityScale": 0.85,
       "seed": 7177,
-      "heroObjects": ["boat", "octopus"],
+      "heroObjects": [
+        "boat",
+        "octopus"
+      ],
       "notes": "Boat half-buried, listing ~20 degrees; octopus posed in hull. Both need a decimation pass before bake."
     },
     {
       "id": "stepping-stones-east",
       "role": "midground-bridge",
-      "center": [9, 2],
-      "radii": [4, 3],
+      "center": [
+        9,
+        2
+      ],
+      "radii": [
+        4,
+        3
+      ],
       "rotationDegrees": 15,
       "densityScale": 0.8,
       "seed": 7193,
-      "heroObjects": ["rock_2", "sea_urchin", "starfish", "shell", "meshy-sea-grass"],
+      "heroObjects": [
+        "rock_2",
+        "sea_urchin",
+        "starfish",
+        "shell",
+        "meshy-sea-grass"
+      ],
       "faunaAnchor": "bottom",
       "notes": "Low clusters bridging the mid-ground dead zone; density fades toward stage exclusion."
     },
     {
       "id": "stepping-stones-west",
       "role": "midground-bridge",
-      "center": [-9, 3],
-      "radii": [4, 3],
+      "center": [
+        -9,
+        3
+      ],
+      "radii": [
+        4,
+        3
+      ],
       "rotationDegrees": -20,
       "densityScale": 0.75,
       "seed": 7211,
-      "heroObjects": ["rock_4", "anemone", "starfish", "meshy-sea-grass"],
+      "heroObjects": [
+        "rock_4",
+        "anemone",
+        "starfish",
+        "meshy-sea-grass"
+      ],
       "faunaAnchor": "bottom",
       "notes": "Mirror of stepping-stones-east, slightly sparser for asymmetry."
     },
     {
       "id": "open-sand-south",
       "role": "negative-space",
-      "center": [0, 12],
-      "radii": [8, 5],
+      "center": [
+        0,
+        12
+      ],
+      "radii": [
+        8,
+        5
+      ],
       "rotationDegrees": 0,
       "densityScale": 0.15,
       "seed": 7229,
@@ -139,13 +245,55 @@
     {
       "id": "foreground-fringe-south",
       "role": "foreground-silhouette",
-      "center": [0, 8],
-      "radii": [9, 2],
+      "center": [
+        0,
+        8
+      ],
+      "radii": [
+        9,
+        2
+      ],
       "rotationDegrees": 0,
       "densityScale": 0.6,
       "seed": 7247,
-      "heroObjects": ["anemone", "starfish", "meshy-sea-grass"],
+      "heroObjects": [
+        "anemone",
+        "starfish",
+        "meshy-sea-grass"
+      ],
       "notes": "Low silhouette interest camera-side. Height capped by foregroundMaxHeightMetres; must never occlude the stage."
+    },
+    {
+      "id": "backdrop-skyline-upstage",
+      "role": "backdrop-height",
+      "shape": "arc",
+      "innerRadiusMetres": 16.0,
+      "outerRadiusMetres": 21.0,
+      "bearingRangeDegrees": [
+        -110,
+        110
+      ],
+      "densityScale": 0.35,
+      "seed": 7113,
+      "heroObjects": [
+        "submerged_coral_citadel"
+      ],
+      "notes": "The reef band alone read as rubble on the horizon: a proscenium needs mass ABOVE the performer, not just around them. This outer band draws only tall classes, far enough upstage that height frames instead of blocks. Runs before the reef band so the skyline claims its ground first."
+    },
+    {
+      "id": "backdrop-arc-upstage",
+      "role": "reef-body",
+      "shape": "arc",
+      "innerRadiusMetres": 12.0,
+      "outerRadiusMetres": 16.0,
+      "bearingRangeDegrees": [
+        -125,
+        125
+      ],
+      "densityScale": 0.55,
+      "seed": 7109,
+      "heroObjects": [],
+      "notes": "The named upstage zones are four small ellipses on a 13-18 m ring, so the arc between them read as gaps rather than a proscenium. This band fills the upstage semicircle continuously. It runs LAST so the named zones and their heroes claim their ground first, and it draws reef body rather than blades -- the kelp curtain owns those, and a band of kelp all the way round is a hedge, not a reef."
     }
   ]
 }

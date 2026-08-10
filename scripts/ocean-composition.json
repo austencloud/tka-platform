@@ -3,7 +3,7 @@
  "coordinateFrame": "Blender: x/y horizontal, +y upstage, z up, seabed top z=0, water plane z=+12",
  "rotationFormat": "quaternion (w, x, y, z)",
  "scaleMeaning": "world metres of the asset's longest axis; geometry is normalised to 1-unit extent at import",
- "total": 321,
+ "total": 414,
  "placements": [
   {
    "asset": "structures/coral-arch",
@@ -3870,66 +3870,45 @@
    ]
   },
   {
-   "asset": "sea_urchin",
-   "path": "sea_urchin.glb",
-   "silhouette": "mound",
-   "species": "Diadema antillarum (long-spined urchin)",
+   "asset": "polyhaven/sand_rocks_small_01",
+   "path": "polyhaven/sand_rocks_small_01.glb",
+   "silhouette": "boulder",
+   "species": "sand-scattered rubble",
    "zone": "stepping-stones-east",
-   "substrate": "sand",
-   "sizeMetres": 0.218,
-   "scale": 0.2184,
+   "substrate": "reef",
+   "sizeMetres": 0.945,
+   "scale": 0.9448,
    "position": [
-    7.6873,
-    -1.0024,
-    0.1057
+    12.1868,
+    -2.4876,
+    0.1196
    ],
    "rotation": [
-    -0.95841965,
-    -0.00652993,
-    0.02200272,
-    0.28443805
+    -0.59844418,
+    -0.07057341,
+    0.155857,
+    0.78268292
    ]
   },
   {
-   "asset": "meshy/ribbon_seaweed",
-   "path": "meshy/ribbon_seaweed.glb",
-   "silhouette": "blade",
-   "species": "Macrocystis blade (ribbon weed)",
+   "asset": "polyhaven/boulder_01",
+   "path": "polyhaven/boulder_01.glb",
+   "silhouette": "boulder",
+   "species": "granite boulder",
    "zone": "stepping-stones-east",
    "substrate": "sand",
-   "sizeMetres": 1.34,
-   "scale": 1.34,
+   "sizeMetres": 1.011,
+   "scale": 1.0112,
    "position": [
-    6.7427,
-    -2.6595,
-    0.6706
+    6.7973,
+    -3.4994,
+    0.0407
    ],
    "rotation": [
-    0.99643928,
-    0.02515242,
-    0.0186786,
-    0.07827654
-   ]
-  },
-  {
-   "asset": "meshy/ribbon_seaweed",
-   "path": "meshy/ribbon_seaweed.glb",
-   "silhouette": "blade",
-   "species": "Macrocystis blade (ribbon weed)",
-   "zone": "stepping-stones-east",
-   "substrate": "sand",
-   "sizeMetres": 1.376,
-   "scale": 1.3757,
-   "position": [
-    6.0824,
-    -2.6929,
-    0.6885
-   ],
-   "rotation": [
-    0.99543625,
-    0.00978461,
-    -0.03876848,
-    0.08664838
+    0.94395189,
+    0.04296247,
+    0.13629789,
+    0.29754318
    ]
   },
   {
@@ -3951,6 +3930,27 @@
     0.04283145,
     0.0761441,
     0.07055817
+   ]
+  },
+  {
+   "asset": "polyhaven/boulder_01",
+   "path": "polyhaven/boulder_01.glb",
+   "silhouette": "boulder",
+   "species": "granite boulder",
+   "zone": "stepping-stones-east",
+   "substrate": "sand",
+   "sizeMetres": 0.938,
+   "scale": 0.9378,
+   "position": [
+    8.6315,
+    -2.9144,
+    0.1385
+   ],
+   "rotation": [
+    0.47797377,
+    -0.14288524,
+    -0.00654454,
+    0.8666499
    ]
   },
   {
@@ -4563,6 +4563,1959 @@
    ]
   },
   {
+   "asset": "meshy/submerged_coral_citadel",
+   "path": "meshy/submerged_coral_citadel.glb",
+   "silhouette": "wall",
+   "species": "encrusted reef buttress",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "reef",
+   "sizeMetres": 4.173,
+   "scale": 4.1728,
+   "position": [
+    18.8264,
+    -0.775,
+    0.4887
+   ],
+   "rotation": [
+    0.74368604,
+    -0.00441646,
+    0.04945195,
+    -0.66668289
+   ]
+  },
+  {
+   "asset": "polyhaven/boulder_01",
+   "path": "polyhaven/boulder_01.glb",
+   "silhouette": "boulder",
+   "species": "granite boulder",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 2.466,
+   "scale": 2.4656,
+   "position": [
+    3.8752,
+    20.3608,
+    -0.0121
+   ],
+   "rotation": [
+    0.72582484,
+    0.02406075,
+    -0.11809626,
+    0.67723899
+   ]
+  },
+  {
+   "asset": "polyhaven/boulder_01",
+   "path": "polyhaven/boulder_01.glb",
+   "silhouette": "boulder",
+   "species": "granite boulder",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.835,
+   "scale": 0.8345,
+   "position": [
+    2.433,
+    17.4658,
+    -0.1333
+   ],
+   "rotation": [
+    0.02390186,
+    -0.05788215,
+    -0.01654604,
+    0.99790009
+   ]
+  },
+  {
+   "asset": "polyhaven/boulder_01",
+   "path": "polyhaven/boulder_01.glb",
+   "silhouette": "boulder",
+   "species": "granite boulder",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "reef",
+   "sizeMetres": 1.269,
+   "scale": 1.2691,
+   "position": [
+    -15.5455,
+    -4.2102,
+    0.0003
+   ],
+   "rotation": [
+    0.73760653,
+    0.03110974,
+    0.16427454,
+    0.65420385
+   ]
+  },
+  {
+   "asset": "polyhaven/boulder_01",
+   "path": "polyhaven/boulder_01.glb",
+   "silhouette": "boulder",
+   "species": "granite boulder",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "reef",
+   "sizeMetres": 0.86,
+   "scale": 0.8604,
+   "position": [
+    -17.6236,
+    -5.84,
+    -0.1974
+   ],
+   "rotation": [
+    0.98531098,
+    -0.01317012,
+    -0.05710332,
+    0.16039959
+   ]
+  },
+  {
+   "asset": "polyhaven/sand_rocks_small_01",
+   "path": "polyhaven/sand_rocks_small_01.glb",
+   "silhouette": "boulder",
+   "species": "sand-scattered rubble",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.926,
+   "scale": 0.9257,
+   "position": [
+    5.4967,
+    15.2028,
+    -0.3961
+   ],
+   "rotation": [
+    0.87720201,
+    -0.0533769,
+    -0.05442876,
+    0.47403065
+   ]
+  },
+  {
+   "asset": "polyhaven/sand_rocks_small_01",
+   "path": "polyhaven/sand_rocks_small_01.glb",
+   "silhouette": "boulder",
+   "species": "sand-scattered rubble",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.872,
+   "scale": 0.8723,
+   "position": [
+    6.9612,
+    16.1071,
+    -0.3651
+   ],
+   "rotation": [
+    0.10787864,
+    0.01941596,
+    0.0862103,
+    0.99022876
+   ]
+  },
+  {
+   "asset": "polyhaven/coast_rocks_05",
+   "path": "polyhaven/coast_rocks_05.glb",
+   "silhouette": "boulder",
+   "species": "coastal rock cluster",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 3.716,
+   "scale": 3.716,
+   "position": [
+    12.6241,
+    12.8685,
+    0.0349
+   ],
+   "rotation": [
+    0.99289641,
+    -0.02298378,
+    0.04958684,
+    0.10568637
+   ]
+  },
+  {
+   "asset": "polyhaven/rock_07",
+   "path": "polyhaven/rock_07.glb",
+   "silhouette": "boulder",
+   "species": "cobble",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.702,
+   "scale": 0.7021,
+   "position": [
+    16.056,
+    2.5539,
+    -0.0831
+   ],
+   "rotation": [
+    -0.60787306,
+    0.19848098,
+    -0.00905993,
+    0.76877406
+   ]
+  },
+  {
+   "asset": "polyhaven/rock_07",
+   "path": "polyhaven/rock_07.glb",
+   "silhouette": "boulder",
+   "species": "cobble",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.363,
+   "scale": 0.3629,
+   "position": [
+    16.4439,
+    3.2357,
+    -0.0921
+   ],
+   "rotation": [
+    -0.14362836,
+    0.11355722,
+    0.01452303,
+    0.98298766
+   ]
+  },
+  {
+   "asset": "polyhaven/stone_01",
+   "path": "polyhaven/stone_01.glb",
+   "silhouette": "boulder",
+   "species": "pebble",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.452,
+   "scale": 0.4516,
+   "position": [
+    -15.9621,
+    10.5655,
+    0.0222
+   ],
+   "rotation": [
+    0.35117496,
+    -0.00801342,
+    -0.01254976,
+    0.93619145
+   ]
+  },
+  {
+   "asset": "polyhaven/stone_01",
+   "path": "polyhaven/stone_01.glb",
+   "silhouette": "boulder",
+   "species": "pebble",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.351,
+   "scale": 0.3507,
+   "position": [
+    -15.8065,
+    11.1636,
+    0.001
+   ],
+   "rotation": [
+    0.60039597,
+    -0.02732541,
+    0.20802169,
+    0.77168969
+   ]
+  },
+  {
+   "asset": "polyhaven/stone_01",
+   "path": "polyhaven/stone_01.glb",
+   "silhouette": "boulder",
+   "species": "pebble",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.209,
+   "scale": 0.2087,
+   "position": [
+    -16.9258,
+    11.7078,
+    -0.0142
+   ],
+   "rotation": [
+    0.02417148,
+    -0.01430723,
+    -0.03729059,
+    0.99890963
+   ]
+  },
+  {
+   "asset": "anemone",
+   "path": "anemone.glb",
+   "silhouette": "mound",
+   "species": "Anthopleura sp. (sea anemone)",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "reef",
+   "sizeMetres": 0.171,
+   "scale": 0.1712,
+   "position": [
+    -18.2511,
+    -2.7898,
+    -0.1241
+   ],
+   "rotation": [
+    -0.97489797,
+    -0.00767175,
+    0.00391198,
+    0.22248547
+   ]
+  },
+  {
+   "asset": "meshy/coral_encrusted_rock",
+   "path": "meshy/coral_encrusted_rock.glb",
+   "silhouette": "boulder",
+   "species": "encrusted basalt boulder",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "reef",
+   "sizeMetres": 1.623,
+   "scale": 1.6232,
+   "position": [
+    17.2377,
+    -4.8774,
+    0.5224
+   ],
+   "rotation": [
+    -0.68547186,
+    -0.02461727,
+    -0.18148428,
+    0.70468842
+   ]
+  },
+  {
+   "asset": "meshy/coral_encrusted_rock",
+   "path": "meshy/coral_encrusted_rock.glb",
+   "silhouette": "boulder",
+   "species": "encrusted basalt boulder",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "reef",
+   "sizeMetres": 1.219,
+   "scale": 1.2194,
+   "position": [
+    18.0259,
+    -7.3825,
+    0.2245
+   ],
+   "rotation": [
+    0.92388827,
+    0.13126455,
+    0.04422324,
+    0.35671331
+   ]
+  },
+  {
+   "asset": "polyhaven/sand_rocks_small_01",
+   "path": "polyhaven/sand_rocks_small_01.glb",
+   "silhouette": "boulder",
+   "species": "sand-scattered rubble",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "reef",
+   "sizeMetres": 0.558,
+   "scale": 0.5583,
+   "position": [
+    19.8203,
+    2.0042,
+    -0.0207
+   ],
+   "rotation": [
+    0.05568166,
+    0.04665219,
+    0.08238678,
+    0.99394947
+   ]
+  },
+  {
+   "asset": "meshy/brain_coral",
+   "path": "meshy/brain_coral.glb",
+   "silhouette": "mound",
+   "species": "Pseudodiploria strigosa (brain coral)",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 1.852,
+   "scale": 1.8517,
+   "position": [
+    10.0176,
+    14.1435,
+    0.3638
+   ],
+   "rotation": [
+    -0.23772465,
+    -0.07225421,
+    -0.04555245,
+    0.96756979
+   ]
+  },
+  {
+   "asset": "polyhaven/rock_07",
+   "path": "polyhaven/rock_07.glb",
+   "silhouette": "boulder",
+   "species": "cobble",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.59,
+   "scale": 0.5904,
+   "position": [
+    -6.5905,
+    16.2143,
+    0.3796
+   ],
+   "rotation": [
+    0.76952435,
+    0.0079985,
+    0.11679749,
+    0.62779507
+   ]
+  },
+  {
+   "asset": "meshy/coral_encrusted_rock",
+   "path": "meshy/coral_encrusted_rock.glb",
+   "silhouette": "boulder",
+   "species": "encrusted basalt boulder",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 2.145,
+   "scale": 2.1446,
+   "position": [
+    -7.2993,
+    18.8802,
+    1.4298
+   ],
+   "rotation": [
+    -0.27146903,
+    0.11226765,
+    -0.01107758,
+    0.95581265
+   ]
+  },
+  {
+   "asset": "meshy/neon_coral_summit",
+   "path": "meshy/neon_coral_summit.glb",
+   "silhouette": "mound",
+   "species": "reef pinnacle (mixed corals)",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 2.005,
+   "scale": 2.0049,
+   "position": [
+    -1.5518,
+    20.7846,
+    0.464
+   ],
+   "rotation": [
+    -0.81271846,
+    0.11818575,
+    -0.01369517,
+    0.57037994
+   ]
+  },
+  {
+   "asset": "polyhaven/rock_07",
+   "path": "polyhaven/rock_07.glb",
+   "silhouette": "boulder",
+   "species": "cobble",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.807,
+   "scale": 0.8068,
+   "position": [
+    -15.9528,
+    7.9141,
+    0.0719
+   ],
+   "rotation": [
+    -0.16043572,
+    0.23129858,
+    0.06445454,
+    0.95739593
+   ]
+  },
+  {
+   "asset": "polyhaven/sand_rocks_small_01",
+   "path": "polyhaven/sand_rocks_small_01.glb",
+   "silhouette": "boulder",
+   "species": "sand-scattered rubble",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "reef",
+   "sizeMetres": 0.875,
+   "scale": 0.8751,
+   "position": [
+    19.1368,
+    4.7462,
+    0.1994
+   ],
+   "rotation": [
+    -0.61757092,
+    -0.08541694,
+    -0.00446239,
+    0.78185049
+   ]
+  },
+  {
+   "asset": "sea_urchin",
+   "path": "sea_urchin.glb",
+   "silhouette": "mound",
+   "species": "Diadema antillarum (long-spined urchin)",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "reef",
+   "sizeMetres": 0.179,
+   "scale": 0.1789,
+   "position": [
+    20.0762,
+    4.1126,
+    0.3012
+   ],
+   "rotation": [
+    -0.07363078,
+    -0.05741449,
+    -0.05328872,
+    0.9942044
+   ]
+  },
+  {
+   "asset": "anemone",
+   "path": "anemone.glb",
+   "silhouette": "mound",
+   "species": "Anthopleura sp. (sea anemone)",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.38,
+   "scale": 0.3797,
+   "position": [
+    -0.8079,
+    17.0493,
+    0.3532
+   ],
+   "rotation": [
+    0.09692912,
+    0.08551443,
+    0.05474713,
+    0.99009837
+   ]
+  },
+  {
+   "asset": "sea_urchin",
+   "path": "sea_urchin.glb",
+   "silhouette": "mound",
+   "species": "Diadema antillarum (long-spined urchin)",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.218,
+   "scale": 0.2177,
+   "position": [
+    7.4378,
+    15.2133,
+    -0.3427
+   ],
+   "rotation": [
+    -0.08341819,
+    -0.02466988,
+    -0.057584,
+    0.99454356
+   ]
+  },
+  {
+   "asset": "polyhaven/boulder_01",
+   "path": "polyhaven/boulder_01.glb",
+   "silhouette": "boulder",
+   "species": "granite boulder",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 1.244,
+   "scale": 1.2444,
+   "position": [
+    -4.9393,
+    18.1418,
+    0.559
+   ],
+   "rotation": [
+    0.49858707,
+    0.06682003,
+    -0.11030647,
+    0.85719222
+   ]
+  },
+  {
+   "asset": "polyhaven/rock_07",
+   "path": "polyhaven/rock_07.glb",
+   "silhouette": "boulder",
+   "species": "cobble",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.477,
+   "scale": 0.4775,
+   "position": [
+    -17.367,
+    10.5356,
+    0.0395
+   ],
+   "rotation": [
+    0.30343246,
+    -0.02375702,
+    -0.05076149,
+    0.95120325
+   ]
+  },
+  {
+   "asset": "meshy/brain_coral",
+   "path": "meshy/brain_coral.glb",
+   "silhouette": "mound",
+   "species": "Pseudodiploria strigosa (brain coral)",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.556,
+   "scale": 0.5558,
+   "position": [
+    -16.1357,
+    12.0979,
+    0.1786
+   ],
+   "rotation": [
+    0.18784865,
+    -0.03878329,
+    0.04327391,
+    0.98047749
+   ]
+  },
+  {
+   "asset": "anemone",
+   "path": "anemone.glb",
+   "silhouette": "mound",
+   "species": "Anthopleura sp. (sea anemone)",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.406,
+   "scale": 0.4064,
+   "position": [
+    12.8361,
+    15.6312,
+    0.1146
+   ],
+   "rotation": [
+    -0.01918402,
+    -0.03102378,
+    -0.02750459,
+    0.99895595
+   ]
+  },
+  {
+   "asset": "meshy/coral_encrusted_rock",
+   "path": "meshy/coral_encrusted_rock.glb",
+   "silhouette": "boulder",
+   "species": "encrusted basalt boulder",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "reef",
+   "sizeMetres": 1.258,
+   "scale": 1.2585,
+   "position": [
+    -17.4006,
+    -3.3611,
+    0.4512
+   ],
+   "rotation": [
+    0.64702473,
+    -0.0191572,
+    -0.19910498,
+    0.73576437
+   ]
+  },
+  {
+   "asset": "anemone",
+   "path": "anemone.glb",
+   "silhouette": "mound",
+   "species": "Anthopleura sp. (sea anemone)",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "reef",
+   "sizeMetres": 0.308,
+   "scale": 0.3076,
+   "position": [
+    20.1994,
+    -4.4729,
+    -0.2517
+   ],
+   "rotation": [
+    0.57459474,
+    0.05446692,
+    0.00746015,
+    0.81658961
+   ]
+  },
+  {
+   "asset": "anemone",
+   "path": "anemone.glb",
+   "silhouette": "mound",
+   "species": "Anthopleura sp. (sea anemone)",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "reef",
+   "sizeMetres": 0.458,
+   "scale": 0.4582,
+   "position": [
+    18.6125,
+    -5.8398,
+    -0.2193
+   ],
+   "rotation": [
+    -0.18844601,
+    0.00176278,
+    -0.0065269,
+    0.98206028
+   ]
+  },
+  {
+   "asset": "meshy/coral_encrusted_rock",
+   "path": "meshy/coral_encrusted_rock.glb",
+   "silhouette": "boulder",
+   "species": "encrusted basalt boulder",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 1.198,
+   "scale": 1.1979,
+   "position": [
+    -3.3959,
+    16.7923,
+    1.0647
+   ],
+   "rotation": [
+    0.19994717,
+    0.11921159,
+    0.03765489,
+    0.97179825
+   ]
+  },
+  {
+   "asset": "anemone",
+   "path": "anemone.glb",
+   "silhouette": "mound",
+   "species": "Anthopleura sp. (sea anemone)",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "reef",
+   "sizeMetres": 0.193,
+   "scale": 0.1927,
+   "position": [
+    -16.5687,
+    -2.6312,
+    0.012
+   ],
+   "rotation": [
+    0.70106374,
+    0.00282128,
+    -0.08005869,
+    0.7085847
+   ]
+  },
+  {
+   "asset": "anemone",
+   "path": "anemone.glb",
+   "silhouette": "mound",
+   "species": "Anthopleura sp. (sea anemone)",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.49,
+   "scale": 0.4904,
+   "position": [
+    6.4505,
+    16.857,
+    -0.2269
+   ],
+   "rotation": [
+    -0.92596202,
+    -0.01124564,
+    -0.00065124,
+    0.3774486
+   ]
+  },
+  {
+   "asset": "polyhaven/stone_01",
+   "path": "polyhaven/stone_01.glb",
+   "silhouette": "boulder",
+   "species": "pebble",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.28,
+   "scale": 0.2802,
+   "position": [
+    -2.5463,
+    18.3936,
+    0.3998
+   ],
+   "rotation": [
+    -0.24808507,
+    0.21942242,
+    0.10000837,
+    0.9382462
+   ]
+  },
+  {
+   "asset": "polyhaven/sand_rocks_small_01",
+   "path": "polyhaven/sand_rocks_small_01.glb",
+   "silhouette": "boulder",
+   "species": "sand-scattered rubble",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.746,
+   "scale": 0.7463,
+   "position": [
+    -17.6827,
+    8.5706,
+    0.2268
+   ],
+   "rotation": [
+    -0.15678792,
+    0.16612792,
+    0.09014699,
+    0.96937742
+   ]
+  },
+  {
+   "asset": "polyhaven/rock_07",
+   "path": "polyhaven/rock_07.glb",
+   "silhouette": "boulder",
+   "species": "cobble",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.556,
+   "scale": 0.5564,
+   "position": [
+    4.4605,
+    17.3588,
+    -0.297
+   ],
+   "rotation": [
+    0.91343245,
+    0.13104218,
+    0.01931297,
+    0.38483258
+   ]
+  },
+  {
+   "asset": "polyhaven/rock_07",
+   "path": "polyhaven/rock_07.glb",
+   "silhouette": "boulder",
+   "species": "cobble",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.647,
+   "scale": 0.6473,
+   "position": [
+    5.288,
+    17.847,
+    -0.2655
+   ],
+   "rotation": [
+    -0.7385993,
+    -0.12555912,
+    -0.06518802,
+    0.65913315
+   ]
+  },
+  {
+   "asset": "sea_urchin",
+   "path": "sea_urchin.glb",
+   "silhouette": "mound",
+   "species": "Diadema antillarum (long-spined urchin)",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.119,
+   "scale": 0.1187,
+   "position": [
+    -2.2976,
+    17.682,
+    0.4559
+   ],
+   "rotation": [
+    -0.96880863,
+    0.06979949,
+    -0.06636997,
+    0.22832628
+   ]
+  },
+  {
+   "asset": "anemone",
+   "path": "anemone.glb",
+   "silhouette": "mound",
+   "species": "Anthopleura sp. (sea anemone)",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.233,
+   "scale": 0.2326,
+   "position": [
+    11.9608,
+    16.0654,
+    0.0494
+   ],
+   "rotation": [
+    0.58185108,
+    -0.00391427,
+    -0.03927998,
+    0.8123368
+   ]
+  },
+  {
+   "asset": "polyhaven/coast_rocks_05",
+   "path": "polyhaven/coast_rocks_05.glb",
+   "silhouette": "boulder",
+   "species": "coastal rock cluster",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 1.641,
+   "scale": 1.6411,
+   "position": [
+    -5.3696,
+    20.2015,
+    0.5188
+   ],
+   "rotation": [
+    0.89594716,
+    -0.17221635,
+    0.18568319,
+    0.36488624
+   ]
+  },
+  {
+   "asset": "polyhaven/rock_07",
+   "path": "polyhaven/rock_07.glb",
+   "silhouette": "boulder",
+   "species": "cobble",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.462,
+   "scale": 0.462,
+   "position": [
+    9.0583,
+    15.834,
+    -0.2813
+   ],
+   "rotation": [
+    -0.52057462,
+    -0.17761018,
+    -0.07453423,
+    0.83180607
+   ]
+  },
+  {
+   "asset": "polyhaven/boulder_01",
+   "path": "polyhaven/boulder_01.glb",
+   "silhouette": "boulder",
+   "species": "granite boulder",
+   "zone": "backdrop-skyline-upstage",
+   "substrate": "reef",
+   "sizeMetres": 0.872,
+   "scale": 0.8716,
+   "position": [
+    -20.2427,
+    -5.1761,
+    -0.2701
+   ],
+   "rotation": [
+    0.83452923,
+    -0.01094576,
+    -0.07052992,
+    0.54632105
+   ]
+  },
+  {
+   "asset": "polyhaven/rock_07",
+   "path": "polyhaven/rock_07.glb",
+   "silhouette": "boulder",
+   "species": "cobble",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.573,
+   "scale": 0.573,
+   "position": [
+    12.1614,
+    4.2439,
+    -0.0357
+   ],
+   "rotation": [
+    -0.86841472,
+    0.00397371,
+    0.0001293,
+    0.49582261
+   ]
+  },
+  {
+   "asset": "polyhaven/stone_01",
+   "path": "polyhaven/stone_01.glb",
+   "silhouette": "boulder",
+   "species": "pebble",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "reef",
+   "sizeMetres": 0.51,
+   "scale": 0.5099,
+   "position": [
+    14.4226,
+    -0.4227,
+    0.093
+   ],
+   "rotation": [
+    -0.49404368,
+    0.12115866,
+    -0.09105013,
+    0.85612575
+   ]
+  },
+  {
+   "asset": "polyhaven/stone_01",
+   "path": "polyhaven/stone_01.glb",
+   "silhouette": "boulder",
+   "species": "pebble",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.325,
+   "scale": 0.3251,
+   "position": [
+    13.5282,
+    7.0642,
+    -0.2294
+   ],
+   "rotation": [
+    0.26987023,
+    0.00838008,
+    -0.00290024,
+    0.96285587
+   ]
+  },
+  {
+   "asset": "polyhaven/stone_01",
+   "path": "polyhaven/stone_01.glb",
+   "silhouette": "boulder",
+   "species": "pebble",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.21,
+   "scale": 0.2101,
+   "position": [
+    13.3311,
+    7.4367,
+    -0.2634
+   ],
+   "rotation": [
+    0.7782889,
+    -0.06296818,
+    -0.02445435,
+    0.62426227
+   ]
+  },
+  {
+   "asset": "polyhaven/rock_07",
+   "path": "polyhaven/rock_07.glb",
+   "silhouette": "boulder",
+   "species": "cobble",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.741,
+   "scale": 0.741,
+   "position": [
+    -9.8415,
+    7.5364,
+    -0.1674
+   ],
+   "rotation": [
+    -0.1706752,
+    0.01362521,
+    0.03042638,
+    0.9847632
+   ]
+  },
+  {
+   "asset": "polyhaven/rock_07",
+   "path": "polyhaven/rock_07.glb",
+   "silhouette": "boulder",
+   "species": "cobble",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.671,
+   "scale": 0.6707,
+   "position": [
+    -8.9057,
+    7.6995,
+    -0.1271
+   ],
+   "rotation": [
+    -0.97549559,
+    -0.15388808,
+    0.02256223,
+    0.15562053
+   ]
+  },
+  {
+   "asset": "starfish",
+   "path": "starfish.glb",
+   "silhouette": "shell",
+   "species": "Oreaster reticulatus (cushion star)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.211,
+   "scale": 0.2108,
+   "position": [
+    -12.148,
+    3.313,
+    -0.2204
+   ],
+   "rotation": [
+    -0.99253424,
+    -0.03682072,
+    0.09357494,
+    0.06901985
+   ]
+  },
+  {
+   "asset": "sea_urchin",
+   "path": "sea_urchin.glb",
+   "silhouette": "mound",
+   "species": "Diadema antillarum (long-spined urchin)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.16,
+   "scale": 0.1603,
+   "position": [
+    -14.3363,
+    -4.684,
+    0.1064
+   ],
+   "rotation": [
+    0.11250386,
+    -0.01419265,
+    -0.00800817,
+    0.99351765
+   ]
+  },
+  {
+   "asset": "polyhaven/sand_rocks_small_01",
+   "path": "polyhaven/sand_rocks_small_01.glb",
+   "silhouette": "boulder",
+   "species": "sand-scattered rubble",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "reef",
+   "sizeMetres": 1.012,
+   "scale": 1.0118,
+   "position": [
+    -12.3307,
+    -4.0993,
+    0.1861
+   ],
+   "rotation": [
+    -0.11337612,
+    0.07619734,
+    -0.0286805,
+    0.99021071
+   ]
+  },
+  {
+   "asset": "polyhaven/sand_rocks_small_01",
+   "path": "polyhaven/sand_rocks_small_01.glb",
+   "silhouette": "boulder",
+   "species": "sand-scattered rubble",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "reef",
+   "sizeMetres": 0.881,
+   "scale": 0.8809,
+   "position": [
+    -12.6452,
+    -2.7598,
+    0.1629
+   ],
+   "rotation": [
+    -0.94879575,
+    0.07694719,
+    0.0009292,
+    0.30637377
+   ]
+  },
+  {
+   "asset": "polyhaven/coast_rocks_05",
+   "path": "polyhaven/coast_rocks_05.glb",
+   "silhouette": "boulder",
+   "species": "coastal rock cluster",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 1.779,
+   "scale": 1.7786,
+   "position": [
+    6.1268,
+    13.2562,
+    -0.3411
+   ],
+   "rotation": [
+    -0.69589611,
+    0.17084715,
+    -0.08653882,
+    0.69213502
+   ]
+  },
+  {
+   "asset": "meshy/coral_encrusted_rock",
+   "path": "meshy/coral_encrusted_rock.glb",
+   "silhouette": "boulder",
+   "species": "encrusted basalt boulder",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 1.895,
+   "scale": 1.8945,
+   "position": [
+    14.1273,
+    -4.4182,
+    0.8116
+   ],
+   "rotation": [
+    0.18219331,
+    0.00816418,
+    -0.00351155,
+    0.98322256
+   ]
+  },
+  {
+   "asset": "meshy/photorealistic_coral_2",
+   "path": "meshy/photorealistic_coral_2.glb",
+   "silhouette": "branching",
+   "species": "Acropora sp. (branching coral)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "reef",
+   "sizeMetres": 0.816,
+   "scale": 0.8162,
+   "position": [
+    10.8852,
+    -5.3143,
+    0.4944
+   ],
+   "rotation": [
+    -0.79824065,
+    0.01022865,
+    -0.01037123,
+    0.6021625
+   ]
+  },
+  {
+   "asset": "meshy/photorealistic_coral_2",
+   "path": "meshy/photorealistic_coral_2.glb",
+   "silhouette": "branching",
+   "species": "Acropora sp. (branching coral)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "reef",
+   "sizeMetres": 0.666,
+   "scale": 0.6658,
+   "position": [
+    10.1514,
+    -5.7518,
+    0.5143
+   ],
+   "rotation": [
+    0.97340061,
+    -0.00108575,
+    -0.01375062,
+    0.22869412
+   ]
+  },
+  {
+   "asset": "starfish",
+   "path": "starfish.glb",
+   "silhouette": "shell",
+   "species": "Oreaster reticulatus (cushion star)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.378,
+   "scale": 0.3777,
+   "position": [
+    -14.4984,
+    -5.3911,
+    0.0283
+   ],
+   "rotation": [
+    -0.29972115,
+    -0.16519188,
+    0.00322664,
+    0.9396108
+   ]
+  },
+  {
+   "asset": "starfish",
+   "path": "starfish.glb",
+   "silhouette": "shell",
+   "species": "Oreaster reticulatus (cushion star)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.169,
+   "scale": 0.1691,
+   "position": [
+    -13.6874,
+    -5.0698,
+    0.0855
+   ],
+   "rotation": [
+    -0.83031366,
+    0.00783613,
+    -0.00635423,
+    0.55720503
+   ]
+  },
+  {
+   "asset": "sea_urchin",
+   "path": "sea_urchin.glb",
+   "silhouette": "mound",
+   "species": "Diadema antillarum (long-spined urchin)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "reef",
+   "sizeMetres": 0.175,
+   "scale": 0.175,
+   "position": [
+    -0.3464,
+    13.5019,
+    0.3728
+   ],
+   "rotation": [
+    0.40539751,
+    0.05274876,
+    -0.00062546,
+    0.91261714
+   ]
+  },
+  {
+   "asset": "anemone",
+   "path": "anemone.glb",
+   "silhouette": "mound",
+   "species": "Anthopleura sp. (sea anemone)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.394,
+   "scale": 0.394,
+   "position": [
+    15.5339,
+    -2.5085,
+    0.0141
+   ],
+   "rotation": [
+    -0.47474577,
+    -0.00766339,
+    0.01709355,
+    0.8799236
+   ]
+  },
+  {
+   "asset": "meshy/fan_coral",
+   "path": "meshy/fan_coral.glb",
+   "silhouette": "plate",
+   "species": "Gorgonia ventalina (sea fan)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "reef",
+   "sizeMetres": 0.767,
+   "scale": 0.7674,
+   "position": [
+    -12.2001,
+    -6.9435,
+    0.3957
+   ],
+   "rotation": [
+    0.10670427,
+    0.10155068,
+    -0.00750027,
+    -0.98906289
+   ]
+  },
+  {
+   "asset": "polyhaven/stone_01",
+   "path": "polyhaven/stone_01.glb",
+   "silhouette": "boulder",
+   "species": "pebble",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.303,
+   "scale": 0.3029,
+   "position": [
+    3.6478,
+    12.26,
+    -0.0791
+   ],
+   "rotation": [
+    0.83703541,
+    -0.01248069,
+    -0.05454501,
+    0.54428007
+   ]
+  },
+  {
+   "asset": "polyhaven/stone_01",
+   "path": "polyhaven/stone_01.glb",
+   "silhouette": "boulder",
+   "species": "pebble",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.314,
+   "scale": 0.314,
+   "position": [
+    4.031,
+    12.1015,
+    -0.1184
+   ],
+   "rotation": [
+    -0.38516067,
+    0.14125775,
+    -0.00140655,
+    0.91197343
+   ]
+  },
+  {
+   "asset": "polyhaven/rock_07",
+   "path": "polyhaven/rock_07.glb",
+   "silhouette": "boulder",
+   "species": "cobble",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.982,
+   "scale": 0.9822,
+   "position": [
+    6.054,
+    11.1794,
+    -0.3256
+   ],
+   "rotation": [
+    0.98236488,
+    0.07187172,
+    -0.13474563,
+    0.10787639
+   ]
+  },
+  {
+   "asset": "polyhaven/rock_07",
+   "path": "polyhaven/rock_07.glb",
+   "silhouette": "boulder",
+   "species": "cobble",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.381,
+   "scale": 0.3806,
+   "position": [
+    5.0298,
+    11.4543,
+    -0.2318
+   ],
+   "rotation": [
+    -0.53014804,
+    0.27594844,
+    -0.02307125,
+    0.80141327
+   ]
+  },
+  {
+   "asset": "anemone",
+   "path": "anemone.glb",
+   "silhouette": "mound",
+   "species": "Anthopleura sp. (sea anemone)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.461,
+   "scale": 0.4607,
+   "position": [
+    1.2865,
+    15.6905,
+    0.1622
+   ],
+   "rotation": [
+    0.54080985,
+    0.04112645,
+    0.0535755,
+    0.83842888
+   ]
+  },
+  {
+   "asset": "polyhaven/sand_rocks_small_01",
+   "path": "polyhaven/sand_rocks_small_01.glb",
+   "silhouette": "boulder",
+   "species": "sand-scattered rubble",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.762,
+   "scale": 0.762,
+   "position": [
+    12.5515,
+    -4.6994,
+    0.0373
+   ],
+   "rotation": [
+    0.05778563,
+    -0.08010834,
+    0.00915351,
+    0.99506768
+   ]
+  },
+  {
+   "asset": "starfish",
+   "path": "starfish.glb",
+   "silhouette": "shell",
+   "species": "Oreaster reticulatus (cushion star)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.157,
+   "scale": 0.1567,
+   "position": [
+    -12.5924,
+    5.5705,
+    -0.215
+   ],
+   "rotation": [
+    -0.24456686,
+    -0.04311449,
+    0.01385076,
+    0.96857439
+   ]
+  },
+  {
+   "asset": "starfish",
+   "path": "starfish.glb",
+   "silhouette": "shell",
+   "species": "Oreaster reticulatus (cushion star)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.155,
+   "scale": 0.1553,
+   "position": [
+    -12.9908,
+    5.5339,
+    -0.1764
+   ],
+   "rotation": [
+    0.87714589,
+    0.01313863,
+    0.02812651,
+    0.47921954
+   ]
+  },
+  {
+   "asset": "polyhaven/sand_rocks_small_01",
+   "path": "polyhaven/sand_rocks_small_01.glb",
+   "silhouette": "boulder",
+   "species": "sand-scattered rubble",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.868,
+   "scale": 0.8678,
+   "position": [
+    9.3741,
+    7.6461,
+    -0.243
+   ],
+   "rotation": [
+    -0.9880917,
+    0.01108305,
+    -0.00370646,
+    0.15342168
+   ]
+  },
+  {
+   "asset": "polyhaven/rock_07",
+   "path": "polyhaven/rock_07.glb",
+   "silhouette": "boulder",
+   "species": "cobble",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.536,
+   "scale": 0.5358,
+   "position": [
+    9.4878,
+    8.5832,
+    -0.3664
+   ],
+   "rotation": [
+    0.80497553,
+    -0.00544068,
+    0.01046325,
+    0.59319079
+   ]
+  },
+  {
+   "asset": "shell",
+   "path": "shell.glb",
+   "silhouette": "shell",
+   "species": "Strombus gigas (queen conch shell)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.178,
+   "scale": 0.1781,
+   "position": [
+    13.9355,
+    5.3653,
+    -0.1106
+   ],
+   "rotation": [
+    0.86974304,
+    -0.00694959,
+    0.00283964,
+    0.49344775
+   ]
+  },
+  {
+   "asset": "meshy/coral_encrusted_rock",
+   "path": "meshy/coral_encrusted_rock.glb",
+   "silhouette": "boulder",
+   "species": "encrusted basalt boulder",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 2.025,
+   "scale": 2.0249,
+   "position": [
+    8.7999,
+    10.7574,
+    0.4431
+   ],
+   "rotation": [
+    0.96652619,
+    0.08529702,
+    -0.08796943,
+    0.22541722
+   ]
+  },
+  {
+   "asset": "anemone",
+   "path": "anemone.glb",
+   "silhouette": "mound",
+   "species": "Anthopleura sp. (sea anemone)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.293,
+   "scale": 0.2926,
+   "position": [
+    11.1124,
+    9.0825,
+    -0.3792
+   ],
+   "rotation": [
+    0.47652771,
+    -0.01890309,
+    0.01759927,
+    0.87878
+   ]
+  },
+  {
+   "asset": "meshy/photorealistic_coral_1",
+   "path": "meshy/photorealistic_coral_1.glb",
+   "silhouette": "branching",
+   "species": "Acropora sp. (branching coral)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "reef",
+   "sizeMetres": 0.764,
+   "scale": 0.7641,
+   "position": [
+    -4.2114,
+    12.7061,
+    0.5481
+   ],
+   "rotation": [
+    0.5292439,
+    -0.00660069,
+    0.03051408,
+    0.84789517
+   ]
+  },
+  {
+   "asset": "polyhaven/boulder_01",
+   "path": "polyhaven/boulder_01.glb",
+   "silhouette": "boulder",
+   "species": "granite boulder",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.87,
+   "scale": 0.87,
+   "position": [
+    7.9325,
+    12.8849,
+    -0.5107
+   ],
+   "rotation": [
+    0.74084414,
+    0.13733804,
+    0.10316765,
+    0.64934171
+   ]
+  },
+  {
+   "asset": "starfish",
+   "path": "starfish.glb",
+   "silhouette": "shell",
+   "species": "Oreaster reticulatus (cushion star)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.303,
+   "scale": 0.3034,
+   "position": [
+    -13.9345,
+    5.6985,
+    -0.0578
+   ],
+   "rotation": [
+    0.20655814,
+    0.07813494,
+    0.03570963,
+    0.97465557
+   ]
+  },
+  {
+   "asset": "sea_urchin",
+   "path": "sea_urchin.glb",
+   "silhouette": "mound",
+   "species": "Diadema antillarum (long-spined urchin)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.13,
+   "scale": 0.1301,
+   "position": [
+    8.202,
+    12.4537,
+    -0.4874
+   ],
+   "rotation": [
+    -0.21727771,
+    0.05985997,
+    0.00471464,
+    0.97426123
+   ]
+  },
+  {
+   "asset": "polyhaven/boulder_01",
+   "path": "polyhaven/boulder_01.glb",
+   "silhouette": "boulder",
+   "species": "granite boulder",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 2.138,
+   "scale": 2.1384,
+   "position": [
+    -13.1594,
+    -8.4675,
+    0.1842
+   ],
+   "rotation": [
+    0.42597437,
+    -0.15467992,
+    -0.03312784,
+    0.8907988
+   ]
+  },
+  {
+   "asset": "shell",
+   "path": "shell.glb",
+   "silhouette": "shell",
+   "species": "Strombus gigas (queen conch shell)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.343,
+   "scale": 0.3431,
+   "position": [
+    -7.1251,
+    11.9846,
+    0.2528
+   ],
+   "rotation": [
+    0.84677575,
+    -0.09212482,
+    0.10886637,
+    0.51247631
+   ]
+  },
+  {
+   "asset": "shell",
+   "path": "shell.glb",
+   "silhouette": "shell",
+   "species": "Strombus gigas (queen conch shell)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.337,
+   "scale": 0.3369,
+   "position": [
+    2.695,
+    13.8585,
+    0.0664
+   ],
+   "rotation": [
+    0.98274543,
+    -0.05390412,
+    0.1768813,
+    0.00433336
+   ]
+  },
+  {
+   "asset": "shell",
+   "path": "shell.glb",
+   "silhouette": "shell",
+   "species": "Strombus gigas (queen conch shell)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.267,
+   "scale": 0.267,
+   "position": [
+    3.6325,
+    15.2792,
+    -0.1484
+   ],
+   "rotation": [
+    0.05303899,
+    0.16649829,
+    0.05199782,
+    0.98324026
+   ]
+  },
+  {
+   "asset": "anemone",
+   "path": "anemone.glb",
+   "silhouette": "mound",
+   "species": "Anthopleura sp. (sea anemone)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "reef",
+   "sizeMetres": 0.241,
+   "scale": 0.241,
+   "position": [
+    -13.3833,
+    -1.9511,
+    0.1918
+   ],
+   "rotation": [
+    0.98184406,
+    0.00060213,
+    0.02985585,
+    0.18732462
+   ]
+  },
+  {
+   "asset": "sea_urchin",
+   "path": "sea_urchin.glb",
+   "silhouette": "mound",
+   "species": "Diadema antillarum (long-spined urchin)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.213,
+   "scale": 0.2133,
+   "position": [
+    4.3369,
+    13.1251,
+    -0.1408
+   ],
+   "rotation": [
+    -0.82733247,
+    0.04607494,
+    -0.03187007,
+    0.55891178
+   ]
+  },
+  {
+   "asset": "meshy/brain_coral",
+   "path": "meshy/brain_coral.glb",
+   "silhouette": "mound",
+   "species": "Pseudodiploria strigosa (brain coral)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.402,
+   "scale": 0.4023,
+   "position": [
+    14.8489,
+    0.8853,
+    0.1699
+   ],
+   "rotation": [
+    0.90767024,
+    0.00049007,
+    0.00526701,
+    0.41965075
+   ]
+  },
+  {
+   "asset": "anemone",
+   "path": "anemone.glb",
+   "silhouette": "mound",
+   "species": "Anthopleura sp. (sea anemone)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.216,
+   "scale": 0.2159,
+   "position": [
+    10.4687,
+    6.4916,
+    -0.1454
+   ],
+   "rotation": [
+    -0.41089076,
+    0.07407173,
+    0.06710369,
+    0.90618942
+   ]
+  },
+  {
+   "asset": "starfish",
+   "path": "starfish.glb",
+   "silhouette": "shell",
+   "species": "Oreaster reticulatus (cushion star)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.241,
+   "scale": 0.2415,
+   "position": [
+    -7.7908,
+    13.8873,
+    0.2057
+   ],
+   "rotation": [
+    0.99318128,
+    0.0618891,
+    -0.08569496,
+    0.04916358
+   ]
+  },
+  {
+   "asset": "sea_urchin",
+   "path": "sea_urchin.glb",
+   "silhouette": "mound",
+   "species": "Diadema antillarum (long-spined urchin)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.143,
+   "scale": 0.1427,
+   "position": [
+    -9.8619,
+    8.7688,
+    0.0061
+   ],
+   "rotation": [
+    0.03167249,
+    -0.01889922,
+    -0.07215781,
+    0.99671105
+   ]
+  },
+  {
+   "asset": "anemone",
+   "path": "anemone.glb",
+   "silhouette": "mound",
+   "species": "Anthopleura sp. (sea anemone)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.262,
+   "scale": 0.2619,
+   "position": [
+    5.9058,
+    14.4033,
+    -0.396
+   ],
+   "rotation": [
+    0.92014766,
+    0.01670859,
+    0.0350696,
+    0.38963986
+   ]
+  },
+  {
+   "asset": "starfish",
+   "path": "starfish.glb",
+   "silhouette": "shell",
+   "species": "Oreaster reticulatus (cushion star)",
+   "zone": "backdrop-arc-upstage",
+   "substrate": "sand",
+   "sizeMetres": 0.217,
+   "scale": 0.2171,
+   "position": [
+    -12.1015,
+    5.4698,
+    -0.2516
+   ],
+   "rotation": [
+    -0.6807059,
+    0.04453185,
+    -0.06586724,
+    0.72822929
+   ]
+  },
+  {
    "asset": "starfish",
    "path": "starfish.glb",
    "silhouette": "shell",
@@ -4647,66 +6600,24 @@
    ]
   },
   {
-   "asset": "starfish",
-   "path": "starfish.glb",
-   "silhouette": "shell",
-   "species": "Oreaster reticulatus (cushion star)",
+   "asset": "meshy/sea_grass",
+   "path": "meshy/sea_grass.glb",
+   "silhouette": "blade",
+   "species": "Thalassia testudinum (turtle grass)",
    "zone": "floor-scatter",
    "substrate": "sand",
-   "sizeMetres": 0.168,
-   "scale": 0.1682,
+   "sizeMetres": 0.484,
+   "scale": 0.7489,
    "position": [
-    8.9972,
-    15.8708,
-    -0.2693
+    -9.3039,
+    4.6228,
+    -0.1596
    ],
    "rotation": [
-    -0.60654856,
-    0.09034767,
-    0.02860841,
-    0.78937804
-   ]
-  },
-  {
-   "asset": "meshy/fan_coral",
-   "path": "meshy/fan_coral.glb",
-   "silhouette": "plate",
-   "species": "Gorgonia ventalina (sea fan)",
-   "zone": "floor-scatter",
-   "substrate": "reef",
-   "sizeMetres": 0.671,
-   "scale": 0.6706,
-   "position": [
-    -12.7292,
-    -11.5485,
-    0.4109
-   ],
-   "rotation": [
-    -0.02888344,
-    -0.01488219,
-    0.00989141,
-    -0.99942305
-   ]
-  },
-  {
-   "asset": "shell",
-   "path": "shell.glb",
-   "silhouette": "shell",
-   "species": "Strombus gigas (queen conch shell)",
-   "zone": "floor-scatter",
-   "substrate": "sand",
-   "sizeMetres": 0.265,
-   "scale": 0.2655,
-   "position": [
-    7.6717,
-    13.1538,
-    -0.4451
-   ],
-   "rotation": [
-    -0.99736454,
-    0.02127117,
-    0.06923583,
-    0.00423263
+    0.99316913,
+    -0.00525071,
+    -0.09958065,
+    0.06059053
    ]
   },
   {
@@ -4716,18 +6627,18 @@
    "species": "Thalassia testudinum (turtle grass)",
    "zone": "floor-scatter",
    "substrate": "reef",
-   "sizeMetres": 0.693,
-   "scale": 1.0728,
+   "sizeMetres": 0.539,
+   "scale": 0.834,
    "position": [
-    22.0701,
-    -1.5355,
-    0.0599
+    -5.8382,
+    -22.5596,
+    0.2366
    ],
    "rotation": [
-    0.98270956,
-    0.04790799,
-    -0.03655997,
-    0.17507175
+    0.99545067,
+    0.02778718,
+    -0.04053912,
+    0.08162358
    ]
   },
   {
@@ -5046,27 +6957,6 @@
    ]
   },
   {
-   "asset": "starfish",
-   "path": "starfish.glb",
-   "silhouette": "shell",
-   "species": "Oreaster reticulatus (cushion star)",
-   "zone": "floor-scatter",
-   "substrate": "sand",
-   "sizeMetres": 0.251,
-   "scale": 0.2508,
-   "position": [
-    16.0528,
-    2.3849,
-    -0.0615
-   ],
-   "rotation": [
-    -0.63800602,
-    -0.06022223,
-    0.00829044,
-    0.76762808
-   ]
-  },
-  {
    "asset": "shell",
    "path": "shell.glb",
    "silhouette": "shell",
@@ -5094,39 +6984,60 @@
    "species": "Strombus gigas (queen conch shell)",
    "zone": "floor-scatter",
    "substrate": "sand",
-   "sizeMetres": 0.225,
-   "scale": 0.225,
+   "sizeMetres": 0.144,
+   "scale": 0.1437,
    "position": [
-    6.1528,
-    11.7423,
-    -0.3024
+    14.5754,
+    15.5318,
+    0.149
    ],
    "rotation": [
-    -0.80255285,
-    0.08886298,
-    -0.03587378,
-    0.5888339
+    -0.87908503,
+    -0.06053584,
+    0.12921608,
+    0.45480558
    ]
   },
   {
-   "asset": "shell",
-   "path": "shell.glb",
+   "asset": "starfish",
+   "path": "starfish.glb",
    "silhouette": "shell",
-   "species": "Strombus gigas (queen conch shell)",
+   "species": "Oreaster reticulatus (cushion star)",
    "zone": "floor-scatter",
    "substrate": "sand",
-   "sizeMetres": 0.198,
-   "scale": 0.1985,
+   "sizeMetres": 0.386,
+   "scale": 0.3856,
    "position": [
-    12.8046,
-    17.2209,
-    0.1735
+    5.2067,
+    9.3317,
+    -0.0771
    ],
    "rotation": [
-    0.79230933,
-    0.04548915,
-    -0.0650095,
-    0.60493837
+    -0.22710096,
+    -0.05976863,
+    -0.03179673,
+    0.97151522
+   ]
+  },
+  {
+   "asset": "meshy/fan_coral",
+   "path": "meshy/fan_coral.glb",
+   "silhouette": "plate",
+   "species": "Gorgonia ventalina (sea fan)",
+   "zone": "floor-scatter",
+   "substrate": "reef",
+   "sizeMetres": 0.562,
+   "scale": 0.5619,
+   "position": [
+    -5.6438,
+    -11.1101,
+    0.5507
+   ],
+   "rotation": [
+    -0.06602023,
+    -0.06359095,
+    0.02689315,
+    -0.99542668
    ]
   },
   {
@@ -5178,18 +7089,18 @@
    "species": "Thalassia testudinum (turtle grass)",
    "zone": "floor-scatter",
    "substrate": "sand",
-   "sizeMetres": 0.751,
-   "scale": 1.1631,
+   "sizeMetres": 0.395,
+   "scale": 0.6112,
    "position": [
-    -6.0017,
-    -2.2205,
-    0.3295
+    -10.5665,
+    8.1937,
+    0.0447
    ],
    "rotation": [
-    0.97858622,
-    0.00082905,
-    -0.0056615,
-    0.20575779
+    0.96586788,
+    0.07453077,
+    -0.03857916,
+    0.24506336
    ]
   },
   {
@@ -5211,27 +7122,6 @@
     -0.00756266,
     -0.01893803,
     0.09208391
-   ]
-  },
-  {
-   "asset": "meshy/sea_grass",
-   "path": "meshy/sea_grass.glb",
-   "silhouette": "blade",
-   "species": "Thalassia testudinum (turtle grass)",
-   "zone": "floor-scatter",
-   "substrate": "reef",
-   "sizeMetres": 0.3,
-   "scale": 0.4647,
-   "position": [
-    19.0888,
-    -2.0641,
-    -0.1064
-   ],
-   "rotation": [
-    0.9586894,
-    -0.01289157,
-    -0.01405992,
-    0.28381465
    ]
   },
   {
@@ -5298,48 +7188,6 @@
    ]
   },
   {
-   "asset": "meshy/sea_grass",
-   "path": "meshy/sea_grass.glb",
-   "silhouette": "blade",
-   "species": "Thalassia testudinum (turtle grass)",
-   "zone": "floor-scatter",
-   "substrate": "sand",
-   "sizeMetres": 0.698,
-   "scale": 1.0799,
-   "position": [
-    -7.2116,
-    18.9479,
-    0.729
-   ],
-   "rotation": [
-    0.99149135,
-    0.00015153,
-    -0.01158742,
-    0.12965571
-   ]
-  },
-  {
-   "asset": "starfish",
-   "path": "starfish.glb",
-   "silhouette": "shell",
-   "species": "Oreaster reticulatus (cushion star)",
-   "zone": "floor-scatter",
-   "substrate": "sand",
-   "sizeMetres": 0.181,
-   "scale": 0.1814,
-   "position": [
-    8.7577,
-    7.7635,
-    -0.2211
-   ],
-   "rotation": [
-    0.12455073,
-    0.08534686,
-    0.20355596,
-    0.96735102
-   ]
-  },
-  {
    "asset": "starfish",
    "path": "starfish.glb",
    "silhouette": "shell",
@@ -5403,27 +7251,6 @@
    ]
   },
   {
-   "asset": "starfish",
-   "path": "starfish.glb",
-   "silhouette": "shell",
-   "species": "Oreaster reticulatus (cushion star)",
-   "zone": "floor-scatter",
-   "substrate": "sand",
-   "sizeMetres": 0.399,
-   "scale": 0.3988,
-   "position": [
-    4.6966,
-    2.5444,
-    0.0367
-   ],
-   "rotation": [
-    -0.76557184,
-    -0.00802607,
-    -0.07334244,
-    0.63910581
-   ]
-  },
-  {
    "asset": "meshy/sea_grass",
    "path": "meshy/sea_grass.glb",
    "silhouette": "blade",
@@ -5442,69 +7269,6 @@
     0.0109199,
     0.01342774,
     0.09204018
-   ]
-  },
-  {
-   "asset": "meshy/sea_grass",
-   "path": "meshy/sea_grass.glb",
-   "silhouette": "blade",
-   "species": "Thalassia testudinum (turtle grass)",
-   "zone": "floor-scatter",
-   "substrate": "sand",
-   "sizeMetres": 0.692,
-   "scale": 1.0716,
-   "position": [
-    13.0051,
-    14.9219,
-    0.3023
-   ],
-   "rotation": [
-    0.95851908,
-    0.01825298,
-    -0.04794659,
-    0.28037318
-   ]
-  },
-  {
-   "asset": "shell",
-   "path": "shell.glb",
-   "silhouette": "shell",
-   "species": "Strombus gigas (queen conch shell)",
-   "zone": "floor-scatter",
-   "substrate": "sand",
-   "sizeMetres": 0.1,
-   "scale": 0.1005,
-   "position": [
-    -2.0373,
-    6.4843,
-    0.0354
-   ],
-   "rotation": [
-    0.91611614,
-    0.05585918,
-    0.15995679,
-    0.36335217
-   ]
-  },
-  {
-   "asset": "starfish",
-   "path": "starfish.glb",
-   "silhouette": "shell",
-   "species": "Oreaster reticulatus (cushion star)",
-   "zone": "floor-scatter",
-   "substrate": "sand",
-   "sizeMetres": 0.158,
-   "scale": 0.1576,
-   "position": [
-    5.4664,
-    19.3083,
-    -0.1004
-   ],
-   "rotation": [
-    0.99726102,
-    0.0636844,
-    -0.03761299,
-    0.00012015
    ]
   },
   {
@@ -5592,45 +7356,24 @@
    ]
   },
   {
-   "asset": "shell",
-   "path": "shell.glb",
-   "silhouette": "shell",
-   "species": "Strombus gigas (queen conch shell)",
+   "asset": "meshy/sea_grass",
+   "path": "meshy/sea_grass.glb",
+   "silhouette": "blade",
+   "species": "Thalassia testudinum (turtle grass)",
    "zone": "floor-scatter",
    "substrate": "sand",
-   "sizeMetres": 0.295,
-   "scale": 0.2949,
+   "sizeMetres": 0.49,
+   "scale": 0.7592,
    "position": [
-    -5.6095,
-    4.6273,
-    0.1038
+    3.8427,
+    -5.9344,
+    0.2151
    ],
    "rotation": [
-    -0.96712006,
-    -0.08506535,
-    -0.08308549,
-    0.22480985
-   ]
-  },
-  {
-   "asset": "shell",
-   "path": "shell.glb",
-   "silhouette": "shell",
-   "species": "Strombus gigas (queen conch shell)",
-   "zone": "floor-scatter",
-   "substrate": "sand",
-   "sizeMetres": 0.16,
-   "scale": 0.1602,
-   "position": [
-    18.7263,
-    12.2926,
-    0.3893
-   ],
-   "rotation": [
-    -0.96022757,
-    -0.08056589,
-    0.15585523,
-    0.21721256
+    0.98271545,
+    0.03231161,
+    0.01859504,
+    0.1813299
    ]
   },
   {
@@ -5781,27 +7524,6 @@
    ]
   },
   {
-   "asset": "meshy/fan_coral",
-   "path": "meshy/fan_coral.glb",
-   "silhouette": "plate",
-   "species": "Gorgonia ventalina (sea fan)",
-   "zone": "floor-scatter",
-   "substrate": "reef",
-   "sizeMetres": 0.88,
-   "scale": 0.8796,
-   "position": [
-    -12.4629,
-    -7.2311,
-    0.4072
-   ],
-   "rotation": [
-    0.10330165,
-    -0.00130453,
-    0.0001129,
-    -0.99464921
-   ]
-  },
-  {
    "asset": "shell",
    "path": "shell.glb",
    "silhouette": "shell",
@@ -5886,24 +7608,24 @@
    ]
   },
   {
-   "asset": "starfish",
-   "path": "starfish.glb",
-   "silhouette": "shell",
-   "species": "Oreaster reticulatus (cushion star)",
+   "asset": "meshy/sea_grass",
+   "path": "meshy/sea_grass.glb",
+   "silhouette": "blade",
+   "species": "Thalassia testudinum (turtle grass)",
    "zone": "floor-scatter",
    "substrate": "sand",
-   "sizeMetres": 0.241,
-   "scale": 0.2414,
+   "sizeMetres": 0.413,
+   "scale": 0.6394,
    "position": [
-    4.5274,
-    20.2905,
-    -0.0549
+    15.1878,
+    4.6738,
+    0.0525
    ],
    "rotation": [
-    0.18963331,
-    -0.07020358,
-    -0.15195186,
-    0.96748194
+    0.98911777,
+    -0.01965157,
+    -0.0150228,
+    0.1450316
    ]
   },
   {
@@ -5970,48 +7692,6 @@
    ]
   },
   {
-   "asset": "meshy/sea_grass",
-   "path": "meshy/sea_grass.glb",
-   "silhouette": "blade",
-   "species": "Thalassia testudinum (turtle grass)",
-   "zone": "floor-scatter",
-   "substrate": "sand",
-   "sizeMetres": 0.742,
-   "scale": 1.1484,
-   "position": [
-    17.9532,
-    1.2916,
-    0.2006
-   ],
-   "rotation": [
-    0.9936851,
-    0.0012532,
-    0.00027848,
-    0.11219745
-   ]
-  },
-  {
-   "asset": "shell",
-   "path": "shell.glb",
-   "silhouette": "shell",
-   "species": "Strombus gigas (queen conch shell)",
-   "zone": "floor-scatter",
-   "substrate": "sand",
-   "sizeMetres": 0.104,
-   "scale": 0.1039,
-   "position": [
-    -3.0904,
-    17.9866,
-    0.4833
-   ],
-   "rotation": [
-    -0.68538029,
-    -0.02069064,
-    0.00195023,
-    0.72788869
-   ]
-  },
-  {
    "asset": "starfish",
    "path": "starfish.glb",
    "silhouette": "shell",
@@ -6051,27 +7731,6 @@
     -0.01507894,
     0.022874,
     -0.99533665
-   ]
-  },
-  {
-   "asset": "meshy/sea_grass",
-   "path": "meshy/sea_grass.glb",
-   "silhouette": "blade",
-   "species": "Thalassia testudinum (turtle grass)",
-   "zone": "floor-scatter",
-   "substrate": "sand",
-   "sizeMetres": 0.573,
-   "scale": 0.8869,
-   "position": [
-    8.0651,
-    10.4001,
-    -0.2003
-   ],
-   "rotation": [
-    0.96812143,
-    -0.02191951,
-    0.03143067,
-    0.24753293
    ]
   },
   {
@@ -6138,48 +7797,6 @@
    ]
   },
   {
-   "asset": "meshy/sea_grass",
-   "path": "meshy/sea_grass.glb",
-   "silhouette": "blade",
-   "species": "Thalassia testudinum (turtle grass)",
-   "zone": "floor-scatter",
-   "substrate": "reef",
-   "sizeMetres": 0.654,
-   "scale": 1.0131,
-   "position": [
-    19.9857,
-    2.4542,
-    0.3095
-   ],
-   "rotation": [
-    0.98664101,
-    0.05975746,
-    -0.05734957,
-    0.14028396
-   ]
-  },
-  {
-   "asset": "starfish",
-   "path": "starfish.glb",
-   "silhouette": "shell",
-   "species": "Oreaster reticulatus (cushion star)",
-   "zone": "floor-scatter",
-   "substrate": "sand",
-   "sizeMetres": 0.257,
-   "scale": 0.2565,
-   "position": [
-    -6.2149,
-    5.0077,
-    0.0236
-   ],
-   "rotation": [
-    -0.45670363,
-    0.05896452,
-    -0.08154879,
-    0.88390881
-   ]
-  },
-  {
    "asset": "shell",
    "path": "shell.glb",
    "silhouette": "shell",
@@ -6228,48 +7845,6 @@
    "species": "Strombus gigas (queen conch shell)",
    "zone": "floor-scatter",
    "substrate": "sand",
-   "sizeMetres": 0.174,
-   "scale": 0.1742,
-   "position": [
-    -5.8512,
-    2.1264,
-    0.0613
-   ],
-   "rotation": [
-    0.86442253,
-    -0.10679595,
-    0.13483227,
-    0.47242838
-   ]
-  },
-  {
-   "asset": "meshy/sea_grass",
-   "path": "meshy/sea_grass.glb",
-   "silhouette": "blade",
-   "species": "Thalassia testudinum (turtle grass)",
-   "zone": "floor-scatter",
-   "substrate": "reef",
-   "sizeMetres": 0.585,
-   "scale": 0.9054,
-   "position": [
-    0.605,
-    -19.2263,
-    0.1156
-   ],
-   "rotation": [
-    0.95697451,
-    0.01293787,
-    0.05009366,
-    0.28552237
-   ]
-  },
-  {
-   "asset": "shell",
-   "path": "shell.glb",
-   "silhouette": "shell",
-   "species": "Strombus gigas (queen conch shell)",
-   "zone": "floor-scatter",
-   "substrate": "sand",
    "sizeMetres": 0.262,
    "scale": 0.2615,
    "position": [
@@ -6282,6 +7857,27 @@
     0.08132257,
     -0.07587506,
     0.58755133
+   ]
+  },
+  {
+   "asset": "meshy/sea_grass",
+   "path": "meshy/sea_grass.glb",
+   "silhouette": "blade",
+   "species": "Thalassia testudinum (turtle grass)",
+   "zone": "floor-scatter",
+   "substrate": "reef",
+   "sizeMetres": 0.607,
+   "scale": 0.9395,
+   "position": [
+    22.0979,
+    -1.2097,
+    0.0473
+   ],
+   "rotation": [
+    0.9892182,
+    0.01005768,
+    -0.00780135,
+    0.14589493
    ]
   },
   {
@@ -6348,24 +7944,45 @@
    ]
   },
   {
-   "asset": "starfish",
-   "path": "starfish.glb",
-   "silhouette": "shell",
-   "species": "Oreaster reticulatus (cushion star)",
+   "asset": "meshy/sea_grass",
+   "path": "meshy/sea_grass.glb",
+   "silhouette": "blade",
+   "species": "Thalassia testudinum (turtle grass)",
    "zone": "floor-scatter",
-   "substrate": "sand",
-   "sizeMetres": 0.388,
-   "scale": 0.3876,
+   "substrate": "reef",
+   "sizeMetres": 0.395,
+   "scale": 0.6119,
    "position": [
-    3.3446,
-    -9.3802,
-    -0.1189
+    1.0067,
+    -18.8703,
+    0.0221
    ],
    "rotation": [
-    0.86331524,
-    -0.07823712,
-    0.04699612,
-    0.49634374
+    0.97082765,
+    0.00158768,
+    0.00576131,
+    0.23970388
+   ]
+  },
+  {
+   "asset": "shell",
+   "path": "shell.glb",
+   "silhouette": "shell",
+   "species": "Strombus gigas (queen conch shell)",
+   "zone": "floor-scatter",
+   "substrate": "sand",
+   "sizeMetres": 0.243,
+   "scale": 0.2427,
+   "position": [
+    8.9379,
+    15.3517,
+    -0.2658
+   ],
+   "rotation": [
+    -0.63539392,
+    0.028372,
+    0.0077729,
+    0.77162762
    ]
   },
   {
@@ -6453,24 +8070,24 @@
    ]
   },
   {
-   "asset": "shell",
-   "path": "shell.glb",
-   "silhouette": "shell",
-   "species": "Strombus gigas (queen conch shell)",
+   "asset": "meshy/sea_grass",
+   "path": "meshy/sea_grass.glb",
+   "silhouette": "blade",
+   "species": "Thalassia testudinum (turtle grass)",
    "zone": "floor-scatter",
-   "substrate": "sand",
-   "sizeMetres": 0.121,
-   "scale": 0.1206,
+   "substrate": "reef",
+   "sizeMetres": 0.668,
+   "scale": 1.0339,
    "position": [
-    12.4385,
-    11.1692,
-    -0.2954
+    14.2734,
+    -14.1678,
+    0.5324
    ],
    "rotation": [
-    0.38992584,
-    -0.13748318,
-    -0.14059615,
-    0.89960488
+    0.96848734,
+    -0.00514858,
+    -0.00284266,
+    0.24899335
    ]
   },
   {
@@ -6537,24 +8154,45 @@
    ]
   },
   {
+   "asset": "meshy/fan_coral",
+   "path": "meshy/fan_coral.glb",
+   "silhouette": "plate",
+   "species": "Gorgonia ventalina (sea fan)",
+   "zone": "floor-scatter",
+   "substrate": "reef",
+   "sizeMetres": 0.668,
+   "scale": 0.6681,
+   "position": [
+    -18.3862,
+    -1.9994,
+    0.0964
+   ],
+   "rotation": [
+    0.07292132,
+    0.01277504,
+    0.01538059,
+    -0.99713726
+   ]
+  },
+  {
    "asset": "meshy/sea_grass",
    "path": "meshy/sea_grass.glb",
    "silhouette": "blade",
    "species": "Thalassia testudinum (turtle grass)",
    "zone": "floor-scatter",
-   "substrate": "sand",
-   "sizeMetres": 0.696,
-   "scale": 1.0773,
+   "substrate": "reef",
+   "sizeMetres": 0.307,
+   "scale": 0.4746,
    "position": [
-    -5.0653,
-    -3.2066,
-    0.3052
+    0.0293,
+    -17.5295,
+    0.0313
    ],
    "rotation": [
-    0.98821897,
-    -0.0013637,
-    -0.00063529,
-    0.15303921
+    0.97263986,
+    0.00725638,
+    0.00841621,
+    0.23205217
    ]
   },
   {
@@ -6621,66 +8259,24 @@
    ]
   },
   {
-   "asset": "meshy/sea_grass",
-   "path": "meshy/sea_grass.glb",
-   "silhouette": "blade",
-   "species": "Thalassia testudinum (turtle grass)",
-   "zone": "floor-scatter",
-   "substrate": "sand",
-   "sizeMetres": 0.624,
-   "scale": 0.9662,
-   "position": [
-    -6.2059,
-    21.0716,
-    0.645
-   ],
-   "rotation": [
-    0.97648909,
-    -0.0106497,
-    0.02446032,
-    0.21390963
-   ]
-  },
-  {
-   "asset": "meshy/sea_grass",
-   "path": "meshy/sea_grass.glb",
-   "silhouette": "blade",
-   "species": "Thalassia testudinum (turtle grass)",
+   "asset": "meshy/fan_coral",
+   "path": "meshy/fan_coral.glb",
+   "silhouette": "plate",
+   "species": "Gorgonia ventalina (sea fan)",
    "zone": "floor-scatter",
    "substrate": "reef",
-   "sizeMetres": 0.793,
-   "scale": 1.2274,
+   "sizeMetres": 0.679,
+   "scale": 0.6791,
    "position": [
-    0.4803,
-    -22.7236,
-    0.3381
+    -9.037,
+    -8.8667,
+    0.5711
    ],
    "rotation": [
-    0.99729413,
-    -0.02246605,
-    0.01227663,
-    0.06891278
-   ]
-  },
-  {
-   "asset": "meshy/sea_grass",
-   "path": "meshy/sea_grass.glb",
-   "silhouette": "blade",
-   "species": "Thalassia testudinum (turtle grass)",
-   "zone": "floor-scatter",
-   "substrate": "reef",
-   "sizeMetres": 0.583,
-   "scale": 0.9029,
-   "position": [
-    -10.2652,
-    -13.3093,
-    0.5634
-   ],
-   "rotation": [
-    0.96802544,
-    -0.00386762,
-    -0.01473711,
-    0.25038891
+    -0.01734361,
+    -0.01655635,
+    0.00147018,
+    -0.99971142
    ]
   },
   {
@@ -6726,24 +8322,381 @@
    ]
   },
   {
+   "asset": "shell",
+   "path": "shell.glb",
+   "silhouette": "shell",
+   "species": "Strombus gigas (queen conch shell)",
+   "zone": "floor-scatter",
+   "substrate": "sand",
+   "sizeMetres": 0.254,
+   "scale": 0.2538,
+   "position": [
+    4.4399,
+    9.8336,
+    0.0082
+   ],
+   "rotation": [
+    -0.87413495,
+    0.06126226,
+    -0.0336143,
+    0.48062991
+   ]
+  },
+  {
+   "asset": "shell",
+   "path": "shell.glb",
+   "silhouette": "shell",
+   "species": "Strombus gigas (queen conch shell)",
+   "zone": "floor-scatter",
+   "substrate": "sand",
+   "sizeMetres": 0.193,
+   "scale": 0.1934,
+   "position": [
+    0.418,
+    20.2812,
+    -0.0397
+   ],
+   "rotation": [
+    0.61121323,
+    -0.00422903,
+    -0.01901569,
+    0.7912262
+   ]
+  },
+  {
+   "asset": "meshy/fan_coral",
+   "path": "meshy/fan_coral.glb",
+   "silhouette": "plate",
+   "species": "Gorgonia ventalina (sea fan)",
+   "zone": "floor-scatter",
+   "substrate": "reef",
+   "sizeMetres": 0.667,
+   "scale": 0.6675,
+   "position": [
+    6.7131,
+    -8.0895,
+    0.4131
+   ],
+   "rotation": [
+    0.031549,
+    -0.00554378,
+    -0.00308344,
+    -0.99948208
+   ]
+  },
+  {
+   "asset": "shell",
+   "path": "shell.glb",
+   "silhouette": "shell",
+   "species": "Strombus gigas (queen conch shell)",
+   "zone": "floor-scatter",
+   "substrate": "sand",
+   "sizeMetres": 0.285,
+   "scale": 0.2854,
+   "position": [
+    5.1697,
+    5.7815,
+    0.1004
+   ],
+   "rotation": [
+    -0.98529738,
+    0.11273707,
+    -0.09109837,
+    0.09044617
+   ]
+  },
+  {
+   "asset": "shell",
+   "path": "shell.glb",
+   "silhouette": "shell",
+   "species": "Strombus gigas (queen conch shell)",
+   "zone": "floor-scatter",
+   "substrate": "sand",
+   "sizeMetres": 0.265,
+   "scale": 0.2653,
+   "position": [
+    13.7045,
+    9.0599,
+    -0.1646
+   ],
+   "rotation": [
+    0.6837912,
+    -0.11204025,
+    -0.16071276,
+    0.70288548
+   ]
+  },
+  {
+   "asset": "meshy/sea_grass",
+   "path": "meshy/sea_grass.glb",
+   "silhouette": "blade",
+   "species": "Thalassia testudinum (turtle grass)",
+   "zone": "floor-scatter",
+   "substrate": "sand",
+   "sizeMetres": 0.428,
+   "scale": 0.6629,
+   "position": [
+    18.6474,
+    11.047,
+    0.5565
+   ],
+   "rotation": [
+    0.9607471,
+    0.01148957,
+    0.00365166,
+    0.27716361
+   ]
+  },
+  {
    "asset": "starfish",
    "path": "starfish.glb",
    "silhouette": "shell",
    "species": "Oreaster reticulatus (cushion star)",
    "zone": "floor-scatter",
    "substrate": "sand",
-   "sizeMetres": 0.345,
-   "scale": 0.3447,
+   "sizeMetres": 0.359,
+   "scale": 0.3592,
    "position": [
-    -8.3211,
-    18.9209,
-    0.3571
+    2.7764,
+    18.3202,
+    -0.1712
    ],
    "rotation": [
-    0.56132483,
-    -0.03308034,
-    -0.03789898,
-    0.82606525
+    -0.52434667,
+    0.03022598,
+    -0.02105774,
+    0.85070766
+   ]
+  },
+  {
+   "asset": "starfish",
+   "path": "starfish.glb",
+   "silhouette": "shell",
+   "species": "Oreaster reticulatus (cushion star)",
+   "zone": "floor-scatter",
+   "substrate": "sand",
+   "sizeMetres": 0.336,
+   "scale": 0.3365,
+   "position": [
+    -0.0632,
+    18.3273,
+    0.1099
+   ],
+   "rotation": [
+    -0.63477076,
+    0.17215791,
+    -0.02361519,
+    0.75290774
+   ]
+  },
+  {
+   "asset": "meshy/sea_grass",
+   "path": "meshy/sea_grass.glb",
+   "silhouette": "blade",
+   "species": "Thalassia testudinum (turtle grass)",
+   "zone": "floor-scatter",
+   "substrate": "reef",
+   "sizeMetres": 0.605,
+   "scale": 0.9367,
+   "position": [
+    -10.0399,
+    -16.4375,
+    0.519
+   ],
+   "rotation": [
+    0.99328079,
+    0.03238605,
+    -0.01351484,
+    0.1102804
+   ]
+  },
+  {
+   "asset": "meshy/fan_coral",
+   "path": "meshy/fan_coral.glb",
+   "silhouette": "plate",
+   "species": "Gorgonia ventalina (sea fan)",
+   "zone": "floor-scatter",
+   "substrate": "reef",
+   "sizeMetres": 0.583,
+   "scale": 0.5831,
+   "position": [
+    -7.5215,
+    -19.7006,
+    0.2725
+   ],
+   "rotation": [
+    -0.09955547,
+    -0.00038546,
+    -0.00197555,
+    -0.99502998
+   ]
+  },
+  {
+   "asset": "starfish",
+   "path": "starfish.glb",
+   "silhouette": "shell",
+   "species": "Oreaster reticulatus (cushion star)",
+   "zone": "floor-scatter",
+   "substrate": "sand",
+   "sizeMetres": 0.322,
+   "scale": 0.3216,
+   "position": [
+    -9.115,
+    3.6937,
+    -0.2827
+   ],
+   "rotation": [
+    0.95841732,
+    0.03012064,
+    0.04842205,
+    0.27961455
+   ]
+  },
+  {
+   "asset": "meshy/sea_grass",
+   "path": "meshy/sea_grass.glb",
+   "silhouette": "blade",
+   "species": "Thalassia testudinum (turtle grass)",
+   "zone": "floor-scatter",
+   "substrate": "sand",
+   "sizeMetres": 0.554,
+   "scale": 0.8571,
+   "position": [
+    -0.7317,
+    -11.4427,
+    0.2226
+   ],
+   "rotation": [
+    0.99142612,
+    -0.00509455,
+    0.03212932,
+    0.12655438
+   ]
+  },
+  {
+   "asset": "starfish",
+   "path": "starfish.glb",
+   "silhouette": "shell",
+   "species": "Oreaster reticulatus (cushion star)",
+   "zone": "floor-scatter",
+   "substrate": "sand",
+   "sizeMetres": 0.393,
+   "scale": 0.3935,
+   "position": [
+    16.8651,
+    12.562,
+    0.2677
+   ],
+   "rotation": [
+    -0.3201601,
+    -0.08971342,
+    0.11398276,
+    0.93619279
+   ]
+  },
+  {
+   "asset": "meshy/sea_grass",
+   "path": "meshy/sea_grass.glb",
+   "silhouette": "blade",
+   "species": "Thalassia testudinum (turtle grass)",
+   "zone": "floor-scatter",
+   "substrate": "sand",
+   "sizeMetres": 0.74,
+   "scale": 1.1461,
+   "position": [
+    -0.3926,
+    -12.5387,
+    0.2956
+   ],
+   "rotation": [
+    0.99384122,
+    -0.01348496,
+    0.09832467,
+    0.04929559
+   ]
+  },
+  {
+   "asset": "meshy/fan_coral",
+   "path": "meshy/fan_coral.glb",
+   "silhouette": "plate",
+   "species": "Gorgonia ventalina (sea fan)",
+   "zone": "floor-scatter",
+   "substrate": "reef",
+   "sizeMetres": 0.871,
+   "scale": 0.8712,
+   "position": [
+    -21.1014,
+    0.271,
+    0.2257
+   ],
+   "rotation": [
+    -0.00179142,
+    0.05822401,
+    0.10788123,
+    -0.99245574
+   ]
+  },
+  {
+   "asset": "meshy/fan_coral",
+   "path": "meshy/fan_coral.glb",
+   "silhouette": "plate",
+   "species": "Gorgonia ventalina (sea fan)",
+   "zone": "floor-scatter",
+   "substrate": "reef",
+   "sizeMetres": 0.657,
+   "scale": 0.6565,
+   "position": [
+    13.5258,
+    -16.8284,
+    0.3404
+   ],
+   "rotation": [
+    0.03600978,
+    0.06055917,
+    0.01609794,
+    -0.99738495
+   ]
+  },
+  {
+   "asset": "starfish",
+   "path": "starfish.glb",
+   "silhouette": "shell",
+   "species": "Oreaster reticulatus (cushion star)",
+   "zone": "floor-scatter",
+   "substrate": "sand",
+   "sizeMetres": 0.353,
+   "scale": 0.3529,
+   "position": [
+    9.1683,
+    12.9321,
+    -0.4994
+   ],
+   "rotation": [
+    -0.98746466,
+    -0.01498645,
+    0.01046156,
+    0.15677852
+   ]
+  },
+  {
+   "asset": "meshy/sea_grass",
+   "path": "meshy/sea_grass.glb",
+   "silhouette": "blade",
+   "species": "Thalassia testudinum (turtle grass)",
+   "zone": "floor-scatter",
+   "substrate": "sand",
+   "sizeMetres": 0.38,
+   "scale": 0.589,
+   "position": [
+    4.2032,
+    -6.5297,
+    0.1669
+   ],
+   "rotation": [
+    0.99384349,
+    -0.0335691,
+    -0.00016548,
+    0.10558508
    ]
   }
  ]

@@ -211,11 +211,24 @@ def contradicts_silhouette(row):
 
 
 def zone_area(zone):
+    if zone.get("shape") == "arc":
+        inner, outer = zone["innerRadiusMetres"], zone["outerRadiusMetres"]
+        lo, hi = zone["bearingRangeDegrees"]
+        return math.radians(hi - lo) / 2.0 * (outer**2 - inner**2)
     return math.pi * zone["radii"][0] * zone["radii"][1]
 
 
 def sample_in_zone(zone, rng):
-    """Uniform point inside the zone ellipse, in runtime (x, z) metres."""
+    """Uniform point inside the zone, in runtime (x, z) metres."""
+    if zone.get("shape") == "arc":
+        # Annular sector. Bearing 0 is upstage-centre (runtime -z) and grows
+        # toward +x, so the band wraps the stage the way the audience sees it.
+        inner, outer = zone["innerRadiusMetres"], zone["outerRadiusMetres"]
+        lo, hi = zone["bearingRangeDegrees"]
+        bearing = math.radians(rng.uniform(lo, hi))
+        radius = math.sqrt(rng.uniform(inner**2, outer**2))
+        return math.sin(bearing) * radius, -math.cos(bearing) * radius
+
     angle = rng.random() * math.tau
     radius = math.sqrt(rng.random())
     ex = math.cos(angle) * radius * zone["radii"][0]
@@ -229,6 +242,30 @@ def sample_in_zone(zone, rng):
 def runtime_to_blender(x, z):
     """Runtime -Z is upstage; Blender +Y is upstage."""
     return x, -z
+
+
+def make_stage_clearance(placement_rules):
+    """Keep-out around the dais, in Blender metres.
+
+    A radius alone cannot express this: the dais is an 8x6 m rectangle whose
+    own corners sit at exactly 5 m, so the 5 m exclusion circle let plants
+    grow a third of a metre from the deck edge.
+    """
+    clearance = placement_rules.get("stageClearance")
+    radius = placement_rules["stageExclusionRadiusMetres"]
+    if not clearance:
+        return lambda bx, by: math.hypot(bx, by) >= radius
+
+    margin = clearance["marginMetres"]
+    half_x = clearance["halfXMetres"] + margin
+    half_y = clearance["halfYMetres"] + margin
+
+    def clear_of_stage(bx, by):
+        if math.hypot(bx, by) < radius:
+            return False
+        return abs(bx) > half_x or abs(by) > half_y
+
+    return clear_of_stage
 
 
 def within_lip(bx, by):
@@ -297,6 +334,7 @@ def main():
     role_admits = rules["roleAdmits"]
     placement_rules = layout["placementRules"]
     stage_exclusion = placement_rules["stageExclusionRadiusMetres"]
+    clear_of_stage = make_stage_clearance(placement_rules)
     foreground_max_height = placement_rules["foregroundMaxHeightMetres"]
     outer_boundary = placement_rules["outerBoundaryMetres"]
 
@@ -379,7 +417,7 @@ def main():
             x, z = sample_in_zone(zone, rng)
             bx, by = runtime_to_blender(x, z)
 
-            if math.hypot(bx, by) < stage_exclusion:
+            if not clear_of_stage(bx, by):
                 rejected += 1
                 continue
             if math.hypot(bx, by) > outer_boundary or not within_lip(bx, by):
@@ -429,7 +467,7 @@ def main():
                     spread *= rng.uniform(1.0, 2.4)
                     phi = rng.random() * math.tau
                     mx, my = bx + math.cos(phi) * spread, by + math.sin(phi) * spread
-                    if math.hypot(mx, my) < stage_exclusion or not within_lip(mx, my):
+                    if not clear_of_stage(mx, my) or not within_lip(mx, my):
                         continue
                     ground = sample(mx, my)
                     if (
@@ -515,7 +553,7 @@ def main():
         angle = scatter_rng.random() * math.tau
         radius = math.sqrt(scatter_rng.uniform(0.0, 1.0)) * outer_boundary
         bx, by = math.cos(angle) * radius, math.sin(angle) * radius
-        if radius < stage_exclusion or not within_lip(bx, by):
+        if not clear_of_stage(bx, by) or not within_lip(bx, by):
             continue
 
         ground = sample(bx, by)
