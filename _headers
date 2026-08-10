@@ -32,6 +32,30 @@
 /fonts/*
   Cache-Control: public, max-age=2592000, stale-while-revalidate=2592000
 
+# The pictograph dataframes ship UNCOMPRESSED, and the app fetches all four:
+# 449 KB of transfer that compresses to roughly 45 KB. Cloudflare only
+# auto-compresses content types on its allowlist, and `text/csv` is not on it
+# while `application/json` is — verified 2026-08-10 against production, where
+# the JSON sibling came back `Content-Encoding: br` and these came back with no
+# encoding at all.
+#
+# Serving them as text/plain puts them on the allowlist and costs nothing:
+# csv-loader.ts reads every response with `.text()` and never inspects the
+# content type (nor do the choreo-card and retro-lab fetches). Listed
+# explicitly rather than as a `*.csv` glob because the directory also holds
+# SVGs and this is a production header change.
+/data/pictographs/DiamondPictographDataframe.csv
+  Content-Type: text/plain; charset=utf-8
+
+/data/pictographs/BoxPictographDataframe.csv
+  Content-Type: text/plain; charset=utf-8
+
+/data/pictographs/SkewedPictographDataframe.csv
+  Content-Type: text/plain; charset=utf-8
+
+/data/pictographs/TrigridPictographDataframe.csv
+  Content-Type: text/plain; charset=utf-8
+
 # These filenames include the source post ID. Changing the media means changing
 # the URL, so browsers can keep the old bytes without revalidating every visit.
 /assets/landing/hero-video-DAME3bEvN3N.mp4
