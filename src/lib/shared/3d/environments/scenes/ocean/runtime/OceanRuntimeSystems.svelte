@@ -135,28 +135,48 @@
   />
 {/if}
 
-<!-- Torch_Light_0 / _1 — exact Blender transforms (Z-up→Y-up: x, z, -y),
-     color (1.0, 0.467, 0.133) = #ff7722, energy 150 → tuned three intensity.
-     Reef sits at Blender identity, so torch Y is the raw Blender Z (1.708).
-     Trimmed 40 → 26 with the rig rebalance: they are warm ACCENTS against the
-     cool key, and at the old value they became general fill the moment the
-     directional light came down. Reach cut 18 → 10 for the same reason — an 18 m
-     radius from the stage's front corners washed the ENTIRE foreground seabed
-     orange, which is most of what read as "salmon sand". At 10 m the warmth is a
-     halo around the stage instead of a floor tint.
+<!-- Torch_Light_0 / _1 — warm accents flanking the stage. Colour is the Blender
+     torch colour (1.0, 0.467, 0.133) = #ff7722; energy 150 → tuned three
+     intensity. They own the only warmth in the frame, so the sun stays cool.
+     Trimmed 40 → 26 with the rig rebalance: at the old value they became general
+     fill the moment the directional light came down. Reach cut 18 → 10 for the
+     same reason — an 18 m radius washed the ENTIRE foreground seabed orange,
+     which is most of what read as "salmon sand".
+
+     They no longer sit at the raw Blender transform (±3, 1.708, 2.25). The dais
+     is a RUNTIME object Blender knows nothing about, it is 8x6 at the origin,
+     and those coordinates are inside it — 0.2 m from a support pillar and 0.8 m
+     under the deck. That was invisible while the dais wrote gl_FragColor and
+     received no light at all. The moment it became a lit standard material the
+     two torches stopped being accents and became its key: 26 candela at ~1 m is
+     an irradiance of ~26 against the spot's 2.7 at the deck, so the near half of
+     the stone blew out to flat cream and the column stumps turned orange. That
+     is the second half of "the stage looks remarkably washed out" — first it had
+     no light, then it had far too much of the wrong light.
+
+     Only the axis that collides moves. ±6.2 puts them 2.2 m outboard of the deck
+     edge and 1.9 lifts them to just under the deck lip instead of inside the
+     pillar band; z stays at the authored 2.25. Pushing them forward as well (4.2)
+     was tried and reverted — it dropped both pools into the camera's immediate
+     foreground and turned the whole front of the seabed warm, which is the
+     "salmon sand" failure the reach cut above exists to prevent.
+     26 → 13 with the move: #ff7722 saturates to flat orange the moment its
+     irradiance runs away, and at 2.3 m from the slab's side face 13 candela
+     lands near the key's own value there. A warm kiss on the stage's flanks,
+     which is what the comment above always claimed these were.
      No castShadow: point-light cube shadows are redundant with the sun's
      directional shadow, and disposing their CubeRenderTarget on scene teardown
      crashes three's deallocateRenderTarget (undefined __webglFramebuffer). -->
 <T.PointLight
-  position={[3, 1.708, 2.25]}
-  intensity={26}
+  position={[6.2, 1.9, 2.25]}
+  intensity={13}
   color="#ff7722"
   distance={10}
   decay={2}
 />
 <T.PointLight
-  position={[-3, 1.708, 2.25]}
-  intensity={26}
+  position={[-6.2, 1.9, 2.25]}
+  intensity={13}
   color="#ff7722"
   distance={10}
   decay={2}
