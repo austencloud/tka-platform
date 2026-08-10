@@ -16,10 +16,12 @@ export function removeStep(
   stepIndex: number,
   createModuleState: ICreateModuleState
 ): void {
-  const selectedStep = createModuleState.sequenceState.selectedStepData;
-
-  // Special case: Removing start position (stepNumber === 0) clears entire sequence
-  if (selectedStep?.stepNumber === 0) {
+  // Special case: a negative index means the start position, and removing it
+  // clears the entire sequence (steps can't exist without one). Keyed on the
+  // passed index, NOT the current selection — a caller deleting step N while
+  // the start position happens to be selected must remove step N, not wipe
+  // the sequence.
+  if (stepIndex < 0) {
     logger.log("Removing start position - clearing entire sequence");
 
     createModuleState.pushUndoSnapshot(UndoOperationType.CLEAR_SEQUENCE, {

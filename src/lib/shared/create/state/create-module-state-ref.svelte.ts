@@ -16,6 +16,12 @@ interface CreateModuleGlobalRef {
   CreateModuleState: CreateModuleState;
   constructTabState: ConstructTabState;
   panelState: PanelCoordinationState;
+  /**
+   * Module-owned clear-sequence flow: confirmation dialog (unless opted out),
+   * undo snapshot, back to the start-position picker. Deleting the start
+   * position routes here — never through a partial setStartPosition(null).
+   */
+  requestClearSequence?: () => void;
 }
 
 let createModuleRef: CreateModuleGlobalRef | null = null;

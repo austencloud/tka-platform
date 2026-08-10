@@ -524,16 +524,15 @@
           <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
         </button>
       {/if}
-      {#if onDelete && hasSelection}
+      <!-- No delete button on the start position: with only a start position
+           the user can already edit it in place, and "deleting" it means
+           clearing the whole sequence — that lives on the Clear button. -->
+      {#if onDelete && hasSelection && !isStartPositionSelected}
         <button
           class="icon-btn delete"
           onclick={() => onDelete()}
-          aria-label={isStartPositionSelected
-            ? "Delete start position"
-            : "Delete step"}
-          title={isStartPositionSelected
-            ? "Delete start position"
-            : "Delete this step"}
+          aria-label="Delete step"
+          title="Delete this step"
         >
           <i class="fa-solid fa-trash" aria-hidden="true"></i>
         </button>

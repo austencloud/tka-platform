@@ -8,6 +8,7 @@
 
 import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { tryGetCreateModuleContext } from "../../context/create-module-context";
   import { onMount } from "svelte";
   import Toast from "../components/Toast.svelte";
   import SequenceDisplay from "../sequence-display/components/SequenceDisplay.svelte";
@@ -20,6 +21,9 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
 
   // Services
   let StepOperator: StepOperator | null = null;
+
+  // Module context (undefined when rendered outside CreateModule, e.g. tests)
+  const createModuleContext = tryGetCreateModuleContext();
 
   // Props
   let {
@@ -148,7 +152,8 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
     }
 
     try {
-      // Special case: Start position (stepNumber 0) - clear it instead of removing
+      // Special case: Start position (stepNumber 0). Steps can't exist
+      // without a start position, so this is a whole-sequence clear.
       if (stepNumber === 0) {
         // For assemble tab, reset the builder state entirely
         if (navigationState.activeTab === "assemble") {
@@ -156,10 +161,9 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
           assembleTabState?.assembleBuilderState?.reset();
           return;
         }
-        sequenceState?.setStartPosition(null);
-        sequenceState?.clearSelection();
-        // Close step editor panel since workspace is now empty
-        panelState?.closeStepEditorPanel();
+        // Route to the module-owned confirmed clear flow (confirmation
+        // dialog, undo snapshot, back to the start-position picker).
+        createModuleContext?.handlers.requestClearSequence();
         return;
       }
 

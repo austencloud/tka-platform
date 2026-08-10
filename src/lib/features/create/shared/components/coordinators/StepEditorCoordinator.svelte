@@ -368,15 +368,17 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
     }
     hapticService?.trigger("warning");
 
-    // Push undo snapshot BEFORE deleting
-    CreateModuleState.pushUndoSnapshot(UndoOperationType.REMOVE_BEATS);
-
-    // For start position (0), clear the start position
+    // Deleting the start position means clearing the whole sequence — steps
+    // can't exist without one. Route to the module-owned confirmed clear flow,
+    // which pushes its own CLEAR_SEQUENCE undo snapshot and returns the user
+    // to the start-position picker.
     if (selectedStepNumber === 0) {
-      activeSequenceState.setStartPosition(null);
-      activeSequenceState.clearSelection();
+      ctx.handlers.requestClearSequence();
       return;
     }
+
+    // Push undo snapshot BEFORE deleting
+    CreateModuleState.pushUndoSnapshot(UndoOperationType.REMOVE_BEATS);
 
     // For regular steps, remove the beat with animation
     // NOTE: Don't clear selection here - the animation callback in StepRemovalHandler

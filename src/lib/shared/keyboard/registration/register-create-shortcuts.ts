@@ -296,7 +296,13 @@ export function registerCreateShortcuts(
       const selectedStepData = sequenceState.selectedStepData;
 
       if (selectedStepData?.stepNumber === 0) {
-        // Start position is selected - clear entire sequence using the same workflow as clear button
+        // Start position is selected — clearing it clears the whole sequence.
+        // Prefer the module-owned flow (confirmation dialog + undo + picker);
+        // fall back to the raw workflow if the ref predates it.
+        if (ref.requestClearSequence) {
+          ref.requestClearSequence();
+          return;
+        }
         try {
           await executeClearSequenceWorkflow({
             CreateModuleState,

@@ -240,6 +240,7 @@
       onError: (err: string) => {
         error = err;
       },
+      requestClearSequence: () => handleClearSequence(),
     },
   });
 
@@ -443,6 +444,7 @@
           CreateModuleState,
           constructTabState,
           panelState,
+          requestClearSequence: () => handleClearSequence(),
         });
 
         servicesInitialized = true;
