@@ -1,9 +1,7 @@
-<!-- NetworkStatusIndicator - Shows network and sync status -->
+<!-- NetworkStatusIndicator - Shows only states the user can act on -->
 <!--
   States:
-  - Hidden: Online and synced (everything fine)
-  - Syncing: Cloud with spinning arrows (brief, during active sync)
-  - Pending: Cloud with exclamation (online but changes pending)
+  - Hidden: Online, plus any routine syncing/pending work (nothing to do about it)
   - Offline: Cloud-slash amber (no network)
   - Error: Cloud with X (sync failed)
 -->
@@ -18,14 +16,13 @@
 	let { variant = "desktop" }: Props = $props();
 
 	// Determine the display state (combines network + sync)
-	type DisplayState = "hidden" | "syncing" | "pending" | "offline" | "error";
+	type DisplayState = "hidden" | "offline" | "error";
 
 	const displayState = $derived.by((): DisplayState => {
 		if (!networkStatusState.isOnline) return "offline";
 		if (syncStatusState.state === "error") return "error";
-		if (syncStatusState.state === "syncing") return "syncing";
-		if (syncStatusState.state === "pending") return "pending";
-		return "hidden"; // Online and synced - hide indicator
+		// Routine syncing/pending is background work the user can't act on - stay quiet.
+		return "hidden";
 	});
 
 	// Icon classes based on state
@@ -33,10 +30,6 @@
 		switch (displayState) {
 			case "offline":
 				return "fa-cloud-slash";
-			case "syncing":
-				return "fa-cloud-arrow-up";
-			case "pending":
-				return "fa-cloud-exclamation";
 			case "error":
 				return "fa-cloud-xmark";
 			default:
@@ -50,10 +43,6 @@
 		switch (displayState) {
 			case "offline":
 				return count > 0 ? `Offline (${count})` : "Offline";
-			case "syncing":
-				return count > 1 ? `Syncing ${count}...` : "Syncing...";
-			case "pending":
-				return count > 1 ? `Pending (${count})` : "Pending";
 			case "error":
 				return "Sync Error";
 			default:
@@ -66,10 +55,6 @@
 		switch (displayState) {
 			case "offline":
 				return "Currently offline. Changes will sync when reconnected.";
-			case "syncing":
-				return "Syncing changes to server...";
-			case "pending":
-				return "Changes pending sync.";
 			case "error":
 				return `Sync error: ${syncStatusState.errorMessage || "Unknown error"}. Will retry.`;
 			default:
@@ -84,8 +69,6 @@
 	<div
 		class="network-status"
 		class:offline={displayState === "offline"}
-		class:syncing={displayState === "syncing"}
-		class:pending={displayState === "pending"}
 		class:error={displayState === "error"}
 		class:mobile={variant === "mobile"}
 		class:desktop={variant === "desktop"}
@@ -134,40 +117,6 @@
 
 	.network-status.offline i {
 		animation: pulse-subtle 2s ease-in-out infinite;
-	}
-
-	/* Syncing state - blue with spinning icon */
-	.network-status.syncing {
-		background: color-mix(
-			in srgb,
-			var(--semantic-info, #3b82f6) 15%,
-			var(--theme-card-bg, rgba(18, 18, 28, 0.98))
-		);
-		border-color: color-mix(
-			in srgb,
-			var(--semantic-info, #3b82f6) 40%,
-			var(--theme-stroke, rgba(255, 255, 255, 0.1))
-		);
-		color: var(--semantic-info, #3b82f6);
-	}
-
-	.network-status.syncing i {
-		animation: bounce-up 1s ease-in-out infinite;
-	}
-
-	/* Pending state - subtle blue (online but not yet synced) */
-	.network-status.pending {
-		background: color-mix(
-			in srgb,
-			var(--semantic-info, #3b82f6) 10%,
-			var(--theme-card-bg, rgba(18, 18, 28, 0.98))
-		);
-		border-color: color-mix(
-			in srgb,
-			var(--semantic-info, #3b82f6) 30%,
-			var(--theme-stroke, rgba(255, 255, 255, 0.1))
-		);
-		color: var(--semantic-info, #3b82f6);
 	}
 
 	/* Error state - red */
@@ -224,16 +173,6 @@
 		}
 	}
 
-	@keyframes bounce-up {
-		0%,
-		100% {
-			transform: translateY(0);
-		}
-		50% {
-			transform: translateY(-2px);
-		}
-	}
-
 	@keyframes shake {
 		0%,
 		100% {
@@ -261,13 +200,6 @@
 		.network-status.offline {
 			background: hsl(38 92% 30%);
 			border-color: hsl(38 92% 50%);
-			color: white;
-		}
-
-		.network-status.syncing,
-		.network-status.pending {
-			background: hsl(217 91% 30%);
-			border-color: hsl(217 91% 50%);
 			color: white;
 		}
 
