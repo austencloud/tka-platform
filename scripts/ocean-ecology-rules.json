@@ -31,6 +31,7 @@
       "wall"
     ],
     "geological-feature": [
+      "outcrop",
       "column",
       "boulder",
       "wall",
@@ -39,6 +40,7 @@
     "secondary-focal": [
       "wreck",
       "boulder",
+      "crawler",
       "swimmer",
       "branching",
       "shell"
@@ -52,6 +54,7 @@
     ],
     "negative-space": [
       "shell",
+      "crawler",
       "blade"
     ],
     "foreground-silhouette": [
@@ -232,9 +235,33 @@
       3
     ],
     "companionSpacing": 2.5,
-    "tiltJitter": 20,
+    "tiltJitter": 6,
     "yawPolicy": "free",
-    "notes": "Small sand detail. Collects in flat ground, never on a slope it would roll off."
+    "notes": "Small sand detail. Collects in flat ground, never on a slope it would roll off. Tilt was 20, which contradicted that note and stood 39 starfish and shells up on their edges -- a starfish is a 3.44 x 0.63 disc, so 20 degrees of jitter is the difference between lying on the sand and leaning against it."
+  },
+  "outcrop": {
+    "substrate": [
+      "rock",
+      "reef",
+      "sand"
+    ],
+    "slopeRange": [
+      0,
+      30
+    ],
+    "depthBand": [
+      2,
+      22
+    ],
+    "habit": "clumping",
+    "clumpSize": [
+      3,
+      5
+    ],
+    "companionSpacing": 1.4,
+    "tiltJitter": 2,
+    "yawPolicy": "free",
+    "notes": "Jointed volcanic bedrock breaking through the seabed -- the substrate the reef is built on, which across the volcanic tropics is what reefs actually grow on. Columnar jointing cracks PERPENDICULAR to the cooling surface, so on a flat floor the columns stand vertical: tilt is near zero, and a leaning basalt mass is the one thing this rock never does. It also never appears alone -- colonnades, walls, cliff faces -- hence a clump of 3-5. Distinct from 'boulder', whose whole character is 25 degrees of 'rock does not care which way it sits'; that rule applied to basalt is what produced a 12.9 m block lying over at 27 degrees."
   },
   "arch": {
     "substrate": [
@@ -303,6 +330,30 @@
     "tiltJitter": 12,
     "yawPolicy": "face-current",
     "notes": "Pelagic: hovers above the floor rather than sitting on it. The generator lifts these off the terrain."
+  },
+  "crawler": {
+    "substrate": [
+      "sand",
+      "reef",
+      "rock"
+    ],
+    "slopeRange": [
+      0,
+      20
+    ],
+    "depthBand": [
+      2,
+      20
+    ],
+    "habit": "clumping",
+    "clumpSize": [
+      1,
+      2
+    ],
+    "companionSpacing": 3.0,
+    "tiltJitter": 5,
+    "yawPolicy": "face-current",
+    "notes": "Bottom-dwelling animals: they SIT on the substrate like scenery does, which is the whole reason they cannot be 'swimmer'. The generator lifts a swimmer 1.2-4.0 m off the floor, so classing a blue-spotted ray and a common octopus as swimmers hovered a ray 3.2 m and an octopus 3.5 m above the sand -- both of which spend their lives against it. Solitary to a pair; an octopus does not school."
   },
   "wreck": {
     "substrate": [

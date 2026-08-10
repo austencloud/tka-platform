@@ -27,7 +27,7 @@ import os
 import sys
 
 import bpy
-from mathutils import Quaternion, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
@@ -142,8 +142,37 @@ def import_source(asset_id, relative_path, sources):
     if abs(final - 1.0) > 1e-3:
         raise RuntimeError(f"{asset_id} normalised to {final:.4f}, expected 1.0")
 
-    # Origin stays at the GLB's own origin -- the facts index expresses
-    # baseOffset against exactly that, so moving it would unseat every placement.
+    # Centre the geometry horizontally over its own origin.
+    #
+    # Normalising scale is only half of normalising a source. The origin is the
+    # point the generator positions, rotates about, and measures footprintRadius
+    # from, so geometry that sits off to one side is placed somewhere else
+    # entirely. sea_grass.glb keeps its grass 44 m from the file origin -- 23.78
+    # units once normalised -- so all 61 clumps landed ~22 m away in whatever
+    # direction their yaw happened to point, some of them over the -46 m trench.
+    # They read as floating plants; they were never where the generator put them.
+    #
+    # The index cannot catch this on its own: baseOffset only measures the UP
+    # axis, and a horizontal offset leaves size, maxExtent and baseOffset all
+    # looking perfectly sane.
+    #
+    # Z is left alone on purpose -- baseOffset is expressed against the origin's
+    # height, so moving it would unseat every placement.
+    corners = [Vector(c) for c in source.bound_box]
+    offset_x = (min(c.x for c in corners) + max(c.x for c in corners)) / 2.0
+    offset_y = (min(c.y for c in corners) + max(c.y for c in corners)) / 2.0
+    if max(abs(offset_x), abs(offset_y)) > 1e-6:
+        # transform() moves the mesh data, leaving the object transform identity
+        # -- the object is single-user by this point, so this cannot leak.
+        source.data.transform(Matrix.Translation((-offset_x, -offset_y, 0.0)))
+        source.data.update()
+        bpy.context.view_layer.update()
+        if max(abs(offset_x), abs(offset_y)) > 0.05:
+            print(
+                f"  re-centred {asset_id}: origin was "
+                f"({offset_x:+.3f}, {offset_y:+.3f}) extents off its geometry"
+            )
+
     source.name = name
 
     for collection in list(source.users_collection):

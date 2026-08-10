@@ -435,6 +435,12 @@ vite.debug*.config.mts
 # and build-ocean-composition.py from checked-in inputs)
 /static/models/ocean/.sources/
 /blender/ocean_composed.blend
+# The generated composition itself (40 MB). Unlike ocean_flora_scene.glb this
+# has no production consumer -- FloraInstances only serves it behind
+# ?flora=composed in dev, so the authored reef is what ships. Regenerate with
+# generate-ocean-composition.py -> build-ocean-composition.py ->
+# blender-export-ocean-composition.py -> optimize-ocean-glb.mjs.
+/static/models/ocean/ocean_composed_scene.glb
 
 # Throwaway review frames written by /api/dev/view-capture. Not assets.
 /static/captures/

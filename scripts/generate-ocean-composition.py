@@ -48,6 +48,8 @@ INSTANCES_PER_SQM = 0.36
 # admit almost nothing -- that is a signal the rules are wrong, and the summary
 # reports it instead of hiding it.
 MAX_ATTEMPTS_PER_INSTANCE = 40
+# Throws a clump sibling gets before it is given up on. See place_companion.
+CLUMP_ATTEMPTS = 8
 # Keep content inside the shelf lip. The abyss reads as depth only while empty.
 LIP_MARGIN = 1.5
 # The default hero camera sits downstage on +z (runtime frame), so "toward the
@@ -273,6 +275,48 @@ def within_lip(bx, by):
     return radius <= lip_radius(math.atan2(by, bx)) - LIP_MARGIN
 
 
+def place_companion(
+    bx, by, row, rule, seed_size, occupied, rng, clear_of_stage, foreground_max_height
+):
+    """Find a spot for one clump sibling, or None after CLUMP_ATTEMPTS tries.
+
+    Every sibling used to get exactly one throw, and a miss was silently
+    dropped. That made clumpSize a wish rather than a count, and the arithmetic
+    says so: the sibling lands at physical * companionSpacing * u away, while
+    is_clear demands physical * companionSpacing * 2 between same-class
+    neighbours, so a sibling only survives when u lands in the top of its
+    [1, 2.4] range -- about 29% of the time, for EVERY clumping class, however
+    companionSpacing is tuned. A clump of four therefore averaged 1.9 members,
+    and 36% of the time was a lone specimen: exactly the "placed by a random
+    walk" tell the clumping rule exists to prevent. Retrying the throw fixes
+    the count without loosening a single spacing test.
+    """
+    for _ in range(CLUMP_ATTEMPTS):
+        # Two radii, not one. is_clear rejects a same-class neighbour closer
+        # than (r_seed + r_member) * companionSpacing, so throwing a sibling
+        # r_seed * companionSpacing * u away was aiming at half the distance the
+        # test demands and relying on u to make up the difference. Sampling the
+        # gap the test actually asks for lands siblings just outside it, which
+        # is what a clump looks like -- tight, touching-adjacent, not a ring of
+        # specimens at maximum reach.
+        radius = row["footprintRadius"] * scale_for_size(row, seed_size)
+        spread = 2.0 * radius * rule["companionSpacing"] * rng.uniform(1.0, 1.6)
+        phi = rng.random() * math.tau
+        mx, my = bx + math.cos(phi) * spread, by + math.sin(phi) * spread
+        if not clear_of_stage(mx, my) or not within_lip(mx, my):
+            continue
+        ground = sample(mx, my)
+        if rule["substrate"] != ["any"] and ground["substrate"] not in rule["substrate"]:
+            continue
+        size = rng.uniform(row["sizeMetres"]["min"], row["sizeMetres"]["max"])
+        if my < -1.0 and abs(mx) < SIGHTLINE_HALF_WIDTH and size > foreground_max_height:
+            continue
+        if not is_clear(occupied, mx, my, row, size, rule):
+            continue
+        return mx, my, size
+    return None
+
+
 def yaw_for(policy, facing_degrees, bx, by, rng):
     """Radians about Blender +Z."""
     jitter = math.radians(rng.uniform(-25.0, 25.0))
@@ -456,30 +500,27 @@ def main():
             # random walk rather than grown.
             placed_before = placed
             clump = rng.randint(*rule["clumpSize"])
+            seed_size = size
             for member in range(clump):
                 if placed >= budget:
                     break
                 if member == 0:
-                    mx, my = bx, by
+                    mx, my, size = bx, by, seed_size
                 else:
-                    spread = row["footprintRadius"] * scale_for_size(row, size)
-                    spread *= rule["companionSpacing"]
-                    spread *= rng.uniform(1.0, 2.4)
-                    phi = rng.random() * math.tau
-                    mx, my = bx + math.cos(phi) * spread, by + math.sin(phi) * spread
-                    if not clear_of_stage(mx, my) or not within_lip(mx, my):
+                    sibling = place_companion(
+                        bx,
+                        by,
+                        row,
+                        rule,
+                        seed_size,
+                        occupied,
+                        rng,
+                        clear_of_stage,
+                        foreground_max_height,
+                    )
+                    if sibling is None:
                         continue
-                    ground = sample(mx, my)
-                    if (
-                        rule["substrate"] != ["any"]
-                        and ground["substrate"] not in rule["substrate"]
-                    ):
-                        continue
-                    size = rng.uniform(row["sizeMetres"]["min"], row["sizeMetres"]["max"])
-                    if my < -1.0 and abs(mx) < SIGHTLINE_HALF_WIDTH and size > foreground_max_height:
-                        continue
-                    if not is_clear(occupied, mx, my, row, size, rule):
-                        continue
+                    mx, my, size = sibling
 
                 ground = sample(mx, my)
                 # baseOffset is normalised against max extent, so multiplying by

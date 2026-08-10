@@ -37,7 +37,7 @@
       "assets": [
         "basalt_pinnacle"
       ],
-      "staging": "Pinnacles form a slot canyon, not a fence: two staggered parallel ridge lines with a 3-4 m navigable gap between them, tallest pinnacles at the upstage end. A fish cluster anchor sits in the gap so schools thread the canyon."
+      "staging": "A short upright colonnade, not a canyon and not a monument. Columnar basalt joints crack perpendicular to the cooling surface, so on this floor the columns stand vertical and cluster: 3-5 of them staggered along one line at 3.5-5 m, tallest upstage, reading as the bedrock the reef grew on. The earlier slot-canyon staging asked for two parallel ridge lines of 6-12 m pinnacles; the asset is a 1:1:1 block, so at 12 m with boulder tilt it landed as a single 12.9 m mass lying over at 27 degrees in the middle of the west flank. A fish cluster anchor still sits alongside so schools pass the colonnade."
     },
     "coral-skyline": {
       "assets": [
@@ -155,7 +155,7 @@
         "meshy-basalt-pinnacle"
       ],
       "faunaAnchor": "canyon-run",
-      "notes": "ALL basalt pinnacles as a slot canyon per heroPresentations.basalt-canyon \u00e2\u20ac\u201d two staggered ridge lines, navigable gap, fish thread it. Cool rim light in Blender bake resolves the dark-rock material clash."
+      "notes": "Basalt colonnade per heroPresentations.basalt-canyon: a clump of upright columns at 3.5-5 m on the west flank, fish threading past them. Cool rim light in the Blender bake resolves the dark-rock material clash."
     },
     {
       "id": "wreck-hollow-southeast",

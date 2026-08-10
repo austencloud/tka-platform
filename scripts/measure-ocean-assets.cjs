@@ -36,6 +36,11 @@ const NOT_SCENERY = new Set([
   "ocean_scene_raw",
   "ocean_seabed_raw",
   "stage_meshy_raw",
+  // The composition pipeline's own output, which lands in this directory. A
+  // whole reef is not a placeable asset; without these two it measured itself
+  // and asked for a species.
+  "ocean_composition_raw",
+  "ocean_composed_scene",
 ]);
 
 // "broken" is authored too: it records a defect found by opening the asset,
@@ -94,6 +99,17 @@ for (const asset of assets) {
   row.footprintRadius = Number(
     ((0.5 * Math.max(m.size[horizontal[0]], m.size[horizontal[1]])) / m.maxExtent).toFixed(4)
   );
+  // Where the geometry's centre sits relative to the file's own origin, in the
+  // same normalized units. baseOffset only ever looked at the UP axis, so a
+  // HORIZONTAL offset was invisible here: meshy/sea_grass keeps its grass 44 m
+  // (23.78 units) off origin on Z and still reported a textbook baseOffset of
+  // -0.2833. The generator positions, rotates and spaces around the origin, so
+  // every one of its 61 clumps landed ~22 m from where it was placed.
+  // build-ocean-composition.py re-centres this at import; recording it here is
+  // what makes the condition visible instead of silent.
+  row.originOffset = m.min.map((lo, i) =>
+    Number(((lo + m.max[i]) / 2 / m.maxExtent).toFixed(4))
+  );
   row.size = m.size.map((s) => Number(s.toFixed(4)));
   row.maxExtent = Number(m.maxExtent.toFixed(4));
   row.signature = { vertices: m.vertices, ratio: m.ratio };
@@ -111,6 +127,18 @@ const BASE_OFFSET_SANE = 1.5;
 const brokenOrigin = Object.entries(facts)
   .filter(([, r]) => Math.abs(r.baseOffset) > BASE_OFFSET_SANE)
   .map(([id, r]) => `${id} (baseOffset ${r.baseOffset})`);
+
+// The horizontal half of the same failure, which went unreported for far longer
+// because nothing measured it. Corrected at import rather than flagged -- the
+// re-centre is lossless and the alternative is re-exporting third-party GLBs --
+// but an asset this far off origin is still worth seeing in the log.
+const OFF_CENTRE_SANE = 0.25;
+const offCentre = Object.entries(facts)
+  .filter(([, r]) => {
+    const up = AXIS_INDEX[r.upAxis || "y"];
+    return [0, 1, 2].some((a) => a !== up && Math.abs(r.originOffset[a]) > OFF_CENTRE_SANE);
+  })
+  .map(([id, r]) => `${id} (originOffset ${r.originOffset.join(", ")})`);
 
 // Duplicate detection. `structures/` and the numbered `rock_*` files turned out
 // to be re-exports of meshy assets -- byte-identical vertex counts and bounds.
@@ -168,6 +196,10 @@ if (dropped.length) console.log(`Dropped ${dropped.length} stale rows: ${dropped
 if (brokenOrigin.length) {
   console.log(`\nBroken origins -- these cannot be seated on terrain until fixed in the GLB:`);
   for (const line of brokenOrigin) console.log(`  ${line}`);
+}
+if (offCentre.length) {
+  console.log(`\nGeometry off its own origin horizontally -- re-centred at import:`);
+  for (const line of offCentre) console.log(`  ${line}`);
 }
 
 const pending = needsAuthoring.filter((id) => facts[id] && !facts[id].aliasOf);
