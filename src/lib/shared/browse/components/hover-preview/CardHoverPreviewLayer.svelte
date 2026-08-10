@@ -15,7 +15,7 @@
 -->
 <script lang="ts">
   import { onDestroy, untrack } from "svelte";
-  import { fade } from "svelte/transition";
+  import { flyFade, popIn } from "$lib/shared/transitions/motion";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
   import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
@@ -23,7 +23,7 @@
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-  import { DURATION } from "$lib/shared/transitions/transitions";
+  import { DURATION, SLIDE, STAGGER } from "$lib/shared/transitions/transitions";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   const { sequence }: { sequence: SequenceData } = $props();
@@ -47,13 +47,11 @@
   let currentStep = $state(0);
   let boxWidth = $state(0);
   let boxHeight = $state(0);
-  // The rail follows the free axis: a wide box grows one to the right, a tall
-  // one lays it below. Below the floors there is no room for a legible cell, so
-  // the preview stays the bare animator rather than shipping unreadable glyphs.
-  const railRight = $derived(boxWidth > boxHeight * 1.15);
-  const showRail = $derived(
-    railRight ? boxWidth >= 320 && boxHeight >= 180 : boxWidth >= 200 && boxHeight >= 260
-  );
+  // The rail follows the free axis: a card wider than it is tall grows one to
+  // the right as a vertical carousel, a taller one lays it below. Every card
+  // gets a rail — a preview that sometimes carries the notation and sometimes
+  // doesn't reads as a bug, not as a size adaptation.
+  const railRight = $derived(boxWidth > boxHeight);
   let frameId: number | null = null;
   let startTime: number | null = null;
   /** Guards against a slow hydration landing after the pointer moved on. */
@@ -152,54 +150,66 @@
   });
 </script>
 
+<!-- |global on both transitions: the card unmounts this whole component to stop
+     the preview, and a local transition would be skipped by that ancestor
+     teardown — the animation would vanish instantly instead of settling back
+     into the card. -->
 {#if playback && frame}
   <div
     class="preview-layer"
     class:rail-right={railRight}
     bind:clientWidth={boxWidth}
     bind:clientHeight={boxHeight}
-    transition:fade={{ duration: DURATION.fast }}
+    transition:popIn|global={{ duration: DURATION.emphasis, start: 0.94 }}
     aria-hidden="true"
   >
     <div class="stage">
       <AnimatorCanvas
-      blueProp={playback.animState.bluePropState}
-      redProp={playback.animState.redPropState}
-      sequenceData={playback.sequence}
-      gridVisible={true}
-      gridMode={playback.sequence.gridMode ?? null}
-      letter={frame.stepData?.letter ?? null}
-      stepData={frame.stepData}
-      currentStep={frame.step}
-      isPlaying={true}
-      word={displayWord}
-      previewDarkMode={true}
-      hideTkaGlyph={true}
-      hideStepNumbers={true}
-      hideProgressBar={true}
-      disableContextMenu={true}
+        blueProp={playback.animState.bluePropState}
+        redProp={playback.animState.redPropState}
+        sequenceData={playback.sequence}
+        gridVisible={true}
+        gridMode={playback.sequence.gridMode ?? null}
+        letter={frame.stepData?.letter ?? null}
+        stepData={frame.stepData}
+        currentStep={frame.step}
+        isPlaying={true}
+        word={displayWord}
+        previewDarkMode={true}
+        hideTkaGlyph={true}
+        hideStepNumbers={true}
+        hideProgressBar={true}
+        disableContextMenu={true}
         visibilityManagerOverride={visibility}
         onInitialized={enableMandala}
       />
     </div>
 
-    {#if showRail}
-      <div class="rail">
-        {#await import("$lib/shared/timeline/StepStrip.svelte") then mod}
-          <mod.default
-            sequence={playback.sequence}
-            currentStep={frame.step}
-            bpm={BPM}
-            density="compact"
-            fillHeight={true}
-            anchor="center"
-            orientation={railRight ? "vertical" : "horizontal"}
-            loop={false}
-            stepPulse={false}
-          />
-        {/await}
-      </div>
-    {/if}
+    <!-- The rail arrives a beat after the animator so the two read as one
+         thing settling into place rather than two panels appearing at once. -->
+    <div
+      class="rail"
+      transition:flyFade|global={{
+        duration: DURATION.emphasis,
+        delay: STAGGER.relaxed,
+        x: railRight ? SLIDE.md : 0,
+        y: railRight ? 0 : SLIDE.md,
+      }}
+    >
+      {#await import("$lib/shared/timeline/StepStrip.svelte") then mod}
+        <mod.default
+          sequence={playback.sequence}
+          currentStep={frame.step}
+          bpm={BPM}
+          density="compact"
+          fillHeight={true}
+          anchor="center"
+          orientation={railRight ? "vertical" : "horizontal"}
+          loop={false}
+          stepPulse={false}
+        />
+      {/await}
+    </div>
   </div>
 {/if}
 
