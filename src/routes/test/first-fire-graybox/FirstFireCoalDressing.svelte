@@ -172,42 +172,55 @@
    *   leg C  12.00 - 14.06m  the short jog
    *   leg D  14.06 - 15.86m  the turn into the DJ court
    *
-   * It gets TWO dressed events, and they are 6m apart. The previous pass ran
-   * cribbing down both walls for the entire distance plus five lamps, and read
-   * as overwhelm: every element present in every frame, nothing to look at
-   * because everything was equally loud.
+   * It gets THREE dressed events, one per leg, and no leg carries two.
    *
-   *   3.75m  the quench vent, on the threshold. Arrival from Water. It is the
-   *          only lit thing on leg A, and it only reads because the rest of
-   *          that leg is dark.
-   *   9.50m  the fuel bank. ONE 4.2m cribbing run, on the LEFT only, sitting
-   *          inside leg B's 5m so a rigid straight run never punches the wall
-   *          on a bend. One lit side and one dark side is a composition; two
-   *          lit sides is a tunnel of orange. It is also the honest read - fuel
-   *          gets stacked where there is room to stack it, not wrapped around a
-   *          corridor like tile.
+   *   3.75m  the quench vent, on the threshold. Arrival from Water.
+   *  10.00m  the fuel bank, past the bend.
+   *  13.20m  one chain lamp, at the court mouth.
    *
-   * Nothing is dressed at the court mouth on purpose. The court opening IS the
-   * third beat, and putting coal on the corner competes with it.
+   * The spacing is set in ELEVATION, not in plan. An earlier pass spaced these
+   * on the floor plan, called 6m "far apart", and shipped an arrival frame
+   * holding the vent, both lamps, the crib and the torch lane at once: leg A is
+   * straight, 7m long, and the visitor spawns at 2.0m, so everything from the
+   * threshold to the bend is one sightline. Distance down a straight corridor
+   * does not separate two things - it stacks them. What separates them is the
+   * bend, so each beat now sits on its own leg and the visitor has to walk to
+   * earn the next one.
+   *
+   * Leg A therefore holds exactly one lit object, at ankle height, and nothing
+   * else. That is the whole point of the arrival: the room should read dark,
+   * warm and deep before it reads decorated, and a visitor who steps out of
+   * Water into a full frame has nowhere left to go.
+   *
+   * The fuel bank is ONE 3.4m cribbing run on the LEFT only, sitting inside
+   * leg B's 5m so a rigid straight run never punches the wall on a bend. One
+   * lit side and one dark side is a composition; two lit sides is a tunnel of
+   * orange. It is also the honest read - fuel gets stacked where there is room
+   * to stack it, not wrapped around a corridor like tile.
    */
-  const CRIB = { along: 9.5, side: -1, bayWidth: 4.2 };
+  const CRIB = { along: 10, side: -1, bayWidth: 3.4 };
 
   const crib = $derived(
     placeAt(centreline, CRIB.along, CRIB.side * wallOffset)
   );
 
   /**
-   * Two lamps: one before the bend, one at the court mouth. They are the
-   * constant that says "the route continues", so they sit at the two decision
-   * points and nowhere else.
+   * ONE lamp, at the court mouth.
    *
-   * The first one used to hang at 4.6m, which is 2.6m from the #7cc7dd Water
-   * spill light the walk scene puts at the spawn - close enough that the hood
-   * rendered cyan and a giant teal lantern filled the arrival frame. At 6.4m it
-   * catches roughly a third of that, so the fixture stays iron and the cool
-   * cast stays on the threshold where it belongs.
+   * There used to be a second at 6.4m on the arrival leg, and it was the
+   * loudest object in the first frame: a lit basket at head height, dead centre
+   * of the corridor, two metres past the spawn. A fixture that hangs in the
+   * middle of the walkway is not decoration, it is an obstacle, and one at the
+   * near end of a straight leg guarantees the visitor meets the room's
+   * brightest element before they have taken a step.
+   *
+   * The route does not need a fixture to be legible - the corridor has one
+   * direction and a lit court at the end of it. So the lamp stops being a
+   * repeated route marker and becomes an event: it hangs at the one place where
+   * the walk turns and commits, and it is the only one, which is why the coals
+   * dripping out of it are worth watching.
    */
-  const LAMP_STATIONS = [6.4, 13.2];
+  const LAMP_STATIONS = [13.2];
 
   const lamps = $derived(
     LAMP_STATIONS.map((along) => placeAt(centreline, along, 0)).filter(
@@ -215,11 +228,7 @@
     )
   );
 
-  /**
-   * Only the first lamp sheds, so the drip is something the visitor walks under
-   * once rather than a condition of the corridor. A coal falling out of every
-   * fixture at once reads as a malfunction.
-   */
+  /** The mouth lamp is the one that sheds. */
   const dripAt = 0;
 
   const thresholdCentre = $derived(toRuntime(contract.threshold.blenderCentre));
@@ -252,11 +261,23 @@
     position={[ventPosition[0], VENT_SINK, ventPosition[1]]}
     rotation.y={ventYaw}
   >
+    <!-- 2.0m across a 4.5m corridor. At 3.4 it spanned nearly wall to wall and
+         stopped reading as a fitting set into the floor - it became the floor,
+         which is the one thing a threshold detail must not do. Sized down it
+         leaves a good metre of dark slab either side to be set into, and the
+         visitor steps over it rather than onto it. -->
+    <!-- Low rate and a knee-high plume because the visitor arrives almost on
+         top of this: the locked water-entry camera stands under two metres
+         from the grate. A plume authored to look right from across the room is
+         a curtain from there, and the arrival frame is the one frame in this
+         section that has to be clean. -->
     <FirstFireSteamVent
-      width={3.4}
-      depth={1.3}
+      width={2}
+      depth={0.9}
       sink={VENT_SINK}
       ceilingY={CEILING_Y - VENT_SINK}
+      steamRate={0.5}
+      plumeHeight={1.1}
       material={iron}
     />
   </T.Group>

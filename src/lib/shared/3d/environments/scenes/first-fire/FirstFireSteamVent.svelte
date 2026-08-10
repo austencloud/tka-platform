@@ -3,7 +3,7 @@
    * Quench vent - look-dev study.
    *
    * A slot in the floor where water meets hot slag, grated over in iron, with
-   * a steam column standing off it. Two jobs in the coal room:
+   * a low curl of steam coming off it. Two jobs in the coal room:
    *
    * 1. It is the "heat in general" beat that is not another orange rectangle.
    *    A room lit entirely by coals is one hue from wall to wall, and a single
@@ -37,6 +37,17 @@
     steamRate?: number;
     /** Ceiling height, so the column dies at the ceiling instead of through it. */
     ceilingY?: number;
+    /**
+     * How high the vapour gets before it dies, in metres off the grate.
+     *
+     * Not the ceiling. A column run to a 5.4m crown is a weather system: 190
+     * large additive sprites stacked over the visitor's whole field of view
+     * turn every frame on that leg into a flat pale wash, which takes the black
+     * out of the room and the depth with it. Kept near waist height the same
+     * station reads as a vent breathing - a detail underfoot that the visitor
+     * walks past, which is what it is.
+     */
+    plumeHeight?: number;
     material: MeshStandardMaterial;
   }
 
@@ -47,8 +58,12 @@
     emberColor = "#ff6a1c",
     steamRate = 1,
     ceilingY = 5.2,
+    plumeHeight = 1.7,
     material,
   }: Props = $props();
+
+  /** Never above the crown, however the consumer sets it. */
+  const plumeTop = $derived(Math.min(plumeHeight, ceilingY - 0.4));
 
   // Ember components are authored against the avatar ground datum, not the
   // museum floor. Lifting them here keeps that detail out of every consumer.
@@ -72,22 +87,22 @@
    */
   const steamColumn = $derived({
     enabled: true,
-    // Dense and large. These are additive sprites with a soft round falloff:
-    // sparse and small, they stay separate blobs and read as a shower of
-    // sparks, which is the opposite of the beat this station is for. They have
-    // to overlap enough to merge into one mass before the eye calls it vapour,
-    // and the colours drop correspondingly dark so the stacking does not
-    // blow out.
-    count: Math.round(190 * steamRate),
-    riseSpeed: 0.62,
+    // Budgeted for the visitor standing ON this thing, which is the case that
+    // matters: the emitter drifts well past `spawnRadius` (measured ~3m across
+    // for a 0.77m radius), so anyone within a couple of metres is inside the
+    // cloud, and every sprite is then a pale blob between them and the entire
+    // room. At close range vapour reads from a handful of sprites; the density
+    // that looks right in a wide shot is a fog bank from the threshold.
+    count: Math.round(34 * steamRate),
+    riseSpeed: 0.42,
     colors: ["#2e2724", "#372e29", "#241e1b", "#413630"],
-    sizeRange: [0.55, 1.35] as [number, number],
-    spawnRadius: Math.min(width, depth) * 0.85,
-    maxHeight: ceilingY - 0.4,
+    sizeRange: [0.22, 0.5] as [number, number],
+    spawnRadius: Math.min(width, depth) * 0.6,
+    maxHeight: plumeTop,
     // Near-zero: steam keeps going up. Embers arc and fall; this must not.
     gravity: 0.015,
     burstInterval: 5.5,
-    burstCount: 14,
+    burstCount: 3,
   });
 
   const GRATE_BARS = 7;
@@ -166,12 +181,16 @@
   <T.Group position.y={floorLift + 0.04}>
     <EmberFountains config={steamColumn} />
   </T.Group>
+  <!-- Sized to the plume, not to the room. HeatDistortion is a billboard, so
+       `height={ceilingY}` puts a full-height scrim in front of everything
+       behind the vent and flattens the corridor to one value. It belongs to
+       the vapour it is shimmering. -->
   <T.Group position.y={floorLift}>
     <HeatDistortion
       position={{ x: 0, z: 0 }}
-      radius={Math.max(width, depth) * 0.7}
-      height={ceilingY}
-      intensity={0.22}
+      radius={Math.max(width, depth) * 0.55}
+      height={plumeTop}
+      intensity={0.12}
     />
   </T.Group>
 {/if}
