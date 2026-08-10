@@ -4,6 +4,7 @@ import {
   createViteDevWatchIgnoredMatcher,
   I18N_MESSAGES_WATCH_PATH,
 } from "./src/config/vite-dev-watch-policy";
+import { createViteDependencyCachePlan } from "./src/config/vite-dependency-cache";
 import { featureGatePlugin } from "./src/config/vite-plugin-feature-gate";
 import { museumPlacementPlugin } from "./src/lib/features/museum/dev/museum-placement-plugin";
 import { composerPlacementPlugin } from "./src/lib/shared/3d/scene-composer/persistence/composer-placement-plugin";
@@ -856,7 +857,12 @@ const devHttps =
     ? { cert: fs.readFileSync(devCertPath), key: fs.readFileSync(devKeyPath) }
     : undefined;
 
-export default defineConfig(({ mode }) => ({
+const dependencyCachePlan = createViteDependencyCachePlan({
+  projectRoot: dirname,
+});
+
+export default defineConfig(({ command, mode }) => ({
+  cacheDir: command === "serve" ? dependencyCachePlan.cacheDir : undefined,
   esbuild: {
     pure:
       mode === "production"
@@ -1124,6 +1130,10 @@ export default defineConfig(({ mode }) => ({
   // This reduces initial dev server load time from 30s+ to ~5-10s
   // ============================================================================
   optimizeDeps: {
+    // Different dev ports cannot overwrite each other's optimizer output.
+    // If an installed package moves to a new pnpm target, use Vite's native
+    // rebuild path instead of serving the stale pre-bundle.
+    force: command === "serve" && dependencyCachePlan.forceRefresh,
     include: [
       // Validation (lightweight, needed immediately)
       "zod",
