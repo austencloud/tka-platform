@@ -17,7 +17,13 @@
     type Mesh,
   } from "three";
   import type { ObjectDefinition } from "../procedural-engine/objects/object-catalog";
-  import type { SurfaceRules, ComposerPlacement, PlacementConstraints, ExclusionZone } from "./types";
+  import type {
+    SurfaceRules,
+    ComposerPlacement,
+    PlacementConstraints,
+  } from "./types";
+  import ComposerModel from "./ComposerModel.svelte";
+  import { validateComposerPlacement } from "./validate-composer-placement";
 
   interface Props {
     definition: ObjectDefinition;
@@ -42,9 +48,17 @@
   const COLOR_INVALID = new Color(0xdd3344);
 
   const threlteCtx = useThrelte();
-  function getScene() { return (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene; }
-  function getCamera() { return (threlteCtx as any).camera?.current ?? (threlteCtx as any).camera; }
-  function getRenderer() { return (threlteCtx as any).renderer?.current ?? (threlteCtx as any).renderer; }
+  function getScene() {
+    return (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
+  }
+  function getCamera() {
+    return (threlteCtx as any).camera?.current ?? (threlteCtx as any).camera;
+  }
+  function getRenderer() {
+    return (
+      (threlteCtx as any).renderer?.current ?? (threlteCtx as any).renderer
+    );
+  }
 
   let ghostX = $state(0);
   let ghostY = $state(0);
@@ -61,8 +75,9 @@
 
   const ghostMaterial = new MeshStandardMaterial({
     transparent: true,
-    opacity: 0.5,
+    opacity: 0.42,
     depthWrite: false,
+    wireframe: true,
     color: COLOR_INVALID,
   });
 
@@ -86,7 +101,8 @@
       if (
         type === "TransformControlsGizmo" ||
         type === "TransformControlsPlane"
-      ) return true;
+      )
+        return true;
       current = current.parent;
     }
     return false;
@@ -103,20 +119,6 @@
 
   function snapToGrid(v: number, gridSize: number): number {
     return Math.round(v / gridSize) * gridSize;
-  }
-
-  function isInExclusionZone(
-    x: number, y: number, z: number,
-    zones?: ExclusionZone[],
-  ): boolean {
-    if (!zones) return false;
-    for (const zone of zones) {
-      const dx = x - zone.center[0];
-      const dy = y - zone.center[1];
-      const dz = z - zone.center[2];
-      if (dx * dx + dy * dy + dz * dz < zone.radius * zone.radius) return true;
-    }
-    return false;
   }
 
   function onPointerMove(event: PointerEvent): void {
@@ -147,7 +149,8 @@
     hitNormal.copy(hit.face.normal).transformDirection(hit.object.matrixWorld);
 
     let px = hitPoint.x;
-    let py = hitPoint.y + surfaceRules.surfaceOffset + (definition.defaultHeight ?? 0);
+    let py =
+      hitPoint.y + surfaceRules.surfaceOffset + (definition.defaultHeight ?? 0);
     let pz = hitPoint.z;
 
     if (surfaceRules.gridSize) {
@@ -164,32 +167,28 @@
     } else if (surfaceRules.orientationMode === "surface-normal") {
       tempQuat.setFromUnitVectors(UP, hitNormal);
       ghostQuat = [tempQuat.x, tempQuat.y, tempQuat.z, tempQuat.w];
-    } else if (surfaceRules.orientationMode === "custom" && surfaceRules.orientFromNormal) {
+    } else if (
+      surfaceRules.orientationMode === "custom" &&
+      surfaceRules.orientFromNormal
+    ) {
       const q = surfaceRules.orientFromNormal(hitNormal);
       ghostQuat = [q.x, q.y, q.z, q.w];
     }
 
-    let isValid = true;
-
-    if (isInExclusionZone(px, py, pz, constraints?.exclusionZones)) {
-      isValid = false;
-    }
-
-    if (constraints?.maxObjects && existingPlacements.length >= constraints.maxObjects) {
-      isValid = false;
-    }
-
-    if (constraints?.validate) {
-      const draftPlacement: ComposerPlacement = {
-        id: "draft",
-        objectKey: definition.key,
-        position: [px, py, pz],
-        rotation: [...ghostQuat],
-        scale: [1, 1, 1],
-      };
-      const err = constraints.validate(draftPlacement, existingPlacements);
-      if (err) isValid = false;
-    }
+    const draftPlacement: ComposerPlacement = {
+      id: "draft",
+      objectKey: definition.key,
+      position: [px, py, pz],
+      rotation: [...ghostQuat],
+      scale: [1, 1, 1],
+    };
+    const isValid =
+      validateComposerPlacement(
+        draftPlacement,
+        existingPlacements,
+        constraints,
+        { isNew: true }
+      ) === null;
 
     valid = isValid;
     ghostMaterial.color.copy(isValid ? COLOR_VALID : COLOR_INVALID);
@@ -256,11 +255,15 @@
     oncreate={onGhostCreate}
     position={[ghostX, ghostY, ghostZ]}
     quaternion={ghostQuat}
+    scale={[
+      definition.defaultScale,
+      definition.defaultScale,
+      definition.defaultScale,
+    ]}
   >
-    <T.Mesh
-      geometry={ghostGeometry}
-      material={ghostMaterial}
-      scale={[definition.defaultScale, definition.defaultScale, definition.defaultScale]}
-    />
+    {#if definition.modelPath}
+      <ComposerModel src={definition.modelPath} />
+    {/if}
+    <T.Mesh geometry={ghostGeometry} material={ghostMaterial} />
   </T.Group>
 {/if}

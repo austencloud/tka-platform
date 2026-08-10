@@ -11,13 +11,27 @@
   import CelestialControls from "$lib/features/lab/tabs/scene-lab/components/CelestialControls.svelte";
   import RainbowControls from "$lib/features/lab/tabs/scene-lab/components/RainbowControls.svelte";
   import VoidControls from "$lib/features/lab/tabs/scene-lab/components/VoidControls.svelte";
+  import ComposerPickerPanel from "$lib/shared/3d/scene-composer/ComposerPickerPanel.svelte";
+  import type { ComposerEditorState } from "$lib/shared/3d/scene-composer/composer-editor-state.svelte";
+  import type { SceneComposerPlugin } from "$lib/shared/3d/scene-composer/types";
 
   interface Props {
     themeId: ThemeId;
     sceneState: SceneLabState;
+    composerState: ComposerEditorState;
+    plugin: SceneComposerPlugin | undefined;
+    composerSaveStatus: "idle" | "saving" | "saved" | "error";
+    onComposerSave: () => void | Promise<void>;
   }
 
-  let { themeId, sceneState }: Props = $props();
+  let {
+    themeId,
+    sceneState,
+    composerState,
+    plugin,
+    composerSaveStatus,
+    onComposerSave,
+  }: Props = $props();
 
   let copyStatus = $state<"idle" | "copied" | "error">("idle");
 
@@ -41,28 +55,66 @@
 
 <div class="controls-panel">
   <div class="actions">
-    <button class="action-btn" onclick={handleReset} title="Reset to defaults">
-      <i class="fas fa-undo"></i> Reset
-    </button>
-    <button
-      class="action-btn primary"
-      class:success={copyStatus === "copied"}
-      class:error={copyStatus === "error"}
-      onclick={handleCopy}
-      title="Copy TypeScript config to clipboard"
-    >
-      {#if copyStatus === "copied"}
-        <i class="fas fa-check"></i> Copied
-      {:else if copyStatus === "error"}
-        <i class="fas fa-xmark"></i> Failed
-      {:else}
-        <i class="fas fa-copy"></i> Copy config
-      {/if}
-    </button>
+    {#if composerState.active}
+      <button class="action-btn" onclick={() => composerState.setActive(false)}>
+        <i class="fas fa-arrow-left"></i> Controls
+      </button>
+      <button
+        class="action-btn primary"
+        class:success={composerSaveStatus === "saved"}
+        class:error={composerSaveStatus === "error"}
+        disabled={composerSaveStatus === "saving"}
+        onclick={onComposerSave}
+      >
+        {#if composerSaveStatus === "saving"}
+          <i class="fas fa-spinner fa-spin"></i> Saving
+        {:else if composerSaveStatus === "saved"}
+          <i class="fas fa-check"></i> Saved
+        {:else if composerSaveStatus === "error"}
+          <i class="fas fa-xmark"></i> Save failed
+        {:else}
+          <i class="fas fa-save"></i> Save
+        {/if}
+        {#if composerState.dirty}<span class="dirty-dot"></span>{/if}
+      </button>
+    {:else}
+      <button
+        class="action-btn"
+        onclick={handleReset}
+        title="Reset to defaults"
+      >
+        <i class="fas fa-undo"></i> Reset
+      </button>
+      <button
+        class="action-btn primary"
+        class:success={copyStatus === "copied"}
+        class:error={copyStatus === "error"}
+        onclick={handleCopy}
+        title="Copy TypeScript config to clipboard"
+      >
+        {#if copyStatus === "copied"}
+          <i class="fas fa-check"></i> Copied
+        {:else if copyStatus === "error"}
+          <i class="fas fa-xmark"></i> Failed
+        {:else}
+          <i class="fas fa-copy"></i> Copy config
+        {/if}
+      </button>
+    {/if}
   </div>
 
   <div class="controls-scroll">
-    {#if themeId === "winter"}
+    {#if composerState.active && plugin}
+      <ComposerPickerPanel
+        catalog={plugin.catalog}
+        sceneName={plugin.displayName}
+        placedCount={composerState.composedObjectCount}
+        activeItemKey={composerState.activeCatalogItem?.key ?? null}
+        onSelectItem={(def) => composerState.startPlacement(def)}
+        onDeselectItem={() => composerState.stopPlacement()}
+        onClose={() => composerState.setActive(false)}
+      />
+    {:else if themeId === "winter"}
       <WinterControls />
     {:else if themeId === "forest"}
       <ForestControls />
@@ -126,24 +178,52 @@
   }
 
   .action-btn.primary {
-    background: color-mix(in srgb, var(--theme-accent, #38bdf8) 18%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #38bdf8) 35%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #38bdf8) 18%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #38bdf8) 35%,
+      transparent
+    );
     color: var(--theme-accent, #38bdf8);
   }
 
   .action-btn.primary:hover {
-    background: color-mix(in srgb, var(--theme-accent, #38bdf8) 28%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #38bdf8) 28%,
+      transparent
+    );
   }
 
   .action-btn.success {
-    background: color-mix(in srgb, var(--semantic-success, #22c55e) 22%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 22%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 40%,
+      transparent
+    );
     color: color-mix(in srgb, var(--semantic-success, #22c55e) 70%, white);
   }
 
   .action-btn.error {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 22%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 40%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 22%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 40%,
+      transparent
+    );
     color: color-mix(in srgb, var(--semantic-error, #ef4444) 70%, white);
   }
 

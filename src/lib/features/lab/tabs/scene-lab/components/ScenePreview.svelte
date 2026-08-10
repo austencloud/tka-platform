@@ -37,12 +37,17 @@
   import ComposerGhost from "$lib/shared/3d/scene-composer/ComposerGhost.svelte";
   import ComposedObject from "$lib/shared/3d/scene-composer/ComposedObject.svelte";
   import { composerRegistry } from "$lib/shared/3d/scene-composer/registry";
-  import { FilePersistence } from "$lib/shared/3d/scene-composer/persistence/file-persistence";
   import type { ComposerPlacement } from "$lib/shared/3d/scene-composer/types";
   import type { Command } from "$lib/shared/history/command-stack.svelte";
   import { getSceneLabContext } from "../context/scene-lab-context";
   import { createSceneLabPlayerState } from "../state/scene-lab-player-state.svelte";
   import EditHistoryShortcutBridge from "$lib/shared/keyboard/components/EditHistoryShortcutBridge.svelte";
+
+  interface Props {
+    onComposerSave?: () => void | Promise<void>;
+  }
+
+  const { onComposerSave }: Props = $props();
 
   const { state: labState, composerState } = getSceneLabContext();
 
@@ -55,7 +60,6 @@
 
   // ── Compose mode helpers ──
   let editorRef: ReturnType<typeof GenericSceneEditor> | undefined = $state();
-  const composePersistence = new FilePersistence();
   const activePlugin = $derived(composerRegistry.get(labState.sceneId));
   const canCompose = $derived(!!activePlugin);
 
@@ -76,16 +80,18 @@
   });
 
   async function handleComposeSave() {
-    if (!activePlugin) return;
-    await composePersistence.save(activePlugin.sceneId, composerState.placements);
-    composerState.markClean();
+    await onComposerSave?.();
   }
 
   function handlePlaceObject(placement: ComposerPlacement) {
     const cmd: Command = {
       label: `Place ${placement.objectKey}`,
-      execute() { composerState.addPlacement(placement); },
-      undo() { composerState.removePlacement(placement.id); },
+      execute() {
+        composerState.addPlacement(placement);
+      },
+      undo() {
+        composerState.removePlacement(placement.id);
+      },
     };
     composerState.commands.execute(cmd);
   }
@@ -172,7 +178,7 @@
         _clampTgt.x,
         newTgtY,
         _clampTgt.z,
-        false,
+        false
       );
       clamping = false;
     }
@@ -226,6 +232,7 @@
       {#if camMode === "orbit" || camMode === "compose"}
         <OrbitControls
           bind:ref={controlsRef}
+          enabled={!composerState.gizmoDragging}
           enableDamping
           dampingFactor={0.05}
           minDistance={2}
@@ -291,7 +298,12 @@
       {:else if labState.sceneId === "autumn"}
         <AutumnScene />
       {:else if labState.sceneId === "cosmic"}
-        <CosmicScene variant={labState.cosmicVariant} config={labState.cosmicVariant === "night" ? labState.cosmicNightConfig : labState.cosmicAuroraConfig} />
+        <CosmicScene
+          variant={labState.cosmicVariant}
+          config={labState.cosmicVariant === "night"
+            ? labState.cosmicNightConfig
+            : labState.cosmicAuroraConfig}
+        />
       {:else if labState.sceneId === "ocean"}
         <OceanScene />
       {:else if labState.sceneId === "ember"}
@@ -327,11 +339,19 @@
 
     {#if camMode === "compose" && activePlugin}
       <ComposerInteractivity>
-        <GenericSceneEditor bind:this={editorRef} editorState={composerState} onSave={handleComposeSave} />
+        <GenericSceneEditor
+          bind:this={editorRef}
+          editorState={composerState}
+          plugin={activePlugin}
+          onSave={handleComposeSave}
+        />
 
         {#each composerState.placements as placement (placement.id)}
-          {@const def = activePlugin.catalog.getDefinition(placement.objectKey)}
-          {#if def}
+          {@const def =
+            placement.source === "native"
+              ? undefined
+              : activePlugin.catalog.getDefinition(placement.objectKey)}
+          {#if def && placement.visible !== false}
             <ComposedObject
               {placement}
               definition={def}
@@ -347,7 +367,7 @@
             definition={composerState.activeCatalogItem}
             surfaceRules={activePlugin.surfaceRules}
             constraints={activePlugin.constraints}
-            existingPlacements={composerState.placements}
+            existingPlacements={composerState.validationPlacements}
             onPlace={handlePlaceObject}
             onCancel={() => composerState.stopPlacement()}
           />
@@ -388,7 +408,10 @@
     {#if canCompose}
       <button
         class:active={camMode === "compose"}
-        onclick={() => (camMode = "compose")}
+        onclick={() => {
+          composerState.setActive(true);
+          camMode = "compose";
+        }}
         title="Compose - place and arrange objects"
       >
         <i class="fas fa-cubes"></i> Compose

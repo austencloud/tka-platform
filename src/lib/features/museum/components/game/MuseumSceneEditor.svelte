@@ -10,8 +10,27 @@
    */
   import { useThrelte, useTask } from "@threlte/core";
   import { TransformControls } from "@threlte/extras";
-  import { Raycaster, Vector2, Vector3, Euler, Mesh, type Object3D, type Camera } from "three";
-  import { resolveScene, resolveCamera, resolveRenderer } from "../resolve-threlte-scene";
+  import {
+    Raycaster,
+    Vector2,
+    Vector3,
+    type Object3D,
+    type Camera,
+  } from "three";
+  import {
+    resolveScene,
+    resolveCamera,
+    resolveRenderer,
+  } from "../resolve-threlte-scene";
+  import { createMetadataSceneObjectAdapter } from "$lib/shared/3d/scene-composer/metadata-scene-object-adapter";
+  import type {
+    ComposerPlacement,
+    SceneObjectHandle,
+  } from "$lib/shared/3d/scene-composer/types";
+  import {
+    CommandStack,
+    type Command,
+  } from "$lib/shared/history/command-stack.svelte";
 
   const _tempVec2 = new Vector3();
   const _worldPos = new Vector3();
@@ -26,31 +45,24 @@
 
   let { onOverrideChanged }: Props = $props();
 
-  // ── Undo/Redo command stack ──
-  interface TransformCommand {
-    object: Object3D;
-    beforePos: Vector3;
-    beforeRot: Euler;
-    beforeScale: Vector3;
-    afterPos: Vector3;
-    afterRot: Euler;
-    afterScale: Vector3;
-  }
+  const museumObjects = createMetadataSceneObjectAdapter({
+    sceneId: "museum",
+    editableRoles: new Set(),
+    lockedRoles: new Set(),
+    editableNamePatterns: [/^plaque-/, /^performer-station-/, /^furniture-/],
+  });
+  const commands = new CommandStack();
+  let selectedHandle: SceneObjectHandle | null = null;
+  let dragStartPlacement: ComposerPlacement | null = null;
 
-  const undoStack: TransformCommand[] = [];
-  const redoStack: TransformCommand[] = [];
-  let dragStartPos: Vector3 | null = null;
-  let dragStartRot: Euler | null = null;
-  let dragStartScale: Vector3 | null = null;
-
-  function captureBeforeDrag(obj: Object3D) {
-    dragStartPos = obj.position.clone();
-    dragStartRot = obj.rotation.clone();
-    dragStartScale = obj.scale.clone();
+  function captureBeforeDrag() {
+    if (!selectedHandle) return;
+    dragStartPlacement = museumObjects.read(selectedHandle);
   }
 
   /** Save position override for a named object after any transform change */
-  function saveOverrideForObject(obj: Object3D) {
+  function saveOverrideForHandle(handle: SceneObjectHandle) {
+    const obj = handle.object;
     if (!obj.name) return;
     obj.getWorldPosition(_worldPos);
     museumEditorOverrides.set(obj.name, {
@@ -62,50 +74,41 @@
     onOverrideChanged?.();
   }
 
-  function captureAfterDrag(obj: Object3D) {
-    if (!dragStartPos || !dragStartRot || !dragStartScale) return;
-    undoStack.push({
-      object: obj,
-      beforePos: dragStartPos,
-      beforeRot: dragStartRot,
-      beforeScale: dragStartScale,
-      afterPos: obj.position.clone(),
-      afterRot: obj.rotation.clone(),
-      afterScale: obj.scale.clone(),
-    });
-    redoStack.length = 0; // Clear redo stack on new action
-    dragStartPos = null;
-    dragStartRot = null;
-    dragStartScale = null;
-
-    // Persist the new position as an override
-    saveOverrideForObject(obj);
+  function captureAfterDrag() {
+    if (!selectedHandle || !dragStartPlacement) return;
+    const handle = selectedHandle;
+    const target = museum3dEditorState.selectedObject ?? undefined;
+    const before = dragStartPlacement;
+    const after = museumObjects.read(handle);
+    const command: Command = {
+      label: `Move ${handle.label}`,
+      execute() {
+        museumObjects.applyPlacement(handle, after, target);
+        saveOverrideForHandle(handle);
+      },
+      undo() {
+        museumObjects.applyPlacement(handle, before, target);
+        saveOverrideForHandle(handle);
+      },
+    };
+    commands.record(command);
+    dragStartPlacement = null;
+    saveOverrideForHandle(handle);
   }
 
   function undo() {
-    const cmd = undoStack.pop();
-    if (!cmd) return;
-    cmd.object.position.copy(cmd.beforePos);
-    cmd.object.rotation.copy(cmd.beforeRot);
-    cmd.object.scale.copy(cmd.beforeScale);
-    redoStack.push(cmd);
-    saveOverrideForObject(cmd.object);
+    commands.undo();
   }
 
   function redo() {
-    const cmd = redoStack.pop();
-    if (!cmd) return;
-    cmd.object.position.copy(cmd.afterPos);
-    cmd.object.rotation.copy(cmd.afterRot);
-    cmd.object.scale.copy(cmd.afterScale);
-    undoStack.push(cmd);
-    saveOverrideForObject(cmd.object);
+    commands.redo();
   }
 
   const ctx = useThrelte();
   const getScene = () => resolveScene(ctx);
   const getCamera = (): Camera | null => resolveCamera(ctx);
-  const getCanvas = (): HTMLCanvasElement | null => resolveRenderer(ctx)?.domElement ?? null;
+  const getCanvas = (): HTMLCanvasElement | null =>
+    resolveRenderer(ctx)?.domElement ?? null;
 
   const raycaster = new Raycaster();
   const pointer = new Vector2();
@@ -113,7 +116,7 @@
   // Track whether TransformControls is actively dragging
   let gizmoDragging = false;
 
-  function findClickedObject(event: PointerEvent): Object3D | null {
+  function findClickedObject(event: PointerEvent): SceneObjectHandle | null {
     const cam = getCamera();
     const scene = getScene();
     if (!cam || !scene) return null;
@@ -132,9 +135,11 @@
       let isGizmo = false;
       let parent: Object3D | null = hit.object;
       while (parent) {
-        if ((parent as any).isTransformControls
-            || parent.type === "TransformControlsGizmo"
-            || parent.type === "TransformControlsPlane") {
+        if (
+          (parent as any).isTransformControls ||
+          parent.type === "TransformControlsGizmo" ||
+          parent.type === "TransformControlsPlane"
+        ) {
           isGizmo = true;
           break;
         }
@@ -142,28 +147,28 @@
       }
       if (isGizmo) return null; // Click was on gizmo - don't change selection
 
-      // Skip instanced meshes (walls, floors, ceilings)
-      if ((hit.object as any).isInstancedMesh) continue;
-
-      if (hit.object instanceof Mesh) {
-        // Walk up the hierarchy to find a named root group
-        let target: Object3D = hit.object;
-        let walk: Object3D | null = hit.object;
-        while (walk && walk.type !== "Scene") {
-          if (walk.name && (
-            walk.name.startsWith("plaque-") ||
-            walk.name.startsWith("performer-station-") ||
-            walk.name.startsWith("furniture-")
-          )) {
-            target = walk;
-            break;
-          }
-          walk = walk.parent;
-        }
-        return target;
-      }
+      const handle = museumObjects.resolveHit(hit);
+      if (handle) return handle;
     }
     return null;
+  }
+
+  function deselect(): void {
+    if (selectedHandle && museum3dEditorState.selectedObject) {
+      museumObjects.disposeTransformTarget(
+        selectedHandle,
+        museum3dEditorState.selectedObject
+      );
+    }
+    selectedHandle = null;
+    dragStartPlacement = null;
+    museum3dEditorState.deselect();
+  }
+
+  function select(handle: SceneObjectHandle): void {
+    deselect();
+    selectedHandle = handle;
+    museum3dEditorState.select(museumObjects.createTransformTarget(handle));
   }
 
   function handlePointerDown(event: PointerEvent) {
@@ -175,11 +180,11 @@
     // Defer so TransformControls processes first
     requestAnimationFrame(() => {
       if (gizmoDragging) return;
-      const obj = findClickedObject(event);
-      if (obj) {
-        museum3dEditorState.select(obj);
+      const handle = findClickedObject(event);
+      if (handle) {
+        select(handle);
       } else {
-        museum3dEditorState.deselect();
+        deselect();
       }
     });
   }
@@ -199,7 +204,11 @@
     const hits = raycaster.intersectObjects(scene.children, true);
 
     for (const hit of hits) {
-      if ((hit.object as any).isInstancedMesh || (hit.object as any).isTransformControls) continue;
+      if (
+        (hit.object as any).isInstancedMesh ||
+        (hit.object as any).isTransformControls
+      )
+        continue;
       // Focus orbit target on the hit point
       museum3dEditorState.focusOnPoint(hit.point.x, hit.point.y, hit.point.z);
       break;
@@ -214,10 +223,22 @@
     const key = event.key.toLowerCase();
 
     // Gizmo mode
-    if (key === "1") { museum3dEditorState.setMode("translate"); return; }
-    if (key === "2") { museum3dEditorState.setMode("rotate"); return; }
-    if (key === "3") { museum3dEditorState.setMode("scale"); return; }
-    if (key === "escape") { museum3dEditorState.deselect(); return; }
+    if (key === "1") {
+      museum3dEditorState.setMode("translate");
+      return;
+    }
+    if (key === "2") {
+      museum3dEditorState.setMode("rotate");
+      return;
+    }
+    if (key === "3") {
+      museum3dEditorState.setMode("scale");
+      return;
+    }
+    if (key === "escape") {
+      deselect();
+      return;
+    }
 
     // Ctrl+Z/Ctrl+Shift+Z undo/redo
     if ((event.ctrlKey || event.metaKey) && key === "z") {
@@ -300,7 +321,7 @@
     }
     window.removeEventListener("keydown", handleKeyDown);
     window.removeEventListener("keyup", handleKeyUp);
-    museum3dEditorState.deselect();
+    deselect();
   });
 </script>
 
@@ -315,13 +336,21 @@
     onmouseDown={() => {
       gizmoDragging = true;
       if (museum3dEditorState.selectedObject) {
-        captureBeforeDrag(museum3dEditorState.selectedObject);
+        captureBeforeDrag();
       }
     }}
     onmouseUp={() => {
       gizmoDragging = false;
       if (museum3dEditorState.selectedObject) {
-        captureAfterDrag(museum3dEditorState.selectedObject);
+        captureAfterDrag();
+      }
+    }}
+    onobjectChange={() => {
+      if (selectedHandle && museum3dEditorState.selectedObject) {
+        museumObjects.previewTransform(
+          selectedHandle,
+          museum3dEditorState.selectedObject
+        );
       }
     }}
   />

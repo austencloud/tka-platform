@@ -1,17 +1,37 @@
 <script lang="ts">
-  import { useThrelte, useTask } from "@threlte/core";
+  import { T, useThrelte, useTask } from "@threlte/core";
   import { TransformControls } from "@threlte/extras";
-  import { Vector3, Color, type Object3D, type Camera } from "three";
+  import {
+    AdditiveBlending,
+    DoubleSide,
+    Group,
+    Matrix4,
+    Mesh,
+    MeshBasicMaterial,
+    Raycaster,
+    Vector2,
+    Vector3,
+    type Camera,
+    type InstancedMesh,
+    type Object3D,
+  } from "three";
   import { onMount, onDestroy } from "svelte";
   import type { ComposerEditorState } from "./composer-editor-state.svelte";
   import type { Command } from "$lib/shared/history/command-stack.svelte";
+  import type {
+    ComposerPlacement,
+    SceneComposerPlugin,
+    SceneObjectHandle,
+  } from "./types";
+  import { validateComposerPlacement } from "./validate-composer-placement";
 
   interface Props {
     editorState: ComposerEditorState;
+    plugin: SceneComposerPlugin;
     onSave?: () => void;
   }
 
-  const { editorState, onSave }: Props = $props();
+  const { editorState, plugin, onSave }: Props = $props();
 
   const _tempVec = new Vector3();
   const _worldPos = new Vector3();
@@ -21,15 +41,52 @@
   let dragStartPos: Vector3 | null = null;
   let dragStartRot = $state<{ x: number; y: number; z: number } | null>(null);
   let dragStartScale: Vector3 | null = null;
-  let gizmoDragging = false;
+  let dragStartNative: ComposerPlacement | null = null;
 
   function captureBeforeDrag(obj: Object3D) {
+    const native = editorState.nativeSelection;
+    if (native) {
+      dragStartNative = native.adapter.read(native.handle);
+      return;
+    }
     dragStartPos = obj.position.clone();
     dragStartRot = { x: obj.rotation.x, y: obj.rotation.y, z: obj.rotation.z };
     dragStartScale = obj.scale.clone();
   }
 
   function captureAfterDrag(obj: Object3D) {
+    const native = editorState.nativeSelection;
+    if (native && dragStartNative) {
+      const before = dragStartNative;
+      const after = native.adapter.read(native.handle);
+      const { adapter, handle, target } = native;
+      const validationError = validateComposerPlacement(
+        after,
+        editorState.validationPlacements,
+        plugin.constraints,
+        { ignoreId: handle.id }
+      );
+      if (validationError) {
+        adapter.applyPlacement(handle, before, target);
+        dragStartNative = null;
+        return;
+      }
+      const cmd: Command = {
+        label: `Move ${handle.label}`,
+        execute() {
+          adapter.applyPlacement(handle, after, target);
+          editorState.upsertPlacement(after);
+        },
+        undo() {
+          adapter.applyPlacement(handle, before, target);
+          editorState.upsertPlacement(before);
+        },
+      };
+      editorState.commands.execute(cmd);
+      dragStartNative = null;
+      return;
+    }
+
     if (!dragStartPos || !dragStartRot || !dragStartScale) return;
 
     const beforePos = dragStartPos.clone();
@@ -45,6 +102,34 @@
     const target = obj;
 
     const composerId = findComposerId(obj);
+    const currentPlacement = composerId
+      ? editorState.placements.find((placement) => placement.id === composerId)
+      : undefined;
+    if (currentPlacement && composerId) {
+      const nextPlacement: ComposerPlacement = {
+        ...currentPlacement,
+        position: [afterPos.x, afterPos.y, afterPos.z],
+        rotation: [
+          obj.quaternion.x,
+          obj.quaternion.y,
+          obj.quaternion.z,
+          obj.quaternion.w,
+        ],
+        scale: [afterScale.x, afterScale.y, afterScale.z],
+      };
+      const validationError = validateComposerPlacement(
+        nextPlacement,
+        editorState.validationPlacements,
+        plugin.constraints,
+        { ignoreId: composerId }
+      );
+      if (validationError) {
+        target.position.copy(beforePos);
+        target.rotation.set(beforeRotX, beforeRotY, beforeRotZ);
+        target.scale.copy(beforeScale);
+        return;
+      }
+    }
 
     const cmd: Command = {
       label: `Move ${composerId ?? "object"}`,
@@ -72,7 +157,12 @@
     obj.getWorldPosition(_worldPos);
     editorState.updatePlacement(id, {
       position: [_worldPos.x, _worldPos.y, _worldPos.z],
-      rotation: [obj.quaternion.x, obj.quaternion.y, obj.quaternion.z, obj.quaternion.w],
+      rotation: [
+        obj.quaternion.x,
+        obj.quaternion.y,
+        obj.quaternion.z,
+        obj.quaternion.w,
+      ],
       scale: [obj.scale.x, obj.scale.y, obj.scale.z],
     });
   }
@@ -80,54 +170,184 @@
   function findComposerId(obj: Object3D): string | null {
     let current: Object3D | null = obj;
     while (current) {
-      if (current.userData?.composerId) return current.userData.composerId as string;
+      if (current.userData?.composerId)
+        return current.userData.composerId as string;
       current = current.parent;
     }
     return null;
   }
 
-  // ── Hover highlight ──
-
-  const HOVER_EMISSIVE = new Color(0x444444);
-  const ZERO_EMISSIVE = new Color(0x000000);
-  let hoveredGroup: Object3D | null = null;
-
-  function setHoverHighlight(obj: Object3D | null) {
-    if (hoveredGroup === obj) return;
-    if (hoveredGroup) {
-      hoveredGroup.traverse((child) => {
-        const m = child as any;
-        if (m.isMesh && m.material?.emissive) {
-          m.material.emissive.copy(ZERO_EMISSIVE);
-        }
-      });
+  function findComposerRoot(obj: Object3D): Object3D | null {
+    const id = findComposerId(obj);
+    if (!id) return null;
+    let root = obj;
+    while (root.parent && root.parent.userData?.composerId === id) {
+      root = root.parent;
     }
-    hoveredGroup = obj;
-    if (obj) {
-      obj.traverse((child) => {
-        const m = child as any;
-        if (m.isMesh && m.material?.emissive) {
-          m.material.emissive.copy(HOVER_EMISSIVE);
-        }
-      });
+    return root;
+  }
+
+  function isComposerToolObject(obj: Object3D): boolean {
+    let current: Object3D | null = obj;
+    while (current) {
+      if (
+        current.userData?.__isComposerGhost ||
+        current.userData?.__isComposerHover ||
+        current.userData?.__isComposerProxy ||
+        current.type === "TransformControlsGizmo" ||
+        current.type === "TransformControlsPlane"
+      ) {
+        return true;
+      }
+      current = current.parent;
     }
-    const canvas = (renderer as any)?.current?.domElement ?? (renderer as any)?.domElement;
-    if (canvas) canvas.style.cursor = obj ? "pointer" : "";
+    return false;
+  }
+
+  function isTransformControlsObject(obj: Object3D): boolean {
+    let current: Object3D | null = obj;
+    while (current) {
+      if (
+        current.type === "TransformControlsGizmo" ||
+        current.type === "TransformControlsPlane"
+      ) {
+        return true;
+      }
+      current = current.parent;
+    }
+    return false;
+  }
+
+  function isHoverFeedbackObject(obj: Object3D): boolean {
+    let current: Object3D | null = obj;
+    while (current) {
+      if (current.userData?.__isComposerHover) return true;
+      current = current.parent;
+    }
+    return false;
+  }
+
+  // ── Hover feedback ──
+
+  const hoverInstanceMatrix = new Matrix4();
+  const hoverWorldMatrix = new Matrix4();
+  const hoverMaterial = new MeshBasicMaterial({
+    color: 0xb7f4ff,
+    blending: AdditiveBlending,
+    side: DoubleSide,
+    transparent: true,
+    opacity: 0.34,
+    depthTest: true,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1,
+    toneMapped: false,
+  });
+  const hoverOverlay = new Group();
+  hoverOverlay.visible = false;
+  hoverOverlay.renderOrder = 1000;
+  hoverOverlay.frustumCulled = false;
+  hoverOverlay.userData.__isComposerHover = true;
+  let hoveredKey: string | null = null;
+
+  function canvasElement(): HTMLCanvasElement | null {
+    return (
+      (renderer as any)?.current?.domElement ??
+      (renderer as any)?.domElement ??
+      null
+    );
+  }
+
+  function clearHoverFeedback(): void {
+    hoveredKey = null;
+    hoverOverlay.visible = false;
+    hoverOverlay.clear();
+    const canvas = canvasElement();
+    if (canvas)
+      canvas.style.cursor = editorState.gizmoDragging ? "grabbing" : "";
+  }
+
+  function showHoverFeedback(key: string): void {
+    if (hoverOverlay.children.length === 0) {
+      clearHoverFeedback();
+      return;
+    }
+    hoveredKey = key;
+    hoverOverlay.visible = true;
+    hoverOverlay.updateMatrixWorld(true);
+    const canvas = canvasElement();
+    if (canvas) canvas.style.cursor = "grab";
+  }
+
+  function addHoverMesh(source: Mesh, worldMatrix: Matrix4): void {
+    const highlight = new Mesh(source.geometry, hoverMaterial);
+    highlight.matrixAutoUpdate = false;
+    highlight.matrix.copy(worldMatrix);
+    highlight.renderOrder = 1000;
+    highlight.frustumCulled = false;
+    highlight.userData.__isComposerHover = true;
+    hoverOverlay.add(highlight);
+  }
+
+  function addObjectHoverMeshes(object: Object3D): void {
+    object.updateWorldMatrix(true, true);
+    object.traverse((child) => {
+      const mesh = child as Mesh;
+      if (!(mesh as any).isMesh || !mesh.geometry) return;
+      addHoverMesh(mesh, mesh.matrixWorld);
+    });
+  }
+
+  function setObjectHoverFeedback(object: Object3D): void {
+    const composerId = findComposerId(object) ?? object.uuid;
+    if (hoveredKey === composerId && hoverOverlay.visible) return;
+    hoverOverlay.clear();
+    addObjectHoverMeshes(object);
+    showHoverFeedback(composerId);
+  }
+
+  function setHandleHoverFeedback(handle: SceneObjectHandle): void {
+    if (handle.locked) {
+      clearHoverFeedback();
+      return;
+    }
+    if (hoveredKey === handle.id && hoverOverlay.visible) return;
+
+    hoverOverlay.clear();
+    for (const member of handle.members ?? [
+      { object: handle.object, instanceId: handle.instanceId },
+    ]) {
+      if (member.instanceId === undefined) {
+        addObjectHoverMeshes(member.object);
+        continue;
+      }
+
+      const instance = member.object as InstancedMesh;
+      instance.updateWorldMatrix(true, false);
+      instance.getMatrixAt(member.instanceId, hoverInstanceMatrix);
+      hoverWorldMatrix.multiplyMatrices(
+        instance.matrixWorld,
+        hoverInstanceMatrix
+      );
+      addHoverMesh(instance as unknown as Mesh, hoverWorldMatrix);
+    }
+    showHoverFeedback(handle.id);
   }
 
   export function handlePointerEnter(group: Object3D) {
-    if (editorState.activeCatalogItem || gizmoDragging) return;
-    setHoverHighlight(group);
+    if (editorState.activeCatalogItem || editorState.gizmoDragging) return;
+    setObjectHoverFeedback(group);
   }
 
   export function handlePointerLeave() {
-    if (gizmoDragging) return;
-    setHoverHighlight(null);
+    if (editorState.gizmoDragging) return;
+    clearHoverFeedback();
   }
 
   export function handleClick(group: Object3D) {
     if (editorState.activeCatalogItem) return;
-    setHoverHighlight(null);
+    clearHoverFeedback();
     editorState.select(group);
   }
 
@@ -138,7 +358,7 @@
 
   // ── Camera + WASD panning ──
 
-  const { camera, renderer } = useThrelte();
+  const { camera, renderer, scene } = useThrelte();
   const getCamera = (): Camera | null => {
     const c = (camera as any).current ?? camera;
     return c?.isCamera ? c : null;
@@ -146,6 +366,134 @@
 
   const panKeys = new Set<string>();
   const PAN_SPEED = 8;
+
+  const nativeRaycaster = new Raycaster();
+  const nativePointer = new Vector2();
+  const appliedNativePlacements = new Set<string>();
+  let nativeSnapshotReady = false;
+
+  $effect(() => {
+    plugin.sceneId;
+    appliedNativePlacements.clear();
+    nativeSnapshotReady = false;
+    clearHoverFeedback();
+    editorState.setNativeScenePlacements([]);
+  });
+
+  useTask(() => {
+    const adapter = plugin.nativeObjects;
+    const activeScene = (scene as any)?.current ?? scene;
+    if (!adapter || !activeScene) return;
+    const pending = editorState.placements.filter(
+      (placement) =>
+        placement.source === "native" &&
+        !appliedNativePlacements.has(placement.id)
+    );
+    if (nativeSnapshotReady && pending.length === 0) return;
+
+    const handles = adapter.enumerate(activeScene);
+    if (handles.length === 0) return;
+    const handlesById = new Map(handles.map((handle) => [handle.id, handle]));
+    for (const placement of pending) {
+      const handle = handlesById.get(placement.id);
+      if (!handle) continue;
+      adapter.applyPlacement(handle, placement);
+      appliedNativePlacements.add(placement.id);
+    }
+    if (!nativeSnapshotReady) {
+      editorState.setNativeScenePlacements(
+        handles.map((handle) => adapter.read(handle))
+      );
+      nativeSnapshotReady = true;
+    }
+  });
+
+  function handleScenePointerDown(event: PointerEvent): void {
+    const adapter = plugin.nativeObjects;
+    if (editorState.activeCatalogItem || editorState.gizmoDragging) return;
+    if (event.button !== 0) return;
+
+    const canvas =
+      (renderer as any)?.current?.domElement ?? (renderer as any)?.domElement;
+    const activeCamera = getCamera();
+    const activeScene = (scene as any)?.current ?? scene;
+    if (!canvas || !activeCamera || !activeScene) return;
+
+    const rect = canvas.getBoundingClientRect();
+    nativePointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    nativePointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    nativeRaycaster.setFromCamera(nativePointer, activeCamera);
+    adapter?.enumerate(activeScene);
+
+    const hits = nativeRaycaster.intersectObjects(activeScene.children, true);
+    for (const hit of hits) {
+      // TransformControls owns presses on its handles. Everything else that
+      // can be edited claims the press before the camera starts an orbit.
+      if (isTransformControlsObject(hit.object)) return;
+      if (isHoverFeedbackObject(hit.object)) continue;
+      if (isComposerToolObject(hit.object)) return;
+
+      const composerRoot = findComposerRoot(hit.object);
+      if (composerRoot) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        clearHoverFeedback();
+        editorState.select(composerRoot);
+        return;
+      }
+
+      if (!adapter) continue;
+      const handle = adapter.resolveHit(hit);
+      if (!handle) continue;
+      if (handle.locked) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      clearHoverFeedback();
+      editorState.selectNative(adapter, handle);
+      return;
+    }
+  }
+
+  function handleSceneHover(event: PointerEvent): void {
+    if (editorState.activeCatalogItem || editorState.gizmoDragging) {
+      clearHoverFeedback();
+      return;
+    }
+
+    const canvas = canvasElement();
+    const activeCamera = getCamera();
+    const activeScene = (scene as any)?.current ?? scene;
+    if (!canvas || !activeCamera || !activeScene) return;
+
+    const rect = canvas.getBoundingClientRect();
+    nativePointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    nativePointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    nativeRaycaster.setFromCamera(nativePointer, activeCamera);
+
+    const adapter = plugin.nativeObjects;
+    const hits = nativeRaycaster.intersectObjects(activeScene.children, true);
+    for (const hit of hits) {
+      if (isComposerToolObject(hit.object)) continue;
+
+      const composerRoot = findComposerRoot(hit.object);
+      if (composerRoot) {
+        setObjectHoverFeedback(composerRoot);
+        return;
+      }
+
+      const handle = adapter?.resolveHit(hit);
+      if (!handle) continue;
+      setHandleHoverFeedback(handle);
+      return;
+    }
+    clearHoverFeedback();
+  }
+
+  function releaseGizmoDrag(): void {
+    if (!editorState.gizmoDragging) return;
+    editorState.setGizmoDragging(false);
+    clearHoverFeedback();
+  }
 
   function handleKeyDown(event: KeyboardEvent) {
     const key = event.key.toLowerCase();
@@ -171,6 +519,28 @@
     if (key === "delete" || key === "backspace") {
       const sel = editorState.selectedObject;
       if (sel) {
+        const native = editorState.nativeSelection;
+        if (native) {
+          if (native.handle.locked) return;
+          const before = native.adapter.read(native.handle);
+          const after = { ...before, visible: false };
+          const { adapter, handle } = native;
+          const cmd: Command = {
+            label: `Delete ${handle.label}`,
+            execute() {
+              adapter.applyPlacement(handle, after);
+              editorState.upsertPlacement(after);
+            },
+            undo() {
+              adapter.applyPlacement(handle, before);
+              editorState.upsertPlacement(before);
+            },
+          };
+          editorState.commands.execute(cmd);
+          editorState.deselect();
+          return;
+        }
+
         const id = findComposerId(sel);
         if (id) {
           const placement = editorState.placements.find((p) => p.id === id);
@@ -214,6 +584,7 @@
   }
 
   useTask((delta) => {
+    if (editorState.gizmoDragging) return;
     if (panKeys.size === 0) return;
     const cam = getCamera();
     if (!cam) return;
@@ -244,18 +615,35 @@
   onMount(() => {
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
+    const canvas = canvasElement();
+    canvas?.addEventListener("pointerdown", handleScenePointerDown, true);
+    canvas?.addEventListener("pointermove", handleSceneHover);
+    canvas?.addEventListener("pointerleave", clearHoverFeedback);
+    window.addEventListener("pointerup", releaseGizmoDrag);
+    window.addEventListener("blur", releaseGizmoDrag);
     if (document.pointerLockElement) document.exitPointerLock();
   });
 
   onDestroy(() => {
     window.removeEventListener("keydown", handleKeyDown);
     window.removeEventListener("keyup", handleKeyUp);
-    setHoverHighlight(null);
+    const canvas = canvasElement();
+    canvas?.removeEventListener("pointerdown", handleScenePointerDown, true);
+    canvas?.removeEventListener("pointermove", handleSceneHover);
+    canvas?.removeEventListener("pointerleave", clearHoverFeedback);
+    window.removeEventListener("pointerup", releaseGizmoDrag);
+    window.removeEventListener("blur", releaseGizmoDrag);
+    editorState.setGizmoDragging(false);
+    clearHoverFeedback();
     editorState.deselect();
+    hoverOverlay.clear();
+    hoverMaterial.dispose();
   });
 </script>
 
-{#if editorState.selectedObject}
+<T is={hoverOverlay} dispose={false} />
+
+{#if editorState.selectedObject && !editorState.selectedLocked}
   <TransformControls
     object={editorState.selectedObject}
     mode={editorState.gizmoMode}
@@ -263,12 +651,23 @@
     rotationSnap={Math.PI / 12}
     scaleSnap={0.1}
     onmouseDown={() => {
-      gizmoDragging = true;
-      if (editorState.selectedObject) captureBeforeDrag(editorState.selectedObject);
+      panKeys.clear();
+      editorState.setGizmoDragging(true);
+      clearHoverFeedback();
+      if (editorState.selectedObject)
+        captureBeforeDrag(editorState.selectedObject);
     }}
     onmouseUp={() => {
-      gizmoDragging = false;
-      if (editorState.selectedObject) captureAfterDrag(editorState.selectedObject);
+      try {
+        if (editorState.selectedObject)
+          captureAfterDrag(editorState.selectedObject);
+      } finally {
+        releaseGizmoDrag();
+      }
+    }}
+    onobjectChange={() => {
+      const native = editorState.nativeSelection;
+      if (native) native.adapter.previewTransform(native.handle, native.target);
     }}
   />
 {/if}

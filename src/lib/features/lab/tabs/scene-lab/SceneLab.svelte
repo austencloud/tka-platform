@@ -24,15 +24,19 @@
   import ComposerPickerPanel from "$lib/shared/3d/scene-composer/ComposerPickerPanel.svelte";
   import { createComposerEditorState } from "$lib/shared/3d/scene-composer/composer-editor-state.svelte";
   import { composerRegistry } from "$lib/shared/3d/scene-composer/registry";
-  import { FilePersistence } from "$lib/shared/3d/scene-composer/persistence/file-persistence";
-  import "$lib/shared/3d/environments/scenes/autumn/autumn-composer-plugin";
-  import "$lib/shared/3d/environments/scenes/cosmic/cosmic-composer-plugin";
+  import { createComposerSaveState } from "$lib/shared/3d/scene-composer/composer-save-state.svelte";
+  import "$lib/shared/3d/scene-composer/register-scene-lab-composer-plugins";
 
   const sceneState = createSceneLabState();
   const composerState = createComposerEditorState();
   setSceneLabContext({ state: sceneState, composerState });
 
-  const persistence = new FilePersistence();
+  const composerSave = createComposerSaveState({
+    getPlugin: () => composerRegistry.get(sceneState.sceneId),
+    getPlacements: () => composerState.placements,
+    onSaved: () => composerState.markClean(),
+    context: { module: "lab", tab: "scene-lab" },
+  });
 
   let copyStatus = $state<"idle" | "copied" | "error">("idle");
 
@@ -73,30 +77,42 @@
 
   <div class="layout">
     <div class="preview-pane">
-      <ScenePreview />
+      <ScenePreview onComposerSave={composerSave.save} />
     </div>
 
     <aside class="controls-pane">
       <div class="actions">
         {#if composerState.active}
-          <button class="action-btn" onclick={() => composerState.setActive(false)}>
+          <button
+            class="action-btn"
+            onclick={() => composerState.setActive(false)}
+          >
             <i class="fas fa-arrow-left"></i> Controls
           </button>
           <button
             class="action-btn primary"
-            onclick={async () => {
-              const plugin = composerRegistry.get(sceneState.sceneId);
-              if (plugin) {
-                await persistence.save(plugin.sceneId, composerState.placements);
-                composerState.markClean();
-              }
-            }}
+            class:success={composerSave.status === "saved"}
+            class:error={composerSave.status === "error"}
+            disabled={composerSave.status === "saving"}
+            onclick={composerSave.save}
           >
-            <i class="fas fa-save"></i> Save
+            {#if composerSave.status === "saving"}
+              <i class="fas fa-spinner fa-spin"></i> Saving
+            {:else if composerSave.status === "saved"}
+              <i class="fas fa-check"></i> Saved
+            {:else if composerSave.status === "error"}
+              <i class="fas fa-xmark"></i> Save failed
+            {:else}
+              <i class="fas fa-save"></i> Save
+            {/if}
             {#if composerState.dirty}<span class="dirty-dot"></span>{/if}
           </button>
         {:else}
-          <button class="action-btn" onclick={handleReset} title="Reset to defaults">
+          <button
+            class="action-btn"
+            onclick={handleReset}
+            title="Reset to defaults"
+          >
             <i class="fas fa-undo"></i> Reset
           </button>
           <button
@@ -124,7 +140,7 @@
             <ComposerPickerPanel
               catalog={plugin.catalog}
               sceneName={plugin.displayName}
-              placedCount={composerState.placements.length}
+              placedCount={composerState.composedObjectCount}
               activeItemKey={composerState.activeCatalogItem?.key ?? null}
               onSelectItem={(def) => composerState.startPlacement(def)}
               onDeselectItem={() => composerState.stopPlacement()}
@@ -234,7 +250,11 @@
   }
 
   .scene-strip button.active {
-    background: color-mix(in srgb, var(--theme-accent, #38bdf8) 22%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #38bdf8) 22%,
+      transparent
+    );
     color: var(--theme-accent-text, #7dd3fc);
     box-shadow:
       0 0 12px color-mix(in srgb, var(--theme-accent, #38bdf8) 18%, transparent),
@@ -304,7 +324,11 @@
   }
 
   .action-btn.primary {
-    background: color-mix(in srgb, var(--theme-accent, #38bdf8) 18%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #38bdf8) 18%,
+      transparent
+    );
     border-color: color-mix(
       in srgb,
       var(--theme-accent, #38bdf8) 35%,
@@ -314,7 +338,11 @@
   }
 
   .action-btn.primary:hover {
-    background: color-mix(in srgb, var(--theme-accent, #38bdf8) 28%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #38bdf8) 28%,
+      transparent
+    );
   }
 
   .action-btn.success {

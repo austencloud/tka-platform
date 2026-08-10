@@ -1,0 +1,10 @@
+import "$lib/shared/3d/environments/scenes/winter/winter-composer-plugin";
+import "$lib/shared/3d/environments/scenes/forest/forest-composer-plugin";
+import "$lib/shared/3d/environments/scenes/autumn/autumn-composer-plugin";
+import "$lib/shared/3d/environments/scenes/cosmic/cosmic-composer-plugin";
+import "$lib/shared/3d/environments/scenes/ocean/authored/ocean-composer-plugin";
+import "$lib/shared/3d/environments/scenes/ember/ember-composer-plugin";
+import "$lib/shared/3d/environments/scenes/blossom/blossom-composer-plugin";
+import "$lib/shared/3d/environments/scenes/rainbow/rainbow-composer-plugin";
+import "$lib/shared/3d/environments/scenes/celestial/celestial-composer-plugin";
+import "$lib/shared/3d/environments/scenes/pure-black/void-composer-plugin";

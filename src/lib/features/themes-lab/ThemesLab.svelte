@@ -9,6 +9,9 @@
   import ScenePreview from "$lib/features/lab/tabs/scene-lab/components/ScenePreview.svelte";
   import type { Component } from "svelte";
   import type { ThemeId } from "./domain/theme-types";
+  import { composerRegistry } from "$lib/shared/3d/scene-composer/registry";
+  import { createComposerSaveState } from "$lib/shared/3d/scene-composer/composer-save-state.svelte";
+  import "$lib/shared/3d/scene-composer/register-scene-lab-composer-plugins";
 
   import OceanLab from "$lib/features/background-builder/components/OceanLab.svelte";
   import CosmicLab from "$lib/features/background-builder/components/CosmicLab.svelte";
@@ -22,6 +25,13 @@
   import VoidLab from "$lib/features/background-builder/components/VoidLab.svelte";
 
   const state = createThemesLabState();
+  const composerSave = createComposerSaveState({
+    getPlugin: () => composerRegistry.get(state.sceneState.sceneId),
+    getPlacements: () => state.composerState.placements,
+    onSaved: () => state.composerState.markClean(),
+    context: { module: "lab", tab: "themes" },
+  });
+  const activePlugin = $derived(composerRegistry.get(state.sceneState.sceneId));
 
   setSceneLabContext(state.sceneLabContext);
 
@@ -70,24 +80,35 @@
     onModeChange={(m) => state.setMode(m)}
   />
 
-  <div class="content" class:mode-3d={state.mode === "3d"}>
+  <div
+    class="content"
+    class:mode-3d={state.mode === "3d"}
+    class:composer-active={state.composerState.active}
+  >
     {#if state.mode === "2d"}
       {#if CurrentLabComponent}
         <CurrentLabComponent />
       {:else}
         <div class="placeholder">
           <i class="fas fa-paint-brush"></i>
-          <p>2D background coming soon for {state.currentTheme?.label ?? "this theme"}</p>
+          <p>
+            2D background coming soon for {state.currentTheme?.label ??
+              "this theme"}
+          </p>
         </div>
       {/if}
     {:else}
       <div class="preview-pane">
-        <ScenePreview />
+        <ScenePreview onComposerSave={composerSave.save} />
       </div>
       <aside class="controls-pane">
         <ThemeControlsPanel
           themeId={state.themeId}
           sceneState={state.sceneState}
+          composerState={state.composerState}
+          plugin={activePlugin}
+          composerSaveStatus={composerSave.status}
+          onComposerSave={composerSave.save}
         />
       </aside>
     {/if}
@@ -101,8 +122,10 @@
     height: 100%;
     padding: 16px 20px 20px;
     overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     gap: 8px;
+    container: themes-lab / inline-size;
   }
 
   .content {
@@ -158,7 +181,7 @@
     font-size: 0.875rem;
   }
 
-  @media (max-width: 900px) {
+  @container themes-lab (max-width: 900px) {
     .content.mode-3d {
       grid-template-columns: 1fr;
       grid-template-rows: minmax(300px, 1fr) auto;
@@ -166,6 +189,31 @@
 
     .controls-pane {
       max-height: 50vh;
+    }
+
+    .content.mode-3d.composer-active {
+      grid-template-rows: minmax(180px, 1fr) minmax(340px, 55vh);
+    }
+
+    .content.mode-3d.composer-active .controls-pane {
+      max-height: none;
+    }
+  }
+
+  @media (max-height: 599px) {
+    @container themes-lab (max-width: 900px) {
+      .content.mode-3d,
+      .content.mode-3d.composer-active {
+        grid-template-columns: minmax(0, 1fr) minmax(260px, 36vw);
+        grid-template-rows: 1fr;
+        gap: 8px;
+      }
+
+      .controls-pane,
+      .content.mode-3d.composer-active .controls-pane {
+        max-height: none;
+        padding: 10px;
+      }
     }
   }
 </style>

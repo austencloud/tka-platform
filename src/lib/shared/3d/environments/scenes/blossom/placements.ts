@@ -1,3 +1,3 @@
 import type { ComposerPlacement } from "$lib/shared/3d/scene-composer/types";
 
-export const AUTUMN_PLACEMENTS: ComposerPlacement[] = [];
+export const BLOSSOM_PLACEMENTS: ComposerPlacement[] = [];

@@ -3,7 +3,11 @@
   import { useGltf, useDraco } from "@threlte/extras";
   import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
   import { onDestroy, untrack } from "svelte";
-  import { InstancedMesh, type MeshStandardMaterial, type MeshPhysicalMaterial } from "three";
+  import {
+    InstancedMesh,
+    type MeshStandardMaterial,
+    type MeshPhysicalMaterial,
+  } from "three";
   import {
     extractFromGLB,
     createGLBCrystalInstancedMesh,
@@ -36,7 +40,9 @@
   const glb5 = useGltf(config.models[5]?.path ?? "", loaderOpts);
   const glb6 = useGltf(config.models[6]?.path ?? "", loaderOpts);
 
-  const allGlbs = $derived([$glb0, $glb1, $glb2, $glb3, $glb4, $glb5, $glb6].filter(Boolean));
+  const allGlbs = $derived(
+    [$glb0, $glb1, $glb2, $glb3, $glb4, $glb5, $glb6].filter(Boolean)
+  );
 
   // ── Build instanced meshes from Composer placements ─────────────────────────
 
@@ -88,7 +94,18 @@
     if (readyModels.length === 0) return;
 
     const rng = seedRng(config.seed);
-    const groups: CrystalPlacement[][] = Array.from({ length: readyModels.length }, () => []);
+    const groups: CrystalPlacement[][] = Array.from(
+      { length: readyModels.length },
+      () => []
+    );
+    const groupIds: string[][] = Array.from(
+      { length: readyModels.length },
+      () => []
+    );
+    const groupObjectKeys: string[][] = Array.from(
+      { length: readyModels.length },
+      () => []
+    );
 
     for (const placement of COSMIC_PLACEMENTS) {
       const modelIdx = objectKeyToModelIndex(placement.objectKey);
@@ -108,6 +125,8 @@
         glowIntensity: 0.5 + rng() * 0.5,
         glowPhase: rng() * Math.PI * 2,
       });
+      groupIds[readyIdx]!.push(placement.id);
+      groupObjectKeys[readyIdx]!.push(placement.objectKey);
     }
 
     const newMeshes: MeshData[] = [];
@@ -123,7 +142,12 @@
 
       const { mesh, material } = createGLBCrystalInstancedMesh(
         readyModels[i]!.extraction,
-        glowScaled,
+        glowScaled
+      );
+      mesh.userData.composerInstanceIds = groupIds[i];
+      mesh.userData.composerInstanceObjectKeys = groupObjectKeys[i];
+      mesh.userData.composerInstanceLabels = groupObjectKeys[i].map((key) =>
+        key.replaceAll("-", " ")
       );
       newMeshes.push({ mesh, material });
     }
@@ -153,9 +177,9 @@
 
   const glowLights = $derived.by(() => {
     if (!config.enabled) return [];
-    const largePlacements = COSMIC_PLACEMENTS
-      .filter((p) => p.scale[0] >= 0.8)
-      .slice(0, 8);
+    const largePlacements = COSMIC_PLACEMENTS.filter(
+      (p) => p.scale[0] >= 0.8
+    ).slice(0, 8);
     return largePlacements.map((p) => ({
       x: p.position[0],
       z: p.position[2],

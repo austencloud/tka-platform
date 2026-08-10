@@ -3,12 +3,7 @@
   import { useGltf } from "@threlte/extras";
   import { onDestroy, onMount } from "svelte";
   import { disposeSceneGraph } from "../utils/dispose-scene";
-  import {
-    Vector3,
-    FogExp2,
-    Color,
-    type MeshStandardMaterial,
-  } from "three";
+  import { Vector3, FogExp2, Color, type MeshStandardMaterial } from "three";
   import GroundPlane from "../primitives/GroundPlane.svelte";
   import CraterGround from "./ember/CraterGround.svelte";
   import SkyGradient from "../primitives/SkyGradient.svelte";
@@ -37,7 +32,12 @@
     stageZOffset?: number;
   }
 
-  let { config, stageWidth = 6, stageDepth = 6, stageZOffset = 0 }: Props = $props();
+  let {
+    config,
+    stageWidth = 6,
+    stageDepth = 6,
+    stageZOffset = 0,
+  }: Props = $props();
 
   const baseConfig = $derived(config ?? createDefaultEmberConfig());
 
@@ -60,7 +60,7 @@
   const { scene, renderer, camera } = useThrelte();
 
   let sceneFeatures = $state<ReturnType<typeof getSceneFeatureContext> | null>(
-    null,
+    null
   );
   try {
     sceneFeatures = getSceneFeatureContext();
@@ -77,7 +77,7 @@
       clone: () => { traverse: (cb: (obj: unknown) => void) => void };
     },
     color: string,
-    blend: number,
+    blend: number
   ) {
     const tintColor = new Color(color);
     const cloned = sourceScene.clone();
@@ -115,7 +115,13 @@
     });
   });
 
-  const logPlacements: { x: number; z: number; scale: number; rotY: number; large: boolean }[] = [
+  const logPlacements: {
+    x: number;
+    z: number;
+    scale: number;
+    rotY: number;
+    large: boolean;
+  }[] = [
     { x: 7.0, z: -1.5, scale: 1.8, rotY: Math.PI * 0.3, large: true },
     { x: 3.5, z: -5.0, scale: 1.5, rotY: Math.PI * 0.8, large: false },
     { x: 8.5, z: -5.5, scale: 1.4, rotY: Math.PI * 1.3, large: true },
@@ -141,7 +147,7 @@
       volcanicClone(
         (i % 2 === 0 ? $rockA : $rockB)!.scene,
         activeConfig.rockTintColor,
-        activeConfig.rockTintBlend,
+        activeConfig.rockTintBlend
       )
     );
   });
@@ -156,9 +162,11 @@
   const campfireClone = $derived($campfire ? $campfire.scene.clone() : null);
 
   onDestroy(() => {
-    for (const c of rockClones) disposeSceneGraph(c as import("three").Object3D);
+    for (const c of rockClones)
+      disposeSceneGraph(c as import("three").Object3D);
     for (const c of logClones) disposeSceneGraph(c as import("three").Object3D);
-    if (campfireClone) disposeSceneGraph(campfireClone as import("three").Object3D);
+    if (campfireClone)
+      disposeSceneGraph(campfireClone as import("three").Object3D);
   });
 
   // ── Fog ────────────────────────────────────────────────────────────────
@@ -233,7 +241,10 @@
 {/if}
 
 <!-- Lava cracks overlay on ground -->
-<LavaCracks config={activeConfig.lavaCracks} groundSize={activeConfig.ground.size} />
+<LavaCracks
+  config={activeConfig.lavaCracks}
+  groundSize={activeConfig.ground.size}
+/>
 
 <!-- Lava pool with domain-warped shader -->
 <LavaPool config={activeConfig.lavaPool} />
@@ -332,7 +343,17 @@
 {#each rockClones as clone, i}
   {@const rock = rockPlacements[i]}
   {#if rock}
-    <T is={clone} position.x={rock.x} position.y={groundY} position.z={rock.z} scale={rock.scale * 2.2} rotation.y={rock.rotY} />
+    <T.Group
+      name={`EmberRock_${i}`}
+      userData={{ tka_composer_id: `ember-rock-${i}`, tka_role: "rock" }}
+      position.x={rock.x}
+      position.y={groundY}
+      position.z={rock.z}
+      scale={rock.scale * 2.2}
+      rotation.y={rock.rotY}
+    >
+      <T is={clone} />
+    </T.Group>
   {/if}
 {/each}
 
@@ -340,7 +361,17 @@
 {#each logClones as clone, i}
   {@const log = logPlacements[i]}
   {#if log}
-    <T is={clone} position.x={log.x} position.y={groundY} position.z={log.z} scale={log.scale * 0.5} rotation.y={log.rotY} />
+    <T.Group
+      name={`EmberLog_${i}`}
+      userData={{ tka_composer_id: `ember-log-${i}`, tka_role: "deadwood" }}
+      position.x={log.x}
+      position.y={groundY}
+      position.z={log.z}
+      scale={log.scale * 0.5}
+      rotation.y={log.rotY}
+    >
+      <T is={clone} />
+    </T.Group>
   {/if}
 {/each}
 
