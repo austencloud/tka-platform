@@ -71,6 +71,7 @@ Animates forward in z-axis and expands to fill the container space
   let gridContainerElement = $state<HTMLDivElement>();
   let drawerHeightAnimation: Animation | null = null;
   let componentRevealFrame: number | null = null;
+  let pendingCloseTimer: ReturnType<typeof setTimeout> | null = null;
   // A reopened multi-component combo lands on the Combo screen it was applied
   // from, not back on Single (the overlay remounts per open — props are nulled
   // on close — so mount-time init is the reopen path).
@@ -125,6 +126,10 @@ Animates forward in z-axis and expands to fill the container space
       if (componentRevealFrame !== null) {
         cancelAnimationFrame(componentRevealFrame);
         componentRevealFrame = null;
+      }
+      if (pendingCloseTimer !== null) {
+        clearTimeout(pendingCloseTimer);
+        pendingCloseTimer = null;
       }
     };
   });
@@ -433,6 +438,18 @@ Animates forward in z-axis and expands to fill the container space
 
     onRhythmChange?.(updates);
     onChange(newLoopType);
+
+    // Rotation period and reflection axis are terminal picks: the value is
+    // already applied, so the open drawer only costs a manual dismiss.
+    // Close after a beat so the segment indicator lands first. Inversion
+    // keeps two controls (timing + build mode) and must stay open.
+    if ("rotationInterval" in updates || "reflectionAxis" in updates) {
+      if (pendingCloseTimer !== null) clearTimeout(pendingCloseTimer);
+      pendingCloseTimer = setTimeout(() => {
+        pendingCloseTimer = null;
+        onClose();
+      }, motionDuration(DURATION.emphasis));
+    }
   }
 
   function applyAndClose() {
