@@ -531,3 +531,59 @@ import, but its only consumer is `SoftwareSubmitForm.svelte`, which is not on `/
 Next step: repeat the manifest reverse-walk used for the Three.js trace, but
 target the firestore chunk, starting from the landing entry rather than guessing
 importers. Do NOT trust a grep sweep for this — two guesses already missed.
+
+## P5 SECOND IMPORTER IDENTIFIED (2026-08-10, post-fix build, manifest trace)
+
+Traced mechanically, not by grep. Post-ChoreoCard-fix build, firestore chunk
+located by its `firestore.googleapis.com` string, then BFS over static
+`imports` from the hero player:
+
+```
+InlineAnimationPlayer.svelte
+  -> _Ds5qe6v_.js        (21 KB anon chunk; contains `viewerMode`, `viewer3d` -> settings state)
+    -> _DlREyAWv.js      (the firestore chunk)
+```
+
+Source-level, `src/lib/shared/settings/state/settings-state.svelte.ts` has TWO
+static VALUE edges into Firebase:
+
+- `:24  import { auth } from "../../auth/firebase"` — pulls the SDK directly.
+- `:1   import { getSettingsPersister } from ".../get-settings-persister"` ->
+  `get-settings-persister.ts:2` statically imports `FirebaseSettingsPersister`
+  -> `firebase-settings-persister.ts:19` imports `auth, getFirestoreInstance`
+  plus `firebase/firestore`.
+
+(`:22` is `import type` and is correctly erased — not a contributor.)
+
+This is why `firebase_firestore` loads BEFORE `firebase_app`/`firebase_auth`:
+the settings path arrives first, independent of the auth barrel.
+
+### Why this was NOT fixed in the same pass
+
+Blast radius is an order of magnitude above the ChoreoCard fix:
+
+- `auth.currentUser` is read at ~12 sites inside settings-state (lines 186, 189,
+  195, 207, 208, 212, 289, 533, 550, 572, 611...), all inside sync methods.
+- `getSettingsPersister()` is SYNCHRONOUS (`return instance ??= new
+  FirebaseSettingsPersister()`). Making it lazy makes it async and ripples to
+  every caller.
+- settings-state is an app-wide singleton; a careless change breaks settings
+  sync for signed-in users, which is silent and expensive to detect.
+
+Swapping `import { auth }` for `getAuthSync()` does NOT help — that symbol lives
+in the same `auth/firebase` module, so the static edge survives.
+
+### The actual fix shape
+
+Split settings-state into a local-only core (what the landing page needs:
+read/write local settings, no identity) and a Firebase sync layer that app mode
+attaches on demand. Landing renders from the local core and never constructs the
+persister. This is an architectural change and wants its own session and its own
+brainstorm — do not bolt it on.
+
+### Status after today
+
+Landing still fetches 5 Firebase SDK chunks. But the 6 identitytoolkit/firestore
+NETWORK round trips are gone (verified 0), because nothing now calls
+`authState.initialize()` on that path. The remaining cost is bundle weight, not
+latency-to-Google.
