@@ -44,6 +44,12 @@ def organic_material(
 
     output = nodes.new("ShaderNodeOutputMaterial")
     bsdf = nodes.new("ShaderNodeBsdfPrincipled")
+    fallback_color = tuple(
+        (float(dark) + float(light)) * 0.5
+        for dark, light in zip(dark_color, light_color)
+    )
+    material.diffuse_color = (*fallback_color, 1.0)
+    bsdf.inputs["Base Color"].default_value = (*fallback_color, 1.0)
     bsdf.inputs["Roughness"].default_value = roughness
 
     texture_coordinate = nodes.new("ShaderNodeTexCoord")
@@ -217,6 +223,46 @@ def create_review_materials():
     }
 
 
+def create_production_campsite_materials():
+    """Export-safe PBR palette matching the approved Gate 8 campsite target."""
+    return {
+        "tent_spruce": flat_material(
+            "Forest Tent Ripstop Spruce", (0.035, 0.115, 0.075), 0.78
+        ),
+        "tent_teal": flat_material(
+            "Forest Tent Ripstop Slate Teal", (0.025, 0.145, 0.165), 0.76
+        ),
+        "tent_ochre": flat_material(
+            "Forest Tent Ripstop Ochre", (0.58, 0.235, 0.035), 0.74
+        ),
+        "tent_floor": flat_material(
+            "Forest Tent Charcoal Floor", (0.012, 0.017, 0.018), 0.92
+        ),
+        "tent_mesh": flat_material(
+            "Forest Tent Dark Mesh", (0.006, 0.011, 0.012), 0.98
+        ),
+        "aluminum": flat_material(
+            "Forest Tent Aluminum Poles", (0.48, 0.53, 0.52), 0.28, 0.82
+        ),
+        "guyline": flat_material(
+            "Forest Tent Ochre Guyline", (0.73, 0.315, 0.025), 0.58
+        ),
+        "mineral_soil": flat_material(
+            "Forest Fire Mineral Soil", (0.055, 0.037, 0.022), 0.96
+        ),
+        "fire_stone": flat_material(
+            "Forest Fire Weathered Stone", (0.16, 0.145, 0.115), 0.94
+        ),
+        "charcoal": flat_material(
+            "Forest Fire Charred Split Wood", (0.025, 0.010, 0.004), 0.94
+        ),
+        "ash": flat_material("Forest Fire Ash", (0.095, 0.088, 0.076), 1.0),
+        "ember": flat_material(
+            "Forest Fire Ember", (0.70, 0.070, 0.006), 0.52
+        ),
+    }
+
+
 def _apply_modifier(obj, modifier):
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
@@ -285,6 +331,25 @@ def rounded_box(name, location, scale, material, bevel_width=0.10):
     bevel.segments = 3
     _apply_modifier(obj, bevel)
     return obj
+
+
+def create_tent_pad(name, position, footprint, yaw, material=None):
+    """Create the durable, already-impacted surface beneath one tent."""
+    pad_material = material or flat_material(
+        "Forest Campsite Durable Tent Pad", (0.095, 0.082, 0.057), 0.99
+    )
+    bpy.ops.mesh.primitive_cube_add(location=(position[0], position[1], 0.025))
+    pad = bpy.context.object
+    pad.name = name
+    pad.scale = (float(footprint[0]) * 0.5, float(footprint[1]) * 0.5, 0.025)
+    pad.rotation_euler[2] = yaw
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    pad.data.materials.append(pad_material)
+    bevel = pad.modifiers.new("Soft campsite pad edge", "BEVEL")
+    bevel.width = 0.22
+    bevel.segments = 4
+    _apply_modifier(pad, bevel)
+    return pad
 
 
 def _cloth_grid(name, width, depth, front_y, back_y, front_z, back_z, material):
@@ -578,8 +643,10 @@ def _stake_and_guy(name, start, stake, materials):
     return line, pin
 
 
-def create_modern_dome_tent(origin=(0.0, 0.0, 0.0), name="ModernDomeTent"):
-    materials = create_review_materials()
+def create_modern_dome_tent(
+    origin=(0.0, 0.0, 0.0), name="ModernDomeTent", materials=None
+):
+    materials = materials or create_review_materials()
     root = bpy.data.objects.new(name, None)
     bpy.context.collection.objects.link(root)
     created = []
@@ -657,8 +724,10 @@ def create_modern_dome_tent(origin=(0.0, 0.0, 0.0), name="ModernDomeTent"):
     return root
 
 
-def create_modern_tunnel_tent(origin=(0.0, 0.0, 0.0), name="ModernTunnelTent"):
-    materials = create_review_materials()
+def create_modern_tunnel_tent(
+    origin=(0.0, 0.0, 0.0), name="ModernTunnelTent", materials=None
+):
+    materials = materials or create_review_materials()
     root = bpy.data.objects.new(name, None)
     bpy.context.collection.objects.link(root)
     created = []
@@ -742,8 +811,10 @@ def create_modern_tunnel_tent(origin=(0.0, 0.0, 0.0), name="ModernTunnelTent"):
     return root
 
 
-def create_modern_trekking_tent(origin=(0.0, 0.0, 0.0), name="ModernTrekkingTent"):
-    materials = create_review_materials()
+def create_modern_trekking_tent(
+    origin=(0.0, 0.0, 0.0), name="ModernTrekkingTent", materials=None
+):
+    materials = materials or create_review_materials()
     root = bpy.data.objects.new(name, None)
     bpy.context.collection.objects.link(root)
     created = []
@@ -811,8 +882,10 @@ def create_modern_trekking_tent(origin=(0.0, 0.0, 0.0), name="ModernTrekkingTent
     return root
 
 
-def create_established_fire_bed(origin=(0.0, 0.0, 0.0), name="EstablishedFireBed"):
-    materials = create_review_materials()
+def create_established_fire_bed(
+    origin=(0.0, 0.0, 0.0), name="EstablishedFireBed", materials=None
+):
+    materials = materials or create_review_materials()
     root = bpy.data.objects.new(name, None)
     bpy.context.collection.objects.link(root)
     created = []
@@ -890,8 +963,13 @@ def create_established_fire_bed(origin=(0.0, 0.0, 0.0), name="EstablishedFireBed
     return root
 
 
-def create_modern_camp_chair(origin=(0.0, 0.0, 0.0), name="ModernCampChair", fabric="teal"):
-    materials = create_review_materials()
+def create_modern_camp_chair(
+    origin=(0.0, 0.0, 0.0),
+    name="ModernCampChair",
+    fabric="teal",
+    materials=None,
+):
+    materials = materials or create_review_materials()
     fabric_material = materials["tent_teal"] if fabric == "teal" else materials["tent_spruce"]
     root = bpy.data.objects.new(name, None)
     bpy.context.collection.objects.link(root)

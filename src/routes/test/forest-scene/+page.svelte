@@ -11,6 +11,11 @@
   import { createEnvironmentTransitionVisualState } from "$lib/shared/3d/environments/state/environment-transition-visual-state.svelte";
   import { setEnvironmentTransitionVisualContext } from "$lib/shared/3d/environments/context/environment-transition-visual-context";
   import HarnessToneMapping from "../winter-scene/HarnessToneMapping.svelte";
+  import ForestCompositionPlan from "./ForestCompositionPlan.svelte";
+  import {
+    createForestAtmosphereAnchor,
+    isForestAtmosphereAnchorId,
+  } from "$lib/shared/3d/environments/scenes/forest/forest-atmosphere-profile";
 
   const sceneFeatureState = createSceneFeatureState();
   setSceneFeatureContext(sceneFeatureState);
@@ -35,9 +40,9 @@
       fov: 58,
     },
     world: {
-      position: [0, 52, 40],
-      target: [0, 1, 0],
-      fov: 52,
+      position: [12, 58, 42],
+      target: [14, 1, 1],
+      fov: 55,
     },
     trees: {
       position: [2, 6.5, 20],
@@ -50,14 +55,54 @@
       fov: 46,
     },
     camp: {
-      position: [11, 4.8, 11],
-      target: [5.5, 1.1, -3.5],
+      position: [29, 7.05, 23.5],
+      target: [35, 1.25, 2.5],
       fov: 45,
+    },
+    campclose: {
+      position: [31, 2.45, 13.5],
+      target: [37.5, 0.97, 5.5],
+      fov: 50,
+    },
+    arrival: {
+      position: [7, 5.4, 20],
+      target: [28, 1, 2],
+      fov: 52,
+    },
+    tentdome: {
+      position: [37.5, 1.9, 6.3],
+      target: [41, 0.8, 1],
+      fov: 50,
+    },
+    tenttunnel: {
+      position: [34.5, 1.95, 11.5],
+      target: [39, 0.8, 7.5],
+      fov: 50,
+    },
+    tenttrekking: {
+      position: [27.8, 1.95, 12],
+      target: [32, 0.9, 8.5],
+      fov: 50,
     },
     stage: {
       position: [-8, 4.5, 12],
       target: [0, 1.0, 0],
       fov: 46,
+    },
+    path: {
+      position: [8, 4.4, 18],
+      target: [-7, 1.0, -32],
+      fov: 48,
+    },
+    paths: {
+      position: [8, 4.4, 18],
+      target: [-7, 1.0, -32],
+      fov: 48,
+    },
+    pathwalk: {
+      position: [-2.5, 2.2, -7],
+      target: [-10, 1.1, -40],
+      fov: 58,
     },
   } as const;
 
@@ -70,6 +115,12 @@
   type ViewName = keyof typeof VIEW_PRESETS;
   let viewportWidth = $state(1920);
   const requestedView = $derived(page.url.searchParams.get("view"));
+  const requestedTime = $derived(page.url.searchParams.get("time"));
+  const atmosphereId = $derived(
+    isForestAtmosphereAnchorId(requestedTime) ? requestedTime : "night"
+  );
+  const atmosphere = $derived(createForestAtmosphereAnchor(atmosphereId));
+  const showCompositionPlan = $derived(requestedView === "composition");
   const view = $derived(
     requestedView && requestedView in VIEW_PRESETS
       ? (requestedView as ViewName)
@@ -85,39 +136,58 @@
 <svelte:window bind:innerWidth={viewportWidth} />
 
 <svelte:head>
-  <title>Moonlit Firefly Forest verification</title>
+  <title>{atmosphere.label} Forest verification</title>
 </svelte:head>
 
-<div class="page">
-  <Canvas
-    createRenderer={(canvas) =>
-      new WebGLRenderer({
-        canvas,
-        antialias: true,
-        preserveDrawingBuffer: true,
-        powerPreference: "high-performance",
-      })}
+{#if showCompositionPlan}
+  <ForestCompositionPlan />
+{:else}
+  <div
+    class="page"
+    data-atmosphere={atmosphere.id}
+    data-atmosphere-hour={atmosphere.hour}
   >
-    <HarnessToneMapping />
-    {#key view}
-      <EnvironmentReviewCamera
-        destinationId="forest-scene-review"
-        preset={cameraPreset}
-        walk={view === "walk"}
-        maxOrbitDistance={240}
+    <Canvas
+      shadows
+      createRenderer={(canvas) =>
+        new WebGLRenderer({
+          canvas,
+          antialias: true,
+          preserveDrawingBuffer: true,
+          powerPreference: "high-performance",
+        })}
+    >
+      <HarnessToneMapping />
+      {#key view}
+        <EnvironmentReviewCamera
+          destinationId="forest-scene-review"
+          preset={cameraPreset}
+          walk={view === "walk" || view === "pathwalk"}
+          maxOrbitDistance={240}
+        />
+      {/key}
+      <Environment3D
+        backgroundType={BackgroundType.FOREST}
+        performerCount={1}
+        stageWidth={6}
+        stageDepth={6}
+        stageZOffset={0}
+        forestConfig={atmosphere.config}
       />
-    {/key}
-    <Environment3D
-      backgroundType={BackgroundType.FOREST}
-      performerCount={1}
-      stageWidth={6}
-      stageDepth={6}
-      stageZOffset={0}
-    />
-  </Canvas>
-</div>
+    </Canvas>
+  </div>
+{/if}
 
 <style>
+  :global(html),
+  :global(body) {
+    overflow: hidden;
+  }
+
+  :global(html) {
+    scrollbar-gutter: auto;
+  }
+
   .page {
     position: fixed;
     inset: 0;

@@ -1,9 +1,9 @@
 # Moonlit Firefly Forest: Gated Rebuild Plan
 
 - **Date:** 2026-08-08
-- **Status:** Gates 0 through 8 are approved. Gate 9, clearing frame and static
-  prop ecology, is implemented and awaiting Austen's visual verdict. Later
-  gates remain blocked.
+- **Status:** Gates 0 through 12 are approved. Gate 12 revision 36 is the locked
+  Night Master. Gate 13A, the registered time-of-day target board, is active.
+  Gates 13B, 13C, and 14 remain blocked.
 - **Quality reference:** Autumn's Blender-authored environment and runtime split.
 - **Review authority:** Austen approves or rejects every visual gate.
 - **Scene steward:** Bramble
@@ -19,6 +19,13 @@ fog, lighting, exposure, fireflies, and campfire response. Reuse Scene Lab's
 existing `ParamSlider`; keep `SkyGradient` and the celestial components as
 render primitives. Coordinate with Elsa before promoting any interpolation
 contract to shared ownership.
+
+**Approved 2026-08-10:** Austen locked revision 36 as the Night Master and
+approved autonomous work between five visual locks. Gate 13 now contains three
+named sub-gates: registered time-of-day targets, the living clock, and the rare
+night UFO slice. The UFO remains an authored environmental invention, never
+proof of the extraterrestrial-signal theory. Tracker decision:
+`2h40cRvXHIL9szNFxb8c`.
 
 ## Target
 
@@ -463,9 +470,44 @@ furthest prop remains 5.595 m from its tree anchor. Runtime review covers all
 seven required viewports. The review board is
 `../../specs/moonlit-firefly-forest/forest-gate9-review-board.png`.
 
-Museum tracker proposal: `UFY4AuUL80NTJMojrRBN`.
+**Approval:** Austen, 2026-08-09: “I'm happy with it for now. Let's incorporate
+what we have thus far.” This accepted the conditional close-tree frame, the
+west root shelf, the east runoff shoulder, and retirement of the old production
+rock and log clones. Museum tracker decision: `UFY4AuUL80NTJMojrRBN`.
 
 **Review question:** Do these props tell one site-specific story?
+
+### Gate 10.1: Measured composition revision
+
+**Change:** Review the clearing, stage, campsite, and route as one measured
+spatial system before moving production geometry.
+
+- Keep the stage at runtime `(0, 0)` and preserve its 7.5 m performance core.
+- Move the approved campsite as one unit from a 17.1 m stage-to-fire distance
+  to a proposed 34.1 m distance on a durable east-rim shelf.
+- Extend the existing camp spur from runtime `(14, 1.5)` to the relocated fire
+  pocket at `(34, 2)`.
+- Preserve the open audience meadow between the south entry and stage.
+- Use a fern-and-boulder threshold, a moss-and-deadwood threshold, and a
+  sedge-and-firefly hollow to give the unused clearing distinct ecological
+  causes without filling it with repeated props.
+- Keep the visual order: stage first, camp glow second, forest depth third.
+
+The measured contract is `scripts/forest-composition-revision.json`. The live
+review board is
+`https://localhost:5174/test/forest-scene?view=composition&rev=24`; its recorded
+evidence is
+`../../specs/moonlit-firefly-forest/forest-composition-revision-plan.png`.
+`scripts/verify-forest-composition-revision.mjs` confirms the rigid camp
+translation, shelf fit, route continuity, 2.5% maximum approach grade,
+performance clearance, and frame-tree clearance. Production placement remains
+unchanged until Austen approves this measured plan.
+
+Museum tracker review: `Q9wYcOIrKi0DBs3srzgm`.
+
+**Review question:** Does the route read as south entry to audience meadow and
+stage, then an optional east spur to a separate campsite pocket, with the
+northwest trail carrying the final forest-depth view?
 
 ### Gate 10: Stage form and terrain contact
 
@@ -497,17 +539,70 @@ Museum tracker proposal: `UFY4AuUL80NTJMojrRBN`.
 
 **Review question:** Does the light reveal depth without flattening the forest?
 
-### Gate 13: Sky and living atmosphere
+**Review packet, 2026-08-09:** Forest now has one scene-owned moonlight rig
+aligned with the visible moon, a restrained camera-side canopy fill, a bounded
+cool performance pool, and a low ambient floor. The former orange global
+hemisphere is replaced by cool sky bounce and deep green ground bounce. The
+camp keeps its warm light inside a 14 m primary and 12 m fill radius with
+physical decay, while darker blue-green fog separates distant tree masses. A
+bounded 2048 px moon-shadow map gives the stage and campsite contact depth on
+the terrain without submitting the 295-tree woodland to a second full render
+pass. Locked hero, stage, and camp frames are recorded under
+`docs/superpowers/specs/moonlit-firefly-forest/evidence/gate12/`. The live
+review is `https://localhost:5174/test/forest-scene?view=hero&rev=36`.
+
+**Approved 2026-08-10:** Austen approved Gate 12 as the Night Master. Revision
+36 is the canonical nighttime endpoint and may not drift while daylight targets
+are authored. Approval quote: “Approve Gate 12 as the Night Master. Approve
+this atmosphere plan. Go full ham between gates.” Tracker decision:
+`2h40cRvXHIL9szNFxb8c`.
+
+### Gate 13A: Registered time-of-day targets
+
+**Change:** Forest atmosphere targets only. Approved geometry, routes, cameras,
+stage placement, campsite placement, and Night Master values stay locked.
+
+- Author Dawn, Day, Golden Hour, Dusk, and Night anchors at documented hours.
+- Use the same hero, walk, world, stage, and camp cameras for every anchor.
+- Treat Day as the material truth test: reject clipped foliage, muddy fog,
+  unreadable tents, texture seams, and implausible fire dominance.
+- Extend the shared sky primitive only through optional sun inputs whose absent
+  defaults leave Autumn, Winter, Ocean, Cosmic, and Celestial unchanged.
+- Do not expose a public time control in this gate.
+
+**Review question:** Do all five anchors read as the same real clearing under
+different light, with the stage first and campsite second?
+
+### Gate 13B: Living clock and ecological response
 
 **Change:** Shared sky configuration and Forest particle balance only.
 
-- Reuse the shared moon, stars, meteors, leaves, and firefly owners.
+- Interpolate the approved anchors from one Forest-owned `0–24 h` value.
+- Reuse the shared moon, sun, stars, meteors, leaves, and firefly owners.
 - Apply any shared moon-distance correction without creating a Forest-specific
   moon implementation.
-- Tune Forest values only after the spatial scene is locked.
+- Drive fog, lighting, exposure, campfire response, birds, bats, fireflies, and
+  rooted wind from the same value.
+- Add Day, Golden Hour, and Night presets, a continuous scrubber, persistence,
+  and optional Play. Manual input pauses Play.
+- Keep any later in-world instrument as an adapter to this clock, not a second
+  time owner.
 
-**Review question:** Does the night continue beyond the trees, and do the
-particles add life without noise?
+**Review question:** Does one complete scrub remain coherent, readable, and
+alive without visible state pops or particle noise?
+
+### Gate 13C: Rare night UFO slice
+
+**Change:** One restrained nighttime environmental event only.
+
+- Reuse or extract the existing UFO scheduler and state machine; provide a
+  Forest 3D renderer instead of creating another scheduler.
+- Keep the production encounter rare, distant, canopy-scale, and night-only.
+- Provide a deterministic review trigger that cannot enter production defaults.
+- Add no narration, plaque, abduction, campsite beam, or confirmed explanation.
+
+**Review question:** Does the event produce a credible “did I just see that?”
+moment without stealing the Forest hierarchy or resolving the lore?
 
 ### Gate 14: Integration and free-orbit review
 
@@ -569,16 +664,22 @@ References:
 | Ground-life placement     | `scripts/forest_ground_life.py`                                           |
 | Placement review sheet    | `scripts/build-forest-ground-life-layout-contact-sheet.mjs`               |
 | Placement verification    | `scripts/verify-forest-ground-life-layout.mjs`                            |
-| Gate 8 prop lineup        | `scripts/forest-prop-lineup.json`, `scripts/forest_prop_assets.py`         |
-| Campsite layout contract  | `scripts/forest-campsite-layout.json`                                      |
-| Gate 8 evidence rig       | `scripts/build-forest-prop-lineup.py`                                      |
-| Gate 8 review sheet       | `scripts/build-forest-prop-lineup-contact-sheet.mjs`                       |
-| Gate 8 verification       | `scripts/verify-forest-prop-lineup.mjs`                                    |
-| Gate 9 static layout      | `scripts/forest-static-prop-layout.json`                                   |
-| Gate 9 layer export       | `scripts/blender-export-forest-near-frame.py`                              |
-| Gate 9 optimization       | `scripts/optimize-forest-near-frame.mjs`                                   |
-| Gate 9 review sheet       | `scripts/build-forest-static-prop-contact-sheet.mjs`                       |
-| Gate 9 verification       | `scripts/verify-forest-near-frame.mjs`                                     |
+| Gate 8 prop lineup        | `scripts/forest-prop-lineup.json`, `scripts/forest_prop_assets.py`        |
+| Campsite layout contract  | `scripts/forest-campsite-layout.json`                                     |
+| Gate 8 evidence rig       | `scripts/build-forest-prop-lineup.py`                                     |
+| Gate 8 review sheet       | `scripts/build-forest-prop-lineup-contact-sheet.mjs`                      |
+| Gate 8 verification       | `scripts/verify-forest-prop-lineup.mjs`                                   |
+| Gate 9 static layout      | `scripts/forest-static-prop-layout.json`                                  |
+| Gate 9 layer export       | `scripts/blender-export-forest-near-frame.py`                             |
+| Gate 9 optimization       | `scripts/optimize-forest-near-frame.mjs`                                  |
+| Gate 9 review sheet       | `scripts/build-forest-static-prop-contact-sheet.mjs`                      |
+| Gate 9 verification       | `scripts/verify-forest-near-frame.mjs`                                    |
+| Gate 10.1 spatial plan    | `scripts/forest-composition-revision.json`                                |
+| Gate 10.1 verification    | `scripts/verify-forest-composition-revision.mjs`                          |
+| Gate 10.1 review route    | `src/routes/test/forest-scene/ForestCompositionPlan.svelte`               |
+| Gate 12 lighting owner    | `src/lib/shared/3d/environments/scenes/forest/ForestLighting.svelte`      |
+| Gate 12 shadow roles      | `src/lib/shared/3d/environments/scenes/forest/forest-shadow-roles.ts`     |
+| Gate 12 visual evidence   | `docs/superpowers/specs/moonlit-firefly-forest/evidence/gate12/`          |
 | Export                    | `scripts/blender-export-forest-full.py`                                   |
 | Optimization              | `scripts/optimize-forest-environment.mjs`                                 |
 | GLB contract              | `scripts/verify-forest-environment-glb.mjs`                               |
@@ -596,11 +697,14 @@ References:
 - [x] Gate 6: ground-life lineup approved
 - [x] Gate 7: ground-life ecology approved
 - [x] Gate 8: clearing-frame and prop lineup approved
-- [ ] Gate 9: clearing frame and static prop ecology approved
-- [ ] Gate 10: stage form approved
-- [ ] Gate 11: camp composition approved
-- [ ] Gate 12: lighting and depth approved
-- [ ] Gate 13: sky and atmosphere approved
+- [x] Gate 9: clearing frame and static prop ecology approved
+- [x] Gate 10.1: measured composition revision approved
+- [x] Gate 10: stage form approved
+- [x] Gate 11: camp composition approved
+- [x] Gate 12: Night Master lighting and depth approved
+- [ ] Gate 13A: registered time-of-day targets approved
+- [ ] Gate 13B: living clock and ecological response approved
+- [ ] Gate 13C: rare night UFO slice approved
 - [ ] Gate 14: final integration approved
 
 No unchecked gate is implied by a later screenshot. A check is recorded only

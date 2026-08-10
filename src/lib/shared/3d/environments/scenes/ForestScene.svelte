@@ -2,8 +2,8 @@
   /**
    * ForestScene
    *
-   * A forest clearing environment with KayKit 3D models arranged in a ring
-   * around the performer. Includes falling leaves and supports autumn/firefly variants.
+   * A moonlit forest clearing assembled from authored environment layers.
+   * Includes falling leaves and supports autumn/firefly variants.
    *
    * Production callers pass just `variant` and get the baked-in look.
    * The Scene Lab can pass a full `config` object instead to drive every
@@ -12,8 +12,6 @@
 
   import { T, useThrelte } from "@threlte/core";
   import { useGltf, useMeshopt } from "@threlte/extras";
-  import TexturedGroundPlane from "../primitives/TexturedGroundPlane.svelte";
-  import GroundPlane from "../primitives/GroundPlane.svelte";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import Starfield from "../primitives/Starfield.svelte";
   import MeteorStreaks from "./cosmic/MeteorStreaks.svelte";
@@ -28,11 +26,16 @@
   import { userProportionsState } from "@austencloud/scene-3d";
   import Stage3D from "../../components/Stage3D.svelte";
   import VolumetricFireComponent from "../../effects/volumetric-fire/VolumetricFireComponent.svelte";
-  import { Vector3, FogExp2, Color } from "three";
-  import { onDestroy } from "svelte";
-  import { disposeSceneGraph } from "../utils/dispose-scene";
+  import { Vector3, FogExp2, type Mesh } from "three";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
   import ForestNearFrameLayer from "./forest/ForestNearFrameLayer.svelte";
+  import ForestStage from "./forest/ForestStage.svelte";
+  import ForestFireflyFields from "./forest/ForestFireflyFields.svelte";
+  import ForestCanopyFlight from "./forest/ForestCanopyFlight.svelte";
+  import ForestCampsite from "./forest/ForestCampsite.svelte";
+  import ForestLighting from "./forest/ForestLighting.svelte";
+  import ForestAtmosphereMaterials from "./forest/ForestAtmosphereMaterials.svelte";
+  import { resolveForestShadowRole } from "./forest/forest-shadow-roles";
 
   interface Props {
     /** Color variant. Ignored if `config` is provided. */
@@ -42,7 +45,7 @@
     stageWidth?: number;
     stageDepth?: number;
     stageZOffset?: number;
-    /** Hide the single built-in Stage3D (hub mounts its own coven stages). */
+    /** Hide the built-in Forest stage (hub mounts its own coven stages). */
     showStage?: boolean;
     /** Override the clearing radius so the hub can widen it for N stations. */
     clearingRadius?: number;
@@ -58,35 +61,55 @@
     clearingRadius,
   }: Props = $props();
 
-  const activeConfig = $derived.by(() => {
-    const base = config ?? createDefaultForestFireflyConfig();
-    return clearingRadius != null ? { ...base, clearingRadius } : base;
-  });
-  const showNearFrame = $derived(
-    shouldShowForestNearFrame(config, clearingRadius)
-  );
+  const activeConfig = $derived(config ?? createDefaultForestFireflyConfig());
+  const showNearFrame = $derived(shouldShowForestNearFrame(clearingRadius));
   let nearFrameReady = $state(false);
+  let forestStageReady = $state(false);
+  let forestStageFailed = $state(false);
+  let forestCampsiteReady = $state(false);
 
   function handleNearFrameReady(): void {
     nearFrameReady = true;
   }
 
-  import { R2_CDN } from "../../constants/r2-cdn";
+  function handleForestStageReady(): void {
+    forestStageReady = true;
+  }
 
-  const tree1 = useGltf(`${R2_CDN}/models/forest/Tree_1_A_Color1.gltf`);
-  const tree2 = useGltf(`${R2_CDN}/models/forest/Tree_2_A_Color1.gltf`);
-  const tree3 = useGltf(`${R2_CDN}/models/forest/Tree_3_A_Color1.gltf`);
-  const rock1 = useGltf(`${R2_CDN}/models/forest/Rock_1_A_Color1.gltf`);
-  const rock2 = useGltf(`${R2_CDN}/models/forest/Rock_1_B_Color1.gltf`);
-  const bush1 = useGltf(`${R2_CDN}/models/forest/Bush_1_A_Color1.gltf`);
-  const bush2 = useGltf(`${R2_CDN}/models/forest/Bush_2_A_Color1.gltf`);
+  function handleForestStageError(error: Error): void {
+    console.warn(
+      "[ForestScene] Forest stage failed to load; using canonical stage",
+      error
+    );
+    forestStageFailed = true;
+    forestStageReady = true;
+  }
 
-  const campfire = useGltf("/models/camping/campfire-pit.glb");
-  const tent = useGltf("/models/camping/tent-canvas.glb");
-  const fallenLog = useGltf("/models/camping/tree-log.glb");
-  const fallenLogSmall = useGltf("/models/camping/tree-log-small.glb");
+  function handleForestCampsiteReady(): void {
+    forestCampsiteReady = true;
+  }
+
+  function handleForestCampsiteError(error: Error): void {
+    console.warn("[ForestScene] Forest campsite failed to load", error);
+    forestCampsiteReady = true;
+  }
   const forestEnvironment = useGltf("/models/forest/forest-environment.glb", {
     meshoptDecoder: useMeshopt(),
+  });
+
+  // The authored forest would cost roughly 49 million processed vertices for
+  // each full shadow pass. Keep it out of the map and let only the terrain
+  // receive contact shadows from the much smaller stage and campsite owners.
+  $effect(() => {
+    if (!$forestEnvironment) return;
+
+    $forestEnvironment.scene.traverse((child) => {
+      const mesh = child as Mesh;
+      if (!mesh.isMesh) return;
+      const shadowRole = resolveForestShadowRole(child.userData?.tka_role);
+      mesh.castShadow = shadowRole.cast;
+      mesh.receiveShadow = shadowRole.receive;
+    });
   });
 
   const { scene, renderer, camera } = useThrelte();
@@ -106,120 +129,28 @@
     // In that case, all features are shown and no readiness reporting is needed.
   }
 
-  // Tree placements derived reactively from config
-  const treePlacements = $derived.by(() => {
-    return activeConfig.treeRings.flatMap((ring, ringIndex) =>
-      Array.from({ length: ring.count }, (_, i) => {
-        const angleOffset = ringIndex * 0.4;
-        const angle = (i / ring.count) * Math.PI * 2 + angleOffset;
-        const seed = ringIndex * 100 + i;
-        const radiusVariation =
-          ring.radius + Math.sin(seed * 3.7) * ring.radiusJitter;
-        const x = Math.cos(angle) * radiusVariation;
-        const z = Math.sin(angle) * radiusVariation;
-        const scale =
-          ring.scaleBase + Math.abs(Math.sin(seed * 2.3) * ring.scaleVariation);
-        const rotation = angle + Math.PI + Math.sin(seed * 1.7) * 0.3;
-        return [x, z, scale, rotation] as [number, number, number, number];
-      })
-    );
-  });
-
-  const rockPlacements = $derived.by(() => {
-    const count = activeConfig.rockCount;
-    const clearingRadius = activeConfig.clearingRadius;
-    return Array.from({ length: count }, (_, i) => {
-      const angle = (i / count) * Math.PI * 2 + 0.2;
-      const radius = clearingRadius - 2.0 + Math.sin(i * 4.1) * 1.0;
-      const x = Math.cos(angle) * radius;
-      const z = Math.sin(angle) * radius;
-      const scale = 0.3 + Math.abs(Math.sin(i * 3.2) * 0.25);
-      const rotation = Math.sin(i * 2.8) * Math.PI;
-      return [x, z, scale, rotation] as [number, number, number, number];
-    });
-  });
-
-  const bushPlacements = $derived.by(() => {
-    const count = activeConfig.bushCount;
-    const clearingRadius = activeConfig.clearingRadius;
-    return Array.from({ length: count }, (_, i) => {
-      const angle = (i / count) * Math.PI * 2 + 0.15;
-      const radius = clearingRadius - 1.5 + Math.sin(i * 5.3) * 1.75;
-      const x = Math.cos(angle) * radius;
-      const z = Math.sin(angle) * radius;
-      const scale = 0.4 + Math.abs(Math.sin(i * 2.1) * 0.25);
-      const rotation = Math.sin(i * 3.4) * Math.PI;
-      return [x, z, scale, rotation] as [number, number, number, number];
-    });
-  });
-
-  // Fallen log placements stay hand-authored - they're intentional focal details.
-  const fallenLogPlacements: [number, number, number, number, boolean][] = [
-    [7.0, 4.0, 2.0, Math.PI * 0.3, true],
-    [-6.0, 5.5, 1.75, Math.PI * 0.7, true],
-    [4.5, -6.5, 1.5, Math.PI * 1.2, false],
-    [-7.5, -3.0, 1.4, Math.PI * 0.1, false],
-    [11.0, 2.0, 1.6, Math.PI * 0.5, true],
-    [-10.0, -6.0, 1.5, Math.PI * 1.4, false],
-    [9.0, -9.0, 1.75, Math.PI * 0.9, true],
-    [14.0, 7.5, 1.4, Math.PI * 0.2, false],
-    [-13.0, 9.0, 1.5, Math.PI * 1.1, true],
-  ];
-
   const groundY = $derived(userProportionsState.groundY);
-
-  // ── Clone caching — clone once per GLB load, not per render ─────────
-
-  const treeClones = $derived.by(() => {
-    // Production gets its connected canopy masses from the authored Forest
-    // GLB. Scene Lab keeps the older reactive rings so its tree controls still
-    // produce an immediate preview while the later integration gate is locked.
-    if (!config || !$tree1 || !$tree2 || !$tree3) return [];
-    const models = [$tree1, $tree2, $tree3];
-    return treePlacements.map((_, i) => models[i % 3]!.scene.clone());
-  });
-
-  const rockClones = $derived.by(() => {
-    // Production replaces the legacy rock ring with two authored edge habitats.
-    if (!config || !$rock1 || !$rock2) return [];
-    const models = [$rock1, $rock2];
-    return rockPlacements.map((_, i) => models[i % 2]!.scene.clone());
-  });
-
-  const bushClones = $derived.by(() => {
-    // Production uses the authored Gate 7 habitat patches in the Forest GLB.
-    // Scene Lab keeps these older rings so its bush controls still respond.
-    if (!config || !$bush1 || !$bush2) return [];
-    const models = [$bush1, $bush2];
-    return bushPlacements.map((_, i) => models[i % 2]!.scene.clone());
-  });
-
-  const logClones = $derived.by(() => {
-    // Production deadwood now has one cause and one location at the beech shelf.
-    if (!config || !$fallenLog || !$fallenLogSmall) return [];
-    return fallenLogPlacements.map(([, , , , isLarge]) =>
-      (isLarge ? $fallenLog : $fallenLogSmall)!.scene.clone()
-    );
-  });
-
-  const campfireClone = $derived($campfire ? $campfire.scene.clone() : null);
-  const tentClone = $derived($tent ? $tent.scene.clone() : null);
-
-  onDestroy(() => {
-    for (const c of treeClones) disposeSceneGraph(c);
-    for (const c of rockClones) disposeSceneGraph(c);
-    for (const c of bushClones) disposeSceneGraph(c);
-    for (const c of logClones) disposeSceneGraph(c);
-    if (campfireClone) disposeSceneGraph(campfireClone);
-    if (tentClone) disposeSceneGraph(tentClone);
-  });
+  const campsiteGroundY = $derived(
+    groundY + (activeConfig.campfire?.groundOffset ?? 0)
+  );
+  const campfireFeatureEnabled = $derived(
+    Boolean(
+      activeConfig.campfire?.enabled &&
+      (sceneFeatures?.isEnabled("campfire") ?? true)
+    )
+  );
+  const tentFeatureEnabled = $derived(sceneFeatures?.isEnabled("tent") ?? true);
 
   // Fire emitter position (reactive to config + groundY)
   const firePosition = $derived.by(() => {
     const cf = activeConfig.campfire;
     if (!cf) return new Vector3(0, groundY, 0);
     const fireHalfHeight = (cf.fireHeight * cf.fireScale) / 2;
-    return new Vector3(cf.position.x, groundY + fireHalfHeight, cf.position.z);
+    return new Vector3(
+      cf.position.x,
+      campsiteGroundY + fireHalfHeight,
+      cf.position.z
+    );
   });
 
   // Apply fog reactively — reuse instance, mutate instead of reallocating
@@ -244,21 +175,13 @@
   // instead of jumping 0% → 100%.
   $effect(() => {
     if (!sceneFeatures) return;
-    const glbs = [
-      $tree1,
-      $tree2,
-      $tree3,
-      $rock1,
-      $rock2,
-      $bush1,
-      $bush2,
-      $campfire,
-      $tent,
-      $fallenLog,
-      $fallenLogSmall,
-      $forestEnvironment,
+    const glbs = [$forestEnvironment];
+    const requiredAssets = [
+      ...glbs,
+      ...(showNearFrame ? [nearFrameReady] : []),
+      ...(showNearFrame ? [forestCampsiteReady] : []),
+      ...(showStage ? [forestStageReady] : []),
     ];
-    const requiredAssets = showNearFrame ? [...glbs, nearFrameReady] : glbs;
     const loaded = requiredAssets.filter(Boolean).length;
     sceneFeatures.reportProgress("environment", loaded / requiredAssets.length);
     if (loaded === requiredAssets.length) {
@@ -287,6 +210,7 @@
   midColor={activeConfig.sky.midColor}
   bottomColor={activeConfig.sky.bottomColor}
   moon={activeConfig.moon}
+  sun={activeConfig.sun}
 />
 
 {#if activeConfig.starfield}
@@ -297,28 +221,35 @@
   <MeteorStreaks config={activeConfig.shootingStars} />
 {/if}
 
-{#if !config && $forestEnvironment}
+{#if showNearFrame && (activeConfig.canopyFlight ?? "bats") === "bats"}
+  <ForestCanopyFlight {groundY} />
+{/if}
+
+{#if $forestEnvironment}
   <T is={$forestEnvironment.scene} position.y={groundY} />
-{:else if activeConfig.ground.textured && activeConfig.ground.diffuseMap}
-  <TexturedGroundPlane
-    color={activeConfig.ground.color}
-    size={activeConfig.ground.size}
-    diffuseMap={activeConfig.ground.diffuseMap}
-    normalMap={activeConfig.ground.normalMap}
-    roughnessMap={activeConfig.ground.roughnessMap}
-    normalScale={activeConfig.ground.normalScale ?? 1.0}
-    textureRepeat={activeConfig.ground.textureRepeat ?? 8}
-  />
-{:else}
-  <GroundPlane
-    color={activeConfig.ground.color}
-    size={activeConfig.ground.size}
-    opacity={activeConfig.ground.opacity ?? 1}
-  />
+  {#if activeConfig.materialResponse}
+    <ForestAtmosphereMaterials
+      scene={$forestEnvironment.scene}
+      response={activeConfig.materialResponse}
+      scope="environment"
+    />
+  {/if}
 {/if}
 
 {#if showNearFrame}
-  <ForestNearFrameLayer {groundY} onReady={handleNearFrameReady} />
+  <ForestNearFrameLayer
+    {groundY}
+    materialResponse={activeConfig.materialResponse}
+    onReady={handleNearFrameReady}
+  />
+  <ForestCampsite
+    groundY={campsiteGroundY}
+    showTents={tentFeatureEnabled}
+    showCampfire={campfireFeatureEnabled}
+    materialResponse={activeConfig.materialResponse}
+    onReady={handleForestCampsiteReady}
+    onError={handleForestCampsiteError}
+  />
 {/if}
 
 {#key activeConfig.leaves.count}
@@ -334,76 +265,25 @@
 {/key}
 
 {#if activeConfig.fireflies}
-  {#key activeConfig.fireflies.count}
-    <FallingParticles
-      type={activeConfig.fireflies.type}
-      count={activeConfig.fireflies.count}
-      area={activeConfig.fireflies.area}
-      speed={activeConfig.fireflies.speed}
-      colors={activeConfig.fireflies.colors}
-      sizeRange={activeConfig.fireflies.sizeRange}
-      spin={activeConfig.fireflies.spin}
-    />
-  {/key}
+  {#if showNearFrame}
+    <ForestFireflyFields config={activeConfig.fireflies} {groundY} />
+  {:else}
+    {#key activeConfig.fireflies.count}
+      <FallingParticles
+        type={activeConfig.fireflies.type}
+        count={activeConfig.fireflies.count}
+        area={activeConfig.fireflies.area}
+        speed={activeConfig.fireflies.speed}
+        colors={activeConfig.fireflies.colors}
+        sizeRange={activeConfig.fireflies.sizeRange}
+        spin={activeConfig.fireflies.spin}
+      />
+    {/key}
+  {/if}
 {/if}
 
-{#each treeClones as clone, i}
-  {@const [x, z, scale, rotY] = treePlacements[i] ?? [0, 0, 1, 0]}
-  <T
-    is={clone}
-    position.x={x}
-    position.y={groundY}
-    position.z={z}
-    {scale}
-    rotation.y={rotY}
-  />
-{/each}
-
-{#each rockClones as clone, i}
-  {@const [x, z, scale, rotY] = rockPlacements[i] ?? [0, 0, 1, 0]}
-  <T
-    is={clone}
-    position.x={x}
-    position.y={groundY}
-    position.z={z}
-    {scale}
-    rotation.y={rotY}
-  />
-{/each}
-
-{#each bushClones as clone, i}
-  {@const [x, z, scale, rotY] = bushPlacements[i] ?? [0, 0, 1, 0]}
-  <T
-    is={clone}
-    position.x={x}
-    position.y={groundY}
-    position.z={z}
-    {scale}
-    rotation.y={rotY}
-  />
-{/each}
-
-{#each logClones as clone, i}
-  {@const [x, z, scale, rotY] = fallenLogPlacements[i] ?? [0, 0, 1, 0, true]}
-  <T
-    is={clone}
-    position.x={x}
-    position.y={groundY}
-    position.z={z}
-    {scale}
-    rotation.y={rotY}
-  />
-{/each}
-
-{#if activeConfig.campfire?.enabled && campfireClone && (sceneFeatures?.isEnabled("campfire") ?? true)}
+{#if campfireFeatureEnabled && activeConfig.campfire}
   {@const cf = activeConfig.campfire}
-  <T
-    is={campfireClone}
-    position.x={cf.position.x}
-    position.y={groundY}
-    position.z={cf.position.z}
-    scale={cf.modelScale}
-  />
   <VolumetricFireComponent
     position={firePosition}
     width={1.0}
@@ -414,7 +294,7 @@
   />
   <T.PointLight
     position.x={cf.position.x}
-    position.y={groundY + cf.primaryLight.heightOffset}
+    position.y={campsiteGroundY + cf.primaryLight.heightOffset}
     position.z={cf.position.z}
     color={cf.primaryLight.color}
     intensity={cf.primaryLight.intensity}
@@ -423,7 +303,7 @@
   />
   <T.PointLight
     position.x={cf.position.x}
-    position.y={groundY + cf.fillLight.heightOffset}
+    position.y={campsiteGroundY + cf.fillLight.heightOffset}
     position.z={cf.position.z}
     color={cf.fillLight.color}
     intensity={cf.fillLight.intensity}
@@ -432,7 +312,7 @@
   />
   <T.Group
     position.x={cf.position.x}
-    position.y={groundY + (cf.fireHeight * cf.fireScale) / 2 + 0.5}
+    position.y={campsiteGroundY + (cf.fireHeight * cf.fireScale) / 2 + 0.5}
     position.z={cf.position.z}
   >
     {#key cf.smokeCount}
@@ -449,25 +329,26 @@
   </T.Group>
 {/if}
 
-<T.HemisphereLight
-  color={activeConfig.hemisphereLight.skyColor}
-  groundColor={activeConfig.hemisphereLight.groundColor}
-  intensity={activeConfig.hemisphereLight.intensity}
+<ForestLighting
+  hemisphere={activeConfig.hemisphereLight}
+  profile={activeConfig.lighting}
+  {groundY}
 />
 
-{#if activeConfig.tent.enabled && tentClone && (sceneFeatures?.isEnabled("tent") ?? true)}
-  <T
-    is={tentClone}
-    position.x={activeConfig.tent.position.x}
-    position.y={groundY}
-    position.z={activeConfig.tent.position.z}
-    scale={activeConfig.tent.scale}
-    rotation.y={activeConfig.tent.rotationY}
-  />
-{/if}
-
 {#if showStage}
-  <T.Group position.z={stageZOffset}>
-    <Stage3D width={stageWidth} depth={stageDepth} />
-  </T.Group>
+  {#if forestStageFailed}
+    <T.Group position.z={stageZOffset}>
+      <Stage3D width={stageWidth} depth={stageDepth} />
+    </T.Group>
+  {:else}
+    <ForestStage
+      width={stageWidth}
+      depth={stageDepth}
+      {groundY}
+      zOffset={stageZOffset}
+      materialResponse={activeConfig.materialResponse}
+      onReady={handleForestStageReady}
+      onError={handleForestStageError}
+    />
+  {/if}
 {/if}

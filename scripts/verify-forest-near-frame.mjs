@@ -7,17 +7,24 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 const glbPath = resolve("static/models/forest/forest-near-frame.glb");
+const rawGlbPath = resolve("static/models/forest/forest-near-frame_raw.glb");
 const layoutPath = resolve("scripts/forest-static-prop-layout.json");
 const layoutBytes = readFileSync(layoutPath);
 const layout = JSON.parse(layoutBytes.toString("utf8"));
 const layoutSha256 = createHash("sha256").update(layoutBytes).digest("hex");
+const compositionPath = resolve(layout.compositionContractPath);
+const compositionBytes = readFileSync(compositionPath);
+const composition = JSON.parse(compositionBytes.toString("utf8"));
+const compositionSha256 = createHash("sha256")
+  .update(compositionBytes)
+  .digest("hex");
 const metricsPath = join(
   tmpdir(),
   "tka-forest-evidence",
   "forest_near_frame_metrics.json"
 );
 const metrics = JSON.parse(readFileSync(metricsPath, "utf8"));
-const maximumBytes = 6 * 1024 * 1024;
+const maximumBytes = 12 * 1024 * 1024;
 
 function invariant(condition, message) {
   if (!condition) throw new Error(message);
@@ -40,6 +47,7 @@ function readGlbJson(path) {
 }
 
 const { bytes, json: gltf } = readGlbJson(glbPath);
+const { json: rawGltf } = readGlbJson(rawGlbPath);
 const extensions = new Set(gltf.extensionsUsed ?? []);
 const authoredNodes = (gltf.nodes ?? []).filter(
   (node) => node.extras?.tka_export_layer === "near-frame"
@@ -50,13 +58,59 @@ const treeNodes = authoredNodes.filter(
 const propNodes = authoredNodes.filter(
   (node) => node.extras?.tka_role === "near-frame-static-prop"
 );
-const expectedTrees = layout.frameTrees;
-const expectedProps = layout.vignettes.flatMap((vignette) =>
-  vignette.props.map((prop) => ({ ...prop, vignetteId: vignette.id }))
+const grassNodes = authoredNodes.filter(
+  (node) => node.extras?.tka_role === "near-frame-grass"
 );
+const trailNodes = authoredNodes.filter(
+  (node) => node.extras?.tka_role === "near-frame-trail"
+);
+const shelfNodes = authoredNodes.filter(
+  (node) => node.extras?.tka_role === "camp-shelf"
+);
+const mushroomNodes = authoredNodes.filter(
+  (node) => node.extras?.tka_role === "near-frame-mushroom-part"
+);
+const rawMushroomNodes = (rawGltf.nodes ?? []).filter(
+  (node) => node.extras?.tka_role === "near-frame-mushroom-part"
+);
+const instancedMushroomCount = (gltf.nodes ?? []).reduce((count, node) => {
+  const translationAccessor =
+    node.extensions?.EXT_mesh_gpu_instancing?.attributes?.TRANSLATION;
+  const meshName = gltf.meshes?.[node.mesh]?.name ?? "";
+  if (
+    !Number.isInteger(translationAccessor) ||
+    !meshName.startsWith("ForestGroundMushroomMesh_")
+  ) {
+    return count;
+  }
+  return count + Number(gltf.accessors?.[translationAccessor]?.count ?? 0);
+}, 0);
+const expectedTrees = layout.frameTrees;
+const expectedProps = [
+  ...layout.vignettes.flatMap((vignette) =>
+    vignette.props.map((prop) => ({ ...prop, vignetteId: vignette.id }))
+  ),
+  ...layout.zoneProps.map((prop) => ({
+    ...prop,
+    vignetteId: prop.habitatZoneId,
+  })),
+];
 const expectedTreeIds = new Set(expectedTrees.map((tree) => tree.id));
 const expectedPropIds = new Set(expectedProps.map((prop) => prop.id));
-const expectedVignetteIds = new Set(layout.vignettes.map(({ id }) => id));
+const expectedVignetteIds = new Set([
+  ...layout.vignettes.map(({ id }) => id),
+  ...layout.zoneProps.map(({ habitatZoneId }) => habitatZoneId),
+]);
+const expectedHabitatZoneIds = new Set(
+  layout.zoneProps.map(({ habitatZoneId }) => habitatZoneId)
+);
+const expectedGrassPatchIds = new Set(layout.grassPatches.map(({ id }) => id));
+const expectedGrassPalettes = new Set(
+  layout.grassPatches.map(({ palette }) => palette)
+);
+const expectedMushroomColonyIds = new Set(
+  layout.mushroomColonies.map(({ id }) => id)
+);
 const sourceMeshById = new Map();
 
 invariant(bytes <= maximumBytes, `GLB exceeds ${maximumBytes} bytes: ${bytes}`);
@@ -75,8 +129,14 @@ invariant(
   "Near-frame GLB textures are not WebP encoded"
 );
 invariant(
-  authoredNodes.length === expectedTrees.length + expectedProps.length,
-  `Expected ${expectedTrees.length + expectedProps.length} authored nodes, found ${authoredNodes.length}`
+  authoredNodes.length ===
+    expectedTrees.length +
+      expectedProps.length +
+      grassNodes.length +
+      mushroomNodes.length +
+      trailNodes.length +
+      shelfNodes.length,
+  "Near-frame authored-node classification is incomplete"
 );
 invariant(
   treeNodes.length === expectedTrees.length,
@@ -85,6 +145,23 @@ invariant(
 invariant(
   propNodes.length === expectedProps.length,
   `Expected ${expectedProps.length} static props, found ${propNodes.length}`
+);
+invariant(
+  grassNodes.length === expectedGrassPalettes.size,
+  `Expected ${expectedGrassPalettes.size} grass palette meshes, found ${grassNodes.length}`
+);
+invariant(
+  trailNodes.length === 1,
+  "Near-frame must contain one worn trail accent"
+);
+invariant(
+  shelfNodes.length === 1,
+  "Near-frame must contain one approved camp shelf"
+);
+invariant(
+  mushroomNodes.length + instancedMushroomCount ===
+    Number(metrics.groundLife.mushroomPartCount),
+  "Near-frame mushroom parts do not match builder metrics"
 );
 
 for (const node of authoredNodes) {
@@ -127,6 +204,52 @@ for (const node of propNodes) {
   }
 }
 
+const actualHabitatZoneIds = new Set(
+  propNodes.map((node) => node.extras.tka_habitat_zone_id).filter(Boolean)
+);
+invariant(
+  [...expectedHabitatZoneIds].every((id) => actualHabitatZoneIds.has(id)),
+  "Near-frame props lost one or more authored habitat-zone identities"
+);
+
+const shelfNode = shelfNodes[0];
+invariant(
+  Number(shelfNode.extras.tka_composition_layout_version) ===
+    composition.version &&
+    shelfNode.extras.tka_composition_layout_sha256 === compositionSha256,
+  "Camp shelf was not built from the approved composition contract"
+);
+
+const actualGrassPatchIds = new Set(
+  grassNodes.flatMap((node) =>
+    String(node.extras.tka_grass_patch_ids ?? "")
+      .split("|")
+      .filter(Boolean)
+  )
+);
+
+invariant(
+  trailNodes[0].extras.tka_trail_accent_id === layout.trailAccent.id &&
+    trailNodes[0].extras.tka_trail_path_id === layout.trailAccent.pathId,
+  "Near-frame trail accent drifted from its authored path contract"
+);
+invariant(
+  Number(metrics.groundLife.trail.sampleCount) >= 8,
+  "Near-frame trail accent has too few samples to follow the path"
+);
+invariant(
+  [...expectedGrassPatchIds].every((id) => actualGrassPatchIds.has(id)),
+  "Near-frame grass lost one or more authored habitat patches"
+);
+
+const actualMushroomColonyIds = new Set(
+  rawMushroomNodes.map((node) => node.extras.tka_mushroom_colony_id)
+);
+invariant(
+  [...expectedMushroomColonyIds].every((id) => actualMushroomColonyIds.has(id)),
+  "Near-frame mushrooms lost one or more authored colonies"
+);
+
 invariant(
   Number(metrics.frameTreeCount) === expectedTrees.length,
   "Builder metrics do not match the frame-tree contract"
@@ -134,6 +257,15 @@ invariant(
 invariant(
   Number(metrics.propCount) === expectedProps.length,
   "Builder metrics do not match the static-prop contract"
+);
+invariant(
+  Number(metrics.zonePropCount) === layout.zoneProps.length,
+  "Builder metrics do not match the habitat-zone prop contract"
+);
+invariant(
+  Number(metrics.campShelf.maximumApproachGradePercent) <=
+    composition.campRelocation.shelf.maximumApproachGradePercent,
+  "Camp shelf exceeds the approved approach grade"
 );
 invariant(
   Number(metrics.minimumPathShoulderMarginMetres) >=
@@ -161,6 +293,14 @@ console.log(
       frameTrees: treeNodes.map((node) => node.extras.tka_frame_tree_id),
       staticProps: propNodes.map((node) => node.extras.tka_static_prop_id),
       vignettes: [...expectedVignetteIds],
+      habitatZones: [...expectedHabitatZoneIds],
+      campShelf: metrics.campShelf,
+      grassPatches: [...expectedGrassPatchIds],
+      grassClumps: metrics.groundLife.grassClumpCount,
+      trail: metrics.groundLife.trail,
+      mushroomColonies: [...expectedMushroomColonyIds],
+      mushroomParts: mushroomNodes.length + instancedMushroomCount,
+      instancedMushroomParts: instancedMushroomCount,
       sharedSourceMeshes: Object.fromEntries(sourceMeshById),
       margins: {
         pathShoulderMetres: metrics.minimumPathShoulderMarginMetres,

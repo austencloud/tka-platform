@@ -100,6 +100,15 @@ function pathInfluence(x, y) {
   );
 }
 
+function pathCoreInfluence(x, y) {
+  return Math.max(
+    ...pathLayout.paths.map((path) => {
+      const distance = distanceToPath(x, y, path);
+      return 1 - smoothstep(path.halfWidth * 0.42, path.halfWidth, distance);
+    })
+  );
+}
+
 const DAMP_HOLLOWS = [
   [-58, 34, 23, 14, -0.28],
   [56, 47, 27, 16, 0.42],
@@ -121,7 +130,8 @@ function macroTint(x, y) {
   const moss = [0.82, 1.08, 0.76];
   const damp = [0.77, 0.88, 0.88];
   const distant = [0.82, 0.91, 0.81];
-  const path = [1.0, 0.88, 0.7];
+  const pathShoulder = [1.09, 0.86, 0.61];
+  const pathCore = [1.28, 1.05, 0.76];
   const packed = [1.08, 0.91, 0.76];
   const shadeWeight = smoothstep(0.04, 0.76, shadePattern(x, y) + noise * 0.24);
   const dampWeight = Math.max(
@@ -131,6 +141,7 @@ function macroTint(x, y) {
   );
   const distantWeight = smoothstep(106 + noise * 7, 142 + noise * 9, radius);
   const pathWeight = pathInfluence(x, y);
+  const pathCoreWeight = pathCoreInfluence(x, y);
   const edgeRadius = harmonicRadius(Math.atan2(y, x), pathLayout.clearingEdge);
   const packedWeight = 1 - smoothstep(edgeRadius - 2, edgeRadius + 2, radius);
 
@@ -138,7 +149,8 @@ function macroTint(x, y) {
   color = mixColor(color, damp, dampWeight * 0.82);
   color = mixColor(color, distant, distantWeight * 0.78);
   color = mixColor(color, packed, packedWeight);
-  color = mixColor(color, path, pathWeight * 0.9);
+  color = mixColor(color, pathShoulder, pathWeight * 0.92);
+  color = mixColor(color, pathCore, pathCoreWeight * 0.78);
   const brightness = 0.99 + 0.035 * Math.sin(x * 0.083 + y * 0.047);
   return color.map((channel) => channel * brightness);
 }

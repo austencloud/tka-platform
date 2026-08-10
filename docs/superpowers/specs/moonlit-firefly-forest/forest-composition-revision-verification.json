@@ -1,0 +1,67 @@
+{
+  "sceneId": "forest-firefly",
+  "gateId": "playable-spatial-pass",
+  "status": "implemented",
+  "generatedAt": "2026-08-10T03:08:01.353Z",
+  "sourceDigests": {
+    "compositionSha256": "80f9b2f22bbeda49a8ccaa07898abb69dead707526cc16f30855d9fd7e324219",
+    "campsiteSha256": "03e16b1dcbaef473cefe2059635149b4c4db03fde77c32934c77a995037e4f2d",
+    "pathsSha256": "fa6b7b577d2db695b85fbc526c827379028cb5ae970bf0795d0d4ec1d106f018",
+    "nearFrameSha256": "e3d6e85bb461bb4d299021bd5c1de0762b925c66b992cfbe4533cfb5d5d87c7a",
+    "treesSha256": "54779aed42e3887f811e1e7a0b400c7b4248df60cb71581d9b6efcdac2d01497"
+  },
+  "metrics": {
+    "currentStageToFireMetres": 17.066,
+    "proposedStageToFireMetres": 34.059,
+    "separationIncreaseMetres": 16.993,
+    "proposedFire": [
+      34,
+      2
+    ],
+    "translatedTentPositions": [
+      {
+        "id": "dome-two-person",
+        "position": [
+          41,
+          1
+        ]
+      },
+      {
+        "id": "tunnel-three-person",
+        "position": [
+          39,
+          7.5
+        ]
+      },
+      {
+        "id": "trekking-one-person",
+        "position": [
+          32,
+          8.5
+        ]
+      }
+    ],
+    "maximumApproachGradePercent": 2.5,
+    "minimumFrameTreeClearanceMetres": 24.593,
+    "habitatZoneCount": 3,
+    "routeStops": 6,
+    "sightlinePriorities": [
+      1,
+      2,
+      3
+    ]
+  },
+  "checks": [
+    "production camp spur matches the approved extension",
+    "production spur ends at the relocated fire pocket",
+    "approved campsite relationships survive the rigid translation",
+    "all tent pads fit inside the durable camp shelf",
+    "camp approach stays within the authored five-percent grade",
+    "habitat screens stay outside the performance core",
+    "approved frame trees stay clear of the relocated fire pocket",
+    "production trees exclude the full east camp shelf",
+    "both camp thresholds have distinct habitat anchors",
+    "the damp hollow has grass and mushroom ecology",
+    "route and focal priorities remain ordered"
+  ]
+}

@@ -1,50 +1,65 @@
 {
-  "version": 1,
-  "coordinateFrame": "Blender x/y equals runtime x/z; metres",
+  "version": 5,
+  "coordinateFrame": "Runtime x/z maps to Blender x/-y before glTF export; metres",
+  "production": {
+    "assetPath": "static/models/forest/forest-campsite.glb",
+    "maximumAssetBytes": 8388608,
+    "roles": ["tent", "tent-pad", "fire-pit", "camp-chair"]
+  },
   "fire": {
-    "position": [9.0, -4.5],
-    "ringRadius": 0.95,
+    "position": [34.0, 2.0],
+    "ringRadius": 0.72,
     "clearedFuelRadius": 3.05,
     "minimumTentDistance": 4.57,
     "maximumVisibleFlameHeight": 1.35,
-    "design": "established irregular stone ring over mineral soil; small fire; runtime owns flame, smoke, and light"
+    "design": "modern low smokeless steel fire pit on a durable mineral-soil pocket; runtime owns flame, smoke, and light"
   },
   "tents": [
     {
       "id": "dome-two-person",
       "assetId": "F1",
       "capacity": 2,
-      "position": [15.8, -2.5],
-      "footprint": [2.7, 3.0],
-      "padFootprint": [3.3, 3.6],
+      "position": [41.0, 1.0],
+      "footprint": [2.25, 2.45],
+      "padFootprint": [2.95, 3.15],
       "entranceFacesFire": true
     },
     {
       "id": "tunnel-three-person",
       "assetId": "F2",
       "capacity": 3,
-      "position": [14.0, 4.2],
-      "footprint": [3.0, 4.6],
-      "padFootprint": [3.6, 5.2],
+      "position": [39.0, 7.5],
+      "footprint": [2.4, 4.4],
+      "padFootprint": [3.1, 5.1],
       "entranceFacesFire": true
     },
     {
       "id": "trekking-one-person",
       "assetId": "F3",
       "capacity": 1,
-      "position": [7.0, 4.2],
-      "footprint": [2.2, 3.0],
-      "padFootprint": [2.8, 3.6],
+      "position": [32.0, 8.5],
+      "footprint": [1.65, 2.54],
+      "padFootprint": [2.2, 3.15],
       "entranceFacesFire": true
     }
   ],
   "communalZone": {
-    "chairAnglesDegrees": [155, 215, 285],
-    "seatRadius": 3.45,
-    "fuelStore": [13.0, -7.7],
-    "waterPoint": [6.0, -5.9],
-    "entrySide": "south",
-    "rule": "Keep the camp-spur arrival and the south side of the fire open; sleeping pitches occupy one quiet north/east arc."
+    "chairAnglesDegrees": [45, 215, 255, 295, 335],
+    "seatRadius": 3.1,
+    "fuelStore": [39.0, -3.3],
+    "waterPoint": [30.2, 4.3],
+    "entrySide": "west",
+    "rule": "The camp spur arrives through the open west gap. Five chairs define the social core; sleeping pitches remain beyond them on one quiet east/south arc."
+  },
+  "siteLogic": {
+    "stageCenter": [0.0, 0.0],
+    "stageRole": "performance bowl remains central and unobstructed",
+    "campRole": "separate east-rim camp pocket beyond the central audience meadow",
+    "audienceApproach": "south and southwest of the stage",
+    "treeRelationship": "the camp shelf occupies a dedicated woodland opening beyond two habitat screens rather than wrapping around a frame tree",
+    "groundElevationMetres": 0.25,
+    "sourceCompositionContract": "scripts/forest-composition-revision.json",
+    "minimumStageToFireCenterMetres": 30.0
   },
   "sources": [
     {

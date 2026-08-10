@@ -1,0 +1,166 @@
+{
+  "version": 2,
+  "status": "approved",
+  "sourceGate": "Forest Gate 10.1 measured composition revision",
+  "coordinateFrame": "Runtime x/z metres; north/upstage is negative z",
+  "sourceContracts": {
+    "campsite": "scripts/forest-campsite-layout.json",
+    "paths": "scripts/forest-path-layout.json",
+    "stage": "scripts/forest-stage-layout.json",
+    "nearFrame": "scripts/forest-static-prop-layout.json",
+    "trees": "scripts/forest-tree-layout.json"
+  },
+  "stage": {
+    "center": [0, 0],
+    "performanceKeepClearRadiusMetres": 7.5,
+    "audienceApproach": "south and southwest"
+  },
+  "campRelocation": {
+    "previousFirePosition": [17, 1.5],
+    "translation": [17, 0.5],
+    "approvedRelativeTentOffsets": {
+      "dome-two-person": [7, -1],
+      "tunnel-three-person": [5, 5.5],
+      "trekking-one-person": [-2, 6.5]
+    },
+    "targetStageToFireRangeMetres": [30, 38],
+    "shelf": {
+      "center": [36.5, 4.5],
+      "radii": [11, 9.5],
+      "rotationDegrees": 8,
+      "topElevationMetres": 0.25,
+      "maximumApproachGradePercent": 5,
+      "label": "Durable camp shelf"
+    },
+    "spurExtension": [
+      [14, 1.5],
+      [20, 1.8],
+      [25.5, 4.5],
+      [30, 4.2],
+      [34, 2]
+    ],
+    "arrivalSide": "west",
+    "rule": "The approved camp moves as one unit. Preserve tent-to-fire relationships, fire clearance, and the open west arrival."
+  },
+  "spatialZones": [
+    {
+      "id": "audience-meadow",
+      "kind": "open",
+      "center": [-1, 13],
+      "radii": [15.5, 10],
+      "rotationDegrees": 0,
+      "label": "Audience meadow",
+      "purpose": "Low grass and worn footfall arcs preserve the stage sightline and performer approach."
+    },
+    {
+      "id": "camp-threshold-north",
+      "kind": "habitat",
+      "center": [22, -5],
+      "radii": [7, 4.5],
+      "rotationDegrees": -15,
+      "label": "Fern + boulder screen",
+      "purpose": "A rooted edge separates stage and camp without hiding the campfire glow."
+    },
+    {
+      "id": "camp-threshold-south",
+      "kind": "habitat",
+      "center": [23, 11],
+      "radii": [8, 4.5],
+      "rotationDegrees": 12,
+      "label": "Moss + deadwood screen",
+      "purpose": "One decomposing habitat closes the old empty gap while leaving the spur open."
+    },
+    {
+      "id": "damp-hollow",
+      "kind": "habitat",
+      "center": [16.5, 24],
+      "radii": [9, 5.2],
+      "rotationDegrees": 18,
+      "label": "Sedge + firefly hollow",
+      "purpose": "A low wet pocket gives the downstage-right clearing a distinct ecological cause."
+    }
+  ],
+  "sightlines": [
+    {
+      "id": "entry-to-stage",
+      "from": [3, 31],
+      "to": [0, 0],
+      "halfAngleDegrees": 12,
+      "priority": 1,
+      "label": "Stage first"
+    },
+    {
+      "id": "audience-to-camp",
+      "from": [0, 17],
+      "to": [34, 2],
+      "halfAngleDegrees": 7,
+      "priority": 2,
+      "label": "Camp glow second"
+    },
+    {
+      "id": "stage-to-northwest-exit",
+      "from": [0, 2],
+      "to": [-10, -25],
+      "halfAngleDegrees": 8,
+      "priority": 3,
+      "label": "Forest depth third"
+    }
+  ],
+  "route": [
+    {
+      "stop": 1,
+      "position": [3, 31],
+      "label": "Enter",
+      "read": "The stage is centered beyond the audience meadow."
+    },
+    {
+      "stop": 2,
+      "position": [0, 17],
+      "label": "Arrive",
+      "read": "The meadow opens and the campfire appears at the right edge."
+    },
+    {
+      "stop": 3,
+      "position": [0, 7],
+      "label": "Perform",
+      "read": "The stage and its upstage tree frame own the clearing."
+    },
+    {
+      "stop": 4,
+      "position": [14, 1.5],
+      "label": "Branch",
+      "read": "A curved spur passes between two habitat screens."
+    },
+    {
+      "stop": 5,
+      "position": [34, 2],
+      "label": "Camp",
+      "read": "The campsite becomes a separate destination on a level shelf."
+    },
+    {
+      "stop": 6,
+      "position": [-10, -25],
+      "label": "Leave",
+      "read": "The northwest trail carries the view into forest depth."
+    }
+  ],
+  "verticalSection": {
+    "axis": "stage center to east camp pocket",
+    "playerEyeHeightMetres": 1.7,
+    "stageDeckHeightMetres": 0.55,
+    "campShelfHeightMetres": 0.25,
+    "outerBankHeightMetres": 2.2,
+    "samples": [
+      [-8, 0],
+      [0, 0],
+      [14, 0],
+      [26, 0.08],
+      [30, 0.18],
+      [34, 0.25],
+      [43, 0.25],
+      [50, 0.85],
+      [58, 2.2]
+    ]
+  },
+  "approvalQuestion": "Does the plan read as stage first, camp second, and forest depth third, with the campsite functioning as a separate destination?"
+}

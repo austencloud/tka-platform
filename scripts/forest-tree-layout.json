@@ -1,7 +1,7 @@
 {
-  "version": 1,
+  "version": 2,
   "seed": 194611,
-  "coordinateFrame": "Blender x/y equals runtime x/z; metres",
+  "coordinateFrame": "Blender x/y exports to runtime x/-z; metres",
   "outerBoundaryFraction": 0.8,
   "spacingFactor": 0.56,
   "assets": [
@@ -96,6 +96,12 @@
       "center": [2, -60],
       "radii": [10, 32],
       "rotationDegrees": -5
+    },
+    {
+      "id": "east-camp-pocket",
+      "center": [36.5, -4.5],
+      "radii": [14, 12],
+      "rotationDegrees": -8
     }
   ],
   "clusters": [

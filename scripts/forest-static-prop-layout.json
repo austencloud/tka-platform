@@ -1,22 +1,37 @@
 {
-  "version": 1,
-  "coordinateFrame": "Blender x/y equals runtime x/z; metres",
+  "version": 3,
+  "coordinateFrame": "Blender x/y exports to runtime x/-z; metres",
   "visibility": "default-forest-only",
-  "sourceGate": "Forest Gate 8 revision 2",
+  "sourceGate": "Forest Gate 10.1 approved composition revision",
+  "compositionContractPath": "scripts/forest-composition-revision.json",
   "frameTrees": [
     {
-      "id": "southwest-canopy-frame",
+      "id": "upstage-west-canopy-frame",
       "assetId": "canopy-beech",
-      "position": [-8.0, -10.5],
-      "scale": 1.1,
-      "rotationDegrees": 32
+      "position": [-11.5, 9.5],
+      "scale": 1.06,
+      "rotationDegrees": 18
     },
     {
-      "id": "southeast-middle-frame",
+      "id": "upstage-east-middle-frame",
       "assetId": "forked-elm",
-      "position": [13.7, -11.5],
-      "scale": 1.16,
-      "rotationDegrees": -24
+      "position": [13.0, 10.8],
+      "scale": 1.14,
+      "rotationDegrees": -31
+    },
+    {
+      "id": "upstage-west-depth-frame",
+      "assetId": "narrow-larch",
+      "position": [-21.0, 20.0],
+      "scale": 0.98,
+      "rotationDegrees": 42
+    },
+    {
+      "id": "upstage-east-depth-frame",
+      "assetId": "pale-willow",
+      "position": [19.0, 21.0],
+      "scale": 1.02,
+      "rotationDegrees": -12
     }
   ],
   "sources": [
@@ -39,79 +54,280 @@
       "id": "decomposing-fallen-log",
       "path": "static/models/autumn/fallen-log.glb",
       "provenance": "TKA Autumn optimized fallen-log family"
+    },
+    {
+      "id": "sand-rock-outcrop",
+      "path": "static/models/ocean/polyhaven/sand_rocks_small_01.glb",
+      "provenance": "Poly Haven sand_rocks_small_01; CC0; distinct multi-stone outcrop"
+    },
+    {
+      "id": "moss-root-island",
+      "path": "static/models/forest/ground-life/moss-root-litter-island.glb",
+      "provenance": "Approved Forest ground-life moss, root, and litter habitat module"
     }
   ],
   "vignettes": [
     {
-      "id": "southwest-root-shelf",
-      "cause": "The mature foreground beech catches deadwood and displaced stone on its downhill root shelf.",
-      "anchorTreeId": "southwest-canopy-frame",
+      "id": "upstage-west-root-shelf",
+      "cause": "The mature west beech catches one windfall and one displaced stone, forming the left wall of the natural stage bowl.",
+      "anchorTreeId": "upstage-west-canopy-frame",
       "props": [
         {
-          "id": "southwest-windfall",
+          "id": "upstage-west-windfall",
           "sourceId": "decomposing-fallen-log",
-          "position": [-12.4, -13.6],
+          "position": [-16.4, 7.2],
           "targetLongestMetres": 4.2,
-          "rotationDegrees": 18,
+          "rotationDegrees": -22,
           "buryDepthMetres": 0.12
         },
         {
-          "id": "southwest-root-rock",
+          "id": "upstage-west-root-rock",
           "sourceId": "earth-tone-rock",
-          "position": [-10.8, -8.9],
+          "position": [-14.6, 4.4],
           "targetLongestMetres": 1.35,
-          "rotationDegrees": -31,
+          "rotationDegrees": 37,
           "buryDepthMetres": 0.18
-        },
-        {
-          "id": "southwest-tail-stone",
-          "sourceId": "quartz-stone",
-          "position": [-6.0, -13.0],
-          "targetLongestMetres": 0.82,
-          "rotationDegrees": 47,
-          "buryDepthMetres": 0.16
         }
       ]
     },
     {
-      "id": "southeast-camp-shoulder",
-      "cause": "Runoff around the forked elm exposes one larger boulder and leaves two smaller stones on the camp-side shoulder without entering the fire pocket.",
-      "anchorTreeId": "southeast-middle-frame",
+      "id": "upstage-east-runoff-bank",
+      "cause": "Runoff below the forked elm exposes a large boulder and a pale stone, making the right wall visually heavier without becoming symmetrical.",
+      "anchorTreeId": "upstage-east-middle-frame",
       "props": [
         {
-          "id": "southeast-runoff-stone",
+          "id": "upstage-east-weathered-boulder",
+          "sourceId": "weathered-boulder",
+          "position": [17.2, 7.6],
+          "targetLongestMetres": 2.55,
+          "rotationDegrees": 26,
+          "buryDepthMetres": 0.3
+        },
+        {
+          "id": "upstage-east-runoff-stone",
           "sourceId": "quartz-stone",
-          "position": [18.8, -13.8],
+          "position": [16.1, 14.9],
           "targetLongestMetres": 0.94,
           "rotationDegrees": -27,
           "buryDepthMetres": 0.19
+        }
+      ]
+    },
+    {
+      "id": "west-depth-stone-break",
+      "cause": "The larch ridge breaks through the soil as two differently scaled stones, stepping the eye toward the distant trail opening.",
+      "anchorTreeId": "upstage-west-depth-frame",
+      "props": [
+        {
+          "id": "west-depth-quartz",
+          "sourceId": "quartz-stone",
+          "position": [-24.8, 18.2],
+          "targetLongestMetres": 0.78,
+          "rotationDegrees": 54,
+          "buryDepthMetres": 0.17
         },
         {
-          "id": "southeast-weathered-boulder",
+          "id": "west-depth-boulder",
           "sourceId": "weathered-boulder",
-          "position": [17.1, -8.9],
-          "targetLongestMetres": 2.35,
-          "rotationDegrees": 26,
-          "buryDepthMetres": 0.28
-        },
+          "position": [-23.1, 23.5],
+          "targetLongestMetres": 1.75,
+          "rotationDegrees": -18,
+          "buryDepthMetres": 0.25
+        }
+      ]
+    },
+    {
+      "id": "east-depth-windthrow",
+      "cause": "A smaller windthrow and earth-tone rock sit below the pale willow, carrying the eye beyond the stage without closing the trail mouth.",
+      "anchorTreeId": "upstage-east-depth-frame",
+      "props": [
         {
-          "id": "southeast-shoulder-rock",
+          "id": "east-depth-shoulder-rock",
           "sourceId": "earth-tone-rock",
-          "position": [15.7, -14.7],
+          "position": [22.3, 17.9],
           "targetLongestMetres": 1.05,
           "rotationDegrees": 63,
           "buryDepthMetres": 0.17
+        },
+        {
+          "id": "east-depth-windfall",
+          "sourceId": "decomposing-fallen-log",
+          "position": [22.8, 24.6],
+          "targetLongestMetres": 3.35,
+          "rotationDegrees": 31,
+          "buryDepthMetres": 0.13
         }
       ]
     }
   ],
+  "zoneProps": [
+    {
+      "id": "camp-threshold-north-outcrop",
+      "habitatZoneId": "camp-threshold-north",
+      "sourceId": "sand-rock-outcrop",
+      "position": [22.0, 5.0],
+      "targetLongestMetres": 4.8,
+      "rotationDegrees": -17,
+      "buryDepthMetres": 0.38,
+      "cause": "One exposed outcrop and its fern apron form the north side of the camp threshold."
+    },
+    {
+      "id": "camp-threshold-south-root-island",
+      "habitatZoneId": "camp-threshold-south",
+      "sourceId": "moss-root-island",
+      "position": [23.0, -11.0],
+      "targetLongestMetres": 5.2,
+      "rotationDegrees": 12,
+      "buryDepthMetres": 0.16,
+      "cause": "One decomposing root-and-moss island forms the south side of the camp threshold."
+    }
+  ],
+  "grassPatches": [
+    {
+      "id": "audience-left-meadow",
+      "center": [-10.0, -8.0],
+      "radii": [6.2, 3.8],
+      "rotationDegrees": 18,
+      "count": 105,
+      "palette": "lush",
+      "cause": "Low meadow grass colonizes the audience-side shade without blocking the central approach."
+    },
+    {
+      "id": "audience-right-meadow",
+      "center": [16.0, -15.5],
+      "radii": [4.8, 2.8],
+      "rotationDegrees": 14,
+      "count": 88,
+      "palette": "base",
+      "cause": "A drier verge grows beyond the durable campsite and keeps the camp spur, fire pocket, and sleeping pads visibly maintained."
+    },
+    {
+      "id": "west-stage-bank",
+      "center": [-12.5, 5.5],
+      "radii": [5.7, 3.4],
+      "rotationDegrees": 34,
+      "count": 96,
+      "palette": "shade",
+      "cause": "Grass gathers beneath the west beech and softens the rise into the natural proscenium."
+    },
+    {
+      "id": "east-stage-bank",
+      "center": [13.0, 6.8],
+      "radii": [5.0, 3.1],
+      "rotationDegrees": -24,
+      "count": 82,
+      "palette": "lush",
+      "cause": "Runoff keeps the elm-side grass taller and greener around the exposed boulder."
+    },
+    {
+      "id": "trail-west-shoulder",
+      "center": [-10.5, 16.0],
+      "radii": [3.2, 6.6],
+      "rotationDegrees": -18,
+      "count": 90,
+      "palette": "shade",
+      "cause": "A narrow verge traces the damp west shoulder of the path while the walking core remains worn bare."
+    },
+    {
+      "id": "trail-east-shoulder",
+      "center": [2.5, 19.0],
+      "radii": [4.0, 7.0],
+      "rotationDegrees": 12,
+      "count": 84,
+      "palette": "base",
+      "cause": "Broken clumps on the opposite shoulder make the trail legible without drawing two artificial parallel borders."
+    },
+    {
+      "id": "camp-threshold-north-ferns",
+      "center": [22.0, 5.0],
+      "radii": [6.3, 3.5],
+      "rotationDegrees": 15,
+      "count": 96,
+      "palette": "shade",
+      "cause": "Shade grass and fern-height blades collect behind the north outcrop while the camp path remains open."
+    },
+    {
+      "id": "camp-threshold-south-moss",
+      "center": [23.0, -11.0],
+      "radii": [6.8, 3.8],
+      "rotationDegrees": -12,
+      "count": 110,
+      "palette": "lush",
+      "cause": "Moist grass gathers around the decomposing root island instead of spreading evenly across the clearing."
+    },
+    {
+      "id": "damp-hollow-sedge-field",
+      "center": [16.5, -24.0],
+      "radii": [8.5, 4.8],
+      "rotationDegrees": -18,
+      "count": 128,
+      "palette": "lush",
+      "cause": "A single low wet pocket carries the downstage-right grass and firefly concentration."
+    }
+  ],
+  "mushroomColonies": [
+    {
+      "id": "west-windfall-amanitas",
+      "position": [-15.4, 8.1],
+      "pattern": "amanita-family",
+      "scale": 1.18,
+      "rotationDegrees": 24,
+      "cause": "Amanitas fruit where the west windfall keeps the soil damp and woody."
+    },
+    {
+      "id": "east-boulder-amanitas",
+      "position": [15.5, 6.5],
+      "pattern": "amanita-ring",
+      "scale": 1.05,
+      "rotationDegrees": -18,
+      "cause": "A smaller red-capped colony follows the mossy toe of the runoff boulder."
+    },
+    {
+      "id": "audience-meadow-amanitas",
+      "position": [-9.5, -6.6],
+      "pattern": "amanita-scouts",
+      "scale": 1.28,
+      "rotationDegrees": 38,
+      "cause": "Two conspicuous caps emerge at the shaded edge of the audience meadow, close enough to read from the hero view."
+    },
+    {
+      "id": "trail-shoulder-chestnuts",
+      "position": [-10.8, 18.7],
+      "pattern": "mushroom-small-colony",
+      "scale": 1.06,
+      "rotationDegrees": -33,
+      "cause": "Muted chestnut mushrooms keep the distant trail ecology from becoming an all-red decorative motif."
+    },
+    {
+      "id": "damp-hollow-amanitas",
+      "position": [14.2, -23.2],
+      "pattern": "amanita-family",
+      "scale": 1.12,
+      "rotationDegrees": 16,
+      "cause": "One readable amanita family marks the wettest lip of the sedge hollow."
+    }
+  ],
+  "trailAccent": {
+    "id": "upstage-woodland-trail",
+    "pathId": "northwest-exit",
+    "maximumDistanceMetres": 58,
+    "sampleSpacingMetres": 1.35,
+    "halfWidthScale": 0.82,
+    "edgeJitterMetres": 0.18,
+    "cause": "Repeated arrivals wear a pale, irregular soil ribbon from behind the stage into the northwest woodland; grass survives only on the shoulders."
+  },
   "rules": {
     "performanceKeepClearRadiusMetres": 7.5,
     "minimumPathShoulderMarginMetres": 1.0,
     "minimumCampfireCenterDistanceMetres": 5.5,
     "maximumPropDistanceFromAnchorMetres": 7.0,
-    "minimumDistinctSourceFamilies": 4,
+    "minimumDistinctSourceFamilies": 6,
+    "requiredHabitatZoneIds": ["camp-threshold-north", "camp-threshold-south"],
+    "minimumPropsPerVignette": 2,
+    "maximumPropsPerVignette": 3,
     "maximumInstancesPerSource": 2,
+    "minimumGrassCoreRadiusMetres": 5.2,
+    "minimumGrassPathCoreMarginMetres": 0.42,
     "legacyRuntimeModelsRetired": [
       "Rock_1_A_Color1.gltf",
       "Rock_1_B_Color1.gltf",

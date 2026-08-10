@@ -67,6 +67,11 @@ with open(PROP_LINEUP_PATH, "r", encoding="utf-8") as prop_lineup_file:
 CAMPSITE_LAYOUT_PATH = os.path.join(SCRIPT_DIR, "forest-campsite-layout.json")
 with open(CAMPSITE_LAYOUT_PATH, "r", encoding="utf-8") as campsite_layout_file:
     CAMPSITE_LAYOUT = json.load(campsite_layout_file)
+COMPOSITION_LAYOUT_PATH = os.path.join(SCRIPT_DIR, "forest-composition-revision.json")
+with open(COMPOSITION_LAYOUT_PATH, "rb") as composition_layout_file:
+    COMPOSITION_LAYOUT_BYTES = composition_layout_file.read()
+COMPOSITION_LAYOUT = json.loads(COMPOSITION_LAYOUT_BYTES.decode("utf-8"))
+COMPOSITION_LAYOUT_SHA256 = hashlib.sha256(COMPOSITION_LAYOUT_BYTES).hexdigest()
 QA_DIR = os.path.join(os.environ.get("TEMP", PROJECT_ROOT), "tka-forest-evidence")
 QA_PATHS = {
     name: os.path.join(QA_DIR, f"forest_environment_qa_{name}.png")
@@ -924,6 +929,115 @@ def mark_near_frame_object(obj, role, source_id, vignette_id):
     obj["tka_static_prop_layout_sha256"] = STATIC_PROP_LAYOUT_SHA256
 
 
+def create_camp_shelf_layer(material):
+    """Build the approved Forest-only camp shelf and its walkable approach."""
+    shelf = COMPOSITION_LAYOUT["campRelocation"]["shelf"]
+    center_x = float(shelf["center"][0])
+    center_y = -float(shelf["center"][1])
+    radius_x, radius_y = map(float, shelf["radii"])
+    rotation = math.radians(-float(shelf["rotationDegrees"]))
+    top = float(shelf["topElevationMetres"])
+    camp_path = next(path for path in PATHS if path["id"] == "camp-spur")
+
+    minimum_x = center_x - radius_x - 4.0
+    maximum_x = center_x + radius_x + 4.0
+    minimum_y = center_y - radius_y - 4.0
+    maximum_y = center_y + radius_y + 4.0
+    columns = 49
+    rows = 43
+    vertices = []
+    faces = []
+    top_heights = []
+    detail_uvs = []
+    macro_uvs = []
+
+    for row in range(rows):
+        y = minimum_y + (maximum_y - minimum_y) * row / (rows - 1)
+        for column in range(columns):
+            x = minimum_x + (maximum_x - minimum_x) * column / (columns - 1)
+            shelf_metric = ellipse_metric(
+                x,
+                y,
+                center_x,
+                center_y,
+                radius_x,
+                radius_y,
+                rotation,
+            )
+            shelf_influence = 1.0 - smoothstep(0.82, 1.12, shelf_metric)
+            path_distance = distance_to_path(x, y, camp_path)
+            path_influence = 1.0 - smoothstep(
+                float(camp_path["halfWidth"]) + 0.35,
+                float(camp_path["halfWidth"]) + float(camp_path["shoulderWidth"]),
+                path_distance,
+            )
+            approach_progress = smoothstep(14.0, 34.0, x)
+            influence = max(shelf_influence, path_influence * approach_progress)
+            base_height = terrain_height(x, y)
+            height = base_height + (top - base_height) * influence
+            vertices.append((x, y, height))
+            detail_uvs.append(terrain_detail_uv(x, y))
+            macro_uvs.append(terrain_macro_uv(x, y))
+            if shelf_metric <= 0.72:
+                top_heights.append(height)
+
+    for row in range(rows - 1):
+        for column in range(columns - 1):
+            first = row * columns + column
+            faces.append((first, first + 1, first + columns + 1, first + columns))
+
+    mesh = bpy.data.meshes.new("Forest Camp Shelf Mesh")
+    mesh.from_pydata(vertices, [], faces)
+    if mesh.validate(verbose=True):
+        raise RuntimeError("Forest camp shelf mesh required validation corrections")
+    mesh.update()
+    mesh.materials.append(material)
+    detail_uv_layer = mesh.uv_layers.new(name="Forest Detail UV")
+    macro_uv_layer = mesh.uv_layers.new(name="Forest Macro UV")
+    for polygon in mesh.polygons:
+        polygon.use_smooth = True
+        for loop_index in polygon.loop_indices:
+            vertex_index = mesh.loops[loop_index].vertex_index
+            detail_uv_layer.data[loop_index].uv = detail_uvs[vertex_index]
+            macro_uv_layer.data[loop_index].uv = macro_uvs[vertex_index]
+
+    shelf_object = bpy.data.objects.new("Forest_CampShelf", mesh)
+    bpy.context.collection.objects.link(shelf_object)
+    shelf_object["tka_role"] = "camp-shelf"
+    shelf_object["tka_export_layer"] = "near-frame"
+    shelf_object["tka_static_prop_layout_version"] = int(STATIC_PROP_LAYOUT["version"])
+    shelf_object["tka_static_prop_layout_sha256"] = STATIC_PROP_LAYOUT_SHA256
+    shelf_object["tka_composition_layout_version"] = int(COMPOSITION_LAYOUT["version"])
+    shelf_object["tka_composition_layout_sha256"] = COMPOSITION_LAYOUT_SHA256
+
+    approach_samples = [
+        (float(distance), float(elevation))
+        for distance, elevation in COMPOSITION_LAYOUT["verticalSection"]["samples"]
+        if 14.0 <= float(distance) <= 43.0
+    ]
+    maximum_grade = 0.0
+    for prior, current in zip(approach_samples, approach_samples[1:]):
+        distance = current[0] - prior[0]
+        if distance > 0.001:
+            maximum_grade = max(
+                maximum_grade,
+                abs(current[1] - prior[1]) / distance * 100.0,
+            )
+    metrics = {
+        "topElevationMetres": top,
+        "minimumTopHeightMetres": min(top_heights),
+        "maximumTopHeightMetres": max(top_heights),
+        "maximumApproachGradePercent": maximum_grade,
+        "vertexCount": len(vertices),
+        "faceCount": len(faces),
+    }
+    if maximum_grade > float(shelf["maximumApproachGradePercent"]):
+        raise RuntimeError(
+            f"Forest camp approach grade {maximum_grade:.3f}% exceeds the approved maximum"
+        )
+    return shelf_object, metrics
+
+
 def validate_static_prop_layout(tree_placements):
     approved_frames = {
         candidate["id"]: candidate for candidate in PROP_LINEUP["framingCandidates"]
@@ -931,8 +1045,8 @@ def validate_static_prop_layout(tree_placements):
     frames = STATIC_PROP_LAYOUT["frameTrees"]
     if STATIC_PROP_LAYOUT["visibility"] != "default-forest-only":
         raise RuntimeError("Forest near-frame layer must remain default-only")
-    if len(frames) != 2:
-        raise RuntimeError("Forest Gate 9 requires exactly two approved frame trees")
+    if len(frames) != len(approved_frames):
+        raise RuntimeError("Forest close-frame tree count drifted from the approved composition")
     for frame in frames:
         approved = approved_frames.get(frame["id"])
         if approved is None:
@@ -959,9 +1073,11 @@ def validate_static_prop_layout(tree_placements):
                 raise RuntimeError(f"Forest frame tree overlaps approved composition: {frame['id']}")
 
     rules = STATIC_PROP_LAYOUT["rules"]
-    fire_x, fire_y = map(float, CAMPSITE_LAYOUT["fire"]["position"])
+    fire_x, fire_runtime_z = map(float, CAMPSITE_LAYOUT["fire"]["position"])
+    fire_y = -fire_runtime_z
     source_counts = {source_id: 0 for source_id in STATIC_PROP_SOURCES}
     prop_count = 0
+    zone_prop_count = 0
     path_margins = []
     camp_margins = []
     anchor_distances = []
@@ -971,8 +1087,15 @@ def validate_static_prop_layout(tree_placements):
         if anchor is None:
             raise RuntimeError(f"Static vignette has no frame-tree anchor: {vignette['id']}")
         anchor_x, anchor_y = map(float, anchor["position"])
-        if len(vignette["props"]) != 3:
-            raise RuntimeError(f"Static vignette must contain three related props: {vignette['id']}")
+        prop_count_for_vignette = len(vignette["props"])
+        if not (
+            int(rules["minimumPropsPerVignette"])
+            <= prop_count_for_vignette
+            <= int(rules["maximumPropsPerVignette"])
+        ):
+            raise RuntimeError(
+                f"Static vignette has the wrong number of related props: {vignette['id']}"
+            )
         for placement in vignette["props"]:
             source_id = placement["sourceId"]
             if source_id not in STATIC_PROP_SOURCES:
@@ -1002,6 +1125,57 @@ def validate_static_prop_layout(tree_placements):
             if camp_margin < float(rules["minimumCampfireCenterDistanceMetres"]):
                 raise RuntimeError(f"Static prop enters campfire pocket: {placement['id']}")
 
+    habitat_zones = {
+        zone["id"]: zone
+        for zone in COMPOSITION_LAYOUT["spatialZones"]
+        if zone["kind"] == "habitat"
+    }
+    required_zone_ids = set(rules["requiredHabitatZoneIds"])
+    authored_zone_ids = {
+        placement["habitatZoneId"] for placement in STATIC_PROP_LAYOUT["zoneProps"]
+    }
+    if authored_zone_ids != required_zone_ids:
+        raise RuntimeError("Forest zone props drifted from the required habitat-zone set")
+    if not authored_zone_ids.issubset(habitat_zones):
+        raise RuntimeError("Forest zone props reference an unknown composition habitat")
+
+    for placement in STATIC_PROP_LAYOUT["zoneProps"]:
+        source_id = placement["sourceId"]
+        if source_id not in STATIC_PROP_SOURCES:
+            raise RuntimeError(f"Unknown Forest static prop source: {source_id}")
+        source_counts[source_id] += 1
+        prop_count += 1
+        zone_prop_count += 1
+        x, y = map(float, placement["position"])
+        radius = float(placement["targetLongestMetres"]) * 0.5
+        if math.hypot(x, y) - radius < float(rules["performanceKeepClearRadiusMetres"]):
+            raise RuntimeError(f"Zone prop enters performance keep-clear: {placement['id']}")
+        zone = habitat_zones[placement["habitatZoneId"]]
+        if ellipse_metric(
+            x,
+            y,
+            float(zone["center"][0]),
+            -float(zone["center"][1]),
+            float(zone["radii"][0]),
+            float(zone["radii"][1]),
+            math.radians(-float(zone["rotationDegrees"])),
+        ) > 1.0:
+            raise RuntimeError(f"Zone prop left its authored habitat: {placement['id']}")
+        for path in PATHS:
+            margin = (
+                distance_to_path(x, y, path)
+                - float(path["halfWidth"])
+                - float(path["shoulderWidth"])
+                - radius
+            )
+            path_margins.append(margin)
+            if margin < float(rules["minimumPathShoulderMarginMetres"]):
+                raise RuntimeError(f"Zone prop blocks path shoulder: {placement['id']}")
+        camp_margin = math.hypot(x - fire_x, y - fire_y) - radius
+        camp_margins.append(camp_margin)
+        if camp_margin < float(rules["minimumCampfireCenterDistanceMetres"]):
+            raise RuntimeError(f"Zone prop enters campfire pocket: {placement['id']}")
+
     if sum(1 for count in source_counts.values() if count > 0) < int(rules["minimumDistinctSourceFamilies"]):
         raise RuntimeError("Forest static prop layer lost source-family diversity")
     if max(source_counts.values()) > int(rules["maximumInstancesPerSource"]):
@@ -1009,6 +1183,8 @@ def validate_static_prop_layout(tree_placements):
     return {
         "frameTreeCount": len(frames),
         "vignetteCount": len(STATIC_PROP_LAYOUT["vignettes"]),
+        "zonePropCount": zone_prop_count,
+        "habitatZoneIds": sorted(authored_zone_ids),
         "propCount": prop_count,
         "sourceCounts": source_counts,
         "minimumPathShoulderMarginMetres": min(path_margins),
@@ -1017,7 +1193,7 @@ def validate_static_prop_layout(tree_placements):
     }
 
 
-def create_near_frame_layer(tree_placements):
+def create_near_frame_layer(tree_placements, ground_life_metrics):
     metrics = validate_static_prop_layout(tree_placements)
     created_meshes = []
     frames_by_asset = {}
@@ -1045,10 +1221,15 @@ def create_near_frame_layer(tree_placements):
 
     props_by_source = {source_id: [] for source_id in STATIC_PROP_SOURCES}
     vignette_by_prop = {}
+    zone_by_prop = {}
     for vignette in STATIC_PROP_LAYOUT["vignettes"]:
         for placement in vignette["props"]:
             props_by_source[placement["sourceId"]].append(placement)
             vignette_by_prop[placement["id"]] = vignette["id"]
+    for placement in STATIC_PROP_LAYOUT["zoneProps"]:
+        props_by_source[placement["sourceId"]].append(placement)
+        vignette_by_prop[placement["id"]] = placement["habitatZoneId"]
+        zone_by_prop[placement["id"]] = placement["habitatZoneId"]
 
     for source_id, placements in props_by_source.items():
         if not placements:
@@ -1068,32 +1249,42 @@ def create_near_frame_layer(tree_placements):
                     vignette_by_prop[placement["id"]],
                 )
                 obj["tka_static_prop_id"] = placement["id"]
+                if placement["id"] in zone_by_prop:
+                    obj["tka_habitat_zone_id"] = zone_by_prop[placement["id"]]
                 created_meshes.append(obj)
         remove_group(prototype)
 
+    print("\nForest near-frame verification")
+    print(f"Frame trees:                       {metrics['frameTreeCount']}")
+    print(f"Anchored vignettes:                {metrics['vignetteCount']}")
+    print(f"Habitat-zone props:                {metrics['zonePropCount']}")
+    print(f"Static prop instances:             {metrics['propCount']}")
+    print(f"Minimum path shoulder margin:      {metrics['minimumPathShoulderMarginMetres']:.3f} m")
+    print(f"Minimum campfire center distance:  {metrics['minimumCampfireCenterDistanceMetres']:.3f} m")
+    print(f"Maximum prop-anchor distance:      {metrics['maximumPropAnchorDistanceMetres']:.3f} m")
+    return created_meshes, metrics
+
+
+def write_near_frame_metrics(metrics, ground_life_metrics, camp_shelf_metrics):
     metrics_path = os.path.join(QA_DIR, "forest_near_frame_metrics.json")
+    os.makedirs(QA_DIR, exist_ok=True)
     with open(metrics_path, "w", encoding="utf-8") as metrics_file:
         json.dump(
             {
                 "contractVersion": STATIC_PROP_LAYOUT["version"],
                 "contractSha256": STATIC_PROP_LAYOUT_SHA256,
+                "compositionVersion": COMPOSITION_LAYOUT["version"],
+                "compositionSha256": COMPOSITION_LAYOUT_SHA256,
                 "visibility": STATIC_PROP_LAYOUT["visibility"],
+                "groundLife": ground_life_metrics,
+                "campShelf": camp_shelf_metrics,
                 **metrics,
             },
             metrics_file,
             indent=2,
         )
         metrics_file.write("\n")
-
-    print("\nForest near-frame verification")
-    print(f"Frame trees:                       {metrics['frameTreeCount']}")
-    print(f"Anchored vignettes:                {metrics['vignetteCount']}")
-    print(f"Static prop instances:             {metrics['propCount']}")
-    print(f"Minimum path shoulder margin:      {metrics['minimumPathShoulderMarginMetres']:.3f} m")
-    print(f"Minimum campfire center distance:  {metrics['minimumCampfireCenterDistanceMetres']:.3f} m")
-    print(f"Maximum prop-anchor distance:      {metrics['maximumPropAnchorDistanceMetres']:.3f} m")
     print(f"Near-frame metrics:                {metrics_path}")
-    return created_meshes, metrics
 
 
 def create_tree_composition(terrain):
@@ -1372,7 +1563,7 @@ def setup_qa_render(near_frame_objects):
     render_qa_view(camera, (0.0, -9.0, 2.2), (0.0, 0.0, 1.35), QA_PATHS["walk"], 31)
     render_qa_view(camera, (8.0, -24.0, 5.5), (39.0, 4.0, 7.0), QA_PATHS["trees"], 41)
     render_qa_view(camera, (1.0, -12.0, 3.1), (9.0, -2.0, 0.15), QA_PATHS["floor"], 41)
-    render_qa_view(camera, (11.0, -11.0, 4.8), (5.5, 3.5, 1.1), QA_PATHS["camp"], 42)
+    render_qa_view(camera, (29.0, -23.5, 7.05), (35.0, -2.5, 1.25), QA_PATHS["camp"], 42)
     render_qa_view(camera, (-8.0, -12.0, 4.5), (0.0, 0.0, 1.0), QA_PATHS["stage"], 41)
     render_qa_view(
         camera,
@@ -1458,7 +1649,7 @@ verify_terrain()
 verify_path_layout()
 tree_placements, tree_counts = create_tree_composition(terrain)
 verify_tree_composition(tree_placements, tree_counts)
-ground_life_metrics = build_ground_life(
+ground_life_metrics, near_frame_ground_life, near_frame_ground_life_metrics = build_ground_life(
     project_root=PROJECT_ROOT,
     layout=GROUND_LAYOUT,
     layout_sha256=GROUND_LAYOUT_SHA256,
@@ -1473,8 +1664,20 @@ ground_life_metrics = build_ground_life(
     tree_placements=tree_placements,
     tree_assets=TREE_ASSETS,
     qa_dir=QA_DIR,
+    near_frame_layout=STATIC_PROP_LAYOUT,
+    near_frame_layout_sha256=STATIC_PROP_LAYOUT_SHA256,
 )
-near_frame_objects, near_frame_metrics = create_near_frame_layer(tree_placements)
+near_frame_static_objects, near_frame_metrics = create_near_frame_layer(
+    tree_placements,
+    near_frame_ground_life_metrics,
+)
+camp_shelf, camp_shelf_metrics = create_camp_shelf_layer(terrain_materials[1])
+write_near_frame_metrics(
+    near_frame_metrics,
+    near_frame_ground_life_metrics,
+    camp_shelf_metrics,
+)
+near_frame_objects = near_frame_static_objects + near_frame_ground_life + [camp_shelf]
 setup_qa_render(near_frame_objects)
 
 print("\nMoonlit Firefly Forest terrain, trees, ground ecology, and close frame authored")

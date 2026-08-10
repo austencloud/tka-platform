@@ -3,6 +3,7 @@
 import type {
   FallingParticlesConfig,
   SkyGradientConfig,
+  SkySunConfig,
 } from "../environment-models";
 import type {
   MeteorStreaksConfig,
@@ -14,11 +15,12 @@ import type {
   FogConfig,
   GroundConfig,
   HemisphereLightConfig,
-  TreeRingConfig,
 } from "./shared-scene-config";
 
 export interface ForestSceneConfig {
   sky: SkyGradientConfig;
+  /** Optional solar disk. Night and legacy configs omit it. */
+  sun?: SkySunConfig | null;
   /** Distant stars visible through the forest canopy. */
   starfield?: StarfieldConfig | null;
   /** Occasional cool-white streaks across the night sky. */
@@ -31,52 +33,103 @@ export interface ForestSceneConfig {
   leaves: FallingParticlesConfig;
   /** Firefly particles (null for autumn variant). */
   fireflies: FallingParticlesConfig | null;
-  /** Concentric tree rings for depth. */
-  treeRings: TreeRingConfig[];
-  /** Inner clearing radius - rocks / bushes hug this edge. */
-  clearingRadius: number;
-  /** Rock count around clearing edge. */
-  rockCount: number;
-  /** Bush count filling gaps. */
-  bushCount: number;
   campfire: CampfireConfig | null;
-  tent: {
-    enabled: boolean;
-    position: { x: number; z: number };
-    scale: number;
-    rotationY: number;
-  };
   /** Ambient hemisphere bounce. */
   hemisphereLight: HemisphereLightConfig;
+  /** Forest-owned motivated light rig. Omitted legacy configs use Night Master. */
+  lighting?: ForestLightingConfig;
+  /** High-canopy silhouette family for the current atmosphere. */
+  canopyFlight?: "bats" | "birds" | "none";
+  /** Per-anchor material grading. Night omits this to preserve revision 36. */
+  materialResponse?: ForestMaterialResponseConfig;
 }
 
-/** The close frame belongs only to the authored default Forest composition. */
+export interface ForestMaterialResponseConfig {
+  terrainTint: string;
+  foliageTint: string;
+  /** Re-hues pale baked canopy highlights without flattening dark bark. */
+  foliageHighlightTint: string;
+  foliageHighlightStrength: number;
+  groundLifeTint: string;
+  stageTint: string;
+  campTint: string;
+  emissiveScale: number;
+}
+
+export interface ForestLightingConfig {
+  key: {
+    color: string;
+    intensity: number;
+    direction: [number, number, number];
+    shadowIntensity: number;
+  };
+  fill: {
+    color: string;
+    intensity: number;
+  };
+  ambient: {
+    color: string;
+    intensity: number;
+  };
+  stage: {
+    color: string;
+    intensity: number;
+    distance: number;
+  };
+}
+
+/** Exact revision-36 values. Other atmosphere anchors must not mutate them. */
+export const FOREST_NIGHT_LIGHTING: ForestLightingConfig = {
+  key: {
+    color: "#b8cee8",
+    intensity: 0.48,
+    direction: [12, 22, -58],
+    shadowIntensity: 0.42,
+  },
+  fill: {
+    color: "#6f9991",
+    intensity: 0.12,
+  },
+  ambient: {
+    color: "#91aaa2",
+    intensity: 0.06,
+  },
+  stage: {
+    color: "#b9d9d2",
+    intensity: 32,
+    distance: 16,
+  },
+};
+
+/** Widened hub callers omit the authored close frame; Scene Lab previews production. */
 export function shouldShowForestNearFrame(
-  config: ForestSceneConfig | undefined,
   clearingRadius: number | undefined
 ): boolean {
-  return config === undefined && clearingRadius === undefined;
+  return clearingRadius === undefined;
 }
 
 const DEFAULT_CAMPFIRE_FIREFLY: CampfireConfig = {
   enabled: true,
-  position: { x: 5.5, z: -3.5 },
+  // Mirrors the measured Forest campsite contract. The GLB owns the stone
+  // bed; this coordinate keeps the live flame, smoke, and lights centered in it.
+  position: { x: 34.0, z: 2.0 },
+  groundOffset: 0.25,
   modelScale: 2.5,
   fireScale: 0.9,
   fireHeight: 2.0,
   primaryLight: {
-    color: "#ff6622",
-    intensity: 50,
-    distance: 20,
-    decay: 1.2,
+    color: "#ff7a32",
+    intensity: 28,
+    distance: 14,
+    decay: 2,
     heightOffset: 1.5,
   },
   fillLight: {
-    color: "#ff4400",
-    intensity: 30,
-    distance: 15,
-    decay: 1.5,
-    heightOffset: 0.25,
+    color: "#ffc078",
+    intensity: 6,
+    distance: 12,
+    decay: 2,
+    heightOffset: 3.5,
   },
   smokeColors: ["#222222", "#1a1a1a", "#111111"],
   smokeCount: 40,
@@ -84,41 +137,22 @@ const DEFAULT_CAMPFIRE_FIREFLY: CampfireConfig = {
 
 const DEFAULT_CAMPFIRE_AUTUMN: CampfireConfig = {
   ...DEFAULT_CAMPFIRE_FIREFLY,
-  primaryLight: { ...DEFAULT_CAMPFIRE_FIREFLY.primaryLight, intensity: 35 },
-  fillLight: { ...DEFAULT_CAMPFIRE_FIREFLY.fillLight, intensity: 20 },
+  primaryLight: {
+    color: "#ff6622",
+    intensity: 35,
+    distance: 20,
+    decay: 1.2,
+    heightOffset: 1.5,
+  },
+  fillLight: {
+    color: "#ff4400",
+    intensity: 20,
+    distance: 15,
+    decay: 1.5,
+    heightOffset: 0.25,
+  },
   smokeColors: ["#443322", "#332211", "#221100"],
 };
-
-const FOREST_TREE_RINGS: TreeRingConfig[] = [
-  {
-    radius: 14,
-    count: 20,
-    scaleBase: 1.4,
-    scaleVariation: 0.4,
-    radiusJitter: 1.0,
-  },
-  {
-    radius: 17.5,
-    count: 28,
-    scaleBase: 1.25,
-    scaleVariation: 0.35,
-    radiusJitter: 1.5,
-  },
-  {
-    radius: 21,
-    count: 36,
-    scaleBase: 1.1,
-    scaleVariation: 0.3,
-    radiusJitter: 1.75,
-  },
-  {
-    radius: 25,
-    count: 44,
-    scaleBase: 0.9,
-    scaleVariation: 0.25,
-    radiusJitter: 2.0,
-  },
-];
 
 const FOREST_FLOOR_TEXTURES = {
   diffuseMap: "/textures/forest-floor/diffuse.jpg",
@@ -133,6 +167,7 @@ export function createDefaultForestFireflyConfig(): ForestSceneConfig {
       midColor: "#1a4a5a",
       bottomColor: "#0d2218",
     },
+    sun: null,
     starfield: {
       enabled: true,
       count: 1400,
@@ -158,7 +193,7 @@ export function createDefaultForestFireflyConfig(): ForestSceneConfig {
       glowScale: 1.12,
       glowOpacity: 0.025,
     },
-    fog: { color: "#0a1210", density: 0.034 },
+    fog: { color: "#0a171c", density: 0.024 },
     ground: {
       color: "#99aa88",
       size: 50,
@@ -185,22 +220,19 @@ export function createDefaultForestFireflyConfig(): ForestSceneConfig {
       sizeRange: [0.2, 0.4],
       spin: false,
     },
-    treeRings: FOREST_TREE_RINGS,
-    clearingRadius: 14,
-    rockCount: 10,
-    bushCount: 16,
     campfire: DEFAULT_CAMPFIRE_FIREFLY,
-    tent: {
-      enabled: true,
-      position: { x: -5.0, z: -4.0 },
-      scale: 2.25,
-      rotationY: Math.PI * 0.65,
-    },
     hemisphereLight: {
-      skyColor: "#ff8844",
-      groundColor: "#221100",
-      intensity: 0.6,
+      skyColor: "#809eb7",
+      groundColor: "#162d24",
+      intensity: 0.38,
     },
+    lighting: {
+      key: { ...FOREST_NIGHT_LIGHTING.key },
+      fill: { ...FOREST_NIGHT_LIGHTING.fill },
+      ambient: { ...FOREST_NIGHT_LIGHTING.ambient },
+      stage: { ...FOREST_NIGHT_LIGHTING.stage },
+    },
+    canopyFlight: "bats",
   };
 }
 
@@ -211,6 +243,7 @@ export function createDefaultForestAutumnConfig(): ForestSceneConfig {
       midColor: "#b5522a",
       bottomColor: "#3d1a10",
     },
+    sun: null,
     starfield: null,
     shootingStars: null,
     moon: null,
@@ -233,21 +266,12 @@ export function createDefaultForestAutumnConfig(): ForestSceneConfig {
       spin: true,
     },
     fireflies: null,
-    treeRings: FOREST_TREE_RINGS,
-    clearingRadius: 14,
-    rockCount: 10,
-    bushCount: 16,
     campfire: DEFAULT_CAMPFIRE_AUTUMN,
-    tent: {
-      enabled: true,
-      position: { x: -5.0, z: -4.0 },
-      scale: 2.25,
-      rotationY: Math.PI * 0.65,
-    },
     hemisphereLight: {
       skyColor: "#ff8844",
       groundColor: "#221100",
       intensity: 0.4,
     },
+    canopyFlight: "none",
   };
 }

@@ -137,6 +137,25 @@ MUSHROOM_PATTERNS = {
         (0.35, -0.10, 0.24, 0.17, "spent"),
         (0.08, 0.31, 0.16, 0.12, "spent"),
     ),
+    "amanita-scouts": (
+        (-0.14, 0.03, 0.36, 0.19, "amanita"),
+        (0.18, -0.06, 0.48, 0.23, "amanita"),
+    ),
+    "amanita-family": (
+        (-0.36, 0.14, 0.30, 0.17, "amanita"),
+        (-0.12, -0.18, 0.48, 0.23, "amanita"),
+        (0.18, 0.08, 0.38, 0.20, "amanita"),
+        (0.39, -0.11, 0.24, 0.14, "amanita"),
+        (0.06, 0.34, 0.20, 0.12, "amanita"),
+    ),
+    "amanita-ring": (
+        (-0.42, 0.10, 0.28, 0.16, "amanita"),
+        (-0.20, -0.31, 0.35, 0.18, "amanita"),
+        (0.12, -0.37, 0.23, 0.13, "amanita"),
+        (0.42, -0.10, 0.42, 0.21, "amanita"),
+        (0.28, 0.29, 0.30, 0.16, "amanita"),
+        (-0.10, 0.38, 0.20, 0.12, "amanita"),
+    ),
 }
 
 
@@ -147,6 +166,16 @@ def _flat_material(name, color, roughness=0.86):
     bsdf = material.node_tree.nodes.get("Principled BSDF")
     bsdf.inputs["Base Color"].default_value = (*color, 1.0)
     bsdf.inputs["Roughness"].default_value = roughness
+    return material
+
+
+def _transparent_flat_material(name, color, alpha, roughness=0.96):
+    material = _flat_material(name, color, roughness)
+    material.diffuse_color = (*color, alpha)
+    bsdf = material.node_tree.nodes.get("Principled BSDF")
+    bsdf.inputs["Base Color"].default_value = (*color, 1.0)
+    bsdf.inputs["Alpha"].default_value = alpha
+    material.surface_render_method = "DITHERED"
     return material
 
 
@@ -375,9 +404,12 @@ def _make_prototypes(project_root, ecology, prototype_collection):
         "twig": _flat_material("Forest Fallen Twig", (0.12, 0.062, 0.027), 0.95),
         "log": _flat_material("Forest Decomposition Log", (0.105, 0.055, 0.025), 0.96),
         "stem": _flat_material("Forest Mushroom Stem", (0.54, 0.47, 0.34), 0.82),
+        "stem-amanita": _flat_material("Forest Amanita Stem", (0.78, 0.72, 0.58), 0.80),
         "cap-chestnut": _flat_material("Forest Mushroom Chestnut", (0.31, 0.105, 0.035), 0.84),
         "cap-honey": _flat_material("Forest Mushroom Honey", (0.48, 0.23, 0.065), 0.84),
         "cap-spent": _flat_material("Forest Mushroom Spent", (0.20, 0.115, 0.055), 0.94),
+        "cap-amanita": _flat_material("Forest Amanita Cap", (0.62, 0.018, 0.012), 0.80),
+        "amanita-spot": _flat_material("Forest Amanita Spots", (0.89, 0.84, 0.68), 0.88),
     }
 
     sources = {}
@@ -472,8 +504,16 @@ def _make_prototypes(project_root, ecology, prototype_collection):
     stem.hide_render = True
     stem.hide_viewport = True
     _link_to_collection(stem, prototype_collection)
-    mushroom_parts = {"stem": stem}
-    for key in ("chestnut", "honey", "spent"):
+    bpy.ops.mesh.primitive_cone_add(vertices=12, radius1=0.13, radius2=0.072, depth=1.0)
+    amanita_stem = bpy.context.object
+    amanita_stem.name = "ForestGroundAmanitaStem"
+    amanita_stem.data.name = "ForestGroundMushroomMesh_stem-amanita"
+    amanita_stem.data.materials.append(materials["stem-amanita"])
+    amanita_stem.hide_render = True
+    amanita_stem.hide_viewport = True
+    _link_to_collection(amanita_stem, prototype_collection)
+    mushroom_parts = {"stem": stem, "stem-amanita": amanita_stem}
+    for key in ("chestnut", "honey", "spent", "amanita"):
         bpy.ops.mesh.primitive_uv_sphere_add(segments=16, ring_count=8)
         cap = bpy.context.object
         cap.name = f"ForestGroundMushroomCap_{key}"
@@ -483,6 +523,16 @@ def _make_prototypes(project_root, ecology, prototype_collection):
         cap.hide_viewport = True
         _link_to_collection(cap, prototype_collection)
         mushroom_parts[key] = cap
+
+    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1, radius=1.0)
+    spot = bpy.context.object
+    spot.name = "ForestGroundAmanitaSpot"
+    spot.data.name = "ForestGroundMushroomMesh_amanita-spot"
+    spot.data.materials.append(materials["amanita-spot"])
+    spot.hide_render = True
+    spot.hide_viewport = True
+    _link_to_collection(spot, prototype_collection)
+    mushroom_parts["amanita-spot"] = spot
 
     return sources, variants, modules, mushroom_parts
 
@@ -644,12 +694,13 @@ def _place_small_mushroom_cluster(
     pattern = MUSHROOM_PATTERNS[variant_id]
     cosine = math.cos(yaw)
     sine = math.sin(yaw)
+    created = []
     for index, (local_x, local_y, height, cap_radius, cap_key) in enumerate(pattern):
         px = x + (local_x * cosine - local_y * sine) * scale
         py = y + (local_x * sine + local_y * cosine) * scale
         ground_z = terrain_height(px, py)
         stem = _place_linked_object(
-            mushroom_parts["stem"],
+            mushroom_parts["stem-amanita" if cap_key == "amanita" else "stem"],
             collection,
             f"{name_prefix}_Stem_{index:02d}",
             (px, py, ground_z + height * scale * 0.5),
@@ -657,6 +708,7 @@ def _place_small_mushroom_cluster(
             (cap_radius * scale * 0.42, cap_radius * scale * 0.42, height * scale),
         )
         stem["tka_role"] = "ground-life-mushroom-part"
+        created.append(stem)
         cap = _place_linked_object(
             mushroom_parts[cap_key],
             collection,
@@ -670,6 +722,302 @@ def _place_small_mushroom_cluster(
             ),
         )
         cap["tka_role"] = "ground-life-mushroom-part"
+        created.append(cap)
+        if cap_key == "amanita":
+            spot_count = 5 + index % 3
+            for spot_index in range(spot_count):
+                spot_angle = yaw + index * 0.83 + spot_index * 2.399963
+                radial_fraction = 0.14 + 0.12 * ((spot_index * 3 + index) % 5)
+                radial = cap_radius * scale * radial_fraction
+                spot_radius = cap_radius * scale * (0.085 + 0.012 * (spot_index % 3))
+                spot = _place_linked_object(
+                    mushroom_parts["amanita-spot"],
+                    collection,
+                    f"{name_prefix}_Spot_{index:02d}_{spot_index:02d}",
+                    (
+                        px + math.cos(spot_angle) * radial,
+                        py + math.sin(spot_angle) * radial,
+                        ground_z
+                        + height * scale
+                        + cap_radius * scale * (0.34 - radial_fraction * 0.10),
+                    ),
+                    spot_angle,
+                    (spot_radius, spot_radius, spot_radius * 0.48),
+                )
+                spot["tka_role"] = "ground-life-mushroom-part"
+                created.append(spot)
+    return created
+
+
+def _stable_seed(value):
+    return sum((index + 1) * ord(character) for index, character in enumerate(value))
+
+
+def _create_near_frame_grass(
+    layout,
+    layout_sha256,
+    terrain_height,
+    distance_to_path,
+    paths,
+    mushroom_positions,
+):
+    rules = layout["rules"]
+    minimum_core_radius = float(rules["minimumGrassCoreRadiusMetres"])
+    path_margin = float(rules["minimumGrassPathCoreMarginMetres"])
+    palette_colors = {
+        "base": (0.13, 0.28, 0.095),
+        "lush": (0.09, 0.34, 0.105),
+        "shade": (0.075, 0.22, 0.085),
+    }
+    materials = {
+        palette: _flat_material(
+            f"Forest Clearing Grass {palette.title()}",
+            color,
+            0.93,
+        )
+        for palette, color in palette_colors.items()
+    }
+    positions_by_palette = {palette: [] for palette in palette_colors}
+    patch_counts = {}
+    occupied = {}
+    cell_size = 0.14
+
+    for patch in layout["grassPatches"]:
+        palette = patch["palette"]
+        if palette not in positions_by_palette:
+            raise RuntimeError(f"Unknown Forest clearing-grass palette: {palette}")
+        rng = random.Random(int(layout["version"]) * 100003 + _stable_seed(patch["id"]))
+        center_x, center_y = map(float, patch["center"])
+        radius_x, radius_y = map(float, patch["radii"])
+        rotation = math.radians(float(patch["rotationDegrees"]))
+        cosine = math.cos(rotation)
+        sine = math.sin(rotation)
+        count = int(patch["count"])
+        accepted = []
+        attempts = 0
+        while len(accepted) < count and attempts < count * 120:
+            attempts += 1
+            angle = rng.uniform(0.0, math.tau)
+            radius = math.sqrt(rng.random())
+            local_x = math.cos(angle) * radius_x * radius
+            local_y = math.sin(angle) * radius_y * radius
+            x = center_x + local_x * cosine - local_y * sine
+            y = center_y + local_x * sine + local_y * cosine
+            if math.hypot(x, y) < minimum_core_radius:
+                continue
+            if any(
+                distance_to_path(x, y, path)
+                < float(path["halfWidth"]) + path_margin
+                for path in paths
+            ):
+                continue
+            if any(math.hypot(x - mx, y - my) < 0.72 for mx, my in mushroom_positions):
+                continue
+            cell_x = math.floor(x / cell_size)
+            cell_y = math.floor(y / cell_size)
+            if any(
+                (x - ox) ** 2 + (y - oy) ** 2 < cell_size**2
+                for nx in range(cell_x - 1, cell_x + 2)
+                for ny in range(cell_y - 1, cell_y + 2)
+                for ox, oy in occupied.get((nx, ny), ())
+            ):
+                continue
+            occupied.setdefault((cell_x, cell_y), []).append((x, y))
+            accepted.append((x, y, patch["id"]))
+        if len(accepted) != count:
+            raise RuntimeError(
+                f"Forest clearing grass placed {len(accepted)}/{count} clumps in {patch['id']}"
+            )
+        positions_by_palette[palette].extend(accepted)
+        patch_counts[patch["id"]] = len(accepted)
+
+    created = []
+    for palette, positions in positions_by_palette.items():
+        if not positions:
+            continue
+        rng = random.Random(71003 + _stable_seed(palette))
+        vertices = []
+        faces = []
+        vertex_uvs = []
+        for clump_x, clump_y, _patch_id in positions:
+            blade_count = 5 + rng.randrange(4)
+            for _blade in range(blade_count):
+                offset_angle = rng.uniform(0.0, math.tau)
+                offset_radius = math.sqrt(rng.random()) * 0.13
+                root_x = clump_x + math.cos(offset_angle) * offset_radius
+                root_y = clump_y + math.sin(offset_angle) * offset_radius
+                root_z = terrain_height(root_x, root_y) + 0.014
+                yaw = rng.uniform(0.0, math.tau)
+                right_x = math.cos(yaw)
+                right_y = math.sin(yaw)
+                lean_angle = yaw + rng.uniform(-0.65, 0.65)
+                lean_x = math.cos(lean_angle)
+                lean_y = math.sin(lean_angle)
+                width = rng.uniform(0.018, 0.036)
+                height = rng.uniform(0.18, 0.46)
+                mid_lean = rng.uniform(0.008, 0.025)
+                tip_lean = rng.uniform(0.025, 0.075)
+                start = len(vertices)
+                vertices.extend(
+                    (
+                        (root_x - right_x * width, root_y - right_y * width, root_z),
+                        (root_x + right_x * width, root_y + right_y * width, root_z),
+                        (root_x - right_x * width * 0.72 + lean_x * mid_lean, root_y - right_y * width * 0.72 + lean_y * mid_lean, root_z + height * 0.56),
+                        (root_x + right_x * width * 0.72 + lean_x * mid_lean, root_y + right_y * width * 0.72 + lean_y * mid_lean, root_z + height * 0.56),
+                        (root_x - right_x * width * 0.10 + lean_x * tip_lean, root_y - right_y * width * 0.10 + lean_y * tip_lean, root_z + height),
+                        (root_x + right_x * width * 0.10 + lean_x * tip_lean, root_y + right_y * width * 0.10 + lean_y * tip_lean, root_z + height),
+                    )
+                )
+                vertex_uvs.extend(
+                    ((0.0, 0.0), (1.0, 0.0), (0.12, 0.56), (0.88, 0.56), (0.45, 1.0), (0.55, 1.0))
+                )
+                faces.extend(
+                    ((start, start + 1, start + 3, start + 2), (start + 2, start + 3, start + 5, start + 4))
+                )
+        mesh = bpy.data.meshes.new(f"Forest Clearing Grass {palette.title()} Mesh")
+        mesh.from_pydata(vertices, [], faces)
+        mesh.update()
+        mesh.materials.append(materials[palette])
+        uv_layer = mesh.uv_layers.new(name="Forest Grass Root Weight")
+        for polygon in mesh.polygons:
+            for loop_index in polygon.loop_indices:
+                vertex_index = mesh.loops[loop_index].vertex_index
+                uv_layer.data[loop_index].uv = vertex_uvs[vertex_index]
+        obj = bpy.data.objects.new(f"Forest_Grass_{palette.title()}", mesh)
+        bpy.context.scene.collection.objects.link(obj)
+        obj["tka_role"] = "near-frame-grass"
+        obj["tka_export_layer"] = "near-frame"
+        obj["tka_static_prop_layout_version"] = int(layout["version"])
+        obj["tka_static_prop_layout_sha256"] = layout_sha256
+        obj["tka_grass_clumps"] = len(positions)
+        obj["tka_grass_patch_ids"] = "|".join(sorted({item[2] for item in positions}))
+        created.append(obj)
+
+    return created, patch_counts
+
+
+def _resample_polyline(points, spacing, maximum_length):
+    samples = [tuple(map(float, points[0]))]
+    travelled = 0.0
+    for first, second in zip(points, points[1:]):
+        first_x, first_y = map(float, first)
+        second_x, second_y = map(float, second)
+        segment_length = math.hypot(second_x - first_x, second_y - first_y)
+        segment_steps = max(1, math.ceil(segment_length / spacing))
+        for step in range(1, segment_steps + 1):
+            amount = step / segment_steps
+            distance = segment_length / segment_steps
+            if travelled + distance > maximum_length:
+                remaining = maximum_length - travelled
+                if remaining > 0.001:
+                    final_amount = (step - 1 + remaining / distance) / segment_steps
+                    samples.append(
+                        (
+                            first_x + (second_x - first_x) * final_amount,
+                            first_y + (second_y - first_y) * final_amount,
+                        )
+                    )
+                return samples
+            samples.append(
+                (
+                    first_x + (second_x - first_x) * amount,
+                    first_y + (second_y - first_y) * amount,
+                )
+            )
+            travelled += distance
+    return samples
+
+
+def _create_near_frame_trail(
+    layout,
+    layout_sha256,
+    terrain_height,
+    paths,
+):
+    accent = layout["trailAccent"]
+    path = next((item for item in paths if item["id"] == accent["pathId"]), None)
+    if path is None:
+        raise RuntimeError(f"Forest trail accent references an unknown path: {accent['pathId']}")
+
+    samples = _resample_polyline(
+        path["points"],
+        float(accent["sampleSpacingMetres"]),
+        float(accent["maximumDistanceMetres"]),
+    )
+    rng = random.Random(91009 + _stable_seed(accent["id"]))
+    core_material = _transparent_flat_material(
+        "Forest Worn Trail Core",
+        (0.49, 0.33, 0.17),
+        0.5,
+        0.98,
+    )
+    edge_material = _transparent_flat_material(
+        "Forest Worn Trail Edge",
+        (0.43, 0.29, 0.15),
+        0.18,
+        0.99,
+    )
+    vertices = []
+    faces = []
+    width_scale = float(accent["halfWidthScale"])
+    edge_jitter = float(accent["edgeJitterMetres"])
+    row_width = 5
+
+    for index, (x, y) in enumerate(samples):
+        previous = samples[max(0, index - 1)]
+        following = samples[min(len(samples) - 1, index + 1)]
+        tangent_x = following[0] - previous[0]
+        tangent_y = following[1] - previous[1]
+        tangent_length = max(0.0001, math.hypot(tangent_x, tangent_y))
+        normal_x = -tangent_y / tangent_length
+        normal_y = tangent_x / tangent_length
+        half_width = float(path["halfWidth"]) * width_scale
+        left_width = half_width + rng.uniform(-edge_jitter, edge_jitter)
+        right_width = half_width + rng.uniform(-edge_jitter, edge_jitter)
+        for band, amount in enumerate((-1.0, -0.48, 0.0, 0.48, 1.0)):
+            width = left_width if amount < 0 else right_width
+            px = x + normal_x * width * amount
+            py = y + normal_y * width * amount
+            crown = 0.008 + 0.003 * (1.0 - abs(amount))
+            undulation = 0.001 * math.sin(index * 1.71 + band * 0.83)
+            vertices.append((px, py, terrain_height(px, py) + crown + undulation))
+
+    for row in range(len(samples) - 1):
+        start = row * row_width
+        next_start = (row + 1) * row_width
+        for band in range(row_width - 1):
+            faces.append(
+                (
+                    start + band,
+                    start + band + 1,
+                    next_start + band + 1,
+                    next_start + band,
+                )
+            )
+
+    mesh = bpy.data.meshes.new("Forest Worn Trail Mesh")
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    mesh.materials.append(core_material)
+    mesh.materials.append(edge_material)
+    for polygon in mesh.polygons:
+        polygon.material_index = 0 if polygon.index % (row_width - 1) in (1, 2) else 1
+    obj = bpy.data.objects.new("Forest_Trail_UpstageWoodland", mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    obj.visible_shadow = False
+    obj["tka_role"] = "near-frame-trail"
+    obj["tka_export_layer"] = "near-frame"
+    obj["tka_static_prop_layout_version"] = int(layout["version"])
+    obj["tka_static_prop_layout_sha256"] = layout_sha256
+    obj["tka_trail_accent_id"] = accent["id"]
+    obj["tka_trail_path_id"] = accent["pathId"]
+    obj["tka_trail_sample_count"] = len(samples)
+    return obj, {
+        "id": accent["id"],
+        "pathId": accent["pathId"],
+        "sampleCount": len(samples),
+        "maximumDistanceMetres": float(accent["maximumDistanceMetres"]),
+    }
 
 
 def _module_local_position(habitat_id, module_type, index, count, patch, rng):
@@ -771,6 +1119,8 @@ def build_ground_life(
     tree_placements,
     tree_assets,
     qa_dir,
+    near_frame_layout=None,
+    near_frame_layout_sha256=None,
 ):
     habitat_definitions = {habitat["id"]: habitat for habitat in ecology["habitats"]}
     ground_collection = bpy.data.collections.new("Forest Ground Life")
@@ -792,6 +1142,14 @@ def build_ground_life(
     family_counts = Counter()
     habitat_counts = Counter()
     module_counts = Counter()
+    near_frame_objects = []
+    near_frame_metrics = {
+        "grassPatchCounts": {},
+        "grassClumpCount": 0,
+        "mushroomColonies": [],
+        "mushroomPartCount": 0,
+        "trail": None,
+    }
 
     for patch_index, patch in enumerate(layout["patches"]):
         habitat_id = patch["habitatId"]
@@ -976,6 +1334,59 @@ def build_ground_life(
             }
         )
 
+    if near_frame_layout is not None:
+        if near_frame_layout_sha256 is None:
+            raise RuntimeError("Forest near-frame ground life requires a layout hash")
+        mushroom_positions = []
+        for colony in near_frame_layout["mushroomColonies"]:
+            pattern = colony["pattern"]
+            if pattern not in MUSHROOM_PATTERNS:
+                raise RuntimeError(f"Unknown Forest near-frame mushroom pattern: {pattern}")
+            x, y = map(float, colony["position"])
+            mushroom_positions.append((x, y))
+            created = _place_small_mushroom_cluster(
+                pattern,
+                x,
+                y,
+                math.radians(float(colony["rotationDegrees"])),
+                float(colony["scale"]),
+                ground_collection,
+                mushroom_parts,
+                terrain_height,
+                f"ForestNearFrameMushroom_{colony['id']}",
+            )
+            for obj in created:
+                obj["tka_role"] = "near-frame-mushroom-part"
+                obj["tka_export_layer"] = "near-frame"
+                obj["tka_static_prop_layout_version"] = int(near_frame_layout["version"])
+                obj["tka_static_prop_layout_sha256"] = near_frame_layout_sha256
+                obj["tka_mushroom_colony_id"] = colony["id"]
+                obj["tka_mushroom_pattern"] = pattern
+            near_frame_objects.extend(created)
+            near_frame_metrics["mushroomColonies"].append(colony["id"])
+            near_frame_metrics["mushroomPartCount"] += len(created)
+
+        grass_objects, grass_patch_counts = _create_near_frame_grass(
+            near_frame_layout,
+            near_frame_layout_sha256,
+            terrain_height,
+            distance_to_path,
+            paths,
+            mushroom_positions,
+        )
+        near_frame_objects.extend(grass_objects)
+        near_frame_metrics["grassPatchCounts"] = grass_patch_counts
+        near_frame_metrics["grassClumpCount"] = sum(grass_patch_counts.values())
+
+        trail_object, trail_metrics = _create_near_frame_trail(
+            near_frame_layout,
+            near_frame_layout_sha256,
+            terrain_height,
+            paths,
+        )
+        near_frame_objects.append(trail_object)
+        near_frame_metrics["trail"] = trail_metrics
+
     prototype_names = {
         prototype.name
         for prototype in (
@@ -1101,4 +1512,4 @@ def build_ground_life(
     print(f"Family counts:                    {dict(family_counts)}")
     print(f"Module counts:                    {dict(module_counts)}")
     print(f"Ground-life metrics:              {metrics_path}")
-    return metrics
+    return metrics, near_frame_objects, near_frame_metrics

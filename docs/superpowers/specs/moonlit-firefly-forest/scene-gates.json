@@ -7,7 +7,7 @@
   "authority": {
     "experienceSpec": "docs/superpowers/plans/active/2026-08-08-forest-environment-pass-one.md",
     "roomShellSource": "scripts/forest-path-layout.json",
-    "planContract": "scripts/forest-tree-layout.json",
+    "planContract": "scripts/forest-composition-revision.json",
     "museumTrackerItems": [
       "rSguQqdHHv8fKNbDnmPv",
       "W8SPNRGyTmAbzoV1GvFR",
@@ -15,7 +15,10 @@
       "PoPSyJvOcDbpppYKubmr",
       "DlJ4UAevLxMFd2jA3VTf",
       "v7A3GRTREIH4OuohvBOX",
-      "UFY4AuUL80NTJMojrRBN"
+      "UFY4AuUL80NTJMojrRBN",
+      "Q9wYcOIrKi0DBs3srzgm",
+      "lTXVsp1LWwbWMTL02sQK",
+      "2h40cRvXHIL9szNFxb8c"
     ]
   },
   "sequenceFingerprints": [],
@@ -42,6 +45,15 @@
       "class": "literal",
       "statement": "The proposed fire pocket keeps a 10-foot fuel-clear circle and at least 15 feet from tent fabric and the stage.",
       "evidence": ["scripts/forest-campsite-layout.json"]
+    },
+    {
+      "id": "C-010",
+      "class": "invention",
+      "statement": "The approved camp moves as one unit to a separate east-rim shelf while the central clearing becomes audience meadow and three named habitat zones.",
+      "evidence": [
+        "scripts/forest-composition-revision.json",
+        "docs/superpowers/specs/moonlit-firefly-forest/forest-composition-revision-plan.png"
+      ]
     }
   ],
   "exemptions": [],
@@ -53,12 +65,12 @@
         {
           "kind": "canon-audit",
           "path": "docs/superpowers/specs/moonlit-firefly-forest/scene-development.md",
-          "sha256": "7f4f84c6ce6a613fe66b805706b496a2688d8791bf8aa9a38c279d0b0a9304ea"
+          "sha256": "3b0680fbe3f31c2ee4d4aa5646f7e57a072f271a9fc8577c58ffd560c911f650"
         },
         {
           "kind": "room-shell",
           "path": "scripts/forest-path-layout.json",
-          "sha256": "2971f2f47bbd11ebdea3ee9f89628025583c720b74b918e0098bff75b776a0d2"
+          "sha256": "fa6b7b577d2db695b85fbc526c827379028cb5ae970bf0795d0d4ec1d106f018"
         }
       ],
       "checks": [
@@ -81,53 +93,59 @@
       "evidence": [
         {
           "kind": "floor-plan",
-          "path": "scripts/forest-path-layout.json",
-          "sha256": "2971f2f47bbd11ebdea3ee9f89628025583c720b74b918e0098bff75b776a0d2"
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/forest-composition-revision-plan.png",
+          "sha256": "58f4e57985772c446bf0a11919f840964f024c06e0e40b8567584083ab9251f8"
         },
         {
           "kind": "vertical-section",
-          "path": "docs/superpowers/plans/active/2026-08-08-forest-environment-pass-one.md",
-          "sha256": "d9ff6e57af6bbd09baab6bfde2aee384d1ffd6449445f24e52c8a0dc949a0f38"
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/forest-composition-revision-plan.png",
+          "sha256": "58f4e57985772c446bf0a11919f840964f024c06e0e40b8567584083ab9251f8"
         },
         {
           "kind": "route-storyboard",
-          "path": "docs/superpowers/plans/active/2026-08-08-forest-environment-pass-one.md",
-          "sha256": "d9ff6e57af6bbd09baab6bfde2aee384d1ffd6449445f24e52c8a0dc949a0f38"
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/forest-composition-revision-plan.png",
+          "sha256": "58f4e57985772c446bf0a11919f840964f024c06e0e40b8567584083ab9251f8"
         },
         {
           "kind": "sightline-study",
-          "path": "docs/superpowers/specs/moonlit-firefly-forest/forest-gate8-review-board.png",
-          "sha256": "259883faffaff38e7e3afa517dfa485dbc5e13a232c5576e25eba92be84bb797"
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/forest-composition-revision-plan.png",
+          "sha256": "58f4e57985772c446bf0a11919f840964f024c06e0e40b8567584083ab9251f8"
+        },
+        {
+          "kind": "automated-report",
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/forest-composition-revision-verification.json",
+          "sha256": "586ee47443ea72c48ed1ff411a8f335a0fb041477753b92259d08642b14a2703"
         }
       ],
       "checks": [
         {
           "name": "walkability",
           "status": "passed",
-          "evidence": "The measured path contract preserves both museum exits, the camp spur, and the central performance core."
+          "evidence": "The existing camp spur joins the proposed extension at runtime (14, 1.5), the extension ends at the relocated fire, and all six route stops remain ordered."
         },
         {
           "name": "clearance",
           "status": "passed",
-          "evidence": "The static-prop verifier reports a 3.548 m minimum path-shoulder margin and 8.043 m minimum campfire distance."
+          "evidence": "The verifier confirms every translated tent pad fits on the durable shelf, the approach grade peaks at 2.5%, and the nearest approved frame tree remains 24.593 m from the proposed fire."
         },
         {
           "name": "sightlines",
           "status": "passed",
-          "evidence": "The approved fixed-camera board shows the clearing, stage, exits, and campsite relationship without blocking the performance core."
+          "evidence": "The measured board records stage-first, camp-second, and forest-depth-third sightline cones while all habitat zones remain outside the performance keep-clear core."
         },
         {
           "name": "final-view",
           "status": "passed",
-          "evidence": "The approved hero framing keeps the stage as the destination while the tree wall bounds the clearing."
+          "evidence": "The review board combines the proposed final focal hierarchy with the floor plan, vertical section, and a ghosted comparison against the current camp."
         }
       ],
       "approval": {
         "approvedBy": "Austen Cloud",
-        "approvedAt": "2026-08-09T17:59:51Z",
-        "quote": "Let's gooooo",
-        "museumTrackerItem": "rSguQqdHHv8fKNbDnmPv",
-        "visualComprehensionConfirmed": true
+        "approvedAt": "2026-08-10T02:50:41Z",
+        "quote": "Perfect",
+        "museumTrackerItem": "Q9wYcOIrKi0DBs3srzgm",
+        "visualComprehensionConfirmed": true,
+        "note": "Austen approved the measured camp translation, shelf, route extension, sightline hierarchy, and named habitat zones shown on the Gate 10.1 composition board."
       }
     },
     {
@@ -137,56 +155,80 @@
         {
           "kind": "blender-source",
           "path": "blender/forest_environment.blend",
-          "sha256": "672255533cc13eecac775395ca7eed8cf6b31f1cae8ea718485cf8501f6f95f9"
+          "sha256": "038a5035d1fd76a11c763c0347804cd7d48a36a6d046f780cde5eb9cc3fdc84b",
+          "note": "Authored terrain, east camp shelf, habitat props, path extension, and tree exclusion source."
         },
         {
           "kind": "coordinate-manifest",
-          "path": "scripts/forest-tree-layout.json",
-          "sha256": "4e68d854a1d88598c4ec101c23f0f6f71afb89b5f7385fb1dad8777fcb166e4f"
+          "path": "scripts/forest-composition-revision.json",
+          "sha256": "80f9b2f22bbeda49a8ccaa07898abb69dead707526cc16f30855d9fd7e324219"
         },
         {
           "kind": "graybox-glb",
           "path": "static/models/forest/forest-environment.glb",
-          "sha256": "4d20ffb1556f08b6b9b0fe265afc02f5ac3a38c82e7e42db23771205bdc22d56"
+          "sha256": "dd33212c07d718788d457d005ad826b16f3121208de0fec66bcedbf841ce564d"
+        },
+        {
+          "kind": "near-frame-glb",
+          "path": "static/models/forest/forest-near-frame.glb",
+          "sha256": "014d14800a960add1c31907ee32ac3049f8d2edbc901723d63dd5eb0727fd02d"
+        },
+        {
+          "kind": "campsite-glb",
+          "path": "static/models/forest/forest-campsite.glb",
+          "sha256": "222a350ce522328ad1838d4ab1f834f0ef7f044706abf12750ac1cbe1bd218ba"
         },
         {
           "kind": "first-person-walk",
-          "path": "https://localhost:5173/test/forest-scene?view=walk"
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/evidence/gate10-2/forest-gate10-2-arrival.png",
+          "sha256": "90407822d6ed4028c0c23c812cffd50822b5f2dd2a7116c57afb020aaf6c32e9",
+          "note": "Arrival frame from the live in-app route. The user-controlled walk remains available at https://localhost:5174/test/forest-scene?view=walk&rev=28."
         },
         {
           "kind": "review-contact-sheet",
-          "path": "docs/superpowers/specs/moonlit-firefly-forest/forest-gate8-review-board.png",
-          "sha256": "259883faffaff38e7e3afa517dfa485dbc5e13a232c5576e25eba92be84bb797"
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/evidence/gate10-2/forest-gate10-2-contact-sheet.png",
+          "sha256": "46fd8a453bf5b140fe44d1821a5ac268e93aab165b7b43e4d2a98b1c8bc929ca"
+        },
+        {
+          "kind": "automated-report",
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/forest-composition-revision-verification.json",
+          "sha256": "586ee47443ea72c48ed1ff411a8f335a0fb041477753b92259d08642b14a2703"
         }
       ],
       "checks": [
         {
           "name": "artifact-digest",
           "status": "passed",
-          "evidence": "The Forest environment GLB contract verifier passes and the source and runtime artifact digests are recorded here."
+          "evidence": "The environment, near-frame, campsite, composition contract, Blender source, verification report, and review board carry current SHA-256 digests."
         },
         {
           "name": "collision",
           "status": "passed",
-          "evidence": "Measured tree and prop exclusions preserve the stage, route shoulders, and campsite fuel-clear envelope."
+          "evidence": "The shelf top is 0.25 m, the approach grade peaks at 2.5%, translated tents remain inside their pads, and static habitat props preserve path, performance, and campfire clearances."
         },
         {
           "name": "route-duration",
           "status": "passed",
-          "evidence": "Forest traversal is user-controlled rather than timed; both exits and the camp spur remain connected."
+          "evidence": "The camp spur now reaches runtime (34, 2). Its six route stops remain ordered and the walk view keeps traversal user-controlled."
         },
         {
           "name": "sequence-parity",
           "status": "passed",
-          "evidence": "The Forest environment pass changes no TKA sequence or Stage3D motion behavior."
+          "evidence": "This environment carries no authored TKA sequence fingerprints. The empty parity set is unchanged by the spatial pass."
+        },
+        {
+          "name": "visual-responsiveness",
+          "status": "passed",
+          "evidence": "The live hero view was captured at 1920x1080, 2560x1440, 3840x2160, 1440x900, 820x1180, 960x412, and 375x667. The stage remains centered and the canvas fills every viewport."
         }
       ],
       "approval": {
         "approvedBy": "Austen Cloud",
-        "approvedAt": "2026-08-09T06:18:12Z",
-        "quote": "it's great, dude. Honestly.",
-        "museumTrackerItem": "2mXvGcaruOaXMvBjZ3dd",
-        "visualComprehensionConfirmed": true
+        "approvedAt": "2026-08-10T04:40:14Z",
+        "quote": "Alright Let's do the next pass on forest",
+        "museumTrackerItem": "lTXVsp1LWwbWMTL02sQK",
+        "visualComprehensionConfirmed": true,
+        "note": "Austen called the embodied Forest scene great, requested an across-the-board rating, then explicitly advanced to the next pass. The accepted Gate 10.1 route and focal hierarchy remain intact."
       }
     },
     {
@@ -196,76 +238,70 @@
         {
           "kind": "locked-camera-set",
           "path": "src/routes/test/forest-scene/+page.svelte",
-          "sha256": "2a3f6e50b3ec13ca0da1f13e59dc397aab57a3b4a8c82fb8cf01b39276af97ef"
-        },
-        {
-          "kind": "visual-target-board",
-          "path": "docs/superpowers/specs/moonlit-firefly-forest/forest-gate8-review-board.png",
-          "sha256": "259883faffaff38e7e3afa517dfa485dbc5e13a232c5576e25eba92be84bb797"
+          "sha256": "08e537949d679a69e7793771bf8f1834b8d1b79c46ead565c70287f0b732b6a4"
         },
         {
           "kind": "material-lighting-brief",
-          "path": "docs/superpowers/specs/moonlit-firefly-forest/scene-development.md",
-          "sha256": "7f4f84c6ce6a613fe66b805706b496a2688d8791bf8aa9a38c279d0b0a9304ea"
+          "path": "src/lib/shared/3d/environments/scenes/forest/ForestLighting.svelte",
+          "sha256": "b2477e4a3462bf835b31484ba4e5f500f8e121f72a8b12be6e22b75249355e22"
+        },
+        {
+          "kind": "shadow-role-contract",
+          "path": "src/lib/shared/3d/environments/scenes/forest/forest-shadow-roles.ts",
+          "sha256": "c5a8cf360aad689f33633410f4a440485d6c88361dd9f3599420f6004b483830"
+        },
+        {
+          "kind": "visual-target-hero",
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/evidence/gate12/forest-gate12-hero.png",
+          "sha256": "ee7e8d7dff54d1c8fe0a44f2aeddbc76f4e91c32e75107d7d077df60d65fd8b4"
+        },
+        {
+          "kind": "visual-target-stage",
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/evidence/gate12/forest-gate12-stage.png",
+          "sha256": "4674a9d867883d6af71aa74ffc3e4545aadc023c84a998c8185ab2dd6023e0cd"
+        },
+        {
+          "kind": "visual-target-camp",
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/evidence/gate12/forest-gate12-camp.png",
+          "sha256": "637e05a8f9f30a3f8d39a6ba051ecbcb7938dade1d139a15eb9c68297d012011"
         }
       ],
       "checks": [
         {
           "name": "camera-registration",
           "status": "passed",
-          "evidence": "The Forest test route owns fixed hero and walk review views used by the approved board."
+          "evidence": "The hero, stage, and camp targets were captured from the locked Forest review cameras in the live in-app route."
         },
         {
-          "name": "silhouette-read",
+          "name": "focal-hierarchy",
           "status": "passed",
-          "evidence": "The approved target establishes a close tree frame, legible central stage, and distinct campsite pocket."
-        }
-      ],
-      "approval": {
-        "approvedBy": "Austen Cloud",
-        "approvedAt": "2026-08-09T17:08:24Z",
-        "quote": "you're doing great, keep it up. next phase",
-        "museumTrackerItem": "v7A3GRTREIH4OuohvBOX",
-        "visualComprehensionConfirmed": true
-      }
-    },
-    {
-      "id": "production-slice",
-      "status": "ready-for-review",
-      "evidence": [
-        {
-          "kind": "vertical-slice-build",
-          "path": "static/models/forest/forest-near-frame.glb",
-          "sha256": "02e45762892c1bb77abce64ffbcc20f81e4b091c84c6222438acb18f0aeb3006"
+          "evidence": "The stage receives a bounded cool pool, the camp keeps a smaller warm practical pool, and their local geometry casts contact depth onto the terrain while the foreground remains dark enough to frame both destinations."
         },
         {
-          "kind": "interaction-capture",
-          "path": "docs/superpowers/specs/moonlit-firefly-forest/forest-gate9-review-board.png",
-          "sha256": "71466868b5af220ab7a6f4ff1046c5d6eb0a89bbc5c0cc8f05572d1d89b74229"
-        },
-        {
-          "kind": "performance-report",
-          "path": "docs/superpowers/specs/moonlit-firefly-forest/forest-gate9-verification-report.json",
-          "sha256": "ccbe83592ef8727790ef215731334df659ad9d56723c886928243c805443d86b"
-        }
-      ],
-      "checks": [
-        {
-          "name": "interaction-state",
+          "name": "palette-separation",
           "status": "passed",
-          "evidence": "The default Forest mounts the near-frame layer; configured and widened-clearing callers omit it, covered by the focused unit test."
+          "evidence": "Cool moon and canopy bounce replace the former orange global hemisphere; warm light is limited to the approved campsite distances."
         },
         {
           "name": "runtime-console",
           "status": "passed",
-          "evidence": "The in-app Forest route loaded with one canvas and no Forest or GLB console errors; the only messages were unrelated UserDocumentManager permission errors."
-        },
-        {
-          "name": "performance",
-          "status": "passed",
-          "evidence": "The verified main GLB is under 20 MiB, the meshopt/WebP near-frame layer is under 6 MiB, and Coven-safe callers make no near-frame request."
+          "evidence": "The live in-app preview reached environment READY with no error or warning messages after the lighting pass."
         }
       ],
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-10T17:06:35Z",
+        "quote": "Approve Gate 12 as the Night Master. Approve this atmosphere plan. Go full ham between gates.",
+        "museumTrackerItem": "2h40cRvXHIL9szNFxb8c",
+        "visualComprehensionConfirmed": true,
+        "note": "Revision 36 is the canonical nighttime endpoint. Gate 13 may author other times without moving approved geometry, routes, cameras, stage, or campsite."
+      }
+    },
+    {
+      "id": "production-slice",
+      "status": "in-progress",
+      "evidence": [],
+      "checks": [],
       "approval": null
     },
     {

@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "imageRoot": "assets/meshy-refs/forest/campsite",
+  "outputDirectory": "static/models/forest/campsite",
+  "statePath": "blender/forest-campsite-meshy-tasks.json",
+  "aiModel": "meshy-6",
+  "estimatedCreditsPerAsset": 30,
+  "maxCredits": 120,
+  "assets": [
+    {
+      "id": "dome-two-person",
+      "label": "Modern two-person dome tent",
+      "targetWidthMetres": 2.25,
+      "targetDepthMetres": 2.45,
+      "targetHeightMetres": 1.1,
+      "polycount": 24000,
+      "textureResolution": "2k",
+      "maximumOptimizedTriangles": 28000,
+      "texturePrompt": "Modern two-person freestanding dome tent in deep spruce-green technical ripstop, ochre inner-door trim, charcoal bathtub floor, silver segmented aluminum poles, black clips, orange guy lines, realistic stitched seams and fabric tension. Neutral diffuse albedo, physically plausible roughness, no baked directional lighting, no dirt, no logos."
+    },
+    {
+      "id": "tunnel-three-person",
+      "label": "Modern three-person tunnel tent",
+      "targetWidthMetres": 2.4,
+      "targetDepthMetres": 4.4,
+      "targetHeightMetres": 1.05,
+      "polycount": 30000,
+      "textureResolution": "2k",
+      "maximumOptimizedTriangles": 34000,
+      "texturePrompt": "Modern low-profile three-person tunnel tent in slate-teal technical ripstop, ochre interior panels, charcoal bathtub floor, four dark segmented hoops, extended vestibule, black clips, orange guy lines, realistic stitched seams, vents, and fabric tension. Neutral diffuse albedo, physically plausible roughness, no baked directional lighting, no dirt, no logos."
+    },
+    {
+      "id": "trekking-one-person",
+      "label": "Modern one-person trekking-pole tent",
+      "targetWidthMetres": 1.5,
+      "targetDepthMetres": 2.45,
+      "targetHeightMetres": 1.19,
+      "polycount": 22000,
+      "textureResolution": "2k",
+      "maximumOptimizedTriangles": 26000,
+      "texturePrompt": "Modern ultralight one-person trekking-pole tent in deep spruce-green technical ripstop, ochre end panels, charcoal bathtub floor, two black trekking poles, orange guy lines, realistic stitched seams and taut low ridgeline. Neutral diffuse albedo, physically plausible roughness, no baked directional lighting, no dirt, no logos."
+    },
+    {
+      "id": "modern-smokeless-fire-pit",
+      "label": "Modern smokeless campsite fire pit",
+      "targetDiameterMetres": 1.15,
+      "targetHeightMetres": 0.52,
+      "polycount": 22000,
+      "textureResolution": "2k",
+      "maximumOptimizedTriangles": 26000,
+      "texturePrompt": "Compact modern smokeless campsite fire pit with a dark graphite powder-coated double-wall steel body, broad rolled rim, restrained brushed stainless perforated vent band, three short feet, removable ember tray, charcoal and ash, and four neatly crossed dry split hardwood logs. Neutral diffuse albedo, physically plausible metal and wood roughness, no baked directional lighting, no flame, no smoke, no stones, no logos."
+    }
+  ]
+}

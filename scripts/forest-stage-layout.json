@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "coordinateFrame": "Blender x/y exports to runtime x/-z; metres",
+  "sourceGate": "Forest Gate 10",
+  "baseDimensions": {
+    "widthMetres": 6,
+    "depthMetres": 6,
+    "deckTopHeightMetres": 0.55,
+    "deckThicknessMetres": 0.09,
+    "plinthTopHeightMetres": 0.46
+  },
+  "deckOutline": [
+    [-2.64, -3.05],
+    [-0.86, -3.18],
+    [0.92, -3.12],
+    [2.54, -2.92],
+    [3.08, -2.3],
+    [3.2, -0.68],
+    [3.12, 1.0],
+    [2.74, 2.72],
+    [1.02, 3.08],
+    [-1.08, 3.14],
+    [-2.72, 2.86],
+    [-3.16, 1.08],
+    [-3.22, -0.78],
+    [-3.04, -2.38]
+  ],
+  "contactApronOutline": [
+    [-3.22, -3.72],
+    [-1.18, -4.08],
+    [1.0, -3.92],
+    [3.2, -3.48],
+    [3.82, -2.58],
+    [4.02, -0.82],
+    [3.8, 1.46],
+    [3.2, 3.26],
+    [1.24, 3.9],
+    [-1.26, 4.02],
+    [-3.36, 3.46],
+    [-3.94, 1.44],
+    [-4.06, -0.98],
+    [-3.76, -2.82]
+  ],
+  "approachSteps": [
+    {
+      "id": "upstage-low-step",
+      "center": [0.08, 3.88],
+      "widthMetres": 1.72,
+      "depthMetres": 0.54,
+      "topHeightMetres": 0.18
+    },
+    {
+      "id": "upstage-middle-step",
+      "center": [0.04, 3.5],
+      "widthMetres": 1.82,
+      "depthMetres": 0.48,
+      "topHeightMetres": 0.36
+    },
+    {
+      "id": "upstage-high-step",
+      "center": [0, 3.14],
+      "widthMetres": 1.94,
+      "depthMetres": 0.42,
+      "topHeightMetres": 0.54
+    }
+  ],
+  "rootButtresses": [],
+  "mossPatches": [],
+  "directionCues": {
+    "downstage": {
+      "color": "#d8a35b",
+      "lineCenterY": -2.52,
+      "triangleCenter": [0, -2.02],
+      "triangleRadiusMetres": 0.34
+    },
+    "upstage": {
+      "color": "#516678",
+      "lineCenterY": 2.56
+    },
+    "performerRight": {
+      "color": "#8f5148",
+      "center": [2.56, 0]
+    },
+    "performerLeft": {
+      "color": "#52705b",
+      "center": [-2.56, 0]
+    }
+  },
+  "materials": {
+    "deck": {
+      "source": "Poly Haven wooden_planks, CC0",
+      "page": "https://polyhaven.com/a/wooden_planks",
+      "diffuse": "static/textures/forest-stage/wooden-planks-diffuse.jpg",
+      "normal": "static/textures/forest-stage/wooden-planks-normal.jpg",
+      "roughness": "static/textures/forest-stage/wooden-planks-roughness.jpg",
+      "realWorldRepeatMetres": 3.2
+    },
+    "contact": {
+      "diffuse": "static/textures/forest-floor/diffuse.jpg",
+      "normal": "static/textures/forest-floor/normal.jpg",
+      "roughness": "static/textures/forest-floor/roughness.jpg",
+      "realWorldRepeatMetres": 4
+    },
+    "plinth": {
+      "diffuse": "static/textures/terrain/rock/diffuse.jpg",
+      "normal": "static/textures/terrain/rock/normal.jpg",
+      "roughness": "static/textures/terrain/rock/roughness.jpg",
+      "realWorldRepeatMetres": 3
+    }
+  },
+  "rules": {
+    "maximumAssetBytes": 4194304,
+    "maximumContactRadiusMetres": 5,
+    "minimumDeckWidthMetres": 6,
+    "minimumDeckDepthMetres": 6,
+    "deckTopHeightToleranceMetres": 0.005,
+    "performanceCoreClearRadiusMetres": 1.8,
+    "minimumCampfireEdgeDistanceMetres": 4.57,
+    "campfireCenterRuntime": [17, 1.5]
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "reviewViews": [
     "framing-baseline",
     "framing-candidate",
@@ -191,18 +191,32 @@
   ],
   "framingCandidates": [
     {
-      "id": "southwest-canopy-frame",
+      "id": "upstage-west-canopy-frame",
       "assetId": "canopy-beech",
-      "position": [-8.0, -10.5],
-      "scale": 1.1,
-      "rotationDegrees": 32
+      "position": [-11.5, 9.5],
+      "scale": 1.06,
+      "rotationDegrees": 18
     },
     {
-      "id": "southeast-middle-frame",
+      "id": "upstage-east-middle-frame",
       "assetId": "forked-elm",
-      "position": [13.7, -11.5],
-      "scale": 1.16,
-      "rotationDegrees": -24
+      "position": [13.0, 10.8],
+      "scale": 1.14,
+      "rotationDegrees": -31
+    },
+    {
+      "id": "upstage-west-depth-frame",
+      "assetId": "narrow-larch",
+      "position": [-21.0, 20.0],
+      "scale": 0.98,
+      "rotationDegrees": 42
+    },
+    {
+      "id": "upstage-east-depth-frame",
+      "assetId": "pale-willow",
+      "position": [19.0, 21.0],
+      "scale": 1.02,
+      "rotationDegrees": -12
     }
   ],
   "rules": {

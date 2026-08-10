@@ -33,6 +33,7 @@ from forest_prop_assets import (  # noqa: E402
     create_modern_dome_tent,
     create_modern_trekking_tent,
     create_modern_tunnel_tent,
+    create_tent_pad,
     flat_material,
     rope_curve,
 )
@@ -462,23 +463,6 @@ def tent_yaw(position, fire_position):
     dx = float(fire_position[0]) - float(position[0])
     dy = float(fire_position[1]) - float(position[1])
     return math.atan2(dx, -dy)
-
-
-def create_tent_pad(name, position, footprint, yaw):
-    material = flat_material("Forest Campsite Durable Tent Pad", (0.095, 0.082, 0.057), 0.99)
-    bpy.ops.mesh.primitive_cube_add(location=(position[0], position[1], 0.025))
-    pad = bpy.context.object
-    pad.name = name
-    pad.scale = (float(footprint[0]) * 0.5, float(footprint[1]) * 0.5, 0.025)
-    pad.rotation_euler[2] = yaw
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    pad.data.materials.append(material)
-    bevel = pad.modifiers.new("Soft campsite pad edge", "BEVEL")
-    bevel.width = 0.22
-    bevel.segments = 4
-    bpy.context.view_layer.objects.active = pad
-    bpy.ops.object.modifier_apply(modifier=bevel.name)
-    return pad
 
 
 def place_tent_family(use_layout=True):
