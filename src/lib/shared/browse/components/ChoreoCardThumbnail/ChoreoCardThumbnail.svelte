@@ -36,6 +36,7 @@ Variation support:
   import { claimViewTransitionName } from "$lib/shared/transitions/view-transition-name-registry";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import VariationPill from "./VariationPill.svelte";
+  import PreviewPlayChip from "./PreviewPlayChip.svelte";
   import SyncStatusBadge from "./SyncStatusBadge.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
@@ -141,9 +142,13 @@ Variation support:
 
   // Cycle to next variation
   function handleCycleVariation() {
-    if (variations.length > 1) {
-      currentVariationIndex = (currentVariationIndex + 1) % variations.length;
-    }
+    if (variations.length <= 1) return;
+    const wasPlaying = previewActive;
+    currentVariationIndex = (currentVariationIndex + 1) % variations.length;
+    // Keep playing across the swap. The preview is keyed by sequence id, so
+    // without this the new variation reads as a different card and the
+    // animation stops the moment you go looking for another version.
+    if (wasPlaying) cardHoverPreview.request(displayedSequence);
   }
 
   function handlePrimaryAction(event: MouseEvent) {
@@ -243,35 +248,30 @@ Variation support:
     }
   }
 
-  function handlePointerMove(event: PointerEvent): void {
-    // A drag is a scroll, not a hold. Kill the pending preview either way.
-    if (event.pointerType !== "mouse") cancelPreviewLongPress();
-    handleSelectionPointerMove(event);
-  }
-
-  // Debounced hover handler - avoids pre-warming during fast scroll-past.
-  // The same debounce gates the animated pop-out: sweeping the pointer across
-  // a grid must not mount an animation engine per card passed over.
+  // Debounced hover handler - avoids pre-warming during fast scroll-past
   let hoverTimer: ReturnType<typeof setTimeout> | null = null;
-  let previewHoverTimer: ReturnType<typeof setTimeout> | null = null;
 
-  function openPreview(): void {
-    if (selectionMode) return;
-    cardHoverPreview.request(displayedSequence);
-  }
-
+  // The animated preview is chip-driven, not hover-driven: it covers the
+  // card's pictograph sheet, so starting it is the reader's decision rather
+  // than something that happens while the pointer passes through. Hover still
+  // does its original job — warming the sequence cache, invisibly — which
+  // means the data is already hydrated by the time the chip is tapped.
   const previewActive = $derived(cardHoverPreview.isActive(displayedSequence.id));
 
-  function handlePointerEnter(event: PointerEvent) {
-    if (event.pointerType !== "mouse" && event.pointerType !== "pen") return;
+  function togglePreview(): void {
+    if (previewActive) {
+      cardHoverPreview.dismiss(displayedSequence.id);
+    } else {
+      cardHoverPreview.request(displayedSequence);
+    }
+  }
+
+  function handlePointerEnter() {
+    if (!onHover) return;
     hoverTimer = setTimeout(() => {
+      onHover(displayedSequence);
       hoverTimer = null;
-      onHover?.(displayedSequence);
     }, 150);
-    // Longer than the prefetch: 150ms is right for warming a cache nobody
-    // sees, but as a trigger for a visible animation it fires on every card
-    // the pointer crosses on its way somewhere else.
-    previewHoverTimer = setTimeout(openPreview, 400);
   }
 
   function handlePointerLeave() {
@@ -279,53 +279,7 @@ Variation support:
       clearTimeout(hoverTimer);
       hoverTimer = null;
     }
-    if (previewHoverTimer !== null) {
-      clearTimeout(previewHoverTimer);
-      previewHoverTimer = null;
-    }
-    cardHoverPreview.dismiss(displayedSequence.id);
-    cancelPreviewLongPress();
     cancelSelectionLongPress();
-  }
-
-  // Touch has no hover. A long press stands in for it — but only where the
-  // card isn't already using long-press to enter batch selection.
-  let previewLongPressTimer: ReturnType<typeof setTimeout> | null = null;
-
-  function cancelPreviewLongPress(): void {
-    if (previewLongPressTimer !== null) {
-      clearTimeout(previewLongPressTimer);
-      previewLongPressTimer = null;
-    }
-  }
-
-  function handlePreviewPointerDown(event: PointerEvent): void {
-    if (
-      onSelectionStart ||
-      selectionMode ||
-      event.button !== 0 ||
-      event.pointerType === "mouse"
-    ) {
-      return;
-    }
-    cancelPreviewLongPress();
-    previewLongPressTimer = setTimeout(() => {
-      previewLongPressTimer = null;
-      longPressFired = true;
-      openPreview();
-      // Match the selection long-press: expire the click guard so the next
-      // deliberate tap still opens the viewer.
-      clickSuppressionTimer = setTimeout(() => {
-        longPressFired = false;
-        clickSuppressionTimer = null;
-      }, 800);
-    }, LONG_PRESS_MS);
-  }
-
-  function handlePreviewPointerUp(): void {
-    cancelPreviewLongPress();
-    // Lifting off ends a touch preview; the mouse path is driven by leave.
-    if (lastPointerType !== "mouse") cardHoverPreview.dismiss(displayedSequence.id);
   }
 
   // Reset to this card's own position ONLY when the base sequence identity changes
@@ -513,10 +467,6 @@ Variation support:
     if (hoverTimer !== null) {
       clearTimeout(hoverTimer);
     }
-    if (previewHoverTimer !== null) {
-      clearTimeout(previewHoverTimer);
-    }
-    cancelPreviewLongPress();
     // The virtualized grid recycles cards out from under an open preview.
     cardHoverPreview.dismiss(displayedSequence.id);
   });
@@ -569,11 +519,18 @@ Variation support:
     </span>
   {/if}
 
-  <VariationPill
-    currentIndex={currentVariationIndex}
-    totalCount={variationCount}
-    onCycle={handleCycleVariation}
-  />
+  <!-- One row so the chips can never land on top of each other, and so adding
+       a third later doesn't need new positioning math. -->
+  <div class="card-chips">
+    {#if !selectionMode}
+      <PreviewPlayChip playing={previewActive} onToggle={togglePreview} />
+    {/if}
+    <VariationPill
+      currentIndex={currentVariationIndex}
+      totalCount={variationCount}
+      onCycle={handleCycleVariation}
+    />
+  </div>
 {/snippet}
 
 {#if isInteractive}
@@ -589,19 +546,10 @@ Variation support:
     data-ghost-linger={selectionMode ? undefined : ""}
     onclick={handlePrimaryAction}
     oncontextmenu={handleContextMenu}
-    onpointerdown={(event) => {
-      handleSelectionPointerDown(event);
-      handlePreviewPointerDown(event);
-    }}
-    onpointermove={handlePointerMove}
-    onpointerup={() => {
-      cancelSelectionLongPress();
-      handlePreviewPointerUp();
-    }}
-    onpointercancel={() => {
-      cancelSelectionLongPress();
-      handlePreviewPointerUp();
-    }}
+    onpointerdown={handleSelectionPointerDown}
+    onpointermove={handleSelectionPointerMove}
+    onpointerup={cancelSelectionLongPress}
+    onpointercancel={cancelSelectionLongPress}
     onpointerenter={handlePointerEnter}
     onpointerleave={handlePointerLeave}
     aria-pressed={selectionMode ? isSelected : undefined}
@@ -752,9 +700,22 @@ Variation support:
   .thumbnail-container {
     width: 100%;
     height: 100%;
-    /* Anchors the hover preview layer, which fills this box in place of the
-       static thumbnail. */
+    /* Anchors the preview layer, which fills this box in place of the static
+       thumbnail. */
     position: relative;
+  }
+
+  /* Bottom-right corner — centered, these sat on top of the card's beat cells
+     (worst on mobile 2-col grids where a chip covered whole pictographs).
+     Above the preview layer so the chips stay usable while it animates. */
+  .card-chips {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   /* Smooth crossfade when cycling variations */

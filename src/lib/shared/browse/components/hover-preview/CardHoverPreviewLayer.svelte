@@ -14,7 +14,7 @@
 	AnimationEngine exists at a time no matter how big the grid is.
 -->
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import { fade } from "svelte/transition";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
@@ -35,8 +35,13 @@
     sequence: SequenceData;
     orchestrator: SequenceAnimationOrchestrator;
     animState: ReturnType<typeof createAnimationPanelState>;
-    visibility: AnimationVisibilityStateManager;
   }
+
+  // One per layer, not per playback: the canvas stays mounted while variations
+  // swap underneath it, so handing it a fresh manager would reset the mandala.
+  // Ephemeral so switching the mandala on here never writes through to the
+  // animation panel's own saved visibility settings.
+  const visibility = new AnimationVisibilityStateManager({ ephemeral: true });
 
   let playback = $state<Playback | null>(null);
   let currentStep = $state(0);
@@ -52,9 +57,13 @@
     }
     startTime = null;
     currentStep = 0;
-    playback?.orchestrator.dispose();
-    playback?.animState.dispose();
+    dispose(playback);
     playback = null;
+  }
+
+  function dispose(target: Playback | null) {
+    target?.orchestrator.dispose();
+    target?.animState.dispose();
   }
 
   function tick(now: number) {
@@ -71,23 +80,23 @@
 
     const orchestrator = new SequenceAnimationOrchestrator(new AnimationStateManager());
     const animState = createAnimationPanelState();
-    // Ephemeral so switching the mandala on here never writes through to the
-    // animation panel's own saved visibility settings.
-    const visibility = new AnimationVisibilityStateManager({ ephemeral: true });
 
     orchestrator.initializeWithDomainData(hydrated);
     animState.setSequenceData(hydrated);
     animState.setTotalSteps(hydrated.steps.length);
 
-    playback = { sequence: hydrated, orchestrator, animState, visibility };
-    startTime = null;
-    frameId = requestAnimationFrame(tick);
+    // Swap, don't tear down and rebuild: cycling to another variation mid-play
+    // would otherwise blank the card for a frame. The beat phase carries over,
+    // so the new sequence picks up where the old one was.
+    const outgoing = playback;
+    playback = { sequence: hydrated, orchestrator, animState };
+    dispose(outgoing);
+    if (frameId === null) frameId = requestAnimationFrame(tick);
   }
 
   $effect(() => {
     const target = sequence;
-    if (playback?.sequence.id === target.id) return;
-    teardown();
+    if (untrack(() => playback?.sequence.id) === target.id) return;
     void start(target);
   });
 
@@ -125,7 +134,7 @@
    * reports ready guarantees that change actually fires.
    */
   function enableMandala() {
-    playback?.visibility.setVisibility("mandala", true);
+    visibility.setVisibility("mandala", true);
   }
 
   onDestroy(() => {
@@ -152,7 +161,7 @@
       hideStepNumbers={true}
       hideProgressBar={true}
       disableContextMenu={true}
-      visibilityManagerOverride={playback.visibility}
+      visibilityManagerOverride={visibility}
       onInitialized={enableMandala}
     />
   </div>
