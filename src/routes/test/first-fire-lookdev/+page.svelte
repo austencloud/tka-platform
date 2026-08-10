@@ -100,8 +100,8 @@
       <p class="provenance">{activeStation.provenance}</p>
     {:else}
       <p class="question">
-        Four coal studies at body scale. Same basalt, same near-zero ambient:
-        every photon is thrown by something burning.
+        Five coal studies at body scale. Same basalt, same iron, same lumps:
+        every photon is still thrown by something burning.
       </p>
       <p class="provenance">
         Drag to orbit. Pick a station to stand in front of it.

@@ -15,6 +15,8 @@
    */
   import { T, useTask } from "@threlte/core";
   import {
+    BackSide,
+    DoubleSide,
     InstancedMesh,
     Matrix4,
     MeshStandardMaterial,
@@ -47,8 +49,8 @@
   const {
     ceilingY = 4.6,
     basketY = 2.4,
-    hoodWidth = 0.92,
-    basketDepth = 0.3,
+    hoodWidth = 1.08,
+    basketDepth = 0.34,
     emberColor = "#ff5a12",
     lightIntensity = 9,
     dripCount = 14,
@@ -62,16 +64,79 @@
   // rough dielectric anyway, and at this metalness the coal light actually
   // wraps the hood and picks the chain out of the dark.
   const iron = new MeshStandardMaterial({
-    color: "#15110e",
+    // Not black. #15110e is about 8% reflectance, which is darker than actual
+    // soot, and at that albedo no amount of bounce will ever put a value on
+    // this fixture - it stays a hole in the frame. Sooted forge iron sits
+    // nearer 16%, and that is the difference between a pyramid you can see and
+    // one you have to be told is there.
+    color: "#2b2320",
     roughness: 0.72,
     metalness: 0.2,
+    // The hood and the basket are both open shells, and the visitor is BELOW
+    // them looking up into the inside. Front-face-only culls exactly the
+    // surfaces they would actually see.
+    side: DoubleSide,
   });
 
-  const hoodHeight = $derived(hoodWidth * 0.95);
-  const basketWidth = $derived(hoodWidth * 0.78);
+  // Inside of the hood only. Nearly black and fully rough, so the coal light
+  // dies on it instead of bouncing back at the visitor.
+  const soot = new MeshStandardMaterial({
+    color: "#0a0706",
+    roughness: 1,
+    metalness: 0,
+    side: BackSide,
+  });
+
+  // The lip of the hood, closest to the coals and permanently baked by them.
+  // This is the ONE part of the fixture that carries emissive, and it is
+  // deliberately a thin ring rather than a face: a bright OUTLINE is what
+  // makes a dark object read against a dark room, while a bright surface just
+  // reads as a lamp made of light. It also fixes the failure this study found
+  // first - a black fixture in a black bay is invisible unless something
+  // glowing sits behind it, which cannot be guaranteed everywhere it hangs.
+  const rim = new MeshStandardMaterial({
+    color: "#241109",
+    emissive: emberColor,
+    emissiveIntensity: 0.38,
+    roughness: 0.8,
+    metalness: 0.1,
+  });
+
+  // Taller than it is wide. The first proportions were squat - a 1.55m-across
+  // cone only 1.03m tall - and from below that reads as an open crate, not as
+  // the pyramid the brief asks for. A dungeon fixture is a steep spire.
+  const hoodHeight = $derived(hoodWidth * 1.55);
+  const hoodRadius = $derived(hoodWidth * 0.5);
+  const basketWidth = $derived(hoodWidth * 0.62);
   // Top of the hood, where the chain terminates.
   const hoodApexY = $derived(basketY + basketDepth + hoodHeight);
   const chainSpan = $derived(ceilingY - hoodApexY);
+
+  /**
+   * The four ridge ribs of the hood, apex to base corner.
+   *
+   * The hood's flat faces point up and out, and in this room nothing lights
+   * anything above head height - every source is a coal at waist level or
+   * lower. So the pyramid's exterior gets no light at all and the fixture
+   * reads as a floating bright ring with a void above it.
+   *
+   * Ribs solve it the way real lanterns always have: they stand proud of the
+   * faces, so their undersides catch the basket light raking upward and the
+   * silhouette gets DRAWN in light lines. Nothing here is emissive - this is
+   * geometry arranged to be lit by a source that already exists.
+   */
+  const RIB_THICKNESS = 0.038;
+  const ribs = $derived.by(() => {
+    const slant = Math.sqrt(hoodRadius * hoodRadius + hoodHeight * hoodHeight);
+    // The cone's own vertices land on 45/135/225/315 once it is turned a
+    // quarter-face, so the ribs have to sit on those same bearings or they
+    // stripe the faces instead of tracing the edges.
+    return Array.from({ length: 4 }, (_, i) => ({
+      yaw: -(Math.PI / 4 + (i * Math.PI) / 2),
+      tilt: Math.atan2(hoodRadius, hoodHeight),
+      length: slant,
+    }));
+  });
 
   const LINK_PITCH = 0.105;
   const links = $derived(
@@ -179,15 +244,74 @@
       </T.Mesh>
     {/each}
 
-    <!-- Hood: four-sided pyramid, apex up. The bottom edge is what throws the
-         hard shadow line that makes this read as a lamp and not a lantern. -->
+    <!-- Hood: four-sided pyramid, apex up, OPEN underneath.
+         The closed version put a capped face across the bottom, and since the
+         coals sit directly under it that face lit up as a flat bright plate -
+         from below, which is where a visitor stands, the fixture read as a
+         glowing table rather than a lamp. Open-ended, the same coal light
+         rakes up the INSIDE of the pyramid instead, which is what gives a
+         hood its shape from underneath. -->
     <T.Mesh
       position.y={basketY + basketDepth + hoodHeight / 2}
       rotation.y={Math.PI / 4}
       material={iron}
     >
-      <T.ConeGeometry args={[hoodWidth * 0.72, hoodHeight, 4]} />
+      <T.ConeGeometry args={[hoodRadius, hoodHeight, 4, 1, true]} />
     </T.Mesh>
+
+    <!-- Soot liner, inside faces only, sitting just inboard of the hood.
+         Without it the coal light blasts the hood's own inner surface and the
+         brightest thing in frame becomes the inside of the shade - so the
+         fixture reads as an open glowing crate instead of a black pyramid with
+         fire in the bottom of it. A real hood interior is caked in soot and
+         stays near-black no matter what is burning under it. -->
+    <T.Mesh
+      position.y={basketY + basketDepth + hoodHeight / 2}
+      rotation.y={Math.PI / 4}
+      material={soot}
+    >
+      <T.ConeGeometry args={[hoodRadius * 0.96, hoodHeight * 0.96, 4, 1, true]} />
+    </T.Mesh>
+
+    {#each ribs as rib, i (i)}
+      <T.Group rotation.y={rib.yaw}>
+        <T.Mesh
+          position={[
+            hoodRadius / 2,
+            basketY + basketDepth + hoodHeight / 2,
+            0,
+          ]}
+          rotation.z={rib.tilt}
+          material={iron}
+        >
+          <T.BoxGeometry args={[RIB_THICKNESS, rib.length, RIB_THICKNESS]} />
+        </T.Mesh>
+      </T.Group>
+    {/each}
+
+    <!-- Hood lip. Sized to the cone's base radius so it traces the bottom edge
+         of the pyramid exactly, which is the line that says "lamp". -->
+    <T.Mesh
+      position.y={basketY + basketDepth + 0.015}
+      rotation.x={Math.PI / 2}
+      rotation.z={Math.PI / 4}
+      material={rim}
+    >
+      <T.TorusGeometry args={[hoodRadius, 0.028, 6, 4]} />
+    </T.Mesh>
+
+    <!-- Bounce off the inside of the hood, thrown back UP the chain.
+         Physically what a reflector does, and the reason the chain was pure
+         black before: the basket light is below the hood and every link sits
+         above it, so nothing in the scene was lighting them. Short distance
+         so it dies before it reaches the ceiling and flattens the room. -->
+    <T.PointLight
+      position={[0, basketY + basketDepth + hoodHeight * 0.55, 0]}
+      color={emberColor}
+      intensity={2.4}
+      distance={2.6}
+      decay={2}
+    />
 
     <!-- Bottom section: the open basket the coals sit in. -->
     <T.Mesh

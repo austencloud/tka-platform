@@ -11,7 +11,7 @@
    * performer, collision and procession state. Here there is nothing but the
    * material and the light it throws.
    */
-  import { T, useTask } from "@threlte/core";
+  import { T, useTask, useThrelte } from "@threlte/core";
   import { MeshStandardMaterial } from "three";
   import { userProportionsState } from "@austencloud/scene-3d";
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
@@ -23,7 +23,12 @@
   import { FIRST_FIRE_BASALT_COLOR } from "../first-fire-graybox/first-fire-court-identity";
   import FirstFireCoalLamp from "./FirstFireCoalLamp.svelte";
   import FirstFireCoalBank from "./FirstFireCoalBank.svelte";
-  import { LOOKDEV_STATIONS, type LookdevStationId } from "./lookdev-stations";
+  import FirstFireSteamVent from "./FirstFireSteamVent.svelte";
+  import {
+    LOOKDEV_STATIONS,
+    STATION_PITCH,
+    type LookdevStationId,
+  } from "./lookdev-stations";
 
   interface Props {
     station: LookdevStationId | "lineup";
@@ -43,8 +48,12 @@
 
   const { station, showScaleFigure, wallTreatment, bounce }: Props = $props();
 
-  const ROOM_WIDTH = 30;
-  const ROOM_DEPTH = 15;
+  const STATION_SPAN = Math.max(...LOOKDEV_STATIONS.map((s) => Math.abs(s.x)));
+  const ROOM_WIDTH = (STATION_SPAN + STATION_PITCH * 0.6) * 2;
+  // Long on purpose. The lineup camera pulls back on narrow viewports to keep
+  // all five stations in frame, and a short room would strand it over the void
+  // past the floor edge.
+  const ROOM_DEPTH = 52;
   const CEILING_Y = 5.2;
   const BACK_Z = -5;
 
@@ -56,11 +65,12 @@
     roughness: 0.95,
     metalness: 0,
   });
-  // See FirstFireCoalLamp for why this is not a PBR metal: with no environment
-  // map, high metalness has no diffuse and nothing to reflect, so every iron
-  // fitting in the room renders pure black and vanishes.
+  // See FirstFireCoalLamp for why this is not a PBR metal, and why it is not
+  // black either: high metalness with no environment map has no diffuse and
+  // nothing to reflect, and an 8%-reflectance "soot black" albedo finishes the
+  // job - between them every iron fitting in the court rendered as a hole.
   const iron = new MeshStandardMaterial({
-    color: "#15110e",
+    color: "#2b2320",
     roughness: 0.72,
     metalness: 0.2,
   });
@@ -70,21 +80,41 @@
     metalness: 0,
   });
 
+  /**
+   * The lineup has to fit five stations across whatever width it is given -
+   * a 2112px screenshot and a ~800px side panel are both real. Fitting by
+   * moving the camera would push it out through the back of the room on narrow
+   * viewports, so the distance is fixed and the vertical fov is solved from the
+   * aspect instead. Clamped, because past about 80 degrees the perspective
+   * stretch at the edges is worse than losing the outer station.
+   */
+  const { size } = useThrelte();
+  const LINEUP_Z = 20;
+  const LINEUP_TARGET_Z = -1;
+  const lineupHalfSpan = STATION_SPAN + STATION_PITCH * 0.46;
+
+  const lineupFov = $derived.by(() => {
+    const aspect = $size.height > 0 ? $size.width / $size.height : 1.6;
+    const halfAngle = Math.atan(lineupHalfSpan / (LINEUP_Z - LINEUP_TARGET_Z));
+    const fov = (2 * Math.atan(Math.tan(halfAngle) / aspect) * 180) / Math.PI;
+    return Math.min(80, Math.max(38, fov));
+  });
+
   const activeCamera = $derived.by(() => {
     if (station === "lineup") {
       return {
-        position: [0, 2.9, 17.5] as [number, number, number],
-        target: [0, 1.9, -1] as [number, number, number],
-        fov: 52,
+        position: [0, 2.9, LINEUP_Z] as [number, number, number],
+        target: [0, 1.9, LINEUP_TARGET_Z] as [number, number, number],
+        fov: lineupFov,
       };
     }
     const found = LOOKDEV_STATIONS.find((s) => s.id === station)!;
     return {
-      position: [found.x, found.eye.height, found.eye.distance] as [
-        number,
-        number,
-        number,
-      ],
+      position: [
+        found.x + (found.eye.offsetX ?? 0),
+        found.eye.height,
+        found.eye.distance,
+      ] as [number, number, number],
       target: [found.x, found.eye.look, found.eye.lookZ] as [
         number,
         number,
@@ -142,6 +172,15 @@
     x: -WALL_W / 2 + 0.3 + i * ((WALL_W - 0.6) / 8),
   }));
 
+  // Station C - a run of lamps down the route. Only the nearest drips: a coal
+  // falling out of every fixture at once reads as a malfunction, not as one
+  // lamp that happens to be shedding while you walk under it.
+  const lampRow = [
+    { z: 1.4, intensity: 9, drips: 14 },
+    { z: -2, intensity: 8, drips: 0 },
+    { z: -5.4, intensity: 7, drips: 0 },
+  ];
+
   // Station D - a furnace mouth venting heat and steam into the room.
   const furnaceCoals: LavaCracksConfig = {
     enabled: true,
@@ -155,6 +194,9 @@
   const FURNACE_W = 2.1;
   const FURNACE_H = 1.7;
   const FURNACE_SILL = 0.75;
+  const furnaceBars = Array.from({ length: 5 }, (_, i) => ({
+    y: FURNACE_SILL + 0.22 + i * ((FURNACE_H - 0.44) / 4),
+  }));
 
   // Breathing furnace glow. A furnace that holds one brightness reads as a
   // light fixture; one that swells and settles reads as combustion.
@@ -314,8 +356,21 @@
 </T.Group>
 
 <!-- ============ C · chain lamp ============ -->
+<!-- Three of them, receding. A single fixture can only answer "does this read
+     as a lamp"; the actual brief is that they MARK THE WAY, and one lamp
+     cannot mark anything. Spaced 3.4m, which is roughly four walking paces -
+     close enough that the next one is already lit when you leave the last. -->
 <T.Group position.x={x("lamp")}>
-  <FirstFireCoalLamp ceilingY={CEILING_Y} basketY={2.55} />
+  {#each lampRow as lamp, i (i)}
+    <T.Group position.z={lamp.z}>
+      <FirstFireCoalLamp
+        ceilingY={CEILING_Y}
+        basketY={2.55}
+        lightIntensity={lamp.intensity}
+        dripCount={lamp.drips}
+      />
+    </T.Group>
+  {/each}
 </T.Group>
 
 <!-- ============ D · furnace vent ============ -->
@@ -334,6 +389,32 @@
       size: [FURNACE_W - 0.1, FURNACE_H - 0.1],
     }}
   />
+
+  <!-- Fuel in the mouth. The first pass left this as bare glow behind heat
+       haze and it read as a soft orange rectangle - the same failure the wall
+       had, for the same reason. A furnace is a fire you are looking INTO, so
+       there has to be something in there for the light to come from behind. -->
+  <T.Group position={[0, FURNACE_SILL, 0.1]}>
+    <FirstFireCoalBank
+      width={FURNACE_W - 0.25}
+      height={FURNACE_H * 0.72}
+      depth={0.42}
+      count={260}
+      sizeRange={[0.06, 0.17]}
+      emberColor="#ff8a2a"
+      heat="banked"
+      seed={27}
+    />
+  </T.Group>
+
+  <!-- Fire bars. Horizontal here, vertical on the banked wall: a grate holds
+       fuel back, a fire bar holds it UP off the ash pit, and the difference in
+       run is what stops the two stations reading as the same fitting twice. -->
+  {#each furnaceBars as bar, i (i)}
+    <T.Mesh position={[0, bar.y, 0.16]} material={iron}>
+      <T.BoxGeometry args={[FURNACE_W, 0.075, 0.11]} />
+    </T.Mesh>
+  {/each}
 
   <!-- Iron surround -->
   <T.Mesh position={[0, FURNACE_SILL - 0.12, 0.14]} material={iron}>
@@ -374,12 +455,20 @@
   </T.Group>
 </T.Group>
 
-<!-- Ash drifting through the whole room, one atmosphere for all four. -->
+<!-- ============ E · quench vent ============ -->
+<T.Group position={[x("steam"), 0, -1.2]}>
+  <FirstFireSteamVent ceilingY={CEILING_Y} material={iron} />
+</T.Group>
+
+<!-- Ash drifting through the whole room, one atmosphere for all five. Kept to
+     the near band rather than the full 52m depth: the room runs long only so
+     the lineup camera has floor under it, and seeding ash down all of it would
+     spend the budget where nobody is looking. -->
 <T.Group position={[0, 2.4, 0]}>
   <FallingParticles
     type="dust"
-    count={120}
-    area={{ width: ROOM_WIDTH, height: 5, depth: ROOM_DEPTH }}
+    count={140}
+    area={{ width: ROOM_WIDTH, height: 5, depth: 16 }}
     speed={0.035}
     colors={["#3a2a24", "#2a1a16", "#4a3028", "#1a1010"]}
     sizeRange={[0.015, 0.05]}
