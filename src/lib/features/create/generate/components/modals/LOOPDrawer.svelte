@@ -10,6 +10,7 @@
   import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
   import type { ReflectionAxis } from "@tka/sequence-engine/loop";
+  import type { GuestLoopLockKind } from "$lib/shared/create/services/loop-guest-gate";
 
   type RhythmValue = {
     rotationInterval: 2 | 4;
@@ -43,7 +44,7 @@
     onRhythmChange?: (updates: Partial<RhythmValue>) => void;
     /** Guest gating — step cap + sign-up callback (see LOOPExpandedOverlay). */
     guestMaxLength?: number;
-    onRequestSignup?: (reason: string) => void;
+    onRequestSignup?: (kind: GuestLoopLockKind) => void;
   } = $props();
 </script>
 

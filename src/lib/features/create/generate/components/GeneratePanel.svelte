@@ -49,6 +49,7 @@ Card-based architecture with integrated Generate button:
     getEffectiveUserId,
   } from "$lib/shared/auth/state/auth-state.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
+  import type { GuestLoopLockKind } from "$lib/shared/create/services/loop-guest-gate";
   import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
   import {
     resolveAccessTier,
@@ -84,8 +85,8 @@ Card-based architecture with integrated Generate button:
     (type, metadata) =>
       context?.CreateModuleState.pushUndoSnapshot(type, metadata),
     // Generate-time guest LOOP lock (e.g. a locked loopType persisted from a
-    // signed-in session) opens the same sign-up modal as the selector gate.
-    (reason) => (loopSignupReason = reason)
+    // signed-in session) opens the same auth screen as the selector gate.
+    openLoopGateAuth
   );
   const deviceState = createDeviceState();
   const startEndState = createStartEndOptionsState(
@@ -108,10 +109,19 @@ Card-based architecture with integrated Generate button:
   const guestLoopMaxLength = $derived(
     accessTier === "guest" ? getMaxSteps("guest") : undefined
   );
-  let loopSignupReason = $state<string | null>(null);
   let setupSignupTrigger = $state<
     "community-setups" | "share-setup" | "step-cap-guest" | null
   >(null);
+
+  // A guest LOOP lock goes straight to the auth screen — no intermediate
+  // nudge; the modal's contextual copy carries the why (Austen, 2026-08-10).
+  // Category locks ask for every LOOP type; length locks are step-cap asks.
+  function openLoopGateAuth(kind: GuestLoopLockKind) {
+    authDrawerState.show(
+      "signup",
+      kind === "length" ? "step-cap-guest" : "loop-locked-guest"
+    );
+  }
 
   function openSetupAuth(mode: "signin" | "signup") {
     const trigger = setupSignupTrigger;
@@ -323,9 +333,9 @@ Card-based architecture with integrated Generate button:
     }}
     sequenceLength={configState.config.length}
     guestMaxLength={guestLoopMaxLength}
-    onRequestSignup={(reason) => {
+    onRequestSignup={(kind) => {
       panelState.closeLOOPPanel();
-      loopSignupReason = reason;
+      openLoopGateAuth(kind);
     }}
     onRhythmChange={(u) =>
       configState.updateConfig({
@@ -361,31 +371,6 @@ Card-based architecture with integrated Generate button:
     onRequestSignIn={() => authDrawerState.show("signin", "saved-setups")}
     onClose={() => panelState.closePresetDrawer()}
   />
-
-  <BaseModal
-    open={loopSignupReason !== null}
-    size="fit"
-    class="chromeless"
-    onclose={() => {
-      loopSignupReason = null;
-    }}
-  >
-    <AuthNudge
-      trigger="loop-locked-guest"
-      text={loopSignupReason ?? undefined}
-      onCreateAccount={() => {
-        loopSignupReason = null;
-        authDrawerState.show("signup", "loop-locked-guest");
-      }}
-      onLogin={() => {
-        loopSignupReason = null;
-        authDrawerState.show("signin", "loop-locked-guest");
-      }}
-      onDismiss={() => {
-        loopSignupReason = null;
-      }}
-    />
-  </BaseModal>
 
   <BaseModal
     open={setupSignupTrigger !== null}

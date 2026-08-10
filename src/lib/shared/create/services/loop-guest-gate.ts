@@ -17,9 +17,11 @@ import { LOOPType, ROTATED_LOOP_TYPES } from "$lib/shared/foundation/domain/mode
 import { expanderMultiplier, specHasExpandInversion } from "./loop-type-utils";
 import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
 
+export type GuestLoopLockKind = "category" | "length";
+
 export type GuestLoopLock =
   | { locked: false }
-  | { locked: true; kind: "category" | "length"; reason: string };
+  | { locked: true; kind: GuestLoopLockKind; reason: string };
 
 const UNLOCKED: GuestLoopLock = Object.freeze({ locked: false });
 

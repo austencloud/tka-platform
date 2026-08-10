@@ -15,7 +15,10 @@ Animates forward in z-axis and expands to fill the container space
     buildLoopSpec,
   } from "$lib/shared/create/services/loop-type-utils";
   import { gateRhythm } from "$lib/shared/create/services/loop-rhythm-gating";
-  import { guestLoopGate } from "$lib/shared/create/services/loop-guest-gate";
+  import {
+    guestLoopGate,
+    type GuestLoopLockKind,
+  } from "$lib/shared/create/services/loop-guest-gate";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
   import { LOOPType } from "../../circular/domain/models/circular-models";
   import LOOPComponentGrid from "../modals/LOOPComponentGrid.svelte";
@@ -57,8 +60,10 @@ Animates forward in z-axis and expands to fill the container space
     /** Guest step cap. Set (by guest-facing hosts) turns on guest LOOP gating;
         absent = no gating (deck/store/admin hosts unaffected). */
     guestMaxLength?: number;
-    /** Called with the lock reason when a guest taps a gated LOOP. */
-    onRequestSignup?: (reason: string) => void;
+    /** Called with the lock kind when a guest taps a gated LOOP. The host
+        routes straight to the auth screen, whose contextual copy is picked by
+        kind (category → every-LOOP-type, length → step cap). */
+    onRequestSignup?: (kind: GuestLoopLockKind) => void;
   }>();
 
   let hapticService: HapticFeedback | null = null;
@@ -202,7 +207,7 @@ Animates forward in z-axis and expands to fill the container space
           guestMaxLength
         );
         if (gate.locked) {
-          onRequestSignup?.(gate.reason);
+          onRequestSignup?.(gate.kind);
           return;
         }
       }
@@ -409,7 +414,7 @@ Animates forward in z-axis and expands to fill the container space
           guestMaxLength
         );
         if (nextGuestLock.locked) {
-          onRequestSignup?.(nextGuestLock.reason);
+          onRequestSignup?.(nextGuestLock.kind);
           return;
         }
       }
@@ -467,7 +472,7 @@ Animates forward in z-axis and expands to fill the container space
     // Guest-gated combo routes to sign-up instead of applying.
     if (guestLock.locked) {
       hapticService?.trigger("selection");
-      onRequestSignup?.(guestLock.reason);
+      onRequestSignup?.(guestLock.kind);
       return;
     }
     if (rhythmGate && !rhythmGate.ok) return;

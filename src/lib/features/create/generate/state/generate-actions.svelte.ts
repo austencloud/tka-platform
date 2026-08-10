@@ -34,7 +34,10 @@ import {
   periodToNumber,
 } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { loopViabilityService } from "$lib/features/create/generate/shared/services/loop-viability-service";
-import { guestLoopGate } from "$lib/shared/create/services/loop-guest-gate";
+import {
+  guestLoopGate,
+  type GuestLoopLockKind,
+} from "$lib/shared/create/services/loop-guest-gate";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { resolveAccessTier, getMaxSteps } from "$lib/shared/auth/domain/access-tier";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -61,7 +64,7 @@ export function createGenerationActionsState(
   getConfig?: () => UIGenerationConfig | undefined,
   getSpellState?: () => SpellModeState | undefined,
   pushUndoSnapshot?: (type: UndoOperationType, metadata?: UndoMetadata) => void,
-  onGuestLoopLocked?: (reason: string) => void
+  onGuestLoopLocked?: (kind: GuestLoopLockKind) => void
 ) {
   let isGenerating = $state(false);
   let lastGeneratedSequence = $state<SequenceData | null>(null);
@@ -126,7 +129,7 @@ export function createGenerationActionsState(
           );
           if (lock.locked) {
             if (onGuestLoopLocked) {
-              onGuestLoopLocked(lock.reason);
+              onGuestLoopLocked(lock.kind);
             } else {
               toast.info(lock.reason, 6000);
             }
