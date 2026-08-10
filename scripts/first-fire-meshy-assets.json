@@ -1,0 +1,58 @@
+{
+  "_note": "Cinder Court (coal room) prop set. Every texturePrompt forbids baked glow on purpose: this room's whole thesis is that coal is the COLD thing occluding the heat behind it, and a lump with orange baked into its albedo destroys that read before the lighting ever gets a say. Iron is specified as worn dark grey rather than black for the same reason the runtime material is #2b2320 - soot-black albedo sits near 8% reflectance and renders as a hole no matter how much light hits it.",
+  "stylePrefix": "cinematic stylized realism, premium fantasy game asset, cohesive underground forge and coal-fired foundry, hand-forged wrought iron, isolated complete object, no text, no background,",
+  "polycount": 20000,
+  "estimatedCreditsPerAsset": 30,
+  "maxCredits": 240,
+  "assets": [
+    {
+      "id": "cinder-lamp",
+      "prompt": "hanging forge lamp, tall steep four-sided pyramid hood like a dungeon lantern, hood open at the bottom with no cap, four raised ridge ribs running up the outside corners of the pyramid, heavy square rim band around the wide lower edge of the hood, shallow open iron basket suspended below the hood on four short straps to hold burning coals, single hanging ring at the apex, no chain, empty basket, readable steep silhouette",
+      "polycount": 24000,
+      "texturePrompt": "worn dark grey-brown wrought iron, hammered and slightly pitted, heavy soot deposits inside the hood and around the rim, warm rust bloom at the joins, diffuse albedo without baked lighting, no glow, no emissive, no fire",
+      "textureSize": 2048
+    },
+    {
+      "id": "crib-bay",
+      "prompt": "one bay of iron coal cribbing for a wall, two heavy square corner posts, a row of evenly spaced vertical fire bars between them, a thick kerb beam across the bottom and a lintel beam across the top, open through the middle so fuel stacked behind it shows between the bars, flat back, tileable side to side, empty with no coal",
+      "polycount": 16000,
+      "texturePrompt": "worn dark grey wrought iron, hammer marks, rivet heads at every join, heat scale and rust streaks running down from the lintel, ash dust settled on upper surfaces, diffuse albedo without baked lighting, no glow, no emissive",
+      "textureSize": 2048
+    },
+    {
+      "id": "furnace-surround",
+      "prompt": "cast iron furnace mouth surround, heavy rectangular frame with a deep flat flange, thick riveted corner plates, a row of horizontal fire bars spanning the opening to hold fuel up off the ash pit, projecting ash lip along the bottom, open through the middle, no doors, empty with no fire",
+      "polycount": 18000,
+      "texturePrompt": "heat-scaled dark grey cast iron, heavy oxidation and flaking scale near the opening, rivets, ash and clinker crusted along the bottom lip, diffuse albedo without baked lighting, no glow, no emissive, no fire",
+      "textureSize": 2048
+    },
+    {
+      "id": "quench-grate",
+      "prompt": "heavy iron floor grate panel for a quench slot, close-set flat bars running across the short axis, thick raised side rails along both long edges, lifting slots at each end, slightly dished from long use, open between the bars, flat underside",
+      "polycount": 12000,
+      "texturePrompt": "wet dark grey iron, polished bright along the walking edges where boots have worn it, rust bloom and mineral scale in the recesses, damp sheen, diffuse albedo without baked lighting, no glow, no emissive",
+      "textureSize": 2048
+    },
+    {
+      "id": "coal-lump-cluster-a",
+      "prompt": "small cluster of seven loose anthracite coal lumps of varied size, sharp conchoidal fractured faces, angular blocky shapes, resting loosely together, completely cold and unlit, no fire, no embers",
+      "polycount": 8000,
+      "texturePrompt": "cold black anthracite coal, dull matte fracture faces with occasional dark glassy sheen, fine grey ash dust in the crevices, completely unlit, diffuse albedo without baked lighting, no glow, no emissive, no orange, no fire",
+      "textureSize": 1024
+    },
+    {
+      "id": "coal-lump-cluster-b",
+      "prompt": "small cluster of nine loose coal lumps and broken cinder, mixed sizes, rounder weathered pieces alongside sharp fractured chunks, some pieces half crumbled to clinker, resting loosely together, completely cold and unlit, no fire, no embers",
+      "polycount": 8000,
+      "texturePrompt": "cold black coal and grey burnt-out clinker, porous crumbled surfaces on the spent pieces, dull matte fracture faces on the fresh ones, fine ash, completely unlit, diffuse albedo without baked lighting, no glow, no emissive, no orange, no fire",
+      "textureSize": 1024
+    },
+    {
+      "id": "ash-scuttle",
+      "prompt": "iron coal scuttle, deep tapered bucket with a rolled rim and a wide pouring lip, riveted band around the body, arched carrying handle, a long-handled coal shovel leaning against it, empty",
+      "polycount": 14000,
+      "texturePrompt": "worn dark grey iron, dented and scuffed from use, ash grey residue inside the bucket and on the shovel blade, rust at the rivets, wooden shovel handle worn smooth and pale, diffuse albedo without baked lighting, no glow, no emissive",
+      "textureSize": 2048
+    }
+  ]
+}

@@ -23,6 +23,7 @@
   import { FIRST_FIRE_BASALT_COLOR } from "../first-fire-graybox/first-fire-court-identity";
   import FirstFireCoalLamp from "./FirstFireCoalLamp.svelte";
   import FirstFireCoalBank from "./FirstFireCoalBank.svelte";
+  import FirstFireCoalWall from "./FirstFireCoalWall.svelte";
   import FirstFireSteamVent from "./FirstFireSteamVent.svelte";
   import {
     LOOKDEV_STATIONS,
@@ -157,28 +158,19 @@
   };
 
   // Station B - banked coal held against the wall behind an iron grate.
-  const wallCoals: LavaCracksConfig = {
-    enabled: true,
-    crackColor: "#ff4a10",
-    intensity: 1.05,
-    speed: 0.008,
-    scale: 4.5,
-    pulseSpeed: 0.25,
-    pulseIntensity: 0.4,
-  };
   const WALL_W = 5.2;
   const WALL_H = 3.1;
-  const grateBars = Array.from({ length: 9 }, (_, i) => ({
-    x: -WALL_W / 2 + 0.3 + i * ((WALL_W - 0.6) / 8),
-  }));
 
   // Station C - a run of lamps down the route. Only the nearest drips: a coal
   // falling out of every fixture at once reads as a malfunction, not as one
   // lamp that happens to be shedding while you walk under it.
+  // Spacing is bounded at the far end by the cribbing behind them: the wall's
+  // posts stand ~1.1m proud of its face, and the first attempt put the third
+  // lamp behind that plane, where it vanished entirely.
   const lampRow = [
-    { z: 1.4, intensity: 9, drips: 14 },
-    { z: -2, intensity: 8, drips: 0 },
-    { z: -5.4, intensity: 7, drips: 0 },
+    { z: 2.4, intensity: 9, drips: 14 },
+    { z: -0.4, intensity: 8, drips: 0 },
+    { z: -3.2, intensity: 7, drips: 0 },
   ];
 
   // Station D - a furnace mouth venting heat and steam into the room.
@@ -300,58 +292,11 @@
 
 <!-- ============ B · banked coal wall ============ -->
 <T.Group position={[x("wall"), 0, BACK_Z + 0.06]}>
-  <!-- The heat, always. On its own (shader treatment) this is the whole wall,
-       and it reads as a red crackle pattern on a flat panel. -->
-  <LavaCracks
-    config={wallCoals}
-    groundSize={1}
-    edgeFade={0}
-    placement={{
-      position: [0, WALL_H / 2 + 0.2, 0.04],
-      rotation: [0, 0, 0],
-      size: [WALL_W, WALL_H],
-    }}
-  />
-
-  {#if wallTreatment === "lumps"}
-    <!-- The same heat, now with a bank of cold lumps standing in front of it.
-         The lumps carry no real glow of their own; they chop the shader behind
-         them into hot slivers, which is what a coal bank actually looks like. -->
-    <T.Group position={[0, 0.28, 0.62]}>
-      <FirstFireCoalBank
-        width={WALL_W - 0.2}
-        height={WALL_H - 0.1}
-        depth={0.55}
-        count={520}
-        sizeRange={[0.07, 0.22]}
-        emberColor="#ff5a12"
-        heat="banked"
-        seed={11}
-      />
-    </T.Group>
-  {/if}
-
-  <!-- Iron grate holding the bank back. It has to sit IN FRONT of the coal to
-       do that: behind it, the lumps bury it and the wall loses the one cue
-       that says a person stacked this fuel here. -->
-  {#each grateBars as bar, i (i)}
-    <T.Mesh position={[bar.x, WALL_H / 2 + 0.2, 1.02]} material={iron}>
-      <T.BoxGeometry args={[0.09, WALL_H, 0.09]} />
-    </T.Mesh>
-  {/each}
-  <T.Mesh position={[0, 0.24, 1.02]} material={iron}>
-    <T.BoxGeometry args={[WALL_W + 0.3, 0.36, 0.5]} />
-  </T.Mesh>
-  <T.Mesh position={[0, WALL_H + 0.2, 1.02]} material={iron}>
-    <T.BoxGeometry args={[WALL_W + 0.3, 0.2, 0.3]} />
-  </T.Mesh>
-
-  <T.PointLight
-    position={[0, WALL_H / 2 + 0.2, 1.1]}
-    color="#ff4a10"
-    intensity={7.5}
-    distance={12}
-    decay={2}
+  <FirstFireCoalWall
+    bayWidth={WALL_W}
+    height={WALL_H}
+    treatment={wallTreatment}
+    material={iron}
   />
 </T.Group>
 
@@ -361,6 +306,30 @@
      cannot mark anything. Spaced 3.4m, which is roughly four walking paces -
      close enough that the next one is already lit when you leave the last. -->
 <T.Group position.x={x("lamp")}>
+  <!-- The fix the frames demanded. A black iron fixture is read as a SILHOUETTE,
+       and there was nothing behind these to be black against - so the hood
+       disappeared and only its rim and ribs drew, which looks like a broken
+       frame hanging in a void. Cribbing behind the row gives the lamps an edge.
+
+       It is also the honest architecture: a corridor lit by hanging lamps has
+       banked coal down its length, which is where the lamps get their fuel. The
+       run is taller than the hearth version so it reaches past the hoods -
+       stopping it at hearth height would silhouette the baskets and leave the
+       pyramids in black, which is the failure with extra steps. -->
+  <T.Group position={[0, 0, BACK_Z + 0.06]}>
+    <FirstFireCoalWall
+      bayWidth={3.2}
+      height={4.2}
+      bays={2}
+      treatment={wallTreatment}
+      lumpsPerBay={280}
+      lightIntensity={4}
+      lightDistance={9}
+      seed={41}
+      material={iron}
+    />
+  </T.Group>
+
   {#each lampRow as lamp, i (i)}
     <T.Group position.z={lamp.z}>
       <FirstFireCoalLamp
