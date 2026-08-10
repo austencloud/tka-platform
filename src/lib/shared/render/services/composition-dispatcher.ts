@@ -291,6 +291,11 @@ export class CompositionDispatcher {
 
     const id = this.nextRequestId++;
     const worker = this.pickWorker();
+    if (!worker) {
+      // No worker survived init. Throwing routes the caller into its existing
+      // main-thread fallback; posting to a dead worker would just hang.
+      throw new Error("No composition worker is ready");
+    }
     worker.pendingCount++;
 
     return new Promise<Blob>((resolve, reject) => {
@@ -342,6 +347,11 @@ export class CompositionDispatcher {
 
     const id = this.nextRequestId++;
     const worker = this.pickWorker();
+    if (!worker) {
+      // No worker survived init. Throwing routes the caller into its existing
+      // main-thread fallback; posting to a dead worker would just hang.
+      throw new Error("No composition worker is ready");
+    }
     worker.pendingCount++;
 
     return new Promise<ImageBitmap>((resolve, reject) => {
@@ -522,11 +532,22 @@ export class CompositionDispatcher {
         };
         this.workers.push(entry);
 
+        // The clock must not start until the init message is actually on the
+        // wire. Arming it here would charge the worker for the main-thread prep
+        // that happens below — cloning every glyph bitmap and the whole asset
+        // bundle, N times over, on a contended thread. That prep alone burned
+        // the full budget in production and reported all N workers as timing
+        // out within the same 40ms, before any of them had been asked to do
+        // anything (2026-08-09).
+        let armTimeout = (): void => {};
         const ready = new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(
-            () => reject(new Error(`Worker ${i} init timeout`)),
-            INIT_TIMEOUT_MS,
-          );
+          let timeout: ReturnType<typeof setTimeout> | undefined;
+          armTimeout = () => {
+            timeout = setTimeout(
+              () => reject(new Error(`Worker ${i} init timeout`)),
+              INIT_TIMEOUT_MS,
+            );
+          };
           worker.onmessage = (event: MessageEvent<CompositionWorkerOutMessage>) => {
             if (event.data.type === "init-done") {
               clearTimeout(timeout);
@@ -590,6 +611,7 @@ export class CompositionDispatcher {
           ...clonedBitmaps,
           ...bundleTransferables(bundleClone),
         ]);
+        armTimeout();
 
         await ready;
       } catch (err) {
@@ -609,10 +631,20 @@ export class CompositionDispatcher {
     this.seededSignature = this.pendingSignature;
   }
 
-  private pickWorker(): WorkerEntry {
-    let best = this.workers[0]!;
+  /**
+   * Least-loaded READY worker, or null when the pool has none.
+   *
+   * Seeding `best` with `workers[0]` regardless of its readiness meant a
+   * partially- or fully-failed pool kept handing out a worker that never
+   * answered, and the compose promise hung forever instead of falling back to
+   * the main thread. Only ready workers are candidates now, and an empty
+   * result is reported honestly.
+   */
+  private pickWorker(): WorkerEntry | null {
+    let best: WorkerEntry | null = null;
     for (const entry of this.workers) {
-      if (entry.ready && entry.pendingCount < best.pendingCount) {
+      if (!entry.ready) continue;
+      if (!best || entry.pendingCount < best.pendingCount) {
         best = entry;
       }
     }

@@ -10,6 +10,30 @@ export const NAMED_ROUTE_MORPH_CLASS = "named-route-morph";
 
 interface NamedRouteViewTransition {
   finished: Promise<void>;
+  /**
+   * Present on a real ViewTransition. Optional here so callers may pass a
+   * finished-only stub (the DEV morph probe, tests).
+   */
+  ready?: Promise<void>;
+}
+
+/**
+ * Swallow a ViewTransition's `ready` rejection.
+ *
+ * When the browser skips a transition — a second navigation starts before the
+ * first settles, the tab is hidden, an element's view-transition-name is
+ * duplicated — it REJECTS `ready` with
+ * `InvalidStateError: Transition was aborted because of invalid state` while
+ * still RESOLVING `finished`. Every call site handled `finished` and none
+ * handled `ready`, so an ordinary skipped transition became an unhandled
+ * rejection: a red console error for the user and an $exception in PostHog
+ * (capture_unhandled_rejections). Attaching this no-op keeps the skip silent;
+ * the transition itself is already recovering correctly.
+ */
+export function ignoreViewTransitionSkip(
+  transition: NamedRouteViewTransition,
+): void {
+  transition.ready?.catch(() => {});
 }
 
 let active = $state(false);
@@ -146,6 +170,7 @@ export function runNamedRouteMorph<T extends NamedRouteViewTransition>(
 
   try {
     const transition = start();
+    ignoreViewTransitionSkip(transition);
     void transition.finished.then(
       () => endNamedRouteMorph(token),
       () => endNamedRouteMorph(token)

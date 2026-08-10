@@ -9,6 +9,8 @@
  * - Synchronize navigation state changes
  */
 
+import { ignoreViewTransitionSkip } from "../transitions/named-route-morph-state.svelte";
+
 /**
  * Document with optional View Transition API support
  * Uses the native ViewTransition type from lib.dom.d.ts when available
@@ -23,6 +25,9 @@ function afterViewTransitionSettles(
   transition: ViewTransition,
   callback: () => void
 ): void {
+  // A skipped transition rejects `ready` while still resolving `finished`.
+  // Without this the skip surfaces as an unhandled rejection.
+  ignoreViewTransitionSkip(transition);
   void transition.finished.then(callback, callback);
 }
 

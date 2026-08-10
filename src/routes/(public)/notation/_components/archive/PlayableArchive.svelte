@@ -107,10 +107,14 @@
 			typeof document !== "undefined" &&
 			"startViewTransition" in document
 		) {
-			document.startViewTransition(async () => {
+			const vt = document.startViewTransition(async () => {
 				commit();
 				await tick();
 			});
+			// A skipped transition rejects `ready` (and `finished` is unread on
+			// this path); unhandled, both become PostHog $exceptions.
+			vt.ready.catch(() => {});
+			vt.finished.catch(() => {});
 		} else {
 			commit();
 		}
@@ -162,6 +166,7 @@
 		soloMorph = true;
 		await tick(); // names are off the other tiles before the snapshot
 		const vt = document.startViewTransition(update);
+		vt.ready.catch(() => {}); // skipped transitions reject `ready`
 		after?.();
 		try {
 			await vt.finished;

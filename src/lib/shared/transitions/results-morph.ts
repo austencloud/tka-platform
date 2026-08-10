@@ -20,6 +20,7 @@
  * the Smart Collection builder — the mutation runs exactly as it does today.
  */
 import { flushSync } from "svelte";
+import { ignoreViewTransitionSkip } from "./named-route-morph-state.svelte";
 import {
   captureResultsMotionState,
   stageResultsMotion,
@@ -111,6 +112,9 @@ export function startMorph(mutate: () => void): ViewTransition | null {
     flushSync(mutate);
     stabilizeResultsLayouts();
   });
+  // A skipped transition rejects `ready`; unhandled, that becomes a console
+  // error and a PostHog $exception. See ignoreViewTransitionSkip.
+  ignoreViewTransitionSkip(transition);
   // Every path that already routes through here inherits the staggered enter.
   stageResultsMotion(transition, before);
   void transition.finished

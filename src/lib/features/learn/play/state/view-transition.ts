@@ -15,5 +15,10 @@ export function withViewTransition(mutate: () => void): void {
     mutate();
     return;
   }
-  start.call(document, mutate);
+  const transition = start.call(document, mutate) as
+    | { ready?: Promise<void> }
+    | undefined;
+  // A skipped transition rejects `ready`; unhandled, that becomes a console
+  // error and a PostHog $exception.
+  transition?.ready?.catch(() => {});
 }
