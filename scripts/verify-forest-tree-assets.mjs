@@ -11,6 +11,8 @@ function invariant(condition, message) {
 }
 
 const args = process.argv.slice(2);
+const onlyIndex = args.indexOf("--only");
+const only = onlyIndex >= 0 ? args[onlyIndex + 1] : null;
 const manifestIndex = args.indexOf("--manifest");
 const manifestPath = resolve(
   manifestIndex >= 0
@@ -18,6 +20,10 @@ const manifestPath = resolve(
     : "scripts/forest-meshy-images.json"
 );
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+const selectedAssets = manifest.assets.filter(
+  (asset) => !only || asset.id === only
+);
+if (selectedAssets.length === 0) throw new Error(`Unknown asset: ${only}`);
 const requireFromCli = createRequire(
   realpathSync(resolve("node_modules/@gltf-transform/cli/package.json"))
 );
@@ -32,7 +38,7 @@ const io = new NodeIO()
   .registerDependencies({ "meshopt.decoder": MeshoptDecoder });
 
 const results = [];
-for (const asset of manifest.assets) {
+for (const asset of selectedAssets) {
   const path = resolve(manifest.outputDirectory, `${asset.id}.glb`);
   const bytes = await readFile(path);
   invariant(

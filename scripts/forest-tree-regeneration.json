@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "candidate": {
+    "id": "mature-temperate-oak-meshy6-r1",
+    "label": "Mature Temperate Oak · Meshy 6 R1",
+    "targetHeightMetres": 16,
+    "roles": ["mature-canopy", "near-frame-candidate"],
+    "aiModel": "meshy-6",
+    "polycount": 60000,
+    "textureResolution": "2k",
+    "optimizedTextureSize": 2048,
+    "maximumOptimizedTriangles": 65000,
+    "prompt": "One complete mature English oak tree, botanically believable at human scale. A stout tapered trunk rises from one coherent modest radial root flare, then divides into clearly separated primary limbs; every limb and secondary branch tapers naturally and visibly connects. The broad asymmetric crown has many distinct airy leaf sprays and uneven branch-end clusters separated by large sky windows, never a spherical or fused canopy. Full tree from root tips to crown, isolated game asset, no ground disk, rocks, vines, moss, props, or background.",
+    "texturePrompt": "Photorealistic dry English oak. Trunk and every visible branch are unmistakable brown-gray bark with deep vertical furrows and restrained warm brown in the creases; zero green tint, algae, moss, or lichen. Leaves alone vary naturally among deep forest green, muted mid-green, and restrained fresh green, with darker interior clusters. Neutral diffuse daylight albedo with no baked highlights or shadows. Clean nonmetallic high-roughness PBR, subtle bark and leaf normals, no emission, no wet gloss."
+  },
+  "cost": {
+    "priorDiagnosticCredits": 5,
+    "previewCredits": 20,
+    "refineCredits": 10,
+    "maximumCredits": 40
+  },
+  "diagnosticStatePath": "docs/superpowers/specs/moonlit-firefly-forest/evidence/tree-regeneration/forest-tree-regeneration-tasks.json",
+  "statePath": "docs/superpowers/specs/moonlit-firefly-forest/evidence/tree-regeneration/forest-tree-regeneration-meshy6-tasks.json",
+  "outputDirectory": "static/models/forest/trees/candidates",
+  "evidenceDirectory": "docs/superpowers/specs/moonlit-firefly-forest/evidence/tree-regeneration"
+}

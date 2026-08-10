@@ -13,6 +13,7 @@
   import { T, useThrelte } from "@threlte/core";
   import { useGltf, useMeshopt } from "@threlte/extras";
   import SkyGradient from "../primitives/SkyGradient.svelte";
+  import CloudSkyDome from "../primitives/CloudSkyDome.svelte";
   import Starfield from "../primitives/Starfield.svelte";
   import MeteorStreaks from "./cosmic/MeteorStreaks.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
@@ -212,6 +213,10 @@
   moon={activeConfig.moon}
   sun={activeConfig.sun}
 />
+
+{#if activeConfig.clouds}
+  <CloudSkyDome config={activeConfig.clouds} />
+{/if}
 
 {#if activeConfig.starfield}
   <Starfield config={activeConfig.starfield} />

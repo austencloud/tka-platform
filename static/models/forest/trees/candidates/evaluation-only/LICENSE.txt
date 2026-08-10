@@ -1,0 +1,11 @@
+This evaluation asset is derived from SpeedTree's White Oak in NVIDIA's Open
+Research Content Archive and is licensed under Creative Commons
+Attribution-NonCommercial-ShareAlike 3.0 Unported.
+
+https://creativecommons.org/licenses/by-nc-sa/3.0/
+
+Original asset author: SpeedTree (https://www.speedtree.com/)
+Archive page: https://developer.nvidia.com/orca/speedtree
+
+Citation:
+SpeedTree, Open Research Content Archive (ORCA), 2017.

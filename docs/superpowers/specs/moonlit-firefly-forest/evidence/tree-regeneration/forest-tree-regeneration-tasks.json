@@ -1,0 +1,17 @@
+{
+  "contractVersion": 1,
+  "candidateId": "mature-temperate-oak-r1",
+  "manifestPath": "scripts/forest-tree-regeneration.json",
+  "manifestSha256": "72076c84ce83ba28f23c638c2a2934d80b97ab8c13e1103e628c0964ab973c03",
+  "balanceBeforeLatestRun": 250,
+  "previewTaskId": "019fed23-55a3-7afb-af0a-5bfbe2a532ec",
+  "previewInputSignature": "8c33a35407a368bc91e5b7e1fe7d26afc356b0da59c4cd1ae3654767bd42f529",
+  "previewSubmittedAt": "2026-08-10T19:25:44.651Z",
+  "previewStatus": "SUCCEEDED",
+  "previewConsumedCredits": 5,
+  "previewBytes": 2972712,
+  "previewDownloadedAt": "2026-08-10T19:28:40.569Z",
+  "balanceAfterLatestRun": 245,
+  "totalConsumedCredits": 5,
+  "completedAt": null
+}

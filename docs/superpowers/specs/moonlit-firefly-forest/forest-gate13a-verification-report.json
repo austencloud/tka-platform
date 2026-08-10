@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "forest-firefly",
+  "gate": "13A",
+  "generatedAt": "2026-08-10T17:48:02Z",
+  "scope": {
+    "geometryChanged": false,
+    "cameraChanged": false,
+    "publicControlAdded": false,
+    "nightMasterChanged": false
+  },
+  "registeredAnchors": [
+    { "id": "dawn", "label": "Dawn", "hour": 5.75 },
+    { "id": "day", "label": "Day", "hour": 12.5 },
+    { "id": "goldenHour", "label": "Golden Hour", "hour": 18.25 },
+    { "id": "dusk", "label": "Dusk", "hour": 20.25 },
+    { "id": "night", "label": "Night Master", "hour": 23 }
+  ],
+  "runtime": {
+    "routePattern": "https://localhost:5174/test/forest-scene?view={view}&time={anchor}",
+    "browserSurface": "Codex in-app browser",
+    "fixedCameras": ["hero", "walk", "world", "stage", "camp"],
+    "consoleErrors": 0,
+    "consoleWarnings": 0
+  },
+  "visualEvidence": {
+    "registeredTargetSheet": {
+      "path": "docs/superpowers/specs/moonlit-firefly-forest/evidence/gate13a/forest-gate13a-five-anchor-registered-targets.png",
+      "dimensions": [1920, 800],
+      "sha256": "6e299739fe08ae8cf2d7b17e48893f0f04d2c77c6c0a567941d63ea0c4b5eeed"
+    },
+    "dayNightCameraProof": {
+      "path": "docs/superpowers/specs/moonlit-firefly-forest/evidence/gate13a/forest-gate13a-day-night-camera-proof.png",
+      "dimensions": [1920, 1120],
+      "sha256": "cc07081113623fcf0aa10f6beb197a1600eb7454a8277593570ee0124fcff0ca"
+    },
+    "walkProof": [
+      "docs/superpowers/specs/moonlit-firefly-forest/evidence/gate13a/forest-gate13a-day-walk.png",
+      "docs/superpowers/specs/moonlit-firefly-forest/evidence/gate13a/forest-gate13a-night-walk.png"
+    ]
+  },
+  "implementationEvidence": {
+    "anchorOwner": {
+      "path": "src/lib/shared/3d/environments/scenes/forest/forest-atmosphere-profile.ts",
+      "sha256": "5a4190335a4cd0db3f5ebde07bfd6a1711df2dd5e3893c173e8e2ed20e5b84a4"
+    },
+    "materialResponseOwner": {
+      "path": "src/lib/shared/3d/environments/scenes/forest/ForestAtmosphereMaterials.svelte",
+      "sha256": "124476e58c5536beaa364338a6a4fdf9f69ca3808fc08da52ef98e6800ead714"
+    },
+    "sharedSkyOwner": {
+      "path": "src/lib/shared/3d/environments/primitives/SkyGradient.svelte",
+      "sha256": "5d4ec817b959a25b3a89dfec59751ff4e750be563a006c639a52f54ddfeb8861"
+    },
+    "lightingOwner": {
+      "path": "src/lib/shared/3d/environments/scenes/forest/ForestLighting.svelte",
+      "sha256": "69e173ba0d34ab4e5931f50721ec80986a49e88c324b3aecbcb8c1e155cce2b8"
+    },
+    "lockedCameraRoute": {
+      "path": "src/routes/test/forest-scene/+page.svelte",
+      "sha256": "d915a3a4505ec201963a2f1b969deb62b6a3018e53dceb49e044a13fa79b444a"
+    }
+  },
+  "verification": {
+    "focusedTests": "9 passed",
+    "nightMasterExactConfig": "passed",
+    "freshAnchorConfigs": "passed",
+    "nocturnalEcologyRules": "passed",
+    "fixedCameraSweep": "passed",
+    "runtimeConsole": "passed"
+  },
+  "approvalStatus": "awaiting-visual-verdict"
+}

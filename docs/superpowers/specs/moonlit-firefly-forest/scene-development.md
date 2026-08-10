@@ -58,6 +58,8 @@ budget, while widened-layout callers omit the near-frame layer.
 | C-010 | invention | The approved camp moves as one unit to a separate east-rim shelf while the central clearing becomes audience meadow and three named habitat zones. | Gate 10.1 measured contract and Gate 10.2 playable proof           | implemented; in visual review |
 | C-011 | invention | Revision 36 is the canonical Forest Night Master; the same clearing will carry Dawn, Day, Golden Hour, Dusk, and Night atmosphere anchors.           | Austen Gate 12 and atmosphere-plan approval                       | locked; Gate 13A active        |
 | C-012 | invention | A rare distant UFO may cross the night Forest without confirming any explanation.                                                                  | Austen atmosphere-plan approval and story-bible guardrail          | approved for Gate 13C          |
+| C-013 | invention | The registered Forest day runs through 05:45 Dawn, 12:30 Day, 18:15 Golden Hour, 20:15 Dusk, and the locked 23:00 Night Master without moving the clearing. | Gate 13A fixed-camera runtime sheet and verification report        | ready for visual verdict       |
+| C-014 | invention | The algae-coated mature canopy tree is replaced by an approved Meshy 6 oak with dry brown-gray bark and foliage-only green. | Austen approval and `./evidence/tree-regeneration/forest-tree-regeneration-verdict.md` | implemented                    |
 
 ## Experience sentence
 
@@ -82,6 +84,11 @@ budget, while widened-layout callers omit the near-frame layer.
 - Gate 10.1 verification: `./forest-composition-revision-verification.json`
 - Gate 10.2 playable review board:
   `./evidence/gate10-2/forest-gate10-2-contact-sheet.png`
+- Gate 13A five-anchor target sheet:
+  `./evidence/gate13a/forest-gate13a-five-anchor-registered-targets.png`
+- Gate 13A Day/Night fixed-camera proof:
+  `./evidence/gate13a/forest-gate13a-day-night-camera-proof.png`
+- Gate 13A verification: `./forest-gate13a-verification-report.json`
 - Framing target: four approved Forest trees sit upstage of the audience and
   form asymmetric side and canopy walls around the stage. Coven Hub and other
   widened-layout callers omit this conditional layer.
@@ -127,6 +134,25 @@ targets live in `./evidence/gate12/`. Austen locked revision 36 and approved the
 five-gate atmosphere plan on 2026-08-10. Gate 13A now authors registered Dawn,
 Day, Golden Hour, Dusk, and Night targets without changing geometry or public
 controls. Tracker decision: `2h40cRvXHIL9szNFxb8c`.
+
+The mature-canopy regeneration is integrated without changing the approved
+Forest layout. The 62,227-triangle Meshy master remains isolated as evidence;
+a 34,151-triangle production LOD now owns all 68 canonical canopy placements in
+both optimized Forest GLBs. The corrected export was verified against the
+tree-asset, full-environment, near-frame, instancing, and clearance contracts.
+The detailed visual and credit record is in
+`./evidence/tree-regeneration/forest-tree-regeneration-verdict.md`.
+
+Gate 13A is ready for Austen's visual verdict. One Forest-owned profile now
+registers 05:45 Dawn, 12:30 Day, 18:15 Golden Hour, 20:15 Dusk, and the exact
+23:00 Night Master. The shared sky accepts an optional solar disk; callers that
+omit it retain their existing sky. Forest-only material grading keeps the same
+terrain, tree, stage, and camp geometry legible as the key and hemisphere
+change. Day and Night were checked through hero, walk, world, stage, and camp
+cameras in the in-app browser with no runtime warnings or errors. The target
+sheet and fixed-camera proof live in `./evidence/gate13a/`; the verification
+report is `./forest-gate13a-verification-report.json`. No public clock or time
+control enters until Gate 13B.
 
 Gates 8 and 9 remain approved. Austen reopened their framing direction for the
 Gate 10 composition revision: intimate trees move upstage, the northwest exit

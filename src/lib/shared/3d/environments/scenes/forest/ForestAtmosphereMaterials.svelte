@@ -93,12 +93,10 @@ uniform float uForestFoliageHighlightStrength;`
           `#include <map_fragment>
 float forestLuminance = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
 float forestGreenSignal = smoothstep(
-  -0.015,
+  0.005,
   0.12,
   diffuseColor.g - max(diffuseColor.r, diffuseColor.b)
 );
-float forestPaleSignal = smoothstep(0.3, 0.82, forestLuminance);
-float forestLeafSignal = max(forestGreenSignal, forestPaleSignal * 0.78);
 float forestTintLuminance = max(
   dot(uForestFoliageHighlightTint, vec3(0.2126, 0.7152, 0.0722)),
   0.001
@@ -108,39 +106,11 @@ vec3 forestLeafColor = uForestFoliageHighlightTint
 diffuseColor.rgb = mix(
   diffuseColor.rgb,
   forestLeafColor,
-  clamp(forestLeafSignal * uForestFoliageHighlightStrength, 0.0, 1.0)
+  clamp(forestGreenSignal * uForestFoliageHighlightStrength, 0.0, 1.0)
 );`
-        )
-        .replace(
-          "#include <opaque_fragment>",
-          `float forestOutputLuminance = dot(
-  outgoingLight,
-  vec3(0.2126, 0.7152, 0.0722)
-);
-float forestOutputChroma = max(
-  max(outgoingLight.r, outgoingLight.g),
-  outgoingLight.b
-) - min(min(outgoingLight.r, outgoingLight.g), outgoingLight.b);
-float forestOutputPaleSignal = smoothstep(
-  0.16,
-  0.68,
-  forestOutputLuminance
-) * (1.0 - smoothstep(0.035, 0.22, forestOutputChroma));
-vec3 forestOutputLeafColor = uForestFoliageHighlightTint
-  * (forestOutputLuminance / forestTintLuminance);
-outgoingLight = mix(
-  outgoingLight,
-  forestOutputLeafColor,
-  clamp(
-    forestOutputPaleSignal * uForestFoliageHighlightStrength,
-    0.0,
-    1.0
-  )
-);
-#include <opaque_fragment>`
         );
     };
-    material.customProgramCacheKey = () => "forest-foliage-highlight-grade-v2";
+    material.customProgramCacheKey = () => "forest-foliage-highlight-grade-v3";
     return uniforms;
   }
 

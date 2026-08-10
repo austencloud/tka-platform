@@ -25,6 +25,7 @@ interface AnchorValues {
   hour: number;
   sky: ForestSceneConfig["sky"];
   sun: NonNullable<ForestSceneConfig["sun"]>;
+  clouds: NonNullable<ForestSceneConfig["clouds"]>;
   fog: ForestSceneConfig["fog"];
   hemisphere: ForestSceneConfig["hemisphereLight"];
   lighting: NonNullable<ForestSceneConfig["lighting"]>;
@@ -56,6 +57,19 @@ const ANCHOR_VALUES: Record<
       opacity: 0.92,
       glowScale: 8,
       glowOpacity: 0.2,
+    },
+    clouds: {
+      enabled: true,
+      coverage: 0.46,
+      density: 0.7,
+      driftSpeed: 0.012,
+      sunDirection: [-26, 5, -58],
+      litColor: "#ffe2c2",
+      shadowColor: "#74849d",
+      opacity: 0.48,
+      scale: 3.5,
+      horizonFade: -0.04,
+      zenithFade: 0.94,
     },
     fog: { color: "#667a70", density: 0.014 },
     hemisphere: {
@@ -107,6 +121,19 @@ const ANCHOR_VALUES: Record<
       glowScale: 5.5,
       glowOpacity: 0.12,
     },
+    clouds: {
+      enabled: true,
+      coverage: 0.38,
+      density: 0.72,
+      driftSpeed: 0.014,
+      sunDirection: [-20, 55, -44],
+      litColor: "#fff8e8",
+      shadowColor: "#8ca3b5",
+      opacity: 0.56,
+      scale: 4.1,
+      horizonFade: -0.08,
+      zenithFade: 0.96,
+    },
     fog: { color: "#648772", density: 0.009 },
     hemisphere: {
       skyColor: "#c8e7ed",
@@ -129,11 +156,11 @@ const ANCHOR_VALUES: Record<
     canopyFlight: "none",
     leafColors: ["#3b7334", "#2f642d", "#4b8140", "#28572a"],
     materials: {
-      terrainTint: "#78a85d",
-      foliageTint: "#6e9e52",
+      terrainTint: "#d6d2ba",
+      foliageTint: "#ffffff",
       foliageHighlightTint: "#3d7e34",
-      foliageHighlightStrength: 0.72,
-      groundLifeTint: "#6f9d50",
+      foliageHighlightStrength: 0.55,
+      groundLifeTint: "#ffffff",
       stageTint: "#e2b263",
       campTint: "#cfdfd4",
       emissiveScale: 0,
@@ -156,6 +183,19 @@ const ANCHOR_VALUES: Record<
       opacity: 0.95,
       glowScale: 8.5,
       glowOpacity: 0.24,
+    },
+    clouds: {
+      enabled: true,
+      coverage: 0.44,
+      density: 0.74,
+      driftSpeed: 0.011,
+      sunDirection: [30, 8, -58],
+      litColor: "#ffd9aa",
+      shadowColor: "#8e7479",
+      opacity: 0.54,
+      scale: 3.8,
+      horizonFade: -0.02,
+      zenithFade: 0.94,
     },
     fog: { color: "#75634e", density: 0.016 },
     hemisphere: {
@@ -206,6 +246,19 @@ const ANCHOR_VALUES: Record<
       opacity: 0.74,
       glowScale: 10,
       glowOpacity: 0.2,
+    },
+    clouds: {
+      enabled: true,
+      coverage: 0.32,
+      density: 0.66,
+      driftSpeed: 0.008,
+      sunDirection: [32, 2.4, -60],
+      litColor: "#d99aa0",
+      shadowColor: "#3e4764",
+      opacity: 0.4,
+      scale: 3.6,
+      horizonFade: 0,
+      zenithFade: 0.92,
     },
     fog: { color: "#394248", density: 0.021 },
     hemisphere: {
@@ -277,6 +330,7 @@ function createAnchor(values: AnchorValues): ForestAtmosphereAnchor {
       ...night,
       sky: { ...values.sky },
       sun: { ...values.sun },
+      clouds: { ...values.clouds },
       moon: null,
       starfield: null,
       shootingStars: null,

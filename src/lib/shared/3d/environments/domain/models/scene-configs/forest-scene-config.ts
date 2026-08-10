@@ -2,6 +2,7 @@
 
 import type {
   FallingParticlesConfig,
+  SkyCloudConfig,
   SkyGradientConfig,
   SkySunConfig,
 } from "../environment-models";
@@ -21,6 +22,8 @@ export interface ForestSceneConfig {
   sky: SkyGradientConfig;
   /** Optional solar disk. Night and legacy configs omit it. */
   sun?: SkySunConfig | null;
+  /** Daylight cloud field. Night omits it to preserve the Night Master. */
+  clouds?: SkyCloudConfig | null;
   /** Distant stars visible through the forest canopy. */
   starfield?: StarfieldConfig | null;
   /** Occasional cool-white streaks across the night sky. */
@@ -47,7 +50,7 @@ export interface ForestSceneConfig {
 export interface ForestMaterialResponseConfig {
   terrainTint: string;
   foliageTint: string;
-  /** Re-hues pale baked canopy highlights without flattening dark bark. */
+  /** Re-hues green-dominant canopy pixels while preserving bark in shared atlases. */
   foliageHighlightTint: string;
   foliageHighlightStrength: number;
   groundLifeTint: string;

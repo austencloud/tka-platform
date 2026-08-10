@@ -9,6 +9,7 @@
    */
 
   import { T } from "@threlte/core";
+  import { tryGetAdaptiveQualityContext } from "../../../context/adaptive-quality-context";
   import type { HemisphereLightConfig } from "../../domain/models/scene-configs/shared-scene-config";
   import {
     FOREST_NIGHT_LIGHTING,
@@ -21,13 +22,13 @@
     groundY?: number;
   }
 
-  let {
-    hemisphere,
-    profile,
-    groundY = 0,
-  }: Props = $props();
+  let { hemisphere, profile, groundY = 0 }: Props = $props();
 
   const KEY_LIGHT_DISTANCE = 64;
+  const adaptiveQuality = tryGetAdaptiveQualityContext();
+  const shadowsEnabled = $derived(
+    adaptiveQuality?.config.enableShadows ?? true
+  );
   const activeProfile = $derived(profile ?? FOREST_NIGHT_LIGHTING);
   const keyPosition = $derived.by(() => {
     const direction = activeProfile.key.direction;
@@ -48,7 +49,7 @@
   position.x={keyPosition[0]}
   position.y={keyPosition[1] + groundY}
   position.z={keyPosition[2]}
-  castShadow
+  castShadow={shadowsEnabled}
   shadow.mapSize.width={2048}
   shadow.mapSize.height={2048}
   shadow.camera.near={1}

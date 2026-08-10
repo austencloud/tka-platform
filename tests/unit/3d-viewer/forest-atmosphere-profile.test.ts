@@ -54,6 +54,15 @@ describe("Forest registered atmosphere anchors", () => {
     expect(night.fireflies?.count).toBeGreaterThan(dusk.fireflies?.count ?? 0);
   });
 
+  it("keeps Day's shared tree and ground-life atlases neutral for wood", () => {
+    const materials =
+      createForestAtmosphereAnchor("day").config.materialResponse;
+
+    expect(materials?.foliageTint).toBe("#ffffff");
+    expect(materials?.groundLifeTint).toBe("#ffffff");
+    expect(materials?.foliageHighlightStrength).toBeLessThanOrEqual(0.55);
+  });
+
   it("returns fresh configs so review changes cannot mutate another anchor", () => {
     const firstDay = createForestAtmosphereAnchor("day").config;
     const secondDay = createForestAtmosphereAnchor("day").config;

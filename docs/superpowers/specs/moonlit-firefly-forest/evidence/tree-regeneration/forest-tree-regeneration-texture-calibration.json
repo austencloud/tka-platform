@@ -1,0 +1,17 @@
+{
+  "pixels": 4194304,
+  "transparentPixels": 0,
+  "foliagePixels": 3592498,
+  "barkAndNeutralPixels": 601806,
+  "barkPaddingPixels": 233311,
+  "originalMeanRgb": [
+    175.849187374115,
+    215.105046749115,
+    54.515424489974976
+  ],
+  "calibratedMeanRgb": [
+    94.0211980342865,
+    140.17583990097046,
+    47.15953302383423
+  ]
+}

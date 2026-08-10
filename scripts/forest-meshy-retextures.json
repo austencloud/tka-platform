@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "sourceStatePath": "blender/forest-meshy-image-tasks.json",
+  "statePath": "blender/forest-meshy-retexture-tasks.json",
+  "outputDirectory": "static/models/forest/trees/retextures",
+  "aiModel": "meshy-6",
+  "textureResolution": "4k",
+  "estimatedCreditsPerAsset": 10,
+  "maxCredits": 30,
+  "assets": [
+    {
+      "id": "lush-canopy-oak",
+      "sourceAssetId": "lush-canopy-oak",
+      "label": "Lush Canopy Beech",
+      "roles": ["mature-canopy"],
+      "targetHeightMetres": 16,
+      "referencePath": "assets/meshy-refs/forest/lush-canopy-oak/front.png",
+      "textureSize": 1024,
+      "maximumOptimizedTriangles": 36000,
+      "textStylePrompt": "Photorealistic living deciduous woodland tree. The trunk and every visible branch are dry cool medium-brown and charcoal-gray bark with clear vertical fissures; zero green tint, algae, lichen, or moss on bark except one tiny muted patch at the lowest root flare. Leaves alone are natural varied forest greens, with deep shaded interiors and fresh mid-green highlights, never neon or chartreuse. Neutral diffuse daylight albedo, no baked light or shadow, no emission, nonmetallic rough bark, matte leaves. Preserve the existing silhouette and geometry."
+    },
+    {
+      "id": "forked-forest-elm",
+      "sourceAssetId": "forked-forest-elm",
+      "label": "Forked Forest Elm",
+      "roles": ["irregular-middle"],
+      "targetHeightMetres": 11,
+      "referencePath": "assets/meshy-refs/forest/forked-forest-elm/front.png",
+      "textureSize": 1024,
+      "maximumOptimizedTriangles": 30000,
+      "textStylePrompt": "Photorealistic healthy deciduous woodland elm. The forked trunk and every visible branch are dry cool gray-brown bark with strong vertical texture; zero green tint, algae, lichen, or moss on bark except one tiny muted patch at the lowest root flare. Leaves alone are varied deep ivy and natural mid greens, with darker canopy interiors, never neon or chartreuse. Neutral diffuse daylight albedo, no baked light or shadow, no emission, nonmetallic rough bark, matte leaves. Preserve the existing silhouette and geometry."
+    },
+    {
+      "id": "young-hornbeam",
+      "sourceAssetId": "young-hornbeam",
+      "label": "Leafy Young Hornbeam",
+      "roles": ["young", "understory"],
+      "targetHeightMetres": 5,
+      "referencePath": "assets/meshy-refs/forest/young-hornbeam/front.png",
+      "textureSize": 1024,
+      "maximumOptimizedTriangles": 22000,
+      "textStylePrompt": "Photorealistic healthy young deciduous hornbeam. The slender trunk and every visible branch are dry cool gray-brown bark with subtle natural striation; zero green tint, algae, lichen, or moss on bark except one tiny muted patch at the lowest root flare. Leaves alone are varied natural forest greens, with deeper shaded interiors and restrained fresh highlights, never neon or chartreuse. Neutral diffuse daylight albedo, no baked light or shadow, no emission, nonmetallic rough bark, matte leaves. Preserve the existing silhouette and geometry."
+    }
+  ]
+}

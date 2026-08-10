@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { resolveForestShadowRole } from "$lib/shared/3d/environments/scenes/forest/forest-shadow-roles";
+import {
+  resolveForestNearFrameShadowRole,
+  resolveForestShadowRole,
+} from "$lib/shared/3d/environments/scenes/forest/forest-shadow-roles";
 
 describe("Forest shadow roles", () => {
   it("lets the terrain receive local contact shadows without casting", () => {
@@ -19,6 +22,27 @@ describe("Forest shadow roles", () => {
       receive: false,
     });
     expect(resolveForestShadowRole(undefined)).toEqual({
+      cast: false,
+      receive: false,
+    });
+  });
+
+  it("lets only the authored near-frame layer shape the clearing", () => {
+    expect(resolveForestNearFrameShadowRole("near-frame-tree", true)).toEqual({
+      cast: true,
+      receive: true,
+    });
+    expect(
+      resolveForestNearFrameShadowRole("near-frame-static-prop", true)
+    ).toEqual({ cast: true, receive: true });
+    expect(resolveForestNearFrameShadowRole("near-frame-grass", true)).toEqual({
+      cast: false,
+      receive: true,
+    });
+  });
+
+  it("removes the near-frame layer from low-cost shadow passes", () => {
+    expect(resolveForestNearFrameShadowRole("near-frame-tree", false)).toEqual({
       cast: false,
       receive: false,
     });

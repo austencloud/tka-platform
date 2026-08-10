@@ -1,0 +1,44 @@
+{
+  "contractVersion": 1,
+  "candidate": {
+    "id": "mature-temperate-oak-meshy6-r1",
+    "label": "Mature Temperate Oak · Meshy 6 R1",
+    "path": "E:/tka-platform/static/models/forest/trees/candidates/mature-temperate-oak-meshy6-r1.glb",
+    "bytes": 1963124,
+    "meshes": 1,
+    "primitives": 1,
+    "vertices": 89839,
+    "triangles": 62227,
+    "materials": 1,
+    "textures": 3,
+    "normalizedDimensionsMetres": [
+      13.189584732055664,
+      13.187250137329102,
+      16
+    ],
+    "reviewHeightMetres": 16,
+    "materialFacts": [
+      {
+        "name": "Material_0.007",
+        "baseColorTexture": true,
+        "normalTexture": true,
+        "metallicRoughnessTexture": true,
+        "metallicFactor": 0,
+        "roughnessFactor": 0.9,
+        "alphaMode": "OPAQUE",
+        "doubleSided": true
+      }
+    ]
+  },
+  "meshy": {
+    "previewTaskId": "019fed29-384e-78eb-9f51-23d1d908ee02",
+    "refineTaskId": "019fed2e-819b-7d56-900b-40d52aee0130",
+    "previewConsumedCredits": 20,
+    "refineConsumedCredits": 10,
+    "totalConsumedCredits": 30,
+    "priorDiagnosticCredits": 5,
+    "totalProjectCredits": 35,
+    "balanceBeforeLatestRun": 225,
+    "balanceAfterLatestRun": 215
+  }
+}
