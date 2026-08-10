@@ -48,7 +48,19 @@ Scope: marketing, UI, docs. Museum game fiction follows its own rules. Full refe
 
 ## Dev Server
 
-Port 5173 is the user's VS Code dev server (hooks block `npm run dev`, `kill-port 5173`, and friends). For verification use `curl localhost:5173/path`, `npm run build`, or `npm run check`. If you need your own dev server: `vite --port 5174`.
+**Port 5173 is Austen's. You never start, restart, or stop it — he has an Agent
+Hub button for that, and it carries the Cloudflare tunnel and pm2 supervision
+that a hand-run `vite` does not.** When it is down or wedged: diagnose, then ask
+him to restart it from Agent Hub. That holds even when he says it is broken and
+even when he asks you to make a page work. Never run `scripts/start-dev.ps1`,
+never `pm2 start|restart tka-dev`, never kill whatever holds the port. Full rule
+and the IPv6 diagnostic trap: `.claude/rules/never-start-the-dev-server.md`.
+
+`npm run dev` is `vite --host ::` — IPv6 only. `curl https://localhost:5173/`
+hits IPv4 and returns `000` even when the server is perfectly healthy; use
+`curl -k -g 'https://[::1]:5173/'`. For verification use that, `npm run build`,
+or `npm run check`. If you need your own dev server: `vite --port <free>`, and
+reap it in the same turn.
 
 ## Bash Gotchas (Windows Git Bash)
 
