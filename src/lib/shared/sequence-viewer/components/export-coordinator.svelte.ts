@@ -30,6 +30,15 @@ import type { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.s
 import type { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/modal-accessibility-helper.svelte";
 type ExportType = "animation" | "image" | "both";
 
+/**
+ * Who delivers the finished file. Default (`true`) is the viewer's own Export
+ * button: save it and say so. A caller that owns delivery — the share sheet,
+ * which shows the render and hands it to a destination — passes `false`.
+ */
+export interface ExportRequestOptions {
+  autoDeliver?: boolean;
+}
+
 type Viewer3DState = ReturnType<typeof createViewer3DState>;
 type AccessibilityHelper = ReturnType<typeof createModalAccessibilityHelper>;
 
@@ -63,7 +72,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
     sequenceModalExporter.cancel();
   }
 
-  function handleRetryExport(handleExportFn: () => Promise<void>) {
+  function handleRetryExport(handleExportFn: () => Promise<unknown>) {
     sequenceModalExporter.clearError();
     handleExportFn();
   }
@@ -262,6 +271,13 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
     if (resolveRecording) resolveRecording();
   }
 
+  /**
+   * Runs an export for the current pane. Resolves `false` when the request was
+   * refused before any render began — wrong pane, an export already in flight,
+   * the take-it-home account gate, an unready canvas or scene. A caller that
+   * shows its own "rendering…" state must honour that `false`, or it spins
+   * forever on a render that was never going to happen.
+   */
   async function handleExport(
     editingPane: 'animation' | 'image' | 'video-upload' | null,
     effectiveSequence: SequenceData | null,
@@ -272,15 +288,20 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
     bpmLocal: number,
     isHandPath: boolean,
     resolvedAutoLayout: ResolvedAutoLayout | null,
-  ) {
+    options?: ExportRequestOptions,
+  ): Promise<boolean> {
+    // The share sheet asks for a render it is going to deliver itself. Without
+    // this the same take also lands in Downloads and toasts "Video ready" —
+    // a 34 MB file the user never asked for, once per attempt.
+    const autoDeliver = options?.autoDeliver !== false;
     const exportType: ExportType | null =
       editingPane === 'animation' ? 'animation' : editingPane === 'image' ? 'image' : null;
 
-    if (sequenceModalExporter.state.isExporting || !exportType) return;
+    if (sequenceModalExporter.state.isExporting || !exportType) return false;
 
     // Take-it-home gate: guests play with export settings freely, but pulling
     // the actual file down requires a free account.
-    if (!ensureFullAccountForExport()) return;
+    if (!ensureFullAccountForExport()) return false;
 
     hapticService?.trigger("selection");
 
@@ -341,7 +362,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
       const threlteResumeAutoLoop = viewer3DState.threlteResumeAutoLoop;
       if (!threlteCamera || !threlteRenderer || !threlteRunFrame || !threltePauseAutoLoop || !threlteResumeAutoLoop) {
         showToast("3D scene not ready for export. Please try again.", "error");
-        return;
+        return false;
       }
 
       // ── Pass 1: Camera Performance Recording ──
@@ -410,7 +431,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
       const recordedDuration = cameraKeyframes.duration;
       if (recordedDuration <= 0) {
         showToast("Recording too short. Please try again.", "error");
-        return;
+        return false;
       }
 
       let exported3DOk = false;
@@ -446,8 +467,8 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
         if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
       }
       // Auto-download on finish (focused tab) + toast/preview fallback.
-      if (exported3DOk) autoDeliverExportedVideo(effectiveSequence);
-      return;
+      if (exported3DOk && autoDeliver) autoDeliverExportedVideo(effectiveSequence);
+      return true;
     }
 
     // 2D mode: frame-by-frame capture from PixiJS canvas
@@ -465,14 +486,14 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
         videoCallbacks
       );
       // Auto-download on finish (focused tab) + toast/preview fallback.
-      autoDeliverExportedVideo(effectiveSequence);
+      if (autoDeliver) autoDeliverExportedVideo(effectiveSequence);
     } else if (exportType === "animation" && (!playbackController || !animationCanvas)) {
       showToast("Animation not ready yet. Wait a moment and try again.", "error");
-      return;
+      return false;
     } else if (exportType === "image" && effectiveSequence) {
       if (!effectiveSequence.steps || effectiveSequence.steps.length === 0) {
         showToast("Sequence has no steps to export.", "error");
-        return;
+        return false;
       }
       // All card toggles (word/difficulty/LOOP/mandala/QR/grid/footer/columns/
       // start-layout) + hand-path suppression come from the one canonical builder,
@@ -488,6 +509,8 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
         callbacks
       );
     }
+
+    return true;
   }
 
   function dispose() {

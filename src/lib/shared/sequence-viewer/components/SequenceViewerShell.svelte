@@ -773,7 +773,9 @@
   {/if}
 
   <!-- Post handoff. Lives in the shell, never in a host, so the drawer, /q and
-       /sequence surfaces are identical by construction. -->
+       /sequence surfaces are identical by construction. `autoDeliver: false`
+       because the sheet delivers the render itself — without it the same take
+       also lands in Downloads and toasts behind the drawer. -->
   <PostShareSheet
     isOpen={share.postSheetOpen}
     sequence={ctx.effectiveSequence ?? null}
@@ -782,7 +784,7 @@
     isExportingVideo={ctx.isExporting}
     isRecordingScene={ctx.isRecording3D}
     exportProgress={ctx.exportProgress?.progress ?? null}
-    onRequestVideo={ctx.handleExport}
+    onRequestVideo={() => ctx.handleExport({ autoDeliver: false })}
     onClose={() => share.setPostSheetOpen(false)}
   />
 </div>

@@ -34,7 +34,7 @@ interface ViewerOrchestratorContextHandlers {
   handlePropTypeChange: (propType: PropType) => void;
   enterEditMode: (pane: "animation" | "image" | "video-upload") => void;
   exitEditMode: () => void;
-  handleExport: () => Promise<void>;
+  handleExport: OrchestratorContext["handleExport"];
   handleArtExport: OrchestratorContext["handleArtExport"];
   handleOpenInCompose: OrchestratorContext["handleOpenInCompose"];
   handleEdit: () => void;

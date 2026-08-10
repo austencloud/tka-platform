@@ -1,7 +1,10 @@
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
-import type { ExportCoordinatorState } from "../components/export-coordinator.svelte";
+import type {
+  ExportCoordinatorState,
+  ExportRequestOptions,
+} from "../components/export-coordinator.svelte";
 import type { PlaybackControllerState } from "../components/playback-controller.svelte";
 import type { MandalaViewerController } from "./mandala-viewer-controller.svelte";
 import type { ViewerInteractiveServicesState } from "./viewer-interactive-services-state.svelte";
@@ -95,8 +98,9 @@ export function createViewerEditModeState(inputs: ViewerEditModeInputs) {
     inputs.accessibilityHelper.announce("Export closed");
   }
 
-  async function handleExport(): Promise<void> {
-    await inputs.exportCoordinator.handleExport(
+  /** Resolves `false` when the coordinator refused the request — see its doc. */
+  async function handleExport(options?: ExportRequestOptions): Promise<boolean> {
+    return await inputs.exportCoordinator.handleExport(
       inputs.getEditingPane(),
       inputs.getEffectiveSequence(),
       inputs.interactive.playbackController,
@@ -105,7 +109,8 @@ export function createViewerEditModeState(inputs: ViewerEditModeInputs) {
       inputs.playback.isPlayingLocal,
       inputs.playback.bpmLocal,
       inputs.getIsHandPath(),
-      inputs.getResolvedCardAutoLayout()
+      inputs.getResolvedCardAutoLayout(),
+      options
     );
   }
 

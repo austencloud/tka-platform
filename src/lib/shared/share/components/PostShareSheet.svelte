@@ -80,8 +80,13 @@
     isRecordingScene?: boolean;
     /** 0–1 render progress, or null when idle. */
     exportProgress: number | null;
-    /** Asks the viewer to start a video export. Non-blocking. */
-    onRequestVideo: () => void;
+    /**
+     * Asks the viewer to start a video export. Non-blocking. Resolving `false`
+     * means the viewer refused the request outright — the export account gate,
+     * a canvas that has not mounted, a take already running — and the sheet
+     * stops waiting for a render that is never coming.
+     */
+    onRequestVideo: () => void | Promise<boolean>;
     /** Fires when the sheet dismisses itself (backdrop, escape, swipe). */
     onClose: () => void;
     /**
@@ -124,6 +129,8 @@
   let captionTouched = $state(false);
   let statusMessage = $state("");
   let busyDestination = $state<HandoffDestinationId | null>(null);
+  /** The viewer turned the render down. See {@link requestVideo}. */
+  let videoRefused = $state(false);
 
   let cardBlob = $state<Blob | null>(null);
   let cardPreviewUrl = $state<string | null>(null);
@@ -410,8 +417,23 @@
     // isRecordingScene counts as in flight: a 3D take reads as idle to both
     // other flags, so without it re-picking Video starts a second recording.
     if (next === "video" && !videoBlob && !isExportingVideo && !isRecordingScene) {
-      onRequestVideo();
+      requestVideo();
     }
+  }
+
+  /**
+   * The viewer refuses a render for reasons the sheet cannot see from its props
+   * — the take-it-home account gate, an animation canvas that has not mounted,
+   * an export already in flight. Until it reported that, the sheet sat on
+   * "Rendering video…" forever with no error and no way back.
+   */
+  function requestVideo(): void {
+    videoRefused = false;
+    const started = onRequestVideo();
+    if (!(started instanceof Promise)) return;
+    void started.then((ok) => {
+      videoRefused = ok === false;
+    });
   }
 
   function applyPreset(text: string): void {
@@ -744,6 +766,13 @@
         <!-- svelte-ignore a11y_media_has_caption -->
         <video class="preview" src={videoBlobUrl} autoplay loop muted playsinline
         ></video>
+      {:else if artifact === "video" && videoRefused}
+        <div class="stage-pending stage-refused" role="status">
+          <span>The render didn't start.</span>
+          <button class="retry" type="button" onclick={requestVideo}>
+            Try again
+          </button>
+        </div>
       {:else}
         <div class="stage-pending" role="status">
           <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
@@ -1104,6 +1133,30 @@
     gap: 0.625rem;
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
     font-size: 0.9375rem;
+  }
+
+  /* Stacked, because the retry is an action rather than a continuation of the
+     sentence, and the stage is taller than it is wide at every width. */
+  .stage-refused {
+    flex-direction: column;
+    color: var(--theme-text, rgba(255, 255, 255, 0.92));
+  }
+
+  .retry {
+    min-height: 2.75rem;
+    padding: 0 1.125rem;
+    border: 1px solid var(--theme-border, rgba(255, 255, 255, 0.16));
+    border-radius: 999px;
+    background: var(--theme-surface-raised, rgba(255, 255, 255, 0.08));
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--duration-fast, 120ms) ease;
+  }
+
+  .retry:hover {
+    background: var(--theme-surface-hover, rgba(255, 255, 255, 0.14));
   }
 
   /* Centered above the artwork, and otherwise left alone: SegmentedControl
@@ -1546,6 +1599,14 @@
       grid-area: stage;
       min-height: 0;
       align-self: start;
+    }
+
+    /* With no artwork the stage IS the frame, so it takes the column: a status
+       line top-aligned beside a full-height controls column reads as a fragment
+       floating in dead space. Artwork keeps `start` — a portrait card should
+       hang from the title, not centre in a well. */
+    .stage:not(.showing-media) {
+      align-self: stretch;
     }
     .artifact-picker {
       grid-area: picker;

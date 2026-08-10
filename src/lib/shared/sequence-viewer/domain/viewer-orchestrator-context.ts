@@ -5,6 +5,7 @@ import type {
   PlaybackMode,
 } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
+import type { ExportRequestOptions } from "$lib/shared/sequence-viewer/components/export-coordinator.svelte";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
@@ -122,7 +123,8 @@ export interface OrchestratorContext {
   toggleImmersive: (host: HTMLElement | null) => Promise<void> | void;
   exitFullscreen: () => void;
   handleFullscreenTap: () => void;
-  handleExport: () => Promise<void>;
+  /** Resolves `false` when the export was refused before any render started. */
+  handleExport: (options?: ExportRequestOptions) => Promise<boolean>;
   resolvedCardAutoLayout: ResolvedAutoLayout | null;
   setResolvedCardAutoLayout: (layout: ResolvedAutoLayout | null) => void;
   handleCanvasReady: (canvas: HTMLCanvasElement | null) => void;
