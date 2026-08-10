@@ -93,7 +93,7 @@ Dev-server absolute values are inflated by unbundled module requests. The
 - [ ] **P0** Clean production baseline, signed-out
 - [ ] **P1** Player chunk: 3.7 s activate→loaded
 - [ ] **P2** The continuous long-task loop
-- [ ] **P3** Cheap certain deletions (independent, any time)
+- [x] **P3** Cheap certain deletions — 2 of 3 done, 1 reclassified
 - [ ] **P4** Background adaptive-quality threshold (external package)
 - [ ] **P5** Defer Firebase auth on landing
 - [ ] **P6** Make the pre-live state look deliberate
@@ -190,18 +190,35 @@ front. Long-task and trace-attribution numbers stay valid under occlusion.
 Independent of everything else. Any session can take these; they need no
 baseline and carry no risk.
 
-- [ ] **Self-host Cormorant Garamond.** `GuideCover.svelte:107` opens two extra
-      origins to `fonts.googleapis.com` at 2.58 s, reached from the landing via
-      `LaunchpadTile.svelte:254` → `BookCoverArt.svelte:11` → `GuideCover`. It
-      also double-loads Fraunces, which is already self-hosted. Two DNS + TLS
-      handshakes for a decorative book cover.
-- [ ] **Compress `DiamondPictographDataframe.csv`.** 33 KB with no
-      `Content-Encoding` while every JSON sibling gets brotli. A `_headers`
-      rule.
-- [ ] **Delete the `arrow-split-manifest.json` fetch.** 404s in production,
-      3-byte stub locally, falls back to `{}` silently
-      (`arrow-svg-loader.ts:60-78`). Either ship the file or drop the loader
-      path. One wasted round trip and a permanent console error.
+- [x] **Self-host the guide cover fonts.** Done, `bcf7aa0ef2`. Verified on the
+      landing page: zero requests to googleapis/gstatic, face loads as
+      `Cormorant Garamond|italic|500`, cover renders unchanged. Vendored under
+      `static/fonts/cormorant/` with its OFL license, matching how Fraunces is
+      already handled — no new dependency, no lockfile churn in a shared
+      checkout. Note Fraunces was **already** self-hosted at the exact italic
+      700 face the cover uses, so half that request had always been redundant.
+- [x] **Compress the pictograph dataframes.** Done, `2ee23c602d`. **Much bigger
+      than scoped:** the app fetches *all four* dataframes and every one shipped
+      uncompressed — **449 KB of transfer that compresses to ~45 KB**, with
+      Skewed alone at 368 KB. The plan originally said "33 KB", which was one
+      file. Cause: Cloudflare only auto-compresses content types on its
+      allowlist; `text/csv` is not on it, `application/json` is. Serving them as
+      `text/plain` fixes it, and costs nothing — `csv-loader.ts` reads every
+      response with `.text()` and never inspects content type.
+- [~] **`arrow-split-manifest.json`** — reclassified, do NOT delete the loader.
+      It is the seam for the parked arrow-tip-z-promotion project, and the
+      manifest is populated by a manual splitter tool. The 404 is genuinely just
+      one wasted request.
+      **A hypothesis worth recording as dead:** it is listed in the SW precache
+      manifest (`generate-svg-precache-manifest.cjs:110`), which looked like it
+      could explain the `sw.js:244` pending flood in Austen's screenshots. It
+      cannot — `static/sw.js:78` states outright that a stray 404 must never
+      fail install, and `precacheSvgAssets` is written to tolerate it. **The
+      pending flood has a different, still-unidentified cause.** Worth folding
+      into P2.
+      Still unexplained: the file is tracked in git, not ignored, not touched by
+      `trim-deploy-assets.js`, and `dash.svg` in the same directory serves 200 —
+      yet this one file 404s. Low value, but genuinely odd.
 
 ---
 
