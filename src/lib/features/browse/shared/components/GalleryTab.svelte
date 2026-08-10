@@ -9,14 +9,7 @@
   import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import InviteCollaboratorsPanel from "$lib/shared/video-collaboration/components/InviteCollaboratorsPanel.svelte";
   import SortJumpSheet from "../../sequences/navigation/components/SortJumpSheet.svelte";
-  import VariationPickerDrawer from "../../sequences/display/components/VariationPickerDrawer.svelte";
   import { sequencePanelManager } from "$lib/shared/browse/state/sequence-panel-state.svelte";
-  import {
-    getVariationPickerState,
-    closeVariationPicker,
-  } from "../state/variation-picker-state.svelte";
-  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
-  import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {
@@ -66,16 +59,6 @@
   }
 
   // Variation picker
-  const pickerState = getVariationPickerState();
-
-  function handleVariationSelected(sequence: SequenceData) {
-    openSequenceViewer(sequence, {
-      returnPath: "/browse/gallery",
-      returnLabel: "Browse",
-      scrollY: browseScrollState.lastScrollY,
-      handPathMode: engine.viewMode.subject === "hands",
-    });
-  }
 
   // Derived: available sections for SortJumpSheet. Skipped while warming so the
   // instant-tap frame doesn't trigger the section compute before the skeleton paints.
@@ -144,14 +127,6 @@
     />
   </div>
 {/if}
-
-<!-- Variation Picker -->
-<VariationPickerDrawer
-  isOpen={pickerState.isOpen}
-  variations={pickerState.variations}
-  onSelect={handleVariationSelected}
-  onClose={closeVariationPicker}
-/>
 
 <style>
   .sequences-main {

@@ -23,13 +23,7 @@ the gallery's, and the source is pinned to my-library with no toggle.
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import SortJumpSheet from "../../sequences/navigation/components/SortJumpSheet.svelte";
-  import VariationPickerDrawer from "../../sequences/display/components/VariationPickerDrawer.svelte";
   import { sequencePanelManager } from "$lib/shared/browse/state/sequence-panel-state.svelte";
-  import {
-    getVariationPickerState,
-    openVariationPicker,
-    closeVariationPicker,
-  } from "../../shared/state/variation-picker-state.svelte";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
   import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
   import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
@@ -182,23 +176,21 @@ the gallery's, and the source is pinned to my-library with no toggle.
     );
   }
 
-  const pickerState = getVariationPickerState();
 
-  function openViewer(sequence: SequenceData) {
+  function openViewer(sequence: SequenceData, variations?: SequenceData[]) {
     openSequenceViewer(sequence, {
       returnPath: "/browse/library",
       returnLabel: "Library",
       scrollY: browseScrollState.lastScrollY,
       handPathMode: engine.viewMode.subject === "hands",
+      variations,
     });
   }
 
+  // A card click always opens the viewer, variations or not. The viewer's own
+  // strip handles switching between them.
   function handleSelect(sequence: SequenceData, variations?: SequenceData[]) {
-    if (variations && variations.length > 1) {
-      openVariationPicker(variations);
-    } else {
-      openViewer(sequence);
-    }
+    openViewer(sequence, variations);
   }
 
   const availableNavigationSections = $derived(
@@ -285,13 +277,6 @@ the gallery's, and the source is pinned to my-library with no toggle.
     />
   </Drawer>
 {/if}
-
-<VariationPickerDrawer
-  isOpen={pickerState.isOpen}
-  variations={pickerState.variations}
-  onSelect={openViewer}
-  onClose={closeVariationPicker}
-/>
 
 <ConfirmDialog
   bind:isOpen={deleteConfirmOpen}

@@ -23,12 +23,6 @@ header; "Edit rule" reopens the builder to change it.
 	import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
 	import SmartCollectionBuilderSheet from "./SmartCollectionBuilderSheet.svelte";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-	import VariationPickerDrawer from "../../sequences/display/components/VariationPickerDrawer.svelte";
-	import {
-		getVariationPickerState,
-		openVariationPicker,
-		closeVariationPicker,
-	} from "../../shared/state/variation-picker-state.svelte";
 	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
 	import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
 	import {
@@ -196,23 +190,21 @@ header; "Edit rule" reopens the builder to change it.
 	});
 
 	// ── Open a sequence in the viewer (same path as AllLibraryView) ─────────
-	const pickerState = getVariationPickerState();
 
-	function openViewer(sequence: SequenceData) {
+	function openViewer(sequence: SequenceData, variations?: SequenceData[]) {
 		openSequenceViewer(sequence, {
 			returnPath: "/browse/library",
 			returnLabel: collection?.name ?? "Library",
 			scrollY: browseScrollState.lastScrollY,
 			handPathMode: engine?.viewMode.subject === "hands",
+			variations,
 		});
 	}
 
+	// A card click always opens the viewer, variations or not. The viewer's own
+	// strip handles switching between them.
 	function handleSelect(sequence: SequenceData, variations?: SequenceData[]) {
-		if (variations && variations.length > 1) {
-			openVariationPicker(variations);
-		} else {
-			openViewer(sequence);
-		}
+		openViewer(sequence, variations);
 	}
 
 	// ── Options menu (rename / edit rule / delete) ──────────────────────────
@@ -325,13 +317,6 @@ header; "Edit rule" reopens the builder to change it.
 </SmartCollectionDetailSurface>
 
 <ContextMenu {menuState} items={menuItems} onClose={() => (menuState = { open: false })} />
-
-<VariationPickerDrawer
-	isOpen={pickerState.isOpen}
-	variations={pickerState.variations}
-	onSelect={openViewer}
-	onClose={closeVariationPicker}
-/>
 
 <ConfirmDialog
 	bind:isOpen={deleteConfirmOpen}

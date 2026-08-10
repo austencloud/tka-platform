@@ -13,7 +13,6 @@ import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
 import { handleModuleChange } from "../../../../shared/navigation-coordinator/navigation-coordinator.svelte";
 import { openSequenceViewer } from "../../../../shared/sequence-viewer/services/sequence-viewer-navigator";
-import { openVariationPicker } from "../state/variation-picker-state.svelte";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
 
@@ -91,16 +90,17 @@ export class BrowseEventHandler {
 
   handleViewDetail(sequence: SequenceData, variations?: SequenceData[]): void {
     const isHandsMode = this.params?.engine.viewMode.subject === "hands";
-    if (variations && variations.length > 1) {
-      openVariationPicker(variations);
-    } else {
-      openSequenceViewer(sequence, {
-        returnPath: "/browse/gallery",
-        returnLabel: "Browse",
-        scrollY: browseScrollState.lastScrollY,
-        handPathMode: isHandsMode,
-      });
-    }
+    // One card, one behaviour: clicking always opens the viewer. Multi-variation
+    // cards pass their siblings through, and the viewer's own variation strip
+    // takes over the picking - the overlay selects the variation the card was
+    // showing by id, so the click lands where the pager left off.
+    openSequenceViewer(sequence, {
+      returnPath: "/browse/gallery",
+      returnLabel: "Browse",
+      scrollY: browseScrollState.lastScrollY,
+      handPathMode: isHandsMode,
+      variations,
+    });
   }
 
   handleCloseDetailPanel(): void {
