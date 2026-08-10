@@ -32,6 +32,10 @@ export interface ColliderConfig {
 	size?: { x: number; y: number; z: number }; // For box
 	radius?: number; // For sphere, capsule, cylinder
 	halfHeight?: number; // For capsule, cylinder
+	/** For trimesh: flat xyz triples. Interpreted in the body's local frame. */
+	vertices?: Float32Array;
+	/** For trimesh: triangle indices into `vertices`. Length is a multiple of 3. */
+	indices?: Uint32Array;
 	friction?: number;
 	restitution?: number;
 	density?: number;

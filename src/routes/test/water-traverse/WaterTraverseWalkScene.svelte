@@ -83,7 +83,7 @@
    * Position survives a reload; "Return to the snowfield" goes back on purpose.
    */
   const RESUME_KEY = "water-traverse-resume";
-  const { layout, colliders, spawn } = buildWaterTraverseSetup();
+  const { layout, colliders, trimeshes, spawn } = buildWaterTraverseSetup();
 
   // ── Surfaces ──────────────────────────────────────────────────────────────
 
@@ -195,7 +195,18 @@
     return (Math.sin(hash * 0.618) + 1) / 2;
   }
 
-  function ridgeFamily(id: string): "snow" | "sea" | "spring" {
+  /**
+   * Which palette a ridge wears.
+   *
+   * Depth decides it before the id does. The descent's flanking ridges run the
+   * whole ramp from the snowfield down to the sea floor, so keying purely off
+   * `ridge-descent` painted the submerged half snow-white: a row of bright
+   * icebergs standing on the seabed, lit from a sun that is 18 m of water away.
+   * A ridge whose base sits below the waterline is underwater rock, whatever
+   * leg of the walk it belongs to.
+   */
+  function ridgeFamily(id: string, baseY: number): "snow" | "sea" | "spring" {
+    if (baseY < WATERLINE_Y) return "sea";
     if (id.startsWith("ridge-snow") || id.startsWith("ridge-descent"))
       return "snow";
     if (id.startsWith("ridge-sea") || id.startsWith("ridge-ascent"))
@@ -206,8 +217,11 @@
   const ridges: RidgeMesh[] = colliders
     .filter((collider) => collider.id.startsWith("ridge-"))
     .map((collider) => {
-      const family = ridgeFamily(collider.id);
       const height = collider.size[1];
+      const family = ridgeFamily(
+        collider.id,
+        collider.position[1] - height / 2,
+      );
       const footprint = Math.max(collider.size[0], collider.size[2]);
       const lean = idNoise(collider.id, 7);
       // The peak carries most of the height; the skirt is the mass it stands
@@ -240,16 +254,13 @@
    * Surfaces the sculpted floor GLB draws, so the graybox must not.
    *
    * `sea-floor`, `descent` and the ascent ramps are still COLLIDERS — they are
-   * the flat safety plane the seabed tiles are stacked on — they are simply no
+   * the flat safety plane the seabed trimesh sits on — they are simply no
    * longer the thing you see. Drawing both would put a flat teal plane through
    * the middle of every dune.
    */
   function drawnByTrenchFloor(id: string): boolean {
     return (
-      id === "sea-floor" ||
-      id === "descent" ||
-      id.startsWith("ascent") ||
-      id.startsWith("seabed-tile-")
+      id === "sea-floor" || id === "descent" || id.startsWith("ascent")
     );
   }
 
@@ -666,6 +677,17 @@
     physicsState = createPhysicsWorldState();
     await initPhysicsWorld(physicsState, { x: 0, y: -9.81, z: 0 });
     if (isDisposed || !physicsState) return;
+
+    // The sculpted seabed, as one static triangle soup. It goes in before the
+    // boxes so that if anything ever spawns during setup it lands on the real
+    // ground rather than the flat safety plane underneath it.
+    for (const mesh of trimeshes) {
+      createRigidBody(
+        physicsState,
+        { type: "static", position: { x: 0, y: 0, z: 0 } },
+        { type: "trimesh", vertices: mesh.vertices, indices: mesh.indices }
+      );
+    }
 
     for (const collider of colliders) {
       createRigidBody(

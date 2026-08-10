@@ -28,7 +28,7 @@
  * gets: no signage, no objective marker, no choice of route. Follow the water.
  */
 
-import { buildSeabedTiles } from "./water-traverse-seabed";
+import { buildSeabedMesh, type SeabedMesh } from "./water-traverse-seabed";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -88,6 +88,14 @@ export interface PerformerAnchor {
 export interface WaterTraverseLayout {
   bounds: WorldRect;
   floorRects: FloorRect[];
+  /**
+   * The sculpted seabed, as one static triangle soup.
+   *
+   * Kept out of `floorRects` on purpose: a rect is an axis-aligned flat or
+   * ramped slab, and the whole point of the seabed is that it is neither. The
+   * flat rects underneath it remain as the safety plane.
+   */
+  seabedMesh: SeabedMesh;
   wallRects: WallRect[];
   waterPlanes: WaterPlane[];
   performers: PerformerAnchor[];
@@ -520,20 +528,11 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
   const ascent = buildAscent();
   const floorRects: FloorRect[] = buildBaseFloorRects();
 
-  // The sculpted seabed, tiled on top of the flat trench floor. The route down
-  // the middle has zero relief by construction, so it contributes no tiles and
-  // stays perfectly smooth; everything here is the rough ground either side of
-  // it. See water-traverse-seabed.ts.
-  for (const tile of buildSeabedTiles(baseFloorYAt)) {
-    const half = tile.size / 2;
-    floorRects.push(
-      flat(
-        tile.id,
-        rect(tile.x - half, tile.z - half, tile.x + half, tile.z + half),
-        tile.topY
-      )
-    );
-  }
+  // The sculpted seabed sits on top of the flat trench floor as one trimesh.
+  // The route down the middle has zero relief by construction, so it is a
+  // perfectly smooth strip of that mesh; the dunes either side carry all the
+  // roughness. See water-traverse-seabed.ts.
+  const seabedMesh = buildSeabedMesh(baseFloorYAt);
 
   const wallRects: WallRect[] = [];
   for (const [id, minZ, maxZ, baseY, topY, halfWidth, chamber] of RIDGE_LEGS) {
@@ -712,6 +711,7 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
       SPRING_END_Z + HALL_THICKNESS
     ),
     floorRects,
+    seabedMesh,
     wallRects,
     waterPlanes,
     performers,

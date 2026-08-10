@@ -230,6 +230,42 @@ def yaw_for(rng, policy, x, layout):
     return rng.uniform(0, 360)
 
 
+def ground_samples(terrain, x, z, radius, rings=2, spokes=8):
+    """Ground elevations under a footprint: centre plus two sampled rings."""
+    heights = [terrain.height(z) + seabed.relief_at(x, z)]
+    for ring in range(1, rings + 1):
+        r = radius * ring / rings
+        for spoke in range(spokes):
+            angle = math.tau * spoke / spokes
+            sx = x + r * math.cos(angle)
+            sz = z + r * math.sin(angle)
+            heights.append(terrain.height(sz) + seabed.relief_at(sx, sz))
+    return heights
+
+
+def footprint_relief_span(terrain, x, z, radius):
+    """How much the ground rises and falls across a footprint, in metres."""
+    heights = ground_samples(terrain, x, z, radius)
+    return max(heights) - min(heights)
+
+
+def seating_tolerance(size):
+    """How much ground variation an asset of this size can absorb.
+
+    Seating at the footprint minimum means the floor can only ever rise INTO an
+    asset, never drop away from it, so this bounds how deeply the ground can cut
+    up its side before the specimen has to go somewhere flatter.
+
+    It scales with size rather than being a flat allowance, because the defect
+    is proportional: a metre of dune against a 14 m pinnacle is the bed it
+    stands in, and the same metre against a 40 cm anemone deletes it. A first
+    pass used a near-constant tolerance and evicted every large landmark from
+    the trench — the citadel, both big rocks and the coral arch all went unused,
+    which cost the composition far more than a bedded-in boulder ever could.
+    """
+    return min(3.0, 0.30 + 0.22 * size)
+
+
 def emit(placements, asset_id, facts, x, z, size, yaw, terrain, tilt_jitter, rng, note):
     """One placement row, sat on the floor and tilted off vertical.
 
@@ -238,8 +274,27 @@ def emit(placements, asset_id, facts, x, z, size, yaw, terrain, tilt_jitter, rng
     standing on. Without the second term every specimen off the cleared route
     sits buried to its waist in its own dune — which is what happens when set
     dressing is placed before the ground exists.
+
+    Seating uses the MINIMUM ground under the whole footprint, not the height at
+    the centre point. A specimen is a rigid object several metres wide standing
+    on undulating dunes: seat it at its centre and the downhill half hangs in
+    open water while the uphill half is swallowed. Measured on the first
+    sculpted build, 29% of the trench had reef geometry more than 0.6 m under
+    the floor, the worst of it over 4 m. Taking the minimum means the ground can
+    only ever rise into a specimen — which reads as bedding in — and never fall
+    away from under it, which reads as broken.
+
+    `baseOffset` deliberately does NOT appear here. It records where a source
+    GLB's geometry sits relative to its own origin, and build-traverse-reef.py
+    already spends that fact at import: every source is normalised to unit
+    extent and re-origined to its base centre, so a placement's y IS where the
+    asset's lowest point lands. Applying the offset a second time sank every
+    specimen by |baseOffset| x size — measured at a 2.6 m table coral, 0.60 m
+    of it under the sand, which is what "tons of stuff clips through the floor"
+    was.
     """
-    y = terrain.height(z) + seabed.relief_at(x, z) + facts["baseOffset"] * size
+    radius = facts["footprintRadius"] * size
+    y = min(ground_samples(terrain, x, z, radius))
     placements.append(
         {
             "asset": asset_id,
@@ -424,6 +479,12 @@ def place_band(layout, act, band_name, facts_index, rules, terrain, occupancy,
             # of rock over the walk.
             if abs(x) - radius < channel_clear:
                 continue
+            # Too much rise and fall under the footprint for this asset to sit
+            # convincingly. Rejecting here rather than fixing it at seating time
+            # is what keeps big specimens off dune crests, where no seating
+            # height exists that does not either bury or float them.
+            if footprint_relief_span(terrain, x, z, radius) > seating_tolerance(size):
+                continue
             if not occupancy.clear_of(x, z, radius, facts["silhouette"],
                                       rule["companionSpacing"]):
                 continue
@@ -453,6 +514,9 @@ def place_band(layout, act, band_name, facts_index, rules, terrain, occupancy,
                         continue
                     if not occupancy.clear_of(sx, sz, sradius, facts["silhouette"],
                                               rule["companionSpacing"] * 0.5):
+                        continue
+                    if (footprint_relief_span(terrain, sx, sz, sradius)
+                            > seating_tolerance(ssize)):
                         continue
                     emit(placements, asset_id, facts, sx, sz, ssize,
                          yaw_for(rng, rule["yawPolicy"], sx, layout), terrain,

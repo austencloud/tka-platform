@@ -9,13 +9,20 @@
  * Relief is stored as metres ABOVE the analytic base floor and is never
  * negative. That is load-bearing: the flat `sea-floor` / `descent` / `ascent`
  * colliders stay exactly where they are as a safety plane, and the sculpted
- * surface is tiled on top of them. Nothing can fall through a gap in the grid.
+ * surface sits on top of them. Nothing can fall through a gap in the field.
  *
- * The tiles are flat cuboids rather than a heightfield collider because the
- * walk already runs on a cuboid world and a 3 m cell keeps every step inside
- * the controller's autostep. The route itself has zero relief by construction,
- * so the surface the visitor actually walks is smooth — the stepping only
- * exists out on the dunes, where the point is that the ground is rough.
+ * ── Why a trimesh and not tiles ─────────────────────────────────────────────
+ *
+ * The first pass tiled the colliders as flat 3 m cuboids, reasoning that a step
+ * smaller than the character controller's autostep would go unnoticed. That is
+ * backwards: autostep means the walker CLIMBS the step instead of being blocked
+ * by it, so a 3 m grid under smooth-drawn dunes reads as a staircase — which is
+ * exactly how it felt.
+ *
+ * The grid is now the mesh's own 0.9 m vertex lattice, triangulated into a
+ * single static trimesh. The collided surface IS the drawn surface: same
+ * vertices, same values, generated in the same pass. There is no resolution
+ * left at which they can disagree.
  */
 
 import grid from "./seabed-heights.json";
@@ -36,21 +43,19 @@ const field = grid as SeabedGrid;
 export const PATH_HALF_W = field.pathHalfWidth;
 
 export const SEABED_MIN_Z = field.minZ;
-export const SEABED_MAX_Z = field.minZ + field.rows * field.step;
+export const SEABED_MAX_Z = field.minZ + (field.rows - 1) * field.step;
 
 /**
- * Relief above the base floor at a world point, bilinearly interpolated.
+ * Relief above the base floor at a world point.
  *
- * Bilinear rather than nearest because this is what the REEF samples: a
- * specimen snapped to its cell's height sits visibly proud on one side of a
- * dune and buried on the other. The colliders deliberately do not interpolate
- * — a tile is one flat cuboid — so a specimen can sit up to a few centimetres
- * off the surface the visitor stands on, which at 18 m depth is invisible and
- * is the right trade against 322 sloped colliders.
+ * Bilinear across the vertex lattice, which is the same interpolation the
+ * trimesh's triangles perform, so a specimen placed with this function and the
+ * ground the visitor stands on agree to within the split of a quad's diagonal —
+ * sub-millimetre at this cell size.
  */
 export function seabedReliefAt(x: number, z: number): number {
-  const fx = (x - field.minX) / field.step - 0.5;
-  const fz = (z - field.minZ) / field.step - 0.5;
+  const fx = (x - field.minX) / field.step;
+  const fz = (z - field.minZ) / field.step;
 
   const x0 = Math.floor(fx);
   const z0 = Math.floor(fz);
@@ -76,46 +81,57 @@ export function seabedReliefAt(x: number, z: number): number {
   );
 }
 
-export interface SeabedTile {
-  id: string;
-  /** Cell centre. */
-  x: number;
-  z: number;
-  /** Top surface of the tile, in world Y. */
-  topY: number;
-  size: number;
+/** A static triangle soup, in world coordinates, ready for Rapier. */
+export interface SeabedMesh {
+  vertices: Float32Array;
+  indices: Uint32Array;
+  triangleCount: number;
 }
 
 /**
- * The tiles worth building colliders for.
+ * Triangulate the field into the collider the visitor walks on.
  *
- * Cells with no relief are skipped entirely: there the flat base floor already
- * IS the surface, and a tile of thickness zero on top of it is 200 wasted
- * colliders. That skip is also why the route costs nothing — it is the part of
- * the field defined to be flat.
+ * World coordinates rather than a local grid plus a transform: the base floor
+ * ramps with Z (the descent drops 18 m), so a vertex's height depends on where
+ * it is along the walk and cannot be factored out into a collider translation.
+ *
+ * Winding is irrelevant here — Rapier's trimesh is solid from both sides — so
+ * this deliberately does NOT mirror the bake's `(a, d, c, b)` order, which
+ * exists only to make the renderer's back-face culling point the right way.
  */
-export function buildSeabedTiles(baseFloorYAt: (z: number) => number): SeabedTile[] {
-  const tiles: SeabedTile[] = [];
-  const MIN_RELIEF = 0.04;
+export function buildSeabedMesh(baseFloorYAt: (z: number) => number): SeabedMesh {
+  const { cols, rows, step, minX, minZ } = field;
 
-  for (let row = 0; row < field.rows; row += 1) {
-    const z = field.minZ + (row + 0.5) * field.step;
-    // No leg filter is needed: the field spans exactly the sea leg and tapers
-    // to zero relief at both seams, so the snowfield and the spring plain keep
-    // their own floors untouched.
-    for (let col = 0; col < field.cols; col += 1) {
-      const relief = field.relief[row][col];
-      if (relief < MIN_RELIEF) continue;
-      const x = field.minX + (col + 0.5) * field.step;
-      tiles.push({
-        id: `seabed-tile-${col}-${row}`,
-        x,
-        z,
-        topY: baseFloorYAt(z) + relief,
-        size: field.step,
-      });
+  const vertices = new Float32Array(cols * rows * 3);
+  for (let row = 0; row < rows; row += 1) {
+    const z = minZ + row * step;
+    const baseY = baseFloorYAt(z);
+    for (let col = 0; col < cols; col += 1) {
+      const i = (row * cols + col) * 3;
+      vertices[i] = minX + col * step;
+      vertices[i + 1] = baseY + field.relief[row][col];
+      vertices[i + 2] = z;
     }
   }
 
-  return tiles;
+  const quadCount = (cols - 1) * (rows - 1);
+  const indices = new Uint32Array(quadCount * 6);
+  let out = 0;
+  for (let row = 0; row < rows - 1; row += 1) {
+    for (let col = 0; col < cols - 1; col += 1) {
+      const a = row * cols + col;
+      const b = a + 1;
+      const c = a + cols + 1;
+      const d = a + cols;
+      indices[out] = a;
+      indices[out + 1] = b;
+      indices[out + 2] = c;
+      indices[out + 3] = a;
+      indices[out + 4] = c;
+      indices[out + 5] = d;
+      out += 6;
+    }
+  }
+
+  return { vertices, indices, triangleCount: quadCount * 2 };
 }

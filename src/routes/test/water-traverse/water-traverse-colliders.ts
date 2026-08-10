@@ -25,6 +25,20 @@ export interface TraverseCollider {
   rotation?: { x: number; y: number; z: number; w: number };
 }
 
+/**
+ * The sculpted seabed. Separate from TraverseCollider because it is a triangle
+ * soup, not a box: it has no centre, no extent and no rotation to speak of, and
+ * pretending otherwise is what produced a staircase the first time round.
+ *
+ * Its vertices are already in world coordinates, so the body it hangs off sits
+ * at the origin.
+ */
+export interface TraverseTrimeshCollider {
+  id: string;
+  vertices: Float32Array;
+  indices: Uint32Array;
+}
+
 /** Slab thickness for floors. Deep enough that nothing tunnels through it. */
 const FLOOR_THICKNESS = 1.2;
 
@@ -99,6 +113,7 @@ function wallCollider(wall: WallRect): TraverseCollider {
 export interface WaterTraverseSetup {
   layout: WaterTraverseLayout;
   colliders: TraverseCollider[];
+  trimeshes: TraverseTrimeshCollider[];
   spawn: { x: number; y: number; z: number; yaw: number };
 }
 
@@ -110,6 +125,13 @@ export function buildWaterTraverseSetup(): WaterTraverseSetup {
     colliders: [
       ...layout.floorRects.map(floorCollider),
       ...layout.wallRects.map(wallCollider),
+    ],
+    trimeshes: [
+      {
+        id: "seabed",
+        vertices: layout.seabedMesh.vertices,
+        indices: layout.seabedMesh.indices,
+      },
     ],
     spawn: layout.spawn,
   };

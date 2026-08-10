@@ -142,6 +142,21 @@ export function createRigidBody(
 				colliderConfig.radius ?? 0.5,
 			);
 			break;
+		case "trimesh": {
+			// "trimesh" was already in ColliderConfig's union but had no case here,
+			// so it fell through to the 0.5 m ball below — a silently wrong shape
+			// rather than an error. Anything asking for a triangle soup has to
+			// supply one.
+			const vertices = colliderConfig.vertices;
+			const indices = colliderConfig.indices;
+			if (!vertices || !indices) {
+				throw new Error(
+					"trimesh collider requires both `vertices` and `indices`",
+				);
+			}
+			colliderDesc = RAPIER.ColliderDesc.trimesh(vertices, indices);
+			break;
+		}
 		default:
 			colliderDesc = RAPIER.ColliderDesc.ball(0.5);
 	}

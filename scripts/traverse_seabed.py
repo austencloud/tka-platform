@@ -9,11 +9,15 @@ This module is the floor's single owner. It is imported by:
 
   build-traverse-seabed.py   bakes the visual mesh (Blender -> GLB)
   generate-traverse-reef.py  samples it so specimens sit ON the ground
-  water-traverse-seabed-heights.json  the coarse grid the runtime walks
+  seabed-heights.json        the vertex grid the runtime collides against
 
 A fourth consumer deriving its own idea of where the ground is would be the
 whole bug again, so there isn't one. The JSON is generated here, never hand
 edited.
+
+All three run at the SAME resolution and on the same vertex lattice, so the
+drawn surface and the collided surface are one geometry rather than two
+approximations of a shared function.
 
 ── The shape ───────────────────────────────────────────────────────────────
 
@@ -74,13 +78,15 @@ VERGE_HALF_W = 8.4
 #: short enough that the ridge walls behind are never hidden.
 MAX_RELIEF = 2.6
 
-#: Mesh resolution for the baked visual. 0.9 m holds the dune crests without
-#: turning the GLB into a million triangles.
+#: The ONE resolution. 0.9 m holds the dune crests without turning the GLB into
+#: a million triangles, and the runtime collider is built from the same grid, so
+#: the surface the visitor stands on is the surface they are looking at.
+#:
+#: The first pass tiled the colliders as flat 3 m cuboids on the theory that a
+#: step under the controller's autostep would go unnoticed. It did not: autostep
+#: means you CLIMB the step rather than trip on it, and climbing a 3 m grid over
+#: ground drawn as smooth dunes reads exactly like walking on stairs.
 MESH_STEP = 0.9
-#: Collider resolution. Coarser on purpose: these are stepped cuboids, and a
-#: 3 m cell keeps the step under the controller's autostep everywhere the
-#: gradient is walkable.
-TILE_STEP = 3.0
 
 
 def base_floor_y(z: float) -> float:
@@ -136,10 +142,17 @@ def _noise(x: float, z: float) -> float:
         + 0.72 * math.sin(x * 0.147 - z * 0.109 + 1.7)
         + 0.48 * math.sin(x * 0.052 + z * 0.211 + 4.1)
     ) / 2.2
+    # Rubble rides on top of the dunes at metre scale. It was originally more
+    # than twice this amplitude, which made the flanks bumpy at the scale of a
+    # specimen's base: out at x = 36 a coral with a 1 m footprint sat on half a
+    # metre of rise and fall, so it could only be buried or floating, never
+    # seated. Dunes are what the eye reads at distance; rubble at this amplitude
+    # keeps the surface from looking poured without breaking anything standing
+    # on it.
     rubble = (
-        0.30 * math.sin(x * 0.61 + z * 0.44 + 2.3)
-        + 0.22 * math.sin(x * 0.93 - z * 0.77 + 5.2)
-        + 0.14 * math.sin(x * 1.71 + z * 1.33 + 0.9)
+        0.16 * math.sin(x * 0.61 + z * 0.44 + 2.3)
+        + 0.10 * math.sin(x * 0.93 - z * 0.77 + 5.2)
+        + 0.05 * math.sin(x * 1.71 + z * 1.33 + 0.9)
     )
     return ridges + rubble
 
@@ -176,45 +189,44 @@ def surface_y(x: float, z: float) -> float:
     return base_floor_y(z) + relief_at(x, z)
 
 
-# ── The collider grid ───────────────────────────────────────────────────────
+# ── The vertex grid ─────────────────────────────────────────────────────────
+
+
+def grid_dimensions() -> tuple:
+    """Vertex counts across the field. Shared with the Blender bake."""
+    cols = int(round((FIELD_HALF_W * 2) / MESH_STEP)) + 1
+    rows = int(round((FIELD_MAX_Z - FIELD_MIN_Z) / MESH_STEP)) + 1
+    return cols, rows
 
 
 def build_height_grid() -> dict:
-    """Coarse grid the runtime tiles its floor colliders from.
+    """The grid the runtime builds its floor collider from.
 
-    Cell height is the MAXIMUM of the cell's corners and centre, not the mean:
-    a tile that sits at the average of a crest and a trough leaves the crest
-    poking through the floor the visitor is standing on.
+    POINT samples on the vertex lattice, not per-cell aggregates. The runtime
+    triangulates these into one static trimesh, so every value here is a vertex
+    the visitor can literally stand on and is the same value the bake wrote into
+    the GLB. There is no aggregation step left in which the two could disagree.
     """
-    cols = int(round((FIELD_HALF_W * 2) / TILE_STEP))
-    rows = int(round((FIELD_MAX_Z - FIELD_MIN_Z) / TILE_STEP))
+    cols, rows = grid_dimensions()
     heights = []
 
     for row in range(rows):
-        z0 = FIELD_MIN_Z + row * TILE_STEP
-        z1 = z0 + TILE_STEP
+        z = FIELD_MIN_Z + row * MESH_STEP
         line = []
         for col in range(cols):
-            x0 = -FIELD_HALF_W + col * TILE_STEP
-            x1 = x0 + TILE_STEP
-            samples = [
-                relief_at(x0, z0),
-                relief_at(x1, z0),
-                relief_at(x0, z1),
-                relief_at(x1, z1),
-                relief_at((x0 + x1) / 2, (z0 + z1) / 2),
-            ]
-            line.append(round(max(samples), 3))
+            x = -FIELD_HALF_W + col * MESH_STEP
+            line.append(round(relief_at(x, z), 3))
         heights.append(line)
 
     return {
         "note": (
             "Generated by scripts/traverse_seabed.py. Relief in metres ABOVE "
-            "the analytic base floor, never below it. Do not hand edit."
+            "the analytic base floor, never below it. Point samples on the "
+            "vertex lattice, identical to the baked mesh. Do not hand edit."
         ),
         "minX": -FIELD_HALF_W,
         "minZ": FIELD_MIN_Z,
-        "step": TILE_STEP,
+        "step": MESH_STEP,
         "cols": cols,
         "rows": rows,
         "pathHalfWidth": PATH_HALF_W,
@@ -248,4 +260,9 @@ if __name__ == "__main__":
     grid = write_height_grid(out)
     peak = max(max(line) for line in grid["relief"])
     print(f"wrote {out}")
-    print(f"  {grid['cols']} x {grid['rows']} cells, peak relief {peak:.2f} m")
+    verts = grid["cols"] * grid["rows"]
+    tris = (grid["cols"] - 1) * (grid["rows"] - 1) * 2
+    print(
+        f"  {grid['cols']} x {grid['rows']} vertices "
+        f"({verts} verts, {tris} tris), peak relief {peak:.2f} m"
+    )
