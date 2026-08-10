@@ -48,9 +48,9 @@ export function guestLoopGate(
       locked: true,
       kind: "category",
       // Pulled from the centralized nudge copy (auth-nudge-trigger.ts) rather
-      // than a local duplicate, so the gloss on "Rotated LOOPs" lives in one
-      // place. This is the ONLY reason string wired to trigger="loop-locked-guest",
-      // so the value here IS what the guest sees, not a fallback.
+      // than a local duplicate. This is the ONLY reason string wired to
+      // trigger="loop-locked-guest", so the value here IS what the guest sees,
+      // not a fallback.
       reason: AUTH_NUDGE_TEXTS["loop-locked-guest"],
     };
   }

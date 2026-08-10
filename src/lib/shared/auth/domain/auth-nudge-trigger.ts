@@ -43,13 +43,13 @@ export const AUTH_NUDGE_TEXTS: Record<AuthNudgeTrigger, string> = {
     "Your saved sequences live here. Log in or create a free account to see them.",
   "module:settings": "Create a free account to customize your settings.",
   "edit-community": "Create a free account to edit and remix sequences.",
-  // Gloss inline rather than gating the nudge behind a LOOP explanation - a
-  // guest hits this mid-funnel, not after reading the guide. Degree-free on
-  // purpose: rotated LOOPs span halved (180°) and quartered (90°) rotation
-  // (MCP get_domain_topic("rotated LOOP")), so the gloss names the mechanism,
-  // not one angle.
+  // Lead with the ask, never with a definition. A guest hits this after
+  // tapping Mirrored/Inverted/etc., so opening with "Rotated LOOPs are
+  // sequences that..." reads as a non sequitur (Austen, 2026-08-10). What
+  // rotated means is the guide's job; this nudge only names the unlock and
+  // what stays free meanwhile.
   "loop-locked-guest":
-    "Rotated LOOPs, sequences that return to their start by repeating the pattern rotated around the grid, are free. Create a free account for every LOOP type.",
+    "Create a free account to use every LOOP type. Rotated LOOPs stay free without one.",
   "community-setups":
     "Create a free account to use community setups and build sequences up to 64 steps.",
   "saved-setups": "Create a free account to keep setups across sessions.",

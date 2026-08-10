@@ -82,7 +82,10 @@ Card-based architecture with integrated Generate button:
     () => configState.config,
     () => spellModeState,
     (type, metadata) =>
-      context?.CreateModuleState.pushUndoSnapshot(type, metadata)
+      context?.CreateModuleState.pushUndoSnapshot(type, metadata),
+    // Generate-time guest LOOP lock (e.g. a locked loopType persisted from a
+    // signed-in session) opens the same sign-up modal as the selector gate.
+    (reason) => (loopSignupReason = reason)
   );
   const deviceState = createDeviceState();
   const startEndState = createStartEndOptionsState(

@@ -60,7 +60,8 @@ export function createGenerationActionsState(
   getIsSequential?: () => boolean,
   getConfig?: () => UIGenerationConfig | undefined,
   getSpellState?: () => SpellModeState | undefined,
-  pushUndoSnapshot?: (type: UndoOperationType, metadata?: UndoMetadata) => void
+  pushUndoSnapshot?: (type: UndoOperationType, metadata?: UndoMetadata) => void,
+  onGuestLoopLocked?: (reason: string) => void
 ) {
   let isGenerating = $state(false);
   let lastGeneratedSequence = $state<SequenceData | null>(null);
@@ -106,9 +107,11 @@ export function createGenerationActionsState(
       }
 
       // Guest LOOP safety net: the selector gates most configs up front, but a
-      // guest can still push a rotated LOOP past their step cap by switching
-      // Period to Quartered afterward. Catch it here with a sign-up toast
-      // instead of the raw "seed too short / not divisible" engine error.
+      // locked config can still reach Generate — a signed-in session's loopType
+      // persisted in localStorage outlives sign-out, and a guest can push a
+      // rotated LOOP past their step cap by switching Period to Quartered.
+      // Raise the same AuthNudge modal the selector uses (Create account /
+      // Log in / Not now) instead of a button-less toast or a raw engine error.
       if (options.loopType && options.mode === GenerationMode.CIRCULAR) {
         const guestTier = resolveAccessTier(
           authState.isAuthenticated,
@@ -122,8 +125,11 @@ export function createGenerationActionsState(
             getMaxSteps("guest")
           );
           if (lock.locked) {
-            generationError = lock.reason;
-            toast.info(lock.reason, 6000);
+            if (onGuestLoopLocked) {
+              onGuestLoopLocked(lock.reason);
+            } else {
+              toast.info(lock.reason, 6000);
+            }
             isGenerating = false;
             return;
           }

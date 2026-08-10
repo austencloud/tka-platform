@@ -81,19 +81,19 @@ describe("AUTH_NUDGE_TEXTS — one phrasing for the account ask", () => {
     expect(AUTH_NUDGE_TEXTS.save).toContain(`${GUEST_SAVE_CAP}`);
   });
 
-  it("the loop-locked-guest nudge glosses 'Rotated LOOPs' instead of dropping bare jargon", () => {
+  it("the loop-locked-guest nudge leads with the ask, not a rotated-LOOP lesson", () => {
     const text = AUTH_NUDGE_TEXTS["loop-locked-guest"];
-    expect(text).toContain("Rotated LOOPs");
-    // The gloss: a plain-language clause explaining what "rotated" means here,
-    // grounded in the domain framing (returns to start, pattern rotated per
-    // repeat). Deliberately degree-free: rotated LOOPs include both halved
-    // (180°) and quartered (90°) rotation, so naming one degree would be wrong.
-    expect(text).toContain("return");
-    expect(text).toContain("rotated");
+    // 2026-08-10 decision: a guest hits this after tapping a locked type
+    // (Mirrored, Inverted, ...), so opening with a definition of rotated
+    // LOOPs reads as a non sequitur. The nudge opens with the account ask;
+    // what "rotated" means belongs to the guide, not this modal.
+    expect(text.startsWith("Create a free account")).toBe(true);
+    expect(text).not.toContain("sequences that");
+    // Rotated LOOPs may appear only as the what-stays-free note, degree-free.
     expect(text).not.toContain("180°");
+    expect(text).not.toContain("90°");
     // Domain rule: "turn" is reserved for prop/body turns, never a LOOP's
-    // rotation slice (tka-domain.md). Word-boundary regex so "return"/
-    // "returns" (legitimately part of the gloss) don't false-positive.
+    // rotation slice (tka-domain.md).
     expect(text.toLowerCase()).not.toMatch(/\bturns?\b/);
   });
 });
