@@ -406,12 +406,16 @@
       return;
     }
 
-    const directionStep = direction === "clockwise" ? 1 : -1;
+    // Rotate by 90° (two 45° steps), never 45°: a single step moves the prop
+    // between the cardinal and intercardinal families, silently skewing the
+    // grid mode. Locations stay gated to the current mode, same as the
+    // placement grid's point set.
+    const directionStep = direction === "clockwise" ? 2 : -2;
     const targetLocation = rotateLocation(
       currentLocation,
       directionStep
     ) as GridLocation;
-    await rotateStartPositionLocation(color, direction, 1, targetLocation);
+    await rotateStartPositionLocation(color, direction, 2, targetLocation);
   }
 
   async function handlePlacementComplete(
