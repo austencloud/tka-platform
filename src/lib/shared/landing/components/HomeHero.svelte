@@ -72,6 +72,7 @@
     showWordHeader={true}
     connectionAware={true}
     serverReducedData={page.data.saveData === true}
+    loadPriority="immediate"
   />
 
   <nav class="hero-actions" aria-label="Start here">

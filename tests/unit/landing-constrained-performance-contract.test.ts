@@ -209,6 +209,13 @@ describe("homepage constrained enhancement boundaries", () => {
     expect(marketingChrome).toContain("if (isConstrainedConnection()) return;");
     expect(homeHero).toContain("if (isConstrainedConnection()) return;");
     expect(homeHero).toContain("connectionAware={true}");
+    // The hero is the most above-the-fold element on the site. The default
+    // loadPriority is "idle", which routes through requestIdleCallback with a
+    // 2500ms timeout — and the landing main thread never idles (measured
+    // 2026-08-09: 123 long tasks, ~50-120ms blocked every second from 690ms
+    // onward), so the idle callback always waits its full timeout before the
+    // player chunk is even requested. That timeout was the placeholder.
+    expect(homeHero).toContain('loadPriority="immediate"');
     expect(launchpad).toContain("if (constrainedConnection) return;");
     expect(launchpadTile).toContain("data-tka-static-media");
     expect(launchpadTile).toContain('mediaLoaded = status === "loaded"');
