@@ -1,7 +1,10 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { AutumnBackgroundSystem, type QualityLevel } from "@austencloud/backgrounds";
-  import { ChipToggle, ChipGroup } from '@austencloud/chip-toggle';
+  import {
+    AutumnBackgroundSystem,
+    type QualityLevel,
+  } from "@austencloud/backgrounds";
+  import { ChipToggle, ChipGroup } from "@austencloud/chip-toggle";
   import LabPreviewCanvas from "./LabPreviewCanvas.svelte";
 
   type DensityPreset = "sparse" | "normal" | "dense" | "storm";
@@ -16,24 +19,41 @@
   };
 
   interface AutumnLabSystem {
-    initialize(dimensions: { width: number; height: number }, quality: QualityLevel): void;
-    update(dimensions: { width: number; height: number }, frameMultiplier: number): void;
-    draw(ctx: CanvasRenderingContext2D, dimensions: { width: number; height: number }): void;
+    initialize(
+      dimensions: { width: number; height: number },
+      quality: QualityLevel
+    ): void;
+    update(
+      dimensions: { width: number; height: number },
+      frameMultiplier: number
+    ): void;
+    draw(
+      ctx: CanvasRenderingContext2D,
+      dimensions: { width: number; height: number }
+    ): void;
     cleanup?(): void;
-    handleResize?(oldDimensions: { width: number; height: number }, newDimensions: { width: number; height: number }): void;
+    handleResize?(
+      oldDimensions: { width: number; height: number },
+      newDimensions: { width: number; height: number }
+    ): void;
     setQuality(quality: QualityLevel): void;
     setLayerVisibility(layers: Partial<LayerState>): void;
     setDensityPreset?(preset: DensityPreset): void;
     setWindPreset?(preset: WindPreset): void;
     triggerGust?(): void;
-    setPointer?(x: number, y: number, active: boolean, pointerType?: string): void;
-    setAccessibility?(settings: { reducedMotion: boolean; highContrast: boolean }): void;
+    setPointer?(
+      x: number,
+      y: number,
+      active: boolean,
+      pointerType?: string
+    ): void;
+    setAccessibility?(settings: {
+      reducedMotion: boolean;
+      highContrast: boolean;
+    }): void;
     getStats(): {
       leaves: number;
-      matteLoaded?: number;
       treesLoaded?: number;
-      platesLoaded?: number;
-      plateTarget?: number;
     };
   }
 
@@ -55,8 +75,8 @@
   let layers: LayerState = $state({
     sky: true,
     moon: false,
-    trees: false,
-    landscape: false,
+    trees: true,
+    landscape: true,
     leaves: true,
     owl: false,
   });
@@ -66,7 +86,7 @@
   let windPreset: WindPreset = $state("breezy");
 
   // Stats
-  let stats = $state({ leaves: 0, platesLoaded: 0, plateTarget: 1 });
+  let stats = $state({ leaves: 0, trees: 0 });
   let lastStatsUpdate = 0;
 
   // Initialize system when canvas is ready
@@ -86,12 +106,7 @@
       const sceneStats = backgroundSystem.getStats();
       stats = {
         leaves: sceneStats.leaves,
-        platesLoaded:
-          sceneStats.platesLoaded ??
-          sceneStats.treesLoaded ??
-          sceneStats.matteLoaded ??
-          0,
-        plateTarget: sceneStats.plateTarget ?? 1,
+        trees: sceneStats.treesLoaded ?? 0,
       };
       lastStatsUpdate = now;
     }
@@ -112,7 +127,8 @@
     backgroundSystem.setDensityPreset?.(densityPreset);
     backgroundSystem.setWindPreset?.(windPreset);
     backgroundSystem.setAccessibility?.({
-      reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+      reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)")
+        .matches,
       highContrast: window.matchMedia("(prefers-contrast: more)").matches,
     });
   }
@@ -137,6 +153,17 @@
     backgroundSystem?.setLayerVisibility(layers);
   }
 
+  function toggleScene() {
+    const visible = !layers.sky;
+    layers = {
+      ...layers,
+      sky: visible,
+      trees: visible,
+      landscape: visible,
+    };
+    backgroundSystem?.setLayerVisibility(layers);
+  }
+
   onDestroy(() => {
     if (backgroundSystem) {
       backgroundSystem.cleanup?.();
@@ -148,40 +175,110 @@
   <div class="controls themed-scrollbar-accent">
     <div class="header">
       <h2>Autumn Lab</h2>
-      <span class="badge">After Rain</span>
+      <span class="badge">Quiet Clearing</span>
     </div>
 
     <!-- Quality Chips -->
     <ChipGroup>
-      <ChipToggle label="High" active={quality === "high"} color="amber" onclick={() => setQuality("high")} />
-      <ChipToggle label="Medium" active={quality === "medium"} color="amber" onclick={() => setQuality("medium")} />
-      <ChipToggle label="Low" active={quality === "low"} color="amber" onclick={() => setQuality("low")} />
+      <ChipToggle
+        label="High"
+        active={quality === "high"}
+        color="amber"
+        onclick={() => setQuality("high")}
+      />
+      <ChipToggle
+        label="Medium"
+        active={quality === "medium"}
+        color="amber"
+        onclick={() => setQuality("medium")}
+      />
+      <ChipToggle
+        label="Low"
+        active={quality === "low"}
+        color="amber"
+        onclick={() => setQuality("low")}
+      />
     </ChipGroup>
 
     <!-- Layer Chips -->
     <ChipGroup>
-      <ChipToggle label="Scene" icon="tree" active={layers.sky} color="amber" onclick={() => toggleLayer("sky")} />
-      <ChipToggle label="Leaves" icon="leaf" active={layers.leaves} color="amber" onclick={() => toggleLayer("leaves")} />
+      <ChipToggle
+        label="Scene"
+        icon="tree"
+        active={layers.sky}
+        color="amber"
+        onclick={toggleScene}
+      />
+      <ChipToggle
+        label="Leaves"
+        icon="leaf"
+        active={layers.leaves}
+        color="amber"
+        onclick={() => toggleLayer("leaves")}
+      />
     </ChipGroup>
 
     <!-- Density Chips -->
     <ChipGroup>
-      <ChipToggle label="Sparse" active={densityPreset === "sparse"} color="amber" onclick={() => setDensity("sparse")} />
-      <ChipToggle label="Normal" active={densityPreset === "normal"} color="amber" onclick={() => setDensity("normal")} />
-      <ChipToggle label="Dense" active={densityPreset === "dense"} color="amber" onclick={() => setDensity("dense")} />
-      <ChipToggle label="Storm" active={densityPreset === "storm"} color="amber" onclick={() => setDensity("storm")} />
+      <ChipToggle
+        label="Sparse"
+        active={densityPreset === "sparse"}
+        color="amber"
+        onclick={() => setDensity("sparse")}
+      />
+      <ChipToggle
+        label="Normal"
+        active={densityPreset === "normal"}
+        color="amber"
+        onclick={() => setDensity("normal")}
+      />
+      <ChipToggle
+        label="Dense"
+        active={densityPreset === "dense"}
+        color="amber"
+        onclick={() => setDensity("dense")}
+      />
+      <ChipToggle
+        label="Storm"
+        active={densityPreset === "storm"}
+        color="amber"
+        onclick={() => setDensity("storm")}
+      />
     </ChipGroup>
 
     <!-- Wind Chips -->
     <ChipGroup>
-      <ChipToggle label="Calm" active={windPreset === "calm"} color="default" onclick={() => setWindPreset("calm")} />
-      <ChipToggle label="Breezy" active={windPreset === "breezy"} color="default" onclick={() => setWindPreset("breezy")} />
-      <ChipToggle label="Windy" active={windPreset === "windy"} color="default" onclick={() => setWindPreset("windy")} />
-      <ChipToggle label="Gusty" active={windPreset === "gusty"} color="default" onclick={() => setWindPreset("gusty")} />
+      <ChipToggle
+        label="Calm"
+        active={windPreset === "calm"}
+        color="default"
+        onclick={() => setWindPreset("calm")}
+      />
+      <ChipToggle
+        label="Breezy"
+        active={windPreset === "breezy"}
+        color="default"
+        onclick={() => setWindPreset("breezy")}
+      />
+      <ChipToggle
+        label="Windy"
+        active={windPreset === "windy"}
+        color="default"
+        onclick={() => setWindPreset("windy")}
+      />
+      <ChipToggle
+        label="Gusty"
+        active={windPreset === "gusty"}
+        color="default"
+        onclick={() => setWindPreset("gusty")}
+      />
     </ChipGroup>
 
     <div class="actions">
-      <button class="action-btn" onclick={() => backgroundSystem?.triggerGust?.()}>
+      <button
+        class="action-btn"
+        onclick={() => backgroundSystem?.triggerGust?.()}
+      >
         <i class="fas fa-wind"></i>
         Call a Gust
       </button>
@@ -200,8 +297,8 @@
           <span class="stat-label">Leaves</span>
         </div>
         <div class="stat">
-          <span class="stat-value">{stats.platesLoaded}/{stats.plateTarget}</span>
-          <span class="stat-label">Art matte</span>
+          <span class="stat-value">{stats.trees}</span>
+          <span class="stat-label">Trees</span>
         </div>
       </div>
     </div>
@@ -210,10 +307,10 @@
     <div class="progress-section">
       <span class="label">Features</span>
       <div class="progress-pills">
-        <span class="pill complete">Wide + portrait art</span>
+        <span class="pill complete">Five depth bands</span>
         <span class="pill complete">Subtle parallax</span>
-        <span class="pill complete">Edge Release</span>
-        <span class="pill complete">Eased Gusts</span>
+        <span class="pill complete">Clear center</span>
+        <span class="pill complete">Eased gusts</span>
       </div>
     </div>
   </div>
@@ -263,7 +360,11 @@
 
   .badge {
     padding: 4px 10px;
-    background: linear-gradient(135deg, rgba(217, 119, 6, 0.3), rgba(245, 158, 11, 0.3));
+    background: linear-gradient(
+      135deg,
+      rgba(217, 119, 6, 0.3),
+      rgba(245, 158, 11, 0.3)
+    );
     border: 1px solid rgba(245, 158, 11, 0.4);
     border-radius: 20px;
     font-size: var(--font-size-compact, 12px);
@@ -401,7 +502,11 @@
   }
 
   .pill.complete {
-    background: color-mix(in srgb, var(--theme-success, #34d399) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-success, #34d399) 15%,
+      transparent
+    );
     color: var(--theme-success, #34d399);
   }
 
