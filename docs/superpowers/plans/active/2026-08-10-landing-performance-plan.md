@@ -464,3 +464,40 @@ Both of my first two readings hit exactly 250 and reported "zero Firebase
 requests" - false. Always navigate with
 `initScript: performance.setResourceTimingBufferSize(5000)` and assert
 `total < 5000` before trusting any absence claim.
+
+## P1 MEASURED (2026-08-10, `npm run build:fast`, exit 0)
+
+Weighed from `.svelte-kit/output/client/.vite/manifest.json` by walking the
+STATIC `imports` closure (not `dynamicImports`) - i.e. the set that must be
+fetched once the entry chunk loads.
+
+`src/lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte`
+- entry chunk itself: **10 KB**
+- transitive static closure: **76 chunks, 6,740 KB raw**
+
+Four chunks are 5.0 MB of that 6.7 MB:
+
+| chunk | raw | gzip | what it is |
+|---|---|---|---|
+| `Cx0Fk2AM.js` | 2567 KB | **720 KB** | vendor blob; exports incl. `openDB`, `Dialog`, `Popover`, `Menu`, `string/record/union` -> idb + bits-ui + zod |
+| `9nRpKbGs.js` | 1321 KB | **353 KB** | `THREE` appears 139x -> Three.js in the hero's static closure |
+| `Dy8h9iaR.js` | 706 KB | **210 KB** | unidentified, fully minified single-letter exports |
+| `DzuM9zPX.js` | 448 KB | **112 KB** | arrow/prop placement data (`loadPublishedDefaults`, `points.map(dx,dy)`) |
+
+**~1.4 MB gzip in four chunks, statically required by the landing hero.**
+
+`ChoreoCard.svelte` has its own 6,443 KB / 79-chunk closure and shares the same
+top four - consistent with the P5 finding that the launchpad tile renders it.
+
+### Read this before acting
+
+- These are STATIC imports of the player entry, so they are all fetched - this
+  is not a speculative "might load" number.
+- Three.js in a 2D inline hero animation is the single largest carve candidate.
+  Confirm what pulls it before cutting: the hero is 2D, so a 3D dependency is
+  most likely arriving through a shared barrel/index re-export, not through
+  genuine use. Find the importer, don't just code-split blindly.
+- `Dy8h9iaR.js` (210 KB gzip) is still unidentified. Identify it before
+  planning around it.
+- Not yet done: the `modulepreload` work, and confirming which of these four
+  the landing page ALREADY has warm from other tiles.
