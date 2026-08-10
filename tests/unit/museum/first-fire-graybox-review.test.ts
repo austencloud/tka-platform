@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { buildFirstFireBlenderContract } from "$lib/features/museum/data/first-fire-blender-contract";
 import {
+  FIRST_FIRE_COURT_LIGHT_REACH_METRES,
   FIRST_FIRE_NEUTRAL_BLACKOUT_MS,
   advanceFirstFireGrayboxProof,
   createFirstFireGrayboxReviewState,
   displayedFirstFireShrine,
   firstFireOrbitZoneThresholds,
+  litFirstFireShrine,
   updateFirstFireGrayboxReview,
   visibleFirstFireFlameGroups,
 } from "../../../src/routes/test/first-fire-graybox/first-fire-graybox-review";
@@ -128,10 +130,57 @@ describe("First Fire Cinder Court review interaction", () => {
     state = advanceFirstFireGrayboxProof(state);
     expect(state.procession.phase).toBe("dj-complete");
     expect(displayedFirstFireShrine(state.procession.phase)).toBe("dj");
-    expect([...visibleFirstFireFlameGroups(state.procession.phase)]).toEqual([
-      "field",
+    // DJ has not been walked away from yet, so it is still alight alongside the
+    // beacon on the court ahead.
+    expect([...visibleFirstFireFlameGroups(state)].sort()).toEqual([
+      "dj",
       "ek",
+      "field",
     ]);
+  });
+
+  it("keeps a finished court burning until the visitor leaves its light", () => {
+    // The failure this locks: DJ went black the frame the orbit completed,
+    // while the visitor was still standing next to the performer.
+    const dj = contract.shrines.find((candidate) => candidate.id === "dj")!;
+    const centre = { x: dj.blenderCentre.x, z: -dj.blenderCentre.y };
+    let state = createFirstFireGrayboxReviewState();
+    state = advanceFirstFireGrayboxProof(state);
+    state = advanceFirstFireGrayboxProof(state);
+    expect(state.procession.phase).toBe("dj-complete");
+
+    const inside = FIRST_FIRE_COURT_LIGHT_REACH_METRES - 4;
+    state = updateFirstFireGrayboxReview(
+      state,
+      contract,
+      { x: centre.x, z: centre.z + inside },
+      16
+    );
+    expect(state.extinguished.dj).toBe(false);
+    expect(litFirstFireShrine(state)).toBe("dj");
+    expect(visibleFirstFireFlameGroups(state).has("dj")).toBe(true);
+
+    const beyond = FIRST_FIRE_COURT_LIGHT_REACH_METRES + 6;
+    state = updateFirstFireGrayboxReview(
+      state,
+      contract,
+      { x: centre.x, z: centre.z + beyond },
+      16
+    );
+    expect(state.extinguished.dj).toBe(true);
+    expect(litFirstFireShrine(state)).toBeNull();
+    expect(visibleFirstFireFlameGroups(state).has("dj")).toBe(false);
+
+    // A performer who has burned down stays down: walking back in must not
+    // relight them.
+    state = updateFirstFireGrayboxReview(
+      state,
+      contract,
+      { x: centre.x, z: centre.z + 5 },
+      16
+    );
+    expect(state.extinguished.dj).toBe(true);
+    expect(visibleFirstFireFlameGroups(state).has("dj")).toBe(false);
   });
 
   it("carries an ordinary sloppy walk through all three courts", () => {
@@ -201,7 +250,7 @@ describe("First Fire Cinder Court review interaction", () => {
       state = advanceFirstFireGrayboxProof(state);
     }
     expect(state.procession.phase).toBe("fire-extinguished");
-    expect(visibleFirstFireFlameGroups(state.procession.phase).size).toBe(0);
+    expect(visibleFirstFireFlameGroups(state).size).toBe(0);
 
     state = updateFirstFireGrayboxReview(
       state,
@@ -212,6 +261,6 @@ describe("First Fire Cinder Court review interaction", () => {
     expect(state.procession.phase).toBe("fire-extinguished");
     state = updateFirstFireGrayboxReview(state, contract, { x: 0, z: 0 }, 1);
     expect(state.procession.phase).toBe("growth-complete");
-    expect(visibleFirstFireFlameGroups(state.procession.phase).size).toBe(0);
+    expect(visibleFirstFireFlameGroups(state).size).toBe(0);
   });
 });

@@ -2,6 +2,7 @@ import type { FirstFireBlenderContract } from "$lib/features/museum/data/first-f
 import type { FirstFireShrineId } from "$lib/features/museum/data/first-fire-procession-plan";
 import {
   completeFirstFireGrowth,
+  completedFirstFireShrines,
   createFirstFireProcessionState,
   enterFirstFireShrine,
   reachFirstFireOrbitZone,
@@ -17,6 +18,20 @@ const ENTRY_PROXIMITY_METRES = 1.65;
  * the gates keeps a shorter arc completable.
  */
 const ORBIT_ZONE_LAP_FRACTIONS = [25 / 360, 110 / 360, 195 / 360, 280 / 360] as const;
+
+/**
+ * How far the visitor must get from a finished court before its fire goes out.
+ *
+ * Not an arbitrary comfort number: the court key in FirstFireEmberDressing is a
+ * PointLight with `distance={14}` and `decay={2}`, so at 14m it contributes
+ * exactly nothing. That is the literal edge of "their light has reached you".
+ * Inside it the performer is still lighting the visitor, so the fire stays up.
+ *
+ * The court outline is radius ~7 and the corridors run several metres past each
+ * mouth, so crossing this threshold means the visitor has left the chamber and
+ * walked away down the tunnel - not merely rounded the performer.
+ */
+export const FIRST_FIRE_COURT_LIGHT_REACH_METRES = 14;
 
 export function firstFireOrbitZoneThresholds(
   orbitSweepDegrees: number
@@ -35,6 +50,12 @@ export interface FirstFireGrayboxReviewState {
   orbitTravelDegrees: Record<FirstFireShrineId, number>;
   lastOrbitAngle: Record<FirstFireShrineId, number | null>;
   blackoutElapsedMs: number;
+  /**
+   * Latched per court once the visitor has walked out of that court's light.
+   * A latch, not a live distance test: a finished performer burns down and
+   * stays down. Walking back into the chamber must not relight them.
+   */
+  extinguished: Record<FirstFireShrineId, boolean>;
 }
 
 export type FirstFireFlameGroup = "field" | FirstFireShrineId;
@@ -45,6 +66,7 @@ export function createFirstFireGrayboxReviewState(): FirstFireGrayboxReviewState
     orbitTravelDegrees: { dj: 0, ek: 0, fl: 0 },
     lastOrbitAngle: { dj: null, ek: null, fl: null },
     blackoutElapsedMs: 0,
+    extinguished: { dj: false, ek: false, fl: false },
   };
 }
 
@@ -68,19 +90,46 @@ export function displayedFirstFireShrine(
   return null;
 }
 
+/**
+ * The court whose performer is still burning: the one being walked, or - once
+ * that walk is done - the court the visitor has not yet left. Drives the hero
+ * light and whether the performer keeps dancing, so a finished court does not
+ * freeze and black out while the visitor is still standing in it.
+ */
+export function litFirstFireShrine(
+  state: FirstFireGrayboxReviewState
+): FirstFireShrineId | null {
+  const phase = state.procession.phase;
+  const active = activeFirstFireShrine(phase);
+  if (active) return active;
+  if (phase === "fire-extinguished" || phase === "growth-complete") return null;
+  const completed = completedFirstFireShrines(state.procession);
+  for (let index = completed.length - 1; index >= 0; index -= 1) {
+    const shrineId = completed[index]!;
+    if (!state.extinguished[shrineId]) return shrineId;
+  }
+  return null;
+}
+
 export function visibleFirstFireFlameGroups(
-  phase: FirstFireProcessionPhase
+  state: FirstFireGrayboxReviewState
 ): ReadonlySet<FirstFireFlameGroup> {
+  const phase = state.procession.phase;
+  // The blackout before the Earth reveal is the authored beat: everything goes
+  // out at once, distance included. That one is meant to be abrupt.
   if (phase === "fire-extinguished" || phase === "growth-complete") {
     return new Set();
   }
-  if (phase === "approach" || phase === "dj-active") {
-    return new Set(["field", "dj"]);
+  const groups = new Set<FirstFireFlameGroup>(["field"]);
+  if (phase === "approach" || phase === "dj-active") groups.add("dj");
+  else if (phase === "dj-complete" || phase === "ek-active") groups.add("ek");
+  else groups.add("fl");
+  // A finished court keeps burning until the visitor has walked out of its
+  // light. Two courts alight at once is the intended read on the way out.
+  for (const shrineId of completedFirstFireShrines(state.procession)) {
+    if (!state.extinguished[shrineId]) groups.add(shrineId);
   }
-  if (phase === "dj-complete" || phase === "ek-active") {
-    return new Set(["field", "ek"]);
-  }
-  return new Set(["field", "fl"]);
+  return groups;
 }
 
 export function firstFirePhaseLabel(
@@ -270,9 +319,34 @@ function enterNearbyShrine(
 }
 
 /**
+ * Puts out a finished court once the visitor is past the reach of its light.
+ * Runs after the phase advance so the court the visitor has just completed is
+ * measured against where they actually are, not where they were.
+ */
+function updateExtinguishLatch(
+  state: FirstFireGrayboxReviewState,
+  contract: FirstFireBlenderContract,
+  position: FirstFireRuntimePosition
+): FirstFireGrayboxReviewState {
+  let extinguished = state.extinguished;
+  for (const shrineId of completedFirstFireShrines(state.procession)) {
+    if (extinguished[shrineId]) continue;
+    const shrine = contract.shrines.find(
+      (candidate) => candidate.id === shrineId
+    );
+    if (!shrine) continue;
+    const distance = distanceToRuntimePoint(position, shrine.blenderCentre);
+    if (distance <= FIRST_FIRE_COURT_LIGHT_REACH_METRES) continue;
+    extinguished = { ...extinguished, [shrineId]: true };
+  }
+  return extinguished === state.extinguished ? state : { ...state, extinguished };
+}
+
+/**
  * Advances the canonical procession from first-person position. Local review
  * state only supplies the physical facts the canonical owner does not track:
- * accumulated orbit travel and blackout time.
+ * accumulated orbit travel, blackout time, and which finished courts the
+ * visitor has now walked away from.
  */
 export function updateFirstFireGrayboxReview(
   state: FirstFireGrayboxReviewState,
@@ -298,19 +372,21 @@ export function updateFirstFireGrayboxReview(
   if (phase === "growth-complete") return state;
 
   const active = activeFirstFireShrine(phase);
-  if (active) return updateActiveOrbit(state, contract, position, active);
-
-  if (phase === "approach") {
-    return enterNearbyShrine(state, contract, position, "dj");
+  let advanced = state;
+  if (active) {
+    advanced = updateActiveOrbit(state, contract, position, active);
+  } else if (phase === "approach") {
+    advanced = enterNearbyShrine(state, contract, position, "dj");
+  } else if (phase === "dj-complete") {
+    // No hub gate is needed: the carved S makes the next court physically
+    // unreachable without walking out of the completed one, and the canonical
+    // procession owner rejects out-of-order entry.
+    advanced = enterNearbyShrine(state, contract, position, "ek");
+  } else if (phase === "ek-complete") {
+    advanced = enterNearbyShrine(state, contract, position, "fl");
   }
 
-  // No hub gate is needed: the carved S makes the next court physically
-  // unreachable without walking out of the completed one, and the canonical
-  // procession owner rejects out-of-order entry.
-  if (phase === "dj-complete") return enterNearbyShrine(state, contract, position, "ek");
-  if (phase === "ek-complete") return enterNearbyShrine(state, contract, position, "fl");
-
-  return state;
+  return updateExtinguishLatch(advanced, contract, position);
 }
 
 function completeActiveShrineForProof(

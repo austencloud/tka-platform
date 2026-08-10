@@ -50,6 +50,7 @@
     createFirstFireGrayboxReviewState,
     displayedFirstFireShrine,
     firstFirePhaseLabel,
+    litFirstFireShrine,
     updateFirstFireGrayboxReview,
     visibleFirstFireFlameGroups,
   } from "./first-fire-graybox-review";
@@ -125,17 +126,19 @@
   const displayedShrineId = $derived(
     displayedFirstFireShrine(reviewState.procession.phase)
   );
+  // The court still burning. Equal to the active court while it is being
+  // walked, then the finished court the visitor has not yet left: a performer
+  // must not freeze and go dark the instant the orbit completes, while the
+  // visitor is still standing next to them.
+  const litShrineId = $derived(litFirstFireShrine(reviewState));
   const activeShrine = $derived(
-    contract.shrines.find((candidate) => candidate.id === activeShrineId) ??
-      null
+    contract.shrines.find((candidate) => candidate.id === litShrineId) ?? null
   );
   const displayedShrine = $derived(
     contract.shrines.find((candidate) => candidate.id === displayedShrineId) ??
       null
   );
-  const visibleFlameGroups = $derived(
-    visibleFirstFireFlameGroups(reviewState.procession.phase)
-  );
+  const visibleFlameGroups = $derived(visibleFirstFireFlameGroups(reviewState));
   // The volcanic dressing is the room's only light source, so it must go out
   // at the extinguish beat for the blackout to actually be black.
   const emberDressingLit = $derived(
@@ -306,8 +309,12 @@
         object.castShadow = true;
         object.receiveShadow = true;
       }
+      // FF_Trench_(dj|ek|fl): the authored node names. The filter used to ask
+      // for FF_Trench_*_Magma, which the GLB has never contained, so no trench
+      // was ever staged and all three molten channels glowed from load - the
+      // finished court's channel included.
       if (
-        /^FF_(Trench_.*_Magma|Growth_|Bridge_EmberBed|FireState_)/i.test(
+        /^FF_(Trench_(dj|ek|fl)|Growth_|Bridge_EmberBed|FireState_)/i.test(
           object.name
         )
       ) {
@@ -415,9 +422,14 @@
         mesh.visible = phase === "growth-complete";
         return;
       }
-      if (name.includes("trench_dj_")) mesh.visible = groups.has("dj");
-      else if (name.includes("trench_ek_")) mesh.visible = groups.has("ek");
-      else if (name.includes("trench_fl_")) mesh.visible = groups.has("fl");
+      // The authored nodes are FF_Trench_dj / _ek / _fl. The old selectors
+      // carried a trailing underscore, so none of them ever matched and every
+      // trench fell through to the "any group lit" branch: all three channels
+      // glowed from the moment the room loaded, including courts the visitor
+      // had not reached. Measured in the running scene, not assumed.
+      if (name.includes("trench_dj")) mesh.visible = groups.has("dj");
+      else if (name.includes("trench_ek")) mesh.visible = groups.has("ek");
+      else if (name.includes("trench_fl")) mesh.visible = groups.has("fl");
       else mesh.visible = groups.size > 0;
     });
   });
@@ -555,7 +567,7 @@
 <FirstFireEmberDressing
   {contract}
   lit={emberDressingLit}
-  activeShrineId={activeShrineId ?? null}
+  activeShrineId={litShrineId ?? null}
 />
 
 <!-- The coal vocabulary applied to the first section of the walk. Follows the
@@ -588,7 +600,7 @@
       facingAngle={yawToward(centre, entry)}
       sequenceId={displayedShrine.sequenceId}
       autoPlay={true}
-      active={displayedShrine.id === activeShrineId}
+      active={displayedShrine.id === litShrineId}
       showGrid={displayedShrine.id === activeShrineId}
       showPlatform={false}
       standingSurfaceHeight={0.22}
