@@ -70,15 +70,29 @@ Popover uses fixed positioning to escape overflow:hidden containers.
   }: Props = $props();
 
   let chipEl: HTMLButtonElement | null = $state(null);
+  let popoverEl: HTMLDivElement | null = $state(null);
   let popoverTop = $state(0);
   let popoverLeft = $state(0);
 
+  /** Keeps the menu on screen: below the chip when there is room, above it when
+   * there is not, and never past either side edge. Reading `popoverEl` runs
+   * this a second time once the menu exists, which is when it can be measured.
+   */
+  const EDGE = 8;
   $effect(() => {
-    if (expanded && chipEl) {
-      const rect = chipEl.getBoundingClientRect();
-      popoverTop = rect.bottom + 6;
-      popoverLeft = rect.left;
-    }
+    if (!expanded || !chipEl) return;
+    const rect = chipEl.getBoundingClientRect();
+    const menuHeight = popoverEl?.offsetHeight ?? 0;
+    const menuWidth = popoverEl?.offsetWidth ?? 0;
+    const below = rect.bottom + 6;
+
+    popoverTop =
+      menuHeight && below + menuHeight > window.innerHeight - EDGE
+        ? Math.max(EDGE, rect.top - 6 - menuHeight)
+        : below;
+    popoverLeft = menuWidth
+      ? Math.max(EDGE, Math.min(rect.left, window.innerWidth - menuWidth - EDGE))
+      : rect.left;
   });
 </script>
 
@@ -164,6 +178,7 @@ Popover uses fixed positioning to escape overflow:hidden containers.
 
 {#if children && expanded}
   <div
+    bind:this={popoverEl}
     class="chip-popover"
     role="listbox"
     aria-label="{label} options"

@@ -70,7 +70,9 @@ expire after 30 days.
 ## 3. Cloudflare
 
 No Instagram secret belongs in Cloudflare. The SvelteKit worker proxies the three
-public Meta URLs to Firebase from `src/lib/server/auth/instagram-auth-proxy.ts`.
+public Meta URLs to Firebase from `src/lib/server/auth/meta-oauth-proxy.ts`
+(which also carries the posting flow's callback — see
+`meta-posting-e2e-checklist.md`).
 Deploy the current app build through the existing Cloudflare Pages pipeline.
 
 Confirm that no cache rule or managed challenge intercepts

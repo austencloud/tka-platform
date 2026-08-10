@@ -11,6 +11,7 @@
 -->
 <script lang="ts">
   import PostShareSheet from "$lib/shared/share/components/PostShareSheet.svelte";
+  import type { MetaPublishStatus } from "$lib/shared/share/services/meta-publish";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
   import { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -60,6 +61,32 @@
   let isExportingVideo = $state(false);
   let exportProgress = $state<number | null>(null);
 
+  // The sheet composes differently depending on which Meta accounts are
+  // connected, and that state arrives over a Firestore subscription the
+  // harness cannot produce. These are the three shapes worth checking.
+  const META_STATES = {
+    none: { instagram: null, facebookPage: null },
+    instagram: {
+      instagram: { username: "austencloud", expiresAtMs: 0 },
+      facebookPage: null,
+    },
+    both: {
+      instagram: { username: "austencloud", expiresAtMs: 0 },
+      facebookPage: {
+        selectedPageId: "page-1",
+        selectedPageName: "The Kinetic Alphabet",
+        pages: [
+          { id: "page-1", name: "The Kinetic Alphabet" },
+          { id: "page-2", name: "Flow Arts Chicago" },
+        ],
+        expiresAtMs: 0,
+      },
+    },
+  } satisfies Record<string, MetaPublishStatus>;
+
+  type MetaStateKey = keyof typeof META_STATES;
+  let metaState = $state<MetaStateKey>("none");
+
   function fakeRender(): void {
     isExportingVideo = true;
     exportProgress = 0.42;
@@ -78,6 +105,15 @@
         exportProgress = null;
       }}>Clear render state</button
     >
+    <button type="button" onclick={() => (metaState = "none")}
+      >Meta: not connected</button
+    >
+    <button type="button" onclick={() => (metaState = "instagram")}
+      >Meta: Instagram only</button
+    >
+    <button type="button" onclick={() => (metaState = "both")}
+      >Meta: IG + Page</button
+    >
   </div>
   <p class="note">
     Video export is driven by the viewer in the real app; this harness only
@@ -94,6 +130,7 @@
   {exportProgress}
   onRequestVideo={fakeRender}
   onClose={() => (isOpen = false)}
+  metaStatusOverride={META_STATES[metaState]}
 />
 
 <style>

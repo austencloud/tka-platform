@@ -99,6 +99,16 @@ export {
   instagramDeauthorizeCallback,
 } from "./auth/instagramAuth";
 export { instagramDataDeletionCallback } from "./auth/instagramDataDeletion";
+export {
+  startMetaConnect,
+  metaConnectCallback,
+  completeMetaConnect,
+  disconnectMetaAccount,
+  selectMetaFacebookPage,
+  refreshMetaPublishStatus,
+} from "./share/metaConnect";
+export { publishToMeta } from "./share/publishToMeta";
+export { refreshMetaPublishTokens } from "./share/refreshMetaTokens";
 
 const db = admin.firestore();
 

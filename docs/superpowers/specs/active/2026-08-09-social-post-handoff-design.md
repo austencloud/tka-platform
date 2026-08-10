@@ -171,19 +171,53 @@ Every destination is a **button**, never a text link
   file locally and must not upload).
 - Zero Meta dependency. Zero app review. No account connection required.
 
-### Phase 2 — Auto-post to Business IG + Facebook Page
+### Phase 2 — Auto-post to Business IG + Facebook Page *(built 2026-08-09)*
 
-Additive: new buttons appear in the same destination row once the accounts are
-connected. Phase 1's shape must not need rewriting for this.
+Additive, as planned: the post buttons appear in the same column once accounts
+are connected, and Phase 1's shape did not need rewriting. Phase 1's handoff
+tiles stay — they demote to the secondary row rather than disappearing, because
+they still work when a token expires or review lapses.
 
-- Connect flow reusing `instagram-auth.ts` + `instagram-auth-proxy.ts`.
-- Firebase Function: create media container → poll → publish. Media source is
-  the same presigned R2 URL Phase 1 already produces.
-- **Meta app review** for `instagram_content_publish` and `pages_manage_posts`.
-  This is the long pole — weeks of latency, and a permanent third-party
-  dependency. Start the submission early; it does not block Phase 1.
-- Personal FB and personal IG stay assist-only. There is no version of this
-  phase that changes that.
+**What shipped**
+
+| Piece | Path |
+|---|---|
+| Connect handshake (start · callback · complete · disconnect · select Page · refresh) | `firebase-functions/src/share/metaConnect.ts` |
+| Publish callable, one entry point for both targets | `firebase-functions/src/share/publishToMeta.ts` |
+| Graph protocol (IG container→poll→publish; Page photo; Page reel 3-phase) | `firebase-functions/src/share/metaGraphClient.ts` |
+| Pure policy — caption, media allowlist, status, error map, refresh window | `firebase-functions/src/share/metaPublishPolicy.ts` |
+| Token + status stores | `metaConnectionStore.ts`, `metaConnectStateStore.ts` |
+| Scheduled long-lived-token refresh (24h) | `refreshMetaTokens.ts` |
+| Client seam — status subscription, callables, error copy | `src/lib/shared/share/services/meta-publish.ts` |
+| Sheet UI — post CTAs, Page picker, setup row | `PostShareSheet.svelte` |
+| Worker proxy (renamed, now carries both flows) | `src/lib/server/auth/meta-oauth-proxy.ts` |
+
+**Decisions worth keeping**
+
+- One `publishToMeta` callable for both targets. The caller's decision is "post
+  this there", not "run the container protocol"; the protocol split lives in
+  `metaGraphClient`.
+- Meta fetches the media from R2 — it accepts no upload — so `publishToMeta`
+  validates the URL against the app's own host before handing it over. A
+  lookalike host (`media.tkaflowarts.com.evil.example`) is rejected.
+- Instagram's container endpoint takes JPEG only; the card renders PNG, so the
+  sheet converts before upload. Video must be H.264 MP4 and the sheet refuses
+  anything else locally rather than letting Meta reject it minutes later.
+- Tokens live in `metaPublishConnections` (Admin SDK only, `allow read: false`).
+  The UI subscribes to a token-free mirror, `metaPublishStatus`.
+- The Page picker is a `FilterChipBase` dropdown, not a `SegmentedControl` —
+  Page names are unbounded user data and laying them side by side is what pushed
+  the setup row past the sheet's width.
+- Per Austen's call, **no public-URL warning and no consent gate.** These are
+  sequences, not personal data.
+
+**Still Austen's, and still the long pole:** the Meta app configuration and
+review for `instagram_business_content_publish`, `pages_manage_posts` and
+`publish_video`. Full checklist: `docs/reference/meta-posting-e2e-checklist.md`.
+Nothing posts until that lands, and the handoff rail keeps working meanwhile.
+
+Personal FB and personal IG stay assist-only. There is no version of this phase
+that changes that.
 
 ### Phase 3 — Deferred, not scoped here
 
@@ -212,6 +246,7 @@ Functional proof required before any "done" claim:
 
 ## Related
 
+- `docs/reference/meta-posting-e2e-checklist.md` — Phase 2 external setup
 - `.claude/rules/sequence-viewer-shell.md` — why the sheet lives in the shell
 - `.claude/rules/never-hand-roll.md`, `chip-primitives.md` — the reuse ledger
 - `.claude/rules/simplified-word-display.md` — caption word handling

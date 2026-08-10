@@ -258,6 +258,25 @@ function createThumbnailAttemptSignal(parent?: AbortSignal): {
   };
 }
 
+/** File extension for a share artifact, keyed off the blob's own content type
+ *  so a JPEG card does not land under a .png key. */
+function shareArtifactExtension(contentType: string, isVideo: boolean): string {
+  switch (contentType) {
+    case "image/jpeg":
+      return "jpg";
+    case "image/png":
+      return "png";
+    case "image/webp":
+      return "webp";
+    case "video/mp4":
+      return "mp4";
+    case "video/webm":
+      return "webm";
+    default:
+      return isVideo ? "mp4" : "png";
+  }
+}
+
 function normalizeError(error: unknown): Error {
   if (error instanceof Error) return error;
   if (
@@ -636,8 +655,11 @@ export class R2VideoUploader {
       const userId = this.getUserId();
       const timestamp = Date.now();
       const isVideo = artifact === "video";
-      const fileName = `${timestamp}_share.${isVideo ? "mp4" : "png"}`;
       const contentType = blob.type || (isVideo ? "video/mp4" : "image/png");
+      // The extension follows the blob, not the artifact kind: Instagram's
+      // container endpoint accepts JPEG only, so a card bound for a direct
+      // post arrives here already converted and must land as .jpg.
+      const fileName = `${timestamp}_share.${shareArtifactExtension(contentType, isVideo)}`;
       const category = isVideo ? "recordings" : "thumbnails";
 
       if (blob.size >= MULTIPART_THRESHOLD) {

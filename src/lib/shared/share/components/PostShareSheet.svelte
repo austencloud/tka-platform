@@ -37,6 +37,19 @@
     type HandoffResult,
     type ShareArtifact,
   } from "$lib/shared/share/services/post-handoff";
+  import { getUser } from "$lib/shared/auth/state/auth-state.svelte";
+  import {
+    connectMetaAccount,
+    disconnectMetaAccount,
+    publishToMeta,
+    selectFacebookPage,
+    subscribeMetaPublishStatus,
+    toInstagramJpeg,
+    EMPTY_META_PUBLISH_STATUS,
+    MetaPublishClientError,
+    type MetaPublishStatus,
+    type MetaPublishTarget,
+  } from "$lib/shared/share/services/meta-publish";
 
   interface Props {
     isOpen: boolean;
@@ -52,6 +65,14 @@
     onRequestVideo: () => void;
     /** Fires when the sheet dismisses itself (backdrop, escape, swipe). */
     onClose: () => void;
+    /**
+     * Testing seam. Connection state normally arrives over a Firestore
+     * subscription, which a visual harness cannot produce — and the sheet
+     * composes differently depending on which accounts are connected, so all
+     * three states have to be checkable at every viewport. Only
+     * `src/routes/test/post-share-sheet` passes this.
+     */
+    metaStatusOverride?: MetaPublishStatus;
   }
 
   let {
@@ -63,6 +84,7 @@
     exportProgress,
     onRequestVideo,
     onClose,
+    metaStatusOverride,
   }: Props = $props();
 
   const captions = getCaptionPresetManager();
@@ -88,6 +110,13 @@
   let qrDataUrl = $state<string | null>(null);
   let qrPending = $state(false);
   let qrError = $state("");
+
+  let liveMetaStatus = $state<MetaPublishStatus>(EMPTY_META_PUBLISH_STATUS);
+  let postingTarget = $state<MetaPublishTarget | null>(null);
+  let connectingTarget = $state<MetaPublishTarget | null>(null);
+  let pageMenuOpen = $state(false);
+  let postStage = $state("");
+  let postedPermalinks = $state<Partial<Record<MetaPublishTarget, string>>>({});
 
   const word = $derived(
     simplifyRepeatedWord(
@@ -118,6 +147,72 @@
   const secondaryDestinations = $derived(
     destinations.filter((destination) => !destination.primary)
   );
+
+  const metaStatus = $derived(metaStatusOverride ?? liveMetaStatus);
+
+  /**
+   * Connected accounts this artifact can be posted to directly. Solid icons
+   * only — the app never loads FontAwesome's brands sheet, so a fa-brands
+   * class renders as an empty box.
+   */
+  const autoPostTargets = $derived.by(() => {
+    const targets: Array<{
+      id: MetaPublishTarget;
+      label: string;
+      account: string;
+      /** Fixed-width name for the setup row, where the account name varies. */
+      network: string;
+      icon: string;
+    }> = [];
+
+    if (metaStatus.instagram) {
+      targets.push({
+        id: "instagram",
+        label: "Post to Instagram",
+        account: `@${metaStatus.instagram.username}`,
+        network: "Instagram",
+        icon: "fa-solid fa-camera-retro",
+      });
+    }
+    if (metaStatus.facebookPage) {
+      targets.push({
+        id: "facebook-page",
+        label: "Post to Facebook",
+        account: metaStatus.facebookPage.selectedPageName || "Your Page",
+        network: "Facebook",
+        icon: "fa-solid fa-thumbs-up",
+      });
+    }
+    return targets;
+  });
+
+  /**
+   * Posting straight to a connected account beats handing the file off, so it
+   * takes the filled button and the handoff's own primary demotes into the
+   * tile row. The alternative — two filled buttons — costs a row the phone
+   * layout does not have (.claude/rules/no-layout-shift.md).
+   */
+  const autoPostPrimary = $derived(autoPostTargets[0] ?? null);
+  const autoPostSecondary = $derived(autoPostTargets.slice(1));
+  const handoffPrimary = $derived(autoPostPrimary ? null : primaryDestination);
+  const tileDestinations = $derived(
+    autoPostPrimary ? destinations : secondaryDestinations
+  );
+
+  const connectableTargets = $derived.by(() => {
+    const chips: Array<{ id: MetaPublishTarget; label: string }> = [];
+    if (!metaStatus.instagram) {
+      chips.push({ id: "instagram", label: "Connect Instagram" });
+    }
+    if (!metaStatus.facebookPage) {
+      chips.push({ id: "facebook-page", label: "Connect a Facebook Page" });
+    }
+    return chips;
+  });
+
+  const facebookPages = $derived(metaStatus.facebookPage?.pages ?? []);
+
+  const metaBusy = $derived(postingTarget !== null || connectingTarget !== null);
 
   const previewReady = $derived(
     !qrDataUrl &&
@@ -197,10 +292,28 @@
     };
   });
 
+  // Which Meta accounts are connected, live. Only while the sheet is open —
+  // a viewer that never shares should not hold a Firestore listener.
+  $effect(() => {
+    if (!isOpen || metaStatusOverride) return;
+
+    const uid = getUser()?.uid;
+    if (!uid) {
+      liveMetaStatus = EMPTY_META_PUBLISH_STATUS;
+      return;
+    }
+    return subscribeMetaPublishStatus(uid, (next) => {
+      liveMetaStatus = next;
+    });
+  });
+
   function handleArtifactChange(next: ShareArtifact): void {
     artifact = next;
     statusMessage = "";
     qrDataUrl = null;
+    // A "View post" that points at the card is wrong once the video is
+    // selected, so the posted-state resets with the artifact.
+    postedPermalinks = {};
 
     if (next === "video" && !videoBlob && !isExportingVideo) {
       onRequestVideo();
@@ -210,6 +323,7 @@
   function applyPreset(text: string): void {
     caption = text;
     captionTouched = true;
+    postedPermalinks = {};
   }
 
   function saveCurrentAsPreset(): void {
@@ -284,7 +398,168 @@
     qrDataUrl = null;
     qrError = "";
   }
+
+  /**
+   * The direct post. Meta fetches the media itself, so the artifact goes to R2
+   * first and only its URL is handed over — the same upload the QR handoff
+   * already uses, which is why an unsaved sequence has nowhere to put it.
+   */
+  async function postToTarget(target: MetaPublishTarget): Promise<void> {
+    const blob = activeBlob;
+    if (!blob) return;
+    if (!sequence?.id) {
+      statusMessage = "Save this sequence first so it has somewhere to upload to.";
+      return;
+    }
+
+    postingTarget = target;
+    statusMessage = "";
+    postStage = "Uploading…";
+
+    try {
+      // Both viewer encoders emit H.264 MP4, which is what Meta ingests. If a
+      // future export path ever hands back WebM, say so here rather than
+      // uploading it and letting Meta reject the container minutes later.
+      if (artifact === "video" && blob.type && !blob.type.includes("mp4")) {
+        statusMessage = "This video isn't in a format Instagram or Facebook accepts.";
+        return;
+      }
+
+      // Instagram's container endpoint accepts JPEG only; the card renders PNG.
+      const media =
+        target === "instagram" && artifact === "card"
+          ? await toInstagramJpeg(blob)
+          : blob;
+
+      const { url } = await getVideoUploader().uploadShareArtifact(
+        sequence.id,
+        media,
+        artifact
+      );
+
+      postStage =
+        artifact === "video" ? "Meta is processing the video…" : "Posting…";
+      const result = await publishToMeta({
+        target,
+        mediaType: artifact === "video" ? "video" : "image",
+        mediaUrl: url,
+        caption,
+      });
+
+      if (result.permalink) {
+        postedPermalinks = { ...postedPermalinks, [target]: result.permalink };
+      }
+      statusMessage =
+        target === "instagram" ? "Posted to Instagram" : "Posted to your Page";
+    } catch (error) {
+      console.error("[PostShareSheet] Direct post failed:", error);
+      statusMessage =
+        error instanceof MetaPublishClientError
+          ? error.message
+          : "Couldn't post that. Try again.";
+    } finally {
+      postingTarget = null;
+      postStage = "";
+    }
+  }
+
+  async function connectTarget(target: MetaPublishTarget): Promise<void> {
+    connectingTarget = target;
+    statusMessage = "";
+
+    try {
+      const account = await connectMetaAccount(target);
+      statusMessage = account ? `Connected ${account}` : "Connected";
+    } catch (error) {
+      statusMessage =
+        error instanceof MetaPublishClientError
+          ? error.message
+          : "Couldn't connect that account.";
+    } finally {
+      connectingTarget = null;
+    }
+  }
+
+  async function forgetTarget(target: MetaPublishTarget): Promise<void> {
+    connectingTarget = target;
+    try {
+      await disconnectMetaAccount(target);
+      statusMessage = "Disconnected";
+    } catch {
+      statusMessage = "Couldn't disconnect that account.";
+    } finally {
+      connectingTarget = null;
+    }
+  }
+
+  async function handlePageChange(pageId: string): Promise<void> {
+    pageMenuOpen = false;
+    try {
+      await selectFacebookPage(pageId);
+    } catch {
+      statusMessage = "Couldn't switch Page.";
+    }
+  }
+
+  // The Page menu is fixed-positioned outside the chip, so a click anywhere
+  // else has to close it explicitly.
+  $effect(() => {
+    if (!pageMenuOpen) return;
+    const close = (event: PointerEvent) => {
+      if (!(event.target as HTMLElement).closest(".page-chip")) {
+        pageMenuOpen = false;
+      }
+    };
+    document.addEventListener("pointerdown", close, true);
+    return () => document.removeEventListener("pointerdown", close, true);
+  });
 </script>
+
+<!-- The posted state reuses the SAME box rather than adding a "View post" row:
+     a new element appearing after a successful post would shove the sheet
+     (.claude/rules/no-layout-shift.md). -->
+{#snippet autoPostButton(
+  target: { id: MetaPublishTarget; label: string; account: string; icon: string },
+  isPrimary: boolean
+)}
+  {@const permalink = postedPermalinks[target.id]}
+  {#if permalink}
+    <a
+      class="cta"
+      class:secondary-cta={!isPrimary}
+      href={permalink}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+      <span class="cta-text">
+        <span class="cta-label">View post</span>
+        <span class="cta-hint">{target.account}</span>
+      </span>
+    </a>
+  {:else}
+    <button
+      type="button"
+      class="cta"
+      class:secondary-cta={!isPrimary}
+      disabled={!activeBlob || metaBusy || busyDestination !== null || qrPending}
+      onclick={() => postToTarget(target.id)}
+    >
+      <i
+        class={postingTarget === target.id
+          ? "fa-solid fa-circle-notch fa-spin"
+          : target.icon}
+        aria-hidden="true"
+      ></i>
+      <span class="cta-text">
+        <span class="cta-label">{target.label}</span>
+        <span class="cta-hint">
+          {postingTarget === target.id ? postStage : target.account}
+        </span>
+      </span>
+    </button>
+  {/if}
+{/snippet}
 
 <Drawer
   bind:isOpen={drawerOpen}
@@ -393,31 +668,42 @@
         ></textarea>
       </div>
 
-      {#if primaryDestination}
+      <!-- `display: contents` by default, so the sheet's own column gap still
+           spaces these. It becomes a real box only in the wide-and-short grid,
+           where two call-to-actions would otherwise stack in one named area. -->
+      <div class="actions">
+      {#if autoPostPrimary}
+        {@render autoPostButton(autoPostPrimary, true)}
+      {:else if handoffPrimary}
         <button
           type="button"
           class="cta"
           disabled={!activeBlob || busyDestination !== null || qrPending}
-          onclick={() => runDestination(primaryDestination.id)}
+          onclick={() => runDestination(handoffPrimary.id)}
         >
           <i
-            class={busyDestination === primaryDestination.id || qrPending
+            class={busyDestination === handoffPrimary.id || qrPending
               ? "fa-solid fa-circle-notch fa-spin"
-              : primaryDestination.icon}
+              : handoffPrimary.icon}
             aria-hidden="true"
           ></i>
           <span class="cta-text">
-            <span class="cta-label">{primaryDestination.label}</span>
-            {#if primaryDestination.hint}
-              <span class="cta-hint">{primaryDestination.hint}</span>
+            <span class="cta-label">{handoffPrimary.label}</span>
+            {#if handoffPrimary.hint}
+              <span class="cta-hint">{handoffPrimary.hint}</span>
             {/if}
           </span>
         </button>
       {/if}
 
-      {#if secondaryDestinations.length}
+      {#each autoPostSecondary as target (target.id)}
+        {@render autoPostButton(target, false)}
+      {/each}
+      </div>
+
+      {#if tileDestinations.length}
         <div class="tiles">
-          {#each secondaryDestinations as destination (destination.id)}
+          {#each tileDestinations as destination (destination.id)}
             <button
               type="button"
               class="tile"
@@ -440,6 +726,79 @@
               </span>
               <span class="tile-label">{destination.short}</span>
             </button>
+          {/each}
+        </div>
+      {/if}
+
+      <!-- Setup, kept visually quieter than the share actions: chips, not
+           buttons the size of the thing you actually came here to do. -->
+      {#if connectableTargets.length || facebookPages.length > 1 || autoPostTargets.length}
+        <div class="connections">
+          {#if facebookPages.length > 1 && metaStatus.facebookPage}
+            {@const selected = metaStatus.facebookPage}
+            <!-- A dropdown, not a segmented control: Page names are long and
+                 unbounded, and laying them all out side by side is what pushed
+                 this row past the sheet's width. -->
+            <div class="page-chip">
+              <FilterChipBase
+                label={selected.selectedPageName || "Choose a Page"}
+                ariaLabel="Which Page to post to"
+                icon="fa-solid fa-thumbs-up"
+                mode="dropdown"
+                size="sm"
+                expanded={pageMenuOpen}
+                disabled={metaBusy}
+                onclick={() => (pageMenuOpen = !pageMenuOpen)}
+              >
+                {#snippet children()}
+                  {#each facebookPages as page (page.id)}
+                    <button
+                      class="page-option"
+                      class:selected={page.id === selected.selectedPageId}
+                      type="button"
+                      role="option"
+                      aria-selected={page.id === selected.selectedPageId}
+                      onclick={() => handlePageChange(page.id)}
+                    >
+                      <span>{page.name}</span>
+                      {#if page.id === selected.selectedPageId}
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                      {/if}
+                    </button>
+                  {/each}
+                {/snippet}
+              </FilterChipBase>
+            </div>
+          {/if}
+
+          {#each connectableTargets as chip (chip.id)}
+            <FilterChipBase
+              label={chip.label}
+              icon={connectingTarget === chip.id
+                ? "fa-solid fa-circle-notch fa-spin"
+                : "fa-solid fa-plus"}
+              mode="action"
+              size="sm"
+              disabled={metaBusy}
+              onclick={() => connectTarget(chip.id)}
+            />
+          {/each}
+
+          {#each autoPostTargets as target (target.id)}
+            <!-- The network, not the account: the account is already named on
+                 the post button above, and a variable-width label here is what
+                 made this row overflow the sheet. -->
+            <FilterChipBase
+              label={`Disconnect ${target.network}`}
+              ariaLabel={`Disconnect ${target.account} from ${target.network}`}
+              icon={connectingTarget === target.id
+                ? "fa-solid fa-circle-notch fa-spin"
+                : "fa-solid fa-link-slash"}
+              mode="action"
+              size="sm"
+              disabled={metaBusy}
+              onclick={() => forgetTarget(target.id)}
+            />
           {/each}
         </div>
       {/if}
@@ -549,7 +908,7 @@
     position: relative;
     display: grid;
     place-items: center;
-    min-height: 12rem;
+    min-height: min(var(--stage-h, 12rem), 24vh);
     padding: 0.75rem;
     border-radius: 1.125rem;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
@@ -565,11 +924,16 @@
   }
 
   /* Capped in rem, not %: the stage row is content-sized, so a percentage here
-     resolves against an indefinite height and stops capping anything. Each
-     cap is the tier's stage min-height minus its padding. */
+     resolves against an indefinite height and stops capping anything. Each tier
+     sets --preview-h to its stage height minus padding.
+
+     The 24vh ceiling is the second half of the cap, and it is what keeps the
+     sheet on screen: the artwork is the one element that can give height back,
+     and without it the wide-screen tiers grow the card on a 1080-tall desktop
+     until the setup row falls past the bottom of the drawer. */
   .preview {
     max-width: 100%;
-    max-height: 10.5rem;
+    max-height: min(var(--preview-h, 10.5rem), 24vh);
     object-fit: contain;
     border-radius: 0.75rem;
     box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.45);
@@ -695,6 +1059,10 @@
       color-mix(in srgb, var(--theme-accent, #6366f1) 28%, transparent);
   }
 
+  .actions {
+    display: contents;
+  }
+
   /* One filled action. Buttons, never text links: every clickable here reads as
      clickable (.claude/rules/clickables-look-like-buttons.md). */
   .cta {
@@ -729,10 +1097,39 @@
     text-align: center;
   }
 
+  /* Same box as the primary so a second connected account does not change the
+     rhythm — only the fill tells you which one leads. */
+  .cta.secondary-cta {
+    background: var(--theme-surface-2, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.16));
+    color: var(--theme-text, #fff);
+    box-shadow: none;
+  }
+
+  .cta.secondary-cta:hover:not(:disabled) {
+    background: var(--theme-surface-3, rgba(255, 255, 255, 0.12));
+    box-shadow: none;
+    filter: none;
+  }
+
+  a.cta {
+    text-decoration: none;
+  }
+
   .cta-text {
     display: flex;
     flex-direction: column;
     min-width: 0;
+  }
+
+  /* Account names and Page names are user data of unbounded length. They ride
+     one line and truncate rather than wrapping the button taller than its
+     sibling (.claude/rules/no-layout-shift.md). */
+  .cta-label,
+  .cta-hint {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .cta-label {
@@ -822,6 +1219,65 @@
     cursor: not-allowed;
   }
 
+  /* Account setup. Scrolls like the preset row for the same reason: a second
+     line of chips is a row the phone layout has not budgeted. */
+  .connections {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: -1rem;
+    padding-inline: 1rem;
+  }
+
+  .connections::-webkit-scrollbar {
+    display: none;
+  }
+
+  .connections > :global(*) {
+    flex: 0 0 auto;
+  }
+
+  /* Anchors the Page menu, which FilterChipBase positions against this chip. */
+  .page-chip {
+    position: relative;
+  }
+
+  .page-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: var(--min-touch-target);
+    padding: 0.625rem 0.75rem;
+    background: transparent;
+    border: none;
+    border-radius: 0.5rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    font: inherit;
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--duration-fast, 150ms) ease;
+  }
+
+  .page-option:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    color: var(--theme-text, #fff);
+  }
+
+  .page-option.selected {
+    color: var(--theme-text, #fff);
+    font-weight: 600;
+  }
+
+  .page-option i {
+    font-size: 0.625rem;
+  }
+
   .secondary {
     display: inline-flex;
     align-items: center;
@@ -854,25 +1310,20 @@
     visibility: visible;
   }
 
-  /* A phone in portrait has to fit the whole sheet above the fold, so the stage
-     stays small there and only claims its full height once the viewport can
-     afford it. */
-  @media (min-height: 800px) {
+  /* The stage only claims its full height once the viewport can afford the
+     whole sheet above the fold. 940, not 800: a connected account adds a second
+     post button and the setup row, and at 900 the difference is exactly what
+     pushed the setup row past the drawer's 85vh. */
+  @media (min-height: 940px) {
     .sheet {
+      --stage-h: 16rem;
+      --preview-h: 14.5rem;
       gap: 1rem;
       padding: 1.25rem;
     }
 
     .sheet-header h2 {
       font-size: 1.5rem;
-    }
-
-    .stage {
-      min-height: 16rem;
-    }
-
-    .preview {
-      max-height: 14.5rem;
     }
 
     textarea {
@@ -911,8 +1362,9 @@
         "stage caption"
         "stage cta"
         "stage tiles"
+        "stage connections"
         "stage status";
-      grid-template-rows: auto auto auto auto auto 1fr;
+      grid-template-rows: auto auto auto auto auto auto 1fr;
       align-content: start;
       column-gap: 1.25rem;
       row-gap: 0.5rem;
@@ -934,13 +1386,23 @@
     .caption-block {
       grid-area: caption;
     }
-    .cta {
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
       grid-area: cta;
+    }
+    .cta {
       min-height: 3rem;
     }
     .tiles {
       grid-area: tiles;
       align-self: start;
+    }
+    .connections {
+      grid-area: connections;
+      margin-inline: 0;
+      padding-inline: 0;
     }
     .status {
       grid-area: status;
@@ -966,6 +1428,8 @@
      with the canvas (.claude/rules/4k-native-layout.md, 1680 seam). */
   @media (min-width: 1680px) {
     .sheet {
+      --stage-h: 20rem;
+      --preview-h: 18.5rem;
       width: min(42rem, 100%);
       gap: 1.25rem;
       padding: 1.5rem;
@@ -973,14 +1437,6 @@
 
     .sheet-header h2 {
       font-size: 1.875rem;
-    }
-
-    .stage {
-      min-height: 20rem;
-    }
-
-    .preview {
-      max-height: 18.5rem;
     }
 
     .cta-label,
@@ -995,7 +1451,8 @@
     }
 
     .artifact-picker :global(.segment),
-    .presets :global(.chip-label) {
+    .presets :global(.chip-label),
+    .connections :global(.chip-label) {
       font-size: 0.9375rem;
     }
   }
@@ -1004,6 +1461,8 @@
      big-screen seam always misses (.claude/rules/4k-native-layout.md). */
   @media (min-width: 2350px) {
     .sheet {
+      --stage-h: 26rem;
+      --preview-h: 24.5rem;
       width: min(52rem, 100%);
       gap: 1.5rem;
       padding: 2rem;
@@ -1015,14 +1474,6 @@
 
     .eyebrow {
       font-size: 0.8125rem;
-    }
-
-    .stage {
-      min-height: 26rem;
-    }
-
-    .preview {
-      max-height: 24.5rem;
     }
 
     .qr-view img {
@@ -1064,7 +1515,8 @@
     }
 
     .artifact-picker :global(.segment),
-    .presets :global(.chip-label) {
+    .presets :global(.chip-label),
+    .connections :global(.chip-label) {
       font-size: 1.125rem;
     }
   }
@@ -1073,6 +1525,8 @@
      and elements step again rather than the band alone. */
   @media (min-width: 3200px) {
     .sheet {
+      --stage-h: 32rem;
+      --preview-h: 30rem;
       width: min(64rem, 100%);
       gap: 1.75rem;
       padding: 2.5rem;
@@ -1084,14 +1538,6 @@
 
     .eyebrow {
       font-size: 1rem;
-    }
-
-    .stage {
-      min-height: 32rem;
-    }
-
-    .preview {
-      max-height: 30rem;
     }
 
     .qr-view img {
@@ -1133,7 +1579,8 @@
     }
 
     .artifact-picker :global(.segment),
-    .presets :global(.chip-label) {
+    .presets :global(.chip-label),
+    .connections :global(.chip-label) {
       font-size: 1.375rem;
     }
   }

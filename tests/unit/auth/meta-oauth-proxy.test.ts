@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  isInstagramAuthProxyPath,
-  proxyInstagramAuthRequest,
-} from "$lib/server/auth/instagram-auth-proxy";
+  isMetaOAuthProxyPath,
+  proxyMetaOAuthRequest,
+} from "$lib/server/auth/meta-oauth-proxy";
 
 const FUNCTION_ORIGIN =
   "https://us-central1-the-kinetic-alphabet.cloudfunctions.net";
@@ -11,21 +11,41 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("Instagram auth worker proxy", () => {
-  it("matches only the three registered Meta callback paths", () => {
-    expect(isInstagramAuthProxyPath("/api/auth/instagram/callback")).toBe(true);
-    expect(isInstagramAuthProxyPath("/api/auth/instagram/deauthorize")).toBe(
+describe("Meta OAuth worker proxy", () => {
+  it("matches only the registered Meta callback paths", () => {
+    expect(isMetaOAuthProxyPath("/api/auth/instagram/callback")).toBe(true);
+    expect(isMetaOAuthProxyPath("/api/auth/instagram/deauthorize")).toBe(
       true
     );
-    expect(isInstagramAuthProxyPath("/api/auth/instagram/data-deletion")).toBe(
+    expect(isMetaOAuthProxyPath("/api/auth/instagram/data-deletion")).toBe(
       true
     );
-    expect(isInstagramAuthProxyPath("/api/auth/instagram/complete")).toBe(
+    expect(isMetaOAuthProxyPath("/api/share/meta/callback")).toBe(true);
+    expect(isMetaOAuthProxyPath("/api/auth/instagram/complete")).toBe(
       false
     );
-    expect(isInstagramAuthProxyPath("/api/auth/instagram/callback/extra")).toBe(
+    expect(isMetaOAuthProxyPath("/api/auth/instagram/callback/extra")).toBe(
       false
     );
+    expect(isMetaOAuthProxyPath("/api/share/meta/start")).toBe(false);
+  });
+
+  it("routes the publish-connect callback to its own function, not sign-in", async () => {
+    // Sign-in and publish-connect share this proxy and nothing else. If this
+    // ever resolves to instagramAuthCallback, a posting handshake would mint a
+    // Firebase session instead.
+    const fetchMock = vi.fn().mockResolvedValue(new Response("callback page"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await proxyMetaOAuthRequest(
+      new Request(
+        "https://tkaflowarts.com/api/share/meta/callback?code=abc&state=xyz"
+      )
+    );
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(`${FUNCTION_ORIGIN}/metaConnectCallback?code=abc&state=xyz`);
+    expect(init.method).toBe("GET");
   });
 
   it("forwards OAuth query values to the callback function", async () => {
@@ -35,7 +55,7 @@ describe("Instagram auth worker proxy", () => {
     const fetchMock = vi.fn().mockResolvedValue(upstreamResponse);
     vi.stubGlobal("fetch", fetchMock);
 
-    const response = await proxyInstagramAuthRequest(
+    const response = await proxyMetaOAuthRequest(
       new Request(
         "https://tkaflowarts.com/api/auth/instagram/callback?code=abc&state=xyz",
         { headers: { host: "tkaflowarts.com", "x-test": "1" } }
@@ -55,7 +75,7 @@ describe("Instagram auth worker proxy", () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response("OK"));
     vi.stubGlobal("fetch", fetchMock);
 
-    await proxyInstagramAuthRequest(
+    await proxyMetaOAuthRequest(
       new Request("https://tkaflowarts.com/api/auth/instagram/deauthorize", {
         method: "POST",
         headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -73,14 +93,14 @@ describe("Instagram auth worker proxy", () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response("OK"));
     vi.stubGlobal("fetch", fetchMock);
 
-    await proxyInstagramAuthRequest(
+    await proxyMetaOAuthRequest(
       new Request("https://tkaflowarts.com/api/auth/instagram/data-deletion", {
         method: "POST",
         headers: { "content-type": "application/x-www-form-urlencoded" },
         body: "signed_request=signed.payload",
       })
     );
-    await proxyInstagramAuthRequest(
+    await proxyMetaOAuthRequest(
       new Request(
         "https://tkaflowarts.com/api/auth/instagram/data-deletion?code=confirmation"
       )
@@ -100,7 +120,7 @@ describe("Instagram auth worker proxy", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    const response = await proxyInstagramAuthRequest(
+    const response = await proxyMetaOAuthRequest(
       new Request("https://tkaflowarts.com/api/auth/instagram/callback", {
         method: "POST",
       })

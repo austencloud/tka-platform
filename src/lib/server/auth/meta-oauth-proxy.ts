@@ -1,10 +1,15 @@
 /**
- * Instagram OAuth reverse proxy inside the SvelteKit Cloudflare worker.
+ * Meta OAuth reverse proxy inside the SvelteKit Cloudflare worker.
  *
  * Meta receives stable first-party URLs on tkaflowarts.com. The worker passes
  * those requests to the Firebase HTTP functions that own secrets, state, and
  * token exchange. This must live in the worker because adapter-cloudflare's
  * advanced-mode _worker.js shadows the repository's functions/ directory.
+ *
+ * Two independent handshakes come through here:
+ *   /api/auth/instagram/*  — Instagram sign-in (mints a Firebase session)
+ *   /api/share/meta/*      — publish-connect (attaches a posting credential)
+ * They share this proxy and nothing else.
  */
 
 const FUNCTION_ORIGIN =
@@ -14,15 +19,17 @@ const FUNCTION_BY_PATH = new Map([
   ["/api/auth/instagram/callback", "instagramAuthCallback"],
   ["/api/auth/instagram/deauthorize", "instagramDeauthorizeCallback"],
   ["/api/auth/instagram/data-deletion", "instagramDataDeletionCallback"],
+  ["/api/share/meta/callback", "metaConnectCallback"],
 ] as const);
 
-type InstagramProxyPath =
+type MetaProxyPath =
   | "/api/auth/instagram/callback"
   | "/api/auth/instagram/deauthorize"
-  | "/api/auth/instagram/data-deletion";
+  | "/api/auth/instagram/data-deletion"
+  | "/api/share/meta/callback";
 
-export function isInstagramAuthProxyPath(pathname: string): boolean {
-  return FUNCTION_BY_PATH.has(pathname as InstagramProxyPath);
+export function isMetaOAuthProxyPath(pathname: string): boolean {
+  return FUNCTION_BY_PATH.has(pathname as MetaProxyPath);
 }
 
 function isAllowedMethod(pathname: string, method: string): boolean {
@@ -40,13 +47,11 @@ function allowedMethods(pathname: string): string {
       : "GET";
 }
 
-export async function proxyInstagramAuthRequest(
+export async function proxyMetaOAuthRequest(
   request: Request
 ): Promise<Response> {
   const requestUrl = new URL(request.url);
-  const functionName = FUNCTION_BY_PATH.get(
-    requestUrl.pathname as InstagramProxyPath
-  );
+  const functionName = FUNCTION_BY_PATH.get(requestUrl.pathname as MetaProxyPath);
   if (!functionName) return new Response("Not found", { status: 404 });
 
   if (!isAllowedMethod(requestUrl.pathname, request.method)) {

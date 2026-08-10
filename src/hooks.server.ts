@@ -5,9 +5,9 @@ import {
   proxyFirebaseAuthHandler,
 } from "$lib/server/auth/firebase-auth-handler-proxy";
 import {
-  isInstagramAuthProxyPath,
-  proxyInstagramAuthRequest,
-} from "$lib/server/auth/instagram-auth-proxy";
+  isMetaOAuthProxyPath,
+  proxyMetaOAuthRequest,
+} from "$lib/server/auth/meta-oauth-proxy";
 import {
   createLandingPageTransformer,
   shouldPreloadRouteAsset,
@@ -49,8 +49,8 @@ export const handle: Handle = async ({ event, resolve }) => {
   // Meta must redirect to an exact public URL, while the app secret and token
   // exchange stay in Firebase. Serve the branded URL through the same worker
   // layer as the existing Firebase auth handler proxy.
-  if (isInstagramAuthProxyPath(event.url.pathname)) {
-    return proxyInstagramAuthRequest(event.request);
+  if (isMetaOAuthProxyPath(event.url.pathname)) {
+    return proxyMetaOAuthRequest(event.request);
   }
 
   // Handle console forwarding endpoint

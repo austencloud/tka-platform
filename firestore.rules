@@ -1977,6 +1977,30 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Meta publish-connect handshake. Same shape as the sign-in states above:
+    // the owner may watch their own random state document for the popup to
+    // report back; nothing in it is a credential.
+    match /metaConnectStates/{state} {
+      allow read: if request.auth != null
+        && request.auth.uid == resource.data.requesterUid;
+      allow write: if false;
+    }
+
+    // Instagram and Facebook Page access tokens. Admin SDK only — no client
+    // read path exists, and none should be added. What the UI needs to render
+    // lives in metaPublishStatus below.
+    match /metaPublishConnections/{uid} {
+      allow read, write: if false;
+    }
+
+    // Token-free mirror of the above: which accounts are connected, under what
+    // name, until when. Owner-readable so the share sheet can subscribe; only
+    // the Admin SDK writes it.
+    match /metaPublishStatus/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
     match /instagramDataDeletionRequests/{confirmationCode} {
       allow read, write: if false;
     }
