@@ -6,21 +6,12 @@
 -->
 <script lang="ts">
   import { getExtensionFlowCoordinator } from "$lib/features/create/shared/get-extension-flow-coordinator";
-  import * as firstStepAnalyzerModule from "$lib/features/create/shared/services/first-step-analyzer";
-  import * as sequenceJsonExporterModule from "$lib/features/create/shared/services/sequence-json-exporter";
+  import { copyToClipboard } from "$lib/features/create/shared/services/sequence-json-exporter";
   import * as sequenceTransferHandlerModule from "$lib/features/create/shared/services/sequence-transfer-handler";
   import * as subDrawerStatePersisterModule from "$lib/features/create/shared/services/sub-drawer-state-persister";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { onMount } from "svelte";
-  import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type {
-    ExtensionAnalysis,
-    CircularizationOption,
-  } from "../../services/sequence-extender";
+  import type { ExtensionAnalysis } from "../../services/sequence-extender";
   import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
-  import type { ExtensionFlowCoordinator } from "../../services/extension-flow-coordinator";
-  import type { SubDrawerType } from "../../services/sub-drawer-state-persister";
-  type FirstStepAnalyzer = typeof firstStepAnalyzerModule;
   import type { Letter } from "$lib/shared/foundation/domain/models/letter";
   import { UndoOperationType } from "../../services/undo-manager";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -28,7 +19,8 @@
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
-  import { createSequenceActionsSubdrawerState } from "../../state/sequence-actions-subdrawer-state.svelte";
+  import { createSequenceActionsPanelState } from "../../state/sequence-actions-panel-state.svelte";
+  import { createSequenceActionsOrchestrator } from "../../services/sequence-actions-orchestrator";
   import { flyTransition, fadeTransition } from "$lib/shared/utils/transitions";
   import { DURATION } from "$lib/shared/transitions/transitions";
 
@@ -39,17 +31,9 @@
   import TransformDetailModal from "../transform-help/TransformDetailModal.svelte";
   import TurnPatternView from "./TurnPatternView.svelte";
 
-  // Transform help mode types
   import type { ActionHelpId } from "../../domain/transforms/transform-help-content";
-  type HelpMode = "inactive" | "selecting" | "viewing";
   import DirectionView from "./DirectionView.svelte";
-  import {
-    getDirectionDrillDepth,
-    getDirectionDrillParent,
-    getDirectionDrillSubtitle,
-    getDirectionDrillTitle,
-    type DirectionDrillRoute,
-  } from "./direction-drill-route";
+  import type { DirectionDrillRoute } from "./direction-drill-route";
   import DurationPatternView from "./DurationPatternView.svelte";
   import ExtendView from "./ExtendView.svelte";
   import StepGridSection from "./StepGridSection.svelte";
@@ -59,10 +43,6 @@
   import MobileHandSelector from "./MobileHandSelector.svelte";
   import MobileActionToolbar from "./MobileActionToolbar.svelte";
   import { getSequenceActionsPanelHeight } from "./sequence-actions-panel-height";
-  import {
-    getHelpModeAfterDetailClose,
-    type SequenceActionsHelpEntry,
-  } from "./sequence-actions-help-flow";
   import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
   import { getReturnContext } from "$lib/shared/coordinators/sequence-handoff.svelte";
@@ -151,30 +131,44 @@
   const extensionFlowCoordinator = getExtensionFlowCoordinator();
   const subDrawerPersister = subDrawerStatePersisterModule;
   const transferHandler = sequenceTransferHandlerModule;
-  const firstStepAnalyzer: FirstStepAnalyzer = firstStepAnalyzerModule;
-  const jsonExporter = sequenceJsonExporterModule;
 
-  // Local state - $effect below handles initial and prop changes
+  const viewState = createSequenceActionsPanelState({
+    initialSubView,
+    initialDirectionRoute,
+    initialExtensionAnalysis,
+    initialHelpAction,
+  });
+  const actionOrchestrator = createSequenceActionsOrchestrator({
+    getSequenceState: () => activeSequenceState,
+    getTargetHand: () => panelState.targetHand,
+    hapticService,
+    pushUndoSnapshot: (type) => CreateModuleState.pushUndoSnapshot(type),
+    busyState: viewState,
+    extensionFlowCoordinator,
+    setGridRotationDirection,
+    finishShiftStart: () => {
+      panelState.exitShiftStartMode();
+      viewState.finishShiftStart();
+    },
+    copySequenceJson: copyToClipboard,
+  });
+
+  // The drawer owns layout and DOM effects. The state owner handles all panel
+  // navigation, transient extension data, dialogs, and operation guards.
   let isOpen = $state(false);
-  let isTransforming = $state(false);
-  let showConfirmDialog = $state(false);
-  let pendingSequenceTransfer = $state<any>(null);
-  // Sub-drawer states - initialized to false, restored after parent drawer registers
-  // Transform help mode state machine
-  let helpMode = $state<HelpMode>(initialHelpAction ? "viewing" : "inactive");
-  let selectedTransform = $state<ActionHelpId | null>(initialHelpAction);
-  let helpEntry = $state<SequenceActionsHelpEntry>(
-    initialHelpAction ? "direct" : "selector"
-  );
-  // Sub-views (Turns / Duration / Rotation / Extend) render INLINE as a
-  // drill-down that swaps the panel content in place — not covering drawers.
-  let subView = $state<
-    "turnPattern" | "duration" | "rotation" | "extend" | null
-  >(initialSubView);
-  let directionRoute = $state<DirectionDrillRoute>(initialDirectionRoute);
-  let extensionAnalysis = $state<ExtensionAnalysis | null>(
-    initialExtensionAnalysis
-  );
+  const isTransforming = $derived(viewState.isTransforming);
+  const isExtending = $derived(viewState.isExtending);
+  const helpMode = $derived(viewState.helpMode);
+  const selectedTransform = $derived(viewState.selectedTransform);
+  const helpEntry = $derived(viewState.helpEntry);
+  const subView = $derived(viewState.subView);
+  const directionRoute = $derived(viewState.directionRoute);
+  const extensionAnalysis = $derived(viewState.extensionAnalysis);
+  const circularizationOptions = $derived(viewState.circularizationOptions);
+  const directUnavailableReason = $derived(viewState.directUnavailableReason);
+  const pendingSequenceTransfer = $derived(viewState.pendingSequenceTransfer);
+  const showShiftConfirmDialog = $derived(viewState.showShiftConfirmDialog);
+  const pendingShiftStepNumber = $derived(viewState.pendingShiftStepNumber);
 
   // The root actions keep the exact workspace-controls footprint. A deeper
   // task earns one more control row, but never at the cost of hiding the
@@ -188,48 +182,9 @@
     });
   });
 
-  // Extend's header is dynamic and depends on the live analysis.
-  const extendDirectlyLoopable = $derived(
-    (extensionAnalysis?.availableLOOPOptions ?? []).length > 0 ||
-      extensionAnalysis?.orientationRepeat != null
-  );
-  const subViewTitle = $derived(
-    subView === "turnPattern"
-      ? "Turn Patterns"
-      : subView === "duration"
-        ? "Duration Patterns"
-        : subView === "rotation"
-          ? getDirectionDrillTitle(directionRoute)
-          : subView === "extend"
-            ? extendDirectlyLoopable
-              ? "Extend"
-              : "Choose Bridge"
-            : ""
-  );
-  // Back always steps exactly one level, so it says which level it lands on.
-  const backLabel = $derived.by(() => {
-    if (subView !== "rotation") return "Back to sequence actions";
-    const parentRoute = getDirectionDrillParent(directionRoute);
-    return parentRoute
-      ? `Back to ${getDirectionDrillTitle(parentRoute)}`
-      : "Back to sequence actions";
-  });
-  const subViewSubtitle = $derived.by(() => {
-    // Every Direction screen owns exactly one knob, so the header subtitle is
-    // where that knob says what it does — the body stays the control alone.
-    if (subView === "rotation")
-      return getDirectionDrillSubtitle(directionRoute);
-    if (subView !== "extend") return "";
-    if (!extendDirectlyLoopable)
-      return "Select a pictograph to reach a loopable position";
-    if (extensionAnalysis?.extensionType === "half_rotation")
-      return "180° rotation patterns";
-    if (extensionAnalysis?.extensionType === "quarter_rotation")
-      return "90° rotation patterns";
-    if (extensionAnalysis?.extensionType === "already_complete")
-      return "Extend with pattern";
-    return "Extend your sequence";
-  });
+  const subViewTitle = $derived(viewState.subViewTitle);
+  const backLabel = $derived(viewState.backLabel);
+  const subViewSubtitle = $derived(viewState.subViewSubtitle);
 
   /**
    * Shared-axis (X) drill-down transition. The sub-view conceptually sits to the
@@ -254,41 +209,19 @@
    * runs the push in reverse instead of sliding in from the right again.
    */
   const NAV_TRAVEL = 30;
-  let navDirection = $state(1);
-  const navEnterX = $derived(NAV_TRAVEL * navDirection);
-  const navExitX = $derived(-NAV_TRAVEL * navDirection);
-  // Spotlight modal state (legacy - modal replaced with route navigation)
-  let spotlightOpen = $state(false);
-  let spotlightSequence = $state<SequenceData | null>(null);
-  // Note: These are kept for backwards compatibility but modal is no longer rendered
-  let circularizationOptions = $state<CircularizationOption[]>([]);
-  let directUnavailableReason = $state<string | null>(null);
-  let isExtending = $state(false);
-  let showShiftConfirmDialog = $state(false);
-  let pendingShiftStepNumber = $state<number | null>(null);
-
-  // Track if we've completed initial restoration (prevents auto-save from clearing on mount)
-  let restorationComplete = $state(false);
+  const navEnterX = $derived(NAV_TRAVEL * viewState.navDirection);
+  const navExitX = $derived(-NAV_TRAVEL * viewState.navDirection);
 
   // Auto-save active sub-drawer to sessionStorage
   // Only clears if restoration is complete (prevents clearing saved state on mount)
   $effect(() => {
     if (!subDrawerPersister || !persistReviewState) return;
 
-    let activeDrawer: SubDrawerType = null;
-    if (subView === "turnPattern") activeDrawer = "turnPattern";
-    else if (subView === "rotation") activeDrawer = "rotationDirection";
-    else if (subView === "duration") activeDrawer = "duration";
-    // Note: "extend" is intentionally NOT persisted. Unlike the stateless
-    // pattern editors above, the extend view depends on transient computed
-    // analysis (extensionAnalysis) that is not saved. Persisting it would
-    // restore an empty, stale "no extensions available" view on reopen. Closing
-    // the panel while in extend therefore returns to the actions grid next open.
-    else if (helpMode !== "inactive") activeDrawer = "help";
+    const activeDrawer = viewState.getPersistedSubDrawer();
 
     if (activeDrawer) {
       subDrawerPersister.setActiveSubDrawer(activeDrawer);
-    } else if (restorationComplete) {
+    } else if (viewState.restorationComplete) {
       // Only clear if restoration is done - prevents clearing on initial mount
       subDrawerPersister.clearSubDrawer();
     }
@@ -301,7 +234,7 @@
   $effect(() => {
     isOpen = show;
     if (!show) {
-      hasRestoredSubDrawer = false;
+      viewState.resetRestorationOnClose();
     }
   });
 
@@ -343,21 +276,15 @@
   // Restore sub-drawer state when panel opens.
   // Opens the sub-drawer immediately so user goes straight to
   // Duration/Extend/Turns/Rotation without seeing the actions grid first.
-  let hasRestoredSubDrawer = false;
   $effect(() => {
     if (!persistReviewState) {
-      restorationComplete = true;
-      hasRestoredSubDrawer = true;
+      viewState.skipRestoration();
       return;
     }
-    if (isOpen && !hasRestoredSubDrawer && subDrawerPersister) {
-      hasRestoredSubDrawer = true;
+    if (isOpen && !viewState.hasRestoredSubView && subDrawerPersister) {
       const restoredSubDrawer = subDrawerPersister.getActiveSubDrawer();
-      if (restoredSubDrawer === "help") helpMode = "selecting";
-      else if (restoredSubDrawer === "turnPattern") subView = "turnPattern";
-      else if (restoredSubDrawer === "rotationDirection") subView = "rotation";
-      else if (restoredSubDrawer === "duration") {
-        subView = "duration";
+      const restoreEffect = viewState.restoreSubView(restoredSubDrawer);
+      if (restoreEffect === "enter-duration-preview") {
         // Restore must run the same entry side effects as handleDuration():
         // without an active preview session, DurationPatternView's onPreview
         // no-ops and pattern changes silently don't show on the timeline
@@ -365,8 +292,7 @@
         if (isSideBySideLayout && sequence) {
           panelState.enterDurationPreviewMode(sequence);
         }
-      }
-      else if (restoredSubDrawer === "extend") {
+      } else if (restoreEffect === "start-extend-flow") {
         // Extend is transient and never auto-persisted (see auto-save effect),
         // so a stored "extend" only comes from an explicit launch
         // (AltHotkeyOverlay's Extend button). Recompute the analysis against the
@@ -375,76 +301,16 @@
         // (subView stays null) when the sequence isn't extendable.
         void handleExtend();
       }
-      // Mark restoration attempted unconditionally. The auto-save effect's clear
-      // branch is gated on this flag; if it only flipped when something was
-      // restored, sessions that opened with no persisted sub-drawer could never
-      // clear stale state written later in the same session.
-      restorationComplete = true;
     }
   });
 
-  // Transform helper - eliminates boilerplate across all transform handlers
-  // Pushes undo snapshot BEFORE performing the action
-  async function withTransform(
-    undoType: UndoOperationType,
-    action: () => Promise<void>,
-    beforeAction?: () => void
-  ) {
-    if (!sequence || isTransforming) return;
-    isTransforming = true;
-    hapticService?.trigger("selection");
-
-    // Push undo snapshot BEFORE the transform
-    CreateModuleState.pushUndoSnapshot(undoType);
-
-    beforeAction?.();
-    try {
-      await action();
-    } finally {
-      isTransforming = false;
-    }
-  }
-
-  // Transform handlers - pass targetHand from panel state
-  const handleMirror = () =>
-    withTransform(UndoOperationType.MIRROR_SEQUENCE, () =>
-      activeSequenceState.mirrorSequence(panelState.targetHand)
-    );
-  const handleSwap = () =>
-    withTransform(UndoOperationType.SWAP_COLORS, () =>
-      activeSequenceState.swapColors()
-    ); // Swap always operates on both hands
-  const handleRewind = () =>
-    withTransform(UndoOperationType.REWIND_SEQUENCE, () =>
-      activeSequenceState.rewindSequence(panelState.targetHand)
-    );
-  const handleFlip = () =>
-    withTransform(UndoOperationType.FLIP_SEQUENCE, () =>
-      activeSequenceState.flipSequence(panelState.targetHand)
-    );
-  const handleInvert = () =>
-    withTransform(UndoOperationType.INVERT_SEQUENCE, () =>
-      activeSequenceState.invertSequence(panelState.targetHand)
-    );
-
-  // Rotation handlers set grid animation direction before transform
-  const handleRotateCW = () =>
-    withTransform(
-      UndoOperationType.ROTATE_SEQUENCE,
-      () =>
-        activeSequenceState.rotateSequence("clockwise", panelState.targetHand),
-      () => setGridRotationDirection(1)
-    );
-  const handleRotateCCW = () =>
-    withTransform(
-      UndoOperationType.ROTATE_SEQUENCE,
-      () =>
-        activeSequenceState.rotateSequence(
-          "counterclockwise",
-          panelState.targetHand
-        ),
-      () => setGridRotationDirection(-1)
-    );
+  const handleMirror = actionOrchestrator.mirror;
+  const handleSwap = actionOrchestrator.swap;
+  const handleRewind = actionOrchestrator.rewind;
+  const handleFlip = actionOrchestrator.flip;
+  const handleInvert = actionOrchestrator.invert;
+  const handleRotateCW = actionOrchestrator.rotateClockwise;
+  const handleRotateCCW = actionOrchestrator.rotateCounterclockwise;
 
   function handlePreview() {
     if (!sequence) return;
@@ -454,129 +320,89 @@
     openSequenceViewer(sequence, { returnPath, returnLabel });
   }
 
-  function handleSpotlightClose() {
-    // Legacy - no longer used since modal is replaced with route
-    spotlightOpen = false;
-    spotlightSequence = null;
-  }
-
   function handleTurnPattern() {
     hapticService?.trigger("selection");
-    navDirection = 1;
-    subView = "turnPattern";
+    viewState.openTurnPatterns();
   }
 
   /** Back out of an inline sub-view, reverting any per-view side effects. */
   function exitSubView() {
     hapticService?.trigger("selection");
-    navDirection = -1;
-    if (subView === "rotation") {
-      const parentRoute = getDirectionDrillParent(directionRoute);
-      if (parentRoute) {
-        directionRoute = parentRoute;
-        return;
-      }
-    }
-    if (subView === "duration" && panelState.isDurationPreviewMode) {
+    const effect = viewState.exitSubView();
+    if (
+      effect === "discard-duration-preview" &&
+      panelState.isDurationPreviewMode
+    ) {
       panelState.exitDurationPreviewMode(false);
     }
-    if (subView === "extend") {
-      extensionAnalysis = null;
-      circularizationOptions = [];
-      directUnavailableReason = null;
-    }
-    subView = null;
   }
 
   function handleTurnPatternApply(result: {
-    sequence: any;
+    sequence: SequenceData;
     warnings?: readonly string[];
   }) {
-    // Push undo snapshot BEFORE applying pattern
-    CreateModuleState.pushUndoSnapshot(UndoOperationType.APPLY_TURN_PATTERN);
-
-    // Update the active sequence with the pattern-applied sequence
-    activeSequenceState.setCurrentSequence(result.sequence);
-    hapticService?.trigger("success");
+    actionOrchestrator.applyPattern(
+      UndoOperationType.APPLY_TURN_PATTERN,
+      result.sequence
+    );
   }
 
   function handleRotationDirection() {
     hapticService?.trigger("selection");
-    navDirection = 1;
-    directionRoute = "hub";
-    subView = "rotation";
+    viewState.openDirection();
   }
 
   function handleDirectionRouteChange(route: DirectionDrillRoute) {
     hapticService?.trigger("selection");
-    navDirection =
-      getDirectionDrillDepth(route) < getDirectionDrillDepth(directionRoute)
-        ? -1
-        : 1;
-    directionRoute = route;
+    viewState.changeDirectionRoute(route);
   }
 
   function handleRotationDirectionApply(result: {
-    sequence: any;
+    sequence: SequenceData;
     warnings?: readonly string[];
   }) {
-    // Push undo snapshot BEFORE applying pattern
-    CreateModuleState.pushUndoSnapshot(
-      UndoOperationType.APPLY_ROTATION_PATTERN
+    actionOrchestrator.applyPattern(
+      UndoOperationType.APPLY_ROTATION_PATTERN,
+      result.sequence
     );
-
-    // Update the active sequence with the pattern-applied sequence
-    activeSequenceState.setCurrentSequence(result.sequence);
-    hapticService?.trigger("success");
   }
 
   function handleReversalApply(result: {
-    sequence: any;
+    sequence: SequenceData;
     warnings?: readonly string[];
   }) {
-    // Reversal flips prop spin (same axis as rotation direction) — reuse the
-    // rotation-pattern undo bucket.
-    CreateModuleState.pushUndoSnapshot(
-      UndoOperationType.APPLY_ROTATION_PATTERN
+    actionOrchestrator.applyPattern(
+      UndoOperationType.APPLY_ROTATION_PATTERN,
+      result.sequence
     );
-    activeSequenceState.setCurrentSequence(result.sequence);
-    hapticService?.trigger("success");
   }
 
   function handleDuration() {
     hapticService?.trigger("selection");
-    navDirection = 1;
-    subView = "duration";
-    // Enter preview mode on desktop (side-by-side layout)
+    viewState.openDuration();
     if (isSideBySideLayout && sequence) {
       panelState.enterDurationPreviewMode(sequence);
     }
   }
 
   function handleDurationApply(result: {
-    sequence: any;
+    sequence: SequenceData;
     warnings?: readonly string[];
   }) {
-    // Push undo snapshot BEFORE applying pattern
-    CreateModuleState.pushUndoSnapshot(
-      UndoOperationType.APPLY_DURATION_PATTERN
+    actionOrchestrator.applyPattern(
+      UndoOperationType.APPLY_DURATION_PATTERN,
+      result.sequence,
+      () => {
+        if (panelState.isDurationPreviewMode) {
+          panelState.exitDurationPreviewMode(true);
+        }
+      }
     );
-
-    // Exit preview mode and apply the changes
-    if (panelState.isDurationPreviewMode) {
-      panelState.exitDurationPreviewMode(true); // apply = true
-    }
-
-    // Update the active sequence with the pattern-applied sequence
-    activeSequenceState.setCurrentSequence(result.sequence);
-    hapticService?.trigger("success");
-    // Duration preview lifecycle ends on apply — return to the actions grid.
-    navDirection = -1;
-    subView = null;
+    viewState.completeDuration();
   }
 
   function handleDurationPreview(result: {
-    sequence: any;
+    sequence: SequenceData;
     warnings?: readonly string[];
   }) {
     if (panelState.isDurationPreviewMode) {
@@ -585,21 +411,12 @@
   }
 
   async function handleExtend() {
-    if (!sequence || !extensionFlowCoordinator) return;
-    hapticService?.trigger("selection");
-
-    const result = await extensionFlowCoordinator.startFlow(sequence);
-
-    if (!result.canExtend) {
-      toast.warning(result.errorMessage || "Cannot extend this sequence");
-      return;
+    const result = await actionOrchestrator.startExtension();
+    if (result.status === "completed") {
+      viewState.openExtend(result.value);
+    } else if (result.status === "failed") {
+      toast.warning(result.message);
     }
-
-    extensionAnalysis = result.analysis;
-    circularizationOptions = result.circularizationOptions;
-    directUnavailableReason = result.directUnavailableReason;
-    navDirection = 1;
-    subView = "extend";
   }
 
   /**
@@ -607,31 +424,13 @@
    * and re-analyzes to show LOOP options.
    */
   async function handleBridgeAppend(bridgeLetter: Letter) {
-    if (!sequence || !extensionFlowCoordinator || isExtending) return;
-    isExtending = true;
-    hapticService?.trigger("selection");
-
-    // Push undo snapshot BEFORE appending bridge
-    CreateModuleState.pushUndoSnapshot(UndoOperationType.ADD_BEAT);
-
-    const result = await extensionFlowCoordinator.appendBridge(
-      sequence,
-      bridgeLetter
-    );
-
-    if (result.success && result.sequence) {
-      activeSequenceState.setCurrentSequence(result.sequence);
-      extensionAnalysis = result.analysis;
-      circularizationOptions = []; // Clear bridge options since we now have LOOPs
-      directUnavailableReason = null;
-      hapticService?.trigger("success");
-      toast.success(result.message);
-    } else {
+    const result = await actionOrchestrator.appendBridge(bridgeLetter);
+    if (result.status === "completed") {
+      viewState.updateExtensionAfterBridge(result.value.analysis);
+      toast.success(result.value.message);
+    } else if (result.status === "failed") {
       toast.error(result.message);
-      hapticService?.trigger("error");
     }
-
-    isExtending = false;
   }
 
   /**
@@ -639,32 +438,13 @@
    * Bridge letter (if any) has already been appended by handleBridgeAppend.
    */
   async function handleExtendApply(loopType: LOOPType) {
-    if (!sequence || !extensionFlowCoordinator || isExtending) return;
-    isExtending = true;
-    hapticService?.trigger("selection");
-
-    // Push undo snapshot BEFORE applying extension
-    CreateModuleState.pushUndoSnapshot(UndoOperationType.EXTEND_SEQUENCE);
-
-    const result = await extensionFlowCoordinator.applyLoop(sequence, loopType);
-
-    if (result.success && result.sequence) {
-      activeSequenceState.setCurrentSequence(result.sequence);
-      hapticService?.trigger("success");
-      toast.success(result.message);
-
-      // Return to the actions grid on success
-      navDirection = -1;
-      subView = null;
-      extensionAnalysis = null;
-      circularizationOptions = [];
-      directUnavailableReason = null;
-    } else {
+    const result = await actionOrchestrator.applyLoop(loopType);
+    if (result.status === "completed") {
+      toast.success(result.value.message);
+      viewState.completeExtension();
+    } else if (result.status === "failed") {
       toast.warning(result.message);
-      hapticService?.trigger("error");
     }
-
-    isExtending = false;
   }
 
   /**
@@ -673,30 +453,13 @@
    * transform is involved.
    */
   function handleOrientationRepeat() {
-    if (!sequence || !extensionFlowCoordinator || isExtending) return;
-    isExtending = true;
-    hapticService?.trigger("selection");
-
-    CreateModuleState.pushUndoSnapshot(UndoOperationType.EXTEND_SEQUENCE);
-
-    const result = extensionFlowCoordinator.applyOrientationRepeat(sequence);
-
-    if (result.success && result.sequence) {
-      activeSequenceState.setCurrentSequence(result.sequence);
-      hapticService?.trigger("success");
-      toast.success(result.message);
-
-      navDirection = -1;
-      subView = null;
-      extensionAnalysis = null;
-      circularizationOptions = [];
-      directUnavailableReason = null;
-    } else {
+    const result = actionOrchestrator.applyOrientationRepeat();
+    if (result.status === "completed") {
+      toast.success(result.value.message);
+      viewState.completeExtension();
+    } else if (result.status === "failed") {
       toast.warning(result.message);
-      hapticService?.trigger("error");
     }
-
-    isExtending = false;
   }
 
   function handleEditInConstructor() {
@@ -723,8 +486,7 @@
         navigationState.setActiveTab("construct");
         break;
       case "confirm-needed":
-        pendingSequenceTransfer = result.pendingSequence;
-        showConfirmDialog = true;
+        viewState.requestTransferConfirmation(result.pendingSequence);
         break;
       case "transfer":
         performSequenceTransfer(result.sequence);
@@ -732,7 +494,7 @@
     }
   }
 
-  async function performSequenceTransfer(sequenceToTransfer: any) {
+  async function performSequenceTransfer(sequenceToTransfer: SequenceData) {
     if (!transferHandler) return;
     const constructTabState = ctx.constructTabState;
     if (!constructTabState?.sequenceState) return;
@@ -779,65 +541,42 @@
   }
 
   function handleShiftStartBeatSelect(stepNumber: number) {
-    if (!sequence || !firstStepAnalyzer) return;
     hapticService?.trigger("selection");
-
-    const result = firstStepAnalyzer.analyzeSelection(sequence, stepNumber);
+    const result = actionOrchestrator.analyzeShiftStart(stepNumber);
+    if (!result) return;
 
     switch (result.action) {
       case "no-op":
         toast.info(result.reason);
         panelState.exitShiftStartMode();
+        viewState.finishShiftStart();
         break;
       case "immediate":
-        executeShiftStart(result.stepNumber);
+        void executeShiftStart(result.stepNumber);
         break;
       case "confirm-needed":
-        pendingShiftStepNumber = result.stepNumber;
-        showShiftConfirmDialog = true;
+        viewState.requestShiftConfirmation(result.stepNumber);
         break;
     }
   }
 
   async function executeShiftStart(stepNumber: number) {
-    if (!sequence || !firstStepAnalyzer || isTransforming) return;
-    isTransforming = true;
-
-    // Push undo snapshot BEFORE shifting
-    CreateModuleState.pushUndoSnapshot(UndoOperationType.SHIFT_START);
-
-    try {
-      await activeSequenceState.shiftStartPosition(stepNumber);
-      const result = firstStepAnalyzer.getResultMessage(sequence, stepNumber);
-      toast.success(result.message);
-      hapticService?.trigger("success");
-    } catch (error) {
-      console.error("[ShiftStart] Failed:", error);
-      toast.error("Could not shift start position");
-      hapticService?.trigger("error");
-    } finally {
-      isTransforming = false;
-      panelState.exitShiftStartMode();
-      pendingShiftStepNumber = null;
-      showShiftConfirmDialog = false;
-    }
+    const result = await actionOrchestrator.shiftStart(stepNumber);
+    if (result.status === "completed") toast.success(result.value.message);
+    else if (result.status === "failed") toast.error(result.message);
   }
 
   function cancelShiftStart() {
     panelState.exitShiftStartMode();
-    pendingShiftStepNumber = null;
-    showShiftConfirmDialog = false;
+    viewState.finishShiftStart();
   }
 
   async function handleCopySequenceJson() {
-    if (!sequence || !jsonExporter) return;
-    hapticService?.trigger("selection");
-
-    const success = await jsonExporter.copyToClipboard(sequence);
-    if (success) {
+    const result = await actionOrchestrator.copySequenceJson();
+    if (result.status === "completed") {
       toast.success("Sequence JSON copied to clipboard");
-    } else {
-      toast.error("Failed to copy to clipboard");
+    } else if (result.status === "failed") {
+      toast.error(result.message);
     }
   }
 
@@ -854,37 +593,25 @@
 
   function enterHelpMode() {
     hapticService?.trigger("selection");
-    helpEntry = "selector";
-    helpMode = "selecting";
+    viewState.enterHelpMode();
   }
 
   function selectTransformHelp(actionId: ActionHelpId) {
     hapticService?.trigger("selection");
-    helpEntry = "selector";
-    selectedTransform = actionId;
-    helpMode = "viewing";
+    viewState.selectTransformHelp(actionId);
   }
 
   function closeDetailModal() {
-    // Desktop Help is a browser, so Back returns to its action selector.
-    // A mobile long-press opens one explanation directly; closing it returns
-    // to the actions that were actually visible before the long-press.
-    helpMode = getHelpModeAfterDetailClose(helpEntry);
-    selectedTransform = null;
+    viewState.closeHelpDetail();
   }
 
   function exitHelpMode() {
-    // Fully exit help mode (backdrop click or escape from selection)
-    helpMode = "inactive";
-    selectedTransform = null;
-    helpEntry = "selector";
+    viewState.exitHelpMode();
   }
 
   /** Mobile long-press help: skip "selecting" mode, go directly to viewing */
   function handleHelpRequest(actionId: ActionHelpId) {
-    helpEntry = "direct";
-    selectedTransform = actionId;
-    helpMode = "viewing";
+    viewState.openDirectHelp(actionId);
   }
 </script>
 
@@ -1146,16 +873,16 @@
 {/if}
 
 <SequencePreviewDialog
-  bind:isOpen={showConfirmDialog}
+  bind:isOpen={viewState.showConfirmDialog}
   currentSequence={ctx.constructTabState?.sequenceState?.currentSequence}
   incomingSequence={pendingSequenceTransfer}
   onConfirm={() => {
-    performSequenceTransfer(pendingSequenceTransfer);
-    pendingSequenceTransfer = null;
+    if (pendingSequenceTransfer) {
+      void performSequenceTransfer(pendingSequenceTransfer);
+    }
+    viewState.clearTransferConfirmation();
   }}
-  onCancel={() => {
-    pendingSequenceTransfer = null;
-  }}
+  onCancel={viewState.clearTransferConfirmation}
 />
 
 <!-- First Beat Confirmation Dialog (non-circular sequences) -->
