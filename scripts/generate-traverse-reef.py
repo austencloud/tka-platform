@@ -37,8 +37,17 @@ import json
 import math
 import os
 import random
+import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+
+# The sculpted floor. Same module the visual mesh is baked from and the runtime
+# colliders are tiled from, so a specimen cannot end up standing on a different
+# seabed from the one the visitor walks.
+import traverse_seabed as seabed  # noqa: E402
+
 FACTS_PATH = os.path.join(HERE, "ocean-asset-facts.json")
 RULES_PATH = os.path.join(HERE, "ocean-ecology-rules.json")
 LAYOUT_PATH = os.path.join(HERE, "water-traverse-reef-layout.json")
@@ -222,8 +231,15 @@ def yaw_for(rng, policy, x, layout):
 
 
 def emit(placements, asset_id, facts, x, z, size, yaw, terrain, tilt_jitter, rng, note):
-    """One placement row, sat on the floor and tilted off vertical."""
-    y = terrain.height(z) + facts["baseOffset"] * size
+    """One placement row, sat on the floor and tilted off vertical.
+
+    The floor is no longer a plane. `terrain.height` gives the analytic ramp
+    profile; `seabed.relief_at` adds the sculpted dune the specimen is actually
+    standing on. Without the second term every specimen off the cleared route
+    sits buried to its waist in its own dune — which is what happens when set
+    dressing is placed before the ground exists.
+    """
+    y = terrain.height(z) + seabed.relief_at(x, z) + facts["baseOffset"] * size
     placements.append(
         {
             "asset": asset_id,

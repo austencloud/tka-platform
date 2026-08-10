@@ -28,6 +28,8 @@
  * gets: no signage, no objective marker, no choice of route. Follow the water.
  */
 
+import { buildSeabedTiles } from "./water-traverse-seabed";
+
 // ── Types ───────────────────────────────────────────────────────────────────
 
 export interface WorldRect {
@@ -447,7 +449,15 @@ function buildRidge(
   return walls;
 }
 
-export function buildWaterTraverseLayout(): WaterTraverseLayout {
+/**
+ * The analytic floor: flat legs and ramps, with no seabed relief on top.
+ *
+ * Split out from buildWaterTraverseLayout because the seabed's height field
+ * is stored RELATIVE to this, so baseFloorYAt has to be able to ask what the
+ * floor was before the field was applied — asking the finished layout would
+ * include the tiles built from the field and define itself in a circle.
+ */
+function buildBaseFloorRects(): FloorRect[] {
   const ascent = buildAscent();
   const full = rect(-SEA_HALF_W, 0, SEA_HALF_W, 0);
 
@@ -499,6 +509,28 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
           SPRING_END_Z - 8
         ),
         SPRING_BANK_Y
+      )
+    );
+  }
+
+  return floorRects;
+}
+
+export function buildWaterTraverseLayout(): WaterTraverseLayout {
+  const ascent = buildAscent();
+  const floorRects: FloorRect[] = buildBaseFloorRects();
+
+  // The sculpted seabed, tiled on top of the flat trench floor. The route down
+  // the middle has zero relief by construction, so it contributes no tiles and
+  // stays perfectly smooth; everything here is the rough ground either side of
+  // it. See water-traverse-seabed.ts.
+  for (const tile of buildSeabedTiles(baseFloorYAt)) {
+    const half = tile.size / 2;
+    floorRects.push(
+      flat(
+        tile.id,
+        rect(tile.x - half, tile.z - half, tile.x + half, tile.z + half),
+        tile.topY
       )
     );
   }
@@ -705,6 +737,20 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
     spawn: { x: 0, y: SNOW_Y + 1.0, z: SNOW_START_Z + 6, yaw: 0 },
   };
 }
+
+/**
+ * Elevation of the ANALYTIC floor at a route Z — the flat legs and the ramps,
+ * before the seabed's sculpted relief is added on top.
+ *
+ * Exported for the seabed module, which stores relief relative to it, and for
+ * scripts/traverse_seabed.py, which reproduces this function so the baked mesh
+ * lands on the same ramps.
+ */
+export function baseFloorYAt(z: number): number {
+  baseFloors ??= buildBaseFloorRects();
+  return floorYAt(baseFloors, z);
+}
+let baseFloors: FloorRect[] | null = null;
 
 /** Which leg a world Z belongs to. */
 export function legAt(z: number): Leg {

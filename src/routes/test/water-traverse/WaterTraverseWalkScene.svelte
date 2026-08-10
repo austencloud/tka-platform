@@ -45,6 +45,7 @@
   import OceanWaterSurface from "$lib/shared/3d/environments/scenes/ocean/runtime/water/WaterSurface.svelte";
   import SteamColumn from "$lib/features/water-traverse/components/SteamColumn.svelte";
   import SeaChamberLife from "$lib/features/water-traverse/components/SeaChamberLife.svelte";
+  import TrenchFloor from "$lib/features/water-traverse/components/TrenchFloor.svelte";
   import {
     detectOceanQuality,
     getOceanQualityConfig,
@@ -235,10 +236,29 @@
       };
     });
 
+  /**
+   * Surfaces the sculpted floor GLB draws, so the graybox must not.
+   *
+   * `sea-floor`, `descent` and the ascent ramps are still COLLIDERS — they are
+   * the flat safety plane the seabed tiles are stacked on — they are simply no
+   * longer the thing you see. Drawing both would put a flat teal plane through
+   * the middle of every dune.
+   */
+  function drawnByTrenchFloor(id: string): boolean {
+    return (
+      id === "sea-floor" ||
+      id === "descent" ||
+      id.startsWith("ascent") ||
+      id.startsWith("seabed-tile-")
+    );
+  }
+
   const surfaces: SurfaceMesh[] = colliders
     .filter(
       (collider) =>
-        !collider.id.startsWith("ridge-") && !collider.id.startsWith("cap-")
+        !collider.id.startsWith("ridge-") &&
+        !collider.id.startsWith("cap-") &&
+        !drawnByTrenchFloor(collider.id)
     )
     .map((collider) => ({
     ...collider,
@@ -818,6 +838,12 @@
     />
   </T.Group>
 {/if}
+
+<!--
+  The ground itself. Drawn before everything that stands on it, and the reason
+  the sea-floor / descent / ascent graybox slabs above are collider-only now.
+-->
+<TrenchFloor />
 
 <!--
   The trench, populated. See SeaChamberLife for why the ocean's own systems are
