@@ -24,7 +24,7 @@
   import { T } from "@threlte/core";
   import { useDraco, useKtx2, useMeshopt } from "@threlte/extras";
   import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-  import type { Group } from "three";
+  import type { Group, Mesh, MeshStandardMaterial } from "three";
   import { R2_CDN } from "$lib/shared/3d/constants/r2-cdn";
 
   interface Props {
@@ -46,6 +46,40 @@
 
   let root = $state.raw<Group | null>(null);
 
+  /**
+   * Make the source assets dielectric.
+   *
+   * Most of the 38 specimens arrive with `metalness: 1` — a glTF default that
+   * survives when the exporter writes no metallicRoughness texture. A fully
+   * metallic PBR surface has NO diffuse response: it shows only the specular
+   * reflection of an environment map, and this trench has no environment map.
+   * The result was the largest specimens rendering as black cutouts with a pale
+   * rim where the single directional light's rough specular lobe caught them.
+   *
+   * It also made the chamber immune to lighting work. Hemisphere light is
+   * diffuse, so raising the seabed's upwelling fill changed nothing at all on
+   * the surfaces that most needed it — the failure looked like a lighting bug
+   * and was a material one.
+   *
+   * Coral, sponge, sand-rock and basalt are dielectrics. Metalness 0 is not a
+   * look choice here, it is the correct value; the 1 is junk metadata. Fixed at
+   * load rather than in the bake so it also covers any specimen added later
+   * from the same third-party sources.
+   */
+  function makeDielectric(group: Group) {
+    const seen = new Set<string>();
+    group.traverse((child) => {
+      const mesh = child as Mesh;
+      if (!mesh.isMesh) return;
+      const material = mesh.material as MeshStandardMaterial;
+      if (!material || seen.has(material.uuid)) return;
+      seen.add(material.uuid);
+      if (material.metalness === undefined) return;
+      material.metalness = 0;
+      material.needsUpdate = true;
+    });
+  }
+
   const loader = new GLTFLoader();
   loader.setDRACOLoader(useDraco("/draco/"));
   loader.setMeshoptDecoder(useMeshopt());
@@ -55,6 +89,7 @@
     GLB_URL,
     (gltf) => {
       root = gltf.scene as Group;
+      makeDielectric(root);
       onProgress?.(1);
       onReady?.(root);
     },

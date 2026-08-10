@@ -15,6 +15,7 @@
     FogExp2,
     Group,
     HemisphereLight,
+    MeshBasicMaterial,
     MeshStandardMaterial,
     Quaternion,
     Vector3,
@@ -107,14 +108,23 @@
     /**
      * The building. Poured concrete, deliberately plain: the dioramas are the
      * expensive part and the shell should read as the thing they were
-     * installed inside, not as more landscape. A little emissive keeps the
-     * ceiling from going to black overhead, where no light reaches it.
+     * installed inside, not as more landscape.
+     *
+     * It used to be pale concrete lifted further by a 0.9 emissive, which put
+     * the building in the same value band as the exhibit inside it. In a real
+     * museum the hall is the DARK thing and the diorama is the lit thing —
+     * that contrast is the entire reason a diorama reads as an object on
+     * display rather than as the world. Dropping the shell four stops is what
+     * makes the water the brightest thing in frame, and it costs nothing.
+     *
+     * The emissive stays, barely, for the ceiling: no light reaches it and
+     * pure black overhead reads as a missing surface rather than as a roof.
      */
     hallShell: new MeshStandardMaterial({
-      color: "#8d8b86",
-      roughness: 0.94,
-      emissive: "#4a4a48",
-      emissiveIntensity: 0.9,
+      color: "#2f3134",
+      roughness: 0.96,
+      emissive: "#14161a",
+      emissiveIntensity: 0.6,
     }),
     /** Portal jambs and lintels. Heavier stone, so the arch reads as built. */
     portal: new MeshStandardMaterial({
@@ -160,15 +170,66 @@
     quaternion: Quaternion;
   }
 
-  const RIDGE_BODY: Record<string, MeshStandardMaterial> = {
+  /**
+   * The peaks are painted scenery, not terrain.
+   *
+   * They were lit rock: MeshStandardMaterial taking the sun, casting and
+   * receiving shadow, sitting in the same value band as everything else. Two
+   * things went wrong with that. They read as unfinished low-poly mountains
+   * rather than as a deliberate flat, and — because they answer to the same
+   * light as the water — nothing in frame said which was the exhibit and which
+   * was the room around it.
+   *
+   * So: matte, unlit, and mixed toward the cyclorama behind them by distance
+   * from the route. A painted backdrop does not have a specular response and
+   * does not get darker on its shadow side; the flatness IS the tell, the same
+   * argument the cyclorama material already makes. Austen chose this over
+   * sculpting them for real (2026-08-09).
+   */
+  const BACKDROP_TINT = new Color("#cfe3ee");
+
+  /** Painted flat. `flatShading` keeps the facets crisp; nothing here is lit. */
+  function paintedFlat(hex: string, towardBackdrop: number): MeshBasicMaterial {
+    return new MeshBasicMaterial({
+      color: new Color(hex).lerp(BACKDROP_TINT, towardBackdrop),
+      fog: true,
+    });
+  }
+
+  const RIDGE_BODY: Record<string, MeshBasicMaterial> = {
+    snow: paintedFlat("#7d8b95", 0.34),
+    sea: paintedFlat("#33423f", 0.16),
+    spring: paintedFlat("#4b3f34", 0.2),
+  };
+  /**
+   * Submerged ridges stay LIT.
+   *
+   * A painted flat is a background device and only works at background
+   * distance. The trench's flanking walls are three metres from the visitor
+   * and eighteen metres underwater, and stripping their light turned them into
+   * a black jagged mass with pale caps — a hole in the picture rather than a
+   * wall. Anything the visitor is standing INSIDE keeps its light; only the
+   * scenery standing beyond the diorama gets flattened.
+   */
+  const RIDGE_BODY_LIT: Record<string, MeshStandardMaterial> = {
     snow: new MeshStandardMaterial({ color: "#5f6a72", roughness: 0.98 }),
     sea: new MeshStandardMaterial({ color: "#2b3736", roughness: 1 }),
     spring: new MeshStandardMaterial({ color: "#3d332a", roughness: 0.95 }),
   };
-  const RIDGE_CAP: Record<string, MeshStandardMaterial> = {
+  const RIDGE_CAP_LIT: Record<string, MeshStandardMaterial> = {
     snow: new MeshStandardMaterial({ color: "#eef6fb", roughness: 0.92 }),
     sea: new MeshStandardMaterial({ color: "#44544d", roughness: 1 }),
     spring: new MeshStandardMaterial({ color: "#8d7663", roughness: 0.92 }),
+  };
+  /**
+   * The cap is the lit face a scenic painter would put on: one value up, warmer
+   * on the spring side, and pushed further toward the backdrop so the tops sink
+   * into it rather than cutting a hard silhouette against the hall.
+   */
+  const RIDGE_CAP: Record<string, MeshBasicMaterial> = {
+    snow: paintedFlat("#eef6fb", 0.42),
+    sea: paintedFlat("#55655d", 0.3),
+    spring: paintedFlat("#9c8471", 0.34),
   };
 
   interface RidgeMesh {
@@ -182,8 +243,8 @@
     peakRadius: number;
     peakHeight: number;
     peakBase: number;
-    body: MeshStandardMaterial;
-    cap: MeshStandardMaterial;
+    body: MeshBasicMaterial | MeshStandardMaterial;
+    cap: MeshBasicMaterial | MeshStandardMaterial;
   }
 
   /** Stable pseudo-random in 0..1 from a string, so the range never reshuffles. */
@@ -222,6 +283,7 @@
         collider.id,
         collider.position[1] - height / 2,
       );
+      const submerged = collider.position[1] - height / 2 < WATERLINE_Y;
       const footprint = Math.max(collider.size[0], collider.size[2]);
       const lean = idNoise(collider.id, 7);
       // The peak carries most of the height; the skirt is the mass it stands
@@ -245,8 +307,10 @@
         peakRadius: spread * (0.38 + idNoise(collider.id, 23) * 0.19),
         peakHeight: height - skirtHeight * 0.62,
         peakBase: skirtHeight * 0.38,
-        body: RIDGE_BODY[family],
-        cap: RIDGE_CAP[family],
+        // Submerged = a wall you are inside; above water = scenery beyond
+        // the diorama. Only the latter is painted.
+        body: submerged ? RIDGE_BODY_LIT[family] : RIDGE_BODY[family],
+        cap: submerged ? RIDGE_CAP_LIT[family] : RIDGE_CAP[family],
       };
     });
 
@@ -855,16 +919,11 @@
 -->
 {#each ridges as ridge (ridge.id)}
   <T.Group position={[ridge.x, ridge.baseY, ridge.z]} rotation.y={ridge.yaw}>
-    <T.Mesh position.y={ridge.skirtHeight / 2} receiveShadow castShadow>
+    <T.Mesh position.y={ridge.skirtHeight / 2}>
       <T.ConeGeometry args={[ridge.skirtRadius, ridge.skirtHeight, 5, 1]} />
       <T is={ridge.body} />
     </T.Mesh>
-    <T.Mesh
-      position.y={ridge.peakBase + ridge.peakHeight / 2}
-      rotation.y={0.7}
-      receiveShadow
-      castShadow
-    >
+    <T.Mesh position.y={ridge.peakBase + ridge.peakHeight / 2} rotation.y={0.7}>
       <T.ConeGeometry args={[ridge.peakRadius, ridge.peakHeight, 4, 1]} />
       <T is={ridge.cap} />
     </T.Mesh>

@@ -109,6 +109,19 @@ const SURFACE_STOPS: Stop[] = [
  * The depth palette, by metres below the waterline. Red goes first in water,
  * then green, so the ramp down is a slow desaturation into blue rather than a
  * dimmer switch.
+ *
+ * `groundColor` is the one value here that is not a mood dial. The chamber has
+ * exactly two lights, so the hemisphere's ground half IS the fill: every face
+ * that turns away from the sun is lit by it and nothing else. It used to be
+ * 0x0b2b36 at the trench floor, which is near black, and the result was that
+ * the largest reef specimens — the basalt pinnacle and the coral citadel on the
+ * east verge — rendered as flat black cutouts with lit caps. They read as holes
+ * punched in the picture rather than as rock.
+ *
+ * A seabed is the brightest surface in a trench. Eighteen metres of water over
+ * pale sand bounces a real, measurable amount of light back up; the shaded side
+ * of a boulder down there is dim blue-green, never black. These values are that
+ * upwelling light, so they track the sand rather than the water above it.
  */
 const DEPTH_STOPS: Stop[] = [
   {
@@ -119,8 +132,8 @@ const DEPTH_STOPS: Stop[] = [
     sunColor: 0xcaf1f7,
     sunIntensity: 1.9,
     skyColor: 0x74c2d4,
-    groundColor: 0x14424f,
-    hemiIntensity: 0.85,
+    groundColor: 0x4a8b90,
+    hemiIntensity: 0.9,
   },
   {
     at: 8,
@@ -130,8 +143,8 @@ const DEPTH_STOPS: Stop[] = [
     sunColor: 0x9adcec,
     sunIntensity: 1.6,
     skyColor: 0x4fa8bf,
-    groundColor: 0x123845,
-    hemiIntensity: 0.82,
+    groundColor: 0x3d7b84,
+    hemiIntensity: 0.95,
   },
   {
     // The floor of the trench. Dark enough to feel like eighteen metres of
@@ -146,8 +159,8 @@ const DEPTH_STOPS: Stop[] = [
     sunColor: 0x7fd2e8,
     sunIntensity: 1.35,
     skyColor: 0x35899f,
-    groundColor: 0x0b2b36,
-    hemiIntensity: 0.72,
+    groundColor: 0x336d78,
+    hemiIntensity: 1.05,
   },
 ];
 

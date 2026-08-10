@@ -63,14 +63,16 @@ INSTANCES_PER_SQM = 0.055
 # band width disagree, which is a layout bug worth seeing.
 MAX_ATTEMPTS_PER_INSTANCE = 30
 
-# Terrain, matching water-traverse-terrain.ts buildAscent(). Duplicated as
-# CONSTANTS rather than imported because that file is TypeScript; the layout's
-# geometry block carries the same numbers and the two are checked against each
-# other at load.
+# Terrain. The ascent profile lives in traverse_seabed.base_floor_y and is
+# read from there, not restated here.
+#
+# It used to be restated here, as the third copy of the same ramp math after
+# water-traverse-terrain.ts and traverse_seabed.py. When the ascent moved on
+# 2026-08-09 the two other copies were updated and this one was not, so all 755
+# specimens were seated against a floor that no longer existed and the 7.5 m
+# arch gate on the centreline ended up 5.3 m underground. Three owners for one
+# curve is how that happens; there is one owner now.
 SEA_FLOOR_Y = -18.0
-SPRING_FLOOR_Y = -0.9
-SURFACE_BREAK_Y = -1.6
-LANDING_LENGTH = 4.0
 
 
 class Terrain:
@@ -85,26 +87,10 @@ class Terrain:
     def __init__(self, geometry):
         self.flat_end_z = geometry["flatEndZ"]
         self.ascent_end_z = geometry["ascentEndZ"]
-        rise = SPRING_FLOOR_Y - SEA_FLOOR_Y
-        to_break = SURFACE_BREAK_Y - SEA_FLOOR_Y
-        span = self.ascent_end_z - self.flat_end_z - LANDING_LENGTH
-        self.lower_run = span * (to_break / rise)
-        self.lower_end_z = self.flat_end_z + self.lower_run
-        self.break_height = to_break
-        self.landing_end_z = self.lower_end_z + LANDING_LENGTH
-        self.top_height = SPRING_FLOOR_Y - SEA_FLOOR_Y
 
     def height(self, z):
         """Metres above the seabed datum at route position z."""
-        if z <= self.flat_end_z:
-            return 0.0
-        if z <= self.lower_end_z:
-            t = (z - self.flat_end_z) / self.lower_run
-            return self.break_height * t
-        if z <= self.landing_end_z:
-            return self.break_height
-        t = (z - self.landing_end_z) / (self.ascent_end_z - self.landing_end_z)
-        return self.break_height + (self.top_height - self.break_height) * t
+        return seabed.base_floor_y(z) - SEA_FLOOR_Y
 
     def slope_degrees(self, z):
         d = 0.5
