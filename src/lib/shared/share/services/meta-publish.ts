@@ -19,6 +19,18 @@ import {
   getFunctionsInstance,
 } from "$lib/shared/auth/firebase";
 
+/**
+ * Gates every interactive posting entry point: the connect chips, the post
+ * buttons, and the Firestore status listener behind them.
+ *
+ * Same reasoning as INSTAGRAM_LOGIN_ENABLED in auth-providers.config.ts, and
+ * the same shape. Pushing `main` deploys the site but NOT the functions, so a
+ * connect chip that reached production before
+ * `docs/reference/meta-posting-e2e-checklist.md` passes would open a popup at a
+ * callable that is not there. The handoff row is unaffected and keeps working.
+ */
+export const META_POSTING_ENABLED = false;
+
 export type MetaPublishTarget = "instagram" | "facebook-page";
 export type MetaPublishMediaType = "image" | "video";
 

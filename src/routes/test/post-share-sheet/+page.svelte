@@ -87,6 +87,13 @@
   type MetaStateKey = keyof typeof META_STATES;
   let metaState = $state<MetaStateKey>("none");
 
+  /**
+   * Passing no override at all is the production path while
+   * META_POSTING_ENABLED is false: no connect chips, no post buttons, handoff
+   * only. It is a fourth shape, and the one shipping today.
+   */
+  let overrideEnabled = $state(true);
+
   function fakeRender(): void {
     isExportingVideo = true;
     exportProgress = 0.42;
@@ -114,6 +121,9 @@
     <button type="button" onclick={() => (metaState = "both")}
       >Meta: IG + Page</button
     >
+    <button type="button" onclick={() => (overrideEnabled = !overrideEnabled)}
+      >{overrideEnabled ? "Meta: as shipped (flag off)" : "Meta: use override"}</button
+    >
   </div>
   <p class="note">
     Video export is driven by the viewer in the real app; this harness only
@@ -130,7 +140,7 @@
   {exportProgress}
   onRequestVideo={fakeRender}
   onClose={() => (isOpen = false)}
-  metaStatusOverride={META_STATES[metaState]}
+  metaStatusOverride={overrideEnabled ? META_STATES[metaState] : undefined}
 />
 
 <style>

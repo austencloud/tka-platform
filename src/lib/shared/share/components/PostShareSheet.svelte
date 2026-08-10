@@ -46,6 +46,7 @@
     subscribeMetaPublishStatus,
     toInstagramJpeg,
     EMPTY_META_PUBLISH_STATUS,
+    META_POSTING_ENABLED,
     MetaPublishClientError,
     type MetaPublishStatus,
     type MetaPublishTarget,
@@ -148,6 +149,14 @@
     destinations.filter((destination) => !destination.primary)
   );
 
+  /**
+   * The flag hides posting everywhere; the harness override is how the visual
+   * pass still reaches all three connection states while it is off.
+   */
+  const postingAvailable = $derived(
+    META_POSTING_ENABLED || metaStatusOverride !== undefined
+  );
+
   const metaStatus = $derived(metaStatusOverride ?? liveMetaStatus);
 
   /**
@@ -165,6 +174,7 @@
       icon: string;
     }> = [];
 
+    if (!postingAvailable) return targets;
     if (metaStatus.instagram) {
       targets.push({
         id: "instagram",
@@ -201,6 +211,7 @@
 
   const connectableTargets = $derived.by(() => {
     const chips: Array<{ id: MetaPublishTarget; label: string }> = [];
+    if (!postingAvailable) return chips;
     if (!metaStatus.instagram) {
       chips.push({ id: "instagram", label: "Connect Instagram" });
     }
@@ -295,7 +306,7 @@
   // Which Meta accounts are connected, live. Only while the sheet is open —
   // a viewer that never shares should not hold a Firestore listener.
   $effect(() => {
-    if (!isOpen || metaStatusOverride) return;
+    if (!isOpen || metaStatusOverride || !META_POSTING_ENABLED) return;
 
     const uid = getUser()?.uid;
     if (!uid) {
