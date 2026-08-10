@@ -7,8 +7,9 @@
  * and validated by tests/unit/spiroanim-72-validate.test.ts (1728/1728
  * orientation agreements against TKA's own engine, 0 continuity breaks).
  *
- * Concepts and handpaths are Gage DeMello's; the generated geometry is Ryan
- * Girard's spiroanim implementation over them.
+ * Concepts and handpaths are Gage DeMello's; the generated geometry is
+ * Mentive's spiroanim implementation over them. ("Mentive" is the handle he
+ * goes by and prefers — the only name his repo and posts actually carry.)
  *
  * Usage:
  *   node scripts/import-spiroanim-eight-step.cjs --dry-run
@@ -27,7 +28,7 @@ const COLLECTION_NAME = "Gage's 12-step CAPs";
 const COLLECTION_DESCRIPTION =
   "The 72 base cells of the 8-Step Concepts, by Gage DeMello. Each is a closed " +
   "12-step capped antispin pattern: one hand caps while the other runs continually. " +
-  "Transcribed from Ryan Girard's spiroanim, which generates the geometry.";
+  "Transcribed from Mentive's spiroanim, which generates the geometry.";
 const NOTES = "8-Step Concepts by Gage DeMello — spiroanim cell";
 
 const cells = JSON.parse(

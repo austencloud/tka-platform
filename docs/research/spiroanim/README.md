@@ -1,6 +1,6 @@
 # SpiroAnim → TKA: full transcription
 
-Complete transcription of Ryan Girard's **SpiroAnim** pattern space into TKA
+Complete transcription of Mentive's **SpiroAnim** pattern space into TKA
 letters. Source: [rbgirard/spiroanim](https://github.com/rbgirard/spiroanim),
 a Vue 3 + Three.js poi/staff animator (`PTEXT = ['POI', 'Staff']`).
 
@@ -11,7 +11,7 @@ at all.
 
 ## Attribution
 
-The Eight Step handpaths are **Gage's source data**, re-paginated by Girard
+The Eight Step handpaths are **Gage's source data**, re-paginated by Mentive
 (his `docs/EIGHT_STEP.md` documents the correction). The VTG matrix descends
 from Noel Yee's Vulcan Tech Gospel (2010). Nothing here is TKA-original; it is
 a transcription of other people's systems into TKA's vocabulary. Credit them on

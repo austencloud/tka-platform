@@ -108,7 +108,7 @@
         {:else if collection.credit}
           <!-- Hand-written attribution for a contributor with no profile to
                link to. Same slot as ownerName, so a card never shows both. -->
-          <span class="tile-owner">{collection.credit}</span>
+          <span class="tile-owner credit">{collection.credit}</span>
         {/if}
       </span>
     </button>
@@ -236,6 +236,17 @@
     font-size: var(--font-size-compact, 12px);
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* "by Adam Molski" fits on one line; a written credit is a phrase and often
+     doesn't. Give it two, then clamp. */
+  .tile-owner.credit {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    white-space: normal;
+    line-height: 1.35;
   }
 
   .tile-count {
