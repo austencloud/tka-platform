@@ -98,6 +98,25 @@ invariant(
   report.counts.basaltMasses === manifest.contract.basalt.length,
   "Blender basalt count drifted from the coordinate manifest"
 );
+// The shell is carved out of one mass, not stacked out of prisms. A returning
+// FF_Basalt_ node means the build regressed to free-standing interior walls
+// standing on a slab, which is what reopened Gate 2.
+invariant(
+  report.shell?.model === "carved",
+  "Blender report no longer describes a carved shell"
+);
+invariant(
+  nodeNames.filter((name) => /^FF_Shell_Rock$/.test(name)).length === 1,
+  "The carved shell mass FF_Shell_Rock is missing from the GLB"
+);
+invariant(
+  nodeNames.filter((name) => /^FF_Basalt_/.test(name)).length === 0,
+  "Stacked basalt prisms returned to the shell"
+);
+invariant(
+  report.counts.basaltMassesBuiltAsGeometry === 0,
+  "Blender report claims basalt masses were built as standalone geometry"
+);
 // Everything green must carry the FF_Growth prefix the runtime stages, or the
 // Earth route renders from the moment the room loads and the reveal is spent
 // while the visitor is still standing at the third performer.

@@ -3,7 +3,7 @@
   "sceneId": "first-fire-cinder-court",
   "title": "First Fire: The Cinder Court",
   "domainProofRequired": true,
-  "currentGate": 3,
+  "currentGate": 2,
   "authority": {
     "experienceSpec": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-production-contract.md",
     "roomShellSource": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
@@ -190,46 +190,79 @@
     },
     {
       "id": "playable-graybox",
-      "status": "approved",
+      "status": "ready-for-review",
       "evidence": [
         {
           "kind": "blender-source",
           "path": "scripts/build-first-fire-graybox.py",
-          "sha256": "355b8b5edfeb07bbe52dc94e29ddd6a883b2113832b16a4a464591803cbf3e5a",
-          "note": "Headless Blender build driven entirely by the approved plan contract."
+          "sha256": "b198c631b2e0c70e03723bc3c8c7ce33d708499921e08bf63e27025ebc254613",
+          "note": "Headless Blender build driven entirely by the approved plan contract. The shell is now carved from one mass rather than stacked; the plan contract itself is consumed unchanged."
         },
         {
           "kind": "coordinate-manifest",
           "path": "docs/superpowers/specs/first-fire-cinder-court/first-fire-cinder-court-blender-plan.json",
-          "sha256": "c0e3b6761f060c67290e5c9cf1560e281c3ec904afe26471c0fae6053f611de4"
+          "sha256": "c0e3b6761f060c67290e5c9cf1560e281c3ec904afe26471c0fae6053f611de4",
+          "note": "Unchanged from the Gate 1 approval. The carve consumes it; it does not re-author it."
         },
         {
           "kind": "graybox-glb",
           "path": "static/models/museum/cave/first-fire-cinder-court-graybox.glb",
-          "sha256": "170d51f2205b6ca0a8bd54c6043171d2810ad55a1e6fc7a71484d06ae75d6cba"
+          "sha256": "178bbccc1427362ba378ac7ca1c7ada2c1cdd6e66f4b0f8e9bc21d97be396429",
+          "note": "143140 bytes. One carved FF_Shell_Rock, zero FF_Basalt_ prisms."
+        },
+        {
+          "kind": "shell-section-measurements",
+          "path": "docs/superpowers/specs/first-fire-cinder-court/gate2/carve-shell-section-measurements.json",
+          "sha256": "0c23169cb4b76420f6b4411b4ecfa3ef4a8f6851bcf57cc305ad33ea0261d243",
+          "note": "Runtime measurement of the loaded shell: crown height and wall vertex count per court, taken from the GLB in the browser rather than from the build script."
         },
         {
           "kind": "first-person-walk",
-          "path": "docs/superpowers/specs/first-fire-cinder-court/gate2/walk-02-dj-mouth.webp",
-          "sha256": "828c2c873b2fb14072da96271d1faf989d47769525d5df339ce7784220e4eee9",
-          "note": "Seven walk frames captured at 1408 by 792 from https://localhost:5173/test/first-fire-graybox, walk-01 through walk-07 in the same directory."
+          "path": "docs/superpowers/specs/first-fire-cinder-court/gate2/carve-01-water-vestibule.webp",
+          "sha256": "4f9b7a7cc98fd267fac63918d3c7d505428f84a46f7a22e5baf9f50973e5d2ad",
+          "note": "Water arrival at 2112 by 1188. The vault closes overhead and the wall runs down into the floor as one surface."
+        },
+        {
+          "kind": "first-person-walk-corridor",
+          "path": "docs/superpowers/specs/first-fire-cinder-court/gate2/carve-02-ember-bridge.webp",
+          "sha256": "3d9673136267382eb7f45f8a280aedec41ca41a99ee6cc2b07adc90ca75d0b73",
+          "note": "Corridor section past the coal wall, with the tunnel arch reading ahead."
+        },
+        {
+          "kind": "first-person-walk-dj-court",
+          "path": "docs/superpowers/specs/first-fire-cinder-court/gate2/carve-03-dj-magma-chamber.webp",
+          "sha256": "e10d116df6e08d57b8df19f137ac333cbfcd1b8a29c5202750a6a6ed0ffd5c82",
+          "note": "DJ court: the 7.6m canyon slot. Crown arcs across frame, exit mouth visible in the chamber wall."
+        },
+        {
+          "kind": "first-person-walk-ek-court",
+          "path": "docs/superpowers/specs/first-fire-cinder-court/gate2/carve-04-ek-burn-bowl.webp",
+          "sha256": "7d317c8883804f29148ad7c2ceeb8af95cdb3698582cc315ed0ee3765ff6bb74",
+          "note": "EK court: the 6.0m low bowl. Ceiling sits close and warm, a different room from DJ."
+        },
+        {
+          "kind": "first-person-walk-fl-court",
+          "path": "docs/superpowers/specs/first-fire-cinder-court/gate2/carve-05-fl-eruption-shaft.webp",
+          "sha256": "4ce4d2bd9d47cd3ff830f1d4f8e062ab79cf991227c884b0c3cb2e6d8ba58398",
+          "note": "FL court: the 9.2m chimney throat. Ceiling leaves frame; the orbit band runs violet."
         },
         {
           "kind": "review-contact-sheet",
           "path": "docs/superpowers/specs/first-fire-cinder-court/gate2/first-fire-gate2-contact-sheet.webp",
-          "sha256": "d7ef76820a25ae3290993a3e1919d7026f4163c188a449cbe5e771b8dcbd2984"
+          "sha256": "d7ef76820a25ae3290993a3e1919d7026f4163c188a449cbe5e771b8dcbd2984",
+          "note": "Superseded stacked-shell contact sheet, retained as the record of what was walked on 2026-08-09."
         }
       ],
       "checks": [
         {
           "name": "artifact-digest",
           "status": "passed",
-          "evidence": "scripts/verify-first-fire-graybox-glb.mjs passes: 156792 bytes, one scene, 151 nodes, 15 materials, Draco plus GPU instancing, no QA cameras or lights, and the report digest matches the coordinate manifest."
+          "evidence": "scripts/verify-first-fire-graybox-glb.mjs passes at 143140 bytes: one scene, 156 instanced objects, 12 materials, Draco plus GPU instancing, no QA cameras or lights, report digest matches the coordinate manifest. Four new invariants fail the build if the stacked shell returns: report.shell.model must be carved, exactly one FF_Shell_Rock node must exist, zero FF_Basalt_ nodes may exist, and the report must claim zero basalt masses built as geometry."
         },
         {
           "name": "collision",
           "status": "passed",
-          "evidence": "Fire never owns collision: the walk player collides with basalt and court walls only. 24 lane flames plus 36 court perimeter flames equals 60 anchors, all pass-through, all placed from the contract."
+          "evidence": "Unchanged by the carve. Colliders are derived from the contract in first-fire-graybox-colliders.ts, not from GLB geometry, so removing the basalt prisms does not move a collision face. The carved wall foot stands 0.30m outboard of every collider face, so the visitor stops on the collider before touching rock. Fire still owns no collision: 24 lane plus 36 court perimeter equals 60 pass-through anchors."
         },
         {
           "name": "route-duration",
@@ -239,26 +272,42 @@
         {
           "name": "sequence-parity",
           "status": "passed",
-          "evidence": "The review mounts the real MuseumPerformerStation3D. Walk frames 2, 4, and 5 show the live rigs with their sequence and catalog identifiers legible: cave-fire-seq-dj/tnd-split-opp-jdjd, cave-fire-seq-ek/tnd-split-opp-keke, cave-fire-seq-fl/tnd-split-opp-lflf."
+          "evidence": "The review mounts the real MuseumPerformerStation3D. carve-03, carve-04 and carve-05 show the live rigs with their sequence and catalog identifiers legible: cave-fire-seq-dj/tnd-split-opp-jdjd, cave-fire-seq-ek/tnd-split-opp-keke, cave-fire-seq-fl/tnd-split-opp-lflf."
         },
         {
           "name": "staged-reveal",
           "status": "passed",
-          "evidence": "The verifier asserts every green mesh carries the runtime staged FF_Growth prefix. Walk frames 1 to 6 contain no green; frame 7 shows the Earth route only after the last fire is out."
+          "evidence": "The verifier asserts every green mesh carries the runtime staged FF_Growth prefix. No green appears in any of the five carve frames, all of which are captured before the extinguish beat."
         },
         {
           "name": "regression-suite",
           "status": "passed",
-          "evidence": "413 of 413 museum unit tests pass (vitest, 2026-08-09)."
+          "evidence": "424 of 424 museum unit tests pass across 46 files (vitest run tests/unit/museum, 2026-08-09), and svelte-check reports 0 errors and 0 warnings after the carve."
+        },
+        {
+          "name": "shell-continuity",
+          "status": "passed",
+          "evidence": "Measured from the loaded GLB in the browser, not from the build script: one FF_Shell_Rock of 6068 vertices spanning -30.8 to 30.8 by -1.4 to 11.5 by -23.8 to 23.8 metres, and zero free-standing FF_Basalt_ prisms. Each court carries the section it was carved with - DJ crown 7.6m with 410 wall vertices in the 6 to 9m band, EK crown 6.0m with 641, FL crown 9.2m with 447 - so the three courts are three different rooms by geometry rather than by dressing. carve-shell-section-measurements.json holds the raw numbers."
         }
       ],
-      "approval": {
-        "approvedBy": "Austen Cloud",
-        "approvedAt": "2026-08-09T18:40:00Z",
-        "quote": "I think we're really on the right track and I'm pretty happy with the Gray box now. What's the next major phase?",
+      "approval": null,
+      "rejection": {
+        "rejectedBy": "Austen Cloud",
+        "rejectedAt": "2026-08-09T22:10:00Z",
+        "quote": "the floor is all fucked up doesn't connect to the walls The walls are kind of randomly spaced I just don't really feel a sense of great cohesion here maybe it's because it's meant to be a tunnel system it's going to have textures replacing the walls If so we should just build it that way",
         "museumTrackerItem": "1bUBNo26hJpRq4Bf36gh",
-        "visualComprehensionConfirmed": true,
-        "note": "Approval confirmed by the later walk report, where Austen described the horseshoe turn and the occluded EK court from his own play session."
+        "supersedes": {
+          "approvedBy": "Austen Cloud",
+          "approvedAt": "2026-08-09T18:40:00Z",
+          "quote": "I think we're really on the right track and I'm pretty happy with the Gray box now. What's the next major phase?",
+          "visualComprehensionConfirmed": true
+        },
+        "finding": "The shell is a navigation blockout, not a room section. scripts/build-first-fire-graybox.py lays one flat 58 by 44 metre slab (FF_Shell_Floor), four perimeter boxes at the bounding box, and no ceiling object of any kind - the script contains no roof, no solidify and no boolean. Every interior wall is a free-standing prism from contract.basalt set down on that slab, so no floor meets any wall. Nine of those prisms are named fill-* and exist only to occupy the floor the route does not use, which is what reads as randomly spaced. The route, widths, sightlines and occlusion that Gate 1 measured are unaffected and stand.",
+        "remedy": "Rebuild the shell by carving rather than stacking: sweep the walked section along each contract centreline, dome the courts where corridors meet, union those volumes and subtract them from a solid mass. Floor, wall and ceiling then share one continuous surface by construction, the fill-* masses cease to exist because leftover floor becomes impossible, and the plan contract is consumed unchanged.",
+        "evidenceRetained": true,
+        "note": "Rejection returns the scene to Gate 2 without discarding its evidence: the artifacts below remain the record of what was walked and approved on 2026-08-09, and are superseded only when the carved shell replaces them.",
+        "remediatedAt": "2026-08-09T23:55:00Z",
+        "remediation": "The shell is carved. scripts/build-first-fire-graybox.py now sweeps a mitred tunnel section along every contract path centreline, revolves a per-court chamber where corridors meet, joins those 25 volumes into one negative and subtracts it from a single rock mass with an exact boolean. FF_Shell_Floor, FF_Shell_North, FF_Shell_South and all 27 free-standing FF_Basalt_ prisms - including the nine fill-* masses - no longer exist as geometry. The GLB carries one FF_Shell_Rock object of 1585 faces, and the verifier fails the build if a basalt prism ever returns."
       }
     },
     {

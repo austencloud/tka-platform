@@ -380,6 +380,10 @@
     if (!isInitialized || props.resetToken === appliedResetToken) return;
     appliedResetToken = props.resetToken;
     resetReview();
+    // The initial reset token lands right after mount, so without this the
+    // spawn teleport silently overwrites the ?camera= capture position and
+    // every locked-camera frame is shot from the Water arrival instead.
+    if (lockedCameraId) teleportToLockedCamera(lockedCameraId);
   });
 
   $effect(() => {

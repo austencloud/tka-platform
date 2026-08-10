@@ -207,5 +207,29 @@
       distance={14}
       decay={2}
     />
+    <!--
+      Chamber bounce.
+
+      The shell is carved, so each court now has its own rock wall standing
+      7.3m out and a crown 6 to 9.2m up. The key above is a point source at
+      decay 2 tuned for the performer: by the time it reaches that wall it is
+      worth about a tenth of what it is worth on the pad, and the chamber
+      renders black. The visitor then stands on a lit disc in a void, which is
+      the exact "floor does not connect to the walls" read that reopened
+      Gate 2 - only now the geometry is right and the lighting hides it.
+
+      This is the molten floor throwing light back onto its own chamber. A
+      glowing floor is an area source, not a point, so it falls off closer to
+      linearly: decay 1 over the chamber radius keeps the wall and the crown
+      legible without doubling the exposure on the pad. It still burns - it
+      goes out with everything else at the extinguish beat.
+    -->
+    <T.PointLight
+      position={[court.x, (court.identity?.keyHeight ?? 2.4) + 1.2, court.z]}
+      color={court.identity?.keyColor ?? "#ff5a12"}
+      intensity={court.id === props.activeShrineId ? 2.2 : 1.5}
+      distance={26}
+      decay={1}
+    />
   {/each}
 {/if}

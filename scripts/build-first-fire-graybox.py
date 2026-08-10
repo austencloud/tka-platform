@@ -138,11 +138,12 @@ def material(
     return result
 
 
+# One rock. The carved shell is a single continuous surface, so floor, wall and
+# vault cannot be given three materials without lying about the geometry - the
+# separate cinder-floor and fractured-edge stones the stacked shell needed are
+# gone with it. What still separates the walked ground from the rock is the
+# route ribbon laid on top of it.
 BASALT = material("FF Basalt", (0.055, 0.043, 0.039, 1), roughness=0.96)
-BASALT_EDGE = material(
-    "FF Fractured Basalt", (0.13, 0.095, 0.073, 1), roughness=0.93
-)
-FLOOR = material("FF Cinder Floor", (0.105, 0.065, 0.048, 1), roughness=0.97)
 ROUTE = material("FF Safe Route", (0.28, 0.15, 0.085, 1), roughness=0.88)
 COURT = material("FF Court Stone", (0.19, 0.105, 0.068, 1), roughness=0.92)
 TRENCH = material(
@@ -399,35 +400,331 @@ def sample_polyline(points: list[dict], count: int) -> list[tuple[float, float]]
     return result
 
 
-# Shell and transition thresholds.
+# ---------------------------------------------------------------------------
+# The room shell: carved, not stacked.
+#
+# Gate 2 was reopened because the first shell was a navigation blockout wearing
+# a room's name. One flat 58 by 44 metre slab, four perimeter boxes at the
+# bounding box, no ceiling object of any kind, and every interior wall a
+# free-standing prism standing on the slab - including nine `fill-*` masses
+# whose only job was to occupy floor the route never uses. Floors met walls at
+# a seam, walls stopped in mid-air, and the spacing read as arbitrary because
+# it was: the prisms were placed to block movement, not to describe a space.
+#
+# This is a lava tube, so it is built the way a lava tube exists: as the absence
+# of rock. The walked section is swept along each contract centreline, the
+# courts are domed where the corridors open out, all of those volumes are joined
+# into a single negative, and that negative is subtracted from one solid mass.
+# Floor, wall and vault are then the same continuous surface by construction -
+# there is no seam that can fail to connect, and no leftover floor to fill.
+#
+# The approved plan contract is consumed unchanged. Centrelines and widths come
+# from pathSections, the chambers from courts/shrines, the apertures from doors,
+# and the corridor clearance is the same 5.5m the contract's basalt walls carry.
+# ---------------------------------------------------------------------------
 min_x, max_x = BOUNDS["minX"], BOUNDS["maxX"]
 min_y, max_y = BOUNDS["minY"], BOUNDS["maxY"]
-wall_height = 8.5
-wall_thickness = 0.8
-add_box("FF_Shell_Floor", (0, 0, -0.22), (ROOM["width"], ROOM["depth"], 0.44), FLOOR, COLLECTIONS["SHELL"])
-add_box("FF_Shell_North", (0, max_y + wall_thickness / 2, wall_height / 2), (ROOM["width"] + wall_thickness * 2, wall_thickness, wall_height), BASALT, COLLECTIONS["SHELL"])
-add_box("FF_Shell_South", (0, min_y - wall_thickness / 2, wall_height / 2), (ROOM["width"] + wall_thickness * 2, wall_thickness, wall_height), BASALT, COLLECTIONS["SHELL"])
+
+SHELL_MARGIN = 1.8          # rock outboard of the plan bounds, so walls have body
+SHELL_FLOOR_DEPTH = 1.4     # rock under the walked floor
+SHELL_ROOF = 11.5           # top of the mass; clears the FL chimney crown
+
+CORRIDOR_CLEARANCE = 5.5    # the contract's corridor basalt is 5.5m tall
+MOUTH_CLEARANCE = 4.2       # a court mouth is a constriction, not a corridor
+VESTIBULE_CLEARANCE = 4.6   # the Water arrival is low, so the corridor lifts
+DOOR_CLEARANCE = 3.4
+
+# Each court is its own chamber. The contract fixes the footprint (radius 7) and
+# a 6m rim minimum; the SECTION is what makes three chambers cut from one rock
+# read as three rooms instead of one room three times. These are the identities
+# already named in first-fire-court-identity: magma chamber, burn, column.
+COURT_SHELL = {
+    "dj": {"clearance": 7.6, "shape": "slot"},   # magma chamber: a canyon slot
+    "ek": {"clearance": 6.0, "shape": "dome"},   # the burn: a low, wide bowl
+    "fl": {"clearance": 9.2, "shape": "shaft"},  # the column: a chimney throat
+}
+
+# Cross-sections as (multiple of the floor half-width, fraction of clearance),
+# floor edge up to the crown. Expressing the lateral term as a multiple lets a
+# 3m mouth and a 14m court share one section language at different scale.
+WALL_PROFILES = {
+    "tube":  [(1.00, 0.00), (1.03, 0.09), (1.07, 0.24), (1.08, 0.44), (1.00, 0.63), (0.81, 0.80), (0.46, 0.93), (0.00, 1.00)],
+    "slot":  [(1.00, 0.00), (1.03, 0.10), (1.06, 0.30), (1.06, 0.52), (1.02, 0.70), (0.92, 0.85), (0.60, 0.95), (0.00, 1.00)],
+    "dome":  [(1.00, 0.00), (1.05, 0.10), (1.08, 0.26), (1.04, 0.44), (0.94, 0.60), (0.78, 0.75), (0.47, 0.90), (0.00, 1.00)],
+    "shaft": [(1.00, 0.00), (1.04, 0.08), (1.06, 0.24), (1.02, 0.42), (0.80, 0.56), (0.42, 0.68), (0.22, 0.86), (0.00, 1.00)],
+}
+
+# The wall foot stands outboard of the walked edge, so the collider set - which
+# is derived from the same contract widths - always stops the visitor before
+# the rock rather than inside it.
+FLOOR_SHOULDER = 0.30
+
+CARVE_COLLECTION = create_collection("CARVE_Negative")
 
 
-def add_split_side(side: str, door: dict) -> None:
-    x = min_x - wall_thickness / 2 if side == "water" else max_x + wall_thickness / 2
-    door_y = door["blender"]["y"]
-    half = door["clearWidth"] / 2
-    lower_end, upper_start = door_y - half, door_y + half
-    for suffix, start, end in (("Lower", min_y, lower_end), ("Upper", upper_start, max_y)):
-        if end <= start:
+def wall_profile(walked_half_width: float, clearance: float, shape: str = "tube") -> list[tuple[float, float]]:
+    foot = walked_half_width + FLOOR_SHOULDER
+    return [(foot * u, clearance * h) for u, h in WALL_PROFILES[shape]]
+
+
+def section_loop(walked_half_width: float, clearance: float, shape: str = "tube") -> list[tuple[float, float]]:
+    """Closed cross-section of the void, as (lateral offset, height)."""
+    profile = wall_profile(walked_half_width, clearance, shape)
+    foot = profile[0][0]
+    loop = [(-foot, 0.0), (foot, 0.0)]
+    loop += profile[1:]                                     # right wall to crown
+    loop += [(-u, h) for u, h in reversed(profile[1:-1])]   # left wall back down
+    return loop
+
+
+def void_mesh(name: str, vertices: list[tuple[float, float, float]], faces: list[tuple[int, ...]]) -> bpy.types.Object:
+    mesh = bpy.data.meshes.new(f"{name}_Mesh")
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    CARVE_COLLECTION.objects.link(obj)
+    return obj
+
+
+def unit(start: tuple[float, float], end: tuple[float, float]) -> tuple[float, float]:
+    dx, dy = end[0] - start[0], end[1] - start[1]
+    length = math.hypot(dx, dy)
+    return (dx / length, dy / length) if length > 1e-9 else (1.0, 0.0)
+
+
+# The mitre widens the section through a bend so the corridor keeps its width
+# instead of pinching. Past this the widening runs away, so it clamps and a
+# joint chamber covers the corner instead - see SHARP_TURN_COSINE.
+MITRE_LIMIT = 0.45
+SHARP_TURN_COSINE = 0.819  # 35 degrees
+
+
+def swept_void(
+    name: str,
+    points: list[tuple[float, float]],
+    width: float,
+    clearance: float,
+    shape: str = "tube",
+    extend: float = 0.3,
+) -> bpy.types.Object | None:
+    """One continuous run of tunnel swept along a centreline.
+
+    Mitred at every interior vertex. The first version of this built each
+    segment as its own straight box, which left the corridor scalloped: at every
+    bend the two boxes' square corners stood proud of the wall on the outside
+    and notched it on the inside, and the plan view read as a chain of blobs
+    rather than a passage.
+    """
+    path = [
+        point for index, point in enumerate(points)
+        if index == 0
+        or math.hypot(point[0] - points[index - 1][0], point[1] - points[index - 1][1]) > 1e-6
+    ]
+    if len(path) < 2:
+        return None
+    # Overrun both ends so consecutive sections overlap. Two sweeps meeting at a
+    # shared vertex touch on a coplanar cap, which is the one case an exact
+    # boolean is entitled to get wrong.
+    if extend > 0:
+        head = unit(path[0], path[1])
+        tail = unit(path[-2], path[-1])
+        path.insert(0, (path[0][0] - head[0] * extend, path[0][1] - head[1] * extend))
+        path.append((path[-1][0] + tail[0] * extend, path[-1][1] + tail[1] * extend))
+
+    loop = section_loop(width / 2, clearance, shape)
+    count = len(loop)
+    vertices: list[tuple[float, float, float]] = []
+    for index, point in enumerate(path):
+        if index == 0:
+            direction = unit(path[0], path[1])
+            scale = 1.0
+        elif index == len(path) - 1:
+            direction = unit(path[-2], path[-1])
+            scale = 1.0
+        else:
+            incoming = unit(path[index - 1], path[index])
+            outgoing = unit(path[index], path[index + 1])
+            bisector = (incoming[0] + outgoing[0], incoming[1] + outgoing[1])
+            length = math.hypot(*bisector)
+            direction = incoming if length < 1e-6 else (bisector[0] / length, bisector[1] / length)
+            normal = (-direction[1], direction[0])
+            scale = 1.0 / max(MITRE_LIMIT, normal[0] * -incoming[1] + normal[1] * incoming[0])
+        nx, ny = -direction[1], direction[0]
+        for lateral, height in loop:
+            vertices.append((
+                point[0] + nx * lateral * scale,
+                point[1] + ny * lateral * scale,
+                height,
+            ))
+
+    faces: list[tuple[int, ...]] = [
+        tuple(reversed(range(count))),
+        tuple(range(count * (len(path) - 1), count * len(path))),
+    ]
+    for ring in range(len(path) - 1):
+        base, top = ring * count, (ring + 1) * count
+        for index in range(count):
+            nxt = (index + 1) % count
+            faces.append((base + index, base + nxt, top + nxt, top + index))
+    return void_mesh(name, vertices, faces)
+
+
+def chamber_void(
+    name: str,
+    centre: tuple[float, float],
+    radius: float,
+    clearance: float,
+    shape: str = "tube",
+    segments: int = 28,
+) -> bpy.types.Object:
+    """The same section revolved: a domed chamber, or the joint at a bend."""
+    profile = wall_profile(radius, clearance, shape)
+    rings = profile[:-1]
+    vertices: list[tuple[float, float, float]] = []
+    for ring_radius, ring_height in rings:
+        for index in range(segments):
+            angle = math.tau * index / segments
+            vertices.append((
+                centre[0] + math.cos(angle) * ring_radius,
+                centre[1] + math.sin(angle) * ring_radius,
+                ring_height,
+            ))
+    apex = len(vertices)
+    vertices.append((centre[0], centre[1], profile[-1][1]))
+    faces: list[tuple[int, ...]] = [tuple(reversed(range(segments)))]
+    for level in range(len(rings) - 1):
+        base, top = level * segments, (level + 1) * segments
+        for index in range(segments):
+            nxt = (index + 1) % segments
+            faces.append((base + index, base + nxt, top + nxt, top + index))
+    crown_ring = (len(rings) - 1) * segments
+    for index in range(segments):
+        faces.append((crown_ring + index, crown_ring + (index + 1) % segments, apex))
+    return void_mesh(name, vertices, faces)
+
+
+carve_parts: list[bpy.types.Object] = []
+
+
+def carve(obj: bpy.types.Object | None) -> None:
+    if obj is not None:
+        carve_parts.append(obj)
+
+
+# The Water vestibule. The contract's threshold footprint is the room the
+# visitor steps into out of Water: wider than the corridor and deliberately
+# lower, so the corridor beyond it reads as a lift rather than a continuation.
+# It runs past minX to meet the door aperture, and it swallows the two short
+# path sections (steam threshold, ember bridge) that live inside it.
+_threshold = CONTRACT["threshold"]["blenderFootprint"]
+carve(swept_void(
+    "CARVE_Vestibule",
+    [
+        (_threshold["centre"]["x"] - _threshold["sizeX"] / 2 - 0.6, _threshold["centre"]["y"]),
+        (_threshold["centre"]["x"] + _threshold["sizeX"] / 2, _threshold["centre"]["y"]),
+    ],
+    _threshold["sizeY"],
+    VESTIBULE_CLEARANCE,
+    extend=0,
+))
+
+# An orbit lane is already inside its court chamber; sweeping it as corridor
+# would only bulge the chamber wall out at the visitor's shoulder.
+SWALLOWED_KINDS = {"shrine-orbit", "steam-threshold", "ember-bridge"}
+SECTION_CLEARANCE = {"shrine-mouth": MOUTH_CLEARANCE}
+
+for section in CONTRACT["pathSections"]:
+    if section["kind"] in SWALLOWED_KINDS:
+        continue
+    clearance = SECTION_CLEARANCE.get(section["kind"], CORRIDOR_CLEARANCE)
+    points = [(point["x"], point["y"]) for point in section["blenderPoints"]]
+    carve(swept_void(f"CARVE_{section['id']}", points, section["width"], clearance))
+    # A joint only where the mitre gave up. The route turns hard twice - into
+    # the DJ court and again out of it - and there the clamped section stops
+    # short of the outside of the corner.
+    for index in range(1, len(points) - 1):
+        incoming = unit(points[index - 1], points[index])
+        outgoing = unit(points[index], points[index + 1])
+        if incoming[0] * outgoing[0] + incoming[1] * outgoing[1] >= SHARP_TURN_COSINE:
             continue
-        add_box(
-            f"FF_Shell_{side.title()}_{suffix}",
-            (x, (start + end) / 2, wall_height / 2),
-            (wall_thickness, end - start, wall_height),
-            BASALT,
-            COLLECTIONS["SHELL"],
-        )
+        carve(chamber_void(
+            f"CARVE_{section['id']}_corner{index:02d}",
+            points[index], section["width"] / 2, clearance, segments=20,
+        ))
 
+for shrine in CONTRACT["shrines"]:
+    spec = COURT_SHELL[shrine["id"]]
+    outline = next(
+        candidate for candidate in CONTRACT["courts"]
+        if candidate["shrineId"] == shrine["id"]
+    )["blenderOutline"]
+    centre = (shrine["blenderCentre"]["x"], shrine["blenderCentre"]["y"])
+    radius = max(
+        math.hypot(point["x"] - centre[0], point["y"] - centre[1])
+        for point in outline
+    )
+    carve(chamber_void(
+        f"CARVE_Court_{shrine['id']}",
+        centre, radius, spec["clearance"], spec["shape"], segments=36,
+    ))
 
-add_split_side("water", CONTRACT["doors"]["water"])
-add_split_side("earth", CONTRACT["doors"]["earth"])
+# Doorways punch clean through the mass at the contract's clear width, so the
+# seam to Water and to Earth is an opening in rock rather than a missing wall.
+for side, door in CONTRACT["doors"].items():
+    outward = -1 if door["side"] == "west" else 1
+    carve(swept_void(
+        f"CARVE_Door_{side}",
+        [
+            (door["blender"]["x"] - outward * 1.2, door["blender"]["y"]),
+            (door["blender"]["x"] + outward * (SHELL_MARGIN + 0.8), door["blender"]["y"]),
+        ],
+        door["clearWidth"],
+        DOOR_CLEARANCE,
+        extend=0,
+    ))
+
+# One negative, one subtraction. Joining first keeps this to a single exact
+# boolean instead of ~70 sequential ones; `use_self` is what lets the
+# overlapping sweeps and chambers behave as their union.
+bpy.ops.object.select_all(action="DESELECT")
+for part in carve_parts:
+    part.select_set(True)
+bpy.context.view_layer.objects.active = carve_parts[0]
+bpy.ops.object.join()
+carve_void = bpy.context.view_layer.objects.active
+carve_void.name = "CARVE_Void"
+bpy.ops.object.mode_set(mode="EDIT")
+bpy.ops.mesh.select_all(action="SELECT")
+bpy.ops.mesh.normals_make_consistent(inside=False)
+bpy.ops.object.mode_set(mode="OBJECT")
+
+shell_rock = add_box(
+    "FF_Shell_Rock",
+    (0, 0, (SHELL_ROOF - SHELL_FLOOR_DEPTH) / 2),
+    (
+        ROOM["width"] + SHELL_MARGIN * 2,
+        ROOM["depth"] + SHELL_MARGIN * 2,
+        SHELL_ROOF + SHELL_FLOOR_DEPTH,
+    ),
+    BASALT,
+    COLLECTIONS["SHELL"],
+)
+carve_modifier = shell_rock.modifiers.new("Carve", "BOOLEAN")
+carve_modifier.operation = "DIFFERENCE"
+carve_modifier.solver = "EXACT"
+carve_modifier.use_self = True
+carve_modifier.use_hole_tolerant = True
+carve_modifier.object = carve_void
+bpy.context.view_layer.objects.active = shell_rock
+bpy.ops.object.modifier_apply(modifier="Carve")
+carve_faces = len(shell_rock.data.polygons)
+if carve_faces <= 6:
+    raise RuntimeError(
+        f"The shell carve produced {carve_faces} faces: the boolean did not cut."
+    )
+bpy.data.objects.remove(carve_void, do_unlink=True)
+bpy.data.collections.remove(CARVE_COLLECTION)
+
 water_door = CONTRACT["doors"]["water"]
 add_box(
     "FF_Water_Threshold",
@@ -462,18 +759,15 @@ for section in CONTRACT["pathSections"]:
             section["width"], 0.075, 0.055, mat, COLLECTIONS["ROUTE"],
         )
 
-# Permanent basalt is the only interior collision owner. Court-defining masses
-# carry their authored height exactly — that is what makes the DJ canyon slot,
-# the low EK bowl rim, and the FL chimney shaft read as three different rooms.
-# Only the generic corridor and fill rock gets a silhouette jitter.
-for index, mass in enumerate(CONTRACT["basalt"]):
-    court_defining = "court" in mass["id"]
-    height = mass["minimumHeight"] + (0 if court_defining else (index % 4) * 0.48)
-    obj = add_polygon_prism(
-        f"FF_Basalt_{mass['id']}", mass["blenderPolygon"], 0, height,
-        BASALT if index % 2 == 0 else BASALT_EDGE, COLLECTIONS["BASALT"],
-    )
-    obj.rotation_euler.z = ((index % 3) - 1) * 0.008
+# The contract's basalt masses no longer build geometry. They were the stacked
+# shell's interior walls, and the carve now expresses the same volume as the
+# rock the tunnel was cut out of: the corridor walls ARE the swept section's
+# flanks, the court rims ARE the chamber walls, and the nine `fill-*` masses
+# that existed only to occupy unwalked floor are simply rock that was never
+# removed. Nothing here is discarded - the masses still own collision, which
+# first-fire-graybox-colliders.ts derives from this same contract, and the
+# carve's wall foot stands FLOOR_SHOULDER outboard of every collider face so
+# the visitor stops before the rock rather than inside it.
 
 # Court floors, orbit rings, ember trenches, and runtime performer pads.
 for shrine in CONTRACT["shrines"]:
@@ -641,7 +935,10 @@ for index, shrine in enumerate(CONTRACT["shrines"]):
         (shrine["blenderCentre"]["x"], shrine["blenderCentre"]["y"], 2.1),
         (1, 0.12 + index * 0.04, 0.015), 1350, 2.5,
     ))
-earth_light = add_light("QA_EarthLight", (max_x - 4, -12, 2.4), (0.18, 0.9, 0.14), 980, 2.7)
+# On the growth path's last leg, not at the room's east edge. The room is a
+# carved tunnel now, so a light placed off the centreline sits inside solid
+# rock and lights nothing.
+earth_light = add_light("QA_EarthLight", (27.75, -10, 2.4), (0.18, 0.9, 0.14), 980, 2.7)
 
 
 def look_at(obj: bpy.types.Object, target: Vector) -> None:
@@ -659,6 +956,13 @@ for camera_spec in CONTRACT["cameras"]:
     )
     data.clip_start = 0.05
     data.clip_end = 250
+    if camera_spec["id"] == "plan":
+        # A real section cut, not a cutaway. The near plane slices the room at
+        # 2.2m so the top-down view shows the carved walls as solid rock with
+        # the tunnel as the void between them. Hiding the shell instead - which
+        # is what this did while the shell was a slab with no ceiling - draws a
+        # plan of the route ribbons and says nothing about the room.
+        data.clip_start = camera_spec["position"]["z"] - 2.2
     if camera_spec["type"] == "orthographic":
         data.type = "ORTHO"
         data.ortho_scale = camera_spec["orthographicScale"]
@@ -708,10 +1012,16 @@ red_objects = [
     or obj.name.startswith("FF_Trench_")
     or "Coal" in obj.name
 ]
+# The overview looks at the room from outside it, and a carved room has a roof,
+# so it is a cutaway. The plan keeps the rock and cuts through it instead; every
+# eye-height camera stands inside the tunnel and keeps it too.
+CUTAWAY_CAMERAS = {"overview"}
+
 render_paths: dict[str, str] = {}
 for camera_id, camera in cameras.items():
     show_red = camera_id not in {"blackout", "earth-reveal"}
     show_growth = camera_id in {"plan", "earth-reveal"}
+    shell_rock.hide_render = camera_id in CUTAWAY_CAMERAS
     for obj in red_objects:
         obj.hide_render = not show_red
     for obj in growth_objects:
@@ -765,8 +1075,21 @@ report = {
         "depth": ROOM["depth"],
         "blenderBounds": BOUNDS,
     },
+    "shell": {
+        "model": "carved",
+        "object": shell_rock.name,
+        "carveOperands": len(carve_parts),
+        "carvedFaces": carve_faces,
+        "corridorClearance": CORRIDOR_CLEARANCE,
+        "mouthClearance": MOUTH_CLEARANCE,
+        "floorShoulder": FLOOR_SHOULDER,
+        "courtSections": {
+            shrine_id: dict(spec) for shrine_id, spec in COURT_SHELL.items()
+        },
+    },
     "counts": {
         "basaltMasses": len(CONTRACT["basalt"]),
+        "basaltMassesBuiltAsGeometry": 0,
         "courts": len(CONTRACT["courts"]),
         "pathSections": len(CONTRACT["pathSections"]),
         "laneFlames": CONTRACT["torchBudget"]["laneStems"],
