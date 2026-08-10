@@ -633,18 +633,45 @@
         teleport(x, y, z);
         return { x, y, z };
       },
-      /** Face a world point from wherever the visitor is standing. */
-      lookAt(x: number, z: number) {
-        const angle = Math.atan2(x - playerPosition.x, z - playerPosition.z);
-        playerYaw = angle;
-        targetPlayerYaw = angle;
-        return angle;
+      /**
+       * Face a world point from wherever the visitor is standing.
+       *
+       * This takes the camera off UnifiedCameraController and drives it
+       * directly. Writing `playerYaw` does not turn the camera — the
+       * controller owns it and overwrites any heading we set, which meant
+       * every review frame captured before 2026-08-09 was shot at the boot
+       * heading no matter what this function returned. A verification bridge
+       * that silently ignores half its own API is worse than no bridge.
+       */
+      lookAt(x: number, z: number, y?: number) {
+        const yaw = Math.atan2(
+          x - playerPosition.x,
+          z - playerPosition.z,
+        );
+        const pitch =
+          y === undefined
+            ? 0
+            : Math.atan2(
+                y - playerPosition.y,
+                Math.hypot(x - playerPosition.x, z - playerPosition.z),
+              );
+        reviewAim = { yaw, pitch };
+        return { yaw, pitch };
+      },
+      /** Aim by angle. Pitch is radians, positive up. */
+      aim(yaw: number, pitch = 0) {
+        reviewAim = { yaw, pitch };
+        return { yaw, pitch };
       },
       /** Look straight down the route. */
-      lookAhead() {
-        playerYaw = 0;
-        targetPlayerYaw = 0;
-        return 0;
+      lookAhead(pitch = 0) {
+        reviewAim = { yaw: 0, pitch };
+        return { yaw: 0, pitch };
+      },
+      /** Hand the camera back to the walker. */
+      release() {
+        reviewAim = null;
+        return true;
       },
       where: () => ({ ...playerPosition, yaw: playerYaw, leg: legAt(playerPosition.z) }),
       atmosphere: () =>
@@ -732,6 +759,30 @@
     if (props.resetToken === appliedResetToken) return;
     appliedResetToken = props.resetToken;
     resetPlayer();
+  });
+
+  /**
+   * Non-null while a review agent is aiming the camera by hand. Suspends
+   * UnifiedCameraController so the two are never fighting over the same
+   * transform, and is dev-only: nothing outside installReviewBridge sets it.
+   */
+  let reviewAim = $state<{ yaw: number; pitch: number } | null>(null);
+
+  useTask(() => {
+    const aim = reviewAim;
+    const cam = threlte.camera.current;
+    if (!aim || !cam) return;
+    // Aim by look-target rather than by writing Euler angles: the bridge's
+    // yaw is atan2(dx, dz) (0 = down-route, +Z), which is not Three's camera
+    // convention, and converting between them by hand is how the heading got
+    // silently wrong in the first place.
+    const cosPitch = Math.cos(aim.pitch);
+    cam.position.set(playerPosition.x, playerPosition.y, playerPosition.z);
+    cam.lookAt(
+      playerPosition.x + Math.sin(aim.yaw) * cosPitch,
+      playerPosition.y + Math.sin(aim.pitch),
+      playerPosition.z + Math.cos(aim.yaw) * cosPitch,
+    );
   });
 
   useTask((delta) => {
@@ -909,7 +960,7 @@
     destinationId="water-traverse-walk"
     {avatarState}
     {physicsProvider}
-    enabled={true}
+    enabled={reviewAim === null}
     initialYaw={bootPoint.yaw}
     initialPitch={0}
     allowedModes={[CameraMode.FIRST_PERSON]}
