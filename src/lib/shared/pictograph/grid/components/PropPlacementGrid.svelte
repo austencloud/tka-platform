@@ -20,6 +20,10 @@
     getPlacementGuideCoordinates,
   } from "$lib/shared/pictograph/grid/services/prop-placement-view-model";
   import { createPropPlacementAimState } from "$lib/shared/pictograph/grid/state/prop-placement-aim-state.svelte";
+  import {
+    createPropPlacementMotionState,
+    type PlacementMotionMove,
+  } from "$lib/shared/pictograph/grid/state/prop-placement-motion.svelte";
   import { createPropPlacementState } from "$lib/shared/pictograph/grid/state/prop-placement-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
@@ -42,6 +46,8 @@
     betaSwapped?: boolean;
     previewPictographData?: StepData | PictographData | null;
     resetEpoch?: number;
+    /** Epoch-counted committed location change to play as an in-place motion. */
+    motionMove?: PlacementMotionMove | null;
     showCenter?: boolean;
     hitTargetRadius?: number;
     editAfterCompletion?: boolean;
@@ -79,6 +85,7 @@
     betaSwapped = false,
     previewPictographData = null,
     resetEpoch = 0,
+    motionMove = null,
     showCenter = false,
     hitTargetRadius = 75,
     editAfterCompletion = false,
@@ -155,6 +162,19 @@
     }
   );
 
+  const motion = createPropPlacementMotionState({
+    getMove: () => motionMove,
+    getGridMode: () => gridMode,
+    getBluePropType: () => bluePropType,
+    getRedPropType: () => redPropType,
+    getBlueOrientation: () => blueOrientation,
+    getRedOrientation: () => redOrientation,
+    getBlueLocation: () => placement.blueLocation,
+    getRedLocation: () => placement.redLocation,
+    getBetaSwapped: () => betaSwapped,
+    getPreviewPictographData: () => previewPictographData,
+  });
+
   const prompt = $derived.by(() =>
     buildPlacementPrompt({
       disabled,
@@ -197,6 +217,14 @@
 
   $effect(() => {
     placement.synchronizeInputs();
+  });
+
+  $effect(() => {
+    motion.synchronize();
+  });
+
+  $effect(() => {
+    return () => motion.destroy();
   });
 
   $effect(() => {
@@ -251,10 +279,14 @@
   {/if}
 
   <div class="grid-area">
-    <div class="grid-wrapper" bind:this={aim.gridWrapper}>
+    <div
+      class="grid-wrapper"
+      class:animating={motion.active}
+      bind:this={aim.gridWrapper}
+    >
       <div class="pictograph-layer">
         <PictographContainer
-          {pictographData}
+          pictographData={motion.step ?? pictographData}
           gridMode={previewPictographData ? null : gridMode}
           showTKA={previewPictographData ? undefined : false}
           showReversals={previewPictographData ? undefined : false}
@@ -266,6 +298,9 @@
           bluePropTypeOverride={bluePropType}
           redPropTypeOverride={redPropType}
           propRenderContext="editor"
+          motionStartData={motion.startData}
+          motionProgress={motion.active ? motion.progress : null}
+          arrowOpacity={motion.active ? 0 : 1}
         />
       </div>
 
@@ -385,6 +420,12 @@
   .pictograph-layer {
     width: 100%;
     height: 100%;
+  }
+
+  /* Props are mid-flight: drag aiming reads live DOM transforms and would
+     fight the animation, so the board ignores input until it lands (~350ms). */
+  .grid-wrapper.animating {
+    pointer-events: none;
   }
 
   .controls-tray {

@@ -11,6 +11,7 @@
 <script lang="ts">
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import PropPlacementGrid from "$lib/shared/pictograph/grid/components/PropPlacementGrid.svelte";
+  import type { PlacementMotionMove } from "$lib/shared/pictograph/grid/state/prop-placement-motion.svelte";
   import type { PropPlacementChange } from "$lib/shared/pictograph/grid/domain/prop-placement";
   import StartPositionEditMode from "./StartPositionEditMode.svelte";
   import DurationControl from "./DurationControl.svelte";
@@ -192,6 +193,7 @@
   let activeMoveColor = $state<MotionColor | null>(null);
   let isRepositioning = $state(false);
   let placementResetEpoch = $state(0);
+  let placementMotionMove = $state<PlacementMotionMove | null>(null);
 
   const stepLabel = $derived.by(() => {
     if (displayedStepNumber === null) return "";
@@ -360,7 +362,8 @@
     color: MotionColor,
     direction: "clockwise" | "counterclockwise",
     rotationSteps: number,
-    targetLocation: GridLocation
+    targetLocation: GridLocation,
+    animateFromLocation: GridLocation | null = null
   ) {
     if (
       !isStartPositionSelected ||
@@ -390,6 +393,18 @@
           ?.startLocation;
       if (updatedLocation !== targetLocation) {
         placementResetEpoch += 1;
+      } else if (animateFromLocation !== null) {
+        // Rotate-arrow moves play in place: the moving prop arcs a
+        // pro-with-zero-turns path around the center while the partner
+        // resolves its beta offset. Drag moves skip this — the finger
+        // already carried the prop.
+        placementMotionMove = {
+          epoch: (placementMotionMove?.epoch ?? 0) + 1,
+          color,
+          from: animateFromLocation,
+          to: targetLocation,
+          direction,
+        };
       }
     } finally {
       isRepositioning = false;
@@ -415,7 +430,13 @@
       currentLocation,
       directionStep
     ) as GridLocation;
-    await rotateStartPositionLocation(color, direction, 2, targetLocation);
+    await rotateStartPositionLocation(
+      color,
+      direction,
+      2,
+      targetLocation,
+      currentLocation
+    );
   }
 
   async function handlePlacementComplete(
@@ -588,6 +609,7 @@
                 betaSwapped={displayedStepData.betaSwapped}
                 previewPictographData={displayedStepData}
                 resetEpoch={placementResetEpoch}
+                motionMove={placementMotionMove}
                 showCenter={startPositionUsesCenter}
                 editAfterCompletion
                 disabled={isRepositioning}

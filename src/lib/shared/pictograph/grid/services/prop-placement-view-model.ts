@@ -185,6 +185,107 @@ export function buildPlacementPictographData(
   } satisfies PictographData;
 }
 
+export interface PlacementTransitionInput {
+  gridMode: GridMode;
+  movingColor: MotionColor;
+  fromLocation: GridLocation;
+  toLocation: GridLocation;
+  direction: "clockwise" | "counterclockwise";
+  blueLocation: GridLocation;
+  redLocation: GridLocation;
+  blueOrientation: Orientation;
+  redOrientation: Orientation;
+  bluePropType: PropType;
+  redPropType: PropType;
+  betaSwapped: boolean;
+  previewPictographData: StepData | PictographData | null;
+}
+
+export interface PlacementTransition {
+  /** Static pictograph at the pre-move locations — the animation's start pose. */
+  startData: PictographData;
+  /** Step whose motions describe the move: pro-with-zero-turns for the moving
+   *  prop, static hold for its partner. Drives the in-place interpolation. */
+  transitionStep: StepData;
+}
+
+/**
+ * Builds the pair of pictographs that let PictographContainer animate a start
+ * position location change in place: the moving prop travels a pro-zero-turns
+ * arc around the grid center while the partner's beta offset resolves via the
+ * prepared-endpoint correction lerp in calculatePictographMotionPositions.
+ */
+export function buildPlacementTransition(
+  input: PlacementTransitionInput
+): PlacementTransition {
+  const isBlueMoving = input.movingColor === MotionColor.BLUE;
+
+  const startData = buildPlacementPictographData({
+    gridMode: input.gridMode,
+    blueLocation: isBlueMoving ? input.fromLocation : input.blueLocation,
+    redLocation: isBlueMoving ? input.redLocation : input.fromLocation,
+    blueOrientation: input.blueOrientation,
+    redOrientation: input.redOrientation,
+    bluePropType: input.bluePropType,
+    redPropType: input.redPropType,
+    betaSwapped: input.betaSwapped,
+    previewPictographData: input.previewPictographData,
+  });
+
+  const movingMotion = createMotionData({
+    motionType: MotionType.PRO,
+    rotationDirection:
+      input.direction === "clockwise"
+        ? RotationDirection.CLOCKWISE
+        : RotationDirection.COUNTER_CLOCKWISE,
+    startLocation: input.fromLocation,
+    endLocation: input.toLocation,
+    turns: 0,
+    startOrientation: isBlueMoving ? input.blueOrientation : input.redOrientation,
+    endOrientation: isBlueMoving ? input.blueOrientation : input.redOrientation,
+    isVisible: true,
+    propType: isBlueMoving ? input.bluePropType : input.redPropType,
+    arrowLocation: input.toLocation,
+    color: input.movingColor,
+    gridMode: input.gridMode,
+    // Force the circular path around the grid center regardless of the global
+    // animation path-shape setting — this preview IS the pathway.
+    pathShape: "arc",
+  });
+  const partnerMotion = buildMotion(
+    isBlueMoving ? input.redLocation : input.blueLocation,
+    isBlueMoving ? MotionColor.RED : MotionColor.BLUE,
+    isBlueMoving ? input.redOrientation : input.blueOrientation,
+    isBlueMoving ? input.redPropType : input.bluePropType,
+    input.gridMode
+  );
+
+  const base = input.previewPictographData;
+  const stepBase = base && "stepNumber" in base ? base : null;
+  const transitionStep = {
+    ...(base ?? {}),
+    id: base?.id ?? "shared-prop-placement-grid",
+    letter: base?.letter ?? null,
+    startPosition: base?.startPosition ?? null,
+    endPosition: base?.endPosition ?? null,
+    gridMode: input.gridMode,
+    betaSwapped: input.betaSwapped,
+    motions: {
+      [MotionColor.BLUE]: isBlueMoving ? movingMotion : partnerMotion,
+      [MotionColor.RED]: isBlueMoving ? partnerMotion : movingMotion,
+    },
+    // The container only computes motion overrides for StepData ("stepNumber"
+    // narrowing), so guarantee the beat fields even without a preview step.
+    stepNumber: stepBase?.stepNumber ?? 0,
+    duration: stepBase?.duration ?? 1,
+    blueReversal: false,
+    redReversal: false,
+    isBlank: stepBase?.isBlank ?? false,
+  } as StepData;
+
+  return { startData, transitionStep };
+}
+
 interface PlacementBetaOffsetInput {
   gridMode: GridMode;
   blueLocation: GridLocation | null;
