@@ -9,10 +9,12 @@
  * of cells, so we just attempt the deterministic public URL: a hit downloads, a
  * miss is reported to the scan card as an asset-integrity failure. QR creation
  * and the admin shortcode backfill are the writers; every later device reads the
- * deterministic object directly, with no manifest lookup. This guarantees the
- * asset exists before the code can be generated. Scanner devices never need to
- * initialize or run the pictograph rasterizer. Misses are negative-cached for
- * the session so the same absent hash is probed at most once per page load.
+ * deterministic object directly. This guarantees the asset exists before the
+ * code can be generated. Scanner devices never need to initialize or run the
+ * pictograph rasterizer. Writer paths use a quiet lookup: an unknown hash is
+ * rendered and uploaded without first sending a request that is expected to
+ * 404. Scanner reads retain direct probing because QR creation has already
+ * guaranteed that those objects exist.
  *
  * Storage: pictograph-cells/{hash}.webp
  * (Reads require the Storage bucket's CORS to allow the app origin — same bucket
@@ -21,13 +23,113 @@
  */
 
 const FIREBASE_STORAGE_BUCKET = "the-kinetic-alphabet.firebasestorage.app";
+const KNOWN_EXISTS_KEY = "tka-cloud-pictograph-cells";
+const KNOWN_MISSING_KEY = "tka-cloud-pictograph-cells-missing";
+const MISSING_TTL_MS = 24 * 60 * 60 * 1000;
+const MAX_PERSISTED_HASHES = 3_000;
 
 /** Successful public URLs, keyed by hash (pure fn of hash; session-lived). */
 const urlCache = new Map<string, string>();
-/** Hashes confirmed ABSENT this session — skip re-probing. */
-const missing = new Set<string>();
 /** In-flight uploads, deduped by hash. */
 const pendingUploads = new Map<string, Promise<string | null>>();
+let knownExists: Set<string> | null = null;
+let knownMissing: Map<string, number> | null = null;
+
+export interface CellDownloadOptions {
+  /** Send a request for a hash this browser has never seen before. Scanner
+   * reads enable this; render-and-upload writers leave it disabled. */
+  probeUnknown?: boolean;
+}
+
+function getKnownExists(): Set<string> {
+  if (knownExists) return knownExists;
+  knownExists = new Set();
+  try {
+    const stored = localStorage.getItem(KNOWN_EXISTS_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as { hashes?: string[] };
+      knownExists = new Set(parsed.hashes ?? []);
+    }
+  } catch {
+    // Storage access is optional. The in-memory cache still works.
+  }
+  return knownExists;
+}
+
+function getKnownMissing(): Map<string, number> {
+  if (knownMissing) return knownMissing;
+  knownMissing = new Map();
+  try {
+    const stored = localStorage.getItem(KNOWN_MISSING_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as { entries?: [string, number][] };
+      const now = Date.now();
+      for (const [hash, timestamp] of parsed.entries ?? []) {
+        if (now - timestamp < MISSING_TTL_MS) {
+          knownMissing.set(hash, timestamp);
+        }
+      }
+    }
+  } catch {
+    // Storage access is optional. The in-memory cache still works.
+  }
+  return knownMissing;
+}
+
+function persistKnownExists(): void {
+  try {
+    const hashes = Array.from(getKnownExists()).slice(-MAX_PERSISTED_HASHES);
+    localStorage.setItem(KNOWN_EXISTS_KEY, JSON.stringify({ hashes }));
+  } catch {
+    // A cache write must never block rendering.
+  }
+}
+
+function persistKnownMissing(): void {
+  try {
+    const entries = Array.from(getKnownMissing().entries()).slice(
+      -MAX_PERSISTED_HASHES
+    );
+    localStorage.setItem(KNOWN_MISSING_KEY, JSON.stringify({ entries }));
+  } catch {
+    // A cache write must never block rendering.
+  }
+}
+
+function registerExists(hash: string): void {
+  const exists = getKnownExists();
+  const missing = getKnownMissing();
+  const isNew = !exists.has(hash);
+  const clearedMissing = missing.delete(hash);
+  exists.add(hash);
+  if (isNew) persistKnownExists();
+  if (clearedMissing) persistKnownMissing();
+}
+
+function isKnownMissing(hash: string): boolean {
+  const missingAt = getKnownMissing().get(hash);
+  if (missingAt === undefined) return false;
+  if (Date.now() - missingAt < MISSING_TTL_MS) return true;
+  getKnownMissing().delete(hash);
+  persistKnownMissing();
+  return false;
+}
+
+function registerMissing(hash: string): void {
+  getKnownMissing().set(hash, Date.now());
+  getKnownExists().delete(hash);
+  persistKnownMissing();
+  persistKnownExists();
+}
+
+/**
+ * Whether this browser has positive proof that the canonical object exists.
+ * Upload success and successful downloads both register that proof, so writer
+ * paths can verify readiness without transferring the image bytes again.
+ */
+export function isCellKnownAvailable(hash: string): boolean {
+  return getKnownExists().has(hash) && !isKnownMissing(hash);
+}
 
 /** The deterministic public URL where this hash's image would live. */
 export function cellPublicUrl(hash: string): string {
@@ -37,17 +139,24 @@ export function cellPublicUrl(hash: string): string {
 
 /**
  * Download the pre-rendered WebP for this hash, or null if it doesn't exist yet
- * (or the network failed). Direct-probe; negative-cached per session. Never throws.
+ * (or the network failed). Confirmed misses are cached for 24 hours. Never throws.
  */
-export async function download(hash: string): Promise<Blob | null> {
-  if (missing.has(hash)) return null;
+export async function download(
+  hash: string,
+  options: CellDownloadOptions = {}
+): Promise<Blob | null> {
+  if (isKnownMissing(hash)) return null;
+  if (options.probeUnknown === false && !getKnownExists().has(hash)) {
+    return null;
+  }
   try {
     const res = await fetch(cellPublicUrl(hash));
     if (!res.ok) {
-      missing.add(hash);
+      if (res.status === 404) registerMissing(hash);
       return null;
     }
     urlCache.set(hash, cellPublicUrl(hash));
+    registerExists(hash);
     return await res.blob();
   } catch {
     return null;
@@ -65,17 +174,21 @@ export async function upload(hash: string, blob: Blob): Promise<string | null> {
 
   const p = (async (): Promise<string | null> => {
     try {
-      const { ref, uploadBytes, getDownloadURL } = await import("firebase/storage");
+      const { ref, uploadBytes, getDownloadURL } =
+        await import("firebase/storage");
       const { getStorageInstance } = await import("$lib/shared/auth/firebase");
       const storage = await getStorageInstance();
       const storageRef = ref(storage, `pictograph-cells/${hash}.webp`);
       await uploadBytes(storageRef, blob, {
         contentType: "image/webp",
-        customMetadata: { uploadedAt: new Date().toISOString(), source: "crowd-sourced" },
+        customMetadata: {
+          uploadedAt: new Date().toISOString(),
+          source: "crowd-sourced",
+        },
       });
       const url = await getDownloadURL(storageRef);
       urlCache.set(hash, url);
-      missing.delete(hash);
+      registerExists(hash);
       return url;
     } catch {
       return null;
@@ -93,6 +206,13 @@ export async function upload(hash: string, blob: Blob): Promise<string | null> {
 /** Test-only reset of module state. */
 export function _resetForTest(): void {
   urlCache.clear();
-  missing.clear();
   pendingUploads.clear();
+  knownExists = null;
+  knownMissing = null;
+  try {
+    localStorage.removeItem(KNOWN_EXISTS_KEY);
+    localStorage.removeItem(KNOWN_MISSING_KEY);
+  } catch {
+    // Tests without DOM storage only need the module state reset.
+  }
 }

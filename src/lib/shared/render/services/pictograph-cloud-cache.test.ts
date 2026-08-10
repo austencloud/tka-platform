@@ -10,7 +10,13 @@ vi.mock("$lib/shared/auth/firebase", () => ({
   getStorageInstance: vi.fn(() => Promise.resolve({})),
 }));
 
-import { download, upload, cellPublicUrl, _resetForTest } from "./pictograph-cloud-cache";
+import {
+  download,
+  upload,
+  cellPublicUrl,
+  isCellKnownAvailable,
+  _resetForTest,
+} from "./pictograph-cloud-cache";
 
 describe("pictograph-cloud-cache", () => {
   beforeEach(() => _resetForTest());
@@ -22,7 +28,10 @@ describe("pictograph-cloud-cache", () => {
 
   it("download returns the blob on a 200 hit", async () => {
     const blob = new Blob(["img"], { type: "image/webp" });
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
+    );
     expect(await download("hit")).toBe(blob);
   });
 
@@ -32,6 +41,16 @@ describe("pictograph-cloud-cache", () => {
     expect(await download("miss")).toBeNull();
     expect(await download("miss")).toBeNull();
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("quiet download treats an unknown hash as a miss without sending a request", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(
+      await download("not-yet-uploaded", { probeUnknown: false })
+    ).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("download never throws on network error", async () => {
@@ -44,5 +63,16 @@ describe("pictograph-cloud-cache", () => {
     const [a, b] = await Promise.all([upload("h", blob), upload("h", blob)]);
     expect(a).toBe("https://dl/url");
     expect(b).toBe("https://dl/url");
+    expect(isCellKnownAvailable("h")).toBe(true);
+  });
+
+  it("exposes positive availability without downloading the object", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(isCellKnownAvailable("new-cell")).toBe(false);
+    await upload("new-cell", new Blob(["w"], { type: "image/webp" }));
+    expect(isCellKnownAvailable("new-cell")).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

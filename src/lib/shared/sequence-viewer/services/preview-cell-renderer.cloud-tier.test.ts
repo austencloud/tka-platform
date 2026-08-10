@@ -4,12 +4,17 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 const blobGet = vi.fn();
 const blobSet = vi.fn().mockResolvedValue(undefined);
 vi.mock("$lib/shared/render/services/pictograph-blob-cache", () => ({
-  pictographBlobCache: { get: (...a: unknown[]) => blobGet(...a), set: (...a: unknown[]) => blobSet(...a) },
+  pictographBlobCache: {
+    get: (...a: unknown[]) => blobGet(...a),
+    set: (...a: unknown[]) => blobSet(...a),
+  },
 }));
 
 const poolRender = vi.fn();
 vi.mock("$lib/shared/render/services/worker-render-pool", () => ({
-  getWorkerRenderPool: () => ({ render: (...a: unknown[]) => poolRender(...a) }),
+  getWorkerRenderPool: () => ({
+    render: (...a: unknown[]) => poolRender(...a),
+  }),
 }));
 
 const cloudDownload = vi.fn();
@@ -30,7 +35,9 @@ vi.mock("$lib/shared/pictograph/shared/services/pictograph-preparer", () => ({
   pictographPreparer: { prepareSingle: vi.fn().mockResolvedValue({}) },
 }));
 vi.mock("$lib/shared/render/services/png-blob-to-webp", () => ({
-  pngBlobToWebp: vi.fn().mockResolvedValue(new Blob(["w"], { type: "image/webp" })),
+  pngBlobToWebp: vi
+    .fn()
+    .mockResolvedValue(new Blob(["w"], { type: "image/webp" })),
 }));
 
 globalThis.URL.createObjectURL = vi.fn(() => "blob:fake");
@@ -80,9 +87,18 @@ describe("renderCell cloud tier", () => {
   it("uploadCanonical: renders + uploads (render-at-publish path)", async () => {
     cloudDownload.mockResolvedValue(null);
     poolRender.mockResolvedValue(new Blob(["png"], { type: "image/png" }));
-    await renderCell(data, undefined, true, { size: 300, probeCloud: true, uploadCanonical: true });
+    await renderCell(data, undefined, true, {
+      size: 300,
+      probeCloud: true,
+      uploadCanonical: true,
+    });
+    expect(cloudDownload).toHaveBeenCalledWith("HASH", {
+      probeUnknown: false,
+    });
     expect(poolRender).toHaveBeenCalledTimes(1);
-    await vi.waitFor(() => expect(cloudUpload).toHaveBeenCalledWith("HASH", expect.any(Blob)));
+    await vi.waitFor(() =>
+      expect(cloudUpload).toHaveBeenCalledWith("HASH", expect.any(Blob))
+    );
   });
 
   it("no flags: skips cloud entirely, renders locally", async () => {
@@ -97,16 +113,28 @@ describe("renderCell cloud tier", () => {
   it("uploadCanonical + IDB hit + cloud MISS: backfills the upload from the cached blob", async () => {
     blobGet.mockResolvedValue(new Blob(["cached"], { type: "image/png" }));
     cloudDownload.mockResolvedValue(null);
-    await renderCell(data, undefined, true, { size: 300, probeCloud: true, uploadCanonical: true });
-    expect(cloudDownload).toHaveBeenCalledWith("HASH");
+    await renderCell(data, undefined, true, {
+      size: 300,
+      probeCloud: true,
+      uploadCanonical: true,
+    });
+    expect(cloudDownload).toHaveBeenCalledWith("HASH", {
+      probeUnknown: false,
+    });
     expect(cloudUpload).toHaveBeenCalledWith("HASH", expect.any(Blob));
     expect(poolRender).not.toHaveBeenCalled(); // cached blob reused, no re-render
   });
 
   it("uploadCanonical + IDB hit + cloud HIT: uploads nothing (idempotent re-warm)", async () => {
     blobGet.mockResolvedValue(new Blob(["cached"], { type: "image/png" }));
-    cloudDownload.mockResolvedValue(new Blob(["cloud"], { type: "image/webp" }));
-    await renderCell(data, undefined, true, { size: 300, probeCloud: true, uploadCanonical: true });
+    cloudDownload.mockResolvedValue(
+      new Blob(["cloud"], { type: "image/webp" })
+    );
+    await renderCell(data, undefined, true, {
+      size: 300,
+      probeCloud: true,
+      uploadCanonical: true,
+    });
     expect(cloudUpload).not.toHaveBeenCalled();
     expect(poolRender).not.toHaveBeenCalled();
   });

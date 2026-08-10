@@ -43,6 +43,7 @@ Variation support:
   import { notifyLibraryMutated } from "$lib/shared/library/library-events";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import { openCollectionPicker } from "$lib/features/library/state/collection-picker-state.svelte";
+  import { cardHoverPreview } from "$lib/shared/browse/state/card-hover-preview-state.svelte";
 
   let thumbnailRef = $state<ReturnType<typeof PropAwareThumbnail> | null>(null);
 
@@ -242,15 +243,35 @@ Variation support:
     }
   }
 
-  // Debounced hover handler - avoids pre-warming during fast scroll-past
-  let hoverTimer: ReturnType<typeof setTimeout> | null = null;
+  function handlePointerMove(event: PointerEvent): void {
+    // A drag is a scroll, not a hold. Kill the pending preview either way.
+    if (event.pointerType !== "mouse") cancelPreviewLongPress();
+    handleSelectionPointerMove(event);
+  }
 
-  function handlePointerEnter() {
-    if (!onHover) return;
+  // Debounced hover handler - avoids pre-warming during fast scroll-past.
+  // The same debounce gates the animated pop-out: sweeping the pointer across
+  // a grid must not mount an animation engine per card passed over.
+  let hoverTimer: ReturnType<typeof setTimeout> | null = null;
+  let previewHoverTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function openPreview(): void {
+    if (selectionMode) return;
+    cardHoverPreview.request(displayedSequence);
+  }
+
+  const previewActive = $derived(cardHoverPreview.isActive(displayedSequence.id));
+
+  function handlePointerEnter(event: PointerEvent) {
+    if (event.pointerType !== "mouse" && event.pointerType !== "pen") return;
     hoverTimer = setTimeout(() => {
-      onHover(displayedSequence);
       hoverTimer = null;
+      onHover?.(displayedSequence);
     }, 150);
+    // Longer than the prefetch: 150ms is right for warming a cache nobody
+    // sees, but as a trigger for a visible animation it fires on every card
+    // the pointer crosses on its way somewhere else.
+    previewHoverTimer = setTimeout(openPreview, 400);
   }
 
   function handlePointerLeave() {
@@ -258,7 +279,53 @@ Variation support:
       clearTimeout(hoverTimer);
       hoverTimer = null;
     }
+    if (previewHoverTimer !== null) {
+      clearTimeout(previewHoverTimer);
+      previewHoverTimer = null;
+    }
+    cardHoverPreview.dismiss(displayedSequence.id);
+    cancelPreviewLongPress();
     cancelSelectionLongPress();
+  }
+
+  // Touch has no hover. A long press stands in for it — but only where the
+  // card isn't already using long-press to enter batch selection.
+  let previewLongPressTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function cancelPreviewLongPress(): void {
+    if (previewLongPressTimer !== null) {
+      clearTimeout(previewLongPressTimer);
+      previewLongPressTimer = null;
+    }
+  }
+
+  function handlePreviewPointerDown(event: PointerEvent): void {
+    if (
+      onSelectionStart ||
+      selectionMode ||
+      event.button !== 0 ||
+      event.pointerType === "mouse"
+    ) {
+      return;
+    }
+    cancelPreviewLongPress();
+    previewLongPressTimer = setTimeout(() => {
+      previewLongPressTimer = null;
+      longPressFired = true;
+      openPreview();
+      // Match the selection long-press: expire the click guard so the next
+      // deliberate tap still opens the viewer.
+      clickSuppressionTimer = setTimeout(() => {
+        longPressFired = false;
+        clickSuppressionTimer = null;
+      }, 800);
+    }, LONG_PRESS_MS);
+  }
+
+  function handlePreviewPointerUp(): void {
+    cancelPreviewLongPress();
+    // Lifting off ends a touch preview; the mouse path is driven by leave.
+    if (lastPointerType !== "mouse") cardHoverPreview.dismiss(displayedSequence.id);
   }
 
   // Reset to this card's own position ONLY when the base sequence identity changes
@@ -446,6 +513,12 @@ Variation support:
     if (hoverTimer !== null) {
       clearTimeout(hoverTimer);
     }
+    if (previewHoverTimer !== null) {
+      clearTimeout(previewHoverTimer);
+    }
+    cancelPreviewLongPress();
+    // The virtualized grid recycles cards out from under an open preview.
+    cardHoverPreview.dismiss(displayedSequence.id);
   });
 </script>
 
@@ -473,6 +546,12 @@ Variation support:
       {addDifficultyLevel}
       {allowQR}
     />
+
+    {#if previewActive}
+      {#await import("$lib/shared/browse/components/hover-preview/CardHoverPreviewLayer.svelte") then mod}
+        <mod.default sequence={displayedSequence} />
+      {/await}
+    {/if}
   </div>
 
   <SyncStatusBadge status={displayedSequence.syncStatus} />
@@ -510,10 +589,19 @@ Variation support:
     data-ghost-linger={selectionMode ? undefined : ""}
     onclick={handlePrimaryAction}
     oncontextmenu={handleContextMenu}
-    onpointerdown={handleSelectionPointerDown}
-    onpointermove={handleSelectionPointerMove}
-    onpointerup={cancelSelectionLongPress}
-    onpointercancel={cancelSelectionLongPress}
+    onpointerdown={(event) => {
+      handleSelectionPointerDown(event);
+      handlePreviewPointerDown(event);
+    }}
+    onpointermove={handlePointerMove}
+    onpointerup={() => {
+      cancelSelectionLongPress();
+      handlePreviewPointerUp();
+    }}
+    onpointercancel={() => {
+      cancelSelectionLongPress();
+      handlePreviewPointerUp();
+    }}
     onpointerenter={handlePointerEnter}
     onpointerleave={handlePointerLeave}
     aria-pressed={selectionMode ? isSelected : undefined}
@@ -664,6 +752,9 @@ Variation support:
   .thumbnail-container {
     width: 100%;
     height: 100%;
+    /* Anchors the hover preview layer, which fills this box in place of the
+       static thumbnail. */
+    position: relative;
   }
 
   /* Smooth crossfade when cycling variations */

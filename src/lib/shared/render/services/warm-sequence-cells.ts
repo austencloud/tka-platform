@@ -28,7 +28,7 @@ export interface WarmOptions {
   /** Participating-hand visibility. Defaults to the sequence's motion profile. */
   showBlueMotion?: boolean;
   showRedMotion?: boolean;
-  /** Throw unless every canonical object can be downloaded after warming. */
+  /** Throw unless every canonical object already exists or uploads successfully. */
   requireComplete?: boolean;
 }
 
@@ -54,8 +54,8 @@ export class IncompleteCellWarmError extends Error {
 }
 
 // A full legacy backfill walks thousands of shortcode records that collapse to
-// a much smaller set of canonical pictographs. Once a strict warm has rendered,
-// uploaded, and read a hash back, keep that proof for the rest of the browser
+// a much smaller set of canonical pictographs. Once a strict warm has rendered
+// and uploaded a hash, keep that proof for the rest of the browser
 // session. Concurrent sequences that share a cell also join the same promise,
 // so the worker pool never rasterizes an identical canonical object twice.
 const verifiedCloudHashes = new Set<string>();
@@ -69,15 +69,11 @@ async function renderCanonicalCell(
   hash: string,
   verifyUpload: boolean
 ): Promise<void> {
-  // Most legacy cards collapse onto pictographs that a previous card already
-  // uploaded. A successful cloud read is the strict proof this pass needs, so
-  // stop there. Sending the same blob through IndexedDB and then downloading
-  // it a second time made large backfills spend most of their time moving an
-  // object that was already ready for scanners.
-  if (verifyUpload) {
-    const stored = await pictographCloudCache.download(hash);
-    if (stored) return;
-  }
+  // Most cards collapse onto pictographs that a previous card already
+  // uploaded. Successful uploads and reads both register positive existence in
+  // the cloud-cache owner. That proof lets QR preparation skip an entire image
+  // download before rendering and another after upload.
+  if (verifyUpload && pictographCloudCache.isCellKnownAvailable(hash)) return;
 
   let url: string | null = null;
   try {
@@ -88,9 +84,8 @@ async function renderCanonicalCell(
       renderOptions
     );
 
-    if (verifyUpload) {
-      const stored = await pictographCloudCache.download(hash);
-      if (!stored) throw new Error("uploaded object could not be read back");
+    if (verifyUpload && !pictographCloudCache.isCellKnownAvailable(hash)) {
+      throw new Error("canonical object upload did not complete");
     }
   } finally {
     if (url?.startsWith("blob:")) URL.revokeObjectURL(url);

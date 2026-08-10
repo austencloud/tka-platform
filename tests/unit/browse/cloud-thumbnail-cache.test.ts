@@ -86,10 +86,8 @@ describe("cloud-thumbnail-cache upload authorization", () => {
     mocks.auth.authStateReady.mockImplementationOnce(async () => {
       mocks.auth.currentUser = { uid: "user-1" };
     });
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({ ok: false, status: 404 })
-    );
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
 
     const result = await upload(
       { ...key, sequenceId: "restored-user" },
@@ -98,6 +96,7 @@ describe("cloud-thumbnail-cache upload authorization", () => {
 
     expect(result).toBe("https://storage.test/thumbnail.webp");
     expect(mocks.auth.authStateReady).toHaveBeenCalledOnce();
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(mocks.uploadBytes).toHaveBeenCalledOnce();
     expect(mocks.auth.authStateReady.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.uploadBytes.mock.invocationCallOrder[0]!
@@ -114,6 +113,18 @@ describe("cloud-thumbnail-cache renderer versioning", () => {
 });
 
 describe("cloud-thumbnail-cache missing-object memory", () => {
+  it("can skip the speculative probe for an unknown thumbnail", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(
+      await getUrl({ ...key, sequenceId: "quiet-unknown" }, Infinity, {
+        probeUnknown: false,
+      })
+    ).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("lets a confirmed 404 override a previously confirmed positive entry", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce({ ok: true, status: 200 });
     vi.stubGlobal("fetch", fetchMock);
@@ -167,7 +178,9 @@ describe("cloud-thumbnail-cache missing-object memory", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await freshCache.loadManifest();
-    expect(fetchMock.mock.calls[0]?.[0]).toContain("manifest.json?alt=media&v=3");
+    expect(fetchMock.mock.calls[0]?.[0]).toContain(
+      "manifest.json?alt=media&v=3"
+    );
     const staleResult = await freshCache.getUrl({
       ...key,
       sequenceId: "stale-persisted",

@@ -43,6 +43,12 @@ export interface DeleteProgress {
   currentFile?: string;
 }
 
+export interface CloudLookupOptions {
+  /** Probe Firebase for a key absent from the manifest and local knowledge.
+   * Normal gallery rendering leaves this off so expected misses stay quiet. */
+  probeUnknown?: boolean;
+}
+
 // In-memory cache with TTL to avoid stale URLs
 // Firebase download URLs expire after ~1 hour, so we refresh after 30 minutes
 const URL_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
@@ -315,7 +321,8 @@ export function getCachedUrl(
  */
 export async function getUrl(
   key: CloudThumbnailKey,
-  priority: number = Infinity
+  priority: number = Infinity,
+  options: CloudLookupOptions = {}
 ): Promise<string | null> {
   const cacheKey = getCacheKey(key);
 
@@ -344,6 +351,12 @@ export async function getUrl(
   if (getKnownExists().has(cacheKey)) {
     urlCache.set(cacheKey, { url: publicUrl, timestamp: Date.now() });
     return publicUrl;
+  }
+
+  // A cache writer can render and upload an unknown key directly. Probing it
+  // first guarantees a browser-visible 404 for every genuine cold miss.
+  if (options.probeUnknown === false) {
+    return null;
   }
 
   // Acquire a slot before probing (respects the Y-position priority queue)
@@ -467,7 +480,7 @@ export async function upload(
   }
 
   // Check if it already exists (race condition check)
-  const existingUrl = await getUrl(key);
+  const existingUrl = await getUrl(key, Infinity, { probeUnknown: false });
   if (existingUrl) {
     return existingUrl;
   }

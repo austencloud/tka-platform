@@ -14,7 +14,10 @@
 
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { ThumbnailRenderInput, ThumbnailCacheKey } from "./thumbnail-key-deriver";
+import type {
+  ThumbnailRenderInput,
+  ThumbnailCacheKey,
+} from "./thumbnail-key-deriver";
 import * as keyDeriverModule from "./thumbnail-key-deriver";
 import {
   ThumbnailRenderTimeoutError,
@@ -174,7 +177,7 @@ async function getStaticManifest(): Promise<Set<string>> {
         staticManifest = new Set();
         return staticManifest;
       }
-      const data = await response.json() as { keys: string[] };
+      const data = (await response.json()) as { keys: string[] };
       staticManifest = new Set(data.keys);
       return staticManifest;
     } catch {
@@ -242,16 +245,21 @@ function renderErrorCode(error: Error): string {
   return "RENDER_FAILED";
 }
 
-function uploadToCloud(orchestrator: ThumbnailRenderOrchestrator, key: ThumbnailCacheKey, blob: Blob): void {
-  cloudCacheModule.upload(orchestrator.buildCloudKey(key), blob)
+function uploadToCloud(
+  orchestrator: ThumbnailRenderOrchestrator,
+  key: ThumbnailCacheKey,
+  blob: Blob
+): void {
+  cloudCacheModule
+    .upload(orchestrator.buildCloudKey(key), blob)
     .then((url) => {
       if (url) {
-        orchestrator['metrics']?.recordUpload(true);
+        orchestrator["metrics"]?.recordUpload(true);
       }
     })
     .catch(() => {
       // Non-fatal - image is displayed, just couldn't upload for others
-      orchestrator['metrics']?.recordUpload(false);
+      orchestrator["metrics"]?.recordUpload(false);
     });
 }
 
@@ -306,7 +314,8 @@ export class ThumbnailRenderOrchestrator {
     // making the whole gallery re-render locally.) After an admin nuke bumps
     // the generation, 0 < generation correctly forces a fresh render.
     const lastRenderedGen = this.renderedGenerations.get(key.hash) ?? 0;
-    const mustSkipCache = request.skipCache || lastRenderedGen < this.cacheGeneration;
+    const mustSkipCache =
+      request.skipCache || lastRenderedGen < this.cacheGeneration;
 
     // Start metrics tracking
     const requestId =
@@ -353,8 +362,10 @@ export class ThumbnailRenderOrchestrator {
       // Current format first (variant/prop/name_id_renderer_mode — mirrors
       // cloud storage paths), legacy shape second
       // (prop/name_renderer_mode — pre-variant bundles).
-      const staticKey = [this.buildStaticKey(key), this.buildLegacyStaticKey(key)]
-        .find((candidate) => manifest.has(candidate));
+      const staticKey = [
+        this.buildStaticKey(key),
+        this.buildLegacyStaticKey(key),
+      ].find((candidate) => manifest.has(candidate));
 
       if (staticKey) {
         const staticUrl = `/thumbnails/${staticKey}.webp`;
@@ -365,7 +376,9 @@ export class ThumbnailRenderOrchestrator {
         request.onStatusChange?.({ state: "complete", url: staticUrl });
         return { url: staticUrl, fromCache: true, key };
       } else if (manifest.size > 0) {
-        console.debug(`[Static] Not in manifest: "${this.buildStaticKey(key)}" (sequence: ${key.inputs.sequenceName})`);
+        console.debug(
+          `[Static] Not in manifest: "${this.buildStaticKey(key)}" (sequence: ${key.inputs.sequenceName})`
+        );
       }
     }
 
@@ -401,10 +414,19 @@ export class ThumbnailRenderOrchestrator {
       // Step 4: Check cloud cache (network request)
       if (memoryCached === undefined) {
         request.onStatusChange?.({ state: "checking-cache" });
-        const cloudUrl = await cloudCacheModule.getUrl(cloudKey, request.priority);
+        const cloudUrl = await cloudCacheModule.getUrl(
+          cloudKey,
+          request.priority ?? Infinity,
+          { probeUnknown: false }
+        );
         assertRequestActive();
         if (cloudUrl) {
-          void saveCloudBlobToLocal(cloudUrl, key.hash, cloudKey, this.localCache);
+          void saveCloudBlobToLocal(
+            cloudUrl,
+            key.hash,
+            cloudKey,
+            this.localCache
+          );
           this.memoryCache.set(key.hash, cloudUrl);
           this.renderedGenerations.set(key.hash, this.cacheGeneration);
           this.completedCount++;

@@ -6,7 +6,7 @@ import type { ThumbnailRenderInput } from "./thumbnail-key-deriver";
 // The cloud tier talks to Firebase Storage — stub it out entirely so a miss
 // there can't mask (or fake) the tiers under test.
 vi.mock("$lib/shared/browse/services/cloud-thumbnail-cache", () => ({
-  getCachedUrl: () => null,
+  getCachedUrl: () => undefined,
   getUrl: vi.fn(async () => null),
   upload: vi.fn(async () => {}),
   clearMemoryCache: () => {},
@@ -16,8 +16,13 @@ vi.mock("$lib/shared/browse/services/cloud-thumbnail-cache", () => ({
 
 import { ThumbnailRenderOrchestrator } from "./thumbnail-render-orchestrator";
 import { deriveKey } from "./thumbnail-key-deriver";
+import * as cloudCacheModule from "$lib/shared/browse/services/cloud-thumbnail-cache";
 
-const sequence = { id: "seq-1", word: "AB", steps: [] } as unknown as SequenceData;
+const sequence = {
+  id: "seq-1",
+  word: "AB",
+  steps: [],
+} as unknown as SequenceData;
 
 /** Default-composition gallery input → usesDefaults=true → static tier eligible. */
 const input: ThumbnailRenderInput = {
@@ -61,11 +66,15 @@ function makeOrchestrator() {
 }
 
 beforeEach(() => {
+  vi.clearAllMocks();
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string) => {
       if (String(url).includes("/thumbnails/manifest.json")) {
-        return { ok: true, json: async () => ({ keys: [staticKey] }) } as Response;
+        return {
+          ok: true,
+          json: async () => ({ keys: [staticKey] }),
+        } as Response;
       }
       return { ok: false, json: async () => ({}) } as Response;
     })
@@ -115,10 +124,35 @@ describe("ThumbnailRenderOrchestrator cache tiers", () => {
 
   it("skipCache renders fresh without touching tiers", async () => {
     const { orchestrator, render, localCache } = makeOrchestrator();
-    const result = await orchestrator.getThumbnail({ sequence, input, skipCache: true });
+    const result = await orchestrator.getThumbnail({
+      sequence,
+      input,
+      skipCache: true,
+    });
 
     expect(render).toHaveBeenCalledTimes(1);
     expect(result.fromCache).toBe(false);
     expect(localCache.get).not.toHaveBeenCalled();
+  });
+
+  it("does not turn an ordinary unknown cloud key into a failed network request", async () => {
+    const { orchestrator, render } = makeOrchestrator();
+    const uncachedInput = {
+      ...input,
+      sequenceName: "CD",
+      sequenceId: "quiet-cloud-miss",
+    };
+
+    await orchestrator.getThumbnail({
+      sequence: { ...sequence, id: "quiet-cloud-miss", word: "CD" },
+      input: uncachedInput,
+    });
+
+    expect(cloudCacheModule.getUrl).toHaveBeenCalledWith(
+      expect.objectContaining({ sequenceId: "quiet-cloud-miss" }),
+      Infinity,
+      { probeUnknown: false }
+    );
+    expect(render).toHaveBeenCalledOnce();
   });
 });

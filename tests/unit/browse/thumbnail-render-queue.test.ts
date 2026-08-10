@@ -24,6 +24,26 @@ describe("ThumbnailRenderQueue", () => {
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
   });
 
+  it("limits the default active render pressure to three thumbnails", async () => {
+    const queue = new ThumbnailRenderQueue();
+    const finishers: Array<() => void> = [];
+    const renders = Array.from({ length: 4 }, (_, index) =>
+      queue.enqueue(
+        `thumbnail-${index}`,
+        () => new Promise<void>((resolve) => finishers.push(resolve))
+      )
+    );
+
+    expect(queue.getStats()).toMatchObject({ active: 3, queued: 1 });
+
+    finishers.splice(0).forEach((finish) => finish());
+    await vi.waitFor(() => {
+      expect(finishers).toHaveLength(1);
+    });
+    finishers[0]!();
+    await Promise.all(renders);
+  });
+
   it("reports the typed deadline when abort-aware work rejects synchronously", async () => {
     vi.useFakeTimers();
     const queue = new ThumbnailRenderQueue();

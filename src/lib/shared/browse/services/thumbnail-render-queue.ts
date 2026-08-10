@@ -31,9 +31,10 @@ interface QueuedTask<T> {
   priority: number;
 }
 
-// Canvas2D rendering is lightweight - 8 concurrent keeps the queue responsive
-// for deck browsing (136+ sequences) without excessive memory pressure
-const DEFAULT_MAX_CONCURRENT = 8;
+// A QR-bearing thumbnail also warms its canonical scan cells before composing.
+// Three active jobs keep that network and raster work below the timeout's
+// contention cliff while queued cards remain priority ordered.
+const DEFAULT_MAX_CONCURRENT = 3;
 
 // If a render hangs (stalled fetch, infinite loop), reclaim the slot after this timeout
 const RENDER_TIMEOUT_MS = 15_000;

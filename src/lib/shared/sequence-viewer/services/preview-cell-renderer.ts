@@ -8,7 +8,10 @@
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import type { LayerRenderOptions, LayerVisibility } from "../../render/services/types";
+import type {
+  LayerRenderOptions,
+  LayerVisibility,
+} from "../../render/services/types";
 import type { BrowseViewMode } from "$lib/shared/browse/domain/browse-view-mode";
 
 /**
@@ -129,9 +132,15 @@ export async function renderCell(
   // The step number is composited on top afterwards (see compositeStepNumberOnBlob)
   // so it lands in the displayed image — dissolving in lockstep with the cell
   // during crossfades — without ever entering the base cache key.
-  const baseOptions: PreviewCellRenderOptions =
-    options.showStepNumbers ? { ...options, showStepNumbers: false } : options;
-  const cacheKey = deriveCacheKey(pictographData, undefined, isDark, baseOptions);
+  const baseOptions: PreviewCellRenderOptions = options.showStepNumbers
+    ? { ...options, showStepNumbers: false }
+    : options;
+  const cacheKey = deriveCacheKey(
+    pictographData,
+    undefined,
+    isDark,
+    baseOptions
+  );
 
   // Solo / motion-solo views keep their repositioned location label as a live
   // overlay (CellRenderer), so don't bake a number into those.
@@ -150,7 +159,13 @@ export async function renderCell(
   const toDisplayUrl = async (b: Blob): Promise<string> =>
     wantNumber
       ? URL.createObjectURL(
-          await compositeStepNumberOnBlob(b, stepNumber!, options.size, isDark, options.widthMultiplier ?? 1),
+          await compositeStepNumberOnBlob(
+            b,
+            stepNumber!,
+            options.size,
+            isDark,
+            options.widthMultiplier ?? 1
+          )
         )
       : URL.createObjectURL(b);
 
@@ -162,7 +177,11 @@ export async function renderCell(
   let cloudHash: string | null = null;
   if (options.probeCloud || options.uploadCanonical) {
     try {
-      cloudHash = await deriveCloudCellHash(pictographData, isDark, baseOptions);
+      cloudHash = await deriveCloudCellHash(
+        pictographData,
+        isDark,
+        baseOptions
+      );
     } catch {
       cloudHash = null;
     }
@@ -179,7 +198,9 @@ export async function renderCell(
       if (options.uploadCanonical && cloudHash) {
         const hashForUpload = cloudHash;
         try {
-          const cloudBlob = await pictographCloudCache.download(hashForUpload);
+          const cloudBlob = await pictographCloudCache.download(hashForUpload, {
+            probeUnknown: false,
+          });
           if (!cloudBlob) {
             const webp = await pngBlobToWebp(cachedBlob);
             await pictographCloudCache.upload(hashForUpload, webp);
@@ -195,7 +216,11 @@ export async function renderCell(
   }
   if (options.probeCloud && cloudHash) {
     try {
-      const cloudBlob = await pictographCloudCache.download(cloudHash);
+      const cloudBlob = options.uploadCanonical
+        ? await pictographCloudCache.download(cloudHash, {
+            probeUnknown: false,
+          })
+        : await pictographCloudCache.download(cloudHash);
       if (cloudBlob) {
         // Seed IndexedDB under the display key so a re-render is a local hit.
         pictographBlobCache.set(cacheKey, cloudBlob).catch(() => {});
@@ -222,7 +247,9 @@ export async function renderCell(
   const effectiveBlueProp = isHandPath ? PropType.HAND : options.bluePropType;
   const effectiveRedProp = isHandPath
     ? PropType.HAND
-    : (options.catDogModeEnabled ? options.redPropType : options.bluePropType);
+    : options.catDogModeEnabled
+      ? options.redPropType
+      : options.bluePropType;
 
   const soloFiltered = isSoloView
     ? filterSoloMotions(pictographData, viewMode!)
@@ -268,7 +295,12 @@ export async function renderCell(
   const pool = getWorkerRenderPool();
   // Render the base number-free (the worker never bakes the number), then
   // composite the number on top below.
-  const blob = await pool.render(prepared, renderOptions, visibility, undefined);
+  const blob = await pool.render(
+    prepared,
+    renderOptions,
+    visibility,
+    undefined
+  );
 
   pictographBlobCache.set(cacheKey, blob).catch(() => {});
 
@@ -303,8 +335,14 @@ export async function deleteCellCache(
   // the delete actually matches the stored entry. Passing the real stepNumber
   // (or showStepNumbers: true) produced a "none"/"6" cell part that never
   // matched the stored "nonum" key, so "Force re-render" deleted nothing.
-  const baseOptions: PreviewCellRenderOptions =
-    options.showStepNumbers ? { ...options, showStepNumbers: false } : options;
-  const cacheKey = deriveCacheKey(pictographData, undefined, isDark, baseOptions);
+  const baseOptions: PreviewCellRenderOptions = options.showStepNumbers
+    ? { ...options, showStepNumbers: false }
+    : options;
+  const cacheKey = deriveCacheKey(
+    pictographData,
+    undefined,
+    isDark,
+    baseOptions
+  );
   return pictographBlobCache.delete(cacheKey);
 }
