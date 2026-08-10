@@ -19,9 +19,6 @@
     getMaxSteps,
   } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
-  import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
-  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
-  import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/auth-nudge-trigger";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { motionDuration } from "$lib/shared/transitions/motion";
 
@@ -65,15 +62,14 @@
       isPremiumOrAbove(authState.role)
     )
   );
-  let showStepCapNudge = $state(false);
-  const stepCapNudgeTrigger: AuthNudgeTrigger = "step-cap-guest";
-  // Guests get the account nudge. Signed-in users get direct feedback instead
-  // of a modal that advertises an unavailable upgrade.
-  const stepCapNudgeAllowed = $derived(accessTier === "guest");
-
   /**
    * Called by InteractiveGrid before adding a motion.
-   * Returns true to block the action and show the nudge.
+   * Returns true to block the action.
+   *
+   * Guests go straight to the auth screen, whose contextual step-cap copy
+   * carries the why — no intermediate nudge (Austen, 2026-08-10). Signed-in
+   * users get direct feedback instead of a screen advertising an unavailable
+   * upgrade.
    *
    * A completed step = one paired step (one on each hand).
    * We cap when the current paired step count would reach the tier limit.
@@ -86,8 +82,8 @@
       builderState.redSteps.length
     );
     if (pairedSteps >= maxSteps) {
-      if (stepCapNudgeAllowed) {
-        showStepCapNudge = true;
+      if (accessTier === "guest") {
+        authDrawerState.show("signup", "step-cap-guest");
       } else {
         toast.info(`Assemble supports up to ${maxSteps} steps.`, 4000);
       }
@@ -105,7 +101,7 @@
     if (!builderState.keyboardMode) return;
     return attachAssembleKeyboard(builderState, {
       onStepCapExceeded: checkStepCap,
-      isModalOpen: () => showStepCapNudge && stepCapNudgeAllowed,
+      isModalOpen: () => authDrawerState.open,
     });
   });
 
@@ -177,31 +173,6 @@
     </div>
   </div>
 
-  <!-- Step cap nudge - shown when user tries to exceed their tier's step limit.
-       Backdrop click / Escape dismiss via BaseModal. -->
-  <BaseModal
-    open={showStepCapNudge && stepCapNudgeAllowed}
-    size="fit"
-    class="chromeless"
-    onclose={() => {
-      showStepCapNudge = false;
-    }}
-  >
-    <AuthNudge
-      trigger={stepCapNudgeTrigger}
-      onCreateAccount={() => {
-        showStepCapNudge = false;
-        authDrawerState.show("signup", stepCapNudgeTrigger);
-      }}
-      onLogin={() => {
-        showStepCapNudge = false;
-        authDrawerState.show("signin", stepCapNudgeTrigger);
-      }}
-      onDismiss={() => {
-        showStepCapNudge = false;
-      }}
-    />
-  </BaseModal>
 </div>
 
 <style>

@@ -113,8 +113,8 @@ export function createGenerationActionsState(
       // locked config can still reach Generate — a signed-in session's loopType
       // persisted in localStorage outlives sign-out, and a guest can push a
       // rotated LOOP past their step cap by switching Period to Quartered.
-      // Raise the same AuthNudge modal the selector uses (Create account /
-      // Log in / Not now) instead of a button-less toast or a raw engine error.
+      // Open the same contextual auth screen the selector uses instead of a
+      // button-less toast or a raw engine error.
       if (options.loopType && options.mode === GenerationMode.CIRCULAR) {
         const guestTier = resolveAccessTier(
           authState.isAuthenticated,

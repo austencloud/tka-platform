@@ -56,8 +56,6 @@ Card-based architecture with integrated Generate button:
     getMaxSteps,
   } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
-  import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
-  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   // Get context for panel coordination (optional - may not be available in all contexts)
   const context = tryGetCreateModuleContext();
   const panelState = context?.panelState;
@@ -109,11 +107,7 @@ Card-based architecture with integrated Generate button:
   const guestLoopMaxLength = $derived(
     accessTier === "guest" ? getMaxSteps("guest") : undefined
   );
-  let setupSignupTrigger = $state<
-    "community-setups" | "share-setup" | "step-cap-guest" | null
-  >(null);
-
-  // A guest LOOP lock goes straight to the auth screen — no intermediate
+  // Every guest gate goes straight to the auth screen — no intermediate
   // nudge; the modal's contextual copy carries the why (Austen, 2026-08-10).
   // Category locks ask for every LOOP type; length locks are step-cap asks.
   function openLoopGateAuth(kind: GuestLoopLockKind) {
@@ -121,13 +115,6 @@ Card-based architecture with integrated Generate button:
       "signup",
       kind === "length" ? "step-cap-guest" : "loop-locked-guest"
     );
-  }
-
-  function openSetupAuth(mode: "signin" | "signup") {
-    const trigger = setupSignupTrigger;
-    if (!trigger) return;
-    setupSignupTrigger = null;
-    authDrawerState.show(mode, trigger);
   }
 
   // Spell mode: derived from word presence (if there's a word, it's spell mode)
@@ -160,11 +147,11 @@ Card-based architecture with integrated Generate button:
     if (!saved) return;
 
     if (source.kind === "community" && isAnonymousViewer) {
-      setupSignupTrigger = "community-setups";
+      authDrawerState.show("signup", "community-setups");
       return;
     }
     if (accessTier === "guest" && saved.config.length > getMaxSteps("guest")) {
-      setupSignupTrigger = "step-cap-guest";
+      authDrawerState.show("signup", "step-cap-guest");
       return;
     }
 
@@ -366,27 +353,12 @@ Card-based architecture with integrated Generate button:
     {isPreview}
     isAnonymous={isAnonymousViewer}
     onApply={handleApplySource}
-    onRequestCommunityAccount={() => (setupSignupTrigger = "community-setups")}
-    onRequestShareAccount={() => (setupSignupTrigger = "share-setup")}
+    onRequestCommunityAccount={() =>
+      authDrawerState.show("signup", "community-setups")}
+    onRequestShareAccount={() => authDrawerState.show("signup", "share-setup")}
     onRequestSignIn={() => authDrawerState.show("signin", "saved-setups")}
     onClose={() => panelState.closePresetDrawer()}
   />
-
-  <BaseModal
-    open={setupSignupTrigger !== null}
-    size="fit"
-    class="chromeless"
-    onclose={() => (setupSignupTrigger = null)}
-  >
-    {#if setupSignupTrigger}
-      <AuthNudge
-        trigger={setupSignupTrigger}
-        onCreateAccount={() => openSetupAuth("signup")}
-        onLogin={() => openSetupAuth("signin")}
-        onDismiss={() => (setupSignupTrigger = null)}
-      />
-    {/if}
-  </BaseModal>
 {/if}
 
 <GeneratePanelTour />

@@ -42,9 +42,6 @@ Delegates ALL logic to services (SRP compliant)
     getMaxSteps,
   } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
-  import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/auth-nudge-trigger";
-  import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
-  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
   import type { LevelNumber } from "$lib/shared/domain/curriculum/level-metadata";
@@ -141,8 +138,6 @@ Delegates ALL logic to services (SRP compliant)
     startEndState?.normalizeOrientationsForLevel(level);
   });
 
-  // Step cap nudge state
-  let showStepCapNudge = $state(false);
   const accessTier = $derived(
     resolveAccessTier(
       authState.isAuthenticated,
@@ -150,11 +145,15 @@ Delegates ALL logic to services (SRP compliant)
       isPremiumOrAbove(authState.role)
     )
   );
-  const stepCapNudgeTrigger: AuthNudgeTrigger = "step-cap-guest";
-  // Only guests get a step-cap nudge now — a free-account pitch for the full
-  // 64-step cap. Logged-in users are hard-capped at 64 with no upsell, so the
+  // Only guests get a step-cap ask — straight to the auth screen, whose
+  // contextual copy carries the why; no intermediate nudge (Austen,
+  // 2026-08-10). Logged-in users are hard-capped at 64 with no upsell, so the
   // cap applies silently. (The paid Scribe tier is shelved until there's a plan.)
-  const stepCapNudgeAllowed = $derived(accessTier === "guest");
+  function onStepCapExceeded() {
+    if (accessTier === "guest") {
+      authDrawerState.show("signup", "step-cap-guest");
+    }
+  }
 
   // Get card colors based on current background (reactive to background changes)
   let cardColors = $derived(
@@ -629,9 +628,7 @@ Delegates ALL logic to services (SRP compliant)
               {...card.props as ComponentProps<typeof LengthCard>}
               color={cardColors.length.color}
               shadowColor={cardColors.length.shadowColor}
-              onStepCapExceeded={() => {
-                showStepCapNudge = true;
-              }}
+              {onStepCapExceeded}
             />
           {:else if card.id === "word-input"}
             <WordInputCard
@@ -679,29 +676,6 @@ Delegates ALL logic to services (SRP compliant)
     </div>
   </div>
 
-  <BaseModal
-    open={showStepCapNudge && stepCapNudgeAllowed}
-    size="fit"
-    class="chromeless"
-    onclose={() => {
-      showStepCapNudge = false;
-    }}
-  >
-    <AuthNudge
-      trigger={stepCapNudgeTrigger}
-      onCreateAccount={() => {
-        showStepCapNudge = false;
-        authDrawerState.show("signup", stepCapNudgeTrigger);
-      }}
-      onLogin={() => {
-        showStepCapNudge = false;
-        authDrawerState.show("signin", stepCapNudgeTrigger);
-      }}
-      onDismiss={() => {
-        showStepCapNudge = false;
-      }}
-    />
-  </BaseModal>
 </div>
 
 <style>

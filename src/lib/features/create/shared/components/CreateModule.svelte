@@ -82,9 +82,6 @@
     getMaxSteps,
   } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
-  import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
-  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
-  import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/auth-nudge-trigger";
   import { createPanelHeightTracker } from "../state/managers/panel-height-tracker.svelte";
   import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
   import type { LetterSource } from "$lib/shared/create/domain/spell-models";
@@ -156,12 +153,15 @@
       isPremiumOrAbove(authState.role)
     )
   );
-  let showStepCapNudge = $state(false);
-  const stepCapNudgeTrigger: AuthNudgeTrigger = "step-cap-guest";
-  // Only guests get a step-cap nudge now — a free-account pitch for the full
-  // 64-step cap. Logged-in users are hard-capped at 64 with no upsell, so the
+  // Only guests get a step-cap ask — straight to the auth screen, whose
+  // contextual copy carries the why; no intermediate nudge (Austen,
+  // 2026-08-10). Logged-in users are hard-capped at 64 with no upsell, so the
   // cap applies silently. (The paid Scribe tier is shelved until there's a plan.)
-  const stepCapNudgeAllowed = $derived(accessTier === "guest");
+  function showStepCapGate() {
+    if (accessTier === "guest") {
+      authDrawerState.show("signup", "step-cap-guest");
+    }
+  }
 
   // LOOP completion state
   let showLoopConfirm = $state(false);
@@ -619,7 +619,7 @@
       CreateModuleState?.sequenceState.getCurrentSteps().length ?? 0;
     const maxSteps = getMaxSteps(accessTier);
     if (currentSteps >= maxSteps) {
-      showStepCapNudge = true;
+      showStepCapGate();
       return;
     }
 
@@ -937,33 +937,6 @@
       onClose: () => panelState.closeSaveToLibraryPanel(),
     }}
   />
-
-  <!-- Step cap nudge - shown when user tries to exceed their tier's step limit.
-       Backdrop click / Escape dismiss via BaseModal; the card itself never
-       propagates to the backdrop. -->
-  <BaseModal
-    open={showStepCapNudge && stepCapNudgeAllowed}
-    size="fit"
-    class="chromeless"
-    onclose={() => {
-      showStepCapNudge = false;
-    }}
-  >
-    <AuthNudge
-      trigger={stepCapNudgeTrigger}
-      onCreateAccount={() => {
-        showStepCapNudge = false;
-        authDrawerState.show("signup", stepCapNudgeTrigger);
-      }}
-      onLogin={() => {
-        showStepCapNudge = false;
-        authDrawerState.show("signin", stepCapNudgeTrigger);
-      }}
-      onDismiss={() => {
-        showStepCapNudge = false;
-      }}
-    />
-  </BaseModal>
 
   <!-- Sequence Transfer Confirmation Dialog -->
   <TransferConfirmDialog
