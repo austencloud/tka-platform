@@ -23,6 +23,25 @@ export interface ViewPose {
   pitch: number;
 }
 
+/** The visible 3D surface at the centre of the camera. */
+export interface ViewTarget3D {
+  /** Stable authored name when the asset preserved one, otherwise its mesh name. */
+  object: string;
+  /** GPU instance within `object`, when the hit came from an InstancedMesh. */
+  instance?: number;
+  materials?: string[];
+  /** World-space point where the centre ray met the surface. */
+  point: { x: number; y: number; z: number };
+  /** World-space origin of the object or individual GPU instance. */
+  origin: { x: number; y: number; z: number };
+  /** Camera-to-surface distance in world metres. */
+  distance: number;
+  /** Named scene-graph ancestry, nearest object first. */
+  path?: string[];
+  /** Primitive GLTF extras that survive into Three.js userData. */
+  metadata?: Record<string, string | number | boolean>;
+}
+
 /** The clipboard payload. Fields are omitted, never nulled, when unavailable. */
 export interface ViewCapture {
   scene: string;
@@ -35,9 +54,13 @@ export interface ViewCapture {
   /** The current URL plus `view=`, so room state survives into the replay. */
   replay: string;
   camera: ViewPose;
+  /** What the centre of the camera was pointing at, when the scene can raycast it. */
+  target?: ViewTarget3D;
   viewport: { width: number; height: number };
   /** Opaque per-scene identifiers. Not interpreted here. */
   state?: Record<string, unknown>;
+  /** Where the JSON landed. Console is the recoverable browser-permission fallback. */
+  delivery?: "clipboard" | "console";
 }
 
 /** Query parameter carrying an encoded pose. */
@@ -54,6 +77,7 @@ export interface ViewSource {
   sceneId: string;
   pose: () => ViewPose;
   canvas: () => HTMLCanvasElement | null;
+  target?: () => ViewTarget3D | undefined;
   state?: () => Record<string, unknown>;
 }
 
@@ -128,7 +152,13 @@ export function parseViewParam(search: string): ViewPose | null {
     const z = read("z");
     const yaw = read("yaw");
     const pitch = read("pitch");
-    if (x === null || y === null || z === null || yaw === null || pitch === null) {
+    if (
+      x === null ||
+      y === null ||
+      z === null ||
+      yaw === null ||
+      pitch === null
+    ) {
       return null;
     }
     return { x, y, z, yaw, pitch };
@@ -150,6 +180,8 @@ export interface CaptureViewOptions {
   pose: ViewPose;
   /** The live WebGL canvas. Requires `preserveDrawingBuffer` on the renderer. */
   canvas: HTMLCanvasElement | null | undefined;
+  /** Surface under the centre reticle at capture time. */
+  target?: ViewTarget3D;
   /** Per-scene identifiers to carry along (phase, active exhibit, ...). */
   state?: Record<string, unknown>;
 }
@@ -198,7 +230,7 @@ async function writeFrame(
 export async function captureView(
   options: CaptureViewOptions
 ): Promise<ViewCapture> {
-  const { sceneId, pose, canvas, state } = options;
+  const { sceneId, pose, canvas, target, state } = options;
 
   const frameResult = canvas
     ? await writeFrame(sceneId, canvas)
@@ -215,6 +247,7 @@ export async function captureView(
       yaw: round(pose.yaw),
       pitch: round(pose.pitch),
     },
+    ...(target ? { target } : {}),
     viewport: {
       width: canvas?.width ?? window.innerWidth,
       height: canvas?.height ?? window.innerHeight,
@@ -222,19 +255,49 @@ export async function captureView(
     ...(state ? { state } : {}),
   };
 
-  await copyToClipboard(capture);
+  capture.delivery = (await copyToClipboard(capture)) ? "clipboard" : "console";
   return capture;
 }
 
-async function copyToClipboard(payload: unknown): Promise<void> {
+const CLIPBOARD_TIMEOUT_MS = 1500;
+
+function copyWithTemporaryTextarea(json: string): boolean {
+  const textarea = document.createElement("textarea");
+  textarea.value = json;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  return copied;
+}
+
+async function copyToClipboard(payload: unknown): Promise<boolean> {
   const json = JSON.stringify(payload, null, 2);
   try {
-    await navigator.clipboard.writeText(json);
+    await Promise.race([
+      navigator.clipboard.writeText(json),
+      new Promise<never>((_resolve, reject) =>
+        setTimeout(
+          () => reject(new Error("clipboard write timed out")),
+          CLIPBOARD_TIMEOUT_MS
+        )
+      ),
+    ]);
+    return true;
   } catch {
-    // Clipboard is permission-gated and unavailable outside a secure context.
-    // Logging with a known prefix keeps the capture recoverable from the
-    // console instead of silently losing it.
+    // The browser permission prompt can reject or never settle. The temporary
+    // textarea covers environments where the older synchronous copy path is
+    // still available; the known log prefix remains the final recovery seam.
+    try {
+      if (copyWithTemporaryTextarea(json)) return true;
+    } catch {
+      // Fall through to the recoverable console payload.
+    }
     console.log("[view-capture]", json);
+    return false;
   }
 }
 
@@ -252,12 +315,16 @@ export interface PageCapture {
     rect: { x: number; y: number; width: number; height: number };
     data?: Record<string, string>;
   };
+  delivery?: "clipboard" | "console";
 }
 
 /** Last pointer position, so P can capture whatever is under the cursor. */
 let pointer: { x: number; y: number } | null = null;
 
-export function trackPointer(event: { clientX: number; clientY: number }): void {
+export function trackPointer(event: {
+  clientX: number;
+  clientY: number;
+}): void {
   pointer = { x: event.clientX, y: event.clientY };
 }
 
@@ -267,9 +334,10 @@ function describeElement(element: Element): string {
   let node: Element | null = element;
   for (let depth = 0; node && depth < 3; depth += 1) {
     const id = node.id ? `#${node.id}` : "";
-    const cls = node.className && typeof node.className === "string"
-      ? `.${node.className.trim().split(/\s+/).slice(0, 2).join(".")}`
-      : "";
+    const cls =
+      node.className && typeof node.className === "string"
+        ? `.${node.className.trim().split(/\s+/).slice(0, 2).join(".")}`
+        : "";
     parts.unshift(`${node.tagName.toLowerCase()}${id}${cls}`);
     node = node.parentElement;
   }
@@ -294,7 +362,9 @@ export async function capturePage(): Promise<PageCapture> {
   if (element) {
     const box = element.getBoundingClientRect();
     // Walk up to whatever carries identity - a sequence cell, a card, a row.
-    const identified = element.closest<HTMLElement>("[data-sequence-id], [data-id], [id]");
+    const identified = element.closest<HTMLElement>(
+      "[data-sequence-id], [data-id], [id]"
+    );
     target = {
       selector: describeElement(element),
       text: (element.textContent ?? "").trim().slice(0, 120) || undefined,
@@ -304,7 +374,12 @@ export async function capturePage(): Promise<PageCapture> {
         width: Math.round(box.width),
         height: Math.round(box.height),
       },
-      data: identified ? { ...identified.dataset, ...(identified.id ? { id: identified.id } : {}) } : undefined,
+      data: identified
+        ? {
+            ...identified.dataset,
+            ...(identified.id ? { id: identified.id } : {}),
+          }
+        : undefined,
     };
   }
 
@@ -321,7 +396,7 @@ export async function capturePage(): Promise<PageCapture> {
     ...(target ? { target } : {}),
   };
 
-  await copyToClipboard(capture);
+  capture.delivery = (await copyToClipboard(capture)) ? "clipboard" : "console";
   return capture;
 }
 
@@ -335,6 +410,7 @@ export async function captureCurrentView(): Promise<ViewCapture | PageCapture> {
     sceneId: activeSource.sceneId,
     pose: activeSource.pose(),
     canvas: activeSource.canvas(),
+    target: activeSource.target?.(),
     state: activeSource.state?.(),
   });
 }

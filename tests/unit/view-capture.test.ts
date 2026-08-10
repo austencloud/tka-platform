@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildReplayUrl,
   encodeViewParam,
   parseViewParam,
   VIEW_PARAM,
@@ -39,14 +40,31 @@ describe("view capture pose encoding", () => {
     expect(encodeURIComponent(encoded)).toBe(encoded);
   });
 
+  it("replaces a named review shot with the replayable pose", () => {
+    const replay = new URL(
+      buildReplayUrl(
+        POSE,
+        new URL("https://localhost/test/autumn-scene?view=walk&quality=high")
+      )
+    );
+    expect(parseViewParam(replay.search)).toEqual(POSE);
+    expect(replay.searchParams.get("quality")).toBe("high");
+  });
+
   // A mistyped or truncated URL must drop the visitor at spawn, not throw.
   it.each([
     ["absent", "?shell=bare"],
     ["empty", `?${VIEW_PARAM}=`],
     ["not base64", `?${VIEW_PARAM}=@@@@`],
     ["base64 but not JSON", `?${VIEW_PARAM}=aGVsbG8`],
-    ["JSON but not a pose", `?${VIEW_PARAM}=${encodeURIComponent(btoa('{"a":1}'))}`],
-    ["non-finite values", `?${VIEW_PARAM}=${encodeURIComponent(btoa('{"x":null,"y":0,"z":0,"yaw":0,"pitch":0}'))}`],
+    [
+      "JSON but not a pose",
+      `?${VIEW_PARAM}=${encodeURIComponent(btoa('{"a":1}'))}`,
+    ],
+    [
+      "non-finite values",
+      `?${VIEW_PARAM}=${encodeURIComponent(btoa('{"x":null,"y":0,"z":0,"yaw":0,"pitch":0}'))}`,
+    ],
   ])("returns null for %s input", (_label, search) => {
     expect(parseViewParam(search)).toBeNull();
   });

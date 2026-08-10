@@ -39,7 +39,11 @@
       const capture = await captureCurrentView();
       const failed = "frameError" in capture ? capture.frameError : undefined;
       toast.success(
-        failed ? `View copied (no frame: ${failed})` : "View copied - paste to Claude",
+        capture.delivery === "console"
+          ? "View recorded in the browser console; clipboard was unavailable"
+          : failed
+            ? `View copied (no frame: ${failed})`
+            : "View copied - paste to Claude",
         failed ? 5000 : 2500
       );
     } catch (error) {
