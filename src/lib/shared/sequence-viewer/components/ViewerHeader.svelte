@@ -443,7 +443,7 @@
           menuSide="bottom"
           containDesktopMenu={true}
           statusMessage={shareStatusMessage}
-          {onShareActionSelect}
+          onActionSelect={onShareActionSelect}
         />
       </div>
 

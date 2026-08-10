@@ -27,6 +27,8 @@
   import { getSharer } from "$lib/shared/share/get-sharer";
   import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
   import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
+  import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
+  import { extractScanCode } from "$lib/shared/qr/services/extract-scan-code";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getCaptionPresetManager } from "$lib/shared/share/state/caption-presets.svelte";
   import {
@@ -58,7 +60,12 @@
   interface Props {
     isOpen: boolean;
     sequence: SequenceData | null;
-    /** Canonical share link for this sequence — seeds the caption presets. */
+    /**
+     * Canonical share link for this sequence. Only used for the caption when
+     * it is already a tka.run short link (the visual harness passes one) — the
+     * viewer's own URL carries the sequence inline and is far too long to post,
+     * so the sheet mints a short code instead.
+     */
     shareUrl: string;
     /** Object URL of an already-rendered export, if the viewer has one. */
     videoBlobUrl: string | null;
@@ -113,6 +120,9 @@
   let cardPreviewUrl = $state<string | null>(null);
   let videoBlob = $state<Blob | null>(null);
 
+  /** tka.run link for this sequence, once the code lands. */
+  let shortUrl = $state<string | null>(null);
+
   let qrDataUrl = $state<string | null>(null);
   let qrPending = $state(false);
   let qrError = $state("");
@@ -130,10 +140,22 @@
     )
   );
 
+  /**
+   * A caller-supplied link is postable only if it is already a scan code —
+   * extractScanCode is the app's own reader for tka.run links, so this asks
+   * the owner rather than guessing at length. Non-short links are dropped.
+   */
+  const seededShortUrl = $derived(
+    extractScanCode(shareUrl ?? "") ? shareUrl.trim() : ""
+  );
+
+  /** The only link that ever reaches a caption. */
+  const postUrl = $derived(shortUrl ?? seededShortUrl);
+
   const presets = $derived(
     captions.buildPresets({
       word: sequence?.word || sequence?.displayName || "",
-      url: shareUrl,
+      url: postUrl,
     })
   );
 
@@ -294,8 +316,39 @@
     };
   });
 
+  // The caption's link. Minting writes a Firestore doc and dedups by content,
+  // so it runs on open — the same "sheet opens instantly, the slow part fills
+  // in" contract the card render follows. Until it lands the caption is just
+  // the word; it never shows the long viewer URL on the way.
+  $effect(() => {
+    if (!isOpen || !sequence || seededShortUrl) return;
+
+    const target = sequence;
+    let stale = false;
+    shortUrl = null;
+
+    void (async () => {
+      try {
+        const result = await getShortCodeManager().createShortCode(target, {
+          embedSequenceData: true,
+        });
+        if (!stale) shortUrl = result.url;
+      } catch (error) {
+        // Short codes are signed-in-only, and a sequence that switches between
+        // one-hand and two-hand choreography has none. Both are ordinary — the
+        // caption carries the word alone and the share still works.
+        console.warn("[PostShareSheet] No short link for the caption:", error);
+      }
+    })();
+
+    return () => {
+      stale = true;
+    };
+  });
+
   // Seed the caption once, and stop the moment the user types — the textarea
-  // is the source of truth from then on.
+  // is the source of truth from then on. Re-runs when the short link lands,
+  // which is what fills the URL in behind an untouched caption.
   $effect(() => {
     if (!isOpen || captionTouched) return;
     const first = presets[0];

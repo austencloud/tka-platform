@@ -21,9 +21,9 @@ vi.mock("$lib/server/auth/firebase-auth-handler-proxy", () => ({
   proxyFirebaseAuthHandler: vi.fn(),
 }));
 
-vi.mock("$lib/server/auth/instagram-auth-proxy", () => ({
-  isInstagramAuthProxyPath: () => false,
-  proxyInstagramAuthRequest: vi.fn(),
+vi.mock("$lib/server/auth/meta-oauth-proxy", () => ({
+  isMetaOAuthProxyPath: () => false,
+  proxyMetaOAuthRequest: vi.fn(),
 }));
 
 import { handle } from "../../src/hooks.server";

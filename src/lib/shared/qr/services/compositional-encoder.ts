@@ -83,18 +83,11 @@ export class CompositionalEncoder {
     // Step 6: Round-trip verify - reconstruct from seed and compare.
     // Audit fix #6: hash is computed on uncompressed flat encoding (this.encode),
     // not on the compressed version (this.encodeWithCompression).
-    const reconstructed = await this.reconstruct(
-      seedEncoded,
-      tag,
-      sequence
-    );
+    const reconstructed = await this.reconstruct(seedEncoded, tag, sequence);
     if (!reconstructed) return null;
 
     const reconstructedFlat = this.flatEncoder.encode(reconstructed);
     if (reconstructedFlat !== flatEncoded) {
-      console.warn(
-        "[CompositionalEncoder] Round-trip mismatch - falling back to flat"
-      );
       return null;
     }
 
@@ -172,15 +165,10 @@ export class CompositionalEncoder {
         startPosition: restoredStartPos ?? originalSequence.startPosition,
         startingPosition: restoredStartPos ?? originalSequence.startingPosition,
       };
-    } catch (error) {
-      // Reconstruction failed (executor or decode error). The null return is
-      // correct — the caller falls back to flat encoding — but log it so
-      // round-trip mismatch bugs are visible during development instead of
-      // silently degrading every recipe to flat.
-      console.warn(
-        "[CompositionalEncoder] reconstruct() failed - falling back to flat:",
-        error
-      );
+    } catch {
+      // Recipe encoding is opportunistic. A detector candidate can still fail
+      // the executor's stricter reconstruction checks; returning null asks the
+      // caller to use the lossless flat encoding.
       return null;
     }
   }

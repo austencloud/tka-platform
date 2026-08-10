@@ -32,6 +32,23 @@ interface PersistedCaptions {
   custom: string[];
 }
 
+/**
+ * Short codes are minted as HTTPS://TKA.RUN/CODE — uppercase, because that is
+ * what QR alphanumeric mode encodes most densely and what gets set on printed
+ * cards. Under a post it reads as shouting, so a caption lowercases the scheme
+ * and host. The URL parser does exactly that and leaves the path alone, which
+ * matters: the code's own case is left untouched.
+ */
+function forCaption(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  try {
+    return new URL(trimmed).toString();
+  } catch {
+    return trimmed;
+  }
+}
+
 function loadPersisted(): PersistedCaptions {
   if (!browser) return { hashtags: DEFAULT_HASHTAGS, custom: [] };
 
@@ -93,16 +110,25 @@ class CaptionPresetManager {
    *
    * `word` MUST arrive raw — this simplifies it. A LOOP caption reads FΨ,
    * never FΨFΨFΨFΨ (.claude/rules/simplified-word-display.md).
+   *
+   * `url` is a tka.run short link or nothing. The viewer's own share URL
+   * carries the whole sequence inline and runs past 200 characters — pasted
+   * under a post it reads as spam, so a caption never carries one. An empty
+   * url is a normal state (a guest, or a code still minting), not an error.
    */
   buildPresets(input: { word: string; url: string }): CaptionPreset[] {
     const word = simplifyRepeatedWord(input.word || "").trim();
-    const url = input.url.trim();
+    const url = forCaption(input.url);
 
     const base = [word, url].filter(Boolean).join(" — ");
     const presets: CaptionPreset[] = [];
 
     if (base) {
-      presets.push({ id: "word-link", label: "Word + link", text: base });
+      presets.push({
+        id: "word-link",
+        label: url ? "Word + link" : "Word",
+        text: base,
+      });
     }
 
     const hashtags = this.hashtags.trim();

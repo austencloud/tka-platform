@@ -150,6 +150,9 @@ describe("SequenceViewerShell host contract", () => {
     );
     expect(viewerHeaderSource).toContain('testId="viewer-share-button"');
     expect(viewerHeaderSource).toContain("containDesktopMenu={true}");
+    expect(viewerHeaderSource).toContain(
+      "onActionSelect={onShareActionSelect}"
+    );
     expect(shellSource).toContain("createViewerShellShareState");
     expect(shellModelSource).toContain('label: "Share Sequence…"');
     expect(shellModelSource).toContain('label: "Send in TKA"');
