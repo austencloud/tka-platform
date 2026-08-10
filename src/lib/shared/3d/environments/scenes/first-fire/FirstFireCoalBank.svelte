@@ -81,9 +81,12 @@
       // Heat is RARE. A coal bank is overwhelmingly black crust with hot
       // glimpses between lumps - an even spread of glowing lumps reads as a
       // heap of pink gravel, which is exactly what the first pass produced.
-      // Squaring a uniform draw pushes most lumps cold and leaves a thin tail
-      // of hot ones.
-      const rarity = Math.pow(random(), 1.8);
+      // Skewing a uniform draw pushes most lumps cold and leaves a thin tail of
+      // hot ones. At 1.8 the tail was not thin: ~13% of lumps cleared the hot
+      // threshold, and 13% of a 900-lump wall is a hundred-odd fully emissive
+      // chunks scattered across it - which is the pale styrofoam rubble this
+      // comment was already trying to prevent. At 3.0 it is ~4%.
+      const rarity = Math.pow(random(), 3);
       // Banked: hot lumps sit deeper, so the glow leaks out from behind crust.
       // Raked: hot lumps sit on top, so the bed reads as actively burning.
       const bias =
@@ -125,8 +128,13 @@
    */
   const BATCHES = [
     { key: "cold", min: 0, max: 0.55, emissive: 0.0, color: "#0d0a09" },
-    { key: "warm", min: 0.55, max: 0.82, emissive: 0.12, color: "#140c09" },
-    { key: "hot", min: 0.82, max: 1.01, emissive: 0.5, color: "#1e0d08" },
+    { key: "warm", min: 0.55, max: 0.82, emissive: 0.05, color: "#140c09" },
+    // Emissive has no shading and no falloff, so it is uniformly bright on
+    // every face. At 0.5 a "hot" lump is a flat peach polygon - brighter than
+    // the crust it is supposed to be occluding, and read at walking distance as
+    // pale rock rather than as a coal that has caught. 0.2 puts it just above
+    // its neighbours, which is all a caught coal ever does.
+    { key: "hot", min: 0.82, max: 1.01, emissive: 0.2, color: "#1e0d08" },
   ] as const;
 
   const batched = $derived(

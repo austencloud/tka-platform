@@ -92,28 +92,30 @@
     z: number;
     /** Yaw so the placed thing faces the corridor. */
     yaw: number;
-    /** Distance along the centreline, for spacing decisions. */
-    along: number;
   }
 
   /**
-   * Walk the centreline and drop a placement every `spacing` metres, offset
-   * sideways by `offset` (signed, so the same call does both walls).
+   * One placement at a named distance along the centreline, offset sideways by
+   * `offset` (signed, so the same call does either wall).
    *
-   * Sampling by arc length rather than per vertex matters: the plan's corridor
-   * vertices bunch up around the turn into the court, and per-vertex placement
-   * would crowd the fittings exactly where the visitor most needs a clear read.
+   * Deliberately NOT a uniform sampler. The first pass dropped a fitting every
+   * N metres down both walls for the whole run, which is how the corridor ended
+   * up with coal packed floor to ceiling on both sides for sixteen metres with
+   * nowhere for the eye to rest. Every station in this file is now a decision
+   * with a distance written next to it.
+   *
+   * Distances are arc length, not vertex index: the plan's corridor vertices
+   * bunch up around the turn into the court, so per-vertex placement crowds the
+   * fittings exactly where the visitor most needs a clear read. Past the end of
+   * the route it clamps rather than dropping the station.
    */
-  function sampleAlong(
+  function placeAt(
     points: readonly [number, number][],
-    spacing: number,
-    offset: number,
-    startAt = 0
-  ): Placement[] {
-    if (points.length < 2) return [];
-    const out: Placement[] = [];
+    distance: number,
+    offset: number
+  ): Placement | null {
+    if (points.length < 2) return null;
     let travelled = 0;
-    let next = startAt;
 
     for (let i = 0; i < points.length - 1; i += 1) {
       const [ax, az] = points[i];
@@ -124,23 +126,20 @@
       if (segment < 1e-6) continue;
       const nx = dx / segment;
       const nz = dz / segment;
-      // Left normal in XZ. Sign of `offset` picks the side.
-      const px = -nz;
-      const pz = nx;
+      const last = i === points.length - 2;
 
-      while (next <= travelled + segment) {
-        const t = next - travelled;
-        out.push({
-          x: ax + nx * t + px * offset,
-          z: az + nz * t + pz * offset,
+      if (distance <= travelled + segment || last) {
+        const t = Math.min(Math.max(distance - travelled, 0), segment);
+        // Left normal in XZ. Sign of `offset` picks the side.
+        return {
+          x: ax + nx * t + -nz * offset,
+          z: az + nz * t + nx * offset,
           yaw: Math.atan2(nx, nz),
-          along: next,
-        });
-        next += spacing;
+        };
       }
       travelled += segment;
     }
-    return out;
+    return null;
   }
 
   const corridorWidth = $derived(transfer?.width ?? 4.5);
@@ -152,36 +151,74 @@
    */
   const wallOffset = $derived(corridorWidth / 2);
 
-  const CRIB_BAY = 3.2;
-  const CRIB_HEIGHT = 4.2;
+  /**
+   * Head height plus a little, NOT floor to ceiling. A coal wall run to the
+   * 5.4m ceiling has no silhouette - it is a lit surface with another lit
+   * surface above it, and the room loses its dark top. Stopping at 2.3m leaves
+   * three metres of black over the fuel, which is what the lamps hang against
+   * and what makes the bank read as a bank rather than as wallpaper.
+   */
+  const CRIB_HEIGHT = 2.3;
   /** Corridor profile: the run projects ~0.6m, leaving 3.3m clear between. */
   const CRIB_RELIEF = 0.42;
 
   /**
-   * Cribbing down both sides. Bays are placed at bay-width intervals so the
-   * runs read continuous around the corridor's bends rather than as separate
-   * panels with basalt showing between them.
+   * ===== The composition =====
    *
-   * Light per bay is deliberately weak and short-range. A run this dense puts
-   * five bays inside any one lump's light radius, so anything strong enough to
-   * read alone stacks five deep down the corridor and washes the coal back to
-   * pale rubble.
+   * The route is four straight legs, measured off the contract:
+   *
+   *   leg A   0.00 - 7.00m   Water door to the bend. Visitor spawns at 2.0m.
+   *   leg B   7.00 - 12.00m  the diagonal
+   *   leg C  12.00 - 14.06m  the short jog
+   *   leg D  14.06 - 15.86m  the turn into the DJ court
+   *
+   * It gets TWO dressed events, and they are 6m apart. The previous pass ran
+   * cribbing down both walls for the entire distance plus five lamps, and read
+   * as overwhelm: every element present in every frame, nothing to look at
+   * because everything was equally loud.
+   *
+   *   3.75m  the quench vent, on the threshold. Arrival from Water. It is the
+   *          only lit thing on leg A, and it only reads because the rest of
+   *          that leg is dark.
+   *   9.50m  the fuel bank. ONE 4.2m cribbing run, on the LEFT only, sitting
+   *          inside leg B's 5m so a rigid straight run never punches the wall
+   *          on a bend. One lit side and one dark side is a composition; two
+   *          lit sides is a tunnel of orange. It is also the honest read - fuel
+   *          gets stacked where there is room to stack it, not wrapped around a
+   *          corridor like tile.
+   *
+   * Nothing is dressed at the court mouth on purpose. The court opening IS the
+   * third beat, and putting coal on the corner competes with it.
    */
-  const leftCrib = $derived(sampleAlong(centreline, CRIB_BAY, -wallOffset, 1.2));
-  const rightCrib = $derived(sampleAlong(centreline, CRIB_BAY, wallOffset, 1.2));
+  const CRIB = { along: 9.5, side: -1, bayWidth: 4.2 };
+
+  const crib = $derived(
+    placeAt(centreline, CRIB.along, CRIB.side * wallOffset)
+  );
 
   /**
-   * Lamps down the centreline. 3.4m is roughly four walking paces - close
-   * enough that the next fixture is already lit when the visitor leaves the
-   * last one, which is what makes a row of them read as a route instead of as
-   * scattered decoration.
+   * Two lamps: one before the bend, one at the court mouth. They are the
+   * constant that says "the route continues", so they sit at the two decision
+   * points and nowhere else.
+   *
+   * The first one used to hang at 4.6m, which is 2.6m from the #7cc7dd Water
+   * spill light the walk scene puts at the spawn - close enough that the hood
+   * rendered cyan and a giant teal lantern filled the arrival frame. At 6.4m it
+   * catches roughly a third of that, so the fixture stays iron and the cool
+   * cast stays on the threshold where it belongs.
    */
-  const lamps = $derived(sampleAlong(centreline, 3.4, 0, 2.2));
+  const LAMP_STATIONS = [6.4, 13.2];
+
+  const lamps = $derived(
+    LAMP_STATIONS.map((along) => placeAt(centreline, along, 0)).filter(
+      (place) => place !== null
+    )
+  );
 
   /**
-   * Only the first lamp sheds. A coal falling out of every fixture at once
-   * reads as a malfunction rather than as one lamp that happens to be shedding
-   * as you pass under it.
+   * Only the first lamp sheds, so the drip is something the visitor walks under
+   * once rather than a condition of the corridor. A coal falling out of every
+   * fixture at once reads as a malfunction.
    */
   const dripAt = 0;
 
@@ -224,41 +261,30 @@
     />
   </T.Group>
 
-  <!-- ===== Transfer corridor: cribbing down both sides ===== -->
-  <!-- A bay's face is its local +Z, and `yaw` points along the walk, so each
-       side turns the OPPOSITE quarter to look back across the centreline. Turn
-       them the same way and both runs present their backs to the visitor. -->
-  {#each leftCrib as bay, i (`l${i}`)}
-    <T.Group position={[bay.x, 0, bay.z]} rotation.y={bay.yaw - Math.PI / 2}>
+  <!-- ===== The fuel bank ===== -->
+  <!-- A bay's face is its local +Z and `yaw` points along the walk, so the run
+       turns a quarter to look back across the centreline. The sign of `side`
+       picks the quarter: turn it the wrong way and the run presents its back. -->
+  {#if crib}
+    <T.Group
+      position={[crib.x, 0, crib.z]}
+      rotation.y={crib.yaw + (CRIB.side * Math.PI) / 2}
+    >
       <FirstFireCoalWall
-        bayWidth={CRIB_BAY}
+        bayWidth={CRIB.bayWidth}
         height={CRIB_HEIGHT}
-        lumpsPerBay={640}
+        lumpsPerBay={900}
         relief={CRIB_RELIEF}
-        lightIntensity={1.5}
-        lightDistance={5}
-        seed={17 + i * 5}
+        lightIntensity={3.2}
+        lightDistance={7}
+        seed={17}
         material={iron}
       />
     </T.Group>
-  {/each}
-  {#each rightCrib as bay, i (`r${i}`)}
-    <T.Group position={[bay.x, 0, bay.z]} rotation.y={bay.yaw + Math.PI / 2}>
-      <FirstFireCoalWall
-        bayWidth={CRIB_BAY}
-        height={CRIB_HEIGHT}
-        lumpsPerBay={640}
-        relief={CRIB_RELIEF}
-        lightIntensity={1.5}
-        lightDistance={5}
-        seed={83 + i * 5}
-        material={iron}
-      />
-    </T.Group>
-  {/each}
+  {/if}
 
   <!-- ===== Lamps marking the way ===== -->
-  {#each lamps as lamp, i (`c${i}`)}
+  {#each lamps as lamp, i (`lamp${i}`)}
     <T.Group position={[lamp.x, 0, lamp.z]}>
       <FirstFireCoalLamp
         ceilingY={CEILING_Y}

@@ -166,12 +166,16 @@
 
     <!-- Two lights, because one cannot do both jobs.
 
-         The bank light sits INSIDE the coal at mid depth. Its only job is to
-         cut the bank into hot slivers, so it is close to the lumps and must be
-         scaled by relief squared: halve the relief and every lump sits at half
-         the distance, which quadruples the light it catches. Without that term
-         a shallow corridor bay blows its coal out to pale pink rubble - the
-         exact failure the lumps exist to prevent.
+         The bank light sits INSIDE the coal at mid depth, and it is FAINT on
+         purpose. Coal is 5% albedo; at 0.13m from a lump, an intensity that
+         sounds modest delivers an irradiance in the tens and renders near-black
+         rock as pale pink polystyrene. That is what the first two passes shipped
+         - a rack of styrofoam. The glow between the lumps is the emissive crust
+         behind them, which no light term touches; this light only has to put a
+         faint rim on the front row so the bank does not read as a flat cutout.
+
+         It is still scaled by relief squared: halve the relief and every lump
+         sits at half the distance, which quadruples what it catches.
 
          The room light stands out in front of the grate at a fixed distance,
          so how much light the wall throws down the corridor does not change
@@ -180,7 +184,7 @@
     <T.PointLight
       position={[0, height / 2 + 0.2, lightZ]}
       color={emberColor}
-      intensity={lightIntensity * 1.6 * relief * relief}
+      intensity={lightIntensity * 0.14 * relief * relief}
       distance={lightDistance * relief}
       decay={2}
     />
