@@ -81,19 +81,26 @@
 
   // Authored exactly like GammaPage: PRO shift, HAND prop; the preparer's
   // hand-path mode converts it to FLOAT. The other hand sits STATIC opposite.
-  const motion = (color: MotionColor, from: GridLocation, to: GridLocation) =>
+  // Cardinal hands live on the diamond grid; intercardinal hands are box mode.
+  const motion = (
+    color: MotionColor,
+    from: GridLocation,
+    to: GridLocation,
+    gridMode: GridMode
+  ) =>
     createMotionData({
       motionType: from === to ? MotionType.STATIC : MotionType.PRO,
       startLocation: from,
       endLocation: to,
       color,
       propType: PropType.HAND,
-      gridMode: GridMode.DIAMOND,
+      gridMode,
     });
 
   type Case = {
     label: string;
     expected: string;
+    gridMode: GridMode;
     data: PictographData;
   };
 
@@ -103,22 +110,25 @@
     to: GridLocation,
     cw: boolean
   ): Case => {
+    const gridMode = CARDINALS.includes(from) ? GridMode.DIAMOND : GridMode.BOX;
     const staticLoc = OPPOSITE[from]!;
-    const moving = motion(movingColor, from, to);
+    const moving = motion(movingColor, from, to, gridMode);
     const still = motion(
       movingColor === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE,
       staticLoc,
-      staticLoc
+      staticLoc,
+      gridMode
     );
     return {
       label: `${SHORT[from]}→${SHORT[to]} ${cw ? "cw" : "ccw"}`,
       expected: chordArrow(from, to),
+      gridMode,
       data: {
         id: `hfr-${movingColor}-${SHORT[from]}-${SHORT[to]}`,
         letter: null,
         startPosition: null,
         endPosition: null,
-        gridMode: GridMode.DIAMOND,
+        gridMode,
         motions:
           movingColor === MotionColor.BLUE
             ? { blue: moving, red: still }
@@ -261,7 +271,7 @@
             >
               <PictographContainer
                 pictographData={c.data}
-                gridMode={GridMode.DIAMOND}
+                gridMode={c.gridMode}
                 bluePropTypeOverride={PropType.HAND}
                 redPropTypeOverride={PropType.HAND}
                 showGrid={true}
