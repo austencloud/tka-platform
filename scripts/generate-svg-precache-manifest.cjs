@@ -107,6 +107,7 @@ function collectAssets(imagesDir = IMAGES_DIR) {
   // so a missing file fails the build loudly instead.
   const explicitFiles = [
     ...ESSENTIAL_ROOT_FILES,
+    path.join("arrows", "arrow-split-manifest.json"),
     ...ELEMENT_FILES.map((name) => path.join("elements", name)),
   ];
   const missing = [];

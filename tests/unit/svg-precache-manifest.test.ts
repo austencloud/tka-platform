@@ -26,6 +26,10 @@ describe("svg precache manifest generator", () => {
     expect(assets).toContain("/images/grid/diamond_grid.svg");
   });
 
+  it("includes the arrow split manifest requested by the renderer", () => {
+    expect(assets).toContain("/images/arrows/arrow-split-manifest.json");
+  });
+
   it("emits only root-relative, forward-slashed /images URLs", () => {
     for (const a of assets) {
       expect(a.startsWith("/images/")).toBe(true);
