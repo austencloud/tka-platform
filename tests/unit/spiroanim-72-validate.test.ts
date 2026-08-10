@@ -6,10 +6,15 @@
  * his per-frame prop orientations exactly — 72 cells x 12 steps x 2 hands.
  */
 import { readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, it, expect } from "vitest";
 import { calculateEndOrientation } from "@tka/sequence-engine/core";
 
-const DATA = new URL("../../docs/research/spiroanim/", import.meta.url);
+// Repo-root-relative, matching every other fixture-reading test here. An
+// `import.meta.url` base is not safe in this runner: CI resolved it to a
+// non-file scheme and the suite died at import with ERR_INVALID_URL_SCHEME,
+// which gated deploys.
+const DATA = (name: string) => resolve("docs/research/spiroanim", name);
 
 type Hand = {
   motionType: string;
@@ -23,7 +28,7 @@ type Hand = {
 type Step = { letter: string; startPos: string; endPos: string; blue: Hand; red: Hand };
 type Cell = { reference: string; word: string; steps: Step[] };
 
-const cells: Cell[] = JSON.parse(readFileSync(new URL("eightstep-72-base.json", DATA), "utf8"));
+const cells: Cell[] = JSON.parse(readFileSync(DATA("eightstep-72-base.json"), "utf8"));
 
 describe("SpiroAnim Eight Step base cells", () => {
   it("agrees with TKA's orientation engine on every motion", () => {
@@ -107,7 +112,7 @@ describe("SpiroAnim Eight Step base cells", () => {
         motions: { blue: motionBlob(s.blue, "blue"), red: motionBlob(s.red, "red") },
       })),
     }));
-    writeFileSync(new URL("eightstep-72-sequences.json", DATA), JSON.stringify(blobs, null, 1));
+    writeFileSync(DATA("eightstep-72-sequences.json"), JSON.stringify(blobs, null, 1));
     console.log(`wrote ${blobs.length} sequence blobs; sample word ${blobs[0]!.word}`);
     expect(blobs).toHaveLength(72);
   });
