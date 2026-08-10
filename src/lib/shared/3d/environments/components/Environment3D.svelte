@@ -46,6 +46,8 @@
     stageZOffset?: number;
     /** Forest-only authored atmosphere override. Other scenes ignore it. */
     forestConfig?: ForestSceneConfig;
+    /** Winter review harness may hide the legacy ice platform behind a revision overlay. */
+    winterPlatformVisible?: boolean;
     /** Reports the transition owner's semantic state for hosts and diagnostics. */
     onTransitionChange?: (
       observation: EnvironmentTransitionObservation<BackgroundType>
@@ -59,6 +61,7 @@
     stageDepth = 6,
     stageZOffset = 0,
     forestConfig,
+    winterPlatformVisible = true,
     onTransitionChange,
   }: Props = $props();
 
@@ -260,7 +263,12 @@
         {stageDepth}
       />
     {:else if config.scene === "winter"}
-      <WinterScene {stageWidth} {stageDepth} {stageZOffset} />
+      <WinterScene
+        {stageWidth}
+        {stageDepth}
+        {stageZOffset}
+        platformVisible={winterPlatformVisible}
+      />
     {:else if config.scene === "ocean"}
       <OceanScene
         {performerCount}

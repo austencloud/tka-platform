@@ -43,6 +43,7 @@
     stageWidth?: number;
     stageDepth?: number;
     stageZOffset?: number;
+    platformVisible?: boolean;
   }
 
   let {
@@ -50,6 +51,7 @@
     stageWidth = 6,
     stageDepth = 6,
     stageZOffset = 0,
+    platformVisible = true,
   }: Props = $props();
 
   const baseConfig = $derived(config ?? createDefaultWinterConfig());
@@ -309,6 +311,8 @@
   />
 {/if}
 
-<T.Group position.z={stageZOffset}>
-  <IcePlatform config={activeConfig.platform} />
-</T.Group>
+{#if platformVisible}
+  <T.Group position.z={stageZOffset}>
+    <IcePlatform config={activeConfig.platform} />
+  </T.Group>
+{/if}

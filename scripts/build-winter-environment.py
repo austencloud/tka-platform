@@ -17,11 +17,12 @@ import json
 import math
 import os
 import random
+import re
 import subprocess
 import tempfile
 
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -54,6 +55,13 @@ with open(SETTLEMENT_LAYOUT_PATH, "rb") as settlement_layout_file:
     SETTLEMENT_LAYOUT_BYTES = settlement_layout_file.read()
 SETTLEMENT_LAYOUT = json.loads(SETTLEMENT_LAYOUT_BYTES.decode("utf-8"))
 SETTLEMENT_LAYOUT_SHA256 = hashlib.sha256(SETTLEMENT_LAYOUT_BYTES).hexdigest()
+FIRE_COURT_CONTRACT_PATH = os.path.join(
+    SCRIPT_DIR, "winter-fire-court-graybox-r1.json"
+)
+with open(FIRE_COURT_CONTRACT_PATH, "rb") as fire_court_contract_file:
+    FIRE_COURT_CONTRACT_BYTES = fire_court_contract_file.read()
+FIRE_COURT_CONTRACT = json.loads(FIRE_COURT_CONTRACT_BYTES.decode("utf-8"))
+FIRE_COURT_CONTRACT_SHA256 = hashlib.sha256(FIRE_COURT_CONTRACT_BYTES).hexdigest()
 COMPOSITION_PLAN_PATH = os.path.join(SCRIPT_DIR, "winter-composition-gate1-r2.json")
 with open(COMPOSITION_PLAN_PATH, "rb") as composition_plan_file:
     COMPOSITION_PLAN_BYTES = composition_plan_file.read()
@@ -75,6 +83,117 @@ with open(TREE_LAYOUT_PATH, "rb") as tree_layout_file:
 TREE_LAYOUT = json.loads(TREE_LAYOUT_BYTES.decode("utf-8"))
 TREE_LAYOUT_SHA256 = hashlib.sha256(TREE_LAYOUT_BYTES).hexdigest()
 TREE_ASSETS = {asset["id"]: asset for asset in TREE_LAYOUT["assets"]}
+COMPOSER_PLACEMENTS_PATH = os.path.join(
+    SCRIPT_DIR, "winter-composer-placements.json"
+)
+with open(COMPOSER_PLACEMENTS_PATH, "r", encoding="utf-8") as composer_file:
+    COMPOSER_MANIFEST = json.load(composer_file)
+COMPOSER_PLACEMENTS = {
+    placement["id"]: placement
+    for placement in COMPOSER_MANIFEST.get("placements", [])
+}
+COMPOSER_CATALOG_ASSETS = {
+    "winter-pine-tall": os.path.join(
+        PROJECT_ROOT, "static", "models", "winter", "tree_pineTallA.glb"
+    ),
+    "winter-pine-round": os.path.join(
+        PROJECT_ROOT, "static", "models", "winter", "tree_pineRoundB.glb"
+    ),
+    "winter-pine-small": os.path.join(
+        PROJECT_ROOT, "static", "models", "winter", "tree_pineSmallA.glb"
+    ),
+    "winter-rock-large-a": os.path.join(
+        PROJECT_ROOT, "static", "models", "winter", "rock_largeA.glb"
+    ),
+    "winter-rock-large-b": os.path.join(
+        PROJECT_ROOT, "static", "models", "winter", "rock_largeB.glb"
+    ),
+    "winter-fallen-log": os.path.join(
+        PROJECT_ROOT, "static", "models", "winter", "log_large.glb"
+    ),
+}
+
+RUNTIME_FROM_BLENDER = Matrix(
+    (
+        (1.0, 0.0, 0.0, 0.0),
+        (0.0, 0.0, 1.0, 0.0),
+        (0.0, -1.0, 0.0, 0.0),
+        (0.0, 0.0, 0.0, 1.0),
+    )
+)
+BLENDER_FROM_RUNTIME = RUNTIME_FROM_BLENDER.inverted()
+
+COMPOSER_EDITABLE_ROLES = {
+    "conifer",
+    "rock",
+    "deadwood",
+    "stump",
+    "settlement-seat",
+    "settlement-hearth-stone",
+    "settlement-hearth-fuel",
+    "settlement-hearth-ember",
+    "lodge-woodpile-log",
+}
+
+
+def normalize_composer_name(value):
+    return re.sub(r"(^-+|-+$)", "", re.sub(r"[^a-z0-9]+", "-", value.lower()))
+
+
+def winter_composer_id(role, name):
+    return f"winter:{normalize_composer_name(role)}:{normalize_composer_name(name)}"
+
+
+def runtime_placement_matrix(placement):
+    x, y, z = placement["position"]
+    qx, qy, qz, qw = placement["rotation"]
+    sx, sy, sz = placement["scale"]
+    runtime_matrix = (
+        Matrix.Translation(Vector((x, y, z)))
+        @ Quaternion((qw, qx, qy, qz)).to_matrix().to_4x4()
+        @ Matrix.Diagonal(Vector((sx, sy, sz, 1.0)))
+    )
+    return BLENDER_FROM_RUNTIME @ runtime_matrix @ RUNTIME_FROM_BLENDER
+
+
+def apply_composer_placement(root, role, object_key=None):
+    placement_id = winter_composer_id(role, root.name)
+    members = [root, *root.children_recursive]
+    for member in members:
+        member["tka_composer_id"] = placement_id
+        member["tka_composer_object_key"] = object_key or role
+        member["tka_composer_locked"] = role not in COMPOSER_EDITABLE_ROLES
+
+    placement = COMPOSER_PLACEMENTS.get(placement_id)
+    if not placement or placement.get("source") != "native":
+        return placement_id
+
+    root.matrix_world = runtime_placement_matrix(placement)
+    visible = placement.get("visible", True)
+    for member in members:
+        member.hide_render = not visible
+        member.hide_set(not visible)
+
+    if role == "conifer":
+        bpy.context.view_layer.update()
+        root["tka_plan_x"] = root.matrix_world.translation.x
+        root["tka_plan_y"] = root.matrix_world.translation.y
+        minimum_z = min(
+            (member.matrix_world @ Vector(corner)).z
+            for member in members
+            if member.type == "MESH"
+            for corner in member.bound_box
+        )
+        contact_height = terrain_contact_height(
+            root["tka_plan_x"],
+            root["tka_plan_y"],
+            root["tka_root_contact_radius"],
+        )
+        intended_minimum_z = contact_height - root["tka_root_bed_depth"]
+        root["tka_contact_height"] = contact_height
+        root["tka_grounded_minimum_z"] = minimum_z
+        root["tka_grounding_error"] = abs(minimum_z - intended_minimum_z)
+    return placement_id
 SETTLEMENT_PATH_CORRIDORS = tuple(
     {
         "id": path["id"],
@@ -91,6 +210,67 @@ HERO_APPROACH = next(
 )
 
 CLEARING_RADIUS = 8.0
+FIRE_COURT_LAYOUT = FIRE_COURT_CONTRACT["court"]
+FIRE_COURT_X = FIRE_COURT_LAYOUT["center"][0]
+FIRE_COURT_Y = -FIRE_COURT_LAYOUT["center"][1]
+# The social clearing includes the court, every friend, both benches, the prop
+# rack, and the lantern-marked entrance. Deriving the envelope from the same
+# contract prevents a later seating adjustment from leaving somebody standing
+# on the sloped snow just outside the fire-safe surface.
+FIRE_COURT_SOCIAL_RUNTIME_POINTS = [
+    (
+        FIRE_COURT_LAYOUT["center"][0]
+        + x_sign
+        * (FIRE_COURT_LAYOUT["radiusX"] + FIRE_COURT_LAYOUT["safetyBuffer"]),
+        FIRE_COURT_LAYOUT["center"][1]
+        + z_sign
+        * (FIRE_COURT_LAYOUT["radiusZ"] + FIRE_COURT_LAYOUT["safetyBuffer"]),
+    )
+    for x_sign in (-1, 1)
+    for z_sign in (-1, 1)
+]
+FIRE_COURT_SOCIAL_RUNTIME_POINTS.extend(
+    tuple(friend["position"]) for friend in FIRE_COURT_CONTRACT["friends"]
+)
+FIRE_COURT_SOCIAL_RUNTIME_POINTS.extend(
+    tuple(bench["center"])
+    for bench in FIRE_COURT_CONTRACT["furnishings"]["benchSegments"]
+)
+FIRE_COURT_SOCIAL_RUNTIME_POINTS.extend(
+    tuple(lantern["position"])
+    for lantern in FIRE_COURT_CONTRACT["furnishings"]["entryLanterns"]
+)
+FIRE_COURT_SOCIAL_RUNTIME_POINTS.append(
+    tuple(FIRE_COURT_CONTRACT["furnishings"]["propRack"]["position"])
+)
+FIRE_COURT_SOCIAL_MARGIN = 1.5
+FIRE_COURT_SOCIAL_MIN_X = min(
+    point[0] for point in FIRE_COURT_SOCIAL_RUNTIME_POINTS
+) - FIRE_COURT_SOCIAL_MARGIN
+FIRE_COURT_SOCIAL_MAX_X = max(
+    point[0] for point in FIRE_COURT_SOCIAL_RUNTIME_POINTS
+) + FIRE_COURT_SOCIAL_MARGIN
+FIRE_COURT_SOCIAL_MIN_Z = min(
+    point[1] for point in FIRE_COURT_SOCIAL_RUNTIME_POINTS
+) - FIRE_COURT_SOCIAL_MARGIN
+FIRE_COURT_SOCIAL_MAX_Z = max(
+    point[1] for point in FIRE_COURT_SOCIAL_RUNTIME_POINTS
+) + FIRE_COURT_SOCIAL_MARGIN
+FIRE_COURT_SOCIAL_X = (FIRE_COURT_SOCIAL_MIN_X + FIRE_COURT_SOCIAL_MAX_X) * 0.5
+FIRE_COURT_SOCIAL_Y = -(
+    (FIRE_COURT_SOCIAL_MIN_Z + FIRE_COURT_SOCIAL_MAX_Z) * 0.5
+)
+FIRE_COURT_SOCIAL_RADIUS_X = (
+    FIRE_COURT_SOCIAL_MAX_X - FIRE_COURT_SOCIAL_MIN_X
+) * 0.5
+FIRE_COURT_SOCIAL_RADIUS_Y = (
+    FIRE_COURT_SOCIAL_MAX_Z - FIRE_COURT_SOCIAL_MIN_Z
+) * 0.5
+# Continue the established zero-metre clearing grade beneath the court. The
+# review court is a shallow inset whose slab intersects this surface; lowering
+# terrain to the slab bottom would create a visible basin and break the flat
+# gathering clearing where the two spaces meet.
+FIRE_COURT_GROUND_HEIGHT = 0.0
 POND_LAYOUT = SETTLEMENT_LAYOUT["pond"]
 POND_X = POND_LAYOUT["center"][0]
 POND_Y = -POND_LAYOUT["center"][1]
@@ -529,10 +709,32 @@ def terrain_height(x, y):
     hearth_influence = 1.0 - smoothstep(hearth_inner, hearth_inner + 4.0, hearth_distance)
     height = height * (1.0 - hearth_influence) + HEARTH_PAD_HEIGHT * hearth_influence
 
-    # Pads establish usable social spaces, then the authored paths get the
-    # final word at their cores. This prevents either pad from lifting a route
-    # into an abrupt lip while retaining broad, softly banked shoulders.
-    return grade_settlement_routes(height, x, y)
+    # Grade the entire ten-friend gathering into one calm snow clearing. The
+    # court, benches, standing friends, rack, and entry lights share this pad;
+    # stopping at the court curb leaves the audience stranded on a snowbank.
+    # Use the rectangle's Chebyshev distance rather than an inscribed ellipse.
+    # The extrema above are a hard occupancy envelope, so every contract point
+    # (including the diagonal bench and entrance corners) must remain inside the
+    # fully graded region instead of falling into an ellipse's corner cut-outs.
+    social_metric = max(
+        abs((x - FIRE_COURT_SOCIAL_X) / FIRE_COURT_SOCIAL_RADIUS_X),
+        abs((y - FIRE_COURT_SOCIAL_Y) / FIRE_COURT_SOCIAL_RADIUS_Y),
+    )
+    court_influence = 1.0 - smoothstep(1.0, 1.38, social_metric)
+    height = (
+        height * (1.0 - court_influence)
+        + FIRE_COURT_GROUND_HEIGHT * court_influence
+    )
+
+    # Routes keep the final word through the lodge and hearth pads, but the
+    # occupied fire-court envelope is a deliberate level destination. Reapply
+    # its mask after route grading so a crossing path cannot lift a bench or a
+    # standing guest back into a snowbank.
+    height = grade_settlement_routes(height, x, y)
+    return (
+        height * (1.0 - court_influence)
+        + FIRE_COURT_GROUND_HEIGHT * court_influence
+    )
 
 
 def point_segment_distance(x, y, start, end):
@@ -862,6 +1064,7 @@ def annotate_settlement(obj, role):
     obj["tka_settlement_layout_sha256"] = SETTLEMENT_LAYOUT_SHA256
     obj["tka_composition_plan_version"] = COMPOSITION_PLAN["version"]
     obj["tka_composition_plan_sha256"] = COMPOSITION_PLAN_SHA256
+    apply_composer_placement(obj, role)
     return obj
 
 
@@ -1629,6 +1832,7 @@ def duplicate_tree(
     tree["tka_grounded_minimum_z"] = grounded_minimum_z
     tree["tka_grounding_error"] = grounding_error
     tree["tka_horizon_root_contact"] = depth_band == "far"
+    apply_composer_placement(tree, "conifer", asset_id)
     return tree
 
 
@@ -1722,6 +1926,50 @@ def hide_source(root):
         obj.hide_viewport = True
 
 
+def create_composer_catalog_additions():
+    placements = [
+        placement
+        for placement in COMPOSER_MANIFEST.get("placements", [])
+        if placement.get("source", "catalog") != "native"
+        and placement.get("visible", True)
+    ]
+    if not placements:
+        return []
+
+    source_roots = {}
+    additions = []
+    for placement in placements:
+        object_key = placement["objectKey"]
+        source_path = COMPOSER_CATALOG_ASSETS.get(object_key)
+        if not source_path:
+            raise RuntimeError(
+                f"No Winter Blender asset mapping for composer item {object_key}"
+            )
+        source = source_roots.get(object_key)
+        if source is None:
+            source = imported_asset_root(
+                f"WinterComposer_{normalize_composer_name(object_key)}",
+                source_path,
+            )
+            source_roots[object_key] = source
+
+        root = duplicate_hierarchy(
+            source,
+            f"Winter_Composer_{normalize_composer_name(placement['id'])}",
+        )
+        root.matrix_world = runtime_placement_matrix(placement)
+        for member in [root, *root.children_recursive]:
+            member["tka_role"] = "composer-catalog"
+            member["tka_composer_id"] = placement["id"]
+            member["tka_composer_object_key"] = object_key
+            member["tka_composer_locked"] = False
+        additions.append(root)
+
+    for source in source_roots.values():
+        hide_source(source)
+    return additions
+
+
 def blender_readable_rock_source(filename):
     source = os.path.join(ROCK_SOURCE_DIR, filename)
     cache_dir = os.path.join(QA_DIR, "rock-sources")
@@ -1773,6 +2021,7 @@ def annotate_prop(root, tier, role, family, burial):
         obj["tka_role"] = role
         obj["tka_source_family"] = family
         obj["tka_burial_fraction"] = burial
+    apply_composer_placement(root, role, family)
 
 
 def create_rocks(sources):
@@ -1844,6 +2093,7 @@ def create_stumps(source):
         stump["tka_role"] = "stump"
         stump["tka_source_family"] = "tree_stump_01"
         stump["tka_burial_fraction"] = burial
+        apply_composer_placement(stump, "stump", "tree_stump_01")
 
 def verify_layout(tree_records):
     flat_samples = []
@@ -1854,6 +2104,23 @@ def verify_layout(tree_records):
     maximum_flat_deviation = max(flat_samples)
     if maximum_flat_deviation > 0.02:
         raise RuntimeError(f"Performance clearing is not flat: {maximum_flat_deviation:.4f}m")
+
+    fire_court_ground = terrain_height(FIRE_COURT_X, FIRE_COURT_Y)
+    if abs(fire_court_ground - FIRE_COURT_GROUND_HEIGHT) > 0.02:
+        raise RuntimeError(
+            "Fire court was not graded to its contract: "
+            f"{fire_court_ground:.4f}m instead of {FIRE_COURT_GROUND_HEIGHT:.4f}m"
+        )
+
+    social_ground_deviation = max(
+        abs(terrain_height(runtime_x, -runtime_z) - FIRE_COURT_GROUND_HEIGHT)
+        for runtime_x, runtime_z in FIRE_COURT_SOCIAL_RUNTIME_POINTS
+    )
+    if social_ground_deviation > 0.02:
+        raise RuntimeError(
+            "Fire-court social clearing leaves a guest on sloped snow: "
+            f"{social_ground_deviation:.4f}m maximum deviation"
+        )
 
     boundary_radii = [
         terrain_boundary_radius(math.tau * segment / TERRAIN_ANGULAR_SEGMENTS)
@@ -2293,6 +2560,7 @@ def verify_layout(tree_records):
 
     print("\nWinter ecology verification")
     print(f"Flat clearing maximum deviation: {maximum_flat_deviation:.4f} m")
+    print(f"Fire-court social deviation:     {social_ground_deviation:.4f} m")
     print(
         "Terrain boundary radius:         "
         f"{minimum_boundary_radius:.3f} to {maximum_boundary_radius:.3f} m"
@@ -2342,6 +2610,10 @@ def verify_layout(tree_records):
                 "minimumPathBankReliefMetres": minimum_path_bank_relief,
                 "settlementLayoutVersion": SETTLEMENT_LAYOUT["version"],
                 "settlementLayoutSha256": SETTLEMENT_LAYOUT_SHA256,
+                "fireCourtContractRevision": FIRE_COURT_CONTRACT["revisionId"],
+                "fireCourtContractSha256": FIRE_COURT_CONTRACT_SHA256,
+                "fireCourtGroundHeight": FIRE_COURT_GROUND_HEIGHT,
+                "fireCourtSocialGroundMaximumDeviation": social_ground_deviation,
                 "compositionPlanVersion": COMPOSITION_PLAN["version"],
                 "compositionPlanSha256": COMPOSITION_PLAN_SHA256,
                 "stageToHearthMetres": stage_to_hearth,
@@ -2499,6 +2771,8 @@ terrain["tka_tree_count"] = len(tree_placements)
 terrain["tka_tree_cluster_count"] = len(TREE_LAYOUT["clusters"])
 terrain["tka_settlement_layout_version"] = SETTLEMENT_LAYOUT["version"]
 terrain["tka_settlement_layout_sha256"] = SETTLEMENT_LAYOUT_SHA256
+terrain["tka_fire_court_contract_revision"] = FIRE_COURT_CONTRACT["revisionId"]
+terrain["tka_fire_court_contract_sha256"] = FIRE_COURT_CONTRACT_SHA256
 terrain["tka_tree_corridors"] = ",".join(
     corridor["id"] for corridor in TREE_CORRIDORS
 )
@@ -2531,12 +2805,14 @@ create_rocks(prop_sources)
 hearth_production = create_hearth_production(prop_sources)
 create_deadwood(prop_sources)
 create_stumps(tree_sources["stump_a"])
+composer_catalog_additions = create_composer_catalog_additions()
 verify_layout(tree_records)
 setup_qa_render()
 
 print("\nMoonlit Winter Hollow authored")
 print(f"Trees:     {len(tree_records)}")
 print(f"Snow caps: {snow_cap_count}")
+print(f"Composer additions: {len(composer_catalog_additions)}")
 print(f"Blend:     {BLEND_PATH}")
 for label, path in QA_PATHS.items():
     print(f"QA {label:8}: {path}")

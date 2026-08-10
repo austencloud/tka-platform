@@ -3,26 +3,48 @@
   "sceneId": "moonlit-winter-hollow",
   "title": "Moonlit Winter Hollow",
   "domainProofRequired": false,
-  "currentGate": 1,
+  "currentGate": 2,
   "authority": {
     "experienceSpec": "docs/superpowers/plans/active/2026-08-08-winter-environment-pass-three.md",
     "roomShellSource": "scripts/winter-settlement-layout.json",
-    "planContract": "scripts/winter-composition-gate1-r2.json",
-    "museumTrackerItems": ["tZdDqKHsPqx8pQ7C5KC9"]
+    "planContract": "scripts/winter-fire-court-graybox-r1.json",
+    "museumTrackerItems": [
+      "tZdDqKHsPqx8pQ7C5KC9",
+      "nXwi8yYiKJRSBi3rgAZs",
+      "L4o1RiMAIOlmGihZjYGg",
+      "ZIy3eIKYhqXkcrXffhik",
+      "Uc9pWzGSfjfWI25LVQt7",
+      "Mu1MpX08ohPIVqCOj1fL"
+    ]
   },
   "sequenceFingerprints": [],
   "claims": [
     {
       "id": "C-001",
       "class": "invention",
-      "statement": "An unnamed seasonal caretaker maintains a warming lodge for four or five visiting performers.",
-      "evidence": ["tZdDqKHsPqx8pQ7C5KC9"]
+      "statement": "The winter keeper hosts an intimate fire jam for exactly ten friends, not a public event.",
+      "evidence": ["ZIy3eIKYhqXkcrXffhik"]
     },
     {
       "id": "C-003",
       "class": "literal",
-      "statement": "Revision 2 places the lodge 44.9 m from the stage and the hearth 12.8 m from the lodge in a 3.1 m cleared pocket.",
-      "evidence": ["scripts/winter-composition-gate1-r2.json"]
+      "statement": "Fire-court revision 2 places a 5.2 x 4.1 m court at (-13, -7) in the broad left clearing, keeps the frozen pond right of the arrival path, and attaches a 4.2 x 5.4 m practice wing to the lodge.",
+      "evidence": ["scripts/winter-fire-court-graybox-r1.json"]
+    },
+    {
+      "id": "C-009",
+      "class": "literal",
+      "statement": "The live Winter terrain continues the flat central clearing beneath the shallow fire-court inset so the gathering is grounded rather than buried in snow.",
+      "evidence": ["scripts/build-winter-environment.py"]
+    },
+    {
+      "id": "C-010",
+      "class": "literal",
+      "statement": "Three detailed animated avatars perform with poi, staff, and fans while the canonical 3D effect owner renders fire at their prop tips.",
+      "evidence": [
+        "src/lib/shared/3d/environments/scenes/winter/graybox/WinterFireCourtPerformer.svelte",
+        "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-performers-r1/winter-fire-court-performers-court.png"
+      ]
     }
   ],
   "exemptions": [],
@@ -34,12 +56,12 @@
         {
           "kind": "canon-audit",
           "path": "docs/superpowers/specs/moonlit-winter-hollow/scene-development.md",
-          "sha256": "c301211e3cac000e626c4fece048ba2acd67658a155d11077b1ded3d0d86c08c"
+          "sha256": "92363081a49c14894f92c77aecdf4354ef2c1fd7cdf065c32447e4b15342d92a"
         },
         {
           "kind": "room-shell",
-          "path": "scripts/winter-composition-gate1-r2.json",
-          "sha256": "9d06fe58feaa364adb3a42965093088b71d0419ad2c22ce9d164f434aa77290a"
+          "path": "scripts/winter-fire-court-graybox-r1.json",
+          "sha256": "ca403912a35078bfc30494e357bea03b39293b69ce56e829a8dbdcb7e29fa743"
         }
       ],
       "checks": [
@@ -56,75 +78,214 @@
         {
           "name": "scope-boundary",
           "status": "passed",
-          "evidence": "The graybox pass authorizes no paid generation, final lodge asset, open-water pond, wildlife, or ambient crowd."
+          "evidence": "The revision authorizes an isolated spatial graybox only: no paid generation, production character assets, open-water pond, wildlife, or final architecture."
         }
       ],
       "approval": null
     },
     {
       "id": "measured-plan",
-      "status": "ready-for-review",
+      "status": "approved",
       "evidence": [
         {
           "kind": "floor-plan",
-          "path": "scripts/winter-settlement-layout.json",
-          "sha256": "2ed59b80a3aae2da184748ac42424e6a798291783b61c1e734dff362b85ad6cb"
+          "path": "scripts/winter-fire-court-graybox-r1.json",
+          "sha256": "ca403912a35078bfc30494e357bea03b39293b69ce56e829a8dbdcb7e29fa743"
         },
         {
           "kind": "vertical-section",
           "path": "docs/superpowers/specs/moonlit-winter-hollow/scene-development.md",
-          "sha256": "c301211e3cac000e626c4fece048ba2acd67658a155d11077b1ded3d0d86c08c"
+          "sha256": "92363081a49c14894f92c77aecdf4354ef2c1fd7cdf065c32447e4b15342d92a"
         },
         {
           "kind": "route-storyboard",
           "path": "docs/superpowers/specs/moonlit-winter-hollow/scene-development.md",
-          "sha256": "c301211e3cac000e626c4fece048ba2acd67658a155d11077b1ded3d0d86c08c"
+          "sha256": "92363081a49c14894f92c77aecdf4354ef2c1fd7cdf065c32447e4b15342d92a"
         },
         {
           "kind": "sightline-study",
           "path": "docs/superpowers/specs/moonlit-winter-hollow/scene-development.md",
-          "sha256": "c301211e3cac000e626c4fece048ba2acd67658a155d11077b1ded3d0d86c08c"
+          "sha256": "92363081a49c14894f92c77aecdf4354ef2c1fd7cdf065c32447e4b15342d92a"
         },
         {
           "kind": "review-board",
-          "path": "docs/superpowers/specs/moonlit-winter-hollow/winter-gate1-r2-review.png",
-          "sha256": "1d8094295d9cdef92de9ab4036de423fb6f3c02f922faec59da5bd6877760732"
+          "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-graybox-r1/winter-fire-court-concept-r1.png",
+          "sha256": "e55c37ab02e5ee916e6e7581f608d1a0584aba772f833884abafdadc1881b538"
         },
         {
           "kind": "review-presentation",
-          "path": "src/routes/test/winter-scene/WinterCompositionPlan.svelte",
-          "sha256": "2da8f6e491a8609c0f892bef1fefc68c746967bbd01e5adb33ba9f74ade7abe1"
+          "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-graybox-r1/winter-fire-court-graybox-r1-plan.png",
+          "sha256": "00645f74ce4e171c1db0a7469aef4111ea218c48735f217d4f6ef7fb65bd8f90"
         }
       ],
       "checks": [
         {
           "name": "walkability",
           "status": "passed",
-          "evidence": "A broad ramp and packed-snow route connect the south entry, performance deck, and lodge at no more than a 12% target grade; the hearth sits in a separate side pocket."
+          "evidence": "One 2.2 m arrival spine passes between court and frozen pond, then climbs to the lodge; a 1.6 m spur enters through the court's east-side curb opening."
         },
         {
           "name": "clearance",
           "status": "passed",
-          "evidence": "The lodge is 44.94 m from the stage, the hearth is 12.81 m from the lodge inside a 3.1 m cleared pocket, and the pond remains 18.87 m from the stage."
+          "evidence": "The measured plan holds at least 9.6 m between court and pond, at least 0.45 m between the primary path edge and court edge, and at least 0.35 m between audience proxies and the fire-court edge."
         },
         {
           "name": "sightlines",
           "status": "passed",
-          "evidence": "The proposed 44-degree hero view presents the bright performance deck first, lodge second, hearth beside the lodge third, and natural frozen pond fourth."
+          "evidence": "The 44-degree hero camera frames the fire jam left of the arrival line, frozen pond right of it, and the lodge destination beyond."
         },
         {
           "name": "final-view",
           "status": "passed",
-          "evidence": "The responsive Gate 1 review presentation records the hero frame, top-down coordinates, vertical section, and attention order without changing the production scene."
+          "evidence": "Austen reviewed the first runtime graybox and explicitly moved the complete gathering seven metres left into the broad clearing he identified as the intended fire-spinning area."
         }
       ],
-      "approval": null
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-10T20:55:58.057Z",
+        "quote": "move everything a little more to the left ... that big clearing ... is what I figured the fire spinning area was",
+        "museumTrackerItem": "Uc9pWzGSfjfWI25LVQt7",
+        "visualComprehensionConfirmed": true,
+        "note": "Austen approved the intimate ten-friend fire-court concept and then gave a direct measured placement correction: move the entire gathering seven metres left into the broad clearing while the pond, lodge, and primary arrival path remain anchored."
+      }
     },
     {
       "id": "playable-graybox",
-      "status": "pending",
-      "evidence": [],
-      "checks": [],
+      "status": "ready-for-review",
+      "evidence": [
+        {
+          "kind": "blender-source",
+          "path": "blender/winter_fire_court_graybox.blend",
+          "sha256": "e27d49352c2bbe1fa1486ee3d18ab83b150325e6edbe624097d936f3f2ce98cc"
+        },
+        {
+          "kind": "coordinate-manifest",
+          "path": "scripts/winter-fire-court-graybox-r1.json",
+          "sha256": "ca403912a35078bfc30494e357bea03b39293b69ce56e829a8dbdcb7e29fa743"
+        },
+        {
+          "kind": "graybox-glb",
+          "path": "static/models/winter/review/winter-fire-court-graybox-r1.glb",
+          "sha256": "d534bd390f3423ea2a0fba29bae5536e384e6e89726d185a08c9cebe20aea0c4"
+        },
+        {
+          "kind": "locked-camera-set",
+          "path": "src/routes/test/winter-scene/+page.svelte",
+          "sha256": "45d9348cfb8f6f87967b40496bad699901922cb8f52b8608884fe7aa261d3d6d"
+        },
+        {
+          "kind": "runtime-overlay",
+          "path": "src/lib/shared/3d/environments/scenes/winter/graybox/WinterFireCourtGraybox.svelte",
+          "sha256": "b62b96d49eb4607372e2ac28f16271fd1425f933403b23e193a44ff40f5771de"
+        },
+        {
+          "kind": "runtime-performers",
+          "path": "src/lib/shared/3d/environments/scenes/winter/graybox/WinterFireCourtPerformer.svelte",
+          "sha256": "907d46aa6bcc2e3d3591685a5f2c819fc6847802a0528c0794e376d2224e3469"
+        },
+        {
+          "kind": "terrain-builder",
+          "path": "scripts/build-winter-environment.py",
+          "sha256": "155a29e5d7678242b994f378e31cdf0fdb473f08bb5d292fb354816bccc006d0"
+        },
+        {
+          "kind": "production-blender-source",
+          "path": "blender/winter_environment.blend",
+          "sha256": "68bf0e3dd8ceaf6c41854db664ebc7d20b5f68f38d29e4e1fe1565afdf3f7a30"
+        },
+        {
+          "kind": "production-environment-glb",
+          "path": "static/models/winter/winter-environment.glb",
+          "sha256": "2ecbe50dabd347ee6f7eccdc5648579e045588668365f73e325b9a1cba844a5f"
+        },
+        {
+          "kind": "world-view",
+          "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-performers-r1/winter-fire-court-performers-world.png",
+          "sha256": "c664f46db946b263fcd0b603cce9e7f7285de301d7c471b034ba3ab59e9e7d2b"
+        },
+        {
+          "kind": "court-view",
+          "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-performers-r1/winter-fire-court-performers-court.png",
+          "sha256": "731698f533403d5672ea6769fc86b9478f3898e556b49a656955a2de2c86226e"
+        },
+        {
+          "kind": "build-report",
+          "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-graybox-r1/winter-fire-court-graybox-r1-report.json",
+          "sha256": "dcfdc74423e04d1634ba91d8f2a71ced3c7d9951396c2da38be480bb7682ab90"
+        },
+        {
+          "kind": "artifact-verification",
+          "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-graybox-r1/winter-fire-court-graybox-r1-verification.json",
+          "sha256": "ff2d42a2b8161e93cc445bc78d557c28711e431923ee6a4c6ab04150628811c1"
+        },
+        {
+          "kind": "hero-view",
+          "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-graybox-r1/winter-fire-court-graybox-r1-hero.png",
+          "sha256": "547750de5d3355df505aa0e8026a86a468e20fdd8f00c6e7099c994a4e9dbe13"
+        },
+        {
+          "kind": "first-person-walk",
+          "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-graybox-r1/winter-fire-court-graybox-r1-walk.png",
+          "sha256": "d606198f98e5acdcf8526e02db3025ea6b62f5414a6a0fc320efd950166edc5e"
+        },
+        {
+          "kind": "court-view",
+          "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-graybox-r1/winter-fire-court-graybox-r1-court.png",
+          "sha256": "b52e69c71105932fefa6f4819a6e11e21ae00dbda9412d70858c117528a89c64"
+        },
+        {
+          "kind": "plan-view",
+          "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-graybox-r1/winter-fire-court-graybox-r1-plan.png",
+          "sha256": "00645f74ce4e171c1db0a7469aef4111ea218c48735f217d4f6ef7fb65bd8f90"
+        },
+        {
+          "kind": "review-contact-sheet",
+          "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-graybox-r1/winter-fire-court-graybox-r1-contact-sheet.png",
+          "sha256": "9892b25769d1f9ec7d930499c4d50e575a9e8691ece09f134359a43cdcf8a183"
+        }
+      ],
+      "checks": [
+        {
+          "name": "artifact-digest",
+          "status": "passed",
+          "evidence": "The coordinate contract, isolated graybox, regraded production terrain, runtime performer composition, and current world and court captures carry SHA-256 digests."
+        },
+        {
+          "name": "walkability",
+          "status": "passed",
+          "evidence": "The measured 2.2 m arrival spine passes between the court and pond and reaches the lodge; the 1.6 m court spur enters through the only curb opening."
+        },
+        {
+          "name": "collision",
+          "status": "passed",
+          "evidence": "Focused geometry tests hold spinners inside the court, all seven audience proxies outside its edge, and the primary route outside the fire-safety envelope."
+        },
+        {
+          "name": "route-duration",
+          "status": "passed",
+          "evidence": "The review walk camera starts at the south entry and faces the continuous arrival spine before the path divides into fire-court and lodge destinations."
+        },
+        {
+          "name": "sequence-parity",
+          "status": "passed",
+          "evidence": "The three performers use existing shared demo fixtures only to prove simultaneous prop motion. They are explicitly review animation, not authored Winter choreography, so the room's production fingerprint set remains empty."
+        },
+        {
+          "name": "landmark-parity",
+          "status": "passed",
+          "evidence": "The Blender builder and GLB verifier enforce the contract's court, frozen pond, lodge, path, and attached practice-wing landmarks."
+        },
+        {
+          "name": "population-and-clearance",
+          "status": "passed",
+          "evidence": "Three proxy spinners are replaced after load by detailed avatars using poi, staff, and fans; four seated, two standing, and one rack-tender audience proxies retain the exact ten-friend layout and 2.4 m minimum spinner spacing."
+        },
+        {
+          "name": "runtime-delivery",
+          "status": "passed",
+          "evidence": "The live 5173 court view loaded all three detailed avatars, three distinct physical props, and canonical fire effects with no browser warnings or errors. The regraded 13.32 MiB production GLB passed the Winter verifier; focused geometry tests passed 5/5."
+        }
+      ],
       "approval": null
     },
     {

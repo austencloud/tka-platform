@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>First Fire — shell forensics</title>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0;
+    padding: clamp(24px, 3vw, 56px);
+    background: #14171c;
+    color: #e8ecf2;
+    font: 16px/1.55 ui-sans-serif, system-ui, sans-serif;
+  }
+  h1 { font-size: clamp(28px, 2.4vw, 44px); margin: 0 0 8px; }
+  .sub { color: #9aa6b6; margin: 0 0 32px; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .pair { grid-template-columns: 1fr; } }
+  figure { margin: 0; }
+  figcaption { color: #9aa6b6; font-size: 14px; padding: 8px 2px; }
+  img { width: 100%; height: auto; display: block; border-radius: 10px; border: 1px solid #2a303a; background: #0d1014; }
+  table { border-collapse: collapse; width: 100%; margin: 28px 0 8px; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid #262c36; }
+  th { color: #9aa6b6; font-weight: 600; }
+  .ok { color: #6fd08c; }
+  .flag { color: #f0b95a; }
+  code { background: #1d222a; padding: 2px 6px; border-radius: 5px; }
+  section { max-width: 1600px; margin: 0 auto 44px; }
+</style>
+</head>
+<body>
+<section>
+  <h1>Cinder Court shell — what the measurements say</h1>
+  <p class="sub">
+    Your capture, and the same shell rendered from the same eye, yaw, pitch, fov and aspect.
+    The render loads the shipped GLB, hides every dressing object, and paints the world
+    background magenta, so any opening to the outside would be unmistakable.
+  </p>
+
+  <div class="pair">
+    <figure>
+      <img src="capture.png" alt="In-app capture of the bare shell" />
+      <figcaption>Your capture — <code>?shell=bare</code>, 2026-08-10T22:19:04Z</figcaption>
+    </figure>
+    <figure>
+      <img src="registered.png" alt="Registered Blender render of the shipped GLB" />
+      <figcaption>Same pose, shipped GLB, magenta background. No magenta anywhere.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <h2>Findings</h2>
+  <table>
+    <tr><th>Check</th><th>Result</th><th>Reading</th></tr>
+    <tr><td>Boundary edges, welded (.blend)</td><td class="ok">0</td><td>Watertight at the source</td></tr>
+    <tr><td>Holes, welded (.blend)</td><td class="ok">0</td><td>No torn surface</td></tr>
+    <tr><td>Non-manifold edges</td><td class="flag">3</td><td>Trivial; not a visible opening</td></tr>
+    <tr><td>Outer wall coverage y=&pm;23.8, z=&minus;1.4/11.5</td><td class="ok">100%</td><td>Sealed</td></tr>
+    <tr><td>Outer wall coverage x=&pm;30.8</td><td class="flag">14.3 / 14.9 m&sup2; open</td><td>The Water and Earth doorways — cut on purpose</td></tr>
+    <tr><td>Background visible from your pose</td><td class="ok">none</td><td>Nothing opens to the outside here</td></tr>
+    <tr><td>Same render, backface culling on</td><td class="ok">identical</td><td>No flipped normals</td></tr>
+  </table>
+  <p class="sub">
+    My earlier count of 1,160 holes was wrong and I have thrown it out: glTF splits vertices
+    per face for flat shading, so an unwelded import reports the whole mesh as boundary.
+    Welded, the shell is closed.
+  </p>
+</section>
+
+<section>
+  <h2>Wall plan, sliced at eye height (1.62 m)</h2>
+  <img src="plan.png" alt="Horizontal slice of the shell at eye height" />
+  <p class="sub">Three courts and the corridors between them. Rock is the field; the voids are the outlines.</p>
+</section>
+</body>
+</html>

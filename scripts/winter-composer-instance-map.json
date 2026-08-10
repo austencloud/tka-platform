@@ -1,0 +1,3070 @@
+{
+  "version": 1,
+  "rawGlbSha256": "1e28ba54829f5be81475004a4e5b5c9c3f67cdd4e44623c4f9827fdf4630e025",
+  "optimizedGlbSha256": "d90f2b275335f729b684a412eb95086798cc80756a796059246d6e5f7aeb3ba7",
+  "optimizedInstanceCount": 521,
+  "matchedInstanceCount": 510,
+  "mappedTreeCount": 472,
+  "instancesByMatrixKey": {
+    "fkciy5": {
+      "id": "winter:conifer:winter-base-near-middle-fir-004",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_004",
+      "locked": false
+    },
+    "k6qhjp": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-125",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_125",
+      "locked": false
+    },
+    "jazjts": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-120",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_120",
+      "locked": false
+    },
+    "1awkg2k": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-225",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_225",
+      "locked": false
+    },
+    "9fu5cr": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-127",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_127",
+      "locked": false
+    },
+    "1intbz5": {
+      "id": "winter:conifer:winter-base-near-middle-fir-041",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_041",
+      "locked": false
+    },
+    "1dthk6n": {
+      "id": "winter:conifer:winter-base-near-middle-fir-095",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_095",
+      "locked": false
+    },
+    "1l0u32s": {
+      "id": "winter:conifer:winter-base-near-middle-fir-012",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_012",
+      "locked": false
+    },
+    "1jxa39x": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-152",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_152",
+      "locked": false
+    },
+    "dzopyl": {
+      "id": "winter:conifer:winter-base-near-middle-fir-050",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_050",
+      "locked": false
+    },
+    "1wac0w1": {
+      "id": "winter:conifer:winter-base-near-middle-fir-054",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_054",
+      "locked": false
+    },
+    "1x35j9c": {
+      "id": "winter:conifer:winter-base-near-middle-fir-024",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_024",
+      "locked": false
+    },
+    "4wrlon": {
+      "id": "winter:conifer:winter-base-near-middle-fir-083",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_083",
+      "locked": false
+    },
+    "17z315m": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-229",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_229",
+      "locked": false
+    },
+    "8rosnw": {
+      "id": "winter:conifer:winter-base-near-middle-fir-091",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_091",
+      "locked": false
+    },
+    "1mu7x2z": {
+      "id": "winter:conifer:winter-base-near-middle-fir-046",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_046",
+      "locked": false
+    },
+    "qwtmn1": {
+      "id": "winter:conifer:winter-base-near-middle-fir-075",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_075",
+      "locked": false
+    },
+    "fvk8vu": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-202",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_202",
+      "locked": false
+    },
+    "1m0joxv": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-214",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_214",
+      "locked": false
+    },
+    "5q4i0v": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-175",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_175",
+      "locked": false
+    },
+    "q9cwyc": {
+      "id": "winter:conifer:winter-base-near-middle-fir-022",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_022",
+      "locked": false
+    },
+    "1wb0sl9": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-139",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_139",
+      "locked": false
+    },
+    "1m059jo": {
+      "id": "winter:conifer:winter-base-near-middle-fir-058",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_058",
+      "locked": false
+    },
+    "tmaey8": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-153",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_153",
+      "locked": false
+    },
+    "12ovoyw": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-113",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_113",
+      "locked": false
+    },
+    "syzrli": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-107",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_107",
+      "locked": false
+    },
+    "6h1gnk": {
+      "id": "winter:conifer:winter-base-near-middle-fir-077",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_077",
+      "locked": false
+    },
+    "ck31s2": {
+      "id": "winter:conifer:winter-base-near-middle-fir-062",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_062",
+      "locked": false
+    },
+    "901m1b": {
+      "id": "winter:conifer:winter-base-near-middle-fir-032",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_032",
+      "locked": false
+    },
+    "1kdj96y": {
+      "id": "winter:conifer:winter-base-near-middle-fir-037",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_037",
+      "locked": false
+    },
+    "wyl8wi": {
+      "id": "winter:conifer:winter-base-near-middle-fir-000",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_000",
+      "locked": false
+    },
+    "sul8v9": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-209",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_209",
+      "locked": false
+    },
+    "l0mp5k": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-178",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_178",
+      "locked": false
+    },
+    "umc8t3": {
+      "id": "winter:conifer:winter-base-near-middle-fir-019",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_019",
+      "locked": false
+    },
+    "1qmzq06": {
+      "id": "winter:conifer:winter-base-near-middle-fir-082",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_082",
+      "locked": false
+    },
+    "6vj874": {
+      "id": "winter:conifer:winter-base-near-middle-fir-097",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_097",
+      "locked": false
+    },
+    "4qd2p0": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-162",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_162",
+      "locked": false
+    },
+    "bqfsy7": {
+      "id": "winter:conifer:winter-base-near-middle-fir-060",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_060",
+      "locked": false
+    },
+    "3xdurh": {
+      "id": "winter:conifer:winter-base-near-middle-fir-072",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_072",
+      "locked": false
+    },
+    "1sm2i90": {
+      "id": "winter:conifer:winter-base-near-middle-fir-071",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_071",
+      "locked": false
+    },
+    "yoq0yy": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-109",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_109",
+      "locked": false
+    },
+    "1ycpzy1": {
+      "id": "winter:conifer:winter-base-near-middle-fir-042",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_042",
+      "locked": false
+    },
+    "yetwm8": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-167",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_167",
+      "locked": false
+    },
+    "1tajmpm": {
+      "id": "winter:conifer:winter-base-near-middle-fir-009",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_009",
+      "locked": false
+    },
+    "b3zq1w": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-235",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_235",
+      "locked": false
+    },
+    "7p6wnn": {
+      "id": "winter:conifer:winter-base-near-middle-fir-088",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_088",
+      "locked": false
+    },
+    "1feszo5": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-211",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_211",
+      "locked": false
+    },
+    "ghl4nb": {
+      "id": "winter:conifer:winter-base-near-middle-fir-029",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_029",
+      "locked": false
+    },
+    "179h0xs": {
+      "id": "winter:conifer:winter-base-near-middle-fir-069",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_069",
+      "locked": false
+    },
+    "quuer7": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-212",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_212",
+      "locked": false
+    },
+    "1htfz56": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-133",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_133",
+      "locked": false
+    },
+    "gzi5gv": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-099",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_099",
+      "locked": false
+    },
+    "7cuit2": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-221",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_221",
+      "locked": false
+    },
+    "1fvk7qu": {
+      "id": "winter:conifer:winter-base-near-middle-fir-086",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_086",
+      "locked": false
+    },
+    "1awvk2m": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-238",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_238",
+      "locked": false
+    },
+    "5xxiw0": {
+      "id": "winter:conifer:winter-base-near-middle-fir-036",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_036",
+      "locked": false
+    },
+    "9bgjzh": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-160",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_160",
+      "locked": false
+    },
+    "1rcbvhv": {
+      "id": "winter:conifer:winter-medium-mid-middle-fir-157",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_middle_fir_157",
+      "locked": false
+    },
+    "40da8o": {
+      "id": "winter:conifer:winter-base-near-middle-fir-076",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_076",
+      "locked": false
+    },
+    "1kh9piu": {
+      "id": "winter:conifer:winter-base-near-middle-fir-048",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_middle_fir_048",
+      "locked": false
+    },
+    "17vdz2w": {
+      "id": "winter:conifer:winter-base-near-young-sapling-043",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_043",
+      "locked": false
+    },
+    "1pbv3s2": {
+      "id": "winter:conifer:winter-base-near-young-sapling-047",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_047",
+      "locked": false
+    },
+    "94te3j": {
+      "id": "winter:conifer:winter-base-near-young-sapling-040",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_040",
+      "locked": false
+    },
+    "1ekjzch": {
+      "id": "winter:conifer:winter-base-near-young-sapling-031",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_031",
+      "locked": false
+    },
+    "1kc8l1t": {
+      "id": "winter:conifer:winter-base-near-young-sapling-018",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_018",
+      "locked": false
+    },
+    "1h5142u": {
+      "id": "winter:conifer:winter-base-near-young-sapling-001",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_001",
+      "locked": false
+    },
+    "1grvdul": {
+      "id": "winter:conifer:winter-base-near-young-sapling-003",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_003",
+      "locked": false
+    },
+    "1ekbhre": {
+      "id": "winter:conifer:winter-base-near-young-sapling-045",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_045",
+      "locked": false
+    },
+    "110puac": {
+      "id": "winter:conifer:winter-base-near-young-sapling-006",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_006",
+      "locked": false
+    },
+    "spgzve": {
+      "id": "winter:conifer:winter-base-near-young-sapling-094",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_094",
+      "locked": false
+    },
+    "apiygo": {
+      "id": "winter:conifer:winter-base-near-young-sapling-093",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_093",
+      "locked": false
+    },
+    "jb9jr2": {
+      "id": "winter:conifer:winter-base-near-young-sapling-096",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_096",
+      "locked": false
+    },
+    "tlxxi8": {
+      "id": "winter:conifer:winter-base-near-young-sapling-079",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_079",
+      "locked": false
+    },
+    "1t8qule": {
+      "id": "winter:conifer:winter-base-near-young-sapling-064",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_064",
+      "locked": false
+    },
+    "19jdfje": {
+      "id": "winter:conifer:winter-base-near-young-sapling-078",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_078",
+      "locked": false
+    },
+    "wbgs5k": {
+      "id": "winter:conifer:winter-base-near-young-sapling-080",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_080",
+      "locked": false
+    },
+    "1vhzd56": {
+      "id": "winter:conifer:winter-base-near-young-sapling-025",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_025",
+      "locked": false
+    },
+    "jr1puc": {
+      "id": "winter:conifer:winter-base-near-young-sapling-026",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_026",
+      "locked": false
+    },
+    "s9qxvo": {
+      "id": "winter:conifer:winter-base-near-young-sapling-081",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_081",
+      "locked": false
+    },
+    "1qkw5d0": {
+      "id": "winter:conifer:winter-base-near-young-sapling-085",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_085",
+      "locked": false
+    },
+    "wqmoat": {
+      "id": "winter:conifer:winter-base-near-young-sapling-055",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_055",
+      "locked": false
+    },
+    "19iz4vy": {
+      "id": "winter:conifer:winter-base-near-young-sapling-070",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_070",
+      "locked": false
+    },
+    "cxy24d": {
+      "id": "winter:conifer:winter-base-near-young-sapling-068",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_068",
+      "locked": false
+    },
+    "1lv3umg": {
+      "id": "winter:conifer:winter-base-near-young-sapling-010",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_010",
+      "locked": false
+    },
+    "1pfycgc": {
+      "id": "winter:conifer:winter-base-near-young-sapling-015",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_015",
+      "locked": false
+    },
+    "ut31mk": {
+      "id": "winter:conifer:winter-base-near-young-sapling-028",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_028",
+      "locked": false
+    },
+    "mqa4xx": {
+      "id": "winter:conifer:winter-base-near-young-sapling-066",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_066",
+      "locked": false
+    },
+    "6himkf": {
+      "id": "winter:conifer:winter-base-near-young-sapling-049",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_049",
+      "locked": false
+    },
+    "1m1nwu0": {
+      "id": "winter:conifer:winter-base-near-young-sapling-008",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_008",
+      "locked": false
+    },
+    "r1pl0g": {
+      "id": "winter:conifer:winter-base-near-young-sapling-087",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_087",
+      "locked": false
+    },
+    "1hcnvh9": {
+      "id": "winter:conifer:winter-base-near-young-sapling-090",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_090",
+      "locked": false
+    },
+    "3bfjje": {
+      "id": "winter:conifer:winter-base-near-young-sapling-061",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_061",
+      "locked": false
+    },
+    "1p3rnny": {
+      "id": "winter:conifer:winter-base-near-young-sapling-056",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_056",
+      "locked": false
+    },
+    "v08aja": {
+      "id": "winter:conifer:winter-base-near-young-sapling-016",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_016",
+      "locked": false
+    },
+    "1vrm2w0": {
+      "id": "winter:conifer:winter-base-near-young-sapling-034",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_034",
+      "locked": false
+    },
+    "aegpv": {
+      "id": "winter:conifer:winter-base-near-young-sapling-013",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_013",
+      "locked": false
+    },
+    "pqw9zn": {
+      "id": "winter:conifer:winter-base-near-young-sapling-020",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_020",
+      "locked": false
+    },
+    "1pnx39r": {
+      "id": "winter:conifer:winter-base-near-young-sapling-007",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_007",
+      "locked": false
+    },
+    "aiy4q3": {
+      "id": "winter:conifer:winter-base-near-young-sapling-039",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_young_sapling_039",
+      "locked": false
+    },
+    "1um03kx": {
+      "id": "winter:conifer:winter-base-near-lush-pine-067",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_lush_pine_067",
+      "locked": false
+    },
+    "14srzdz": {
+      "id": "winter:conifer:winter-medium-mid-lush-pine-164",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_lush_pine_164",
+      "locked": false
+    },
+    "3ym2tb": {
+      "id": "winter:conifer:winter-medium-mid-lush-pine-138",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_lush_pine_138",
+      "locked": false
+    },
+    "1xrq96f": {
+      "id": "winter:conifer:winter-base-near-lush-pine-027",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_lush_pine_027",
+      "locked": false
+    },
+    "1wlio8w": {
+      "id": "winter:conifer:winter-base-near-lush-pine-092",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_lush_pine_092",
+      "locked": false
+    },
+    "1arfx66": {
+      "id": "winter:conifer:winter-base-near-lush-pine-084",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_lush_pine_084",
+      "locked": false
+    },
+    "uuz587": {
+      "id": "winter:conifer:winter-base-near-lush-pine-052",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_lush_pine_052",
+      "locked": false
+    },
+    "imc6e": {
+      "id": "winter:conifer:winter-base-near-lush-pine-023",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_lush_pine_023",
+      "locked": false
+    },
+    "10kqggu": {
+      "id": "winter:conifer:winter-base-near-lush-pine-002",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_lush_pine_002",
+      "locked": false
+    },
+    "1j37p6n": {
+      "id": "winter:conifer:winter-medium-mid-lush-pine-198",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_lush_pine_198",
+      "locked": false
+    },
+    "1uwm21p": {
+      "id": "winter:conifer:winter-base-near-lush-pine-035",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_lush_pine_035",
+      "locked": false
+    },
+    "ynu227": {
+      "id": "winter:conifer:winter-base-near-lush-pine-053",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_lush_pine_053",
+      "locked": false
+    },
+    "15bgz5o": {
+      "id": "winter:conifer:winter-base-near-lush-pine-030",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_lush_pine_030",
+      "locked": false
+    },
+    "1tk5zgj": {
+      "id": "winter:conifer:winter-medium-mid-lush-pine-134",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_lush_pine_134",
+      "locked": false
+    },
+    "xgqgfl": {
+      "id": "winter:conifer:winter-medium-mid-lush-pine-116",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_lush_pine_116",
+      "locked": false
+    },
+    "76jwk2": {
+      "id": "winter:conifer:winter-base-near-lush-pine-005",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_lush_pine_005",
+      "locked": false
+    },
+    "1vky1gx": {
+      "id": "winter:conifer:winter-base-near-lush-pine-063",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_lush_pine_063",
+      "locked": false
+    },
+    "acgdej": {
+      "id": "winter:conifer:winter-base-near-lush-pine-065",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_lush_pine_065",
+      "locked": false
+    },
+    "necz4v": {
+      "id": "winter:conifer:winter-base-near-mature-spruce-051",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_mature_spruce_051",
+      "locked": false
+    },
+    "198aku0": {
+      "id": "winter:conifer:winter-medium-mid-mature-spruce-176",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_mature_spruce_176",
+      "locked": false
+    },
+    "hivwes": {
+      "id": "winter:conifer:winter-base-near-mature-spruce-033",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_mature_spruce_033",
+      "locked": false
+    },
+    "gfbznp": {
+      "id": "winter:conifer:winter-medium-mid-mature-spruce-106",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_mature_spruce_106",
+      "locked": false
+    },
+    "1be93wr": {
+      "id": "winter:conifer:winter-base-near-mature-spruce-038",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_mature_spruce_038",
+      "locked": false
+    },
+    "10qfv3r": {
+      "id": "winter:conifer:winter-base-near-mature-spruce-014",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_mature_spruce_014",
+      "locked": false
+    },
+    "qhgzif": {
+      "id": "winter:conifer:winter-medium-mid-mature-spruce-155",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_mature_spruce_155",
+      "locked": false
+    },
+    "n3z2wg": {
+      "id": "winter:conifer:winter-medium-mid-mature-spruce-129",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_mature_spruce_129",
+      "locked": false
+    },
+    "fhvof4": {
+      "id": "winter:conifer:winter-base-near-mature-spruce-074",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_mature_spruce_074",
+      "locked": false
+    },
+    "1lpc2c6": {
+      "id": "winter:conifer:winter-base-near-mature-spruce-011",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_mature_spruce_011",
+      "locked": false
+    },
+    "1q2ez2d": {
+      "id": "winter:conifer:winter-base-near-mature-spruce-017",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_mature_spruce_017",
+      "locked": false
+    },
+    "k728vz": {
+      "id": "winter:conifer:winter-medium-mid-mature-spruce-208",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_mature_spruce_208",
+      "locked": false
+    },
+    "4skcc": {
+      "id": "winter:conifer:winter-base-near-mature-spruce-089",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_mature_spruce_089",
+      "locked": false
+    },
+    "1wsi67w": {
+      "id": "winter:conifer:winter-base-near-mature-spruce-044",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_mature_spruce_044",
+      "locked": false
+    },
+    "1raq7p3": {
+      "id": "winter:conifer:winter-base-near-mature-spruce-073",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_mature_spruce_073",
+      "locked": false
+    },
+    "qbllnk": {
+      "id": "winter:conifer:winter-base-near-mature-spruce-021",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_mature_spruce_021",
+      "locked": false
+    },
+    "1aph393": {
+      "id": "winter:conifer:winter-base-near-mature-spruce-059",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_mature_spruce_059",
+      "locked": false
+    },
+    "1l3qdgt": {
+      "id": "winter:conifer:winter-base-near-mature-spruce-057",
+      "objectKey": "conifer",
+      "label": "Winter_Base_Near_mature_spruce_057",
+      "locked": false
+    },
+    "10dvo7g": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-114",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_114",
+      "locked": false
+    },
+    "1y1ubhe": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-122",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_122",
+      "locked": false
+    },
+    "18f5e51": {
+      "id": "winter:conifer:winter-high-far-distance-tall-407",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_407",
+      "locked": false
+    },
+    "1l0lqop": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-100",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_100",
+      "locked": false
+    },
+    "8x8bn1": {
+      "id": "winter:conifer:winter-high-far-distance-tall-401",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_401",
+      "locked": false
+    },
+    "18it49v": {
+      "id": "winter:conifer:winter-high-far-distance-tall-394",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_394",
+      "locked": false
+    },
+    "138cppa": {
+      "id": "winter:conifer:winter-high-far-distance-tall-402",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_402",
+      "locked": false
+    },
+    "f4ds4r": {
+      "id": "winter:conifer:winter-high-far-distance-tall-255",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_255",
+      "locked": false
+    },
+    "mtx9cw": {
+      "id": "winter:conifer:winter-high-far-distance-tall-261",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_261",
+      "locked": false
+    },
+    "d62dct": {
+      "id": "winter:conifer:winter-high-far-distance-tall-447",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_447",
+      "locked": false
+    },
+    "189trxx": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-215",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_215",
+      "locked": false
+    },
+    "hzevm4": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-191",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_191",
+      "locked": false
+    },
+    "1i117vq": {
+      "id": "winter:conifer:winter-high-far-distance-tall-308",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_308",
+      "locked": false
+    },
+    "1k8cxzu": {
+      "id": "winter:conifer:winter-high-far-distance-tall-420",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_420",
+      "locked": false
+    },
+    "1q8qfzi": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-183",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_183",
+      "locked": false
+    },
+    "11uny0b": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-165",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_165",
+      "locked": false
+    },
+    "q5jvnr": {
+      "id": "winter:conifer:winter-high-far-distance-tall-410",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_410",
+      "locked": false
+    },
+    "1jb2f6m": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-219",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_219",
+      "locked": false
+    },
+    "b8pwak": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-159",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_159",
+      "locked": false
+    },
+    "17qd3ew": {
+      "id": "winter:conifer:winter-high-far-distance-tall-260",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_260",
+      "locked": false
+    },
+    "h46dti": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-203",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_203",
+      "locked": false
+    },
+    "oaz4kh": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-126",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_126",
+      "locked": false
+    },
+    "53towq": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-161",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_161",
+      "locked": false
+    },
+    "1evhk57": {
+      "id": "winter:conifer:winter-high-far-distance-tall-374",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_374",
+      "locked": false
+    },
+    "1cbyq85": {
+      "id": "winter:conifer:winter-high-far-distance-tall-418",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_418",
+      "locked": false
+    },
+    "xlx8ix": {
+      "id": "winter:conifer:winter-high-far-distance-tall-282",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_282",
+      "locked": false
+    },
+    "11ro0is": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-224",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_224",
+      "locked": false
+    },
+    "avfpff": {
+      "id": "winter:conifer:winter-high-far-distance-tall-296",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_296",
+      "locked": false
+    },
+    "1sf5zfu": {
+      "id": "winter:conifer:winter-high-far-distance-tall-370",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_370",
+      "locked": false
+    },
+    "1i6tuj5": {
+      "id": "winter:conifer:winter-high-far-distance-tall-341",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_341",
+      "locked": false
+    },
+    "1dqfr5q": {
+      "id": "winter:conifer:winter-high-far-distance-tall-438",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_438",
+      "locked": false
+    },
+    "o8oot7": {
+      "id": "winter:conifer:winter-high-far-distance-tall-311",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_311",
+      "locked": false
+    },
+    "866o6m": {
+      "id": "winter:conifer:winter-high-far-distance-tall-426",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_426",
+      "locked": false
+    },
+    "b210uy": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-197",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_197",
+      "locked": false
+    },
+    "an3zjq": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-169",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_169",
+      "locked": false
+    },
+    "n6yxx1": {
+      "id": "winter:conifer:winter-high-far-distance-tall-408",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_408",
+      "locked": false
+    },
+    "1857p5l": {
+      "id": "winter:conifer:winter-high-far-distance-tall-288",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_288",
+      "locked": false
+    },
+    "19ao98k": {
+      "id": "winter:conifer:winter-high-far-distance-tall-448",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_448",
+      "locked": false
+    },
+    "1eqw5lz": {
+      "id": "winter:conifer:winter-high-far-distance-tall-345",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_345",
+      "locked": false
+    },
+    "e3golp": {
+      "id": "winter:conifer:winter-high-far-distance-tall-361",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_361",
+      "locked": false
+    },
+    "2jcr2i": {
+      "id": "winter:conifer:winter-high-far-distance-tall-317",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_317",
+      "locked": false
+    },
+    "cfmloi": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-171",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_171",
+      "locked": false
+    },
+    "43wqm1": {
+      "id": "winter:conifer:winter-high-far-distance-tall-417",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_417",
+      "locked": false
+    },
+    "1k6oz8t": {
+      "id": "winter:conifer:winter-high-far-distance-tall-466",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_466",
+      "locked": false
+    },
+    "s2lahk": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-195",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_195",
+      "locked": false
+    },
+    "qwf1xf": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-119",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_119",
+      "locked": false
+    },
+    "gk3x68": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-143",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_143",
+      "locked": false
+    },
+    "wase3v": {
+      "id": "winter:conifer:winter-high-far-distance-tall-400",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_400",
+      "locked": false
+    },
+    "19v5zgn": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-228",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_228",
+      "locked": false
+    },
+    "1b4oh8e": {
+      "id": "winter:conifer:winter-high-far-distance-tall-463",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_463",
+      "locked": false
+    },
+    "fnl58p": {
+      "id": "winter:conifer:winter-high-far-distance-tall-414",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_414",
+      "locked": false
+    },
+    "1rcq8hm": {
+      "id": "winter:conifer:winter-high-far-distance-tall-322",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_322",
+      "locked": false
+    },
+    "1op5erk": {
+      "id": "winter:conifer:winter-high-far-distance-tall-265",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_265",
+      "locked": false
+    },
+    "11y1v1v": {
+      "id": "winter:conifer:winter-high-far-distance-tall-249",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_249",
+      "locked": false
+    },
+    "44y1vi": {
+      "id": "winter:conifer:winter-high-far-distance-tall-390",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_390",
+      "locked": false
+    },
+    "1qnd47y": {
+      "id": "winter:conifer:winter-high-far-distance-tall-335",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_335",
+      "locked": false
+    },
+    "yk9jtq": {
+      "id": "winter:conifer:winter-high-far-distance-tall-292",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_292",
+      "locked": false
+    },
+    "1p2pt13": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-205",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_205",
+      "locked": false
+    },
+    "15t3lfg": {
+      "id": "winter:conifer:winter-high-far-distance-tall-314",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_314",
+      "locked": false
+    },
+    "j593ml": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-149",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_149",
+      "locked": false
+    },
+    "14ad1zs": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-098",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_098",
+      "locked": false
+    },
+    "1rkh9d3": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-103",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_103",
+      "locked": false
+    },
+    "1f25wph": {
+      "id": "winter:conifer:winter-high-far-distance-tall-412",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_412",
+      "locked": false
+    },
+    "wbjfig": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-218",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_218",
+      "locked": false
+    },
+    "x9crei": {
+      "id": "winter:conifer:winter-high-far-distance-tall-443",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_443",
+      "locked": false
+    },
+    "1iu9q1g": {
+      "id": "winter:conifer:winter-high-far-distance-tall-302",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_302",
+      "locked": false
+    },
+    "zxt2s6": {
+      "id": "winter:conifer:winter-high-far-distance-tall-386",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_386",
+      "locked": false
+    },
+    "1hez0nx": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-124",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_124",
+      "locked": false
+    },
+    "1xsbn9r": {
+      "id": "winter:conifer:winter-high-far-distance-tall-454",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_454",
+      "locked": false
+    },
+    "eibajz": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-141",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_141",
+      "locked": false
+    },
+    "17sn5os": {
+      "id": "winter:conifer:winter-high-far-distance-tall-399",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_399",
+      "locked": false
+    },
+    "v0bk13": {
+      "id": "winter:conifer:winter-high-far-distance-tall-263",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_263",
+      "locked": false
+    },
+    "1dckkg5": {
+      "id": "winter:conifer:winter-high-far-distance-tall-290",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_290",
+      "locked": false
+    },
+    "1ckdecb": {
+      "id": "winter:conifer:winter-high-far-distance-tall-359",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_359",
+      "locked": false
+    },
+    "etd6sh": {
+      "id": "winter:conifer:winter-high-far-distance-tall-245",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_245",
+      "locked": false
+    },
+    "1oahjpb": {
+      "id": "winter:conifer:winter-high-far-distance-tall-252",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_252",
+      "locked": false
+    },
+    "9frbgh": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-166",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_166",
+      "locked": false
+    },
+    "1pcb9kq": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-192",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_192",
+      "locked": false
+    },
+    "1mzbvco": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-101",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_101",
+      "locked": false
+    },
+    "1ozg73q": {
+      "id": "winter:conifer:winter-high-far-distance-tall-274",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_274",
+      "locked": false
+    },
+    "w76qni": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-140",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_140",
+      "locked": false
+    },
+    "f3rvys": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-232",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_232",
+      "locked": false
+    },
+    "1ro9602": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-147",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_147",
+      "locked": false
+    },
+    "1tsz2iu": {
+      "id": "winter:conifer:winter-high-far-distance-tall-388",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_388",
+      "locked": false
+    },
+    "efs8yd": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-226",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_226",
+      "locked": false
+    },
+    "1gptcqi": {
+      "id": "winter:conifer:winter-high-far-distance-tall-404",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_404",
+      "locked": false
+    },
+    "10suqe4": {
+      "id": "winter:conifer:winter-high-far-distance-tall-330",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_330",
+      "locked": false
+    },
+    "1joaed4": {
+      "id": "winter:conifer:winter-high-far-distance-tall-338",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_338",
+      "locked": false
+    },
+    "65d8qv": {
+      "id": "winter:conifer:winter-high-far-distance-tall-376",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_376",
+      "locked": false
+    },
+    "spw91g": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-145",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_145",
+      "locked": false
+    },
+    "xqnfjm": {
+      "id": "winter:conifer:winter-high-far-distance-tall-244",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_244",
+      "locked": false
+    },
+    "ehx1it": {
+      "id": "winter:conifer:winter-high-far-distance-tall-449",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_449",
+      "locked": false
+    },
+    "19wq69u": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-217",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_217",
+      "locked": false
+    },
+    "146hiec": {
+      "id": "winter:conifer:winter-high-far-distance-tall-360",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_360",
+      "locked": false
+    },
+    "k00pr4": {
+      "id": "winter:conifer:winter-high-far-distance-tall-441",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_441",
+      "locked": false
+    },
+    "y2ujhz": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-233",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_233",
+      "locked": false
+    },
+    "1p3cuw1": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-121",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_121",
+      "locked": false
+    },
+    "rqpi8h": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-118",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_118",
+      "locked": false
+    },
+    "1dv4epy": {
+      "id": "winter:conifer:winter-high-far-distance-tall-413",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_413",
+      "locked": false
+    },
+    "g0xtum": {
+      "id": "winter:conifer:winter-high-far-distance-tall-269",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_269",
+      "locked": false
+    },
+    "65csct": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-185",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_185",
+      "locked": false
+    },
+    "dqqmg7": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-194",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_194",
+      "locked": false
+    },
+    "9347h5": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-108",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_108",
+      "locked": false
+    },
+    "jcvm6i": {
+      "id": "winter:conifer:winter-high-far-distance-tall-440",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_440",
+      "locked": false
+    },
+    "bfz108": {
+      "id": "winter:conifer:winter-high-far-distance-tall-281",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_281",
+      "locked": false
+    },
+    "9u11ug": {
+      "id": "winter:conifer:winter-high-far-distance-tall-356",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_356",
+      "locked": false
+    },
+    "191n2a2": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-182",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_182",
+      "locked": false
+    },
+    "yqq2g9": {
+      "id": "winter:conifer:winter-high-far-distance-tall-343",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_343",
+      "locked": false
+    },
+    "1xv1shn": {
+      "id": "winter:conifer:winter-medium-mid-distance-tall-230",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_tall_230",
+      "locked": false
+    },
+    "17rxpwt": {
+      "id": "winter:conifer:winter-high-far-distance-tall-428",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_428",
+      "locked": false
+    },
+    "1n9sgvd": {
+      "id": "winter:conifer:winter-high-far-distance-tall-301",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_301",
+      "locked": false
+    },
+    "ib9bsr": {
+      "id": "winter:conifer:winter-high-far-distance-tall-369",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_tall_369",
+      "locked": false
+    },
+    "1raa4ep": {
+      "id": "winter:conifer:winter-high-far-distance-small-299",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_299",
+      "locked": false
+    },
+    "qfpr9": {
+      "id": "winter:conifer:winter-high-far-distance-small-329",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_329",
+      "locked": false
+    },
+    "1yxoliv": {
+      "id": "winter:conifer:winter-high-far-distance-small-381",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_381",
+      "locked": false
+    },
+    "c6lvak": {
+      "id": "winter:conifer:winter-high-far-distance-small-246",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_246",
+      "locked": false
+    },
+    "an8h8x": {
+      "id": "winter:conifer:winter-high-far-distance-small-455",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_455",
+      "locked": false
+    },
+    "1ysglof": {
+      "id": "winter:conifer:winter-high-far-distance-small-405",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_405",
+      "locked": false
+    },
+    "1a9ozdj": {
+      "id": "winter:conifer:winter-high-far-distance-small-276",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_276",
+      "locked": false
+    },
+    "pcssg": {
+      "id": "winter:conifer:winter-high-far-distance-small-251",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_251",
+      "locked": false
+    },
+    "24wriu": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-173",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_173",
+      "locked": false
+    },
+    "1h5ad8p": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-151",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_151",
+      "locked": false
+    },
+    "2kgga1": {
+      "id": "winter:conifer:winter-high-far-distance-small-382",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_382",
+      "locked": false
+    },
+    "1ek8kxo": {
+      "id": "winter:conifer:winter-high-far-distance-small-363",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_363",
+      "locked": false
+    },
+    "1rr4tkd": {
+      "id": "winter:conifer:winter-high-far-distance-small-415",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_415",
+      "locked": false
+    },
+    "799bis": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-200",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_200",
+      "locked": false
+    },
+    "plzkdq": {
+      "id": "winter:conifer:winter-high-far-distance-small-353",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_353",
+      "locked": false
+    },
+    "1x2engr": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-231",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_231",
+      "locked": false
+    },
+    "rspbfd": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-168",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_168",
+      "locked": false
+    },
+    "o1c2da": {
+      "id": "winter:conifer:winter-high-far-distance-small-351",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_351",
+      "locked": false
+    },
+    "yvqgtc": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-216",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_216",
+      "locked": false
+    },
+    "1vworcz": {
+      "id": "winter:conifer:winter-high-far-distance-small-406",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_406",
+      "locked": false
+    },
+    "gitbpw": {
+      "id": "winter:conifer:winter-high-far-distance-small-332",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_332",
+      "locked": false
+    },
+    "j03my9": {
+      "id": "winter:conifer:winter-high-far-distance-small-346",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_346",
+      "locked": false
+    },
+    "9nfuvx": {
+      "id": "winter:conifer:winter-high-far-distance-small-275",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_275",
+      "locked": false
+    },
+    "dmt87x": {
+      "id": "winter:conifer:winter-high-far-distance-small-273",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_273",
+      "locked": false
+    },
+    "1dub3f2": {
+      "id": "winter:conifer:winter-high-far-distance-small-429",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_429",
+      "locked": false
+    },
+    "k58fwo": {
+      "id": "winter:conifer:winter-high-far-distance-small-257",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_257",
+      "locked": false
+    },
+    "1joy2ey": {
+      "id": "winter:conifer:winter-high-far-distance-small-450",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_450",
+      "locked": false
+    },
+    "185w8j0": {
+      "id": "winter:conifer:winter-high-far-distance-small-436",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_436",
+      "locked": false
+    },
+    "oadh3l": {
+      "id": "winter:conifer:winter-high-far-distance-small-431",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_431",
+      "locked": false
+    },
+    "kcdyzm": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-110",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_110",
+      "locked": false
+    },
+    "iegdgr": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-222",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_222",
+      "locked": false
+    },
+    "aklgv7": {
+      "id": "winter:conifer:winter-high-far-distance-small-398",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_398",
+      "locked": false
+    },
+    "1pwxpz7": {
+      "id": "winter:conifer:winter-high-far-distance-small-432",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_432",
+      "locked": false
+    },
+    "13j0qvr": {
+      "id": "winter:conifer:winter-high-far-distance-small-336",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_336",
+      "locked": false
+    },
+    "fqsqnp": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-132",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_132",
+      "locked": false
+    },
+    "odffgk": {
+      "id": "winter:conifer:winter-high-far-distance-small-350",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_350",
+      "locked": false
+    },
+    "1aa9vug": {
+      "id": "winter:conifer:winter-high-far-distance-small-262",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_262",
+      "locked": false
+    },
+    "17cis0w": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-179",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_179",
+      "locked": false
+    },
+    "zlisfj": {
+      "id": "winter:conifer:winter-high-far-distance-small-427",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_427",
+      "locked": false
+    },
+    "1viv5ar": {
+      "id": "winter:conifer:winter-high-far-distance-small-391",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_391",
+      "locked": false
+    },
+    "ezgfm1": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-193",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_193",
+      "locked": false
+    },
+    "vbz9rh": {
+      "id": "winter:conifer:winter-high-far-distance-small-396",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_396",
+      "locked": false
+    },
+    "1qwmgb0": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-136",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_136",
+      "locked": false
+    },
+    "s7b0lt": {
+      "id": "winter:conifer:winter-high-far-distance-small-378",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_378",
+      "locked": false
+    },
+    "sa1xoh": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-207",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_207",
+      "locked": false
+    },
+    "9sidvr": {
+      "id": "winter:conifer:winter-high-far-distance-small-325",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_325",
+      "locked": false
+    },
+    "ylpc14": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-148",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_148",
+      "locked": false
+    },
+    "4ltuls": {
+      "id": "winter:conifer:winter-high-far-distance-small-392",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_392",
+      "locked": false
+    },
+    "p1ulv2": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-187",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_187",
+      "locked": false
+    },
+    "wwl2tt": {
+      "id": "winter:conifer:winter-high-far-distance-small-366",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_366",
+      "locked": false
+    },
+    "1w34gmj": {
+      "id": "winter:conifer:winter-high-far-distance-small-284",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_284",
+      "locked": false
+    },
+    "8zd1aj": {
+      "id": "winter:conifer:winter-high-far-distance-small-266",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_266",
+      "locked": false
+    },
+    "13w8aqx": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-123",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_123",
+      "locked": false
+    },
+    "v2nwu": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-199",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_199",
+      "locked": false
+    },
+    "sydu7d": {
+      "id": "winter:conifer:winter-high-far-distance-small-328",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_328",
+      "locked": false
+    },
+    "uqvbpg": {
+      "id": "winter:conifer:winter-high-far-distance-small-268",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_268",
+      "locked": false
+    },
+    "11i5z1s": {
+      "id": "winter:conifer:winter-high-far-distance-small-303",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_303",
+      "locked": false
+    },
+    "nonyid": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-174",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_174",
+      "locked": false
+    },
+    "f44dkt": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-227",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_227",
+      "locked": false
+    },
+    "1tb4jd4": {
+      "id": "winter:conifer:winter-high-far-distance-small-458",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_458",
+      "locked": false
+    },
+    "1l08b5n": {
+      "id": "winter:conifer:winter-high-far-distance-small-445",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_445",
+      "locked": false
+    },
+    "ybnxh4": {
+      "id": "winter:conifer:winter-high-far-distance-small-446",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_446",
+      "locked": false
+    },
+    "cfagl0": {
+      "id": "winter:conifer:winter-high-far-distance-small-416",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_416",
+      "locked": false
+    },
+    "m6q4fv": {
+      "id": "winter:conifer:winter-high-far-distance-small-307",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_307",
+      "locked": false
+    },
+    "1vw32ud": {
+      "id": "winter:conifer:winter-high-far-distance-small-355",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_355",
+      "locked": false
+    },
+    "fiiep2": {
+      "id": "winter:conifer:winter-high-far-distance-small-242",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_242",
+      "locked": false
+    },
+    "4s9f9c": {
+      "id": "winter:conifer:winter-high-far-distance-small-279",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_279",
+      "locked": false
+    },
+    "1vot4l8": {
+      "id": "winter:conifer:winter-high-far-distance-small-424",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_424",
+      "locked": false
+    },
+    "14lv668": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-146",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_146",
+      "locked": false
+    },
+    "ib2q2g": {
+      "id": "winter:conifer:winter-high-far-distance-small-271",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_271",
+      "locked": false
+    },
+    "omdlls": {
+      "id": "winter:conifer:winter-high-far-distance-small-459",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_459",
+      "locked": false
+    },
+    "46gdrl": {
+      "id": "winter:conifer:winter-high-far-distance-small-352",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_352",
+      "locked": false
+    },
+    "1pyq8ow": {
+      "id": "winter:conifer:winter-high-far-distance-small-239",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_239",
+      "locked": false
+    },
+    "3rtyno": {
+      "id": "winter:conifer:winter-high-far-distance-small-344",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_344",
+      "locked": false
+    },
+    "1ul15or": {
+      "id": "winter:conifer:winter-high-far-distance-small-367",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_367",
+      "locked": false
+    },
+    "x14wg5": {
+      "id": "winter:conifer:winter-high-far-distance-small-339",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_339",
+      "locked": false
+    },
+    "1rwevm9": {
+      "id": "winter:conifer:winter-high-far-distance-small-383",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_383",
+      "locked": false
+    },
+    "5kfcev": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-104",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_104",
+      "locked": false
+    },
+    "fj25hc": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-186",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_186",
+      "locked": false
+    },
+    "1x1c0li": {
+      "id": "winter:conifer:winter-high-far-distance-small-305",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_305",
+      "locked": false
+    },
+    "odqecd": {
+      "id": "winter:conifer:winter-high-far-distance-small-285",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_285",
+      "locked": false
+    },
+    "69u5r4": {
+      "id": "winter:conifer:winter-high-far-distance-small-462",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_462",
+      "locked": false
+    },
+    "c5twn0": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-170",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_170",
+      "locked": false
+    },
+    "zkz96v": {
+      "id": "winter:conifer:winter-high-far-distance-small-425",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_425",
+      "locked": false
+    },
+    "z04hir": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-115",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_115",
+      "locked": false
+    },
+    "niqvh7": {
+      "id": "winter:conifer:winter-high-far-distance-small-444",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_444",
+      "locked": false
+    },
+    "1ginrqe": {
+      "id": "winter:conifer:winter-high-far-distance-small-470",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_470",
+      "locked": false
+    },
+    "hhsqtc": {
+      "id": "winter:conifer:winter-high-far-distance-small-358",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_358",
+      "locked": false
+    },
+    "s3swnn": {
+      "id": "winter:conifer:winter-high-far-distance-small-365",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_365",
+      "locked": false
+    },
+    "1p50bvp": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-189",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_189",
+      "locked": false
+    },
+    "1yxby10": {
+      "id": "winter:conifer:winter-high-far-distance-small-451",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_451",
+      "locked": false
+    },
+    "1ogroqm": {
+      "id": "winter:conifer:winter-high-far-distance-small-409",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_409",
+      "locked": false
+    },
+    "gb23nj": {
+      "id": "winter:conifer:winter-high-far-distance-small-280",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_280",
+      "locked": false
+    },
+    "1ci88cl": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-105",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_105",
+      "locked": false
+    },
+    "1pnu1wv": {
+      "id": "winter:conifer:winter-high-far-distance-small-464",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_464",
+      "locked": false
+    },
+    "1miugwr": {
+      "id": "winter:conifer:winter-high-far-distance-small-272",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_272",
+      "locked": false
+    },
+    "1ikddbo": {
+      "id": "winter:conifer:winter-high-far-distance-small-315",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_315",
+      "locked": false
+    },
+    "1a2ddjb": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-237",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_237",
+      "locked": false
+    },
+    "94r8mp": {
+      "id": "winter:conifer:winter-high-far-distance-small-298",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_298",
+      "locked": false
+    },
+    "49sd4d": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-135",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_135",
+      "locked": false
+    },
+    "4dwatr": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-112",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_112",
+      "locked": false
+    },
+    "hefymd": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-102",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_102",
+      "locked": false
+    },
+    "bavb8w": {
+      "id": "winter:conifer:winter-high-far-distance-small-469",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_469",
+      "locked": false
+    },
+    "h592dh": {
+      "id": "winter:conifer:winter-high-far-distance-small-300",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_300",
+      "locked": false
+    },
+    "x80ila": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-204",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_204",
+      "locked": false
+    },
+    "9qv0rx": {
+      "id": "winter:conifer:winter-high-far-distance-small-297",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_297",
+      "locked": false
+    },
+    "sk6wy9": {
+      "id": "winter:conifer:winter-high-far-distance-small-395",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_395",
+      "locked": false
+    },
+    "x61n9j": {
+      "id": "winter:conifer:winter-high-far-distance-small-349",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_349",
+      "locked": false
+    },
+    "o4yuai": {
+      "id": "winter:conifer:winter-high-far-distance-small-293",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_293",
+      "locked": false
+    },
+    "t51831": {
+      "id": "winter:conifer:winter-high-far-distance-small-362",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_362",
+      "locked": false
+    },
+    "eo34jt": {
+      "id": "winter:conifer:winter-high-far-distance-small-283",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_283",
+      "locked": false
+    },
+    "3tjpoi": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-213",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_213",
+      "locked": false
+    },
+    "9mxqw6": {
+      "id": "winter:conifer:winter-high-far-distance-small-313",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_313",
+      "locked": false
+    },
+    "1df5m4l": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-130",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_130",
+      "locked": false
+    },
+    "risgfa": {
+      "id": "winter:conifer:winter-high-far-distance-small-403",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_403",
+      "locked": false
+    },
+    "oz7q8i": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-223",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_223",
+      "locked": false
+    },
+    "vn5wkd": {
+      "id": "winter:conifer:winter-high-far-distance-small-241",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_241",
+      "locked": false
+    },
+    "1kh9odc": {
+      "id": "winter:conifer:winter-high-far-distance-small-435",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_435",
+      "locked": false
+    },
+    "1pblbey": {
+      "id": "winter:conifer:winter-high-far-distance-small-419",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_419",
+      "locked": false
+    },
+    "1g13qp": {
+      "id": "winter:conifer:winter-high-far-distance-small-442",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_442",
+      "locked": false
+    },
+    "1c97dzt": {
+      "id": "winter:conifer:winter-high-far-distance-small-333",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_333",
+      "locked": false
+    },
+    "2e261i": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-154",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_154",
+      "locked": false
+    },
+    "z6u3ww": {
+      "id": "winter:conifer:winter-high-far-distance-small-384",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_384",
+      "locked": false
+    },
+    "1jhqz88": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-236",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_236",
+      "locked": false
+    },
+    "dlb734": {
+      "id": "winter:conifer:winter-high-far-distance-small-411",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_411",
+      "locked": false
+    },
+    "1376lle": {
+      "id": "winter:conifer:winter-high-far-distance-small-250",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_250",
+      "locked": false
+    },
+    "1basz86": {
+      "id": "winter:conifer:winter-high-far-distance-small-319",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_319",
+      "locked": false
+    },
+    "1exw2wy": {
+      "id": "winter:conifer:winter-high-far-distance-small-277",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_277",
+      "locked": false
+    },
+    "u42c88": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-158",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_158",
+      "locked": false
+    },
+    "km1wgb": {
+      "id": "winter:conifer:winter-high-far-distance-small-310",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_310",
+      "locked": false
+    },
+    "12q3yyp": {
+      "id": "winter:conifer:winter-high-far-distance-small-347",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_347",
+      "locked": false
+    },
+    "rntzjt": {
+      "id": "winter:conifer:winter-high-far-distance-small-259",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_259",
+      "locked": false
+    },
+    "1ym42cj": {
+      "id": "winter:conifer:winter-high-far-distance-small-453",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_453",
+      "locked": false
+    },
+    "1nltqot": {
+      "id": "winter:conifer:winter-high-far-distance-small-465",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_465",
+      "locked": false
+    },
+    "c1m8jp": {
+      "id": "winter:conifer:winter-high-far-distance-small-368",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_368",
+      "locked": false
+    },
+    "14kv8zh": {
+      "id": "winter:conifer:winter-high-far-distance-small-457",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_457",
+      "locked": false
+    },
+    "1aq4c6v": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-128",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_128",
+      "locked": false
+    },
+    "8ksz0a": {
+      "id": "winter:conifer:winter-high-far-distance-small-267",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_267",
+      "locked": false
+    },
+    "1in7g8o": {
+      "id": "winter:conifer:winter-high-far-distance-small-320",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_320",
+      "locked": false
+    },
+    "wpzrt4": {
+      "id": "winter:conifer:winter-high-far-distance-small-304",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_304",
+      "locked": false
+    },
+    "nyt0hm": {
+      "id": "winter:conifer:winter-high-far-distance-small-318",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_318",
+      "locked": false
+    },
+    "fmnjsi": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-144",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_144",
+      "locked": false
+    },
+    "1dhgvhy": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-184",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_184",
+      "locked": false
+    },
+    "s86zc2": {
+      "id": "winter:conifer:winter-high-far-distance-small-393",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_393",
+      "locked": false
+    },
+    "1pqqt8o": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-142",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_142",
+      "locked": false
+    },
+    "8uke1": {
+      "id": "winter:conifer:winter-high-far-distance-small-342",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_342",
+      "locked": false
+    },
+    "18goghg": {
+      "id": "winter:conifer:winter-high-far-distance-small-348",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_348",
+      "locked": false
+    },
+    "kr1pvi": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-190",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_190",
+      "locked": false
+    },
+    "13cxmoc": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-131",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_131",
+      "locked": false
+    },
+    "v74hs8": {
+      "id": "winter:conifer:winter-high-far-distance-small-434",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_434",
+      "locked": false
+    },
+    "1cgtlqe": {
+      "id": "winter:conifer:winter-high-far-distance-small-364",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_364",
+      "locked": false
+    },
+    "1oakjnh": {
+      "id": "winter:conifer:winter-high-far-distance-small-289",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_289",
+      "locked": false
+    },
+    "1jqowr5": {
+      "id": "winter:conifer:winter-high-far-distance-small-243",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_243",
+      "locked": false
+    },
+    "1vkgc4h": {
+      "id": "winter:conifer:winter-high-far-distance-small-397",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_397",
+      "locked": false
+    },
+    "1gzbyu1": {
+      "id": "winter:conifer:winter-high-far-distance-small-240",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_240",
+      "locked": false
+    },
+    "w3i4qt": {
+      "id": "winter:conifer:winter-high-far-distance-small-422",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_422",
+      "locked": false
+    },
+    "1ax6qq0": {
+      "id": "winter:conifer:winter-high-far-distance-small-375",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_375",
+      "locked": false
+    },
+    "15140mp": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-210",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_210",
+      "locked": false
+    },
+    "1l06k1k": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-117",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_117",
+      "locked": false
+    },
+    "kojqgu": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-234",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_234",
+      "locked": false
+    },
+    "2xziu2": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-111",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_111",
+      "locked": false
+    },
+    "1rt7ygz": {
+      "id": "winter:conifer:winter-high-far-distance-small-357",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_357",
+      "locked": false
+    },
+    "po3wxe": {
+      "id": "winter:conifer:winter-high-far-distance-small-253",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_253",
+      "locked": false
+    },
+    "1ddeewj": {
+      "id": "winter:conifer:winter-high-far-distance-small-452",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_452",
+      "locked": false
+    },
+    "jbxzlp": {
+      "id": "winter:conifer:winter-high-far-distance-small-256",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_256",
+      "locked": false
+    },
+    "bu6ajy": {
+      "id": "winter:conifer:winter-high-far-distance-small-316",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_316",
+      "locked": false
+    },
+    "amw9nw": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-156",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_156",
+      "locked": false
+    },
+    "1jdoc0c": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-188",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_188",
+      "locked": false
+    },
+    "w4awoi": {
+      "id": "winter:conifer:winter-high-far-distance-small-337",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_337",
+      "locked": false
+    },
+    "3w4rrg": {
+      "id": "winter:conifer:winter-high-far-distance-small-254",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_254",
+      "locked": false
+    },
+    "1i2407m": {
+      "id": "winter:conifer:winter-high-far-distance-small-354",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_354",
+      "locked": false
+    },
+    "9v47e": {
+      "id": "winter:conifer:winter-high-far-distance-small-380",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_380",
+      "locked": false
+    },
+    "1yzu3h4": {
+      "id": "winter:conifer:winter-high-far-distance-small-377",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_377",
+      "locked": false
+    },
+    "1b04h5f": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-150",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_150",
+      "locked": false
+    },
+    "1fauie0": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-163",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_163",
+      "locked": false
+    },
+    "u43hk6": {
+      "id": "winter:conifer:winter-high-far-distance-small-321",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_321",
+      "locked": false
+    },
+    "1vl0fl6": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-196",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_196",
+      "locked": false
+    },
+    "5q9t2d": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-206",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_206",
+      "locked": false
+    },
+    "en6ob5": {
+      "id": "winter:conifer:winter-high-far-distance-small-331",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_331",
+      "locked": false
+    },
+    "1lewz0v": {
+      "id": "winter:conifer:winter-high-far-distance-small-467",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_467",
+      "locked": false
+    },
+    "e1enyk": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-181",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_181",
+      "locked": false
+    },
+    "1pwgvdc": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-137",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_137",
+      "locked": false
+    },
+    "13a24hn": {
+      "id": "winter:conifer:winter-high-far-distance-small-278",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_278",
+      "locked": false
+    },
+    "slj6af": {
+      "id": "winter:conifer:winter-high-far-distance-small-309",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_309",
+      "locked": false
+    },
+    "1q07io0": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-220",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_220",
+      "locked": false
+    },
+    "b4evxt": {
+      "id": "winter:conifer:winter-high-far-distance-small-291",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_291",
+      "locked": false
+    },
+    "1k77roy": {
+      "id": "winter:conifer:winter-high-far-distance-small-258",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_258",
+      "locked": false
+    },
+    "1bq2iak": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-180",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_180",
+      "locked": false
+    },
+    "7pq2rw": {
+      "id": "winter:conifer:winter-high-far-distance-small-248",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_248",
+      "locked": false
+    },
+    "1ske4j5": {
+      "id": "winter:conifer:winter-high-far-distance-small-287",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_287",
+      "locked": false
+    },
+    "1es0srd": {
+      "id": "winter:conifer:winter-high-far-distance-small-379",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_379",
+      "locked": false
+    },
+    "1ng3ub7": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-172",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_172",
+      "locked": false
+    },
+    "inpwgd": {
+      "id": "winter:conifer:winter-high-far-distance-small-295",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_295",
+      "locked": false
+    },
+    "1dhqked": {
+      "id": "winter:conifer:winter-high-far-distance-small-456",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_456",
+      "locked": false
+    },
+    "1czlsdg": {
+      "id": "winter:conifer:winter-high-far-distance-small-264",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_264",
+      "locked": false
+    },
+    "10mrqv": {
+      "id": "winter:conifer:winter-high-far-distance-small-294",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_294",
+      "locked": false
+    },
+    "1g5is28": {
+      "id": "winter:conifer:winter-high-far-distance-small-423",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_423",
+      "locked": false
+    },
+    "1q2lamg": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-177",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_177",
+      "locked": false
+    },
+    "h2lr5v": {
+      "id": "winter:conifer:winter-high-far-distance-small-389",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_389",
+      "locked": false
+    },
+    "8r1e2k": {
+      "id": "winter:conifer:winter-medium-mid-distance-small-201",
+      "objectKey": "conifer",
+      "label": "Winter_Medium_Mid_distance_small_201",
+      "locked": false
+    },
+    "11fk1s2": {
+      "id": "winter:conifer:winter-high-far-distance-small-324",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_324",
+      "locked": false
+    },
+    "1a9bwb4": {
+      "id": "winter:conifer:winter-high-far-distance-small-323",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_small_323",
+      "locked": false
+    },
+    "1ubxfey": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-327",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_327",
+      "locked": false
+    },
+    "19pjy19": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-471",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_471",
+      "locked": false
+    },
+    "11icqzq": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-461",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_461",
+      "locked": false
+    },
+    "1fy4u4u": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-385",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_385",
+      "locked": false
+    },
+    "tfkumr": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-439",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_439",
+      "locked": false
+    },
+    "1rstd50": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-437",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_437",
+      "locked": false
+    },
+    "sc1wgt": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-334",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_334",
+      "locked": false
+    },
+    "my9w4o": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-326",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_326",
+      "locked": false
+    },
+    "ax1nzs": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-247",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_247",
+      "locked": false
+    },
+    "2ispyq": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-340",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_340",
+      "locked": false
+    },
+    "14dx4lf": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-373",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_373",
+      "locked": false
+    },
+    "12pkjw3": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-286",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_286",
+      "locked": false
+    },
+    "yn2spf": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-270",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_270",
+      "locked": false
+    },
+    "xkkqg0": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-312",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_312",
+      "locked": false
+    },
+    "wnwck7": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-306",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_306",
+      "locked": false
+    },
+    "607jw0": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-460",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_460",
+      "locked": false
+    },
+    "i8y6yi": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-468",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_468",
+      "locked": false
+    },
+    "1esoooh": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-430",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_430",
+      "locked": false
+    },
+    "1hfvsx8": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-433",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_433",
+      "locked": false
+    },
+    "4zv34h": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-387",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_387",
+      "locked": false
+    },
+    "gilw23": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-421",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_421",
+      "locked": false
+    },
+    "12h59h9": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-371",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_371",
+      "locked": false
+    },
+    "1lfbis6": {
+      "id": "winter:conifer:winter-high-far-distance-windswept-372",
+      "objectKey": "conifer",
+      "label": "Winter_High_Far_distance_windswept_372",
+      "locked": false
+    },
+    "ojsrr2": {
+      "id": "winter:settlement-hearth-ember:winter-base-hearthember-01",
+      "objectKey": "settlement-hearth-ember",
+      "label": "Winter_Base_HearthEmber_01",
+      "locked": false
+    },
+    "342v5e": {
+      "id": "winter:settlement-hearth-stone:winter-base-hearthstone-01-winterstone-stone-01",
+      "objectKey": "settlement-hearth-stone",
+      "label": "Winter_Base_HearthStone_01_WinterStone_stone_01",
+      "locked": false
+    },
+    "16mzzo2": {
+      "id": "winter:settlement-hearth-stone:winter-base-hearthstone-07-winterstone-stone-01",
+      "objectKey": "settlement-hearth-stone",
+      "label": "Winter_Base_HearthStone_07_WinterStone_stone_01",
+      "locked": false
+    },
+    "bdkxrd": {
+      "id": "winter:settlement-hearth-stone:winter-base-hearthstone-06-winterstone-stone-01",
+      "objectKey": "settlement-hearth-stone",
+      "label": "Winter_Base_HearthStone_06_WinterStone_stone_01",
+      "locked": false
+    },
+    "r83lpv": {
+      "id": "winter:settlement-hearth-stone:winter-base-hearthstone-12-winterstone-stone-01",
+      "objectKey": "settlement-hearth-stone",
+      "label": "Winter_Base_HearthStone_12_WinterStone_stone_01",
+      "locked": false
+    },
+    "idyk8o": {
+      "id": "winter:settlement-hearth-stone:winter-base-hearthstone-11-winterstone-stone-01",
+      "objectKey": "settlement-hearth-stone",
+      "label": "Winter_Base_HearthStone_11_WinterStone_stone_01",
+      "locked": false
+    },
+    "1ov8okf": {
+      "id": "winter:settlement-hearth-stone:winter-base-hearthstone-05-winterstone-stone-01",
+      "objectKey": "settlement-hearth-stone",
+      "label": "Winter_Base_HearthStone_05_WinterStone_stone_01",
+      "locked": false
+    },
+    "lws21p": {
+      "id": "winter:settlement-hearth-stone:winter-base-hearthstone-04-winterstone-stone-01",
+      "objectKey": "settlement-hearth-stone",
+      "label": "Winter_Base_HearthStone_04_WinterStone_stone_01",
+      "locked": false
+    },
+    "4xadfi": {
+      "id": "winter:settlement-hearth-stone:winter-base-hearthstone-10-winterstone-stone-01",
+      "objectKey": "settlement-hearth-stone",
+      "label": "Winter_Base_HearthStone_10_WinterStone_stone_01",
+      "locked": false
+    },
+    "183sbsf": {
+      "id": "winter:settlement-hearth-stone:winter-base-hearthstone-09-winterstone-stone-01",
+      "objectKey": "settlement-hearth-stone",
+      "label": "Winter_Base_HearthStone_09_WinterStone_stone_01",
+      "locked": false
+    },
+    "b8fl4e": {
+      "id": "winter:settlement-hearth-stone:winter-base-hearthstone-03-winterstone-stone-01",
+      "objectKey": "settlement-hearth-stone",
+      "label": "Winter_Base_HearthStone_03_WinterStone_stone_01",
+      "locked": false
+    },
+    "1qnmukb": {
+      "id": "winter:settlement-hearth-stone:winter-base-hearthstone-02-winterstone-stone-01",
+      "objectKey": "settlement-hearth-stone",
+      "label": "Winter_Base_HearthStone_02_WinterStone_stone_01",
+      "locked": false
+    },
+    "1ev41az": {
+      "id": "winter:settlement-hearth-stone:winter-base-hearthstone-08-winterstone-stone-01",
+      "objectKey": "settlement-hearth-stone",
+      "label": "Winter_Base_HearthStone_08_WinterStone_stone_01",
+      "locked": false
+    },
+    "1v4ffah": {
+      "id": "winter:rock:winter-high-pathrock-eastfar-winterstone-stone-01",
+      "objectKey": "rock",
+      "label": "Winter_High_PathRock_EastFar_WinterStone_stone_01",
+      "locked": false
+    },
+    "o44hkq": {
+      "id": "winter:rock:winter-medium-pathrock-westnear-winterstone-stone-01",
+      "objectKey": "rock",
+      "label": "Winter_Medium_PathRock_WestNear_WinterStone_stone_01",
+      "locked": false
+    },
+    "ijbdgc": {
+      "id": "winter:rock:winter-high-farrock-01-winterstone-stone-01",
+      "objectKey": "rock",
+      "label": "Winter_High_FarRock_01_WinterStone_stone_01",
+      "locked": false
+    },
+    "zjmtf2": {
+      "id": "winter:rock:winter-base-pondstone-02-winterstone-stone-01",
+      "objectKey": "rock",
+      "label": "Winter_Base_PondStone_02_WinterStone_stone_01",
+      "locked": false
+    },
+    "eys52i": {
+      "id": "winter:rock:winter-medium-eastrock-01-winterstone-stone-01",
+      "objectKey": "rock",
+      "label": "Winter_Medium_EastRock_01_WinterStone_stone_01",
+      "locked": false
+    },
+    "1yevctg": {
+      "id": "winter:settlement-seat:winter-base-hearthchair-02-winterhearthchair-mesh-0-009",
+      "objectKey": "settlement-seat",
+      "label": "Winter_Base_HearthChair_02_WinterHearthChair_Mesh_0.009",
+      "locked": false
+    },
+    "q8xpcd": {
+      "id": "winter:settlement-seat:winter-base-hearthchair-04-winterhearthchair-mesh-0-009",
+      "objectKey": "settlement-seat",
+      "label": "Winter_Base_HearthChair_04_WinterHearthChair_Mesh_0.009",
+      "locked": false
+    },
+    "1wckdg9": {
+      "id": "winter:settlement-seat:winter-base-hearthchair-01-winterhearthchair-mesh-0-009",
+      "objectKey": "settlement-seat",
+      "label": "Winter_Base_HearthChair_01_WinterHearthChair_Mesh_0.009",
+      "locked": false
+    },
+    "1szo1o8": {
+      "id": "winter:settlement-seat:winter-base-hearthchair-05-winterhearthchair-mesh-0-009",
+      "objectKey": "settlement-seat",
+      "label": "Winter_Base_HearthChair_05_WinterHearthChair_Mesh_0.009",
+      "locked": false
+    },
+    "1i9dv9e": {
+      "id": "winter:settlement-seat:winter-base-hearthchair-03-winterhearthchair-mesh-0-009",
+      "objectKey": "settlement-seat",
+      "label": "Winter_Base_HearthChair_03_WinterHearthChair_Mesh_0.009",
+      "locked": false
+    },
+    "vwqspx": {
+      "id": "winter:lodge-woodpile-rack:winter-base-lodgewoodpilerack-north",
+      "objectKey": "lodge-woodpile-rack",
+      "label": "Winter_Base_LodgeWoodpileRack_North",
+      "locked": true
+    },
+    "l9vy2k": {
+      "id": "winter:settlement-hearth-ember:winter-base-hearthember-02",
+      "objectKey": "settlement-hearth-ember",
+      "label": "Winter_Base_HearthEmber_02",
+      "locked": false
+    },
+    "gi9bna": {
+      "id": "winter:settlement-hearth-ember:winter-base-hearthember-03",
+      "objectKey": "settlement-hearth-ember",
+      "label": "Winter_Base_HearthEmber_03",
+      "locked": false
+    },
+    "yijp4j": {
+      "id": "winter:rock:winter-high-pathrock-westfar-winterboulder-boulder-01",
+      "objectKey": "rock",
+      "label": "Winter_High_PathRock_WestFar_WinterBoulder_boulder_01",
+      "locked": false
+    },
+    "1debbi0": {
+      "id": "winter:rock:winter-base-westrock-01-winterboulder-boulder-01",
+      "objectKey": "rock",
+      "label": "Winter_Base_WestRock_01_WinterBoulder_boulder_01",
+      "locked": false
+    },
+    "16ndmsv": {
+      "id": "winter:rock:winter-medium-frontrock-01-winterboulder-boulder-01",
+      "objectKey": "rock",
+      "label": "Winter_Medium_FrontRock_01_WinterBoulder_boulder_01",
+      "locked": false
+    },
+    "19xtdp0": {
+      "id": "winter:rock:winter-base-pondboulder-01-winterboulder-boulder-01",
+      "objectKey": "rock",
+      "label": "Winter_Base_PondBoulder_01_WinterBoulder_boulder_01",
+      "locked": false
+    },
+    "tjneo2": {
+      "id": "winter:rock:winter-medium-pathrock-eastnear-winterrock-rock-07",
+      "objectKey": "rock",
+      "label": "Winter_Medium_PathRock_EastNear_WinterRock_rock_07",
+      "locked": false
+    },
+    "cehwqu": {
+      "id": "winter:rock:winter-base-deadwoodrock-01-winterrock-rock-07",
+      "objectKey": "rock",
+      "label": "Winter_Base_DeadwoodRock_01_WinterRock_rock_07",
+      "locked": false
+    },
+    "fmh0mz": {
+      "id": "winter:rock:winter-medium-rearrock-01-winterrock-rock-07",
+      "objectKey": "rock",
+      "label": "Winter_Medium_RearRock_01_WinterRock_rock_07",
+      "locked": false
+    },
+    "86gggq": {
+      "id": "winter:deadwood:winter-medium-pathlog-west-winterfallenlog-mesh-0",
+      "objectKey": "deadwood",
+      "label": "Winter_Medium_PathLog_West_WinterFallenLog_Mesh_0",
+      "locked": false
+    },
+    "bbgtsg": {
+      "id": "winter:deadwood:winter-medium-fallenlog-front-winterfallenlog-mesh-0",
+      "objectKey": "deadwood",
+      "label": "Winter_Medium_FallenLog_Front_WinterFallenLog_Mesh_0",
+      "locked": false
+    },
+    "303tjn": {
+      "id": "winter:deadwood:winter-base-fallenlog-east-winterfallenlog-mesh-0",
+      "objectKey": "deadwood",
+      "label": "Winter_Base_FallenLog_East_WinterFallenLog_Mesh_0",
+      "locked": false
+    },
+    "15nnzi3": {
+      "id": "winter:deadwood:winter-high-pathtrunk-east-winterdeadtrunk-dead-tree-trunk-02",
+      "objectKey": "deadwood",
+      "label": "Winter_High_PathTrunk_East_WinterDeadTrunk_dead_tree_trunk_02",
+      "locked": false
+    },
+    "79tt18": {
+      "id": "winter:deadwood:winter-base-deadtrunk-west-winterdeadtrunk-dead-tree-trunk-02",
+      "objectKey": "deadwood",
+      "label": "Winter_Base_DeadTrunk_West_WinterDeadTrunk_dead_tree_trunk_02",
+      "locked": false
+    }
+  }
+}

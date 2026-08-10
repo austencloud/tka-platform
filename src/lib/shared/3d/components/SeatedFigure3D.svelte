@@ -18,9 +18,11 @@
     modelUrl: string;
     animationUrl: string;
     timeOffset?: number;
+    /** Reports when the detailed model and sitting clip are both visible. */
+    onReady?: () => void;
   }
 
-  const { modelUrl, animationUrl, timeOffset = 0 }: Props = $props();
+  const { modelUrl, animationUrl, timeOffset = 0, onReady }: Props = $props();
 
   let scene = $state<Object3D | null>(null);
   let mixer = $state<AnimationMixer | null>(null);
@@ -33,7 +35,9 @@
         if (cancelled) return;
         scene = prepared.scene;
         if (!prepared.clip) {
-          console.warn(`[SeatedFigure3D] No clip for ${modelUrl} / ${animationUrl}`);
+          console.warn(
+            `[SeatedFigure3D] No clip for ${modelUrl} / ${animationUrl}`
+          );
           return;
         }
         const m = new AnimationMixer(prepared.scene);
@@ -42,6 +46,7 @@
         action.play();
         if (timeOffset > 0) m.update(timeOffset);
         mixer = m;
+        onReady?.();
       })
       .catch((err) => {
         console.error(`[SeatedFigure3D] prepareFigure failed:`, err);

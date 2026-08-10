@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 6,
   "seed": 20260809,
   "coordinateFrame": "Blender x/y exports to runtime x/-z; metres",
   "intent": "Path-led winter forest depth with overlapping near, mid, and far masses",
@@ -155,6 +155,28 @@
         [-18, 69],
         [-36, 104]
       ]
+    },
+    {
+      "id": "stage-to-lodge-sightline",
+      "role": "landmark-sightline",
+      "halfWidth": 3.8,
+      "shoulderWidth": 1.2,
+      "points": [
+        [0, 0],
+        [-10, 16],
+        [-24, 38]
+      ]
+    },
+    {
+      "id": "stage-to-hearth-sightline",
+      "role": "landmark-sightline",
+      "halfWidth": 3.2,
+      "shoulderWidth": 1,
+      "points": [
+        [0, 0],
+        [-14, 12],
+        [-34, 30]
+      ]
     }
   ],
   "clusters": [
@@ -226,9 +248,9 @@
     {
       "id": "near-path-west-gate",
       "band": "near",
-      "center": [-24, 26],
-      "radii": [13, 10],
-      "rotationDegrees": -18,
+      "center": [-35, 18],
+      "radii": [9, 12],
+      "rotationDegrees": -28,
       "counts": {
         "mature-spruce": 1,
         "lush-pine": 1,

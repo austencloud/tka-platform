@@ -44,9 +44,21 @@ const { NodeIO } = await import(
 const { ALL_EXTENSIONS } = await import(
   pathToFileURL(requireFromCli.resolve("@gltf-transform/extensions"))
 );
-const { textureCompress } = await import(
+const { instance, textureCompress } = await import(
   pathToFileURL(requireFromCli.resolve("@gltf-transform/functions"))
 );
+
+const EDITABLE_COMPOSER_ROLES = new Set([
+  "conifer",
+  "rock",
+  "deadwood",
+  "stump",
+  "settlement-seat",
+  "settlement-hearth-stone",
+  "settlement-hearth-fuel",
+  "settlement-hearth-ember",
+  "lodge-woodpile-log",
+]);
 
 function size(path) {
   return `${(statSync(path).size / 1024 / 1024).toFixed(2)} MiB`;
@@ -64,6 +76,89 @@ function clean() {
   for (const path of TEMPORARIES) {
     if (existsSync(path)) rmSync(path);
   }
+}
+
+function normalizedName(value) {
+  return String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function composerDescriptor(node) {
+  const extras = node.getExtras();
+  const role =
+    typeof extras.tka_role === "string" ? extras.tka_role : undefined;
+  const authoredId =
+    typeof extras.tka_composer_id === "string"
+      ? extras.tka_composer_id
+      : undefined;
+  if (!authoredId && !role) return null;
+
+  const name = node.getName();
+  const id =
+    authoredId ||
+    `winter:${normalizedName(role)}:${normalizedName(name || "unnamed")}`;
+  return {
+    id,
+    objectKey:
+      typeof extras.tka_composer_object_key === "string"
+        ? extras.tka_composer_object_key
+        : normalizedName(role),
+    label: name || role || "Winter scene object",
+    locked:
+      typeof extras.tka_composer_locked === "boolean"
+        ? extras.tka_composer_locked
+        : !EDITABLE_COMPOSER_ROLES.has(role),
+  };
+}
+
+async function createComposerInstanceBatches(input, output) {
+  const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
+  const document = await io.read(input);
+  const descriptorsByMesh = new Map();
+
+  for (const scene of document.getRoot().listScenes()) {
+    scene.traverse((node) => {
+      const mesh = node.getMesh();
+      if (!mesh || node.getExtension("EXT_mesh_gpu_instancing")) return;
+      const descriptors = descriptorsByMesh.get(mesh) ?? [];
+      descriptors.push(composerDescriptor(node));
+      descriptorsByMesh.set(mesh, descriptors);
+    });
+  }
+
+  await document.transform(instance({ min: 2 }));
+
+  for (const node of document.getRoot().listNodes()) {
+    if (!node.getExtension("EXT_mesh_gpu_instancing")) continue;
+    const mesh = node.getMesh();
+    const descriptors = mesh ? descriptorsByMesh.get(mesh) : undefined;
+    if (
+      !descriptors ||
+      descriptors.every((descriptor) => descriptor === null)
+    ) {
+      continue;
+    }
+    node.setExtras({
+      ...node.getExtras(),
+      composerInstanceIds: descriptors.map((descriptor) =>
+        descriptor ? descriptor.id : null
+      ),
+      composerInstanceObjectKeys: descriptors.map((descriptor) =>
+        descriptor ? descriptor.objectKey : null
+      ),
+      composerInstanceLabels: descriptors.map((descriptor) =>
+        descriptor ? descriptor.label : null
+      ),
+      composerInstanceLocked: descriptors.map((descriptor) =>
+        descriptor ? descriptor.locked : true
+      ),
+    });
+  }
+
+  await io.write(output, document);
 }
 
 if (!existsSync(INPUT)) {
@@ -96,19 +191,14 @@ try {
     "--simplify-error",
     "0.05",
     "--instance",
-    "true",
+    "false",
     "--flatten",
     "false",
     "--join",
     "false",
   ]);
-  run("Convert every repeated optimized mesh to GPU instances", [
-    "instance",
-    TMP_SLIM,
-    TMP_INSTANCED,
-    "--min",
-    "2",
-  ]);
+  console.log("\nConvert repeated meshes to ID-preserving GPU instances");
+  await createComposerInstanceBatches(TMP_SLIM, TMP_INSTANCED);
 
   console.log("\nNormalize textures to PNG; detail maps to 512px");
   {

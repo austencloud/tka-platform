@@ -1,0 +1,198 @@
+{
+  "schemaVersion": 1,
+  "sceneId": "moonlit-winter-hollow",
+  "revisionId": "fire-court-graybox-r1",
+  "coordinateFrame": "Runtime x/z in metres; Blender receives x/-z; elevations are runtime y",
+  "derivedFrom": "scripts/winter-settlement-layout.json",
+  "intent": "An intimate fire-spinning retreat for exactly ten friends: fire court left, frozen pond right, lodge and attached indoor practice wing beyond",
+  "story": {
+    "place": "Winter Keeper's Hollow",
+    "resident": "The winter keeper, host of a close circle of flow artists",
+    "gatheringScale": "Ten friends, not a public event",
+    "outdoorPurpose": "A dark, fire-safe court for three active fire spinners and seven nearby friends",
+    "indoorPurpose": "A modest double-height practice wing attached to the keeper's cabin for cold-weather juggling",
+    "waterRule": "The separate natural pond is fully frozen, quiet, and non-emissive"
+  },
+  "court": {
+    "id": "keeper-fire-court",
+    "center": [-13, -7],
+    "radiusX": 5.2,
+    "radiusZ": 4.1,
+    "surfaceElevation": 0.12,
+    "surfaceThickness": 0.18,
+    "safetyBuffer": 1.2,
+    "curbSegments": 22,
+    "entryGapDegrees": 42,
+    "entryFacesDegrees": 0,
+    "treatment": "irregular dark stone and tamped earth, low snow-banked curb, no raised stage"
+  },
+  "pond": {
+    "id": "natural-frozen-pond",
+    "center": [16, -10],
+    "radiusX": 6,
+    "radiusZ": 4.4,
+    "surfaceElevation": 0.15,
+    "treatment": "fully frozen, dark, rough, snow-banked, and non-emissive"
+  },
+  "lodge": {
+    "id": "warming-lodge",
+    "center": [-24, -38],
+    "footprint": [7.8, 6.4],
+    "targetPadElevation": 2.6
+  },
+  "practiceWing": {
+    "id": "indoor-practice-wing",
+    "center": [-29.2, -39],
+    "footprint": [4.2, 5.4],
+    "wallHeight": 4.6,
+    "ridgeHeight": 6.5,
+    "targetPadElevation": 2.6,
+    "attachmentOverlapMetres": 0.8,
+    "treatment": "modest timber addition with warm windows; visibly attached, not a second venue"
+  },
+  "paths": [
+    {
+      "id": "south-entry-to-lodge",
+      "role": "primary-arrival-spine",
+      "width": 2.2,
+      "points": [
+        [8, 38, 0.2],
+        [5, 28, 0.15],
+        [2, 18, 0.1],
+        [1, 9, 0.08],
+        [2, -3, 0.15],
+        [2, -12, 0.45],
+        [-4, -18, 1.1],
+        [-12, -27, 1.9],
+        [-22, -35, 2.6],
+        [-24, -35, 2.6]
+      ]
+    },
+    {
+      "id": "fire-court-spur",
+      "role": "social-arrival",
+      "width": 1.6,
+      "points": [
+        [2, -6.7, 0.24],
+        [-7.4, -6.8, 0.18],
+        [-8.2, -7, 0.14]
+      ]
+    }
+  ],
+  "friends": [
+    {
+      "id": "spinner-1",
+      "role": "spinner",
+      "position": [-14.8, -6.2],
+      "facingDegrees": 12
+    },
+    {
+      "id": "spinner-2",
+      "role": "spinner",
+      "position": [-11.8, -5.6],
+      "facingDegrees": 145
+    },
+    {
+      "id": "spinner-3",
+      "role": "spinner",
+      "position": [-12.5, -8.7],
+      "facingDegrees": 255
+    },
+    {
+      "id": "seated-1",
+      "role": "seated",
+      "position": [-19.74, -6.28],
+      "facingDegrees": 102
+    },
+    {
+      "id": "seated-2",
+      "role": "seated",
+      "position": [-18.66, -6.12],
+      "facingDegrees": 95
+    },
+    {
+      "id": "seated-3",
+      "role": "seated",
+      "position": [-19.67, -8.68],
+      "facingDegrees": 82
+    },
+    {
+      "id": "seated-4",
+      "role": "seated",
+      "position": [-18.53, -8.92],
+      "facingDegrees": 76
+    },
+    {
+      "id": "standing-1",
+      "role": "standing",
+      "position": [-17.4, -12.5],
+      "facingDegrees": 35
+    },
+    {
+      "id": "standing-2",
+      "role": "standing",
+      "position": [-19, -11.6],
+      "facingDegrees": 28
+    },
+    {
+      "id": "rack-tender",
+      "role": "rack-tender",
+      "position": [-19.5, -2.6],
+      "facingDegrees": -84
+    }
+  ],
+  "furnishings": {
+    "benchSegments": [
+      { "center": [-19.2, -6.2], "length": 2.6, "rotationDegrees": 8 },
+      { "center": [-19.1, -8.8], "length": 2.7, "rotationDegrees": -12 }
+    ],
+    "entryLanterns": [
+      { "position": [-7.7, -5.4] },
+      { "position": [-7.7, -8.5] }
+    ],
+    "propRack": { "position": [-20.4, -2.5], "rotationDegrees": 8 },
+    "woodStack": { "position": [-20.2, -34.1], "rotationDegrees": -15 }
+  },
+  "cameras": [
+    {
+      "id": "hero",
+      "name": "WF_Camera_Hero",
+      "position": [7, 5.2, 30],
+      "target": [-13, 1.2, -9],
+      "horizontalFovDegrees": 44
+    },
+    {
+      "id": "walk",
+      "name": "WF_Camera_Walk",
+      "position": [8, 1.65, 38],
+      "target": [1, 1.1, 7],
+      "horizontalFovDegrees": 58
+    },
+    {
+      "id": "court",
+      "name": "WF_Camera_Court",
+      "position": [2, 4.2, 8],
+      "target": [-13, 0.9, -7],
+      "horizontalFovDegrees": 48
+    },
+    {
+      "id": "plan",
+      "name": "WF_Camera_Plan",
+      "position": [-6, 62, -7],
+      "target": [-6, 0, -7],
+      "orthographicScale": 76
+    }
+  ],
+  "requirements": {
+    "friendCount": 10,
+    "spinnerCount": 3,
+    "seatedCount": 4,
+    "standingCount": 2,
+    "rackTenderCount": 1,
+    "minimumSpinnerSpacingMetres": 2.4,
+    "minimumAudienceCourtEdgeClearanceMetres": 0.35,
+    "minimumCourtPondClearanceMetres": 9.6,
+    "minimumPrimaryPathCourtClearanceMetres": 0.45,
+    "minimumPracticeWingAttachmentOverlapMetres": 0.5
+  }
+}

@@ -13,6 +13,7 @@
   import { setEnvironmentTransitionVisualContext } from "$lib/shared/3d/environments/context/environment-transition-visual-context";
   import HarnessToneMapping from "./HarnessToneMapping.svelte";
   import WinterCompositionPlan from "./WinterCompositionPlan.svelte";
+  import WinterFireCourtGraybox from "$lib/shared/3d/environments/scenes/winter/graybox/WinterFireCourtGraybox.svelte";
 
   const sceneFeatureState = createSceneFeatureState();
   setSceneFeatureContext(sceneFeatureState);
@@ -22,14 +23,14 @@
 
   const VIEW_PRESETS = {
     hero: {
-      position: [10, 5.2, 30],
-      target: [-6, 1.8, -9],
+      position: [7, 5.2, 30],
+      target: [-13, 1.8, -9],
       fov: 44,
     },
     pond: {
-      position: [6, 5.5, 18],
+      position: [8, 4.8, -2],
       target: [16, 0.15, -10],
-      fov: 42,
+      fov: 46,
     },
     trees: {
       position: [8, 6, 24],
@@ -56,20 +57,25 @@
       target: [0, 0.12, 0],
       fov: 43,
     },
+    court: {
+      position: [2, 4.2, 8],
+      target: [-13, 0.9, -7],
+      fov: 48,
+    },
     settlement: {
       position: [10, 18, 30],
       target: [-8, 2.6, -15],
       fov: 42,
     },
     lodge: {
-      position: [-4, 6, 2],
-      target: [-24, 2.6, -38],
-      fov: 46,
+      position: [-18, 6, -25],
+      target: [-24, 4.5, -38],
+      fov: 48,
     },
     hearth: {
-      position: [-16, 5.5, -9],
+      position: [-30, 5.2, -25.5],
       target: [-34, 3.35, -30],
-      fov: 42,
+      fov: 52,
     },
     world: {
       position: [10, 52, 30],
@@ -125,7 +131,11 @@
   type ViewName = keyof typeof VIEW_PRESETS;
   let viewportWidth = $state(1920);
   const requestedView = $derived(page.url.searchParams.get("view"));
+  const requestedAsset = $derived(page.url.searchParams.get("asset"));
   const showCompositionPlan = $derived(requestedView === "composition");
+  const showFireCourtGraybox = $derived(
+    requestedAsset === "fire-court-graybox-r1"
+  );
   const view = $derived(
     requestedView && requestedView in VIEW_PRESETS
       ? (requestedView as ViewName)
@@ -171,7 +181,11 @@
         stageWidth={6}
         stageDepth={6}
         stageZOffset={0}
+        winterPlatformVisible={!showFireCourtGraybox}
       />
+      {#if showFireCourtGraybox}
+        <WinterFireCourtGraybox />
+      {/if}
     </Canvas>
   </div>
 {/if}

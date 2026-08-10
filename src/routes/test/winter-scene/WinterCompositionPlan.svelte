@@ -58,13 +58,13 @@
 </script>
 
 <svelte:head>
-  <title>Winter retreat composition · Gate 1 revision</title>
+  <title>Winter retreat composition · Approved Gate 1</title>
 </svelte:head>
 
 <main class="plan-shell">
   <header class="plan-header">
     <div>
-      <p class="eyebrow">Gate 1 revision · production scene unchanged</p>
+      <p class="eyebrow">Gate 1 approved · Gate 2 production review ready</p>
       <h1>The retreat triangle</h1>
       <p class="lede">
         Performance ice first. Warm refuge second. Natural frozen pond third.
@@ -80,7 +80,7 @@
   <section class="hero-panel" aria-labelledby="hero-title">
     <div class="panel-heading hero-heading">
       <div>
-        <p class="panel-kicker">Proposed first impression</p>
+        <p class="panel-kicker">Approved first impression</p>
         <h2 id="hero-title">One frame with a clear order of attention</h2>
       </div>
       <span class="camera-chip">44° lens · 5.2 m camera</span>
@@ -93,7 +93,7 @@
       aria-labelledby="hero-svg-title hero-svg-description"
     >
       <title id="hero-svg-title"
-        >Proposed Moonlit Winter Hollow hero composition</title
+        >Approved Moonlit Winter Hollow hero composition</title
       >
       <desc id="hero-svg-description">
         The illuminated stage dominates the lower center. A packed snow route
@@ -257,7 +257,7 @@
         role="img"
         aria-labelledby="plan-svg-title plan-svg-description"
       >
-        <title id="plan-svg-title">Measured proposed Winter retreat plan</title>
+        <title id="plan-svg-title">Measured approved Winter retreat plan</title>
         <desc id="plan-svg-description">
           Entry arrives from the south. The stage remains central. The lodge
           moves farther upstage-left, the hearth moves beside it, and the fully

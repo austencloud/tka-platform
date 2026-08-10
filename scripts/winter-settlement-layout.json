@@ -80,7 +80,7 @@
       "treeHalfWidth": 1.35,
       "treeShoulderWidth": 1,
       "targetElevations": [0, 2.6],
-      "clearingExitProgress": 0.07291736365351514,
+      "clearingExitProgress": 0.38,
       "points": [
         [-3.2, -4.2],
         [-6, -9],
@@ -109,7 +109,7 @@
       "width": 1.4,
       "treeHalfWidth": 1,
       "treeShoulderWidth": 0.8,
-      "targetElevations": [0.55, 0.54],
+      "targetElevations": [0, 0.54],
       "points": [
         [-5, -11],
         [2, -13],
