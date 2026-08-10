@@ -418,7 +418,6 @@
     flex-direction: column;
     gap: 4px;
     min-height: 0;
-    /* flex is applied dynamically via inline style based on item count */
   }
 
   .section-label {
@@ -442,7 +441,6 @@
   }
 
   /* ===== MOBILE MODE: 3 columns, compact buttons ===== */
-  /* Note: flex values are applied dynamically via inline styles based on item count */
   .actions-container.mobile .section-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 4px;
@@ -546,6 +544,11 @@
   .actions-container.desktop {
     height: auto;
     min-height: 100%;
+    /* The parent (.controls-content) is a flex column scroller; without this
+       it flex-shrinks the stack to its own height and the unshrinkable tiles
+       spill across section boundaries and overlap. Content-height + parent
+       scroll is the only safe fallback. */
+    flex-shrink: 0;
     overflow: visible;
     /* Center the whole stack in the scroll area so leftover height splits
        evenly top/bottom (intentional) instead of dumping at the bottom. When
@@ -566,6 +569,9 @@
   }
   .actions-container.desktop .section {
     gap: clamp(6px, 1.2cqh, 12px);
+    /* Sections never shrink below their grid content — a squeezed section
+       lets tiles (min-height floor) overflow into the next section. */
+    flex-shrink: 0;
   }
   .actions-container.desktop .section-label {
     font-size: clamp(0.62rem, 1.4cqh, 0.72rem);
@@ -596,7 +602,26 @@
     height: auto;
     aspect-ratio: 1 / 0.84;
     min-height: 88px;
-    max-height: clamp(108px, 17cqh, 152px);
+    /* Height budget is row-count-aware. The default (2-col) tier stacks SEVEN
+       tile rows (3 transform + 3 patterns + 1 edit); labels, section gaps, and
+       grid gaps eat ~21cqh, leaving (100 - 21) / 7 ≈ 11.28cqh per row. The
+       3-col tier (5 rows) restores 17cqh below. */
+    max-height: clamp(96px, 11.25cqh, 152px);
+    /* Grid items with an aspect-ratio default to start-alignment, so the
+       capped height transfers to a narrow width and strands each tile at the
+       left of its column. Stretch fills the column; max-height still rules. */
+    justify-self: stretch;
+  }
+  /* 3 cols = 5 tile rows (2+2+1), so each row earns a bigger height slice:
+     (100 - 21) / 5 ≈ 15.8cqh, held at 15.5 for slack. justify-self reverts
+     to the pre-existing wide-tier alignment. This block must sit AFTER the
+     base .grid-btn rule — same specificity, so source order decides the
+     cascade inside the matching container query. */
+  @container (min-width: 560px) {
+    .actions-container.desktop .grid-btn {
+      max-height: clamp(108px, 15.5cqh, 152px);
+      justify-self: normal;
+    }
     padding: clamp(8px, 1.6cqh, 14px);
     border-radius: 12px;
     background: color-mix(
