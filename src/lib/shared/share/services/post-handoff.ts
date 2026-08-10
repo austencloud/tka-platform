@@ -40,6 +40,13 @@ export interface HandoffDestination {
   id: HandoffDestinationId;
   label: string;
   icon: string;
+  /**
+   * Renders the network's own mark instead of `icon`. The app has had these as
+   * inline SVGs since Facebook sign-in shipped
+   * (src/lib/shared/auth/components/icons/) — a generic glyph in their place
+   * reads as a placeholder, because it is one.
+   */
+  brand?: "facebook" | "instagram";
   /** Primary renders as the filled button; the rest are secondary. */
   primary: boolean;
   /** One-word form for the compact tile row; the full label stays the a11y name. */
@@ -97,9 +104,8 @@ export function resolveDestinations(ctx: HandoffContext): HandoffDestination[] {
         id: "copy-image-facebook",
         label: "Copy image & open Facebook",
         short: "Facebook",
-        // Solid only: the app loads solid.min.css, never brands.min.css, so a
-        // fa-brands class renders as an empty box.
         icon: "fa-solid fa-image",
+        brand: "facebook",
         primary: false,
         hint: "Paste into your post",
       });

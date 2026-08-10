@@ -19,6 +19,9 @@
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import InstagramIcon from "$lib/shared/auth/components/icons/InstagramIcon.svelte";
+  import FacebookIcon from "$lib/shared/auth/components/icons/FacebookIcon.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { getSharer } from "$lib/shared/share/get-sharer";
@@ -93,6 +96,8 @@
   // Drawer owns its own open flag (it animates out), so mirror the prop in and
   // report dismissals back out rather than binding the caller's state.
   let drawerOpen = $state(false);
+  /** Title glyph height in px, measured off a CSS-sized element. */
+  let glyphHeight = $state(0);
 
   $effect(() => {
     drawerOpen = isOpen;
@@ -160,9 +165,9 @@
   const metaStatus = $derived(metaStatusOverride ?? liveMetaStatus);
 
   /**
-   * Connected accounts this artifact can be posted to directly. Solid icons
-   * only — the app never loads FontAwesome's brands sheet, so a fa-brands
-   * class renders as an empty box.
+   * Connected accounts this artifact can be posted to directly. The mark is
+   * the network's own — FontAwesome's brands sheet is not loaded, but the app
+   * has carried inline Instagram and Facebook SVGs since sign-in shipped.
    */
   const autoPostTargets = $derived.by(() => {
     const targets: Array<{
@@ -171,7 +176,7 @@
       account: string;
       /** Fixed-width name for the setup row, where the account name varies. */
       network: string;
-      icon: string;
+      brand: "instagram" | "facebook";
     }> = [];
 
     if (!postingAvailable) return targets;
@@ -181,7 +186,7 @@
         label: "Post to Instagram",
         account: `@${metaStatus.instagram.username}`,
         network: "Instagram",
-        icon: "fa-solid fa-camera-retro",
+        brand: "instagram",
       });
     }
     if (metaStatus.facebookPage) {
@@ -190,7 +195,7 @@
         label: "Post to Facebook",
         account: metaStatus.facebookPage.selectedPageName || "Your Page",
         network: "Facebook",
-        icon: "fa-solid fa-thumbs-up",
+        brand: "facebook",
       });
     }
     return targets;
@@ -526,11 +531,26 @@
   });
 </script>
 
+{#snippet brandMark(brand: "instagram" | "facebook")}
+  <span class="brand-mark">
+    {#if brand === "instagram"}
+      <InstagramIcon />
+    {:else}
+      <FacebookIcon />
+    {/if}
+  </span>
+{/snippet}
+
 <!-- The posted state reuses the SAME box rather than adding a "View post" row:
      a new element appearing after a successful post would shove the sheet
      (.claude/rules/no-layout-shift.md). -->
 {#snippet autoPostButton(
-  target: { id: MetaPublishTarget; label: string; account: string; icon: string },
+  target: {
+    id: MetaPublishTarget;
+    label: string;
+    account: string;
+    brand: "instagram" | "facebook";
+  },
   isPrimary: boolean
 )}
   {@const permalink = postedPermalinks[target.id]}
@@ -556,12 +576,11 @@
       disabled={!activeBlob || metaBusy || busyDestination !== null || qrPending}
       onclick={() => postToTarget(target.id)}
     >
-      <i
-        class={postingTarget === target.id
-          ? "fa-solid fa-circle-notch fa-spin"
-          : target.icon}
-        aria-hidden="true"
-      ></i>
+      {#if postingTarget === target.id}
+        <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
+      {:else}
+        {@render brandMark(target.brand)}
+      {/if}
       <span class="cta-text">
         <span class="cta-label">{target.label}</span>
         <span class="cta-hint">
@@ -583,14 +602,23 @@
   }}
 >
   <div class="sheet">
-    <header class="sheet-header">
-      <div class="title-group">
-        <span class="eyebrow">Share</span>
-        <h2>{word}</h2>
-      </div>
+    <header class="panel-header">
+      <!-- The word is a word in this alphabet, so it renders in the alphabet —
+           the same glyph component the card, the gallery and compose use. A
+           system font here spells FΨ as two unrelated symbols. -->
+      <h2 class="panel-title">
+        <!-- The glyph takes a px height, but the size belongs with the other
+             tier rules in CSS, so a zero-width sizer carries it across. -->
+        <span class="glyph-sizer" bind:clientHeight={glyphHeight}></span>
+        <TKAWordGlyph
+          word={sequence.word}
+          height={glyphHeight || 26}
+          darkMode
+        />
+      </h2>
       <button
         type="button"
-        class="close"
+        class="header-close"
         onclick={onClose}
         aria-label="Close share sheet"
       >
@@ -728,12 +756,14 @@
               onclick={() => runDestination(destination.id)}
             >
               <span class="tile-icon">
-                <i
-                  class={busyDestination === destination.id
-                    ? "fa-solid fa-circle-notch fa-spin"
-                    : destination.icon}
-                  aria-hidden="true"
-                ></i>
+                {#if busyDestination === destination.id}
+                  <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"
+                  ></i>
+                {:else if destination.brand}
+                  {@render brandMark(destination.brand)}
+                {:else}
+                  <i class={destination.icon} aria-hidden="true"></i>
+                {/if}
               </span>
               <span class="tile-label">{destination.short}</span>
             </button>
@@ -754,13 +784,15 @@
               <FilterChipBase
                 label={selected.selectedPageName || "Choose a Page"}
                 ariaLabel="Which Page to post to"
-                icon="fa-solid fa-thumbs-up"
                 mode="dropdown"
                 size="sm"
                 expanded={pageMenuOpen}
                 disabled={metaBusy}
                 onclick={() => (pageMenuOpen = !pageMenuOpen)}
               >
+                {#snippet iconSnippet()}
+                  {@render brandMark("facebook")}
+                {/snippet}
                 {#snippet children()}
                   {#each facebookPages as page (page.id)}
                     <button
@@ -785,14 +817,22 @@
           {#each connectableTargets as chip (chip.id)}
             <FilterChipBase
               label={chip.label}
-              icon={connectingTarget === chip.id
-                ? "fa-solid fa-circle-notch fa-spin"
-                : "fa-solid fa-plus"}
               mode="action"
               size="sm"
               disabled={metaBusy}
               onclick={() => connectTarget(chip.id)}
-            />
+            >
+              {#snippet iconSnippet()}
+                {#if connectingTarget === chip.id}
+                  <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"
+                  ></i>
+                {:else}
+                  {@render brandMark(
+                    chip.id === "instagram" ? "instagram" : "facebook"
+                  )}
+                {/if}
+              {/snippet}
+            </FilterChipBase>
           {/each}
 
           {#each autoPostTargets as target (target.id)}
@@ -838,6 +878,14 @@
     --sheet-border-radius-top-right: 1.5rem;
   }
 
+  /* Drawer.css floors bottom sheets at 50dvh so a short one is not a sliver.
+     This sheet is never short — it is 386px on a folded phone in landscape and
+     876px on a 4K panel — so the floor only ever adds empty drawer under the
+     content: 204px of it at 2160. Hug the sheet instead. */
+  :global(.post-share-drawer.drawer-content[data-placement="bottom"]) {
+    min-height: 0;
+  }
+
   /* Phone portrait is the tight case, so it is the base: everything from the
      title to the tile row has to fit above the fold at 375x667. Taller
      viewports get the roomier version back in the min-height tier below. */
@@ -850,67 +898,68 @@
     margin: 0 auto;
   }
 
-  .sheet-header {
+  /* The app's sheet header, not a new one: title left, one action right, a
+     hairline under it. Matches ScanCardSheet's .panel-header, which is what
+     every other bottom sheet in this app already looks like. */
+  .panel-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    gap: 1rem;
+    gap: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  .title-group {
+  .panel-title {
     display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-    min-width: 0;
-  }
-
-  .eyebrow {
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.55));
-  }
-
-  .sheet-header h2 {
+    align-items: center;
     margin: 0;
-    font-size: 1.25rem;
-    font-weight: 650;
-    line-height: 1.15;
-    letter-spacing: -0.01em;
+    min-width: 0;
+    /* The glyph carries the word; this element only positions it. */
+    font-size: var(--font-size-lg, 18px);
     color: var(--theme-text, #fff);
-    overflow-wrap: anywhere;
   }
 
-  .close {
+  .glyph-sizer {
+    width: 0;
+    height: 1.625rem;
+  }
+
+  .header-close {
     flex: 0 0 auto;
     display: grid;
     place-items: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    /* Visual size is 36px; the padding carries the hit area to the 44px floor. */
-    margin: -0.25rem -0.25rem 0 0;
-    padding: 0.25rem;
-    box-sizing: content-box;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 999px;
-    background: var(--theme-surface-2, rgba(255, 255, 255, 0.06));
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
-    font-size: 1rem;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    margin-right: -0.5rem;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+    font-size: 1.0625rem;
     cursor: pointer;
     transition:
-      background 0.15s ease,
-      color 0.15s ease,
-      transform 0.12s ease;
+      background var(--duration-fast, 150ms) ease,
+      color var(--duration-fast, 150ms) ease;
   }
 
-  .close:hover {
-    background: var(--theme-surface-3, rgba(255, 255, 255, 0.12));
-    color: var(--theme-text, #fff);
+  @media (hover: hover) {
+    .header-close:hover {
+      background: var(--theme-surface-2, rgba(255, 255, 255, 0.06));
+      color: var(--theme-text, #fff);
+    }
   }
 
-  .close:active {
-    transform: scale(0.94);
+  /* Brand marks size themselves off the surrounding text so they sit on the
+     same optical line as FontAwesome glyphs in the same row. */
+  .brand-mark {
+    display: inline-flex;
+    flex: 0 0 auto;
+  }
+
+  .brand-mark :global(svg) {
+    width: 1.15em;
+    height: 1.15em;
   }
 
   /* Fixed box: the preview, the pending spinner and the QR view all live here,
@@ -934,6 +983,18 @@
     overflow: hidden;
   }
 
+  /* The frame belongs to the spinner and the QR view, which need a surface to
+     sit on. Real artwork does not: the card renders its own rounded edge and
+     shadow, so keeping the box around it draws a bordered well with a portrait
+     card floating in the middle of it — the artwork centres on empty space
+     instead (.claude/rules/visual-verification-mandatory.md, dead space). */
+  .stage.showing-media {
+    padding: 0;
+    border-color: transparent;
+    background: none;
+    box-shadow: none;
+  }
+
   /* Capped in rem, not %: the stage row is content-sized, so a percentage here
      resolves against an indefinite height and stops capping anything. Each tier
      sets --preview-h to its stage height minus padding.
@@ -944,7 +1005,7 @@
      until the setup row falls past the bottom of the drawer. */
   .preview {
     max-width: 100%;
-    max-height: min(var(--preview-h, 10.5rem), 24vh);
+    max-height: min(var(--preview-h, 10.5rem), 30vh);
     object-fit: contain;
     border-radius: 0.75rem;
     box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.45);
@@ -958,9 +1019,10 @@
     font-size: 0.9375rem;
   }
 
-  /* One glass pill, centered above the artwork. The control itself IS the
-     pill — nesting a 999px wrapper around its 8px corners left a visible
-     rectangle inside the capsule. Width is its labels', never the sheet's
+  /* Centered above the artwork, and otherwise left alone: SegmentedControl
+     already carries the app's look, and re-skinning it into a glass capsule is
+     what made this control read as hand-rolled. Only the width override stays,
+     so it sizes to its two labels rather than the sheet
      (.claude/rules/visual-verification-mandatory.md). */
   .artifact-picker {
     align-self: center;
@@ -969,14 +1031,6 @@
 
   .artifact-picker :global(.segmented-control) {
     width: auto;
-    border-radius: 999px;
-    background: rgba(10, 10, 14, 0.5);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-  }
-
-  .artifact-picker :global(.indicator) {
-    border-radius: 999px;
   }
 
   .qr-view {
@@ -1327,14 +1381,18 @@
      pushed the setup row past the drawer's 85vh. */
   @media (min-height: 940px) {
     .sheet {
-      --stage-h: 16rem;
-      --preview-h: 14.5rem;
+      /* Past 18rem the rem figure stops binding and the 30vh half of the cap
+         takes over, which is the intent on a tablet: 288px of card in a
+         1180px-tall viewport left the thing you came to look at smaller than
+         the button under it, with 260px of viewport still unspent. */
+      --stage-h: 22rem;
+      --preview-h: 24rem;
       gap: 1rem;
       padding: 1.25rem;
     }
 
-    .sheet-header h2 {
-      font-size: 1.5rem;
+    .glyph-sizer {
+      height: 1.75rem;
     }
 
     textarea {
@@ -1359,14 +1417,22 @@
     }
   }
 
-  /* Wide and short (folded Z Fold landscape, small laptops in a browser with
-     chrome): stacked, the 16rem preview pushes every action below the fold.
-     Put the preview beside the controls and use the wide axis instead. */
-  @media (min-width: 700px) and (max-height: 620px) {
+  /* Two columns from 900px up — the artwork beside the controls, not above them.
+     Stacked, the preview is capped by whatever vertical the controls leave over,
+     which on a 1920x1080 desktop is a 165px-wide card marooned in a 624px-wide
+     frame: the exact dead-space failure in visual-verification-mandatory.md.
+     Beside them the stage is a tall column the card fills, so the thing you came
+     here to look at is actually the biggest thing on screen.
+
+     900 is the seam because it takes in every wide case at once: the folded
+     Z Fold in landscape (960x412), where stacking pushes the actions off the
+     bottom, and every laptop and desktop above it. Tablet portrait (820) stays
+     stacked — one column is right when the viewport is taller than it is wide. */
+  @media (min-width: 900px) {
     .sheet {
       display: grid;
-      width: min(52rem, 100%);
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+      width: min(58rem, 100%);
+      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
       grid-template-areas:
         "stage header"
         "stage picker"
@@ -1375,20 +1441,22 @@
         "stage tiles"
         "stage connections"
         "stage status";
-      grid-template-rows: auto auto auto auto auto auto 1fr;
+      /* The caption row takes the slack. The card is the tallest thing here,
+         and the leftover beside it has to go somewhere: into the box you are
+         actually typing in, rather than into a hole above the status line. */
+      grid-template-rows: auto auto minmax(5rem, 1fr) auto auto auto auto;
       align-content: start;
-      column-gap: 1.25rem;
-      row-gap: 0.5rem;
-      padding: 0.25rem 1rem 0.5rem;
+      column-gap: 1.5rem;
+      row-gap: 0.625rem;
     }
 
-    .sheet-header {
+    .panel-header {
       grid-area: header;
     }
     .stage {
       grid-area: stage;
       min-height: 0;
-      align-self: stretch;
+      align-self: start;
     }
     .artifact-picker {
       grid-area: picker;
@@ -1396,40 +1464,100 @@
     }
     .caption-block {
       grid-area: caption;
+      min-height: 0;
     }
     .actions {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.625rem;
       grid-area: cta;
-    }
-    .cta {
-      min-height: 3rem;
     }
     .tiles {
       grid-area: tiles;
       align-self: start;
     }
-    .connections {
-      grid-area: connections;
-      margin-inline: 0;
-      padding-inline: 0;
-    }
     .status {
       grid-area: status;
-      min-height: 0.875rem;
-      font-size: 0.75rem;
     }
 
-    .sheet-header h2 {
-      font-size: 1.25rem;
-    }
-
+    /* vh, not the stage: the stage is content-sized here, so a percentage cap
+       resolves against an indefinite height and stops capping. Without a real
+       ceiling the card's natural size sets the sheet's height, and a laptop
+       viewport gets a share sheet that scrolls. */
     .preview {
-      max-height: 100%;
+      max-width: 100%;
+      max-height: 58vh;
     }
 
     textarea {
+      flex: 1 1 auto;
+      height: auto;
+      min-height: 5rem;
+      resize: none;
+    }
+
+    /* The edge bleed exists so a scrolled row reads as scrollable against the
+       sheet's own padding. In two columns these rows start mid-sheet, where
+       bleeding would run them under the stage. */
+    .presets,
+    .connections {
+      margin-inline: 0;
+      padding-inline: 0;
+    }
+    .connections {
+      grid-area: connections;
+    }
+  }
+
+  /* Wide AND short (folded Z Fold landscape, a laptop with browser chrome
+     eating the viewport): same two columns, every vertical measure tightened so
+     the setup row still clears the fold. */
+  @media (min-width: 900px) and (max-height: 620px) {
+    /* The setup row moves under the artwork. The stage column here is ~170px
+       wide against a 412px-tall viewport, so the left side has vertical to
+       spare while the right side is the thing running out of it — keeping every
+       row on the right is what pushed the setup chips off the bottom once
+       connected accounts started adding a row. The tiles stay on the right:
+       given the full width they stretch three short labels across 880px. */
+    .sheet {
+      width: min(52rem, 100%);
+      grid-template-areas:
+        "stage header"
+        "stage picker"
+        "stage caption"
+        "stage cta"
+        "stage tiles"
+        "connections status";
+      grid-template-rows: auto auto minmax(3.25rem, 1fr) auto auto auto;
+      row-gap: 0.25rem;
+      padding: 0.25rem 1rem 0.375rem;
+    }
+
+    .glyph-sizer {
+      height: 1.375rem;
+    }
+
+    .panel-header {
+      padding-bottom: 0.375rem;
+    }
+
+    .cta {
+      min-height: 2.75rem;
+      padding: 0.5rem 1rem;
+    }
+
+    .status {
+      min-height: 0.875rem;
+      font-size: 0.75rem;
+      align-self: center;
+      text-align: right;
+    }
+
+    /* Fixed basis rather than the three rows it asks for: on a 412px-tall
+       viewport the caption has no slack to absorb, and `rows=3` is 38px the
+       setup row needs more. */
+    textarea {
+      flex: 1 1 3.25rem;
       height: 3.25rem;
       min-height: 3.25rem;
     }
@@ -1438,16 +1566,18 @@
   /* A bottom drawer on a 4K panel reads as a phone strip unless the sheet grows
      with the canvas (.claude/rules/4k-native-layout.md, 1680 seam). */
   @media (min-width: 1680px) {
+    /* No --stage-h/--preview-h from here up: every viewport this wide is also
+       past the 900px seam, so the stage is stretching and the preview's cap has
+       already lifted. Width and type are what still have to step. */
     .sheet {
-      --stage-h: 20rem;
-      --preview-h: 18.5rem;
-      width: min(42rem, 100%);
-      gap: 1.25rem;
+      width: min(74rem, 100%);
+      column-gap: 2rem;
+      row-gap: 0.875rem;
       padding: 1.5rem;
     }
 
-    .sheet-header h2 {
-      font-size: 1.875rem;
+    .glyph-sizer {
+      height: 2rem;
     }
 
     .cta-label,
@@ -1472,19 +1602,22 @@
      big-screen seam always misses (.claude/rules/4k-native-layout.md). */
   @media (min-width: 2350px) {
     .sheet {
-      --stage-h: 26rem;
-      --preview-h: 24.5rem;
-      width: min(52rem, 100%);
-      gap: 1.5rem;
+      width: min(90rem, 100%);
+      /* A fixed stage track from here up, not a fraction. The card render is a
+         480px-wide raster (sharer.ts stepSize 240), so past ~2350 a fractional
+         column keeps widening past anything the artwork can fill — 765px of
+         column around a 480px card at 3840. Pinning the track to just over the
+         card's own width spends the extra canvas on the controls instead, and
+         holds the same width while the render is still pending, so the card
+         landing does not shove the column (.claude/rules/no-layout-shift.md). */
+      grid-template-columns: 32rem minmax(0, 1fr);
+      column-gap: 2.5rem;
+      row-gap: 1rem;
       padding: 2rem;
     }
 
-    .sheet-header h2 {
-      font-size: 2.25rem;
-    }
-
-    .eyebrow {
-      font-size: 0.8125rem;
+    .glyph-sizer {
+      height: 2.375rem;
     }
 
     .qr-view img {
@@ -1519,12 +1652,6 @@
       font-size: 1.25rem;
     }
 
-    .close {
-      width: 3rem;
-      height: 3rem;
-      font-size: 1.375rem;
-    }
-
     .artifact-picker :global(.segment),
     .presets :global(.chip-label),
     .connections :global(.chip-label) {
@@ -1536,19 +1663,19 @@
      and elements step again rather than the band alone. */
   @media (min-width: 3200px) {
     .sheet {
-      --stage-h: 32rem;
-      --preview-h: 30rem;
-      width: min(64rem, 100%);
-      gap: 1.75rem;
+      /* 96rem, not 112: the card tops out at 480px and the caption is the only
+         thing that benefits from more width. Past ~1550px the sheet stops
+         reading as a composition and starts reading as a strip of controls
+         parked next to a small picture. */
+      width: min(96rem, 100%);
+      grid-template-columns: 34rem minmax(0, 1fr);
+      column-gap: 3rem;
+      row-gap: 1.25rem;
       padding: 2.5rem;
     }
 
-    .sheet-header h2 {
-      font-size: 2.75rem;
-    }
-
-    .eyebrow {
-      font-size: 1rem;
+    .glyph-sizer {
+      height: 2.875rem;
     }
 
     .qr-view img {
@@ -1583,12 +1710,6 @@
       font-size: 1.5rem;
     }
 
-    .close {
-      width: 3.75rem;
-      height: 3.75rem;
-      font-size: 1.75rem;
-    }
-
     .artifact-picker :global(.segment),
     .presets :global(.chip-label),
     .connections :global(.chip-label) {
@@ -1599,14 +1720,13 @@
   @media (prefers-reduced-motion: reduce) {
     .cta,
     .tile,
-    .close,
+    .header-close,
     textarea {
       transition: none;
     }
 
     .cta:active:not(:disabled),
-    .tile:active:not(:disabled),
-    .close:active {
+    .tile:active:not(:disabled) {
       transform: none;
     }
   }

@@ -23,13 +23,17 @@ import {
  * Gates every interactive posting entry point: the connect chips, the post
  * buttons, and the Firestore status listener behind them.
  *
- * Same reasoning as INSTAGRAM_LOGIN_ENABLED in auth-providers.config.ts, and
- * the same shape. Pushing `main` deploys the site but NOT the functions, so a
- * connect chip that reached production before
- * `docs/reference/meta-posting-e2e-checklist.md` passes would open a popup at a
- * callable that is not there. The handoff row is unaffected and keeps working.
+ * Same reasoning as INSTAGRAM_LOGIN_ENABLED in auth-providers.config.ts.
+ * Pushing `main` deploys the site but NOT the functions, so a connect chip that
+ * reached production before `docs/reference/meta-posting-e2e-checklist.md`
+ * passes would open a popup at a callable that is not there.
+ *
+ * On in dev so the whole sheet is reachable at localhost, off in the build.
+ * Connecting will still fail against a project whose functions and secrets are
+ * not deployed — that is what the checklist is for — but the UI is testable.
+ * Hardcode `true` once review lands.
  */
-export const META_POSTING_ENABLED = false;
+export const META_POSTING_ENABLED = import.meta.env.DEV;
 
 export type MetaPublishTarget = "instagram" | "facebook-page";
 export type MetaPublishMediaType = "image" | "video";

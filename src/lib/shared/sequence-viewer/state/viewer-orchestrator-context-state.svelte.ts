@@ -41,6 +41,7 @@ interface ViewerOrchestratorContextHandlers {
   handleVideoUpload: () => Promise<void>;
   handleShare: () => void;
   handleCopyLink: () => Promise<boolean>;
+  getShareUrl: () => string;
   handleOpenInBrowser: (pendingType?: PendingActionType | null) => void;
   invokeGatedAction: OrchestratorContext["invokeGatedAction"];
   openSignInPrompt: () => void;
@@ -204,6 +205,7 @@ export function createViewerOrchestratorContextState(
       handleVideoUpload: inputs.handlers.handleVideoUpload,
       handleShare: inputs.handlers.handleShare,
       handleCopyLink: inputs.handlers.handleCopyLink,
+      getShareUrl: inputs.handlers.getShareUrl,
       handleDelete: inputs.libraryActions.handleDelete,
       handleOpenInBrowser: inputs.handlers.handleOpenInBrowser,
       invokeGatedAction: inputs.handlers.invokeGatedAction,
