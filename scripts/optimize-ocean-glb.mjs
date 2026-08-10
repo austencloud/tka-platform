@@ -36,12 +36,18 @@ import { createRequire } from "module";
 import { pathToFileURL } from "url";
 import sharp from "sharp";
 
-const INPUT = resolve("static/models/ocean/ocean_scene_raw.glb");
-const OUTPUT = resolve("static/models/ocean/ocean_flora_scene.glb");
-const TMP_SLIM = resolve("static/models/ocean/_tmp_slim.glb");
-const TMP_PNG = resolve("static/models/ocean/_tmp_png.glb");
-const TMP_UASTC = resolve("static/models/ocean/_tmp_uastc.glb");
-const TMP_ETC = resolve("static/models/ocean/_tmp_etc.glb");
+// Defaults are the ocean scene; the water traverse's trench gallery runs the
+// same five passes over a different pair of files, and a second copy of this
+// would be a second place for the KTX/meshopt ordering constraints to rot.
+//   node scripts/optimize-ocean-glb.mjs [inputGlb] [outputGlb]
+const [inputArg, outputArg] = process.argv.slice(2);
+const INPUT = resolve(inputArg ?? "static/models/ocean/ocean_scene_raw.glb");
+const OUTPUT = resolve(outputArg ?? "static/models/ocean/ocean_flora_scene.glb");
+const tmp = (name) => resolve(OUTPUT, `../_tmp_${name}.glb`);
+const TMP_SLIM = tmp("slim");
+const TMP_PNG = tmp("png");
+const TMP_UASTC = tmp("uastc");
+const TMP_ETC = tmp("etc");
 
 // Local KTX-Software on PATH so the uastc/etc1s passes can transcode.
 const KTX_BIN = resolve(".tools/ktx");

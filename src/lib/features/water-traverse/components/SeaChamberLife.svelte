@@ -37,7 +37,7 @@
   import MarineParticles from "$lib/shared/3d/environments/scenes/ocean/runtime/atmosphere/MarineParticles.svelte";
   import FishBoids from "$lib/shared/3d/environments/scenes/ocean/runtime/fauna/fish/FishBoids.svelte";
   import JellyfishSwarm from "$lib/shared/3d/environments/scenes/ocean/runtime/fauna/jellyfish/JellyfishSwarm.svelte";
-  import FloraInstances from "$lib/shared/3d/environments/scenes/ocean/authored/FloraInstances.svelte";
+  import TrenchGallery from "./TrenchGallery.svelte";
   import { WATER_Y } from "$lib/shared/3d/environments/scenes/ocean/runtime/atmosphere/god-ray-axis";
 
   interface Props {
@@ -152,15 +152,15 @@
 </script>
 
 <!--
-  Flora is one baked reef GLB. It is placed once, at the trench centre, because
-  it is 36 MB and tiling it would multiply that; the fauna and light do the work
-  of filling the ends.
+  The reef, composed for THIS trench rather than borrowed from the ocean stage.
+  It carries absolute route z for all 98 m, so it is not centred and not tiled —
+  TrenchGallery applies only the seabed elevation. The island of coral that used
+  to sit at midZ with bare sand either side of it is gone.
 -->
 {#if quality.enableAuthoredFlora}
-  <T.Group bind:ref={reefGroup} position={[0, floorY, midZ]}>
-    <FloraInstances
-      {quality}
-      worldYOffset={floorY}
+  <T.Group bind:ref={reefGroup}>
+    <TrenchGallery
+      {floorY}
       onProgress={onFloraProgress}
       onReady={handleFloraReady}
     />

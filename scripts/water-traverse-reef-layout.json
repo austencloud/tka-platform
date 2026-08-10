@@ -1,0 +1,261 @@
+{
+  "_doc": {
+    "purpose": "How the trench gallery is composed. The tunable art layer for the water traverse's middle leg; scripts/ocean-asset-facts.json holds the objective half and scripts/ocean-ecology-rules.json holds the biology.",
+    "why-not-the-ocean-layout": "scripts/ocean-zone-layout.json composes a THEATRE: elliptical zones arranged around a proscenium and a dais, staged for one hero camera sitting downstage. This is a WALK. There is no fixed camera, the audience is a person moving up the centreline at 1.4 m/s, and the composition has to read from every point on that line. Different problem, different layout file. The facts and the ecology rules are shared verbatim.",
+    "frame": "Runtime frame. x is across the trench (0 = walking centreline), y is metres above the seabed, z is absolute distance along the route from the snowfield entrance.",
+    "design": "docs/superpowers/specs/active/2026-08-09-trench-gallery-composition-design.md"
+  },
+  "geometry": {
+    "_doc": "Read from src/lib/features/water-traverse/data/water-traverse-terrain.ts. If those constants move, these move with them — the generator asserts nothing, so a stale copy here plants coral inside a wall.",
+    "trenchStartZ": 92,
+    "flatEndZ": 144,
+    "ascentEndZ": 190,
+    "floorHalfWidth": 42,
+    "ridgeThickness": 6,
+    "channelHalfWidth": 4.5,
+    "ridgeTopY": 14.5,
+    "waterlineY": 18
+  },
+  "clearance": {
+    "_doc": "The walk is forward-only and must never require exploration to be legible, so the channel is not a suggestion. Every placement is rejected inside channelHalfWidth + margin, measured to the instance's own footprint rather than its origin — a 12 m pinnacle whose ORIGIN clears the channel still has 6 m of rock hanging over it.",
+    "margin": 1.2,
+    "exitClearZ": 175,
+    "exitClearReason": "The last 15 m of the ascent is bare sand. The visitor's head breaking the surface is the moment this leg is built around and it does not share the frame with scenery."
+  },
+  "bands": {
+    "_doc": "THE central move, and the thing that makes this an exhibit rather than a reef. Distance from the walking line decides what may be placed there, by size. A reef does not sort itself relative to a walkway; a curator does. It also fixes the failure that made 87 fish invisible: something 40 cm across at 30 m in fog is not small, it is absent — so nothing small is ever placed out there, and nothing enormous is ever placed close enough to become a wall.",
+    "near": {
+      "fromX": 7.0,
+      "toX": 12.0,
+      "sizeMetres": [
+        0.08,
+        2.2
+      ],
+      "densityScale": 5.0,
+      "note": "Reading distance. Detail you can actually resolve while walking past: urchins, shells, anemones, fans, brain coral, grass."
+    },
+    "mid": {
+      "fromX": 12.0,
+      "toX": 20.0,
+      "sizeMetres": [
+        1.0,
+        5.0
+      ],
+      "note": "The body of the reef. Tables, staghorn thickets, encrusted rock, kelp stands, bommies."
+    },
+    "far": {
+      "fromX": 20.0,
+      "toX": 32.0,
+      "sizeMetres": [
+        4.0,
+        12.0
+      ],
+      "note": "Silhouette only. Past the fog's useful range nothing reads but outline, so only the monumental goes here: pinnacles, buttress walls, citadels, the coral mountain."
+    },
+    "verge": {
+      "fromX": 5.7,
+      "toX": 7.0,
+      "sizeMetres": [
+        0.06,
+        0.45
+      ],
+      "densityScale": 9.0,
+      "note": "Added after the first walkthrough. At 1.6 m eye height everything beyond 7 m projects into a thin strip at the horizon, so the lower half of the frame was empty floor. Only ankle-to-knee detail lives here — shells, urchins, grass, rubble — close enough to pass BESIDE you rather than in front of you."
+    }
+  },
+  "acts": [
+    {
+      "id": "descent-beds",
+      "fromZ": 92,
+      "toZ": 116,
+      "note": "You have just walked down a 40 m ramp into a room that is about to be enormous. Holding the ceiling low here — nothing over 3 m — means the colonnade lands as a reveal instead of as more of the same.",
+      "density": 1.15,
+      "maxHeightMetres": 3.0,
+      "bandSizeFloor": {
+        "far": 1.2,
+        "verge": 0.06
+      },
+      "admits": {
+        "near": [
+          "shell",
+          "mound",
+          "blade",
+          "branching"
+        ],
+        "mid": [
+          "blade",
+          "boulder",
+          "branching",
+          "mound"
+        ],
+        "far": [
+          "boulder",
+          "wall"
+        ],
+        "verge": [
+          "shell",
+          "mound",
+          "blade"
+        ]
+      }
+    },
+    {
+      "id": "colonnade",
+      "fromZ": 116,
+      "toZ": 162,
+      "note": "The monumental band, and the one place the composition is openly architectural. Big structures are ranked into BAYS on both flanks at a regular stride, so walking it reads as passing columns in a hall — which is what the building around it already is. Between the bays the flanks fall back to reef and kelp so the rhythm is felt rather than counted.",
+      "density": 1.0,
+      "maxHeightMetres": 14.0,
+      "admits": {
+        "near": [
+          "shell",
+          "mound",
+          "plate",
+          "branching"
+        ],
+        "mid": [
+          "plate",
+          "branching",
+          "mound",
+          "blade",
+          "boulder"
+        ],
+        "far": [
+          "column",
+          "wall",
+          "mound",
+          "boulder"
+        ],
+        "verge": [
+          "shell",
+          "mound",
+          "blade",
+          "branching"
+        ]
+      },
+      "bays": {
+        "_doc": "One monumental instance per bay, alternating flanks, at the far band. Alternating is what keeps it a colonnade rather than a corridor of gates — both flanks answering at the same z would close the view down the trench.",
+        "strideZ": 11.5,
+        "startZ": 120,
+        "x": [
+          22.0,
+          30.0
+        ],
+        "classes": [
+          "column",
+          "wall",
+          "mound"
+        ]
+      },
+      "bandSizeFloor": {
+        "verge": 0.06
+      }
+    },
+    {
+      "id": "shallows-approach",
+      "fromZ": 162,
+      "toZ": 190,
+      "note": "The ascent ramp. Thinning, and rising toward the light: plates and fans on the slope catch it broadside, which is the last thing the visitor sees before the surface.",
+      "density": 0.55,
+      "maxHeightMetres": 5.0,
+      "admits": {
+        "near": [
+          "shell",
+          "plate",
+          "mound"
+        ],
+        "mid": [
+          "plate",
+          "branching",
+          "blade"
+        ],
+        "far": [
+          "boulder",
+          "mound"
+        ],
+        "verge": [
+          "shell",
+          "mound",
+          "blade"
+        ]
+      },
+      "bandSizeFloor": {
+        "verge": 0.06
+      }
+    }
+  ],
+  "gates": {
+    "_doc": "Arches straddling the walk. Standing INSIDE the exhibit rather than beside it is the strongest move a walkable room has, and there are four arch assets sitting unused in the index. Each is scaled so its opening clears the channel and the visitor's head, then placed on the centreline and yawed square to the walk so it is passed THROUGH, not seen edge-on. Two only: a third would make it an arcade and the colonnade already owns rhythm.",
+    "atZ": [
+      124,
+      152
+    ],
+    "sizeMetres": 7.5,
+    "assets": [
+      "structures/coral-arch",
+      "meshy/sunlit_coral_arch"
+    ]
+  },
+  "specimens": {
+    "_doc": "The curatorial move, and deliberately not ecological. A museum shows one perfect example of a thing in its own clear space; a reef never does. Each specimen stands alone on a swept sand apron at reading distance from the walk, with every other placement rejected inside its radius. They are what makes the trench read as INSTALLED.",
+    "apronRadius": 5.0,
+    "placements": [
+      {
+        "asset": "meshy/table_coral",
+        "z": 108,
+        "x": -8.5,
+        "sizeMetres": 2.6
+      },
+      {
+        "asset": "boat",
+        "z": 133,
+        "x": 15.0,
+        "sizeMetres": 5.5
+      },
+      {
+        "asset": "meshy/brain_coral",
+        "z": 141,
+        "x": -8.0,
+        "sizeMetres": 1.9
+      },
+      {
+        "asset": "meshy/fan_coral",
+        "z": 168,
+        "x": 8.0,
+        "sizeMetres": 1.4
+      }
+    ]
+  },
+  "kelpStands": {
+    "_doc": "Giant kelp is the only asset that reaches from the seabed toward the surface, so it is the only one that can describe the 18 m of water overhead. Placed as a few dense stands rather than scattered singles — kelp is a forest or it is a weed — and kept off the flanks of the bays so the pinnacles keep their silhouette.",
+    "count": 5,
+    "radius": 4.5,
+    "frondRadius": 1.1,
+    "perStand": [
+      7,
+      12
+    ],
+    "assets": [
+      "kelp_plant",
+      "meshy/tall_kelp"
+    ],
+    "sizeMetres": [
+      6.0,
+      11.0
+    ],
+    "zRange": [
+      112,
+      158
+    ],
+    "xRange": [
+      13.0,
+      20.0
+    ]
+  },
+  "yaw": {
+    "_doc": "The ecology rules' face-camera-biased policy points at the ocean stage's fixed hero camera. There is no such camera here, so it is reinterpreted: the audience is the walking line, and an instance faces the nearest point on x = 0. Same intent — show the interesting face to whoever is looking — different geometry.",
+    "channelBiasJitterDegrees": 22,
+    "currentDegrees": 20
+  },
+  "seed": 20260809
+}
