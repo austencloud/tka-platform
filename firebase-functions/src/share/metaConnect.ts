@@ -73,10 +73,18 @@ const FACEBOOK_AUTHORIZE_URL = "https://www.facebook.com/v23.0/dialog/oauth";
 const INSTAGRAM_PUBLISH_SCOPE =
   "instagram_business_basic,instagram_business_content_publish";
 
-/** `publish_video` is separate from `pages_manage_posts` and is what a Page
- *  reel needs; requesting it up front avoids a second consent round. */
-const FACEBOOK_PUBLISH_SCOPE =
-  "pages_show_list,pages_read_engagement,pages_manage_posts,publish_video";
+/**
+ * Facebook names its permission set in the dashboard, not in the URL.
+ *
+ * The publishing app is `type: Business`, and the only login product such an
+ * app can add is Facebook Login for Business, where `config_id` replaced
+ * `scope` outright. The permissions live in the app's "Page posting"
+ * configuration and are, in order: `pages_show_list`, `pages_read_engagement`,
+ * `pages_manage_posts`, `publish_video` — `publish_video` being separate from
+ * `pages_manage_posts` and what a Page reel needs. Editing that list is a
+ * dashboard action; this constant only points at it.
+ */
+const FACEBOOK_LOGIN_CONFIG_ID = "1026384010306248";
 
 function configuredSecret(value: string, name: string): string {
   const trimmed = value.trim();
@@ -155,7 +163,7 @@ export const startMetaConnect = onCall(
               instagramAppId.value(),
               "INSTAGRAM_APP_ID"
             ),
-            scope: INSTAGRAM_PUBLISH_SCOPE,
+            grant: { kind: "scope", scope: INSTAGRAM_PUBLISH_SCOPE },
             state,
           })
         : buildAuthorizeUrl({
@@ -164,7 +172,7 @@ export const startMetaConnect = onCall(
               facebookAppId.value(),
               "FACEBOOK_APP_ID"
             ),
-            scope: FACEBOOK_PUBLISH_SCOPE,
+            grant: { kind: "config", configId: FACEBOOK_LOGIN_CONFIG_ID },
             state,
           });
 
@@ -172,17 +180,35 @@ export const startMetaConnect = onCall(
   }
 );
 
+/**
+ * How the two providers name the permissions they are being asked for. They do
+ * not accept each other's form: Instagram business login takes a raw scope
+ * list, and Facebook Login for Business rejects `scope` in favour of a
+ * configuration id.
+ */
+type AuthorizeGrant =
+  | { kind: "scope"; scope: string }
+  | { kind: "config"; configId: string };
+
 function buildAuthorizeUrl(input: {
   base: string;
   clientId: string;
-  scope: string;
+  grant: AuthorizeGrant;
   state: string;
 }): string {
   const url = new URL(input.base);
   url.searchParams.set("client_id", input.clientId);
   url.searchParams.set("redirect_uri", META_CONNECT_CALLBACK_URL);
   url.searchParams.set("response_type", "code");
-  url.searchParams.set("scope", input.scope);
+  if (input.grant.kind === "config") {
+    url.searchParams.set("config_id", input.grant.configId);
+    // A configuration carries its own default response type, and for a
+    // user-token configuration that default is a token handed to the browser.
+    // This flow exchanges a code server-side, so the request has to say so.
+    url.searchParams.set("override_default_response_type", "true");
+  } else {
+    url.searchParams.set("scope", input.grant.scope);
+  }
   url.searchParams.set("state", input.state);
   return url.toString();
 }
