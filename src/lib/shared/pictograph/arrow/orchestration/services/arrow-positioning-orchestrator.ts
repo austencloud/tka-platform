@@ -234,6 +234,22 @@ export function shouldMirrorArrow(
     return false;
   }
 
+  // FLOAT arrows are NEVER mirrored. A float has no prop rotation, so there is
+  // no "opposite spin" glyph to mirror into; the straight chevron's direction is
+  // fully encoded by the handpath rotation maps (float-rotation-maps.ts), which
+  // were tuned against unmirrored floats (/test/float-rotations builds them with
+  // rotationDirection = NO_ROTATION).
+  //
+  // Data-sourced floats carry rotationDirection "norotation" and so fell through
+  // harmlessly, but PictographPreparer.transformForHandPath stamps the HANDPATH
+  // direction onto rotationDirection when converting PRO/ANTI shifts to hand
+  // floats. That made every counter-clockwise hand float mirror (scale(-1, 1)),
+  // rendering its chevron reversed — e.g. Level 1 gamma, red E→N: correct 180°
+  // at NE points up-left, mirrored it points up-right.
+  if (motionType === "float") {
+    return false;
+  }
+
   const mirrorConditions = {
     anti: { cw: true, ccw: false },
     other: { cw: false, ccw: true },
