@@ -340,7 +340,13 @@ Variation support:
   const delay = (ms: number) =>
     new Promise<void>((r) => setTimeout(r, ms));
 
+  /** Serializes toggles: a click during an in-flight morph is dropped rather
+   * than letting two startViewTransition orchestrations interleave and clobber
+   * each other's staging state (browser would skip one anyway). */
+  let toggleInFlight = false;
+
   async function togglePreview(): Promise<void> {
+    if (toggleInFlight) return;
     const seq = displayedSequence;
     if (!morphCapable() || !prepareMorph()) {
       morphDriven = false;
@@ -348,6 +354,17 @@ Variation support:
       else cardHoverPreview.request(seq);
       return;
     }
+    toggleInFlight = true;
+    try {
+      await runMorphToggle(seq);
+    } finally {
+      toggleInFlight = false;
+      morphStaging = false;
+      previewReadyResolve = null;
+    }
+  }
+
+  async function runMorphToggle(seq: SequenceData): Promise<void> {
     morphDriven = true;
     if (previewActive) {
       // Stop: old state = live preview, new state = static card + crops. The
@@ -363,7 +380,6 @@ Variation support:
       } catch {
         /* skipped transitions still applied the DOM change */
       }
-      morphStaging = false;
     } else {
       // Play: the crops must be PAINTED before the old-state capture, so they
       // mount a frame ahead of the transition.
@@ -385,8 +401,6 @@ Variation support:
       } catch {
         /* skipped */
       }
-      previewReadyResolve = null;
-      morphStaging = false;
     }
   }
 

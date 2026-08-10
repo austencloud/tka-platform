@@ -109,7 +109,16 @@
 
   async function start(target: SequenceData) {
     const token = ++loadToken;
-    const hydrated = await ensureMotionData(target);
+    let hydrated: SequenceData | null;
+    try {
+      hydrated = await ensureMotionData(target);
+    } catch {
+      // Hydration failed — release any morph waiting on readiness so the
+      // toggle's view transition degrades to its quick fade instead of
+      // holding the 1500ms race open for a frame that will never come.
+      onReady?.();
+      return;
+    }
     if (token !== loadToken) return;
     if (!hydrated?.steps?.length) return;
 
@@ -426,9 +435,4 @@
     align-self: stretch;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .preview-layer {
-      display: none;
-    }
-  }
 </style>
