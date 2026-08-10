@@ -15,6 +15,17 @@ const ACTION_TILE = {
   activate: true,
 } satisfies LaunchpadTileDef;
 
+const MEDIA_TILE = {
+  id: "composer",
+  href: "/composer",
+  heading: "Composer",
+  descriptor: "Build and animate TKA sequences.",
+  span: "2x2",
+  color: "#a78bfa",
+  icon: "fa-pen-nib",
+  media: "mandala",
+} satisfies LaunchpadTileDef;
+
 describe("LaunchpadTile enhanced actions", () => {
   it("keeps the fallback href and intercepts an ordinary activation", async () => {
     const onActivate = vi.fn();
@@ -57,5 +68,21 @@ describe("LaunchpadTile enhanced actions", () => {
 
     expect(modifiedClick.defaultPrevented).toBe(false);
     expect(onActivate).toHaveBeenCalledOnce();
+  });
+
+  it("renders meaningful static media before the optional renderer activates", () => {
+    render(LaunchpadTile, {
+      tile: MEDIA_TILE,
+      active: false,
+      index: 0,
+    });
+
+    const poster = document.querySelector<HTMLElement>(
+      '[data-tka-static-media="composer"]'
+    );
+
+    expect(poster).toBeInstanceOf(HTMLElement);
+    expect(Number(getComputedStyle(poster!).opacity)).toBeGreaterThan(0);
+    expect(poster?.textContent).toContain("TKA");
   });
 });

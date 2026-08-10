@@ -120,6 +120,9 @@
   type LoadStatus = "idle" | "loading" | "loaded" | "error";
 
   const word = $derived(sequence ? simplifyRepeatedWord(sequence.word) : "");
+  const staticPreviewLetters = $derived(
+    sequence?.steps.slice(0, 8).map((step) => step.letter || "·") ?? []
+  );
 
   const heroVisibilityManager = new AnimationVisibilityStateManager({
     ephemeral: true,
@@ -218,8 +221,28 @@
 </script>
 
 {#snippet playerPlaceholder()}
-  {#if manualActivationAvailable}
-    <div class="demo-pending">
+  <div class="demo-pending">
+    <div
+      class="static-sequence-preview"
+      data-tka-static-preview
+      aria-hidden="true"
+    >
+      <div class="static-preview-orbit">
+        <span class="static-preview-dot static-preview-dot-blue"></span>
+        <span class="static-preview-dot static-preview-dot-red"></span>
+        <span class="tka-font static-preview-word">{word || "TKA"}</span>
+      </div>
+
+      {#if staticPreviewLetters.length > 0}
+        <div class="static-preview-letters">
+          {#each staticPreviewLetters as letter, index (`${letter}-${index}`)}
+            <span>{letter}</span>
+          {/each}
+        </div>
+      {/if}
+    </div>
+
+    {#if manualActivationAvailable}
       <button
         type="button"
         class="preview-load-button"
@@ -228,17 +251,21 @@
         <span aria-hidden="true">▶</span>
         <span>Play live preview</span>
       </button>
-    </div>
-  {:else}
-    <div class="demo-pending" role="status">
-      <span class="pending-dot" aria-hidden="true"></span>
-      <span>Preparing a live sequence...</span>
-    </div>
-  {/if}
+    {:else}
+      <div class="preview-loading" role="status">
+        <span class="pending-dot" aria-hidden="true"></span>
+        <span>Preparing a live sequence...</span>
+      </div>
+    {/if}
+  </div>
 {/snippet}
 
 {#snippet notationPlaceholder()}
-  <div class="notation-placeholder" aria-hidden="true"></div>
+  <div class="notation-placeholder" data-tka-static-notation aria-hidden="true">
+    {#each staticPreviewLetters as letter, index (`${letter}-${index}`)}
+      <span>{letter}</span>
+    {/each}
+  </div>
 {/snippet}
 
 <div
@@ -260,9 +287,7 @@
                footprint holds constant, so no layout shift either way. -->
           <LazyMount
             loader={() =>
-              import(
-                "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
-              )}
+              import("$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte")}
             active={active && !!sequence && !isNamedRouteMorphActive()}
             placeholder={playerPlaceholder}
             onStatusChange={(status) => (playerLoadStatus = status)}
@@ -452,11 +477,123 @@
     position: absolute;
     inset: 0;
     display: grid;
-    place-content: center;
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: center;
     justify-items: center;
-    gap: 0.8rem;
+    gap: clamp(0.75rem, 4cqi, 1.25rem);
+    padding: clamp(1rem, 6cqi, 2rem);
     color: oklch(0.7 0.04 270);
     font-size: var(--font-size-min, 0.875rem);
+  }
+  .static-sequence-preview {
+    position: relative;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    place-items: center;
+    align-self: stretch;
+    width: 100%;
+    min-height: 0;
+  }
+  .static-preview-orbit {
+    position: relative;
+    width: min(68cqi, 18rem);
+    max-width: 82%;
+    aspect-ratio: 1;
+    border: 1px solid oklch(0.7 0.12 285 / 0.32);
+    border-radius: 50%;
+    background:
+      radial-gradient(
+        circle at center,
+        oklch(0.62 0.16 285 / 0.18),
+        transparent 42%
+      ),
+      linear-gradient(
+        135deg,
+        oklch(0.58 0.16 255 / 0.08),
+        oklch(0.58 0.16 315 / 0.08)
+      );
+    box-shadow:
+      0 0 2.5rem oklch(0.58 0.16 285 / 0.14),
+      inset 0 0 2rem oklch(0.58 0.16 285 / 0.08);
+  }
+  .static-preview-orbit::before,
+  .static-preview-orbit::after {
+    content: "";
+    position: absolute;
+    border: 1px solid oklch(0.76 0.08 275 / 0.18);
+    border-radius: 50%;
+  }
+  .static-preview-orbit::before {
+    inset: 14%;
+  }
+  .static-preview-orbit::after {
+    inset: 28%;
+    border-color: oklch(0.76 0.08 275 / 0.26);
+  }
+  .static-preview-word {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    z-index: 1;
+    max-width: 78%;
+    overflow: hidden;
+    color: oklch(0.94 0.03 275);
+    font-size: clamp(1.4rem, 8cqi, 2.8rem);
+    line-height: 1;
+    letter-spacing: 0.08em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-shadow: 0 0 1.4rem oklch(0.68 0.14 285 / 0.42);
+    translate: -50% -50%;
+  }
+  .static-preview-dot {
+    position: absolute;
+    z-index: 1;
+    width: clamp(0.55rem, 3cqi, 0.85rem);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    box-shadow: 0 0 1rem currentColor;
+  }
+  .static-preview-dot-blue {
+    top: 16%;
+    left: 22%;
+    color: oklch(0.76 0.16 250);
+    background: currentColor;
+  }
+  .static-preview-dot-red {
+    right: 18%;
+    bottom: 20%;
+    color: oklch(0.72 0.18 20);
+    background: currentColor;
+  }
+  .static-preview-letters {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    gap: clamp(0.2rem, 1.5cqi, 0.45rem);
+    width: 100%;
+    margin-top: clamp(0.5rem, 2.5cqi, 0.85rem);
+  }
+  .static-preview-letters span,
+  .notation-placeholder span {
+    display: grid;
+    place-items: center;
+    min-width: clamp(1.5rem, 7cqi, 2.25rem);
+    aspect-ratio: 1;
+    color: oklch(0.88 0.04 275);
+    font-family: var(--font-family-tka, Georgia, serif);
+    font-size: clamp(0.75rem, 3.4cqi, 1rem);
+    line-height: 1;
+    border: 1px solid oklch(0.62 0.08 275 / 0.3);
+    border-radius: 0.45rem;
+    background: oklch(0.24 0.04 275 / 0.48);
+  }
+  .preview-loading {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    min-height: 44px;
   }
   .pending-dot {
     width: 0.85rem;
@@ -537,25 +674,17 @@
     font-size: var(--font-size-min, 0.875rem);
   }
   .notation-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.2rem, 1.4cqi, 0.45rem);
     width: 100%;
     height: 100%;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      oklch(0.72 0.04 270 / 0.08),
-      transparent
-    );
-    background-size: 200% 100%;
-    animation: notation-placeholder-pulse 1.8s ease-in-out infinite;
+    padding-inline: 0.5rem;
   }
-
-  @keyframes notation-placeholder-pulse {
-    from {
-      background-position: 100% 0;
-    }
-    to {
-      background-position: -100% 0;
-    }
+  .notation-placeholder span {
+    min-width: clamp(1.6rem, 8cqi, 2.35rem);
+    max-height: calc(100% - 0.75rem);
   }
   .notation-load-error button {
     min-height: 44px;
@@ -734,6 +863,10 @@
       border-top: 1px solid oklch(0.4 0.04 270 / 0.14);
       border-radius: 18px;
     }
+    .with-notation-strip .notation-placeholder {
+      flex-direction: column;
+      padding: 0.5rem 0;
+    }
     .with-notation-strip .reroll-row {
       margin-top: 0.35rem;
     }
@@ -745,9 +878,6 @@
 
   @media (prefers-reduced-motion: reduce) {
     .pending-dot {
-      animation: none;
-    }
-    .notation-placeholder {
       animation: none;
     }
     .reroll-button {

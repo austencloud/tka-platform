@@ -108,7 +108,7 @@ describe("homepage SSR preload policy", () => {
 
   it("removes application boot blocks from the root document", () => {
     const html = [
-      "<head><meta charset=\"utf-8\">",
+      '<head><meta charset="utf-8">',
       "<!-- tka-root-app-only:start -->",
       "<script>window.bootApplicationShell()</script>",
       "<!-- tka-root-app-only:end -->",
@@ -180,14 +180,12 @@ describe("homepage SSR preload policy", () => {
     expect(result.html).toContain("window.__tkaLandingConstrained");
     expect(result.html).toContain("window.__tkaPreloadLandingModules");
     expect(result.html).toContain('window.addEventListener("load",start');
-    expect(result.html).toContain(
-      'return import("/_app/env.js")'
-    );
+    expect(result.html).toContain('return import("/_app/env.js")');
   });
 });
 
 describe("homepage constrained enhancement boundaries", () => {
-  it("keeps analytics, decorative media, and live renderers off slow links", () => {
+  it("keeps heavy renderers off slow links without shipping empty media boxes", () => {
     const layout = source("src/routes/+layout.svelte");
     const landingEvents = source("src/lib/shared/analytics/landing-events.ts");
     const marketingChrome = source(
@@ -199,6 +197,12 @@ describe("homepage constrained enhancement boundaries", () => {
     const launchpad = source(
       "src/lib/shared/landing/components/launchpad/LaunchpadGrid.svelte"
     );
+    const launchpadTile = source(
+      "src/lib/shared/landing/components/launchpad/LaunchpadTile.svelte"
+    );
+    const sequenceHero = source(
+      "src/lib/shared/landing/components/SequenceHeroDemo.svelte"
+    );
 
     expect(layout).toContain("if (!isConstrainedConnection())");
     expect(landingEvents).toContain("if (isConstrainedConnection()) return;");
@@ -206,9 +210,13 @@ describe("homepage constrained enhancement boundaries", () => {
     expect(homeHero).toContain("if (isConstrainedConnection()) return;");
     expect(homeHero).toContain("connectionAware={true}");
     expect(launchpad).toContain("if (constrainedConnection) return;");
+    expect(launchpadTile).toContain("data-tka-static-media");
+    expect(launchpadTile).toContain('mediaLoaded = status === "loaded"');
+    expect(sequenceHero).toContain("data-tka-static-preview");
+    expect(sequenceHero).toContain("data-tka-static-notation");
   });
 
-  it("offers the live preview immediately instead of waiting for an idle callback", () => {
+  it("offers a static sequence immediately with live playback on request", () => {
     const sequenceHero = source(
       "src/lib/shared/landing/components/SequenceHeroDemo.svelte"
     );
@@ -221,6 +229,7 @@ describe("homepage constrained enhancement boundaries", () => {
       "manualActivationAvailable = $state(connectionAware);"
     );
     expect(sequenceHero).toContain("manualActivationRequested = true;");
+    expect(sequenceHero).toContain("staticPreviewLetters");
     expect(sequenceHero).toContain("Play live preview");
   });
 
