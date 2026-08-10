@@ -11,6 +11,11 @@ Everything below is Austen's to do. The code is written, tested, and merged; it
 cannot work until the Meta app grants these permissions, and **app review is the
 long pole** — budget days, not minutes.
 
+Until then the entry points are dark: `META_POSTING_ENABLED` in
+`src/lib/shared/share/services/meta-publish.ts` is `false`, so the share sheet
+shows the handoff row and nothing else. Flip it for the live test in step 4,
+and leave it on only once that test passes.
+
 ## What the flow needs to be true
 
 - The Instagram account is a **Business or Creator** account. Personal accounts
@@ -98,7 +103,9 @@ GET without state must return the branded failure page, not the SPA shell.
 
 ## 4. Live test, in this order
 
-Use an app-role account while the app is still in development mode.
+Use an app-role account while the app is still in development mode. Set
+`META_POSTING_ENABLED = true` on the deployment under test first — with it off
+the sheet never shows a connect chip and step 1 has nothing to click.
 
 1. Open a saved sequence in the viewer, then Share. With nothing connected, the
    sheet shows the handoff row and two connect chips.
@@ -121,7 +128,8 @@ Use an app-role account while the app is still in development mode.
    silent failure.
 
 Only after all nine pass with an app-role account: submit for App Review with a
-screencast of steps 2–6, then move the app to Live.
+screencast of steps 2–6, then move the app to Live. `META_POSTING_ENABLED` ships
+as `true` at that point and not before.
 
 ## What breaks it later
 

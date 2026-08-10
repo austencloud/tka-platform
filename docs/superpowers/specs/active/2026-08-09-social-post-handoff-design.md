@@ -190,6 +190,7 @@ they still work when a token expires or review lapses.
 | Scheduled long-lived-token refresh (24h) | `refreshMetaTokens.ts` |
 | Client seam — status subscription, callables, error copy | `src/lib/shared/share/services/meta-publish.ts` |
 | Sheet UI — post CTAs, Page picker, setup row | `PostShareSheet.svelte` |
+| Kill switch, off until review passes — `META_POSTING_ENABLED` | `meta-publish.ts` |
 | Worker proxy (renamed, now carries both flows) | `src/lib/server/auth/meta-oauth-proxy.ts` |
 
 **Decisions worth keeping**
@@ -210,6 +211,10 @@ they still work when a token expires or review lapses.
   the setup row past the sheet's width.
 - Per Austen's call, **no public-URL warning and no consent gate.** These are
   sequences, not personal data.
+
+- Posting ships behind `META_POSTING_ENABLED = false`. Pushing `main` deploys
+  the site but not the functions, so an ungated connect chip would reach
+  production ahead of the callable it opens.
 
 **Still Austen's, and still the long pole:** the Meta app configuration and
 review for `instagram_business_content_publish`, `pages_manage_posts` and
