@@ -5,6 +5,7 @@ import {
   I18N_MESSAGES_WATCH_PATH,
 } from "./src/config/vite-dev-watch-policy";
 import { createViteDependencyCachePlan } from "./src/config/vite-dependency-cache";
+import { createViteDependencyRefreshPlugin } from "./src/config/vite-plugin-dependency-refresh";
 import { featureGatePlugin } from "./src/config/vite-plugin-feature-gate";
 import { museumPlacementPlugin } from "./src/lib/features/museum/dev/museum-placement-plugin";
 import { composerPlacementPlugin } from "./src/lib/shared/3d/scene-composer/persistence/composer-placement-plugin";
@@ -876,6 +877,7 @@ export default defineConfig(({ command, mode }) => ({
     ...getEnabledFeaturesDefineMap(),
   },
   plugins: [
+    createViteDependencyRefreshPlugin({ projectRoot: dirname }),
     featureGatePlugin(),
     // realtime-bpm-analyzer is browser-only (AudioContext) and has broken
     // package exports that Vite/Rollup can't resolve in some environments

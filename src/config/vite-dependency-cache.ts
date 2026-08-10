@@ -2,6 +2,7 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import path from "node:path";
 
 const DEFAULT_VITE_DEV_PORT = 5173;
+const DEPENDENCY_STATE_FILES = ["package.json", "pnpm-lock.yaml"] as const;
 
 interface OptimizedDependencyMetadata {
   optimized?: Record<string, { src?: unknown }>;
@@ -54,6 +55,22 @@ export function getViteDependencyCacheDir(
   port: number
 ): string {
   return path.resolve(projectRoot, "node_modules/.vite", `port-${port}`);
+}
+
+export function getViteDependencyStatePaths(projectRoot: string): string[] {
+  return DEPENDENCY_STATE_FILES.map((fileName) =>
+    path.resolve(projectRoot, fileName)
+  );
+}
+
+export function isViteDependencyStatePath(
+  projectRoot: string,
+  candidatePath: string
+): boolean {
+  const normalizedCandidate = path.resolve(candidatePath);
+  return getViteDependencyStatePaths(projectRoot).some(
+    (statePath) => normalizedCandidate === statePath
+  );
 }
 
 function getPackageName(dependencyId: string): string | null {
