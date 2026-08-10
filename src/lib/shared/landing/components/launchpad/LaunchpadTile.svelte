@@ -151,9 +151,23 @@
                   </span>
                 </span>
               {:else if tile.media === "guide-cover"}
-                <span class="poster-book">
-                  <small>THE</small>
-                  <strong>KINETIC<br />ALPHABET</strong>
+                <!-- Baked render of the real cover (GuideCover, navy edition)
+                     via /guide/level-1/cover-lab at 960px. The live component
+                     sits at the deep end of the sequence-engine + settings
+                     import graph, which put this tile's art 12-26s behind
+                     first paint; a 50KB webp of identical pixels is SSR'd
+                     here and paints with the first image wave, no JS at all.
+                     Re-bake from cover-lab if the locked cover changes. -->
+                <span class="guide-cover-box">
+                  <img
+                    class="guide-cover-img"
+                    src="/images/landing/guide-cover-navy.webp"
+                    alt=""
+                    width="960"
+                    height="1242"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </span>
               {:else if tile.media === "pictograph"}
                 <span class="poster-timeline">
@@ -245,17 +259,6 @@
                 prefetch={visible}
                 onStatusChange={handleMediaStatus}
                 props={{ startDelayMs: index * 900 }}
-              />
-            </span>
-          {:else if tile.media === "guide-cover"}
-            <span class="guide-cover-box">
-              <LazyMount
-                loader={() =>
-                  import("$lib/features/store/components/BookCoverArt.svelte")}
-                {active}
-                prefetch={visible}
-                onStatusChange={handleMediaStatus}
-                props={{ width: "100%" }}
               />
             </span>
           {:else if tile.media === "alphabet-strip"}
@@ -573,40 +576,6 @@
     letter-spacing: 0.16em;
   }
 
-  .poster-book {
-    position: relative;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-width: 0;
-    width: min(44%, 9rem);
-    aspect-ratio: 4 / 5;
-    padding: 1.2rem;
-    overflow: hidden;
-    color: oklch(0.94 0.02 255);
-    border: 1px solid color-mix(in oklch, var(--c) 64%, white 12%);
-    border-left-width: 0.55rem;
-    border-radius: 0.35rem 0.75rem 0.75rem 0.35rem;
-    background: linear-gradient(
-      145deg,
-      color-mix(in oklch, var(--c) 42%, oklch(0.2 0.04 255)),
-      oklch(0.16 0.035 255)
-    );
-    box-shadow: 0 1rem 2.5rem -1.2rem rgba(0, 0, 0, 0.82);
-    rotate: 3deg;
-  }
-  .poster-book small {
-    margin-bottom: 0.45rem;
-    font-size: var(--font-size-compact, 0.75rem);
-    letter-spacing: 0.2em;
-  }
-  .poster-book strong {
-    font-family: Georgia, serif;
-    font-size: clamp(0.9rem, 3cqi, 1.35rem);
-    line-height: 1.05;
-  }
-
   .poster-timeline {
     display: grid;
     grid-template-columns: auto minmax(4rem, 9rem) auto;
@@ -741,6 +710,19 @@
     top: 50%;
     translate: 0 -50%;
     width: 8.75rem;
+  }
+
+  /* Book framing carried over from BookCoverArt.svelte (spine, squared edge,
+     tilt) so the baked cover reads as the same object the shop renders live. */
+  .guide-cover-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 4px 10px 10px 4px;
+    border-left: 5px solid #8b6cff;
+    box-shadow: 14px 18px 36px rgba(0, 0, 0, 0.45);
+    background: #14142b;
+    transform: rotate(-2deg);
   }
 
   .alphabet-box {
@@ -1005,17 +987,9 @@
       width: auto;
       height: 82%;
     }
-    .tile.variant-home .poster-card-stack,
-    .tile.variant-home .poster-book {
+    .tile.variant-home .poster-card-stack {
       width: auto;
       height: 72%;
-    }
-    .tile.variant-home.t-guide .poster-book {
-      height: 58%;
-      padding: 0.45rem;
-    }
-    .tile.variant-home.t-guide .poster-book strong {
-      font-size: 0.75rem;
     }
     .tile.variant-home.t-guide .card .body h2 {
       max-width: 38%;
@@ -1247,8 +1221,7 @@
       opacity: 0.86;
     }
     .tile.variant-home .poster-orbit,
-    .tile.variant-home .poster-card-stack,
-    .tile.variant-home .poster-book {
+    .tile.variant-home .poster-card-stack {
       width: auto;
       height: 82%;
     }
@@ -1271,12 +1244,6 @@
     .tile.variant-home .poster-timeline strong,
     .tile.variant-home .poster-dictionary span {
       font-size: var(--font-size-compact, 0.75rem);
-    }
-    .tile.variant-home .poster-book {
-      padding: 0.45rem;
-    }
-    .tile.variant-home .poster-book strong {
-      font-size: 0.65rem;
     }
     .tile.variant-home .poster-card-front small {
       font-size: 0.6rem;

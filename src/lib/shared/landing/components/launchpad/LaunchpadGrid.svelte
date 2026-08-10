@@ -75,7 +75,13 @@
     const queuedMedia = new Set<string>();
     const mediaIds = new Set(
       tiles
-        .filter((tile) => tile.media || tile.mediaLoader)
+        // guide-cover is a static SSR'd <img> (baked cover art), not a lazy
+        // component mount — queueing it would park the stagger on a tile that
+        // never reports settled.
+        .filter(
+          (tile) =>
+            (tile.media && tile.media !== "guide-cover") || tile.mediaLoader
+        )
         .map((tile) => tile.id)
     );
 
