@@ -337,8 +337,22 @@ then `new_page` (background: true) on the target URL, then
   with `list_network_requests` scoped to the page before blaming a subsystem.
 - Cloudflare edge can serve stale responses mid-rollout. Verify deploys with
   cache-busting query params before concluding a deploy failed.
-- The gated GitHub Action only fires a webhook; Cloudflare builds separately.
-  A poll started before the webhook fires will report a false timeout.
+- **Nothing reaches production while CI is red, and the failure is silent.**
+  Cloudflare's own auto-deploy for the production branch is turned **OFF**
+  (`.github/workflows/pages-deploy.yml`). The only path is the deploy hook,
+  fired by `Deploy Pages (gated)`, which runs on `workflow_run` completion of
+  `Web App CI` and proceeds only `if workflow_run.conclusion == 'success'`.
+  A red suite means the deploy job reports **`skipped`** — not `failure` — so
+  a casual glance at the run list looks fine while production is frozen.
+  **Check `gh run list` for a green `Web App CI` before polling production for
+  anything.** On 2026-08-10 this cost 15 minutes of polling a build that was
+  never going to start, on a red suite owned by an unrelated session.
+- The gated action only fires a webhook; Cloudflare builds separately, so
+  there is still a lag after CI goes green. A poll started before the webhook
+  fires will report a false timeout.
+- `workflow_dispatch` can force a deploy past the gate. That ships `main` with
+  a red suite, which is the exact thing the gate exists to prevent — it is
+  Austen's call, never an agent's.
 
 **Files that matter:**
 
