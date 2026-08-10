@@ -80,7 +80,7 @@
     IVideoExportOrchestrator,
     VideoExportProgress,
   } from "$lib/shared/compose/domain/video-export-types";
-  import type { OrchestratorContext } from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
+  import type { OrchestratorContext } from "$lib/shared/sequence-viewer/domain/viewer-orchestrator-context";
   import { setScanCardCloudProbe } from "$lib/shared/sequence-viewer/scan-card-cloud-context";
   import {
     guideTargetForLetter,

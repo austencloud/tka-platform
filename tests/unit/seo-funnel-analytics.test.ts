@@ -35,8 +35,8 @@ describe("SEO acquisition funnel analytics", () => {
     const videoExporter = read(
       "src/lib/shared/sequence-viewer/components/export-coordinator.svelte.ts"
     );
-    const viewer = read(
-      "src/lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte"
+    const viewerShareActions = read(
+      "src/lib/shared/sequence-viewer/services/viewer-share-actions.ts"
     );
 
     expect(imageExporter).toContain("if (!shareCanceled)");
@@ -45,7 +45,7 @@ describe("SEO acquisition funnel analytics", () => {
       "result.success && !result.canceled && !measuredVideoUrls.has(url)"
     );
     expect(videoExporter).toContain('exportFormat: "mp4"');
-    expect(viewer).toContain('logShareAction("sequence_share"');
-    expect(viewer).toContain('logShareAction("link_copy"');
+    expect(viewerShareActions).toContain('logShareAction("sequence_share"');
+    expect(viewerShareActions).toContain('logShareAction("link_copy"');
   });
 });

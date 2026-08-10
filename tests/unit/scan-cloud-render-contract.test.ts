@@ -80,8 +80,12 @@ describe("QR scan cloud-render contract", () => {
     const orchestrator = source(
       "src/lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte"
     );
-    expect(orchestrator).toMatch(
-      /if \(!cloudBackedScan\) \{\s*cellPreWarmer\.preWarmSequence/
+    const interactiveServices = source(
+      "src/lib/shared/sequence-viewer/state/viewer-interactive-services-state.svelte.ts"
+    );
+    expect(orchestrator).toContain("cloudBackedScan,");
+    expect(interactiveServices).toMatch(
+      /if \(!inputs\.cloudBackedScan\) \{\s*dependencies\.preWarmSequence/
     );
   });
 });

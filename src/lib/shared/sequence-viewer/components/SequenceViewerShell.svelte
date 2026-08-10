@@ -29,7 +29,7 @@
   import ViewerContentRail from "./ViewerContentRail.svelte";
   import ViewerModeBottomBar from "./ViewerModeBottomBar.svelte";
   import { dockTrayState } from "./ControlDock.svelte";
-  import type { OrchestratorContext } from "./SequenceViewerOrchestrator.svelte";
+  import type { OrchestratorContext } from "../domain/viewer-orchestrator-context";
   import VideoGallery from "./VideoGallery.svelte";
   import ViewerHeader from "./ViewerHeader.svelte";
   import FullscreenControls from "./FullscreenControls.svelte";

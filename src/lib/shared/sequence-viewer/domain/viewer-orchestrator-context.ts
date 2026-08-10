@@ -1,0 +1,184 @@
+import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
+import type { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
+import type {
+  AnimationPanelState,
+  PlaybackMode,
+} from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
+import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
+import type { TempoPracticeConfig } from "$lib/shared/sequence-viewer/services/tempo-practice-orchestrator";
+import type { PracticeViewPrefs } from "$lib/shared/sequence-viewer/state/practice-view-prefs.svelte";
+import type { createTempoPracticeState } from "$lib/shared/sequence-viewer/state/tempo-practice-state.svelte";
+import type { createViewerState } from "$lib/shared/sequence-viewer/state/viewer-state.svelte";
+import type { SequenceViewerVisibilityState } from "$lib/shared/sequence-viewer/state/viewer-visibility-state.svelte";
+import type { TunnelViewController } from "$lib/shared/sequence-viewer/tunnel/tunnel-view-controller.svelte";
+import type { MandalaViewerController } from "$lib/shared/sequence-viewer/state/mandala-viewer-controller.svelte";
+import type { PendingActionType } from "$lib/shared/sequence-viewer/services/pending-action-queue";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
+import type {
+  ImageCompositionProps,
+  PropRenderingProps,
+  ViewerPlaybackState,
+} from "./viewer-prop-groups";
+import type { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
+
+export type ViewMode = "animation" | "image" | "split";
+export type ExportType = "animation" | "image" | "both";
+export type PlaybackSource = "animation" | "video";
+
+export interface OrchestratorContext {
+  sequence: SequenceData | null;
+  effectiveSequence: SequenceData | null;
+  hasSequence: boolean;
+
+  isPlayingLocal: boolean;
+  currentStepLocal: number;
+  bpmLocal: number;
+  currentLetter: Letter | null;
+  currentStepData: StartPositionData | StepData | null;
+  highlightedStepIndex: number | null;
+  animationLoading: boolean;
+  cardReady: boolean;
+  ensureInteractiveServices: () => void;
+
+  playbackSource: PlaybackSource;
+  videoPlaybackBeatIndex: number | null;
+  activeStepMap: StepMap | null;
+  setPlaybackSource: (source: PlaybackSource) => void;
+  setActiveStepMap: (beatMap: StepMap | null) => void;
+  onVideoTimeUpdate: (currentTime: number) => void;
+  modalAnimationState: AnimationPanelState;
+
+  viewMode: ViewMode;
+  isMobile: boolean;
+  isFullscreen: boolean;
+  fullscreenControlsVisible: boolean;
+  fullscreenStackVertical: boolean;
+  editingPane: "animation" | "image" | "video-upload" | null;
+
+  isExportMode: boolean;
+  exportType: ExportType | null;
+  exportOptions: ReturnType<typeof getExportOptionsState>;
+  isExporting: boolean;
+  exportProgress: VideoExportProgress | null;
+  exportError: string | null;
+  previewBlobUrl: string | null;
+  singlePlayDuration: number;
+
+  practiceActive: boolean;
+  practiceRunning: boolean;
+  practiceCountdown: number;
+  practiceState: ReturnType<typeof createTempoPracticeState>;
+  practiceViewPrefs: PracticeViewPrefs;
+  metronomeEnabled: boolean;
+  handleToggleMetronome: () => void;
+  mirrorEnabled: boolean;
+  handleToggleMirror: () => void;
+
+  bluePropType: PropType | undefined;
+  redPropType: PropType | undefined;
+  catDogModeEnabled: boolean | undefined;
+  handlePropTypeChange: (propType: PropType) => void;
+
+  imgShowWord: boolean;
+  imgShowStartPos: boolean;
+  imgShowDifficulty: boolean;
+  imgShowStepNumbers: boolean;
+  imgShowNotes: boolean;
+  imgDarkMode: boolean;
+
+  isSyncToggling: boolean;
+  isSyncActive: boolean;
+  isSyncConnected: boolean;
+  canvasReady: boolean;
+  onRenderProgress: (loaded: number, total: number) => void;
+
+  isLoggedIn: boolean;
+  isOwned: boolean;
+  isSaved: boolean;
+  isPublished: boolean;
+  isFavorite: boolean;
+  handleFavoriteToggle: () => void;
+  handlePublishAction: () => Promise<void>;
+  handleUnpublishAction: () => Promise<void>;
+
+  playbackMode: PlaybackMode;
+  handlePlaybackModeChange: (mode: PlaybackMode) => void;
+  handlePlaybackToggle: () => void;
+  handleBpmChange: (bpm: number) => void;
+  handleStepClick: (stepIndex: number) => void;
+  handleProgressBarSeek: (targetStep: number) => void;
+  handleProgressBarScrubStart: () => void;
+  handleProgressBarScrubEnd: () => void;
+  enterEditMode: (pane: "animation" | "image" | "video-upload") => void;
+  exitEditMode: () => void;
+  enterFullscreen: () => void;
+  immersive: boolean;
+  toggleImmersive: (host: HTMLElement | null) => Promise<void> | void;
+  exitFullscreen: () => void;
+  handleFullscreenTap: () => void;
+  handleExport: () => Promise<void>;
+  resolvedCardAutoLayout: ResolvedAutoLayout | null;
+  setResolvedCardAutoLayout: (layout: ResolvedAutoLayout | null) => void;
+  handleCanvasReady: (canvas: HTMLCanvasElement | null) => void;
+  handleSyncToggle: () => Promise<void>;
+  handleOpenInCompose: (
+    preset?: "stagger" | "mirror" | "combo-export"
+  ) => Promise<void>;
+  handleEdit: () => void;
+  handleSave: () => void;
+  handleVideoUpload: () => Promise<void>;
+  handleShare: () => void;
+  handleCopyLink: () => Promise<boolean>;
+  handleDelete: () => Promise<void>;
+  handleOpenInBrowser: (pendingType?: PendingActionType | null) => void;
+  invokeGatedAction: (
+    type: PendingActionType,
+    realHandler: (() => void) | (() => Promise<void>) | undefined
+  ) => void;
+  openSignInPrompt: () => void;
+  handleUnifiedDarkModeToggle: () => void;
+  handlePracticeStart: () => void;
+  enterPracticeMode: () => void;
+  exitPracticeMode: () => void;
+  handlePracticeStepLevel: (dir: 1 | -1) => void;
+  handlePracticeToggleHold: () => void;
+  handlePracticeSetConfig: (patch: Partial<TempoPracticeConfig>) => void;
+  handlePracticeStop: () => void;
+  onClose: () => void;
+  stepHalfBeatBackward: () => void;
+  stepHalfBeatForward: () => void;
+  stepFullBeatBackward: () => void;
+  stepFullBeatForward: () => void;
+  restartToStart: () => void;
+  handleCancelExport: () => void;
+  handleRetryExport: () => void;
+  dismissPreview: () => void;
+  saveExportedVideo: () => Promise<void>;
+
+  playbackController: AnimationPlaybackController | null;
+  handleArtExport: (args: {
+    artType: "mandala" | "tunnel";
+    controller: TunnelViewController;
+    mandalaController: MandalaViewerController;
+  }) => void;
+
+  splitPanePlayback: ViewerPlaybackState;
+  splitPaneImageComposition: ImageCompositionProps;
+  splitPanePropRendering: PropRenderingProps;
+
+  renderMode: "2d" | "3d";
+  viewer3DState: ReturnType<typeof createViewer3DState>;
+  countdownValue: number;
+  isRecording3D: boolean;
+  recordingElapsed: number;
+  handleStopRecording: () => void;
+
+  viewerState: ReturnType<typeof createViewerState>;
+  viewerVisibility: SequenceViewerVisibilityState;
+}

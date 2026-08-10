@@ -34,7 +34,7 @@
     type SequenceRouteHandoff,
   } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import SequenceViewerOrchestrator from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
-  import type { OrchestratorContext } from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
+  import type { OrchestratorContext } from "$lib/shared/sequence-viewer/domain/viewer-orchestrator-context";
   import SequenceViewerShell from "$lib/shared/sequence-viewer/components/SequenceViewerShell.svelte";
 
   import {

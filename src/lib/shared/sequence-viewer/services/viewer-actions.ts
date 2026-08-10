@@ -1,4 +1,4 @@
-import type { OrchestratorContext } from "../components/SequenceViewerOrchestrator.svelte";
+import type { OrchestratorContext } from "../domain/viewer-orchestrator-context";
 import { VIDEO_UPLOAD_ENABLED } from "../config/viewer-feature-flags";
 
 // One profile since the /q scan page adopted SequenceViewerShell (the drawer's

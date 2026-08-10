@@ -1,5 +1,5 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { OrchestratorContext } from "../components/SequenceViewerOrchestrator.svelte";
+import type { OrchestratorContext } from "../domain/viewer-orchestrator-context";
 import { buildViewerShareActions } from "../services/viewer-shell-model";
 
 type ViewerShareActionId = "share-sequence" | "send-sequence" | "copy-link";

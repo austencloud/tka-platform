@@ -15,7 +15,7 @@ import {
   buildPracticeConfigProperties,
   buildVideoExportAnalyticsConfig,
 } from "../services/viewer-shell-model";
-import type { OrchestratorContext } from "../components/SequenceViewerOrchestrator.svelte";
+import type { OrchestratorContext } from "../domain/viewer-orchestrator-context";
 
 export interface ViewerShellExportOverrides {
   onVideoExport: () => void;
