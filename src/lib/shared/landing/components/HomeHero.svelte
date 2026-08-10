@@ -13,6 +13,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
+  import { page } from "$app/state";
   import SequenceHeroDemo from "./SequenceHeroDemo.svelte";
   import { createHeroAct } from "$lib/shared/landing/data/hero-act.svelte";
   import { FALLBACK_DEMO } from "$lib/shared/landing/data/per-visit-demo";
@@ -70,6 +71,7 @@
     showNotationStrip={true}
     showWordHeader={true}
     connectionAware={true}
+    serverReducedData={page.data.saveData === true}
   />
 
   <nav class="hero-actions" aria-label="Start here">

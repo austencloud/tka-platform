@@ -227,8 +227,15 @@ describe("homepage constrained enhancement boundaries", () => {
     // everyone instead of only genuine data-saver users.
     expect(sequenceHero).toMatch(/connectionAware\s*&&\s*prefersReducedData\(\)/);
     expect(sequenceHero).toContain("manualActivationAvailable = true;");
+    // The seed is the SERVER's Save-Data reading, never `connectionAware`
+    // alone. Seeding it from connectionAware shipped the degraded hero to
+    // every visitor at SSR and relied on hydration to undo it, which put
+    // "Play live preview" on screen for seconds on a healthy connection.
     expect(sequenceHero).toContain(
-      "manualActivationAvailable = $state(connectionAware);"
+      "manualActivationAvailable = $state(connectionAware && serverReducedData);"
+    );
+    expect(source("src/routes/+layout.server.ts")).toContain(
+      'request.headers.get("save-data") === "on"'
     );
     expect(sequenceHero).toContain("manualActivationRequested = true;");
     expect(sequenceHero).toContain("staticPreviewLetters");

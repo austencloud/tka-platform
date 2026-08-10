@@ -59,6 +59,7 @@
     showWordHeader = false,
     loadPriority = "idle",
     connectionAware = false,
+    serverReducedData = false,
   }: {
     /** Null while the host is still producing the sequence (e.g. /composer's
         per-visit generated demo) — the stage box and caption line keep their
@@ -115,6 +116,10 @@
     /** Leaves the live player behind an explicit tap on slow links and
         Save-Data while preserving the complete reserved stage. */
     connectionAware?: boolean;
+    /** The server's reading of the `Save-Data` request header. This decides
+        what SSR ships, so a visitor who has not asked for reduced data never
+        receives the degraded hero at all — see manualActivationAvailable. */
+    serverReducedData?: boolean;
   } = $props();
 
   type LoadStatus = "idle" | "loading" | "loaded" | "error";
@@ -156,7 +161,16 @@
   // Chrome reports effectiveType '3g' at well under 1 Mbps on gigabit
   // desktops, which parked the hero on "Play live preview" for people who
   // should have seen it playing immediately.
-  let manualActivationAvailable = $state(connectionAware);
+  // Seeded from the SERVER's Save-Data reading, not from `connectionAware`
+  // alone. Seeding it `true` for every connection-aware host meant SSR shipped
+  // "Play live preview" and the poster markup to everyone, and the real hero
+  // only appeared once hydration ran the near-viewport observer below — which
+  // defers behind requestIdleCallback (2500ms timeout) on a main thread busy
+  // rendering pictographs. Measured 2026-08-09 on production: `load` at 1.9s
+  // but assets still arriving past 12.9s, with the degraded hero on screen for
+  // most of it. The degraded page is now opt-in, which is what the data-saver
+  // signal always meant.
+  let manualActivationAvailable = $state(connectionAware && serverReducedData);
   let manualActivationRequested = $state(false);
   let playerLoadStatus = $state<LoadStatus>("idle");
   let notationLoadStatus = $state<LoadStatus>("idle");
