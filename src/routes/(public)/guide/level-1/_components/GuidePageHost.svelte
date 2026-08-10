@@ -30,7 +30,11 @@
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { setGuidePrintMode } from "../_data/guide-data-context";
   import { loadOverrides } from "../_data/guide-overrides.svelte";
-  import type { GuideFrame } from "../_data/guide-frame-prefs.svelte";
+  import {
+    guideFramePrefs,
+    setGuideFrame,
+    type GuideFrame,
+  } from "../_data/guide-frame-prefs.svelte";
   import "../_styles/guide.css";
 
   let { slug }: { slug: string } = $props();
@@ -50,10 +54,17 @@
   );
 
   // Default FLOW so the prerendered (crawlable) HTML is the mobile-first reflow.
-  // Local state - NOT guideFramePrefs, which defaults to "sheet" on the server
-  // and would make prerender emit the mobile-hostile 8.5in sheet. Sheet is an
-  // opt-in toggle. Pages with no reflow content yet render sheet-only.
+  // Starts as local state - NOT guideFramePrefs, which defaults to "sheet" on
+  // the server and would make prerender emit the mobile-hostile 8.5in sheet.
+  // After mount (client only) the saved preference is adopted and kept in sync
+  // through setGuideFrame, so the Page/Reflow choice survives reloads and HMR
+  // and follows the reader's own preference owner. Pages with no reflow content
+  // render sheet-only.
   let frame = $state<GuideFrame>(canFlow ? "flow" : "sheet");
+  function pickFrame(v: GuideFrame) {
+    frame = v;
+    setGuideFrame(v);
+  }
   $effect(() => {
     // If a page has no reflow content, force sheet (the toggle is hidden too).
     if (!canFlow && frame === "flow") frame = "sheet";
@@ -112,7 +123,65 @@
     return () => ro.disconnect();
   });
 
+  // Per-topic scroll persistence. The topic pages scroll the WINDOW (the route
+  // is normal document flow), and SvelteKit's own restore fires before the
+  // async pictographs have grown the page, so a dev-server full reload (HMR)
+  // used to clamp the position back to the top. Same recipe as GuideReader:
+  // persist on scroll (rAF-throttled, guarded during restore), restore with a
+  // retry loop that waits for the document to be tall enough to land there.
+  const TOPIC_SCROLL_KEY = $derived(`guide-topic-scroll-${slug}`);
+  let restoringScroll = false;
+  function persistScroll() {
+    if (restoringScroll) return;
+    try {
+      sessionStorage.setItem(TOPIC_SCROLL_KEY, String(window.scrollY));
+    } catch {
+      // sessionStorage unavailable - position just won't persist.
+    }
+  }
   onMount(() => {
+    // Adopt the saved Page/Reflow preference (client-only so prerender stays
+    // on the crawlable flow default).
+    if (canFlow && guideFramePrefs.frame !== frame) {
+      frame = guideFramePrefs.frame;
+    }
+
+    let scrollRaf = 0;
+    const onWinScroll = () => {
+      if (scrollRaf) return;
+      scrollRaf = requestAnimationFrame(() => {
+        scrollRaf = 0;
+        persistScroll();
+      });
+    };
+    window.addEventListener("scroll", onWinScroll, { passive: true });
+
+    let cancelled = false;
+    const target = (() => {
+      try {
+        return Number(sessionStorage.getItem(TOPIC_SCROLL_KEY) ?? 0);
+      } catch {
+        return 0;
+      }
+    })();
+    if (target > 0) {
+      restoringScroll = true;
+      let attempts = 0;
+      const park = () => {
+        if (cancelled) return;
+        const maxScroll =
+          document.documentElement.scrollHeight - window.innerHeight;
+        if (maxScroll >= target || attempts >= 120) {
+          window.scrollTo({ top: Math.min(target, Math.max(0, maxScroll)), behavior: "instant" });
+          restoringScroll = false;
+          return;
+        }
+        attempts += 1;
+        requestAnimationFrame(park);
+      };
+      requestAnimationFrame(park);
+    }
+
     loadOverrides();
     const root = document.documentElement;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -126,6 +195,9 @@
     themeObs.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
 
     return () => {
+      cancelled = true;
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
+      window.removeEventListener("scroll", onWinScroll);
       mq.removeEventListener("change", resolveTheme);
       themeObs.disconnect();
     };
@@ -157,7 +229,7 @@
               { value: "sheet", label: "Page" },
             ]}
             value={frame}
-            onchange={(v: GuideFrame) => (frame = v)}
+            onchange={pickFrame}
             size="sm"
             color="accent"
           />
