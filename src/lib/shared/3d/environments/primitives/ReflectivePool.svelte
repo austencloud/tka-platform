@@ -24,6 +24,8 @@
     depth: number;
     /** Centre of the surface in world space. */
     position: [number, number, number];
+    /** Local XY shoreline in metres for a non-rectangular body of water. */
+    outline?: Array<[number, number]>;
     textureWidth?: number;
     textureHeight?: number;
     deepColor?: string | number;
@@ -33,6 +35,8 @@
     rippleScale?: number;
     rippleStrength?: number;
     foamWidth?: number;
+    /** Allows natural rock or terrain to own the shoreline instead of foam. */
+    foamOpacity?: number;
     /** Metres over which the rim colour gives way to the deep colour. */
     shoreFade?: number;
     /** Ripple speed multiplier. Still water is not motionless water. */
@@ -55,6 +59,7 @@
     uRippleScale: props.rippleScale ?? defaults.rippleScale,
     uRippleStrength: props.rippleStrength ?? defaults.rippleStrength,
     uFoamWidth: props.foamWidth ?? defaults.foamWidth,
+    uFoamOpacity: props.foamOpacity ?? defaults.foamOpacity,
     uShoreFade: props.shoreFade ?? defaults.shoreFade,
     uTime: 0,
   };
@@ -77,6 +82,7 @@
   width={props.width}
   height={props.depth}
   position={props.position}
+  outline={props.outline}
   rotation={[-Math.PI / 2, 0, 0]}
   textureWidth={props.textureWidth ?? 1024}
   textureHeight={props.textureHeight ?? 1024}

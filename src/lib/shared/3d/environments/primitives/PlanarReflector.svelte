@@ -12,11 +12,24 @@
   import { useThrelte } from "@threlte/core";
   import { onMount } from "svelte";
   import { Reflector } from "three/examples/jsm/objects/Reflector.js";
-  import { PlaneGeometry, type ShaderMaterial } from "three";
+  import {
+    PlaneGeometry,
+    Shape,
+    ShapeGeometry,
+    type BufferGeometry,
+    type Scene,
+    type ShaderMaterial,
+  } from "three";
 
   interface Props {
     width?: number;
     height?: number;
+    /**
+     * Optional local XY shoreline in metres. Supplying it replaces the
+     * rectangular plane with the authored water footprint while preserving
+     * the same reflection owner.
+     */
+    outline?: Array<[number, number]>;
     /** Reflection render-target size. Water can afford less than a mirror. */
     textureWidth?: number;
     textureHeight?: number;
@@ -60,6 +73,44 @@
   const clipBias = props.clipBias ?? 0.003;
   let reflector = $state.raw<Reflector | null>(null);
 
+  function resolveScene(): Scene {
+    const value = scene as unknown as Scene | { current?: Scene };
+    return "current" in value && value.current
+      ? value.current
+      : (value as Scene);
+  }
+
+  function createGeometry(): BufferGeometry {
+    if (!props.outline || props.outline.length < 3) {
+      return new PlaneGeometry(width, height);
+    }
+
+    const shape = new Shape();
+    const [first, ...rest] = props.outline;
+    shape.moveTo(first![0], first![1]);
+    for (const [x, y] of rest) shape.lineTo(x, y);
+    shape.closePath();
+
+    const geometry = new ShapeGeometry(shape);
+    geometry.computeBoundingBox();
+    const bounds = geometry.boundingBox;
+    const positions = geometry.attributes.position;
+    const uv = geometry.attributes.uv;
+    if (bounds && uv) {
+      const spanX = Math.max(bounds.max.x - bounds.min.x, 0.001);
+      const spanY = Math.max(bounds.max.y - bounds.min.y, 0.001);
+      for (let index = 0; index < positions.count; index += 1) {
+        uv.setXY(
+          index,
+          (positions.getX(index) - bounds.min.x) / spanX,
+          (positions.getY(index) - bounds.min.y) / spanY
+        );
+      }
+      uv.needsUpdate = true;
+    }
+    return geometry;
+  }
+
   $effect(() => {
     if (reflector) {
       reflector.visible = props.active !== false;
@@ -67,7 +118,8 @@
   });
 
   onMount(() => {
-    const geometry = new PlaneGeometry(width, height);
+    const geometry = createGeometry();
+    const sceneRoot = resolveScene();
     reflector = new Reflector(geometry, {
       clipBias,
       textureWidth,
@@ -88,17 +140,16 @@
     reflector.rotation.set(...rotation);
     reflector.visible = props.active !== false;
 
-    // Threlte 8's scene context IS the Scene. An earlier `scene.current` here
-    // was always undefined, so the guard swallowed every reflector and the
-    // surface rendered black — the bug that made the grotto look waterless.
-    scene.add(reflector);
+    // Mount this outside Threlte's declarative tree because Reflector's
+    // onBeforeRender callback only runs when the renderer owns the object.
+    sceneRoot.add(reflector);
     props.onReady?.(reflector);
 
     return () => {
       if (!reflector) return;
-      scene.remove(reflector);
+      sceneRoot.remove(reflector);
       reflector.getRenderTarget().dispose();
-      reflector.material.dispose();
+      (reflector.material as ShaderMaterial).dispose();
       geometry.dispose();
       reflector = null;
     };

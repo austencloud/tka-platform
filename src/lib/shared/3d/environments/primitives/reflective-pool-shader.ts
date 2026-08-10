@@ -41,6 +41,7 @@ export interface ReflectivePoolUniformValues {
   rippleStrength: number;
   /** Metres of foam at the rim. */
   foamWidth: number;
+  foamOpacity: number;
   /** Metres over which the rim colour gives way to the deep colour. */
   shoreFade: number;
 }
@@ -55,6 +56,7 @@ export const REFLECTIVE_POOL_DEFAULTS: ReflectivePoolUniformValues = {
   rippleScale: 1.4,
   rippleStrength: 0.09,
   foamWidth: 0.22,
+  foamOpacity: 0.55,
   shoreFade: 2.2,
 };
 
@@ -76,6 +78,7 @@ export const ReflectivePoolShader = {
     uRippleScale: { value: REFLECTIVE_POOL_DEFAULTS.rippleScale },
     uRippleStrength: { value: REFLECTIVE_POOL_DEFAULTS.rippleStrength },
     uFoamWidth: { value: REFLECTIVE_POOL_DEFAULTS.foamWidth },
+    uFoamOpacity: { value: REFLECTIVE_POOL_DEFAULTS.foamOpacity },
     uShoreFade: { value: REFLECTIVE_POOL_DEFAULTS.shoreFade },
   },
 
@@ -112,6 +115,7 @@ export const ReflectivePoolShader = {
     uniform float uRippleScale;
     uniform float uRippleStrength;
     uniform float uFoamWidth;
+    uniform float uFoamOpacity;
     uniform float uShoreFade;
 
     varying vec4 vProjectedUv;
@@ -188,7 +192,7 @@ export const ReflectivePoolShader = {
 
       // Shoreline. Water meeting an edge foams; a hard cut reads as geometry.
       float foam = 1.0 - smoothstep( 0.0, uFoamWidth, wobbled );
-      surface = mix( surface, vec3( 0.86, 0.92, 0.94 ), foam * 0.55 );
+      surface = mix( surface, vec3( 0.86, 0.92, 0.94 ), foam * uFoamOpacity );
 
       gl_FragColor = vec4( surface, 1.0 );
 
