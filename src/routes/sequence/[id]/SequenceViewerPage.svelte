@@ -16,6 +16,9 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
+  import { registerLoopDetector } from "$lib/shared/create/get-loop-detector";
+  import { registerLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
+  import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import {
     parsePropsFromURL,
     parseSequenceRouteId,
@@ -161,6 +164,14 @@
         loadFullSequenceData: async () => null,
       } satisfies ShortCodeSequenceLoader);
     }
+
+    // Same bare-layout gap as /q/[code]: without the composition root, the
+    // animation playback path's getLoopDetector() throws and the whole
+    // animation/3D view dead-ends at "Animation data not available"; the
+    // loop display resolver degrades silently, dropping LOOP labels.
+    // Registering is idempotent — app mode re-registers the same singletons.
+    registerLoopDetector(loopDetector);
+    registerLoopDisplayResolver(resolveLoopDisplay);
 
     // Non-blocking: settings sync happens in background.
     // Don't block the viewer on service initialization.
