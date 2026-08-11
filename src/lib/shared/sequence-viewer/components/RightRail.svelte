@@ -1,7 +1,6 @@
 <script lang="ts">
   import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import ViewerPopover from "$lib/shared/3d/components/controls/ViewerPopover.svelte";
-  import ExportPopover from "./ExportPopover.svelte";
   import CameraPopover from "$lib/shared/3d/components/CameraPopover.svelte";
   import SceneSelectorPopover from "$lib/shared/3d/components/SceneSelectorPopover.svelte";
   import FormationPopover from "$lib/shared/3d/components/controls/FormationPopover.svelte";
@@ -79,16 +78,11 @@
       <CameraPopover {onSettingChange} />
     </ViewerPopover>
 
-    <ViewerPopover
-      id="export"
-      title="Export"
-      icon="fa-arrow-up-from-bracket"
-      tooltip="Export"
-      width={340}
-      {onSettingChange}
-    >
-      <ExportPopover {onSettingChange} />
-    </ViewerPopover>
+    <!-- No "Export" chip here. It looked like a button that exported and was
+         only ever resolution/quality/FPS/loop-count chips — the settings now
+         live behind Share, next to the render they shape, where the export
+         actually happens. Austen (2026-08-11): "why do we have an export
+         animation button here?" -->
 
     <button
       data-save-shortcut

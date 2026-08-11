@@ -16,8 +16,13 @@
      inside a min-height stage (.claude/rules/no-layout-shift.md).
 -->
 <script lang="ts">
+  import { onDestroy, untrack } from "svelte";
+  import { slide } from "svelte/transition";
   import ShareSheetFrame from "./ShareSheetFrame.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import ExportImagePanel from "$lib/shared/sequence-viewer/components/ExportImagePanel.svelte";
+  import ExportPopover from "$lib/shared/sequence-viewer/components/ExportPopover.svelte";
+  import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import InstagramIcon from "$lib/shared/auth/components/icons/InstagramIcon.svelte";
@@ -30,8 +35,9 @@
   import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
   import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
-  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-options";
+  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+  import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import { getCaptionPresetManager } from "$lib/shared/share/state/caption-presets.svelte";
   import {
     buildArtifactFilename,
@@ -152,11 +158,42 @@
   }: Props = $props();
 
   const captions = getCaptionPresetManager();
+  const exportOptions = getExportOptionsState();
 
   /** Title glyph height in px, measured off a CSS-sized element. */
   let glyphHeight = $state(0);
 
   let artifact = $state<ShareArtifact>("card");
+  /**
+   * The settings layer, folded away until asked for. Austen (2026-08-11): "the
+   * settings are really just a customization layer that is optional between
+   * clicking share and sharing to the destination." So the sheet opens ready to
+   * post with the settings the user already has, and only unfolds them when the
+   * answer to "what am I about to send" is "not quite that."
+   */
+  let customizeOpen = $state(false);
+
+  /**
+   * Bring the panel into view once it has finished unfolding.
+   *
+   * On a short landscape phone (960x412) the toggle already sits near the
+   * bottom of the sheet, so the panel unfolds entirely below the fold: the tap
+   * looks like it did nothing until you happen to scroll. `block: "nearest"`
+   * so a panel that is already visible — every desktop width — does not move.
+   * After `introend`, or the element would still be mid-slide and only its
+   * first few pixels would be scrolled to.
+   */
+  function revealCustomize(event: Event): void {
+    const el = event.currentTarget;
+    if (!(el instanceof HTMLElement)) return;
+    el.scrollIntoView({
+      block: "nearest",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+  }
+
   let caption = $state("");
   let captionTouched = $state(false);
   let statusMessage = $state("");
@@ -168,7 +205,34 @@
   let cardPreviewUrl = $state<string | null>(null);
   /** Card settings the blob in hand was rendered from; re-render when it moves. */
   let renderedCardKey: string | null = null;
+  /**
+   * And which sequence it was rendered from. Two different sequences of the same
+   * length with the same settings serialize to the same key, so the key alone
+   * would hold the previous sequence's card on screen under the new word.
+   */
+  let renderedCardTarget: SequenceData | null = null;
   let videoBlob = $state<Blob | null>(null);
+
+  /**
+   * Neither the card-composition manager nor the visibility manager is
+   * rune-backed — both publish through observer callbacks — so reading them
+   * inside an effect subscribes to nothing at all. Without these counters the
+   * Customize panel changes a setting and the card above it never redraws,
+   * which is the one thing Share has to get right. ExportImagePanel carries the
+   * same two counters, for the same reason.
+   */
+  const composition = getImageCompositionManager();
+  const visibility = getVisibilityStateManager();
+  let cardSettingsVersion = $state(0);
+  function onCardSettingsChanged(): void {
+    cardSettingsVersion++;
+  }
+  composition.registerObserver(onCardSettingsChanged);
+  visibility.registerObserver(onCardSettingsChanged, ["all"]);
+  onDestroy(() => {
+    composition.unregisterObserver(onCardSettingsChanged);
+    visibility.unregisterObserver(onCardSettingsChanged);
+  });
 
   /** Post link for this sequence, once the code lands. */
   let shortUrl = $state<string | null>(null);
@@ -427,6 +491,29 @@
   const videoBusy = $derived(artifact === "video" && !videoBlob);
 
   /**
+   * The four knobs a video render is made from. A card re-renders the instant a
+   * setting moves — it costs a moment. A video costs minutes, so changing a
+   * setting after one has landed offers a re-render instead of taking one.
+   */
+  const videoSettingsKey = $derived(
+    [
+      exportOptions.videoResolution,
+      exportOptions.videoQuality,
+      exportOptions.videoFps,
+      exportOptions.videoLoopCount,
+    ].join("|")
+  );
+  /** Settings the render in hand was made with. */
+  let renderedVideoKey = $state<string | null>(null);
+  /**
+   * Settings the render in flight was STARTED with. Stamping on arrival instead
+   * would credit a take with whatever the knobs happen to say minutes later, so
+   * moving a setting mid-render would silently mark the finished take current
+   * and never offer the re-render it needs.
+   */
+  let requestedVideoKey: string | null = null;
+
+  /**
    * A render has landed, even if its bytes are still being read.
    *
    * `videoBlob` is fetched FROM `videoBlobUrl`, asynchronously — so for the tick
@@ -436,6 +523,16 @@
    * the sheet fire a second 3D take the instant it reopened holding the first.
    */
   const hasVideo = $derived(!!videoBlobUrl || !!videoBlob);
+
+  /** A render is in hand, but not of the settings now selected. */
+  const videoSettingsStale = $derived(
+    artifact === "video" &&
+      hasVideo &&
+      !isExportingVideo &&
+      !isRecordingScene &&
+      renderedVideoKey !== null &&
+      renderedVideoKey !== videoSettingsKey
+  );
 
   const progressLabel = $derived.by(() => {
     if (!videoBusy) return "";
@@ -457,6 +554,9 @@
     wasOpen = isOpen;
     if (!isOpen) return;
     artifact = initialArtifact;
+    // Every share starts on the short path: the settings you already have, one
+    // press from the destination. Customize is there when the answer is no.
+    customizeOpen = false;
     if (
       initialArtifact === "video" &&
       !hasVideo &&
@@ -480,20 +580,36 @@
     if (!isOpen || !sequence) return;
 
     const target = sequence;
+    // Subscribes this effect to every card setting the Customize panel can
+    // reach. buildCardRenderOptions reads both managers, but through plain
+    // method calls that no rune is watching — this is the dependency.
+    void cardSettingsVersion;
+    // exportOptions.imageDarkMode, not the composition manager's own darkMode:
+    // the Card pane's on-screen preview reads this one, and the file has to
+    // match the card the user was looking at when they pressed Share.
+    const darkMode = exportOptions.imageDarkMode;
     const cardOptions = buildCardRenderOptions(target, {
-      darkMode: getImageCompositionManager().darkMode,
+      darkMode,
       isHandPath: !!target.metadata?.isHandPathVisualization,
       resolvedAutoLayout: resolvedCardAutoLayout,
     });
-    const settingsKey = JSON.stringify(cardOptions);
-    if (settingsKey === renderedCardKey) return;
+    // The visibility snapshot rides along because TKA, TnD, positions and
+    // non-radial points never enter cardOptions — the composer inherits them
+    // from the global manager at render time. Keyed on the options alone, this
+    // guard returns early on the one class of setting it cannot see, and the
+    // Customize panel's TKA chip moves nothing. (sharer.ts keys its blob cache
+    // on the same snapshot, for the same reason.)
+    const settingsKey = `${JSON.stringify(cardOptions)}|${JSON.stringify(
+      visibility.getState()
+    )}`;
+    if (settingsKey === renderedCardKey && target === renderedCardTarget) return;
 
     let stale = false;
 
     void (async () => {
       try {
         const blob = await getSharer().getCardImageBlob(target, {
-          darkMode: getImageCompositionManager().darkMode,
+          darkMode,
           resolvedAutoLayout: resolvedCardAutoLayout,
         });
         if (stale) return;
@@ -501,6 +617,7 @@
         cardBlob = blob;
         cardPreviewUrl = URL.createObjectURL(blob);
         renderedCardKey = settingsKey;
+        renderedCardTarget = target;
       } catch (error) {
         console.error("[PostShareSheet] Card render failed:", error);
         if (!stale) statusMessage = "Couldn't render the card";
@@ -522,6 +639,14 @@
       videoBlob = null;
       return;
     }
+
+    // Promote the settings this render was STARTED with. `untrack`, or the
+    // stamp would re-subscribe to the settings it exists to compare against and
+    // update itself the instant they change — staleness could never fire. A
+    // render the sheet did not ask for (one the viewer already had) is credited
+    // to the settings now showing, which is the only claim available about it.
+    renderedVideoKey = requestedVideoKey ?? untrack(() => videoSettingsKey);
+    requestedVideoKey = null;
 
     let stale = false;
     void (async () => {
@@ -623,6 +748,7 @@
    */
   function requestVideo(): void {
     videoRefused = false;
+    requestedVideoKey = untrack(() => videoSettingsKey);
     const started = onRequestVideo();
     if (!(started instanceof Promise)) return;
     void started.then((ok) => {
@@ -1110,6 +1236,66 @@
 
     </div>
 
+    <!-- The customization layer: optional, folded away, and sitting directly
+         under what it changes so a toggled setting is visible in the preview
+         above it. Card settings redraw the card as you press them; video
+         settings apply to the next render, so a landed take offers one. -->
+    {#if !qrDataUrl && sequence}
+      <div class="customize">
+        <button
+          type="button"
+          class="customize-toggle"
+          aria-expanded={customizeOpen}
+          aria-controls="post-share-customize"
+          onclick={() => (customizeOpen = !customizeOpen)}
+        >
+          <i
+            class="fa-solid fa-sliders"
+            aria-hidden="true"
+          ></i>
+          <span class="customize-label">
+            {artifact === "card" ? "Card settings" : `${videoLabel} settings`}
+          </span>
+          <i
+            class="fa-solid fa-chevron-down chevron"
+            class:open={customizeOpen}
+            aria-hidden="true"
+          ></i>
+        </button>
+
+        {#if customizeOpen}
+          <div
+            class="customize-body"
+            id="post-share-customize"
+            transition:slide={{ duration: 200 }}
+            onintroend={revealCustomize}
+          >
+            {#if artifact === "card"}
+              <ExportImagePanel
+                {exportOptions}
+                layout="inline"
+                stepCount={sequence.steps?.length ?? 0}
+                resolvedAutoLayout={resolvedCardAutoLayout}
+              />
+            {:else}
+              <ExportPopover />
+              {#if videoSettingsStale}
+                <button
+                  type="button"
+                  class="rerender"
+                  onclick={requestVideo}
+                  transition:slide={{ duration: 160 }}
+                >
+                  <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+                  Re-render with these settings
+                </button>
+              {/if}
+            {/if}
+          </div>
+        {/if}
+      </div>
+    {/if}
+
     {#if !qrDataUrl}
       <div class="caption-block">
         <!-- One scrolling chip row instead of a label row plus a chip row: the
@@ -1526,6 +1712,116 @@
     max-width: 22rem;
     font-size: 0.875rem;
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
+  }
+
+  .customize {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+
+  /* A row, not a card: closed, this is one line of chrome between the preview
+     and the caption, and it has to read as "there is more here if you want it"
+     without competing with the destinations below. */
+  .customize-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    width: 100%;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.5rem 0.875rem;
+    border-radius: 0.875rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-surface-2, rgba(255, 255, 255, 0.05));
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .customize-toggle:hover {
+    background: var(--theme-surface-hover, rgba(255, 255, 255, 0.09));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.16));
+    color: var(--theme-text, #fff);
+  }
+
+  .customize-toggle:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .customize-label {
+    flex: 1;
+    text-align: left;
+  }
+
+  .chevron {
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
+  }
+
+  .chevron.open {
+    transform: rotate(180deg);
+  }
+
+  .customize-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.875rem;
+    border-radius: 0.875rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-surface-2, rgba(255, 255, 255, 0.04));
+  }
+
+  /* The panel lets its SegmentedControl fill the row (ExportImagePanel's
+     .seg-fill), which is right in a narrow rail and wrong here: across the
+     width this sheet gives the panel, two short labels stretch into a progress
+     bar (.claude/rules/visual-verification-mandatory.md). Cap it at a width
+     that still reads as a pair of buttons. */
+  .customize-body :global(.seg-fill) {
+    max-width: 24rem;
+  }
+
+  .rerender {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.5rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #6366f1) 55%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 22%,
+      transparent
+    );
+    color: var(--theme-text, #fff);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .rerender:hover {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 34%,
+      transparent
+    );
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chevron {
+      transition: none;
+    }
   }
 
   .caption-block {
@@ -2072,11 +2368,12 @@
         "stage cta"
         "stage tiles"
         "stage connections"
-        "stage status";
+        "stage status"
+        "stage customize";
       /* The caption row takes the slack. The card is the tallest thing here,
          and the leftover beside it has to go somewhere: into the box you are
          actually typing in, rather than into a hole above the status line. */
-      grid-template-rows: auto auto minmax(5rem, 1fr) auto auto auto auto;
+      grid-template-rows: auto auto minmax(5rem, 1fr) auto auto auto auto auto;
       align-content: start;
       column-gap: 1.5rem;
       row-gap: 0.625rem;
@@ -2118,6 +2415,14 @@
     }
     .status {
       grid-area: status;
+    }
+
+    /* Named in every area map from here up, or it auto-places into whatever
+       cell is free. The 2350 tier opens a 1fr spacer above the header to centre
+       the control stack against the card, and an unnamed item lands in it: at
+       3840 the Card settings panel rendered ABOVE the sheet's own title. */
+    .customize {
+      grid-area: customize;
     }
 
     /* vh, not the stage: the stage is content-sized here, so a percentage cap
@@ -2174,14 +2479,19 @@
        given the full width they stretch three short labels across 880px. */
     .sheet {
       width: min(52rem, 100%);
+      /* Customize spans both columns here alone. Expanded on a 412px-tall
+         viewport it IS the screen, and confined to the right column it left the
+         card's column as a strip of empty black beside it — the panel's own
+         chip rows are what should be using that width. */
       grid-template-areas:
         "stage header"
         "stage picker"
         "stage caption"
         "stage cta"
         "stage tiles"
-        "connections status";
-      grid-template-rows: auto auto minmax(3.25rem, 1fr) auto auto auto;
+        "connections status"
+        "customize customize";
+      grid-template-rows: auto auto minmax(3.25rem, 1fr) auto auto auto auto;
       row-gap: 0.25rem;
       padding: 0.25rem 1rem 0.375rem;
     }
@@ -2345,8 +2655,9 @@
         "stage tiles"
         "stage connections"
         "stage status"
+        "stage customize"
         "stage .";
-      grid-template-rows: 1fr auto auto auto auto auto auto auto 1fr;
+      grid-template-rows: 1fr auto auto auto auto auto auto auto auto 1fr;
     }
 
     textarea {
@@ -2398,6 +2709,7 @@
     .cta-hint,
     .network-hint,
     .tile-label,
+    .customize-label,
     .status {
       font-size: 1.0625rem;
     }
@@ -2406,6 +2718,22 @@
       width: 3rem;
       height: 3rem;
       font-size: 1.25rem;
+    }
+
+    /* The panel inside is the shared ExportImagePanel, and its scale is fixed
+       in tokens rather than stepped — beside type this tier has already grown,
+       its labels and chips read as punctuation. Raising the tokens for this
+       subtree only is how the other big-screen consumers step it
+       (DeckReleaserTab, AssembleToolPanel), and it leaves the rail's copy of
+       the panel alone. */
+    .customize-body {
+      --font-size-compact: 1rem;
+      --font-size-min: 1.125rem;
+    }
+
+    .customize-body :global(.chip) {
+      min-height: 3rem;
+      border-radius: 0.875rem;
     }
 
     .artifact-picker :global(.segment),
@@ -2486,6 +2814,7 @@
     .cta-hint,
     .network-hint,
     .tile-label,
+    .customize-label,
     .status {
       font-size: 1.3125rem;
     }
@@ -2500,6 +2829,16 @@
     .presets :global(.chip-label),
     .connections :global(.chip-label) {
       font-size: 1.375rem;
+    }
+
+    .customize-body {
+      --font-size-compact: 1.125rem;
+      --font-size-min: 1.3125rem;
+    }
+
+    .customize-body :global(.chip) {
+      min-height: 3.5rem;
+      padding-inline: 1.25rem;
     }
   }
 

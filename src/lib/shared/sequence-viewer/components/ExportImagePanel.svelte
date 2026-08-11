@@ -1,10 +1,18 @@
 <!--
   ExportImagePanel.svelte
 
-  Image export settings panel.
-  Desktop: side panel next to choreo card preview (all settings visible).
-  Mobile: compact bottom bar with [Download Card] [Settings gear].
-    Settings open in a slide-up overlay. Choreo card gets full screen space.
+  The card's settings — what the card SHOWS, not how it leaves. Three layouts,
+  one owner:
+  - "sidebar": desktop panel beside the card preview, every setting visible.
+  - "bottom": mobile ControlDock, the same settings in tabbed trays.
+  - "inline": chrome-free body for a host that already has its own frame —
+    the share sheet's Customize layer.
+
+  It carries no download button. Delivery of any kind — download, Instagram,
+  Facebook, the phone's own sheet — lives behind Share, so there is one door
+  out of the viewer and one place to look for it. Austen (2026-08-11): "why do
+  we have a download card honestly everything should just be consolidated to be
+  behind the share button that way everyone knows what to expect."
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
@@ -27,21 +35,15 @@
     type ResolvedAutoLayout,
   } from "$lib/shared/render/services/container-aware-layout";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-  import {
-    shareTarget,
-    saveActionLabel,
-  } from "$lib/shared/mobile/share-action.svelte";
 
-  type PanelLayout = "sidebar" | "bottom";
+  type PanelLayout = "sidebar" | "bottom" | "inline";
 
   interface Props {
     exportOptions: ExportOptionsStateManager;
-    isExporting: boolean;
     layout?: PanelLayout;
     stepCount: number;
-    /** Measured winner from the live Download Card preview. */
+    /** Measured winner from the live card preview. */
     resolvedAutoLayout?: ResolvedAutoLayout | null;
-    onExport: () => void;
     onClose?: () => void;
     onSettingChange?: (
       group: string,
@@ -54,11 +56,9 @@
 
   let {
     exportOptions,
-    isExporting,
     layout = "bottom",
     stepCount,
     resolvedAutoLayout = null,
-    onExport,
     onClose,
     onSettingChange,
   }: Props = $props();
@@ -338,15 +338,6 @@
     );
   }
 
-  // Mobile shares (native sheet), desktop downloads. Icon + label mirror the
-  // actual delivery gate (shareTarget = shareOrDownloadBlob's own gate) so the
-  // copy can't disagree with what tapping it does.
-  const dockTrailing = $derived({
-    icon: shareTarget.isMobile ? "fa-share-nodes" : "fa-download",
-    label: saveActionLabel("Card"),
-    onClick: onExport,
-    busy: isExporting,
-  });
 </script>
 
 {#if layout === "bottom"}
@@ -355,12 +346,7 @@
        controls collapse into Content / Columns / Theme tabs with a
        compact Share/Download trailing trigger.
        ============================================================ -->
-  <ControlDock
-    tabs={DISPLAY_TABS}
-    {activeTab}
-    onTabSelect={selectDisplayTab}
-    trailingAction={dockTrailing}
-  >
+  <ControlDock tabs={DISPLAY_TABS} {activeTab} onTabSelect={selectDisplayTab}>
     {#snippet tray()}
       <!-- Cross-dissolve the tab bodies (true 4-state swap in one box) so
            switching tabs doesn't hard-cut. Height between the differing bodies
@@ -613,23 +599,26 @@
   </ControlDock>
 {:else}
   <!-- ============================================================
-       DESKTOP SIDEBAR: All settings visible (unchanged)
+       DESKTOP SIDEBAR: All settings visible.
+       INLINE: the same rows with the panel chrome off, for a host that
+       brings its own frame (the share sheet's Customize layer).
        ============================================================ -->
   <div
     class="export-panel"
+    class:inline={layout === "inline"}
     transition:fade={{ duration: 200 }}
     role="region"
-    aria-label="Card export settings"
+    aria-label="Card settings"
   >
     <div class="panel-center-inner">
       {#if onClose}
         <div class="panel-header">
-          <span class="panel-title">Export Settings</span>
+          <span class="panel-title">Card settings</span>
           <button
             type="button"
             class="close-btn"
             onclick={onClose}
-            aria-label="Close export panel"
+            aria-label="Close card settings"
           >
             <i class="fas fa-times" aria-hidden="true"></i>
           </button>
@@ -918,24 +907,6 @@
           </div>
         </div>
       </div>
-
-      <div class="panel-footer">
-        <button
-          type="button"
-          class="export-btn"
-          onclick={onExport}
-          disabled={isExporting}
-          aria-label="Download Card"
-        >
-          {#if isExporting}
-            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-            Exporting...
-          {:else}
-            <i class="fas fa-download" aria-hidden="true"></i>
-            Download Card
-          {/if}
-        </button>
-      </div>
     </div>
   </div>
 {/if}
@@ -1116,6 +1087,20 @@
     overflow-y: auto;
   }
 
+  /* Inline: same rows, no panel. The host frame (the share sheet) owns the
+     surface, the scrolling and the padding, so the panel drops its background,
+     its full-height stretch and its own gutters rather than nesting a second
+     card inside one. */
+  .export-panel.inline {
+    background: none;
+    border-top: none;
+    height: auto;
+    overflow: visible;
+  }
+  .export-panel.inline .panel-body {
+    padding: 0;
+  }
+
   /* Vertically center the settings group within the tall panel.
      auto block margins collapse to 0 when content overflows, so it
      still scrolls from the top — no clipping on long content. */
@@ -1293,58 +1278,17 @@
     font-size: 12px;
   }
 
-  .panel-footer {
-    padding: 8px 16px 12px;
-    flex-shrink: 0;
-  }
-
-  .export-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    min-height: var(--min-touch-target);
-    padding: 12px 24px;
-    border: none;
-    border-radius: 12px;
-    background: var(--theme-accent, #6366f1);
-    color: white;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .export-btn:hover:not(:disabled) {
-    filter: brightness(1.1);
-    box-shadow: 0 4px 12px
-      color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
-  }
-
-  .export-btn:active:not(:disabled) {
-    transform: scale(0.98);
-    transition-duration: 50ms;
-  }
-
-  .export-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
   /* ============================================================
    * Reduced motion
    * ============================================================ */
 
   @media (prefers-reduced-motion: reduce) {
-    .chip,
-    .export-btn {
+    .chip {
       transition: none !important;
       animation: none !important;
     }
 
-    .chip:active,
-    .export-btn:active {
+    .chip:active {
       transform: none !important;
     }
   }

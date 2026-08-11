@@ -7,17 +7,6 @@
 
   const exportOptions = getExportOptionsState();
 
-  let isExporting = $state(false);
-  let lastAction = $state("");
-  let t: ReturnType<typeof setTimeout> | undefined;
-  function fakeExport() {
-    if (isExporting) return;
-    // Mirrors the intent: touch -> share, desktop -> download.
-    lastAction = window.matchMedia("(pointer: coarse)").matches ? "share" : "download";
-    isExporting = true;
-    t = setTimeout(() => (isExporting = false), 1500);
-  }
-
   type Device = { id: string; label: string; w: number; h: number };
   const DEVICES: Device[] = [
     { id: "se", label: "iPhone SE", w: 375, h: 667 },
@@ -34,7 +23,7 @@
 
 <div class="page">
   <header class="harness">
-    <div class="title">Choreo Card Display · ControlDock {#if lastAction}<span class="tag">{lastAction}</span>{/if}</div>
+    <div class="title">Choreo Card Display · ControlDock</div>
     <div class="seg device-seg">
       {#each DEVICES as d}
         <button class:active={deviceId === d.id} onclick={() => (deviceId = d.id)}>{d.label}</button>
@@ -52,13 +41,13 @@
         <div class="viewer row">
           <div class="hero"><div class="card"><div class="card-grid">{#each cells as _}<div class="pcell"></div>{/each}</div></div><span class="hero-tag">choreo card</span></div>
           <div class="sidebar-slot">
-            <ExportImagePanel {exportOptions} {isExporting} layout="sidebar" stepCount={8} onExport={fakeExport} onClose={() => {}} />
+            <ExportImagePanel {exportOptions} layout="sidebar" stepCount={8} onClose={() => {}} />
           </div>
         </div>
       {:else}
         <div class="viewer col">
           <div class="hero"><div class="card"><div class="card-grid">{#each cells as _}<div class="pcell"></div>{/each}</div></div><span class="hero-tag">choreo card</span></div>
-          <ExportImagePanel {exportOptions} {isExporting} layout="bottom" stepCount={8} onExport={fakeExport} />
+          <ExportImagePanel {exportOptions} layout="bottom" stepCount={8} />
         </div>
       {/if}
     </div>
@@ -69,7 +58,6 @@
   .page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 1rem; background: #07070f; color: #e2e8f0; }
   .harness { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.75rem; }
   .title { font-size: 0.85rem; font-weight: 600; opacity: 0.7; display: flex; align-items: center; gap: 8px; }
-  .tag { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 999px; background: rgba(99,102,241,0.3); color: #c7d2fe; }
   .seg { display: flex; gap: 1px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 3px; }
   .seg button { padding: 0.35rem 0.7rem; border: none; border-radius: 6px; background: transparent; color: inherit; cursor: pointer; opacity: 0.55; font-size: 0.72rem; }
   .seg button.active { background: rgba(99, 102, 241, 0.25); opacity: 1; }

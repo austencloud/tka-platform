@@ -720,18 +720,16 @@
                   />
                 {/if}
               {:else if layout.isImageExportActive && !isMobile}
-                <!-- No onClose on desktop widths: the card export settings are
-                     required to configure the download and must stay put.
-                     Leave the Download Card mode via the content rail. Below
-                     the sidebar threshold the panel stacks under the hero
-                     (layout="bottom") while the rail column persists. -->
+                <!-- No onClose on desktop widths: the card settings shape what
+                     Share hands over and must stay put. Leave the Card pane via
+                     the content rail. Below the sidebar threshold the panel
+                     stacks under the hero (layout="bottom") while the rail
+                     column persists. -->
                 <ExportImagePanel
                   exportOptions={ctx.exportOptions}
-                  isExporting={interactions.cardBusy}
                   stepCount={ctx.effectiveSequence?.steps?.length ?? 0}
                   resolvedAutoLayout={ctx.resolvedCardAutoLayout}
                   layout={layout.effectiveMobile ? "bottom" : "sidebar"}
-                  onExport={interactions.handleCardExport}
                   onSettingChange={interactions.handleCardSettingChange}
                 />
               {:else if layout.isVideoUploadActive}
@@ -752,11 +750,9 @@
           <div class="export-footer-overlay">
             <ExportImagePanel
               exportOptions={ctx.exportOptions}
-              isExporting={interactions.cardBusy}
               stepCount={ctx.effectiveSequence.steps?.length ?? 0}
               resolvedAutoLayout={ctx.resolvedCardAutoLayout}
               layout="bottom"
-              onExport={interactions.handleCardExport}
               onClose={interactions.handleUnfocusPane}
               onSettingChange={interactions.handleCardSettingChange}
             />

@@ -6,6 +6,7 @@ import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloade
 import { buildCardRenderOptions } from "./card-render-options";
 import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
 import { hashString } from "$lib/shared/foundation/services/content-hasher";
+import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
 
 export const CARD_BLOB_CACHE_MAX_ENTRIES = 3;
 export const CARD_BLOB_CACHE_MAX_BYTES = 24 * 1024 * 1024;
@@ -109,8 +110,17 @@ export class Sharer {
       }),
     };
 
+    // The visibility snapshot belongs in the key even though most of it never
+    // reaches renderOptions: buildCardRenderOptions deliberately leaves TKA,
+    // TnD, positions and non-radial points undefined so the composer inherits
+    // them from the global manager at render time. That makes them real inputs
+    // to the image and invisible to a key built from the options alone — toggle
+    // TKA off and the cache hands back the card that still has it. (The same
+    // reasoning already put bluePropType/redPropType in the options object.)
     const cacheKey = hashString(
-      `${JSON.stringify(sequence)}\n${JSON.stringify(renderOptions)}`
+      `${JSON.stringify(sequence)}\n${JSON.stringify(renderOptions)}\n${JSON.stringify(
+        getVisibilityStateManager().getState()
+      )}`
     );
     const cached = this.cardBlobCache.get(cacheKey);
     if (cached) {
