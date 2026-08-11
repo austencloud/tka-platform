@@ -1,7 +1,7 @@
 <!--
   InstructionStep.svelte
 
-  Displays a single instruction step with optional image/placeholder.
+  Displays a single instruction step with an optional screenshot.
   Reusable component that adapts to compact mode.
 -->
 <script lang="ts">
@@ -31,17 +31,12 @@
     <div class="step-text">{@html step.text}</div>
   </div>
 
-  <!-- Show placeholder for future screenshots (only when not in compact mode) -->
-  {#if !compact}
+  <!-- A step without a screenshot renders as text only. "Screenshot coming
+       soon" placeholders shipped to real users for months; an empty promise
+       box is worse than no box. -->
+  {#if !compact && step.image}
     <div class="step-image-container">
-      {#if step.image}
-        <img src={step.image} alt="Step {index + 1}" class="step-image" />
-      {:else}
-        <div class="image-placeholder">
-          <i class="fas fa-image" aria-hidden="true"></i>
-          <span class="placeholder-text">Screenshot coming soon</span>
-        </div>
-      {/if}
+      <img src={step.image} alt="Step {index + 1}" class="step-image" />
     </div>
   {/if}
 </div>
@@ -126,28 +121,5 @@
     width: 100%;
     height: auto;
     display: block;
-  }
-
-  .image-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: clamp(6px, 1.5cqh, 8px);
-    padding: clamp(12px, 3cqh, 20px);
-    background: var(--theme-card-bg);
-    color: var(--theme-text-dim); /* Improved contrast for WCAG AAA */
-    min-height: 80px;
-  }
-
-  .image-placeholder i {
-    font-size: clamp(18px, 4cqw, 24px);
-    opacity: 0.5;
-  }
-
-  .placeholder-text {
-    font-size: clamp(10px, 2cqw, 11px);
-    opacity: 0.6;
-    font-style: italic;
   }
 </style>

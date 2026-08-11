@@ -184,6 +184,9 @@
     // is a standalone kept page (not part of the redirect) and needs its own entry.
     "/roots/software",
     "/support",
+    // Festival signup funnel — the QR on every sample-pack signup card lands
+    // here. Wants the cosmic chrome and the .mkt-shell root ramp for 4K.
+    "/start",
     "/composer",
     // The Guide hub participates in the homepage shared-element morph, so it
     // uses the persistent root chrome. Deeper /guide pages keep GuideShell's
