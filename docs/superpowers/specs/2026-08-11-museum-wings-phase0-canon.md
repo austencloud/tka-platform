@@ -160,6 +160,34 @@ assignments follow the catalog rows, not letter intuition.
   different prop (3 cases / 3 props; Sun's 4 cases / 4 props). Asset
   inventory of 3D prop models is a Gate 1 prerequisite if sealed.
 
+## Canonical sequence binding (executed 2026-08-11, Austen's direction)
+
+Austen: *"grab the hand paths from the canonical 19 sequences that we show
+within the guide ... so that our own game can stay consistent."*
+
+**The rule:** every museum case and opener transcribes its catalog entry
+VERBATIM from `static/data/hero/tnd-base-words.json` (the l1-tnd-motions
+catalog — the variation authority, and the same data the guide's Level 1
+content teaches). Never a freshly generated variation, even a valid one.
+
+**The audit and fix:** 11 of the 19 entries in
+`src/lib/features/museum/data/museum-exhibit-sequences.ts` were
+MCP-generated variations that disagreed with the catalog (Water ×3
+phase-shifted from alpha1; Air ×3 flipped rotations from beta5; Sun S/T
+running CW where the catalog runs CCW; Moon ×3 flipped rotations from
+gamma11). All 11 were retranscribed field-for-field from the catalog;
+a diff script now proves 19/19 MATCH. The 8 that already matched (Earth
+G/H/I, Fire JD/KE/LF, Sun U/V) were untouched.
+
+| Wing | Catalog ids |
+|---|---|
+| Water | tnd-split-same-aaaa / -bbbb / -cccc (alpha1) |
+| Fire | tnd-split-opp-jdjd / -keke / -lflf |
+| Earth | tnd-tog-same-gggg / -hhhh / -iiii |
+| Air | tnd-tog-opp-djdj / -ekek / -flfl (beta5) |
+| Sun | tnd-quarter-same-ssss / -tttt / -uuuu / -vvvv (gamma11) |
+| Moon | tnd-quarter-opp-mpmp / -nqnq / -oror (gamma11) |
+
 ## What Phase 0 unblocks
 
 Each approved row becomes the wing's declaration (teaching sentence, beats,
