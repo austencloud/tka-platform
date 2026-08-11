@@ -29,6 +29,9 @@
 <style>
   .size-toggle {
     display: flex;
+    /* overflow: hidden (for the corner radius) zeroes the min-width: auto
+       floor, so without this the labels clip when a sibling wants space. */
+    flex-shrink: 0;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
     overflow: hidden;

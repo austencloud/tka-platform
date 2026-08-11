@@ -1,13 +1,16 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import type { CardFooter, DeckReleaseCard } from "../../domain/models/DeckRelease";
+  import type {
+    CardFooter,
+    DeckReleaseCard,
+  } from "../../domain/models/DeckRelease";
   import type { CardPair } from "../../services/types";
   import PrintPreviewPages from "../print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "../print-preview/PrintPreviewToolbar.svelte";
   import CardInspectModal from "../CardInspectModal.svelte";
   import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
   import DeckPropSwitcher from "./DeckPropSwitcher.svelte";
-  import type { CardSizeId } from "../../domain/card-sizes";
+  import type { CardSizeId, PaperSizeId } from "../../domain/card-sizes";
   import type { TnDElement } from "../../domain/tnd-element";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
@@ -41,7 +44,12 @@
     isReleasing: boolean;
     readOnly?: boolean;
     footers?: CardFooter[];
-    onContextMenu?: (x: number, y: number, rerender: () => void, sequence?: SequenceData) => void;
+    onContextMenu?: (
+      x: number,
+      y: number,
+      rerender: () => void,
+      sequence?: SequenceData
+    ) => void;
     brokenLoopCount?: number;
     /** Reroll only makes sense for randomly-rolled decks (LOOP). TnD is a finite,
      *  deterministic enumeration, so the redraw button is hidden for it. */
@@ -52,9 +60,11 @@
     /** Show the Refresh-from-gallery action (gallery decks). */
     showRefresh?: boolean;
     cardSize: CardSizeId;
+    paperSize: PaperSizeId;
     copies: number;
     groupByElement: boolean;
     groupByLetter: boolean;
+    includeHowToRead: boolean;
     /** Builds the markdown deck bundle for the Copy-for-AI button. */
     getAiSummary: () => string;
     sortedSequences: SequenceData[];
@@ -68,12 +78,17 @@
     rerenderKey: number;
     sideFilter: "fronts" | "backs" | null;
     onCardSizeChange: (s: CardSizeId) => void;
+    onPaperSizeChange: (s: PaperSizeId) => void;
     onCopiesChange: (n: number) => void;
     onGroupByElementChange: (on: boolean) => void;
     onGroupByLetterChange: (on: boolean) => void;
     onRerender: () => void;
-    onPairsReady: (pairs: CardPair[]) => void;
-    onRenderStateChange: (s: { isRendering: boolean; progress: number; total: number }) => void;
+    onPairPreparerReady: (prepare: (() => Promise<CardPair[]>) | null) => void;
+    onRenderStateChange: (s: {
+      isRendering: boolean;
+      progress: number;
+      total: number;
+    }) => void;
   }
 
   let {
@@ -103,9 +118,11 @@
     showPropSwitcher = false,
     showRefresh = false,
     cardSize,
+    paperSize,
     copies,
     groupByElement,
     groupByLetter,
+    includeHowToRead,
     getAiSummary,
     sortedSequences,
     sortedFooters,
@@ -118,11 +135,12 @@
     rerenderKey,
     sideFilter,
     onCardSizeChange,
+    onPaperSizeChange,
     onCopiesChange,
     onGroupByElementChange,
     onGroupByLetterChange,
     onRerender,
-    onPairsReady,
+    onPairPreparerReady,
     onRenderStateChange,
   }: Props = $props();
 
@@ -142,7 +160,10 @@
 
   function handleNameKey(e: KeyboardEvent) {
     if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
-    else if (e.key === "Escape") { nameDraft = deckName; (e.currentTarget as HTMLInputElement).blur(); }
+    else if (e.key === "Escape") {
+      nameDraft = deckName;
+      (e.currentTarget as HTMLInputElement).blur();
+    }
   }
 
   let inspectedSequence = $state<SequenceData | null>(null);
@@ -164,10 +185,14 @@
   const stepSummary = $derived(
     distribution.length === 1
       ? `${distribution[0]!.step}-step`
-      : distribution.map((d) => `${d.step}-step ×${d.count}`).join("  ·  "),
+      : distribution.map((d) => `${d.step}-step ×${d.count}`).join("  ·  ")
   );
 
-  function handleCardClick(sequence: SequenceData, frontImageUrl?: string, rerender?: () => Promise<string | null>) {
+  function handleCardClick(
+    sequence: SequenceData,
+    frontImageUrl?: string,
+    rerender?: () => Promise<string | null>
+  ) {
     inspectedFrontImageUrl = frontImageUrl ?? null;
     inspectedRerender = rerender ?? null;
     inspectedSequence = sequence;
@@ -175,7 +200,7 @@
 
   function handleSwapInspected() {
     if (!inspectedSequence) return;
-    const idx = sequences.findIndex(s => s.id === inspectedSequence!.id);
+    const idx = sequences.findIndex((s) => s.id === inspectedSequence!.id);
     if (idx >= 0) {
       onSwapCard(idx);
       inspectedSequence = null;
@@ -212,22 +237,30 @@
           title="Click to rename"
         />
       {:else}
-        <h2 class="deck-number" class:placeholder={!deckName}>{deckName || `Deck #${String(refNumber).padStart(3, "0")}`}</h2>
+        <h2 class="deck-number" class:placeholder={!deckName}>
+          {deckName || `Deck #${String(refNumber).padStart(3, "0")}`}
+        </h2>
       {/if}
       <div class="deck-meta">
-        <!-- Printed count, not sequence count: every deck also ships the
-             "How to Read" insert, and this is the number a print vendor needs. -->
+        <!-- Printed count follows the optional insert so the header, preview,
+             and export panel always describe the same physical deck. -->
         <span
           class="meta-cards"
-          title="{cards.length} sequence cards + 1 How to Read insert"
-        >{cards.length + 1} cards</span>
+          title={includeHowToRead
+            ? `${cards.length} sequence cards + 1 How to Read card`
+            : `${cards.length} sequence cards`}
+          >{cards.length + (includeHowToRead ? 1 : 0)} cards</span
+        >
         {#if stepSummary}
           <span class="meta-sep" aria-hidden="true">·</span>
           <span class="meta-steps">{stepSummary}</span>
         {/if}
         {#if brokenLoopCount > 0}
           <span class="meta-sep" aria-hidden="true">·</span>
-          <span class="meta-broken" title="These cards' turns don't return the prop to its start orientation. Redraw to reroll.">
+          <span
+            class="meta-broken"
+            title="These cards' turns don't return the prop to its start orientation. Redraw to reroll."
+          >
             <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
             {brokenLoopCount} break loop
           </span>
@@ -249,13 +282,24 @@
         useToast
       />
       {#if !readOnly && showRedraw}
-        <button type="button" class="redraw-btn" onclick={onRedraw} disabled={isReleasing}>
+        <button
+          type="button"
+          class="redraw-btn"
+          onclick={onRedraw}
+          disabled={isReleasing}
+        >
           <i class="fas fa-dice" aria-hidden="true"></i>
           Redraw
         </button>
       {/if}
       {#if showRefresh && onRefresh}
-        <button type="button" class="redraw-btn" onclick={onRefresh} disabled={isReleasing} title="Re-query your gallery for current matches">
+        <button
+          type="button"
+          class="redraw-btn"
+          onclick={onRefresh}
+          disabled={isReleasing}
+          title="Re-query your gallery for current matches"
+        >
           <i class="fas fa-rotate" aria-hidden="true"></i>
           Refresh
         </button>
@@ -265,26 +309,29 @@
 
   <PrintPreviewToolbar
     {cardSize}
+    {paperSize}
     totalCards={cards.length}
     {isRendering}
     {renderProgress}
     {renderTotal}
-    onCardSizeChange={onCardSizeChange}
-    onRerender={onRerender}
+    {onCardSizeChange}
+    {onPaperSizeChange}
+    {onRerender}
     {copies}
-    onCopiesChange={onCopiesChange}
+    {onCopiesChange}
     {copiesPresets}
     {copiesAnnotate}
     {groupByElement}
-    onGroupByElementChange={onGroupByElementChange}
+    {onGroupByElementChange}
     {groupByLetter}
-    onGroupByLetterChange={onGroupByLetterChange}
+    {onGroupByLetterChange}
   />
 
   <div class="preview-area">
     <PrintPreviewPages
       sequences={sortedSequences}
       {cardSize}
+      {paperSize}
       {theme}
       {bluePropType}
       {redPropType}
@@ -298,14 +345,17 @@
       includeStartPosition={true}
       deckMode={true}
       deckNumber={refNumber}
+      includeInsertCard={includeHowToRead}
       displayMode="sheets"
       deckId={String(nextDeckNumber).padStart(3, "0")}
       deckName={`LOOP Deck #${nextDeckNumber}`}
       {deckSummary}
       onCardClick={handleCardClick}
-      onCardContextMenu={onContextMenu ? (x, y, rerender, sequence) => onContextMenu(x, y, rerender, sequence) : undefined}
-      onPairsReady={onPairsReady}
-      onRenderStateChange={onRenderStateChange}
+      onCardContextMenu={onContextMenu
+        ? (x, y, rerender, sequence) => onContextMenu(x, y, rerender, sequence)
+        : undefined}
+      {onPairPreparerReady}
+      {onRenderStateChange}
     />
   </div>
 </div>
@@ -317,25 +367,44 @@
     {bluePropType}
     {redPropType}
     includeStartPosition={true}
-    onContextMenu={onContextMenu ? (x, y, _rerender) => {
-      onContextMenu(x, y, () => {
-        if (inspectedRerender) {
-          inspectedRerender().then(newUrl => {
-            if (newUrl) inspectedFrontImageUrl = newUrl;
-          });
+    onContextMenu={onContextMenu
+      ? (x, y, _rerender) => {
+          onContextMenu(
+            x,
+            y,
+            () => {
+              if (inspectedRerender) {
+                inspectedRerender().then((newUrl) => {
+                  if (newUrl) inspectedFrontImageUrl = newUrl;
+                });
+              }
+            },
+            inspectedSequence ?? undefined
+          );
         }
-      }, inspectedSequence ?? undefined);
-    } : undefined}
-    onClose={() => { inspectedSequence = null; inspectedFrontImageUrl = null; inspectedRerender = null; }}
+      : undefined}
+    onClose={() => {
+      inspectedSequence = null;
+      inspectedFrontImageUrl = null;
+      inspectedRerender = null;
+    }}
   >
     {#snippet extraActions()}
       {#if !readOnly}
-        <button class="copy-btn swap-btn" onclick={handleSwapInspected} aria-label="Swap card">
+        <button
+          class="copy-btn swap-btn"
+          onclick={handleSwapInspected}
+          aria-label="Swap card"
+        >
           <i class="fas fa-random"></i> Swap Card
         </button>
       {/if}
       {#if allowRemove}
-        <button class="copy-btn remove-btn" onclick={handleRemoveInspected} aria-label="Remove this card from the deck">
+        <button
+          class="copy-btn remove-btn"
+          onclick={handleRemoveInspected}
+          aria-label="Remove this card from the deck"
+        >
           <i class="fas fa-trash"></i> Remove
         </button>
       {/if}
@@ -421,7 +490,9 @@
     border: 1px solid transparent;
     border-radius: 10px;
     cursor: text;
-    transition: background 0.15s, border-color 0.15s;
+    transition:
+      background 0.15s,
+      border-color 0.15s;
   }
 
   .deck-name-input:hover {
@@ -448,6 +519,7 @@
   .meta-cards {
     font-weight: 700;
     color: var(--theme-text, rgba(255, 255, 255, 0.92));
+    font-variant-numeric: tabular-nums;
   }
 
   .meta-sep {
@@ -501,31 +573,86 @@
     flex: 1;
     min-height: 0;
     overflow: auto;
-    padding: 16px;
+    padding: clamp(8px, 0.8vw, 16px);
   }
 
   .swap-btn {
-    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 15%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 15%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 30%,
+      transparent
+    );
     color: var(--theme-accent, #a78bfa);
   }
 
   .swap-btn:hover {
-    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 25%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 25%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 50%,
+      transparent
+    );
     color: var(--theme-text, #fff);
   }
 
   .remove-btn {
-    background: color-mix(in srgb, var(--semantic-error, #f87171) 14%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-error, #f87171) 32%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #f87171) 14%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #f87171) 32%,
+      transparent
+    );
     color: var(--semantic-error, #f87171);
   }
 
   .remove-btn:hover {
-    background: color-mix(in srgb, var(--semantic-error, #f87171) 26%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-error, #f87171) 55%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #f87171) 26%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #f87171) 55%,
+      transparent
+    );
     color: var(--theme-text, #fff);
+  }
+
+  @media (min-width: 2600px) {
+    .review-header {
+      gap: 20px;
+      padding: 16px 24px;
+    }
+
+    .back-btn,
+    .redraw-btn {
+      min-height: var(--min-touch-target, 52px);
+      padding-inline: 20px;
+      font-size: var(--font-size-min, 16px);
+    }
+
+    .deck-number,
+    .deck-name-input {
+      font-size: 30px;
+    }
+
+    .deck-meta {
+      font-size: var(--font-size-min, 16px);
+    }
   }
 
   @media (max-width: 768px) {

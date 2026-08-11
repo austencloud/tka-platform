@@ -23,9 +23,29 @@ export const CARD_SIZES = {
 
 export type CardSizeId = keyof typeof CARD_SIZES;
 
-// US Letter in points (1 inch = 72 points)
-const LETTER_W_PT = 612; // 8.5 * 72
-const LETTER_H_PT = 792; // 11 * 72
+// Home-print sheet stock (1 inch = 72 points). "superb" is Super B / A3+
+// (13"×19", 330×483mm) — the Epson ET-16650's maximum sheet, fed through the
+// rear specialty slot for heavy cover stock.
+export const PAPER_SIZES = {
+  letter: {
+    label: 'Letter 8.5"×11"',
+    shortLabel: "Letter",
+    widthInches: 8.5,
+    heightInches: 11,
+    widthPt: 612,
+    heightPt: 792,
+  },
+  superb: {
+    label: 'Super B 13"×19"',
+    shortLabel: '13"×19"',
+    widthInches: 13,
+    heightInches: 19,
+    widthPt: 936,
+    heightPt: 1368,
+  },
+} as const;
+
+export type PaperSizeId = keyof typeof PAPER_SIZES;
 
 export interface PageLayout {
   cols: number;
@@ -36,20 +56,34 @@ export interface PageLayout {
   gutterPt: number;
   marginXPt: number;
   marginYPt: number;
+  pageWidthPt: number;
+  pageHeightPt: number;
 }
 
 const GUTTER_PT = 0;
 
-const PAGE_LAYOUTS: Record<CardSizeId, PageLayout> = {
-  poker: buildLayout(CARD_SIZES.poker, 3, 3),
-  tarot: buildLayout(CARD_SIZES.tarot, 3, 2),
+// Grid counts are pinned per card × paper combination, not derived from an
+// auto-fill, so every sheet keeps a printable margin. Tarot on Super B stops at
+// 3 rows: a 4th row is exactly 19.00" tall — zero margin, inside the printer's
+// non-printable edge.
+const PAGE_LAYOUTS: Record<PaperSizeId, Record<CardSizeId, PageLayout>> = {
+  letter: {
+    poker: buildLayout(CARD_SIZES.poker, "letter", 3, 3),
+    tarot: buildLayout(CARD_SIZES.tarot, "letter", 3, 2),
+  },
+  superb: {
+    poker: buildLayout(CARD_SIZES.poker, "superb", 5, 5),
+    tarot: buildLayout(CARD_SIZES.tarot, "superb", 4, 3),
+  },
 };
 
 function buildLayout(
   size: (typeof CARD_SIZES)[CardSizeId],
+  paperSize: PaperSizeId,
   cols: number,
   rows: number
 ): PageLayout {
+  const paper = PAPER_SIZES[paperSize];
   const cardWidthPt = Math.round(size.widthInches * 72);
   const cardHeightPt = Math.round(size.heightInches * 72);
   const gridW = cols * cardWidthPt + (cols - 1) * GUTTER_PT;
@@ -61,11 +95,16 @@ function buildLayout(
     cardWidthPt,
     cardHeightPt,
     gutterPt: GUTTER_PT,
-    marginXPt: (LETTER_W_PT - gridW) / 2,
-    marginYPt: (LETTER_H_PT - gridH) / 2,
+    marginXPt: (paper.widthPt - gridW) / 2,
+    marginYPt: (paper.heightPt - gridH) / 2,
+    pageWidthPt: paper.widthPt,
+    pageHeightPt: paper.heightPt,
   };
 }
 
-export function getPageLayout(cardSize: CardSizeId): PageLayout {
-  return PAGE_LAYOUTS[cardSize];
+export function getPageLayout(
+  cardSize: CardSizeId,
+  paperSize: PaperSizeId = "letter"
+): PageLayout {
+  return PAGE_LAYOUTS[paperSize][cardSize];
 }

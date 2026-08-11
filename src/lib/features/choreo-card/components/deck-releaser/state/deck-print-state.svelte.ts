@@ -1,7 +1,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
-import type { CardSizeId } from "../../../domain/card-sizes";
-import { getPageLayout } from "../../../domain/card-sizes";
+import type { CardSizeId, PaperSizeId } from "../../../domain/card-sizes";
+import { getPageLayout, PAPER_SIZES } from "../../../domain/card-sizes";
 import { buildDeckAiSummary } from "../../../services/deck-ai-summary";
 import type { PrintPDFMode } from "../../../services/print-pdf-exporter";
 import {
@@ -19,12 +19,15 @@ import type { DeckReleaserSessionStorage } from "./deck-releaser-session";
 import type { DeckReleaserState } from "./deck-releaser-state.svelte";
 
 const PRINT_SETTINGS_KEY = "deckReleaser.printSettings";
+type PairPreparer = () => Promise<CardPair[]>;
 
 interface PersistedPrintSettings {
   cardSize: CardSizeId;
+  paperSize?: PaperSizeId;
   copies: number;
   groupByElement: boolean;
   groupByLetter?: boolean;
+  includeHowToRead?: boolean;
 }
 
 export interface DeckPrintStateDependencies {
@@ -56,11 +59,21 @@ export function createDeckPrintState(
 ) {
   const saved = loadPrintSettings(deps.storage);
   let cardSize = $state<CardSizeId>(saved.cardSize ?? "poker");
-  let copies = $state(saved.copies ?? getPageLayout(cardSize).cardsPerPage);
+  // Guard the persisted value: an unknown id (removed size, corrupted storage)
+  // must not reach getPageLayout as an object key.
+  let paperSize = $state<PaperSizeId>(
+    saved.paperSize && saved.paperSize in PAPER_SIZES
+      ? saved.paperSize
+      : "letter"
+  );
+  let copies = $state(
+    saved.copies ?? getPageLayout(cardSize, paperSize).cardsPerPage
+  );
   let groupByElement = $state(saved.groupByElement ?? true);
   let groupByLetter = $state(saved.groupByLetter ?? false);
+  let includeHowToRead = $state(saved.includeHowToRead ?? false);
   let selectedSide = $state<PrintSide>("fronts");
-  let renderedPairs = $state<CardPair[]>([]);
+  let pairPreparer: PairPreparer | null = null;
   let isRendering = $state(false);
   let renderProgress = $state(0);
   let isExporting = $state(false);
@@ -75,7 +88,14 @@ export function createDeckPrintState(
     try {
       deps.storage.setItem(
         PRINT_SETTINGS_KEY,
-        JSON.stringify({ cardSize, copies, groupByElement, groupByLetter })
+        JSON.stringify({
+          cardSize,
+          paperSize,
+          copies,
+          groupByElement,
+          groupByLetter,
+          includeHowToRead,
+        })
       );
     } catch {
       // Printing still works when the browser refuses preference storage.
@@ -105,7 +125,9 @@ export function createDeckPrintState(
     }
     return [...counts.values()];
   });
-  const cardsPerPage = $derived(getPageLayout(cardSize).cardsPerPage);
+  const cardsPerPage = $derived(
+    getPageLayout(cardSize, paperSize).cardsPerPage
+  );
   const copiesPresets = $derived.by(() => {
     const ladder = suggestCopyCounts(groupSizes, cardsPerPage).map(
       (suggestion) => suggestion.copies
@@ -133,6 +155,7 @@ export function createDeckPrintState(
       turnIntensity: deck.turnIntensity,
       gridMode: [...deck.selectedGridModes][0] ?? "diamond",
       propType: String(deck.bluePropType),
+      includeHowToRead,
     });
   }
 
@@ -151,7 +174,10 @@ export function createDeckPrintState(
         copies,
         groupByColor: groupByElement,
         groupByLetter,
-        sheets: waste.sheets,
+        includeHowToRead,
+        sheets:
+          waste.sheets +
+          (includeHowToRead ? Math.ceil(copies / cardsPerPage) : 0),
         blanks: waste.blanks,
       },
       recipe: deck.viewingRelease?.recipe ?? deck.toRecipe(),
@@ -162,15 +188,18 @@ export function createDeckPrintState(
     const cards = sortedSequences
       .map(
         (sequence, index) =>
-          `${hashSequenceContent(sequence)}:${tndElements[index]?.element ?? "_"}`
+          `${hashSequenceContent(sequence)}:${JSON.stringify(sortedFooters[index] ?? {})}:${tndElements[index]?.element ?? "_"}`
       )
       .join(",");
     return [
-      "v1",
+      "2026-08-11-v2",
+      deck.name.trim(),
       deck.theme,
       deck.bluePropType,
       deck.redPropType,
       cardSize,
+      includeHowToRead,
+      rerenderKey,
       cards,
     ].join("|");
   });
@@ -179,8 +208,12 @@ export function createDeckPrintState(
     return [
       `Deck_${deckRefPadded}`,
       mode,
+      paperSize,
       copies,
       groupByElement,
+      groupByLetter,
+      includeHowToRead,
+      JSON.stringify(metadata),
       printDeckSignature,
     ].join("§");
   }
@@ -196,11 +229,11 @@ export function createDeckPrintState(
     };
   }
 
-  function metadataForPrintRun(printRunId: string) {
+  function metadataForPrintRun(printRunId: string, baseMetadata = metadata) {
     return {
-      ...metadata,
-      subject: `${metadata.subject} Serialized artwork run ${printRunId}.`,
-      keywords: [...metadata.keywords, `print-run:${printRunId}`],
+      ...baseMetadata,
+      subject: `${baseMetadata.subject} Serialized artwork run ${printRunId}.`,
+      keywords: [...baseMetadata.keywords, `print-run:${printRunId}`],
     };
   }
 
@@ -218,13 +251,33 @@ export function createDeckPrintState(
     }
   }
 
-  async function buildInsertPair(): Promise<CardPair> {
+  async function buildInsertPair(options: {
+    theme: string;
+    cardSize: CardSizeId;
+    deckNumber: number;
+  }): Promise<CardPair> {
     const { front, back } = await deps.renderInsertCardPair({
-      theme: deck.theme,
-      cardSize,
-      deckNumber: deckRefNumber,
+      theme: options.theme,
+      cardSize: options.cardSize,
+      deckNumber: options.deckNumber,
     });
     return { front, back, label: "How to Read" };
+  }
+
+  async function requirePreparedPairs(
+    prepare: PairPreparer | null,
+    expectedCount = sortedSequences.length
+  ): Promise<CardPair[]> {
+    if (!prepare) {
+      throw new Error("The card preview is still preparing.");
+    }
+    const pairs = await prepare();
+    if (pairs.length !== expectedCount) {
+      throw new Error(
+        "Couldn't prepare every card for printing. Re-render the deck and try again."
+      );
+    }
+    return pairs;
   }
 
   async function buildPrintPDF(mode: PrintPDFMode): Promise<{
@@ -232,66 +285,91 @@ export function createDeckPrintState(
     printRunId: string | null;
   }> {
     const deckName = `Deck_${deckRefPadded}`;
+    const key = buildPrintKey(mode);
+    const preparePairs = pairPreparer;
+    const expectedCardCount = sortedSequences.length;
+    const printCardSize = cardSize;
+    const printPaperSize = paperSize;
+    const printCopies = copies;
+    const printElements = [...tndElements];
+    const printGroupByElement = groupByElement;
+    const printMetadata = metadata;
+    const identity = physicalDeckIdentity();
+    const insertOptions = includeHowToRead
+      ? {
+          theme: deck.theme,
+          cardSize: printCardSize,
+          deckNumber: deckRefNumber,
+        }
+      : null;
     const onProgress = (current: number, total: number) => {
       exportProgress = current;
       exportTotal = total;
     };
 
-    if (mode === "backs") {
-      const blob = await deps.getOrBuildPrintPDF(
-        buildPrintKey(mode),
-        renderedPairs,
-        deckName,
-        cardSize,
-        mode,
-        {
-          copies,
-          elements: tndElements,
-          groupByElement,
-          meta: metadata,
-          insertPair: await buildInsertPair(),
-        },
-        onProgress
-      );
-      return { blob, printRunId: null };
-    }
+    return deps.getOrBuildPrintPDF(key, async () => {
+      const pairs = await requirePreparedPairs(preparePairs, expectedCardCount);
+      const insertPair = insertOptions
+        ? await buildInsertPair(insertOptions)
+        : undefined;
 
-    const run = await deps.prepareSerializedPrintRun({
-      pairs: renderedPairs,
-      ...physicalDeckIdentity(),
-      cardSize,
-      copies,
-      groupByElement,
-      outputMode: mode,
+      if (mode === "backs") {
+        const blob = await deps.exportHomePrintPDF(
+          pairs,
+          deckName,
+          printCardSize,
+          onProgress,
+          mode,
+          {
+            paperSize: printPaperSize,
+            copies: printCopies,
+            elements: printElements,
+            groupByElement: printGroupByElement,
+            meta: printMetadata,
+            insertPair,
+          }
+        );
+        return { blob, printRunId: null };
+      }
+
+      const run = await deps.prepareSerializedPrintRun({
+        pairs,
+        ...identity,
+        cardSize: printCardSize,
+        copies: printCopies,
+        groupByElement: printGroupByElement,
+        outputMode: mode,
+      });
+      let blob: Blob;
+      try {
+        blob = await deps.exportHomePrintPDF(
+          pairs,
+          deckName,
+          printCardSize,
+          onProgress,
+          mode,
+          {
+            paperSize: printPaperSize,
+            copies: printCopies,
+            elements: printElements,
+            groupByElement: printGroupByElement,
+            meta: metadataForPrintRun(run.printRunId, printMetadata),
+            insertPair,
+            frontRenderer: ({ pair, cardIndex, copyIndex }) =>
+              run.renderFront(pair, cardIndex, copyIndex),
+          }
+        );
+      } catch (error) {
+        await recordFailedPrintRun(run);
+        throw error;
+      }
+      await run.complete();
+      return { blob, printRunId: run.printRunId };
     });
-    let blob: Blob;
-    try {
-      blob = await deps.exportHomePrintPDF(
-        renderedPairs,
-        deckName,
-        cardSize,
-        onProgress,
-        mode,
-        {
-          copies,
-          elements: tndElements,
-          groupByElement,
-          meta: metadataForPrintRun(run.printRunId),
-          insertPair: await buildInsertPair(),
-          frontRenderer: ({ pair, cardIndex, copyIndex }) =>
-            run.renderFront(pair, cardIndex, copyIndex),
-        }
-      );
-    } catch (error) {
-      await recordFailedPrintRun(run);
-      throw error;
-    }
-    await run.complete();
-    return { blob, printRunId: run.printRunId };
   }
 
   async function exportPDF(mode: PrintPDFMode = "combined"): Promise<void> {
-    if (renderedPairs.length === 0) return;
+    if (sortedSequences.length === 0) return;
     isExporting = true;
     exportError = "";
     exportProgress = 0;
@@ -317,13 +395,13 @@ export function createDeckPrintState(
   }
 
   async function exportFrontsAndBacks(): Promise<void> {
-    if (renderedPairs.length === 0 || isExporting) return;
+    if (sortedSequences.length === 0 || isExporting) return;
     await exportPDF("fronts");
     await exportPDF("backs");
   }
 
   async function print(mode: PrintPDFMode): Promise<void> {
-    if (renderedPairs.length === 0 || isPrinting) return;
+    if (sortedSequences.length === 0 || isPrinting) return;
     isPrinting = true;
     exportError = "";
     try {
@@ -337,15 +415,16 @@ export function createDeckPrintState(
   }
 
   async function exportZIP(): Promise<void> {
-    if (renderedPairs.length === 0) return;
+    if (sortedSequences.length === 0) return;
     isExporting = true;
     exportError = "";
     exportProgress = 0;
     exportTotal = 0;
     try {
+      const pairs = await requirePreparedPairs(pairPreparer);
       const deckName = `Deck_${deckRefPadded}`;
       const run = await deps.prepareSerializedPrintRun({
-        pairs: renderedPairs,
+        pairs,
         ...physicalDeckIdentity(),
         cardSize,
         copies: 1,
@@ -355,14 +434,20 @@ export function createDeckPrintState(
       let blob: Blob;
       try {
         blob = await deps.exportDeckZIP(
-          renderedPairs,
+          pairs,
           deckName,
           (current, total) => {
             exportProgress = current;
             exportTotal = total;
           },
           {
-            insertPair: await buildInsertPair(),
+            insertPair: includeHowToRead
+              ? await buildInsertPair({
+                  theme: deck.theme,
+                  cardSize,
+                  deckNumber: deckRefNumber,
+                })
+              : undefined,
             frontRenderer: (pair, cardIndex) =>
               run.renderFront(pair, cardIndex, 0),
           }
@@ -386,10 +471,19 @@ export function createDeckPrintState(
   }
 
   function changeCardSize(value: CardSizeId): void {
-    if (copies === getPageLayout(cardSize).cardsPerPage) {
-      copies = getPageLayout(value).cardsPerPage;
+    if (copies === getPageLayout(cardSize, paperSize).cardsPerPage) {
+      copies = getPageLayout(value, paperSize).cardsPerPage;
     }
     cardSize = value;
+  }
+
+  function changePaperSize(value: PaperSizeId): void {
+    // Same full-sheet tracking as changeCardSize: when copies sits on "one full
+    // sheet", keep it on one full sheet of the new paper (9 → 25 for poker).
+    if (copies === getPageLayout(cardSize, paperSize).cardsPerPage) {
+      copies = getPageLayout(cardSize, value).cardsPerPage;
+    }
+    paperSize = value;
   }
 
   const previewSideFilter = $derived(
@@ -403,6 +497,9 @@ export function createDeckPrintState(
   return {
     get cardSize() {
       return cardSize;
+    },
+    get paperSize() {
+      return paperSize;
     },
     get copies() {
       return copies;
@@ -422,17 +519,17 @@ export function createDeckPrintState(
     set groupByLetter(value) {
       groupByLetter = value;
     },
+    get includeHowToRead() {
+      return includeHowToRead;
+    },
+    set includeHowToRead(value) {
+      includeHowToRead = value;
+    },
     get selectedSide() {
       return selectedSide;
     },
     set selectedSide(value) {
       selectedSide = value;
-    },
-    get renderedPairs() {
-      return renderedPairs;
-    },
-    set renderedPairs(value) {
-      renderedPairs = value;
     },
     get isRendering() {
       return isRendering;
@@ -494,8 +591,12 @@ export function createDeckPrintState(
     copiesAnnotate,
     getAiSummary,
     changeCardSize,
+    changePaperSize,
     requestRerender() {
       rerenderKey++;
+    },
+    setPairPreparer(value: PairPreparer | null) {
+      pairPreparer = value;
     },
     setRenderState(state: { isRendering: boolean; progress: number }) {
       isRendering = state.isRendering;

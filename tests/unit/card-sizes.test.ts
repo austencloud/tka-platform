@@ -47,4 +47,36 @@ describe('getPageLayout', () => {
     expect(tarot.marginXPt).toBe(9);
     expect(tarot.marginYPt).toBe(54);
   });
+
+  it('poker fills a 13x19 Super B sheet 5x5=25', () => {
+    const layout = getPageLayout('poker', 'superb');
+    expect(layout.cols).toBe(5);
+    expect(layout.rows).toBe(5);
+    expect(layout.cardsPerPage).toBe(25);
+    expect(layout.pageWidthPt).toBe(936);
+    expect(layout.pageHeightPt).toBe(1368);
+    expect(layout.marginXPt).toBe(18);
+    expect(layout.marginYPt).toBe(54);
+  });
+
+  it('tarot on Super B stops at 4x3=12 so a printable margin survives', () => {
+    const layout = getPageLayout('tarot', 'superb');
+    expect(layout.cols).toBe(4);
+    expect(layout.rows).toBe(3);
+    expect(layout.cardsPerPage).toBe(12);
+    // A 4th tarot row would be exactly 19" tall — zero vertical margin.
+    expect(layout.marginYPt).toBeGreaterThan(0);
+  });
+
+  it('every layout keeps its grid inside the sheet with positive margins', () => {
+    for (const paper of ['letter', 'superb'] as const) {
+      for (const card of ['poker', 'tarot'] as const) {
+        const l = getPageLayout(card, paper);
+        expect(l.marginXPt).toBeGreaterThan(0);
+        expect(l.marginYPt).toBeGreaterThan(0);
+        expect(l.cols * l.cardWidthPt).toBeLessThanOrEqual(l.pageWidthPt);
+        expect(l.rows * l.cardHeightPt).toBeLessThanOrEqual(l.pageHeightPt);
+      }
+    }
+  });
 });

@@ -67,6 +67,34 @@ describe("exportHomePrintPDF with the How to Read insert", () => {
     expect(await pageCount(blob)).toBe(3);
   });
 
+  it("emits 13x19 Super B pages holding 25 poker cards when paperSize is superb", async () => {
+    // 25 cards fill exactly one 5×5 Super B sheet; on Letter they'd need 3.
+    const pairs = Array.from({ length: 25 }, (_, i) => pair(`C${i}`));
+    const blob = await exportHomePrintPDF(pairs, "D", "poker", undefined, "fronts", {
+      paperSize: "superb",
+      copies: 1,
+      groupByElement: false,
+    });
+
+    const doc = await PDFDocument.load(await blob.arrayBuffer());
+    expect(doc.getPageCount()).toBe(1);
+    const { width, height } = doc.getPage(0).getSize();
+    expect(width).toBe(936); // 13" × 72
+    expect(height).toBe(1368); // 19" × 72
+  });
+
+  it("keeps Letter page dimensions when paperSize is omitted", async () => {
+    const blob = await exportHomePrintPDF([pair("ABC")], "D", "poker", undefined, "fronts", {
+      copies: 1,
+      groupByElement: false,
+    });
+
+    const doc = await PDFDocument.load(await blob.arrayBuffer());
+    const { width, height } = doc.getPage(0).getSize();
+    expect(width).toBe(612);
+    expect(height).toBe(792);
+  });
+
   it("does not hand the insert to the serialized front renderer", async () => {
     const labels: string[] = [];
 

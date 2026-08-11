@@ -3,10 +3,8 @@ import type { PDFFont, PDFImage, PDFPage } from 'pdf-lib';
 import { planPrintSlots, type PlannedSlot } from './print-slot-planner';
 import type { TnDElement } from '../domain/tnd-element';
 import type { CardPair } from "./types";
-import { CARD_SIZES, getPageLayout, type CardSizeId, type PageLayout } from '../domain/card-sizes';
+import { CARD_SIZES, getPageLayout, type CardSizeId, type PageLayout, type PaperSizeId } from '../domain/card-sizes';
 
-const LETTER_W = 612; // 8.5" × 72
-const LETTER_H = 792; // 11" × 72
 const GUIDE_COLOR = rgb(0.65, 0.65, 0.65);
 const CROP_COLOR = rgb(0.4, 0.4, 0.4);
 const CROP_LEN = 8;
@@ -61,6 +59,9 @@ export async function exportDeckPDF(
 export type PrintPDFMode = 'combined' | 'fronts' | 'backs';
 
 export interface HomePrintOptions {
+	/** Sheet stock the grid is laid out on. Default US Letter; "superb" is the
+	 *  13"×19" Super B sheet the ET-16650 takes through its rear feed. */
+	paperSize?: PaperSizeId;
 	/** Whole-deck copies. Each element block repeats N times. Default 1, min 1. */
 	copies?: number;
 	/** Element tag per pair, parallel to `pairs`. Absent → no grouping (single
@@ -124,15 +125,15 @@ export async function exportHomePrintPDF(
 	mode: PrintPDFMode = 'combined',
 	options: HomePrintOptions = {},
 ): Promise<Blob> {
-	const layout = getPageLayout(cardSize);
-	const { cols, cardsPerPage, cardWidthPt, cardHeightPt, gutterPt, marginXPt, marginYPt } = layout;
+	const layout = getPageLayout(cardSize, options.paperSize ?? 'letter');
+	const { cols, cardsPerPage, cardWidthPt, cardHeightPt, gutterPt, marginXPt, marginYPt, pageWidthPt, pageHeightPt } = layout;
 
 	const copies = Math.max(1, Math.floor(options.copies ?? 1));
 	const elements = options.elements ?? [];
 	const groupByElement = options.groupByElement ?? true;
 	// firstOnTop: reverse card order so the deck's FIRST card is drawn last and
 	// lands on top of the printed/cut stack (was: last card on top).
-	const indexedPairs = pairs.map((pair, cardIndex) => ({ pair, cardIndex }));
+	const indexedPairs: IndexedCardPair[] = pairs.map((pair, cardIndex) => ({ pair, cardIndex }));
 	const plannedSlots = planPrintSlots(
 		indexedPairs,
 		elements,
@@ -195,7 +196,7 @@ export async function exportHomePrintPDF(
 		for (let sheet = 0; sheet < totalSheets; sheet++) {
 			const start = sheet * cardsPerPage;
 			const sheetSlots = slots.slice(start, start + cardsPerPage);
-			const frontsPage = pdfDoc.addPage([LETTER_W, LETTER_H]);
+			const frontsPage = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
 
 			for (let i = 0; i < sheetSlots.length; i++) {
 				const slot = sheetSlots[i]!;
@@ -203,7 +204,7 @@ export async function exportHomePrintPDF(
 				const col = i % cols;
 				const row = Math.floor(i / cols);
 				const x = marginXPt + col * (cardWidthPt + gutterPt);
-				const y = LETTER_H - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
+				const y = pageHeightPt - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
 				// The insert has no sequence, so it never goes through the serialized
 				// renderer — its identical pixels are embedded once and reused.
 				const serialize = Boolean(options.frontRenderer) && !slot.item.isInsert;
@@ -231,14 +232,14 @@ export async function exportHomePrintPDF(
 	}
 
 	if (mode === 'combined') {
-		addFlipInstructionPage(pdfDoc, font, fontBold);
+		addFlipInstructionPage(pdfDoc, font, fontBold, pageWidthPt, pageHeightPt);
 	}
 
 	if (includeBacks) {
 		for (let sheet = 0; sheet < totalSheets; sheet++) {
 			const start = sheet * cardsPerPage;
 			const sheetSlots = slots.slice(start, start + cardsPerPage);
-			const backsPage = pdfDoc.addPage([LETTER_W, LETTER_H]);
+			const backsPage = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
 
 			for (let i = 0; i < sheetSlots.length; i++) {
 				const slot = sheetSlots[i]!;
@@ -247,7 +248,7 @@ export async function exportHomePrintPDF(
 				const row = Math.floor(i / cols);
 				const mirroredCol = cols - 1 - col;
 				const x = marginXPt + mirroredCol * (cardWidthPt + gutterPt);
-				const y = LETTER_H - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
+				const y = pageHeightPt - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
 				const img = await embedBack(slot.item.pair.back);
 				backsPage.drawImage(img, { x, y, width: cardWidthPt, height: cardHeightPt });
 			}
@@ -276,7 +277,7 @@ function cardX(col: number, layout: PageLayout): number {
 	return layout.marginXPt + col * (layout.cardWidthPt + layout.gutterPt);
 }
 function cardY(row: number, layout: PageLayout): number {
-	return LETTER_H - layout.marginYPt - (row + 1) * layout.cardHeightPt - row * layout.gutterPt;
+	return layout.pageHeightPt - layout.marginYPt - (row + 1) * layout.cardHeightPt - row * layout.gutterPt;
 }
 
 function drawCropMarks(page: PDFPage, layout: PageLayout) {
@@ -287,7 +288,7 @@ function drawCropMarks(page: PDFPage, layout: PageLayout) {
 		const right = left + layout.cardWidthPt;
 
 		// Vertical marks at top and bottom margins for each card edge
-		const topEdge = LETTER_H - layout.marginYPt;
+		const topEdge = layout.pageHeightPt - layout.marginYPt;
 		const botEdge = cardY(rows - 1, layout);
 
 		// Top margin marks
@@ -326,11 +327,12 @@ function drawSheetLabel(
 	deckName: string,
 	deckSummary = "",
 ) {
+	const { width: pageW, height: pageH } = page.getSize();
 	const label = `${side}  ·  Sheet ${sheetNum} of ${totalSheets}`;
 	const labelWidth = fontBold.widthOfTextAtSize(label, 7);
 	page.drawText(label, {
-		x: LETTER_W - labelWidth - LABEL_EDGE_X,
-		y: LETTER_H - LABEL_EDGE_Y - 7,
+		x: pageW - labelWidth - LABEL_EDGE_X,
+		y: pageH - LABEL_EDGE_Y - 7,
 		size: 7,
 		font: fontBold,
 		color: GUIDE_COLOR,
@@ -340,8 +342,8 @@ function drawSheetLabel(
 	if (deckSummary) {
 		const sumWidth = font.widthOfTextAtSize(deckSummary, 7);
 		page.drawText(deckSummary, {
-			x: (LETTER_W - sumWidth) / 2,
-			y: LETTER_H - LABEL_EDGE_Y - 7,
+			x: (pageW - sumWidth) / 2,
+			y: pageH - LABEL_EDGE_Y - 7,
 			size: 7,
 			font: fontBold,
 			color: GUIDE_COLOR,
@@ -351,7 +353,7 @@ function drawSheetLabel(
 	if (deckName) {
 		page.drawText(deckName, {
 			x: LABEL_EDGE_X,
-			y: LETTER_H - LABEL_EDGE_Y - 6,
+			y: pageH - LABEL_EDGE_Y - 6,
 			size: 6,
 			font,
 			color: GUIDE_COLOR,
@@ -376,7 +378,7 @@ function drawFlipHint(
 	const flipText = ">> LONG EDGE";
 	const flipWidth = font.widthOfTextAtSize(flipText, 6);
 	page.drawText(flipText, {
-		x: LETTER_W - LABEL_EDGE_X - flipWidth,
+		x: page.getSize().width - LABEL_EDGE_X - flipWidth,
 		y: LABEL_EDGE_Y,
 		size: 6,
 		font,
@@ -388,10 +390,12 @@ function addFlipInstructionPage(
 	pdfDoc: PDFDocument,
 	font: PDFFont,
 	fontBold: PDFFont,
+	pageWidthPt: number,
+	pageHeightPt: number,
 ) {
-	const page = pdfDoc.addPage([LETTER_W, LETTER_H]);
-	const cx = LETTER_W / 2;
-	let y = LETTER_H / 2 + 60;
+	const page = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
+	const cx = pageWidthPt / 2;
+	let y = pageHeightPt / 2 + 60;
 
 	const title = "STOP: FLIP YOUR PAPER";
 	const titleW = fontBold.widthOfTextAtSize(title, 16);

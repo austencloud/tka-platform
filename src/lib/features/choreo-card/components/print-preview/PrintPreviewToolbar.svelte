@@ -2,7 +2,13 @@
   import CardSizeToggle from "../card-preview/CardSizeToggle.svelte";
   import CopiesSelect from "./CopiesSelect.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
-  import { getPageLayout, type CardSizeId } from "../../domain/card-sizes";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import {
+    getPageLayout,
+    PAPER_SIZES,
+    type CardSizeId,
+    type PaperSizeId,
+  } from "../../domain/card-sizes";
 
   interface Props {
     cardSize: CardSizeId;
@@ -11,6 +17,10 @@
     renderProgress: number;
     renderTotal: number;
     onCardSizeChange: (size: CardSizeId) => void;
+    /** Sheet stock for the print layout. Omit both to hide the picker and lay
+     *  out on Letter (existing non-releaser callers). */
+    paperSize?: PaperSizeId;
+    onPaperSizeChange?: (size: PaperSizeId) => void;
     onRerender?: () => void;
     /** Copies per card for the print layout. Omit to hide the control. */
     copies?: number;
@@ -38,6 +48,8 @@
     renderProgress,
     renderTotal,
     onCardSizeChange,
+    paperSize,
+    onPaperSizeChange,
     onRerender,
     copies,
     onCopiesChange,
@@ -50,9 +62,18 @@
     onPrint,
   }: Props = $props();
 
-  // The "one card per page" count for the current size (9 poker / 6 tarot) —
-  // marks the primary copies chip.
-  const perPage = $derived(getPageLayout(cardSize).cardsPerPage);
+  // The "one card per page" count for the current size and paper (9 poker /
+  // 6 tarot on Letter; 25 / 12 on Super B) — marks the primary copies chip.
+  const perPage = $derived(
+    getPageLayout(cardSize, paperSize ?? "letter").cardsPerPage
+  );
+
+  const paperChoices = (
+    Object.entries(PAPER_SIZES) as [
+      PaperSizeId,
+      (typeof PAPER_SIZES)[PaperSizeId],
+    ][]
+  ).map(([value, spec]) => ({ value, label: spec.shortLabel }));
 
   const progressText = $derived(
     renderTotal > 0
@@ -64,6 +85,17 @@
 <div class="toolbar" role="toolbar" aria-label="Print preview controls">
   <div class="toolbar-left">
     <CardSizeToggle selected={cardSize} onchange={onCardSizeChange} />
+    {#if paperSize != null && onPaperSizeChange}
+      <SegmentedControl
+        options={paperChoices}
+        value={paperSize}
+        onchange={onPaperSizeChange}
+        color="accent"
+        size="sm"
+        semantics="radiogroup"
+        ariaLabel="Paper size"
+      />
+    {/if}
   </div>
 
   <div class="toolbar-right">
@@ -82,7 +114,6 @@
       <FilterChipBase
         mode="toggle"
         size="sm"
-        icon="fas fa-palette"
         label="Group by color"
         active={groupByElement}
         chipColor="#10b981"
@@ -94,7 +125,6 @@
       <FilterChipBase
         mode="toggle"
         size="sm"
-        icon="fas fa-font"
         label="Group by letter"
         active={groupByLetter}
         chipColor="#a78bfa"
@@ -104,13 +134,21 @@
 
     {#if onRerender}
       <button
-        class="icon-btn"
+        class="rerender-btn"
         class:spinning={isRendering}
         onclick={onRerender}
         aria-label={isRendering ? "Restart render" : "Re-render all cards"}
-        title={isRendering ? "Restart render (cancels current)" : "Re-render all cards"}
+        title={isRendering
+          ? "Restart render (cancels current)"
+          : "Re-render all cards"}
       >
         <i class="fas fa-sync-alt" aria-hidden="true"></i>
+        <span class="rerender-label">
+          <span class="rerender-sizer" aria-hidden="true">Re-render cards</span>
+          <span class="rerender-live"
+            >{isRendering ? "Restart render" : "Re-render cards"}</span
+          >
+        </span>
       </button>
     {/if}
 
@@ -127,7 +165,9 @@
       class="print-btn"
       disabled={isRendering || totalCards === 0}
       onclick={onPrint}
-      title={totalCards === 0 ? "Load a deck first" : `Print ${totalCards} cards`}
+      title={totalCards === 0
+        ? "Load a deck first"
+        : `Print ${totalCards} cards`}
     >
       <i class="fas fa-print" aria-hidden="true"></i>
       <span>Print This Deck</span>
@@ -150,6 +190,21 @@
     align-items: center;
     gap: 8px;
     flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  /* SegmentedControl's root is width: 100% for full-width rows; in this flex
+     row that resolves its flex-basis to the whole container and starves the
+     card-size toggle. Content-size it here. Grid with equal 1fr columns sizes
+     every segment to the widest label (flex:1 at max-content would split the
+     sum and clip the wide one), and equal segments keep the sliding
+     indicator's percentage math honest. */
+  .toolbar-left > :global(.segmented-control) {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    width: max-content;
+    flex: 0 0 auto;
   }
 
   .toolbar-right {
@@ -167,45 +222,83 @@
     margin-left: 4px;
   }
 
-  .icon-btn {
-    display: flex;
+  .rerender-btn {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    background: transparent;
+    gap: 7px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 7px 11px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    font-size: 13px;
+    border-radius: 100px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
+    font-family: inherit;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      border-color var(--duration-fast, 150ms) ease,
+      color var(--duration-fast, 150ms) ease;
   }
 
-  .icon-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.06);
+  .rerender-btn:hover:not(:disabled) {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 10%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 30%,
+      transparent
+    );
     color: var(--theme-text, #fff);
   }
 
-  .icon-btn:disabled {
+  .rerender-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .rerender-btn:disabled {
     opacity: 0.3;
     cursor: not-allowed;
   }
 
-  .icon-btn.spinning i {
+  .rerender-btn.spinning i {
     animation: spin 1s linear infinite;
   }
 
+  .rerender-label {
+    display: inline-grid;
+  }
+
+  .rerender-sizer,
+  .rerender-live {
+    grid-area: 1 / 1;
+  }
+
+  .rerender-sizer {
+    visibility: hidden;
+  }
+
   @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .progress-text {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-size: 13px;
+    font-size: var(--font-size-min, 14px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     white-space: nowrap;
   }

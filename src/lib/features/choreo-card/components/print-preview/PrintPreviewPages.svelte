@@ -1,6 +1,5 @@
 <script lang="ts">
-
-import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRenderer";
+  import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRenderer";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { CardFooter } from "../../domain/models/DeckRelease";
   import type { CardSizeId } from "../../domain/card-sizes";
@@ -8,17 +7,34 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   import type { PrintRenderOptions } from "../../services/types";
   import type { TnDElement } from "../../domain/tnd-element";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { getPageLayout, CARD_SIZES } from "../../domain/card-sizes";
-  import { planPrintSlots, type PlannedSlot } from "../../services/print-slot-planner";
+  import {
+    getPageLayout,
+    CARD_SIZES,
+    PAPER_SIZES,
+    type PaperSizeId,
+  } from "../../domain/card-sizes";
+  import {
+    planPrintSlots,
+    type PlannedSlot,
+  } from "../../services/print-slot-planner";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getCatalogLayoutPolicy } from "../../domain/catalog-layout-policy";
-  import { cardCache, type RenderedCard, type CachedCard } from "./print-preview-cache";
-  import { deckCardBlobCache, blobToDataUrl, canvasToBlob } from "../../services/DeckCardBlobCache";
+  import {
+    cardCache,
+    type RenderedCard,
+    type CachedCard,
+  } from "./print-preview-cache";
+  import {
+    deckCardBlobCache,
+    canvasToBlob,
+  } from "../../services/DeckCardBlobCache";
   import { hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import { getCompositionDispatcher } from "$lib/shared/render/get-composition-dispatcher";
   import { buildOverridePlacementBundle } from "$lib/shared/render/services/override-placement-bundle";
+  import { prewarmCardPool } from "$lib/shared/render/services/card-pool-prewarm";
+  import { warmCardBackCachesAsync } from "../../services/card-back/warm-card-back-caches";
   import ShimmerBlock from "$lib/shared/components/loading/ShimmerBlock.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 
@@ -31,6 +47,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   interface Props {
     sequences: SequenceData[];
     cardSize: CardSizeId;
+    /** Sheet stock the preview sheets are laid out on. Defaults to Letter so
+     *  non-releaser callers keep their existing pages. */
+    paperSize?: PaperSizeId;
     theme: string;
     isLoading: boolean;
     includeStartPosition?: boolean;
@@ -50,11 +69,26 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
      *  only on the final sheet. Preview + PDF share this flag. Default true. */
     groupByElement?: boolean;
     /** Right-click context menu on a card cell: (x, y, rerender callback for that card, sequence) */
-    onCardContextMenu?: (x: number, y: number, rerender: () => void, sequence: SequenceData) => void;
+    onCardContextMenu?: (
+      x: number,
+      y: number,
+      rerender: () => void,
+      sequence: SequenceData
+    ) => void;
     /** Left-click a card to inspect it (includes the pre-rendered front image URL and a rerender callback) */
-    onCardClick?: (sequence: SequenceData, frontImageUrl?: string, rerender?: () => Promise<string | null>) => void;
-    onPairsReady?: (pairs: CardPair[]) => void;
-    onRenderStateChange?: (state: { isRendering: boolean; progress: number; total: number }) => void;
+    onCardClick?: (
+      sequence: SequenceData,
+      frontImageUrl?: string,
+      rerender?: () => Promise<string | null>
+    ) => void;
+    /** Supplies print-ready canvases on demand. Keeping them out of preview
+     *  state avoids retaining two full-resolution canvases for every card. */
+    onPairPreparerReady?: (prepare: (() => Promise<CardPair[]>) | null) => void;
+    onRenderStateChange?: (state: {
+      isRendering: boolean;
+      progress: number;
+      total: number;
+    }) => void;
     /** "sheets" = print-ready pages with fronts+backs, "grid" = flowing card grid (fronts only) */
     displayMode?: "sheets" | "grid";
     /** Grid mode only: render each card's back image stacked beneath its front */
@@ -66,6 +100,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     /** Release number. When set, the preview leads with the "How to Read"
      *  insert exactly as the exporters do, and the insert prints this number. */
     deckNumber?: number;
+    /** Include the leading How to Read sheet. Defaults on for existing callers;
+     *  the Deck Releaser supplies its persisted print setting explicitly. */
+    includeInsertCard?: boolean;
     /** Concise recipe line (deck label · loop · period · length · level · turns ·
      *  grid · prop). Printed centered in each sheet's top margin by the PDF
      *  exporter; the preview mirrors it in the same spot so screen == print. */
@@ -88,6 +125,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   let {
     sequences,
     cardSize,
+    paperSize = "letter",
     theme,
     isLoading,
     includeStartPosition = true,
@@ -100,13 +138,14 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     groupByElement = true,
     onCardContextMenu,
     onCardClick,
-    onPairsReady,
+    onPairPreparerReady,
     onRenderStateChange,
     displayMode = "sheets",
     showBacks = false,
     deckId,
     deckName,
     deckNumber,
+    includeInsertCard = true,
     deckSummary,
     bluePropType,
     redPropType,
@@ -116,9 +155,15 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   // Resolve render-visual inputs: explicit overrides pin a released deck's
   // render; otherwise follow live settings. The cache key and render options
   // both read these so a pinned deck's content hash matches what was cached.
-  const resolvedBlueProp = $derived(bluePropType ?? settingsService.settings.bluePropType);
-  const resolvedRedProp = $derived(redPropType ?? settingsService.settings.redPropType);
-  const resolvedBackground = $derived(theme ?? settingsService.settings.backgroundType ?? "");
+  const resolvedBlueProp = $derived(
+    bluePropType ?? settingsService.settings.bluePropType
+  );
+  const resolvedRedProp = $derived(
+    redPropType ?? settingsService.settings.redPropType
+  );
+  const resolvedBackground = $derived(
+    theme ?? settingsService.settings.backgroundType ?? ""
+  );
 
   // The "How to Read" insert, rendered as a preview card so the on-screen
   // sheets match the exported document. Cheap: the renderer caches per
@@ -130,8 +175,14 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     const n = deckNumber;
     let cancelled = false;
 
+    if (!includeInsertCard) {
+      insertCard = null;
+      return;
+    }
+
     void (async () => {
-      const { renderInsertCardPair } = await import("../../services/PrintCardRenderer");
+      const { renderInsertCardPair } =
+        await import("../../services/PrintCardRenderer");
       const { front, back } = await renderInsertCardPair({
         theme: activeTheme,
         cardSize: size,
@@ -145,7 +196,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       };
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   });
 
   let renderedCards: RenderedCard[] = $state([]);
@@ -167,15 +220,20 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   let piecesDone = $state(0);
   let piecesTotal = $state(0);
 
-  let layout = $derived(getPageLayout(cardSize));
+  let layout = $derived(getPageLayout(cardSize, paperSize));
   let sizeSpec = $derived(CARD_SIZES[cardSize]);
+  let paperSpec = $derived(PAPER_SIZES[paperSize]);
   let cardAspect = $derived(sizeSpec.canvasWidth / sizeSpec.canvasHeight);
-  let colWidthPct = $derived((sizeSpec.widthInches / 8.5) * 100);
+  let colWidthPct = $derived(
+    (sizeSpec.widthInches / paperSpec.widthInches) * 100
+  );
 
   let cropMarks = $derived.by(() => {
     const { cols, rows } = layout;
     const marginX = (100 - cols * colWidthPct) / 2;
-    const rowHeightPct = colWidthPct * (8.5 / 11) / cardAspect;
+    const rowHeightPct =
+      (colWidthPct * (paperSpec.widthInches / paperSpec.heightInches)) /
+      cardAspect;
     const marginY = (100 - rows * rowHeightPct) / 2;
     const markLen = 1.2;
 
@@ -198,12 +256,44 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
   const BLANK_CARD: RenderedCard = { frontUrl: "", backUrl: "", label: "" };
 
-  // Parallel render lanes. Each in-flight card holds ~2 full-size canvases, so
-  // bound by core count to overlap async gaps without blowing up peak memory.
-  const RENDER_CONCURRENCY = Math.min(
-    8,
-    Math.max(2, (typeof navigator !== "undefined" ? navigator.hardwareConcurrency : 0) || 4),
-  );
+  // Card backs still rasterize DOM fragments on the main thread. Eight lanes
+  // made a large deck stop processing pointer updates for seconds at a time.
+  // Two lanes keep the worker-fed fronts moving while bounding back-raster and
+  // canvas memory pressure.
+  const RENDER_CONCURRENCY = 2;
+  const PREVIEW_PUBLISH_BATCH = 4;
+
+  function yieldToBrowser(): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
+  function cardFromBlobs(
+    frontBlob: Blob,
+    backBlob: Blob,
+    label: string
+  ): CachedCard {
+    return {
+      rendered: {
+        frontUrl: URL.createObjectURL(frontBlob),
+        backUrl: URL.createObjectURL(backBlob),
+        label,
+      },
+      frontBlob,
+      backBlob,
+    };
+  }
+
+  function discardCachedCard(key: string): void {
+    const cached = cardCache.get(key);
+    if (!cached) return;
+    if (cached.rendered.frontUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(cached.rendered.frontUrl);
+    }
+    if (cached.rendered.backUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(cached.rendered.backUrl);
+    }
+    cardCache.delete(key);
+  }
 
   function capitalize(s: string | null): string {
     return s ? s[0]!.toUpperCase() + s.slice(1) : "";
@@ -217,7 +307,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   // render run, not per card.
   function refreshOverrideBundle(): void {
     try {
-      getCompositionDispatcher().updateOverrideBundle(buildOverridePlacementBundle());
+      getCompositionDispatcher().updateOverrideBundle(
+        buildOverridePlacementBundle()
+      );
     } catch (err) {
       console.warn("[PrintPreview] override bundle refresh failed:", err);
     }
@@ -239,21 +331,35 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       renderedCards.map((card, seqIndex) => ({ card, seqIndex }));
     // firstOnTop=true mirrors the PDF exporter: deck's FIRST card is drawn last
     // (lands on top of the printed stack). Keeps the preview pixel-for-pixel with print.
-    const planned = planPrintSlots(indexed, tndElements ?? [], copies, layout.cardsPerPage, groupByElement, true);
+    const planned = planPrintSlots(
+      indexed,
+      tndElements ?? [],
+      copies,
+      layout.cardsPerPage,
+      groupByElement,
+      true
+    );
 
     // Mirror the exporter's leading insert sheet: one insert per copy, padded to
     // a whole sheet. Built here rather than through the planner for the same
     // reason as the exporter — an untagged bucket would merge with the cards or
     // land at the bottom of the cut stack. seqIndex stays null so the insert is
     // not clickable and cannot be mistaken for a source card.
-    const insertSlots: PlannedSlot<{ card: RenderedCard; seqIndex: number | null }>[] = [];
+    const insertSlots: PlannedSlot<{
+      card: RenderedCard;
+      seqIndex: number | null;
+    }>[] = [];
     if (insertCard) {
       const item = { card: insertCard, seqIndex: null };
       for (let c = 0; c < copies; c++) {
         insertSlots.push({ item, elementName: "How to Read", copyIndex: c });
       }
       while (insertSlots.length % layout.cardsPerPage !== 0) {
-        insertSlots.push({ item: null, elementName: "How to Read", copyIndex: null });
+        insertSlots.push({
+          item: null,
+          elementName: "How to Read",
+          copyIndex: null,
+        });
       }
     }
 
@@ -265,15 +371,20 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
           card: s.item?.card ?? BLANK_CARD,
           seqIndex: s.item?.seqIndex ?? null,
           elementName: s.elementName,
-        })),
+        }))
       );
     }
     return pages;
   });
 
-  function buildRenderOptions(stepCount?: number, footer?: CardFooter, cardIndex?: number): PrintRenderOptions {
+  function buildRenderOptions(
+    stepCount?: number,
+    footer?: CardFooter,
+    cardIndex?: number
+  ): PrintRenderOptions {
     const imageComposition = getImageCompositionManager();
-    const element = (cardIndex != null ? tndElements?.[cardIndex] : undefined) ?? tndElement;
+    const element =
+      (cardIndex != null ? tndElements?.[cardIndex] : undefined) ?? tndElement;
     // Render at the SELECTED card size's canvas dims. Without this the renderer
     // falls back to its MPC poker default (822×1122), so tarot cards render at
     // poker aspect and then get squished into tarot print slots — stretch, a gap
@@ -304,20 +415,20 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     };
   }
 
-  function canvasToDataUrl(canvas: HTMLCanvasElement): string {
-    return canvas.toDataURL("image/png");
-  }
-
-  function buildCacheKey(seq: SequenceData, stepCount: number | undefined, index: number): string {
+  function buildCacheKey(
+    seq: SequenceData,
+    stepCount: number | undefined,
+    index: number
+  ): string {
     const seqId = seq.id ?? seq.word ?? seq.name ?? "";
     const footer = footers?.[index];
-    const layout = deckMode && stepCount != null
-      ? getCatalogLayoutPolicy(stepCount)
-      : "row";
+    const layout =
+      deckMode && stepCount != null ? getCatalogLayoutPolicy(stepCount) : "row";
     const optsPart = [
       CARD_RENDER_SCHEMA,
-      cardSize, theme,
-      (tndElements?.[index]?.familyId ?? tndElement?.familyId ?? "none"),
+      cardSize,
+      theme,
+      tndElements?.[index]?.familyId ?? tndElement?.familyId ?? "none",
       resolvedBlueProp,
       resolvedRedProp,
       resolvedBackground,
@@ -365,7 +476,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     showToast(
       "Couldn't cache rendered cards (storage may be full). Cards still print, but re-opening this deck will re-render them.",
       "warning",
-      6000,
+      6000
     );
   }
 
@@ -410,7 +521,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     for (let idx = 0; idx < seqs.length; idx++) {
       const seq = seqs[idx]!;
       const key = buildCacheKey(seq, seq.steps?.length, idx);
-      if (!cardCache.has(key)) missKeys.push(key);
+      const cached = cardCache.get(key);
+      if (!cached?.frontBlob || !cached.backBlob) missKeys.push(key);
     }
 
     if (missKeys.length > 0) {
@@ -418,47 +530,41 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       if (generation !== renderGeneration) return;
 
       for (const [key, entry] of idbHits) {
-        const frontUrl = await blobToDataUrl(entry.frontBlob);
-        const backUrl = await blobToDataUrl(entry.backBlob);
-        cardCache.set(key, {
-          rendered: { frontUrl, backUrl, label: entry.label },
-          pair: null,
-        });
+        discardCachedCard(key);
+        cardCache.set(
+          key,
+          cardFromBlobs(entry.frontBlob, entry.backBlob, entry.label)
+        );
       }
       if (generation !== renderGeneration) return;
     }
 
     // Phase 2: Fast path if every card is now in memory (from either tier)
     const allCached = seqs.every((seq, idx) => {
-      return cardCache.has(buildCacheKey(seq, seq.steps?.length, idx));
+      const cached = cardCache.get(
+        buildCacheKey(seq, seq.steps?.length, idx)
+      );
+      return !!cached?.frontBlob && !!cached.backBlob;
     });
 
     if (allCached) {
       const cards: RenderedCard[] = [];
       for (let idx = 0; idx < seqs.length; idx++) {
         const seq = seqs[idx]!;
-        const cached = cardCache.get(buildCacheKey(seq, seq.steps?.length, idx))!;
+        const cached = cardCache.get(
+          buildCacheKey(seq, seq.steps?.length, idx)
+        )!;
         cards.push(cached.rendered);
       }
       renderedCards = cards;
       renderProgress = seqs.length;
       isRendering = false;
-      onRenderStateChange?.({ isRendering: false, progress: seqs.length, total: seqs.length });
-
-      rebuildPairs(seqs, generation).then(pairs => {
-        if (pairs && generation === renderGeneration) onPairsReady?.(pairs);
-      }).catch(err => {
-        console.error("[PrintPreview] rebuildPairs failed:", err);
-        // Pairs power the print PDF — without them the download is blank. Tell the
-        // user instead of letting them download an empty file with no explanation.
-        if (generation === renderGeneration) {
-          showToast(
-            "Couldn't prepare the print pages. Try regenerating the deck before downloading the PDF.",
-            "error",
-            6000,
-          );
-        }
+      onRenderStateChange?.({
+        isRendering: false,
+        progress: seqs.length,
+        total: seqs.length,
       });
+
       return;
     }
 
@@ -476,6 +582,20 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     prepDone = 0;
     prepTotal = 0;
     renderedCards = [];
+    prewarmCardPool({
+      sequences: seqs,
+      bluePropType: resolvedBlueProp,
+      redPropType: resolvedRedProp,
+      theme: resolvedBackground,
+      iconPaths: (footers ?? [])
+        .map((footer) => footer.iconPath)
+        .filter((path): path is string => !!path),
+    });
+    const warmSequence = seqs[0];
+    if (warmSequence) {
+      await warmCardBackCachesAsync(warmSequence, resolvedBackground);
+      if (generation !== renderGeneration) return;
+    }
     // Sync the worker pool with any arrow overrides saved since it was seeded, so
     // freshly-edited placements render (not the stale init-time bundle).
     refreshOverrideBundle();
@@ -485,7 +605,11 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     const cardPieceDone = new Array(seqs.length).fill(0);
     piecesTotal = perCardPieces.reduce((a, b) => a + b, 0);
     piecesDone = 0;
-    onRenderStateChange?.({ isRendering: true, progress: 0, total: seqs.length });
+    onRenderStateChange?.({
+      isRendering: true,
+      progress: 0,
+      total: seqs.length,
+    });
 
     const renderer = getPrintCardRenderer();
 
@@ -497,10 +621,18 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     // chunk progress so the bar moves during the otherwise-silent cold start.
     await getShortCodeManager().resolveCodesForDeck(
       seqs,
-      { bluePropType: resolvedBlueProp, redPropType: resolvedRedProp, deckId, deckName },
-      (done, total) => {
-        if (generation === renderGeneration) { prepDone = done; prepTotal = total; }
+      {
+        bluePropType: resolvedBlueProp,
+        redPropType: resolvedRedProp,
+        deckId,
+        deckName,
       },
+      (done, total) => {
+        if (generation === renderGeneration) {
+          prepDone = done;
+          prepTotal = total;
+        }
+      }
     );
     if (generation !== renderGeneration) return;
 
@@ -509,7 +641,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     renderStage = "rendering";
 
     const cards: RenderedCard[] = new Array(seqs.length);
-    const pairs: (CardPair | null)[] = new Array(seqs.length).fill(null);
     let completed = 0;
     let nextIndex = 0;
 
@@ -518,7 +649,6 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       const stepCount = seq.steps?.length;
       const footer = seqFooter(i);
       const options = buildRenderOptions(stepCount, footer, i);
-      const renderMeta = { sequence: seq, options };
       const cacheKey = buildCacheKey(seq, stepCount, i);
       const cached = cardCache.get(cacheKey);
 
@@ -533,45 +663,44 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       };
 
       try {
-        if (cached) {
+        if (cached?.frontBlob && cached.backBlob) {
           cards[i] = cached.rendered;
-          if (!cached.pair) {
-            cached.pair = await reconstructPair(cached.rendered, renderMeta);
-          }
-          pairs[i] = { ...cached.pair, renderMeta };
         } else {
           // Front (Canvas2D) and back (DOM screenshot, ~200ms fixed wait) are
           // independent and each allocate their own canvas/container, so render
           // them together rather than front-then-back.
           const [frontCanvas, backCanvas] = await Promise.all([
-            renderer.renderFront(seq, options, (p) => reportPieces(p.current, p.total)),
+            renderer.renderFront(seq, options, (p) =>
+              reportPieces(p.current, p.total)
+            ),
             renderer.renderBack(seq, options),
           ]);
 
           const label = seq.word || seq.name || `Card ${i + 1}`;
-          const card: RenderedCard = {
-            frontUrl: canvasToDataUrl(frontCanvas),
-            backUrl: canvasToDataUrl(backCanvas),
-            label,
-          };
-          const pair: CardPair = {
-            front: frontCanvas,
-            back: backCanvas,
-            label,
-            renderMeta,
-          };
+          const [frontBlob, backBlob] = await Promise.all([
+            canvasToBlob(frontCanvas),
+            canvasToBlob(backCanvas),
+          ]);
+          const cachedCard = cardFromBlobs(frontBlob, backBlob, label);
 
-          cards[i] = card;
-          pairs[i] = pair;
-          cardCache.set(cacheKey, { rendered: card, pair });
+          cards[i] = cachedCard.rendered;
+          discardCachedCard(cacheKey);
+          cardCache.set(cacheKey, cachedCard);
 
-          Promise.all([canvasToBlob(frontCanvas), canvasToBlob(backCanvas)])
-            .then(([fb, bb]) => deckCardBlobCache.set(cacheKey, fb, bb, label))
+          deckCardBlobCache
+            .set(cacheKey, frontBlob, backBlob, label)
             .catch((err) => warnBlobCacheFailure("write", err));
         }
       } catch (err) {
-        console.error(`[PrintPreview] Card ${i + 1} (${seq.word}) render failed:`, err);
-        cards[i] = { frontUrl: "", backUrl: "", label: `⚠ ${seq.word || seq.name || `Card ${i + 1}`}` };
+        console.error(
+          `[PrintPreview] Card ${i + 1} (${seq.word}) render failed:`,
+          err
+        );
+        cards[i] = {
+          frontUrl: "",
+          backUrl: "",
+          label: `⚠ ${seq.word || seq.name || `Card ${i + 1}`}`,
+        };
       }
 
       completed++;
@@ -584,8 +713,20 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
         // `cards` is a sparse array (assigned by index); Array.from visits every
         // slot — including not-yet-rendered holes — so the result is dense and
         // `{#each}` never sees an undefined entry.
-        renderedCards = Array.from(cards, (c) => c ?? BLANK_CARD);
-        onRenderStateChange?.({ isRendering: true, progress: completed, total: seqs.length });
+        // Publishing the full sparse deck after every card made Svelte rebuild
+        // every sheet dozens of times. Four-card batches keep progress visible
+        // while leaving time for pointer hit-testing and paint between batches.
+        if (
+          completed === seqs.length ||
+          completed % PREVIEW_PUBLISH_BATCH === 0
+        ) {
+          renderedCards = Array.from(cards, (c) => c ?? BLANK_CARD);
+        }
+        onRenderStateChange?.({
+          isRendering: true,
+          progress: completed,
+          total: seqs.length,
+        });
       }
     };
 
@@ -594,6 +735,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
         const i = nextIndex++;
         if (i >= seqs.length) return;
         await renderOne(i);
+        await yieldToBrowser();
       }
     };
 
@@ -601,46 +743,60 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     await Promise.all(Array.from({ length: laneCount }, () => lane()));
 
     if (generation !== renderGeneration) return;
+    renderedCards = Array.from(cards, (card) => card ?? BLANK_CARD);
     isRendering = false;
-    onPairsReady?.(pairs.filter((p): p is CardPair => p !== null));
-    onRenderStateChange?.({ isRendering: false, progress: seqs.length, total: seqs.length });
+    onRenderStateChange?.({
+      isRendering: false,
+      progress: seqs.length,
+      total: seqs.length,
+    });
   }
 
-  async function rebuildPairs(seqs: SequenceData[], generation: number): Promise<CardPair[] | null> {
+  async function rebuildPairs(
+    seqs: SequenceData[],
+    generation: number
+  ): Promise<CardPair[] | null> {
     const pairs: CardPair[] = [];
     for (let idx = 0; idx < seqs.length; idx++) {
       const seq = seqs[idx]!;
       if (generation !== renderGeneration) return null;
       const cached = cardCache.get(buildCacheKey(seq, seq.steps?.length, idx));
-      if (!cached) return null;
+      if (!cached?.frontBlob || !cached.backBlob) return null;
       const renderMeta = {
         sequence: seq,
-        options: buildRenderOptions(
-          seq.steps?.length,
-          seqFooter(idx),
-          idx
-        ),
+        options: buildRenderOptions(seq.steps?.length, seqFooter(idx), idx),
       };
-      if (cached.pair) {
-        pairs.push({ ...cached.pair, renderMeta });
-      } else {
-        const pair = await reconstructPair(cached.rendered, renderMeta);
-        cached.pair = pair;
-        pairs.push(pair);
-      }
+      if (idx > 0) await yieldToBrowser();
+      pairs.push(await reconstructPair(cached, renderMeta));
     }
     return pairs;
   }
 
   async function reconstructPair(
-    rendered: RenderedCard,
+    cached: CachedCard,
     renderMeta: NonNullable<CardPair["renderMeta"]>
   ): Promise<CardPair> {
     const [front, back] = await Promise.all([
-      dataUrlToCanvas(rendered.frontUrl),
-      dataUrlToCanvas(rendered.backUrl),
+      blobToCanvas(cached.frontBlob, cached.rendered.frontUrl),
+      blobToCanvas(cached.backBlob, cached.rendered.backUrl),
     ]);
-    return { front, back, label: rendered.label, renderMeta };
+    return { front, back, label: cached.rendered.label, renderMeta };
+  }
+
+  async function blobToCanvas(
+    blob: Blob,
+    fallbackUrl: string
+  ): Promise<HTMLCanvasElement> {
+    if (typeof createImageBitmap !== "function") {
+      return dataUrlToCanvas(fallbackUrl);
+    }
+    const bitmap = await createImageBitmap(blob);
+    const canvas = document.createElement("canvas");
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    canvas.getContext("2d")!.drawImage(bitmap, 0, 0);
+    bitmap.close();
+    return canvas;
   }
 
   function dataUrlToCanvas(dataUrl: string): Promise<HTMLCanvasElement> {
@@ -653,10 +809,27 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
         canvas.getContext("2d")!.drawImage(img, 0, 0);
         resolve(canvas);
       };
-      img.onerror = () => reject(new Error("Failed to load image from data URL"));
+      img.onerror = () =>
+        reject(new Error("Failed to load image from data URL"));
       img.src = dataUrl;
     });
   }
+
+  async function prepareCurrentPairs(): Promise<CardPair[]> {
+    const generation = renderGeneration;
+    const pairs = await rebuildPairs(sequences, generation);
+    if (!pairs || generation !== renderGeneration) {
+      throw new Error("The deck changed while its print pages were preparing.");
+    }
+    return pairs;
+  }
+
+  $effect(() => {
+    const notify = onPairPreparerReady;
+    if (!notify) return;
+    notify(prepareCurrentPairs);
+    return () => notify(null);
+  });
 
   async function rerenderCard(index: number): Promise<string | null> {
     const seq = sequences[index];
@@ -668,7 +841,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     const options = buildRenderOptions(stepCount, footer, index);
 
     const cacheKey = buildCacheKey(seq, stepCount, index);
-    cardCache.delete(cacheKey);
+    discardCachedCard(cacheKey);
     // A failed delete can leave a stale blob entry that shows the OLD card image
     // after a fix — warn so the user knows a hard refresh may be needed.
     deckCardBlobCache.delete(cacheKey).catch((err) => {
@@ -676,7 +849,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       showToast(
         "Couldn't clear the old cached image. If this card still looks unchanged, refresh the page.",
         "warning",
-        6000,
+        6000
       );
     });
 
@@ -688,28 +861,22 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     const backCanvas = await renderer.renderBack(seq, options);
 
     const label = seq.word || seq.name || `Card ${index + 1}`;
-    const card: RenderedCard = {
-      frontUrl: canvasToDataUrl(frontCanvas),
-      backUrl: canvasToDataUrl(backCanvas),
-      label,
-    };
+    const [frontBlob, backBlob] = await Promise.all([
+      canvasToBlob(frontCanvas),
+      canvasToBlob(backCanvas),
+    ]);
+    const cachedCard = cardFromBlobs(frontBlob, backBlob, label);
 
-    cardCache.set(cacheKey, {
-      rendered: card,
-      pair: {
-        front: frontCanvas,
-        back: backCanvas,
-        label,
-        renderMeta: { sequence: seq, options },
-      },
-    });
+    cardCache.set(cacheKey, cachedCard);
 
-    Promise.all([canvasToBlob(frontCanvas), canvasToBlob(backCanvas)])
-      .then(([fb, bb]) => deckCardBlobCache.set(cacheKey, fb, bb, label))
+    deckCardBlobCache
+      .set(cacheKey, frontBlob, backBlob, label)
       .catch((err) => warnBlobCacheFailure("write", err));
 
-    renderedCards = renderedCards.map((c, i) => i === index ? card : c);
-    return card.frontUrl;
+    renderedCards = renderedCards.map((card, i) =>
+      i === index ? cachedCard.rendered : card
+    );
+    return cachedCard.rendered.frontUrl;
   }
 
   function handleCardContextMenu(event: MouseEvent, cardIndex: number) {
@@ -767,7 +934,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
             {#if preparing}
               Preparing: resolving codes {prepDone} / {prepTotal}…
             {:else}
-              Placing pictographs: {Math.floor(piecesDone)} / {piecesTotal} ({renderProgress} / {renderTotal} cards)
+              Placing pictographs: {Math.floor(piecesDone)} / {piecesTotal} ({renderProgress}
+              / {renderTotal} cards)
             {/if}
           </span>
         {/if}
@@ -783,34 +951,66 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
             class:clickable={!!onCardClick}
             role="button"
             tabindex="0"
-            onclick={() => { const seq = sequences[idx]; if (seq) onCardClick?.(seq, card.frontUrl, () => rerenderCard(idx)); }}
+            onclick={() => {
+              const seq = sequences[idx];
+              if (seq)
+                onCardClick?.(seq, card.frontUrl, () => rerenderCard(idx));
+            }}
             onkeydown={(e) => {
               if (!onCardClick) return;
-              if (e.key === 'Enter' || e.key === ' ') {
+              if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 const seq = sequences[idx];
-                if (seq) onCardClick(seq, card.frontUrl, () => rerenderCard(idx));
+                if (seq)
+                  onCardClick(seq, card.frontUrl, () => rerenderCard(idx));
               }
             }}
             oncontextmenu={(e) => handleCardContextMenu(e, idx)}
           >
-            <div class="card-cell" style:aspect-ratio="{cardAspect}">
+            <div class="card-cell" style:aspect-ratio={cardAspect}>
               {#if card.frontUrl}
-                <img src={card.frontUrl} alt="{card.label} front" />
+                <img
+                  src={card.frontUrl}
+                  alt="{card.label} front"
+                  loading={idx < 12 ? "eager" : "lazy"}
+                  fetchpriority={idx < 12 ? "high" : "auto"}
+                  decoding="async"
+                />
               {:else if card.label.startsWith("⚠")}
-                <div class="card-error" title={card.label}><i class="fas fa-exclamation-triangle" aria-hidden="true"></i></div>
+                <div class="card-error" title={card.label}>
+                  <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                </div>
               {:else}
-                <ShimmerBlock width="100%" height="100%" borderRadius="0" delay={(idx % 6) * 120} />
+                <ShimmerBlock
+                  width="100%"
+                  height="100%"
+                  borderRadius="0"
+                  delay={(idx % 6) * 120}
+                />
               {/if}
             </div>
             {#if showBacks}
-              <div class="card-cell" style:aspect-ratio="{cardAspect}">
+              <div class="card-cell" style:aspect-ratio={cardAspect}>
                 {#if card.backUrl}
-                  <img src={card.backUrl} alt="{card.label} back" />
+                  <img
+                    src={card.backUrl}
+                    alt="{card.label} back"
+                    loading={idx < 12 ? "eager" : "lazy"}
+                    fetchpriority={idx < 12 ? "high" : "auto"}
+                    decoding="async"
+                  />
                 {:else if card.label.startsWith("⚠")}
-                  <div class="card-error" title={card.label}><i class="fas fa-exclamation-triangle" aria-hidden="true"></i></div>
+                  <div class="card-error" title={card.label}>
+                    <i class="fas fa-exclamation-triangle" aria-hidden="true"
+                    ></i>
+                  </div>
                 {:else}
-                  <ShimmerBlock width="100%" height="100%" borderRadius="0" delay={(idx % 6) * 120 + 60} />
+                  <ShimmerBlock
+                    width="100%"
+                    height="100%"
+                    borderRadius="0"
+                    delay={(idx % 6) * 120 + 60}
+                  />
                 {/if}
               </div>
             {/if}
@@ -821,129 +1021,203 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
       <div class="pages-scroll">
         <!-- ═══ PHASE 1: ALL FRONTS ═══ -->
         {#if sideFilter !== "backs"}
-        {#each sheets as sheet, sheetIndex (sheetIndex)}
-          {@const elName = capitalize(sheet[0]?.elementName ?? null)}
-          <span class="page-label">Fronts{elName ? ` · ${elName}` : ""} · Sheet {sheetIndex + 1} of {sheets.length}</span>
-          <div class="page">
-            <div class="page-guide page-guide-top">
-              {#if deckName}<span class="guide-text">{deckName}</span>{/if}
-              {#if deckSummary}<span class="guide-text guide-bold guide-recipe">{deckSummary}</span>{/if}
-              <span class="guide-text guide-bold">FRONTS{elName ? ` · ${elName}` : ""} · Sheet {sheetIndex + 1} of {sheets.length}</span>
-            </div>
-            <div
-              class="page-grid"
-              style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
-            >
-              {#each sheet as slot, cardIndex (cardIndex)}
-                {#if !slot.card.frontUrl}
-                  <div class="card-cell blank" style:aspect-ratio="{cardAspect}"></div>
-                {:else}
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div
-                  class="card-cell"
-                  class:clickable={!!onCardClick && slot.seqIndex != null}
-                  style:aspect-ratio="{cardAspect}"
-                  role="button"
-                  tabindex="0"
-                  onclick={() => {
-                    const idx = slot.seqIndex;
-                    if (idx == null) return;
-                    const seq = sequences[idx];
-                    if (seq) onCardClick?.(seq, slot.card.frontUrl, () => rerenderCard(idx));
-                  }}
-                  onkeydown={(e) => {
-                    if (!onCardClick) return;
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      const idx = slot.seqIndex;
-                      if (idx == null) return;
-                      const seq = sequences[idx];
-                      if (seq) onCardClick(seq, slot.card.frontUrl, () => rerenderCard(idx));
-                    }
-                  }}
-                  oncontextmenu={(e) => { if (slot.seqIndex != null) handleCardContextMenu(e, slot.seqIndex); }}
-                >
-                  <img src={slot.card.frontUrl} alt="{slot.card.label} front" />
+          {#each sheets as sheet, sheetIndex (sheetIndex)}
+            {@const elName = capitalize(sheet[0]?.elementName ?? null)}
+            <article class="sheet-preview">
+              <span class="page-label"
+                >Fronts{elName ? ` · ${elName}` : ""} · Sheet {sheetIndex + 1} of
+                {sheets.length}</span
+              >
+              <div
+                class="page"
+                style:aspect-ratio="{paperSpec.widthInches} / {paperSpec.heightInches}"
+              >
+                <div class="page-guide page-guide-top">
+                  {#if deckName}<span class="guide-text">{deckName}</span>{/if}
+                  {#if deckSummary}<span
+                      class="guide-text guide-bold guide-recipe"
+                      >{deckSummary}</span
+                    >{/if}
+                  <span class="guide-text guide-bold"
+                    >FRONTS{elName ? ` · ${elName}` : ""} · Sheet {sheetIndex +
+                      1} of {sheets.length}</span
+                  >
                 </div>
-                {/if}
-              {/each}
-            </div>
-            <div class="page-guide page-guide-bottom">
-              <span class="guide-text">FRONT SIDE</span>
-              <span class="guide-text">Sheet {sheetIndex + 1} of {sheets.length}</span>
-            </div>
-            {#each cropMarks as mark}
-              <div class="crop-mark" style="left:{mark.x}%;top:{mark.y}%;width:{mark.w || 0.1}%;height:{mark.h || 0.1}%"></div>
-            {/each}
-          </div>
-        {/each}
+                <div
+                  class="page-grid"
+                  style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
+                >
+                  {#each sheet as slot, cardIndex (cardIndex)}
+                    {#if !slot.card.frontUrl}
+                      <div
+                        class="card-cell blank"
+                        style:aspect-ratio={cardAspect}
+                      ></div>
+                    {:else}
+                      <!-- svelte-ignore a11y_no_static_element_interactions -->
+                      <div
+                        class="card-cell"
+                        class:clickable={!!onCardClick && slot.seqIndex != null}
+                        style:aspect-ratio={cardAspect}
+                        role="button"
+                        tabindex="0"
+                        onclick={() => {
+                          const idx = slot.seqIndex;
+                          if (idx == null) return;
+                          const seq = sequences[idx];
+                          if (seq)
+                            onCardClick?.(seq, slot.card.frontUrl, () =>
+                              rerenderCard(idx)
+                            );
+                        }}
+                        onkeydown={(e) => {
+                          if (!onCardClick) return;
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            const idx = slot.seqIndex;
+                            if (idx == null) return;
+                            const seq = sequences[idx];
+                            if (seq)
+                              onCardClick(seq, slot.card.frontUrl, () =>
+                                rerenderCard(idx)
+                              );
+                          }
+                        }}
+                        oncontextmenu={(e) => {
+                          if (slot.seqIndex != null)
+                            handleCardContextMenu(e, slot.seqIndex);
+                        }}
+                      >
+                        <img
+                          src={slot.card.frontUrl}
+                          alt="{slot.card.label} front"
+                          loading={sheetIndex < 2 ? "eager" : "lazy"}
+                          fetchpriority={sheetIndex < 2 ? "high" : "auto"}
+                          decoding="async"
+                        />
+                      </div>
+                    {/if}
+                  {/each}
+                </div>
+                <div class="page-guide page-guide-bottom">
+                  <span class="guide-text">FRONT SIDE</span>
+                  <span class="guide-text"
+                    >Sheet {sheetIndex + 1} of {sheets.length}</span
+                  >
+                </div>
+                {#each cropMarks as mark}
+                  <div
+                    class="crop-mark"
+                    style="left:{mark.x}%;top:{mark.y}%;width:{mark.w ||
+                      0.1}%;height:{mark.h || 0.1}%"
+                  ></div>
+                {/each}
+              </div>
+            </article>
+          {/each}
         {/if}
 
         <!-- ═══ PHASE 2: ALL BACKS ═══ -->
         {#if sideFilter !== "fronts"}
-        {#each sheets as sheet, sheetIndex (sheetIndex)}
-          {@const elName = capitalize(sheet[0]?.elementName ?? null)}
-          <span class="page-label">Backs{elName ? ` · ${elName}` : ""} · Sheet {sheetIndex + 1} of {sheets.length}</span>
-          <div class="page">
-            <div class="page-guide page-guide-top">
-              {#if deckName}<span class="guide-text">{deckName}</span>{/if}
-              {#if deckSummary}<span class="guide-text guide-bold guide-recipe">{deckSummary}</span>{/if}
-              <span class="guide-text guide-bold">BACKS{elName ? ` · ${elName}` : ""} · Sheet {sheetIndex + 1} of {sheets.length}</span>
-            </div>
-            <div
-              class="page-grid"
-              style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
-            >
-              {#each sheet as slot, cardIndex (cardIndex)}
-                {#if !slot.card.backUrl}
-                  <div
-                    class="card-cell blank"
-                    style:aspect-ratio="{cardAspect}"
-                    style:grid-column="{mirroredCol(cardIndex, layout.cols) + 1}"
-                    style:grid-row="{rowOf(cardIndex, layout.cols) + 1}"
-                  ></div>
-                {:else}
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div
-                  class="card-cell"
-                  class:clickable={!!onCardClick && slot.seqIndex != null}
-                  style:aspect-ratio="{cardAspect}"
-                  style:grid-column="{mirroredCol(cardIndex, layout.cols) + 1}"
-                  style:grid-row="{rowOf(cardIndex, layout.cols) + 1}"
-                  role="button"
-                  tabindex="0"
-                  onclick={() => {
-                    const idx = slot.seqIndex;
-                    if (idx == null) return;
-                    const seq = sequences[idx];
-                    if (seq) onCardClick?.(seq, slot.card.frontUrl, () => rerenderCard(idx));
-                  }}
-                  onkeydown={(e) => {
-                    if (!onCardClick) return;
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      const idx = slot.seqIndex;
-                      if (idx == null) return;
-                      const seq = sequences[idx];
-                      if (seq) onCardClick(seq, slot.card.frontUrl, () => rerenderCard(idx));
-                    }
-                  }}
-                  oncontextmenu={(e) => { if (slot.seqIndex != null) handleCardContextMenu(e, slot.seqIndex); }}
-                >
-                  <img src={slot.card.backUrl} alt="{slot.card.label} back" />
+          {#each sheets as sheet, sheetIndex (sheetIndex)}
+            {@const elName = capitalize(sheet[0]?.elementName ?? null)}
+            <article class="sheet-preview">
+              <span class="page-label"
+                >Backs{elName ? ` · ${elName}` : ""} · Sheet {sheetIndex + 1} of {sheets.length}</span
+              >
+              <div
+                class="page"
+                style:aspect-ratio="{paperSpec.widthInches} / {paperSpec.heightInches}"
+              >
+                <div class="page-guide page-guide-top">
+                  {#if deckName}<span class="guide-text">{deckName}</span>{/if}
+                  {#if deckSummary}<span
+                      class="guide-text guide-bold guide-recipe"
+                      >{deckSummary}</span
+                    >{/if}
+                  <span class="guide-text guide-bold"
+                    >BACKS{elName ? ` · ${elName}` : ""} · Sheet {sheetIndex +
+                      1} of {sheets.length}</span
+                  >
                 </div>
-                {/if}
-              {/each}
-            </div>
-            <div class="page-guide page-guide-bottom">
-              <span class="guide-text">BACK SIDE: columns mirrored for long-edge flip</span>
-              <span class="guide-text">↻ LONG EDGE</span>
-            </div>
-            {#each cropMarks as mark}
-              <div class="crop-mark" style="left:{mark.x}%;top:{mark.y}%;width:{mark.w || 0.1}%;height:{mark.h || 0.1}%"></div>
-            {/each}
-          </div>
-        {/each}
+                <div
+                  class="page-grid"
+                  style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
+                >
+                  {#each sheet as slot, cardIndex (cardIndex)}
+                    {#if !slot.card.backUrl}
+                      <div
+                        class="card-cell blank"
+                        style:aspect-ratio={cardAspect}
+                        style:grid-column={mirroredCol(cardIndex, layout.cols) +
+                          1}
+                        style:grid-row={rowOf(cardIndex, layout.cols) + 1}
+                      ></div>
+                    {:else}
+                      <!-- svelte-ignore a11y_no_static_element_interactions -->
+                      <div
+                        class="card-cell"
+                        class:clickable={!!onCardClick && slot.seqIndex != null}
+                        style:aspect-ratio={cardAspect}
+                        style:grid-column={mirroredCol(cardIndex, layout.cols) +
+                          1}
+                        style:grid-row={rowOf(cardIndex, layout.cols) + 1}
+                        role="button"
+                        tabindex="0"
+                        onclick={() => {
+                          const idx = slot.seqIndex;
+                          if (idx == null) return;
+                          const seq = sequences[idx];
+                          if (seq)
+                            onCardClick?.(seq, slot.card.frontUrl, () =>
+                              rerenderCard(idx)
+                            );
+                        }}
+                        onkeydown={(e) => {
+                          if (!onCardClick) return;
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            const idx = slot.seqIndex;
+                            if (idx == null) return;
+                            const seq = sequences[idx];
+                            if (seq)
+                              onCardClick(seq, slot.card.frontUrl, () =>
+                                rerenderCard(idx)
+                              );
+                          }
+                        }}
+                        oncontextmenu={(e) => {
+                          if (slot.seqIndex != null)
+                            handleCardContextMenu(e, slot.seqIndex);
+                        }}
+                      >
+                        <img
+                          src={slot.card.backUrl}
+                          alt="{slot.card.label} back"
+                          loading={sheetIndex < 2 ? "eager" : "lazy"}
+                          fetchpriority={sheetIndex < 2 ? "high" : "auto"}
+                          decoding="async"
+                        />
+                      </div>
+                    {/if}
+                  {/each}
+                </div>
+                <div class="page-guide page-guide-bottom">
+                  <span class="guide-text"
+                    >BACK SIDE: columns mirrored for long-edge flip</span
+                  >
+                  <span class="guide-text">↻ LONG EDGE</span>
+                </div>
+                {#each cropMarks as mark}
+                  <div
+                    class="crop-mark"
+                    style="left:{mark.x}%;top:{mark.y}%;width:{mark.w ||
+                      0.1}%;height:{mark.h || 0.1}%"
+                  ></div>
+                {/each}
+              </div>
+            </article>
+          {/each}
         {/if}
       </div>
     {/if}
@@ -956,7 +1230,8 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     flex-direction: column;
     flex: 1;
     overflow-y: auto;
-    padding: 16px;
+    container-type: inline-size;
+    padding: clamp(12px, 1.1cqw, 24px);
   }
 
   .card-grid-scroll {
@@ -967,11 +1242,21 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   }
 
   .pages-scroll {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    align-items: center;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: clamp(18px, 1.5cqw, 32px);
+    align-items: start;
+    width: 100%;
     padding-bottom: 24px;
+  }
+
+  .sheet-preview {
+    display: grid;
+    gap: 8px;
+    width: min(100%, 50rem);
+    min-width: 0;
+    margin: 0;
+    justify-self: center;
   }
 
   .page {
@@ -981,11 +1266,24 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     box-shadow: var(--shadow-card, 0 2px 8px rgba(0, 0, 0, 0.3));
     width: 100%;
     max-width: 800px;
-    aspect-ratio: 8.5 / 11;
+    /* aspect-ratio comes from the paper spec via an inline style. */
+    content-visibility: auto;
     box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  @container (min-width: 80rem) {
+    .pages-scroll {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sheet-preview,
+    .page {
+      width: 100%;
+      max-width: none;
+    }
   }
 
   .page-grid {
@@ -1007,7 +1305,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   }
 
   .card-item.clickable .card-cell {
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.15s ease;
   }
 
   .card-item.clickable:hover .card-cell {
@@ -1039,7 +1339,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
 
   .card-cell.clickable {
     cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.15s ease;
   }
 
   .card-cell.clickable:hover {
@@ -1058,7 +1360,7 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     text-align: center;
-    margin-top: 8px;
+    margin: 0;
   }
 
   .progress-bar-container {
@@ -1095,8 +1397,12 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
     animation: indeterminate-slide 1.15s ease-in-out infinite;
   }
   @keyframes indeterminate-slide {
-    0% { left: -35%; }
-    100% { left: 100%; }
+    0% {
+      left: -35%;
+    }
+    100% {
+      left: 100%;
+    }
   }
   @media (prefers-reduced-motion: reduce) {
     .progress-bar-fill.indeterminate-fill {

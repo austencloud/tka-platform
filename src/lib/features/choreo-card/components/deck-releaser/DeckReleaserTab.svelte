@@ -42,8 +42,6 @@
   import { generationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
   import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
   import { loadDiamondEdges } from "../../services/pictograph-letter-lookup";
-  import { prewarmCardPool } from "$lib/shared/render/services/card-pool-prewarm";
-  import { warmCardBackCaches } from "../../services/card-back/warm-card-back-caches";
 
   interface Props {
     onContextMenu?: (
@@ -146,8 +144,6 @@
         blueOrientation,
         redOrientation
       ),
-    prewarmCardPool,
-    warmCardBackCaches,
     loadArchivedDeck: archive.load,
     getReleasedSequenceIds: () => releaseHistory.releasedSequenceIds,
     info: (message) => toast.info(message),
@@ -436,9 +432,11 @@
         footers={print.footers}
         {onContextMenu}
         cardSize={print.cardSize}
+        paperSize={print.paperSize}
         copies={print.copies}
         groupByElement={print.groupByElement}
         groupByLetter={print.groupByLetter}
+        includeHowToRead={print.includeHowToRead}
         getAiSummary={print.getAiSummary}
         sortedSequences={print.sortedSequences}
         sortedFooters={print.sortedFooters}
@@ -451,6 +449,7 @@
         rerenderKey={print.rerenderKey}
         sideFilter={print.previewSideFilter}
         onCardSizeChange={print.changeCardSize}
+        onPaperSizeChange={print.changePaperSize}
         onCopiesChange={(value) => {
           print.copies = value;
         }}
@@ -461,9 +460,7 @@
           print.groupByLetter = value;
         }}
         onRerender={print.requestRerender}
-        onPairsReady={(pairs) => {
-          print.renderedPairs = pairs;
-        }}
+        onPairPreparerReady={print.setPairPreparer}
         onRenderStateChange={print.setRenderState}
         onSwapCard={production.swap}
         onRemoveCard={handleRemoveCard}
@@ -591,8 +588,13 @@
             cardCount={rs.cards.length}
             tndElements={print.tndElements}
             cardSize={print.cardSize}
+            paperSize={print.paperSize}
             copies={print.copies}
             groupByElement={print.groupByElement}
+            includeHowToRead={print.includeHowToRead}
+            onIncludeHowToReadChange={(value) => {
+              print.includeHowToRead = value;
+            }}
             theme={rs.theme}
             selectedSide={print.selectedSide}
             onSideChange={(side) => {
@@ -646,11 +648,12 @@
   }
 
   .releaser-sidebar {
-    width: clamp(300px, 22vw, 440px);
+    width: clamp(320px, 18vw, 400px);
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     min-height: 0;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.94));
     border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
@@ -803,6 +806,24 @@
     filter: brightness(1.1);
   }
 
+  @media (min-width: 2600px) {
+    .deck-releaser {
+      --font-size-compact: 14px;
+      --font-size-min: 16px;
+      --font-size-sm: 16px;
+      --min-touch-target: 52px;
+    }
+
+    .releaser-sidebar {
+      width: clamp(440px, 13vw, 520px);
+    }
+
+    .sidebar-switch,
+    .sidebar-footer {
+      padding: 16px;
+    }
+  }
+
   @media (max-width: 900px) {
     .deck-releaser {
       flex-direction: column;
@@ -815,7 +836,7 @@
       max-height: 320px;
     }
     .releaser-sidebar.print-mode {
-      max-height: none;
+      max-height: min(65%, 640px);
     }
   }
 </style>

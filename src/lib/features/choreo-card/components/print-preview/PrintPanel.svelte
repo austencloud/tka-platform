@@ -1,7 +1,14 @@
 <script lang="ts">
-  import { getPageLayout, type CardSizeId } from "../../domain/card-sizes";
+  import {
+    getPageLayout,
+    PAPER_SIZES,
+    type CardSizeId,
+    type PaperSizeId,
+  } from "../../domain/card-sizes";
   import { TND_ELEMENTS, type TnDElement } from "../../domain/tnd-element";
   import type { PrintPDFMode } from "../../services/print-pdf-exporter";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 
   /** The side picker's four choices. 'zip' = card images (download only). */
   export type PrintSide = "fronts" | "backs" | "combined" | "zip";
@@ -10,8 +17,12 @@
     cardCount: number;
     tndElements?: (TnDElement | undefined)[];
     cardSize: CardSizeId;
+    /** Sheet stock the counts describe. Defaults to Letter. */
+    paperSize?: PaperSizeId;
     copies?: number;
     groupByElement?: boolean;
+    includeHowToRead: boolean;
+    onIncludeHowToReadChange: (include: boolean) => void;
     theme: string;
     /** Controlled side selection (lifted to the tab so the preview can scope). */
     selectedSide: PrintSide;
@@ -35,8 +46,11 @@
     cardCount,
     tndElements = [],
     cardSize,
+    paperSize = "letter",
     copies = 1,
     groupByElement = true,
+    includeHowToRead,
+    onIncludeHowToReadChange,
     theme,
     selectedSide,
     onSideChange,
@@ -54,7 +68,7 @@
 
   const busy = $derived(isExporting || isPrinting || isRendering);
   const printable = $derived(selectedSide !== "zip");
-  const layout = $derived(getPageLayout(cardSize));
+  const layout = $derived(getPageLayout(cardSize, paperSize));
 
   // Sheets = Σ over colors of ceil(colorCount * copies / cardsPerPage); each
   // color pads to whole sheets. Normal-fill (or untagged) → flat count.
@@ -71,7 +85,8 @@
       else untagged++;
     }
     let sheets = 0;
-    for (const c of counts.values()) sheets += Math.ceil((c * copies) / perPage);
+    for (const c of counts.values())
+      sheets += Math.ceil((c * copies) / perPage);
     if (untagged) sheets += Math.ceil((untagged * copies) / perPage);
     return sheets;
   });
@@ -80,7 +95,9 @@
   // one insert per copy, padded to whole sheets. Mirrors the insert block in
   // exportHomePrintPDF — these labels must agree with the file it produces.
   const insertSheets = $derived(Math.ceil(copies / layout.cardsPerPage));
-  const totalSheets = $derived(sheetCount + insertSheets);
+  const totalSheets = $derived(
+    sheetCount + (includeHowToRead ? insertSheets : 0)
+  );
 
   const elementCounts = $derived.by(() => {
     const counts = new Map<string, { element: TnDElement; count: number }>();
@@ -98,42 +115,67 @@
 
   const SIDE_OPTIONS: {
     id: PrintSide;
-    icon: string;
     label: string;
     getDetail: () => string;
     getHint: () => string;
   }[] = [
-    { id: "fronts", icon: "fa-layer-group", label: "Fronts",
+    {
+      id: "fronts",
+      label: "Fronts",
       getDetail: () => `${totalSheets} sheets`,
-      getHint: () => "Print these first, then flip the stack for the backs." },
-    { id: "backs", icon: "fa-rotate", label: "Backs",
+      getHint: () => "Print these first, then flip the stack for the backs.",
+    },
+    {
+      id: "backs",
+      label: "Backs",
       getDetail: () => `${totalSheets} sheets`,
-      getHint: () => "Print after the fronts. Columns mirrored for the long-edge flip." },
+      getHint: () =>
+        "Print after the fronts. Columns mirrored for the long-edge flip.",
+    },
     // fronts + ONE flip separator + backs. The exporter adds a single
     // instruction page, not two (see home-print-insert-card.test.ts).
-    { id: "combined", icon: "fa-book-open", label: "Combined",
+    {
+      id: "combined",
+      label: "Combined",
       getDetail: () => `${totalSheets * 2 + 1} pages`,
-      getHint: () => "Fronts + flip instructions + backs, in one file." },
-    { id: "zip", icon: "fa-images", label: "Images",
-      getDetail: () => `${(cardCount + 1) * 2} PNGs`,
-      getHint: () => "Individual files for MPC or custom layouts. Download only." },
+      getHint: () => "Fronts + flip instructions + backs, in one file.",
+    },
+    {
+      id: "zip",
+      label: "Images",
+      getDetail: () => `${(cardCount + (includeHowToRead ? 1 : 0)) * 2} PNGs`,
+      getHint: () =>
+        "Individual files for MPC or custom layouts. Download only.",
+    },
   ];
+  const sideChoices = SIDE_OPTIONS.map((option) => ({
+    value: option.id,
+    label: option.label,
+  }));
 
-  const selectedOption = $derived(SIDE_OPTIONS.find((f) => f.id === selectedSide)!);
+  const selectedOption = $derived(
+    SIDE_OPTIONS.find((f) => f.id === selectedSide)!
+  );
 
   const printLabel = $derived.by(() => {
     if (isPrinting) return "Preparing…";
     switch (selectedSide) {
-      case "fronts": return "Print Fronts";
-      case "backs": return "Print Backs";
-      case "combined": return "Print Combined";
-      default: return "Print";
+      case "fronts":
+        return "Print Fronts";
+      case "backs":
+        return "Print Backs";
+      case "combined":
+        return "Print Combined";
+      default:
+        return "Print";
     }
   });
 
   const downloadLabel = $derived.by(() => {
     if (isExporting) {
-      return exportTotal > 0 ? `Exporting ${exportProgress} / ${exportTotal}…` : "Preparing…";
+      return exportTotal > 0
+        ? `Exporting ${exportProgress} / ${exportTotal}…`
+        : "Preparing…";
     }
     return `Download ${selectedOption.label}`;
   });
@@ -154,28 +196,60 @@
   {#if elementCounts.length > 0 && groupByElement}
     <div class="elements" aria-label="Element breakdown">
       {#each elementCounts as { element, count }}
-        <div class="element-pill" style="--el-color: {element.accentColor}"
-          title="{element.element}: {count} card{count === 1 ? '' : 's'}">
-          <img src={element.iconPath} alt={element.element} class="element-icon" width="16" height="16" />
+        <div
+          class="element-pill"
+          style="--el-color: {element.accentColor}"
+          title="{element.element}: {count} card{count === 1 ? '' : 's'}"
+        >
+          <img
+            src={element.iconPath}
+            alt={element.element}
+            class="element-icon"
+            width="16"
+            height="16"
+          />
           <span class="element-count">{count}</span>
         </div>
       {/each}
     </div>
   {/if}
 
-  <h3 class="section-label">Choose a side</h3>
-  <div class="side-grid" role="radiogroup" aria-label="Print side">
-    {#each SIDE_OPTIONS as opt (opt.id)}
-      <button class="side-card" class:selected={selectedSide === opt.id}
-        role="radio" aria-checked={selectedSide === opt.id}
-        onclick={() => onSideChange(opt.id)}>
-        <i class="fas {opt.icon} side-icon" aria-hidden="true"></i>
-        <span class="side-label">{opt.label}</span>
-        <span class="side-detail">{opt.getDetail()}</span>
-      </button>
-    {/each}
+  <h3 class="section-label">Print output</h3>
+  <div class="output-picker">
+    <SegmentedControl
+      options={sideChoices}
+      value={selectedSide}
+      onchange={onSideChange}
+      color="accent"
+      size="sm"
+      semantics="radiogroup"
+      ariaLabel="Print output"
+    />
   </div>
-  <p class="side-hint">{selectedOption.getHint()}</p>
+  <div class="output-summary">
+    <strong>{selectedOption.getDetail()}</strong>
+    <span>{selectedOption.getHint()}</span>
+  </div>
+
+  <div class="extra-card">
+    <div class="extra-copy">
+      <span class="extra-label">Deck extras</span>
+      <span class="extra-hint"
+        >Adds one reference card to each printed deck.</span
+      >
+    </div>
+    <FilterChipBase
+      mode="toggle"
+      size="sm"
+      label="How to Read"
+      active={includeHowToRead}
+      chipColor="var(--theme-accent, #8b5cf6)"
+      ariaLabel={includeHowToRead
+        ? "Remove the How to Read card"
+        : "Include the How to Read card"}
+      onclick={() => onIncludeHowToReadChange(!includeHowToRead)}
+    />
+  </div>
 
   {#if exportError}
     <div class="error" role="alert">
@@ -185,31 +259,46 @@
   {/if}
 
   <div class="actions">
-    <button class="action print-action"
+    <button
+      class="action print-action"
       disabled={busy || !printable || cardCount === 0}
-      title={!printable ? "Card images can't be sent to a printer. Download instead." : undefined}
-      onclick={handlePrint}>
+      title={!printable
+        ? "Card images can't be sent to a printer. Download instead."
+        : undefined}
+      onclick={handlePrint}
+    >
       {#if isPrinting}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
       {:else}<i class="fas fa-print" aria-hidden="true"></i>{/if}
       <span>{printLabel}</span>
     </button>
-    <button class="action download-action" disabled={busy} onclick={handleExport}>
+    <button
+      class="action download-action"
+      disabled={busy}
+      onclick={handleExport}
+    >
       {#if isExporting}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
       {:else}<i class="fas fa-download" aria-hidden="true"></i>{/if}
       <span>{downloadLabel}</span>
     </button>
     {#if onExportBoth}
-      <button class="action download-action both-action" disabled={busy}
-        onclick={() => { if (!busy) onExportBoth?.(); }}
-        title="Download the fronts and the backs as two separate PDF files">
+      <button
+        class="action download-action both-action"
+        disabled={busy}
+        onclick={() => {
+          if (!busy) onExportBoth?.();
+        }}
+        title="Download the fronts and the backs as two separate PDF files"
+      >
         <i class="fas fa-clone" aria-hidden="true"></i>
-        <span>Fronts + Backs</span>
+        <span>Download Fronts + Backs</span>
       </button>
     {/if}
   </div>
 
   <p class="workflow-tip">
-    Print the fronts, flip your paper stack on the <strong>long edge</strong>, then print the backs.
+    Lays out on <strong>{PAPER_SIZES[paperSize].label}</strong> paper. Print the
+    fronts, flip your paper stack on the <strong>long edge</strong>, then print
+    the backs.
   </p>
 </div>
 
@@ -217,8 +306,8 @@
   .print-panel {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    padding: 16px;
+    gap: var(--settings-spacing-md, 14px);
+    padding: var(--settings-spacing-md, 16px);
     overflow-y: auto;
     min-height: 0;
   }
@@ -240,7 +329,11 @@
     border-radius: 20px;
   }
 
-  .element-icon { width: 14px; height: 14px; object-fit: contain; }
+  .element-icon {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+  }
 
   .element-count {
     font-size: 12px;
@@ -255,58 +348,79 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
   }
 
-  .side-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
-  .side-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 14px 12px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1.5px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    color: rgba(255, 255, 255, 0.5);
-    font: inherit;
-    cursor: pointer;
-    transition: all 0.15s;
+  .output-picker {
+    min-width: 0;
   }
 
-  .side-card:hover {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.15);
-    color: rgba(255, 255, 255, 0.7);
+  .output-summary {
+    display: grid;
+    gap: 3px;
+    min-height: 3.25rem;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.45;
   }
 
-  .side-card.selected {
-    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 10%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
+  .output-summary strong {
     color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 14px);
+    font-variant-numeric: tabular-nums;
   }
 
-  .side-icon { font-size: 20px; }
-  .side-card.selected .side-icon { color: var(--theme-accent, #a78bfa); }
-  .side-label { font-size: 13px; font-weight: 600; }
-  .side-detail { font-size: var(--font-size-compact, 12px); font-weight: 400; opacity: 0.6; font-variant-numeric: tabular-nums; }
+  .extra-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+  }
 
-  .side-hint { margin: 0; font-size: 12px; color: rgba(255, 255, 255, 0.4); min-height: 32px; }
+  .extra-copy {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .extra-label {
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+  }
+
+  .extra-hint {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.35;
+  }
 
   .error {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 10px 14px;
-    background: color-mix(in srgb, var(--semantic-error, #f87171) 8%, transparent);
-    border: 1px solid color-mix(in srgb, var(--semantic-error, #f87171) 20%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #f87171) 8%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-error, #f87171) 20%, transparent);
     border-radius: 8px;
-    font-size: 13px;
+    font-size: var(--font-size-min, 14px);
     color: var(--semantic-error, #f87171);
   }
 
-  .actions { display: flex; flex-direction: column; gap: 10px; }
+  .actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
 
   .action {
     display: flex;
@@ -315,7 +429,7 @@
     gap: 10px;
     padding: 14px 20px;
     min-height: 52px;
-    font-size: 15px;
+    font-size: var(--font-size-min, 15px);
     font-weight: 700;
     font-family: inherit;
     color: var(--theme-text, #fff);
@@ -325,13 +439,27 @@
     transition: all 0.15s;
   }
 
-  .action:disabled { opacity: 0.5; cursor: not-allowed; }
+  .action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 
-  .print-action { background: linear-gradient(135deg, var(--semantic-success, #10b981), #059669); }
+  .print-action {
+    background: linear-gradient(
+      135deg,
+      var(--semantic-success, #10b981),
+      #059669
+    );
+  }
 
   .print-action:hover:not(:disabled) {
-    background: linear-gradient(135deg, #34d399, var(--semantic-success, #10b981));
-    box-shadow: 0 4px 20px color-mix(in srgb, var(--semantic-success, #10b981) 30%, transparent);
+    background: linear-gradient(
+      135deg,
+      #34d399,
+      var(--semantic-success, #10b981)
+    );
+    box-shadow: 0 4px 20px
+      color-mix(in srgb, var(--semantic-success, #10b981) 30%, transparent);
   }
 
   .download-action {
@@ -346,6 +474,13 @@
     color: var(--theme-text, #fff);
   }
 
-  .workflow-tip { margin: 0; font-size: 12px; color: rgba(255, 255, 255, 0.3); line-height: 1.5; }
-  .workflow-tip strong { color: rgba(255, 255, 255, 0.6); }
+  .workflow-tip {
+    margin: 0;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
+    line-height: 1.5;
+  }
+  .workflow-tip strong {
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.68));
+  }
 </style>
