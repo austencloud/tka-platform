@@ -136,16 +136,14 @@ assignments follow the catalog rows, not letter intuition.
   2026-08-11 (top-down plan: two mirrored bridge arcs around the void,
   cases on the mirror axis itself, both routes rejoin before Sun).
 - **Moon:** observatory gallery — no verdict yet.
-- **NEW (Austen, pending seal) — the step-strip opener:** the wing
-  introduction shows the mode as a step-by-step progression (discrete frozen
-  poses in a row — hands at sides, then one up one down, then...) performed
-  by a visible avatar; the CONTINUOUS version is felt in the prop-bearing
-  exhibit performers. This repairs a real flaw in the trail-only opener: a
-  trail shows WHERE hands go but integrates over time, so phase — the entire
-  timing half of the classification — is invisible in the trace. Freeze
-  frames make timing legible at a glance. Museum-native form: a
-  Muybridge-style motion-study strip, which is exactly the kind of artifact
-  the Order would produce.
+- **SEALED (Austen, 2026-08-11) — the choreo-card opener (absorbs the
+  step-strip idea):** at the start of every family passage, the wing's
+  choreo card is displayed — actual pictographs, unlabeled — while a
+  propless avatar performs just that hand path with a trail effect on the
+  tips of the hands. The card IS the discrete step-by-step representation,
+  so it carries the timing legibility a trail alone cannot (a trail
+  integrates over time; phase — the entire timing half of the
+  classification — is invisible in the trace). Tracker `And3P4gs`.
 - **NEW (Austen, pending seal) — props are eternal:** all props exist from
   the very first cave; the system is eternal and the Order only catalogues
   it. Each wing shows its words performed with a procession of different
@@ -159,6 +157,35 @@ assignments follow the catalog rows, not letter intuition.
   the path (as described), vs (b) zip — each case in a wing carries a
   different prop (3 cases / 3 props; Sun's 4 cases / 4 props). Asset
   inventory of 3D prop models is a Gate 1 prerequisite if sealed.
+
+## The case triptych (SEALED 2026-08-11 — restored original vision)
+
+Austen: *"the original vision was supposed to be like we have these recessed
+areas inside the museum and next to it we have a television screen showing
+the 3D animation and a sign post showing the choreo card that corresponds
+with that ... the animation connects with what the avatar is doing and is in
+sync with it and is in sync with the highlighting on the choreo card. That
+actually was a really important element that I think we lost track of."*
+
+Every exhibit case presents its sequence three ways at once, off ONE
+playback clock:
+
+1. **The alcove** — the recessed case holding the performing avatar (the
+   exhibit itself, behind the wing's elemental barrier).
+2. **The screen** — a display beside the case showing the animation.
+3. **The card** — the choreo card on a sign/wall, its step highlighting
+   advancing in sync with the avatar and the animation.
+
+The choreo card is the thread connecting every sequence across the whole
+museum: each sequence seen represented in every way. Tracker `iS40tQud`.
+
+**Existing owners (compose, don't rebuild):** museum stations already run a
+playback state with autoPlay (`MuseumPerformerStation3D.svelte`); the
+choreo-card feature owns the card render (`src/lib/features/choreo-card/`);
+active-step highlighting synced to the animation engine already exists as
+the shared `StepStrip` (`src/lib/shared/timeline/StepStrip.svelte`, driven
+by `animation-engine/services/step-calculator.ts`). The new work is wiring
+the card's highlight to the station's clock, not a new sync system.
 
 ## Canonical sequence binding (executed 2026-08-11, Austen's direction)
 
