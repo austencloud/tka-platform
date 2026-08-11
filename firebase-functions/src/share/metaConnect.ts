@@ -233,6 +233,13 @@ function buildAuthorizeUrl(input: {
     url.searchParams.set("override_default_response_type", "true");
   } else {
     url.searchParams.set("scope", input.grant.scope);
+    // Sign-in already authorized this same Instagram app, against a different
+    // callback. Without this, Instagram answers with "you previously connected
+    // — continue sharing?" and issues a code minted under that first grant's
+    // redirect_uri, which this flow then redeems with its own and is told the
+    // two are not identical. Forcing a fresh pass is what makes the code belong
+    // to the request that asked for it.
+    url.searchParams.set("force_reauth", "true");
   }
   url.searchParams.set("state", input.state);
   return url.toString();
