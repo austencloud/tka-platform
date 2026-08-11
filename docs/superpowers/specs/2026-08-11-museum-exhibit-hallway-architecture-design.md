@@ -135,6 +135,39 @@ App-background scenes in the same gate ledger (moonlit-firefly-forest,
 moonlit-winter-hollow, seraphic-vault/olive-cloudbreak) are outside this
 spec's scope.
 
+## Fit within the historical museum
+
+The TnD hallway is the Vulcan Cave wing — chapter one of the story bible's
+chronological walk (Cave → Egyptian → Classical/Medieval → Enlightenment →
+Victorian → Modern → Scribe rooms → sequential endings → gift shop → jam).
+The live floor plan already exits through `egypt-threshold`.
+
+- **Curriculum position:** zero-turn is the cave's place in the record.
+  Whole turns, Types 3-6 and LOOPs are canonically discovered in the
+  Egyptian wing — the 49-cell turn matrix we withhold here is that wing's
+  inheritance. Each historical wing unlocks its slice of the curriculum and
+  declares its case roster from a catalog authority, as the cave's 19 come
+  from `tnd-base-words.json`.
+- **The barrier rule is the museum-wide through-line.** Cave barriers are
+  natural media (softest, most reverent). The casing grows institutional
+  with history: temple gates, Victorian brass-and-glass vitrines, Modern
+  one-way observation glass, peaking at the isolation cubicles (endings
+  Room 2), vanishing in Room 3 and the jam. The display furniture itself
+  narrates the Order's tightening grip — the spectator → participant arc
+  spans the whole museum, not just the cave.
+- **Furniture carries the secondary timeline** (wings reflect construction
+  decade, per the bible): 1930s Bureau stamps retrofitted onto ancient rock
+  in the cave; track lighting and early digital signage on 1990s cases.
+- **The grammar repeats per era:** one signature move, solo cases behind the
+  era's barrier, period props per canon (torches → staves → fans → clubs →
+  LED). The opener slot generalizes: each wing's first station uses the same
+  invisible-performer trail tech to show what that era discovered (the cave
+  shows a mode's path; Egypt's could show a path turning for the first time;
+  later, a LOOP closing on itself).
+- **The wing declaration shape is era-agnostic** — teaching sentence, beats,
+  cases, barrier type — so future historical wings are new manifests, not
+  new architectures.
+
 ## Open items
 
 - Signature moves + teaching sentences for Fire, Air, Sun, Moon (gate 0 work).
