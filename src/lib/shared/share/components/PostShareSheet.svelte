@@ -629,6 +629,32 @@
     }
   }
 
+  /**
+   * The dropdown can only offer Pages Meta actually shared. Reaching one that
+   * was left out of the original grant means asking Meta again, which it will
+   * only do once the current grant is released — so this drops it and reopens
+   * the dialog in one action.
+   */
+  async function changeSharedPages(): Promise<void> {
+    pageMenuOpen = false;
+    connectingTarget = "facebook-page";
+    statusMessage = "";
+
+    try {
+      const account = await connectMetaAccount("facebook-page", {
+        reselect: true,
+      });
+      statusMessage = account ? `Connected ${account}` : "Connected";
+    } catch (error) {
+      statusMessage =
+        error instanceof MetaPublishClientError
+          ? error.message
+          : "Couldn't reopen the Page list.";
+    } finally {
+      connectingTarget = null;
+    }
+  }
+
   // The Page menu is fixed-positioned outside the chip, so a click anywhere
   // else has to close it explicitly.
   $effect(() => {
@@ -901,9 +927,9 @@
 
       <!-- Setup, kept visually quieter than the share actions: chips, not
            buttons the size of the thing you actually came here to do. -->
-      {#if connectableTargets.length || facebookPages.length > 1 || pageChoicePending || autoPostTargets.length}
+      {#if connectableTargets.length || metaStatus.facebookPage || autoPostTargets.length}
         <div class="connections">
-          {#if (facebookPages.length > 1 || pageChoicePending) && metaStatus.facebookPage}
+          {#if metaStatus.facebookPage}
             {@const selected = metaStatus.facebookPage}
             <!-- A dropdown, not a segmented control: Page names are long and
                  unbounded, and laying them all out side by side is what pushed
@@ -939,6 +965,26 @@
                       {/if}
                     </button>
                   {/each}
+                  <!-- Lives here because this is where you look when the Page
+                       you want is not on the list. The setup row above is one
+                       scrolling line by design and has no room for a fourth
+                       chip. -->
+                  <button
+                    class="page-option page-option--add"
+                    type="button"
+                    role="option"
+                    aria-selected="false"
+                    disabled={metaBusy}
+                    onclick={changeSharedPages}
+                  >
+                    <span>Add a Page…</span>
+                    {#if connectingTarget === "facebook-page"}
+                      <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"
+                      ></i>
+                    {:else}
+                      <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                    {/if}
+                  </button>
                 {/snippet}
               </FilterChipBase>
             </div>
@@ -1497,6 +1543,19 @@
 
   .page-option i {
     font-size: 0.625rem;
+  }
+
+  /* Separated because it is an action, not one more Page to pick. */
+  .page-option--add {
+    margin-top: 0.25rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    border-radius: 0 0 0.5rem 0.5rem;
+  }
+
+  .page-option--add:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .secondary {

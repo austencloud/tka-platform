@@ -359,6 +359,25 @@ export async function listFacebookPages(userAccessToken: string): Promise<
   );
 }
 
+/**
+ * Hands the whole grant back to Meta, de-authorizing the app for this person.
+ *
+ * Meta — not this app — owns which Pages were shared, and it will not re-ask
+ * while the app is still authorized: returning to the login dialog offers
+ * "continue with your previous settings" and replays the original selection.
+ * Revoking is what makes the next dialog a first-time one, which is the only
+ * route back to Meta's own Page picker.
+ */
+export async function revokeFacebookPermissions(
+  userAccessToken: string
+): Promise<void> {
+  const url = new URL(`${FB_GRAPH}/me/permissions`);
+  url.searchParams.set("access_token", userAccessToken);
+  await graphRequest<{ success?: boolean }>(url.toString(), {
+    method: "DELETE",
+  });
+}
+
 export async function publishFacebookPagePhoto(input: {
   pageId: string;
   pageAccessToken: string;

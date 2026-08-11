@@ -24,6 +24,7 @@ import {
   exchangeInstagramLongLivedToken,
   fetchInstagramAccount,
   listFacebookPages,
+  revokeFacebookPermissions,
 } from "./metaGraphClient";
 import {
   clearConnection,
@@ -133,6 +134,21 @@ function publicFailureCode(error: unknown): MetaConnectFailureCode {
   return error instanceof MetaConnectError ? error.code : "meta/provider-error";
 }
 
+/**
+ * What Meta actually said, for the logs and nowhere else.
+ *
+ * The page the popup renders is deliberately vague, because a Graph error code
+ * is not something the person mid-authorization can act on. Whoever is
+ * debugging it can — and without this, a failed connect records only the same
+ * sanitized bucket the UI already showed, which is no information at all.
+ * Unrecognized Graph errors keep Meta's own message (see `mapMetaError`), so
+ * this is usually the sentence that names the real cause.
+ */
+function failureDetail(error: unknown): string {
+  if (error instanceof Error) return `${error.name}: ${error.message}`;
+  return typeof error === "string" ? error : "unknown";
+}
+
 export const startMetaConnect = onCall(
   { secrets: CONNECT_SECRETS },
   async (request) => {
@@ -147,6 +163,15 @@ export const startMetaConnect = onCall(
       throw new HttpsError("invalid-argument", "Return origin is not allowed", {
         reason: "meta/origin-not-allowed",
       });
+    }
+
+    // Someone re-opening this to reach a Page they did not share the first
+    // time gets nowhere while the grant stands: Meta answers a second visit
+    // with "continue with your previous settings" and hands back the same
+    // Pages. Releasing the grant here, before the popup navigates, is what
+    // turns the dialog back into a first-time one with its Page picker.
+    if (request.data?.reselect === true && target === "facebook-page") {
+      await releaseFacebookGrant(uid);
     }
 
     const { state, expiresAtMs } = await createMetaConnectState({
@@ -265,7 +290,11 @@ export const metaConnectCallback = onRequest(
           });
         });
       }
-      functions.logger.warn("Meta publish connect did not complete", { code });
+      functions.logger.warn("Meta publish connect did not complete", {
+        code,
+        target: claimed?.data.target,
+        detail: failureDetail(error),
+      });
       sendProviderCallbackPage(
         response,
         {
@@ -416,10 +445,38 @@ export const completeMetaConnect = onCall(async (request) => {
   };
 });
 
+/**
+ * Gives the Facebook grant back to Meta and forgets the local credential.
+ *
+ * Deleting only the local copy leaves Meta still authorized, which is what
+ * made disconnecting and reconnecting land on the same Pages every time.
+ *
+ * The revoke is best effort: a token Meta has already invalidated cannot be
+ * revoked, and refusing to disconnect over that would strand someone with a
+ * connection they can neither use nor replace. Clearing local state regardless
+ * keeps the sheet honest — it says disconnected because it is.
+ */
+async function releaseFacebookGrant(uid: string): Promise<void> {
+  const existing = await readConnections(uid);
+  const token = existing.facebookPage?.userAccessToken;
+  if (token) {
+    await revokeFacebookPermissions(token).catch((error) => {
+      functions.logger.warn("Could not revoke the Facebook grant", {
+        error: error instanceof Error ? error.name : "unknown",
+      });
+    });
+  }
+  await clearConnection(uid, "facebook-page");
+}
+
 export const disconnectMetaAccount = onCall(async (request) => {
   const uid = requireSignedInCaller(request);
   const target = parseTarget(request.data?.target);
-  await clearConnection(uid, target);
+  if (target === "facebook-page") {
+    await releaseFacebookGrant(uid);
+  } else {
+    await clearConnection(uid, target);
+  }
   return { disconnected: true };
 });
 

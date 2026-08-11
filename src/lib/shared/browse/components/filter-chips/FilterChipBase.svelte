@@ -79,6 +79,41 @@ Popover uses fixed positioning to escape overflow:hidden containers.
    * this a second time once the menu exists, which is when it can be measured.
    */
   const EDGE = 8;
+
+  /**
+   * The ancestor a `position: fixed` child is actually positioned against.
+   *
+   * Normally that is the viewport, but a transform, perspective, filter,
+   * backdrop-filter, `will-change` on either, or paint/layout containment on
+   * ANY ancestor makes that element the containing block instead. The share
+   * sheet's drawer carries three of them, which put this menu hundreds of
+   * pixels off the chip. Returns null when the viewport really is the frame.
+   */
+  function containingBlock(el: HTMLElement | null): DOMRect | null {
+    let node = el?.parentElement ?? null;
+    while (node) {
+      const style = getComputedStyle(node);
+      const willChange = style.willChange ?? "";
+      const contain = style.contain ?? "";
+      if (
+        style.transform !== "none" ||
+        style.perspective !== "none" ||
+        style.filter !== "none" ||
+        (style.backdropFilter ?? "none") !== "none" ||
+        willChange.includes("transform") ||
+        willChange.includes("filter") ||
+        contain.includes("paint") ||
+        contain.includes("layout") ||
+        contain === "strict" ||
+        contain === "content"
+      ) {
+        return node.getBoundingClientRect();
+      }
+      node = node.parentElement;
+    }
+    return null;
+  }
+
   $effect(() => {
     if (!expanded || !chipEl) return;
     const rect = chipEl.getBoundingClientRect();
@@ -86,13 +121,19 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     const menuWidth = popoverEl?.offsetWidth ?? 0;
     const below = rect.bottom + 6;
 
-    popoverTop =
+    const top =
       menuHeight && below + menuHeight > window.innerHeight - EDGE
         ? Math.max(EDGE, rect.top - 6 - menuHeight)
         : below;
-    popoverLeft = menuWidth
+    const left = menuWidth
       ? Math.max(EDGE, Math.min(rect.left, window.innerWidth - menuWidth - EDGE))
       : rect.left;
+
+    // Everything above is viewport space, which is what the edge clamps need.
+    // Shift into the containing block's space only at the point of applying it.
+    const frame = containingBlock(popoverEl);
+    popoverTop = top - (frame?.top ?? 0);
+    popoverLeft = left - (frame?.left ?? 0);
   });
 </script>
 

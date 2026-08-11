@@ -153,7 +153,7 @@ export function metaConnectFailureMessage(code: MetaConnectFailureCode): string 
     case "meta/cancelled":
       return "Authorization was cancelled.";
     case "meta/no-pages":
-      return "This Facebook account does not administer any Pages.";
+      return "No Pages came through. Try again and share all your Pages.";
     case "meta/state-expired":
       return "This connection request expired. Try again.";
     case "meta/not-configured":

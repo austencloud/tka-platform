@@ -74,7 +74,9 @@ export function metaErrorMessage(code: string): string {
     case "meta/session-required":
       return "Sign-in is still loading. Try again in a moment.";
     case "meta/no-pages":
-      return "That Facebook account doesn't administer any Pages.";
+      // Meta shares Pages per-authorization, so an empty list far more often
+      // means none were ticked in its dialog than that there are none to tick.
+      return "No Pages came through. Reconnect and share all your Pages.";
     case "meta/not-connected":
       return "Connect the account first.";
     case "meta/page-required":
@@ -324,8 +326,14 @@ async function waitForConnectState(
 }
 
 /** Opens the consent popup and resolves with the connected account's name. */
+/**
+ * @param options.reselect Drop the existing grant before opening the dialog,
+ *   so Meta asks which Pages to share instead of silently reusing the previous
+ *   answer. The only way to reach a Page that was not shared the first time.
+ */
 export async function connectMetaAccount(
-  target: MetaPublishTarget
+  target: MetaPublishTarget,
+  options: { reselect?: boolean } = {}
 ): Promise<string> {
   if (typeof window === "undefined") {
     throw new MetaPublishClientError("meta/provider-error");
@@ -339,12 +347,13 @@ export async function connectMetaAccount(
   try {
     const functions = await getFunctionsInstance();
     const start = httpsCallable<
-      { target: MetaPublishTarget; returnOrigin: string },
+      { target: MetaPublishTarget; returnOrigin: string; reselect?: boolean },
       StartMetaConnectResponse
     >(functions, "startMetaConnect");
     const started = await start({
       target,
       returnOrigin: window.location.origin,
+      reselect: options.reselect === true,
     });
     validateStartResponse(started.data);
 
