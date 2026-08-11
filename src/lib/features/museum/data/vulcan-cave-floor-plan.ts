@@ -478,9 +478,12 @@ const sunWalls = {
 // own centre. Placing the pillars on the room centre would put the whole exhibit
 // off-axis from the sun mapping, which is polar about the CHAMBER centre.
 //
-// Station assignment is from the MCP data, not taste: SSSS/TTTT close on gamma3
-// and UUUU/VVVV on gamma11, so U and V take one axis (the leader/follower
-// inversion mirrored across the centre) and S and T the cross axis.
+// Station assignment note (updated 2026-08-11): after the canonical
+// retranscription all four Sun sequences (SSSS/TTTT/UUUU/VVVV) start and end
+// on gamma11 per the l1-tnd-motions catalog, so the old gamma3-vs-gamma11
+// rationale for the axis split no longer holds. The current layout (U/V one
+// axis, S/T the cross axis) is retained as authored; re-derive or reconfirm
+// the axis assignment at Sun's Gate 1 board.
 const sunDimensions = computeRoomDimensions({
   walls: sunWalls,
   minInteriorWidth: SUN_MIN_INTERIOR_WIDTH,
