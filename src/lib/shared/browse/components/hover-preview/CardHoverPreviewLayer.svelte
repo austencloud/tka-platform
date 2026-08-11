@@ -353,8 +353,13 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    /* The card's chip row lives at bottom-right, over this layer. Clearing it
-       keeps the rail's far cells from disappearing under the play chip. */
+  }
+
+  /* Chips (play/stop + variation pill) float over both bottom corners. In
+     column mode the horizontal rail spans the bottom, so the whole body clears
+     the chip row — free here, because the stage is WIDTH-limited in this
+     orientation and loses nothing to bottom padding. */
+  .preview-body:not(.rail-right) {
     padding-bottom: calc(var(--min-touch-target, 44px) + 12px);
   }
 
@@ -428,11 +433,26 @@
 
   /* A vertical rail is sized by the cells it can stack, which is a function of
      its HEIGHT — hand it more width than that and the surplus is dead margin
-     the animation could have used. */
+     the animation could have used. In row mode the stage is HEIGHT-limited, so
+     chip clearance must NOT be body padding (it collapsed the square stage on
+     short cards) — only the rail pads its bottom, clearing the variation pill
+     in the corner beneath it. */
   .preview-body.rail-right .rail {
     min-width: 60px;
     max-width: 34cqh;
     align-self: stretch;
+    /* StepStrip's virtual window deliberately runs cells past the rail box, so
+       no box geometry (padding/margin) keeps them off the variation pill in
+       the corner below. Fade them out instead: cells dissolve before reaching
+       the chip zone, and no-repeat hides anything past either end. */
+    mask-image: linear-gradient(
+      to bottom,
+      transparent,
+      black 10%,
+      black calc(100% - var(--min-touch-target, 44px) - 20px),
+      transparent calc(100% - var(--min-touch-target, 44px) + 8px)
+    );
+    mask-repeat: no-repeat;
   }
 
 </style>
