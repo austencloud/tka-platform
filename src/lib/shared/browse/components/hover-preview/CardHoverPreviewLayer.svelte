@@ -426,9 +426,12 @@
   }
 
   /* Floors keep a cell legible on a nearly-square card; ceilings stop a very
-     long card from handing the rail more room than the animation. */
+     long card from handing the rail more room than the animation. The floor
+     must fit StepStrip's FOCUSED cell — 64px minimum cell × 1.32 hero scale
+     + frame + headroom ≈ 114px — or the gold frame clips top and bottom.
+     (The strip viewport is overflow:hidden; a shorter band crops it.) */
   .preview-body:not(.rail-right) .rail {
-    min-height: 64px;
+    min-height: 7.25rem;
     max-height: 45cqh;
   }
 
