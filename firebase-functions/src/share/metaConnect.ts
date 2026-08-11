@@ -381,6 +381,18 @@ async function connectFacebookPage(uid: string, code: string): Promise<string> {
     functions.logger.warn("Facebook connect returned no Pages", {
       permissions,
     });
+
+    // Nothing is stored on this path, so without this the grant Meta just
+    // issued becomes unreachable: the next attempt is answered with "continue
+    // with your previous settings", replaying the very authorization that
+    // produced no Pages, and there is no saved token left for a revoke to
+    // break the loop with. Handing this one back on the way out is what makes
+    // simply trying again reach the Page picker.
+    await revokeFacebookPermissions(longLived.accessToken).catch((error) => {
+      functions.logger.warn("Could not release the empty Facebook grant", {
+        error: error instanceof Error ? error.name : "unknown",
+      });
+    });
     throw new MetaConnectError("meta/no-pages");
   }
 

@@ -76,7 +76,7 @@ export function metaErrorMessage(code: string): string {
     case "meta/no-pages":
       // Meta shares Pages per-authorization, so an empty list far more often
       // means none were ticked in its dialog than that there are none to tick.
-      return "No Pages came through. Reconnect and share all your Pages.";
+      return "No Pages came through. Try again and share all your Pages.";
     case "meta/not-connected":
       return "Connect the account first.";
     case "meta/page-required":
