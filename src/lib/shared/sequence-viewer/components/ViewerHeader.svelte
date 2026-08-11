@@ -66,6 +66,14 @@
     shareActions: readonly ShareActionMenuItem[];
     shareStatusMessage?: string;
     onShareActionSelect: (actionId: string) => void;
+    /**
+     * The pane on screen carries its own Share — the 3D rail's accent chip, or
+     * the Mandala and Tunnel action footers. The header stands down there rather
+     * than stacking a second, smaller share glyph 60px above a bigger one that
+     * opens the same sheet. Austen (2026-08-11): "there should not be two
+     * separate context menus when you click share."
+     */
+    shareOwnedByPane?: boolean;
   }
 
   let {
@@ -103,6 +111,7 @@
     shareActions,
     shareStatusMessage = "",
     onShareActionSelect,
+    shareOwnedByPane = false,
   }: Props = $props();
 
   const FULL_CHROME_MIN_WIDTH = 1080;
@@ -428,25 +437,27 @@
     {/if}
 
     {#if !embedded}
-      <div class="share-slot">
-        <ShareActionMenu
-          bind:open={shareMenuOpen}
-          actions={shareActions}
-          triggerLabel={labelledChrome ? "Share" : undefined}
-          useMobileSheet={isMobile}
-          disabled={!ctx.hasSequence}
-          ariaLabel="Share sequence"
-          sheetTitle="Share sequence"
-          tooltip="Share sequence"
-          testId="viewer-share-button"
-          idBase="viewer-share"
-          menuSide="bottom"
-          containDesktopMenu={true}
-          statusMessage={shareStatusMessage}
-          onDirectOpen={() => onShareActionSelect("share-sequence")}
-          onActionSelect={onShareActionSelect}
-        />
-      </div>
+      {#if !shareOwnedByPane}
+        <div class="share-slot">
+          <ShareActionMenu
+            bind:open={shareMenuOpen}
+            actions={shareActions}
+            triggerLabel={labelledChrome ? "Share" : undefined}
+            useMobileSheet={isMobile}
+            disabled={!ctx.hasSequence}
+            ariaLabel="Share sequence"
+            sheetTitle="Share sequence"
+            tooltip="Share sequence"
+            testId="viewer-share-button"
+            idBase="viewer-share"
+            menuSide="bottom"
+            containDesktopMenu={true}
+            statusMessage={shareStatusMessage}
+            onDirectOpen={() => onShareActionSelect("share-sequence")}
+            onActionSelect={onShareActionSelect}
+          />
+        </div>
+      {/if}
 
       {#if !navigation}
         <button

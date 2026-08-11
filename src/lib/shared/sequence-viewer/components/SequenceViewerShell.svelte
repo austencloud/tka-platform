@@ -345,6 +345,18 @@
    * the take used to look like a hung "Rendering video…" over a scene the user
    * could neither see nor stop. Step aside for the take, come back with it.
    */
+  /**
+   * Panes that carry their own, bigger Share: the 3D rail's accent chip and the
+   * Mandala and Tunnel action footers. Where one is up, the header's small share
+   * glyph is a second button 60px away, in the same colour, opening the same
+   * sheet — so the header stands down and each view has exactly one Share.
+   */
+  const shareOwnedByPane = $derived(
+    ctx.viewerState.viewerMode === "animation-3d" ||
+      ctx.viewerState.viewerMode === "mandala" ||
+      ctx.viewerState.viewerMode === "tunnel"
+  );
+
   let awaitingSceneTake = $state(false);
   /** previewBlobUrl at step-aside, so an older export can't count as the take. */
   let takeBaselineUrl = $state<string | null>(null);
@@ -441,6 +453,7 @@
         }
       : null}
     shareActions={share.actions}
+    {shareOwnedByPane}
     shareStatusMessage={share.statusMessage}
     onShareActionSelect={share.selectAction}
     onOverflowOpenChange={(open, reason) =>
