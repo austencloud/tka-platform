@@ -110,9 +110,20 @@ the thing without anyone having to spin") made walkable.
 1. **Teaching statement before geometry.** Gate 0 for every wing requires the
    one-sentence unique observable and the five-beat mapping before any
    layout is drawn.
-2. **Lockstep gates.** No wing passes Gate 2 (graybox) until all six have an
-   approved Gate 1 plan; no wing enters Gate 3 (visual target) until all six
-   grayboxes are approved. Depth is only purchased museum-wide.
+2. **Lockstep gates — AMENDED 2026-08-11 (Austen: "Yes. Let's do that."):
+   vertical slice first, then lockstep.** Water runs ahead as a vertical
+   slice: one case driven all the way through — declaration → graybox in the
+   shared harness → the sealed case triptych (alcove avatar + screen + choreo
+   card, one playback clock) → the choreo-card opener with the propless
+   trail avatar. Rationale: the triptych is the highest-risk, highest-value
+   element in the whole design and has never been built once; lockstep
+   breadth would front-load six grayboxes around an unproven core, and
+   agents replicate a proven template far better than they invent under
+   ambiguity. Once the Water slice is approved, the remaining five wings
+   proceed under the original lockstep rule: no wing passes Gate 2 until all
+   five have an approved Gate 1 plan; no wing enters Gate 3 until all
+   grayboxes are approved. Depth beyond the slice is only purchased
+   museum-wide.
 3. **Shared graybox review layer** (absorbed workstream): one runtime
    harness — `GrayboxRoom` inside the Canvas + `GrayboxReviewShell` outside
    it, grey shell default — replaces the four hand-rolled review routes.
@@ -124,7 +135,7 @@ the thing without anyone having to spin") made walkable.
 
 | Wing | Inherits | Next action |
 |---|---|---|
-| Water | ring-station terrain, dive passage, mirror pool optics | Re-plan as wing 1 under this spec: passage = signature move, A/B/C as cases across the water, pool = payoff. Gate 1 board. |
+| Water | ring-station terrain, dive passage, mirror pool optics | **VERTICAL SLICE (amended 2026-08-11):** re-plan as wing 1 under this spec (passage = signature move, A/B/C as cases across the water, pool = payoff), then drive one case through graybox + triptych + opener in the shared harness before any other wing boards Gate 1. |
 | Fire | cinder-court shrine structure (G1 was approved; G2 rejected) | Shrines become cases behind heat/gates; re-board Gate 1 under the wing grammar. Roster transcribed from catalog rows. |
 | Earth | terrace-overlook signature move | Both existing Gate 1 boards are superseded as drawn; the overlook survives. New Gate 1 board. |
 | Air | nothing (weakest room, zero scene work) | First wing designed FROM the grammar rather than retrofitted. Teaching sentence + Gate 1. |

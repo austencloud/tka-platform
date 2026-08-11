@@ -230,3 +230,10 @@ G/H/I, Fire JD/KE/LF, Sun U/V) were untouched.
 Each approved row becomes the wing's declaration (teaching sentence, beats,
 cases, barrier) consumed by the shared graybox review harness. Gate 1 boards
 are drawn only from approved rows — geometry never precedes purpose again.
+
+**Sequencing amendment (Austen, 2026-08-11):** Water runs first as a
+vertical slice — one case through declaration → graybox → the sealed
+triptych → the choreo-card opener — before the other five wings board
+Gate 1 under the lockstep rule. The triptych is the unproven core; prove it
+once, then the agent fleet stamps the template across the remaining wings.
+Details in the parent spec's amended rule 2.
