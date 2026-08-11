@@ -360,6 +360,30 @@ export async function listFacebookPages(userAccessToken: string): Promise<
 }
 
 /**
+ * The permissions Meta actually granted, as opposed to the ones asked for.
+ *
+ * An empty Page list is ambiguous — it reads the same whether no Page was
+ * shared or the token never carried `pages_show_list` to ask with, and those
+ * two want opposite fixes. Graph reports declined permissions alongside
+ * granted ones, so both are returned rather than filtered here.
+ */
+export async function listPermissionStatuses(
+  userAccessToken: string
+): Promise<Record<string, string>> {
+  const url = new URL(`${FB_GRAPH}/me/permissions`);
+  url.searchParams.set("access_token", userAccessToken);
+  const payload = await graphRequest<{
+    data?: { permission?: string; status?: string }[];
+  }>(url.toString());
+
+  const statuses: Record<string, string> = {};
+  for (const entry of payload?.data ?? []) {
+    if (entry.permission) statuses[entry.permission] = entry.status ?? "unknown";
+  }
+  return statuses;
+}
+
+/**
  * Hands the whole grant back to Meta, de-authorizing the app for this person.
  *
  * Meta — not this app — owns which Pages were shared, and it will not re-ask

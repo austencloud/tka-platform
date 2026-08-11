@@ -24,6 +24,7 @@ import {
   exchangeInstagramLongLivedToken,
   fetchInstagramAccount,
   listFacebookPages,
+  listPermissionStatuses,
   revokeFacebookPermissions,
 } from "./metaGraphClient";
 import {
@@ -370,6 +371,16 @@ async function connectFacebookPage(uid: string, code: string): Promise<string> {
   });
   const pages = await listFacebookPages(longLived.accessToken);
   if (pages.length === 0) {
+    // Meta answers "no Pages shared" and "you never had permission to ask"
+    // with the same empty list, and the remedy differs: one is a choice in
+    // the dialog, the other is the app's permission set. Recording what was
+    // actually granted is the only way to tell them apart afterwards.
+    const permissions = await listPermissionStatuses(
+      longLived.accessToken
+    ).catch(() => null);
+    functions.logger.warn("Facebook connect returned no Pages", {
+      permissions,
+    });
     throw new MetaConnectError("meta/no-pages");
   }
 
