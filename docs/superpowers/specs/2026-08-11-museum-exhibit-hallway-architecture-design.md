@@ -1,7 +1,7 @@
 # Museum Exhibit-Hallway Architecture — Bird's-Eye Design
 
 **Date:** 2026-08-11
-**Status:** Approved in conversation (Austen, 2026-08-11); spec awaiting written review
+**Status:** APPROVED (Austen, 2026-08-11 — "It's good. I like it. Let's seal it in.")
 **Tracker session:** `EyuCr7HhHcglvFn06nfG` (all decisions below are captured there)
 **Supersedes:** the six walk-through mode-room grammar; `fsJqYPYk` (three
 performers on one stage per room); both Earth Gate 1 floor plans as drawn;
