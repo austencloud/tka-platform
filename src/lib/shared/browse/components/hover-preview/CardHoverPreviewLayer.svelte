@@ -356,13 +356,6 @@
     justify-content: center;
   }
 
-  /* Chips (play/stop + variation pill) float over both bottom corners. In
-     column mode the horizontal rail spans the bottom, so the whole body clears
-     the chip row — free here, because the stage is WIDTH-limited in this
-     orientation and loses nothing to bottom padding. */
-  .preview-body:not(.rail-right) {
-    padding-bottom: calc(var(--min-touch-target, 44px) + 12px);
-  }
 
   .preview-body.rail-right {
     flex-direction: row;
