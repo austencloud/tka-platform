@@ -58,6 +58,25 @@ export interface ViewerSplitPaneProps {
     controller: TunnelViewController;
     mandalaController: MandalaViewerController;
   }) => void;
+  /** Hands the active art view to the shell's post-share sheet. */
+  onArtShare?: (args: {
+    artType: "mandala" | "tunnel";
+    controller: TunnelViewController;
+    mandalaController: MandalaViewerController;
+  }) => void;
+  /**
+   * The share sheet currently owns a render of this art. The pane suppresses
+   * its own result overlay while true — otherwise the tunnel's inline
+   * "Save / Dismiss" preview is sitting behind the sheet when it closes,
+   * offering a second delivery of a file the sheet already handled.
+   */
+  artShareActive?: boolean;
+  /**
+   * Opens the shell's post-share sheet on the 3D scene. Takes no target: the
+   * scene's video IS the animation export, so only the artifact the sheet opens
+   * on differs from a plain share.
+   */
+  onSceneShare?: () => void;
   onArtExportEvent?: ArtExportEventSink;
   onArtSettingChange?: (
     group: string,
@@ -101,6 +120,7 @@ export interface ViewerMotionSurfaceProps {
   onSceneReadyChange?: (ready: boolean) => void;
   onViewer3DSettingChange?: ViewerControlSink;
   onViewer3DAction?: ViewerActionSink;
+  onSceneShare?: () => void;
   suppressProgress: boolean;
   practiceActive: boolean;
   practiceMirrorEnabled: boolean;
@@ -131,6 +151,8 @@ export interface ViewerCompanionSurfaceProps {
   isLoggedIn: boolean;
   onVideoUpload?: () => void;
   onArtExport?: ViewerSplitPaneProps["onArtExport"];
+  onArtShare?: ViewerSplitPaneProps["onArtShare"];
+  artShareActive?: boolean;
   onArtExportEvent?: ArtExportEventSink;
   onArtSettingChange?: ViewerSplitPaneProps["onArtSettingChange"];
   onArtAction?: ViewerActionSink;

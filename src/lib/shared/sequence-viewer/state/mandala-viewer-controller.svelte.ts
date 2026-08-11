@@ -149,6 +149,13 @@ export class MandalaViewerController {
   exportDelivery = $state<MandalaExportDelivery | null>(null);
   /** Last export diagnostic (render/encode/mux split, HW status) — logged live. */
   lastExportDiag = $state<MandalaExportDiag | null>(null);
+  /**
+   * The finished MP4, held rather than delivered. Only set when the caller
+   * asked for `{ deliver: false }` — the share sheet renders the mandala to
+   * post it, so writing the same file to Downloads on the way would be a file
+   * nobody asked for.
+   */
+  exportBlobUrl = $state<string | null>(null);
 
   /** The active preset's stage background (custom preset falls back to black). */
   bgColor = $derived(
@@ -355,7 +362,16 @@ export class MandalaViewerController {
    * the H.264 encode — so the on-screen mandala keeps undulating without jank.
    * The main thread only posts the spec once and reflects progress.
    */
-  startExport(): void {
+  /**
+   * @param options.deliver Save or share the finished file (default). `false`
+   * hands it back on {@link exportBlobUrl} instead, for a caller that owns the
+   * delivery itself — the post-share sheet, which uploads the same blob.
+   * @returns `false` when the request was refused outright (a render already
+   * running, no steps to render). A caller showing its own "rendering…" state
+   * has to honour that, or it spins on a render that never began.
+   */
+  startExport(options?: { deliver?: boolean }): boolean {
+    const deliver = options?.deliver !== false;
     const sequence = this.#sources.getSequence();
     if (
       this.exporting ||
@@ -363,11 +379,12 @@ export class MandalaViewerController {
         this.exportPhase !== "complete" &&
         this.exportPhase !== "error")
     )
-      return;
-    if (!sequence?.steps) return;
+      return false;
+    if (!sequence?.steps) return false;
 
     this.exportError = null;
     this.exportDelivery = null;
+    this.#releaseExportBlob();
     this.exportProgress = 0;
     this.exportPhase = "capturing";
     this.exporting = true;
@@ -442,6 +459,19 @@ export class MandalaViewerController {
           performance.now() - startMs
         );
         const filename = `mandala-${this.pathShape}-${this.preset}-${reps}x.mp4`;
+
+        if (!deliver) {
+          this.exportBlobUrl = URL.createObjectURL(blob);
+          this.exportDelivery = { outcome: "completed", method: "handoff" };
+          this.exporting = false;
+          this.#exportHandle = null;
+          this.exportPhase = "complete";
+          window.setTimeout(() => {
+            if (this.exportPhase === "complete") this.exportPhase = "idle";
+          }, 1400);
+          return;
+        }
+
         // Mobile: native share sheet (canShare files). Desktop: anchor download.
         // shareOrDownloadBlob gates on the DEVICE (detectPlatform), not on
         // navigator.share existence — desktop Chrome/Edge implement the Web
@@ -492,6 +522,17 @@ export class MandalaViewerController {
         this.exporting = false;
         this.#exportHandle = null;
       });
+
+    return true;
+  }
+
+  /**
+   * Drop a held render. The share sheet calls this on open so each share bakes
+   * the mandala as it is now — reusing the last file would silently post the
+   * shape, palette or spin the user changed after rendering it.
+   */
+  clearExportBlob(): void {
+    this.#releaseExportBlob();
   }
 
   cancelExport(): void {
@@ -507,5 +548,13 @@ export class MandalaViewerController {
     this.exportPhase = "idle";
     this.exportError = null;
     this.exportDelivery = null;
+    this.#releaseExportBlob();
+  }
+
+  /** A held blob is a live object URL; dropping the reference alone leaks it. */
+  #releaseExportBlob(): void {
+    if (!this.exportBlobUrl) return;
+    URL.revokeObjectURL(this.exportBlobUrl);
+    this.exportBlobUrl = null;
   }
 }

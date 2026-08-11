@@ -71,6 +71,8 @@
     onPlaybackToggle = () => {},
     onPropChange,
     onArtExport,
+    onArtShare,
+    artShareActive = false,
     onArtExportEvent,
     onArtSettingChange,
     onArtAction,
@@ -109,6 +111,19 @@
       controller: TunnelViewController;
       mandalaController: MandalaViewerController;
     }) => void;
+    /**
+     * Hands this art view to the post-share sheet. The pane owns the two
+     * controllers, so it passes them up rather than rendering its own sheet:
+     * the shell already hosts one, and a second would be the second share
+     * destination Track 1 exists to remove.
+     */
+    onArtShare?: (args: {
+      artType: ArtType;
+      controller: TunnelViewController;
+      mandalaController: MandalaViewerController;
+    }) => void;
+    /** The share sheet owns the current render; keep the inline preview out. */
+    artShareActive?: boolean;
     onArtExportEvent?: ArtExportEventSink;
     onArtSettingChange?: (
       group: string,
@@ -248,6 +263,10 @@
       return;
     }
     onArtExport({ artType, controller, mandalaController });
+  }
+
+  function handleShare(): void {
+    onArtShare?.({ artType, controller, mandalaController });
   }
 
   function finishArtExportAttempt(
@@ -573,6 +592,7 @@
         {sequence}
         {bluePropType}
         {redPropType}
+        exportTakeoverSuppressed={artShareActive}
         onExportCancel={cancelMandalaExport}
         onExportRetry={retryMandalaExport}
       />
@@ -590,7 +610,7 @@
       />
     {/if}
 
-    {#if artType === "tunnel" && exportState.previewBlobUrl && !exportState.isExporting}
+    {#if artType === "tunnel" && exportState.previewBlobUrl && !exportState.isExporting && !artShareActive}
       <!-- Preview-first: the rendered kaleidoscope plays inline; the user saves
            (download on desktop / share sheet on mobile) or dismisses. Nothing
            hit disk automatically. -->
@@ -602,7 +622,7 @@
           onDismiss={dismissTunnelPreview}
         />
       </div>
-    {:else if takeover.phase !== "idle"}
+    {:else if takeover.phase !== "idle" && !artShareActive}
       <!-- The shared premium ring overlay (same as the mandala export). The live
            kaleidoscope keeps playing, dimmed + blurred, behind the ring. -->
       <ExportTakeover
@@ -624,6 +644,7 @@
     {artType}
     {layout}
     onExport={handleExport}
+    onShare={handleShare}
     onSaveTunnel={() => void handleSaveTunnel("settings_panel")}
     {bpm}
     {playbackMode}

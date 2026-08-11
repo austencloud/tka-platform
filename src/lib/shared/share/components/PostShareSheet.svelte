@@ -106,6 +106,20 @@
      * where the tile simply does not appear.
      */
     onSendInTka?: () => void;
+    /**
+     * What the video option is called, and what it is. "Video" is the sequence
+     * animation; the Mandala and Tunnel views hand their own render in under
+     * their own name, because sharing from those views means sharing what is on
+     * screen, not the animation behind it.
+     */
+    videoLabel?: string;
+    /**
+     * Which artifact the sheet opens on. The art views open on their render and
+     * ask for it immediately — you pressed Share on a mandala, so the mandala is
+     * what you are sharing. Everywhere else the card is already in hand and the
+     * sheet is actionable the moment it appears.
+     */
+    initialArtifact?: ShareArtifact;
   }
 
   let {
@@ -120,6 +134,8 @@
     onClose,
     metaStatusOverride,
     onSendInTka,
+    videoLabel = "Video",
+    initialArtifact = "card",
   }: Props = $props();
 
   const captions = getCaptionPresetManager();
@@ -395,15 +411,45 @@
 
   const videoBusy = $derived(artifact === "video" && !videoBlob);
 
+  /**
+   * A render has landed, even if its bytes are still being read.
+   *
+   * `videoBlob` is fetched FROM `videoBlobUrl`, asynchronously — so for the tick
+   * between an export finishing and that fetch resolving, `videoBlob` is null
+   * while a perfectly good render exists. Every decision about whether to ASK
+   * for a render reads this, never the blob: gating on `videoBlob` is what made
+   * the sheet fire a second 3D take the instant it reopened holding the first.
+   */
+  const hasVideo = $derived(!!videoBlobUrl || !!videoBlob);
+
   const progressLabel = $derived.by(() => {
     if (!videoBusy) return "";
     // A scene take is the user recording, not the machine rendering. Saying
     // "Rendering video…" over it is what made the 3D path look hung.
     if (isRecordingScene) return "Recording the scene…";
     if (isExportingVideo && exportProgress !== null) {
-      return `Rendering video… ${Math.round(exportProgress * 100)}%`;
+      return `Rendering ${videoLabel.toLowerCase()}… ${Math.round(exportProgress * 100)}%`;
     }
-    return "Rendering video…";
+    return `Rendering ${videoLabel.toLowerCase()}…`;
+  });
+
+  // Open on the artifact this host is about. Keyed off the isOpen edge rather
+  // than a prop mirror so a re-render mid-session cannot yank the user's own
+  // pick out from under them.
+  let wasOpen = false;
+  $effect(() => {
+    if (isOpen === wasOpen) return;
+    wasOpen = isOpen;
+    if (!isOpen) return;
+    artifact = initialArtifact;
+    if (
+      initialArtifact === "video" &&
+      !hasVideo &&
+      !isExportingVideo &&
+      !isRecordingScene
+    ) {
+      requestVideo();
+    }
   });
 
   // Card first: getCardImageBlob is cached, so the sheet is actionable the
@@ -437,7 +483,13 @@
   // The viewer owns the export; this only adopts the resulting blob.
   $effect(() => {
     const url = videoBlobUrl;
-    if (!url) return;
+    // An empty slot means empty. Holding the previous render here is how a
+    // mandala share ended up showing the animation the viewer exported an hour
+    // ago, under the label "Mandala".
+    if (!url) {
+      videoBlob = null;
+      return;
+    }
 
     let stale = false;
     void (async () => {
@@ -526,7 +578,7 @@
 
     // isRecordingScene counts as in flight: a 3D take reads as idle to both
     // other flags, so without it re-picking Video starts a second recording.
-    if (next === "video" && !videoBlob && !isExportingVideo && !isRecordingScene) {
+    if (next === "video" && !hasVideo && !isExportingVideo && !isRecordingScene) {
       requestVideo();
     }
   }
@@ -982,7 +1034,7 @@
         <SegmentedControl
           options={[
             { value: "card", label: "Card" },
-            { value: "video", label: "Video" },
+            { value: "video", label: videoLabel },
           ]}
           value={artifact}
           onchange={handleArtifactChange}

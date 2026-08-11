@@ -114,17 +114,17 @@ export function createViewerEditModeState(inputs: ViewerEditModeInputs) {
     );
   }
 
-  function handleArtExport(args: {
+  /** Resolves `false` when the request was refused — see {@link handleExport}. */
+  async function handleArtExport(args: {
     artType: "mandala" | "tunnel";
     controller: TunnelViewController;
     mandalaController: MandalaViewerController;
-  }): void {
+  }): Promise<boolean> {
     if (args.artType === "mandala") {
-      args.mandalaController.startExport();
-      return;
+      return args.mandalaController.startExport();
     }
 
-    void inputs.exportCoordinator.exportTunnel(
+    return await inputs.exportCoordinator.exportTunnel(
       inputs.interactive.playbackController,
       inputs.modalAnimationState,
       inputs.interactive.hapticService,

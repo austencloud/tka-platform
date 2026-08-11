@@ -567,8 +567,8 @@ export function createViewerShellInteractionState(
 
   function handleArtExport(
     args: Parameters<OrchestratorContext["handleArtExport"]>[0]
-  ): void {
-    inputs.getContext().handleArtExport(args);
+  ): Promise<boolean> {
+    return inputs.getContext().handleArtExport(args);
   }
 
   function handleArtExportEvent(

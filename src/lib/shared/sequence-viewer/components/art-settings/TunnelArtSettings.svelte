@@ -12,6 +12,7 @@
   import type { TunnelViewController } from "../../tunnel/tunnel-view-controller.svelte";
   import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import ArtSettingsSidebarFrame from "./ArtSettingsSidebarFrame.svelte";
+  import ArtActionFooter from "./ArtActionFooter.svelte";
   import TunnelEffectsSettings from "./TunnelEffectsSettings.svelte";
   import TunnelLookSettings from "./TunnelLookSettings.svelte";
   import TunnelPlaybackSettings from "./TunnelPlaybackSettings.svelte";
@@ -34,6 +35,7 @@
     controller: TunnelViewController;
     layout: "sidebar" | "bottom";
     onExport: () => void;
+    onShare: () => void;
     onSaveTunnel?: () => void;
     bpm: number;
     playbackMode: PlaybackMode;
@@ -52,6 +54,7 @@
     controller,
     layout,
     onExport,
+    onShare,
     onSaveTunnel,
     bpm,
     playbackMode,
@@ -147,6 +150,14 @@
   // Colors gets the live accent-pair dots (matching the native mandala dock);
   // "download" is excluded — it's the trailing Export action, not a tray tab.
 
+  const tunnelDockShare = $derived<ControlDockAction>({
+    icon: "fa-share-nodes",
+    label: "Share",
+    accent: true,
+    onClick: onShare,
+    disabled: exporting,
+  });
+
   const tunnelDockExport = $derived<ControlDockAction>({
     icon: "fa-film",
     label: "Export Video",
@@ -221,7 +232,8 @@
     tabs={tunnelDockTabs}
     activeTab={openTunnelTab}
     onTabSelect={selectTunnelDock}
-    trailingAction={tunnelDockExport}
+    trailingAction={tunnelDockShare}
+    secondaryActions={[tunnelDockExport]}
     trayMaxHeight={openTunnelTab === "effects"
       ? "min(54vh, 360px)"
       : "min(33vh, 250px)"}
@@ -269,12 +281,12 @@
           </div>
         </div>
 
-        <div class="panel-footer">
-          <button type="button" class="export-btn" onclick={onExport}>
-            <i class="fas fa-film" aria-hidden="true"></i>
-            <span>Export Video</span>
-          </button>
-        </div>
+        <ArtActionFooter
+          {onShare}
+          {onExport}
+          exportLabel="Export Video"
+          busy={exporting}
+        />
       </div>
     </div>
   </ArtSettingsSidebarFrame>
@@ -359,46 +371,6 @@
     line-height: 1.4;
     margin: 0;
     padding: 0 8px;
-  }
-
-  /* Pinned export footer. */
-  .panel-footer {
-    padding: 12px 16px 16px;
-    flex-shrink: 0;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
-  }
-  .export-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    min-height: var(--min-touch-target);
-    padding: 12px 16px;
-    background: var(--theme-accent);
-    border: 1.5px solid var(--theme-accent);
-    border-radius: 12px;
-    color: white;
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    cursor: pointer;
-    transition: filter var(--duration-normal, 200ms) ease;
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .export-btn:hover {
-      filter: brightness(1.1);
-    }
-  }
-  .export-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .export-btn {
-      transition: none;
-    }
   }
 
   /* Mobile dock tray: tighten the shared section bodies. Buttons/inputs keep

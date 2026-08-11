@@ -193,6 +193,11 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       cancel: () => void;
     } | null = null;
 
+    /** Which side of the export owns the progress readout — see onProgress below. */
+    let captureComplete = false;
+    let encodedSoFar = 0;
+    let encodedTotal = 0;
+
     if (useBackgroundEncoder) {
       const bitrate = calculateBitrate(outputWidth, outputHeight, fps);
 
@@ -217,11 +222,20 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       // Wire progress from worker - only used during the finalize phase.
       // During capture, the main loop reports its own progress; the worker
       // encodes frames concurrently but we don't surface that to the UI
-      // to avoid rapid "capturing"/"encoding" flicker.
-      this.backgroundEncoder.onProgress = () => {
-        // Progress is reported by the capture loop during capture phase.
-        // After capture completes, the finalize section below sets stage
-        // to "encoding" once and the worker's "complete" message ends it.
+      // to avoid rapid "capturing"/"encoding" flicker. Once capture is done the
+      // encoder still holds a deep queue, so its count becomes the only real
+      // signal — surfacing it is what keeps the finalize phase from reading as
+      // a freeze.
+      this.backgroundEncoder.onProgress = (frameIndex, total) => {
+        encodedSoFar = frameIndex;
+        encodedTotal = total;
+        if (!captureComplete) return;
+        onProgress({
+          progress: total > 0 ? frameIndex / total : 0,
+          stage: "encoding",
+          currentFrame: frameIndex,
+          totalFrames: total,
+        });
       };
 
       await this.backgroundEncoder.initialize({
@@ -834,7 +848,13 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       // -----------------------------------------------------------------------
       // Finalize - flush encoder and download
       // -----------------------------------------------------------------------
-      onProgress({ progress: 0, stage: "encoding" });
+      captureComplete = true;
+      onProgress({
+        progress: encodedTotal > 0 ? encodedSoFar / encodedTotal : 0,
+        stage: "encoding",
+        currentFrame: encodedTotal > 0 ? encodedSoFar : undefined,
+        totalFrames: encodedTotal > 0 ? encodedTotal : undefined,
+      });
 
       let outputBlob: Blob;
 

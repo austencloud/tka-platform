@@ -10,6 +10,7 @@
   } from "../mandala/MandalaCategoryControl.svelte";
   import type { MandalaViewerController } from "../../state/mandala-viewer-controller.svelte";
   import ArtSettingsSidebarFrame from "./ArtSettingsSidebarFrame.svelte";
+  import ArtActionFooter from "./ArtActionFooter.svelte";
   import type { ArtSettingChangeHandler } from "./art-settings-types";
 
   type MandalaRailId = MandalaCategory;
@@ -18,6 +19,7 @@
     mandalaController: MandalaViewerController;
     layout: "sidebar" | "bottom";
     onExport: () => void;
+    onShare: () => void;
     onArtSettingChange?: ArtSettingChangeHandler;
     exporting: boolean;
     reduceMotion: boolean;
@@ -27,6 +29,7 @@
     mandalaController,
     layout,
     onExport,
+    onShare,
     onArtSettingChange,
     exporting,
     reduceMotion,
@@ -83,6 +86,15 @@
       )
   );
 
+  // Share leads on the dock too, so the phone and the desktop sidebar agree on
+  // which action is the first-class one.
+  const mandalaDockShare: ControlDockAction = {
+    icon: "fa-share-nodes",
+    label: "Share",
+    accent: true,
+    onClick: () => onShare(),
+  };
+
   const mandalaDockExport: ControlDockAction = {
     icon: "fa-download",
     label: "Export MP4",
@@ -95,7 +107,8 @@
     tabs={mandalaDockTabs}
     activeTab={openMandalaCat}
     onTabSelect={selectMandalaDock}
-    trailingAction={mandalaDockExport}
+    trailingAction={mandalaDockShare}
+    secondaryActions={[mandalaDockExport]}
     trayMaxHeight="min(33vh, 250px)"
   >
     {#snippet tray()}
@@ -133,12 +146,7 @@
         {/each}
       </div>
 
-      <div class="panel-footer">
-        <button type="button" class="export-btn" onclick={onExport}>
-          <i class="fas fa-film" aria-hidden="true"></i>
-          <span>Export MP4</span>
-        </button>
-      </div>
+      <ArtActionFooter {onShare} {onExport} exportLabel="Export MP4" />
     </div>
   </ArtSettingsSidebarFrame>
 {/if}
@@ -195,43 +203,4 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
   }
 
-  /* Pinned export footer. */
-  .panel-footer {
-    padding: 12px 16px 16px;
-    flex-shrink: 0;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
-  }
-  .export-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    min-height: var(--min-touch-target);
-    padding: 12px 16px;
-    background: var(--theme-accent);
-    border: 1.5px solid var(--theme-accent);
-    border-radius: 12px;
-    color: white;
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    cursor: pointer;
-    transition: filter var(--duration-normal, 200ms) ease;
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .export-btn:hover {
-      filter: brightness(1.1);
-    }
-  }
-  .export-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b5cf6);
-    outline-offset: 2px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .export-btn {
-      transition: none;
-    }
-  }
 </style>

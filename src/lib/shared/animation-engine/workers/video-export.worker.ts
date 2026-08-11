@@ -178,6 +178,16 @@ let wasmEncoder: H264MP4Encoder | null = null;
 
 let cancelled = false;
 let encoderErrored = false;
+/**
+ * Frames actually through the encoder and into the muxer, which is NOT the
+ * number received. `encoder.encode()` only queues; with `latencyMode:"quality"`
+ * the queue runs thousands deep and drains inside `flush()`. Reporting receipts
+ * as progress made the readout hit 100% while most of the work was still
+ * pending, so the last minutes of a long export looked like a frozen "Frame N
+ * of N" — a 73s take measured 189s between `finish` and `complete` with the
+ * counter parked at the end the whole time. Count what has landed instead.
+ */
+let encodedFrames = 0;
 let frameDurationMicros = 0;
 let encoderWidth = 0;
 let encoderHeight = 0;
@@ -325,6 +335,7 @@ function cleanup(): void {
   sourceWidth = 0;
   sourceHeight = 0;
   encoderErrored = false;
+  encodedFrames = 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -363,6 +374,8 @@ async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
     output: async (chunk, meta) => {
       const packet = EncodedPacket.fromEncodedChunk(chunk);
       await localVideoSource.add(packet, meta);
+      // Progress is reported HERE, not on frame receipt — see `encodedFrames`.
+      post({ type: "progress", frameIndex: encodedFrames++ });
     },
     error: (e) => {
       encoderErrored = true;
@@ -697,13 +710,16 @@ async function handleConfig(config: ExportConfig): Promise<void> {
 function handleFrame(msg: FrameMessage): void {
   if (cancelled) return;
 
+  // Only the WASM encoder reports on receipt, because it encodes synchronously
+  // inside addFrameRgba — receipt and completion are the same moment there. The
+  // WebCodecs path reports from the encoder's own output callback instead.
   if (msg.type === "frame-captured") {
     if (hasWebCodecs) {
       handleFrameCapturedWebCodecs(msg);
     } else {
       handleFrameCapturedWasm(msg);
+      post({ type: "progress", frameIndex: msg.frameIndex });
     }
-    post({ type: "progress", frameIndex: msg.frameIndex });
     return;
   }
 
@@ -712,9 +728,8 @@ function handleFrame(msg: FrameMessage): void {
     handleFrameWebCodecs(msg);
   } else {
     handleFrameWasm(msg);
+    post({ type: "progress", frameIndex: msg.frameIndex });
   }
-
-  post({ type: "progress", frameIndex: msg.frameIndex });
 }
 
 async function handleFinish(): Promise<void> {

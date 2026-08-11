@@ -27,6 +27,8 @@ export interface ArtSettingsPanelProps {
   artType: ArtType;
   layout?: "sidebar" | "bottom";
   onExport: () => void;
+  /** Opens the post-share sheet with this art as the artifact. */
+  onShare: () => void;
   onSaveTunnel?: () => void;
   bpm?: number;
   playbackMode?: PlaybackMode;

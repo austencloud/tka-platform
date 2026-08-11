@@ -13,6 +13,7 @@
     artType,
     layout = "sidebar",
     onExport,
+    onShare,
     onSaveTunnel,
     bpm = $bindable(60),
     playbackMode = "continuous",
@@ -42,6 +43,7 @@
     {controller}
     {layout}
     {onExport}
+    {onShare}
     {onSaveTunnel}
     {bpm}
     {playbackMode}
@@ -60,6 +62,7 @@
     {mandalaController}
     {layout}
     {onExport}
+    {onShare}
     {onArtSettingChange}
     {exporting}
     {reduceMotion}

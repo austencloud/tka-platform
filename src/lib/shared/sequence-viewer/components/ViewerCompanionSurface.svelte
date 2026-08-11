@@ -29,6 +29,8 @@
     isLoggedIn,
     onVideoUpload,
     onArtExport,
+    onArtShare,
+    artShareActive = false,
     onArtExportEvent,
     onArtSettingChange,
     onArtAction,
@@ -144,6 +146,8 @@
       layout={layout.isMobile ? "bottom" : "sidebar"}
       {onPropChange}
       {onArtExport}
+      {onArtShare}
+      {artShareActive}
       {onArtExportEvent}
       {onArtSettingChange}
       {onArtAction}
@@ -175,6 +179,8 @@
       layout={layout.isMobile ? "bottom" : "sidebar"}
       {onPropChange}
       {onArtExport}
+      {onArtShare}
+      {artShareActive}
       {onArtExportEvent}
       {onArtSettingChange}
       {onArtAction}

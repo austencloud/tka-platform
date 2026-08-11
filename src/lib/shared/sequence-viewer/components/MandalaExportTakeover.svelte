@@ -11,6 +11,12 @@
     bluePropType?: string;
     redPropType?: string;
     size: number;
+    /**
+     * The share sheet is driving this render and shows its own progress. The
+     * takeover would sit behind the modal, unreachable, and its Cancel/Retry
+     * would compete with the sheet's.
+     */
+    suppressed?: boolean;
     onCancel?: () => void;
     onRetry?: () => void;
   }
@@ -20,6 +26,7 @@
     bluePropType,
     redPropType,
     size,
+    suppressed = false,
     onCancel,
     onRetry,
   }: Props = $props();
@@ -30,34 +37,36 @@
   });
 </script>
 
-<ExportTakeover
-  phase={ctrl.exportPhase}
-  progress={ctrl.exportProgress}
-  {phaseLabel}
-  error={ctrl.exportError}
-  onCancel={() => (onCancel ? onCancel() : ctrl.cancelExport())}
-  onRetry={() => (onRetry ? onRetry() : ctrl.startExport())}
-  opaque
->
-  {#snippet centerpiece()}
-    <SequenceMandala
-      {sequence}
-      animate={!ctrl.paused}
-      animateMin={0}
-      animateMax={ctrl.rangeMax}
-      animatePeriod={ctrl.period}
-      animateEasing="breathe"
-      animateRotation={ctrl.rotation}
-      pathShape={ctrl.pathShape}
-      {size}
-      {bluePropType}
-      {redPropType}
-      mode="card-back"
-      style="stroke"
-      show="both"
-      palette={ctrl.palette}
-      strokeWidth={ctrl.lineWeight}
-      gradient={ctrl.gradientColors}
-    />
-  {/snippet}
-</ExportTakeover>
+{#if !suppressed}
+  <ExportTakeover
+    phase={ctrl.exportPhase}
+    progress={ctrl.exportProgress}
+    {phaseLabel}
+    error={ctrl.exportError}
+    onCancel={() => (onCancel ? onCancel() : ctrl.cancelExport())}
+    onRetry={() => (onRetry ? onRetry() : ctrl.startExport())}
+    opaque
+  >
+    {#snippet centerpiece()}
+      <SequenceMandala
+        {sequence}
+        animate={!ctrl.paused}
+        animateMin={0}
+        animateMax={ctrl.rangeMax}
+        animatePeriod={ctrl.period}
+        animateEasing="breathe"
+        animateRotation={ctrl.rotation}
+        pathShape={ctrl.pathShape}
+        {size}
+        {bluePropType}
+        {redPropType}
+        mode="card-back"
+        style="stroke"
+        show="both"
+        palette={ctrl.palette}
+        strokeWidth={ctrl.lineWeight}
+        gradient={ctrl.gradientColors}
+      />
+    {/snippet}
+  </ExportTakeover>
+{/if}

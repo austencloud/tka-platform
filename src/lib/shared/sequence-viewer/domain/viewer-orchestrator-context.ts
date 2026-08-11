@@ -166,11 +166,12 @@ export interface OrchestratorContext {
   saveExportedVideo: () => Promise<void>;
 
   playbackController: AnimationPlaybackController | null;
+  /** Resolves `false` when the render was refused before it began. */
   handleArtExport: (args: {
     artType: "mandala" | "tunnel";
     controller: TunnelViewController;
     mandalaController: MandalaViewerController;
-  }) => void;
+  }) => Promise<boolean>;
 
   splitPanePlayback: ViewerPlaybackState;
   splitPaneImageComposition: ImageCompositionProps;

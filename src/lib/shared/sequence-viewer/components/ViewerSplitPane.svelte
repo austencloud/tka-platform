@@ -54,11 +54,14 @@
     isLoggedIn = false,
     onVideoUpload,
     onArtExport,
+    onArtShare,
+    artShareActive = false,
     onArtExportEvent,
     onArtSettingChange,
     onArtAction,
     onViewer3DSettingChange,
     onViewer3DAction,
+    onSceneShare,
     suppressProgress = false,
     practiceActive = false,
     practiceCellSize = 72,
@@ -194,6 +197,7 @@
       {onSceneReadyChange}
       {onViewer3DSettingChange}
       {onViewer3DAction}
+      {onSceneShare}
       {suppressProgress}
       {practiceActive}
       {practiceMirrorEnabled}
@@ -223,6 +227,8 @@
       {isLoggedIn}
       {onVideoUpload}
       {onArtExport}
+      {onArtShare}
+      {artShareActive}
       {onArtExportEvent}
       {onArtSettingChange}
       {onArtAction}
@@ -261,6 +267,7 @@
         {onSceneReadyChange}
         {onViewer3DSettingChange}
         {onViewer3DAction}
+        {onSceneShare}
         {suppressProgress}
         {practiceActive}
         {practiceMirrorEnabled}
@@ -290,6 +297,8 @@
         {isLoggedIn}
         {onVideoUpload}
         {onArtExport}
+        {onArtShare}
+        {artShareActive}
         {onArtExportEvent}
         {onArtSettingChange}
         {onArtAction}

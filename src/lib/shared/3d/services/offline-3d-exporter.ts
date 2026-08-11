@@ -166,7 +166,15 @@ export class Offline3DExporter {
       );
     }
 
+    // Capture owns the readout until the last frame is handed over; the encoder
+    // owns it after. Without the gate the two interleave and the label flips
+    // between "Rendering frames" and "Encoding video" several times a second,
+    // and the encoder's (lower) count keeps yanking the ring backwards.
+    let captureComplete = false;
+    let encodedSoFar = 0;
     this.backgroundEncoder.onProgress = (frameIndex, total) => {
+      encodedSoFar = frameIndex;
+      if (!captureComplete) return;
       onProgress({
         progress: frameIndex / total,
         stage: "encoding",
@@ -330,6 +338,17 @@ export class Offline3DExporter {
       }
 
       diag.finish();
+
+      // Hand the readout to the encoder. Every frame is captured but most are
+      // still queued inside it, so this is where the honest number lives from
+      // here on — and on a long take that tail is a large share of the wait.
+      captureComplete = true;
+      onProgress({
+        progress: encodedSoFar / totalFrames,
+        stage: "encoding",
+        currentFrame: encodedSoFar,
+        totalFrames,
+      });
 
       const blob = await this.backgroundEncoder.finish();
       onProgress({ progress: 1, stage: "complete", totalFrames });

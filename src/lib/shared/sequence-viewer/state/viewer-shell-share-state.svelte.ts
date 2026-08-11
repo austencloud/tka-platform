@@ -1,8 +1,21 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { OrchestratorContext } from "../domain/viewer-orchestrator-context";
 import { buildViewerShareActions } from "../services/viewer-shell-model";
+import type { MandalaViewerController } from "./mandala-viewer-controller.svelte";
+import type { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
 
 type ViewerShareActionId = "share-sequence" | "send-sequence" | "copy-link";
+
+/**
+ * The art view a share is about. ArtPane owns both controllers, so it hands
+ * them up here rather than rendering a sheet of its own — the shell already
+ * hosts the one sheet every share entry point lands on.
+ */
+export interface ArtShareTarget {
+  artType: "mandala" | "tunnel";
+  controller: TunnelViewController;
+  mandalaController: MandalaViewerController;
+}
 
 interface ViewerShellShareInputs {
   getContext: () => OrchestratorContext;
@@ -26,6 +39,23 @@ export function createViewerShellShareState(
   let copyClaudeFeedback = $state(false);
   let shareLinkCopied = $state(false);
   let postSheetOpen = $state(false);
+  /**
+   * `$state.raw`: these are class instances with private fields, and a deep
+   * proxy around them breaks their own reactivity and their `#private` access.
+   * Their internal `$state` fields stay reactive through the raw reference,
+   * which is exactly what the sheet reads (progress, the finished blob).
+   */
+  let artShare = $state.raw<ArtShareTarget | null>(null);
+  /** This share came from the 3D pane, so the sheet opens on Video. */
+  let sceneShare = $state(false);
+  /**
+   * The sheet is hidden for a live 3D take, not dismissed. Hiding it closes the
+   * native <dialog>, which fires `close`, which calls back through
+   * `setPostSheetOpen(false)` — so without this flag the take's own step-aside
+   * ends the very share session it is fulfilling, and the sheet comes back on
+   * Card with the finished take buried behind the picker.
+   */
+  let sceneTakeSuspended = $state(false);
   let copyClaudeFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
   let shareLinkFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -90,6 +120,67 @@ export function createViewerShellShareState(
    */
   function shareSequence(): void {
     dependencies.captureScanAction("share");
+    artShare = null;
+    sceneShare = false;
+    sceneTakeSuspended = false;
+    postSheetOpen = true;
+  }
+
+  /**
+   * Retires whatever the open sheet was a share OF. The session is what makes
+   * the sheet's video slot a mandala instead of the animation, or labels it
+   * Scene instead of Video — it has to die with the sheet, or the next plain
+   * share opens still pointed at the last one.
+   */
+  function endShareSession(): void {
+    const hadRender = sceneShare || !!artShare;
+    sceneShare = false;
+    sceneTakeSuspended = false;
+    // Retire the render along with the session that asked for it. The viewer
+    // suppresses its own result overlay only while the sheet owns the render, so
+    // leaving the blob behind means closing the sheet reveals an "Export
+    // complete — Save" panel offering a second delivery of the file the sheet
+    // just handled. True of a scene take as much as of a mandala or tunnel.
+    if (hadRender) inputs.getContext().dismissPreview();
+    if (!artShare) return;
+    artShare.mandalaController.clearExportBlob();
+    artShare = null;
+  }
+
+  /**
+   * Share what is on screen, not the sequence behind it. From the Mandala or
+   * Tunnel view the artifact is that render, so the sheet opens on it and asks
+   * for it immediately. Austen (2026-08-11): "if I'm in the tunnel there should
+   * be a big fat share button specifically for sharing that tunnel."
+   */
+  function shareArt(target: ArtShareTarget): void {
+    dependencies.captureScanAction("share", { source: `art_${target.artType}` });
+    // Start the slot empty. Both render paths keep their last result around —
+    // the shared exporter's preview and the mandala's held blob — and either
+    // one would be adopted as this share's artifact and labelled as the art the
+    // user is looking at, which it may not be.
+    inputs.getContext().dismissPreview();
+    target.mandalaController.clearExportBlob();
+    artShare = target;
+    sceneShare = false;
+    sceneTakeSuspended = false;
+    postSheetOpen = true;
+  }
+
+  /**
+   * The 3D pane's Share. Unlike the art views this needs no target: a scene
+   * share IS the animation export — `handleExport` records the live 3D stage
+   * whenever 3D is the editing pane — so the only thing that differs from a
+   * plain share is which artifact the sheet opens on.
+   */
+  function shareScene(): void {
+    dependencies.captureScanAction("share", { source: "scene_3d" });
+    // Same reason as shareArt: an old animation render still sitting in the
+    // preview slot would be adopted as this share's video.
+    inputs.getContext().dismissPreview();
+    artShare = null;
+    sceneShare = true;
+    sceneTakeSuspended = false;
     postSheetOpen = true;
   }
 
@@ -138,16 +229,46 @@ export function createViewerShellShareState(
     get postSheetOpen() {
       return postSheetOpen;
     },
+    get artShare() {
+      return artShare;
+    },
+    get sceneShare() {
+      return sceneShare;
+    },
+    /** The user opening or dismissing the sheet. Dismissing ends the session. */
     setPostSheetOpen(open: boolean) {
       postSheetOpen = open;
+      if (open) {
+        sceneTakeSuspended = false;
+        return;
+      }
+      if (sceneTakeSuspended) return;
+      endShareSession();
+    },
+    /**
+     * Hide the sheet for a live 3D take WITHOUT ending the session. The take is
+     * a camera performance on the stage the sheet is covering, so the sheet gets
+     * out of the way and comes back with the result — and it has to come back as
+     * the same share, or it reopens on Card and buries the take it just asked
+     * for.
+     */
+    suspendForSceneTake() {
+      sceneTakeSuspended = true;
+      postSheetOpen = false;
+    },
+    resumeAfterSceneTake() {
+      sceneTakeSuspended = false;
+      postSheetOpen = true;
     },
     getShareUrl(): string {
       return inputs.getContext().getShareUrl();
     },
     copyForClaude,
     sendToInbox,
+    shareArt,
     selectAction,
     sendToStickerLab,
+    shareScene,
     destroy,
   };
 }

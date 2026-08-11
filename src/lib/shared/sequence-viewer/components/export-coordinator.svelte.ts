@@ -191,6 +191,11 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
    * (VideoPreviewPanel: play / save / share). NOTHING auto-downloads — the user
    * picks save/share from the preview. Errors still toast (a failed export must
    * not look like nothing happened).
+   *
+   * Resolves `false` when the request was refused before any render began — an
+   * export already running, the take-it-home account gate, an unready
+   * controller. The share sheet shows its own "Rendering tunnel…" state and has
+   * to honour that, or it spins on a render that never started.
    */
   async function exportTunnel(
     playbackController: AnimationPlaybackController | null,
@@ -200,16 +205,16 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
     // Per-prop rainbow spectrum, mirrored from the live tunnel controller so the
     // offscreen engine colors the kaleidoscope to match the on-screen view.
     tunnelSpectrum: boolean,
-  ) {
-    if (sequenceModalExporter.state.isExporting) return;
+  ): Promise<boolean> {
+    if (sequenceModalExporter.state.isExporting) return false;
 
     // Take-it-home gate: same as the 2D path — producing the file needs a
     // free account.
-    if (!ensureFullAccountForExport()) return;
+    if (!(await ensureFullAccountForExport())) return false;
 
     if (!playbackController) {
       showToast("Animation not ready yet. Wait a moment and try again.", "error");
-      return;
+      return false;
     }
 
     hapticService?.trigger("selection");
@@ -265,10 +270,38 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
     );
     // No auto-download: ArtPane surfaces previewBlobUrl in VideoPreviewPanel and
     // the user saves/shares from there.
+    return true;
   }
 
   function handleStopRecording() {
     if (resolveRecording) resolveRecording();
+  }
+
+  /**
+   * The 3D stage hands up its canvas and Threlte handles from inside the Threlte
+   * canvas component, several frames after the scene itself reports loaded.
+   * Through that window the viewer looks completely ready — stage drawn, Record
+   * Scene pill up, Share up — while `webglCanvas` and the five handles are still
+   * null, and an export asked for there was refused outright ("Animation not
+   * ready yet", "3D scene not ready for export"). Reproducible by clicking Share
+   * the moment the button appears. Wait for the handles instead of turning the
+   * user away for being quick.
+   */
+  async function await3DExportHandles(timeoutMs = 10000): Promise<void> {
+    const ready = () =>
+      !!viewer3DState.webglCanvas &&
+      !!viewer3DState.threlteCamera &&
+      !!viewer3DState.threlteRenderer &&
+      !!viewer3DState.threlteRunFrame &&
+      !!viewer3DState.threltePauseAutoLoop &&
+      !!viewer3DState.threlteResumeAutoLoop;
+
+    const deadline = Date.now() + timeoutMs;
+    while (!ready() && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    // Timing out is not handled here: the gates below already own the "not
+    // ready" message, and reaching them means the stage genuinely never came up.
   }
 
   /**
@@ -301,7 +334,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
 
     // Take-it-home gate: guests play with export settings freely, but pulling
     // the actual file down requires a free account.
-    if (!ensureFullAccountForExport()) return false;
+    if (!(await ensureFullAccountForExport())) return false;
 
     hapticService?.trigger("selection");
 
@@ -343,6 +376,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
 
     // 3D mode: real-time capture from WebGL canvas
     const is3DMode = viewer3DState.renderMode === '3d';
+    if (is3DMode && exportType === "animation") await await3DExportHandles();
     const webglCanvas = viewer3DState.webglCanvas;
 
     if (exportType === "animation" && is3DMode && webglCanvas && playbackController) {

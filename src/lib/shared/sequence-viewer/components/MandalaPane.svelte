@@ -29,6 +29,8 @@
     showDownload?: boolean;
     /** Optional compact action at the end of the bottom dock. */
     dockAction?: ControlDockAction;
+    /** The share sheet owns this render and shows its own progress. */
+    exportTakeoverSuppressed?: boolean;
     onExportCancel?: () => void;
     onExportRetry?: () => void;
   }
@@ -42,6 +44,7 @@
     controlsPlacement = "dock",
     showDownload = true,
     dockAction,
+    exportTakeoverSuppressed = false,
     onExportCancel,
     onExportRetry,
   }: Props = $props();
@@ -127,6 +130,7 @@
     {bluePropType}
     {redPropType}
     size={takeoverSize}
+    suppressed={exportTakeoverSuppressed}
     onCancel={onExportCancel}
     onRetry={onExportRetry}
   />

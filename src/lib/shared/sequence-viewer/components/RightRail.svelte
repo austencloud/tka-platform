@@ -23,8 +23,10 @@
     bpm?: number;
     onSettingChange?: ViewerControlSink;
     onAction?: ViewerActionSink;
+    /** Opens the shell's post-share sheet on this scene. */
+    onShare?: () => void;
   }
-  let { renderMode, bpm, onSettingChange, onAction }: Props = $props();
+  let { renderMode, bpm, onSettingChange, onAction, onShare }: Props = $props();
 
   let saveSceneOpen = $state(false);
 
@@ -58,6 +60,25 @@
       undoLabel="3D scene change"
       redoLabel="3D scene change"
     />
+    {#if onShare}
+      <!-- Share leads the rail and carries the accent, the same hierarchy the
+           Mandala and Tunnel sidebars use. Austen (2026-08-11): "if I'm in the
+           3D scene there should be a big fat share button in the 3D scene." -->
+      <button
+        type="button"
+        class="rail-chip rail-chip-accent"
+        aria-label="Share scene"
+        data-tooltip="Share scene"
+        data-testid="scene-share-button"
+        onclick={onShare}
+      >
+        <i class="fa-solid fa-share-nodes"></i>
+      </button>
+      <div class="performer-separator" aria-hidden="true">
+        <div class="separator-line"></div>
+      </div>
+    {/if}
+
     <ViewerPopover
       id="formation"
       title="Formation"
@@ -171,6 +192,17 @@
   .rail-chip:hover {
     transform: scale(1.08);
     border-color: rgba(255, 255, 255, 0.22);
+  }
+  /* The rail sits over a live 3D scene, so the accent keeps the glass and the
+     blur the other chips have — a flat fill would read as a floating sticker. */
+  .rail-chip-accent {
+    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 82%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #4a9eff) 90%, transparent);
+    color: white;
+  }
+  .rail-chip-accent:hover {
+    border-color: color-mix(in srgb, var(--theme-accent, #4a9eff) 100%, transparent);
+    filter: brightness(1.1);
   }
   .rail-chip:hover::after {
     content: attr(data-tooltip);

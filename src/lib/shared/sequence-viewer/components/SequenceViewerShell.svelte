@@ -217,6 +217,87 @@
     }
   );
 
+  /**
+   * Resolves the sheet's video slot against the art-share session.
+   *
+   * Mandala runs its own worker pipeline and now hands the file back instead of
+   * saving it. Tunnel bakes through the shared exporter, so its result is
+   * already the same `previewBlobUrl` the animation export uses — only the
+   * request differs, and the pane's inline preview is suppressed while the
+   * sheet owns it.
+   */
+  const artShareVideo = $derived.by(() => {
+    const target = share.artShare;
+
+    if (target?.artType === "mandala") {
+      const mandala = target.mandalaController;
+      return {
+        blobUrl: mandala.exportBlobUrl,
+        exporting: mandala.exporting,
+        progress: mandala.exporting ? mandala.exportProgress : null,
+        label: "Mandala",
+        request: () =>
+          Promise.resolve(mandala.startExport({ deliver: false })),
+      };
+    }
+
+    if (target?.artType === "tunnel") {
+      return {
+        blobUrl: ctx.previewBlobUrl,
+        exporting: ctx.isExporting,
+        progress: ctx.exportProgress?.progress ?? null,
+        label: "Tunnel",
+        request: () => interactions.handleArtExport(target),
+      };
+    }
+
+    return {
+      blobUrl: ctx.previewBlobUrl,
+      exporting: ctx.isExporting,
+      progress: ctx.exportProgress?.progress ?? null,
+      // Same export either way — `handleExport` records the live stage when 3D
+      // is the editing pane. Only a share that came FROM the 3D rail names it
+      // that, because only there is the user unambiguously looking at a scene.
+      label: share.sceneShare ? "Scene" : "Video",
+      request: requestShareVideo,
+    };
+  });
+
+  /**
+   * True while a share armed the animation export pane on the viewer's behalf.
+   *
+   * `handleExport` refuses outright unless the editing pane is "animation" or
+   * "image" (export-coordinator.svelte.ts), and a viewer that has never opened
+   * Export sits at `null` — which is every fresh page load. So Share → Video on
+   * a page the user just landed on reported "The render didn't start." with
+   * nothing on screen they could do about it. Arm the pane for them, and put the
+   * viewer back the way they left it once the sheet is done with it.
+   */
+  let armedExportForShare = $state(false);
+
+  function requestShareVideo(): Promise<boolean> {
+    if (ctx.editingPane !== "animation") {
+      // setExportContext, NOT enterEditMode/enterExport: those also move
+      // viewerMode, and moving it remounts the 3D canvas — so the export ran one
+      // tick later against unregistered Threlte refs and bailed with "3D scene
+      // not ready for export." The export context alone is what `editingPane`
+      // reads, and leaving the view where it is keeps the live stage the take
+      // needs already mounted.
+      ctx.viewerState.setExportContext("animation-export");
+      armedExportForShare = true;
+    }
+    return ctx.handleExport({ autoDeliver: false });
+  }
+
+  $effect(() => {
+    if (!armedExportForShare) return;
+    // Not while the sheet is up, and not during a live take — the sheet is only
+    // hidden then, and exiting would tear down the export the take is feeding.
+    if (share.postSheetOpen || awaitingSceneTake) return;
+    armedExportForShare = false;
+    ctx.viewerState.exitExport();
+  });
+
   onMount(() => {
     const cleanupLayout = layout.mount();
     const cleanupInteractions = interactions.mount();
@@ -272,7 +353,7 @@
     if (!ctx.isRecording3D || !share.postSheetOpen) return;
     awaitingSceneTake = true;
     takeBaselineUrl = ctx.previewBlobUrl;
-    share.setPostSheetOpen(false);
+    share.suspendForSceneTake();
   });
 
   $effect(() => {
@@ -287,7 +368,7 @@
     const url = ctx.previewBlobUrl;
     if (!url || url === takeBaselineUrl) return;
     awaitingSceneTake = false;
-    share.setPostSheetOpen(true);
+    share.resumeAfterSceneTake();
   });
 </script>
 
@@ -520,6 +601,9 @@
                 ? interactions.handleGalleryVideoUpload
                 : undefined}
               onArtExport={interactions.handleArtExport}
+              onArtShare={share.shareArt}
+              artShareActive={!!share.artShare}
+              onSceneShare={share.shareScene}
               onArtExportEvent={interactions.handleArtExportEvent}
               onArtSettingChange={interactions.handleArtSettingChange}
               onArtAction={interactions.handleArtAction}
@@ -776,15 +860,21 @@
        /sequence surfaces are identical by construction. `autoDeliver: false`
        because the sheet delivers the render itself — without it the same take
        also lands in Downloads and toasts behind the drawer. -->
+  <!-- The video slot follows whatever the share was about. From Mandala it is
+       the mandala's own worker render; from Tunnel it is the kaleidoscope bake
+       (which already lands in the shared exporter's preview slot, so only the
+       request differs); otherwise it is the sequence animation. -->
   <PostShareSheet
     isOpen={share.postSheetOpen}
     sequence={ctx.effectiveSequence ?? null}
     shareUrl={share.postSheetOpen ? share.getShareUrl() : ""}
-    videoBlobUrl={ctx.previewBlobUrl}
-    isExportingVideo={ctx.isExporting}
-    isRecordingScene={ctx.isRecording3D}
-    exportProgress={ctx.exportProgress?.progress ?? null}
-    onRequestVideo={() => ctx.handleExport({ autoDeliver: false })}
+    videoBlobUrl={artShareVideo.blobUrl}
+    isExportingVideo={artShareVideo.exporting}
+    isRecordingScene={!share.artShare && ctx.isRecording3D}
+    exportProgress={artShareVideo.progress}
+    onRequestVideo={artShareVideo.request}
+    videoLabel={artShareVideo.label}
+    initialArtifact={share.artShare || share.sceneShare ? "video" : "card"}
     onSendInTka={() => share.sendToInbox()}
     onClose={() => share.setPostSheetOpen(false)}
   />

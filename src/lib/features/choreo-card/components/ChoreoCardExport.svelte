@@ -68,7 +68,7 @@
     if (sequences.length === 0 || isExporting) return;
 
     // Take-it-home gate: a free account is required to download cards.
-    if (!ensureFullAccountForExport()) return;
+    if (!(await ensureFullAccountForExport())) return;
 
     isExporting = true;
     exportCurrent = 0;
