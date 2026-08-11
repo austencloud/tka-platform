@@ -59,6 +59,18 @@ the below-seam actions mutate the engine in place.
   // editor instead of the chooser.
   let drillSeed = $state<{ section?: WorkspaceSection }>({});
 
+  function editFilter(type: BrowseFilterType): void {
+    // The drill remounts on edit, so clear the persisted collapse first. The
+    // requested editor then arrives visible instead of opening off-screen.
+    try {
+      localStorage.removeItem("tka-filter-pane-collapsed");
+    } catch {
+      // Locked-down embeds can deny storage; the remounted drill uses its
+      // expanded fallback in that environment.
+    }
+    drillSeed = { section: SECTION_FOR_FILTER_TYPE[type] };
+  }
+
   const loopKeyByValue = $derived(
     new Map(
       [...engine.activeFilters]
@@ -122,8 +134,7 @@ the below-seam actions mutate the engine in place.
     <FilterRuleStrip
       filters={engine.allFilterChips.filter((c) => !c.locked)}
       connectives={engine.connectives}
-      onEditFilter={(type) =>
-        (drillSeed = { section: SECTION_FOR_FILTER_TYPE[type] })}
+      onEditFilter={editFilter}
       onRemoveFilter={(key) => withResultsMorph(() => engine.removeFilter(key))}
     />
   {:else}
@@ -175,8 +186,7 @@ the below-seam actions mutate the engine in place.
       <FilterRuleStrip
         filters={engine.allFilterChips.filter((c) => !c.locked)}
         connectives={engine.connectives}
-        onEditFilter={(type) =>
-          (drillSeed = { section: SECTION_FOR_FILTER_TYPE[type] })}
+        onEditFilter={editFilter}
         onRemoveFilter={(key) =>
           withResultsMorph(() => engine.removeFilter(key))}
       />
