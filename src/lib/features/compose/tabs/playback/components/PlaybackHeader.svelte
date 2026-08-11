@@ -5,16 +5,19 @@
 -->
 <script lang="ts">
   import type { ComposeMode } from "../../../shared/state/compose-module-state.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import ShareButton from "$lib/features/create/shared/workspace-panel/shared/components/buttons/ShareButton.svelte";
 
   let {
     currentMode,
+    sequence = null,
     onSave,
-    onShare,
     onClose,
   }: {
     currentMode: ComposeMode;
+    /** The composition on screen. Shared as-is; null disables the control. */
+    sequence?: SequenceData | null;
     onSave: () => void;
-    onShare: () => void;
     onClose: () => void;
   } = $props();
 
@@ -50,14 +53,11 @@
       <span class="btn-label">Save</span>
     </button>
 
-    <button
-      class="action-btn share-btn"
-      onclick={onShare}
-      aria-label="Share composition"
-    >
-      <i class="fas fa-share-alt" aria-hidden="true"></i>
-      <span class="btn-label">Share</span>
-    </button>
+    <!-- The real thing, not a second one: ShareButton carries its own
+         PostShareSheet, so this overlay reaches Instagram and Facebook through
+         the same sheet as the viewer and the Create workspace. It replaced a
+         local button wired to an empty handler. -->
+    <ShareButton {sequence} />
   </div>
 
   <div class="header-right">
@@ -150,18 +150,6 @@
     background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent);
     border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
     color: var(--theme-accent, #c4b5fd);
-  }
-
-  .share-btn {
-    background: color-mix(in srgb, var(--feature-view, #06b6d4) 20%, transparent);
-    border-color: color-mix(in srgb, var(--feature-view, #06b6d4) 30%, transparent);
-    color: var(--feature-view, #22d3ee);
-  }
-
-  .share-btn:hover {
-    background: color-mix(in srgb, var(--feature-view, #06b6d4) 30%, transparent);
-    border-color: color-mix(in srgb, var(--feature-view, #06b6d4) 50%, transparent);
-    color: var(--feature-view, #67e8f9);
   }
 
   .action-btn:active {

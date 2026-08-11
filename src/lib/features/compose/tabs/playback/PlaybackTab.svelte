@@ -84,10 +84,6 @@
     // TODO: Implement save functionality
   }
 
-  function handleShare() {
-    // TODO: Implement share functionality
-  }
-
   function handleOpenSettings(_canvasId: string) {
     isTrailSettingsOpen = true;
   }
@@ -134,8 +130,8 @@
     <!-- Desktop Layout: Header with mode/actions -->
     <PlaybackHeader
       currentMode={playbackState.currentMode}
+      sequence={playbackState.sequences[0]?.sequence ?? null}
       onSave={handleSave}
-      onShare={handleShare}
       onClose={handleClose}
     />
   {/if}

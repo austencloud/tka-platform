@@ -167,8 +167,6 @@
     onVideoStepChange = () => {},
     onExportVideo = () => {},
     onCancelExport = () => {},
-    onShareAnimation = () => {},
-    isSharing = false,
     isCircular = false,
     loopCount = 1,
     onLoopCountChange = () => {},
@@ -211,8 +209,6 @@
     onVideoStepChange?: (beat: number) => void;
     onExportVideo?: () => void;
     onCancelExport?: () => void;
-    onShareAnimation?: () => void;
-    isSharing?: boolean;
     isCircular?: boolean;
     loopCount?: number;
     onLoopCountChange?: (count: number) => void;
