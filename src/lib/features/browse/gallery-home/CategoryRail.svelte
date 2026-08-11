@@ -99,6 +99,10 @@
        label; taller than that and the tiles read as posters, not a picker. */
     --catalog-rows: 6;
     --catalog-tile-max: 8.5rem;
+    /* The tile's floor lives HERE, not on the tile: `pane-height-budget.ts`
+       sizes the catalog from this track minimum, so a floor authored on
+       CategoryTile is invisible to the budget and the tile overhangs its row. */
+    --catalog-tile-min: 3.4rem;
     --catalog-gap: 0.4rem;
     max-height: calc(
       var(--catalog-rows) * var(--catalog-tile-max) +
@@ -110,7 +114,7 @@
     min-height: 0;
     flex: 1 1 auto;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: minmax(3.4rem, 1fr);
+    grid-auto-rows: minmax(var(--catalog-tile-min, 3.4rem), 1fr);
     gap: var(--catalog-gap);
   }
   .cat-cell {
@@ -148,6 +152,19 @@
        keeps its own width. */
     .catalog-layout .desktop-filter-grid > .cat-cell:last-child {
       grid-column: auto;
+    }
+  }
+  /* The row floor steps with the tile's own padding/type tiers in
+     CategoryTile (same 1680 / 2600 viewport seams). Keeping the two in lockstep
+     is the whole point of owning the floor here. */
+  @media (min-width: 1680px) {
+    .desktop-filter-catalog.catalog-layout {
+      --catalog-tile-min: 4rem;
+    }
+  }
+  @media (min-width: 2600px) {
+    .desktop-filter-catalog.catalog-layout {
+      --catalog-tile-min: 5.25rem;
     }
   }
   /* 4K at 100% and portrait desktops: the column is ~2100px tall and three

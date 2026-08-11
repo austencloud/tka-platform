@@ -325,8 +325,14 @@
      Sized in rem so the tier steps below move the whole tile together. The
      44px touch floor is a FLOOR, not the design height — a row pinned to it
      reads as a smushed strip (Austen, 2026-08-05). */
+  /* No floor of its own: the CELL is the sizing authority (the tile is
+     `height: 100%` of it below) and the grid row carries the floor via
+     `--catalog-tile-min`. A min-height here is invisible to the height budget,
+     which measures the grid's track minimum — the two drifted apart at the
+     1680 seam and every tile overhung its row by 9.6px, hiding its own bottom
+     edge behind the tile below it. */
   .mini-tile.catalog {
-    min-height: 3.4rem;
+    min-height: 0;
     gap: 0.55rem;
     padding: 0.55rem 0.65rem;
     border-radius: 0.8rem;
@@ -334,14 +340,17 @@
   .mini-tile.catalog:hover {
     transform: none;
   }
+  /* Selection reads on the WHOLE tile — accent edge all the way around plus a
+     tint. Never a left-edge bar (`.claude/rules/no-left-edge-accent-bar.md`). */
   .mini-tile.catalog.catalog-active {
     border-color: var(--theme-accent, #6366f1);
     background: color-mix(
       in srgb,
-      var(--theme-accent, #6366f1) 18%,
+      var(--theme-accent, #6366f1) 22%,
       var(--theme-card-bg, rgba(255, 255, 255, 0.04))
     );
-    box-shadow: inset 3px 0 0 var(--theme-accent, #6366f1);
+    box-shadow: 0 0 0 1px
+      color-mix(in srgb, var(--theme-accent, #6366f1) 55%, transparent);
   }
   .mini-tile.catalog .mini-art {
     width: 2.1rem;
@@ -391,7 +400,6 @@
      column itself widens and the tile can carry real weight. */
   @media (min-width: 1680px) {
     .mini-tile.catalog {
-      min-height: 4rem;
       gap: 0.65rem;
       padding: 0.7rem 0.8rem;
       border-radius: 0.9rem;
@@ -410,7 +418,6 @@
   }
   @media (min-width: 2600px) {
     .mini-tile.catalog {
-      min-height: 5.25rem;
       gap: 0.65rem;
       padding: 0.9rem 0.8rem;
       border-radius: 1.1rem;
@@ -824,10 +831,11 @@
         border-color: var(--theme-accent, #6366f1);
         background: color-mix(
           in srgb,
-          var(--theme-accent, #6366f1) 18%,
+          var(--theme-accent, #6366f1) 22%,
           var(--theme-card-bg, rgba(255, 255, 255, 0.04))
         );
-        box-shadow: inset 3px 0 0 var(--theme-accent, #6366f1);
+        box-shadow: 0 0 0 1px
+          color-mix(in srgb, var(--theme-accent, #6366f1) 55%, transparent);
       }
       .mini-tile.rail .mini-art {
         width: 2.25rem;

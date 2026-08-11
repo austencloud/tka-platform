@@ -320,8 +320,11 @@
     var(--theme-accent, #6366f1) 70%,
     transparent
   );
-  background: color-mix(in srgb, var(--theme-accent, #6366f1) 18%, transparent);
-  box-shadow: inset 3px 0 0 var(--theme-accent, #6366f1);
+  background: color-mix(in srgb, var(--theme-accent, #6366f1) 22%, transparent);
+  /* Full accent edge, never a left-edge bar — the level tiles below already
+     spoke this ring language (`.claude/rules/no-left-edge-accent-bar.md`). */
+  box-shadow: 0 0 0 1px
+    color-mix(in srgb, var(--theme-accent, #6366f1) 55%, transparent);
 }
 /* Level tiles carry full-bleed difficulty gradients — a ring reads over
      them where a background tint cannot. */
