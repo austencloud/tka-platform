@@ -14,6 +14,7 @@ import type { ImageComposer } from "../../../shared/render/services/image-compos
 import type { PrintRenderOptions } from "./types";
 import { renderCardBack } from "./card-back-dom-renderer";
 import { renderInfoCardFront, renderInfoCardBack } from "./info-card-canvas-renderer";
+import { renderSignupCardFront, renderSignupCardBack } from "./signup-card-canvas-renderer";
 import { buildBackJob } from "./card-back/card-back-job-builder";
 import { paintBackJob } from "./card-back/card-back-raster";
 import { buildFrontComposeOptions } from "./build-front-compose-options";
@@ -196,6 +197,29 @@ export async function renderInsertCardPair(options: {
   const [front, back] = await Promise.all([
     renderInfoCardFront({ ...geometry, deckNumber: options.deckNumber }),
     renderInfoCardBack(geometry),
+  ]);
+  return { front, back };
+}
+
+/**
+ * The festival sample-pack signup card (QR → tkaflowarts.com/start).
+ * Standalone for the same reason as the insert: no pictographs, no
+ * ImageComposer — the 9-up sheet script and the harness build it directly.
+ */
+export async function renderSignupCardPair(options: {
+  theme: string;
+  cardSize?: CardSizeId;
+}): Promise<{ front: HTMLCanvasElement; back: HTMLCanvasElement }> {
+  const size = CARD_SIZES[options.cardSize ?? "poker"];
+  const geometry = {
+    width: size.canvasWidth,
+    height: size.canvasHeight,
+    bleedPx: size.bleedPx,
+    theme: options.theme,
+  };
+  const [front, back] = await Promise.all([
+    renderSignupCardFront(geometry),
+    renderSignupCardBack(geometry),
   ]);
   return { front, back };
 }

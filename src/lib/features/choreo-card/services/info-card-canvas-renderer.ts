@@ -12,7 +12,9 @@ import type { InfoCardCanvasOptions } from "./types";
 import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
 
 // Scale factor: info cards were designed at 500x700. Content area is 750x1050.
-const REF_SCALE = 1.5;
+// Exported (with the frame helpers below) so sibling static cards — the
+// festival signup card — share one owner for the frame aesthetic.
+export const REF_SCALE = 1.5;
 
 // Cache rendered canvases. The back is fully static. The FRONT carries the deck
 // number, so its cache key must include it — keying on theme alone hands deck 8
@@ -625,7 +627,7 @@ function drawWrappedRuns(
 
 // ── Shared helpers ──
 
-function drawBorderFrame(
+export function drawBorderFrame(
   ctx: CanvasRenderingContext2D,
   x: number, y: number, w: number, h: number,
   borderWidth: number, theme: string
@@ -641,7 +643,7 @@ function drawBorderFrame(
   ctx.fill();
 }
 
-function fillBackground(
+export function fillBackground(
   ctx: CanvasRenderingContext2D,
   x: number, y: number, w: number, h: number,
   theme: string
@@ -701,7 +703,7 @@ function getThemeBackgroundColors(theme: string): Array<{ offset: number; color:
   return THEMES[theme] ?? THEMES.cosmic!;
 }
 
-function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+export function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const words = text.split(" ");
   const lines: string[] = [];
   let currentLine = "";
@@ -719,7 +721,7 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
   return lines;
 }
 
-function roundRect(
+export function roundRect(
   ctx: CanvasRenderingContext2D,
   x: number, y: number, w: number, h: number, r: number
 ) {

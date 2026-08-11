@@ -116,8 +116,13 @@ export class QRCodeGenerator {
    *  distinct-payload count; evicts the oldest entry past the cap. */
   private static readonly MAX_DECODED_IMAGES = 256;
 
+  /**
+   * The short-code manager is only needed for sequence QRs (they mint
+   * tka.run codes). URL-only consumers — e.g. the festival signup card,
+   * rendered from a bare harness with no app-shell wiring — may omit it.
+   */
   constructor(
-    private readonly shortCodeManager: ShortCodeManager,
+    private readonly shortCodeManager?: ShortCodeManager,
     private readonly imageCache: QrImageCache = getQrImageCache(),
     private readonly cellWarmer: CellWarmer = warmSequenceCells
   ) {}
@@ -150,30 +155,40 @@ export class QRCodeGenerator {
     url: string,
     size: number,
     margin: number,
-    style: QRCodeStyle
+    style: QRCodeStyle,
+    centerIcon: "play" | "none"
   ): ConstructorParameters<typeof QRCodeStyling>[0] {
+    // Center play button: a QR that resolves to the animated player carries the
+    // triangle as an implicit "scan to play". hideBackgroundDots clears the
+    // modules behind it and the margin gives a clean ring. centerIcon "none"
+    // skips the overlay (and the forced-"H" recovery it requires) for QRs whose
+    // destination is not a player.
+    const imageOptions =
+      centerIcon === "play"
+        ? {
+            image: playIconDataUrl(style.color || "#1a1a2e"),
+            imageOptions: {
+              imageSize: 0.25,
+              margin: 3,
+              hideBackgroundDots: true,
+              crossOrigin: "anonymous",
+            },
+          }
+        : {};
     return {
       width: size,
       height: size,
       type: "svg",
       data: url,
       margin: margin,
-      // Center play button: every QR resolves to the animated player, so the
-      // triangle implicitly declares "scan to play". hideBackgroundDots clears
-      // the modules behind it and the margin gives a clean ring.
-      image: playIconDataUrl(style.color || "#1a1a2e"),
-      imageOptions: {
-        imageSize: 0.25,
-        margin: 3,
-        hideBackgroundDots: true,
-        crossOrigin: "anonymous",
-      },
+      ...imageOptions,
       qrOptions: {
         typeNumber: 0, // Auto-detect
         mode: "Byte",
         // Force "H" (30% recovery) whenever the center image is embedded so the
         // obscured modules stay recoverable, regardless of the preset's level.
-        errorCorrectionLevel: "H",
+        errorCorrectionLevel:
+          centerIcon === "play" ? "H" : style.errorCorrectionLevel || "M",
       },
       dotsOptions: {
         color: style.color || "#1a1a2e",
@@ -202,6 +217,7 @@ export class QRCodeGenerator {
   ): Promise<{ svg: string; dataUrl: string }> {
     const size = options?.size || 200;
     const margin = options?.margin || 1;
+    const centerIcon = options?.centerIcon ?? "play";
     let style = this.resolveStyle(options?.style);
 
     // Dark mode: white modules on transparent background
@@ -217,14 +233,14 @@ export class QRCodeGenerator {
     // expensive bit (the QR=93% bottleneck). Key on everything that changes the
     // pixels — url + size + margin + resolved style — so a repeat payload is a
     // pure cache read, no render.
-    const cacheKey = `${QR_IMAGE_CACHE_SCHEMA}:${size}:${margin}:${JSON.stringify(style)}:${url}`;
+    const cacheKey = `${QR_IMAGE_CACHE_SCHEMA}:${size}:${margin}:${centerIcon}:${JSON.stringify(style)}:${url}`;
     const cachedImage = await this.imageCache.get(cacheKey);
     if (cachedImage) {
       return cachedImage;
     }
 
     const qrCode = new QRCodeStyling(
-      this.createQROptions(url, size, margin, style)
+      this.createQROptions(url, size, margin, style, centerIcon)
     );
 
     // Get SVG blob
@@ -292,6 +308,11 @@ export class QRCodeGenerator {
     // s~ path that baked the whole sequence into the URL is gone — those QRs
     // were unscannable and varied in module density. Callers gate guests out
     // before they ever reach here (guests get no QR at all).
+    if (!this.shortCodeManager) {
+      throw new Error(
+        "QRCodeGenerator: sequence QRs require a ShortCodeManager; this instance was constructed URL-only"
+      );
+    }
     const { code, url: shortUrl } =
       await this.shortCodeManager.createShortCode(sequence, propOptions);
 

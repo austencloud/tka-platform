@@ -111,6 +111,12 @@ export interface QRCodeOptions {
   deckId?: string;
   /** Deck name for attribution tracking */
   deckName?: string;
+  /**
+   * Center overlay. "play" (default) embeds the green play-triangle badge and
+   * forces error correction to "H". "none" leaves the modules untouched — for
+   * QRs whose destination is not a player (e.g. the festival signup card).
+   */
+  centerIcon?: "play" | "none";
 }
 
 /**
