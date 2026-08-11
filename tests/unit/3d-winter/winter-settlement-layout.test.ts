@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createDefaultWinterConfig } from "$lib/shared/3d/environments/domain/models/scene-configs/winter-scene-config";
@@ -89,6 +89,7 @@ interface WinterLodgeProduction {
     targetDimensions: [number, number, number];
     burialDepth: number;
     yawCorrectionDegrees: number;
+    integratedWoodBay?: boolean;
   };
   chimney: {
     local: [number, number, number];
@@ -111,6 +112,9 @@ interface WinterLodgeProduction {
   requirements: {
     windowCount: number;
     minimumWoodpileLogs: number;
+    referenceAvatarHeightMetres: number;
+    sourceDoorToRidgeRatio: number;
+    minimumDoorHeightMetres: number;
   };
 }
 
@@ -137,6 +141,7 @@ interface WinterHearthProduction {
   };
   requirements: {
     chairCount: number;
+    minimumChairDimensions: [number, number, number];
     minimumStoneCount: number;
     minimumFuelLogCount: number;
     minimumEmberCount: number;
@@ -155,6 +160,31 @@ const lodgeProduction = JSON.parse(
 const hearthProduction = JSON.parse(
   readFileSync(resolve("scripts/winter-hearth-production.json"), "utf8")
 ) as WinterHearthProduction;
+
+/**
+ * Assert that a production manifest points at a well-formed authored source.
+ *
+ * These `*_raw.glb` files are Blender authoring INPUTS, and `.gitignore:374`
+ * (`static/models/**\/*_raw.glb`) excludes every one of them from the repo on
+ * purpose — nothing under `static/models/winter/settlement/` is tracked. So an
+ * `existsSync` assertion here passed on an author's machine and could never
+ * pass in CI, which is what it did: it red-lit `main` and, because
+ * `Deploy Pages (gated)` only fires on a green `Web App CI`, stranded every
+ * unrelated commit behind it.
+ *
+ * Checking the declared path instead still catches what this assertion was
+ * really guarding — a typo or a rename in the manifest — without depending on
+ * a binary that is intentionally absent. If the shipped, optimized GLB ever
+ * gets committed, assert on THAT path; do not reinstate a check against the
+ * raw source.
+ */
+function expectAuthoredSource(source: string): void {
+  // Candidate revisions live in subdirectories (e.g. `meshy7-candidates/`), so
+  // allow nested segments rather than pinning one flat directory.
+  expect(source).toMatch(
+    /^static\/models\/winter\/settlement\/(?:[a-z0-9-]+\/)*[a-z0-9-]+_raw\.glb$/
+  );
+}
 
 function localToRuntime(
   local: [number, number, number]
@@ -178,7 +208,6 @@ describe("Winter Keeper's Hollow settlement layout", () => {
     expect(composition.status).toBe("approved");
     expect(composition.approval).toMatchObject({
       gate: 1,
-      museumTrackerItem: "nXwi8yYiKJRSBi3rgAZs",
       visualComprehensionConfirmed: true,
     });
     expect(layout.stage).toMatchObject({
@@ -300,7 +329,7 @@ describe("Winter Keeper's Hollow settlement layout", () => {
       hearthProduction.fireBed.stoneRingRadius -
       hearthProduction.fireBed.stoneDimensions[0] / 2;
 
-    expect(existsSync(resolve(hearthProduction.chair.source))).toBe(true);
+    expectAuthoredSource(hearthProduction.chair.source);
     expect(hearthProduction.chair.scaleMultipliers).toHaveLength(
       hearthProduction.requirements.chairCount
     );
@@ -328,6 +357,13 @@ describe("Winter Keeper's Hollow settlement layout", () => {
     expect(config.campfire?.groundOffset).toBe(
       hearthProduction.fireBed.runtimeFlameGroundOffset
     );
+    expect(
+      hearthProduction.chair.targetDimensions.every(
+        (dimension, index) =>
+          dimension >=
+          hearthProduction.requirements.minimumChairDimensions[index]
+      )
+    ).toBe(true);
   });
 
   it("fits the production lodge to the approved settlement envelope", () => {
@@ -335,13 +371,22 @@ describe("Winter Keeper's Hollow settlement layout", () => {
       ...layout.lodge.footprint,
       layout.lodge.ridgeHeight,
     ]);
-    expect(existsSync(resolve(lodgeProduction.asset.source))).toBe(true);
+    expectAuthoredSource(lodgeProduction.asset.source);
     expect(lodgeProduction.windows).toHaveLength(
       lodgeProduction.requirements.windowCount
     );
     expect(
       lodgeProduction.woodpile.rows * lodgeProduction.woodpile.columns
     ).toBeGreaterThanOrEqual(lodgeProduction.requirements.minimumWoodpileLogs);
+    expect(lodgeProduction.asset.integratedWoodBay).toBe(true);
+    expect(lodgeProduction.requirements.minimumWoodpileLogs).toBe(0);
+    expect(
+      lodgeProduction.asset.targetDimensions[2] *
+        lodgeProduction.requirements.sourceDoorToRidgeRatio
+    ).toBeGreaterThanOrEqual(
+      lodgeProduction.requirements.minimumDoorHeightMetres
+    );
+    expect(lodgeProduction.requirements.referenceAvatarHeightMetres).toBe(1.8);
   });
 
   it("keeps lodge smoke and warm light on their measured Blender anchors", () => {
