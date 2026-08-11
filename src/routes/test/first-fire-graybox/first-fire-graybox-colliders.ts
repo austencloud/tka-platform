@@ -9,7 +9,13 @@ export const FIRST_FIRE_GRAYBOX_SPAWN = {
 
 export interface FirstFireGrayboxCollider {
   id: string;
-  source: "shell" | "basalt";
+  /**
+   * Always "shell": these are the room's outer envelope. Rock inside it is the
+   * carved mesh, which is not described here at all. The union used to also
+   * carry "basalt" for the pre-carve mass outlines - see the note on
+   * `buildFirstFireGrayboxColliders`.
+   */
+  source: "shell";
   shape: "box";
   position: [number, number, number];
   size: [number, number, number];
@@ -17,7 +23,6 @@ export interface FirstFireGrayboxCollider {
 }
 
 const WALL_THICKNESS = 0.6;
-const BASALT_COLLIDER_THICKNESS = 0.34;
 const WALL_HEIGHT = 8;
 const FLOOR_THICKNESS = 0.5;
 
@@ -62,32 +67,23 @@ function axisAlignedWall(
       );
 }
 
-function basaltEdge(
-  massId: string,
-  edgeIndex: number,
-  start: { x: number; y: number },
-  end: { x: number; y: number },
-  height: number
-): FirstFireGrayboxCollider {
-  const startZ = -start.y;
-  const endZ = -end.y;
-  const dx = end.x - start.x;
-  const dz = endZ - startZ;
-  const length = Math.hypot(dx, dz);
-  const yaw = -Math.atan2(dz, dx);
-  return box(
-    `${massId}-edge-${edgeIndex + 1}`,
-    "basalt",
-    [(start.x + end.x) / 2, height / 2, (startZ + endZ) / 2],
-    [length + BASALT_COLLIDER_THICKNESS, height, BASALT_COLLIDER_THICKNESS],
-    { x: 0, y: Math.sin(yaw / 2), z: 0, w: Math.cos(yaw / 2) }
-  );
-}
-
 /**
- * Collision for the isolated review shell comes from the measured contract.
- * Basalt keeps its authored polygon silhouette instead of turning into broad
- * bounding boxes, and every fire guide remains intentionally walk-through.
+ * Collision for the isolated review shell.
+ *
+ * This builds the outer envelope only: the floor, the four room walls with
+ * their two door gaps, and a stop a little beyond each door so the review walk
+ * ends at the threshold instead of in the void. The rock inside that envelope
+ * collides as the carved mesh - see `first-fire-shell-collider` - so a wall
+ * that the carve removed stops blocking the moment it stops being drawn.
+ *
+ * It used to also emit one upright box per edge of every basalt mass's authored
+ * polygon. Those polygons are the rock's silhouette BEFORE the courts and
+ * corridors were cut from it, and no basalt mesh is exported at all
+ * (`basaltMassesBuiltAsGeometry: 0`), so those colliders sealed chambers that
+ * the visitor could plainly see were open. Removed 2026-08-10; the shell mesh
+ * is the only description of where the rock is.
+ *
+ * Every fire guide remains intentionally walk-through.
  */
 export function buildFirstFireGrayboxColliders(
   contract: FirstFireBlenderContract
@@ -138,17 +134,6 @@ export function buildFirstFireGrayboxColliders(
       earthDoorMaxZ
     ),
   ];
-
-  for (const mass of contract.basalt) {
-    for (let index = 0; index < mass.blenderPolygon.length; index += 1) {
-      const start = mass.blenderPolygon[index]!;
-      const end =
-        mass.blenderPolygon[(index + 1) % mass.blenderPolygon.length]!;
-      colliders.push(
-        basaltEdge(mass.id, index, start, end, mass.minimumHeight)
-      );
-    }
-  }
 
   return colliders;
 }

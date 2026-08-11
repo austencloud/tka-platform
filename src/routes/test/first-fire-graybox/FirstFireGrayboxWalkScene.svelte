@@ -31,6 +31,10 @@
     FIRST_FIRE_GRAYBOX_SPAWN,
   } from "./first-fire-graybox-colliders";
   import {
+    extractShellTrimesh,
+    type ShellTrimesh,
+  } from "./first-fire-shell-collider";
+  import {
     applyBareShellShading,
     BARE_SHELL_BACKGROUND,
     isBareShellRequested,
@@ -123,6 +127,13 @@
 
   let physicsState: PhysicsWorldState | null = null;
   let playerState: PlayerControllerState | null = null;
+  /**
+   * The carved rock, as collision. Extracted when the GLB lands and attached
+   * once the physics world exists - the loader callback and the async physics
+   * init race, and whichever finishes second does the attaching.
+   */
+  let shellTrimesh: ShellTrimesh | null = null;
+  let isShellColliderAttached = false;
   let physicsProvider = $state<PhysicsProvider | null>(null);
   let isInitialized = $state(false);
   let isDisposed = false;
@@ -396,6 +407,33 @@
     cameraRevision += 1;
   }
 
+  /**
+   * Give the physics world the rock the visitor can see.
+   *
+   * Vertices are already world-space, so the body sits at the origin: a
+   * translation here would move the collision away from the mesh it was
+   * measured from, which is the whole failure this replaces.
+   */
+  function attachShellCollider(): void {
+    if (isShellColliderAttached || !physicsState?.world || !shellTrimesh) return;
+    createRigidBody(
+      physicsState,
+      { type: "static", position: { x: 0, y: 0, z: 0 } },
+      {
+        type: "trimesh",
+        vertices: shellTrimesh.vertices,
+        indices: shellTrimesh.indices,
+      }
+    );
+    isShellColliderAttached = true;
+    // Verification seam, same reason as the material report below: "you can
+    // walk where the rock is gone" has to be measurable from the page.
+    (globalThis as Record<string, unknown>).__firstFireShellCollider = {
+      triangles: shellTrimesh.triangles,
+      meshes: shellTrimesh.meshes,
+    };
+  }
+
   function handleGrayboxReady(scene: Object3D): void {
     flameAnchors = extractFirstFireFlameAnchors(scene, contract.fireGuides);
     // Give each court its own rock, pad and molten channel. The GLB is
@@ -447,6 +485,16 @@
     });
     padSurfaceHeights = measuredPads;
 
+    // Collision comes off the same mesh that just loaded, so the carve and the
+    // walkable space can never disagree.
+    shellTrimesh = extractShellTrimesh(scene);
+    if (!shellTrimesh) {
+      console.warn(
+        "[FirstFireGraybox] No structural mesh found for collision; the room is the outer envelope only."
+      );
+    }
+    attachShellCollider();
+
     assetRevision += 1;
     // Verification seam: the re-materialisation counts have to be readable
     // from the page, otherwise "each court is its own environment" is a claim
@@ -494,6 +542,10 @@
         }
       );
     }
+
+    // The GLB may already be in hand: whichever of the two finishes second
+    // attaches the rock.
+    attachShellCollider();
 
     playerState = createPlayerController(physicsState, {
       position: {

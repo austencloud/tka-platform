@@ -448,11 +448,46 @@ COURT_SHELL = {
 # Cross-sections as (multiple of the floor half-width, fraction of clearance),
 # floor edge up to the crown. Expressing the lateral term as a multiple lets a
 # 3m mouth and a 14m court share one section language at different scale.
+#
+# These four all had a BELLY: they bulged past their own foot on the way up -
+# tube ran 1.00, 1.03, 1.07, 1.08 before coming back in. That belly undercut
+# every wall foot in the room. Where two voids ran close, each one's belly ate
+# into the wall between them at mid-height while leaving its base, so the wall
+# came out as a low stump with open air above it. Read as a distribution, that
+# floor was 93.6% dead flat at z=0 and 6% a ragged fringe climbing to 1.58m
+# across 152 distinct levels.
+#
+# Austen (2026-08-10): "I'd like you to simplify the floor it seems like you
+# went for this jagged cave approach and I just want to back everything up and
+# get a really simple Gray box going where the floor is consistent."
+#
+# So the lateral term is clamped at 1.00 and every crown value is the one the
+# passing build used. The floor is one plane at z=0 by construction: nothing
+# reaches outboard of its foot, so there is no undercut and no stump.
+#
+# Two larger rewrites were tried first and both made the shell worse. Read this
+# before reaching for either again:
+#
+#   Re-shaped crowns (a hand-tuned taper) hung a stalactite over fl-mouth-out
+#   that came to a 166mm point at z=4.7, flanked by the fl court and the growth
+#   path. A crown that draws in beside a taller neighbour ends in a knife.
+#
+#   A box section - vertical walls, flat ceiling - turned that point-tangency
+#   into LINE-tangency: a vertical wall parallel to a court's vertical wall
+#   grazes it for its whole height, which cost 8 splinters, a 2.2m blade beside
+#   Court_dj, and 27 sightlines out of the room.
+#
+# The belly was doing hidden work: it pushed each run far enough sideways to
+# CROSS its neighbours rather than graze them, and the blunting pass below only
+# walks a court wall where a run actually crosses it (see needle_arcs: it bails
+# when every gap is positive). Clamping to 1.00 keeps the crossings the pass was
+# tuned against, because the walls still stand exactly where they always did at
+# the height the runs meet. It only ever ADDS rock, and only below the crown.
 WALL_PROFILES = {
-    "tube":  [(1.00, 0.00), (1.03, 0.09), (1.07, 0.24), (1.08, 0.44), (1.00, 0.63), (0.81, 0.80), (0.46, 0.93), (0.00, 1.00)],
-    "slot":  [(1.00, 0.00), (1.03, 0.10), (1.06, 0.30), (1.06, 0.52), (1.02, 0.70), (0.92, 0.85), (0.60, 0.95), (0.00, 1.00)],
-    "dome":  [(1.00, 0.00), (1.05, 0.10), (1.08, 0.26), (1.04, 0.44), (0.94, 0.60), (0.78, 0.75), (0.47, 0.90), (0.00, 1.00)],
-    "shaft": [(1.00, 0.00), (1.04, 0.08), (1.06, 0.24), (1.02, 0.42), (0.80, 0.56), (0.42, 0.68), (0.22, 0.86), (0.00, 1.00)],
+    "tube":  [(1.00, 0.00), (1.00, 0.63), (0.81, 0.80), (0.46, 0.93), (0.00, 1.00)],
+    "slot":  [(1.00, 0.00), (1.00, 0.70), (0.92, 0.85), (0.60, 0.95), (0.00, 1.00)],
+    "dome":  [(1.00, 0.00), (1.00, 0.44), (0.94, 0.60), (0.78, 0.75), (0.47, 0.90), (0.00, 1.00)],
+    "shaft": [(1.00, 0.00), (1.00, 0.42), (0.80, 0.56), (0.42, 0.68), (0.22, 0.86), (0.00, 1.00)],
 }
 
 # The wall foot stands outboard of the walked edge, so the collider set - which
@@ -478,13 +513,27 @@ def wall_profile(walked_half_width: float, clearance: float, shape: str = "tube"
     return [(foot * u, clearance * h) for u, h in WALL_PROFILES[shape]]
 
 
+def crown_is_a_ridge(profile: list[tuple[float, float]]) -> bool:
+    """Does the section close to a line on its own axis, or to a flat top?
+
+    A ridged crown shares one apex between both walls; a flat crown has two
+    distinct top corners and a ceiling between them. Everything that builds
+    geometry from a profile has to know which, or it drops the far corner.
+    """
+    return profile[-1][0] <= 1e-6
+
+
 def section_loop(walked_half_width: float, clearance: float, shape: str = "tube") -> list[tuple[float, float]]:
     """Closed cross-section of the void, as (lateral offset, height)."""
     profile = wall_profile(walked_half_width, clearance, shape)
     foot = profile[0][0]
     loop = [(-foot, 0.0), (foot, 0.0)]
     loop += profile[1:]                                     # right wall to crown
-    loop += [(-u, h) for u, h in reversed(profile[1:-1])]   # left wall back down
+    # A ridge's apex belongs to both walls and is walked once; a flat crown's
+    # top corner is mirrored like every other point, and the segment between
+    # the two mirrored corners IS the ceiling.
+    mirrored = profile[1:-1] if crown_is_a_ridge(profile) else profile[1:]
+    loop += [(-u, h) for u, h in reversed(mirrored)]        # left wall back down
     return loop
 
 
@@ -609,7 +658,8 @@ def chamber_void(
 ) -> bpy.types.Object:
     """The same section revolved: a domed chamber, or the joint at a bend."""
     profile = wall_profile(radius, clearance, shape)
-    rings = profile[:-1]
+    ridged = crown_is_a_ridge(profile)
+    rings = profile[:-1] if ridged else profile
     vertices: list[tuple[float, float, float]] = []
     for ring_radius, ring_height in rings:
         for index in range(segments):
@@ -619,8 +669,6 @@ def chamber_void(
                 centre[1] + math.sin(angle) * ring_radius,
                 ring_height,
             ))
-    apex = len(vertices)
-    vertices.append((centre[0], centre[1], profile[-1][1]))
     faces: list[tuple[int, ...]] = [tuple(reversed(range(segments)))]
     for level in range(len(rings) - 1):
         base, top = level * segments, (level + 1) * segments
@@ -628,8 +676,15 @@ def chamber_void(
             nxt = (index + 1) % segments
             faces.append((base + index, base + nxt, top + nxt, top + index))
     crown_ring = (len(rings) - 1) * segments
-    for index in range(segments):
-        faces.append((crown_ring + index, crown_ring + (index + 1) % segments, apex))
+    if ridged:
+        apex = len(vertices)
+        vertices.append((centre[0], centre[1], profile[-1][1]))
+        for index in range(segments):
+            faces.append((crown_ring + index, crown_ring + (index + 1) % segments, apex))
+    else:
+        # Rings run counter-clockwise in plan, so the crown ring in order faces
+        # up - the same n-gon the floor uses, wound the other way.
+        faces.append(tuple(range(crown_ring, crown_ring + segments)))
     return void_mesh(name, vertices, faces)
 
 
@@ -711,6 +766,22 @@ note_volume("run", "CARVE_Vestibule", SWEPT_PATHS["CARVE_Vestibule"],
 SWALLOWED_KINDS = {"shrine-orbit", "steam-threshold", "ember-bridge"}
 SECTION_CLEARANCE = {"shrine-mouth": MOUTH_CLEARANCE}
 
+# ONE joint per position on the whole route, sized to swallow every section that
+# meets there.
+#
+# Sections are chained end to end - mouth into orbit into mouth into transfer -
+# so a shared endpoint used to receive one joint per section: two cones on the
+# same axis with different radii and different heights, their walls converging
+# to a common circle. That is a tangency the build makes for itself, and where
+# a court wall happened to pass through the same place it became a third
+# surface in the same graze. The result at (21.45, 5.55) was a 166mm sliver of
+# rock hanging at 4.68m with 12% rock around it, right where fl-mouth-out hands
+# over to earth-growth-path.
+#
+# Merging them is simpler in every direction: one cone instead of two, fewer
+# operands on the exact boolean, and no coaxial pair to graze.
+JOINTS: dict[tuple[float, float], dict] = {}
+
 for section in CONTRACT["pathSections"]:
     if section["kind"] in SWALLOWED_KINDS:
         continue
@@ -740,14 +811,26 @@ for section in CONTRACT["pathSections"]:
     # a wedge cannot survive at a vertex that has one. Sweeping every vertex
     # costs about 40 more operands on one exact boolean and removes the entire
     # failure class, which is worth more than the seconds.
-    for index in range(len(points)):
-        carve(chamber_void(
-            f"CARVE_{section['id']}_joint{index:02d}",
-            points[index],
-            section["width"] / 2 + JOINT_PROUD,
-            clearance + JOINT_PROUD,
-            segments=20,
-        ))
+    for index, point in enumerate(points):
+        key = (round(point[0], 3), round(point[1], 3))
+        existing = JOINTS.get(key)
+        radius = section["width"] / 2 + JOINT_PROUD
+        height = clearance + JOINT_PROUD
+        if existing is None:
+            JOINTS[key] = {"centre": point, "radius": radius, "height": height,
+                           "id": f"{section['id']}_joint{index:02d}"}
+        else:
+            existing["radius"] = max(existing["radius"], radius)
+            existing["height"] = max(existing["height"], height)
+
+for joint in JOINTS.values():
+    carve(chamber_void(
+        f"CARVE_{joint['id']}",
+        joint["centre"],
+        joint["radius"],
+        joint["height"],
+        segments=20,
+    ))
 
 for shrine in CONTRACT["shrines"]:
     spec = COURT_SHELL[shrine["id"]]

@@ -23,37 +23,28 @@ describe("First Fire Cinder Court collision scaffold", () => {
     expect(FIRST_FIRE_GRAYBOX_SPAWN.yaw).toBe(Math.PI / 2);
   });
 
-  it("uses shell pieces plus every authored basalt polygon edge and nothing from fire", () => {
-    const expectedBasaltEdges = contract.basalt.reduce(
-      (sum, mass) => sum + mass.blenderPolygon.length,
-      0
-    );
+  it("is the outer envelope only, with nothing from fire", () => {
     expect(
       colliders.filter((collider) => collider.source === "shell")
     ).toHaveLength(9);
-    expect(
-      colliders.filter((collider) => collider.source === "basalt")
-    ).toHaveLength(expectedBasaltEdges);
+    expect(colliders).toHaveLength(9);
     expect(
       colliders.some((collider) => /fire|flame|trench|magma/i.test(collider.id))
     ).toBe(false);
   });
 
-  it("preserves polygonal basalt edges instead of broad bounding boxes", () => {
-    const firstMass = contract.basalt[0]!;
-    const firstEdge = colliders.find(
-      (candidate) => candidate.id === `${firstMass.id}-edge-1`
-    );
-    const start = firstMass.blenderPolygon[0]!;
-    const end = firstMass.blenderPolygon[1]!;
-    expect(firstEdge?.source).toBe("basalt");
-    expect(firstEdge?.position[0]).toBeCloseTo((start.x + end.x) / 2, 12);
-    expect(firstEdge?.position[2]).toBeCloseTo(-(start.y + end.y) / 2, 12);
-    expect(firstEdge?.size[0]).toBeCloseTo(
-      Math.hypot(end.x - start.x, end.y - start.y) + 0.34,
-      12
-    );
-    expect(firstEdge?.rotation).toBeDefined();
+  it("emits no collider from the pre-carve basalt outlines", () => {
+    // The authored basalt polygons are the rock's silhouette BEFORE the courts
+    // and corridors were cut out of it, and no basalt mesh is exported at all.
+    // One box per polygon edge sealed chambers the visitor could see were open,
+    // so rock collision moved to the carved mesh itself. If an edge collider
+    // ever comes back, the room stops matching the model again.
+    expect(contract.basalt.length).toBeGreaterThan(0);
+    for (const mass of contract.basalt) {
+      expect(
+        colliders.some((collider) => collider.id.startsWith(`${mass.id}-edge-`))
+      ).toBe(false);
+    }
   });
 
   it("leaves both measured four-metre door spans open", () => {
