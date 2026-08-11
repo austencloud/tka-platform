@@ -174,6 +174,29 @@ export interface MetaErrorPayload {
     code?: number;
     error_subcode?: number;
   };
+  /**
+   * api.instagram.com's OAuth host answers in a flat envelope of its own,
+   * with different key names than every Graph call.
+   */
+  error_type?: string;
+  error_message?: string;
+}
+
+/**
+ * Instagram's OAuth errors, read into the Graph shape.
+ *
+ * Reading only `error.message` meant a failed Instagram connect reported
+ * "Meta returned HTTP 400" and discarded the one sentence naming the cause,
+ * which is the difference between a fixable error and a mystery. The flat
+ * envelope also carries a `code`, but that is the HTTP status, not a Graph
+ * error code, so it is deliberately left out rather than classified wrongly.
+ */
+function instagramOAuthError(
+  payload: MetaErrorPayload | null
+): MetaErrorPayload["error"] | undefined {
+  const message = payload?.error_message?.trim();
+  if (!message) return undefined;
+  return { message, type: payload?.error_type };
 }
 
 /**
@@ -185,7 +208,7 @@ export function mapMetaError(
   payload: MetaErrorPayload | null,
   httpStatus: number
 ): MetaPublishError {
-  const error = payload?.error;
+  const error = payload?.error ?? instagramOAuthError(payload);
   const code = error?.code;
   const subcode = error?.error_subcode;
   const message = error?.message?.trim();

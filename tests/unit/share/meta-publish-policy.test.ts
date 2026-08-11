@@ -192,6 +192,18 @@ describe("Graph error mapping", () => {
     expect(error.code).toBe("meta/provider-error");
     expect(error.message).toBe("Something specific");
   });
+
+  it("reads Instagram's flat OAuth envelope, not just the Graph shape", () => {
+    const error = mapMetaError(
+      { error_type: "OAuthException", error_message: "Invalid platform app" },
+      400
+    );
+    expect(error.message).toBe("Invalid platform app");
+  });
+
+  it("falls back to the status only when there is no message anywhere", () => {
+    expect(mapMetaError({}, 400).message).toBe("Meta returned HTTP 400");
+  });
 });
 
 describe("token refresh window", () => {
