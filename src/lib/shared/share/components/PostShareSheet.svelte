@@ -16,7 +16,7 @@
      inside a min-height stage (.claude/rules/no-layout-shift.md).
 -->
 <script lang="ts">
-  import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import ShareSheetFrame from "./ShareSheetFrame.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
@@ -114,15 +114,8 @@
 
   const captions = getCaptionPresetManager();
 
-  // Drawer owns its own open flag (it animates out), so mirror the prop in and
-  // report dismissals back out rather than binding the caller's state.
-  let drawerOpen = $state(false);
   /** Title glyph height in px, measured off a CSS-sized element. */
   let glyphHeight = $state(0);
-
-  $effect(() => {
-    drawerOpen = isOpen;
-  });
 
   let artifact = $state<ShareArtifact>("card");
   let caption = $state("");
@@ -192,13 +185,14 @@
     resolveDestinations({ artifact, blob: activeBlob, filename })
   );
 
-  // One filled call-to-action, the rest as compact tiles — the hierarchy an OS
-  // share sheet uses, so the obvious move reads as obvious.
-  const primaryDestination = $derived(
-    destinations.find((destination) => destination.primary) ?? null
-  );
-  const secondaryDestinations = $derived(
-    destinations.filter((destination) => !destination.primary)
+  /**
+   * The device's own share affordance, when it has one — and the sheet's test
+   * for being on a phone. `resolveDestinations` gates this on the DEVICE, not
+   * the capability, so desktop Chrome never produces it even though it
+   * implements `navigator.share`.
+   */
+  const nativeShare = $derived(
+    destinations.find((destination) => destination.id === "native-share") ?? null
   );
 
   /**
@@ -211,69 +205,155 @@
 
   const metaStatus = $derived(metaStatusOverride ?? liveMetaStatus);
 
-  /**
-   * Connected accounts this artifact can be posted to directly. The mark is
-   * the network's own — FontAwesome's brands sheet is not loaded, but the app
-   * has carried inline Instagram and Facebook SVGs since sign-in shipped.
-   */
-  const autoPostTargets = $derived.by(() => {
-    const targets: Array<{
-      id: MetaPublishTarget;
-      label: string;
-      account: string;
-      /** Fixed-width name for the setup row, where the account name varies. */
-      network: string;
-      brand: "instagram" | "facebook";
-    }> = [];
+  type NetworkKind = "post" | "connect" | "choose-page" | "handoff";
 
-    if (!postingAvailable) return targets;
-    if (metaStatus.instagram) {
-      targets.push({
-        id: "instagram",
-        label: "Post to Instagram",
-        account: `@${metaStatus.instagram.username}`,
-        network: "Instagram",
+  interface NetworkPlan {
+    key: "instagram" | "facebook";
+    brand: "instagram" | "facebook";
+    /** The network's own name, for labels the account name would otherwise own. */
+    name: string;
+    label: string;
+    hint: string;
+    kind: NetworkKind;
+    /** Set for every kind that talks to Meta. */
+    target?: MetaPublishTarget;
+    /** Set for `handoff`: the mechanism that reaches this network without an API. */
+    destination?: HandoffDestinationId;
+  }
+
+  /**
+   * Instagram and Facebook, as the two things this sheet exists for.
+   *
+   * They used to be small chips under a generic accent button, which is how a
+   * sheet whose entire purpose is those two networks ended up with no trace of
+   * either on it (Austen, 2026-08-11: "there's no evidence of the Facebook or
+   * Instagram logo"). Each network is now one button in its own colours at
+   * every state, and the state changes only what the button DOES: post when
+   * the account is connected, connect when it is not, and — when posting is
+   * switched off — the handoff that genuinely reaches that network, which is
+   * the QR for Instagram and the clipboard for Facebook.
+   *
+   * A phone is the exception: its OS share sheet reaches both networks in one
+   * tap and is the honest primary there, so the fallbacks are desktop-only and
+   * the row can legitimately come back empty.
+   */
+  const networks = $derived.by(() => {
+    const plans: NetworkPlan[] = [];
+    const instagram = postingAvailable ? metaStatus.instagram : null;
+    const page = postingAvailable ? metaStatus.facebookPage : null;
+
+    if (instagram) {
+      plans.push({
+        key: "instagram",
         brand: "instagram",
+        name: "Instagram",
+        label: "Post to Instagram",
+        hint: `@${instagram.username}`,
+        kind: "post",
+        target: "instagram",
+      });
+    } else if (postingAvailable) {
+      plans.push({
+        key: "instagram",
+        brand: "instagram",
+        name: "Instagram",
+        label: "Connect Instagram",
+        hint: "Post straight from here",
+        kind: "connect",
+        target: "instagram",
+      });
+    } else if (destinations.some((d) => d.id === "send-to-phone")) {
+      plans.push({
+        key: "instagram",
+        brand: "instagram",
+        name: "Instagram",
+        label: "Send to Instagram",
+        hint: "Scan the code, post from your phone",
+        kind: "handoff",
+        destination: "send-to-phone",
       });
     }
-    // A connection with no Page chosen is not a post target yet. Offering
-    // "Post to Facebook" here would have to name a Page, and the only name
-    // available would be a guess — which is the bug this avoids.
-    if (metaStatus.facebookPage?.selectedPageId) {
-      targets.push({
-        id: "facebook-page",
-        label: "Post to Facebook",
-        account: metaStatus.facebookPage.selectedPageName || "Your Page",
-        network: "Facebook",
+
+    // A connection with no Page chosen is not a post target yet: "Post to
+    // Facebook" would have to name a Page, and the only name available would
+    // be a guess. It asks for the Page instead.
+    if (page?.selectedPageId) {
+      plans.push({
+        key: "facebook",
         brand: "facebook",
+        name: "Facebook",
+        label: "Post to Facebook",
+        hint: page.selectedPageName || "Your Page",
+        kind: "post",
+        target: "facebook-page",
+      });
+    } else if (page) {
+      plans.push({
+        key: "facebook",
+        brand: "facebook",
+        name: "Facebook",
+        label: "Choose a Page",
+        hint: "Pick where your posts land",
+        kind: "choose-page",
+        target: "facebook-page",
+      });
+    } else if (postingAvailable) {
+      plans.push({
+        key: "facebook",
+        brand: "facebook",
+        name: "Facebook",
+        label: "Connect Facebook",
+        hint: "Post to your Page",
+        kind: "connect",
+        target: "facebook-page",
+      });
+    } else if (destinations.some((d) => d.id === "copy-image-facebook")) {
+      plans.push({
+        key: "facebook",
+        brand: "facebook",
+        name: "Facebook",
+        label: "Open Facebook",
+        hint: "Copies the image to paste in",
+        kind: "handoff",
+        destination: "copy-image-facebook",
       });
     }
-    return targets;
+
+    return plans;
   });
 
-  /**
-   * Posting straight to a connected account beats handing the file off, so it
-   * takes the filled button and the handoff's own primary demotes into the
-   * tile row. The alternative — two filled buttons — costs a row the phone
-   * layout does not have (.claude/rules/no-layout-shift.md).
-   */
-  const autoPostPrimary = $derived(autoPostTargets[0] ?? null);
-  const autoPostSecondary = $derived(autoPostTargets.slice(1));
-  const handoffPrimary = $derived(autoPostPrimary ? null : primaryDestination);
-  const tileDestinations = $derived(
-    autoPostPrimary ? destinations : secondaryDestinations
+  /** Every connected Meta target, for the disconnect chips in the setup row. */
+  const autoPostTargets = $derived(
+    networks
+      .filter((plan) => plan.kind === "post")
+      .map((plan) => ({
+        id: plan.target as MetaPublishTarget,
+        network: plan.name,
+        account: plan.hint,
+      }))
   );
 
-  const connectableTargets = $derived.by(() => {
-    const chips: Array<{ id: MetaPublishTarget; label: string }> = [];
-    if (!postingAvailable) return chips;
-    if (!metaStatus.instagram) {
-      chips.push({ id: "instagram", label: "Connect Instagram" });
-    }
-    if (!metaStatus.facebookPage) {
-      chips.push({ id: "facebook-page", label: "Connect a Facebook Page" });
-    }
-    return chips;
+  /**
+   * Whatever the network buttons did not claim. A handoff promoted onto a
+   * network button must not also sit in the tile row underneath it, or the
+   * same action appears twice with two different names.
+   */
+  const tileDestinations = $derived.by(() => {
+    const claimed = new Set(
+      networks
+        .map((plan) => plan.destination)
+        .filter((id): id is HandoffDestinationId => !!id)
+    );
+    const branded = new Set(networks.map((plan) => plan.brand));
+    return destinations.filter(
+      (destination) =>
+        destination.id !== "native-share" &&
+        !claimed.has(destination.id) &&
+        // A network with its own button owns that network. Leaving the
+        // clipboard handoff in the tile row too puts Facebook on the sheet
+        // twice, under two different names, doing two different things.
+        !(destination.brand && branded.has(destination.brand))
+    );
   });
 
   const facebookPages = $derived(metaStatus.facebookPage?.pages ?? []);
@@ -591,6 +671,38 @@
     }
   }
 
+  /**
+   * What a network button does depends only on where that account currently
+   * stands, so the button itself carries no branching — the plan does.
+   */
+  function runNetwork(plan: NetworkPlan): void {
+    switch (plan.kind) {
+      case "post":
+        void postToTarget(plan.target as MetaPublishTarget);
+        return;
+      case "connect":
+        void connectTarget(plan.target as MetaPublishTarget);
+        return;
+      case "choose-page":
+        // The list of Pages Meta shared lives in the setup row's dropdown,
+        // directly under this button. Opening it there keeps one owner for
+        // the Page choice instead of a second copy inside the button.
+        pageMenuOpen = true;
+        return;
+      case "handoff":
+        void runDestination(plan.destination as HandoffDestinationId);
+    }
+  }
+
+  /**
+   * Connecting and picking a Page are account setup and need no artifact.
+   * Everything else moves the file, so it waits for the render.
+   */
+  function networkDisabled(plan: NetworkPlan): boolean {
+    if (plan.kind === "connect" || plan.kind === "choose-page") return metaBusy;
+    return !activeBlob || metaBusy || busyDestination !== null || qrPending;
+  }
+
   async function connectTarget(target: MetaPublishTarget): Promise<void> {
     connectingTarget = target;
     statusMessage = "";
@@ -679,70 +791,88 @@
   </span>
 {/snippet}
 
-<!-- The posted state reuses the SAME box rather than adding a "View post" row:
+<!-- One network, one button, in that network's own colours.
+
+     The posted state reuses the SAME box rather than adding a "View post" row:
      a new element appearing after a successful post would shove the sheet
      (.claude/rules/no-layout-shift.md). -->
-{#snippet autoPostButton(
-  target: {
-    id: MetaPublishTarget;
-    label: string;
-    account: string;
-    brand: "instagram" | "facebook";
-  },
-  isPrimary: boolean
-)}
-  {@const permalink = postedPermalinks[target.id]}
+{#snippet networkButton(plan: NetworkPlan)}
+  {@const permalink = plan.target ? postedPermalinks[plan.target] : undefined}
+  {@const busy =
+    (!!plan.target &&
+      (postingTarget === plan.target || connectingTarget === plan.target)) ||
+    (!!plan.destination &&
+      (busyDestination === plan.destination ||
+        (plan.destination === "send-to-phone" && qrPending)))}
   {#if permalink}
     <a
-      class="cta"
-      class:secondary-cta={!isPrimary}
+      class="network network--{plan.brand} is-posted"
       href={permalink}
       target="_blank"
       rel="noopener noreferrer"
     >
-      <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
-      <span class="cta-text">
-        <span class="cta-label">View post</span>
-        <span class="cta-hint">{target.account}</span>
+      <span class="network-mark">{@render brandMark(plan.brand)}</span>
+      <span class="network-text">
+        <span class="network-label">View on {plan.name}</span>
+        <span class="network-hint">{plan.hint}</span>
       </span>
+      <i
+        class="network-chevron fa-solid fa-arrow-up-right-from-square"
+        aria-hidden="true"
+      ></i>
     </a>
   {:else}
     <button
       type="button"
-      class="cta"
-      class:secondary-cta={!isPrimary}
-      disabled={!activeBlob || metaBusy || busyDestination !== null || qrPending}
-      onclick={() => postToTarget(target.id)}
+      class="network network--{plan.brand}"
+      disabled={networkDisabled(plan)}
+      onclick={() => runNetwork(plan)}
     >
-      {#if postingTarget === target.id}
-        <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
-      {:else}
-        {@render brandMark(target.brand)}
-      {/if}
-      <span class="cta-text">
-        <span class="cta-label">{target.label}</span>
-        <span class="cta-hint">
-          {postingTarget === target.id ? postStage : target.account}
+      <span class="network-mark">
+        {#if busy}
+          <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
+        {:else}
+          {@render brandMark(plan.brand)}
+        {/if}
+      </span>
+      <span class="network-text">
+        <span class="network-label">{plan.label}</span>
+        <!-- The account name is the hint at rest and the stage while posting,
+             so progress replaces it in place instead of adding a line. -->
+        <span class="network-hint">
+          {busy && postStage ? postStage : plan.hint}
         </span>
       </span>
+      <i class="network-chevron fa-solid fa-chevron-right" aria-hidden="true"
+      ></i>
     </button>
   {/if}
 {/snippet}
 
-<Drawer
-  bind:isOpen={drawerOpen}
-  placement="bottom"
+<ShareSheetFrame
+  {isOpen}
   ariaLabel="Share this sequence"
-  class="post-share-drawer"
-  focusContainerOnOpen={true}
-  onOpenChange={(open) => {
-    if (!open && isOpen) onClose();
-  }}
+  {onClose}
+  narrow={!!qrDataUrl}
 >
+  {#snippet children(surface)}
   <!-- The QR is a focused step, not a sibling of the setup controls: with the
        picker, caption, tiles and connections all hidden, the two-column grid
        leaves the whole right column empty under the title. One column. -->
-  <div class="sheet" class:qr-step={!!qrDataUrl}>
+  <!-- `autofocus` on the container, not on a control. A native <dialog> that
+       finds no autofocus target focuses its first focusable child, which here
+       is Close — so the sheet opened with a focus ring around the one button
+       that throws the sheet away, drawing the eye there instead of to the
+       destinations. Taking the focus itself is also the standard dialog
+       behaviour: the sheet is announced, and Tab starts at the first control. -->
+  <!-- svelte-ignore a11y_autofocus -->
+  <div
+    class="sheet"
+    data-surface={surface}
+    class:qr-step={!!qrDataUrl}
+    tabindex="-1"
+    autofocus
+  >
     <header class="panel-header">
       <!-- The word is a word in this alphabet, so it renders in the alphabet —
            the same glyph component the card, the gallery and compose use. A
@@ -861,37 +991,35 @@
         ></textarea>
       </div>
 
-      <!-- `display: contents` by default, so the sheet's own column gap still
-           spaces these. It becomes a real box only in the wide-and-short grid,
-           where two call-to-actions would otherwise stack in one named area. -->
+      <!-- The destinations, in the order they matter: the phone's own share
+           sheet when there is one (one tap, reaches everything), then a
+           full-width button per network. -->
       <div class="actions">
-      {#if autoPostPrimary}
-        {@render autoPostButton(autoPostPrimary, true)}
-      {:else if handoffPrimary}
-        <button
-          type="button"
-          class="cta"
-          disabled={!activeBlob || busyDestination !== null || qrPending}
-          onclick={() => runDestination(handoffPrimary.id)}
-        >
-          <i
-            class={busyDestination === handoffPrimary.id || qrPending
-              ? "fa-solid fa-circle-notch fa-spin"
-              : handoffPrimary.icon}
-            aria-hidden="true"
-          ></i>
-          <span class="cta-text">
-            <span class="cta-label">{handoffPrimary.label}</span>
-            {#if handoffPrimary.hint}
-              <span class="cta-hint">{handoffPrimary.hint}</span>
-            {/if}
-          </span>
-        </button>
-      {/if}
+        {#if nativeShare}
+          <button
+            type="button"
+            class="cta"
+            disabled={!activeBlob || busyDestination !== null || qrPending}
+            onclick={() => runDestination(nativeShare.id)}
+          >
+            <i
+              class={busyDestination === nativeShare.id
+                ? "fa-solid fa-circle-notch fa-spin"
+                : nativeShare.icon}
+              aria-hidden="true"
+            ></i>
+            <span class="cta-text">
+              <span class="cta-label">{nativeShare.label}</span>
+              {#if nativeShare.hint}
+                <span class="cta-hint">{nativeShare.hint}</span>
+              {/if}
+            </span>
+          </button>
+        {/if}
 
-      {#each autoPostSecondary as target (target.id)}
-        {@render autoPostButton(target, false)}
-      {/each}
+        {#each networks as plan (plan.key)}
+          {@render networkButton(plan)}
+        {/each}
       </div>
 
       {#if tileDestinations.length}
@@ -925,9 +1053,10 @@
         </div>
       {/if}
 
-      <!-- Setup, kept visually quieter than the share actions: chips, not
-           buttons the size of the thing you actually came here to do. -->
-      {#if connectableTargets.length || metaStatus.facebookPage || autoPostTargets.length}
+      <!-- Setup for accounts that are ALREADY connected — which Page, and how
+           to drop the connection. Connecting itself is not here any more: it
+           is the network button above, in that network's own colours. -->
+      {#if metaStatus.facebookPage || autoPostTargets.length}
         <div class="connections">
           {#if metaStatus.facebookPage}
             {@const selected = metaStatus.facebookPage}
@@ -990,27 +1119,6 @@
             </div>
           {/if}
 
-          {#each connectableTargets as chip (chip.id)}
-            <FilterChipBase
-              label={chip.label}
-              mode="action"
-              size="sm"
-              disabled={metaBusy}
-              onclick={() => connectTarget(chip.id)}
-            >
-              {#snippet iconSnippet()}
-                {#if connectingTarget === chip.id}
-                  <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"
-                  ></i>
-                {:else}
-                  {@render brandMark(
-                    chip.id === "instagram" ? "instagram" : "facebook"
-                  )}
-                {/if}
-              {/snippet}
-            </FilterChipBase>
-          {/each}
-
           {#each autoPostTargets as target (target.id)}
             <!-- The network, not the account: the account is already named on
                  the post button above, and a variable-width label here is what
@@ -1037,34 +1145,15 @@
       {qrError || statusMessage || " "}
     </p>
   </div>
-</Drawer>
+  {/snippet}
+</ShareSheetFrame>
 
 <style>
-  /* Skin the shared Drawer rather than re-declaring a sheet: glass over the
-     app, a hairline top edge, and a shadow that lifts it off the page. */
-  :global(.post-share-drawer) {
-    --sheet-bg: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--theme-surface, #14141c) 92%, transparent) 0%,
-      color-mix(in srgb, var(--theme-surface, #14141c) 98%, transparent) 100%
-    );
-    --sheet-filter: blur(28px) saturate(160%);
-    --sheet-shadow: 0 -1.5rem 4rem rgba(0, 0, 0, 0.55);
-    --sheet-border-radius-top-left: 1.5rem;
-    --sheet-border-radius-top-right: 1.5rem;
-  }
-
-  /* Drawer.css floors bottom sheets at 50dvh so a short one is not a sliver.
-     This sheet is never short — it is 386px on a folded phone in landscape and
-     876px on a 4K panel — so the floor only ever adds empty drawer under the
-     content: 204px of it at 2160. Hug the sheet instead. */
-  :global(.post-share-drawer.drawer-content[data-placement="bottom"]) {
-    min-height: 0;
-  }
-
   /* Phone portrait is the tight case, so it is the base: everything from the
      title to the tile row has to fit above the fold at 375x667. Taller
-     viewports get the roomier version back in the min-height tier below. */
+     viewports get the roomier version back in the min-height tier below.
+     (The surface itself — drawer under 900px, dialog above — is
+     ShareSheetFrame's; this file only lays out what sits on it.) */
   .sheet {
     display: flex;
     flex-direction: column;
@@ -1299,7 +1388,10 @@
 
   textarea {
     width: 100%;
-    resize: vertical;
+    /* The drawer is sized to its content and already fills the phone. A native
+       grabber here lets a drag push the post buttons off the bottom of the
+       screen, and it draws an OS widget into a designed surface. */
+    resize: none;
     padding: 0.75rem 0.875rem;
     border-radius: 0.875rem;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -1423,6 +1515,120 @@
     opacity: 0.45;
     cursor: not-allowed;
     box-shadow: none;
+  }
+
+  /* A network destination, wearing that network's colours.
+
+     The fills are the platforms' own: Instagram's is the mark's five-stop
+     ramp, Facebook's is its single blue. Nothing else in this sheet is
+     coloured, so these two read as the destinations and everything around
+     them as the settings that feed them. */
+  .network {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    width: 100%;
+    min-height: 3.25rem;
+    padding: 0.625rem 1rem;
+    border: 1px solid var(--network-edge);
+    border-radius: 1rem;
+    background: var(--network-fill);
+    color: #fff;
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: 0 0.625rem 1.5rem var(--network-glow);
+    transition:
+      transform 0.12s ease,
+      box-shadow 0.18s ease,
+      filter 0.18s ease;
+  }
+
+  .network--instagram {
+    --network-fill: linear-gradient(
+      118deg,
+      #f9ce34 0%,
+      #ee2a7b 48%,
+      #6228d7 100%
+    );
+    --network-edge: rgba(255, 255, 255, 0.2);
+    --network-glow: color-mix(in srgb, #ee2a7b 34%, transparent);
+  }
+
+  .network--facebook {
+    --network-fill: linear-gradient(135deg, #1877f2 0%, #0b53c0 100%);
+    --network-edge: rgba(255, 255, 255, 0.18);
+    --network-glow: color-mix(in srgb, #1877f2 34%, transparent);
+  }
+
+  /* A disc behind the mark so the logo stays legible over the brightest stop
+     of the Instagram ramp, where white-on-yellow otherwise disappears. */
+  .network-mark {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.22);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+    font-size: 1.0625rem;
+  }
+
+  .network-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  /* Account names and Page names are user data of unbounded length: they ride
+     one line and truncate rather than growing the button taller than its
+     sibling (.claude/rules/no-layout-shift.md). */
+  .network-label,
+  .network-hint {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .network-label {
+    font-size: 1rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+
+  .network-hint {
+    font-size: 0.8125rem;
+    opacity: 0.85;
+  }
+
+  .network-chevron {
+    flex: 0 0 auto;
+    font-size: 0.8125rem;
+    opacity: 0.7;
+  }
+
+  .network:hover:not(:disabled) {
+    filter: brightness(1.08) saturate(1.05);
+    box-shadow: 0 0.875rem 2rem var(--network-glow);
+  }
+
+  .network:active:not(:disabled) {
+    transform: scale(0.985);
+  }
+
+  .network:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  /* Posted: the button stays put and stops shouting — the destination is no
+     longer a thing to do, it is a thing to go look at. */
+  .network.is-posted {
+    filter: saturate(0.72);
   }
 
   /* Equal columns: the row must not reflow as the destination set changes with
@@ -1615,7 +1821,8 @@
       min-height: 5.5rem;
     }
 
-    .cta {
+    .cta,
+    .network {
       min-height: 3.5rem;
     }
 
@@ -1712,11 +1919,15 @@
       max-height: 58vh;
     }
 
+    /* Grows into the slack the card column leaves, but only so far: a caption
+       is a few lines, and past that the box stops being an input you are
+       filling and starts being a hole in the layout
+       (.claude/rules/visual-verification-mandatory.md, dead space). */
     textarea {
       flex: 1 1 auto;
       height: auto;
       min-height: 5rem;
-      resize: none;
+      max-height: 9rem;
     }
 
     /* The edge bleed exists so a scrolled row reads as scrollable against the
@@ -1778,6 +1989,43 @@
       padding: 0.5rem 1rem;
     }
 
+    /* Side by side, not stacked. Stacked they cost two rows on the one viewport
+       with no vertical to give — 56px more than the dialog has, which pushed the
+       tiles under the fold — while each ran 490px wide across a column that had
+       width to spare. One row spends the axis that is free to buy back the axis
+       that is not, and lands the buttons at a proportion that reads like a pair
+       of buttons rather than two progress bars. */
+    .actions {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+
+    .actions > :global(*) {
+      flex: 1 1 12rem;
+      min-width: 0;
+    }
+
+    .network {
+      min-height: 2.75rem;
+      padding: 0.375rem 0.875rem;
+      gap: 0.625rem;
+      border-radius: 0.75rem;
+    }
+
+    .network-mark {
+      width: 1.75rem;
+      height: 1.75rem;
+      font-size: 0.875rem;
+    }
+
+    /* Two per row leaves the text 129px and "Connect Instagram" needs 140. The
+       chevron and its gap are 26 of those px, and it is the one part of the row
+       carrying no information — a full-bleed brand-coloured button already reads
+       as pressable. */
+    .network-chevron {
+      display: none;
+    }
+
     .status {
       min-height: 0.875rem;
       font-size: 0.75rem;
@@ -1813,14 +2061,27 @@
     }
 
     .cta-label,
+    .network-label,
     textarea {
       font-size: 1.0625rem;
     }
 
     .cta-hint,
+    .network-hint,
     .tile-label,
     .status {
       font-size: 0.9375rem;
+    }
+
+    .network {
+      min-height: 4rem;
+      padding-inline: 1.25rem;
+    }
+
+    .network-mark {
+      width: 2.5rem;
+      height: 2.5rem;
+      font-size: 1.1875rem;
     }
 
     .artifact-picker :global(.segment),
@@ -1834,18 +2095,52 @@
      big-screen seam always misses (.claude/rules/4k-native-layout.md). */
   @media (min-width: 2350px) {
     .sheet {
-      width: min(90rem, 100%);
+      width: min(100rem, 100%);
       /* A fixed stage track from here up, not a fraction. The card render is a
-         480px-wide raster (sharer.ts stepSize 240), so past ~2350 a fractional
-         column keeps widening past anything the artwork can fill — 765px of
-         column around a 480px card at 3840. Pinning the track to just over the
-         card's own width spends the extra canvas on the controls instead, and
-         holds the same width while the render is still pending, so the card
-         landing does not shove the column (.claude/rules/no-layout-shift.md). */
-      grid-template-columns: 32rem minmax(0, 1fr);
+         960x1280 raster (sharer.ts stepSize 240, four columns), so the track is
+         sized toward that instead of left to float: a fraction either starves
+         the card or opens rail around it, and it changes width when the render
+         lands, shoving the column (.claude/rules/no-layout-shift.md). */
+      grid-template-columns: 44rem minmax(0, 1fr);
       column-gap: 2.5rem;
       row-gap: 1rem;
       padding: 2rem;
+    }
+
+    /* The vh ceiling exists to stop a laptop scrolling. A 1440-tall panel is
+       not that panel, and holding 58vh here would cap the card below the track
+       the tier just widened for it. */
+    .preview {
+      max-height: 66vh;
+    }
+
+    /* Beside a card this tall the controls no longer need the caption row to
+       soak up slack — there is more slack than a caption can honestly use, and
+       a 1fr row with a capped input inside it opens the hole ABOVE the post
+       buttons rather than filling anything. Size the caption to its own content
+       and let the trailing row hold what is left, so the column reads as a
+       stack that ends rather than one with a gap punched through it. */
+    .sheet {
+      /* `align-content` cannot centre this: the stage spans every row, so there
+         is no free space in the track list for it to distribute. Flexible rows
+         above and below the control block do the same job against a spanning
+         item — the stack sits opposite the middle of the card instead of
+         hanging from its top edge with a column of black beneath it. */
+      grid-template-areas:
+        "stage ."
+        "stage header"
+        "stage picker"
+        "stage caption"
+        "stage cta"
+        "stage tiles"
+        "stage connections"
+        "stage status"
+        "stage .";
+      grid-template-rows: 1fr auto auto auto auto auto auto auto 1fr;
+    }
+
+    textarea {
+      max-height: 13rem;
     }
 
     .glyph-sizer {
@@ -1867,12 +2162,31 @@
       width: 2rem;
     }
 
+    .network {
+      min-height: 5rem;
+      padding-inline: 1.5rem;
+      border-radius: 1.25rem;
+      gap: 1.125rem;
+    }
+
+    .network-mark {
+      width: 3.25rem;
+      height: 3.25rem;
+      font-size: 1.5rem;
+    }
+
+    .network-chevron {
+      font-size: 1rem;
+    }
+
     .cta-label,
+    .network-label,
     textarea {
       font-size: 1.3125rem;
     }
 
     .cta-hint,
+    .network-hint,
     .tile-label,
     .status {
       font-size: 1.0625rem;
@@ -1895,15 +2209,26 @@
      and elements step again rather than the band alone. */
   @media (min-width: 3200px) {
     .sheet {
-      /* 96rem, not 112: the card tops out at 480px and the caption is the only
-         thing that benefits from more width. Past ~1550px the sheet stops
-         reading as a composition and starts reading as a strip of controls
-         parked next to a small picture. */
-      width: min(96rem, 100%);
-      grid-template-columns: 34rem minmax(0, 1fr);
+      /* 60rem is the card's own raster at 1:1 — 960px. Below it the artwork is
+         downscaled on the one screen with the pixels to show it at full size,
+         which is what made this sheet read as a small island in a black sea at
+         3840. The rest of the band goes to the controls, at roughly the same
+         8:1 button proportion the 1920 tier already ships. */
+      width: min(118rem, 100%);
+      grid-template-columns: 60rem minmax(0, 1fr);
       column-gap: 3rem;
       row-gap: 1.25rem;
       padding: 2.5rem;
+    }
+
+    /* 72vh of 2160 is 1555px — clear of the card's own 1280px height, so the
+       raster finally renders 1:1 instead of being downscaled by its ceiling. */
+    .preview {
+      max-height: 72vh;
+    }
+
+    textarea {
+      max-height: 17rem;
     }
 
     .glyph-sizer {
@@ -1925,12 +2250,31 @@
       width: 2.5rem;
     }
 
+    .network {
+      min-height: 6.25rem;
+      padding-inline: 1.875rem;
+      border-radius: 1.5rem;
+      gap: 1.375rem;
+    }
+
+    .network-mark {
+      width: 4rem;
+      height: 4rem;
+      font-size: 1.875rem;
+    }
+
+    .network-chevron {
+      font-size: 1.25rem;
+    }
+
     .cta-label,
+    .network-label,
     textarea {
       font-size: 1.625rem;
     }
 
     .cta-hint,
+    .network-hint,
     .tile-label,
     .status {
       font-size: 1.3125rem;
@@ -1983,8 +2327,17 @@
     }
   }
 
+  /* Last in the file so it beats every width tier above: inside the dialog the
+     frame owns the sheet's width, and a rem cap here would centre a 34rem
+     column in a 90rem dialog — the dead rail the modal exists to remove. */
+  .sheet[data-surface="modal"] {
+    width: 100%;
+    max-width: none;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .cta,
+    .network,
     .tile,
     .header-close,
     textarea {
@@ -1992,6 +2345,7 @@
     }
 
     .cta:active:not(:disabled),
+    .network:active:not(:disabled),
     .tile:active:not(:disabled) {
       transform: none;
     }

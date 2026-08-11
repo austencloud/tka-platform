@@ -5,55 +5,62 @@
   the no-layout-shift behavior can be checked at every required viewport
   without driving the whole create → save → viewer flow.
 
-  The sequence carries real steps so the card artwork actually renders — a
-  preview stage judged against an empty box tells you nothing about how the
-  sheet composes around real media.
+  It also renders a REAL sequence, pulled from the published gallery through
+  the same loader the viewer uses. A hand-written one was here before, and it
+  taught the page nothing true: invented steps render invented pictographs, so
+  the card the sheet composes around was not a card this app can produce.
+  Austen (2026-08-11): "Even when we're testing we should be using real data."
+
+  The only thing still simulated is video-export progress, which the viewer
+  owns and no harness can drive.
 -->
 <script lang="ts">
+  import { onMount } from "svelte";
   import PostShareSheet from "$lib/shared/share/components/PostShareSheet.svelte";
   import type { MetaPublishStatus } from "$lib/shared/share/services/meta-publish";
-  import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
-  import { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-  import {
-    MotionColor,
-    MotionType,
-    RotationDirection,
-  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { hydrateSequence } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
+  import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
+  import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
+  import { registerLoopDetector } from "$lib/shared/create/get-loop-detector";
 
-  const sequence = createSequenceData({
-    id: "harness-sequence",
-    // Repeated on purpose: the header and filename must read FΨ, never FΨFΨFΨFΨ.
-    word: "FΨFΨFΨFΨ",
-    name: "Harness sequence",
-    steps: Array.from({ length: 8 }, (_, index) => {
-      const stepNumber = index + 1;
-      return createStepData({
-        id: `harness-step-${stepNumber}`,
-        stepNumber,
-        startPosition: GridPosition.ALPHA1,
-        endPosition: GridPosition.BETA1,
-        motions: {
-          blue: createMotionData({
-            color: MotionColor.BLUE,
-            motionType: MotionType.PRO,
-            rotationDirection:
-              stepNumber % 2 === 0
-                ? RotationDirection.CLOCKWISE
-                : RotationDirection.COUNTER_CLOCKWISE,
-          }),
-          red: createMotionData({
-            color: MotionColor.RED,
-            motionType: MotionType.ANTI,
-            rotationDirection:
-              stepNumber % 2 === 0
-                ? RotationDirection.COUNTER_CLOCKWISE
-                : RotationDirection.CLOCKWISE,
-          }),
-        },
-      });
-    }),
+  /**
+   * A real published sequence: 16 steps, a rotated LOOP of period 4, owned by
+   * Austen in `publicSequences`. Guest-readable, so the harness needs no
+   * sign-in.
+   *
+   * Chosen because its word repeats four times, which keeps the check the old
+   * synthetic sequence existed for: the header and the filename must read
+   * CΨΩX, never CΨΩXCΨΩXCΨΩXCΨΩX
+   * (.claude/rules/simplified-word-display.md).
+   *
+   * Both the word and the id are needed: the loader resolves by word and takes
+   * the id only to disambiguate, so an id alone matches nothing.
+   */
+  const SEQUENCE_WORD = "CΨΩXCΨΩXCΨΩXCΨΩX";
+  const SEQUENCE_ID = "2077a0d6-01d1-4b2b-a920-da9da6ee7e47";
+
+  let sequence = $state<SequenceData | null>(null);
+  let loadError = $state<string | null>(null);
+
+  onMount(async () => {
+    // Hydration runs the viewer's own path, which asks for a loop detector.
+    // The real viewer route registers it exactly like this.
+    registerLoopDetector(loopDetector);
+    try {
+      const loaded = await getBrowseLoader().loadFullSequenceData(
+        SEQUENCE_WORD,
+        SEQUENCE_ID
+      );
+      if (!loaded) {
+        loadError = "That sequence is not in the published gallery any more.";
+        return;
+      }
+      sequence = await hydrateSequence(loaded);
+    } catch (error) {
+      loadError =
+        error instanceof Error ? error.message : "Could not load the sequence.";
+    }
   });
 
   let isOpen = $state(true);
@@ -143,15 +150,26 @@
     >
   </div>
   <p class="note">
-    Video export is driven by the viewer in the real app; this harness only
-    simulates its progress states.
+    {#if loadError}
+      Couldn't load the real sequence: {loadError}
+    {:else if !sequence}
+      Loading {SEQUENCE_ID} from the published gallery…
+    {:else}
+      Real sequence {sequence.word} ({sequence.steps?.length ?? 0} steps). Video
+      export is driven by the viewer in the real app; this harness only
+      simulates its progress states.
+    {/if}
   </p>
 </div>
 
+<!-- No `shareUrl`: the sheet mints (or, per the one-code-per-hash invariant,
+     re-resolves) this sequence's real short code itself, which is what the
+     viewer makes it do in production. A hardcoded link here would skip the
+     one piece of the caption the user actually posts. -->
 <PostShareSheet
-  {isOpen}
+  isOpen={isOpen && !!sequence}
   {sequence}
-  shareUrl="https://tkaflowarts.com/sequence/A3F9"
+  shareUrl=""
   {videoBlobUrl}
   {isExportingVideo}
   {exportProgress}
