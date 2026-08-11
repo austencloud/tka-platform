@@ -46,6 +46,12 @@ export function createViewerShellShareState(
    * which is exactly what the sheet reads (progress, the finished blob).
    */
   let artShare = $state.raw<ArtShareTarget | null>(null);
+  /**
+   * The art view currently on screen, registered by ArtPane while it is active.
+   * Distinct from `artShare`, which is the target of an OPEN sheet: this one
+   * only answers "what would the header's Share be about right now."
+   */
+  let registeredArtTarget = $state.raw<ArtShareTarget | null>(null);
   /** This share came from the 3D pane, so the sheet opens on Video. */
   let sceneShare = $state(false);
   /**
@@ -184,6 +190,11 @@ export function createViewerShellShareState(
     postSheetOpen = true;
   }
 
+  /** ArtPane says what it is showing while it is up, and withdraws on park. */
+  function setArtShareTarget(target: ArtShareTarget | null): void {
+    registeredArtTarget = target;
+  }
+
   async function copyShareLink(): Promise<void> {
     dependencies.captureScanAction("copy_link");
     const copied = await inputs.getContext().handleCopyLink();
@@ -197,10 +208,31 @@ export function createViewerShellShareState(
     }, 1800);
   }
 
+  /**
+   * The header's Share, resolved against the pane the user is looking at.
+   *
+   * One Share, in one place, that shares the thing on screen: the mandala from
+   * the Mandala pane, the tunnel from the Tunnel pane, the live 3D take from
+   * the 3D pane, the card everywhere else. Austen (2026-08-11): "Let's keep
+   * Share in one consistent place in the header always, we don't need it in
+   * two places" — the button consolidated, the payload did not.
+   */
+  function shareCurrentView(): void {
+    if (inputs.getContext().viewerState.viewerMode === "animation-3d") {
+      shareScene();
+      return;
+    }
+    if (registeredArtTarget) {
+      shareArt(registeredArtTarget);
+      return;
+    }
+    shareSequence();
+  }
+
   function selectAction(actionId: string): void {
     switch (actionId as ViewerShareActionId) {
       case "share-sequence":
-        shareSequence();
+        shareCurrentView();
         break;
       case "send-sequence":
         sendToInbox();
@@ -265,7 +297,7 @@ export function createViewerShellShareState(
     },
     copyForClaude,
     sendToInbox,
-    shareArt,
+    setArtShareTarget,
     selectAction,
     sendToStickerLab,
     shareScene,

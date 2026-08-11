@@ -61,7 +61,6 @@
     onArtAction,
     onViewer3DSettingChange,
     onViewer3DAction,
-    onSceneShare,
     suppressProgress = false,
     practiceActive = false,
     practiceCellSize = 72,
@@ -197,7 +196,6 @@
       {onSceneReadyChange}
       {onViewer3DSettingChange}
       {onViewer3DAction}
-      {onSceneShare}
       {suppressProgress}
       {practiceActive}
       {practiceMirrorEnabled}
@@ -267,7 +265,6 @@
         {onSceneReadyChange}
         {onViewer3DSettingChange}
         {onViewer3DAction}
-        {onSceneShare}
         {suppressProgress}
         {practiceActive}
         {practiceMirrorEnabled}

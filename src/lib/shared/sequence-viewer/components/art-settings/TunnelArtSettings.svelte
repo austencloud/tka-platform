@@ -35,7 +35,6 @@
     controller: TunnelViewController;
     layout: "sidebar" | "bottom";
     onExport: () => void;
-    onShare: () => void;
     onSaveTunnel?: () => void;
     bpm: number;
     playbackMode: PlaybackMode;
@@ -54,7 +53,6 @@
     controller,
     layout,
     onExport,
-    onShare,
     onSaveTunnel,
     bpm,
     playbackMode,
@@ -150,17 +148,13 @@
   // Colors gets the live accent-pair dots (matching the native mandala dock);
   // "download" is excluded — it's the trailing Export action, not a tray tab.
 
-  const tunnelDockShare = $derived<ControlDockAction>({
-    icon: "fa-share-nodes",
-    label: "Share",
-    accent: true,
-    onClick: onShare,
-    disabled: exporting,
-  });
-
+  // Export is the dock's one trailing action now. Share moved out entirely:
+  // the header carries it on every pane, and a second one down here was the
+  // duplicate Austen asked to be rid of.
   const tunnelDockExport = $derived<ControlDockAction>({
     icon: "fa-film",
     label: "Export Video",
+    accent: true,
     onClick: onExport,
     disabled: exporting,
     busy: exporting,
@@ -232,8 +226,7 @@
     tabs={tunnelDockTabs}
     activeTab={openTunnelTab}
     onTabSelect={selectTunnelDock}
-    trailingAction={tunnelDockShare}
-    secondaryActions={[tunnelDockExport]}
+    trailingAction={tunnelDockExport}
     trayMaxHeight={openTunnelTab === "effects"
       ? "min(54vh, 360px)"
       : "min(33vh, 250px)"}
@@ -282,7 +275,6 @@
         </div>
 
         <ArtActionFooter
-          {onShare}
           {onExport}
           exportLabel="Export Video"
           busy={exporting}

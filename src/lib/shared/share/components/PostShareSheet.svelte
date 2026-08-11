@@ -23,6 +23,7 @@
   import InstagramIcon from "$lib/shared/auth/components/icons/InstagramIcon.svelte";
   import FacebookIcon from "$lib/shared/auth/components/icons/FacebookIcon.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { deriveWord } from "$lib/shared/foundation/services/word-deriver";
   import { getSharer } from "$lib/shared/share/get-sharer";
@@ -30,6 +31,7 @@
   import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+  import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-options";
   import { getCaptionPresetManager } from "$lib/shared/share/state/caption-presets.svelte";
   import {
     buildArtifactFilename,
@@ -120,6 +122,16 @@
      * sheet is actionable the moment it appears.
      */
     initialArtifact?: ShareArtifact;
+    /**
+     * The geometry the live card preview settled on. With the column count on
+     * Auto the card has no fixed shape — the on-screen preview measures its
+     * container and picks one. Without this the shared PNG re-derives its own,
+     * and the user posts a card laid out differently from the card they were
+     * looking at when they pressed Share. Austen (2026-08-11): "when you click
+     * share on a card it should respect the current card settings that you've
+     * set."
+     */
+    resolvedCardAutoLayout?: ResolvedAutoLayout | null;
   }
 
   let {
@@ -136,6 +148,7 @@
     onSendInTka,
     videoLabel = "Video",
     initialArtifact = "card",
+    resolvedCardAutoLayout = null,
   }: Props = $props();
 
   const captions = getCaptionPresetManager();
@@ -153,6 +166,8 @@
 
   let cardBlob = $state<Blob | null>(null);
   let cardPreviewUrl = $state<string | null>(null);
+  /** Card settings the blob in hand was rendered from; re-render when it moves. */
+  let renderedCardKey: string | null = null;
   let videoBlob = $state<Blob | null>(null);
 
   /** Post link for this sequence, once the code lands. */
@@ -455,20 +470,37 @@
   // Card first: getCardImageBlob is cached, so the sheet is actionable the
   // moment it opens. Runs on open rather than at module scope so a viewer that
   // never shares never pays the render.
+  //
+  // Building the options HERE, rather than letting getCardImageBlob build them
+  // out of sight, is what subscribes this effect to the user's card settings.
+  // Change dark mode, columns, the QR, the mandala, the footer — the preview and
+  // the file that gets posted both re-render. What you press Share on is what
+  // goes out.
   $effect(() => {
-    if (!isOpen || !sequence || cardBlob) return;
+    if (!isOpen || !sequence) return;
 
     const target = sequence;
+    const cardOptions = buildCardRenderOptions(target, {
+      darkMode: getImageCompositionManager().darkMode,
+      isHandPath: !!target.metadata?.isHandPathVisualization,
+      resolvedAutoLayout: resolvedCardAutoLayout,
+    });
+    const settingsKey = JSON.stringify(cardOptions);
+    if (settingsKey === renderedCardKey) return;
+
     let stale = false;
 
     void (async () => {
       try {
         const blob = await getSharer().getCardImageBlob(target, {
           darkMode: getImageCompositionManager().darkMode,
+          resolvedAutoLayout: resolvedCardAutoLayout,
         });
         if (stale) return;
+        if (cardPreviewUrl) URL.revokeObjectURL(cardPreviewUrl);
         cardBlob = blob;
         cardPreviewUrl = URL.createObjectURL(blob);
+        renderedCardKey = settingsKey;
       } catch (error) {
         console.error("[PostShareSheet] Card render failed:", error);
         if (!stale) statusMessage = "Couldn't render the card";

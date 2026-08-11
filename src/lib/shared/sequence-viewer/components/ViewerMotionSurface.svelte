@@ -29,7 +29,6 @@
     onSceneReadyChange,
     onViewer3DSettingChange,
     onViewer3DAction,
-    onSceneShare,
     suppressProgress,
     practiceActive,
     practiceMirrorEnabled,
@@ -286,7 +285,6 @@
       {bpm}
       onSettingChange={onViewer3DSettingChange}
       onAction={onViewer3DAction}
-      onShare={onSceneShare}
     />
     <LazyMount
       loader={loadPerformerHub}

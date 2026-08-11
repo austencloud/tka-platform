@@ -61,6 +61,7 @@
     playback,
     artType,
     active = true,
+    shown,
     layout = "sidebar",
     bluePropType,
     redPropType,
@@ -84,6 +85,13 @@
     artType: ArtType;
     /** False while a persistent art pane is parked behind another viewer mode. */
     active?: boolean;
+    /**
+     * Is this pane the one the user is actually looking at? Distinct from
+     * `active`, which stays true on the main side for BOTH art panes so their
+     * controllers keep running — so `active` cannot answer "which art is the
+     * header's Share about." Defaults to `active` for hosts with one art pane.
+     */
+    shown?: boolean;
     /** "bottom" (mobile) swaps the right sidebar for a ControlDock floating over
      *  the art; "sidebar" (default, desktop) keeps the right rail. */
     layout?: "sidebar" | "bottom";
@@ -112,16 +120,20 @@
       mandalaController: MandalaViewerController;
     }) => void;
     /**
-     * Hands this art view to the post-share sheet. The pane owns the two
-     * controllers, so it passes them up rather than rendering its own sheet:
-     * the shell already hosts one, and a second would be the second share
-     * destination Track 1 exists to remove.
+     * Registers this art view as what the header's Share is currently about,
+     * and withdraws it when the pane parks. The pane owns the two controllers,
+     * so it hands them up rather than rendering a Share of its own: Share lives
+     * in the header on every pane, and the pane's job is only to say what the
+     * user is looking at. Austen (2026-08-11): "Let's keep Share in one
+     * consistent place in the header always."
      */
-    onArtShare?: (args: {
-      artType: ArtType;
-      controller: TunnelViewController;
-      mandalaController: MandalaViewerController;
-    }) => void;
+    onArtShare?: (
+      args: {
+        artType: ArtType;
+        controller: TunnelViewController;
+        mandalaController: MandalaViewerController;
+      } | null
+    ) => void;
     /** The share sheet owns the current render; keep the inline preview out. */
     artShareActive?: boolean;
     onArtExportEvent?: ArtExportEventSink;
@@ -265,9 +277,20 @@
     onArtExport({ artType, controller, mandalaController });
   }
 
-  function handleShare(): void {
+  /**
+   * Tell the shell what the header's Share is about while this pane is up, and
+   * take it back when it parks. Art panes stay mounted behind other viewer
+   * modes, so an unregistered target would make a plain 2D share hand over a
+   * mandala.
+   */
+  $effect(() => {
+    if (!(shown ?? active)) {
+      onArtShare?.(null);
+      return;
+    }
     onArtShare?.({ artType, controller, mandalaController });
-  }
+    return () => onArtShare?.(null);
+  });
 
   function finishArtExportAttempt(
     stage: "completed" | "failed" | "canceled",
@@ -644,7 +667,6 @@
     {artType}
     {layout}
     onExport={handleExport}
-    onShare={handleShare}
     onSaveTunnel={() => void handleSaveTunnel("settings_panel")}
     {bpm}
     {playbackMode}

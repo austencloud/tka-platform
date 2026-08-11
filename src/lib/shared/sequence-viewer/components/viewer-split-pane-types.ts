@@ -71,12 +71,6 @@ export interface ViewerSplitPaneProps {
    * offering a second delivery of a file the sheet already handled.
    */
   artShareActive?: boolean;
-  /**
-   * Opens the shell's post-share sheet on the 3D scene. Takes no target: the
-   * scene's video IS the animation export, so only the artifact the sheet opens
-   * on differs from a plain share.
-   */
-  onSceneShare?: () => void;
   onArtExportEvent?: ArtExportEventSink;
   onArtSettingChange?: (
     group: string,
@@ -120,7 +114,6 @@ export interface ViewerMotionSurfaceProps {
   onSceneReadyChange?: (ready: boolean) => void;
   onViewer3DSettingChange?: ViewerControlSink;
   onViewer3DAction?: ViewerActionSink;
-  onSceneShare?: () => void;
   suppressProgress: boolean;
   practiceActive: boolean;
   practiceMirrorEnabled: boolean;

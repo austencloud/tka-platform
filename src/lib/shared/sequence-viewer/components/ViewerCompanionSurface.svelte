@@ -130,6 +130,7 @@
     <ArtPane
       artType="mandala"
       active={side === "right" ? mandala.shown : true}
+      shown={mandala.shown}
       {sequence}
       {playback}
       bluePropType={propRendering.bluePropType != null
@@ -163,6 +164,7 @@
     <ArtPane
       artType="tunnel"
       active={side === "right" ? tunnel.shown : true}
+      shown={tunnel.shown}
       {sequence}
       {playback}
       bluePropType={propRendering.bluePropType != null

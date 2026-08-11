@@ -4,6 +4,7 @@ import type { ShareOptions } from "../domain/models/share-options";
 import { PreviewCache } from "./preview-cache";
 import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
 import { buildCardRenderOptions } from "./card-render-options";
+import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
 import { hashString } from "$lib/shared/foundation/services/content-hasher";
 
 export const CARD_BLOB_CACHE_MAX_ENTRIES = 3;
@@ -86,7 +87,15 @@ export class Sharer {
    */
   async getCardImageBlob(
     sequence: SequenceData,
-    opts: { darkMode: boolean },
+    opts: {
+      darkMode: boolean;
+      /**
+       * Geometry the live card preview measured. Auto columns have no fixed
+       * shape, so without it the file re-derives its own and stops matching the
+       * card on screen. Callers with a preview pass theirs.
+       */
+      resolvedAutoLayout?: ResolvedAutoLayout | null;
+    },
     onProgress?: ImageGenerationProgressCallback
   ): Promise<Blob> {
     const renderOptions = {
@@ -96,6 +105,7 @@ export class Sharer {
       ...buildCardRenderOptions(sequence, {
         darkMode: opts.darkMode,
         isHandPath: !!sequence.metadata?.isHandPathVisualization,
+        resolvedAutoLayout: opts.resolvedAutoLayout ?? null,
       }),
     };
 

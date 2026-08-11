@@ -19,7 +19,6 @@
     mandalaController: MandalaViewerController;
     layout: "sidebar" | "bottom";
     onExport: () => void;
-    onShare: () => void;
     onArtSettingChange?: ArtSettingChangeHandler;
     exporting: boolean;
     reduceMotion: boolean;
@@ -29,7 +28,6 @@
     mandalaController,
     layout,
     onExport,
-    onShare,
     onArtSettingChange,
     exporting,
     reduceMotion,
@@ -86,18 +84,13 @@
       )
   );
 
-  // Share leads on the dock too, so the phone and the desktop sidebar agree on
-  // which action is the first-class one.
-  const mandalaDockShare: ControlDockAction = {
-    icon: "fa-share-nodes",
-    label: "Share",
-    accent: true,
-    onClick: () => onShare(),
-  };
-
+  // Export is the dock's one trailing action now. Share moved out entirely:
+  // the header carries it on every pane, and a second one down here was the
+  // duplicate Austen asked to be rid of.
   const mandalaDockExport: ControlDockAction = {
     icon: "fa-download",
     label: "Export MP4",
+    accent: true,
     onClick: () => onExport(),
   };
 </script>
@@ -107,8 +100,7 @@
     tabs={mandalaDockTabs}
     activeTab={openMandalaCat}
     onTabSelect={selectMandalaDock}
-    trailingAction={mandalaDockShare}
-    secondaryActions={[mandalaDockExport]}
+    trailingAction={mandalaDockExport}
     trayMaxHeight="min(33vh, 250px)"
   >
     {#snippet tray()}
@@ -146,7 +138,7 @@
         {/each}
       </div>
 
-      <ArtActionFooter {onShare} {onExport} exportLabel="Export MP4" />
+      <ArtActionFooter {onExport} exportLabel="Export MP4" />
     </div>
   </ArtSettingsSidebarFrame>
 {/if}
