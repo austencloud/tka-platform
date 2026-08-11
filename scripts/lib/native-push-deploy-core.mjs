@@ -1,4 +1,4 @@
-import { isAbsolute, relative, sep } from "node:path";
+import { isAbsolute, relative, sep, win32 } from "node:path";
 
 const ZERO_OID = /^0+$/;
 const ZIP_CENTRAL_DIRECTORY_SIGNATURE = 0x02014b50;
@@ -151,6 +151,20 @@ export function selectSnapshotArchive(platform = process.platform) {
   return platform === "win32"
     ? { filename: "source.zip", format: "zip" }
     : { filename: "source.tar", format: "tar" };
+}
+
+export function selectSnapshotExtractor(
+  platform = process.platform,
+  systemRoot = process.env.SystemRoot
+) {
+  if (platform !== "win32") return "tar";
+  if (!systemRoot) {
+    throw new Error(
+      "SystemRoot is required to locate the Windows ZIP-capable tar executable."
+    );
+  }
+
+  return win32.join(systemRoot, "System32", "tar.exe");
 }
 
 export function parsePushUpdates(input) {

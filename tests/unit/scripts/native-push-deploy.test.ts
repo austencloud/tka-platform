@@ -14,6 +14,7 @@ import {
   parsePushUpdates,
   readJavaProperty,
   selectSnapshotArchive,
+  selectSnapshotExtractor,
   selectAndroidDevice,
 } from "../../../scripts/lib/native-push-deploy-core.mjs";
 
@@ -144,6 +145,22 @@ describe("native snapshot extraction", () => {
       filename: "source.tar",
       format: "tar",
     });
+  });
+
+  it("pins Windows extraction to the ZIP-capable system tar", () => {
+    expect(selectSnapshotExtractor("win32", "C:\\Windows")).toBe(
+      "C:\\Windows\\System32\\tar.exe"
+    );
+  });
+
+  it("does not depend on PATH when Windows system location is unavailable", () => {
+    expect(() => selectSnapshotExtractor("win32", "")).toThrow(
+      "SystemRoot is required"
+    );
+  });
+
+  it("uses tar from PATH on non-Windows hosts", () => {
+    expect(selectSnapshotExtractor("linux", "")).toBe("tar");
   });
 
   it("passes Windows ZIP paths relative to the build directory", () => {

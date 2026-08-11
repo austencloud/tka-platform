@@ -29,6 +29,7 @@ import {
   parsePushUpdates,
   readJavaProperty,
   selectSnapshotArchive,
+  selectSnapshotExtractor,
   selectAndroidDevice,
 } from "./lib/native-push-deploy-core.mjs";
 
@@ -296,9 +297,11 @@ function createSnapshot(
     archivePath,
     snapshotRoot
   );
-  run(process.platform === "win32" ? "tar.exe" : "tar", extraction.args, {
-    cwd: extraction.cwd,
-  });
+  const extractor = selectSnapshotExtractor();
+  if (process.platform === "win32" && !existsSync(extractor)) {
+    throw new Error(`Windows archive extractor was not found: ${extractor}`);
+  }
+  run(extractor, extraction.args, { cwd: extraction.cwd });
   rmSync(archivePath, { force: true });
 
   copyLocalBuildInputs(repoRoot, snapshotRoot);
