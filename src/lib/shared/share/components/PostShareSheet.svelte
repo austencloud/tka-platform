@@ -1987,6 +1987,36 @@
     }
   }
 
+  /* Five tiles do not fit across a phone. At 375 the equal-column row gives each
+     one 58.7px, and "Download" alone needs 69px — the labels ran into their
+     neighbours and the row overflowed its own box. Three columns give each tile
+     ~100px, which is room for the word at full size and a 44px icon above it.
+     5 % 3 = 2, so the second row holds two tiles, never a lone orphan
+     (.claude/rules/4k-native-layout.md).
+
+     Width, not height, is the axis that matters here: the stacked tile above is
+     gated on min-height 940, so a short phone (375x667) kept the side-by-side
+     icon+label that cannot fit at any label size. This block sits after it and
+     wins on every narrow viewport regardless of height. */
+  @media (max-width: 480px) {
+    .tiles {
+      grid-auto-flow: row;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .tile {
+      flex-direction: column;
+      gap: 0.375rem;
+      padding: 0.625rem 0.375rem;
+    }
+
+    .tile-icon {
+      width: 2.25rem;
+      height: 2.25rem;
+      font-size: 1rem;
+    }
+  }
+
   /* Two columns from 900px up — the artwork beside the controls, not above them.
      Stacked, the preview is capped by whatever vertical the controls leave over,
      which on a 1920x1080 desktop is a 165px-wide card marooned in a 624px-wide
