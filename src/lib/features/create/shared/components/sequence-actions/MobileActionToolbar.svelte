@@ -22,6 +22,7 @@
     unavailable?: boolean;
     highlighted?: boolean;
     visible?: boolean;
+    locked?: boolean;
   }
 
   interface Props {
@@ -37,6 +38,9 @@
     shiftStartActive?: boolean;
     swapDisabled?: boolean;
     showEditInConstructor: boolean;
+    /** Guest-gated Patterns category: tiles stay tappable but show a lock and
+        route to sign-up (the parent supplies gated handlers). */
+    patternsLocked?: boolean;
     onHelpRequest?: (actionId: ActionHelpId) => void;
     onMirror: () => void;
     onFlip: () => void;
@@ -67,6 +71,7 @@
     shiftStartActive = false,
     swapDisabled = false,
     showEditInConstructor,
+    patternsLocked = false,
     onHelpRequest,
     onMirror,
     onFlip,
@@ -166,6 +171,7 @@
       btnColor: "20, 184, 166",
       action: onTurnPattern,
       disabled: !hasSequence,
+      locked: patternsLocked,
     },
     {
       id: "direction",
@@ -174,6 +180,7 @@
       btnColor: "14, 165, 233",
       action: onRotationDirection,
       disabled: !hasSequence,
+      locked: patternsLocked,
     },
     {
       id: "duration",
@@ -182,6 +189,7 @@
       btnColor: "251, 146, 60",
       action: onDuration,
       disabled: !hasSequence,
+      locked: patternsLocked,
     },
     {
       id: "rewind",
@@ -190,6 +198,7 @@
       btnColor: "244, 63, 94",
       action: onRewind,
       disabled,
+      locked: patternsLocked,
     },
     ...(onExtend && canExtend
       ? [
@@ -200,6 +209,7 @@
             btnColor: "34, 197, 94",
             action: onExtend,
             disabled: !hasSequence || isExtending,
+            locked: patternsLocked,
           },
         ]
       : []),
@@ -214,6 +224,7 @@
             disabled: !hasSequence || isTransforming || !canShiftStart,
             unavailable: !canShiftStart,
             highlighted: shiftStartActive,
+            locked: patternsLocked,
           },
         ]
       : []),
@@ -311,6 +322,7 @@
           disabled={action.disabled ?? false}
           unavailable={action.unavailable ?? false}
           highlighted={action.highlighted ?? false}
+          locked={action.locked ?? false}
           onAction={action.action}
           onLongPress={() => handleLongPress(action.id)}
         >
@@ -324,6 +336,7 @@
           disabled={action.disabled ?? false}
           unavailable={action.unavailable ?? false}
           highlighted={action.highlighted ?? false}
+          locked={action.locked ?? false}
           onAction={action.action}
           onLongPress={() => handleLongPress(action.id)}
         />

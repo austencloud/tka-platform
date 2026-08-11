@@ -18,7 +18,11 @@
   import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
+  import { isAdmin, authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
+  import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/auth-nudge-trigger";
+  import { resolveAccessTier } from "$lib/shared/auth/domain/access-tier";
+  import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import { createSequenceActionsPanelState } from "../../state/sequence-actions-panel-state.svelte";
   import { createSequenceActionsOrchestrator } from "../../services/sequence-actions-orchestrator";
   import { flyTransition, fadeTransition } from "$lib/shared/utils/transitions";
@@ -571,6 +575,41 @@
     viewState.finishShiftStart();
   }
 
+  // ===== GUEST GATE: PATTERNS SECTION =====
+  // Guests keep Transform and Edit; the Patterns tools are an account perk.
+  // A locked tile stays tappable and routes straight to the contextual auth
+  // screen (no intermediate nudge — same policy as the LOOP gate, Austen
+  // 2026-08-10). Help mode is unaffected: the grid intercepts clicks before
+  // these handlers when help is active, so learning stays free.
+  const patternsLocked = $derived(
+    resolveAccessTier(
+      authState.isAuthenticated,
+      authState.isAnonymous,
+      isPremiumOrAbove(authState.role)
+    ) === "guest"
+  );
+
+  function gatedPattern(
+    action: () => void | Promise<void>,
+    trigger: AuthNudgeTrigger = "patterns-guest"
+  ): () => void {
+    return () => {
+      if (patternsLocked) {
+        authDrawerState.show("signup", trigger);
+        return;
+      }
+      void action();
+    };
+  }
+
+  const gatedTurnPattern = gatedPattern(handleTurnPattern);
+  const gatedRotationDirection = gatedPattern(handleRotationDirection);
+  const gatedDuration = gatedPattern(handleDuration);
+  const gatedRewind = gatedPattern(handleRewind);
+  // Extend adds steps, so the ask names the step cap rather than the tools.
+  const gatedExtend = gatedPattern(handleExtend, "step-cap-guest");
+  const gatedShiftStart = gatedPattern(handleShiftStart);
+
   async function handleCopySequenceJson() {
     const result = await actionOrchestrator.copySequenceJson();
     if (result.status === "completed") {
@@ -813,15 +852,14 @@
             onRotateCW={handleRotateCW}
             onRotateCCW={handleRotateCCW}
             onSwap={handleSwap}
-            onRewind={handleRewind}
-            onTurnPattern={handleTurnPattern}
-            onRotationDirection={handleRotationDirection}
-            onDuration={handleDuration}
-            onExtend={handleExtend}
-            onShiftStart={isShiftStartMode
-              ? cancelShiftStart
-              : handleShiftStart}
+            onRewind={gatedRewind}
+            onTurnPattern={gatedTurnPattern}
+            onRotationDirection={gatedRotationDirection}
+            onDuration={gatedDuration}
+            onExtend={gatedExtend}
+            onShiftStart={isShiftStartMode ? cancelShiftStart : gatedShiftStart}
             onEditInConstructor={handleEditInConstructor}
+            {patternsLocked}
           />
         {:else}
           <!-- Desktop: full grid of all actions -->
@@ -846,13 +884,14 @@
               onRotateCW={handleRotateCW}
               onRotateCCW={handleRotateCCW}
               onSwap={handleSwap}
-              onRewind={handleRewind}
-              onTurnPattern={handleTurnPattern}
-              onRotationDirection={handleRotationDirection}
-              onDuration={handleDuration}
-              onExtend={handleExtend}
-              onShiftStart={handleShiftStart}
+              onRewind={gatedRewind}
+              onTurnPattern={gatedTurnPattern}
+              onRotationDirection={gatedRotationDirection}
+              onDuration={gatedDuration}
+              onExtend={gatedExtend}
+              onShiftStart={gatedShiftStart}
               onEditInConstructor={handleEditInConstructor}
+              {patternsLocked}
             />
           </div>
         {/if}

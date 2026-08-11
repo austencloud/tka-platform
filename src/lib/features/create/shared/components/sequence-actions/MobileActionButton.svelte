@@ -15,6 +15,8 @@
     disabled?: boolean;
     unavailable?: boolean;
     highlighted?: boolean;
+    /** Guest-gated: muted with a lock badge, stays tappable (tap → sign-up). */
+    locked?: boolean;
     customIcon?: Snippet;
     onAction: () => void;
     onLongPress?: () => void;
@@ -27,6 +29,7 @@
     disabled = false,
     unavailable = false,
     highlighted = false,
+    locked = false,
     customIcon,
     onAction,
     onLongPress,
@@ -94,9 +97,10 @@
   class="mobile-action-btn"
   class:unavailable
   class:highlighted
+  class:locked
   style:--btn-color={btnColor}
   {disabled}
-  aria-label={label}
+  aria-label={locked ? `${label} - locked, sign up to unlock` : label}
   onpointerdown={handlePointerDown}
   onpointermove={handlePointerMove}
   onpointerup={handlePointerUp}
@@ -112,6 +116,11 @@
     {/if}
   </div>
   <span class="btn-label">{label}</span>
+  {#if locked}
+    <div class="lock-badge" aria-hidden="true">
+      <i class="fas fa-lock" aria-hidden="true"></i>
+    </div>
+  {/if}
 </button>
 
 <style>
@@ -151,6 +160,29 @@
   .mobile-action-btn.unavailable {
     --btn-color: 100, 100, 100;
     opacity: 0.5;
+  }
+
+  /* Guest-locked: muted like the LOOP grid's locked cards, still tappable. */
+  .mobile-action-btn.locked {
+    position: relative;
+    opacity: 0.55;
+    filter: saturate(0.55);
+  }
+
+  .lock-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(20, 20, 35, 0.85);
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 9px;
+    pointer-events: none;
   }
 
   .mobile-action-btn.highlighted {

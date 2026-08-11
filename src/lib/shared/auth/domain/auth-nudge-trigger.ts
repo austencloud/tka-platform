@@ -3,6 +3,7 @@ import { GUEST_SAVE_CAP } from "./guest-access-config";
 export type AuthNudgeTrigger =
   | "save"
   | "step-cap-guest"
+  | "patterns-guest"
   | "export"
   | "module:learn"
   | "module:library"
@@ -37,6 +38,12 @@ export const AUTH_NUDGE_TEXTS: Record<AuthNudgeTrigger, string> = {
   save: `Guests can save ${GUEST_SAVE_CAP} sequences. Create a free account to save more.`,
   "step-cap-guest":
     "Guests can create sequences up to 8 steps. Create a free account for up to 64 steps.",
+  // Sequence Actions panel: the Patterns section (Turn Pattern, Direction,
+  // Duration, First Step, Rewind) is an account perk; Transform and Edit stay
+  // free so guests still feel the product. Extend routes to step-cap-guest
+  // instead — it adds steps, so the cap copy names the real unlock.
+  "patterns-guest":
+    "Create a free account to use pattern tools like Turn Pattern, Direction, and Duration.",
   export: "Create a free account to export your sequences.",
   "module:learn": "Create a free account to start learning TKA notation.",
   "module:library":
@@ -98,6 +105,11 @@ const AUTH_PROMPT_CONTENTS: Record<AuthNudgeTrigger, AuthPromptContent> = {
     key: "step-cap-guest",
     title: "Keep adding steps",
     body: "A free account raises the limit from 8 steps to 64.",
+  },
+  "patterns-guest": {
+    key: "patterns-guest",
+    title: "Use pattern tools",
+    body: "A free account adds Turn Pattern, Direction, Duration, First Step, and Rewind.",
   },
   export: {
     key: "export",

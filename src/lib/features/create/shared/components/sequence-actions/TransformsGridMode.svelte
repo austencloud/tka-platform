@@ -24,6 +24,9 @@
     compactMode?: boolean;
     /** True when help mode is active - buttons show help instead of applying transforms/patterns */
     helpMode?: boolean;
+    /** Guest-gated Patterns section: tiles stay tappable but show a lock and
+        route to sign-up (the parent supplies gated handlers). */
+    patternsLocked?: boolean;
     /** Callback when an action is selected in help mode */
     onHelpSelect?: (actionId: ActionHelpId) => void;
     onTurns: () => void;
@@ -54,6 +57,7 @@
     isDesktopPanel = false,
     compactMode = false,
     helpMode = false,
+    patternsLocked = false,
     onHelpSelect,
     onTurns,
     onMirror,
@@ -229,18 +233,29 @@
   </section>
 
   <!-- PATTERNS Section -->
+  {#snippet lockBadge()}
+    {#if patternsLocked && !helpMode}
+      <div class="lock-badge" aria-hidden="true">
+        <i class="fas fa-lock" aria-hidden="true"></i>
+      </div>
+    {/if}
+  {/snippet}
   <section class="section patterns-section">
     <span class="section-label">Patterns</span>
     <div class="section-grid">
       <button
         class="grid-btn turn-pattern"
         class:help-active={helpMode}
+        class:locked={patternsLocked && !helpMode}
         onclick={() => handleActionClick("turn-pattern", onTurnPattern)}
         disabled={!hasSequence && !helpMode}
         aria-label={helpMode
           ? "Learn about Turn Pattern"
-          : "Apply turn pattern to sequence"}
+          : patternsLocked
+            ? "Turn Pattern - locked, sign up to unlock"
+            : "Apply turn pattern to sequence"}
       >
+        {@render lockBadge()}
         <div class="btn-icon">
           <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
         </div>
@@ -252,12 +267,16 @@
       <button
         class="grid-btn direction"
         class:help-active={helpMode}
+        class:locked={patternsLocked && !helpMode}
         onclick={() => handleActionClick("direction", onRotationDirection)}
         disabled={!hasSequence && !helpMode}
         aria-label={helpMode
           ? "Learn about Rotation Direction"
-          : "Apply rotation direction pattern (clockwise or counter-clockwise)"}
+          : patternsLocked
+            ? "Direction - locked, sign up to unlock"
+            : "Apply rotation direction pattern (clockwise or counter-clockwise)"}
       >
+        {@render lockBadge()}
         <div class="btn-icon">
           <i class="fas fa-compass" aria-hidden="true"></i>
         </div>
@@ -269,12 +288,16 @@
       <button
         class="grid-btn duration"
         class:help-active={helpMode}
+        class:locked={patternsLocked && !helpMode}
         onclick={() => handleActionClick("duration", onDuration)}
         disabled={!hasSequence && !helpMode}
         aria-label={helpMode
           ? "Learn about Duration"
-          : "Apply duration pattern (beat timing)"}
+          : patternsLocked
+            ? "Duration - locked, sign up to unlock"
+            : "Apply duration pattern (beat timing)"}
       >
+        {@render lockBadge()}
         <div class="btn-icon">
           <i class="fas fa-stopwatch" aria-hidden="true"></i>
         </div>
@@ -287,17 +310,23 @@
         <button
           class="grid-btn extend"
           class:help-active={helpMode}
+          class:locked={patternsLocked && !helpMode}
           onclick={() => handleActionClick("extend", onExtend)}
           disabled={(!hasSequence || isExtending) && !helpMode}
-          data-ghost={!hasSequence || isExtending || helpMode ? undefined : "safe"}
+          data-ghost={!hasSequence || isExtending || helpMode || patternsLocked
+            ? undefined
+            : "safe"}
           data-ghost-kind="extend"
           data-ghost-label="Extend"
           aria-label={helpMode
             ? "Learn about Extend"
-            : isExtending
-              ? "Extending sequence"
-              : "Extend sequence back to starting position"}
+            : patternsLocked
+              ? "Extend - locked, sign up to unlock"
+              : isExtending
+                ? "Extending sequence"
+                : "Extend sequence back to starting position"}
         >
+          {@render lockBadge()}
           <div class="btn-icon">
             {#if isExtending}
               <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -316,13 +345,17 @@
           class="grid-btn shift-start"
           class:unavailable={!canShiftStart && !helpMode}
           class:help-active={helpMode}
+          class:locked={patternsLocked && !helpMode}
           onclick={() => handleActionClick("shift-start", onShiftStart)}
           disabled={(!hasSequence || isTransforming || !canShiftStart) &&
             !helpMode}
           aria-label={helpMode
             ? "Learn about First Beat"
-            : "Pick new first beat: change where the sequence starts"}
+            : patternsLocked
+              ? "First Step - locked, sign up to unlock"
+              : "Pick new first beat: change where the sequence starts"}
         >
+          {@render lockBadge()}
           <div class="btn-icon">
             <i class="fas fa-forward" aria-hidden="true"></i>
           </div>
@@ -335,12 +368,16 @@
       <button
         class="grid-btn rewind"
         class:help-active={helpMode}
+        class:locked={patternsLocked && !helpMode}
         onclick={() => handleActionClick("rewind", onRewind)}
         disabled={disabled && !helpMode}
         aria-label={helpMode
           ? "Learn about Rewind"
-          : "Rewind: add reversed sequence to the end"}
+          : patternsLocked
+            ? "Rewind - locked, sign up to unlock"
+            : "Rewind: add reversed sequence to the end"}
       >
+        {@render lockBadge()}
         <div class="btn-icon">
           <i class="fas fa-backward" aria-hidden="true"></i>
         </div>
@@ -466,6 +503,30 @@
   .grid-btn:disabled {
     cursor: not-allowed;
     opacity: 0.4;
+  }
+
+  /* Guest-locked: muted like the LOOP grid's locked cards, but stays
+     interactive — the tap routes to sign-up (LOOPComponentButton precedent). */
+  .grid-btn.locked {
+    position: relative;
+    opacity: 0.55;
+    filter: saturate(0.55);
+  }
+
+  .lock-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(20, 20, 35, 0.85);
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 11px;
+    pointer-events: none;
   }
 
   .grid-btn:active:not(:disabled) {
@@ -611,17 +672,6 @@
        capped height transfers to a narrow width and strands each tile at the
        left of its column. Stretch fills the column; max-height still rules. */
     justify-self: stretch;
-  }
-  /* 3 cols = 5 tile rows (2+2+1), so each row earns a bigger height slice:
-     (100 - 21) / 5 ≈ 15.8cqh, held at 15.5 for slack. justify-self reverts
-     to the pre-existing wide-tier alignment. This block must sit AFTER the
-     base .grid-btn rule — same specificity, so source order decides the
-     cascade inside the matching container query. */
-  @container (min-width: 560px) {
-    .actions-container.desktop .grid-btn {
-      max-height: clamp(108px, 15.5cqh, 152px);
-      justify-self: normal;
-    }
     padding: clamp(8px, 1.6cqh, 14px);
     border-radius: 12px;
     background: color-mix(
@@ -635,6 +685,17 @@
         rgba(var(--btn-color), 0.225) 100%,
         var(--theme-stroke, rgba(255, 255, 255, 0.1))
       );
+  }
+  /* 3 cols = 5 tile rows (2+2+1), so each row earns a bigger height slice:
+     (100 - 21) / 5 ≈ 15.8cqh, held at 15.5 for slack. justify-self reverts
+     to the pre-existing wide-tier alignment. This block must sit AFTER the
+     base .grid-btn rule — same specificity, so source order decides the
+     cascade inside the matching container query. */
+  @container (min-width: 560px) {
+    .actions-container.desktop .grid-btn {
+      max-height: clamp(108px, 15.5cqh, 152px);
+      justify-self: normal;
+    }
   }
   .actions-container.desktop .grid-btn:hover:not(:disabled) {
     background: color-mix(
