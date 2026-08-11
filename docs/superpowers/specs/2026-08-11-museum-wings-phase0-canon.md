@@ -46,10 +46,14 @@ assignments follow the catalog rows, not letter intuition.
 - **Unique observable:** alternation as light — when one is up the other is
   down, like flames trading.
 - **Barrier:** heat and shrine gates. 
-- **Signature move (PROPOSAL, inherits `jl8TveF5` + cinder-court shrines):**
-  the darkening procession — each shrine's flames self-extinguish as the next
-  ignites (the lighting itself performs split-opposite), ending in total
-  extinction with green growth circling the cold trench into Earth (canon).
+- **Signature move (APPROVED 2026-08-11, inherits `jl8TveF5` + cinder-court
+  shrines):** the darkening procession — each shrine's flames self-extinguish
+  as the next ignites, ending in total extinction with green growth circling
+  the cold trench into Earth (canon). The procession is atmosphere and
+  momentum, not pedagogy — the original claim that the lighting "performs
+  split-opposite" was retracted (lights alternate in time but have no arc
+  direction; only half the class maps). The mode is taught by the opener and
+  the performers, as everywhere else.
 - **Payoff:** the last lit shrine seen across the dark of the extinguished
   ones.
 
@@ -85,9 +89,9 @@ assignments follow the catalog rows, not letter intuition.
 - **Unique observable:** four-fold rotational symmetry — four letters, four
   quarters (inherits the 08-05 mandala idea).
 - **Barrier:** the central light shaft/atrium.
-- **Signature move (PROPOSAL):** the quarter circuit — the path rings the
-  shaft in four quarter-turn landings, one case per quarter, the mandala
-  floor below.
+- **Signature move (APPROVED 2026-08-11 — "I think STUV matches what I
+  mean"):** the quarter circuit — the path rings the shaft in four
+  quarter-turn landings, one case per quarter, the mandala floor below.
 - **Payoff:** from the fourth landing, all four cases around the lit mandala.
 
 ### 6 · QUARTER-OPPOSITE (Moon) — cases MP, NQ, OR
@@ -121,6 +125,40 @@ assignments follow the catalog rows, not letter intuition.
   thin, the floor falls away, wind. Air→Sun: the void brightens; the first
   shaft of light. Sun→Moon: noon dims to silver night. Moon→Egypt: dawn —
   first warm desert light.
+
+## Review round 1 (Austen, 2026-08-11)
+
+- **Fire:** self-extinguishing shrine procession APPROVED; the
+  "lighting performs split-opposite" justification rejected and retracted —
+  performers and the opener carry the pedagogy.
+- **Sun:** quarter circuit APPROVED ("I think STUV matches what I mean").
+- **Air:** twin crossing pending — needs visualization, delivered in-chat
+  2026-08-11 (top-down plan: two mirrored bridge arcs around the void,
+  cases on the mirror axis itself, both routes rejoin before Sun).
+- **Moon:** observatory gallery — no verdict yet.
+- **NEW (Austen, pending seal) — the step-strip opener:** the wing
+  introduction shows the mode as a step-by-step progression (discrete frozen
+  poses in a row — hands at sides, then one up one down, then...) performed
+  by a visible avatar; the CONTINUOUS version is felt in the prop-bearing
+  exhibit performers. This repairs a real flaw in the trail-only opener: a
+  trail shows WHERE hands go but integrates over time, so phase — the entire
+  timing half of the classification — is invisible in the trace. Freeze
+  frames make timing legible at a glance. Museum-native form: a
+  Muybridge-style motion-study strip, which is exactly the kind of artifact
+  the Order would produce.
+- **NEW (Austen, pending seal) — props are eternal:** all props exist from
+  the very first cave; the system is eternal and the Order only catalogues
+  it. Each wing shows its words performed with a procession of different
+  props — walk past an avatar on the right with staves, one on the left with
+  clubs, one on the right with fans — multiple presentations of the same
+  Type-1 zero-turn material, no new concepts. Supersedes the
+  props-introduced-through-history notion; era flavor moves entirely to
+  display furniture (already rule 2 of the parent spec). Static dual-wield
+  props only (staves, clubs, fans, buugeng — never poi). Open sub-fork:
+  (a) procession — same word repeated by several prop-varied avatars along
+  the path (as described), vs (b) zip — each case in a wing carries a
+  different prop (3 cases / 3 props; Sun's 4 cases / 4 props). Asset
+  inventory of 3D prop models is a Gate 1 prerequisite if sealed.
 
 ## What Phase 0 unblocks
 
