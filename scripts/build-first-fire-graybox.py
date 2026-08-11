@@ -13,6 +13,7 @@ Run from the repository root:
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import math
 import random
@@ -459,6 +460,16 @@ WALL_PROFILES = {
 # the rock rather than inside it.
 FLOOR_SHOULDER = 0.30
 
+# A joint stands this much proud of the run it closes. Sized to match exactly,
+# its wall is TANGENT to the tube's, and tangency is the one thing an exact
+# boolean cannot resolve into a solid: it leaves a knife edge of rock along the
+# whole contact, which the interior audit reads as a wall 1mm thick and the
+# visitor reads as a fin standing in the corridor. Proud by a hand's width, the
+# surfaces cross transversally instead, and the union is unambiguous. It is not
+# visible - 8cm on a 5.5m passage - and it is the difference between a room and
+# a room full of blades.
+JOINT_PROUD = 0.08
+
 CARVE_COLLECTION = create_collection("CARVE_Negative")
 
 
@@ -493,10 +504,28 @@ def unit(start: tuple[float, float], end: tuple[float, float]) -> tuple[float, f
 
 
 # The mitre widens the section through a bend so the corridor keeps its width
-# instead of pinching. Past this the widening runs away, so it clamps and a
-# joint chamber covers the corner instead - see SHARP_TURN_COSINE.
-MITRE_LIMIT = 0.45
-SHARP_TURN_COSINE = 0.819  # 35 degrees
+# instead of pinching. Past this the widening runs away, so it clamps; the joint
+# chamber every vertex now carries is what actually closes the corner, so the
+# clamp is free to be conservative - and it should be, because widening is not
+# free. A mitred ring is a flat cross-section pushed out sideways, and once it
+# is pushed further than the segments either side of it are long, it crosses
+# them, and the sweep hands the solver a mesh that folds through itself.
+#
+# At 0.45 a 104-degree turn scaled the ring by 1.62, throwing it 4.1m out from
+# the torch lane's last vertex on segments about 2m long. The solver resolved
+# that fold into a triangular prism of rock 150mm across and 1.1m tall, standing
+# a metre inside the dj court, 4.4m from that vertex. Nothing downstream could
+# remove it: it is inboard of every wall, so no blunting cut reaches it, and it
+# is welded to the shell, so no loose-part sweep sees it.
+#
+# 0.85 caps the widening at 1.18. Corners are closed by their joints, which is
+# what they were added to do.
+MITRE_LIMIT = 0.85
+
+# The centreline each sweep actually used, overrun included. The needle pass
+# below reasons about surfaces, and a surface built from a path that is not the
+# path the mesh used would send it hunting wedges that are not there.
+SWEPT_PATHS: dict[str, list[tuple[float, float]]] = {}
 
 
 def swept_void(
@@ -531,6 +560,7 @@ def swept_void(
         path.insert(0, (path[0][0] - head[0] * extend, path[0][1] - head[1] * extend))
         path.append((path[-1][0] + tail[0] * extend, path[-1][1] + tail[1] * extend))
 
+    SWEPT_PATHS[name] = list(path)
     loop = section_loop(width / 2, clearance, shape)
     count = len(loop)
     vertices: list[tuple[float, float, float]] = []
@@ -605,28 +635,76 @@ def chamber_void(
 
 carve_parts: list[bpy.types.Object] = []
 
+# What each carved volume IS, as opposed to how it was tessellated: a
+# centreline, a walked half width, a profile and a height. The needle pass
+# reasons about these, because a wedge between two spaces is a property of
+# their surfaces, not of the triangles that approximate them.
+VOLUME_PLAN: list[dict] = []
+
 
 def carve(obj: bpy.types.Object | None) -> None:
     if obj is not None:
         carve_parts.append(obj)
 
 
+def note_volume(kind: str, name: str, points, half_width: float,
+                clearance: float, shape: str = "tube") -> None:
+    VOLUME_PLAN.append({"kind": kind, "id": name, "points": list(points),
+                        "half_width": half_width, "clearance": clearance,
+                        "shape": shape})
+
+
+def lateral_at(volume: dict, z: float) -> float:
+    """How far this volume reaches sideways at that height. 0 above its crown."""
+    if z < 0 or z > volume["clearance"]:
+        return 0.0
+    profile = wall_profile(volume["half_width"], volume["clearance"], volume["shape"])
+    for (near, low), (far, high) in zip(profile, profile[1:]):
+        if low <= z <= high:
+            span = high - low
+            return near if span < 1e-9 else near + (far - near) * (z - low) / span
+    return 0.0
+
+
+def plan_distance(points, probe) -> float:
+    if len(points) == 1:
+        return math.dist(points[0], probe)
+    best = math.inf
+    for start, end in zip(points, points[1:]):
+        ux, uy = end[0] - start[0], end[1] - start[1]
+        length = ux * ux + uy * uy
+        t = 0.0 if length < 1e-12 else max(0.0, min(1.0, (
+            (probe[0] - start[0]) * ux + (probe[1] - start[1]) * uy) / length))
+        best = min(best, math.dist((start[0] + ux * t, start[1] + uy * t), probe))
+    return best
+
+
 # The Water vestibule. The contract's threshold footprint is the room the
 # visitor steps into out of Water: wider than the corridor and deliberately
 # lower, so the corridor beyond it reads as a lift rather than a continuation.
-# It runs past minX to meet the door aperture, and it swallows the two short
-# path sections (steam threshold, ember bridge) that live inside it.
+# It swallows the two short path sections (steam threshold, ember bridge) that
+# live inside it.
+#
+# It stops AT minX. An earlier version ran it 0.6m past, "to meet the door
+# aperture" - which it already meets: the Water door bores from x-1.2 (inside
+# the room) out through the block face, so the two overlap by 1.2m with the
+# vestibule ending on the bound. All the overrun did was eat a third of the
+# 1.8m shell margin, leaving the end wall beside the door at exactly 1.2m -
+# the audit's own floor, landed on to the millimetre. A wall that passes or
+# fails on rounding is a wall built by accident.
 _threshold = CONTRACT["threshold"]["blenderFootprint"]
 carve(swept_void(
     "CARVE_Vestibule",
     [
-        (_threshold["centre"]["x"] - _threshold["sizeX"] / 2 - 0.6, _threshold["centre"]["y"]),
+        (_threshold["centre"]["x"] - _threshold["sizeX"] / 2, _threshold["centre"]["y"]),
         (_threshold["centre"]["x"] + _threshold["sizeX"] / 2, _threshold["centre"]["y"]),
     ],
     _threshold["sizeY"],
     VESTIBULE_CLEARANCE,
     extend=0,
 ))
+note_volume("run", "CARVE_Vestibule", SWEPT_PATHS["CARVE_Vestibule"],
+            _threshold["sizeY"] / 2, VESTIBULE_CLEARANCE)
 
 # An orbit lane is already inside its court chamber; sweeping it as corridor
 # would only bulge the chamber wall out at the visitor's shoulder.
@@ -639,17 +717,36 @@ for section in CONTRACT["pathSections"]:
     clearance = SECTION_CLEARANCE.get(section["kind"], CORRIDOR_CLEARANCE)
     points = [(point["x"], point["y"]) for point in section["blenderPoints"]]
     carve(swept_void(f"CARVE_{section['id']}", points, section["width"], clearance))
-    # A joint only where the mitre gave up. The route turns hard twice - into
-    # the DJ court and again out of it - and there the clamped section stops
-    # short of the outside of the corner.
-    for index in range(1, len(points) - 1):
-        incoming = unit(points[index - 1], points[index])
-        outgoing = unit(points[index], points[index + 1])
-        if incoming[0] * outgoing[0] + incoming[1] * outgoing[1] >= SHARP_TURN_COSINE:
-            continue
+    note_volume("run", section["id"], SWEPT_PATHS[f"CARVE_{section['id']}"],
+                section["width"] / 2, clearance)
+    # A joint at EVERY vertex, ends included - not only where the mitre gave up.
+    #
+    # Gate 2 was rejected on 2026-08-10 for a hole in the wall that no mesh
+    # statistic could see: the shell was watertight, normals were consistent,
+    # and an interior ray audit still found 133 places where the rock between
+    # two spaces ran under 1.2m, the thinnest at 1mm. They were all within 3m of
+    # a section end or a bend.
+    #
+    # The cause was corner rock, not missing rock. Two tubes crossing at an
+    # angle close on the INSIDE of the turn, where their caps overlap, and leave
+    # a tapering wedge on the OUTSIDE, where nothing carves. `extend` overlaps
+    # the caps and so only ever fixed the inside. Every section boundary on this
+    # route - mouth into orbit into mouth into transfer - is such a crossing,
+    # and none of them was a bend inside a single section, so the old 35-degree
+    # joint rule never fired for any of them.
+    #
+    # A joint is a revolution of the same profile at the same half width, so its
+    # wall meets the tube's exactly: the union is a round-cornered passage, and
+    # a wedge cannot survive at a vertex that has one. Sweeping every vertex
+    # costs about 40 more operands on one exact boolean and removes the entire
+    # failure class, which is worth more than the seconds.
+    for index in range(len(points)):
         carve(chamber_void(
-            f"CARVE_{section['id']}_corner{index:02d}",
-            points[index], section["width"] / 2, clearance, segments=20,
+            f"CARVE_{section['id']}_joint{index:02d}",
+            points[index],
+            section["width"] / 2 + JOINT_PROUD,
+            clearance + JOINT_PROUD,
+            segments=20,
         ))
 
 for shrine in CONTRACT["shrines"]:
@@ -667,6 +764,168 @@ for shrine in CONTRACT["shrines"]:
         f"CARVE_Court_{shrine['id']}",
         centre, radius, spec["clearance"], spec["shape"], segments=36,
     ))
+    note_volume("court", f"Court_{shrine['id']}", [centre], radius,
+                spec["clearance"], spec["shape"])
+
+# --- Blunt the needles -------------------------------------------------------
+#
+# Where a corridor crosses a court's wall, the rock between them goes to nothing
+# at the crossing. That is not a defect - it is what an OPENING IS, and every
+# doorway in the room has the same edge. What is a defect is when the two
+# surfaces cross at so shallow an angle that the rock stays paper thin for
+# metres: the spur then tapers to a knife, and from inside the room a knife of
+# rock with void either side reads as a tear in the wall. That is what Gate 2
+# was rejected for on 2026-08-10.
+#
+# EVERY crossing is walked at every rung of its height, and every arc of thin
+# rock found is cut off - not only the arcs longer than NEEDLE_LIMIT. The volume
+# carved runs ALONG the arc from the crossing to where the spur has earned its
+# thickness back, so what is left is a spur that ends bluntly instead of one
+# that ends in a blade. Cutting across the spur instead would strand its tip as
+# a floating shard.
+#
+# The length gate is gone because it was wrong twice. It let through a rock
+# column ten centimetres square standing free between z 1.22 and 2.62 beside the
+# dj court, and a hanging wall ending in a point at z 3.81 beside the ek court -
+# both on arcs too short to qualify as blades, neither of them anything a
+# visitor would read as an edge. This is the same lesson the joint chambers
+# above already learned: stop deciding WHICH crossings deserve treatment and
+# treat them all. A cut on a short arc takes a small wedge off the lip of an
+# opening, which is what rock does anyway; a knife edge is what rock never does.
+#
+# The count of cuts is deliberately NOT written down here. An earlier version of
+# this comment recorded that twenty-one of twenty-four crossings tapered out
+# within 1.25-1.31m and named the three that did not, which read as a survey and
+# was really a description of three samples. `needlesCut` in the manifest is the
+# live count; a number in a comment is a number that was true once.
+NEEDLE_LIMIT = 1.8      # a strip of thin rock longer than this is a blade
+MIN_WALL = 1.2          # rock thinner than this is not reading as rock
+NEEDLE_STEPS = 720      # resolution of the walk around a court wall
+NEEDLE_OFFSET = 0.55    # push the cut outboard, into the spur
+NEEDLE_WIDTH = 1.6      # wide enough to span the spur and the wall's own lean
+NEEDLE_HEADROOM = 1.0   # and to reach above the corridor's crown
+NEEDLE_RISE = 0.25      # one rung of the ladder up the crossing
+NEEDLE_TOE = 0.2        # the first rung, just clear of the floor slab
+
+
+def height_ladder(top: float) -> list[float]:
+    """Every rung of a crossing, from the toe to the crown.
+
+    This used to be the literal tuple (0.5, 1.6, 2.6), on the reasoning that
+    the court wall leans outward as it rises and three samples follow it. They
+    do not. BOTH surfaces draw in as they rise, at rates set by their own
+    profiles, so a court and a corridor that overlap generously at knee height
+    can part company near the crown - and where they last touch they leave a
+    blade hanging with its point in mid-air.
+
+    The first shipped graybox had one: a fin over the dj court, 3.5m long,
+    tapering to 30mm, hanging between z 4.2 and 5.4 with a matching stub on
+    the floor. Four metres from the visitor's eye. Nothing was ever sampled
+    above 2.6m, so nothing saw it, and the audit called the shell sound
+    because a hanging point is not a blade by any measure taken at the wall.
+
+    A crossing is 5.5m tall. Walk all of it.
+    """
+    rungs = max(1, math.ceil((top - NEEDLE_TOE) / NEEDLE_RISE))
+    return [NEEDLE_TOE + index * (top - NEEDLE_TOE) / rungs for index in range(rungs + 1)]
+
+
+def needle_arcs(court: dict, run: dict, z: float) -> list[dict]:
+    """Walk the court wall at this height; return any long needles as arcs.
+
+    A corridor crosses a court wall twice and each crossing leaves rock on one
+    side of it, so both directions are followed. An arc is returned as angular
+    indices rather than as points, so that the same needle found on twenty
+    rungs is recognised as one needle and cut once. Twenty near-coincident
+    cuts would be twenty chances for the boolean to leave scrap.
+    """
+    court_reach, run_reach = lateral_at(court, z), lateral_at(run, z)
+    if court_reach <= 0 or run_reach <= 0:
+        return []
+    centre = court["points"][0]
+    gaps = []
+    for index in range(NEEDLE_STEPS):
+        angle = math.tau * index / NEEDLE_STEPS
+        probe = (centre[0] + math.cos(angle) * court_reach,
+                 centre[1] + math.sin(angle) * court_reach)
+        gaps.append(plan_distance(run["points"], probe) - run_reach)
+    if min(gaps) > 0 or max(gaps) <= 0:
+        return []
+
+    arc = math.tau * court_reach / NEEDLE_STEPS
+    found = []
+    for index in range(NEEDLE_STEPS):
+        following = (index + 1) % NEEDLE_STEPS
+        if gaps[index] <= 0 < gaps[following]:
+            cursor, stride = following, 1
+        elif gaps[following] <= 0 < gaps[index]:
+            cursor, stride = index, -1
+        else:
+            continue
+        length, indices = 0.0, []
+        while gaps[cursor] < MIN_WALL and length < 12.0:
+            indices.append(cursor)
+            length += arc
+            cursor = (cursor + stride) % NEEDLE_STEPS
+        if len(indices) >= 2:
+            found.append({"indices": indices, "reach": court_reach})
+    return found
+
+
+def fold_arc(needles: list[dict], arc: dict, z: float) -> None:
+    """File this rung's arc under the needle it belongs to, merging any it joins."""
+    indices = set(arc["indices"])
+    touching = [needle for needle in needles if needle["indices"] & indices]
+    for needle in touching:
+        needles.remove(needle)
+        indices |= needle["indices"]
+    reaches = [arc["reach"]] + [r for n in touching for r in (n["near"], n["far"])]
+    needles.append({
+        "indices": indices,
+        "near": min(reaches),
+        "far": max(reaches),
+        "bottom": min([z] + [n["bottom"] for n in touching]),
+        "top": max([z] + [n["top"] for n in touching]),
+    })
+
+
+def arc_path(centre, indices: set[int], radius: float) -> list[tuple[float, float]]:
+    """The cut's centreline: the arc walked in order, starting after its widest gap."""
+    ordered = sorted(indices)
+    seam = max(range(len(ordered)),
+               key=lambda i: (ordered[i] - ordered[i - 1]) % NEEDLE_STEPS)
+    return [(centre[0] + math.cos(math.tau * index / NEEDLE_STEPS) * radius,
+             centre[1] + math.sin(math.tau * index / NEEDLE_STEPS) * radius)
+            for index in ordered[seam:] + ordered[:seam]]
+
+
+NEEDLES_CUT: list[dict] = []
+for _court in [v for v in VOLUME_PLAN if v["kind"] == "court"]:
+    for _run in [v for v in VOLUME_PLAN if v["kind"] == "run"]:
+        _needles: list[dict] = []
+        for _height in height_ladder(_run["clearance"]):
+            for _arc in needle_arcs(_court, _run, _height):
+                fold_arc(_needles, _arc, _height)
+        for _index, _needle in enumerate(_needles):
+            # The court's reach drifts as the ladder climbs, so one cut for the
+            # whole needle is centred on the middle of that drift and widened by
+            # it. Centring on the widest rung instead would leave the lowest
+            # rung's needle standing outside the cut, which is the same bug in a
+            # new place.
+            _spread = _needle["far"] - _needle["near"]
+            _radius = (_needle["near"] + _needle["far"]) / 2 + NEEDLE_OFFSET
+            _path = arc_path(_court["points"][0], _needle["indices"], _radius)
+            carve(swept_void(
+                f"CARVE_Blunt_{_court['id']}_{_run['id']}_{_index}",
+                _path, NEEDLE_WIDTH + _spread,
+                max(_run["clearance"], _needle["top"]) + NEEDLE_HEADROOM, extend=0))
+            NEEDLES_CUT.append({
+                "court": _court["id"], "run": _run["id"],
+                "heights": [round(_needle["bottom"], 2), round(_needle["top"], 2)],
+                "at": [round(_path[0][0], 2), round(_path[0][1], 2)],
+                "length": round(len(_needle["indices"]) * math.tau
+                                * _needle["far"] / NEEDLE_STEPS, 2),
+            })
 
 # Doorways punch clean through the mass at the contract's clear width, so the
 # seam to Water and to Earth is an opening in rock rather than a missing wall.
@@ -686,6 +945,29 @@ for side, door in CONTRACT["doors"].items():
 # One negative, one subtraction. Joining first keeps this to a single exact
 # boolean instead of ~70 sequential ones; `use_self` is what lets the
 # overlapping sweeps and chambers behave as their union.
+# When the audit finds a blade, the useful question is never "where" - it is
+# "between which two spaces", and after the join nothing in the result
+# remembers. Answer it from the plan, by asking which volumes actually reach
+# that point at that height.
+#
+# The first version of this ranked volumes by distance to their nearest VERTEX,
+# which is not the same question and quietly gives the wrong answer: a court's
+# dome is covered in vertices, so anything standing on a court wall reports the
+# court as 0.4m away and looks like the culprit. It sent a whole session
+# hunting corridor-against-court tangencies that the plan does not contain.
+def volumes_around(point, count: int = 2) -> list[str]:
+    height = point[2]
+    ranked = sorted(
+        (
+            (plan_distance(volume["points"], (point[0], point[1]))
+             - lateral_at(volume, height), volume["id"])
+            for volume in VOLUME_PLAN
+        ),
+        key=lambda entry: entry[0],
+    )
+    return [f"{name} ({gap:+.2f}m)" for gap, name in ranked[:count]]
+
+
 bpy.ops.object.select_all(action="DESELECT")
 for part in carve_parts:
     part.select_set(True)
@@ -724,6 +1006,78 @@ if carve_faces <= 6:
     )
 bpy.data.objects.remove(carve_void, do_unlink=True)
 bpy.data.collections.remove(CARVE_COLLECTION)
+
+# An exact boolean leaves scrap behind: zero-area faces lying on top of real
+# ones, 49 of them at the last count. The visitor never sees them, but they
+# double every ray crossing they sit on, which is enough to make a measuring
+# instrument report walls that are not there. Sweep them up at the source
+# rather than teaching every downstream tool to ignore them.
+SCRAP_WELD = 1e-4
+bpy.context.view_layer.objects.active = shell_rock
+bpy.ops.object.mode_set(mode="EDIT")
+bpy.ops.mesh.select_all(action="SELECT")
+bpy.ops.mesh.remove_doubles(threshold=SCRAP_WELD)
+bpy.ops.mesh.dissolve_degenerate(threshold=SCRAP_WELD)
+bpy.ops.mesh.normals_make_consistent(inside=False)
+bpy.ops.object.mode_set(mode="OBJECT")
+
+# The shell has to survive being looked at, not merely be closed. A watertight
+# carve shipped a room with 133 sub-1.2m walls once; the audit walks the floor,
+# fans rays from three eye heights and measures the rock behind every wall the
+# visitor can see. The build fails rather than hand that on to a dressing pass.
+_audit_spec = importlib.util.spec_from_file_location(
+    "first_fire_shell_audit", ROOT / "scripts" / "audit-first-fire-shell.py"
+)
+_audit_module = importlib.util.module_from_spec(_audit_spec)
+_audit_spec.loader.exec_module(_audit_module)
+SHELL_AUDIT = _audit_module.audit_shell(
+    shell_rock,
+    CONTRACT,
+    min_wall=1.2,
+    # Coarser than the standalone sweep so it costs seconds inside a build. A
+    # fin is metres long, so a 2m grid with a 36-ray fan still lands on it.
+    #
+    # The pitch fan is NOT trimmed, though. It used to be `(0.0,)` - horizontal
+    # rays only - which meant this gate could not see a ceiling at all, and it
+    # passed a shell with a blade hanging over the dj court. Coarse sampling of
+    # the whole room is thrift; fine sampling of a third of it is a gate that
+    # reports on the part it chose to look at.
+    grid_step=2.0,
+    ray_count=36,
+)
+for defect in (SHELL_AUDIT["thin_wall_defects"] + SHELL_AUDIT["thin_margin_defects"]
+               + SHELL_AUDIT["splinters"]):
+    defect["between"] = volumes_around(defect["at"])
+if not SHELL_AUDIT["pass"]:
+    lines = "\n".join(
+        [
+            f"  a blade {d['span']}m across and {d['thickness']}m thick at {d['at']},"
+            f" between {' and '.join(d['between'])}"
+            for d in SHELL_AUDIT["thin_wall_defects"][:10]
+        ]
+        + [
+            f"  the block's own skin {d['thickness']}m from the room over"
+            f" {d['span']}m at {d['at']}, behind {' and '.join(d['between'])}"
+            for d in SHELL_AUDIT["thin_margin_defects"][:10]
+        ]
+        + [
+            f"  a splinter of rock {d['thickness']}m thick standing in open air"
+            f" at {d['at']} - only {d['bulk'] * 100:.0f}% of its surroundings is"
+            f" rock - between {' and '.join(d['between'])}"
+            for d in SHELL_AUDIT["splinters"][:10]
+        ]
+    )
+    raise RuntimeError(
+        "The carved shell failed its interior audit: "
+        f"{SHELL_AUDIT['thin_wall_defect_count']} blades of rock wider than "
+        f"{SHELL_AUDIT['needle_limit']}m and thinner than "
+        f"{SHELL_AUDIT['min_wall']}m, "
+        f"{SHELL_AUDIT['thin_margin_defect_count']} stretches where the room "
+        f"comes within {SHELL_AUDIT['min_margin']}m of the outdoors, "
+        f"{SHELL_AUDIT['splinter_count']} splinters standing in open air, "
+        f"{SHELL_AUDIT['leak_count']} sightlines out "
+        f"of the room.\n{lines}"
+    )
 
 water_door = CONTRACT["doors"]["water"]
 add_box(
@@ -1080,6 +1434,9 @@ report = {
         "object": shell_rock.name,
         "carveOperands": len(carve_parts),
         "carvedFaces": carve_faces,
+        "cleanedFaces": len(shell_rock.data.polygons),
+        "needlesCut": NEEDLES_CUT,
+        "interiorAudit": SHELL_AUDIT,
         "corridorClearance": CORRIDOR_CLEARANCE,
         "mouthClearance": MOUTH_CLEARANCE,
         "floorShoulder": FLOOR_SHOULDER,
