@@ -2,9 +2,11 @@
 
 **Date:** 2026-08-11
 **Parent spec:** `2026-08-11-museum-exhibit-hallway-architecture-design.md` (APPROVED)
-**Status:** Draft for Austen's review — teaching sentences and Water/Earth
-signature moves inherit approved decisions; Fire/Air/Sun/Moon signature moves
-and the seam plan are PROPOSALS
+**Status:** Phase 0 rows APPROVED for all six wings (2026-08-11) — Water and
+Earth inherit approved lineage; Fire, Sun and Air approved this round; Moon
+concept-approved with a floor-plan rider on Gate 1. Choreo-card opener, case
+triptych, and eternal props SEALED. The seam plan and museum-scale notes
+remain proposals (art-pass intent).
 **MCP grounding (calls made 2026-08-11):** `elemental-model`, `vtg`,
 `quarter-time` — timings are phase offsets (together = in sync, split = 180°,
 quarter = 90°); same/opposite is HAND-ARC direction, not prop rotation.
@@ -75,10 +77,11 @@ assignments follow the catalog rows, not letter intuition.
 - **Unique observable:** the mirror axis (canon: opposite-direction wings
   carry one) — the room and the motion share it.
 - **Barrier:** a void crossed on bridges.
-- **Signature move (PROPOSAL):** the twin crossing — the path splits into two
-  mirrored bridges around the central void and rejoins; the visitor's own
-  route performs together-opposite. Performers on ledges across the void,
-  framed against depth.
+- **Signature move (APPROVED 2026-08-11 — "the diagram made sense, I
+  approve"):** the twin crossing — the path splits into two mirrored bridges
+  around the central void and rejoins; the visitor's own route performs
+  together-opposite. Cases on the mirror axis, performers framed against
+  depth.
 - **Payoff:** from the rejoin point, both bridges and all cases in one
   mirrored view.
 
@@ -101,9 +104,12 @@ assignments follow the catalog rows, not letter intuition.
 - **Unique observable:** phases: quarter offsets are what moon phases are.
 - **Barrier:** sealed observation glass — no air out there (the regolith
   plain becomes the diorama).
-- **Signature move (PROPOSAL):** the observatory gallery — a long sealed
-  window traverse where the plain reveals in phase-lit segments, waxing to
-  the full view.
+- **Signature move (CONCEPT APPROVED 2026-08-11 — "I love the idea, I just
+  don't know how the floor plan's gonna look"):** the observatory gallery —
+  a long sealed window traverse where the plain reveals in phase-lit
+  segments, waxing to the full view. Rider: Moon's Gate 1 board must show
+  the floor plan before geometry is trusted; the concept is approved, the
+  plan is not yet.
 - **Payoff:** the full window — all three performers on the plain at once.
 
 ## Museum-scale notes
@@ -132,10 +138,11 @@ assignments follow the catalog rows, not letter intuition.
   "lighting performs split-opposite" justification rejected and retracted —
   performers and the opener carry the pedagogy.
 - **Sun:** quarter circuit APPROVED ("I think STUV matches what I mean").
-- **Air:** twin crossing pending — needs visualization, delivered in-chat
-  2026-08-11 (top-down plan: two mirrored bridge arcs around the void,
-  cases on the mirror axis itself, both routes rejoin before Sun).
-- **Moon:** observatory gallery — no verdict yet.
+- **Air:** twin crossing APPROVED on the delivered top-down diagram (two
+  mirrored bridge arcs around the void, cases on the mirror axis, routes
+  rejoin before Sun). Tracker `rFLudh7d`.
+- **Moon:** observatory gallery CONCEPT APPROVED; floor plan is the open
+  question — Gate 1 must show it. Tracker `Q4Pyy1bI`.
 - **SEALED (Austen, 2026-08-11) — the choreo-card opener (absorbs the
   step-strip idea):** at the start of every family passage, the wing's
   choreo card is displayed — actual pictographs, unlabeled — while a
@@ -144,19 +151,22 @@ assignments follow the catalog rows, not letter intuition.
   so it carries the timing legibility a trail alone cannot (a trail
   integrates over time; phase — the entire timing half of the
   classification — is invisible in the trace). Tracker `And3P4gs`.
-- **NEW (Austen, pending seal) — props are eternal:** all props exist from
+- **SEALED (Austen, 2026-08-11) — props are eternal:** all props exist from
   the very first cave; the system is eternal and the Order only catalogues
-  it. Each wing shows its words performed with a procession of different
-  props — walk past an avatar on the right with staves, one on the left with
-  clubs, one on the right with fans — multiple presentations of the same
-  Type-1 zero-turn material, no new concepts. Supersedes the
-  props-introduced-through-history notion; era flavor moves entirely to
-  display furniture (already rule 2 of the parent spec). Static dual-wield
-  props only (staves, clubs, fans, buugeng — never poi). Open sub-fork:
-  (a) procession — same word repeated by several prop-varied avatars along
-  the path (as described), vs (b) zip — each case in a wing carries a
-  different prop (3 cases / 3 props; Sun's 4 cases / 4 props). Asset
-  inventory of 3D prop models is a Gate 1 prerequisite if sealed.
+  it. Each wing shows its words performed with different props — walk past
+  an avatar on the right with staves, one on the left with clubs, one on
+  the right with fans — multiple presentations of the same Type-1 zero-turn
+  material, no new concepts. Supersedes the props-introduced-through-history
+  notion; era flavor moves entirely to display furniture (rule 2 of the
+  parent spec). Static dual-wield props only (staves, clubs, fans, buugeng
+  — never poi). Two riders from the seal ("we could play with that
+  positioning in all sorts of ways ... lots and lots of avatars throughout
+  this museum, as long as every letter gets its own showcase"):
+  (1) positioning is free per wing — the procession-vs-zip sub-fork
+  dissolves, both are allowed and may mix; (2) the one-case-per-word
+  structure is inviolable — prop-varied avatars multiply AROUND the
+  showcases, never replace them. 3D prop asset inventory is now a Gate 1
+  prerequisite. Tracker `Ub0x9Gbg`.
 
 ## The case triptych (SEALED 2026-08-11 — restored original vision)
 
