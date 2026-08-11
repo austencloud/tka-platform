@@ -193,6 +193,16 @@
     contract.shrines.find((candidate) => candidate.id === displayedShrineId) ??
       null
   );
+  // The {#key} that wraps the performer station is evaluated by the same
+  // reactive pass that clears displayedShrine, and it runs BEFORE the {#if}
+  // around it tears the block down - so reading `.id` off the narrowed value
+  // inline throws on the frame the shrine goes away. Deriving the key here lets
+  // it tolerate the null it is about to be unmounted for.
+  const displayedShrineKey = $derived(
+    displayedShrine
+      ? `${displayedShrine.id}:${padSurfaceHeights[displayedShrine.id] ?? "unmeasured"}`
+      : "no-shrine"
+  );
   const visibleFlameGroups = $derived(visibleFirstFireFlameGroups(reviewState));
   // The volcanic dressing is the room's only light source, so it must go out
   // at the extinguish beat for the blackout to actually be black.
@@ -697,13 +707,22 @@
     ceiling its ground colour and the room reads as an open trench with a black
     lid. Ambient carries base visibility and four directionals give form,
     including one aimed up from below the floor purely to describe the vault.
+
+    These intensities are set against the single grey the bare shading applies,
+    not against the GLB's near-black basalt, and they are read back off the
+    canvas rather than eyeballed. Ambient plus key used to sum past 1.6, which
+    was invisible on dark rock and blew the vault flat the moment the room
+    actually became grey; the first correction overshot the other way and left
+    the whole frame inside a 47-level band. Nothing here should clip and nothing
+    should sit in a smear - a blown ceiling hides a hole exactly as well as a
+    black one does.
   -->
   <T.Color attach="background" args={[BARE_SHELL_BACKGROUND]} />
-  <T.AmbientLight color="#eef1f5" intensity={0.85} />
-  <T.DirectionalLight position={[-18, 24, 14]} intensity={0.75} />
-  <T.DirectionalLight position={[16, 14, -20]} intensity={0.4} />
-  <T.DirectionalLight position={[0, -14, 6]} intensity={0.5} />
-  <T.DirectionalLight position={[24, 6, 18]} intensity={0.3} />
+  <T.AmbientLight color="#eef1f5" intensity={0.6} />
+  <T.DirectionalLight position={[-18, 24, 14]} intensity={0.95} />
+  <T.DirectionalLight position={[16, 14, -20]} intensity={0.5} />
+  <T.DirectionalLight position={[0, -14, 6]} intensity={0.62} />
+  <T.DirectionalLight position={[24, 6, 18]} intensity={0.4} />
 {:else}
   <T.Color attach="background" args={["#040303"]} />
   <T.FogExp2 attach="fog" args={["#0b0807", 0.012]} />
@@ -789,7 +808,7 @@
   <!-- Keyed on the measurement too: the station reads standingSurfaceHeight once
        at mount, so a rig mounted before the GLB resolved would keep the stale
        height for the rest of the walk. -->
-  {#key `${displayedShrine.id}:${padSurfaceHeights[displayedShrine.id] ?? "unmeasured"}`}
+  {#key displayedShrineKey}
     {@const entry = {
       x: displayedShrine.blenderEntry.x,
       z: -displayedShrine.blenderEntry.y,
