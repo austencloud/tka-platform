@@ -10,7 +10,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { goto } from "$app/navigation";
+  import { afterNavigate, goto } from "$app/navigation";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import SequenceViewerOrchestrator from "./SequenceViewerOrchestrator.svelte";
   import SequenceViewerShell from "./SequenceViewerShell.svelte";
@@ -60,18 +60,31 @@
     };
   });
 
-  let bootstrapAttempted = false;
-  $effect(() => {
-    const loading = authState.loading;
-    if (loading || bootstrapAttempted) return;
-    bootstrapAttempted = true;
-    void bootstrapFromUrl();
+  let requestedCode = $state<string | null>(null);
+  let resolvingCode = $state<string | null>(null);
+
+  // The host stays mounted while someone moves around the app. A QR scan can
+  // therefore arrive long after its first URL check, so every completed app
+  // navigation gets a chance to hand off a new sequence code.
+  afterNavigate(({ to }) => {
+    requestedCode = to?.url.searchParams.get("v") ?? null;
   });
 
-  async function bootstrapFromUrl() {
+  $effect(() => {
+    const loading = authState.loading;
+    const code = requestedCode;
+    const activeResolution = resolvingCode;
+    if (loading || !code || activeResolution) return;
+
+    resolvingCode = code;
+    void bootstrapFromCode(code).finally(() => {
+      if (requestedCode === code) requestedCode = null;
+      resolvingCode = null;
+    });
+  });
+
+  async function bootstrapFromCode(code: string) {
     if (typeof window === "undefined") return;
-    const code = new URL(window.location.href).searchParams.get("v");
-    if (!code || overlay.isOpen) return;
     let openedSuccessfully = false;
     try {
       const manager = getShortCodeManager();
@@ -81,7 +94,6 @@
         return;
       }
 
-      if (overlay.isOpen) return;
       const stillMatches =
         new URL(window.location.href).searchParams.get("v") === code;
       if (!stillMatches) return;
@@ -90,7 +102,6 @@
         loopDetector: getLoopDetector(),
       });
 
-      if (overlay.isOpen) return;
       if (new URL(window.location.href).searchParams.get("v") !== code) return;
 
       openSequenceOverlay(hydrated, {
