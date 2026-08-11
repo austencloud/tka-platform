@@ -172,17 +172,25 @@ export async function downloadArtifact(
     : { status: "failed", message: "Download failed" };
 }
 
-export async function copyCaption(caption: string): Promise<HandoffResult> {
+async function copyText(text: string, noun: string): Promise<HandoffResult> {
   if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
     return { status: "failed", message: "Clipboard unavailable" };
   }
 
   try {
-    await navigator.clipboard.writeText(caption);
-    return { status: "done", message: "Caption copied" };
+    await navigator.clipboard.writeText(text);
+    return { status: "done", message: `${noun} copied` };
   } catch {
-    return { status: "failed", message: "Couldn't copy caption" };
+    return { status: "failed", message: `Couldn't copy ${noun.toLowerCase()}` };
   }
+}
+
+export function copyCaption(caption: string): Promise<HandoffResult> {
+  return copyText(caption, "Caption");
+}
+
+export function copyLink(url: string): Promise<HandoffResult> {
+  return copyText(url, "Link");
 }
 
 const FACEBOOK_COMPOSER_URL = "https://www.facebook.com/";

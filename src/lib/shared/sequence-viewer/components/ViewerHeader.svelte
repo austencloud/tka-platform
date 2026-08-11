@@ -443,6 +443,7 @@
           menuSide="bottom"
           containDesktopMenu={true}
           statusMessage={shareStatusMessage}
+          onDirectOpen={() => onShareActionSelect("share-sequence")}
           onActionSelect={onShareActionSelect}
         />
       </div>

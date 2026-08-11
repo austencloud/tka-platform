@@ -785,6 +785,7 @@
     isRecordingScene={ctx.isRecording3D}
     exportProgress={ctx.exportProgress?.progress ?? null}
     onRequestVideo={() => ctx.handleExport({ autoDeliver: false })}
+    onSendInTka={() => share.sendToInbox()}
     onClose={() => share.setPostSheetOpen(false)}
   />
 </div>

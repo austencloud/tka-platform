@@ -33,6 +33,13 @@
     canShareCard: boolean;
     onTriggerClick: () => void;
     onGuestShare: () => void;
+    /**
+     * Press opens the share sheet instead of this menu. The menu's own items
+     * all exist inside that sheet now, so leaving both is the second context
+     * menu Austen asked to be rid of. The menu markup stays for the moment as
+     * the guest-gated fallback path.
+     */
+    onDirectOpen: () => void;
     onShareCard: () => void;
     onSendSequence: () => void;
     onCopyLink: () => void;
@@ -54,6 +61,7 @@
     canShareCard,
     onTriggerClick,
     onGuestShare,
+    onDirectOpen,
     onShareCard,
     onSendSequence,
     onCopyLink,
@@ -207,6 +215,7 @@
   menuSide="top"
   {statusMessage}
   {onTriggerClick}
+  {onDirectOpen}
   onBlockedOpen={onGuestShare}
   onActionSelect={(actionId) => handleActionSelect(actionId as ShareActionId)}
 />

@@ -39,6 +39,7 @@
     type PreparedWorkspaceCard,
   } from "../../state/workspace-share-readiness.svelte";
   import WorkspaceShareControl from "./WorkspaceShareControl.svelte";
+  import PostShareSheet from "$lib/shared/share/components/PostShareSheet.svelte";
 
   interface Props {
     sequence?: SequenceData | null;
@@ -614,6 +615,25 @@
     announcedCardRequest = null;
     menuOpen = true;
   }
+
+  /**
+   * The workspace share button now lands on the same sheet the viewer's does.
+   * It used to open a menu of Send Sequence / Share Card / Copy Link / Download
+   * Card — four entries that all exist inside the sheet, reached by a different
+   * route, with no Instagram or Facebook anywhere. Austen (2026-08-11): "every
+   * time you click share it brings you to the page like this."
+   */
+  let postSheetOpen = $state(false);
+
+  function openPostSheet(): void {
+    if (!sequence) return;
+    postSheetOpen = true;
+  }
+
+  function sendSequenceToInbox(): void {
+    if (!sequence) return;
+    openSendSequenceSheet(buildSequenceSharePayload(sequence));
+  }
 </script>
 
 <WorkspaceShareControl
@@ -635,4 +655,19 @@
   onSendSequence={handleSendSequence}
   onCopyLink={handleCopyLink}
   onDownloadCard={handleDownloadSelect}
+  onDirectOpen={openPostSheet}
+/>
+
+<!-- No `shareUrl`: the workspace sequence has no canonical viewer URL yet, and
+     the sheet mints (or re-resolves) the short code itself. -->
+<PostShareSheet
+  isOpen={postSheetOpen}
+  {sequence}
+  shareUrl=""
+  videoBlobUrl={null}
+  isExportingVideo={false}
+  exportProgress={null}
+  onRequestVideo={() => {}}
+  onSendInTka={sendSequenceToInbox}
+  onClose={() => (postSheetOpen = false)}
 />

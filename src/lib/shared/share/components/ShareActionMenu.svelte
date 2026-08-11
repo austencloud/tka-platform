@@ -27,6 +27,17 @@
      */
     containDesktopMenu?: boolean;
     statusMessage?: string;
+    /**
+     * Skip the menu and run this on press, keeping the trigger's chrome, tooltip,
+     * busy state and test id identical to the menu-backed surfaces.
+     *
+     * Every share entry point in the app now lands on the same sheet, so a menu
+     * in front of it is a fork in a road with one destination. Austen
+     * (2026-08-11): "there should not be two separate context menus when you
+     * click share." `actions` stays required — a caller that has not yet been
+     * unified still renders a menu.
+     */
+    onDirectOpen?: (() => void) | null;
     onTriggerClick?: () => void;
     onBlockedOpen?: () => void;
     onActionSelect: (actionId: string) => void;
@@ -51,6 +62,7 @@
     menuSideOffset = 10,
     containDesktopMenu = false,
     statusMessage = "",
+    onDirectOpen = null,
     onTriggerClick = () => {},
     onBlockedOpen = () => {},
     onActionSelect,
@@ -70,6 +82,10 @@
     onTriggerClick();
     if (!canOpen) {
       onBlockedOpen();
+      return;
+    }
+    if (onDirectOpen) {
+      onDirectOpen();
       return;
     }
     open = true;
@@ -98,15 +114,19 @@
 </script>
 
 <div class="share-action-control">
-  {#if useMobileSheet || !canOpen}
+  {#if useMobileSheet || !canOpen || onDirectOpen}
     <button
       type="button"
       class="share-action-trigger"
       title={tooltip}
       aria-label={ariaLabel}
       aria-busy={triggerBusy}
-      aria-haspopup={useMobileSheet && canOpen ? "dialog" : undefined}
-      aria-expanded={useMobileSheet && canOpen ? open : undefined}
+      aria-haspopup={useMobileSheet && canOpen && !onDirectOpen
+        ? "dialog"
+        : undefined}
+      aria-expanded={useMobileSheet && canOpen && !onDirectOpen
+        ? open
+        : undefined}
       data-testid={testId}
       disabled={disabled || busy}
       onclick={handleDirectTrigger}
@@ -122,7 +142,7 @@
       {/if}
     </button>
 
-    {#if useMobileSheet && canOpen}
+    {#if useMobileSheet && canOpen && !onDirectOpen}
       <Portal>
         <Drawer
           bind:isOpen={open}

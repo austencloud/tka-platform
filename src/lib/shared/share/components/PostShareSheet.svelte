@@ -24,6 +24,7 @@
   import FacebookIcon from "$lib/shared/auth/components/icons/FacebookIcon.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import { deriveWord } from "$lib/shared/foundation/services/word-deriver";
   import { getSharer } from "$lib/shared/share/get-sharer";
   import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
   import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
@@ -33,6 +34,7 @@
   import {
     buildArtifactFilename,
     buildPostLink,
+    copyLink,
     copyCaption,
     copyImageAndOpenFacebook,
     downloadArtifact,
@@ -97,6 +99,13 @@
      * `src/routes/test/post-share-sheet` passes this.
      */
     metaStatusOverride?: MetaPublishStatus;
+    /**
+     * Hands the sequence to another TKA user. App-internal, so it is not a
+     * handoff destination — the host owns the send sheet and passes the opener.
+     * Omitted on hosts with no inbox (the /q scan page, the visual harness),
+     * where the tile simply does not appear.
+     */
+    onSendInTka?: () => void;
   }
 
   let {
@@ -110,6 +119,7 @@
     onRequestVideo,
     onClose,
     metaStatusOverride,
+    onSendInTka,
   }: Props = $props();
 
   const captions = getCaptionPresetManager();
@@ -143,9 +153,17 @@
   let postStage = $state("");
   let postedPermalinks = $state<Partial<Record<MetaPublishTarget, string>>>({});
 
+  /**
+   * `deriveWord`, not `sequence.word`: a workspace sequence has not been saved,
+   * so its `word` field is empty and only its steps carry the letters. Reading
+   * the raw field left the Create surface with no title and a caption that was
+   * a bare URL, while the card beside it rendered the word correctly.
+   */
+  const alphabetWord = $derived(sequence ? deriveWord(sequence) : "");
+
   const word = $derived(
     simplifyRepeatedWord(
-      sequence?.displayName || sequence?.word || sequence?.intendedWord || ""
+      sequence?.displayName || alphabetWord || sequence?.intendedWord || ""
     )
   );
 
@@ -156,7 +174,7 @@
    * word by construction, and FΨ is the word, not FΨFΨFΨFΨ
    * (.claude/rules/simplified-word-display.md).
    */
-  const glyphWord = $derived(simplifyRepeatedWord(sequence?.word ?? ""));
+  const glyphWord = $derived(simplifyRepeatedWord(alphabetWord));
 
   /**
    * A caller-supplied link is used only if it is already the post-link form.
@@ -172,7 +190,7 @@
 
   const presets = $derived(
     captions.buildPresets({
-      word: sequence?.word || sequence?.displayName || "",
+      word: alphabetWord || sequence?.displayName || "",
       url: postUrl,
     })
   );
@@ -675,6 +693,64 @@
    * What a network button does depends only on where that account currently
    * stands, so the button itself carries no branching — the plan does.
    */
+  /**
+   * Tiles the sheet owns rather than the handoff resolver: one is app-internal
+   * (the TKA inbox), the other needs the short code the sheet just resolved.
+   * They live here so the workspace and the viewer stop needing a context menu
+   * to reach them.
+   */
+  interface LocalTile {
+    id: string;
+    label: string;
+    short: string;
+    icon: string;
+    ready: boolean;
+    run: () => void;
+  }
+
+  const localTiles = $derived.by((): LocalTile[] => {
+    const tiles: LocalTile[] = [];
+    if (onSendInTka) {
+      tiles.push({
+        id: "send-in-tka",
+        label: "Send in TKA",
+        short: "Send",
+        icon: "fa-solid fa-paper-plane",
+        ready: !!sequence,
+        run: () => onSendInTka?.(),
+      });
+    }
+    if (postUrl) {
+      tiles.push({
+        id: "copy-link",
+        label: "Copy link",
+        short: "Link",
+        icon: "fa-solid fa-link",
+        ready: true,
+        run: () => void runLocalTile("copy-link", () => copyLink(postUrl)),
+      });
+    }
+    return tiles;
+  });
+
+  let busyLocalTile = $state<string | null>(null);
+
+  async function runLocalTile(
+    id: string,
+    action: () => Promise<HandoffResult>
+  ): Promise<void> {
+    statusMessage = "";
+    busyLocalTile = id;
+    try {
+      const result = await action();
+      if (result.status !== "canceled" && result.message) {
+        statusMessage = result.message;
+      }
+    } finally {
+      busyLocalTile = null;
+    }
+  }
+
   function runNetwork(plan: NetworkPlan): void {
     switch (plan.kind) {
       case "post":
@@ -1022,8 +1098,28 @@
         {/each}
       </div>
 
-      {#if tileDestinations.length}
+      {#if tileDestinations.length || localTiles.length}
         <div class="tiles">
+          {#each localTiles as tile (tile.id)}
+            <button
+              type="button"
+              class="tile"
+              aria-label={tile.label}
+              title={tile.label}
+              disabled={!tile.ready || busyLocalTile !== null}
+              onclick={tile.run}
+            >
+              <span class="tile-icon">
+                {#if busyLocalTile === tile.id}
+                  <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"
+                  ></i>
+                {:else}
+                  <i class={tile.icon} aria-hidden="true"></i>
+                {/if}
+              </span>
+              <span class="tile-label">{tile.short}</span>
+            </button>
+          {/each}
           {#each tileDestinations as destination (destination.id)}
             <button
               type="button"
