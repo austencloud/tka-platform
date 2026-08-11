@@ -256,6 +256,40 @@ export function getRole(): UserRole {
 }
 
 /**
+ * Force a token refresh and adopt any role the server has since granted.
+ *
+ * The sign-in fast path reads the CACHED token (`getIdTokenResult(false)`), so
+ * a claim written while the user was already signed in — a role grant — stays
+ * invisible to them until Firebase refreshes on its own, up to an hour later.
+ * That is what stranded thirteen testers on `user` after their tester claims
+ * were set: the claim was correct on the server and stale in every browser.
+ *
+ * Returns true when the role changed, so callers can log or react.
+ */
+async function reconcileRoleFromServerClaims(user: User): Promise<boolean> {
+  try {
+    const idTokenResult = await user.getIdTokenResult(true);
+    let newRole = (idTokenResult.claims.role as UserRole) || "user";
+    const newIsAdmin = idTokenResult.claims.admin === true;
+    if (newIsAdmin && newRole !== "admin") {
+      newRole = "admin";
+    }
+
+    if (newRole === _state.role && newIsAdmin === _state.isAdmin) return false;
+
+    _state = { ..._state, role: newRole, isAdmin: newIsAdmin };
+
+    // Feature access is derived from the role, so the flag service has to be
+    // rebuilt before any gated tab will appear.
+    await featureFlagService.initialize(user.uid, newRole);
+    return true;
+  } catch (error) {
+    console.error("❌ [authState] Failed to refresh token:", error);
+    return false;
+  }
+}
+
+/**
  * Initialize subscription status listener
  * Watches Firestore for subscription changes and syncs role to auth state
  */
@@ -285,29 +319,9 @@ async function initializeSubscriptionListener(
         // Skip initial snapshot (only react to changes)
         if (snapshot.metadata.hasPendingWrites) return;
 
-        try {
-          // Force token refresh to get updated custom claims from server
-          const idTokenResult = await user.getIdTokenResult(true);
-          let newRole = (idTokenResult.claims.role as UserRole) || "user";
-          const newIsAdmin = idTokenResult.claims.admin === true;
-          if (newIsAdmin && newRole !== "admin") {
-            newRole = "admin";
-          }
-
-          // Only update if role actually changed
-          if (newRole !== _state.role || newIsAdmin !== _state.isAdmin) {
-            _state = {
-              ..._state,
-              role: newRole,
-              isAdmin: newIsAdmin,
-            };
-
-            // Re-initialize feature flags with new role
-            await featureFlagService.initialize(user.uid, newRole);
-          }
-        } catch (error) {
-          console.error("❌ [authState] Failed to refresh token:", error);
-        }
+        // A subscription change can carry a role change (premium), so pick up
+        // whatever the server now says.
+        await reconcileRoleFromServerClaims(user);
       },
       (error) => {
         // A listener can report its final permission error after sign-out. Its
@@ -517,6 +531,13 @@ async function doInitializeAuthListener(): Promise<void> {
 
       // ── Background work: none of this blocks the UI ──
       if (user) {
+        // The role above came from the cached token. Ask the server once, in
+        // the background, so a role granted since this browser's last token
+        // refresh lands on THIS page load rather than up to an hour later.
+        // The UI is already unblocked, so the only visible effect is a gated
+        // tab appearing a moment after sign-in instead of not at all.
+        void reconcileRoleFromServerClaims(user);
+
         import("$lib/shared/auth/firebase")
           .then(({ getFirestoreInstance }) => getFirestoreInstance())
           .catch((error) => {
