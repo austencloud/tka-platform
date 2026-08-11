@@ -63,9 +63,23 @@
 
   // The sheet composes differently depending on which Meta accounts are
   // connected, and that state arrives over a Firestore subscription the
-  // harness cannot produce. These are the three shapes worth checking.
+  // harness cannot produce. These are the four shapes worth checking.
   const META_STATES = {
     none: { instagram: null, facebookPage: null },
+    // Connected to an account that administers several Pages, none chosen.
+    // The sheet must ask rather than post to whichever Page sorts first.
+    unchosen: {
+      instagram: null,
+      facebookPage: {
+        selectedPageId: "",
+        selectedPageName: "",
+        pages: [
+          { id: "page-1", name: "The Kinetic Alphabet" },
+          { id: "page-2", name: "Flow Arts Chicago" },
+        ],
+        expiresAtMs: 0,
+      },
+    },
     instagram: {
       instagram: { username: "austencloud", expiresAtMs: 0 },
       facebookPage: null,
@@ -120,6 +134,9 @@
     >
     <button type="button" onclick={() => (metaState = "both")}
       >Meta: IG + Page</button
+    >
+    <button type="button" onclick={() => (metaState = "unchosen")}
+      >Meta: Page not chosen</button
     >
     <button type="button" onclick={() => (overrideEnabled = !overrideEnabled)}
       >{overrideEnabled ? "Meta: as shipped (flag off)" : "Meta: use override"}</button

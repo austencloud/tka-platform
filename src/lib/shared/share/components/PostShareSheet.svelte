@@ -236,7 +236,10 @@
         brand: "instagram",
       });
     }
-    if (metaStatus.facebookPage) {
+    // A connection with no Page chosen is not a post target yet. Offering
+    // "Post to Facebook" here would have to name a Page, and the only name
+    // available would be a guess — which is the bug this avoids.
+    if (metaStatus.facebookPage?.selectedPageId) {
       targets.push({
         id: "facebook-page",
         label: "Post to Facebook",
@@ -274,6 +277,15 @@
   });
 
   const facebookPages = $derived(metaStatus.facebookPage?.pages ?? []);
+
+  /**
+   * Connected, administers several Pages, and hasn't said which one. The chip
+   * is the ask — it is the only thing standing between here and posting, so it
+   * reads as an action rather than a settled setting.
+   */
+  const pageChoicePending = $derived(
+    !!metaStatus.facebookPage && !metaStatus.facebookPage.selectedPageId
+  );
 
   const metaBusy = $derived(postingTarget !== null || connectingTarget !== null);
 
@@ -889,9 +901,9 @@
 
       <!-- Setup, kept visually quieter than the share actions: chips, not
            buttons the size of the thing you actually came here to do. -->
-      {#if connectableTargets.length || facebookPages.length > 1 || autoPostTargets.length}
+      {#if connectableTargets.length || facebookPages.length > 1 || pageChoicePending || autoPostTargets.length}
         <div class="connections">
-          {#if facebookPages.length > 1 && metaStatus.facebookPage}
+          {#if (facebookPages.length > 1 || pageChoicePending) && metaStatus.facebookPage}
             {@const selected = metaStatus.facebookPage}
             <!-- A dropdown, not a segmented control: Page names are long and
                  unbounded, and laying them all out side by side is what pushed
@@ -902,6 +914,8 @@
                 ariaLabel="Which Page to post to"
                 mode="dropdown"
                 size="sm"
+                active={pageChoicePending}
+                emphasis={pageChoicePending ? "solid" : "soft"}
                 expanded={pageMenuOpen}
                 disabled={metaBusy}
                 onclick={() => (pageMenuOpen = !pageMenuOpen)}

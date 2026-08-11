@@ -228,6 +228,13 @@ async function publishFacebookPage(input: {
     throw new MetaPublishError("meta/token-expired");
   }
 
+  // Distinct from not-connected: the account IS connected, it just administers
+  // several Pages and none has been chosen. Posting to a guess is the failure
+  // this separates out.
+  if (!connection.selectedPageId) {
+    throw new MetaPublishError("meta/page-required");
+  }
+
   const page = connection.pages.find(
     (candidate) => candidate.id === connection.selectedPageId
   );

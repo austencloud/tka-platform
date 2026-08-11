@@ -15,6 +15,8 @@ export type MetaPublishMediaType = "image" | "video";
 
 export type MetaPublishFailureCode =
   | "meta/not-connected"
+  /** Connected, but administers several Pages and none has been chosen. */
+  | "meta/page-required"
   | "meta/token-expired"
   | "meta/permission-missing"
   | "meta/media-rejected"

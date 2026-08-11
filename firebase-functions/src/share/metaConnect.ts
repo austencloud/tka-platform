@@ -339,12 +339,20 @@ async function connectFacebookPage(uid: string, code: string): Promise<string> {
 
   // Keep whichever Page was already selected if this is a reconnect, so
   // re-authorizing does not silently retarget a week of posts.
+  //
+  // With no prior selection there is nothing to keep, and picking the first
+  // Page Meta happens to return is a decision wearing a default's clothing:
+  // whoever connects gets whichever Page sorts first, never having been asked.
+  // An empty id means "not chosen yet" — the sheet asks, and publishing
+  // refuses until it has an answer. One Page is not a decision, so it stands.
   const existing = await readConnections(uid);
   const previous = existing.facebookPage?.selectedPageId;
   const selectedPageId =
     previous && pages.some((page) => page.id === previous)
       ? previous
-      : pages[0].id;
+      : pages.length === 1
+        ? pages[0].id
+        : "";
 
   const now = Date.now();
   await writeFacebookConnection(uid, {

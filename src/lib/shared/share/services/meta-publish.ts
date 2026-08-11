@@ -77,6 +77,8 @@ export function metaErrorMessage(code: string): string {
       return "That Facebook account doesn't administer any Pages.";
     case "meta/not-connected":
       return "Connect the account first.";
+    case "meta/page-required":
+      return "Choose which Page to post to first.";
     case "meta/token-expired":
       return "That connection expired. Reconnect and try again.";
     case "meta/permission-missing":
