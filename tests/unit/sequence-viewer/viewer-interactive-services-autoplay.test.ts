@@ -1,0 +1,153 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
+import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { isViewerReadyToAutoplay } from "$lib/shared/sequence-viewer/services/viewer-autoplay-readiness";
+import { shouldAutoplayViewer } from "$lib/shared/sequence-viewer/services/viewer-autoplay-policy";
+import { createViewerInteractiveServicesState } from "$lib/shared/sequence-viewer/state/viewer-interactive-services-state.svelte";
+
+const sequence = {
+  id: "qr-autoplay",
+  word: "WOW",
+  steps: [],
+} as unknown as SequenceData;
+
+function createHarness(options?: {
+  loadedCells?: number;
+  totalCells?: number;
+  reducedMotion?: boolean;
+  ignoredStarts?: number;
+}) {
+  let loadedCells = options?.loadedCells ?? 5;
+  let totalCells = options?.totalCells ?? 5;
+  let isPlaying = false;
+  let ignoredStarts = options?.ignoredStarts ?? 0;
+  const togglePlayback = vi.fn(() => {
+    if (ignoredStarts > 0) {
+      ignoredStarts -= 1;
+      return;
+    }
+    isPlaying = !isPlaying;
+  });
+  const playbackController = {
+    initialize: vi.fn(() => true),
+    setSpeed: vi.fn(),
+    togglePlayback,
+  } as unknown as AnimationPlaybackController;
+  const modalAnimationState = createAnimationPanelState({ ephemeral: true });
+
+  const state = createViewerInteractiveServicesState(
+    {
+      modalAnimationState,
+      playback: {
+        get isPlayingLocal() {
+          return isPlaying;
+        },
+        bpmLocal: 60,
+        setPlaybackController: vi.fn(),
+        setHapticService: vi.fn(),
+        setAnimationVisible: vi.fn(),
+      } as never,
+      viewerState: { viewerMode: "split" } as never,
+      cloudBackedScan: true,
+      getCellsLoaded: () => loadedCells,
+      getTotalCells: () => totalCells,
+      getViewMode: () => "split",
+    },
+    {
+      getAnimationPlaybackController: () => playbackController,
+      getHapticFeedback: () => ({}) as never,
+      getLanSyncCoordinator: () => ({}) as never,
+      initializeLanSync: vi.fn(),
+      hydrateSequence: async () => sequence,
+      preWarmSequence: vi.fn(),
+      setAnimationPlaybackRef: vi.fn(),
+      isViewerReadyToAutoplay,
+      shouldAutoplayViewer,
+      getSettings: () =>
+        ({
+          reducedMotion: options?.reducedMotion ?? false,
+        }) as never,
+    }
+  );
+
+  return {
+    state,
+    togglePlayback,
+    setProgress(loaded: number, total: number) {
+      loadedCells = loaded;
+      totalCells = total;
+    },
+    dispose: () => modalAnimationState.dispose(),
+  };
+}
+
+describe("viewer interactive autoplay", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({ matches: false }))
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it("starts a ready QR animation immediately without waiting for a timer", async () => {
+    const harness = createHarness();
+
+    harness.state.ensureInteractiveServices();
+    await harness.state.initializeAnimation(sequence);
+
+    expect(harness.togglePlayback).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+    harness.dispose();
+  });
+
+  it("keeps polling until an unfinished QR card becomes ready", async () => {
+    const harness = createHarness({ loadedCells: 2, totalCells: 5 });
+
+    harness.state.ensureInteractiveServices();
+    await harness.state.initializeAnimation(sequence);
+
+    expect(harness.togglePlayback).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(1);
+
+    harness.setProgress(5, 5);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(harness.togglePlayback).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+    harness.dispose();
+  });
+
+  it("retries when the first ready-state start is ignored", async () => {
+    const harness = createHarness({ ignoredStarts: 1 });
+
+    harness.state.ensureInteractiveServices();
+    await harness.state.initializeAnimation(sequence);
+
+    expect(harness.togglePlayback).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(1);
+
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(harness.togglePlayback).toHaveBeenCalledTimes(2);
+    expect(vi.getTimerCount()).toBe(0);
+    harness.dispose();
+  });
+
+  it("keeps a ready QR animation still when reduced motion is enabled", async () => {
+    const harness = createHarness({ reducedMotion: true });
+
+    harness.state.ensureInteractiveServices();
+    await harness.state.initializeAnimation(sequence);
+
+    expect(harness.togglePlayback).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+    harness.dispose();
+  });
+});

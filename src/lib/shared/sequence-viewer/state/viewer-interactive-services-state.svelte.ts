@@ -51,6 +51,35 @@ export function createViewerInteractiveServicesState(
   let servicesLoadPromise: Promise<void> | null = null;
   let autoplayReadyTimer: ReturnType<typeof setInterval> | null = null;
 
+  function tryCompleteAutoplay(startedAt: number): boolean {
+    const ready = dependencies.isViewerReadyToAutoplay({
+      cloudBackedScan: inputs.cloudBackedScan,
+      loadedCells: inputs.getCellsLoaded(),
+      totalCells: inputs.getTotalCells(),
+      elapsedMs: Date.now() - startedAt,
+    });
+    if (!ready) return false;
+
+    const systemPrefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const autoplayAllowed = dependencies.shouldAutoplayViewer({
+      viewMode: inputs.getViewMode(),
+      reducedMotionSetting: dependencies.getSettings().reducedMotion ?? false,
+      systemPrefersReducedMotion,
+    });
+    if (!autoplayAllowed) return true;
+
+    if (!inputs.playback.isPlayingLocal) {
+      playbackController?.togglePlayback();
+    }
+
+    // The shared controller reports the transition synchronously. Keep the
+    // readiness poll alive if a stale owner made the start call a no-op, so a
+    // scan never spends its one autoplay attempt before motion actually began.
+    return inputs.playback.isPlayingLocal;
+  }
+
   function ensureInteractiveServices(): void {
     if (animationServicesReady || servicesLoadPromise) return;
     servicesLoadPromise = loadServices().finally(() => {
@@ -113,30 +142,20 @@ export function createViewerInteractiveServicesState(
 
       const startedAt = Date.now();
       if (autoplayReadyTimer !== null) clearInterval(autoplayReadyTimer);
-      autoplayReadyTimer = setInterval(() => {
-        const ready = dependencies.isViewerReadyToAutoplay({
-          cloudBackedScan: inputs.cloudBackedScan,
-          loadedCells: inputs.getCellsLoaded(),
-          totalCells: inputs.getTotalCells(),
-          elapsedMs: Date.now() - startedAt,
-        });
-        if (!ready) return;
 
-        clearInterval(autoplayReadyTimer!);
-        autoplayReadyTimer = null;
-        const systemPrefersReducedMotion =
-          typeof window !== "undefined" &&
-          window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        const autoplayAllowed = dependencies.shouldAutoplayViewer({
-          viewMode: inputs.getViewMode(),
-          reducedMotionSetting:
-            dependencies.getSettings().reducedMotion ?? false,
-          systemPrefersReducedMotion,
-        });
-        if (autoplayAllowed && !inputs.playback.isPlayingLocal) {
-          playbackController?.togglePlayback();
-        }
-      }, 50);
+      // QR startup is intentionally deferred until the complete card has
+      // painted. At that point readiness is already true, so begin the visible
+      // motion now instead of making the first impression wait on a browser
+      // timer that mobile webviews may throttle. Other viewer paths retain the
+      // readiness poll while their cells are still settling.
+      if (!tryCompleteAutoplay(startedAt)) {
+        autoplayReadyTimer = setInterval(() => {
+          if (!tryCompleteAutoplay(startedAt)) return;
+
+          clearInterval(autoplayReadyTimer!);
+          autoplayReadyTimer = null;
+        }, 50);
+      }
     } catch (error) {
       console.warn(
         "[SequenceViewerOrchestrator] Animation not available:",
