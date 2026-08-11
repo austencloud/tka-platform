@@ -278,6 +278,7 @@
           isPlaying={true}
           word={displayWord}
           hideHeader={true}
+          fillContainer={true}
           previewDarkMode={true}
           hideTkaGlyph={true}
           hideStepNumbers={true}
