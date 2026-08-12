@@ -64,19 +64,22 @@ function descriptorForNode(node) {
   if (!role) return null;
   const name = node.getName();
   return {
-    id:
-      typeof extras.tka_composer_id === "string"
-        ? extras.tka_composer_id
-        : `winter:${normalizedName(role)}:${normalizedName(name)}`,
-    objectKey:
-      typeof extras.tka_composer_object_key === "string"
-        ? extras.tka_composer_object_key
-        : normalizedName(role),
-    label: name || role,
-    locked:
-      typeof extras.tka_composer_locked === "boolean"
-        ? extras.tka_composer_locked
-        : !EDITABLE_ROLES.has(role),
+    role,
+    descriptor: {
+      id:
+        typeof extras.tka_composer_id === "string"
+          ? extras.tka_composer_id
+          : `winter:${normalizedName(role)}:${normalizedName(name)}`,
+      objectKey:
+        typeof extras.tka_composer_object_key === "string"
+          ? extras.tka_composer_object_key
+          : normalizedName(role),
+      label: name || role,
+      locked:
+        typeof extras.tka_composer_locked === "boolean"
+          ? extras.tka_composer_locked
+          : !EDITABLE_ROLES.has(role),
+    },
   };
 }
 
@@ -117,13 +120,14 @@ const [rawBytes, optimizedBytes, rawDocument, optimizedDocument] =
 
 const rawDescriptorsByMesh = new Map();
 for (const node of rawDocument.getRoot().listNodes()) {
-  const descriptor = descriptorForNode(node);
+  const authored = descriptorForNode(node);
   const mesh = node.getMesh();
-  if (!descriptor || !mesh) continue;
+  if (!authored || !mesh) continue;
   const nodeMatrix = matrixFromNode(node);
   const samples = rawDescriptorsByMesh.get(mesh.getName()) ?? [];
   samples.push({
-    descriptor,
+    descriptor: authored.descriptor,
+    role: authored.role,
     position: new Vector3().setFromMatrixPosition(nodeMatrix),
   });
   rawDescriptorsByMesh.set(mesh.getName(), samples);
@@ -187,9 +191,9 @@ for (const node of optimizedDocument.getRoot().listNodes()) {
 
 const expectedTreeCount = [...rawDescriptorsByMesh.values()]
   .flat()
-  .filter((sample) => sample.descriptor.objectKey === "conifer").length;
+  .filter((sample) => sample.role === "conifer").length;
 const mappedTreeCount = Object.values(instancesByMatrixKey).filter(
-  (descriptor) => descriptor.objectKey === "conifer"
+  (descriptor) => descriptor.id.startsWith("winter:conifer:")
 ).length;
 if (mappedTreeCount !== expectedTreeCount) {
   throw new Error(
