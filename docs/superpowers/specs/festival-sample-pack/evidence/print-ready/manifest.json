@@ -1,0 +1,40 @@
+{
+  "cards": [
+    {
+      "front": "fronts/001_JIDCKIEC_front.png",
+      "back": "backs/001_JIDCKIEC_back.png"
+    },
+    {
+      "front": "fronts/002_DJII_front.png",
+      "back": "backs/002_DJII_back.png"
+    },
+    {
+      "front": "fronts/003_NROT_front.png",
+      "back": "backs/003_NROT_back.png"
+    },
+    {
+      "front": "fronts/004_MVNU_front.png",
+      "back": "backs/004_MVNU_back.png"
+    },
+    {
+      "front": "fronts/005_Start_Here_front.png",
+      "back": "backs/005_Start_Here_back.png"
+    },
+    {
+      "front": "fronts/006_AAAA_front.png",
+      "back": "backs/006_AAAA_back.png"
+    },
+    {
+      "front": "fronts/007_GGGG_front.png",
+      "back": "backs/007_GGGG_back.png"
+    },
+    {
+      "front": "fronts/008_FALG_front.png",
+      "back": "backs/008_FALG_back.png"
+    },
+    {
+      "front": "fronts/009_BΦ-AΦ-_front.png",
+      "back": "backs/009_BΦ-AΦ-_back.png"
+    }
+  ]
+}

@@ -1,0 +1,490 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "tnd-3to1-motions",
+  "records": {
+    "AAAA": {
+      "sourcePath": "catalogs/tnd-3to1-motions/sequences/tnd-3to1-split-same-aaaa",
+      "docId": "tnd-split-same-aaaa",
+      "loopType": "rotated",
+      "metadata": {
+        "startPosition": "alpha1",
+        "vtgRatio": "3:1",
+        "deckId": "tnd-3to1-motions",
+        "vtgCategory": "Split-Same",
+        "familyLabel": "Split-Same",
+        "familyId": "split-same",
+        "handPathId": "n→e→s→w→n|s→w→n→e→s",
+        "seed": "A",
+        "turns": 1
+      },
+      "author": "TKA System",
+      "word": "AAAA",
+      "startPosition": {
+        "gridMode": "diamond",
+        "isStartPosition": true,
+        "id": "e4eab02e-6a5e-40fb-bde6-5492460af342",
+        "motions": {
+          "blue": {
+            "arrowLocation": "s",
+            "color": "blue",
+            "startOrientation": "in",
+            "gridMode": "diamond",
+            "propType": "staff",
+            "endOrientation": "in",
+            "endLocation": "s",
+            "startLocation": "s",
+            "isVisible": true,
+            "motionType": "static",
+            "rotationDirection": "noRotation",
+            "turns": 0
+          },
+          "red": {
+            "motionType": "static",
+            "rotationDirection": "noRotation",
+            "turns": 0,
+            "arrowLocation": "n",
+            "color": "red",
+            "gridMode": "diamond",
+            "propType": "staff",
+            "endOrientation": "in",
+            "startOrientation": "in",
+            "startLocation": "n",
+            "endLocation": "n",
+            "isVisible": true
+          }
+        },
+        "gridPosition": "alpha1"
+      },
+      "isCircular": true,
+      "notes": "TnD Split-Same (3:1): AAAA",
+      "steps": [
+        {
+          "gridMode": "diamond",
+          "startPosition": "alpha1",
+          "stepNumber": 1,
+          "isStep": true,
+          "id": "95a5b2ad-cccd-4d39-8af6-72dce85e3c45",
+          "letter": "A",
+          "duration": 1,
+          "isBlank": false,
+          "motions": {
+            "blue": {
+              "color": "blue",
+              "arrowLocation": "w",
+              "endOrientation": "out",
+              "propType": "staff",
+              "gridMode": "diamond",
+              "startOrientation": "in",
+              "startLocation": "s",
+              "endLocation": "w",
+              "isVisible": true,
+              "motionType": "pro",
+              "rotationDirection": "cw",
+              "turns": 1
+            },
+            "red": {
+              "startLocation": "n",
+              "endLocation": "e",
+              "isVisible": true,
+              "color": "red",
+              "arrowLocation": "e",
+              "propType": "staff",
+              "gridMode": "diamond",
+              "endOrientation": "out",
+              "startOrientation": "in",
+              "rotationDirection": "cw",
+              "turns": 1,
+              "motionType": "pro"
+            }
+          },
+          "endPosition": "alpha3",
+          "blueReversal": false,
+          "redReversal": false
+        },
+        {
+          "redReversal": false,
+          "blueReversal": false,
+          "endPosition": "alpha5",
+          "motions": {
+            "blue": {
+              "rotationDirection": "cw",
+              "turns": 1,
+              "motionType": "pro",
+              "startLocation": "w",
+              "endLocation": "n",
+              "isVisible": true,
+              "arrowLocation": "n",
+              "color": "blue",
+              "endOrientation": "in",
+              "gridMode": "diamond",
+              "propType": "staff",
+              "startOrientation": "out"
+            },
+            "red": {
+              "turns": 1,
+              "rotationDirection": "cw",
+              "motionType": "pro",
+              "isVisible": true,
+              "endLocation": "s",
+              "startLocation": "e",
+              "startOrientation": "out",
+              "endOrientation": "in",
+              "gridMode": "diamond",
+              "propType": "staff",
+              "arrowLocation": "s",
+              "color": "red"
+            }
+          },
+          "isBlank": false,
+          "duration": 1,
+          "letter": "A",
+          "id": "243827c5-dc41-46dc-9574-9804522f3c35",
+          "isStep": true,
+          "startPosition": "alpha3",
+          "stepNumber": 2,
+          "gridMode": "diamond"
+        },
+        {
+          "gridMode": "diamond",
+          "stepNumber": 3,
+          "startPosition": "alpha5",
+          "isStep": true,
+          "id": "508959d9-dcd0-44d3-911f-533d6893799c",
+          "letter": "A",
+          "duration": 1,
+          "isBlank": false,
+          "motions": {
+            "blue": {
+              "startLocation": "n",
+              "endLocation": "e",
+              "isVisible": true,
+              "arrowLocation": "e",
+              "color": "blue",
+              "gridMode": "diamond",
+              "propType": "staff",
+              "endOrientation": "out",
+              "startOrientation": "in",
+              "rotationDirection": "cw",
+              "turns": 1,
+              "motionType": "pro"
+            },
+            "red": {
+              "motionType": "pro",
+              "turns": 1,
+              "rotationDirection": "cw",
+              "endOrientation": "out",
+              "gridMode": "diamond",
+              "propType": "staff",
+              "startOrientation": "in",
+              "arrowLocation": "w",
+              "color": "red",
+              "isVisible": true,
+              "startLocation": "s",
+              "endLocation": "w"
+            }
+          },
+          "endPosition": "alpha7",
+          "blueReversal": false,
+          "redReversal": false
+        },
+        {
+          "blueReversal": false,
+          "redReversal": false,
+          "letter": "A",
+          "duration": 1,
+          "id": "c5884281-5a61-45a6-bd40-c3eb6786180f",
+          "motions": {
+            "blue": {
+              "startOrientation": "out",
+              "endOrientation": "in",
+              "propType": "staff",
+              "gridMode": "diamond",
+              "color": "blue",
+              "arrowLocation": "s",
+              "isVisible": true,
+              "endLocation": "s",
+              "startLocation": "e",
+              "motionType": "pro",
+              "turns": 1,
+              "rotationDirection": "cw"
+            },
+            "red": {
+              "turns": 1,
+              "rotationDirection": "cw",
+              "motionType": "pro",
+              "isVisible": true,
+              "endLocation": "n",
+              "startLocation": "w",
+              "startOrientation": "out",
+              "endOrientation": "in",
+              "propType": "staff",
+              "gridMode": "diamond",
+              "color": "red",
+              "arrowLocation": "n"
+            }
+          },
+          "endPosition": "alpha1",
+          "isBlank": false,
+          "gridMode": "diamond",
+          "startPosition": "alpha7",
+          "stepNumber": 4,
+          "isStep": true
+        }
+      ],
+      "id": "tnd-3to1-split-same-aaaa",
+      "isFavorite": false,
+      "sequenceLength": 4,
+      "name": "AAAA",
+      "level": 1,
+      "tags": [
+        "tnd-deck",
+        "vtg-3to1",
+        "split-same"
+      ],
+      "gridMode": "diamond",
+      "thumbnails": []
+    },
+    "GGGG": {
+      "sourcePath": "catalogs/tnd-3to1-motions/sequences/tnd-3to1-tog-same-gggg",
+      "docId": "tnd-tog-same-gggg",
+      "thumbnails": [],
+      "gridMode": "diamond",
+      "tags": [
+        "tnd-deck",
+        "vtg-3to1",
+        "tog-same"
+      ],
+      "sequenceLength": 4,
+      "isFavorite": false,
+      "level": 1,
+      "name": "GGGG",
+      "steps": [
+        {
+          "blueReversal": false,
+          "redReversal": false,
+          "id": "6d1b5d8a-2718-4cf5-a1fe-beb12a1ab62c",
+          "duration": 1,
+          "letter": "G",
+          "isBlank": false,
+          "endPosition": "beta7",
+          "motions": {
+            "blue": {
+              "motionType": "pro",
+              "rotationDirection": "cw",
+              "turns": 1,
+              "color": "blue",
+              "arrowLocation": "w",
+              "startOrientation": "in",
+              "propType": "staff",
+              "gridMode": "diamond",
+              "endOrientation": "out",
+              "endLocation": "w",
+              "startLocation": "s",
+              "isVisible": true
+            },
+            "red": {
+              "isVisible": true,
+              "startLocation": "s",
+              "endLocation": "w",
+              "propType": "staff",
+              "gridMode": "diamond",
+              "endOrientation": "out",
+              "startOrientation": "in",
+              "color": "red",
+              "arrowLocation": "w",
+              "turns": 1,
+              "rotationDirection": "cw",
+              "motionType": "pro"
+            }
+          },
+          "gridMode": "diamond",
+          "isStep": true,
+          "startPosition": "beta5",
+          "stepNumber": 1
+        },
+        {
+          "redReversal": false,
+          "blueReversal": false,
+          "isBlank": false,
+          "endPosition": "beta1",
+          "motions": {
+            "blue": {
+              "isVisible": true,
+              "endLocation": "n",
+              "startLocation": "w",
+              "startOrientation": "out",
+              "endOrientation": "in",
+              "gridMode": "diamond",
+              "propType": "staff",
+              "arrowLocation": "n",
+              "color": "blue",
+              "turns": 1,
+              "rotationDirection": "cw",
+              "motionType": "pro"
+            },
+            "red": {
+              "endLocation": "n",
+              "startLocation": "w",
+              "isVisible": true,
+              "arrowLocation": "n",
+              "color": "red",
+              "startOrientation": "out",
+              "endOrientation": "in",
+              "gridMode": "diamond",
+              "propType": "staff",
+              "rotationDirection": "cw",
+              "turns": 1,
+              "motionType": "pro"
+            }
+          },
+          "id": "a1197fdd-2fd0-4009-bcc2-e40d0c3fcd42",
+          "duration": 1,
+          "letter": "G",
+          "isStep": true,
+          "startPosition": "beta7",
+          "stepNumber": 2,
+          "gridMode": "diamond"
+        },
+        {
+          "stepNumber": 3,
+          "startPosition": "beta1",
+          "isStep": true,
+          "gridMode": "diamond",
+          "redReversal": false,
+          "blueReversal": false,
+          "isBlank": false,
+          "motions": {
+            "blue": {
+              "motionType": "pro",
+              "turns": 1,
+              "rotationDirection": "cw",
+              "propType": "staff",
+              "gridMode": "diamond",
+              "endOrientation": "out",
+              "startOrientation": "in",
+              "color": "blue",
+              "arrowLocation": "e",
+              "isVisible": true,
+              "startLocation": "n",
+              "endLocation": "e"
+            },
+            "red": {
+              "isVisible": true,
+              "endLocation": "e",
+              "startLocation": "n",
+              "startOrientation": "in",
+              "endOrientation": "out",
+              "propType": "staff",
+              "gridMode": "diamond",
+              "color": "red",
+              "arrowLocation": "e",
+              "turns": 1,
+              "rotationDirection": "cw",
+              "motionType": "pro"
+            }
+          },
+          "endPosition": "beta3",
+          "id": "2e1d941c-3afd-4c46-8dfd-c6622890c3b1",
+          "letter": "G",
+          "duration": 1
+        },
+        {
+          "isStep": true,
+          "startPosition": "beta3",
+          "stepNumber": 4,
+          "gridMode": "diamond",
+          "isBlank": false,
+          "endPosition": "beta5",
+          "motions": {
+            "blue": {
+              "motionType": "pro",
+              "rotationDirection": "cw",
+              "turns": 1,
+              "arrowLocation": "s",
+              "color": "blue",
+              "startOrientation": "out",
+              "endOrientation": "in",
+              "gridMode": "diamond",
+              "propType": "staff",
+              "endLocation": "s",
+              "startLocation": "e",
+              "isVisible": true
+            },
+            "red": {
+              "motionType": "pro",
+              "turns": 1,
+              "rotationDirection": "cw",
+              "startOrientation": "out",
+              "endOrientation": "in",
+              "gridMode": "diamond",
+              "propType": "staff",
+              "arrowLocation": "s",
+              "color": "red",
+              "isVisible": true,
+              "endLocation": "s",
+              "startLocation": "e"
+            }
+          },
+          "id": "813c4011-9335-458f-8e24-3b5afe05ab3b",
+          "duration": 1,
+          "letter": "G",
+          "redReversal": false,
+          "blueReversal": false
+        }
+      ],
+      "id": "tnd-3to1-tog-same-gggg",
+      "notes": "TnD Tog-Same (3:1): GGGG",
+      "startPosition": {
+        "gridMode": "diamond",
+        "isStartPosition": true,
+        "id": "246d9dc2-0fb4-4951-9997-713211a6529b",
+        "motions": {
+          "blue": {
+            "isVisible": true,
+            "endLocation": "s",
+            "startLocation": "s",
+            "startOrientation": "in",
+            "endOrientation": "in",
+            "gridMode": "diamond",
+            "propType": "staff",
+            "arrowLocation": "s",
+            "color": "blue",
+            "turns": 0,
+            "rotationDirection": "noRotation",
+            "motionType": "static"
+          },
+          "red": {
+            "rotationDirection": "noRotation",
+            "turns": 0,
+            "motionType": "static",
+            "endLocation": "s",
+            "startLocation": "s",
+            "isVisible": true,
+            "arrowLocation": "s",
+            "color": "red",
+            "startOrientation": "in",
+            "endOrientation": "in",
+            "gridMode": "diamond",
+            "propType": "staff"
+          }
+        },
+        "gridPosition": "beta5"
+      },
+      "isCircular": true,
+      "author": "TKA System",
+      "word": "GGGG",
+      "loopType": "rotated",
+      "metadata": {
+        "vtgRatio": "3:1",
+        "deckId": "tnd-3to1-motions",
+        "vtgCategory": "Tog-Same",
+        "startPosition": "beta5",
+        "familyLabel": "Tog-Same",
+        "seed": "G",
+        "handPathId": "s→w→n→e→s|s→w→n→e→s",
+        "turns": 1,
+        "familyId": "tog-same"
+      }
+    }
+  }
+}
