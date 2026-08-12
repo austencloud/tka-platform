@@ -58,6 +58,7 @@ import {
   MOON_STATIONS,
 } from "./moon-layout";
 import { CAVE_THRESHOLD_ROOM } from "./lobby-floor-plan";
+import { VULCAN_CAVE_WINGS } from "./wing-declarations/vulcan-cave-wings";
 
 type WallName = "north" | "south" | "east" | "west";
 
@@ -73,94 +74,50 @@ export interface CaveModeRoom {
   tone: MuseumFloorPlanZoneTone;
 }
 
-export const CAVE_MODE_ROOMS = [
-  {
-    roomId: "cave-water",
-    label: "Water",
-    category: "SS",
-    technicalMode: "Split-time / same-direction",
-    performerIds: ["cave-water-a", "cave-water-b", "cave-water-c"],
-    sequenceIds: ["cave-water-seq-a", "cave-water-seq-b", "cave-water-seq-c"],
-    tone: "arrival",
-  },
-  {
-    roomId: "cave-fire",
-    label: "Fire",
-    category: "SO",
-    technicalMode: "Split-time / opposite-direction",
-    performerIds: [
-      "cave-fire-automaton-dj",
-      "cave-fire-automaton-ek",
-      "cave-fire-automaton-fl",
-    ],
-    sequenceIds: [
-      "cave-fire-seq-dj",
-      "cave-fire-seq-ek",
-      "cave-fire-seq-fl",
-    ],
-    tone: "retail",
-  },
-  {
-    roomId: "cave-earth",
-    label: "Earth",
-    category: "TS",
-    technicalMode: "Together-time / same-direction",
-    performerIds: [
-      "cave-earth-automaton-g",
-      "cave-earth-automaton-h",
-      "cave-earth-automaton-i",
-    ],
-    sequenceIds: ["cave-earth-seq-g", "cave-earth-seq-h", "cave-earth-seq-i"],
-    tone: "social",
-  },
-  {
-    roomId: "cave-air",
-    label: "Air",
-    category: "TO",
-    technicalMode: "Together-time / opposite-direction",
-    performerIds: [
-      "cave-air-automaton-dj",
-      "cave-air-automaton-ek",
-      "cave-air-automaton-fl",
-    ],
-    sequenceIds: ["cave-air-seq-dj", "cave-air-seq-ek", "cave-air-seq-fl"],
-    tone: "service",
-  },
-  {
-    roomId: "cave-sun",
-    label: "Sun",
-    category: "QS",
-    technicalMode: "Quarter-time / same-direction",
-    performerIds: [
-      "cave-sun-automaton-u",
-      "cave-sun-automaton-s",
-      "cave-sun-automaton-v",
-      "cave-sun-automaton-t",
-    ],
-    sequenceIds: [
-      "cave-sun-seq-u",
-      "cave-sun-seq-s",
-      "cave-sun-seq-v",
-      "cave-sun-seq-t",
-    ],
-    tone: "anchor",
-  },
-  {
-    roomId: "cave-moon",
-    label: "Moon",
-    category: "QO",
-    technicalMode: "Quarter-time / opposite-direction",
-    // Three, not four. MPMP, NQNQ and OROR are the Quarter-Opposite pairs that
-    // close across M–R; the fourth compass point is the arrival hole.
-    performerIds: [
-      "cave-moon-automaton-mp",
-      "cave-moon-automaton-nq",
-      "cave-moon-automaton-or",
-    ],
-    sequenceIds: ["cave-moon-seq-mp", "cave-moon-seq-nq", "cave-moon-seq-or"],
-    tone: "exhibit",
-  },
-] as const satisfies readonly CaveModeRoom[];
+/**
+ * Dev-facing flavor that stays with the cave floor plan rather than the
+ * era-agnostic declarations: the elemental shorthand label and the zone tone.
+ */
+const WING_ROOM_META: Record<
+  string,
+  { label: string; tone: MuseumFloorPlanZoneTone }
+> = {
+  "cave-water": { label: "Water", tone: "arrival" },
+  "cave-fire": { label: "Fire", tone: "retail" },
+  "cave-earth": { label: "Earth", tone: "social" },
+  "cave-air": { label: "Air", tone: "service" },
+  "cave-sun": { label: "Sun", tone: "anchor" },
+  "cave-moon": { label: "Moon", tone: "exhibit" },
+};
+
+/**
+ * Derived from the wing declarations (the single source since 2026-08-12) —
+ * do not hand-edit mode data here. Ordering follows the declarations' walk
+ * order. Note the Moon wing has three cases, not four: MPMP, NQNQ and OROR
+ * are the Quarter-Opposite pairs that close across M–R (PM = MP collapse);
+ * the fourth compass point is the arrival hole.
+ */
+export const CAVE_MODE_ROOMS: readonly CaveModeRoom[] = VULCAN_CAVE_WINGS.map(
+  (wing) => {
+    const meta = WING_ROOM_META[wing.roomId];
+    if (!meta) {
+      throw new Error(`No cave room meta for wing room ${wing.roomId}`);
+    }
+    return {
+      roomId: wing.roomId,
+      label: meta.label,
+      category: wing.mode.category,
+      technicalMode: wing.mode.technicalMode,
+      performerIds: wing.beats[2].cases.map(
+        (exhibitCase) => exhibitCase.showcaseStationRef
+      ),
+      sequenceIds: wing.beats[2].cases.map(
+        (exhibitCase) => exhibitCase.sequenceKey
+      ),
+      tone: meta.tone,
+    };
+  }
+);
 
 export const CAVE_SPACE_ORDER = [
   "cave-threshold",
