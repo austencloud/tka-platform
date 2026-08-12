@@ -90,14 +90,16 @@ describe("Vulcan Cave floor plan", () => {
           performer.tileY < wing.bounds.y + wing.bounds.height - 1
       );
 
-      expect(
-        [...roomPerformers.map((performer) => performer.id)].sort(),
-        mode.roomId
-      ).toEqual([...mode.performerIds].sort());
-      expect(
-        roomPerformers.map((performer) => performer.sequenceId),
-        mode.roomId
-      ).toEqual([...mode.sequenceIds]);
+      // Placement order and declaration order may differ (CAVE_MODE_ROOMS
+      // follows the wing declarations' canon order since 2026-08-12) — the
+      // invariant is the performer↔sequence PAIRING, not the array order.
+      const placedPairs = roomPerformers
+        .map((performer) => `${performer.id}→${performer.sequenceId}`)
+        .sort();
+      const declaredPairs = mode.performerIds
+        .map((performerId, index) => `${performerId}→${mode.sequenceIds[index]}`)
+        .sort();
+      expect(placedPairs, mode.roomId).toEqual(declaredPairs);
       expect(
         roomPerformers.every((performer) => performer.autoPlay),
         mode.roomId
