@@ -38,7 +38,9 @@ export function createChoreoCardQrState(
     if (!deps.showQRCode) return "";
     const sequenceId = deps.sequence.id ?? deps.sequence.word ?? "unknown";
     const authTag = deps.isAuthenticated ? "a" : "g";
-    return `${sequenceId}:${deps.darkMode}:${authTag}${encodedViewMode ? `:${encodedViewMode}` : ""}`;
+    const blueProp = deps.bluePropType ?? "default";
+    const redProp = deps.redPropType ?? "default";
+    return `${sequenceId}:${deps.darkMode}:${authTag}:${blueProp}:${redProp}${encodedViewMode ? `:${encodedViewMode}` : ""}`;
   });
 
   $effect(() => {
