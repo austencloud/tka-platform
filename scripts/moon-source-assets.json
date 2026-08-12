@@ -1,0 +1,245 @@
+{
+  "version": 1,
+  "preparedOn": "2026-08-12",
+  "sourceRoot": "assets/3d-source/moon",
+  "nasa3dResourcesRevision": "11ebb4ee043715aefbba6aeec8a61746fad67fa7",
+  "purpose": "Curated source assets for the Moon observatory exhibit. Source files are staged for later art production and are not runtime dependencies.",
+  "licensePolicy": {
+    "polyHaven": {
+      "license": "CC0 1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "attributionRequired": false,
+      "creditPolicy": "Retain source and artist credits in production records even though CC0 does not require attribution."
+    },
+    "nasa": {
+      "rights": "NASA content is generally not subject to copyright in the United States and may be used in public exhibits and computer graphical simulations, subject to NASA media guidelines.",
+      "guidelinesUrl": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "attributionRequired": true,
+      "creditPolicy": "Acknowledge NASA as the source. Do not imply endorsement. Do not use NASA insignia, logotypes, identifiers, or identifiable people without the applicable clearance."
+    }
+  },
+  "assets": [
+    {
+      "id": "nasa-lro-color-8k",
+      "label": "LRO 2025 color map, 8K 16-bit sRGB",
+      "provider": "NASA Scientific Visualization Studio",
+      "sourcePage": "https://svs.gsfc.nasa.gov/4720/",
+      "role": "Macro lunar color and distant globe work",
+      "rightsKey": "nasa",
+      "credit": "NASA's Scientific Visualization Studio; visualization by Ernie Wright; science by Noah Petro",
+      "destination": "nasa/cgi-moon-kit/lroc_color_16bit_srgb_8k.tif",
+      "url": "https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_16bit_srgb_8k.tif",
+      "expectedBytes": 243289792
+    },
+    {
+      "id": "nasa-lola-displacement-16ppd",
+      "label": "LOLA global displacement map, 16 pixels per degree",
+      "provider": "NASA Scientific Visualization Studio",
+      "sourcePage": "https://svs.gsfc.nasa.gov/4720/",
+      "role": "Macro terrain shape and local-site blockout source",
+      "rightsKey": "nasa",
+      "credit": "NASA's Scientific Visualization Studio; LRO LOLA data",
+      "destination": "nasa/cgi-moon-kit/ldem_16.tif",
+      "url": "https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/ldem_16.tif",
+      "expectedBytes": 66378634
+    },
+    {
+      "id": "nasa-moon-color-small",
+      "label": "LRO Moon color model, small",
+      "provider": "NASA Goddard Space Flight Center",
+      "sourcePage": "https://svs.gsfc.nasa.gov/14959/",
+      "role": "Distant Moon, reference globe, or exhibit screen",
+      "rightsKey": "nasa",
+      "credit": "NASA's Goddard Space Flight Center; produced by Dan Gallagher; LRO data",
+      "destination": "nasa/moon-models/moon_small.glb",
+      "url": "https://svs.gsfc.nasa.gov/vis/a010000/a014900/a014959/moon_small.glb",
+      "expectedBytes": 13799876
+    },
+    {
+      "id": "nasa-moon-topographic-small",
+      "label": "LRO Moon topographic model, small",
+      "provider": "NASA Goddard Space Flight Center",
+      "sourcePage": "https://svs.gsfc.nasa.gov/14959/",
+      "role": "Topographic reference and exhibit screen",
+      "rightsKey": "nasa",
+      "credit": "NASA's Goddard Space Flight Center; produced by Dan Gallagher; LRO data",
+      "destination": "nasa/moon-models/Moon_NASA_LRO_8k_Topo_Small.glb",
+      "url": "https://svs.gsfc.nasa.gov/vis/a010000/a014900/a014959/Moon_NASA_LRO_8k_Topo_Small.glb",
+      "expectedBytes": 81505784
+    },
+    {
+      "id": "nasa-apollo-lunar-module",
+      "label": "Apollo Lunar Module",
+      "provider": "NASA 3D Resources",
+      "sourcePage": "https://science.nasa.gov/3d-resources/apollo-lunar-module/",
+      "role": "Optional period exhibit prop",
+      "rightsKey": "nasa",
+      "credit": "NASA; model by Michael D. Carbajal",
+      "destination": "nasa/spacecraft/apollo-lunar-module.glb",
+      "url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/11ebb4ee043715aefbba6aeec8a61746fad67fa7/3D%20Models/Apollo%20Lunar%20Module/Apollo%20Lunar%20Module.glb",
+      "expectedBytes": 716840,
+      "sourceRevision": "74b7b99a60f9903a0592fd763ed14482204e24d9"
+    },
+    {
+      "id": "nasa-lunar-reconnaissance-orbiter-b",
+      "label": "Lunar Reconnaissance Orbiter B",
+      "provider": "NASA 3D Resources",
+      "sourcePage": "https://science.nasa.gov/mission/lro/",
+      "role": "Optional instrument or dossier exhibit prop",
+      "rightsKey": "nasa",
+      "credit": "NASA",
+      "destination": "nasa/spacecraft/lunar-reconnaissance-orbiter-b.glb",
+      "url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/11ebb4ee043715aefbba6aeec8a61746fad67fa7/3D%20Models/Lunar%20Reconnaissance%20Orbiter%20%28B%29/Lunar%20Reconnaissance%20Orbiter%20%28B%29.glb",
+      "expectedBytes": 2902744,
+      "sourceRevision": "d17e0a781d1bd599faca618d2efb01209f77a912"
+    },
+    {
+      "id": "nasa-aristarchus-region",
+      "label": "Aristarchus region terrain mesh",
+      "provider": "NASA 3D Resources",
+      "sourcePage": "https://github.com/nasa/NASA-3D-Resources/tree/master/3D%20Printing/Moon%20-%20Aristarchus%20Region",
+      "role": "Optional terrain-form and silhouette study",
+      "rightsKey": "nasa",
+      "credit": "NASA",
+      "destination": "nasa/terrain-studies/aristarchus-region.stl",
+      "url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/11ebb4ee043715aefbba6aeec8a61746fad67fa7/3D%20Printing/Moon%20-%20Aristarchus%20Region/Moon%20-%20Aristarchus%20Region.stl",
+      "expectedBytes": 6492084,
+      "sourceRevision": "ee89f1e3db79ad0af44a99de5c0408e257baa7f9"
+    },
+    {
+      "id": "nasa-copernicus-crater",
+      "label": "Copernicus Crater terrain mesh",
+      "provider": "NASA 3D Resources",
+      "sourcePage": "https://github.com/nasa/NASA-3D-Resources/tree/master/3D%20Printing/Moon%20-%20Copernicus%20Crater",
+      "role": "Optional crater-form and silhouette study",
+      "rightsKey": "nasa",
+      "credit": "NASA",
+      "destination": "nasa/terrain-studies/copernicus-crater.stl",
+      "url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/11ebb4ee043715aefbba6aeec8a61746fad67fa7/3D%20Printing/Moon%20-%20Copernicus%20Crater/Moon%20-%20Copernicus%20Crater.stl",
+      "expectedBytes": 27775884,
+      "sourceRevision": "1290df0fc03304182383d241f37f2bb4c4723eb1"
+    },
+    {
+      "id": "nasa-gassendi-crater",
+      "label": "Gassendi Crater terrain mesh",
+      "provider": "NASA 3D Resources",
+      "sourcePage": "https://github.com/nasa/NASA-3D-Resources/tree/master/3D%20Printing/Moon%20-%20Gassendi%20Crater",
+      "role": "Optional crater-form and silhouette study",
+      "rightsKey": "nasa",
+      "credit": "NASA",
+      "destination": "nasa/terrain-studies/gassendi-crater.stl",
+      "url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/11ebb4ee043715aefbba6aeec8a61746fad67fa7/3D%20Printing/Moon%20-%20Gassendi%20Crater/Moon%20-%20Gassendi%20Crater.stl",
+      "expectedBytes": 29735884,
+      "sourceRevision": "cd819130e643d015a1882a49076474d17f31c101"
+    },
+    {
+      "id": "nasa-mount-hadley",
+      "label": "Mount Hadley terrain mesh",
+      "provider": "NASA 3D Resources",
+      "sourcePage": "https://github.com/nasa/NASA-3D-Resources/tree/master/3D%20Printing/Moon%20-%20Mount%20Hadley",
+      "role": "Optional ridge-form and silhouette study",
+      "rightsKey": "nasa",
+      "credit": "NASA",
+      "destination": "nasa/terrain-studies/mount-hadley.stl",
+      "url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/11ebb4ee043715aefbba6aeec8a61746fad67fa7/3D%20Printing/Moon%20-%20Mount%20Hadley/Moon%20-%20Mount%20Hadley.stl",
+      "expectedBytes": 47500084,
+      "sourceRevision": "6ba7dbf397983e6a9efe7ebda5244313243d0ee6"
+    },
+    {
+      "id": "nasa-tycho",
+      "label": "Tycho terrain mesh",
+      "provider": "NASA 3D Resources",
+      "sourcePage": "https://github.com/nasa/NASA-3D-Resources/tree/master/3D%20Printing/Moon%20-%20Tycho",
+      "role": "Optional ray-crater form and silhouette study",
+      "rightsKey": "nasa",
+      "credit": "NASA",
+      "destination": "nasa/terrain-studies/tycho.stl",
+      "url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/11ebb4ee043715aefbba6aeec8a61746fad67fa7/3D%20Printing/Moon%20-%20Tycho/Moon%20-%20Tycho.stl",
+      "expectedBytes": 47500084,
+      "sourceRevision": "1c395de28d7a09204b0e008d21cec09b9e796e92"
+    },
+    {
+      "id": "polyhaven-moon-dusted-01",
+      "label": "Moon Dusted 01",
+      "provider": "Poly Haven",
+      "sourcePage": "https://polyhaven.com/a/moon_dusted_01",
+      "role": "Primary close-range regolith material",
+      "rightsKey": "polyHaven",
+      "credit": "Poly Haven; photography by Greg Zaal, Rico Cilliers, and Jenelle van Heerden; processing by Dario Barresi",
+      "captureNote": "Photoscanned lunar regolith simulant at Spaceport Rostock, not lunar-return material.",
+      "kind": "polyhaven-gltf",
+      "assetId": "moon_dusted_01",
+      "resolution": "4k",
+      "destinationDirectory": "polyhaven/moon_dusted_01",
+      "supplementalMaps": [
+        { "channel": "nor_dx", "format": "jpg" },
+        { "channel": "Displacement", "format": "exr" }
+      ]
+    },
+    {
+      "id": "polyhaven-moon-meteor-02",
+      "label": "Moon Meteor 02",
+      "provider": "Poly Haven",
+      "sourcePage": "https://polyhaven.com/a/moon_meteor_02",
+      "role": "Crater-marked secondary regolith material",
+      "rightsKey": "polyHaven",
+      "credit": "Poly Haven; photography by Greg Zaal and Rico Cilliers; processing by Jenelle van Heerden",
+      "captureNote": "Photoscanned lunar regolith simulant at Spaceport Rostock, not lunar-return material.",
+      "kind": "polyhaven-gltf",
+      "assetId": "moon_meteor_02",
+      "resolution": "4k",
+      "destinationDirectory": "polyhaven/moon_meteor_02",
+      "supplementalMaps": [
+        { "channel": "nor_dx", "format": "jpg" },
+        { "channel": "Displacement", "format": "exr" }
+      ]
+    },
+    {
+      "id": "polyhaven-moon-rock-01",
+      "label": "Moon Rock 01",
+      "provider": "Poly Haven",
+      "sourcePage": "https://polyhaven.com/a/moon_rock_01",
+      "role": "Large close-range rock and scatter source",
+      "rightsKey": "polyHaven",
+      "credit": "Poly Haven; photography by Greg Zaal, Rico Cilliers, and Jenelle van Heerden; processing by Dario Barresi",
+      "captureNote": "Photoscanned lunar regolith simulant at Spaceport Rostock, not a lunar-return rock.",
+      "kind": "polyhaven-gltf",
+      "assetId": "moon_rock_01",
+      "resolution": "4k",
+      "destinationDirectory": "polyhaven/moon_rock_01",
+      "supplementalMaps": [{ "channel": "nor_dx", "format": "jpg" }]
+    },
+    {
+      "id": "polyhaven-moon-rock-03",
+      "label": "Moon Rock 03",
+      "provider": "Poly Haven",
+      "sourcePage": "https://polyhaven.com/a/moon_rock_03",
+      "role": "Small close-range rock and scatter source",
+      "rightsKey": "polyHaven",
+      "credit": "Poly Haven; photography by Greg Zaal, Rico Cilliers, and Jenelle van Heerden",
+      "captureNote": "Photoscanned lunar regolith simulant at Spaceport Rostock, not a lunar-return rock.",
+      "kind": "polyhaven-gltf",
+      "assetId": "moon_rock_03",
+      "resolution": "4k",
+      "destinationDirectory": "polyhaven/moon_rock_03",
+      "supplementalMaps": [{ "channel": "nor_dx", "format": "jpg" }]
+    }
+  ],
+  "referenceOnly": [
+    {
+      "id": "coryg89-moondemo",
+      "url": "https://github.com/CoryG89/MoonDemo",
+      "reason": "The code is MIT, but the repository identifies its principal Moon imagery as personal non-commercial material and does not establish shipping rights for the starfield. No binaries may enter the production pool."
+    },
+    {
+      "id": "cesium-moon",
+      "url": "https://cesium.com/platform/cesium-ion/content/cesium-moon/",
+      "reason": "Useful for geographic scouting. Streaming, attribution, subscription, and offline-use terms make it unsuitable for the museum's source package."
+    },
+    {
+      "id": "polyhaven-moon-lab-hdri",
+      "url": "https://polyhaven.com/a/moon_lab",
+      "reason": "Indoor laboratory capture. It may inform lighting calibration but must not become the exterior lunar sky."
+    }
+  ]
+}

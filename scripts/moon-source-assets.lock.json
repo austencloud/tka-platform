@@ -1,0 +1,291 @@
+{
+  "manifestVersion": 1,
+  "preparedOn": "2026-08-12",
+  "files": [
+    {
+      "id": "nasa-lro-color-8k",
+      "destination": "nasa/cgi-moon-kit/lroc_color_16bit_srgb_8k.tif",
+      "url": "https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_16bit_srgb_8k.tif",
+      "expectedBytes": 243289792,
+      "sha256": "db7808e878b6a55eb409bb231eab8deb477f84b5c9d7396d76ff73e5d54992d9"
+    },
+    {
+      "id": "nasa-lola-displacement-16ppd",
+      "destination": "nasa/cgi-moon-kit/ldem_16.tif",
+      "url": "https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/ldem_16.tif",
+      "expectedBytes": 66378634,
+      "sha256": "1ea42bf44f7e9d694f79c3afa7145f97fbf06cc67372067d9fe73dce43bad796"
+    },
+    {
+      "id": "nasa-moon-color-small",
+      "destination": "nasa/moon-models/moon_small.glb",
+      "url": "https://svs.gsfc.nasa.gov/vis/a010000/a014900/a014959/moon_small.glb",
+      "expectedBytes": 13799876,
+      "sha256": "12d3b0bb7fe214903f51447d1bc61710f442e92a11c703fcaca6d4e7ff8e67d4"
+    },
+    {
+      "id": "nasa-moon-topographic-small",
+      "destination": "nasa/moon-models/Moon_NASA_LRO_8k_Topo_Small.glb",
+      "url": "https://svs.gsfc.nasa.gov/vis/a010000/a014900/a014959/Moon_NASA_LRO_8k_Topo_Small.glb",
+      "expectedBytes": 81505784,
+      "sha256": "c4b65fb4df622a37fd75366c2ed9bf9e163e41c0fde178b3b27e31b0173e6953"
+    },
+    {
+      "id": "nasa-apollo-lunar-module",
+      "destination": "nasa/spacecraft/apollo-lunar-module.glb",
+      "url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/11ebb4ee043715aefbba6aeec8a61746fad67fa7/3D%20Models/Apollo%20Lunar%20Module/Apollo%20Lunar%20Module.glb",
+      "expectedBytes": 716840,
+      "sha256": "379101dfcee399267addf771709107c35e826b0b9e5233272f123e4c8a585c4e"
+    },
+    {
+      "id": "nasa-lunar-reconnaissance-orbiter-b",
+      "destination": "nasa/spacecraft/lunar-reconnaissance-orbiter-b.glb",
+      "url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/11ebb4ee043715aefbba6aeec8a61746fad67fa7/3D%20Models/Lunar%20Reconnaissance%20Orbiter%20%28B%29/Lunar%20Reconnaissance%20Orbiter%20%28B%29.glb",
+      "expectedBytes": 2902744,
+      "sha256": "c868a65e36ed293476be3d05e7e60968778c5cf4b2a7aba8859fcc20242a0612"
+    },
+    {
+      "id": "nasa-aristarchus-region",
+      "destination": "nasa/terrain-studies/aristarchus-region.stl",
+      "url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/11ebb4ee043715aefbba6aeec8a61746fad67fa7/3D%20Printing/Moon%20-%20Aristarchus%20Region/Moon%20-%20Aristarchus%20Region.stl",
+      "expectedBytes": 6492084,
+      "sha256": "2ecf2908c96647baf5a29ec2e0a7fc3e4485c982358fc1e7ca8512a478d6f93f"
+    },
+    {
+      "id": "nasa-copernicus-crater",
+      "destination": "nasa/terrain-studies/copernicus-crater.stl",
+      "url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/11ebb4ee043715aefbba6aeec8a61746fad67fa7/3D%20Printing/Moon%20-%20Copernicus%20Crater/Moon%20-%20Copernicus%20Crater.stl",
+      "expectedBytes": 27775884,
+      "sha256": "fb5bb0120d0f56aa5a89d7c7f54d94ceb9a5498166cb9aa4aeb7a364ea752a3d"
+    },
+    {
+      "id": "nasa-gassendi-crater",
+      "destination": "nasa/terrain-studies/gassendi-crater.stl",
+      "url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/11ebb4ee043715aefbba6aeec8a61746fad67fa7/3D%20Printing/Moon%20-%20Gassendi%20Crater/Moon%20-%20Gassendi%20Crater.stl",
+      "expectedBytes": 29735884,
+      "sha256": "cd33f19797dcca7eeb025c0cdc43664ee62812989c77bd31b3c97f9d5601c5e5"
+    },
+    {
+      "id": "nasa-mount-hadley",
+      "destination": "nasa/terrain-studies/mount-hadley.stl",
+      "url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/11ebb4ee043715aefbba6aeec8a61746fad67fa7/3D%20Printing/Moon%20-%20Mount%20Hadley/Moon%20-%20Mount%20Hadley.stl",
+      "expectedBytes": 47500084,
+      "sha256": "e6ded6b87b3515de2aefe423a06e9460c4133246dca1e76fd115af79bc33cae3"
+    },
+    {
+      "id": "nasa-tycho",
+      "destination": "nasa/terrain-studies/tycho.stl",
+      "url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/11ebb4ee043715aefbba6aeec8a61746fad67fa7/3D%20Printing/Moon%20-%20Tycho/Moon%20-%20Tycho.stl",
+      "expectedBytes": 47500084,
+      "sha256": "2d8b69f5d0ddc6b4c020da465744a4c1b91d177953ea419c68ae46408accbdf0"
+    },
+    {
+      "id": "polyhaven-moon-dusted-01-gltf",
+      "destination": "polyhaven/moon_dusted_01/moon_dusted_01_4k.gltf",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/gltf/4k/moon_dusted_01/moon_dusted_01_4k.gltf",
+      "expectedBytes": 2800,
+      "md5": "84f90cba80b66d93b32a578e3b6e3416",
+      "sha256": "65f6ed393c6aa87eece899284c71d91f233f597ca484a6832088391337f9be6e"
+    },
+    {
+      "id": "polyhaven-moon-dusted-01-textures/moon_dusted_01_nor_gl_4k.jpg",
+      "destination": "polyhaven/moon_dusted_01/textures/moon_dusted_01_nor_gl_4k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/moon_dusted_01/moon_dusted_01_nor_gl_4k.jpg",
+      "expectedBytes": 17346484,
+      "md5": "a318c005517e67a12ebea061dd08a0ed",
+      "sha256": "3bf3da91bcd538eb8368d72d02e2b62b8e9687c1fff2718f9247697550f34eb6"
+    },
+    {
+      "id": "polyhaven-moon-dusted-01-textures/moon_dusted_01_diff_4k.jpg",
+      "destination": "polyhaven/moon_dusted_01/textures/moon_dusted_01_diff_4k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/moon_dusted_01/moon_dusted_01_diff_4k.jpg",
+      "expectedBytes": 11226133,
+      "md5": "123c6234e69c742242e0140a0884dd77",
+      "sha256": "925e1409353bf4252e5099eb9cfd560d309bb6d98b6c1c44d11262e23ddcecc0"
+    },
+    {
+      "id": "polyhaven-moon-dusted-01-textures/moon_dusted_01_arm_4k.jpg",
+      "destination": "polyhaven/moon_dusted_01/textures/moon_dusted_01_arm_4k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/moon_dusted_01/moon_dusted_01_arm_4k.jpg",
+      "expectedBytes": 9599483,
+      "md5": "e33f6b216ed54fb9ff1175915b8406b9",
+      "sha256": "935a223eeaf08b234a2487102b98d543f688e5b9904f5e223f8cec47e95b9350"
+    },
+    {
+      "id": "polyhaven-moon-dusted-01-moon_dusted_01.bin",
+      "destination": "polyhaven/moon_dusted_01/moon_dusted_01.bin",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/gltf/8k/moon_dusted_01/moon_dusted_01.bin",
+      "expectedBytes": 2370260,
+      "md5": "823429a866d1133dff61343b9d6daa91",
+      "sha256": "03dafd68532d040e9f01c043612aed100ec142c4a206b84bf261ddd878e79d4d"
+    },
+    {
+      "id": "polyhaven-moon-dusted-01-nor_dx-4k-jpg",
+      "destination": "polyhaven/moon_dusted_01/textures/moon_dusted_01_nor_dx_4k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/moon_dusted_01/moon_dusted_01_nor_dx_4k.jpg",
+      "expectedBytes": 17321365,
+      "md5": "3c5404c0a4fdb5f303db83964b265c50",
+      "sha256": "04853e1bea346773c52804acbd1c2c2a80cbc1c26bbf6d22d03875357e50a7ff"
+    },
+    {
+      "id": "polyhaven-moon-dusted-01-Displacement-4k-exr",
+      "destination": "polyhaven/moon_dusted_01/textures/moon_dusted_01_disp_4k.exr",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/exr/4k/moon_dusted_01/moon_dusted_01_disp_4k.exr",
+      "expectedBytes": 5043239,
+      "md5": "6923d45b3ae6f505d60ef2044cd5487a",
+      "sha256": "cdc11a5d72b2e0ca5dba6f586835cf7ca858b6413e3ab5604827ba1a288c2a9b"
+    },
+    {
+      "id": "polyhaven-moon-meteor-02-gltf",
+      "destination": "polyhaven/moon_meteor_02/moon_meteor_02_4k.gltf",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/gltf/4k/moon_meteor_02/moon_meteor_02_4k.gltf",
+      "expectedBytes": 2794,
+      "md5": "69817215252e62dd8161da12f110c8f5",
+      "sha256": "c055dfb7f297d9a2925a8bbf2d33b049aaf2a38106634f8e267f932b8c3668e4"
+    },
+    {
+      "id": "polyhaven-moon-meteor-02-textures/moon_meteor_02_nor_gl_4k.jpg",
+      "destination": "polyhaven/moon_meteor_02/textures/moon_meteor_02_nor_gl_4k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/moon_meteor_02/moon_meteor_02_nor_gl_4k.jpg",
+      "expectedBytes": 17689950,
+      "md5": "3f41a0575e44f5720e00c61fc0f46406",
+      "sha256": "ade5e4b8f2d88f34321d5da1001432b4d89dbad7614bc12f88c235b503922e72"
+    },
+    {
+      "id": "polyhaven-moon-meteor-02-textures/moon_meteor_02_diff_4k.jpg",
+      "destination": "polyhaven/moon_meteor_02/textures/moon_meteor_02_diff_4k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/moon_meteor_02/moon_meteor_02_diff_4k.jpg",
+      "expectedBytes": 4505010,
+      "md5": "37e6914384952b1b5521ac63e11f3652",
+      "sha256": "41e88433d16623b705ee2efd5068b785aeb1f62e805a199c9a0bea175eb7f832"
+    },
+    {
+      "id": "polyhaven-moon-meteor-02-textures/moon_meteor_02_arm_4k.jpg",
+      "destination": "polyhaven/moon_meteor_02/textures/moon_meteor_02_arm_4k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/moon_meteor_02/moon_meteor_02_arm_4k.jpg",
+      "expectedBytes": 8031601,
+      "md5": "6da56861d965a0569d503ea4de4cb3e1",
+      "sha256": "3c434ef434ed763bd349fb872d82c8165932456349bbabb912dee479d32dd6be"
+    },
+    {
+      "id": "polyhaven-moon-meteor-02-moon_meteor_02.bin",
+      "destination": "polyhaven/moon_meteor_02/moon_meteor_02.bin",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/gltf/8k/moon_meteor_02/moon_meteor_02.bin",
+      "expectedBytes": 2369268,
+      "md5": "725992cdec7fe74a27898fd537721cf9",
+      "sha256": "e66c98a3b470d7d34fb1192d874f1309f670e37b7f5767efc30bc5bec401e133"
+    },
+    {
+      "id": "polyhaven-moon-meteor-02-nor_dx-4k-jpg",
+      "destination": "polyhaven/moon_meteor_02/textures/moon_meteor_02_nor_dx_4k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/moon_meteor_02/moon_meteor_02_nor_dx_4k.jpg",
+      "expectedBytes": 17668800,
+      "md5": "71a5d5ea0280300137513e3439db180c",
+      "sha256": "23683c65096b5ee50a99e2f5449996f6c0658360a9e08fd16e3a190c64ec4235"
+    },
+    {
+      "id": "polyhaven-moon-meteor-02-Displacement-4k-exr",
+      "destination": "polyhaven/moon_meteor_02/textures/moon_meteor_02_disp_4k.exr",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/exr/4k/moon_meteor_02/moon_meteor_02_disp_4k.exr",
+      "expectedBytes": 2320413,
+      "md5": "33b9ab111bf852e204ecc0c07d0c1bd6",
+      "sha256": "18519e70aaa198d449958d29830cd49e829ee64fa47116d3639295931c058487"
+    },
+    {
+      "id": "polyhaven-moon-rock-01-gltf",
+      "destination": "polyhaven/moon_rock_01/moon_rock_01_4k.gltf",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/moon_rock_01/moon_rock_01_4k.gltf",
+      "expectedBytes": 7088,
+      "md5": "a473f2866464d0382d0005225657f0f2",
+      "sha256": "690ab7688ea5c5316689438044c4ddf2637cdcfc3ca18c0d270cf02626a7cdf4"
+    },
+    {
+      "id": "polyhaven-moon-rock-01-textures/moon_rock_01_nor_gl_4k.jpg",
+      "destination": "polyhaven/moon_rock_01/textures/moon_rock_01_nor_gl_4k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/4k/moon_rock_01/moon_rock_01_nor_gl_4k.jpg",
+      "expectedBytes": 7243871,
+      "md5": "7223171f4fef12e5c14aef060dc66ec6",
+      "sha256": "b9a6d3809d7bfdef289823302669af4c92887b54dc7aad140d70d7e998b1c6c8"
+    },
+    {
+      "id": "polyhaven-moon-rock-01-textures/moon_rock_01_diff_4k.jpg",
+      "destination": "polyhaven/moon_rock_01/textures/moon_rock_01_diff_4k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/4k/moon_rock_01/moon_rock_01_diff_4k.jpg",
+      "expectedBytes": 3029504,
+      "md5": "e21cdf677753d8769dce644c413f4502",
+      "sha256": "198b3e2ba9110bbca2cf254c82eaaf99ab22eea58603a4ef307e5e0b80f41cf5"
+    },
+    {
+      "id": "polyhaven-moon-rock-01-textures/moon_rock_01_arm_4k.jpg",
+      "destination": "polyhaven/moon_rock_01/textures/moon_rock_01_arm_4k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/4k/moon_rock_01/moon_rock_01_arm_4k.jpg",
+      "expectedBytes": 3800204,
+      "md5": "88b0171f9ae0b67ccdf8fba307eb0ab1",
+      "sha256": "44be49c683d34ce70d44378917cc82cc131b16b17e28f57d844d21175d545032"
+    },
+    {
+      "id": "polyhaven-moon-rock-01-moon_rock_01.bin",
+      "destination": "polyhaven/moon_rock_01/moon_rock_01.bin",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/moon_rock_01/moon_rock_01.bin",
+      "expectedBytes": 448168,
+      "md5": "5dc30dc1be5e8dd5fff64dd824cad828",
+      "sha256": "c6671327046efd27ab1a97c4c716412f209a063184e65f0376e3be6583e8f52a"
+    },
+    {
+      "id": "polyhaven-moon-rock-01-nor_dx-4k-jpg",
+      "destination": "polyhaven/moon_rock_01/textures/moon_rock_01_nor_dx_4k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/4k/moon_rock_01/moon_rock_01_nor_dx_4k.jpg",
+      "expectedBytes": 7226014,
+      "md5": "1f97c25e4d0b345d71a7e4f71c9daa2d",
+      "sha256": "3fb1db78ce1f39ab04f7c15339794476b82cccfde0b730537f702e91c3cc3f50"
+    },
+    {
+      "id": "polyhaven-moon-rock-03-gltf",
+      "destination": "polyhaven/moon_rock_03/moon_rock_03_4k.gltf",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/moon_rock_03/moon_rock_03_4k.gltf",
+      "expectedBytes": 2789,
+      "md5": "621f773af2b49ed68cdba54e61db09e3",
+      "sha256": "4831f45fabdf7291db9d3dc9397bb9e05a62e0d5ced883ced13854504aba0cc9"
+    },
+    {
+      "id": "polyhaven-moon-rock-03-textures/moon_rock_03_nor_gl_4k.jpg",
+      "destination": "polyhaven/moon_rock_03/textures/moon_rock_03_nor_gl_4k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/4k/moon_rock_03/moon_rock_03_nor_gl_4k.jpg",
+      "expectedBytes": 8184639,
+      "md5": "53e01dd417686b64686476aa5dab59c1",
+      "sha256": "b76341730bbaf8d11c8a3073a429e659c1b2ccc99aa8285fa5846b32f651a60b"
+    },
+    {
+      "id": "polyhaven-moon-rock-03-textures/moon_rock_03_diff_4k.jpg",
+      "destination": "polyhaven/moon_rock_03/textures/moon_rock_03_diff_4k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/4k/moon_rock_03/moon_rock_03_diff_4k.jpg",
+      "expectedBytes": 4035201,
+      "md5": "66eadae386379a5b3d8256f43987e8b7",
+      "sha256": "573086c24b3ffb2a430ab24d9861ff5aee8a13a1d1037c63330b60f8730ac08a"
+    },
+    {
+      "id": "polyhaven-moon-rock-03-textures/moon_rock_03_arm_4k.jpg",
+      "destination": "polyhaven/moon_rock_03/textures/moon_rock_03_arm_4k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/4k/moon_rock_03/moon_rock_03_arm_4k.jpg",
+      "expectedBytes": 4205771,
+      "md5": "b29efdba31e0e0309579339b6b3cce4a",
+      "sha256": "02ad678edbc7e41d42b14fb253030aadac5aa74c3e34294ee9963b3397b8976d"
+    },
+    {
+      "id": "polyhaven-moon-rock-03-moon_rock_03.bin",
+      "destination": "polyhaven/moon_rock_03/moon_rock_03.bin",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/moon_rock_03/moon_rock_03.bin",
+      "expectedBytes": 131060,
+      "md5": "6d0b79c8e72e2340c0e8be38e78267e2",
+      "sha256": "b9e79d1c12719515f48b8e27ddf692f9e2076ad4eafd1cf4a4d12d1bcc6d85df"
+    },
+    {
+      "id": "polyhaven-moon-rock-03-nor_dx-4k-jpg",
+      "destination": "polyhaven/moon_rock_03/textures/moon_rock_03_nor_dx_4k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/4k/moon_rock_03/moon_rock_03_nor_dx_4k.jpg",
+      "expectedBytes": 8156891,
+      "md5": "b085f52e214b15f8e3b013bb012fc194",
+      "sha256": "fe441073a54b716e426d9869b5d6884d6084c6428fa7ab8d6024e9ada35cb90e"
+    }
+  ]
+}
