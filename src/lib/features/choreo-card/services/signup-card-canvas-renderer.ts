@@ -5,20 +5,20 @@
  * Front: QR to tkaflowarts.com/start, the URL as text (QR-dead insurance),
  * and one pitch line. Back: brand mark.
  *
- * Content is static, so canvases are cached after first render — same
- * discipline as the info card. Frame aesthetics (border gradient, theme
- * background, corner radii) delegate to the info-card renderer's helpers so
- * the signup card matches the deck it ships with.
+ * The card uses the SAME frame as the real deck cards — wrapContentInCardFrame
+ * (stripe border, white inner content) — so it matches the pack it ships with
+ * and stays home-printer friendly: ink lives in the border and the QR, not in
+ * a full-bleed dark ground.
+ *
+ * Content is static, so canvases are cached after first render.
  */
 
 import type { InfoCardCanvasOptions } from "./types";
+import { REF_SCALE, roundRect, wrapText } from "./info-card-canvas-renderer";
 import {
-  REF_SCALE,
-  drawBorderFrame,
-  fillBackground,
-  roundRect,
-  wrapText,
-} from "./info-card-canvas-renderer";
+  getCardFrameContentInset,
+  wrapContentInCardFrame,
+} from "./card-front-frame";
 import { QRCodeGenerator } from "$lib/shared/qr/services/qr-code-generator";
 
 export const SIGNUP_CARD_URL = "https://tkaflowarts.com/start";
@@ -27,10 +27,46 @@ const SIGNUP_CARD_URL_TEXT = "tkaflowarts.com/start";
 const PITCH_LINE =
   "Create a free account and every card in this pack comes alive.";
 
+const INK = "#1e1b4b";
+const INK_SOFT = "rgba(30, 27, 75, 0.55)";
+const INK_FAINT = "rgba(30, 27, 75, 0.4)";
+
+/** Stripe-border palette per harness theme, mirroring the tndElement
+ * accent/darkComplement pairs real cards are framed with. */
+const FRAME_COLORS: Record<string, { accent: string; dark: string }> = {
+  cosmic: { accent: "#818cf8", dark: "#1e1b4b" },
+  ocean: { accent: "#22d3ee", dark: "#0c4a6e" },
+  ember: { accent: "#fb923c", dark: "#7c2d12" },
+};
+
 let cachedFront: HTMLCanvasElement | null = null;
 let cachedFrontKey: string | null = null;
 let cachedBack: HTMLCanvasElement | null = null;
 let cachedBackKey: string | null = null;
+
+function htmlFactory(w: number, h: number): HTMLCanvasElement {
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  return c;
+}
+
+function makeContentCanvas(options: InfoCardCanvasOptions): {
+  canvas: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D;
+  border: number;
+} {
+  const border = getCardFrameContentInset(options.bleedPx);
+  const canvas = htmlFactory(options.width - border * 2, options.height - border * 2);
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  return { canvas, ctx, border };
+}
+
+function frameColors(theme: string): { accent: string; dark: string } {
+  return FRAME_COLORS[theme] ?? FRAME_COLORS.cosmic!;
+}
 
 export async function renderSignupCardFront(
   options: InfoCardCanvasOptions
@@ -48,31 +84,9 @@ export async function renderSignupCardFront(
     { style: "classic", margin: 2, centerIcon: "none" }
   );
 
-  const canvas = document.createElement("canvas");
-  canvas.width = options.width;
-  canvas.height = options.height;
-  const ctx = canvas.getContext("2d")!;
-
-  const bleed = options.bleedPx;
-  const contentW = options.width - bleed * 2;
-  const contentH = options.height - bleed * 2;
-
-  ctx.fillStyle = "#080c24";
-  ctx.fillRect(0, 0, options.width, options.height);
-
-  const borderWidth = 4 * REF_SCALE;
-  drawBorderFrame(ctx, bleed, bleed, contentW, contentH, borderWidth, options.theme);
-
-  const innerX = bleed + borderWidth;
-  const innerY = bleed + borderWidth;
-  const innerW = contentW - borderWidth * 2;
-  const innerH = contentH - borderWidth * 2;
-
-  fillBackground(ctx, innerX, innerY, innerW, innerH, options.theme);
-
-  const padX = 30 * REF_SCALE;
+  const { canvas, ctx } = makeContentCanvas(options);
+  const centerX = canvas.width / 2;
   const padY = 28 * REF_SCALE;
-  const centerX = innerX + innerW / 2;
 
   // Measured once against a throwaway context, then vertically centred —
   // same probe-and-centre pattern as the info card.
@@ -80,7 +94,7 @@ export async function renderSignupCardFront(
     let curY = startY;
 
     // Title
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = INK;
     ctx.font = `800 ${34 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
@@ -88,19 +102,20 @@ export async function renderSignupCardFront(
     curY += 34 * REF_SCALE + 6 * REF_SCALE;
 
     // Subtitle
-    ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+    ctx.fillStyle = INK_SOFT;
     ctx.font = `400 ${17 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
     ctx.fillText("Flow Arts Composer", centerX, curY);
     curY += 17 * REF_SCALE + 22 * REF_SCALE;
 
-    // QR on a white tile. Print + lamination + jam lighting want the classic
-    // dark-modules-on-white contrast, not a themed QR.
+    // QR straight on the white ground, inside a hairline keyline so the cut
+    // zone reads as deliberate. Classic dark-on-white modules scan best.
     const tileSize = 300 * REF_SCALE;
-    const tilePad = 18 * REF_SCALE;
+    const tilePad = 16 * REF_SCALE;
     const tileX = centerX - tileSize / 2;
-    ctx.fillStyle = "#ffffff";
+    ctx.strokeStyle = "rgba(30, 27, 75, 0.15)";
+    ctx.lineWidth = 2;
     roundRect(ctx, tileX, curY, tileSize, tileSize, 14 * REF_SCALE);
-    ctx.fill();
+    ctx.stroke();
     ctx.drawImage(
       qrImage,
       tileX + tilePad,
@@ -111,16 +126,16 @@ export async function renderSignupCardFront(
     curY += tileSize + 16 * REF_SCALE;
 
     // The URL as text — insurance for a QR that will not scan.
-    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+    ctx.fillStyle = INK;
     ctx.font = `700 ${17 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
     ctx.fillText(SIGNUP_CARD_URL_TEXT, centerX, curY);
     curY += 17 * REF_SCALE + 20 * REF_SCALE;
 
     // Pitch line
-    ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+    ctx.fillStyle = INK_SOFT;
     const pitchSize = 14 * REF_SCALE;
     ctx.font = `400 ${pitchSize}px "Segoe UI", system-ui, sans-serif`;
-    const pitchLines = wrapText(ctx, PITCH_LINE, innerW - padX * 2.6);
+    const pitchLines = wrapText(ctx, PITCH_LINE, canvas.width - 60 * REF_SCALE);
     for (const line of pitchLines) {
       ctx.fillText(line, centerX, curY);
       curY += pitchSize * 1.5;
@@ -129,25 +144,34 @@ export async function renderSignupCardFront(
     return curY;
   };
 
-  const bodyTop = innerY + padY;
-  const bodyLimit = innerY + innerH - padY - 20 * REF_SCALE;
-  const probeCanvas = document.createElement("canvas");
-  probeCanvas.width = 1;
-  probeCanvas.height = 1;
+  const bodyTop = padY;
+  const bodyLimit = canvas.height - padY - 20 * REF_SCALE;
+  const probeCanvas = htmlFactory(1, 1);
   const naturalH = drawBody(probeCanvas.getContext("2d")!, bodyTop) - bodyTop;
   const slack = Math.max(0, bodyLimit - bodyTop - naturalH);
   drawBody(ctx, bodyTop + slack / 2);
 
   // Footer
-  ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+  ctx.fillStyle = INK_FAINT;
   ctx.font = `400 ${11 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
-  ctx.fillText("The Kinetic Alphabet", centerX, innerY + innerH - padY);
+  ctx.fillText("The Kinetic Alphabet", centerX, canvas.height - padY);
 
-  cachedFront = canvas;
+  const framed = wrapContentInCardFrame(
+    canvas,
+    {
+      canvasWidth: options.width,
+      canvasHeight: options.height,
+      bleedPx: options.bleedPx,
+      ...frameColors(options.theme),
+    },
+    htmlFactory
+  ) as HTMLCanvasElement;
+
+  cachedFront = framed;
   cachedFrontKey = key;
-  return canvas;
+  return framed;
 }
 
 export async function renderSignupCardBack(
@@ -158,79 +182,65 @@ export async function renderSignupCardBack(
 
   const logo = await loadImage("/branding/logo.jpg");
 
-  const canvas = document.createElement("canvas");
-  canvas.width = options.width;
-  canvas.height = options.height;
-  const ctx = canvas.getContext("2d")!;
-
-  const bleed = options.bleedPx;
-  const contentW = options.width - bleed * 2;
-  const contentH = options.height - bleed * 2;
-
-  ctx.fillStyle = "#080c24";
-  ctx.fillRect(0, 0, options.width, options.height);
-
-  const borderWidth = 4 * REF_SCALE;
-  drawBorderFrame(ctx, bleed, bleed, contentW, contentH, borderWidth, options.theme);
-
-  const innerX = bleed + borderWidth;
-  const innerY = bleed + borderWidth;
-  const innerW = contentW - borderWidth * 2;
-  const innerH = contentH - borderWidth * 2;
-
-  fillBackground(ctx, innerX, innerY, innerW, innerH, options.theme);
-
-  const centerX = innerX + innerW / 2;
+  const { canvas, ctx } = makeContentCanvas(options);
+  const centerX = canvas.width / 2;
   const padY = 28 * REF_SCALE;
+  const { accent } = frameColors(options.theme);
 
-  // Brand mark: the round logo on a white disc (the logo is a JPEG with its
-  // own white ground, so the disc gives it a clean, anti-aliased edge), with
-  // the wordmark below — the same brand row the /start page opens with.
+  // Brand mark: the round logo with a thin accent ring (the logo JPEG carries
+  // its own white ground, so on a white card only the ring defines its edge),
+  // wordmark below — the same brand row the /start page opens with.
   const logoR = 60 * REF_SCALE;
   const blockH =
     logoR * 2 + 20 * REF_SCALE + 30 * REF_SCALE + 8 * REF_SCALE + 16 * REF_SCALE;
-  const blockTop = innerY + (innerH - blockH) / 2;
+  const blockTop = (canvas.height - blockH) / 2;
   const logoCY = blockTop + logoR;
-
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-  ctx.arc(centerX, logoCY, logoR, 0, Math.PI * 2);
-  ctx.fill();
 
   ctx.save();
   ctx.beginPath();
   ctx.arc(centerX, logoCY, logoR - 2 * REF_SCALE, 0, Math.PI * 2);
   ctx.clip();
-  ctx.drawImage(
-    logo,
-    centerX - logoR,
-    logoCY - logoR,
-    logoR * 2,
-    logoR * 2
-  );
+  ctx.drawImage(logo, centerX - logoR, logoCY - logoR, logoR * 2, logoR * 2);
   ctx.restore();
 
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 2 * REF_SCALE;
+  ctx.beginPath();
+  ctx.arc(centerX, logoCY, logoR - REF_SCALE, 0, Math.PI * 2);
+  ctx.stroke();
+
   let curY = logoCY + logoR + 20 * REF_SCALE;
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = INK;
   ctx.font = `800 ${26 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
   ctx.fillText("Flow Arts Composer", centerX, curY);
   curY += 26 * REF_SCALE + 8 * REF_SCALE;
 
-  ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+  ctx.fillStyle = INK_SOFT;
   ctx.font = `400 ${15 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
   ctx.fillText("The Kinetic Alphabet", centerX, curY);
 
   // Footer: the URL again — the back is the face a stacked pack shows.
-  ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+  ctx.fillStyle = INK_FAINT;
   ctx.font = `400 ${12 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
   ctx.textBaseline = "bottom";
-  ctx.fillText(SIGNUP_CARD_URL_TEXT, centerX, innerY + innerH - padY);
+  ctx.fillText(SIGNUP_CARD_URL_TEXT, centerX, canvas.height - padY);
 
-  cachedBack = canvas;
+  const framed = wrapContentInCardFrame(
+    canvas,
+    {
+      canvasWidth: options.width,
+      canvasHeight: options.height,
+      bleedPx: options.bleedPx,
+      ...frameColors(options.theme),
+    },
+    htmlFactory
+  ) as HTMLCanvasElement;
+
+  cachedBack = framed;
   cachedBackKey = key;
-  return canvas;
+  return framed;
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
