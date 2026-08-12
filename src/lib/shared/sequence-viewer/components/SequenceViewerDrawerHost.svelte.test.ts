@@ -1,10 +1,12 @@
 import { render } from "vitest-browser-svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 const mocks = vi.hoisted(() => ({
   afterNavigateCallback: null as null | ((navigation: unknown) => void),
-  resolveShortCode: vi.fn(),
+  resolveShortCodeWithRecord: vi.fn(),
   hydrateSequence: vi.fn(),
+  updateSettings: vi.fn(),
   openSequenceOverlay: vi.fn(),
   removeCurrentUrlParams: vi.fn(),
 }));
@@ -22,8 +24,12 @@ vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
 
 vi.mock("$lib/shared/qr/get-short-code-manager", () => ({
   getShortCodeManager: () => ({
-    resolveShortCode: mocks.resolveShortCode,
+    resolveShortCodeWithRecord: mocks.resolveShortCodeWithRecord,
   }),
+}));
+
+vi.mock("$lib/shared/application/state/app-state.svelte", () => ({
+  updateSettings: mocks.updateSettings,
 }));
 
 vi.mock("$lib/shared/navigation/services/sequence-hydrator", () => ({
@@ -77,7 +83,13 @@ describe("SequenceViewerDrawerHost URL bootstrap", () => {
   it("opens a sequence when a QR deep link arrives after the host mounted", async () => {
     const resolvedSequence = { id: "resolved-sequence" };
     const hydratedSequence = { id: "hydrated-sequence" };
-    mocks.resolveShortCode.mockResolvedValue(resolvedSequence);
+    mocks.resolveShortCodeWithRecord.mockResolvedValue({
+      sequence: resolvedSequence,
+      record: {
+        bluePropType: PropType.STAFF,
+        redPropType: PropType.STAFF,
+      },
+    });
     mocks.hydrateSequence.mockResolvedValue(hydratedSequence);
 
     render(SequenceViewerDrawerHost);
@@ -85,9 +97,12 @@ describe("SequenceViewerDrawerHost URL bootstrap", () => {
     await vi.waitFor(() => {
       expect(mocks.afterNavigateCallback).toBeTypeOf("function");
     });
-    expect(mocks.resolveShortCode).not.toHaveBeenCalled();
+    expect(mocks.resolveShortCodeWithRecord).not.toHaveBeenCalled();
 
-    const url = new URL("/browse/gallery?v=SCAN42", window.location.origin);
+    const url = new URL(
+      "/browse/gallery?v=SCAN42&bp=club&rp=club",
+      window.location.origin
+    );
     window.history.replaceState({}, "", url);
     mocks.afterNavigateCallback?.({ to: { url } });
 
@@ -99,9 +114,14 @@ describe("SequenceViewerDrawerHost URL bootstrap", () => {
       });
     });
 
-    expect(mocks.resolveShortCode).toHaveBeenCalledWith("SCAN42");
+    expect(mocks.resolveShortCodeWithRecord).toHaveBeenCalledWith("SCAN42");
     expect(mocks.hydrateSequence).toHaveBeenCalledWith(resolvedSequence, {
       loopDetector: expect.any(Object),
+    });
+    expect(mocks.updateSettings).toHaveBeenCalledWith({
+      bluePropType: PropType.CLUB,
+      redPropType: PropType.CLUB,
+      catDogMode: false,
     });
   });
 });

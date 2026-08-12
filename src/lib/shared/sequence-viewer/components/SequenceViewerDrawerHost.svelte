@@ -20,7 +20,10 @@
     openSequenceOverlay,
   } from "../state/sequence-viewer-overlay-state.svelte";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
+  import { resolveScanPropConfig } from "$lib/shared/qr/services/scan-prop-resolver";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { updateSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { parsePropsFromURL } from "$lib/shared/navigation/services/sequence-encoder";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { getLoopDetector } from "$lib/shared/create/get-loop-detector";
   import { removeCurrentUrlParams } from "$lib/shared/navigation/services/url-state";
@@ -88,7 +91,8 @@
     let openedSuccessfully = false;
     try {
       const manager = getShortCodeManager();
-      const resolved = await manager.resolveShortCode(code);
+      const { sequence: resolved, record } =
+        await manager.resolveShortCodeWithRecord(code);
       if (!resolved) {
         stripInvalidV(code);
         return;
@@ -103,6 +107,18 @@
       });
 
       if (new URL(window.location.href).searchParams.get("v") !== code) return;
+
+      const currentUrl = new URL(window.location.href);
+      const propConfig = resolveScanPropConfig(
+        hydrated,
+        parsePropsFromURL(currentUrl.searchParams),
+        record
+      );
+      await updateSettings({
+        bluePropType: propConfig.bluePropType,
+        redPropType: propConfig.redPropType,
+        catDogMode: propConfig.catDogMode,
+      });
 
       openSequenceOverlay(hydrated, {
         fromUrl: true,

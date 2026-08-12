@@ -1,124 +1,116 @@
 import { isNative, isAndroid } from "./platform-detector";
+import { resolveNativeDeepLinkTarget } from "./native-deep-link-target";
 
 export class NativeInitializer {
-	async initialize(): Promise<void> {
-		if (!isNative()) return;
+  async initialize(): Promise<void> {
+    if (!isNative()) return;
 
-		// initAppLifecycle navigates off the marketing landing (the native shell
-		// loads "/") into the app. Hide the splash only AFTER that navigation so
-		// the landing never flashes behind the splash on a cold start.
-		await Promise.allSettled([
-			this.initStatusBar(),
-			this.initKeyboard(),
-			this.initAppLifecycle(),
-		]);
+    // initAppLifecycle navigates off the marketing landing (the native shell
+    // loads "/") into the app. Hide the splash only AFTER that navigation so
+    // the landing never flashes behind the splash on a cold start.
+    await Promise.allSettled([
+      this.initStatusBar(),
+      this.initKeyboard(),
+      this.initAppLifecycle(),
+    ]);
 
-		await this.initSplashScreen();
-	}
+    await this.initSplashScreen();
+  }
 
-	private async initStatusBar(): Promise<void> {
-		const { StatusBar, Style } = await import("@capacitor/status-bar");
-		await StatusBar.setStyle({ style: Style.Dark });
+  private async initStatusBar(): Promise<void> {
+    const { StatusBar, Style } = await import("@capacitor/status-bar");
+    await StatusBar.setStyle({ style: Style.Dark });
 
-		if (isAndroid()) {
-			// Don't overlay on Android - let the system handle status bar space.
-			// The WebView's env(safe-area-inset-top) isn't reliable in Android WebView.
-			await StatusBar.setOverlaysWebView({ overlay: false });
-			await StatusBar.setBackgroundColor({ color: "#0b1d2a" });
-		} else {
-			// iOS handles safe area insets natively via env() - overlay is safe
-			await StatusBar.setOverlaysWebView({ overlay: true });
-		}
-	}
+    if (isAndroid()) {
+      // Don't overlay on Android - let the system handle status bar space.
+      // The WebView's env(safe-area-inset-top) isn't reliable in Android WebView.
+      await StatusBar.setOverlaysWebView({ overlay: false });
+      await StatusBar.setBackgroundColor({ color: "#0b1d2a" });
+    } else {
+      // iOS handles safe area insets natively via env() - overlay is safe
+      await StatusBar.setOverlaysWebView({ overlay: true });
+    }
+  }
 
-	private async initKeyboard(): Promise<void> {
-		const { Keyboard, KeyboardResize } = await import("@capacitor/keyboard");
-		await Keyboard.setResizeMode({ mode: KeyboardResize.None });
-		await Keyboard.setScroll({ isDisabled: true });
-	}
+  private async initKeyboard(): Promise<void> {
+    const { Keyboard, KeyboardResize } = await import("@capacitor/keyboard");
+    await Keyboard.setResizeMode({ mode: KeyboardResize.None });
+    await Keyboard.setScroll({ isDisabled: true });
+  }
 
-	private async initSplashScreen(): Promise<void> {
-		const { SplashScreen } = await import("@capacitor/splash-screen");
-		await SplashScreen.hide({ fadeOutDuration: 300 });
-	}
+  private async initSplashScreen(): Promise<void> {
+    const { SplashScreen } = await import("@capacitor/splash-screen");
+    await SplashScreen.hide({ fadeOutDuration: 300 });
+  }
 
-	private async initAppLifecycle(): Promise<void> {
-		const { App } = await import("@capacitor/app");
+  private async initAppLifecycle(): Promise<void> {
+    const { App } = await import("@capacitor/app");
 
-		if (isAndroid()) {
-			await App.addListener("backButton", ({ canGoBack }) => {
-				if (canGoBack) {
-					window.history.back();
-				} else {
-					App.exitApp();
-				}
-			});
-		}
+    if (isAndroid()) {
+      await App.addListener("backButton", ({ canGoBack }) => {
+        if (canGoBack) {
+          window.history.back();
+        } else {
+          App.exitApp();
+        }
+      });
+    }
 
-		// Register the share target BEFORE the first await that could yield, so
-		// the plugin's retained ACTION_SEND event has a listener to be replayed
-		// to. Nothing here is awaited for a grace period and nothing routes:
-		// the adapter persists the bytes and bumps a signal, and
-		// ShareIntakeHost - mounted inside MainApplication, beside the drawers a
-		// share actually opens - runs the pipeline.
-		//
-		// The unconditional boot-into-app-shell call below is unchanged by this
-		// edit. An earlier revision skipped it when a share was pending, which
-		// left the app on "/" - the marketing landing (src/routes/+page.svelte) -
-		// where InboxDrawer and SequenceViewerDrawerHost do not exist, so the
-		// share opened as state nothing rendered.
-		const { ensureShareTargetRegistered } = await import(
-			"$lib/shared/share-intake/get-share-intake"
-		);
-		await ensureShareTargetRegistered();
+    // Register the share target BEFORE the first await that could yield, so
+    // the plugin's retained ACTION_SEND event has a listener to be replayed
+    // to. Nothing here is awaited for a grace period and nothing routes:
+    // the adapter persists the bytes and bumps a signal, and
+    // ShareIntakeHost - mounted inside MainApplication, beside the drawers a
+    // share actually opens - runs the pipeline.
+    //
+    // The unconditional boot-into-app-shell call below is unchanged by this
+    // edit. An earlier revision skipped it when a share was pending, which
+    // left the app on "/" - the marketing landing (src/routes/+page.svelte) -
+    // where InboxDrawer and SequenceViewerDrawerHost do not exist, so the
+    // share opened as state nothing rendered.
+    const { ensureShareTargetRegistered } =
+      await import("$lib/shared/share-intake/get-share-intake");
+    await ensureShareTargetRegistered();
 
-		// Handle deep links from both cold start and warm resume.
-		// Cold start: getLaunchUrl() returns the URL that opened the app.
-		// Warm resume: appUrlOpen fires when a new URL arrives while running.
-		const launchUrl = await App.getLaunchUrl();
-		const openedViaDeepLink = launchUrl?.url
-			? await this.handleDeepLink(launchUrl.url)
-			: false;
+    // Handle deep links from both cold start and warm resume.
+    // Cold start: getLaunchUrl() returns the URL that opened the app.
+    // Warm resume: appUrlOpen fires when a new URL arrives while running.
+    const launchUrl = await App.getLaunchUrl();
+    const openedViaDeepLink = launchUrl?.url
+      ? await this.handleDeepLink(launchUrl.url)
+      : false;
 
-		// Normal cold start (tapped the app icon, no deep link): the native shell
-		// loads "/", which is the marketing landing. This is a standalone app, so
-		// boot straight into the Composer instead of showing the landing page.
-		if (!openedViaDeepLink) {
-			await this.bootIntoApp();
-		}
+    // Normal cold start (tapped the app icon, no deep link): the native shell
+    // loads "/", which is the marketing landing. This is a standalone app, so
+    // boot straight into the Composer instead of showing the landing page.
+    if (!openedViaDeepLink) {
+      await this.bootIntoApp();
+    }
 
-		await App.addListener("appUrlOpen", async ({ url }) => {
-			await this.handleDeepLink(url);
-		});
-	}
+    await App.addListener("appUrlOpen", async ({ url }) => {
+      await this.handleDeepLink(url);
+    });
+  }
 
-	// Navigate off the "/" landing into the app's front page. replaceState so the
-	// Android back button from the app entry exits the app (via the backButton
-	// handler) rather than returning to the landing page.
-	private async bootIntoApp(): Promise<void> {
-		const { goto } = await import("$app/navigation");
-		await goto("/create", { replaceState: true });
-	}
+  // Navigate off the "/" landing into the app's front page. replaceState so the
+  // Android back button from the app entry exits the app (via the backButton
+  // handler) rather than returning to the landing page.
+  private async bootIntoApp(): Promise<void> {
+    const { goto } = await import("$app/navigation");
+    await goto("/create", { replaceState: true });
+  }
 
-	// Returns true if the URL was a real deep link that navigated the app.
-	private async handleDeepLink(url: string): Promise<boolean> {
-		try {
-			const parsed = new URL(url);
-			let target = parsed.pathname + parsed.search + parsed.hash;
-			if (!target || target === "/") return false;
-
-			// /q/{code} = QR scan. Open in-app sequence viewer, not landing page.
-			const qMatch = parsed.pathname.match(/^\/q\/([^/?#]+)/);
-			if (qMatch?.[1]) {
-				target = `/browse/gallery?v=${encodeURIComponent(qMatch[1])}`;
-			}
-
-			const { goto } = await import("$app/navigation");
-			await goto(target);
-			return true;
-		} catch {
-			// Malformed URL — ignore.
-			return false;
-		}
-	}
+  // Returns true if the URL was a real deep link that navigated the app.
+  private async handleDeepLink(url: string): Promise<boolean> {
+    const target = resolveNativeDeepLinkTarget(url);
+    if (!target) return false;
+    try {
+      const { goto } = await import("$app/navigation");
+      await goto(target);
+      return true;
+    } catch {
+      // Malformed URL — ignore.
+      return false;
+    }
+  }
 }
