@@ -36,6 +36,9 @@
     exportTotal: number;
     exportError: string;
     onPrint: (mode: PrintPDFMode) => void;
+    /** Print a one-page scaling test sheet (card grid outlines + inch ruler)
+     *  for the current paper. Omit to hide the button. */
+    onPrintTest?: () => void;
     onExportPDF: (mode: PrintPDFMode, copies: number) => void;
     onExportZIP: () => void;
     /** Download fronts + backs as two separate PDF files at once. */
@@ -61,6 +64,7 @@
     exportTotal,
     exportError,
     onPrint,
+    onPrintTest,
     onExportPDF,
     onExportZIP,
     onExportBoth,
@@ -258,6 +262,39 @@
     </div>
   {/if}
 
+  <div class="checklist" aria-label="Print dialog checklist">
+    <span class="checklist-title">Print dialog checklist</span>
+    <ul class="checklist-items">
+      <li>
+        <i class="fas fa-file" aria-hidden="true"></i>
+        Paper size: <strong>{PAPER_SIZES[paperSize].label}</strong>
+      </li>
+      <li>
+        <i class="fas fa-expand" aria-hidden="true"></i>
+        Scale: <strong>100% / Actual size</strong> — never “Fit to page”
+      </li>
+      {#if paperSize === "superb"}
+        <li>
+          <i class="fas fa-print" aria-hidden="true"></i>
+          Printer: <strong>rear feed · Cardstock · Thick Paper on</strong>
+        </li>
+      {/if}
+    </ul>
+    {#if onPrintTest}
+      <button
+        class="test-sheet-btn"
+        disabled={busy}
+        onclick={() => {
+          if (!busy) onPrintTest?.();
+        }}
+        title="One page: card grid outlines + an inch ruler. Print it on scrap paper and measure the ruler before spending card stock."
+      >
+        <i class="fas fa-ruler-horizontal" aria-hidden="true"></i>
+        <span>Print test sheet on scrap paper</span>
+      </button>
+    {/if}
+  </div>
+
   <div class="actions">
     <button
       class="action print-action"
@@ -414,6 +451,80 @@
     border-radius: 8px;
     font-size: var(--font-size-min, 14px);
     color: var(--semantic-error, #f87171);
+  }
+
+  .checklist {
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+  }
+
+  .checklist-title {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
+  }
+
+  .checklist-items {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
+    line-height: 1.4;
+  }
+
+  .checklist-items li {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .checklist-items i {
+    width: 14px;
+    flex-shrink: 0;
+    text-align: center;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+  }
+
+  .checklist-items strong {
+    color: var(--theme-text, #fff);
+    font-weight: 600;
+  }
+
+  .test-sheet-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 10px 14px;
+    font-size: var(--font-size-compact, 13px);
+    font-weight: 600;
+    font-family: inherit;
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .test-sheet-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--theme-text, #fff);
+  }
+
+  .test-sheet-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .actions {

@@ -1,9 +1,20 @@
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, PrintScaling, rgb, StandardFonts } from 'pdf-lib';
 import type { PDFFont, PDFImage, PDFPage } from 'pdf-lib';
 import { planPrintSlots, type PlannedSlot } from './print-slot-planner';
 import type { TnDElement } from '../domain/tnd-element';
 import type { CardPair } from "./types";
-import { CARD_SIZES, getPageLayout, type CardSizeId, type PageLayout, type PaperSizeId } from '../domain/card-sizes';
+import { CARD_SIZES, getPageLayout, PAPER_SIZES, type CardSizeId, type PageLayout, type PaperSizeId } from '../domain/card-sizes';
+
+/** Ask PDF viewers to default their print dialog to 100% scale and to pick the
+ *  tray holding paper that matches the page size. Acrobat and most desktop
+ *  viewers honor these; Chrome's built-in viewer ignores them. They exist to
+ *  close the shrink-to-fit trap: a 13"×19" layout silently scaled to Letter
+ *  prints tiny cards in the middle of the big sheet. */
+function applyPrintViewerPrefs(pdfDoc: PDFDocument): void {
+	const prefs = pdfDoc.catalog.getOrCreateViewerPreferences();
+	prefs.setPrintScaling(PrintScaling.None);
+	prefs.setPickTrayByPDFSize(true);
+}
 
 const GUIDE_COLOR = rgb(0.65, 0.65, 0.65);
 const CROP_COLOR = rgb(0.4, 0.4, 0.4);
@@ -50,6 +61,103 @@ export async function exportDeckPDF(
 		});
 
 		onProgress?.(i + 1, total);
+	}
+
+	const pdfBytes = await pdfDoc.save();
+	return new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
+}
+
+/** One-page scaling test sheet: the true card-grid outlines for this paper +
+ *  card combo, a ruler with 1-inch ticks, and the dialog settings spelled out.
+ *  Printed on scrap paper it proves the whole chain (app → PDF → print dialog
+ *  → driver) before any card stock is spent. A short ruler means the print
+ *  dialog is scaling — the fix is there, not in the deck. */
+export async function exportCalibrationPDF(
+	cardSize: CardSizeId = 'poker',
+	paperSize: PaperSizeId = 'letter',
+): Promise<Blob> {
+	const layout = getPageLayout(cardSize, paperSize);
+	const { cols, rows, cardWidthPt, cardHeightPt, gutterPt, marginXPt, marginYPt, pageWidthPt, pageHeightPt } = layout;
+	const paper = PAPER_SIZES[paperSize];
+	const card = CARD_SIZES[cardSize];
+
+	const pdfDoc = await PDFDocument.create();
+	applyPrintViewerPrefs(pdfDoc);
+	pdfDoc.setTitle(`TKA print test sheet — ${paper.label}`);
+	const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+	const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+	const page = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
+
+	// The real card grid, outlines only: shows exactly where cards will land.
+	for (let r = 0; r < rows; r++) {
+		for (let c = 0; c < cols; c++) {
+			page.drawRectangle({
+				x: marginXPt + c * (cardWidthPt + gutterPt),
+				y: pageHeightPt - marginYPt - (r + 1) * cardHeightPt - r * gutterPt,
+				width: cardWidthPt,
+				height: cardHeightPt,
+				borderColor: GUIDE_COLOR,
+				borderWidth: 0.75,
+			});
+		}
+	}
+
+	// Ruler: the longest whole-inch run that fits with half-inch ends to spare.
+	const rulerInches = Math.floor(paper.widthInches - 1);
+	const rulerLenPt = rulerInches * 72;
+	const rulerX = (pageWidthPt - rulerLenPt) / 2;
+	const rulerY = pageHeightPt / 2;
+	page.drawLine({
+		start: { x: rulerX, y: rulerY },
+		end: { x: rulerX + rulerLenPt, y: rulerY },
+		thickness: 1.5,
+		color: rgb(0, 0, 0),
+	});
+	for (let i = 0; i <= rulerInches; i++) {
+		const x = rulerX + i * 72;
+		page.drawLine({
+			start: { x, y: rulerY },
+			end: { x, y: rulerY + 14 },
+			thickness: 1.5,
+			color: rgb(0, 0, 0),
+		});
+		const label = String(i);
+		page.drawText(label, {
+			x: x - fontBold.widthOfTextAtSize(label, 10) / 2,
+			y: rulerY + 18,
+			size: 10,
+			font: fontBold,
+			color: rgb(0, 0, 0),
+		});
+	}
+
+	// Instructions, centered under the ruler. Black on the bare page — the grid
+	// behind them is faint outline only.
+	const lines: { text: string; f: PDFFont; size: number }[] = [
+		{ text: `${paper.label} test sheet`, f: fontBold, size: 16 },
+		{
+			text: `Print dialog: Paper size ${paper.label}  ·  Scale 100% / Actual size — never "Fit to page".`,
+			f: font, size: 11,
+		},
+		{
+			text: `The ruler above must measure exactly ${rulerInches} inches. Short ruler = the dialog is scaling.`,
+			f: font, size: 11,
+		},
+		{
+			text: `Each outlined cell is one ${card.label} card. The grid should sit centered with even margins.`,
+			f: font, size: 11,
+		},
+	];
+	let textY = rulerY - 40;
+	for (const line of lines) {
+		page.drawText(line.text, {
+			x: (pageWidthPt - line.f.widthOfTextAtSize(line.text, line.size)) / 2,
+			y: textY,
+			size: line.size,
+			font: line.f,
+			color: rgb(0, 0, 0),
+		});
+		textY -= line.size + 10;
 	}
 
 	const pdfBytes = await pdfDoc.save();
@@ -166,6 +274,7 @@ export async function exportHomePrintPDF(
 	const totalSheets = slots.length / cardsPerPage; // integer by construction
 
 	const pdfDoc = await PDFDocument.create();
+	applyPrintViewerPrefs(pdfDoc);
 	const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 	const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 	const includeFronts = mode === 'combined' || mode === 'fronts';

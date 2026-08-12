@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { PDFDocument } from "pdf-lib";
-import { exportHomePrintPDF } from "../print-pdf-exporter";
+import { PDFDocument, PrintScaling } from "pdf-lib";
+import { exportCalibrationPDF, exportHomePrintPDF } from "../print-pdf-exporter";
 import type { CardPair } from "../types";
 
 /**
@@ -95,6 +95,22 @@ describe("exportHomePrintPDF with the How to Read insert", () => {
     expect(height).toBe(792);
   });
 
+  it("embeds print-at-100% viewer preferences", async () => {
+    // PrintScaling None defaults honoring viewers (Acrobat, Edge) to Actual
+    // size — the guard against the shrink-to-Letter trap that printed tiny
+    // cards on a 13x19 sheet.
+    const blob = await exportHomePrintPDF([pair("ABC")], "D", "poker", undefined, "fronts", {
+      paperSize: "superb",
+      copies: 1,
+      groupByElement: false,
+    });
+
+    const doc = await PDFDocument.load(await blob.arrayBuffer());
+    const prefs = doc.catalog.getOrCreateViewerPreferences();
+    expect(prefs.getPrintScaling()).toBe(PrintScaling.None);
+    expect(prefs.getPickTrayByPDFSize()).toBe(true);
+  });
+
   it("does not hand the insert to the serialized front renderer", async () => {
     const labels: string[] = [];
 
@@ -110,5 +126,29 @@ describe("exportHomePrintPDF with the How to Read insert", () => {
 
     // Two copies of the one sequence card; the insert never appears.
     expect(labels).toEqual(["ABC:0", "ABC:0"]);
+  });
+});
+
+describe("exportCalibrationPDF", () => {
+  it("emits one page at the exact paper dimensions", async () => {
+    const superb = await PDFDocument.load(
+      await (await exportCalibrationPDF("poker", "superb")).arrayBuffer()
+    );
+    expect(superb.getPageCount()).toBe(1);
+    expect(superb.getPage(0).getSize()).toEqual({ width: 936, height: 1368 });
+
+    const letter = await PDFDocument.load(
+      await (await exportCalibrationPDF("poker", "letter")).arrayBuffer()
+    );
+    expect(letter.getPage(0).getSize()).toEqual({ width: 612, height: 792 });
+  });
+
+  it("carries the same print-at-100% viewer preferences", async () => {
+    const doc = await PDFDocument.load(
+      await (await exportCalibrationPDF("poker", "superb")).arrayBuffer()
+    );
+    const prefs = doc.catalog.getOrCreateViewerPreferences();
+    expect(prefs.getPrintScaling()).toBe(PrintScaling.None);
+    expect(prefs.getPickTrayByPDFSize()).toBe(true);
   });
 });

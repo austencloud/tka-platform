@@ -37,6 +37,7 @@ export interface DeckPrintStateDependencies {
   getOrBuildPrintPDF: typeof import("../../../services/print-pdf-cache").getOrBuildPrintPDF;
   prepareSerializedPrintRun: typeof import("../../../services/serialized-print-run").prepareSerializedPrintRun;
   exportHomePrintPDF: typeof import("../../../services/print-pdf-exporter").exportHomePrintPDF;
+  exportCalibrationPDF: typeof import("../../../services/print-pdf-exporter").exportCalibrationPDF;
   printPdfBlob(blob: Blob): void | Promise<void>;
   exportDeckZIP: typeof import("../../../services/print-zip-exporter").exportDeckZIP;
 }
@@ -414,6 +415,22 @@ export function createDeckPrintState(
     }
   }
 
+  // No deck required and no PDF cache: the sheet is cheap to rebuild and must
+  // always reflect the CURRENT card size + paper size selection.
+  async function printTestSheet(): Promise<void> {
+    if (isPrinting) return;
+    isPrinting = true;
+    exportError = "";
+    try {
+      const blob = await deps.exportCalibrationPDF(cardSize, paperSize);
+      await deps.printPdfBlob(blob);
+    } catch (error) {
+      exportError = `Test sheet failed: ${error instanceof Error ? error.message : error}`;
+    } finally {
+      isPrinting = false;
+    }
+  }
+
   async function exportZIP(): Promise<void> {
     if (sortedSequences.length === 0) return;
     isExporting = true;
@@ -592,6 +609,7 @@ export function createDeckPrintState(
     getAiSummary,
     changeCardSize,
     changePaperSize,
+    printTestSheet,
     requestRerender() {
       rerenderKey++;
     },

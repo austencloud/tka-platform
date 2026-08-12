@@ -94,6 +94,11 @@
         await import("../../services/print-pdf-exporter");
       return exportHomePrintPDF(...args);
     },
+    async exportCalibrationPDF(...args) {
+      const { exportCalibrationPDF } =
+        await import("../../services/print-pdf-exporter");
+      return exportCalibrationPDF(...args);
+    },
     async printPdfBlob(blob) {
       const { printPdfBlob } = await import("../../services/print-blob");
       printPdfBlob(blob);
@@ -607,6 +612,7 @@
             exportTotal={print.exportTotal}
             exportError={print.exportError}
             onPrint={print.print}
+            onPrintTest={print.printTestSheet}
             onExportPDF={print.exportPDF}
             onExportZIP={print.exportZIP}
             onExportBoth={print.exportFrontsAndBacks}
