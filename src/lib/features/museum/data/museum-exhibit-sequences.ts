@@ -20,7 +20,7 @@ import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 
 // ── Raw MCP format ──
 
-interface RawMotion {
+export interface RawMotion {
 	color: string;
 	startLocation: string;
 	endLocation: string;
@@ -30,7 +30,7 @@ interface RawMotion {
 	endOrientation: string;
 }
 
-interface RawStep {
+export interface RawStep {
 	letter: string;
 	startPosition: string;
 	endPosition: string;
@@ -39,7 +39,7 @@ interface RawStep {
 	stepNumber: number;
 }
 
-interface RawSequence {
+export interface RawSequence {
 	word: string;
 	steps: RawStep[];
 }
@@ -688,3 +688,10 @@ const GM = "diamond" as GridMode;
 export const MUSEUM_EXHIBIT_SEQUENCES: Record<string, MuseumSequenceData> = Object.fromEntries(
 	Object.entries(RAW).map(([id, raw]) => [id, convertRaw(raw, GM)])
 );
+
+/**
+ * The verbatim transcriptions, pre-conversion. The wing-declaration validator
+ * compares these field-for-field against the l1-tnd-motions catalog
+ * (static/data/hero/tnd-base-words.json) — the canonical-binding guard.
+ */
+export const RAW_MUSEUM_SEQUENCES: Record<string, RawSequence> = RAW;
