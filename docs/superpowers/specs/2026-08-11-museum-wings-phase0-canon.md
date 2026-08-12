@@ -237,3 +237,10 @@ triptych → the choreo-card opener — before the other five wings board
 Gate 1 under the lockstep rule. The triptych is the unproven core; prove it
 once, then the agent fleet stamps the template across the remaining wings.
 Details in the parent spec's amended rule 2.
+
+**Built (2026-08-12):** the declarations layer is live —
+`src/lib/features/museum/data/wing-declarations/` (types, six manifests,
+grammar validator) with the verbatim canonical binding enforced in CI
+(`tests/unit/museum/wing-declaration-grammar.test.ts`), and
+`CAVE_MODE_ROOMS` derived from the manifests. Pending station refs
+(openers, viewpoints) are each wing's Gate 1 placement obligations.
