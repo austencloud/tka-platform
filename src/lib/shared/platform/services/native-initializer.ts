@@ -105,6 +105,14 @@ export class NativeInitializer {
     const target = resolveNativeDeepLinkTarget(url);
     if (!target) return false;
     try {
+      // The native launch URL arrives before the root layout finishes
+      // Firestore/auth startup. Waiting at this boundary makes the eventual
+      // navigation observable by the already-mounted sequence viewer host,
+      // instead of asking it to recover a route that completed during boot.
+      const { awaitAuthSettled } =
+        await import("$lib/shared/auth/state/auth-state.svelte");
+      await awaitAuthSettled();
+
       const { goto } = await import("$app/navigation");
       await goto(target);
       return true;
