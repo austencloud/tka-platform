@@ -202,6 +202,16 @@ export const startMetaConnect = onCall(
             state,
           });
 
+    // The other half of the redirect_uri comparison Meta refuses to show us.
+    // State is a single-use capability and stays out of the logs.
+    functions.logger.info("Meta connect authorization requested", {
+      target,
+      authorizationUrl: authorizationUrl.replace(
+        /([?&]state=)[^&]*/,
+        "$1<redacted>"
+      ),
+    });
+
     return { authorizationUrl, state, expiresAtMs };
   }
 );
@@ -246,6 +256,35 @@ function buildAuthorizeUrl(input: {
   return url.toString();
 }
 
+/**
+ * Enough of the authorization code to diagnose it, and none of it to use.
+ *
+ * Meta answers a code it will not honour with one sentence about redirect_uri,
+ * whatever the real cause. Two of the causes are visible right here, before the
+ * exchange: Express parses the query as form-encoded, where `+` decodes to a
+ * space, so a code carrying one arrives corrupted; and the redirect_uri we are
+ * about to redeem with is a constant that must match what the dialog was given.
+ * Recording both alongside the code's shape is what separates those from a
+ * grant Meta minted against some other callback.
+ */
+function logCodeShape(
+  target: MetaConnectionTarget,
+  rawUrl: string,
+  code: string
+): void {
+  const rawCode = /[?&]code=([^&]*)/.exec(rawUrl)?.[1] ?? "";
+  functions.logger.info("Meta connect callback received a code", {
+    target,
+    redirectUri: META_CONNECT_CALLBACK_URL,
+    codeLength: code.length,
+    codeHead: code.slice(0, 8),
+    codeTail: code.slice(-8),
+    codeHasSpace: code.includes(" "),
+    rawEncodedLength: rawCode.length,
+    rawHasPlus: rawCode.includes("+"),
+  });
+}
+
 export const metaConnectCallback = onRequest(
   { secrets: CONNECT_SECRETS, cors: false },
   async (request, response) => {
@@ -273,6 +312,11 @@ export const metaConnectCallback = onRequest(
       if (!code || code.length > 4096) {
         throw new MetaConnectError("meta/provider-error");
       }
+      logCodeShape(
+        claimed.data.target,
+        request.originalUrl ?? request.url,
+        code
+      );
 
       const accountName =
         claimed.data.target === "instagram"

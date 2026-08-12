@@ -17,6 +17,7 @@
  *     POST  graph.facebook.com/{page-id}/video_reels   upload_phase=finish
  */
 
+import * as functions from "firebase-functions";
 import {
   MetaPublishError,
   mapMetaError,
@@ -61,9 +62,31 @@ async function graphRequest<T>(
   }
 
   if (!response.ok) {
+    // Meta's `error_subcode` is what separates "this code was already
+    // redeemed" from "expired" from "minted against another redirect_uri" —
+    // three different bugs behind one sentence about redirect_uri. Only the
+    // sentence survives `mapMetaError`, so the subcode is recorded here or
+    // nowhere. The endpoint is logged as host+path only: the Facebook token
+    // exchange carries `client_secret` in its query string.
+    const endpoint = safeEndpoint(url);
+    functions.logger.warn("Meta rejected a Graph call", {
+      endpoint,
+      httpStatus: response.status,
+      body: text.slice(0, 600),
+    });
     throw mapMetaError(payload as MetaErrorPayload | null, response.status);
   }
   return payload as T;
+}
+
+/** Host and path of a Graph URL, never its query string. */
+function safeEndpoint(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.host}${parsed.pathname}`;
+  } catch {
+    return "unparseable";
+  }
 }
 
 function form(params: Record<string, string | undefined>): URLSearchParams {
