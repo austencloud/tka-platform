@@ -66,7 +66,7 @@ const expectedHashes: Record<keyof typeof factories, string> = {
   createDefaultVoidConfig:
     "b10ed0531f8504ea86366957b22e713b80aeb1b03a6b4f33fd485e395d6b42b2",
   createDefaultWinterConfig:
-    "e6ef9afe683a89872c02660b45f6b7d4a96e2d94b591a6d4f01954624f8408ac",
+    "ca001318c24be406fefcdd5232c5682fca900da8f1a00f19ee321d6f25dfd39e",
 };
 
 describe("scene configuration defaults", () => {

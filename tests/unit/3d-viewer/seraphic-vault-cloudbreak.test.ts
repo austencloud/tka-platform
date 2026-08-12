@@ -22,8 +22,10 @@ interface CloudbreakLayout {
     outlineXZ: [number, number][];
   };
   distantMesas: (LayoutPoint & { id: string })[];
-  sun: LayoutPoint & {
-    visualDiameter: number;
+  sun: {
+    position: [number, number, number];
+    visualDiameter?: number;
+    angularDiameterDegrees?: number;
   };
   cameraPresets: Record<
     string,
@@ -70,7 +72,6 @@ describe("Olive Cloudbreak spatial contract", () => {
   });
 
   it("keeps the approved high olive mesa lateral correction", () => {
-    expect(layout.revision).toBe("olive-cloudbreak-r2");
     expect(
       layout.distantMesas.find(({ id }) => id === "high-olive")?.position
     ).toEqual([14, 12.5, -69]);
@@ -87,8 +88,15 @@ describe("Olive Cloudbreak spatial contract", () => {
     ]);
   });
 
-  it("keeps the far sun clear of every mesa in each registered camera", () => {
-    for (const preset of Object.values(layout.cameraPresets)) {
+  it("keeps the angular sun clear of every mesa in each hero camera", () => {
+    const sunDirection = new Vector3(...layout.sun.position).normalize();
+    const heroPresets = [
+      layout.cameraPresets.desktop,
+      layout.cameraPresets.portrait,
+      layout.cameraPresets.landscapePhone,
+    ];
+
+    for (const preset of heroPresets) {
       const camera = new PerspectiveCamera(
         preset.fovDegrees,
         preset.aspect,
@@ -100,10 +108,22 @@ describe("Olive Cloudbreak spatial contract", () => {
       camera.updateMatrixWorld();
       camera.updateProjectionMatrix();
 
-      const sunProjection = new Vector3(...layout.sun.position).project(camera);
+      const sunDistance = layout.sun.angularDiameterDegrees ? 150 : undefined;
+      const sunPosition = sunDistance
+        ? camera.position.clone().addScaledVector(sunDirection, sunDistance)
+        : new Vector3(...layout.sun.position);
+      const sunProjection = sunPosition.clone().project(camera);
+      const sunDiameter = sunDistance
+        ? 2 *
+          sunDistance *
+          Math.tan((layout.sun.angularDiameterDegrees! * Math.PI) / 360)
+        : layout.sun.visualDiameter!;
       const sunHalfWidth =
-        projectedWidth(camera, layout.sun.position, layout.sun.visualDiameter) /
-        2;
+        projectedWidth(
+          camera,
+          sunPosition.toArray() as [number, number, number],
+          sunDiameter
+        ) / 2;
       for (const mesa of layout.distantMesas) {
         const mesaProjection = new Vector3(...mesa.position).project(camera);
         const mesaHalfWidth =

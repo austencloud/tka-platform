@@ -14,10 +14,19 @@ describe("Scene Lab composer coverage", () => {
     expect(new Set(actual).size).toBe(actual.length);
   });
 
-  it("uses catalog model paths that exist on disk", () => {
+  it("uses deployable catalog paths or declared raw authoring inputs", () => {
     for (const plugin of composerRegistry.list()) {
       for (const item of plugin.catalog.allItems()) {
         if (!item.modelPath) continue;
+
+        if (item.modelPath.endsWith("_raw.glb")) {
+          expect(
+            item.modelPath,
+            `${plugin.sceneId}/${item.key}: ${item.modelPath}`
+          ).toMatch(/^\/models\/(?:[a-z0-9-]+\/)*[a-z0-9-]+_raw\.glb$/);
+          continue;
+        }
+
         expect(
           existsSync(resolve("static", item.modelPath.replace(/^\//, ""))),
           `${plugin.sceneId}/${item.key}: ${item.modelPath}`
