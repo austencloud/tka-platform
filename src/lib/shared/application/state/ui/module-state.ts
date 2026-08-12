@@ -1,6 +1,7 @@
 import { browser } from "$app/environment";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { writeUrl } from "$lib/shared/navigation/services/url-state";
+import { isStandaloneAppSurface } from "$lib/shared/navigation/services/app-shell-route";
 import type { ModuleId } from "../../../navigation/domain/types";
 import { featureFlagService } from "../../../auth/services/post-hog-feature-flag-service.svelte";
 import { navigationState } from "../../../navigation/state/navigation-state.svelte";
@@ -302,6 +303,10 @@ export async function initializeModulePersistence(): Promise<void> {
     let urlTab: string | null = null;
     if (browser) {
       const pathname = window.location.pathname;
+      // Some focused screens need Firebase and auth without being navigation
+      // modules. Their URL belongs to the screen, so module restore must not
+      // reinterpret the first path segment and rewrite it to Create.
+      if (isStandaloneAppSurface(pathname)) return;
       const searchParams = new URLSearchParams(window.location.search);
       const parts = pathname.replace(/^\/+/, "").split("/").filter(Boolean);
       const firstPart = parts[0];
