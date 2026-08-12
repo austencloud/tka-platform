@@ -6,7 +6,7 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { tryGetAccountSetupContext } from "$lib/shared/onboarding/context/account-setup-context";
-  import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
+  import { prefersReducedData } from "$lib/shared/platform/network-conditions";
   import type { AppSettings } from "$lib/shared/settings/domain/app-settings";
   import { applyThemeFromColors } from "$lib/shared/settings/utils/background-theme-calculator";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -31,7 +31,7 @@
   let previewedType = $state(initialPreview ?? selectedType);
   let lastSelectedType = selectedType;
   let mounted = $state(false);
-  let constrainedConnection = $state(false);
+  let reducedDataPreferred = $state(false);
   let webglAvailable = $state(true);
   let failedTheme = $state<BackgroundType | null>(null);
   let prefersReducedMotion = $state(false);
@@ -41,12 +41,12 @@
   const selectedTheme = $derived(getShowroomTheme(selectedType));
   const livePreview = $derived(
     mounted &&
-      !constrainedConnection &&
+      !reducedDataPreferred &&
       webglAvailable &&
       failedTheme !== previewedType
   );
   const fallbackReason = $derived<"connection" | "renderer" | null>(
-    constrainedConnection
+    reducedDataPreferred
       ? "connection"
       : !webglAvailable || failedTheme === previewedType
         ? "renderer"
@@ -62,7 +62,7 @@
 
   onMount(() => {
     mounted = true;
-    constrainedConnection = isConstrainedConnection();
+    reducedDataPreferred = prefersReducedData();
     webglAvailable = detectWebGL();
 
     const motionPreference = window.matchMedia(
