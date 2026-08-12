@@ -26,7 +26,7 @@ const entries = Object.entries(AUTH_NUDGE_TEXTS) as [
 ][];
 
 describe("AUTH_NUDGE_TEXTS — one phrasing for the account ask", () => {
-  it("has exactly the 18 live triggers, including collections and sharing", () => {
+  it("has exactly the 19 live triggers, including patterns, collections, and sharing", () => {
     expect(Object.keys(AUTH_NUDGE_TEXTS).sort()).toEqual(
       [
         "step-cap-guest",
@@ -38,6 +38,7 @@ describe("AUTH_NUDGE_TEXTS — one phrasing for the account ask", () => {
         "module:learn",
         "module:library",
         "module:settings",
+        "patterns-guest",
         "prop-collection",
         "save",
         "saved-setups",
