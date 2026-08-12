@@ -22,4 +22,20 @@ describe("festival /start route contract", () => {
       "if (isStandaloneAppSurface(pathname)) return;"
     );
   });
+
+  it("guards navigation history before it seeds an app-module URL", () => {
+    const coordinator = readSource(
+      "src/lib/shared/navigation-coordinator/navigation-coordinator.svelte.ts"
+    );
+
+    const standaloneGuard = coordinator.indexOf(
+      "if (isStandaloneAppSurface(window.location.pathname)) return;"
+    );
+    const historySeed = coordinator.indexOf(
+      "replaceHistoryState(navigationState.currentModule, navigationState.activeTab);"
+    );
+
+    expect(standaloneGuard).toBeGreaterThan(-1);
+    expect(historySeed).toBeGreaterThan(standaloneGuard);
+  });
 });

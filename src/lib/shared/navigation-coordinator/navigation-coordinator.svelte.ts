@@ -51,6 +51,7 @@ import {
 } from "../auth/services/post-hog-feature-flag-service.svelte";
 import { parseCreatorPathname } from "../navigation/services/creator-routes";
 import { pruneParamsForNavigation } from "../navigation/services/url-parameter-policy";
+import { isStandaloneAppSurface } from "../navigation/services/app-shell-route";
 import { writeUrl } from "../navigation/services/url-state";
 import { buildNavigationDestinationId } from "../navigation/domain/navigation-visit";
 import { getNavigationVisitPersister } from "../navigation/get-navigation-visit-persister";
@@ -789,6 +790,12 @@ function parsePathNavigation(): {
 
 export function initializeNavigationHistory() {
   if (historyInitialized || typeof window === "undefined") return;
+
+  // Focused app surfaces use auth and the shared application bootstrap, but
+  // they own their URL and content. Seeding module history here would rewrite
+  // an unknown first segment such as /start to the current app module.
+  if (isStandaloneAppSurface(window.location.pathname)) return;
+
   historyInitialized = true;
 
   // First, parse the URL pathname to see if user navigated directly to a specific module/tab
