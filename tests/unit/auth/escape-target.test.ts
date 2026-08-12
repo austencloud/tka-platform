@@ -151,7 +151,7 @@ describe("resolveEscapeTarget — boundaries", () => {
     expect(t.label).toBe("Open in browser");
   });
 
-  it("android app-target on the scan route uses the explicit app bridge", () => {
+  it("android app-target on the scan route uses the directly claimed path", () => {
     const t = resolveEscapeTarget({
       platform: "android",
       iosMajorVersion: null,
@@ -159,8 +159,8 @@ describe("resolveEscapeTarget — boundaries", () => {
       currentUrl: "https://tkaflowarts.com/q/ABCD",
     });
     const dataPart = t.url!.split("#Intent")[0];
-    expect(dataPart).toContain("/store/open?to=");
-    expect(decodeURIComponent(dataPart)).toContain("/q/ABCD");
+    expect(dataPart).toContain("/q/ABCD");
+    expect(dataPart).not.toContain("/store/open?to=");
   });
 
   it("android app-target on an UNcovered route bridges through /store/open", () => {

@@ -8,8 +8,8 @@ const manifest = readFileSync(
 );
 
 describe("Android App Links", () => {
-  it("leaves QR scans in the browser but claims deliberate app-entry routes", () => {
-    expect(manifest).not.toContain('android:pathPrefix="/q/"');
+  it("opens QR scans and deliberate app-entry routes in the installed app", () => {
+    expect(manifest).toContain('android:pathPrefix="/q/"');
     expect(manifest).toContain('android:pathPrefix="/sequence/"');
     expect(manifest).toContain('android:pathPrefix="/store/"');
   });

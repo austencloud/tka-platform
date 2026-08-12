@@ -82,11 +82,11 @@ export class InAppBrowserDetector {
    * The ?forceIAB test hook, resolved here rather than at each call site.
    *
    * It has to sit BEHIND the same native short-circuit detect() applies, not be
-   * OR'd on after it. Android App Links claim https://tkaflowarts.com/sequence/*
-   * and /store/* with autoVerify (AndroidManifest.xml), and native-initializer's
-   * handleDeepLink forwards `pathname + search + hash` verbatim to goto() — so
-   * a claimed link carrying ?forceIAB opens the packaged app with the param
-   * intact. Read naively, the app then tells its own users that
+   * OR'd on after it. Android App Links claim https://tkaflowarts.com/q/*,
+   * /sequence/*, and /store/* with autoVerify (AndroidManifest.xml), and the
+   * native deep-link target preserves the query while resolving the destination.
+   * A claimed link carrying ?forceIAB therefore opens the packaged app with the
+   * param intact. Read naively, the app then tells its own users that
    * Google sign-in is blocked here and returns before ever calling
    * signInWithGoogle(), which is a dead button rather than merely wrong copy.
    * Four call sites each re-deriving this is four chances to forget the check.

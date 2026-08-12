@@ -24,10 +24,9 @@
 
             <!--
                 App Links: open deliberate app-entry URLs directly in the app.
-                Printed-card /q/ links stay in the browser so the scan page can
-                record the visit and run its card-to-motion reveal. That page's
-                explicit Open TKA action enters through the claimed /store/open
-                bridge below.
+                Printed-card /q/ links are included so an installed app receives
+                the scanned sequence immediately; Android falls back to the web
+                scan page when the app is not installed.
                 autoVerify triggers Android to fetch
                 https://tkaflowarts.com/.well-known/assetlinks.json
                 and confirm this app owns the domain. Must match both the
@@ -39,6 +38,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" />
                 <data android:host="tkaflowarts.com" />
+                <data android:pathPrefix="/q/" />
                 <data android:pathPrefix="/sequence/" />
                 <data android:pathPrefix="/store/" />
             </intent-filter>

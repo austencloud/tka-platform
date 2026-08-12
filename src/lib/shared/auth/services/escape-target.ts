@@ -19,7 +19,7 @@ const IOS_MIN_SCHEME_VERSION = 17;
  * AASA). An app-target intent for anything else can't be resolved by the
  * installed app, so it must be bridged through a claimed path (see below).
  */
-const COVERED_APP_PREFIXES = ["/sequence/", "/store/"];
+const COVERED_APP_PREFIXES = ["/q/", "/sequence/", "/store/"];
 const APP_BRIDGE_PATH = "/store/open";
 
 function isCoveredAppRoute(pathname: string): boolean {
