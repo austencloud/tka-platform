@@ -124,6 +124,7 @@
         fromUrl: true,
         shortCode: code,
         skipHistoryPush: true,
+        playOnOpen: true,
       });
       openedSuccessfully = true;
     } catch (error) {
@@ -172,24 +173,26 @@
   class="sequence-viewer-drawer"
 >
   {#if overlay.sequence}
-    <SequenceViewerOrchestrator
-      sequence={overlay.sequence}
-      isMobile={isMobileWidth}
-      initialBpm={overlay.initialBpm}
-      initialStep={overlay.initialStep}
-      handPathMode={overlay.handPathMode}
-      playOnOpen={overlay.playOnOpen}
-      onClose={handleDismiss}
-    >
-      {#snippet children(ctx)}
-        <SequenceViewerShell
-          {ctx}
-          sequence={overlay.sequence!}
-          isMobile={isMobileWidth}
-          onClose={handleDismiss}
-        />
-      {/snippet}
-    </SequenceViewerOrchestrator>
+    {#key overlay.sessionKey}
+      <SequenceViewerOrchestrator
+        sequence={overlay.sequence}
+        isMobile={isMobileWidth}
+        initialBpm={overlay.initialBpm}
+        initialStep={overlay.initialStep}
+        handPathMode={overlay.handPathMode}
+        playOnOpen={overlay.playOnOpen}
+        onClose={handleDismiss}
+      >
+        {#snippet children(ctx)}
+          <SequenceViewerShell
+            {ctx}
+            sequence={overlay.sequence!}
+            isMobile={isMobileWidth}
+            onClose={handleDismiss}
+          />
+        {/snippet}
+      </SequenceViewerOrchestrator>
+    {/key}
   {/if}
 </Drawer>
 

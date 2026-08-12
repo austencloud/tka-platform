@@ -52,6 +52,7 @@ vi.mock("../state/sequence-viewer-overlay-state.svelte", () => ({
     initialStep: 0,
     handPathMode: false,
     playOnOpen: false,
+    sessionKey: 0,
     dismissPath: null,
     openedFromUrl: false,
   }),
@@ -109,6 +110,7 @@ describe("SequenceViewerDrawerHost URL bootstrap", () => {
     await vi.waitFor(() => {
       expect(mocks.openSequenceOverlay).toHaveBeenCalledWith(hydratedSequence, {
         fromUrl: true,
+        playOnOpen: true,
         shortCode: "SCAN42",
         skipHistoryPush: true,
       });
@@ -123,5 +125,45 @@ describe("SequenceViewerDrawerHost URL bootstrap", () => {
       redPropType: PropType.CLUB,
       catDogMode: false,
     });
+  });
+
+  it("replaces the open sequence when another QR handoff arrives", async () => {
+    mocks.resolveShortCodeWithRecord.mockImplementation(
+      async (code: string) => ({
+        sequence: { id: `resolved-${code}` },
+        record: null,
+      })
+    );
+    mocks.hydrateSequence.mockImplementation(
+      async (sequence: { id: string }) => ({
+        id: sequence.id.replace("resolved", "hydrated"),
+      })
+    );
+
+    render(SequenceViewerDrawerHost);
+    await vi.waitFor(() => {
+      expect(mocks.afterNavigateCallback).toBeTypeOf("function");
+    });
+
+    for (const code of ["FIRST", "SECOND"]) {
+      const url = new URL(`/browse/gallery?v=${code}`, window.location.origin);
+      window.history.replaceState({}, "", url);
+      mocks.afterNavigateCallback?.({ to: { url } });
+      await vi.waitFor(() => {
+        expect(mocks.openSequenceOverlay).toHaveBeenCalledWith(
+          { id: `hydrated-${code}` },
+          {
+            fromUrl: true,
+            playOnOpen: true,
+            shortCode: code,
+            skipHistoryPush: true,
+          }
+        );
+      });
+    }
+
+    expect(
+      mocks.resolveShortCodeWithRecord.mock.calls.map(([code]) => code)
+    ).toEqual(["FIRST", "SECOND"]);
   });
 });

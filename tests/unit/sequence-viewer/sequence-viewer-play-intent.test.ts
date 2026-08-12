@@ -65,4 +65,51 @@ describe("sequence viewer Play intent", () => {
 
     expect(overlay.playOnOpen).toBe(false);
   });
+
+  it("starts a fresh viewer session when an open sequence is replaced", () => {
+    openSequenceOverlay(
+      { id: "first", name: "First", word: "A", steps: [] } as never,
+      { fromUrl: true, shortCode: "FIRST", skipHistoryPush: true }
+    );
+    const firstSession = overlay.sessionKey;
+
+    openSequenceOverlay(
+      { id: "second", name: "Second", word: "B", steps: [] } as never,
+      {
+        fromUrl: true,
+        shortCode: "SECOND",
+        skipHistoryPush: true,
+        playOnOpen: true,
+      }
+    );
+
+    expect(overlay.isOpen).toBe(true);
+    expect(overlay.sequence?.id).toBe("second");
+    expect(overlay.activeShortCode).toBe("SECOND");
+    expect(overlay.sessionKey).toBeGreaterThan(firstSession);
+    expect(overlay.playOnOpen).toBe(true);
+  });
+
+  it("reopens a closed viewer for the next scanned sequence", () => {
+    openSequenceOverlay(
+      { id: "first", name: "First", word: "A", steps: [] } as never,
+      { fromUrl: true, shortCode: "FIRST", skipHistoryPush: true }
+    );
+    closeSequenceOverlay();
+
+    openSequenceOverlay(
+      { id: "second", name: "Second", word: "B", steps: [] } as never,
+      {
+        fromUrl: true,
+        shortCode: "SECOND",
+        skipHistoryPush: true,
+        playOnOpen: true,
+      }
+    );
+
+    expect(overlay.isOpen).toBe(true);
+    expect(overlay.sequence?.id).toBe("second");
+    expect(overlay.activeShortCode).toBe("SECOND");
+    expect(overlay.playOnOpen).toBe(true);
+  });
 });

@@ -206,6 +206,7 @@
     },
     {
       navigate: goto,
+      openExternalHref: (href) => window.location.assign(href),
       captureScanAction,
       captureScanExport,
       captureScanPlaybackChanged,
@@ -389,7 +390,7 @@
     {openAppHref}
     onAccountSignIn={!embedded ? onAccountSignIn : undefined}
     onAccountOpenApp={openAppHref && !embedded
-      ? () => interactions.recordOpenApp("account_entry")
+      ? interactions.handleAccountOpenApp
       : undefined}
     {guideAction}
     isFavorite={interactions.headerActions.isFavorite}

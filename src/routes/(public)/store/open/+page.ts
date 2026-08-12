@@ -10,7 +10,7 @@ export const prerender = false;
 /**
  * App deep-link bridge.
  *
- * The native app only claims https App Links for /q/, /sequence/, and /store/.
+ * The native app only claims https App Links for /sequence/ and /store/.
  * A link to any other route (e.g. /create/construct) can't open the installed
  * app directly, so the Android escape intent routes it through here — a claimed
  * /store/ path — carrying the real destination as ?to=. This restores it.

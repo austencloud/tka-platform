@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  buildAppBridgePath,
   resolveEscapeTarget,
   safeInternalPath,
 } from "$lib/shared/auth/services/escape-target";
@@ -150,7 +151,7 @@ describe("resolveEscapeTarget — boundaries", () => {
     expect(t.label).toBe("Open in browser");
   });
 
-  it("android app-target on a covered route (/q/) deep-links straight to it", () => {
+  it("android app-target on the scan route uses the explicit app bridge", () => {
     const t = resolveEscapeTarget({
       platform: "android",
       iosMajorVersion: null,
@@ -158,8 +159,8 @@ describe("resolveEscapeTarget — boundaries", () => {
       currentUrl: "https://tkaflowarts.com/q/ABCD",
     });
     const dataPart = t.url!.split("#Intent")[0];
-    expect(dataPart).toContain("/q/ABCD");
-    expect(dataPart).not.toContain("/store/open");
+    expect(dataPart).toContain("/store/open?to=");
+    expect(decodeURIComponent(dataPart)).toContain("/q/ABCD");
   });
 
   it("android app-target on an UNcovered route bridges through /store/open", () => {
@@ -213,5 +214,20 @@ describe("safeInternalPath (bridge open-redirect guard)", () => {
   it("falls back to root on null/empty", () => {
     expect(safeInternalPath(null)).toBe("/");
     expect(safeInternalPath("")).toBe("/");
+  });
+});
+
+describe("buildAppBridgePath", () => {
+  it("carries an internal destination through the claimed app route", () => {
+    const bridge = buildAppBridgePath("/browse/gallery?v=ABCD&bp=club&rp=club");
+    expect(bridge).toBe(
+      "/store/open?to=%2Fbrowse%2Fgallery%3Fv%3DABCD%26bp%3Dclub%26rp%3Dclub"
+    );
+  });
+
+  it("does not carry an external destination", () => {
+    expect(buildAppBridgePath("https://evil.example")).toBe(
+      "/store/open?to=%2F"
+    );
   });
 });

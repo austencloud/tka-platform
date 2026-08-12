@@ -42,6 +42,7 @@ interface ViewerShellInteractionInputs {
 
 interface ViewerShellInteractionDependencies {
   navigate: (href: string) => void | Promise<void>;
+  openExternalHref: (href: string) => void;
   captureScanAction: typeof import("$lib/shared/analytics/scan-analytics").captureScanAction;
   captureScanExport: typeof import("$lib/shared/analytics/scan-analytics").captureScanExport;
   captureScanPlaybackChanged: typeof import("$lib/shared/analytics/scan-analytics").captureScanPlaybackChanged;
@@ -163,7 +164,14 @@ export function createViewerShellInteractionState(
     const href = inputs.getOpenAppHref();
     if (!href) return;
     recordOpenApp("overflow");
-    void dependencies.navigate(href);
+    dependencies.openExternalHref(href);
+  }
+
+  function handleAccountOpenApp(): void {
+    const href = inputs.getOpenAppHref();
+    if (!href) return;
+    recordOpenApp("account_entry");
+    dependencies.openExternalHref(href);
   }
 
   function handleAccountSignIn(): void {
@@ -649,6 +657,7 @@ export function createViewerShellInteractionState(
     },
     mount,
     recordOpenApp,
+    handleAccountOpenApp,
     handleVideoExport,
     handleCardExport,
     handleRemix,

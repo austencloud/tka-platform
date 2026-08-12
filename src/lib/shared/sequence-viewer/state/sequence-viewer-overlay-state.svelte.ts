@@ -21,7 +21,7 @@ let _handPathMode = $state(false);
 let _playOnOpen = $state(false);
 let _openedFromUrl = $state(false);
 let _activeShortCode = $state<string | null>(null);
-let _openToken = 0;
+let _openToken = $state(0);
 
 export function openSequenceOverlay(
   sequence: SequenceData,
@@ -210,6 +210,10 @@ export function getSequenceOverlayState() {
     },
     get activeShortCode() {
       return _activeShortCode;
+    },
+    /** Changes for every open, including replacing an already-open sequence. */
+    get sessionKey() {
+      return _openToken;
     },
   };
 }

@@ -107,6 +107,8 @@
     type ScanResolutionFailureCategory,
   } from "$lib/shared/analytics/scan-resolution-analytics";
   import { ExportAttemptGuard } from "$lib/shared/sequence-viewer/domain/export-attempt-guard";
+  import { getInAppBrowserDetector } from "$lib/shared/auth/get-in-app-browser-detector";
+  import { buildScanAppHandoffHref } from "$lib/shared/qr/services/scan-app-handoff";
 
   // Scan cards download pre-rendered pictographs from the shared cloud store
   // instead of rasterizing on the scanner's device. Enables probeCloud on every
@@ -146,6 +148,12 @@
 
   const { data, onViewerReady }: Props = $props();
   const shortCode = $derived(page.params["code"]);
+  const openAppHref = $derived(
+    buildScanAppHandoffHref(shortCode, page.url.searchParams, {
+      android: browser && getInAppBrowserDetector().getPlatform() === "android",
+      origin: page.url.origin,
+    })
+  );
 
   /**
    * `?demo=1` — this page is being SHOWN, not scanned.
@@ -1160,7 +1168,7 @@
             embedded={isDemo}
             onClose={closeViewer}
             onRemix={openInComposer}
-            openAppHref={`/browse/gallery?from=scan&code=${shortCode}`}
+            {openAppHref}
             onAccountSignIn={ctx.openSignInPrompt}
             guideAction={{ label: "See it in the Guide", onSelect: seeInGuide }}
             exportOverrides={{

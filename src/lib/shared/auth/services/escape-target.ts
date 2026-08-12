@@ -19,7 +19,7 @@ const IOS_MIN_SCHEME_VERSION = 17;
  * AASA). An app-target intent for anything else can't be resolved by the
  * installed app, so it must be bridged through a claimed path (see below).
  */
-const COVERED_APP_PREFIXES = ["/q/", "/sequence/", "/store/"];
+const COVERED_APP_PREFIXES = ["/sequence/", "/store/"];
 const APP_BRIDGE_PATH = "/store/open";
 
 function isCoveredAppRoute(pathname: string): boolean {
@@ -37,6 +37,15 @@ export function safeInternalPath(to: string | null | undefined): string {
   if (!to) return "/";
   if (to === "/") return "/";
   return /^\/(?![/\\])/.test(to) ? to : "/";
+}
+
+/**
+ * Give a browser page an explicit doorway into the installed app. Android
+ * claims this bridge, while a browser without the app follows the same route
+ * and lands on the validated destination normally.
+ */
+export function buildAppBridgePath(to: string): string {
+  return `${APP_BRIDGE_PATH}?to=${encodeURIComponent(safeInternalPath(to))}`;
 }
 
 export type EscapeMethod =
@@ -114,9 +123,7 @@ function androidIntent(u: URL, input: EscapeInput): EscapeTarget {
     // claimed bridge path carrying the real destination for the app to restore.
     const appTail = isCoveredAppRoute(u.pathname)
       ? tail
-      : `${u.host}${APP_BRIDGE_PATH}?to=${encodeURIComponent(
-          u.pathname + u.search + u.hash
-        )}`;
+      : `${u.host}${buildAppBridgePath(u.pathname + u.search + u.hash)}`;
     return {
       method: "android_intent",
       label: "Open in the app",
