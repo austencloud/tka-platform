@@ -17,6 +17,22 @@ afterEach(() => {
 });
 
 describe("production release feature gate", () => {
+  it("keeps role-gated operator modules in the production bundle", async () => {
+    const flags = await loadProductionFeatureFlags();
+    const defineMap = flags.getEnabledFeaturesDefineMap();
+
+    expect(flags.isFeatureEnabled("admin")).toBe(true);
+    expect(flags.isFeatureEnabled("choreo-card")).toBe(true);
+    expect(defineMap).not.toHaveProperty("__FEATURE_ADMIN__");
+    expect(defineMap).not.toHaveProperty("__FEATURE_CHOREO_CARD__");
+    expect(flags.getDisabledFeatureModulePaths()).not.toContain(
+      "features/admin/"
+    );
+    expect(flags.getDisabledFeatureModulePaths()).not.toContain(
+      "features/choreo-card/"
+    );
+  });
+
   it("fails Coven closed without stubbing its museum-shared components", async () => {
     const flags = await loadProductionFeatureFlags();
     const coven = flags.FEATURES.find((feature) => feature.id === "coven");

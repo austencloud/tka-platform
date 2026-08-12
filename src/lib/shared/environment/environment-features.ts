@@ -131,9 +131,9 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   tika: false, // Tika AI tutor (admin-only for now)
   compose: false,
   train: false,
-  admin: false,
+  admin: true, // Production tool; runtime admin-role checks still control access
   settings: true, // Settings always available
-  choreo_card: false, // Choreo card generator (internal tool)
+  choreo_card: true, // Production tool; module definition keeps it admin-only
   word_card: false, // Legacy alias for choreo_card
   choreo: false, // Choreo sheet builder (route renamed from "write" Jul 2026)
   watch: false, // Watch videos/performances (unreleased)
