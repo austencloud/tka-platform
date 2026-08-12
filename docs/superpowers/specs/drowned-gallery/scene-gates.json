@@ -1,16 +1,17 @@
 {
   "schemaVersion": 1,
   "sceneId": "drowned-gallery",
-  "title": "The Drowned Gallery (Three Channels) — REJECTED direction",
+  "title": "Water wing (SPLIT-SAME) — the drowned gallery and the grotto",
   "domainProofRequired": true,
   "currentGate": 1,
   "authority": {
-    "experienceSpec": "docs/superpowers/specs/2026-08-09-drowned-gallery-channels-design.md",
+    "experienceSpec": "docs/superpowers/specs/2026-08-11-museum-exhibit-hallway-architecture-design.md",
     "roomShellSource": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
     "planContract": "src/lib/features/museum/data/drowned-gallery-terrain.ts",
     "museumTrackerItems": [
       "DRct0NTnvfNc20F1Z4ee",
-      "kZfilqc0ViZpGR3nPOPU"
+      "kZfilqc0ViZpGR3nPOPU",
+      "6zDGcqYJRGUlk1PxGpCx"
     ]
   },
   "sequenceFingerprints": [
@@ -18,29 +19,30 @@
       "performerId": "cave-water-a",
       "sequenceId": "cave-water-seq-a",
       "sourcePath": "src/lib/features/museum/data/museum-exhibit-sequences.ts",
-      "sourceSha256": "707a7111e769241d86c6d19c6bdbc45da32da318b13a07ddc03bc3a5f0ad3843",
-      "fingerprint": "32372ee83b959d584e73c9cf00d11c25609179885a215f4cf2b7c4c68f4dde8c"
+      "sourceSha256": "8036c7990655f565a6ed3ad68b4ccda2c5d363faf257de0227429ac5860cf52a",
+      "fingerprint": "cb50f18f85155872b8bfa624e13097c8d5f07302a01e0c0f5f7c953f68e947c4"
     },
     {
       "performerId": "cave-water-b",
       "sequenceId": "cave-water-seq-b",
       "sourcePath": "src/lib/features/museum/data/museum-exhibit-sequences.ts",
-      "sourceSha256": "707a7111e769241d86c6d19c6bdbc45da32da318b13a07ddc03bc3a5f0ad3843",
-      "fingerprint": "a7ad76c247a110a9d9d333f65be37c96ecb8efd459cf07f91a80b9ce55987a7a"
+      "sourceSha256": "8036c7990655f565a6ed3ad68b4ccda2c5d363faf257de0227429ac5860cf52a",
+      "fingerprint": "6e0ff432836ea3de0a9681bca424f23a82de208546e2d79376aa328c41a4ef85"
     },
     {
       "performerId": "cave-water-c",
       "sequenceId": "cave-water-seq-c",
       "sourcePath": "src/lib/features/museum/data/museum-exhibit-sequences.ts",
-      "sourceSha256": "707a7111e769241d86c6d19c6bdbc45da32da318b13a07ddc03bc3a5f0ad3843",
-      "fingerprint": "25dfe083297055aabe01c75718df5e897904a09cd010a90ad013a6fe71d7dca0"
+      "sourceSha256": "8036c7990655f565a6ed3ad68b4ccda2c5d363faf257de0227429ac5860cf52a",
+      "fingerprint": "06604b707b394bc97a61990475d56d125acc2ff5a9d9e94f365ca38dd8e7fc5f"
     }
   ],
+  "fingerprintMethod": "sha256 over canonical JSON (object keys sorted recursively) of the entry in RAW_MUSEUM_SEQUENCES.",
   "claims": [
     {
       "id": "C-001",
       "class": "literal",
-      "statement": "Water stages the exact museum sequences AAAA, BBBB and CCCC (cave-water-seq-a/b/c), alpha3-to-alpha3 loops.",
+      "statement": "Water stages the exact museum sequences AAAA, BBBB and CCCC (cave-water-seq-a/b/c), five-step alpha1-to-alpha1 loops. Re-fingerprinted 2026-08-12 after commit 8476f35c2e re-transcribed all 19 wing sequences verbatim from the catalog and moved these three off alpha3.",
       "evidence": [
         "src/lib/features/museum/data/museum-exhibit-sequences.ts",
         "docs/superpowers/specs/drowned-gallery/drowned-gallery-production-contract.md"
@@ -51,41 +53,52 @@
       "class": "literal",
       "statement": "A, B and C are the Split-Same group of Type 1 Dual-Shift: A blue pro/red pro, B anti/anti, C blue anti/red pro.",
       "evidence": [
-        "Flow Arts MCP get_letter_explanation A/B/C, 2026-08-09",
+        "Flow Arts MCP get_letter_explanation C, 2026-08-12: Type 1 Dual-Shift, blue anti / red pro, Split-Same group is ABC = pro + anti + hybrid",
         "src/lib/features/museum/data/museum-exhibit-sequences.ts"
       ]
     },
     {
       "id": "C-003",
-      "class": "metaphor",
-      "statement": "Channel length encodes letter order: A shortest, C (the hybrid) longest.",
+      "class": "literal",
+      "statement": "Every dimension on the Gate 1 board is read out of the compiled room geometry, not drawn by eye.",
       "evidence": [
-        "docs/superpowers/specs/drowned-gallery/drowned-gallery-gate1-report.json"
+        "src/lib/features/museum/data/drowned-gallery-terrain.ts",
+        "docs/superpowers/specs/drowned-gallery/water-gate1-board.html"
       ]
     },
     {
       "id": "C-004",
       "class": "metaphor",
-      "statement": "The mirror pool doubling all three performers expresses water showing motion twice.",
-      "evidence": []
+      "statement": "Still water you cannot cross stands in for a display case: the three performers are visible and unreachable.",
+      "evidence": [
+        "docs/superpowers/specs/drowned-gallery/water-gate1-board.html"
+      ]
     },
     {
       "id": "C-005",
-      "class": "invention",
-      "statement": "Private air-bell audiences: surfacing and meeting a letter are the same moment.",
+      "class": "metaphor",
+      "statement": "The mirror pool doubling each performer, and the wing's shared move being shown once on the opener before you meet three versions of it.",
       "evidence": []
     },
     {
       "id": "C-006",
       "class": "invention",
-      "statement": "A reduced-gravity buoyant water shaft carries the player up to the grotto ring after the dives.",
-      "evidence": []
-    },
+      "statement": "The parapet deck, the opener plinth and dais, three wall screens and three rail cards. None exist in the geometry yet; the Gate 1 board is the proposal for all of them.",
+      "evidence": [
+        "docs/superpowers/specs/drowned-gallery/water-gate1-board.html"
+      ]
+    }
+  ],
+  "supersededClaims": [
     {
-      "id": "C-007",
-      "class": "invention",
-      "statement": "Each channel mouth glows with its bell's firelight color through the water.",
-      "evidence": []
+      "supersededBy": "docs/superpowers/specs/2026-08-11-museum-exhibit-hallway-architecture-design.md",
+      "note": "The three-channels direction was rejected on 2026-08-11. Its air-bell audiences, buoyant water shaft, channel-length letter ordering and firelit channel mouths are retired with it.",
+      "statements": [
+        "Channel length encodes letter order: A shortest, C (the hybrid) longest.",
+        "Private air-bell audiences: surfacing and meeting a letter are the same moment.",
+        "A reduced-gravity buoyant water shaft carries the player up to the grotto ring after the dives.",
+        "Each channel mouth glows with its bell's firelight color through the water."
+      ]
     }
   ],
   "exemptions": [],
@@ -128,9 +141,52 @@
     },
     {
       "id": "measured-plan",
-      "status": "rejected",
-      "evidence": [],
-      "checks": []
+      "status": "ready-for-review",
+      "evidence": [
+        {
+          "kind": "floor-plan",
+          "path": "docs/superpowers/specs/drowned-gallery/water-gate1-board.html",
+          "note": "Sheets P-01 (whole walk, 1 grid = 5 m) and P-02 (the grotto at 1 grid = 1 m) with entry, exit, doors, blocked rects, performer shelf, opener and parapet."
+        },
+        {
+          "kind": "vertical-section",
+          "path": "docs/superpowers/specs/drowned-gallery/water-gate1-board.html",
+          "note": "Sheet S-01: floor line, eye line at 1.6 m, water surfaces at -1.5 m and -0.45 m, rock roof at -1.9 m, submerged span measured at 28.4 m of 124.9 m."
+        },
+        {
+          "kind": "route-storyboard",
+          "path": "docs/superpowers/specs/drowned-gallery/water-gate1-board.html",
+          "note": "Thirteen numbered stops with chainage, what the visitor sees and what they understand at each."
+        },
+        {
+          "kind": "sightline-study",
+          "path": "docs/superpowers/specs/drowned-gallery/water-gate1-board.html",
+          "note": "Sheet P-02 sightlines from the parapet stand at (20.25, 15.0): A 16.6 m at -53 deg, B 11.8 m at -32 deg, C 10.0 m at +4.3 deg, 57.2 deg total spread, with reflection bounce points."
+        }
+      ],
+      "checks": [
+        {
+          "name": "walkability",
+          "status": "passed",
+          "evidence": "Route sampled every 0.2 m against createDrownedGalleryTerrain blockedAt/elevationAt. No sample lands on shore, channel, pool, rock fill or a threshold jamb. Parapet deck is the one exception and is recorded as decision W-2: it sits inside the single blocked pool rect, which must be split into three when the deck is built."
+        },
+        {
+          "name": "clearance",
+          "status": "passed",
+          "evidence": "Eye at 1.6 m over the floor clears the gallery rock roof at -1.9 m throughout the submerged leg; grotto ceiling is 9.5 m over the deck. Landing at -3.1 m is derived so the eye sits exactly on the -1.5 m waterline."
+        },
+        {
+          "name": "sightlines",
+          "status": "passed",
+          "evidence": "All three cases visible from the parapet stand with a receding 57.2 deg spread; all three reflection bounce points computed at z = 9.17, inside the channel span 6.25 to 10.25, so each performer's double lands on water rather than deck."
+        },
+        {
+          "name": "final-view",
+          "status": "passed",
+          "evidence": "Parapet in the northeast corner of the grotto is the last stop before the Fire door. Reached by walking the procession west to east past A, B and C with no backtracking; A reads smallest from there, so the three cases stack in walk order."
+        }
+      ],
+      "approval": null
     },
     {
       "id": "playable-graybox",

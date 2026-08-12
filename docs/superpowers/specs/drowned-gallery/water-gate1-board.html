@@ -1,0 +1,451 @@
+<title>Water wing — Gate 1 board</title>
+<style>
+:root {
+  --paper: #eef1f2;
+  --sheet: #f8fafa;
+  --ink: #0e1a20;
+  --ink-2: #405058;
+  --ink-3: #6d7d85;
+  --line: #c3cdd1;
+  --line-2: #9daab0;
+  --deck: #dfe6e8;
+  --rock: #cfd6d8;
+  --rockmass: #d7dee0;
+  --water: #7fb6c9;
+  --water-deep: #4a8ba3;
+  --accent: #c4622d;
+  --route: #b8860b;
+  --new: #1f7a6a;
+  --shadow: 0 1px 0 rgba(14,26,32,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0b1116;
+    --sheet: #111a20;
+    --ink: #dfe8eb;
+    --ink-2: #9fb0b8;
+    --ink-3: #74868f;
+    --line: #24333c;
+    --line-2: #3c515c;
+    --deck: #1a262d;
+    --rock: #16212700;
+    --rockmass: #172329;
+    --water: #2b5f74;
+    --water-deep: #1b4356;
+    --accent: #e8874c;
+    --route: #e0b64a;
+    --new: #38b09a;
+    --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0b1116;
+  --sheet: #111a20;
+  --ink: #dfe8eb;
+  --ink-2: #9fb0b8;
+  --ink-3: #74868f;
+  --line: #24333c;
+  --line-2: #3c515c;
+  --deck: #1a262d;
+  --rock: #16212700;
+  --rockmass: #172329;
+  --water: #2b5f74;
+  --water-deep: #1b4356;
+  --accent: #e8874c;
+  --route: #e0b64a;
+  --new: #38b09a;
+  --shadow: none;
+}
+* { box-sizing: border-box; }
+html { font-size: clamp(16px, calc(16px + 8 * (100vw - 1680px) / 2160), 24px); }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+/* 4K: the band grows with the viewport (floor 1720, fluid 88vw, ceiling 2600)
+   and the root type ramps 16px -> 24px across 1680 -> 3840, so every rem
+   measure grows by the same multiplier instead of stranding rail. */
+.wrap { max-width: min(clamp(1720px, 88vw, 2600px), 92vw); margin: 0 auto; padding: 3rem 0 6rem; }
+.mono, .dim, .sheetid, .sheetscale, .at, code {
+  font-family: ui-monospace, "Cascadia Mono", "Cascadia Code", Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+header.masthead { border-bottom: 2px solid var(--ink); padding-bottom: 18px; margin-bottom: 34px; }
+.eyebrow {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 0.75rem; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3);
+  display: flex; gap: 18px; flex-wrap: wrap;
+}
+h1 { font-size: clamp(28px, 4vw, 42px); line-height: 1.1; margin: 10px 0 6px; font-weight: 650; letter-spacing: -.01em; text-wrap: balance; }
+.standfirst { font-size: 1.1875rem; color: var(--ink-2); margin: 0; text-wrap: pretty; }
+h2 {
+  font-size: 0.8125rem; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3);
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-weight: 600;
+  margin: 54px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line);
+}
+h3 { font-size: 1.1875rem; margin: 26px 0 6px; font-weight: 620; }
+/* No reading caps: prose fills the band. Long runs of body copy set in two
+   columns so the measure stays sane without leaving dead rail beside it. */
+p { max-width: none; }
+.twocol { columns: 2; column-gap: 56px; }
+.twocol p { margin-top: 0; break-inside: avoid; }
+.lede { font-size: 1.0625rem; }
+.sheet { margin: 0 0 6px; }
+.sheet svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+.sheet svg.fill { width: 100%; }
+.splitfig { display: grid; grid-template-columns: minmax(20rem, 25rem) minmax(0, 1fr); gap: 0 2.5rem; align-items: start; }
+.splitfig .notes { padding-top: 4px; }
+.splitfig .notes h3:first-child { margin-top: 0; }
+/* Column counts are pinned per tier, never auto-fit: three notes must never
+   fall to two columns and strand the third on a row of its own. */
+.threeup { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 2.75rem; margin-top: 8px; }
+.threeup h3 { margin-top: 14px; }
+.threeup p { max-width: none; }
+.decisions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 2.75rem; }
+@media (max-width: 1000px) {
+  .splitfig, .threeup, .decisions { grid-template-columns: 1fr; }
+  .twocol { columns: 1; }
+}
+.decisions .decision { margin: 14px 0; }
+.decisions p { max-width: none; }
+.sheetwrap { overflow-x: auto; border: 1px solid var(--line); background: var(--sheet); padding: 10px; box-shadow: var(--shadow); }
+figcaption {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 0.75rem;
+  color: var(--ink-3); padding-top: 8px; border-top: 1px solid var(--line); margin-top: 8px;
+  display: flex; gap: 12px; flex-wrap: wrap; align-items: baseline;
+}
+.sheetid { color: var(--ink); font-weight: 700; letter-spacing: .08em; }
+.sheetscale { margin-left: auto; }
+.sheetbg { fill: var(--sheet); }
+.grid { stroke: var(--line); stroke-width: .6; }
+.room { fill: none; stroke: var(--line-2); stroke-width: 1.4; }
+.rock { fill: var(--rock); stroke: none; }
+.deck { fill: var(--deck); stroke: var(--line-2); stroke-width: .5; }
+.ramp { fill: var(--deck); stroke: var(--line-2); stroke-width: .5; stroke-dasharray: 3 2; }
+.water { fill: var(--water); fill-opacity: .55; stroke: var(--water-deep); stroke-width: .6; }
+.water-deep { fill: var(--water-deep); fill-opacity: .5; stroke: none; }
+.barrier { stroke: var(--water-deep); stroke-width: 1.6; }
+.shelf { fill: var(--deck); stroke: var(--line-2); stroke-width: .8; stroke-dasharray: 2 2; }
+.rail { fill: var(--line-2); }
+.jamb { fill: var(--ink-3); }
+.opening { fill: none; stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 3 2; }
+.new { fill: var(--new); fill-opacity: .3; stroke: var(--new); stroke-width: 1.4; }
+.new.screen { fill-opacity: .85; }
+.new.card { fill-opacity: .75; }
+.dais { fill: var(--new); fill-opacity: .18; stroke: var(--new); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.route { fill: none; stroke: var(--route); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.perf { fill: var(--accent); stroke: var(--sheet); stroke-width: 1.5; }
+.perflabel { fill: var(--sheet); font: 700 11px ui-monospace, Consolas, monospace; }
+.caseword { fill: var(--accent); font: 600 11px ui-monospace, Consolas, monospace; letter-spacing: .08em; }
+.look { stroke: var(--accent); stroke-width: .8; stroke-dasharray: 2 3; opacity: .7; }
+.sight { stroke: var(--accent); stroke-width: 1; opacity: .85; }
+.bounce { fill: none; stroke: var(--accent); stroke-width: 1.4; }
+.stand { fill: var(--route); stroke: var(--ink); stroke-width: 1.2; }
+.tag, .doorlabel, .zonelabel { fill: var(--ink-2); font: 11px ui-monospace, Consolas, monospace; }
+.doorlabel { fill: var(--ink-3); }
+.dim { fill: var(--ink-3); font: 10px ui-monospace, Consolas, monospace; }
+.dimline line { stroke: var(--ink-3); stroke-width: .7; }
+.bracket { stroke: var(--ink-3); stroke-width: 1.2; }
+.scalebar line { stroke: var(--ink); stroke-width: 1.2; }
+.north path { stroke: var(--ink); stroke-width: 1.2; fill: none; }
+.rockmass { fill: var(--rockmass); stroke: none; }
+.roof { fill: var(--rockmass); stroke: none; }
+.roofhatch { fill: url(#rockhatch); stroke: none; }
+.halo { stroke: var(--sheet); stroke-width: 3.5px; paint-order: stroke fill; }
+.roofline { stroke: var(--ink); stroke-width: 1.6; }
+.measure { stroke: var(--ink-2); stroke-width: 1; }
+.waterlevel.dashed { stroke-dasharray: 6 4; }
+.waterband { fill: var(--water); fill-opacity: .38; }
+.waterlevel { stroke: var(--water-deep); stroke-width: 1.2; }
+.floorline { fill: none; stroke: var(--ink); stroke-width: 2; }
+.eyeline { fill: none; stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 5 3; }
+.subspan { fill: var(--water-deep); fill-opacity: .16; }
+.subtext, .wl { fill: var(--ink-2); font: 11px ui-monospace, Consolas, monospace;
+  stroke: var(--sheet); stroke-width: 3.5px; paint-order: stroke fill; }
+.callout { stroke: var(--ink-3); stroke-width: .7; stroke-dasharray: 2 3; }
+.calloutlabel { fill: var(--ink-2); font: 10px ui-monospace, Consolas, monospace; }
+.key { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 14px 0 0; padding: 0; list-style: none;
+  font-family: ui-monospace, Consolas, monospace; font-size: 0.75rem; color: var(--ink-2); }
+.key li { display: flex; align-items: center; gap: 7px; }
+.sw { width: 16px; height: 10px; border: 1px solid var(--line-2); display: inline-block; }
+table { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 0.9375rem; }
+th, td { text-align: left; vertical-align: top; padding: 11px 14px 11px 0; border-bottom: 1px solid var(--line); }
+th { font-family: ui-monospace, Consolas, monospace; font-size: 0.6875rem; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--ink-3); font-weight: 600; border-bottom: 1px solid var(--line-2); }
+td.num { font-family: ui-monospace, Consolas, monospace; color: var(--accent); font-weight: 700; width: 34px; }
+td.where { width: 210px; }
+td.where b { display: block; font-weight: 620; }
+td.where .at { display: block; font-size: 0.6875rem; color: var(--ink-3); margin-top: 2px; }
+/* Six facts, column count pinned per tier so the row always divides evenly.
+   auto-fit stranded two empty cells at tablet width. */
+.facts { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px;
+  background: var(--line); border: 1px solid var(--line); margin: 20px 0 0; }
+@media (max-width: 1000px) { .facts { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 560px) { .facts { grid-template-columns: repeat(2, 1fr); } }
+.facts div { background: var(--sheet); padding: 14px 16px; }
+.facts dt { font-family: ui-monospace, Consolas, monospace; font-size: 0.6875rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-3); margin: 0 0 4px; }
+.facts dd { margin: 0; font-family: ui-monospace, Consolas, monospace; font-size: 1.25rem; font-weight: 600;
+  font-variant-numeric: tabular-nums; }
+.facts dd small { font-size: 0.75rem; color: var(--ink-3); font-weight: 400; }
+.decision { border: 1px solid var(--line-2); border-radius: 2px; padding: 16px 20px; margin: 26px 0;
+  background: color-mix(in srgb, var(--accent) 5%, var(--sheet)); }
+.decision .id { font-family: ui-monospace, Consolas, monospace; font-size: 0.6875rem; letter-spacing: .12em;
+  color: var(--accent); font-weight: 700; }
+.decision h3 { margin-top: 2px; }
+.rec { border-top: 1px dashed var(--line-2); margin-top: 10px; padding-top: 10px; }
+.rec b { font-family: ui-monospace, Consolas, monospace; font-size: 0.6875rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-3); }
+.claims td:first-child { width: 96px; }
+.tagpill { font-family: ui-monospace, Consolas, monospace; font-size: 0.6875rem; letter-spacing: .06em;
+  text-transform: uppercase; border: 1px solid var(--line-2); padding: 2px 7px; color: var(--ink-2); }
+footer { margin-top: 70px; padding-top: 18px; border-top: 2px solid var(--ink); color: var(--ink-3);
+  font-family: ui-monospace, Consolas, monospace; font-size: 0.75rem; }
+</style>
+
+<div class="wrap">
+<header class="masthead">
+  <div class="eyebrow"><span>Vulcan Cave</span><span>Wing 1 of 6 · SPLIT-SAME</span><span>Gate 1 · measured plan</span><span>2026-08-12</span></div>
+  <h1>Water: the drowned gallery and the grotto</h1>
+  <p class="standfirst">Every number on this page was read out of the room's own geometry, not drawn by eye. Three things are new and need your call: where the opener stands, where the payoff view is, and what each case looks like from the visitor's side of the water.</p>
+</header>
+
+<p class="lede">The wing is one walk with no branches. You wade in, you go under, you come up, and then you meet three performers across still water you cannot cross. The walk is <b>124.9 m</b> long; <b>28.4 m</b> of it is spent with your head under water. The exhibit itself is the last <b>59.6 m</b>.</p>
+
+<dl class="facts">
+  <div><dt>Walk length</dt><dd>124.9<small> m</small></dd></div>
+  <div><dt>Head underwater</dt><dd>28.4<small> m</small></dd></div>
+  <div><dt>Grotto</dt><dd>25 × 22<small> m</small></dd></div>
+  <div><dt>Ceiling, grotto</dt><dd>9.5<small> m over deck</small></dd></div>
+  <div><dt>Deepest floor</dt><dd>-4.5<small> m</small></dd></div>
+  <div><dt>Eye height</dt><dd>1.6<small> m over floor</small></dd></div>
+</dl>
+
+<h2>P-01 · The whole walk</h2>
+<div class="splitfig">
+  <div>
+    <div class="sheetwrap"><figure class="sheet">
+  <svg class="" viewBox="0 0 357 824.5" width="357" height="824.5" role="img" aria-label="Water bay — the whole walk">
+    <rect class="sheetbg" x="0" y="0" width="357" height="824.5"/>
+    <line class="grid" x1="24.5" y1="30" x2="24.5" y2="794.5"/><line class="grid" x1="79.5" y1="30" x2="79.5" y2="794.5"/><line class="grid" x1="134.5" y1="30" x2="134.5" y2="794.5"/><line class="grid" x1="189.5" y1="30" x2="189.5" y2="794.5"/><line class="grid" x1="244.5" y1="30" x2="244.5" y2="794.5"/><line class="grid" x1="299.5" y1="30" x2="299.5" y2="794.5"/><line class="grid" x1="354.5" y1="30" x2="354.5" y2="794.5"/><line class="grid" x1="30" y1="63" x2="327" y2="63"/><line class="grid" x1="30" y1="118" x2="327" y2="118"/><line class="grid" x1="30" y1="173" x2="327" y2="173"/><line class="grid" x1="30" y1="228" x2="327" y2="228"/><line class="grid" x1="30" y1="283" x2="327" y2="283"/><line class="grid" x1="30" y1="338" x2="327" y2="338"/><line class="grid" x1="30" y1="393" x2="327" y2="393"/><line class="grid" x1="30" y1="448" x2="327" y2="448"/><line class="grid" x1="30" y1="503" x2="327" y2="503"/><line class="grid" x1="30" y1="558" x2="327" y2="558"/><line class="grid" x1="30" y1="613" x2="327" y2="613"/><line class="grid" x1="30" y1="668" x2="327" y2="668"/><line class="grid" x1="30" y1="723" x2="327" y2="723"/><line class="grid" x1="30" y1="778" x2="327" y2="778"/><rect class="room" x="164.75" y="654.25" width="27.50" height="132"><title>room interior</title></rect><rect class="room" x="104.25" y="335.25" width="148.50" height="264"><title>room interior</title></rect><rect class="room" x="38.25" y="38.25" width="275" height="242"><title>room interior</title></rect><rect class="rock" x="104.25" y="335.25" width="55" height="88"><title>solid rock</title></rect><rect class="rock" x="192.25" y="335.25" width="60.50" height="88"><title>solid rock</title></rect><rect class="rock" x="104.25" y="423.25" width="16.50" height="27.50"><title>solid rock</title></rect><rect class="rock" x="192.25" y="423.25" width="60.50" height="27.50"><title>solid rock</title></rect><rect class="rock" x="104.25" y="450.75" width="16.50" height="60.50"><title>solid rock</title></rect><rect class="rock" x="148.25" y="450.75" width="104.50" height="60.50"><title>solid rock</title></rect><rect class="rock" x="104.25" y="511.25" width="16.50" height="27.50"><title>solid rock</title></rect><rect class="rock" x="104.25" y="538.75" width="121" height="60.50"><title>solid rock</title></rect><rect class="ramp" x="164.75" y="654.25" width="27.50" height="132"><title>approach-ramp</title></rect><rect class="deck" x="236.25" y="599.25" width="16.50" height="16.50"><title>approach-corridor-0</title></rect><rect class="deck" x="170.25" y="615.75" width="82.50" height="5.50"><title>approach-corridor-1</title></rect><rect class="deck" x="164.75" y="621.25" width="88" height="5.50"><title>approach-corridor-2</title></rect><rect class="deck" x="164.75" y="626.75" width="82.50" height="5.50"><title>approach-corridor-3</title></rect><rect class="deck" x="164.75" y="632.25" width="16.50" height="22"><title>approach-corridor-4</title></rect><rect class="ramp" x="225.25" y="538.75" width="27.50" height="60.50"><title>descent-stair</title></rect><rect class="deck" x="120.75" y="511.25" width="132" height="27.50"><title>west-run</title></rect><rect class="deck" x="120.75" y="450.75" width="27.50" height="60.50"><title>north-run</title></rect><rect class="deck" x="120.75" y="423.25" width="71.50" height="27.50"><title>east-bend</title></rect><rect class="ramp" x="159.25" y="399.05" width="33" height="24.20"><title>surfacing-lower</title></rect><rect class="deck" x="159.25" y="383.65" width="33" height="15.40"><title>surfacing-landing</title></rect><rect class="ramp" x="159.25" y="335.25" width="33" height="48.40"><title>surfacing-upper</title></rect><rect class="deck" x="159.25" y="280.25" width="33" height="55"><title>gallery-corridor-0</title></rect><rect class="ramp" x="291.25" y="241.75" width="22" height="38.50"><title>exit-ramp</title></rect><rect class="deck" x="38.25" y="230.75" width="236.50" height="49.50"><title>apron</title></rect><rect class="deck" x="38.25" y="76.75" width="27.50" height="154"><title>west-walkway</title></rect><rect class="deck" x="274.75" y="76.75" width="16.50" height="203.50"><title>east-walkway-0</title></rect><rect class="deck" x="291.25" y="76.75" width="22" height="165"><title>east-walkway-1</title></rect><rect class="deck" x="65.75" y="120.75" width="209" height="27.50"><title>procession</title></rect><rect class="deck" x="65.75" y="148.25" width="209" height="82.50"><title>pool-bottom</title></rect><rect class="deck" x="65.75" y="76.75" width="209" height="44"><title>channel-bed</title></rect><rect class="deck" x="38.25" y="38.25" width="275" height="38.50"><title>shore-shelf</title></rect><rect class="water-deep" x="236.25" y="599.25" width="16.50" height="16.50"><title>water</title></rect><rect class="water-deep" x="170.25" y="615.75" width="82.50" height="5.50"><title>water</title></rect><rect class="water-deep" x="164.75" y="621.25" width="88" height="5.50"><title>water</title></rect><rect class="water-deep" x="164.75" y="626.75" width="82.50" height="5.50"><title>water</title></rect><rect class="water-deep" x="164.75" y="632.25" width="16.50" height="22"><title>water</title></rect><rect class="water-deep" x="164.75" y="654.25" width="27.50" height="9.78"><title>water</title></rect><rect class="water-deep" x="225.25" y="551.35" width="27.50" height="47.90"><title>water</title></rect><rect class="water-deep" x="159.25" y="355.99" width="33" height="56.89"><title>water</title></rect><rect class="water" x="65.75" y="76.75" width="209" height="44"><title>water</title></rect><rect class="water" x="65.75" y="148.25" width="209" height="82.50"><title>water</title></rect><polyline class="route" points="175.8,786.3 175.8,654.3 173,629.5 244.5,624 244.5,599.3 239,538.8 239,525 134.5,525 134.5,437 175.8,437 175.8,423.3 175.8,391.4 175.8,335.3 175.8,280.3 175.8,266.5 118,266.5 52,261 52,134.5 101.5,134.5 178.5,134.5 255.5,134.5 247.3,173 294,178.5 294,197.8 294,261 313.3,261"/><circle class="perf" cx="101.5" cy="63" r="4"/><circle class="perf" cx="178.5" cy="63" r="4"/><circle class="perf" cx="255.5" cy="63" r="4"/><line class="bracket" x1="321" y1="786.3" x2="321" y2="599.3"/><text class="zonelabel" transform="translate(315,692.8) rotate(-90)" text-anchor="middle">1 · flooded approach</text><line class="bracket" x1="321" y1="599.3" x2="321" y2="423.3"/><text class="zonelabel" transform="translate(315,511.3) rotate(-90)" text-anchor="middle">2 · the drowned gallery</text><line class="bracket" x1="321" y1="423.3" x2="321" y2="335.3"/><text class="zonelabel" transform="translate(315,379.3) rotate(-90)" text-anchor="middle">3 · surfacing stair</text><line class="bracket" x1="321" y1="280.3" x2="321" y2="38.3"/><text class="zonelabel" transform="translate(315,159.3) rotate(-90)" text-anchor="middle">4 · the grotto</text><g class="scalebar"><line x1="38" y1="780.5" x2="148" y2="780.5"/><line x1="38" y1="776.5" x2="38" y2="784.5"/><line x1="148" y1="776.5" x2="148" y2="784.5"/><line x1="93" y1="777.5" x2="93" y2="783.5"/><text x="156" y="784.5" class="dim">10 m</text></g><g class="north"><path d="M 305 66 L 305 40 M 299 49 L 305 40 L 311 49"/><text x="305" y="80" text-anchor="middle" class="dim">N</text></g>
+  </svg>
+  <figcaption><span class="sheetid">P-01</span> Water bay — the whole walk <span class="sheetscale">1 grid square = 5 m</span></figcaption>
+</figure></div>
+    <ul class="key">
+      <li><span class="sw" style="background:var(--deck)"></span>deck</li>
+      <li><span class="sw" style="background:var(--water);opacity:.6"></span>water</li>
+      <li><span class="sw" style="background:var(--rockmass)"></span>rock</li>
+      <li><span class="sw" style="background:var(--route);height:3px;border:0"></span>route</li>
+      <li><span class="sw" style="background:var(--accent);border-radius:50%;width:10px"></span>performer</li>
+    </ul>
+  </div>
+  <div class="notes">
+    <p>North is up, so you read this drawing bottom to top: you come in at the bottom and leave at the top right. The gold line is the route. Anything with a dashed edge is a slope.</p>
+    <h3>1 · Flooded approach <span class="at">z 70.8 → 53.8 · 22 m</span></h3>
+    <p>A ramp down into 12 cm of standing water, then a corridor that bends east. You are wet from the first step but nothing is over your head yet.</p>
+    <h3>2 · The drowned gallery <span class="at">z 53.8 → 37.8 · 27 m</span></h3>
+    <p>A stair drops 2.9 m and the rock roof closes over at −1.9 m — which is <em>below</em> the water surface, so from here there is no air anywhere in sight. The path runs west, north, then east in an S. One lit bloom halfway along is the only thing to walk toward.</p>
+    <h3>3 · Surfacing stair <span class="at">z 37.8 → 24.8 · 13 m</span></h3>
+    <p>Up 4.2 m in two ramps with a flat landing between them. The landing height is the one derived number in the room: it puts your eye exactly on the surface, so you break out standing still.</p>
+    <h3>4 · The grotto <span class="at">z 24.8 → 2.8 · 25 × 22 m</span></h3>
+    <p>The exhibit. A ring of walkways around a mirror pool and a channel, with the three cases on a shelf across water you cannot cross.</p>
+  </div>
+</div>
+
+<h2>S-01 · What it does vertically</h2>
+<p>This is the same walk seen from the side, flattened out straight. The black line is the floor under your feet; the orange dashed line is your eye. Where the orange line drops below the blue water surface, you are under. The shaded band marks that stretch.</p>
+<div class="sheetwrap"><figure class="sheet">
+  <svg class="fill" viewBox="0 0 1101 396.4" width="1101" height="396.4" role="img" aria-label="Section along the walk">
+    <rect class="sheetbg" x="0" y="0" width="1101" height="396.4"/>
+    <defs><pattern id="rockhatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="var(--ink-3)" stroke-width="1" opacity=".45"/></pattern></defs><line class="grid" x1="34" y1="86" x2="971" y2="86"/><text class="dim" x="28" y="89" text-anchor="end">4 m</text><line class="grid" x1="34" y1="130" x2="971" y2="130"/><text class="dim" x="28" y="133" text-anchor="end">2 m</text><line class="grid" x1="34" y1="174" x2="971" y2="174"/><text class="dim" x="28" y="177" text-anchor="end">0 m</text><line class="grid" x1="34" y1="218" x2="971" y2="218"/><text class="dim" x="28" y="221" text-anchor="end">-2 m</text><line class="grid" x1="34" y1="262" x2="971" y2="262"/><text class="dim" x="28" y="265" text-anchor="end">-4 m</text><line class="grid" x1="34" y1="306" x2="971" y2="306"/><text class="dim" x="28" y="309" text-anchor="end">-6 m</text><line class="grid" x1="34" y1="86" x2="34" y2="310.4"/><text class="dim" x="34" y="324.4" text-anchor="middle">0</text><line class="grid" x1="109" y1="86" x2="109" y2="310.4"/><text class="dim" x="109" y="324.4" text-anchor="middle">10</text><line class="grid" x1="184" y1="86" x2="184" y2="310.4"/><text class="dim" x="184" y="324.4" text-anchor="middle">20</text><line class="grid" x1="259" y1="86" x2="259" y2="310.4"/><text class="dim" x="259" y="324.4" text-anchor="middle">30</text><line class="grid" x1="334" y1="86" x2="334" y2="310.4"/><text class="dim" x="334" y="324.4" text-anchor="middle">40</text><line class="grid" x1="409" y1="86" x2="409" y2="310.4"/><text class="dim" x="409" y="324.4" text-anchor="middle">50</text><line class="grid" x1="484" y1="86" x2="484" y2="310.4"/><text class="dim" x="484" y="324.4" text-anchor="middle">60</text><line class="grid" x1="559" y1="86" x2="559" y2="310.4"/><text class="dim" x="559" y="324.4" text-anchor="middle">70</text><line class="grid" x1="634" y1="86" x2="634" y2="310.4"/><text class="dim" x="634" y="324.4" text-anchor="middle">80</text><line class="grid" x1="709" y1="86" x2="709" y2="310.4"/><text class="dim" x="709" y="324.4" text-anchor="middle">90</text><line class="grid" x1="784" y1="86" x2="784" y2="310.4"/><text class="dim" x="784" y="324.4" text-anchor="middle">100</text><line class="grid" x1="859" y1="86" x2="859" y2="310.4"/><text class="dim" x="859" y="324.4" text-anchor="middle">110</text><line class="grid" x1="934" y1="86" x2="934" y2="310.4"/><text class="dim" x="934" y="324.4" text-anchor="middle">120</text><rect class="waterband" x="118" y="207" width="354" height="103.4"/><polygon class="rockmass" points="34,310.4 34,174 35.5,174.6 37,175.2 38.5,175.8 40,176.4 41.5,177 43,177.6 44.5,178.2 46,178.8 47.5,179.3 49,179.9 50.5,180.5 52,181.1 53.5,181.7 55,182.3 56.5,182.9 58,183.5 59.5,184.1 61,184.7 62.5,185.3 64,185.9 65.5,186.5 67,187.1 68.5,187.7 70,188.3 71.5,188.8 73,189.4 74.5,190 76,190.6 77.5,191.2 79,191.8 80.5,192.4 82,193 83.5,193.6 85,194.2 86.5,194.8 88,195.4 89.5,196 91,196.6 92.5,197.2 94,197.8 95.5,198.4 97,198.9 98.5,199.5 100,200.1 101.5,200.7 103,201.3 104.5,201.9 106,202.5 107.5,203.1 109,203.7 110.5,204.3 112,204.9 113.5,205.5 115,206.1 116.5,206.7 118,207.3 119.5,207.9 121,208.5 122.5,209 124,209.6 125.5,209.6 127,209.6 128.5,209.6 130,209.6 131.5,209.6 133,209.6 134.5,209.6 136,209.6 137.5,209.6 139,209.6 140.5,209.6 142,209.6 143.5,209.6 145,209.6 146.5,209.6 148,209.6 149.5,209.6 151,209.6 152.5,209.6 154,209.6 155.5,209.6 157,209.6 158.5,209.6 160,209.6 161.5,209.6 163,209.6 164.5,209.6 166,209.6 167.5,209.6 169,209.6 170.5,209.6 172,209.6 173.5,209.6 175,209.6 176.5,209.6 178,209.6 179.5,209.6 181,209.6 182.5,209.6 184,209.6 185.5,209.6 187,209.6 188.5,209.6 190,209.6 191.5,209.6 193,209.6 194.5,209.6 196,209.6 197.5,209.6 199,209.6 200.5,209.6 202,209.6 203.5,209.6 205,209.6 206.5,209.6 208,211.6 209.5,213.8 211,216.1 212.5,218.4 214,220.7 215.5,223 217,225.3 218.5,227.6 220,229.9 221.5,232.2 223,234.5 224.5,236.8 226,239.1 227.5,241.4 229,243.7 230.5,246 232,248.3 233.5,250.6 235,252.9 236.5,255.2 238,257.4 239.5,259.7 241,262 242.5,264.3 244,266.6 245.5,268.9 247,271.2 248.5,273 250,273 251.5,273 253,273 254.5,273 256,273 257.5,273 259,273 260.5,273 262,273 263.5,273 265,273 266.5,273 268,273 269.5,273 271,273 272.5,273 274,273 275.5,273 277,273 278.5,273 280,273 281.5,273 283,273 284.5,273 286,273 287.5,273 289,273 290.5,273 292,273 293.5,273 295,273 296.5,273 298,273 299.5,273 301,273 302.5,273 304,273 305.5,273 307,273 308.5,273 310,273 311.5,273 313,273 314.5,273 316,273 317.5,273 319,273 320.5,273 322,273 323.5,273 325,273 326.5,273 328,273 329.5,273 331,273 332.5,273 334,273 335.5,273 337,273 338.5,273 340,273 341.5,273 343,273 344.5,273 346,273 347.5,273 349,273 350.5,273 352,273 353.5,273 355,273 356.5,273 358,273 359.5,273 361,273 362.5,273 364,273 365.5,273 367,273 368.5,273 370,273 371.5,273 373,273 374.5,273 376,273 377.5,273 379,273 380.5,273 382,273 383.5,273 385,273 386.5,273 388,273 389.5,273 391,273 392.5,273 394,273 395.5,273 397,273 398.5,273 400,273 401.5,273 403,273 404.5,273 406,273 407.5,273 409,273 410.5,273 412,273 413.5,273 415,273 416.5,273 418,273 419.5,273 421,273 422.5,273 424,273 425.5,273 427,271.7 428.5,268.9 430,266.1 431.5,263.3 433,260.5 434.5,257.7 436,254.9 437.5,252.1 439,249.3 440.5,246.5 442,243.7 443.5,242.2 445,242.2 446.5,242.2 448,242.2 449.5,242.2 451,242.2 452.5,242.2 454,240.9 455.5,238.1 457,235.3 458.5,232.5 460,229.7 461.5,226.9 463,224.1 464.5,221.3 466,218.5 467.5,215.7 469,212.9 470.5,210.1 472,207.3 473.5,204.5 475,201.7 476.5,198.9 478,196.1 479.5,193.3 481,190.5 482.5,187.7 484,184.9 485.5,182.1 487,180.6 488.5,180.6 490,180.6 491.5,180.6 493,180.6 494.5,180.6 496,180.6 497.5,180.6 499,180.6 500.5,180.6 502,180.6 503.5,180.6 505,180.6 506.5,180.6 508,180.6 509.5,180.6 511,180.6 512.5,180.6 514,180.6 515.5,180.6 517,180.6 518.5,180.6 520,180.6 521.5,180.6 523,180.6 524.5,180.6 526,180.6 527.5,180.6 529,180.6 530.5,180.6 532,180.6 533.5,180.6 535,180.6 536.5,180.6 538,180.6 539.5,180.6 541,180.6 542.5,180.6 544,180.6 545.5,180.6 547,180.6 548.5,180.6 550,180.6 551.5,180.6 553,180.6 554.5,180.6 556,180.6 557.5,180.6 559,180.6 560.5,180.6 562,180.6 563.5,180.6 565,180.6 566.5,180.6 568,180.6 569.5,180.6 571,180.6 572.5,180.6 574,180.6 575.5,180.6 577,180.6 578.5,180.6 580,180.6 581.5,180.6 583,180.6 584.5,180.6 586,180.6 587.5,180.6 589,180.6 590.5,180.6 592,180.6 593.5,180.6 595,180.6 596.5,180.6 598,180.6 599.5,180.6 601,180.6 602.5,180.6 604,180.6 605.5,180.6 607,180.6 608.5,180.6 610,180.6 611.5,180.6 613,180.6 614.5,180.6 616,180.6 617.5,180.6 619,180.6 620.5,180.6 622,180.6 623.5,180.6 625,180.6 626.5,180.6 628,180.6 629.5,180.6 631,180.6 632.5,180.6 634,180.6 635.5,180.6 637,180.6 638.5,180.6 640,180.6 641.5,180.6 643,180.6 644.5,180.6 646,180.6 647.5,180.6 649,180.6 650.5,180.6 652,180.6 653.5,180.6 655,180.6 656.5,180.6 658,180.6 659.5,180.6 661,180.6 662.5,180.6 664,180.6 665.5,180.6 667,180.6 668.5,180.6 670,180.6 671.5,180.6 673,180.6 674.5,180.6 676,180.6 677.5,180.6 679,180.6 680.5,180.6 682,180.6 683.5,180.6 685,180.6 686.5,180.6 688,180.6 689.5,180.6 691,180.6 692.5,180.6 694,180.6 695.5,180.6 697,180.6 698.5,180.6 700,180.6 701.5,180.6 703,180.6 704.5,180.6 706,180.6 707.5,180.6 709,180.6 710.5,180.6 712,180.6 713.5,180.6 715,180.6 716.5,180.6 718,180.6 719.5,180.6 721,180.6 722.5,180.6 724,180.6 725.5,180.6 727,180.6 728.5,180.6 730,180.6 731.5,180.6 733,180.6 734.5,180.6 736,180.6 737.5,180.6 739,180.6 740.5,180.6 742,180.6 743.5,180.6 745,180.6 746.5,180.6 748,180.6 749.5,180.6 751,180.6 752.5,180.6 754,180.6 755.5,180.6 757,180.6 758.5,180.6 760,180.6 761.5,180.6 763,180.6 764.5,180.6 766,180.6 767.5,180.6 769,180.6 770.5,180.6 772,180.6 773.5,180.6 775,180.6 776.5,180.6 778,180.6 779.5,180.6 781,180.6 782.5,180.6 784,180.6 785.5,180.6 787,180.6 788.5,180.6 790,180.6 791.5,180.6 793,180.6 794.5,180.6 796,180.6 797.5,180.6 799,180.6 800.5,180.6 802,180.6 803.5,180.6 805,180.6 806.5,180.6 808,180.6 809.5,180.6 811,180.6 812.5,180.6 814,180.6 815.5,180.6 817,180.6 818.5,180.6 820,180.6 821.5,180.6 823,180.6 824.5,180.6 826,180.6 827.5,180.6 829,180.6 830.5,180.6 832,180.6 833.5,180.6 835,180.6 836.5,180.6 838,180.6 839.5,180.6 841,180.6 842.5,180.6 844,180.6 845.5,180.6 847,180.6 848.5,180.6 850,180.6 851.5,180.6 853,180.6 854.5,180.6 856,180.6 857.5,180.6 859,180.6 860.5,180.6 862,180.6 863.5,180.6 865,180.6 866.5,180.6 868,180.6 869.5,180.6 871,180.6 872.5,180.6 874,180.6 875.5,180.6 877,180.6 878.5,180.6 880,180.6 881.5,180.6 883,180.6 884.5,180.6 886,180.6 887.5,180.6 889,180.6 890.5,180.6 892,180.6 893.5,180.6 895,180.6 896.5,180.6 898,180.6 899.5,180.6 901,180.6 902.5,180.6 904,180.6 905.5,180.6 907,180.6 908.5,180.6 910,180.6 911.5,180.6 913,180.6 914.5,180.6 916,180.6 917.5,180.6 919,180.6 920.5,180.6 922,180.6 923.5,180.6 925,180.6 926.5,180.6 928,180.6 929.5,180.6 931,180.6 932.5,180.6 934,180.6 935.5,180.6 937,180.6 938.5,180.6 940,180.6 941.5,180.6 943,180.6 944.5,180.6 946,179.8 947.5,179.8 949,179.8 950.5,179.8 952,179.8 953.5,179.8 955,179.8 956.5,179.8 958,179.7 959.5,179.1 961,178.4 962.5,177.7 964,177.1 965.5,176.4 967,175.8 968.5,175.1 970,174.4 971,310.4"/><rect class="roof" x="248.2" y="86" width="199.9" height="129.8"/><rect class="roofhatch" x="248.2" y="86" width="199.9" height="129.8"/><line class="roofline" x1="248.2" y1="215.8" x2="448" y2="215.8"/><line class="waterlevel" x1="118" y1="207" x2="472" y2="207"/><line class="waterlevel dashed" x1="523.8" y1="183.9" x2="971" y2="183.9"/><polyline class="floorline" points="34,174 35.5,174.6 37,175.2 38.5,175.8 40,176.4 41.5,177 43,177.6 44.5,178.2 46,178.8 47.5,179.3 49,179.9 50.5,180.5 52,181.1 53.5,181.7 55,182.3 56.5,182.9 58,183.5 59.5,184.1 61,184.7 62.5,185.3 64,185.9 65.5,186.5 67,187.1 68.5,187.7 70,188.3 71.5,188.8 73,189.4 74.5,190 76,190.6 77.5,191.2 79,191.8 80.5,192.4 82,193 83.5,193.6 85,194.2 86.5,194.8 88,195.4 89.5,196 91,196.6 92.5,197.2 94,197.8 95.5,198.4 97,198.9 98.5,199.5 100,200.1 101.5,200.7 103,201.3 104.5,201.9 106,202.5 107.5,203.1 109,203.7 110.5,204.3 112,204.9 113.5,205.5 115,206.1 116.5,206.7 118,207.3 119.5,207.9 121,208.5 122.5,209 124,209.6 125.5,209.6 127,209.6 128.5,209.6 130,209.6 131.5,209.6 133,209.6 134.5,209.6 136,209.6 137.5,209.6 139,209.6 140.5,209.6 142,209.6 143.5,209.6 145,209.6 146.5,209.6 148,209.6 149.5,209.6 151,209.6 152.5,209.6 154,209.6 155.5,209.6 157,209.6 158.5,209.6 160,209.6 161.5,209.6 163,209.6 164.5,209.6 166,209.6 167.5,209.6 169,209.6 170.5,209.6 172,209.6 173.5,209.6 175,209.6 176.5,209.6 178,209.6 179.5,209.6 181,209.6 182.5,209.6 184,209.6 185.5,209.6 187,209.6 188.5,209.6 190,209.6 191.5,209.6 193,209.6 194.5,209.6 196,209.6 197.5,209.6 199,209.6 200.5,209.6 202,209.6 203.5,209.6 205,209.6 206.5,209.6 208,211.6 209.5,213.8 211,216.1 212.5,218.4 214,220.7 215.5,223 217,225.3 218.5,227.6 220,229.9 221.5,232.2 223,234.5 224.5,236.8 226,239.1 227.5,241.4 229,243.7 230.5,246 232,248.3 233.5,250.6 235,252.9 236.5,255.2 238,257.4 239.5,259.7 241,262 242.5,264.3 244,266.6 245.5,268.9 247,271.2 248.5,273 250,273 251.5,273 253,273 254.5,273 256,273 257.5,273 259,273 260.5,273 262,273 263.5,273 265,273 266.5,273 268,273 269.5,273 271,273 272.5,273 274,273 275.5,273 277,273 278.5,273 280,273 281.5,273 283,273 284.5,273 286,273 287.5,273 289,273 290.5,273 292,273 293.5,273 295,273 296.5,273 298,273 299.5,273 301,273 302.5,273 304,273 305.5,273 307,273 308.5,273 310,273 311.5,273 313,273 314.5,273 316,273 317.5,273 319,273 320.5,273 322,273 323.5,273 325,273 326.5,273 328,273 329.5,273 331,273 332.5,273 334,273 335.5,273 337,273 338.5,273 340,273 341.5,273 343,273 344.5,273 346,273 347.5,273 349,273 350.5,273 352,273 353.5,273 355,273 356.5,273 358,273 359.5,273 361,273 362.5,273 364,273 365.5,273 367,273 368.5,273 370,273 371.5,273 373,273 374.5,273 376,273 377.5,273 379,273 380.5,273 382,273 383.5,273 385,273 386.5,273 388,273 389.5,273 391,273 392.5,273 394,273 395.5,273 397,273 398.5,273 400,273 401.5,273 403,273 404.5,273 406,273 407.5,273 409,273 410.5,273 412,273 413.5,273 415,273 416.5,273 418,273 419.5,273 421,273 422.5,273 424,273 425.5,273 427,271.7 428.5,268.9 430,266.1 431.5,263.3 433,260.5 434.5,257.7 436,254.9 437.5,252.1 439,249.3 440.5,246.5 442,243.7 443.5,242.2 445,242.2 446.5,242.2 448,242.2 449.5,242.2 451,242.2 452.5,242.2 454,240.9 455.5,238.1 457,235.3 458.5,232.5 460,229.7 461.5,226.9 463,224.1 464.5,221.3 466,218.5 467.5,215.7 469,212.9 470.5,210.1 472,207.3 473.5,204.5 475,201.7 476.5,198.9 478,196.1 479.5,193.3 481,190.5 482.5,187.7 484,184.9 485.5,182.1 487,180.6 488.5,180.6 490,180.6 491.5,180.6 493,180.6 494.5,180.6 496,180.6 497.5,180.6 499,180.6 500.5,180.6 502,180.6 503.5,180.6 505,180.6 506.5,180.6 508,180.6 509.5,180.6 511,180.6 512.5,180.6 514,180.6 515.5,180.6 517,180.6 518.5,180.6 520,180.6 521.5,180.6 523,180.6 524.5,180.6 526,180.6 527.5,180.6 529,180.6 530.5,180.6 532,180.6 533.5,180.6 535,180.6 536.5,180.6 538,180.6 539.5,180.6 541,180.6 542.5,180.6 544,180.6 545.5,180.6 547,180.6 548.5,180.6 550,180.6 551.5,180.6 553,180.6 554.5,180.6 556,180.6 557.5,180.6 559,180.6 560.5,180.6 562,180.6 563.5,180.6 565,180.6 566.5,180.6 568,180.6 569.5,180.6 571,180.6 572.5,180.6 574,180.6 575.5,180.6 577,180.6 578.5,180.6 580,180.6 581.5,180.6 583,180.6 584.5,180.6 586,180.6 587.5,180.6 589,180.6 590.5,180.6 592,180.6 593.5,180.6 595,180.6 596.5,180.6 598,180.6 599.5,180.6 601,180.6 602.5,180.6 604,180.6 605.5,180.6 607,180.6 608.5,180.6 610,180.6 611.5,180.6 613,180.6 614.5,180.6 616,180.6 617.5,180.6 619,180.6 620.5,180.6 622,180.6 623.5,180.6 625,180.6 626.5,180.6 628,180.6 629.5,180.6 631,180.6 632.5,180.6 634,180.6 635.5,180.6 637,180.6 638.5,180.6 640,180.6 641.5,180.6 643,180.6 644.5,180.6 646,180.6 647.5,180.6 649,180.6 650.5,180.6 652,180.6 653.5,180.6 655,180.6 656.5,180.6 658,180.6 659.5,180.6 661,180.6 662.5,180.6 664,180.6 665.5,180.6 667,180.6 668.5,180.6 670,180.6 671.5,180.6 673,180.6 674.5,180.6 676,180.6 677.5,180.6 679,180.6 680.5,180.6 682,180.6 683.5,180.6 685,180.6 686.5,180.6 688,180.6 689.5,180.6 691,180.6 692.5,180.6 694,180.6 695.5,180.6 697,180.6 698.5,180.6 700,180.6 701.5,180.6 703,180.6 704.5,180.6 706,180.6 707.5,180.6 709,180.6 710.5,180.6 712,180.6 713.5,180.6 715,180.6 716.5,180.6 718,180.6 719.5,180.6 721,180.6 722.5,180.6 724,180.6 725.5,180.6 727,180.6 728.5,180.6 730,180.6 731.5,180.6 733,180.6 734.5,180.6 736,180.6 737.5,180.6 739,180.6 740.5,180.6 742,180.6 743.5,180.6 745,180.6 746.5,180.6 748,180.6 749.5,180.6 751,180.6 752.5,180.6 754,180.6 755.5,180.6 757,180.6 758.5,180.6 760,180.6 761.5,180.6 763,180.6 764.5,180.6 766,180.6 767.5,180.6 769,180.6 770.5,180.6 772,180.6 773.5,180.6 775,180.6 776.5,180.6 778,180.6 779.5,180.6 781,180.6 782.5,180.6 784,180.6 785.5,180.6 787,180.6 788.5,180.6 790,180.6 791.5,180.6 793,180.6 794.5,180.6 796,180.6 797.5,180.6 799,180.6 800.5,180.6 802,180.6 803.5,180.6 805,180.6 806.5,180.6 808,180.6 809.5,180.6 811,180.6 812.5,180.6 814,180.6 815.5,180.6 817,180.6 818.5,180.6 820,180.6 821.5,180.6 823,180.6 824.5,180.6 826,180.6 827.5,180.6 829,180.6 830.5,180.6 832,180.6 833.5,180.6 835,180.6 836.5,180.6 838,180.6 839.5,180.6 841,180.6 842.5,180.6 844,180.6 845.5,180.6 847,180.6 848.5,180.6 850,180.6 851.5,180.6 853,180.6 854.5,180.6 856,180.6 857.5,180.6 859,180.6 860.5,180.6 862,180.6 863.5,180.6 865,180.6 866.5,180.6 868,180.6 869.5,180.6 871,180.6 872.5,180.6 874,180.6 875.5,180.6 877,180.6 878.5,180.6 880,180.6 881.5,180.6 883,180.6 884.5,180.6 886,180.6 887.5,180.6 889,180.6 890.5,180.6 892,180.6 893.5,180.6 895,180.6 896.5,180.6 898,180.6 899.5,180.6 901,180.6 902.5,180.6 904,180.6 905.5,180.6 907,180.6 908.5,180.6 910,180.6 911.5,180.6 913,180.6 914.5,180.6 916,180.6 917.5,180.6 919,180.6 920.5,180.6 922,180.6 923.5,180.6 925,180.6 926.5,180.6 928,180.6 929.5,180.6 931,180.6 932.5,180.6 934,180.6 935.5,180.6 937,180.6 938.5,180.6 940,180.6 941.5,180.6 943,180.6 944.5,180.6 946,179.8 947.5,179.8 949,179.8 950.5,179.8 952,179.8 953.5,179.8 955,179.8 956.5,179.8 958,179.7 959.5,179.1 961,178.4 962.5,177.7 964,177.1 965.5,176.4 967,175.8 968.5,175.1 970,174.4"/><polyline class="eyeline" points="34,138.8 35.5,139.4 37,140 38.5,140.6 40,141.2 41.5,141.8 43,142.4 44.5,143 46,143.6 47.5,144.1 49,144.7 50.5,145.3 52,145.9 53.5,146.5 55,147.1 56.5,147.7 58,148.3 59.5,148.9 61,149.5 62.5,150.1 64,150.7 65.5,151.3 67,151.9 68.5,152.5 70,153.1 71.5,153.6 73,154.2 74.5,154.8 76,155.4 77.5,156 79,156.6 80.5,157.2 82,157.8 83.5,158.4 85,159 86.5,159.6 88,160.2 89.5,160.8 91,161.4 92.5,162 94,162.6 95.5,163.2 97,163.7 98.5,164.3 100,164.9 101.5,165.5 103,166.1 104.5,166.7 106,167.3 107.5,167.9 109,168.5 110.5,169.1 112,169.7 113.5,170.3 115,170.9 116.5,171.5 118,172.1 119.5,172.7 121,173.3 122.5,173.8 124,174.4 125.5,174.4 127,174.4 128.5,174.4 130,174.4 131.5,174.4 133,174.4 134.5,174.4 136,174.4 137.5,174.4 139,174.4 140.5,174.4 142,174.4 143.5,174.4 145,174.4 146.5,174.4 148,174.4 149.5,174.4 151,174.4 152.5,174.4 154,174.4 155.5,174.4 157,174.4 158.5,174.4 160,174.4 161.5,174.4 163,174.4 164.5,174.4 166,174.4 167.5,174.4 169,174.4 170.5,174.4 172,174.4 173.5,174.4 175,174.4 176.5,174.4 178,174.4 179.5,174.4 181,174.4 182.5,174.4 184,174.4 185.5,174.4 187,174.4 188.5,174.4 190,174.4 191.5,174.4 193,174.4 194.5,174.4 196,174.4 197.5,174.4 199,174.4 200.5,174.4 202,174.4 203.5,174.4 205,174.4 206.5,174.4 208,176.4 209.5,178.6 211,180.9 212.5,183.2 214,185.5 215.5,187.8 217,190.1 218.5,192.4 220,194.7 221.5,197 223,199.3 224.5,201.6 226,203.9 227.5,206.2 229,208.5 230.5,210.8 232,213.1 233.5,215.4 235,217.7 236.5,220 238,222.2 239.5,224.5 241,226.8 242.5,229.1 244,231.4 245.5,233.7 247,236 248.5,237.8 250,237.8 251.5,237.8 253,237.8 254.5,237.8 256,237.8 257.5,237.8 259,237.8 260.5,237.8 262,237.8 263.5,237.8 265,237.8 266.5,237.8 268,237.8 269.5,237.8 271,237.8 272.5,237.8 274,237.8 275.5,237.8 277,237.8 278.5,237.8 280,237.8 281.5,237.8 283,237.8 284.5,237.8 286,237.8 287.5,237.8 289,237.8 290.5,237.8 292,237.8 293.5,237.8 295,237.8 296.5,237.8 298,237.8 299.5,237.8 301,237.8 302.5,237.8 304,237.8 305.5,237.8 307,237.8 308.5,237.8 310,237.8 311.5,237.8 313,237.8 314.5,237.8 316,237.8 317.5,237.8 319,237.8 320.5,237.8 322,237.8 323.5,237.8 325,237.8 326.5,237.8 328,237.8 329.5,237.8 331,237.8 332.5,237.8 334,237.8 335.5,237.8 337,237.8 338.5,237.8 340,237.8 341.5,237.8 343,237.8 344.5,237.8 346,237.8 347.5,237.8 349,237.8 350.5,237.8 352,237.8 353.5,237.8 355,237.8 356.5,237.8 358,237.8 359.5,237.8 361,237.8 362.5,237.8 364,237.8 365.5,237.8 367,237.8 368.5,237.8 370,237.8 371.5,237.8 373,237.8 374.5,237.8 376,237.8 377.5,237.8 379,237.8 380.5,237.8 382,237.8 383.5,237.8 385,237.8 386.5,237.8 388,237.8 389.5,237.8 391,237.8 392.5,237.8 394,237.8 395.5,237.8 397,237.8 398.5,237.8 400,237.8 401.5,237.8 403,237.8 404.5,237.8 406,237.8 407.5,237.8 409,237.8 410.5,237.8 412,237.8 413.5,237.8 415,237.8 416.5,237.8 418,237.8 419.5,237.8 421,237.8 422.5,237.8 424,237.8 425.5,237.8 427,236.5 428.5,233.7 430,230.9 431.5,228.1 433,225.3 434.5,222.5 436,219.7 437.5,216.9 439,214.1 440.5,211.3 442,208.5 443.5,207 445,207 446.5,207 448,207 449.5,207 451,207 452.5,207 454,205.7 455.5,202.9 457,200.1 458.5,197.3 460,194.5 461.5,191.7 463,188.9 464.5,186.1 466,183.3 467.5,180.5 469,177.7 470.5,174.9 472,172.1 473.5,169.3 475,166.5 476.5,163.7 478,160.9 479.5,158.1 481,155.3 482.5,152.5 484,149.7 485.5,146.9 487,145.4 488.5,145.4 490,145.4 491.5,145.4 493,145.4 494.5,145.4 496,145.4 497.5,145.4 499,145.4 500.5,145.4 502,145.4 503.5,145.4 505,145.4 506.5,145.4 508,145.4 509.5,145.4 511,145.4 512.5,145.4 514,145.4 515.5,145.4 517,145.4 518.5,145.4 520,145.4 521.5,145.4 523,145.4 524.5,145.4 526,145.4 527.5,145.4 529,145.4 530.5,145.4 532,145.4 533.5,145.4 535,145.4 536.5,145.4 538,145.4 539.5,145.4 541,145.4 542.5,145.4 544,145.4 545.5,145.4 547,145.4 548.5,145.4 550,145.4 551.5,145.4 553,145.4 554.5,145.4 556,145.4 557.5,145.4 559,145.4 560.5,145.4 562,145.4 563.5,145.4 565,145.4 566.5,145.4 568,145.4 569.5,145.4 571,145.4 572.5,145.4 574,145.4 575.5,145.4 577,145.4 578.5,145.4 580,145.4 581.5,145.4 583,145.4 584.5,145.4 586,145.4 587.5,145.4 589,145.4 590.5,145.4 592,145.4 593.5,145.4 595,145.4 596.5,145.4 598,145.4 599.5,145.4 601,145.4 602.5,145.4 604,145.4 605.5,145.4 607,145.4 608.5,145.4 610,145.4 611.5,145.4 613,145.4 614.5,145.4 616,145.4 617.5,145.4 619,145.4 620.5,145.4 622,145.4 623.5,145.4 625,145.4 626.5,145.4 628,145.4 629.5,145.4 631,145.4 632.5,145.4 634,145.4 635.5,145.4 637,145.4 638.5,145.4 640,145.4 641.5,145.4 643,145.4 644.5,145.4 646,145.4 647.5,145.4 649,145.4 650.5,145.4 652,145.4 653.5,145.4 655,145.4 656.5,145.4 658,145.4 659.5,145.4 661,145.4 662.5,145.4 664,145.4 665.5,145.4 667,145.4 668.5,145.4 670,145.4 671.5,145.4 673,145.4 674.5,145.4 676,145.4 677.5,145.4 679,145.4 680.5,145.4 682,145.4 683.5,145.4 685,145.4 686.5,145.4 688,145.4 689.5,145.4 691,145.4 692.5,145.4 694,145.4 695.5,145.4 697,145.4 698.5,145.4 700,145.4 701.5,145.4 703,145.4 704.5,145.4 706,145.4 707.5,145.4 709,145.4 710.5,145.4 712,145.4 713.5,145.4 715,145.4 716.5,145.4 718,145.4 719.5,145.4 721,145.4 722.5,145.4 724,145.4 725.5,145.4 727,145.4 728.5,145.4 730,145.4 731.5,145.4 733,145.4 734.5,145.4 736,145.4 737.5,145.4 739,145.4 740.5,145.4 742,145.4 743.5,145.4 745,145.4 746.5,145.4 748,145.4 749.5,145.4 751,145.4 752.5,145.4 754,145.4 755.5,145.4 757,145.4 758.5,145.4 760,145.4 761.5,145.4 763,145.4 764.5,145.4 766,145.4 767.5,145.4 769,145.4 770.5,145.4 772,145.4 773.5,145.4 775,145.4 776.5,145.4 778,145.4 779.5,145.4 781,145.4 782.5,145.4 784,145.4 785.5,145.4 787,145.4 788.5,145.4 790,145.4 791.5,145.4 793,145.4 794.5,145.4 796,145.4 797.5,145.4 799,145.4 800.5,145.4 802,145.4 803.5,145.4 805,145.4 806.5,145.4 808,145.4 809.5,145.4 811,145.4 812.5,145.4 814,145.4 815.5,145.4 817,145.4 818.5,145.4 820,145.4 821.5,145.4 823,145.4 824.5,145.4 826,145.4 827.5,145.4 829,145.4 830.5,145.4 832,145.4 833.5,145.4 835,145.4 836.5,145.4 838,145.4 839.5,145.4 841,145.4 842.5,145.4 844,145.4 845.5,145.4 847,145.4 848.5,145.4 850,145.4 851.5,145.4 853,145.4 854.5,145.4 856,145.4 857.5,145.4 859,145.4 860.5,145.4 862,145.4 863.5,145.4 865,145.4 866.5,145.4 868,145.4 869.5,145.4 871,145.4 872.5,145.4 874,145.4 875.5,145.4 877,145.4 878.5,145.4 880,145.4 881.5,145.4 883,145.4 884.5,145.4 886,145.4 887.5,145.4 889,145.4 890.5,145.4 892,145.4 893.5,145.4 895,145.4 896.5,145.4 898,145.4 899.5,145.4 901,145.4 902.5,145.4 904,145.4 905.5,145.4 907,145.4 908.5,145.4 910,145.4 911.5,145.4 913,145.4 914.5,145.4 916,145.4 917.5,145.4 919,145.4 920.5,145.4 922,145.4 923.5,145.4 925,145.4 926.5,145.4 928,145.4 929.5,145.4 931,145.4 932.5,145.4 934,145.4 935.5,145.4 937,145.4 938.5,145.4 940,145.4 941.5,145.4 943,145.4 944.5,145.4 946,144.6 947.5,144.6 949,144.6 950.5,144.6 952,144.6 953.5,144.6 955,144.6 956.5,144.6 958,144.5 959.5,143.9 961,143.2 962.5,142.5 964,141.9 965.5,141.2 967,140.6 968.5,139.9 970,139.2"/><rect class="subspan" x="229" y="86" width="213" height="224.4"/><text class="wl" x="348.1" y="150.9" text-anchor="middle">solid rock</text><text class="wl" x="348.1" y="166.9" text-anchor="middle">roof at -1.9 m</text><text class="wl" x="124" y="200">water surface -1.5 m</text><text class="wl" x="529.8" y="197.9">grotto water -0.45 m — beside the walkway, not under it</text><line class="callout" x1="34" y1="53" x2="34" y2="310.4"/><text class="calloutlabel" x="32" y="48" text-anchor="start">start · the squeeze</text><line class="callout" x1="229" y1="73" x2="229" y2="310.4"/><text class="calloutlabel" x="229" y="68" text-anchor="middle">eye goes under</text><line class="callout" x1="358.8" y1="53" x2="358.8" y2="310.4"/><text class="calloutlabel" x="358.8" y="48" text-anchor="middle">the bloom</text><line class="callout" x1="448" y1="73" x2="448" y2="310.4"/><text class="calloutlabel" x="448" y="68" text-anchor="middle">landing · eye on the surface</text><line class="callout" x1="523.8" y1="53" x2="523.8" y2="310.4"/><text class="calloutlabel" x="523.8" y="48" text-anchor="middle">grotto</text><line class="callout" x1="869.5" y1="73" x2="869.5" y2="310.4"/><text class="calloutlabel" x="869.5" y="68" text-anchor="middle">parapet</text><line class="callout" x1="971" y1="53" x2="971" y2="310.4"/><text class="calloutlabel" x="973" y="48" text-anchor="end">Fire door</text><line class="measure" x1="229" y1="344.4" x2="442" y2="344.4"/><line class="measure" x1="229" y1="340.4" x2="229" y2="348.4"/><line class="measure" x1="442" y1="340.4" x2="442" y2="348.4"/><text class="subtext" x="335.5" y="361.4" text-anchor="middle">head under water · 28.4 m of the walk</text><text class="dim" x="981" y="324.4">metres walked</text>
+  </svg>
+  <figcaption><span class="sheetid">S-01</span> Section along the walk <span class="sheetscale">heights true, distance compressed</span></figcaption>
+</figure></div>
+<p>The moment worth protecting is the landing at <b>−3.1 m</b>. It is not an authored number: it is the floor height that puts your eye exactly on the water surface, so the surface break happens standing still on a flat step rather than somewhere on a ramp.</p>
+
+<h2>P-02 · The grotto</h2>
+<p>The room you actually look at things in. Green is new and needs approval; everything else is already built.</p>
+<div class="sheetwrap"><figure class="sheet">
+  <svg class="fill" viewBox="0 0 1160 1104" width="1160" height="1104" role="img" aria-label="The grotto — cases, opener, parapet">
+    <rect class="sheetbg" x="0" y="0" width="1160" height="1104"/>
+    <line class="grid" x1="30" y1="30" x2="30" y2="1074"/><line class="grid" x1="110" y1="30" x2="110" y2="1074"/><line class="grid" x1="190" y1="30" x2="190" y2="1074"/><line class="grid" x1="270" y1="30" x2="270" y2="1074"/><line class="grid" x1="350" y1="30" x2="350" y2="1074"/><line class="grid" x1="430" y1="30" x2="430" y2="1074"/><line class="grid" x1="510" y1="30" x2="510" y2="1074"/><line class="grid" x1="590" y1="30" x2="590" y2="1074"/><line class="grid" x1="670" y1="30" x2="670" y2="1074"/><line class="grid" x1="750" y1="30" x2="750" y2="1074"/><line class="grid" x1="830" y1="30" x2="830" y2="1074"/><line class="grid" x1="910" y1="30" x2="910" y2="1074"/><line class="grid" x1="990" y1="30" x2="990" y2="1074"/><line class="grid" x1="1070" y1="30" x2="1070" y2="1074"/><line class="grid" x1="1150" y1="30" x2="1150" y2="1074"/><line class="grid" x1="30" y1="50" x2="1130" y2="50"/><line class="grid" x1="30" y1="130" x2="1130" y2="130"/><line class="grid" x1="30" y1="210" x2="1130" y2="210"/><line class="grid" x1="30" y1="290" x2="1130" y2="290"/><line class="grid" x1="30" y1="370" x2="1130" y2="370"/><line class="grid" x1="30" y1="450" x2="1130" y2="450"/><line class="grid" x1="30" y1="530" x2="1130" y2="530"/><line class="grid" x1="30" y1="610" x2="1130" y2="610"/><line class="grid" x1="30" y1="690" x2="1130" y2="690"/><line class="grid" x1="30" y1="770" x2="1130" y2="770"/><line class="grid" x1="30" y1="850" x2="1130" y2="850"/><line class="grid" x1="30" y1="930" x2="1130" y2="930"/><line class="grid" x1="30" y1="1010" x2="1130" y2="1010"/><rect class="room" x="80" y="80" width="1000" height="880"><title>grotto interior 25.0 × 22.0 m</title></rect><rect class="deck" x="520" y="960" width="120" height="200"><title>gallery-corridor-0 @ -0.3 m</title></rect><rect class="ramp" x="1000" y="820" width="80" height="140"><title>exit-ramp @ -0.3 m</title></rect><rect class="deck" x="80" y="780" width="860" height="180"><title>apron @ -0.3 m</title></rect><rect class="deck" x="80" y="220" width="100" height="560"><title>west-walkway @ -0.3 m</title></rect><rect class="deck" x="940" y="220" width="60" height="740"><title>east-walkway-0 @ -0.3 m</title></rect><rect class="deck" x="1000" y="220" width="80" height="600"><title>east-walkway-1 @ -0.3 m</title></rect><rect class="deck" x="180" y="380" width="760" height="100"><title>procession @ -0.3 m</title></rect><rect class="deck" x="180" y="480" width="760" height="300"><title>pool-bottom @ -5 m</title></rect><rect class="deck" x="180" y="220" width="760" height="160"><title>channel-bed @ -2.7 m</title></rect><rect class="deck" x="80" y="80" width="1000" height="140"><title>shore-shelf @ -1 m</title></rect><rect class="water barrier" x="180" y="220" width="760" height="160"><title>channel — 4.0 m wide, 2.25 m deep, BLOCKED</title></rect><rect class="water" x="180" y="480" width="760" height="300"><title>mirror pool — blocked</title></rect><rect class="shelf" x="80" y="80" width="1000" height="140"><title>performer shelf — blocked</title></rect><rect class="new" x="740" y="480" width="200" height="120"><title>PROPOSED parapet deck 5.0 × 3.0 m</title></rect><rect class="rail" x="180" y="470" width="760" height="10"><title>balustrade</title></rect><rect class="rail" x="180" y="780" width="760" height="10"><title>balustrade</title></rect><rect class="rail" x="170" y="480" width="10" height="300"><title>balustrade</title></rect><rect class="rail" x="940" y="480" width="10" height="300"><title>balustrade</title></rect><rect class="rail" x="180" y="380" width="760" height="10"><title>balustrade</title></rect><rect class="rail" x="170" y="220" width="10" height="160"><title>balustrade</title></rect><rect class="rail" x="940" y="220" width="10" height="160"><title>balustrade</title></rect><rect class="jamb" x="940" y="640" width="20" height="40"><title>threshold jamb</title></rect><rect class="jamb" x="1060" y="640" width="20" height="40"><title>threshold jamb</title></rect><rect class="opening" x="960" y="640" width="100" height="40"><title>threshold opening 2.5 m</title></rect><rect class="new screen" x="158" y="82" width="96" height="12"><title>PROPOSED screen for AAAA</title></rect><rect class="new card" x="292" y="376" width="36" height="20"><title>PROPOSED card sign for AAAA</title></rect><circle class="perf" cx="310" cy="170" r="8"/><text class="perflabel" x="310" y="174" text-anchor="middle">A</text><text class="caseword" x="310" y="156" text-anchor="middle">AAAA</text><line class="look" x1="310" y1="170" x2="310" y2="430"/><rect class="new screen" x="438" y="82" width="96" height="12"><title>PROPOSED screen for BBBB</title></rect><rect class="new card" x="572" y="376" width="36" height="20"><title>PROPOSED card sign for BBBB</title></rect><circle class="perf" cx="590" cy="170" r="8"/><text class="perflabel" x="590" y="174" text-anchor="middle">B</text><text class="caseword" x="590" y="156" text-anchor="middle">BBBB</text><line class="look" x1="590" y1="170" x2="590" y2="430"/><rect class="new screen" x="718" y="82" width="96" height="12"><title>PROPOSED screen for CCCC</title></rect><rect class="new card" x="852" y="376" width="36" height="20"><title>PROPOSED card sign for CCCC</title></rect><circle class="perf" cx="870" cy="170" r="8"/><text class="perflabel" x="870" y="174" text-anchor="middle">C</text><text class="caseword" x="870" y="156" text-anchor="middle">CCCC</text><line class="look" x1="870" y1="170" x2="870" y2="430"/><rect class="new card" x="346" y="854" width="48" height="24"><title>PROPOSED opener card plinth</title></rect><circle class="new dais" cx="370" cy="822" r="40"/><text class="tag" x="370" y="825" text-anchor="middle">opener</text><line class="sight" x1="840" y1="570" x2="310" y2="170"/><circle class="bounce" cx="530.8" cy="336.7" r="3"/><line class="sight" x1="840" y1="570" x2="590" y2="170"/><circle class="bounce" cx="694.2" cy="336.7" r="3"/><line class="sight" x1="840" y1="570" x2="870" y2="170"/><circle class="bounce" cx="857.5" cy="336.7" r="3"/><circle class="stand" cx="840" cy="570" r="5"/><text class="tag halo" x="852" y="592">you stand here</text><polyline class="route" points="580,1160 580,960 580,910 370,910 130,890 130,430 310,430 590,430 870,430 840,570 1010,590 1010,660 1010,890 1080,890"/><text class="doorlabel" x="580" y="1054" text-anchor="middle">in, from the surfacing stair · 3.0 m</text><text class="doorlabel" x="1010" y="1026" text-anchor="middle">out, to Fire · 3.5 m</text><g class="dimline"><line x1="80" y1="58" x2="1080" y2="58"/><line x1="80" y1="54" x2="80" y2="62"/><line x1="1080" y1="54" x2="1080" y2="62"/><text class="dim" x="580" y="53" text-anchor="middle">25.0 m</text></g><g class="dimline"><line x1="70" y1="220" x2="70" y2="380"/><line x1="66" y1="220" x2="74" y2="220"/><line x1="66" y1="380" x2="74" y2="380"/><text class="dim" transform="translate(65,300) rotate(-90)" text-anchor="middle">channel 4.0 m</text></g><g class="dimline"><line x1="158" y1="380" x2="158" y2="480"/><line x1="154" y1="380" x2="162" y2="380"/><line x1="154" y1="480" x2="162" y2="480"/><text class="dim" transform="translate(153,430) rotate(-90)" text-anchor="middle">procession 2.5 m</text></g><g class="dimline"><line x1="158" y1="480" x2="158" y2="780"/><line x1="154" y1="480" x2="162" y2="480"/><line x1="154" y1="780" x2="162" y2="780"/><text class="dim" transform="translate(153,630) rotate(-90)" text-anchor="middle">pool 7.5 m</text></g><g class="dimline"><line x1="70" y1="780" x2="70" y2="960"/><line x1="66" y1="780" x2="74" y2="780"/><line x1="66" y1="960" x2="74" y2="960"/><text class="dim" transform="translate(65,870) rotate(-90)" text-anchor="middle">apron 4.5 m</text></g><g class="scalebar"><line x1="38" y1="1196" x2="238" y2="1196"/><line x1="38" y1="1192" x2="38" y2="1200"/><line x1="238" y1="1192" x2="238" y2="1200"/><line x1="138" y1="1193" x2="138" y2="1199"/><text x="246" y="1200" class="dim">5 m</text></g><g class="north"><path d="M 1108 66 L 1108 40 M 1102 49 L 1108 40 L 1114 49"/><text x="1108" y="80" text-anchor="middle" class="dim">N</text></g>
+  </svg>
+  <figcaption><span class="sheetid">P-02</span> The grotto — cases, opener, parapet <span class="sheetscale">1 grid square = 2 m</span></figcaption>
+</figure></div>
+<ul class="key">
+  <li><span class="sw" style="background:var(--new);opacity:.6"></span>proposed — new</li>
+  <li><span class="sw" style="background:var(--deck)"></span>deck you can walk</li>
+  <li><span class="sw" style="background:var(--water);opacity:.6"></span>water you cannot enter</li>
+  <li><span class="sw" style="background:var(--accent);border-radius:50%;width:10px"></span>performer</li>
+  <li><span class="sw" style="border:1px solid var(--accent);background:none;border-radius:50%;width:10px"></span>where the reflection bounces</li>
+</ul>
+
+<div class="threeup">
+<div>
+<h3>The barrier is the water</h3>
+<p>The channel in front of the performers is <b>4.0 m wide and 2.25 m deep</b>. It is on the blocked list, so the game will not let you walk into it, and the shelf the performers stand on is blocked too. There is a rail along the near edge as well. You cannot get to them by accident or on purpose.</p>
+</div>
+<div>
+<h3>A case is three things and one clock</h3>
+<p>The performer stands on the shelf at z 5.0. Their screen hangs on the wall <b>2.6 m to their left</b> so it never hides them. Their card sits on the rail in front of you at <b>0.7 m high</b>, low enough that it blocks nothing. One clock drives the performer and the screen together, so the pictograph on the wall is always the step the body is on.</p>
+</div>
+<div>
+<h3>Nothing doubles back</h3>
+<p>You come in at the south, go west, north, east along the cases, and leave through the east wall. Every metre of the route is walked once. The apron is wide enough (<b>4.5 m</b>) that the opener never stands in the way of the arrival view.</p>
+</div>
+</div>
+
+<h3>The parapet: why it is in the corner and not the middle</h3>
+<p>The payoff has to come after the cases, and you should never walk back over ground you already covered. Walking the procession west to east puts you past A, B and C in order and delivers you to the northeast corner — so that is where the deck goes. From the standing point the three of them sit inside a <b>57.2°</b> view, receding: A is 16.6 m away and smallest, C is 10 m away and nearest.</p>
+<p>Each one is also doubled. Standing eye at 1.30 m, a figure's reflected head sits below the water surface, and the line to it crosses the water inside the channel every time — at z 9.2, 9.2 and 9.2 m, all inside the channel's 6.3–10.3 m span. The small orange rings on the drawing are those three bounce points.</p>
+
+<h2>R-01 · The route, stop by stop</h2>
+<table>
+  <thead><tr><th></th><th>Where</th><th>What you see</th><th>What you do</th><th>What you take away</th></tr></thead>
+  <tbody>
+    <tr>
+      <td class="num">1</td>
+      <td class="where"><b>The squeeze mouth</b><span class="at">x 13.8, z 70.8 · floor 0.0 m</span></td>
+      <td>A ramp running down into black water. You hear it before the corridor opens.</td>
+      <td>Walk down. There is one way and it is wet.</td>
+      <td>Water is the subject here.</td>
+    </tr>
+    <tr>
+      <td class="num">2</td>
+      <td class="where"><b>Ankle-deep bend</b><span class="at">z 58.8 → 53.8 · floor −1.62 m</span></td>
+      <td>Water 12 cm over the floor, a corridor bending east then north.</td>
+      <td>Wade. Nothing to decide.</td>
+      <td>The floor is already under water.</td>
+    </tr>
+    <tr>
+      <td class="num">3</td>
+      <td class="where"><b>Head of the descent stair</b><span class="at">z 53.8 · open shaft above</span></td>
+      <td>The stair drops away; overhead the shaft is open and the surface is visible above you.</td>
+      <td>Walk down 2.9 m over 5.5 m of run.</td>
+      <td>You are about to go under, and you can see the surface you are leaving.</td>
+    </tr>
+    <tr>
+      <td class="num">4</td>
+      <td class="where"><b>Under the roof</b><span class="at">z 48.3 · floor −4.5 m, roof −1.9 m</span></td>
+      <td>Rock ceiling 2.6 m over your head, and it is below the water surface. No air anywhere.</td>
+      <td>Keep walking. 1.4 m of water over your eye.</td>
+      <td>There is no surface to swim to in here.</td>
+    </tr>
+    <tr>
+      <td class="num">5</td>
+      <td class="where"><b>The bloom</b><span class="at">x 10.0, z 43.0 · halfway along the north run</span></td>
+      <td>The one lit thing in the drowned leg.</td>
+      <td>Walk toward it.</td>
+      <td>Something is ahead. Keep going.</td>
+    </tr>
+    <tr>
+      <td class="num">6</td>
+      <td class="where"><b>The surfacing landing</b><span class="at">z 34.9 · floor −3.1 m</span></td>
+      <td>Your eye lands exactly on the water surface — half above, half below, in one step.</td>
+      <td>Stand on the flat landing. Breathe.</td>
+      <td>You came up. The whole drowned leg was the price of this.</td>
+    </tr>
+    <tr>
+      <td class="num">7</td>
+      <td class="where"><b>Grotto door</b><span class="at">x 13.8, z 24.8 · 3.0 m wide</span></td>
+      <td>The ceiling jumps to 9.5 m. A still pool, and three lit figures on a shelf across the water.</td>
+      <td>Step out onto the apron.</td>
+      <td>This is the room. Those three are what it is about.</td>
+    </tr>
+    <tr>
+      <td class="num">8</td>
+      <td class="where"><b>The opener</b><span class="at">x 8.5, z 21.3–22.4 · on the way west</span></td>
+      <td>A card at reading height, and behind it a figure with no props tracing the hand path in the air.</td>
+      <td>Read it. It takes ten seconds.</td>
+      <td>One move, shown plainly, before you meet three versions of it.</td>
+    </tr>
+    <tr>
+      <td class="num">9</td>
+      <td class="where"><b>West walkway</b><span class="at">x 2.5, z 20.3 → 6.3 · 2.5 m wide</span></td>
+      <td>The pool on your right holding the whole dome upside down. The three figures getting closer.</td>
+      <td>Walk north along the water.</td>
+      <td>You go around the water, never across it.</td>
+    </tr>
+    <tr>
+      <td class="num">10</td>
+      <td class="where"><b>The procession — A, then B, then C</b><span class="at">z 11.5 · 2.5 m wide, cases at x 7 / 14 / 21</span></td>
+      <td>Each case across 4 m of still channel: the performer on the shelf, their screen on the wall behind, their card on the rail in front, and the whole figure doubled in the water.</td>
+      <td>Walk east past all three. Stop at any of them.</td>
+      <td>Three variations of the one move you were just shown.</td>
+    </tr>
+    <tr>
+      <td class="num">11</td>
+      <td class="where"><b>The parapet</b><span class="at">x 20.3, z 15.0 · deck out over the pool</span></td>
+      <td>All three at once inside a 57° view, each one doubled. A is furthest and smallest; C is nearest.</td>
+      <td>Stand. This is the last thing the wing asks of you.</td>
+      <td>They are a set, not three separate things.</td>
+    </tr>
+    <tr>
+      <td class="num">12</td>
+      <td class="where"><b>The carved threshold</b><span class="at">x 24.5, z 17.3 · 2.5 m opening</span></td>
+      <td>A cut frame in the east walkway, warm light past it.</td>
+      <td>Walk through and keep going south.</td>
+      <td>The next wing is that way.</td>
+    </tr>
+    <tr>
+      <td class="num">13</td>
+      <td class="where"><b>Fire door — the final view</b><span class="at">x 26.3, z 23.0 · top of the exit ramp</span></td>
+      <td>Turning at the door: the whole grotto behind you, three lit alcoves across still water, the pool doubling the dome.</td>
+      <td>Leave.</td>
+      <td>What Water was.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Four calls I need from you</h2>
+<div class="decisions">
+<div class="decision">
+  <span class="id">W-1</span>
+  <h3>The performer shelf sits under the water line</h3>
+  <p>The shelf A, B and C stand on is at -1 m. The grotto's water surface is at -0.45 m — 0.55 m higher. Right now no water is drawn over the shelf, so it reads as a dry ledge lower than the water beside it, which cannot happen.</p>
+  <div class="rec"><b>Recommend</b><p>Flood it. Draw the water across the shelf too, so the three of them stand shin-deep in still water and the reflection starts at their ankles. It is the Water wing; performers standing in it is better than a dry ledge. Or raise the shelf to −0.35 m and keep them dry.</p></div>
+</div>
+<div class="decision">
+  <span class="id">W-2</span>
+  <h3>The parapet has to be cut out of the pool</h3>
+  <p>The mirror pool is one solid blocked rectangle from x 3.75 to 22.75. The proposed parapet deck sits inside that rectangle, so as written the game would refuse to let you stand on it.</p>
+  <div class="rec"><b>Recommend</b><p>Split the pool into three blocked pieces around the parapet footprint when the deck is built. Mechanical, but it has to be done in the same change or the parapet does not exist.</p></div>
+</div>
+<div class="decision">
+  <span class="id">W-3</span>
+  <h3>The screens and cards are new objects</h3>
+  <p>Three wall screens, three rail cards and the opener plinth do not exist in the geometry yet. Their positions are fixed by this board; the objects get built with the shared graybox harness.</p>
+  <div class="rec"><b>Recommend</b><p>Build them in the terrain module so the walkable geometry and the drawing stay one source, the way every other rect in this room already works.</p></div>
+</div>
+<div class="decision">
+  <span class="id">W-4</span>
+  <h3>The walk is long before anything happens</h3>
+  <p>65.3 m of the 124.9 m walk is approach, drowning and surfacing, with one lit bloom in the middle. The exhibit itself is the last 59.6 m.</p>
+  <div class="rec"><b>Recommend</b><p>Keep it. The submerged leg is what makes the grotto land, and it is already built. But if it plays long in the graybox, the west run is the leg to shorten.</p></div>
+</div>
+</div>
+
+<h2>What is fact, what is a figure of speech, what is invented</h2>
+<table class="claims">
+  <thead><tr><th>Class</th><th>Claim</th></tr></thead>
+  <tbody>
+    <tr><td><span class="tagpill">literal</span></td><td>The three cases stage the museum sequences AAAA, BBBB and CCCC exactly as stored, and each one matches its catalog row field for field. The grammar test enforces it.</td></tr>
+    <tr><td><span class="tagpill">literal</span></td><td>Every dimension on these drawings is read out of the compiled room, not drawn by eye.</td></tr>
+    <tr><td><span class="tagpill">metaphor</span></td><td>Still water standing in for a display case: you can see them, you cannot reach them.</td></tr>
+    <tr><td><span class="tagpill">metaphor</span></td><td>The reflection doubling each performer, and the wing's move being shown once before you meet three versions of it.</td></tr>
+    <tr><td><span class="tagpill">invention</span></td><td>The parapet deck, the opener plinth and dais, the three wall screens and three rail cards. None of them exist yet. This board is the proposal.</td></tr>
+  </tbody>
+</table>
+
+<h2>What happens after you approve this</h2>
+<p>Gate 2 is a playable graybox: the parapet, the opener and the six triptych objects get built into the room's geometry module, and you walk the whole thing at eye height and tell me whether it reads. Nothing gets pretty until you have walked it.</p>
+<p>Before I treat this gate as passed I need you to tell me the route back in your own words — where you go, what stops you, and where you end up. If your read does not match the drawing, the drawing is wrong, not you.</p>
+
+<footer>
+  Water wing · Gate 1 · measured from src/lib/features/museum/data/drowned-gallery-terrain.ts and vulcan-cave-floor-plan.ts · 2026-08-12
+</footer>
+</div>
