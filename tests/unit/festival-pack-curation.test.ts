@@ -3,9 +3,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const require = createRequire(import.meta.url);
-const { buildCandidateNames, buildFestivalPackCuration } =
+const { buildCandidateNames, buildFestivalPackCuration, isClassicPosition } =
   require("../../scripts/festival-pack-curate.cjs") as {
     buildCandidateNames(): Array<Record<string, string>>;
+    isClassicPosition(position: string | null | undefined): boolean;
     buildFestivalPackCuration(documents: unknown[]): {
       candidates: Array<{
         selected: boolean;
@@ -35,7 +36,7 @@ describe("festival pack curation", () => {
     ).toBe(50);
     expect(candidates[0]).toEqual({
       mirrored8: "DJII",
-      rotated16: "NROT",
+      rotated16: "OVXΔ",
       rotated8: "MVNU",
       mirroredSwapped8: "FALG",
     });
@@ -60,6 +61,16 @@ describe("festival pack curation", () => {
         "mirroredInverted8",
       ]);
       expect(candidate.cards).toHaveLength(8);
+      for (const card of candidate.cards) {
+        expect(isClassicPosition(card.startPosition as string)).toBe(true);
+        expect(isClassicPosition(card.endPosition as string)).toBe(true);
+      }
+      expect(
+        candidate.cards.find((card) => card.slot === "rotated16")?.period
+      ).toBe(4);
+      expect(
+        candidate.cards.find((card) => card.slot === "rotated8")?.period
+      ).toBe(2);
     }
     expect(
       curation.candidates.filter((candidate) => candidate.selected)

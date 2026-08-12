@@ -11,33 +11,46 @@ const EVIDENCE_DIR = path.join(
   REPO,
   "docs/superpowers/specs/festival-sample-pack/evidence"
 );
+const TND_SNAPSHOT = path.join(EVIDENCE_DIR, "festival-pack-tnd-records.json");
+const LOCAL_SEQUENCE_SNAPSHOT = path.join(
+  EVIDENCE_DIR,
+  "festival-pack-local-sequences.json"
+);
 
 const MIRRORED_8 = ["DJII", "EΦ-JΨ-DΦ-KΨ-"];
 const ROTATED_16 = [
-  "NROT",
-  "ALFALGGF",
-  "RRRS",
+  "OVXΔ",
+  "MΛWΔ",
   "AKIΦ",
   "AJEΦ-",
   "AΔSX",
-  "MΛWΔ",
-  "Φ-BKE",
-  "IIΩXKEΣY",
-  "OVXΔ",
+  "AΣSW",
+  "BΔTX",
+  "BΣTW",
+  "CΔUW",
+  "CΣVX",
+  "EJΦK",
+  "FΦ-BJ",
+  "IΩPY-",
+  "KDCΦ-",
+  "KΣ-XC",
 ];
 const ROTATED_8 = [
   "MVNU",
   "OT",
   "QT",
   "RT",
-  "SN",
   "SOTR",
   "VPUQ",
-  "JΦ",
-  "DΨ",
+  "BΔMX",
+  "BΣTX",
+  "CΩ-SW-",
+  "EΔUZ",
+  "W-Θ-",
+  "XΣΛS",
   "ΦAΦ-L",
 ];
-const MIRRORED_SWAPPED_8 = ["FALG", "GELIGELI"];
+const MIRRORED_SWAPPED_8 = ["FALG"];
 
 const FIXED = {
   mirrored16: "JIDCKIEC",
@@ -49,14 +62,18 @@ const FIXED = {
 const SLOT_REQUIREMENTS = {
   mirrored16: { loopType: "mirrored", sequenceLength: 16 },
   mirrored8: { loopType: "mirrored", sequenceLength: 8 },
-  rotated16: { loopType: "rotated", sequenceLength: 16 },
-  rotated8: { loopType: "rotated", sequenceLength: 8 },
+  rotated16: { loopType: "rotated", sequenceLength: 16, period: 4 },
+  rotated8: { loopType: "rotated", sequenceLength: 8, period: 2 },
   mirroredSwapped8: { loopType: "mirrored_swapped", sequenceLength: 8 },
   mirroredInverted8: {
     loopType: "mirrored_inverted",
     sequenceLength: 8,
   },
 };
+
+function isClassicPosition(position) {
+  return new Set(["alpha1", "beta5", "gamma11"]).has(position ?? "");
+}
 
 function findPublishedSequence(documents, name) {
   const matches = documents.filter(
@@ -72,11 +89,16 @@ function findPublishedSequence(documents, name) {
 
 function assertSlot(sequence, slot) {
   const requirement = SLOT_REQUIREMENTS[slot];
+  const startPosition = sequence.startPosition?.gridPosition;
   if (!requirement) throw new Error(`unknown sampler slot: ${slot}`);
   if (
     sequence.level !== 1 ||
     sequence.loopType !== requirement.loopType ||
     sequence.sequenceLength !== requirement.sequenceLength ||
+    (requirement.period != null &&
+      Number(sequence.period) !== requirement.period) ||
+    sequence.isCircular !== true ||
+    !isClassicPosition(startPosition) ||
     typeof sequence.sourceRef !== "string"
   ) {
     throw new Error(
@@ -85,6 +107,9 @@ function assertSlot(sequence, slot) {
           level: sequence.level,
           loopType: sequence.loopType,
           sequenceLength: sequence.sequenceLength,
+          period: sequence.period ?? null,
+          isCircular: sequence.isCircular,
+          startPosition,
           sourceRef: sequence.sourceRef,
         })
     );
@@ -93,6 +118,7 @@ function assertSlot(sequence, slot) {
 
 function publishedCard(sequence, slot) {
   assertSlot(sequence, slot);
+  const startPosition = sequence.startPosition.gridPosition;
   return {
     slot,
     source: "publicSequences",
@@ -104,12 +130,26 @@ function publishedCard(sequence, slot) {
     sequenceLength: sequence.sequenceLength,
     gridMode: sequence.gridMode,
     period: sequence.period ?? null,
-    startPosition: sequence.startPosition?.gridPosition ?? null,
+    startPosition,
+    endPosition: startPosition,
     sourceRef: sequence.sourceRef,
   };
 }
 
-function tndCard({ slot, name, family, element, docId }) {
+function tndCard({ slot, name, family, element, docId, record }) {
+  const startPosition =
+    record?.startPosition?.gridPosition ?? record?.steps?.[0]?.startPosition;
+  const endPosition = record?.steps?.at(-1)?.endPosition;
+  if (
+    record?.isCircular !== true ||
+    !isClassicPosition(startPosition) ||
+    !isClassicPosition(endPosition)
+  ) {
+    throw new Error(
+      `${name} must start and end in Alpha, Beta, or Gamma: ` +
+        JSON.stringify({ startPosition, endPosition })
+    );
+  }
   return {
     slot,
     source: "catalog",
@@ -123,6 +163,49 @@ function tndCard({ slot, name, family, element, docId }) {
     element,
     ratio: "3:1",
     turnIntensity: 1,
+    startPosition,
+    endPosition,
+  };
+}
+
+function localCard(record, slot) {
+  const startPosition = record?.startPosition?.gridPosition;
+  const endPosition = record?.steps?.at(-1)?.endPosition;
+  const requirement = SLOT_REQUIREMENTS[slot];
+  if (
+    !requirement ||
+    record?.level !== 1 ||
+    record?.loopType !== requirement.loopType ||
+    record?.steps?.length !== requirement.sequenceLength ||
+    record?.isCircular !== true ||
+    !isClassicPosition(startPosition) ||
+    !isClassicPosition(endPosition)
+  ) {
+    throw new Error(
+      `${record?.name ?? "local sequence"} does not satisfy ${slot}: ` +
+        JSON.stringify({
+          level: record?.level,
+          loopType: record?.loopType,
+          sequenceLength: record?.steps?.length,
+          isCircular: record?.isCircular,
+          startPosition,
+          endPosition,
+        })
+    );
+  }
+  return {
+    slot,
+    source: "packLocal",
+    id: record.id,
+    name: record.name,
+    word: record.word,
+    level: record.level,
+    loopType: record.loopType,
+    sequenceLength: record.steps.length,
+    gridMode: record.gridMode,
+    period: record.period ?? null,
+    startPosition,
+    endPosition,
   };
 }
 
@@ -138,7 +221,7 @@ function candidateKey(names) {
 function buildCandidateNames() {
   const selected = {
     mirrored8: "DJII",
-    rotated16: "NROT",
+    rotated16: "OVXΔ",
     rotated8: "MVNU",
     mirroredSwapped8: "FALG",
   };
@@ -170,7 +253,12 @@ function buildCandidateNames() {
   return candidates;
 }
 
-function buildFestivalPackCuration(documents) {
+function buildFestivalPackCuration(
+  documents,
+  tndRecords = JSON.parse(fs.readFileSync(TND_SNAPSHOT, "utf8")).records,
+  localRecords = JSON.parse(fs.readFileSync(LOCAL_SEQUENCE_SNAPSHOT, "utf8"))
+    .records
+) {
   const lookup = (name) => findPublishedSequence(documents, name);
   const candidateNames = buildCandidateNames();
   const candidates = candidateNames.map((names, index) => ({
@@ -187,6 +275,7 @@ function buildFestivalPackCuration(documents) {
         family: "Split-Same",
         element: "water",
         docId: "tnd-3to1-split-same-aaaa",
+        record: tndRecords[FIXED.vtgSplitSame],
       }),
       tndCard({
         slot: "vtgTogetherSame",
@@ -194,8 +283,9 @@ function buildFestivalPackCuration(documents) {
         family: "Together-Same",
         element: "earth",
         docId: "tnd-3to1-tog-same-gggg",
+        record: tndRecords[FIXED.vtgTogetherSame],
       }),
-      publishedCard(lookup(names.mirroredSwapped8), "mirroredSwapped8"),
+      localCard(localRecords[names.mirroredSwapped8], "mirroredSwapped8"),
       publishedCard(lookup(FIXED.mirroredInverted8), "mirroredInverted8"),
     ],
   }));
@@ -204,9 +294,9 @@ function buildFestivalPackCuration(documents) {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     constraint:
-      "Type 1 and turn intensity <= 2 apply to the two VTG teaching cards; LOOP slots are published Level-1 sequences.",
+      "Type 1 and turn intensity <= 2 apply to the two VTG teaching cards; LOOP slots are published Level-1 sequences. Every card starts and ends in Alpha, Beta, or Gamma. Rotated 16-step cards are Quartered; rotated 8-step cards are Halved.",
     selectionReason:
-      "Candidate 1 is Austen's approved control and uses the clearest published names in every scarce slot.",
+      "Candidate 1 keeps Austen's approved control except for the requested Quartered 16-step rotated card; OVXΔ preserves the Gamma start family and is a published Level-1 LOOP.",
     candidates,
     selected: candidates[0],
   };
@@ -239,4 +329,5 @@ if (require.main === module) writeCuration();
 module.exports = {
   buildCandidateNames,
   buildFestivalPackCuration,
+  isClassicPosition,
 };

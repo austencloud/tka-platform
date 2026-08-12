@@ -26,10 +26,11 @@
   import selectedPack from "../../../../docs/superpowers/specs/festival-sample-pack/evidence/festival-pack-selected.json";
   import publicSnapshot from "../../../../static/data/snapshots/public-sequences.json";
   import tndRecords from "../../../../docs/superpowers/specs/festival-sample-pack/evidence/festival-pack-tnd-records.json";
+  import localSequences from "../../../../docs/superpowers/specs/festival-sample-pack/evidence/festival-pack-local-sequences.json";
 
   interface SelectedCard {
     slot: string;
-    source: "publicSequences" | "catalog";
+    source: "publicSequences" | "catalog" | "packLocal";
     id?: string;
     sourceRef?: string;
     catalogId?: string;
@@ -60,7 +61,12 @@
     string,
     Record<string, unknown>
   >;
+  const localSequenceRecords = (localSequences.records ?? {}) as Record<
+    string,
+    Record<string, unknown>
+  >;
   const theme = "rainbow";
+  const classicPositions = new Set(["alpha1", "beta5", "gamma11"]);
 
   let status = $state("Preparing the selected festival pack...");
   let error = $state("");
@@ -96,6 +102,13 @@
 
   async function loadCardSequence(card: SelectedCard): Promise<SequenceData> {
     if (card.source === "publicSequences") return findPublicSequence(card);
+    if (card.source === "packLocal") {
+      const sequence = localSequenceRecords[card.name];
+      if (!sequence) {
+        throw new Error(`Pack-local sequence not found: ${card.name}`);
+      }
+      return hydrateSequence(sequence);
+    }
     if (!card.catalogId || !card.docId) {
       throw new Error(`Catalog source is incomplete: ${card.name}`);
     }
@@ -107,6 +120,25 @@
         : undefined);
     if (!sequence) throw new Error(`Catalog sequence not found: ${card.name}`);
     return sequence;
+  }
+
+  function assertClassicEndpoints(
+    card: SelectedCard,
+    sequence: SequenceData
+  ): void {
+    const startPosition =
+      sequence.startPosition?.gridPosition ?? sequence.steps[0]?.startPosition;
+    const endPosition =
+      sequence.steps.at(-1)?.endPosition ??
+      (sequence.isCircular ? startPosition : undefined);
+    if (
+      !classicPositions.has(startPosition ?? "") ||
+      !classicPositions.has(endPosition ?? "")
+    ) {
+      throw new Error(
+        `${card.name} must start and end in Alpha, Beta, or Gamma; got ${startPosition ?? "unknown"} → ${endPosition ?? "unknown"}`
+      );
+    }
   }
 
   function buildOptions(
@@ -149,6 +181,7 @@
     card: SelectedCard
   ): Promise<{ pair: CardPair; rendered: RenderedCard }> {
     const sequence = await loadCardSequence(card);
+    assertClassicEndpoints(card, sequence);
     const options = buildOptions(card, sequence);
     const [front, back] = await Promise.all([
       renderer.renderFront(sequence, options),

@@ -14,6 +14,7 @@
       "gridMode": "diamond",
       "period": null,
       "startPosition": "alpha1",
+      "endPosition": "alpha1",
       "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/JIDCKIEC"
     },
     {
@@ -28,21 +29,23 @@
       "gridMode": "diamond",
       "period": null,
       "startPosition": "beta5",
+      "endPosition": "beta5",
       "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII"
     },
     {
       "slot": "rotated16",
       "source": "publicSequences",
-      "id": "NROT",
-      "name": "NROT",
-      "word": "NROTNROTNROTNROT",
+      "id": "OVXΔ",
+      "name": "OVXΔ",
+      "word": "OVXΔOVXΔOVXΔOVXΔ",
       "level": 1,
       "loopType": "rotated",
       "sequenceLength": 16,
       "gridMode": "diamond",
-      "period": 2,
-      "startPosition": "gamma13",
-      "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/NROT"
+      "period": 4,
+      "startPosition": "gamma11",
+      "endPosition": "gamma11",
+      "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/OVXΔ"
     },
     {
       "slot": "rotated8",
@@ -56,6 +59,7 @@
       "gridMode": "diamond",
       "period": 2,
       "startPosition": "gamma11",
+      "endPosition": "gamma11",
       "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/MVNU"
     },
     {
@@ -70,7 +74,9 @@
       "vtgFamily": "Split-Same",
       "element": "water",
       "ratio": "3:1",
-      "turnIntensity": 1
+      "turnIntensity": 1,
+      "startPosition": "alpha1",
+      "endPosition": "alpha1"
     },
     {
       "slot": "vtgTogetherSame",
@@ -84,12 +90,14 @@
       "vtgFamily": "Together-Same",
       "element": "earth",
       "ratio": "3:1",
-      "turnIntensity": 1
+      "turnIntensity": 1,
+      "startPosition": "beta5",
+      "endPosition": "beta5"
     },
     {
       "slot": "mirroredSwapped8",
-      "source": "publicSequences",
-      "id": "FALG",
+      "source": "packLocal",
+      "id": "festival-falg-beta5",
       "name": "FALG",
       "word": "FALGFALG",
       "level": 1,
@@ -97,8 +105,8 @@
       "sequenceLength": 8,
       "gridMode": "diamond",
       "period": null,
-      "startPosition": "beta7",
-      "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/FALG"
+      "startPosition": "beta5",
+      "endPosition": "beta5"
     },
     {
       "slot": "mirroredInverted8",
@@ -112,6 +120,7 @@
       "gridMode": "diamond",
       "period": null,
       "startPosition": "alpha1",
+      "endPosition": "alpha1",
       "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΦ-AΦ-"
     }
   ]

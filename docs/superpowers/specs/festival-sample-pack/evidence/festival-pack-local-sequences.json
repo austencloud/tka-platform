@@ -1,0 +1,310 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": "flow-arts MCP generate_sequence",
+  "records": {
+    "FALG": {
+      "id": "festival-falg-beta5",
+      "name": "FALG",
+      "word": "FALGFALG",
+      "level": 1,
+      "sequenceLength": 8,
+      "gridMode": "diamond",
+      "isCircular": true,
+      "loopType": "mirrored_swapped",
+      "components": ["mirrored", "swapped"],
+      "notes": "Festival Sampler 2026",
+      "startPosition": {
+        "id": "festival-falg-beta5-start",
+        "isStartPosition": true,
+        "gridPosition": "beta5",
+        "startPosition": "beta5",
+        "endPosition": "beta5",
+        "letter": "β",
+        "motions": {
+          "blue": {
+            "color": "blue",
+            "motionType": "static",
+            "rotationDirection": "noRotation",
+            "startLocation": "s",
+            "endLocation": "s",
+            "turns": 0,
+            "startOrientation": "in",
+            "endOrientation": "in",
+            "propType": "staff",
+            "isVisible": true
+          },
+          "red": {
+            "color": "red",
+            "motionType": "static",
+            "rotationDirection": "noRotation",
+            "startLocation": "s",
+            "endLocation": "s",
+            "turns": 0,
+            "startOrientation": "in",
+            "endOrientation": "in",
+            "propType": "staff",
+            "isVisible": true
+          }
+        }
+      },
+      "steps": [
+        {
+          "stepNumber": 1,
+          "letter": "F",
+          "startPosition": "beta5",
+          "endPosition": "alpha7",
+          "motions": {
+            "blue": {
+              "color": "blue",
+              "motionType": "anti",
+              "rotationDirection": "cw",
+              "startLocation": "s",
+              "endLocation": "e",
+              "turns": 0,
+              "startOrientation": "in",
+              "endOrientation": "out",
+              "propType": "staff",
+              "isVisible": true
+            },
+            "red": {
+              "color": "red",
+              "motionType": "pro",
+              "rotationDirection": "cw",
+              "startLocation": "s",
+              "endLocation": "w",
+              "turns": 0,
+              "startOrientation": "in",
+              "endOrientation": "in",
+              "propType": "staff",
+              "isVisible": true
+            }
+          }
+        },
+        {
+          "stepNumber": 2,
+          "letter": "A",
+          "startPosition": "alpha7",
+          "endPosition": "alpha1",
+          "motions": {
+            "blue": {
+              "color": "blue",
+              "motionType": "pro",
+              "rotationDirection": "cw",
+              "startLocation": "e",
+              "endLocation": "s",
+              "turns": 0,
+              "startOrientation": "out",
+              "endOrientation": "out",
+              "propType": "staff",
+              "isVisible": true
+            },
+            "red": {
+              "color": "red",
+              "motionType": "pro",
+              "rotationDirection": "cw",
+              "startLocation": "w",
+              "endLocation": "n",
+              "turns": 0,
+              "startOrientation": "in",
+              "endOrientation": "in",
+              "propType": "staff",
+              "isVisible": true
+            }
+          }
+        },
+        {
+          "stepNumber": 3,
+          "letter": "L",
+          "startPosition": "alpha1",
+          "endPosition": "beta3",
+          "motions": {
+            "blue": {
+              "color": "blue",
+              "motionType": "anti",
+              "rotationDirection": "cw",
+              "startLocation": "s",
+              "endLocation": "e",
+              "turns": 0,
+              "startOrientation": "out",
+              "endOrientation": "in",
+              "propType": "staff",
+              "isVisible": true
+            },
+            "red": {
+              "color": "red",
+              "motionType": "pro",
+              "rotationDirection": "cw",
+              "startLocation": "n",
+              "endLocation": "e",
+              "turns": 0,
+              "startOrientation": "in",
+              "endOrientation": "in",
+              "propType": "staff",
+              "isVisible": true
+            }
+          }
+        },
+        {
+          "stepNumber": 4,
+          "letter": "G",
+          "startPosition": "beta3",
+          "endPosition": "beta5",
+          "motions": {
+            "blue": {
+              "color": "blue",
+              "motionType": "pro",
+              "rotationDirection": "cw",
+              "startLocation": "e",
+              "endLocation": "s",
+              "turns": 0,
+              "startOrientation": "in",
+              "endOrientation": "in",
+              "propType": "staff",
+              "isVisible": true
+            },
+            "red": {
+              "color": "red",
+              "motionType": "pro",
+              "rotationDirection": "cw",
+              "startLocation": "e",
+              "endLocation": "s",
+              "turns": 0,
+              "startOrientation": "in",
+              "endOrientation": "in",
+              "propType": "staff",
+              "isVisible": true
+            }
+          }
+        },
+        {
+          "stepNumber": 5,
+          "letter": "F",
+          "startPosition": "beta5",
+          "endPosition": "alpha7",
+          "motions": {
+            "blue": {
+              "color": "blue",
+              "motionType": "pro",
+              "rotationDirection": "ccw",
+              "startLocation": "s",
+              "endLocation": "e",
+              "turns": 0,
+              "startOrientation": "in",
+              "endOrientation": "in",
+              "propType": "staff",
+              "isVisible": true
+            },
+            "red": {
+              "color": "red",
+              "motionType": "anti",
+              "rotationDirection": "ccw",
+              "startLocation": "s",
+              "endLocation": "w",
+              "turns": 0,
+              "startOrientation": "in",
+              "endOrientation": "out",
+              "propType": "staff",
+              "isVisible": true
+            }
+          }
+        },
+        {
+          "stepNumber": 6,
+          "letter": "A",
+          "startPosition": "alpha7",
+          "endPosition": "alpha5",
+          "motions": {
+            "blue": {
+              "color": "blue",
+              "motionType": "pro",
+              "rotationDirection": "ccw",
+              "startLocation": "e",
+              "endLocation": "n",
+              "turns": 0,
+              "startOrientation": "in",
+              "endOrientation": "in",
+              "propType": "staff",
+              "isVisible": true
+            },
+            "red": {
+              "color": "red",
+              "motionType": "pro",
+              "rotationDirection": "ccw",
+              "startLocation": "w",
+              "endLocation": "s",
+              "turns": 0,
+              "startOrientation": "out",
+              "endOrientation": "out",
+              "propType": "staff",
+              "isVisible": true
+            }
+          }
+        },
+        {
+          "stepNumber": 7,
+          "letter": "L",
+          "startPosition": "alpha5",
+          "endPosition": "beta7",
+          "motions": {
+            "blue": {
+              "color": "blue",
+              "motionType": "pro",
+              "rotationDirection": "ccw",
+              "startLocation": "n",
+              "endLocation": "w",
+              "turns": 0,
+              "startOrientation": "in",
+              "endOrientation": "in",
+              "propType": "staff",
+              "isVisible": true
+            },
+            "red": {
+              "color": "red",
+              "motionType": "anti",
+              "rotationDirection": "ccw",
+              "startLocation": "s",
+              "endLocation": "w",
+              "turns": 0,
+              "startOrientation": "out",
+              "endOrientation": "in",
+              "propType": "staff",
+              "isVisible": true
+            }
+          }
+        },
+        {
+          "stepNumber": 8,
+          "letter": "G",
+          "startPosition": "beta7",
+          "endPosition": "beta5",
+          "motions": {
+            "blue": {
+              "color": "blue",
+              "motionType": "pro",
+              "rotationDirection": "ccw",
+              "startLocation": "w",
+              "endLocation": "s",
+              "turns": 0,
+              "startOrientation": "in",
+              "endOrientation": "in",
+              "propType": "staff",
+              "isVisible": true
+            },
+            "red": {
+              "color": "red",
+              "motionType": "pro",
+              "rotationDirection": "ccw",
+              "startLocation": "w",
+              "endLocation": "s",
+              "turns": 0,
+              "startOrientation": "in",
+              "endOrientation": "in",
+              "propType": "staff",
+              "isVisible": true
+            }
+          }
+        }
+      ]
+    }
+  }
+}
