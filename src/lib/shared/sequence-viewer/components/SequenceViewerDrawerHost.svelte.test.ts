@@ -81,6 +81,41 @@ describe("SequenceViewerDrawerHost URL bootstrap", () => {
     window.history.replaceState({}, "", "/create");
   });
 
+  it("opens the initial deep link when the lazy host mounts after navigation", async () => {
+    const resolvedSequence = { id: "resolved-cold-start" };
+    const hydratedSequence = { id: "hydrated-cold-start" };
+    mocks.resolveShortCodeWithRecord.mockResolvedValue({
+      sequence: resolvedSequence,
+      record: {
+        bluePropType: PropType.STAFF,
+        redPropType: PropType.STAFF,
+      },
+    });
+    mocks.hydrateSequence.mockResolvedValue(hydratedSequence);
+    window.history.replaceState(
+      {},
+      "",
+      "/browse/gallery?v=COLD42&bp=club&rp=club"
+    );
+
+    render(SequenceViewerDrawerHost);
+
+    await vi.waitFor(() => {
+      expect(mocks.openSequenceOverlay).toHaveBeenCalledWith(hydratedSequence, {
+        fromUrl: true,
+        playOnOpen: true,
+        shortCode: "COLD42",
+        skipHistoryPush: true,
+      });
+    });
+    expect(mocks.resolveShortCodeWithRecord).toHaveBeenCalledWith("COLD42");
+    expect(mocks.updateSettings).toHaveBeenCalledWith({
+      bluePropType: PropType.CLUB,
+      redPropType: PropType.CLUB,
+      catDogMode: false,
+    });
+  });
+
   it("opens a sequence when a QR deep link arrives after the host mounted", async () => {
     const resolvedSequence = { id: "resolved-sequence" };
     const hydratedSequence = { id: "hydrated-sequence" };

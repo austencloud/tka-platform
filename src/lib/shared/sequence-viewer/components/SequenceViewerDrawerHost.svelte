@@ -45,6 +45,8 @@
   });
 
   let drawerOpen = $state(false);
+  let requestedCode = $state<string | null>(null);
+  let resolvingCode = $state<string | null>(null);
 
   $effect(() => {
     drawerOpen = overlay.isOpen;
@@ -58,13 +60,14 @@
 
   onMount(() => {
     window.addEventListener("popstate", handlePopState);
+    // MainApplication imports this host after the route has already finished
+    // on a cold Capacitor launch. afterNavigate cannot replay that completed
+    // navigation, so read the live URL once when the host joins the page.
+    requestedCode = new URL(window.location.href).searchParams.get("v");
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };
   });
-
-  let requestedCode = $state<string | null>(null);
-  let resolvingCode = $state<string | null>(null);
 
   // The host stays mounted while someone moves around the app. A QR scan can
   // therefore arrive long after its first URL check, so every completed app
