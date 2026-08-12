@@ -118,6 +118,9 @@ describe("SequenceViewerShell host contract", () => {
     expect(viewerSplitPaneSource).not.toContain("createPaneKeepAlive");
 
     expect(viewerMotionSurfaceSource).toContain("<AnimatorCanvas");
+    expect(viewerMotionSurfaceSource).toMatch(
+      /<AnimatorCanvas[\s\S]*?\bfillContainer\b[\s\S]*?\/>/
+    );
     expect(viewerMotionSurfaceSource).toContain("<LazyMount");
     expect(viewerMotionSurfaceSource).toContain("<RightRail");
     expect(viewerCompanionSurfaceSource).toContain("createPaneKeepAlive");

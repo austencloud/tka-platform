@@ -253,6 +253,7 @@
           onProgressBarScrubEnd={onProgressBarScrubEnd ?? null}
           focused={side === "left" && layout.focusedPane === "animation"}
           suppress2DOverlays={false}
+          fillContainer
           hideProgressBar={side === "left" ? suppressProgress : true}
           hideHeader
           tapToToggle={side === "left"}
