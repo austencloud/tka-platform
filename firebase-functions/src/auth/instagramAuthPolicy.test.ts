@@ -42,6 +42,17 @@ describe("Instagram auth policy", () => {
     });
   });
 
+  it("reads Meta's documented data-array token response", () => {
+    const result = parseInstagramTokenResponse(
+      '{"data":[{"access_token":"token-value","user_id":"17841454020424131","permissions":"instagram_business_basic,instagram_business_content_publish"}]}'
+    );
+
+    expect(result).toEqual({
+      accessToken: "token-value",
+      userId: "17841454020424131",
+    });
+  });
+
   it("rejects a token response without both credential fields", () => {
     expect(() => parseInstagramTokenResponse('{"user_id":"123"}')).toThrow(
       InstagramAuthPolicyError

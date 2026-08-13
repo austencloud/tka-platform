@@ -77,12 +77,24 @@ export function parseInstagramTokenResponse(
     throw new InstagramAuthPolicyError("instagram/invalid-response");
   }
 
+  const topLevel =
+    typeof payload === "object" && payload !== null ? payload : undefined;
+  const data =
+    topLevel && "data" in topLevel && Array.isArray(topLevel.data)
+      ? topLevel.data
+      : [];
+  const tokenPayload =
+    topLevel &&
+    "access_token" in topLevel &&
+    typeof topLevel.access_token === "string"
+      ? topLevel
+      : data[0];
   const accessToken =
-    typeof payload === "object" &&
-    payload !== null &&
-    "access_token" in payload &&
-    typeof payload.access_token === "string"
-      ? payload.access_token
+    typeof tokenPayload === "object" &&
+    tokenPayload !== null &&
+    "access_token" in tokenPayload &&
+    typeof tokenPayload.access_token === "string"
+      ? tokenPayload.access_token
       : "";
 
   const idMatch = text.match(
