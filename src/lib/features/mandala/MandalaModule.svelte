@@ -605,22 +605,24 @@
             </button>
           </div>
 
-          <div class="detail-footer">
-            <button
-              type="button"
-              class="action-btn delete-btn"
-              class:confirming={deleteConfirming}
-              onclick={handleDeleteClick}
-            >
-              {#if deleteConfirming}
-                <i class="fas fa-check" aria-hidden="true"></i>
-                <span>Confirm Delete</span>
-              {:else}
-                <i class="fas fa-trash-alt" aria-hidden="true"></i>
-                <span>Delete</span>
-              {/if}
-            </button>
-          </div>
+          {#if !mandalaCollectionState.isReadOnlyPreview}
+            <div class="detail-footer">
+              <button
+                type="button"
+                class="action-btn delete-btn"
+                class:confirming={deleteConfirming}
+                onclick={handleDeleteClick}
+              >
+                {#if deleteConfirming}
+                  <i class="fas fa-check" aria-hidden="true"></i>
+                  <span>Confirm Delete</span>
+                {:else}
+                  <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                  <span>Delete</span>
+                {/if}
+              </button>
+            </div>
+          {/if}
         </div>
       </div>
     {/if}

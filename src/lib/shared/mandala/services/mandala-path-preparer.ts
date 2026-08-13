@@ -24,8 +24,13 @@ import type {
 } from "./types";
 import { calculate as calculateMandalaGeometry } from "./mandala-geometry-calculator";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { getTipPoints } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
 import {
+	getTipPoints,
+	getTipPointsBaseline,
+	type TipPoint,
+} from "$lib/shared/animation-engine/domain/types/prop-tip-points";
+import {
+	getDefaultTrailPointConfig,
 	resolveTrailPointConfig,
 	type TrailPointSource,
 } from "$lib/shared/animation-engine/domain/types/trail-point-types";
@@ -62,7 +67,7 @@ export function computeEngineAlignedMandalaScale(canvasSize: number): number {
 
 function sourceToOffset(
 	source: TrailPointSource,
-	propType: string | null | undefined
+	points: readonly TipPoint[]
 ): MandalaTipOffset | null {
 	if (source.type === "none") return null;
 	if (source.type === "custom") return { dx: source.dx, dy: source.dy };
@@ -71,7 +76,7 @@ function sourceToOffset(
 	// baseline list; the two order a prop's arms differently (triad's arms are
 	// 120 degrees apart between them, torch's are 180), so the mandala traced a
 	// different arm than the trail drew from.
-	const point = getTipPoints(propType).points[source.index];
+	const point = points[source.index];
 	return point ? { dx: point.dx, dy: point.dy } : null;
 }
 
@@ -84,9 +89,20 @@ function sourceToOffset(
  */
 export function resolveMandalaTipOffsets(
 	propType: string | null | undefined,
-	trackingMode: TrackingMode
+	trackingMode: TrackingMode,
+	pointMode: "effective" | "baseline" = "effective"
 ): MandalaTipOffset[] {
-	const config = resolveTrailPointConfig(propType, trackingMode);
+	// Static sequence mandalas use the shipped prop geometry. Live animation
+	// overlays use effective points so Effects Lab assignments still line up with
+	// the trails on screen.
+	const points =
+		pointMode === "baseline"
+			? getTipPointsBaseline(propType).points
+			: getTipPoints(propType).points;
+	const config =
+		pointMode === "baseline" && trackingMode !== TrackingMode.HAND
+			? getDefaultTrailPointConfig(propType, points)
+			: resolveTrailPointConfig(propType, trackingMode);
 	const sources: TrailPointSource[] = [];
 	const hasTwoEnds = propTipEnds(propType ?? undefined) === 2;
 
@@ -110,7 +126,7 @@ export function resolveMandalaTipOffsets(
 
 	const unique = new Map<string, MandalaTipOffset>();
 	for (const source of sources) {
-		const point = sourceToOffset(source, propType);
+		const point = sourceToOffset(source, points);
 		if (!point) continue;
 		const key = `${point.dx}:${point.dy}`;
 		if (!unique.has(key)) unique.set(key, point);

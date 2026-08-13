@@ -21,6 +21,13 @@ import type {
 // canvas draws that artwork, so the traced tip sits on its visible end.
 const CLUB_TIP_REACH = 258.67 / 2;
 const STAFF_TIP_REACH = 252.8 / 2;
+const sequenceMandalaSource = readFileSync(
+  resolve(
+    process.cwd(),
+    "src/lib/shared/mandala/components/SequenceMandala.svelte"
+  ),
+  "utf8"
+);
 
 afterEach(() => {
   setTrailPointOverrideProvider(null);
@@ -190,6 +197,53 @@ describe("animation mandala trail-point alignment", () => {
     expect(resolveMandalaTipOffsets("staff", TrackingMode.HAND)).toEqual([
       { dx: 0, dy: 0 },
     ]);
+  });
+
+  it("keeps static sequence mandalas on each prop's canonical tips", () => {
+    setTipPointOverrideProvider((propType) =>
+      propType === "fan"
+        ? {
+            points: [
+              { dx: 999, dy: -40 },
+              { dx: 1_000, dy: 0 },
+              { dx: 999, dy: 40 },
+            ],
+          }
+        : null
+    );
+
+    const fanTips = resolveMandalaTipOffsets(
+      "fan",
+      TrackingMode.BOTH_ENDS,
+      "baseline"
+    );
+    const staffTips = resolveMandalaTipOffsets(
+      "staff",
+      TrackingMode.BOTH_ENDS,
+      "baseline"
+    );
+    const paths = calculate(
+      [staticEastStep()],
+      "fan",
+      "fan",
+      undefined,
+      { blue: fanTips, red: fanTips }
+    );
+
+    expect(fanTips).toEqual([{ dx: 130, dy: 0 }]);
+    expect(staffTips).toEqual([
+      { dx: -STAFF_TIP_REACH, dy: 0 },
+      { dx: STAFF_TIP_REACH, dy: 0 },
+    ]);
+    expect(paths.blue).toHaveLength(1);
+    expect(paths.red).toHaveLength(1);
+    expect(sequenceMandalaSource).toContain("resolveMandalaTipOffsets");
+    expect(sequenceMandalaSource).toMatch(
+      /TrackingMode\.BOTH_ENDS,\s*"baseline"/
+    );
+    expect(sequenceMandalaSource).not.toContain(
+      "getTipPointsBaseline(bluePropType).points"
+    );
   });
 
   it("honors custom trail points instead of falling back to prop defaults", () => {

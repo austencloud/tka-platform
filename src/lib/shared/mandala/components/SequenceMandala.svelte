@@ -30,12 +30,14 @@
 		LIGHT_MOTION_PURPLE_STROKE,
 		LIGHT_MOTION_PURPLE_FILL,
 	} from "../domain/mandala-constants";
-	import { calculate as calculateMandalaGeometry, calculateMorphed as calculateMandalaMorphed } from "../services/mandala-geometry-calculator";
-	import { getMandalaPathOptions } from "../services/mandala-path-options";
 	import {
-		interpolateMandalaPaths,
-		mandalaPathsEqual,
-	} from "../services/mandala-path-interpolator";
+		calculate as calculateMandalaGeometry,
+		calculateMorphed as calculateMandalaMorphed,
+	} from "../services/mandala-geometry-calculator";
+	import { getMandalaPathOptions } from "../services/mandala-path-options";
+	import { resolveMandalaTipOffsets } from "../services/mandala-path-preparer";
+	import { interpolateMandalaPaths, mandalaPathsEqual } from "../services/mandala-path-interpolator";
+	import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 	import { pairTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
 	import { DURATION } from "$lib/shared/transitions/transitions";
 
@@ -49,7 +51,7 @@
 	}
 
 	function breatheEase(t: number): number {
-		return Math.pow(Math.sin(t * Math.PI / 2), 1.6);
+		return Math.pow(Math.sin((t * Math.PI) / 2), 1.6);
 	}
 
 	function heartbeatEase(t: number): number {
@@ -118,7 +120,11 @@
 		/** Override stroke width (default 2.5) */
 		strokeWidth?: number;
 		/** Per-path gradient colors for gradient color mode */
-		gradient?: { blue: [string, string]; red: [string, string]; purple: [string, string] };
+		gradient?: {
+			blue: [string, string];
+			red: [string, string];
+			purple: [string, string];
+		};
 		/**
 		 * Prop ends traced: 2 = staff (both tips), 1 = club (one tip). Optional —
 		 * when omitted, derived from bluePropType/redPropType via pairTipEnds. Set
@@ -158,6 +164,21 @@
 	// traces both. This is what makes a club sequence's mandala drop the inner
 	// (pinky) locus instead of always drawing the double-staff figure.
 	const effectiveTipEnds = $derived(tipEnds ?? pairTipEnds(bluePropType, redPropType));
+	const tipOverrides = $derived.by(() => {
+		if (!bluePropType && !redPropType) return undefined;
+		return {
+			blue: resolveMandalaTipOffsets(
+				bluePropType,
+				TrackingMode.BOTH_ENDS,
+				"baseline"
+			),
+			red: resolveMandalaTipOffsets(
+				redPropType,
+				TrackingMode.BOTH_ENDS,
+				"baseline"
+			),
+		};
+	});
 
 	const DARK_MOTION_PALETTE: MandalaPalette = {
 		blueStroke: DARK_MOTION_BLUE_STROKE,
@@ -317,15 +338,34 @@
 		};
 	});
 
-	const effectiveDx = $derived(
-		tipDx ?? (animate ? animatedDx : MANDALA_STANDARD_TIP_DX)
-	);
+	const effectiveDx = $derived(tipDx ?? (animate ? animatedDx : MANDALA_STANDARD_TIP_DX));
+
+	const animatedTipOverrides = $derived.by(() => {
+		const baseline = tipOverrides;
+		if (!baseline || !animate) return baseline;
+
+		// Each prop keeps its real silhouette, but the distance of every tracked
+		// point must still breathe with the Depth control. Passing the fixed
+		// baseline through unchanged leaves the picture frozen while its wrapper
+		// spins, because animatedDx never reaches the geometry calculator.
+		const scale = effectiveDx / MANDALA_STANDARD_TIP_DX;
+		return {
+			blue: baseline.blue.map(({ dx, dy }) => ({
+				dx: dx * scale,
+				dy: dy * scale,
+			})),
+			red: baseline.red.map(({ dx, dy }) => ({
+				dx: dx * scale,
+				dy: dy * scale,
+			})),
+		};
+	});
 
 	const pathOptions = $derived(getMandalaPathOptions(pathShape, effectiveTipEnds));
 
 	const calculatedPaths = $derived.by((): MandalaPaths | null => {
 		if (!calcReady || !sequence?.steps) return null;
-		const tip = { dx: effectiveDx, dy: 0 };
+		const overrides = tipDx === undefined ? animatedTipOverrides : { dx: effectiveDx, dy: 0 };
 		const morph = activeMorph;
 		if (morph) {
 			return calculateMandalaMorphed(
@@ -335,16 +375,10 @@
 				getMandalaPathOptions(morph.from, effectiveTipEnds),
 				pathOptions,
 				morph.t,
-				tip
+				overrides
 			);
 		}
-		return calculateMandalaGeometry(
-			sequence.steps,
-			bluePropType,
-			redPropType,
-			pathOptions,
-			tip
-		);
+		return calculateMandalaGeometry(sequence.steps, bluePropType, redPropType, pathOptions, overrides);
 	});
 
 	// The workspace changes a whole sequence at once. Holding the currently
@@ -358,10 +392,8 @@
 		}
 
 		const reducedMotion =
-			typeof window !== "undefined" &&
-			window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-		const canMorph =
-			morphChanges && !animate && activeMorph === null && !reducedMotion;
+			typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+		const canMorph = morphChanges && !animate && activeMorph === null && !reducedMotion;
 
 		if (!lastChangeTarget || !canMorph) {
 			if (changeMorphRafId) cancelAnimationFrame(changeMorphRafId);
@@ -386,10 +418,7 @@
 		let start: number | null = null;
 		const stepChangeMorph = (timestamp: number) => {
 			if (start === null) start = timestamp;
-			const linearProgress = Math.min(
-				1,
-				(timestamp - start) / CHANGE_MORPH_MS,
-			);
+			const linearProgress = Math.min(1, (timestamp - start) / CHANGE_MORPH_MS);
 			const progress = EASING_FNS.bloom(linearProgress);
 			changeMorphPaths = interpolateMandalaPaths(from, target, progress);
 			draw();
@@ -425,9 +454,7 @@
 	// Canvas while motion is live (undulation or shape-morph), SVG when fully
 	// static. `svgString` is lazy — it isn't read in the canvas branch, so the
 	// expensive SVG-string build is skipped entirely during animation.
-	const useCanvas = $derived(
-		animate || activeMorph !== null || changeMorphActive,
-	);
+	const useCanvas = $derived(animate || activeMorph !== null || changeMorphActive);
 
 	const svgString = $derived.by((): string => {
 		if (useCanvas || !paths) return "";
@@ -456,10 +483,7 @@
 		// above native so raster edges approach the old SVG's vector crispness.
 		// MAX_BACKING caps the pixel count so the per-frame raster (glow is the
 		// expensive part) stays within the 60fps budget on the largest panes.
-		const dpr =
-			typeof window !== "undefined"
-				? Math.min(3, Math.max(1, window.devicePixelRatio || 1))
-				: 1;
+		const dpr = typeof window !== "undefined" ? Math.min(3, Math.max(1, window.devicePixelRatio || 1)) : 1;
 		// True rendered size in CSS px — getBoundingClientRect reflects any CSS
 		// transform/zoom on an ancestor (e.g. a scaled device frame), so the backing
 		// matches what's actually on screen even there. Falls back to the prop.
@@ -479,7 +503,10 @@
 		// on first paint or size change).
 		if (typeof OffscreenCanvas !== "undefined") {
 			if (!scratch || scratch.a.width !== device || scratch.a.height !== device) {
-				scratch = { a: new OffscreenCanvas(device, device), b: new OffscreenCanvas(device, device) };
+				scratch = {
+					a: new OffscreenCanvas(device, device),
+					b: new OffscreenCanvas(device, device),
+				};
 			}
 		}
 
@@ -519,17 +546,11 @@
 </script>
 
 {#if useCanvas}
-	<div
-		class="mandala-container"
-		style="width: {size}px; height: {size}px; transform: rotate({rotationDeg}deg);"
-	>
+	<div class="mandala-container" style="width: {size}px; height: {size}px; transform: rotate({rotationDeg}deg);">
 		<canvas bind:this={canvasEl} class="mandala-canvas"></canvas>
 	</div>
 {:else if svgString}
-	<div
-		class="mandala-container"
-		style="width: {size}px; height: {size}px; transform: rotate({rotationDeg}deg);"
-	>
+	<div class="mandala-container" style="width: {size}px; height: {size}px; transform: rotate({rotationDeg}deg);">
 		{@html svgString}
 	</div>
 {/if}
