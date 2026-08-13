@@ -3,7 +3,7 @@
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
 
   interface Props {
-    onBack: () => void;
+    onBack?: () => void;
   }
 
   const { onBack }: Props = $props();
@@ -11,10 +11,12 @@
 </script>
 
 <div class="customize-view">
-  <button type="button" class="back-btn" onclick={onBack}>
-    <i class="fas fa-arrow-left" aria-hidden="true"></i>
-    Back to presets
-  </button>
+  {#if onBack}
+    <button type="button" class="back-btn" onclick={onBack}>
+      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      Back
+    </button>
+  {/if}
 
   {#if state}
     <EffectControlStack effect="ghost" config={state} tiers={["primary"]} />

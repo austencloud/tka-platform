@@ -132,6 +132,9 @@ appearance while removing the hidden dependency on Trails.
 The shared control manifest exposes Color, Intensity, Persistence, and Density.
 The same fields drive 2D and 3D surfaces.
 
+Ghost exposes no named presets. Chrono-Frost is one visual identity with direct
+controls for blue and red color, intensity, persistence, and density.
+
 ## Verification
 
 Automated proof must cover:

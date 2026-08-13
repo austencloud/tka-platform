@@ -111,7 +111,7 @@
     trails: { comp: TrailsPanel, needsBack: false },
     zap: { comp: ZapCustomize, needsBack: true },
     sparkles: { comp: SparklesCustomize, needsBack: true },
-    ghost: { comp: GhostCustomize, needsBack: true },
+    ghost: { comp: GhostCustomize, needsBack: false },
     bloom: { comp: BloomCustomize, needsBack: true },
     goo: { comp: GooCustomize, needsBack: true },
     bubbles: { comp: BubblesCustomize, needsBack: true },

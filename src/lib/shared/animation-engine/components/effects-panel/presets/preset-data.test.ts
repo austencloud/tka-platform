@@ -60,11 +60,15 @@ describe("effect preset data", () => {
     expect(GROUPS).toHaveLength(16);
   });
 
-  it("every group's effectType matches its presets' id prefix family", () => {
+  it("every effect except Ghost offers at least one named preset", () => {
     // Sanity: groups aren't mis-wired (e.g. LED group holding fire presets).
     for (const g of GROUPS) {
-      expect(g.presets.length).toBeGreaterThan(0);
       expect(typeof g.effectType).toBe("string");
+      if (g.effectType === "ghost") {
+        expect(g.presets).toEqual([]);
+      } else {
+        expect(g.presets.length).toBeGreaterThan(0);
+      }
     }
   });
 

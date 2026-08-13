@@ -1,4 +1,3 @@
-import { GHOST_PRESETS } from "$lib/shared/animation-engine/components/effects-panel/presets/ghost-presets";
 import type { EffectPreset } from "$lib/shared/animation-engine/components/effects-panel/presets/types";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import type { GhostIntent } from "$lib/shared/effects/domain/effects-config";
@@ -11,13 +10,6 @@ export interface GhostReviewPreset extends EffectPreset<"ghost"> {
   direction: string;
   source: GhostPresetSource;
 }
-
-const PRODUCTION_DIRECTIONS: Record<string, string> = {
-  "ghost-stroboscope": "Balanced brightness with a long, readable memory.",
-  "ghost-rainbow-trail": "More poses, softer opacity, and the longest fade.",
-  "ghost-twin-ghosts": "A bright cluster held close to the live prop.",
-  "ghost-pulse": "Wide gaps between sharp, persistent captures.",
-};
 
 const STUDY_PRESETS: GhostReviewPreset[] = [
   {
@@ -83,11 +75,6 @@ const STUDY_PRESETS: GhostReviewPreset[] = [
 ];
 
 export const GHOST_REVIEW_PRESETS: readonly GhostReviewPreset[] = [
-  ...GHOST_PRESETS.map((preset) => ({
-    ...preset,
-    direction: PRODUCTION_DIRECTIONS[preset.id] ?? "Production preset.",
-    source: "production" as const,
-  })),
   ...STUDY_PRESETS,
 ];
 
