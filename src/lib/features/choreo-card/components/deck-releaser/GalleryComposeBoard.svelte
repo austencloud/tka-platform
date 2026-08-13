@@ -5,10 +5,19 @@
   toggle primitive (no hand-rolled chips, no checkboxes).
 -->
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import { onMount } from "svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import { getDeckReleaserContext } from "./context/deck-releaser-context";
+
+  interface Props {
+    completion?: Snippet;
+  }
+
+  let { completion }: Props = $props();
 
   const { state: rs } = getDeckReleaserContext();
 
@@ -17,6 +26,11 @@
   // just shows nothing to pick).
   let collections = $state<{ id: string; name: string }[]>([]);
   let collectionsReady = $state(false);
+  type PreviewState = "idle" | "loading" | "ready" | "stale" | "error";
+  let previewState = $state<PreviewState>("idle");
+  let previewMatchCount = $state(0);
+  let previewSequences = $state<SequenceData[]>([]);
+  let previewRequest = 0;
 
   onMount(async () => {
     try {
@@ -42,8 +56,14 @@
   const LEVELS = [1, 2, 3, 4, 5, 6];
 
   // --- mutators (all persist so a refresh keeps the filter) ---
+  function invalidatePreview() {
+    previewRequest += 1;
+    if (previewState !== "idle") previewState = "stale";
+  }
+
   function patch(next: Partial<typeof rs.galleryFilters>) {
     rs.galleryFilters = { ...rs.galleryFilters, ...next };
+    invalidatePreview();
     rs.persist();
   }
   function toggleIn<T>(list: T[] | undefined, value: T): T[] {
@@ -63,7 +83,10 @@
   function setTotalCards(value: string) {
     const parsed = Number.parseInt(value, 10);
     if (Number.isNaN(parsed)) return;
-    rs.totalCards = Math.max(1, Math.min(500, parsed));
+    const nextTotal = Math.max(1, Math.min(500, parsed));
+    if (nextTotal === rs.totalCards) return;
+    rs.totalCards = nextTotal;
+    invalidatePreview();
     rs.persist();
   }
 
@@ -116,9 +139,99 @@
   );
   const editionSummary = $derived(rs.notes.trim() || "Untitled edition");
   const propSummary = $derived(getPropTypeDisplayInfo(rs.bluePropType).label);
+  const availabilityTitle = $derived(
+    previewState === "loading"
+      ? "Checking your library"
+      : previewState === "error"
+        ? "Library check failed"
+        : previewState === "stale"
+          ? "Filters changed"
+          : previewState === "ready" && previewMatchCount === 0
+            ? "No matches found"
+            : previewState === "ready" && previewMatchCount < rs.totalCards
+              ? `${previewMatchCount} matching ${previewMatchCount === 1 ? "card" : "cards"}`
+              : previewState === "ready"
+                ? "Target covered"
+                : "Check your library"
+  );
+  const availabilityDetail = $derived(
+    previewState === "loading"
+      ? "Finding the newest matching sequences."
+      : previewState === "error"
+        ? "The check could not finish. Drawing is still available."
+        : previewState === "stale"
+          ? "Run the check again for the current filters."
+          : previewState === "ready" && previewMatchCount === 0
+            ? "Clear a filter or search for another word."
+            : previewState === "ready" && previewMatchCount < rs.totalCards
+              ? `Only ${previewMatchCount} match. Lower the target or loosen a filter.`
+              : previewState === "ready"
+                ? `At least ${rs.totalCards} matches are ready to draw.`
+                : "Confirm the current filters before drawing."
+  );
+  const previewActionLabel = $derived(
+    previewState === "loading"
+      ? "Checking"
+      : previewState === "idle"
+        ? "Check matches"
+        : "Check again"
+  );
+
+  function sequenceTitle(sequence: SequenceData): string {
+    return (
+      sequence.displayName?.trim() ||
+      sequence.intendedWord?.trim() ||
+      sequence.word?.trim() ||
+      sequence.name?.trim() ||
+      "Untitled sequence"
+    );
+  }
+
+  function sequenceLength(sequence: SequenceData): number {
+    return sequence.sequenceLength ?? sequence.steps?.length ?? 0;
+  }
+
+  function sequenceLoopType(sequence: SequenceData): string | null {
+    if (!sequence.loopType) return null;
+    const id = String(sequence.loopType);
+    return (
+      LOOP_TYPES.find((option) => option.id === id)?.label ??
+      id
+        .split("_")
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ")
+    );
+  }
+
+  async function checkMatches() {
+    const request = ++previewRequest;
+    previewState = "loading";
+
+    try {
+      const { queryGalleryDeck } =
+        await import("$lib/features/choreo-card/services/gallery-deck-source");
+      const { sequences } = await queryGalleryDeck(
+        rs.galleryFilters,
+        rs.totalCards,
+        rs.notes
+      );
+      if (request !== previewRequest) return;
+
+      previewMatchCount = sequences.length;
+      previewSequences = sequences.slice(0, 4);
+      previewState = "ready";
+    } catch (error) {
+      if (request !== previewRequest) return;
+      console.warn("Gallery availability check failed:", error);
+      previewMatchCount = 0;
+      previewSequences = [];
+      previewState = "error";
+    }
+  }
 
   function clearFilters() {
     rs.galleryFilters = {};
+    invalidatePreview();
     rs.persist();
   }
 </script>
@@ -387,18 +500,88 @@
         </span>
       </div>
 
-      <div class="deck-visual" aria-hidden="true">
-        <span class="deck-card deck-card-back"></span>
-        <span class="deck-card deck-card-middle"></span>
-        <span class="deck-card deck-card-front">
-          <i class="fas fa-wand-magic-sparkles"></i>
-          <span>Choreo Cards</span>
-        </span>
-        <span class="target-count">
-          <strong>{rs.totalCards}</strong>
-          <span>card target</span>
-        </span>
-      </div>
+      <section
+        class="availability-panel"
+        class:is-ready={previewState === "ready"}
+        class:is-error={previewState === "error"}
+        aria-labelledby="gallery-availability-heading"
+        aria-busy={previewState === "loading"}
+      >
+        <div class="availability-summary">
+          <span
+            class="target-count"
+            aria-label={`${rs.totalCards} card target`}
+          >
+            <strong>{rs.totalCards}</strong>
+            <span>card target</span>
+          </span>
+
+          <span class="availability-copy" aria-live="polite">
+            <small id="gallery-availability-heading">Library availability</small
+            >
+            <strong>{availabilityTitle}</strong>
+            <span id="gallery-availability-description"
+              >{availabilityDetail}</span
+            >
+          </span>
+        </div>
+
+        <ActionButton
+          label={previewActionLabel}
+          busyLabel="Checking"
+          icon={previewState === "loading"
+            ? "fa-spinner fa-spin"
+            : previewState === "idle"
+              ? "fa-magnifying-glass"
+              : "fa-arrow-rotate-right"}
+          color="theme"
+          fullWidth
+          busy={previewState === "loading"}
+          ariaDescribedBy="gallery-availability-description"
+          onclick={checkMatches}
+        />
+
+        {#if previewState === "loading"}
+          <div class="preview-skeleton" aria-hidden="true">
+            {#each [1, 2, 3] as row (row)}
+              <span><i></i><b></b></span>
+            {/each}
+          </div>
+        {:else if previewState === "ready" && previewSequences.length > 0}
+          <div class="preview-section">
+            <div class="preview-heading">
+              <strong>Newest matches</strong>
+              <span>{previewSequences.length} shown</span>
+            </div>
+            <ol class="preview-list">
+              {#each previewSequences as sequence, index (sequence.id)}
+                <li>
+                  <span class="preview-index"
+                    >{String(index + 1).padStart(2, "0")}</span
+                  >
+                  <span class="preview-copy">
+                    <strong>{sequenceTitle(sequence)}</strong>
+                    <span class="preview-meta">
+                      <span>{sequenceLength(sequence)} steps</span>
+                      {#if sequence.level}
+                        <span>L{sequence.level}</span>
+                      {/if}
+                      {#if sequenceLoopType(sequence)}
+                        <span>{sequenceLoopType(sequence)}</span>
+                      {/if}
+                    </span>
+                  </span>
+                </li>
+              {/each}
+            </ol>
+          </div>
+        {:else if previewState === "ready"}
+          <div class="preview-empty">
+            <i class="fas fa-filter-circle-xmark" aria-hidden="true"></i>
+            <span>No sequence cards match this recipe.</span>
+          </div>
+        {/if}
+      </section>
 
       <dl class="recipe-list">
         <div>
@@ -443,6 +626,12 @@
         </span>
       </div>
     </aside>
+
+    {#if completion}
+      <div class="gallery-completion">
+        {@render completion()}
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -560,12 +749,17 @@
   .gallery-workspace {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "filters"
+      "recipe"
+      "completion";
     gap: clamp(14px, 1.25cqw, 24px);
     align-items: stretch;
     min-width: 0;
   }
 
   .filter-canvas {
+    grid-area: filters;
     display: flex;
     flex-direction: column;
     gap: clamp(12px, 1.1cqw, 22px);
@@ -814,6 +1008,7 @@
   }
 
   .recipe-panel {
+    grid-area: recipe;
     display: flex;
     flex-direction: column;
     gap: clamp(16px, 1.35cqw, 24px);
@@ -840,6 +1035,11 @@
       );
     border-radius: 18px;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  .gallery-completion {
+    grid-area: completion;
+    min-width: 0;
   }
 
   .recipe-heading {
@@ -883,10 +1083,12 @@
     line-height: 1.2;
   }
 
-  .deck-visual {
-    position: relative;
-    min-height: clamp(12rem, 17cqw, 17rem);
-    overflow: hidden;
+  .availability-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+    padding: 14px;
     background:
       linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
@@ -898,83 +1100,45 @@
     background-size: 24px 24px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 16px;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
   }
 
-  .deck-card {
-    position: absolute;
-    top: 50%;
-    left: 42%;
-    width: clamp(5.2rem, 6.5cqw, 7.5rem);
-    aspect-ratio: 5 / 7;
-    border-radius: 12px;
-    transform-origin: center;
-  }
-
-  .deck-card-back {
-    background: color-mix(
+  .availability-panel.is-ready {
+    border-color: color-mix(
       in srgb,
-      var(--theme-accent, #8b5cf6) 18%,
-      var(--theme-card-bg, #171725)
+      var(--theme-accent, #8b5cf6) 40%,
+      var(--theme-stroke, rgba(255, 255, 255, 0.1))
     );
-    border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #8b5cf6) 42%, transparent);
-    transform: translate(-72%, -48%) rotate(-11deg);
+    box-shadow: inset 0 0 0 1px
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 8%, transparent);
   }
 
-  .deck-card-middle {
-    background: color-mix(
+  .availability-panel.is-error {
+    border-color: color-mix(
       in srgb,
-      var(--theme-accent, #8b5cf6) 11%,
-      var(--theme-panel-bg, #11111a)
+      var(--color-error, #ef4444) 55%,
+      var(--theme-stroke, rgba(255, 255, 255, 0.1))
     );
-    border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #8b5cf6) 34%, transparent);
-    transform: translate(-52%, -50%) rotate(-3deg);
   }
 
-  .deck-card-front {
-    display: flex;
-    flex-direction: column;
+  .availability-summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 13px;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
-    background:
-      linear-gradient(
-        145deg,
-        color-mix(in srgb, var(--theme-accent, #8b5cf6) 28%, transparent),
-        transparent 58%
-      ),
-      var(--theme-card-bg, #191927);
-    border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #8b5cf6) 56%, transparent);
-    color: var(--theme-text, #fff);
-    transform: translate(-32%, -51%) rotate(5deg);
-    box-shadow: 0 22px 42px rgba(0, 0, 0, 0.34);
-  }
-
-  .deck-card-front i {
-    color: var(--theme-accent, #8b5cf6);
-    font-size: clamp(18px, 2cqw, 28px);
-  }
-
-  .deck-card-front span {
-    max-width: 70%;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-align: center;
-    text-transform: uppercase;
+    min-width: 0;
   }
 
   .target-count {
-    position: absolute;
-    right: clamp(12px, 1.2cqw, 20px);
-    bottom: clamp(12px, 1.2cqw, 20px);
-    z-index: 2;
     display: flex;
     flex-direction: column;
-    min-width: 6rem;
+    justify-content: center;
+    min-width: 5.25rem;
+    min-height: 5.25rem;
     padding: 12px 14px;
+    box-sizing: border-box;
     background: color-mix(
       in srgb,
       var(--theme-panel-bg, #11111a) 90%,
@@ -983,7 +1147,7 @@
     border: 1px solid
       color-mix(in srgb, var(--theme-accent, #8b5cf6) 42%, transparent);
     border-radius: 13px;
-    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
   }
 
   .target-count strong {
@@ -999,6 +1163,203 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     white-space: nowrap;
+  }
+
+  .availability-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .availability-copy small {
+    color: var(--theme-accent, #8b5cf6);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .availability-copy strong {
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 14px);
+    line-height: 1.3;
+  }
+
+  .availability-copy > span {
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.64));
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.4;
+  }
+
+  .preview-skeleton,
+  .preview-section,
+  .preview-list {
+    min-width: 0;
+  }
+
+  .preview-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .preview-skeleton > span {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 9px;
+    align-items: center;
+    min-height: 44px;
+    padding: 7px 9px;
+    box-sizing: border-box;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-radius: 9px;
+  }
+
+  .preview-skeleton i,
+  .preview-skeleton b {
+    display: block;
+    height: 12px;
+    background: color-mix(in srgb, var(--theme-text, #fff) 10%, transparent);
+    border-radius: 999px;
+    animation: preview-pulse 1.1s ease-in-out infinite alternate;
+  }
+
+  .preview-skeleton i {
+    width: 22px;
+  }
+
+  .preview-skeleton b {
+    width: 72%;
+  }
+
+  .preview-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .preview-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .preview-heading strong {
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-compact, 12px);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .preview-heading span {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .preview-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .preview-list li {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 9px;
+    align-items: center;
+    min-height: 48px;
+    padding: 7px 9px;
+    box-sizing: border-box;
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #11111a) 78%,
+      transparent
+    );
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 10px;
+  }
+
+  .preview-index {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 15%,
+      transparent
+    );
+    border-radius: 8px;
+    color: var(--theme-accent, #8b5cf6);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .preview-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .preview-copy > strong {
+    overflow: hidden;
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 14px);
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .preview-meta {
+    display: flex;
+    gap: 7px;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+
+  .preview-meta > span + span::before {
+    margin-right: 7px;
+    color: color-mix(
+      in srgb,
+      var(--theme-text-dim, rgba(255, 255, 255, 0.5)) 52%,
+      transparent
+    );
+    content: "\00B7";
+  }
+
+  .preview-empty {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 10px;
+    box-sizing: border-box;
+    background: color-mix(in srgb, var(--theme-text, #fff) 3%, transparent);
+    border-radius: 10px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.64));
+    font-size: var(--font-size-min, 14px);
+    line-height: 1.35;
+  }
+
+  .preview-empty i {
+    color: var(--theme-accent, #8b5cf6);
+  }
+
+  @keyframes preview-pulse {
+    to {
+      opacity: 0.42;
+    }
   }
 
   .recipe-list {
@@ -1117,6 +1478,11 @@
   @container configure (min-width: 74rem) {
     .gallery-workspace {
       grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.31fr);
+      grid-template-areas:
+        "filters recipe"
+        "completion recipe";
+      grid-template-rows: auto auto;
+      align-items: start;
     }
 
     .collection-card {
@@ -1140,7 +1506,7 @@
     }
 
     .recipe-panel {
-      min-height: 100%;
+      align-self: stretch;
     }
 
     .recipe-list {
@@ -1199,6 +1565,15 @@
     .recipe-panel {
       border-radius: 14px;
     }
+
+    .availability-summary {
+      grid-template-columns: 1fr;
+    }
+
+    .target-count {
+      width: 100%;
+      min-height: 4.5rem;
+    }
   }
 
   @container configure (min-width: 160rem) {
@@ -1238,8 +1613,24 @@
       padding: 32px;
     }
 
-    .deck-visual {
-      min-height: 21rem;
+    .availability-panel {
+      gap: 18px;
+      padding: 20px;
+    }
+
+    .target-count {
+      min-width: 6.5rem;
+      min-height: 6.5rem;
+      padding: 16px 18px;
+    }
+
+    .preview-list {
+      gap: 10px;
+    }
+
+    .preview-list li {
+      min-height: 58px;
+      padding: 10px 12px;
     }
 
     .recipe-list > div {
@@ -1260,8 +1651,14 @@
   @media (prefers-reduced-motion: reduce) {
     .filter-card,
     .word-input,
-    .size-input {
+    .size-input,
+    .availability-panel {
       transition: none;
+    }
+
+    .preview-skeleton i,
+    .preview-skeleton b {
+      animation: none;
     }
   }
 </style>

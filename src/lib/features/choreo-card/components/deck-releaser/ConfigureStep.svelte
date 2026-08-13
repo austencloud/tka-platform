@@ -7,6 +7,7 @@
   } from "../../services/deck-composer";
   import TnDTurnMatrix from "../TnDTurnMatrix.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
   import TnDFamilyCards from "./TnDFamilyCards.svelte";
   import TransformPanel from "./TransformPanel.svelte";
   import LoopBentoBoard from "./LoopBentoBoard.svelte";
@@ -110,9 +111,9 @@
 
   const drawLabel = $derived(
     deckMode === "tnd"
-      ? `Compose ${tndCardCount} TnD cards`
+      ? `Compose ${tndCardCount} cards`
       : deckMode === "gallery"
-        ? `Draw up to ${totalCards} cards`
+        ? `Compose up to ${totalCards} cards`
         : `Generate ${totalCards} cards`
   );
 
@@ -233,6 +234,39 @@
     {/if}
   </section>
 
+  {#snippet catalogCompletion()}
+    <section class="catalog-footer" aria-labelledby="catalog-completion-title">
+      <div class="catalog-summary" id="draw-action-summary">
+        <span class="catalog-icon"
+          ><i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i></span
+        >
+        <span class="catalog-copy">
+          <span class="catalog-kicker" id="catalog-completion-title"
+            >Next: Review</span
+          >
+          <strong>{actionTitle}</strong>
+          <span class="catalog-detail">{actionDetail}</span>
+        </span>
+      </div>
+
+      <div class="catalog-action">
+        <ActionButton
+          label={drawLabel}
+          busyLabel={loadingLabel}
+          icon={isLoading || isGenerating
+            ? "fa-spinner fa-spin"
+            : "fa-arrow-right"}
+          color="theme"
+          fullWidth
+          busy={isLoading || isGenerating}
+          disabled={isLoading || isGenerating || !canDraw}
+          onclick={onDraw}
+          ariaDescribedBy="draw-action-summary"
+        />
+      </div>
+    </section>
+  {/snippet}
+
   <div class="board-shell">
     {#if deckMode === "tnd"}
       <div class="board tnd-board">
@@ -271,7 +305,7 @@
         </section>
       </div>
     {:else if deckMode === "gallery"}
-      <GalleryComposeBoard />
+      <GalleryComposeBoard completion={catalogCompletion} />
     {:else}
       <LoopBentoBoard
         {weights}
@@ -293,34 +327,9 @@
     {/if}
   </div>
 
-  <div class="action-dock">
-    <div class="action-summary" id="draw-action-summary">
-      <span class="action-icon"
-        ><i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i></span
-      >
-      <span class="action-copy">
-        <span class="action-kicker">Ready to compose</span>
-        <strong>{actionTitle}</strong>
-        <span class="action-detail">{actionDetail}</span>
-      </span>
-    </div>
-
-    <button
-      type="button"
-      class="draw-btn"
-      disabled={isLoading || isGenerating || !canDraw}
-      onclick={onDraw}
-      aria-describedby="draw-action-summary"
-    >
-      {#if isLoading || isGenerating}
-        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        <span aria-live="polite">{loadingLabel}</span>
-      {:else}
-        <i class="fas fa-dice" aria-hidden="true"></i>
-        <span>{drawLabel}</span>
-      {/if}
-    </button>
-  </div>
+  {#if deckMode !== "gallery"}
+    {@render catalogCompletion()}
+  {/if}
 </div>
 
 <style>
@@ -456,7 +465,7 @@
     font-size: 10px;
   }
 
-  .action-icon {
+  .catalog-icon {
     display: grid;
     place-items: center;
     flex: 0 0 auto;
@@ -473,13 +482,13 @@
     color: var(--theme-accent, #8b5cf6);
   }
 
-  .action-copy {
+  .catalog-copy {
     display: flex;
     flex-direction: column;
     min-width: 0;
   }
 
-  .action-kicker {
+  .catalog-kicker {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-compact, 12px);
     font-weight: 700;
@@ -487,7 +496,7 @@
     text-transform: uppercase;
   }
 
-  .action-copy strong {
+  .catalog-copy strong {
     color: var(--theme-text, #fff);
     font-size: var(--font-size-min, 14px);
     font-variant-numeric: tabular-nums;
@@ -636,81 +645,64 @@
     letter-spacing: 0.05em;
   }
 
-  .action-dock {
-    position: sticky;
-    bottom: 16px;
-    z-index: 4;
-    display: flex;
+  .catalog-footer {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(22rem, 36rem);
     align-items: center;
-    justify-content: space-between;
     gap: clamp(16px, 2vw, 32px);
     width: 100%;
-    padding: 14px;
+    padding: clamp(18px, 1.55cqw, 28px);
     box-sizing: border-box;
     background:
-      linear-gradient(
-        var(--theme-panel-bg, rgba(18, 18, 28, 0.98)),
-        var(--theme-panel-bg, rgba(18, 18, 28, 0.98))
+      radial-gradient(
+        circle at 92% 50%,
+        color-mix(in srgb, var(--theme-accent, #8b5cf6) 14%, transparent),
+        transparent 32%
       ),
-      #080a10;
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.16));
+      linear-gradient(
+        112deg,
+        color-mix(in srgb, var(--theme-accent, #8b5cf6) 7%, transparent),
+        transparent 48%
+      ),
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1px solid
+      color-mix(
+        in srgb,
+        var(--theme-accent, #8b5cf6) 24%,
+        var(--theme-stroke, rgba(255, 255, 255, 0.1))
+      );
     border-radius: var(--composer-radius);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.34);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
-  .action-summary {
+  .catalog-footer::before {
+    position: absolute;
+    top: -1px;
+    left: clamp(18px, 1.55cqw, 28px);
+    width: clamp(5rem, 9cqw, 9rem);
+    height: 2px;
+    background: var(--theme-accent, #8b5cf6);
+    border-radius: 999px;
+    content: "";
+  }
+
+  .catalog-summary {
     display: flex;
     align-items: center;
     gap: 12px;
     min-width: 0;
   }
 
-  .action-detail {
+  .catalog-detail {
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
     font-size: var(--font-size-compact, 12px);
     line-height: 1.35;
   }
 
-  .draw-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    flex: 0 0 auto;
-    width: min(36rem, 46%);
-    min-height: 56px;
-    padding: 14px 24px;
-    background: var(--theme-accent, #8b5cf6);
-    border: none;
-    border-radius: 12px;
-    color: #fff;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    cursor: pointer;
-    transition:
-      filter 0.15s ease,
-      transform 0.15s ease,
-      box-shadow 0.15s ease;
-    box-shadow: 0 12px 28px
-      color-mix(in srgb, var(--theme-accent, #8b5cf6) 24%, transparent);
-  }
-
-  .draw-btn:hover:not(:disabled) {
-    filter: brightness(1.1);
-    transform: translateY(-1px);
-  }
-
-  .draw-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    box-shadow: none;
-  }
-
-  .draw-btn:focus-visible {
-    outline: 3px solid
-      color-mix(in srgb, white 78%, var(--theme-accent, #8b5cf6));
-    outline-offset: 3px;
+  .catalog-action {
+    width: 100%;
+    min-width: 0;
   }
 
   /* TnD board: below the 3-up threshold, stack hero matrix → families →
@@ -765,14 +757,9 @@
       width: 100%;
     }
 
-    .action-dock {
-      position: static;
+    .catalog-footer {
+      grid-template-columns: 1fr;
       align-items: stretch;
-      flex-direction: column;
-    }
-
-    .draw-btn {
-      width: 100%;
     }
   }
 
@@ -806,7 +793,7 @@
       min-height: 3em;
     }
 
-    .action-icon {
+    .catalog-icon {
       display: none;
     }
   }
@@ -817,11 +804,11 @@
     }
 
     .release-progress,
-    .action-dock {
+    .catalog-footer {
       padding: 20px;
     }
 
-    .action-icon {
+    .catalog-icon {
       width: 52px;
       height: 52px;
       border-radius: 15px;
@@ -833,9 +820,8 @@
       border-radius: 13px;
     }
 
-    .draw-btn {
-      min-height: 68px;
-      border-radius: 16px;
+    .catalog-footer {
+      grid-template-columns: minmax(0, 1fr) minmax(32rem, 48rem);
     }
   }
 
@@ -851,15 +837,8 @@
     }
   }
 
-  @media (max-height: 600px) {
-    .action-dock {
-      position: static;
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .notes-input,
-    .draw-btn {
+    .notes-input {
       transition: none;
     }
   }

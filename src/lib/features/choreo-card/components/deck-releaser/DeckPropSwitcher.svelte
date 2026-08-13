@@ -25,7 +25,7 @@
   type="button"
   class="prop-toggle"
   onclick={() => (open = true)}
-  aria-label="Change deck prop (currently {propLabel})"
+  aria-label="Prop {propLabel}. Change deck prop"
   aria-haspopup="dialog"
 >
   <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>

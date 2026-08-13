@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { PDFDocument, PrintScaling } from "pdf-lib";
 import {
   exportCalibrationPDF,
+  exportFixedSheetBatchPDF,
   exportHomePrintPDF,
 } from "../print-pdf-exporter";
 import type { CardPair } from "../types";
@@ -136,6 +137,34 @@ describe("exportHomePrintPDF with the How to Read insert", () => {
     expect(await pageCount(blob)).toBe(120);
     expect(progress).toHaveLength(120);
     expect(progress.at(-1)).toEqual([120, 120]);
+  });
+
+  it("alternates matching fronts and backs for a batch of unique sheets", async () => {
+    const progress: Array<[number, number]> = [];
+    const sheets = Array.from({ length: 3 }, (_, sheetIndex) =>
+      Array.from({ length: 9 }, (_, cardIndex) =>
+        pair(`P${sheetIndex + 1}C${cardIndex + 1}`)
+      )
+    );
+
+    const blob = await exportFixedSheetBatchPDF(
+      sheets,
+      "Festival Sampler",
+      "poker",
+      (current, total) => progress.push([current, total]),
+      "combined",
+      { paperSize: "letter" }
+    );
+
+    expect(await pageCount(blob)).toBe(6);
+    expect(progress).toEqual([
+      [1, 6],
+      [2, 6],
+      [3, 6],
+      [4, 6],
+      [5, 6],
+      [6, 6],
+    ]);
   });
 
   it("emits 13x19 Super B pages holding 25 poker cards when paperSize is superb", async () => {

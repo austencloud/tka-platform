@@ -15,7 +15,7 @@
    * />
    */
 
-  type ColorPreset = "default" | "cyan" | "fuse";
+  type ColorPreset = "default" | "cyan" | "fuse" | "theme";
 
   interface Props {
     label: string;
@@ -151,6 +151,21 @@
     --action-shadow: 0 4px 12px rgba(234, 88, 12, 0.28);
     --action-shadow-hover: 0 6px 16px rgba(234, 88, 12, 0.38);
     --action-focus: var(--theme-text, #0b0b0f);
+  }
+
+  /* Color: Current app theme */
+  .action-button[data-color="theme"] {
+    --action-gradient: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 86%, white),
+      var(--theme-accent, #8b5cf6)
+    );
+    --action-text: var(--theme-text-on-accent, #ffffff);
+    --action-shadow: 0 4px 12px
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 28%, transparent);
+    --action-shadow-hover: 0 7px 18px
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 38%, transparent);
+    --action-focus: color-mix(in srgb, var(--theme-accent, #8b5cf6) 55%, white);
   }
 
   /* Reduced motion */

@@ -233,6 +233,131 @@ export interface HomePrintOptions {
 	insertPair?: CardPair;
 }
 
+export interface FixedSheetBatchOptions {
+	paperSize?: PaperSizeId;
+	meta?: HomePrintOptions['meta'];
+}
+
+/**
+ * Export already-composed physical sheets as a duplex batch. Combined output
+ * alternates each job's pages (pack 1 front, pack 1 back, pack 2 front, pack 2
+ * back), which keeps every unique festival assortment paired in a printer's
+ * automatic duplex path. Shared card canvases are embedded only once.
+ */
+export async function exportFixedSheetBatchPDF(
+	sheets: readonly (readonly CardPair[])[],
+	deckName: string,
+	cardSize: CardSizeId = 'poker',
+	onProgress?: (current: number, total: number) => void,
+	mode: PrintPDFMode = 'combined',
+	options: FixedSheetBatchOptions = {}
+): Promise<Blob> {
+	if (sheets.length === 0) throw new Error('Fixed-sheet batch is empty');
+
+	const layout = getPageLayout(cardSize, options.paperSize ?? 'letter');
+	const { cols, cardsPerPage, cardWidthPt, cardHeightPt, gutterPt, marginXPt, marginYPt, pageWidthPt, pageHeightPt } =
+		layout;
+	for (const [index, sheet] of sheets.entries()) {
+		if (sheet.length !== cardsPerPage) {
+			throw new Error(`Fixed sheet ${index + 1} needs ${cardsPerPage} cards; received ${sheet.length}`);
+		}
+	}
+
+	const pdfDoc = await PDFDocument.create();
+	applyPrintViewerPrefs(pdfDoc);
+	const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+	const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+	const includeFronts = mode === 'combined' || mode === 'fronts';
+	const includeBacks = mode === 'combined' || mode === 'backs';
+	const progressTotal = sheets.length * ((includeFronts ? 1 : 0) + (includeBacks ? 1 : 0));
+	let progressCount = 0;
+
+	const frontImages = new Map<HTMLCanvasElement, PDFImage>();
+	const backImages = new Map<HTMLCanvasElement, PDFImage>();
+	const embed = async (canvas: HTMLCanvasElement, cache: Map<HTMLCanvasElement, PDFImage>): Promise<PDFImage> => {
+		let image = cache.get(canvas);
+		if (!image) {
+			image = await pdfDoc.embedPng(canvasToPngBytes(canvas));
+			cache.set(canvas, image);
+		}
+		return image;
+	};
+
+	for (let sheetIndex = 0; sheetIndex < sheets.length; sheetIndex++) {
+		const sheet = sheets[sheetIndex]!;
+		const packLabel = `PACK ${String(sheetIndex + 1).padStart(2, '0')}`;
+
+		if (includeFronts) {
+			const page = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
+			for (let index = 0; index < sheet.length; index++) {
+				const pair = sheet[index]!;
+				const col = index % cols;
+				const row = Math.floor(index / cols);
+				page.drawImage(await embed(pair.front, frontImages), {
+					x: marginXPt + col * (cardWidthPt + gutterPt),
+					y: pageHeightPt - marginYPt - (row + 1) * cardHeightPt - row * gutterPt,
+					width: cardWidthPt,
+					height: cardHeightPt,
+				});
+			}
+			drawCropMarks(page, layout);
+			drawSheetLabel(
+				page,
+				font,
+				fontBold,
+				`FRONTS  ·  ${packLabel}`,
+				sheetIndex + 1,
+				sheets.length,
+				deckName,
+				options.meta?.deckSummary
+			);
+			drawFlipHint(page, font, 'FRONT SIDE');
+			onProgress?.(++progressCount, progressTotal);
+		}
+
+		if (includeBacks) {
+			const page = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
+			for (let index = 0; index < sheet.length; index++) {
+				const pair = sheet[index]!;
+				const col = index % cols;
+				const row = Math.floor(index / cols);
+				const mirroredCol = cols - 1 - col;
+				page.drawImage(await embed(pair.back, backImages), {
+					x: marginXPt + mirroredCol * (cardWidthPt + gutterPt),
+					y: pageHeightPt - marginYPt - (row + 1) * cardHeightPt - row * gutterPt,
+					width: cardWidthPt,
+					height: cardHeightPt,
+				});
+			}
+			drawCropMarks(page, layout);
+			drawSheetLabel(
+				page,
+				font,
+				fontBold,
+				`BACKS  ·  ${packLabel}`,
+				sheetIndex + 1,
+				sheets.length,
+				deckName,
+				options.meta?.deckSummary
+			);
+			drawFlipHint(page, font, 'BACK SIDE: columns mirrored for long-edge flip');
+			onProgress?.(++progressCount, progressTotal);
+		}
+	}
+
+	const meta = options.meta;
+	if (meta?.title) pdfDoc.setTitle(meta.title);
+	if (meta?.subject) pdfDoc.setSubject(meta.subject);
+	if (meta?.keywords?.length) pdfDoc.setKeywords(meta.keywords);
+	pdfDoc.setCreator('Flow Arts Composer');
+	pdfDoc.setProducer('Flow Arts Composer');
+
+	const pdfBytes = await pdfDoc.save();
+	return new Blob([pdfBytes.buffer as ArrayBuffer], {
+		type: 'application/pdf',
+	});
+}
+
 interface IndexedCardPair {
 	pair: CardPair;
 	cardIndex: number;

@@ -5,13 +5,20 @@ import {
   mirrorFestivalSheetColumns,
   placeFestivalSignupAtCenter,
 } from "$lib/features/choreo-card/services/festival-sampler-sheet";
+import { festivalSamplerFingerprint } from "$lib/features/choreo-card/services/festival-sampler-manifest";
+import uniquePackManifests from "$lib/features/choreo-card/data/festival-sampler-manifests.json";
 
 const require = createRequire(import.meta.url);
 const { buildCandidateNames, buildFestivalPackCuration, isClassicPosition } =
   require("../../scripts/festival-pack-curate.cjs") as {
     buildCandidateNames(): Array<Record<string, string>>;
     isClassicPosition(position: string | null | undefined): boolean;
-    buildFestivalPackCuration(documents: unknown[]): {
+    buildFestivalPackCuration(
+      documents: unknown[],
+      tndRecords?: unknown,
+      localRecords?: unknown,
+      count?: number
+    ): {
       candidates: Array<{
         selected: boolean;
         cards: Array<Record<string, unknown>>;
@@ -42,6 +49,8 @@ describe("festival pack curation", () => {
       mirrored8: "DJII",
       rotated16: "OVXΔ",
       rotated8: "MVNU",
+      tndBase: "AAAA",
+      tndTurn: "JDJD",
       mirroredSwapped8: "FALG",
     });
   });
@@ -59,8 +68,8 @@ describe("festival pack curation", () => {
         "mirrored8",
         "rotated16",
         "rotated8",
-        "vtgSplitSame",
-        "vtgTogetherSame",
+        "tndBase",
+        "tndTurn",
         "mirroredSwapped8",
         "mirroredInverted8",
       ]);
@@ -79,6 +88,67 @@ describe("festival pack curation", () => {
     expect(
       curation.candidates.filter((candidate) => candidate.selected)
     ).toHaveLength(1);
+  });
+
+  it("provides 60 different tradeable pack assortments", () => {
+    const packs = uniquePackManifests.candidates.slice(0, 60);
+    const fingerprints = packs.map((pack) =>
+      festivalSamplerFingerprint(pack.cards)
+    );
+
+    expect(packs).toHaveLength(60);
+    expect(new Set(fingerprints).size).toBe(60);
+    const tndPairs = packs.map((pack) =>
+      pack.cards
+        .filter((card) => card.slot === "tndBase" || card.slot === "tndTurn")
+        .map((card) => card.docId)
+        .join("|")
+    );
+    expect(new Set(tndPairs).size).toBe(60);
+    expect(
+      new Set(
+        packs.map(
+          (pack) => pack.cards.find((card) => card.slot === "tndBase")!.name
+        )
+      ).size
+    ).toBe(10);
+    expect(
+      new Set(
+        packs.map(
+          (pack) => pack.cards.find((card) => card.slot === "tndTurn")!.name
+        )
+      ).size
+    ).toBe(9);
+    for (const pack of packs) {
+      const base = pack.cards.find((card) => card.slot === "tndBase")!;
+      const turn = pack.cards.find((card) => card.slot === "tndTurn")!;
+      expect(base.ratio).toBe("1:1");
+      expect(base.turnIntensity).toBe(0);
+      expect(base.level).toBe(1);
+      expect(base.familyId).toMatch(/-same$/);
+      expect(turn.ratio).toBe("3:1");
+      expect(turn.turnIntensity).toBe(1);
+      expect(turn.level).toBe(2);
+      expect(turn.familyId).toMatch(/-opp$/);
+    }
+    expect(
+      new Set(
+        packs.flatMap((pack) =>
+          pack.cards
+            .filter((card) => card.slot === "rotated16")
+            .map((card) => card.name)
+        )
+      ).size
+    ).toBe(15);
+    expect(
+      new Set(
+        packs.flatMap((pack) =>
+          pack.cards
+            .filter((card) => card.slot === "rotated8")
+            .map((card) => card.name)
+        )
+      ).size
+    ).toBe(13);
   });
 
   it("crops the same physical bleed from 1x fronts and 2x backs", () => {
@@ -102,17 +172,7 @@ describe("festival pack curation", () => {
       "SIGNUP"
     );
 
-    expect(sheet).toEqual([
-      "A",
-      "B",
-      "C",
-      "D",
-      "SIGNUP",
-      "E",
-      "F",
-      "G",
-      "H",
-    ]);
+    expect(sheet).toEqual(["A", "B", "C", "D", "SIGNUP", "E", "F", "G", "H"]);
     expect(mirrorFestivalSheetColumns(sheet)).toEqual([
       "C",
       "B",
