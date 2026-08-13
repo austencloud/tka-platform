@@ -34,6 +34,8 @@ export type PetalSpriteShape =
   // Blossom (procedural, cherry-blossom-flavoured).
   | "blossom_flower"
   | "blossom_petal"
+  | "blossom_petal_folded"
+  | "blossom_petal_curled"
   // UXWing autumn leaves (real SVG paths, free commercial).
   | "maple"
   | "curved"
@@ -46,6 +48,11 @@ export type PetalSpriteShape =
   | "banana"
   | "fern"
   | "elephant"
+  | "palm"
+  | "calathea"
+  // Ember Ash (procedural charred fragments).
+  | "ash_flake"
+  | "ash_cinder"
   // Gold hero - hand-authored.
   | "ginkgo";
 
@@ -62,8 +69,8 @@ export interface PetalPalette {
 
 const BLOSSOM: PetalPalette = {
   id: "blossom",
-  // 1 flower for every 7 petals - the full flower is a rare accent; loose
-  // petals carry the stream. (Was 1:3, which read as too many big flowers.)
+  // One intact flower per fifteen loose petals. Whole blossoms are punctuation;
+  // the smaller loose silhouettes carry the stream without masking the props.
   sprites: [
     "blossom_flower",
     "blossom_petal",
@@ -72,7 +79,15 @@ const BLOSSOM: PetalPalette = {
     "blossom_petal",
     "blossom_petal",
     "blossom_petal",
-    "blossom_petal",
+    "blossom_petal_folded",
+    "blossom_petal_folded",
+    "blossom_petal_folded",
+    "blossom_petal_folded",
+    "blossom_petal_folded",
+    "blossom_petal_curled",
+    "blossom_petal_curled",
+    "blossom_petal_curled",
+    "blossom_petal_curled",
   ],
   // Cherry blossom colour mix: vibrant magenta/pink/blush + rose/pink/
   // cream/lavender, carried over from the package palette.
@@ -93,13 +108,13 @@ const AUTUMN: PetalPalette = {
   sprites: ["maple", "curved", "oak", "rounded", "double", "nature"],
   // Warm autumnal: golds → oranges → reds → browns → a hint of green.
   tints: [
-    "#e8a317",
-    "#ffcf4a",
-    "#ff8a2a",
-    "#d9541c",
-    "#b8351f",
-    "#7a3810",
-    "#3f6b2a",
+    "#d39a32",
+    "#e1b957",
+    "#c96d35",
+    "#a94832",
+    "#7f3430",
+    "#6c4527",
+    "#596333",
   ],
 };
 
@@ -107,15 +122,15 @@ const GOLD: PetalPalette = {
   id: "gold",
   // Ginkgo dominates, with a few rounded/oval leaves to add silhouette
   // variety so the stream doesn't read as one repeating shape.
-  sprites: ["ginkgo", "ginkgo", "ginkgo", "rounded", "oval"],
+  sprites: ["ginkgo", "ginkgo", "ginkgo", "ginkgo", "curved", "nature"],
   tints: [
-    "#ffcf4a",
-    "#ffd96b",
-    "#e8a317",
-    "#d97818",
-    "#f5b947",
-    "#f7dc8f",
-    "#b8782a",
+    "#d8b45a",
+    "#e7ca78",
+    "#b98a39",
+    "#94652f",
+    "#c69a4b",
+    "#ead8a0",
+    "#80603a",
   ],
 };
 
@@ -123,22 +138,42 @@ const ASH: PetalPalette = {
   id: "ash",
   // Subset of autumn leaves - we tint them charcoal and occasionally light
   // an ember along the rim.
-  sprites: ["maple", "oak", "rounded", "double", "curved"],
-  tints: ["#1a1a1a", "#333333", "#0f0a08", "#4a3d38", "#2a2020"],
-  emberEdge: { chance: 0.2, color: "#ff6020" },
+  sprites: [
+    "ash_flake",
+    "ash_flake",
+    "ash_flake",
+    "ash_cinder",
+    "ash_cinder",
+    "curved",
+    "oak",
+  ],
+  tints: ["#393536", "#4b4745", "#625951", "#76655c", "#51423e"],
+  emberEdge: { chance: 0.55, color: "#ff491f" },
 };
 
 const JUNGLE: PetalPalette = {
   id: "jungle",
-  sprites: ["monstera", "monstera", "banana", "fern", "elephant"],
+  // Broad leaves carry the family, while the lighter palm and fern profiles
+  // break up repetition. Repeated entries are deliberate visual weighting.
+  sprites: [
+    "monstera",
+    "monstera",
+    "banana",
+    "banana",
+    "calathea",
+    "calathea",
+    "elephant",
+    "palm",
+    "fern",
+  ],
   tints: [
-    "#1f6b2a",
-    "#2d8a39",
-    "#3f9c47",
-    "#5eae4d",
-    "#7cc155",
-    "#2b5e2e",
-    "#4a7a24",
+    "#2f7d3a",
+    "#3f9146",
+    "#54a653",
+    "#70b85a",
+    "#8cc866",
+    "#386d3b",
+    "#5d8332",
   ],
 };
 
@@ -167,14 +202,19 @@ export function deriveCustomPalette(hex: string): PetalPalette {
   const darker = hslToHex({ h: base.h, s: base.s, l: clamp01(base.l - 0.1) });
   return {
     id: "custom",
-    sprites: ["round", "round", "oval"],
+    sprites: [
+      "blossom_petal",
+      "blossom_petal",
+      "blossom_petal_folded",
+      "blossom_petal_curled",
+    ],
     tints: [hex, lighter, darker],
   };
 }
 
 export function pickPetalSprite(
   palette: PetalPalette,
-  rand: () => number = Math.random,
+  rand: () => number = Math.random
 ): PetalSpriteShape {
   const n = palette.sprites.length;
   return palette.sprites[Math.floor(rand() * n)] ?? "round";
@@ -182,7 +222,7 @@ export function pickPetalSprite(
 
 export function pickPetalTint(
   palette: PetalPalette,
-  rand: () => number = Math.random,
+  rand: () => number = Math.random
 ): string {
   const n = palette.tints.length;
   return palette.tints[Math.floor(rand() * n)] ?? "#ffffff";
@@ -190,10 +230,59 @@ export function pickPetalTint(
 
 export function rollEmberFlag(
   palette: PetalPalette,
-  rand: () => number = Math.random,
+  rand: () => number = Math.random
 ): boolean {
   if (!palette.emberEdge) return false;
   return rand() < palette.emberEdge.chance;
+}
+
+/**
+ * Shared size art direction for both renderers.
+ *
+ * Most particles live in the small tier, a quarter are medium, and only a
+ * handful become accents. Intact blossoms stay smaller than loose petals so
+ * their five-lobed outline never turns into a hand-sized badge near camera.
+ */
+export function resolvePetalSize(
+  baseSize: number,
+  intensity: number,
+  shape: PetalSpriteShape,
+  rand: () => number = Math.random
+): number {
+  const intensityScale = 0.36 + clamp01(intensity) * 0.42;
+  if (shape === "blossom_flower") {
+    return baseSize * intensityScale * (0.62 + rand() * 0.1);
+  }
+
+  const tier = rand();
+  const jitter = rand();
+  const populationScale =
+    tier < 0.72
+      ? 0.54 + jitter * 0.18
+      : tier < 0.96
+        ? 0.74 + jitter * 0.16
+        : 0.92 + jitter * 0.1;
+  const silhouetteScale =
+    shape === "blossom_petal_curled"
+      ? 0.76
+      : shape === "blossom_petal_folded"
+        ? 0.88
+        : 1;
+  return baseSize * intensityScale * populationScale * silhouetteScale;
+}
+
+/** Motion-born petals may read clearly; ambient petals stay translucent. */
+export function resolvePetalOpacity(
+  shape: PetalSpriteShape,
+  ambient: boolean
+): number {
+  const silhouetteOpacity =
+    shape === "blossom_flower"
+      ? 0.68
+      : shape === "blossom_petal_curled"
+        ? 0.72
+        : 0.82;
+  return silhouetteOpacity * (ambient ? 0.7 : 1);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -204,7 +293,14 @@ interface SvgLeafData {
   d: string;
   viewBox: { width: number; height: number };
   /** Procedural fallback for jsdom / environments without Path2D. */
-  fallback: "maple" | "oak" | "elm" | "oval" | "elongated" | "round" | "stylized";
+  fallback:
+    | "maple"
+    | "oak"
+    | "elm"
+    | "oval"
+    | "elongated"
+    | "round"
+    | "stylized";
 }
 
 // UXWing leaf silhouettes (free commercial use, no attribution required).
@@ -246,32 +342,47 @@ const UXWING_LEAVES: Record<
 };
 
 // Hand-authored tropical leaf silhouettes (single closed paths, viewBox
-// 0-100). Kept intentionally simple so they read cleanly at 30-80 px.
-const JUNGLE_LEAVES: Record<"monstera" | "banana" | "fern" | "elephant", SvgLeafData> = {
-  // Fenestrated Monstera: oval outline with four deep bays per side that
-  // echo the iconic splits without requiring interior holes.
+// 0-100). Their asymmetric contours and varied negative-space rhythms keep
+// the atlas from reading as a repeated pack of generic leaf icons.
+const JUNGLE_LEAVES: Record<
+  "monstera" | "banana" | "fern" | "elephant" | "palm" | "calathea",
+  SvgLeafData
+> = {
+  // Mature monstera with offset split lobes and a narrow basal stem.
   monstera: {
-    d: "M50 4 C62 4 72 9 79 18 C84 24 88 31 90 38 C84 36 76 37 72 42 C79 44 85 48 88 54 C80 54 72 55 68 60 C74 63 80 68 83 74 C74 74 66 76 62 82 C67 86 70 90 72 94 C64 96 56 96 50 96 C44 96 36 96 28 94 C30 90 33 86 38 82 C34 76 26 74 17 74 C20 68 26 63 32 60 C28 55 20 54 12 54 C15 48 21 44 28 42 C24 37 16 36 10 38 C12 31 16 24 21 18 C28 9 38 4 50 4 Z",
+    d: "M48 97 C47 84 45 71 43 59 C36 73 27 83 18 85 C19 76 24 67 31 60 C22 67 14 69 8 64 C15 56 23 51 34 48 C23 49 15 46 11 40 C20 34 30 34 39 38 C32 31 27 24 29 17 C39 20 47 29 50 38 C54 27 62 16 73 11 C76 20 72 29 63 37 C74 32 83 32 91 37 C87 45 78 49 67 49 C78 50 87 55 92 62 C85 68 77 68 67 62 C76 70 81 78 80 86 C69 84 60 75 54 61 C53 74 53 86 55 97 Z",
     viewBox: { width: 100, height: 100 },
     fallback: "oak",
   },
-  // Banana leaf: long elegant oval, ~3:1, with a subtle curve at the tip.
+  // Wind-worn banana leaf: long, bowed and irregularly torn at the edge.
   banana: {
-    d: "M50 3 C58 6 62 12 64 22 C66 38 66 54 64 72 C62 84 58 92 50 97 C42 92 38 84 36 72 C34 54 34 38 36 22 C38 12 42 6 50 3 Z",
+    d: "M47 97 C43 82 38 67 34 51 C30 36 32 18 47 4 C55 11 62 20 66 31 L58 34 L68 39 L59 43 L66 49 L57 52 L63 58 L55 61 L60 68 L53 71 L57 78 C56 86 53 92 51 97 Z",
     viewBox: { width: 100, height: 100 },
     fallback: "elongated",
   },
-  // Fern frond: pinnate with 8 leaflet pairs tapering to a tip.
+  // Loose fern frond with alternating pinnae and a naturally bent tip.
   fern: {
-    d: "M50 3 C52 8 54 12 56 14 L62 15 L57 20 L66 22 L58 27 L68 30 L59 34 L70 38 L60 42 L70 46 L60 50 L70 54 L59 58 L68 62 L57 66 L64 70 L55 74 L60 78 L52 82 L55 88 L50 97 L45 88 L48 82 L40 78 L45 74 L36 70 L43 66 L32 62 L41 58 L30 54 L40 50 L30 46 L40 42 L30 38 L41 34 L32 30 L42 27 L34 22 L43 20 L38 15 L44 14 C46 12 48 8 50 3 Z",
+    d: "M56 4 C57 9 57 13 57 17 L64 13 L59 22 L70 19 L60 28 L73 27 L61 34 L76 36 L61 40 L76 46 L60 46 L73 57 L58 52 L69 66 L56 58 L63 75 L54 64 L56 84 L51 69 L50 97 L46 69 L38 83 L44 63 L31 74 L42 56 L27 64 L40 50 L24 53 L40 44 L24 42 L41 37 L27 32 L43 31 L32 23 L46 25 L39 16 L49 20 C51 13 53 8 56 4 Z",
     viewBox: { width: 100, height: 100 },
     fallback: "elm",
   },
-  // Elephant-ear / Alocasia: shield shape with rounded basal lobes.
+  // Alocasia shield with a clean heart notch and unequal basal lobes.
   elephant: {
-    d: "M50 5 C66 5 78 14 84 28 C90 42 90 58 84 72 C78 86 66 95 50 97 C44 92 38 92 32 86 C36 82 38 78 36 74 C28 76 22 74 18 68 C22 64 26 62 28 58 C20 58 14 54 12 46 C18 42 24 40 28 40 C26 32 32 24 40 20 C42 24 46 26 50 22 C54 26 58 24 60 20 C68 24 74 32 72 40 C76 40 82 42 88 46 C86 54 80 58 72 58 C74 62 78 64 82 68 C78 74 72 76 64 74 C62 78 64 82 68 86 C62 92 56 92 50 97 C50 70 50 35 50 5 Z",
+    d: "M50 97 C44 87 34 80 25 71 C14 60 12 45 18 31 C23 19 33 12 44 10 C47 10 49 16 50 21 C53 15 57 10 62 11 C75 14 84 24 88 38 C92 53 87 68 76 79 C69 86 59 91 50 97 Z",
     viewBox: { width: 100, height: 100 },
     fallback: "oval",
+  },
+  // Palmate forest-understory leaf. Unequal fingers give it a wind-swept fan.
+  palm: {
+    d: "M49 97 C47 82 45 70 43 60 L29 82 C25 78 27 66 34 53 L16 68 C12 62 20 51 33 43 L10 47 C10 39 22 33 37 33 L21 20 C27 15 39 23 46 34 L45 8 C52 7 56 22 53 36 L67 15 C73 20 68 33 59 43 L82 30 C86 37 75 46 62 51 L89 49 C89 57 75 62 59 59 C56 73 54 85 54 97 Z",
+    viewBox: { width: 100, height: 100 },
+    fallback: "stylized",
+  },
+  // Calathea-like lance with a relaxed wave rather than a perfect oval.
+  calathea: {
+    d: "M51 4 C62 13 68 25 66 38 C65 48 70 57 64 70 C60 82 55 91 49 97 C41 88 36 78 37 66 C38 55 32 47 36 34 C39 20 44 10 51 4 Z",
+    viewBox: { width: 100, height: 100 },
+    fallback: "elongated",
   },
 };
 
@@ -286,14 +397,15 @@ const GINKGO: SvgLeafData = {
 /*                   Path2D cache + rendering (production)                */
 /* ---------------------------------------------------------------------- */
 
-const hasPath2D = typeof Path2D !== "undefined" && typeof DOMMatrix !== "undefined";
+const hasPath2D =
+  typeof Path2D !== "undefined" && typeof DOMMatrix !== "undefined";
 
 const pathCache = new Map<string, Path2D>();
 
 function getOrBuildPath(
   key: string,
   data: SvgLeafData,
-  size: number,
+  size: number
 ): Path2D | null {
   if (!hasPath2D) return null;
   const cacheKey = `${key}-${Math.round(size)}`;
@@ -329,17 +441,28 @@ function paintLeaf(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   path: Path2D,
   size: number,
-  tint: string,
+  tint: string
 ): void {
-  const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 0.9);
-  gradient.addColorStop(0, adjustBrightness(tint, 1.25));
-  gradient.addColorStop(0.55, tint);
-  gradient.addColorStop(1, adjustBrightness(tint, 0.65));
+  // Directional light reads as a thin organic surface. The former radial
+  // highlight made every leaf look like a glossy UI icon.
+  const gradient = ctx.createLinearGradient(
+    -size * 0.42,
+    -size,
+    size * 0.32,
+    size
+  );
+  gradient.addColorStop(0, adjustBrightness(tint, 1.16));
+  gradient.addColorStop(0.34, tint);
+  gradient.addColorStop(0.78, adjustBrightness(tint, 0.78));
+  gradient.addColorStop(1, adjustBrightness(tint, 0.58));
   ctx.fillStyle = gradient;
   ctx.fill(path);
-  ctx.strokeStyle = adjustBrightness(tint, 0.5);
-  ctx.lineWidth = Math.max(0.5, size * 0.04);
+  const previousAlpha = ctx.globalAlpha;
+  ctx.globalAlpha = previousAlpha * 0.58;
+  ctx.strokeStyle = adjustBrightness(tint, 0.42);
+  ctx.lineWidth = Math.max(0.45, size * 0.035);
   ctx.stroke(path);
+  ctx.globalAlpha = previousAlpha;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -354,14 +477,16 @@ export function drawPetalSilhouette(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   shape: PetalSpriteShape,
   size: number,
-  tint: string,
+  tint: string
 ): void {
   switch (shape) {
     case "blossom_flower":
       drawBlossomFlower(ctx, size, tint);
       return;
     case "blossom_petal":
-      drawBlossomPetal(ctx, size, tint);
+    case "blossom_petal_folded":
+    case "blossom_petal_curled":
+      drawBlossomPetal(ctx, shape, size, tint);
       return;
     case "maple":
     case "curved":
@@ -375,7 +500,13 @@ export function drawPetalSilhouette(
     case "banana":
     case "fern":
     case "elephant":
+    case "palm":
+    case "calathea":
       drawJungleLeaf(ctx, shape, size, tint);
+      return;
+    case "ash_flake":
+    case "ash_cinder":
+      drawAshFragment(ctx, shape, size, tint);
       return;
     case "ginkgo":
       drawGinkgo(ctx, size, tint);
@@ -404,17 +535,21 @@ export function drawPetalEmberRim(
   shape: PetalSpriteShape,
   size: number,
   color: string,
-  alpha: number,
+  alpha: number
 ): void {
   const prevAlpha = ctx.globalAlpha;
   const prevComposite = ctx.globalCompositeOperation;
+  const prevShadowBlur = ctx.shadowBlur;
+  const prevShadowColor = ctx.shadowColor;
   try {
     ctx.globalCompositeOperation = "lighter";
     ctx.globalAlpha = alpha;
     ctx.strokeStyle = color;
-    ctx.lineWidth = Math.max(0.6, size * 0.14);
+    ctx.lineWidth = Math.max(0.9, size * 0.18);
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
+    ctx.shadowColor = color;
+    ctx.shadowBlur = Math.max(2, size * 0.42);
 
     const svgData = getSvgDataForShape(shape);
     if (svgData) {
@@ -439,7 +574,17 @@ export function drawPetalEmberRim(
       return;
     }
 
-    if (shape === "blossom_flower" || shape === "blossom_petal") {
+    if (shape === "ash_flake" || shape === "ash_cinder") {
+      strokeAshFragment(ctx, shape, size);
+      return;
+    }
+
+    if (
+      shape === "blossom_flower" ||
+      shape === "blossom_petal" ||
+      shape === "blossom_petal_folded" ||
+      shape === "blossom_petal_curled"
+    ) {
       // Ember on a blossom petal: trace a simple oval - the flower's
       // multi-path geometry doesn't need a per-petal outline.
       strokeProceduralShape(ctx, "oval", size);
@@ -448,6 +593,8 @@ export function drawPetalEmberRim(
   } finally {
     ctx.globalAlpha = prevAlpha;
     ctx.globalCompositeOperation = prevComposite;
+    ctx.shadowBlur = prevShadowBlur;
+    ctx.shadowColor = prevShadowColor;
   }
 }
 
@@ -464,6 +611,8 @@ function getSvgDataForShape(shape: PetalSpriteShape): SvgLeafData | null {
     case "banana":
     case "fern":
     case "elephant":
+    case "palm":
+    case "calathea":
       return JUNGLE_LEAVES[shape];
     case "ginkgo":
       return GINKGO;
@@ -480,7 +629,7 @@ function drawUxwingLeaf(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   shape: "maple" | "curved" | "oak" | "rounded" | "double" | "nature",
   size: number,
-  tint: string,
+  tint: string
 ): void {
   const data = UXWING_LEAVES[shape];
   const path = getOrBuildPath(shape, data, size);
@@ -493,30 +642,195 @@ function drawUxwingLeaf(
 
 function drawJungleLeaf(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-  shape: "monstera" | "banana" | "fern" | "elephant",
+  shape: "monstera" | "banana" | "fern" | "elephant" | "palm" | "calathea",
   size: number,
-  tint: string,
+  tint: string
 ): void {
   const data = JUNGLE_LEAVES[shape];
   const path = getOrBuildPath(shape, data, size);
   if (path) {
     paintLeaf(ctx, path, size, tint);
+    paintJungleVeins(ctx, path, shape, size, tint);
     return;
   }
   drawProceduralShape(ctx, data.fallback, size, tint);
 }
 
+function paintJungleVeins(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  path: Path2D,
+  shape: "monstera" | "banana" | "fern" | "elephant" | "palm" | "calathea",
+  size: number,
+  tint: string
+): void {
+  if (size < 3.5) return;
+  const previousAlpha = ctx.globalAlpha;
+  ctx.save();
+  ctx.clip(path);
+  ctx.globalAlpha = previousAlpha * 0.34;
+  ctx.strokeStyle = adjustBrightness(tint, 1.65);
+  ctx.lineWidth = Math.max(0.42, size * 0.045);
+  ctx.lineCap = "round";
+
+  ctx.beginPath();
+  ctx.moveTo(0, size * 0.88);
+  ctx.quadraticCurveTo(
+    shape === "fern" ? size * 0.12 : -size * 0.04,
+    0,
+    shape === "fern" ? size * 0.12 : 0,
+    -size * 0.8
+  );
+  ctx.stroke();
+
+  ctx.globalAlpha = previousAlpha * 0.2;
+  ctx.lineWidth = Math.max(0.32, size * 0.025);
+  ctx.beginPath();
+  if (shape === "palm") {
+    const rays = [-0.72, -0.42, 0, 0.38, 0.7] as const;
+    for (const x of rays) {
+      ctx.moveTo(0, size * 0.18);
+      ctx.quadraticCurveTo(
+        x * size * 0.55,
+        -size * 0.08,
+        x * size,
+        -size * 0.58
+      );
+    }
+  } else {
+    const levels = [-0.48, -0.18, 0.14, 0.44] as const;
+    const width = shape === "banana" || shape === "calathea" ? 0.52 : 0.72;
+    for (const y of levels) {
+      const reach = (1 - Math.abs(y) * 0.42) * width * size;
+      ctx.moveTo(0, y * size);
+      ctx.quadraticCurveTo(
+        reach * 0.5,
+        (y - 0.08) * size,
+        reach,
+        (y - 0.2) * size
+      );
+      ctx.moveTo(0, y * size);
+      ctx.quadraticCurveTo(
+        -reach * 0.5,
+        (y - 0.04) * size,
+        -reach,
+        (y - 0.16) * size
+      );
+    }
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawGinkgo(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   size: number,
-  tint: string,
+  tint: string
 ): void {
   const path = getOrBuildPath("ginkgo", GINKGO, size);
   if (path) {
     paintLeaf(ctx, path, size, tint);
+    paintGinkgoVeins(ctx, path, size, tint);
     return;
   }
   drawProceduralShape(ctx, GINKGO.fallback, size, tint);
+}
+
+function paintGinkgoVeins(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  path: Path2D,
+  size: number,
+  tint: string
+): void {
+  if (size < 3.5) return;
+  const previousAlpha = ctx.globalAlpha;
+  ctx.save();
+  ctx.clip(path);
+  ctx.globalAlpha = previousAlpha * 0.24;
+  ctx.strokeStyle = adjustBrightness(tint, 1.55);
+  ctx.lineWidth = Math.max(0.34, size * 0.028);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  for (const x of [-0.72, -0.38, 0, 0.38, 0.72]) {
+    ctx.moveTo(0, size * 0.8);
+    ctx.quadraticCurveTo(x * size * 0.3, size * 0.05, x * size, -size * 0.55);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawAshFragment(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  shape: "ash_flake" | "ash_cinder",
+  size: number,
+  tint: string
+): void {
+  const gradient = ctx.createLinearGradient(-size, -size, size, size);
+  gradient.addColorStop(0, adjustBrightness(tint, 1.35));
+  gradient.addColorStop(0.45, tint);
+  gradient.addColorStop(1, adjustBrightness(tint, 0.55));
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  buildAshFragmentPath(ctx, shape, size);
+  ctx.fill();
+
+  const previousAlpha = ctx.globalAlpha;
+  ctx.globalAlpha = previousAlpha * 0.28;
+  ctx.strokeStyle = adjustBrightness(tint, 1.7);
+  ctx.lineWidth = Math.max(0.35, size * 0.035);
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.28, size * 0.55);
+  ctx.lineTo(size * 0.04, size * 0.08);
+  ctx.lineTo(-size * 0.06, -size * 0.48);
+  ctx.stroke();
+  ctx.globalAlpha = previousAlpha;
+}
+
+function strokeAshFragment(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  shape: "ash_flake" | "ash_cinder",
+  size: number
+): void {
+  ctx.beginPath();
+  buildAshFragmentPath(ctx, shape, size);
+  ctx.stroke();
+}
+
+function buildAshFragmentPath(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  shape: "ash_flake" | "ash_cinder",
+  size: number
+): void {
+  if (shape === "ash_flake") {
+    ctx.moveTo(-size * 0.16, -size * 0.94);
+    ctx.lineTo(size * 0.48, -size * 0.58);
+    ctx.lineTo(size * 0.36, -size * 0.14);
+    ctx.lineTo(size * 0.72, size * 0.28);
+    ctx.lineTo(size * 0.08, size * 0.92);
+    ctx.lineTo(-size * 0.5, size * 0.58);
+    ctx.lineTo(-size * 0.38, size * 0.08);
+    ctx.lineTo(-size * 0.66, -size * 0.34);
+  } else {
+    ctx.moveTo(-size * 0.1, -size);
+    ctx.bezierCurveTo(
+      size * 0.42,
+      -size * 0.68,
+      size * 0.5,
+      -size * 0.16,
+      size * 0.24,
+      size * 0.12
+    );
+    ctx.lineTo(size * 0.46, size * 0.58);
+    ctx.bezierCurveTo(
+      size * 0.08,
+      size,
+      -size * 0.42,
+      size * 0.72,
+      -size * 0.32,
+      size * 0.24
+    );
+    ctx.lineTo(-size * 0.52, -size * 0.28);
+  }
+  ctx.closePath();
 }
 
 /**
@@ -527,24 +841,29 @@ function drawGinkgo(
 function drawBlossomFlower(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   size: number,
-  tint: string,
+  tint: string
 ): void {
   const { r, g, b } = hexToRgbTuple(tint);
 
-  // Glow halo. Trimmed from 1.6 - the wide halo made flowers dominate.
-  const glowRadius = size * 1.15;
+  // A tight, low-alpha bloom keeps the rare flower luminous without turning
+  // each sprite into a circular fog patch.
+  const glowRadius = size * 1.04;
   const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, glowRadius);
-  glow.addColorStop(0, `rgba(${r},${g},${b},0.5)`);
-  glow.addColorStop(0.45, `rgba(${r},${g},${b},0.2)`);
+  glow.addColorStop(0, `rgba(${r},${g},${b},0.28)`);
+  glow.addColorStop(0.45, `rgba(${r},${g},${b},0.1)`);
   glow.addColorStop(1, `rgba(${r},${g},${b},0)`);
   ctx.fillStyle = glow;
   ctx.fillRect(-glowRadius, -glowRadius, glowRadius * 2, glowRadius * 2);
 
   // 5 petals fanned out from centre, each with its own radial gradient.
   const petalCount = 5;
-  const widthFactor = 0.45;
+  const lengths = [0.91, 0.98, 0.88, 0.95, 0.9] as const;
+  const widths = [0.42, 0.47, 0.4, 0.45, 0.43] as const;
+  const offsets = [-0.035, 0.018, -0.012, 0.03, -0.02] as const;
   for (let i = 0; i < petalCount; i++) {
-    const angle = (i * Math.PI * 2) / petalCount;
+    const angle = (i * Math.PI * 2) / petalCount + offsets[i]!;
+    const length = lengths[i]!;
+    const widthFactor = widths[i]!;
     ctx.save();
     ctx.rotate(angle);
     const petalGrad = ctx.createRadialGradient(
@@ -553,7 +872,7 @@ function drawBlossomFlower(
       0,
       0,
       size * widthFactor,
-      size * 0.7,
+      size * 0.7
     );
     petalGrad.addColorStop(0, `rgba(${r},${g},${b},1)`);
     petalGrad.addColorStop(0.6, `rgba(${r},${g},${b},0.75)`);
@@ -565,32 +884,22 @@ function drawBlossomFlower(
       size * widthFactor,
       size * 0.1,
       size * widthFactor,
-      size * 0.45,
+      size * 0.45
     );
-    ctx.quadraticCurveTo(
-      size * widthFactor,
-      size * 0.8,
-      0,
-      size * 0.95,
-    );
+    ctx.quadraticCurveTo(size * widthFactor, size * 0.8, 0, size * length);
     ctx.quadraticCurveTo(
       -size * widthFactor,
       size * 0.8,
       -size * widthFactor,
-      size * 0.45,
+      size * 0.45
     );
-    ctx.quadraticCurveTo(
-      -size * widthFactor,
-      size * 0.1,
-      0,
-      0,
-    );
+    ctx.quadraticCurveTo(-size * widthFactor, size * 0.1, 0, 0);
     ctx.fill();
     ctx.restore();
   }
 
   // Yellow stamen centre.
-  const centreRadius = size * 0.22;
+  const centreRadius = size * 0.16;
   const centreGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, centreRadius);
   centreGrad.addColorStop(0, "rgba(255, 230, 70, 1)");
   centreGrad.addColorStop(1, "rgba(245, 180, 40, 0.6)");
@@ -601,41 +910,158 @@ function drawBlossomFlower(
 }
 
 /**
- * Blossom single petal - procedural ellipse with radial gradient. Drawn
- * upright (long axis = y).
+ * Three loose blossom silhouettes: an open heart-notched petal, a folded
+ * side-facing petal, and a curled crescent. They share a painted fill and a
+ * faint vein, but their outlines stay distinct after the 3D atlas turns them.
  */
 function drawBlossomPetal(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  shape: "blossom_petal" | "blossom_petal_folded" | "blossom_petal_curled",
   size: number,
-  tint: string,
+  tint: string
 ): void {
   const { r, g, b } = hexToRgbTuple(tint);
-  const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, size);
-  grad.addColorStop(0, `rgba(${r},${g},${b},1)`);
-  grad.addColorStop(0.65, `rgba(${r},${g},${b},0.75)`);
-  grad.addColorStop(1, `rgba(${r},${g},${b},0.15)`);
+  const grad = ctx.createLinearGradient(-size * 0.45, -size, size * 0.35, size);
+  grad.addColorStop(0, "rgba(255,255,255,0.9)");
+  grad.addColorStop(0.32, `rgba(${r},${g},${b},0.96)`);
+  grad.addColorStop(0.78, `rgba(${r},${g},${b},0.72)`);
+  grad.addColorStop(
+    1,
+    `rgba(${Math.round(r * 0.72)},${Math.round(g * 0.72)},${Math.round(b * 0.72)},0.62)`
+  );
   ctx.fillStyle = grad;
-  // Primary ellipse.
   ctx.beginPath();
-  ctx.ellipse(0, 0, size * 0.5, size * 0.9, 0, 0, Math.PI * 2);
+  if (shape === "blossom_petal") {
+    ctx.moveTo(0, size * 0.92);
+    ctx.bezierCurveTo(
+      -size * 0.2,
+      size * 0.66,
+      -size * 0.58,
+      size * 0.22,
+      -size * 0.5,
+      -size * 0.28
+    );
+    ctx.bezierCurveTo(
+      -size * 0.43,
+      -size * 0.78,
+      -size * 0.15,
+      -size * 1.02,
+      0,
+      -size * 0.78
+    );
+    ctx.bezierCurveTo(
+      size * 0.2,
+      -size * 1.02,
+      size * 0.5,
+      -size * 0.72,
+      size * 0.48,
+      -size * 0.24
+    );
+    ctx.bezierCurveTo(
+      size * 0.5,
+      size * 0.2,
+      size * 0.2,
+      size * 0.66,
+      0,
+      size * 0.92
+    );
+  } else if (shape === "blossom_petal_folded") {
+    ctx.moveTo(-size * 0.08, size * 0.95);
+    ctx.bezierCurveTo(
+      -size * 0.28,
+      size * 0.42,
+      -size * 0.3,
+      -size * 0.4,
+      -size * 0.05,
+      -size * 0.94
+    );
+    ctx.bezierCurveTo(
+      size * 0.1,
+      -size * 0.68,
+      size * 0.34,
+      -size * 0.3,
+      size * 0.28,
+      size * 0.18
+    );
+    ctx.bezierCurveTo(
+      size * 0.22,
+      size * 0.58,
+      size * 0.06,
+      size * 0.84,
+      -size * 0.08,
+      size * 0.95
+    );
+  } else {
+    ctx.moveTo(-size * 0.16, size * 0.88);
+    ctx.bezierCurveTo(
+      -size * 0.56,
+      size * 0.48,
+      -size * 0.5,
+      -size * 0.36,
+      -size * 0.06,
+      -size * 0.94
+    );
+    ctx.bezierCurveTo(
+      size * 0.02,
+      -size * 0.5,
+      size * 0.42,
+      -size * 0.46,
+      size * 0.56,
+      -size * 0.08
+    );
+    ctx.bezierCurveTo(
+      size * 0.22,
+      -size * 0.18,
+      size * 0.02,
+      size * 0.24,
+      size * 0.22,
+      size * 0.62
+    );
+    ctx.bezierCurveTo(
+      size * 0.04,
+      size * 0.72,
+      -size * 0.06,
+      size * 0.82,
+      -size * 0.16,
+      size * 0.88
+    );
+  }
+  ctx.closePath();
   ctx.fill();
-  // Secondary ellipse rotated 60° adds the twisted cherry petal read.
+
+  // The fold survives at small sizes as one quiet directional highlight.
+  ctx.strokeStyle = `rgba(255,255,255,${shape === "blossom_petal_curled" ? 0.24 : 0.32})`;
+  ctx.lineWidth = Math.max(0.45, size * 0.055);
+  ctx.lineCap = "round";
   ctx.beginPath();
-  ctx.ellipse(0, 0, size * 0.42, size * 0.78, Math.PI / 3, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.moveTo(-size * 0.08, size * 0.72);
+  ctx.quadraticCurveTo(
+    size * 0.08,
+    size * 0.1,
+    shape === "blossom_petal_curled" ? size * 0.34 : 0,
+    -size * 0.66
+  );
+  ctx.stroke();
 }
 
 /* ---------------------------------------------------------------------- */
 /*                  Procedural fallbacks + generic shapes                 */
 /* ---------------------------------------------------------------------- */
 
-type ProceduralShape = "round" | "oval" | "elongated" | "stylized" | "maple" | "oak" | "elm";
+type ProceduralShape =
+  | "round"
+  | "oval"
+  | "elongated"
+  | "stylized"
+  | "maple"
+  | "oak"
+  | "elm";
 
 function drawProceduralShape(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   shape: ProceduralShape,
   size: number,
-  tint: string,
+  tint: string
 ): void {
   ctx.fillStyle = tint;
   ctx.beginPath();
@@ -646,7 +1072,7 @@ function drawProceduralShape(
 function strokeProceduralShape(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   shape: ProceduralShape,
-  size: number,
+  size: number
 ): void {
   ctx.beginPath();
   buildProceduralPath(ctx, shape, size);
@@ -656,13 +1082,27 @@ function strokeProceduralShape(
 function buildProceduralPath(
   ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   shape: ProceduralShape,
-  s: number,
+  s: number
 ): void {
   switch (shape) {
     case "round": {
       ctx.moveTo(0, -s * 0.95);
-      ctx.bezierCurveTo(s * 0.9, -s * 0.9, s * 0.95, s * 0.2, s * 0.3, s * 0.95);
-      ctx.bezierCurveTo(s * 0.1, s * 0.6, -s * 0.1, s * 0.6, -s * 0.3, s * 0.95);
+      ctx.bezierCurveTo(
+        s * 0.9,
+        -s * 0.9,
+        s * 0.95,
+        s * 0.2,
+        s * 0.3,
+        s * 0.95
+      );
+      ctx.bezierCurveTo(
+        s * 0.1,
+        s * 0.6,
+        -s * 0.1,
+        s * 0.6,
+        -s * 0.3,
+        s * 0.95
+      );
       ctx.bezierCurveTo(-s * 0.95, s * 0.2, -s * 0.9, -s * 0.9, 0, -s * 0.95);
       ctx.closePath();
       return;
@@ -791,7 +1231,8 @@ function hexToRgbTuple(hex: string): Rgb {
 
 function adjustBrightness(hex: string, factor: number): string {
   const { r, g, b } = hexToRgb(hex);
-  const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n * factor)));
+  const clamp = (n: number) =>
+    Math.max(0, Math.min(255, Math.round(n * factor)));
   const toHex = (n: number) => clamp(n).toString(16).padStart(2, "0");
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }

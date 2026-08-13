@@ -17,9 +17,14 @@
     drawPetalSilhouette,
     pickPetalSprite,
     pickPetalTint,
+    resolvePetalOpacity,
     rollEmberFlag,
     type PetalSpriteShape,
   } from "$lib/shared/effects/domain/petal-palettes";
+  import {
+    resolveEmberWorldSpan,
+    resolvePetalWorldSize,
+  } from "./petal-world-art-direction";
 
   interface Props {
     /** Resolved petal params. */
@@ -28,11 +33,11 @@
     enabled: boolean;
     /** Y coordinate of the spawn ceiling. Default 3 world units. */
     ceilingY?: number;
-    /** Half-extent of the spawn zone in XZ (world units). Default 2. */
+    /** Half-extent of the spawn zone in XZ (world units). Default 1.4. */
     zoneHalf?: number;
   }
 
-  let { params, enabled, ceilingY = 3, zoneHalf = 2 }: Props = $props();
+  let { params, enabled, ceilingY = 3, zoneHalf = 1.4 }: Props = $props();
 
   interface Petal3D {
     id: number;
@@ -54,6 +59,7 @@
     angY: number;
     angZ: number;
     phase: number;
+    opacity: number;
     ember: boolean;
   }
 
@@ -63,26 +69,29 @@
   let clock = 0;
 
   const MAX_AMBIENT = 512;
-  const EMBER_MAX_AGE = 0.4;
+  const EMBER_MAX_AGE = 1.35;
   const FADE_OUT_FRACTION = 0.2;
   const FADE_IN_DURATION = 0.12;
 
   const textureCache = new Map<string, CanvasTexture>();
 
-  function getOrBakeTexture(shape: PetalSpriteShape, tint: string): CanvasTexture | null {
+  function getOrBakeTexture(
+    shape: PetalSpriteShape,
+    tint: string
+  ): CanvasTexture | null {
     const key = `${shape}:${tint}`;
     const cached = textureCache.get(key);
     if (cached) return cached;
     if (typeof document === "undefined") return null;
     const canvas = document.createElement("canvas");
-    canvas.width = 64;
-    canvas.height = 64;
+    canvas.width = 96;
+    canvas.height = 96;
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
-    ctx.clearRect(0, 0, 64, 64);
+    ctx.clearRect(0, 0, 96, 96);
     ctx.save();
-    ctx.translate(32, 32);
-    drawPetalSilhouette(ctx, shape, 28, tint);
+    ctx.translate(48, 48);
+    drawPetalSilhouette(ctx, shape, 40, tint);
     ctx.restore();
     const tex = new CanvasTexture(canvas);
     tex.needsUpdate = true;
@@ -98,14 +107,13 @@
     spawnAccumulator += delta * rate;
 
     const palette = params.resolvedPalette;
-    const baseSize = params.baseSize * (0.7 + 0.9 * params.intensity);
     const fall = params.fallBaseSpeed * (0.3 + 0.7 * params.fallSpeed);
 
     while (spawnAccumulator >= 1 && petals.length < MAX_AMBIENT) {
       const x = (Math.random() - 0.5) * 2 * zoneHalf;
       const z = (Math.random() - 0.5) * 2 * zoneHalf;
-      const drift = 0.25;
-      const jitter = 0.7 + Math.random() * 0.6;
+      const drift = 0.14;
+      const shape = pickPetalSprite(palette);
       petals.push({
         id: nextId++,
         x,
@@ -115,9 +123,14 @@
         vy: -fall * (0.8 + Math.random() * 0.4),
         vz: (Math.random() - 0.5) * drift,
         age: 0,
-        maxAge: params.lifetime * (0.8 + Math.random() * 0.4),
-        size: baseSize * jitter,
-        shape: pickPetalSprite(palette),
+        maxAge: params.lifetime * (0.75 + Math.random() * 0.2),
+        size: resolvePetalWorldSize(
+          params.baseSize,
+          params.intensity,
+          shape,
+          true
+        ),
+        shape,
         tint: pickPetalTint(palette),
         rx: (Math.random() - 0.5) * 2.0,
         ry: (Math.random() - 0.5) * 2.5,
@@ -126,6 +139,7 @@
         angY: Math.random() * Math.PI * 2,
         angZ: Math.random() * Math.PI * 2,
         phase: Math.random() * Math.PI * 2,
+        opacity: resolvePetalOpacity(shape, true),
         ember: rollEmberFlag(palette),
       });
       spawnAccumulator -= 1;
@@ -137,8 +151,12 @@
     for (const p of petals) {
       p.age += delta;
       if (p.age >= p.maxAge) continue;
-      const swayX = Math.sin(p.phase + clock * swayFreq * Math.PI * 2) * swayBase;
-      const swayZ = Math.cos(p.phase * 1.3 + clock * swayFreq * Math.PI * 2) * swayBase * 0.5;
+      const swayX =
+        Math.sin(p.phase + clock * swayFreq * Math.PI * 2) * swayBase;
+      const swayZ =
+        Math.cos(p.phase * 1.3 + clock * swayFreq * Math.PI * 2) *
+        swayBase *
+        0.5;
       p.x += (p.vx + swayX) * delta;
       p.y += p.vy * delta;
       p.z += (p.vz + swayZ) * delta;
@@ -155,13 +173,13 @@
     const fadeIn = p.age < FADE_IN_DURATION ? p.age / FADE_IN_DURATION : 1;
     const fadeOut =
       lifeT > 1 - FADE_OUT_FRACTION ? (1 - lifeT) / FADE_OUT_FRACTION : 1;
-    return Math.max(0, fadeIn * fadeOut);
+    return Math.max(0, fadeIn * fadeOut * p.opacity);
   }
 
   function emberOpacity(p: Petal3D): number {
     if (!p.ember) return 0;
     if (p.age >= EMBER_MAX_AGE) return 0;
-    return (1 - p.age / EMBER_MAX_AGE) * 0.9;
+    return (1 - p.age / EMBER_MAX_AGE) * 1.1;
   }
 
   const palette = $derived(params.resolvedPalette);
@@ -181,12 +199,14 @@
       rotation.z={p.angZ}
     >
       <T.PlaneGeometry args={[p.size * 2, p.size * 2]} />
-      <T.MeshBasicMaterial
+      <T.MeshLambertMaterial
         map={tex as Texture}
         transparent
         opacity={op}
         depthWrite={false}
         side={DoubleSide}
+        emissive="#ffffff"
+        emissiveIntensity={0.14}
       />
     </T.Mesh>
     {#if p.ember && emberOpacity(p) > 0.02}
@@ -198,11 +218,13 @@
         rotation.y={p.angY}
         rotation.z={p.angZ}
       >
-        <T.PlaneGeometry args={[p.size * 2.2, p.size * 2.2]} />
+        <T.PlaneGeometry
+          args={[resolveEmberWorldSpan(p.size), resolveEmberWorldSpan(p.size)]}
+        />
         <T.MeshBasicMaterial
           color={emberColor}
           transparent
-          opacity={emberOpacity(p) * 0.6}
+          opacity={emberOpacity(p) * 0.92}
           depthWrite={false}
           side={DoubleSide}
         />

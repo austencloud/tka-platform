@@ -43,24 +43,27 @@
     const base = PETAL_PALETTES[id];
     if (id !== "blossom") return base;
     let sprites: PetalPalette["sprites"];
-    if (fm === "hide") sprites = ["blossom_petal"];
-    else if (fm === "thin")
+    if (fm === "hide")
+      sprites = [
+        "blossom_petal",
+        "blossom_petal_folded",
+        "blossom_petal_curled",
+      ];
+    else if (fm === "thin") sprites = base.sprites;
+    else
       sprites = [
         "blossom_flower",
         "blossom_petal",
-        "blossom_petal",
-        "blossom_petal",
-        "blossom_petal",
-        "blossom_petal",
-        "blossom_petal",
-        "blossom_petal",
+        "blossom_petal_folded",
+        "blossom_petal_curled",
       ];
-    else sprites = base.sprites;
     return { ...base, sprites };
   }
 
   const variants: PetalVariant[] = createVariants();
-  let canvases: (HTMLCanvasElement | null)[] = $state(Array(variants.length).fill(null));
+  let canvases: (HTMLCanvasElement | null)[] = $state(
+    Array(variants.length).fill(null)
+  );
   let counts = $state<number[]>(Array(variants.length).fill(0));
   let fps = $state(0);
 
@@ -81,13 +84,25 @@
     let rang: number;
 
     if (pattern === "spin") {
-      bh = { x: W * 0.34 + Math.cos(t * 1.1) * handR, y: cy + Math.sin(t * 1.1) * handR };
-      rh = { x: W * 0.66 + Math.cos(-t * 1.1 + Math.PI) * handR, y: cy + Math.sin(-t * 1.1) * handR };
+      bh = {
+        x: W * 0.34 + Math.cos(t * 1.1) * handR,
+        y: cy + Math.sin(t * 1.1) * handR,
+      };
+      rh = {
+        x: W * 0.66 + Math.cos(-t * 1.1 + Math.PI) * handR,
+        y: cy + Math.sin(-t * 1.1) * handR,
+      };
       bang = t * 3.0;
       rang = -t * 3.0 + Math.PI / 2;
     } else if (pattern === "figure8") {
-      bh = { x: cx + Math.sin(t * 1.2) * W * 0.22, y: cy + Math.sin(t * 2.4) * H * 0.16 };
-      rh = { x: cx + Math.sin(t * 1.2 + Math.PI) * W * 0.22, y: cy + Math.sin(t * 2.4) * H * 0.16 };
+      bh = {
+        x: cx + Math.sin(t * 1.2) * W * 0.22,
+        y: cy + Math.sin(t * 2.4) * H * 0.16,
+      };
+      rh = {
+        x: cx + Math.sin(t * 1.2 + Math.PI) * W * 0.22,
+        y: cy + Math.sin(t * 2.4) * H * 0.16,
+      };
       bang = t * 2.2;
       rang = -t * 2.2;
     } else {
@@ -99,10 +114,22 @@
     }
 
     return {
-      blueA: { x: bh.x + Math.cos(bang) * staffR, y: bh.y + Math.sin(bang) * staffR },
-      blueB: { x: bh.x - Math.cos(bang) * staffR, y: bh.y - Math.sin(bang) * staffR },
-      redA: { x: rh.x + Math.cos(rang) * staffR, y: rh.y + Math.sin(rang) * staffR },
-      redB: { x: rh.x - Math.cos(rang) * staffR, y: rh.y - Math.sin(rang) * staffR },
+      blueA: {
+        x: bh.x + Math.cos(bang) * staffR,
+        y: bh.y + Math.sin(bang) * staffR,
+      },
+      blueB: {
+        x: bh.x - Math.cos(bang) * staffR,
+        y: bh.y - Math.sin(bang) * staffR,
+      },
+      redA: {
+        x: rh.x + Math.cos(rang) * staffR,
+        y: rh.y + Math.sin(rang) * staffR,
+      },
+      redB: {
+        x: rh.x - Math.cos(rang) * staffR,
+        y: rh.y - Math.sin(rang) * staffR,
+      },
     };
   }
 
@@ -110,7 +137,7 @@
     ctx: CanvasRenderingContext2D,
     a: { x: number; y: number },
     b: { x: number; y: number },
-    color: string,
+    color: string
   ) {
     ctx.save();
     ctx.strokeStyle = color;
@@ -143,7 +170,15 @@
     }
 
     const tips = tipsAt(clock, RES, RES);
-    const opts = { baseSize, density, palette, width: RES, height: RES, carry, streak };
+    const opts = {
+      baseSize,
+      density,
+      palette,
+      width: RES,
+      height: RES,
+      carry,
+      streak,
+    };
 
     for (let i = 0; i < variants.length; i++) {
       const canvas = canvases[i];
@@ -178,15 +213,19 @@
     <h1>Petals — motion model comparison</h1>
     <p class="sub">
       Same synthetic prop motion feeds all four. Watch how each model moves,
-      then tell me which one(s) to keep. Drag <b>Size</b> down to see the
-      "too big" complaint disappear; crank <b>Speed</b> to test reactivity.
+      then tell me which one(s) to keep. Drag <b>Size</b> down to see the "too
+      big" complaint disappear; crank <b>Speed</b> to test reactivity.
     </p>
   </header>
 
   <div class="controls">
     <div class="group">
       <span class="label">Play</span>
-      <button class="seg" aria-pressed={playing} onclick={() => (playing = !playing)}>
+      <button
+        class="seg"
+        aria-pressed={playing}
+        onclick={() => (playing = !playing)}
+      >
         {playing ? "❚❚ Pause" : "▶ Play"}
       </button>
       <button class="seg" onclick={reset}>↺ Reset</button>
@@ -195,14 +234,22 @@
     <div class="group">
       <span class="label">Pattern</span>
       {#each PATTERNS as p}
-        <button class="seg" aria-pressed={pattern === p} onclick={() => (pattern = p)}>{p}</button>
+        <button
+          class="seg"
+          aria-pressed={pattern === p}
+          onclick={() => (pattern = p)}>{p}</button
+        >
       {/each}
     </div>
 
     <div class="group">
       <span class="label">Palette</span>
       {#each PALETTE_IDS as id}
-        <button class="seg" aria-pressed={paletteId === id} onclick={() => (paletteId = id)}>{id}</button>
+        <button
+          class="seg"
+          aria-pressed={paletteId === id}
+          onclick={() => (paletteId = id)}>{id}</button
+        >
       {/each}
     </div>
 
@@ -222,12 +269,16 @@
     </div>
 
     <div class="group slider accent">
-      <span class="label">Carry <b>{Math.round(carry * 100)}%</b> <em>A</em></span>
+      <span class="label"
+        >Carry <b>{Math.round(carry * 100)}%</b> <em>A</em></span
+      >
       <input type="range" min="0" max="1" step="0.05" bind:value={carry} />
     </div>
 
     <div class="group slider accent">
-      <span class="label">Streak <b>{Math.round(streak * 100)}%</b> <em>A</em></span>
+      <span class="label"
+        >Streak <b>{Math.round(streak * 100)}%</b> <em>A</em></span
+      >
       <input type="range" min="0" max="1" step="0.05" bind:value={streak} />
     </div>
 
@@ -238,7 +289,8 @@
           class="seg"
           aria-pressed={flowerMode === fm}
           disabled={paletteId !== "blossom"}
-          onclick={() => (flowerMode = fm)}>{fm}</button>
+          onclick={() => (flowerMode = fm)}>{fm}</button
+        >
       {/each}
     </div>
 
@@ -252,7 +304,8 @@
       <figure class="cell">
         <figcaption>
           <span class="title">{v.title}</span>
-          {#if (counts[i] ?? 0) > 0}<span class="count">{counts[i]} live</span>{/if}
+          {#if (counts[i] ?? 0) > 0}<span class="count">{counts[i]} live</span
+            >{/if}
           <span class="blurb">{v.blurb}</span>
         </figcaption>
         <canvas
@@ -327,7 +380,9 @@
     font-size: 13px;
     cursor: pointer;
     text-transform: capitalize;
-    transition: background 120ms ease, border-color 120ms ease;
+    transition:
+      background 120ms ease,
+      border-color 120ms ease;
   }
   .seg:hover {
     background: rgba(255, 255, 255, 0.06);

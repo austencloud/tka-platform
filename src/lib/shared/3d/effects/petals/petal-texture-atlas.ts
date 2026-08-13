@@ -1,4 +1,9 @@
-import { CanvasTexture, SRGBColorSpace } from "three";
+import {
+  CanvasTexture,
+  LinearFilter,
+  LinearMipmapLinearFilter,
+  SRGBColorSpace,
+} from "three";
 import {
   drawPetalSilhouette,
   type PetalSpriteShape,
@@ -11,6 +16,8 @@ const SHAPES: readonly PetalSpriteShape[] = [
   "stylized",
   "blossom_flower",
   "blossom_petal",
+  "blossom_petal_folded",
+  "blossom_petal_curled",
   "maple",
   "curved",
   "oak",
@@ -21,12 +28,16 @@ const SHAPES: readonly PetalSpriteShape[] = [
   "banana",
   "fern",
   "elephant",
+  "palm",
+  "calathea",
+  "ash_flake",
+  "ash_cinder",
   "ginkgo",
 ];
 
 const COLUMNS = 5;
 const ROWS = Math.ceil(SHAPES.length / COLUMNS);
-const CELL_SIZE = 64;
+const CELL_SIZE = 128;
 let atlas: CanvasTexture | null = null;
 
 export interface PetalAtlasFrame {
@@ -65,12 +76,16 @@ export function getPetalTextureAtlas(): CanvasTexture | null {
       column * CELL_SIZE + CELL_SIZE / 2,
       row * CELL_SIZE + CELL_SIZE / 2
     );
-    drawPetalSilhouette(context, SHAPES[index]!, 28, "#ffffff");
+    drawPetalSilhouette(context, SHAPES[index]!, 50, "#ffffff");
     context.restore();
   }
 
   atlas = new CanvasTexture(canvas);
   atlas.colorSpace = SRGBColorSpace;
+  atlas.magFilter = LinearFilter;
+  atlas.minFilter = LinearMipmapLinearFilter;
+  atlas.generateMipmaps = true;
+  atlas.name = "tka-petal-silhouette-atlas";
   atlas.needsUpdate = true;
   return atlas;
 }

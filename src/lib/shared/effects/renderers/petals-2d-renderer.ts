@@ -5,8 +5,17 @@ import {
   drawPetalEmberRim,
   pickPetalSprite,
   pickPetalTint,
+  resolvePetalOpacity,
+  resolvePetalSize,
   rollEmberFlag,
 } from "../domain/petal-palettes";
+import {
+  addPetalWake2D,
+  resolvePetalAirflowPhrase,
+  samplePetalAirflow2D,
+  type PetalAirflow2D,
+  type PetalWakeSource2D,
+} from "../domain/petal-airflow";
 import type { EmitterTip } from "./emitter-tip";
 import { emitterId } from "./emitter-tip";
 
@@ -16,9 +25,9 @@ import { emitterId } from "./emitter-tip";
  * Airstream model: a petal is born carrying a fraction (`carry`) of the prop
  * tip's instantaneous velocity, so it launches along the prop's actual arc.
  * That inherited motion bleeds off over time (rate set by `streakLength`)
- * while vertical velocity eases toward a terminal fall. Each petal also has
- * an individual flutter (own frequency + phase) so streaks read as living
- * leaves rather than rigid lines — no global synchronized sway.
+ * while vertical velocity eases toward a terminal fall. Nearby petals sample
+ * one shared air field, with a small private flutter that keeps their faces
+ * from locking together.
  */
 interface Petal {
   /** Current position (px). */
@@ -40,33 +49,39 @@ interface Petal {
   tint: string;
   /** Current rotation angle (radians). */
   rot: number;
-  /** Per-petal flutter frequency (rad/s) - individual so petals don't sync. */
+  /** Per-petal flutter frequency (rad/s), used only for fine variation. */
   freq: number;
   /** Per-petal flutter phase offset. */
   phase: number;
-  /** True if this petal has an ember rim (ash palette, 20% chance). */
+  /** Independent edge-on flutter rate and phase. */
+  faceFreq: number;
+  facePhase: number;
+  /** Shape-level alpha ceiling; ambient petals are deliberately quieter. */
+  opacity: number;
+  /** True if this petal carries a short-lived ember rim. */
   ember: boolean;
 }
 
 const MAX_PETALS = 2048;
 const FADE_OUT_FRACTION = 0.2; // last 20% of life fades alpha out
 const FADE_IN_DURATION = 0.12; // seconds
-const EMBER_MAX_AGE = 0.4; // seconds - ember glow dies well before petal
+const EMBER_MAX_AGE = 1.35; // seconds - readable heat trace, still shorter than the ash body
 const TAU = Math.PI * 2;
 
 /**
- * Canvas2D petals renderer - per-tip falling sprite emitter with
- * sinusoidal sway. Silhouettes are drawn procedurally from the palette's
- * shape list; no PNG atlases required.
+ * Canvas2D petals renderer. Silhouettes are drawn procedurally, then carried
+ * through the same coherent air model as the 3D pool.
  *
  * Ember rim (ash palette only): particles flagged at spawn get a short
- * orange additive glow along their silhouette edge that dies over the
- * first 400ms while the petal continues its normal lifetime.
+ * orange additive glow along their silhouette edge that cools while the
+ * petal continues its normal lifetime.
  */
 export class Petals2DRenderer {
   private petals: Petal[] = [];
   private lastTipPos = new Map<string, { x: number; y: number }>();
   private smoothedVelocity = new Map<string, { vx: number; vy: number }>();
+  private readonly wakeSources: PetalWakeSource2D[] = [];
+  private readonly airflow: PetalAirflow2D = { x: 0, y: 0, turn: 0 };
   private clock = 0;
 
   render(
@@ -74,18 +89,17 @@ export class Petals2DRenderer {
     params: Petals2DParams,
     emitters: EmitterTip[],
     dt: number,
-    scale: number = 1,
+    scale: number = 1
   ): void {
     this.clock += dt;
     const palette = params.resolvedPalette;
-    // Halved relative to the legacy formula (0.7 + 0.9·intensity) — the
-    // petals/flowers read far too large before. Intensity 0.6 → ~7.6px half.
-    const baseSize = params.baseSize * scale * (0.4 + 0.6 * params.intensity);
+    const baseSize = params.baseSize * scale;
     const poolCap = Math.min(MAX_PETALS, params.poolSize ?? MAX_PETALS);
 
     // 1. Per-emitter velocity smoothing + spawn. Covers base props and every
     //    tunnel kaleidoscope layer (propIndex >= 2).
     const seen = new Set<string>();
+    this.wakeSources.length = 0;
     for (const e of emitters) {
       if (!this.isEndEnabled(e.end, params)) continue;
       const id = emitterId(e.propIndex, e.tipIndex);
@@ -101,18 +115,47 @@ export class Petals2DRenderer {
       const alpha = 1 - Math.pow(0.6, dt * 60);
       const svx = prev ? prev.vx + (vx - prev.vx) * alpha : vx;
       const svy = prev ? prev.vy + (vy - prev.vy) * alpha : vy;
-      if (prev) { prev.vx = svx; prev.vy = svy; } else { this.smoothedVelocity.set(id, { vx: svx, vy: svy }); }
+      if (prev) {
+        prev.vx = svx;
+        prev.vy = svy;
+      } else {
+        this.smoothedVelocity.set(id, { vx: svx, vy: svy });
+      }
+      this.wakeSources.push({
+        x: e.x,
+        y: e.y,
+        velocityX: svx,
+        velocityY: svy,
+      });
       const speedPx = Math.hypot(svx, svy);
-      this.spawnPetals(params, palette, e, svx, svy, speedPx, dt, scale, baseSize, poolCap);
-      if (last) { last.x = e.x; last.y = e.y; } else { this.lastTipPos.set(id, { x: e.x, y: e.y }); }
+      this.spawnPetals(
+        params,
+        palette,
+        e,
+        svx,
+        svy,
+        speedPx,
+        dt,
+        scale,
+        baseSize,
+        poolCap
+      );
+      if (last) {
+        last.x = e.x;
+        last.y = e.y;
+      } else {
+        this.lastTipPos.set(id, { x: e.x, y: e.y });
+      }
     }
     // Prune state for emitters not present this frame (a layer toggled off or a
     // tip turned off by tracking-mode) so the Maps don't grow unbounded.
-    for (const id of this.lastTipPos.keys()) if (!seen.has(id)) this.lastTipPos.delete(id);
-    for (const id of this.smoothedVelocity.keys()) if (!seen.has(id)) this.smoothedVelocity.delete(id);
+    for (const id of this.lastTipPos.keys())
+      if (!seen.has(id)) this.lastTipPos.delete(id);
+    for (const id of this.smoothedVelocity.keys())
+      if (!seen.has(id)) this.smoothedVelocity.delete(id);
 
     // 2. Integrate + age + cull.
-    this.integratePetals(dt, params);
+    this.integratePetals(dt, params, scale);
 
     if (this.petals.length === 0) return;
 
@@ -130,14 +173,21 @@ export class Petals2DRenderer {
     dt: number,
     scale: number,
     baseSize: number,
-    poolCap: number,
+    poolCap: number
   ): void {
     if (this.petals.length >= poolCap) return;
     const PX_PER_WORLD = 60;
     const refSpeed = params.motionReferenceSpeed * PX_PER_WORLD * scale;
     const speedScalar = refSpeed > 0 ? Math.min(1, speedPx / refSpeed) : 0;
-    const ambient = params.ambientEmission * params.ambientSpawnRate;
-    const motion = params.motionEmission * speedScalar * params.motionSpawnRate;
+    const phrase = resolvePetalAirflowPhrase(this.clock);
+    const ambient = params.ambientEmission * params.ambientSpawnRate * phrase;
+    const motion =
+      params.motionEmission *
+      speedScalar *
+      params.motionSpawnRate *
+      (0.92 + phrase * 0.08);
+    const ambientShare =
+      ambient + motion > 0 ? ambient / (ambient + motion) : 1;
     const expected = (ambient + motion) * dt;
     let n = Math.floor(expected);
     if (Math.random() < expected - n) n++;
@@ -145,15 +195,15 @@ export class Petals2DRenderer {
     if (n > slots) n = slots;
     if (n <= 0) return;
 
-    const fall = params.fallBaseSpeed * (0.3 + 0.7 * params.fallSpeed) * scale;
     const carry = params.carry;
-    // Short lifetime keeps petals near the prop's recent path so the effect
-    // reads as a trailing ribbon, not a cloud that fills the whole frame.
-    const lifeBase = 1.0 + params.intensity * 1.4;
+    // Airstream needs enough hang time to draw the prop's recent path. Size,
+    // opacity and motion drag keep that ribbon airy rather than cloud-like.
+    const lifeBase = 2.2 + params.intensity * 1.2;
 
     for (let i = 0; i < n; i++) {
-      const jitter = 0.7 + Math.random() * 0.6;
-      const size = baseSize * jitter;
+      const isAmbient = Math.random() < ambientShare;
+      const shape = pickPetalSprite(palette);
+      const size = resolvePetalSize(baseSize, params.intensity, shape);
       const ox = (Math.random() - 0.5) * 8 * scale;
       const oy = (Math.random() - 0.5) * 6 * scale;
       // Airstream: inherit a fraction of the tip's velocity so the petal
@@ -168,17 +218,24 @@ export class Petals2DRenderer {
         age: 0,
         maxAge: lifeBase * (0.8 + Math.random() * 0.4),
         size,
-        shape: pickPetalSprite(palette),
+        shape,
         tint: pickPetalTint(palette),
         rot: Math.random() * TAU,
-        freq: 1.4 + Math.random() * 2.6,
+        freq: 1.1 + Math.random() * 2.2,
         phase: Math.random() * TAU,
+        faceFreq: 1.5 + Math.random() * 2.1,
+        facePhase: Math.random() * TAU,
+        opacity: resolvePetalOpacity(shape, isAmbient),
         ember: rollEmberFlag(palette),
       });
     }
   }
 
-  private integratePetals(dt: number, params: Petals2DParams): void {
+  private integratePetals(
+    dt: number,
+    params: Petals2DParams,
+    scale: number
+  ): void {
     // Inherited horizontal motion bleeds off — higher streakLength keeps the
     // decay base closer to 1 so the ribbon lingers longer behind the prop.
     const decayBase = 0.02 + params.streakLength * 0.5;
@@ -193,12 +250,30 @@ export class Petals2DRenderer {
       // Horizontal inherited motion decays; vertical eases toward terminal fall.
       p.vx *= drag;
       p.vy += (fall - p.vy) * fallEase;
-      // Individual flutter so streaks read as living leaves, not rigid lines.
-      const flutter = Math.sin(this.clock * p.freq + p.phase) * 16;
-      p.x += (p.vx + flutter) * dt;
-      p.y += p.vy * dt;
-      // Tumble follows the motion the petal is actually doing.
-      p.rot += (p.vx * 0.0016 + flutter * 0.02) * dt * 60;
+      const airflow = samplePetalAirflow2D(
+        p.x,
+        p.y,
+        this.clock,
+        scale,
+        this.airflow
+      );
+      for (const source of this.wakeSources) {
+        addPetalWake2D(airflow, p.x, p.y, source, scale);
+      }
+      const privateFlutter =
+        Math.sin(this.clock * p.freq + p.phase) *
+        3.4 *
+        scale *
+        (0.55 + params.swayAmplitude * 0.45);
+      const horizontalMotion = p.vx + airflow.x + privateFlutter;
+      p.x += horizontalMotion * dt;
+      p.y += (p.vy + airflow.y) * dt;
+      // Rotation follows the current instead of revealing its old sine wave.
+      p.rot +=
+        (horizontalMotion * 0.012 +
+          airflow.turn * 0.82 +
+          privateFlutter * 0.008) *
+        dt;
       if (i !== writeIdx) this.petals[writeIdx] = p;
       writeIdx++;
     }
@@ -207,7 +282,7 @@ export class Petals2DRenderer {
 
   private drawPetals(
     ctx: CanvasRenderingContext2D,
-    palette: PetalPalette,
+    palette: PetalPalette
   ): void {
     const prevAlpha = ctx.globalAlpha;
     const prevComposite = ctx.globalCompositeOperation;
@@ -218,27 +293,28 @@ export class Petals2DRenderer {
         const lifeT = p.age / p.maxAge;
         const fadeIn = p.age < FADE_IN_DURATION ? p.age / FADE_IN_DURATION : 1;
         const fadeOut =
-          lifeT > 1 - FADE_OUT_FRACTION
-            ? (1 - lifeT) / FADE_OUT_FRACTION
-            : 1;
-        const alpha = Math.max(0, fadeIn * fadeOut);
+          lifeT > 1 - FADE_OUT_FRACTION ? (1 - lifeT) / FADE_OUT_FRACTION : 1;
+        const face =
+          0.32 +
+          Math.abs(Math.sin(this.clock * p.faceFreq + p.facePhase)) * 0.68;
+        const alpha = Math.max(0, fadeIn * fadeOut * p.opacity);
         if (alpha <= 0.02) continue;
 
         const cos = Math.cos(p.rot);
         const sin = Math.sin(p.rot);
-        ctx.setTransform(cos, sin, -sin, cos, p.x, p.y);
+        ctx.setTransform(cos * face, sin * face, -sin, cos, p.x, p.y);
         ctx.globalAlpha = alpha;
         drawPetalSilhouette(ctx, p.shape, p.size, p.tint);
         if (p.ember && palette.emberEdge && p.age < EMBER_MAX_AGE) {
           const emberT = p.age / EMBER_MAX_AGE;
-          const emberAlpha = (1 - emberT) * alpha * 0.9;
+          const emberAlpha = (1 - emberT) * alpha * 1.15;
           if (emberAlpha > 0.02) {
             drawPetalEmberRim(
               ctx,
               p.shape,
               p.size,
               palette.emberEdge.color,
-              emberAlpha,
+              emberAlpha
             );
           }
         }
@@ -259,6 +335,7 @@ export class Petals2DRenderer {
     this.petals = [];
     this.lastTipPos.clear();
     this.smoothedVelocity.clear();
+    this.wakeSources.length = 0;
     this.clock = 0;
   }
 }

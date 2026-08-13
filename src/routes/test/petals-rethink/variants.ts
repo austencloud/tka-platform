@@ -15,11 +15,12 @@ import {
   drawPetalSilhouette,
   pickPetalSprite,
   pickPetalTint,
+  resolvePetalSize,
   type PetalPalette,
   type PetalSpriteShape,
 } from "$lib/shared/effects/domain/petal-palettes";
 import { Petals2DRenderer } from "$lib/shared/effects/renderers/petals-2d-renderer";
-import type { Petals2DParams } from "$lib/shared/effects/translators/canvas2d-types";
+import { resolvePetals2D } from "$lib/shared/effects/translators/canvas2d-translator";
 import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 
 const TAU = Math.PI * 2;
@@ -48,7 +49,12 @@ export interface PetalVariant {
   readonly id: string;
   readonly title: string;
   readonly blurb: string;
-  render(ctx: CanvasRenderingContext2D, tips: TipMap, dt: number, opts: VariantOpts): void;
+  render(
+    ctx: CanvasRenderingContext2D,
+    tips: TipMap,
+    dt: number,
+    opts: VariantOpts
+  ): void;
   count(): number;
   dispose(): void;
 }
@@ -105,13 +111,18 @@ abstract class BaseVariant implements PetalVariant {
   protected abstract initVelocity(
     svx: number,
     svy: number,
-    opts: VariantOpts,
+    opts: VariantOpts
   ): { vx: number; vy: number };
 
   /** Per-frame motion integration (mutates p.x/p.y/p.vx/p.vy/p.rot). */
   protected abstract integrate(p: P, dt: number, opts: VariantOpts): void;
 
-  render(ctx: CanvasRenderingContext2D, tips: TipMap, dt: number, opts: VariantOpts): void {
+  render(
+    ctx: CanvasRenderingContext2D,
+    tips: TipMap,
+    dt: number,
+    opts: VariantOpts
+  ): void {
     this.clock += dt;
     const tipsArr: Array<{ x: number; y: number; sp: number }> = [];
 
@@ -173,7 +184,7 @@ abstract class BaseVariant implements PetalVariant {
     svx: number,
     svy: number,
     dt: number,
-    opts: VariantOpts,
+    opts: VariantOpts
   ): void {
     if (this.pool.length >= POOL_CAP) return;
     const scalar = Math.min(1, sp / REF_SPEED);
@@ -186,10 +197,13 @@ abstract class BaseVariant implements PetalVariant {
     if (n <= 0) return;
 
     for (let i = 0; i < n; i++) {
-      const size = opts.baseSize * (0.7 + Math.random() * 0.6);
+      const shape = pickPetalSprite(opts.palette);
+      const size = resolvePetalSize(opts.baseSize, 0.5, shape);
       const v = this.initVelocity(svx, svy, opts);
       const sx = this.ambientFromArea ? Math.random() * opts.width : tip.x;
-      const sy = this.ambientFromArea ? Math.random() * opts.height * 0.5 : tip.y;
+      const sy = this.ambientFromArea
+        ? Math.random() * opts.height * 0.5
+        : tip.y;
       this.pool.push({
         x: sx + (Math.random() - 0.5) * 8,
         y: sy + (Math.random() - 0.5) * 6,
@@ -198,7 +212,7 @@ abstract class BaseVariant implements PetalVariant {
         age: 0,
         maxAge: this.lifeBase * (0.8 + Math.random() * 0.5),
         size,
-        shape: pickPetalSprite(opts.palette),
+        shape,
         tint: pickPetalTint(opts.palette),
         rot: Math.random() * TAU,
         rotVel: (Math.random() - 0.5) * 0.04,
@@ -217,7 +231,8 @@ abstract class BaseVariant implements PetalVariant {
       for (const p of this.pool) {
         const lifeT = p.age / p.maxAge;
         const fIn = p.age < FADE_IN ? p.age / FADE_IN : 1;
-        const fOut = lifeT > 1 - FADE_OUT_FRAC ? (1 - lifeT) / FADE_OUT_FRAC : 1;
+        const fOut =
+          lifeT > 1 - FADE_OUT_FRAC ? (1 - lifeT) / FADE_OUT_FRAC : 1;
         const alpha = Math.max(0, fIn * fOut);
         if (alpha <= 0.02) continue;
         const cos = Math.cos(p.rot);
@@ -262,7 +277,7 @@ class AirstreamVariant extends BaseVariant {
   protected initVelocity(
     svx: number,
     svy: number,
-    opts: VariantOpts,
+    opts: VariantOpts
   ): { vx: number; vy: number } {
     // Inherit a fraction of the tip's instantaneous velocity, plus spread.
     const carry = opts.carry ?? 0.55;
@@ -386,40 +401,68 @@ class SettleVariant extends BaseVariant {
 
 class BaselineVariant implements PetalVariant {
   readonly id = "baseline";
-  readonly title = "Current (shipped)";
+  readonly title = "Production · Airstream";
   readonly blurb =
-    "The production renderer as it ships today: global synchronized sway, intensity-scaled size.";
+    "The production airstream model with smaller tiered silhouettes, individual flutter, and quieter ambient particles.";
 
   private r = new Petals2DRenderer();
 
-  render(ctx: CanvasRenderingContext2D, tips: TipMap, dt: number, opts: VariantOpts): void {
-    const params: Petals2DParams = {
-      // PetalsIntent
-      ambientEmission: 0.6,
-      motionEmission: 1,
-      intensity: 0.5,
-      palette: "blossom",
-      customColor: "#ffb0c8",
-      swayAmplitude: 1,
-      carry: opts.carry ?? 0.55,
-      streakLength: opts.streak ?? 0.4,
-      fallSpeed: 0.6,
-      trackingMode: "both_ends",
-      // Petals2DParams
-      resolvedPalette: opts.palette,
-      poolSize: POOL_CAP,
-      baseSize: opts.baseSize,
-      ambientSpawnRate: 5 * opts.density,
-      motionSpawnRate: 25 * opts.density,
-      motionReferenceSpeed: 3.0,
-      fallBaseSpeed: 140,
-      blendMode: "source-over",
-    };
+  render(
+    ctx: CanvasRenderingContext2D,
+    tips: TipMap,
+    dt: number,
+    opts: VariantOpts
+  ): void {
+    const params = resolvePetals2D(
+      {
+        ambientEmission: 0.6,
+        motionEmission: 1,
+        intensity: 0.5,
+        palette: "blossom",
+        customColor: "#ffb0c8",
+        swayAmplitude: 1,
+        carry: opts.carry ?? 0.55,
+        streakLength: opts.streak ?? 0.4,
+        fallSpeed: 0.6,
+        trackingMode: "both_ends",
+      },
+      {
+        resolvedPalette: opts.palette,
+        poolSize: POOL_CAP,
+        baseSize: opts.baseSize,
+        ambientSpawnRate: 2 * opts.density,
+        motionSpawnRate: 34 * opts.density,
+      }
+    );
     const emitters: EmitterTip[] = [
-      tips.blueA && { ...tips.blueA, propIndex: 0, tipIndex: 0, end: "A" as const, color: "#ffb0c8" },
-      tips.blueB && { ...tips.blueB, propIndex: 0, tipIndex: 1, end: "B" as const, color: "#ffb0c8" },
-      tips.redA && { ...tips.redA, propIndex: 1, tipIndex: 0, end: "A" as const, color: "#ffb0c8" },
-      tips.redB && { ...tips.redB, propIndex: 1, tipIndex: 1, end: "B" as const, color: "#ffb0c8" },
+      tips.blueA && {
+        ...tips.blueA,
+        propIndex: 0,
+        tipIndex: 0,
+        end: "A" as const,
+        color: "#ffb0c8",
+      },
+      tips.blueB && {
+        ...tips.blueB,
+        propIndex: 0,
+        tipIndex: 1,
+        end: "B" as const,
+        color: "#ffb0c8",
+      },
+      tips.redA && {
+        ...tips.redA,
+        propIndex: 1,
+        tipIndex: 0,
+        end: "A" as const,
+        color: "#ffb0c8",
+      },
+      tips.redB && {
+        ...tips.redB,
+        propIndex: 1,
+        tipIndex: 1,
+        end: "B" as const,
+        color: "#ffb0c8",
+      },
     ].filter(Boolean) as EmitterTip[];
     this.r.render(ctx, params, emitters, dt, 1);
   }

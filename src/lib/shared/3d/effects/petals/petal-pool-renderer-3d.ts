@@ -2,13 +2,30 @@ import { Euler, Object3D, PlaneGeometry, Quaternion } from "three";
 import {
   pickPetalSprite,
   pickPetalTint,
+  resolvePetalOpacity,
   rollEmberFlag,
 } from "$lib/shared/effects/domain/petal-palettes";
+import {
+  addPetalWake3D,
+  resolvePetalAirflowPhrase,
+  samplePetalAirflow3D,
+  type PetalAirflow3D,
+  type PetalWakeSource3D,
+} from "$lib/shared/effects/domain/petal-airflow";
+import {
+  NEUTRAL_PETAL_ENVIRONMENT_PROFILE,
+  resolveEmberWorldSpan,
+  type PetalEnvironmentProfile3D,
+  resolvePetalWorldSize,
+} from "./petal-world-art-direction";
 import {
   ParticleInstancePool3D,
   type ParticleInstanceWrite,
 } from "../instancing/particle-instance-pool-3d";
-import { setRgbFromHex, type MutableRgb } from "../instancing/particle-color";
+import {
+  setLinearRgbFromHex,
+  type MutableRgb,
+} from "../instancing/particle-color";
 import {
   isTrackedTip,
   type PetalTipSource3D,
@@ -19,7 +36,7 @@ import {
 } from "./petal-texture-atlas";
 
 const CAPACITY = 2048;
-const EMBER_MAX_AGE = 0.4;
+const EMBER_MAX_AGE = 1.35;
 const FADE_OUT_FRACTION = 0.2;
 const FADE_IN_DURATION = 0.12;
 
@@ -45,6 +62,11 @@ export class PetalPoolRenderer3D {
   private readonly phase = new Float32Array(CAPACITY);
   private readonly swayFrequency = new Float32Array(CAPACITY);
   private readonly swaySpeed = new Float32Array(CAPACITY);
+  private readonly fallVelocity = new Float32Array(CAPACITY);
+  private readonly dragBase = new Float32Array(CAPACITY);
+  private readonly maxOpacity = new Float32Array(CAPACITY);
+  private readonly tumble = new Uint8Array(CAPACITY);
+  private readonly baseRotationX = new Float32Array(CAPACITY);
   private readonly red = new Float32Array(CAPACITY);
   private readonly green = new Float32Array(CAPACITY);
   private readonly blue = new Float32Array(CAPACITY);
@@ -57,9 +79,11 @@ export class PetalPoolRenderer3D {
   private readonly uvWidth = new Float32Array(CAPACITY);
   private readonly uvHeight = new Float32Array(CAPACITY);
   private readonly accumulators = new Map<number, number>();
+  private readonly wakeSources: PetalWakeSource3D[] = [];
   private readonly euler = new Euler();
   private readonly quaternion = new Quaternion();
   private readonly color: MutableRgb = { red: 1, green: 1, blue: 1 };
+  private readonly airflow: PetalAirflow3D = { x: 0, y: 0, z: 0, turn: 0 };
   private readonly writeState: ParticleInstanceWrite = {
     x: 0,
     y: 0,
@@ -75,6 +99,7 @@ export class PetalPoolRenderer3D {
   private cursor = 0;
   private ambientAccumulator = 0;
   private clock = 0;
+  private environmentProfile = NEUTRAL_PETAL_ENVIRONMENT_PROFILE;
 
   constructor() {
     const atlas = getPetalTextureAtlas();
@@ -83,13 +108,39 @@ export class PetalPoolRenderer3D {
       geometry: new PlaneGeometry(1, 1),
       texture: atlas,
       renderOrder: 103,
+      nearFadeStart: 2.2,
+      nearFadeEnd: 3.8,
+      farFadeStart: 5.2,
+      farFadeEnd: 10.5,
+      farFadeOpacity: 0.56,
+      farSoftness: 0.62,
+      fog: true,
+      colorManaged: true,
+      surfaceLighting: { strength: 0.72, floor: 0.24 },
+      contrastAdaptation: {
+        backdropLuminance: NEUTRAL_PETAL_ENVIRONMENT_PROFILE.backdropLuminance,
+        minimumSurfaceLuminance:
+          NEUTRAL_PETAL_ENVIRONMENT_PROFILE.minimumSurfaceLuminance,
+        maximumSurfaceLuminance:
+          NEUTRAL_PETAL_ENVIRONMENT_PROFILE.maximumSurfaceLuminance,
+        strength: NEUTRAL_PETAL_ENVIRONMENT_PROFILE.contrastStrength,
+        edgeStrength: NEUTRAL_PETAL_ENVIRONMENT_PROFILE.edgeStrength,
+      },
     });
     this.emberPool = new ParticleInstancePool3D({
       capacity: CAPACITY,
       geometry: new PlaneGeometry(1, 1),
       texture: atlas,
       additive: true,
-      renderOrder: 102,
+      renderOrder: 104,
+      nearFadeStart: 2.2,
+      nearFadeEnd: 3.8,
+      farFadeStart: 5.2,
+      farFadeEnd: 10.5,
+      farFadeOpacity: 0.7,
+      farSoftness: 0.35,
+      fog: true,
+      colorManaged: true,
     });
   }
 
@@ -98,13 +149,43 @@ export class PetalPoolRenderer3D {
     this.emberPool.initialize(parent);
   }
 
+  setEnvironmentProfile(profile: PetalEnvironmentProfile3D): void {
+    this.environmentProfile = profile;
+    this.petalPool.setContrastAdaptation({
+      backdropLuminance: profile.backdropLuminance,
+      minimumSurfaceLuminance: profile.minimumSurfaceLuminance,
+      maximumSurfaceLuminance: profile.maximumSurfaceLuminance,
+      strength: profile.contrastStrength,
+      edgeStrength: profile.edgeStrength,
+    });
+  }
+
   update(sources: readonly PetalTipSource3D[], delta: number): void {
     const dt = Math.min(Math.max(delta, 0), 1 / 15);
     this.clock += dt;
+    let wakeSourceCount = 0;
     for (const source of sources) {
-      if (isTrackedTip(source.params.trackingMode, source.tipIndex))
+      if (isTrackedTip(source.params.trackingMode, source.tipIndex)) {
         this.emitMotion(source, dt);
+        const wakeSource = this.wakeSources[wakeSourceCount] ?? {
+          x: 0,
+          y: 0,
+          z: 0,
+          velocityX: 0,
+          velocityY: 0,
+          velocityZ: 0,
+        };
+        wakeSource.x = source.position.x;
+        wakeSource.y = source.position.y;
+        wakeSource.z = source.position.z;
+        wakeSource.velocityX = source.velocity.x;
+        wakeSource.velocityY = source.velocity.y;
+        wakeSource.velocityZ = source.velocity.z;
+        this.wakeSources[wakeSourceCount] = wakeSource;
+        wakeSourceCount++;
+      }
     }
+    this.wakeSources.length = wakeSourceCount;
     if (sources.length > 0) this.emitAmbient(sources, dt);
 
     this.petalPool.beginFrame();
@@ -123,12 +204,45 @@ export class PetalPoolRenderer3D {
         Math.cos(this.phase[index]! * 1.3 + oscillation) *
         this.swaySpeed[index]! *
         0.5;
-      this.x[index]! += (this.vx[index]! + swayX) * dt;
-      this.y[index]! += this.vy[index]! * dt;
-      this.z[index]! += (this.vz[index]! + swayZ) * dt;
-      this.rotationX[index]! += this.rotationVelocityX[index]! * dt;
-      this.rotationY[index]! += this.rotationVelocityY[index]! * dt;
-      this.rotationZ[index]! += this.rotationVelocityZ[index]! * dt;
+      const airflow = samplePetalAirflow3D(
+        this.x[index]!,
+        this.y[index]!,
+        this.z[index]!,
+        this.clock,
+        this.airflow
+      );
+      for (const source of this.wakeSources) {
+        addPetalWake3D(
+          airflow,
+          this.x[index]!,
+          this.y[index]!,
+          this.z[index]!,
+          source
+        );
+      }
+      const drag = Math.pow(this.dragBase[index]!, dt);
+      const fallEase = 1 - Math.pow(0.2, dt);
+      this.vx[index]! *= drag;
+      this.vz[index]! *= drag;
+      this.vy[index]! +=
+        (this.fallVelocity[index]! - this.vy[index]!) * fallEase;
+      this.x[index]! += (this.vx[index]! + airflow.x + swayX * 0.24) * dt;
+      this.y[index]! += (this.vy[index]! + airflow.y) * dt;
+      this.z[index]! += (this.vz[index]! + airflow.z + swayZ * 0.24) * dt;
+      if (this.tumble[index] === 1) {
+        this.rotationX[index]! += this.rotationVelocityX[index]! * dt;
+        this.rotationY[index]! +=
+          (this.rotationVelocityY[index]! + airflow.turn * 0.2) * dt;
+        this.rotationZ[index]! += this.rotationVelocityZ[index]! * dt;
+      } else {
+        // Fluttering petals repeatedly present and hide their face; the small
+        // yaw/roll drift prevents the whole stream from flipping in sync.
+        this.rotationX[index] =
+          this.baseRotationX[index]! + Math.sin(oscillation) * 1.05;
+        this.rotationY[index]! +=
+          (this.rotationVelocityY[index]! + airflow.turn * 0.16) * dt;
+        this.rotationZ[index]! += this.rotationVelocityZ[index]! * dt;
+      }
       this.euler.set(
         this.rotationX[index]!,
         this.rotationY[index]!,
@@ -157,7 +271,16 @@ export class PetalPoolRenderer3D {
       write.red = this.red[index]!;
       write.green = this.green[index]!;
       write.blue = this.blue[index]!;
-      write.alpha = Math.max(0, fadeIn * fadeOut);
+      write.alpha = Math.min(
+        1,
+        Math.max(
+          0,
+          fadeIn *
+            fadeOut *
+            this.maxOpacity[index]! *
+            this.environmentProfile.opacityScale
+        )
+      );
       write.uvX = this.uvX[index]!;
       write.uvY = this.uvY[index]!;
       write.uvWidth = this.uvWidth[index]!;
@@ -165,12 +288,17 @@ export class PetalPoolRenderer3D {
       this.petalPool.write(write);
 
       if (this.ember[index] === 1 && this.age[index]! < EMBER_MAX_AGE) {
-        write.scaleX = this.size[index]! * 2.2;
-        write.scaleY = this.size[index]! * 2.2;
+        write.scaleX = resolveEmberWorldSpan(this.size[index]!);
+        write.scaleY = resolveEmberWorldSpan(this.size[index]!);
         write.red = this.emberRed[index]!;
         write.green = this.emberGreen[index]!;
         write.blue = this.emberBlue[index]!;
-        write.alpha = (1 - this.age[index]! / EMBER_MAX_AGE) * 0.54;
+        write.alpha = Math.min(
+          1.05,
+          (1 - this.age[index]! / EMBER_MAX_AGE) *
+            (0.58 + this.maxOpacity[index]! * 0.42) *
+            this.environmentProfile.opacityScale
+        );
         this.emberPool.write(write);
       }
     }
@@ -181,6 +309,7 @@ export class PetalPoolRenderer3D {
   clear(): void {
     this.active.fill(0);
     this.accumulators.clear();
+    this.wakeSources.length = 0;
     this.ambientAccumulator = 0;
     this.petalPool.clear();
     this.emberPool.clear();
@@ -197,7 +326,12 @@ export class PetalPoolRenderer3D {
       params.motionReferenceSpeed > 0
         ? Math.min(1, source.speed / params.motionReferenceSpeed)
         : 0;
-    const rate = params.motionEmission * speedScalar * params.motionTipRate;
+    const rate =
+      params.motionEmission *
+      speedScalar *
+      params.motionTipRate *
+      this.environmentProfile.motionEmissionScale *
+      (0.92 + resolvePetalAirflowPhrase(this.clock) * 0.08);
     let accumulator = (this.accumulators.get(source.sourceId) ?? 0) + dt * rate;
     while (accumulator >= 1) {
       if (
@@ -218,7 +352,11 @@ export class PetalPoolRenderer3D {
   private emitAmbient(sources: readonly PetalTipSource3D[], dt: number): void {
     const params = sources[0]!.params;
     this.ambientAccumulator +=
-      dt * params.ambientEmission * params.ambientAboveRate;
+      dt *
+      params.ambientEmission *
+      params.ambientAboveRate *
+      this.environmentProfile.ambientEmissionScale *
+      resolvePetalAirflowPhrase(this.clock);
     let centerX = 0;
     let centerY = 0;
     let centerZ = 0;
@@ -232,9 +370,16 @@ export class PetalPoolRenderer3D {
     centerZ /= sources.length;
     while (this.ambientAccumulator >= 1) {
       const source = sources[0]!;
-      const x = centerX + (Math.random() - 0.5) * 4;
-      const y = centerY + 3 + Math.random() * 0.5;
-      const z = centerZ + (Math.random() - 0.5) * 4;
+      const x = centerX + (Math.random() - 0.5) * 3.2;
+      const y = centerY + 2.4 + Math.random() * 0.8;
+      const depthBand = Math.random();
+      const z =
+        centerZ +
+        (depthBand < 0.2
+          ? -1.35 + Math.random() * 0.65
+          : depthBand < 0.74
+            ? -0.7 + Math.random() * 1.4
+            : 0.82 + Math.random() * 1.48);
       if (!this.spawn(source, x, y, z, true)) break;
       this.ambientAccumulator -= 1;
     }
@@ -247,39 +392,65 @@ export class PetalPoolRenderer3D {
     z: number,
     ambient: boolean
   ): boolean {
-    const slot = this.takeSlot();
-    if (slot < 0) return false;
     const params = source.params;
+    const slot = this.takeSlot(Math.min(CAPACITY, params.poolSize));
+    if (slot < 0) return false;
     const palette = params.resolvedPalette;
     const shape = pickPetalSprite(palette);
     const frame = getPetalAtlasFrame(shape);
-    const baseSize = params.baseSize * (0.7 + 0.9 * params.intensity);
     const fall = params.fallBaseSpeed * (0.3 + 0.7 * params.fallSpeed);
+    const fallTarget = -fall * (0.82 + Math.random() * 0.32);
+    const spread = ambient ? 0.14 : 0.22;
+    const tumble = Math.random() < 0.28;
     this.active[slot] = 1;
     this.x[slot] = ambient ? x : x + (Math.random() - 0.5) * 0.08;
     this.y[slot] = ambient ? y : y + (Math.random() - 0.5) * 0.06;
     this.z[slot] = ambient ? z : z + (Math.random() - 0.5) * 0.08;
-    this.vx[slot] = (Math.random() - 0.5) * (ambient ? 0.25 : 0.3);
-    this.vy[slot] = -fall * (0.8 + Math.random() * 0.4);
-    this.vz[slot] = (Math.random() - 0.5) * (ambient ? 0.25 : 0.3);
+    this.vx[slot] = ambient
+      ? (Math.random() - 0.5) * spread
+      : source.velocity.x * params.carry + (Math.random() - 0.5) * spread;
+    this.vy[slot] = ambient
+      ? fallTarget
+      : source.velocity.y * params.carry - fall * 0.12;
+    this.vz[slot] = ambient
+      ? (Math.random() - 0.5) * spread
+      : source.velocity.z * params.carry + (Math.random() - 0.5) * spread;
     this.age[slot] = 0;
-    this.maxAge[slot] = params.lifetime * (0.8 + Math.random() * 0.4);
-    this.size[slot] = baseSize * (0.7 + Math.random() * 0.6);
-    this.rotationVelocityX[slot] = (Math.random() - 0.5) * 2;
-    this.rotationVelocityY[slot] = (Math.random() - 0.5) * 2.5;
-    this.rotationVelocityZ[slot] = (Math.random() - 0.5) * 2;
+    this.maxAge[slot] =
+      params.lifetime *
+      (ambient ? 0.75 + Math.random() * 0.2 : 0.52 + Math.random() * 0.24);
+    this.size[slot] = resolvePetalWorldSize(
+      params.baseSize,
+      params.intensity,
+      shape,
+      ambient
+    );
+    this.rotationVelocityX[slot] =
+      (Math.random() - 0.5) * (tumble ? 4.2 : 0.45);
+    this.rotationVelocityY[slot] = (Math.random() - 0.5) * (tumble ? 5 : 0.7);
+    this.rotationVelocityZ[slot] =
+      (Math.random() - 0.5) * (tumble ? 3.8 : 0.55);
     this.rotationX[slot] = Math.random() * Math.PI * 2;
+    this.baseRotationX[slot] = this.rotationX[slot]!;
     this.rotationY[slot] = Math.random() * Math.PI * 2;
     this.rotationZ[slot] = Math.random() * Math.PI * 2;
     this.phase[slot] = Math.random() * Math.PI * 2;
-    this.swayFrequency[slot] = params.swayFrequency;
-    this.swaySpeed[slot] = params.swayBaseSpeed * params.swayAmplitude;
-    setRgbFromHex(this.color, pickPetalTint(palette));
+    this.swayFrequency[slot] =
+      params.swayFrequency * (0.65 + Math.random() * 0.7);
+    this.swaySpeed[slot] =
+      params.swayBaseSpeed *
+      params.swayAmplitude *
+      (0.55 + Math.random() * 0.65);
+    this.fallVelocity[slot] = fallTarget;
+    this.dragBase[slot] = ambient ? 0.72 : 0.03 + params.streakLength * 0.5;
+    this.maxOpacity[slot] = resolvePetalOpacity(shape, ambient);
+    this.tumble[slot] = tumble ? 1 : 0;
+    setLinearRgbFromHex(this.color, pickPetalTint(palette));
     this.red[slot] = this.color.red;
     this.green[slot] = this.color.green;
     this.blue[slot] = this.color.blue;
     this.ember[slot] = rollEmberFlag(palette) ? 1 : 0;
-    setRgbFromHex(this.color, palette.emberEdge?.color ?? "#ff6020");
+    setLinearRgbFromHex(this.color, palette.emberEdge?.color ?? "#ff6020");
     this.emberRed[slot] = this.color.red;
     this.emberGreen[slot] = this.color.green;
     this.emberBlue[slot] = this.color.blue;
@@ -290,11 +461,11 @@ export class PetalPoolRenderer3D {
     return true;
   }
 
-  private takeSlot(): number {
-    for (let offset = 0; offset < CAPACITY; offset++) {
-      const index = (this.cursor + offset) % CAPACITY;
+  private takeSlot(limit: number): number {
+    for (let offset = 0; offset < limit; offset++) {
+      const index = (this.cursor + offset) % limit;
       if (this.active[index] === 0) {
-        this.cursor = (index + 1) % CAPACITY;
+        this.cursor = (index + 1) % limit;
         return index;
       }
     }
