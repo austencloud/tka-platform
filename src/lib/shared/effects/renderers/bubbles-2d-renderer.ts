@@ -53,17 +53,27 @@ interface PopBurst {
   maxAge: number;
   /** Size (px). */
   r: number;
+  /** Film sliver orientation and angular velocity. */
+  angle: number;
+  spin: number;
   /** Color cached at spawn - avoids per-frame palette lookup when iridescent. */
   color: string;
 }
 
+interface BubbleGradientSet {
+  body: CanvasGradient;
+  specular: CanvasGradient;
+  bounce: CanvasGradient;
+}
+
 const MAX_BUBBLES = 1024;
-const POP_DURATION = 0.12; // seconds - rim expands 1.5× + fades
-const POP_MAX_SCALE = 1.5;
+const POP_DURATION = 0.18;
+const POP_RELAX_SCALE = 1.18;
 const BURST_COUNT_MIN = 4;
-const BURST_COUNT_MAX = 8;
+const BURST_COUNT_MAX = 7;
 const BURST_LIFE_MIN = 0.18;
 const BURST_LIFE_VAR = 0.22;
+const GRADIENT_CACHE_ENTRIES_PER_CONTEXT = 8;
 const TAU = Math.PI * 2;
 
 /**
@@ -95,17 +105,23 @@ export class Bubbles2DRenderer {
   private bursts: PopBurst[] = [];
   private lastTipPos = new Map<string, { x: number; y: number }>();
   private smoothedVelocity = new Map<string, { vx: number; vy: number }>();
+  private gradientCache = new WeakMap<
+    CanvasRenderingContext2D,
+    Map<string, BubbleGradientSet>
+  >();
+  private burstCursor = 0;
 
   render(
     ctx: CanvasRenderingContext2D,
     params: Bubbles2DParams,
     emitters: EmitterTip[],
     dt: number,
-    scale: number = 1,
+    scale: number = 1
   ): void {
     const palette = params.resolvedPalette;
     const baseR = params.baseRadius * scale * (0.7 + 0.9 * params.intensity);
     const poolCap = Math.min(MAX_BUBBLES, params.poolSize ?? MAX_BUBBLES);
+    if (this.bursts.length > poolCap) this.bursts.length = poolCap;
 
     // 1. Per-tip velocity smoothing + spawn.
     const seen = new Set<string>();
@@ -124,18 +140,30 @@ export class Bubbles2DRenderer {
       const alpha = 1 - Math.pow(0.6, dt * 60);
       const svx = prev ? prev.vx + (vx - prev.vx) * alpha : vx;
       const svy = prev ? prev.vy + (vy - prev.vy) * alpha : vy;
-      if (prev) { prev.vx = svx; prev.vy = svy; } else { this.smoothedVelocity.set(id, { vx: svx, vy: svy }); }
+      if (prev) {
+        prev.vx = svx;
+        prev.vy = svy;
+      } else {
+        this.smoothedVelocity.set(id, { vx: svx, vy: svy });
+      }
       const speedPx = Math.hypot(svx, svy);
       this.spawnBubbles(params, e, speedPx, dt, scale, baseR, poolCap);
-      if (last) { last.x = e.x; last.y = e.y; } else { this.lastTipPos.set(id, { x: e.x, y: e.y }); }
+      if (last) {
+        last.x = e.x;
+        last.y = e.y;
+      } else {
+        this.lastTipPos.set(id, { x: e.x, y: e.y });
+      }
     }
 
     // Prune per-tip state for emitters that vanished this frame.
-    for (const id of this.lastTipPos.keys()) if (!seen.has(id)) this.lastTipPos.delete(id);
-    for (const id of this.smoothedVelocity.keys()) if (!seen.has(id)) this.smoothedVelocity.delete(id);
+    for (const id of this.lastTipPos.keys())
+      if (!seen.has(id)) this.lastTipPos.delete(id);
+    for (const id of this.smoothedVelocity.keys())
+      if (!seen.has(id)) this.smoothedVelocity.delete(id);
 
     // 2. Integrate + age + cull.
-    this.integrateBubbles(dt, scale, params);
+    this.integrateBubbles(dt, scale, params, poolCap);
     this.integrateBursts(dt);
 
     if (this.bubbles.length === 0 && this.bursts.length === 0) return;
@@ -154,15 +182,14 @@ export class Bubbles2DRenderer {
     dt: number,
     scale: number,
     baseR: number,
-    poolCap: number,
+    poolCap: number
   ): void {
     if (this.bubbles.length >= poolCap) return;
     const PX_PER_WORLD = 60;
     const refSpeed = params.motionReferenceSpeed * PX_PER_WORLD * scale;
     const speedScalar = refSpeed > 0 ? Math.min(1, speedPx / refSpeed) : 0;
     const ambient = params.ambientEmission * params.ambientSpawnRate;
-    const motion =
-      params.motionEmission * speedScalar * params.motionSpawnRate;
+    const motion = params.motionEmission * speedScalar * params.motionSpawnRate;
     const expected = (ambient + motion) * dt;
     let n = Math.floor(expected);
     if (Math.random() < expected - n) n++;
@@ -221,6 +248,7 @@ export class Bubbles2DRenderer {
     dt: number,
     scale: number,
     params: Bubbles2DParams,
+    poolCap: number
   ): void {
     let writeIdx = 0;
     for (let i = 0; i < this.bubbles.length; i++) {
@@ -244,7 +272,7 @@ export class Bubbles2DRenderer {
         b.popping = 1;
         b.popAge = 0;
         b.popR = this.currentRadius(b);
-        this.spawnBurst(b, params, scale);
+        this.spawnBurst(b, params, scale, poolCap);
       }
       if (i !== writeIdx) this.bubbles[writeIdx] = b;
       writeIdx++;
@@ -258,10 +286,12 @@ export class Bubbles2DRenderer {
       const p = this.bursts[i]!;
       p.age += dt;
       if (p.age >= p.maxAge) continue;
-      p.vx *= 0.94;
-      p.vy *= 0.94;
+      const damping = Math.pow(0.94, dt * 60);
+      p.vx *= damping;
+      p.vy *= damping;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
+      p.angle += p.spin * dt;
       if (i !== writeIdx) this.bursts[writeIdx] = p;
       writeIdx++;
     }
@@ -272,7 +302,9 @@ export class Bubbles2DRenderer {
     b: Bubble,
     params: Bubbles2DParams,
     scale: number,
+    capacity: number
   ): void {
+    if (capacity <= 0) return;
     const count =
       BURST_COUNT_MIN +
       Math.floor(Math.random() * (BURST_COUNT_MAX - BURST_COUNT_MIN + 1));
@@ -289,16 +321,22 @@ export class Bubbles2DRenderer {
     for (let i = 0; i < count; i++) {
       const theta = (i / count) * TAU + Math.random() * 0.4;
       const mag = speed * (0.6 + Math.random() * 0.8);
-      this.bursts.push({
-        x,
-        y: b.y,
-        vx: Math.cos(theta) * mag * scale,
-        vy: Math.sin(theta) * mag * scale,
-        age: 0,
-        maxAge: BURST_LIFE_MIN + Math.random() * BURST_LIFE_VAR,
-        r: (0.6 + Math.random() * 0.7) * (0.5 + sizeK) * scale,
-        color,
-      });
+      const burst =
+        this.bursts.length < capacity
+          ? ({} as PopBurst)
+          : this.bursts[this.burstCursor % capacity]!;
+      burst.x = x;
+      burst.y = b.y;
+      burst.vx = Math.cos(theta) * mag * scale;
+      burst.vy = Math.sin(theta) * mag * scale;
+      burst.age = 0;
+      burst.maxAge = BURST_LIFE_MIN + Math.random() * BURST_LIFE_VAR;
+      burst.r = (0.6 + Math.random() * 0.7) * (0.5 + sizeK) * scale;
+      burst.angle = theta;
+      burst.spin = (Math.random() - 0.5) * 9;
+      burst.color = color;
+      if (this.bursts.length < capacity) this.bursts.push(burst);
+      this.burstCursor = (this.burstCursor + 1) % capacity;
     }
   }
 
@@ -321,12 +359,9 @@ export class Bubbles2DRenderer {
   private drawBubbles(
     ctx: CanvasRenderingContext2D,
     params: Bubbles2DParams,
-    palette: BubblePalette,
+    palette: BubblePalette
   ): void {
-    const prevAlpha = ctx.globalAlpha;
-    const prevCap = ctx.lineCap;
-    const prevJoin = ctx.lineJoin;
-    const prevComposite = ctx.globalCompositeOperation;
+    ctx.save();
     try {
       ctx.globalCompositeOperation = "source-over";
       ctx.lineCap = "round";
@@ -341,31 +376,20 @@ export class Bubbles2DRenderer {
       // band just inside the edge. That Fresnel falloff is what reads as a
       // curved film instead of a flat tinted disc, and it's the single
       // biggest reason the old flat fill looked like a sticker.
-      const bodyGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 1.0);
-      bodyGrad.addColorStop(0, withAlphaScale(palette.fill, 0));
-      bodyGrad.addColorStop(0.6, withAlphaScale(palette.fill, 0.1));
-      bodyGrad.addColorStop(0.9, withAlphaScale(palette.fill, 0.7));
-      bodyGrad.addColorStop(1, withAlphaScale(palette.fill, 0.18));
-
-      // Primary specular - the tight window reflection, upper left.
-      const specGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 1.0);
-      specGrad.addColorStop(0, palette.highlight);
-      specGrad.addColorStop(0.45, withAlphaScale(palette.highlight, 0.55));
-      specGrad.addColorStop(1, withAlphaScale(palette.highlight, 0));
-
-      // Secondary bounce - light that passed through and caught the far
-      // wall. Soft, dim, opposite the specular.
-      const bounceGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 1.0);
-      bounceGrad.addColorStop(0, withAlphaScale(palette.highlight, 0.4));
-      bounceGrad.addColorStop(1, withAlphaScale(palette.highlight, 0));
+      const {
+        body: bodyGrad,
+        specular: specGrad,
+        bounce: bounceGrad,
+      } = this.getGradients(ctx, palette);
 
       for (const b of this.bubbles) {
         let r: number;
         let alpha: number;
         if (b.popping === 1) {
           const t = b.popAge / POP_DURATION;
-          r = b.popR * (1 + (POP_MAX_SCALE - 1) * t);
-          alpha = 1 - t;
+          const relaxed = 1 - Math.pow(1 - t, 2);
+          r = b.popR * (1 + (POP_RELAX_SCALE - 1) * relaxed);
+          alpha = Math.pow(1 - t, 1.6);
         } else {
           r = this.currentRadius(b);
           const lifeT = Math.min(1, b.age / b.maxAge);
@@ -381,29 +405,46 @@ export class Bubbles2DRenderer {
         const lifeT = Math.min(1, b.age / b.maxAge);
         const rim = iridescent ? oilIridescentRim(lifeT) : palette.rim;
 
+        if (b.popping === 1) {
+          const t = b.popAge / POP_DURATION;
+          const rimWidth = Math.min(1.9, Math.max(0.65, r * 0.055)) * 1.45;
+          ctx.globalAlpha = alpha;
+          ctx.lineWidth = rimWidth;
+          ctx.strokeStyle = rim;
+          ctx.beginPath();
+          ctx.ellipse(
+            x,
+            y,
+            r * (1 + t * 0.12),
+            r * Math.max(0.16, 1 - t * 0.84),
+            0,
+            0,
+            TAU
+          );
+          ctx.stroke();
+          continue;
+        }
+
         // Interior film.
-        ctx.setTransform(r, 0, 0, r, x, y);
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(r, r);
         ctx.globalAlpha = alpha;
         ctx.fillStyle = bodyGrad;
         ctx.beginPath();
         ctx.arc(0, 0, 1.0, 0, TAU);
         ctx.fill();
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.restore();
 
         // Rim. Held to roughly a hairline regardless of radius - a rim
-        // that scales with r turns every large bubble into a cartoon
-        // outline. Thicker only while popping, where it's the whole point.
-        const rimWidth =
-          Math.min(1.9, Math.max(0.65, r * 0.055)) *
-          (b.popping === 1 ? 1.7 : 1);
+        // that scales with r turns every large bubble into a cartoon outline.
+        const rimWidth = Math.min(1.9, Math.max(0.65, r * 0.055));
         ctx.globalAlpha = alpha;
         ctx.lineWidth = rimWidth;
         ctx.strokeStyle = rim;
         ctx.beginPath();
         ctx.arc(x, y, r, 0, TAU);
         ctx.stroke();
-
-        if (b.popping === 1) continue;
 
         // Thin-film interference: a hue-shifted sheen on the shadowed arc,
         // opposite the specular. Every palette gets a whisper of it, the
@@ -420,45 +461,38 @@ export class Bubbles2DRenderer {
 
         // Primary specular, upper left.
         const specR = r * 0.2;
-        ctx.setTransform(specR, 0, 0, specR, x - r * 0.4, y - r * 0.44);
+        ctx.save();
+        ctx.translate(x - r * 0.4, y - r * 0.44);
+        ctx.scale(specR, specR);
         ctx.globalAlpha = alpha * 0.9;
         ctx.fillStyle = specGrad;
         ctx.beginPath();
         ctx.arc(0, 0, 1.0, 0, TAU);
         ctx.fill();
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.restore();
 
         // Secondary bounce, lower right.
         if (r > 3) {
           const bounceR = r * 0.3;
-          ctx.setTransform(
-            bounceR,
-            0,
-            0,
-            bounceR,
-            x + r * 0.36,
-            y + r * 0.42,
-          );
+          ctx.save();
+          ctx.translate(x + r * 0.36, y + r * 0.42);
+          ctx.scale(bounceR, bounceR);
           ctx.globalAlpha = alpha * 0.32;
           ctx.fillStyle = bounceGrad;
           ctx.beginPath();
           ctx.arc(0, 0, 1.0, 0, TAU);
           ctx.fill();
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.restore();
         }
       }
     } finally {
-      ctx.globalAlpha = prevAlpha;
-      ctx.lineCap = prevCap;
-      ctx.lineJoin = prevJoin;
-      ctx.globalCompositeOperation = prevComposite;
+      ctx.restore();
     }
   }
 
   private drawBursts(ctx: CanvasRenderingContext2D): void {
     if (this.bursts.length === 0) return;
-    const prevComposite = ctx.globalCompositeOperation;
-    const prevAlpha = ctx.globalAlpha;
+    ctx.save();
     try {
       ctx.globalCompositeOperation = "lighter";
       for (const p of this.bursts) {
@@ -468,13 +502,47 @@ export class Bubbles2DRenderer {
         ctx.globalAlpha = alpha;
         ctx.fillStyle = p.color;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, TAU);
+        ctx.ellipse(p.x, p.y, p.r * 1.65, p.r * 0.34, p.angle, 0, TAU);
         ctx.fill();
       }
     } finally {
-      ctx.globalCompositeOperation = prevComposite;
-      ctx.globalAlpha = prevAlpha;
+      ctx.restore();
     }
+  }
+
+  private getGradients(
+    ctx: CanvasRenderingContext2D,
+    palette: BubblePalette
+  ): BubbleGradientSet {
+    let contextCache = this.gradientCache.get(ctx);
+    if (!contextCache) {
+      contextCache = new Map();
+      this.gradientCache.set(ctx, contextCache);
+    }
+    const transform = ctx.getTransform();
+    const key = `${palette.fill}|${palette.highlight}|${transform.a},${transform.b},${transform.c},${transform.d},${transform.e},${transform.f}`;
+    const cached = contextCache.get(key);
+    if (cached) return cached;
+
+    const body = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+    body.addColorStop(0, withAlphaScale(palette.fill, 0));
+    body.addColorStop(0.6, withAlphaScale(palette.fill, 0.1));
+    body.addColorStop(0.9, withAlphaScale(palette.fill, 0.7));
+    body.addColorStop(1, withAlphaScale(palette.fill, 0.18));
+    const specular = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+    specular.addColorStop(0, palette.highlight);
+    specular.addColorStop(0.45, withAlphaScale(palette.highlight, 0.55));
+    specular.addColorStop(1, withAlphaScale(palette.highlight, 0));
+    const bounce = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+    bounce.addColorStop(0, withAlphaScale(palette.highlight, 0.4));
+    bounce.addColorStop(1, withAlphaScale(palette.highlight, 0));
+    const gradients = { body, specular, bounce };
+    if (contextCache.size >= GRADIENT_CACHE_ENTRIES_PER_CONTEXT) {
+      const oldestKey = contextCache.keys().next().value;
+      if (oldestKey !== undefined) contextCache.delete(oldestKey);
+    }
+    contextCache.set(key, gradients);
+    return gradients;
   }
 
   private isEndEnabled(end: "A" | "B", params: Bubbles2DParams): boolean {
@@ -487,6 +555,8 @@ export class Bubbles2DRenderer {
     this.bursts = [];
     this.lastTipPos.clear();
     this.smoothedVelocity.clear();
+    this.gradientCache = new WeakMap();
+    this.burstCursor = 0;
   }
 }
 
@@ -499,7 +569,7 @@ export class Bubbles2DRenderer {
 function withAlphaScale(color: string, factor: number): string {
   const k = Math.max(0, Math.min(1, factor));
   const rgba = color.match(
-    /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)/i,
+    /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)/i
   );
   if (rgba) {
     const a = rgba[4] === undefined ? 1 : parseFloat(rgba[4]);
