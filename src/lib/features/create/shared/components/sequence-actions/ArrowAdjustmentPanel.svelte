@@ -31,6 +31,7 @@
   import { rotationOverrideManager } from "$lib/shared/pictograph/arrow/positioning/placement/services/rotation-override-manager";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { isEditableKeyboardTarget } from "$lib/shared/keyboard/domain/shortcut-target-resolution";
 
   const logger = createComponentLogger("ArrowAdjustmentPanel");
 
@@ -175,6 +176,7 @@
   function handleKeydown(event: KeyboardEvent) {
     // Yield to a foreground editor (Inspect modal) when it owns the keyboard.
     if (!keyboardActive) return;
+    if (isEditableKeyboardTarget(event.target)) return;
     const key = event.key.toLowerCase();
 
     // Calculate increment based on modifiers

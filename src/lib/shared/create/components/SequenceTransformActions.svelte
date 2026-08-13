@@ -1,11 +1,11 @@
 <!--
-  TransformsGridMode.svelte
+  SequenceTransformActions.svelte
 
-  Grid of transform action buttons: Mirror, Swap, Rotate, Reverse, Preview, Edit.
+  Canonical grid of sequence transform, pattern, and edit actions.
   Supports help mode where clicking buttons shows educational content instead of applying transforms.
 -->
 <script lang="ts">
-  import type { ActionHelpId } from "../../domain/transforms/transform-help-content";
+  import type { SequenceActionId } from "$lib/shared/create/domain/sequence-action-types";
   import SwapIcon from "$lib/shared/icons/SwapIcon.svelte";
 
   interface Props {
@@ -24,25 +24,36 @@
     compactMode?: boolean;
     /** True when help mode is active - buttons show help instead of applying transforms/patterns */
     helpMode?: boolean;
+    /** The Create workspace pivots by 45°. Fixed-grid consumers such as Fuse
+        may use the same action surface with 90° as their smallest legal turn. */
+    rotationDegrees?: 45 | 90;
+    desktopColumns?: 2 | 3;
+    /** Other sequence surfaces provide only the callbacks that are valid in
+        their context; absent callbacks remove those tiles. */
+    secondarySectionLabel?: string;
+    /** Compact surfaces can place First Step beside the geometric transforms
+        instead of creating a sparse secondary row. */
+    shiftStartPlacement?: "secondary" | "transform";
+    onReset?: () => void;
     /** Guest-gated Patterns section: tiles stay tappable but show a lock and
         route to sign-up (the parent supplies gated handlers). */
     patternsLocked?: boolean;
     /** Callback when an action is selected in help mode */
-    onHelpSelect?: (actionId: ActionHelpId) => void;
-    onTurns: () => void;
+    onHelpSelect?: (actionId: SequenceActionId) => void;
+    onTurns?: () => void;
     onMirror: () => void;
     onFlip: () => void;
     onInvert: () => void;
     onRotateCW: () => void;
     onRotateCCW: () => void;
-    onSwap: () => void;
-    onRewind: () => void;
-    onTurnPattern: () => void;
-    onRotationDirection: () => void;
-    onDuration: () => void;
+    onSwap?: () => void;
+    onRewind?: () => void;
+    onTurnPattern?: () => void;
+    onRotationDirection?: () => void;
+    onDuration?: () => void;
     onExtend?: () => void;
     onShiftStart?: () => void;
-    onEditInConstructor: () => void;
+    onEditInConstructor?: () => void;
   }
 
   let {
@@ -57,6 +68,11 @@
     isDesktopPanel = false,
     compactMode = false,
     helpMode = false,
+    rotationDegrees = 45,
+    desktopColumns = 2,
+    secondarySectionLabel = "Patterns",
+    shiftStartPlacement = "secondary",
+    onReset,
     patternsLocked = false,
     onHelpSelect,
     onTurns,
@@ -76,7 +92,10 @@
   }: Props = $props();
 
   // In help mode, clicking any action button shows help instead of applying
-  function handleActionClick(actionId: ActionHelpId, normalAction: () => void) {
+  function handleActionClick(
+    actionId: SequenceActionId,
+    normalAction: () => void
+  ) {
     if (helpMode && onHelpSelect) {
       onHelpSelect(actionId);
     } else {
@@ -85,6 +104,20 @@
   }
 
   const disabled = $derived(isTransforming || isExtending || !hasSequence);
+  const hasPatternTools = $derived(
+    !!(onTurnPattern || onRotationDirection || onDuration || onExtend)
+  );
+  const hasSecondaryActions = $derived(
+    !!(
+      hasPatternTools ||
+      (onShiftStart && shiftStartPlacement === "secondary") ||
+      onRewind ||
+      onReset
+    )
+  );
+  const hasEditActions = $derived(
+    !!(onTurns || (showEditInConstructor && onEditInConstructor))
+  );
 
   // Button height + icon + label all scale together off the panel's height via
   // container-query units (see Approach A in the CSS). No row-stretching flex:
@@ -92,10 +125,45 @@
   // that left giant buttons hugging tiny centered content on tall panels.
 </script>
 
+{#snippet lockBadge()}
+  {#if patternsLocked && !helpMode}
+    <div class="lock-badge" aria-hidden="true">
+      <i class="fas fa-lock" aria-hidden="true"></i>
+    </div>
+  {/if}
+{/snippet}
+
+{#snippet shiftStartButton()}
+  <button
+    class="grid-btn shift-start"
+    class:unavailable={!canShiftStart && !helpMode}
+    class:help-active={helpMode}
+    class:locked={patternsLocked && !helpMode}
+    onclick={() =>
+      onShiftStart && handleActionClick("shift-start", onShiftStart)}
+    disabled={(!hasSequence || isTransforming || !canShiftStart) && !helpMode}
+    aria-label={helpMode
+      ? "Learn about First Beat"
+      : patternsLocked
+        ? "First Step - locked, sign up to unlock"
+        : "Pick new first beat: change where the sequence starts"}
+  >
+    {@render lockBadge()}
+    <div class="btn-icon">
+      <i class="fas fa-forward" aria-hidden="true"></i>
+    </div>
+    <div class="btn-text">
+      <span class="btn-label">First Step</span>
+      <span class="btn-desc">Pick new step 1</span>
+    </div>
+  </button>
+{/snippet}
+
 <div
   class="actions-container"
   class:disabled
   class:desktop={isDesktopPanel}
+  class:three-column={isDesktopPanel && desktopColumns === 3}
   class:mobile={!isDesktopPanel}
   class:compact={compactMode}
   class:help-mode={helpMode}
@@ -144,31 +212,33 @@
           <span class="btn-desc">Flip up & down</span>
         </div>
       </button>
-      <button
-        class="grid-btn swap"
-        class:unavailable={swapDisabled && !helpMode}
-        class:help-active={helpMode}
-        onclick={() => handleActionClick("swap", onSwap)}
-        data-ghost={disabled || helpMode ? undefined : "safe"}
-        data-ghost-kind="transform"
-        data-ghost-label="Swap"
-        disabled={(disabled || swapDisabled) && !helpMode}
-        aria-label={helpMode
-          ? "Learn about Swap Hands"
-          : swapDisabled
-            ? "Swap requires both hands selected"
-            : "Swap hands in sequence"}
-      >
-        <div class="btn-icon swap-icon-host">
-          <SwapIcon size="1em" />
-        </div>
-        <div class="btn-text">
-          <span class="btn-label">Swap</span>
-          <span class="btn-desc"
-            >{swapDisabled ? "Needs both hands" : "Switch hands"}</span
-          >
-        </div>
-      </button>
+      {#if onSwap}
+        <button
+          class="grid-btn swap"
+          class:unavailable={swapDisabled && !helpMode}
+          class:help-active={helpMode}
+          onclick={() => handleActionClick("swap", onSwap)}
+          data-ghost={disabled || helpMode ? undefined : "safe"}
+          data-ghost-kind="transform"
+          data-ghost-label="Swap"
+          disabled={(disabled || swapDisabled) && !helpMode}
+          aria-label={helpMode
+            ? "Learn about Swap Hands"
+            : swapDisabled
+              ? "Swap requires both hands selected"
+              : "Swap hands in sequence"}
+        >
+          <div class="btn-icon swap-icon-host">
+            <SwapIcon size="1em" />
+          </div>
+          <div class="btn-text">
+            <span class="btn-label">Swap</span>
+            <span class="btn-desc"
+              >{swapDisabled ? "Needs both hands" : "Switch hands"}</span
+            >
+          </div>
+        </button>
+      {/if}
       <button
         class="grid-btn invert"
         class:help-active={helpMode}
@@ -199,14 +269,14 @@
         disabled={disabled && !helpMode}
         aria-label={helpMode
           ? "Learn about Rotate"
-          : "Rotate sequence left 45 degrees"}
+          : `Rotate sequence left ${rotationDegrees} degrees`}
       >
         <div class="btn-icon">
           <i class="fas fa-rotate-left" aria-hidden="true"></i>
         </div>
         <div class="btn-text">
           <span class="btn-label">Rotate L</span>
-          <span class="btn-desc">Pivot 45°</span>
+          <span class="btn-desc">Pivot {rotationDegrees}°</span>
         </div>
       </button>
       <button
@@ -219,218 +289,228 @@
         disabled={disabled && !helpMode}
         aria-label={helpMode
           ? "Learn about Rotate"
-          : "Rotate sequence right 45 degrees"}
+          : `Rotate sequence right ${rotationDegrees} degrees`}
       >
         <div class="btn-icon">
           <i class="fas fa-rotate-right" aria-hidden="true"></i>
         </div>
         <div class="btn-text">
           <span class="btn-label">Rotate R</span>
-          <span class="btn-desc">Pivot 45°</span>
+          <span class="btn-desc">Pivot {rotationDegrees}°</span>
         </div>
       </button>
+      {#if onShiftStart && shiftStartPlacement === "transform"}
+        {@render shiftStartButton()}
+      {/if}
     </div>
   </section>
 
   <!-- PATTERNS Section -->
-  {#snippet lockBadge()}
-    {#if patternsLocked && !helpMode}
-      <div class="lock-badge" aria-hidden="true">
-        <i class="fas fa-lock" aria-hidden="true"></i>
+  {#if hasSecondaryActions}
+    <section
+      class="section patterns-section"
+      class:source-section={!hasPatternTools}
+    >
+      <span class="section-label">{secondarySectionLabel}</span>
+      <div class="section-grid">
+        {#if onTurnPattern}
+          <button
+            class="grid-btn turn-pattern"
+            class:help-active={helpMode}
+            class:locked={patternsLocked && !helpMode}
+            onclick={() => handleActionClick("turn-pattern", onTurnPattern)}
+            disabled={!hasSequence && !helpMode}
+            aria-label={helpMode
+              ? "Learn about Turn Pattern"
+              : patternsLocked
+                ? "Turn Pattern - locked, sign up to unlock"
+                : "Apply turn pattern to sequence"}
+          >
+            {@render lockBadge()}
+            <div class="btn-icon">
+              <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+            </div>
+            <div class="btn-text">
+              <span class="btn-label">Turn Pattern</span>
+              <span class="btn-desc">Apply patterns</span>
+            </div>
+          </button>
+        {/if}
+        {#if onRotationDirection}
+          <button
+            class="grid-btn direction"
+            class:help-active={helpMode}
+            class:locked={patternsLocked && !helpMode}
+            onclick={() => handleActionClick("direction", onRotationDirection)}
+            disabled={!hasSequence && !helpMode}
+            aria-label={helpMode
+              ? "Learn about Rotation Direction"
+              : patternsLocked
+                ? "Direction - locked, sign up to unlock"
+                : "Apply rotation direction pattern (clockwise or counter-clockwise)"}
+          >
+            {@render lockBadge()}
+            <div class="btn-icon">
+              <i class="fas fa-compass" aria-hidden="true"></i>
+            </div>
+            <div class="btn-text">
+              <span class="btn-label">Direction</span>
+              <span class="btn-desc">CW/CCW patterns</span>
+            </div>
+          </button>
+        {/if}
+        {#if onDuration}
+          <button
+            class="grid-btn duration"
+            class:help-active={helpMode}
+            class:locked={patternsLocked && !helpMode}
+            onclick={() => handleActionClick("duration", onDuration)}
+            disabled={!hasSequence && !helpMode}
+            aria-label={helpMode
+              ? "Learn about Duration"
+              : patternsLocked
+                ? "Duration - locked, sign up to unlock"
+                : "Apply duration pattern (beat timing)"}
+          >
+            {@render lockBadge()}
+            <div class="btn-icon">
+              <i class="fas fa-stopwatch" aria-hidden="true"></i>
+            </div>
+            <div class="btn-text">
+              <span class="btn-label">Duration</span>
+              <span class="btn-desc">Beat timing</span>
+            </div>
+          </button>
+        {/if}
+        {#if onExtend && canExtend}
+          <button
+            class="grid-btn extend"
+            class:help-active={helpMode}
+            class:locked={patternsLocked && !helpMode}
+            onclick={() => handleActionClick("extend", onExtend)}
+            disabled={(!hasSequence || isExtending) && !helpMode}
+            data-ghost={!hasSequence ||
+            isExtending ||
+            helpMode ||
+            patternsLocked
+              ? undefined
+              : "safe"}
+            data-ghost-kind="extend"
+            data-ghost-label="Extend"
+            aria-label={helpMode
+              ? "Learn about Extend"
+              : patternsLocked
+                ? "Extend - locked, sign up to unlock"
+                : isExtending
+                  ? "Extending sequence"
+                  : "Extend sequence back to starting position"}
+          >
+            {@render lockBadge()}
+            <div class="btn-icon">
+              {#if isExtending}
+                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+              {:else}
+                <i class="fas fa-circle-check" aria-hidden="true"></i>
+              {/if}
+            </div>
+            <div class="btn-text">
+              <span class="btn-label">{isExtending ? "..." : "Extend"}</span>
+              <span class="btn-desc">Complete to start</span>
+            </div>
+          </button>
+        {/if}
+        {#if onShiftStart && shiftStartPlacement === "secondary"}
+          {@render shiftStartButton()}
+        {/if}
+        {#if onRewind}
+          <button
+            class="grid-btn rewind"
+            class:help-active={helpMode}
+            class:locked={patternsLocked && !helpMode}
+            onclick={() => handleActionClick("rewind", onRewind)}
+            disabled={disabled && !helpMode}
+            aria-label={helpMode
+              ? "Learn about Rewind"
+              : patternsLocked
+                ? "Rewind - locked, sign up to unlock"
+                : "Rewind: add reversed sequence to the end"}
+          >
+            {@render lockBadge()}
+            <div class="btn-icon">
+              <i class="fas fa-backward" aria-hidden="true"></i>
+            </div>
+            <div class="btn-text">
+              <span class="btn-label">Rewind</span>
+              <span class="btn-desc">Add reverse to end</span>
+            </div>
+          </button>
+        {/if}
+        {#if onReset}
+          <button
+            class="grid-btn reset"
+            onclick={onReset}
+            {disabled}
+            aria-label="Reset sequence to its original path"
+          >
+            <div class="btn-icon">
+              <i class="fas fa-arrow-rotate-left" aria-hidden="true"></i>
+            </div>
+            <div class="btn-text">
+              <span class="btn-label">Reset</span>
+              <span class="btn-desc">Original path</span>
+            </div>
+          </button>
+        {/if}
       </div>
-    {/if}
-  {/snippet}
-  <section class="section patterns-section">
-    <span class="section-label">Patterns</span>
-    <div class="section-grid">
-      <button
-        class="grid-btn turn-pattern"
-        class:help-active={helpMode}
-        class:locked={patternsLocked && !helpMode}
-        onclick={() => handleActionClick("turn-pattern", onTurnPattern)}
-        disabled={!hasSequence && !helpMode}
-        aria-label={helpMode
-          ? "Learn about Turn Pattern"
-          : patternsLocked
-            ? "Turn Pattern - locked, sign up to unlock"
-            : "Apply turn pattern to sequence"}
-      >
-        {@render lockBadge()}
-        <div class="btn-icon">
-          <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-        </div>
-        <div class="btn-text">
-          <span class="btn-label">Turn Pattern</span>
-          <span class="btn-desc">Apply patterns</span>
-        </div>
-      </button>
-      <button
-        class="grid-btn direction"
-        class:help-active={helpMode}
-        class:locked={patternsLocked && !helpMode}
-        onclick={() => handleActionClick("direction", onRotationDirection)}
-        disabled={!hasSequence && !helpMode}
-        aria-label={helpMode
-          ? "Learn about Rotation Direction"
-          : patternsLocked
-            ? "Direction - locked, sign up to unlock"
-            : "Apply rotation direction pattern (clockwise or counter-clockwise)"}
-      >
-        {@render lockBadge()}
-        <div class="btn-icon">
-          <i class="fas fa-compass" aria-hidden="true"></i>
-        </div>
-        <div class="btn-text">
-          <span class="btn-label">Direction</span>
-          <span class="btn-desc">CW/CCW patterns</span>
-        </div>
-      </button>
-      <button
-        class="grid-btn duration"
-        class:help-active={helpMode}
-        class:locked={patternsLocked && !helpMode}
-        onclick={() => handleActionClick("duration", onDuration)}
-        disabled={!hasSequence && !helpMode}
-        aria-label={helpMode
-          ? "Learn about Duration"
-          : patternsLocked
-            ? "Duration - locked, sign up to unlock"
-            : "Apply duration pattern (beat timing)"}
-      >
-        {@render lockBadge()}
-        <div class="btn-icon">
-          <i class="fas fa-stopwatch" aria-hidden="true"></i>
-        </div>
-        <div class="btn-text">
-          <span class="btn-label">Duration</span>
-          <span class="btn-desc">Beat timing</span>
-        </div>
-      </button>
-      {#if onExtend && canExtend}
-        <button
-          class="grid-btn extend"
-          class:help-active={helpMode}
-          class:locked={patternsLocked && !helpMode}
-          onclick={() => handleActionClick("extend", onExtend)}
-          disabled={(!hasSequence || isExtending) && !helpMode}
-          data-ghost={!hasSequence || isExtending || helpMode || patternsLocked
-            ? undefined
-            : "safe"}
-          data-ghost-kind="extend"
-          data-ghost-label="Extend"
-          aria-label={helpMode
-            ? "Learn about Extend"
-            : patternsLocked
-              ? "Extend - locked, sign up to unlock"
-              : isExtending
-                ? "Extending sequence"
-                : "Extend sequence back to starting position"}
-        >
-          {@render lockBadge()}
-          <div class="btn-icon">
-            {#if isExtending}
-              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-            {:else}
-              <i class="fas fa-circle-check" aria-hidden="true"></i>
-            {/if}
-          </div>
-          <div class="btn-text">
-            <span class="btn-label">{isExtending ? "..." : "Extend"}</span>
-            <span class="btn-desc">Complete to start</span>
-          </div>
-        </button>
-      {/if}
-      {#if onShiftStart}
-        <button
-          class="grid-btn shift-start"
-          class:unavailable={!canShiftStart && !helpMode}
-          class:help-active={helpMode}
-          class:locked={patternsLocked && !helpMode}
-          onclick={() => handleActionClick("shift-start", onShiftStart)}
-          disabled={(!hasSequence || isTransforming || !canShiftStart) &&
-            !helpMode}
-          aria-label={helpMode
-            ? "Learn about First Beat"
-            : patternsLocked
-              ? "First Step - locked, sign up to unlock"
-              : "Pick new first beat: change where the sequence starts"}
-        >
-          {@render lockBadge()}
-          <div class="btn-icon">
-            <i class="fas fa-forward" aria-hidden="true"></i>
-          </div>
-          <div class="btn-text">
-            <span class="btn-label">First Step</span>
-            <span class="btn-desc">Pick new step 1</span>
-          </div>
-        </button>
-      {/if}
-      <button
-        class="grid-btn rewind"
-        class:help-active={helpMode}
-        class:locked={patternsLocked && !helpMode}
-        onclick={() => handleActionClick("rewind", onRewind)}
-        disabled={disabled && !helpMode}
-        aria-label={helpMode
-          ? "Learn about Rewind"
-          : patternsLocked
-            ? "Rewind - locked, sign up to unlock"
-            : "Rewind: add reversed sequence to the end"}
-      >
-        {@render lockBadge()}
-        <div class="btn-icon">
-          <i class="fas fa-backward" aria-hidden="true"></i>
-        </div>
-        <div class="btn-text">
-          <span class="btn-label">Rewind</span>
-          <span class="btn-desc">Add reverse to end</span>
-        </div>
-      </button>
-    </div>
-  </section>
+    </section>
+  {/if}
 
   <!-- EDIT Section - dimmed in help mode since these don't have help content -->
-  <section class="section edit-section" class:help-dimmed={helpMode}>
-    <span class="section-label">Edit</span>
-    <div class="section-grid">
-      <button
-        class="grid-btn edit-turns"
-        class:highlighted={hasSelection}
-        onclick={onTurns}
-        disabled={!hasSelection}
-        aria-label={hasSelection
-          ? "Edit turns for selected step"
-          : "Edit turns: select a step first"}
-      >
-        <div class="btn-icon">
-          <i class="fas fa-sliders-h" aria-hidden="true"></i>
-        </div>
-        <div class="btn-text">
-          <span class="btn-label">Edit Turns</span>
-          <span class="btn-desc"
-            >{hasSelection ? "Adjust rotation" : "Select step first"}</span
+  {#if hasEditActions}
+    <section class="section edit-section" class:help-dimmed={helpMode}>
+      <span class="section-label">Edit</span>
+      <div class="section-grid">
+        {#if onTurns}
+          <button
+            class="grid-btn edit-turns"
+            class:highlighted={hasSelection}
+            onclick={onTurns}
+            disabled={!hasSelection}
+            aria-label={hasSelection
+              ? "Edit turns for selected step"
+              : "Edit turns: select a step first"}
           >
-        </div>
-      </button>
-      {#if showEditInConstructor}
-        <button
-          class="grid-btn construct"
-          onclick={onEditInConstructor}
-          disabled={!hasSequence}
-          data-testid="edit-in-construct"
-          aria-label="Open sequence in construct for full editing"
-        >
-          <div class="btn-icon">
-            <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-          </div>
-          <div class="btn-text">
-            <span class="btn-label">Edit in Construct</span>
-            <span class="btn-desc">Full editor</span>
-          </div>
-        </button>
-      {/if}
-    </div>
-  </section>
+            <div class="btn-icon">
+              <i class="fas fa-sliders-h" aria-hidden="true"></i>
+            </div>
+            <div class="btn-text">
+              <span class="btn-label">Edit Turns</span>
+              <span class="btn-desc"
+                >{hasSelection ? "Adjust rotation" : "Select step first"}</span
+              >
+            </div>
+          </button>
+        {/if}
+        {#if showEditInConstructor && onEditInConstructor}
+          <button
+            class="grid-btn construct"
+            onclick={onEditInConstructor}
+            disabled={!hasSequence}
+            data-testid="edit-in-construct"
+            aria-label="Open sequence in construct for full editing"
+          >
+            <div class="btn-icon">
+              <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+            </div>
+            <div class="btn-text">
+              <span class="btn-label">Edit in Construct</span>
+              <span class="btn-desc">Full editor</span>
+            </div>
+          </button>
+        {/if}
+      </div>
+    </section>
+  {/if}
 </div>
 
 <style>
@@ -654,6 +734,9 @@
       grid-template-columns: repeat(3, 1fr);
     }
   }
+  .actions-container.desktop.three-column .section-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
   .actions-container.desktop .grid-btn {
     flex-direction: column;
     align-items: center;
@@ -696,6 +779,10 @@
       max-height: clamp(108px, 15.5cqh, 152px);
       justify-self: normal;
     }
+  }
+  .actions-container.desktop.three-column .grid-btn {
+    max-height: clamp(108px, 15.5cqh, 152px);
+    justify-self: normal;
   }
   .actions-container.desktop .grid-btn:hover:not(:disabled) {
     background: color-mix(
@@ -768,6 +855,14 @@
   .actions-container.desktop .edit-section .grid-btn {
     flex: 0 1 clamp(140px, 30cqw, 264px);
   }
+  .actions-container.desktop .source-section .section-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .actions-container.desktop .source-section .grid-btn {
+    flex: 0 1 clamp(140px, 30cqw, 264px);
+  }
 
   /* ===== BUTTON COLORS - CSS custom properties for each button ===== */
   .grid-btn.mirror {
@@ -789,6 +884,9 @@
   .grid-btn.rewind {
     --btn-color: 244, 63, 94;
   } /* Rose */
+  .grid-btn.reset {
+    --btn-color: 100, 116, 139;
+  } /* Slate */
   .grid-btn.turn-pattern {
     --btn-color: 20, 184, 166;
   } /* Teal */
@@ -886,13 +984,13 @@
   /* ===== HELP MODE CONTAINER ===== */
   .actions-container.help-mode {
     /* Override disabled state - all buttons are interactive in help mode */
-    opacity: 1 !important;
-    pointer-events: auto !important;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   /* ===== HELP MODE ACTIVE STATE - Subtle highlight ===== */
   .grid-btn.help-active {
-    opacity: 1 !important;
+    opacity: 1;
     cursor: help;
     border-color: rgba(59, 130, 246, 0.5);
     box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);

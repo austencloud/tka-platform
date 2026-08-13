@@ -65,7 +65,7 @@ export const SEQUENCE_ACTION_INTENTIONS: Intention[] = [
         "Extend. Let's see."
       ),
     /*
-     * The precondition is the app's own answer, not a guess. TransformsGridMode
+     * The precondition is the app's own answer, not a guess. SequenceTransformActions
      * renders the Extend button inside `{#if onExtend && canExtend}` — so the
      * control exists ONLY on a sequence that genuinely closes. The ghost cannot
      * reach for an extension that is not available, which is the whole point of

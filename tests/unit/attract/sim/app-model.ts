@@ -141,7 +141,7 @@ function screenKinds(s: SimState): Record<string, number> {
         "step-edit": s.stepEditorOpen ? 8 : 0,
         "sequence-actions": s.seqLen > 0 && !s.actionsPanelOpen ? 1 : 0,
         // The actions panel: transforms always, Extend only when the sequence
-        // genuinely closes — the real TransformsGridMode renders that button
+        // genuinely closes — the real SequenceTransformActions renders that button
         // inside `{#if onExtend && canExtend}`, so its presence IS the signal.
         transform: s.actionsPanelOpen ? 6 : 0,
         extend:

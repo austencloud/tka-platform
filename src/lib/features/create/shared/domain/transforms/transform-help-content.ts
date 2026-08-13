@@ -1,3 +1,9 @@
+import type {
+  SequenceActionId,
+  SequencePatternActionId,
+  SequenceTransformActionId,
+} from "$lib/shared/create/domain/sequence-action-types";
+
 /**
  * Sequence Action Help Content
  *
@@ -7,13 +13,13 @@
  */
 
 // Transform IDs (geometric operations)
-export type TransformId = "mirror" | "flip" | "invert" | "rotate" | "swap" | "rewind";
+export type TransformId = SequenceTransformActionId;
 
 // Pattern/Tool IDs (pattern application and sequence tools)
-export type PatternId = "turn-pattern" | "direction" | "duration" | "extend" | "shift-start";
+export type PatternId = SequencePatternActionId;
 
 // All action IDs that support help mode
-export type ActionHelpId = TransformId | PatternId;
+export type ActionHelpId = SequenceActionId;
 
 export interface ActionHelpItem {
   id: ActionHelpId;

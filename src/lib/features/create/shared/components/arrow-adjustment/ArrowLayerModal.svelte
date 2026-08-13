@@ -22,6 +22,7 @@
   import type { SelectedArrowContext } from "../../services/arrow-adjustment-orchestrator";
   import type { GlobalAdjustmentKey } from "$lib/shared/pictograph/arrow/positioning/global/domain/global-arrow-adjustment";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+  import { isEditableKeyboardTarget } from "$lib/shared/keyboard/domain/shortcut-target-resolution";
 
   const logger = createComponentLogger("ArrowLayerModal");
 
@@ -184,6 +185,7 @@
 
   function handleKeydown(event: KeyboardEvent) {
     if (!open) return;
+    if (isEditableKeyboardTarget(event.target)) return;
     const key = event.key.toLowerCase();
     if (
       key === "s" &&

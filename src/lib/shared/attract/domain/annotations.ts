@@ -51,7 +51,7 @@ export type GhostKind =
    * impressive single press in the app.
    *
    * Needs no published state attribute, which was a pleasant surprise:
-   * `TransformsGridMode` renders the button inside `{#if onExtend && canExtend}`,
+   * `SequenceTransformActions` renders the button inside `{#if onExtend && canExtend}`,
    * so its EXISTENCE is already the extendable signal. The precondition is
    * therefore the app's own answer rather than an inference, which is the only
    * way it cannot lie.

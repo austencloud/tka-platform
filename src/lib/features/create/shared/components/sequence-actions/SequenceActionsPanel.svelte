@@ -30,7 +30,7 @@
 
   import CreatePanelDrawer from "../CreatePanelDrawer.svelte";
   import SequencePreviewDialog from "./SequencePreviewDialog.svelte";
-  import TransformsGridMode from "./TransformsGridMode.svelte";
+  import SequenceTransformActions from "$lib/shared/create/components/SequenceTransformActions.svelte";
   import TransformHelpOverlay from "../transform-help/TransformHelpOverlay.svelte";
   import TransformDetailModal from "../transform-help/TransformDetailModal.svelte";
   import TurnPatternView from "./TurnPatternView.svelte";
@@ -864,7 +864,7 @@
         {:else}
           <!-- Desktop: full grid of all actions -->
           <div class="controls-content">
-            <TransformsGridMode
+            <SequenceTransformActions
               {hasSequence}
               {hasSelection}
               {isTransforming}
@@ -1171,7 +1171,7 @@
     flex-direction: column;
     overflow-y: auto;
     /* Query container for the action grid's proportional sizing (Approach A
-       in TransformsGridMode). cqh inside resolves against this box's height,
+       in SequenceTransformActions). cqh inside resolves against this box's height,
        which flex:1 makes definite — so button/icon/label scale to the panel,
        not to their own content. */
     container-type: size;
