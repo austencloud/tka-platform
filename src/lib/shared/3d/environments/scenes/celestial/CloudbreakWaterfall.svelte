@@ -1,7 +1,7 @@
 <script lang="ts">
   import { T, useTask } from "@threlte/core";
   import { onDestroy } from "svelte";
-  import { DoubleSide, ShaderMaterial } from "three";
+  import { DoubleSide, MeshBasicMaterial, ShaderMaterial } from "three";
 
   interface Props {
     position: [number, number, number];
@@ -11,6 +11,7 @@
     crestDepth?: number;
     opacity?: number;
     speed?: number;
+    pulse?: number;
   }
 
   let {
@@ -21,6 +22,7 @@
     crestDepth = 0,
     opacity = 0.78,
     speed = 1,
+    pulse = 0,
   }: Props = $props();
 
   const material = new ShaderMaterial({
@@ -78,25 +80,72 @@
     `,
   });
 
-  useTask((delta) => {
-    material.uniforms.uTime.value += Math.min(delta, 1 / 20) * speed;
+  const lipMaterial = new MeshBasicMaterial({
+    color: "#e7fbff",
+    transparent: true,
+    opacity: 0.48,
+    depthWrite: false,
+    side: DoubleSide,
+  });
+  const mistMaterial = new MeshBasicMaterial({
+    color: "#e9f8fb",
+    transparent: true,
+    opacity: 0.2,
+    depthWrite: false,
+  });
+  let pulseEnergy = 0;
+
+  $effect(() => {
+    void pulse;
+    if (pulse > 0) pulseEnergy = 1;
   });
 
-  onDestroy(() => material.dispose());
+  useTask((delta) => {
+    material.uniforms.uTime.value += Math.min(delta, 1 / 20) * speed;
+    pulseEnergy = Math.max(0, pulseEnergy - delta * 0.7);
+    material.uniforms.uOpacity.value = opacity * (1 + pulseEnergy * 0.08);
+  });
+
+  onDestroy(() => {
+    material.dispose();
+    lipMaterial.dispose();
+    mistMaterial.dispose();
+  });
 </script>
 
 <T.Group {position} rotation.y={rotationY}>
   <T.Mesh {material} renderOrder={3}>
     <T.PlaneGeometry args={[width, height, 10, 40]} />
   </T.Mesh>
+  <T.Mesh position.z={-0.09} rotation.y={0.12} {material} renderOrder={3}>
+    <T.PlaneGeometry args={[width * 0.9, height * 0.98, 8, 36]} />
+  </T.Mesh>
   {#if crestDepth > 0}
     <T.Mesh
-      position={[0, height / 2 + 0.018, crestDepth * 0.42]}
+      position={[0, height / 2 + 0.018, crestDepth * 0.5]}
       rotation.x={-Math.PI / 2}
       {material}
       renderOrder={3}
     >
       <T.PlaneGeometry args={[width * 0.94, crestDepth, 10, 12]} />
     </T.Mesh>
+    <T.Mesh
+      position={[0, height / 2 + 0.035, 0.18]}
+      rotation.x={-Math.PI / 2}
+      material={lipMaterial}
+      renderOrder={4}
+    >
+      <T.PlaneGeometry args={[width * 1.04, 0.44]} />
+    </T.Mesh>
   {/if}
+  <T.Mesh
+    position={[0, -height / 2 + 0.28, 0.12]}
+    scale.x={width * 0.62}
+    scale.y={0.34}
+    scale.z={0.7}
+    material={mistMaterial}
+    renderOrder={4}
+  >
+    <T.SphereGeometry args={[1, 24, 12]} />
+  </T.Mesh>
 </T.Group>

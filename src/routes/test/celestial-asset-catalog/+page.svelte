@@ -38,8 +38,8 @@
     if (view === "front") {
       return {
         caption: "Registered front",
-        title: "One lagoon, one material language.",
-        body: "The reflector now follows the irregular shoreline, two unique limestone clusters replace the copied rim, the waterfall begins at the waterline, and the production cloud panorama is present.",
+        title: "Sunlight finds the waterline.",
+        body: "A shaped wet-stone bank surrounds the reflective lagoon, the overflow leaves a visible crest, and stronger sun and shadow separate the stage from the shelf.",
       };
     }
     if (view === "rear") {
@@ -146,7 +146,7 @@
 
     {#if isSpatialView}
       <section class="decision-card">
-        <span class="decision-kicker">Gate 1 · Revision 5</span>
+        <span class="decision-kicker">Gate 1 · Revision 6</span>
         <h2>{viewCopy.title}</h2>
         <p>{viewCopy.body}</p>
         <div class="decision-stats" aria-label="Catalog summary">

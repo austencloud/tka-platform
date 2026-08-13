@@ -1,6 +1,7 @@
 <script lang="ts">
   import { T } from "@threlte/core";
   import { useGltf, useKtx2, useMeshopt } from "@threlte/extras";
+  import { onDestroy } from "svelte";
   import {
     Box3,
     Color,
@@ -12,10 +13,10 @@
     type Object3D,
   } from "three";
 
-  import type { CloudbreakAssetCandidate } from "./catalog";
+  import type { CloudbreakRenderableAsset } from "./cloudbreak-assets";
 
   interface Props {
-    asset: CloudbreakAssetCandidate;
+    asset: CloudbreakRenderableAsset;
     position: [number, number, number];
     rotationY?: number;
     scaleMultiplier?: number;
@@ -38,6 +39,7 @@
   });
   let prepared = $state<Group | null>(null);
   let reportedReady = false;
+  const ownedMaterials = new Set<Material>();
 
   function cloneMaterial(material: Material): Material {
     if (asset.materialGrade === "limestone" && stoneMaterial) {
@@ -46,10 +48,12 @@
       limestoneClone.roughness = Math.max(0.84, limestoneClone.roughness);
       limestoneClone.envMapIntensity = 0.48;
       limestoneClone.needsUpdate = true;
+      ownedMaterials.add(limestoneClone);
       return limestoneClone;
     }
 
     const clone = material.clone();
+    ownedMaterials.add(clone);
     if (!(clone instanceof MeshStandardMaterial)) return clone;
 
     clone.metalness = 0;
@@ -105,6 +109,11 @@
       reportedReady = true;
       onReady?.(asset.id);
     }
+  });
+
+  onDestroy(() => {
+    for (const material of ownedMaterials) material.dispose();
+    ownedMaterials.clear();
   });
 </script>
 

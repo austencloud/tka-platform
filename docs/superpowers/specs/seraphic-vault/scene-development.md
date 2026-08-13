@@ -1,6 +1,6 @@
 # Olive Cloudbreak celestial production contract
 
-**Status:** Gate 1 revision 5 visual-integration pass ready for review
+**Status:** Gate 1 revision 6 Opus production pass ready for review
 
 **Scene ID:** `seraphic-vault`
 
@@ -8,7 +8,8 @@
 
 **Current creative provenance:** `zFBOeHQh11FPogHCOuQj`,
 `gxtDuAKzjk0GEVbaIjrE`, `pHK4L3DvITTkhMyR6192`,
-`YRzymqYQL7NHDnB2SSag`, `IhLgSyXG6tHNsFSDhv3H`
+`YRzymqYQL7NHDnB2SSag`, `IhLgSyXG6tHNsFSDhv3H`,
+`9hS7oQNdNlVwHLMUvB8R`
 
 ## Active outcome
 
@@ -27,29 +28,29 @@ survives into the new geometry.
   `../active/2026-08-09-olive-cloudbreak-celestial-pivot.md`
 - Gate 0 audit: `./gate0-cloudbreak-canon-audit.md`
 - Measured layout: `scripts/seraphic-vault-cloudbreak-layout.json`
-- Gate 1 revision 5 integration brief:
-  `./seraphic-vault-gate1-r5-visual-integration.md`
+- Gate 1 revision 6 production brief:
+  `./seraphic-vault-gate1-r6-opus-production-pass.md`
 - Gate 1 registered front:
-  `./seraphic-vault-gate1-cloudbreak-r5-front.png`
+  `./seraphic-vault-gate1-cloudbreak-r6-front.png`
 - Gate 1 reverse camera:
-  `./seraphic-vault-gate1-cloudbreak-r5-rear.png`
+  `./seraphic-vault-gate1-cloudbreak-r6-rear.png`
 - Gate 1 measured overview:
-  `./seraphic-vault-gate1-cloudbreak-r5-plan.png`
+  `./seraphic-vault-gate1-cloudbreak-r6-plan.png`
 - Production olive comparison:
-  `./seraphic-vault-gate1-cloudbreak-r5-trees.png`
+  `./seraphic-vault-gate1-cloudbreak-r6-trees.png`
 - Optimized CC0 stone comparison:
-  `./seraphic-vault-gate1-cloudbreak-r5-stone.png`
+  `./seraphic-vault-gate1-cloudbreak-r6-stone.png`
 - In-app review route:
   `https://127.0.0.1:5176/test/celestial-asset-catalog`
 
 The approved revision 2 front composition remains the starting point. Revision
-5 integrates the revision 4 production assets into one material and atmospheric
-language. The reflector is clipped to the lagoon's authored outline, two unique
-CC0 clusters inherit the shelf limestone material, the overflow begins at the
-waterline, the worn route is stronger, and the review uses the production cloud
-panorama. The rear sanctuary remains an explicit spatial graybox until the
-production-model pass. Gates 2 through 6 stay pending until this revised spatial
-and asset read passes review.
+6 carries the revision 5 integration through the Opus production critique. The
+reflector, foam, and wet bank now follow a 15-point shoreline; sunlight casts
+strong contact shadows; the shelf, stage, path, strata, and mesas separate into
+distinct limestone values; the sun reads as distant; and the animated falls sit
+in front of their mesa faces. The rear sanctuary remains an explicit spatial
+graybox until the production-model pass. Gates 2 through 6 stay pending until
+this revised spatial and asset read passes review.
 
 ---
 

@@ -19,6 +19,7 @@
     RGBAFormat,
     ShaderMaterial,
     SphereGeometry,
+    Vector2,
     Vector3,
     type Mesh,
   } from "three";
@@ -124,6 +125,7 @@
           uDensity: { value: config.density },
           uOpacity: { value: config.opacity },
           uScale: { value: config.scale ?? 3.8 },
+          uOffset: { value: new Vector2(...(config.offset ?? [0, 0])) },
           uHorizonFade: { value: config.horizonFade ?? -0.08 },
           uZenithFade: { value: config.zenithFade ?? 0.9 },
           uNoiseTexture: { value: noiseTexture },
@@ -147,6 +149,7 @@
           uniform float uDensity;
           uniform float uOpacity;
           uniform float uScale;
+          uniform vec2 uOffset;
           uniform float uHorizonFade;
           uniform float uZenithFade;
           uniform sampler2D uNoiseTexture;
@@ -161,14 +164,17 @@
               atan(skyDirection.z, skyDirection.x) / 6.2831853 + 0.5,
               asin(clamp(skyDirection.y, -1.0, 1.0)) / 3.14159265 + 0.5
             );
+
             vec2 drift = vec2(uTime * 0.007, uTime * 0.0025);
             vec4 broadNoise = texture2D(
               uNoiseTexture,
-              skyUv * vec2(uScale * 0.42, uScale * 0.36) + drift
+              skyUv * vec2(uScale * 0.42, uScale * 0.36) + uOffset + drift
             );
             vec4 detailNoise = texture2D(
               uNoiseTexture,
-              skyUv * vec2(uScale * 0.92, uScale * 0.78) - drift * 0.63
+              skyUv * vec2(uScale * 0.92, uScale * 0.78)
+                + uOffset * 0.73
+                - drift * 0.63
             );
             float broad = broadNoise.r * 0.62 + broadNoise.g * 0.38;
             float detail = detailNoise.b * 0.6 + detailNoise.g * 0.4;
@@ -218,6 +224,7 @@
     material.uniforms.uDensity!.value = config.density;
     material.uniforms.uOpacity!.value = config.opacity;
     material.uniforms.uScale!.value = config.scale ?? 3.8;
+    material.uniforms.uOffset!.value.set(...(config.offset ?? [0, 0]));
     material.uniforms.uHorizonFade!.value = config.horizonFade ?? -0.08;
     material.uniforms.uZenithFade!.value = config.zenithFade ?? 0.9;
     material.uniforms

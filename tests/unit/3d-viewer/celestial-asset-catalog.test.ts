@@ -57,7 +57,7 @@ describe("Olive Cloudbreak reusable asset catalog", () => {
     ]);
     expect(assetsForView("rear")).toEqual([]);
     expect(assetsForView("plan")).toEqual([]);
-    expect(cloudbreakLayout.revision).toBe("olive-cloudbreak-r5");
+    expect(cloudbreakLayout.revision).toBe("olive-cloudbreak-r6");
     expect(cloudbreakLayout.approach.wornBandWidth).toBeGreaterThanOrEqual(5);
     expect(cloudbreakLayout.rearThreshold.outerHeight).toBeGreaterThanOrEqual(
       10 * 1.75
@@ -72,15 +72,46 @@ describe("Olive Cloudbreak reusable asset catalog", () => {
       "src/routes/test/celestial-asset-catalog/CloudbreakAssetCatalogScene.svelte",
       "utf8"
     );
+    const cloudbreakSource = readFileSync(
+      "src/lib/shared/3d/environments/scenes/celestial/OliveCloudbreakSlice.svelte",
+      "utf8"
+    );
     const reflectorSource = readFileSync(
       "src/lib/shared/3d/environments/primitives/PlanarReflector.svelte",
       "utf8"
     );
+    const poolShaderSource = readFileSync(
+      "src/lib/shared/3d/environments/primitives/reflective-pool-shader.ts",
+      "utf8"
+    );
 
-    expect(sceneSource).toContain("outline={lagoonLocalOutline}");
-    expect(sceneSource).toContain('role === "cloudbreak-lagoon-rim"');
+    expect(sceneSource).toContain("<OliveCloudbreakSlice");
+    expect(cloudbreakSource).toContain(
+      "outline={CLOUDBREAK_LAGOON_LOCAL_OUTLINE}"
+    );
+    expect(cloudbreakSource).toContain('role === "cloudbreak-lagoon-rim"');
     expect(sceneSource).toContain("<CelestialCloudPanorama />");
     expect(reflectorSource).toContain("new ShapeGeometry(shape)");
+    expect(cloudbreakLayout.lagoon.outlineXZ.length).toBeGreaterThan(10);
+    expect(poolShaderSource).toContain("shorelineDistance( metres )");
+    expect(poolShaderSource).toContain("uShorelineStarts[16]");
+  });
+
+  it("reviews the same assembly that owns the integrated runtime", () => {
+    const reviewSource = readFileSync(
+      "src/routes/test/celestial-asset-catalog/CloudbreakAssetCatalogScene.svelte",
+      "utf8"
+    );
+    const runtimeSource = readFileSync(
+      "src/lib/shared/3d/environments/scenes/CelestialScene.svelte",
+      "utf8"
+    );
+
+    expect(reviewSource).toContain("<OliveCloudbreakSlice");
+    expect(runtimeSource).toContain("<OliveCloudbreakSlice");
+    expect(reviewSource).not.toMatch(
+      /\.\/Cloudbreak(?:LagoonEdge|SpatialStudy|Waterfall)/
+    );
   });
 
   it("limits Meshy spending to the custom organic signatures", () => {

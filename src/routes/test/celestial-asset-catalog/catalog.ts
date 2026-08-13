@@ -13,11 +13,9 @@ export type CloudbreakAssetVerdict =
   | "distant-only"
   | "exclude";
 
-export interface CloudbreakAssetCandidate {
-  id: string;
+export interface CloudbreakAssetCandidate extends CloudbreakRenderableAsset {
   label: string;
   sourceLabel: string;
-  path: string;
   kind: CloudbreakAssetKind;
   verdict: CloudbreakAssetVerdict;
   role: string;
@@ -27,8 +25,6 @@ export interface CloudbreakAssetCandidate {
   sizeBytes: number;
   renderVertexCount: number;
   sha256: string;
-  targetHeight: number;
-  materialGrade: "olive" | "limestone";
 }
 
 export type CloudbreakHuntMethod =
@@ -137,7 +133,7 @@ export const CLOUDBREAK_ASSET_HUNT: ReadonlyArray<CloudbreakHuntTarget> = [
     method: "Runtime owner",
     priority: "Complete",
     target:
-      "Use the shared camera-centred SkyGradient sun at a fixed angular diameter, with the same normalized direction driving clouds, water glints, and the directional key.",
+      "Use the shared camera-centred sky sun at a fixed angular diameter, with the same normalized direction driving clouds, water glints, and the directional key.",
     acceptance:
       "Shows no translation parallax while orbiting and reads as the source of every warm highlight in the scene.",
   },
@@ -146,10 +142,9 @@ export const CLOUDBREAK_ASSET_HUNT: ReadonlyArray<CloudbreakHuntTarget> = [
 export const CLOUDBREAK_ASSET_CATALOG: ReadonlyArray<CloudbreakAssetCandidate> =
   [
     {
-      id: "olive-west-ancient",
+      ...getCloudbreakRuntimeAsset("olive-west-ancient"),
       label: "Ancient open olive",
       sourceLabel: "Cloudbreak Olive West",
-      path: "/models/celestial/cloudbreak/source/olive-west-ancient.glb",
       kind: "tree",
       verdict: "reuse",
       role: "Primary western stage frame",
@@ -161,14 +156,11 @@ export const CLOUDBREAK_ASSET_CATALOG: ReadonlyArray<CloudbreakAssetCandidate> =
       renderVertexCount: 176_040,
       sha256:
         "5740bf0c1ae801b30c3d5eba73c84c78fa701cd4cf5142e4cc82fdcf20fbbd19",
-      targetHeight: 7,
-      materialGrade: "olive",
     },
     {
-      id: "olive-east-windswept",
+      ...getCloudbreakRuntimeAsset("olive-east-windswept"),
       label: "Windswept olive",
       sourceLabel: "Cloudbreak Olive East",
-      path: "/models/celestial/cloudbreak/source/olive-east-windswept.glb",
       kind: "tree",
       verdict: "reuse",
       role: "Directional eastern stage frame",
@@ -180,8 +172,6 @@ export const CLOUDBREAK_ASSET_CATALOG: ReadonlyArray<CloudbreakAssetCandidate> =
       renderVertexCount: 155_817,
       sha256:
         "9cd5a7f920d350c28a6aab748e1b5021fde44cc145efa5c53a5473931ed338ae",
-      targetHeight: 6,
-      materialGrade: "olive",
     },
     {
       id: "forked-forest-elm",
@@ -260,10 +250,9 @@ export const CLOUDBREAK_ASSET_CATALOG: ReadonlyArray<CloudbreakAssetCandidate> =
       materialGrade: "olive",
     },
     {
-      id: "coast-rocks-05",
+      ...getCloudbreakRuntimeAsset("coast-rocks-05"),
       label: "Weathered lagoon ledge",
       sourceLabel: "Poly Haven coast_rocks_05",
-      path: "/models/celestial/cloudbreak/rocks/coast-rocks-05.glb",
       kind: "stone",
       verdict: "reuse",
       role: "Primary lagoon shoreline",
@@ -275,14 +264,11 @@ export const CLOUDBREAK_ASSET_CATALOG: ReadonlyArray<CloudbreakAssetCandidate> =
       renderVertexCount: 305_691,
       sha256:
         "36e4a5fd6f19d1f0c4cf0aec686579e34025f8e755b0fa57212b4812699c1f81",
-      targetHeight: 0.85,
-      materialGrade: "limestone",
     },
     {
-      id: "sand-rocks-small-01",
+      ...getCloudbreakRuntimeAsset("sand-rocks-small-01"),
       label: "Broken shoreline cluster",
       sourceLabel: "Poly Haven sand_rocks_small_01",
-      path: "/models/celestial/cloudbreak/rocks/sand-rocks-small-01.glb",
       kind: "stone",
       verdict: "reuse",
       role: "Lagoon shoulder and transition",
@@ -294,8 +280,6 @@ export const CLOUDBREAK_ASSET_CATALOG: ReadonlyArray<CloudbreakAssetCandidate> =
       renderVertexCount: 254_205,
       sha256:
         "636eeff95a732ab7424a4c31bd39d295f682c7c47d821bd74482522917361cd7",
-      targetHeight: 0.65,
-      materialGrade: "limestone",
     },
     {
       id: "polyhaven-boulder",
@@ -399,3 +383,7 @@ export function formatCatalogVertices(vertices: number): string {
     ? `${Math.round(vertices / 1_000)}k vertices`
     : `${vertices} vertices`;
 }
+import {
+  getCloudbreakRuntimeAsset,
+  type CloudbreakRenderableAsset,
+} from "$lib/shared/3d/environments/scenes/celestial/cloudbreak-assets";

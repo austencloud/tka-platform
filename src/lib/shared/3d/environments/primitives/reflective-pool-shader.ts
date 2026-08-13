@@ -80,6 +80,25 @@ export const ReflectivePoolShader = {
     uFoamWidth: { value: REFLECTIVE_POOL_DEFAULTS.foamWidth },
     uFoamOpacity: { value: REFLECTIVE_POOL_DEFAULTS.foamOpacity },
     uShoreFade: { value: REFLECTIVE_POOL_DEFAULTS.shoreFade },
+    uShorelineCount: { value: 4 },
+    uShorelineStarts: {
+      value: [
+        new Vector2(-5, -5),
+        new Vector2(5, -5),
+        new Vector2(5, 5),
+        new Vector2(-5, 5),
+        ...Array.from({ length: 12 }, () => new Vector2()),
+      ],
+    },
+    uShorelineEnds: {
+      value: [
+        new Vector2(5, -5),
+        new Vector2(5, 5),
+        new Vector2(-5, 5),
+        new Vector2(-5, -5),
+        ...Array.from({ length: 12 }, () => new Vector2()),
+      ],
+    },
   },
 
   vertexShader: /* glsl */ `
@@ -117,6 +136,9 @@ export const ReflectivePoolShader = {
     uniform float uFoamWidth;
     uniform float uFoamOpacity;
     uniform float uShoreFade;
+    uniform float uShorelineCount;
+    uniform vec2 uShorelineStarts[16];
+    uniform vec2 uShorelineEnds[16];
 
     varying vec4 vProjectedUv;
     varying vec2 vPlaneUv;
@@ -131,6 +153,34 @@ export const ReflectivePoolShader = {
            + sin( p.y * 1.7 - t * 0.44 ) * 0.44
            + sin( ( p.x + p.y ) * 2.3 + t * 0.91 ) * 0.24
            + sin( ( p.x - p.y ) * 3.1 - t * 0.73 ) * 0.16;
+    }
+
+    float distanceToSegment( vec2 point, vec2 start, vec2 end ) {
+      vec2 segment = end - start;
+      float segmentLength = max( dot( segment, segment ), 0.0001 );
+      float along = clamp(
+        dot( point - start, segment ) / segmentLength,
+        0.0,
+        1.0
+      );
+      return length( point - ( start + segment * along ) );
+    }
+
+    float shorelineDistance( vec2 point ) {
+      float nearest = 10000.0;
+      for ( int index = 0; index < 16; index++ ) {
+        if ( float( index ) < uShorelineCount ) {
+          nearest = min(
+            nearest,
+            distanceToSegment(
+              point,
+              uShorelineStarts[index],
+              uShorelineEnds[index]
+            )
+          );
+        }
+      }
+      return nearest;
     }
 
     void main() {
@@ -161,9 +211,10 @@ export const ReflectivePoolShader = {
       float rippleFade = 1.0 - smoothstep( 12.0, 70.0, viewDistance );
       normal = normalize( mix( vec3( 0.0, 1.0, 0.0 ), normal, rippleFade ) );
 
-      // Distance to the nearest rim, in metres — drives both depth and foam.
-      vec2 toEdge = ( 0.5 - abs( vPlaneUv - 0.5 ) ) * uSize;
-      float edgeDistance = min( toEdge.x, toEdge.y );
+      // Measure the authored shoreline rather than the texture's rectangular
+      // bounding box. Without this, a shaped pool still carries straight foam
+      // and depth bands that reveal the hidden reflector rectangle.
+      float edgeDistance = shorelineDistance( metres );
       // Ripples wander the shoreline so it is never a ruler-straight band.
       float wobbled = edgeDistance + h * 0.06;
 

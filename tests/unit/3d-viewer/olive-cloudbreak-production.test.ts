@@ -19,6 +19,12 @@ const sliceSource = readFileSync(
   ),
   "utf8"
 );
+const spatialSource = readFileSync(
+  resolve(
+    "src/lib/shared/3d/environments/scenes/celestial/CloudbreakSpatialStudy.svelte"
+  ),
+  "utf8"
+);
 
 describe("Olive Cloudbreak production contract", () => {
   it("makes the approved Cloudbreak slice the sole celestial geometry owner", () => {
@@ -26,16 +32,22 @@ describe("Olive Cloudbreak production contract", () => {
     expect(sliceSource).toContain(
       "/models/celestial/olive-cloudbreak-production-slice.glb"
     );
+    expect(sliceSource).toContain("<ReflectivePool");
+    expect(sliceSource).toContain("<CloudbreakAsset");
+    expect(sliceSource).toContain("<CloudbreakWaterfall");
     expect(sceneSource).not.toContain("CelestialSanctuaries");
     expect(sceneSource).not.toContain("celestial-environment.glb");
   });
 
-  it("keeps one natural far sun aligned with the lighting configuration", () => {
+  it("keeps one angular sky sun aligned with the lighting configuration", () => {
     expect(createDefaultCelestialConfig().sunLight?.position).toEqual([
-      0, 14, -115,
+      -12, 30, -115,
     ]);
-    expect(sunSource).toContain("position = [0, 14, -115]");
-    expect(sunSource).not.toMatch(/aureole|ringOne|ringTwo|spoke/i);
+    expect(sceneSource).toContain("<CelestialSun");
+    expect(sceneSource).toContain("direction={CLOUDBREAK_SKY_SUN.direction}");
+    expect(sunSource).toContain("activeCamera.position");
+    expect(sunSource).toContain("angularDiameterDegrees");
+    expect(sunSource).not.toContain("position = [0, 14, -115]");
     expect(sceneSource).not.toContain("<T.PointLight");
   });
 
@@ -51,8 +63,9 @@ describe("Olive Cloudbreak production contract", () => {
     expect(sliceSource).toContain(
       'import { userProportionsState } from "@austencloud/scene-3d"'
     );
-    expect(sliceSource).toContain(
-      "position.y={userProportionsState.groundY}"
-    );
+    expect(sliceSource).toContain("groundY = userProportionsState.groundY");
+    expect(sliceSource).toContain("position.y={groundY}");
+    expect(spatialSource).toContain("position={[0, 0.225, -1]}");
+    expect(spatialSource).toContain("position={[0, 0.11, -1]}");
   });
 });

@@ -43,7 +43,7 @@
 
   const sequence = demoJson as unknown as SequenceData;
   const heroCamera: CameraStateSnapshot = {
-    position: { x: 0, y: 7.8, z: 30 },
+    position: { x: 11, y: 7.8, z: 30 },
     rotation: { x: 0, y: 0, z: 0 },
     target: { x: 0, y: 0.8, z: -5 },
     fov: 50,
@@ -70,15 +70,15 @@
   ] as const;
   const performerOptions = [1, 4, 8] as const;
   const desktopHeroCamera = {
-    position: { x: 0, y: 7.8, z: 30 },
+    position: { x: 11, y: 7.8, z: 30 },
     target: { x: 0, y: 0.8, z: -5 },
   } as const;
   const portraitHeroCamera = {
-    position: { x: 0, y: 9.5, z: 45 },
+    position: { x: 8, y: 9.5, z: 45 },
     target: { x: 0, y: 1, z: -5 },
   } as const;
   const landscapePhoneHeroCamera = {
-    position: { x: 0, y: 7.2, z: 29 },
+    position: { x: 10, y: 7.2, z: 29 },
     target: { x: 0, y: 0.7, z: -5 },
   } as const;
 

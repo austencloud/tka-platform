@@ -194,6 +194,13 @@
 
           if (uMoonEnabled > 0.5) {
             vec3 moonDirection = normalize(uMoonDirection);
+            // Tangent-plane projection maps the Moon direction and its exact
+            // opposite to the same UVs. Reject the back hemisphere so walking
+            // around the scene reveals one Moon instead of an antipodal copy.
+            float moonFrontHemisphere = step(
+              0.0,
+              dot(skyDirection, moonDirection)
+            );
             vec3 referenceUp = abs(moonDirection.y) > 0.98
               ? vec3(1.0, 0.0, 0.0)
               : vec3(0.0, 1.0, 0.0);
@@ -213,7 +220,10 @@
 
             vec4 moonSample = texture2D(uMoonTexture, moonUv);
             float diskEdge = 1.0 - smoothstep(0.965, 1.0, radialDistance);
-            float diskAlpha = moonSample.a * diskEdge * uMoonOpacity;
+            float diskAlpha = moonSample.a
+              * diskEdge
+              * uMoonOpacity
+              * moonFrontHemisphere;
 
             // A low moon crosses more atmosphere: it dims, warms, and acquires
             // a restrained forward-scattering halo near the horizon.
@@ -238,7 +248,7 @@
 
             float haloRadius = max(uMoonGlowScale, 1.001);
             float halo = 1.0 - smoothstep(1.0, haloRadius, radialDistance);
-            halo *= 1.0 - diskEdge;
+            halo *= (1.0 - diskEdge) * moonFrontHemisphere;
             color += atmosphericTint * halo * uMoonGlowOpacity * transmittance;
             color = mix(color, moonColor, clamp(diskAlpha, 0.0, 1.0));
           }

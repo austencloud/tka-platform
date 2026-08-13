@@ -11,6 +11,7 @@
   import CelestialInteraction from "./celestial/CelestialInteraction.svelte";
   import OliveCloudbreakSlice from "./celestial/OliveCloudbreakSlice.svelte";
   import CelestialSun from "./celestial/CelestialSun.svelte";
+  import { CLOUDBREAK_SKY_SUN } from "./celestial/cloudbreak-layout";
   import {
     type CelestialSceneConfig,
     createDefaultCelestialConfig,
@@ -105,7 +106,12 @@
 
 <OliveCloudbreakSlice {interactionPulse} onReady={handleCloudbreakReady} />
 
-<CelestialSun pulse={interactionPulse} />
+<CelestialSun
+  direction={CLOUDBREAK_SKY_SUN.direction}
+  angularDiameterDegrees={CLOUDBREAK_SKY_SUN.angularDiameterDegrees}
+  color={CLOUDBREAK_SKY_SUN.color}
+  pulse={interactionPulse}
+/>
 
 {#if activeConfig.godRays.enabled}
   <GodRays config={activeConfig.godRays} />

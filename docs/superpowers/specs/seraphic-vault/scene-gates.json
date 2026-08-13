@@ -40,7 +40,8 @@
       "wLtsIC1y0UhIDwu88ULw",
       "pHK4L3DvITTkhMyR6192",
       "YRzymqYQL7NHDnB2SSag",
-      "IhLgSyXG6tHNsFSDhv3H"
+      "IhLgSyXG6tHNsFSDhv3H",
+      "9hS7oQNdNlVwHLMUvB8R"
     ]
   },
   "sequenceFingerprints": [],
@@ -708,6 +709,30 @@
         }
       ],
       "museumTrackerItem": "IhLgSyXG6tHNsFSDhv3H"
+    },
+    {
+      "gateId": "measured-plan",
+      "revision": "olive-cloudbreak-r5-visual-integration",
+      "status": "superseded-by-r6-opus-production-pass",
+      "reviewedAt": "2026-08-10",
+      "feedback": [
+        "Revision 5 removed the rectangular overlay, joined the crest to the lagoon, restored production clouds, and unified the imported shoreline geology.",
+        "The Opus 5 review still found weak material separation, flat lighting, hidden falls, a timid sun, and residual rectangular shoreline behavior in the water shader.",
+        "Revision 6 preserves the accepted layout and production olives while correcting those visual relationships."
+      ],
+      "evidence": [
+        {
+          "kind": "route-storyboard",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-r5-visual-integration.md",
+          "sha256": "efaef5960b149bdd62eb806bc1dfe2f6d382bf8237b450aa543e985f9c929eb9"
+        },
+        {
+          "kind": "sightline-study",
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r5-front.png",
+          "sha256": "b9b6e8eea843d664b61162ce46755cb2b20e639b2b63ae513c66ca706cad4309"
+        }
+      ],
+      "museumTrackerItem": "9hS7oQNdNlVwHLMUvB8R"
     }
   ],
   "gates": [
@@ -744,38 +769,38 @@
       "evidence": [
         {
           "kind": "floor-plan",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r5-plan.png",
-          "sha256": "a4f207f1699fd28416000a9fc49796942e89955b28ce6944349c89747cbd78a5"
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r6-plan.png",
+          "sha256": "106be068bd416ed1ad0f6e19b9c67ce39c33d27b25ab8a5dca32ca8d07608bfd"
         },
         {
           "kind": "vertical-section",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r5-rear.png",
-          "sha256": "ad83b61cfb4d48a20e646166bd7fdb46e2f187fa3ca88186b50d84ce0eccbeb5"
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r6-rear.png",
+          "sha256": "d434d95fd014fe5e11ebba0ea1f81a42d38b5fbacc5739576af126c276fbb30c"
         },
         {
           "kind": "route-storyboard",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-r5-visual-integration.md",
-          "sha256": "efaef5960b149bdd62eb806bc1dfe2f6d382bf8237b450aa543e985f9c929eb9"
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-r6-opus-production-pass.md",
+          "sha256": "258e23228cebb22730c459756d6e9cd9c065559637e302873d728591a147fe4d"
         },
         {
           "kind": "sightline-study",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r5-front.png",
-          "sha256": "b9b6e8eea843d664b61162ce46755cb2b20e639b2b63ae513c66ca706cad4309"
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r6-front.png",
+          "sha256": "a8d75f62c3129ddfb74679f22adf6a7a59186777945e3855aaffdbdcf5e294a0"
         },
         {
           "kind": "room-shell",
           "path": "scripts/seraphic-vault-cloudbreak-layout.json",
-          "sha256": "b3b8e663913ab13d4a13b6bf1692905e28bab5341949e57a7f9b987394af9884"
+          "sha256": "3b3f5bf057db9ebe99b327d07a46800682b532fc8edaa61aca5c60703dca40c3"
         },
         {
           "kind": "asset-audit-trees",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r5-trees.png",
-          "sha256": "01dcf0d4b52fba9ed5b80582c2fc6a7ccfdabd19f170a4eb5bd6bfb78768dabf"
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r6-trees.png",
+          "sha256": "b2b9610cc3966144395ed8b103ab51031f5e01965f00045f737db07092c77a05"
         },
         {
           "kind": "asset-audit-stone",
-          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r5-stone.png",
-          "sha256": "6919bed0d2366055d8a63aa7a8360ee7930ff6fae5339dd51f896c59c894d10b"
+          "path": "docs/superpowers/specs/seraphic-vault/seraphic-vault-gate1-cloudbreak-r6-stone.png",
+          "sha256": "d5cb3768585e337e681790901bc24ed08e8213b3dc8173abb213ce7ad49b25e9"
         },
         {
           "kind": "in-app-review-route",
@@ -791,17 +816,17 @@
         {
           "name": "clearance",
           "status": "passed",
-          "evidence": "The 12 metre sanctuary opening is wider than the worn route, the optimized CC0 shoreline stays outside the raised dry stage, and the 1.75 metre figure clears the opening with monumental headroom."
+          "evidence": "The 12 metre sanctuary opening is wider than the worn route, the shaped lagoon bank and two sparse CC0 clusters stay outside the raised dry stage, and the 1.75 metre figure clears the opening with monumental headroom."
         },
         {
           "name": "sightlines",
           "status": "passed",
-          "evidence": "The fitted in-app Front camera preserves both custom olives, the raised stage, the complete irregular right-edge lagoon, connected animated overflow, four-mesa depth field, and production cloud panorama. The reverse camera presents one connected sanctuary graybox mass."
+          "evidence": "The fitted in-app Front camera preserves both custom olives, the raised stage, the complete irregular right-edge lagoon, the distant sun, visible animated falls, the four-mesa depth field, and the production cloud panorama. The reverse camera presents one connected sanctuary graybox mass."
         },
         {
           "name": "final-view",
           "status": "passed",
-          "evidence": "Front, Rear, Plan, Trees, and Stone captures come from one runtime study. The shared reflector follows the six-point lagoon outline, the production panorama is present, and only two distinct limestone-treated shoreline clusters remain."
+          "evidence": "Front, Rear, Plan, Trees, and Stone captures come from one runtime study. The shared reflector, foam, and wet bank follow the 15-point lagoon outline; the production panorama is present; and the imported geology is sparse, distinct, and limestone-graded."
         }
       ],
       "approval": null

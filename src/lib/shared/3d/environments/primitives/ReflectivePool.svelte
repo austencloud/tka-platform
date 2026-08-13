@@ -47,6 +47,38 @@
   const props: Props = $props();
 
   const defaults = REFLECTIVE_POOL_DEFAULTS;
+  const MAX_SHORELINE_SEGMENTS = 16;
+
+  function resolveShoreline(): Array<[number, number]> {
+    if (props.outline && props.outline.length >= 3) {
+      return props.outline.slice(0, MAX_SHORELINE_SEGMENTS);
+    }
+
+    const halfWidth = props.width / 2;
+    const halfDepth = props.depth / 2;
+    return [
+      [-halfWidth, -halfDepth],
+      [halfWidth, -halfDepth],
+      [halfWidth, halfDepth],
+      [-halfWidth, halfDepth],
+    ];
+  }
+
+  const shoreline = resolveShoreline();
+  const shorelineStarts = Array.from(
+    { length: MAX_SHORELINE_SEGMENTS },
+    (_, index) => {
+      const point = shoreline[index % shoreline.length]!;
+      return new Vector2(point[0], point[1]);
+    }
+  );
+  const shorelineEnds = Array.from(
+    { length: MAX_SHORELINE_SEGMENTS },
+    (_, index) => {
+      const point = shoreline[(index + 1) % shoreline.length]!;
+      return new Vector2(point[0], point[1]);
+    }
+  );
 
   const uniforms: Record<string, unknown> = {
     uDeepColor: new Color(props.deepColor ?? defaults.deepColor),
@@ -61,6 +93,9 @@
     uFoamWidth: props.foamWidth ?? defaults.foamWidth,
     uFoamOpacity: props.foamOpacity ?? defaults.foamOpacity,
     uShoreFade: props.shoreFade ?? defaults.shoreFade,
+    uShorelineCount: shoreline.length,
+    uShorelineStarts: shorelineStarts,
+    uShorelineEnds: shorelineEnds,
     uTime: 0,
   };
 

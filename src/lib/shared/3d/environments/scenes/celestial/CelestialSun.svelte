@@ -1,28 +1,38 @@
 <script lang="ts">
-  import { T, useTask } from "@threlte/core";
+  import { T, useTask, useThrelte } from "@threlte/core";
   import { onDestroy } from "svelte";
   import {
     AdditiveBlending,
     DataTexture,
     LinearFilter,
+    MathUtils,
     RGBAFormat,
     SpriteMaterial,
     SRGBColorSpace,
+    Vector3,
+    type Sprite,
   } from "three";
 
   interface Props {
-    position?: [number, number, number];
+    direction?: [number, number, number];
+    angularDiameterDegrees?: number;
     color?: string;
-    size?: number;
     pulse?: number;
   }
 
   let {
-    position = [0, 14, -115],
+    direction = [-0.1, 0.19, -1],
+    angularDiameterDegrees = 0.78,
     color = "#ffe3ad",
-    size = 9,
     pulse = 0,
   }: Props = $props();
+
+  const { camera } = useThrelte();
+  const skyRadius = 145;
+  const coreSize = $derived(
+    2 * skyRadius * Math.tan(MathUtils.degToRad(angularDiameterDegrees) / 2)
+  );
+  const sunDirection = $derived(new Vector3(...direction).normalize());
 
   function createSunTexture(kind: "core" | "halo"): DataTexture {
     const dimension = 192;
@@ -59,7 +69,7 @@
     transparent: true,
     opacity: 1,
     depthWrite: false,
-    depthTest: true,
+    depthTest: false,
     blending: AdditiveBlending,
     fog: false,
     toneMapped: false,
@@ -70,11 +80,13 @@
     transparent: true,
     opacity: 0.27,
     depthWrite: false,
-    depthTest: true,
+    depthTest: false,
     blending: AdditiveBlending,
     fog: false,
     toneMapped: false,
   });
+  let coreSprite = $state<Sprite>();
+  let haloSprite = $state<Sprite>();
   let pulseEnergy = 0;
   let elapsed = 0;
 
@@ -88,6 +100,15 @@
   });
 
   useTask((delta) => {
+    const activeCamera = camera.current;
+    if (activeCamera) {
+      const position = activeCamera.position
+        .clone()
+        .addScaledVector(sunDirection, skyRadius);
+      coreSprite?.position.copy(position);
+      haloSprite?.position.copy(position);
+    }
+
     elapsed += delta;
     pulseEnergy = Math.max(0, pulseEnergy - delta * 0.55);
     haloMaterial.opacity =
@@ -104,23 +125,21 @@
 </script>
 
 <T.Sprite
+  bind:ref={haloSprite}
   material={haloMaterial}
-  position.x={position[0]}
-  position.y={position[1]}
-  position.z={position[2] + 0.05}
-  scale.x={size * 2.15}
-  scale.y={size * 2.15}
+  scale.x={coreSize * 2.15}
+  scale.y={coreSize * 2.15}
   scale.z={1}
   renderOrder={0}
+  frustumCulled={false}
 />
 
 <T.Sprite
+  bind:ref={coreSprite}
   material={coreMaterial}
-  position.x={position[0]}
-  position.y={position[1]}
-  position.z={position[2]}
-  scale.x={size}
-  scale.y={size}
+  scale.x={coreSize}
+  scale.y={coreSize}
   scale.z={1}
   renderOrder={0}
+  frustumCulled={false}
 />

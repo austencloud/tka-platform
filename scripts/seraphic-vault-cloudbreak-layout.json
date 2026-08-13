@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sceneId": "seraphic-vault",
-  "revision": "olive-cloudbreak-r5",
+  "revision": "olive-cloudbreak-r6",
   "units": "metres",
   "coordinateSystem": {
     "x": "right",
@@ -69,14 +69,23 @@
     "name": "Right-edge reflecting lagoon",
     "surfaceY": 0.14,
     "outlineXZ": [
-      [9.5, 5.5],
-      [13.5, 6.5],
-      [16, 3],
-      [15.5, -3.5],
-      [12, -6],
-      [9.25, -3]
+      [9.35, 4.45],
+      [10.15, 5.65],
+      [12.25, 6.45],
+      [13.85, 6.05],
+      [15.25, 4.7],
+      [16.05, 2.55],
+      [15.75, 0.35],
+      [15.6, -2.2],
+      [14.85, -4.15],
+      [13.2, -5.55],
+      [11.45, -5.95],
+      [9.85, -4.65],
+      [9.15, -2.4],
+      [9.25, 0.1],
+      [8.95, 2.4]
     ],
-    "overflowXZ": [15.5, -2.5],
+    "overflowXZ": [15.8, 0.35],
     "minimumClearanceFromPerformance": 2
   },
   "oliveTrees": [
@@ -129,9 +138,10 @@
     }
   ],
   "sun": {
-    "position": [0, 14, -115],
-    "visualDiameter": 9,
-    "description": "One far natural sun governs the warm light hierarchy."
+    "position": [-11.5, 22, -115],
+    "lightPosition": [-12, 30, -115],
+    "angularDiameterDegrees": 0.78,
+    "description": "One camera-centred angular sun governs the warm light hierarchy without translation parallax."
   },
   "cloudOcean": {
     "averageTopY": -9.5,
