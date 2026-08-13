@@ -1,3 +1,5 @@
+/* global fetch, Response, URL, console */
+
 /**
  * Cloudflare Worker: QR Short Code Redirect + Edge OG Meta
  *
@@ -22,14 +24,30 @@
 
 const SOCIAL_CRAWLER_UA =
   /facebookexternalhit|Twitterbot|LinkedInBot|Slackbot|Discordbot|WhatsApp|TelegramBot|Applebot|Googlebot/i;
+const CANONICAL_ASSET_LINKS_URL =
+  "https://tkaflowarts.com/.well-known/assetlinks.json";
+
+async function proxyAssetLinks() {
+  const upstream = await fetch(CANONICAL_ASSET_LINKS_URL);
+  if (!upstream.ok) {
+    return new Response("Digital Asset Links unavailable", { status: 503 });
+  }
+
+  return new Response(upstream.body, {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=3600",
+    },
+  });
+}
 
 function buildOGPage(code, meta) {
   const word = meta.word || "Sequence";
   const description = meta.creator
     ? `Flow sequence by ${meta.creator}`
     : "Watch this flow sequence";
-  const image =
-    meta.thumbnailUrl || "https://tkaflowarts.com/og-default.png";
+  const image = meta.thumbnailUrl || "https://tkaflowarts.com/og-default.png";
   const url = `https://tkaflowarts.com/q/${code}`;
 
   return `<!DOCTYPE html>
@@ -66,6 +84,13 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
+
+    // Android requires a direct 200 from every claimed App Links host. Proxy
+    // the canonical association document instead of redirecting or duplicating
+    // certificate fingerprints in this independently deployed Worker.
+    if (path === "/.well-known/assetlinks.json") {
+      return proxyAssetLinks();
+    }
 
     if (path === "/" || path === "") {
       return Response.redirect("https://tkaflowarts.com/app", 301);

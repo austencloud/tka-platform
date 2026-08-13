@@ -2,12 +2,12 @@ name = "tka-shortcode-redirect"
 main = "shortcode-redirect.js"
 compatibility_date = "2025-04-01"
 
-[observability]
-enabled = true
-
 routes = [
   { pattern = "tka.run/*", zone_name = "tka.run" }
 ]
+
+[observability]
+enabled = true
 
 [[kv_namespaces]]
 binding = "SHORTCODES"

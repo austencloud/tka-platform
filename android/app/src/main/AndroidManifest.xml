@@ -23,6 +23,21 @@
             </intent-filter>
 
             <!--
+                Printed cards encode https://tka.run/{code}. Claim the short
+                domain itself so Android enters TKA before the edge redirect,
+                avoiding a visible Chrome hop. This stays separate from the
+                tkaflowarts.com filter so each host verifies independently.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="tka.run" />
+                <data android:pathPrefix="/" />
+            </intent-filter>
+
+            <!--
                 App Links: open deliberate app-entry URLs directly in the app.
                 Printed-card /q/ links are included so an installed app receives
                 the scanned sequence immediately; Android falls back to the web

@@ -1,7 +1,14 @@
 import { isNative, isAndroid } from "./platform-detector";
 import { resolveNativeDeepLinkTarget } from "./native-deep-link-target";
+import {
+  isNativeScanViewerReady,
+  markNativeScanViewerFailed,
+  waitForNativeScanViewerReady,
+} from "./native-scan-viewer-readiness";
 
 export class NativeInitializer {
+  private deepLinkTransitionToken = 0;
+
   async initialize(): Promise<void> {
     if (!isNative()) return;
 
@@ -14,7 +21,7 @@ export class NativeInitializer {
       this.initAppLifecycle(),
     ]);
 
-    await this.initSplashScreen();
+    await this.hideSplashScreen();
   }
 
   private async initStatusBar(): Promise<void> {
@@ -38,7 +45,12 @@ export class NativeInitializer {
     await Keyboard.setScroll({ isDisabled: true });
   }
 
-  private async initSplashScreen(): Promise<void> {
+  private async showSplashScreen(): Promise<void> {
+    const { SplashScreen } = await import("@capacitor/splash-screen");
+    await SplashScreen.show({ autoHide: false, fadeInDuration: 0 });
+  }
+
+  private async hideSplashScreen(): Promise<void> {
     const { SplashScreen } = await import("@capacitor/splash-screen");
     await SplashScreen.hide({ fadeOutDuration: 300 });
   }
@@ -88,7 +100,7 @@ export class NativeInitializer {
     }
 
     await App.addListener("appUrlOpen", async ({ url }) => {
-      await this.handleDeepLink(url);
+      await this.handleDeepLink(url, true);
     });
   }
 
@@ -101,9 +113,28 @@ export class NativeInitializer {
   }
 
   // Returns true if the URL was a real deep link that navigated the app.
-  private async handleDeepLink(url: string): Promise<boolean> {
+  private async handleDeepLink(
+    url: string,
+    coverWithSplash = false
+  ): Promise<boolean> {
     const target = resolveNativeDeepLinkTarget(url);
     if (!target) return false;
+
+    const targetUrl = new URL(target, "https://localhost");
+    const scanCode = targetUrl.searchParams.get("v");
+    const alreadyShowingScan =
+      scanCode !== null && isNativeScanViewerReady(scanCode);
+    const transitionToken = scanCode ? ++this.deepLinkTransitionToken : 0;
+    const shouldCoverTransition =
+      coverWithSplash && scanCode !== null && !alreadyShowingScan;
+
+    if (shouldCoverTransition) await this.showSplashScreen();
+
+    const viewerReadiness =
+      scanCode && !alreadyShowingScan
+        ? waitForNativeScanViewerReady(scanCode)
+        : null;
+
     try {
       // The native launch URL arrives before the root layout finishes
       // Firestore/auth startup. Waiting at this boundary makes the eventual
@@ -115,10 +146,26 @@ export class NativeInitializer {
 
       const { goto } = await import("$app/navigation");
       await goto(target);
+
+      if (viewerReadiness) {
+        const outcome = await viewerReadiness;
+        if (outcome === "timeout") {
+          console.warn(
+            `[NativeInitializer] Timed out waiting for scanned sequence "${scanCode}" to paint.`
+          );
+        }
+      }
       return true;
     } catch {
-      // Malformed URL — ignore.
+      if (scanCode) markNativeScanViewerFailed(scanCode);
       return false;
+    } finally {
+      if (
+        shouldCoverTransition &&
+        transitionToken === this.deepLinkTransitionToken
+      ) {
+        await this.hideSplashScreen();
+      }
     }
   }
 }

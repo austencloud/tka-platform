@@ -27,6 +27,11 @@
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { getLoopDetector } from "$lib/shared/create/get-loop-detector";
   import { removeCurrentUrlParams } from "$lib/shared/navigation/services/url-state";
+  import {
+    clearNativeScanViewerReady,
+    markNativeScanViewerFailed,
+    markNativeScanViewerReady,
+  } from "$lib/shared/platform/services/native-scan-viewer-readiness";
 
   const overlay = getSequenceOverlayState();
 
@@ -136,7 +141,10 @@
         error
       );
     } finally {
-      if (!openedSuccessfully) stripInvalidV(code);
+      if (!openedSuccessfully) {
+        markNativeScanViewerFailed(code);
+        stripInvalidV(code);
+      }
     }
   }
 
@@ -152,6 +160,7 @@
     const wasOpen = overlay.isOpen;
     const wasFromUrl = overlay.openedFromUrl;
 
+    clearNativeScanViewerReady();
     closeSequenceOverlay();
 
     if (path) {
@@ -163,6 +172,15 @@
 
   function handleDrawerClose() {
     handleDismiss();
+  }
+
+  function handleViewerReady() {
+    const code = overlay.activeShortCode;
+    if (code) {
+      markNativeScanViewerReady(code);
+    } else {
+      clearNativeScanViewerReady();
+    }
   }
 </script>
 
@@ -184,6 +202,7 @@
         initialStep={overlay.initialStep}
         handPathMode={overlay.handPathMode}
         playOnOpen={overlay.playOnOpen}
+        onCardReady={handleViewerReady}
         onClose={handleDismiss}
       >
         {#snippet children(ctx)}

@@ -13,7 +13,9 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchAutoHide: true,
+      // Native QR launches keep this surface up until the requested viewer's
+      // first card frame is ready, so the previous app screen never flashes.
+      launchAutoHide: false,
       launchShowDuration: 3000,
       backgroundColor: '#0b1d2a',
       androidScaleType: 'CENTER_CROP'

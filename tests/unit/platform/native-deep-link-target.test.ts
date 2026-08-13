@@ -10,6 +10,14 @@ describe("native deep-link targets", () => {
     ).toBe("/browse/gallery?bp=club&rp=club&pid=23456789ABCD&v=CLUB42");
   });
 
+  it("opens the bare short-domain URL encoded in printed QR codes", () => {
+    expect(
+      resolveNativeDeepLinkTarget(
+        "https://tka.run/CLUB42?bp=club&rp=club&pid=23456789ABCD"
+      )
+    ).toBe("/browse/gallery?bp=club&rp=club&pid=23456789ABCD&v=CLUB42");
+  });
+
   it("preserves ordinary app links unchanged", () => {
     expect(
       resolveNativeDeepLinkTarget(
