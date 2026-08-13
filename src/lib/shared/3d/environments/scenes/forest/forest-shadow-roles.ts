@@ -5,7 +5,6 @@ export interface ForestShadowRole {
 
 const NO_SHADOWS: ForestShadowRole = { cast: false, receive: false };
 const RECEIVER_ONLY: ForestShadowRole = { cast: false, receive: true };
-const CASTER_AND_RECEIVER: ForestShadowRole = { cast: true, receive: true };
 
 /**
  * Keep the moon depth pass bounded. The 295-tree authored woodland remains out
@@ -19,18 +18,20 @@ export function resolveForestShadowRole(role: unknown): ForestShadowRole {
 }
 
 /**
- * The four authored near-frame trees are the only woodland meshes allowed to
- * shape the clearing with directional shadows. Ground detail can receive the
- * result, while low/medium quality paths keep the entire near-frame layer out
- * of the depth pass.
+ * The ecological atlas owns tree-root contact. Full Poly Haven tree meshes are
+ * deliberately kept out of the depth pass because their alpha-card crowns
+ * produce hard polygon islands on the clearing. Local rocks and deadwood still
+ * cast real contact shadows, and ground detail receives the result.
  */
 export function resolveForestNearFrameShadowRole(
   role: unknown,
   shadowsEnabled: boolean
 ): ForestShadowRole {
   if (!shadowsEnabled) return NO_SHADOWS;
-  if (role === "near-frame-tree" || role === "near-frame-static-prop") {
-    return CASTER_AND_RECEIVER;
+  if (role === "near-frame-static-prop") {
+    return { cast: true, receive: true };
   }
-  return role === "near-frame-grass" ? RECEIVER_ONLY : NO_SHADOWS;
+  return role === "near-frame-tree" || role === "near-frame-grass"
+    ? RECEIVER_ONLY
+    : NO_SHADOWS;
 }

@@ -30,6 +30,37 @@ const expectedTreeAssetCounts = Object.fromEntries(
     ),
   ])
 );
+const expectedTreeVariants = treeLayout.assets.flatMap((asset) => {
+  const variants = asset.variants?.length ? asset.variants : [asset];
+  const assetCount = expectedTreeAssetCounts[asset.id];
+  return variants.map((variant, index) => ({
+    assetId: asset.id,
+    variantId: variant.id ?? asset.id,
+    meshName: `ForestTreeMesh_${asset.id}_${variant.id ?? asset.id}`,
+    sourcePath: variant.sourcePath ?? asset.sourcePath,
+    count:
+      Math.floor(assetCount / variants.length) +
+      (index < assetCount % variants.length ? 1 : 0),
+  }));
+});
+const expectedTreeSourceMeshes = Array.from(
+  expectedTreeVariants.reduce((groups, variant) => {
+    const existing = groups.get(variant.sourcePath);
+    if (existing) {
+      existing.count += variant.count;
+      existing.variantIds.push(variant.variantId);
+    } else {
+      groups.set(variant.sourcePath, {
+        meshName: variant.meshName,
+        sourcePath: variant.sourcePath,
+        count: variant.count,
+        variantIds: [variant.variantId],
+      });
+    }
+    return groups;
+  }, new Map())
+  .values()
+);
 const expectedTreeCount = Object.values(expectedTreeAssetCounts).reduce(
   (total, count) => total + count,
   0
@@ -96,6 +127,9 @@ const instancedMeshName = (node) => gltf.meshes?.[node.mesh]?.name ?? "";
 const treeInstancingNodes = instancingNodes.filter((node) =>
   instancedMeshName(node).startsWith("ForestTreeMesh_")
 );
+const treeSourceNodes = (gltf.nodes ?? []).filter((node) =>
+  instancedMeshName(node).startsWith("ForestTreeMesh_")
+);
 const groundVariantInstancingNodes = instancingNodes.filter((node) =>
   instancedMeshName(node).startsWith("ForestGroundLifeVariantMesh_")
 );
@@ -128,8 +162,8 @@ invariant(
     .join(", ")}`
 );
 invariant(
-  extensions.has("EXT_meshopt_compression"),
-  "GLB lost meshopt compression"
+  extensions.has("KHR_draco_mesh_compression"),
+  "GLB lost Draco compression"
 );
 invariant(
   extensions.has("EXT_texture_webp"),
@@ -145,6 +179,9 @@ invariant(
 );
 
 const terrain = terrainNodes[0].extras;
+const groundMaterialContract = JSON.parse(
+  readFileSync(resolve("scripts/forest-ground-materials.json"), "utf8")
+);
 const materialZoneNames = String(terrain.tka_material_zone_names ?? "").split(
   "|"
 );
@@ -176,6 +213,14 @@ invariant(
 invariant(
   terrain.tka_macro_diffuse === "forest-floor-zoned.jpg",
   `Unexpected Forest macro diffuse: ${terrain.tka_macro_diffuse}`
+);
+invariant(
+  Number(terrain.tka_ground_material_version) === groundMaterialContract.version,
+  `Unexpected Forest living-ground contract version: ${terrain.tka_ground_material_version}`
+);
+invariant(
+  String(terrain.tka_ground_material_families) === "neutral|meadow|litter|damp",
+  `Unexpected Forest ground material families: ${terrain.tka_ground_material_families}`
 );
 const pathNames = String(terrain.tka_path_names ?? "").split("|");
 const pathRoles = String(terrain.tka_path_roles ?? "").split("|");
@@ -356,8 +401,8 @@ invariant(
   "Forest terrain lost its required GPU-instancing contract"
 );
 
-const exportedTreeCounts = Object.fromEntries(
-  expectedTreeAssetIds.map((assetId) => [assetId, 0])
+const exportedTreeSourceMeshCounts = Object.fromEntries(
+  expectedTreeSourceMeshes.map((source) => [source.meshName, 0])
 );
 for (const node of instancingNodes) {
   const attributes = node.extensions.EXT_mesh_gpu_instancing.attributes ?? {};
@@ -377,25 +422,25 @@ for (const node of instancingNodes) {
     "Forest instancing node lost its authored scale variation"
   );
 }
-for (const node of treeInstancingNodes) {
-  const attributes = node.extensions.EXT_mesh_gpu_instancing.attributes ?? {};
-  const translationCount = gltf.accessors?.[attributes.TRANSLATION]?.count;
+for (const node of treeSourceNodes) {
+  const attributes = node.extensions?.EXT_mesh_gpu_instancing?.attributes ?? {};
+  const translationCount = node.extensions?.EXT_mesh_gpu_instancing
+    ? gltf.accessors?.[attributes.TRANSLATION]?.count
+    : 1;
   const meshName = instancedMeshName(node);
-  const assetId = meshName.replace(/^ForestTreeMesh_/, "");
+  const source = expectedTreeSourceMeshes.find(
+    (candidate) => candidate.meshName === meshName
+  );
   invariant(
-    Object.hasOwn(exportedTreeCounts, assetId),
+    source,
     `Unexpected instanced Forest tree mesh: ${meshName}`
   );
-  exportedTreeCounts[assetId] += translationCount;
+  exportedTreeSourceMeshCounts[source.meshName] += translationCount;
 }
-invariant(
-  treeInstancingNodes.length === expectedTreeAssetIds.length,
-  `Expected ${expectedTreeAssetIds.length} tree instancing nodes, found ${treeInstancingNodes.length}`
-);
-for (const assetId of expectedTreeAssetIds) {
+for (const source of expectedTreeSourceMeshes) {
   invariant(
-    exportedTreeCounts[assetId] === expectedTreeAssetCounts[assetId],
-    `Unexpected exported ${assetId} count: ${exportedTreeCounts[assetId]}`
+    exportedTreeSourceMeshCounts[source.meshName] === source.count,
+    `Unexpected exported ${source.meshName} count: ${exportedTreeSourceMeshCounts[source.meshName]}`
   );
 }
 const exportedMeshNames = (gltf.meshes ?? []).map((mesh) => mesh.name ?? "");
@@ -490,15 +535,20 @@ invariant(
 const requireFromCli = createRequire(
   realpathSync(resolve("node_modules/@gltf-transform/cli/package.json"))
 );
-const [{ NodeIO }, { ALL_EXTENSIONS }, { MeshoptDecoder }] = await Promise.all([
+const [{ NodeIO }, { ALL_EXTENSIONS }, { MeshoptDecoder }, draco3d] = await Promise.all([
   import(pathToFileURL(requireFromCli.resolve("@gltf-transform/core"))),
   import(pathToFileURL(requireFromCli.resolve("@gltf-transform/extensions"))),
   import(pathToFileURL(requireFromCli.resolve("meshoptimizer"))),
+  import(pathToFileURL(requireFromCli.resolve("draco3dgltf"))),
 ]);
 await MeshoptDecoder.ready;
+const dracoDecoder = await draco3d.createDecoderModule();
 const io = new NodeIO()
   .registerExtensions(ALL_EXTENSIONS)
-  .registerDependencies({ "meshopt.decoder": MeshoptDecoder });
+  .registerDependencies({
+    "meshopt.decoder": MeshoptDecoder,
+    "draco3d.decoder": dracoDecoder,
+  });
 const document = await io.read(glbPath);
 const root = document.getRoot();
 const decodedTerrain = root
@@ -535,20 +585,34 @@ for (const primitive of decodedMesh.listPrimitives()) {
   );
 }
 
-for (const zoneName of expectedMaterialZones) {
-  invariant(
-    (materialTriangles.get(zoneName) ?? 0) > 0,
-    `Optimized Forest GLB lost material zone: ${zoneName}`
-  );
-}
+invariant(
+  (materialTriangles.get("Packed Performance Clearing") ?? 0) > 0,
+  "Optimized Forest GLB lost the continuous ground surface"
+);
+invariant(
+  [...materialTriangles.keys()].filter((name) => expectedMaterialZones.includes(name)).length === 1,
+  "Optimized Forest terrain split back into hard-edged material islands"
+);
 
-const clearingRadius = Number(terrain.tka_clearing_radius);
+const performanceCoreRadius = Number(terrain.tka_performance_core_radius);
 const maximumFlatDeviation = vertices
-  .filter(([x, , z]) => Math.hypot(x, z) <= clearingRadius + 0.001)
+  .filter(([x, , z]) => Math.hypot(x, z) <= performanceCoreRadius + 0.001)
   .reduce((maximum, [, y]) => Math.max(maximum, Math.abs(y)), 0);
 invariant(
   maximumFlatDeviation <= 0.02,
-  `Optimized Forest clearing is not flat: ${maximumFlatDeviation.toFixed(4)}m`
+  `Optimized Forest performance core is not flat: ${maximumFlatDeviation.toFixed(4)}m`
+);
+const livingGroundHeights = vertices
+  .filter(([x, , z]) => {
+    const radius = Math.hypot(x, z);
+    return radius > performanceCoreRadius + 0.5 && radius <= 30;
+  })
+  .map(([, y]) => y);
+const livingGroundRelief =
+  Math.max(...livingGroundHeights) - Math.min(...livingGroundHeights);
+invariant(
+  terrain.tka_living_ground_relief_required === true && livingGroundRelief >= 0.12,
+  `Optimized Forest clearing lost living relief: ${livingGroundRelief.toFixed(4)}m`
 );
 
 const angularSegments = Number(terrain.tka_angular_segments);
@@ -613,8 +677,10 @@ console.log(
       extensions: [...extensions],
       terrainEnvelope: {
         shape: terrain.tka_boundary_shape,
-        clearingRadius,
+        clearingRadius: Number(terrain.tka_clearing_radius),
+        performanceCoreRadius,
         maximumFlatDeviation,
+        livingGroundRelief,
         minimumRadius: actualMinimumRadius,
         maximumRadius: actualMaximumRadius,
         minimumSkirtDrop: actualMinimumSkirtDrop,
@@ -636,8 +702,19 @@ console.log(
         layoutSha256: treeLayoutSha256,
         count: expectedTreeCount,
         clusters: treeClusterNames,
-        assetCounts: exportedTreeCounts,
+        assetCounts: Object.fromEntries(
+          expectedTreeAssetIds.map((assetId, index) => [
+            assetId,
+            treeAssetCounts[index],
+          ])
+        ),
+        authoredVariantCounts: Object.fromEntries(
+          expectedTreeVariants.map((variant) => [variant.variantId, variant.count])
+        ),
+        sourceMeshCounts: exportedTreeSourceMeshCounts,
         instancingNodes: treeInstancingNodes.length,
+        standaloneLowFrequencyNodes:
+          treeSourceNodes.length - treeInstancingNodes.length,
         transformAttributes: ["TRANSLATION", "ROTATION", "SCALE"],
       },
       groundLife: {

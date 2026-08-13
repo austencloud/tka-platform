@@ -1,0 +1,96 @@
+{
+  "version": 2,
+  "status": "approved",
+  "sourceDecisionId": "UwbTSR6CvVN9M925ZB2T",
+  "coordinateFrame": "Blender x/y metres; runtime x/-z",
+  "worldExtentMetres": 200,
+  "atlasSizePixels": 4096,
+  "sourceFamilies": {
+    "neutral": {
+      "label": "Forest transition soil",
+      "source": "Poly Haven forrest_ground_01, CC0",
+      "page": "https://polyhaven.com/a/forrest_ground_01",
+      "diffuse": "static/textures/forest-floor/diffuse.jpg",
+      "normal": "static/textures/forest-floor/normal.jpg",
+      "roughness": "static/textures/forest-floor/roughness.jpg",
+      "repeatMetres": 5.2
+    },
+    "meadow": {
+      "label": "Living clearing grass",
+      "source": "Existing Autumn living-grass PBR family",
+      "page": "internal://autumn-living-ground",
+      "diffuse": "static/textures/terrain/grass/diffuse.jpg",
+      "normal": "static/textures/terrain/grass/normal.jpg",
+      "roughness": "static/textures/terrain/grass/roughness.jpg",
+      "repeatMetres": 3.2,
+      "colorGrade": {
+        "brightness": 1.08,
+        "saturation": 1.08,
+        "tint": [58, 108, 45],
+        "tintStrength": 0.08
+      }
+    },
+    "litter": {
+      "label": "Canopy leaf litter",
+      "source": "Poly Haven forest_leaves_02, CC0",
+      "page": "https://polyhaven.com/a/forest_leaves_02",
+      "diffuse": "assets/3d-source/forest/ground-materials/forest-leaves-diffuse.jpg",
+      "normal": "assets/3d-source/forest/ground-materials/forest-leaves-normal.jpg",
+      "roughness": "assets/3d-source/forest/ground-materials/forest-leaves-roughness.jpg",
+      "repeatMetres": 4.4
+    },
+    "damp": {
+      "label": "Damp runoff soil",
+      "source": "Poly Haven brown_mud_rocks_01, CC0",
+      "page": "https://polyhaven.com/a/brown_mud_rocks_01",
+      "diffuse": "assets/3d-source/forest/ground-materials/brown-mud-diffuse.jpg",
+      "normal": "assets/3d-source/forest/ground-materials/brown-mud-normal.jpg",
+      "roughness": "assets/3d-source/forest/ground-materials/brown-mud-roughness.jpg",
+      "repeatMetres": 4.8
+    }
+  },
+  "materialZones": {
+    "Packed Performance Clearing": {
+      "detailFamily": "meadow",
+      "roughnessScale": 0.93,
+      "normalStrength": 0.42
+    },
+    "Path Soil": {
+      "detailFamily": "neutral",
+      "roughnessScale": 1,
+      "normalStrength": 0.32
+    },
+    "Leaf Duff": {
+      "detailFamily": "litter",
+      "roughnessScale": 0.98,
+      "normalStrength": 0.62
+    },
+    "Shade Moss": {
+      "detailFamily": "litter",
+      "roughnessScale": 0.96,
+      "normalStrength": 0.5
+    },
+    "Damp Hollow": {
+      "detailFamily": "damp",
+      "roughnessScale": 0.82,
+      "normalStrength": 0.68
+    },
+    "Quiet Distant Ground": {
+      "detailFamily": "neutral",
+      "roughnessScale": 1,
+      "normalStrength": 0.4
+    }
+  },
+  "rules": {
+    "performanceCoreRadiusMetres": 4.8,
+    "stageContactRadiusMetres": 5.1,
+    "nearTreeContactRadiusMetres": 4.2,
+    "campShelfTrafficRadiusScale": 0.82,
+    "maximumBakedContactDarkening": 0.24,
+    "minimumOpenMeadowWeight": 0.58,
+    "requiresHabitatDrivenBlend": true,
+    "requiresBrokenPathEdges": true,
+    "forbidsUniformClearingTint": true,
+    "forbidsCircularRootIslands": true
+  }
+}

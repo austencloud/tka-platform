@@ -1,0 +1,209 @@
+{
+  "contractVersion": 1,
+  "contractSha256": "3d66a7c997bb2bbb8f53f993da35ef859e3c45d5c301d4658be3738ba9779dcf",
+  "reviewFrameHeightMetres": 22.0,
+  "reviewAnglesDegrees": [
+    0.0,
+    45.0,
+    110.0
+  ],
+  "candidates": [
+    {
+      "id": "PH-JACARANDA",
+      "label": "Natural Broad Canopy",
+      "family": "Poly Haven Natural",
+      "roles": [
+        "mature-canopy",
+        "hero-frame"
+      ],
+      "sourcePath": "E:\\tka-platform\\assets\\3d-source\\forest\\polyhaven\\jacaranda_tree\\jacaranda_tree_1k.gltf",
+      "sourceBytes": 214609299,
+      "meshCount": 1,
+      "vertices": 3680496,
+      "triangles": 3863832,
+      "materials": 3,
+      "images": 9,
+      "sourceDimensionsMetres": [
+        24.417049407958984,
+        19.15457534790039,
+        19.468875885009766
+      ],
+      "reviewScale": 0.7704605077661101,
+      "reviewHeightMetres": 15.0,
+      "renders": {
+        "front": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-jacaranda_front.png",
+        "three-quarter": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-jacaranda_three-quarter.png",
+        "silhouette": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-jacaranda_silhouette.png"
+      }
+    },
+    {
+      "id": "PH-SMALL-02",
+      "label": "Natural Slender Broadleaf",
+      "family": "Poly Haven Natural",
+      "roles": [
+        "irregular-middle",
+        "young"
+      ],
+      "sourcePath": "E:\\tka-platform\\assets\\3d-source\\forest\\polyhaven\\tree_small_02\\tree_small_02_1k.gltf",
+      "sourceBytes": 100974143,
+      "meshCount": 1,
+      "vertices": 1777278,
+      "triangles": 2062487,
+      "materials": 3,
+      "images": 9,
+      "sourceDimensionsMetres": [
+        2.9166998863220215,
+        4.292477130889893,
+        4.556740760803223
+      ],
+      "reviewScale": 1.755640801165487,
+      "reviewHeightMetres": 8.0,
+      "renders": {
+        "front": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-small-02_front.png",
+        "three-quarter": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-small-02_three-quarter.png",
+        "silhouette": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-small-02_silhouette.png"
+      }
+    },
+    {
+      "id": "PH-ISLAND-01",
+      "label": "Natural Gnarled Spreader",
+      "family": "Poly Haven Natural",
+      "roles": [
+        "hero-frame",
+        "irregular-middle"
+      ],
+      "sourcePath": "E:\\tka-platform\\assets\\3d-source\\forest\\polyhaven\\island_tree_01\\island_tree_01_1k.gltf",
+      "sourceBytes": 66337268,
+      "meshCount": 1,
+      "vertices": 1303928,
+      "triangles": 1599403,
+      "materials": 3,
+      "images": 9,
+      "sourceDimensionsMetres": [
+        4.755149841308594,
+        4.817679405212402,
+        5.027446746826172
+      ],
+      "reviewScale": 1.7901731143510773,
+      "reviewHeightMetres": 9.0,
+      "renders": {
+        "front": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-island-01_front.png",
+        "three-quarter": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-island-01_three-quarter.png",
+        "silhouette": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-island-01_silhouette.png"
+      }
+    },
+    {
+      "id": "PH-ISLAND-02",
+      "label": "Natural Riparian Spreader",
+      "family": "Poly Haven Natural",
+      "roles": [
+        "riparian",
+        "irregular-middle"
+      ],
+      "sourcePath": "E:\\tka-platform\\assets\\3d-source\\forest\\polyhaven\\island_tree_02\\island_tree_02_1k.gltf",
+      "sourceBytes": 46172406,
+      "meshCount": 1,
+      "vertices": 874494,
+      "triangles": 1072212,
+      "materials": 3,
+      "images": 9,
+      "sourceDimensionsMetres": [
+        4.207745552062988,
+        4.07069730758667,
+        3.4066057205200195
+      ],
+      "reviewScale": 2.0548312820103667,
+      "reviewHeightMetres": 7.0,
+      "renders": {
+        "front": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-island-02_front.png",
+        "three-quarter": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-island-02_three-quarter.png",
+        "silhouette": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-island-02_silhouette.png"
+      }
+    },
+    {
+      "id": "PH-ISLAND-03",
+      "label": "Natural Understory Spreader",
+      "family": "Poly Haven Natural",
+      "roles": [
+        "understory",
+        "young"
+      ],
+      "sourcePath": "E:\\tka-platform\\assets\\3d-source\\forest\\polyhaven\\island_tree_03\\island_tree_03_1k.gltf",
+      "sourceBytes": 84885466,
+      "meshCount": 1,
+      "vertices": 1708346,
+      "triangles": 2085320,
+      "materials": 3,
+      "images": 9,
+      "sourceDimensionsMetres": [
+        2.9720709323883057,
+        2.9132323265075684,
+        2.6150591373443604
+      ],
+      "reviewScale": 1.912002649805308,
+      "reviewHeightMetres": 5.0,
+      "renders": {
+        "front": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-island-03_front.png",
+        "three-quarter": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-island-03_three-quarter.png",
+        "silhouette": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-island-03_silhouette.png"
+      }
+    },
+    {
+      "id": "PH-FIR-01",
+      "label": "Natural Mature Fir Family",
+      "family": "Poly Haven Natural",
+      "roles": [
+        "mature-conifer",
+        "distant-silhouette"
+      ],
+      "sourcePath": "E:\\tka-platform\\assets\\3d-source\\forest\\polyhaven\\fir_tree_01\\fir_tree_01_1k.gltf",
+      "sourceBytes": 487358833,
+      "meshCount": 3,
+      "vertices": 9010699,
+      "triangles": 6982937,
+      "materials": 6,
+      "images": 12,
+      "sourceDimensionsMetres": [
+        18.778045654296875,
+        6.5107269287109375,
+        18.9387264251709
+      ],
+      "reviewScale": 0.8448297758150662,
+      "reviewHeightMetres": 16.0,
+      "renders": {
+        "front": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-fir-01_front.png",
+        "three-quarter": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-fir-01_three-quarter.png",
+        "silhouette": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-fir-01_silhouette.png"
+      }
+    },
+    {
+      "id": "PH-FIR-SAPLING",
+      "label": "Natural Fir Understory Family",
+      "family": "Poly Haven Natural",
+      "roles": [
+        "understory",
+        "young",
+        "distant-silhouette"
+      ],
+      "sourcePath": "E:\\tka-platform\\assets\\3d-source\\forest\\polyhaven\\fir_sapling_medium\\fir_sapling_medium_1k.gltf",
+      "sourceBytes": 78056936,
+      "meshCount": 3,
+      "vertices": 1747107,
+      "triangles": 1533513,
+      "materials": 3,
+      "images": 6,
+      "sourceDimensionsMetres": [
+        14.792922973632812,
+        5.275873184204102,
+        8.890353202819824
+      ],
+      "reviewScale": 0.6748888219758167,
+      "reviewHeightMetres": 6.0,
+      "renders": {
+        "front": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-fir-sapling_front.png",
+        "three-quarter": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-fir-sapling_three-quarter.png",
+        "silhouette": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-family-r1\\forest_tree_ph-fir-sapling_silhouette.png"
+      }
+    }
+  ]
+}

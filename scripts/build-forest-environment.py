@@ -32,6 +32,11 @@ from forest_ground_life import build_ground_life
 BLEND_PATH = os.path.join(PROJECT_ROOT, "blender", "forest_environment.blend")
 TEXTURE_DIR = os.path.join(PROJECT_ROOT, "static", "textures", "forest-floor")
 ZONED_DIFFUSE_PATH = os.path.join(TEXTURE_DIR, "forest-floor-zoned.jpg")
+GROUND_MATERIAL_PATH = os.path.join(SCRIPT_DIR, "forest-ground-materials.json")
+with open(GROUND_MATERIAL_PATH, "rb") as ground_material_file:
+    GROUND_MATERIAL_BYTES = ground_material_file.read()
+GROUND_MATERIALS = json.loads(GROUND_MATERIAL_BYTES.decode("utf-8"))
+GROUND_MATERIAL_SHA256 = hashlib.sha256(GROUND_MATERIAL_BYTES).hexdigest()
 PATH_LAYOUT_PATH = os.path.join(SCRIPT_DIR, "forest-path-layout.json")
 with open(PATH_LAYOUT_PATH, "rb") as path_layout_file:
     PATH_LAYOUT_BYTES = path_layout_file.read()
@@ -190,8 +195,6 @@ def distance_to_path(x, y, path):
 
 
 def path_depression(x, y):
-    if math.hypot(x, y) <= CLEARING_RADIUS:
-        return 0.0
     depth = 0.0
     for path in PATHS:
         maximum_depth = float(path["depression"])
@@ -239,7 +242,55 @@ def terrain_mound(x, y, center_x, center_y, radius, height):
 def base_terrain_height(x, y):
     radius = math.hypot(x, y)
     if radius <= CLEARING_RADIUS:
-        return 0.0
+        # The stage core remains level. Beyond it, the clearing carries subtle
+        # compression, drainage, and root shelves so props do not sit on a
+        # mathematically flat plane.
+        performance_core = float(
+            GROUND_MATERIALS["rules"]["performanceCoreRadiusMetres"]
+        )
+        core_guard = smoothstep(performance_core, performance_core + 3.4, radius)
+        micro_relief = core_guard * (
+            0.045 * math.sin(x * 0.31 + y * 0.17)
+            + 0.028 * math.sin(x * 0.13 - y * 0.37)
+            + 0.016 * math.cos((x + y) * 0.61)
+        )
+        audience_settle = -0.09 * (
+            1.0
+            - smoothstep(
+                0.34,
+                1.08,
+                ellipse_metric(x, y, -1.0, 13.0, 15.5, 10.0, 0.0),
+            )
+        ) * core_guard
+        damp_hollow = -0.18 * (
+            1.0
+            - smoothstep(
+                0.38,
+                1.12,
+                ellipse_metric(x, y, 16.5, -24.0, 9.0, 5.2, math.radians(-18.0)),
+            )
+        )
+        root_shelves = 0.0
+        for frame_index, frame in enumerate(STATIC_PROP_LAYOUT["frameTrees"]):
+            tree_x, tree_y = map(float, frame["position"])
+            tree_radius = 3.1 * float(frame["scale"])
+            delta_x = x - tree_x
+            delta_y = y - tree_y
+            angle = math.atan2(delta_y, delta_x)
+            irregular_radius = tree_radius * (
+                1.0
+                + 0.18 * math.sin(angle * 3.0 + frame_index * 1.7)
+                + 0.10 * math.sin(angle * 7.0 - frame_index * 0.9)
+            )
+            root_shelves += 0.12 * (
+                1.0
+                - smoothstep(
+                    irregular_radius * 0.24,
+                    irregular_radius,
+                    math.hypot(delta_x, delta_y),
+                )
+            )
+        return micro_relief + audience_settle + damp_hollow + root_shelves
 
     # The current Forest and Coven Hub both depend on a broad level clearing.
     # Woodland relief begins outside their maximum authored performance area.
@@ -276,11 +327,9 @@ def base_terrain_height(x, y):
 
 def terrain_height(x, y):
     radius = math.hypot(x, y)
-    if radius <= CLEARING_RADIUS:
-        return 0.0
     return (
         base_terrain_height(x, y)
-        - path_depression(x, y)
+        - path_depression(x, y) * smoothstep(PERFORMANCE_KEEP_CLEAR_RADIUS, 12.0, radius)
         + root_crossing_height(x, y)
     )
 
@@ -351,59 +400,21 @@ def create_floor_materials():
             "Missing zoned Forest diffuse. Run node scripts/build-forest-floor-texture.mjs"
         )
     forest_diffuse = ZONED_DIFFUSE_PATH
-    forest_normal = os.path.join(TEXTURE_DIR, "normal.jpg")
-    forest_roughness = os.path.join(TEXTURE_DIR, "roughness.jpg")
-
-    definitions = (
-        (
-            MATERIAL_ZONE_NAMES[0],
-            forest_diffuse,
-            forest_normal,
-            forest_roughness,
-            0.96,
-            0.38,
-        ),
-        (
-            MATERIAL_ZONE_NAMES[1],
-            forest_diffuse,
-            forest_normal,
-            forest_roughness,
-            0.96,
-            0.58,
-        ),
-        (
-            MATERIAL_ZONE_NAMES[2],
-            forest_diffuse,
-            forest_normal,
-            forest_roughness,
-            0.98,
-            0.64,
-        ),
-        (
-            MATERIAL_ZONE_NAMES[3],
-            forest_diffuse,
-            forest_normal,
-            forest_roughness,
-            1.0,
-            0.46,
-        ),
-        (
-            MATERIAL_ZONE_NAMES[4],
-            forest_diffuse,
-            forest_normal,
-            forest_roughness,
-            0.76,
-            0.72,
-        ),
-        (
-            MATERIAL_ZONE_NAMES[5],
-            forest_diffuse,
-            forest_normal,
-            forest_roughness,
-            1.0,
-            0.42,
-        ),
-    )
+    families = GROUND_MATERIALS["sourceFamilies"]
+    definitions = []
+    for material_name in MATERIAL_ZONE_NAMES:
+        zone = GROUND_MATERIALS["materialZones"][material_name]
+        family = families[zone["detailFamily"]]
+        definitions.append(
+            (
+                material_name,
+                forest_diffuse,
+                os.path.join(PROJECT_ROOT, family["normal"]),
+                os.path.join(PROJECT_ROOT, family["roughness"]),
+                float(zone["roughnessScale"]),
+                float(zone["normalStrength"]),
+            )
+        )
     return [forest_floor_material(*definition) for definition in definitions]
 
 
@@ -522,7 +533,10 @@ def create_terrain(materials):
     zone_counts = [0] * len(materials)
     for polygon in mesh.polygons:
         zone_index = terrain_material_zone(polygon.center.x, polygon.center.y)
-        polygon.material_index = zone_index
+        # The world-space ecological mask blends these authored families at
+        # runtime. One continuous terrain primitive prevents hard polygon
+        # borders from appearing between PBR response families.
+        polygon.material_index = 0
         zone_counts[zone_index] += 1
         for loop_index in polygon.loop_indices:
             vertex_index = mesh.loops[loop_index].vertex_index
@@ -534,6 +548,11 @@ def create_terrain(materials):
     terrain["tka_role"] = "terrain"
     terrain["tka_phase"] = "world-envelope"
     terrain["tka_material_phase"] = "forest-floor-zones"
+    terrain["tka_ground_material_version"] = int(GROUND_MATERIALS["version"])
+    terrain["tka_ground_material_sha256"] = GROUND_MATERIAL_SHA256
+    terrain["tka_ground_material_families"] = "|".join(
+        GROUND_MATERIALS["sourceFamilies"].keys()
+    )
     terrain["tka_material_zone_names"] = "|".join(MATERIAL_ZONE_NAMES)
     terrain["tka_material_zone_counts"] = zone_counts
     terrain["tka_uv_metres_per_tile"] = TERRAIN_UV_METRES
@@ -545,6 +564,10 @@ def create_terrain(materials):
     terrain["tka_path_roles"] = "|".join(path["role"] for path in PATHS)
     terrain["tka_root_crossing_count"] = len(ROOT_CROSSINGS)
     terrain["tka_clearing_radius"] = CLEARING_RADIUS
+    terrain["tka_performance_core_radius"] = float(
+        GROUND_MATERIALS["rules"]["performanceCoreRadiusMetres"]
+    )
+    terrain["tka_living_ground_relief_required"] = True
     clearing_edge_radii = [
         clearing_edge_radius(math.tau * segment / TERRAIN_ANGULAR_SEGMENTS)
         for segment in range(TERRAIN_ANGULAR_SEGMENTS)
@@ -567,16 +590,27 @@ def create_terrain(materials):
 
 
 def verify_terrain():
-    flat_samples = []
+    performance_core = float(
+        GROUND_MATERIALS["rules"]["performanceCoreRadiusMetres"]
+    )
+    core_samples = []
+    living_ground_samples = []
     for y in range(-30, 31):
         for x in range(-30, 31):
-            if math.hypot(x, y) <= CLEARING_RADIUS:
-                flat_samples.append(abs(terrain_height(x, y)))
-    maximum_flat_deviation = max(flat_samples)
-    if maximum_flat_deviation > 0.02:
+            radius = math.hypot(x, y)
+            height = terrain_height(x, y)
+            if radius <= performance_core:
+                core_samples.append(abs(height))
+            elif radius <= CLEARING_RADIUS:
+                living_ground_samples.append(height)
+    maximum_core_deviation = max(core_samples)
+    if maximum_core_deviation > 0.02:
         raise RuntimeError(
-            f"Performance clearing is not flat: {maximum_flat_deviation:.4f}m"
+            f"Performance core is not flat: {maximum_core_deviation:.4f}m"
         )
+    living_ground_range = max(living_ground_samples) - min(living_ground_samples)
+    if living_ground_range < 0.12:
+        raise RuntimeError("Forest clearing lost its living-ground relief")
 
     boundary_radii = [
         terrain_boundary_radius(math.tau * segment / TERRAIN_ANGULAR_SEGMENTS)
@@ -612,7 +646,8 @@ def verify_terrain():
         )
 
     print("\nForest terrain verification")
-    print(f"Flat clearing maximum deviation: {maximum_flat_deviation:.4f} m")
+    print(f"Flat performance-core deviation:  {maximum_core_deviation:.4f} m")
+    print(f"Living clearing relief range:     {living_ground_range:.4f} m")
     print(
         "Terrain boundary radius:         "
         f"{minimum_boundary_radius:.3f} to {maximum_boundary_radius:.3f} m"
@@ -772,8 +807,14 @@ def build_tree_placements():
     return placements
 
 
-def import_tree_prototype(asset):
-    source_path = os.path.join(PROJECT_ROOT, asset["stagedPath"])
+def tree_source_variants(asset):
+    variants = asset.get("variants")
+    return variants if variants else [asset]
+
+
+def import_tree_prototype(asset, variant=None):
+    source = variant or asset
+    source_path = os.path.join(PROJECT_ROOT, source["stagedPath"])
     if not os.path.isfile(source_path):
         raise RuntimeError(
             f"Missing staged tree source {source_path}; run prepare-forest-composition-sources.mjs"
@@ -784,7 +825,7 @@ def import_tree_prototype(asset):
     meshes = [obj for obj in imported if obj.type == "MESH"]
     if len(meshes) != 1:
         raise RuntimeError(
-            f"Tree {asset['id']} must import as one mesh, found {len(meshes)}"
+            f"Tree {asset['id']} variant {source.get('id', asset['id'])} must import as one mesh, found {len(meshes)}"
         )
     prototype = meshes[0]
     for obj in imported:
@@ -802,8 +843,18 @@ def import_tree_prototype(asset):
     source_height = source_max_z - source_min_z
     if source_height <= 0.01:
         raise RuntimeError(f"Tree {asset['id']} has invalid height {source_height}")
-    prototype.data.name = f"ForestTreeMesh_{asset['id']}"
+    prototype["tka_tree_variant"] = source.get("id", asset["id"])
+    prototype.data.name = (
+        f"ForestTreeMesh_{asset['id']}_{source.get('id', asset['id'])}"
+    )
     return prototype, source_min_z, source_height
+
+
+def import_tree_prototypes(asset):
+    return [
+        (*import_tree_prototype(asset, variant), variant.get("id", asset["id"]))
+        for variant in tree_source_variants(asset)
+    ]
 
 
 def distance_to_rectangle_edge(x, y, half_width, half_depth):
@@ -1201,9 +1252,12 @@ def create_near_frame_layer(tree_placements, ground_life_metrics):
         frames_by_asset.setdefault(frame["assetId"], []).append(frame)
     for asset_id, frames in frames_by_asset.items():
         asset = TREE_ASSETS[asset_id]
-        prototype, source_min_z, source_height = import_tree_prototype(asset)
-        normalized_scale = float(asset["targetHeightMetres"]) / source_height
-        for frame in frames:
+        prototypes = import_tree_prototypes(asset)
+        for frame_index, frame in enumerate(frames):
+            prototype, source_min_z, source_height, variant_id = prototypes[
+                frame_index % len(prototypes)
+            ]
+            normalized_scale = float(asset["targetHeightMetres"]) / source_height
             x, y = map(float, frame["position"])
             scale = normalized_scale * float(frame["scale"])
             tree = prototype.copy()
@@ -1216,8 +1270,10 @@ def create_near_frame_layer(tree_placements, ground_life_metrics):
             tree.location = (x, y, terrain_height(x, y) - source_min_z * scale)
             mark_near_frame_object(tree, "near-frame-tree", asset_id, frame["id"])
             tree["tka_frame_tree_id"] = frame["id"]
+            tree["tka_tree_variant"] = variant_id
             created_meshes.append(tree)
-        bpy.data.objects.remove(prototype, do_unlink=True)
+        for prototype, _source_min_z, _source_height, _variant_id in prototypes:
+            bpy.data.objects.remove(prototype, do_unlink=True)
 
     props_by_source = {source_id: [] for source_id in STATIC_PROP_SOURCES}
     vignette_by_prop = {}
@@ -1298,9 +1354,12 @@ def create_tree_composition(terrain):
         if not asset_placements:
             continue
         asset = TREE_ASSETS[asset_id]
-        prototype, source_min_z, source_height = import_tree_prototype(asset)
-        normalized_scale = float(asset["targetHeightMetres"]) / source_height
+        prototypes = import_tree_prototypes(asset)
         for index, placement in enumerate(asset_placements):
+            prototype, source_min_z, source_height, variant_id = prototypes[
+                index % len(prototypes)
+            ]
+            normalized_scale = float(asset["targetHeightMetres"]) / source_height
             scale = normalized_scale * placement["scaleVariation"]
             tree = prototype.copy()
             tree.data = prototype.data
@@ -1322,11 +1381,14 @@ def create_tree_composition(terrain):
             tree["tka_tree_asset"] = asset_id
             tree["tka_tree_family"] = asset["family"]
             tree["tka_tree_roles"] = "|".join(asset["roles"])
+            tree["tka_tree_variant"] = variant_id
             tree["tka_target_height_metres"] = float(asset["targetHeightMetres"])
             tree["tka_tree_layout_version"] = int(TREE_LAYOUT["version"])
             tree["tka_tree_layout_sha256"] = TREE_LAYOUT_SHA256
+            placement["variantId"] = variant_id
             counts[asset_id] += 1
-        bpy.data.objects.remove(prototype, do_unlink=True)
+        for prototype, _source_min_z, _source_height, _variant_id in prototypes:
+            bpy.data.objects.remove(prototype, do_unlink=True)
 
     terrain["tka_tree_phase"] = "forest-composition"
     terrain["tka_tree_layout_version"] = int(TREE_LAYOUT["version"])
@@ -1376,9 +1438,24 @@ def verify_tree_composition(placements, counts):
     for asset_id, count in counts.items():
         for role in TREE_ASSETS[asset_id]["roles"]:
             role_counts[role] = role_counts.get(role, 0) + count
-    for role in ("mature-canopy", "irregular-middle", "young", "snag"):
+    for role in ("mature-canopy", "irregular-middle", "young", "understory"):
         if role_counts.get(role, 0) <= 0:
             raise RuntimeError(f"Forest composition lost the {role} role")
+    if any(asset["family"] != "Poly Haven Natural" for asset in TREE_ASSETS.values()):
+        raise RuntimeError("Forest tree composition still contains a non-natural tree family")
+    variant_counts = {}
+    for placement in placements:
+        variant_id = placement.get("variantId")
+        if not variant_id:
+            raise RuntimeError(f"Tree placement lost its source variant: {placement}")
+        variant_counts[variant_id] = variant_counts.get(variant_id, 0) + 1
+    expected_variant_count = sum(
+        len(tree_source_variants(asset)) for asset in TREE_ASSETS.values()
+    )
+    if len(variant_counts) != expected_variant_count:
+        raise RuntimeError(
+            f"Expected {expected_variant_count} natural tree variants, used {len(variant_counts)}"
+        )
 
     metrics_path = os.path.join(QA_DIR, "forest_environment_tree_metrics.json")
     os.makedirs(QA_DIR, exist_ok=True)
@@ -1390,6 +1467,8 @@ def verify_tree_composition(placements, counts):
                 "treeCount": len(placements),
                 "clusterCount": len(TREE_LAYOUT["clusters"]),
                 "assetCounts": counts,
+                "variantCounts": variant_counts,
+                "sourceVariantCount": len(variant_counts),
                 "roleCounts": role_counts,
                 "minimumTrunkSpacingMetres": minimum_spacing,
                 "minimumPathShoulderClearanceMetres": minimum_path_clearance,
@@ -1405,6 +1484,7 @@ def verify_tree_composition(placements, counts):
     print(f"Minimum trunk spacing:             {minimum_spacing:.3f} m")
     print(f"Minimum path shoulder clearance:   {minimum_path_clearance:.3f} m")
     print(f"Asset counts:                      {counts}")
+    print(f"Natural source variants:           {len(variant_counts)}")
     print(f"Tree metrics:                      {metrics_path}")
 
 

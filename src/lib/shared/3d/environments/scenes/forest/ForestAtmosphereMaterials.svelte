@@ -7,12 +7,16 @@
     type Object3D,
   } from "three";
   import { onMount } from "svelte";
+  import { inheritForestGroundDetailPatch } from "./forest-ground-detail";
+  import { inheritRootedWindPatch } from "../../primitives/rooted-wind-material";
   import type { ForestMaterialResponseConfig } from "../../domain/models/scene-configs/forest-scene-config";
 
   type MaterialScope = "environment" | "near-frame" | "stage" | "camp";
   type MaterialCategory =
     | "terrainTint"
+    | "forestFloorTint"
     | "foliageTint"
+    | "woodyTint"
     | "groundLifeTint"
     | "stageTint"
     | "campTint";
@@ -60,11 +64,37 @@
     materialName: string,
     materialScope: MaterialScope
   ): MaterialCategory {
+    if (
+      materialScope === "stage" &&
+      materialName === "ForestStage_ForestContact"
+    ) {
+      return "terrainTint";
+    }
     if (materialScope === "stage") return "stageTint";
     if (materialScope === "camp") return "campTint";
-    if (TERRAIN_MATERIALS.has(materialName)) return "terrainTint";
-    if (materialName.startsWith("PaletteMaterial")) return "groundLifeTint";
+    if (
+      materialName === "Packed Performance Clearing" ||
+      materialName === "Path Soil"
+    ) {
+      return "terrainTint";
+    }
+    if (TERRAIN_MATERIALS.has(materialName)) return "forestFloorTint";
+    if (
+      materialName.startsWith("PaletteMaterial") ||
+      materialName.startsWith("Forest Clearing Grass")
+    ) {
+      return "groundLifeTint";
+    }
     if (materialName.startsWith("Material_")) return "foliageTint";
+    const normalizedName = materialName.toLowerCase();
+    if (/leaves|twig/.test(normalizedName)) return "foliageTint";
+    if (
+      /trunk|bark|branches|jacaranda_tree|tree_small|island_tree|fir_tree|fir_sapling/.test(
+        normalizedName
+      )
+    ) {
+      return "woodyTint";
+    }
     return "groundLifeTint";
   }
 
@@ -92,25 +122,24 @@ uniform float uForestFoliageHighlightStrength;`
           "#include <map_fragment>",
           `#include <map_fragment>
 float forestLuminance = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
-float forestGreenSignal = smoothstep(
-  0.005,
-  0.12,
-  diffuseColor.g - max(diffuseColor.r, diffuseColor.b)
-);
 float forestTintLuminance = max(
   dot(uForestFoliageHighlightTint, vec3(0.2126, 0.7152, 0.0722)),
   0.001
 );
+float forestLeafLuminance = max(
+  forestLuminance,
+  0.16 + 0.10 * uForestFoliageHighlightStrength
+);
 vec3 forestLeafColor = uForestFoliageHighlightTint
-  * (forestLuminance / forestTintLuminance);
+  * (forestLeafLuminance / forestTintLuminance);
 diffuseColor.rgb = mix(
   diffuseColor.rgb,
   forestLeafColor,
-  clamp(forestGreenSignal * uForestFoliageHighlightStrength, 0.0, 1.0)
+  clamp(uForestFoliageHighlightStrength, 0.0, 1.0)
 );`
         );
     };
-    material.customProgramCacheKey = () => "forest-foliage-highlight-grade-v3";
+    material.customProgramCacheKey = () => "forest-foliage-highlight-grade-v4";
     return uniforms;
   }
 
@@ -125,6 +154,8 @@ diffuseColor.rgb = mix(
 
     const clone = original.clone();
     clone.name = original.name;
+    inheritForestGroundDetailPatch(original, clone);
+    inheritRootedWindPatch(original, clone);
     const category = classify(original.name, materialScope);
     clones.set(original, clone);
     clonedMaterials.push(clone);

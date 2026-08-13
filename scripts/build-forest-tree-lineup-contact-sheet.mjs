@@ -5,21 +5,23 @@ import { dirname, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import sharp from "sharp";
 
-const manifestPath = resolve("scripts/forest-tree-lineup.json");
-const evidenceDirectory = resolve(
-  tmpdir(),
-  "tka-forest-evidence",
-  "tree-lineup"
+const args = process.argv.slice(2);
+const manifestIndex = args.indexOf("--manifest");
+const manifestPath = resolve(
+  manifestIndex >= 0
+    ? args[manifestIndex + 1]
+    : "scripts/forest-tree-lineup.json"
 );
+const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+const evidenceDirectory = manifest.evidenceDirectory
+  ? resolve(manifest.evidenceDirectory)
+  : resolve(tmpdir(), "tka-forest-evidence", "tree-lineup");
 const metricsPath = resolve(
   evidenceDirectory,
   "forest_tree_lineup_metrics.json"
 );
 
-const [manifest, metrics] = await Promise.all([
-  readFile(manifestPath, "utf8").then(JSON.parse),
-  readFile(metricsPath, "utf8").then(JSON.parse),
-]);
+const metrics = JSON.parse(await readFile(metricsPath, "utf8"));
 
 const CARD_WIDTH = 1000;
 const CARD_HEIGHT = 440;
@@ -70,8 +72,8 @@ async function buildCard(candidate, metric) {
       <rect width="8" height="${CARD_HEIGHT}" rx="4" fill="${accent}"/>
       <text x="34" y="43" fill="#f6ead3" font-family="system-ui, sans-serif" font-size="27" font-weight="700">${escapeXml(candidate.id)}  ${escapeXml(candidate.label)}</text>
       <text x="34" y="73" fill="${accent}" font-family="system-ui, sans-serif" font-size="17" font-weight="650">${escapeXml(candidate.family)}</text>
-      <text x="965" y="43" fill="#c2d2c7" text-anchor="end" font-family="ui-monospace, monospace" font-size="15">${escapeXml(formatCount(metric.triangles))} tris · ${escapeXml(formatBytes(metric.sourceBytes))}</text>
-      <text x="965" y="72" fill="#8fa89a" text-anchor="end" font-family="ui-monospace, monospace" font-size="14">12 m review height · person 1.75 m</text>
+      <text x="965" y="43" fill="#c2d2c7" text-anchor="end" font-family="ui-monospace, monospace" font-size="15">${escapeXml(formatCount(metric.triangles))} tris · ${escapeXml(formatBytes(metric.runtimeBytes ?? metric.sourceBytes))}</text>
+      <text x="965" y="72" fill="#8fa89a" text-anchor="end" font-family="ui-monospace, monospace" font-size="14">${escapeXml(metric.reviewHeightMetres.toFixed(1))} m tree · person 1.75 m</text>
       ${imageLabels
         .map((label, index) => {
           const x = IMAGE_START_X + index * (IMAGE_SIZE + IMAGE_GAP);
@@ -143,42 +145,56 @@ async function buildSheet({ candidates, columns, title, subtitle, output }) {
   return { output, width, height, candidates: candidates.length };
 }
 
-const current = manifest.candidates.filter(
-  (candidate) => candidate.family === "Current Forest"
-);
-const autumn = manifest.candidates.filter(
-  (candidate) => candidate.family === "Autumn Reuse"
-);
-const fresh = manifest.candidates.filter(
-  (candidate) => candidate.family === "Fresh Forest"
-);
-
-const outputs = await Promise.all([
-  buildSheet({
-    candidates: current,
+const legacySheets = [
+  {
+    id: "current",
+    family: "Current Forest",
     columns: 1,
     title: "Forest Gate 4 · current KayKit trees",
-    subtitle:
-      "Source materials shown honestly. Every tree is normalized to 12 m.",
-    output: resolve(evidenceDirectory, "forest_tree_lineup_current.png"),
-  }),
-  buildSheet({
-    candidates: autumn,
+    subtitle: "Source materials shown honestly. Every tree is normalized to 12 m.",
+    output: "forest_tree_lineup_current.png",
+  },
+  {
+    id: "autumn",
+    family: "Autumn Reuse",
     columns: 2,
     title: "Forest Gate 4 · reusable Autumn trees",
-    subtitle:
-      "Source materials shown honestly. Forest recoloring belongs to a later approved pass.",
-    output: resolve(evidenceDirectory, "forest_tree_lineup_autumn.png"),
-  }),
-  buildSheet({
-    candidates: fresh,
+    subtitle: "Source materials shown honestly. Forest recoloring belongs to a later approved pass.",
+    output: "forest_tree_lineup_autumn.png",
+  },
+  {
+    id: "fresh",
+    family: "Fresh Forest",
     columns: 1,
     title: "Forest Gate 4 · fresh lush-green family",
-    subtitle:
-      "ImageGen concepts reconstructed with Meshy 6. Every tree is normalized to 12 m.",
-    output: resolve(evidenceDirectory, "forest_tree_lineup_fresh.png"),
-  }),
-]);
+    subtitle: "ImageGen concepts reconstructed with Meshy 6. Every tree is normalized to 12 m.",
+    output: "forest_tree_lineup_fresh.png",
+  },
+];
+
+const sheetContracts = manifest.contactSheets ?? legacySheets;
+const outputs = await Promise.all(
+  sheetContracts.map((sheet) => {
+    const candidateIds = new Set(sheet.candidateIds ?? []);
+    const candidates = manifest.candidates.filter((candidate) =>
+      candidateIds.size > 0
+        ? candidateIds.has(candidate.id)
+        : sheet.family
+          ? candidate.family === sheet.family
+          : true
+    );
+    if (candidates.length === 0) {
+      throw new Error(`Contact sheet ${sheet.id} has no candidates`);
+    }
+    return buildSheet({
+      candidates,
+      columns: sheet.columns ?? 1,
+      title: sheet.title,
+      subtitle: sheet.subtitle,
+      output: resolve(evidenceDirectory, sheet.output),
+    });
+  })
+);
 
 console.log(
   JSON.stringify({ contractVersion: manifest.version, outputs }, null, 2)

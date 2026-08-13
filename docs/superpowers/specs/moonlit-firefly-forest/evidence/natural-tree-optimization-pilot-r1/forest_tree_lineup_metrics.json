@@ -1,0 +1,68 @@
+{
+  "contractVersion": 1,
+  "contractSha256": "b84cbe857534fe03644658d26c758ce2a7b151739613505e9d8d4e1eec723ffa",
+  "reviewFrameHeightMetres": 22.0,
+  "reviewAnglesDegrees": [
+    0.0,
+    45.0,
+    110.0
+  ],
+  "candidates": [
+    {
+      "id": "PH-JACARANDA-RAW",
+      "label": "Natural Broad Canopy \u00b7 Source",
+      "family": "Poly Haven Natural Source",
+      "roles": [
+        "mature-canopy",
+        "hero-frame"
+      ],
+      "sourcePath": "E:\\tka-platform\\assets\\3d-source\\forest\\polyhaven\\jacaranda_tree\\jacaranda_tree_1k.gltf",
+      "sourceBytes": 214609299,
+      "meshCount": 1,
+      "vertices": 3680496,
+      "triangles": 3863832,
+      "materials": 3,
+      "images": 9,
+      "sourceDimensionsMetres": [
+        24.417049407958984,
+        19.15457534790039,
+        19.468875885009766
+      ],
+      "reviewScale": 0.7704605077661101,
+      "reviewHeightMetres": 15.0,
+      "renders": {
+        "front": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-optimization-pilot-r1\\forest_tree_ph-jacaranda-raw_front.png",
+        "three-quarter": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-optimization-pilot-r1\\forest_tree_ph-jacaranda-raw_three-quarter.png",
+        "silhouette": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-optimization-pilot-r1\\forest_tree_ph-jacaranda-raw_silhouette.png"
+      }
+    },
+    {
+      "id": "PH-JACARANDA-OPT",
+      "label": "Natural Broad Canopy \u00b7 Runtime Candidate",
+      "family": "Poly Haven Natural Optimized",
+      "roles": [
+        "mature-canopy",
+        "hero-frame"
+      ],
+      "sourcePath": "E:\\tka-platform\\static\\models\\forest\\trees\\candidates\\natural-tree-family-r1\\jacaranda-tree-pilot-review.glb",
+      "sourceBytes": 4412932,
+      "meshCount": 1,
+      "vertices": 124462,
+      "triangles": 60285,
+      "materials": 3,
+      "images": 9,
+      "sourceDimensionsMetres": [
+        24.16489601135254,
+        19.05270767211914,
+        19.327049255371094
+      ],
+      "reviewScale": 0.7761143360169901,
+      "reviewHeightMetres": 15.0,
+      "renders": {
+        "front": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-optimization-pilot-r1\\forest_tree_ph-jacaranda-opt_front.png",
+        "three-quarter": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-optimization-pilot-r1\\forest_tree_ph-jacaranda-opt_three-quarter.png",
+        "silhouette": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\evidence\\natural-tree-optimization-pilot-r1\\forest_tree_ph-jacaranda-opt_silhouette.png"
+      }
+    }
+  ]
+}

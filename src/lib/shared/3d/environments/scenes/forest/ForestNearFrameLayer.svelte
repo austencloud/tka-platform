@@ -1,12 +1,13 @@
 <script lang="ts">
   import { T } from "@threlte/core";
-  import { useGltf, useMeshopt } from "@threlte/extras";
+  import { useDraco, useGltf, useMeshopt } from "@threlte/extras";
   import type { Mesh } from "three";
   import { tryGetAdaptiveQualityContext } from "../../../context/adaptive-quality-context";
   import ForestClearingWind from "./ForestClearingWind.svelte";
   import ForestAtmosphereMaterials from "./ForestAtmosphereMaterials.svelte";
   import { resolveForestNearFrameShadowRole } from "./forest-shadow-roles";
   import type { ForestMaterialResponseConfig } from "../../domain/models/scene-configs/forest-scene-config";
+  import { QualityTier } from "../../../effects/types";
 
   interface Props {
     groundY: number;
@@ -20,8 +21,10 @@
   const shadowsEnabled = $derived(
     adaptiveQuality?.config.enableShadows ?? true
   );
+  const qualityTier = $derived(adaptiveQuality?.tier ?? QualityTier.MEDIUM);
 
   const nearFrame = useGltf("/models/forest/forest-near-frame.glb", {
+    dracoLoader: useDraco("/draco/"),
     meshoptDecoder: useMeshopt(),
   });
 
@@ -56,5 +59,5 @@
       scope="near-frame"
     />
   {/if}
-  <ForestClearingWind scene={$nearFrame.scene} />
+  <ForestClearingWind scene={$nearFrame.scene} tier={qualityTier} />
 {/if}

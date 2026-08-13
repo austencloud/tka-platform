@@ -13,10 +13,11 @@ import { FOREST_PLACEMENTS } from "./placements";
 const treeItems: ObjectDefinition[] = [
   {
     key: "forest-lush-oak",
-    name: "Lush Canopy Oak",
+    name: "Natural Broad Canopy",
     type: "prop",
     icon: "fa-tree",
-    modelPath: "/models/forest/trees/lush-canopy-oak.glb",
+    modelPath:
+      "/models/forest/trees/candidates/natural-tree-family-r1/jacaranda-tree.glb",
     fallbackGeometry: "cone",
     defaultScale: 1,
     defaultHeight: 0,
@@ -27,10 +28,11 @@ const treeItems: ObjectDefinition[] = [
   },
   {
     key: "forest-forked-elm",
-    name: "Forked Forest Elm",
+    name: "Natural Gnarled Spreader",
     type: "prop",
     icon: "fa-tree",
-    modelPath: "/models/forest/trees/forked-forest-elm.glb",
+    modelPath:
+      "/models/forest/trees/candidates/natural-tree-family-r1/island-tree-01.glb",
     fallbackGeometry: "cone",
     defaultScale: 1,
     defaultHeight: 0,
@@ -41,10 +43,11 @@ const treeItems: ObjectDefinition[] = [
   },
   {
     key: "forest-young-hornbeam",
-    name: "Young Hornbeam",
+    name: "Natural Understory Spreader",
     type: "prop",
     icon: "fa-seedling",
-    modelPath: "/models/forest/trees/young-hornbeam.glb",
+    modelPath:
+      "/models/forest/trees/candidates/natural-tree-family-r1/island-tree-03.glb",
     fallbackGeometry: "cone",
     defaultScale: 1,
     defaultHeight: 0,

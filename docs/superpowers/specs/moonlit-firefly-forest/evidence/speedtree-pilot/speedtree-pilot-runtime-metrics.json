@@ -1,0 +1,129 @@
+{
+  "contractVersion": 1,
+  "source": {
+    "label": "SpeedTree ORCA White Oak",
+    "author": "SpeedTree",
+    "archiveMaintainer": "Morgan McGuire Computer Graphics Archive",
+    "canonicalPage": "https://developer.nvidia.com/orca/speedtree",
+    "archiveUrl": "https://casual-effects.com/g3d/data10/research/model/white_oak/white_oak.zip",
+    "license": "CC BY-NC-SA 3.0",
+    "commercialUseAllowed": false,
+    "defaultSourceRoot": "C:/Users/Austen/AppData/Local/Temp/tka-speedtree-white-oak-pilot/source",
+    "objectFile": "white_oak.obj"
+  },
+  "verdictBoundary": {
+    "visualAndTechnicalEvaluationAllowed": true,
+    "productionPromotionAllowed": false,
+    "reason": "The ORCA control source is CC BY-NC-SA 3.0."
+  },
+  "candidate": {
+    "path": "E:/tka-platform/static/models/forest/trees/candidates/evaluation-only/speedtree-orca-white-oak-evaluation.glb",
+    "sha256": "c8eb52f6fac75526d1f8222a66c052d55edaf5d1f256eb253929df48be3cdd83",
+    "bytes": 3393372,
+    "meshes": 1,
+    "primitives": 4,
+    "vertices": 41699,
+    "triangles": 36760,
+    "textures": 8,
+    "minimum": [
+      -7.913529872894287,
+      4.1466958433655776e-7,
+      -7.429680756603343
+    ],
+    "maximum": [
+      7.913529872894287,
+      16.000002157406172,
+      7.429684020060428
+    ],
+    "dimensions": [
+      15.827059745788574,
+      16.000001742736586,
+      14.85936477666377
+    ],
+    "materials": [
+      {
+        "name": "ForestOak_CutWood",
+        "alphaMode": "OPAQUE",
+        "alphaCutoff": 0.5,
+        "doubleSided": false,
+        "metallicFactor": 0,
+        "roughnessFactor": 0.92,
+        "baseColorTexture": "T_Cap_02_D",
+        "normalTexture": "T_Cap_02_N"
+      },
+      {
+        "name": "ForestOak_Bark",
+        "alphaMode": "OPAQUE",
+        "alphaCutoff": 0.5,
+        "doubleSided": false,
+        "metallicFactor": 0,
+        "roughnessFactor": 0.92,
+        "baseColorTexture": "T_WhiteOakBark_D",
+        "normalTexture": "T_WhiteOakBark_N"
+      },
+      {
+        "name": "ForestOak_Foliage_Outer",
+        "alphaMode": "MASK",
+        "alphaCutoff": 0.55,
+        "doubleSided": true,
+        "metallicFactor": 0,
+        "roughnessFactor": 0.84,
+        "baseColorTexture": "T_White_Oak_Leaves_Hero_1_D",
+        "normalTexture": "T_White_Oak_Leaves_Hero_1_N"
+      },
+      {
+        "name": "ForestOak_Foliage_Inner",
+        "alphaMode": "MASK",
+        "alphaCutoff": 0.55,
+        "doubleSided": true,
+        "metallicFactor": 0,
+        "roughnessFactor": 0.84,
+        "baseColorTexture": "T_White_Oak_Leaves_Hero_3_D",
+        "normalTexture": "T_White_Oak_Leaves_Hero_3_N"
+      }
+    ]
+  },
+  "currentMeshyProduction": {
+    "path": "E:/tka-platform/static/models/forest/trees/lush-canopy-oak.glb",
+    "sha256": "c349be5db9a4fa5099e011a760bcc74806af2ce3d4ee860580aaef155e4858e2",
+    "bytes": 1559680,
+    "meshes": 1,
+    "primitives": 1,
+    "vertices": 60755,
+    "triangles": 34151,
+    "textures": 3,
+    "minimum": [
+      -4.142869110306353,
+      0,
+      -4.085569779468957
+    ],
+    "maximum": [
+      4.044331426819414,
+      10,
+      4.086981873108331
+    ],
+    "dimensions": [
+      8.187200537125767,
+      10,
+      8.172551652577289
+    ],
+    "materials": [
+      {
+        "name": "Material_0.007",
+        "alphaMode": "OPAQUE",
+        "alphaCutoff": 0.5,
+        "doubleSided": true,
+        "metallicFactor": 0,
+        "roughnessFactor": 0.9,
+        "baseColorTexture": "Image_0",
+        "normalTexture": "Image_2"
+      }
+    ]
+  },
+  "deltas": {
+    "triangles": 2609,
+    "bytes": 1833692,
+    "materials": 3,
+    "semanticSurfaceCount": "1 -> 4"
+  }
+}

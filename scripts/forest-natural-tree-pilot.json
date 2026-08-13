@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "gate": "forest-natural-tree-optimization-pilot-r1",
+  "reviewFrameHeightMetres": 22,
+  "reviewAnglesDegrees": [0, 45, 110],
+  "evidenceDirectory": "docs/superpowers/specs/moonlit-firefly-forest/evidence/natural-tree-optimization-pilot-r1",
+  "blendPath": "blender/forest_natural_tree_optimization_pilot_r1.blend",
+  "candidates": [
+    {
+      "id": "PH-JACARANDA-RAW",
+      "label": "Natural Broad Canopy · Source",
+      "family": "Poly Haven Natural Source",
+      "roles": ["mature-canopy", "hero-frame"],
+      "targetHeightMetres": 15,
+      "source": {
+        "kind": "polyhaven-gltf",
+        "localPath": "assets/3d-source/forest/polyhaven/jacaranda_tree/jacaranda_tree_1k.gltf",
+        "provenance": "Poly Haven Jacaranda Tree",
+        "sourceUrl": "https://polyhaven.com/a/jacaranda_tree",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "PH-JACARANDA-OPT",
+      "label": "Natural Broad Canopy · Runtime Candidate",
+      "family": "Poly Haven Natural Optimized",
+      "roles": ["mature-canopy", "hero-frame"],
+      "targetHeightMetres": 15,
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/forest/trees/candidates/natural-tree-family-r1/jacaranda-tree-pilot-review.glb",
+        "provenance": "Poly Haven Jacaranda Tree, runtime optimization pilot",
+        "sourceUrl": "https://polyhaven.com/a/jacaranda_tree",
+        "license": "CC0"
+      }
+    }
+  ]
+}

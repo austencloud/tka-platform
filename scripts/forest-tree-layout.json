@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "seed": 194611,
   "coordinateFrame": "Blender x/y exports to runtime x/-z; metres",
   "outerBoundaryFraction": 0.8,
@@ -7,11 +7,18 @@
   "assets": [
     {
       "id": "canopy-beech",
-      "label": "Lush Canopy Beech",
-      "family": "Fresh Forest",
+      "label": "Natural Broad Canopy",
+      "family": "Poly Haven Natural",
       "roles": ["mature-canopy"],
-      "sourcePath": "static/models/forest/trees/lush-canopy-oak.glb",
+      "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/jacaranda-tree.glb",
       "stagedPath": "blender/forest-composition-sources/canopy-beech.glb",
+      "variants": [
+        {
+          "id": "jacaranda-broad-canopy",
+          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/jacaranda-tree.glb",
+          "stagedPath": "blender/forest-composition-sources/canopy-beech.glb"
+        }
+      ],
       "targetHeightMetres": 16,
       "scaleRange": [0.84, 1.17],
       "footprintRadius": 6.2,
@@ -20,11 +27,23 @@
     },
     {
       "id": "forked-elm",
-      "label": "Forked Forest Elm",
-      "family": "Fresh Forest",
+      "label": "Natural Irregular Broadleaf",
+      "family": "Poly Haven Natural",
       "roles": ["irregular-middle"],
-      "sourcePath": "static/models/forest/trees/forked-forest-elm.glb",
-      "stagedPath": "blender/forest-composition-sources/forked-elm.glb",
+      "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/island-tree-01.glb",
+      "stagedPath": "blender/forest-composition-sources/forked-elm-island.glb",
+      "variants": [
+        {
+          "id": "island-gnarled-spreader",
+          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/island-tree-01.glb",
+          "stagedPath": "blender/forest-composition-sources/forked-elm-island.glb"
+        },
+        {
+          "id": "slender-broadleaf",
+          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/tree-small-02.glb",
+          "stagedPath": "blender/forest-composition-sources/forked-elm-slender.glb"
+        }
+      ],
       "targetHeightMetres": 11,
       "scaleRange": [0.82, 1.18],
       "footprintRadius": 4.5,
@@ -33,11 +52,28 @@
     },
     {
       "id": "young-hornbeam",
-      "label": "Leafy Young Hornbeam",
-      "family": "Fresh Forest",
+      "label": "Lush Summer Understory Mix",
+      "family": "Poly Haven Natural",
       "roles": ["young", "understory"],
-      "sourcePath": "static/models/forest/trees/young-hornbeam.glb",
-      "stagedPath": "blender/forest-composition-sources/young-hornbeam.glb",
+      "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/jacaranda-tree.glb",
+      "stagedPath": "blender/forest-composition-sources/young-hornbeam-jacaranda.glb",
+      "variants": [
+        {
+          "id": "young-jacaranda-canopy",
+          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/jacaranda-tree.glb",
+          "stagedPath": "blender/forest-composition-sources/young-hornbeam-jacaranda.glb"
+        },
+        {
+          "id": "young-slender-broadleaf",
+          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/tree-small-02.glb",
+          "stagedPath": "blender/forest-composition-sources/young-hornbeam-slender.glb"
+        },
+        {
+          "id": "young-riparian-spreader",
+          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/island-tree-02.glb",
+          "stagedPath": "blender/forest-composition-sources/young-hornbeam-riparian.glb"
+        }
+      ],
       "targetHeightMetres": 5,
       "scaleRange": [0.78, 1.22],
       "footprintRadius": 2.5,
@@ -45,38 +81,19 @@
       "clearingSetback": 2.4
     },
     {
-      "id": "weathered-snag",
-      "label": "Weathered Snag",
-      "family": "Autumn Reuse",
-      "roles": ["snag", "distant-silhouette"],
-      "sourcePath": "static/models/autumn/autumn-snag.glb",
-      "stagedPath": "blender/forest-composition-sources/weathered-snag.glb",
-      "targetHeightMetres": 12,
-      "scaleRange": [0.86, 1.15],
-      "footprintRadius": 3.0,
-      "pathClearance": 1.5,
-      "clearingSetback": 3.2
-    },
-    {
-      "id": "narrow-larch",
-      "label": "Narrow Larch",
-      "family": "Autumn Reuse",
-      "roles": ["mature-canopy", "distant-silhouette"],
-      "sourcePath": "static/models/autumn/golden-larch.glb",
-      "stagedPath": "blender/forest-composition-sources/narrow-larch.glb",
-      "targetHeightMetres": 15,
-      "scaleRange": [0.86, 1.16],
-      "footprintRadius": 3.8,
-      "pathClearance": 1.6,
-      "clearingSetback": 3.8
-    },
-    {
       "id": "pale-willow",
-      "label": "Pale Willow",
-      "family": "Autumn Reuse",
+      "label": "Natural Riparian Spreader",
+      "family": "Poly Haven Natural",
       "roles": ["irregular-middle", "damp-hollow"],
-      "sourcePath": "static/models/autumn/autumn-willow.glb",
+      "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/island-tree-02.glb",
       "stagedPath": "blender/forest-composition-sources/pale-willow.glb",
+      "variants": [
+        {
+          "id": "riparian-spreader",
+          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/island-tree-02.glb",
+          "stagedPath": "blender/forest-composition-sources/pale-willow.glb"
+        }
+      ],
       "targetHeightMetres": 11,
       "scaleRange": [0.86, 1.14],
       "footprintRadius": 5.0,
@@ -111,10 +128,9 @@
       "radii": [50, 24],
       "rotationDegrees": 0,
       "counts": {
-        "canopy-beech": 7,
-        "forked-elm": 10,
-        "young-hornbeam": 12,
-        "narrow-larch": 2
+        "canopy-beech": 8,
+        "forked-elm": 11,
+        "young-hornbeam": 12
       }
     },
     {
@@ -123,10 +139,9 @@
       "radii": [35, 38],
       "rotationDegrees": 25,
       "counts": {
-        "canopy-beech": 6,
-        "forked-elm": 9,
-        "young-hornbeam": 12,
-        "narrow-larch": 2
+        "canopy-beech": 7,
+        "forked-elm": 10,
+        "young-hornbeam": 12
       }
     },
     {
@@ -147,10 +162,9 @@
       "radii": [32, 34],
       "rotationDegrees": 15,
       "counts": {
-        "canopy-beech": 4,
-        "forked-elm": 7,
-        "young-hornbeam": 10,
-        "narrow-larch": 2
+        "canopy-beech": 5,
+        "forked-elm": 8,
+        "young-hornbeam": 10
       }
     },
     {
@@ -159,10 +173,9 @@
       "radii": [43, 32],
       "rotationDegrees": -15,
       "counts": {
-        "canopy-beech": 6,
-        "forked-elm": 9,
-        "young-hornbeam": 12,
-        "weathered-snag": 2
+        "canopy-beech": 7,
+        "forked-elm": 10,
+        "young-hornbeam": 12
       }
     },
     {
@@ -171,10 +184,9 @@
       "radii": [30, 50],
       "rotationDegrees": 8,
       "counts": {
-        "canopy-beech": 5,
-        "forked-elm": 9,
-        "young-hornbeam": 12,
-        "weathered-snag": 2
+        "canopy-beech": 6,
+        "forked-elm": 10,
+        "young-hornbeam": 12
       }
     },
     {
@@ -183,10 +195,9 @@
       "radii": [35, 35],
       "rotationDegrees": -25,
       "counts": {
-        "canopy-beech": 5,
-        "forked-elm": 8,
-        "young-hornbeam": 11,
-        "narrow-larch": 2
+        "canopy-beech": 6,
+        "forked-elm": 9,
+        "young-hornbeam": 11
       }
     },
     {
@@ -194,14 +205,14 @@
       "center": [16, 113],
       "radii": [70, 24],
       "rotationDegrees": 0,
-      "counts": { "canopy-beech": 6, "forked-elm": 7, "narrow-larch": 5 }
+      "counts": { "canopy-beech": 9, "forked-elm": 9 }
     },
     {
       "id": "far-west-depth",
       "center": [-112, -24],
       "radii": [24, 65],
       "rotationDegrees": 0,
-      "counts": { "canopy-beech": 6, "forked-elm": 7, "narrow-larch": 5 }
+      "counts": { "canopy-beech": 9, "forked-elm": 9 }
     },
     {
       "id": "far-east-depth",
@@ -209,9 +220,8 @@
       "radii": [25, 70],
       "rotationDegrees": 0,
       "counts": {
-        "canopy-beech": 6,
-        "forked-elm": 7,
-        "narrow-larch": 5,
+        "canopy-beech": 9,
+        "forked-elm": 9,
         "pale-willow": 1
       }
     },
@@ -220,7 +230,7 @@
       "center": [0, -118],
       "radii": [70, 23],
       "rotationDegrees": 0,
-      "counts": { "canopy-beech": 6, "forked-elm": 7, "narrow-larch": 5 }
+      "counts": { "canopy-beech": 9, "forked-elm": 9 }
     },
     {
       "id": "northeast-depth-bridge",
@@ -228,10 +238,9 @@
       "radii": [43, 26],
       "rotationDegrees": 28,
       "counts": {
-        "canopy-beech": 3,
+        "canopy-beech": 4,
         "forked-elm": 4,
-        "young-hornbeam": 5,
-        "narrow-larch": 1
+        "young-hornbeam": 5
       }
     },
     {
@@ -241,9 +250,8 @@
       "rotationDegrees": 20,
       "counts": {
         "canopy-beech": 3,
-        "forked-elm": 4,
+        "forked-elm": 5,
         "young-hornbeam": 5,
-        "weathered-snag": 1,
         "pale-willow": 1
       }
     }

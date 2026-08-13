@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import sharp from "sharp";
 
 function invariant(condition, message) {
   if (!condition) throw new Error(message);
@@ -39,13 +40,18 @@ const io = new NodeIO()
 
 const results = [];
 for (const asset of selectedAssets) {
-  const path = resolve(manifest.outputDirectory, `${asset.id}.glb`);
+  const path = asset.outputPath
+    ? resolve(asset.outputPath)
+    : resolve(manifest.outputDirectory, `${asset.id}.glb`);
   const bytes = await readFile(path);
   invariant(
     bytes.length >= 12 && bytes.subarray(0, 4).toString("ascii") === "glTF",
     `${asset.id} is not a GLB`
   );
-  invariant(bytes.length <= 6 * 1024 * 1024, `${asset.id} exceeds 6 MiB`);
+  invariant(
+    bytes.length <= (asset.maximumBytes ?? 6 * 1024 * 1024),
+    `${asset.id} exceeds its byte budget`
+  );
   const jsonLength = bytes.readUInt32LE(12);
   const json = JSON.parse(bytes.subarray(20, 20 + jsonLength).toString("utf8"));
   const extensions = new Set(json.extensionsUsed ?? []);
@@ -70,18 +76,59 @@ for (const asset of selectedAssets) {
     }
   }
   invariant(triangles > 0, `${asset.id} has no triangles`);
-  invariant(
-    triangles <= asset.maximumOptimizedTriangles,
-    `${asset.id} has ${triangles} triangles; maximum is ${asset.maximumOptimizedTriangles}`
-  );
+  if (asset.maximumOptimizedTriangles) {
+    invariant(
+      triangles <= asset.maximumOptimizedTriangles,
+      `${asset.id} has ${triangles} triangles; maximum is ${asset.maximumOptimizedTriangles}`
+    );
+  }
+  const materialNames = document
+    .getRoot()
+    .listMaterials()
+    .map((material) => material.getName());
+  for (const pattern of asset.requiredMaterialPatterns ?? []) {
+    invariant(
+      materialNames.some((name) => new RegExp(pattern, "i").test(name)),
+      `${asset.id} is missing a material matching ${pattern}`
+    );
+  }
+  let foliageAlphaMaterials = 0;
+  if (asset.synthesizeFoliageAlpha ?? manifest.synthesizeFoliageAlpha) {
+    for (const material of document.getRoot().listMaterials()) {
+      if (!/leaves|twig/i.test(material.getName())) continue;
+      foliageAlphaMaterials += 1;
+      invariant(
+        material.getAlphaMode() === "MASK",
+        `${asset.id} foliage material ${material.getName()} is not alpha-tested`
+      );
+      const image = material.getBaseColorTexture()?.getImage();
+      invariant(
+        image,
+        `${asset.id} foliage material ${material.getName()} has no base-color texture`
+      );
+      const metadata = await sharp(image).metadata();
+      const stats = await sharp(image).stats();
+      const alpha = stats.channels[3];
+      invariant(
+        metadata.channels === 4 && alpha,
+        `${asset.id} foliage material ${material.getName()} lost its alpha channel`
+      );
+      invariant(
+        alpha.min <= 8 && alpha.max >= 247,
+        `${asset.id} foliage material ${material.getName()} lacks a complete cutout range`
+      );
+    }
+  }
   results.push({
     id: asset.id,
     roles: asset.roles,
     targetHeightMetres: asset.targetHeightMetres,
     bytes: statSync(path).size,
     triangles,
-    materials: document.getRoot().listMaterials().length,
+    materials: materialNames.length,
+    materialNames,
     textures: document.getRoot().listTextures().length,
+    foliageAlphaMaterials,
   });
 }
 

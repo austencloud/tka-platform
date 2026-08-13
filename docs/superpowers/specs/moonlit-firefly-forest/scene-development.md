@@ -14,7 +14,8 @@
 `DlJ4UAevLxMFd2jA3VTf`, `v7A3GRTREIH4OuohvBOX`,
 `UFY4AuUL80NTJMojrRBN`, `cYHeDvPZV5zgbGyCTbh7`,
 `Q9wYcOIrKi0DBs3srzgm`, `lTXVsp1LWwbWMTL02sQK`,
-`2h40cRvXHIL9szNFxb8c`
+`2h40cRvXHIL9szNFxb8c`, `IfXvzjoulL4tBTuSfY9j`,
+`eNGUZus1AmY7RDttJu0p`
 
 This file is an evidence index for the scene-production gate contract. The
 controlling plan remains the single creative and implementation owner.
@@ -44,22 +45,24 @@ budget, while widened-layout callers omit the near-frame layer.
 
 ## Claim ledger
 
-| ID    | Class     | Statement                                                                                                                                          | Evidence or proposal source                                        | Status                        |
-| ----- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ----------------------------- |
-| C-001 | literal   | The terrain stays level through 30 m; the baked environment contract owns the woodland placement.                                                  | Forest path contract, tree layout, and Gate 10 verification        | locked                        |
-| C-002 | literal   | Ground ecology is caused by named habitats rather than even scatter.                                                                               | Gate 7 metrics and Austen approval                                 | locked                        |
-| C-003 | invention | Selected near trees create a smaller default visual clearing while widened-layout callers omit that layer.                                         | Austen Gate 8 approval and Gate 9 runtime proof                    | locked                        |
-| C-004 | invention | The camp shelter is a hand-built moss-canvas lean-to with oak poles.                                                                               | Gate 8 revision 1 visual target                                    | rejected by Austen            |
-| C-005 | literal   | Poly Haven boulder and rock sources are CC0 and already used by approved Autumn production.                                                        | Source asset pages and Autumn builder                              | verified                      |
-| C-006 | invention | The camp uses a contemporary two-person dome, three-person tunnel, and one-person trekking-pole tent as one cohesive gear family.                  | Austen Gate 8 approval and production GLB                          | implemented; in visual review |
-| C-007 | literal   | The production fire pocket provides a 3.05 m fuel-clear circle and at least 4.57 m from each tent edge and the stage.                              | Forest campsite contract, GLB verifier, and official fire guidance | verified                      |
-| C-008 | invention | Four upstage trees form the natural audience-facing amphitheater without occupying the audience side of the clearing.                              | Austen direction and Gate 10 runtime proof                         | in visual review              |
-| C-009 | invention | Grass, rocks, deadwood, fungi, and fireflies follow habitat fields; four rare bats stay high and peripheral at night.                              | Austen direction and Gate 10 runtime proof                         | in visual review              |
-| C-010 | invention | The approved camp moves as one unit to a separate east-rim shelf while the central clearing becomes audience meadow and three named habitat zones. | Gate 10.1 measured contract and Gate 10.2 playable proof           | implemented; in visual review |
-| C-011 | invention | Revision 36 is the canonical Forest Night Master; the same clearing will carry Dawn, Day, Golden Hour, Dusk, and Night atmosphere anchors.           | Austen Gate 12 and atmosphere-plan approval                       | locked; Gate 13A active        |
-| C-012 | invention | A rare distant UFO may cross the night Forest without confirming any explanation.                                                                  | Austen atmosphere-plan approval and story-bible guardrail          | approved for Gate 13C          |
-| C-013 | invention | The registered Forest day runs through 05:45 Dawn, 12:30 Day, 18:15 Golden Hour, 20:15 Dusk, and the locked 23:00 Night Master without moving the clearing. | Gate 13A fixed-camera runtime sheet and verification report        | ready for visual verdict       |
-| C-014 | invention | The algae-coated mature canopy tree is replaced by an approved Meshy 6 oak with dry brown-gray bark and foliage-only green. | Austen approval and `./evidence/tree-regeneration/forest-tree-regeneration-verdict.md` | implemented                    |
+| ID    | Class     | Statement                                                                                                                                                         | Evidence or proposal source                                                            | Status                        |
+| ----- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------- |
+| C-001 | literal   | The terrain stays level through 30 m; the baked environment contract owns the woodland placement.                                                                 | Forest path contract, tree layout, and Gate 10 verification                            | locked                        |
+| C-002 | literal   | Ground ecology is caused by named habitats rather than even scatter.                                                                                              | Gate 7 metrics and Austen approval                                                     | locked                        |
+| C-003 | invention | Selected near trees create a smaller default visual clearing while widened-layout callers omit that layer.                                                        | Austen Gate 8 approval and Gate 9 runtime proof                                        | locked                        |
+| C-004 | invention | The camp shelter is a hand-built moss-canvas lean-to with oak poles.                                                                                              | Gate 8 revision 1 visual target                                                        | rejected by Austen            |
+| C-005 | literal   | Poly Haven boulder and rock sources are CC0 and already used by approved Autumn production.                                                                       | Source asset pages and Autumn builder                                                  | verified                      |
+| C-006 | invention | The camp uses a contemporary two-person dome, three-person tunnel, and one-person trekking-pole tent as one cohesive gear family.                                 | Austen Gate 8 approval and production GLB                                              | implemented; in visual review |
+| C-007 | literal   | The production fire pocket provides a 3.05 m fuel-clear circle and at least 4.57 m from each tent edge and the stage.                                             | Forest campsite contract, GLB verifier, and official fire guidance                     | verified                      |
+| C-008 | invention | Four upstage trees form the natural audience-facing amphitheater without occupying the audience side of the clearing.                                             | Austen direction and Gate 10 runtime proof                                             | in visual review              |
+| C-009 | invention | Grass, rocks, deadwood, fungi, and fireflies follow habitat fields; four rare bats stay high and peripheral at night.                                             | Austen direction and Gate 10 runtime proof                                             | in visual review              |
+| C-010 | invention | The approved camp moves as one unit to a separate east-rim shelf while the central clearing becomes audience meadow and three named habitat zones.                | Gate 10.1 measured contract and Gate 10.2 playable proof                               | implemented; in visual review |
+| C-011 | invention | Revision 36 is the canonical Forest Night Master; the same clearing will carry Dawn, Day, Golden Hour, Dusk, and Night atmosphere anchors.                        | Austen Gate 12 and atmosphere-plan approval                                            | locked; Gate 13A active       |
+| C-012 | invention | A rare distant UFO may cross the night Forest without confirming any explanation.                                                                                 | Austen atmosphere-plan approval and story-bible guardrail                              | approved for Gate 13C         |
+| C-013 | invention | The registered Forest day runs through 05:45 Dawn, 12:30 Day, 18:15 Golden Hour, 20:15 Dusk, and the locked 23:00 Night Master without moving the clearing.       | Gate 13A fixed-camera runtime sheet and verification report                            | ready for visual verdict      |
+| C-014 | invention | The algae-coated mature canopy tree is replaced by an approved Meshy 6 oak with dry brown-gray bark and foliage-only green.                                       | Austen approval and `./evidence/tree-regeneration/forest-tree-regeneration-verdict.md` | implemented                   |
+| C-015 | literal   | SpeedTree commercial adoption is shelved; the current Forest placement and production tree pipeline remain canonical, while the ORCA pilot stays evaluation-only. | Austen direction and tracker decision `IfXvzjoulL4tBTuSfY9j`                           | locked                        |
+| C-016 | invention | Dawn through Dusk project the canonical 2D Celestial cloud system onto one camera-centered world-space sky dome; Night keeps clouds disabled.                     | Tracker decision `eNGUZus1AmY7RDttJu0p` and Gate 13A revision 4 proof                  | ready for visual verdict      |
 
 ## Experience sentence
 
@@ -89,6 +92,8 @@ budget, while widened-layout callers omit the near-frame layer.
 - Gate 13A Day/Night fixed-camera proof:
   `./evidence/gate13a/forest-gate13a-day-night-camera-proof.png`
 - Gate 13A verification: `./forest-gate13a-verification-report.json`
+- Gate 13A revision 4 world-space Celestial-cloud-system hero proof:
+  `./evidence/gate13a/forest-gate13a-r4-world-cloud-hero.png`
 - Framing target: four approved Forest trees sit upstage of the audience and
   form asymmetric side and canopy walls around the stage. Coven Hub and other
   widened-layout callers omit this conditional layer.
@@ -143,16 +148,40 @@ tree-asset, full-environment, near-frame, instancing, and clearance contracts.
 The detailed visual and credit record is in
 `./evidence/tree-regeneration/forest-tree-regeneration-verdict.md`.
 
+The later SpeedTree ORCA pilot is not a production dependency. Its live
+revision 97 review proved that semantic bark and foliage surfaces are valuable,
+but the evaluation canopy was over-scaled for the clearing and the licensed
+source would require a paid production path. Austen chose to retain the current
+placement and tree pipeline. The pilot GLBs, scripts, metrics, and verdict stay
+quarantined under `./evidence/speedtree-pilot/` and
+`static/models/forest/trees/candidates/evaluation-only/`; no SpeedTree asset is
+mounted by the runtime. Tracker decision: `IfXvzjoulL4tBTuSfY9j`.
+
 Gate 13A is ready for Austen's visual verdict. One Forest-owned profile now
 registers 05:45 Dawn, 12:30 Day, 18:15 Golden Hour, 20:15 Dusk, and the exact
 23:00 Night Master. The shared sky accepts an optional solar disk; callers that
 omit it retain their existing sky. Forest-only material grading keeps the same
 terrain, tree, stage, and camp geometry legible as the key and hemisphere
 change. Day and Night were checked through hero, walk, world, stage, and camp
-cameras in the in-app browser with no runtime warnings or errors. The target
-sheet and fixed-camera proof live in `./evidence/gate13a/`; the verification
-report is `./forest-gate13a-verification-report.json`. No public clock or time
-control enters until Gate 13B.
+cameras in the in-app browser with no runtime warnings or errors. The rejected
+generated cloud bank and its Forest-only texture were removed from production
+and preserved under `./evidence/gate13a/rejected-r2/`. Revision 3
+adapts the existing `CelestialBackgroundSystem` into an equirectangular texture
+on a camera-centered world-space sky dome, so Forest receives the same 2D
+cumulus, cirrus, and stratus system already used by Celestial rather than
+another authored cloud implementation. The rejected screen-space projection
+made the clouds follow the viewport like a windshield decal; revision 4 keeps
+their orientation in world space while the dome follows camera translation. A
+wrapped midpoint crossfade makes the panorama's 0-degree/360-degree meridian
+continuous instead of exposing the 2D canvas edge as a vertical line.
+Per-anchor phase, tint, and opacity remain Forest-owned while Night stays
+cloudless. The approved-direction hero proof is
+`./evidence/gate13a/forest-gate13a-r4-world-cloud-hero.png`; rejected
+screen-space captures remain under
+`./evidence/gate13a/rejected-r2/screen-space-r3/`. The original target sheet,
+fixed-camera proof, and verification report remain in `./evidence/gate13a/` and
+`./forest-gate13a-verification-report.json`. No public clock or time control
+enters until Gate 13B.
 
 Gates 8 and 9 remain approved. Austen reopened their framing direction for the
 Gate 10 composition revision: intimate trees move upstage, the northwest exit
@@ -182,6 +211,46 @@ environment export is a separate 17,177,092-byte GLB containing 295 trees across
 13 authored clusters and masses. The former four procedural
 `FOREST_TREE_RINGS` no longer exist, so Lab and production cannot disagree about
 the woodland.
+
+The Living Ground pass replaces the former flat olive clearing with one
+continuous 4096 px world-space ecological atlas and a separate four-family
+walking-distance detail system. Meadow, transition soil, canopy litter, and
+damp runoff are blended by a 1024 px mask derived from the authored paths,
+trees, habitat patches, stage, campsite, and props. Physical grass now forms
+3,292 fuller summer clumps across 15 habitat patches while keeping the
+performance core and paths clear. The runtime terrain remains one material, so
+ecological variation cannot expose the rejected polygon islands. The current
+optimized environment is 17,067,076 bytes and the near-frame layer is
+12,351,892 bytes. Day, walking-distance, and locked-Night proof plus the exact
+contract results live in `./evidence/living-ground/forest-living-ground-verdict.md`.
+
+The first production Night review exposed a specular regression in that pass:
+the moon key turned the meadow normal and roughness variation into a silver,
+frost-like field. The Forest ground owner now applies atmosphere-specific
+surface response. Night reduces baked and procedural normal relief and clamps
+terrain roughness to a dry 0.96 minimum; Day keeps the stronger detail response.
+No Night light, shadow, atmosphere, tree, stage, campsite, or placement value
+changed.
+
+The Meadow System pass replaces the visible sprinkled-spike layer with 6,251
+habitat-authored summer clumps across the same 15 ecological patches. Curved,
+tapered ribbons and feathered patch edges concentrate physical blades around
+the clearing and trail shoulders, then yield to the ground atlas through the
+distance. The runtime reveals 2,833 base clumps on low quality, adds 1,683 at
+medium, and adds 1,735 at high. All tiers share the rooted GPU wind owner,
+including local phase variation, root contact darkening, and restrained colour
+variation. The performance core, trail cores, mushrooms, stage, campsite,
+trees, and Night lighting remain outside the pass. Day and Night floor proofs
+are in `./evidence/meadow-system/`.
+
+The subsequent tree diagnosis established that the washed-out western canopy
+is not a broken Poly Haven asset channel. The current Day foliage grade lifts
+82.9% of visible Jacaranda pixels and collapses p90/p10 contrast from 3.25 to
+1.61; high fill, missing near-frame canopy shadows, and two overlapping uses of
+the same Jacaranda silhouette compound the result. The correction order is to
+restore luminance-preserving green-gated grading, recover foliage-aware near
+occlusion, then replace the repeated west-depth silhouette. No tree file was
+changed during the Meadow System pass.
 
 The campsite is a separate 2,153,112-byte Meshopt-compressed production GLB with
 three Meshy tents, three tent pads, one Meshy smokeless fire pit, and five

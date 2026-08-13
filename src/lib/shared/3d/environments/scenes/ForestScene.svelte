@@ -11,9 +11,10 @@
    */
 
   import { T, useThrelte } from "@threlte/core";
-  import { useGltf, useMeshopt } from "@threlte/extras";
+  import { useDraco, useGltf, useMeshopt } from "@threlte/extras";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import CloudSkyDome from "../primitives/CloudSkyDome.svelte";
+  import CelestialCloudSky from "../primitives/CelestialCloudSky.svelte";
   import Starfield from "../primitives/Starfield.svelte";
   import MeteorStreaks from "./cosmic/MeteorStreaks.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
@@ -36,6 +37,7 @@
   import ForestCampsite from "./forest/ForestCampsite.svelte";
   import ForestLighting from "./forest/ForestLighting.svelte";
   import ForestAtmosphereMaterials from "./forest/ForestAtmosphereMaterials.svelte";
+  import ForestGroundDetail from "./forest/ForestGroundDetail.svelte";
   import { resolveForestShadowRole } from "./forest/forest-shadow-roles";
 
   interface Props {
@@ -63,6 +65,9 @@
   }: Props = $props();
 
   const activeConfig = $derived(config ?? createDefaultForestFireflyConfig());
+  const isNightMaster = $derived(
+    Boolean(activeConfig.moon?.enabled && !activeConfig.materialResponse)
+  );
   const showNearFrame = $derived(shouldShowForestNearFrame(clearingRadius));
   let nearFrameReady = $state(false);
   let forestStageReady = $state(false);
@@ -95,6 +100,7 @@
     forestCampsiteReady = true;
   }
   const forestEnvironment = useGltf("/models/forest/forest-environment.glb", {
+    dracoLoader: useDraco("/draco/"),
     meshoptDecoder: useMeshopt(),
   });
 
@@ -215,7 +221,11 @@
 />
 
 {#if activeConfig.clouds}
-  <CloudSkyDome config={activeConfig.clouds} />
+  {#if activeConfig.clouds.visualSource === "celestial-2d"}
+    <CelestialCloudSky config={activeConfig.clouds} />
+  {:else}
+    <CloudSkyDome config={activeConfig.clouds} />
+  {/if}
 {/if}
 
 {#if activeConfig.starfield}
@@ -232,6 +242,12 @@
 
 {#if $forestEnvironment}
   <T is={$forestEnvironment.scene} position.y={groundY} />
+  <ForestGroundDetail
+    scene={$forestEnvironment.scene}
+    strength={isNightMaster ? 0.18 : 0.9}
+    normalResponse={isNightMaster ? 0.14 : 0.72}
+    roughnessFloor={isNightMaster ? 0.96 : 0.82}
+  />
   {#if activeConfig.materialResponse}
     <ForestAtmosphereMaterials
       scene={$forestEnvironment.scene}

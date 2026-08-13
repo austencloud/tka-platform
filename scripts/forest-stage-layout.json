@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "coordinateFrame": "Blender x/y exports to runtime x/-z; metres",
   "sourceGate": "Forest Gate 10",
   "baseDimensions": {
@@ -26,20 +26,20 @@
     [-3.04, -2.38]
   ],
   "contactApronOutline": [
-    [-3.22, -3.72],
-    [-1.18, -4.08],
-    [1.0, -3.92],
-    [3.2, -3.48],
-    [3.82, -2.58],
-    [4.02, -0.82],
-    [3.8, 1.46],
-    [3.2, 3.26],
-    [1.24, 3.9],
-    [-1.26, 4.02],
-    [-3.36, 3.46],
-    [-3.94, 1.44],
-    [-4.06, -0.98],
-    [-3.76, -2.82]
+    [-3.12, -3.12],
+    [-1.12, -3.27],
+    [0.98, -3.23],
+    [3.12, -2.98],
+    [3.24, -2.35],
+    [3.26, -0.72],
+    [3.22, 1.1],
+    [2.8, 2.93],
+    [1.12, 3.18],
+    [-1.15, 3.22],
+    [-2.8, 3.01],
+    [-3.23, 1.17],
+    [-3.26, -0.84],
+    [-3.12, -2.46]
   ],
   "approachSteps": [
     {
@@ -96,10 +96,12 @@
       "realWorldRepeatMetres": 3.2
     },
     "contact": {
-      "diffuse": "static/textures/forest-floor/diffuse.jpg",
-      "normal": "static/textures/forest-floor/normal.jpg",
-      "roughness": "static/textures/forest-floor/roughness.jpg",
-      "realWorldRepeatMetres": 4
+      "source": "Forest Living Ground ecological atlas, CC0 source blend",
+      "page": "https://polyhaven.com/a/sparse_grass",
+      "diffuse": "static/textures/forest-floor/forest-floor-zoned.jpg",
+      "normal": "assets/3d-source/forest/ground-materials/sparse-grass-normal.jpg",
+      "roughness": "assets/3d-source/forest/ground-materials/sparse-grass-roughness.jpg",
+      "realWorldRepeatMetres": 3.2
     },
     "plinth": {
       "diffuse": "static/textures/terrain/rock/diffuse.jpg",

@@ -25,58 +25,128 @@ function run(label, args) {
   });
 }
 
-async function resizeGroundLifeTextures(input, output) {
+async function resizeDistanceTierTextures(input, output) {
   const requireFromCli = createRequire(
     realpathSync(resolve("node_modules/@gltf-transform/cli/package.json"))
   );
-  const [{ NodeIO }, { ALL_EXTENSIONS }] = await Promise.all([
+  const [
+    { NodeIO },
+    { ALL_EXTENSIONS },
+    { simplifyPrimitive },
+    { MeshoptSimplifier },
+  ] = await Promise.all([
     import(pathToFileURL(requireFromCli.resolve("@gltf-transform/core"))),
     import(pathToFileURL(requireFromCli.resolve("@gltf-transform/extensions"))),
+    import(pathToFileURL(requireFromCli.resolve("@gltf-transform/functions"))),
+    import(pathToFileURL(requireFromCli.resolve("meshoptimizer"))),
   ]);
+  await MeshoptSimplifier.ready;
   const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
   const document = await io.read(input);
   const root = document.getRoot();
-  const groundTextures = new Map();
+  const textureTiers = new Map();
 
-  function registerTexture(texture, quality) {
+  function registerTexture(texture, maxSize, quality) {
     if (!texture) return;
-    groundTextures.set(
-      texture,
-      Math.max(quality, groundTextures.get(texture) ?? 0)
-    );
+    const current = textureTiers.get(texture);
+    textureTiers.set(texture, {
+      maxSize: Math.max(maxSize, current?.maxSize ?? 0),
+      quality: Math.max(quality, current?.quality ?? 0),
+    });
   }
 
   for (const mesh of root.listMeshes()) {
-    if (!mesh.getName().startsWith("ForestGroundLifeVariantMesh_")) continue;
+    const meshName = mesh.getName();
+    const isGroundLife = meshName.startsWith("ForestGroundLifeVariantMesh_");
+    const isMassForestTree = meshName.startsWith("ForestTreeMesh_");
+    const isTerrain = meshName === "Forest Sculpted Terrain Mesh";
+    if (!isGroundLife && !isMassForestTree && !isTerrain) continue;
+    const maxSize = isMassForestTree ? 512 : 1024;
     for (const primitive of mesh.listPrimitives()) {
       const material = primitive.getMaterial();
       if (!material) continue;
-      registerTexture(material.getBaseColorTexture(), 84);
-      registerTexture(material.getMetallicRoughnessTexture(), 90);
-      registerTexture(material.getNormalTexture(), 92);
-      registerTexture(material.getOcclusionTexture(), 90);
+      if (isTerrain) {
+        registerTexture(material.getBaseColorTexture(), 4096, 91);
+        registerTexture(material.getMetallicRoughnessTexture(), 1024, 86);
+        registerTexture(material.getNormalTexture(), 1024, 88);
+        registerTexture(material.getOcclusionTexture(), 1024, 86);
+      } else {
+        registerTexture(material.getBaseColorTexture(), maxSize, 84);
+        registerTexture(material.getMetallicRoughnessTexture(), maxSize, 88);
+        registerTexture(material.getNormalTexture(), maxSize, 90);
+        registerTexture(material.getOcclusionTexture(), maxSize, 88);
+      }
     }
   }
 
   let resized = 0;
-  for (const [texture, quality] of groundTextures) {
+  for (const [texture, tier] of textureTiers) {
     const image = texture.getImage();
     if (!image) continue;
     const metadata = await sharp(image).metadata();
-    if ((metadata.width ?? 0) <= 1024 && (metadata.height ?? 0) <= 1024) {
+    if (
+      (metadata.width ?? 0) <= tier.maxSize &&
+      (metadata.height ?? 0) <= tier.maxSize
+    ) {
       continue;
     }
     const resizedImage = await sharp(image)
-      .resize(1024, 1024, { fit: "inside", withoutEnlargement: true })
-      .webp({ quality, effort: 6 })
+      .resize(tier.maxSize, tier.maxSize, {
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .webp({ quality: tier.quality, effort: 6 })
       .toBuffer();
     texture.setImage(resizedImage);
     texture.setMimeType("image/webp");
     resized += 1;
   }
 
+  let treeTrianglesBefore = 0;
+  let treeTrianglesAfter = 0;
+  for (const mesh of root.listMeshes()) {
+    if (!mesh.getName().startsWith("ForestTreeMesh_")) continue;
+    const meshTriangleCount = mesh
+      .listPrimitives()
+      .reduce(
+        (total, primitive) =>
+          total +
+          (primitive.getIndices()?.getCount() ??
+            primitive.getAttribute("POSITION")?.getCount() ??
+            0) /
+            3,
+        0
+      );
+    for (const primitive of mesh.listPrimitives()) {
+      const materialName = primitive.getMaterial()?.getName() ?? "";
+      const isFoliage = /leaves|twig/i.test(materialName);
+      const before =
+        (primitive.getIndices()?.getCount() ??
+          primitive.getAttribute("POSITION")?.getCount() ??
+          0) / 3;
+      treeTrianglesBefore += before;
+      if (!isFoliage && meshTriangleCount >= 15_000 && before >= 1_000) {
+        simplifyPrimitive(primitive, {
+          simplifier: MeshoptSimplifier,
+          ratio: 0.35,
+          error: 0.025,
+          lockBorder: false,
+        });
+      }
+      treeTrianglesAfter +=
+        (primitive.getIndices()?.getCount() ??
+          primitive.getAttribute("POSITION")?.getCount() ??
+          0) / 3;
+    }
+  }
+
   await io.write(output, document);
-  console.log(`Resized ${resized} Forest ground-life textures to 1024 px`);
+  console.log(
+    `Resized ${resized} Forest textures: mass trees at 512 px, ground life at 1024 px`
+  );
+  console.log(
+    `Simplified mass-tree prototypes from ${Math.round(treeTrianglesBefore).toLocaleString()} to ${Math.round(treeTrianglesAfter).toLocaleString()} triangles`
+  );
 }
 
 if (!existsSync(INPUT)) {
@@ -106,9 +176,9 @@ try {
     "--join",
     "false",
   ]);
-  console.log("\nResize Forest ground-life textures");
-  await resizeGroundLifeTextures(TMP, TMP_TEXTURES);
-  run("Apply meshopt geometry compression", ["meshopt", TMP_TEXTURES, OUTPUT]);
+  console.log("\nApply Forest distance texture tiers");
+  await resizeDistanceTierTextures(TMP, TMP_TEXTURES);
+  run("Apply Draco geometry compression", ["draco", TMP_TEXTURES, OUTPUT]);
 } finally {
   if (existsSync(TMP)) rmSync(TMP);
   if (existsSync(TMP_TEXTURES)) rmSync(TMP_TEXTURES);

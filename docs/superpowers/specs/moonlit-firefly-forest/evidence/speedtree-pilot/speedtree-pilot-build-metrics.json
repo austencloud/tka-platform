@@ -1,0 +1,29 @@
+{
+  "sourceObject": "C:\\Users\\Austen\\AppData\\Local\\Temp\\tka-speedtree-white-oak-pilot\\source\\white_oak.obj",
+  "sourceLicense": "CC BY-NC-SA 3.0",
+  "productionEligible": false,
+  "meshObjects": 1,
+  "vertices": 38199,
+  "triangles": 36760,
+  "materials": [
+    "ForestOak_CutWood",
+    "ForestOak_Bark",
+    "ForestOak_Foliage_Outer",
+    "ForestOak_Foliage_Inner"
+  ],
+  "minimum": [
+    -7.913529872894287,
+    -7.42968225479126,
+    1.8173807347920956e-08
+  ],
+  "maximum": [
+    7.913529872894287,
+    7.42968225479126,
+    16.0
+  ],
+  "dimensionsMetres": [
+    15.827059745788574,
+    14.85936450958252,
+    16.0
+  ]
+}

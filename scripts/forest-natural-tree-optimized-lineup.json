@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "gate": "forest-natural-tree-family-r1-optimized",
+  "reviewFrameHeightMetres": 22,
+  "reviewAnglesDegrees": [0, 45, 110],
+  "requiredRoles": [
+    "mature-canopy",
+    "hero-frame",
+    "irregular-middle",
+    "young",
+    "understory",
+    "riparian",
+    "mature-conifer",
+    "distant-silhouette",
+    "leafless-derivative"
+  ],
+  "evidenceDirectory": "docs/superpowers/specs/moonlit-firefly-forest/evidence/natural-tree-family-r1-optimized",
+  "blendPath": "blender/forest_natural_tree_lineup_r1_optimized.blend",
+  "contactSheets": [
+    {
+      "id": "natural-family",
+      "columns": 2,
+      "title": "Forest Natural Tree Replacement · runtime candidates",
+      "subtitle": "Natural Poly Haven sources, optimized for the existing Forest placement system.",
+      "output": "forest_natural_tree_family_r1.png"
+    }
+  ],
+  "candidates": [
+    {
+      "id": "PH-JACARANDA",
+      "label": "Natural Broad Canopy",
+      "family": "Poly Haven Natural Optimized",
+      "roles": ["mature-canopy", "hero-frame"],
+      "targetHeightMetres": 15,
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/forest/trees/candidates/natural-tree-family-r1/review/jacaranda-tree.glb",
+        "runtimePath": "static/models/forest/trees/candidates/natural-tree-family-r1/jacaranda-tree.glb",
+        "provenance": "Poly Haven Jacaranda Tree",
+        "sourceUrl": "https://polyhaven.com/a/jacaranda_tree",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "PH-SMALL-02",
+      "label": "Natural Slender Broadleaf",
+      "family": "Poly Haven Natural Optimized",
+      "roles": ["irregular-middle", "young", "leafless-derivative"],
+      "targetHeightMetres": 8,
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/forest/trees/candidates/natural-tree-family-r1/review/tree-small-02.glb",
+        "runtimePath": "static/models/forest/trees/candidates/natural-tree-family-r1/tree-small-02.glb",
+        "provenance": "Poly Haven Tree Small 02",
+        "sourceUrl": "https://polyhaven.com/a/tree_small_02",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "PH-ISLAND-01",
+      "label": "Natural Gnarled Spreader",
+      "family": "Poly Haven Natural Optimized",
+      "roles": ["hero-frame", "irregular-middle"],
+      "targetHeightMetres": 9,
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/forest/trees/candidates/natural-tree-family-r1/review/island-tree-01.glb",
+        "runtimePath": "static/models/forest/trees/candidates/natural-tree-family-r1/island-tree-01.glb",
+        "provenance": "Poly Haven Island Tree 01",
+        "sourceUrl": "https://polyhaven.com/a/island_tree_01",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "PH-ISLAND-02",
+      "label": "Natural Riparian Spreader",
+      "family": "Poly Haven Natural Optimized",
+      "roles": ["riparian", "irregular-middle"],
+      "targetHeightMetres": 7,
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/forest/trees/candidates/natural-tree-family-r1/review/island-tree-02.glb",
+        "runtimePath": "static/models/forest/trees/candidates/natural-tree-family-r1/island-tree-02.glb",
+        "provenance": "Poly Haven Island Tree 02",
+        "sourceUrl": "https://polyhaven.com/a/island_tree_02",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "PH-ISLAND-03",
+      "label": "Natural Understory Spreader",
+      "family": "Poly Haven Natural Optimized",
+      "roles": ["understory", "young"],
+      "targetHeightMetres": 5,
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/forest/trees/candidates/natural-tree-family-r1/review/island-tree-03.glb",
+        "runtimePath": "static/models/forest/trees/candidates/natural-tree-family-r1/island-tree-03.glb",
+        "provenance": "Poly Haven Island Tree 03",
+        "sourceUrl": "https://polyhaven.com/a/island_tree_03",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "PH-FIR-01",
+      "label": "Natural Mature Fir Family",
+      "family": "Poly Haven Natural Optimized",
+      "roles": ["mature-conifer", "distant-silhouette"],
+      "targetHeightMetres": 16,
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/forest/trees/candidates/natural-tree-family-r1/review/fir-tree-01-family.glb",
+        "runtimePath": "static/models/forest/trees/candidates/natural-tree-family-r1/fir-tree-01-family.glb",
+        "provenance": "Poly Haven Fir Tree 01",
+        "sourceUrl": "https://polyhaven.com/a/fir_tree_01",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "PH-FIR-SAPLING",
+      "label": "Natural Fir Understory Family",
+      "family": "Poly Haven Natural Optimized",
+      "roles": ["understory", "young", "distant-silhouette"],
+      "targetHeightMetres": 6,
+      "source": {
+        "kind": "local-glb",
+        "localPath": "static/models/forest/trees/candidates/natural-tree-family-r1/review/fir-sapling-medium-family.glb",
+        "runtimePath": "static/models/forest/trees/candidates/natural-tree-family-r1/fir-sapling-medium-family.glb",
+        "provenance": "Poly Haven Fir Sapling Medium",
+        "sourceUrl": "https://polyhaven.com/a/fir_sapling_medium",
+        "license": "CC0"
+      }
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "gate": "forest-natural-tree-family-r1",
+  "reviewFrameHeightMetres": 22,
+  "reviewAnglesDegrees": [0, 45, 110],
+  "evidenceDirectory": "docs/superpowers/specs/moonlit-firefly-forest/evidence/natural-tree-family-r1",
+  "blendPath": "blender/forest_natural_tree_lineup_r1.blend",
+  "candidates": [
+    {
+      "id": "PH-JACARANDA",
+      "label": "Natural Broad Canopy",
+      "family": "Poly Haven Natural",
+      "roles": ["mature-canopy", "hero-frame"],
+      "targetHeightMetres": 15,
+      "source": {
+        "kind": "polyhaven-gltf",
+        "assetId": "jacaranda_tree",
+        "resolution": "1k",
+        "localPath": "assets/3d-source/forest/polyhaven/jacaranda_tree/jacaranda_tree_1k.gltf",
+        "provenance": "Poly Haven Jacaranda Tree",
+        "sourceUrl": "https://polyhaven.com/a/jacaranda_tree",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "PH-SMALL-02",
+      "label": "Natural Slender Broadleaf",
+      "family": "Poly Haven Natural",
+      "roles": ["irregular-middle", "young"],
+      "targetHeightMetres": 8,
+      "source": {
+        "kind": "polyhaven-gltf",
+        "assetId": "tree_small_02",
+        "resolution": "1k",
+        "localPath": "assets/3d-source/forest/polyhaven/tree_small_02/tree_small_02_1k.gltf",
+        "provenance": "Poly Haven Tree Small 02",
+        "sourceUrl": "https://polyhaven.com/a/tree_small_02",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "PH-ISLAND-01",
+      "label": "Natural Gnarled Spreader",
+      "family": "Poly Haven Natural",
+      "roles": ["hero-frame", "irregular-middle"],
+      "targetHeightMetres": 9,
+      "source": {
+        "kind": "polyhaven-gltf",
+        "assetId": "island_tree_01",
+        "resolution": "1k",
+        "localPath": "assets/3d-source/forest/polyhaven/island_tree_01/island_tree_01_1k.gltf",
+        "provenance": "Poly Haven Island Tree 01",
+        "sourceUrl": "https://polyhaven.com/a/island_tree_01",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "PH-ISLAND-02",
+      "label": "Natural Riparian Spreader",
+      "family": "Poly Haven Natural",
+      "roles": ["riparian", "irregular-middle"],
+      "targetHeightMetres": 7,
+      "source": {
+        "kind": "polyhaven-gltf",
+        "assetId": "island_tree_02",
+        "resolution": "1k",
+        "localPath": "assets/3d-source/forest/polyhaven/island_tree_02/island_tree_02_1k.gltf",
+        "provenance": "Poly Haven Island Tree 02",
+        "sourceUrl": "https://polyhaven.com/a/island_tree_02",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "PH-ISLAND-03",
+      "label": "Natural Understory Spreader",
+      "family": "Poly Haven Natural",
+      "roles": ["understory", "young"],
+      "targetHeightMetres": 5,
+      "source": {
+        "kind": "polyhaven-gltf",
+        "assetId": "island_tree_03",
+        "resolution": "1k",
+        "localPath": "assets/3d-source/forest/polyhaven/island_tree_03/island_tree_03_1k.gltf",
+        "provenance": "Poly Haven Island Tree 03",
+        "sourceUrl": "https://polyhaven.com/a/island_tree_03",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "PH-FIR-01",
+      "label": "Natural Mature Fir Family",
+      "family": "Poly Haven Natural",
+      "roles": ["mature-conifer", "distant-silhouette"],
+      "targetHeightMetres": 16,
+      "source": {
+        "kind": "polyhaven-gltf",
+        "assetId": "fir_tree_01",
+        "resolution": "1k",
+        "localPath": "assets/3d-source/forest/polyhaven/fir_tree_01/fir_tree_01_1k.gltf",
+        "provenance": "Poly Haven Fir Tree 01",
+        "sourceUrl": "https://polyhaven.com/a/fir_tree_01",
+        "license": "CC0"
+      }
+    },
+    {
+      "id": "PH-FIR-SAPLING",
+      "label": "Natural Fir Understory Family",
+      "family": "Poly Haven Natural",
+      "roles": ["understory", "young", "distant-silhouette"],
+      "targetHeightMetres": 6,
+      "source": {
+        "kind": "polyhaven-gltf",
+        "assetId": "fir_sapling_medium",
+        "resolution": "1k",
+        "localPath": "assets/3d-source/forest/polyhaven/fir_sapling_medium/fir_sapling_medium_1k.gltf",
+        "provenance": "Poly Haven Fir Sapling Medium",
+        "sourceUrl": "https://polyhaven.com/a/fir_sapling_medium",
+        "license": "CC0"
+      }
+    }
+  ]
+}

@@ -23,24 +23,28 @@ function validateGlb(bytes, label) {
 
 const prepared = [];
 for (const asset of layout.assets) {
-  const input = resolve(asset.sourcePath);
-  const output = resolve(asset.stagedPath);
-  if (!existsSync(input)) throw new Error(`Missing tree source: ${input}`);
-  const inputBytes = await readFile(input);
-  validateGlb(inputBytes, input);
-  await mkdir(dirname(output), { recursive: true });
-  execFileSync(process.execPath, [cliPath, "copy", input, output], {
-    stdio: "inherit",
-  });
-  const outputBytes = await readFile(output);
-  validateGlb(outputBytes, output);
-  prepared.push({
-    id: asset.id,
-    sourcePath: asset.sourcePath,
-    sourceSha256: sha256(inputBytes),
-    stagedPath: asset.stagedPath,
-    stagedBytes: outputBytes.length,
-  });
+  const variants = asset.variants?.length ? asset.variants : [asset];
+  for (const variant of variants) {
+    const input = resolve(variant.sourcePath);
+    const output = resolve(variant.stagedPath);
+    if (!existsSync(input)) throw new Error(`Missing tree source: ${input}`);
+    const inputBytes = await readFile(input);
+    validateGlb(inputBytes, input);
+    await mkdir(dirname(output), { recursive: true });
+    execFileSync(process.execPath, [cliPath, "copy", input, output], {
+      stdio: "inherit",
+    });
+    const outputBytes = await readFile(output);
+    validateGlb(outputBytes, output);
+    prepared.push({
+      id: asset.id,
+      variantId: variant.id ?? asset.id,
+      sourcePath: variant.sourcePath,
+      sourceSha256: sha256(inputBytes),
+      stagedPath: variant.stagedPath,
+      stagedBytes: outputBytes.length,
+    });
+  }
 }
 
 const statePath = resolve("blender/forest-composition-sources/manifest.json");

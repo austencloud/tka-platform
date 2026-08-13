@@ -21,7 +21,7 @@
     },
     {
       "id": "upstage-west-depth-frame",
-      "assetId": "narrow-larch",
+      "assetId": "canopy-beech",
       "position": [-21.0, 20.0],
       "scale": 0.98,
       "rotationDegrees": 42
@@ -188,7 +188,7 @@
       "center": [-10.0, -8.0],
       "radii": [6.2, 3.8],
       "rotationDegrees": 18,
-      "count": 105,
+      "count": 142,
       "palette": "lush",
       "cause": "Low meadow grass colonizes the audience-side shade without blocking the central approach."
     },
@@ -197,7 +197,7 @@
       "center": [16.0, -15.5],
       "radii": [4.8, 2.8],
       "rotationDegrees": 14,
-      "count": 88,
+      "count": 116,
       "palette": "base",
       "cause": "A drier verge grows beyond the durable campsite and keeps the camp spur, fire pocket, and sleeping pads visibly maintained."
     },
@@ -206,7 +206,7 @@
       "center": [-12.5, 5.5],
       "radii": [5.7, 3.4],
       "rotationDegrees": 34,
-      "count": 96,
+      "count": 126,
       "palette": "shade",
       "cause": "Grass gathers beneath the west beech and softens the rise into the natural proscenium."
     },
@@ -215,7 +215,7 @@
       "center": [13.0, 6.8],
       "radii": [5.0, 3.1],
       "rotationDegrees": -24,
-      "count": 82,
+      "count": 110,
       "palette": "lush",
       "cause": "Runoff keeps the elm-side grass taller and greener around the exposed boulder."
     },
@@ -224,7 +224,7 @@
       "center": [-10.5, 16.0],
       "radii": [3.2, 6.6],
       "rotationDegrees": -18,
-      "count": 90,
+      "count": 112,
       "palette": "shade",
       "cause": "A narrow verge traces the damp west shoulder of the path while the walking core remains worn bare."
     },
@@ -233,7 +233,7 @@
       "center": [2.5, 19.0],
       "radii": [4.0, 7.0],
       "rotationDegrees": 12,
-      "count": 84,
+      "count": 108,
       "palette": "base",
       "cause": "Broken clumps on the opposite shoulder make the trail legible without drawing two artificial parallel borders."
     },
@@ -242,7 +242,7 @@
       "center": [22.0, 5.0],
       "radii": [6.3, 3.5],
       "rotationDegrees": 15,
-      "count": 96,
+      "count": 112,
       "palette": "shade",
       "cause": "Shade grass and fern-height blades collect behind the north outcrop while the camp path remains open."
     },
@@ -251,7 +251,7 @@
       "center": [23.0, -11.0],
       "radii": [6.8, 3.8],
       "rotationDegrees": -12,
-      "count": 110,
+      "count": 132,
       "palette": "lush",
       "cause": "Moist grass gathers around the decomposing root island instead of spreading evenly across the clearing."
     },
@@ -260,9 +260,63 @@
       "center": [16.5, -24.0],
       "radii": [8.5, 4.8],
       "rotationDegrees": -18,
-      "count": 128,
+      "count": 164,
       "palette": "lush",
       "cause": "A single low wet pocket carries the downstage-right grass and firefly concentration."
+    },
+    {
+      "id": "north-sunlit-hillside",
+      "center": [3.0, 44.0],
+      "radii": [18.0, 10.5],
+      "rotationDegrees": 6,
+      "count": 360,
+      "palette": "base",
+      "cause": "Short summer meadow cover occupies the open north rise between path shoulders and canopy trunks."
+    },
+    {
+      "id": "east-camp-hillside",
+      "center": [43.0, 8.0],
+      "radii": [18.0, 11.0],
+      "rotationDegrees": -15,
+      "count": 340,
+      "palette": "lush",
+      "cause": "Sunlit turf fills the camp-facing rise while the worn shelf, fire pocket, and sleeping pads remain open."
+    },
+    {
+      "id": "west-woodland-verge",
+      "center": [-36.0, 5.0],
+      "radii": [17.0, 12.0],
+      "rotationDegrees": 18,
+      "count": 320,
+      "palette": "shade",
+      "cause": "Shade-tolerant meadow grass bridges the western habitat patches into the woodland edge."
+    },
+    {
+      "id": "south-summer-sward",
+      "center": [0.0, -45.0],
+      "radii": [22.0, 12.0],
+      "rotationDegrees": -4,
+      "count": 420,
+      "palette": "base",
+      "cause": "A broken summer sward occupies the open southern basin outside the audience keep-clear area."
+    },
+    {
+      "id": "northeast-runoff-meadow",
+      "center": [52.0, 42.0],
+      "radii": [20.0, 13.0],
+      "rotationDegrees": -22,
+      "count": 380,
+      "palette": "lush",
+      "cause": "The brighter northeast drainage supports broader meadow cover between mature trees."
+    },
+    {
+      "id": "southwest-dappled-slope",
+      "center": [-48.0, -38.0],
+      "radii": [20.0, 13.0],
+      "rotationDegrees": 21,
+      "count": 350,
+      "palette": "shade",
+      "cause": "Dappled shade on the southwest slope carries low grass between litter-rich tree contacts."
     }
   ],
   "mushroomColonies": [

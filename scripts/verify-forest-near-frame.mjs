@@ -24,7 +24,7 @@ const metricsPath = join(
   "forest_near_frame_metrics.json"
 );
 const metrics = JSON.parse(readFileSync(metricsPath, "utf8"));
-const maximumBytes = 12 * 1024 * 1024;
+const maximumBytes = 13 * 1024 * 1024;
 
 function invariant(condition, message) {
   if (!condition) throw new Error(message);
@@ -108,6 +108,7 @@ const expectedGrassPatchIds = new Set(layout.grassPatches.map(({ id }) => id));
 const expectedGrassPalettes = new Set(
   layout.grassPatches.map(({ palette }) => palette)
 );
+const expectedGrassTiers = new Set(["base", "medium", "high"]);
 const expectedMushroomColonyIds = new Set(
   layout.mushroomColonies.map(({ id }) => id)
 );
@@ -121,8 +122,8 @@ invariant(
   "QA lights leaked into the GLB"
 );
 invariant(
-  extensions.has("EXT_meshopt_compression"),
-  "Near-frame GLB lost meshopt compression"
+  extensions.has("KHR_draco_mesh_compression"),
+  "Near-frame GLB lost Draco compression"
 );
 invariant(
   extensions.has("EXT_texture_webp"),
@@ -147,8 +148,8 @@ invariant(
   `Expected ${expectedProps.length} static props, found ${propNodes.length}`
 );
 invariant(
-  grassNodes.length === expectedGrassPalettes.size,
-  `Expected ${expectedGrassPalettes.size} grass palette meshes, found ${grassNodes.length}`
+  grassNodes.length === expectedGrassPalettes.size * expectedGrassTiers.size,
+  `Expected ${expectedGrassPalettes.size * expectedGrassTiers.size} meadow tier/palette meshes, found ${grassNodes.length}`
 );
 invariant(
   trailNodes.length === 1,
@@ -227,6 +228,35 @@ const actualGrassPatchIds = new Set(
       .filter(Boolean)
   )
 );
+const actualGrassTiers = new Set(
+  grassNodes.map((node) => node.extras.tka_grass_quality_tier)
+);
+const grassNodeClumps = grassNodes.reduce(
+  (sum, node) => sum + Number(node.extras.tka_grass_clumps ?? 0),
+  0
+);
+
+invariant(
+  grassNodes.every(
+    (node) => Number(node.extras.tka_meadow_system_version) === 1
+  ),
+  "Near-frame grass did not come from the approved meadow-system builder"
+);
+invariant(
+  [...expectedGrassTiers].every((tier) => actualGrassTiers.has(tier)),
+  "Near-frame grass lost one or more cumulative quality tiers"
+);
+invariant(
+  grassNodeClumps === Number(metrics.groundLife.grassClumpCount),
+  "Meadow mesh clump totals do not match builder metrics"
+);
+invariant(
+  Object.values(metrics.groundLife.grassTierCounts).reduce(
+    (sum, count) => sum + Number(count),
+    0
+  ) === Number(metrics.groundLife.grassClumpCount),
+  "Meadow quality-tier metrics do not sum to the authored clump total"
+);
 
 invariant(
   trailNodes[0].extras.tka_trail_accent_id === layout.trailAccent.id &&
@@ -297,6 +327,7 @@ console.log(
       campShelf: metrics.campShelf,
       grassPatches: [...expectedGrassPatchIds],
       grassClumps: metrics.groundLife.grassClumpCount,
+      grassTiers: metrics.groundLife.grassTierCounts,
       trail: metrics.groundLife.trail,
       mushroomColonies: [...expectedMushroomColonyIds],
       mushroomParts: mushroomNodes.length + instancedMushroomCount,

@@ -29,7 +29,7 @@ describe("Forest shadow roles", () => {
 
   it("lets only the authored near-frame layer shape the clearing", () => {
     expect(resolveForestNearFrameShadowRole("near-frame-tree", true)).toEqual({
-      cast: true,
+      cast: false,
       receive: true,
     });
     expect(

@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "source": {
+    "label": "SpeedTree ORCA White Oak",
+    "author": "SpeedTree",
+    "archiveMaintainer": "Morgan McGuire Computer Graphics Archive",
+    "canonicalPage": "https://developer.nvidia.com/orca/speedtree",
+    "archiveUrl": "https://casual-effects.com/g3d/data10/research/model/white_oak/white_oak.zip",
+    "license": "CC BY-NC-SA 3.0",
+    "commercialUseAllowed": false,
+    "defaultSourceRoot": "C:/Users/Austen/AppData/Local/Temp/tka-speedtree-white-oak-pilot/source",
+    "objectFile": "white_oak.obj"
+  },
+  "candidate": {
+    "id": "speedtree-orca-white-oak-evaluation",
+    "targetHeightMetres": 16,
+    "maximumTriangles": 45000,
+    "maximumBytes": 8388608,
+    "optimizedTextureSize": 2048,
+    "rawPath": "static/models/forest/trees/candidates/evaluation-only/speedtree-orca-white-oak-evaluation_raw.glb",
+    "reviewPath": "static/models/forest/trees/candidates/evaluation-only/speedtree-orca-white-oak-evaluation_review.glb",
+    "runtimePath": "static/models/forest/trees/candidates/evaluation-only/speedtree-orca-white-oak-evaluation.glb"
+  },
+  "comparison": {
+    "meshyReviewPath": "static/models/forest/trees/candidates/mature-temperate-oak-meshy6-r1_review.glb",
+    "meshyRuntimePath": "static/models/forest/trees/lush-canopy-oak.glb"
+  },
+  "evidenceDirectory": "docs/superpowers/specs/moonlit-firefly-forest/evidence/speedtree-pilot"
+}
