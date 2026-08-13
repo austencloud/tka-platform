@@ -1,4 +1,10 @@
 import type { Bloom2DParams } from "../translators/canvas2d-types";
+import {
+  resolveBloomAfterglowRetention,
+  resolveBloomExposure,
+  resolveBloomFootprintScale,
+  resolveBloomHistoryDeposit,
+} from "../domain/bloom-optics";
 
 /**
  * Per-tip input for the bloom overlay. Each tip is an independent light
@@ -17,9 +23,22 @@ export interface BloomTipInput {
   propIndex: number;
   tipIndex: number;
   color: string;
+  /** Tracker velocity in viewbox units per second when available. */
+  velocityX?: number;
+  /** Tracker velocity in viewbox units per second when available. */
+  velocityY?: number;
 }
 
 type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+
+const PRISM_SPECTRUM = [
+  "255,42,52",
+  "255,132,24",
+  "255,224,60",
+  "62,238,120",
+  "34,196,255",
+  "92,72,255",
+] as const;
 
 /**
  * Lens-bloom renderer for the Canvas2D backend.
@@ -32,34 +51,16 @@ type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
  *   3. Anamorphic streak - the halo stretched along the motion vector; length
  *      grows with the tip's per-frame speed.
  *   4. Diffraction star spikes - the lens glint off a bright point.
- *   5. Chromatic fringe - red/blue ghosts split along motion on fast swings.
+ *   5. Spectral trail - moving white light separates into a narrow spectrum.
  *
- * A long-exposure afterglow is achieved with an offscreen accumulation buffer:
- * light is drawn into it each frame, the buffer decays by a fixed per-frame
- * fraction (frame-based, NOT wall-clock - so QR export stays deterministic),
- * and the buffer is composited onto the overlay. When no offscreen canvas is
- * available (headless/jsdom) it falls back to drawing straight to the context -
- * same lens bloom, minus the persistent trail.
+ * A long-exposure afterglow is achieved with an offscreen accumulation buffer.
+ * Only moving colored scatter enters that buffer. The white source, spikes,
+ * and spectral fringe stay live, so revisiting a pose cannot stack them into a
+ * flash. The decay remains frame-based so QR export stays deterministic.
  *
  * This is the only effect named after a real photographic phenomenon, and it
  * now renders that phenomenon: lens bloom.
  */
-
-/**
- * Perceptual response curve for the Intensity slider.
- *
- * The five lens layers are all drawn with additive `lighter` blend, so light
- * saturates toward white around ~0.15-0.2 alpha. Feeding the raw 0..1 slider
- * value straight in as alpha makes the bottom ~15% of the track do all the
- * useful work and everything above it blow out flat white - the slider is
- * linear in alpha but wildly nonlinear in *perceived* brightness.
- *
- * Gamma-shaping the slider value (like a camera exposure curve) makes the
- * track perceptually linear: medium brightness lands near the 50% mark, "barely
- * glowing" occupies the low end, and full blowout stays reachable at 100%.
- * 0.5 ** 2.6 ≈ 0.16, i.e. the slider's midpoint renders at ~16% alpha.
- */
-const INTENSITY_GAMMA = 2.6;
 
 export class Bloom2DRenderer {
   // Offscreen accumulation buffer holding the decaying long-exposure light.
@@ -72,14 +73,14 @@ export class Bloom2DRenderer {
   private accumUnavailable = false;
 
   // Previous tip positions by tipIndex → per-frame velocity for streak length,
-  // spike flare, and chromatic offset.
+  // spike flare, and prism motion response.
   private prevPos = new Map<number, { x: number; y: number }>();
 
   render(
     ctx: CanvasRenderingContext2D,
     params: Bloom2DParams,
     tips: BloomTipInput[],
-    scale: number = 1,
+    scale: number = 1
   ): void {
     if (tips.length === 0) {
       // Still decay the afterglow so a lifted prop's light fades out instead of
@@ -97,24 +98,28 @@ export class Bloom2DRenderer {
     if (!accCtx || !this.accum) {
       // No offscreen buffer (headless/jsdom): draw lens bloom directly, no
       // persistent afterglow. Behavior-equivalent minus the trail.
-      this.drawContributions(ctx, params, tips, scale);
+      this.drawLiveContributions(ctx, params, tips, scale);
       this.rememberPositions(tips);
       return;
     }
 
-    // 1. Decay the accumulation buffer toward transparent. afterglow→0 wipes it
-    //    fully each frame (no trail); afterglow→1 keeps ~98% per frame (~1s).
+    // 1. Decay the accumulated colored scatter.
     this.applyDecay(accCtx, params.afterglow, W, H);
 
-    // 2. Add this frame's light into the buffer (additive).
-    this.drawContributions(accCtx, params, tips, scale);
+    // 2. Add a bounded dose of moving halo and streak. The hot source never
+    //    enters this buffer.
+    this.drawHistoryContributions(accCtx, params, tips, scale);
 
-    // 3. Composite the accumulated light onto the (already-cleared) overlay.
+    // 3. Composite history behind the live optics.
     ctx.save();
     ctx.globalCompositeOperation = params.blendMode ?? "lighter";
     ctx.globalAlpha = 1;
     ctx.drawImage(this.accum, 0, 0);
     ctx.restore();
+
+    // 4. Draw the source exactly once. This is what keeps slow turns and
+    //    crossings from flashing white.
+    this.drawLiveContributions(ctx, params, tips, scale);
 
     this.rememberPositions(tips);
   }
@@ -131,7 +136,10 @@ export class Bloom2DRenderer {
   // ── Accumulation buffer ─────────────────────────────────────────────
 
   /** Decay-only frame (no tips): fade the afterglow, blit, no new light. */
-  private decayOnly(ctx: CanvasRenderingContext2D, params: Bloom2DParams): void {
+  private decayOnly(
+    ctx: CanvasRenderingContext2D,
+    params: Bloom2DParams
+  ): void {
     if (!this.accum || !this.accumCtx) return;
     this.applyDecay(this.accumCtx, params.afterglow, this.accumW, this.accumH);
     ctx.save();
@@ -146,8 +154,13 @@ export class Bloom2DRenderer {
    * fraction. `destination-out` with a low-alpha black fill subtracts alpha
    * uniformly - the standard light-trail decay. Frame-based (deterministic).
    */
-  private applyDecay(acc: Ctx2D, afterglow: number, w: number, h: number): void {
-    const retain = 0.6 + 0.39 * clamp01(afterglow); // 0.60..0.99 kept per frame
+  private applyDecay(
+    acc: Ctx2D,
+    afterglow: number,
+    w: number,
+    h: number
+  ): void {
+    const retain = resolveBloomAfterglowRetention(afterglow);
     acc.save();
     acc.globalCompositeOperation = "destination-out";
     acc.globalAlpha = 1;
@@ -157,7 +170,8 @@ export class Bloom2DRenderer {
   }
 
   private ensureAccum(W: number, H: number): Ctx2D | null {
-    if (this.accumCtx && this.accumW === W && this.accumH === H) return this.accumCtx;
+    if (this.accumCtx && this.accumW === W && this.accumH === H)
+      return this.accumCtx;
     if (this.accumUnavailable) return null;
 
     let canvas: OffscreenCanvas | HTMLCanvasElement | null = null;
@@ -191,23 +205,26 @@ export class Bloom2DRenderer {
 
   // ── Per-tip light contributions ─────────────────────────────────────
 
-  /** Draw every tip's five lens layers into `target` with additive blend. */
-  private drawContributions(
+  /** Draw every tip's live lens layers once. */
+  private drawLiveContributions(
     target: Ctx2D,
     params: Bloom2DParams,
     tips: BloomTipInput[],
-    scale: number,
+    scale: number
   ): void {
     const t = performance.now() / 1000;
-    const pulseFactor =
-      1 -
-      params.pulse +
-      params.pulse * (0.5 + 0.5 * Math.sin(t * params.pulseRate * Math.PI * 2));
-    const shaped = Math.pow(clamp01(params.intensity), INTENSITY_GAMMA);
-    const baseAlpha = clamp01(shaped * pulseFactor);
-    if (baseAlpha <= 0 && params.falloff !== "ring") return;
+    const baseAlpha = resolveBloomExposure(
+      params.intensity,
+      params.pulse,
+      params.pulseRate,
+      t
+    );
+    if (baseAlpha <= 0) return;
 
     const coreR = Math.max(1, params.radius * scale);
+    const footprintScale = resolveBloomFootprintScale(
+      new Set(tips.map((tip) => tip.propIndex)).size
+    );
 
     target.save();
     target.globalCompositeOperation = "lighter";
@@ -218,30 +235,168 @@ export class Bloom2DRenderer {
 
       // Per-frame velocity drives the motion-reactive layers.
       const prev = this.prevPos.get(tip.tipIndex);
-      const vx = prev ? tip.x - prev.x : 0;
-      const vy = prev ? tip.y - prev.y : 0;
+      const vx =
+        tip.velocityX !== undefined
+          ? tip.velocityX / 60
+          : prev
+            ? tip.x - prev.x
+            : 0;
+      const vy =
+        tip.velocityY !== undefined
+          ? tip.velocityY / 60
+          : prev
+            ? tip.y - prev.y
+            : 0;
       const speed = Math.hypot(vx, vy);
       const angle = speed > 0.01 ? Math.atan2(vy, vx) : 0;
 
       // 1. Colored halo.
-      this.drawHalo(target, tip.x, tip.y, coreR, params.falloff, color, baseAlpha);
+      this.drawHalo(
+        target,
+        tip.x,
+        tip.y,
+        coreR,
+        params.falloff,
+        color,
+        baseAlpha * (1 - params.chromatic * 0.75)
+      );
 
-      // 2. Over-exposed white-hot core.
-      this.drawCore(target, tip.x, tip.y, coreR * 0.38, baseAlpha);
-
-      // 3. Anamorphic motion streak.
+      // 2. Anamorphic motion streak.
       if (params.streak > 0 && speed > 0.5) {
-        this.drawStreak(target, tip.x, tip.y, coreR, angle, speed, params.streak, color, baseAlpha);
+        this.drawStreak(
+          target,
+          tip.x,
+          tip.y,
+          coreR,
+          angle,
+          speed,
+          params.streak,
+          color,
+          baseAlpha
+        );
       }
 
-      // 4. Diffraction star spikes.
+      // 3. Prism reveals the direction of travel. A paused tip stays clean
+      //    instead of spraying a decorative rainbow across the notation.
+      if (params.chromatic > 0 && speed > 0.2) {
+        this.drawSpectralTrail(
+          target,
+          tip.x,
+          tip.y,
+          coreR,
+          vx,
+          vy,
+          speed,
+          params.chromatic,
+          footprintScale,
+          baseAlpha
+        );
+      }
+
+      // A high-dispersion preset keeps a hairline red/cyan edge at rest. It is
+      // just enough to identify Prism on static arc samples without projecting
+      // any geometry over the motion paths.
+      if (params.chromatic >= 0.8) {
+        this.drawSpectralEdge(
+          target,
+          tip.x,
+          tip.y,
+          coreR,
+          params.chromatic,
+          baseAlpha
+        );
+      }
+
+      // 4. The white source sits over the trail so the current prop position
+      // remains more legible than the color separation behind it.
+      if (params.coreStrength > 0) {
+        this.drawCore(
+          target,
+          tip.x,
+          tip.y,
+          coreR * (0.16 + params.coreStrength * 0.22),
+          baseAlpha * params.coreStrength
+        );
+      }
+
+      // 5. Diffraction star spikes.
       if (params.spikes > 0) {
-        this.drawSpikes(target, tip.x, tip.y, coreR, scale, speed, params.spikes, baseAlpha);
+        this.drawSpikes(
+          target,
+          tip.x,
+          tip.y,
+          coreR,
+          scale,
+          speed,
+          params.spikes,
+          baseAlpha
+        );
       }
+    }
 
-      // 5. Chromatic fringe on fast swings.
-      if (params.chromatic > 0 && speed > 0.5) {
-        this.drawChroma(target, tip.x, tip.y, coreR, angle, speed, params.chromatic, baseAlpha);
+    target.restore();
+  }
+
+  /**
+   * Store only the moving colored scatter. Deposit is normalized against the
+   * chosen retention, which keeps long afterglow from becoming white by
+   * accumulation alone.
+   */
+  private drawHistoryContributions(
+    target: Ctx2D,
+    params: Bloom2DParams,
+    tips: BloomTipInput[],
+    scale: number
+  ): void {
+    const deposit = resolveBloomHistoryDeposit(params.afterglow);
+    if (deposit <= 0) return;
+
+    const t = performance.now() / 1000;
+    const exposure = resolveBloomExposure(
+      params.intensity,
+      params.pulse,
+      params.pulseRate,
+      t
+    );
+    const alpha = exposure * deposit;
+    if (alpha <= 0) return;
+
+    const coreR = Math.max(1, params.radius * scale);
+    target.save();
+    target.globalCompositeOperation = "lighter";
+    target.globalAlpha = 1;
+
+    for (const tip of tips) {
+      const prev = this.prevPos.get(tip.tipIndex);
+      if (!prev) continue;
+      const vx = tip.x - prev.x;
+      const vy = tip.y - prev.y;
+      const speed = Math.hypot(vx, vy);
+      if (speed <= 0.5) continue;
+
+      const color = this.pickColor(params, tip, t);
+      const angle = Math.atan2(vy, vx);
+      this.drawHalo(
+        target,
+        tip.x,
+        tip.y,
+        coreR * (0.62 + params.streak * 0.18),
+        params.falloff,
+        color,
+        alpha
+      );
+      if (params.streak > 0) {
+        this.drawStreak(
+          target,
+          tip.x,
+          tip.y,
+          coreR,
+          angle,
+          speed,
+          params.streak,
+          color,
+          alpha
+        );
       }
     }
 
@@ -255,7 +410,7 @@ export class Bloom2DRenderer {
     r: number,
     falloff: Bloom2DParams["falloff"],
     color: string,
-    alpha: number,
+    alpha: number
   ): void {
     const g = target.createRadialGradient(x, y, 0, x, y, r);
     const col = (a: number) => withAlpha(color, alpha * a);
@@ -265,13 +420,6 @@ export class Bloom2DRenderer {
         g.addColorStop(0, col(1));
         g.addColorStop(0.15, col(0.7));
         g.addColorStop(0.6, col(0.1));
-        g.addColorStop(1, transparent);
-        break;
-      case "ring":
-        g.addColorStop(0, transparent);
-        g.addColorStop(0.45, col(0.2));
-        g.addColorStop(0.7, col(1));
-        g.addColorStop(0.9, col(0.3));
         g.addColorStop(1, transparent);
         break;
       case "smooth":
@@ -286,13 +434,53 @@ export class Bloom2DRenderer {
   }
 
   /** Blown-out near-white center - the over-exposed light source. */
-  private drawCore(target: Ctx2D, x: number, y: number, r: number, alpha: number): void {
+  private drawCore(
+    target: Ctx2D,
+    x: number,
+    y: number,
+    r: number,
+    alpha: number
+  ): void {
     const g = target.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, `rgba(255,255,255,${clamp01(alpha)})`);
     g.addColorStop(0.5, `rgba(255,255,255,${clamp01(alpha * 0.5)})`);
     g.addColorStop(1, "rgba(255,255,255,0)");
     target.fillStyle = g;
     target.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+
+  /** A compact chromatic fringe that stays under the white source. */
+  private drawSpectralEdge(
+    target: Ctx2D,
+    x: number,
+    y: number,
+    coreR: number,
+    chromatic: number,
+    alpha: number
+  ): void {
+    const offset = coreR * 0.22;
+    const radius = coreR * 0.28;
+    const edgeAlpha = clamp01(alpha * chromatic * 0.52);
+    const edges = [
+      { x: x - offset, rgb: "255,42,52" },
+      { x: x + offset, rgb: "34,196,255" },
+    ] as const;
+
+    for (const edge of edges) {
+      const gradient = target.createRadialGradient(
+        edge.x,
+        y,
+        0,
+        edge.x,
+        y,
+        radius
+      );
+      gradient.addColorStop(0, `rgba(${edge.rgb},${edgeAlpha})`);
+      gradient.addColorStop(0.58, `rgba(${edge.rgb},${edgeAlpha * 0.44})`);
+      gradient.addColorStop(1, `rgba(${edge.rgb},0)`);
+      target.fillStyle = gradient;
+      target.fillRect(edge.x - radius, y - radius, radius * 2, radius * 2);
+    }
   }
 
   /**
@@ -309,7 +497,7 @@ export class Bloom2DRenderer {
     speed: number,
     streak: number,
     color: string,
-    alpha: number,
+    alpha: number
   ): void {
     const stretch = 1 + Math.min(speed / coreR, 3.5) * streak * 1.6;
     target.save();
@@ -337,7 +525,7 @@ export class Bloom2DRenderer {
     scale: number,
     speed: number,
     spikes: number,
-    alpha: number,
+    alpha: number
   ): void {
     const flare = 1 + Math.min(speed / coreR, 2) * 0.5;
     const longLen = coreR * (1.2 + 2.2 * spikes) * flare;
@@ -366,42 +554,67 @@ export class Bloom2DRenderer {
     target.restore();
   }
 
-  /**
-   * Red/blue ghost cores offset along the motion axis - the lens can't focus
-   * all wavelengths together on a fast-moving bright source.
-   */
-  private drawChroma(
+  /** A short red-to-violet exposure trailing the tip's actual movement. */
+  private drawSpectralTrail(
     target: Ctx2D,
     x: number,
     y: number,
     coreR: number,
-    angle: number,
+    velocityX: number,
+    velocityY: number,
     speed: number,
     chromatic: number,
-    alpha: number,
+    footprintScale: number,
+    alpha: number
   ): void {
-    const offset = Math.min(speed * 0.5, coreR * 0.6) * chromatic;
-    if (offset < 0.5) return;
-    const ox = Math.cos(angle) * offset;
-    const oy = Math.sin(angle) * offset;
-    const r = coreR * 0.5;
-    const a = clamp01(alpha * 0.5);
-    this.drawTintedBlob(target, x + ox, y + oy, r, `rgba(255,40,40,${a})`);
-    this.drawTintedBlob(target, x - ox, y - oy, r, `rgba(40,80,255,${a})`);
-  }
+    const threshold = Math.max(0.2, coreR * 0.008);
+    if (speed <= threshold) return;
 
-  private drawTintedBlob(target: Ctx2D, x: number, y: number, r: number, head: string): void {
-    const g = target.createRadialGradient(x, y, 0, x, y, r);
-    const tail = head.replace(/[\d.]+\)$/, "0)");
-    g.addColorStop(0, head);
-    g.addColorStop(1, tail);
-    target.fillStyle = g;
-    target.fillRect(x - r, y - r, r * 2, r * 2);
+    const motion = clamp01((speed - threshold) / Math.max(1, coreR * 0.24));
+    const length =
+      coreR * footprintScale * (0.38 + motion * (0.8 + chromatic * 0.65));
+    const spread = coreR * footprintScale * chromatic * (0.07 + motion * 0.08);
+    const bandWidth = Math.max(
+      0.65,
+      coreR * footprintScale * (0.02 + motion * 0.012)
+    );
+    const bandCount = PRISM_SPECTRUM.length;
+    const intensity = clamp01(alpha * chromatic * (0.72 + motion * 0.2));
+    if (length < 1 || intensity <= 0) return;
+
+    target.save();
+    target.translate(x, y);
+    target.rotate(Math.atan2(velocityY, velocityX));
+    target.lineCap = "round";
+
+    for (let index = 0; index < bandCount; index++) {
+      const amount = bandCount === 1 ? 0.5 : index / (bandCount - 1);
+      const offset = lerp(-spread, spread, amount);
+      const rgb = PRISM_SPECTRUM[index]!;
+      const gradient = target.createLinearGradient(0, 0, -length, 0);
+      gradient.addColorStop(0, `rgba(${rgb},${intensity * 0.5})`);
+      gradient.addColorStop(0.18, `rgba(${rgb},${intensity * 0.72})`);
+      gradient.addColorStop(0.58, `rgba(${rgb},${intensity * 0.42})`);
+      gradient.addColorStop(1, `rgba(${rgb},0)`);
+      target.strokeStyle = gradient;
+      target.lineWidth = bandWidth;
+      target.beginPath();
+      target.moveTo(-coreR * 0.03, offset * 0.15);
+      target.lineTo(-length * 0.42, offset * 0.6);
+      target.lineTo(-length, offset);
+      target.stroke();
+    }
+
+    target.restore();
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────
 
-  private pickColor(params: Bloom2DParams, tip: BloomTipInput, t: number): string {
+  private pickColor(
+    params: Bloom2DParams,
+    tip: BloomTipInput,
+    t: number
+  ): string {
     switch (params.colorMode) {
       case "prop-matched":
         return tip.color;
@@ -421,10 +634,10 @@ export class Bloom2DRenderer {
     for (const tip of tips) {
       this.prevPos.set(tip.tipIndex, { x: tip.x, y: tip.y });
     }
-    if (this.prevPos.size > tips.length) {
-      const live = new Set(tips.map((tp) => tp.tipIndex));
-      for (const key of this.prevPos.keys()) {
-        if (!live.has(key)) this.prevPos.delete(key);
+    const live = new Set(tips.map((tip) => tip.tipIndex));
+    for (const key of this.prevPos.keys()) {
+      if (!live.has(key)) {
+        this.prevPos.delete(key);
       }
     }
   }
@@ -433,6 +646,10 @@ export class Bloom2DRenderer {
 /** Clamp to [0, 1]. */
 function clamp01(v: number): number {
   return v < 0 ? 0 : v > 1 ? 1 : v;
+}
+
+function lerp(start: number, end: number, amount: number): number {
+  return start + (end - start) * amount;
 }
 
 /**

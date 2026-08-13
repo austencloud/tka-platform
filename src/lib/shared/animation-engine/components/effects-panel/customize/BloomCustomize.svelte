@@ -21,7 +21,6 @@
   const FALLOFFS: { value: BloomIntent["falloff"]; label: string }[] = [
     { value: "smooth", label: "Smooth" },
     { value: "sharp", label: "Sharp" },
-    { value: "ring", label: "Ring" },
   ];
 
   // Palette row fixed at 5 entries for v1; add/remove deferred.
@@ -71,7 +70,9 @@
                 type="color"
                 value={state.bloom.color}
                 oninput={(e) =>
-                  state.updateEffect("bloom", { color: (e.currentTarget as HTMLInputElement).value })}
+                  state.updateEffect("bloom", {
+                    color: (e.currentTarget as HTMLInputElement).value,
+                  })}
               />
             </label>
           </div>
@@ -85,7 +86,11 @@
                 <input
                   type="color"
                   value={paletteAt(i)}
-                  oninput={(e) => setPaletteAt(i, (e.currentTarget as HTMLInputElement).value)}
+                  oninput={(e) =>
+                    setPaletteAt(
+                      i,
+                      (e.currentTarget as HTMLInputElement).value
+                    )}
                 />
               </label>
             {/each}
@@ -104,9 +109,13 @@
           step="0.05"
           value={state.bloom.intensity}
           oninput={(e) =>
-            state.updateEffect("bloom", { intensity: +(e.currentTarget as HTMLInputElement).value })}
+            state.updateEffect("bloom", {
+              intensity: +(e.currentTarget as HTMLInputElement).value,
+            })}
         />
-        <span class="slider-value">{Math.round(state.bloom.intensity * 100)}%</span>
+        <span class="slider-value"
+          >{Math.round(state.bloom.intensity * 100)}%</span
+        >
       </div>
 
       <!-- Radius -->
@@ -120,107 +129,150 @@
           step="2"
           value={state.bloom.radius}
           oninput={(e) =>
-            state.updateEffect("bloom", { radius: +(e.currentTarget as HTMLInputElement).value })}
+            state.updateEffect("bloom", {
+              radius: +(e.currentTarget as HTMLInputElement).value,
+            })}
         />
         <span class="slider-value">{state.bloom.radius}px</span>
       </div>
 
-      <AdvancedControls count={6}>
-      <!-- Pulse -->
-      <div class="slider-row">
-        <label for="bloom-pulse">Pulse</label>
-        <input
-          id="bloom-pulse"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={state.bloom.pulse}
-          oninput={(e) =>
-            state.updateEffect("bloom", { pulse: +(e.currentTarget as HTMLInputElement).value })}
-        />
-        <span class="slider-value">{Math.round(state.bloom.pulse * 100)}%</span>
-      </div>
+      <AdvancedControls count={7}>
+        <div class="slider-row">
+          <label for="bloom-core">Core</label>
+          <input
+            id="bloom-core"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={state.bloom.coreStrength}
+            oninput={(e) =>
+              state.updateEffect("bloom", {
+                coreStrength: +(e.currentTarget as HTMLInputElement).value,
+              })}
+          />
+          <span class="slider-value"
+            >{Math.round(state.bloom.coreStrength * 100)}%</span
+          >
+        </div>
 
-      <!-- Pulse Rate -->
-      <div class="slider-row">
-        <label for="bloom-pulse-rate">Rate</label>
-        <input
-          id="bloom-pulse-rate"
-          type="range"
-          min="0.25"
-          max="4"
-          step="0.25"
-          value={state.bloom.pulseRate}
-          oninput={(e) =>
-            state.updateEffect("bloom", { pulseRate: +(e.currentTarget as HTMLInputElement).value })}
-        />
-        <span class="slider-value">{state.bloom.pulseRate}Hz</span>
-      </div>
+        <!-- Pulse -->
+        <div class="slider-row">
+          <label for="bloom-pulse">Pulse</label>
+          <input
+            id="bloom-pulse"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={state.bloom.pulse}
+            oninput={(e) =>
+              state.updateEffect("bloom", {
+                pulse: +(e.currentTarget as HTMLInputElement).value,
+              })}
+          />
+          <span class="slider-value"
+            >{Math.round(state.bloom.pulse * 100)}%</span
+          >
+        </div>
 
-      <!-- Streak (anamorphic motion smear) -->
-      <div class="slider-row">
-        <label for="bloom-streak">Streak</label>
-        <input
-          id="bloom-streak"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={state.bloom.streak}
-          oninput={(e) =>
-            state.updateEffect("bloom", { streak: +(e.currentTarget as HTMLInputElement).value })}
-        />
-        <span class="slider-value">{Math.round(state.bloom.streak * 100)}%</span>
-      </div>
+        <!-- Pulse Rate -->
+        <div class="slider-row">
+          <label for="bloom-pulse-rate">Rate</label>
+          <input
+            id="bloom-pulse-rate"
+            type="range"
+            min="0.25"
+            max="4"
+            step="0.25"
+            value={state.bloom.pulseRate}
+            oninput={(e) =>
+              state.updateEffect("bloom", {
+                pulseRate: +(e.currentTarget as HTMLInputElement).value,
+              })}
+          />
+          <span class="slider-value">{state.bloom.pulseRate}Hz</span>
+        </div>
 
-      <!-- Spikes (diffraction star glint) -->
-      <div class="slider-row">
-        <label for="bloom-spikes">Spikes</label>
-        <input
-          id="bloom-spikes"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={state.bloom.spikes}
-          oninput={(e) =>
-            state.updateEffect("bloom", { spikes: +(e.currentTarget as HTMLInputElement).value })}
-        />
-        <span class="slider-value">{Math.round(state.bloom.spikes * 100)}%</span>
-      </div>
+        <!-- Streak (anamorphic motion smear) -->
+        <div class="slider-row">
+          <label for="bloom-streak">Streak</label>
+          <input
+            id="bloom-streak"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={state.bloom.streak}
+            oninput={(e) =>
+              state.updateEffect("bloom", {
+                streak: +(e.currentTarget as HTMLInputElement).value,
+              })}
+          />
+          <span class="slider-value"
+            >{Math.round(state.bloom.streak * 100)}%</span
+          >
+        </div>
 
-      <!-- Chromatic (lens dispersion fringe) -->
-      <div class="slider-row">
-        <label for="bloom-chromatic">Dispersion</label>
-        <input
-          id="bloom-chromatic"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={state.bloom.chromatic}
-          oninput={(e) =>
-            state.updateEffect("bloom", { chromatic: +(e.currentTarget as HTMLInputElement).value })}
-        />
-        <span class="slider-value">{Math.round(state.bloom.chromatic * 100)}%</span>
-      </div>
+        <!-- Spikes (diffraction star glint) -->
+        <div class="slider-row">
+          <label for="bloom-spikes">Spikes</label>
+          <input
+            id="bloom-spikes"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={state.bloom.spikes}
+            oninput={(e) =>
+              state.updateEffect("bloom", {
+                spikes: +(e.currentTarget as HTMLInputElement).value,
+              })}
+          />
+          <span class="slider-value"
+            >{Math.round(state.bloom.spikes * 100)}%</span
+          >
+        </div>
 
-      <!-- Afterglow (long-exposure trail persistence) -->
-      <div class="slider-row">
-        <label for="bloom-afterglow">Afterglow</label>
-        <input
-          id="bloom-afterglow"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={state.bloom.afterglow}
-          oninput={(e) =>
-            state.updateEffect("bloom", { afterglow: +(e.currentTarget as HTMLInputElement).value })}
-        />
-        <span class="slider-value">{Math.round(state.bloom.afterglow * 100)}%</span>
-      </div>
+        <!-- Chromatic (lens dispersion fringe) -->
+        <div class="slider-row">
+          <label for="bloom-chromatic">Dispersion</label>
+          <input
+            id="bloom-chromatic"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={state.bloom.chromatic}
+            oninput={(e) =>
+              state.updateEffect("bloom", {
+                chromatic: +(e.currentTarget as HTMLInputElement).value,
+              })}
+          />
+          <span class="slider-value"
+            >{Math.round(state.bloom.chromatic * 100)}%</span
+          >
+        </div>
+
+        <!-- Afterglow (long-exposure trail persistence) -->
+        <div class="slider-row">
+          <label for="bloom-afterglow">Afterglow</label>
+          <input
+            id="bloom-afterglow"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={state.bloom.afterglow}
+            oninput={(e) =>
+              state.updateEffect("bloom", {
+                afterglow: +(e.currentTarget as HTMLInputElement).value,
+              })}
+          />
+          <span class="slider-value"
+            >{Math.round(state.bloom.afterglow * 100)}%</span
+          >
+        </div>
       </AdvancedControls>
     </div>
   {:else}
