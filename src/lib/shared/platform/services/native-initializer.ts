@@ -4,13 +4,11 @@ import {
   beginNativeScanViewerTransition,
   isNativeScanViewerReady,
   markNativeScanViewerFailed,
-  markNativeScanViewerRevealed,
-  waitForNativeScanViewerReady,
+  waitForNativeScanLoadingSurfaceReady,
 } from "./native-scan-viewer-readiness";
 
 export class NativeInitializer {
   private deepLinkTransitionToken = 0;
-  private launchScanRevealCode: string | null = null;
 
   async initialize(): Promise<void> {
     if (!isNative()) return;
@@ -25,10 +23,6 @@ export class NativeInitializer {
     ]);
 
     await this.hideSplashScreen();
-    if (this.launchScanRevealCode) {
-      markNativeScanViewerRevealed(this.launchScanRevealCode);
-      this.launchScanRevealCode = null;
-    }
   }
 
   private async initStatusBar(): Promise<void> {
@@ -143,9 +137,9 @@ export class NativeInitializer {
 
     if (shouldCoverTransition) await this.showSplashScreen();
 
-    const viewerReadiness =
+    const loadingSurfaceReadiness =
       scanCode && !alreadyShowingScan
-        ? waitForNativeScanViewerReady(scanCode)
+        ? waitForNativeScanLoadingSurfaceReady(scanCode)
         : null;
 
     try {
@@ -160,25 +154,18 @@ export class NativeInitializer {
       const { goto } = await import("$app/navigation");
       await goto(target);
 
-      if (viewerReadiness) {
-        const outcome = await viewerReadiness;
+      if (loadingSurfaceReadiness) {
+        const outcome = await loadingSurfaceReadiness;
         if (outcome === "timeout") {
           console.warn(
-            `[NativeInitializer] Timed out waiting for scanned sequence "${scanCode}" to paint.`
+            `[NativeInitializer] Timed out waiting for the scan loading surface for "${scanCode}" to paint.`
           );
         }
-      }
-
-      if (scanCode && viewerReadiness && !shouldCoverTransition) {
-        // Cold launch: initialize() owns the one native hide after all startup
-        // work settles, then releases playback from the same boundary.
-        this.launchScanRevealCode = scanCode;
       }
       return true;
     } catch {
       if (scanCode) {
         markNativeScanViewerFailed(scanCode);
-        if (!shouldCoverTransition) this.launchScanRevealCode = scanCode;
       }
       return false;
     } finally {
@@ -187,7 +174,6 @@ export class NativeInitializer {
         transitionToken === this.deepLinkTransitionToken
       ) {
         await this.hideSplashScreen();
-        if (scanCode) markNativeScanViewerRevealed(scanCode);
       }
     }
   }

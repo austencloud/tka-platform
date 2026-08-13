@@ -6,10 +6,9 @@ const mocks = vi.hoisted(() => ({
   goto: vi.fn<(target: string) => Promise<void>>(),
   hideSplash: vi.fn<() => Promise<void>>(),
   showSplash: vi.fn<() => Promise<void>>(),
-  waitForViewerReady: vi.fn<() => Promise<"ready" | "failed" | "timeout">>(),
+  waitForLoadingSurface: vi.fn<() => Promise<"ready" | "failed" | "timeout">>(),
   beginViewerTransition: vi.fn(),
   markViewerFailed: vi.fn(),
-  markViewerRevealed: vi.fn(),
   isViewerReady: vi.fn(() => false),
 }));
 
@@ -32,8 +31,7 @@ vi.mock("$lib/shared/platform/services/native-scan-viewer-readiness", () => ({
   beginNativeScanViewerTransition: mocks.beginViewerTransition,
   isNativeScanViewerReady: mocks.isViewerReady,
   markNativeScanViewerFailed: mocks.markViewerFailed,
-  markNativeScanViewerRevealed: mocks.markViewerRevealed,
-  waitForNativeScanViewerReady: mocks.waitForViewerReady,
+  waitForNativeScanLoadingSurfaceReady: mocks.waitForLoadingSurface,
 }));
 
 type DeepLinkHandler = {
@@ -46,7 +44,7 @@ describe("NativeInitializer deep-link readiness", () => {
     mocks.goto.mockResolvedValue();
     mocks.hideSplash.mockResolvedValue();
     mocks.showSplash.mockResolvedValue();
-    mocks.waitForViewerReady.mockResolvedValue("ready");
+    mocks.waitForLoadingSurface.mockResolvedValue("ready");
     mocks.isViewerReady.mockReturnValue(false);
   });
 
@@ -74,14 +72,14 @@ describe("NativeInitializer deep-link readiness", () => {
     expect(mocks.goto).toHaveBeenCalledWith(
       "/browse/gallery?bp=club&rp=club&v=W61Y"
     );
-    expect(mocks.waitForViewerReady).toHaveBeenCalledWith("W61Y");
+    expect(mocks.waitForLoadingSurface).toHaveBeenCalledWith("W61Y");
     expect(mocks.beginViewerTransition).toHaveBeenCalledWith("W61Y");
   });
 
-  it("covers a warm scan until the replacement viewer reports its first card", async () => {
+  it("covers a warm scan until the app loading surface has painted", async () => {
     mocks.awaitAuthSettled.mockResolvedValue();
     let releaseViewer!: (outcome: "ready") => void;
-    mocks.waitForViewerReady.mockReturnValue(
+    mocks.waitForLoadingSurface.mockReturnValue(
       new Promise((resolve) => {
         releaseViewer = resolve;
       })
@@ -106,10 +104,6 @@ describe("NativeInitializer deep-link readiness", () => {
 
     await expect(opening).resolves.toBe(true);
     expect(mocks.hideSplash).toHaveBeenCalledWith({ fadeOutDuration: 0 });
-    expect(mocks.markViewerRevealed).toHaveBeenCalledWith("W61Y");
-    expect(mocks.hideSplash.mock.invocationCallOrder[0]).toBeLessThan(
-      mocks.markViewerRevealed.mock.invocationCallOrder[0]!
-    );
   });
 
   it("ignores non-deep-link URLs without waiting for startup", async () => {

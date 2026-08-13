@@ -58,14 +58,7 @@
     authState,
     initializeAuthListener,
   } from "$lib/shared/auth/state/auth-state.svelte";
-  import {
-    simplifyRepeatedWord,
-    compressWord,
-  } from "$lib/shared/foundation/utils/word-simplifier";
-  import {
-    isDashLetter,
-    getBaseLetter,
-  } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { resolveScanPropConfig } from "$lib/shared/qr/services/scan-prop-resolver";
   import { updateSettings } from "$lib/shared/application/state/app-state.svelte";
   import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
@@ -96,7 +89,8 @@
     saveScanPlaybackBpm,
   } from "$lib/shared/sequence-viewer/services/scan-playback-tempo";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
-  import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
+  import ScanSequenceLoader from "$lib/shared/sequence-viewer/components/ScanSequenceLoader.svelte";
+  import { getScanLoaderBaseLetters } from "$lib/shared/sequence-viewer/services/scan-sequence-loader";
   import ToastContainer from "$lib/shared/toast/components/ToastContainer.svelte";
   import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
   import { toExportTakeoverPhase } from "$lib/shared/video-export/services/export-takeover-phase";
@@ -711,20 +705,6 @@
     }
   }
 
-  // Unique base letters for a word, reusing the renderer's own tokenization so
-  // the priority-loaded glyphs exactly match what TKAWordGlyph will request.
-  function wordBaseLetters(word: string): string[] {
-    if (!word) return [];
-    const seen = new Set<string>();
-    for (const segment of compressWord(word)) {
-      for (const token of segment.tokens) {
-        const base = isDashLetter(token) ? getBaseLetter(token) : token;
-        if (base) seen.add(base);
-      }
-    }
-    return [...seen];
-  }
-
   // Signed-in scanner: wire the deferred library/video/QR registrations the bare
   // /q route skipped. save/favorite/publish call getLibraryRepository(), which
   // THROWS without registerPublicIndexSyncerFactory() (done in deferred-registrations,
@@ -860,7 +840,7 @@
 
       // Paint the word as a pulsing glyph loader when its small glyph subset
       // arrives, but never hold shortcode hydration or the live card behind it.
-      const baseLetters = wordBaseLetters(loaderWord);
+      const baseLetters = getScanLoaderBaseLetters(loaderWord);
       if (baseLetters.length > 0) {
         void getGlyphCache()
           .loadGlyphsByLetter(baseLetters)
@@ -1059,18 +1039,11 @@
 <div class="page">
   {#if pageState.kind === "loading"}
     <div class="center-content">
-      {#if glyphsReady && loaderWord}
-        <div class="word-loader">
-          <TKAWordGlyph word={loaderWord} height={40} darkMode fitToParent />
-        </div>
-        <div class="loader-progress">
-          <ProgressBar percent={loadProgress} height={4} />
-        </div>
-      {:else}
-        <div class="dots-loader" aria-label="Loading">
-          <span></span><span></span><span></span>
-        </div>
-      {/if}
+      <ScanSequenceLoader
+        word={loaderWord}
+        {glyphsReady}
+        progress={loadProgress}
+      />
     </div>
   {:else if pageState.kind === "error"}
     <div class="center-content">
@@ -1298,79 +1271,11 @@
     color: var(--theme-text, #ffffff);
   }
 
-  .word-loader {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    animation: word-pulse 1.4s ease-in-out infinite;
-  }
-
   .solo-export-title {
     color: var(--theme-text, #ffffff);
     font-size: 1.1rem;
     font-weight: 650;
     letter-spacing: 0.01em;
-  }
-
-  .loader-progress {
-    width: 160px;
-    max-width: 60%;
-    margin: 1rem auto 0;
-  }
-
-  @keyframes word-pulse {
-    0%,
-    100% {
-      opacity: 0.35;
-      transform: scale(0.97);
-    }
-    50% {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  .dots-loader {
-    display: flex;
-    justify-content: center;
-    gap: 0.5rem;
-  }
-
-  .dots-loader span {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--theme-accent, #0891b2);
-    animation: dot-pulse 1.2s ease-in-out infinite;
-  }
-
-  .dots-loader span:nth-child(2) {
-    animation-delay: 0.2s;
-  }
-  .dots-loader span:nth-child(3) {
-    animation-delay: 0.4s;
-  }
-
-  @keyframes dot-pulse {
-    0%,
-    100% {
-      opacity: 0.3;
-      transform: scale(0.8);
-    }
-    50% {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .word-loader,
-    .dots-loader span {
-      animation: none;
-    }
-    .word-loader {
-      opacity: 0.85;
-    }
   }
 
   /* ── Player ── */

@@ -16,8 +16,10 @@ interface PendingReadiness {
 const DEFAULT_TIMEOUT_MS = 20_000;
 
 let readyCode: string | null = null;
+let loadingSurfaceReadyCode: string | null = null;
 let transitionCode: string | null = null;
-const pendingByCode = new Map<string, Set<PendingReadiness>>();
+const pendingViewerByCode = new Map<string, Set<PendingReadiness>>();
+const pendingLoadingSurfaceByCode = new Map<string, Set<PendingReadiness>>();
 const transitionListeners = new Set<
   (transition: NativeScanViewerTransition) => void
 >();
@@ -26,7 +28,11 @@ function normalizeCode(code: string): string {
   return code.trim().toUpperCase();
 }
 
-function settleCode(code: string, outcome: NativeScanViewerOutcome): void {
+function settleCode(
+  pendingByCode: Map<string, Set<PendingReadiness>>,
+  code: string,
+  outcome: NativeScanViewerOutcome
+): void {
   const normalized = normalizeCode(code);
   const pending = pendingByCode.get(normalized);
   if (!pending) return;
@@ -35,43 +41,12 @@ function settleCode(code: string, outcome: NativeScanViewerOutcome): void {
   for (const readiness of pending) readiness.finish(outcome);
 }
 
-function notifyTransition(
+function waitForCode(
+  pendingByCode: Map<string, Set<PendingReadiness>>,
   code: string,
-  phase: NativeScanViewerTransitionPhase
-): void {
-  const transition = { code, phase };
-  for (const listener of transitionListeners) listener(transition);
-}
-
-/**
- * Starts the native handoff before Android raises the splash. Existing viewer
- * playback can therefore stop before the covering surface becomes visible,
- * and the replacement viewer can hold autoplay until reveal.
- */
-export function beginNativeScanViewerTransition(code: string): void {
-  const normalized = normalizeCode(code);
-  if (transitionCode && transitionCode !== normalized) {
-    const supersededCode = transitionCode;
-    transitionCode = null;
-    settleCode(supersededCode, "failed");
-    notifyTransition(supersededCode, "failed");
-  }
-
-  transitionCode = normalized;
-  notifyTransition(normalized, "started");
-}
-
-/**
- * Keeps the native launch surface visible until the app viewer has painted the
- * sequence requested by the incoming QR. The viewer host owns the matching
- * ready/failure signals because it owns shortcode resolution and card paint.
- */
-export function waitForNativeScanViewerReady(
-  code: string,
-  timeoutMs = DEFAULT_TIMEOUT_MS
+  timeoutMs: number
 ): Promise<NativeScanViewerOutcome> {
   const normalized = normalizeCode(code);
-  if (readyCode === normalized) return Promise.resolve("ready");
 
   return new Promise((resolve) => {
     let settled = false;
@@ -94,33 +69,100 @@ export function waitForNativeScanViewerReady(
   });
 }
 
+function notifyTransition(
+  code: string,
+  phase: NativeScanViewerTransitionPhase
+): void {
+  const transition = { code, phase };
+  for (const listener of transitionListeners) listener(transition);
+}
+
+/**
+ * Starts the native handoff before Android raises the splash. Existing viewer
+ * playback can therefore stop before the covering surface becomes visible,
+ * and the replacement viewer can hold autoplay until reveal.
+ */
+export function beginNativeScanViewerTransition(code: string): void {
+  const normalized = normalizeCode(code);
+  if (transitionCode === normalized) {
+    notifyTransition(normalized, "started");
+    return;
+  }
+
+  if (transitionCode && transitionCode !== normalized) {
+    const supersededCode = transitionCode;
+    transitionCode = null;
+    settleCode(pendingViewerByCode, supersededCode, "failed");
+    settleCode(pendingLoadingSurfaceByCode, supersededCode, "failed");
+    notifyTransition(supersededCode, "failed");
+  }
+
+  loadingSurfaceReadyCode = null;
+  transitionCode = normalized;
+  notifyTransition(normalized, "started");
+}
+
+/**
+ * Waits only for an app-owned loading surface to paint. Android can remove its
+ * launch cover at this boundary without exposing the viewer's empty canvas.
+ */
+export function waitForNativeScanLoadingSurfaceReady(
+  code: string,
+  timeoutMs = DEFAULT_TIMEOUT_MS
+): Promise<NativeScanViewerOutcome> {
+  const normalized = normalizeCode(code);
+  if (loadingSurfaceReadyCode === normalized) return Promise.resolve("ready");
+  return waitForCode(pendingLoadingSurfaceByCode, normalized, timeoutMs);
+}
+
+export function markNativeScanLoadingSurfaceReady(code: string): void {
+  const normalized = normalizeCode(code);
+  loadingSurfaceReadyCode = normalized;
+  settleCode(pendingLoadingSurfaceByCode, normalized, "ready");
+}
+
+/**
+ * Tracks the later boundary where the requested viewer is safe to reveal. The
+ * app loader remains visible and playback remains gated until this settles.
+ */
+export function waitForNativeScanViewerReady(
+  code: string,
+  timeoutMs = DEFAULT_TIMEOUT_MS
+): Promise<NativeScanViewerOutcome> {
+  const normalized = normalizeCode(code);
+  if (readyCode === normalized) return Promise.resolve("ready");
+  return waitForCode(pendingViewerByCode, normalized, timeoutMs);
+}
+
 export function markNativeScanViewerReady(code: string): void {
   const normalized = normalizeCode(code);
   readyCode = normalized;
-  settleCode(normalized, "ready");
-}
+  settleCode(pendingViewerByCode, normalized, "ready");
 
-export function markNativeScanViewerFailed(code: string): void {
-  const normalized = normalizeCode(code);
-  settleCode(normalized, "failed");
-}
-
-/** Releases animation only after the native splash is fully gone. */
-export function markNativeScanViewerRevealed(code: string): void {
-  const normalized = normalizeCode(code);
   if (transitionCode !== normalized) return;
-
   transitionCode = null;
   notifyTransition(normalized, "revealed");
 }
 
+export function markNativeScanViewerFailed(code: string): void {
+  const normalized = normalizeCode(code);
+  settleCode(pendingViewerByCode, normalized, "failed");
+  settleCode(pendingLoadingSurfaceByCode, normalized, "failed");
+  if (transitionCode === normalized) {
+    transitionCode = null;
+    notifyTransition(normalized, "failed");
+  }
+}
+
 export function clearNativeScanViewerReady(): void {
   readyCode = null;
+  loadingSurfaceReadyCode = null;
   if (!transitionCode) return;
 
   const cancelledCode = transitionCode;
   transitionCode = null;
-  settleCode(cancelledCode, "failed");
+  settleCode(pendingViewerByCode, cancelledCode, "failed");
+  settleCode(pendingLoadingSurfaceByCode, cancelledCode, "failed");
   notifyTransition(cancelledCode, "failed");
 }
 

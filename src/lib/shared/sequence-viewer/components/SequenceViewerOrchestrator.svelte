@@ -106,6 +106,8 @@
     /** Fires once the card has settled all of its cells. Progressive hosts use
      *  this to reveal the full viewer without exposing placeholder frames. */
     onCardReady?: () => void;
+    /** Fires after both the card and animation surface are ready to paint. */
+    onReadyForReveal?: () => void;
     initialBlueVisible?: boolean;
     initialRedVisible?: boolean;
     /** Effect to activate on mount (e.g. "trails" for the QR scan landing page).
@@ -136,6 +138,7 @@
     initialViewerMode,
     deferInteractiveStartup = false,
     onCardReady,
+    onReadyForReveal,
     initialBlueVisible,
     initialRedVisible,
     initialActiveEffect,
@@ -233,6 +236,7 @@
   let totalCells = $state(0);
   let cardReady = $state(false);
   let cardReadyNotified = false;
+  let revealReadyNotified = false;
   const cloudBackedScan = getScanCardCloudProbe();
 
   const interactive = createViewerInteractiveServicesState(
@@ -305,6 +309,34 @@
       queueMicrotask(() => onCardReady?.());
     }
   }
+
+  $effect(() => {
+    const animationSettled =
+      interactive.animationServicesReady &&
+      !interactive.animationLoading &&
+      modalAnimationState.sequenceData !== null;
+    const animationFailed = modalAnimationState.error !== null;
+
+    if (
+      revealReadyNotified ||
+      !cardReady ||
+      (!animationSettled && !animationFailed)
+    ) {
+      return;
+    }
+
+    revealReadyNotified = true;
+    queueMicrotask(() => {
+      if (typeof requestAnimationFrame === "undefined") {
+        onReadyForReveal?.();
+        return;
+      }
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => onReadyForReveal?.());
+      });
+    });
+  });
 
   const propVisibility = createViewerPropVisibilityState(
     {

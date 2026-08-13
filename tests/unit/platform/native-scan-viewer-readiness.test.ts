@@ -4,10 +4,11 @@ import {
   clearNativeScanViewerReady,
   isNativeScanViewerTransitionPending,
   isNativeScanViewerReady,
+  markNativeScanLoadingSurfaceReady,
   markNativeScanViewerFailed,
   markNativeScanViewerReady,
-  markNativeScanViewerRevealed,
   subscribeNativeScanViewerTransition,
+  waitForNativeScanLoadingSurfaceReady,
   waitForNativeScanViewerReady,
 } from "$lib/shared/platform/services/native-scan-viewer-readiness";
 
@@ -46,7 +47,7 @@ describe("native scan viewer readiness", () => {
     vi.useRealTimers();
   });
 
-  it("keeps playback gated from transition start until splash reveal", () => {
+  it("hands off to the app loader while playback stays gated", async () => {
     clearNativeScanViewerReady();
     const transitions: Array<{ code: string; phase: string }> = [];
     const unsubscribe = subscribeNativeScanViewerTransition((transition) => {
@@ -56,10 +57,12 @@ describe("native scan viewer readiness", () => {
     beginNativeScanViewerTransition("wow42");
     expect(isNativeScanViewerTransitionPending("WOW42")).toBe(true);
 
-    markNativeScanViewerReady("WOW42");
+    const loadingSurface = waitForNativeScanLoadingSurfaceReady("WOW42");
+    markNativeScanLoadingSurfaceReady("WOW42");
+    await expect(loadingSurface).resolves.toBe("ready");
     expect(isNativeScanViewerTransitionPending("WOW42")).toBe(true);
 
-    markNativeScanViewerRevealed("WOW42");
+    markNativeScanViewerReady("WOW42");
     expect(isNativeScanViewerTransitionPending("WOW42")).toBe(false);
     expect(transitions).toEqual([
       { code: "WOW42", phase: "started" },
@@ -67,5 +70,18 @@ describe("native scan viewer readiness", () => {
     ]);
 
     unsubscribe();
+  });
+
+  it("keeps a painted loader ready when Android repeats the same deep link", async () => {
+    clearNativeScanViewerReady();
+    beginNativeScanViewerTransition("SAME42");
+    markNativeScanLoadingSurfaceReady("SAME42");
+
+    beginNativeScanViewerTransition("same42");
+
+    await expect(
+      waitForNativeScanLoadingSurfaceReady("SAME42")
+    ).resolves.toBe("ready");
+    expect(isNativeScanViewerTransitionPending("SAME42")).toBe(true);
   });
 });
