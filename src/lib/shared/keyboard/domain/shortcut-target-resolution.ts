@@ -24,10 +24,15 @@ function isVisible(element: HTMLElement): boolean {
   return element.getClientRects().length > 0;
 }
 
-function isEditableElement(element: Element | null): boolean {
-  if (!element) return false;
+/**
+ * Returns whether keyboard input currently belongs to a text-editing control.
+ * Global tools use this boundary before claiming keys so an editor behind a
+ * drawer cannot turn a message into camera movement or a shortcut.
+ */
+export function isEditableKeyboardTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
 
-  const editableHost = element.closest<HTMLElement>("[contenteditable]");
+  const editableHost = target.closest<HTMLElement>("[contenteditable]");
   if (
     editableHost &&
     editableHost.getAttribute("contenteditable")?.toLowerCase() !== "false"
@@ -35,9 +40,9 @@ function isEditableElement(element: Element | null): boolean {
     return true;
   }
 
-  if (element instanceof HTMLTextAreaElement) return true;
-  if (element instanceof HTMLSelectElement) return true;
-  if (!(element instanceof HTMLInputElement)) return false;
+  if (target instanceof HTMLTextAreaElement) return true;
+  if (target instanceof HTMLSelectElement) return true;
+  if (!(target instanceof HTMLInputElement)) return false;
 
   return ![
     "button",
@@ -50,7 +55,7 @@ function isEditableElement(element: Element | null): boolean {
     "range",
     "reset",
     "submit",
-  ].includes(element.type);
+  ].includes(target.type);
 }
 
 function getLayerZIndex(layer: HTMLElement): number {
@@ -112,7 +117,7 @@ export function resolveShortcutTarget<T extends HTMLElement>(
   options: ShortcutTargetResolutionOptions
 ): T | null {
   const activeElement = document.activeElement;
-  if (options.ignoreEditableFocus && isEditableElement(activeElement)) {
+  if (options.ignoreEditableFocus && isEditableKeyboardTarget(activeElement)) {
     return null;
   }
 

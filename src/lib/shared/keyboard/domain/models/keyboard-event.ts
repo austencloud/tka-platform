@@ -10,6 +10,7 @@ import type {
   KeyModifier,
   KeyboardEventDetails,
 } from "../types/keyboard-types";
+import { isEditableKeyboardTarget } from "../shortcut-target-resolution";
 
 export class NormalizedKeyboardEvent implements KeyboardEventDetails {
   key: string;
@@ -25,7 +26,9 @@ export class NormalizedKeyboardEvent implements KeyboardEventDetails {
     this.key = this.normalizeKey(event.key);
     this.modifiers = this.extractModifiers(event);
     this.ctrlOrMeta = this.detectCtrlOrMeta();
-    this.isInputTarget = this.checkIfInputTarget(event.target);
+    this.isInputTarget =
+      isEditableKeyboardTarget(event.target) ||
+      event.target instanceof HTMLInputElement;
   }
 
   /**
@@ -78,26 +81,6 @@ export class NormalizedKeyboardEvent implements KeyboardEventDetails {
       this.originalEvent.metaKey ||
       this.modifiers.includes("ctrl") ||
       this.modifiers.includes("meta")
-    );
-  }
-
-  /**
-   * Check if the target is an input element
-   * Single-key shortcuts should be disabled when typing
-   */
-  private checkIfInputTarget(target: EventTarget | null): boolean {
-    if (!(target instanceof HTMLElement)) return false;
-
-    const tagName = target.tagName.toLowerCase();
-    const isEditable =
-      target.getAttribute("contenteditable") === "true" ||
-      target.hasAttribute("contenteditable");
-
-    return (
-      tagName === "input" ||
-      tagName === "textarea" ||
-      tagName === "select" ||
-      isEditable
     );
   }
 

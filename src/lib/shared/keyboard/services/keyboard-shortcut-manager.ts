@@ -22,6 +22,7 @@ import {
   dismissTopDrawer,
 } from "$lib/shared/foundation/ui/drawer/drawer-stack";
 import { getActiveModule } from "$lib/shared/application/state/ui/ui-state.svelte";
+import { isEditableKeyboardTarget } from "../domain/shortcut-target-resolution";
 
 const debug = createComponentLogger("KeyboardShortcutManager");
 
@@ -226,6 +227,19 @@ export class KeyboardShortcutManager {
     // that event, so stop before normalization instead of turning it into a
     // burst of uncaught exceptions.
     if (typeof event.key !== "string" || event.key.length === 0) return;
+
+    // Text entry owns printable keys, even when a command has `forceExecute`.
+    // That flag keeps deliberate combos such as Ctrl+K available in inputs; it
+    // must never let a bare or Shift-modified letter cancel text insertion.
+    if (
+      isEditableKeyboardTarget(event.target) &&
+      event.key.length === 1 &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey
+    ) {
+      return;
+    }
 
     // Skip WASD shortcuts when an arrow is selected for adjustment
     // The ArrowAdjustmentControls component handles WASD in this case
