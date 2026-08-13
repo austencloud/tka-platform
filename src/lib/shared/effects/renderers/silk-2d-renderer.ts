@@ -20,6 +20,10 @@ interface RibbonTrail {
   color: string;
   phase: number;
   lastSeenAt: number;
+  headX: number;
+  headY: number;
+  headSpeed: number;
+  distanceSinceSample: number;
 }
 
 interface SilkMaterialProfile {
@@ -30,21 +34,25 @@ interface SilkMaterialProfile {
   glowAlpha: number;
   edgeAlpha: number;
   foldStrength: number;
+  sheenAlpha: number;
+  sheenWidth: number;
 }
 
-const MAX_SAMPLES = 300;
+const MAX_SAMPLES = 96;
 const AURA_STRIDE = 8;
 const TAU = Math.PI * 2;
 
 const MATERIAL_PROFILES: Record<SilkPalette["id"], SilkMaterialProfile> = {
   satin: {
-    propColorMix: 0.58,
-    edgeBodyMix: 0.55,
-    shadowMix: 0.42,
+    propColorMix: 0.82,
+    edgeBodyMix: 0.88,
+    shadowMix: 0.28,
     bodyAlpha: 0.9,
     glowAlpha: 0.02,
-    edgeAlpha: 0.28,
+    edgeAlpha: 0.14,
     foldStrength: 0.24,
+    sheenAlpha: 0.21,
+    sheenWidth: 1.35,
   },
   velvet: {
     propColorMix: 0.2,
@@ -54,6 +62,8 @@ const MATERIAL_PROFILES: Record<SilkPalette["id"], SilkMaterialProfile> = {
     glowAlpha: 0.018,
     edgeAlpha: 0.22,
     foldStrength: 0.3,
+    sheenAlpha: 0.08,
+    sheenWidth: 0.9,
   },
   ethereal: {
     propColorMix: 0.42,
@@ -63,6 +73,8 @@ const MATERIAL_PROFILES: Record<SilkPalette["id"], SilkMaterialProfile> = {
     glowAlpha: 0.12,
     edgeAlpha: 0.38,
     foldStrength: 0.22,
+    sheenAlpha: 0.18,
+    sheenWidth: 0.68,
   },
   shadow: {
     propColorMix: 0.3,
@@ -72,6 +84,8 @@ const MATERIAL_PROFILES: Record<SilkPalette["id"], SilkMaterialProfile> = {
     glowAlpha: 0.01,
     edgeAlpha: 0.24,
     foldStrength: 0.34,
+    sheenAlpha: 0.05,
+    sheenWidth: 0.82,
   },
   gold_leaf: {
     propColorMix: 0.14,
@@ -81,6 +95,8 @@ const MATERIAL_PROFILES: Record<SilkPalette["id"], SilkMaterialProfile> = {
     glowAlpha: 0.03,
     edgeAlpha: 0.34,
     foldStrength: 0.32,
+    sheenAlpha: 0.3,
+    sheenWidth: 0.64,
   },
   ember: {
     propColorMix: 0.16,
@@ -90,6 +106,8 @@ const MATERIAL_PROFILES: Record<SilkPalette["id"], SilkMaterialProfile> = {
     glowAlpha: 0.18,
     edgeAlpha: 0.38,
     foldStrength: 0.24,
+    sheenAlpha: 0.22,
+    sheenWidth: 0.7,
   },
   custom: {
     propColorMix: 0.36,
@@ -99,6 +117,8 @@ const MATERIAL_PROFILES: Record<SilkPalette["id"], SilkMaterialProfile> = {
     glowAlpha: 0.035,
     edgeAlpha: 0.3,
     foldStrength: 0.28,
+    sheenAlpha: 0.18,
+    sheenWidth: 0.74,
   },
 };
 
@@ -124,8 +144,25 @@ export function resolveSilk2DWidthEnvelope(positionFraction: number): number {
 }
 
 /**
+ * Duration changes the reach of the attached cloth, not the number of old
+ * frames painted on screen. The cap stays compact enough for crossings to
+ * remain readable at the longest setting.
+ */
+export function resolveSilk2DMaximumLength(
+  duration: number,
+  scale: number
+): number {
+  return (120 + clamp01(duration) * 240) * Math.max(0.25, scale);
+}
+
+/** Distance-based sampling keeps the cloth equally smooth at every frame rate. */
+export function resolveSilk2DSampleSpacing(scale: number): number {
+  return 4 * Math.max(0.25, scale);
+}
+
+/**
  * Motion interpolation can leave tiny frame-to-frame corners in an otherwise
- * smooth path. Two light neighbor passes remove that grit while keeping both
+ * smooth path. Three light neighbor passes remove that grit while keeping both
  * the free tail and the prop attachment exactly where they were recorded.
  */
 export function smoothSilk2DPath(points: readonly { x: number; y: number }[]): {
@@ -136,12 +173,12 @@ export function smoothSilk2DPath(points: readonly { x: number; y: number }[]): {
   let y = points.map((point) => point.y);
   if (points.length < 3) return { x, y };
 
-  for (let pass = 0; pass < 2; pass++) {
+  for (let pass = 0; pass < 3; pass++) {
     const nextX = [...x];
     const nextY = [...y];
     for (let index = 1; index < points.length - 1; index++) {
-      nextX[index] = x[index]! * 0.64 + (x[index - 1]! + x[index + 1]!) * 0.18;
-      nextY[index] = y[index]! * 0.64 + (y[index - 1]! + y[index + 1]!) * 0.18;
+      nextX[index] = x[index]! * 0.56 + (x[index - 1]! + x[index + 1]!) * 0.22;
+      nextY[index] = y[index]! * 0.56 + (y[index - 1]! + y[index + 1]!) * 0.22;
     }
     x = nextX;
     y = nextY;
@@ -207,8 +244,10 @@ export class Silk2DRenderer {
       if (!tip) {
         const trail = this.tipTrails.get(id);
         if (trail) {
-          this.trimTrail(trail.samples, params.lifetimeSeconds);
-          if (trail.samples.length === 0) this.tipTrails.delete(id);
+          const fadeDuration = Math.max(0.12, params.lifetimeSeconds * 0.7);
+          if (this.time - trail.lastSeenAt > fadeDuration) {
+            this.tipTrails.delete(id);
+          }
         }
         this.lastTipPos.delete(id);
         continue;
@@ -216,20 +255,33 @@ export class Silk2DRenderer {
 
       let trail = this.tipTrails.get(id);
       if (!trail) {
+        const initialSample = createRibbonSample(tip.x, tip.y, this.time, 0, 0);
         trail = {
-          samples: [],
+          samples: [initialSample],
           color: tip.color,
           phase: phaseFromId(id),
           lastSeenAt: this.time,
+          headX: tip.x,
+          headY: tip.y,
+          headSpeed: 0,
+          distanceSinceSample: 0,
         };
         this.tipTrails.set(id, trail);
+        this.lastTipPos.set(id, { x: tip.x, y: tip.y });
+        continue;
       }
       trail.color = tip.color;
       trail.lastSeenAt = this.time;
 
       if (loopDetected) {
-        // The sequence seam teleports the prop. Do not stitch that jump into
-        // the cloth, but prime velocity for the next continuous frame.
+        // Move the existing cloth with the attachment at a sequence seam.
+        // Recording the teleport would create a diagonal slash across stage.
+        const dx = tip.x - trail.headX;
+        const dy = tip.y - trail.headY;
+        this.translateTrail(trail, dx, dy);
+        trail.headX = tip.x;
+        trail.headY = tip.y;
+        trail.headSpeed = 0;
         this.lastTipPos.set(id, { x: tip.x, y: tip.y });
         continue;
       }
@@ -241,24 +293,18 @@ export class Silk2DRenderer {
         speed /= 60 * scale;
       }
 
-      const previousSample = trail.samples[trail.samples.length - 1];
-      const pathDistance = previousSample
-        ? (Number.isFinite(previousSample.pathDistance)
-            ? previousSample.pathDistance
-            : 0) +
-          Math.hypot(tip.x - previousSample.x, tip.y - previousSample.y)
-        : 0;
-      trail.samples.push({
-        x: tip.x,
-        y: tip.y,
-        t: this.time,
-        speed,
-        pathDistance,
-      });
-      this.trimTrail(trail.samples, params.lifetimeSeconds);
-      if (trail.samples.length > MAX_SAMPLES) {
-        trail.samples.splice(0, trail.samples.length - MAX_SAMPLES);
+      if (last) this.recordSegment(trail, last, tip, speed, dt, scale);
+      else {
+        this.translateTrail(trail, tip.x - trail.headX, tip.y - trail.headY);
+        trail.distanceSinceSample = 0;
       }
+      trail.headX = tip.x;
+      trail.headY = tip.y;
+      trail.headSpeed = speed;
+      this.trimTrailToLength(
+        trail,
+        resolveSilk2DMaximumLength(params.duration, scale)
+      );
 
       if (last) {
         last.x = tip.x;
@@ -269,7 +315,7 @@ export class Silk2DRenderer {
     }
 
     const drawableTrails = [...this.tipTrails.values()].filter(
-      (trail) => trail.samples.length >= 3
+      (trail) => trail.samples.length >= 2
     );
     if (drawableTrails.length === 0) return;
 
@@ -294,9 +340,71 @@ export class Silk2DRenderer {
     }
   }
 
-  private trimTrail(trail: RibbonSample[], lifetimeSeconds: number): void {
-    const cutoff = this.time - lifetimeSeconds;
-    while (trail.length > 0 && trail[0]!.t < cutoff) trail.shift();
+  private recordSegment(
+    trail: RibbonTrail,
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    speed: number,
+    dt: number,
+    scale: number
+  ): void {
+    const spacing = resolveSilk2DSampleSpacing(scale);
+    const segmentLength = Math.hypot(to.x - from.x, to.y - from.y);
+    if (segmentLength < 0.001) return;
+
+    let consumed = 0;
+    let distanceToNext = Math.max(0.001, spacing - trail.distanceSinceSample);
+    while (
+      consumed + distanceToNext <= segmentLength + 0.001 &&
+      trail.samples.length < MAX_SAMPLES
+    ) {
+      consumed += distanceToNext;
+      const fraction = clamp01(consumed / segmentLength);
+      const previous = trail.samples[trail.samples.length - 1]!;
+      trail.samples.push(
+        createRibbonSample(
+          from.x + (to.x - from.x) * fraction,
+          from.y + (to.y - from.y) * fraction,
+          this.time - dt * (1 - fraction),
+          speed,
+          previous.pathDistance + spacing
+        )
+      );
+      trail.distanceSinceSample = 0;
+      distanceToNext = spacing;
+    }
+    trail.distanceSinceSample += Math.max(0, segmentLength - consumed);
+  }
+
+  private trimTrailToLength(trail: RibbonTrail, maximumLength: number): void {
+    const samples = trail.samples;
+    if (samples.length < 2) return;
+
+    let currentLength =
+      samples[samples.length - 1]!.pathDistance - samples[0]!.pathDistance;
+    currentLength += Math.hypot(
+      trail.headX - samples[samples.length - 1]!.x,
+      trail.headY - samples[samples.length - 1]!.y
+    );
+
+    while (samples.length > 2 && currentLength > maximumLength) {
+      currentLength -= Math.hypot(
+        samples[1]!.x - samples[0]!.x,
+        samples[1]!.y - samples[0]!.y
+      );
+      samples.shift();
+    }
+
+    if (samples.length > MAX_SAMPLES) {
+      samples.splice(0, samples.length - MAX_SAMPLES);
+    }
+  }
+
+  private translateTrail(trail: RibbonTrail, dx: number, dy: number): void {
+    for (const sample of trail.samples) {
+      sample.x += dx;
+      sample.y += dy;
+    }
   }
 
   private drawRibbon(
@@ -306,9 +414,15 @@ export class Silk2DRenderer {
     scale: number,
     energyScale: number
   ): void {
-    const samples = trail.samples;
+    const samples = resolveDrawableSamples(trail, scale);
     const n = samples.length;
-    const basePath = smoothSilk2DPath(samples);
+    if (n < 3) return;
+    const basePath = smoothSilk2DPath(
+      samples.map((sample) => ({
+        x: sample.x,
+        y: sample.y,
+      }))
+    );
     const leftX = new Array<number>(n);
     const leftY = new Array<number>(n);
     const rightX = new Array<number>(n);
@@ -316,6 +430,8 @@ export class Silk2DRenderer {
     const spineX = new Array<number>(n);
     const spineY = new Array<number>(n);
     const halfWidths = new Array<number>(n);
+    const sheenAcross = new Array<number>(n);
+    const shadowAcross = new Array<number>(n);
     const palette = params.resolvedPalette;
     const profile = MATERIAL_PROFILES[palette.id] ?? MATERIAL_PROFILES.satin;
 
@@ -349,43 +465,59 @@ export class Silk2DRenderer {
       );
       const positionFraction = i / (n - 1);
       const freeEnd = Math.pow(1 - positionFraction, 0.72);
-      const bodyEnvelope = smoothstep(0, 0.12, positionFraction) * freeEnd;
       const tautWidth = 1 - speedFraction * params.tautness * 0.58;
       const widthEnvelope = resolveSilk2DWidthEnvelope(positionFraction);
-      const halfWidth = Math.max(
-        0.65 * scale,
-        params.baseHalfWidth *
-          scale *
-          params.intensity *
-          tautWidth *
-          widthEnvelope
-      );
-      halfWidths[i] = halfWidth;
-      maxHalfWidth = Math.max(maxHalfWidth, halfWidth);
-
       const turn = clamp(signedTurn(basePath.x, basePath.y, i), -0.45, 0.45);
       const flutterEnergy =
         (0.3 + speedFraction * 0.7) * (1 - params.tautness * 0.42);
       const flutterAmplitude =
-        params.flutter * scale * (1.2 + flutterEnergy * 5.5);
+        params.flutter * scale * (8 + flutterEnergy * 32);
       const stableDistance = Number.isFinite(sample.pathDistance)
         ? sample.pathDistance
         : i * scale * 4;
       const pathCoordinate = stableDistance / Math.max(0.001, scale);
       const waveA = Math.sin(
-        pathCoordinate * 0.055 -
-          this.time * (1.15 + speedFraction * 1.35) +
+        pathCoordinate * 0.018 -
+          this.time * (0.38 + speedFraction * 0.5) +
           trail.phase
       );
       const waveB = Math.sin(
-        pathCoordinate * 0.024 + this.time * 0.62 + trail.phase * 1.7
+        pathCoordinate * 0.0085 + this.time * 0.19 + trail.phase * 1.7
       );
       const centerFlutter =
-        (waveA + waveB * 0.42) * flutterAmplitude * bodyEnvelope +
+        (waveA + waveB * 0.42) *
+          flutterAmplitude *
+          freeEnd *
+          (0.3 + smoothstep(0, 0.1, positionFraction) * 0.7) +
         turn * params.flutter * 7 * scale * freeEnd;
+      const gravitySag =
+        params.baseHalfWidth *
+        scale *
+        (0.16 + params.flutter * 2.4) *
+        (1 - params.tautness * 0.55) *
+        Math.pow(freeEnd, 1.45);
       const foldWave = Math.sin(
-        pathCoordinate * 0.072 + this.time * 0.72 + trail.phase * 1.31
+        pathCoordinate * 0.026 + this.time * 0.28 + trail.phase * 1.31
       );
+      const minimumHalfWidth =
+        (0.04 + smoothstep(0, 0.16, positionFraction) * 0.5) * scale;
+      const widthBillow =
+        1 +
+        (waveA * 0.7 + waveB * 0.3) * params.flutter * (0.18 + freeEnd * 0.2);
+      const clothVolume = 1.16 + params.flutter * 0.28;
+      const halfWidth = Math.max(
+        minimumHalfWidth,
+        params.baseHalfWidth *
+          scale *
+          params.intensity *
+          tautWidth *
+          widthEnvelope *
+          widthBillow *
+          clothVolume
+      );
+      halfWidths[i] = halfWidth;
+      maxHalfWidth = Math.max(maxHalfWidth, halfWidth);
+
       const fold =
         foldWave *
         halfWidth *
@@ -393,16 +525,56 @@ export class Silk2DRenderer {
         0.52 *
         freeEnd *
         profile.foldStrength;
-      const leftWidth = Math.max(0.45 * scale, halfWidth + fold);
-      const rightWidth = Math.max(0.45 * scale, halfWidth - fold);
+      const leftWidth = Math.max(minimumHalfWidth, halfWidth + fold);
+      const rightWidth = Math.max(minimumHalfWidth, halfWidth - fold);
+      sheenAcross[i] = clamp(
+        0.64 + foldWave * params.flutter * 0.22 + turn * 0.18,
+        0.42,
+        0.82
+      );
+      shadowAcross[i] = clamp(
+        0.27 - foldWave * params.flutter * 0.18 - turn * 0.12,
+        0.12,
+        0.46
+      );
 
       spineX[i] = basePath.x[i]! + px * centerFlutter;
-      spineY[i] = basePath.y[i]! + py * centerFlutter;
+      spineY[i] = basePath.y[i]! + py * centerFlutter + gravitySag;
       leftX[i] = spineX[i]! + px * leftWidth;
       leftY[i] = spineY[i]! + py * leftWidth;
       rightX[i] = spineX[i]! - px * rightWidth;
       rightY[i] = spineY[i]! - py * rightWidth;
     }
+
+    // Width modulation happens after the centerline is smoothed, so smooth
+    // the two final hems as well. This removes pixel-scale silhouette chatter
+    // without softening the filled fabric or moving either endpoint.
+    const leftEdge = smoothSilk2DPath(
+      leftX.map((x, index) => ({ x, y: leftY[index]! }))
+    );
+    const rightEdge = smoothSilk2DPath(
+      rightX.map((x, index) => ({ x, y: rightY[index]! }))
+    );
+    const sheenPath = smoothSilk2DPath(
+      sheenAcross.map((across, index) => ({
+        x:
+          rightEdge.x[index]! +
+          (leftEdge.x[index]! - rightEdge.x[index]!) * across,
+        y:
+          rightEdge.y[index]! +
+          (leftEdge.y[index]! - rightEdge.y[index]!) * across,
+      }))
+    );
+    const shadowPath = smoothSilk2DPath(
+      shadowAcross.map((across, index) => ({
+        x:
+          rightEdge.x[index]! +
+          (leftEdge.x[index]! - rightEdge.x[index]!) * across,
+        y:
+          rightEdge.y[index]! +
+          (leftEdge.y[index]! - rightEdge.y[index]!) * across,
+      }))
+    );
 
     const representative = resolveSilk2DMaterialColors(
       palette,
@@ -412,7 +584,8 @@ export class Silk2DRenderer {
     const disappearanceDuration = Math.max(0.12, params.lifetimeSeconds * 0.7);
     const trailVisibility =
       1 - smoothstep(0, disappearanceDuration, this.time - trail.lastSeenAt);
-    const ribbonAlpha = params.intensity * energyScale * trailVisibility;
+    const ribbonAlpha =
+      Math.sqrt(params.intensity) * energyScale * trailVisibility;
     if (ribbonAlpha <= 0.01) return;
 
     // Every layer follows one unbroken path. Restarting the body and selvedges
@@ -447,17 +620,51 @@ export class Silk2DRenderer {
       }
     }
 
-    // A canvas gradient lives in screen space; it cannot bend with this path.
-    // The old white highlight therefore crossed curved fabric at unrelated
-    // angles. Color now stays on the continuous body, while the two actual
-    // ribbon boundaries provide the surface definition.
+    // One continuous body reads as fabric. Short gradient panels looked like
+    // stacked acetate and exposed their seams whenever the path turned.
     ctx.globalAlpha = ribbonAlpha * profile.bodyAlpha;
     ctx.fillStyle = representative.body;
     ctx.beginPath();
-    traceCentripetalForward(ctx, leftX, leftY, 0, n - 1, n);
-    traceCentripetalBackward(ctx, rightX, rightY, 0, n - 1, n);
+    traceCentripetalForward(ctx, leftEdge.x, leftEdge.y, 0, n - 1, n);
+    traceCentripetalBackward(ctx, rightEdge.x, rightEdge.y, 0, n - 1, n);
     ctx.closePath();
     ctx.fill();
+
+    // Two broad, soft bands model the changing angle across the cloth. Both
+    // follow the local surface and stay clipped to the filled silhouette, so
+    // the material gets depth without reviving the detached white centerline.
+    const previousFilter = ctx.filter;
+    ctx.save();
+    try {
+      ctx.beginPath();
+      traceCentripetalForward(ctx, leftEdge.x, leftEdge.y, 0, n - 1, n);
+      traceCentripetalBackward(ctx, rightEdge.x, rightEdge.y, 0, n - 1, n);
+      ctx.closePath();
+      ctx.clip();
+
+      ctx.filter = `blur(${Math.max(0.9, scale * 1.45)}px)`;
+      ctx.globalAlpha = ribbonAlpha * (0.075 + profile.foldStrength * 0.26);
+      ctx.strokeStyle = representative.shadow;
+      ctx.lineWidth = Math.max(0.9 * scale, maxHalfWidth * 1.06);
+      ctx.beginPath();
+      traceCentripetalForward(ctx, shadowPath.x, shadowPath.y, 0, n - 1, n);
+      ctx.stroke();
+
+      ctx.globalAlpha = ribbonAlpha * profile.sheenAlpha;
+      ctx.strokeStyle = mixColor(
+        representative.body,
+        representative.edge,
+        0.38
+      );
+      ctx.lineWidth = Math.max(0.8 * scale, maxHalfWidth * profile.sheenWidth);
+      ctx.beginPath();
+      traceCentripetalForward(ctx, sheenPath.x, sheenPath.y, 0, n - 1, n);
+      ctx.stroke();
+    } finally {
+      ctx.restore();
+      // Test canvases do not implement a real state stack.
+      ctx.filter = previousFilter;
+    }
 
     let edgeStyle: string | CanvasGradient = representative.edge;
     if (
@@ -486,14 +693,14 @@ export class Silk2DRenderer {
     ctx.strokeStyle = representative.shadow;
     ctx.lineWidth = 0.65 * scale;
     ctx.beginPath();
-    traceCentripetalForward(ctx, rightX, rightY, 0, n - 1, n);
+    traceCentripetalForward(ctx, rightEdge.x, rightEdge.y, 0, n - 1, n);
     ctx.stroke();
 
     ctx.globalAlpha = ribbonAlpha * profile.edgeAlpha;
     ctx.strokeStyle = edgeStyle;
     ctx.lineWidth = 0.7 * scale;
     ctx.beginPath();
-    traceCentripetalForward(ctx, leftX, leftY, 0, n - 1, n);
+    traceCentripetalForward(ctx, leftEdge.x, leftEdge.y, 0, n - 1, n);
     ctx.stroke();
   }
 
@@ -507,6 +714,50 @@ export class Silk2DRenderer {
     this.lastTipPos.clear();
     this.time = 0;
   }
+}
+
+function createRibbonSample(
+  x: number,
+  y: number,
+  t: number,
+  speed: number,
+  pathDistance: number
+): RibbonSample {
+  return {
+    x,
+    y,
+    t,
+    speed,
+    pathDistance,
+  };
+}
+
+function resolveDrawableSamples(
+  trail: RibbonTrail,
+  scale: number
+): RibbonSample[] {
+  const samples = trail.samples;
+  const last = samples[samples.length - 1];
+  if (!last) return [];
+
+  if (
+    Math.hypot(trail.headX - last.x, trail.headY - last.y) <
+    Math.max(0.05, scale * 0.2)
+  ) {
+    return samples;
+  }
+
+  const targetGap = Math.hypot(trail.headX - last.x, trail.headY - last.y);
+  return [
+    ...samples,
+    {
+      x: trail.headX,
+      y: trail.headY,
+      t: trail.lastSeenAt,
+      speed: trail.headSpeed,
+      pathDistance: last.pathDistance + targetGap,
+    },
+  ];
 }
 
 function signedTurn(x: number[], y: number[], index: number): number {

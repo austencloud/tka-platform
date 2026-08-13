@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   Silk2DRenderer,
+  resolveSilk2DMaximumLength,
+  resolveSilk2DSampleSpacing,
   smoothSilk2DPath,
 } from "$lib/shared/effects/renderers/silk-2d-renderer";
 import { resolveCentripetalBezierSegment } from "$lib/shared/effects/renderers/ribbon-trace";
@@ -29,6 +31,7 @@ function makeContext(): CanvasRenderingContext2D {
     canvas: { width: 800, height: 600 },
     globalAlpha: 1,
     globalCompositeOperation: "source-over",
+    filter: "none",
     fillStyle: "",
     strokeStyle: "",
     lineWidth: 1,
@@ -36,6 +39,7 @@ function makeContext(): CanvasRenderingContext2D {
     lineJoin: "miter",
     beginPath: vi.fn(),
     closePath: vi.fn(),
+    clip: vi.fn(),
     moveTo: vi.fn(),
     lineTo: vi.fn(),
     bezierCurveTo: vi.fn(),
@@ -128,7 +132,20 @@ describe("2D Silk path polish", () => {
     }
   });
 
-  it("does not draw a separate highlight stroke through the ribbon body", () => {
+  it("maps duration to a bounded physical strip length", () => {
+    expect(resolveSilk2DMaximumLength(0, 1)).toBe(120);
+    expect(resolveSilk2DMaximumLength(0.5, 1)).toBe(240);
+    expect(resolveSilk2DMaximumLength(1, 1)).toBe(360);
+    expect(resolveSilk2DMaximumLength(2, 1)).toBe(360);
+  });
+
+  it("keeps sample density stable across render scales", () => {
+    expect(resolveSilk2DSampleSpacing(0.5)).toBe(2);
+    expect(resolveSilk2DSampleSpacing(1)).toBe(4);
+    expect(resolveSilk2DSampleSpacing(2)).toBe(8);
+  });
+
+  it("clips the broad satin reflection to the ribbon body", () => {
     const renderer = new Silk2DRenderer();
     const ctx = makeContext();
 
@@ -137,13 +154,14 @@ describe("2D Silk path polish", () => {
     }
 
     vi.mocked(ctx.stroke).mockClear();
-    vi.mocked(ctx.createLinearGradient).mockClear();
+    vi.mocked(ctx.clip).mockClear();
     renderer.render(ctx, PARAMS, [tip(264, 180)], 1 / 60);
 
-    // The broad underpaint and the two true boundaries are the only strokes.
-    // A fourth stroke would put an independent line back inside the fabric.
-    expect(ctx.stroke).toHaveBeenCalledTimes(3);
+    // Underpaint, two clipped surface folds, and the two true hems.
+    expect(ctx.stroke).toHaveBeenCalledTimes(5);
+    expect(ctx.clip).toHaveBeenCalledTimes(1);
     expect(ctx.createLinearGradient).not.toHaveBeenCalled();
+    expect(ctx.filter).toBe("none");
   });
 
   it("lets a missing prop fade away instead of leaving a permanent ribbon", () => {
@@ -163,5 +181,23 @@ describe("2D Silk path polish", () => {
     vi.mocked(ctx.fill).mockClear();
     renderer.render(ctx, PARAMS, [], 0.1);
     expect(vi.mocked(ctx.fill)).not.toHaveBeenCalled();
+  });
+
+  it("moves retained cloth with a returning prop instead of stitching a teleport", () => {
+    const renderer = new Silk2DRenderer();
+    const ctx = makeContext();
+
+    for (let frame = 0; frame < 24; frame++) {
+      renderer.render(ctx, PARAMS, [tip(100 + frame * 4, 180)], 1 / 60);
+    }
+    renderer.render(ctx, PARAMS, [], 0.05);
+    vi.mocked(ctx.bezierCurveTo).mockClear();
+    renderer.render(ctx, PARAMS, [tip(900, 180)], 1 / 60);
+
+    const xCoordinates = vi
+      .mocked(ctx.bezierCurveTo)
+      .mock.calls.flatMap((call) => [call[0], call[2], call[4]]);
+    expect(xCoordinates.length).toBeGreaterThan(0);
+    expect(Math.min(...xCoordinates)).toBeGreaterThan(700);
   });
 });

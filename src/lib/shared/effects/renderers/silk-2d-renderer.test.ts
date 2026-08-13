@@ -77,6 +77,7 @@ function makeCtx(): CanvasRenderingContext2D {
     bezierCurveTo: vi.fn(),
     quadraticCurveTo: vi.fn(),
     closePath: vi.fn(),
+    clip: vi.fn(),
     stroke: vi.fn(),
     arc: vi.fn(),
     ellipse: vi.fn(),
@@ -196,12 +197,14 @@ describe("Silk2DRenderer", () => {
     for (let i = 0; i < 30; i++) {
       r.render(ctx, params, toEmitters(moveBag(i)), 1 / 60, 1, false);
     }
-    // Body fill is the primary draw call. Satin stays a continuous material
-    // color because a screen-space gradient cannot bend with the ribbon.
+    // One body fill per trail is the primary draw call. Satin intentionally
+    // avoids local panel gradients, which made the cloth look laminated.
     expect(
       (ctx.fill as ReturnType<typeof vi.fn>).mock.calls.length
     ).toBeGreaterThan(0);
-    expect(ctx.createLinearGradient).not.toHaveBeenCalled();
+    expect(
+      (ctx.createLinearGradient as ReturnType<typeof vi.fn>).mock.calls.length
+    ).toBe(0);
     expect((ctx.save as ReturnType<typeof vi.fn>).mock.calls.length).toBe(
       (ctx.restore as ReturnType<typeof vi.fn>).mock.calls.length
     );
