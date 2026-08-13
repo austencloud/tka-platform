@@ -20,6 +20,10 @@
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
 
   const LONG_PRESS_MS = 400;
+  const REPLY_SWIPE_THRESHOLD = 56;
+  const REPLY_SWIPE_MAX = 88;
+  const SWIPE_INTENT_DISTANCE = 10;
+  const REPLY_SWIPE_VELOCITY = 0.45;
   const REACTIONS = ["❤️", "👍", "😂", "😮", "😢", "👎"];
 
   let { message, isOwn, children } = $props<{
@@ -37,6 +41,15 @@
   let reactionBarEl: HTMLDivElement | undefined = $state();
   let moreButtonEl: HTMLButtonElement | undefined = $state();
   let moreMenuEl: HTMLDivElement | undefined = $state();
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchStartTime = 0;
+  let swipeDistance = $state(0);
+  let swipeCueX = $state(8);
+  let swipeIntent: "pending" | "horizontal" | "vertical" | null = null;
+  let isSwiping = $state(false);
+  let replyThresholdCrossed = false;
+  let suppressNextClick = false;
 
   let hapticService: HapticFeedback | undefined;
 
@@ -66,35 +79,129 @@
   );
   const canEdit = $derived(isOwn && !message.isDeleted);
   const canDelete = $derived(isOwn && !message.isDeleted);
+  const swipeProgress = $derived(
+    Math.min(1, swipeDistance / REPLY_SWIPE_THRESHOLD)
+  );
+  const swipeVisualOffset = $derived(
+    Math.min(32, Math.max(0, swipeDistance) * 0.48)
+  );
 
   // Long-press for mobile
-  function handleTouchStart() {
+  function handleTouchStart(event: TouchEvent) {
     if (!isMobile) return;
+    const touch = event.touches[0];
+    if (!touch || message.isDeleted) return;
+
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    touchStartTime = Date.now();
+    swipeIntent = "pending";
+    swipeDistance = 0;
+    replyThresholdCrossed = false;
+
+    const messageElement =
+      wrapperEl?.querySelector<HTMLElement>('[role="article"]');
+    if (wrapperEl && messageElement) {
+      const wrapperRect = wrapperEl.getBoundingClientRect();
+      const messageRect = messageElement.getBoundingClientRect();
+      swipeCueX = Math.max(42, messageRect.left - wrapperRect.left + 42);
+    }
 
     longPressTimer = setTimeout(() => {
       hapticService?.trigger("selection");
       showReactions = true;
       showMoreMenu = true;
+      swipeIntent = null;
     }, LONG_PRESS_MS);
   }
 
-  function handleTouchEnd() {
+  function clearLongPress(): void {
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       longPressTimer = null;
     }
   }
 
-  function handleTouchMove() {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
+  function resetSwipe(): void {
+    swipeDistance = 0;
+    swipeIntent = null;
+    isSwiping = false;
+    replyThresholdCrossed = false;
+  }
+
+  function handleTouchMove(event: TouchEvent) {
+    if (!isMobile || !swipeIntent) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = touch.clientY - touchStartY;
+
+    if (swipeIntent === "pending") {
+      if (
+        Math.abs(deltaX) < SWIPE_INTENT_DISTANCE &&
+        Math.abs(deltaY) < SWIPE_INTENT_DISTANCE
+      ) {
+        return;
+      }
+
+      clearLongPress();
+      swipeIntent =
+        deltaX > 0 && Math.abs(deltaX) > Math.abs(deltaY)
+          ? "horizontal"
+          : "vertical";
     }
+
+    if (swipeIntent !== "horizontal") return;
+
+    isSwiping = true;
+    const positiveDistance = Math.max(0, deltaX);
+    swipeDistance =
+      positiveDistance <= REPLY_SWIPE_MAX
+        ? positiveDistance
+        : REPLY_SWIPE_MAX + Math.sqrt(positiveDistance - REPLY_SWIPE_MAX) * 3;
+
+    if (swipeDistance >= REPLY_SWIPE_THRESHOLD && !replyThresholdCrossed) {
+      replyThresholdCrossed = true;
+      hapticService?.trigger("selection");
+    }
+  }
+
+  function handleTouchEnd() {
+    clearLongPress();
+
+    if (swipeIntent !== "horizontal") {
+      resetSwipe();
+      return;
+    }
+
+    const elapsed = Math.max(1, Date.now() - touchStartTime);
+    const velocity = swipeDistance / elapsed;
+    const shouldReply =
+      swipeDistance >= REPLY_SWIPE_THRESHOLD ||
+      (swipeDistance >= 24 && velocity >= REPLY_SWIPE_VELOCITY);
+
+    suppressNextClick = true;
+    resetSwipe();
+    if (shouldReply) startReply(false);
+  }
+
+  function handleTouchCancel(): void {
+    clearLongPress();
+    resetSwipe();
   }
 
   // Click to toggle reactions on desktop (supplements hover)
   function handleClick(event: MouseEvent) {
-    if (isMobile) return;
+    if (isMobile) {
+      suppressNextClick = false;
+      return;
+    }
+    if (suppressNextClick) {
+      suppressNextClick = false;
+      event.preventDefault();
+      return;
+    }
     // Don't toggle if clicking inside the reaction bar itself
     const target = event.target as HTMLElement;
     if (target.closest(".reaction-bar")) return;
@@ -359,11 +466,15 @@
     }
   }
 
-  function handleReply() {
+  function startReply(withHaptic: boolean): void {
     showReactions = false;
     showMoreMenu = false;
     inboxState.setReplyTo(message);
-    hapticService?.trigger("selection");
+    if (withHaptic) hapticService?.trigger("selection");
+  }
+
+  function handleReply(): void {
+    startReply(true);
   }
 
   function handleEdit() {
@@ -395,6 +506,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="message-wrapper"
+  class:own={isOwn}
   bind:this={wrapperEl}
   onmouseenter={() => !isMobile && (showReactions = true)}
   onmouseleave={() => {
@@ -406,11 +518,27 @@
   ontouchstart={handleTouchStart}
   ontouchend={handleTouchEnd}
   ontouchmove={handleTouchMove}
-  ontouchcancel={handleTouchEnd}
+  ontouchcancel={handleTouchCancel}
   oncontextmenu={handleContextMenu}
 >
+  <span
+    class="reply-swipe-cue"
+    class:armed={swipeProgress >= 1}
+    style:left="{swipeCueX}px"
+    style:opacity={swipeProgress}
+    aria-hidden="true"
+  >
+    <i class="fa-solid fa-reply"></i>
+  </span>
+
   <!-- The message bubble -->
-  {@render children()}
+  <div
+    class="swipe-content"
+    class:swiping={isSwiping}
+    style:transform="translate3d({swipeVisualOffset}px, 0, 0)"
+  >
+    {@render children()}
+  </div>
 
   <!-- Floating reaction bar (Facebook Messenger style) -->
   {#if showReactions && !message.isDeleted}
@@ -427,6 +555,15 @@
           {emoji}
         </button>
       {/each}
+
+      <button
+        type="button"
+        class="reply-btn"
+        onclick={() => handleReply()}
+        aria-label="Reply to message from {message.senderName}"
+      >
+        <i class="fa-solid fa-reply" aria-hidden="true"></i>
+      </button>
 
       <!-- More button -->
       <button
@@ -532,6 +669,44 @@
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+    touch-action: pan-y pinch-zoom;
+  }
+
+  .swipe-content {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+
+  .swipe-content.swiping {
+    transition: none;
+  }
+
+  .reply-swipe-cue {
+    position: absolute;
+    top: 50%;
+    z-index: 0;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 50%;
+    color: var(--theme-accent, #6366f1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    transform: translate(-100%, -50%) scale(0.82);
+    transition:
+      transform var(--duration-fast, 120ms) ease,
+      background var(--duration-fast, 120ms) ease;
+    pointer-events: none;
+  }
+
+  .reply-swipe-cue.armed {
+    color: white;
+    background: var(--theme-accent, #6366f1);
+    transform: translate(-100%, -50%) scale(1);
   }
 
   /* Floating reaction bar */
@@ -625,12 +800,13 @@
   }
 
   /* More button (ellipsis) */
+  .reply-btn,
   .more-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
     margin-left: 4px;
     border: none;
     background: rgba(255, 255, 255, 0.08);
@@ -642,8 +818,15 @@
     padding: 0;
   }
 
+  .reply-btn {
+    margin-left: 4px;
+  }
+
+  .reply-btn:hover,
+  .reply-btn:focus-visible,
   .more-btn:hover,
-  .more-btn.active {
+  .more-btn.active,
+  .more-btn:focus-visible {
     background: rgba(255, 255, 255, 0.15);
     color: var(--theme-text, #ffffff);
   }
@@ -738,17 +921,18 @@
       font-size: 1.4rem;
     }
 
-    .more-btn {
-      width: 36px;
-      height: 36px;
-    }
-
     .reaction-bar {
       padding: 8px 10px;
     }
 
     .menu-item {
       padding: 12px 14px;
+    }
+  }
+
+  @media (hover: none), (pointer: coarse) {
+    .reply-btn {
+      display: none;
     }
   }
 
@@ -760,6 +944,11 @@
       animation: none;
       opacity: 1;
       transform: none;
+    }
+
+    .swipe-content,
+    .reply-swipe-cue {
+      transition: none;
     }
 
     .emoji-btn:hover,

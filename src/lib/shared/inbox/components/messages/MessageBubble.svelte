@@ -37,6 +37,9 @@
     showReadReceipt?: boolean;
     isGroup?: boolean;
     senderInfo?: ParticipantInfo;
+    replyTarget?: Message;
+    onNavigateToMessage?: (messageId: string) => void;
+    isHighlighted?: boolean;
   }
 
   let {
@@ -48,6 +51,9 @@
     showReadReceipt = false,
     isGroup = false,
     senderInfo,
+    replyTarget,
+    onNavigateToMessage,
+    isHighlighted = false,
   }: Props = $props();
 
   const showSender = $derived(isGroup && !isOwn && senderInfo);
@@ -110,7 +116,14 @@
 -->
 {#snippet bubbleContent()}
   {#if message.replyTo}
-    <ReplyPreview reply={message.replyTo} compact />
+    <ReplyPreview
+      reply={message.replyTo}
+      compact
+      unavailable={replyTarget?.isDeleted ?? false}
+      onActivate={onNavigateToMessage
+        ? () => onNavigateToMessage?.(message.replyTo!.messageId)
+        : undefined}
+    />
   {/if}
 
   {#if message.isDeleted}
@@ -204,7 +217,10 @@
         class:has-attachment={hasAttachment}
         class:has-reactions={hasReactions}
         class:has-sender={true}
+        class:highlighted={isHighlighted}
+        data-message-id={message.id}
         role="article"
+        tabindex="-1"
         aria-label="{message.senderName}: {accessibleMessage}"
       >
         <span class="sender-name">{senderInfo.displayName}</span>
@@ -223,7 +239,10 @@
       class:is-new={isNew}
       class:has-attachment={hasAttachment}
       class:has-reactions={hasReactions}
+      class:highlighted={isHighlighted}
+      data-message-id={message.id}
       role="article"
+      tabindex="-1"
       aria-label="{isOwn ? 'You' : message.senderName}: {accessibleMessage}"
     >
       <div class="bubble">
@@ -263,6 +282,10 @@
     animation: slideInNew var(--duration-emphasis) ease-out;
   }
 
+  .message-bubble:focus {
+    outline: none;
+  }
+
   @keyframes slideIn {
     from {
       opacity: 0;
@@ -297,6 +320,24 @@
 
   .bubble:hover {
     transform: scale(1.01);
+  }
+
+  .message-bubble.highlighted .bubble {
+    animation: reply-target-pulse 1.4s ease-out;
+  }
+
+  @keyframes reply-target-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 1px transparent;
+    }
+    24%,
+    70% {
+      box-shadow:
+        0 0 0 2px var(--theme-accent, #6366f1),
+        0 0 0 7px
+          color-mix(in srgb, var(--theme-accent, #6366f1) 22%, transparent);
+    }
   }
 
   .own .bubble {
@@ -448,6 +489,10 @@
     .bubble {
       animation: none !important;
       transition: none !important;
+    }
+
+    .message-bubble.highlighted .bubble {
+      box-shadow: 0 0 0 2px var(--theme-accent, #6366f1);
     }
   }
 </style>

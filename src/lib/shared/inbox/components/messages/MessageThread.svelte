@@ -7,7 +7,7 @@
    * Supports both direct (1:1) and group conversations
    */
 
-  import { onMount } from "svelte";
+  import { onDestroy, onMount, tick } from "svelte";
   import type {
     Conversation,
     ConversationType,
@@ -23,6 +23,7 @@
   import DateSeparator from "./DateSeparator.svelte";
   import EmptyMessages from "../empty-states/EmptyMessages.svelte";
   import TypingIndicator from "./TypingIndicator.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   interface Props {
     conversation: Conversation;
@@ -41,6 +42,18 @@
   const isGroup = $derived(conversationType === "group");
 
   let messagesContainer: HTMLDivElement | undefined = $state();
+  let contextualMessages: Message[] | null = $state(null);
+  let contextTargetId: string | null = $state(null);
+  let highlightedMessageId: string | null = $state(null);
+  let isLocatingReply = $state(false);
+  let navigationAnnouncement = $state("");
+  let highlightTimer: ReturnType<typeof setTimeout> | null = null;
+  let trackedConversationId = conversation?.id ?? "";
+  let previousLatestMessageId: string | null = null;
+
+  onDestroy(() => {
+    if (highlightTimer) clearTimeout(highlightTimer);
+  });
 
   // Subscribe to typing indicators
   onMount(() => {
@@ -65,17 +78,143 @@
       : authState.user?.uid
   );
 
-  // Auto-scroll to bottom when new messages arrive
+  const displayedMessages = $derived(contextualMessages ?? messages);
+  const messagesById = $derived.by(
+    () =>
+      new Map(
+        displayedMessages.map((message) => [message.id, message] as const)
+      )
+  );
+  const contextTarget = $derived(
+    contextTargetId ? messagesById.get(contextTargetId) : undefined
+  );
+
   $effect(() => {
-    if (messages.length > 0 && messagesContainer) {
-      requestAnimationFrame(() => {
-        messagesContainer?.scrollTo({
-          top: messagesContainer.scrollHeight,
-          behavior: "smooth",
-        });
-      });
-    }
+    const conversationId = conversation?.id ?? "";
+    if (conversationId === trackedConversationId) return;
+
+    trackedConversationId = conversationId;
+    contextualMessages = null;
+    contextTargetId = null;
+    highlightedMessageId = null;
+    navigationAnnouncement = "";
+    previousLatestMessageId = null;
   });
+
+  // Initial load and messages sent by the current user go to the latest
+  // message. Incoming messages never pull someone away from older context.
+  $effect(() => {
+    const latestMessage = messages.at(-1);
+    const container = messagesContainer;
+    if (!latestMessage || !container) return;
+    if (latestMessage.id === previousLatestMessageId) return;
+
+    const isInitialLoad = previousLatestMessageId === null;
+    previousLatestMessageId = latestMessage.id;
+    const isNearLatest =
+      container.scrollHeight - container.scrollTop - container.clientHeight <
+      96;
+    const isOwnMessage = latestMessage.senderId === currentUserId;
+    if (!isInitialLoad && !isNearLatest && !isOwnMessage) return;
+
+    if (contextualMessages && isOwnMessage) {
+      contextualMessages = null;
+      contextTargetId = null;
+    }
+
+    requestAnimationFrame(() => {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: isInitialLoad ? "auto" : "smooth",
+      });
+    });
+  });
+
+  function findRenderedMessage(messageId: string): HTMLElement | undefined {
+    return Array.from(
+      messagesContainer?.querySelectorAll<HTMLElement>("[data-message-id]") ??
+        []
+    ).find((element) => element.dataset.messageId === messageId);
+  }
+
+  function prefersReducedMotion(): boolean {
+    return (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    );
+  }
+
+  async function focusMessage(messageId: string): Promise<boolean> {
+    await tick();
+    const element = findRenderedMessage(messageId);
+    if (!element) return false;
+
+    element.scrollIntoView({
+      block: "center",
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    });
+    element.focus({ preventScroll: true });
+    highlightedMessageId = messageId;
+    if (highlightTimer) clearTimeout(highlightTimer);
+    highlightTimer = setTimeout(() => {
+      if (highlightedMessageId === messageId) highlightedMessageId = null;
+    }, 1600);
+    return true;
+  }
+
+  async function navigateToMessage(messageId: string): Promise<void> {
+    if (isLocatingReply) return;
+
+    let target = messagesById.get(messageId);
+    if (!target) {
+      isLocatingReply = true;
+      navigationAnnouncement = "Loading the original message";
+      try {
+        const context = await messagingService.getMessageContext(
+          conversation.id,
+          messageId
+        );
+        target = context.find((message) => message.id === messageId);
+        if (!target) {
+          navigationAnnouncement = "Original message is unavailable";
+          toast.error("Original message is unavailable.");
+          return;
+        }
+        contextualMessages = context;
+        contextTargetId = messageId;
+      } catch {
+        navigationAnnouncement = "Could not load the original message";
+        toast.error("Couldn't load the original message.");
+        return;
+      } finally {
+        isLocatingReply = false;
+      }
+    }
+
+    if (!(await focusMessage(messageId))) {
+      navigationAnnouncement = "Original message is unavailable";
+      toast.error("Original message is unavailable.");
+      return;
+    }
+
+    if (!target) return;
+
+    navigationAnnouncement = target.isDeleted
+      ? `Moved to deleted message from ${target.senderName}`
+      : `Moved to original message from ${target.senderName}`;
+  }
+
+  async function returnToLatest(): Promise<void> {
+    contextualMessages = null;
+    contextTargetId = null;
+    highlightedMessageId = null;
+    navigationAnnouncement = "Returned to latest messages";
+    await tick();
+    messagesContainer?.scrollTo({
+      top: messagesContainer.scrollHeight,
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    });
+  }
 
   // Get other participant info
   const otherParticipantId = $derived(
@@ -100,7 +239,7 @@
     let currentDateKey = "";
     let currentGroup: MessageGroup | null = null;
 
-    for (const message of messages) {
+    for (const message of displayedMessages) {
       const dateKey = getDateKey(message.createdAt);
 
       if (dateKey !== currentDateKey) {
@@ -154,10 +293,19 @@
 
 <div class="message-thread">
   <!-- Messages container -->
-  <div class="messages-container" bind:this={messagesContainer}>
+  <div
+    class="messages-container themed-scrollbar"
+    bind:this={messagesContainer}
+  >
+    {#if isLocatingReply}
+      <div class="locating-reply" role="status">
+        <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+        Finding original message
+      </div>
+    {/if}
     {#if isLoading}
       <MessageSkeleton count={6} />
-    {:else if messages.length === 0}
+    {:else if displayedMessages.length === 0}
       <EmptyMessages
         recipientName={isGroup
           ? conversation?.groupMetadata?.name
@@ -165,6 +313,19 @@
         {isGroup}
       />
     {:else}
+      {#if contextualMessages}
+        <div class="context-toolbar" role="status">
+          <span>
+            {contextTarget?.isDeleted
+              ? "Viewing a deleted original message"
+              : "Viewing the original message"}
+          </span>
+          <button type="button" onclick={returnToLatest}>
+            <i class="fa-solid fa-arrow-down" aria-hidden="true"></i>
+            Return to latest
+          </button>
+        </div>
+      {/if}
       <div class="messages">
         {#each messageGroups as group, groupIndex}
           <DateSeparator date={group.date} />
@@ -181,6 +342,11 @@
               senderInfo={isGroup
                 ? conversation?.participantInfo?.[message.senderId]
                 : undefined}
+              replyTarget={message.replyTo
+                ? messagesById.get(message.replyTo.messageId)
+                : undefined}
+              onNavigateToMessage={navigateToMessage}
+              isHighlighted={message.id === highlightedMessageId}
             />
           {/each}
         {/each}
@@ -198,6 +364,8 @@
       lastEditableMessage={lastEditableOwnMessage}
     />
   {/if}
+
+  <p class="sr-only" aria-live="polite">{navigationAnnouncement}</p>
 </div>
 
 <style>
@@ -208,14 +376,145 @@
   }
 
   .messages-container {
+    position: relative;
     flex: 1;
     overflow-y: auto;
     padding: 8px 16px 16px;
+    overscroll-behavior: contain;
   }
 
   .messages {
     display: flex;
     flex-direction: column;
     gap: 8px;
+  }
+
+  .context-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 52px;
+    margin: -2px 0 10px;
+    padding: 6px 8px 6px 14px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 14px;
+    color: var(--theme-text, #ffffff);
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    font-size: var(--font-size-sm, 14px);
+  }
+
+  .locating-reply {
+    position: sticky;
+    top: 0;
+    z-index: 21;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: var(--min-touch-target, 44px);
+    margin: -2px auto 8px;
+    padding: 0 16px;
+    width: fit-content;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 999px;
+    color: var(--theme-text, #ffffff);
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
+  }
+
+  .context-toolbar span {
+    min-width: 0;
+    overflow: hidden;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .context-toolbar button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 14px;
+    border: 1px solid
+      color-mix(
+        in srgb,
+        var(--theme-accent, #6366f1) 46%,
+        var(--theme-stroke, rgba(255, 255, 255, 0.1))
+      );
+    border-radius: 999px;
+    color: var(--theme-text, #ffffff);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 14%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      background var(--duration-fast, 120ms) ease,
+      border-color var(--duration-fast, 120ms) ease;
+  }
+
+  .context-toolbar button:hover,
+  .context-toolbar button:focus-visible {
+    border-color: var(--theme-accent, #6366f1);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 24%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+  }
+
+  .context-toolbar button:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (max-width: 520px) {
+    .context-toolbar {
+      align-items: stretch;
+      flex-direction: column;
+      padding: 10px;
+    }
+
+    .context-toolbar span {
+      padding: 0 4px;
+    }
+
+    .context-toolbar button {
+      width: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .locating-reply i {
+      animation: none;
+    }
+
+    .context-toolbar button {
+      transition: none;
+    }
   }
 </style>

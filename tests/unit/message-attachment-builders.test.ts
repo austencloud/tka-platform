@@ -6,7 +6,11 @@ import {
   decodeLegacySequenceAttachment,
 } from "$lib/shared/inbox/domain/message-attachment-builders";
 import { buildSequenceSharePayload } from "$lib/shared/inbox/domain/build-sequence-share-payload";
-import { getMessagePreviewText } from "$lib/shared/messaging/domain/message-preview";
+import {
+  buildReplyPreview,
+  getMessagePreviewText,
+  getReplyPreviewText,
+} from "$lib/shared/messaging/domain/message-preview";
 
 function findUndefinedPaths(value: unknown, path = "attachment"): string[] {
   if (value === undefined) return [path];
@@ -28,6 +32,42 @@ describe("message attachment presentation", () => {
     expect(
       getMessagePreviewText("A caption that should win", [{ type: "image" }])
     ).toBe("A caption that should win");
+  });
+
+  it("keeps complete reply text and attachment context", () => {
+    const content = "A".repeat(240);
+    const reply = buildReplyPreview({
+      id: "message-1",
+      senderId: "sender-1",
+      senderName: "Austen",
+      content,
+      attachments: [{ type: "sequence" }],
+    });
+
+    expect(reply).toEqual({
+      messageId: "message-1",
+      senderId: "sender-1",
+      senderName: "Austen",
+      content,
+      attachmentType: "sequence",
+    });
+    expect(getReplyPreviewText(reply)).toBe(content);
+    expect(
+      getReplyPreviewText({
+        messageId: "legacy-message",
+        senderName: "Legacy sender",
+        content: "",
+      })
+    ).toBe("Message");
+    expect(
+      getReplyPreviewText({
+        messageId: "image-message",
+        senderId: "sender-1",
+        senderName: "Austen",
+        content: "",
+        attachmentType: "image",
+      })
+    ).toBe("Image");
   });
 
   it("uses a compact short-code route instead of serializing the sequence", () => {

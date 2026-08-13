@@ -705,7 +705,9 @@ service cloud.firestore {
       // MANDALA COLLECTION (Saved mandala designs)
       // -------------------------------------------------------------------------
       match /mandala-collection/{mandalaId} {
-        allow read, create, update: if isOwner(userId);
+        // Admin reads support user preview. Creates and updates stay owner-only.
+        allow read: if isOwner(userId) || isAdmin();
+        allow create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
@@ -713,7 +715,9 @@ service cloud.firestore {
       // TUNNEL COLLECTION (Saved tunnel snapshots — sequence + full look)
       // -------------------------------------------------------------------------
       match /tunnel-collection/{tunnelId} {
-        allow read, create, update: if isOwner(userId);
+        // Admin reads support user preview. Creates and updates stay owner-only.
+        allow read: if isOwner(userId) || isAdmin();
+        allow create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
@@ -721,7 +725,9 @@ service cloud.firestore {
       // 3D SCENE COLLECTION (Saved 3D viewer configs — scene + camera + performers)
       // -------------------------------------------------------------------------
       match /scene-3d-collection/{sceneId} {
-        allow read, create, update: if isOwner(userId);
+        // Admin reads support user preview. Creates and updates stay owner-only.
+        allow read: if isOwner(userId) || isAdmin();
+        allow create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
       }
 
@@ -952,6 +958,57 @@ service cloud.firestore {
                 && request.resource.data.attachments.size() > 0));
         }
 
+        function isValidReplyPreview(reply) {
+          let targetPath = /databases/$(database)/documents/conversations/$(conversationId)/messages/$(reply.messageId);
+          let target = get(targetPath).data;
+
+          return reply.keys().hasOnly([
+              'messageId',
+              'senderId',
+              'senderName',
+              'content',
+              'attachmentType'
+            ])
+            && reply.keys().hasAll([
+              'messageId',
+              'senderId',
+              'senderName',
+              'content'
+            ])
+            && reply.messageId is string
+            && reply.messageId != messageId
+            && reply.senderId is string
+            && reply.senderName is string
+            && reply.senderName.size() > 0
+            && reply.senderName.size() <= 120
+            && reply.content is string
+            && reply.content.size() <= 2000
+            && exists(targetPath)
+            && target.senderId == reply.senderId
+            && target.senderName == reply.senderName
+            && target.content == reply.content
+            && (!('isDeleted' in target) || target.isDeleted == false)
+            && (
+              (!('attachmentType' in reply)
+                && (!('attachments' in target)
+                  || target.attachments == null
+                  || target.attachments.size() == 0))
+              ||
+              ('attachmentType' in reply
+                && reply.attachmentType in ['image', 'sequence', 'collection', 'link', 'feedback']
+                && target.attachments is list
+                && target.attachments.size() > 0
+                && target.attachments[0].type == reply.attachmentType)
+            );
+        }
+
+        function hasValidReplyPreview() {
+          return !('replyTo' in request.resource.data)
+            || request.resource.data.replyTo == null
+            || (request.resource.data.replyTo is map
+              && isValidReplyPreview(request.resource.data.replyTo));
+        }
+
         function isValidMessageEdit() {
           let changed = request.resource.data.diff(resource.data).affectedKeys();
           let oldHistory = ('editHistory' in resource.data
@@ -999,7 +1056,8 @@ service cloud.firestore {
           && isConversationParticipant(conversationId)
           && request.resource.data.senderId == request.auth.uid
           && hasValidClientAttachment()
-          && hasValidMessageBody();
+          && hasValidMessageBody()
+          && hasValidReplyPreview();
 
         // Updating messages:
         // - Sender edits append the previous text to immutable edit history

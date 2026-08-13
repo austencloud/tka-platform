@@ -86,8 +86,13 @@ export interface MessageReaction {
  */
 export interface ReplyPreview {
   messageId: string;
+  /** Present on new replies. Older stored replies predate this field. */
+  senderId?: string;
   senderName: string;
-  content: string; // Truncated to ~100 chars
+  /** Snapshot of the complete original text at the time the reply was sent. */
+  content: string;
+  /** Enough attachment context to make an attachment-only quote meaningful. */
+  attachmentType?: MessageAttachmentType;
 }
 
 /**

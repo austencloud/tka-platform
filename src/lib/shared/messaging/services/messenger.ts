@@ -20,6 +20,7 @@ import {
   writeBatch,
   increment,
   runTransaction,
+  startAt,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import {
@@ -38,7 +39,10 @@ import type {
   MessageReaction,
   MessageEdit,
 } from "../domain/models/message-models";
-import { getMessagePreviewText } from "../domain/message-preview";
+import {
+  buildReplyPreview,
+  getMessagePreviewText,
+} from "../domain/message-preview";
 
 const CONVERSATIONS_COLLECTION = "conversations";
 const MESSAGES_SUBCOLLECTION = "messages";
@@ -113,7 +117,12 @@ export class Messenger {
    */
   async sendMessage(input: CreateMessageInput): Promise<Message> {
     try {
-      const { conversationId, content, attachments, replyTo } = input;
+      const {
+        conversationId,
+        content,
+        attachments,
+        replyTo: requestedReply,
+      } = input;
       const normalizedContent = content.trim();
 
       // Rate limiting - prevent spam
@@ -159,6 +168,35 @@ export class Messenger {
 
       if (!participants.includes(effectiveUser.uid)) {
         throw new Error("User is not a participant in this conversation");
+      }
+
+      // Display fields in a quote are not trusted input. Resolve the message in
+      // this conversation immediately before sending so edits and attachment
+      // context cannot leave a forged or stale reply behind.
+      let replyTo: Message["replyTo"];
+      if (requestedReply) {
+        const replySnapshot = await getDoc(
+          doc(
+            firestore,
+            CONVERSATIONS_COLLECTION,
+            conversationId,
+            MESSAGES_SUBCOLLECTION,
+            requestedReply.messageId
+          )
+        );
+        if (
+          !replySnapshot.exists() ||
+          replySnapshot.data()["isDeleted"] === true
+        ) {
+          throw new Error("The original message is no longer available");
+        }
+        replyTo = buildReplyPreview(
+          this.mapDocToMessage(
+            replySnapshot.id,
+            conversationId,
+            replySnapshot.data()
+          )
+        );
       }
 
       // Create the message
@@ -295,6 +333,56 @@ export class Messenger {
       console.error("[Messenger] Failed to get messages:", error);
       toast.error("Failed to load messages.");
       return [];
+    }
+  }
+
+  /**
+   * Load a bounded window around one message. Reply navigation uses this when
+   * the source is older than the live 100-message subscription.
+   */
+  async getMessageContext(
+    conversationId: string,
+    messageId: string,
+    radius = 25
+  ): Promise<Message[]> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const messagesRef = collection(
+        firestore,
+        CONVERSATIONS_COLLECTION,
+        conversationId,
+        MESSAGES_SUBCOLLECTION
+      );
+      const targetRef = doc(messagesRef, messageId);
+      const targetSnapshot = await getDoc(targetRef);
+      if (!targetSnapshot.exists()) return [];
+
+      const [olderSnapshot, newerSnapshot] = await Promise.all([
+        getDocs(
+          query(
+            messagesRef,
+            orderBy("createdAt", "desc"),
+            startAt(targetSnapshot),
+            limit(radius + 1)
+          )
+        ),
+        getDocs(
+          query(
+            messagesRef,
+            orderBy("createdAt", "asc"),
+            startAfter(targetSnapshot),
+            limit(radius)
+          )
+        ),
+      ]);
+
+      return [...olderSnapshot.docs.reverse(), ...newerSnapshot.docs].map(
+        (snapshot) =>
+          this.mapDocToMessage(snapshot.id, conversationId, snapshot.data())
+      );
+    } catch (error) {
+      console.error("[Messenger] Failed to locate reply target:", error);
+      throw error;
     }
   }
 

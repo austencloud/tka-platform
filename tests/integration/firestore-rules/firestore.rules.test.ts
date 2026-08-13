@@ -83,6 +83,44 @@ function adminCtx() {
   });
 }
 
+describe("saved Art admin preview", () => {
+  it("allows admin reads while keeping cross-user creates and updates blocked", async () => {
+    const collectionNames = [
+      "mandala-collection",
+      "tunnel-collection",
+      "scene-3d-collection",
+    ];
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore(SDK_SETTINGS);
+      for (const collectionName of collectionNames) {
+        await setDoc(doc(db, `users/${FULL_UID}/${collectionName}/saved-art`), {
+          name: "Saved Art",
+        });
+      }
+    });
+
+    const admin = adminCtx().firestore(SDK_SETTINGS);
+    const nonOwner = testEnv
+      .authenticatedContext("other-user", {
+        firebase: { sign_in_provider: "password" },
+      })
+      .firestore(SDK_SETTINGS);
+
+    for (const collectionName of collectionNames) {
+      const path = `users/${FULL_UID}/${collectionName}/saved-art`;
+      await assertSucceeds(getDoc(doc(admin, path)));
+      await assertFails(getDoc(doc(nonOwner, path)));
+      await assertFails(updateDoc(doc(admin, path), { name: "Changed" }));
+      await assertFails(
+        setDoc(doc(admin, `users/${FULL_UID}/${collectionName}/new-art`), {
+          name: "New Art",
+        })
+      );
+    }
+  });
+});
+
 describe("user profile privilege boundaries", () => {
   async function seedProfiles() {
     await testEnv.withSecurityRulesDisabled(async (context) => {
@@ -1226,6 +1264,78 @@ describe("messaging attachments", () => {
         attachments: [
           { type: "image", storagePath: "message-images/fake/fake/fake.webp" },
         ],
+      })
+    );
+  });
+
+  it("accepts canonical replies and rejects forged reply previews", async () => {
+    await seedConversation();
+    await seedMessage();
+    const messages = collection(
+      messageCtx(SENDER).firestore(SDK_SETTINGS),
+      `conversations/${CONVERSATION}/messages`
+    );
+    const base = {
+      senderId: SENDER,
+      senderName: "Sender",
+      content: "This answers the original",
+      readBy: [SENDER],
+      attachments: null,
+    };
+    const canonicalReply = {
+      messageId: "message-1",
+      senderId: SENDER,
+      senderName: "Sender",
+      content: "Original message",
+    };
+
+    await assertSucceeds(
+      addDoc(messages, { ...base, replyTo: canonicalReply })
+    );
+    await assertFails(
+      addDoc(messages, {
+        ...base,
+        replyTo: { ...canonicalReply, content: "Fabricated quote" },
+      })
+    );
+    await assertFails(
+      addDoc(messages, {
+        ...base,
+        replyTo: { ...canonicalReply, messageId: "missing-message" },
+      })
+    );
+  });
+
+  it("keeps attachment context tied to the original message", async () => {
+    await seedConversation();
+    await seedMessage({
+      content: "",
+      attachments: [{ type: "sequence", url: "/q/AB3D" }],
+    });
+    const messages = collection(
+      messageCtx(SENDER).firestore(SDK_SETTINGS),
+      `conversations/${CONVERSATION}/messages`
+    );
+    const base = {
+      senderId: SENDER,
+      senderName: "Sender",
+      content: "Replying to the sequence",
+      readBy: [SENDER],
+      attachments: null,
+    };
+    const replyTo = {
+      messageId: "message-1",
+      senderId: SENDER,
+      senderName: "Sender",
+      content: "",
+      attachmentType: "sequence",
+    };
+
+    await assertSucceeds(addDoc(messages, { ...base, replyTo }));
+    await assertFails(
+      addDoc(messages, {
+        ...base,
+        replyTo: { ...replyTo, attachmentType: "image" },
       })
     );
   });

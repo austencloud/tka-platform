@@ -18,9 +18,15 @@ interface FinalizeMessageImageRequest {
   content?: string;
   replyTo?: {
     messageId: string;
-    senderName: string;
-    content: string;
   };
+}
+
+interface CanonicalReplyPreview {
+  messageId: string;
+  senderId: string;
+  senderName: string;
+  content: string;
+  attachmentType?: string;
 }
 
 interface FinalizeMessageImageResponse {
@@ -37,26 +43,50 @@ function requireSafeId(value: unknown, field: string): string {
   return value;
 }
 
-function optionalReplyPreview(
-  value: unknown
-): FinalizeMessageImageRequest["replyTo"] | undefined {
+function optionalReplyMessageId(value: unknown): string | undefined {
   if (value == null) return undefined;
   if (typeof value !== "object") {
     throw new HttpsError("invalid-argument", "Reply preview is invalid.");
   }
 
   const reply = value as Record<string, unknown>;
-  const messageId = requireSafeId(reply.messageId, "Reply message ID");
-  const senderName =
-    typeof reply.senderName === "string"
-      ? reply.senderName.trim().slice(0, 120)
-      : "";
-  const content =
-    typeof reply.content === "string" ? reply.content.trim().slice(0, 100) : "";
-  if (!senderName || !content) {
-    throw new HttpsError("invalid-argument", "Reply preview is incomplete.");
+  return requireSafeId(reply.messageId, "Reply message ID");
+}
+
+export function buildCanonicalReplyPreview(
+  messageId: string,
+  data: Record<string, unknown> | undefined
+): CanonicalReplyPreview {
+  if (!data || data.isDeleted === true) {
+    throw new HttpsError(
+      "failed-precondition",
+      "The original message is no longer available."
+    );
   }
-  return { messageId, senderName, content };
+
+  const senderId = typeof data.senderId === "string" ? data.senderId : "";
+  const senderName =
+    typeof data.senderName === "string" ? data.senderName.trim() : "";
+  const content = typeof data.content === "string" ? data.content : "";
+  if (!senderId || !senderName || content.length > MAX_MESSAGE_LENGTH) {
+    throw new HttpsError(
+      "failed-precondition",
+      "The original message cannot be quoted."
+    );
+  }
+
+  const preview: CanonicalReplyPreview = {
+    messageId,
+    senderId,
+    senderName: senderName.slice(0, 120),
+    content,
+  };
+  const attachments = Array.isArray(data.attachments) ? data.attachments : [];
+  const attachment = attachments[0] as Record<string, unknown> | undefined;
+  if (typeof attachment?.type === "string") {
+    preview.attachmentType = attachment.type;
+  }
+  return preview;
 }
 
 function isAnonymousToken(token: Record<string, unknown>): boolean {
@@ -90,12 +120,21 @@ export const finalizeMessageImage = onCall(
     if (content.length > MAX_MESSAGE_LENGTH) {
       throw new HttpsError("invalid-argument", "Message is too long.");
     }
-    const replyTo = optionalReplyPreview(data.replyTo);
+    const replyMessageId = optionalReplyMessageId(data.replyTo);
+    if (replyMessageId === messageId) {
+      throw new HttpsError(
+        "invalid-argument",
+        "A message cannot reply to itself."
+      );
+    }
 
     const db = getFirestore();
     const bucket = getStorage().bucket();
     const conversationRef = db.doc(`conversations/${conversationId}`);
     const messageRef = conversationRef.collection("messages").doc(messageId);
+    const replyRef = replyMessageId
+      ? conversationRef.collection("messages").doc(replyMessageId)
+      : null;
     const stagingPath = `message-image-staging/${senderId}/${conversationId}/${messageId}/${attachmentId}`;
     const finalPath = `message-images/${conversationId}/${messageId}/${attachmentId}.webp`;
     const stagingFile = bucket.file(stagingPath);
@@ -200,10 +239,13 @@ export const finalizeMessageImage = onCall(
 
     try {
       await db.runTransaction(async (transaction) => {
-        const [freshConversation, freshMessage] = await Promise.all([
-          transaction.get(conversationRef),
-          transaction.get(messageRef),
-        ]);
+        const [freshConversation, freshMessage, freshReply] = await Promise.all(
+          [
+            transaction.get(conversationRef),
+            transaction.get(messageRef),
+            replyRef ? transaction.get(replyRef) : Promise.resolve(null),
+          ]
+        );
         if (!freshConversation.exists) {
           throw new HttpsError("not-found", "Conversation not found.");
         }
@@ -226,6 +268,12 @@ export const finalizeMessageImage = onCall(
           }
           return;
         }
+        const replyTo = replyMessageId
+          ? buildCanonicalReplyPreview(
+              replyMessageId,
+              freshReply?.exists ? freshReply.data() : undefined
+            )
+          : undefined;
 
         transaction.create(messageRef, {
           senderId,

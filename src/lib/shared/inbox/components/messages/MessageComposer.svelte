@@ -18,7 +18,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { buildSequenceMessageAttachment } from "../../domain/message-attachment-builders";
   import { buildSequenceSharePayload } from "../../domain/build-sequence-share-payload";
-  import { getMessagePreviewText } from "$lib/shared/messaging/domain/message-preview";
+  import { buildReplyPreview } from "$lib/shared/messaging/domain/message-preview";
   import { getMessageImageSender } from "$lib/shared/messaging/get-message-image-sender";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import { getShortCodeShareMessage } from "$lib/shared/qr/domain/short-code-error";
@@ -44,6 +44,7 @@
   let imageSendHandle: MessageImageSendHandle | null = null;
   let activeEditId: string | null = null;
   let draftBeforeEdit: string | null = null;
+  let lastFocusedReplyId: string | null = null;
 
   // Typing indicator debounce
   let typingTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -85,6 +86,27 @@
     inputElement.setSelectionRange(messageText.length, messageText.length);
     resizeInput();
   }
+
+  const replyPreview = $derived(
+    inboxState.replyToMessage
+      ? buildReplyPreview(inboxState.replyToMessage)
+      : null
+  );
+
+  // Starting a reply should be one action, not "choose Reply, then find the
+  // composer." The draft stays exactly where it was and receives focus.
+  $effect(() => {
+    const replyId = inboxState.replyToMessage?.id ?? null;
+    if (!replyId) {
+      lastFocusedReplyId = null;
+      return;
+    }
+    if (replyId === lastFocusedReplyId || inboxState.isEditing) return;
+
+    lastFocusedReplyId = replyId;
+    const focusTimer = setTimeout(focusInputAtEnd, 0);
+    return () => clearTimeout(focusTimer);
+  });
 
   // Editing temporarily borrows the composer. The draft and any attachment
   // waiting underneath come back when the edit is saved or cancelled.
@@ -137,6 +159,11 @@
 
   // Handle keyboard shortcuts
   function handleKeydown(event: KeyboardEvent) {
+    // The composer owns its keystrokes. Background editors stay mounted while
+    // Messages is open, so letting this bubble can turn typed letters such as
+    // S into WASD movement and cancel the browser's text insertion.
+    event.stopPropagation();
+
     // Cancel edit on Escape
     if (event.key === "Escape") {
       if (inboxState.isEditing) {
@@ -145,6 +172,7 @@
         return;
       }
       if (inboxState.isReplying) {
+        event.preventDefault();
         inboxState.clearReplyTo();
         return;
       }
@@ -192,16 +220,7 @@
     messagingService.setTyping(conversationId, false).catch(() => {});
 
     // Capture reply context before clearing
-    const replyTo = inboxState.replyToMessage
-      ? {
-          messageId: inboxState.replyToMessage.id,
-          senderName: inboxState.replyToMessage.senderName,
-          content: getMessagePreviewText(
-            inboxState.replyToMessage.content,
-            inboxState.replyToMessage.attachments
-          ),
-        }
-      : undefined;
+    const replyTo = replyPreview ?? undefined;
     const attachment = pendingAttachment;
 
     isSending = true;
@@ -357,17 +376,11 @@
 
 <div class="message-composer" class:editing={isEditing}>
   <!-- Reply preview strip -->
-  {#if isReplying && inboxState.replyToMessage}
+  {#if isReplying && replyPreview}
     <div class="reply-strip">
       <ReplyPreview
-        reply={{
-          messageId: inboxState.replyToMessage.id,
-          senderName: inboxState.replyToMessage.senderName,
-          content: getMessagePreviewText(
-            inboxState.replyToMessage.content,
-            inboxState.replyToMessage.attachments
-          ),
-        }}
+        reply={replyPreview}
+        domId="message-reply-context"
         onDismiss={() => inboxState.clearReplyTo()}
       />
     </div>
@@ -411,6 +424,7 @@
       maxlength={2000}
       disabled={isSending}
       aria-label={isEditing ? "Edit message" : "Message input"}
+      aria-describedby={isReplying ? "message-reply-context" : undefined}
     ></textarea>
     <button
       data-save-shortcut={isEditing ? "" : undefined}

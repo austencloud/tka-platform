@@ -1,4 +1,9 @@
-import type { MessageAttachment } from "./models/message-models";
+import type {
+  Message,
+  MessageAttachment,
+  MessageAttachmentType,
+  ReplyPreview,
+} from "./models/message-models";
 
 const MAX_PREVIEW_LENGTH = 100;
 
@@ -23,4 +28,42 @@ export function getMessagePreviewText(
     default:
       return "Sent an attachment";
   }
+}
+
+const REPLY_ATTACHMENT_LABELS: Record<MessageAttachmentType, string> = {
+  image: "Image",
+  sequence: "Sequence",
+  collection: "Collection",
+  link: "Link",
+  feedback: "Feedback",
+};
+
+/**
+ * Replies keep a snapshot rather than borrowing the conversation-list preview.
+ * The full text is retained so future presentations are not limited by today's
+ * two-line quote, while attachment-only messages still carry useful context.
+ */
+export function buildReplyPreview(
+  message: Pick<
+    Message,
+    "id" | "senderId" | "senderName" | "content" | "attachments"
+  >
+): ReplyPreview {
+  const preview: ReplyPreview = {
+    messageId: message.id,
+    senderId: message.senderId,
+    senderName: message.senderName,
+    content: message.content,
+  };
+  const attachmentType = message.attachments?.[0]?.type;
+  if (attachmentType) preview.attachmentType = attachmentType;
+  return preview;
+}
+
+export function getReplyPreviewText(reply: ReplyPreview): string {
+  const text = reply.content.trim();
+  if (text) return text;
+  if (reply.attachmentType)
+    return REPLY_ATTACHMENT_LABELS[reply.attachmentType];
+  return "Message";
 }

@@ -4,7 +4,7 @@
    *
    * Renders a feedback submission as a tappable card within a message.
    * Links directly to the feedback item for viewing/responding.
-   * Shows deleted state if the feedback no longer exists.
+   * Shows an unavailable state when an attachment has no feedback target.
    */
 
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
@@ -14,7 +14,6 @@
     STATUS_CONFIG,
   } from "$lib/shared/feedback/domain/models/feedback-models";
   import type { MessageAttachment } from "$lib/shared/messaging/domain/models/message-models";
-  import { feedbackService } from "$lib/shared/feedback/services/feedback-repository";
   import { inboxState } from "../../state/inbox-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { setNotificationTargetFeedback } from "$lib/shared/feedback/state/notification-action-state.svelte";
@@ -28,8 +27,13 @@
 
   let { attachment, isOwn }: Props = $props();
 
-  // Track if feedback still exists
-  let isDeleted = $state(false);
+  // Feedback documents are private to their author and trusted roles. A
+  // message can outlive the document it links to, and once that document is
+  // gone Firestore has no resource data with which to prove prior ownership.
+  // Trust the immutable attachment metadata here, just as SequenceMessageCard
+  // does, instead of issuing a background existence read on every mount.
+  const feedbackId = $derived(attachment.metadata?.feedbackId);
+  const isDeleted = $derived(!feedbackId);
   let isChecking = $state(true);
 
   // Haptic feedback service
@@ -42,29 +46,9 @@
     STATUS_CONFIG[feedbackStatus as keyof typeof STATUS_CONFIG]
   );
 
-  // Check if feedback exists on mount
-  onMount(async () => {
+  onMount(() => {
     hapticService = getHapticFeedback();
-
-    const feedbackId = attachment.metadata?.feedbackId;
-    if (!feedbackId) {
-      isChecking = false;
-      return;
-    }
-
-    try {
-      const feedback = await feedbackService.getFeedback(feedbackId);
-      isDeleted = feedback === null;
-    } catch (err) {
-      console.error(
-        "[FeedbackMessageCard] Error checking feedback existence:",
-        err
-      );
-      // On error, assume it exists to avoid false negatives
-      isDeleted = false;
-    } finally {
-      isChecking = false;
-    }
+    isChecking = false;
   });
 
   async function handleClick() {
@@ -72,7 +56,6 @@
 
     hapticService?.trigger("selection");
 
-    const feedbackId = attachment.metadata?.feedbackId;
     if (!feedbackId) {
       return;
     }

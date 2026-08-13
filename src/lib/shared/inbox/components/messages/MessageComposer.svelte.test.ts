@@ -182,4 +182,89 @@ describe("MessageComposer editing", () => {
       .element(page.getByRole("button", { name: "Save changes" }))
       .toBeEnabled();
   });
+
+  it("keeps typing keystrokes away from background app hotkeys", () => {
+    const backgroundHotkey = vi.fn((event: KeyboardEvent) => {
+      if (event.key.toLowerCase() === "s") event.preventDefault();
+    });
+    window.addEventListener("keydown", backgroundHotkey);
+
+    try {
+      render(MessageComposer, { conversationId: "conversation-1" });
+      const input = document.querySelector("textarea");
+      if (!(input instanceof HTMLTextAreaElement)) {
+        throw new Error("Message textarea was not rendered");
+      }
+
+      const event = new KeyboardEvent("keydown", {
+        key: "s",
+        code: "KeyS",
+        bubbles: true,
+        cancelable: true,
+      });
+      input.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(false);
+      expect(backgroundHotkey).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener("keydown", backgroundHotkey);
+    }
+  });
+
+  it("focuses the existing draft and sends a complete reply snapshot", async () => {
+    const originalText = "A".repeat(240);
+    inboxState.setReplyTo(
+      message({
+        id: "original-message",
+        senderId: "other-user",
+        senderName: "Morgan",
+        content: originalText,
+        attachments: [{ type: "sequence" }],
+      })
+    );
+    render(MessageComposer, { conversationId: "conversation-1" });
+
+    const composer = page.getByRole("textbox", { name: "Message input" });
+    await vi.waitFor(() => {
+      expect(document.activeElement).toBe(document.querySelector("textarea"));
+    });
+    await expect.element(page.getByText("Replying to Morgan")).toBeVisible();
+    await composer.fill("This is the answer");
+    await page.getByRole("button", { name: "Send message" }).click();
+
+    await vi.waitFor(() => {
+      expect(mocks.sendMessage).toHaveBeenCalledWith({
+        conversationId: "conversation-1",
+        content: "This is the answer",
+        attachments: undefined,
+        replyTo: {
+          messageId: "original-message",
+          senderId: "other-user",
+          senderName: "Morgan",
+          content: originalText,
+          attachmentType: "sequence",
+        },
+      });
+    });
+    expect(inboxState.replyToMessage).toBeNull();
+  });
+
+  it("cancels a reply with Escape without clearing the draft", async () => {
+    inboxState.setReplyTo(
+      message({
+        id: "original-message",
+        senderId: "other-user",
+        senderName: "Morgan",
+      })
+    );
+    render(MessageComposer, { conversationId: "conversation-1" });
+    const composer = page.getByRole("textbox", { name: "Message input" });
+    await composer.fill("Keep this draft");
+
+    dispatchKey("Escape");
+
+    expect(inboxState.replyToMessage).toBeNull();
+    await expect.element(composer).toHaveValue("Keep this draft");
+    expect(mocks.sendMessage).not.toHaveBeenCalled();
+  });
 });
