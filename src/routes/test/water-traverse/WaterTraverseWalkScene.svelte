@@ -356,11 +356,17 @@
     }
   );
 
-  /** Where a performer stands. A body-sized post on a disc you can see coming. */
+  /**
+   * Where a performer stands. A body-sized post on the dais top, and the stop
+   * disc down at the RING floor around the dais — blue marks where the
+   * visitor stands, and since the reverence stations that is no longer where
+   * the performer stands.
+   */
   const stops = layout.performers.map((performer) => ({
     id: performer.id,
     x: performer.x,
     y: performer.y,
+    ringY: performer.ringY,
     z: performer.z,
     letter: performer.letter,
   }));
@@ -901,10 +907,11 @@
   </T.Mesh>
 {/each}
 
-<!-- Where a performer stands, and how far off you can tell. -->
+<!-- Where a performer stands, and how far off you can tell. The disc lies on
+  the ring floor around the dais; the post stands on the dais top. -->
 {#each stops as stop (stop.id)}
   <T.Group position={[stop.x, stop.y, stop.z]}>
-    <T.Mesh position.y={0.03} rotation.x={-Math.PI / 2}>
+    <T.Mesh position.y={stop.ringY - stop.y + 0.03} rotation.x={-Math.PI / 2}>
       <T.CircleGeometry args={[2.6, 24]} />
       <T is={MARK.stop} />
     </T.Mesh>

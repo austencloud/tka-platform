@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Water — three stations, one grammar</title>
+<style>
+  :root {
+    --bg: #0b1220; --panel: #101a2e; --line: #223252;
+    --ink: #dbe7ff; --dim: #7e93b8;
+    --ice: #9fd8ff; --sea: #46c2ff; --steam: #ffb2a1; --gold: #ffd166;
+    --river: #1d3a5f;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 15px/1.5 "Segoe UI", system-ui, sans-serif;
+    padding: 48px clamp(24px, 6vw, 96px);
+  }
+  h1 { font-size: 26px; margin-bottom: 6px; }
+  .sub { color: var(--dim); margin-bottom: 34px; max-width: 64rem; }
+  .plan { width: 100%; height: auto; display: block; margin-bottom: 30px; }
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 30px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+  .card h2 { font-size: 15px; margin-bottom: 6px; }
+  .card p { font-size: 13.5px; color: var(--dim); }
+  .card .tag { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; }
+  .a .tag { color: var(--ice); } .b .tag { color: var(--sea); } .c .tag { color: var(--steam); }
+  .note { color: var(--dim); border-top: 1px solid var(--line); padding-top: 16px; max-width: 64rem; }
+  .note b { color: var(--ink); }
+  @media (max-width: 900px) { .cards { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <h1>Three stations, one grammar</h1>
+  <p class="sub">
+    The reverence rule made spatial: each performer stands on a platform the path
+    is forced to acknowledge. The route (gold) swells around every dais and rejoins —
+    you cannot pass A, B or C without walking around them. Same grammar three times,
+    dressed by the element each time. Plan view, not to scale.
+  </p>
+
+  <svg class="plan" viewBox="0 0 1200 240" xmlns="http://www.w3.org/2000/svg" role="img"
+       aria-label="Plan view: a route with three circular platforms it splits around">
+    <!-- watercourse ribbon -->
+    <rect x="0" y="95" width="1200" height="50" rx="25" fill="var(--river)" opacity="0.55"/>
+
+    <!-- route: splits around each dais -->
+    <path d="M 20 120
+             H 130
+             C 175 120 175 78 220 78  C 265 78 265 120 310 120
+             H 450
+             C 495 120 495 78 540 78  C 585 78 585 120 630 120
+             H 790
+             C 845 120 845 66 910 66  C 975 66 975 120 1030 120
+             H 1180"
+          fill="none" stroke="var(--gold)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 130 120 C 175 120 175 162 220 162 C 265 162 265 120 310 120" fill="none" stroke="var(--gold)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 450 120 C 495 120 495 162 540 162 C 585 162 585 120 630 120" fill="none" stroke="var(--gold)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M 790 120 C 845 120 845 174 910 174 C 975 174 975 120 1030 120" fill="none" stroke="var(--gold)" stroke-width="5" stroke-linecap="round"/>
+
+    <!-- hand-path station marker -->
+    <circle cx="75" cy="120" r="10" fill="none" stroke="var(--ice)" stroke-width="2.5" stroke-dasharray="4 3"/>
+    <text x="75" y="155" fill="var(--dim)" font-size="12" text-anchor="middle">hand path</text>
+
+    <!-- A: ice dais in a frozen pool -->
+    <circle cx="220" cy="120" r="34" fill="#14263f" stroke="var(--ice)" stroke-width="2"/>
+    <circle cx="220" cy="120" r="17" fill="#1b3557" stroke="var(--ice)" stroke-width="2.5"/>
+    <text x="220" y="126" fill="var(--ice)" font-size="16" font-weight="700" text-anchor="middle">A</text>
+    <text x="220" y="195" fill="var(--dim)" font-size="12" text-anchor="middle">ice dais · frozen pool</text>
+
+    <!-- B: trench dais -->
+    <circle cx="540" cy="120" r="34" fill="#14263f" stroke="var(--sea)" stroke-width="2"/>
+    <circle cx="540" cy="120" r="17" fill="#1b3557" stroke="var(--sea)" stroke-width="2.5"/>
+    <text x="540" y="126" fill="var(--sea)" font-size="16" font-weight="700" text-anchor="middle">B</text>
+    <text x="540" y="195" fill="var(--dim)" font-size="12" text-anchor="middle">sea-floor dais · god rays</text>
+
+    <!-- C: dais in the reflection pool -->
+    <circle cx="910" cy="120" r="52" fill="#0f2f4a" stroke="var(--steam)" stroke-width="1.5" opacity="0.9"/>
+    <circle cx="910" cy="120" r="19" fill="#1b3557" stroke="var(--steam)" stroke-width="2.5"/>
+    <text x="910" y="126" fill="var(--steam)" font-size="16" font-weight="700" text-anchor="middle">C</text>
+    <text x="910" y="205" fill="var(--dim)" font-size="12" text-anchor="middle">vent dais IN the reflection pool · mirror doubles the sequence</text>
+
+    <!-- door -->
+    <rect x="1183" y="100" width="10" height="40" fill="var(--steam)" opacity="0.8"/>
+    <text x="1150" y="90" fill="var(--dim)" font-size="12" text-anchor="end">door to Fire</text>
+  </svg>
+
+  <div class="cards">
+    <div class="card a">
+      <span class="tag">Station A · ice</span>
+      <h2>The frozen pool</h2>
+      <p>The river widens into a round frozen pool; A stands on a raised ice dais at its
+      centre. The path circles either side and rejoins. First station in the museum —
+      it sets the grammar: platform, walk around, watch.</p>
+    </div>
+    <div class="card b">
+      <span class="tag">Station B · sea</span>
+      <h2>The trench dais</h2>
+      <p>The channel splits around a rock dais rising from the trench floor, B on it
+      under the god rays. Walking the ring means seeing the sequence from every side
+      with the surface glittering overhead.</p>
+    </div>
+    <div class="card c">
+      <span class="tag">Station C · steam</span>
+      <h2>The dais in the mirror</h2>
+      <p>C stands on a vent platform ringed by the springs pool itself. The path wraps
+      the pool rim, and the still water doubles the performer and their trails —
+      reverence, the reflection, and dwell in a single move.</p>
+    </div>
+  </div>
+
+  <p class="note">
+    <b>Why the same shape three times:</b> repetition is what makes it a grammar instead
+    of three set-pieces — by the third ring, walking around a platform <i>means</i>
+    "a letter lives here." It also works in either room shape: three rings along the
+    traverse, or rings for A and B on the approach with C's ring as the court's centre.
+  </p>
+</body>
+</html>

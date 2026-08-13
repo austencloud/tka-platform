@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Water — transit vs dwell</title>
+<style>
+  :root {
+    --bg: #0b1220; --panel: #101a2e; --line: #223252;
+    --ink: #dbe7ff; --dim: #7e93b8;
+    --teach: #46c2ff; --spectacle: #3a4f78; --dwell: #ffd166;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 15px/1.5 "Segoe UI", system-ui, sans-serif;
+    padding: 48px clamp(24px, 6vw, 96px); min-height: 100vh;
+  }
+  h1 { font-size: 26px; letter-spacing: 0.01em; margin-bottom: 6px; }
+  .sub { color: var(--dim); margin-bottom: 40px; max-width: 62rem; }
+  .strip-block { margin-bottom: 44px; }
+  .strip-title { font-size: 13px; letter-spacing: 0.14em; color: var(--dim); text-transform: uppercase; margin-bottom: 4px; }
+  .strip-verdict { font-size: 15px; margin-bottom: 12px; }
+  .strip {
+    display: flex; height: 84px; border: 1px solid var(--line);
+    border-radius: 8px; overflow: hidden; background: var(--panel);
+  }
+  .seg { position: relative; display: flex; flex-direction: column; justify-content: flex-end; padding: 8px 10px; border-right: 1px solid var(--line); min-width: 0; }
+  .seg:last-child { border-right: 0; }
+  .seg .name { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seg .len { font-size: 11px; color: var(--dim); }
+  .seg.teach { background: color-mix(in srgb, var(--teach) 16%, var(--panel)); box-shadow: inset 0 3px 0 var(--teach); }
+  .seg.spec  { box-shadow: inset 0 3px 0 var(--spectacle); }
+  .seg.dwell { background: color-mix(in srgb, var(--dwell) 13%, var(--panel)); box-shadow: inset 0 3px 0 var(--dwell); }
+  .tallies { display: flex; gap: 28px; margin-top: 10px; font-size: 13px; color: var(--dim); }
+  .tallies b { color: var(--ink); font-weight: 600; }
+  .legend { display: flex; gap: 26px; margin: 6px 0 34px; font-size: 13px; color: var(--dim); }
+  .key { display: inline-block; width: 22px; height: 10px; border-radius: 3px; margin-right: 7px; vertical-align: baseline; }
+  .k-teach { background: var(--teach); } .k-spec { background: var(--spectacle); } .k-dwell { background: var(--dwell); }
+  .note { color: var(--dim); max-width: 62rem; border-top: 1px solid var(--line); padding-top: 18px; }
+  .note b { color: var(--ink); }
+</style>
+</head>
+<body>
+  <h1>Water, from the lobby: transit vs dwell</h1>
+  <p class="sub">
+    Both strips are the same 58 m budget. Blue = a sequence is being taught here.
+    Slate = environment only. Gold = the architecture invites you to STOP —
+    which is the one thing sequences need and Earth and Fire both provide.
+    The second strip is proportions to argue about, not a measured plan.
+  </p>
+
+  <div class="legend">
+    <span><span class="key k-teach"></span>teaching</span>
+    <span><span class="key k-spec"></span>environment only</span>
+    <span><span class="key k-dwell"></span>dwell space (feet stop)</span>
+  </div>
+
+  <div class="strip-block">
+    <div class="strip-title">Today — the traverse (built, walkable)</div>
+    <div class="strip-verdict">27 m teaches, 31 m is spectacle, and nowhere do your feet stop.</div>
+    <div class="strip">
+      <div class="seg teach" style="flex: 10"><span class="name">snowfield · path + A</span><span class="len">10 m</span></div>
+      <div class="seg spec"  style="flex: 10"><span class="name">descent</span><span class="len">10 m</span></div>
+      <div class="seg teach" style="flex: 7"><span class="name">sea · B</span><span class="len">7 m</span></div>
+      <div class="seg spec"  style="flex: 9"><span class="name">cave</span><span class="len">9 m</span></div>
+      <div class="seg spec"  style="flex: 5"><span class="name">canyon</span><span class="len">5 m</span></div>
+      <div class="seg spec"  style="flex: 7"><span class="name">sump</span><span class="len">7 m</span></div>
+      <div class="seg teach" style="flex: 10"><span class="name">springs · C</span><span class="len">10 m</span></div>
+    </div>
+    <div class="tallies">
+      <span>teaching <b>27 m</b></span><span>spectacle <b>31 m</b></span><span>dwell <b>0 m</b></span>
+      <span>performers are passed at <b>walking speed</b></span>
+    </div>
+  </div>
+
+  <div class="strip-block">
+    <div class="strip-title">The flip — traverse as approach, springs as the room (proposal zzt034TI)</div>
+    <div class="strip-verdict">Same dive, shorter. The destination is a court you stand in — pool mirror at its centre.</div>
+    <div class="strip">
+      <div class="seg teach" style="flex: 8"><span class="name">snowfield · path + A</span><span class="len">8 m</span></div>
+      <div class="seg spec"  style="flex: 7"><span class="name">descent</span><span class="len">7 m</span></div>
+      <div class="seg teach" style="flex: 6"><span class="name">sea · B</span><span class="len">6 m</span></div>
+      <div class="seg spec"  style="flex: 6"><span class="name">cave</span><span class="len">6 m</span></div>
+      <div class="seg spec"  style="flex: 5"><span class="name">sump</span><span class="len">5 m</span></div>
+      <div class="seg dwell" style="flex: 26"><span class="name">SPRINGS COURT · C + pool mirror + recap · door to Fire</span><span class="len">26 m</span></div>
+    </div>
+    <div class="tallies">
+      <span>teaching <b>14 m</b> en route</span><span>spectacle <b>18 m</b></span><span>dwell <b>26 m</b></span>
+      <span>emergence lands you <b>in the room</b>, not past it</span>
+    </div>
+  </div>
+
+  <p class="note">
+    <b>The mechanism:</b> a river says GO; a court says STAY. Watching a sequence takes
+    standing still, so whatever Water wants to teach has to live in a space whose
+    architecture stops your feet. The flip keeps the on/under/in spine as the threshold —
+    the emergence becomes the moment you <i>arrive</i> — and rehomes the reflection as the
+    room's centrepiece: still water doubling the performer and their trails.
+    In the terrain program this is a constants change, not a rebuild.
+  </p>
+</body>
+</html>

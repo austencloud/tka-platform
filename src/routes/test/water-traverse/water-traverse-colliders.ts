@@ -126,13 +126,19 @@ export function buildWaterTraverseSetup(): WaterTraverseSetup {
       ...layout.floorRects.map(floorCollider),
       ...layout.wallRects.map(wallCollider),
     ],
-    trimeshes: [
-      {
-        id: "seabed",
-        vertices: layout.seabedMesh.vertices,
-        indices: layout.seabedMesh.indices,
-      },
-    ],
+    // The seabed is gated off at chamber scale (the terrain module exports an
+    // empty mesh until the height field is re-baked); a zero-triangle trimesh
+    // is a degenerate Rapier collider, so it is omitted rather than passed.
+    trimeshes:
+      layout.seabedMesh.triangleCount > 0
+        ? [
+            {
+              id: "seabed",
+              vertices: layout.seabedMesh.vertices,
+              indices: layout.seabedMesh.indices,
+            },
+          ]
+        : [],
     spawn: layout.spawn,
   };
 }

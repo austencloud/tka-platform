@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Water — the bird's eye view</title>
+<style>
+  :root {
+    --bg: #0d1013;
+    --panel: #151a1f;
+    --line: #2a333c;
+    --ink: #e7edf3;
+    --dim: #8b98a5;
+    --fire: #ff7a3c;
+    --water: #5fb8e8;
+    --ice: #b8dcf0;
+    --steam: #d6c9e8;
+    --bad: #e8615f;
+    --good: #6fd08c;
+    font-size: 16px;
+  }
+  @media (min-width: 1680px) { :root { font-size: calc(16px + 8 * (100vw - 1680px) / 2160); } }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    line-height: 1.55; padding: 3rem 2rem 6rem;
+  }
+  .shell { max-width: min(1720px, 92vw); margin: 0 auto; }
+  @media (min-width: 1680px) { .shell { max-width: min(2600px, 88vw); } }
+
+  .kicker { font-size: .75rem; letter-spacing: .18em; text-transform: uppercase; color: var(--water); font-weight: 600; }
+  h1 { font-family: Georgia, serif; font-size: 2.6rem; margin: .4rem 0 .6rem; font-weight: 400; }
+  .lede { font-size: 1.1rem; color: var(--dim); max-width: 62rem; }
+
+  h2 { font-family: Georgia, serif; font-weight: 400; font-size: 1.7rem; margin: 3.5rem 0 .5rem; }
+  p { max-width: 70rem; }
+
+  .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 1.5rem; }
+  @media (max-width: 1100px) { .plans { grid-template-columns: 1fr; } }
+
+  .plan {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column;
+  }
+  .plan h3 { margin: 0 0 .15rem; font-size: 1.05rem; font-weight: 600; }
+  .plan .sub { color: var(--dim); font-size: .84rem; margin-bottom: .9rem; min-height: 2.6em; }
+  .plan svg { width: 100%; height: auto; display: block; background: #0a0d10; border-radius: 8px; }
+  .verdict { margin-top: .9rem; font-size: .86rem; padding: .55rem .7rem; border-radius: 8px; border: 1px solid var(--line); }
+  .verdict.bad { color: var(--bad); border-color: #4a2624; background: #1c1211; }
+  .verdict.good { color: var(--good); border-color: #22452f; background: #0f1a14; }
+
+  table { border-collapse: collapse; margin-top: 1.2rem; width: 100%; max-width: 74rem; font-size: .93rem; }
+  th, td { text-align: left; padding: .6rem .8rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--dim); font-weight: 600; font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; }
+  td.no { color: var(--bad); }
+  td.yes { color: var(--good); }
+  .m { font-variant-numeric: tabular-nums; }
+
+  .callout {
+    border-left: 3px solid var(--water); padding: .2rem 0 .2rem 1.1rem;
+    margin: 1.4rem 0; color: var(--dim); font-style: italic; max-width: 66rem;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 1rem 1.6rem; margin-top: 1rem; font-size: .82rem; color: var(--dim); }
+  .legend span { display: flex; align-items: center; gap: .45rem; }
+  .sw { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+  text { font-family: "Inter", system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="kicker">Water · where we are</div>
+  <h1>Three plans at one scale</h1>
+  <p class="lede">
+    Same metres per pixel in all three drawings, so the shapes are honestly comparable.
+    Fire is the room that works. The traverse is what we built. The grotto is what I think
+    Water should be.
+  </p>
+
+  <div class="plans">
+
+    <!-- ============ FIRE ============ -->
+    <div class="plan">
+      <h3 style="color:var(--fire)">Fire · Cinder Court</h3>
+      <div class="sub">58 × 44 m room. Three courts, each entered through its own mouth. The performer is hidden until you cross the threshold.</div>
+      <svg viewBox="0 0 250 200" role="img" aria-label="Fire cinder court plan">
+        <!-- room shell 58 x 44 -> 4 px/m, offset 5,5 -->
+        <rect x="5" y="5" width="232" height="176" fill="#12161a" stroke="#3a3027" stroke-width="1.5"/>
+        <!-- basalt masses -->
+        <g fill="#1d232a">
+          <polygon points="60,20 92,14 104,44 74,54"/>
+          <polygon points="150,26 186,20 198,52 162,58"/>
+          <polygon points="46,96 80,90 88,126 52,132"/>
+          <polygon points="140,100 176,94 190,132 150,138"/>
+          <polygon points="96,140 132,134 140,172 100,176"/>
+        </g>
+        <!-- courts: circles around each performer -->
+        <g fill="#1a1310" stroke="#4a2f1c" stroke-width="1">
+          <circle cx="57" cy="45" r="26"/>
+          <circle cx="121" cy="141" r="26"/>
+          <circle cx="185" cy="49" r="26"/>
+        </g>
+        <!-- route: threshold -> dj -> ek -> fl -> earth -->
+        <path d="M5,93 L30,93 L44,80 Q57,72 70,80 Q82,92 70,102 Q57,112 46,102
+                 L70,120 L96,132 Q108,120 121,120 Q140,128 134,148 Q124,164 108,158
+                 L140,150 L168,120 L172,72 Q185,62 196,70 Q208,84 198,96 Q186,106 174,98
+                 L206,96 L237,120"
+              fill="none" stroke="var(--fire)" stroke-width="2.2" stroke-linecap="round" opacity=".85"/>
+        <!-- performers -->
+        <g>
+          <circle cx="57" cy="45" r="5" fill="var(--fire)"/>
+          <circle cx="121" cy="141" r="5" fill="var(--fire)"/>
+          <circle cx="185" cy="49" r="5" fill="var(--fire)"/>
+        </g>
+        <text x="57" y="34" fill="#f0c9ae" font-size="8" text-anchor="middle">DJ</text>
+        <text x="121" y="130" fill="#f0c9ae" font-size="8" text-anchor="middle">EK</text>
+        <text x="185" y="38" fill="#f0c9ae" font-size="8" text-anchor="middle">FL</text>
+        <!-- doors -->
+        <rect x="1" y="83" width="6" height="20" fill="var(--water)"/>
+        <rect x="235" y="111" width="6" height="20" fill="var(--good)"/>
+        <text x="14" y="196" fill="#6b7885" font-size="7">from Water</text>
+        <text x="196" y="196" fill="#6b7885" font-size="7">to Earth</text>
+      </svg>
+      <div class="verdict good">Each performer owns a room. You arrive, you orbit, you leave. Nothing else is competing for your eye.</div>
+    </div>
+
+    <!-- ============ TRAVERSE ============ -->
+    <div class="plan">
+      <h3 style="color:var(--water)">Traverse · what we built</h3>
+      <div class="sub">56.5 m ribbon. Three daises sitting on the only path. A arrives 1.5 seconds in, and you can see it from the spawn point.</div>
+      <svg viewBox="0 0 250 200" role="img" aria-label="Water traverse plan">
+        <!-- corridor runs left to right, 56.5 m -> 4 px/m -->
+        <!-- hall walls, width varies -->
+        <path d="M5,74 L45,74 L60,58 L110,58 L128,84 L150,84 L164,72 L196,72 L210,52 L237,52
+                 L237,148 L210,148 L196,128 L164,128 L150,116 L128,116 L110,142 L60,142 L45,126 L5,126 Z"
+              fill="#0f1519" stroke="#26333c" stroke-width="1.5"/>
+        <!-- water body -->
+        <path d="M5,86 L45,86 L60,70 L110,70 L128,92 L150,92 L164,84 L196,84 L210,66 L237,66
+                 L237,134 L210,134 L196,116 L164,116 L150,108 L128,108 L110,130 L60,130 L45,114 L5,114 Z"
+              fill="#12303f" opacity=".7"/>
+        <!-- the route with its three detours -->
+        <path d="M5,100 Q24,100 30,100 Q40,88 52,100 Q66,112 80,100
+                 Q96,100 100,100 Q112,112 122,100 Q132,88 142,100
+                 L200,100 Q212,88 222,100 Q230,108 237,100"
+              fill="none" stroke="var(--water)" stroke-width="2.2" stroke-linecap="round"/>
+        <!-- daises ON the line -->
+        <g>
+          <rect x="41" y="91" width="18" height="18" rx="2" fill="#1d3c4d" stroke="var(--ice)" stroke-width="1.4"/>
+          <rect x="111" y="91" width="18" height="18" rx="2" fill="#1d3c4d" stroke="var(--water)" stroke-width="1.4"/>
+          <rect x="211" y="91" width="18" height="18" rx="2" fill="#1d3c4d" stroke="var(--steam)" stroke-width="1.4"/>
+          <circle cx="50" cy="100" r="4" fill="var(--ice)"/>
+          <circle cx="120" cy="100" r="4" fill="var(--water)"/>
+          <circle cx="220" cy="100" r="4" fill="var(--steam)"/>
+        </g>
+        <text x="50" y="85" fill="var(--ice)" font-size="8" text-anchor="middle">A</text>
+        <text x="120" y="85" fill="var(--water)" font-size="8" text-anchor="middle">B</text>
+        <text x="220" y="85" fill="var(--steam)" font-size="8" text-anchor="middle">C</text>
+        <!-- sightline arrow -->
+        <line x1="10" y1="164" x2="118" y2="164" stroke="var(--bad)" stroke-width="1.2" stroke-dasharray="3 3"/>
+        <text x="12" y="176" fill="var(--bad)" font-size="7">A and B visible from here — no reveal</text>
+        <text x="12" y="192" fill="#6b7885" font-size="7">1.5 s to A · 4 s to B · 7.5 s to C</text>
+      </svg>
+      <div class="verdict bad">The dais is the only way to force a stop, so reverence reads as a roadblock. There is nowhere to stand and look that isn't the path itself.</div>
+    </div>
+
+    <!-- ============ GROTTO ============ -->
+    <div class="plan">
+      <h3 style="color:var(--good)">Grotto · what I'd build</h3>
+      <div class="sub">One room, one pool, three alcoves around it. Ice edge, drowned basin, steaming shallows. Reverence by framing across water, not by blocking the path.</div>
+      <svg viewBox="0 0 250 200" role="img" aria-label="Proposed grotto plan">
+        <!-- room shell ~46 x 40 -->
+        <path d="M18,10 L232,10 L242,60 L236,150 L200,190 L52,190 L14,150 L8,64 Z"
+              fill="#12161a" stroke="#26333c" stroke-width="1.5"/>
+        <!-- the pool: one water body, three temperaments -->
+        <defs>
+          <linearGradient id="poolg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#7fb9d8"/>
+            <stop offset="45%" stop-color="#153e52"/>
+            <stop offset="100%" stop-color="#4b4260"/>
+          </linearGradient>
+        </defs>
+        <ellipse cx="126" cy="102" rx="76" ry="52" fill="url(#poolg)" opacity=".55" stroke="#2d5468" stroke-width="1"/>
+        <!-- ice shelf, north edge -->
+        <path d="M62,58 Q126,36 190,58 Q160,74 126,72 Q92,74 62,58 Z" fill="#25404e" opacity=".85"/>
+        <text x="126" y="54" fill="var(--ice)" font-size="7.5" text-anchor="middle">frozen edge — you walk ON it</text>
+        <!-- deep basin marker -->
+        <text x="126" y="106" fill="#9fd0e6" font-size="7.5" text-anchor="middle">deep basin — you go UNDER</text>
+        <!-- steam shallows, south east -->
+        <path d="M150,146 Q186,140 202,120 Q206,150 176,166 Q158,162 150,146 Z" fill="#3a3550" opacity=".9"/>
+        <text x="176" y="180" fill="var(--steam)" font-size="7.5" text-anchor="middle">vents — you wade IN</text>
+        <!-- causeway apron -->
+        <path d="M22,96 Q26,52 70,42 Q126,26 186,44 Q222,58 224,92
+                 Q226,132 196,158 Q158,182 116,176"
+              fill="none" stroke="#3d4c58" stroke-width="9" stroke-linecap="round" opacity=".55"/>
+        <!-- route -->
+        <path d="M8,110 L24,104 Q28,60 72,50 Q100,42 126,48
+                 L126,66 L126,86
+                 L150,120 Q170,140 186,132
+                 Q206,120 214,96"
+              fill="none" stroke="var(--good)" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="0"/>
+        <!-- sump entry -->
+        <path d="M8,110 L0,110" stroke="var(--water)" stroke-width="5"/>
+        <text x="10" y="126" fill="var(--water)" font-size="7">sump in</text>
+        <!-- alcoves + performers -->
+        <g>
+          <rect x="112" y="34" width="28" height="14" rx="4" fill="#1b2c36" stroke="var(--ice)" stroke-width="1.2"/>
+          <circle cx="126" cy="41" r="4" fill="var(--ice)"/>
+          <rect x="112" y="94" width="28" height="14" rx="4" fill="#132836" stroke="var(--water)" stroke-width="1.2"/>
+          <circle cx="126" cy="101" r="4" fill="var(--water)"/>
+          <rect x="186" y="118" width="28" height="14" rx="4" fill="#26223a" stroke="var(--steam)" stroke-width="1.2"/>
+          <circle cx="200" cy="125" r="4" fill="var(--steam)"/>
+        </g>
+        <text x="150" y="42" fill="var(--ice)" font-size="8">A</text>
+        <text x="98" y="104" fill="var(--water)" font-size="8">B</text>
+        <text x="222" y="128" fill="var(--steam)" font-size="8">C</text>
+        <!-- exit -->
+        <rect x="218" y="86" width="24" height="6" fill="var(--fire)" transform="rotate(-12 230 89)"/>
+        <text x="200" y="80" fill="#6b7885" font-size="7">to Fire</text>
+      </svg>
+      <div class="verdict good">The pool is the exhibit. Each performer is framed across still water and doubled by the reflection — and the apron is somewhere to stand that isn't in anyone's way.</div>
+    </div>
+
+  </div>
+
+  <div class="legend">
+    <span><i class="sw" style="background:var(--fire)"></i> route</span>
+    <span><i class="sw" style="background:#1d232a;border:1px solid #3a4550"></i> rock / occluder</span>
+    <span><i class="sw" style="background:#12303f"></i> water</span>
+    <span><i class="sw" style="background:var(--ice)"></i> performer</span>
+  </div>
+
+  <h2>What the measurements say</h2>
+  <table>
+    <tr><th>&nbsp;</th><th>Fire · Cinder Court</th><th>Traverse · as built</th></tr>
+    <tr><td>Shape</td><td>58 × 44 m room</td><td class="no">56.5 m ribbon, 4–36 m wide</td></tr>
+    <tr><td>Walkable footprint</td><td class="m">2,552 m²</td><td class="m no">1,155 m² — less than half</td></tr>
+    <tr><td>First performer</td><td>after a threshold and a bridge</td><td class="no">1.5 seconds from the spawn point</td></tr>
+    <tr><td>Performer spacing</td><td class="m">20–32 m, in separate courts</td><td class="m no">on one line: 6.5 · 23.5 · 55</td></tr>
+    <tr><td>Hidden until you arrive?</td><td class="yes">Yes — all three</td><td class="no">No. A and B are visible the whole way</td></tr>
+    <tr><td>Where you orbit</td><td>inside a 3 m court that exists only for that performer</td><td class="no">in the middle of the only corridor</td></tr>
+    <tr><td>Somewhere to stand and watch</td><td class="yes">the court floor</td><td class="no">nowhere — every square metre is the route</td></tr>
+  </table>
+
+  <h2>The actual mistake</h2>
+  <p>
+    You asked for two things that were each right and that fight each other. "Make it the same
+    length as Fire" — but Fire's 58 m is the <em>width of a room</em>, and I built a 58 m
+    <em>hallway</em>. Then "each performer needs reverence, you can't walk past them" — and in a
+    hallway the only way to stop someone is to stand in their way. So the dais became a
+    roadblock. That's on me: I executed both instructions and never said they were pulling in
+    opposite directions.
+  </p>
+  <p>
+    There's a deeper conflict underneath. The traverse's founding rule was open sightlines —
+    "the end of the walk is visible from the beginning." Fire's founding rule is the opposite:
+    <code>performersHiddenUntilTheMouth</code> is a checked, enforced property of its plan. You
+    cannot bolt reverence onto a design whose whole thesis is that you can see everything at once
+    and never need to stop.
+  </p>
+
+  <h2>So: are you over-correcting?</h2>
+  <p>
+    No. But I'd change one thing about the fix. Three separate chambers works and matches Fire,
+    at the cost of building three rooms and losing the reflection pool everywhere except one of
+    them. One grotto with one pool gets you the same reverence for a third of the build — and it
+    keeps the single best idea the traverse ever had.
+  </p>
+  <div class="callout">
+    "A hot spring in a cold place is ice at the edges, liquid in the basin, steam at the
+    interface." — that line is already in the traverse spec. It describes one pool, not three
+    rooms.
+  </div>
+  <p>
+    One water surface, three relationships to it, is a real idea and it survives intact: A stands
+    on the frozen edge, B is down in the drowned basin, C is in the steaming shallows. Same pool.
+    You walk the apron around it, each performer is framed across still black water and doubled by
+    their own reflection, and nobody is standing in your path. The sump entry stays — going under
+    to get in is the one thing only this room can do to you, and it was already the approved
+    reason the grotto lands when you surface into it.
+  </p>
+
+  <h2>What I'd keep from the last two weeks</h2>
+  <p>
+    The terrain module is throwaway — it encodes a corridor. What isn't throwaway: the measured-eye
+    discipline (every clearance derived against a real 1.6 m eye), the on/under/in grammar, the
+    waterline-crossing work, and the review bridge that lets a frame be captured without pointer
+    lock. Those move to the grotto unchanged.
+  </p>
+
+</div>
+</body>
+</html>

@@ -28,7 +28,10 @@
  * gets: no signage, no objective marker, no choice of route. Follow the water.
  */
 
-import { buildSeabedMesh, type SeabedMesh } from "./water-traverse-seabed";
+// buildSeabedMesh deliberately not imported: the seabed is gated off at
+// chamber scale until its height field is re-baked (see the note in
+// buildWaterTraverseLayout). Only the mesh TYPE is still part of the contract.
+import type { SeabedMesh } from "./water-traverse-seabed";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -79,8 +82,14 @@ export interface PerformerAnchor {
   effectId: string;
   x: number;
   z: number;
-  /** Standing surface elevation for this anchor. */
+  /** Standing surface elevation for this anchor — the dais top. */
   y: number;
+  /**
+   * The floor of the ring AROUND the dais — where the visitor stands to
+   * watch. Since the reverence stations these are different numbers, and
+   * anything marking "stop here" belongs at ringY, not y.
+   */
+  ringY: number;
   /** Radians. Faces back down the route, so the visitor meets their front. */
   facingAngle: number;
 }
@@ -99,6 +108,28 @@ export interface WaterTraverseLayout {
   wallRects: WallRect[];
   waterPlanes: WaterPlane[];
   performers: PerformerAnchor[];
+  /**
+   * The hand-path station: where Water's teaching starts, BEFORE the first
+   * performer. Water's primitive is the split-same hand path itself, so the
+   * room opens by showing the path, not a figure doing A — the figure at
+   * ICE_PERFORMER_Z then embodies what this already taught. Staged in
+   * dual-wheel mode, per Austen (2026-08-11): split-same reads as dual wheels,
+   * the exception being sequences that retrace themselves without the arms
+   * clipping. This is a DATA anchor only — the scene decides how to draw it,
+   * and the graybox draws nothing here yet.
+   */
+  handPathStation: {
+    x: number;
+    z: number;
+    /** The frozen river's surface — the ice is the natural display plane. */
+    y: number;
+    /** Radians. Faces back down the route, like the performers. */
+    facingAngle: number;
+    /** Radius of each wheel of the dual-wheel display, in world metres. */
+    wheelRadius: number;
+    /** Centre-to-centre spacing of the two wheels, in world metres. */
+    wheelGap: number;
+  };
   /** Centreline samples along the route, for path checks and camera aims. */
   route: { x: number; z: number; y: number }[];
   legs: Record<Leg, WorldRect>;
@@ -155,53 +186,32 @@ export const EYE_ABOVE_FLOOR = 1.6;
 /**
  * ── The size of the world ───────────────────────────────────────────────────
  *
- * One factor on every dimension in this file. At 1 the piece is 284 m and 1:07
- * of walking, with 210 of those metres — fifty seconds — spent under water.
- * Walked, that is too much of one thing. Austen (2026-08-10): "it feels like
- * the underwater section lasts for a very very long time so I'd say let's start
- * everything smaller and then we'll fill it in later and maybe expand it when
- * that time comes."
+ * One factor on every dimension in this file — a GROW knob, not the design.
  *
- * So the graybox is built small and grown later, and this is the one number
- * that grows it. Uniform scale is the whole point: every inequality in this
- * file compares one dimension against another, so multiplying all of them
- * preserves every relation already verified — the sump's roof still drowns its
- * own exit, the pool still breaks mid-room, no wall floats, no seam opens. The
- * proportions are not re-derived at each scale. They cannot change.
+ * The design is now authored at chamber scale: 58 m nose to door, the length
+ * of the Fire court, per Austen (2026-08-11): "make the 3-element walk much
+ * smaller, like the same length as fire and earth." The first authored size
+ * was 284 m; a 0.6 scale pass proved the walk at 170 m and proved with it that
+ * 170 m of one room is a hike, not a chamber. This rewrite moves the shrink
+ * out of the knob and into the base metres, because a 3× compression is not a
+ * scale — the visitor's eye does not shrink, so depths, clearances and grades
+ * all had to be re-derived against a full-sized person in a one-room world.
  *
- * At 0.6, measured: 170.4 m and 0:41, with 123 m — 29 seconds — under water.
- * One floor trough, five waterline crossings in the same order, worst floor
- * step 0.11 m, every vent and performer still sitting on the floor.
+ * So at 1.0 every metre in this file is an honest metre. The knob remains for
+ * the day the room earns growth ("we'll fill it in later and maybe expand it").
+ * Uniform scale UP preserves every relation verified here; scale DOWN runs
+ * into the two eye-height floors, both derived on SPRINGS_WATER_Y.
  *
  * TWO THINGS DO NOT SCALE, and they are the two that are not part of the world:
  *
  *   WATERLINE_Y      the datum everything is measured from, and 0 × anything
  *                    is 0. Named here because it looks like an omission.
  *   EYE_ABOVE_FLOOR  the visitor. A person does not get smaller because the
- *                    room did, and that is exactly what makes a smaller world
- *                    feel tighter rather than merely nearer. Walking speed
- *                    (WaterTraverseWalkScene) is the same kind of constant and
- *                    is left alone for the same reason.
- *
- * So the metres this file reports stay honest metres. The canyon at 0.6 is not
- * a 48 m canyon drawn small; it is a 29 m canyon, and the HUD, the distance
- * posts and the clock all agree with each other about that.
- *
- * TWO CONSEQUENCES of a visitor who does not shrink, both found by walking it:
- *
- *   Anything measured against the EYE needs a floor, or the world closes on
- *   the camera before it closes on the room. SUMP_THROAT_CLEARANCE is the one
- *   place that bites, and it carries the fix and the frame that proved it.
- *
- *   Anything set by a GRADE holds its length at any scale, because grades are
- *   ratios. The emergence from the pool is 6.5 m whether the world is 284 m or
- *   170 — so shrinking the walk did not shorten the payoff, it enlarged it
- *   from 1.7% of the route to 3.8%. That one came out right for free.
- *
- * The knob has a hard lower bound of 0.38; the two constraints that set it are
- * derived on SPRINGS_WATER_Y, next to the constant that breaks first.
+ *                    room did. Walking speed (WaterTraverseWalkScene) is the
+ *                    same kind of constant and is left alone for the same
+ *                    reason.
  */
-export const WORLD_SCALE = 0.6;
+export const WORLD_SCALE = 1.0;
 
 /** Metres, scaled. Every dimension in this file is authored through it. */
 function m(metres: number): number {
@@ -210,11 +220,15 @@ function m(metres: number): number {
 
 /** Snow sits a little proud of the ice so the river reads as a cut ribbon. */
 export const SNOW_Y = WATERLINE_Y + m(0.28);
-/** The sea floor. Deep enough that the surface overhead reads as a sky. */
-export const SEA_FLOOR_Y = -m(18);
 /**
- * Floor at the cave's far end. The passage DESCENDS — three metres over
- * sixty-six, a grade you feel underfoot without ever seeing it as a ramp.
+ * The sea floor. Deep enough that the surface overhead reads as a sky:
+ * 3.4 m of water over the eye, which is the least this room can carry and
+ * still put the surface out of reach.
+ */
+export const SEA_FLOOR_Y = -m(5);
+/**
+ * Floor at the cave's far end. The passage DESCENDS — under a metre over
+ * nine, a grade you feel underfoot without ever seeing it as a ramp.
  *
  * It used to CLIMB seventeen metres, to −0.9, and put the visitor's head back
  * out of the water at z 165 on a flat landing. That was the piece's centrepiece
@@ -228,7 +242,7 @@ export const SEA_FLOOR_Y = -m(18);
  * see SPRINGS_WATER_Y — so the walk now goes down once and comes up once, and
  * the coming up is the last thing that happens.
  */
-export const CAVE_FLOOR_END_Y = WATERLINE_Y - m(21);
+export const CAVE_FLOOR_END_Y = WATERLINE_Y - m(5.8);
 
 // ── Plan ────────────────────────────────────────────────────────────────────
 
@@ -239,47 +253,70 @@ export const CAVE_FLOOR_END_Y = WATERLINE_Y - m(21);
  * plain opens out again. The narrowing at the descent is what makes the drop
  * feel like a gorge closing before it lets go.
  */
-const SNOW_HALF_W = m(48);
-const SEA_HALF_W = m(42);
+const SNOW_HALF_W = m(9);
+const SEA_HALF_W = m(8);
 /** Widest of the three; only used for whole-route bounds. */
-const VALLEY_HALF_W = m(48);
+const VALLEY_HALF_W = m(9);
 /** Ridge walls that contain the walk without ever being the subject. */
-const RIDGE_THICKNESS = m(6);
-const SNOW_RIDGE_TOP = SNOW_Y + m(30);
+const RIDGE_THICKNESS = m(2.5);
+const SNOW_RIDGE_TOP = SNOW_Y + m(5);
 /**
  * The seabed ridges top out BELOW the waterline on purpose. Built to the same
- * 30 m as the snowfield's they made a roofed canyon: from the trench floor the
+ * height as the snowfield's they made a roofed canyon: from the trench floor the
  * entire upper frame was unlit rock, the surface was never visible, and the
  * middle leg read as a slot you were trapped in rather than the floor of a
  * sea. Keeping them under the line means every upward glance down there ends
  * in open water and the light coming through it.
  */
-const SEA_RIDGE_TOP = WATERLINE_Y - m(3.5);
+const SEA_RIDGE_TOP = WATERLINE_Y - m(1.2);
 /** The gorge walls at the descent: high enough to funnel, too low to roof. */
-const DESCENT_RIDGE_TOP = SNOW_Y + m(9);
+const DESCENT_RIDGE_TOP = SNOW_Y + m(3);
 
 /** The watercourse: one ribbon, constant width, centred on x = 0 throughout. */
-export const CHANNEL_HALF_W = m(4.5);
+export const CHANNEL_HALF_W = m(2.2);
 
 /**
- * Leg lengths. The two flat legs were originally 118 m and 80 m, which walked
- * as 88 seconds of holding W for the whole route. The transitions are the
- * interesting parts and they keep their full run — the descent has to stay a
- * 40 m ramp or the grade turns into a cliff — so the compression comes entirely
- * out of the flats.
+ * The ring stations (reverence decision, 2026-08-11): each performer stands on
+ * a platform in the middle of the pathway, and the path splits around it and
+ * rejoins. The same shape three times is what makes it a grammar — by the
+ * third ring, walking around a platform MEANS "a letter lives here."
+ *
+ * The rise is the enforcement. The character controller autosteps 0.45 m, so
+ * a 0.9 m riser cannot be climbed or ignored — walking around is the only way
+ * past, which is exactly what "unmissable" asks for. Platform footprints share
+ * one size; what differs per station is the water each dais stands in.
+ */
+const STATION_DAIS_HALF_W = m(1.2);
+const STATION_DAIS_RISE = m(0.9);
+/**
+ * Station A's frozen pool: the river cut widens from ±2.2 to ±4.5 around the
+ * dais, leaving a 3.3 m ice ring on either side. Starts past the hand-path
+ * station's wheels (they reach z 4.4) and ends clear of the ice→sea portal.
+ */
+const STATION_A_POOL_MIN_Z = m(4.5);
+const STATION_A_POOL_MAX_Z = m(8.5);
+const STATION_A_POOL_HALF_W = m(4.5);
+
+/**
+ * Leg lengths, at chamber scale: 58 m nose to door, the Fire court's length.
+ * Every leg is now a STATION rather than a stretch — the walk is 14 seconds
+ * of holding W, and the time the room takes is the time spent stopping. The
+ * descent's grade is the number that resisted compression hardest: 5.3 m of
+ * drop over 10 m of run is 28°, and shortening the ramp further turns the
+ * gorge into a cliff face with a path drawn on it.
  */
 const SNOW_START_Z = 0;
-const SNOW_END_Z = m(52);
-const DESCENT_END_Z = m(92);
-const SEA_END_Z = m(124);
+const SNOW_END_Z = m(10);
+const DESCENT_END_Z = m(20);
+const SEA_END_Z = m(27);
 /**
  * The last step. Written out at full size rather than derived from SUMP_END_Z
  * because that constant is declared with the rest of the sump, below, and a
  * module-scope const cannot read one that has not been initialised yet. The
- * arithmetic it stands for: 250 (sump end) + 34 m of springs chamber, before
+ * arithmetic it stands for: 48 (sump end) + 10 m of springs chamber, before
  * scale. Both ends go through m(), so the seam stays exact at any WORLD_SCALE.
  */
-const SPRING_END_Z = m(284);
+const SPRING_END_Z = m(58);
 
 /**
  * The cave: from the sea hall's end wall to the canyon's near one.
@@ -288,7 +325,7 @@ const SPRING_END_Z = m(284);
  * was a climb. The name went with the climb.
  */
 const CAVE_START_Z = SEA_END_Z;
-const CAVE_END_Z = m(190);
+const CAVE_END_Z = m(36);
 
 export const TOTAL_LENGTH_M = SPRING_END_Z;
 
@@ -313,8 +350,8 @@ export const TOTAL_LENGTH_M = SPRING_END_Z;
  *
  * The shape is big → big → small → BIG → smallest → big. Two squeezes, and the
  * second one is worse than the first: the cave you could stand up in, the sump
- * you cannot, and the sump is thirty metres under a surface you have not seen
- * since the canyon. Coming out of that into the springs is the payoff the room
+ * you cannot, and the sump is nearly nine metres under a surface you have not
+ * seen since the canyon. Coming out of that into the springs is the payoff the room
  * is built for — and the springs are where the head finally comes back up.
  *
  * The first two are still dioramas in a hall — you can see a ceiling and it is
@@ -337,8 +374,8 @@ type HallRegion = "snowfield" | "sea";
  * argument for how much the Order spent on it.
  */
 export const CHAMBER_CEILING: Record<HallRegion, number> = {
-  snowfield: WATERLINE_Y + m(34),
-  sea: WATERLINE_Y + m(52),
+  snowfield: WATERLINE_Y + m(7),
+  sea: WATERLINE_Y + m(13),
 };
 /**
  * Hall half-width per chamber. These sit OUTSIDE the ridge blocks, which reach
@@ -346,8 +383,8 @@ export const CHAMBER_CEILING: Record<HallRegion, number> = {
  * than punching through its walls.
  */
 export const CHAMBER_HALF_W: Record<HallRegion, number> = {
-  snowfield: m(78),
-  sea: m(92),
+  snowfield: m(14),
+  sea: m(18),
 };
 /** Chamber extents along Z. The seams are where the portals stand. */
 const CHAMBER_Z: Record<HallRegion, [number, number]> = {
@@ -380,16 +417,16 @@ const CAVE_SLICES = 6;
  * 12 m across the channel itself is 9 of them, which is the right relationship
  * for a flooded slot: the water fills the passage and you wade up it.
  */
-const CAVE_HALF_W_MOUTH = m(6);
-const CAVE_HALF_W_INNER = m(12);
+const CAVE_HALF_W_MOUTH = m(2.2);
+const CAVE_HALF_W_INNER = m(3.5);
 /**
  * Headroom at the mouth and at the canyon end, measured at each slice's FAR
  * end so the number is the worst case in that slice rather than the best. Six
  * metres, under a hall that is seventy, is the squeeze the walk was missing.
  */
-const CAVE_CLEARANCE_MOUTH = m(6);
-const CAVE_CLEARANCE_INNER = m(12);
-const ROCK_THICKNESS = m(6);
+const CAVE_CLEARANCE_MOUTH = m(3);
+const CAVE_CLEARANCE_INNER = m(4.6);
+const ROCK_THICKNESS = m(3);
 
 // ── The canyon, the sump, and the springs ───────────────────────────────────
 
@@ -402,20 +439,20 @@ const ROCK_THICKNESS = m(6);
  * a big room; it is a section TALLER THAN IT IS WIDE, and that only works if
  * both walls are in shot at once.
  */
-const CANYON_HALF_W = m(24);
-const CANYON_ROOF_Y = WATERLINE_Y + m(58);
+const CANYON_HALF_W = m(4.5);
+const CANYON_ROOF_Y = WATERLINE_Y + m(12);
 /**
- * Floor at the canyon's far end: the descent carrying on, two metres over
- * twenty-two, with the walls the full 48 m apart the whole way.
+ * Floor at the canyon's far end: the descent carrying on, half a metre over
+ * five, with the walls the full 9 m apart the whole way.
  *
  * It was −6, the bottom of a dive that began waist-deep at −0.9, and both of
  * those numbers belonged to the version where the cave climbed out of the sea.
- * The visitor now arrives here already twenty-one metres down, through an
- * eleven-metre hole in the near wall, and the canyon's one job is the look UP:
- * 58 m of rock overhead, and the sea's surface twenty-three metres of water
- * above the eye — visible, lit, and completely out of reach.
+ * The visitor now arrives here through a 7 m hole in the near wall, and the
+ * canyon's one job is the look UP: 12 m of rock overhead, and the sea's
+ * surface nearly five metres of water above the eye — visible, lit, and
+ * completely out of reach.
  */
-const CANYON_FLOOR_END_Y = WATERLINE_Y - m(23);
+const CANYON_FLOOR_END_Y = WATERLINE_Y - m(6.3);
 
 /**
  * ── The sump ────────────────────────────────────────────────────────────────
@@ -439,10 +476,10 @@ const CANYON_FLOOR_END_Y = WATERLINE_Y - m(23);
  * the door, which is a descent followed by a corridor, and a corridor is not a
  * spring. The pinch is the low point of the walk; the chamber climbs out of it.
  */
-const SUMP_START_Z = m(212);
-const SUMP_END_Z = m(250);
+const SUMP_START_Z = m(41);
+const SUMP_END_Z = m(48);
 /**
- * Floor at the pinch: 30 m under the line, and the deepest metre of the piece.
+ * Floor at the pinch: 8.8 m under the line, and the deepest metre of the piece.
  *
  * It was 19, which was chosen when the chamber beyond it was flat and 19 was
  * therefore also the floor of every remaining metre. Once the chamber climbs,
@@ -455,13 +492,13 @@ const SUMP_END_Z = m(250);
  * a waterline at y = 0 and has to stay there, so raising the door raises the
  * mouth's lintel into the surface. The rise has to be paid for by going deeper.
  */
-const SUMP_FLOOR_END_Y = WATERLINE_Y - m(30);
+const SUMP_FLOOR_END_Y = WATERLINE_Y - m(8.8);
 /**
  * The pinch. 7 m across with 3.5 m of headroom, tighter than the cave's 12 × 6,
  * because the cave already spent that card: a second squeeze that is not worse
  * than the first one is not a squeeze, it is a repeat.
  */
-const SUMP_THROAT_HALF_W = m(3.5);
+const SUMP_THROAT_HALF_W = m(2);
 /**
  * The one dimension in this file with a floor under it, and the exception
  * proves the rule that produced it.
@@ -471,27 +508,28 @@ const SUMP_THROAT_HALF_W = m(3.5);
  * scale — and the visitor is a camera at eye height with no crouch, so the
  * roof's whole job is to be low without being in their face.
  *
- * Pure m(3.5) got that wrong at 0.6. It left 0.5 m over the eye, and 0.5 m of
- * air over a camera is not a squeeze you feel, it is a black slab across the
- * top half of the frame with the springs opening hidden behind it. Screenshot
- * at z 148 (2026-08-10): unlit ceiling filling 45% of the view, the room beyond
- * invisible. Claustrophobia you cannot see out of is just a blind spot.
+ * Pure scaling got that wrong once already (0.5 m over the eye at the old 0.6
+ * pass): 0.5 m of air over a camera is not a squeeze you feel, it is a black
+ * slab across the top half of the frame with the springs opening hidden behind
+ * it. Screenshot from that pass: unlit ceiling filling 45% of the view, the
+ * room beyond invisible. Claustrophobia you cannot see out of is a blind spot.
  *
  * So the clearance is whichever is larger: the scaled value, or enough air to
  * stoop under. PINCH_OVER_EYE is that second term — a metre, which reads as
  * duck-your-head and still leaves a letterbox onto what comes next.
  *
- * At scale 1 the scaled value wins (3.5 > 2.6) and the full-size world is
- * untouched. Below scale ~0.74 the floor takes over, which is the point of it.
+ * At chamber scale the two terms MEET: the authored clearance is the eye
+ * floor, 2.6 m, duck-your-head with a letterbox onto what comes next. Grow the
+ * world and the scaled term takes over; shrink it and the floor holds.
  */
 const PINCH_OVER_EYE = 1.0;
 const SUMP_THROAT_CLEARANCE = Math.max(
-  m(3.5),
+  m(2.6),
   EYE_ABOVE_FLOOR + PINCH_OVER_EYE
 );
 /**
  * How hard the closing is front-loaded. Both are eased rather than linear
- * because linear from 58 m of roof spends three quarters of the run still
+ * because linear from 18 m of roof spends three quarters of the run still
  * unmistakably inside the canyon and then drops the ceiling on you in the last
  * five metres. The exponents put the collapse where it can be watched.
  *
@@ -504,18 +542,18 @@ const SUMP_THROAT_CLEARANCE = Math.max(
 const SUMP_ROOF_EASE = 2.2;
 const SUMP_WALL_EASE = 1.6;
 /**
- * Slices. Twenty-four rather than twelve, and the reason is only ever visible
- * on a pitch-up: axis-aligned slabs approximating a curve read as strata when
- * each step is about a metre and as a STAIRCASE when each step is five. Twelve
- * slices over a 60 m fall was a staircase — see the graybox frame at z 196,
- * pitch 0.5, which is the frame this number was set from.
+ * Slices. Set by step size, not by count: axis-aligned slabs approximating a
+ * curve read as strata when each step is under half a metre and as a STAIRCASE
+ * when each step is five. Sixteen over the 7 m run keeps the step a hair under
+ * 0.45 m — the same stratum size the 284 m original proved out at 24 slices
+ * over its 38 m fall.
  */
-const SUMP_SLICES = 24;
+const SUMP_SLICES = 16;
 
 /**
  * ── The springs ─────────────────────────────────────────────────────────────
  *
- * The sump lets out into a chamber 52 m across with a pool in the near half of
+ * The sump lets out into a chamber 16 m across with a pool in the near half of
  * it and a shore in the far half. The vents are on its floor — some under the
  * water, some out of it — and the heat goes UP into rock instead of out into
  * sky.
@@ -527,16 +565,16 @@ const SUMP_SLICES = 24;
  * a flooded hall that happens to have a column in it.
  *
  * So the shape of the back half is a U. Down through the canyon, down through
- * the sump, the pinch at the bottom of it, and then thirty-four metres of
- * climb out — with the vents coming up off that rising floor alongside you and
- * the roof staying flat overhead, which is the only reference you have down
- * here that the ground is moving and you are moving with it.
+ * the sump, the pinch at the bottom of it, and then ten metres of climb out —
+ * with the vents coming up off that rising floor alongside you and the roof
+ * staying flat overhead, which is the only reference you have down here that
+ * the ground is moving and you are moving with it.
  *
  * And the climb crosses a SURFACE, which is the thing the first cut of this
- * room could not do. Eleven metres of rise under a roof is a number on a
- * readout; eleven metres of rise that takes your head out of the water, at a
- * line you can see, with the far half of the walk in air, is the ending. See
- * SPRINGS_WATER_Y.
+ * room could not do. Four and a half metres of rise under a roof is a number
+ * on a readout; four and a half metres of rise that takes your head out of the
+ * water, at a line you can see, with the far half of the walk in air, is the
+ * ending. See SPRINGS_WATER_Y.
  *
  * The roof stays put on purpose. If the ceiling climbed too, the section would
  * be constant and the ascent would be invisible: no horizon, no sky, nothing
@@ -547,58 +585,47 @@ const SUMP_SLICES = 24;
  * This chamber is the volcano's first room, and the door is at the top of the
  * climb — so the handoff happens already ascending, and Fire carries it on up.
  */
-const SPRINGS_HALF_W = m(26);
-const SPRINGS_ROOF_Y = WATERLINE_Y - m(3);
+const SPRINGS_HALF_W = m(8);
+const SPRINGS_ROOF_Y = WATERLINE_Y - m(1.4);
 /**
  * Floor at the DOOR — the top of the climb, not the level of the room.
  *
- * Still −19, which is what the whole chamber used to be. Keeping the far end
- * where it was is what makes the head wall, the mouth, its 8 m lintel and the
- * throat behind it all survive this change untouched: the geometry that reads
- * correctly still reads correctly, and only the ground under it moved.
+ * 1.4 m above the pool, so the walk finishes on dry rock with the water it
+ * just left visibly below and behind. The last metres before the door are the
+ * only dry floor in the back half of the piece.
  */
-const SPRINGS_FLOOR_Y = WATERLINE_Y - m(19);
+const SPRINGS_FLOOR_Y = WATERLINE_Y - m(4.2);
 
 /**
- * The pool: a SECOND water surface, twenty-three metres under the first one,
- * and the only place in the piece where the visitor's head comes back out.
+ * The pool: a SECOND water surface, 5.6 m under the first one, and the only
+ * place in the piece where the visitor's head comes back out.
  *
  * Beyond a sump the passage is sealed and the air already inside the mountain
  * has nowhere to go, so the chamber past it holds its own standing level under
  * its own air bell. That is ordinary karst, and here it is the ONLY thing that
- * can give this room an emergence. The chamber's roof is at −3; no amount of
- * climbing inside it could ever cross y = 0, and lifting the whole room until
- * it could would want 75–110 m of floor at a walkable grade against the 34 m
- * this chamber has. At 34 m it would be a 40-degree wall.
+ * can give this room an emergence: the chamber's roof is at −1.4, so no amount
+ * of climbing inside it could ever cross y = 0.
  *
- * −23 is placed by two constraints and nothing else. It has to DROWN the sump's
- * exit, whose roof at the pinch is −26.5, so the visitor comes through that hole
- * still fully under water with no seam to notice. And it has to put the crossing
- * mid-room rather than at either wall: they leave the sump with 5.4 m over the
- * eye, break the surface halfway up the climb, wade out a few paces later, and
- * finish four metres above the pool at the door.
+ * −5.6 is placed by two constraints and nothing else, both measured against a
+ * visitor who does not scale:
  *
- * Those figures are at WORLD_SCALE 1. Both constraints have a floor under them,
- * and this is where WORLD_SCALE's own lower bound comes from — recorded here
- * rather than up at the knob because these are the two things that break.
+ *   It has to DROWN the sump's exit. The roof at the pinch is the floor plus
+ *   the eye clearance: −8.8 + 2.6 = −6.2. The pool sits 0.6 m over that, so
+ *   the visitor comes through the hole still fully under water with no seam
+ *   to notice.
  *
- *   Water over the EYE at the sump's exit:  7·s − 1.6 > 0  →  s > 0.229.
- *     Below that the visitor walks out of the sump with their head already in
- *     the air and the emergence has nowhere to happen.
+ *   It has to put the crossing MID-ROOM rather than at either wall. Leaving
+ *   the sump the eye is at −7.2 — 1.6 m under the pool — the break lands at
+ *   z ≈ 51.5, a third of the way up the chamber; the shore at z ≈ 55; and the
+ *   walk finishes 1.4 m above the pool at the door. Wade between break and
+ *   shore: about three and a half metres.
  *
- *   Water over the sump's ROOF:  7·s − SUMP_THROAT_CLEARANCE > 0.
- *     This used to be scale-free — roof and water both scaled, so the margin
- *     was always 3.5·s. It stopped being scale-free when the clearance gained
- *     a floor of its own (eye + 1 m, see SUMP_THROAT_CLEARANCE), because that
- *     floor lifts the roof faster than the water at small scales. Under
- *     s ≈ 0.743 the margin is 7·s − 2.6, which reaches zero at s = 0.371 —
- *     the roof surfacing through the pool, and the seam the pool exists to
- *     hide becoming a hole in it.
- *
- * The second binds first. **0.38 is the floor on WORLD_SCALE.** At 0.6 the
- * margins are 2.6 m over the eye and 1.6 m over the roof.
+ * These margins are authored at WORLD_SCALE 1 and both GROW with the world.
+ * Shrinking below 1 shrinks the water while SUMP_THROAT_CLEARANCE's eye floor
+ * holds the roof up — the 0.6 m drown margin closes fast. Do not scale this
+ * world down; grow it or re-derive it.
  */
-const SPRINGS_WATER_Y = WATERLINE_Y - m(23);
+const SPRINGS_WATER_Y = WATERLINE_Y - m(5.6);
 
 /** Where the springs floor reaches a given elevation. Inverse of springsFloorYAt. */
 function springsZAtFloorY(y: number): number {
@@ -618,38 +645,40 @@ const SPRINGS_BREAK_Z = springsZAtFloorY(SPRINGS_WATER_Y - EYE_ABOVE_FLOOR);
 const SPRINGS_SHORE_Z = springsZAtFloorY(SPRINGS_WATER_Y);
 
 /** The flare: how far it takes to go from the throat to the full chamber. */
-const SPRINGS_FLARE_LENGTH = m(6);
+const SPRINGS_FLARE_LENGTH = m(2);
 /** Steps the flare's walls, roof and pool are all cut into. */
 const SPRINGS_FLARE_SLICES = 3;
 
 /**
  * The far end is not a taper. It is a door.
  *
- * What this replaces converged the walls past the last step and capped them
- * 16 m beyond it — the trick the canyon's old head wall was missing, and it
- * does work, in the canyon, where the section is 59 m tall and the cap is a
- * small rectangle low in a very tall frame. It does not survive being moved
- * here. This chamber is 16 m from floor to roof, so a cap 18 m ahead subtends
- * roughly 60° across and 48° up: at the last step it is not a distant
- * continuation, it is a WALL, and the frame reads as the back of a room. Which
- * is the one thing the far end cannot say, because the far end is the handoff.
+ * What this replaces converged the walls past the last step and capped them a
+ * few metres beyond it — the trick the canyon's head wall gets away with,
+ * because there the cap is a small rectangle low in a very tall frame. It does
+ * not survive being moved here. This chamber is under 3 m from floor to roof
+ * at the door, so a near cap fills the frame: at the last step it is not a
+ * distant continuation, it is a WALL, and the frame reads as the back of a
+ * room. Which is the one thing the far end cannot say, because the far end is
+ * the handoff.
  *
- * So the chamber ends in a face with a mouth in it — 14 m across and 8 m tall,
- * sitting on the floor of a wall 52 m wide and 16 m high — and a flooded throat
- * runs on into the dark behind it. A hole reads as somewhere to go in a way no
- * taper does, and the last step of the water walk lands in it.
+ * So the chamber ends in a face with a mouth in it — 5 m across and 2.6 m
+ * tall, human-scaled at last, sitting on the floor of a wall 16 m wide — and a
+ * flooded throat runs on into the dark behind it. A hole reads as somewhere to
+ * go in a way no taper does, and the last step of the water walk lands in it.
+ * It is also the first DOORWAY the visitor has fit since the lobby, which is
+ * the right note to hand to Fire on.
  */
-const SPRINGS_MOUTH_HALF_W = m(7);
-const SPRINGS_MOUTH_TOP_Y = SPRINGS_FLOOR_Y + m(8);
+const SPRINGS_MOUTH_HALF_W = m(2.5);
+const SPRINGS_MOUTH_TOP_Y = SPRINGS_FLOOR_Y + m(2.6);
 /**
- * Sixty metres of throat, and the length is doing one job: the cap has to be
- * far enough away that the fog takes it. At 22 m it did not, and the end wall
- * came back as the BRIGHTEST surface in the frame — a lit rectangle at the end
- * of the tunnel, which says daylight, which is the exact thing pulling the
- * shaft out of the canyon was meant to stop saying. Nobody walks this passage,
- * so its only cost is a few rects, and what it buys is a hole that goes dark.
+ * Twenty-five metres of throat, and the length is doing one job: the cap has
+ * to be far enough away that the fog takes it, or the end wall comes back as
+ * the BRIGHTEST surface in the frame — a lit rectangle at the end of the
+ * tunnel, which says daylight. Through a 2.6 m mouth the sightline is short
+ * and low, so 25 m buys the same darkness 60 bought the full-size door.
+ * Nobody walks this passage; its only cost is a few rects.
  */
-const SPRINGS_THROAT_LENGTH = m(60);
+const SPRINGS_THROAT_LENGTH = m(25);
 
 /**
  * One outer boundary for the whole rock half, rather than each space's own
@@ -667,7 +696,7 @@ const BACK_OUTER_HALF_W =
 /** And one top plane, for the same reason, so no seam opens above a roof. */
 const BACK_OUTER_TOP_Y = CANYON_ROOF_Y + ROCK_THICKNESS;
 
-const HALL_THICKNESS = m(3);
+const HALL_THICKNESS = m(2);
 /**
  * The lowest floor anywhere. Walls are built down to it so none of them float.
  *
@@ -680,8 +709,8 @@ const HALL_THICKNESS = m(3);
 const HALL_BASE_Y = SUMP_FLOOR_END_Y - m(2);
 
 /**
- * The near face of the head-wall portal — where the chamber's 16 m of roof
- * actually becomes the mouth's 8 m. Declared here rather than beside the other
+ * The near face of the head-wall portal — where the chamber's roof actually
+ * becomes the mouth's 2.6 m. Declared here rather than beside the other
  * springs constants because it needs HALL_THICKNESS, which is declared below
  * them: a const cannot read a const written later in the file.
  */
@@ -821,7 +850,7 @@ function caveHalfWAt(z: number): number {
   );
 }
 
-/** The cave tube: rock either side and rock overhead, for 66 m. */
+/** The cave tube: rock either side and rock overhead, for 9 m. */
 function buildCave(): WallRect[] {
   const walls: WallRect[] = [];
 
@@ -874,9 +903,9 @@ function sumpFloorYAt(z: number): number {
 /**
  * The springs floor: the climb out, and the second half of the U.
  *
- * One straight grade from the pinch at −30 to the door at −19 — 11 m of rise
- * over 34 m, a little under 18°. Steep enough to be felt underfoot and to move
- * the depth readout a metre every three paces, shallow enough that it is a
+ * One straight grade from the pinch at −8.8 to the door at −4.2 — 4.6 m of
+ * rise over 10 m, about 25°. Steep enough to be felt underfoot and to move
+ * the depth readout a metre every couple of paces, shallow enough that it is a
  * floor rather than a ramp you notice as an object.
  *
  * Clamped past the door, so the throat behind the mouth runs on flat. The
@@ -926,7 +955,7 @@ function sumpHalfWAt(z: number): number {
  *
  * Expressed as CLEARANCE over the floor rather than as an absolute height,
  * because the thing being authored is how much room is over the visitor's head
- * — and the floor is falling at the same time. Eased hard: linear from 58 m
+ * — and the floor is falling at the same time. Eased hard: linear from 18 m
  * leaves the ceiling unmistakably canyon-height for three quarters of the run
  * and then drops it in the last five metres, which reads as a bug rather than
  * as a room closing.
@@ -969,7 +998,7 @@ function solveSumpSurfaceEndZ(): number {
 const SUMP_SURFACE_END_Z = solveSumpSurfaceEndZ();
 
 /**
- * The canyon: two rock walls and a roof, for 22 m.
+ * The canyon: two rock walls and a roof, for 5 m.
  *
  * Solid slabs rather than the broken ridge blocks the open legs use. A ridge
  * is a skyline seen against something beyond it; a canyon wall has nothing
@@ -1125,8 +1154,8 @@ function buildSprings(): WallRect[] {
   );
 
   // The head wall, with the mouth cut out of it. Jambs and lintel run out to
-  // the same outer plane as everything else back here, so the 52 m face is
-  // solid rock either side of a 14 m hole and there is no seam to find.
+  // the same outer plane as everything else back here, so the 16 m face is
+  // solid rock either side of a 5 m hole and there is no seam to find.
   walls.push(
     ...buildPortal(
       "springs-head",
@@ -1195,16 +1224,17 @@ function ramp(id: string, r: WorldRect, fromY: number, toY: number): FloorRect {
  *
  * Its base comes off the climbing floor rather than off a constant, and its
  * height is a FRACTION of the clearance over it rather than a number of metres.
- * Both for the same reason: the ground under this room moves 11 m between its
- * near end and its far one. An absolute 21 m column authored at the flare is a
- * full-height plume there and pokes three metres through the ceiling once the
- * floor has climbed to meet it.
+ * Both for the same reason: the ground under this room moves 4.6 m between its
+ * near end and its far one. An absolute column authored at the flare is a
+ * full-height plume there and pokes through the ceiling once the floor has
+ * climbed to meet it.
  */
 /**
- * Position, spread and radius are authored at full size and scaled here, so the
- * seven call sites below stay legible against their own comments ("x ±10", "z
- * 265", "30 m ahead") whatever WORLD_SCALE is. `rise` is a FRACTION of the gap
- * to the roof, so it is already scale-free and must not be touched.
+ * Position, spread and radius are authored in chamber-scale metres and scaled
+ * here, so the seven call sites below stay legible against their own comments
+ * ("x ±3.6", "z 56.5", "~8 m ahead") whatever WORLD_SCALE is. `rise` is a
+ * FRACTION of the gap to the roof, so it is already scale-free and must not be
+ * touched.
  */
 function vent(x: number, z: number, rise: number, radius: number) {
   const worldZ = m(z);
@@ -1247,7 +1277,7 @@ const RIDGE_LEGS: [string, number, number, number, number, number, HallRegion][]
 ];
 
 /** Clearance the peaks keep under their chamber's roof. */
-const RIDGE_HEADROOM = m(4);
+const RIDGE_HEADROOM = m(1.5);
 
 /** Deterministic value in [0,1). Terrain must be identical every reload. */
 function jitter(seed: number): number {
@@ -1279,7 +1309,7 @@ function buildRidge(
    */
   maxTop: number
 ): WallRect[] {
-  const BLOCK = m(17);
+  const BLOCK = m(5);
   const count = Math.max(2, Math.round((maxZ - minZ) / BLOCK));
   const step = (maxZ - minZ) / count;
   const walls: WallRect[] = [];
@@ -1294,8 +1324,8 @@ function buildRidge(
       );
       // Pull some blocks back and push others in, so the valley breathes
       // instead of running at one width for the whole leg.
-      const inset = m(-2.5 + jitter(seed + 11) * 9);
-      const depth = RIDGE_THICKNESS + m(jitter(seed + 23) * 14);
+      const inset = m(-1 + jitter(seed + 11) * 3.5);
+      const depth = RIDGE_THICKNESS + m(jitter(seed + 23) * 5);
       const near = halfWidth + inset;
       const far = near + depth;
 
@@ -1332,19 +1362,69 @@ function buildBaseFloorRects(): FloorRect[] {
     // proud of it, and the walkable ice is the waterline itself. Without the
     // cut the surface disappears under the snow slab and the first landscape
     // loses the only thing it is about.
+    //
+    // At station A the cut widens into a pool, so each snow slab is three
+    // rects — bank, bank pulled back beside the pool, bank again — and the ice
+    // bed is three to match. The 0.28 m the snow stands proud becomes the
+    // pool's rim for free.
     flat(
-      "snowfield-west",
-      rect(-SNOW_HALF_W, SNOW_START_Z, -CHANNEL_HALF_W, SNOW_END_Z),
+      "snowfield-west-in",
+      rect(-SNOW_HALF_W, SNOW_START_Z, -CHANNEL_HALF_W, STATION_A_POOL_MIN_Z),
       SNOW_Y
     ),
     flat(
-      "snowfield-east",
-      rect(CHANNEL_HALF_W, SNOW_START_Z, SNOW_HALF_W, SNOW_END_Z),
+      "snowfield-west-pool",
+      rect(
+        -SNOW_HALF_W,
+        STATION_A_POOL_MIN_Z,
+        -STATION_A_POOL_HALF_W,
+        STATION_A_POOL_MAX_Z
+      ),
       SNOW_Y
     ),
     flat(
-      "frozen-river-bed",
-      rect(-CHANNEL_HALF_W, SNOW_START_Z, CHANNEL_HALF_W, SNOW_END_Z),
+      "snowfield-west-out",
+      rect(-SNOW_HALF_W, STATION_A_POOL_MAX_Z, -CHANNEL_HALF_W, SNOW_END_Z),
+      SNOW_Y
+    ),
+    flat(
+      "snowfield-east-in",
+      rect(CHANNEL_HALF_W, SNOW_START_Z, SNOW_HALF_W, STATION_A_POOL_MIN_Z),
+      SNOW_Y
+    ),
+    flat(
+      "snowfield-east-pool",
+      rect(
+        STATION_A_POOL_HALF_W,
+        STATION_A_POOL_MIN_Z,
+        SNOW_HALF_W,
+        STATION_A_POOL_MAX_Z
+      ),
+      SNOW_Y
+    ),
+    flat(
+      "snowfield-east-out",
+      rect(CHANNEL_HALF_W, STATION_A_POOL_MAX_Z, SNOW_HALF_W, SNOW_END_Z),
+      SNOW_Y
+    ),
+    flat(
+      "frozen-river-bed-in",
+      rect(-CHANNEL_HALF_W, SNOW_START_Z, CHANNEL_HALF_W, STATION_A_POOL_MIN_Z),
+      WATERLINE_Y
+    ),
+    flat(
+      "frozen-pool-bed",
+      rect(
+        -STATION_A_POOL_HALF_W,
+        STATION_A_POOL_MIN_Z,
+        STATION_A_POOL_HALF_W,
+        STATION_A_POOL_MAX_Z
+      ),
+      WATERLINE_Y
+    ),
+    flat(
+      "frozen-river-bed-out",
+      rect(-CHANNEL_HALF_W, STATION_A_POOL_MAX_Z, CHANNEL_HALF_W, SNOW_END_Z),
       WATERLINE_Y
     ),
     ramp(
@@ -1430,13 +1510,13 @@ function buildBaseFloorRects(): FloorRect[] {
   }
 
   /**
-   * The springs chamber floor: one ramp, climbing 11 m from the pinch to the
+   * The springs chamber floor: one ramp, climbing 4.6 m from the pinch to the
    * door. The visitor arrives at the bottom of the piece and walks back up out
    * of it.
    *
    * One rect and not a stack of slices, because a `ramp-z` IS the slope — the
    * sump is sliced only because its WIDTH changes down the run and an
-   * axis-aligned rect cannot taper. This chamber is the same 52 m wide the
+   * axis-aligned rect cannot taper. This chamber is the same 16 m wide the
    * whole way, so slicing it would buy a staircase where a plane already fits.
    */
   floorRects.push(
@@ -1481,18 +1561,18 @@ function buildBaseFloorRects(): FloorRect[] {
 export function buildWaterTraverseLayout(): WaterTraverseLayout {
   const floorRects: FloorRect[] = buildBaseFloorRects();
 
-  // STALE SINCE THE CAVE: the baked height field runs z 52 → 189.7 at ±42 m,
-  // which is the old open-water trench. Past the cave mouth at z 124 the walk
-  // is inside a passage 13–21 m wide, so the last 66 m of this field is seabed
-  // relief growing through solid rock. Harmless today — the graybox draws
-  // boxes and loads no trimesh — but scripts/traverse_seabed.py has to re-bake
-  // to end at CAVE_START_Z before any art pass loads it.
-  //
-  // The sculpted seabed sits on top of the flat trench floor as one trimesh.
-  // The route down the middle has zero relief by construction, so it is a
-  // perfectly smooth strip of that mesh; the dunes either side carry all the
-  // roughness. See water-traverse-seabed.ts.
-  const seabedMesh = buildSeabedMesh(baseFloorYAt);
+  // GATED OFF at chamber scale: the baked height field runs z 52 → 189.7 at
+  // ±42 m — coordinates from the old 170 m open-water trench. On the 58 m walk
+  // that entire field lies BEYOND the springs head wall, so loading it would
+  // drape phantom dune relief through solid rock and over nothing the visitor
+  // can reach. An empty mesh keeps the layout shape stable while saying so.
+  // scripts/traverse_seabed.py has to re-bake against the new SEA leg extents
+  // (z 20 → 27) before any art pass turns this back on.
+  const seabedMesh: SeabedMesh = {
+    vertices: new Float32Array(0),
+    indices: new Uint32Array(0),
+    triangleCount: 0,
+  };
 
   const wallRects: WallRect[] = [];
   for (const [id, minZ, maxZ, baseY, topY, halfWidth, chamber] of RIDGE_LEGS) {
@@ -1532,13 +1612,13 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
       SNOW_END_Z,
       CHAMBER_HALF_W.sea,
       CHAMBER_CEILING.sea,
-      m(30),
-      WATERLINE_Y + m(26)
+      m(6),
+      WATERLINE_Y + m(6)
     ),
-    // The cave mouth: a 26 m hole at the foot of a wall 184 m across and 70 m
-    // tall. It has to be small enough that the sea hall reads as ending, and
-    // it has to sit on the FLOOR — a cave you enter through an arch halfway up
-    // a wall is a doorway with rock texture on it.
+    // The cave mouth: a 4.4 m hole at the foot of a wall 36 m across. It has
+    // to be small enough that the sea hall reads as ending, and it has to sit
+    // on the FLOOR — a cave you enter through an arch halfway up a wall is a
+    // doorway with rock texture on it.
     ...buildPortal(
       "cave-mouth",
       CAVE_START_Z,
@@ -1547,7 +1627,7 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
       CAVE_HALF_W_MOUTH,
       mouth.roofY
     ),
-    // Cave → canyon. The reveal: you leave a 16 m tube through a hole in the
+    // Cave → canyon. The reveal: you leave a 7 m tube through a hole in the
     // near wall of a room nearly four times as tall.
     ...buildPortal(
       "cave-canyon",
@@ -1581,18 +1661,40 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
    * y = 0 is the sea, and it runs from the frozen river the visitor walks on,
    * over the trench they walk under, to the last metre of the sump where the
    * rock roof comes down and meets it. There is no water surface anywhere in
-   * the cave: that passage is flooded to its ceiling for all 66 m, which is
+   * the cave: that passage is flooded to its ceiling for all 9 m, which is
    * exactly what makes it a passage rather than a beach.
    *
-   * SPRINGS_WATER_Y is the pool in the last room, twenty-three metres lower,
-   * sealed under its own air bell behind the sump. It is the only surface the
-   * visitor's head comes back through, and by construction it is the last thing
-   * that happens to them in this piece.
+   * SPRINGS_WATER_Y is the pool in the last room, five and a half metres
+   * lower, sealed under its own air bell behind the sump. It is the only
+   * surface the visitor's head comes back through, and by construction it is
+   * the last thing that happens to them in this piece.
    */
   const waterPlanes: WaterPlane[] = [
+    // Ribbon, pool, ribbon — the same split as the ice bed under it, because a
+    // single full-length plane would z-fight the wider pool plane where they
+    // overlap.
     {
-      id: "frozen-river",
-      ...rect(-CHANNEL_HALF_W, SNOW_START_Z, CHANNEL_HALF_W, SNOW_END_Z),
+      id: "frozen-river-in",
+      ...rect(-CHANNEL_HALF_W, SNOW_START_Z, CHANNEL_HALF_W, STATION_A_POOL_MIN_Z),
+      surfaceY: WATERLINE_Y,
+      state: "ice",
+      seenFromBelow: false,
+    },
+    {
+      id: "frozen-pool",
+      ...rect(
+        -STATION_A_POOL_HALF_W,
+        STATION_A_POOL_MIN_Z,
+        STATION_A_POOL_HALF_W,
+        STATION_A_POOL_MAX_Z
+      ),
+      surfaceY: WATERLINE_Y,
+      state: "ice",
+      seenFromBelow: false,
+    },
+    {
+      id: "frozen-river-out",
+      ...rect(-CHANNEL_HALF_W, STATION_A_POOL_MAX_Z, CHANNEL_HALF_W, SNOW_END_Z),
       surfaceY: WATERLINE_Y,
       state: "ice",
       seenFromBelow: false,
@@ -1605,15 +1707,15 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
       seenFromBelow: true,
     },
     /**
-     * The canyon, flooded wall to wall, with its surface twenty-one metres over
-     * the visitor's head and 58 m of rock over that.
+     * The canyon, flooded wall to wall, with its surface nearly five metres
+     * over the visitor's head and 12 m of rock over that.
      *
      * There is no plane over the cave between these two. The cave's roof runs
-     * from −12.5 at the mouth to −9 at the far end, so the passage is under the
-     * line for its whole length and has no surface to draw — the sea does not
-     * stop there, the AIR does. Which makes this plane the first water the
-     * visitor has seen since z 124, arriving overhead through an 11 m hole, at
-     * the exact moment the room they are in becomes enormous.
+     * from −2.0 at the mouth to −1.2 at the far end, so the passage is under
+     * the line for its whole length and has no surface to draw — the sea does
+     * not stop there, the AIR does. Which makes this plane the first water the
+     * visitor has seen since z 27, arriving overhead through a 7 m hole, at
+     * the exact moment the room they are in becomes tall.
      */
     {
       id: "canyon-water",
@@ -1655,12 +1757,12 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
    * the metre where the climbing floor comes up through it.
    *
    * Sliced across the flare for the same reason the flare's walls are — the
-   * room opens from 7 m across to 52 in two paces, and a single rect at the
-   * full width would leave twenty metres of water plane hanging inside solid
-   * rock on either side of the throat.
+   * room opens from 4 m across to 16 in two paces, and a single rect at the
+   * full width would leave metres of water plane hanging inside solid rock on
+   * either side of the throat.
    *
    * Seen from below AND above, and that is the whole point of it: the visitor
-   * arrives underneath this plane with 5.4 m of water over their eye, watches
+   * arrives underneath this plane with 1.6 m of water over their eye, watches
    * it come down to meet them as the floor climbs, and walks out through it.
    */
   for (let i = 0; i < SPRINGS_FLARE_SLICES; i += 1) {
@@ -1694,15 +1796,107 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
    * the same motion as A inverted, which is what steam is to ice.
    * Verified against the Flow Arts MCP 2026-08-09.
    */
-  const ICE_PERFORMER_Z = (SNOW_START_Z + SNOW_END_Z) / 2 + m(6);
-  /** Just clear of the water's edge — see the anchor's own note below. */
-  const STEAM_PERFORMER_Z = SPRINGS_SHORE_Z + m(1.4);
+  const ICE_PERFORMER_Z = (SNOW_START_Z + SNOW_END_Z) / 2 + m(1.5);
+  const SEA_PERFORMER_Z = (DESCENT_END_Z + SEA_END_Z) / 2;
+  /**
+   * ON the shoreline, not past it. The dais straddles the metre where the
+   * climbing floor meets the pool's surface, so the figure stands exactly on
+   * the boundary the room is about — and the still water doubles them.
+   */
+  const STEAM_PERFORMER_Z = SPRINGS_SHORE_Z;
+
+  /**
+   * The three daises, one per performer, each dead on the centreline so the
+   * path HAS to fork. See the station constants up top for why 0.9 m of rise
+   * is the enforcement and not just staging.
+   *
+   * A's stands in the frozen pool; the ice ring around it is the walk. B's
+   * rises from the trench floor with a guide stone either side — the trench
+   * is 16 m wide, and without the stones "walk around it" degrades into
+   * "drift past it at a distance"; with them the way through is two 3 m lanes
+   * that hold the visitor inside the sequence's reach. C's is a vent platform
+   * half in and half out of the springs pool, met head-on in the wade up from
+   * the surface break.
+   */
+  wallRects.push(
+    {
+      id: "station-a-dais",
+      rect: rect(
+        -STATION_DAIS_HALF_W,
+        ICE_PERFORMER_Z - STATION_DAIS_HALF_W,
+        STATION_DAIS_HALF_W,
+        ICE_PERFORMER_Z + STATION_DAIS_HALF_W
+      ),
+      // Sunk half a metre so no seam shows between riser and ice.
+      baseY: WATERLINE_Y - m(0.5),
+      topY: WATERLINE_Y + STATION_DAIS_RISE,
+    },
+    {
+      id: "station-b-dais",
+      rect: rect(
+        -STATION_DAIS_HALF_W,
+        SEA_PERFORMER_Z - STATION_DAIS_HALF_W,
+        STATION_DAIS_HALF_W,
+        SEA_PERFORMER_Z + STATION_DAIS_HALF_W
+      ),
+      baseY: SEA_FLOOR_Y - m(0.5),
+      topY: SEA_FLOOR_Y + STATION_DAIS_RISE,
+    },
+    // The guide stones: shoulder-high rock masses from x ±4.2 to the trench
+    // walls. Their tops sit just above the standing eye (−3.4), so they read
+    // as masses to move between rather than steps to climb — and from the
+    // descent ramp, where the eye is still high, the visitor sees over them
+    // to the dais they frame.
+    {
+      id: "station-b-stone-west",
+      rect: rect(
+        -SEA_HALF_W,
+        SEA_PERFORMER_Z - m(1),
+        -m(4.2),
+        SEA_PERFORMER_Z + m(1)
+      ),
+      baseY: SEA_FLOOR_Y - m(0.5),
+      topY: SEA_FLOOR_Y + m(1.8),
+    },
+    {
+      id: "station-b-stone-east",
+      rect: rect(
+        m(4.2),
+        SEA_PERFORMER_Z - m(1),
+        SEA_HALF_W,
+        SEA_PERFORMER_Z + m(1)
+      ),
+      baseY: SEA_FLOOR_Y - m(0.5),
+      topY: SEA_FLOOR_Y + m(1.8),
+    },
+    // C's rise is measured from the WATER, not the floor: 1.2 m over the pool
+    // puts the platform clear of the surface while the wading floor beside it
+    // (−5.1 to −6.0 across the dais's span) stays 0.7–1.6 m below the top —
+    // still past the autostep from every side.
+    {
+      id: "station-c-dais",
+      rect: rect(
+        -STATION_DAIS_HALF_W,
+        STEAM_PERFORMER_Z - m(1),
+        STATION_DAIS_HALF_W,
+        STEAM_PERFORMER_Z + m(1)
+      ),
+      baseY: SPRINGS_WATER_Y - m(2),
+      topY: SPRINGS_WATER_Y + m(1.2),
+    }
+  );
+
   const performers: PerformerAnchor[] = [
     /**
      * A, then B, then C, in that order along the walk. The first mapping put
      * the hybrid letter on the liquid leg because liquid is the hybrid state,
      * which was a nice idea nobody walking the route could ever read: what a
      * visitor actually reads is the alphabet counting up as they go.
+     *
+     * All three stand on their daises now (2026-08-11 reverence decision):
+     * y is the dais top, x is the centreline. The old off-centre C placement
+     * — chosen so the figure was "something you pass" — is the exact thing
+     * the decision overrules: nobody is passed at walking speed any more.
      */
     {
       id: "ice-performer",
@@ -1711,10 +1905,8 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
       effectId: "sparkles",
       x: 0,
       z: ICE_PERFORMER_Z,
-      // Off the floor, not off the waterline. Those are the same number on the
-      // frozen river and 0.28 m apart here, which is enough to see a figure
-      // hovering once you are standing next to it.
-      y: floorYAt(floorRects, ICE_PERFORMER_Z),
+      y: WATERLINE_Y + STATION_DAIS_RISE,
+      ringY: WATERLINE_Y,
       facingAngle: Math.PI,
     },
     {
@@ -1723,46 +1915,52 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
       letter: "B",
       effectId: "goo",
       x: 0,
-      z: (DESCENT_END_Z + SEA_END_Z) / 2,
-      y: SEA_FLOOR_Y,
+      z: SEA_PERFORMER_Z,
+      y: SEA_FLOOR_Y + STATION_DAIS_RISE,
+      ringY: SEA_FLOOR_Y,
       facingAngle: Math.PI,
     },
-    /**
-     * On the shore, a pace and a half above the pool's edge.
-     *
-     * Every earlier mark for this figure was chosen when the whole chamber was
-     * under water and one metre of it was as good as another: 18 m in, then
-     * deeper, always argued from framing angles alone. The room now has a
-     * feature to stand next to. STEAM is the state this performer carries, and
-     * steam is what water does when it LEAVES the water — putting the figure at
-     * the line where the visitor's own head has just come out of it is the one
-     * placement that means something.
-     *
-     * Still 11 m off the centreline, which the other two are not, and the
-     * reasons are unchanged: on the line the visitor walks THROUGH the
-     * performer, and from anywhere behind them the figure stands squarely in
-     * the mouth — blocking the one opening the room exists to hand you to. Off
-     * to the left they are something you pass. At 23 m ahead of the flare that
-     * offset reads 25° off centre, inside the forward cone the whole way in.
-     */
     {
       id: "steam-performer",
       leg: "spring",
       letter: "C",
       effectId: "smoke",
-      x: -m(11),
+      x: 0,
       z: STEAM_PERFORMER_Z,
-      // Off the floor function, not off SPRINGS_FLOOR_Y. That constant is the
-      // floor at the DOOR; taking it literally here would stand the figure
-      // three metres up in open air, halfway up its own room.
-      y: springsFloorYAt(STEAM_PERFORMER_Z),
+      y: SPRINGS_WATER_Y + m(1.2),
+      // The wading floor at the shoreline, which is where the ring is walked.
+      ringY: springsFloorYAt(STEAM_PERFORMER_Z),
       facingAngle: Math.PI,
     },
   ];
 
+  /**
+   * The route bends around each dais — east at A, west at B, east at C, so
+   * the walk sways instead of zigzagging the same shoulder three times. Half
+   * a sine per detour keeps the polyline honest for camera aims; the visitor
+   * themselves is steered by the colliders, not this line.
+   */
+  const ringDetours = [
+    {
+      minZ: STATION_A_POOL_MIN_Z,
+      maxZ: STATION_A_POOL_MAX_Z,
+      reach: m(2.6),
+    },
+    // Lane centre between the dais edge (1.2) and the stone edge (4.2).
+    { minZ: SEA_PERFORMER_Z - m(2.2), maxZ: SEA_PERFORMER_Z + m(2.2), reach: -m(2.7) },
+    { minZ: STEAM_PERFORMER_Z - m(2.5), maxZ: STEAM_PERFORMER_Z + m(2.5), reach: m(2.6) },
+  ];
   const route: { x: number; z: number; y: number }[] = [];
-  for (let z = SNOW_START_Z + m(2); z <= SPRING_END_Z - m(2); z += m(4)) {
-    route.push({ x: 0, z, y: floorYAt(floorRects, z) });
+  for (let z = SNOW_START_Z + m(1); z <= SPRING_END_Z - m(1); z += m(1.5)) {
+    let x = 0;
+    for (const detour of ringDetours) {
+      if (z > detour.minZ && z < detour.maxZ) {
+        x =
+          detour.reach *
+          Math.sin((Math.PI * (z - detour.minZ)) / (detour.maxZ - detour.minZ));
+      }
+    }
+    route.push({ x, z, y: floorYAt(floorRects, z) });
   }
 
   return {
@@ -1780,6 +1978,17 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
     wallRects,
     waterPlanes,
     performers,
+    // A couple of paces in, on the ice, before the A performer at z 6.5: the
+    // path first, then the person doing it. Wheel sizing is arm-scaled — two
+    // 1.2 m wheels with a 1.7 m gap sit inside the 4.4 m river channel.
+    handPathStation: {
+      x: 0,
+      z: m(3.2),
+      y: WATERLINE_Y,
+      facingAngle: Math.PI,
+      wheelRadius: m(1.2),
+      wheelGap: m(1.7),
+    },
     route,
     legs: {
       snowfield: rect(-SNOW_HALF_W, SNOW_START_Z, SNOW_HALF_W, DESCENT_END_Z),
@@ -1804,44 +2013,43 @@ export function buildWaterTraverseLayout(): WaterTraverseLayout {
      * scattered across a floor that is rising past you, are a source — and the
      * room stops being a flooded hall with a column in it.
      *
-     * Two are full height and stop dead at the roof, because that is what a
-     * vent under thirty metres of water does: the heat has nowhere to go. The
-     * other four peter out, which is what keeps the tall two reading as tall.
-     * Ranged in Z so the room reveals them in sequence rather than all at once,
-     * and one (the 4 m one at z 265) sits close enough to the centreline to be
-     * PASSED — the difference between watching springs across a room and
-     * walking through them.
+     * Two are full height and stop dead at the roof, because the air bell is
+     * barely more than head-high: the heat has nowhere to go. The other five
+     * peter out, which is what keeps the tall two reading as tall. Ranged in Z
+     * so the room reveals them in sequence rather than all at once, and one
+     * (at z 48.9) sits close enough to the centreline to be PASSED — the
+     * difference between watching springs across a room and walking through
+     * them.
      */
     vents: [
       // The pair that flanks the door, and the two that carry the room.
       //
-      // Full height, hard against the mouth's shoulders at x ±10 — the opening
-      // is 14 m across, so they stand just outside it and frame it without
-      // covering it. They are here rather than in the middle of the floor
-      // because they are the only vents visible for the WHOLE walk: from the
-      // pinch they are 30 m ahead and 10 m off, which is 18° — dead in the
-      // forward cone — and they stay in it every metre of the climb. The last
+      // Full height, hard against the mouth's shoulders at x ±3.6 — the
+      // opening is 5 m across, so they stand just outside it and frame it
+      // without covering it. They are here rather than in the middle of the
+      // floor because they are the only vents visible for the WHOLE climb:
+      // from the pinch they are ~8 m ahead and 3.6 m off, which is 24° —
+      // inside the forward cone — and they stay in it every metre. The last
       // thing the room shows before handing over is its heat standing either
       // side of the way out.
-      vent(-10, 281, 1, 3),
-      vent(10.5, 280, 1, 2.8),
-      // The middle pair, close enough to the centreline to be in frame from the
-      // entrance and to be walked BETWEEN halfway up. This is the correction
-      // the first scatter needed: lateral offset only means anything against
-      // forward distance. 11 m out at 6 m ahead is 61° off-centreline, which is
-      // off the side of the screen; the same 11 m at 18 m ahead is 31°, which
-      // is the edge of the picture. Vents ranged by distance instead of spread
-      // by width left the middle of the walk with nothing in front of it.
-      vent(-6, 273, 0.5, 2),
-      vent(7.5, 268, 0.45, 1.9),
+      vent(-3.6, 56.5, 1, 1.0),
+      vent(3.7, 56.2, 1, 0.95),
+      // The middle pair, close enough to the centreline to be in frame from
+      // the entrance and to be walked BETWEEN halfway up. Lateral offset only
+      // means anything against forward distance: a wide vent right beside you
+      // is off the side of the screen; the same offset a few metres ahead is
+      // the edge of the picture. Vents ranged by distance instead of spread by
+      // width would leave the middle of the walk with nothing in front of it.
+      vent(-2.1, 53.6, 0.5, 0.7),
+      vent(2.6, 52.4, 0.45, 0.65),
       // And the wide, early ones — met in the first few steps out of the sump,
       // passed close, and gone. They are peripheral on purpose: something has
       // to go by at arm's length or the room is a thing watched from a path.
-      vent(-19, 262, 0.35, 2.2),
-      vent(20, 265, 0.3, 2.4),
-      vent(6.5, 258, 0.25, 1.5),
+      vent(-6.2, 49.8, 0.35, 0.8),
+      vent(6.6, 50.6, 0.3, 0.85),
+      vent(2.3, 48.9, 0.25, 0.5),
     ],
-    spawn: { x: 0, y: SNOW_Y + 1.0, z: SNOW_START_Z + m(6), yaw: 0 },
+    spawn: { x: 0, y: SNOW_Y + 1.0, z: SNOW_START_Z + m(2), yaw: 0 },
   };
 }
 
@@ -1888,10 +2096,10 @@ export type WaterRelation = "on" | "in" | "under" | "above";
  * this function is "the water here."
  *
  * Everything before the springs answers with the sea, including the sump, whose
- * back half has no surface at all — but a visitor thirty metres down under a
- * roofed passage is under the sea by any measure, so the answer is still right.
+ * back half has no surface at all — but a visitor nearly nine metres down under
+ * a roofed passage is under the sea by any measure, so the answer is still right.
  * The springs chamber answers with its own pool, and that single substitution is
- * what lets the last climb register as an emergence instead of as eleven metres
+ * what lets the last climb register as an emergence instead of as four metres
  * of getting marginally less drowned.
  */
 export function waterLevelAt(z: number): number {
@@ -1938,8 +2146,8 @@ function caveSliceAt(z: number) {
  * The ceiling directly overhead, and the walls either side.
  *
  * Queried by Z rather than read off a per-leg map, because the cave's roof
- * steps six times inside one leg. A readout that answered "52 m to ceiling"
- * while the visitor stood in a nine-metre tube would be reporting the room
+ * steps six times inside one leg. A readout that answered "18 m to ceiling"
+ * while the visitor stood in a three-metre tube would be reporting the room
  * they just left.
  */
 export function ceilingAt(z: number): number {
@@ -1967,7 +2175,7 @@ export function hallHalfWidthAt(z: number): number {
   if (region === "canyon") return CANYON_HALF_W;
   if (region === "sump") return sumpHalfWAt(z);
   // The flare, then the room, then the mouth. Reported honestly through the
-  // opening, since "7 m across" and "52 m across" six paces apart is the whole
+  // opening, since "4 m across" and "16 m across" two paces apart is the whole
   // payoff.
   if (region === "springs") return springsHalfWAt(z);
   return CHAMBER_HALF_W[region];
