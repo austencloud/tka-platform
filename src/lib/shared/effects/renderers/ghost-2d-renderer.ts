@@ -1,4 +1,20 @@
 import type { Ghost2DParams } from "../translators/canvas2d-types";
+import {
+  resolveGhostAngleQuantization,
+  resolveGhostHistoryCapacity,
+  resolveGhostLifetimeSeconds,
+  resolveGhostPositionQuantization,
+} from "../domain/ghost-parameters";
+import {
+  resolveGhost2DAgeVisual,
+  resolveGhostPropColor,
+  resolveGhostRimColor,
+} from "./ghost-chrono-frost-2d";
+import {
+  GhostPoseHistory,
+  selectGhostAgeStratifiedSamples,
+  type GhostPoseSample,
+} from "./ghost-pose-history";
 
 /**
  * Ghost = prop onion-skin (decaying ghost trail).
@@ -45,47 +61,57 @@ export interface GhostInput {
   epoch: string | number;
 }
 
-/** A ghost plus the time it was last passed (drives the decay). */
-type GhostEntry = { g: GhostProp; seen: number };
+const MAX_VISIBLE_GHOSTS_PER_PROP = 10;
+const MAX_TREATMENTS_PER_SPRITE = 12;
 
-/** Backstop cap on live ghosts — pruning normally keeps the set far below this. */
-const MAX_GHOSTS = 300;
+type TreatmentSurface = HTMLCanvasElement | OffscreenCanvas;
+
+interface GhostSpriteTreatment {
+  body: TreatmentSurface;
+  rim: TreatmentSurface;
+  frost: TreatmentSurface;
+  width: number;
+  height: number;
+}
+
+interface TreatmentCanvas {
+  canvas: TreatmentSurface;
+  ctx: CanvasRenderingContext2D;
+}
 
 export class Ghost2DRenderer {
-  private ghosts = new Map<string, GhostEntry>();
-  private epoch: string | number | null = null;
-  /** Accumulated playback time (seconds) — drives the decay. */
-  private time = 0;
+  private readonly history = new GhostPoseHistory<GhostProp>();
+  private knownPropIds = new Set<number>();
+  private treatmentCache = new WeakMap<
+    object,
+    Map<string, GhostSpriteTreatment | null>
+  >();
 
   render(
     ctx: CanvasRenderingContext2D,
     params: Ghost2DParams,
     input: GhostInput,
     deltaTime: number,
-    _scale: number,
+    _scale: number
   ): void {
     const { props, epoch } = input;
     const w = ctx.canvas?.width ?? 0;
     const h = ctx.canvas?.height ?? 0;
     if (w <= 0 || h <= 0) return;
 
-    if (epoch !== this.epoch) {
-      this.ghosts.clear();
-      this.epoch = epoch;
-      this.time = 0;
-    }
-    this.time += Math.max(0, deltaTime);
+    this.history.setEpoch(epoch);
+    this.history.advance(deltaTime);
 
     // Knob mapping:
     //   intensity → overall trail opacity (peak alpha of the freshest ghost)
     //   decay     → Persistence: how long a ghost lasts before fading out
     //   interval  → Density (0-1, higher = denser): finer pose sampling
     const intensity = Math.max(0, Math.min(1, params.intensity ?? 1));
-    const tailSec = 0.2 + Math.max(0, Math.min(12, params.decay)) * 0.18;
-    const tailPeak = 0.85 * intensity;
+    const tailSec = resolveGhostLifetimeSeconds(params.decay);
     const density = Math.max(0, Math.min(1, params.interval ?? 0.5));
-    const posQuant = Math.max(4, w * 0.05 * (1 - 0.85 * density));
-    const angQuant = Math.max(0.04, 0.3 * (1 - 0.85 * density));
+    const posQuant = resolveGhostPositionQuantization(density, w, 4);
+    const angQuant = resolveGhostAngleQuantization(density);
+    const currentKeys = new Set<string>();
 
     // Capture / refresh the current poses.
     for (const g of props) {
@@ -93,46 +119,273 @@ export class Ghost2DRenderer {
       const key =
         `${g.id}|${Math.round(g.centerX / posQuant)}|` +
         `${Math.round(g.centerY / posQuant)}|${Math.round(g.angle / angQuant)}`;
-      const existing = this.ghosts.get(key);
-      if (existing) existing.seen = this.time;
-      else if (this.ghosts.size < MAX_GHOSTS) this.ghosts.set(key, { g: { ...g }, seen: this.time });
+      currentKeys.add(key);
+      this.knownPropIds.add(g.id);
+      this.history.capture(key, () => ({ ...g }));
     }
+    const capacityPerProp = resolveGhostHistoryCapacity(
+      density,
+      MAX_VISIBLE_GHOSTS_PER_PROP
+    );
+    this.history.prune(
+      tailSec,
+      capacityPerProp * Math.max(1, this.knownPropIds.size)
+    );
 
-    // Draw the decaying trail; prune anything that has fully faded.
+    // Draw oldest-first so young, brighter ice remains readable on top.
     ctx.clearRect(0, 0, w, h);
     const prevAlpha = ctx.globalAlpha;
+    const prevComposite = ctx.globalCompositeOperation;
     try {
-      for (const [key, { g, seen }] of this.ghosts) {
-        const age = this.time - seen;
-        if (age >= tailSec) {
-          this.ghosts.delete(key);
-          continue;
-        }
-        const alpha = tailPeak * (1 - age / tailSec);
-        if (alpha <= 0.012) continue;
-        this.blit(ctx, g, alpha);
+      for (const sample of this.visibleSamples(currentKeys)) {
+        const visual = resolveGhost2DAgeVisual(
+          sample.ageSeconds,
+          tailSec,
+          intensity
+        );
+        if (visual.rimAlpha <= 0.012) continue;
+        const color = resolveGhostPropColor(
+          sample.snapshot.id,
+          params.blueColor,
+          params.redColor
+        );
+        this.blit(ctx, sample.snapshot, color, visual);
       }
     } finally {
       ctx.globalAlpha = prevAlpha;
+      ctx.globalCompositeOperation = prevComposite;
     }
   }
 
-  /** Blit one prop sprite at its transform and the given alpha (no shadow). */
-  private blit(ctx: CanvasRenderingContext2D, g: GhostProp, alpha: number): void {
-    ctx.globalAlpha = alpha;
+  private visibleSamples(
+    currentKeys: ReadonlySet<string>
+  ): GhostPoseSample<GhostProp>[] {
+    const byProp = new Map<number, GhostPoseSample<GhostProp>[]>();
+    for (const sample of this.history.samples(currentKeys)) {
+      const samples = byProp.get(sample.snapshot.id) ?? [];
+      samples.push(sample);
+      byProp.set(sample.snapshot.id, samples);
+    }
+
+    const selected: GhostPoseSample<GhostProp>[] = [];
+    for (const samples of byProp.values()) {
+      selected.push(
+        ...selectGhostAgeStratifiedSamples(samples, MAX_VISIBLE_GHOSTS_PER_PROP)
+      );
+    }
+    return selected.sort((a, b) => b.ageSeconds - a.ageSeconds);
+  }
+
+  private blit(
+    ctx: CanvasRenderingContext2D,
+    g: GhostProp,
+    color: string,
+    visual: ReturnType<typeof resolveGhost2DAgeVisual>
+  ): void {
+    const treatment = this.resolveTreatment(g, color);
     ctx.save();
     ctx.translate(g.centerX, g.centerY);
     ctx.rotate(g.angle);
     if (g.flipped) ctx.scale(-1, 1);
-    ctx.drawImage(g.image, -g.width / 2, -g.height / 2, g.width, g.height);
+
+    if (!treatment) {
+      ctx.globalAlpha = Math.max(visual.bodyAlpha, visual.rimAlpha * 0.72);
+      ctx.drawImage(g.image, -g.width / 2, -g.height / 2, g.width, g.height);
+      ctx.restore();
+      return;
+    }
+
+    const x = -treatment.width / 2;
+    const y = -treatment.height / 2;
+    ctx.globalCompositeOperation = "source-over";
+    ctx.globalAlpha = visual.bodyAlpha;
+    ctx.drawImage(treatment.body, x, y);
+    ctx.globalCompositeOperation = "screen";
+    ctx.globalAlpha = visual.frostAlpha;
+    ctx.drawImage(treatment.frost, x, y);
+    ctx.globalAlpha = visual.rimAlpha;
+    ctx.drawImage(treatment.rim, x, y);
     ctx.restore();
+  }
+
+  private resolveTreatment(
+    g: GhostProp,
+    color: string
+  ): GhostSpriteTreatment | null {
+    const imageKey = g.image as object;
+    let treatments = this.treatmentCache.get(imageKey);
+    if (!treatments) {
+      treatments = new Map();
+      this.treatmentCache.set(imageKey, treatments);
+    }
+
+    const width = Math.max(1, Math.ceil(g.width));
+    const height = Math.max(1, Math.ceil(g.height));
+    const key = `${width}x${height}|${color.toLowerCase()}`;
+    if (treatments.has(key)) return treatments.get(key) ?? null;
+    if (treatments.size >= MAX_TREATMENTS_PER_SPRITE) treatments.clear();
+
+    const treatment = this.buildTreatment(g.image, width, height, color);
+    treatments.set(key, treatment);
+    return treatment;
+  }
+
+  private buildTreatment(
+    image: CanvasImageSource,
+    spriteWidth: number,
+    spriteHeight: number,
+    color: string
+  ): GhostSpriteTreatment | null {
+    const rimRadius = Math.max(
+      2,
+      Math.min(9, Math.round(Math.min(spriteWidth, spriteHeight) * 0.07))
+    );
+    const padding = rimRadius + 2;
+    const width = spriteWidth + padding * 2;
+    const height = spriteHeight + padding * 2;
+    const body = this.createTreatmentCanvas(width, height);
+    const rim = this.createTreatmentCanvas(width, height);
+    const frost = this.createTreatmentCanvas(width, height);
+    if (!body || !rim || !frost) return null;
+
+    this.tintSprite(
+      body.ctx,
+      image,
+      padding,
+      spriteWidth,
+      spriteHeight,
+      color,
+      width,
+      height
+    );
+    this.buildRim(
+      rim.ctx,
+      image,
+      padding,
+      spriteWidth,
+      spriteHeight,
+      rimRadius,
+      resolveGhostRimColor(color),
+      width,
+      height
+    );
+    this.buildFrost(
+      frost.ctx,
+      image,
+      padding,
+      spriteWidth,
+      spriteHeight,
+      width,
+      height
+    );
+    return {
+      body: body.canvas,
+      rim: rim.canvas,
+      frost: frost.canvas,
+      width,
+      height,
+    };
+  }
+
+  private createTreatmentCanvas(
+    width: number,
+    height: number
+  ): TreatmentCanvas | null {
+    try {
+      const canvas: TreatmentSurface =
+        typeof OffscreenCanvas !== "undefined"
+          ? new OffscreenCanvas(width, height)
+          : document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d") as CanvasRenderingContext2D | null;
+      return ctx ? { canvas, ctx } : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private tintSprite(
+    ctx: CanvasRenderingContext2D,
+    image: CanvasImageSource,
+    padding: number,
+    spriteWidth: number,
+    spriteHeight: number,
+    color: string,
+    width: number,
+    height: number
+  ): void {
+    ctx.clearRect(0, 0, width, height);
+    ctx.globalCompositeOperation = "source-over";
+    ctx.drawImage(image, padding, padding, spriteWidth, spriteHeight);
+    ctx.globalCompositeOperation = "source-in";
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  private buildRim(
+    ctx: CanvasRenderingContext2D,
+    image: CanvasImageSource,
+    padding: number,
+    spriteWidth: number,
+    spriteHeight: number,
+    radius: number,
+    color: string,
+    width: number,
+    height: number
+  ): void {
+    ctx.clearRect(0, 0, width, height);
+    ctx.globalCompositeOperation = "source-over";
+    const directions = 16;
+    for (let index = 0; index < directions; index += 1) {
+      const angle = (index / directions) * Math.PI * 2;
+      ctx.drawImage(
+        image,
+        padding + Math.cos(angle) * radius,
+        padding + Math.sin(angle) * radius,
+        spriteWidth,
+        spriteHeight
+      );
+    }
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.drawImage(image, padding, padding, spriteWidth, spriteHeight);
+    ctx.globalCompositeOperation = "source-in";
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  private buildFrost(
+    ctx: CanvasRenderingContext2D,
+    image: CanvasImageSource,
+    padding: number,
+    spriteWidth: number,
+    spriteHeight: number,
+    width: number,
+    height: number
+  ): void {
+    ctx.clearRect(0, 0, width, height);
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = "#e2f9ff";
+    const shardCount = Math.max(
+      18,
+      Math.min(72, Math.round((spriteWidth * spriteHeight) / 160))
+    );
+    for (let index = 0; index < shardCount; index += 1) {
+      const x = padding + ((index * 37 + index * index * 11) % spriteWidth);
+      const y = padding + ((index * 53 + index * index * 7) % spriteHeight);
+      const shardWidth = 1 + (index % 3);
+      const shardHeight = 2 + ((index * 5) % 7);
+      ctx.fillRect(x, y, shardWidth, shardHeight);
+    }
+    ctx.globalCompositeOperation = "destination-in";
+    ctx.drawImage(image, padding, padding, spriteWidth, spriteHeight);
   }
 
   /** Reset all cross-frame state. Called on dispose + canvas clear. */
   reset(): void {
-    this.ghosts.clear();
-    this.epoch = null;
-    this.time = 0;
+    this.history.reset();
+    this.knownPropIds.clear();
+    this.treatmentCache = new WeakMap();
   }
 
   dispose(): void {
