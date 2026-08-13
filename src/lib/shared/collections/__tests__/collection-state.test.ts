@@ -22,6 +22,9 @@ interface FakeRepo extends FirebaseCollectionRepository<CollectionEntry> {
   failNextSave: boolean;
   failNextRemove: boolean;
   remote: CollectionEntry[];
+  remoteByUser: Map<string, CollectionEntry[]>;
+  loadedUserIds: string[];
+  loadImpl: ((uid: string) => Promise<CollectionEntry[]>) | null;
 }
 
 function makeRepo(): FakeRepo {
@@ -31,8 +34,13 @@ function makeRepo(): FakeRepo {
     failNextSave: false,
     failNextRemove: false,
     remote: [],
-    async load() {
-      return [...repo.remote];
+    remoteByUser: new Map(),
+    loadedUserIds: [],
+    loadImpl: null,
+    async load(uid) {
+      repo.loadedUserIds.push(uid);
+      if (repo.loadImpl) return repo.loadImpl(uid);
+      return [...(repo.remoteByUser.get(uid) ?? repo.remote)];
     },
     async save(_uid, entry) {
       if (repo.failNextSave) {
@@ -139,6 +147,53 @@ describe("CollectionState", () => {
     repo.failNextSave = true;
     await expect(s.rename(entry.id, "Nope")).rejects.toThrow("save denied");
     expect(s.collection[0]?.name).toBe("E");
+  });
+
+  it("shows a separate read-only preview and restores the owner's saved Art", async () => {
+    const owned = { id: "owned", name: "Owner Art", createdAt: 1 };
+    const previewed = { id: "preview", name: "Preview Art", createdAt: 2 };
+    repo.remoteByUser.set("owner", [owned]);
+    repo.remoteByUser.set("preview-user", [previewed]);
+
+    await s.init("owner");
+    await s.startReadOnlyPreview("preview-user");
+
+    expect(s.isReadOnlyPreview).toBe(true);
+    expect(s.collection).toEqual([previewed]);
+    expect(repo.loadedUserIds).toEqual(["owner", "preview-user"]);
+
+    const savedBefore = repo.saved.length;
+    await expect(s.add(base)).rejects.toThrow("read-only");
+    await expect(s.remove(previewed.id)).rejects.toThrow("read-only");
+    await expect(s.rename(previewed.id, "Changed")).rejects.toThrow(
+      "read-only"
+    );
+    expect(repo.saved).toHaveLength(savedBefore);
+    expect(repo.removed).toHaveLength(0);
+
+    s.stopReadOnlyPreview();
+    expect(s.isReadOnlyPreview).toBe(false);
+    expect(s.collection).toEqual([owned]);
+  });
+
+  it("ignores an older saved-Art preview response after the identity changes", async () => {
+    const pending = new Map<string, (entries: CollectionEntry[]) => void>();
+    repo.loadImpl = (uid) =>
+      new Promise((resolve) => {
+        pending.set(uid, resolve);
+      });
+
+    const first = s.startReadOnlyPreview("first-user");
+    const second = s.startReadOnlyPreview("second-user");
+    pending.get("second-user")?.([
+      { id: "second", name: "Second", createdAt: 2 },
+    ]);
+    await second;
+    pending.get("first-user")?.([{ id: "first", name: "First", createdAt: 1 }]);
+    await first;
+
+    expect(s.collection.map((entry) => entry.id)).toEqual(["second"]);
+    expect(s.loading).toBe(false);
   });
 
   it("teardown() clears state", async () => {

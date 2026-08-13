@@ -24,6 +24,7 @@ instead of showing an empty shell.
 <script lang="ts">
   import { onMount, type Component } from "svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
   import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
@@ -51,6 +52,7 @@ instead of showing an empty shell.
   import { getSharedCollectionsContext } from "../context/shared-collections-context";
 
   const signedIn = $derived(!!authState.user);
+  const previewReadOnly = $derived(userPreviewState.isActive);
   const sharedCollectionsState = getSharedCollectionsContext();
   const sharedCollections = $derived(sharedCollectionsState.items);
 
@@ -59,15 +61,30 @@ instead of showing an empty shell.
       collectionsState.ensureStarted();
       followedCollectionsState.ensureStarted();
     }
-    const uid = authState.user?.uid;
-    if (uid) {
+    const signedInUserId = authState.user?.uid;
+    const effectiveUserId = authState.effectiveUserId;
+    if (signedInUserId) {
       // The Art shelf's three singletons are also started at auth boot
       // (auth-boot-orchestrator), but a fast Library visit can beat that
       // non-blocking chain — ensureStarted() is idempotent per uid, so
       // this becomes a no-op once boot's own init() has already fired.
-      tunnelCollectionState.ensureStarted(uid);
-      scene3dCollectionState.ensureStarted(uid);
-      mandalaCollectionState.ensureStarted(uid);
+      tunnelCollectionState.ensureStarted(signedInUserId);
+      scene3dCollectionState.ensureStarted(signedInUserId);
+      mandalaCollectionState.ensureStarted(signedInUserId);
+    }
+
+    if (previewReadOnly && effectiveUserId) {
+      void Promise.all([
+        tunnelCollectionState.startReadOnlyPreview(effectiveUserId),
+        scene3dCollectionState.startReadOnlyPreview(effectiveUserId),
+        mandalaCollectionState.startReadOnlyPreview(effectiveUserId),
+      ]).catch((error: unknown) =>
+        console.warn("[MyCollectionsPanel] Saved Art preview failed:", error)
+      );
+    } else {
+      tunnelCollectionState.stopReadOnlyPreview();
+      scene3dCollectionState.stopReadOnlyPreview();
+      mandalaCollectionState.stopReadOnlyPreview();
     }
   });
 
@@ -125,21 +142,31 @@ instead of showing an empty shell.
   // Synthetic — not a Firestore doc. Its id "all" can't collide with real
   // collections (Firestore auto-ids are 20 chars; system ids use "system_").
   let libraryCount = $state(0);
+  let libraryCountRevision = 0;
   $effect(() => {
-    if (!signedIn) {
+    const effectiveUserId = authState.effectiveUserId;
+    const revision = ++libraryCountRevision;
+    if (!effectiveUserId) {
       libraryCount = 0;
       return;
     }
     getLibraryRepository()
       .getSequences()
-      .then((seqs) => (libraryCount = seqs.length))
+      .then((seqs) => {
+        if (
+          revision === libraryCountRevision &&
+          authState.effectiveUserId === effectiveUserId
+        ) {
+          libraryCount = seqs.length;
+        }
+      })
       .catch(() => {});
   });
 
   const allShelf = $derived<LibraryCollection>({
     id: "all",
     name: "All",
-    ownerId: authState.user?.uid ?? "",
+    ownerId: authState.effectiveUserId ?? "",
     sequenceIds: [],
     sequenceCount: libraryCount,
     icon: "fa-layer-group",
@@ -282,7 +309,7 @@ instead of showing an empty shell.
     return {
       id,
       name,
-      ownerId: authState.user?.uid ?? "",
+      ownerId: authState.effectiveUserId ?? "",
       sequenceIds: [],
       sequenceCount,
       coverImageUrl,
@@ -403,7 +430,9 @@ instead of showing an empty shell.
   {/each}
 {/snippet}
 
-{#snippet sharedShelfContent(sel: { id: string; ownerId: string | null } | null)}
+{#snippet sharedShelfContent(
+  sel: { id: string; ownerId: string | null } | null
+)}
   {#if sharedCollectionsState.loading}
     <div class="shared-shelf-state" role="status">
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -432,50 +461,55 @@ instead of showing an empty shell.
   {#each collections as c (c.id)}
     <CollectionCard
       collection={c}
+      readonly={previewReadOnly}
       selected={!!sel && sel.id === c.id && !sel.ownerId}
       onOpen={() => openCollection(c.id, c.name)}
-      onEditRule={c.kind === "smart" ? () => (smartEditTarget = c) : undefined}
+      onEditRule={c.kind === "smart" && !previewReadOnly
+        ? () => (smartEditTarget = c)
+        : undefined}
     />
   {/each}
 
-  {#if showInput}
-    <div class="new-tile-input">
-      <!-- svelte-ignore a11y_autofocus -->
-      <input
-        type="text"
-        class="name-field"
-        placeholder="Collection name"
-        aria-label="New collection name"
-        bind:value={newName}
-        onkeydown={handleInputKeydown}
-        maxlength="60"
-        autofocus
+  {#if !previewReadOnly}
+    {#if showInput}
+      <div class="new-tile-input">
+        <!-- svelte-ignore a11y_autofocus -->
+        <input
+          type="text"
+          class="name-field"
+          placeholder="Collection name"
+          aria-label="New collection name"
+          bind:value={newName}
+          onkeydown={handleInputKeydown}
+          maxlength="60"
+          autofocus
+        />
+        <button
+          type="button"
+          class="confirm-create"
+          onclick={handleCreate}
+          disabled={!newName.trim() || creating}
+          aria-label="Create collection"
+        >
+          <i class="fas fa-check" aria-hidden="true"></i>
+        </button>
+      </div>
+    {:else}
+      <CollectionAddTile
+        label="New collection"
+        hint="Choose the sequences yourself"
+        icon="fa-plus"
+        onclick={() => (showInput = true)}
       />
-      <button
-        type="button"
-        class="confirm-create"
-        onclick={handleCreate}
-        disabled={!newName.trim() || creating}
-        aria-label="Create collection"
-      >
-        <i class="fas fa-check" aria-hidden="true"></i>
-      </button>
-    </div>
-  {:else}
+    {/if}
+
     <CollectionAddTile
-      label="New collection"
-      hint="Choose the sequences yourself"
-      icon="fa-plus"
-      onclick={() => (showInput = true)}
+      label="New Smart Collection"
+      hint="Build a live collection from filters"
+      icon="fa-wand-magic-sparkles"
+      onclick={() => (smartBuilderOpen = true)}
     />
   {/if}
-
-  <CollectionAddTile
-    label="New Smart Collection"
-    hint="Build a live collection from filters"
-    icon="fa-wand-magic-sparkles"
-    onclick={() => (smartBuilderOpen = true)}
-  />
 {/snippet}
 
 {#snippet artShelf(sel: { id: string; ownerId: string | null } | null)}
@@ -540,8 +574,10 @@ instead of showing an empty shell.
       selected={!!sel &&
         sel.ownerId === item.ownerId &&
         sel.id === item.collection.id}
-      onUnfollow={() =>
-        followedCollectionsState.unfollow(item.ownerId, item.collection.id)}
+      onUnfollow={previewReadOnly
+        ? undefined
+        : () =>
+            followedCollectionsState.unfollow(item.ownerId, item.collection.id)}
       onOpen={() =>
         openForeignCollection(
           item.ownerId,
@@ -715,14 +751,14 @@ instead of showing an empty shell.
   </div>
 {/if}
 
-{#if smartBuilderOpen}
+{#if smartBuilderOpen && !previewReadOnly}
   <SmartCollectionBuilderSheet
     mode="create"
     onClose={() => (smartBuilderOpen = false)}
   />
 {/if}
 
-{#if smartEditTarget?.filterSpec}
+{#if smartEditTarget?.filterSpec && !previewReadOnly}
   <SmartCollectionBuilderSheet
     mode="edit"
     editCollectionId={smartEditTarget.id}

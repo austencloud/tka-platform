@@ -1,4 +1,5 @@
 import { authState, getEffectiveUserId } from "$lib/shared/auth/state/auth-state.svelte";
+import { isPreviewReadOnly } from "$lib/shared/debug/state/user-preview-state.svelte";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
 import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
 import { isFullAccountUser } from "$lib/shared/auth/domain/access-tier";
@@ -57,8 +58,12 @@ class CollectionsState {
    * live for the current user.
    */
   ensureStarted(): void {
-    const uid = authState.user?.uid ?? null;
-    if (!uid || this.startedFor === uid) return;
+    const uid = authState.effectiveUserId;
+    if (!uid) {
+      this.teardown();
+      return;
+    }
+    if (this.startedFor === uid) return;
 
     this.teardown();
     this.startedFor = uid;
@@ -72,11 +77,14 @@ class CollectionsState {
 
     // Favorites has to exist so it can anchor the picker's first chip; the
     // subscription reports it the moment it's created. Fire-and-forget.
-    ensureSystemCollections().catch((err) =>
-      console.error("[collections-state] ensureSystemCollections failed:", err)
-    );
+    if (!isPreviewReadOnly() && uid === authState.user?.uid) {
+      ensureSystemCollections().catch((err) =>
+        console.error("[collections-state] ensureSystemCollections failed:", err)
+      );
+    }
 
     this.unsubscribe = subscribeToCollections((cols) => {
+      if (this.startedFor !== uid) return;
       this.collections = cols;
       this.loading = false;
       writeOwnMirror(uid, cols);
@@ -96,6 +104,14 @@ class CollectionsState {
     return !!c && c.sequenceIds.includes(sequenceId);
   }
 
+  private blockPreviewWrite(notify = true): boolean {
+    if (!isPreviewReadOnly()) return false;
+    if (notify) {
+      toast.warning("This library is read-only while previewing another user.");
+    }
+    return true;
+  }
+
   /**
    * Toggle membership with a live write. The manager surfaces its own error
    * toast; on failure latency compensation reverts the snapshot, so we only
@@ -106,6 +122,7 @@ class CollectionsState {
    * deserve a way back. Adds are self-evident and stay silent.
    */
   async toggle(sequenceId: string, collectionId: string): Promise<void> {
+    if (this.blockPreviewWrite()) return;
     const c = this.collections.find((col) => col.id === collectionId);
     if (!c) return;
 
@@ -158,6 +175,7 @@ class CollectionsState {
     sequenceIds: readonly string[],
     collectionId: string
   ): Promise<boolean> {
+    if (this.blockPreviewWrite()) return false;
     const c = this.collections.find((col) => col.id === collectionId);
     if (!c || c.kind === "smart") return false;
 
@@ -204,6 +222,7 @@ class CollectionsState {
     sequenceIds: readonly string[],
     collectionId: string
   ): Promise<BulkCollectionRemoveResult | null> {
+    if (this.blockPreviewWrite()) return null;
     const c = this.collections.find((col) => col.id === collectionId);
     if (!c || c.kind === "smart") return null;
 
@@ -271,6 +290,7 @@ class CollectionsState {
    * failure (the manager toasts its own error).
    */
   async create(name: string): Promise<LibraryCollection | null> {
+    if (this.blockPreviewWrite()) return null;
     const trimmed = name.trim();
     if (!trimmed) return null;
 
@@ -298,6 +318,7 @@ class CollectionsState {
     filterSpec: SmartFilterSpec,
     initialCount = 0
   ): Promise<LibraryCollection | null> {
+    if (this.blockPreviewWrite()) return null;
     const trimmed = name.trim();
     if (!trimmed) return null;
 
@@ -325,6 +346,7 @@ class CollectionsState {
     filterSpec: SmartFilterSpec,
     matchCount?: number
   ): Promise<boolean> {
+    if (this.blockPreviewWrite()) return false;
     try {
       await updateCollectionFilterSpec(collectionId, filterSpec, matchCount);
       return true;
@@ -342,6 +364,7 @@ class CollectionsState {
     collectionId: string,
     matchCount: number
   ): Promise<void> {
+    if (this.blockPreviewWrite(false)) return;
     await syncSmartCollectionCount(collectionId, matchCount);
   }
 
@@ -351,6 +374,7 @@ class CollectionsState {
    * renamed) and toasts its own error, so callers only need the boolean.
    */
   async rename(collectionId: string, name: string): Promise<boolean> {
+    if (this.blockPreviewWrite()) return false;
     const trimmed = name.trim();
     if (!trimmed) return false;
     try {
@@ -371,6 +395,7 @@ class CollectionsState {
     collectionId: string,
     details: { name: string; description: string; credit: string }
   ): Promise<boolean> {
+    if (this.blockPreviewWrite()) return false;
     const name = details.name.trim();
     if (!name) return false;
     try {
@@ -391,6 +416,7 @@ class CollectionsState {
    * alone. Returns false when the write fails (manager toasts).
    */
   async setPublic(collectionId: string, isPublic: boolean): Promise<boolean> {
+    if (this.blockPreviewWrite()) return false;
     // Smart collections are private-only in v1 — refuse publishing them.
     const c = this.collections.find((col) => col.id === collectionId);
     if (c?.kind === "smart") return false;
@@ -424,6 +450,7 @@ class CollectionsState {
    * The sequences themselves are untouched — only the folder goes away.
    */
   async remove(collectionId: string): Promise<boolean> {
+    if (this.blockPreviewWrite()) return false;
     try {
       await deleteCollection(collectionId);
       return true;
@@ -437,6 +464,7 @@ class CollectionsState {
     name: string,
     sequenceId: string
   ): Promise<LibraryCollection | null> {
+    if (this.blockPreviewWrite()) return null;
     const created = await this.create(name);
     if (!created) return null;
     try {
@@ -452,6 +480,7 @@ class CollectionsState {
     name: string,
     sequenceIds: readonly string[]
   ): Promise<LibraryCollection | null> {
+    if (this.blockPreviewWrite()) return null;
     const created = await this.create(name);
     if (!created) return null;
     try {

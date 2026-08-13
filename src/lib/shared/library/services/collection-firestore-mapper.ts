@@ -15,6 +15,7 @@ import {
   type Firestore,
 } from "firebase/firestore";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { isPreviewReadOnly } from "$lib/shared/debug/state/user-preview-state.svelte";
 import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
 import { LibrarySequenceDocSchema } from "$lib/shared/library/domain/library-schemas";
 import { hydrate } from "$lib/shared/foundation/services/sequence-hydrator";
@@ -42,7 +43,15 @@ import type { LibrarySequence } from "$lib/shared/library/domain/models/library-
 /**
  * Get the current user ID or throw if not authenticated
  */
-export function getAuthenticatedUserId(): string {
+export function getAuthenticatedUserId(
+  access: "read" | "write" = "write"
+): string {
+  if (access === "write" && isPreviewReadOnly()) {
+    throw new CollectionError(
+      "Library is read-only while previewing another user",
+      "UNAUTHORIZED"
+    );
+  }
   const userId = authState.effectiveUserId;
   if (!userId) {
     throw new CollectionError("User not authenticated", "UNAUTHORIZED");

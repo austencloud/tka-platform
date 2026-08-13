@@ -386,7 +386,7 @@ export async function getCollection(
   collectionId: string
 ): Promise<LibraryCollection | null> {
   const firestore = await getFirestoreInstance();
-  const userId = getAuthenticatedUserId();
+  const userId = getAuthenticatedUserId("read");
   const docRef = doc(firestore, getUserCollectionPath(userId, collectionId));
   const docSnap = await getDoc(docRef);
 
@@ -577,7 +577,7 @@ export async function deleteCollection(collectionId: string): Promise<void> {
 
 export async function getCollections(): Promise<LibraryCollection[]> {
   const firestore = await getFirestoreInstance();
-  const userId = getAuthenticatedUserId();
+  const userId = getAuthenticatedUserId("read");
   const collectionsRef = collection(firestore, getUserCollectionsPath(userId));
   const q = query(collectionsRef, orderBy("sortOrder", "asc"));
 
@@ -785,7 +785,7 @@ export async function getCollectionSequences(
   collectionId: string
 ): Promise<LibrarySequence[]> {
   const firestore = await getFirestoreInstance();
-  const userId = getAuthenticatedUserId();
+  const userId = getAuthenticatedUserId("read");
   const collectionData = await getCollection(collectionId);
 
   if (!collectionData || collectionData.sequenceIds.length === 0) {
@@ -1248,7 +1248,7 @@ export async function removeSequencesFromCollection(
 export function subscribeToCollections(
   callback: (collections: LibraryCollection[]) => void
 ): () => void {
-  const userId = getAuthenticatedUserId();
+  const userId = getAuthenticatedUserId("read");
   let unsubscribe: Unsubscribe | null = null;
 
   getFirestoreInstance()
@@ -1311,7 +1311,7 @@ export function subscribeToCollection(
   collectionId: string,
   callback: (collection: LibraryCollection | null) => void
 ): () => void {
-  const userId = getAuthenticatedUserId();
+  const userId = getAuthenticatedUserId("read");
   let unsubscribe: Unsubscribe | null = null;
 
   getFirestoreInstance()

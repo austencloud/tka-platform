@@ -9,16 +9,28 @@ const mocks = vi.hoisted(() => ({
 	getPublicCollection: vi.fn(),
 	getUserDisplayNames: vi.fn(),
 	toastError: vi.fn(),
+	toastWarning: vi.fn(),
 	snapshotCb: null as ((refs: FollowedCollectionRef[]) => void) | null,
+	previewReadOnly: false,
+	authState: {
+		user: { uid: "me" },
+		effectiveUserId: "me" as string | null,
+	},
+	unsubscribes: [] as Array<ReturnType<typeof vi.fn>>,
+	subscribeToFollowedCollections: vi.fn(
+		(cb: (refs: FollowedCollectionRef[]) => void) => {
+			mocks.snapshotCb = cb;
+			const unsubscribe = vi.fn();
+			mocks.unsubscribes.push(unsubscribe);
+			return Promise.resolve(unsubscribe);
+		},
+	),
 }));
 
 vi.mock("$lib/shared/library/services/followed-collections", () => ({
 	followCollection: mocks.followCollection,
 	unfollowCollection: mocks.unfollowCollection,
-	subscribeToFollowedCollections: (cb: (refs: FollowedCollectionRef[]) => void) => {
-		mocks.snapshotCb = cb;
-		return Promise.resolve(() => {});
-	},
+	subscribeToFollowedCollections: mocks.subscribeToFollowedCollections,
 }));
 vi.mock("$lib/features/library/services/public-collection-loader", () => ({
 	getPublicCollection: mocks.getPublicCollection,
@@ -27,10 +39,17 @@ vi.mock("$lib/shared/community/services/user-repository", () => ({
 	getUserDisplayNames: mocks.getUserDisplayNames,
 }));
 vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
-	authState: { user: { uid: "me" } },
+	authState: mocks.authState,
+}));
+vi.mock("$lib/shared/debug/state/user-preview-state.svelte", () => ({
+	isPreviewReadOnly: () => mocks.previewReadOnly,
 }));
 vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({
-	toast: { error: mocks.toastError, success: vi.fn() },
+	toast: {
+		error: mocks.toastError,
+		success: vi.fn(),
+		warning: mocks.toastWarning,
+	},
 }));
 
 import { followedCollectionsState } from "../followed-collections-state.svelte";
@@ -68,10 +87,37 @@ beforeEach(() => {
 	localStorage.clear();
 	vi.clearAllMocks();
 	mocks.snapshotCb = null;
+	mocks.unsubscribes = [];
+	mocks.previewReadOnly = false;
+	mocks.authState.effectiveUserId = "me";
 	mocks.getUserDisplayNames.mockResolvedValue(new Map<string, string>());
 });
 
 describe("followedCollectionsState", () => {
+	it("restarts its follow subscription for the effective preview identity", async () => {
+		followedCollectionsState.ensureStarted();
+		await Promise.resolve();
+
+		mocks.previewReadOnly = true;
+		mocks.authState.effectiveUserId = "preview-user";
+		followedCollectionsState.ensureStarted();
+		await Promise.resolve();
+
+		expect(mocks.subscribeToFollowedCollections).toHaveBeenCalledTimes(2);
+		expect(mocks.unsubscribes[0]).toHaveBeenCalledOnce();
+	});
+
+	it("blocks follow writes while previewing another user", async () => {
+		mocks.previewReadOnly = true;
+
+		await followedCollectionsState.follow("owner", "collection");
+		await followedCollectionsState.unfollow("owner", "collection");
+
+		expect(mocks.followCollection).not.toHaveBeenCalled();
+		expect(mocks.unfollowCollection).not.toHaveBeenCalled();
+		expect(mocks.toastWarning).toHaveBeenCalledTimes(2);
+	});
+
 	it("keeps the surviving collections when one ref's read rejects", async () => {
 		mocks.getPublicCollection.mockImplementation((ownerId: string, colId: string) =>
 			colId === "c1" ? Promise.resolve(col("c1")) : Promise.reject(new Error("denied")),

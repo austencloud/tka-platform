@@ -21,6 +21,7 @@ const firestoreMocks = vi.hoisted(() => {
     removeSavedSequenceIds: vi.fn(),
     captureEvent: vi.fn(),
     captureException: vi.fn(),
+    previewReadOnly: false,
   };
 });
 
@@ -52,6 +53,9 @@ vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
     user: { uid: "user-1", displayName: "Test User" },
     isFullAccount: true,
   },
+}));
+vi.mock("$lib/shared/debug/state/user-preview-state.svelte", () => ({
+  isPreviewReadOnly: () => firestoreMocks.previewReadOnly,
 }));
 vi.mock("$lib/shared/application/get-error-handler", () => ({
   getErrorHandler: () => ({ showUserError: firestoreMocks.showUserError }),
@@ -142,6 +146,7 @@ function makeSequence() {
 describe("LibraryRepository.saveSequence atomic persistence", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    firestoreMocks.previewReadOnly = false;
     firestoreMocks.updateDoc.mockResolvedValue(undefined);
     firestoreMocks.getDoc.mockResolvedValue({
       exists: () => false,
@@ -165,6 +170,16 @@ describe("LibraryRepository.saveSequence atomic persistence", () => {
       },
     ]);
     firestoreMocks.deleteLocalSequences.mockResolvedValue(undefined);
+  });
+
+  it("rejects preview writes before a batch operation can reach Firestore", async () => {
+    firestoreMocks.previewReadOnly = true;
+    const repository = new LibraryRepository(null as never);
+
+    await expect(
+      repository.deleteSequences(["sequence-1"])
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    expect(firestoreMocks.deleteSequences).not.toHaveBeenCalled();
   });
 
   it("commits the sequence and profile activity patch in one batch", async () => {

@@ -134,7 +134,7 @@
   setSharedCollectionsContext(sharedCollectionsState);
 
   $effect(() => {
-    sharedCollectionsState.start(authState.user?.uid ?? null);
+    sharedCollectionsState.start(authState.effectiveUserId);
   });
 
   // ✅ PURE RUNES: Local state
@@ -357,24 +357,6 @@
       // TODO: Re-open sequence detail panel with contextId
     }
   }
-
-  // ✅ RELOAD LIBRARY ON IMPERSONATION CHANGE
-  // When admin impersonates a different user, reload My Library data
-  let lastEffectiveUserId = $state<string | null>(authState.effectiveUserId);
-  $effect(() => {
-    const currentEffectiveUserId = authState.effectiveUserId;
-    const isInMyLibrary = engine.source === "my-library";
-
-    // If user changed and we're viewing My Library, reload for the new user.
-    // Clearing the cache ensures loadLibrarySequences fetches from Firestore
-    // instead of returning the previous user's data.
-    if (currentEffectiveUserId !== lastEffectiveUserId && isInMyLibrary) {
-      engine.invalidateLibraryCache();
-      void engine.refresh();
-    }
-
-    lastEffectiveUserId = currentEffectiveUserId;
-  });
 
   // ✅ SYNC ANIMATION MODAL STATE
   $effect(() => {

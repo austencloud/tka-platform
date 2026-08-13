@@ -55,6 +55,7 @@ import { toggleFavorite as doToggleFavorite } from "$lib/shared/library/services
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { isPreviewReadOnly } from "$lib/shared/debug/state/user-preview-state.svelte";
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import {
   onLibraryMutated,
@@ -241,9 +242,13 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
   let isTransitioning = $state(false);
   let transitionTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  // Library cache (per-source, avoids Firestore round-trip on tab switch)
+  // Library cache (per-source + per-user, avoids Firestore round-trip on tab
+  // switch without ever carrying one account's rows into another preview).
   let libraryCache: SequenceData[] | null = null;
+  let libraryCacheUserId: string | null = null;
   let libraryLoadRevision = 0;
+  let initialized = false;
+  let lastEffectiveUserId = authState.effectiveUserId;
 
   // --- Derived: filtering + sorting pipeline ---
 
@@ -473,6 +478,24 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
       });
     });
 
+    $effect(() => {
+      const currentEffectiveUserId = authState.effectiveUserId;
+      if (currentEffectiveUserId === lastEffectiveUserId) return;
+
+      // A preview switch can happen while this engine stays mounted. Empty the
+      // previous account immediately, cancel its in-flight request, and load the
+      // new account through the same path a fresh Library visit uses.
+      lastEffectiveUserId = currentEffectiveUserId;
+      libraryLoadRevision += 1;
+      libraryCache = null;
+      libraryCacheUserId = null;
+      if (source === "my-library") {
+        allSequences = [];
+        sectionsReady = false;
+        if (initialized) void loadLibrarySequences();
+      }
+    });
+
     // Return root cleanup
     return () => {};
   });
@@ -515,9 +538,11 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
   async function loadLibrarySequences(): Promise<void> {
     const requestRevision = ++libraryLoadRevision;
+    const requestedUserId = authState.effectiveUserId;
     const requestedViewMode = { ..._viewMode };
     const isCurrentRequest = (): boolean =>
       requestRevision === libraryLoadRevision &&
+      requestedUserId === authState.effectiveUserId &&
       source === "my-library" &&
       sameViewMode(_viewMode, requestedViewMode);
 
@@ -554,7 +579,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
     }
 
     // Fast path: use cached data
-    if (libraryCache) {
+    if (libraryCache && libraryCacheUserId === requestedUserId) {
       allSequences = libraryCache;
       sectionsReady = true;
       isLoading = false;
@@ -583,6 +608,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
         if (!isCurrentRequest()) return;
         allSequences = local;
         libraryCache = local;
+        libraryCacheUserId = requestedUserId;
         sectionsReady = true;
       } catch (err) {
         if (!isCurrentRequest()) return;
@@ -623,6 +649,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
       );
       allSequences = deduped;
       libraryCache = deduped;
+      libraryCacheUserId = requestedUserId;
       sectionsReady = true;
     } catch (err) {
       if (!isCurrentRequest()) return;
@@ -760,6 +787,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
     // --- Initialize / Refresh ---
     async initialize(): Promise<void> {
+      initialized = true;
       if (source === "my-library") await loadLibrarySequences();
       else await loadCommunitySequences();
     },
@@ -779,6 +807,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
     async refresh(): Promise<void> {
       libraryCache = null;
+      libraryCacheUserId = null;
       if (source === "my-library") await loadLibrarySequences();
       else {
         try {
@@ -926,6 +955,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
     // --- Favorites ---
     async toggleFavorite(sequenceId: string): Promise<void> {
+      if (isPreviewReadOnly()) return;
       try {
         const newStatus = await doToggleFavorite(sequenceId);
         const update = (seq: SequenceData) =>
@@ -1017,6 +1047,7 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
     // --- Cache ---
     invalidateLibraryCache(): void {
       libraryCache = null;
+      libraryCacheUserId = null;
     },
 
     // --- Cleanup ---

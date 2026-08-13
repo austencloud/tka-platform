@@ -35,6 +35,8 @@ header; "Edit rule" reopens the builder to change it.
 		toSyntheticCollection,
 	} from "$lib/features/browse/collections/config/founding-collections";
 	import SmartCollectionDetailSurface from "./SmartCollectionDetailSurface.svelte";
+	import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
+	import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
 	let {
 		collectionId,
@@ -51,6 +53,7 @@ header; "Edit rule" reopens the builder to change it.
 	let reloadKey = $state(0);
 
 	const isFounding = $derived(!!collection && isFoundingId(collection.id));
+	const previewReadOnly = $derived(userPreviewState.isActive);
 	const tileColor = $derived(collection?.color ?? "var(--theme-accent)");
 	const spec = $derived(collection?.filterSpec ?? null);
 
@@ -62,6 +65,7 @@ header; "Edit rule" reopens the builder to change it.
 	// reflects here. A deleted (or non-smart) doc bails to the list.
 	$effect(() => {
 		const id = collectionId;
+		const effectiveUserId = authState.effectiveUserId;
 		void reloadKey;
 		collection = null;
 		loadState = "loading";
@@ -85,6 +89,7 @@ header; "Edit rule" reopens the builder to change it.
 
 		try {
 			unsubscribe = subscribeToCollection(id, (col) => {
+				if (authState.effectiveUserId !== effectiveUserId) return;
 				clearTimeout(timeout);
 				if (!col || col.kind !== "smart") {
 					onBack();
@@ -182,7 +187,7 @@ header; "Edit rule" reopens the builder to change it.
 		const eng = engine;
 		const col = collection;
 		if (!eng || !col || eng.isLoading) return;
-		if (isFoundingId(col.id)) return; // config-defined, nothing to write
+		if (isFoundingId(col.id) || previewReadOnly) return; // config-defined or preview-only
 		const live = eng.resultCount;
 		if (live !== col.sequenceCount) {
 			void collectionsState.syncSmartCount(col.id, live);
@@ -276,12 +281,12 @@ header; "Edit rule" reopens the builder to change it.
 	matchCount={liveMatchCount}
 	loading={resultsLoading}
 	error={hasLoadError}
-	readOnly={isFounding}
+	readOnly={isFounding || previewReadOnly}
 	{showBack}
 	editing={renaming}
 	{onBack}
-	onEdit={collection && !isFounding ? () => (editOpen = true) : undefined}
-	onOptions={collection && !isFounding ? handleOptions : undefined}
+	onEdit={collection && !isFounding && !previewReadOnly ? () => (editOpen = true) : undefined}
+	onOptions={collection && !isFounding && !previewReadOnly ? handleOptions : undefined}
 	onRetry={retryLoad}
 >
 	{#snippet titleEditor()}
@@ -316,7 +321,11 @@ header; "Edit rule" reopens the builder to change it.
 	{/snippet}
 </SmartCollectionDetailSurface>
 
-<ContextMenu {menuState} items={menuItems} onClose={() => (menuState = { open: false })} />
+<ContextMenu
+	{menuState}
+	items={previewReadOnly ? [] : menuItems}
+	onClose={() => (menuState = { open: false })}
+/>
 
 <ConfirmDialog
 	bind:isOpen={deleteConfirmOpen}
@@ -329,7 +338,7 @@ header; "Edit rule" reopens the builder to change it.
 	onCancel={() => (deleteConfirmOpen = false)}
 />
 
-{#if editOpen && collection}
+{#if editOpen && collection && !previewReadOnly}
 	<SmartCollectionBuilderSheet
 		mode="edit"
 		editCollectionId={collectionId}

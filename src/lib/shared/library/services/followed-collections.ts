@@ -57,7 +57,7 @@ export async function subscribeToFollowedCollections(
   callback: (refs: FollowedCollectionRef[]) => void
 ): Promise<Unsubscribe> {
   const firestore = await getFirestoreInstance();
-  const userId = getAuthenticatedUserId();
+  const userId = getAuthenticatedUserId("read");
   return onSnapshot(
     collection(firestore, getFollowedCollectionsPath(userId)),
     (snapshot) => {

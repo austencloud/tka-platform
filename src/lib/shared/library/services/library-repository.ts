@@ -28,6 +28,7 @@ import {
   getFirestoreInstance,
 } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { isPreviewReadOnly } from "$lib/shared/debug/state/user-preview-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import { PUBLIC_PROFILE_VERSION } from "$lib/shared/community/domain/models/public-profile-contract";
@@ -220,6 +221,16 @@ export class LibraryRepository {
     return userId;
   }
 
+  private getWritableUserId(): string {
+    if (isPreviewReadOnly()) {
+      throw new LibraryError(
+        "Library is read-only while previewing another user",
+        "UNAUTHORIZED"
+      );
+    }
+    return this.getUserId();
+  }
+
   /**
    * `{ isAnonymous }` for the live auth user, or `{}` when there is no current
    * user. Merged into every users/{uid} write this repository makes so a doc it
@@ -363,7 +374,7 @@ export class LibraryRepository {
     overrides?: { visibility?: SequenceVisibility; notes?: string }
   ): Promise<LibrarySequence> {
     const firestore = await getFirestoreInstance();
-    const userId = this.getUserId();
+    const userId = this.getWritableUserId();
 
     if (isEmptySequence(sequence)) {
       throw new LibraryError(
@@ -800,7 +811,7 @@ export class LibraryRepository {
     thumbnailUrl: string
   ): Promise<void> {
     const firestore = await getFirestoreInstance();
-    const userId = this.getUserId();
+    const userId = this.getWritableUserId();
     const existing = await this.getSequence(sequenceId);
     if (!existing) {
       throw new LibraryError("Sequence not found", "NOT_FOUND", sequenceId);
@@ -918,7 +929,7 @@ export class LibraryRepository {
     updates: Partial<LibrarySequence>
   ): Promise<LibrarySequence> {
     const firestore = await getFirestoreInstance();
-    const userId = this.getUserId();
+    const userId = this.getWritableUserId();
     const docRef = doc(firestore, getUserSequencePath(userId, sequenceId));
 
     // Read existing from local cache (fast - Firestore serves from cache first)
@@ -1188,6 +1199,7 @@ export class LibraryRepository {
   }
 
   async publishSequence(sequenceId: string): Promise<void> {
+    this.getWritableUserId();
     const existing = await this.getSequence(sequenceId);
     if (!existing) {
       throw new LibraryError("Sequence not found", "NOT_FOUND", sequenceId);
@@ -1200,7 +1212,7 @@ export class LibraryRepository {
 
     // Publishing an already-public owner doc is an explicit repair operation.
     // This covers legacy records whose public mirror was never written.
-    const userId = this.getUserId();
+    const userId = this.getWritableUserId();
     const compositionReady = {
       ...existing,
       ...ensureComposition(existing),
@@ -1210,6 +1222,7 @@ export class LibraryRepository {
   }
 
   async unpublishSequence(sequenceId: string): Promise<void> {
+    this.getWritableUserId();
     const existing = await this.getSequence(sequenceId);
     if (!existing) {
       throw new LibraryError("Sequence not found", "NOT_FOUND", sequenceId);
@@ -1223,7 +1236,7 @@ export class LibraryRepository {
     // Likewise, an already-private doc can still have a stale legacy mirror.
     await this.publicIndexSyncer.removeFromPublicIndex(sequenceId);
     await this.touchSequenceCollections(
-      this.getUserId(),
+      this.getWritableUserId(),
       existing.collectionIds
     );
   }
@@ -1347,7 +1360,7 @@ export class LibraryRepository {
   ): Promise<void> {
     try {
       const firestore = await getFirestoreInstance();
-      const userId = this.getUserId();
+      const userId = this.getWritableUserId();
       const sequenceDocRef = doc(
         firestore,
         getUserSequencePath(userId, sequence.id)
@@ -1493,6 +1506,7 @@ export class LibraryRepository {
   async deleteSequences(sequenceIds: string[]): Promise<BatchSequenceResult[]> {
     const uniqueIds = [...new Set(sequenceIds.filter(Boolean))];
     if (uniqueIds.length === 0) return [];
+    this.getWritableUserId();
 
     return runSequencePermanentDeletion(uniqueIds, () =>
       this.performPermanentDeletion(uniqueIds)
@@ -1607,6 +1621,7 @@ export class LibraryRepository {
     sequenceIds: string[],
     collectionId: string
   ): Promise<void> {
+    this.getWritableUserId();
     return this.batchOps.moveToCollection(sequenceIds, collectionId);
   }
 
@@ -1614,6 +1629,7 @@ export class LibraryRepository {
     sequenceIds: string[],
     tagIds: string[]
   ): Promise<void> {
+    this.getWritableUserId();
     return this.batchOps.addTagsToSequences(sequenceIds, tagIds);
   }
 
@@ -1621,6 +1637,7 @@ export class LibraryRepository {
     sequenceIds: string[],
     visibility: SequenceVisibility
   ): Promise<BatchSequenceResult[]> {
+    this.getWritableUserId();
     return this.batchOps.setVisibilityBatch(sequenceIds, visibility);
   }
 
@@ -1629,14 +1646,17 @@ export class LibraryRepository {
   // ============================================================
 
   async softDeleteSequence(sequenceId: string): Promise<void> {
+    this.getWritableUserId();
     return this.recycleBin.softDeleteSequence(sequenceId);
   }
 
   async restoreSequence(sequenceId: string): Promise<RestoreSequenceResult> {
+    this.getWritableUserId();
     return this.recycleBin.restoreSequence(sequenceId);
   }
 
   async purgeSequence(sequenceId: string): Promise<void> {
+    this.getWritableUserId();
     return this.recycleBin.purgeSequence(sequenceId);
   }
 
@@ -1645,6 +1665,7 @@ export class LibraryRepository {
   }
 
   async emptyRecycleBin(): Promise<void> {
+    this.getWritableUserId();
     return this.recycleBin.emptyRecycleBin();
   }
 
@@ -1653,6 +1674,7 @@ export class LibraryRepository {
   // ============================================================
 
   async toggleFavorite(sequenceId: string): Promise<boolean> {
+    this.getWritableUserId();
     const existing = await this.getSequence(sequenceId);
     if (!existing) {
       throw new LibraryError("Sequence not found", "NOT_FOUND", sequenceId);

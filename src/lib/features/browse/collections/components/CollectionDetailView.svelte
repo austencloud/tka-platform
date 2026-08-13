@@ -49,6 +49,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
   import { openCollectionPickerForSequences } from "$lib/features/library/state/collection-picker-state.svelte";
   import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { getCollectionCollaborationManager } from "$lib/shared/library/get-collection-collaboration-manager";
   import { openShareCollectionSheet } from "$lib/shared/inbox/state/send-sequence-state.svelte";
@@ -118,13 +119,19 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 
   const isSystem = $derived(!!collection && isSystemCollection(collection));
   const isShared = $derived(!!foreignOwnerId && !!accessRole);
-  const canEdit = $derived(!foreignOwnerId || accessRole === "editor");
-  const canManageAccess = $derived(!foreignOwnerId);
+  const previewReadOnly = $derived(userPreviewState.isActive);
+  const canEdit = $derived(
+    !previewReadOnly && (!foreignOwnerId || accessRole === "editor")
+  );
+  const canManageAccess = $derived(!previewReadOnly && !foreignOwnerId);
   const tileColor = $derived(collection?.color ?? "var(--theme-accent)");
 
   $effect(() => {
     const id = collectionId;
     const owner = foreignOwnerId;
+    const effectiveUserId = authState.effectiveUserId;
+    const isCurrentIdentity = () =>
+      authState.effectiveUserId === effectiveUserId;
     firstSnapshotSeen = false;
     collection = null;
     members = [];
@@ -137,6 +144,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
       followedCollectionsState.ensureStarted();
       let previousFingerprint: string | null = null;
       const handleCollection = (col: LibraryCollection | null) => {
+        if (!isCurrentIdentity()) return;
         firstSnapshotSeen = true;
         if (!col) {
           memberLoadEpoch++;
@@ -154,6 +162,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
         }
       };
       const handleError = (err: Error) => {
+        if (!isCurrentIdentity()) return;
         console.error(
           "[CollectionDetail] Collection subscription failed:",
           err
@@ -185,6 +194,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
     }
 
     const unsubscribe = subscribeToCollection(id, (col) => {
+      if (!isCurrentIdentity()) return;
       const wasFirst = !firstSnapshotSeen;
       firstSnapshotSeen = true;
 
@@ -298,6 +308,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
   }
 
   function handleRemoveFromCollection(sequenceId: string) {
+    if (previewReadOnly) return;
     // toggle() sees the sequence is a member and removes it; the collection
     // subscription then drops it from the grid.
     if (foreignOwnerId && accessRole === "editor") {
@@ -344,6 +355,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
   }
 
   function openAddSelectedToCollection(): void {
+    if (previewReadOnly) return;
     if (selectionState.selectedCount === 0) return;
     openCollectionPickerForSequences({
       sequenceIds: [...selectionState.selectedIds],
@@ -354,6 +366,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
   let removingSelected = $state(false);
 
   async function removeSelectedFromCollection(): Promise<void> {
+    if (previewReadOnly) return;
     if (removingSelected || selectionState.selectedCount === 0) return;
     const selectedIds = [...selectionState.selectedIds];
     removingSelected = true;
@@ -461,7 +474,9 @@ becomes private while open, we bail back to the list instead of showing a ghost.
   // consume it (one-shot) and open the scanner straight away. Foreign
   // (read-only) collections never scan.
   const pendingScan = consumePendingScanIntent();
-  let scanSheetOpen = $state(pendingScan === collectionId && !foreignOwnerId);
+  let scanSheetOpen = $state(
+    pendingScan === collectionId && !foreignOwnerId && !previewReadOnly
+  );
 
   // ── Header options (rename / delete) ─────────────────────────────
   let menuState: ContextMenuState = $state({ open: false });
@@ -519,7 +534,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
           },
         }
       );
-    } else if (isShared) {
+    } else if (isShared && !previewReadOnly) {
       if (accessRole === "editor") {
         items.push({
           id: "rename",
@@ -560,8 +575,9 @@ becomes private while open, we bail back to the list instead of showing a ghost.
   }
 
   async function commitRename() {
-    const name = renameValue.trim();
     renaming = false;
+    if (previewReadOnly) return;
+    const name = renameValue.trim();
     if (!collection || !name || name === collection.name) return;
     const wasPublic = collection.isPublic;
     if (foreignOwnerId && accessRole === "editor") {
@@ -593,6 +609,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 
   async function performDelete() {
     deleteConfirmOpen = false;
+    if (previewReadOnly) return;
     const wasPublic = collection?.isPublic ?? false;
     const ok = await collectionsState.remove(collectionId);
     if (ok) {
@@ -604,6 +621,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
 
   async function leaveCollection() {
     leaveConfirmOpen = false;
+    if (previewReadOnly) return;
     if (!foreignOwnerId || !authState.user?.uid) return;
     try {
       await collaborationManager.removeAccess(
@@ -704,7 +722,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
         </div>
       {/if}
 
-      {#if collection && foreignOwnerId && !accessRole}
+      {#if collection && foreignOwnerId && !accessRole && !previewReadOnly}
         {@const following = followedCollectionsState.isFollowed(
           foreignOwnerId,
           collectionId
@@ -839,7 +857,7 @@ becomes private while open, we bail back to the list instead of showing a ghost.
         resultTotal={visibleCount ?? members.length}
         onSelect={(sequence, variations) =>
           handleSequenceAction("view-detail", sequence, variations)}
-        selection={panelSelection}
+        selection={previewReadOnly ? undefined : panelSelection}
         showSelectionAction={false}
         hideSelectionToolbar
         collectionContext={canEdit

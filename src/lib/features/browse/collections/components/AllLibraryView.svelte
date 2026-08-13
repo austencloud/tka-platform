@@ -36,10 +36,12 @@ the gallery's, and the source is pinned to my-library with no toggle.
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
 
   // The desktop split view keeps the collection rail visible, so it passes no
   // onBack — BrowsePanel then omits the back pill entirely.
   let { onBack }: { onBack?: () => void } = $props();
+  const previewReadOnly = $derived(userPreviewState.isActive);
 
   const engine = createBrowseEngine({
     persistKey: "tka-browse-library-all",
@@ -176,7 +178,6 @@ the gallery's, and the source is pinned to my-library with no toggle.
     );
   }
 
-
   function openViewer(sequence: SequenceData, variations?: SequenceData[]) {
     openSequenceViewer(sequence, {
       returnPath: "/browse/library",
@@ -218,8 +219,8 @@ the gallery's, and the source is pinned to my-library with no toggle.
     showFilterBar={false}
     hideFilterChips
     onSelect={handleSelect}
-    {emptyAction}
-    {selection}
+    emptyAction={previewReadOnly ? undefined : emptyAction}
+    selection={previewReadOnly ? undefined : selection}
   />
 {/snippet}
 

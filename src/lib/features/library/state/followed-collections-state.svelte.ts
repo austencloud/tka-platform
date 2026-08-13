@@ -1,4 +1,5 @@
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { isPreviewReadOnly } from "$lib/shared/debug/state/user-preview-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
 import {
@@ -41,8 +42,12 @@ class FollowedCollectionsState {
 	private resolveEpoch = 0;
 
 	ensureStarted(): void {
-		const uid = authState.user?.uid ?? null;
-		if (!uid || this.startedFor === uid) return;
+		const uid = authState.effectiveUserId;
+		if (!uid) {
+			this.teardown();
+			return;
+		}
+		if (this.startedFor === uid) return;
 
 		this.teardown();
 		this.startedFor = uid;
@@ -67,6 +72,7 @@ class FollowedCollectionsState {
 				}
 			})
 			.catch((err) => {
+				if (this.startedFor !== uid) return;
 				console.error("[followed-collections] subscribe failed:", err);
 				this.loading = false;
 			});
@@ -89,6 +95,10 @@ class FollowedCollectionsState {
 	}
 
 	async follow(ownerId: string, collectionId: string): Promise<void> {
+		if (isPreviewReadOnly()) {
+			toast.warning("This library is read-only while previewing another user.");
+			return;
+		}
 		try {
 			await followCollection(ownerId, collectionId);
 		} catch (err) {
@@ -98,6 +108,10 @@ class FollowedCollectionsState {
 	}
 
 	async unfollow(ownerId: string, collectionId: string): Promise<void> {
+		if (isPreviewReadOnly()) {
+			toast.warning("This library is read-only while previewing another user.");
+			return;
+		}
 		try {
 			await unfollowCollection(ownerId, collectionId);
 		} catch (err) {
@@ -142,7 +156,7 @@ class FollowedCollectionsState {
 				}),
 			);
 			// Persist the resolved shelf so the next open paints it synchronously.
-			const uid = authState.user?.uid;
+			const uid = this.startedFor;
 			if (uid) writeFollowedMirror(uid, this.items);
 		} catch (err) {
 			// Batched name lookup failed; keep the last good items rather than

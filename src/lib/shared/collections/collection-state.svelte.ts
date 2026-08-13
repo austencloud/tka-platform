@@ -12,18 +12,34 @@ import type { LocalCollectionRepository } from "./local-collection-repository";
  *   reload, and everything migrates to Firestore on sign-in.
  */
 export class CollectionState<T extends CollectionEntry> {
-  collection = $state<T[]>([]);
+  private ownedCollection = $state<T[]>([]);
+  private previewCollection = $state<T[] | null>(null);
+  private previewUserId = $state<string | null>(null);
   // True while Firestore hydration is in flight, so galleries show a loading
   // indicator instead of mistaking "not loaded yet" for "empty".
-  loading = $state(false);
+  private ownedLoading = $state(false);
+  private previewLoading = $state(false);
   private userId: string | null = null;
   private localLoaded = false;
   private startedFor: string | null = null;
+  private previewRevision = 0;
 
   constructor(
     private readonly repo: FirebaseCollectionRepository<T>,
-    private readonly localRepo: LocalCollectionRepository<T>,
+    private readonly localRepo: LocalCollectionRepository<T>
   ) {}
+
+  get collection(): T[] {
+    return this.previewCollection ?? this.ownedCollection;
+  }
+
+  get loading(): boolean {
+    return this.previewUserId ? this.previewLoading : this.ownedLoading;
+  }
+
+  get isReadOnlyPreview(): boolean {
+    return this.previewUserId !== null;
+  }
 
   /**
    * Hydrate this store for a user, and point its WRITES at them.
@@ -34,22 +50,21 @@ export class CollectionState<T extends CollectionEntry> {
    * somebody else's uid quietly makes your own saves target their namespace.
    *
    * The profile stage did exactly that while rendering a visited creator, and
-   * because these collections are owner-only by Firestore rule the load was
-   * rejected, `collection` kept the previous user's entries, and one person's
-   * saved art rendered on another person's profile. If you want to display a
-   * DIFFERENT user's collection, read it separately — do not route it through
-   * this singleton.
+   * because ordinary cross-user reads are rejected, `collection` kept the
+   * previous user's entries, and one person's saved art rendered on another
+   * person's profile. Admin preview uses `startReadOnlyPreview()` so another
+   * user's data never becomes this singleton's write target.
    */
   async init(userId: string): Promise<void> {
     this.userId = userId;
     this.startedFor = userId;
-    this.loading = true;
+    this.ownedLoading = true;
     try {
       const firebaseEntries = await this.repo.load(userId);
-      this.collection = firebaseEntries;
+      this.ownedCollection = firebaseEntries;
       await this.migrateFromLocalStorage(userId, firebaseEntries);
     } finally {
-      this.loading = false;
+      this.ownedLoading = false;
     }
   }
 
@@ -63,6 +78,37 @@ export class CollectionState<T extends CollectionEntry> {
   ensureStarted(userId: string): void {
     if (this.startedFor === userId) return;
     void this.init(userId);
+  }
+
+  /**
+   * Show another user's saved Art without repointing this singleton's writes.
+   * Preview changes can arrive faster than Firestore; only the newest request
+   * may replace what the Library shows.
+   */
+  async startReadOnlyPreview(userId: string): Promise<void> {
+    if (this.previewUserId === userId) return;
+    const revision = ++this.previewRevision;
+    this.previewUserId = userId;
+    this.previewCollection = [];
+    this.previewLoading = true;
+    try {
+      const entries = await this.repo.load(userId);
+      if (revision !== this.previewRevision || this.previewUserId !== userId) {
+        return;
+      }
+      this.previewCollection = entries;
+    } finally {
+      if (revision === this.previewRevision && this.previewUserId === userId) {
+        this.previewLoading = false;
+      }
+    }
+  }
+
+  stopReadOnlyPreview(): void {
+    this.previewRevision += 1;
+    this.previewUserId = null;
+    this.previewCollection = null;
+    this.previewLoading = false;
   }
 
   /** Guest-mode boot: hydrate from localStorage without a Firestore read. */
@@ -80,55 +126,64 @@ export class CollectionState<T extends CollectionEntry> {
     this.localLoaded = true;
     const persisted = this.localRepo.load();
     if (persisted.length === 0) return;
-    const known = new Set(this.collection.map((e) => e.id));
-    this.collection.push(...persisted.filter((e) => !known.has(e.id)));
+    const known = new Set(this.ownedCollection.map((e) => e.id));
+    this.ownedCollection.push(...persisted.filter((e) => !known.has(e.id)));
   }
 
   teardown(): void {
-    this.collection = [];
-    this.loading = false;
+    this.ownedCollection = [];
+    this.ownedLoading = false;
     this.userId = null;
     this.localLoaded = false;
     this.startedFor = null;
+    this.stopReadOnlyPreview();
+  }
+
+  private assertWritable(): void {
+    if (this.isReadOnlyPreview) {
+      throw new Error("Saved Art is read-only while previewing another user");
+    }
   }
 
   async add(entry: Omit<T, "id" | "createdAt">): Promise<T> {
+    this.assertWritable();
     this.ensureLocalLoaded();
     const full = {
       ...entry,
       id: crypto.randomUUID(),
       createdAt: Date.now(),
     } as T;
-    this.collection.unshift(full);
+    this.ownedCollection.unshift(full);
 
     if (this.userId) {
       try {
         await this.repo.save(this.userId, full);
       } catch (error) {
-        const idx = this.collection.findIndex((e) => e.id === full.id);
-        if (idx !== -1) this.collection.splice(idx, 1);
+        const idx = this.ownedCollection.findIndex((e) => e.id === full.id);
+        if (idx !== -1) this.ownedCollection.splice(idx, 1);
         throw error;
       }
     } else {
-      this.localRepo.save(this.collection);
+      this.localRepo.save(this.ownedCollection);
     }
     return full;
   }
 
   async remove(id: string): Promise<void> {
+    this.assertWritable();
     this.ensureLocalLoaded();
-    const idx = this.collection.findIndex((e) => e.id === id);
+    const idx = this.ownedCollection.findIndex((e) => e.id === id);
     if (idx === -1) return;
-    const [removed] = this.collection.splice(idx, 1);
+    const [removed] = this.ownedCollection.splice(idx, 1);
     if (this.userId) {
       try {
         await this.repo.remove(this.userId, id);
       } catch (error) {
-        if (removed) this.collection.splice(idx, 0, removed);
+        if (removed) this.ownedCollection.splice(idx, 0, removed);
         throw error;
       }
     } else {
-      this.localRepo.save(this.collection);
+      this.localRepo.save(this.ownedCollection);
     }
   }
 
@@ -136,23 +191,24 @@ export class CollectionState<T extends CollectionEntry> {
    *  name back if the Firestore write fails. Returns null for a blank name or
    *  unknown id. */
   async rename(id: string, name: string): Promise<T | null> {
+    this.assertWritable();
     this.ensureLocalLoaded();
     const trimmed = name.trim();
-    const idx = this.collection.findIndex((e) => e.id === id);
+    const idx = this.ownedCollection.findIndex((e) => e.id === id);
     if (idx === -1 || !trimmed) return null;
-    const prev = this.collection[idx]!;
+    const prev = this.ownedCollection[idx]!;
     if (prev.name === trimmed) return prev;
     const next = { ...prev, name: trimmed } as T;
-    this.collection[idx] = next;
+    this.ownedCollection[idx] = next;
     if (this.userId) {
       try {
         await this.repo.save(this.userId, next);
       } catch (error) {
-        this.collection[idx] = prev;
+        this.ownedCollection[idx] = prev;
         throw error;
       }
     } else {
-      this.localRepo.save(this.collection);
+      this.localRepo.save(this.ownedCollection);
     }
     return next;
   }
@@ -161,7 +217,10 @@ export class CollectionState<T extends CollectionEntry> {
     return this.collection.length;
   }
 
-  private async migrateFromLocalStorage(userId: string, existing: T[]): Promise<void> {
+  private async migrateFromLocalStorage(
+    userId: string,
+    existing: T[]
+  ): Promise<void> {
     const localEntries = this.localRepo.load();
     if (localEntries.length === 0) return;
 
@@ -170,7 +229,7 @@ export class CollectionState<T extends CollectionEntry> {
 
     for (const entry of toMigrate) {
       await this.repo.save(userId, entry);
-      this.collection.push(entry);
+      this.ownedCollection.push(entry);
     }
 
     this.localRepo.clear();

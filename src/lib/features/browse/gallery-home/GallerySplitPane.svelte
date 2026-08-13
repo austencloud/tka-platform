@@ -120,7 +120,7 @@
 <div
   class="gallery-split-pane"
   class:filter-pane-collapsed={filterPaneCollapsed}
-  class:pane-resizing
+  class:pane-resizing={paneResizing}
   style:--filter-pane-w={`${filterPaneWidth}px`}
 >
   <div class="pane-left-shell" aria-hidden={filterPaneCollapsed}>

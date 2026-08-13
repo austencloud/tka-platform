@@ -12,7 +12,9 @@
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
+  import type { FireOverlayConfig } from "$lib/shared/animation-engine/domain/types/fire-types";
   import type { PreparedSequenceHandoff } from "$lib/shared/animation-engine/domain/chaining-types";
   import type {
     TipEffectMap,
@@ -114,6 +116,8 @@
     trailSettingsOverride = null,
     tipEffectMap = undefined,
     tipEffortMap = undefined,
+    fireConfig = undefined,
+    effectsConfigState = undefined,
     backgroundAlpha = 1,
     hideTkaGlyph = false,
     hideStepNumbers = false,
@@ -121,6 +125,7 @@
     disableContextMenu = false,
     interactive = true,
     onTogglePlaybackRef = undefined,
+    onReady = undefined,
     visibilityManagerOverride = undefined,
   }: {
     sequence: SequenceData;
@@ -228,6 +233,12 @@
      *  visitor's (or Austen's) in-app easing choice leaks into public embeds.
      *  Cell-wide linear: `{ "*": { effort: "linear" } }`. */
     tipEffortMap?: TipEffortMap;
+    /** Optional fire-renderer override for controlled previews and comparison
+     *  surfaces. Omitted players retain the production effects configuration. */
+    fireConfig?: Partial<FireOverlayConfig>;
+    /** Isolated effect intent for test/editorial players. Omitted players keep
+     *  the viewer-owned production configuration. */
+    effectsConfigState?: EffectsConfigState;
     /** Hide the in-canvas letter glyph / step counter (chrome-free embeds
      *  like the caps live hero — "a prop floating in space"). */
     hideTkaGlyph?: boolean;
@@ -246,6 +257,8 @@
      *  control, demo acts). Same contract as AnimationPlayer's prop of the
      *  same name. */
     onTogglePlaybackRef?: (toggleFn: () => void) => void;
+    /** Fires after the sequence and its playback services are ready. */
+    onReady?: () => void;
     /** Per-instance visibility manager (ephemeral scope). Routes the
      *  orchestrator's effort/path-shape reads AND setSpeed's write-back away
      *  from the global singleton, so a public embed neither inherits the
@@ -534,6 +547,7 @@
       }
 
       hasLoadedOnce = true;
+      onReady?.();
     } catch (err) {
       console.error("Failed to load animation:", err);
       error = err instanceof Error ? err.message : "Failed to load animation";
@@ -658,6 +672,8 @@
         {backgroundAlpha}
         {tipEffectMap}
         {tipEffortMap}
+        {fireConfig}
+        {effectsConfigState}
         {bluePropType}
         {redPropType}
         positionGlyphVisible={showPositionGlyph}

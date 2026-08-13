@@ -33,11 +33,13 @@ export function createSharedCollectionsState(
     unsubscribe = collaborationManager.subscribeToReceivedCollections(
       recipientId,
       (nextItems) => {
+        if (startedFor !== recipientId) return;
         items = nextItems;
         loading = false;
         error = null;
       },
       (failure) => {
+        if (startedFor !== recipientId) return;
         console.error(
           "[shared-collections-state] Subscription failed:",
           failure

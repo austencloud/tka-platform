@@ -52,6 +52,7 @@ Variation support:
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import { openCollectionPicker } from "$lib/features/library/state/collection-picker-state.svelte";
   import { cardHoverPreview } from "$lib/shared/browse/state/card-hover-preview-state.svelte";
+  import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
 
   let thumbnailRef = $state<ReturnType<typeof PropAwareThumbnail> | null>(null);
 
@@ -141,6 +142,7 @@ Variation support:
     }
     return sequence;
   });
+  const previewReadOnly = $derived(userPreviewState.isActive);
 
   // Total count for the pill
   const variationCount = $derived(
@@ -447,6 +449,11 @@ Variation support:
   // sheet owned by the card would vanish with it. See collection-picker-state.
 
   async function performRemove() {
+    if (previewReadOnly) {
+      removeConfirmOpen = false;
+      removeTarget = null;
+      return;
+    }
     const seq = removeTarget;
     if (!seq) return;
     const myUid = authState.user?.uid;
@@ -493,10 +500,12 @@ Variation support:
     // pictograph section here: thumbnails are static cached images that don't
     // re-render on visibility toggles.
     const items: ContextMenuEntry[] = buildCardMenuSection({
-      onRerender: () => {
-        closeContextMenu();
-        thumbnailRef?.forceRerender();
-      },
+      onRerender: previewReadOnly
+        ? undefined
+        : () => {
+            closeContextMenu();
+            thumbnailRef?.forceRerender();
+          },
       onSendTo: handleSendTo,
       isAdmin: featureFlagService.isAdmin,
       sequenceForImageActions: seq,
@@ -508,7 +517,7 @@ Variation support:
     // Owner-only: filing into a collection is filing YOUR sequence into YOUR
     // collection. Admins viewing someone else's card don't get this (that would
     // reference a foreign sequence id — out of scope until save-to-library-first).
-    if (isOwner || isPersonalLibrary) {
+    if (!previewReadOnly && (isOwner || isPersonalLibrary)) {
       items.push({ type: "separator" } as ContextMenuEntry, {
         id: "add-to-collection",
         label: "Collections…",
@@ -523,7 +532,7 @@ Variation support:
         },
       });
     }
-    if (collectionContext) {
+    if (!previewReadOnly && collectionContext) {
       const ctx = collectionContext;
       items.push({ type: "separator" } as ContextMenuEntry, {
         id: "remove-from-collection",
@@ -535,7 +544,10 @@ Variation support:
         },
       });
     }
-    if (isOwner || isPersonalLibrary || featureFlagService.isAdmin) {
+    if (
+      !previewReadOnly &&
+      (isOwner || isPersonalLibrary || featureFlagService.isAdmin)
+    ) {
       items.push({ type: "separator" } as ContextMenuEntry, {
         id: "remove-from-library",
         label: "Delete permanently",

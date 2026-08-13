@@ -13,8 +13,16 @@ const mocks = vi.hoisted(() => ({
   deleteCollection: vi.fn(),
   toastError: vi.fn(),
   toastInfo: vi.fn(),
+  toastWarning: vi.fn(),
   showToast: vi.fn(),
   authDrawerShow: vi.fn(),
+  previewReadOnly: false,
+  authState: {
+    user: { uid: "admin" },
+    effectiveUserId: "admin" as string | null,
+    isAuthenticated: true,
+    isAnonymous: false,
+  },
 }));
 
 vi.mock("$lib/shared/library/services/collection-manager", () => ({
@@ -29,7 +37,12 @@ vi.mock("$lib/shared/library/services/collection-manager", () => ({
   deleteCollection: mocks.deleteCollection,
 }));
 vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({
-  toast: { error: mocks.toastError, success: vi.fn(), info: mocks.toastInfo },
+  toast: {
+    error: mocks.toastError,
+    success: vi.fn(),
+    info: mocks.toastInfo,
+    warning: mocks.toastWarning,
+  },
   showToast: mocks.showToast,
 }));
 // Publishing requires a full account (setPublic routes guests to the signup
@@ -37,7 +50,10 @@ vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({
 // mock to a signed-in full user so the delegate path is what gets exercised;
 // the guest branch overrides these per-test.
 vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
-  authState: { user: null, isAuthenticated: true, isAnonymous: false },
+  authState: mocks.authState,
+}));
+vi.mock("$lib/shared/debug/state/user-preview-state.svelte", () => ({
+  isPreviewReadOnly: () => mocks.previewReadOnly,
 }));
 vi.mock("$lib/shared/auth/state/auth-drawer-state.svelte", () => ({
   authDrawerState: { show: mocks.authDrawerShow },
@@ -52,6 +68,7 @@ import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 // authState above is the vi.mock plain object; the production type marks the tier
 // flags readonly, so cast to a mutable view to reset/flip them between tests.
 const mutableAuth = authState as unknown as {
+  effectiveUserId: string | null;
   isAuthenticated: boolean;
   isAnonymous: boolean;
 };
@@ -77,6 +94,7 @@ function col(
 }
 
 beforeEach(() => {
+  collectionsState.teardown();
   vi.clearAllMocks();
   mocks.addSequenceToCollection.mockResolvedValue(undefined);
   mocks.addSequencesToCollection.mockResolvedValue({
@@ -96,14 +114,46 @@ beforeEach(() => {
   );
   mocks.updateCollection.mockResolvedValue(undefined);
   mocks.deleteCollection.mockResolvedValue(undefined);
+  mocks.ensureSystemCollections.mockResolvedValue(undefined);
+  mocks.subscribeToCollections.mockReturnValue(vi.fn());
   // Reset the auth tier so a guest-branch test cannot leak into the next one.
+  mutableAuth.effectiveUserId = "admin";
   mutableAuth.isAuthenticated = true;
   mutableAuth.isAnonymous = false;
+  mocks.previewReadOnly = false;
   collectionsState.collections = [];
   collectionsState.loading = false;
 });
 
 describe("collectionsState", () => {
+  it("restarts its subscription for the effective preview identity", () => {
+    collectionsState.ensureStarted();
+    const firstUnsubscribe = mocks.subscribeToCollections.mock.results[0]
+      ?.value as ReturnType<typeof vi.fn>;
+
+    mocks.previewReadOnly = true;
+    mutableAuth.effectiveUserId = "preview-user";
+    collectionsState.ensureStarted();
+
+    expect(firstUnsubscribe).toHaveBeenCalledOnce();
+    expect(mocks.subscribeToCollections).toHaveBeenCalledTimes(2);
+    expect(mocks.ensureSystemCollections).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks collection writes while previewing another user", async () => {
+    mocks.previewReadOnly = true;
+    collectionsState.collections = [col("c1", "Previewed")];
+
+    await collectionsState.toggle("s1", "c1");
+    expect(await collectionsState.create("Nope")).toBeNull();
+    expect(await collectionsState.remove("c1")).toBe(false);
+
+    expect(mocks.addSequenceToCollection).not.toHaveBeenCalled();
+    expect(mocks.createUserCollection).not.toHaveBeenCalled();
+    expect(mocks.deleteCollection).not.toHaveBeenCalled();
+    expect(mocks.toastWarning).toHaveBeenCalledTimes(3);
+  });
+
   it("isIn reflects membership", () => {
     collectionsState.collections = [
       col("c1", "A", { sequenceIds: ["s1"], sequenceCount: 1 }),
