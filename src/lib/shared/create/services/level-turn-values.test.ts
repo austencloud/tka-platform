@@ -15,8 +15,8 @@ describe("turnValuesForLevel", () => {
     expect(turnValuesForLevel(2)).toEqual([0, 1, 2, 3]);
   });
 
-  it("gives Level 3 half turns and floats", () => {
-    expect(turnValuesForLevel(3)).toEqual([0, 0.5, 1, 1.5, 2, 2.5, 3, "fl"]);
+  it("places the Level 3 float immediately before 0", () => {
+    expect(turnValuesForLevel(3)).toEqual(["fl", 0, 0.5, 1, 1.5, 2, 2.5, 3]);
   });
 
   it("clamps out-of-range levels into 1-3", () => {

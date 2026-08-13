@@ -6,6 +6,7 @@
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import { getEffectiveRotationDirection } from "$lib/shared/pictograph/shared/domain/utils/effective-rotation-direction";
 import type { Motion } from "@tka/tka-types";
 
 /**
@@ -176,7 +177,7 @@ function analyzeSequenceContext(
 
   (["blue", "red"] as const).forEach((color) => {
     const currentMotion = option.motions[color];
-    const currentRotation = currentMotion?.rotationDirection;
+    const currentRotation = getEffectiveRotationDirection(currentMotion);
 
     // Skip if no rotation or is NO_ROTATION enum value
     if (!currentRotation) {
@@ -194,7 +195,7 @@ function analyzeSequenceContext(
       if (!previousPictograph) continue;
 
       const previousMotion = previousPictograph.motions[color];
-      const previousRotation = previousMotion?.rotationDirection;
+      const previousRotation = getEffectiveRotationDirection(previousMotion);
 
       // Skip if no rotation or is NO_ROTATION enum value
       if (!previousRotation) {

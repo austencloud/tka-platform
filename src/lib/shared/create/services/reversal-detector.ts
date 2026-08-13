@@ -24,6 +24,7 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
+import { getEffectiveRotationDirection } from "$lib/shared/pictograph/shared/domain/utils/effective-rotation-direction";
 
 /**
  * Reversal Detection Service Contract
@@ -169,6 +170,7 @@ export function detectReversalsForOptions(
 
 interface MotionLike {
   readonly rotationDirection?: string;
+  readonly prefloatRotationDirection?: string;
   readonly motionType?: string;
 }
 
@@ -181,13 +183,14 @@ interface SignalCarrier {
 }
 
 /**
- * Prop rotation of a motion with the production fallbacks: explicit value
- * wins; static/dash without one legitimately have no rotation; pro/anti/float
- * without one is bad data → warn and default cw.
+ * Effective prop rotation of a motion. A float reads its preserved pre-float
+ * direction; other motions use the rendered direction. Static/dash without a
+ * direction are neutral, while malformed rotating motions warn and default cw.
  */
 function propDirOf(motion: MotionLike | null | undefined): string | null {
   if (!motion) return null;
-  if (motion.rotationDirection) return motion.rotationDirection;
+  const effectiveDirection = getEffectiveRotationDirection(motion);
+  if (effectiveDirection) return effectiveDirection;
   if (motion.motionType === "static" || motion.motionType === "dash") {
     return "noRotation";
   }
@@ -218,15 +221,15 @@ function lastActivePropDir(
 
 /**
  * Dot rule for an option's motion against the sequence anchor: the prop's
- * rotation direction flips. The option side reads the raw rotationDirection
- * (no bad-data defaulting), preserving the legacy option-preview behavior.
+ * rotation direction flips. Floats compare their preserved pre-float direction
+ * because their rendered noRotation value is intentionally neutral.
  */
 function propFlips(
   anchor: string | null,
   motion: MotionLike | null | undefined
 ): boolean {
   if (!anchor || !motion) return false;
-  const cur = motion.rotationDirection || null;
+  const cur = getEffectiveRotationDirection(motion);
   return cur !== null && cur !== "noRotation" && cur !== anchor;
 }
 

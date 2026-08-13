@@ -18,7 +18,7 @@ export type TurnLevel = (typeof TURN_LEVELS)[number];
 const LEVEL_TURN_VALUES: Record<TurnLevel, readonly TurnValue[]> = {
   1: [0],
   2: [0, 1, 2, 3],
-  3: [0, 0.5, 1, 1.5, 2, 2.5, 3, "fl"],
+  3: ["fl", 0, 0.5, 1, 1.5, 2, 2.5, 3],
 };
 
 /** Turn values legal at `level`. Out-of-range levels clamp into 1-3. */

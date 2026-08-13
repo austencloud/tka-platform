@@ -35,6 +35,7 @@ type MotionLite = {
   startLocation: string;
   endLocation: string;
   rotationDirection: string;
+  prefloatRotationDirection?: string;
   handPath?: string | null;
 };
 
@@ -45,13 +46,24 @@ function motion(
   rotationDirection: string,
   handPath?: string
 ): MotionLite {
-  return { motionType, startLocation, endLocation, rotationDirection, ...(handPath ? { handPath } : {}) };
+  return {
+    motionType,
+    startLocation,
+    endLocation,
+    rotationDirection,
+    ...(handPath ? { handPath } : {}),
+  };
 }
 
 /** Parked hand: static, no travel, no spin — inert on both signals. */
 const parked = (): MotionLite => motion("static", "s", "s", "noRotation");
 
-function step(num: number, blue: MotionLite, red: MotionLite, isBlank = false): StepData {
+function step(
+  num: number,
+  blue: MotionLite,
+  red: MotionLite,
+  isBlank = false
+): StepData {
   return {
     id: `beat-${num}`,
     stepNumber: num,
@@ -91,7 +103,10 @@ describe("processReversals — dots are prop-direction reversals ONLY", () => {
     // rotationDirection unchanged cw→cw; hand retraces n→w. Legacy showed no
     // dot here, and per the display policy the dot must stay absent.
     const result = processReversals(
-      seq([step(1, proOpener(), parked()), step(2, motion("anti", "n", "w", "cw"), parked())])
+      seq([
+        step(1, proOpener(), parked()),
+        step(2, motion("anti", "n", "w", "cw"), parked()),
+      ])
     );
     expect(result.steps[1]!.blueReversal).toBe(false);
     expect(result.steps[1]!.redReversal).toBe(false);
@@ -99,7 +114,10 @@ describe("processReversals — dots are prop-direction reversals ONLY", () => {
 
   it("PROP reversal (hand continues, prop reverses) → dot", () => {
     const result = processReversals(
-      seq([step(1, proOpener(), parked()), step(2, motion("anti", "n", "e", "ccw"), parked())])
+      seq([
+        step(1, proOpener(), parked()),
+        step(2, motion("anti", "n", "e", "ccw"), parked()),
+      ])
     );
     expect(result.steps[1]!.blueReversal).toBe(true);
     expect(result.steps[1]!.redReversal).toBe(false);
@@ -107,14 +125,20 @@ describe("processReversals — dots are prop-direction reversals ONLY", () => {
 
   it("FULL reversal (both retrace — prop direction flips too) → dot", () => {
     const result = processReversals(
-      seq([step(1, proOpener(), parked()), step(2, motion("pro", "n", "w", "ccw"), parked())])
+      seq([
+        step(1, proOpener(), parked()),
+        step(2, motion("pro", "n", "w", "ccw"), parked()),
+      ])
     );
     expect(result.steps[1]!.blueReversal).toBe(true);
   });
 
   it("natural continuation → no dot", () => {
     const result = processReversals(
-      seq([step(1, proOpener(), parked()), step(2, motion("pro", "n", "e", "cw"), parked())])
+      seq([
+        step(1, proOpener(), parked()),
+        step(2, motion("pro", "n", "e", "cw"), parked()),
+      ])
     );
     expect(result.steps[1]!.blueReversal).toBe(false);
     expect(result.steps[1]!.redReversal).toBe(false);
@@ -138,10 +162,20 @@ describe("processReversals — dots are prop-direction reversals ONLY", () => {
       step(4, motion("anti", "s", "w", "ccw"), parked()),
     ];
     const looped = processReversals(seq(steps, "rotated"));
-    expect(looped.steps.map((s) => s.blueReversal)).toEqual([true, true, true, true]);
+    expect(looped.steps.map((s) => s.blueReversal)).toEqual([
+      true,
+      true,
+      true,
+      true,
+    ]);
 
     const linear = processReversals(seq(steps));
-    expect(linear.steps.map((s) => s.blueReversal)).toEqual([false, true, true, true]);
+    expect(linear.steps.map((s) => s.blueReversal)).toEqual([
+      false,
+      true,
+      true,
+      true,
+    ]);
   });
 
   it("loop wrap does NOT dot a pure hand-reversal loop (prop direction never flips)", () => {
@@ -183,7 +217,10 @@ describe("canonical engine API — handReversal signal channel retained (non-dis
       step(2, motion("pro", "n", "w", "ccw"), parked()),
     ];
     const signals = deriveReversals(steps);
-    expect(signals[1]!.blue).toEqual({ propReversal: true, handReversal: true });
+    expect(signals[1]!.blue).toEqual({
+      propReversal: true,
+      handReversal: true,
+    });
   });
 
   it("sees float hand-arc flips (authored handPath) on the signal channel only", () => {
@@ -192,7 +229,10 @@ describe("canonical engine API — handReversal signal channel retained (non-dis
       step(2, motion("float", "n", "w", "noRotation", "ccw"), parked()),
     ];
     const signals = deriveReversals(steps);
-    expect(signals[1]!.blue).toEqual({ propReversal: false, handReversal: true });
+    expect(signals[1]!.blue).toEqual({
+      propReversal: false,
+      handReversal: true,
+    });
   });
 });
 
@@ -225,6 +265,23 @@ describe("option previews — dot channel only (prop-direction flip)", () => {
     });
   });
 
+  it("dots a float from its preserved pre-float prop direction", () => {
+    const option = {
+      motions: {
+        blue: {
+          ...motion("float", "n", "e", "noRotation"),
+          prefloatRotationDirection: "ccw",
+        },
+        red: parked(),
+      },
+    } as unknown as PictographData;
+
+    expect(detectReversalForOption(currentSequence, option)).toEqual({
+      blueReversal: true,
+      redReversal: false,
+    });
+  });
+
   it("detectReversalsForOptions dots prop/full options, not hand-reversal or continuation options", () => {
     const sequencePictographs = [
       { motions: { blue: proOpener(), red: parked() } },
@@ -237,8 +294,18 @@ describe("option previews — dot channel only (prop-direction flip)", () => {
     ] as unknown as PictographData[];
 
     const annotated = detectReversalsForOptions(sequencePictographs, options);
-    expect(annotated.map((o) => o.blueReversal)).toEqual([false, true, true, false]);
-    expect(annotated.map((o) => o.redReversal)).toEqual([false, false, false, false]);
+    expect(annotated.map((o) => o.blueReversal)).toEqual([
+      false,
+      true,
+      true,
+      false,
+    ]);
+    expect(annotated.map((o) => o.redReversal)).toEqual([
+      false,
+      false,
+      false,
+      false,
+    ]);
   });
 
   it("returns all-false for an empty sequence", () => {

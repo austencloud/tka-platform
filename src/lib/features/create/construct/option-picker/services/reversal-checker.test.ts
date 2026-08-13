@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { countDirectionReversals } from "./reversal-checker";
+import { countDirectionReversals, getReversalCount } from "./reversal-checker";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
@@ -7,7 +7,10 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
-function step(blueDir: RotationDirection, redDir = RotationDirection.NO_ROTATION): PictographData {
+function step(
+  blueDir: RotationDirection,
+  redDir = RotationDirection.NO_ROTATION
+): PictographData {
   return {
     letter: "X",
     motions: {
@@ -20,6 +23,28 @@ function step(blueDir: RotationDirection, redDir = RotationDirection.NO_ROTATION
         motionType: MotionType.DASH,
         rotationDirection: redDir,
         turns: redDir === RotationDirection.NO_ROTATION ? 0 : 2,
+      }),
+    },
+  } as unknown as PictographData;
+}
+
+function floatStep(prefloatDirection: RotationDirection): PictographData {
+  const motion = {
+    ...createMotionData({
+      motionType: MotionType.FLOAT,
+      rotationDirection: RotationDirection.NO_ROTATION,
+      turns: "fl",
+    }),
+    prefloatRotationDirection: prefloatDirection,
+  };
+  return {
+    letter: "M",
+    motions: {
+      blue: motion,
+      red: createMotionData({
+        motionType: MotionType.STATIC,
+        rotationDirection: RotationDirection.NO_ROTATION,
+        turns: 0,
       }),
     },
   } as unknown as PictographData;
@@ -49,5 +74,24 @@ describe("countDirectionReversals", () => {
     const prev = step(RotationDirection.CLOCKWISE);
     const option = step(RotationDirection.CLOCKWISE);
     expect(countDirectionReversals(option, [prev])).toBe(0);
+  });
+
+  it("uses a float's preserved pre-float prop direction for continuity", () => {
+    const prev = step(RotationDirection.CLOCKWISE);
+
+    expect(
+      countDirectionReversals(floatStep(RotationDirection.CLOCKWISE), [prev])
+    ).toBe(0);
+    expect(
+      countDirectionReversals(floatStep(RotationDirection.COUNTER_CLOCKWISE), [
+        prev,
+      ])
+    ).toBe(1);
+    expect(
+      getReversalCount(floatStep(RotationDirection.CLOCKWISE), [prev])
+    ).toBe(0);
+    expect(
+      getReversalCount(floatStep(RotationDirection.COUNTER_CLOCKWISE), [prev])
+    ).toBe(1);
   });
 });
