@@ -153,6 +153,10 @@ const EXCEPTION_NOISE = [
   // SDK lifecycle message during that teardown; there is no failed app action.
   /^Firestore shutting down$/,
   /@firebase\/firestore:.*Uncaught Error in snapshot listener:.*Firestore shutting down/,
+  // Browsers intentionally redact cross-origin script failures to this exact
+  // sentinel when CORS does not grant the page access to the error details.
+  // It carries no source, stack, line, or actionable failure information.
+  /^Script error\.?$/,
 ];
 
 /**

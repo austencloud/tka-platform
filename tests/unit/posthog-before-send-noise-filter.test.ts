@@ -127,6 +127,16 @@ describe("dropKnownNoise (PostHog before_send)", () => {
     ).toBeNull();
   });
 
+  it("drops the browser's opaque cross-origin Script error sentinel", () => {
+    expect(dropKnownNoise(exceptionEvent("Script error."))).toBeNull();
+    expect(dropKnownNoise(exceptionEvent("Script error"))).toBeNull();
+  });
+
+  it("keeps actionable errors that merely mention a script error", () => {
+    const event = exceptionEvent("Script error while saving a sequence");
+    expect(dropKnownNoise(event)).toBe(event);
+  });
+
   it("keeps other Firestore aborted errors visible", () => {
     const event = exceptionEvent(
       "FirebaseError: [code=aborted]: transaction contention"
