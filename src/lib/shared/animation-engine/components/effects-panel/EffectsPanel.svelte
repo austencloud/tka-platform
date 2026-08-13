@@ -19,6 +19,7 @@
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import EffectTuneStrip from "$lib/shared/effects/components/EffectTuneStrip.svelte";
+  import EffectControlStack from "$lib/shared/effects/components/EffectControlStack.svelte";
   import { createEffectControlOverrides } from "$lib/shared/effects/effect-control-fields";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 
@@ -78,6 +79,9 @@
   const activeEffect = $derived(effectsConfigState.activeEffect);
   const registration = $derived<EffectRegistration | undefined>(
     activeEffect !== "none" ? getRegistration(activeEffect) : undefined
+  );
+  const hasPresetChoices = $derived(
+    (registration?.presetGroup.presets.length ?? 0) > 0
   );
 
   // Trails and fire keep a few values outside their effect intent. Both viewer
@@ -417,7 +421,7 @@
       />
     </div>
 
-    {#if activeEffect !== "none" && !customizeOpen && registration}
+    {#if activeEffect !== "none" && !customizeOpen && registration && hasPresetChoices}
       <div class="sb-section">
         <EffectPresetsSection
           presetGroup={registration.presetGroup}
@@ -431,6 +435,25 @@
           effectLabel={EFFECT_LABELS[activeEffect] ?? ""}
           accentColor={EFFECT_COLORS[activeEffect] ?? "#8b5cf6"}
           summary={currentSummary}
+        />
+      </div>
+    {/if}
+
+    {#if activeEffect !== "none" && registration && !hasPresetChoices}
+      <div class="sb-section">
+        <EffectControlStack
+          effect={activeEffect}
+          config={effectsConfigState}
+          tiers={["primary", "tracking", "advanced"]}
+          propType={animationSettings.currentPropType}
+          overrides={tuneOverrides}
+          onSettingChange={(setting, previousValue, value, coalesce) =>
+            reportSetting(
+              `tuning_${activeEffect}_${setting}`,
+              previousValue,
+              value,
+              coalesce
+            )}
         />
       </div>
     {/if}
@@ -542,45 +565,61 @@
             >
           </div>
 
-          <div
-            class="preset-wrap"
-            role="radiogroup"
-            aria-label="{EFFECT_LABELS[activeEffect] ?? activeEffect} presets"
-          >
-            {#each registration.presetGroup.presets as preset (preset.id)}
-              {@const isActive = activePresetId === preset.id}
-              <button
-                type="button"
-                class="preset-chip"
-                class:active={isActive}
-                role="radio"
-                aria-checked={isActive}
-                onclick={() => handlePresetSelect(preset.id)}
-              >
-                {#if preset.previewColor === "rainbow"}
-                  <span class="swatch rainbow" aria-hidden="true"></span>
-                {:else if preset.previewColor === "custom"}
-                  <span class="swatch custom" aria-hidden="true"></span>
-                {:else if preset.previewColor2}
-                  <span class="swatch dual" aria-hidden="true">
-                    <span class="half" style:background={preset.previewColor}
+          {#if hasPresetChoices}
+            <div
+              class="preset-wrap"
+              role="radiogroup"
+              aria-label="{EFFECT_LABELS[activeEffect] ?? activeEffect} presets"
+            >
+              {#each registration.presetGroup.presets as preset (preset.id)}
+                {@const isActive = activePresetId === preset.id}
+                <button
+                  type="button"
+                  class="preset-chip"
+                  class:active={isActive}
+                  role="radio"
+                  aria-checked={isActive}
+                  onclick={() => handlePresetSelect(preset.id)}
+                >
+                  {#if preset.previewColor === "rainbow"}
+                    <span class="swatch rainbow" aria-hidden="true"></span>
+                  {:else if preset.previewColor === "custom"}
+                    <span class="swatch custom" aria-hidden="true"></span>
+                  {:else if preset.previewColor2}
+                    <span class="swatch dual" aria-hidden="true">
+                      <span class="half" style:background={preset.previewColor}
+                      ></span>
+                      <span class="half" style:background={preset.previewColor2}
+                      ></span>
+                    </span>
+                  {:else}
+                    <span
+                      class="swatch"
+                      style:background={preset.previewColor}
+                      aria-hidden="true"
                     ></span>
-                    <span class="half" style:background={preset.previewColor2}
-                    ></span>
-                  </span>
-                {:else}
-                  <span
-                    class="swatch"
-                    style:background={preset.previewColor}
-                    aria-hidden="true"
-                  ></span>
-                {/if}
-                {preset.name}
-              </button>
-            {/each}
-          </div>
+                  {/if}
+                  {preset.name}
+                </button>
+              {/each}
+            </div>
+          {:else}
+            <EffectTuneStrip
+              effectId={activeEffect}
+              config={effectsConfigState}
+              propType={animationSettings.currentPropType}
+              overrides={tuneOverrides}
+              onSettingChange={(setting, previousValue, value, coalesce) =>
+                reportSetting(
+                  `tuning_${activeEffect}_${setting}`,
+                  previousValue,
+                  value,
+                  coalesce
+                )}
+            />
+          {/if}
 
-          {#if primarySpec}
+          {#if hasPresetChoices && primarySpec}
             <div class="slider-row">
               <span class="slider-label">{primarySpec.label}</span>
               <input
@@ -667,45 +706,62 @@
       />
 
       {#if activeEffect !== "none" && registration}
-        <div
-          class="preset-strip"
-          role="radiogroup"
-          aria-label="{EFFECT_LABELS[activeEffect] ?? activeEffect} presets"
-        >
-          {#each registration.presetGroup.presets as preset (preset.id)}
-            {@const isActive = activePresetId === preset.id}
-            <button
-              type="button"
-              class="preset-chip"
-              class:active={isActive}
-              role="radio"
-              aria-checked={isActive}
-              onclick={() => handlePresetSelect(preset.id)}
-            >
-              {#if preset.previewColor === "rainbow"}
-                <span class="swatch rainbow" aria-hidden="true"></span>
-              {:else if preset.previewColor === "custom"}
-                <span class="swatch custom" aria-hidden="true"></span>
-              {:else if preset.previewColor2}
-                <span class="swatch dual" aria-hidden="true">
-                  <span class="half" style:background={preset.previewColor}
+        {#if hasPresetChoices}
+          <div
+            class="preset-strip"
+            role="radiogroup"
+            aria-label="{EFFECT_LABELS[activeEffect] ?? activeEffect} presets"
+          >
+            {#each registration.presetGroup.presets as preset (preset.id)}
+              {@const isActive = activePresetId === preset.id}
+              <button
+                type="button"
+                class="preset-chip"
+                class:active={isActive}
+                role="radio"
+                aria-checked={isActive}
+                onclick={() => handlePresetSelect(preset.id)}
+              >
+                {#if preset.previewColor === "rainbow"}
+                  <span class="swatch rainbow" aria-hidden="true"></span>
+                {:else if preset.previewColor === "custom"}
+                  <span class="swatch custom" aria-hidden="true"></span>
+                {:else if preset.previewColor2}
+                  <span class="swatch dual" aria-hidden="true">
+                    <span class="half" style:background={preset.previewColor}
+                    ></span>
+                    <span class="half" style:background={preset.previewColor2}
+                    ></span>
+                  </span>
+                {:else}
+                  <span
+                    class="swatch"
+                    style:background={preset.previewColor}
+                    aria-hidden="true"
                   ></span>
-                  <span class="half" style:background={preset.previewColor2}
-                  ></span>
-                </span>
-              {:else}
-                <span
-                  class="swatch"
-                  style:background={preset.previewColor}
-                  aria-hidden="true"
-                ></span>
-              {/if}
-              {preset.name}
-            </button>
-          {/each}
-        </div>
+                {/if}
+                {preset.name}
+              </button>
+            {/each}
+          </div>
+        {:else}
+          <EffectControlStack
+            effect={activeEffect}
+            config={effectsConfigState}
+            tiers={["primary", "tracking", "advanced"]}
+            propType={animationSettings.currentPropType}
+            overrides={tuneOverrides}
+            onSettingChange={(setting, previousValue, value, coalesce) =>
+              reportSetting(
+                `tuning_${activeEffect}_${setting}`,
+                previousValue,
+                value,
+                coalesce
+              )}
+          />
+        {/if}
 
-        {#if primarySpec}
+        {#if hasPresetChoices && primarySpec}
           <div class="slider-row">
             <span class="slider-label">{primarySpec.label}</span>
             <input

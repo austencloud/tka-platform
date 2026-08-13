@@ -193,6 +193,10 @@ async function handleRender(msg: RenderRequest): Promise<void> {
         assets.bluePropViewBox, assets.redPropViewBox,
         i, dt,
         frame.stepIndex, frame.isStartPosition,
+        {
+          blue: assets.bluePropImage,
+          red: assets.redPropImage,
+        }
       );
     }
 

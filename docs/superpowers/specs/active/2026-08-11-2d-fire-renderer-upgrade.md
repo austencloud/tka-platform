@@ -33,6 +33,12 @@ compositing, adaptive quality, and the existing WebGL2 fallback contract.
    use a 256² solve; the HDR presentation target scales to 1024 pixels.
 10. Run the comparison through the canonical inline sequence player so both
     profiles can be judged on the same real prop choreography.
+11. Keep Fire in the foreground, but protect prop readability with an exact
+    rendered-sprite color-and-silhouette matte in the final HDR composite. The matte caps
+    only dense, prop-hiding fire; calm flame and bloom outside the silhouette
+    remain untouched, the prop's color becomes a restrained heat glaze instead
+    of a gray transparency window, and the ignition point keeps a small tip
+    exemption.
 
 ## Deliberate Boundaries
 
@@ -52,6 +58,9 @@ compositing, adaptive quality, and the existing WebGL2 fallback contract.
   call per interpolated splat.
 - Cache allocation never exceeds its configured byte budget. An over-budget
   loop stays live instead of recording a partial or repeatedly retrying cache.
+- The prop matte is drawn once per visible sprite into an 8-bit RGBA
+  presentation target. Sprite textures are reused by image identity and removed
+  when the corresponding painted sprite leaves the frame.
 
 ## Verification
 
@@ -62,5 +71,8 @@ compositing, adaptive quality, and the existing WebGL2 fallback contract.
   and viewport.
 - Compare the profiles on the same eight-beat staff sequence, with autoplay
   released only after both player instances finish loading.
+- Verify dense crossings preserve the prop silhouette in live playback, cached
+  replay, and headless export without producing rectangular or capsule-shaped
+  cutouts around fans, hoops, or asymmetric props.
 - Check the route at 1920x1080, 2560x1440, 3840x2160, 1440x900, 820x1180,
   960x412, and 375x667. Record console errors and renderer diagnostics.

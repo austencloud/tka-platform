@@ -6,6 +6,7 @@
  */
 
 import type { RenderedPropTransform } from "$lib/shared/animation-engine/domain/types/fire-types";
+import type { RenderedPropSprite } from "$lib/shared/animation-engine/domain/types/rendered-prop-sprite";
 import type { RenderSceneParams } from "$lib/shared/animation-engine/domain/types/animation-render-types";
 
 export type {
@@ -47,6 +48,13 @@ export interface IAnimationRenderer {
    * Used by fire overlay to avoid recomputing prop positions independently.
    */
   getLastPropTransforms(): { blue: RenderedPropTransform | null; red: RenderedPropTransform | null };
+
+  /**
+   * Get every prop sprite that was actually painted in the last frame,
+   * including outgoing crossfade art and tunnel copies. Optional because
+   * offscreen renderers can provide their geometry directly to an effect.
+   */
+  getLastRenderedPropSprites?(): readonly RenderedPropSprite[];
 
   /**
    * Get the current prop sprite images, so the echo overlay can onion-skin

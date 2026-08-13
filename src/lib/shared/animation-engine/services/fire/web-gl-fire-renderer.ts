@@ -49,6 +49,7 @@ import {
   GRADIENT_SUBTRACT_FRAG,
   CLEAR_FRAG,
   DISPLAY_FRAG,
+  PROP_VISIBILITY_MATTE_FRAG,
   BLOOM_COMPOSITE_FRAG,
   CURL_NOISE_FRAG,
 } from "./fluid-shader-sources";
@@ -130,7 +131,7 @@ export function computeFireVisualCacheKey(
   >
 ): string {
   return JSON.stringify({
-    rendererRevision: 6,
+    rendererRevision: 7,
     fuelSourceId: config.fuelSourceId ?? "default",
     intensity: config.intensity,
     brightness: config.brightness ?? 0.5,
@@ -289,6 +290,7 @@ export class WebGLFireRenderer {
   private gradientSubtractProgram: ShaderProgram | null = null;
   private clearProgram: ShaderProgram | null = null;
   private displayProgram: ShaderProgram | null = null;
+  private propVisibilityMatteProgram: ShaderProgram | null = null;
   private bloomDownsampleProgram: ShaderProgram | null = null;
   private bloomUpsampleProgram: ShaderProgram | null = null;
   private bloomCompositeProgram: ShaderProgram | null = null;
@@ -320,8 +322,14 @@ export class WebGLFireRenderer {
 
   // Bloom pipeline FBOs
   private displayFBO: FBOAttachment | null = null;
+  private propVisibilityMatteFBO: FBOAttachment | null = null;
   private bloomMips: FBOAttachment[] = [];
   private bloomMipSizes: [number, number][] = [];
+  private propVisibilityMatteActive = false;
+  private readonly propVisibilityTextures = new Map<
+    TexImageSource,
+    WebGLTexture
+  >();
 
   // Timing
   private lastRenderTime = -1;
@@ -333,7 +341,7 @@ export class WebGLFireRenderer {
   // Turbulence clock for idle-fire flickering (cheap deterministic noise)
   private turbulenceClock = 0;
 
-  // Per-frame tip data cached for display pass (set during stepSimulation)
+  // Per-frame tip data shared by the fire display and prop-aware composite.
   private displayTipUVs: Float32Array = new Float32Array(32); // 16 tips * 2 (x,y)
   private displayTipFlameScales: Float32Array = new Float32Array(16);
   private displayTipColors: Float32Array = new Float32Array(48); // 16 tips * 3 (r,g,b)
@@ -634,6 +642,8 @@ export class WebGLFireRenderer {
     }
     this.lastRenderTime = input.currentTime;
     this.resizePresentationBuffers(config.renderingProfile ?? "cinematic");
+    this.updateDisplayTipData(input.tips, input);
+    this.renderPropVisibilityMatte(input);
 
     if (this._diagEnabled && this._diagFrameCount < 5) {
       this._diagFrameCount++;
@@ -970,6 +980,7 @@ export class WebGLFireRenderer {
       activeTips: this.displayTipCount,
       canvasSize: [this.displayCanvasWidth, this.displayCanvasHeight],
       cacheState: this.frameCache?.getDiagnostics() ?? null,
+      propVisibilityMatteActive: this.propVisibilityMatteActive,
       contextLost: this.gl?.isContextLost() ?? null,
       lastConfigHash: this.lastConfigHash,
     };
@@ -978,6 +989,38 @@ export class WebGLFireRenderer {
   // ============================================================
   // Simulation pipeline
   // ============================================================
+
+  private updateDisplayTipData(
+    tips: PropTipData[],
+    input: FireFrameInput
+  ): void {
+    this.displayTipCount = Math.min(tips.length, 16);
+    this.displayCanvasWidth = input.canvasWidth;
+    this.displayCanvasHeight = input.canvasHeight;
+
+    for (let index = 0; index < this.displayTipCount; index++) {
+      const tip = tips[index]!;
+      this.displayTipUVs[index * 2] = tip.x / input.canvasWidth;
+      this.displayTipUVs[index * 2 + 1] = 1 - tip.y / input.canvasHeight;
+      this.displayTipFlameScales[index] = tip.flameScale;
+
+      const presentation = computeFireTipPresentation(
+        tip,
+        input.canvasWidth,
+        input.canvasHeight,
+        this.tipPresentation
+      );
+      this.displayTipShapes[index * 4] = presentation.directionX;
+      this.displayTipShapes[index * 4 + 1] = presentation.directionY;
+      this.displayTipShapes[index * 4 + 2] = presentation.stretch;
+      this.displayTipShapes[index * 4 + 3] = presentation.breakup;
+
+      const color = input.propColors?.[tip.propIndex];
+      this.displayTipColors[index * 3] = color?.r ?? 1;
+      this.displayTipColors[index * 3 + 1] = color?.g ?? 0.65;
+      this.displayTipColors[index * 3 + 2] = color?.b ?? 0.12;
+    }
+  }
 
   private stepSimulation(
     tips: PropTipData[],
@@ -1000,11 +1043,6 @@ export class WebGLFireRenderer {
       1.0 / this.simWidth,
       1.0 / this.simHeight,
     ];
-
-    // Cache tip UV positions for the display pass (wick core rendering)
-    this.displayTipCount = Math.min(tips.length, 16);
-    this.displayCanvasWidth = input.canvasWidth;
-    this.displayCanvasHeight = input.canvasHeight;
 
     // Sub-step to keep dt ≤ 16ms. The Navier-Stokes solver is nonlinear —
     // larger time steps cause numerical instability that makes the fire
@@ -1080,32 +1118,6 @@ export class WebGLFireRenderer {
     this.splatBatch(this.temperature!, splats, "temperature");
     if ((config.colorBlend ?? 0) > 0 && input.propColors && this.colorField) {
       this.splatBatch(this.colorField, splats, "color");
-    }
-
-    // Cache tip UV positions + flameScales for the display pass
-    for (let ti = 0; ti < this.displayTipCount; ti++) {
-      const tip = tips[ti]!;
-      this.displayTipUVs[ti * 2] = tip.x / input.canvasWidth;
-      this.displayTipUVs[ti * 2 + 1] = 1.0 - tip.y / input.canvasHeight;
-      this.displayTipFlameScales[ti] = tip.flameScale;
-      const presentation = computeFireTipPresentation(
-        tip,
-        input.canvasWidth,
-        input.canvasHeight,
-        this.tipPresentation
-      );
-      this.displayTipShapes[ti * 4] = presentation.directionX;
-      this.displayTipShapes[ti * 4 + 1] = presentation.directionY;
-      this.displayTipShapes[ti * 4 + 2] = presentation.stretch;
-      this.displayTipShapes[ti * 4 + 3] = presentation.breakup;
-      if (input.propColors) {
-        const color = input.propColors[tip.propIndex];
-        if (color) {
-          this.displayTipColors[ti * 3] = color.r;
-          this.displayTipColors[ti * 3 + 1] = color.g;
-          this.displayTipColors[ti * 3 + 2] = color.b;
-        }
-      }
     }
 
     // 2-7. Physics sub-stepping: run advection, buoyancy, vorticity,
@@ -1368,6 +1380,155 @@ export class WebGLFireRenderer {
   // Display rendering
   // ============================================================
 
+  private getPropVisibilityTexture(image: TexImageSource): WebGLTexture | null {
+    const gl = this.gl!;
+    const cached = this.propVisibilityTextures.get(image);
+    if (cached) return cached;
+
+    if (
+      typeof HTMLImageElement !== "undefined" &&
+      image instanceof HTMLImageElement &&
+      (!image.complete || image.naturalWidth === 0)
+    ) {
+      return null;
+    }
+
+    const texture = gl.createTexture();
+    if (!texture) return null;
+
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+
+    this.propVisibilityTextures.set(image, texture);
+    return texture;
+  }
+
+  private trimPropVisibilityTextures(
+    activeImages: ReadonlySet<TexImageSource>
+  ): void {
+    const gl = this.gl!;
+    for (const [image, texture] of this.propVisibilityTextures) {
+      if (!activeImages.has(image)) {
+        gl.deleteTexture(texture);
+        this.propVisibilityTextures.delete(image);
+      }
+    }
+  }
+
+  /**
+   * Rasterize the exact alpha silhouettes that the 2D renderer painted this
+   * frame. The final fire composite reads this matte after bloom, so cached and
+   * live fire both react to the prop's current pose without baking prop state
+   * into the fluid cache.
+   */
+  private renderPropVisibilityMatte(input: FireFrameInput): void {
+    const gl = this.gl!;
+    const program = this.propVisibilityMatteProgram;
+    const target = this.propVisibilityMatteFBO;
+    const sprites = input.propSprites ?? [];
+    const activeImages = new Set<TexImageSource>();
+
+    if (!program || !target || sprites.length === 0) {
+      this.propVisibilityMatteActive = false;
+      this.trimPropVisibilityTextures(activeImages);
+      return;
+    }
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
+    gl.viewport(0, 0, this.presentationWidth, this.presentationHeight);
+    gl.disable(gl.SCISSOR_TEST);
+    gl.disable(gl.BLEND);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    gl.useProgram(program.program);
+    gl.uniform2f(
+      program.uniforms.get("u_targetSize")!,
+      this.presentationWidth,
+      this.presentationHeight
+    );
+    gl.uniform1i(program.uniforms.get("u_propSprite")!, 0);
+    gl.enable(gl.BLEND);
+    gl.blendEquation(gl.FUNC_ADD);
+    gl.blendFuncSeparate(
+      gl.ONE,
+      gl.ONE_MINUS_SRC_ALPHA,
+      gl.ONE,
+      gl.ONE_MINUS_SRC_ALPHA
+    );
+    gl.enable(gl.SCISSOR_TEST);
+
+    const scaleX = this.presentationWidth / Math.max(input.canvasWidth, 1);
+    const scaleY = this.presentationHeight / Math.max(input.canvasHeight, 1);
+    let drawnSpriteCount = 0;
+
+    for (const sprite of sprites) {
+      if (sprite.opacity <= 0.001 || sprite.width <= 0 || sprite.height <= 0) {
+        continue;
+      }
+
+      const texture = this.getPropVisibilityTexture(sprite.image);
+      if (!texture) continue;
+      activeImages.add(sprite.image);
+
+      const centerX = sprite.centerX * scaleX;
+      const centerY = sprite.centerY * scaleY;
+      const width = sprite.width * scaleX;
+      const height = sprite.height * scaleY;
+      const cos = Math.cos(sprite.angle);
+      const sin = Math.sin(sprite.angle);
+      const boundsWidth = Math.abs(cos) * width + Math.abs(sin) * height;
+      const boundsHeight = Math.abs(sin) * width + Math.abs(cos) * height;
+      const left = Math.max(0, Math.floor(centerX - boundsWidth * 0.5) - 1);
+      const top = Math.max(0, Math.floor(centerY - boundsHeight * 0.5) - 1);
+      const right = Math.min(
+        this.presentationWidth,
+        Math.ceil(centerX + boundsWidth * 0.5) + 1
+      );
+      const bottom = Math.min(
+        this.presentationHeight,
+        Math.ceil(centerY + boundsHeight * 0.5) + 1
+      );
+      if (right <= left || bottom <= top) continue;
+
+      gl.scissor(
+        left,
+        this.presentationHeight - bottom,
+        right - left,
+        bottom - top
+      );
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.uniform2f(program.uniforms.get("u_center")!, centerX, centerY);
+      gl.uniform2f(program.uniforms.get("u_size")!, width, height);
+      gl.uniform1f(program.uniforms.get("u_angle")!, sprite.angle);
+      gl.uniform1f(program.uniforms.get("u_flipped")!, sprite.flipped ? 1 : 0);
+      gl.uniform1f(program.uniforms.get("u_opacity")!, sprite.opacity);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      drawnSpriteCount++;
+    }
+
+    gl.disable(gl.SCISSOR_TEST);
+    gl.blendEquation(gl.FUNC_ADD);
+    gl.blendFuncSeparate(
+      gl.ONE,
+      gl.ONE_MINUS_SRC_ALPHA,
+      gl.ONE,
+      gl.ONE_MINUS_SRC_ALPHA
+    );
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    this.propVisibilityMatteActive = drawnSpriteCount > 0;
+    this.trimPropVisibilityTextures(activeImages);
+  }
+
   /**
    * Render the display pass. When bloom is enabled, renders to an intermediate
    * FBO, runs the bloom mip chain, then composites scene + bloom to screen.
@@ -1380,7 +1541,8 @@ export class WebGLFireRenderer {
     const gl = this.gl!;
     const bloomStrength = config.bloomStrength ?? 0.08;
     const useFilmic = config.renderingProfile !== "legacy";
-    const useIntermediate = useFilmic || bloomStrength > 0;
+    const useIntermediate =
+      useFilmic || bloomStrength > 0 || this.propVisibilityMatteActive;
 
     if (useIntermediate && this.displayFBO) {
       // Render scene-linear fire to an HDR intermediate before bloom/output.
@@ -1575,6 +1737,30 @@ export class WebGLFireRenderer {
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, bloomTexture);
     gl.uniform1i(prog.uniforms.get("u_bloom")!, 1);
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(
+      gl.TEXTURE_2D,
+      this.propVisibilityMatteFBO?.texture ?? sceneTexture
+    );
+    gl.uniform1i(prog.uniforms.get("u_propVisibilityMatte")!, 2);
+    gl.uniform1f(
+      prog.uniforms.get("u_propVisibilityEnabled")!,
+      this.propVisibilityMatteActive ? 1 : 0
+    );
+    gl.uniform1i(prog.uniforms.get("u_tipCount")!, this.displayTipCount);
+    if (this.displayTipCount > 0) {
+      gl.uniform2fv(
+        prog.uniforms.get("u_tipPositions[0]")!,
+        this.displayTipUVs.subarray(0, this.displayTipCount * 2)
+      );
+      gl.uniform1fv(
+        prog.uniforms.get("u_tipFlameScales[0]")!,
+        this.displayTipFlameScales.subarray(0, this.displayTipCount)
+      );
+    }
+    const aspect =
+      this.displayCanvasWidth / Math.max(this.displayCanvasHeight, 1);
+    gl.uniform2f(prog.uniforms.get("u_aspectCorrect")!, 1, aspect);
     gl.uniform1f(prog.uniforms.get("u_bloomStrength")!, bloomStrength);
     gl.uniform1f(prog.uniforms.get("u_useFilmic")!, useFilmic ? 1 : 0);
     gl.uniform1f(prog.uniforms.get("u_exposure")!, 1.0);
@@ -1786,6 +1972,14 @@ export class WebGLFireRenderer {
       this.gl!.HALF_FLOAT,
       this.gl!.LINEAR
     );
+    this.propVisibilityMatteFBO = this.createFBO(
+      width,
+      height,
+      this.gl!.RGBA8,
+      this.gl!.RGBA,
+      this.gl!.UNSIGNED_BYTE,
+      this.gl!.LINEAR
+    );
     this.createBloomMipChain(width, height);
   }
 
@@ -1800,7 +1994,8 @@ export class WebGLFireRenderer {
     if (
       width === this.presentationWidth &&
       height === this.presentationHeight &&
-      this.displayFBO
+      this.displayFBO &&
+      this.propVisibilityMatteFBO
     ) {
       return;
     }
@@ -1849,6 +2044,12 @@ export class WebGLFireRenderer {
       gl.deleteFramebuffer(this.displayFBO.fbo);
       this.displayFBO = null;
     }
+    if (this.propVisibilityMatteFBO) {
+      gl.deleteTexture(this.propVisibilityMatteFBO.texture);
+      gl.deleteFramebuffer(this.propVisibilityMatteFBO.fbo);
+      this.propVisibilityMatteFBO = null;
+    }
+    this.propVisibilityMatteActive = false;
     this.destroyBloomMipChain();
     this.presentationWidth = 1;
     this.presentationHeight = 1;
@@ -2068,6 +2269,21 @@ export class WebGLFireRenderer {
         },
       },
       {
+        frag: PROP_VISIBILITY_MATTE_FRAG,
+        uniforms: [
+          "u_propSprite",
+          "u_targetSize",
+          "u_center",
+          "u_size",
+          "u_angle",
+          "u_flipped",
+          "u_opacity",
+        ],
+        assign: (sp) => {
+          this.propVisibilityMatteProgram = sp;
+        },
+      },
+      {
         frag: BLOOM_DOWNSAMPLE_FRAG,
         uniforms: ["u_source", "u_texelSize", "u_threshold", "u_knee"],
         assign: (sp) => {
@@ -2090,6 +2306,12 @@ export class WebGLFireRenderer {
           "u_useFilmic",
           "u_exposure",
           "u_ditherStrength",
+          "u_propVisibilityMatte",
+          "u_propVisibilityEnabled",
+          "u_tipPositions[0]",
+          "u_tipFlameScales[0]",
+          "u_tipCount",
+          "u_aspectCorrect",
         ],
         assign: (sp) => {
           this.bloomCompositeProgram = sp;
@@ -2263,6 +2485,7 @@ export class WebGLFireRenderer {
         this.gradientSubtractProgram,
         this.clearProgram,
         this.displayProgram,
+        this.propVisibilityMatteProgram,
         this.bloomDownsampleProgram,
         this.bloomUpsampleProgram,
         this.bloomCompositeProgram,
@@ -2276,6 +2499,10 @@ export class WebGLFireRenderer {
         gl.deleteShader(pending.fragShader);
       }
       if (this.pendingVertexShader) gl.deleteShader(this.pendingVertexShader);
+      for (const texture of this.propVisibilityTextures.values()) {
+        gl.deleteTexture(texture);
+      }
+      this.propVisibilityTextures.clear();
     }
 
     this.pendingPrograms = [];
@@ -2298,6 +2525,7 @@ export class WebGLFireRenderer {
     this.gradientSubtractProgram = null;
     this.clearProgram = null;
     this.displayProgram = null;
+    this.propVisibilityMatteProgram = null;
     this.bloomDownsampleProgram = null;
     this.bloomUpsampleProgram = null;
     this.bloomCompositeProgram = null;

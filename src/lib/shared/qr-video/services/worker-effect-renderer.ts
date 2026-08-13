@@ -63,6 +63,7 @@ import type {
   PropTipData,
 } from "$lib/shared/animation-engine/domain/types/fire-types";
 import { DEFAULT_FIRE_CONFIG } from "$lib/shared/animation-engine/domain/types/fire-types";
+import type { RenderedPropSprite } from "$lib/shared/animation-engine/domain/types/rendered-prop-sprite";
 import type {
   LedFrameInput,
   LedTipData,
@@ -77,6 +78,11 @@ const VIEWBOX_SIZE = 950;
 const BLUE_COLOR = "#3575E2";
 const RED_COLOR = "#ED1C24";
 
+export interface WorkerPropImages {
+  blue: ImageBitmap;
+  red: ImageBitmap;
+}
+
 export interface WorkerEffectRenderer {
   renderFrame(
     ctx: OffscreenCanvasRenderingContext2D,
@@ -88,7 +94,8 @@ export interface WorkerEffectRenderer {
     frameIndex: number,
     dt: number,
     stepIndex: number,
-    isStartPosition: boolean
+    isStartPosition: boolean,
+    propImages?: WorkerPropImages
   ): void;
   dispose(): void;
 }
@@ -131,6 +138,27 @@ function computeTips(
   return {
     a: { x: center.x + halfLen * cos, y: center.y + halfLen * sin },
     b: { x: center.x - halfLen * cos, y: center.y - halfLen * sin },
+  };
+}
+
+function buildWorkerPropSprite(
+  canvasSize: number,
+  prop: FramePropState | null,
+  image: ImageBitmap | undefined,
+  viewBox: { width: number; height: number }
+): RenderedPropSprite | null {
+  if (!prop || !image) return null;
+  const center = getPropCenter(canvasSize, prop);
+  const scale = canvasSize / VIEWBOX_SIZE;
+  return {
+    image,
+    centerX: center.x,
+    centerY: center.y,
+    angle: prop.staffRotationAngle,
+    width: viewBox.width * scale,
+    height: viewBox.height * scale,
+    flipped: false,
+    opacity: 1,
   };
 }
 
@@ -643,7 +671,19 @@ function createFireRenderer(canvasSize: number): WorkerEffectRenderer | null {
   const prevTips = new Map<string, PrevTipState>();
 
   return {
-    renderFrame(ctx, cs, blue, red, blueVB, redVB, frameIndex, dt) {
+    renderFrame(
+      ctx,
+      cs,
+      blue,
+      red,
+      blueVB,
+      redVB,
+      frameIndex,
+      dt,
+      _stepIndex,
+      _isStartPosition,
+      propImages
+    ) {
       const tips: PropTipData[] = [];
       const currentTime = frameIndex * dt * 1000;
 
@@ -701,6 +741,10 @@ function createFireRenderer(canvasSize: number): WorkerEffectRenderer | null {
         canvasWidth: cs,
         canvasHeight: cs,
         darkMode: true,
+        propSprites: [
+          buildWorkerPropSprite(cs, blue, propImages?.blue, blueVB),
+          buildWorkerPropSprite(cs, red, propImages?.red, redVB),
+        ].filter((sprite): sprite is RenderedPropSprite => sprite !== null),
       };
 
       renderer.renderFire(input, { ...DEFAULT_FIRE_CONFIG });

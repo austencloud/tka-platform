@@ -1451,6 +1451,8 @@ export class AnimationRenderLoop {
     // Read prop transforms from Canvas2D renderer for fire coherence
     const renderedTransforms =
       this.renderer?.getLastPropTransforms?.() ?? undefined;
+    const renderedPropSprites =
+      this.renderer?.getLastRenderedPropSprites?.() ?? [];
 
     // Fire/charcoal/zap overlays: render after Canvas2D so they composite on top.
     // Fire, charcoal, and zap all consume FireTipTracker output (zap reads the
@@ -1550,6 +1552,7 @@ export class AnimationRenderLoop {
           canvasWidth: this.canvasSize,
           canvasHeight: this.canvasSize,
           darkMode: params.darkMode ?? false,
+          propSprites: renderedPropSprites,
           propColors: params.propColors,
           loopDetected: this.loopDetectedThisFrame || tipResult.gapDetected,
           playbackSpeed: params.playbackSpeed,

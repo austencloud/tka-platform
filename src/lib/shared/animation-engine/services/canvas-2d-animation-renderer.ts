@@ -27,6 +27,7 @@
  */
 
 import type { RenderedPropTransform } from "$lib/shared/animation-engine/domain/types/fire-types";
+import type { RenderedPropSprite } from "$lib/shared/animation-engine/domain/types/rendered-prop-sprite";
 import type {
   RenderSceneParams,
 } from "$lib/shared/animation-engine/domain/types/animation-render-types";
@@ -188,6 +189,7 @@ export class Canvas2DAnimationRenderer {
 
   private lastBlueTransform: RenderedPropTransform | null = null;
   private lastRedTransform: RenderedPropTransform | null = null;
+  private readonly lastRenderedPropSprites: RenderedPropSprite[] = [];
 
   // Track current grid mode for resize operations
   private currentGridMode: string = "diamond";
@@ -414,6 +416,7 @@ export class Canvas2DAnimationRenderer {
   }
 
   renderScene(params: RenderSceneParams): void {
+    this.lastRenderedPropSprites.length = 0;
     const ctx = this.appManager.getContext();
     if (!ctx || !this.appManager.isReady()) {
       return;
@@ -813,6 +816,10 @@ export class Canvas2DAnimationRenderer {
     return { blue: this.lastBlueTransform, red: this.lastRedTransform };
   }
 
+  getLastRenderedPropSprites(): readonly RenderedPropSprite[] {
+    return this.lastRenderedPropSprites;
+  }
+
   /** Current prop sprite images — the echo overlay ghosts these at past poses. */
   getPropImages(): { blue: HTMLImageElement | null; red: HTMLImageElement | null } {
     return {
@@ -885,6 +892,17 @@ export class Canvas2DAnimationRenderer {
     const width = dimensions.width * transform.scaleFactor;
     const height = dimensions.height * transform.scaleFactor;
     const rotation = propType?.toLowerCase() === "hand" ? 0 : transform.angle;
+
+    this.lastRenderedPropSprites.push({
+      image,
+      centerX: transform.centerX,
+      centerY: transform.centerY,
+      angle: rotation,
+      width,
+      height,
+      flipped,
+      opacity: ctx.globalAlpha,
+    });
 
     ctx.save();
     ctx.translate(transform.centerX, transform.centerY);

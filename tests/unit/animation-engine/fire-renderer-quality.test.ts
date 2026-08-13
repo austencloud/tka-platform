@@ -13,8 +13,13 @@ import {
   hasReachedFireFrameCacheCapacity,
 } from "$lib/shared/animation-engine/services/fire/fire-frame-cache";
 import { DEFAULT_FIRE_CONFIG } from "$lib/shared/animation-engine/domain/types/fire-types";
-import { DISPLAY_FRAG } from "$lib/shared/animation-engine/services/fire/fluid-shader-sources";
+import {
+  BLOOM_COMPOSITE_FRAG,
+  DISPLAY_FRAG,
+  PROP_VISIBILITY_MATTE_FRAG,
+} from "$lib/shared/animation-engine/services/fire/fluid-shader-sources";
 import { computeFireTipPresentation } from "$lib/shared/animation-engine/services/fire/fire-tip-presentation";
+import { computeFirePropVisibilityScale } from "$lib/shared/animation-engine/services/fire/fire-prop-visibility";
 import type { PropTipData } from "$lib/shared/animation-engine/domain/types/fire-types";
 
 function createTip(overrides: Partial<PropTipData> = {}): PropTipData {
@@ -182,6 +187,34 @@ describe("2D fire quality controls", () => {
         coreIndex
       )
     ).toBeGreaterThan(coreIndex);
+  });
+
+  it("protects prop readability only when foreground fire becomes dense", () => {
+    expect(computeFirePropVisibilityScale(0.5, 0.3, 1, 0)).toBe(1);
+    expect(computeFirePropVisibilityScale(1, 2, 0, 0)).toBe(1);
+    expect(computeFirePropVisibilityScale(1, 2, 1, 0)).toBeCloseTo(0.46, 8);
+    expect(computeFirePropVisibilityScale(1, 2, 1, 1)).toBeGreaterThan(0.84);
+  });
+
+  it("composites dense fire against the exact painted prop silhouette", () => {
+    expect(PROP_VISIBILITY_MATTE_FRAG).toContain(
+      "texture(u_propSprite, vec2(spriteUv.x, 1.0 - spriteUv.y))"
+    );
+    expect(PROP_VISIBILITY_MATTE_FRAG).toContain(
+      "fragColor = vec4(sprite.rgb * matte, matte)"
+    );
+    expect(PROP_VISIBILITY_MATTE_FRAG).toContain("if (u_flipped > 0.5)");
+    expect(BLOOM_COMPOSITE_FRAG).toContain(
+      "vec4 propVisibility = texture(u_propVisibilityMatte, v_uv)"
+    );
+    expect(BLOOM_COMPOSITE_FRAG).toContain(
+      "float propVisibilityScale = mix(1.0, capScale, protection)"
+    );
+    expect(BLOOM_COMPOSITE_FRAG).toContain("1.0 - tipFreedom * 0.72");
+    expect(BLOOM_COMPOSITE_FRAG).toContain("combined *= propVisibilityScale");
+    expect(BLOOM_COMPOSITE_FRAG).toContain(
+      "mapped = mix(mapped, heatedPropColor, propHeatBlend)"
+    );
   });
 });
 

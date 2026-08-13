@@ -1,4 +1,5 @@
 import type { CharcoalSparkParams } from "./charcoal-spark-types";
+import type { RenderedPropSprite } from "./rendered-prop-sprite";
 /**
  * Fire Overlay Types
  *
@@ -104,6 +105,10 @@ export interface FireFrameInput {
   canvasHeight: number;
   /** Whether dark mode is active (affects intensity) */
   darkMode: boolean;
+  /** Prop sprites exactly as the main canvas painted them this frame. Natural
+   * Fire uses their alpha silhouettes to keep dense foreground flame from
+   * erasing the props underneath. */
+  propSprites?: readonly RenderedPropSprite[];
   /** Prop colors for colored flames, indexed by tip.propIndex.
    *  [0]=base blue, [1]=base red; [2+2*li]/[3+2*li]=tunnel-layer blue/red.
    *  The base pair is always present; extra entries appear only when the

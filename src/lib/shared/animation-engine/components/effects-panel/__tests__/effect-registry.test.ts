@@ -8,7 +8,7 @@ describe("effect-registry", () => {
       expect(reg).toBeDefined();
       expect(reg!.meta.id).toBe(meta.id);
       expect(reg!.presetGroup).toBeDefined();
-      expect(reg!.presetGroup.presets.length).toBeGreaterThan(0);
+      expect(Array.isArray(reg!.presetGroup.presets)).toBe(true);
     }
   });
 

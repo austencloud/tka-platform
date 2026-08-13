@@ -1,3 +1,5 @@
+import { FIRE_PROP_VISIBILITY } from "../fire/fire-prop-visibility";
+
 /**
  * FluidShaderSources
  *
@@ -40,6 +42,46 @@ void main() {
   vec2 pos = POSITIONS[gl_VertexID];
   v_uv = pos * 0.5 + 0.5;
   gl_Position = vec4(pos, 0.0, 1.0);
+}
+`;
+
+// Draws the alpha of a real prop sprite into a screen-space matte. The same
+// fullscreen vertex shader is scissored to each rotated sprite's bounds, so
+// tunnel copies cost only the pixels they cover rather than a full-screen pass.
+export const PROP_VISIBILITY_MATTE_FRAG = `#version 300 es
+precision highp float;
+
+in vec2 v_uv;
+out vec4 fragColor;
+
+uniform sampler2D u_propSprite;
+uniform vec2 u_targetSize;
+uniform vec2 u_center;
+uniform vec2 u_size;
+uniform float u_angle;
+uniform float u_flipped;
+uniform float u_opacity;
+
+void main() {
+  vec2 pixel = vec2(gl_FragCoord.x, u_targetSize.y - gl_FragCoord.y);
+  vec2 delta = pixel - u_center;
+  float c = cos(u_angle);
+  float s = sin(u_angle);
+  vec2 local = vec2(
+    c * delta.x + s * delta.y,
+    -s * delta.x + c * delta.y
+  );
+  if (u_flipped > 0.5) local.x = -local.x;
+
+  vec2 spriteUv = local / max(u_size, vec2(0.0001)) + 0.5;
+  if (any(lessThan(spriteUv, vec2(0.0))) || any(greaterThan(spriteUv, vec2(1.0)))) {
+    discard;
+  }
+
+  vec4 sprite = texture(u_propSprite, vec2(spriteUv.x, 1.0 - spriteUv.y));
+  float matte = sprite.a * clamp(u_opacity, 0.0, 1.0);
+  if (matte < 0.001) discard;
+  fragColor = vec4(sprite.rgb * matte, matte);
 }
 `;
 
@@ -878,6 +920,12 @@ uniform float u_bloomStrength;
 uniform float u_useFilmic;
 uniform float u_exposure;
 uniform float u_ditherStrength;
+uniform sampler2D u_propVisibilityMatte;
+uniform float u_propVisibilityEnabled;
+uniform vec2 u_tipPositions[16];
+uniform float u_tipFlameScales[16];
+uniform int u_tipCount;
+uniform vec2 u_aspectCorrect;
 
 float acesToneScale(float value) {
   float a = 2.51;
@@ -910,14 +958,83 @@ void main() {
   vec4 bloom = texture(u_bloom, v_uv);
 
   vec4 combined = scene + bloom * u_bloomStrength;
+  vec3 visiblePropColor = vec3(0.0);
+  float propHeatBlend = 0.0;
+
+  // Dense flame may cross the prop, but it must not replace the prop. The
+  // matte uses the exact painted sprite alpha, so open fan/hoop areas and
+  // asymmetric silhouettes stay untouched. Calm flame remains fully opaque;
+  // only the piled-up optical density that hides the prop is reduced.
+  if (u_propVisibilityEnabled > 0.5) {
+    vec4 propVisibility = texture(u_propVisibilityMatte, v_uv);
+    float propMatte = propVisibility.a;
+    float peakEmission = max(combined.r, max(combined.g, combined.b));
+    float densitySignal = max(
+      clamp(combined.a, 0.0, 1.0),
+      clamp(peakEmission * ${FIRE_PROP_VISIBILITY.emissionWeight.toFixed(2)}, 0.0, 1.0)
+    );
+    float severity = smoothstep(
+      ${FIRE_PROP_VISIBILITY.densityStart.toFixed(2)},
+      ${FIRE_PROP_VISIBILITY.densityFull.toFixed(2)},
+      densitySignal
+    );
+
+    // The wick is allowed to disappear into its ignition flame. Protecting the
+    // shaft remains the priority, so this exemption falls off within roughly
+    // one prop-width of each emitter.
+    float tipFreedom = 0.0;
+    if (propMatte > 0.001 && severity > 0.001) {
+      for (int i = 0; i < 16; i++) {
+        if (i >= u_tipCount) break;
+        vec2 delta = (v_uv - u_tipPositions[i]) * u_aspectCorrect;
+        float radius = 0.018 * u_tipFlameScales[i];
+        tipFreedom = max(
+          tipFreedom,
+          1.0 - smoothstep(radius * 0.35, radius, length(delta))
+        );
+      }
+    }
+
+    float denseCapMix = smoothstep(
+      ${FIRE_PROP_VISIBILITY.denseCapStart.toFixed(2)},
+      1.0,
+      severity
+    );
+    float alphaCap = mix(
+      ${FIRE_PROP_VISIBILITY.softAlphaCap.toFixed(2)},
+      ${FIRE_PROP_VISIBILITY.denseAlphaCap.toFixed(2)},
+      denseCapMix
+    );
+    float capScale = combined.a > alphaCap
+      ? alphaCap / max(combined.a, 0.00001)
+      : 1.0;
+    float protection = propMatte * severity
+      * (1.0 - tipFreedom * ${FIRE_PROP_VISIBILITY.tipFreedom.toFixed(2)});
+    float propVisibilityScale = mix(1.0, capScale, protection);
+    visiblePropColor = propVisibility.rgb / max(propMatte, 0.00001);
+    propHeatBlend = protection * ${FIRE_PROP_VISIBILITY.heatColorRetention.toFixed(2)};
+    combined *= propVisibilityScale;
+  }
+
   float a = min(combined.a, 1.0);
+  // Dense fire heats the prop's own color instead of replacing it with a gray
+  // transparency window. A small red lift suggests incandescence while the
+  // real blue/red sprite remains recognizable through the foreground flame.
+  vec3 heatedPropColor = clamp(
+    visiblePropColor * 1.08 + vec3(0.14, 0.025, 0.0),
+    0.0,
+    1.0
+  );
   if (u_useFilmic < 0.5) {
-    fragColor = vec4(min(combined.rgb, vec3(a)), a);
+    vec3 legacyColor = min(combined.rgb / max(a, 0.00001), vec3(1.0));
+    legacyColor = mix(legacyColor, heatedPropColor, propHeatBlend);
+    fragColor = vec4(legacyColor * a, a);
     return;
   }
 
   vec3 straightHdr = combined.rgb / max(a, 0.00001);
   vec3 mapped = huePreservingToneMap(straightHdr);
+  mapped = mix(mapped, heatedPropColor, propHeatBlend);
   mapped += ditherNoise(gl_FragCoord.xy) * u_ditherStrength;
   mapped = clamp(mapped, 0.0, 1.0);
   fragColor = vec4(mapped * a, a);
