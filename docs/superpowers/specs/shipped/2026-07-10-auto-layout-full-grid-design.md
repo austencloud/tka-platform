@@ -25,11 +25,11 @@ The start position is not a plain grid cell — it owns a full row (row
 placement) or a full column (column placement). So a tidy 3×3 of 9 cells is not
 representable; the real candidates are:
 
-| shape | grid | empty cells | note |
-|---|---|---|---|
-| `sc=3`, column (what Auto picked) | 4×3 = 12 | **3** | QR slot + 2 visible gaps |
-| `sc=4`, column | 5×2 = 10 | 1 | just the QR slot, zero visible gaps |
-| `sc=2`, row | 2×5 = 10 | 1 | zero visible gaps |
+| shape                             | grid     | empty cells | note                                |
+| --------------------------------- | -------- | ----------- | ----------------------------------- |
+| `sc=3`, column (what Auto picked) | 4×3 = 12 | **3**       | QR slot + 2 visible gaps            |
+| `sc=4`, column                    | 5×2 = 10 | 1           | just the QR slot, zero visible gaps |
+| `sc=2`, row                       | 2×5 = 10 | 1           | zero visible gaps                   |
 
 The clean shapes waste one cell (the reserved QR slot); the picked shape wastes
 three. Auto preferred it purely on render size.
@@ -40,17 +40,17 @@ The obvious reading of "acceptable parameters" is: only allow step-column counts
 that divide the step count evenly (`stepCount % stepCols === 0`). This breaks on
 primes and awkward counts. For 7 steps the only clean divisors are `sc ∈ {1, 7}`,
 forcing Auto into a 1-wide strip or a 7-wide row — strictly worse than today. A
-hard divisor filter is out.
+hard divisor filter without a prime fallback is out.
 
 ## Rejected approach: fewest-empty-cells primary
 
 The first attempt made `wasted` the primary objective (fewest gaps wins, size
 only a tie-breaker). It fixed the 8-count but **over-corrected**: for a 12-count
-+ start + QR in a tall container it picked the *skinniest* full grid — a 2-wide
-2×7 (wasted 1) — over the container-filling 4×4 (the shape the deterministic
-table and the card-download preview both use). Pure fewest-waste ignores how
-small/skinny the winner renders. Symmetric failure to pure-size: one leaves
-corner gaps, the other leaves horizontal dead space around a tiny card.
+with Start and QR in a tall container it picked the _skinniest_ full grid, a
+2-wide 2×7 (wasted 1), over the container-filling 4×4 (the shape the
+deterministic table and the card-download preview both use). Pure fewest-waste
+ignores how small/skinny the winner renders. Symmetric failure to pure-size: one
+leaves corner gaps, the other leaves horizontal dead space around a tiny card.
 
 ## Rejected approach: fewest-empty-cells + slack
 
@@ -59,7 +59,7 @@ corner gaps, the other leaves horizontal dead space around a tiny card.
 2×7 (wasted 1), so `k = 1` caps the pool at wasted ≤ 2 and excludes the
 container-filling 4×4 (wasted 3) — giving a 4-wide `5×3` instead of the table's
 4×4. Raising to `k = 2` re-admits the 8-count's 3-gap 4×3. The slack `k` is in
-the same 8-vs-12 tension as a raw primary flip: it can't weigh *how much* bigger
+the same 8-vs-12 tension as a raw primary flip: it can't weigh _how much_ bigger
 a gappy shape renders.
 
 ## Design: gap-penalized size
@@ -76,7 +76,7 @@ score    = cellEdge - GAP_PENALTY_FRACTION * bestEdge * wasted
 
 Ties (within `CELL_EDGE_EPSILON`) break on raw `cellEdge`, then on `balance`.
 
-Each empty cell docks a fixed fraction of the *biggest achievable* cell edge, so
+Each empty cell docks a fixed fraction of the _biggest achievable_ cell edge, so
 the penalty is scale-invariant (independent of container pixel size). A shape
 with an extra gap must render at least `GAP_PENALTY_FRACTION * bestEdge` bigger
 per gap to win. This is exactly the missing degree of freedom: it weighs the
@@ -87,7 +87,7 @@ lexically.
 
 A third real case forced a refinement. In a **portrait** viewer panel (~0.71),
 an 8-count + start + QR picked a 2×5 with the start + QR on a top row. The wider
-3×4 start-**column** renders bigger and fills the panel, but pricing *total*
+3×4 start-**column** renders bigger and fills the panel, but pricing _total_
 `wasted` cells rejected it: its start column carries two structural holes (start
 at top, QR at bottom, mandala lane between), counting as 2 gaps.
 
@@ -108,6 +108,26 @@ score = cellEdge - GAP_PENALTY_FRACTION * bestEdge * stepTrailing
 Total `wasted` (incl. start-lane holes) drops to a tiebreak below cell edge, so
 two equal-size, equal-step-gap shapes prefer fewer holes but a shape is never
 rejected for a structural start-lane hole.
+
+## 2026-08-12 amendment: canonical counts before fit scoring
+
+The gap score still allowed a container to invent a non-canonical shape. A
+16-step card on a tall, narrow screen selected three step columns because those
+cells were larger, even though 16 divides cleanly into 2, 4, or 8 columns. The
+result was a six-row tower with a ragged last row. The card's manual Columns
+control already excluded that count.
+
+Auto now begins with the same canonical exact-divisor counts as the manual
+control. It removes canonical candidates whose step region is a strip or tower
+(long side more than 2.5 times the short side), then applies the existing fit
+score to the remaining shapes. For 16 steps, 2×8 and 8×2 are rejected and 4×4
+wins; Start can occupy the top row or left column without changing that 4×4
+step grid.
+
+The prime-safe behavior remains. When a length has no readable exact-divisor
+candidate, Auto falls back to the complete candidate set and chooses the best
+ragged layout. Three columns therefore remain available for lengths where they
+are canonical or where a ragged fallback genuinely needs them.
 
 `GAP_PENALTY_FRACTION = 0.12`. The usable band is ~0.10–0.15. Results across the
 three real cases and robustness checks:
@@ -139,8 +159,10 @@ gappy or skinny layouts.
   from the Auto seam, and stay on the deterministic static table
   (`layout-calculator.ts`). Untouched.
 - **Manual column override**, **per-length composition override**, **mixed
-  durations**, and **long scroll sequences** all short-circuit before
-  `pickBestFitLayout` in `choreo-card-layout-state.svelte.ts`. Untouched.
+  durations**, and **long scroll sequences** continue through their existing
+  paths. Manual and per-length overrides still bypass Auto; scrolling long
+  sequences still use the width-driven policy. Mixed-duration Auto candidates
+  use the same canonical step counts before duration-aware fit scoring.
 - The QR-reservation guards (`continue` when a required QR slot can't be parked)
   are unchanged.
 - Start placement selection (`row` vs `column`) still flows from the chosen

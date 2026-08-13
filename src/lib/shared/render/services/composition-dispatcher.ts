@@ -11,7 +11,7 @@ type CompositionProgress = Parameters<CompositionProgressCallback>[0];
 
 function reportFinalizing(
   onProgress: CompositionProgressCallback | undefined,
-  latestProgress: CompositionProgress | undefined,
+  latestProgress: CompositionProgress | undefined
 ): void {
   if (!onProgress || latestProgress?.stage === "finalizing") return;
   onProgress({
@@ -58,7 +58,13 @@ export type CompositionWorkerInMessage =
 export type CompositionWorkerOutMessage =
   | { type: "init-done" }
   | { type: "result"; id: number; bitmap: ImageBitmap }
-  | { type: "progress"; id: number; current: number; total: number; stage: string }
+  | {
+      type: "progress";
+      id: number;
+      current: number;
+      total: number;
+      stage: string;
+    }
   | { type: "error"; id: number; message: string }
   | { type: "probe-result"; ok: boolean; error?: string };
 
@@ -87,13 +93,22 @@ interface PendingRequest {
 // One in-flight 1644x2244 RGBA card canvas per worker ≈ 14.7 MB. Reserve a core
 // for the main thread and cap at 8 — past ~8 the seed/memory cost outweighs the
 // throughput gain (a 32-core box would otherwise spawn 31 workers ≈ 455 MB).
-export function computePoolSize(hardwareConcurrency: number | undefined): number {
+export function computePoolSize(
+  hardwareConcurrency: number | undefined,
+  workerLimit = 8
+): number {
   const cores = hardwareConcurrency || 4;
-  return Math.max(2, Math.min(cores - 1, 8));
+  return Math.max(2, Math.min(cores - 1, workerLimit));
 }
 
+// A production worker is one bundled module. In Vite development, each worker
+// loads the raw module graph independently; eight workers turned one route
+// visit into roughly a thousand requests and starved pointer updates. Two keep
+// local printing responsive without changing the shipped production pool.
+const WORKER_LIMIT = import.meta.env.DEV ? 2 : 8;
 const POOL_SIZE = computePoolSize(
   typeof navigator !== "undefined" ? navigator.hardwareConcurrency : undefined,
+  WORKER_LIMIT
 );
 const INIT_TIMEOUT_MS = 15_000;
 
@@ -103,8 +118,11 @@ export class CompositionDispatcher {
   private initializing: Promise<void> | null = null;
   private nextRequestId = 1;
   private pendingRequests = new Map<number, PendingRequest>();
-  private pendingBundle: import("./card-asset-bundle").AssetBundle | null = null;
-  private pendingOverrideBundle: import("./override-placement-bundle").OverridePlacementBundle | null = null;
+  private pendingBundle: import("./card-asset-bundle").AssetBundle | null =
+    null;
+  private pendingOverrideBundle:
+    | import("./override-placement-bundle").OverridePlacementBundle
+    | null = null;
   private pendingSignature: string | null = null;
   private seededSignature: string | null = null;
   // Open while a pre-warm builds its asset bundle. ensureInitialized awaits it so
@@ -116,7 +134,7 @@ export class CompositionDispatcher {
 
   constructor(
     private readonly imageComposer: ImageComposer,
-    private readonly textRenderer: TextRenderer,
+    private readonly textRenderer: TextRenderer
   ) {}
 
   /** Set the AssetBundle seeded into each worker's SVG caches at init time. */
@@ -125,7 +143,9 @@ export class CompositionDispatcher {
   }
 
   /** Set the override placement bundle seeded into each worker at init. */
-  setOverrideBundle(bundle: import("./override-placement-bundle").OverridePlacementBundle): void {
+  setOverrideBundle(
+    bundle: import("./override-placement-bundle").OverridePlacementBundle
+  ): void {
     this.pendingOverrideBundle = bundle;
   }
 
@@ -137,7 +157,9 @@ export class CompositionDispatcher {
    * after this call is processed by the re-seeded worker. No-op-safe before init
    * (pending bundle alone suffices — init will seed it).
    */
-  updateOverrideBundle(bundle: import("./override-placement-bundle").OverridePlacementBundle): void {
+  updateOverrideBundle(
+    bundle: import("./override-placement-bundle").OverridePlacementBundle
+  ): void {
     this.pendingOverrideBundle = bundle;
     for (const entry of this.workers) {
       entry.worker.postMessage({
@@ -195,13 +217,17 @@ export class CompositionDispatcher {
    * paint → transfer). Caches the result so subsequent calls are free.
    */
   static async probeWorkerSupport(): Promise<boolean> {
-    if (CompositionDispatcher.workerSupport !== null) return CompositionDispatcher.workerSupport;
+    if (CompositionDispatcher.workerSupport !== null)
+      return CompositionDispatcher.workerSupport;
     // In-flight dedup: concurrent callers share the single probe in progress
     // (mirrors the `initializing` guard) instead of each spawning a worker.
     if (CompositionDispatcher.probing) return CompositionDispatcher.probing;
     CompositionDispatcher.probing = (async () => {
       try {
-        if (typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined") {
+        if (
+          typeof Worker === "undefined" ||
+          typeof OffscreenCanvas === "undefined"
+        ) {
           return (CompositionDispatcher.workerSupport = false);
         }
         try {
@@ -222,9 +248,12 @@ export class CompositionDispatcher {
   // init -> OffscreenCanvas -> paint -> transfer end to end.
   private static runProbe(): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
-      const w = new Worker(new URL("../workers/composition.worker.ts", import.meta.url), {
-        type: "module",
-      });
+      const w = new Worker(
+        new URL("../workers/composition.worker.ts", import.meta.url),
+        {
+          type: "module",
+        }
+      );
       const timeout = setTimeout(() => {
         console.warn("[CompositionDispatcher] worker probe timed out");
         w.terminate();
@@ -244,7 +273,7 @@ export class CompositionDispatcher {
           if (!d.ok) {
             console.warn(
               "[CompositionDispatcher] worker probe failed:",
-              d.error ?? "(no detail)",
+              d.error ?? "(no detail)"
             );
           }
           resolve(!!d.ok);
@@ -262,18 +291,40 @@ export class CompositionDispatcher {
     /** Pre-rendered QR bitmap (main-thread produced). The worker has no QR
      * generator, so a baked QR MUST be transferred in; the main-thread fallback
      * reads it via options.qrImageBitmap. Null = no QR baked. */
-    qrBitmap: ImageBitmap | null = null,
+    qrBitmap: ImageBitmap | null = null
   ): Promise<Blob> {
     if (CompositionDispatcher.canUseWorker()) {
       try {
-        return await this.composeOnWorker(sequence, options, onProgress, signal, qrBitmap);
+        return await this.composeOnWorker(
+          sequence,
+          options,
+          onProgress,
+          signal,
+          qrBitmap
+        );
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") throw error;
-        console.warn("[CompositionDispatcher] Worker failed, falling back to main thread:", error);
-        return this.composeOnMainThread(sequence, options, onProgress, signal, qrBitmap);
+        if (error instanceof DOMException && error.name === "AbortError")
+          throw error;
+        console.warn(
+          "[CompositionDispatcher] Worker failed, falling back to main thread:",
+          error
+        );
+        return this.composeOnMainThread(
+          sequence,
+          options,
+          onProgress,
+          signal,
+          qrBitmap
+        );
       }
     }
-    return this.composeOnMainThread(sequence, options, onProgress, signal, qrBitmap);
+    return this.composeOnMainThread(
+      sequence,
+      options,
+      onProgress,
+      signal,
+      qrBitmap
+    );
   }
 
   // ---- Worker path ----
@@ -283,7 +334,7 @@ export class CompositionDispatcher {
     options: Partial<SequenceExportOptions>,
     onProgress?: CompositionProgressCallback,
     signal?: AbortSignal,
-    qrBitmap: ImageBitmap | null = null,
+    qrBitmap: ImageBitmap | null = null
   ): Promise<Blob> {
     await this.ensureInitialized();
 
@@ -299,11 +350,20 @@ export class CompositionDispatcher {
     worker.pendingCount++;
 
     return new Promise<Blob>((resolve, reject) => {
-      const pending: PendingRequest = { resolve, reject, onProgress, signal, workerEntry: worker };
+      const pending: PendingRequest = {
+        resolve,
+        reject,
+        onProgress,
+        signal,
+        workerEntry: worker,
+      };
 
       if (signal) {
         pending.abortHandler = () => {
-          worker.worker.postMessage({ type: "cancel", id } satisfies CompositionWorkerInMessage);
+          worker.worker.postMessage({
+            type: "cancel",
+            id,
+          } satisfies CompositionWorkerInMessage);
         };
         signal.addEventListener("abort", pending.abortHandler, { once: true });
       }
@@ -339,7 +399,7 @@ export class CompositionDispatcher {
     options: Partial<SequenceExportOptions>,
     qrBitmap: ImageBitmap | null = null,
     signal?: AbortSignal,
-    onProgress?: CompositionProgressCallback,
+    onProgress?: CompositionProgressCallback
   ): Promise<ImageBitmap> {
     await this.ensureInitialized();
 
@@ -366,7 +426,10 @@ export class CompositionDispatcher {
 
       if (signal) {
         pending.abortHandler = () => {
-          worker.worker.postMessage({ type: "cancel", id } satisfies CompositionWorkerInMessage);
+          worker.worker.postMessage({
+            type: "cancel",
+            id,
+          } satisfies CompositionWorkerInMessage);
         };
         signal.addEventListener("abort", pending.abortHandler, { once: true });
       }
@@ -430,10 +493,14 @@ export class CompositionDispatcher {
 
       canvas.convertToBlob({ type: "image/webp", quality: 0.9 }).then(
         (blob) => pending.resolve(blob),
-        (err) => pending.reject(err instanceof Error ? err : new Error(String(err))),
+        (err) =>
+          pending.reject(err instanceof Error ? err : new Error(String(err)))
       );
     } else if (data.type === "error") {
-      if (data.message.includes("AbortError") || data.message.includes("cancelled")) {
+      if (
+        data.message.includes("AbortError") ||
+        data.message.includes("cancelled")
+      ) {
         pending.reject(new DOMException(data.message, "AbortError"));
       } else {
         pending.reject(new Error(data.message));
@@ -448,7 +515,7 @@ export class CompositionDispatcher {
     options: Partial<SequenceExportOptions>,
     onProgress?: CompositionProgressCallback,
     signal?: AbortSignal,
-    qrBitmap: ImageBitmap | null = null,
+    qrBitmap: ImageBitmap | null = null
   ): Promise<Blob> {
     // The main-thread ImageComposer draws a pre-rendered QR from
     // options.qrImageBitmap (falls back to its own generator otherwise). Thread
@@ -466,13 +533,13 @@ export class CompositionDispatcher {
           sequence,
           opts,
           forwardProgress,
-          signal,
+          signal
         )
       : await this.imageComposer.composeSequenceImage(
           sequence,
           opts,
           forwardProgress,
-          signal,
+          signal
         );
 
     reportFinalizing(onProgress, latestProgress);
@@ -483,7 +550,7 @@ export class CompositionDispatcher {
       (canvas as HTMLCanvasElement).toBlob(
         (blob) => (blob ? resolve(blob) : reject(new Error("toBlob failed"))),
         "image/webp",
-        0.9,
+        0.9
       );
     });
   }
@@ -504,9 +571,18 @@ export class CompositionDispatcher {
   private async initPool(): Promise<void> {
     await this.textRenderer.preloadGlyphImages();
     const glyphEntries = await convertGlyphCacheToBitmaps(
-      this.textRenderer.getGlyphCache(),
+      this.textRenderer.getGlyphCache()
     );
-    console.log("[CompositionDispatcher] initPool glyphEntries:", glyphEntries.length, "bundle keys:", this.pendingBundle?.keys.length ?? 0, "grids:", this.pendingBundle ? Object.values(this.pendingBundle.grids).filter(Boolean).length : 0);
+    console.log(
+      "[CompositionDispatcher] initPool glyphEntries:",
+      glyphEntries.length,
+      "bundle keys:",
+      this.pendingBundle?.keys.length ?? 0,
+      "grids:",
+      this.pendingBundle
+        ? Object.values(this.pendingBundle.grids).filter(Boolean).length
+        : 0
+    );
 
     const glyphMeta: GlyphTransferEntry[] = glyphEntries.map((e) => ({
       letter: e.letter,
@@ -523,7 +599,7 @@ export class CompositionDispatcher {
       try {
         const worker = new Worker(
           new URL("../workers/composition.worker.ts", import.meta.url),
-          { type: "module" },
+          { type: "module" }
         );
 
         const entry: WorkerEntry = { worker, ready: false, pendingCount: 0 };
@@ -545,15 +621,18 @@ export class CompositionDispatcher {
           armTimeout = () => {
             timeout = setTimeout(
               () => reject(new Error(`Worker ${i} init timeout`)),
-              INIT_TIMEOUT_MS,
+              INIT_TIMEOUT_MS
             );
           };
-          worker.onmessage = (event: MessageEvent<CompositionWorkerOutMessage>) => {
+          worker.onmessage = (
+            event: MessageEvent<CompositionWorkerOutMessage>
+          ) => {
             if (event.data.type === "init-done") {
               clearTimeout(timeout);
               entry.ready = true;
-              worker.onmessage = (ev: MessageEvent<CompositionWorkerOutMessage>) =>
-                this.handleWorkerMessage(ev.data);
+              worker.onmessage = (
+                ev: MessageEvent<CompositionWorkerOutMessage>
+              ) => this.handleWorkerMessage(ev.data);
               resolve();
             }
           };
@@ -561,7 +640,7 @@ export class CompositionDispatcher {
 
         // Clone glyph bitmaps for this worker (transfer consumes the original).
         const clonedBitmaps = await Promise.all(
-          glyphEntries.map((e) => createImageBitmap(e.bitmap)),
+          glyphEntries.map((e) => createImageBitmap(e.bitmap))
         );
 
         // Clone the AssetBundle per worker. Empty bundle when none was set —
@@ -570,14 +649,20 @@ export class CompositionDispatcher {
         let bundleClone: import("./card-asset-bundle").AssetBundle = {
           keys: [],
           bitmaps: [],
-          grids: { diamond: null, box: null, diamondNonRadial: null, boxNonRadial: null },
+          grids: {
+            diamond: null,
+            box: null,
+            diamondNonRadial: null,
+            boxNonRadial: null,
+          },
           icons: [],
         };
         if (bundle) {
           const clonedBmps = await Promise.all(
-            bundle.bitmaps.map((b) => createImageBitmap(b)),
+            bundle.bitmaps.map((b) => createImageBitmap(b))
           );
-          type GridSlot = import("./card-asset-bundle").AssetBundle["grids"]["diamond"];
+          type GridSlot =
+            import("./card-asset-bundle").AssetBundle["grids"]["diamond"];
           const cloneGrid = async (g: GridSlot): Promise<ImageBitmap | null> =>
             g ? await createImageBitmap(g as ImageBitmapSource) : null;
           // Clone footer icons per worker (transfer detaches the source).
@@ -585,7 +670,7 @@ export class CompositionDispatcher {
             bundle.icons.map(async (icon) => ({
               path: icon.path,
               bitmap: await createImageBitmap(icon.bitmap),
-            })),
+            }))
           );
           bundleClone = {
             keys: [...bundle.keys],
@@ -605,7 +690,12 @@ export class CompositionDispatcher {
           glyphs: clonedBitmaps,
           glyphMeta,
           bundle: bundleClone,
-          overrideBundle: this.pendingOverrideBundle ?? { default: [], special: [], global: [], propGeometry: [] },
+          overrideBundle: this.pendingOverrideBundle ?? {
+            default: [],
+            special: [],
+            global: [],
+            propGeometry: [],
+          },
         };
         worker.postMessage(initMessage, [
           ...clonedBitmaps,
@@ -615,11 +705,16 @@ export class CompositionDispatcher {
 
         await ready;
       } catch (err) {
-        console.error(`[CompositionDispatcher] Failed to create worker ${i}:`, err);
+        console.error(
+          `[CompositionDispatcher] Failed to create worker ${i}:`,
+          err
+        );
       }
     };
 
-    await Promise.all(Array.from({ length: POOL_SIZE }, (_, i) => spawnWorker(i)));
+    await Promise.all(
+      Array.from({ length: POOL_SIZE }, (_, i) => spawnWorker(i))
+    );
 
     // Close the source glyph bitmaps — workers have their own clones
     for (const entry of glyphEntries) {

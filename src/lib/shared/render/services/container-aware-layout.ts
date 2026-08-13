@@ -16,8 +16,12 @@
  * state factory's `previewAspectRatio`, so both size the card by one formula.
  */
 
-import { HEADER_HEIGHT_DIVISOR, FOOTER_HEIGHT_DIVISOR } from "@tka/render-composition";
+import {
+  HEADER_HEIGHT_DIVISOR,
+  FOOTER_HEIGHT_DIVISOR,
+} from "@tka/render-composition";
 import { calculateTimelineRowsByBeatCount } from "$lib/shared/create/utils/grid-calculations";
+import { getCanonicalCardStepColumnCounts } from "$lib/shared/render/services/card-step-column-options";
 
 export type StartPlacement = "row" | "column" | "none";
 
@@ -66,6 +70,9 @@ export interface BestFitInput {
 /** Cell-edge ties within this many px are treated as equal (stability + float noise). */
 const CELL_EDGE_EPSILON = 0.5;
 
+/** Long side / short side limit for a canonical step grid. */
+const MAX_CANONICAL_STEP_GRID_RATIO = 2.5;
+
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
@@ -82,7 +89,7 @@ function gridShape(
   stepCount: number,
   stepCols: number,
   includeStartPosition: boolean,
-  placement: StartPlacement,
+  placement: StartPlacement
 ): { cols: number; rows: number } {
   const sc = Math.max(1, stepCols);
   if (!includeStartPosition || placement === "none") {
@@ -115,10 +122,12 @@ function stepTrailingEmpties(
   rows: number,
   stepCount: number,
   includeStartPosition: boolean,
-  placement: StartPlacement,
+  placement: StartPlacement
 ): number {
-  const stepCols = includeStartPosition && placement === "column" ? cols - 1 : cols;
-  const stepRows = includeStartPosition && placement === "row" ? rows - 1 : rows;
+  const stepCols =
+    includeStartPosition && placement === "column" ? cols - 1 : cols;
+  const stepRows =
+    includeStartPosition && placement === "row" ? rows - 1 : rows;
   return stepCols * stepRows - stepCount;
 }
 
@@ -131,7 +140,7 @@ export function cardHeightInCells(
   cols: number,
   rows: number,
   showHeader: boolean,
-  showFooter: boolean,
+  showFooter: boolean
 ): number {
   const hfScale = cols >= 3 ? 1 : cols / 3;
   const headerFraction = showHeader ? (1 / HEADER_HEIGHT_DIVISOR) * hfScale : 0;
@@ -154,6 +163,19 @@ interface Candidate {
   /** Total empty cells incl. start-lane holes — a soft tiebreak only. */
   wasted: number;
   balance: number;
+}
+
+/**
+ * A divisor is only useful to Auto when it also produces a readable step grid.
+ * This keeps 16 steps on 4x4 instead of letting a tall container pull it into
+ * 2x8, while 8 can still rotate between 2x4 and 4x2. Short cards may use a
+ * single row because three or four cells do not read as a strip.
+ */
+function hasReadableStepGrid(candidate: Candidate, stepCount: number): boolean {
+  if (stepCount <= 4) return true;
+  const shortSide = Math.min(candidate.stepWidthUnits, candidate.stepRows);
+  const longSide = Math.max(candidate.stepWidthUnits, candidate.stepRows);
+  return shortSide > 0 && longSide / shortSide <= MAX_CANONICAL_STEP_GRID_RATIO;
 }
 
 /**
@@ -205,10 +227,10 @@ export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
 
   const durations = Array.from(
     { length: stepCount },
-    (_, index) => stepDurations?.[index] ?? 1,
+    (_, index) => stepDurations?.[index] ?? 1
   );
   const hasMixedDurations = durations.some(
-    (duration) => Math.abs(duration - 1) > 0.001,
+    (duration) => Math.abs(duration - 1) > 0.001
   );
   const durationSteps = hasMixedDurations
     ? durations.map((duration) => ({ duration }))
@@ -227,11 +249,11 @@ export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
       if (durationSteps) {
         const timelineRows = calculateTimelineRowsByBeatCount(
           durationSteps,
-          sc,
+          sc
         );
         const maxStepUnits = Math.max(
           1,
-          ...timelineRows.map((row) => row.totalDuration),
+          ...timelineRows.map((row) => row.totalDuration)
         );
         stepRows = timelineRows.length;
         stepWidthUnits = maxStepUnits;
@@ -248,12 +270,7 @@ export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
           widthUnits = maxStepUnits + 1;
         }
       } else {
-        const shape = gridShape(
-          stepCount,
-          sc,
-          true,
-          placement,
-        );
+        const shape = gridShape(stepCount, sc, true, placement);
         cols = shape.cols;
         rows = shape.rows;
         widthUnits = cols;
@@ -274,11 +291,11 @@ export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
         widthUnits,
         rows,
         showHeader,
-        showFooter,
+        showFooter
       );
       const cellEdge = Math.min(
         containerWidth / widthUnits,
-        containerHeight / heightCells,
+        containerHeight / heightCells
       );
 
       candidates.push({
@@ -290,7 +307,13 @@ export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
         stepRows,
         stepWidthUnits,
         cellEdge,
-        stepTrailing: stepTrailingEmpties(cols, rows, stepCount, true, placement),
+        stepTrailing: stepTrailingEmpties(
+          cols,
+          rows,
+          stepCount,
+          true,
+          placement
+        ),
         wasted: cols * rows - usedCells,
         balance: Math.abs(widthUnits - rows),
       });
@@ -299,8 +322,25 @@ export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
 
   if (candidates.length === 0) return null;
 
+  // Auto chooses only from the same exact-divisor counts exposed by the card's
+  // Columns control when those counts contain a readable shape. Prime and
+  // awkward lengths keep the exhaustive fallback instead of being forced into
+  // a one-row or one-column card.
+  const canonicalStepColumns = new Set(
+    getCanonicalCardStepColumnCounts(stepCount)
+  );
+  const canonicalCandidates = candidates.filter(
+    (candidate) =>
+      canonicalStepColumns.has(candidate.stepCols) &&
+      hasReadableStepGrid(candidate, stepCount)
+  );
+  const eligibleCandidates =
+    canonicalCandidates.length > 0 ? canonicalCandidates : candidates;
+
   let best: Candidate | null = null;
-  for (const c of candidates) if (!best || isBetter(c, best)) best = c;
+  for (const candidate of eligibleCandidates) {
+    if (!best || isBetter(candidate, best)) best = candidate;
+  }
 
   if (!best) return null;
   if (!includeStartPosition) {
@@ -333,7 +373,7 @@ export function getStepColumnsForLayout(layout: FitLayout): number {
  */
 export function pickScrollColumns(
   containerWidth: number,
-  opts?: { min?: number; max?: number; targetCellPx?: number },
+  opts?: { min?: number; max?: number; targetCellPx?: number }
 ): number {
   const { min = 4, max = 7, targetCellPx = 130 } = opts ?? {};
   if (!(containerWidth > 0)) return 5;
