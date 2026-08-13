@@ -27,7 +27,12 @@ describe("Viewer3D Gate 5 observation seam", () => {
   });
 
   it("forwards semantic environment transition observations through the production viewer", () => {
-    expect(canvasSource).toContain("{onEnvironmentTransitionChange}");
+    expect(canvasSource).toContain(
+      "onEnvironmentTransitionChange={handleEnvironmentTransitionChange}"
+    );
+    expect(canvasSource).toContain(
+      "onEnvironmentTransitionChange?.(observation)"
+    );
     expect(sceneSource).toContain(
       "onTransitionChange={onEnvironmentTransitionChange}"
     );

@@ -487,13 +487,13 @@
      emission. Bubbles rise (+y) and grow over lifetime before popping on
      timeout or max-size.
      ============================================================================= -->
-{#if !pooledEffectsManaged && bubbles3D}
+{#if !pooledEffectsManaged && bubblesEnabled && bubbles3D && isPlaying}
   {#if blueEnds}
     <BubbleEmitter3D
       position={blueEnds.positive}
       propVelocity={bluePositiveVelocityVec}
       params={bubbles3D}
-      enabled={bubblesEnabled && bubblesShowRightEnd && isPlaying}
+      enabled={bubblesShowRightEnd}
     />
   {/if}
   {#if blueEnds}
@@ -501,7 +501,7 @@
       position={blueEnds.negative}
       propVelocity={blueNegativeVelocityVec}
       params={bubbles3D}
-      enabled={bubblesEnabled && bubblesShowLeftEnd && isPlaying}
+      enabled={bubblesShowLeftEnd}
     />
   {/if}
   {#if redEnds}
@@ -509,7 +509,7 @@
       position={redEnds.positive}
       propVelocity={redPositiveVelocityVec}
       params={bubbles3D}
-      enabled={bubblesEnabled && bubblesShowRightEnd && isPlaying}
+      enabled={bubblesShowRightEnd}
     />
   {/if}
   {#if redEnds}
@@ -517,7 +517,7 @@
       position={redEnds.negative}
       propVelocity={redNegativeVelocityVec}
       params={bubbles3D}
-      enabled={bubblesEnabled && bubblesShowLeftEnd && isPlaying}
+      enabled={bubblesShowLeftEnd}
     />
   {/if}
 {/if}

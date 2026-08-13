@@ -16,7 +16,6 @@ const accents: ObjectDefinition[] = [
     name: "Cloudbreak Root Stone",
     type: "prop",
     icon: "fa-gem",
-    modelPath: "/models/vegetation/rock/stone_largeA.glb",
     fallbackGeometry: "sphere",
     defaultScale: 1.2,
     defaultHeight: 0,

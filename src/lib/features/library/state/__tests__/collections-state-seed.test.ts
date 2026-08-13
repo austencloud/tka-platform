@@ -30,7 +30,10 @@ vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({
 	toast: { error: vi.fn(), success: vi.fn() },
 }));
 vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
-	authState: { user: { uid: "u1" } },
+	authState: {
+		user: { uid: "u1" },
+		effectiveUserId: "u1",
+	},
 }));
 
 import { collectionsState } from "../collections-state.svelte";

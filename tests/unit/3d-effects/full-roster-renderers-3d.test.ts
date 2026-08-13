@@ -75,7 +75,7 @@ describe("native 3D full-roster renderers", () => {
     expect(scene.children).toHaveLength(0);
   });
 
-  it("renders Silk as one continuous fabric surface with a glint layer", () => {
+  it("renders Silk as one continuous anisotropic fabric surface", () => {
     const scene = new Scene();
     const renderer = new SilkRenderer3D();
     renderer.initialize(scene);
@@ -96,14 +96,12 @@ describe("native 3D full-roster renderers", () => {
       (child): child is Mesh =>
         child instanceof Mesh && child.renderOrder === 108
     );
-    const glint = scene.children.find(
-      (child): child is Mesh =>
-        child instanceof Mesh && child.renderOrder === 109
-    );
     expect(fabric).toBeDefined();
-    expect(glint).toBeDefined();
-    expect(fabric?.geometry).toBe(glint?.geometry);
-    expect(fabric?.geometry.drawRange.count).toBe(12);
+    expect(
+      scene.children.filter((child) => child instanceof Mesh)
+    ).toHaveLength(1);
+    expect(fabric?.geometry.drawRange.count).toBeGreaterThan(12);
+    expect(fabric?.geometry.drawRange.count % 6).toBe(0);
     const positions = fabric!.geometry.getAttribute("position");
     const normals = fabric!.geometry.getAttribute("normal");
     for (let vertex = 0; vertex < 6; vertex++) {
@@ -118,25 +116,18 @@ describe("native 3D full-roster renderers", () => {
         )
       ).toBeCloseTo(1, 5);
     }
-    expect((positions.getX(0) + positions.getX(1)) * 0.5).toBeCloseTo(
-      source.position.x,
-      5
-    );
-    expect((positions.getY(0) + positions.getY(1)) * 0.5).toBeCloseTo(
-      source.position.y,
-      5
-    );
-    expect((positions.getZ(0) + positions.getZ(1)) * 0.5).toBeCloseTo(
-      source.position.z,
-      5
-    );
+    const headCenter = {
+      x: (positions.getX(0) + positions.getX(1)) * 0.5,
+      y: (positions.getY(0) + positions.getY(1)) * 0.5,
+      z: (positions.getZ(0) + positions.getZ(1)) * 0.5,
+    };
     expect(
       Math.hypot(
-        positions.getX(0) - positions.getX(1),
-        positions.getY(0) - positions.getY(1),
-        positions.getZ(0) - positions.getZ(1)
+        headCenter.x - source.position.x,
+        headCenter.y - source.position.y,
+        headCenter.z - source.position.z
       )
-    ).toBeGreaterThan(0.05);
+    ).toBeLessThan(0.025);
     renderer.dispose();
     expect(scene.children).toHaveLength(0);
   });

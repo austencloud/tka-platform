@@ -96,7 +96,9 @@ describe("homepage hero notation rail contract", () => {
     );
     expect(sequenceHero).not.toContain('class="element-badge"');
     expect(sequenceHero).not.toContain("shownElement.iconPath");
-    expect(animatorCanvas).toContain("{elementalGlyphVisible}");
+    expect(animatorCanvas).toContain(
+      "elementalGlyphVisible={effectiveElementalGlyphVisible}"
+    );
   });
 
   it("routes the prefetched sequence through the player's clock-preserving boundary handoff", () => {
