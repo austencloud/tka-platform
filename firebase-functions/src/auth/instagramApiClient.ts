@@ -35,6 +35,11 @@ export async function exchangeInstagramAuthorizationCode(input: {
   });
   const responseText = await response.text();
   if (!response.ok) {
+    functions.logger.warn("Instagram token exchange was rejected", {
+      httpStatus: response.status,
+      requestId: response.headers.get("x-fb-request-id"),
+      body: responseText.slice(0, 600),
+    });
     const professionalAccountRequired = /professional|business|creator/i.test(
       responseText
     );

@@ -15,12 +15,12 @@
 import * as functions from "firebase-functions";
 import { defineSecret } from "firebase-functions/params";
 import { HttpsError, onCall, onRequest } from "firebase-functions/v2/https";
+import { exchangeInstagramAuthorizationCode } from "../auth/instagramApiClient";
 import { isAllowedInstagramReturnOrigin } from "../auth/instagramAuthPolicy";
 import { sendProviderCallbackPage } from "../auth/providerCallbackPage";
 import {
   exchangeFacebookCode,
   exchangeFacebookLongLivedToken,
-  exchangeInstagramCode,
   exchangeInstagramLongLivedToken,
   fetchInstagramAccount,
   listFacebookPages,
@@ -368,7 +368,7 @@ async function connectInstagram(uid: string, code: string): Promise<string> {
     instagramAppSecret.value(),
     "INSTAGRAM_APP_SECRET"
   );
-  const shortLived = await exchangeInstagramCode({
+  const shortLived = await exchangeInstagramAuthorizationCode({
     code,
     appId: configuredSecret(instagramAppId.value(), "INSTAGRAM_APP_ID"),
     appSecret,

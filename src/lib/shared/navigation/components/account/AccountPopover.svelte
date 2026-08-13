@@ -4,7 +4,10 @@
   import { signInWithGoogle } from "$lib/shared/auth/services/authenticator";
   import { upgradeAnonymousWithGoogle } from "$lib/shared/auth/services/anonymous-upgrade";
   import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
-  import { mapAuthError } from "$lib/shared/auth/services/auth-error-messages";
+  import {
+    isExpectedAuthInterruption,
+    mapAuthError,
+  } from "$lib/shared/auth/services/auth-error-messages";
   import { getAuthInstance } from "$lib/shared/auth/firebase";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { authState } from "../../../auth/state/auth-state.svelte";
@@ -119,7 +122,9 @@
         await signInWithGoogle();
       }
     } catch (error: unknown) {
-      console.error("[AccountPopover] Google sign-in failed", error);
+      if (!isExpectedAuthInterruption(error)) {
+        console.error("[AccountPopover] Google sign-in failed", error);
+      }
       const message = mapAuthError(error);
       if (message) toast.error(message);
     }

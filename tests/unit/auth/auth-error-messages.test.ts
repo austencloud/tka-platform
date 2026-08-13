@@ -9,6 +9,7 @@ describe("auth provider interruption classification", () => {
     "auth/popup-blocked",
     "auth/popup-closed-by-user",
     "auth/cancelled-popup-request",
+    "auth/user-cancelled",
   ])("treats %s as an expected provider outcome", (code) => {
     expect(isExpectedAuthInterruption({ code })).toBe(true);
   });
@@ -30,8 +31,9 @@ describe("auth provider interruption classification", () => {
     );
   });
 
-  it("stays silent when the user dismisses or supersedes a popup", () => {
+  it("stays silent when the user dismisses, denies, or supersedes a provider flow", () => {
     expect(mapAuthError({ code: "auth/popup-closed-by-user" })).toBeNull();
     expect(mapAuthError({ code: "auth/cancelled-popup-request" })).toBeNull();
+    expect(mapAuthError({ code: "auth/user-cancelled" })).toBeNull();
   });
 });

@@ -13,16 +13,18 @@ export function getAuthErrorCode(error: unknown): string | undefined {
 }
 
 /**
- * Provider popups can be blocked, dismissed, or superseded without indicating
- * an application failure. Callers may still show recovery copy, but these
- * outcomes should be measured as interaction events rather than exceptions.
+ * Provider flows can be blocked, dismissed, denied by the user, or superseded
+ * without indicating an application failure. Callers may still show recovery
+ * copy, but these outcomes should be measured as interaction events rather
+ * than exceptions.
  */
 export function isExpectedAuthInterruption(error: unknown): boolean {
   const errorCode = getAuthErrorCode(error);
   return (
     errorCode === "auth/popup-blocked" ||
     errorCode === "auth/popup-closed-by-user" ||
-    errorCode === "auth/cancelled-popup-request"
+    errorCode === "auth/cancelled-popup-request" ||
+    errorCode === "auth/user-cancelled"
   );
 }
 
@@ -38,7 +40,8 @@ export function mapAuthError(error: unknown): string | null {
       return "Popup was blocked. Please allow popups for this site.";
     case "auth/popup-closed-by-user":
     case "auth/cancelled-popup-request":
-      // Silent - user just clicked away, or a second popup superseded this one.
+    case "auth/user-cancelled":
+      // Silent: the user dismissed/denied the flow, or another popup replaced it.
       return null;
     case "auth/account-exists-with-different-credential":
       return "An account already exists with this email using a different sign-in method.";

@@ -72,6 +72,12 @@ Add to Secret Manager in project `the-kinetic-alphabet`:
 Already present and reused: `INSTAGRAM_APP_ID`, `INSTAGRAM_APP_SECRET`,
 `R2_PUBLIC_URL`.
 
+Instagram's short-lived code exchange must use the shared
+`exchangeInstagramAuthorizationCode` owner. It sends Meta's required multipart
+form. Do not replace it with `URLSearchParams`: Meta reports that request as a
+`redirect_uri` mismatch and consumes the one-time code, which hides the actual
+request-shape defect behind an unretryable provider error.
+
 Deploy the functions and the rules. **Function deploys are manual** — pushing to
 `main` deploys the site, not the functions:
 

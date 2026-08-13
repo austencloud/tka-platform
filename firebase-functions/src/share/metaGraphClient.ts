@@ -28,8 +28,6 @@ export const GRAPH_VERSION = "v23.0";
 const IG_GRAPH = `https://graph.instagram.com`;
 const FB_GRAPH = `https://graph.facebook.com/${GRAPH_VERSION}`;
 const FB_RUPLOAD = `https://rupload.facebook.com/video-upload/${GRAPH_VERSION}`;
-const IG_OAUTH_TOKEN_URL = "https://api.instagram.com/oauth/access_token";
-
 const REQUEST_TIMEOUT_MS = 30_000;
 
 async function graphRequest<T>(
@@ -103,43 +101,6 @@ export interface InstagramTokenResult {
   accessToken: string;
   /** Seconds until expiry, as Meta reports it. */
   expiresIn: number;
-}
-
-/**
- * Short-lived code → short-lived token. Separate host from the graph calls;
- * this one is form-encoded, not query-string.
- */
-export async function exchangeInstagramCode(input: {
-  code: string;
-  appId: string;
-  appSecret: string;
-  redirectUrl: string;
-}): Promise<{ accessToken: string; userId: string }> {
-  const payload = await graphRequest<{
-    access_token?: string;
-    user_id?: number | string;
-  }>(IG_OAUTH_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: form({
-      client_id: input.appId,
-      client_secret: input.appSecret,
-      grant_type: "authorization_code",
-      redirect_uri: input.redirectUrl,
-      code: input.code,
-    }),
-  });
-
-  if (!payload?.access_token || payload.user_id === undefined) {
-    throw new MetaPublishError(
-      "meta/provider-error",
-      "Instagram returned an incomplete token response"
-    );
-  }
-  return {
-    accessToken: payload.access_token,
-    userId: String(payload.user_id),
-  };
 }
 
 /** Short-lived (1 hour) → long-lived (60 days). */
@@ -357,9 +318,9 @@ export async function exchangeFacebookLongLivedToken(input: {
 }
 
 /** The Pages this person administers, each with its own page access token. */
-export async function listFacebookPages(userAccessToken: string): Promise<
-  Array<{ id: string; name: string; accessToken: string }>
-> {
+export async function listFacebookPages(
+  userAccessToken: string
+): Promise<Array<{ id: string; name: string; accessToken: string }>> {
   const url = new URL(`${FB_GRAPH}/me/accounts`);
   url.searchParams.set("fields", "id,name,access_token");
   url.searchParams.set("limit", "50");
@@ -401,7 +362,8 @@ export async function listPermissionStatuses(
 
   const statuses: Record<string, string> = {};
   for (const entry of payload?.data ?? []) {
-    if (entry.permission) statuses[entry.permission] = entry.status ?? "unknown";
+    if (entry.permission)
+      statuses[entry.permission] = entry.status ?? "unknown";
   }
   return statuses;
 }
