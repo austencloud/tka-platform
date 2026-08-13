@@ -50,7 +50,10 @@ import {
   featureFlagState,
 } from "../auth/services/post-hog-feature-flag-service.svelte";
 import { parseCreatorPathname } from "../navigation/services/creator-routes";
-import { pruneParamsForNavigation } from "../navigation/services/url-parameter-policy";
+import {
+  pruneParamsForNavigation,
+  pruneRouteScopedParams,
+} from "../navigation/services/url-parameter-policy";
 import { isStandaloneAppSurface } from "../navigation/services/app-shell-route";
 import { writeUrl } from "../navigation/services/url-state";
 import { buildNavigationDestinationId } from "../navigation/domain/navigation-visit";
@@ -634,6 +637,7 @@ function replaceHistoryState(moduleId: ModuleId, sectionId?: string) {
     url.pathname = canonical;
   }
   url.hash = "";
+  pruneRouteScopedParams(url, url.pathname);
   writeUrl(url, { state: { moduleId, sectionId } });
   recordNavigationVisit(moduleId, sectionId);
 }

@@ -15,6 +15,7 @@ const ROUTE_SCOPED_PARAMETERS: readonly RouteScopedParameter[] = [
   { name: "handoff", isValidForPath: startsWith("/compose") },
   { name: "feedback", isValidForPath: startsWith("/feedback") },
   { name: "openFeedback", isValidForPath: startsWith("/feedback") },
+  { name: "pack", isValidForPath: startsWith("/choreo_card/releaser") },
   { name: "room", isValidForPath: startsWith("/museum") },
   { name: "seq", isValidForPath: isLoopLabelerPath },
   { name: "filter", isValidForPath: isLoopLabelerPath },
@@ -24,14 +25,18 @@ const ROUTE_SCOPED_PARAMETERS: readonly RouteScopedParameter[] = [
 
 const ONE_REQUEST_PARAMETERS = ["fresh", "from", "code", "section"] as const;
 
-export function pruneParamsForNavigation(url: URL, pathname: string): void {
-  for (const name of ONE_REQUEST_PARAMETERS) {
-    url.searchParams.delete(name);
-  }
-
+export function pruneRouteScopedParams(url: URL, pathname: string): void {
   for (const parameter of ROUTE_SCOPED_PARAMETERS) {
     if (!parameter.isValidForPath(pathname)) {
       url.searchParams.delete(parameter.name);
     }
   }
+}
+
+export function pruneParamsForNavigation(url: URL, pathname: string): void {
+  for (const name of ONE_REQUEST_PARAMETERS) {
+    url.searchParams.delete(name);
+  }
+
+  pruneRouteScopedParams(url, pathname);
 }

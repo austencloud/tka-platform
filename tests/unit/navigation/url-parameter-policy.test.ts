@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { pruneParamsForNavigation } from "$lib/shared/navigation/services/url-parameter-policy";
+import {
+  pruneParamsForNavigation,
+  pruneRouteScopedParams,
+} from "$lib/shared/navigation/services/url-parameter-policy";
 
 describe("route-scoped URL parameters", () => {
   it("drops recovery and source-route state on module navigation", () => {
@@ -25,5 +28,20 @@ describe("route-scoped URL parameters", () => {
 
     expect(scanUrl.search).toBe("?scan=1");
     expect(labelerUrl.search).toBe("?seq=abc&filter=pending");
+  });
+
+  it("keeps a festival pack only on its deck-releaser route", () => {
+    const releaserUrl = new URL(
+      "https://tkaflowarts.com/choreo_card/releaser?pack=festival-sampler-2026"
+    );
+    const generateUrl = new URL(
+      "https://tkaflowarts.com/create/generate?pack=festival-sampler-2026"
+    );
+
+    pruneRouteScopedParams(releaserUrl, releaserUrl.pathname);
+    pruneRouteScopedParams(generateUrl, generateUrl.pathname);
+
+    expect(releaserUrl.search).toBe("?pack=festival-sampler-2026");
+    expect(generateUrl.search).toBe("");
   });
 });

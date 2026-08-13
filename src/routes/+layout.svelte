@@ -11,6 +11,7 @@
   import { navigationMorphs } from "$lib/shared/transitions/navigation-morphs";
   import { runNamedRouteMorph } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
+  import { pruneRouteScopedParams } from "$lib/shared/navigation/services/url-parameter-policy";
   import {
     markLanding,
     installLandingMarkReader,
@@ -130,12 +131,6 @@
     });
   });
 
-  const OWNED_PARAMS: Record<string, readonly string[]> = {
-    // loop-labeler (/test/loop-labeler) uses these for deep-link state.
-    seq: ["/test/loop-labeler"],
-    filter: ["/test/loop-labeler"],
-  };
-
   afterNavigate((navigation) => {
     if (typeof window === "undefined") return;
     const pathname = navigation.to?.url.pathname ?? "";
@@ -145,14 +140,9 @@
     // router has accepted that document, it no longer belongs in the URL.
     let changed = url.searchParams.has("fresh");
     if (changed) url.searchParams.delete("fresh");
-    for (const [param, ownedBy] of Object.entries(OWNED_PARAMS)) {
-      if (!url.searchParams.has(param)) continue;
-      const allowed = ownedBy.some((prefix) => pathname.startsWith(prefix));
-      if (!allowed) {
-        url.searchParams.delete(param);
-        changed = true;
-      }
-    }
+    const beforeRouteCleanup = url.search;
+    pruneRouteScopedParams(url, pathname);
+    changed ||= url.search !== beforeRouteCleanup;
 
     if (changed) {
       const cleaned = url.pathname + (url.search ? url.search : "") + url.hash;
