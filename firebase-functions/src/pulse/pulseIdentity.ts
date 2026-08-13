@@ -25,6 +25,15 @@ export interface AuthIdentity {
 type DocData = Record<string, unknown> | null | undefined;
 
 /**
+ * Agent browser profiles use reserved `agent-*` Firebase UIDs. Real Firebase
+ * accounts use generated IDs, while the provisioner assigns this prefix only
+ * to automation identities such as the shared Codex + Claude profile.
+ */
+export function isAgentUserId(userId: string | null | undefined): boolean {
+  return userId?.startsWith("agent-") ?? false;
+}
+
+/**
  * Is this session a guest? Auth wins; when it is unavailable, fall back to the
  * doc's flag, which is what Pulse used before and is right for every doc
  * createOrUpdateUserDocument wrote.

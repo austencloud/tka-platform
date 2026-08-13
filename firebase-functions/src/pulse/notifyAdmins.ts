@@ -14,6 +14,7 @@
 
 import * as admin from "firebase-admin";
 import { singleScanMessage, digestMessage } from "./scanDigestMessages";
+import { isAgentUserId } from "./pulseIdentity";
 
 const db = admin.firestore();
 
@@ -70,6 +71,10 @@ export function isAdminData(
 export async function notifyAdmins(
   input: AdminNotificationInput
 ): Promise<number> {
+  // Browser verification should exercise the real app without presenting the
+  // shared Codex + Claude profile as real user activity to Austen.
+  if (isAgentUserId(input.fromUserId)) return 0;
+
   const admins = await loadAdmins();
 
   const prefKey = PULSE_PREF_KEYS[input.type];
@@ -149,6 +154,8 @@ export interface ScanDigestInput {
 export async function notifyAdminsScanDigest(
   input: ScanDigestInput
 ): Promise<void> {
+  if (isAgentUserId(input.fromUserId)) return;
+
   const admins = await loadAdmins();
   const bucket = Math.floor(input.now / input.windowMs);
   const docId = `qr-scan-digest-${bucket}`;

@@ -1,4 +1,5 @@
 import {
+  isAgentUserId,
   isGuestSession,
   isGuestUpgrade,
   resolveDisplayName,
@@ -18,6 +19,19 @@ const full: AuthIdentity = {
 
 /** The doc a guest's first library save mints: a count, and no identity. */
 const identityLessDoc = { sequenceCount: 1, lastActivityDate: {} };
+
+describe("isAgentUserId", () => {
+  it("recognizes the shared browser profile and future agent identities", () => {
+    expect(isAgentUserId("agent-codex-claude")).toBe(true);
+    expect(isAgentUserId("agent-future-browser")).toBe(true);
+  });
+
+  it("does not suppress ordinary or missing user IDs", () => {
+    expect(isAgentUserId("PBp3GSBO6igCKPwJyLZNmVEmamI3")).toBe(false);
+    expect(isAgentUserId(null)).toBe(false);
+    expect(isAgentUserId(undefined)).toBe(false);
+  });
+});
 
 describe("isGuestSession", () => {
   it("believes auth over the doc", () => {
