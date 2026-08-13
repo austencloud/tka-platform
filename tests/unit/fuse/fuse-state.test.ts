@@ -224,6 +224,33 @@ describe("Fuse state", () => {
     expect(state.canFuse).toBe(true);
   });
 
+  it("rebuilds the follower geometry when the symmetry transform changes", async () => {
+    const state = createState(createLoader([]), {
+      generateSoloLoop: createSoloGenerator(),
+    });
+    await state.initialize();
+
+    state.setRelationship("blue", "mirror");
+    await vi.waitFor(() => {
+      expect(state.statusMessage).toBe("Red follows Blue (Mirror).");
+    });
+    const mirroredMotions = state.symmetryPreview?.steps.map(
+      (step) => step.motions.red
+    );
+
+    state.setTransform("rotate90");
+    await vi.waitFor(() => {
+      expect(state.statusMessage).toBe("Red follows Blue (Rotate 90).");
+    });
+    const rotatedMotions = state.symmetryPreview?.steps.map(
+      (step) => step.motions.red
+    );
+
+    expect(mirroredMotions).toBeDefined();
+    expect(rotatedMotions).toBeDefined();
+    expect(rotatedMotions).not.toEqual(mirroredMotions);
+  });
+
   it("distinguishes a catalog failure from an exact-length empty pool", async () => {
     const showUserError = vi.fn(() => "catalog-error");
     const loader = createLoader([]);

@@ -50,7 +50,7 @@
   const WIDE_MIN_LEFT = 1050;
   const WIDE_MAX_LEFT = 1400;
   const CANVAS_FLOOR = 560; // canvas never narrower than this
-  const STEP_COL_CANDIDATES = [2, 4, 6, 8] as const; // step columns to weigh (+1 start col)
+  const STEP_COL_CANDIDATES = [1, 2, 4, 6, 8] as const; // step columns to weigh (+1 context col)
   const CARD_GAP = 14; // vertical gap between the stacked blue/red cards
   const CARD_HPAD = 44; // card horizontal padding, both sides
   const CARD_CHROME_V = 96; // card vertical chrome: padding + the Back/Shuffle row
@@ -90,8 +90,9 @@
   );
 
   // Pictograph cell size for one card at a given path-column width and step
-  // column count. Grid = sc step columns + 1 start column; rows = ceil(steps/sc)
-  // but at least 2 (the start column stacks the start position over the mandala).
+  // column count. Grid = step columns + 1 context column. The context column
+  // holds Start above the mandala, so full cards always distribute beats across
+  // at least two rows instead of stranding the mandala in a row by itself.
   // Each card owns half the content row minus the gap and its own chrome.
   const cardBoxH = $derived(
     Math.max(0, (contentH - CARD_GAP) / 2 - CARD_CHROME_V)
@@ -102,18 +103,26 @@
     const boxW = Math.max(0, leftW - CARD_HPAD);
     return Math.min(boxW / gridCols, cardBoxH / rows);
   }
+  function stepColumnCandidates(): readonly number[] {
+    const twoRowCeiling = Math.max(1, Math.ceil(stepCount / 2));
+    return STEP_COL_CANDIDATES.filter((columns) => columns <= twoRowCeiling);
+  }
+  function emptyStepCells(sc: number): number {
+    return Math.max(0, Math.ceil(stepCount / sc) * sc - stepCount);
+  }
   function bestStepCols(leftW: number): number {
-    let best: number = STEP_COL_CANDIDATES[0];
+    let best = stepColumnCandidates()[0] ?? 1;
     let bestCell = -1;
-    for (const sc of STEP_COL_CANDIDATES) {
+    for (const sc of stepColumnCandidates()) {
       const cell = cellSizeFor(leftW, sc);
-      // A shallow desktop card can make several column counts produce the same
-      // cell size because height, not width, is the limiting dimension. Use
-      // the denser option in that tie so the LOOP fills the horizontal card
-      // instead of becoming a small grid surrounded by empty surface.
+      // A shallow card often makes multiple arrangements the same size. Prefer
+      // the one that fills its beat rows, then the denser option. This keeps an
+      // 8-beat LOOP at 4 × 2 instead of leaving most of row 2 empty.
       if (
         cell > bestCell + 0.5 ||
-        (Math.abs(cell - bestCell) <= 0.5 && sc > best)
+        (Math.abs(cell - bestCell) <= 0.5 &&
+          (emptyStepCells(sc) < emptyStepCells(best) ||
+            (emptyStepCells(sc) === emptyStepCells(best) && sc > best)))
       ) {
         bestCell = cell;
         best = sc;
@@ -156,7 +165,7 @@
       return clampSplit(containerWidth * 0.42);
     let bestSeam = clampSplit(containerWidth * 0.42);
     let bestCell = -1;
-    for (const sc of STEP_COL_CANDIDATES) {
+    for (const sc of stepColumnCandidates()) {
       const gridCols = sc + 1;
       const rows = Math.max(Math.ceil(stepCount / sc), 2);
       const seam = clampSplit((gridCols / rows) * cardBoxH + CARD_HPAD);

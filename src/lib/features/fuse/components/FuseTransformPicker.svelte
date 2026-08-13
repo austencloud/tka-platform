@@ -155,7 +155,7 @@
         <div>
           <span class="field-label">How the other path is rebuilt</span>
           <span class="field-help">
-            Every {driverLabel} edit rebuilds {followerLabel}
+            Each rule rebuilds {followerLabel} immediately
           </span>
         </div>
       </div>

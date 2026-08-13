@@ -15,6 +15,9 @@
   let draftMode = $state<FuseMode>(fuseState.mode);
   let draftDriver = $state<FuseSide>(fuseState.driverSide);
   let draftTransform = $state<FuseTransformId>(fuseState.transformId);
+  let restoreMode = $state<FuseMode>(fuseState.mode);
+  let restoreDriver = $state<FuseSide>(fuseState.driverSide);
+  let restoreTransform = $state<FuseTransformId>(fuseState.transformId);
 
   const transformLabel = $derived(
     FUSE_TRANSFORMS.find((item) => item.id === fuseState.transformId)?.label ??
@@ -43,10 +46,19 @@
   );
 
   function beginEdit(mode: FuseMode = fuseState.mode): void {
+    restoreMode = fuseState.mode;
+    restoreDriver = fuseState.driverSide;
+    restoreTransform = fuseState.transformId;
     draftMode = mode;
     draftDriver = fuseState.driverSide;
     draftTransform = fuseState.transformId;
     editing = true;
+
+    // Entering the linked workflow should change the canvas immediately. The
+    // saved values above let Cancel put the exact previous pairing back.
+    if (mode === "symmetry" && fuseState.mode !== "symmetry") {
+      fuseState.setRelationship(draftDriver, draftTransform);
+    }
   }
 
   function selectMode(mode: FuseMode): void {
@@ -60,6 +72,25 @@
 
   function applyRelationship(): void {
     fuseState.setRelationship(draftDriver, draftTransform);
+    editing = false;
+  }
+
+  function previewDriver(side: FuseSide): void {
+    draftDriver = side;
+    fuseState.setRelationship(side, draftTransform);
+  }
+
+  function previewTransform(id: FuseTransformId): void {
+    draftTransform = id;
+    fuseState.setRelationship(draftDriver, id);
+  }
+
+  function cancelRelationship(): void {
+    if (restoreMode === "shuffle") {
+      fuseState.setMode("shuffle");
+    } else {
+      fuseState.setRelationship(restoreDriver, restoreTransform);
+    }
     editing = false;
   }
 </script>
@@ -90,13 +121,13 @@
         relationshipLayout={true}
         driver={draftDriver}
         transform={draftTransform}
-        onDriverChange={(side) => (draftDriver = side)}
-        onTransformChange={(id) => (draftTransform = id)}
+        onDriverChange={previewDriver}
+        onTransformChange={previewTransform}
       />
 
       <div class="relationship-commit">
         <div class="relationship-flow" aria-live="polite">
-          <span class="flow-label">Draft link</span>
+          <span class="flow-label">Live preview</span>
           <span class="path-token" data-side={draftDriver}>
             <span class="token-kicker">You edit</span>
             <strong>{draftDriverLabel}</strong>
@@ -118,7 +149,7 @@
 
         <div class="editor-actions">
           {#if fuseState.mode === "symmetry"}
-            <PanelButton variant="secondary" onclick={() => (editing = false)}>
+            <PanelButton variant="secondary" onclick={cancelRelationship}>
               Cancel
             </PanelButton>
           {/if}
@@ -128,7 +159,7 @@
             onclick={applyRelationship}
           >
             <i class="fas fa-link" aria-hidden="true"></i>
-            Make {draftFollowerLabel} follow {draftDriverLabel}
+            Use this relationship
           </PanelButton>
         </div>
       </div>
