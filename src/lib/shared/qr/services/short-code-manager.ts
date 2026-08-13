@@ -68,6 +68,7 @@ import {
   hydrateSoloShortCodePayload,
   verifyEncodedSoloPayload,
 } from "./short-code-payload-hydrator";
+import { fetchPublicShortCodeRecord } from "./public-short-code-record-reader";
 
 export type { ShortCodeData } from "./types";
 
@@ -116,6 +117,7 @@ const ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
  */
 const FIRESTORE_GRACE_MS = 2_500;
 const FIRESTORE_HARD_MS = 8_000;
+const FIRESTORE_REST_TIMEOUT_MS = 5_000;
 const SNAPSHOT_TIMEOUT_MS = 12_000;
 
 /**
@@ -1064,7 +1066,10 @@ export class ShortCodeManager {
     let bestCreated = (best.data() as ShortCodeData).createdAt ?? "";
     for (const d of snapshot.docs.slice(1)) {
       const created = (d.data() as ShortCodeData).createdAt ?? "";
-      if (created < bestCreated || (created === bestCreated && d.id < best.id)) {
+      if (
+        created < bestCreated ||
+        (created === bestCreated && d.id < best.id)
+      ) {
         best = d;
         bestCreated = created;
       }
@@ -1335,8 +1340,8 @@ export class ShortCodeManager {
    *   1. Every leg has a deadline (see the *_MS budgets). Nothing on the scan
    *      path can stall indefinitely.
    *   2. Sources OVERLAP. Firestore gets a short head start alone (the healthy
-   *      case, and much the cheapest), then the snapshot ladder runs alongside
-   *      it rather than waiting on a full rejection.
+   *      case, and much the cheapest), then the public REST reader and snapshot
+   *      ladder run alongside it rather than waiting on a full rejection.
    *   3. A source that loads but LACKS the code is a miss, not an answer. Only
    *      when every source has been consulted do we report not-found. That is
    *      the SJJ6 bug: the stale snapshot "succeeded" and terminated the
@@ -1393,9 +1398,31 @@ export class ShortCodeManager {
       };
     }
 
-    // Firestore is slow, dead, or answered a non-authoritative miss. Bring the
-    // snapshot layers up in parallel — with each other and with whatever
-    // Firestore is still doing.
+    // Firestore is slow, dead, or answered a non-authoritative miss. The public
+    // REST document is far smaller than either snapshot and uses a separate
+    // transport, so bring it up alongside the snapshot layers and whatever the
+    // browser SDK is still doing. This is the load-bearing Capacitor fallback:
+    // Android WebView can reach this endpoint even when the SDK's streaming
+    // connection never establishes.
+    const restLeg = fetchPublicShortCodeRecord(code, {
+      timeoutMs: FIRESTORE_REST_TIMEOUT_MS,
+    })
+      .then((data) => {
+        note("firestore-rest", data ? "hit" : "miss");
+        if (data) winner ??= "firestore-rest";
+        return data;
+      })
+      .catch((error) => {
+        note(
+          "firestore-rest",
+          isTimeoutError(error) ? "timeout" : "error",
+          errorLabel(error)
+        );
+        return null;
+      });
+
+    // Snapshot layers remain the offline/stale-network fallback and race
+    // independently. A miss from any one source never terminates resolution.
     const snapshotLegs = SNAPSHOT_SOURCES.map((source) =>
       this.loadSnapshotSource(source)
         .then((map) => {
@@ -1424,6 +1451,7 @@ export class ShortCodeManager {
 
     const data = await firstTruthy<ShortCodeData>([
       firestoreLeg,
+      restLeg,
       ...snapshotLegs,
     ]);
 

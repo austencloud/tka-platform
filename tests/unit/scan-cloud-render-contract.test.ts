@@ -23,7 +23,11 @@ describe("QR scan cloud-render contract", () => {
   it("prepares the viewer record once and retains the browser fallback", () => {
     const page = source("src/routes/q/[code]/QScanPage.svelte");
     const server = source("src/routes/q/[code]/+page.server.ts");
-    expect(server).toContain("fromFirestoreFields");
+    const publicReader = source(
+      "src/lib/shared/qr/services/public-short-code-record-reader.ts"
+    );
+    expect(server).toContain("fetchPublicShortCodeRecord");
+    expect(publicReader).toContain("fromFirestoreFields");
     expect(server).toContain("prepareScanViewerPayload(");
     expect(server).toContain("preparedSequence: prepared?.sequence ?? null");
     expect(server).toContain(

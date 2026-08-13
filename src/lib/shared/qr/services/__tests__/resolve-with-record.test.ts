@@ -127,6 +127,48 @@ describe("resolveShortCodeWithRecord", () => {
     expect(record?.deckName).toBe("LOOP Deck One");
   });
 
+  it("uses the public REST record when the browser Firestore SDK stalls", async () => {
+    vi.useFakeTimers();
+    try {
+      const manager = makeManager(null);
+      getDocMock.mockReturnValue(new Promise(() => {}));
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: string | URL | Request) => {
+          const url = String(input);
+          if (url.startsWith("https://firestore.googleapis.com/")) {
+            return {
+              ok: true,
+              status: 200,
+              statusText: "OK",
+              json: async () => ({
+                fields: {
+                  sequence: { stringValue: "KAKA" },
+                  encoded: { stringValue: "s~rest-blob" },
+                  deckId: { stringValue: "deck-rest" },
+                },
+              }),
+            };
+          }
+          return { ok: false, status: 404, statusText: "Not Found" };
+        })
+      );
+
+      const resolving = manager.resolveShortCodeWithRecord("W61Y");
+      await vi.advanceTimersByTimeAsync(2_500);
+
+      const { sequence, record } = await resolving;
+      expect(sequence?.id).toBe("W61Y");
+      expect(sequence?.word).toBe("KAKA");
+      expect(record?.deckId).toBe("deck-rest");
+
+      // Settle the abandoned SDK leg before restoring real timers.
+      await vi.advanceTimersByTimeAsync(5_500);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("returns a null record for an inline-encoded code (no doc exists)", async () => {
     const manager = makeManager(null);
     const { sequence, record } =
