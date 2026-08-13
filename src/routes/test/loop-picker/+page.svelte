@@ -46,9 +46,9 @@
     { title: "Two options only", options: [inverted, rewound], repeat: null },
   ];
 
-  // The picker fills its host's height in the real drawer, so the frame has to
-  // give it one — sized at the drawer's own default to represent it honestly.
-  let widthPx = $state(860);
+  // The picker centers its choice shelf in the real drawer, so the frame keeps
+  // the drawer's full height to catch accidental stretching or top-stranding.
+  let widthPx = $state(960);
   let heightPx = $state(800);
 </script>
 

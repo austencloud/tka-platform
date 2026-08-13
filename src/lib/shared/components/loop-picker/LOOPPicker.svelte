@@ -5,7 +5,7 @@
   Used by both Spell tab and Sequence Actions Extend feature.
 
   Features:
-  - Responsive 2-3 column grid layout
+  - Compact choice shelf that centers without stretching to fill the drawer
   - 60px touch targets for accessibility
   - Direct LOOP options (no bridge letter needed)
   - Bridge letter options (when position groups don't match)
@@ -59,22 +59,7 @@
   const showRepeat = $derived(
     Boolean(orientationRepeat && onOrientationRepeat)
   );
-
-  /*
-   * Column count is chosen, not auto-filled, and it is chosen to make the
-   * rows FILL the drawer rather than to make the cards small.
-   *
-   * Few options therefore means fewer columns, not a short strip: two options
-   * become two full-width rows that use the height, instead of two chips over
-   * 600px of black. Counts are also picked so the last row is never a lone
-   * orphan — 4 reads as 2x2, 5 as 3+2.
-   */
-  const columns = $derived(
-    directOptions.length <= 3 ? 1 : directOptions.length === 4 ? 2 : 3
-  );
-
-  /* Full-width rows put the glyph beside the text instead of above it. */
-  const isBanner = $derived(columns === 1);
+  const choiceCount = $derived(directOptions.length + (showRepeat ? 1 : 0));
 
   // Derived state
   const hasDirectOptions = $derived(directOptions.length > 0);
@@ -108,114 +93,119 @@
 </script>
 
 <div class="loop-picker" class:applying={isApplying}>
-  <!-- Header -->
-  <header class="picker-header">
-    <h3>Apply LOOP</h3>
-    <span class="subtitle">Click to extend your sequence</span>
-  </header>
+  <div class="picker-content" data-count={choiceCount}>
+    <!-- Header -->
+    <header class="picker-header">
+      <h3>Apply LOOP</h3>
+      <span class="subtitle">Click to extend your sequence</span>
+    </header>
 
-  <!-- Direct LOOP Options -->
-  {#if hasDirectOptions || showRepeat}
-    <section class="options-section" transition:slide={{ duration: 200 }}>
-      <div
-        class="options-grid"
-        class:banner={isBanner}
-        style="--cols: {columns}"
-      >
-        {#each directOptions as option}
-          <button
-            class="loop-button"
-            style={loopTypeTint(option.loopType)}
-            onclick={() => handleDirectClick(option.loopType)}
-            disabled={isApplying}
-          >
-            <!--
+    <!-- Direct LOOP Options -->
+    {#if hasDirectOptions || showRepeat}
+      <section class="options-section" transition:slide={{ duration: 200 }}>
+        <div class="options-grid" data-count={choiceCount}>
+          {#each directOptions as option}
+            <button
+              type="button"
+              class="loop-button"
+              style={loopTypeTint(option.loopType)}
+              onclick={() => handleDirectClick(option.loopType)}
+              disabled={isApplying}
+            >
+              <!--
               The same glyph badge these LOOPs already wear on a sequence card,
               in the same brand colours — so the choice here and the thing it
               produces are recognisably one object.
             -->
-            <span class="loop-glyph" aria-hidden="true">
-              <LOOPIconStrip
-                activeComponents={parseLoopComponents(option.loopType)}
-                size={isBanner ? 52 : 34}
-                showFreeformWhenEmpty={false}
-              />
-            </span>
-            <span class="loop-text">
-              <span class="loop-name">{option.name}</span>
-              <span class="loop-desc">{option.description}</span>
-            </span>
-          </button>
-        {/each}
-
-        {#if orientationRepeat && onOrientationRepeat}
-          <button
-            class="loop-button repeat"
-            style={repeatTint}
-            onclick={() => !isApplying && onOrientationRepeat?.()}
-            disabled={isApplying}
-          >
-            <span class="loop-glyph" aria-hidden="true">
-              <i class="fas fa-repeat"></i>
-            </span>
-            <span class="loop-text">
-              <span class="loop-name"
-                >Repeated &times;{orientationRepeat.count}</span
-              >
-              <span class="loop-desc">
-                Back at the start position, but the props are turned. Repeating
-                {orientationRepeat.count} times returns their orientation too.
+              <span class="loop-glyph" aria-hidden="true">
+                <LOOPIconStrip
+                  activeComponents={parseLoopComponents(option.loopType)}
+                  size={38}
+                  showFreeformWhenEmpty={false}
+                />
               </span>
-            </span>
-          </button>
-        {/if}
-      </div>
-    </section>
-  {:else if directUnavailableReason}
-    <div class="unavailable-reason">
-      <i class="fas fa-info-circle" aria-hidden="true"></i>
-      <span>{directUnavailableReason}</span>
-    </div>
-  {/if}
+              <span class="loop-text">
+                <span class="loop-name">{option.name}</span>
+                <span class="loop-desc">{option.description}</span>
+              </span>
+            </button>
+          {/each}
 
-  <!-- Bridge Letter Options -->
-  {#if showBridgeSection}
-    <section class="bridge-section" transition:slide={{ duration: 200 }}>
-      <div class="section-header">
-        <span class="section-label">Add bridge letter + LOOP</span>
-      </div>
-
-      <div class="bridge-options">
-        {#each circularizationOptions as option}
-          <div class="bridge-group">
-            <div class="bridge-header">
-              <span class="bridge-letter">+{option.bridgeLetters.join("")}</span
-              >
-              <span class="bridge-arrow">→</span>
-              <span class="bridge-end">{option.endPosition}</span>
-            </div>
-            <div class="bridge-loops">
-              {#each option.availableLOOPs as loop}
-                <button
-                  class="loop-button bridge"
-                  style={loopTypeTint(loop.loopType)}
-                  onclick={() => {
-                    const bridgeLetter = option.bridgeLetters[0];
-                    if (bridgeLetter)
-                      handleBridgeClick(bridgeLetter, loop.loopType);
-                  }}
-                  disabled={isApplying}
-                  title={loop.description || formatLOOPType(loop.loopType)}
+          {#if orientationRepeat && onOrientationRepeat}
+            <button
+              type="button"
+              class="loop-button repeat"
+              style={repeatTint}
+              onclick={() => !isApplying && onOrientationRepeat?.()}
+              disabled={isApplying}
+            >
+              <span class="loop-glyph" aria-hidden="true">
+                <i class="fas fa-repeat"></i>
+              </span>
+              <span class="loop-text">
+                <span class="loop-name"
+                  >Repeated &times;{orientationRepeat.count}</span
                 >
-                  <span class="loop-name">{formatLOOPType(loop.loopType)}</span>
-                </button>
-              {/each}
-            </div>
-          </div>
-        {/each}
+                <span class="loop-desc">
+                  Back at the start position, but the props are turned.
+                  Repeating
+                  {orientationRepeat.count} times returns their orientation too.
+                </span>
+              </span>
+            </button>
+          {/if}
+        </div>
+      </section>
+    {:else if directUnavailableReason}
+      <div class="unavailable-reason">
+        <i class="fas fa-info-circle" aria-hidden="true"></i>
+        <span>{directUnavailableReason}</span>
       </div>
-    </section>
-  {/if}
+    {/if}
+
+    <!-- Bridge Letter Options -->
+    {#if showBridgeSection}
+      <section class="bridge-section" transition:slide={{ duration: 200 }}>
+        <div class="section-header">
+          <span class="section-label">Add bridge letter + LOOP</span>
+        </div>
+
+        <div class="bridge-options">
+          {#each circularizationOptions as option}
+            <div class="bridge-group">
+              <div class="bridge-header">
+                <span class="bridge-letter"
+                  >+{option.bridgeLetters.join("")}</span
+                >
+                <span class="bridge-arrow">→</span>
+                <span class="bridge-end">{option.endPosition}</span>
+              </div>
+              <div class="bridge-loops">
+                {#each option.availableLOOPs as loop}
+                  <button
+                    type="button"
+                    class="loop-button bridge"
+                    style={loopTypeTint(loop.loopType)}
+                    onclick={() => {
+                      const bridgeLetter = option.bridgeLetters[0];
+                      if (bridgeLetter)
+                        handleBridgeClick(bridgeLetter, loop.loopType);
+                    }}
+                    disabled={isApplying}
+                    title={loop.description || formatLOOPType(loop.loopType)}
+                  >
+                    <span class="loop-name"
+                      >{formatLOOPType(loop.loopType)}</span
+                    >
+                  </button>
+                {/each}
+              </div>
+            </div>
+          {/each}
+        </div>
+      </section>
+    {/if}
+  </div>
 
   <!-- Applying overlay -->
   {#if isApplying}
@@ -232,19 +222,47 @@
     container-name: loop-picker;
     display: flex;
     flex-direction: column;
-    gap: var(--settings-spacing-md, 16px);
-    /* Claim the drawer's remaining height so the options can fill it. */
     flex: 1;
     min-height: 0;
     position: relative;
-    padding: var(--settings-spacing-md, 16px);
+    padding: clamp(0.75rem, 2cqw, 1.5rem);
+    overflow-y: auto;
+  }
+
+  .loop-picker.applying {
+    pointer-events: none;
+  }
+
+  /*
+   * The options form one deliberate object in the middle of the available
+   * canvas. The shelf grows only as wide and tall as its choices, so a tall
+   * drawer no longer turns a handful of labels into four wall-sized buttons.
+   */
+  .picker-content {
+    width: 100%;
+    max-width: 72rem;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--settings-spacing-md, 16px);
+    padding: clamp(0.875rem, 1.75cqw, 1.25rem);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--settings-radius-md, 12px);
   }
 
-  .loop-picker.applying {
-    pointer-events: none;
+  .picker-content[data-count="1"] {
+    max-width: 20rem;
+  }
+
+  .picker-content[data-count="2"] {
+    max-width: 38rem;
+  }
+
+  .picker-content[data-count="3"],
+  .picker-content[data-count="5"],
+  .picker-content[data-count="6"] {
+    max-width: 56rem;
   }
 
   .picker-header {
@@ -265,74 +283,107 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
   }
 
-  /* The section is the link in the chain that hands the height to the grid. */
-  .options-section {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-  }
-
   /*
-   * The options ARE the panel — they claim its height rather than sitting as a
-   * strip of chips above a field of black. Column count is pinned per option
-   * count (see `columns` above) so the last row is never an orphan, and rows
-   * share the leftover height equally. The floor keeps a short viewport (a
-   * folded phone in landscape) from crushing them.
+   * Flex lines center independently, so data-driven counts never leave a lone
+   * option stuck against the left edge. Four choices fit in one row at the
+   * desktop drawer width; narrower containers recompose to two and then one.
    */
   .options-grid {
-    flex: 1;
-    min-height: 0;
-    display: grid;
-    grid-template-columns: repeat(var(--cols, 3), 1fr);
-    /* Rows share the drawer's height equally, with a floor for short viewports. */
-    grid-auto-rows: minmax(7.5rem, 1fr);
-    gap: var(--settings-spacing-sm, 8px);
-    overflow-y: auto;
+    --choice-basis: 100%;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.625rem;
   }
 
-  /*
-   * Full-width rows lay out horizontally: glyph, then name and description in
-   * a left-aligned stack. A centred column inside an 828px-wide card leaves
-   * two big empty flanks and reads as a mistake.
-   */
-  .options-grid.banner .loop-button {
-    flex-direction: row;
-    justify-content: flex-start;
-    gap: 2rem;
-    padding: 1.5rem 2.5rem;
-    text-align: left;
-  }
-
-  .options-grid.banner .loop-text {
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  /*
-   * A banner row is tall, so its content scales with it — a 2rem glyph and
-   * 16px label marooned in a 400px slab reads as a rendering accident rather
-   * than a deliberately generous target.
-   */
-  .options-grid.banner .loop-glyph {
-    font-size: 3.25rem;
-    flex-shrink: 0;
-  }
-
-  .options-grid.banner .loop-name {
-    font-size: 1.625rem;
-  }
-
-  .options-grid.banner .loop-desc {
-    max-width: 60ch;
-    font-size: 1rem;
-  }
-
-  /* One column on a phone-width panel; the cards stay legible, not squeezed. */
-  @container loop-picker (max-width: 26rem) {
+  @container loop-picker (min-width: 32rem) {
     .options-grid {
-      grid-template-columns: 1fr;
-      grid-auto-rows: minmax(5.5rem, auto);
+      --choice-basis: calc((100% - 0.625rem) / 2);
+      max-width: 34.625rem;
+      margin-inline: auto;
+    }
+  }
+
+  @container loop-picker (min-width: 48rem) {
+    .options-grid {
+      --choice-basis: calc((100% - 1.875rem) / 4);
+      max-width: 69.875rem;
+    }
+
+    .options-grid[data-count="1"] {
+      --choice-basis: 17rem;
+      max-width: 17rem;
+    }
+
+    .options-grid[data-count="2"] {
+      --choice-basis: calc((100% - 0.625rem) / 2);
+      max-width: 34.625rem;
+    }
+
+    .options-grid[data-count="3"],
+    .options-grid[data-count="5"],
+    .options-grid[data-count="6"] {
+      --choice-basis: calc((100% - 1.25rem) / 3);
+      max-width: 52.25rem;
+    }
+  }
+
+  /* Portrait tablets keep two readable columns even though their raw width can
+     technically hold four. Phones remain one column through the base rule. */
+  @media (orientation: portrait) and (max-width: 60rem) {
+    @container loop-picker (min-width: 32rem) {
+      .options-grid {
+        --choice-basis: calc((100% - 0.625rem) / 2);
+        max-width: 34.625rem;
+      }
+    }
+  }
+
+  /* A true 4K canvas has no operating-system scale helping it. Recompose the
+     same shelf at presentation distance without letting controls fill the panel. */
+  @container loop-picker (min-width: 90rem) {
+    .picker-content {
+      max-width: 92rem;
+      gap: 1.25rem;
+      padding: 1.75rem;
+    }
+
+    .picker-content[data-count="1"] {
+      max-width: 25rem;
+    }
+
+    .picker-content[data-count="2"] {
+      max-width: 48rem;
+    }
+
+    .picker-content[data-count="3"],
+    .picker-content[data-count="5"],
+    .picker-content[data-count="6"] {
+      max-width: 70rem;
+    }
+
+    .options-grid {
+      --choice-basis: calc((100% - 2.625rem) / 4);
+      max-width: 88rem;
+      gap: 0.875rem;
+    }
+
+    .options-grid[data-count="1"] {
+      --choice-basis: 21rem;
+      max-width: 21rem;
+    }
+
+    .options-grid[data-count="2"] {
+      --choice-basis: calc((100% - 0.875rem) / 2);
+      max-width: 42.875rem;
+    }
+
+    .options-grid[data-count="3"],
+    .options-grid[data-count="5"],
+    .options-grid[data-count="6"] {
+      --choice-basis: calc((100% - 1.75rem) / 3);
+      max-width: 64.75rem;
     }
   }
 
@@ -341,6 +392,11 @@
      double padding, while the choice cards retain full touch targets. */
   @container sequence-action-subview (max-width: 599px) and (max-height: 430px) {
     .loop-picker {
+      padding: var(--settings-spacing-sm, 8px);
+    }
+
+    .picker-content {
+      margin-block: 0;
       gap: var(--settings-spacing-sm, 8px);
       padding: var(--settings-spacing-sm, 8px);
       border-radius: 10px;
@@ -359,12 +415,8 @@
       white-space: nowrap;
     }
 
-    .options-grid {
-      grid-auto-rows: minmax(5.5rem, auto);
-    }
-
     .loop-button {
-      min-height: 5.5rem;
+      min-height: 4.75rem;
       padding: 0.75rem;
       gap: 0.25rem;
     }
@@ -385,12 +437,14 @@
     --c2-mix: var(--loop-c2-mix, 9%);
 
     display: flex;
+    flex: 0 1 var(--choice-basis);
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    min-height: 3.75rem;
-    padding: 1.25rem 1rem;
+    min-width: 0;
+    min-height: 8.75rem;
+    padding: 1rem 0.875rem;
     text-align: center;
     background: linear-gradient(
       135deg,
@@ -438,21 +492,12 @@
     font-size: var(--font-size-min, 14px);
   }
 
-  /*
-   * The repeat spans the full row. It is a different KIND of extension from
-   * its neighbours (no transform, just repetition), and spanning also means a
-   * trailing odd option can never strand a half-empty row.
-   */
-  .loop-button.repeat {
-    grid-column: 1 / -1;
-  }
-
   .loop-glyph {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 2.125rem;
-    font-size: 1.75rem;
+    min-height: 2.375rem;
+    font-size: 2rem;
     color: var(--c1);
   }
 
@@ -465,7 +510,7 @@
   }
 
   .loop-name {
-    font-size: 1.125rem;
+    font-size: 1rem;
     line-height: 1.2;
   }
 
@@ -477,9 +522,53 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
   }
 
-  /* The repeat spans the row, so its copy has room to run wider. */
-  .loop-button.repeat .loop-desc {
-    max-width: 46ch;
+  @container loop-picker (min-width: 90rem) {
+    .picker-header h3,
+    .loop-name {
+      font-size: 1.25rem;
+    }
+
+    .subtitle,
+    .loop-desc {
+      font-size: 1rem;
+    }
+
+    .loop-button {
+      min-height: 10rem;
+      padding: 1.25rem 1rem;
+    }
+
+    .loop-glyph {
+      min-height: 3rem;
+      transform: scale(1.25);
+    }
+
+    .loop-desc {
+      max-width: 28ch;
+    }
+  }
+
+  /* Phone-width drawers read faster as compact horizontal rows. */
+  @container loop-picker (max-width: 31.999rem) {
+    .loop-button {
+      flex-direction: row;
+      justify-content: flex-start;
+      min-height: 5.25rem;
+      padding: 0.75rem 1rem;
+      text-align: left;
+    }
+
+    .loop-glyph {
+      flex: 0 0 3rem;
+    }
+
+    .loop-text {
+      align-items: flex-start;
+    }
+
+    .loop-desc {
+      max-width: none;
+    }
   }
 
   /*
@@ -495,6 +584,7 @@
     }
 
     .loop-button {
+      min-height: 4.75rem;
       padding: 0.625rem 0.75rem;
       gap: 0.25rem;
     }
