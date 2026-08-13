@@ -4,8 +4,14 @@ import { HandPathDataSchema } from "./hand-path-schemas";
 
 const SoloPropStepSchema = z
   .object({
-    location: z.string(),
-    orientation: z.string(),
+    startLocation: z.string(),
+    endLocation: z.string(),
+    startOrientation: z.string(),
+    endOrientation: z.string(),
+    motionType: z.string(),
+    rotationDirection: z.string(),
+    turns: z.union([z.number(), z.literal("fl")]),
+    duration: z.number(),
   })
   .passthrough();
 

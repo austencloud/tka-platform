@@ -3,7 +3,17 @@
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
   import { getFuseContext } from "../context/fuse-context";
 
-  let { onOpenViewer }: { onOpenViewer: () => Promise<void> } = $props();
+  let {
+    onOpenViewer,
+    onShare,
+    onSave,
+    isSaving = false,
+  }: {
+    onOpenViewer: () => Promise<void>;
+    onShare: () => Promise<void>;
+    onSave: () => Promise<void>;
+    isSaving?: boolean;
+  } = $props();
   const { state: fuseState } = getFuseContext();
 
   const sourceControlsDisabled = $derived(
@@ -35,16 +45,16 @@
         variant="secondary"
         fullWidth={true}
         disabled={blueDisabled}
-        ariaLabel="Shuffle Blue path"
+        ariaLabel="Generate another Blue LOOP"
         onclick={() => void fuseState.shuffle("blue")}
       >
         <i
           class="fas {fuseState.pendingSide === 'blue'
             ? 'fa-spinner fa-spin'
-            : 'fa-shuffle'}"
+            : 'fa-wand-magic-sparkles'}"
           aria-hidden="true"
         ></i>
-        <span class="shuffle-verb">Shuffle</span> Blue
+        <span class="shuffle-verb">New</span> Blue
       </PanelButton>
     </div>
 
@@ -66,18 +76,46 @@
         variant="secondary"
         fullWidth={true}
         disabled={redDisabled}
-        ariaLabel="Shuffle Red path"
+        ariaLabel="Generate another Red LOOP"
         onclick={() => void fuseState.shuffle("red")}
       >
         <i
           class="fas {fuseState.pendingSide === 'red'
             ? 'fa-spinner fa-spin'
-            : 'fa-shuffle'}"
+            : 'fa-wand-magic-sparkles'}"
           aria-hidden="true"
         ></i>
-        <span class="shuffle-verb">Shuffle</span> Red
+        <span class="shuffle-verb">New</span> Red
       </PanelButton>
     </div>
+  </div>
+
+  <div class="result-row" role="group" aria-label="Combined sequence actions">
+    <div class="share-control">
+      <ActionButton
+        label="Share result"
+        busyLabel="Opening share"
+        icon="fa-share-nodes"
+        color="fuse"
+        fullWidth={true}
+        ariaDisabled={!fuseState.canFuse}
+        onclick={() => void onShare()}
+      />
+    </div>
+    <PanelButton
+      variant="secondary"
+      fullWidth={true}
+      disabled={!fuseState.canFuse || isSaving}
+      ariaBusy={isSaving}
+      saveShortcut={true}
+      onclick={() => void onSave()}
+    >
+      <i
+        class="fas {isSaving ? 'fa-spinner fa-spin' : 'fa-bookmark'}"
+        aria-hidden="true"
+      ></i>
+      {isSaving ? "Saving..." : "Save"}
+    </PanelButton>
   </div>
 
   {#if fuseState.error}
@@ -121,6 +159,24 @@
     gap: var(--settings-spacing-sm, 8px);
   }
 
+  .result-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: var(--settings-spacing-sm, 8px);
+  }
+
+  .share-control,
+  .share-control :global(.action-button),
+  .result-row :global(.panel-btn) {
+    min-width: 0;
+    min-height: var(--min-touch-target, 48px);
+  }
+
+  .share-control :global(.action-button),
+  .result-row :global(.panel-btn) {
+    border-radius: var(--settings-radius-md, 14px);
+  }
+
   .shuffle-control,
   .viewer-control {
     min-width: 0;
@@ -149,7 +205,7 @@
     box-shadow:
       0 6px 18px
         color-mix(in srgb, var(--semantic-warning, #f97316) 36%, transparent),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      inset 0 1px 0 var(--theme-stroke-strong);
   }
 
   .viewer-control :global(.action-button i) {

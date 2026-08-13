@@ -19,6 +19,7 @@
     disabled?: boolean;
     ariaLabel?: string;
     placement?: "top" | "bottom";
+    align?: "left" | "right";
   }
 
   const {
@@ -26,6 +27,7 @@
     disabled = false,
     ariaLabel = "More actions",
     placement = "top",
+    align = "right",
   }: Props = $props();
 
   let open = $state(false);
@@ -71,6 +73,7 @@
 <div
   class="overflow-menu"
   class:opens-bottom={placement === "bottom"}
+  class:aligns-left={align === "left"}
   bind:this={menuEl}
   onkeydown={handleKeydown}
 >
@@ -163,6 +166,11 @@
   .opens-bottom .overflow-dropdown {
     top: calc(100% + 6px);
     bottom: auto;
+  }
+
+  .aligns-left .overflow-dropdown {
+    right: auto;
+    left: 0;
   }
 
   .overflow-item {

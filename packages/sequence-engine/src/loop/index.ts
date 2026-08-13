@@ -251,3 +251,15 @@ export {
   reduceToMinimalLoop,
   type MinimalLoopResult,
 } from "./reduction/minimal-loop-reducer.js";
+
+// Color-neutral, one-prop LOOP ownership. This is the canonical seam for
+// generators and pickers that must not invent a blue/red relationship.
+export {
+  buildRewoundSoloLoop,
+  buildRotatedSoloLoop,
+  buildReflectedSoloLoop,
+  buildInvertedSoloLoop,
+  detectSoloLOOP,
+  rewindSoloMotion,
+  type SoloLOOPDetectionResult,
+} from "./solo/solo-loop.js";

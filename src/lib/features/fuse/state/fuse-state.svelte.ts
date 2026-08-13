@@ -27,9 +27,9 @@ import { getSequenceDisplayName } from "$lib/shared/foundation/services/word-der
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import {
+import type {
   MotionColor,
-  type Orientation,
+  Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { swapMotionColor } from "$lib/shared/create/services/motion-transforms";
 import {
@@ -38,7 +38,15 @@ import {
   mirrorSequence,
   rewindSequence,
   rotateSequence,
+  shiftStartPosition,
 } from "$lib/shared/create/services/sequence-transformer";
+import { soloPropToSequence } from "$lib/shared/foundation/services/solo-prop-sequence-adapter";
+import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
+import {
+  closeSoloPathAsRewoundLoop,
+  isStructuredSoloLoop,
+  type GeneratedSoloLoop,
+} from "../services/solo-loop-generator";
 import { fusedDisplayName, fuseSequences } from "../services/sequence-fuser";
 import {
   createFuseShufflePool,
@@ -79,20 +87,33 @@ export type FuseTransformId =
 export interface FuseTransformOption {
   id: FuseTransformId;
   label: string;
+  description: string;
 }
 
 /** Display catalog for the transform picker — a single source of truth shared by
  * the picker UI and this state's apply logic (keyed by the same id union). */
 export const FUSE_TRANSFORMS: readonly FuseTransformOption[] = [
-  { id: "mirror", label: "Mirror" },
-  { id: "flip", label: "Flip" },
-  { id: "rotate90", label: "Rotate 90" },
-  { id: "rotate180", label: "Rotate 180" },
-  { id: "invert", label: "Invert" },
-  { id: "rewind", label: "Rewind" },
-  { id: "rotate-mirror", label: "Rotate + Mirror" },
-  { id: "mirror-invert", label: "Mirror + Invert" },
-  { id: "rotate-invert", label: "Rotate + Invert" },
+  { id: "mirror", label: "Mirror", description: "Reflect left and right" },
+  { id: "flip", label: "Flip", description: "Reflect top and bottom" },
+  { id: "rotate90", label: "Rotate 90", description: "Turn one quarter" },
+  { id: "rotate180", label: "Rotate 180", description: "Turn halfway" },
+  { id: "invert", label: "Invert", description: "Reverse every turn" },
+  { id: "rewind", label: "Rewind", description: "Reverse the step order" },
+  {
+    id: "rotate-mirror",
+    label: "Rotate + Mirror",
+    description: "Quarter turn, then mirror",
+  },
+  {
+    id: "mirror-invert",
+    label: "Mirror + Invert",
+    description: "Mirror, then reverse turns",
+  },
+  {
+    id: "rotate-invert",
+    label: "Rotate + Invert",
+    description: "Quarter turn, then reverse turns",
+  },
 ];
 
 function isFuseTransformId(value: unknown): value is FuseTransformId {
@@ -127,10 +148,19 @@ export interface FuseStateDeps {
   initialLength?: FuseLength;
   random?: () => number;
   prefersReducedMotion?: () => boolean;
+  /** Browser-backed one-prop generator. Optional so state tests and non-browser
+   * consumers can still exercise the legacy injected catalog seam. FuseTab
+   * always supplies it. */
+  generateSoloLoop?: (length: FuseLength) => Promise<GeneratedSoloLoop>;
 }
 
 /** Kind of a non-shuffle source injected via {@link setSource}. */
-export type FuseSourceKind = "library" | "vtg" | "custom";
+export type FuseSourceKind =
+  | "generated"
+  | "library"
+  | "vtg"
+  | "custom"
+  | "adjusted";
 
 /** Where an injected (non-shuffle) source came from. Persisted per-side so a
  * restored injected source can be labeled and, for future producers, re-derived.
@@ -141,7 +171,16 @@ export interface SourceOrigin {
   word?: string;
   name?: string;
   label?: string;
+  loopSpec?: GeneratedSoloLoop["loopSpec"];
 }
+
+export type FuseSourceAdjustment =
+  | { kind: "rotate"; quarterTurns: -1 | 1 }
+  | { kind: "mirror" }
+  | { kind: "flip" }
+  | { kind: "invert" }
+  | { kind: "first-step"; step: number }
+  | { kind: "reset" };
 
 /** The injected side's solo path serialized for a self-contained restore — no
  * library round-trip or producer dependency needed to rebuild it after HMR. */
@@ -187,7 +226,13 @@ function parseSourceOrigin(value: unknown): SourceOrigin | undefined {
   if (!value || typeof value !== "object") return undefined;
   const record = value as Record<string, unknown>;
   const kind = record.kind;
-  if (kind !== "library" && kind !== "vtg" && kind !== "custom") {
+  if (
+    kind !== "generated" &&
+    kind !== "library" &&
+    kind !== "vtg" &&
+    kind !== "custom" &&
+    kind !== "adjusted"
+  ) {
     return undefined;
   }
   const origin: SourceOrigin = { kind };
@@ -195,6 +240,9 @@ function parseSourceOrigin(value: unknown): SourceOrigin | undefined {
   if (typeof record.word === "string") origin.word = record.word;
   if (typeof record.name === "string") origin.name = record.name;
   if (typeof record.label === "string") origin.label = record.label;
+  if (record.loopSpec && typeof record.loopSpec === "object") {
+    origin.loopSpec = record.loopSpec as GeneratedSoloLoop["loopSpec"];
+  }
   return origin;
 }
 
@@ -349,6 +397,7 @@ export function createFuseState({
   prefersReducedMotion = () =>
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  generateSoloLoop,
 }: FuseStateDeps) {
   let persisted = readPersistedState();
   const cachedBrowseLoader = createHydrationCache(browseLoader);
@@ -389,6 +438,8 @@ export function createFuseState({
   // random pool. Not reactive: only persistence and shuffle read it.
   let blueOrigin: { origin: SourceOrigin; solo: SoloPropData } | null = null;
   let redOrigin: { origin: SourceOrigin; solo: SoloPropData } | null = null;
+  let blueBaseSolo: SoloPropData | null = null;
+  let redBaseSolo: SoloPropData | null = null;
 
   function injectedOriginFor(side: FuseSide) {
     return side === "blue" ? blueOrigin : redOrigin;
@@ -406,6 +457,40 @@ export function createFuseState({
   function clearInjectedOrigin(side: FuseSide): void {
     if (side === "blue") blueOrigin = null;
     else redOrigin = null;
+  }
+
+  function setBaseSolo(side: FuseSide, solo: SoloPropData): void {
+    if (side === "blue") blueBaseSolo = solo;
+    else redBaseSolo = solo;
+  }
+
+  function baseSoloFor(side: FuseSide): SoloPropData | null {
+    return side === "blue" ? blueBaseSolo : redBaseSolo;
+  }
+
+  function sequenceForSolo(side: FuseSide, solo: SoloPropData): SequenceData {
+    return updateSequenceData(
+      soloPropToSequence(solo, side === "blue" ? "left" : "right"),
+      { isCircular: true }
+    );
+  }
+
+  async function generateSource(
+    side: FuseSide,
+    length: FuseLength
+  ): Promise<{ sequence: SequenceData; origin: SourceOrigin }> {
+    if (!generateSoloLoop) {
+      throw new Error("The solo LOOP generator is unavailable");
+    }
+    const generated = await generateSoloLoop(length);
+    return {
+      sequence: sequenceForSolo(side, generated.solo),
+      origin: {
+        kind: "generated",
+        label: "Generated solo LOOP",
+        loopSpec: generated.loopSpec,
+      },
+    };
   }
 
   // Symmetry mode: one driver side keeps a source, the follower is derived from
@@ -516,8 +601,7 @@ export function createFuseState({
     length: FuseLength
   ): SequenceData {
     if (selection.origin && selection.solo) {
-      const solo =
-        side === "blue" ? rebuilt.blueSoloProp : rebuilt.redSoloProp;
+      const solo = side === "blue" ? rebuilt.blueSoloProp : rebuilt.redSoloProp;
       if (solo) setInjectedOrigin(side, selection.origin, solo);
       return lengthMatchedInjectedSide(side, rebuilt, preview, length);
     }
@@ -781,17 +865,19 @@ export function createFuseState({
     stopClock();
 
     try {
-      const sequences = await getCatalog();
-      if (!isCurrentLengthGeneration(generation)) return;
+      if (!generateSoloLoop) {
+        const sequences = await getCatalog();
+        if (!isCurrentLengthGeneration(generation)) return;
 
-      bluePool.reset(sequences, length);
-      redPool.reset(sequences, length);
-      if (bluePool.poolSize === 0 || redPool.poolSize === 0) {
-        error = {
-          kind: "empty",
-          message: `No ${length}-step paths are available. Choose another length.`,
-        };
-        return;
+        bluePool.reset(sequences, length);
+        redPool.reset(sequences, length);
+        if (bluePool.poolSize === 0 || redPool.poolSize === 0) {
+          error = {
+            kind: "empty",
+            message: `No ${length}-step paths are available. Choose another length.`,
+          };
+          return;
+        }
       }
 
       // Mount-time restore: when the requested length matches the persisted one
@@ -800,7 +886,7 @@ export function createFuseState({
       // restore request and always loads fresh. Any miss (hydrate returns null,
       // wrong length, missing side data, or the preview can't be built) falls
       // through to the random path below.
-      if (restore && restore.length === length && restore.blue && restore.red) {
+      if (restore?.length === length && restore.blue && restore.red) {
         const restoredPair = await hydrateRestoredPair(
           restore.blue,
           restore.red,
@@ -838,6 +924,12 @@ export function createFuseState({
 
             bluePool.commitRestored(blueRestored);
             redPool.commitRestored(redRestored);
+            if (blueRestored.blueSoloProp) {
+              setBaseSolo("blue", blueRestored.blueSoloProp);
+            }
+            if (redRestored.redSoloProp) {
+              setBaseSolo("red", redRestored.redSoloProp);
+            }
             previewSequence = preview;
             appliedLength = length;
             hasLoadedPair = true;
@@ -868,10 +960,22 @@ export function createFuseState({
         }
       }
 
-      const [blueCandidate, redCandidate] = await Promise.all([
-        bluePool.stageNext(),
-        redPool.stageNext(),
-      ]);
+      const [blueCandidate, redCandidate] = generateSoloLoop
+        ? await Promise.all([
+            generateSource("blue", length).then((generated) => ({
+              sequence: generated.sequence,
+              poolPosition: 0,
+              nextCursor: 0,
+              origin: generated.origin,
+            })),
+            generateSource("red", length).then((generated) => ({
+              sequence: generated.sequence,
+              poolPosition: 0,
+              nextCursor: 0,
+              origin: generated.origin,
+            })),
+          ])
+        : await Promise.all([bluePool.stageNext(), redPool.stageNext()]);
       if (!isCurrentLengthGeneration(generation)) return;
 
       if (!blueCandidate || !redCandidate) {
@@ -891,18 +995,51 @@ export function createFuseState({
 
       bluePool.commit(blueCandidate, true);
       redPool.commit(redCandidate, true);
+      const blueGeneratedOrigin = (
+        blueCandidate as typeof blueCandidate & { origin?: SourceOrigin }
+      ).origin;
+      const redGeneratedOrigin = (
+        redCandidate as typeof redCandidate & { origin?: SourceOrigin }
+      ).origin;
+      if (blueCandidate.sequence.blueSoloProp) {
+        setBaseSolo("blue", blueCandidate.sequence.blueSoloProp);
+        if (blueGeneratedOrigin) {
+          setInjectedOrigin(
+            "blue",
+            blueGeneratedOrigin,
+            blueCandidate.sequence.blueSoloProp
+          );
+        }
+      }
+      if (redCandidate.sequence.redSoloProp) {
+        setBaseSolo("red", redCandidate.sequence.redSoloProp);
+        if (redGeneratedOrigin) {
+          setInjectedOrigin(
+            "red",
+            redGeneratedOrigin,
+            redCandidate.sequence.redSoloProp
+          );
+        }
+      }
       previewSequence = preview;
       appliedLength = length;
       hasLoadedPair = true;
       persistSelection(blueCandidate.sequence, redCandidate.sequence, length);
-      // Warm the next Shuffle for both sides so the first tap is instant.
-      bluePool.prefetchNext();
-      redPool.prefetchNext();
+      if (!generateSoloLoop) {
+        // The legacy browse deck can hydrate its next candidate ahead of time.
+        bluePool.prefetchNext();
+        redPool.prefetchNext();
+      }
       if (mode === "symmetry") void deriveFollower();
       if (resumeAfterLoad) startClock();
     } catch (loadError) {
       if (!isCurrentLengthGeneration(generation)) return;
-      error = { kind: "catalog", message: "Couldn't load paths. Try again." };
+      error = {
+        kind: "catalog",
+        message: generateSoloLoop
+          ? "Couldn't generate one-hand LOOPs. Try again."
+          : "Couldn't load paths. Try again.",
+      };
       reportUnexpected(error.message, loadError, "load-paths");
     } finally {
       if (isCurrentLengthGeneration(generation)) isLoadingLength = false;
@@ -939,7 +1076,14 @@ export function createFuseState({
     error = null;
 
     try {
-      const candidate = await pool.stageNext();
+      const candidate = generateSoloLoop
+        ? await generateSource(side, appliedLength).then((generated) => ({
+            sequence: generated.sequence,
+            poolPosition: 0,
+            nextCursor: 0,
+            origin: generated.origin,
+          }))
+        : await pool.stageNext();
       if (!isCurrentSideGeneration(side, generation)) return;
 
       if (!candidate || !counterpart.sequence) {
@@ -958,16 +1102,27 @@ export function createFuseState({
       if (!isCurrentSideGeneration(side, generation)) return;
 
       pool.commit(candidate, false);
-      // A shuffle replaces any injected source on this side; return it to the
-      // random pool before persisting so the injected origin isn't written back.
-      clearInjectedOrigin(side);
+      const generatedSolo =
+        side === "blue"
+          ? candidate.sequence.blueSoloProp
+          : candidate.sequence.redSoloProp;
+      const generatedOrigin = (
+        candidate as typeof candidate & { origin?: SourceOrigin }
+      ).origin;
+      if (generateSoloLoop && generatedSolo && generatedOrigin) {
+        setBaseSolo(side, generatedSolo);
+        setInjectedOrigin(side, generatedOrigin, generatedSolo);
+      } else {
+        // The legacy browse shuffle returns this side to its catalog deck.
+        clearInjectedOrigin(side);
+      }
       // In symmetry the driver's independent fusion is never shown — deriveFollower
       // owns previewSequence — so skip publishing it (isDeriving keeps Fuse blocked
       // until the derive lands).
-      if (!(mode === "symmetry" && side === driverSide)) previewSequence = preview;
+      if (!(mode === "symmetry" && side === driverSide))
+        previewSequence = preview;
       persistSelection(blue, red, appliedLength);
-      // Warm the following candidate so the next Shuffle stays instant.
-      pool.prefetchNext();
+      if (!generateSoloLoop) pool.prefetchNext();
       // Shuffling changes one path at the beat already on screen. Resetting the
       // shared beat here made both props jump back to the start of the loop.
       readyMessage = sourceReadyMessage(side, candidate.sequence, false);
@@ -1032,12 +1187,20 @@ export function createFuseState({
       // for VTG so the flower's turns + start orientation aren't dropped.
       const carriedSolo =
         side === "blue" ? source.blueSoloProp : source.redSoloProp;
-      const solo =
+      let solo =
         origin.kind === "vtg" || !carriedSolo
           ? side === "blue"
             ? extractBlueSoloProp(source)
             : extractRedSoloProp(source)
           : carriedSolo;
+      let effectiveOrigin = origin;
+      if (origin.kind === "vtg") {
+        const closed = closeSoloPathAsRewoundLoop(solo, length);
+        solo = closed.solo;
+        effectiveOrigin = { ...origin, loopSpec: closed.loopSpec };
+      } else if (!isStructuredSoloLoop(solo)) {
+        throw new Error("The selected one-hand path is not a structured LOOP");
+      }
 
       const injected: SequenceData =
         side === "blue"
@@ -1057,10 +1220,12 @@ export function createFuseState({
       );
       pool.commitRestored(committed);
       // Record the origin before persisting so the injected solo is written.
-      setInjectedOrigin(side, origin, solo);
+      setInjectedOrigin(side, effectiveOrigin, solo);
+      setBaseSolo(side, solo);
       // Symmetry: deriveFollower owns previewSequence; don't flash the driver's
       // independent fusion (isDeriving keeps Fuse blocked until it resolves).
-      if (!(mode === "symmetry" && side === driverSide)) previewSequence = preview;
+      if (!(mode === "symmetry" && side === driverSide))
+        previewSequence = preview;
       const blueForPersist = side === "blue" ? committed : counterpartSeq;
       const redForPersist = side === "red" ? committed : counterpartSeq;
       persistSelection(blueForPersist, redForPersist, length);
@@ -1073,9 +1238,125 @@ export function createFuseState({
       error = {
         kind: "candidate",
         side,
-        message: `Couldn't use that ${label} path. Shuffle a path and try again.`,
+        message: `Couldn't use that ${label} path. Generate another path and try again.`,
       };
       reportUnexpected(error.message, sourceError, `set-source-${side}`);
+    } finally {
+      if (isCurrentSideGeneration(side, generation) && pendingSide === side) {
+        pendingSide = null;
+      }
+    }
+  }
+
+  /** Apply a nondestructive transform to one source. The source's base solo is
+   * retained separately so Reset can return to the exact generated or selected
+   * LOOP. Every materialized result is rechecked for seamless closure before it
+   * replaces the visible source. */
+  async function adjustSource(
+    side: FuseSide,
+    adjustment: FuseSourceAdjustment
+  ): Promise<void> {
+    if (
+      disposed ||
+      isLoadingLength ||
+      pendingSide !== null ||
+      isFusing ||
+      appliedLength === null
+    ) {
+      return;
+    }
+
+    const current = poolFor(side).sequence;
+    const currentSolo =
+      side === "blue" ? current?.blueSoloProp : current?.redSoloProp;
+    const counterpart = otherPool(side).sequence;
+    if (!currentSolo || !counterpart) return;
+
+    const generation = incrementSideGeneration(side);
+    pendingSide = side;
+    error = null;
+
+    try {
+      const base = baseSoloFor(side) ?? currentSolo;
+      let transformed = sequenceForSolo(
+        side,
+        adjustment.kind === "reset" ? base : currentSolo
+      );
+
+      switch (adjustment.kind) {
+        case "rotate":
+          transformed = await rotateSequence(
+            transformed,
+            adjustment.quarterTurns * 2,
+            side
+          );
+          break;
+        case "mirror":
+          transformed = await mirrorSequence(transformed, side);
+          break;
+        case "flip":
+          transformed = await flipSequence(transformed, side);
+          break;
+        case "invert":
+          transformed = await invertSequence(transformed, side);
+          break;
+        case "first-step":
+          transformed = shiftStartPosition(transformed, adjustment.step);
+          break;
+        case "reset":
+          break;
+      }
+      if (!isCurrentSideGeneration(side, generation)) return;
+      if (!isSeamlesslyLoopable(transformed)) {
+        throw new Error("The adjustment broke the one-hand LOOP boundary");
+      }
+
+      const solo =
+        side === "blue"
+          ? extractBlueSoloProp(transformed)
+          : extractRedSoloProp(transformed);
+      const injected = sequenceForSolo(side, solo);
+      const blueSequence = side === "blue" ? injected : counterpart;
+      const redSequence = side === "red" ? injected : counterpart;
+      const preview = createPreview(blueSequence, redSequence, appliedLength);
+      const committed = lengthMatchedInjectedSide(
+        side,
+        injected,
+        preview,
+        appliedLength
+      );
+      poolFor(side).commit(
+        { sequence: committed, poolPosition: 0, nextCursor: 0 },
+        false
+      );
+      const previousOrigin = injectedOriginFor(side)?.origin;
+      setInjectedOrigin(
+        side,
+        {
+          kind: "adjusted",
+          label: "Adjusted solo LOOP",
+          ...(previousOrigin?.loopSpec
+            ? { loopSpec: previousOrigin.loopSpec }
+            : {}),
+        },
+        solo
+      );
+      if (!(mode === "symmetry" && side === driverSide)) {
+        previewSequence = preview;
+      }
+      const blueForPersist = side === "blue" ? committed : counterpart;
+      const redForPersist = side === "red" ? committed : counterpart;
+      persistSelection(blueForPersist, redForPersist, appliedLength);
+      readyMessage = `${side === "blue" ? "Blue" : "Red"} LOOP adjusted.`;
+      if (mode === "symmetry" && side === driverSide) void deriveFollower();
+    } catch (adjustmentError) {
+      if (!isCurrentSideGeneration(side, generation)) return;
+      error = {
+        kind: "candidate",
+        side,
+        message: `Couldn't adjust the ${side === "blue" ? "Blue" : "Red"} LOOP. Try another transform.`,
+      };
+      reportUnexpected(error.message, adjustmentError, `adjust-${side}`);
     } finally {
       if (isCurrentSideGeneration(side, generation) && pendingSide === side) {
         pendingSide = null;
@@ -1191,7 +1472,11 @@ export function createFuseState({
         driverSide,
         transformId
       );
-      if (disposed || generation !== symmetryGeneration || mode !== "symmetry") {
+      if (
+        disposed ||
+        generation !== symmetryGeneration ||
+        mode !== "symmetry"
+      ) {
         return;
       }
 
@@ -1205,11 +1490,15 @@ export function createFuseState({
         error = {
           kind: "derivation",
           message:
-            "Couldn't derive the symmetric path at this length. Shuffle the driver and try again.",
+            "Couldn't derive the symmetric path at this length. Generate another driver and try again.",
         };
         return;
       }
-      if (disposed || generation !== symmetryGeneration || mode !== "symmetry") {
+      if (
+        disposed ||
+        generation !== symmetryGeneration ||
+        mode !== "symmetry"
+      ) {
         return;
       }
 
@@ -1222,7 +1511,7 @@ export function createFuseState({
       error = {
         kind: "derivation",
         message:
-          "Couldn't derive the symmetric path. Shuffle the driver and try again.",
+          "Couldn't derive the symmetric path. Generate another driver and try again.",
       };
       reportUnexpected(error.message, deriveError, "derive-symmetry");
     } finally {
@@ -1266,6 +1555,26 @@ export function createFuseState({
     }
   }
 
+  /** Commit the whole pairing decision together. The relationship composer
+   * keeps its draft local, so the result does not flicker through a temporary
+   * driver or transform while the user is still deciding. */
+  function setRelationship(
+    nextDriver: FuseSide,
+    nextTransform: FuseTransformId
+  ): void {
+    const changed =
+      mode !== "symmetry" ||
+      driverSide !== nextDriver ||
+      transformId !== nextTransform;
+    if (!changed) return;
+
+    driverSide = nextDriver;
+    transformId = nextTransform;
+    mode = "symmetry";
+    persistModeState();
+    void deriveFollower();
+  }
+
   function setDriver(side: FuseSide): void {
     if (side === driverSide) return;
     driverSide = side;
@@ -1303,7 +1612,16 @@ export function createFuseState({
         side === "red" ? previousEntry.sequence : counterpart.sequence;
       const preview = createPreview(blue, red, appliedLength);
       pool.commitPrevious();
-      if (!(mode === "symmetry" && side === driverSide)) previewSequence = preview;
+      const previousSolo =
+        side === "blue"
+          ? previousEntry.sequence.blueSoloProp
+          : previousEntry.sequence.redSoloProp;
+      const currentOrigin = injectedOriginFor(side)?.origin;
+      if (previousSolo && currentOrigin) {
+        setInjectedOrigin(side, currentOrigin, previousSolo);
+      }
+      if (!(mode === "symmetry" && side === driverSide))
+        previewSequence = preview;
       persistSelection(blue, red, appliedLength);
       // Back uses the same in-place swap as Shuffle, so playback stays on beat.
       error = null;
@@ -1313,7 +1631,7 @@ export function createFuseState({
       error = {
         kind: "preview",
         message:
-          "Couldn't build the combined preview. Shuffle a path and try again.",
+          "Couldn't build the combined preview. Generate another path and try again.",
       };
       reportUnexpected(error.message, previewError, `previous-${side}`);
     }
@@ -1347,7 +1665,7 @@ export function createFuseState({
       ).length;
       if (missingLetters > 0) {
         const message =
-          "Couldn't identify every fused step. Shuffle a path and try again.";
+          "Couldn't identify every fused step. Generate another path and try again.";
         error = { kind: "derivation", message };
         reportUnexpected(
           message,
@@ -1379,7 +1697,7 @@ export function createFuseState({
     } catch (deriveError) {
       if (disposed || generation !== buildGeneration) return null;
       const message =
-        "Couldn't identify every fused step. Shuffle a path and try again.";
+        "Couldn't identify every fused step. Generate another path and try again.";
       error = { kind: "derivation", message };
       reportUnexpected(message, deriveError, "derive-fused-word");
       return null;
@@ -1391,7 +1709,7 @@ export function createFuseState({
   function reportPreviewFailure(technicalError: unknown): void {
     if (!previewSequence || error?.kind === "preview") return;
     const message =
-      "Couldn't build the combined preview. Shuffle a path and try again.";
+      "Couldn't build the combined preview. Generate another path and try again.";
     error = { kind: "preview", message };
     stopClock();
     reportUnexpected(message, technicalError, "initialize-preview");
@@ -1520,9 +1838,11 @@ export function createFuseState({
     setLength,
     shuffle,
     setSource,
+    adjustSource,
     previous,
     retry,
     setMode,
+    setRelationship,
     setDriver,
     setTransform,
     buildFusedSequence,

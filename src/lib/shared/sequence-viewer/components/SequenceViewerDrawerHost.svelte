@@ -192,6 +192,7 @@
             sequence={overlay.sequence!}
             isMobile={isMobileWidth}
             onClose={handleDismiss}
+            shareOnOpen={overlay.shareOnOpen}
           />
         {/snippet}
       </SequenceViewerOrchestrator>

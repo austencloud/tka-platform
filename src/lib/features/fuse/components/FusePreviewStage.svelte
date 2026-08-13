@@ -11,12 +11,16 @@
 
   let {
     onOpenViewer,
+    onShare,
+    onSave,
     compact = false,
-    condensedAction = false,
+    isSaving = false,
   }: {
     onOpenViewer: () => Promise<void>;
+    onShare: () => Promise<void>;
+    onSave: () => Promise<void>;
     compact?: boolean;
-    condensedAction?: boolean;
+    isSaving?: boolean;
   } = $props();
   const { state: fuseState } = getFuseContext();
   let tempoOpen = $state(false);
@@ -46,7 +50,16 @@
   class:compact
   aria-labelledby="fuse-preview-heading"
 >
-  <h3 id="fuse-preview-heading" class="sr-only">Combined preview</h3>
+  <header class="preview-heading">
+    <div>
+      <span class="preview-eyebrow">Result</span>
+      <h3 id="fuse-preview-heading">Combined preview</h3>
+    </div>
+    <span class="preview-meta">
+      {fuseState.appliedLength ?? fuseState.requestedLength} steps · {fuseState.bpm}
+      BPM
+    </span>
+  </header>
 
   <div class="frame-wrap">
     <div class="preview-frame" role="img" aria-label={previewDescription}>
@@ -92,7 +105,7 @@
   </div>
 
   {#if compact}
-    <FuseMobileControls {onOpenViewer} />
+    <FuseMobileControls {onOpenViewer} {onShare} {onSave} {isSaving} />
   {:else}
     <p
       id="fuse-action-status"
@@ -143,22 +156,49 @@
         </Popover.Root>
       </div>
 
-      <div class="fuse-slot">
-        <ActionButton
-          label={condensedAction
-            ? "Open viewer"
-            : "Open combined sequence viewer"}
-          busyLabel={condensedAction
-            ? "Opening viewer..."
-            : "Opening combined sequence..."}
-          icon={fuseState.isFusing ? "fa-spinner fa-spin" : "fa-expand"}
-          color="fuse"
+      <div class="result-actions" aria-label="Combined sequence actions">
+        <div class="share-slot">
+          <ActionButton
+            label="Share result"
+            busyLabel="Opening share..."
+            icon="fa-share-nodes"
+            color="fuse"
+            fullWidth={true}
+            ariaDisabled={!fuseState.canFuse}
+            onclick={() => void onShare()}
+          />
+        </div>
+        <PanelButton
+          variant="secondary"
           fullWidth={true}
-          ariaDisabled={!fuseState.canFuse}
-          ariaDescribedBy="fuse-action-status"
-          busy={fuseState.isFusing}
-          onclick={() => void onOpenViewer()}
-        />
+          disabled={!fuseState.canFuse || isSaving}
+          ariaBusy={isSaving}
+          saveShortcut={true}
+          onclick={() => void onSave()}
+        >
+          <i
+            class="fas {isSaving ? 'fa-spinner fa-spin' : 'fa-bookmark'}"
+            aria-hidden="true"
+          ></i>
+          {isSaving ? "Saving..." : "Save result"}
+        </PanelButton>
+        <div class="viewer-slot">
+          <PanelButton
+            variant="secondary"
+            fullWidth={true}
+            disabled={!fuseState.canFuse || fuseState.isFusing}
+            ariaBusy={fuseState.isFusing}
+            onclick={() => void onOpenViewer()}
+          >
+            <i
+              class="fas {fuseState.isFusing
+                ? 'fa-spinner fa-spin'
+                : 'fa-expand'}"
+              aria-hidden="true"
+            ></i>
+            Open viewer
+          </PanelButton>
+        </div>
       </div>
     </div>
   {/if}
@@ -221,6 +261,10 @@
     background: transparent;
   }
 
+  .preview-stage.compact .preview-heading {
+    display: none;
+  }
+
   .compact .frame-wrap {
     flex: 1 1 0;
     min-height: 0;
@@ -228,6 +272,41 @@
 
   h3 {
     margin: 0;
+  }
+
+  .preview-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--settings-spacing-md, 12px);
+    min-width: 0;
+  }
+
+  .preview-heading > div {
+    min-width: 0;
+  }
+
+  .preview-heading h3 {
+    color: var(--theme-text, #fff);
+    font-size: 1rem;
+    font-weight: 750;
+  }
+
+  .preview-eyebrow,
+  .preview-meta {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+  }
+
+  .preview-eyebrow {
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .preview-meta {
+    flex: 0 0 auto;
+    font-variant-numeric: tabular-nums;
   }
 
   .frame-wrap {
@@ -261,6 +340,68 @@
       ),
       color-mix(in srgb, var(--theme-card-bg, #161821) 76%, black);
     background-size: 28px 28px;
+  }
+
+  @container fuse (min-width: 1680px) and (min-height: 900px) {
+    .preview-stage {
+      padding: 20px;
+    }
+
+    .preview-heading h3 {
+      font-size: 1.25rem;
+    }
+
+    .preview-eyebrow,
+    .preview-meta {
+      font-size: 14px;
+    }
+
+    .frame-wrap {
+      justify-content: center;
+    }
+
+    .preview-frame {
+      flex: 0 1 auto;
+      width: min(100%, calc(100cqh - 190px));
+      max-width: 100%;
+      aspect-ratio: 1;
+      align-self: center;
+    }
+  }
+
+  @container fuse (min-width: 2600px) and (min-height: 1400px) {
+    .preview-stage {
+      gap: var(--settings-spacing-lg, 20px);
+      padding: 28px;
+    }
+
+    .preview-heading h3 {
+      font-size: 1.5rem;
+    }
+
+    .preview-eyebrow,
+    .preview-meta {
+      font-size: var(--font-size-compact, 16px);
+    }
+
+    .stage-controls {
+      gap: var(--settings-spacing-md, 14px);
+    }
+
+    .share-slot :global(.action-button),
+    .result-actions :global(.panel-btn) {
+      min-height: var(--min-touch-target, 64px);
+      font-size: var(--font-size-min, 18px);
+    }
+
+    .tempo-value {
+      font-size: 1.35rem;
+    }
+
+    .tempo-unit,
+    .tempo-trigger i {
+      font-size: var(--font-size-compact, 16px);
+    }
   }
 
   .error-strip {
@@ -339,13 +480,6 @@
     min-height: var(--min-touch-target, 44px);
   }
 
-  /* Inline tempo chips are for wide desktop only; every other width uses the
-     compact popover trigger. Only one is ever in flow. */
-  .bpm-inline {
-    display: none;
-    min-width: 0;
-  }
-
   /* With the standalone play/pause button gone (canvas-tap owns playback), the
      tempo control claims the freed width: it grows to a sane cap so BPM reads
      as a real control, while the Fuse button keeps the larger share and
@@ -357,25 +491,35 @@
     max-width: 340px;
   }
 
-  .fuse-slot {
-    flex: 2.4 1 0;
+  .result-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) repeat(2, minmax(0, 1fr));
+    flex: 1 1 auto;
+    gap: var(--settings-spacing-sm, 10px);
     min-width: 0;
   }
 
-  /* Really-big desktop: the tempo controls come out into the open, and the
-     Fuse button gives up the excess width it was hogging. */
+  .share-slot,
+  .viewer-slot {
+    min-width: 0;
+  }
+
+  .share-slot :global(.action-button),
+  .result-actions :global(.panel-btn) {
+    min-height: 54px;
+    border-radius: 16px;
+  }
+
+  /* Really-big desktop: keep tempo visible beside a capped result action
+     cluster. The previous rule hid the only BPM control at this width. */
   @container fuse (min-width: 1500px) {
-    .bpm-inline {
-      display: block;
-      flex: 1 1 auto;
-    }
-
     .bpm-compact {
-      display: none;
+      flex: 0 0 220px;
     }
 
-    .fuse-slot {
-      flex: 0 0 clamp(300px, 24cqw, 460px);
+    .result-actions {
+      flex: 0 1 min(100%, 960px);
+      margin-left: auto;
     }
   }
 
@@ -386,9 +530,9 @@
     justify-content: center;
     gap: 6px;
     width: 100%;
-    min-width: 128px;
+    min-width: 0;
     min-height: var(--min-touch-target, 44px);
-    padding: 10px 16px;
+    padding: 10px clamp(6px, 1cqw, 16px);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
     border-radius: var(--settings-radius-md, 12px);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.055));
@@ -452,6 +596,10 @@
       padding: 14px;
     }
 
+    .result-actions {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
     .frame-wrap {
       flex-basis: 260px;
       min-height: 240px;
@@ -463,7 +611,7 @@
      flex:1 eats the free height and pushes the control row to the bottom,
      the frame's grid background fills the full width (props center in it,
      so it reads as a wide grid, not empty gutters), and the Fuse button
-     (fuse-slot flex:1) stretches across the bar. All this rule does is let
+     action cluster stretches across the bar. All this rule does is let
      the stage shrink into its fr row — min-height:0, which must NOT leak to
      the scroll layouts where a zero minimum collapses the grid row. */
   @container fuse (min-width: 600px) and (min-height: 600px) {

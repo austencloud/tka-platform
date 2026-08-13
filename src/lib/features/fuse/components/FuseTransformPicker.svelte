@@ -16,8 +16,24 @@
   } from "../state/fuse-state.svelte";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
 
-  let { embedded = false }: { embedded?: boolean } = $props();
+  let {
+    embedded = false,
+    driver,
+    transform,
+    onDriverChange,
+    onTransformChange,
+    relationshipLayout = false,
+  }: {
+    embedded?: boolean;
+    driver?: FuseSide;
+    transform?: FuseTransformId;
+    onDriverChange?: (side: FuseSide) => void;
+    onTransformChange?: (id: FuseTransformId) => void;
+    relationshipLayout?: boolean;
+  } = $props();
   const { state: fuseState } = getFuseContext();
+  const selectedDriver = $derived(driver ?? fuseState.driverSide);
+  const selectedTransform = $derived(transform ?? fuseState.transformId);
 
   const TRANSFORM_ICONS: Record<FuseTransformId, string> = {
     mirror: "fa-left-right",
@@ -56,38 +72,75 @@
     FUSE_TRANSFORMS.map((transform) => ({
       value: transform.id,
       label: transform.label,
+      description: transform.description,
       icon: TRANSFORM_ICONS[transform.id],
     }))
   );
 
-  const followerLabel = $derived(
-    fuseState.driverSide === "blue" ? "Red" : "Blue"
-  );
-  const driverLabel = $derived(
-    fuseState.driverSide === "blue" ? "Blue" : "Red"
-  );
+  const followerLabel = $derived(selectedDriver === "blue" ? "Red" : "Blue");
+  const driverLabel = $derived(selectedDriver === "blue" ? "Blue" : "Red");
   const followerColor = $derived(
-    fuseState.driverSide === "blue"
+    selectedDriver === "blue"
       ? "var(--prop-red, #f44336)"
       : "var(--prop-blue, #2196f3)"
   );
 
   function handleDriver(value: FuseSide): void {
-    fuseState.setDriver(value);
+    if (onDriverChange) onDriverChange(value);
+    else fuseState.setDriver(value);
   }
 
   function handleTransform(value: FuseTransformId): void {
-    fuseState.setTransform(value);
+    if (onTransformChange) onTransformChange(value);
+    else fuseState.setTransform(value);
   }
 </script>
 
-<div class="transform-picker" class:embedded>
-  <div class="field" role="group" aria-label="Driver hand">
-    <span class="field-label">Driver</span>
+<div
+  class="transform-picker"
+  class:embedded
+  class:relationship-layout={relationshipLayout}
+>
+  <div class="field" role="group" aria-label="Path you will edit">
+    <div class="field-heading">
+      {#if relationshipLayout}<span class="step-number">1</span>{/if}
+      <div>
+        <span class="field-label">
+          {relationshipLayout ? "Path you will edit" : "Driver"}
+        </span>
+        {#if relationshipLayout}
+          <span class="field-help">{driverLabel} stays editable</span>
+        {/if}
+      </div>
+    </div>
+    {#if relationshipLayout}
+      <div class="driver-map" aria-hidden="true">
+        <span class="driver-node" data-side={selectedDriver}>
+          <i class="fas fa-pen" aria-hidden="true"></i>
+          <span>
+            <strong>{driverLabel}</strong>
+            <small>You edit</small>
+          </span>
+        </span>
+        <span class="driver-arrow">
+          <i class="fas fa-arrow-right" aria-hidden="true"></i>
+        </span>
+        <span
+          class="driver-node"
+          data-side={selectedDriver === "blue" ? "red" : "blue"}
+        >
+          <i class="fas fa-link" aria-hidden="true"></i>
+          <span>
+            <strong>{followerLabel}</strong>
+            <small>Fuse builds</small>
+          </span>
+        </span>
+      </div>
+    {/if}
     <div class="field-control driver-control">
       <SegmentedControl
         options={driverOptions}
-        value={fuseState.driverSide}
+        value={selectedDriver}
         onchange={handleDriver}
         color="accent"
         size="md"
@@ -96,15 +149,28 @@
   </div>
 
   <div class="transform-options">
+    {#if relationshipLayout}
+      <div class="field-heading">
+        <span class="step-number">2</span>
+        <div>
+          <span class="field-label">How the other path is rebuilt</span>
+          <span class="field-help">
+            Every {driverLabel} edit rebuilds {followerLabel}
+          </span>
+        </div>
+      </div>
+    {/if}
     <OptionChipRow
-      label={`${followerLabel} follows ${driverLabel}`}
+      label={relationshipLayout
+        ? `Rule applied to ${followerLabel}`
+        : `${followerLabel} follows ${driverLabel}`}
       ariaLabel="Follower transformation"
       options={transformOptions}
-      value={fuseState.transformId}
+      value={selectedTransform}
       onChange={handleTransform}
       color={followerColor}
       {disabled}
-      layout="stacked"
+      layout={relationshipLayout ? "tiles" : "stacked"}
     />
   </div>
 </div>
@@ -134,11 +200,63 @@
     background: transparent;
   }
 
+  .transform-picker.embedded.relationship-layout {
+    grid-template-columns: minmax(18rem, 22rem) minmax(0, 1fr);
+    align-items: stretch;
+    gap: 10px;
+  }
+
   .field {
     display: flex;
     flex-direction: column;
     gap: 4px;
     min-width: 0;
+  }
+
+  .relationship-layout .field,
+  .relationship-layout .transform-options {
+    padding: clamp(12px, 0.45cqw, 17px);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: var(--settings-radius-md, 14px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.045));
+  }
+
+  .relationship-layout .transform-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .field-heading {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+  }
+
+  .field-heading > div {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .step-number {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #8b6cff) 55%, transparent);
+    border-radius: 50%;
+    color: var(--theme-text, #fff);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b6cff) 18%,
+      transparent
+    );
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 800;
   }
 
   .field-label {
@@ -148,6 +266,18 @@
     letter-spacing: 0.01em;
   }
 
+  .relationship-layout .field-label {
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 750;
+  }
+
+  .field-help {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.3;
+  }
+
   .field-control {
     display: flex;
     min-width: 0;
@@ -155,6 +285,70 @@
 
   .driver-control {
     width: 100%;
+  }
+
+  .relationship-layout .driver-control {
+    padding-block: 8px;
+  }
+
+  .driver-map {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    margin-block: auto;
+    padding-block: 12px;
+  }
+
+  .driver-node {
+    display: grid;
+    justify-items: center;
+    gap: 7px;
+    min-width: 0;
+    padding: 12px 8px;
+    border: 1px solid
+      color-mix(in srgb, var(--node-color) 42%, var(--theme-stroke));
+    border-radius: var(--settings-radius-md, 14px);
+    color: var(--theme-text, #fff);
+    background: color-mix(
+      in srgb,
+      var(--node-color) 12%,
+      var(--theme-panel-bg)
+    );
+    text-align: center;
+  }
+
+  .driver-node[data-side="blue"] {
+    --node-color: var(--prop-blue, #2196f3);
+  }
+
+  .driver-node[data-side="red"] {
+    --node-color: var(--prop-red, #f44336);
+  }
+
+  .driver-node > i {
+    color: color-mix(in srgb, var(--node-color) 76%, var(--theme-text));
+    font-size: 1.15rem;
+  }
+
+  .driver-node > span {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .driver-node strong {
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .driver-node small {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .driver-arrow {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-compact, 12px);
   }
 
   .field-control :global(.segmented-control) {
@@ -174,6 +368,59 @@
     .transform-picker:not(.embedded) {
       grid-template-columns: minmax(0, 1fr);
       width: 100%;
+    }
+
+    .transform-picker.embedded.relationship-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @container fuse (min-width: 1680px) and (max-width: 2599px) and (min-height: 900px) {
+    .transform-picker.embedded.relationship-layout {
+      grid-template-columns: minmax(16rem, 19rem) minmax(0, 1fr);
+    }
+  }
+
+  @container fuse (min-width: 1181px) and (max-width: 1679px) and (min-height: 780px) {
+    .driver-map {
+      display: none;
+    }
+
+    .relationship-layout .field,
+    .relationship-layout .transform-options {
+      padding: 10px;
+    }
+
+    .relationship-layout .field-help,
+    .relationship-layout .transform-options :global(.option-label) {
+      display: none;
+    }
+
+    .relationship-layout .driver-control {
+      margin-block: auto;
+      padding-block: 4px;
+    }
+  }
+
+  @container fuse (min-width: 2600px) and (min-height: 1400px) {
+    .transform-picker.embedded.relationship-layout {
+      grid-template-columns: minmax(22rem, 26rem) minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .relationship-layout .field,
+    .relationship-layout .transform-options {
+      padding: 20px;
+    }
+
+    .step-number {
+      width: 36px;
+      height: 36px;
+    }
+
+    .driver-node {
+      min-height: 100px;
+      align-content: center;
     }
   }
 </style>

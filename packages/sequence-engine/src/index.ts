@@ -19,6 +19,10 @@ export {
   OrientationCalculator,
   OrientationPropagator,
 } from "./core/orientation/OrientationPropagator.js";
+export {
+  calculateEndOrientation,
+  calculateOrientations,
+} from "./core/orientation/OrientationCalculator.js";
 
 // Transition graph
 export type { ITransitionGraph } from "./core/transition-graph/ITransitionGraph.js";

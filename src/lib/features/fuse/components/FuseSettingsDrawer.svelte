@@ -4,8 +4,7 @@
   import { portal } from "$lib/features/create/generate/components/modals/portal";
   import { getFuseContext } from "../context/fuse-context";
   import FuseLengthPicker from "./FuseLengthPicker.svelte";
-  import FuseModeBar from "./FuseModeBar.svelte";
-  import FuseTransformPicker from "./FuseTransformPicker.svelte";
+  import FuseRelationshipComposer from "./FuseRelationshipComposer.svelte";
 
   let { isOpen = $bindable(false) }: { isOpen: boolean } = $props();
   const { state: fuseState } = getFuseContext();
@@ -45,20 +44,7 @@
           <FuseLengthPicker />
         </section>
 
-        <section class="settings-section" aria-labelledby="fuse-mode-title">
-          <h3 id="fuse-mode-title">Pairing</h3>
-          <FuseModeBar />
-        </section>
-
-        {#if fuseState.mode === "symmetry"}
-          <section
-            class="settings-section symmetry-section"
-            aria-labelledby="fuse-symmetry-title"
-          >
-            <h3 id="fuse-symmetry-title">Symmetry</h3>
-            <FuseTransformPicker embedded={true} />
-          </section>
-        {/if}
+        <FuseRelationshipComposer />
       </div>
     </div>
   </Drawer>
@@ -157,14 +143,6 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
-  }
-
-  .symmetry-section {
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, #8b6cff) 34%,
-      var(--theme-stroke, transparent)
-    );
   }
 
   @media (prefers-reduced-motion: reduce) {

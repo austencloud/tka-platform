@@ -8,6 +8,7 @@ import { PLAYBACK_MAX_BPM } from "$lib/shared/animation-engine/domain/constants/
 import type { HandPathData } from "$lib/shared/foundation/domain/models/hand-path-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { GeneratedSoloLoop } from "$lib/features/fuse/services/solo-loop-generator";
 import {
   GridLocation,
   GridMode,
@@ -116,6 +117,18 @@ function createState(
   });
 }
 
+function createSoloGenerator() {
+  let generation = 0;
+  return vi.fn(async (length: number): Promise<GeneratedSoloLoop> => {
+    generation += 1;
+    const sequence = makeSequence(`generated-${generation}`, length);
+    return {
+      solo: sequence.blueSoloProp!,
+      loopSpec: { rewound: { period: 2 } },
+    };
+  });
+}
+
 describe("Fuse state", () => {
   // createFuseState persists the selected pair to localStorage ("fuse-tab-state",
   // fuse-state.svelte.ts:50) and initialize() restores it on mount, re-hydrating
@@ -124,6 +137,91 @@ describe("Fuse state", () => {
   // loadFullSequenceData for a foreign sequence.
   beforeEach(() => {
     localStorage.clear();
+  });
+
+  it("generates independent one-hand LOOPs without loading the sequence gallery", async () => {
+    const loader = createLoader([]);
+    const generator = createSoloGenerator();
+    const state = createState(loader, { generateSoloLoop: generator });
+
+    await state.initialize();
+
+    expect(generator).toHaveBeenCalledTimes(2);
+    expect(generator).toHaveBeenNthCalledWith(1, 8);
+    expect(loader.loadSequenceMetadata).not.toHaveBeenCalled();
+    expect(loader.loadFullSequenceData).not.toHaveBeenCalled();
+    expect(state.blue.sequence?.blueSoloProp).toBeDefined();
+    expect(state.red.sequence?.redSoloProp).toBeDefined();
+    expect(state.canFuse).toBe(true);
+
+    const redHash = state.red.sequence?.redSoloProp?.contentHash;
+    await state.shuffle("blue");
+
+    expect(generator).toHaveBeenCalledTimes(3);
+    expect(state.red.sequence?.redSoloProp?.contentHash).toBe(redHash);
+    expect(state.blue.canGoBack).toBe(true);
+  });
+
+  it("chooses a new first step on one LOOP without changing its partner", async () => {
+    const generator = createSoloGenerator();
+    const state = createState(createLoader([]), {
+      generateSoloLoop: generator,
+    });
+    await state.initialize();
+
+    const originalBlueStart = state.blue.sequence?.blueSoloProp?.startLocation;
+    const originalRedHash = state.red.sequence?.redSoloProp?.contentHash;
+    await state.adjustSource("blue", { kind: "first-step", step: 2 });
+
+    expect(state.error).toBeNull();
+    expect(state.blue.sequence?.blueSoloProp?.startLocation).not.toBe(
+      originalBlueStart
+    );
+    expect(state.red.sequence?.redSoloProp?.contentHash).toBe(originalRedHash);
+    expect(state.canFuse).toBe(true);
+  });
+
+  it("keeps one-hand LOOP closure through every independent source transform", async () => {
+    const state = createState(createLoader([]), {
+      generateSoloLoop: createSoloGenerator(),
+    });
+    await state.initialize();
+
+    const adjustments = [
+      { kind: "rotate", quarterTurns: 1 },
+      { kind: "rotate", quarterTurns: -1 },
+      { kind: "mirror" },
+      { kind: "flip" },
+      { kind: "invert" },
+      { kind: "reset" },
+    ] as const;
+
+    for (const adjustment of adjustments) {
+      await state.adjustSource("blue", adjustment);
+      expect(state.error, adjustment.kind).toBeNull();
+      expect(state.canFuse, adjustment.kind).toBe(true);
+    }
+  });
+
+  it("applies a symmetry relationship as one state transition", async () => {
+    const state = createState(createLoader([]), {
+      generateSoloLoop: createSoloGenerator(),
+    });
+    await state.initialize();
+
+    expect(state.mode).toBe("shuffle");
+    expect(state.driverSide).toBe("blue");
+    expect(state.transformId).toBe("mirror");
+
+    state.setRelationship("red", "rotate90");
+
+    expect(state.mode).toBe("symmetry");
+    expect(state.driverSide).toBe("red");
+    expect(state.transformId).toBe("rotate90");
+    await vi.waitFor(() => {
+      expect(state.statusMessage).toBe("Blue follows Red (Rotate 90).");
+    });
+    expect(state.canFuse).toBe(true);
   });
 
   it("distinguishes a catalog failure from an exact-length empty pool", async () => {

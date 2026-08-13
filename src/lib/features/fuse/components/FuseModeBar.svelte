@@ -11,12 +11,34 @@
   import type { FuseMode } from "../state/fuse-state.svelte";
 
   const { state: fuseState } = getFuseContext();
+  let {
+    selectedMode,
+    onSelect,
+    compact = false,
+  }: {
+    selectedMode?: FuseMode;
+    onSelect?: (mode: FuseMode) => void;
+    compact?: boolean;
+  } = $props();
+  const value = $derived(selectedMode ?? fuseState.mode);
 
   // No icons: SegmentedControl renders the icon in place of the label, and the
   // two mode words carry the meaning here.
-  const modeOptions: { value: FuseMode; label: string }[] = [
-    { value: "shuffle", label: "Shuffle" },
-    { value: "symmetry", label: "Symmetry" },
+  const modeOptions: {
+    value: FuseMode;
+    label: string;
+    ariaLabel: string;
+  }[] = [
+    {
+      value: "shuffle",
+      label: "Separate",
+      ariaLabel: "Separate paths: edit Blue and Red independently",
+    },
+    {
+      value: "symmetry",
+      label: "Linked",
+      ariaLabel: "Linked paths: one path rebuilds the other",
+    },
   ];
 
   // Mode swaps rebuild the preview; keep it inert mid-load so a switch can't race
@@ -28,14 +50,15 @@
   );
 
   function handleSelect(value: FuseMode): void {
-    fuseState.setMode(value);
+    if (onSelect) onSelect(value);
+    else fuseState.setMode(value);
   }
 </script>
 
-<div class="fuse-mode-bar" role="group" aria-label="Fuse mode">
+<div class="fuse-mode-bar" class:compact role="group" aria-label="Pairing mode">
   <SegmentedControl
     {options}
-    value={fuseState.mode}
+    {value}
     onchange={handleSelect}
     color="accent"
     size="md"
@@ -45,12 +68,16 @@
 <style>
   .fuse-mode-bar {
     display: flex;
-    flex: 1 1 18rem;
-    width: 100%;
+    flex: 0 0 auto;
+    width: min(100%, 28rem);
     min-width: 0;
   }
 
   .fuse-mode-bar :global(.segmented-control) {
     width: 100%;
+  }
+
+  .fuse-mode-bar.compact {
+    width: min(100%, 22rem);
   }
 </style>

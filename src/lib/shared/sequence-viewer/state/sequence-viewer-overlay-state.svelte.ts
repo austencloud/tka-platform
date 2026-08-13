@@ -19,6 +19,7 @@ let _initialStep = $state(0);
 let _dismissPath = $state<string | null>(null);
 let _handPathMode = $state(false);
 let _playOnOpen = $state(false);
+let _shareOnOpen = $state(false);
 let _openedFromUrl = $state(false);
 let _activeShortCode = $state<string | null>(null);
 let _openToken = $state(0);
@@ -35,6 +36,7 @@ export function openSequenceOverlay(
     handPathMode?: boolean;
     /** Open on the 2D animation surface and request playback. */
     playOnOpen?: boolean;
+    shareOnOpen?: boolean;
     fromUrl?: boolean;
     shortCode?: string;
   }
@@ -49,6 +51,7 @@ export function openSequenceOverlay(
   _dismissPath = options?.dismissPath || null;
   _handPathMode = options?.handPathMode ?? false;
   _playOnOpen = options?.playOnOpen ?? false;
+  _shareOnOpen = options?.shareOnOpen ?? false;
   _openedFromUrl = options?.fromUrl ?? false;
   _activeShortCode = options?.shortCode ?? null;
   _isOpen = true;
@@ -157,6 +160,7 @@ export function closeSequenceOverlay(): void {
   _dismissPath = null;
   _handPathMode = false;
   _playOnOpen = false;
+  _shareOnOpen = false;
   _openedFromUrl = false;
   _activeShortCode = null;
 }
@@ -204,6 +208,9 @@ export function getSequenceOverlayState() {
     },
     get playOnOpen() {
       return _playOnOpen;
+    },
+    get shareOnOpen() {
+      return _shareOnOpen;
     },
     get openedFromUrl() {
       return _openedFromUrl;

@@ -15,6 +15,7 @@
   import { deriveLettersForSequence } from "$lib/shared/navigation/services/letter-deriver";
   import { createFuseState } from "./state/fuse-state.svelte";
   import { setFuseContext } from "./context/fuse-context";
+  import { generateSoloLoop } from "./services/solo-loop-generator";
   import FuseLayout from "./components/FuseLayout.svelte";
 
   type FuseInitResult =
@@ -29,6 +30,7 @@
         browseLoader: getBrowseLoader(),
         deriveLetters: deriveLettersForSequence,
         errorHandler: getErrorHandler(),
+        generateSoloLoop,
       });
       setFuseContext({ state });
       void state.initialize();

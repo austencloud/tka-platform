@@ -143,6 +143,8 @@
     contextContent?: Snippet;
     /** The full-page sequence route keeps its immersive transport overlay. */
     showFullscreenControls?: boolean;
+    /** Host intent: enter through Share and open the canonical sheet once. */
+    shareOnOpen?: boolean;
   }
 
   let {
@@ -161,6 +163,7 @@
     navigation,
     contextContent,
     showFullscreenControls = false,
+    shareOnOpen = false,
   }: Props = $props();
 
   const scanInstrumentationEnabled = isScanVisit();
@@ -218,6 +221,13 @@
     }
   );
 
+  let consumedShareOnOpen = false;
+  $effect(() => {
+    if (!shareOnOpen || consumedShareOnOpen) return;
+    consumedShareOnOpen = true;
+    void Promise.resolve().then(() => share.selectAction("share-sequence"));
+  });
+
   /**
    * Resolves the sheet's video slot against the art-share session.
    *
@@ -237,8 +247,7 @@
         exporting: mandala.exporting,
         progress: mandala.exporting ? mandala.exportProgress : null,
         label: "Mandala",
-        request: () =>
-          Promise.resolve(mandala.startExport({ deliver: false })),
+        request: () => Promise.resolve(mandala.startExport({ deliver: false })),
       };
     }
 
@@ -537,7 +546,8 @@
               isExporting={interactions.videoBusy}
               bpm={ctx.bpmLocal}
               onBpmChange={(bpm) => interactions.handleBpmChange(bpm, "viewer")}
-              onPropChange={(prop) => interactions.handlePropChange(prop, "viewer")}
+              onPropChange={(prop) =>
+                interactions.handlePropChange(prop, "viewer")}
               playback={ctx.splitPanePlayback}
               imageComposition={layout.isImageExportActive
                 ? {
@@ -564,9 +574,7 @@
               onFocusPane={interactions.handleFocusPane}
               onUnfocusPane={interactions.handleUnfocusPane}
               onStepClick={interactions.handleStepClick}
-              onQrPlayClick={ctx.practiceActive
-                ? undefined
-                : layout.playFromQr}
+              onQrPlayClick={ctx.practiceActive ? undefined : layout.playFromQr}
               onCanvasReady={ctx.handleCanvasReady}
               onAutoLayoutResolved={layout.isImageExportActive
                 ? ctx.setResolvedCardAutoLayout
@@ -827,8 +835,7 @@
           progress={ctx.practiceState.progress}
           bpm={ctx.bpmLocal}
           isPlaying={ctx.isPlayingLocal}
-          onBpmChange={(bpm) =>
-            interactions.handleBpmChange(bpm, "practice")}
+          onBpmChange={(bpm) => interactions.handleBpmChange(bpm, "practice")}
           onPlayPause={() => interactions.handlePlaybackToggle("practice")}
           onStepLevel={interactions.handlePracticeStepLevel}
           onToggleHold={interactions.handlePracticeToggleHold}

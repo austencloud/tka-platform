@@ -13,7 +13,7 @@
   // Rendered tiles survive reopening and are shared across both source cards:
   // loadShapeMatrix caches the geometry, but the per-side canvas paint is not,
   // so memoize the data URLs per side at module scope.
-  const tileCache = new Map<FuseSideKey, Map<string, string>>();
+  const tileCache = new Map<string, Map<string, string>>();
 </script>
 
 <script lang="ts">
@@ -32,11 +32,15 @@
   } from "$lib/shared/shape-matrix/domain/filter-flower-axis";
   import { loadShapeMatrix } from "$lib/shared/shape-matrix/services/shape-matrix-flowers";
   import { renderHeader } from "$lib/shared/shape-matrix/services/shape-matrix-render";
+  import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
+  import { getTipPointsBaseline } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
+  import { propTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
   import { resolveFlowerArchetype } from "$lib/shared/shape-matrix/services/flower-archetype";
   import { resolveRotationStyleMatrices } from "$lib/features/lab/vtg-lab/services/resolve-rotation-style-matrices";
   import { loadDiamondEdges } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
   import { buildFlowerSequence } from "$lib/features/lab/vtg-lab/services/build-flower-sequence";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
   let {
     side,
@@ -50,6 +54,15 @@
 
   const TILE_PX = 88;
   const label = $derived(side === "blue" ? "Blue" : "Red");
+  const settings = getSettings();
+  const propType = $derived(
+    side === "blue" ? settings.bluePropType : settings.redPropType
+  );
+  const tipCount = $derived(propTipEnds(propType));
+  const propLabel = $derived(
+    tipCount === 2 ? "both prop ends" : "one prop tip"
+  );
+  const cacheKey = $derived(`${side}:${propType}:${tipCount}`);
 
   // The flower list is deterministic and synchronous, so the tile grid has its
   // full structure from the first frame — only the painted images arrive async.
@@ -57,17 +70,18 @@
   const flowers: Flower[] = applyFilter(
     buildFlowerAxis(),
     defaultAxisFilter(),
-    true,
+    true
   );
 
-  let tiles = $state<Map<string, string>>(tileCache.get(side) ?? new Map());
+  let tiles = $state<Map<string, string>>(tileCache.get(cacheKey) ?? new Map());
   let busy = $state(false);
   let open = $state(true);
   let pickError = $state<string | null>(null);
 
   $effect(() => {
     if (!browser) return;
-    const cached = tileCache.get(side);
+    const keyForRun = cacheKey;
+    const cached = tileCache.get(keyForRun);
     if (cached) {
       tiles = cached;
       return;
@@ -76,16 +90,35 @@
     void (async () => {
       const data = await loadShapeMatrix();
       if (cancelled) return;
-      const paintMap = side === "blue" ? data.blue : data.red;
       const built = new Map<string, string>();
+      const tipPoints = getTipPointsBaseline(propType).points;
+      const [matrices, edges] = await Promise.all([
+        resolveRotationStyleMatrices("diamond"),
+        loadDiamondEdges(),
+      ]);
+      if (cancelled) return;
       for (const flower of flowers) {
         const key = flowerKey(flower);
-        const paths = paintMap.get(key);
-        if (!paths) continue;
-        built.set(key, renderHeader(paths, side, TILE_PX, data.clubTipDx));
+        const archetype = resolveFlowerArchetype(matrices, flower.style);
+        const sequence = buildFlowerSequence(archetype, flower, side, edges);
+        const geometry = calculateMandalaGeometry(
+          sequence.steps,
+          side === "blue" ? propType : undefined,
+          side === "red" ? propType : undefined,
+          { tipEnds: tipCount, pathShape: "arc" },
+          {
+            blue: side === "blue" ? tipPoints : [],
+            red: side === "red" ? tipPoints : [],
+          }
+        );
+        const reach = Math.max(
+          data.clubTipDx,
+          ...tipPoints.map((point) => Math.hypot(point.dx, point.dy))
+        );
+        built.set(key, renderHeader(geometry, side, TILE_PX, reach));
       }
       if (cancelled) return;
-      tileCache.set(side, built);
+      tileCache.set(keyForRun, built);
       tiles = built;
     })();
     return () => {
@@ -110,7 +143,8 @@
     } catch (error) {
       // Without this the matrix/edge load or build throwing would be an unhandled
       // rejection with no user-facing signal — the modal would just sit there.
-      pickError = "Couldn't build that path. Try another, or reopen the picker.";
+      pickError =
+        "Couldn't build that path. Try another, or reopen the picker.";
       console.error("[FuseVtgPathPicker] pick failed", error);
     } finally {
       busy = false;
@@ -126,6 +160,7 @@
 <BaseModal
   bind:open
   size="lg"
+  class="fuse-vtg-picker"
   onclose={close}
   labelledBy="fuse-vtg-picker-title"
 >
@@ -135,7 +170,7 @@
         Pick a {label} VTG path
       </h2>
       <p class="picker-sub">
-        {flowers.length} paths — each is one hand's rotational shape.
+        {flowers.length} paths, previewed with {propLabel} for your {propType}.
       </p>
       {#if pickError}
         <p class="picker-error" role="alert">{pickError}</p>
@@ -196,6 +231,11 @@
     padding: 8px 24px 24px;
   }
 
+  :global(dialog.base-modal.fuse-vtg-picker[data-size="lg"]) {
+    width: min(88vw, 1180px);
+    max-height: min(82dvh, 980px);
+  }
+
   .picker-body.red {
     --tile-color: var(--prop-red, #f44336);
   }
@@ -214,9 +254,17 @@
     padding: 10px 8px;
     min-height: var(--min-touch-target, 44px);
     border: 1px solid
-      color-mix(in srgb, var(--tile-color) 30%, var(--theme-stroke, rgba(255, 255, 255, 0.12)));
+      color-mix(
+        in srgb,
+        var(--tile-color) 30%,
+        var(--theme-stroke, rgba(255, 255, 255, 0.12))
+      );
     border-radius: var(--settings-radius-md, 14px);
-    background: color-mix(in srgb, var(--tile-color) 6%, var(--theme-card-bg, rgba(255, 255, 255, 0.04)));
+    background: color-mix(
+      in srgb,
+      var(--tile-color) 6%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
     color: var(--theme-text, #fff);
     cursor: pointer;
     transition:
@@ -254,7 +302,11 @@
     .tile:hover:not(:disabled) {
       transform: translateY(-1px);
       border-color: color-mix(in srgb, var(--tile-color) 60%, transparent);
-      background: color-mix(in srgb, var(--tile-color) 14%, var(--theme-card-bg, rgba(255, 255, 255, 0.04)));
+      background: color-mix(
+        in srgb,
+        var(--tile-color) 14%,
+        var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+      );
     }
   }
 
@@ -266,6 +318,13 @@
   @media (prefers-reduced-motion: reduce) {
     .tile {
       transition: none;
+    }
+  }
+
+  @media (max-width: 520px) {
+    :global(dialog.base-modal.fuse-vtg-picker[data-size="lg"]) {
+      width: 100%;
+      max-height: var(--viewport-height, 100dvh);
     }
   }
 </style>

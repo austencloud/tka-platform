@@ -1,24 +1,36 @@
 <script lang="ts">
   import { LANDSCAPE_THRESHOLDS } from "$lib/shared/device/domain/constants/device-constants";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
+  import { getLibrarySaveService } from "$lib/features/library/get-library-save-service";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { LibraryError } from "$lib/shared/library/domain/library-error";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getFuseContext } from "../context/fuse-context";
-  import FuseModeBar from "./FuseModeBar.svelte";
   import FusePreviewStage from "./FusePreviewStage.svelte";
+  import FuseRelationshipComposer from "./FuseRelationshipComposer.svelte";
   import FuseSettingsDrawer from "./FuseSettingsDrawer.svelte";
   import FuseSourceCard from "./FuseSourceCard.svelte";
-  import FuseTransformPicker from "./FuseTransformPicker.svelte";
+  import FuseFirstStepPanel from "./FuseFirstStepPanel.svelte";
   import FuseWorkspaceHeader from "./FuseWorkspaceHeader.svelte";
 
   const { state: fuseState } = getFuseContext();
+  const settings = getSettings();
   let containerElement = $state<HTMLDivElement | null>(null);
   let compact = $state(true);
   let landscapeSplit = $state(false);
   let settingsOpen = $state(false);
+  let actionSide = $state<"blue" | "red" | null>(null);
+  let firstStepOpen = $state(false);
+  let inlineFirstStepSide = $state<"blue" | "red" | null>(null);
+  let isSavingResult = $state(false);
   // On the locked desktop layout the source cards sit in a tall column with
   // room to spare, so each pictograph stays large even with a start position
   // and a mandala added. Gate the full choreo card on that size (matching the
   // 1100/780 layout breakpoint) so smaller screens keep the lean, big-cell view.
   let fullCard = $state(false);
+  let wideWorkspace = $state(false);
   const controlsInDrawer = $derived(!fullCard);
 
   // Desktop-only draggable seam between the path column and the animation
@@ -34,6 +46,9 @@
   // the computed default on the next visit at that size.
   const SPLIT_KEY = "tka-fuse-splits"; // JSON map: deviceBucket -> px
   const MIN_LEFT = 340; // path column never narrower than this
+  const LAPTOP_MIN_LEFT = 560;
+  const WIDE_MIN_LEFT = 1050;
+  const WIDE_MAX_LEFT = 1400;
   const CANVAS_FLOOR = 560; // canvas never narrower than this
   const STEP_COL_CANDIDATES = [2, 4, 6, 8] as const; // step columns to weigh (+1 start col)
   const CARD_GAP = 14; // vertical gap between the stacked blue/red cards
@@ -92,7 +107,14 @@
     let bestCell = -1;
     for (const sc of STEP_COL_CANDIDATES) {
       const cell = cellSizeFor(leftW, sc);
-      if (cell > bestCell) {
+      // A shallow desktop card can make several column counts produce the same
+      // cell size because height, not width, is the limiting dimension. Use
+      // the denser option in that tie so the LOOP fills the horizontal card
+      // instead of becoming a small grid surrounded by empty surface.
+      if (
+        cell > bestCell + 0.5 ||
+        (Math.abs(cell - bestCell) <= 0.5 && sc > best)
+      ) {
         bestCell = cell;
         best = sc;
       }
@@ -111,9 +133,18 @@
     `${Math.round(w / 160) * 160}x${Math.round(h / 160) * 160}x${steps}`;
   const deviceBucket = $derived(bucketOf(containerWidth, contentH, stepCount));
 
-  const maxLeft = () => Math.max(MIN_LEFT, containerWidth - CANVAS_FLOOR);
+  const minLeft = () =>
+    wideWorkspace
+      ? WIDE_MIN_LEFT
+      : containerWidth >= 1180
+        ? LAPTOP_MIN_LEFT
+        : MIN_LEFT;
+  const maxLeft = () =>
+    wideWorkspace
+      ? Math.min(WIDE_MAX_LEFT, containerWidth - CANVAS_FLOOR)
+      : Math.max(MIN_LEFT, containerWidth - CANVAS_FLOOR);
   const clampSplit = (px: number) =>
-    Math.round(Math.min(maxLeft(), Math.max(MIN_LEFT, px)));
+    Math.round(Math.min(maxLeft(), Math.max(minLeft(), px)));
 
   // Default seam: jointly pick the step-column count and the width that MAXIMIZE
   // pictograph size. Each candidate's ideal width is its aspect-matched fill
@@ -184,6 +215,27 @@
     splitPx = optimalSplit();
   }
 
+  function commitSplit(px: number): void {
+    splitPx = clampSplit(px);
+    overrides = { ...overrides, [deviceBucket]: splitPx };
+    persistOverrides();
+  }
+
+  function onSplitKeyDown(event: KeyboardEvent): void {
+    const current = splitPx ?? optimalSplit();
+    const step = event.shiftKey ? 64 : 24;
+    let next: number | null = null;
+
+    if (event.key === "ArrowLeft") next = current - step;
+    else if (event.key === "ArrowRight") next = current + step;
+    else if (event.key === "Home") next = minLeft();
+    else if (event.key === "End") next = maxLeft();
+
+    if (next === null) return;
+    event.preventDefault();
+    commitSplit(next);
+  }
+
   // The phone layout is a different interaction, not a squeezed desktop grid.
   // Measuring the tab's actual slot also handles split-screen and foldable
   // layouts where the viewport width says little about the room Fuse receives.
@@ -197,6 +249,7 @@
       const aspectRatio = height > 0 ? width / height : 1;
       compact = useCompactLayout;
       fullCard = useFullCards;
+      wideWorkspace = width >= 1680 && height >= 900;
       // Use the measured Fuse slot, not the physical screen: Android chrome and
       // the app nav can pull an unfolded Fold's content height below 600px.
       // Phone-shaped landscape screens stay on the existing scroll layout.
@@ -222,6 +275,14 @@
   });
 
   async function handleOpenViewer(): Promise<void> {
+    await openBuiltResult(false);
+  }
+
+  async function handleShare(): Promise<void> {
+    await openBuiltResult(true);
+  }
+
+  async function openBuiltResult(shareOnOpen: boolean): Promise<void> {
     const sequence = await fuseState.buildFusedSequence();
     if (!sequence) return;
 
@@ -230,10 +291,70 @@
         returnPath: "/app/create",
         returnLabel: "Fuse",
         initialBpm: fuseState.bpm,
+        shareOnOpen,
       });
     } catch (failure) {
       fuseState.reportViewerFailure(failure);
     }
+  }
+
+  async function handleSaveResult(): Promise<void> {
+    if (isSavingResult) return;
+    const sequence = await fuseState.buildFusedSequence();
+    if (!sequence) return;
+    isSavingResult = true;
+    try {
+      const intended = createSequenceData({
+        ...sequence,
+        intendedProp: {
+          bluePropType: settings.bluePropType ?? PropType.STAFF,
+          redPropType: settings.redPropType ?? PropType.STAFF,
+          catDogMode: settings.catDogMode ?? false,
+        },
+      });
+      const name = intended.word || intended.name || "Fused LOOP";
+      await getLibrarySaveService().saveSequence(intended, {
+        name,
+        visibility: "private",
+        tags: [],
+        notes: "Created in Fuse",
+      });
+      showToast("Fused LOOP saved to your library", "success");
+    } catch (failure) {
+      if (
+        failure instanceof LibraryError &&
+        failure.code === "ALREADY_EXISTS"
+      ) {
+        showToast("That fused LOOP is already in your library", "info");
+        return;
+      }
+      console.error("[FuseLayout] Failed to save fused LOOP", failure);
+      const message =
+        failure instanceof Error
+          ? failure.message
+          : "Couldn't save the fused LOOP";
+      showToast(message, "error");
+    } finally {
+      isSavingResult = false;
+    }
+  }
+
+  function openFirstStep(side: "blue" | "red"): void {
+    if (compact) {
+      actionSide = side;
+      firstStepOpen = true;
+      return;
+    }
+    inlineFirstStepSide = side;
+  }
+
+  function closeFirstStep(): void {
+    firstStepOpen = false;
+    actionSide = null;
+  }
+
+  function closeInlineFirstStep(): void {
+    inlineFirstStepSide = null;
   }
 </script>
 
@@ -243,6 +364,7 @@
     class:compact-workspace={compact}
     class:condensed-workspace={controlsInDrawer}
     class:landscape-workspace={landscapeSplit}
+    class:wide-workspace={wideWorkspace}
     class:dragging
     style:--fuse-left={fullCard && splitPx !== null ? `${splitPx}px` : null}
     aria-busy={fuseState.isLoadingLength ||
@@ -254,36 +376,62 @@
       onOpenOptions={() => (settingsOpen = true)}
     />
     {#if !controlsInDrawer}
-      <div class="fuse-mode-row">
-        <FuseModeBar />
-        {#if fuseState.mode === "symmetry"}
-          <FuseTransformPicker />
-        {/if}
-      </div>
+      <FuseRelationshipComposer />
     {/if}
     {#if fullCard}
       <div class="fuse-left-col" bind:this={leftColEl}>
-        <FuseSourceCard side="blue" full={true} {stepCols} />
-        <FuseSourceCard side="red" full={true} {stepCols} />
+        <FuseSourceCard
+          side="blue"
+          full={true}
+          {stepCols}
+          onChooseFirstStep={openFirstStep}
+          firstStepPickerActive={inlineFirstStepSide === "blue"}
+          onFirstStepComplete={closeInlineFirstStep}
+          onCancelFirstStep={closeInlineFirstStep}
+        />
+        <FuseSourceCard
+          side="red"
+          full={true}
+          {stepCols}
+          onChooseFirstStep={openFirstStep}
+          firstStepPickerActive={inlineFirstStepSide === "red"}
+          onFirstStepComplete={closeInlineFirstStep}
+          onCancelFirstStep={closeInlineFirstStep}
+        />
         <div
           class="split-handle"
           role="slider"
           tabindex="0"
           aria-label="Resize path panel"
           aria-orientation="vertical"
-          aria-valuemin={MIN_LEFT}
+          aria-valuemin={minLeft()}
           aria-valuemax={maxLeft()}
           aria-valuenow={splitPx ?? 0}
+          aria-valuetext={`${splitPx ?? 0} pixels for source paths`}
           onpointerdown={onSplitDown}
           onpointermove={onSplitMove}
           onpointerup={onSplitUp}
           onpointercancel={onSplitUp}
           ondblclick={onSplitReset}
-        ></div>
+          onkeydown={onSplitKeyDown}
+        >
+          <span class="split-flow" aria-hidden="true">
+            <span class="pair-dots">
+              <span class="path-dot blue-dot"></span>
+              <span class="path-dot red-dot"></span>
+            </span>
+            <i class="fas fa-plus"></i>
+            <i class="fas fa-arrow-right"></i>
+          </span>
+        </div>
       </div>
     {:else if compact}
       <div class="fuse-mobile-sources" aria-label="Source paths">
-        <FuseSourceCard side="blue" compactHero={true} />
+        <FuseSourceCard
+          side="blue"
+          compactHero={true}
+          onChooseFirstStep={openFirstStep}
+        />
         <div class="fusion-bridge" aria-hidden="true">
           <span class="fusion-beam beam-blue"></span>
           <span class="fusion-core">
@@ -294,25 +442,64 @@
           <span class="fusion-spark spark-two"></span>
           <span class="fusion-spark spark-three"></span>
         </div>
-        <FuseSourceCard side="red" compactHero={true} />
+        <FuseSourceCard
+          side="red"
+          compactHero={true}
+          onChooseFirstStep={openFirstStep}
+        />
       </div>
     {:else if landscapeSplit}
       <div class="fuse-left-col">
-        <FuseSourceCard side="blue" full={false} />
-        <FuseSourceCard side="red" full={false} />
+        <FuseSourceCard
+          side="blue"
+          full={false}
+          onChooseFirstStep={openFirstStep}
+          firstStepPickerActive={inlineFirstStepSide === "blue"}
+          onFirstStepComplete={closeInlineFirstStep}
+          onCancelFirstStep={closeInlineFirstStep}
+        />
+        <FuseSourceCard
+          side="red"
+          full={false}
+          onChooseFirstStep={openFirstStep}
+          firstStepPickerActive={inlineFirstStepSide === "red"}
+          onFirstStepComplete={closeInlineFirstStep}
+          onCancelFirstStep={closeInlineFirstStep}
+        />
       </div>
     {:else}
-      <FuseSourceCard side="blue" full={false} />
-      <FuseSourceCard side="red" full={false} />
+      <FuseSourceCard
+        side="blue"
+        full={false}
+        onChooseFirstStep={openFirstStep}
+        firstStepPickerActive={inlineFirstStepSide === "blue"}
+        onFirstStepComplete={closeInlineFirstStep}
+        onCancelFirstStep={closeInlineFirstStep}
+      />
+      <FuseSourceCard
+        side="red"
+        full={false}
+        onChooseFirstStep={openFirstStep}
+        firstStepPickerActive={inlineFirstStepSide === "red"}
+        onFirstStepComplete={closeInlineFirstStep}
+        onCancelFirstStep={closeInlineFirstStep}
+      />
     {/if}
     <FusePreviewStage
       onOpenViewer={handleOpenViewer}
+      onShare={handleShare}
+      onSave={handleSaveResult}
+      isSaving={isSavingResult}
       {compact}
-      condensedAction={landscapeSplit}
     />
   </div>
 
   <FuseSettingsDrawer bind:isOpen={settingsOpen} />
+  <FuseFirstStepPanel
+    bind:isOpen={firstStepOpen}
+    side={actionSide}
+    onClose={closeFirstStep}
+  />
 </div>
 
 <style>
@@ -426,18 +613,30 @@
     height: 30px;
     transform: translate(-50%, -50%);
     border: 1px solid
-      color-mix(in srgb, var(--semantic-warning, #f97316) 76%, white);
+      color-mix(
+        in srgb,
+        var(--semantic-warning, #f97316) 76%,
+        var(--theme-text, #fff)
+      );
     border-radius: 50%;
-    color: #fff4df;
+    color: color-mix(
+      in srgb,
+      var(--semantic-warning, #f97316) 24%,
+      var(--theme-text, #fff)
+    );
     background:
       radial-gradient(
         circle at 35% 30%,
-        rgba(255, 255, 255, 0.34),
+        color-mix(in srgb, var(--theme-text, #fff) 34%, transparent),
         transparent 34%
       ),
-      color-mix(in srgb, var(--semantic-warning, #f97316) 72%, #17131d);
+      color-mix(
+        in srgb,
+        var(--semantic-warning, #f97316) 72%,
+        var(--theme-panel-bg, #17131d)
+      );
     box-shadow:
-      0 0 0 3px rgba(0, 0, 0, 0.56),
+      0 0 0 3px color-mix(in srgb, var(--theme-shadow) 56%, transparent),
       0 0 16px
         color-mix(in srgb, var(--semantic-warning, #f97316) 58%, transparent);
     font-size: 12px;
@@ -449,8 +648,12 @@
     width: 3px;
     height: 3px;
     border-radius: 50%;
-    background: #ffe3a3;
-    box-shadow: 0 0 6px #fb923c;
+    background: color-mix(
+      in srgb,
+      var(--semantic-warning, #f97316) 36%,
+      var(--theme-text, #fff)
+    );
+    box-shadow: 0 0 6px var(--semantic-warning, #f97316);
     animation: fusion-spark 1500ms ease-in-out infinite;
   }
 
@@ -475,13 +678,13 @@
     0%,
     100% {
       box-shadow:
-        0 0 0 3px rgba(0, 0, 0, 0.56),
+        0 0 0 3px color-mix(in srgb, var(--theme-shadow) 56%, transparent),
         0 0 11px
           color-mix(in srgb, var(--semantic-warning, #f97316) 42%, transparent);
     }
     50% {
       box-shadow:
-        0 0 0 3px rgba(0, 0, 0, 0.56),
+        0 0 0 3px color-mix(in srgb, var(--theme-shadow) 56%, transparent),
         0 0 20px
           color-mix(in srgb, var(--semantic-warning, #f97316) 72%, transparent);
     }
@@ -572,18 +775,6 @@
     }
   }
 
-  /* Mode row: the shuffle/symmetry switch, plus the symmetry transform picker
-     when it's on. Spans the full width in every layout (grid-area: mode). Wraps
-     so the mode bar and picker stack on narrow containers. */
-  .fuse-mode-row {
-    grid-area: mode;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--settings-spacing-sm, 10px);
-    min-width: 0;
-  }
-
   /* Desktop path column: blue over red, with the drag seam pinned to its right
      edge. Only rendered at the locked desktop size, so grid-area: left never
      applies in the narrower layouts. */
@@ -621,11 +812,61 @@
     transform: translateX(-50%);
     width: 2px;
     height: 100%;
-    background: rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--theme-text, #fff) 8%, transparent);
     border-radius: 1px;
     transition:
       background 150ms ease,
       width 150ms ease;
+  }
+
+  .split-handle:focus-visible::before {
+    width: 4px;
+    background: var(--theme-accent, #8b6cff);
+  }
+
+  /* 4K gives the result the additional room. The source workbench stops
+     growing once its full LOOP cards are comfortably readable. */
+  @container fuse (min-width: 1680px) and (min-height: 900px) {
+    .fuse-workspace {
+      --font-size-min: 16px;
+      --font-size-compact: 14px;
+      --font-size-sm: 17px;
+      --min-touch-target: 48px;
+      grid-template-columns: var(--fuse-left, 1400px) minmax(0, 1fr);
+      grid-template-rows: max-content max-content minmax(0, 1fr);
+      grid-template-areas:
+        "header header"
+        "mode preview"
+        "left preview";
+      gap: 18px;
+      padding: 24px;
+    }
+
+    .fuse-left-col {
+      gap: 18px;
+    }
+
+    .split-flow {
+      display: flex;
+    }
+  }
+
+  /* At native 4K the two halves become a real workbench rather than a 1080p
+     layout surrounded by pixels. The source tools scale for arm's-length use,
+     while the result keeps the larger share of the canvas. */
+  @container fuse (min-width: 2600px) and (min-height: 1400px) {
+    .fuse-workspace {
+      --font-size-min: 18px;
+      --font-size-compact: 16px;
+      --font-size-sm: 19px;
+      --min-touch-target: 64px;
+      gap: 24px;
+      padding: 32px;
+    }
+
+    .fuse-left-col {
+      gap: 24px;
+    }
   }
 
   .split-handle::after {
@@ -637,10 +878,62 @@
     width: 4px;
     height: 44px;
     border-radius: 2px;
-    background: rgba(255, 255, 255, 0.18);
+    background: color-mix(in srgb, var(--theme-text, #fff) 18%, transparent);
     transition:
       background 150ms ease,
       height 150ms ease;
+  }
+
+  .split-flow {
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    left: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: 82px;
+    height: 54px;
+    transform: translate(-50%, -50%);
+    border: 1px solid
+      color-mix(
+        in srgb,
+        var(--semantic-warning, #f97316) 48%,
+        var(--theme-stroke)
+      );
+    border-radius: 999px;
+    color: color-mix(
+      in srgb,
+      var(--semantic-warning, #f97316) 78%,
+      var(--theme-text, #fff)
+    );
+    background: var(--theme-panel-bg, #0c0e16);
+    box-shadow: 0 10px 28px var(--theme-shadow, rgba(0, 0, 0, 0.4));
+    font-size: 13px;
+    pointer-events: none;
+  }
+
+  .pair-dots {
+    display: grid;
+    gap: 4px;
+  }
+
+  .path-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  .blue-dot {
+    color: var(--prop-blue, #2196f3);
+    background: currentColor;
+  }
+
+  .red-dot {
+    color: var(--prop-red, #f44336);
+    background: currentColor;
   }
 
   .split-handle:hover::before,

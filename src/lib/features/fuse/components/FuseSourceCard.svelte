@@ -2,21 +2,23 @@
   import type { BrowseViewMode } from "$lib/shared/browse/domain/browse-view-mode";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import OverflowMenu from "$lib/shared/ui/components/OverflowMenu.svelte";
-  import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import FuseVtgPathPicker from "./FuseVtgPathPicker.svelte";
+  import FuseSoloLoopPicker from "./FuseSoloLoopPicker.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import {
-    createSequenceData,
-    type SequenceData,
-  } from "$lib/shared/foundation/domain/models/sequence-data";
-  import {
-    extractBlueSoloProp,
-    extractRedSoloProp,
-  } from "$lib/shared/foundation/services/sequence-decomposer";
+  import FuseLivePathGrid from "./FuseLivePathGrid.svelte";
+  import FuseSourceActionPopover from "./FuseSourceActionPopover.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { getSoloPropSaveOrchestrator } from "$lib/features/library/get-solo-prop-save-orchestrator";
+  import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { getFuseContext } from "../context/fuse-context";
-  import { FUSE_TRANSFORMS } from "../state/fuse-state.svelte";
+  import {
+    FUSE_TRANSFORMS,
+    type FuseSourceAdjustment,
+  } from "../state/fuse-state.svelte";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
 
   let {
@@ -24,6 +26,10 @@
     full = false,
     compactHero = false,
     stepCols = 4,
+    onChooseFirstStep,
+    firstStepPickerActive = false,
+    onFirstStepComplete,
+    onCancelFirstStep,
   }: {
     side: FuseSide;
     // Big desktop only: render the complete choreo card — start position plus
@@ -35,6 +41,10 @@
     // Step column count FuseLayout picked to maximize pictograph size for the
     // current seam width and length. Only used in full (desktop) mode.
     stepCols?: number;
+    onChooseFirstStep: (side: FuseSide) => void;
+    firstStepPickerActive?: boolean;
+    onFirstStepComplete?: (side: FuseSide) => void;
+    onCancelFirstStep?: () => void;
   } = $props();
 
   const { state: fuseState } = getFuseContext();
@@ -60,6 +70,7 @@
       fuseState.pendingSide !== null ||
       fuseState.isFusing
   );
+  let isSavingLoop = $state(false);
 
   // Symmetry mode: the driver keeps its source + controls; the follower renders
   // the derived result (fuseState.symmetryPreview) read-only, so this card shows the
@@ -114,6 +125,22 @@
   const stepColumns = $derived<number | null>(
     full ? stepCols : bestStageCols(stageW, stageH, stepCount)
   );
+  const liveGridColumns = $derived(Math.max(1, stepColumns ?? 1));
+  const liveGridRows = $derived(
+    Math.max(1, Math.ceil(stepCount / liveGridColumns), full ? 2 : 1)
+  );
+  const liveGridTotalColumns = $derived(liveGridColumns + (full ? 1 : 0));
+  const liveCellSize = $derived(
+    Math.max(
+      72,
+      Math.floor(
+        Math.min(
+          stageW / Math.max(1, liveGridTotalColumns),
+          stageH / Math.max(1, liveGridRows)
+        )
+      ) || 120
+    )
+  );
 
   // Phone cards keep one canonical pictograph renderer mounted and feed it the
   // playing step. This avoids ChoreoCard's heavy-content crossfade, preserves a
@@ -152,35 +179,57 @@
   // of a cold render. Same props as the live card => identical cache keys.
   const nextSequence = $derived(source.nextSequence);
 
-  // Library source pick: open a sequence picker filtered to the current fused
-  // length, then inject the chosen sequence's hand for this side. Gated with
-  // {#if} so the browse engine only instantiates on open (two source cards).
+  // Saved-source selection is solo-only. The picker rejects ordinary two-hand
+  // sequences and any solo path without a recognized, seamless LOOP.
   let pickerOpen = $state(false);
 
-  function openLibraryPicker(): void {
+  async function openLibraryPicker(): Promise<void> {
+    await ensureGuestIdentity();
     pickerOpen = true;
   }
 
   async function handleLibrarySelect(sequence: SequenceData): Promise<void> {
-    // Extract just this side's hand from the picked two-hand sequence and wrap
-    // it as a single-hand source carrying the side's soloProp; setSource fuses
-    // it against the counterpart's current path and tiles it to the length.
-    const solo =
-      side === "blue"
-        ? extractBlueSoloProp(sequence)
-        : extractRedSoloProp(sequence);
-    const wrapped = createSequenceData({
-      id: sequence.id,
-      word: sequence.word,
-      name: sequence.name,
-      ...(side === "blue" ? { blueSoloProp: solo } : { redSoloProp: solo }),
-    });
-    await fuseState.setSource(side, wrapped, {
+    await fuseState.setSource(side, sequence, {
       kind: "library",
       id: sequence.id,
       word: sequence.word,
       name: sequence.name,
     });
+  }
+
+  async function saveCurrentLoop(): Promise<void> {
+    if (isSavingLoop || !source.sequence) return;
+    const solo =
+      side === "blue"
+        ? source.sequence.blueSoloProp
+        : source.sequence.redSoloProp;
+    if (!solo) {
+      showToast("This path is not ready to save yet", "info");
+      return;
+    }
+
+    isSavingLoop = true;
+    try {
+      await ensureGuestIdentity();
+      const result = await getSoloPropSaveOrchestrator().save(solo, {
+        name: `${label} ${solo.length}-step LOOP`,
+        notes: "Created in Fuse",
+        authoredHand: side === "blue" ? "left" : "right",
+        ownerId: authState.effectiveUserId ?? undefined,
+        ownerDisplayName: authState.user?.displayName ?? undefined,
+      });
+      showToast(
+        result.reusedExisting
+          ? "That one-hand LOOP is already saved"
+          : `${label} one-hand LOOP saved`,
+        "success"
+      );
+    } catch (failure) {
+      console.error(`[FuseSourceCard] Failed to save ${side} LOOP`, failure);
+      showToast("Couldn't save that one-hand LOOP. Try again.", "error");
+    } finally {
+      isSavingLoop = false;
+    }
   }
 
   // VTG source pick: open the flower picker, then inject the chosen single-hand
@@ -193,6 +242,19 @@
     vtgOpen = true;
   }
 
+  function apply(adjustment: FuseSourceAdjustment): void {
+    void fuseState.adjustSource(side, adjustment);
+  }
+
+  async function chooseInlineFirstStep(stepIndex: number): Promise<void> {
+    if (!firstStepPickerActive) return;
+    await fuseState.adjustSource(side, {
+      kind: "first-step",
+      step: stepIndex + 1,
+    });
+    onFirstStepComplete?.(side);
+  }
+
   async function handleVtgSelect(
     sequence: SequenceData,
     label: string
@@ -200,29 +262,76 @@
     await fuseState.setSource(side, sequence, { kind: "vtg", label });
   }
 
-  const sourceMenuItems = $derived([
-    {
-      label: "Pick from library",
-      icon: "fas fa-book",
-      action: openLibraryPicker,
-    },
-    {
-      label: "Pick a VTG path",
-      icon: "fas fa-fan",
-      action: openVtgPicker,
-    },
-  ]);
   const compactSourceMenuItems = $derived([
     ...(source.canGoBack
       ? [
           {
             label: "Previous path",
             icon: "fas fa-arrow-rotate-left",
-            action: () => fuseState.previous(side),
+            action: (): void => {
+              fuseState.previous(side);
+            },
           },
         ]
       : []),
-    ...sourceMenuItems,
+    {
+      label: "Regenerate path",
+      icon: "fas fa-wand-magic-sparkles",
+      action: () => void fuseState.shuffle(side),
+    },
+    {
+      label: isSavingLoop ? "Saving LOOP..." : "Save LOOP",
+      icon: isSavingLoop ? "fas fa-spinner fa-spin" : "fas fa-bookmark",
+      action: (): void => {
+        void saveCurrentLoop();
+      },
+      disabled: isSavingLoop || !source.sequence,
+    },
+    {
+      label: "Choose saved LOOP",
+      icon: "fas fa-book",
+      action: () => void openLibraryPicker(),
+    },
+    {
+      label: "Choose path",
+      icon: "fas fa-fan",
+      action: openVtgPicker,
+    },
+    {
+      label: "Mirror path",
+      icon: "fas fa-left-right",
+      action: () => apply({ kind: "mirror" }),
+    },
+    {
+      label: "Flip path",
+      icon: "fas fa-up-down",
+      action: () => apply({ kind: "flip" }),
+    },
+    {
+      label: "Invert turns",
+      icon: "fas fa-repeat",
+      action: () => apply({ kind: "invert" }),
+    },
+    {
+      label: "Rotate left 90°",
+      icon: "fas fa-rotate-left",
+      action: () => apply({ kind: "rotate", quarterTurns: -1 }),
+    },
+    {
+      label: "Rotate right 90°",
+      icon: "fas fa-rotate-right",
+      action: () => apply({ kind: "rotate", quarterTurns: 1 }),
+    },
+    {
+      label: "Choose first step",
+      icon: "fas fa-forward",
+      action: () => onChooseFirstStep(side),
+    },
+    {
+      label: "Reset adjustments",
+      icon: "fas fa-arrow-rotate-left",
+      action: () => apply({ kind: "reset" }),
+    },
   ]);
 </script>
 
@@ -230,6 +339,7 @@
   class="source-card {side}-source"
   class:loading={source.isLoading}
   class:compact-hero={compactHero}
+  class:first-step-picker={firstStepPickerActive}
   aria-label="{label} path"
   aria-busy={source.isLoading}
 >
@@ -256,29 +366,25 @@
           bluePropTypeOverride={settings.bluePropType}
           redPropTypeOverride={settings.redPropType}
           stepNumberOverride={false}
+          cellIndex={0}
+          transitionKey={`fuse-${side}-compact`}
         />
       </div>
     {:else if displaySequence}
       <div class="notation-scroll themed-scrollbar">
-        <ChoreoCard
+        <FuseLivePathGrid
           sequence={displaySequence}
-          browseViewMode={viewMode}
-          columnCount={stepColumns}
-          startPositionLayoutOverride={startLayout}
-          includeStartPosition={full}
+          {side}
+          columns={liveGridColumns}
+          cellSize={liveCellSize}
+          includeStart={full}
           showMandala={full}
-          showWord={false}
-          showStepNumbers={true}
-          showDifficultyLevel={false}
-          showNotes={false}
-          showLoopGlyph={false}
-          showHighlight={true}
           highlightedStepIndex={highlightIndex}
-          darkMode={true}
           bluePropType={settings.bluePropType}
           redPropType={settings.redPropType}
-          hideSoloHeader={true}
-          fitWidth={true}
+          onStepClick={firstStepPickerActive
+            ? (stepIndex) => void chooseInlineFirstStep(stepIndex)
+            : undefined}
         />
       </div>
     {:else if source.isLoading || isSymmetryFollower}
@@ -295,7 +401,7 @@
 
     {#if source.isLoading && displaySequence && !isSymmetryFollower}
       <div class="notation-loading" aria-hidden="true">
-        <i class="fas fa-shuffle fa-spin"></i>
+        <i class="fas fa-spinner fa-spin"></i>
       </div>
     {/if}
   </div>
@@ -316,6 +422,7 @@
           disabled={sourceControlsDisabled}
           ariaLabel="{label} path options"
           placement="bottom"
+          align={side === "blue" ? "left" : "right"}
         />
       </div>
     {/if}
@@ -327,40 +434,75 @@
       <span>{followerTransformLabel} of {driverLabel}</span>
     </div>
   {:else if !compactHero}
-    <div class="source-actions">
-      <PanelButton
-        variant="secondary"
-        fullWidth={true}
-        disabled={sourceControlsDisabled || !source.canGoBack}
-        onclick={() => fuseState.previous(side)}
-      >
-        <i class="fas fa-arrow-rotate-left" aria-hidden="true"></i>
-        Back
-      </PanelButton>
-      <div class="shuffle-slot">
+    {#if firstStepPickerActive}
+      <div class="first-step-toolbar" role="status" aria-live="polite">
+        <div>
+          <i class="fas fa-arrow-pointer" aria-hidden="true"></i>
+          <span
+            ><strong>Choose the new step 1.</strong> Click any beat above.</span
+          >
+        </div>
+        <PanelButton variant="secondary" onclick={onCancelFirstStep}>
+          Cancel
+        </PanelButton>
+      </div>
+    {:else}
+      <div class="source-actions">
         <PanelButton
           variant="secondary"
           fullWidth={true}
-          disabled={sourceControlsDisabled || !source.sequence}
-          onclick={() => void fuseState.shuffle(side)}
+          disabled={sourceControlsDisabled || !source.canGoBack}
+          onclick={() => fuseState.previous(side)}
         >
-          <i class="fas fa-shuffle" aria-hidden="true"></i>
-          Shuffle
+          <i class="fas fa-arrow-rotate-left" aria-hidden="true"></i>
+          Previous
         </PanelButton>
-      </div>
-      <div class="source-menu">
-        <OverflowMenu
-          items={sourceMenuItems}
+        <div class="shuffle-slot">
+          <PanelButton
+            variant="secondary"
+            fullWidth={true}
+            disabled={sourceControlsDisabled || !source.sequence}
+            onclick={() => void fuseState.shuffle(side)}
+          >
+            <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+            Regenerate
+          </PanelButton>
+        </div>
+        <PanelButton
+          variant="secondary"
+          disabled={sourceControlsDisabled || !source.sequence || isSavingLoop}
+          ariaBusy={isSavingLoop}
+          onclick={() => void saveCurrentLoop()}
+        >
+          <i
+            class="fas {isSavingLoop ? 'fa-spinner fa-spin' : 'fa-bookmark'}"
+            aria-hidden="true"
+          ></i>
+          {isSavingLoop ? "Saving..." : "Save LOOP"}
+        </PanelButton>
+        <PanelButton
+          variant="secondary"
           disabled={sourceControlsDisabled}
+          onclick={() => void openLibraryPicker()}
+        >
+          <i class="fas fa-book" aria-hidden="true"></i>
+          Saved LOOP
+        </PanelButton>
+        <PanelButton
+          variant="secondary"
+          disabled={sourceControlsDisabled}
+          onclick={openVtgPicker}
+        >
+          <i class="fas fa-fan" aria-hidden="true"></i>
+          Shape path
+        </PanelButton>
+        <FuseSourceActionPopover
+          {side}
+          disabled={sourceControlsDisabled || !source.sequence}
+          {onChooseFirstStep}
         />
       </div>
-    </div>
-  {/if}
-
-  {#if source.revision > 1}
-    {#key source.revision}
-      <span class="change-flash" aria-hidden="true"></span>
-    {/key}
+    {/if}
   {/if}
 </section>
 
@@ -390,10 +532,10 @@
 {/if}
 
 {#if pickerOpen}
-  <SequencePickerModal
+  <FuseSoloLoopPicker
     open
-    title="Pick a {label} path"
-    requiredBeatCount={fuseState.appliedLength}
+    {side}
+    length={fuseState.appliedLength ?? 0}
     onSelect={handleLibrarySelect}
     onClose={() => (pickerOpen = false)}
   />
@@ -442,6 +584,13 @@
     border-style: dashed;
   }
 
+  .source-card.first-step-picker {
+    border-color: color-mix(in srgb, var(--source-color) 72%, white);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--source-color) 35%, transparent),
+      0 0 28px color-mix(in srgb, var(--source-color) 18%, transparent);
+  }
+
   .notation-empty {
     display: grid;
     place-items: center;
@@ -468,7 +617,7 @@
     overflow: hidden;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--settings-radius-md, 14px);
-    background: color-mix(in srgb, var(--theme-panel-bg) 84%, black);
+    background: var(--theme-panel-bg);
   }
 
   .notation-scroll {
@@ -515,7 +664,7 @@
     padding: 4px 6px;
     border-radius: 999px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.72));
-    background: rgba(0, 0, 0, 0.76);
+    background: var(--theme-panel-bg);
     font-size: var(--font-size-min, 14px);
     font-variant-numeric: tabular-nums;
     font-weight: 700;
@@ -542,7 +691,7 @@
     background: color-mix(
       in srgb,
       var(--source-color) 17%,
-      rgba(0, 0, 0, 0.76)
+      var(--theme-panel-bg)
     );
     font-size: var(--font-size-min, 14px);
   }
@@ -565,16 +714,47 @@
     height: 30px;
     border-radius: 50%;
     color: color-mix(in srgb, var(--source-color) 85%, white);
-    background: color-mix(in srgb, var(--theme-panel-bg) 70%, transparent);
-    backdrop-filter: blur(2px);
+    background: var(--theme-panel-bg);
     font-size: 14px;
   }
 
   .source-actions {
     display: grid;
-    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) auto;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: var(--settings-spacing-sm, 8px);
     margin-top: auto;
+  }
+
+  .first-step-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: var(--min-touch-target, 44px);
+    margin-top: auto;
+    padding: 6px 8px 6px 14px;
+    border: 1px solid
+      color-mix(in srgb, var(--source-color) 58%, var(--theme-stroke));
+    border-radius: var(--settings-radius-md, 14px);
+    background: color-mix(
+      in srgb,
+      var(--source-color) 12%,
+      var(--theme-panel-bg)
+    );
+  }
+
+  .first-step-toolbar > div {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.72));
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .first-step-toolbar i,
+  .first-step-toolbar strong {
+    color: color-mix(in srgb, var(--source-color) 76%, white);
   }
 
   /* Read-only footer for the derived follower in symmetry mode. Occupies the
@@ -592,19 +772,12 @@
       color-mix(in srgb, var(--source-color) 40%, var(--theme-stroke));
     border-radius: var(--settings-radius-md, 14px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    font-size: var(--font-size-compact, 0.8rem);
+    font-size: var(--font-size-min, 14px);
     font-weight: 600;
   }
 
   .follower-note i {
     color: color-mix(in srgb, var(--source-color) 80%, white);
-  }
-
-  /* The overflow menu anchors its dropdown to itself and opens upward, so it
-     stays inside the card even though the card clips overflow. */
-  .source-menu {
-    display: flex;
-    align-items: stretch;
   }
 
   /* Shuffle is the primary action, tinted in the path's color; the word "Blue"
@@ -636,29 +809,6 @@
     overflow: hidden;
     opacity: 0;
     pointer-events: none;
-  }
-
-  .change-flash {
-    position: absolute;
-    inset: 2px;
-    pointer-events: none;
-    border: 2px solid color-mix(in srgb, var(--source-color) 72%, white);
-    border-radius: calc(var(--settings-radius-lg, 20px) - 2px);
-    animation: source-change 240ms ease-out both;
-  }
-
-  @keyframes source-change {
-    0% {
-      opacity: 0;
-      transform: scale(0.99);
-    }
-    35% {
-      opacity: 0.85;
-    }
-    100% {
-      opacity: 0;
-      transform: scale(1);
-    }
   }
 
   @keyframes loading-pulse {
@@ -714,6 +864,13 @@
         var(--theme-card-bg, rgba(255, 255, 255, 0.045));
     }
 
+    /* The compact menu is intentionally local to its source card. Raise that
+       card while the trigger/menu owns focus so the result controls below do
+       not paint over the lower transform actions. */
+    .source-card.compact-hero:focus-within {
+      z-index: 30;
+    }
+
     .compact-hero .notation-stage {
       flex: 1 1 0;
       min-height: 0;
@@ -753,6 +910,42 @@
 
     .compact-hero :global(.overflow-dropdown) {
       min-width: 160px;
+      max-height: min(70vh, 520px);
+      overflow-y: auto;
+    }
+  }
+
+  @container fuse (min-width: 600px) and (max-width: 1500px) {
+    .source-actions {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .first-step-toolbar {
+      min-height: calc(var(--min-touch-target, 44px) * 2 + 8px);
+    }
+  }
+
+  @container fuse (min-width: 1100px) and (max-width: 1500px) and (min-height: 780px) {
+    .source-card {
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .source-actions {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+  }
+
+  @container fuse (min-width: 1680px) and (min-height: 900px) {
+    .source-actions :global(.panel-btn) {
+      min-width: 0;
+      padding-inline: 12px;
+      font-size: 16px;
+      white-space: nowrap;
+    }
+
+    .follower-note {
+      font-size: 16px;
     }
   }
 
@@ -780,6 +973,12 @@
   @container fuse (min-width: 1100px) and (min-height: 780px) {
     .notation-stage {
       min-height: 120px;
+    }
+  }
+
+  @container fuse (min-width: 1100px) and (max-width: 1500px) and (min-height: 780px) {
+    .notation-stage {
+      min-height: 64px;
     }
   }
 

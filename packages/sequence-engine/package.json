@@ -26,6 +26,11 @@
       "import": "./dist/loop/index.js",
       "default": "./dist/loop/index.js"
     },
+    "./loop/solo": {
+      "types": "./src/loop/solo/solo-loop.ts",
+      "import": "./dist/loop/solo/solo-loop.js",
+      "default": "./dist/loop/solo/solo-loop.js"
+    },
     "./analysis": {
       "types": "./src/analysis/index.ts",
       "import": "./dist/analysis/index.js",

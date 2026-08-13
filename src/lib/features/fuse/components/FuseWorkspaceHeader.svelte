@@ -14,7 +14,7 @@
   const { state: fuseState } = getFuseContext();
 
   const compactModeLabel = $derived.by(() => {
-    if (fuseState.mode === "shuffle") return "Shuffle";
+    if (fuseState.mode === "shuffle") return "Independent";
     const transformLabel =
       FUSE_TRANSFORMS.find(
         (transform) => transform.id === fuseState.transformId
@@ -30,7 +30,7 @@
   {#if compact}
     <div class="sr-only">
       <h2>Fuse two paths</h2>
-      <p>Shuffle Blue or Red, then Fuse.</p>
+      <p>Generate or adjust either one-hand LOOP, then Fuse.</p>
     </div>
 
     <div class="compact-summary" aria-label="Current Fuse options">
@@ -185,6 +185,21 @@
         var(--theme-panel-bg, #0c0e16) 88%,
         transparent
       );
+    }
+  }
+
+  @container fuse (min-width: 1680px) and (min-height: 900px) {
+    .fuse-header {
+      min-height: 72px;
+      padding-inline: 20px;
+    }
+
+    h2 {
+      font-size: 1.65rem;
+    }
+
+    .length-field {
+      width: 31rem;
     }
   }
 </style>

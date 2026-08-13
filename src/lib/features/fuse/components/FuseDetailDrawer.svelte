@@ -71,14 +71,14 @@
           <span class="step-number" aria-hidden="true">1</span>
           <div>
             <h3>Set the length</h3>
-            <p>Both path pools use the same step count.</p>
+            <p>Both one-hand LOOPs use the same step count.</p>
           </div>
         </section>
         <section class="help-step">
           <span class="step-number" aria-hidden="true">2</span>
           <div>
-            <h3>Shuffle either path</h3>
-            <p>Back returns to the last path you saw.</p>
+            <h3>Shape either LOOP</h3>
+            <p>Generate, choose, or adjust each source independently.</p>
           </div>
         </section>
         <section class="help-step">
