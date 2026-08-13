@@ -14,7 +14,22 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/fire-types";
 
-export const EFFECTS_CONFIG_VERSION = 31;
+export const EFFECTS_CONFIG_VERSION = 34;
+
+/** User-facing 2D Fire look. The renderer translates this into its internal profile. */
+export type FireRenderingStyle = "natural" | "liquid";
+
+/** Canonical Silk intensity range shared by controls, state, and persistence. */
+export const SILK_INTENSITY_MIN = 0;
+export const SILK_INTENSITY_MAX = 0.65;
+export const SILK_INTENSITY_DEFAULT = 0.5;
+
+export function clampSilkIntensity(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return SILK_INTENSITY_DEFAULT;
+  }
+  return Math.max(SILK_INTENSITY_MIN, Math.min(SILK_INTENSITY_MAX, value));
+}
 
 export type EffectType =
   | "none"
@@ -54,6 +69,8 @@ export interface TrailsIntent {
 }
 
 export interface FireIntent {
+  /** Natural uses the defined hot-core flame; Liquid restores the broad flowing look. */
+  renderingStyle: FireRenderingStyle;
   /** 0.45-1.0. Overall fire strength (drives emission rate / density). */
   intensity: number;
   /**
@@ -166,6 +183,10 @@ export interface SparklesIntent {
  * stick line, the actual prop graphic. See ghost-2d-renderer.ts.
  */
 export interface GhostIntent {
+  /** Hex — frozen exposures from the blue prop. */
+  blueColor: string;
+  /** Hex — frozen exposures from the red prop. */
+  redColor: string;
   /** 0-1 — overall trail opacity (master brightness). */
   intensity: number;
   /** 1-10 — Persistence: how long each ghost lingers before fading to nothing. */
@@ -177,6 +198,8 @@ export interface GhostIntent {
 export interface BloomIntent {
   /** 0-1 - peak alpha at halo center. */
   intensity: number;
+  /** 0-1 - white source strength, independent of the colored halo. */
+  coreStrength: number;
   /** 8-200 px - halo radius in 2D. 3D billboard scales proportionally. */
   radius: number;
   /** Hex - used when colorMode === "solid". */
@@ -190,7 +213,7 @@ export interface BloomIntent {
    * "palette" = pick from palette by tipIndex.
    */
   colorMode: "solid" | "prop-matched" | "rainbow" | "palette";
-  /** "smooth" = gaussian falloff, "sharp" = tighter hot core, "ring" = hollow corona. */
+  /** "smooth" = gaussian falloff, "sharp" = tighter halo. "ring" is legacy-only. */
   falloff: "smooth" | "sharp" | "ring";
   /** 0-1 - breathing amplitude (0 = static halo, 1 = full on/off pulse). */
   pulse: number;
@@ -202,7 +225,7 @@ export interface BloomIntent {
   /** 0-1 - diffraction star-spike brightness (the lens glint off a bright
    *  point). 0 = no spikes. */
   spikes: number;
-  /** 0-1 - chromatic aberration. Red/blue fringe offset grows with tip speed. */
+  /** 0-1 - spectral dispersion trailing a moving white source. */
   chromatic: number;
   /** 0-1 - long-exposure afterglow persistence. 0 = none (draw-fresh each
    *  frame), 1 = light trail lingers ~1s. */
@@ -299,7 +322,14 @@ export interface InkIntent {
   /** 0-1. Stroke width + opacity. */
   intensity: number;
   /** Named palette. "custom" uses customColor. */
-  palette: "india" | "sumi" | "watercolor" | "neon" | "blood" | "acid" | "custom";
+  palette:
+    | "india"
+    | "sumi"
+    | "watercolor"
+    | "neon"
+    | "blood"
+    | "acid"
+    | "custom";
   /** Hex string. Used only when palette === "custom". */
   customColor: string;
   /**
@@ -330,7 +360,14 @@ export interface SmokeIntent {
    * (lifetime, curl bias, rise bias) alongside color. "custom" uses
    * customColor with neutral behavior defaults.
    */
-  palette: "incense" | "fog" | "genie" | "cursed" | "spirit" | "campfire" | "custom";
+  palette:
+    | "incense"
+    | "fog"
+    | "genie"
+    | "cursed"
+    | "spirit"
+    | "campfire"
+    | "custom";
   /** Hex string. Used only when palette === "custom". */
   customColor: string;
   /** 0-1. Curl noise magnitude. 0 = straight rise, 1 = chaotic swirl. Multiplied by palette.curlBias. */
@@ -349,7 +386,14 @@ export interface FrostIntent {
   /** 0-1. Crystal size + frost density. */
   intensity: number;
   /** Named palette. "custom" uses customColor. */
-  palette: "glacial" | "breath" | "black_ice" | "aurora" | "diamond" | "cursed" | "custom";
+  palette:
+    | "glacial"
+    | "breath"
+    | "black_ice"
+    | "aurora"
+    | "diamond"
+    | "cursed"
+    | "custom";
   /** Hex string. Used only when palette === "custom". */
   customColor: string;
   /** 0-1. Crystal angular complexity. 0 = simple hexagons, 1 = branching dendrites. */
@@ -361,7 +405,7 @@ export interface FrostIntent {
 }
 
 export interface SilkIntent {
-  /** 0-1. Overall opacity + width multiplier. */
+  /** 0-0.65. Overall opacity + width multiplier. */
   intensity: number;
   /** 0-1. Base ribbon half-width before velocity scaling. Maps to 5-30px. */
   width: number;
@@ -372,7 +416,14 @@ export interface SilkIntent {
   /** 0-1. How much velocity narrows the ribbon. 0 = constant width, 1 = dramatic speed contrast. */
   tautness: number;
   /** Named palette. "custom" uses customColor. */
-  palette: "satin" | "velvet" | "ethereal" | "shadow" | "gold_leaf" | "ember" | "custom";
+  palette:
+    | "satin"
+    | "velvet"
+    | "ethereal"
+    | "shadow"
+    | "gold_leaf"
+    | "ember"
+    | "custom";
   /** Hex string. Used only when palette === "custom". */
   customColor: string;
   /** Which staff end(s) the ribbon tracks. */
@@ -383,7 +434,14 @@ export interface AnimalIntent {
   /** Which creature ornaments the fixed-length chain. */
   creature: "snake" | "dragon" | "caterpillar";
   /** Named palette (shared with silk). "custom" uses customColor. */
-  palette: "satin" | "velvet" | "ethereal" | "shadow" | "gold_leaf" | "ember" | "custom";
+  palette:
+    | "satin"
+    | "velvet"
+    | "ethereal"
+    | "shadow"
+    | "gold_leaf"
+    | "ember"
+    | "custom";
   /** Hex - used only when palette === "custom". */
   customColor: string;
   /** 0-1. Overall opacity + width multiplier. */
@@ -480,6 +538,6 @@ export interface EffectsConfig {
   };
   /** Which effect is currently active. "none" = no effect selected. */
   activeEffect: EffectType;
-  /** Per-effect render-layer override. Missing key = default ("behind"). */
+  /** Per-effect render-layer override. Missing key uses that effect's layer policy. */
   effectLayerOverrides: Record<string, "behind" | "front">;
 }

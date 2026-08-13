@@ -7,7 +7,7 @@
  *  - EffectController instance (fire/LED/cell-map API surface)
  *  - effectsConfigState field + setter wiring
  *  - Effect-specific change-detection prev-fields
- *    (prevColorBlend, prevFireIntensity, prevFireTurbulence, prevFireColorCurve,
+ *    (prevColorBlend, prevFireIntensity, prevFireBrightness, prevFireTurbulence, prevFireColorCurve,
  *     prevCharcoalParamsJson, prevEffortPreset)
  *  - initPrevState() — initialise all the above from EffectsConfigState at startup
  *  - syncEffects() — the effect-sync portion of handleVisibilityChange()
@@ -23,15 +23,25 @@ import { EffectController } from "../effect-controller";
 import type { AnimatorState } from "../../state/animator-state.svelte";
 import type { CanvasLifecycleManager } from "../canvas-lifecycle-manager";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
-import type { FireOverlayConfig, FireColorCurve } from "../../domain/types/fire-types";
+import type { FireRenderingStyle } from "$lib/shared/effects/domain/effects-config";
+import type {
+  FireOverlayConfig,
+  FireColorCurve,
+} from "../../domain/types/fire-types";
 import {
   BASE_FIRE_PHYSICS,
   BASE_COLOR_CURVE,
   intensityToPhysics,
 } from "../../domain/types/fire-types";
 import type { LedOverlayConfig } from "../../domain/types/led-types";
-import type { TipEffectMap, TipEffortMap } from "../../domain/types/tip-effect-types";
-import { semanticToCharcoalParams, type CharcoalSparkParams } from "../../domain/types/charcoal-spark-types";
+import type {
+  TipEffectMap,
+  TipEffortMap,
+} from "../../domain/types/tip-effect-types";
+import {
+  semanticToCharcoalParams,
+  type CharcoalSparkParams,
+} from "../../domain/types/charcoal-spark-types";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import type { AnimationVisibilityState } from "../animation-visibility-synchronizer";
 import type { AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
@@ -45,18 +55,27 @@ import { EFFECT_PLUGINS } from "../effects/registry";
 // ── Helpers (mirrored from engine — keep in sync) ───────────────────────────
 
 /** Returns true if any entry in the map has the given effect type. */
-function hasEffectInMap(map: TipEffectMap | undefined, effect: string): boolean {
+function hasEffectInMap(
+  map: TipEffectMap | undefined,
+  effect: string
+): boolean {
   if (!map) return false;
-  return Object.values(map).some(a => a.effect === effect);
+  return Object.values(map).some((a) => a.effect === effect);
 }
 
 /** Extract CharcoalSparkParams from EffectsConfigState, with defaults. */
-function getCharcoalParamsFromConfig(ecs: EffectsConfigState | null | undefined): CharcoalSparkParams {
+function getCharcoalParamsFromConfig(
+  ecs: EffectsConfigState | null | undefined
+): CharcoalSparkParams {
   if (!ecs) {
     return semanticToCharcoalParams({ intensity: 0.5, spread: 0.5, glow: 0.6 });
   }
-  const { intensity, spread, glow, coreColor, midColor, coolColor } = ecs.charcoal;
-  return semanticToCharcoalParams({ intensity, spread, glow }, { coreColor, midColor, coolColor });
+  const { intensity, spread, glow, coreColor, midColor, coolColor } =
+    ecs.charcoal;
+  return semanticToCharcoalParams(
+    { intensity, spread, glow },
+    { coreColor, midColor, coolColor }
+  );
 }
 
 export class EffectSystem {
@@ -70,8 +89,10 @@ export class EffectSystem {
   // ── Effect-specific change-detection prev-fields ────────────────────────────
   private _prevColorBlend: number = 0.5;
   private _prevFireIntensity: number = 0.7;
+  private _prevFireBrightness: number = 0.5;
   private _prevFireTurbulence: number = 0.5;
   private _prevFireColorCurve: FireColorCurve | null = null;
+  private _prevFireRenderingStyle: FireRenderingStyle = "natural";
   private _prevCharcoalParamsJson: string = "";
   private _prevEffortPreset: EffortId = "linear";
 
@@ -109,7 +130,9 @@ export class EffectSystem {
   // ── Renderer accessors (for retained engine branches) ──────────────────────
 
   get trailOverlay(): ITrailOverlayCanvas | null {
-    return this._rendererManager.getRenderer("trails") as unknown as ITrailOverlayCanvas | null;
+    return this._rendererManager.getRenderer(
+      "trails"
+    ) as unknown as ITrailOverlayCanvas | null;
   }
 
   get fireTipTracker(): FireTipTracker | null {
@@ -117,11 +140,15 @@ export class EffectSystem {
   }
 
   get fireRenderer(): WebGLFireRenderer | null {
-    return this._rendererManager.getRenderer("fire") as WebGLFireRenderer | null;
+    return this._rendererManager.getRenderer(
+      "fire"
+    ) as WebGLFireRenderer | null;
   }
 
   get charcoalRenderer(): CharcoalSparkRenderer | null {
-    return this._rendererManager.getRenderer("charcoal") as CharcoalSparkRenderer | null;
+    return this._rendererManager.getRenderer(
+      "charcoal"
+    ) as CharcoalSparkRenderer | null;
   }
 
   get ledRenderer(): WebGLLedRenderer | null {
@@ -138,8 +165,12 @@ export class EffectSystem {
   initPrevState(ecs: EffectsConfigState | null): void {
     this._prevColorBlend = ecs?.fire.colorBlend ?? 0.5;
     this._prevFireIntensity = ecs?.fire.intensity ?? 0.7;
+    this._prevFireBrightness = ecs?.fire.brightness ?? 0.5;
     this._prevFireTurbulence = ecs?.fire.turbulence ?? 0.5;
-    this._prevCharcoalParamsJson = JSON.stringify(getCharcoalParamsFromConfig(ecs));
+    this._prevFireRenderingStyle = ecs?.fire.renderingStyle ?? "natural";
+    this._prevCharcoalParamsJson = JSON.stringify(
+      getCharcoalParamsFromConfig(ecs)
+    );
 
     const erm = this._rendererManager;
 
@@ -157,8 +188,11 @@ export class EffectSystem {
     // Build fireConfig from base params + slider mappings
     erm.fireConfig.colorBlend = this._prevColorBlend;
     erm.fireConfig.intensity = this._prevFireIntensity;
+    erm.fireConfig.brightness = this._prevFireBrightness;
     erm.fireConfig.flameHeight = this._prevFireIntensity;
     erm.fireConfig.turbulence = this._prevFireTurbulence;
+    erm.fireConfig.renderingProfile =
+      this._prevFireRenderingStyle === "liquid" ? "legacy" : "cinematic";
     erm.fireConfig.fuelRendererType = "fluid";
 
     const basePhysics = BASE_FIRE_PHYSICS;
@@ -205,20 +239,26 @@ export class EffectSystem {
     // Sync fire slider values + color curve -> physics
     const colorBlend = ecs?.fire.colorBlend ?? 0.5;
     const fireIntensity = ecs?.fire.intensity ?? 0.7;
+    const fireBrightness = ecs?.fire.brightness ?? 0.5;
     const fireTurbulence = ecs?.fire.turbulence ?? 0.5;
     const fireColorCurve = ecs?.fire.colorCurve ?? null;
+    const fireRenderingStyle = ecs?.fire.renderingStyle ?? "natural";
 
     const slidersChanged =
       colorBlend !== this._prevColorBlend ||
       fireIntensity !== this._prevFireIntensity ||
+      fireBrightness !== this._prevFireBrightness ||
       fireTurbulence !== this._prevFireTurbulence ||
-      fireColorCurve !== this._prevFireColorCurve;
+      fireColorCurve !== this._prevFireColorCurve ||
+      fireRenderingStyle !== this._prevFireRenderingStyle;
 
     if (slidersChanged) {
       this._prevColorBlend = colorBlend;
       this._prevFireIntensity = fireIntensity;
+      this._prevFireBrightness = fireBrightness;
       this._prevFireTurbulence = fireTurbulence;
       this._prevFireColorCurve = fireColorCurve;
+      this._prevFireRenderingStyle = fireRenderingStyle;
 
       const basePhysics = BASE_FIRE_PHYSICS;
       const intOverrides = intensityToPhysics(fireIntensity);
@@ -226,8 +266,11 @@ export class EffectSystem {
         colorBlend,
         fuelRendererType: "fluid",
         intensity: fireIntensity,
+        brightness: fireBrightness,
         flameHeight: fireIntensity,
         turbulence: fireTurbulence,
+        renderingProfile:
+          fireRenderingStyle === "liquid" ? "legacy" : "cinematic",
         physicsPreset: {
           ...basePhysics,
           ...intOverrides,
@@ -300,14 +343,19 @@ export class EffectSystem {
   }
 
   sampleFireCanvas(): string {
-    return this._rendererManager.fireRenderer?.sampleFireCanvas?.() ?? "no fire renderer";
+    return (
+      this._rendererManager.fireRenderer?.sampleFireCanvas?.() ??
+      "no fire renderer"
+    );
   }
 
   snapshotFireCanvas(): void {
     this._rendererManager.fireRenderer?.snapshotFireCanvas?.();
   }
 
-  captureDiagnostics(context: import("../effect-controller").DiagnosticContext): Record<string, unknown> {
+  captureDiagnostics(
+    context: import("../effect-controller").DiagnosticContext
+  ): Record<string, unknown> {
     return this._controller.captureDiagnostics(context);
   }
 

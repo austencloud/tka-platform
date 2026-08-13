@@ -7,12 +7,14 @@
  *   3 = main canvas (grid + glyphs + props)
  *   4 = effect override in front of props
  *
- * Users toggle individual effects between "behind" (default) and "front"
- * via the effects panel, so behaviors like Charcoal sparks or Bloom halos
- * can visually cover the props when that reads better.
+ * Users toggle individual effects between "behind" and "front" via the
+ * effects panel. The effects domain owns each effect's default intent; this
+ * module only maps that resolved intent to renderer stacking slots.
  */
 
-export type EffectLayerMode = "behind" | "front";
+import type { EffectLayerMode } from "$lib/shared/effects/domain/effect-layer-policy";
+
+export type { EffectLayerMode } from "$lib/shared/effects/domain/effect-layer-policy";
 
 export const LAYER_Z_TRAIL_BEHIND = 1;
 export const LAYER_Z_EFFECT_BEHIND = 2;
@@ -22,7 +24,10 @@ export const LAYER_Z_FRONT = 4;
 /** Effects whose "behind" default is z=1 (trail) rather than z=2 (most overlays). */
 const TRAIL_EFFECT_IDS: ReadonlySet<string> = new Set(["trails"]);
 
-export function resolveEffectZ(effectId: string, mode: EffectLayerMode): number {
+export function resolveEffectZ(
+  effectId: string,
+  mode: EffectLayerMode
+): number {
   if (mode === "front") return LAYER_Z_FRONT;
   return TRAIL_EFFECT_IDS.has(effectId)
     ? LAYER_Z_TRAIL_BEHIND

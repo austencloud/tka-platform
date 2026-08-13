@@ -132,7 +132,7 @@ export class AnimationVisibilityStateManager {
       speed: 1.0, // Default to 60 BPM
       wordHeader: true, // Show word/sequence name by default
       progressBar: true, // Show progress bar by default
-      mandala: false,
+      mandala: true,
 
       // Global effects
       darkMode: true, // Dark Mode enabled by default (better first impression)

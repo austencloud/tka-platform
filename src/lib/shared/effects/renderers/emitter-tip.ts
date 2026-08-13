@@ -21,10 +21,10 @@ export interface EmitterTip {
   /** Derived from tipIndex (0→"A", else "B"). Drives tracking-mode filtering. */
   end: "A" | "B";
   /**
-   * Per-prop resolved color (hex). Consumed only by prop-colored effects
-   * (echo, zap same-prop edges); palette-driven effects ignore it. Mirrors the
-   * trail-overlay spectrum gating: base props use the trail colors, layers use
-   * the spectrum fan when the rainbow toggle is on, base colors when off.
+   * Per-prop resolved color (hex). Consumed by prop-colored effects and mixed
+   * into materials that need to preserve prop identity, including Silk.
+   * Mirrors the trail-overlay spectrum gating: base props use the trail colors,
+   * layers use the spectrum fan when rainbow is on, base colors when off.
    */
   color: string;
 }

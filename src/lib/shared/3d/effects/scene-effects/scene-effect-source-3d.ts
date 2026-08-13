@@ -8,7 +8,9 @@ import type {
   Silk3DParams,
   Animal3DParams,
   Pulse3DParams,
+  Bloom3DParams,
 } from "$lib/shared/effects/translators/webgl3d-types";
+import type { QualityTier } from "../types";
 
 export interface SceneEffectVector3 {
   x: number;
@@ -76,6 +78,12 @@ export interface PulseTipSource3D extends SceneEffectTipBase3D {
   params: Pulse3DParams;
 }
 
+export interface BloomTipSource3D extends SceneEffectTipBase3D {
+  effect: "bloom";
+  params: Bloom3DParams;
+  qualityTier: QualityTier;
+}
+
 export type SceneEffectTipSource3D =
   | SparkleTipSource3D
   | GooTipSource3D
@@ -85,7 +93,8 @@ export type SceneEffectTipSource3D =
   | InkTipSource3D
   | SilkTipSource3D
   | AnimalTipSource3D
-  | PulseTipSource3D;
+  | PulseTipSource3D
+  | BloomTipSource3D;
 
 export interface SceneEffectRigFrame3D {
   playing: boolean;

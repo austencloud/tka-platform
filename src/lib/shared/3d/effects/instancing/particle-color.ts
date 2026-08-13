@@ -18,6 +18,18 @@ export function setRgbFromHex(target: MutableRgb, hex: string): void {
   target.blue = parseInt(normalized.slice(4, 6), 16) / 255;
 }
 
+/**
+ * Vertex colors used by a color-managed Three.js shader live in linear sRGB.
+ * CSS hex values are display-space sRGB, so feeding their bytes directly into
+ * the attribute makes midtones lift and lose their authored saturation.
+ */
+export function setLinearRgbFromHex(target: MutableRgb, hex: string): void {
+  setRgbFromHex(target, hex);
+  target.red = srgbChannelToLinear(target.red);
+  target.green = srgbChannelToLinear(target.green);
+  target.blue = srgbChannelToLinear(target.blue);
+}
+
 export function setRgbFromHsl(
   target: MutableRgb,
   hueDegrees: number,
@@ -49,4 +61,10 @@ function hueChannel(p: number, q: number, raw: number): number {
   if (t < 1 / 2) return q;
   if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
   return p;
+}
+
+function srgbChannelToLinear(channel: number): number {
+  return channel <= 0.04045
+    ? channel / 12.92
+    : Math.pow((channel + 0.055) / 1.055, 2.4);
 }

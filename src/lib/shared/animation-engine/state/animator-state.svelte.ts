@@ -94,7 +94,7 @@ export function createAnimatorState(): AnimatorState {
       elementalGlyph: false,
       darkMode: false,
       wordHeader: true,
-      mandala: false,
+      mandala: true,
       activeEffect: "trails" as EffectType,
       tipEffectMap: {} as TipEffectMap,
     } as AnimationVisibilityState,

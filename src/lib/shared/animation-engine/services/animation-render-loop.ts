@@ -593,6 +593,8 @@ export class AnimationRenderLoop {
     propIndex: number;
     tipIndex: number;
     color: string;
+    velocityX?: number;
+    velocityY?: number;
   }[] {
     const layerCount = params.props.additionalLayers.length;
     const spectrum = params.props.tunnelSpectrum ?? true;
@@ -604,6 +606,8 @@ export class AnimationRenderLoop {
       propIndex: number;
       tipIndex: number;
       color: string;
+      velocityX?: number;
+      velocityY?: number;
     }[] = [];
     let globalTipIndex = 0;
     for (const t of tips) {
@@ -614,6 +618,8 @@ export class AnimationRenderLoop {
         y: t.y,
         propIndex: t.propIndex,
         tipIndex: globalTipIndex++,
+        velocityX: t.velocityX,
+        velocityY: t.velocityY,
         color: AnimationRenderLoop.resolveTipColor(
           t.propIndex,
           layerCount,
@@ -1737,11 +1743,13 @@ export class AnimationRenderLoop {
         if (fireRenderer?.isInitialized()) {
           // Map quality tier → fire simulation quality level
           const fireQuality =
-            hints.tier === QualityTier.HIGH
-              ? 3
-              : hints.tier === QualityTier.MEDIUM
-                ? 2
-                : 1;
+            params.fireConfig?.renderingProfile === "legacy"
+              ? 2
+              : hints.tier === QualityTier.HIGH
+                ? 4
+                : hints.tier === QualityTier.MEDIUM
+                  ? 2
+                  : 1;
           fireRenderer.setQuality(fireQuality);
         }
       }

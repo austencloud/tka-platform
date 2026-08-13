@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { DEFAULT_EFFECTS_CONFIG } from "../../domain/defaults";
+import { SILK_INTENSITY_MAX } from "../../domain/effects-config";
 
 // Mock the scene undo manager before importing the module under test.
 // Module path is `get-scene-undo-manager` (Phase C kebab rename) — mocking the
@@ -16,7 +17,8 @@ vi.mock("$lib/shared/3d/undo/get-scene-undo-manager", () => ({
   getSceneUndoManager: () => undoSpies,
 }));
 
-const { createEffectsConfigState } = await import("../effects-config-state.svelte");
+const { createEffectsConfigState } =
+  await import("../effects-config-state.svelte");
 
 // This suite runs in the node env (no window/localStorage). Persistence in the
 // factory is gated on `typeof window !== "undefined"`, so exercising the persist
@@ -52,9 +54,18 @@ describe("EffectsConfigState", () => {
       expect(state.fire.colorBlend).toBe(originalBlend);
     });
 
+    it("clamps manual Silk intensity updates to the canonical maximum", () => {
+      const state = createEffectsConfigState(undefined, { persist: false });
+      state.updateEffect("silk", { intensity: 0.9 });
+      expect(state.silk.intensity).toBe(SILK_INTENSITY_MAX);
+      expect(state.personalDefault("silk")?.intensity).toBe(SILK_INTENSITY_MAX);
+    });
+
     it("throws for unknown effect id", () => {
       const state = createEffectsConfigState();
-      expect(() => state.updateEffect("bogus" as any, {})).toThrow("Unknown effect id");
+      expect(() => state.updateEffect("bogus" as any, {})).toThrow(
+        "Unknown effect id"
+      );
     });
   });
 
@@ -80,7 +91,10 @@ describe("EffectsConfigState", () => {
     it("applyPreset does NOT overwrite the personal default", () => {
       const state = createEffectsConfigState(undefined, { persist: false });
       state.updateEffect("bloom", { intensity: 0.123 });
-      state.applyPreset("bloom", "bloom-supernova", { intensity: 1, radius: 50 });
+      state.applyPreset("bloom", "bloom-supernova", {
+        intensity: 1,
+        radius: 50,
+      });
       expect(state.bloom.intensity).toBe(1); // preset applied to live config
       expect(state.personalDefault("bloom")?.intensity).toBe(0.123); // your look preserved
     });
@@ -88,7 +102,10 @@ describe("EffectsConfigState", () => {
     it("restorePersonalDefault returns the pre-preset tuning", () => {
       const state = createEffectsConfigState(undefined, { persist: false });
       state.updateEffect("bloom", { intensity: 0.123, radius: 41 });
-      state.applyPreset("bloom", "bloom-supernova", { intensity: 1, radius: 50 });
+      state.applyPreset("bloom", "bloom-supernova", {
+        intensity: 1,
+        radius: 50,
+      });
       state.restorePersonalDefault("bloom");
       expect(state.bloom.intensity).toBe(0.123);
       expect(state.bloom.radius).toBe(41);
@@ -100,12 +117,16 @@ describe("EffectsConfigState", () => {
       state.updateEffect("bloom", { intensity: 0.123 });
       expect(state.hasCustom("bloom")).toBe(true);
       state.resetToFactory("bloom");
-      expect(state.bloom.intensity).toBe(DEFAULT_EFFECTS_CONFIG.bloom.intensity);
+      expect(state.bloom.intensity).toBe(
+        DEFAULT_EFFECTS_CONFIG.bloom.intensity
+      );
       expect(state.activePresets.bloom).toBeNull();
       // Personal default is wiped to factory, so a later Default click can't
       // resurrect the discarded tuning.
       expect(state.hasCustom("bloom")).toBe(false);
-      expect(state.personalDefault("bloom")?.intensity).toBe(DEFAULT_EFFECTS_CONFIG.bloom.intensity);
+      expect(state.personalDefault("bloom")?.intensity).toBe(
+        DEFAULT_EFFECTS_CONFIG.bloom.intensity
+      );
     });
 
     it("resetAllToFactory returns every effect to factory and wipes personal defaults", () => {
@@ -113,7 +134,9 @@ describe("EffectsConfigState", () => {
       state.updateEffect("bloom", { intensity: 0.123 });
       state.updateEffect("fire", { intensity: 0.2 });
       state.resetAllToFactory();
-      expect(state.bloom.intensity).toBe(DEFAULT_EFFECTS_CONFIG.bloom.intensity);
+      expect(state.bloom.intensity).toBe(
+        DEFAULT_EFFECTS_CONFIG.bloom.intensity
+      );
       expect(state.fire.intensity).toBe(DEFAULT_EFFECTS_CONFIG.fire.intensity);
       expect(state.hasCustom("bloom")).toBe(false);
       expect(state.hasCustom("fire")).toBe(false);
@@ -125,13 +148,35 @@ describe("EffectsConfigState", () => {
       vi.stubGlobal("localStorage", ls);
       ls.setItem(
         "tka_effects_custom",
-        JSON.stringify({ bloom: { ...DEFAULT_EFFECTS_CONFIG.bloom, intensity: 0.77 } }),
+        JSON.stringify({
+          bloom: { ...DEFAULT_EFFECTS_CONFIG.bloom, intensity: 0.77 },
+        })
       );
       // Mark the one-time clean as already done so it doesn't wipe the seed.
       ls.setItem("tka_effects_custom_clean", "1");
       const state = createEffectsConfigState(undefined, { persist: true });
       expect(state.personalDefault("bloom")?.intensity).toBe(0.77);
       expect(state.hasCustom("bloom")).toBe(true);
+      vi.unstubAllGlobals();
+    });
+
+    it("heals a pre-core Bloom personal default", () => {
+      const ls = makeLocalStorageStub();
+      vi.stubGlobal("window", {});
+      vi.stubGlobal("localStorage", ls);
+      const { coreStrength: _retired, ...legacyBloom } =
+        DEFAULT_EFFECTS_CONFIG.bloom;
+      ls.setItem(
+        "tka_effects_custom",
+        JSON.stringify({ bloom: { ...legacyBloom, falloff: "ring" } })
+      );
+      ls.setItem("tka_effects_custom_clean", "1");
+
+      const state = createEffectsConfigState(undefined, { persist: true });
+      expect(state.personalDefault("bloom")?.coreStrength).toBe(
+        DEFAULT_EFFECTS_CONFIG.bloom.coreStrength
+      );
+      expect(state.personalDefault("bloom")?.falloff).toBe("smooth");
       vi.unstubAllGlobals();
     });
 
@@ -153,7 +198,10 @@ describe("EffectsConfigState", () => {
   describe("applyPreset", () => {
     it("merges the patch into the target effect's intent", () => {
       const state = createEffectsConfigState();
-      state.applyPreset("led", "led-green-glow", { brightness: 4, patternId: "solid" });
+      state.applyPreset("led", "led-green-glow", {
+        brightness: 4,
+        patternId: "solid",
+      });
       expect(state.led.brightness).toBe(4);
       expect(state.led.patternId).toBe("solid");
     });
@@ -169,6 +217,12 @@ describe("EffectsConfigState", () => {
       const originalSpeed = state.led.patternSpeed;
       state.applyPreset("led", "led-green-glow", { brightness: 2 });
       expect(state.led.patternSpeed).toBe(originalSpeed);
+    });
+
+    it("clamps Silk preset patches to the canonical maximum", () => {
+      const state = createEffectsConfigState(undefined, { persist: false });
+      state.applyPreset("silk", "legacy-hot-silk", { intensity: 0.9 });
+      expect(state.silk.intensity).toBe(SILK_INTENSITY_MAX);
     });
 
     it("a subsequent updateEffect on the same effect nulls the active preset", () => {
@@ -248,21 +302,27 @@ describe("EffectsConfigState", () => {
   });
 
   describe("effectLayerOverrides", () => {
-    it("getEffectLayer returns 'behind' by default", () => {
+    it("puts Fire in front by default while other effects remain behind", () => {
       const state = createEffectsConfigState();
-      expect(state.getEffectLayer("fire")).toBe("behind");
-    });
-
-    it("setEffectLayer stores override", () => {
-      const state = createEffectsConfigState();
-      state.setEffectLayer("fire", "front");
       expect(state.getEffectLayer("fire")).toBe("front");
+      expect(state.getEffectLayer("smoke")).toBe("behind");
     });
 
-    it("setEffectLayer('behind') removes entry from map", () => {
+    it("stores an explicit behind override for Fire", () => {
       const state = createEffectsConfigState();
-      state.setEffectLayer("fire", "front");
       state.setEffectLayer("fire", "behind");
+      expect(state.getEffectLayer("fire")).toBe("behind");
+      expect(state.effectLayerOverrides).toEqual({ fire: "behind" });
+    });
+
+    it("removes an override when an effect returns to its own default", () => {
+      const state = createEffectsConfigState();
+      state.setEffectLayer("fire", "behind");
+      state.setEffectLayer("fire", "front");
+      expect(state.effectLayerOverrides).toEqual({});
+
+      state.setEffectLayer("smoke", "front");
+      state.setEffectLayer("smoke", "behind");
       expect(state.effectLayerOverrides).toEqual({});
     });
   });

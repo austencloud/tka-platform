@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   resolveAnimal3D,
   resolveFire3D,
+  resolvePetals3D,
   resolvePulse3D,
   resolveSilk3D,
   resolveSparkles3D,
@@ -10,6 +11,7 @@ import type { FireIntent, SparklesIntent } from "../domain/effects-config";
 import { DEFAULT_EFFECTS_CONFIG } from "../domain/defaults";
 
 const base: FireIntent = {
+  renderingStyle: "natural",
   intensity: 0.7,
   brightness: 1.0,
   colorBlend: 0.5,
@@ -105,6 +107,28 @@ describe("resolveSparkles3D world units", () => {
     expect(resolveSparkles3D(sparkBase, { worldSpread: 9 }).worldSpread).toBe(
       9
     );
+  });
+});
+
+describe("resolvePetals3D art-direction bounds", () => {
+  it("keeps the raw petal base below one eighth of a staff", () => {
+    const petals = resolvePetals3D(DEFAULT_EFFECTS_CONFIG.petals);
+    expect(petals.baseSize).toBeLessThan(STAFF / 8);
+  });
+
+  it("makes the motion stream dominant over the ambient shower", () => {
+    const petals = resolvePetals3D(DEFAULT_EFFECTS_CONFIG.petals);
+    expect(
+      petals.motionTipRate * DEFAULT_EFFECTS_CONFIG.petals.motionEmission
+    ).toBeGreaterThan(
+      petals.ambientAboveRate * DEFAULT_EFFECTS_CONFIG.petals.ambientEmission
+    );
+    expect(petals.ambientAboveRate).toBeLessThanOrEqual(4);
+  });
+
+  it("keeps the resolved lifetime short enough to avoid a persistent cloud", () => {
+    const petals = resolvePetals3D(DEFAULT_EFFECTS_CONFIG.petals);
+    expect(petals.lifetime).toBeLessThanOrEqual(4.5);
   });
 });
 

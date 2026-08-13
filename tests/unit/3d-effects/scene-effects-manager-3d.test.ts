@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { Scene } from "three";
+import { InstancedMesh, Scene, ShaderMaterial } from "three";
+import { BackgroundType } from "@austencloud/backgrounds";
 import { SceneEffectsManager3D } from "$lib/shared/3d/effects/scene-effects/scene-effects-manager-3d";
 import { isTrackedTip } from "$lib/shared/3d/effects/scene-effects/scene-effect-source-3d";
+import { resolvePetalEnvironmentProfile } from "$lib/shared/3d/effects/petals/petal-world-art-direction";
+import { resolveBloom3D } from "$lib/shared/effects/translators/webgl3d-translator";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+import { QualityTier } from "$lib/shared/3d/effects/types";
 
 describe("SceneEffectsManager3D", () => {
   it("owns one scene-level mesh per material variant and releases them together", () => {
@@ -9,9 +14,9 @@ describe("SceneEffectsManager3D", () => {
     const manager = new SceneEffectsManager3D();
     manager.initialize(scene);
 
-    // Existing six particle/material variants plus twelve scene-level visual
-    // layers for Ink, Silk, Animal, and Pulse.
-    expect(scene.children).toHaveLength(18);
+    // Existing six particle/material variants, twelve scene-level visual
+    // layers for Ink, Silk, Animal, and Pulse, plus one Bloom optical batch.
+    expect(scene.children).toHaveLength(19);
     manager.update(1 / 60);
     manager.dispose();
     expect(scene.children).toHaveLength(0);
@@ -24,6 +29,61 @@ describe("SceneEffectsManager3D", () => {
     expect(second.sourceIdBase - first.sourceIdBase).toBe(4);
     first.dispose();
     second.dispose();
+  });
+
+  it("applies the viewer environment profile to the pooled petal material", () => {
+    const scene = new Scene();
+    const manager = new SceneEffectsManager3D();
+    const profile = resolvePetalEnvironmentProfile(BackgroundType.FOREST);
+    manager.setPetalEnvironmentProfile(profile);
+    manager.initialize(scene);
+
+    const petalMesh = scene.children.find(
+      (child) => child.renderOrder === 103
+    ) as InstancedMesh | undefined;
+    const material = petalMesh?.material as ShaderMaterial | undefined;
+    expect(material?.uniforms.uBackdropLuminance?.value).toBe(
+      profile.backdropLuminance
+    );
+    expect(material?.uniforms.uContrastStrength?.value).toBe(
+      profile.contrastStrength
+    );
+
+    manager.dispose();
+  });
+
+  it("keeps Bloom optically live while a rig is paused", () => {
+    const scene = new Scene();
+    const manager = new SceneEffectsManager3D();
+    const registration = manager.registerRig({
+      playing: false,
+      sources: [
+        {
+          sourceId: 1,
+          propIndex: 0,
+          tipIndex: 0,
+          position: { x: 0, y: 0, z: 0 },
+          velocity: { x: 0, y: 0, z: 0 },
+          speed: 0,
+          currentStep: 0,
+          propColor: "#3575e2",
+          effect: "bloom",
+          params: resolveBloom3D(DEFAULT_EFFECTS_CONFIG.bloom),
+          qualityTier: QualityTier.LOW,
+        },
+      ],
+    });
+    manager.initialize(scene);
+    manager.update(1 / 60);
+
+    const bloom = scene.children.find(
+      (child): child is InstancedMesh =>
+        child instanceof InstancedMesh && child.renderOrder === 119
+    );
+    expect(bloom?.count).toBe(1);
+
+    registration.dispose();
+    manager.dispose();
   });
 });
 

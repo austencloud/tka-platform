@@ -426,6 +426,12 @@ Last audit: 2025-12-27
   );
 
   const effectiveTkaGlyphVisible = $derived(tkaGlyphVisible && !hideTkaGlyph);
+  // The elemental glyph describes the relationship between one blue prop and
+  // one red prop. Once a tunnel adds more prop layers, showing that same glyph
+  // would falsely describe the whole canvas as a single two-prop relationship.
+  const effectiveElementalGlyphVisible = $derived(
+    elementalGlyphVisible && additionalLayers.length === 0
+  );
   const effectiveBeatNumbersVisible = $derived(stepNumbersVisible && !hideStepNumbers);
   const effectiveBluePathLinesVisible = $derived(bluePathLinesVisible && !hidePathLines);
   const effectiveRedPathLinesVisible = $derived(redPathLinesVisible && !hidePathLines);
@@ -594,7 +600,7 @@ Last audit: 2025-12-27
       {positionGlyphVisible}
       {darkModeEnabled}
       {effectiveTkaGlyphVisible}
-      {elementalGlyphVisible}
+      elementalGlyphVisible={effectiveElementalGlyphVisible}
       {effectiveBeatNumbersVisible}
       bluePathLinesVisible={effectiveBluePathLinesVisible}
       redPathLinesVisible={effectiveRedPathLinesVisible}

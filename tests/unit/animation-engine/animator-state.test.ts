@@ -9,6 +9,7 @@ describe("AnimatorState", () => {
     expect(a.isInitialized).toBe(false);
     expect(a.currentBluePropType).toBe("staff");
     expect(a.displayedTurnsTuple).toBe("(s, 0, 0)");
+    expect(a.visibilityState.mandala).toBe(true);
 
     a.setInitialized(true);
     a.setBluePropType("fan");

@@ -1,5 +1,8 @@
 import type { EffectsConfig } from "./effects-config";
-import { EFFECTS_CONFIG_VERSION } from "./effects-config";
+import {
+  EFFECTS_CONFIG_VERSION,
+  SILK_INTENSITY_DEFAULT,
+} from "./effects-config";
 
 export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
   version: EFFECTS_CONFIG_VERSION,
@@ -19,6 +22,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
   },
 
   fire: {
+    renderingStyle: "natural",
     intensity: 0.7,
     brightness: 0.5,
     colorBlend: 0,
@@ -73,6 +77,8 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
   // decay=Persistence (trail length), interval=Density (higher=denser).
   // See ghost-2d-renderer.ts.
   ghost: {
+    blueColor: "#3b82f6",
+    redColor: "#ef4444",
     intensity: 0.85,
     decay: 8,
     interval: 0.5,
@@ -80,6 +86,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
 
   bloom: {
     intensity: 0.5,
+    coreStrength: 0.45,
     radius: 36,
     color: "#f472b6",
     palette: ["#f472b6", "#fbbf24", "#22d3ee"],
@@ -175,7 +182,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
   },
 
   silk: {
-    intensity: 0.7,
+    intensity: SILK_INTENSITY_DEFAULT,
     width: 0.5,
     duration: 0.5,
     flutter: 0.3,

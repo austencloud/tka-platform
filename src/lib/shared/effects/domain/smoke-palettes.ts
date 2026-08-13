@@ -90,8 +90,8 @@ const SPIRIT: SmokePalette = {
 
 const CAMPFIRE: SmokePalette = {
   id: "campfire",
-  core: "#706560",
-  edge: "#a09590",
+  core: "#6e2411",
+  edge: "#dc6b24",
   lifetime: 4.0,
   curlBias: 0.6,
   riseBias: 0.6,

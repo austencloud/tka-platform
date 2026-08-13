@@ -16,6 +16,8 @@
   interface Option {
     value: T;
     label: string;
+    /** Optional consequence shown by the tile layout. */
+    description?: string;
     /** FontAwesome class without the leading "fas", e.g. "fa-ruler". */
     icon?: string;
     /** CSS color for a leading swatch dot (palette rows). */
@@ -35,7 +37,7 @@
     /** Prevent selection while the owning workflow is busy. */
     disabled?: boolean;
     /** Stack the label above the chips when the option set needs more room. */
-    layout?: "inline" | "stacked";
+    layout?: "inline" | "stacked" | "tiles";
   }
 
   const {
@@ -53,6 +55,7 @@
 <div
   class="option-row"
   class:stacked={layout === "stacked"}
+  class:tiles={layout === "tiles"}
   style:--option-accent={color}
 >
   <span class="option-label">{label}</span>
@@ -82,7 +85,12 @@
         {:else if option.icon}
           <i class="fas {option.icon}" aria-hidden="true"></i>
         {/if}
-        {option.label}
+        <span class="chip-copy">
+          <span class="chip-label">{option.label}</span>
+          {#if option.description}
+            <span class="chip-description">{option.description}</span>
+          {/if}
+        </span>
       </button>
     {/each}
   </div>
@@ -114,6 +122,23 @@
     flex-wrap: wrap;
   }
 
+  .chip-copy {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .chip-label {
+    min-width: 0;
+  }
+
+  .chip-description {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.58));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    line-height: 1.25;
+  }
+
   .option-row.stacked {
     flex-direction: column;
     align-items: stretch;
@@ -123,6 +148,105 @@
     min-width: 0;
     font-size: var(--font-size-min, 14px);
     font-weight: 650;
+  }
+
+  .option-row.tiles {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .tiles .option-label {
+    min-width: 0;
+    color: var(--theme-text, white);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+  }
+
+  .tiles .chip-group {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .tiles .chip {
+    position: relative;
+    justify-content: flex-start;
+    min-width: 0;
+    min-height: max(var(--min-touch-target, 44px), 62px);
+    padding: 10px 12px;
+    text-align: left;
+  }
+
+  .tiles .chip i {
+    display: grid;
+    place-items: center;
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    color: color-mix(in srgb, var(--option-accent) 78%, var(--theme-text));
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .tiles .chip.active {
+    box-shadow:
+      inset 3px 0 0 var(--option-accent),
+      0 8px 20px -16px var(--option-accent);
+  }
+
+  .tiles .chip.active .chip-description {
+    color: color-mix(in srgb, var(--theme-text) 76%, transparent);
+  }
+
+  @container fuse (max-width: 1180px) {
+    .tiles .chip-group {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* A desktop-height Fuse workspace has two source LOOPs below this chooser.
+     Keep the full explanatory gallery for native 4K, but pack ordinary desktop
+     into two rows so neither LOOP loses its action bar. */
+  @container fuse (min-width: 1181px) and (max-width: 2599px) and (min-height: 780px) {
+    .tiles .chip-group {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .tiles .chip {
+      flex-direction: column;
+      min-height: var(--min-touch-target, 48px);
+      padding: 8px 10px;
+      gap: 3px;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .tiles .chip i {
+      flex-basis: auto;
+      width: auto;
+      height: auto;
+      font-size: var(--font-size-compact, 14px);
+    }
+
+    .tiles .chip-label {
+      white-space: nowrap;
+    }
+
+    .tiles .chip-description {
+      display: none;
+    }
+  }
+
+  @container fuse (min-width: 2600px) and (min-height: 1400px) {
+    .option-row.tiles,
+    .tiles .chip-group {
+      gap: 12px;
+    }
+
+    .tiles .chip {
+      min-height: 78px;
+      padding: 12px 14px;
+    }
   }
 
   .chip {

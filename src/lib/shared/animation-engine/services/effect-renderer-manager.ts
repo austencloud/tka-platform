@@ -17,17 +17,27 @@ import type { FireTipTracker } from "./fire-tip-tracker";
 import type { LedTipTracker } from "./led-tip-tracker";
 import type { ITrailOverlayCanvas } from "./ITrailOverlayCanvas";
 import type { IAnimationRenderLoop } from "./IAnimationRenderLoop";
-import type { EffectType, TipEffectMap, TipEffortMap } from "../domain/types/tip-effect-types";
+import type {
+  EffectType,
+  TipEffectMap,
+  TipEffortMap,
+} from "../domain/types/tip-effect-types";
 import type { FireOverlayConfig } from "../domain/types/fire-types";
 import { DEFAULT_FIRE_CONFIG } from "../domain/types/fire-types";
 import type { LedOverlayConfig } from "../domain/types/led-types";
-import { DEFAULT_LED_CONFIG, ledBrightnessToFloat } from "../domain/types/led-types";
+import {
+  DEFAULT_LED_CONFIG,
+  ledBrightnessToFloat,
+} from "../domain/types/led-types";
 import { resolveEffectZ } from "./effect-layer";
 import type { AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
 import type { CharcoalSparkParams } from "../domain/types/charcoal-spark-types";
 import { semanticToCharcoalParams } from "../domain/types/charcoal-spark-types";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
-import type { RenderFrameParams, RenderLoopConfig } from "./IAnimationRenderLoop";
+import type {
+  RenderFrameParams,
+  RenderLoopConfig,
+} from "./IAnimationRenderLoop";
 import type { EffectRendererLike } from "./effects/effect-renderer";
 import { EFFECT_PLUGINS, EFFECT_PLUGIN_BY_ID } from "./effects/registry";
 // WebGLLedRenderer imported as value — syncLedOverlay uses deferred requestAnimationFrame init.
@@ -49,7 +59,7 @@ type OverlayEffectId = Exclude<EffectType, "none" | "led" | "trails">;
 /** The 14 plugins that use the generic overlay lifecycle (canvas2d + webgl, no led/trails). */
 const OVERLAY_PLUGINS = EFFECT_PLUGINS.filter(
   (p) => p.kind === "canvas2d" || p.kind === "webgl"
-) as readonly (typeof EFFECT_PLUGINS[number] & { id: OverlayEffectId })[];
+) as readonly ((typeof EFFECT_PLUGINS)[number] & { id: OverlayEffectId })[];
 
 export class EffectRendererManager {
   // ── Registry-backed renderer Map (P2.3) ─────────────────────────────
@@ -108,7 +118,7 @@ export class EffectRendererManager {
   // ── Previous-frame flags for change detection ───────────────────────
   /** Map from effect name to whether tips are currently enabled. LED uses ledConfig.enabled instead. */
   private prevEffectEnabled: Map<OverlayEffectId, boolean> = new Map(
-    OVERLAY_PLUGINS.map(p => [p.id as OverlayEffectId, false])
+    OVERLAY_PLUGINS.map((p) => [p.id as OverlayEffectId, false])
   );
 
   /** Whether the given overlay effect was enabled last frame. */
@@ -130,7 +140,8 @@ export class EffectRendererManager {
 
   /** Returns the charcoal renderer, cast to its concrete type, or null. */
   get charcoalRenderer(): CharcoalSparkRenderer | null {
-    return (this.renderers.get("charcoal") ?? null) as CharcoalSparkRenderer | null;
+    return (this.renderers.get("charcoal") ??
+      null) as CharcoalSparkRenderer | null;
   }
 
   /** Returns the LED renderer, cast to its concrete type, or null. */
@@ -140,7 +151,8 @@ export class EffectRendererManager {
 
   /** Returns the trail overlay, cast to ITrailOverlayCanvas, or null. */
   get trailOverlay(): ITrailOverlayCanvas | null {
-    return (this.renderers.get("trails") ?? null) as unknown as ITrailOverlayCanvas | null;
+    return (this.renderers.get("trails") ??
+      null) as unknown as ITrailOverlayCanvas | null;
   }
 
   /** Set the trail overlay into the registry Map. Called externally by CanvasLifecycleManager. */
@@ -189,15 +201,20 @@ export class EffectRendererManager {
     renderLoopService?: IAnimationRenderLoop | null;
     canvasSize?: number;
   }): void {
-    if (refs.renderLoopService !== undefined) this.renderLoopService = refs.renderLoopService;
+    if (refs.renderLoopService !== undefined)
+      this.renderLoopService = refs.renderLoopService;
     if (refs.canvasSize !== undefined) this.canvasSize = refs.canvasSize;
   }
 
   /** Expose charcoal params from EffectsConfigState for the registry onInit hook. */
   getCharcoalParamsFromConfig(): CharcoalSparkParams | undefined {
     if (!this.effectsConfigState) return undefined;
-    const { intensity, spread, glow, coreColor, midColor, coolColor } = this.effectsConfigState.charcoal;
-    return semanticToCharcoalParams({ intensity, spread, glow }, { coreColor, midColor, coolColor });
+    const { intensity, spread, glow, coreColor, midColor, coolColor } =
+      this.effectsConfigState.charcoal;
+    return semanticToCharcoalParams(
+      { intensity, spread, glow },
+      { coreColor, midColor, coolColor }
+    );
   }
 
   /** Check whether a given overlay effect is currently enabled. */
@@ -211,7 +228,7 @@ export class EffectRendererManager {
    * Generic init/destroy lifecycle for a single registry-driven overlay effect.
    * Driven by EFFECT_PLUGINS (canvas2d + webgl kinds) via the renderers Map.
    */
-  private syncOverlay(plugin: typeof OVERLAY_PLUGINS[number]): void {
+  private syncOverlay(plugin: (typeof OVERLAY_PLUGINS)[number]): void {
     const id = plugin.id as OverlayEffectId;
     const enabled = this.prevEffectEnabled.get(id) ?? false;
 
@@ -280,14 +297,14 @@ export class EffectRendererManager {
    * loop. Shared by the inline canvas2d path and the deferred webgl path so
    * both register the renderer and run plugin.onInit identically.
    */
-  private initOverlayRenderer(plugin: typeof OVERLAY_PLUGINS[number]): void {
+  private initOverlayRenderer(plugin: (typeof OVERLAY_PLUGINS)[number]): void {
     const id = plugin.id as OverlayEffectId;
     if (!this.containerElement) return;
     const renderer = plugin.createRenderer();
     const success = renderer.initialize(
       this.containerElement,
       this.canvasSize,
-      this.canvasSize,
+      this.canvasSize
     );
     if (success) {
       this.renderers.set(id, renderer);
@@ -307,7 +324,7 @@ export class EffectRendererManager {
    * flight per id; membership in pendingWebglInit doubles as a cancel signal so
    * dispose() (which clears the set) aborts an in-flight init.
    */
-  private scheduleWebglInit(plugin: typeof OVERLAY_PLUGINS[number]): void {
+  private scheduleWebglInit(plugin: (typeof OVERLAY_PLUGINS)[number]): void {
     const id = plugin.id as OverlayEffectId;
     if (this.pendingWebglInit.has(id)) return;
     this.pendingWebglInit.add(id);
@@ -352,7 +369,9 @@ export class EffectRendererManager {
       this.prewarmLed();
       return;
     }
-    const plugin = EFFECT_PLUGIN_BY_ID[id] as typeof OVERLAY_PLUGINS[number] | undefined;
+    const plugin = EFFECT_PLUGIN_BY_ID[id] as
+      | (typeof OVERLAY_PLUGINS)[number]
+      | undefined;
     // webgl-kind OVERLAY plugins (fire, charcoal) benefit. trails (kind:"trails")
     // inits once at engine startup and is never parked; canvas2d init is already a
     // cheap inline getContext. Any other id is a harmless no-op, so hover-intent
@@ -419,7 +438,9 @@ export class EffectRendererManager {
    * Sync a single effect overlay by name. Finds the plugin and delegates.
    */
   syncEffectOverlay(effect: OverlayEffectId): void {
-    const plugin = EFFECT_PLUGIN_BY_ID[effect] as typeof OVERLAY_PLUGINS[number] | undefined;
+    const plugin = EFFECT_PLUGIN_BY_ID[effect] as
+      | (typeof OVERLAY_PLUGINS)[number]
+      | undefined;
     if (plugin && (plugin.kind === "canvas2d" || plugin.kind === "webgl")) {
       this.syncOverlay(plugin);
     }
@@ -456,7 +477,9 @@ export class EffectRendererManager {
         if (this.ledWarmHidden) {
           this.ledWarmHidden = false;
           this.setRendererCanvasVisible("led", true);
-          this.renderLoopService?.updateConfig({ renderers: { led: currentLed } });
+          this.renderLoopService?.updateConfig({
+            renderers: { led: currentLed },
+          });
           this.triggerRender();
         }
         return;
@@ -554,7 +577,9 @@ export class EffectRendererManager {
         this.renderers.set("led", ledRenderer);
         if (this.ledConfig.enabled) {
           // Enabled while the prewarm was in flight — go live now.
-          this.renderLoopService?.updateConfig({ renderers: { led: ledRenderer } });
+          this.renderLoopService?.updateConfig({
+            renderers: { led: ledRenderer },
+          });
           this.triggerRender();
         } else {
           // Park warm: hide + clear, leave it out of the loop.
@@ -575,10 +600,21 @@ export class EffectRendererManager {
    * Set fire overlay configuration. Called by visibility state changes.
    */
   setFireConfig(config: Partial<FireOverlayConfig>): void {
+    const previousProfile = this.fireConfig.renderingProfile ?? "cinematic";
     Object.assign(this.fireConfig, config);
     // Forward quality setting to renderer if present
     if (config.quality !== undefined && this.fireRenderer) {
       this.fireRenderer.setQuality(config.quality);
+    }
+    if (
+      config.renderingProfile !== undefined &&
+      config.renderingProfile !== previousProfile &&
+      this.fireRenderer?.isInitialized()
+    ) {
+      // Natural and Liquid Fire store different data in the thermal field.
+      // Clearing on a style switch prevents one look from briefly bleeding
+      // into the other while the new flame establishes itself.
+      this.fireRenderer.clearSimulation();
     }
     this.syncEffectOverlay("fire");
 
@@ -637,9 +673,9 @@ export class EffectRendererManager {
    * then global VM map) is assigned the given effect.
    */
   hasEffectInEffectiveMap(effect: EffectType): boolean {
-    const effectiveMap = this.cellTipEffectMap ??
-      this.effectsConfigState?.tipEffectMap ?? {};
-    return Object.values(effectiveMap).some(a => a.effect === effect);
+    const effectiveMap =
+      this.cellTipEffectMap ?? this.effectsConfigState?.tipEffectMap ?? {};
+    return Object.values(effectiveMap).some((a) => a.effect === effect);
   }
 
   /**
@@ -673,14 +709,20 @@ export class EffectRendererManager {
   syncEffectLayers(): void {
     if (!this.effectsConfigState) return;
     const state = this.effectsConfigState;
-    const apply = (id: string, renderer: { setCanvasZIndex?: (z: number) => void } | null) => {
+    const apply = (
+      id: string,
+      renderer: { setCanvasZIndex?: (z: number) => void } | null
+    ) => {
       if (!renderer?.setCanvasZIndex) return;
       renderer.setCanvasZIndex(resolveEffectZ(id, state.getEffectLayer(id)));
     };
     apply("trails", this.trailOverlay);
     apply("led", this.ledRenderer);
     for (const plugin of OVERLAY_PLUGINS) {
-      apply(plugin.id, this.renderers.get(plugin.id as OverlayEffectId) ?? null);
+      apply(
+        plugin.id,
+        this.renderers.get(plugin.id as OverlayEffectId) ?? null
+      );
     }
   }
 
@@ -701,7 +743,9 @@ export class EffectRendererManager {
     this.canvasSize = newSize;
     // Resize all registry-driven renderers (canvas2d + webgl overlays)
     for (const plugin of OVERLAY_PLUGINS) {
-      this.renderers.get(plugin.id as OverlayEffectId)?.resize?.(newSize, newSize);
+      this.renderers
+        .get(plugin.id as OverlayEffectId)
+        ?.resize?.(newSize, newSize);
     }
     // LED + trail handled separately
     this.renderers.get("led")?.resize?.(newSize, newSize);
@@ -758,7 +802,9 @@ export class EffectRendererManager {
    */
   initLedConfigFromEffectsState(ecs: EffectsConfigState | null): void {
     const tipMap = ecs?.tipEffectMap ?? {};
-    this.ledConfig.enabled = Object.values(tipMap).some(a => a.effect === "led");
+    this.ledConfig.enabled = Object.values(tipMap).some(
+      (a) => a.effect === "led"
+    );
     this.ledConfig.patternId = ecs?.led.patternId ?? "solid";
     this.ledConfig.primaryColor = ecs?.led.primaryColor ?? "#00ff88";
     this.ledConfig.secondaryColor = ecs?.led.secondaryColor ?? "#ffffff";
@@ -769,7 +815,9 @@ export class EffectRendererManager {
    * Sync LED config from EffectsConfigState. Returns a partial diff for
    * batched setLedConfig() call.
    */
-  diffLedConfigFromEffectsState(ecs: EffectsConfigState | null): Partial<LedOverlayConfig> {
+  diffLedConfigFromEffectsState(
+    ecs: EffectsConfigState | null
+  ): Partial<LedOverlayConfig> {
     const ledEnabled = this.hasEffectInEffectiveMap("led");
     const ledPatternId = ecs?.led.patternId ?? "solid";
     const ledColor = ecs?.led.primaryColor ?? "#00ff88";
@@ -779,11 +827,16 @@ export class EffectRendererManager {
 
     const ledDiff: Partial<LedOverlayConfig> = {};
     if (ledEnabled !== this.ledConfig.enabled) ledDiff.enabled = ledEnabled;
-    if (ledPatternId !== this.ledConfig.patternId) ledDiff.patternId = ledPatternId;
-    if (ledColor !== this.ledConfig.primaryColor) ledDiff.primaryColor = ledColor;
-    if (ledSecondaryColor !== this.ledConfig.secondaryColor) ledDiff.secondaryColor = ledSecondaryColor;
-    if (ledBrightness !== this.ledConfig.brightness) ledDiff.brightness = ledBrightness;
-    if (ledColorMode !== this.ledConfig.colorMode) ledDiff.colorMode = ledColorMode;
+    if (ledPatternId !== this.ledConfig.patternId)
+      ledDiff.patternId = ledPatternId;
+    if (ledColor !== this.ledConfig.primaryColor)
+      ledDiff.primaryColor = ledColor;
+    if (ledSecondaryColor !== this.ledConfig.secondaryColor)
+      ledDiff.secondaryColor = ledSecondaryColor;
+    if (ledBrightness !== this.ledConfig.brightness)
+      ledDiff.brightness = ledBrightness;
+    if (ledColorMode !== this.ledConfig.colorMode)
+      ledDiff.colorMode = ledColorMode;
 
     return ledDiff;
   }

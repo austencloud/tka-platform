@@ -81,7 +81,7 @@ describe("effect preset data", () => {
         const hasResolve = p.resolvePatch !== undefined;
         expect(
           hasPatch !== hasResolve,
-          `${p.id}: expected exactly one of patch/resolvePatch (patch=${hasPatch}, resolvePatch=${hasResolve})`,
+          `${p.id}: expected exactly one of patch/resolvePatch (patch=${hasPatch}, resolvePatch=${hasResolve})`
         ).toBe(true);
       }
     }
@@ -94,9 +94,14 @@ describe("effect preset data", () => {
     // creature mode split out of Silk into Animal, the discriminator moved
     // with it (Silk is now a single-purpose ribbon with no mode axis).
     const missing = ANIMAL_PRESET_GROUP.presets
-      .filter((p) => p.patch && !("creature" in (p.patch as Record<string, unknown>)))
+      .filter(
+        (p) => p.patch && !("creature" in (p.patch as Record<string, unknown>))
+      )
       .map((p) => p.id);
-    expect(missing, `animal presets missing \`creature\`: ${missing.join(", ")}`).toEqual([]);
+    expect(
+      missing,
+      `animal presets missing \`creature\`: ${missing.join(", ")}`
+    ).toEqual([]);
   });
 
   it("every preset uses a static patch (no dynamic resolvePatch remains)", () => {
@@ -104,7 +109,7 @@ describe("effect preset data", () => {
     // now live in the Customize panels, and trail's default IS the colour-matched
     // pair on the synthetic Default chip. So every preset is a static patch.
     const dynamic = GROUPS.flatMap((g) =>
-      g.presets.filter((p) => p.resolvePatch).map((p) => p.id),
+      g.presets.filter((p) => p.resolvePatch).map((p) => p.id)
     );
     expect(dynamic).toEqual([]);
   });

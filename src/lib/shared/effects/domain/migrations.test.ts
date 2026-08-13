@@ -601,4 +601,65 @@ describe("migrateEffectsConfig", () => {
     const out = migrateEffectsConfig(current as any);
     expect(out.fire.brightness).toBe(0.35);
   });
+
+  it("migrates saved Fire settings to the natural style", () => {
+    const v32 = {
+      version: 32,
+      fire: {
+        intensity: 0.82,
+        brightness: 0.6,
+        colorBlend: 0,
+        turbulence: 0.7,
+        colorCurve: null,
+        propColors: null,
+        customColors: null,
+      },
+    };
+    const out = migrateEffectsConfig(v32);
+    expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
+    expect(out.fire.renderingStyle).toBe("natural");
+    expect(out.fire.intensity).toBe(0.82);
+  });
+
+  it("preserves a saved Liquid Fire style", () => {
+    const current = {
+      ...DEFAULT_EFFECTS_CONFIG,
+      fire: {
+        ...DEFAULT_EFFECTS_CONFIG.fire,
+        renderingStyle: "liquid" as const,
+      },
+    };
+    expect(migrateEffectsConfig(current).fire.renderingStyle).toBe("liquid");
+  });
+
+  it("migrates Bloom to an independent live core and retires Ring", () => {
+    const v33 = {
+      ...DEFAULT_EFFECTS_CONFIG,
+      version: 33,
+      bloom: {
+        ...DEFAULT_EFFECTS_CONFIG.bloom,
+        coreStrength: undefined,
+        falloff: "ring" as const,
+      },
+    };
+
+    const out = migrateEffectsConfig(v33);
+    expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
+    expect(out.bloom.coreStrength).toBe(
+      DEFAULT_EFFECTS_CONFIG.bloom.coreStrength
+    );
+    expect(out.bloom.falloff).toBe("smooth");
+  });
+
+  it("preserves a deliberate Bloom core strength", () => {
+    const current = {
+      ...DEFAULT_EFFECTS_CONFIG,
+      bloom: {
+        ...DEFAULT_EFFECTS_CONFIG.bloom,
+        coreStrength: 0.82,
+      },
+    };
+
+    expect(migrateEffectsConfig(current).bloom.coreStrength).toBe(0.82);
+  });
 });

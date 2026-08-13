@@ -25,9 +25,6 @@ export const GRID_SPACING_Z = 5.2;
 
 export const GRID_COLS = 4;
 
-/** The one sequence every cell runs. A museum exhibit sequence, MCP-verified. */
-export const GRID_SEQUENCE_ID = "cave-water-seq-a";
-
 export interface EffectCell {
   id: string;
   label: string;

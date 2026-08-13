@@ -1,6 +1,10 @@
 import type { Object3D } from "three";
 import { BubbleRenderer3D } from "../bubbles/bubble-renderer-3d";
 import { PetalPoolRenderer3D } from "../petals/petal-pool-renderer-3d";
+import {
+  NEUTRAL_PETAL_ENVIRONMENT_PROFILE,
+  type PetalEnvironmentProfile3D,
+} from "../petals/petal-world-art-direction";
 import { SparkleRenderer3D } from "../particles/sparkle-renderer-3d";
 import { SmokePoolRenderer3D } from "../smoke/smoke-pool-renderer-3d";
 import { GooRenderer3D } from "../water/goo-renderer-3d";
@@ -8,6 +12,7 @@ import { InkRenderer3D } from "../ink/ink-renderer-3d";
 import { SilkRenderer3D } from "../silk/silk-renderer-3d";
 import { AnimalRenderer3D } from "../animal/animal-renderer-3d";
 import { PulseRenderer3D } from "../pulse/pulse-renderer-3d";
+import { BloomRenderer3D } from "../bloom/bloom-renderer-3d";
 import type {
   BubbleTipSource3D,
   GooTipSource3D,
@@ -19,6 +24,7 @@ import type {
   SilkTipSource3D,
   AnimalTipSource3D,
   PulseTipSource3D,
+  BloomTipSource3D,
 } from "./scene-effect-source-3d";
 
 export interface SceneEffectsRigRegistration3D {
@@ -28,7 +34,7 @@ export interface SceneEffectsRigRegistration3D {
 }
 
 /**
- * Owns one renderer per particle effect for one Three.js scene.
+ * Owns one renderer per pooled visual effect for one Three.js scene.
  *
  * Orchestrators only publish stable tip inputs. This manager gathers every rig
  * after Threlte's main stage and advances each effect exactly once, so particle
@@ -45,6 +51,7 @@ export class SceneEffectsManager3D {
   private readonly silk: SilkTipSource3D[] = [];
   private readonly animal: AnimalTipSource3D[] = [];
   private readonly pulse: PulseTipSource3D[] = [];
+  private readonly bloom: BloomTipSource3D[] = [];
   private sparkleRenderer: SparkleRenderer3D | null = null;
   private gooRenderer: GooRenderer3D | null = null;
   private bubbleRenderer: BubbleRenderer3D | null = null;
@@ -54,8 +61,10 @@ export class SceneEffectsManager3D {
   private silkRenderer: SilkRenderer3D | null = null;
   private animalRenderer: AnimalRenderer3D | null = null;
   private pulseRenderer: PulseRenderer3D | null = null;
+  private bloomRenderer: BloomRenderer3D | null = null;
   private parent: Object3D | null = null;
   private nextSourceId = 1;
+  private petalEnvironmentProfile = NEUTRAL_PETAL_ENVIRONMENT_PROFILE;
 
   registerRig(frame: SceneEffectRigFrame3D): SceneEffectsRigRegistration3D {
     this.rigs.add(frame);
@@ -81,11 +90,13 @@ export class SceneEffectsManager3D {
     this.gooRenderer = new GooRenderer3D();
     this.bubbleRenderer = new BubbleRenderer3D();
     this.petalRenderer = new PetalPoolRenderer3D();
+    this.petalRenderer.setEnvironmentProfile(this.petalEnvironmentProfile);
     this.smokeRenderer = new SmokePoolRenderer3D();
     this.inkRenderer = new InkRenderer3D();
     this.silkRenderer = new SilkRenderer3D();
     this.animalRenderer = new AnimalRenderer3D();
     this.pulseRenderer = new PulseRenderer3D();
+    this.bloomRenderer = new BloomRenderer3D();
     this.sparkleRenderer.initialize(parent);
     this.gooRenderer.initialize(parent);
     this.bubbleRenderer.initialize(parent);
@@ -95,6 +106,13 @@ export class SceneEffectsManager3D {
     this.silkRenderer.initialize(parent);
     this.animalRenderer.initialize(parent);
     this.pulseRenderer.initialize(parent);
+    this.bloomRenderer.initialize(parent);
+  }
+
+  setPetalEnvironmentProfile(profile: PetalEnvironmentProfile3D): void {
+    if (profile === this.petalEnvironmentProfile) return;
+    this.petalEnvironmentProfile = profile;
+    this.petalRenderer?.setEnvironmentProfile(profile);
   }
 
   update(delta: number): void {
@@ -108,12 +126,17 @@ export class SceneEffectsManager3D {
     this.silk.length = 0;
     this.animal.length = 0;
     this.pulse.length = 0;
+    this.bloom.length = 0;
     let anyPlaying = false;
 
     for (const rig of this.rigs) {
-      if (!rig.playing) continue;
-      anyPlaying = true;
+      if (rig.playing) anyPlaying = true;
       for (const source of rig.sources) {
+        if (source.effect === "bloom") {
+          this.bloom.push(source);
+          continue;
+        }
+        if (!rig.playing) continue;
         switch (source.effect) {
           case "sparkles":
             this.sparkles.push(source);
@@ -146,7 +169,9 @@ export class SceneEffectsManager3D {
       }
     }
 
-    // Pausing freezes the complete effect frame, matching the old emitters.
+    // Bloom pulse remains clock-driven while paused, matching its 2D contract.
+    // Emission-based effects still freeze with the animation.
+    this.bloomRenderer?.update(this.bloom, delta);
     if (!anyPlaying) return;
     this.sparkleRenderer?.update(this.sparkles, delta);
     this.gooRenderer?.update(this.goo, delta);
@@ -169,6 +194,7 @@ export class SceneEffectsManager3D {
     this.silkRenderer?.clear();
     this.animalRenderer?.clear();
     this.pulseRenderer?.clear();
+    this.bloomRenderer?.clear();
   }
 
   dispose(): void {
@@ -187,6 +213,7 @@ export class SceneEffectsManager3D {
     this.silkRenderer?.dispose();
     this.animalRenderer?.dispose();
     this.pulseRenderer?.dispose();
+    this.bloomRenderer?.dispose();
     this.sparkleRenderer = null;
     this.gooRenderer = null;
     this.bubbleRenderer = null;
@@ -196,5 +223,6 @@ export class SceneEffectsManager3D {
     this.silkRenderer = null;
     this.animalRenderer = null;
     this.pulseRenderer = null;
+    this.bloomRenderer = null;
   }
 }

@@ -24,6 +24,7 @@
   import PerfProbe from "./PerfProbe.svelte";
   import AnimalPresetReview from "../animal-presets/+page.svelte";
   import { EFFECT_CELLS } from "./effect-grid";
+  import { BLOOM_PRESETS } from "$lib/shared/animation-engine/components/effects-panel/presets/bloom-presets";
 
   /**
    * One shared effects config for the page, persist:false so the harness never
@@ -34,7 +35,18 @@
    * → EffectOrchestrator3D → EffectsLayer.activeEffects). This context supplies
    * only the per-effect INTENT parameters, which are shared by every cell.
    */
-  setEffectsConfigContext(createEffectsConfigState(undefined, { persist: false }));
+  const effectsConfig = createEffectsConfigState(undefined, { persist: false });
+  const requestedBloomPreset = BLOOM_PRESETS.find(
+    (preset) => preset.id === page.url.searchParams.get("preset")
+  );
+  if (requestedBloomPreset?.patch) {
+    effectsConfig.applyPreset(
+      "bloom",
+      requestedBloomPreset.id,
+      requestedBloomPreset.patch
+    );
+  }
+  setEffectsConfigContext(effectsConfig);
 
   let showProps = $state(false);
   let playing = $state(true);
@@ -57,6 +69,19 @@
   const animalPresetMode = $derived(
     page.url.searchParams.get("view") === "animal-presets",
   );
+  const focusedEffect = $derived(page.url.searchParams.get("focus"));
+  const focusedCell = $derived(
+    EFFECT_CELLS.find((cell) => cell.id === focusedEffect) ?? null,
+  );
+  const sceneCameraPosition = $derived(
+    focusedCell
+      ? ([0, 2.5, 3.2] as const)
+      : cameraPosition,
+  );
+  const sceneCameraTarget = $derived(
+    focusedCell ? ([0, 1.25, 0] as const) : ([0, 0.6, 1] as const),
+  );
+  const sceneFov = $derived(focusedCell ? 38 : 50);
 
   const boolOptions = [
     { value: true, label: "On" },
@@ -98,11 +123,18 @@
       <!-- Framed to fill the stage with the 4x4: high enough that the rows read
            as a grid rather than a receding line, close enough that no cell is
            a speck. The grid spans 3 * GRID_SPACING in both axes. -->
-      <T.PerspectiveCamera makeDefault position={cameraPosition} fov={50}>
-        <OrbitControls enableDamping target={[0, 0.6, 1]} maxPolarAngle={Math.PI / 2} />
+      <T.PerspectiveCamera makeDefault position={sceneCameraPosition} fov={sceneFov}>
+        <OrbitControls enableDamping target={sceneCameraTarget} maxPolarAngle={Math.PI / 2} />
       </T.PerspectiveCamera>
       <PerfProbe />
-      <EffectGridScene {showProps} {playing} {showLabels} {centerPlanes} />
+      <EffectGridScene
+        {showProps}
+        {playing}
+        {showLabels}
+        {centerPlanes}
+        focusEffect={focusedCell?.id ?? null}
+        showStageMarker={!focusedCell}
+      />
     </Canvas>
   </section>
 

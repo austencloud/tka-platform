@@ -116,15 +116,31 @@ export interface Sparkles3DParams extends SparklesIntent {
 }
 
 export interface Ghost3DParams extends GhostIntent {
-  /** Max phantom mesh count per prop (ring buffer). Derived from decay / interval. */
-  poolSize: number;
+  /** Seconds before an exposure fades completely. */
+  lifetimeSeconds: number;
+  /** Rig-local world-space position bucket size. */
+  positionQuantization: number;
+  /** Orientation bucket size in radians. */
+  angleQuantization: number;
+  /** Fresnel exponent for the frozen silhouette edge. */
+  rimPower: number;
 }
 
 export interface Bloom3DParams extends BloomIntent {
-  /** World-space sprite scale (derived from radius). 28 px ≈ 1.12 world units. */
-  spriteScale: number;
-  /** Texture resolution for the procedural halo sprite (square). */
-  textureSize: number;
+  /** World-space radius of the complete optical footprint. */
+  haloRadiusWorld: number;
+  /** World units per second that maps to full motion response. */
+  motionReferenceSpeed: number;
+  /** Seconds before an exposure-history sample disappears. */
+  historyLifetimeSeconds: number;
+  /** Minimum travelled distance between retained exposure samples. */
+  historySampleDistanceWorld: number;
+  /** HDR multiplier that feeds the scene bloom pass. */
+  emissiveStrength: number;
+  /** Peak local-light intensity before source-count normalization. */
+  lightIntensity: number;
+  /** World-space range of each prop light. */
+  lightRange: number;
 }
 
 export interface Goo3DParams extends GooIntent {

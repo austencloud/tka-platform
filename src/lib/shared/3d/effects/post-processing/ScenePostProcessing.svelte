@@ -67,7 +67,7 @@
     }
   });
 
-  // Tier-gated glow: on HIGH/MEDIUM the effects quality tier enables bloom, so
+  // Hardware-gated glow: on HIGH/MEDIUM the detected visual tier enables bloom, so
   // the consolidated 3D trail (HDR-emissive ribbon) blooms in ANY scene, not
   // just ocean. On LOW the trail's in-shader halo alone carries the glow and no
   // composer runs. Trails default-on in the viewer, so tier is the right gate.
@@ -75,10 +75,9 @@
     adaptiveQuality?.config ?? qualityTierDetector.currentConfig
   );
   const tierBloom = $derived(tierConfig.enableBloom);
-  // Preserve the ocean's core grade when a capable device temporarily steps
-  // down for frame pressure. Bloom/distortion/chromatic still follow the live
-  // tier, while ACES + absorption + vignette remain. A device detected LOW at
-  // startup keeps the original composer-free emergency budget.
+  // A device detected LOW at startup keeps the original composer-free budget.
+  // Frame pressure may lower DPR, but it never removes authored post-processing
+  // or rebuilds the composer around a cheaper visual tier mid-session.
   const allowOceanComposer = $derived(
     isOcean &&
       (adaptiveQuality

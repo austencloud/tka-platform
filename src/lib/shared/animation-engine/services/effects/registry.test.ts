@@ -21,4 +21,8 @@ describe("EFFECT_PLUGINS registry", () => {
       expect(EFFECT_PLUGIN_BY_ID[p.id]).toBe(p);
     }
   });
+
+  it("routes Smoke through the deferred WebGL lifecycle", () => {
+    expect(EFFECT_PLUGIN_BY_ID.smoke.kind).toBe("webgl");
+  });
 });

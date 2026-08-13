@@ -39,11 +39,39 @@ describe("migrateEffectsConfig", () => {
       fire: { ...DEFAULT_EFFECTS_CONFIG.fire, intensity: 0.9 },
       led: DEFAULT_EFFECTS_CONFIG.led,
       charcoal: DEFAULT_EFFECTS_CONFIG.charcoal,
-      activePresets: { trails: null, fire: "fire-intense", led: null, charcoal: null },
+      activePresets: {
+        trails: null,
+        fire: "fire-intense",
+        led: null,
+        charcoal: null,
+      },
     };
     const result = migrateEffectsConfig(v1);
     expect(result.trails.thickness).toBe(10);
     expect(result.fire.intensity).toBe(0.9);
     expect(result.activePresets.fire).toBe("fire-intense");
+  });
+
+  it("adds Bloom core strength and maps the retired Ring falloff to Smooth", () => {
+    const legacy = structuredClone(DEFAULT_EFFECTS_CONFIG) as unknown as Record<
+      string,
+      unknown
+    >;
+    legacy.version = 33;
+    const bloom = legacy.bloom as Record<string, unknown>;
+    delete bloom.coreStrength;
+    bloom.falloff = "ring";
+
+    const result = migrateEffectsConfig(legacy);
+    expect(result.bloom.coreStrength).toBe(
+      DEFAULT_EFFECTS_CONFIG.bloom.coreStrength
+    );
+    expect(result.bloom.falloff).toBe("smooth");
+  });
+
+  it("preserves a deliberate Bloom core strength", () => {
+    const current = structuredClone(DEFAULT_EFFECTS_CONFIG);
+    current.bloom.coreStrength = 0.82;
+    expect(migrateEffectsConfig(current).bloom.coreStrength).toBe(0.82);
   });
 });

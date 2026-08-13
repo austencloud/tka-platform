@@ -10,7 +10,11 @@
    */
 
   import { Vector3, Quaternion, Euler } from "three";
-  import type { PropState3D } from "@austencloud/scene-3d";
+  import {
+    AUSTEN_STAFF,
+    PropType,
+    type PropState3D,
+  } from "@austencloud/scene-3d";
   import { getEffectsConfigContext as getUnifiedEffectsState } from "$lib/shared/effects/state/effects-config-context";
   import { getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import {
@@ -22,9 +26,8 @@
     resolvePetals3D,
     resolveSmoke3D,
   } from "$lib/shared/effects/translators/webgl3d-translator";
-  import { AUSTEN_STAFF } from "@austencloud/scene-3d";
   import type { EffectType } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
-  import type { TipPositionData3D } from "./types";
+  import { QualityTier, type TipPositionData3D } from "./types";
 
   // Effect components
   // Trails are no longer mounted here. The single consolidated 3D trail
@@ -32,8 +35,8 @@
   // effectsSlot.
   //
   // Mounted by EffectOrchestrator3D. This component owns the ONLY 3D renderers
-  // for goo, bubbles, smoke, petals, sparkles, zap, ghost and bloom. It was
-  // unmounted for a period, which silently cost those eight effects their 3D
+  // for goo, bubbles, smoke, petals, sparkles, zap and ghost. It was
+  // unmounted for a period, which silently cost those seven effects their 3D
   // path; tests/unit/effects/effect-orchestrator-mounts-layer.test.ts now
   // guards against that recurring.
   import SparkleEmitter from "./particles/SparkleEmitter.svelte";
@@ -41,10 +44,9 @@
   // PropMotionEffects is the LEGACY per-prop motion blur/speed-line mount
   // driven by configState.motion (the `effects-config-state` next to this
   // file, not the unified one). Phase 3 retires it. Ghost is the unified
-  // intent-layer replacement, mounted via GhostStaff3D below.
+  // intent-layer replacement, mounted via GhostPropHistory3D below.
   import PropMotionEffects from "./motion/PropMotionEffects.svelte";
-  import GhostStaff3D from "./motion/GhostStaff3D.svelte";
-  import BloomBillboard3D from "./post-processing/BloomBillboard3D.svelte";
+  import GhostPropHistory3D from "./motion/GhostPropHistory3D.svelte";
   import WaterEmitter3D from "./water/WaterEmitter3D.svelte";
   import BubbleEmitter3D from "./bubbles/BubbleEmitter3D.svelte";
   import PetalEmitter3D from "./petals/PetalEmitter3D.svelte";
@@ -56,6 +58,9 @@
     bluePropState: PropState3D | null;
     /** Red prop state from animation */
     redPropState: PropState3D | null;
+    /** Canonical 3D prop types used by the live rig. */
+    bluePropType?: PropType;
+    redPropType?: PropType;
     /** Whether animation is currently playing */
     isPlaying: boolean;
     /** Staff length for end position calculations */
@@ -77,18 +82,23 @@
     /** Rig-local tips and metres/second velocities from TipPositionBridge3D. */
     blueTipData?: readonly TipPositionData3D[];
     redTipData?: readonly TipPositionData3D[];
-    /** A scene coordinator owns the five particle effects when present. */
+    /** A scene coordinator owns the scene-batched effects when present. */
     pooledEffectsManaged?: boolean;
-    /** Current animation step index (fractional). Used by Ghost (GhostStaff3D)
-     *  to detect beat onsets and age phantoms. Default 0 when a parent
-     *  hasn't plumbed it yet - Ghost stays silent rather than capturing a
-     *  lone phantom at beat 0 every frame. */
+    /** Current fractional animation step. Ghost uses backward movement to
+     *  detect loops and scrubs; pose capture itself is motion-based. */
     currentStep?: number;
+    /** Seam metadata keeps Ghost history continuous across a real LOOP wrap. */
+    totalSteps?: number;
+    seamlesslyLoopable?: boolean;
+    /** Shared adaptive quality tier for bounded Ghost prop pools. */
+    qualityTier?: QualityTier;
   }
 
   let {
     bluePropState,
     redPropState,
+    bluePropType = PropType.STAFF,
+    redPropType = PropType.STAFF,
     isPlaying,
     staffLength = AUSTEN_STAFF.length,
     activeEffects = [],
@@ -98,6 +108,9 @@
     redTipData = [],
     pooledEffectsManaged = false,
     currentStep = 0,
+    totalSteps = 0,
+    seamlesslyLoopable = false,
+    qualityTier = QualityTier.MEDIUM,
   }: Props = $props();
 
   const unifiedState = getUnifiedEffectsState();
@@ -133,10 +146,6 @@
     unifiedState ? resolveGhost3D(unifiedState.ghost) : null
   );
   const ghostEnabled = $derived(isActive("ghost"));
-  const bloomIntent = $derived(unifiedState?.bloom ?? null);
-  const bloomEnabled = $derived(isActive("bloom"));
-  const bloomBlueColor = $derived(unifiedState?.trails.blueColor ?? "#3b82f6");
-  const bloomRedColor = $derived(unifiedState?.trails.redColor ?? "#ef4444");
   // 3D goo currently renders via the legacy WaterEmitter3D particle system; a dedicated 3D goo renderer is a follow-up.
   const goo3D = $derived(unifiedState ? resolveGoo3D(unifiedState.goo) : null);
   const gooEnabled = $derived(isActive("goo"));
@@ -182,17 +191,6 @@
     smoke3D?.trackingMode === "right_end" ||
       smoke3D?.trackingMode === "both_ends"
   );
-  /**
-   * Pick the phantom color for the Ghost effect. Ghost is prop-matched: each
-   * prop's ghosts wear that prop's unified trail color.
-   */
-  function pickGhostColor(whichProp: "blue" | "red"): string {
-    const trails = unifiedState?.trails;
-    return whichProp === "blue"
-      ? (trails?.blueColor ?? "#3b82f6")
-      : (trails?.redColor ?? "#ef4444");
-  }
-
   function pickSparkleColor(i: number): string {
     if (!sparkles3D) return "#ffffff";
     if (sparkles3D.colorMode === "solid") return sparkles3D.color;
@@ -410,79 +408,37 @@
 {/if}
 
 <!-- =============================================================================
-     Unified Ghost intent (Phase 1d revised) - beat-onset phantoms of each
-     prop, sourced from the unified intent layer via resolveGhost3D.
+     Unified Ghost intent - time-based frozen poses of the canonical prop,
+     sourced from the unified intent layer via resolveGhost3D.
      Lives alongside the legacy PropMotionEffects mount above; Phase 3
      retires the legacy path.
      ============================================================================= -->
-{#if ghostEnabled && ghost3D && isPlaying}
-  <GhostStaff3D
+{#if ghostEnabled && ghost3D}
+  <GhostPropHistory3D
     propState={bluePropState}
-    enabled={ghostEnabled}
-    intensity={ghost3D.intensity}
-    decay={ghost3D.decay}
-    interval={ghost3D.interval}
-    color={pickGhostColor("blue")}
-    {staffLength}
+    propType={bluePropType}
+    propColor="blue"
+    params={ghost3D}
+    enabled={ghostEnabled && isPlaying}
+    propLength={staffLength}
     handAnchor={blueHandPos}
     {currentStep}
-    shape="staff"
+    {totalSteps}
+    {seamlesslyLoopable}
+    {qualityTier}
   />
-  <GhostStaff3D
+  <GhostPropHistory3D
     propState={redPropState}
-    enabled={ghostEnabled}
-    intensity={ghost3D.intensity}
-    decay={ghost3D.decay}
-    interval={ghost3D.interval}
-    color={pickGhostColor("red")}
-    {staffLength}
+    propType={redPropType}
+    propColor="red"
+    params={ghost3D}
+    enabled={ghostEnabled && isPlaying}
+    propLength={staffLength}
     handAnchor={redHandPos}
     {currentStep}
-    shape="staff"
-  />
-{/if}
-
-<!-- =============================================================================
-     Bloom: per-tip radial halation sprites. Unlike echo/trails, bloom runs
-     even when paused - pulse modulation is time-based, not step-based.
-     4 sprites total: blueA, blueB, redA, redB.
-     ============================================================================= -->
-{#if bloomEnabled && bloomIntent}
-  <BloomBillboard3D
-    position={blueEnds?.positive ?? null}
-    tipIndex={0}
-    propIndex={0}
-    blueColor={bloomBlueColor}
-    redColor={bloomRedColor}
-    intent={bloomIntent}
-    enabled={bloomEnabled}
-  />
-  <BloomBillboard3D
-    position={blueEnds?.negative ?? null}
-    tipIndex={1}
-    propIndex={0}
-    blueColor={bloomBlueColor}
-    redColor={bloomRedColor}
-    intent={bloomIntent}
-    enabled={bloomEnabled}
-  />
-  <BloomBillboard3D
-    position={redEnds?.positive ?? null}
-    tipIndex={2}
-    propIndex={1}
-    blueColor={bloomBlueColor}
-    redColor={bloomRedColor}
-    intent={bloomIntent}
-    enabled={bloomEnabled}
-  />
-  <BloomBillboard3D
-    position={redEnds?.negative ?? null}
-    tipIndex={3}
-    propIndex={1}
-    blueColor={bloomBlueColor}
-    redColor={bloomRedColor}
-    intent={bloomIntent}
-    enabled={bloomEnabled}
+    {totalSteps}
+    {seamlesslyLoopable}
+    {qualityTier}
   />
 {/if}
 
@@ -531,37 +487,37 @@
      emission. Bubbles rise (+y) and grow over lifetime before popping on
      timeout or max-size.
      ============================================================================= -->
-{#if !pooledEffectsManaged && bubblesEnabled && bubbles3D && isPlaying}
-  {#if blueEnds && bubblesShowRightEnd}
+{#if !pooledEffectsManaged && bubbles3D}
+  {#if blueEnds}
     <BubbleEmitter3D
       position={blueEnds.positive}
       propVelocity={bluePositiveVelocityVec}
       params={bubbles3D}
-      enabled={true}
+      enabled={bubblesEnabled && bubblesShowRightEnd && isPlaying}
     />
   {/if}
-  {#if blueEnds && bubblesShowLeftEnd}
+  {#if blueEnds}
     <BubbleEmitter3D
       position={blueEnds.negative}
       propVelocity={blueNegativeVelocityVec}
       params={bubbles3D}
-      enabled={true}
+      enabled={bubblesEnabled && bubblesShowLeftEnd && isPlaying}
     />
   {/if}
-  {#if redEnds && bubblesShowRightEnd}
+  {#if redEnds}
     <BubbleEmitter3D
       position={redEnds.positive}
       propVelocity={redPositiveVelocityVec}
       params={bubbles3D}
-      enabled={true}
+      enabled={bubblesEnabled && bubblesShowRightEnd && isPlaying}
     />
   {/if}
-  {#if redEnds && bubblesShowLeftEnd}
+  {#if redEnds}
     <BubbleEmitter3D
       position={redEnds.negative}
       propVelocity={redNegativeVelocityVec}
       params={bubbles3D}
-      enabled={true}
+      enabled={bubblesEnabled && bubblesShowLeftEnd && isPlaying}
     />
   {/if}
 {/if}

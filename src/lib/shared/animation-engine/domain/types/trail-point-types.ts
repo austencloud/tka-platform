@@ -123,9 +123,9 @@ function primaryTrailTipIndex(points: readonly TipPoint[]): number {
  * geometry in callers that de-duplicate matching sources.
  */
 export function getDefaultTrailPointConfig(
-  propType: string | null | undefined
+  propType: string | null | undefined,
+  points: readonly TipPoint[] = getTipPoints(propType).points
 ): TrailPointConfig {
-  const points = getTipPoints(propType).points;
   if (points.length === 0) {
     return { left: { type: "none" }, right: { type: "none" } };
   }

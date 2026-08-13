@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { Object3D, PlaneGeometry } from "three";
+import { Object3D, PlaneGeometry, ShaderMaterial, Texture } from "three";
 import { ParticleInstancePool3D } from "$lib/shared/3d/effects/instancing/particle-instance-pool-3d";
+import { setLinearRgbFromHex } from "$lib/shared/3d/effects/instancing/particle-color";
 
 describe("ParticleInstancePool3D", () => {
   it("packs visible particles into stable instance attributes", () => {
@@ -87,5 +88,84 @@ describe("ParticleInstancePool3D", () => {
     pool.commit();
     expect(center.version).toBe(initialVersion);
     expect(pool.mesh.count).toBe(0);
+  });
+
+  it("carries an optional near-camera fade into the particle shader", () => {
+    const pool = new ParticleInstancePool3D({
+      capacity: 1,
+      geometry: new PlaneGeometry(1, 1),
+      nearFadeStart: 2.2,
+      nearFadeEnd: 3.8,
+    });
+    const material = pool.mesh.material as ShaderMaterial;
+    expect(material.uniforms.uNearFadeStart?.value).toBe(2.2);
+    expect(material.uniforms.uNearFadeEnd?.value).toBe(3.8);
+    expect(material.fragmentShader).toContain("smoothstep");
+  });
+
+  it("opts art-directed particles into scene lighting, fog, and far-depth softness", () => {
+    const pool = new ParticleInstancePool3D({
+      capacity: 1,
+      geometry: new PlaneGeometry(1, 1),
+      texture: new Texture(),
+      fog: true,
+      colorManaged: true,
+      surfaceLighting: { strength: 0.72, floor: 0.24 },
+      contrastAdaptation: {
+        backdropLuminance: 0.035,
+        minimumSurfaceLuminance: 0.15,
+        maximumSurfaceLuminance: 0.72,
+        strength: 0.86,
+        edgeStrength: 0.2,
+      },
+      farFadeStart: 5.2,
+      farFadeEnd: 10.5,
+      farFadeOpacity: 0.56,
+      farSoftness: 0.62,
+    });
+    const material = pool.mesh.material as ShaderMaterial;
+
+    expect(material.fog).toBe(true);
+    expect(material.lights).toBe(true);
+    expect(material.defines.USE_PARTICLE_SURFACE_LIGHTING).toBe("");
+    expect(material.defines.USE_PARTICLE_COLOR_MANAGEMENT).toBe("");
+    expect(material.defines.USE_PARTICLE_CONTRAST_ADAPTATION).toBe("");
+    expect(material.uniforms.uLightingStrength?.value).toBe(0.72);
+    expect(material.uniforms.uLightingFloor?.value).toBe(0.24);
+    expect(material.uniforms.uFarFadeStart?.value).toBe(5.2);
+    expect(material.uniforms.uFarFadeEnd?.value).toBe(10.5);
+    expect(material.uniforms.uFarFadeOpacity?.value).toBe(0.56);
+    expect(material.uniforms.uFarSoftness?.value).toBe(0.62);
+    expect(material.uniforms.uBackdropLuminance?.value).toBe(0.035);
+    expect(material.uniforms.uMinimumSurfaceLuminance?.value).toBe(0.15);
+    expect(material.uniforms.uMaximumSurfaceLuminance?.value).toBe(0.72);
+    expect(material.uniforms.uContrastStrength?.value).toBe(0.86);
+    expect(material.uniforms.uContrastEdgeStrength?.value).toBe(0.2);
+    expect(material.fragmentShader).toContain("#include <fog_fragment>");
+    expect(material.fragmentShader).toContain("#include <colorspace_fragment>");
+    expect(material.fragmentShader).toContain(
+      "abs(dot(normal, lightDirection))"
+    );
+    expect(material.fragmentShader).toContain("sampleColor.a * sampleColor.a");
+    expect(material.fragmentShader).toContain("particleLuminance");
+
+    pool.setContrastAdaptation({
+      backdropLuminance: 0.56,
+      minimumSurfaceLuminance: 0.08,
+      maximumSurfaceLuminance: 0.2,
+      strength: 0.94,
+      edgeStrength: 0.3,
+    });
+    expect(material.uniforms.uBackdropLuminance?.value).toBe(0.56);
+    expect(material.uniforms.uMaximumSurfaceLuminance?.value).toBe(0.2);
+    expect(material.uniforms.uContrastStrength?.value).toBe(0.94);
+  });
+
+  it("converts authored sRGB tints into the shader's linear working space", () => {
+    const color = { red: 0, green: 0, blue: 0 };
+    setLinearRgbFromHex(color, "#808080");
+    expect(color.red).toBeCloseTo(0.21586, 4);
+    expect(color.green).toBeCloseTo(0.21586, 4);
+    expect(color.blue).toBeCloseTo(0.21586, 4);
   });
 });

@@ -36,6 +36,11 @@ import type {
   Animal3DParams,
   Pulse3DParams,
 } from "./webgl3d-types";
+import {
+  resolveGhostAngleQuantization,
+  resolveGhostLifetimeSeconds,
+  resolveGhostPositionQuantization,
+} from "../domain/ghost-parameters";
 import { resolveWaterPalette } from "../domain/water-palettes";
 import { resolveBubblePalette } from "../domain/bubble-palettes";
 import { resolvePetalPalette } from "../domain/petal-palettes";
@@ -58,7 +63,7 @@ const STAFF_WORLD_LENGTH = 0.8636;
 
 export function resolveTrails3D(
   intent: TrailsIntent,
-  override: Partial<Trails3DParams> = {},
+  override: Partial<Trails3DParams> = {}
 ): Trails3DParams {
   const defaults: Omit<Trails3DParams, keyof TrailsIntent> = {
     tubeRadius: intent.thickness * 0.008, // 0.008-0.096 world units
@@ -72,7 +77,7 @@ export function resolveTrails3D(
 
 export function resolveFire3D(
   intent: FireIntent,
-  override: Partial<Fire3DParams> = {},
+  override: Partial<Fire3DParams> = {}
 ): Fire3DParams {
   const defaults: Omit<Fire3DParams, keyof FireIntent> = {
     volumetricDensity: 0.3 + intent.intensity * 0.7,
@@ -93,7 +98,7 @@ export function resolveFire3D(
 
 export function resolveLed3D(
   intent: LedIntent,
-  override: Partial<Led3DParams> = {},
+  override: Partial<Led3DParams> = {}
 ): Led3DParams {
   const defaults: Omit<Led3DParams, keyof LedIntent> = {
     segmentCount: 200,
@@ -104,7 +109,7 @@ export function resolveLed3D(
 
 export function resolveCharcoal3D(
   intent: CharcoalIntent,
-  override: Partial<Charcoal3DParams> = {},
+  override: Partial<Charcoal3DParams> = {}
 ): Charcoal3DParams {
   const defaults: Omit<Charcoal3DParams, keyof CharcoalIntent> = {
     particleLifetime: 0.5 + intent.glow * 1.5,
@@ -116,7 +121,7 @@ export function resolveCharcoal3D(
 
 export function resolveZap3D(
   intent: ZapIntent,
-  override: Partial<Zap3DParams> = {},
+  override: Partial<Zap3DParams> = {}
 ): Zap3DParams {
   const defaults: Omit<Zap3DParams, keyof ZapIntent> = {
     segments: Math.max(4, Math.round(5 + intent.intensity * 8)),
@@ -129,7 +134,7 @@ export function resolveZap3D(
 
 export function resolveSparkles3D(
   intent: SparklesIntent,
-  override: Partial<Sparkles3DParams> = {},
+  override: Partial<Sparkles3DParams> = {}
 ): Sparkles3DParams {
   const defaults: Omit<Sparkles3DParams, keyof SparklesIntent> = {
     poolSize: 512,
@@ -149,29 +154,46 @@ export function resolveSparkles3D(
 
 export function resolveGhost3D(
   intent: GhostIntent,
-  override: Partial<Ghost3DParams> = {},
+  override: Partial<Ghost3DParams> = {}
 ): Ghost3DParams {
   const defaults: Omit<Ghost3DParams, keyof GhostIntent> = {
-    poolSize: Math.max(2, Math.ceil(intent.decay / intent.interval) + 2),
+    lifetimeSeconds: resolveGhostLifetimeSeconds(intent.decay),
+    positionQuantization: resolveGhostPositionQuantization(
+      intent.interval,
+      STAFF_WORLD_LENGTH,
+      0.012
+    ),
+    angleQuantization: resolveGhostAngleQuantization(intent.interval),
+    rimPower: 2.35,
   };
   return { ...intent, ...defaults, ...override };
 }
 
 export function resolveBloom3D(
   intent: BloomIntent,
-  override: Partial<Bloom3DParams> = {},
+  override: Partial<Bloom3DParams> = {}
 ): Bloom3DParams {
   const defaults: Omit<Bloom3DParams, keyof BloomIntent> = {
-    // Tuned so 28 px 2D ≈ 1.12 world units 3D.
-    spriteScale: intent.radius * 0.04,
-    textureSize: 128,
+    // The authored radius is a 2D pixel value. Map the 8..90 control range to
+    // an optical radius that stays proportional to a 0.86m staff.
+    haloRadiusWorld:
+      0.14 + ((Math.max(8, Math.min(90, intent.radius)) - 8) / 82) * 0.58,
+    motionReferenceSpeed: 3,
+    historyLifetimeSeconds:
+      intent.afterglow <= 0.001 ? 0 : 0.08 + intent.afterglow * 0.95,
+    historySampleDistanceWorld: 0.065 - intent.afterglow * 0.04,
+    // Keep HDR headroom for post bloom without allowing every preset to clip
+    // into the same white source. Core strength now owns that source directly.
+    emissiveStrength: 1.1 + intent.intensity * 1.6,
+    lightIntensity: 0.8 + intent.intensity * 2.2,
+    lightRange: 3.5 + intent.radius / 45,
   };
   return { ...intent, ...defaults, ...override };
 }
 
 export function resolveGoo3D(
   intent: GooIntent,
-  override: Partial<Goo3DParams> = {},
+  override: Partial<Goo3DParams> = {}
 ): Goo3DParams {
   const defaults: Omit<Goo3DParams, keyof GooIntent> = {
     resolvedPalette: resolveWaterPalette(intent),
@@ -187,7 +209,7 @@ export function resolveGoo3D(
 
 export function resolveBubbles3D(
   intent: BubblesIntent,
-  override: Partial<Bubbles3DParams> = {},
+  override: Partial<Bubbles3DParams> = {}
 ): Bubbles3DParams {
   const defaults: Omit<Bubbles3DParams, keyof BubblesIntent> = {
     resolvedPalette: resolveBubblePalette(intent),
@@ -208,7 +230,7 @@ export function resolveBubbles3D(
 
 export function resolvePetals3D(
   intent: PetalsIntent,
-  override: Partial<Petals3DParams> = {},
+  override: Partial<Petals3DParams> = {}
 ): Petals3DParams {
   const defaults: Omit<Petals3DParams, keyof PetalsIntent> = {
     resolvedPalette: resolvePetalPalette(intent),
@@ -217,14 +239,14 @@ export function resolvePetals3D(
     // 3D emission is dual-source: ambient-from-ceiling + motion-from-tip.
     // Ambient rate stays lower than 2D because 3D petals live longer per
     // particle (longer descent path).
-    ambientAboveRate: 10,
-    motionTipRate: 25,
+    ambientAboveRate: 3,
+    motionTipRate: 18,
     motionReferenceSpeed: 3.0,
     // 3D uses +y = up, so falling is negative velocity.
-    fallBaseSpeed: 1.4,
-    swayBaseSpeed: 0.8,
-    swayFrequency: 1.4,
-    lifetime: 4.0 + intent.intensity * 4.0,
+    fallBaseSpeed: 0.95,
+    swayBaseSpeed: 0.45,
+    swayFrequency: 0.85,
+    lifetime: 3.0 + intent.intensity * 2.5,
   };
   return { ...intent, ...defaults, ...override };
 }
@@ -240,7 +262,7 @@ export function resolvePetals3D(
  */
 export function resolveSmoke3D(
   intent: SmokeIntent,
-  override: Partial<Smoke3DParams> = {},
+  override: Partial<Smoke3DParams> = {}
 ): Smoke3DParams {
   const palette = resolveSmokePalette(intent);
   const RISE_BASE_M = 1.5; // m/sec upward at riseSpeed=1, palette.riseBias=1
@@ -279,11 +301,11 @@ export function resolveSmoke3D(
  */
 export function resolveInk3D(
   intent: InkIntent,
-  override: Partial<Ink3DParams> = {},
+  override: Partial<Ink3DParams> = {}
 ): Ink3DParams {
   const palette = resolveInkPalette(intent);
   const STROKE_WIDTH_MAX_BASE_WORLD = 0.2; // ≈ 12 px / 60 px-per-world
-  const STROKE_WIDTH_MIN_WORLD = 0.017;     // ≈ 1 px / 60 px-per-world
+  const STROKE_WIDTH_MIN_WORLD = 0.017; // ≈ 1 px / 60 px-per-world
   const LIFETIME_SECONDS_BASE = 4.5;
   const MAX_POINTS_PER_TIP = 40;
   const MOTION_REFERENCE_SPEED = 3.0;
@@ -311,7 +333,7 @@ export function resolveInk3D(
 
 export function resolveSilk3D(
   intent: SilkIntent,
-  override: Partial<Silk3DParams> = {},
+  override: Partial<Silk3DParams> = {}
 ): Silk3DParams {
   const defaults: Omit<Silk3DParams, keyof SilkIntent> = {
     resolvedPalette: resolveSilkPalette(intent),
@@ -325,7 +347,7 @@ export function resolveSilk3D(
 
 export function resolveAnimal3D(
   intent: AnimalIntent,
-  override: Partial<Animal3DParams> = {},
+  override: Partial<Animal3DParams> = {}
 ): Animal3DParams {
   const defaults: Omit<Animal3DParams, keyof AnimalIntent> = {
     resolvedPalette: resolveAnimalPalette(intent),
@@ -341,7 +363,7 @@ export function resolveAnimal3D(
 
 export function resolvePulse3D(
   intent: PulseIntent,
-  override: Partial<Pulse3DParams> = {},
+  override: Partial<Pulse3DParams> = {}
 ): Pulse3DParams {
   const ringPixels =
     intent.style === "stroke"
@@ -359,7 +381,7 @@ export function resolvePulse3D(
 
 export function resolveFrost3D(
   intent: FrostIntent,
-  override: Partial<Frost3DParams> = {},
+  override: Partial<Frost3DParams> = {}
 ): Frost3DParams {
   const palette = resolveFrostPalette(intent);
   const defaults: Omit<Frost3DParams, keyof FrostIntent> = {

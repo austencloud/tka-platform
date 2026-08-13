@@ -50,7 +50,11 @@
     type QualityTierConfig,
     type TipPositionData3D,
   } from "./types";
-  import type { PropState3D } from "@austencloud/scene-3d";
+  import {
+    PROP_COLORS,
+    PropType,
+    type PropState3D,
+  } from "@austencloud/scene-3d";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import {
@@ -67,11 +71,11 @@
     resolveSilk3D,
     resolveAnimal3D,
     resolvePulse3D,
+    resolveBloom3D,
   } from "$lib/shared/effects/translators/webgl3d-translator";
   import { evaluatePattern } from "$lib/shared/animation-engine/domain/patterns/evaluator";
   import { createReusableContext } from "$lib/shared/animation-engine/domain/patterns/context";
   import { ledBrightnessToFloat } from "$lib/shared/animation-engine/domain/types/led-types";
-  import { PROP_COLORS } from "@austencloud/scene-3d";
   import { getSceneEffectsContext } from "./scene-effects/scene-effects-context";
   import type {
     SceneEffectRigFrame3D,
@@ -97,6 +101,8 @@
   interface Props {
     bluePropState: PropState3D | null;
     redPropState: PropState3D | null;
+    bluePropType?: PropType;
+    redPropType?: PropType;
     isPlaying: boolean;
     staffHalfLength?: number;
     /**
@@ -106,6 +112,9 @@
      * frame.
      */
     currentStep?: number;
+    /** Sequence seam metadata for persistence effects such as Ghost. */
+    totalSteps?: number;
+    seamlesslyLoopable?: boolean;
     tipEffectMap?: TipEffectMap;
     globalTipEffectMap?: TipEffectMap;
     /** Rig-local hand position for blue prop (from PerformerRig HandAnchor). y is always 0. */
@@ -135,9 +144,13 @@
   let {
     bluePropState,
     redPropState,
+    bluePropType = PropType.STAFF,
+    redPropType = PropType.STAFF,
     isPlaying,
     staffHalfLength = 0.5,
     currentStep = 0,
+    totalSteps = 0,
+    seamlesslyLoopable = false,
     tipEffectMap,
     globalTipEffectMap = {},
     blueHandPos = { x: 0, z: 0 },
@@ -196,7 +209,7 @@
   const sceneEffectsManager = getSceneEffectsContext();
 
   // Resolved intent objects only change when their config does. Keeping them
-  // derived avoids allocating nine spread objects per rig on every frame.
+  // derived avoids allocating ten spread objects per rig on every frame.
   const resolvedSparkles = $derived(resolveSparkles3D(effectsState.sparkles));
   const resolvedGoo = $derived(resolveGoo3D(effectsState.goo));
   const resolvedBubbles = $derived(resolveBubbles3D(effectsState.bubbles));
@@ -206,6 +219,7 @@
   const resolvedSilk = $derived(resolveSilk3D(effectsState.silk));
   const resolvedAnimal = $derived(resolveAnimal3D(effectsState.animal));
   const resolvedPulse = $derived(resolvePulse3D(effectsState.pulse));
+  const resolvedBloom = $derived(resolveBloom3D(effectsState.bloom));
 
   const pooledFrame: SceneEffectRigFrame3D = { playing: false, sources: [] };
   const pooledSources: Array<SceneEffectTipSource3D | null> = [
@@ -238,7 +252,8 @@
       effect !== "ink" &&
       effect !== "silk" &&
       effect !== "animal" &&
-      effect !== "pulse"
+      effect !== "pulse" &&
+      effect !== "bloom"
     )
       return;
 
@@ -284,6 +299,14 @@
         case "pulse":
           source = { ...base, effect, params: resolvedPulse };
           break;
+        case "bloom":
+          source = {
+            ...base,
+            effect,
+            params: resolvedBloom,
+            qualityTier,
+          };
+          break;
       }
       pooledSources[slot] = source;
     }
@@ -315,6 +338,10 @@
         break;
       case "pulse":
         source.params = resolvedPulse;
+        break;
+      case "bloom":
+        source.params = resolvedBloom;
+        source.qualityTier = qualityTier;
         break;
     }
 
@@ -497,7 +524,6 @@
       // Drop the LED prev-position cache so resume/scrub doesn't draw an
       // 8-sample bridge from the stale pre-pause position to the new one.
       _ledPrevPositions.clear();
-      return;
     }
 
     const resolvedLed = resolveLed3D(effectsState.led);
@@ -836,6 +862,11 @@
       redEffectTips = [];
     }
 
+    // Bloom remains a live optical response while paused. The tip bridge was
+    // reset above, so it publishes the current pose with zero motion without
+    // inventing a trail across a pause or scrub. Every emitter below freezes.
+    if (!isPlaying) return;
+
     // LED rendering - direct imperative update in the same frame tick.
     // Determine the parent for imperative meshes: effectsParentRef (rig group)
     // or fall back to scene root via camera parent chain.
@@ -1064,8 +1095,8 @@
      This bypasses Svelte's batched prop propagation so effect data flows
      in the same frame tick as the tip position computation. -->
 
-<!-- The eight effects whose only 3D renderers live in EffectsLayer: goo,
-     bubbles, smoke, petals, sparkles, zap, ghost, bloom. Mounting it
+<!-- The seven effects whose only 3D renderers live in EffectsLayer: goo,
+     bubbles, smoke, petals, sparkles, zap, and ghost. Mounting it
      unconditionally is correct — it gates each effect on activeEffects below.
 
      activeEffects is the 3D selection, resolved here from the same
@@ -1076,6 +1107,8 @@
 <EffectsLayer
   {bluePropState}
   {redPropState}
+  {bluePropType}
+  {redPropType}
   {isPlaying}
   staffLength={staffHalfLength * 2}
   activeEffects={layerActiveEffects}
@@ -1085,4 +1118,7 @@
   redTipData={redEffectTips}
   pooledEffectsManaged={sceneEffectsManager !== null}
   {currentStep}
+  {totalSteps}
+  {seamlesslyLoopable}
+  {qualityTier}
 />

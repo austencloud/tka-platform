@@ -28,6 +28,7 @@ import type {
   AnimalIntent,
   PulseIntent,
 } from "../domain/effects-config";
+import { clampSilkIntensity } from "../domain/effects-config";
 
 export interface EffectConfigMap {
   trails: TrailsIntent;
@@ -51,6 +52,10 @@ export interface EffectConfigMap {
 import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 import { DEFAULT_EFFECTS_CONFIG } from "../domain/defaults";
 import { migrateEffectsConfig } from "../domain/migrations";
+import {
+  getDefaultEffectLayer,
+  type EffectLayerMode,
+} from "../domain/effect-layer-policy";
 import { getSceneUndoManager } from "$lib/shared/3d/undo/get-scene-undo-manager";
 import { charcoalParamsToSemantic } from "$lib/shared/animation-engine/domain/types/charcoal-spark-types";
 
@@ -71,8 +76,23 @@ const CUSTOM_CLEAN_FLAG = "tka_effects_custom_clean";
 const VM_STORAGE_KEY = "animation-visibility-settings";
 
 const EFFECT_IDS = [
-  "trails", "fire", "led", "charcoal", "zap", "sparkles", "ghost", "bloom",
-  "goo", "bubbles", "petals", "smoke", "ink", "frost", "silk", "animal", "pulse",
+  "trails",
+  "fire",
+  "led",
+  "charcoal",
+  "zap",
+  "sparkles",
+  "ghost",
+  "bloom",
+  "goo",
+  "bubbles",
+  "petals",
+  "smoke",
+  "ink",
+  "frost",
+  "silk",
+  "animal",
+  "pulse",
 ] as const;
 
 /** One of the 16 concrete effect ids — `EffectType` minus "none". */
@@ -83,6 +103,36 @@ export function isEffectId(value: string): value is EffectId {
   return (EFFECT_IDS as readonly string[]).includes(value);
 }
 
+function normalizeEffectIntent(effectId: string, intent: unknown): unknown {
+  if (intent === null || typeof intent !== "object") {
+    return intent;
+  }
+  if (effectId === "silk") {
+    const silk = intent as SilkIntent;
+    return { ...silk, intensity: clampSilkIntensity(silk.intensity) };
+  }
+  if (effectId === "bloom") {
+    const bloom = intent as Partial<BloomIntent>;
+    return {
+      ...DEFAULT_EFFECTS_CONFIG.bloom,
+      ...bloom,
+      falloff:
+        bloom.falloff === "ring"
+          ? "smooth"
+          : (bloom.falloff ?? DEFAULT_EFFECTS_CONFIG.bloom.falloff),
+    };
+  }
+  return intent;
+}
+
+function normalizeEffectsConfig(next: EffectsConfig): EffectsConfig {
+  return {
+    ...next,
+    bloom: normalizeEffectIntent("bloom", next.bloom) as BloomIntent,
+    silk: normalizeEffectIntent("silk", next.silk) as SilkIntent,
+  };
+}
+
 /**
  * Legacy effect keys the VM overlay consumes. Stripped from the VM entry
  * after migration — the visibility manager re-serializes unknown keys
@@ -91,10 +141,22 @@ export function isEffectId(value: string): value is EffectId {
  * load, silently clobbering the user's effects-config changes.
  */
 const LEGACY_VM_EFFECT_KEYS = [
-  "fireIntensity", "fireColorBlend", "fireTurbulence", "fireColorCurve", "firePropColors",
-  "ledBrightness", "ledPatternId", "ledPatternSpeed", "ledPrimaryColor", "ledSecondaryColor",
-  "ledColorMode", "ledActivePresetId", "ledUserPresets",
-  "charcoalParams", "tipEffectMap", "effectLayerOverrides",
+  "fireIntensity",
+  "fireColorBlend",
+  "fireTurbulence",
+  "fireColorCurve",
+  "firePropColors",
+  "ledBrightness",
+  "ledPatternId",
+  "ledPatternSpeed",
+  "ledPrimaryColor",
+  "ledSecondaryColor",
+  "ledColorMode",
+  "ledActivePresetId",
+  "ledUserPresets",
+  "charcoalParams",
+  "tipEffectMap",
+  "effectLayerOverrides",
 ] as const;
 
 /**
@@ -149,7 +211,10 @@ function migrateFromVmStorageOnce(config: EffectsConfig): EffectsConfig {
     }
 
     // effectLayerOverrides
-    if (vm.effectLayerOverrides && Object.keys(vm.effectLayerOverrides).length > 0) {
+    if (
+      vm.effectLayerOverrides &&
+      Object.keys(vm.effectLayerOverrides).length > 0
+    ) {
       migrated.effectLayerOverrides = vm.effectLayerOverrides;
     }
 
@@ -171,7 +236,9 @@ function migrateFromVmStorageOnce(config: EffectsConfig): EffectsConfig {
     if (stripped) {
       try {
         localStorage.setItem(VM_STORAGE_KEY, JSON.stringify(vm));
-      } catch { /* quota exceeded or private browsing */ }
+      } catch {
+        /* quota exceeded or private browsing */
+      }
     }
 
     return migrated;
@@ -186,7 +253,8 @@ function loadStoredConfig(): EffectsConfig | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<EffectsConfig>;
-    const storedVersion = typeof parsed.version === "number" ? parsed.version : 1;
+    const storedVersion =
+      typeof parsed.version === "number" ? parsed.version : 1;
     // Versioned migration chain FIRST — it needs the raw legacy field shapes
     // (e.g. v2 zap.color) before any default-merge injects current-shape
     // fields. It also merges defaults and stamps the current version.
@@ -232,19 +300,25 @@ function cleanPollutedCustomDataOnce(): void {
     if (localStorage.getItem(CUSTOM_CLEAN_FLAG)) return;
     localStorage.removeItem(CUSTOM_KEY);
     localStorage.setItem(CUSTOM_CLEAN_FLAG, "1");
-  } catch { /* quota exceeded or private browsing */ }
+  } catch {
+    /* quota exceeded or private browsing */
+  }
 }
 
 export function createEffectsConfigState(
   initial: EffectsConfig = DEFAULT_EFFECTS_CONFIG,
-  options: { persist?: boolean } = {},
+  options: { persist?: boolean } = {}
 ) {
   // persist:false → fully isolated instance (no read from / write to the shared
   // tka_effects_config key). For ephemeral surfaces (tunnel/effects judges,
   // landing previews) that must not clobber the user's global effects config.
   const persist = options.persist ?? true;
   const stored = persist ? loadStoredConfig() : null;
-  let config = $state<EffectsConfig>(stored ?? migrateFromVmStorageOnce(structuredClone(initial)));
+  let config = $state<EffectsConfig>(
+    normalizeEffectsConfig(
+      stored ?? migrateFromVmStorageOnce(structuredClone(initial))
+    )
+  );
   let version = $state(0);
   // Transient, never-persisted hover-intent signal: "the user is about to make
   // this effect active — warm its renderer now." Sibling to activeEffect; read
@@ -257,12 +331,18 @@ export function createEffectsConfigState(
 
   sceneUndo.registerDomain("effects", {
     capture: () => {
-      try { return structuredClone(config); }
-      catch { return JSON.parse(JSON.stringify(config)); }
+      try {
+        return structuredClone(config);
+      } catch {
+        return JSON.parse(JSON.stringify(config));
+      }
     },
     restore: (snapshot) => {
-      try { config = structuredClone(snapshot); }
-      catch { config = JSON.parse(JSON.stringify(snapshot)); }
+      try {
+        config = normalizeEffectsConfig(structuredClone(snapshot));
+      } catch {
+        config = normalizeEffectsConfig(JSON.parse(JSON.stringify(snapshot)));
+      }
       version++;
       scheduleSave();
     },
@@ -276,7 +356,9 @@ export function createEffectsConfigState(
     saveTimer = setTimeout(() => {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-      } catch { /* quota exceeded or private browsing */ }
+      } catch {
+        /* quota exceeded or private browsing */
+      }
     }, 300);
   }
 
@@ -288,13 +370,18 @@ export function createEffectsConfigState(
     defaultsTimer = setTimeout(() => {
       try {
         localStorage.setItem(CUSTOM_KEY, JSON.stringify(personalDefaults));
-      } catch { /* quota exceeded or private browsing */ }
+      } catch {
+        /* quota exceeded or private browsing */
+      }
     }, 300);
   }
 
   const cloneOne = <T>(v: T): T => {
-    try { return structuredClone(v); }
-    catch { return JSON.parse(JSON.stringify(v)); }
+    try {
+      return structuredClone(v);
+    } catch {
+      return JSON.parse(JSON.stringify(v));
+    }
   };
 
   // Per-effect Custom slot — "your last-modified look". Auto-captured on every
@@ -309,7 +396,8 @@ export function createEffectsConfigState(
   const personalDefaults = $state<Record<string, unknown>>({});
   for (const id of EFFECT_IDS) {
     const stored = storedDefaults?.[id];
-    personalDefaults[id] = stored != null ? cloneOne(stored) : null;
+    personalDefaults[id] =
+      stored != null ? normalizeEffectIntent(id, cloneOne(stored)) : null;
   }
 
   // Heal stale trail colours. The retired trail "Custom" preset seeded magenta/
@@ -317,7 +405,9 @@ export function createEffectsConfigState(
   // so the trail Default chip showed magenta+blue instead of the matched red/blue.
   // Reset that exact leaked pair (live config + personal default) to the factory
   // colours. Idempotent; only the leaked pair is touched, never a real colour pick.
-  function healStaleTrailColors(t: { blueColor?: string; redColor?: string } | undefined | null): boolean {
+  function healStaleTrailColors(
+    t: { blueColor?: string; redColor?: string } | undefined | null
+  ): boolean {
     if (t && t.blueColor === "#8b5cf6" && t.redColor === "#ec4899") {
       t.blueColor = DEFAULT_EFFECTS_CONFIG.trails.blueColor;
       t.redColor = DEFAULT_EFFECTS_CONFIG.trails.redColor;
@@ -325,26 +415,39 @@ export function createEffectsConfigState(
     }
     return false;
   }
-  const healedConfig = healStaleTrailColors(config.trails as { blueColor?: string; redColor?: string });
-  const healedDefault = healStaleTrailColors(personalDefaults.trails as { blueColor?: string; redColor?: string });
+  const healedConfig = healStaleTrailColors(
+    config.trails as { blueColor?: string; redColor?: string }
+  );
+  const healedDefault = healStaleTrailColors(
+    personalDefaults.trails as { blueColor?: string; redColor?: string }
+  );
   if (persist && healedConfig) scheduleSave();
   if (persist && healedDefault) persistPersonalDefaults();
 
   /** Structural deep-equality for effect intents (scalars, string arrays, shallow objects). */
   function deepEqual(a: unknown, b: unknown): boolean {
     if (a === b) return true;
-    if (a === null || b === null || typeof a !== "object" || typeof b !== "object") return false;
+    if (
+      a === null ||
+      b === null ||
+      typeof a !== "object" ||
+      typeof b !== "object"
+    )
+      return false;
     const ak = Object.keys(a as object);
     const bk = Object.keys(b as object);
     if (ak.length !== bk.length) return false;
     return ak.every((k) =>
-      deepEqual((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]),
+      deepEqual(
+        (a as Record<string, unknown>)[k],
+        (b as Record<string, unknown>)[k]
+      )
     );
   }
 
   function updateEffect<K extends keyof EffectConfigMap>(
     effectId: K,
-    patch: Partial<EffectConfigMap[K]>,
+    patch: Partial<EffectConfigMap[K]>
   ) {
     if (!isEffectId(effectId)) {
       throw new Error(`Unknown effect id: "${effectId}"`);
@@ -353,20 +456,25 @@ export function createEffectsConfigState(
     // The keyed config write is a genuine TS mapped-type limitation: indexing
     // config by the generic K and merging Partial<EffectConfigMap[K]> can't be
     // expressed without widening, so the cast stays here (and at applyPreset).
-    (config as unknown as Record<string, unknown>)[effectId] = {
-      ...(config as unknown as Record<string, EffectConfigMap[K]>)[effectId],
-      ...patch,
-    };
+    (config as unknown as Record<string, unknown>)[effectId] =
+      normalizeEffectIntent(effectId, {
+        ...(config as unknown as Record<string, EffectConfigMap[K]>)[effectId],
+        ...patch,
+      });
     config.activePresets[effectId as keyof typeof config.activePresets] = null;
     // A manual edit IS the user's personal default — capture and persist it.
-    personalDefaults[effectId] = cloneOne((config as unknown as Record<string, unknown>)[effectId]);
+    personalDefaults[effectId] = cloneOne(
+      (config as unknown as Record<string, unknown>)[effectId]
+    );
     scheduleSave();
     persistPersonalDefaults();
     sceneUndo.commitStateCoalescing(`effects-${effectId}`);
   }
 
   /** The effect's personal default ("your look"), or null if none seeded. */
-  function personalDefault<K extends keyof EffectConfigMap>(id: K): EffectConfigMap[K] | null {
+  function personalDefault<K extends keyof EffectConfigMap>(
+    id: K
+  ): EffectConfigMap[K] | null {
     return (personalDefaults[id] as EffectConfigMap[K] | undefined) ?? null;
   }
 
@@ -374,7 +482,10 @@ export function createEffectsConfigState(
   function hasCustom(id: keyof EffectConfigMap): boolean {
     const snap = personalDefaults[id];
     if (snap == null) return false;
-    return !deepEqual(snap, (DEFAULT_EFFECTS_CONFIG as unknown as Record<string, unknown>)[id]);
+    return !deepEqual(
+      snap,
+      (DEFAULT_EFFECTS_CONFIG as unknown as Record<string, unknown>)[id]
+    );
   }
 
   /** Restore this effect's personal default (the Default chip). No-op without one. */
@@ -383,14 +494,19 @@ export function createEffectsConfigState(
     const snap = personalDefaults[id];
     if (snap == null) return;
     sceneUndo.captureState("restore-custom-effect", `Restore ${id}`);
-    (config as unknown as Record<string, unknown>)[id] = cloneOne(snap);
+    (config as unknown as Record<string, unknown>)[id] = normalizeEffectIntent(
+      id,
+      cloneOne(snap)
+    );
     config.activePresets[id as keyof typeof config.activePresets] = null;
     scheduleSave();
     sceneUndo.commitState();
   }
 
   const factoryOf = (id: string) =>
-    cloneOne((DEFAULT_EFFECTS_CONFIG as unknown as Record<string, unknown>)[id]);
+    cloneOne(
+      (DEFAULT_EFFECTS_CONFIG as unknown as Record<string, unknown>)[id]
+    );
 
   /**
    * Reset one effect to the factory original (the buried escape hatch). Also
@@ -441,12 +557,14 @@ export function createEffectsConfigState(
     prewarmHint = effect;
   }
 
-  function getEffectLayer(effectId: string): "behind" | "front" {
-    return config.effectLayerOverrides[effectId] ?? "behind";
+  function getEffectLayer(effectId: string): EffectLayerMode {
+    return (
+      config.effectLayerOverrides[effectId] ?? getDefaultEffectLayer(effectId)
+    );
   }
 
-  function setEffectLayer(effectId: string, mode: "behind" | "front") {
-    if (mode === "behind") {
+  function setEffectLayer(effectId: string, mode: EffectLayerMode) {
+    if (mode === getDefaultEffectLayer(effectId)) {
       const { [effectId]: _omit, ...rest } = config.effectLayerOverrides;
       config.effectLayerOverrides = rest;
     } else {
@@ -475,24 +593,28 @@ export function createEffectsConfigState(
   function applyPreset<K extends keyof EffectConfigMap>(
     effectType: K,
     presetId: string,
-    patch: Partial<EffectConfigMap[K]>,
+    patch: Partial<EffectConfigMap[K]>
   ) {
     sceneUndo.captureState("apply-effect-preset", `Apply ${effectType} preset`);
     // Same generic mapped-type limitation as updateEffect — see comment there.
-    (config as unknown as Record<string, unknown>)[effectType] = {
-      ...(config as unknown as Record<string, EffectConfigMap[K]>)[effectType],
-      ...patch,
-    };
-    config.activePresets[effectType as keyof typeof config.activePresets] = presetId;
+    (config as unknown as Record<string, unknown>)[effectType] =
+      normalizeEffectIntent(effectType, {
+        ...(config as unknown as Record<string, EffectConfigMap[K]>)[
+          effectType
+        ],
+        ...patch,
+      });
+    config.activePresets[effectType as keyof typeof config.activePresets] =
+      presetId;
     scheduleSave();
     sceneUndo.commitState();
   }
 
   function replace(next: EffectsConfig) {
     try {
-      config = structuredClone(next);
+      config = normalizeEffectsConfig(structuredClone(next));
     } catch {
-      config = JSON.parse(JSON.stringify(next));
+      config = normalizeEffectsConfig(JSON.parse(JSON.stringify(next)));
     }
     scheduleSave();
   }
@@ -503,8 +625,11 @@ export function createEffectsConfigState(
   let baselineMem: EffectsConfig | null = null;
 
   function cloneConfig(c: EffectsConfig): EffectsConfig {
-    try { return structuredClone(c); }
-    catch { return JSON.parse(JSON.stringify(c)); }
+    try {
+      return structuredClone(c);
+    } catch {
+      return JSON.parse(JSON.stringify(c));
+    }
   }
 
   /** Promote the current tuning to the baseline (what Reset returns to). */
@@ -512,8 +637,11 @@ export function createEffectsConfigState(
     const snap = cloneConfig(config);
     baselineMem = snap;
     if (persist && typeof window !== "undefined") {
-      try { localStorage.setItem(BASELINE_KEY, JSON.stringify(snap)); }
-      catch { /* quota exceeded or private browsing */ }
+      try {
+        localStorage.setItem(BASELINE_KEY, JSON.stringify(snap));
+      } catch {
+        /* quota exceeded or private browsing */
+      }
     }
   }
 
@@ -524,39 +652,91 @@ export function createEffectsConfigState(
       try {
         const raw = localStorage.getItem(BASELINE_KEY);
         if (raw) next = migrateEffectsConfig(JSON.parse(raw));
-      } catch { /* malformed/inaccessible baseline */ }
+      } catch {
+        /* malformed/inaccessible baseline */
+      }
     }
     replace(next ?? cloneConfig(DEFAULT_EFFECTS_CONFIG));
   }
 
   return {
-    get config() { return config; },
-    get tipEffectMap() { return config.tipEffectMap; },
-    get trails() { return config.trails; },
-    get fire() { return config.fire; },
-    get led() { return config.led; },
-    get charcoal() { return config.charcoal; },
-    get zap() { return config.zap; },
-    get sparkles() { return config.sparkles; },
-    get ghost() { return config.ghost; },
-    get bloom() { return config.bloom; },
-    get goo() { return config.goo; },
-    get bubbles() { return config.bubbles; },
-    get petals() { return config.petals; },
-    get smoke() { return config.smoke; },
-    get ink() { return config.ink; },
-    get frost() { return config.frost; },
-    get silk() { return config.silk; },
-    get animal() { return config.animal; },
-    get pulse() { return config.pulse; },
-    get activePresets() { return config.activePresets; },
-    get activeEffect() { return config.activeEffect; },
-    get effectLayerOverrides() { return config.effectLayerOverrides; },
-    get version() { return version; },
-    get prewarmHint() { return prewarmHint; },
+    get config() {
+      return config;
+    },
+    get tipEffectMap() {
+      return config.tipEffectMap;
+    },
+    get trails() {
+      return config.trails;
+    },
+    get fire() {
+      return config.fire;
+    },
+    get led() {
+      return config.led;
+    },
+    get charcoal() {
+      return config.charcoal;
+    },
+    get zap() {
+      return config.zap;
+    },
+    get sparkles() {
+      return config.sparkles;
+    },
+    get ghost() {
+      return config.ghost;
+    },
+    get bloom() {
+      return config.bloom;
+    },
+    get goo() {
+      return config.goo;
+    },
+    get bubbles() {
+      return config.bubbles;
+    },
+    get petals() {
+      return config.petals;
+    },
+    get smoke() {
+      return config.smoke;
+    },
+    get ink() {
+      return config.ink;
+    },
+    get frost() {
+      return config.frost;
+    },
+    get silk() {
+      return config.silk;
+    },
+    get animal() {
+      return config.animal;
+    },
+    get pulse() {
+      return config.pulse;
+    },
+    get activePresets() {
+      return config.activePresets;
+    },
+    get activeEffect() {
+      return config.activeEffect;
+    },
+    get effectLayerOverrides() {
+      return config.effectLayerOverrides;
+    },
+    get version() {
+      return version;
+    },
+    get prewarmHint() {
+      return prewarmHint;
+    },
 
     effect<K extends keyof EffectConfigMap>(id: K): EffectConfigMap[K] {
-      return (config as unknown as Record<string, unknown>)[id] as EffectConfigMap[K];
+      return (config as unknown as Record<string, unknown>)[
+        id
+      ] as EffectConfigMap[K];
     },
 
     updateEffect,

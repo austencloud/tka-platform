@@ -15,6 +15,7 @@
  */
 
 import type { EffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
+import { SILK_INTENSITY_MAX } from "$lib/shared/effects/domain/effects-config";
 import { getBilateralEndLabels } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
 
 export type ControlType =
@@ -195,6 +196,7 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
     slider("sparkles", "gravity", "Gravity", { tier: "advanced" }),
   ],
   ghost: [
+    { id: "ghost-color", label: "Colors", type: "colorPair", field: "blueColor", pairFields: ["blueColor", "redColor"], tier: "primary" },
     slider("ghost", "intensity", "Intensity", { tier: "primary" }),
     slider("ghost", "decay", "Persistence", { min: 1, max: 10, step: 0.5, pct: false, tier: "primary" }),
     slider("ghost", "interval", "Density", { tier: "primary" }),
@@ -205,8 +207,9 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
     ] },
     slider("bloom", "intensity", "Intensity", { tier: "primary" }),
     slider("bloom", "radius", "Radius", { min: 8, max: 200, step: 2, pct: false, tier: "primary" }),
+    slider("bloom", "coreStrength", "Core", { tier: "advanced" }),
     { id: "bloom-falloff", label: "Falloff", type: "segmented", field: "falloff", tier: "primary", options: [
-      { value: "smooth", label: "Smooth" }, { value: "sharp", label: "Sharp" }, { value: "ring", label: "Ring" },
+      { value: "smooth", label: "Smooth" }, { value: "sharp", label: "Sharp" },
     ] },
     { id: "bloom-tint", label: "Tint", type: "color", field: "color", tier: "advanced", showWhen: (i) => i.colorMode === "solid" },
     { id: "bloom-palette", label: "Palette", type: "paletteSwatches", field: "palette", tier: "advanced", showWhen: (i) => i.colorMode === "palette" },
@@ -255,7 +258,7 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
   smoke: [
     ...paletteColor("smoke", [
       { value: "incense", label: "Incense" }, { value: "fog", label: "Fog" }, { value: "genie", label: "Genie" },
-      { value: "cursed", label: "Cursed" }, { value: "spirit", label: "Spirit" }, { value: "campfire", label: "Campfire" }, { value: "custom", label: "Custom" },
+      { value: "cursed", label: "Cursed" }, { value: "spirit", label: "Spirit" }, { value: "campfire", label: "Fire smoke" }, { value: "custom", label: "Custom" },
     ]),
     slider("smoke", "intensity", "Intensity", { tier: "primary" }),
     slider("smoke", "ambientEmission", "Ambient", { tier: "primary" }),
@@ -293,7 +296,7 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
       { value: "satin", label: "Satin" }, { value: "velvet", label: "Velvet" }, { value: "ethereal", label: "Ethereal" },
       { value: "shadow", label: "Shadow" }, { value: "gold_leaf", label: "Gold" }, { value: "ember", label: "Ember" }, { value: "custom", label: "Custom" },
     ]),
-    slider("silk", "intensity", "Intensity", { tier: "primary" }),
+    slider("silk", "intensity", "Intensity", { max: SILK_INTENSITY_MAX, tier: "primary" }),
     slider("silk", "width", "Width", { tier: "primary" }),
     slider("silk", "flutter", "Flutter", { tier: "primary" }),
     { id: "silk-track", label: "Track", type: "segmented", field: "trackingMode", options: TRACK_OPTS, tier: "tracking" },

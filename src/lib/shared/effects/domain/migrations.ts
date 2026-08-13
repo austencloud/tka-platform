@@ -1,5 +1,5 @@
 import type { EffectsConfig } from "./effects-config";
-import { EFFECTS_CONFIG_VERSION } from "./effects-config";
+import { clampSilkIntensity, EFFECTS_CONFIG_VERSION } from "./effects-config";
 import { DEFAULT_EFFECTS_CONFIG } from "./defaults";
 
 /**
@@ -11,7 +11,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   if (!raw || typeof raw !== "object") {
     return structuredClone(DEFAULT_EFFECTS_CONFIG);
   }
-   
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy migration shapes have arbitrary keys
   type LegacyRecord = Record<string, any>;
   const input = raw as Partial<EffectsConfig> & {
@@ -33,7 +33,12 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
 
   // v2 → v3: split zap.color into zap.leftColor + zap.rightColor.
   // Mutate the input shape *before* the default-merge so downstream sees v3 shape.
-  if (version < 3 && input.zap && typeof input.zap.color === "string" && !input.zap.leftColor) {
+  if (
+    version < 3 &&
+    input.zap &&
+    typeof input.zap.color === "string" &&
+    !input.zap.leftColor
+  ) {
     input.zap.leftColor = input.zap.color;
     input.zap.rightColor = input.zap.color;
     delete input.zap.color;
@@ -96,7 +101,9 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     if (input.tipEffectMap) {
       for (const key of Object.keys(input.tipEffectMap)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const entry = (input.tipEffectMap as any)[key] as Record<string, any> | undefined;
+        const entry = (input.tipEffectMap as any)[key] as
+          | Record<string, any>
+          | undefined;
         if (entry?.effect === "motion") entry.effect = "echo";
       }
     }
@@ -122,7 +129,8 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
       const b = input.bloom as Record<string, any>;
       const oldRadius = typeof b.radius === "number" ? b.radius : 0.5;
       const newRadiusPx = Math.min(200, Math.max(8, oldRadius * 200 + 8));
-      const preservedIntensity = typeof b.intensity === "number" ? b.intensity : 0.7;
+      const preservedIntensity =
+        typeof b.intensity === "number" ? b.intensity : 0.7;
       b.radius = newRadiusPx;
       b.intensity = preservedIntensity;
       delete b.threshold;
@@ -191,7 +199,8 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // spikes/chromatic/afterglow fields resolve from defaults via the merge below.
   if (version < 17 && input.bloom) {
     if (input.bloom.intensity === 0.95) input.bloom.intensity = 0.6;
-    if (input.bloom.colorMode === "solid") input.bloom.colorMode = "prop-matched";
+    if (input.bloom.colorMode === "solid")
+      input.bloom.colorMode = "prop-matched";
   }
 
   // v17 → v18: zap gains a `style` selector ("branching" | "plasma" | "web").
@@ -269,7 +278,9 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     if (input.tipEffectMap) {
       for (const key of Object.keys(input.tipEffectMap)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const entry = (input.tipEffectMap as any)[key] as Record<string, any> | undefined;
+        const entry = (input.tipEffectMap as any)[key] as
+          | Record<string, any>
+          | undefined;
         if (entry?.effect === "water") entry.effect = "goo";
       }
     }
@@ -297,8 +308,14 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy echo fields not in current shape
     const e = input.echo as Record<string, any>;
     input.echo = {
-      intensity: typeof e.intensity === "number" ? e.intensity : DEFAULT_EFFECTS_CONFIG.ghost.intensity,
-      decay: typeof e.decay === "number" ? e.decay : DEFAULT_EFFECTS_CONFIG.ghost.decay,
+      intensity:
+        typeof e.intensity === "number"
+          ? e.intensity
+          : DEFAULT_EFFECTS_CONFIG.ghost.intensity,
+      decay:
+        typeof e.decay === "number"
+          ? e.decay
+          : DEFAULT_EFFECTS_CONFIG.ghost.decay,
       interval: DEFAULT_EFFECTS_CONFIG.ghost.interval,
     };
   }
@@ -316,7 +333,9 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     if (input.tipEffectMap) {
       for (const key of Object.keys(input.tipEffectMap)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const entry = (input.tipEffectMap as any)[key] as Record<string, any> | undefined;
+        const entry = (input.tipEffectMap as any)[key] as
+          | Record<string, any>
+          | undefined;
         if (entry?.effect === "echo") entry.effect = "ghost";
       }
     }
@@ -324,7 +343,10 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
       const presets = anyInput.activePresets as Record<string, unknown>;
       if (presets.ghost == null) presets.ghost = presets.echo;
       delete presets.echo;
-      if (typeof presets.ghost === "string" && presets.ghost.startsWith("echo-")) {
+      if (
+        typeof presets.ghost === "string" &&
+        presets.ghost.startsWith("echo-")
+      ) {
         presets.ghost = "ghost-" + presets.ghost.slice("echo-".length);
       }
     }
@@ -349,7 +371,8 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
         customColor: silk!.customColor ?? "#600018",
         intensity: typeof silk!.intensity === "number" ? silk!.intensity : 0.85,
         width: typeof silk!.width === "number" ? silk!.width : 0.55,
-        bodyLength: typeof silk!.bodyLength === "number" ? silk!.bodyLength : 0.55,
+        bodyLength:
+          typeof silk!.bodyLength === "number" ? silk!.bodyLength : 0.55,
         slither: typeof silk!.slither === "number" ? silk!.slither : 0.55,
         trackingMode: silk!.trackingMode ?? "right_end",
       };
@@ -363,13 +386,19 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     if (input.tipEffectMap) {
       for (const key of Object.keys(input.tipEffectMap)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const entry = (input.tipEffectMap as any)[key] as Record<string, any> | undefined;
+        const entry = (input.tipEffectMap as any)[key] as
+          | Record<string, any>
+          | undefined;
         if (wasSerpent && entry?.effect === "silk") entry.effect = "animal";
       }
     }
     if (anyInput.activePresets) {
       const presets = anyInput.activePresets as Record<string, any>;
-      if (wasSerpent && typeof presets.silk === "string" && presets.silk.startsWith("silk-")) {
+      if (
+        wasSerpent &&
+        typeof presets.silk === "string" &&
+        presets.silk.startsWith("silk-")
+      ) {
         // silk-serpent → animal-serpent, silk-dragon → animal-dragon.
         const suffix = presets.silk.slice("silk-".length);
         if (suffix === "serpent" || suffix === "dragon") {
@@ -378,14 +407,17 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
         }
       }
     }
-    if (wasSerpent && anyInput.activeEffect === "silk") anyInput.activeEffect = "animal";
+    if (wasSerpent && anyInput.activeEffect === "silk")
+      anyInput.activeEffect = "animal";
 
     // 2. Retire frost — neutralize persisted usage so nothing points at a dead
     //    effect. Frost config block + default stay dormant (deletion deferred).
     if (input.tipEffectMap) {
       for (const key of Object.keys(input.tipEffectMap)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const entry = (input.tipEffectMap as any)[key] as Record<string, any> | undefined;
+        const entry = (input.tipEffectMap as any)[key] as
+          | Record<string, any>
+          | undefined;
         if (entry?.effect === "frost") delete (input.tipEffectMap as any)[key];
       }
     }
@@ -402,12 +434,15 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   if (version < 31) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const anyInput = input as any;
-    if (anyInput.menagerie && !anyInput.animal) anyInput.animal = anyInput.menagerie;
+    if (anyInput.menagerie && !anyInput.animal)
+      anyInput.animal = anyInput.menagerie;
     delete anyInput.menagerie;
     if (input.tipEffectMap) {
       for (const key of Object.keys(input.tipEffectMap)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const entry = (input.tipEffectMap as any)[key] as Record<string, any> | undefined;
+        const entry = (input.tipEffectMap as any)[key] as
+          | Record<string, any>
+          | undefined;
         if (entry?.effect === "menagerie") entry.effect = "animal";
       }
     }
@@ -419,6 +454,30 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
       delete presets.menagerie;
     }
     if (anyInput.activeEffect === "menagerie") anyInput.activeEffect = "animal";
+  }
+
+  // v31 → v32: Ghost owns its prop colors instead of borrowing Trails colors.
+  // Seed the established prop hues so existing saved looks do not change.
+  if (version < 32 && input.ghost) {
+    const ghost = input.ghost as LegacyRecord;
+    ghost.blueColor ??= DEFAULT_EFFECTS_CONFIG.ghost.blueColor;
+    ghost.redColor ??= DEFAULT_EFFECTS_CONFIG.ghost.redColor;
+  }
+
+  // v32 → v33: Fire can preserve the original broad liquid presentation as a
+  // named preset. Existing looks remain on the current natural Fire default.
+  if (version < 33 && input.fire) {
+    const fire = input.fire as LegacyRecord;
+    fire.renderingStyle ??= "natural";
+  }
+
+  // v33 → v34: Bloom separates the live white source from its colored halo.
+  // Saved looks gain the restrained factory source, and the retired Ring
+  // falloff resolves to Smooth instead of preserving the target-like center.
+  if (version < 34 && input.bloom) {
+    const bloom = input.bloom as LegacyRecord;
+    bloom.coreStrength ??= DEFAULT_EFFECTS_CONFIG.bloom.coreStrength;
+    if (bloom.falloff === "ring") bloom.falloff = "smooth";
   }
 
   const out: EffectsConfig = {
@@ -438,7 +497,11 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     smoke: { ...DEFAULT_EFFECTS_CONFIG.smoke, ...(input.smoke ?? {}) },
     ink: { ...DEFAULT_EFFECTS_CONFIG.ink, ...(input.ink ?? {}) },
     frost: { ...DEFAULT_EFFECTS_CONFIG.frost, ...(input.frost ?? {}) },
-    silk: { ...DEFAULT_EFFECTS_CONFIG.silk, ...(input.silk ?? {}) },
+    silk: {
+      ...DEFAULT_EFFECTS_CONFIG.silk,
+      ...(input.silk ?? {}),
+      intensity: clampSilkIntensity(input.silk?.intensity),
+    },
     animal: { ...DEFAULT_EFFECTS_CONFIG.animal, ...(input.animal ?? {}) },
     pulse: { ...DEFAULT_EFFECTS_CONFIG.pulse, ...(input.pulse ?? {}) },
     activePresets: {

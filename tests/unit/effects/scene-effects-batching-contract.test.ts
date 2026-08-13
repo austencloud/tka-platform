@@ -16,12 +16,20 @@ const COORDINATOR = readFileSync(
   ),
   "utf8"
 );
-const GHOST = readFileSync(
-  resolve("src/lib/shared/3d/effects/motion/GhostStaff3D.svelte"),
+const GHOST_HISTORY = readFileSync(
+  resolve("src/lib/shared/3d/effects/motion/GhostPropHistory3D.svelte"),
+  "utf8"
+);
+const GHOST_PHANTOM = readFileSync(
+  resolve("src/lib/shared/3d/effects/motion/GhostPropPhantom3D.svelte"),
   "utf8"
 );
 const BLOOM = readFileSync(
-  resolve("src/lib/shared/3d/effects/post-processing/BloomBillboard3D.svelte"),
+  resolve("src/lib/shared/3d/effects/bloom/bloom-renderer-3d.ts"),
+  "utf8"
+);
+const BLOOM_MATERIAL = readFileSync(
+  resolve("src/lib/shared/3d/effects/bloom/bloom-material-3d.ts"),
   "utf8"
 );
 const ZAP = readFileSync(
@@ -69,12 +77,12 @@ describe("scene-level particle batching contract", () => {
     expect(COORDINATOR).not.toContain("scene.current");
   });
 
-  it("shares Ghost geometry across beat snapshots and disposes it at teardown", () => {
-    expect(GHOST).toContain("geometry={staffGeometry}");
-    expect(GHOST).toContain("geometry={tipGeometry}");
-    expect(GHOST).not.toMatch(/<T\.(?:Cylinder|Sphere)Geometry/);
-    expect(GHOST).toContain("staffGeometry.dispose()");
-    expect(GHOST).toContain("tipGeometry.dispose()");
+  it("keeps a bounded Ghost prop pool and disposes each slot material", () => {
+    expect(GHOST_HISTORY).toContain("resolveGhostPoolSize");
+    expect(GHOST_HISTORY).toContain("Array.from({ length: poolSize }");
+    expect(GHOST_PHANTOM).toContain("<Prop3D");
+    expect(GHOST_PHANTOM).not.toMatch(/<T\.(?:Cylinder|Sphere)Geometry/);
+    expect(GHOST_PHANTOM).toContain("onDestroy(() => material.dispose())");
   });
 
   it("rewrites Zap's fixed GPU buffers instead of replacing geometries", () => {
@@ -85,10 +93,20 @@ describe("scene-level particle batching contract", () => {
     expect(ZAP.match(/new BufferGeometry\(\)/g)).toHaveLength(1);
   });
 
-  it("shares Bloom radial masks and tints them instead of baking rainbow frames", () => {
-    expect(BLOOM).toContain('<script module lang="ts">');
-    expect(BLOOM).toContain("material.color.set");
-    expect(BLOOM).not.toContain("rainbowTexture");
+  it("routes Bloom through one scene batch with real optical controls", () => {
+    expect(ORCHESTRATOR).toContain('effect !== "bloom"');
+    expect(ORCHESTRATOR).toContain("params: resolvedBloom");
+    expect(LAYER).not.toContain("BloomBillboard3D");
+    expect(BLOOM).toContain("new InstancedMesh");
+    expect(BLOOM).toContain("writeHistory");
+    expect(BLOOM_MATERIAL).toContain("vStreak");
+    expect(BLOOM_MATERIAL).toContain("vSpikes");
+    expect(BLOOM_MATERIAL).toContain("vChromatic");
+    expect(
+      existsSync(
+        resolve("src/lib/shared/3d/effects/post-processing/BloomBillboard3D.svelte")
+      )
+    ).toBe(false);
   });
 
   it("does not leave the retired duplicate fire emitter in the tree", () => {

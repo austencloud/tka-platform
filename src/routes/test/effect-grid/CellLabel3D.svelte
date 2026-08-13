@@ -5,8 +5,7 @@
    * Threlte's <Text> needs troika-three-text, which this project does not
    * install — it renders nothing and says nothing about why. Rather than add a
    * dependency for a test harness, this draws the label into a canvas and
-   * puts it on a sprite, the same procedural-texture technique
-   * BloomBillboard3D already uses for its halo.
+   * puts it on a sprite. The texture stays local to this test-only label.
    */
   import { T } from "@threlte/core";
   import { CanvasTexture, SRGBColorSpace } from "three";

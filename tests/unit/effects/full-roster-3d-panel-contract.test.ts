@@ -23,6 +23,14 @@ describe("3D full-roster contract", () => {
     expect(panel).toContain('key: "motion" as const');
   });
 
+  it("exposes each active effect's canonical presets in the regular 3D panel", () => {
+    expect(panel).toContain("EffectPresetsSection");
+    expect(panel).toContain("getRegistration(activeEffectId)");
+    expect(panel).toContain("matchPresetId(activeRegistration.presetGroup");
+    expect(panel).toContain("config.applyPreset(");
+    expect(panel).not.toContain("BLOOM_PRESETS");
+  });
+
   it("resolves and publishes all four formerly missing effects", () => {
     for (const effect of ["Ink", "Silk", "Animal", "Pulse"]) {
       expect(orchestrator).toContain(`resolve${effect}3D`);

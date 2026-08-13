@@ -19,32 +19,59 @@ import {
   resolvePulse2D,
 } from "$lib/shared/effects/translators/canvas2d-translator";
 
-import { Bloom2DRenderer, type BloomTipInput } from "$lib/shared/effects/renderers/bloom-2d-renderer";
+import {
+  Bloom2DRenderer,
+  type BloomTipInput,
+} from "$lib/shared/effects/renderers/bloom-2d-renderer";
 import { Bubbles2DRenderer } from "$lib/shared/effects/renderers/bubbles-2d-renderer";
-import { Ghost2DRenderer, type GhostInput } from "$lib/shared/effects/renderers/ghost-2d-renderer";
+import {
+  Ghost2DRenderer,
+  type GhostInput,
+} from "$lib/shared/effects/renderers/ghost-2d-renderer";
 import { Frost2DRenderer } from "$lib/shared/effects/renderers/frost-2d-renderer";
 import { Ink2DRenderer } from "$lib/shared/effects/renderers/ink-2d-renderer";
 import { Petals2DRenderer } from "$lib/shared/effects/renderers/petals-2d-renderer";
-import { Pulse2DRenderer, type PulseTipInput } from "$lib/shared/effects/renderers/pulse-2d-renderer";
+import {
+  Pulse2DRenderer,
+  type PulseTipInput,
+} from "$lib/shared/effects/renderers/pulse-2d-renderer";
 import { Silk2DRenderer } from "$lib/shared/effects/renderers/silk-2d-renderer";
 import { Animal2DRenderer } from "$lib/shared/effects/renderers/animal-2d-renderer";
 import { Smoke2DRenderer } from "$lib/shared/effects/renderers/smoke-2d-renderer";
+import { WebGLSmokeRenderer } from "$lib/shared/animation-engine/services/smoke/web-gl-smoke-renderer";
 import { Sparkles2DRenderer } from "$lib/shared/effects/renderers/sparkles-2d-renderer";
 import { Goo2DRenderer } from "$lib/shared/effects/renderers/goo-2d-renderer";
 import { Zap2DRenderer } from "$lib/shared/effects/renderers/zap-2d-renderer";
 import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 
 import { Canvas2DTrailRenderer } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-trail-renderer";
-import { DEFAULT_TRAIL_SETTINGS, TrailMode, TrailEffect } from "$lib/shared/animation-engine/domain/types/trail-types";
-import type { TrailPoint, TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
+import {
+  DEFAULT_TRAIL_SETTINGS,
+  TrailMode,
+  TrailEffect,
+} from "$lib/shared/animation-engine/domain/types/trail-types";
+import type {
+  TrailPoint,
+  TrailSettings,
+} from "$lib/shared/animation-engine/domain/types/trail-types";
 
 import { WebGLFireRenderer } from "$lib/shared/animation-engine/services/fire/web-gl-fire-renderer";
 import { WebGLLedRenderer } from "$lib/shared/animation-engine/services/led/web-gl-led-renderer";
 import { CharcoalSparkRenderer } from "$lib/shared/animation-engine/services/charcoal/charcoal-spark-renderer";
-import type { FireFrameInput, PropTipData } from "$lib/shared/animation-engine/domain/types/fire-types";
+import type {
+  FireFrameInput,
+  PropTipData,
+} from "$lib/shared/animation-engine/domain/types/fire-types";
 import { DEFAULT_FIRE_CONFIG } from "$lib/shared/animation-engine/domain/types/fire-types";
-import type { LedFrameInput, LedTipData } from "$lib/shared/animation-engine/domain/types/led-types";
-import { DEFAULT_LED_CONFIG, PROP_BLUE, PROP_RED } from "$lib/shared/animation-engine/domain/types/led-types";
+import type {
+  LedFrameInput,
+  LedTipData,
+} from "$lib/shared/animation-engine/domain/types/led-types";
+import {
+  DEFAULT_LED_CONFIG,
+  PROP_BLUE,
+  PROP_RED,
+} from "$lib/shared/animation-engine/domain/types/led-types";
 
 const VIEWBOX_SIZE = 950;
 const BLUE_COLOR = "#3575E2";
@@ -61,7 +88,7 @@ export interface WorkerEffectRenderer {
     frameIndex: number,
     dt: number,
     stepIndex: number,
-    isStartPosition: boolean,
+    isStartPosition: boolean
   ): void;
   dispose(): void;
 }
@@ -93,7 +120,7 @@ function getPropCenter(canvasSize: number, propState: FramePropState): Vec2 {
 function computeTips(
   canvasSize: number,
   prop: FramePropState | null,
-  viewBox: { width: number; height: number },
+  viewBox: { width: number; height: number }
 ): { a: Vec2; b: Vec2 } | null {
   if (!prop) return null;
   const center = getPropCenter(canvasSize, prop);
@@ -119,7 +146,7 @@ function computeFourTips(
   blue: FramePropState | null,
   red: FramePropState | null,
   blueVB: { width: number; height: number },
-  redVB: { width: number; height: number },
+  redVB: { width: number; height: number }
 ): FourTipPositions {
   const b = computeTips(canvasSize, blue, blueVB);
   const r = computeTips(canvasSize, red, redVB);
@@ -138,10 +165,38 @@ function computeFourTips(
  */
 function fourTipsToEmitters(four: FourTipPositions): EmitterTip[] {
   const out: EmitterTip[] = [];
-  if (four.bluePosA) out.push({ ...four.bluePosA, propIndex: 0, tipIndex: 0, end: "A", color: BLUE_COLOR });
-  if (four.bluePosB) out.push({ ...four.bluePosB, propIndex: 0, tipIndex: 1, end: "B", color: BLUE_COLOR });
-  if (four.redPosA) out.push({ ...four.redPosA, propIndex: 1, tipIndex: 0, end: "A", color: RED_COLOR });
-  if (four.redPosB) out.push({ ...four.redPosB, propIndex: 1, tipIndex: 1, end: "B", color: RED_COLOR });
+  if (four.bluePosA)
+    out.push({
+      ...four.bluePosA,
+      propIndex: 0,
+      tipIndex: 0,
+      end: "A",
+      color: BLUE_COLOR,
+    });
+  if (four.bluePosB)
+    out.push({
+      ...four.bluePosB,
+      propIndex: 0,
+      tipIndex: 1,
+      end: "B",
+      color: BLUE_COLOR,
+    });
+  if (four.redPosA)
+    out.push({
+      ...four.redPosA,
+      propIndex: 1,
+      tipIndex: 0,
+      end: "A",
+      color: RED_COLOR,
+    });
+  if (four.redPosB)
+    out.push({
+      ...four.redPosB,
+      propIndex: 1,
+      tipIndex: 1,
+      end: "B",
+      color: RED_COLOR,
+    });
   return out;
 }
 
@@ -165,28 +220,57 @@ function createTrailsRenderer(): WorkerEffectRenderer {
       const tips = computeFourTips(canvasSize, blue, red, blueVB, redVB);
 
       if (tips.bluePosA) {
-        bluePoints.push({ x: tips.bluePosA.x, y: tips.bluePosA.y, timestamp, propIndex: 0, tipIndex: 0 });
+        bluePoints.push({
+          x: tips.bluePosA.x,
+          y: tips.bluePosA.y,
+          timestamp,
+          propIndex: 0,
+          tipIndex: 0,
+        });
       }
       if (tips.bluePosB) {
-        bluePoints.push({ x: tips.bluePosB.x, y: tips.bluePosB.y, timestamp, propIndex: 0, tipIndex: 1 });
+        bluePoints.push({
+          x: tips.bluePosB.x,
+          y: tips.bluePosB.y,
+          timestamp,
+          propIndex: 0,
+          tipIndex: 1,
+        });
       }
       if (tips.redPosA) {
-        redPoints.push({ x: tips.redPosA.x, y: tips.redPosA.y, timestamp, propIndex: 1, tipIndex: 0 });
+        redPoints.push({
+          x: tips.redPosA.x,
+          y: tips.redPosA.y,
+          timestamp,
+          propIndex: 1,
+          tipIndex: 0,
+        });
       }
       if (tips.redPosB) {
-        redPoints.push({ x: tips.redPosB.x, y: tips.redPosB.y, timestamp, propIndex: 1, tipIndex: 1 });
+        redPoints.push({
+          x: tips.redPosB.x,
+          y: tips.redPosB.y,
+          timestamp,
+          propIndex: 1,
+          tipIndex: 1,
+        });
       }
 
       const maxPoints = settings.maxPoints;
-      if (bluePoints.length > maxPoints) bluePoints.splice(0, bluePoints.length - maxPoints);
-      if (redPoints.length > maxPoints) redPoints.splice(0, redPoints.length - maxPoints);
+      if (bluePoints.length > maxPoints)
+        bluePoints.splice(0, bluePoints.length - maxPoints);
+      if (redPoints.length > maxPoints)
+        redPoints.splice(0, redPoints.length - maxPoints);
 
       renderer.renderTrails(
         ctx as unknown as CanvasRenderingContext2D,
-        bluePoints, redPoints,
-        settings, timestamp,
-        !!blue, !!red,
-        canvasSize,
+        bluePoints,
+        redPoints,
+        settings,
+        timestamp,
+        !!blue,
+        !!red,
+        canvasSize
       );
     },
     dispose() {
@@ -199,22 +283,50 @@ function createTrailsRenderer(): WorkerEffectRenderer {
 // ── Canvas2D "quad-tip" effects (smoke, water, bubbles, etc.) ──
 
 function createQuadTipEffect(
-  effectType: Exclude<EffectType, "none" | "trails" | "fire" | "led" | "charcoal" | "bloom" | "ghost" | "pulse">,
-  canvasSize: number,
+  effectType: Exclude<
+    EffectType,
+    | "none"
+    | "trails"
+    | "fire"
+    | "led"
+    | "charcoal"
+    | "bloom"
+    | "ghost"
+    | "pulse"
+  >,
+  canvasSize: number
 ): WorkerEffectRenderer {
   const scale = computeEffectScale(canvasSize, canvasSize);
   const config = DEFAULT_EFFECTS_CONFIG;
 
   const renderers = {
-    smoke: () => ({ r: new Smoke2DRenderer(), p: resolveSmoke2D(config.smoke) }),
+    smoke: () => ({
+      r: new Smoke2DRenderer(),
+      p: resolveSmoke2D(config.smoke),
+    }),
     goo: () => ({ r: new Goo2DRenderer(), p: resolveGoo2D(config.goo) }),
-    bubbles: () => ({ r: new Bubbles2DRenderer(), p: resolveBubbles2D(config.bubbles) }),
-    petals: () => ({ r: new Petals2DRenderer(), p: resolvePetals2D(config.petals) }),
-    frost: () => ({ r: new Frost2DRenderer(), p: resolveFrost2D(config.frost) }),
+    bubbles: () => ({
+      r: new Bubbles2DRenderer(),
+      p: resolveBubbles2D(config.bubbles),
+    }),
+    petals: () => ({
+      r: new Petals2DRenderer(),
+      p: resolvePetals2D(config.petals),
+    }),
+    frost: () => ({
+      r: new Frost2DRenderer(),
+      p: resolveFrost2D(config.frost),
+    }),
     ink: () => ({ r: new Ink2DRenderer(), p: resolveInk2D(config.ink) }),
-    sparkles: () => ({ r: new Sparkles2DRenderer(), p: resolveSparkles2D(config.sparkles) }),
+    sparkles: () => ({
+      r: new Sparkles2DRenderer(),
+      p: resolveSparkles2D(config.sparkles),
+    }),
     silk: () => ({ r: new Silk2DRenderer(), p: resolveSilk2D(config.silk) }),
-    animal: () => ({ r: new Animal2DRenderer(), p: resolveAnimal2D(config.animal) }),
+    animal: () => ({
+      r: new Animal2DRenderer(),
+      p: resolveAnimal2D(config.animal),
+    }),
     zap: () => ({ r: new Zap2DRenderer(), p: resolveZap2D(config.zap) }),
   } as const;
 
@@ -222,38 +334,99 @@ function createQuadTipEffect(
 
   return {
     renderFrame(ctx, cs, blue, red, blueVB, redVB, _fi, dt) {
-      const tips: EmitterTip[] = fourTipsToEmitters(computeFourTips(cs, blue, red, blueVB, redVB));
+      const tips: EmitterTip[] = fourTipsToEmitters(
+        computeFourTips(cs, blue, red, blueVB, redVB)
+      );
 
       switch (effectType) {
         case "smoke":
-          (r as Smoke2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
+          (r as Smoke2DRenderer).render(
+            ctx as unknown as CanvasRenderingContext2D,
+            p as any,
+            tips,
+            dt,
+            scale
+          );
           break;
         case "goo":
-          (r as Goo2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
+          (r as Goo2DRenderer).render(
+            ctx as unknown as CanvasRenderingContext2D,
+            p as any,
+            tips,
+            dt,
+            scale
+          );
           break;
         case "bubbles":
-          (r as Bubbles2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
+          (r as Bubbles2DRenderer).render(
+            ctx as unknown as CanvasRenderingContext2D,
+            p as any,
+            tips,
+            dt,
+            scale
+          );
           break;
         case "petals":
-          (r as Petals2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
+          (r as Petals2DRenderer).render(
+            ctx as unknown as CanvasRenderingContext2D,
+            p as any,
+            tips,
+            dt,
+            scale
+          );
           break;
         case "frost":
-          (r as Frost2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
+          (r as Frost2DRenderer).render(
+            ctx as unknown as CanvasRenderingContext2D,
+            p as any,
+            tips,
+            dt,
+            scale
+          );
           break;
         case "ink":
-          (r as Ink2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
+          (r as Ink2DRenderer).render(
+            ctx as unknown as CanvasRenderingContext2D,
+            p as any,
+            tips,
+            dt,
+            scale
+          );
           break;
         case "sparkles":
-          (r as Sparkles2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
+          (r as Sparkles2DRenderer).render(
+            ctx as unknown as CanvasRenderingContext2D,
+            p as any,
+            tips,
+            dt,
+            scale
+          );
           break;
         case "silk":
-          (r as Silk2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
+          (r as Silk2DRenderer).render(
+            ctx as unknown as CanvasRenderingContext2D,
+            p as any,
+            tips,
+            dt,
+            scale
+          );
           break;
         case "animal":
-          (r as Animal2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
+          (r as Animal2DRenderer).render(
+            ctx as unknown as CanvasRenderingContext2D,
+            p as any,
+            tips,
+            dt,
+            scale
+          );
           break;
         case "zap":
-          (r as Zap2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, scale);
+          (r as Zap2DRenderer).render(
+            ctx as unknown as CanvasRenderingContext2D,
+            p as any,
+            tips,
+            scale
+          );
           break;
       }
     },
@@ -277,15 +450,44 @@ function createBloomRenderer(canvasSize: number): WorkerEffectRenderer {
       const rt = computeTips(cs, red, redVB);
 
       if (bt) {
-        tips.push({ x: bt.a.x, y: bt.a.y, propIndex: 0, tipIndex: 0, color: BLUE_COLOR });
-        tips.push({ x: bt.b.x, y: bt.b.y, propIndex: 0, tipIndex: 1, color: BLUE_COLOR });
+        tips.push({
+          x: bt.a.x,
+          y: bt.a.y,
+          propIndex: 0,
+          tipIndex: 0,
+          color: BLUE_COLOR,
+        });
+        tips.push({
+          x: bt.b.x,
+          y: bt.b.y,
+          propIndex: 0,
+          tipIndex: 1,
+          color: BLUE_COLOR,
+        });
       }
       if (rt) {
-        tips.push({ x: rt.a.x, y: rt.a.y, propIndex: 1, tipIndex: 2, color: RED_COLOR });
-        tips.push({ x: rt.b.x, y: rt.b.y, propIndex: 1, tipIndex: 3, color: RED_COLOR });
+        tips.push({
+          x: rt.a.x,
+          y: rt.a.y,
+          propIndex: 1,
+          tipIndex: 2,
+          color: RED_COLOR,
+        });
+        tips.push({
+          x: rt.b.x,
+          y: rt.b.y,
+          propIndex: 1,
+          tipIndex: 3,
+          color: RED_COLOR,
+        });
       }
 
-      renderer.render(ctx as unknown as CanvasRenderingContext2D, params, tips, scale);
+      renderer.render(
+        ctx as unknown as CanvasRenderingContext2D,
+        params,
+        tips,
+        scale
+      );
     },
     dispose() {
       renderer.dispose();
@@ -305,9 +507,22 @@ function createGhostRenderer(canvasSize: number): WorkerEffectRenderer {
   const accumCtx = accum.getContext("2d");
 
   return {
-    renderFrame(ctx, cs, blue, red, blueVB, redVB, frameIndex, dt, stepIndex, isStartPosition) {
+    renderFrame(
+      ctx,
+      cs,
+      blue,
+      red,
+      blueVB,
+      redVB,
+      frameIndex,
+      dt,
+      stepIndex,
+      isStartPosition
+    ) {
       if (!accumCtx) return;
-      const currentStep = isStartPosition ? 0 : stepIndex + (frameIndex * dt) % 1;
+      const currentStep = isStartPosition
+        ? 0
+        : stepIndex + ((frameIndex * dt) % 1);
       // Ghost now onion-skins the REAL prop sprite, which the export worker does
       // not load (it only computes analytic tips). Real export ghosting is wired
       // in productionization; until then the export echo layer is empty.
@@ -322,7 +537,7 @@ function createGhostRenderer(canvasSize: number): WorkerEffectRenderer {
         params,
         input,
         dt,
-        scale,
+        scale
       );
       ctx.save();
       ctx.globalAlpha = Math.max(0, Math.min(1, params.intensity));
@@ -343,22 +558,66 @@ function createPulseRenderer(canvasSize: number): WorkerEffectRenderer {
   const scale = computeEffectScale(canvasSize, canvasSize);
 
   return {
-    renderFrame(ctx, cs, blue, red, blueVB, redVB, frameIndex, dt, stepIndex, isStartPosition) {
+    renderFrame(
+      ctx,
+      cs,
+      blue,
+      red,
+      blueVB,
+      redVB,
+      frameIndex,
+      dt,
+      stepIndex,
+      isStartPosition
+    ) {
       const tips: PulseTipInput[] = [];
       const bt = computeTips(cs, blue, blueVB);
       const rt = computeTips(cs, red, redVB);
 
       if (bt) {
-        tips.push({ x: bt.a.x, y: bt.a.y, propIndex: 0, tipIndex: 0, color: BLUE_COLOR });
-        tips.push({ x: bt.b.x, y: bt.b.y, propIndex: 0, tipIndex: 1, color: BLUE_COLOR });
+        tips.push({
+          x: bt.a.x,
+          y: bt.a.y,
+          propIndex: 0,
+          tipIndex: 0,
+          color: BLUE_COLOR,
+        });
+        tips.push({
+          x: bt.b.x,
+          y: bt.b.y,
+          propIndex: 0,
+          tipIndex: 1,
+          color: BLUE_COLOR,
+        });
       }
       if (rt) {
-        tips.push({ x: rt.a.x, y: rt.a.y, propIndex: 1, tipIndex: 2, color: RED_COLOR });
-        tips.push({ x: rt.b.x, y: rt.b.y, propIndex: 1, tipIndex: 3, color: RED_COLOR });
+        tips.push({
+          x: rt.a.x,
+          y: rt.a.y,
+          propIndex: 1,
+          tipIndex: 2,
+          color: RED_COLOR,
+        });
+        tips.push({
+          x: rt.b.x,
+          y: rt.b.y,
+          propIndex: 1,
+          tipIndex: 3,
+          color: RED_COLOR,
+        });
       }
 
-      const currentStep = isStartPosition ? 0 : stepIndex + (frameIndex * dt) % 1;
-      renderer.render(ctx as unknown as CanvasRenderingContext2D, params, tips, currentStep, dt, scale);
+      const currentStep = isStartPosition
+        ? 0
+        : stepIndex + ((frameIndex * dt) % 1);
+      renderer.render(
+        ctx as unknown as CanvasRenderingContext2D,
+        params,
+        tips,
+        currentStep,
+        dt,
+        scale
+      );
     },
     dispose() {
       renderer.dispose();
@@ -371,6 +630,8 @@ function createPulseRenderer(canvasSize: number): WorkerEffectRenderer {
 interface PrevTipState {
   x: number;
   y: number;
+  velocityX: number;
+  velocityY: number;
 }
 
 function createFireRenderer(canvasSize: number): WorkerEffectRenderer | null {
@@ -389,21 +650,37 @@ function createFireRenderer(canvasSize: number): WorkerEffectRenderer | null {
       const buildTip = (
         pos: Vec2,
         propIndex: 0 | 1,
-        tipIndex: number,
+        tipIndex: number
       ): PropTipData => {
         const key = `${propIndex}_${tipIndex}`;
-        const prev = prevTips.get(key) ?? pos;
-        const vx = (pos.x - prev.x) / Math.max(dt, 0.001);
-        const vy = (pos.y - prev.y) / Math.max(dt, 0.001);
+        const previous = prevTips.get(key);
+        const prev = previous ?? { ...pos, velocityX: 0, velocityY: 0 };
+        const safeDt = Math.max(dt, 0.001);
+        const vx = (pos.x - prev.x) / safeDt;
+        const vy = (pos.y - prev.y) / safeDt;
         const speed = Math.sqrt(vx * vx + vy * vy);
-        prevTips.set(key, { x: pos.x, y: pos.y });
+        const accelerationX = previous ? (vx - prev.velocityX) / safeDt : 0;
+        const accelerationY = previous ? (vy - prev.velocityY) / safeDt : 0;
+        prevTips.set(key, {
+          x: pos.x,
+          y: pos.y,
+          velocityX: vx,
+          velocityY: vy,
+        });
         return {
-          x: pos.x, y: pos.y,
-          prevX: prev.x, prevY: prev.y,
-          velocityX: vx, velocityY: vy,
-          speed, propIndex, tipIndex,
+          x: pos.x,
+          y: pos.y,
+          prevX: prev.x,
+          prevY: prev.y,
+          velocityX: vx,
+          velocityY: vy,
+          speed,
+          propIndex,
+          tipIndex,
+          accelerationX,
+          accelerationY,
           flameScale: 1.0,
-          jerk: 0,
+          jerk: Math.hypot(accelerationX, accelerationY),
         };
       };
 
@@ -435,6 +712,25 @@ function createFireRenderer(canvasSize: number): WorkerEffectRenderer | null {
   };
 }
 
+function createSmokeRenderer(canvasSize: number): WorkerEffectRenderer | null {
+  const renderer = new WebGLSmokeRenderer();
+  if (!renderer.initializeHeadless(canvasSize, canvasSize)) return null;
+  const webglCanvas = renderer.getCanvas() as unknown as OffscreenCanvas;
+  const params = resolveSmoke2D(DEFAULT_EFFECTS_CONFIG.smoke);
+  return {
+    renderFrame(ctx, cs, blue, red, blueVB, redVB, _frameIndex, dt) {
+      const tips = fourTipsToEmitters(
+        computeFourTips(cs, blue, red, blueVB, redVB)
+      );
+      renderer.renderFrame(params, tips, dt);
+      ctx.drawImage(webglCanvas, 0, 0);
+    },
+    dispose() {
+      renderer.dispose();
+    },
+  };
+}
+
 function createLedRenderer(canvasSize: number): WorkerEffectRenderer | null {
   const renderer = new WebGLLedRenderer();
   const ok = renderer.initializeHeadless(canvasSize, canvasSize);
@@ -452,18 +748,29 @@ function createLedRenderer(canvasSize: number): WorkerEffectRenderer | null {
         pos: Vec2,
         propIndex: 0 | 1,
         tipIndex: number,
-        color: { r: number; g: number; b: number },
+        color: { r: number; g: number; b: number }
       ): LedTipData => {
         const key = `${propIndex}_${tipIndex}`;
-        const prev = prevTips.get(key) ?? pos;
-        const vx = (pos.x - prev.x) / Math.max(dt, 0.001);
-        const vy = (pos.y - prev.y) / Math.max(dt, 0.001);
+        const previous = prevTips.get(key);
+        const prev = previous ?? { ...pos, velocityX: 0, velocityY: 0 };
+        const safeDt = Math.max(dt, 0.001);
+        const vx = (pos.x - prev.x) / safeDt;
+        const vy = (pos.y - prev.y) / safeDt;
         const speed = Math.sqrt(vx * vx + vy * vy);
-        prevTips.set(key, { x: pos.x, y: pos.y });
+        prevTips.set(key, {
+          x: pos.x,
+          y: pos.y,
+          velocityX: vx,
+          velocityY: vy,
+        });
         return {
-          x: pos.x, y: pos.y,
-          velocityX: vx, velocityY: vy,
-          speed, propIndex, tipIndex,
+          x: pos.x,
+          y: pos.y,
+          velocityX: vx,
+          velocityY: vy,
+          speed,
+          propIndex,
+          tipIndex,
           brightness: 1.0,
           ...color,
         };
@@ -499,7 +806,9 @@ function createLedRenderer(canvasSize: number): WorkerEffectRenderer | null {
   };
 }
 
-function createCharcoalRenderer(canvasSize: number): WorkerEffectRenderer | null {
+function createCharcoalRenderer(
+  canvasSize: number
+): WorkerEffectRenderer | null {
   const renderer = new CharcoalSparkRenderer();
   const ok = renderer.initializeHeadless(canvasSize, canvasSize);
   if (!ok) return null;
@@ -515,21 +824,37 @@ function createCharcoalRenderer(canvasSize: number): WorkerEffectRenderer | null
       const buildTip = (
         pos: Vec2,
         propIndex: 0 | 1,
-        tipIndex: number,
+        tipIndex: number
       ): PropTipData => {
         const key = `${propIndex}_${tipIndex}`;
-        const prev = prevTips.get(key) ?? pos;
-        const vx = (pos.x - prev.x) / Math.max(dt, 0.001);
-        const vy = (pos.y - prev.y) / Math.max(dt, 0.001);
+        const previous = prevTips.get(key);
+        const prev = previous ?? { ...pos, velocityX: 0, velocityY: 0 };
+        const safeDt = Math.max(dt, 0.001);
+        const vx = (pos.x - prev.x) / safeDt;
+        const vy = (pos.y - prev.y) / safeDt;
         const speed = Math.sqrt(vx * vx + vy * vy);
-        prevTips.set(key, { x: pos.x, y: pos.y });
+        const accelerationX = previous ? (vx - prev.velocityX) / safeDt : 0;
+        const accelerationY = previous ? (vy - prev.velocityY) / safeDt : 0;
+        prevTips.set(key, {
+          x: pos.x,
+          y: pos.y,
+          velocityX: vx,
+          velocityY: vy,
+        });
         return {
-          x: pos.x, y: pos.y,
-          prevX: prev.x, prevY: prev.y,
-          velocityX: vx, velocityY: vy,
-          speed, propIndex, tipIndex,
+          x: pos.x,
+          y: pos.y,
+          prevX: prev.x,
+          prevY: prev.y,
+          velocityX: vx,
+          velocityY: vy,
+          speed,
+          propIndex,
+          tipIndex,
+          accelerationX,
+          accelerationY,
           flameScale: 1.0,
-          jerk: 0,
+          jerk: Math.hypot(accelerationX, accelerationY),
         };
       };
 
@@ -565,7 +890,7 @@ function createCharcoalRenderer(canvasSize: number): WorkerEffectRenderer | null
 
 export function createWorkerEffectRenderer(
   effectType: EffectType,
-  canvasSize: number,
+  canvasSize: number
 ): WorkerEffectRenderer | null {
   switch (effectType) {
     case "none":
@@ -580,11 +905,15 @@ export function createWorkerEffectRenderer(
       return createPulseRenderer(canvasSize);
     case "fire":
       return createFireRenderer(canvasSize);
+    case "smoke":
+      return (
+        createSmokeRenderer(canvasSize) ??
+        createQuadTipEffect("smoke", canvasSize)
+      );
     case "led":
       return createLedRenderer(canvasSize);
     case "charcoal":
       return createCharcoalRenderer(canvasSize);
-    case "smoke":
     case "goo":
     case "bubbles":
     case "petals":

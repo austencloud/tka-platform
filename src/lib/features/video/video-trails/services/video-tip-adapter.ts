@@ -1,6 +1,9 @@
 import type { DetectedEndpoint } from "../domain/types";
 import type { PropTipData } from "$lib/shared/animation-engine/domain/types/fire-types";
-import type { LedTipData, LedOverlayConfig } from "$lib/shared/animation-engine/domain/types/led-types";
+import type {
+  LedTipData,
+  LedOverlayConfig,
+} from "$lib/shared/animation-engine/domain/types/led-types";
 import type { TrailPoint } from "$lib/shared/animation-engine/domain/types/trail-types";
 
 // Tracks a single endpoint's last known position and timestamp so we can
@@ -9,6 +12,8 @@ interface PreviousPosition {
   x: number;
   y: number;
   time: number;
+  velocityX: number;
+  velocityY: number;
 }
 
 // Minimum time delta (seconds) used as the denominator in velocity calculations.
@@ -22,7 +27,7 @@ export class VideoTipAdapter {
   mapToFireTips(
     endpoints: DetectedEndpoint[],
     canvasSize: number,
-    currentTime: number,
+    currentTime: number
   ): PropTipData[] {
     return endpoints.map((ep) => {
       const key = `${ep.propIndex}-${ep.tipIndex}`;
@@ -32,15 +37,25 @@ export class VideoTipAdapter {
       // is zero. On subsequent frames we use finite differencing: Δposition / Δtime.
       let vx = 0;
       let vy = 0;
+      let accelerationX = 0;
+      let accelerationY = 0;
 
       if (prev !== undefined) {
         // Clamp dt so a duplicate timestamp doesn't produce Infinity.
         const dt = Math.max((currentTime - prev.time) / 1000, MIN_DT_SECONDS);
         vx = (ep.x - prev.x) / dt;
         vy = (ep.y - prev.y) / dt;
+        accelerationX = (vx - prev.velocityX) / dt;
+        accelerationY = (vy - prev.velocityY) / dt;
       }
 
-      this.previousPositions.set(key, { x: ep.x, y: ep.y, time: currentTime });
+      this.previousPositions.set(key, {
+        x: ep.x,
+        y: ep.y,
+        time: currentTime,
+        velocityX: vx,
+        velocityY: vy,
+      });
 
       return {
         x: ep.x,
@@ -50,12 +65,12 @@ export class VideoTipAdapter {
         velocityX: vx,
         velocityY: vy,
         speed: Math.sqrt(vx * vx + vy * vy),
+        accelerationX,
+        accelerationY,
         propIndex: ep.propIndex,
         tipIndex: ep.tipIndex,
         flameScale: ep.brightness,
-        // Jerk (rate of change of acceleration) is not available from a single
-        // endpoint snapshot - the fire renderer will derive it internally.
-        jerk: 0,
+        jerk: Math.hypot(accelerationX, accelerationY),
       };
     });
   }
@@ -63,7 +78,7 @@ export class VideoTipAdapter {
   mapToLedTips(
     endpoints: DetectedEndpoint[],
     _currentTime: number,
-    _ledConfig: LedOverlayConfig,
+    _ledConfig: LedOverlayConfig
   ): LedTipData[] {
     // Velocity is not needed for the LED renderer, which relies on position and
     // the pattern engine for color. We pass white (1, 1, 1) and let the renderer
@@ -83,7 +98,10 @@ export class VideoTipAdapter {
     }));
   }
 
-  mapToTrailPoints(endpoints: DetectedEndpoint[], currentTime: number): TrailPoint[] {
+  mapToTrailPoints(
+    endpoints: DetectedEndpoint[],
+    currentTime: number
+  ): TrailPoint[] {
     return endpoints.map((ep) => ({
       x: ep.x,
       y: ep.y,
