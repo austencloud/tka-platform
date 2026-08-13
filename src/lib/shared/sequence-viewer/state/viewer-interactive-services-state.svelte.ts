@@ -20,6 +20,7 @@ interface ViewerInteractiveServicesInputs {
   getCellsLoaded: () => number;
   getTotalCells: () => number;
   getViewMode: () => ViewMode;
+  getPlaybackReleased: () => boolean;
 }
 
 interface ViewerInteractiveServicesDependencies {
@@ -50,8 +51,11 @@ export function createViewerInteractiveServicesState(
   let lastLoadedSequenceId: string | null = null;
   let servicesLoadPromise: Promise<void> | null = null;
   let autoplayReadyTimer: ReturnType<typeof setInterval> | null = null;
+  let pausedForPlaybackGate = false;
 
   function tryCompleteAutoplay(startedAt: number): boolean {
+    if (!inputs.getPlaybackReleased()) return false;
+
     const ready = dependencies.isViewerReadyToAutoplay({
       cloudBackedScan: inputs.cloudBackedScan,
       loadedCells: inputs.getCellsLoaded(),
@@ -174,6 +178,28 @@ export function createViewerInteractiveServicesState(
     autoplayReadyTimer = null;
   }
 
+  function syncPlaybackRelease(released: boolean): void {
+    if (!released) {
+      if (inputs.playback.isPlayingLocal && playbackController) {
+        playbackController.togglePlayback();
+        pausedForPlaybackGate = true;
+      }
+      return;
+    }
+
+    // A failed scan hands the existing viewer back to the user. Resume only
+    // when this gate itself paused that viewer; replacement viewers use their
+    // normal autoplay readiness poll.
+    if (
+      pausedForPlaybackGate &&
+      !inputs.playback.isPlayingLocal &&
+      playbackController
+    ) {
+      playbackController.togglePlayback();
+      pausedForPlaybackGate = false;
+    }
+  }
+
   return {
     get animationServicesReady() {
       return animationServicesReady;
@@ -190,6 +216,7 @@ export function createViewerInteractiveServicesState(
     ensureInteractiveServices,
     initializeAnimation,
     clearAutoplayTimer,
+    syncPlaybackRelease,
   };
 }
 

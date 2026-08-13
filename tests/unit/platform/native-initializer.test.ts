@@ -7,7 +7,9 @@ const mocks = vi.hoisted(() => ({
   hideSplash: vi.fn<() => Promise<void>>(),
   showSplash: vi.fn<() => Promise<void>>(),
   waitForViewerReady: vi.fn<() => Promise<"ready" | "failed" | "timeout">>(),
+  beginViewerTransition: vi.fn(),
   markViewerFailed: vi.fn(),
+  markViewerRevealed: vi.fn(),
   isViewerReady: vi.fn(() => false),
 }));
 
@@ -27,8 +29,10 @@ vi.mock("@capacitor/splash-screen", () => ({
 }));
 
 vi.mock("$lib/shared/platform/services/native-scan-viewer-readiness", () => ({
+  beginNativeScanViewerTransition: mocks.beginViewerTransition,
   isNativeScanViewerReady: mocks.isViewerReady,
   markNativeScanViewerFailed: mocks.markViewerFailed,
+  markNativeScanViewerRevealed: mocks.markViewerRevealed,
   waitForNativeScanViewerReady: mocks.waitForViewerReady,
 }));
 
@@ -71,6 +75,7 @@ describe("NativeInitializer deep-link readiness", () => {
       "/browse/gallery?bp=club&rp=club&v=W61Y"
     );
     expect(mocks.waitForViewerReady).toHaveBeenCalledWith("W61Y");
+    expect(mocks.beginViewerTransition).toHaveBeenCalledWith("W61Y");
   });
 
   it("covers a warm scan until the replacement viewer reports its first card", async () => {
@@ -100,7 +105,11 @@ describe("NativeInitializer deep-link readiness", () => {
     releaseViewer("ready");
 
     await expect(opening).resolves.toBe(true);
-    expect(mocks.hideSplash).toHaveBeenCalledWith({ fadeOutDuration: 300 });
+    expect(mocks.hideSplash).toHaveBeenCalledWith({ fadeOutDuration: 0 });
+    expect(mocks.markViewerRevealed).toHaveBeenCalledWith("W61Y");
+    expect(mocks.hideSplash.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.markViewerRevealed.mock.invocationCallOrder[0]!
+    );
   });
 
   it("ignores non-deep-link URLs without waiting for startup", async () => {

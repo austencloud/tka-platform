@@ -1,12 +1,14 @@
 /**
- * Generate iOS PWA splash screens for all device sizes.
+ * Generate branded PWA and Android splash screens.
  *
  * Creates a dark radial-gradient background (#0b1d2a → #060d14)
  * with the TKA icon centered in a soft circular vignette,
  * plus a subtle blue/indigo glow ring behind the logo and
  * the app name below.
  *
- * Usage:  node scripts/generate-splash-screens.mjs
+ * Usage:
+ *   node scripts/generate-splash-screens.mjs
+ *   node scripts/generate-splash-screens.mjs --android
  */
 
 import sharp from "sharp";
@@ -16,6 +18,14 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const OUT = path.join(ROOT, "static", "pwa");
+const ANDROID_RES = path.join(
+  ROOT,
+  "android",
+  "app",
+  "src",
+  "main",
+  "res"
+);
 const ICON = path.join(OUT, "icons", "icon-1024x1024.png");
 
 // Every device size referenced in app.html, plus newer iPhones (15/16 era)
@@ -36,6 +46,22 @@ const SCREENS = [
   { w: 1242, h: 2208, name: "splash-1242x2208.png" },   // iPhone 6+/7+/8+
   { w: 750, h: 1334, name: "splash-750x1334.png" },     // iPhone 6/7/8
   { w: 640, h: 1136, name: "splash-640x1136.png" },     // iPhone 5/SE1
+];
+
+// Capacitor's native splash plugin selects these exact Android resources by
+// orientation and density for both cold launches and programmatic warm scans.
+const ANDROID_SCREENS = [
+  { w: 480, h: 320, name: "drawable/splash.png" },
+  { w: 480, h: 320, name: "drawable-land-mdpi/splash.png" },
+  { w: 800, h: 480, name: "drawable-land-hdpi/splash.png" },
+  { w: 1280, h: 720, name: "drawable-land-xhdpi/splash.png" },
+  { w: 1600, h: 960, name: "drawable-land-xxhdpi/splash.png" },
+  { w: 1920, h: 1280, name: "drawable-land-xxxhdpi/splash.png" },
+  { w: 320, h: 480, name: "drawable-port-mdpi/splash.png" },
+  { w: 480, h: 800, name: "drawable-port-hdpi/splash.png" },
+  { w: 720, h: 1280, name: "drawable-port-xhdpi/splash.png" },
+  { w: 960, h: 1600, name: "drawable-port-xxhdpi/splash.png" },
+  { w: 1280, h: 1920, name: "drawable-port-xxxhdpi/splash.png" },
 ];
 
 /**
@@ -102,7 +128,7 @@ function backgroundSvg(w, h, logoSize) {
 </svg>`;
 }
 
-async function generateSplash({ w, h, name }) {
+async function generateSplash({ w, h, name }, outDir = OUT) {
   // Logo sizing: ~18% of the shorter dimension, clamped
   const shortSide = Math.min(w, h);
   const logoSize = Math.min(Math.round(shortSide * 0.18), 280);
@@ -141,7 +167,7 @@ async function generateSplash({ w, h, name }) {
   const cx = Math.round((w - logoSize) / 2);
   const cy = Math.round((h - logoSize) / 2) - Math.round(logoSize * 0.08);
 
-  const outPath = path.join(OUT, name);
+  const outPath = path.join(outDir, name);
   await sharp(bgBuffer, { density: 72 })
     .resize(w, h)
     .composite([
@@ -155,13 +181,17 @@ async function generateSplash({ w, h, name }) {
 }
 
 async function main() {
-  console.log(`Generating ${SCREENS.length} iOS splash screens…\n`);
+  const androidOnly = process.argv.includes("--android");
+  const screens = androidOnly ? ANDROID_SCREENS : SCREENS;
+  const outDir = androidOnly ? ANDROID_RES : OUT;
+  const platform = androidOnly ? "Android" : "iOS PWA";
+  console.log(`Generating ${screens.length} ${platform} splash screens…\n`);
 
-  for (const screen of SCREENS) {
-    await generateSplash(screen);
+  for (const screen of screens) {
+    await generateSplash(screen, outDir);
   }
 
-  console.log(`\nDone — files written to ${OUT}`);
+  console.log(`\nDone — files written to ${outDir}`);
 }
 
 main().catch((err) => {

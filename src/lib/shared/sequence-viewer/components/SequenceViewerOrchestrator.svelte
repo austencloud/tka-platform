@@ -94,6 +94,8 @@
     handPathMode?: boolean;
     /** Force the animation surface and request playback after assets settle. */
     playOnOpen?: boolean;
+    /** Holds playback while a native launch surface covers the viewer. */
+    playbackReleased?: boolean;
     forceGuest?: boolean;
     initialRenderMode?: "2d" | "3d";
     /** Initial shared-shell surface. Scan uses card so animation work stays out
@@ -128,6 +130,7 @@
     blockClicks = false,
     handPathMode = false,
     playOnOpen = false,
+    playbackReleased = true,
     forceGuest = false,
     initialRenderMode,
     initialViewerMode,
@@ -241,6 +244,7 @@
       getCellsLoaded: () => cellsLoaded,
       getTotalCells: () => totalCells,
       getViewMode: () => viewMode,
+      getPlaybackReleased: () => playbackReleased,
     },
     {
       getAnimationPlaybackController,
@@ -256,6 +260,14 @@
       getSettings,
     }
   );
+
+  $effect(() => {
+    // Reading the reactive getters keeps the effect attached when services
+    // arrive after a native transition has already started.
+    void playback.isPlayingLocal;
+    void interactive.playbackController;
+    interactive.syncPlaybackRelease(playbackReleased);
+  });
   const presentation = createViewerPlaybackPresentationState({
     modalAnimationState,
     playback,

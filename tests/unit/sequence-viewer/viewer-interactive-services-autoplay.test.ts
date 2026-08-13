@@ -17,11 +17,13 @@ function createHarness(options?: {
   totalCells?: number;
   reducedMotion?: boolean;
   ignoredStarts?: number;
+  playbackReleased?: boolean;
 }) {
   let loadedCells = options?.loadedCells ?? 5;
   let totalCells = options?.totalCells ?? 5;
   let isPlaying = false;
   let ignoredStarts = options?.ignoredStarts ?? 0;
+  let playbackReleased = options?.playbackReleased ?? true;
   const togglePlayback = vi.fn(() => {
     if (ignoredStarts > 0) {
       ignoredStarts -= 1;
@@ -53,6 +55,7 @@ function createHarness(options?: {
       getCellsLoaded: () => loadedCells,
       getTotalCells: () => totalCells,
       getViewMode: () => "split",
+      getPlaybackReleased: () => playbackReleased,
     },
     {
       getAnimationPlaybackController: () => playbackController,
@@ -77,6 +80,12 @@ function createHarness(options?: {
     setProgress(loaded: number, total: number) {
       loadedCells = loaded;
       totalCells = total;
+    },
+    releasePlayback() {
+      playbackReleased = true;
+    },
+    holdPlayback() {
+      playbackReleased = false;
     },
     dispose: () => modalAnimationState.dispose(),
   };
@@ -137,6 +146,40 @@ describe("viewer interactive autoplay", () => {
 
     expect(harness.togglePlayback).toHaveBeenCalledTimes(2);
     expect(vi.getTimerCount()).toBe(0);
+    harness.dispose();
+  });
+
+  it("holds autoplay until the native splash has been revealed", async () => {
+    const harness = createHarness({ playbackReleased: false });
+
+    harness.state.ensureInteractiveServices();
+    await harness.state.initializeAnimation(sequence);
+
+    expect(harness.togglePlayback).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(1);
+
+    harness.releasePlayback();
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(harness.togglePlayback).toHaveBeenCalledOnce();
+    expect(vi.getTimerCount()).toBe(0);
+    harness.dispose();
+  });
+
+  it("pauses existing playback before the splash and resumes after reveal", async () => {
+    const harness = createHarness();
+
+    harness.state.ensureInteractiveServices();
+    await harness.state.initializeAnimation(sequence);
+    expect(harness.togglePlayback).toHaveBeenCalledOnce();
+
+    harness.holdPlayback();
+    harness.state.syncPlaybackRelease(false);
+    expect(harness.togglePlayback).toHaveBeenCalledTimes(2);
+
+    harness.releasePlayback();
+    harness.state.syncPlaybackRelease(true);
+    expect(harness.togglePlayback).toHaveBeenCalledTimes(3);
     harness.dispose();
   });
 

@@ -29,8 +29,10 @@
   import { removeCurrentUrlParams } from "$lib/shared/navigation/services/url-state";
   import {
     clearNativeScanViewerReady,
+    isNativeScanViewerTransitionPending,
     markNativeScanViewerFailed,
     markNativeScanViewerReady,
+    subscribeNativeScanViewerTransition,
   } from "$lib/shared/platform/services/native-scan-viewer-readiness";
 
   const overlay = getSequenceOverlayState();
@@ -52,6 +54,7 @@
   let drawerOpen = $state(false);
   let requestedCode = $state<string | null>(null);
   let resolvingCode = $state<string | null>(null);
+  let playbackReleased = $state(true);
 
   $effect(() => {
     drawerOpen = overlay.isOpen;
@@ -65,12 +68,23 @@
 
   onMount(() => {
     window.addEventListener("popstate", handlePopState);
+    const unsubscribeNativeTransition = subscribeNativeScanViewerTransition(
+      ({ phase }) => {
+        if (phase === "started") {
+          playbackReleased = false;
+          return;
+        }
+
+        playbackReleased = true;
+      }
+    );
     // MainApplication imports this host after the route has already finished
     // on a cold Capacitor launch. afterNavigate cannot replay that completed
     // navigation, so read the live URL once when the host joins the page.
     requestedCode = new URL(window.location.href).searchParams.get("v");
     return () => {
       window.removeEventListener("popstate", handlePopState);
+      unsubscribeNativeTransition();
     };
   });
 
@@ -127,6 +141,8 @@
         redPropType: propConfig.redPropType,
         catDogMode: propConfig.catDogMode,
       });
+
+      playbackReleased = !isNativeScanViewerTransitionPending(code);
 
       openSequenceOverlay(hydrated, {
         fromUrl: true,
@@ -202,6 +218,7 @@
         initialStep={overlay.initialStep}
         handPathMode={overlay.handPathMode}
         playOnOpen={overlay.playOnOpen}
+        {playbackReleased}
         onCardReady={handleViewerReady}
         onClose={handleDismiss}
       >
