@@ -101,8 +101,10 @@ function loadSessionOptions(): Partial<StartEndOptions> | null {
       endPositions: (data.endPositions || []) as GridPosition[],
       mustContainLetters: (data.mustContainLetters || []) as Letter[],
       mustNotContainLetters: (data.mustNotContainLetters || []) as Letter[],
-      blueStartOrientation: (data.blueStartOrientation as Orientation) ?? Orientation.IN,
-      redStartOrientation: (data.redStartOrientation as Orientation) ?? Orientation.IN,
+      blueStartOrientation:
+        (data.blueStartOrientation as Orientation) ?? Orientation.IN,
+      redStartOrientation:
+        (data.redStartOrientation as Orientation) ?? Orientation.IN,
     };
   } catch (error) {
     console.warn("⚠️ StartEndOptions: Failed to load session options:", error);
@@ -365,6 +367,23 @@ export function createStartEndOptionsState(
     updateOptions({ endPositions: [...positions] });
   }
 
+  /**
+   * LOOPs determine their own endpoint, so a manually selected endpoint cannot
+   * remain active once LOOP generation is enabled. Clear both representations
+   * together so an older saved session cannot keep an invisible constraint.
+   */
+  function reconcileLoopEnabled(loopEnabled: boolean): boolean {
+    if (
+      !loopEnabled ||
+      (options.endPosition === null && options.endPositions.length === 0)
+    ) {
+      return false;
+    }
+
+    updateOptions({ endPosition: null, endPositions: [] });
+    return true;
+  }
+
   function setMustContainLetters(letters: Letter[]) {
     updateOptions({ mustContainLetters: [...letters] });
   }
@@ -406,12 +425,15 @@ export function createStartEndOptionsState(
     setStartPosition,
     setEndPosition,
     setEndPositions,
+    reconcileLoopEnabled,
     setMustContainLetters,
     setMustNotContainLetters,
   };
 }
 
-export type StartEndOptionsState = ReturnType<typeof createStartEndOptionsState>;
+export type StartEndOptionsState = ReturnType<
+  typeof createStartEndOptionsState
+>;
 
 /** @deprecated Use createStartEndOptionsState instead */
 export const createCustomizeOptionsState = createStartEndOptionsState;

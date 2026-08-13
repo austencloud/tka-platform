@@ -91,6 +91,13 @@ Card-based architecture with integrated Generate button:
     undefined,
     configState.config.gridMode
   );
+
+  // A LOOP owns its endpoint. Keep the Customize state honest across every
+  // enable path, including the LOOP picker, saved setups, and restored sessions.
+  $effect(() => {
+    startEndState.reconcileLoopEnabled(configState.config.loopEnabled);
+  });
+
   const favoriteState = createFavoriteState(() =>
     captureSetupSnapshot(configState.config, startEndState.options)
   );

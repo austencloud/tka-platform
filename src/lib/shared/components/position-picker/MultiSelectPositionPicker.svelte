@@ -21,6 +21,18 @@ Uses blocklist approach: positions in blockedPositions are excluded.
   import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import { createStartPositionVariations } from "./start-position-utils";
   import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import {
+    blockAllExcept,
+    hasSameBlockedPositions,
+    toggleBlockedPosition,
+  } from "./position-selection";
+
+  interface PositionSelectionPreset {
+    id: string;
+    label: string;
+    blockedPositions: GridPosition[];
+  }
 
   let {
     blockedPositions = [],
@@ -28,24 +40,34 @@ Uses blocklist approach: positions in blockedPositions are excluded.
     gridMode: gridModeProp = GridMode.DIAMOND,
     blueStartOrientation = Orientation.IN,
     redStartOrientation = Orientation.IN,
+    presets = [],
   } = $props<{
     blockedPositions: GridPosition[];
     onBlockedChange: (blocked: GridPosition[]) => void;
     gridMode?: GridMode;
     blueStartOrientation?: Orientation;
     redStartOrientation?: Orientation;
+    /** Named shortcuts shown beside All and Choose one. */
+    presets?: PositionSelectionPreset[];
   }>();
 
   // State
   let variations = $state<PictographData[]>([]);
   let hapticService: HapticFeedback | null = $state(null);
   let isLoading = $state(true);
+  let selectionMode = $state<"custom" | "one" | null>(null);
+  let customNeedsFirstPosition = $state(false);
 
   // Convert blockedPositions to Set for O(1) lookup
   const blockedSet = $derived(new Set(blockedPositions));
+  const allPositions = $derived(
+    variations.map((variation) => variation.startPosition as GridPosition)
+  );
 
   // Load variations based on grid mode (reactive to prop changes)
   function loadVariations(mode: GridMode) {
+    selectionMode = null;
+    customNeedsFirstPosition = false;
     variations = startPositionManager.getAllStartPositionVariations(mode);
   }
 
@@ -75,13 +97,58 @@ Uses blocklist approach: positions in blockedPositions are excluded.
    * Toggle a position's blocked state
    */
   function togglePosition(position: GridPosition) {
+    if (selectionMode === "one") {
+      hapticService?.trigger("success");
+      selectionMode = null;
+      onBlockedChange(blockAllExcept(allPositions, position));
+      return;
+    }
+
+    if (selectionMode === "custom" && customNeedsFirstPosition) {
+      hapticService?.trigger("success");
+      customNeedsFirstPosition = false;
+      onBlockedChange(blockAllExcept(allPositions, position));
+      return;
+    }
+
+    const newBlocked = toggleBlockedPosition(
+      allPositions,
+      blockedPositions,
+      position
+    );
+    if (newBlocked === blockedPositions) {
+      hapticService?.trigger("warning");
+      return;
+    }
+
     hapticService?.trigger("selection");
-
-    const newBlocked = blockedSet.has(position)
-      ? blockedPositions.filter((p: GridPosition) => p !== position) // Remove from blocked
-      : [...blockedPositions, position]; // Add to blocked
-
     onBlockedChange(newBlocked);
+  }
+
+  function selectAll() {
+    hapticService?.trigger("selection");
+    selectionMode = null;
+    customNeedsFirstPosition = false;
+    onBlockedChange([]);
+  }
+
+  function selectPreset(preset: PositionSelectionPreset) {
+    hapticService?.trigger("selection");
+    selectionMode = null;
+    customNeedsFirstPosition = false;
+    onBlockedChange([...preset.blockedPositions]);
+  }
+
+  function toggleChooseOne() {
+    hapticService?.trigger("selection");
+    selectionMode = selectionMode === "one" ? null : "one";
+    customNeedsFirstPosition = false;
+  }
+
+  function selectCustom() {
+    hapticService?.trigger("selection");
+    selectionMode = "custom";
+    customNeedsFirstPosition = true;
   }
 
   /**
@@ -92,6 +159,13 @@ Uses blocklist approach: positions in blockedPositions are excluded.
   }
 
   function handleKeydown(e: KeyboardEvent, position: GridPosition) {
+    if (e.key === "Escape" && selectionMode !== null) {
+      e.preventDefault();
+      selectionMode = null;
+      customNeedsFirstPosition = false;
+      return;
+    }
+
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       togglePosition(position);
@@ -99,7 +173,24 @@ Uses blocklist approach: positions in blockedPositions are excluded.
   }
 
   // Count enabled positions
-  const enabledCount = $derived(variations.length - blockedPositions.length);
+  const enabledCount = $derived(
+    allPositions.filter((position) => !blockedSet.has(position)).length
+  );
+  const matchingPreset = $derived(
+    presets.find((preset) =>
+      hasSameBlockedPositions(blockedPositions, preset.blockedPositions)
+    )
+  );
+  const inferredSelection = $derived(
+    enabledCount === variations.length
+      ? "all"
+      : matchingPreset
+        ? `preset:${matchingPreset.id}`
+        : enabledCount === 1
+          ? "one"
+          : "custom"
+  );
+  const activeSelection = $derived(selectionMode ?? inferredSelection);
 
   // Re-orient each variation's props to the chosen start orientation. Start
   // positions are static holds, so start == end orientation (mirrors how the
@@ -135,10 +226,63 @@ Uses blocklist approach: positions in blockedPositions are excluded.
       <span>Loading positions...</span>
     </div>
   {:else}
+    <div
+      class="quick-actions"
+      role="toolbar"
+      aria-label="Quick position choices"
+    >
+      <FilterChipBase
+        label="All"
+        icon="fas fa-check-double"
+        mode="toggle"
+        size="sm"
+        active={activeSelection === "all"}
+        ariaLabel="Enable all positions"
+        onclick={selectAll}
+      />
+      {#each presets as preset (preset.id)}
+        <FilterChipBase
+          label={preset.label}
+          icon="fas fa-shapes"
+          mode="toggle"
+          size="sm"
+          active={activeSelection === `preset:${preset.id}`}
+          ariaLabel={`Use ${preset.label} positions`}
+          onclick={() => selectPreset(preset)}
+        />
+      {/each}
+      <FilterChipBase
+        label="Custom"
+        icon="fas fa-sliders"
+        mode="toggle"
+        size="sm"
+        active={activeSelection === "custom"}
+        ariaLabel="Select a custom mix of positions"
+        onclick={selectCustom}
+      />
+      <FilterChipBase
+        label="Choose one"
+        icon="fas fa-bullseye"
+        mode="toggle"
+        size="sm"
+        active={activeSelection === "one"}
+        ariaLabel={selectionMode === "one"
+          ? "Cancel choosing one position"
+          : "Choose exactly one position"}
+        onclick={toggleChooseOne}
+      />
+    </div>
+
     <!-- Status indicator -->
-    <div class="status-row">
+    <div class="status-row" aria-live="polite" aria-atomic="true">
       <span class="status-text">
-        {#if enabledCount === variations.length}
+        {#if selectionMode === "one"}
+          Choose the one position to keep
+        {:else if selectionMode === "custom" && customNeedsFirstPosition}
+          Choose the first position in your mix
+        {:else if selectionMode === "custom"}
+          {enabledCount} of {variations.length} positions selected
+        {:else if enabledCount === variations.length}
           All {variations.length} positions enabled
         {:else if enabledCount === 0}
           No positions enabled
@@ -146,7 +290,13 @@ Uses blocklist approach: positions in blockedPositions are excluded.
           {enabledCount} of {variations.length} positions enabled
         {/if}
       </span>
-      <span class="hint-text">Tap to toggle</span>
+      <span class="hint-text"
+        >{selectionMode === "one" || customNeedsFirstPosition
+          ? "Tap a position"
+          : selectionMode === "custom"
+            ? "Tap to add or remove"
+            : "Tap to toggle"}</span
+      >
     </div>
 
     <!-- Position grid -->
@@ -164,7 +314,13 @@ Uses blocklist approach: positions in blockedPositions are excluded.
           style:--letter-border-color={getLetterBorderColorSafe(
             position.letter
           )}
-          aria-label="{enabled ? 'Disable' : 'Enable'} position {position.startPosition}"
+          aria-label={selectionMode === "one"
+            ? `Use only position ${position.startPosition}`
+            : customNeedsFirstPosition
+              ? `Start custom selection with position ${position.startPosition}`
+              : enabled && enabledCount === 1
+                ? `Position ${position.startPosition} is the only enabled position`
+                : `${enabled ? "Disable" : "Enable"} position ${position.startPosition}`}
           aria-pressed={enabled}
         >
           <div class="pictograph-wrapper">
@@ -172,7 +328,13 @@ Uses blocklist approach: positions in blockedPositions are excluded.
           </div>
           {#if !enabled}
             <div class="disabled-overlay">
-              <svg class="x-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+              <svg
+                class="x-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+              >
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
             </div>
@@ -189,6 +351,22 @@ Uses blocklist approach: positions in blockedPositions are excluded.
     flex-direction: column;
     gap: 12px;
     padding: 8px 0;
+  }
+
+  .quick-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    min-height: var(--min-touch-target, 48px);
+    overflow-x: auto;
+    padding-inline: 4px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .quick-actions::-webkit-scrollbar {
+    display: none;
   }
 
   .status-row {

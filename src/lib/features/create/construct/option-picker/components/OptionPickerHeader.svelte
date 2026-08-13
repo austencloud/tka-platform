@@ -100,7 +100,7 @@
   const filterValue = $derived(isContinuousOnly ? "continuous" : "all");
 
   // One button per legal turn value at this level: L2 → 0 1 2 3,
-  // L3 → 0 · 0.5 · 1 · 1.5 · 2 · 2.5 · 3 · fl.
+  // L3 → fl · 0 · 0.5 · 1 · 1.5 · 2 · 2.5 · 3.
   const turnOptions = $derived(
     turnValuesForLevel(level).map((v) => ({
       value: turnValueToKey(v),

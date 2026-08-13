@@ -26,11 +26,9 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     getAllowedPositions,
     getAllPositions,
     getBlockedPositionsForPreset,
-    PRESET_LABELS,
     StartPositionPreset,
   } from "../../shared/domain/start-position-presets";
   import StyleExpandPanel from "../StyleExpandPanel.svelte";
-  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import SettingsDrillPanel, {
     type SettingsDrillItem,
   } from "$lib/shared/ui/components/settings-drill/SettingsDrillPanel.svelte";
@@ -151,12 +149,18 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     getAllowedPositions(localBlockedPositions, gridMode).length
   );
 
-  // Single-select preset options for the SegmentedControl.
-  const startPresetOptions = [
-    StartPositionPreset.ANY,
-    StartPositionPreset.CLASSIC,
-    StartPositionPreset.CUSTOM,
-  ].map((p) => ({ value: p, label: PRESET_LABELS[p] }));
+  // Classic 3 remains a useful shortcut, but Custom is a state, not an action.
+  // The shared picker owns All and Choose one for both start and end screens.
+  const startPositionPresets = $derived([
+    {
+      id: "classic",
+      label: "Classic 3",
+      blockedPositions: getBlockedPositionsForPreset(
+        StartPositionPreset.CLASSIC,
+        gridMode
+      ),
+    },
+  ]);
 
   // ─── Row values ───
   const startPosDisplay = $derived.by(() => {
@@ -278,21 +282,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     emitStartEndChange();
   }
 
-  // Preset segment: All clears the blocklist, Classic 3 blocks all but the
-  // classic three, Custom is auto-detected from manual grid toggles (clicking
-  // it directly is a no-op — the grid drives the custom state).
-  function handlePresetSelect(preset: StartPositionPreset) {
-    if (preset === StartPositionPreset.CUSTOM) return;
-    hapticService?.trigger("selection");
-    if (preset === StartPositionPreset.ANY) {
-      applyBlockedPositions([]);
-    } else if (preset === StartPositionPreset.CLASSIC) {
-      applyBlockedPositions(
-        getBlockedPositionsForPreset(StartPositionPreset.CLASSIC, gridMode)
-      );
-    }
-  }
-
   // Manual multi-select toggles from the shared grid primitive.
   function handleBlockedChange(blocked: GridPosition[]) {
     applyBlockedPositions(blocked);
@@ -369,26 +358,17 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
           />
         </div>
       {:else if id === "startPos"}
-        <SegmentedControl
-          options={startPresetOptions}
-          value={currentPreset}
-          onchange={handlePresetSelect}
-          color="accent"
-          size="sm"
-        />
         <div class="drill-fill grid-fill">
           <MultiSelectPositionPicker
             blockedPositions={localBlockedPositions}
             onBlockedChange={handleBlockedChange}
             blueStartOrientation={localBlueOri}
             redStartOrientation={localRedOri}
+            presets={startPositionPresets}
             {gridMode}
           />
         </div>
       {:else if id === "endPos"}
-        <p class="detail-note">
-          Where the sequence can end. All enabled means any position.
-        </p>
         <div class="drill-fill grid-fill">
           <MultiSelectPositionPicker
             blockedPositions={endBlockedPositions}
@@ -579,11 +559,11 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
 
   /* The reserve is whatever the picker puts ABOVE its grid, so the square grid
      plus that chrome still fits the wrapper's height. MultiSelectPositionPicker
-     has a one-line "N of 16 enabled" row; PositionPickerGrid has a full-height
-     "Any" button, which is why they differ. Under-reserving here cost a 16px
-     scroll on a 375px phone. */
+     has a quick-action toolbar and one-line status row; PositionPickerGrid has
+     a full-height "Any" button. Under-reserving here cost a 16px scroll on a
+     375px phone. */
   .grid-fill {
-    --grid-reserve: 3.5rem;
+    --grid-reserve: 7rem;
   }
 
   .grid-fill :global(.position-picker-grid) {

@@ -27,6 +27,11 @@ Renders a section with:
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/prepared-pictograph-data";
   import { tryGetOptionAuditionContext } from "../../context/option-audition-context";
   import { createHoldToAuditionAttachment } from "../../services/hold-to-audition";
+  import DoubleFloatOptionRows from "../../components/DoubleFloatOptionRows.svelte";
+  import {
+    buildDoubleFloatOptionRows,
+    countDoubleFloatPathGroups,
+  } from "../../services/double-float-option-groups";
 
   // Props - Dark mode is handled via CSS (:root.dark) not prop drilling
   const {
@@ -82,6 +87,9 @@ Renders a section with:
       sectionPictographs()
     );
   });
+  const doubleFloatRows = $derived(() =>
+    buildDoubleFloatOptionRows(displayedItems())
+  );
 
   // Reactive container element for measuring available space
   let sectionContainer = $state<HTMLDivElement>();
@@ -190,7 +198,10 @@ Renders a section with:
   // CRITICAL: Considers BOTH width AND height constraints to prevent overflow
   // Size calculation delegated to GridFitCalculator service
   const optimalLayout = $derived(() => {
-    const rawItemCount = displayedItems().length;
+    const groupedRows = doubleFloatRows();
+    const rawItemCount = groupedRows
+      ? countDoubleFloatPathGroups(groupedRows)
+      : displayedItems().length;
     const safeItemCount = Math.max(rawItemCount, 1);
     const maxColumns = layoutConfig?.optionsPerRow || 4;
     const columns = Math.min(maxColumns, safeItemCount);
@@ -344,41 +355,54 @@ Renders a section with:
 
   <!-- Section Content - Index-keyed so components stay mounted,
        arrows/props transition in place via their own CSS transforms -->
-  <div
-    class="pictographs-grid"
-    style:grid-template-columns={optimalLayout().gridColumns}
-    style:gap={layoutConfig?.gridGap || "16px"}
-  >
-    {#each displayedItems() as pictograph, index (index)}
-      {@const borderColors = getLetterBorderColors(pictograph.letter)}
-      <button
-        class="pictograph-option"
-        class:continuation={continuationIndex === index}
-        onclick={() => handlePictographClick(pictograph, index)}
-        oncontextmenu={handleContextMenu}
-        style:width="{optimalLayout().pictographSize}px"
-        style:height="{optimalLayout().pictographSize}px"
-        style:--border-primary={borderColors.primary}
-        style:--border-secondary={borderColors.secondary}
-        style:--pictograph-size="{optimalLayout().pictographSize}px"
-        data-testid="option-item"
-        data-letter={pictograph.letter}
-        data-option-index={index}
-        data-ghost="safe"
-        data-ghost-kind="option"
-        aria-label="Add {pictograph.letter ?? 'movement'}. Hold to preview."
-        aria-keyshortcuts="Shift+Space"
-        title="Tap to add. Hold to preview."
-        {@attach holdToAudition}
-      >
-        <OptionPictographCell
-          pictographData={pictograph as PreparedPictographData}
-          blueReversal={pictograph.blueReversal || false}
-          redReversal={pictograph.redReversal || false}
-        />
-      </button>
-    {/each}
-  </div>
+  {#if doubleFloatRows()}
+    <DoubleFloatOptionRows
+      rows={doubleFloatRows()!}
+      previewSize={optimalLayout().pictographSize}
+      {continuationIndex}
+      onSelect={(option, originalIndex) => {
+        const displayed = displayedItems()[originalIndex];
+        if (displayed) handlePictographClick(displayed, originalIndex);
+        else onPictographSelected(option);
+      }}
+    />
+  {:else}
+    <div
+      class="pictographs-grid"
+      style:grid-template-columns={optimalLayout().gridColumns}
+      style:gap={layoutConfig?.gridGap || "16px"}
+    >
+      {#each displayedItems() as pictograph, index (index)}
+        {@const borderColors = getLetterBorderColors(pictograph.letter)}
+        <button
+          class="pictograph-option"
+          class:continuation={continuationIndex === index}
+          onclick={() => handlePictographClick(pictograph, index)}
+          oncontextmenu={handleContextMenu}
+          style:width="{optimalLayout().pictographSize}px"
+          style:height="{optimalLayout().pictographSize}px"
+          style:--border-primary={borderColors.primary}
+          style:--border-secondary={borderColors.secondary}
+          style:--pictograph-size="{optimalLayout().pictographSize}px"
+          data-testid="option-item"
+          data-letter={pictograph.letter}
+          data-option-index={index}
+          data-ghost="safe"
+          data-ghost-kind="option"
+          aria-label="Add {pictograph.letter ?? 'movement'}. Hold to preview."
+          aria-keyshortcuts="Shift+Space"
+          title="Tap to add. Hold to preview."
+          {@attach holdToAudition}
+        >
+          <OptionPictographCell
+            pictographData={pictograph as PreparedPictographData}
+            blueReversal={pictograph.blueReversal || false}
+            redReversal={pictograph.redReversal || false}
+          />
+        </button>
+      {/each}
+    </div>
+  {/if}
 </div>
 
 <PictographContextMenuHost bind:this={contextMenuHost} />

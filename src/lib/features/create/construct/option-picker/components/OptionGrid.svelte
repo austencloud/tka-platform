@@ -9,9 +9,14 @@ Computes reversal indicators for options based on current sequence.
 <script lang="ts">
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/prepared-pictograph-data";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
-  import { reversalDetector, type ReversalDetector } from "$lib/shared/create/services/reversal-detector";
+  import {
+    reversalDetector,
+    type ReversalDetector,
+  } from "$lib/shared/create/services/reversal-detector";
   import type { PictographWithReversals } from "$lib/shared/create/services/reversal-detector";
   import OptionCard from "./OptionCard.svelte";
+  import DoubleFloatOptionRows from "./DoubleFloatOptionRows.svelte";
+  import { buildDoubleFloatOptionRows } from "../services/double-float-option-groups";
 
   interface Props {
     options: PictographData[];
@@ -47,29 +52,45 @@ Computes reversal indicators for options based on current sequence.
   const optionsWithReversals = $derived(() => {
     return ReversalDetector.detectReversalsForOptions(currentSequence, options);
   });
+
+  const doubleFloatRows = $derived(() =>
+    buildDoubleFloatOptionRows(optionsWithReversals())
+  );
 </script>
 
-<div
-  class="option-grid"
-  style:gap
-  style:grid-template-columns="repeat({effectiveColumns}, {cardSize}px)"
->
-  {#each optionsWithReversals() as option, index (index)}
-    <div class="option-card-wrapper">
-      <OptionCard
-        pictograph={option as PreparedPictographData}
-        size={cardSize}
-        blueReversal={option.blueReversal || false}
-        redReversal={option.redReversal || false}
-        isContinuation={continuationIndex === index}
-        onSelect={(p) => {
-          onSlotClicked?.(typeSectionTitle, index);
-          onSelect(p);
-        }}
-      />
-    </div>
-  {/each}
-</div>
+{#if doubleFloatRows()}
+  <DoubleFloatOptionRows
+    rows={doubleFloatRows()!}
+    previewSize={cardSize}
+    {continuationIndex}
+    onSelect={(option, originalIndex) => {
+      onSlotClicked?.(typeSectionTitle, originalIndex);
+      onSelect(option as PreparedPictographData);
+    }}
+  />
+{:else}
+  <div
+    class="option-grid"
+    style:gap
+    style:grid-template-columns="repeat({effectiveColumns}, {cardSize}px)"
+  >
+    {#each optionsWithReversals() as option, index (index)}
+      <div class="option-card-wrapper">
+        <OptionCard
+          pictograph={option as PreparedPictographData}
+          size={cardSize}
+          blueReversal={option.blueReversal || false}
+          redReversal={option.redReversal || false}
+          isContinuation={continuationIndex === index}
+          onSelect={(p) => {
+            onSlotClicked?.(typeSectionTitle, index);
+            onSelect(p);
+          }}
+        />
+      </div>
+    {/each}
+  </div>
+{/if}
 
 <style>
   .option-grid {
