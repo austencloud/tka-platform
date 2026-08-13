@@ -1,4 +1,5 @@
 import type { EffectPreset, EffectPresetGroup } from "./types";
+import { SILK_INTENSITY_DEFAULT, SILK_INTENSITY_MAX } from "$lib/shared/effects/domain/effects-config";
 
 export const SILK_PRESETS: EffectPreset<"silk">[] = [
   {
@@ -7,7 +8,7 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
     previewColor: "#c0c0d0",
     patch: {
       palette: "satin",
-      intensity: 0.7,
+      intensity: SILK_INTENSITY_DEFAULT,
       width: 0.5,
       duration: 0.5,
       flutter: 0.3,
@@ -21,7 +22,7 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
     previewColor: "#c080ff",
     patch: {
       palette: "ethereal",
-      intensity: 0.6,
+      intensity: 0.55,
       width: 0.7,
       duration: 0.8,
       flutter: 0.7,
@@ -35,7 +36,7 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
     previewColor: "#202830",
     patch: {
       palette: "shadow",
-      intensity: 0.8,
+      intensity: 0.6,
       width: 0.4,
       duration: 0.3,
       flutter: 0.1,
@@ -49,7 +50,7 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
     previewColor: "#ffd700",
     patch: {
       palette: "gold_leaf",
-      intensity: 0.8,
+      intensity: 0.6,
       width: 0.7,
       duration: 0.6,
       flutter: 0.2,
@@ -63,7 +64,7 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
     previewColor: "#ff6000",
     patch: {
       palette: "ember",
-      intensity: 0.9,
+      intensity: SILK_INTENSITY_MAX,
       width: 0.5,
       duration: 0.5,
       flutter: 0.4,

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { SilkIntent } from "$lib/shared/effects/domain/effects-config";
+  import { SILK_INTENSITY_MAX } from "$lib/shared/effects/domain/effects-config";
   import OptionChipRow from "../OptionChipRow.svelte";
   import AdvancedControls from "$lib/shared/effects/components/AdvancedControls.svelte";
 
@@ -76,7 +77,7 @@
           id="silk-intensity"
           type="range"
           min="0"
-          max="1"
+          max={SILK_INTENSITY_MAX}
           step="0.05"
           value={state.silk.intensity}
           oninput={(e) =>

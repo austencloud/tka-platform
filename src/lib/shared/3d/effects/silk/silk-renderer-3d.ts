@@ -21,17 +21,20 @@ interface SilkState extends SilkRibbonFrame3D {
   seenEpoch: number;
 }
 
+export function resolveSilkSourceEnergyScale(sourceCount: number): number {
+  return Math.min(1, Math.pow(2 / Math.max(1, sourceCount), 0.72));
+}
+
+export function resolveSilkSourceSampleBudget(sourceCount: number): number {
+  return Math.max(2, Math.floor(SAMPLE_CAPACITY / Math.max(1, sourceCount)));
+}
+
 export class SilkRenderer3D {
   private readonly ribbon = new SilkRibbonGeometry3D(SAMPLE_CAPACITY);
-  private readonly fabricMaterial = createSilkRibbonMaterial3D(false);
-  private readonly glintMaterial = createSilkRibbonMaterial3D(true);
+  private readonly fabricMaterial = createSilkRibbonMaterial3D();
   private readonly fabricMesh = new Mesh(
     this.ribbon.geometry,
     this.fabricMaterial
-  );
-  private readonly glintMesh = new Mesh(
-    this.ribbon.geometry,
-    this.glintMaterial
   );
   private readonly states = new Map<number, SilkState>();
   private parent: Object3D | null = null;
@@ -41,18 +44,15 @@ export class SilkRenderer3D {
   constructor() {
     this.fabricMesh.frustumCulled = false;
     this.fabricMesh.renderOrder = 108;
-    this.glintMesh.frustumCulled = false;
-    this.glintMesh.renderOrder = 109;
   }
 
   initialize(parent: Object3D): void {
     if (this.parent === parent) return;
     if (this.parent) {
       this.parent.remove(this.fabricMesh);
-      this.parent.remove(this.glintMesh);
     }
     this.parent = parent;
-    parent.add(this.fabricMesh, this.glintMesh);
+    parent.add(this.fabricMesh);
   }
 
   update(sources: readonly SilkTipSource3D[], delta: number): void {
@@ -72,19 +72,31 @@ export class SilkRenderer3D {
           headSideY: 0,
           headSideZ: 0,
           hasHeadSide: false,
+          propColor: source.propColor,
+          dynamicPositions: new Float32Array(PATH_CAPACITY * 3),
+          dynamicVelocities: new Float32Array(PATH_CAPACITY * 3),
+          dynamicCount: 0,
+          pathExtended: false,
         };
         this.states.set(source.sourceId, state);
       }
       state.params = source.params;
+      state.propColor = source.propColor;
       state.lastSeen = this.clock;
       state.seenEpoch = this.epoch;
-      state.path.push(source.position, this.clock, source.speed, 0.025);
+      const pathExtended = state.path.push(
+        source.position,
+        this.clock,
+        source.speed,
+        0.025
+      );
+      state.pathExtended ||= pathExtended;
     }
 
-    this.ribbon.beginFrame();
+    const activeStates: SilkState[] = [];
     for (const [sourceId, state] of this.states) {
       state.path.trimBefore(this.clock - state.params.lifetimeSeconds);
-      this.ribbon.writeRibbon(state.path, state.params, this.clock, state);
+      if (state.path.count >= 2) activeStates.push(state);
       if (
         state.seenEpoch !== this.epoch &&
         state.path.count === 0 &&
@@ -92,6 +104,21 @@ export class SilkRenderer3D {
       ) {
         this.states.delete(sourceId);
       }
+    }
+
+    const energyScale = resolveSilkSourceEnergyScale(activeStates.length);
+    const sampleBudget = resolveSilkSourceSampleBudget(activeStates.length);
+    this.ribbon.beginFrame();
+    for (const state of activeStates) {
+      this.ribbon.writeRibbon(
+        state.path,
+        state.params,
+        this.clock,
+        state,
+        energyScale,
+        sampleBudget,
+        dt
+      );
     }
     this.ribbon.commit();
   }
@@ -104,10 +131,8 @@ export class SilkRenderer3D {
   dispose(): void {
     this.clear();
     this.parent?.remove(this.fabricMesh);
-    this.parent?.remove(this.glintMesh);
     this.parent = null;
     this.ribbon.dispose();
     this.fabricMaterial.dispose();
-    this.glintMaterial.dispose();
   }
 }

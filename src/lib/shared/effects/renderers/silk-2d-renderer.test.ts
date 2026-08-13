@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
-import { Silk2DRenderer } from "./silk-2d-renderer";
+import {
+  Silk2DRenderer,
+  resolveSilk2DEnergyScale,
+  resolveSilk2DMaterialColors,
+  resolveSilk2DWidthEnvelope,
+} from "./silk-2d-renderer";
 import type { Silk2DParams } from "../translators/canvas2d-types";
 import type { SilkPalette } from "../domain/silk-palettes";
 import type { EmitterTip } from "./emitter-tip";
@@ -14,10 +19,38 @@ type PosBag = {
 /** Convert the legacy 4-slot bag to the flat emitter contract (base props). */
 function toEmitters(s: PosBag): EmitterTip[] {
   const out: EmitterTip[] = [];
-  if (s.bluePosA) out.push({ ...s.bluePosA, propIndex: 0, tipIndex: 0, end: "A", color: "#3a7fd9" });
-  if (s.bluePosB) out.push({ ...s.bluePosB, propIndex: 0, tipIndex: 1, end: "B", color: "#3a7fd9" });
-  if (s.redPosA) out.push({ ...s.redPosA, propIndex: 1, tipIndex: 0, end: "A", color: "#d94f4f" });
-  if (s.redPosB) out.push({ ...s.redPosB, propIndex: 1, tipIndex: 1, end: "B", color: "#d94f4f" });
+  if (s.bluePosA)
+    out.push({
+      ...s.bluePosA,
+      propIndex: 0,
+      tipIndex: 0,
+      end: "A",
+      color: "#3a7fd9",
+    });
+  if (s.bluePosB)
+    out.push({
+      ...s.bluePosB,
+      propIndex: 0,
+      tipIndex: 1,
+      end: "B",
+      color: "#3a7fd9",
+    });
+  if (s.redPosA)
+    out.push({
+      ...s.redPosA,
+      propIndex: 1,
+      tipIndex: 0,
+      end: "A",
+      color: "#d94f4f",
+    });
+  if (s.redPosB)
+    out.push({
+      ...s.redPosB,
+      propIndex: 1,
+      tipIndex: 1,
+      end: "B",
+      color: "#d94f4f",
+    });
   return out;
 }
 
@@ -96,14 +129,66 @@ function moveBag(i: number): PosBag {
 function moveWithLayer(i: number): EmitterTip[] {
   return [
     ...toEmitters(moveBag(i)),
-    { x: 300 + i * 8, y: 100, propIndex: 2, tipIndex: 0, end: "A", color: "#22cc88" },
-    { x: 320 + i * 8, y: 140, propIndex: 2, tipIndex: 1, end: "B", color: "#22cc88" },
-    { x: 400 + i * 8, y: 100, propIndex: 3, tipIndex: 0, end: "A", color: "#cc4488" },
-    { x: 420 + i * 8, y: 140, propIndex: 3, tipIndex: 1, end: "B", color: "#cc4488" },
+    {
+      x: 300 + i * 8,
+      y: 100,
+      propIndex: 2,
+      tipIndex: 0,
+      end: "A",
+      color: "#22cc88",
+    },
+    {
+      x: 320 + i * 8,
+      y: 140,
+      propIndex: 2,
+      tipIndex: 1,
+      end: "B",
+      color: "#22cc88",
+    },
+    {
+      x: 400 + i * 8,
+      y: 100,
+      propIndex: 3,
+      tipIndex: 0,
+      end: "A",
+      color: "#cc4488",
+    },
+    {
+      x: 420 + i * 8,
+      y: 140,
+      propIndex: 3,
+      tipIndex: 1,
+      end: "B",
+      color: "#cc4488",
+    },
   ];
 }
 
 describe("Silk2DRenderer", () => {
+  it("tapers the free tail and gathers the prop attachment", () => {
+    const middle = resolveSilk2DWidthEnvelope(0.5);
+    expect(resolveSilk2DWidthEnvelope(0)).toBeLessThan(middle);
+    expect(resolveSilk2DWidthEnvelope(1)).toBeLessThan(middle);
+    expect(middle).toBeCloseTo(1);
+  });
+
+  it("normalizes overlapping ribbon energy without erasing dense tunnels", () => {
+    expect(resolveSilk2DEnergyScale(2)).toBe(1);
+    expect(resolveSilk2DEnergyScale(4)).toBe(1);
+    expect(resolveSilk2DEnergyScale(16)).toBeLessThan(
+      resolveSilk2DEnergyScale(8)
+    );
+    expect(resolveSilk2DEnergyScale(100)).toBe(0.32);
+  });
+
+  it("carries prop color into neutral silk materials", () => {
+    const blue = resolveSilk2DMaterialColors(SATIN, "#3a7fd9", 0.5);
+    const red = resolveSilk2DMaterialColors(SATIN, "#d94f4f", 0.5);
+    expect(blue.body).not.toBe(red.body);
+    expect(blue.edge).not.toBe(red.edge);
+    expect(blue.body).not.toBe("rgb(192,192,208)");
+  });
+
   it("renders ribbons once enough samples accumulate", () => {
     const r = new Silk2DRenderer();
     const ctx = makeCtx();
@@ -111,8 +196,15 @@ describe("Silk2DRenderer", () => {
     for (let i = 0; i < 30; i++) {
       r.render(ctx, params, toEmitters(moveBag(i)), 1 / 60, 1, false);
     }
-    // Body fill is the primary draw call — at least one segment must paint.
-    expect((ctx.fill as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
+    // Body fill is the primary draw call. Satin stays a continuous material
+    // color because a screen-space gradient cannot bend with the ribbon.
+    expect(
+      (ctx.fill as ReturnType<typeof vi.fn>).mock.calls.length
+    ).toBeGreaterThan(0);
+    expect(ctx.createLinearGradient).not.toHaveBeenCalled();
+    expect((ctx.save as ReturnType<typeof vi.fn>).mock.calls.length).toBe(
+      (ctx.restore as ReturnType<typeof vi.fn>).mock.calls.length
+    );
   });
 
   it("renders ribbons from tunnel layer emitters (propIndex >= 2)", () => {
@@ -125,8 +217,10 @@ describe("Silk2DRenderer", () => {
       rBase.render(ctxBase, params, toEmitters(moveBag(i)), 1 / 60, 1, false);
       rLayered.render(ctxLayered, params, moveWithLayer(i), 1 / 60, 1, false);
     }
-    const baseCalls = (ctxBase.fill as ReturnType<typeof vi.fn>).mock.calls.length;
-    const layeredCalls = (ctxLayered.fill as ReturnType<typeof vi.fn>).mock.calls.length;
+    const baseCalls = (ctxBase.fill as ReturnType<typeof vi.fn>).mock.calls
+      .length;
+    const layeredCalls = (ctxLayered.fill as ReturnType<typeof vi.fn>).mock
+      .calls.length;
     // 4 base ends vs 8 base+layer ends ⇒ strictly more body-fill segments.
     // Confirms layer emitters (propIndex >= 2) actually draw ribbons.
     expect(layeredCalls).toBeGreaterThan(baseCalls);
@@ -139,7 +233,9 @@ describe("Silk2DRenderer", () => {
     for (let i = 0; i < 30; i++) {
       r.render(ctx, params, toEmitters(moveBag(i)), 1 / 60, 1, false);
     }
-    expect((ctx.fill as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
+    expect(
+      (ctx.fill as ReturnType<typeof vi.fn>).mock.calls.length
+    ).toBeGreaterThan(0);
   });
 
   it("retains trails for emitters that vanish (does not hard-prune)", () => {
@@ -157,15 +253,31 @@ describe("Silk2DRenderer", () => {
       ctxAfter,
       params,
       [
-        { x: 260, y: 100, propIndex: 0, tipIndex: 0, end: "A", color: "#3a7fd9" },
-        { x: 280, y: 140, propIndex: 0, tipIndex: 1, end: "B", color: "#3a7fd9" },
+        {
+          x: 260,
+          y: 100,
+          propIndex: 0,
+          tipIndex: 0,
+          end: "A",
+          color: "#3a7fd9",
+        },
+        {
+          x: 280,
+          y: 140,
+          propIndex: 0,
+          tipIndex: 1,
+          end: "B",
+          color: "#3a7fd9",
+        },
       ],
       1 / 60,
       1,
-      false,
+      false
     );
     // Red trails (propIndex 1) still have samples within lifetime ⇒ still fill.
-    expect((ctxAfter.fill as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
+    expect(
+      (ctxAfter.fill as ReturnType<typeof vi.fn>).mock.calls.length
+    ).toBeGreaterThan(0);
   });
 
   it("loopDetected skips recording without crashing", () => {
@@ -179,7 +291,7 @@ describe("Silk2DRenderer", () => {
     // A loop boundary teleports the tips; loopDetected must not throw and must
     // not record a spike sample this frame (trail length unchanged-ish).
     expect(() =>
-      r.render(ctx, params, toEmitters(moveBag(0)), 1 / 60, 1, true),
+      r.render(ctx, params, toEmitters(moveBag(0)), 1 / 60, 1, true)
     ).not.toThrow();
     const after = (ctx.fill as ReturnType<typeof vi.fn>).mock.calls.length;
     // Still drawing from the retained trail, so fill count keeps climbing.
@@ -194,6 +306,8 @@ describe("Silk2DRenderer", () => {
       r.render(ctx, params, toEmitters(moveBag(i)), 1 / 60, 1, false);
     }
     r.dispose();
-    expect(() => r.render(ctx, params, toEmitters(moveBag(0)), 1 / 60, 1, false)).not.toThrow();
+    expect(() =>
+      r.render(ctx, params, toEmitters(moveBag(0)), 1 / 60, 1, false)
+    ).not.toThrow();
   });
 });

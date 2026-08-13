@@ -4,13 +4,95 @@ import { setRgbFromHex, type MutableRgb } from "../instancing/particle-color";
 import type { BoundedSourcePath3D } from "../scene-effects/bounded-source-path-3d";
 
 const EPSILON = 1e-8;
-const MAX_POINTS_PER_RIBBON = 320;
+const MAX_PATH_POINTS_PER_RIBBON = 320;
+const MAX_RENDER_POINTS_PER_RIBBON = 2560;
+const MAX_SPLINE_SUBDIVISIONS = 8;
+export const SILK_CROSS_SECTION_VERTEX_COUNT = 7;
 
 export interface SilkRibbonFrame3D {
   headSideX: number;
   headSideY: number;
   headSideZ: number;
   hasHeadSide: boolean;
+  propColor?: string;
+  dynamicPositions?: Float32Array;
+  dynamicVelocities?: Float32Array;
+  dynamicCount?: number;
+  pathExtended?: boolean;
+}
+
+export interface SilkMaterialProfile3D {
+  sheen: number;
+  roughness: number;
+  translucency: number;
+  weaveFrequency: number;
+  identityMix: number;
+}
+
+const SILK_MATERIAL_PROFILES: Record<string, SilkMaterialProfile3D> = {
+  satin: {
+    sheen: 0.94,
+    roughness: 0.22,
+    translucency: 0.16,
+    weaveFrequency: 34,
+    identityMix: 0.68,
+  },
+  velvet: {
+    sheen: 0.42,
+    roughness: 0.82,
+    translucency: 0.02,
+    weaveFrequency: 24,
+    identityMix: 0.2,
+  },
+  ethereal: {
+    sheen: 0.82,
+    roughness: 0.34,
+    translucency: 0.38,
+    weaveFrequency: 29,
+    identityMix: 0.22,
+  },
+  shadow: {
+    sheen: 0.3,
+    roughness: 0.76,
+    translucency: 0.12,
+    weaveFrequency: 21,
+    identityMix: 0.18,
+  },
+  gold_leaf: {
+    sheen: 0.88,
+    roughness: 0.3,
+    translucency: 0.04,
+    weaveFrequency: 18,
+    identityMix: 0.1,
+  },
+  ember: {
+    sheen: 0.58,
+    roughness: 0.5,
+    translucency: 0.18,
+    weaveFrequency: 27,
+    identityMix: 0.14,
+  },
+  custom: {
+    sheen: 0.74,
+    roughness: 0.44,
+    translucency: 0.14,
+    weaveFrequency: 27,
+    identityMix: 0.42,
+  },
+};
+
+export function resolveSilkMaterialProfile3D(
+  paletteId: string
+): Readonly<SilkMaterialProfile3D> {
+  return SILK_MATERIAL_PROFILES[paletteId] ?? SILK_MATERIAL_PROFILES.custom!;
+}
+
+export function resolveSilkAttachmentScale(
+  arcDistance: number,
+  baseHalfWidth: number
+): number {
+  const openDistance = Math.max(0.08, baseHalfWidth * 0.9);
+  return 0.06 + smoothstep(arcDistance, 0.012, openDistance) * 0.94;
 }
 
 /**
@@ -22,44 +104,75 @@ export class SilkRibbonGeometry3D {
 
   private readonly positions: Float32Array;
   private readonly normals: Float32Array;
+  private readonly ribbonTangents: Float32Array;
   private readonly bodyColors: Float32Array;
   private readonly edgeColors: Float32Array;
   private readonly alphas: Float32Array;
   private readonly ribbonEdges: Float32Array;
   private readonly progresses: Float32Array;
   private readonly emissives: Float32Array;
+  private readonly sheens: Float32Array;
+  private readonly roughnesses: Float32Array;
+  private readonly translucencies: Float32Array;
+  private readonly weaveFrequencies: Float32Array;
   private readonly indices: Uint32Array;
 
-  private readonly centers = new Float32Array(MAX_POINTS_PER_RIBBON * 3);
-  private readonly tangents = new Float32Array(MAX_POINTS_PER_RIBBON * 3);
-  private readonly sides = new Float32Array(MAX_POINTS_PER_RIBBON * 3);
+  private readonly rawCenters = new Float32Array(
+    MAX_PATH_POINTS_PER_RIBBON * 3
+  );
+  private readonly rawCenterScratch = new Float32Array(
+    MAX_PATH_POINTS_PER_RIBBON * 3
+  );
+  private readonly rawBirths = new Float32Array(MAX_PATH_POINTS_PER_RIBBON);
+  private readonly rawSpeeds = new Float32Array(MAX_PATH_POINTS_PER_RIBBON);
+  private readonly centers = new Float32Array(MAX_RENDER_POINTS_PER_RIBBON * 3);
+  private readonly births = new Float32Array(MAX_RENDER_POINTS_PER_RIBBON);
+  private readonly speeds = new Float32Array(MAX_RENDER_POINTS_PER_RIBBON);
+  private readonly tangents = new Float32Array(
+    MAX_RENDER_POINTS_PER_RIBBON * 3
+  );
+  private readonly sides = new Float32Array(MAX_RENDER_POINTS_PER_RIBBON * 3);
+  private readonly arcLengths = new Float32Array(MAX_RENDER_POINTS_PER_RIBBON);
   private readonly body: MutableRgb = { red: 1, green: 1, blue: 1 };
   private readonly bodyAlt: MutableRgb = { red: 1, green: 1, blue: 1 };
   private readonly edge: MutableRgb = { red: 1, green: 1, blue: 1 };
   private readonly edgeAlt: MutableRgb = { red: 1, green: 1, blue: 1 };
+  private readonly propTint: MutableRgb = { red: 1, green: 1, blue: 1 };
   private sampleCursor = 0;
   private indexCursor = 0;
 
   constructor(private readonly sampleCapacity: number) {
-    const vertexCapacity = sampleCapacity * 2;
+    const vertexCapacity = sampleCapacity * SILK_CROSS_SECTION_VERTEX_COUNT;
     this.positions = new Float32Array(vertexCapacity * 3);
     this.normals = new Float32Array(vertexCapacity * 3);
+    this.ribbonTangents = new Float32Array(vertexCapacity * 3);
     this.bodyColors = new Float32Array(vertexCapacity * 3);
     this.edgeColors = new Float32Array(vertexCapacity * 3);
     this.alphas = new Float32Array(vertexCapacity);
     this.ribbonEdges = new Float32Array(vertexCapacity);
     this.progresses = new Float32Array(vertexCapacity);
     this.emissives = new Float32Array(vertexCapacity);
-    this.indices = new Uint32Array(sampleCapacity * 6);
+    this.sheens = new Float32Array(vertexCapacity);
+    this.roughnesses = new Float32Array(vertexCapacity);
+    this.translucencies = new Float32Array(vertexCapacity);
+    this.weaveFrequencies = new Float32Array(vertexCapacity);
+    this.indices = new Uint32Array(
+      sampleCapacity * (SILK_CROSS_SECTION_VERTEX_COUNT - 1) * 6
+    );
 
     this.setDynamicAttribute("position", this.positions, 3);
     this.setDynamicAttribute("normal", this.normals, 3);
+    this.setDynamicAttribute("ribbonTangent", this.ribbonTangents, 3);
     this.setDynamicAttribute("bodyColor", this.bodyColors, 3);
     this.setDynamicAttribute("edgeColor", this.edgeColors, 3);
     this.setDynamicAttribute("alpha", this.alphas, 1);
     this.setDynamicAttribute("ribbonEdge", this.ribbonEdges, 1);
     this.setDynamicAttribute("progress", this.progresses, 1);
     this.setDynamicAttribute("emissive", this.emissives, 1);
+    this.setDynamicAttribute("sheen", this.sheens, 1);
+    this.setDynamicAttribute("roughness", this.roughnesses, 1);
+    this.setDynamicAttribute("translucency", this.translucencies, 1);
+    this.setDynamicAttribute("weaveFrequency", this.weaveFrequencies, 1);
     const index = new BufferAttribute(this.indices, 1);
     index.setUsage(DynamicDrawUsage);
     this.geometry.setIndex(index);
@@ -75,48 +188,85 @@ export class SilkRibbonGeometry3D {
     path: BoundedSourcePath3D,
     params: Silk3DParams,
     currentTime: number,
-    frame: SilkRibbonFrame3D
+    frame: SilkRibbonFrame3D,
+    energyScale = 1,
+    sampleBudget = Number.POSITIVE_INFINITY,
+    delta = 1 / 60
   ): void {
     const available = this.sampleCapacity - this.sampleCursor;
-    const count = Math.min(
+    const rawCount = Math.min(
       path.count,
       params.maxPointsPerTip,
-      MAX_POINTS_PER_RIBBON,
-      available
+      MAX_PATH_POINTS_PER_RIBBON
     );
-    if (count < 2) return;
+    if (rawCount < 2 || available < 2) return;
 
-    this.readCenters(path, count);
+    const count = this.readCenters(
+      path,
+      rawCount,
+      Math.min(sampleBudget, available),
+      frame,
+      params,
+      currentTime,
+      delta
+    );
     this.writeTangents(count);
     this.writeTransportedSides(count, frame);
-    this.resolveColors(params);
+    const materialProfile = resolveSilkMaterialProfile3D(
+      params.resolvedPalette.id
+    );
+    this.resolveColors(params, frame, materialProfile);
 
-    const baseVertex = this.sampleCursor * 2;
+    const baseVertex = this.sampleCursor * SILK_CROSS_SECTION_VERTEX_COUNT;
     for (let sample = 0; sample < count; sample++) {
-      this.writeSample(baseVertex, sample, count, path, params, currentTime);
+      this.writeSample(
+        baseVertex,
+        sample,
+        count,
+        params,
+        currentTime,
+        energyScale,
+        materialProfile
+      );
     }
     for (let segment = 0; segment < count - 1; segment++) {
-      const v0 = baseVertex + segment * 2;
-      this.indices[this.indexCursor++] = v0;
-      this.indices[this.indexCursor++] = v0 + 1;
-      this.indices[this.indexCursor++] = v0 + 2;
-      this.indices[this.indexCursor++] = v0 + 1;
-      this.indices[this.indexCursor++] = v0 + 3;
-      this.indices[this.indexCursor++] = v0 + 2;
+      const currentRow = baseVertex + segment * SILK_CROSS_SECTION_VERTEX_COUNT;
+      const nextRow = currentRow + SILK_CROSS_SECTION_VERTEX_COUNT;
+      for (
+        let cross = 0;
+        cross < SILK_CROSS_SECTION_VERTEX_COUNT - 1;
+        cross++
+      ) {
+        const v0 = currentRow + cross;
+        const v1 = v0 + 1;
+        const v2 = nextRow + cross;
+        const v3 = v2 + 1;
+        this.indices[this.indexCursor++] = v0;
+        this.indices[this.indexCursor++] = v1;
+        this.indices[this.indexCursor++] = v2;
+        this.indices[this.indexCursor++] = v1;
+        this.indices[this.indexCursor++] = v3;
+        this.indices[this.indexCursor++] = v2;
+      }
     }
     this.sampleCursor += count;
   }
 
   commit(): void {
-    const vertexCount = this.sampleCursor * 2;
+    const vertexCount = this.sampleCursor * SILK_CROSS_SECTION_VERTEX_COUNT;
     this.markUpdated("position", vertexCount * 3);
     this.markUpdated("normal", vertexCount * 3);
+    this.markUpdated("ribbonTangent", vertexCount * 3);
     this.markUpdated("bodyColor", vertexCount * 3);
     this.markUpdated("edgeColor", vertexCount * 3);
     this.markUpdated("alpha", vertexCount);
     this.markUpdated("ribbonEdge", vertexCount);
     this.markUpdated("progress", vertexCount);
     this.markUpdated("emissive", vertexCount);
+    this.markUpdated("sheen", vertexCount);
+    this.markUpdated("roughness", vertexCount);
+    this.markUpdated("translucency", vertexCount);
+    this.markUpdated("weaveFrequency", vertexCount);
     const index = this.geometry.index as BufferAttribute;
     index.clearUpdateRanges();
     if (this.indexCursor > 0) index.addUpdateRange(0, this.indexCursor);
@@ -133,14 +283,231 @@ export class SilkRibbonGeometry3D {
     this.geometry.dispose();
   }
 
-  private readCenters(path: BoundedSourcePath3D, count: number): void {
-    for (let sample = 0; sample < count; sample++) {
+  private readCenters(
+    path: BoundedSourcePath3D,
+    rawCount: number,
+    renderBudget: number,
+    frame: SilkRibbonFrame3D,
+    params: Silk3DParams,
+    currentTime: number,
+    delta: number
+  ): number {
+    for (let sample = 0; sample < rawCount; sample++) {
       const pathIndex = path.indexFromNewest(sample);
       const i3 = sample * 3;
-      this.centers[i3] = path.xAt(pathIndex);
-      this.centers[i3 + 1] = path.yAt(pathIndex);
-      this.centers[i3 + 2] = path.zAt(pathIndex);
+      this.rawCenters[i3] = path.xAt(pathIndex);
+      this.rawCenters[i3 + 1] = path.yAt(pathIndex);
+      this.rawCenters[i3 + 2] = path.zAt(pathIndex);
+      this.rawBirths[sample] = path.birthAt(pathIndex);
+      this.rawSpeeds[sample] = path.speedAt(pathIndex);
     }
+
+    const dynamicPositions = frame.dynamicPositions;
+    const dynamicVelocities = frame.dynamicVelocities;
+    if (dynamicPositions && dynamicVelocities) {
+      let dynamicCount = Math.min(frame.dynamicCount ?? 0, rawCount);
+      if (frame.pathExtended) {
+        const shiftCount = Math.min(dynamicCount, rawCount - 1);
+        for (let sample = shiftCount; sample >= 1; sample--) {
+          const target = sample * 3;
+          const source = target - 3;
+          dynamicPositions[target] = dynamicPositions[source]!;
+          dynamicPositions[target + 1] = dynamicPositions[source + 1]!;
+          dynamicPositions[target + 2] = dynamicPositions[source + 2]!;
+          dynamicVelocities[target] = dynamicVelocities[source]!;
+          dynamicVelocities[target + 1] = dynamicVelocities[source + 1]!;
+          dynamicVelocities[target + 2] = dynamicVelocities[source + 2]!;
+        }
+        dynamicPositions[0] = this.rawCenters[0]!;
+        dynamicPositions[1] = this.rawCenters[1]!;
+        dynamicPositions[2] = this.rawCenters[2]!;
+        dynamicVelocities[0] = 0;
+        dynamicVelocities[1] = 0;
+        dynamicVelocities[2] = 0;
+        dynamicCount = Math.min(rawCount, dynamicCount + 1);
+        frame.pathExtended = false;
+      }
+
+      for (let sample = dynamicCount; sample < rawCount; sample++) {
+        const i3 = sample * 3;
+        dynamicPositions[i3] = this.rawCenters[i3]!;
+        dynamicPositions[i3 + 1] = this.rawCenters[i3 + 1]!;
+        dynamicPositions[i3 + 2] = this.rawCenters[i3 + 2]!;
+        dynamicVelocities[i3] = 0;
+        dynamicVelocities[i3 + 1] = 0;
+        dynamicVelocities[i3 + 2] = 0;
+      }
+      dynamicCount = rawCount;
+
+      const dt = clamp(delta, 0, 1 / 30);
+      const attraction = 7 + params.tautness * 17;
+      const damping = Math.exp(-(4.2 + params.tautness * 3.8) * dt);
+      const gravity =
+        (0.12 + params.flutter * 0.34) * (1 - params.tautness * 0.72);
+      for (let sample = 1; sample < rawCount; sample++) {
+        const i3 = sample * 3;
+        const trailing = sample / Math.max(1, rawCount - 1);
+        const windPhase = currentTime * 2.1 + sample * 0.37;
+        const wind =
+          Math.sin(windPhase) * params.flutter * trailing * trailing * 0.2;
+        let velocityX =
+          dynamicVelocities[i3]! +
+          (this.rawCenters[i3]! - dynamicPositions[i3]!) * attraction * dt;
+        let velocityY =
+          dynamicVelocities[i3 + 1]! +
+          (this.rawCenters[i3 + 1]! - dynamicPositions[i3 + 1]!) *
+            attraction *
+            dt -
+          gravity * trailing * dt;
+        let velocityZ =
+          dynamicVelocities[i3 + 2]! +
+          (this.rawCenters[i3 + 2]! - dynamicPositions[i3 + 2]!) *
+            attraction *
+            dt;
+        velocityX = (velocityX + wind * dt) * damping;
+        velocityY *= damping;
+        velocityZ =
+          (velocityZ + Math.cos(windPhase * 0.83) * wind * dt) * damping;
+        dynamicVelocities[i3] = velocityX;
+        dynamicVelocities[i3 + 1] = velocityY;
+        dynamicVelocities[i3 + 2] = velocityZ;
+        dynamicPositions[i3] += velocityX * dt;
+        dynamicPositions[i3 + 1] += velocityY * dt;
+        dynamicPositions[i3 + 2] += velocityZ * dt;
+      }
+
+      // The head is pinned. Every following point keeps the path's travelled
+      // length, which turns the relaxed history into a streamer rather than a
+      // shrinking spline.
+      for (let iteration = 0; iteration < 3; iteration++) {
+        dynamicPositions[0] = this.rawCenters[0]!;
+        dynamicPositions[1] = this.rawCenters[1]!;
+        dynamicPositions[2] = this.rawCenters[2]!;
+        for (let sample = 1; sample < rawCount; sample++) {
+          const i3 = sample * 3;
+          const previous = i3 - 3;
+          const targetDistance = Math.max(
+            0.01,
+            Math.hypot(
+              this.rawCenters[i3]! - this.rawCenters[previous]!,
+              this.rawCenters[i3 + 1]! - this.rawCenters[previous + 1]!,
+              this.rawCenters[i3 + 2]! - this.rawCenters[previous + 2]!
+            )
+          );
+          const dx = dynamicPositions[i3]! - dynamicPositions[previous]!;
+          const dy =
+            dynamicPositions[i3 + 1]! - dynamicPositions[previous + 1]!;
+          const dz =
+            dynamicPositions[i3 + 2]! - dynamicPositions[previous + 2]!;
+          const distance = Math.hypot(dx, dy, dz) || targetDistance;
+          const correction = ((distance - targetDistance) / distance) * 0.9;
+          dynamicPositions[i3] -= dx * correction;
+          dynamicPositions[i3 + 1] -= dy * correction;
+          dynamicPositions[i3 + 2] -= dz * correction;
+        }
+      }
+
+      this.rawCenters.set(dynamicPositions.subarray(0, rawCount * 3));
+      frame.dynamicCount = dynamicCount;
+    }
+
+    // Raw tip history contains the choreography's intentional corners. Fabric
+    // carries momentum through those corners instead of creasing like folded
+    // cardboard. Two bounded relaxation passes remove the remaining kinks
+    // while the attachment stays welded to the live tip.
+    for (let pass = 0; pass < 2; pass++) {
+      this.rawCenterScratch.set(this.rawCenters.subarray(0, rawCount * 3));
+      for (let sample = 1; sample < rawCount - 1; sample++) {
+        const i3 = sample * 3;
+        const previous = i3 - 3;
+        const next = i3 + 3;
+        const trailingWeight = 0.2 + (sample / (rawCount - 1)) * 0.08;
+        const centerWeight = 1 - trailingWeight * 2;
+        this.rawCenters[i3] =
+          this.rawCenterScratch[previous]! * trailingWeight +
+          this.rawCenterScratch[i3]! * centerWeight +
+          this.rawCenterScratch[next]! * trailingWeight;
+        this.rawCenters[i3 + 1] =
+          this.rawCenterScratch[previous + 1]! * trailingWeight +
+          this.rawCenterScratch[i3 + 1]! * centerWeight +
+          this.rawCenterScratch[next + 1]! * trailingWeight;
+        this.rawCenters[i3 + 2] =
+          this.rawCenterScratch[previous + 2]! * trailingWeight +
+          this.rawCenterScratch[i3 + 2]! * centerWeight +
+          this.rawCenterScratch[next + 2]! * trailingWeight;
+      }
+    }
+
+    const maximumByBudget = Math.max(
+      1,
+      Math.floor((Math.max(2, renderBudget) - 1) / (rawCount - 1))
+    );
+    const subdivisions = Math.min(MAX_SPLINE_SUBDIVISIONS, maximumByBudget);
+    let renderCount = 0;
+    for (let segment = 0; segment < rawCount - 1; segment++) {
+      const p0 = Math.max(0, segment - 1) * 3;
+      const p1 = segment * 3;
+      const p2 = (segment + 1) * 3;
+      const p3 = Math.min(rawCount - 1, segment + 2) * 3;
+      for (let subdivision = 0; subdivision < subdivisions; subdivision++) {
+        const t = subdivision / subdivisions;
+        const target = renderCount * 3;
+        this.centers[target] = catmullRomScalar(
+          this.rawCenters[p0]!,
+          this.rawCenters[p1]!,
+          this.rawCenters[p2]!,
+          this.rawCenters[p3]!,
+          t
+        );
+        this.centers[target + 1] = catmullRomScalar(
+          this.rawCenters[p0 + 1]!,
+          this.rawCenters[p1 + 1]!,
+          this.rawCenters[p2 + 1]!,
+          this.rawCenters[p3 + 1]!,
+          t
+        );
+        this.centers[target + 2] = catmullRomScalar(
+          this.rawCenters[p0 + 2]!,
+          this.rawCenters[p1 + 2]!,
+          this.rawCenters[p2 + 2]!,
+          this.rawCenters[p3 + 2]!,
+          t
+        );
+        this.births[renderCount] = mix(
+          this.rawBirths[segment]!,
+          this.rawBirths[segment + 1]!,
+          t
+        );
+        this.speeds[renderCount] = mix(
+          this.rawSpeeds[segment]!,
+          this.rawSpeeds[segment + 1]!,
+          t
+        );
+        renderCount++;
+      }
+    }
+    const finalRaw = (rawCount - 1) * 3;
+    const finalRender = renderCount * 3;
+    this.centers[finalRender] = this.rawCenters[finalRaw]!;
+    this.centers[finalRender + 1] = this.rawCenters[finalRaw + 1]!;
+    this.centers[finalRender + 2] = this.rawCenters[finalRaw + 2]!;
+    this.births[renderCount] = this.rawBirths[rawCount - 1]!;
+    this.speeds[renderCount] = this.rawSpeeds[rawCount - 1]!;
+    renderCount++;
+
+    this.arcLengths[0] = 0;
+    for (let sample = 1; sample < renderCount; sample++) {
+      const i3 = sample * 3;
+      const previous = i3 - 3;
+      this.arcLengths[sample] =
+        this.arcLengths[sample - 1]! +
+        Math.hypot(
+          this.centers[i3]! - this.centers[previous]!,
+          this.centers[i3 + 1]! - this.centers[previous + 1]!,
+          this.centers[i3 + 2]! - this.centers[previous + 2]!
+        );
+    }
+    return renderCount;
   }
 
   private writeTangents(count: number): void {
@@ -173,9 +540,13 @@ export class SilkRibbonGeometry3D {
     const tx = this.tangents[0]!;
     const ty = this.tangents[1]!;
     const tz = this.tangents[2]!;
-    let sx = frame.hasHeadSide ? frame.headSideX : -tz;
-    let sy = frame.hasHeadSide ? frame.headSideY : 0;
-    let sz = frame.hasHeadSide ? frame.headSideZ : tx;
+    // Choreography is authored in the stage's XY plane, so that plane is the
+    // ribbon's natural rest orientation. Parallel transport preserves real
+    // turns; a soft rest-plane bias prevents a horizontal stroke from rolling
+    // the whole cloth edge-on and disappearing from the default view.
+    let sx = frame.hasHeadSide ? frame.headSideX : -ty;
+    let sy = frame.hasHeadSide ? frame.headSideY : tx;
+    let sz = frame.hasHeadSide ? frame.headSideZ : 0;
     let along = sx * tx + sy * ty + sz * tz;
     sx -= tx * along;
     sy -= ty * along;
@@ -209,10 +580,30 @@ export class SilkRibbonGeometry3D {
       let nextSz = sz - currentTz * along;
       length = Math.hypot(nextSx, nextSy, nextSz);
       if (length < EPSILON) {
-        nextSx = -currentTz;
-        nextSy = 0;
-        nextSz = currentTx;
+        nextSx = -currentTy;
+        nextSy = currentTx;
+        nextSz = 0;
         length = Math.hypot(nextSx, nextSy, nextSz) || 1;
+      }
+      nextSx /= length;
+      nextSy /= length;
+      nextSz /= length;
+
+      const restLength = Math.hypot(currentTx, currentTy);
+      if (restLength > EPSILON) {
+        let restX = -currentTy / restLength;
+        let restY = currentTx / restLength;
+        if (restX * nextSx + restY * nextSy < 0) {
+          restX = -restX;
+          restY = -restY;
+        }
+        const restBias = 0.68;
+        nextSx = mix(nextSx, restX, restBias);
+        nextSy = mix(nextSy, restY, restBias);
+        nextSz = mix(nextSz, 0, restBias);
+        length = Math.hypot(nextSx, nextSy, nextSz) || 1;
+      } else {
+        length = 1;
       }
       sx = nextSx / length;
       sy = nextSy / length;
@@ -223,7 +614,11 @@ export class SilkRibbonGeometry3D {
     }
   }
 
-  private resolveColors(params: Silk3DParams): void {
+  private resolveColors(
+    params: Silk3DParams,
+    frame: SilkRibbonFrame3D,
+    materialProfile: Readonly<SilkMaterialProfile3D>
+  ): void {
     setRgbFromHex(this.body, params.resolvedPalette.body);
     setRgbFromHex(
       this.bodyAlt,
@@ -234,32 +629,49 @@ export class SilkRibbonGeometry3D {
       this.edgeAlt,
       params.resolvedPalette.edgeAlt ?? params.resolvedPalette.edge
     );
+    setRgbFromHex(
+      this.propTint,
+      frame.propColor ?? params.resolvedPalette.body
+    );
+
+    // A light trace of the canonical prop color keeps crossings readable.
+    // The palette still dominates, so Gold remains gold and Velvet remains red.
+    const bodyMix = materialProfile.identityMix;
+    const edgeMix = Math.min(0.42, bodyMix + 0.08);
+    for (const color of [this.body, this.bodyAlt]) {
+      color.red = mix(color.red, this.propTint.red, bodyMix);
+      color.green = mix(color.green, this.propTint.green, bodyMix);
+      color.blue = mix(color.blue, this.propTint.blue, bodyMix);
+    }
+    for (const color of [this.edge, this.edgeAlt]) {
+      color.red = mix(color.red, this.propTint.red, edgeMix);
+      color.green = mix(color.green, this.propTint.green, edgeMix);
+      color.blue = mix(color.blue, this.propTint.blue, edgeMix);
+    }
   }
 
   private writeSample(
     baseVertex: number,
     sample: number,
     count: number,
-    path: BoundedSourcePath3D,
     params: Silk3DParams,
-    currentTime: number
+    currentTime: number,
+    energyScale: number,
+    materialProfile: Readonly<SilkMaterialProfile3D>
   ): void {
     const i3 = sample * 3;
-    const pathIndex = path.indexFromNewest(sample);
     const life = clamp(
-      (currentTime - path.birthAt(pathIndex)) / params.lifetimeSeconds,
+      (currentTime - this.births[sample]!) / params.lifetimeSeconds,
       0,
       1
     );
-    const tailEnvelope = smoothstep(life, 0.04, 0.94);
+    const sampleProgress = sample / Math.max(1, count - 1);
+    const tailEnvelope = 1 - smoothstep(sampleProgress, 0.72, 1);
     const speedScale = clamp(
-      path.speedAt(pathIndex) / params.motionReferenceSpeed,
+      this.speeds[sample]! / params.motionReferenceSpeed,
       0,
       1
     );
-    const flutterStrength =
-      params.flutter * (1 - params.tautness * 0.62) * tailEnvelope;
-    const phase = currentTime * (2.1 + params.flutter * 1.7) - sample * 0.38;
 
     const tx = this.tangents[i3]!;
     const ty = this.tangents[i3 + 1]!;
@@ -271,10 +683,42 @@ export class SilkRibbonGeometry3D {
     let ny = tz * sx - tx * sz;
     let nz = tx * sy - ty * sx;
 
-    // Twist the cloth around its transported frame. The wave grows toward the
-    // free tail, stays proportional to ribbon width, and never moves the live
-    // prop endpoint away from its tracked position.
-    const twist = Math.sin(phase) * flutterStrength * 0.2;
+    const previousTangent = Math.max(0, sample - 1) * 3;
+    const nextTangent = Math.min(count - 1, sample + 1) * 3;
+    const tangentDot = clamp(
+      this.tangents[previousTangent]! * this.tangents[nextTangent]! +
+        this.tangents[previousTangent + 1]! * this.tangents[nextTangent + 1]! +
+        this.tangents[previousTangent + 2]! * this.tangents[nextTangent + 2]!,
+      -1,
+      1
+    );
+    const speedChange =
+      Math.abs(
+        this.speeds[sample]! - this.speeds[Math.min(sample + 1, count - 1)]!
+      ) / params.motionReferenceSpeed;
+    const motionLoad = clamp((1 - tangentDot) * 5.5 + speedChange * 0.72, 0, 1);
+    const surfaceEnergy = clamp(
+      0.12 + params.flutter * 0.5 + motionLoad * 0.58,
+      0,
+      1
+    );
+    const phase =
+      currentTime * (1.7 + params.flutter * 1.4) -
+      sample * (0.19 + motionLoad * 0.13);
+
+    // Transport gives the ribbon a stable frame. Motion load then twists that
+    // frame, so direction changes travel down the cloth instead of producing a
+    // camera-facing strip or a time-only sine wave.
+    const attachmentRelease = smoothstep(
+      this.arcLengths[sample]!,
+      0.01,
+      Math.max(0.1, params.baseHalfWidthWorld * 0.85)
+    );
+    const twist =
+      Math.sin(phase) *
+      (0.025 + surfaceEnergy * 0.29) *
+      attachmentRelease *
+      (0.25 + tailEnvelope * 0.75);
     let widthX = sx + nx * twist;
     let widthY = sy + ny * twist;
     let widthZ = sz + nz * twist;
@@ -290,22 +734,40 @@ export class SilkRibbonGeometry3D {
     ny /= normalLength;
     nz /= normalLength;
 
-    const widthTaper = 1 - Math.pow(life, 1.45) * 0.62;
-    const motionTightening = 1 - params.tautness * speedScale * 0.32;
+    const attachmentScale = resolveSilkAttachmentScale(
+      this.arcLengths[sample]!,
+      params.baseHalfWidthWorld
+    );
+    const ageTaper = Math.pow(Math.max(0, 1 - life), 0.72);
+    const tailTaper = 1 - smoothstep(sampleProgress, 0.76, 1) * 0.96;
+    const motionTightening = 1 - params.tautness * speedScale * 0.52;
+    const widthPulse =
+      1 +
+      Math.sin(phase * 0.83 + motionLoad * 1.4) *
+        surfaceEnergy *
+        attachmentRelease *
+        tailEnvelope *
+        0.1;
     const halfWidth =
       params.baseHalfWidthWorld *
-      (0.68 + params.intensity * 0.42) *
-      widthTaper *
-      motionTightening;
+      (0.42 + params.intensity * 0.28) *
+      attachmentScale *
+      ageTaper *
+      tailTaper *
+      motionTightening *
+      widthPulse;
     const flutterOffset =
-      Math.sin(phase * 0.73 + 0.8) * halfWidth * flutterStrength * 0.2;
+      Math.sin(phase * 0.71 + 0.8) *
+      attachmentRelease *
+      (halfWidth * surfaceEnergy * 0.34 +
+        params.baseHalfWidthWorld * params.flutter * 0.55);
     const gravitySag =
       params.baseHalfWidthWorld *
-      params.flutter *
+      (0.16 + params.flutter * 0.84) *
       (1 - params.tautness) *
       life *
       life *
-      0.34;
+      0.16;
     const centerX = this.centers[i3]! + nx * flutterOffset;
     const centerY = this.centers[i3 + 1]! + ny * flutterOffset - gravitySag;
     const centerZ = this.centers[i3 + 2]! + nz * flutterOffset;
@@ -316,19 +778,61 @@ export class SilkRibbonGeometry3D {
     const edgeRed = mix(this.edge.red, this.edgeAlt.red, colorMix);
     const edgeGreen = mix(this.edge.green, this.edgeAlt.green, colorMix);
     const edgeBlue = mix(this.edge.blue, this.edgeAlt.blue, colorMix);
-    const alpha = params.intensity * Math.pow(1 - life, 0.58);
+    const alpha =
+      Math.sqrt(params.intensity) *
+      energyScale *
+      Math.pow(Math.max(0, 1 - life), 1.15) *
+      (0.2 + tailEnvelope * 0.8);
     const emissive = params.resolvedPalette.emissive ? 1 : 0;
+    const totalArcLength = this.arcLengths[count - 1]!;
+    const arcProgress =
+      totalArcLength > EPSILON
+        ? this.arcLengths[sample]! / totalArcLength
+        : sampleProgress;
+    const crownAmplitude =
+      halfWidth * (0.045 + surfaceEnergy * 0.2) * Math.sin(phase * 0.43 + 0.9);
+    const pleatAmplitude = halfWidth * (0.04 + surfaceEnergy * 0.24);
+    const foldPhase = phase * 0.36 + motionLoad * 1.8;
 
-    for (let edgeIndex = 0; edgeIndex < 2; edgeIndex++) {
-      const sign = edgeIndex === 0 ? -1 : 1;
-      const vertex = baseVertex + sample * 2 + edgeIndex;
+    for (
+      let crossIndex = 0;
+      crossIndex < SILK_CROSS_SECTION_VERTEX_COUNT;
+      crossIndex++
+    ) {
+      const across =
+        (crossIndex / (SILK_CROSS_SECTION_VERTEX_COUNT - 1)) * 2 - 1;
+      const edgeEnvelope = 1 - across * across;
+      const crossPhase = across * Math.PI * 1.5 + foldPhase;
+      const foldSignal = crownAmplitude + pleatAmplitude * Math.sin(crossPhase);
+      const normalOffset = foldSignal * edgeEnvelope;
+      const normalSlope =
+        pleatAmplitude * Math.cos(crossPhase) * Math.PI * 1.5 * edgeEnvelope +
+        foldSignal * -2 * across;
+      const inverseHalfWidth = 1 / Math.max(0.001, halfWidth);
+      let surfaceNormalX = nx - widthX * normalSlope * inverseHalfWidth;
+      let surfaceNormalY = ny - widthY * normalSlope * inverseHalfWidth;
+      let surfaceNormalZ = nz - widthZ * normalSlope * inverseHalfWidth;
+      const surfaceNormalLength =
+        Math.hypot(surfaceNormalX, surfaceNormalY, surfaceNormalZ) || 1;
+      surfaceNormalX /= surfaceNormalLength;
+      surfaceNormalY /= surfaceNormalLength;
+      surfaceNormalZ /= surfaceNormalLength;
+
+      const vertex =
+        baseVertex + sample * SILK_CROSS_SECTION_VERTEX_COUNT + crossIndex;
       const v3 = vertex * 3;
-      this.positions[v3] = centerX + widthX * halfWidth * sign;
-      this.positions[v3 + 1] = centerY + widthY * halfWidth * sign;
-      this.positions[v3 + 2] = centerZ + widthZ * halfWidth * sign;
-      this.normals[v3] = nx;
-      this.normals[v3 + 1] = ny;
-      this.normals[v3 + 2] = nz;
+      this.positions[v3] =
+        centerX + widthX * halfWidth * across + nx * normalOffset;
+      this.positions[v3 + 1] =
+        centerY + widthY * halfWidth * across + ny * normalOffset;
+      this.positions[v3 + 2] =
+        centerZ + widthZ * halfWidth * across + nz * normalOffset;
+      this.normals[v3] = surfaceNormalX;
+      this.normals[v3 + 1] = surfaceNormalY;
+      this.normals[v3 + 2] = surfaceNormalZ;
+      this.ribbonTangents[v3] = tx;
+      this.ribbonTangents[v3 + 1] = ty;
+      this.ribbonTangents[v3 + 2] = tz;
       this.bodyColors[v3] = bodyRed;
       this.bodyColors[v3 + 1] = bodyGreen;
       this.bodyColors[v3 + 2] = bodyBlue;
@@ -336,9 +840,13 @@ export class SilkRibbonGeometry3D {
       this.edgeColors[v3 + 1] = edgeGreen;
       this.edgeColors[v3 + 2] = edgeBlue;
       this.alphas[vertex] = alpha;
-      this.ribbonEdges[vertex] = sign;
-      this.progresses[vertex] = life;
+      this.ribbonEdges[vertex] = across;
+      this.progresses[vertex] = arcProgress;
       this.emissives[vertex] = emissive;
+      this.sheens[vertex] = materialProfile.sheen;
+      this.roughnesses[vertex] = materialProfile.roughness;
+      this.translucencies[vertex] = materialProfile.translucency;
+      this.weaveFrequencies[vertex] = materialProfile.weaveFrequency;
     }
   }
 
@@ -371,4 +879,22 @@ function smoothstep(value: number, minimum: number, maximum: number): number {
 
 function mix(a: number, b: number, amount: number): number {
   return a + (b - a) * amount;
+}
+
+function catmullRomScalar(
+  p0: number,
+  p1: number,
+  p2: number,
+  p3: number,
+  t: number
+): number {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return (
+    0.5 *
+    (2 * p1 +
+      (-p0 + p2) * t +
+      (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
+      (-p0 + 3 * p1 - 3 * p2 + p3) * t3)
+  );
 }
