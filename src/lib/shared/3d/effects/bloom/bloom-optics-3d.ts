@@ -37,21 +37,19 @@ export function resolveBloomOpticalFrame3D(
   );
 
   const dispersion = Math.min(1, Math.max(0, params.chromatic));
-  const prismFootprint = 1 - dispersion + dispersion * footprintScale;
+  const auroraFootprint = 1 - dispersion + dispersion * footprintScale;
   const velocityStretch = 1 + params.streak * motion * 5.5;
-  const spectralTrailStretch =
-    1 + dispersion * (0.18 + Math.min(1, motion) * 2);
 
   return {
     energy: exposure * Math.max(0, sourceNormalization),
     coreStrength: Math.min(1, Math.max(0, params.coreStrength)),
-    radiusWorld: params.haloRadiusWorld * prismFootprint,
-    stretch: Math.max(velocityStretch, spectralTrailStretch),
+    radiusWorld: params.haloRadiusWorld * auroraFootprint,
+    stretch: velocityStretch,
     streak: params.streak * Math.min(1, motion),
     spikes: params.spikes * (0.55 + Math.min(1, motion) * 0.45),
-    // Prism is a lens treatment, not a motion trigger. Letting speed multiply
+    // Aurora is a lens treatment, not a motion trigger. Letting speed multiply
     // it from zero to full made every acceleration flash between white and
-    // saturated RGB. A constant split follows the prop without blinking.
+    // saturated color. Constant energy follows the prop without blinking.
     chromatic: dispersion,
   };
 }

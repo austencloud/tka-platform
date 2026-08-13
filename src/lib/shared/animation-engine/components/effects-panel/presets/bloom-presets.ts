@@ -45,13 +45,13 @@ export const BLOOM_PRESETS: EffectPreset<"bloom">[] = [
   },
   {
     id: "bloom-prism",
-    name: "Prism",
+    name: "Aurora",
     previewColor: "rainbow",
     patch: {
-      intensity: 0.66,
-      coreStrength: 0.64,
-      radius: 24,
-      color: "#ffffff",
+      intensity: 0.68,
+      coreStrength: 0.28,
+      radius: 32,
+      color: "#e8f7ff",
       palette: ["#ff1744", "#00e676", "#2979ff", "#ffd600"],
       colorMode: "solid",
       falloff: "smooth",
@@ -59,7 +59,7 @@ export const BLOOM_PRESETS: EffectPreset<"bloom">[] = [
       pulseRate: 1,
       streak: 0,
       spikes: 0,
-      chromatic: 0.92,
+      chromatic: 0.9,
       afterglow: 0,
     },
   },
@@ -93,7 +93,7 @@ export const BLOOM_PRESET_GROUP: EffectPresetGroup = {
     const layers: string[] = [];
     if (b.streak > 0) layers.push("streak");
     if (b.spikes > 0) layers.push("spikes");
-    if (b.chromatic > 0) layers.push("dispersion");
+    if (b.chromatic > 0) layers.push("iridescence");
     const lens = layers.length ? layers.join(" · ") : "halo";
     return `${b.colorMode} · ${lens} · glow ${Math.round(b.afterglow * 100)}%`;
   },

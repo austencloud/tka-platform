@@ -30,6 +30,7 @@ function makeContext(withCanvas = false) {
     save: vi.fn(),
     restore: vi.fn(),
     beginPath: vi.fn(),
+    arc: vi.fn(),
     moveTo: vi.fn(),
     lineTo: vi.fn(),
     closePath: vi.fn(),
@@ -139,47 +140,37 @@ describe("Bloom2DRenderer optical layers", () => {
     }
   });
 
-  it("keeps Prism quiet at rest and draws ordered color only behind motion", () => {
+  it("keeps Aurora's iridescent structure identical at rest and in motion", () => {
     const renderer = new Bloom2DRenderer();
-    const prism = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
+    const aurora = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
     const resting = makeContext();
-    renderer.render(resting.context, params(prism.patch ?? {}), [tip(100)]);
+    renderer.render(resting.context, params(aurora.patch ?? {}), [tip(100)]);
 
-    expect(resting.radial).toHaveLength(4);
-    expect(resting.linear).toHaveLength(0);
+    expect(resting.radial).toHaveLength(2);
+    expect(resting.linear).toHaveLength(2);
+    expect(resting.calls.scale).toBe(2);
     expect(resting.calls.stroke).toBe(0);
 
     const moving = makeContext();
-    renderer.render(moving.context, params(prism.patch ?? {}), [tip(150)]);
+    renderer.render(moving.context, params(aurora.patch ?? {}), [tip(150)]);
 
-    expect(moving.radial).toHaveLength(4);
-    expect(moving.linear).toHaveLength(6);
-    expect(moving.calls.stroke).toBe(6);
-
-    const expectedBandColors = [
-      "255,42,52",
-      "255,132,24",
-      "255,224,60",
-      "62,238,120",
-      "34,196,255",
-      "92,72,255",
-    ];
-    expect(
-      moving.linear.map((band) => band.stops[1]![1].split(",0.")[0])
-    ).toEqual(expectedBandColors.map((rgb) => `rgba(${rgb}`));
+    expect(moving.radial).toHaveLength(2);
+    expect(moving.linear).toHaveLength(2);
+    expect(moving.calls.scale).toBe(2);
+    expect(moving.calls.stroke).toBe(0);
   });
 
-  it("uses tracker velocity on the first frame instead of waiting for a position delta", () => {
+  it("renders one Aurora field for all tips on the same prop", () => {
     const renderer = new Bloom2DRenderer();
+    const aurora = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
     const frame = makeContext();
-    const prism = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
-
-    renderer.render(frame.context, params(prism.patch ?? {}), [
-      { ...tip(), velocityX: 600, velocityY: 0 },
+    renderer.render(frame.context, params(aurora.patch ?? {}), [
+      tip(80),
+      { ...tip(180), tipIndex: 1 },
     ]);
 
-    expect(frame.linear).toHaveLength(6);
-    expect(frame.calls.stroke).toBe(6);
+    expect(frame.linear).toHaveLength(2);
+    expect(frame.radial).toHaveLength(4);
   });
 
   it("renders a different dominant layer structure for every preset", () => {
@@ -202,7 +193,7 @@ describe("Bloom2DRenderer optical layers", () => {
     expect(Object.fromEntries(signatures)).toEqual({
       Supernova: "2:8:0",
       Comet: "3:0:1",
-      Prism: "4:6:0",
+      Aurora: "2:2:2",
       Halo: "2:0:0",
     });
   });

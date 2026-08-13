@@ -225,7 +225,7 @@ export interface BloomIntent {
   /** 0-1 - diffraction star-spike brightness (the lens glint off a bright
    *  point). 0 = no spikes. */
   spikes: number;
-  /** 0-1 - spectral dispersion trailing a moving white source. */
+  /** 0-1 - stable iridescent color surrounding the white source. */
   chromatic: number;
   /** 0-1 - long-exposure afterglow persistence. 0 = none (draw-fresh each
    *  frame), 1 = light trail lingers ~1s. */

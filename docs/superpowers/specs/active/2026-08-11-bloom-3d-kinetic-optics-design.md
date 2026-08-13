@@ -22,7 +22,7 @@ The four presets are optical archetypes, not nearby parameter samples:
 | ----------- | ------------------------------------------------------ |
 | `Supernova` | White-hot sharp source with a violent diffraction star |
 | `Comet`     | Warm velocity blade with the longest exposure trail    |
-| `Prism`     | Tight white source with a short spectral motion trail  |
+| `Aurora`    | Stable pearlescent field spanning each complete prop   |
 | `Halo`      | Broad, quiet aura with almost no visible white center  |
 
 The existing effect intent remains authoritative. Version 34 adds
@@ -39,7 +39,7 @@ current field must produce a visible 3D response:
 | `pulse`, `pulseRate`            | Time-based exposure modulation                  |
 | `streak`                        | Camera-space velocity stretch                   |
 | `spikes`                        | Diffraction-star energy                         |
-| `chromatic`                     | Red and blue separation along motion            |
+| `chromatic`                     | Stable iridescent color field across the prop   |
 | `afterglow`                     | Bounded halo and streak history along the path  |
 
 ## Why this effect owns the work
@@ -64,19 +64,23 @@ pulls the colored light into an anamorphic blade aligned to projected velocity.
 Diffraction rays flare around the live source. Afterglow leaves a fading record
 of the colored halo and blade in space. The source itself is never accumulated.
 
-Prism makes movement easier to read. A compact white source marks the current
-prop tip. Motion pulls a short, narrow red-to-violet exposure behind the tip,
-aligned to its real velocity. The bands keep a fixed order and fade before they
-can cover the letter paths. A paused tip has no spectral projection at all.
+Aurora groups every source belonging to the same prop into one pearlescent
+field. A continuous magenta-through-violet gradient spans the group rather than
+repeating a tiny rainbow at every tip. The field follows prop geometry, while
+time, speed, acceleration, and direction never change its brightness or
+footprint. Playback therefore carries the same light smoothly through pauses
+and reversals.
 
-The trail stays close to the prop and softens toward its tail. It must not read
-as a beam, fan, cluster of RGB bulbs, or blurred billboard. Increasing prop
-density reduces both exposure and trail footprint so formations remain legible
-instead of becoming rainbow confetti.
+The aura stays close to the prop and softens continuously at its edge. It must
+not read as a beam, fan, ring, cluster of RGB bulbs, or blurred billboard.
+Increasing prop density reduces both exposure and aura footprint so formations
+remain legible instead of becoming rainbow confetti.
 
-Depth testing remains enabled, so the effect respects bodies, props, and scene
-geometry. HDR source energy feeds the existing scene bloom pass on capable
-tiers. The shader still carries the identity when post-processing is disabled.
+Aurora is composited as camera-space glare just in front of its physical
+source. Its capped aspect ratio keeps depth intersections from turning the soft
+field into triangular beams while allowing nearer scene geometry to occlude it.
+HDR source energy feeds the existing scene bloom pass on capable tiers, while
+the shader still carries the identity when post-processing is disabled.
 
 The decomposition follows current glare research, which separates optical glare
 into glow, starburst, shimmer, and streak components:
@@ -106,11 +110,12 @@ Current renderer guidance adds three constraints:
 instanced quad pool draws live sources and exposure-history samples across the
 scene. Source count changes instance count, not draw-call count.
 
-The vertex shader projects tip velocity through the active camera and rotates
-the quad in view space. The fragment shader composes the halo, hot core,
-velocity blade, diffraction rays, and source-anchored spectral trail.
+The vertex shader projects tip velocity through the active camera for effects
+that use a blade. Aurora instead uses the longest stable axis between a prop's
+sources, capped to a compact oval. The fragment shader composes the halo, hot
+core, velocity blade, diffraction rays, and prop-spanning iridescent field.
 Historical instances use the same material with zero core, zero spikes, and
-zero dispersion.
+zero iridescence.
 
 Brightness is divided by the square root of active prop-pair count. This keeps a
 single performer vivid without allowing mirrored tunnels or multi-performer
@@ -165,11 +170,11 @@ overlay density gates. The 3D harness is authoritative here; the effect tuner is
 a Canvas2D surface. Frames are checked at 1920x1080, 2560x1440, 3840x2160,
 1440x900, 820x1180, 960x412, and 375x667. The pass also records console errors.
 Automated proof compares the complete optical signatures of Supernova, Comet,
-Prism, and Halo and enforces the single-batch draw contract.
+Aurora, and Halo and enforces the single-batch draw contract.
 
 Acceptance requires:
 
-- Supernova, Comet, Prism, and Halo remain visibly distinct in 3D.
+- Supernova, Comet, Aurora, and Halo remain visibly distinct in 3D.
 - Every advanced Bloom slider causes an observable change.
 - Fast motion reads as optical exposure instead of a trail tube.
 - The source remains legible without post-processing on the low tier.
@@ -178,9 +183,8 @@ Acceptance requires:
 - A stationary or reversing tip does not brighten because it revisits the same
   pixel or world position.
 - Each preset has one dominant optical dimension that no other preset matches.
-- Prism has one visible white origin and one short red-to-violet trail per
-  moving tip.
-- Prism has no stationary spectrum, beam, fan, dark sprite seam, isolated RGB
-  blobs, hue cycling, or pulse.
-- Prism follows tip velocity and leaves the notation unobscured when paused.
-- Prism remains readable at one, two, six, and eight-performer densities.
+- Aurora has one compact, continuous spectrum per prop at rest and in motion.
+- Aurora has no motion threshold, beam, fan, ring, dark sprite seam, isolated
+  RGB blobs, hue cycling, or pulse.
+- Aurora produces identical optical geometry while paused and moving.
+- Aurora remains readable at one, two, six, and eight-performer densities.

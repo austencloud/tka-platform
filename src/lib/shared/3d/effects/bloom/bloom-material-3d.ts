@@ -35,6 +35,7 @@ const vertexShader = /* glsl */ `
     vSeed = aVelocitySeed.w;
 
     vec3 centerView = (modelViewMatrix * vec4(aCenter, 1.0)).xyz;
+    centerView.z += aLens.y * 0.035;
     vec3 velocityView = (modelViewMatrix * vec4(aVelocitySeed.xyz, 0.0)).xyz;
     float projectedSpeed = length(velocityView.xy);
     vec2 along = projectedSpeed > 0.0001
@@ -42,13 +43,10 @@ const vertexShader = /* glsl */ `
       : vec2(1.0, 0.0);
     vec2 across = vec2(-along.y, along.x);
     vec2 local = position.xy;
-    float isPrism = step(0.001, aLens.y) * (1.0 - aLens.w);
     float centeredAlong = local.x * aOptics.z;
-    float prismAlong = mix(-aOptics.z, 1.0, uv.x);
-    float alongDistance = mix(centeredAlong, prismAlong, isPrism);
-    vOpticalPoint = vec2(alongDistance, local.y);
+    vOpticalPoint = vec2(centeredAlong, local.y);
     vec2 offset =
-      along * alongDistance * aOptics.y +
+      along * centeredAlong * aOptics.y +
       across * local.y * aOptics.y;
     gl_Position = projectionMatrix * vec4(centerView + vec3(offset, 0.0), 1.0);
   }
@@ -102,6 +100,7 @@ const fragmentShader = /* glsl */ `
       opticalPoint.y
     );
     float radial = length(opticalPoint);
+    float auraRadial = length(bladePoint);
 
     float smoothHalo = gaussian(radial, 2.8);
     float sharpHalo = gaussian(radial, 8.5);
@@ -124,38 +123,23 @@ const fragmentShader = /* glsl */ `
       ray(diagonal.yx, 52.0, 4.2)
     ) * 0.78 * vSpikes * (1.0 - vHistory);
 
-    // Prism stays quiet at rest. Movement pulls a narrow ordered spectrum
-    // behind the source, which makes the effect describe choreography instead
-    // of throwing decorative beams over it.
-    float prismMotion = clamp((vStretch - 1.18) / 2.0, 0.0, 1.0);
-    float trailProgress = clamp(-opticalPoint.x / max(vStretch, 0.001), 0.0, 1.0);
-    float trailHalfWidth = mix(0.09, 0.19, trailProgress);
-    float spectralPosition = opticalPoint.y / max(trailHalfWidth, 0.001);
-    float insideTrail = smoothstep(1.05, 0.8, abs(spectralPosition));
-    float behindSource = 1.0 - smoothstep(-0.02, 0.08, opticalPoint.x);
-    float trailFade = 1.0 - smoothstep(0.48, 1.0, trailProgress);
-    float spectralTrail =
-      insideTrail * behindSource * trailFade * vChromatic * prismMotion *
-      (1.0 - vHistory);
-    vec3 spectral =
-      spectralPalette(spectralPosition * 0.5 + 0.5) * spectralTrail;
-
-    float redEdge = gaussian(length(opticalPoint - vec2(0.0, -0.075)), 55.0);
-    float cyanEdge = gaussian(length(opticalPoint - vec2(0.0, 0.075)), 55.0);
-    float edgeMask = vChromatic * (1.0 - vHistory) * 0.38;
-    vec3 spectralEdge = (
-      vec3(1.0, 0.055, 0.075) * redEdge +
-      vec3(0.04, 0.72, 1.0) * cyanEdge
-    ) * edgeMask;
+    // Aurora is one continuous color field spanning the whole prop. It has no
+    // clock or speed input, so pausing and reversing cannot alter its energy.
+    float auraAmount = clamp(bladePoint.x * 1.1 + 0.5, 0.0, 1.0);
+    float auraBody =
+      gaussian(auraRadial, 2.35) * vChromatic * (1.0 - vHistory);
+    float pearl =
+      0.97 + 0.03 * cos(auraAmount * 12.56637061436 + vSeed * 6.28318530718);
+    vec3 auraColor = mix(vec3(0.92, 0.98, 1.0), spectralPalette(auraAmount), 0.96);
+    vec3 spectralAura = auraColor * auraBody * pearl;
 
     vec3 hotCore = mix(vColor, vec3(1.0), 0.88);
     float exposure = sqrt(max(vEnergy, 0.0));
-    float haloPresence = 1.0 - vChromatic * 0.78;
+    float haloPresence = 1.0 - vChromatic * 0.92;
     vec3 light =
       vColor * (halo * haloPresence + blade * 1.35 * (1.0 - vChromatic) + star * 2.8) +
       hotCore * core * (0.7 + exposure * 1.1) +
-      spectralEdge +
-      spectral * 2.0;
+      spectralAura * 1.7;
     light *= uEmissiveStrength;
 
     float alpha = exposure * (
@@ -163,8 +147,7 @@ const fragmentShader = /* glsl */ `
       core * 0.88 +
       blade * 0.68 * (1.0 - vChromatic) +
       star * 1.2 +
-      (redEdge + cyanEdge) * edgeMask * 0.18 +
-      spectralTrail * 0.72
+      auraBody * 0.58
     );
     if (alpha < 0.002) discard;
 

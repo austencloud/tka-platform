@@ -62,6 +62,7 @@ function makeCtx() {
     restore: vi.fn(),
     clearRect: vi.fn(),
     beginPath: vi.fn(),
+    arc: vi.fn(),
     moveTo: vi.fn(),
     lineTo: vi.fn(),
     closePath: vi.fn(),
@@ -120,7 +121,7 @@ function makeParams(overrides: Partial<Bloom2DParams> = {}): Bloom2DParams {
     pulseRate: 1,
     streak: 0.55,
     spikes: 0.6,
-    chromatic: 0.35,
+    chromatic: 0,
     afterglow: 0.5,
     blendMode: "lighter",
     ...overrides,
@@ -158,8 +159,8 @@ describe("Bloom2DRenderer (lens bloom)", () => {
   it("draws a colored halo + white core per tip (2 radial gradients each)", () => {
     const r = new Bloom2DRenderer();
     const { ctx, radial } = makeCtx();
-    // Spectral motion trails are linear, so the two radial gradients remain
-    // the colored halo and its white source.
+    // With iridescence disabled, the two gradients are the colored halo and
+    // its white source.
     r.render(ctx, makeParams({ spikes: 0 }), [makeTip()]);
     expect(radial).toHaveLength(2);
   });
@@ -346,39 +347,39 @@ describe("Bloom2DRenderer (lens bloom)", () => {
   describe("motion reactivity", () => {
     it("frame 1 (no velocity) draws no streak transform; frame 2 (moved) does", () => {
       const r = new Bloom2DRenderer();
-      const params = makeParams({ spikes: 0, streak: 0.8, chromatic: 0.5 });
+      const params = makeParams({ spikes: 0, streak: 0.8, chromatic: 0 });
 
-      // Frame 1 has neither a velocity streak nor decorative spectral beams.
+      // Frame 1 has no velocity streak.
       const f1 = makeCtx();
       r.render(f1.ctx, params, [makeTip({ x: 100, y: 150, tipIndex: 0 })]);
       expect(f1.calls.scale).toBe(0); // streak uses scale(); none on first frame
       expect(f1.linear).toHaveLength(0);
 
-      // Frame 2: the same tip moved, so Prism leaves six narrow color traces.
+      // Frame 2: the same tip moved, so the anamorphic streak appears.
       const f2 = makeCtx();
       r.render(f2.ctx, params, [makeTip({ x: 180, y: 150, tipIndex: 0 })]);
       expect(f2.calls.scale).toBeGreaterThan(0); // anamorphic streak fired
       expect(f2.calls.translate).toBeGreaterThan(0);
-      expect(f2.linear).toHaveLength(6);
-      expect(f2.calls.stroke).toBe(6);
+      expect(f2.linear).toHaveLength(0);
     });
 
-    it("aims each spectral trail along that tip's actual movement", () => {
+    it("keeps Aurora's aura unchanged when the tip moves", () => {
       const r = new Bloom2DRenderer();
-      const params = makeParams({ streak: 0, spikes: 0, chromatic: 1 });
-      r.render(makeCtx().ctx, params, [
-        makeTip({ x: 80, y: 100, propIndex: 0, tipIndex: 0 }),
-        makeTip({ x: 120, y: 100, propIndex: 0, tipIndex: 1 }),
-      ]);
-      const frame = makeCtx();
-      r.render(frame.ctx, params, [
-        makeTip({ x: 120, y: 100, propIndex: 0, tipIndex: 0 }),
-        makeTip({ x: 80, y: 100, propIndex: 0, tipIndex: 1 }),
-      ]);
+      const aurora = BLOOM_PRESETS.find(
+        (preset) => preset.id === "bloom-prism"
+      )!;
+      const params = makeParams(aurora.patch ?? {});
+      const resting = makeCtx();
+      r.render(resting.ctx, params, [makeTip({ x: 80, y: 100 })]);
+      const moving = makeCtx();
+      r.render(moving.ctx, params, [makeTip({ x: 180, y: 100 })]);
 
-      expect(frame.calls.stroke).toBe(12);
-      expect(frame.calls.rotations[0]).toBeCloseTo(0, 5);
-      expect(Math.abs(frame.calls.rotations[1]!)).toBeCloseTo(Math.PI, 5);
+      expect(resting.radial).toHaveLength(2);
+      expect(moving.radial).toHaveLength(2);
+      expect(resting.linear).toHaveLength(2);
+      expect(moving.linear).toHaveLength(2);
+      expect(resting.calls.rotate).toBe(2);
+      expect(moving.calls.rotate).toBe(2);
     });
   });
 
@@ -403,7 +404,7 @@ describe("Bloom2DRenderer (lens bloom)", () => {
     expect(Object.fromEntries(signatures)).toEqual({
       Supernova: "2:8:0",
       Comet: "3:0:1",
-      Prism: "4:6:0",
+      Aurora: "2:2:2",
       Halo: "2:0:0",
     });
   });

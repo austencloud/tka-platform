@@ -53,7 +53,7 @@ export function resolveBloomHistoryDeposit(afterglow: number): number {
 
 /**
  * Large formations need a smaller optical footprint, not fewer lights. This
- * keeps every prop readable while preventing sixteen spectral trails from
+ * keeps every prop readable while preventing sixteen iridescent auras from
  * covering the choreography underneath them.
  */
 export function resolveBloomFootprintScale(propCount: number): number {

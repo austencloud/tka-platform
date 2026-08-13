@@ -102,30 +102,30 @@ describe("Bloom Kinetic Optics response", () => {
     expect(crest).toBeLessThan(0.25);
   });
 
-  it("keeps Prism color stable while motion controls only trail length", () => {
-    const prism = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
+  it("keeps Aurora color and geometry identical at rest and in motion", () => {
+    const aurora = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
     const params = resolveBloom3D({
       ...DEFAULT_EFFECTS_CONFIG.bloom,
-      ...prism.patch,
+      ...aurora.patch,
     });
     const resting = resolveBloomOpticalFrame3D(params, 0, 0, 1).chromatic;
     const moving = resolveBloomOpticalFrame3D(params, 8, 0, 1).chromatic;
 
-    expect(resting).toBeCloseTo(0.92);
-    expect(moving).toBeCloseTo(0.92);
+    expect(resting).toBeCloseTo(0.9);
+    expect(moving).toBeCloseTo(0.9);
     expect(moving).toBe(resting);
 
     const restingFrame = resolveBloomOpticalFrame3D(params, 0, 0, 1);
     const movingFrame = resolveBloomOpticalFrame3D(params, 8, 0, 1);
-    expect(restingFrame.stretch).toBeLessThan(1.3);
-    expect(movingFrame.stretch).toBeGreaterThan(restingFrame.stretch);
+    expect(restingFrame.stretch).toBe(1);
+    expect(movingFrame.stretch).toBe(restingFrame.stretch);
   });
 
-  it("reduces Prism's footprint in dense formations without changing its spectrum", () => {
-    const prism = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
+  it("reduces Aurora's footprint in dense formations without changing its spectrum", () => {
+    const aurora = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
     const params = resolveBloom3D({
       ...DEFAULT_EFFECTS_CONFIG.bloom,
-      ...prism.patch,
+      ...aurora.patch,
     });
     const solo = resolveBloomOpticalFrame3D(params, 0, 0, 1, 1);
     const formation = resolveBloomOpticalFrame3D(params, 0, 0, 0.25, 0.55);
@@ -165,19 +165,19 @@ describe("Bloom Kinetic Optics response", () => {
 
     const supernova = signatures.get("Supernova")!;
     const comet = signatures.get("Comet")!;
-    const prism = signatures.get("Prism")!;
+    const aurora = signatures.get("Aurora")!;
     const halo = signatures.get("Halo")!;
 
     expect(supernova.frame.coreStrength).toBe(1);
-    expect(supernova.frame.spikes).toBeGreaterThan(prism.frame.spikes);
+    expect(supernova.frame.spikes).toBeGreaterThan(aurora.frame.spikes);
     expect(comet.frame.streak).toBe(1);
     expect(comet.params.historyLifetimeSeconds).toBeGreaterThan(
       supernova.params.historyLifetimeSeconds
     );
-    expect(prism.frame.chromatic).toBeCloseTo(0.92);
-    expect(prism.frame.coreStrength).toBeGreaterThan(0);
-    expect(prism.params.colorMode).toBe("solid");
-    expect(prism.params.palette).toEqual([
+    expect(aurora.frame.chromatic).toBeCloseTo(0.9);
+    expect(aurora.frame.coreStrength).toBeGreaterThan(0);
+    expect(aurora.params.colorMode).toBe("solid");
+    expect(aurora.params.palette).toEqual([
       "#ff1744",
       "#00e676",
       "#2979ff",
@@ -196,6 +196,7 @@ describe("BloomRenderer3D", () => {
     const scene = new Scene();
     const renderer = new BloomRenderer3D();
     const source = makeSource();
+    source.params = { ...source.params, chromatic: 0 };
     renderer.initialize(scene);
     renderer.update([source], 1 / 60);
     source.position.x = 0.2;
@@ -220,7 +221,7 @@ describe("BloomRenderer3D", () => {
     expect(geometry.getAttribute("aOptics").getZ(0)).toBeGreaterThan(1);
     expect(geometry.getAttribute("aOptics").getW(0)).toBeGreaterThan(0);
     expect(geometry.getAttribute("aLens").getX(0)).toBeGreaterThan(0);
-    expect(geometry.getAttribute("aLens").getY(0)).toBeGreaterThan(0);
+    expect(geometry.getAttribute("aLens").getY(0)).toBe(0);
     expect(geometry.getAttribute("aLens").getW(1)).toBe(1);
     expect(geometry.getAttribute("aCoreStrength").getX(0)).toBeGreaterThan(0);
     expect(geometry.getAttribute("aCoreStrength").getX(1)).toBe(0);
@@ -248,13 +249,13 @@ describe("BloomRenderer3D", () => {
     renderer.dispose();
   });
 
-  it("aims Prism along tip motion and retains that axis when motion stops", () => {
+  it("keeps Aurora geometry identical when the prop moves and stops", () => {
     const scene = new Scene();
     const renderer = new BloomRenderer3D();
-    const prism = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
-    const prismParams = resolveBloom3D({
+    const aurora = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
+    const auroraParams = resolveBloom3D({
       ...DEFAULT_EFFECTS_CONFIG.bloom,
-      ...prism.patch,
+      ...aurora.patch,
     });
     renderer.initialize(scene);
     const source = makeSource({
@@ -262,17 +263,14 @@ describe("BloomRenderer3D", () => {
       tipIndex: 0,
       velocity: { x: 0, y: 3, z: 0 },
       speed: 3,
-      params: prismParams,
+      params: auroraParams,
     });
     renderer.update([source], 1 / 60);
 
-    const axes = renderer.object3D.geometry.getAttribute("aVelocitySeed");
     const movingStretch = renderer.object3D.geometry
       .getAttribute("aOptics")
       .getZ(0);
-    expect(axes.getX(0)).toBeCloseTo(0, 6);
-    expect(axes.getY(0)).toBeCloseTo(1, 6);
-    expect(movingStretch).toBeGreaterThan(2);
+    expect(movingStretch).toBe(1);
 
     source.velocity = { x: 0, y: 0, z: 0 };
     source.speed = 0;
@@ -280,8 +278,64 @@ describe("BloomRenderer3D", () => {
     const restingStretch = renderer.object3D.geometry
       .getAttribute("aOptics")
       .getZ(0);
-    expect(axes.getY(0)).toBeCloseTo(1, 6);
-    expect(restingStretch).toBeLessThan(movingStretch);
+    expect(restingStretch).toBe(movingStretch);
+    renderer.dispose();
+  });
+
+  it("renders one elongated Aurora field for both tips of a prop", () => {
+    const scene = new Scene();
+    const renderer = new BloomRenderer3D();
+    const aurora = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
+    const params = resolveBloom3D({
+      ...DEFAULT_EFFECTS_CONFIG.bloom,
+      ...aurora.patch,
+    });
+    renderer.initialize(scene);
+    renderer.update(
+      [
+        makeSource({
+          sourceId: 1,
+          tipIndex: 0,
+          position: { x: -1, y: 0, z: 0 },
+          params,
+        }),
+        makeSource({
+          sourceId: 2,
+          tipIndex: 1,
+          position: { x: 1, y: 0, z: 0 },
+          params,
+        }),
+      ],
+      1 / 60
+    );
+
+    const geometry = renderer.object3D.geometry;
+    expect(renderer.object3D.count).toBe(1);
+    expect(geometry.getAttribute("aOptics").getZ(0)).toBeGreaterThan(1);
+    expect(geometry.getAttribute("aLens").getY(0)).toBeCloseTo(0.9);
+    renderer.dispose();
+  });
+
+  it("keeps matching prop hands on different performers as separate Aurora fields", () => {
+    const scene = new Scene();
+    const renderer = new BloomRenderer3D();
+    const aurora = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
+    const params = resolveBloom3D({
+      ...DEFAULT_EFFECTS_CONFIG.bloom,
+      ...aurora.patch,
+    });
+    renderer.initialize(scene);
+    renderer.update(
+      [
+        makeSource({ sourceId: 1, propIndex: 0, tipIndex: 0, params }),
+        makeSource({ sourceId: 2, propIndex: 0, tipIndex: 1, params }),
+        makeSource({ sourceId: 5, propIndex: 0, tipIndex: 0, params }),
+        makeSource({ sourceId: 6, propIndex: 0, tipIndex: 1, params }),
+      ],
+      1 / 60
+    );
+
+    expect(renderer.object3D.count).toBe(2);
     renderer.dispose();
   });
 

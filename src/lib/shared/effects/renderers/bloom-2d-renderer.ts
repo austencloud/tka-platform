@@ -23,21 +23,17 @@ export interface BloomTipInput {
   propIndex: number;
   tipIndex: number;
   color: string;
-  /** Tracker velocity in viewbox units per second when available. */
-  velocityX?: number;
-  /** Tracker velocity in viewbox units per second when available. */
-  velocityY?: number;
 }
 
 type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
-const PRISM_SPECTRUM = [
-  "255,42,52",
-  "255,132,24",
-  "255,224,60",
-  "62,238,120",
-  "34,196,255",
-  "92,72,255",
+const AURORA_SPECTRUM = [
+  "255,78,177",
+  "255,118,72",
+  "255,190,72",
+  "50,224,210",
+  "75,126,255",
+  "182,92,255",
 ] as const;
 
 /**
@@ -51,7 +47,7 @@ const PRISM_SPECTRUM = [
  *   3. Anamorphic streak - the halo stretched along the motion vector; length
  *      grows with the tip's per-frame speed.
  *   4. Diffraction star spikes - the lens glint off a bright point.
- *   5. Spectral trail - moving white light separates into a narrow spectrum.
+ *   5. Aurora - one stable pearlescent spectrum spanning each prop.
  *
  * A long-exposure afterglow is achieved with an offscreen accumulation buffer.
  * Only moving colored scatter enters that buffer. The white source, spikes,
@@ -73,7 +69,7 @@ export class Bloom2DRenderer {
   private accumUnavailable = false;
 
   // Previous tip positions by tipIndex → per-frame velocity for streak length,
-  // spike flare, and prism motion response.
+  // spike flare, and motion-reactive optical presets.
   private prevPos = new Map<number, { x: number; y: number }>();
 
   render(
@@ -230,23 +226,32 @@ export class Bloom2DRenderer {
     target.globalCompositeOperation = "lighter";
     target.globalAlpha = 1;
 
+    if (params.chromatic > 0) {
+      const tipsByProp = new Map<number, BloomTipInput[]>();
+      for (const tip of tips) {
+        const propTips = tipsByProp.get(tip.propIndex);
+        if (propTips) propTips.push(tip);
+        else tipsByProp.set(tip.propIndex, [tip]);
+      }
+      for (const propTips of tipsByProp.values()) {
+        this.drawIridescentAura(
+          target,
+          propTips,
+          coreR,
+          params.chromatic,
+          footprintScale,
+          baseAlpha
+        );
+      }
+    }
+
     for (const tip of tips) {
       const color = this.pickColor(params, tip, t);
 
       // Per-frame velocity drives the motion-reactive layers.
       const prev = this.prevPos.get(tip.tipIndex);
-      const vx =
-        tip.velocityX !== undefined
-          ? tip.velocityX / 60
-          : prev
-            ? tip.x - prev.x
-            : 0;
-      const vy =
-        tip.velocityY !== undefined
-          ? tip.velocityY / 60
-          : prev
-            ? tip.y - prev.y
-            : 0;
+      const vx = prev ? tip.x - prev.x : 0;
+      const vy = prev ? tip.y - prev.y : 0;
       const speed = Math.hypot(vx, vy);
       const angle = speed > 0.01 ? Math.atan2(vy, vx) : 0;
 
@@ -258,7 +263,7 @@ export class Bloom2DRenderer {
         coreR,
         params.falloff,
         color,
-        baseAlpha * (1 - params.chromatic * 0.75)
+        baseAlpha * (1 - params.chromatic * 0.94)
       );
 
       // 2. Anamorphic motion streak.
@@ -276,39 +281,8 @@ export class Bloom2DRenderer {
         );
       }
 
-      // 3. Prism reveals the direction of travel. A paused tip stays clean
-      //    instead of spraying a decorative rainbow across the notation.
-      if (params.chromatic > 0 && speed > 0.2) {
-        this.drawSpectralTrail(
-          target,
-          tip.x,
-          tip.y,
-          coreR,
-          vx,
-          vy,
-          speed,
-          params.chromatic,
-          footprintScale,
-          baseAlpha
-        );
-      }
-
-      // A high-dispersion preset keeps a hairline red/cyan edge at rest. It is
-      // just enough to identify Prism on static arc samples without projecting
-      // any geometry over the motion paths.
-      if (params.chromatic >= 0.8) {
-        this.drawSpectralEdge(
-          target,
-          tip.x,
-          tip.y,
-          coreR,
-          params.chromatic,
-          baseAlpha
-        );
-      }
-
-      // 4. The white source sits over the trail so the current prop position
-      // remains more legible than the color separation behind it.
+      // 3. The white source stays small enough to preserve the surrounding
+      // color instead of bleaching it into another plain halo.
       if (params.coreStrength > 0) {
         this.drawCore(
           target,
@@ -319,7 +293,7 @@ export class Bloom2DRenderer {
         );
       }
 
-      // 5. Diffraction star spikes.
+      // 4. Diffraction star spikes.
       if (params.spikes > 0) {
         this.drawSpikes(
           target,
@@ -449,37 +423,81 @@ export class Bloom2DRenderer {
     target.fillRect(x - r, y - r, r * 2, r * 2);
   }
 
-  /** A compact chromatic fringe that stays under the white source. */
-  private drawSpectralEdge(
+  /** A stable opalescent light field with no moving parts or hard color seams. */
+  private drawIridescentAura(
     target: Ctx2D,
-    x: number,
-    y: number,
+    tips: BloomTipInput[],
     coreR: number,
     chromatic: number,
+    footprintScale: number,
     alpha: number
   ): void {
-    const offset = coreR * 0.22;
-    const radius = coreR * 0.28;
-    const edgeAlpha = clamp01(alpha * chromatic * 0.52);
-    const edges = [
-      { x: x - offset, rgb: "255,42,52" },
-      { x: x + offset, rgb: "34,196,255" },
+    const centerX =
+      tips.reduce((sum, tip) => sum + tip.x, 0) / Math.max(1, tips.length);
+    const centerY =
+      tips.reduce((sum, tip) => sum + tip.y, 0) / Math.max(1, tips.length);
+
+    let covarianceXX = 0;
+    let covarianceXY = 0;
+    let covarianceYY = 0;
+    for (const tip of tips) {
+      const dx = tip.x - centerX;
+      const dy = tip.y - centerY;
+      covarianceXX += dx * dx;
+      covarianceXY += dx * dy;
+      covarianceYY += dy * dy;
+    }
+    const angle =
+      tips.length > 1
+        ? 0.5 * Math.atan2(2 * covarianceXY, covarianceXX - covarianceYY)
+        : -Math.PI * 0.22;
+    const axisX = Math.cos(angle);
+    const axisY = Math.sin(angle);
+    let halfLength = 0;
+    let halfWidth = 0;
+    for (const tip of tips) {
+      const dx = tip.x - centerX;
+      const dy = tip.y - centerY;
+      halfLength = Math.max(halfLength, Math.abs(dx * axisX + dy * axisY));
+      halfWidth = Math.max(halfWidth, Math.abs(-dx * axisY + dy * axisX));
+    }
+
+    const sourceRadius = coreR * footprintScale;
+    halfLength = Math.max(sourceRadius, halfLength + sourceRadius * 0.64);
+    halfWidth = Math.max(sourceRadius * 0.74, halfWidth + sourceRadius * 0.34);
+    const auraAlpha = clamp01(alpha * chromatic);
+    const layers = [
+      { scale: 1, opacity: 0.58, blur: sourceRadius * 0.12 },
+      { scale: 0.76, opacity: 0.46, blur: sourceRadius * 0.04 },
     ] as const;
 
-    for (const edge of edges) {
-      const gradient = target.createRadialGradient(
-        edge.x,
-        y,
+    for (const layer of layers) {
+      target.save();
+      target.translate(centerX, centerY);
+      target.rotate(angle);
+      target.filter = `blur(${Math.max(1, layer.blur)}px)`;
+
+      const gradient = target.createLinearGradient(
+        -halfLength * layer.scale,
         0,
-        edge.x,
-        y,
-        radius
+        halfLength * layer.scale,
+        0
       );
-      gradient.addColorStop(0, `rgba(${edge.rgb},${edgeAlpha})`);
-      gradient.addColorStop(0.58, `rgba(${edge.rgb},${edgeAlpha * 0.44})`);
-      gradient.addColorStop(1, `rgba(${edge.rgb},0)`);
+      for (let index = 0; index < AURORA_SPECTRUM.length; index++) {
+        const rgb = AURORA_SPECTRUM[index]!;
+        const position = index / (AURORA_SPECTRUM.length - 1);
+        gradient.addColorStop(
+          position,
+          `rgba(${rgb},${auraAlpha * layer.opacity})`
+        );
+      }
+
       target.fillStyle = gradient;
-      target.fillRect(edge.x - radius, y - radius, radius * 2, radius * 2);
+      target.scale(1, halfWidth / halfLength);
+      target.beginPath();
+      target.arc(0, 0, halfLength * layer.scale, 0, Math.PI * 2);
+      target.fill();
+      target.restore();
     }
   }
 
@@ -554,60 +572,6 @@ export class Bloom2DRenderer {
     target.restore();
   }
 
-  /** A short red-to-violet exposure trailing the tip's actual movement. */
-  private drawSpectralTrail(
-    target: Ctx2D,
-    x: number,
-    y: number,
-    coreR: number,
-    velocityX: number,
-    velocityY: number,
-    speed: number,
-    chromatic: number,
-    footprintScale: number,
-    alpha: number
-  ): void {
-    const threshold = Math.max(0.2, coreR * 0.008);
-    if (speed <= threshold) return;
-
-    const motion = clamp01((speed - threshold) / Math.max(1, coreR * 0.24));
-    const length =
-      coreR * footprintScale * (0.38 + motion * (0.8 + chromatic * 0.65));
-    const spread = coreR * footprintScale * chromatic * (0.07 + motion * 0.08);
-    const bandWidth = Math.max(
-      0.65,
-      coreR * footprintScale * (0.02 + motion * 0.012)
-    );
-    const bandCount = PRISM_SPECTRUM.length;
-    const intensity = clamp01(alpha * chromatic * (0.72 + motion * 0.2));
-    if (length < 1 || intensity <= 0) return;
-
-    target.save();
-    target.translate(x, y);
-    target.rotate(Math.atan2(velocityY, velocityX));
-    target.lineCap = "round";
-
-    for (let index = 0; index < bandCount; index++) {
-      const amount = bandCount === 1 ? 0.5 : index / (bandCount - 1);
-      const offset = lerp(-spread, spread, amount);
-      const rgb = PRISM_SPECTRUM[index]!;
-      const gradient = target.createLinearGradient(0, 0, -length, 0);
-      gradient.addColorStop(0, `rgba(${rgb},${intensity * 0.5})`);
-      gradient.addColorStop(0.18, `rgba(${rgb},${intensity * 0.72})`);
-      gradient.addColorStop(0.58, `rgba(${rgb},${intensity * 0.42})`);
-      gradient.addColorStop(1, `rgba(${rgb},0)`);
-      target.strokeStyle = gradient;
-      target.lineWidth = bandWidth;
-      target.beginPath();
-      target.moveTo(-coreR * 0.03, offset * 0.15);
-      target.lineTo(-length * 0.42, offset * 0.6);
-      target.lineTo(-length, offset);
-      target.stroke();
-    }
-
-    target.restore();
-  }
-
   // ── Helpers ─────────────────────────────────────────────────────────
 
   private pickColor(
@@ -646,10 +610,6 @@ export class Bloom2DRenderer {
 /** Clamp to [0, 1]. */
 function clamp01(v: number): number {
   return v < 0 ? 0 : v > 1 ? 1 : v;
-}
-
-function lerp(start: number, end: number, amount: number): number {
-  return start + (end - start) * amount;
 }
 
 /**

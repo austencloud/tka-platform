@@ -166,6 +166,7 @@ export class BloomRenderer3D {
     }
 
     this.visibleCount = 0;
+    this.writeAuroraGroups(sources, normalization, footprintScale);
     for (const source of sources) {
       const frame = resolveBloomOpticalFrame3D(
         source.params,
@@ -174,6 +175,7 @@ export class BloomRenderer3D {
         normalization,
         footprintScale
       );
+      if (frame.chromatic > 0) continue;
       const opticalAxis = this.resolveOpticalAxis(source);
       this.resolveColor(source);
       this.write({
@@ -204,6 +206,98 @@ export class BloomRenderer3D {
     this.material.uniforms.uEmissiveStrength!.value = maxEmissive;
     this.commit();
     this.updateLights(sources, normalization);
+  }
+
+  /** Aurora is one stable optical field per prop, not a rainbow coin per tip. */
+  private writeAuroraGroups(
+    sources: readonly BloomTipSource3D[],
+    normalization: number,
+    footprintScale: number
+  ): void {
+    const sourcesByProp = new Map<number, BloomTipSource3D[]>();
+    for (const source of sources) {
+      if (source.params.chromatic <= 0) continue;
+      const propId = Math.floor((source.sourceId - 1) / 2);
+      const propSources = sourcesByProp.get(propId);
+      if (propSources) propSources.push(source);
+      else sourcesByProp.set(propId, [source]);
+    }
+
+    for (const [propId, propSources] of sourcesByProp) {
+      const first = propSources[0]!;
+      const frame = resolveBloomOpticalFrame3D(
+        first.params,
+        first.speed,
+        this.clock,
+        normalization,
+        footprintScale
+      );
+      let centerX = 0;
+      let centerY = 0;
+      let centerZ = 0;
+      for (const source of propSources) {
+        centerX += source.position.x;
+        centerY += source.position.y;
+        centerZ += source.position.z;
+      }
+      centerX /= propSources.length;
+      centerY /= propSources.length;
+      centerZ /= propSources.length;
+
+      let axisX = 1;
+      let axisY = 0;
+      let axisZ = 0;
+      let maxDistanceSquared = 0;
+      for (let left = 0; left < propSources.length; left++) {
+        for (let right = left + 1; right < propSources.length; right++) {
+          const a = propSources[left]!.position;
+          const b = propSources[right]!.position;
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const dz = b.z - a.z;
+          const distanceSquared = dx * dx + dy * dy + dz * dz;
+          if (distanceSquared > maxDistanceSquared) {
+            maxDistanceSquared = distanceSquared;
+            const inverseDistance = 1 / Math.sqrt(distanceSquared);
+            axisX = dx * inverseDistance;
+            axisY = dy * inverseDistance;
+            axisZ = dz * inverseDistance;
+          }
+        }
+      }
+      if (maxDistanceSquared === 0) {
+        const stableAxis = this.resolveOpticalAxis(first);
+        axisX = stableAxis.x;
+        axisY = stableAxis.y;
+        axisZ = stableAxis.z;
+      }
+
+      const width = frame.radiusWorld * 0.95;
+      const halfSpan = Math.sqrt(maxDistanceSquared) * 0.5;
+      const halfLength = Math.max(width, halfSpan + width * 0.46);
+      this.color.set(first.params.color);
+      this.write({
+        x: centerX,
+        y: centerY,
+        z: centerZ,
+        velocityX: axisX,
+        velocityY: axisY,
+        velocityZ: axisZ,
+        red: this.color.r,
+        green: this.color.g,
+        blue: this.color.b,
+        energy: Math.min(1.2, frame.energy * 1.15),
+        radius: width,
+        stretch: Math.min(1.9, halfLength / width),
+        streak: 0,
+        spikes: 0,
+        chromatic: frame.chromatic,
+        falloff: resolveBloomFalloffCode(first.params.falloff),
+        history: 0,
+        coreStrength: 0,
+        seed: (propId % 7) / 7,
+      });
+    }
   }
 
   clear(): void {
