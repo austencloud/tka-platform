@@ -1,6 +1,10 @@
 import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import {
+  mirrorFestivalSheetColumns,
+  placeFestivalSignupAtCenter,
+} from "$lib/features/choreo-card/services/festival-sampler-sheet";
 
 const require = createRequire(import.meta.url);
 const { buildCandidateNames, buildFestivalPackCuration, isClassicPosition } =
@@ -90,5 +94,35 @@ describe("festival pack curation", () => {
       width: 1500,
       height: 2100,
     });
+  });
+
+  it("keeps signup centered and mirrors each back-page row", () => {
+    const sheet = placeFestivalSignupAtCenter(
+      ["A", "B", "C", "D", "E", "F", "G", "H"],
+      "SIGNUP"
+    );
+
+    expect(sheet).toEqual([
+      "A",
+      "B",
+      "C",
+      "D",
+      "SIGNUP",
+      "E",
+      "F",
+      "G",
+      "H",
+    ]);
+    expect(mirrorFestivalSheetColumns(sheet)).toEqual([
+      "C",
+      "B",
+      "A",
+      "E",
+      "SIGNUP",
+      "D",
+      "H",
+      "G",
+      "F",
+    ]);
   });
 });

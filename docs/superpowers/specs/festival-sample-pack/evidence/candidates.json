@@ -1,0 +1,1556 @@
+{
+  "version": 2,
+  "generation": {
+    "method": "flow-arts MCP generate_sequence",
+    "constraintPreset": "smooth",
+    "classicStartPositions": [
+      "alpha1",
+      "beta5",
+      "gamma11"
+    ],
+    "loopCards": 90,
+    "verifiedAt": "2026-08-12"
+  },
+  "lists": [
+    [
+      {
+        "slot": "mirrored-16",
+        "label": "Mirrored · 16 · Halved",
+        "word": "JDΦ-ΣPWΘ-X-JDΦ-ΣPWΘ-X-",
+        "counts": 16,
+        "file": "pack1__mirrored-16.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "mirrored-8",
+        "label": "Mirrored · 8 · Halved",
+        "word": "ΘΛΛY-ΘΛΛY-",
+        "counts": 8,
+        "file": "pack1__mirrored-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "rotated-16",
+        "label": "Rotated · 16 · Quartered",
+        "word": "HΩZHHΩZHHΩZHHΩZH",
+        "counts": 16,
+        "file": "pack1__rotated-16.png",
+        "period": "quartered",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "rotated-8",
+        "label": "Rotated · 8 · Halved",
+        "word": "W-Ω-TΛW-Ω-TΛ",
+        "counts": 8,
+        "file": "pack1__rotated-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "tnd-a",
+        "label": "TnD · Split · Same · no turns",
+        "word": "AAAA",
+        "counts": 4,
+        "file": "pack1__tnd-a.png",
+        "period": null,
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "tnd-b",
+        "label": "TnD · Split · Opposite · 1 turn throughout",
+        "word": "JDJD",
+        "counts": 4,
+        "file": "pack1__tnd-b.png",
+        "period": null,
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "mirrored_swapped-8",
+        "label": "Mirrored+Swapped · 8 · Halved",
+        "word": "YΣ-YΣ-YΣ-YΣ-",
+        "counts": 8,
+        "file": "pack1__mirrored_swapped-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "mirrored_inverted-8",
+        "label": "Mirrored+Inverted · 8 · Halved",
+        "word": "Ω-Y-ΦBΘ-Z-ΦA",
+        "counts": 8,
+        "file": "pack1__mirrored_inverted-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      }
+    ],
+    [
+      {
+        "slot": "mirrored-16",
+        "label": "Mirrored · 16 · Halved",
+        "word": "FΔRΛRWΩ-Z-FΔRΛRWΩ-Z-",
+        "counts": 16,
+        "file": "pack2__mirrored-16.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "mirrored-8",
+        "label": "Mirrored · 8 · Halved",
+        "word": "W-ΣRΛW-ΣRΛ",
+        "counts": 8,
+        "file": "pack2__mirrored-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "rotated-16",
+        "label": "Rotated · 16 · Quartered",
+        "word": "ZΨ-FΘ-ZΨ-FΘ-ZΨ-FΘ-ZΨ-FΘ-",
+        "counts": 16,
+        "file": "pack2__rotated-16.png",
+        "period": "quartered",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "rotated-8",
+        "label": "Rotated · 8 · Halved",
+        "word": "CΘ-ΛXCΘ-ΛX",
+        "counts": 8,
+        "file": "pack2__rotated-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "tnd-a",
+        "label": "TnD · Together · Same · no turns",
+        "word": "GGGG",
+        "counts": 4,
+        "file": "pack2__tnd-a.png",
+        "period": null,
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "tnd-b",
+        "label": "TnD · Together · Opposite · 1 turn throughout",
+        "word": "DJDJ",
+        "counts": 4,
+        "file": "pack2__tnd-b.png",
+        "period": null,
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "mirrored_swapped-8",
+        "label": "Mirrored+Swapped · 8 · Halved",
+        "word": "KΔ-X-Φ-KΔ-X-Φ-",
+        "counts": 8,
+        "file": "pack2__mirrored_swapped-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "mirrored_inverted-8",
+        "label": "Mirrored+Inverted · 8 · Halved",
+        "word": "ΘZ-Σ-ZΩY-Δ-Y",
+        "counts": 8,
+        "file": "pack2__mirrored_inverted-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      }
+    ],
+    [
+      {
+        "slot": "mirrored-16",
+        "label": "Mirrored · 16 · Halved",
+        "word": "Z-ΩY-Ψ-ΩOΛ-OZ-ΩY-Ψ-ΩOΛ-O",
+        "counts": 16,
+        "file": "pack3__mirrored-16.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "mirrored-8",
+        "label": "Mirrored · 8 · Halved",
+        "word": "BΩ-WΦ-BΩ-WΦ-",
+        "counts": 8,
+        "file": "pack3__mirrored-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "rotated-16",
+        "label": "Rotated · 16 · Quartered",
+        "word": "ΔRY-FΔRY-FΔRY-FΔRY-F",
+        "counts": 16,
+        "file": "pack3__rotated-16.png",
+        "period": "quartered",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "rotated-8",
+        "label": "Rotated · 8 · Halved",
+        "word": "HΩΛ-Y-HΩΛ-Y-",
+        "counts": 8,
+        "file": "pack3__rotated-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "tnd-a",
+        "label": "TnD · Quarter · Same · no turns",
+        "word": "SSSS",
+        "counts": 4,
+        "file": "pack3__tnd-a.png",
+        "period": null,
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "tnd-b",
+        "label": "TnD · Quarter · Opposite · 1 turn throughout",
+        "word": "MPMP",
+        "counts": 4,
+        "file": "pack3__tnd-b.png",
+        "period": null,
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "mirrored_swapped-8",
+        "label": "Mirrored+Swapped · 8 · Halved",
+        "word": "EΔΛYEΔΛY",
+        "counts": 8,
+        "file": "pack3__mirrored_swapped-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "mirrored_inverted-8",
+        "label": "Mirrored+Inverted · 8 · Halved",
+        "word": "MW-Ω-Λ-NX-Θ-Λ-",
+        "counts": 8,
+        "file": "pack3__mirrored_inverted-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      }
+    ],
+    [
+      {
+        "slot": "mirrored-16",
+        "label": "Mirrored · 16 · Halved",
+        "word": "LΔ-Z-HΔ-W-AALΔ-Z-HΔ-W-AA",
+        "counts": 16,
+        "file": "pack4__mirrored-16.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "mirrored-8",
+        "label": "Mirrored · 8 · Halved",
+        "word": "ΘYΩZΘYΩZ",
+        "counts": 8,
+        "file": "pack4__mirrored-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "rotated-16",
+        "label": "Rotated · 16 · Quartered",
+        "word": "Σ-PWJΣ-PWJΣ-PWJΣ-PWJ",
+        "counts": 16,
+        "file": "pack4__rotated-16.png",
+        "period": "quartered",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "rotated-8",
+        "label": "Rotated · 8 · Halved",
+        "word": "RY-ΦΔRY-ΦΔ",
+        "counts": 8,
+        "file": "pack4__rotated-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "tnd-a",
+        "label": "TnD · Split · Same · no turns",
+        "word": "BBBB",
+        "counts": 4,
+        "file": "pack4__tnd-a.png",
+        "period": null,
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "tnd-b",
+        "label": "TnD · Split · Opposite · 1 turn throughout",
+        "word": "KEKE",
+        "counts": 4,
+        "file": "pack4__tnd-b.png",
+        "period": null,
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "mirrored_swapped-8",
+        "label": "Mirrored+Swapped · 8 · Halved",
+        "word": "TΛ-Λ-Λ-TΛ-Λ-Λ-",
+        "counts": 8,
+        "file": "pack4__mirrored_swapped-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "mirrored_inverted-8",
+        "label": "Mirrored+Inverted · 8 · Halved",
+        "word": "CCΣW-CCΔX-",
+        "counts": 8,
+        "file": "pack4__mirrored_inverted-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      }
+    ],
+    [
+      {
+        "slot": "mirrored-16",
+        "label": "Mirrored · 16 · Halved",
+        "word": "EΔΛ-MYΘΛ-ZEΔΛ-MYΘΛ-Z",
+        "counts": 16,
+        "file": "pack5__mirrored-16.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "mirrored-8",
+        "label": "Mirrored · 8 · Halved",
+        "word": "W-CΨΘW-CΨΘ",
+        "counts": 8,
+        "file": "pack5__mirrored-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "rotated-16",
+        "label": "Rotated · 16 · Quartered",
+        "word": "OW-ΣΛOW-ΣΛOW-ΣΛOW-ΣΛ",
+        "counts": 16,
+        "file": "pack5__rotated-16.png",
+        "period": "quartered",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "rotated-8",
+        "label": "Rotated · 8 · Halved",
+        "word": "ΣYΣ-W-ΣYΣ-W-",
+        "counts": 8,
+        "file": "pack5__rotated-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "tnd-a",
+        "label": "TnD · Together · Same · no turns",
+        "word": "HHHH",
+        "counts": 4,
+        "file": "pack5__tnd-a.png",
+        "period": null,
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "tnd-b",
+        "label": "TnD · Together · Opposite · 1 turn throughout",
+        "word": "EKEK",
+        "counts": 4,
+        "file": "pack5__tnd-b.png",
+        "period": null,
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "mirrored_swapped-8",
+        "label": "Mirrored+Swapped · 8 · Halved",
+        "word": "LFΨΦLFΨΦ",
+        "counts": 8,
+        "file": "pack5__mirrored_swapped-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "mirrored_inverted-8",
+        "label": "Mirrored+Inverted · 8 · Halved",
+        "word": "FΘ-Y-GFΩ-Z-H",
+        "counts": 8,
+        "file": "pack5__mirrored_inverted-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      }
+    ],
+    [
+      {
+        "slot": "mirrored-16",
+        "label": "Mirrored · 16 · Halved",
+        "word": "WΨEΔX-ΣYΣ-WΨEΔX-ΣYΣ-",
+        "counts": 16,
+        "file": "pack6__mirrored-16.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "mirrored-8",
+        "label": "Mirrored · 8 · Halved",
+        "word": "CΦ-ΔX-CΦ-ΔX-",
+        "counts": 8,
+        "file": "pack6__mirrored-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "rotated-16",
+        "label": "Rotated · 16 · Quartered",
+        "word": "Θ-OΛX-Θ-OΛX-Θ-OΛX-Θ-OΛX-",
+        "counts": 16,
+        "file": "pack6__rotated-16.png",
+        "period": "quartered",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "rotated-8",
+        "label": "Rotated · 8 · Halved",
+        "word": "Δ-TΛY-Δ-TΛY-",
+        "counts": 8,
+        "file": "pack6__rotated-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "tnd-a",
+        "label": "TnD · Quarter · Same · no turns",
+        "word": "TTTT",
+        "counts": 4,
+        "file": "pack6__tnd-a.png",
+        "period": null,
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "tnd-b",
+        "label": "TnD · Quarter · Opposite · 1 turn throughout",
+        "word": "NQNQ",
+        "counts": 4,
+        "file": "pack6__tnd-b.png",
+        "period": null,
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "mirrored_swapped-8",
+        "label": "Mirrored+Swapped · 8 · Halved",
+        "word": "HΩWΨHΩWΨ",
+        "counts": 8,
+        "file": "pack6__mirrored_swapped-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "mirrored_inverted-8",
+        "label": "Mirrored+Inverted · 8 · Halved",
+        "word": "ΛX-Φ-Θ-ΛW-Φ-Ω-",
+        "counts": 8,
+        "file": "pack6__mirrored_inverted-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      }
+    ],
+    [
+      {
+        "slot": "mirrored-16",
+        "label": "Mirrored · 16 · Halved",
+        "word": "Θ-MΛY-IΩZ-ΦΘ-MΛY-IΩZ-Φ",
+        "counts": 16,
+        "file": "pack7__mirrored-16.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "mirrored-8",
+        "label": "Mirrored · 8 · Halved",
+        "word": "FΘ-OYFΘ-OY",
+        "counts": 8,
+        "file": "pack7__mirrored-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "rotated-16",
+        "label": "Rotated · 16 · Quartered",
+        "word": "GΣ-RZ-GΣ-RZ-GΣ-RZ-GΣ-RZ-",
+        "counts": 16,
+        "file": "pack7__rotated-16.png",
+        "period": "quartered",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "rotated-8",
+        "label": "Rotated · 8 · Halved",
+        "word": "QZ-ΦΘ-QZ-ΦΘ-",
+        "counts": 8,
+        "file": "pack7__rotated-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "tnd-a",
+        "label": "TnD · Split · Same · no turns",
+        "word": "CCCC",
+        "counts": 4,
+        "file": "pack7__tnd-a.png",
+        "period": null,
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "tnd-b",
+        "label": "TnD · Split · Opposite · 1 turn throughout",
+        "word": "LFLF",
+        "counts": 4,
+        "file": "pack7__tnd-b.png",
+        "period": null,
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "mirrored_swapped-8",
+        "label": "Mirrored+Swapped · 8 · Halved",
+        "word": "TXΣRTXΣR",
+        "counts": 8,
+        "file": "pack7__mirrored_swapped-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "mirrored_inverted-8",
+        "label": "Mirrored+Inverted · 8 · Halved",
+        "word": "CΨΔ-X-CΨΣ-W-",
+        "counts": 8,
+        "file": "pack7__mirrored_inverted-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      }
+    ],
+    [
+      {
+        "slot": "mirrored-16",
+        "label": "Mirrored · 16 · Halved",
+        "word": "FΘ-Λ-RY-Δ-ΛY-FΘ-Λ-RY-Δ-ΛY-",
+        "counts": 16,
+        "file": "pack8__mirrored-16.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "mirrored-8",
+        "label": "Mirrored · 8 · Halved",
+        "word": "SSΛΛ-SSΛΛ-",
+        "counts": 8,
+        "file": "pack8__mirrored-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "rotated-16",
+        "label": "Rotated · 16 · Quartered",
+        "word": "MPWΔMPWΔMPWΔMPWΔ",
+        "counts": 16,
+        "file": "pack8__rotated-16.png",
+        "period": "quartered",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "rotated-8",
+        "label": "Rotated · 8 · Halved",
+        "word": "AΣY-ΦAΣY-Φ",
+        "counts": 8,
+        "file": "pack8__rotated-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "tnd-a",
+        "label": "TnD · Together · Same · no turns",
+        "word": "IIII",
+        "counts": 4,
+        "file": "pack8__tnd-a.png",
+        "period": null,
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "tnd-b",
+        "label": "TnD · Together · Opposite · 1 turn throughout",
+        "word": "FLFL",
+        "counts": 4,
+        "file": "pack8__tnd-b.png",
+        "period": null,
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "mirrored_swapped-8",
+        "label": "Mirrored+Swapped · 8 · Halved",
+        "word": "KEΨΦKEΨΦ",
+        "counts": 8,
+        "file": "pack8__mirrored_swapped-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "mirrored_inverted-8",
+        "label": "Mirrored+Inverted · 8 · Halved",
+        "word": "FΔTZFΣSY",
+        "counts": 8,
+        "file": "pack8__mirrored_inverted-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      }
+    ],
+    [
+      {
+        "slot": "mirrored-16",
+        "label": "Mirrored · 16 · Halved",
+        "word": "W-AΣWΘ-Y-GΣ-W-AΣWΘ-Y-GΣ-",
+        "counts": 16,
+        "file": "pack9__mirrored-16.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "mirrored-8",
+        "label": "Mirrored · 8 · Halved",
+        "word": "CΔUX-CΔUX-",
+        "counts": 8,
+        "file": "pack9__mirrored-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "rotated-16",
+        "label": "Rotated · 16 · Quartered",
+        "word": "BΩ-Z-ΦBΩ-Z-ΦBΩ-Z-ΦBΩ-Z-Φ",
+        "counts": 16,
+        "file": "pack9__rotated-16.png",
+        "period": "quartered",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "rotated-8",
+        "label": "Rotated · 8 · Halved",
+        "word": "ΩY-ΦLΩY-ΦL",
+        "counts": 8,
+        "file": "pack9__rotated-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "tnd-a",
+        "label": "TnD · Quarter · Same · no turns",
+        "word": "UUUU",
+        "counts": 4,
+        "file": "pack9__tnd-a.png",
+        "period": null,
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "tnd-b",
+        "label": "TnD · Quarter · Opposite · 1 turn throughout",
+        "word": "OROR",
+        "counts": 4,
+        "file": "pack9__tnd-b.png",
+        "period": null,
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "mirrored_swapped-8",
+        "label": "Mirrored+Swapped · 8 · Halved",
+        "word": "FΔΛY-FΔΛY-",
+        "counts": 8,
+        "file": "pack9__mirrored_swapped-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "mirrored_inverted-8",
+        "label": "Mirrored+Inverted · 8 · Halved",
+        "word": "YFΨΣ-ZFΨΔ-",
+        "counts": 8,
+        "file": "pack9__mirrored_inverted-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      }
+    ],
+    [
+      {
+        "slot": "mirrored-16",
+        "label": "Mirrored · 16 · Halved",
+        "word": "Θ-MΛ-XΩ-NX-Φ-Θ-MΛ-XΩ-NX-Φ-",
+        "counts": 16,
+        "file": "pack10__mirrored-16.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "mirrored-8",
+        "label": "Mirrored · 8 · Halved",
+        "word": "ΦJΘY-ΦJΘY-",
+        "counts": 8,
+        "file": "pack10__mirrored-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "rotated-16",
+        "label": "Rotated · 16 · Quartered",
+        "word": "Δ-Y-ΘY-Δ-Y-ΘY-Δ-Y-ΘY-Δ-Y-ΘY-",
+        "counts": 16,
+        "file": "pack10__rotated-16.png",
+        "period": "quartered",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "rotated-8",
+        "label": "Rotated · 8 · Halved",
+        "word": "RY-ΩΛRY-ΩΛ",
+        "counts": 8,
+        "file": "pack10__rotated-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "tnd-a",
+        "label": "TnD · Split · Same · no turns",
+        "word": "AAAA",
+        "counts": 4,
+        "file": "pack10__tnd-a.png",
+        "period": null,
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "tnd-b",
+        "label": "TnD · Split · Opposite · 1 turn throughout",
+        "word": "JDJD",
+        "counts": 4,
+        "file": "pack10__tnd-b.png",
+        "period": null,
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "mirrored_swapped-8",
+        "label": "Mirrored+Swapped · 8 · Halved",
+        "word": "WΣZ-Δ-WΣZ-Δ-",
+        "counts": 8,
+        "file": "pack10__mirrored_swapped-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "mirrored_inverted-8",
+        "label": "Mirrored+Inverted · 8 · Halved",
+        "word": "ΔX-LFΣW-LF",
+        "counts": 8,
+        "file": "pack10__mirrored_inverted-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      }
+    ],
+    [
+      {
+        "slot": "mirrored-16",
+        "label": "Mirrored · 16 · Halved",
+        "word": "GΘOW-AΘ-Z-Ψ-GΘOW-AΘ-Z-Ψ-",
+        "counts": 16,
+        "file": "pack11__mirrored-16.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "mirrored-8",
+        "label": "Mirrored · 8 · Halved",
+        "word": "MΛX-ΣMΛX-Σ",
+        "counts": 8,
+        "file": "pack11__mirrored-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "rotated-16",
+        "label": "Rotated · 16 · Quartered",
+        "word": "WΨHΔ-WΨHΔ-WΨHΔ-WΨHΔ-",
+        "counts": 16,
+        "file": "pack11__rotated-16.png",
+        "period": "quartered",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "rotated-8",
+        "label": "Rotated · 8 · Halved",
+        "word": "ΣRΛWΣRΛW",
+        "counts": 8,
+        "file": "pack11__rotated-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "tnd-a",
+        "label": "TnD · Together · Same · no turns",
+        "word": "GGGG",
+        "counts": 4,
+        "file": "pack11__tnd-a.png",
+        "period": null,
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "tnd-b",
+        "label": "TnD · Together · Opposite · 1 turn throughout",
+        "word": "DJDJ",
+        "counts": 4,
+        "file": "pack11__tnd-b.png",
+        "period": null,
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "mirrored_swapped-8",
+        "label": "Mirrored+Swapped · 8 · Halved",
+        "word": "LΔ-Z-ΦLΔ-Z-Φ",
+        "counts": 8,
+        "file": "pack11__mirrored_swapped-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "mirrored_inverted-8",
+        "label": "Mirrored+Inverted · 8 · Halved",
+        "word": "ΘYFΨΩZFΨ",
+        "counts": 8,
+        "file": "pack11__mirrored_inverted-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      }
+    ],
+    [
+      {
+        "slot": "mirrored-16",
+        "label": "Mirrored · 16 · Halved",
+        "word": "TZHΔ-X-LΦΔTZHΔ-X-LΦΔ",
+        "counts": 16,
+        "file": "pack12__mirrored-16.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "mirrored-8",
+        "label": "Mirrored · 8 · Halved",
+        "word": "ΔRXBΔRXB",
+        "counts": 8,
+        "file": "pack12__mirrored-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "rotated-16",
+        "label": "Rotated · 16 · Quartered",
+        "word": "Ω-OX-Φ-Ω-OX-Φ-Ω-OX-Φ-Ω-OX-Φ-",
+        "counts": 16,
+        "file": "pack12__rotated-16.png",
+        "period": "quartered",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "rotated-8",
+        "label": "Rotated · 8 · Halved",
+        "word": "HΩWΨHΩWΨ",
+        "counts": 8,
+        "file": "pack12__rotated-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "tnd-a",
+        "label": "TnD · Quarter · Same · no turns",
+        "word": "VVVV",
+        "counts": 4,
+        "file": "pack12__tnd-a.png",
+        "period": null,
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "tnd-b",
+        "label": "TnD · Quarter · Opposite · 1 turn throughout",
+        "word": "PMPM",
+        "counts": 4,
+        "file": "pack12__tnd-b.png",
+        "period": null,
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "mirrored_swapped-8",
+        "label": "Mirrored+Swapped · 8 · Halved",
+        "word": "FΨFΨFΨFΨ",
+        "counts": 8,
+        "file": "pack12__mirrored_swapped-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "mirrored_inverted-8",
+        "label": "Mirrored+Inverted · 8 · Halved",
+        "word": "VXCΔUWCΣ",
+        "counts": 8,
+        "file": "pack12__mirrored_inverted-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      }
+    ],
+    [
+      {
+        "slot": "mirrored-16",
+        "label": "Mirrored · 16 · Halved",
+        "word": "LΨ-ΩY-GΘYΦLΨ-ΩY-GΘYΦ",
+        "counts": 16,
+        "file": "pack13__mirrored-16.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "mirrored-8",
+        "label": "Mirrored · 8 · Halved",
+        "word": "FΨΩY-FΨΩY-",
+        "counts": 8,
+        "file": "pack13__mirrored-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "rotated-16",
+        "label": "Rotated · 16 · Quartered",
+        "word": "FLΣ-Y-FLΣ-Y-FLΣ-Y-FLΣ-Y-",
+        "counts": 16,
+        "file": "pack13__rotated-16.png",
+        "period": "quartered",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "rotated-8",
+        "label": "Rotated · 8 · Halved",
+        "word": "SSΛΛSSΛΛ",
+        "counts": 8,
+        "file": "pack13__rotated-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "tnd-a",
+        "label": "TnD · Split · Same · no turns",
+        "word": "BBBB",
+        "counts": 4,
+        "file": "pack13__tnd-a.png",
+        "period": null,
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "tnd-b",
+        "label": "TnD · Split · Opposite · 1 turn throughout",
+        "word": "KEKE",
+        "counts": 4,
+        "file": "pack13__tnd-b.png",
+        "period": null,
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "mirrored_swapped-8",
+        "label": "Mirrored+Swapped · 8 · Halved",
+        "word": "ZΔ-ZΔ-ZΔ-ZΔ-",
+        "counts": 8,
+        "file": "pack13__mirrored_swapped-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "mirrored_inverted-8",
+        "label": "Mirrored+Inverted · 8 · Halved",
+        "word": "CΘ-MW-CΩ-NX-",
+        "counts": 8,
+        "file": "pack13__mirrored_inverted-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      }
+    ],
+    [
+      {
+        "slot": "mirrored-16",
+        "label": "Mirrored · 16 · Halved",
+        "word": "Ψ-ΦΨΔ-X-KΦΨΨ-ΦΨΔ-X-KΦΨ",
+        "counts": 16,
+        "file": "pack14__mirrored-16.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "mirrored-8",
+        "label": "Mirrored · 8 · Halved",
+        "word": "OYFΣOYFΣ",
+        "counts": 8,
+        "file": "pack14__mirrored-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "rotated-16",
+        "label": "Rotated · 16 · Quartered",
+        "word": "TTΛRTTΛRTTΛRTTΛR",
+        "counts": 16,
+        "file": "pack14__rotated-16.png",
+        "period": "quartered",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "rotated-8",
+        "label": "Rotated · 8 · Halved",
+        "word": "Ω-ΛZΦΩ-ΛZΦ",
+        "counts": 8,
+        "file": "pack14__rotated-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "tnd-a",
+        "label": "TnD · Together · Same · no turns",
+        "word": "HHHH",
+        "counts": 4,
+        "file": "pack14__tnd-a.png",
+        "period": null,
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "tnd-b",
+        "label": "TnD · Together · Opposite · 1 turn throughout",
+        "word": "EKEK",
+        "counts": 4,
+        "file": "pack14__tnd-b.png",
+        "period": null,
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "mirrored_swapped-8",
+        "label": "Mirrored+Swapped · 8 · Halved",
+        "word": "CΔΛXCΔΛX",
+        "counts": 8,
+        "file": "pack14__mirrored_swapped-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "mirrored_inverted-8",
+        "label": "Mirrored+Inverted · 8 · Halved",
+        "word": "EΩ-Z-IDΘ-Y-I",
+        "counts": 8,
+        "file": "pack14__mirrored_inverted-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      }
+    ],
+    [
+      {
+        "slot": "mirrored-16",
+        "label": "Mirrored · 16 · Halved",
+        "word": "TZΘZ-Δ-Z-ΦΘ-TZΘZ-Δ-Z-ΦΘ-",
+        "counts": 16,
+        "file": "pack15__mirrored-16.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "mirrored-8",
+        "label": "Mirrored · 8 · Halved",
+        "word": "ΔTZ-ΦΔTZ-Φ",
+        "counts": 8,
+        "file": "pack15__mirrored-8.png",
+        "period": "halved",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "rotated-16",
+        "label": "Rotated · 16 · Quartered",
+        "word": "Ω-NZΦΩ-NZΦΩ-NZΦΩ-NZΦ",
+        "counts": 16,
+        "file": "pack15__rotated-16.png",
+        "period": "quartered",
+        "startPosition": "alpha1",
+        "endPosition": "alpha1"
+      },
+      {
+        "slot": "rotated-8",
+        "label": "Rotated · 8 · Halved",
+        "word": "FΔXΨFΔXΨ",
+        "counts": 8,
+        "file": "pack15__rotated-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "tnd-a",
+        "label": "TnD · Quarter · Same · no turns",
+        "word": "SSSS",
+        "counts": 4,
+        "file": "pack15__tnd-a.png",
+        "period": null,
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "tnd-b",
+        "label": "TnD · Quarter · Opposite · 1 turn throughout",
+        "word": "QNQN",
+        "counts": 4,
+        "file": "pack15__tnd-b.png",
+        "period": null,
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      },
+      {
+        "slot": "mirrored_swapped-8",
+        "label": "Mirrored+Swapped · 8 · Halved",
+        "word": "ΩYΩYΩYΩY",
+        "counts": 8,
+        "file": "pack15__mirrored_swapped-8.png",
+        "period": "halved",
+        "startPosition": "beta5",
+        "endPosition": "beta5"
+      },
+      {
+        "slot": "mirrored_inverted-8",
+        "label": "Mirrored+Inverted · 8 · Halved",
+        "word": "X-CΔQW-CΣP",
+        "counts": 8,
+        "file": "pack15__mirrored_inverted-8.png",
+        "period": "halved",
+        "startPosition": "gamma11",
+        "endPosition": "gamma11"
+      }
+    ]
+  ],
+  "catalog": [
+    {
+      "slot": "tnd-quarter-opp-mpmp",
+      "label": "Quarter · Opposite · no turns",
+      "word": "MPMP",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-opp-mpmp__plain.png"
+    },
+    {
+      "slot": "tnd-quarter-opp-mpmp",
+      "label": "Quarter · Opposite · 1 turn throughout",
+      "word": "MPMP",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-opp-mpmp__1turn.png"
+    },
+    {
+      "slot": "tnd-quarter-opp-nqnq",
+      "label": "Quarter · Opposite · no turns",
+      "word": "NQNQ",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-opp-nqnq__plain.png"
+    },
+    {
+      "slot": "tnd-quarter-opp-nqnq",
+      "label": "Quarter · Opposite · 1 turn throughout",
+      "word": "NQNQ",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-opp-nqnq__1turn.png"
+    },
+    {
+      "slot": "tnd-quarter-opp-oror",
+      "label": "Quarter · Opposite · no turns",
+      "word": "OROR",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-opp-oror__plain.png"
+    },
+    {
+      "slot": "tnd-quarter-opp-oror",
+      "label": "Quarter · Opposite · 1 turn throughout",
+      "word": "OROR",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-opp-oror__1turn.png"
+    },
+    {
+      "slot": "tnd-quarter-opp-pmpm",
+      "label": "Quarter · Opposite · no turns",
+      "word": "PMPM",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-opp-pmpm__plain.png"
+    },
+    {
+      "slot": "tnd-quarter-opp-pmpm",
+      "label": "Quarter · Opposite · 1 turn throughout",
+      "word": "PMPM",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-opp-pmpm__1turn.png"
+    },
+    {
+      "slot": "tnd-quarter-opp-qnqn",
+      "label": "Quarter · Opposite · no turns",
+      "word": "QNQN",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-opp-qnqn__plain.png"
+    },
+    {
+      "slot": "tnd-quarter-opp-qnqn",
+      "label": "Quarter · Opposite · 1 turn throughout",
+      "word": "QNQN",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-opp-qnqn__1turn.png"
+    },
+    {
+      "slot": "tnd-quarter-opp-roro",
+      "label": "Quarter · Opposite · no turns",
+      "word": "RORO",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-opp-roro__plain.png"
+    },
+    {
+      "slot": "tnd-quarter-opp-roro",
+      "label": "Quarter · Opposite · 1 turn throughout",
+      "word": "RORO",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-opp-roro__1turn.png"
+    },
+    {
+      "slot": "tnd-quarter-same-ssss",
+      "label": "Quarter · Same · no turns",
+      "word": "SSSS",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-same-ssss__plain.png"
+    },
+    {
+      "slot": "tnd-quarter-same-ssss",
+      "label": "Quarter · Same · 1 turn throughout",
+      "word": "SSSS",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-same-ssss__1turn.png"
+    },
+    {
+      "slot": "tnd-quarter-same-tttt",
+      "label": "Quarter · Same · no turns",
+      "word": "TTTT",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-same-tttt__plain.png"
+    },
+    {
+      "slot": "tnd-quarter-same-tttt",
+      "label": "Quarter · Same · 1 turn throughout",
+      "word": "TTTT",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-same-tttt__1turn.png"
+    },
+    {
+      "slot": "tnd-quarter-same-uuuu",
+      "label": "Quarter · Same · no turns",
+      "word": "UUUU",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-same-uuuu__plain.png"
+    },
+    {
+      "slot": "tnd-quarter-same-uuuu",
+      "label": "Quarter · Same · 1 turn throughout",
+      "word": "UUUU",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-same-uuuu__1turn.png"
+    },
+    {
+      "slot": "tnd-quarter-same-vvvv",
+      "label": "Quarter · Same · no turns",
+      "word": "VVVV",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-same-vvvv__plain.png"
+    },
+    {
+      "slot": "tnd-quarter-same-vvvv",
+      "label": "Quarter · Same · 1 turn throughout",
+      "word": "VVVV",
+      "counts": 4,
+      "file": "catalog__tnd-quarter-same-vvvv__1turn.png"
+    },
+    {
+      "slot": "tnd-split-opp-jdjd",
+      "label": "Split · Opposite · no turns",
+      "word": "JDJD",
+      "counts": 4,
+      "file": "catalog__tnd-split-opp-jdjd__plain.png"
+    },
+    {
+      "slot": "tnd-split-opp-jdjd",
+      "label": "Split · Opposite · 1 turn throughout",
+      "word": "JDJD",
+      "counts": 4,
+      "file": "catalog__tnd-split-opp-jdjd__1turn.png"
+    },
+    {
+      "slot": "tnd-split-opp-keke",
+      "label": "Split · Opposite · no turns",
+      "word": "KEKE",
+      "counts": 4,
+      "file": "catalog__tnd-split-opp-keke__plain.png"
+    },
+    {
+      "slot": "tnd-split-opp-keke",
+      "label": "Split · Opposite · 1 turn throughout",
+      "word": "KEKE",
+      "counts": 4,
+      "file": "catalog__tnd-split-opp-keke__1turn.png"
+    },
+    {
+      "slot": "tnd-split-opp-lflf",
+      "label": "Split · Opposite · no turns",
+      "word": "LFLF",
+      "counts": 4,
+      "file": "catalog__tnd-split-opp-lflf__plain.png"
+    },
+    {
+      "slot": "tnd-split-opp-lflf",
+      "label": "Split · Opposite · 1 turn throughout",
+      "word": "LFLF",
+      "counts": 4,
+      "file": "catalog__tnd-split-opp-lflf__1turn.png"
+    },
+    {
+      "slot": "tnd-split-same-aaaa",
+      "label": "Split · Same · no turns",
+      "word": "AAAA",
+      "counts": 4,
+      "file": "catalog__tnd-split-same-aaaa__plain.png"
+    },
+    {
+      "slot": "tnd-split-same-aaaa",
+      "label": "Split · Same · 1 turn throughout",
+      "word": "AAAA",
+      "counts": 4,
+      "file": "catalog__tnd-split-same-aaaa__1turn.png"
+    },
+    {
+      "slot": "tnd-split-same-bbbb",
+      "label": "Split · Same · no turns",
+      "word": "BBBB",
+      "counts": 4,
+      "file": "catalog__tnd-split-same-bbbb__plain.png"
+    },
+    {
+      "slot": "tnd-split-same-bbbb",
+      "label": "Split · Same · 1 turn throughout",
+      "word": "BBBB",
+      "counts": 4,
+      "file": "catalog__tnd-split-same-bbbb__1turn.png"
+    },
+    {
+      "slot": "tnd-split-same-cccc",
+      "label": "Split · Same · no turns",
+      "word": "CCCC",
+      "counts": 4,
+      "file": "catalog__tnd-split-same-cccc__plain.png"
+    },
+    {
+      "slot": "tnd-split-same-cccc",
+      "label": "Split · Same · 1 turn throughout",
+      "word": "CCCC",
+      "counts": 4,
+      "file": "catalog__tnd-split-same-cccc__1turn.png"
+    },
+    {
+      "slot": "tnd-tog-opp-djdj",
+      "label": "Together · Opposite · no turns",
+      "word": "DJDJ",
+      "counts": 4,
+      "file": "catalog__tnd-tog-opp-djdj__plain.png"
+    },
+    {
+      "slot": "tnd-tog-opp-djdj",
+      "label": "Together · Opposite · 1 turn throughout",
+      "word": "DJDJ",
+      "counts": 4,
+      "file": "catalog__tnd-tog-opp-djdj__1turn.png"
+    },
+    {
+      "slot": "tnd-tog-opp-ekek",
+      "label": "Together · Opposite · no turns",
+      "word": "EKEK",
+      "counts": 4,
+      "file": "catalog__tnd-tog-opp-ekek__plain.png"
+    },
+    {
+      "slot": "tnd-tog-opp-ekek",
+      "label": "Together · Opposite · 1 turn throughout",
+      "word": "EKEK",
+      "counts": 4,
+      "file": "catalog__tnd-tog-opp-ekek__1turn.png"
+    },
+    {
+      "slot": "tnd-tog-opp-flfl",
+      "label": "Together · Opposite · no turns",
+      "word": "FLFL",
+      "counts": 4,
+      "file": "catalog__tnd-tog-opp-flfl__plain.png"
+    },
+    {
+      "slot": "tnd-tog-opp-flfl",
+      "label": "Together · Opposite · 1 turn throughout",
+      "word": "FLFL",
+      "counts": 4,
+      "file": "catalog__tnd-tog-opp-flfl__1turn.png"
+    },
+    {
+      "slot": "tnd-tog-same-gggg",
+      "label": "Together · Same · no turns",
+      "word": "GGGG",
+      "counts": 4,
+      "file": "catalog__tnd-tog-same-gggg__plain.png"
+    },
+    {
+      "slot": "tnd-tog-same-gggg",
+      "label": "Together · Same · 1 turn throughout",
+      "word": "GGGG",
+      "counts": 4,
+      "file": "catalog__tnd-tog-same-gggg__1turn.png"
+    },
+    {
+      "slot": "tnd-tog-same-hhhh",
+      "label": "Together · Same · no turns",
+      "word": "HHHH",
+      "counts": 4,
+      "file": "catalog__tnd-tog-same-hhhh__plain.png"
+    },
+    {
+      "slot": "tnd-tog-same-hhhh",
+      "label": "Together · Same · 1 turn throughout",
+      "word": "HHHH",
+      "counts": 4,
+      "file": "catalog__tnd-tog-same-hhhh__1turn.png"
+    },
+    {
+      "slot": "tnd-tog-same-iiii",
+      "label": "Together · Same · no turns",
+      "word": "IIII",
+      "counts": 4,
+      "file": "catalog__tnd-tog-same-iiii__plain.png"
+    },
+    {
+      "slot": "tnd-tog-same-iiii",
+      "label": "Together · Same · 1 turn throughout",
+      "word": "IIII",
+      "counts": 4,
+      "file": "catalog__tnd-tog-same-iiii__1turn.png"
+    }
+  ]
+}
