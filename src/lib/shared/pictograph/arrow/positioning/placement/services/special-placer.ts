@@ -21,6 +21,7 @@ import type { PictographData } from "../../../../shared/domain/models/pictograph
 import type { MotionData } from "../../../../shared/domain/models/motion-data";
 import {
   generateOrientationKey,
+  getMotionOrientationBucket,
   resolveEffectiveOriKey,
   mapToLegacyBucket,
 } from "../../key-generation/services/special-placement-ori-key-generator";
@@ -68,14 +69,8 @@ export class SpecialPlacer {
 
     // Step 1: Generate orientation key.
     // For staff+staff, collapse to legacy bucket - radial variants are identical.
-    const rawOriKey = generateOrientationKey(
-      motionData,
-      pictographData
-    );
-    const oriKey = resolveEffectiveOriKey(
-      rawOriKey,
-      pictographData
-    );
+    const rawOriKey = generateOrientationKey(motionData, pictographData);
+    const oriKey = resolveEffectiveOriKey(rawOriKey, pictographData);
 
     // Step 2: Determine grid mode
     const gridMode = this.getGridMode(pictographData);
@@ -116,7 +111,10 @@ export class SpecialPlacer {
       );
 
       if (cascadingResult) {
-        return new FabricPoint(cascadingResult.adjustment.x, cascadingResult.adjustment.y);
+        return new FabricPoint(
+          cascadingResult.adjustment.x,
+          cascadingResult.adjustment.y
+        );
       }
     }
 
@@ -184,14 +182,8 @@ export class SpecialPlacer {
 
     // Step 1: Generate orientation key.
     // For staff+staff, collapse to legacy bucket - radial variants are identical.
-    const rawOriKey = generateOrientationKey(
-      motionData,
-      pictographData
-    );
-    const oriKey = resolveEffectiveOriKey(
-      rawOriKey,
-      pictographData
-    );
+    const rawOriKey = generateOrientationKey(motionData, pictographData);
+    const oriKey = resolveEffectiveOriKey(rawOriKey, pictographData);
     // Compute legacy bucket from rawOriKey, not oriKey (same fix as getSpecialAdjustment)
     const legacyOriKey = mapToLegacyBucket(rawOriKey);
 
@@ -201,70 +193,69 @@ export class SpecialPlacer {
     // Step 3: Generate turns tuple
     const turnsTuple = this.tupleGenerator.generateTurnsTuple(pictographData);
 
-    // Step 4: Check localStorage for user overrides (takes priority)
-    // Try specific oriKey first, then legacy bucket
-    let localStorageOverride = this.checkLocalStorageOverride(
-      gridMode,
-      oriKey,
-      letter,
-      turnsTuple,
-      rotationOverrideKey
+    // Mixed-orientation data is sparse by design. A letter or tuple can be
+    // absent from its combination bucket while its rotation flag still lives
+    // in the selected motion's base layer (for example Θ- (s, 3, 3), whose
+    // blue dash flag is in from_layer2). Preserve the authored precedence:
+    // exact orientation, legacy combination, then the motion's base layer.
+    const orientationBuckets = Array.from(
+      new Set([oriKey, legacyOriKey, getMotionOrientationBucket(motionData)])
     );
-    if (localStorageOverride === null) {
-      localStorageOverride = this.checkLocalStorageOverride(
-        gridMode,
-        legacyOriKey,
-        letter,
-        turnsTuple,
-        rotationOverrideKey
-      );
-    }
-    if (localStorageOverride !== null) {
-      return localStorageOverride;
-    }
-
-    // Step 5: Load letter data - try specific oriKey folder, fall back to legacy
-    let letterData = await this.dataService.getLetterData(
-      gridMode,
-      oriKey,
-      letter
-    );
-    if (!letterData || Object.keys(letterData).length === 0) {
-      letterData = await this.dataService.getLetterData(
-        gridMode,
-        legacyOriKey,
-        letter
-      );
-    }
-
-    if (!letterData || Object.keys(letterData).length === 0) {
-      return false;
-    }
-
-    // Step 6: Lookup rotation override in JSON data
-    // Try motion-type-based key first (e.g., static_rot_angle_override)
-    let result = this.lookupService.lookupRotationOverride(
-      letterData,
-      turnsTuple,
-      rotationOverrideKey,
-      letter
+    const overrideKeys = Array.from(
+      new Set(
+        [
+          rotationOverrideKey,
+          `${motionType}_rot_angle_override`,
+          motionData.color
+            ? `${motionData.color.toLowerCase()}_rot_angle_override`
+            : "",
+        ].filter(Boolean)
+      )
     );
 
-    // FALLBACK: If not found, try color-based key (e.g., red_rot_angle_override)
-    // Some JSON files use color-based keys instead of motion-type-based keys
-    if (!result && motionData.color) {
-      const colorBasedKey = `${motionData.color.toLowerCase()}_rot_angle_override`;
-      if (colorBasedKey !== rotationOverrideKey) {
-        result = this.lookupService.lookupRotationOverride(
-          letterData,
+    // Step 4: Check localStorage first. Explicit false values suppress an
+    // authored JSON flag, which lets the adjustment button turn defaults off.
+    for (const bucket of orientationBuckets) {
+      for (const key of overrideKeys) {
+        const localStorageOverride = this.checkLocalStorageOverride(
+          gridMode,
+          bucket,
+          letter,
           turnsTuple,
-          colorBasedKey,
-          letter
+          key
         );
+        if (localStorageOverride !== null) {
+          return localStorageOverride;
+        }
       }
     }
 
-    return result;
+    // Step 5: Look through the same buckets and accepted legacy key shapes in
+    // static JSON. Continue after a non-empty file when the tuple/key is absent;
+    // the base layer remains a valid inherited source.
+    for (const bucket of orientationBuckets) {
+      const letterData = await this.dataService.getLetterData(
+        gridMode,
+        bucket,
+        letter
+      );
+      if (!letterData || Object.keys(letterData).length === 0) continue;
+
+      for (const key of overrideKeys) {
+        if (
+          this.lookupService.lookupRotationOverride(
+            letterData,
+            turnsTuple,
+            key,
+            letter
+          )
+        ) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -285,7 +276,11 @@ export class SpecialPlacer {
     pictographData: PictographData,
     arrowColor?: string,
     attributeKey?: string
-  ): Promise<{ adjustment: FabricPoint; filePath: string; turnsTupleKey: string } | null> {
+  ): Promise<{
+    adjustment: FabricPoint;
+    filePath: string;
+    turnsTupleKey: string;
+  } | null> {
     if (!motionData || !pictographData.letter) {
       return null;
     }
@@ -294,14 +289,8 @@ export class SpecialPlacer {
 
     // Generate orientation key.
     // For staff+staff, collapse to legacy bucket - radial variants are identical.
-    const rawOriKey = generateOrientationKey(
-      motionData,
-      pictographData
-    );
-    const oriKey = resolveEffectiveOriKey(
-      rawOriKey,
-      pictographData
-    );
+    const rawOriKey = generateOrientationKey(motionData, pictographData);
+    const oriKey = resolveEffectiveOriKey(rawOriKey, pictographData);
     // Compute legacy bucket from rawOriKey, not oriKey (same fix as getSpecialAdjustment)
     const legacyOriKey = mapToLegacyBucket(rawOriKey);
 
@@ -309,7 +298,8 @@ export class SpecialPlacer {
     const gridMode = this.getGridMode(pictographData);
 
     // Generate turns tuple
-    const turnsTupleKey = this.tupleGenerator.generateTurnsTuple(pictographData);
+    const turnsTupleKey =
+      this.tupleGenerator.generateTurnsTuple(pictographData);
 
     // Load letter data from static JSON - try specific oriKey, fall back to legacy
     let usedOriKey = oriKey;

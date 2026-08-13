@@ -29,16 +29,32 @@ export function generateOrientationKey(
 
 export function mapToLegacyBucket(specificOriKey: string): string {
   const separatorIndex = specificOriKey.indexOf("_");
-  const blueOri = separatorIndex >= 0 ? specificOriKey.slice(0, separatorIndex) : specificOriKey;
-  const redOri = separatorIndex >= 0 ? specificOriKey.slice(separatorIndex + 1) : "in";
-  const radialOrientations = ["in", "out"];
-  const blueLayer = radialOrientations.includes(blueOri) ? 1 : 2;
-  const redLayer = radialOrientations.includes(redOri) ? 1 : 2;
+  const blueOri =
+    separatorIndex >= 0
+      ? specificOriKey.slice(0, separatorIndex)
+      : specificOriKey;
+  const redOri =
+    separatorIndex >= 0 ? specificOriKey.slice(separatorIndex + 1) : "in";
+  const blueLayer = getOrientationLayer(blueOri);
+  const redLayer = getOrientationLayer(redOri);
 
   if (blueLayer === 1 && redLayer === 1) return "from_layer1";
   if (blueLayer === 2 && redLayer === 2) return "from_layer2";
   if (blueLayer === 1 && redLayer === 2) return "from_layer3_blue1_red2";
   return "from_layer3_blue2_red1";
+}
+
+function getOrientationLayer(orientation: string): 1 | 2 {
+  return orientation === "in" || orientation === "out" ? 1 : 2;
+}
+
+/**
+ * The base special-placement bucket for one motion's starting orientation.
+ * Mixed-orientation files can omit a letter or tuple that still has an
+ * inherited rotation flag in this per-motion bucket.
+ */
+export function getMotionOrientationBucket(motionData: MotionData): string {
+  return `from_layer${getOrientationLayer(motionData.startOrientation)}`;
 }
 
 export function resolveEffectiveOriKey(

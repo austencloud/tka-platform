@@ -16,6 +16,8 @@ import {
 import {
   dashClockwiseMap,
   dashCounterClockwiseMap,
+  dashClockwiseOverrideMap,
+  dashCounterClockwiseOverrideMap,
 } from "../config/dash-rotation-maps";
 import {
   floatClockwiseHandpathMap,
@@ -29,9 +31,13 @@ export function selectStaticMap(
 ): Record<GridLocation, number> {
   const clockwise = isClockwise(rotationDirection);
   if (isRadial) {
-    return clockwise ? staticRadialClockwiseMap : staticRadialCounterClockwiseMap;
+    return clockwise
+      ? staticRadialClockwiseMap
+      : staticRadialCounterClockwiseMap;
   } else {
-    return clockwise ? staticNonRadialClockwiseMap : staticNonRadialCounterClockwiseMap;
+    return clockwise
+      ? staticNonRadialClockwiseMap
+      : staticNonRadialCounterClockwiseMap;
   }
 }
 
@@ -41,16 +47,36 @@ export function selectStaticOverrideMap(
   return isRadial ? staticRadialOverrideMap : staticNonRadialOverrideMap;
 }
 
-export function selectProMap(rotationDirection: string): Record<GridLocation, number> {
-  return isClockwise(rotationDirection) ? proClockwiseMap : proCounterClockwiseMap;
+export function selectProMap(
+  rotationDirection: string
+): Record<GridLocation, number> {
+  return isClockwise(rotationDirection)
+    ? proClockwiseMap
+    : proCounterClockwiseMap;
 }
 
-export function selectAntiMap(rotationDirection: string): Record<GridLocation, number> {
-  return isClockwise(rotationDirection) ? antiClockwiseMap : antiCounterClockwiseMap;
+export function selectAntiMap(
+  rotationDirection: string
+): Record<GridLocation, number> {
+  return isClockwise(rotationDirection)
+    ? antiClockwiseMap
+    : antiCounterClockwiseMap;
 }
 
-export function selectDashMap(rotationDirection: string): Record<GridLocation, number> {
-  return isClockwise(rotationDirection) ? dashClockwiseMap : dashCounterClockwiseMap;
+export function selectDashMap(
+  rotationDirection: string
+): Record<GridLocation, number> {
+  return isClockwise(rotationDirection)
+    ? dashClockwiseMap
+    : dashCounterClockwiseMap;
+}
+
+export function selectDashOverrideMap(
+  rotationDirection: string
+): Partial<Record<GridLocation, number>> {
+  return isClockwise(rotationDirection)
+    ? dashClockwiseOverrideMap
+    : dashCounterClockwiseOverrideMap;
 }
 
 export function selectFloatMap(

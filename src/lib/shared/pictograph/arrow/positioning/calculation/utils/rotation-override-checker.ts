@@ -3,8 +3,15 @@ import type { PictographData } from "../../../../shared/domain/models/pictograph
 import type { MotionData } from "../../../../shared/domain/models/motion-data";
 import type { SpecialPlacer } from "../../placement/services/special-placer";
 import type { IRotationAngleOverrideKeyGenerator } from "../../key-generation/services/rotation-angle-override-key-generator";
-import { selectStaticOverrideMap } from "./rotation-map-selector";
-import { normalizeRotationDirection } from "./rotation-direction-utils";
+import { dashNoRotationMap } from "../config/dash-rotation-maps";
+import {
+  selectDashOverrideMap,
+  selectStaticOverrideMap,
+} from "./rotation-map-selector";
+import {
+  isNoRotation,
+  normalizeRotationDirection,
+} from "./rotation-direction-utils";
 
 export async function checkAndApplyOverride(
   motion: MotionData,
@@ -28,7 +35,12 @@ export async function checkAndApplyOverride(
     );
 
     if (hasOverride) {
-      return getRotationFromOverrideMap(isRadial, location, motion.rotationDirection);
+      return getRotationFromOverrideMap(
+        motion,
+        isRadial,
+        location,
+        motion.rotationDirection
+      );
     }
   } catch (error) {
     console.warn("Rotation override check failed:", error);
@@ -38,10 +50,20 @@ export async function checkAndApplyOverride(
 }
 
 function getRotationFromOverrideMap(
+  motion: MotionData,
   isRadial: boolean,
   location: GridLocation,
   rotationDirection: string
 ): number {
+  if (motion.motionType.toLowerCase() === "dash") {
+    if (isNoRotation(rotationDirection) || motion.turns === 0) {
+      const key = `${motion.startLocation},${motion.endLocation}`;
+      return dashNoRotationMap[key] ?? 0.0;
+    }
+
+    return selectDashOverrideMap(rotationDirection)[location] ?? 0.0;
+  }
+
   const overrideMap = selectStaticOverrideMap(isRadial);
   const angleValue = overrideMap[location];
 

@@ -15,10 +15,10 @@ import type { TurnsTupleGenerator } from "./turns-tuple-generator";
 import {
   generateOrientationKey,
   resolveEffectiveOriKey,
-  mapToLegacyBucket,
 } from "../../key-generation/services/special-placement-ori-key-generator";
 import type { IRotationAngleOverrideKeyGenerator } from "../../key-generation/services/rotation-angle-override-key-generator";
 import { deriveGridMode as _deriveGridMode } from "../../../../grid/services/grid-mode-deriver";
+import { specialPlacer, type SpecialPlacer } from "./special-placer";
 const STORAGE_KEY = "tka_rotation_overrides";
 
 interface RotationOverrideData {
@@ -70,7 +70,8 @@ export interface IRotationOverrideManager {
 export class RotationOverrideManager implements IRotationOverrideManager {
   constructor(
     private readonly tupleGenerator: TurnsTupleGenerator,
-    private readonly rotationKeyGenerator: IRotationAngleOverrideKeyGenerator
+    private readonly rotationKeyGenerator: IRotationAngleOverrideKeyGenerator,
+    private readonly specialPlacement: SpecialPlacer
   ) {}
 
   async toggleRotationOverride(
@@ -119,15 +120,15 @@ export class RotationOverrideManager implements IRotationOverrideManager {
 
     const turnsData = overrides[gridMode][oriKey][letter][turnsTuple];
 
-    // Toggle override
-    const isActive = turnsData[rotationKey] === true;
-    if (isActive) {
-      // Remove override
-      delete turnsData[rotationKey];
-    } else {
-      // Add override
-      turnsData[rotationKey] = true;
-    }
+    // Toggle the effective state, including authored static JSON. Keeping an
+    // explicit false value is necessary when the built-in placement flag is
+    // true; deleting the local entry would immediately reveal that flag again.
+    const isActive = await this.specialPlacement.hasRotationAngleOverride(
+      motion,
+      pictographData,
+      rotationKey
+    );
+    turnsData[rotationKey] = !isActive;
 
     // Save updated overrides
     this.saveOverrides(overrides);
@@ -150,40 +151,16 @@ export class RotationOverrideManager implements IRotationOverrideManager {
       return false;
     }
 
-    // Use the same effective oriKey SpecialPlacer uses when reading,
-    // so the state shown in the UI matches what the renderer applies.
-    const rawOriKey = generateOrientationKey(motion, pictographData);
-    const oriKey = resolveEffectiveOriKey(rawOriKey, pictographData);
-    const gridMode = this.getGridMode(pictographData);
-    const turnsTuple = this.tupleGenerator.generateTurnsTuple(pictographData);
     const rotationKey =
       this.rotationKeyGenerator.generateRotationAngleOverrideKey(
         motion,
         pictographData
       );
-    const letter = pictographData.letter;
-
-    // Load overrides and check - try effective oriKey first, then legacy
-    // bucket from the RAW key. Computing legacy from rawOriKey (not from
-    // an already-collapsed oriKey) matches SpecialPlacer's pattern so stale
-    // non-staff entries can still be discovered.
-    const overrides = this.loadOverrides();
-    if (
-      overrides[gridMode]?.[oriKey]?.[letter]?.[turnsTuple]?.[rotationKey] ===
-      true
-    ) {
-      return true;
-    }
-
-    const legacyOriKey = mapToLegacyBucket(rawOriKey);
-    if (legacyOriKey !== oriKey) {
-      return (
-        overrides[gridMode]?.[legacyOriKey]?.[letter]?.[turnsTuple]?.[rotationKey] ===
-        true
-      );
-    }
-
-    return false;
+    return this.specialPlacement.hasRotationAngleOverride(
+      motion,
+      pictographData,
+      rotationKey
+    );
   }
 
   clearAllOverrides(): void {
@@ -255,10 +232,19 @@ export class RotationOverrideManager implements IRotationOverrideManager {
 import { turnsTupleGenerator } from "./turns-tuple-generator";
 import { rotationAngleOverrideKeyGenerator } from "../../key-generation/services/rotation-angle-override-key-generator";
 
-
 // HMR-aware singleton instance (persists localStorage state across HMR)
 let hmrRotationOverrideManager: RotationOverrideManager | null =
   import.meta.hot?.data?.rotationOverrideManagerInstance ?? null;
+
+// This dependency was added after older HMR instances were already in memory.
+// Recreate those instances so the first toggle after this update does not call
+// through an object that cannot resolve the effective authored state.
+if (
+  hmrRotationOverrideManager &&
+  !("specialPlacement" in hmrRotationOverrideManager)
+) {
+  hmrRotationOverrideManager = null;
+}
 
 if (import.meta.hot) {
   import.meta.hot.dispose((data) => {
@@ -270,7 +256,8 @@ function getRotationOverrideManager(): RotationOverrideManager {
   if (!hmrRotationOverrideManager) {
     hmrRotationOverrideManager = new RotationOverrideManager(
       turnsTupleGenerator,
-      rotationAngleOverrideKeyGenerator
+      rotationAngleOverrideKeyGenerator,
+      specialPlacer
     );
   }
   return hmrRotationOverrideManager;
